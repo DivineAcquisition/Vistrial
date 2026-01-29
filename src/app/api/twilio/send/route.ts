@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
 import { sendSMS } from "@/lib/twilio/send-sms"
+import { checkSendCompliance, validateMessageContent } from "@/lib/sms/compliance"
 
 export async function POST(request: NextRequest) {
   try {
@@ -38,13 +39,67 @@ export async function POST(request: NextRequest) {
     // Get user profile for Twilio credentials
     const { data: profile, error: profileError } = await supabase
       .from("profiles")
-      .select("twilio_account_sid, twilio_auth_token, twilio_phone_number")
+      .select("twilio_account_sid, twilio_auth_token, twilio_phone_number, business_name, timezone")
       .eq("id", user.id)
       .single()
 
     if (profileError || !profile?.twilio_account_sid || !profile?.twilio_auth_token || !profile?.twilio_phone_number) {
       return NextResponse.json(
         { error: "Twilio not configured" },
+        { status: 400 }
+      )
+    }
+
+    // Check if phone is on opt-out list
+    const { data: optOut } = await supabase
+      .from("opt_outs")
+      .select("id, opted_out_at")
+      .eq("user_id", user.id)
+      .eq("phone", lead.phone)
+      .single()
+
+    const isOptedOut = !!optOut
+
+    // Run compliance checks before sending
+    const complianceCheck = await checkSendCompliance({
+      lead: {
+        phone: lead.phone,
+        status: lead.status,
+        consent_timestamp: lead.consent_timestamp,
+        created_at: lead.created_at,
+        timezone: lead.timezone,
+      },
+      profileTimezone: profile.timezone || "America/New_York",
+      isOptedOut,
+    })
+
+    if (!complianceCheck.canSend) {
+      return NextResponse.json(
+        {
+          error: complianceCheck.reason,
+          complianceBlocked: true,
+          nextValidTime: complianceCheck.nextValidTime?.toISOString(),
+        },
+        { status: 400 }
+      )
+    }
+
+    // Validate message content (warnings, not blocking)
+    const isFirstMessage = lead.current_step === 0 || lead.current_step === 1
+    const messageValidation = validateMessageContent(
+      message,
+      profile.business_name || "Business",
+      isFirstMessage
+    )
+
+    // Block if there are errors (e.g., first message without opt-out)
+    if (!messageValidation.isValid) {
+      return NextResponse.json(
+        {
+          error: messageValidation.errors.join(". "),
+          validationErrors: messageValidation.errors,
+          validationWarnings: messageValidation.warnings,
+        },
         { status: 400 }
       )
     }
@@ -56,6 +111,7 @@ export async function POST(request: NextRequest) {
       body: message,
       accountSid: profile.twilio_account_sid,
       authToken: profile.twilio_auth_token,
+      statusCallback: `${process.env.NEXT_PUBLIC_APP_URL}/api/twilio/status`,
     })
 
     if (!result.success) {
@@ -90,6 +146,7 @@ export async function POST(request: NextRequest) {
       success: true,
       messageSid: result.messageSid,
       message: messageRecord,
+      warnings: messageValidation.warnings,
     })
   } catch (error) {
     console.error("Send SMS error:", error)

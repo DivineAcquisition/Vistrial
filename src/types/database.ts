@@ -9,6 +9,13 @@ export type LeadStatus =
   | "no_response"
   | "paused"
   | "cancelled"
+  | "opted_out"
+
+// Consent method types for TCPA compliance
+export type ConsentMethod = "verbal" | "written" | "online_form" | "text_reply"
+
+// Opt-out reason types
+export type OptOutReason = "STOP" | "UNSUBSCRIBE" | "CANCEL" | "END" | "QUIT" | "STOPALL" | "manual"
 
 export type StepType = "sms" | "email" | "wait"
 export type DelayUnit = "minutes" | "hours" | "days"
@@ -95,11 +102,28 @@ export interface Lead {
   source: string | null
   notes: string | null
   tags: string[] | null
+  // TCPA Compliance - Consent tracking
+  consent_method: ConsentMethod | null
+  consent_timestamp: string | null
+  consent_ip: string | null
+  consent_language: string | null
+  timezone: string | null
   created_at: string
   updated_at: string
   // Joined fields
   job_type?: JobType
   sequence?: Sequence
+}
+
+// Opt-out record for TCPA compliance
+export interface OptOut {
+  id: string
+  user_id: string
+  phone: string
+  opted_out_at: string
+  reason: OptOutReason | null
+  lead_id: string | null
+  created_at: string
 }
 
 export interface Message {
@@ -154,6 +178,19 @@ export interface LeadInput {
   source?: string
   notes?: string
   tags?: string[]
+  // TCPA Compliance - Consent tracking
+  consent_method?: ConsentMethod
+  consent_timestamp?: string
+  consent_ip?: string
+  consent_language?: string
+  timezone?: string
+}
+
+// Opt-out input for creating opt-out records
+export interface OptOutInput {
+  phone: string
+  reason?: OptOutReason
+  lead_id?: string
 }
 
 export interface SequenceInput {

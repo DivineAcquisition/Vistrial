@@ -9,6 +9,8 @@ import {
   RiCloseCircleLine,
   RiAlertLine,
   RiPauseCircleLine,
+  RiForbidLine,
+  RiDeleteBinLine,
 } from "@remixicon/react"
 
 export type LeadStatus =
@@ -19,6 +21,8 @@ export type LeadStatus =
   | "not_interested"
   | "no_response"
   | "paused"
+  | "opted_out"
+  | "cancelled"
 
 const statusConfig: Record<
   LeadStatus,
@@ -66,6 +70,17 @@ const statusConfig: Record<
     color:
       "bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400",
     icon: RiPauseCircleLine,
+  },
+  opted_out: {
+    label: "Opted Out",
+    color:
+      "bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-400",
+    icon: RiForbidLine,
+  },
+  cancelled: {
+    label: "Cancelled",
+    color: "bg-gray-100 text-gray-500 dark:bg-gray-900 dark:text-gray-500",
+    icon: RiDeleteBinLine,
   },
 }
 

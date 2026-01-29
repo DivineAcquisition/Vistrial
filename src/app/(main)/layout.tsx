@@ -1,13 +1,24 @@
+"use client"
+
+import { VistrialLayout } from "@/components/ui/navigation/VistrialLayout"
+import { useState } from "react"
+import { AddLeadModal } from "@/components/ui/leads/AddLeadModal"
+
 export default function Layout({
   children,
 }: Readonly<{
   children: React.ReactNode
 }>) {
+  const [showAddLeadModal, setShowAddLeadModal] = useState(false)
+
   return (
-    <div className="relative">
-      <div className="p-4 sm:px-6 sm:pb-10 sm:pt-10 lg:px-10 lg:pt-7">
+    <>
+      <VistrialLayout onAddLead={() => setShowAddLeadModal(true)}>
         {children}
-      </div>
-    </div>
+      </VistrialLayout>
+      {showAddLeadModal && (
+        <AddLeadModal onClose={() => setShowAddLeadModal(false)} />
+      )}
+    </>
   )
 }

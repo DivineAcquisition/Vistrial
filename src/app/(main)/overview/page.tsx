@@ -1,7 +1,7 @@
 "use client"
 
 import { StatCard } from "@/components/ui/dashboard/StatCard"
-import { StatusBadge, LeadStatus } from "@/components/ui/leads/StatusBadge"
+import { LeadStatus } from "@/components/ui/leads/StatusBadge"
 import { Button } from "@/components/Button"
 import { Card } from "@/components/Card"
 import {

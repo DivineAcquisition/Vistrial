@@ -34,13 +34,47 @@ export function parseTwilioWebhook(formData: FormData): {
 }
 
 /**
+ * For Next.js API routes - extracts and validates webhook
+ */
+export async function validateTwilioWebhook(
+  request: Request,
+  authToken: string
+): Promise<{ valid: boolean; params?: Record<string, string> }> {
+  const signature = request.headers.get("x-twilio-signature")
+
+  if (!signature) {
+    return { valid: false }
+  }
+
+  const url = request.url
+  const formData = await request.formData()
+  const params: Record<string, string> = {}
+
+  formData.forEach((value, key) => {
+    params[key] = value.toString()
+  })
+
+  const valid = validateTwilioSignature(authToken, signature, url, params)
+
+  return { valid, params }
+}
+
+/**
  * Generate TwiML response
  */
 export function generateTwiMLResponse(message?: string): string {
   if (message) {
+    // Escape XML special characters in the message
+    const escapedMessage = message
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&apos;")
+    
     return `<?xml version="1.0" encoding="UTF-8"?>
 <Response>
-  <Message>${message}</Message>
+  <Message>${escapedMessage}</Message>
 </Response>`
   }
 

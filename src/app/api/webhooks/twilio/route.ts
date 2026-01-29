@@ -8,6 +8,7 @@ import {
   getOptOutKeyword,
   COMPLIANCE_MESSAGES,
 } from "@/lib/constants/sms-compliance"
+import { detectSentiment, detectBookingIntent } from "@/lib/twilio/opt-out"
 
 export async function POST(request: NextRequest) {
   try {
@@ -26,7 +27,7 @@ export async function POST(request: NextRequest) {
     // Find the user/profile associated with this Twilio number (to phone)
     const { data: profile } = await supabase
       .from("profiles")
-      .select("id, business_name, business_phone")
+      .select("id, business_name, business_phone, twilio_account_sid, twilio_auth_token")
       .eq("twilio_phone_number", webhook.to)
       .single()
 
@@ -61,6 +62,7 @@ export async function POST(request: NextRequest) {
           .update({
             status: "opted_out",
             next_action_at: null,
+            updated_at: new Date().toISOString(),
           })
           .eq("user_id", profile.id)
           .eq("phone", webhook.from)
@@ -96,6 +98,7 @@ export async function POST(request: NextRequest) {
             status: "responded",
             last_response_at: new Date().toISOString(),
             last_response_text: webhook.body,
+            updated_at: new Date().toISOString(),
           })
           .eq("user_id", profile.id)
           .eq("phone", webhook.from)
@@ -128,18 +131,54 @@ export async function POST(request: NextRequest) {
       })
     }
 
-    // 4. Normal message - use existing handler
-    const { data, error } = await supabase.rpc("handle_inbound_message", {
-      p_from_phone: webhook.from,
-      p_to_phone: webhook.to,
-      p_body: webhook.body,
-      p_twilio_sid: webhook.messageSid,
-    })
+    // 4. Normal message - handle with sentiment detection
+    if (profile) {
+      // Find the lead for this phone
+      const { data: lead } = await supabase
+        .from("leads")
+        .select("id, status, current_step")
+        .eq("user_id", profile.id)
+        .eq("phone", webhook.from)
+        .order("updated_at", { ascending: false })
+        .limit(1)
+        .single()
 
-    if (error) {
-      console.error("Error handling inbound message:", error)
-    } else {
-      console.log("Inbound message handled, message_id:", data)
+      if (lead) {
+        // Detect sentiment and booking intent
+        const sentiment = detectSentiment(webhook.body)
+        const hasBookingIntent = detectBookingIntent(webhook.body)
+
+        // Log the inbound message
+        await supabase.from("messages").insert({
+          lead_id: lead.id,
+          user_id: profile.id,
+          direction: "inbound",
+          status: "received",
+          to_phone: webhook.to,
+          from_phone: webhook.from,
+          body: webhook.body,
+          twilio_sid: webhook.messageSid,
+          created_at: new Date().toISOString(),
+        })
+
+        // Update lead status to responded and store sentiment
+        await supabase
+          .from("leads")
+          .update({
+            status: "responded",
+            last_response_at: new Date().toISOString(),
+            last_response_text: webhook.body,
+            response_sentiment: sentiment,
+            next_action_at: null, // Stop automated messages when they respond
+            updated_at: new Date().toISOString(),
+          })
+          .eq("id", lead.id)
+
+        console.log(`Lead ${lead.id} responded with sentiment: ${sentiment}, booking intent: ${hasBookingIntent}`)
+      } else {
+        // Unknown sender - log but don't create lead
+        console.log("Message from unknown number:", webhook.from)
+      }
     }
 
     // Return empty TwiML response (no auto-reply for normal messages)
@@ -158,7 +197,7 @@ export async function POST(request: NextRequest) {
 }
 
 /**
- * Helper to log inbound messages for compliance keywords
+ * Helper to log inbound messages for compliance keywords (opt-out, help, etc.)
  */
 async function logInboundMessage(
   supabase: ReturnType<typeof createAdminClient>,
@@ -189,5 +228,15 @@ async function logInboundMessage(
       twilio_sid: webhook.messageSid,
       created_at: new Date().toISOString(),
     })
+
+    // Update lead's last response
+    await supabase
+      .from("leads")
+      .update({
+        last_response_at: new Date().toISOString(),
+        last_response_text: webhook.body,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", lead.id)
   }
 }

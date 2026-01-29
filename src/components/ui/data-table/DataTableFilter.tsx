@@ -60,7 +60,7 @@ const ColumnFiltersLabel = ({
         {columnFilterLabels.map((value, index) => (
           <span
             key={value}
-            className={cx("font-semibold text-indigo-600 dark:text-indigo-400")}
+            className={cx("font-semibold text-brand-600 dark:text-brand-400")}
           >
             {value}
             {index < columnFilterLabels.length - 1 && ", "}
@@ -74,7 +74,7 @@ const ColumnFiltersLabel = ({
     <>
       <span
         className={cx(
-          "font-semibold text-indigo-600 dark:text-indigo-400",
+          "font-semibold text-brand-600 dark:text-brand-400",
           className,
         )}
       >

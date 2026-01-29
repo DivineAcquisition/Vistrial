@@ -65,7 +65,7 @@ export default function Billing() {
           plans.{" "}
           <a
             href="#"
-            className="inline-flex items-center gap-1 text-indigo-600 dark:text-indigo-500"
+            className="inline-flex items-center gap-1 text-brand-600 dark:text-brand-400"
           >
             Compare plans
             <RiArrowRightUpLine
@@ -281,7 +281,7 @@ export default function Billing() {
                     </div>
                     <a
                       href="#"
-                      className="inline-flex items-center gap-1 text-sm text-indigo-600 dark:text-indigo-500"
+                      className="inline-flex items-center gap-1 text-sm text-brand-600 dark:text-brand-400"
                     >
                       Learn more
                       <RiArrowRightUpLine
@@ -309,7 +309,7 @@ export default function Billing() {
                     </div>
                     <a
                       href="#"
-                      className="inline-flex items-center gap-1 text-sm text-indigo-600 dark:text-indigo-500"
+                      className="inline-flex items-center gap-1 text-sm text-brand-600 dark:text-brand-400"
                     >
                       Learn more
                       <RiArrowRightUpLine

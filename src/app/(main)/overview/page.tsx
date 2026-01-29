@@ -118,7 +118,7 @@ const data3: KpiEntryExtended[] = [
     title: "Base tier",
     percentage: 68.1,
     value: "$200",
-    color: "bg-indigo-600 dark:bg-indigo-500",
+    color: "bg-brand-600 dark:bg-brand-400",
   },
   {
     title: "On-demand charges",

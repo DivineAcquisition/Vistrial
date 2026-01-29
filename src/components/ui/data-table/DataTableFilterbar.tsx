@@ -70,7 +70,7 @@ export function Filterbar<TData>({ table }: DataTableToolbarProps<TData>) {
           <Button
             variant="ghost"
             onClick={() => table.resetColumnFilters()}
-            className="border border-gray-200 px-2 font-semibold text-indigo-600 sm:border-none sm:py-1 dark:border-gray-800 dark:text-indigo-500"
+            className="border border-gray-200 px-2 font-semibold text-brand-600 sm:border-none sm:py-1 dark:border-gray-800 dark:text-brand-400"
           >
             Clear filters
           </Button>

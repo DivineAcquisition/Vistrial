@@ -231,7 +231,7 @@ export default function General() {
                   information.{" "}
                   <a
                     href="#"
-                    className="inline-flex items-center gap-1 text-indigo-600 hover:underline hover:underline-offset-4 dark:text-indigo-400"
+                    className="inline-flex items-center gap-1 text-brand-600 hover:underline hover:underline-offset-4 dark:text-brand-400"
                   >
                     Learn more
                     <RiExternalLinkLine

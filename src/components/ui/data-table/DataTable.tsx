@@ -102,7 +102,7 @@ export function DataTable<TData>({ columns, data }: DataTableProps<TData>) {
                         )}
                       >
                         {index === 0 && row.getIsSelected() && (
-                          <div className="absolute inset-y-0 left-0 w-0.5 bg-indigo-600 dark:bg-indigo-500" />
+                          <div className="absolute inset-y-0 left-0 w-0.5 bg-brand-600 dark:bg-brand-400" />
                         )}
                         {flexRender(
                           cell.column.columnDef.cell,

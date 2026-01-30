@@ -12,7 +12,7 @@ import {
 } from "@remixicon/react"
 
 interface Lead {
-  id: number
+  id: string | number
   name: string
   phone: string
   email?: string
@@ -27,6 +27,7 @@ interface Lead {
   lastResponse?: string
   bookedAmount?: number
   lostReason?: string
+  sequence_id?: string
 }
 
 interface LeadDetailSlideOverProps {

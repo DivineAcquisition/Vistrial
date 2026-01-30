@@ -152,7 +152,7 @@ export function useOptOuts(options: UseOptOutsOptions = {}) {
         .eq("user_id", user.id)
         .in("phone", phones)
 
-      const optedOutPhones = new Set(data?.map((o) => o.phone) || [])
+      const optedOutPhones = new Set(data?.map((o: { phone: string }) => o.phone) || [])
       return new Map(phones.map((p) => [p, optedOutPhones.has(p)]))
     },
     []

@@ -106,7 +106,8 @@ function getSubdomain(hostname: string): Subdomain {
     return "localhost" // Allow all routes in preview
   }
 
-  return "unknown"
+  // For any other domain (custom domains, etc.), allow all routes like localhost
+  return "localhost"
 }
 
 // Check if path is allowed for subdomain

@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback } from "react"
 import { createClient } from "@/lib/supabase/client"
 import type { Message } from "@/types/database"
+import type { RealtimePostgresInsertPayload, RealtimePostgresUpdatePayload } from "@supabase/supabase-js"
 
 export function useMessages(leadId: string) {
   const [messages, setMessages] = useState<Message[]>([])
@@ -51,8 +52,8 @@ export function useMessages(leadId: string) {
           table: "messages",
           filter: `lead_id=eq.${leadId}`,
         },
-        (payload) => {
-          setMessages((prev) => [...prev, payload.new as Message])
+        (payload: RealtimePostgresInsertPayload<Message>) => {
+          setMessages((prev) => [...prev, payload.new])
         }
       )
       .on(
@@ -63,9 +64,9 @@ export function useMessages(leadId: string) {
           table: "messages",
           filter: `lead_id=eq.${leadId}`,
         },
-        (payload) => {
+        (payload: RealtimePostgresUpdatePayload<Message>) => {
           setMessages((prev) =>
-            prev.map((m) => (m.id === payload.new.id ? (payload.new as Message) : m))
+            prev.map((m) => (m.id === payload.new.id ? payload.new : m))
           )
         }
       )

@@ -1,7 +1,7 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
+import { Logo } from "@/components/ui/Logo";
 
 export default function AuthLayout({
   children,
@@ -29,30 +29,8 @@ export default function AuthLayout({
       {/* Main content - centered */}
       <div className="flex-1 flex flex-col items-center justify-center px-4 py-8 relative z-10">
         {/* Logo */}
-        <Link href="/" className="flex items-center gap-2.5 mb-8">
-          <div className="relative">
-            <div className="absolute inset-0 bg-brand-500 rounded-lg blur-lg opacity-30" />
-            <div className="relative">
-              <Image
-                src="/Untitled design (2).png"
-                alt="Vistrial"
-                width={40}
-                height={40}
-                className="rounded-xl shadow-lg"
-                priority
-                unoptimized
-              />
-            </div>
-          </div>
-          <Image
-            src="/VISTRIAL.png"
-            alt="Vistrial"
-            width={110}
-            height={32}
-            className="h-8 w-auto"
-            priority
-            unoptimized
-          />
+        <Link href="/" className="mb-8">
+          <Logo size="md" variant="dark" />
         </Link>
 
         {/* Form card */}

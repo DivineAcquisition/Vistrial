@@ -1,73 +1,52 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
 import { cn } from "@/lib/utils/cn";
+import { Logo, LogoIcon, LogoText } from "@/components/ui/Logo";
 
 interface LogoProps {
   className?: string;
   size?: "sm" | "md" | "lg";
 }
 
-const sizes = {
-  sm: { icon: 32, full: { width: 120, height: 32 } },
-  md: { icon: 40, full: { width: 150, height: 40 } },
-  lg: { icon: 56, full: { width: 200, height: 56 } },
-};
-
-// Full logo with text (VISTRIAL.png)
-export function Logo({ className, size = "md" }: LogoProps) {
-  const { full } = sizes[size];
-
+// Full logo with text
+export function FullLogo({ className, size = "md" }: LogoProps) {
   return (
     <Link href="/" className={cn("block", className)}>
-      <Image
-        src="/VISTRIAL.png"
-        alt="Vistrial"
-        width={full.width}
-        height={full.height}
-        className="h-auto w-auto"
-        priority
-        unoptimized
-      />
+      <Logo size={size} variant="dark" />
     </Link>
   );
 }
 
-// Icon only logo (Untitled design (2).png)
-export function LogoIcon({ className, size = "md" }: LogoProps) {
-  const { icon } = sizes[size];
+// Icon only logo
+export function IconLogo({ className, size = "md" }: LogoProps) {
+  const sizes = {
+    sm: 28,
+    md: 36,
+    lg: 48,
+  };
 
   return (
     <Link href="/" className={cn("block", className)}>
-      <Image
-        src="/Untitled design (2).png"
-        alt="Vistrial"
-        width={icon}
-        height={icon}
-        className="h-auto w-auto"
-        priority
-        unoptimized
-      />
+      <LogoIcon size={sizes[size]} />
     </Link>
   );
 }
 
 // Logo mark without link
 export function LogoMark({ className, size = "md" }: Omit<LogoProps, "className"> & { className?: string }) {
-  const { icon } = sizes[size];
+  const sizes = {
+    sm: 28,
+    md: 36,
+    lg: 48,
+  };
 
   return (
     <div className={cn("inline-block", className)}>
-      <Image
-        src="/Untitled design (2).png"
-        alt="Vistrial"
-        width={icon}
-        height={icon}
-        className="h-auto w-auto"
-        priority
-        unoptimized
-      />
+      <LogoIcon size={sizes[size]} />
     </div>
   );
 }
+
+// Re-export for backwards compatibility
+export { Logo, LogoIcon, LogoText };

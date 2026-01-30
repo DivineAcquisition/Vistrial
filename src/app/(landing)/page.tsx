@@ -7,7 +7,7 @@
 
 import { useState } from "react"
 import Link from "next/link"
-import Image from "next/image"
+import { LogoIcon, LogoText } from "@/components/ui/Logo"
 import {
   RiCalendarLine,
   RiMessage2Line,
@@ -33,24 +33,10 @@ export default function LandingPage() {
       {/* Navigation */}
       <nav className="fixed top-0 left-0 right-0 z-50 bg-white/80 backdrop-blur-xl border-b border-gray-100">
         <div className="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Image
-              src="/Untitled design (2).png"
-              alt="Vistrial"
-              width={32}
-              height={32}
-              className="rounded-lg"
-              unoptimized
-            />
-            <Image
-              src="/VISTRIAL.png"
-              alt="Vistrial"
-              width={100}
-              height={28}
-              className="h-7 w-auto"
-              unoptimized
-            />
-          </div>
+          <Link href="/" className="flex items-center gap-2">
+            <LogoIcon size={32} />
+            <LogoText className="text-gray-900" />
+          </Link>
           <div className="hidden md:flex items-center gap-8">
             <a href="#features" className="text-gray-600 hover:text-gray-900 transition-colors">Features</a>
             <a href="#demo" className="text-gray-600 hover:text-gray-900 transition-colors">Demo</a>
@@ -509,42 +495,48 @@ export default function LandingPage() {
                 icon: RiGlobalLine,
                 title: "Embeddable Booking",
                 description: "Add your booking page to any website with one line of code.",
-                color: "brand",
+                bgColor: "bg-brand-100",
+                iconColor: "text-brand-600",
               },
               {
                 icon: RiLoopLeftLine,
                 title: "Membership Billing",
                 description: "Convert one-time bookings into recurring revenue.",
-                color: "green",
+                bgColor: "bg-green-100",
+                iconColor: "text-green-600",
               },
               {
                 icon: RiTeamLine,
                 title: "Customer Portal",
                 description: "Customers manage their own bookings and memberships.",
-                color: "blue",
+                bgColor: "bg-blue-100",
+                iconColor: "text-blue-600",
               },
               {
                 icon: RiMoneyDollarCircleLine,
                 title: "Instant Quotes",
                 description: "Create quotes with built-in profit calculator.",
-                color: "amber",
+                bgColor: "bg-amber-100",
+                iconColor: "text-amber-600",
               },
               {
                 icon: RiMessage2Line,
                 title: "SMS Notifications",
                 description: "Automated texts for confirmations and reminders.",
-                color: "pink",
+                bgColor: "bg-pink-100",
+                iconColor: "text-pink-600",
               },
               {
                 icon: RiBarChart2Line,
                 title: "Dashboard & Reports",
                 description: "See your bookings, revenue, and metrics at a glance.",
-                color: "gray",
+                bgColor: "bg-gray-100",
+                iconColor: "text-gray-600",
               },
             ].map((feature) => (
               <div key={feature.title} className="bg-gray-50 rounded-xl p-6 border border-gray-100 hover:border-gray-200 transition-colors">
-                <div className={`w-12 h-12 bg-${feature.color}-100 rounded-xl flex items-center justify-center mb-4`}>
-                  <feature.icon className={`w-6 h-6 text-${feature.color}-600`} />
+                <div className={`w-12 h-12 ${feature.bgColor} rounded-xl flex items-center justify-center mb-4`}>
+                  <feature.icon className={`w-6 h-6 ${feature.iconColor}`} />
                 </div>
                 <h3 className="text-lg font-semibold text-gray-900 mb-2">
                   {feature.title}
@@ -649,15 +641,8 @@ export default function LandingPage() {
         <div className="max-w-5xl mx-auto">
           <div className="flex flex-col md:flex-row items-center justify-between gap-6">
             <div className="flex items-center gap-2">
-              <Image
-                src="/Untitled design (2).png"
-                alt="Vistrial"
-                width={32}
-                height={32}
-                className="rounded-lg"
-                unoptimized
-              />
-              <span className="font-bold text-xl text-gray-900">Vistrial</span>
+              <LogoIcon size={32} />
+              <LogoText className="text-gray-900" />
             </div>
             <div className="flex items-center gap-8 text-sm text-gray-500">
               <a href="#" className="hover:text-gray-700">Privacy</a>

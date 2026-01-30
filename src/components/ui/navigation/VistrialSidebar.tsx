@@ -2,7 +2,7 @@
 
 import { siteConfig } from "@/app/siteConfig"
 import { cx } from "@/lib/utils"
-import Image from "next/image"
+import { LogoIcon } from "@/components/ui/Logo"
 import {
   RiDashboardLine,
   RiUserLine,
@@ -56,19 +56,7 @@ export function VistrialSidebar({ isCollapsed, onToggle }: VistrialSidebarProps)
       {/* Logo */}
       <div className="border-b border-gray-100 p-4">
         <Link href="/overview" className="flex items-center gap-3">
-          <div className="relative">
-            <div className="absolute inset-0 bg-brand-500 rounded-xl blur-md opacity-20" />
-            <div className="relative flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-brand-400 to-brand-600 shadow-lg shadow-brand-500/25">
-              <Image
-                src="/Untitled design (2).png"
-                alt="Vistrial"
-                width={28}
-                height={28}
-                className="rounded-lg"
-                unoptimized
-              />
-            </div>
-          </div>
+          <LogoIcon size={40} />
           {!isCollapsed && (
             <div>
               <h1 className="text-lg font-bold text-gray-900">Vistrial</h1>
@@ -129,7 +117,6 @@ export function VistrialSidebar({ isCollapsed, onToggle }: VistrialSidebarProps)
                 className="h-full rounded-full bg-gradient-to-r from-brand-500 to-brand-600 relative"
                 style={{ width: "42%" }}
               >
-                {/* Shimmer effect */}
                 <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/40 to-transparent animate-shimmer" />
               </div>
             </div>
@@ -164,7 +151,7 @@ export function VistrialSidebar({ isCollapsed, onToggle }: VistrialSidebarProps)
           {isCollapsed ? (
             <RiMenuUnfoldLine className="h-5 w-5" />
           ) : (
-            <RiMenuFoldLine className="h-5 h-5" />
+            <RiMenuFoldLine className="h-5 w-5" />
           )}
         </button>
       </div>

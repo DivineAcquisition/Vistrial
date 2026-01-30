@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from "react"
 import { useRouter } from "next/navigation"
-import Image from "next/image"
+import { Logo, LogoIcon } from "@/components/ui/Logo"
 import {
   RiSendPlaneFill,
   RiCheckLine,
@@ -249,24 +249,7 @@ export default function OnboardingPage() {
       {/* Header */}
       <header className="border-b border-gray-100 bg-white/80 backdrop-blur-xl sticky top-0 z-50">
         <div className="max-w-2xl mx-auto px-4 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-2.5">
-            <Image
-              src="/Untitled design (2).png"
-              alt="Vistrial"
-              width={36}
-              height={36}
-              className="rounded-xl shadow-lg"
-              unoptimized
-            />
-            <Image
-              src="/VISTRIAL.png"
-              alt="Vistrial"
-              width={100}
-              height={28}
-              className="h-7 w-auto"
-              unoptimized
-            />
-          </div>
+          <Logo size="sm" variant="dark" showText={true} />
           <div className="flex items-center gap-2">
             {[0, 1, 2, 3, 4].map((step) => (
               <div
@@ -291,15 +274,8 @@ export default function OnboardingPage() {
               <div key={message.id} className="animate-fade-in">
                 {message.type === "bot" && (
                   <div className="flex gap-3">
-                    <div className="flex-shrink-0 w-8 h-8 rounded-full bg-gradient-to-br from-brand-500 to-brand-600 flex items-center justify-center shadow-lg shadow-brand-500/25">
-                      <Image
-                        src="/Untitled design (2).png"
-                        alt=""
-                        width={20}
-                        height={20}
-                        className="rounded"
-                        unoptimized
-                      />
+                    <div className="flex-shrink-0">
+                      <LogoIcon size={32} />
                     </div>
                     <div className="bg-gray-100 rounded-2xl rounded-tl-md px-4 py-3 max-w-[80%]">
                       <p className="text-gray-900">{message.content}</p>
@@ -410,15 +386,8 @@ export default function OnboardingPage() {
             {/* Typing indicator */}
             {isTyping && (
               <div className="flex gap-3">
-                <div className="flex-shrink-0 w-8 h-8 rounded-full bg-gradient-to-br from-brand-500 to-brand-600 flex items-center justify-center shadow-lg shadow-brand-500/25">
-                  <Image
-                    src="/Untitled design (2).png"
-                    alt=""
-                    width={20}
-                    height={20}
-                    className="rounded"
-                    unoptimized
-                  />
+                <div className="flex-shrink-0">
+                  <LogoIcon size={32} />
                 </div>
                 <div className="bg-gray-100 rounded-2xl rounded-tl-md px-4 py-3">
                   <div className="flex gap-1">

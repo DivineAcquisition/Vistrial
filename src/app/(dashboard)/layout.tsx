@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { DashboardSidebar } from "@/components/dashboard/sidebar";
 import { DashboardHeader } from "@/components/dashboard/header";
+import { AnimatedBackground } from "@/components/ui/AnimatedBackground";
 
 export default async function DashboardLayout({
   children,
@@ -51,17 +52,23 @@ export default async function DashboardLayout({
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-950">
-      {/* Sidebar */}
-      <DashboardSidebar business={business} />
+    <div className="min-h-screen bg-gray-950 relative overflow-hidden">
+      {/* Animated gradient background */}
+      <AnimatedBackground variant="subtle" />
 
-      {/* Main content */}
-      <div className="lg:pl-64">
-        {/* Header */}
-        <DashboardHeader user={user} business={business} />
+      {/* Content wrapper */}
+      <div className="relative z-10">
+        {/* Sidebar */}
+        <DashboardSidebar business={business} />
 
-        {/* Page content */}
-        <main className="p-6">{children}</main>
+        {/* Main content */}
+        <div className="lg:pl-64">
+          {/* Header */}
+          <DashboardHeader user={user} business={business} />
+
+          {/* Page content */}
+          <main className="p-6">{children}</main>
+        </div>
       </div>
     </div>
   );

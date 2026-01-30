@@ -4,10 +4,72 @@
 
 @layer base {
   html {
-    @apply bg-white;
+    @apply bg-gray-950;
   }
   
   body {
-    @apply bg-white text-gray-900;
+    @apply bg-gray-950 text-gray-50;
   }
+}
+
+/* Shimmer animation for progress bars and loading states */
+@keyframes shimmer {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+.animate-shimmer {
+  animation: shimmer 2s infinite;
+}
+
+/* Gradient text utility */
+.gradient-text {
+  @apply bg-gradient-to-r from-white via-gray-100 to-gray-300 bg-clip-text text-transparent;
+}
+
+/* Glow effects */
+.glow-brand {
+  box-shadow: 0 0 40px rgba(139, 127, 255, 0.15);
+}
+
+.glow-brand-strong {
+  box-shadow: 0 0 60px rgba(139, 127, 255, 0.25);
+}
+
+/* Glass card styles */
+.glass-card {
+  @apply bg-gray-900/80 backdrop-blur-xl rounded-2xl border border-white/10;
+}
+
+.glass-card-hover {
+  @apply glass-card hover:border-white/20 transition-all duration-300;
+}
+
+/* Input dark styles */
+.input-dark {
+  @apply w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:border-brand-500/50 focus:ring-2 focus:ring-brand-500/20 transition-all;
+}
+
+/* Button primary dark */
+.btn-primary {
+  @apply relative px-6 py-3 bg-gradient-to-r from-brand-500 to-brand-600 text-white font-semibold rounded-xl overflow-hidden transition-all duration-300 hover:scale-[1.02] active:scale-[0.98];
+}
+
+.btn-primary::before {
+  content: '';
+  @apply absolute inset-0 bg-gradient-to-r from-brand-400 to-brand-500 opacity-0 hover:opacity-100 transition-opacity;
+}
+
+/* Scrollbar styling for dark theme */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  @apply bg-gray-900;
+}
+
+::-webkit-scrollbar-thumb {
+  @apply bg-gray-700 rounded-full hover:bg-gray-600;
 }

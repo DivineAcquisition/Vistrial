@@ -6,6 +6,9 @@ import {
   RiMoneyDollarCircleLine,
   RiTimeLine,
   RiArrowRightLine,
+  RiExternalLinkLine,
+  RiFileTextLine,
+  RiCodeSSlashLine,
 } from "@remixicon/react";
 import Link from "next/link";
 import { formatCurrency, formatTime } from "@/lib/utils/format";
@@ -131,126 +134,146 @@ export default async function DashboardPage() {
   return (
     <div className="space-y-6">
       {/* Welcome */}
-      <div>
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-50">
+      <div className="space-y-2">
+        <h1 className="text-3xl font-bold bg-gradient-to-r from-white via-gray-100 to-gray-300 bg-clip-text text-transparent">
           Welcome back, {user.user_metadata?.full_name?.split(" ")[0] || "there"}!
         </h1>
-        <p className="text-gray-500 dark:text-gray-400">Here&apos;s what&apos;s happening with your business today.</p>
+        <p className="text-gray-400">Here&apos;s what&apos;s happening with your business today.</p>
       </div>
 
       {/* Stats */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-6">
-          <div className="flex items-center gap-4">
-            <div className="w-12 h-12 bg-brand-100 dark:bg-brand-900/30 rounded-xl flex items-center justify-center">
-              <RiCalendarLine className="w-6 h-6 text-brand-600 dark:text-brand-400" />
-            </div>
-            <div>
-              <p className="text-sm text-gray-500 dark:text-gray-400">Today&apos;s Bookings</p>
-              <p className="text-2xl font-bold text-gray-900 dark:text-gray-50">{todayCount}</p>
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-6">
-          <div className="flex items-center gap-4">
-            <div className="w-12 h-12 bg-blue-100 dark:bg-blue-900/30 rounded-xl flex items-center justify-center">
-              <RiTimeLine className="w-6 h-6 text-blue-600 dark:text-blue-400" />
-            </div>
-            <div>
-              <p className="text-sm text-gray-500 dark:text-gray-400">This Week</p>
-              <p className="text-2xl font-bold text-gray-900 dark:text-gray-50">{weekBookings}</p>
+        <div className="relative group">
+          <div className="absolute -inset-0.5 bg-gradient-to-r from-brand-500/20 to-brand-600/20 rounded-2xl blur opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+          <div className="relative bg-gray-900/80 backdrop-blur-xl rounded-2xl border border-white/10 p-6 hover:border-white/20 transition-all">
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 bg-gradient-to-br from-brand-400/20 to-brand-600/20 rounded-xl flex items-center justify-center">
+                <RiCalendarLine className="w-6 h-6 text-brand-400" />
+              </div>
+              <div>
+                <p className="text-sm text-gray-400">Today&apos;s Bookings</p>
+                <p className="text-2xl font-bold text-white">{todayCount}</p>
+              </div>
             </div>
           </div>
         </div>
 
-        <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-6">
-          <div className="flex items-center gap-4">
-            <div className="w-12 h-12 bg-green-100 dark:bg-green-900/30 rounded-xl flex items-center justify-center">
-              <RiTeamLine className="w-6 h-6 text-green-600 dark:text-green-400" />
-            </div>
-            <div>
-              <p className="text-sm text-gray-500 dark:text-gray-400">Active Members</p>
-              <p className="text-2xl font-bold text-gray-900 dark:text-gray-50">{activeMembers}</p>
+        <div className="relative group">
+          <div className="absolute -inset-0.5 bg-gradient-to-r from-blue-500/20 to-blue-600/20 rounded-2xl blur opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+          <div className="relative bg-gray-900/80 backdrop-blur-xl rounded-2xl border border-white/10 p-6 hover:border-white/20 transition-all">
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 bg-gradient-to-br from-blue-400/20 to-blue-600/20 rounded-xl flex items-center justify-center">
+                <RiTimeLine className="w-6 h-6 text-blue-400" />
+              </div>
+              <div>
+                <p className="text-sm text-gray-400">This Week</p>
+                <p className="text-2xl font-bold text-white">{weekBookings}</p>
+              </div>
             </div>
           </div>
         </div>
 
-        <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-6">
-          <div className="flex items-center gap-4">
-            <div className="w-12 h-12 bg-amber-100 dark:bg-amber-900/30 rounded-xl flex items-center justify-center">
-              <RiMoneyDollarCircleLine className="w-6 h-6 text-amber-600 dark:text-amber-400" />
+        <div className="relative group">
+          <div className="absolute -inset-0.5 bg-gradient-to-r from-green-500/20 to-green-600/20 rounded-2xl blur opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+          <div className="relative bg-gray-900/80 backdrop-blur-xl rounded-2xl border border-white/10 p-6 hover:border-white/20 transition-all">
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 bg-gradient-to-br from-green-400/20 to-green-600/20 rounded-xl flex items-center justify-center">
+                <RiTeamLine className="w-6 h-6 text-green-400" />
+              </div>
+              <div>
+                <p className="text-sm text-gray-400">Active Members</p>
+                <p className="text-2xl font-bold text-white">{activeMembers}</p>
+              </div>
             </div>
-            <div>
-              <p className="text-sm text-gray-500 dark:text-gray-400">Month Revenue</p>
-              <p className="text-2xl font-bold text-gray-900 dark:text-gray-50">{formatCurrency(monthRevenue)}</p>
+          </div>
+        </div>
+
+        <div className="relative group">
+          <div className="absolute -inset-0.5 bg-gradient-to-r from-amber-500/20 to-amber-600/20 rounded-2xl blur opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+          <div className="relative bg-gray-900/80 backdrop-blur-xl rounded-2xl border border-white/10 p-6 hover:border-white/20 transition-all">
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 bg-gradient-to-br from-amber-400/20 to-amber-600/20 rounded-xl flex items-center justify-center">
+                <RiMoneyDollarCircleLine className="w-6 h-6 text-amber-400" />
+              </div>
+              <div>
+                <p className="text-sm text-gray-400">Month Revenue</p>
+                <p className="text-2xl font-bold text-white">{formatCurrency(monthRevenue)}</p>
+              </div>
             </div>
           </div>
         </div>
       </div>
 
       {/* Today's Schedule */}
-      <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800">
-        <div className="p-6 border-b border-gray-200 dark:border-gray-800 flex items-center justify-between">
-          <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-50">Today&apos;s Schedule</h2>
-          <Link
-            href="/bookings"
-            className="text-sm text-brand-600 dark:text-brand-400 hover:text-brand-700 dark:hover:text-brand-300 font-medium flex items-center gap-1"
-          >
-            View all
-            <RiArrowRightLine className="w-4 h-4" />
-          </Link>
-        </div>
-
-        {todayBookings && todayBookings.length > 0 ? (
-          <div className="divide-y divide-gray-200 dark:divide-gray-800">
-            {todayBookings.map((booking) => (
-              <div key={booking.id} className="p-4 flex items-center justify-between">
-                <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 bg-gray-100 dark:bg-gray-800 rounded-lg flex items-center justify-center">
-                    <RiTimeLine className="w-5 h-5 text-gray-500 dark:text-gray-400" />
-                  </div>
-                  <div>
-                    <p className="font-medium text-gray-900 dark:text-gray-50">
-                      {booking.contacts?.first_name} {booking.contacts?.last_name}
-                    </p>
-                    <p className="text-sm text-gray-500 dark:text-gray-400">
-                      {formatTime(booking.scheduled_time)} · {booking.address_line1 || "No address"}
-                    </p>
-                  </div>
-                </div>
-                <div className="text-right">
-                  <p className="font-semibold text-gray-900 dark:text-gray-50">
-                    {formatCurrency(booking.total)}
-                  </p>
-                  <span
-                    className={`text-xs px-2 py-1 rounded-full ${
-                      booking.status === "confirmed"
-                        ? "bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400"
-                        : booking.status === "pending"
-                        ? "bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400"
-                        : "bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400"
-                    }`}
-                  >
-                    {booking.status}
-                  </span>
-                </div>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <div className="p-8 text-center">
-            <RiCalendarLine className="w-12 h-12 text-gray-300 dark:text-gray-600 mx-auto mb-3" />
-            <p className="text-gray-500 dark:text-gray-400">No bookings scheduled for today</p>
+      <div className="relative">
+        <div className="absolute -inset-0.5 bg-gradient-to-r from-brand-500/10 via-brand-600/10 to-indigo-500/10 rounded-2xl blur opacity-50" />
+        <div className="relative bg-gray-900/80 backdrop-blur-xl rounded-2xl border border-white/10 overflow-hidden">
+          {/* Top accent line */}
+          <div className="h-px bg-gradient-to-r from-transparent via-brand-500/50 to-transparent" />
+          
+          <div className="p-6 border-b border-white/10 flex items-center justify-between">
+            <h2 className="text-lg font-semibold text-white">Today&apos;s Schedule</h2>
             <Link
-              href="/bookings/new"
-              className="mt-4 inline-flex items-center gap-2 text-brand-600 dark:text-brand-400 hover:text-brand-700 dark:hover:text-brand-300 font-medium"
+              href="/bookings"
+              className="text-sm text-brand-400 hover:text-brand-300 font-medium flex items-center gap-1 transition-colors"
             >
-              Create a booking
+              View all
               <RiArrowRightLine className="w-4 h-4" />
             </Link>
           </div>
-        )}
+
+          {todayBookings && todayBookings.length > 0 ? (
+            <div className="divide-y divide-white/5">
+              {todayBookings.map((booking) => (
+                <div key={booking.id} className="p-4 flex items-center justify-between hover:bg-white/5 transition-colors">
+                  <div className="flex items-center gap-4">
+                    <div className="w-12 h-12 bg-white/5 rounded-xl flex items-center justify-center border border-white/10">
+                      <RiTimeLine className="w-5 h-5 text-gray-400" />
+                    </div>
+                    <div>
+                      <p className="font-medium text-white">
+                        {booking.contacts?.first_name} {booking.contacts?.last_name}
+                      </p>
+                      <p className="text-sm text-gray-400">
+                        {formatTime(booking.scheduled_time)} · {booking.address_line1 || "No address"}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <p className="font-semibold text-white">
+                      {formatCurrency(booking.total)}
+                    </p>
+                    <span
+                      className={`text-xs px-2.5 py-1 rounded-full ${
+                        booking.status === "confirmed"
+                          ? "bg-green-500/20 text-green-400 border border-green-500/30"
+                          : booking.status === "pending"
+                          ? "bg-amber-500/20 text-amber-400 border border-amber-500/30"
+                          : "bg-white/10 text-gray-400 border border-white/10"
+                      }`}
+                    >
+                      {booking.status}
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="p-12 text-center">
+              <div className="w-16 h-16 bg-white/5 rounded-2xl flex items-center justify-center mx-auto mb-4 border border-white/10">
+                <RiCalendarLine className="w-8 h-8 text-gray-500" />
+              </div>
+              <p className="text-gray-400 mb-4">No bookings scheduled for today</p>
+              <Link
+                href="/bookings/new"
+                className="inline-flex items-center gap-2 text-brand-400 hover:text-brand-300 font-medium transition-colors"
+              >
+                Create a booking
+                <RiArrowRightLine className="w-4 h-4" />
+              </Link>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Quick Actions */}
@@ -258,26 +281,52 @@ export default async function DashboardPage() {
         <Link
           href={`https://book.vistrial.io/${business.slug}`}
           target="_blank"
-          className="bg-gradient-to-r from-brand-600 to-indigo-600 text-white rounded-xl p-6 hover:opacity-90 transition-opacity"
+          className="group relative overflow-hidden rounded-2xl p-6 transition-all duration-300 hover:scale-[1.02]"
         >
-          <h3 className="font-semibold mb-1">View Booking Page</h3>
-          <p className="text-sm text-white/80">See what your customers see</p>
+          <div className="absolute inset-0 bg-gradient-to-r from-brand-500 to-brand-600" />
+          <div className="absolute inset-0 bg-gradient-to-r from-brand-400 to-brand-500 opacity-0 group-hover:opacity-100 transition-opacity" />
+          <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700" />
+          <div className="relative flex items-center gap-4">
+            <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center">
+              <RiExternalLinkLine className="w-6 h-6 text-white" />
+            </div>
+            <div>
+              <h3 className="font-semibold text-white mb-0.5">View Booking Page</h3>
+              <p className="text-sm text-white/80">See what your customers see</p>
+            </div>
+          </div>
         </Link>
 
         <Link
           href="/quotes/new"
-          className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-6 hover:border-brand-300 dark:hover:border-brand-700 transition-colors"
+          className="group relative bg-gray-900/80 backdrop-blur-xl border border-white/10 rounded-2xl p-6 hover:border-brand-500/50 transition-all duration-300"
         >
-          <h3 className="font-semibold text-gray-900 dark:text-gray-50 mb-1">Create Quote</h3>
-          <p className="text-sm text-gray-500 dark:text-gray-400">Send a quote with auto follow-up</p>
+          <div className="absolute inset-0 rounded-2xl bg-brand-500/5 opacity-0 group-hover:opacity-100 transition-opacity" />
+          <div className="relative flex items-center gap-4">
+            <div className="w-12 h-12 bg-white/5 group-hover:bg-brand-500/20 rounded-xl flex items-center justify-center border border-white/10 transition-colors">
+              <RiFileTextLine className="w-6 h-6 text-gray-400 group-hover:text-brand-400 transition-colors" />
+            </div>
+            <div>
+              <h3 className="font-semibold text-white mb-0.5">Create Quote</h3>
+              <p className="text-sm text-gray-400">Send a quote with auto follow-up</p>
+            </div>
+          </div>
         </Link>
 
         <Link
           href="/settings/embed"
-          className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-6 hover:border-brand-300 dark:hover:border-brand-700 transition-colors"
+          className="group relative bg-gray-900/80 backdrop-blur-xl border border-white/10 rounded-2xl p-6 hover:border-brand-500/50 transition-all duration-300"
         >
-          <h3 className="font-semibold text-gray-900 dark:text-gray-50 mb-1">Get Embed Code</h3>
-          <p className="text-sm text-gray-500 dark:text-gray-400">Add booking to your website</p>
+          <div className="absolute inset-0 rounded-2xl bg-brand-500/5 opacity-0 group-hover:opacity-100 transition-opacity" />
+          <div className="relative flex items-center gap-4">
+            <div className="w-12 h-12 bg-white/5 group-hover:bg-brand-500/20 rounded-xl flex items-center justify-center border border-white/10 transition-colors">
+              <RiCodeSSlashLine className="w-6 h-6 text-gray-400 group-hover:text-brand-400 transition-colors" />
+            </div>
+            <div>
+              <h3 className="font-semibold text-white mb-0.5">Get Embed Code</h3>
+              <p className="text-sm text-gray-400">Add booking to your website</p>
+            </div>
+          </div>
         </Link>
       </div>
     </div>

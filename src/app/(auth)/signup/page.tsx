@@ -12,6 +12,7 @@ import {
   RiBuilding2Line,
   RiPhoneLine,
   RiCheckboxCircleLine,
+  RiArrowRightLine,
 } from "@remixicon/react";
 import { signUp } from "@/lib/auth/actions";
 
@@ -19,6 +20,7 @@ export default function SignupPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [focusedField, setFocusedField] = useState<string | null>(null);
 
   async function handleSubmit(formData: FormData) {
     setLoading(true);
@@ -33,20 +35,28 @@ export default function SignupPage() {
   }
 
   return (
-    <div className="w-full max-w-md">
+    <div className="w-full">
       {/* Header */}
-      <div className="text-center mb-8">
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-50">
+      <div className="text-center mb-8 space-y-3">
+        <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-green-500/10 border border-green-500/20">
+          <span className="relative flex h-2 w-2">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+            <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
+          </span>
+          <span className="text-sm font-medium text-green-400">Get started free</span>
+        </div>
+        <h1 className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-white via-gray-100 to-gray-300 bg-clip-text text-transparent">
           Create your account
         </h1>
-        <p className="text-gray-500 dark:text-gray-400 mt-2">
+        <p className="text-gray-400">
           Start booking more customers today
         </p>
       </div>
 
       {/* Error Message */}
       {error && (
-        <div className="mb-6 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl text-red-600 dark:text-red-400 text-sm">
+        <div className="mb-6 p-4 bg-red-500/10 border border-red-500/30 rounded-xl text-red-400 text-sm flex items-center gap-3">
+          <span className="h-2 w-2 rounded-full bg-red-400 flex-shrink-0" />
           {error}
         </div>
       )}
@@ -57,12 +67,12 @@ export default function SignupPage() {
         <div>
           <label
             htmlFor="fullName"
-            className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+            className="flex items-center gap-1 text-sm font-medium text-gray-300 mb-2"
           >
+            <RiUserLine className="h-4 w-4 text-gray-500" />
             Your name
           </label>
-          <div className="relative">
-            <RiUserLine className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+          <div className={`relative rounded-xl transition-all duration-300 ${focusedField === "fullName" ? "ring-2 ring-brand-500/50" : ""}`}>
             <input
               id="fullName"
               name="fullName"
@@ -70,7 +80,9 @@ export default function SignupPage() {
               autoComplete="name"
               required
               placeholder="John Smith"
-              className="w-full pl-12 pr-4 py-3 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent transition-all text-gray-900 dark:text-gray-50 placeholder-gray-400"
+              onFocus={() => setFocusedField("fullName")}
+              onBlur={() => setFocusedField(null)}
+              className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:border-brand-500/50 transition-colors"
             />
           </div>
         </div>
@@ -79,22 +91,24 @@ export default function SignupPage() {
         <div>
           <label
             htmlFor="businessName"
-            className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+            className="flex items-center gap-1 text-sm font-medium text-gray-300 mb-2"
           >
+            <RiBuilding2Line className="h-4 w-4 text-gray-500" />
             Business name
           </label>
-          <div className="relative">
-            <RiBuilding2Line className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+          <div className={`relative rounded-xl transition-all duration-300 ${focusedField === "businessName" ? "ring-2 ring-brand-500/50" : ""}`}>
             <input
               id="businessName"
               name="businessName"
               type="text"
               required
               placeholder="Sparkle Clean Co"
-              className="w-full pl-12 pr-4 py-3 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent transition-all text-gray-900 dark:text-gray-50 placeholder-gray-400"
+              onFocus={() => setFocusedField("businessName")}
+              onBlur={() => setFocusedField(null)}
+              className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:border-brand-500/50 transition-colors"
             />
           </div>
-          <p className="text-xs text-gray-400 mt-1.5">
+          <p className="text-xs text-gray-500 mt-1.5">
             Your booking link: book.vistrial.io/sparkle-clean-co
           </p>
         </div>
@@ -103,12 +117,12 @@ export default function SignupPage() {
         <div>
           <label
             htmlFor="phone"
-            className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+            className="flex items-center gap-1 text-sm font-medium text-gray-300 mb-2"
           >
+            <RiPhoneLine className="h-4 w-4 text-gray-500" />
             Phone number
           </label>
-          <div className="relative">
-            <RiPhoneLine className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+          <div className={`relative rounded-xl transition-all duration-300 ${focusedField === "phone" ? "ring-2 ring-brand-500/50" : ""}`}>
             <input
               id="phone"
               name="phone"
@@ -116,7 +130,9 @@ export default function SignupPage() {
               autoComplete="tel"
               required
               placeholder="(555) 123-4567"
-              className="w-full pl-12 pr-4 py-3 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent transition-all text-gray-900 dark:text-gray-50 placeholder-gray-400"
+              onFocus={() => setFocusedField("phone")}
+              onBlur={() => setFocusedField(null)}
+              className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:border-brand-500/50 transition-colors"
             />
           </div>
         </div>
@@ -125,12 +141,12 @@ export default function SignupPage() {
         <div>
           <label
             htmlFor="email"
-            className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+            className="flex items-center gap-1 text-sm font-medium text-gray-300 mb-2"
           >
+            <RiMailLine className="h-4 w-4 text-gray-500" />
             Email address
           </label>
-          <div className="relative">
-            <RiMailLine className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+          <div className={`relative rounded-xl transition-all duration-300 ${focusedField === "email" ? "ring-2 ring-brand-500/50" : ""}`}>
             <input
               id="email"
               name="email"
@@ -138,7 +154,9 @@ export default function SignupPage() {
               autoComplete="email"
               required
               placeholder="john@sparkleclean.com"
-              className="w-full pl-12 pr-4 py-3 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent transition-all text-gray-900 dark:text-gray-50 placeholder-gray-400"
+              onFocus={() => setFocusedField("email")}
+              onBlur={() => setFocusedField(null)}
+              className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:border-brand-500/50 transition-colors"
             />
           </div>
         </div>
@@ -147,12 +165,12 @@ export default function SignupPage() {
         <div>
           <label
             htmlFor="password"
-            className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+            className="flex items-center gap-1 text-sm font-medium text-gray-300 mb-2"
           >
+            <RiLockLine className="h-4 w-4 text-gray-500" />
             Password
           </label>
-          <div className="relative">
-            <RiLockLine className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+          <div className={`relative rounded-xl transition-all duration-300 ${focusedField === "password" ? "ring-2 ring-brand-500/50" : ""}`}>
             <input
               id="password"
               name="password"
@@ -161,12 +179,14 @@ export default function SignupPage() {
               required
               minLength={8}
               placeholder="••••••••"
-              className="w-full pl-12 pr-12 py-3 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent transition-all text-gray-900 dark:text-gray-50 placeholder-gray-400"
+              onFocus={() => setFocusedField("password")}
+              onBlur={() => setFocusedField(null)}
+              className="w-full px-4 py-3 pr-12 bg-white/5 border border-white/10 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:border-brand-500/50 transition-colors"
             />
             <button
               type="button"
               onClick={() => setShowPassword(!showPassword)}
-              className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+              className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-300 transition-colors"
             >
               {showPassword ? (
                 <RiEyeOffLine className="w-5 h-5" />
@@ -175,7 +195,7 @@ export default function SignupPage() {
               )}
             </button>
           </div>
-          <p className="text-xs text-gray-400 mt-1.5">
+          <p className="text-xs text-gray-500 mt-1.5">
             Must be at least 8 characters
           </p>
         </div>
@@ -184,22 +204,32 @@ export default function SignupPage() {
         <button
           type="submit"
           disabled={loading}
-          className="w-full bg-brand-600 hover:bg-brand-700 text-white py-3 rounded-xl font-semibold focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-2 mt-6"
+          className="group relative w-full inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl font-semibold text-white overflow-hidden transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 mt-2"
         >
+          {/* Button gradient background */}
+          <div className="absolute inset-0 bg-gradient-to-r from-brand-500 to-brand-600" />
+          {/* Hover glow */}
+          <div className="absolute inset-0 bg-gradient-to-r from-brand-400 to-brand-500 opacity-0 group-hover:opacity-100 transition-opacity" />
+          {/* Shine effect */}
+          <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700" />
+          
           {loading ? (
             <>
-              <RiLoader4Line className="w-5 h-5 animate-spin" />
-              Creating account...
+              <RiLoader4Line className="relative w-5 h-5 animate-spin" />
+              <span className="relative">Creating account...</span>
             </>
           ) : (
-            "Create account"
+            <>
+              <span className="relative">Create account</span>
+              <RiArrowRightLine className="relative w-5 h-5 group-hover:translate-x-1 transition-transform" />
+            </>
           )}
         </button>
       </form>
 
       {/* Features */}
-      <div className="mt-8 pt-6 border-t border-gray-200 dark:border-gray-800">
-        <p className="text-xs text-gray-500 dark:text-gray-400 mb-3 text-center font-medium">
+      <div className="mt-6 pt-6 border-t border-white/10">
+        <p className="text-xs text-gray-500 mb-3 text-center font-medium">
           What you get:
         </p>
         <div className="grid grid-cols-2 gap-2">
@@ -211,9 +241,9 @@ export default function SignupPage() {
           ].map((feature) => (
             <div
               key={feature}
-              className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400"
+              className="flex items-center gap-2 text-sm text-gray-400"
             >
-              <RiCheckboxCircleLine className="w-4 h-4 text-green-500 flex-shrink-0" />
+              <RiCheckboxCircleLine className="w-4 h-4 text-green-400 flex-shrink-0" />
               <span>{feature}</span>
             </div>
           ))}
@@ -221,11 +251,11 @@ export default function SignupPage() {
       </div>
 
       {/* Sign in link */}
-      <p className="text-center text-gray-600 dark:text-gray-400 mt-8">
+      <p className="text-center text-gray-400 mt-6">
         Already have an account?{" "}
         <Link
           href="/login"
-          className="text-brand-600 dark:text-brand-400 font-semibold hover:text-brand-700 dark:hover:text-brand-300"
+          className="text-brand-400 font-semibold hover:text-brand-300 transition-colors"
         >
           Sign in
         </Link>

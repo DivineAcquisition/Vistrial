@@ -10,9 +10,9 @@ import { cx, focusRing } from "@/lib/utils"
 const buttonVariants = tv({
   base: [
     // base
-    "relative inline-flex items-center justify-center whitespace-nowrap rounded-md border text-center font-medium shadow-sm transition-all duration-100 ease-in-out",
+    "relative inline-flex items-center justify-center whitespace-nowrap rounded-xl border text-center font-medium transition-all duration-200 ease-in-out",
     // disabled
-    "disabled:pointer-events-none disabled:shadow-none",
+    "disabled:pointer-events-none disabled:opacity-50",
     // focus
     focusRing,
   ],
@@ -22,27 +22,27 @@ const buttonVariants = tv({
         // border
         "border-transparent",
         // text color
-        "text-white dark:text-gray-900",
+        "text-white",
         // background color
-        "bg-brand-600 dark:bg-brand-400",
+        "bg-gradient-to-r from-brand-500 to-brand-600",
         // hover color
-        "hover:bg-brand-700 dark:hover:bg-brand-500",
-        // disabled
-        "disabled:bg-brand-100 disabled:text-gray-400",
-        "disabled:dark:bg-brand-800 disabled:dark:text-brand-400",
+        "hover:from-brand-400 hover:to-brand-500",
+        // shadow
+        "shadow-lg shadow-brand-500/25",
+        // hover scale
+        "hover:scale-[1.02] active:scale-[0.98]",
       ],
       secondary: [
         // border
-        "border-gray-300 dark:border-gray-800",
+        "border-white/10",
         // text color
-        "text-gray-900 dark:text-gray-50",
+        "text-gray-300",
         // background color
-        "bg-white dark:bg-gray-950",
+        "bg-white/5",
         //hover color
-        "hover:bg-gray-50 dark:hover:bg-gray-900/60",
-        // disabled
-        "disabled:text-gray-400",
-        "disabled:dark:text-gray-600",
+        "hover:bg-white/10 hover:text-white",
+        // hover border
+        "hover:border-white/20",
       ],
       light: [
         // base
@@ -50,14 +50,11 @@ const buttonVariants = tv({
         // border
         "border-transparent",
         // text color
-        "text-gray-900 dark:text-gray-50",
+        "text-white",
         // background color
-        "bg-gray-200 dark:bg-gray-900",
+        "bg-white/10",
         // hover color
-        "hover:bg-gray-300/70 dark:hover:bg-gray-800/80",
-        // disabled
-        "disabled:bg-gray-100 disabled:text-gray-400",
-        "disabled:dark:bg-gray-800 disabled:dark:text-gray-600",
+        "hover:bg-white/20",
       ],
       ghost: [
         // base
@@ -65,12 +62,9 @@ const buttonVariants = tv({
         // border
         "border-transparent",
         // text color
-        "text-gray-900 dark:text-gray-50",
+        "text-gray-400",
         // hover color
-        "bg-transparent hover:bg-gray-100 dark:hover:bg-gray-800/80",
-        // disabled
-        "disabled:text-gray-400",
-        "disabled:dark:text-gray-600",
+        "bg-transparent hover:bg-white/5 hover:text-white",
       ],
       destructive: [
         // text color
@@ -78,18 +72,17 @@ const buttonVariants = tv({
         // border
         "border-transparent",
         // background color
-        "bg-red-600 dark:bg-red-700",
+        "bg-red-600",
         // hover color
-        "hover:bg-red-700 dark:hover:bg-red-600",
-        // disabled
-        "disabled:bg-red-300 disabled:text-white",
-        "disabled:dark:bg-red-950 disabled:dark:text-red-400",
+        "hover:bg-red-500",
+        // shadow
+        "shadow-lg shadow-red-500/25",
       ],
     },
     size: {
-      sm: "px-2.5 py-1.5 text-xs",
-      md: "px-3 py-2 text-sm",
-      lg: "px-4 py-2.5 text-sm",
+      sm: "px-3 py-1.5 text-xs",
+      md: "px-4 py-2 text-sm",
+      lg: "px-5 py-2.5 text-sm",
     },
   },
   defaultVariants: {

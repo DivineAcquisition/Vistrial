@@ -2,9 +2,10 @@
 
 import { useState } from "react"
 import { VistrialSidebar } from "./VistrialSidebar"
-import { RiMenuLine, RiAddLine } from "@remixicon/react"
+import { RiMenuLine, RiAddLine, RiSearchLine, RiNotification3Line } from "@remixicon/react"
 import { Button } from "@/components/Button"
 import { usePathname } from "next/navigation"
+import { AnimatedBackground } from "@/components/ui/AnimatedBackground"
 
 interface VistrialLayoutProps {
   children: React.ReactNode
@@ -21,13 +22,17 @@ export function VistrialLayout({ children, onAddLead }: VistrialLayoutProps) {
     if (pathname.includes("/details") || pathname.includes("/leads")) return "Leads"
     if (pathname.includes("/sequences")) return "Sequences"
     if (pathname.includes("/settings")) return "Settings"
+    if (pathname.includes("/quotes")) return "Quotes"
     return "Dashboard"
   }
 
   return (
-    <div className="flex h-screen bg-gray-100 dark:bg-gray-900">
+    <div className="flex h-screen bg-gray-950 relative overflow-hidden">
+      {/* Animated gradient background */}
+      <AnimatedBackground variant="subtle" />
+
       {/* Desktop Sidebar */}
-      <div className="hidden lg:block">
+      <div className="hidden lg:block relative z-20">
         <VistrialSidebar
           isCollapsed={sidebarCollapsed}
           onToggle={() => setSidebarCollapsed(!sidebarCollapsed)}
@@ -38,7 +43,7 @@ export function VistrialLayout({ children, onAddLead }: VistrialLayoutProps) {
       {mobileSidebarOpen && (
         <div className="fixed inset-0 z-50 lg:hidden">
           <div
-            className="fixed inset-0 bg-black/50"
+            className="fixed inset-0 bg-black/60 backdrop-blur-sm"
             onClick={() => setMobileSidebarOpen(false)}
           />
           <div className="fixed inset-y-0 left-0 z-50">
@@ -51,21 +56,21 @@ export function VistrialLayout({ children, onAddLead }: VistrialLayoutProps) {
       )}
 
       {/* Main Content */}
-      <div className="flex flex-1 flex-col overflow-hidden">
+      <div className="flex flex-1 flex-col overflow-hidden relative z-10">
         {/* Header */}
-        <header className="flex items-center justify-between border-b border-gray-200 bg-white px-6 py-4 dark:border-gray-800 dark:bg-gray-950">
+        <header className="flex items-center justify-between border-b border-white/10 bg-gray-950/50 backdrop-blur-xl px-6 py-4">
           <div className="flex items-center gap-4">
             <button
               onClick={() => setMobileSidebarOpen(true)}
-              className="rounded-lg p-2 hover:bg-gray-100 lg:hidden dark:hover:bg-gray-800"
+              className="rounded-xl p-2.5 bg-white/5 hover:bg-white/10 border border-white/10 lg:hidden transition-all"
             >
-              <RiMenuLine className="h-5 w-5 text-gray-600 dark:text-gray-400" />
+              <RiMenuLine className="h-5 w-5 text-gray-400" />
             </button>
             <div>
-              <h1 className="text-xl font-bold text-gray-900 dark:text-gray-50">
+              <h1 className="text-xl font-bold text-white">
                 {getPageTitle()}
               </h1>
-              <p className="text-sm text-gray-500 dark:text-gray-400">
+              <p className="text-sm text-gray-400">
                 {new Date().toLocaleDateString("en-US", {
                   weekday: "long",
                   month: "long",
@@ -75,12 +80,31 @@ export function VistrialLayout({ children, onAddLead }: VistrialLayoutProps) {
               </p>
             </div>
           </div>
-          {onAddLead && (
-            <Button onClick={onAddLead} className="gap-2">
-              <RiAddLine className="h-5 w-5" />
-              <span className="hidden sm:inline">Add Lead</span>
-            </Button>
-          )}
+          
+          <div className="flex items-center gap-3">
+            {/* Search */}
+            <div className="hidden md:block relative">
+              <RiSearchLine className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
+              <input
+                type="text"
+                placeholder="Search..."
+                className="w-64 pl-11 pr-4 py-2.5 bg-white/5 border border-white/10 rounded-xl text-sm text-white placeholder-gray-500 focus:outline-none focus:bg-white/10 focus:border-brand-500/50 focus:ring-2 focus:ring-brand-500/20 transition-all"
+              />
+            </div>
+            
+            {/* Notifications */}
+            <button className="relative p-2.5 text-gray-400 hover:text-white bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl transition-all">
+              <RiNotification3Line className="w-5 h-5" />
+              <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-brand-500 rounded-full ring-2 ring-gray-950" />
+            </button>
+            
+            {onAddLead && (
+              <Button onClick={onAddLead} className="gap-2 bg-gradient-to-r from-brand-500 to-brand-600 hover:from-brand-400 hover:to-brand-500 border-0 shadow-lg shadow-brand-500/25">
+                <RiAddLine className="h-5 w-5" />
+                <span className="hidden sm:inline">Add Lead</span>
+              </Button>
+            )}
+          </div>
         </header>
 
         {/* Page Content */}

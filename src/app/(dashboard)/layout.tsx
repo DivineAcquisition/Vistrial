@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
-import { Sidebar } from "@/components/dashboard/sidebar";
-import { Header } from "@/components/dashboard/header";
+import { DashboardSidebar } from "@/components/dashboard/sidebar";
+import { DashboardHeader } from "@/components/dashboard/header";
 
 export default async function DashboardLayout({
   children,
@@ -18,10 +18,8 @@ export default async function DashboardLayout({
     redirect("/login");
   }
 
-  // Try to get business info
-  let business = null;
-
   // Try businesses table first
+  let business = null;
   const { data: businessData } = await supabase
     .from("businesses")
     .select("*")
@@ -31,7 +29,7 @@ export default async function DashboardLayout({
   if (businessData) {
     business = businessData;
   } else {
-    // Fall back to profiles table
+    // Fall back to profiles table for legacy support
     const { data: profile } = await supabase
       .from("profiles")
       .select("*")
@@ -40,29 +38,30 @@ export default async function DashboardLayout({
 
     if (profile) {
       business = {
-        name: profile.business_name,
-        slug: profile.business_slug,
+        id: profile.id,
+        name: profile.business_name || "My Business",
+        slug: profile.business_slug || "my-business",
         logo_url: profile.logo_url,
       };
     }
   }
 
+  if (!business) {
+    redirect("/onboarding");
+  }
+
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-950">
-      {/* Sidebar - hidden on mobile */}
-      <div className="hidden lg:fixed lg:inset-y-0 lg:flex lg:w-64">
-        <Sidebar business={business} />
-      </div>
+    <div className="min-h-screen bg-slate-50">
+      {/* Sidebar */}
+      <DashboardSidebar business={business} />
 
       {/* Main content */}
       <div className="lg:pl-64">
-        <Header 
-          user={user} 
-          business={business}
-        />
-        <main className="p-4 lg:p-6">
-          {children}
-        </main>
+        {/* Header */}
+        <DashboardHeader user={user} business={business} />
+
+        {/* Page content */}
+        <main className="p-6">{children}</main>
       </div>
     </div>
   );

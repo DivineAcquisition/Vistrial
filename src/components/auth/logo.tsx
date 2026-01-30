@@ -1,10 +1,11 @@
+"use client";
+
 import Image from "next/image";
 import Link from "next/link";
 import { cn } from "@/lib/utils/cn";
 
 interface LogoProps {
   className?: string;
-  showText?: boolean;
   size?: "sm" | "md" | "lg";
 }
 
@@ -27,13 +28,14 @@ export function Logo({ className, size = "md" }: LogoProps) {
         height={full.height}
         className="h-auto w-auto"
         priority
+        unoptimized
       />
     </Link>
   );
 }
 
 // Icon only logo (Untitled design (2).png)
-export function LogoIcon({ className, size = "md" }: Omit<LogoProps, "showText">) {
+export function LogoIcon({ className, size = "md" }: LogoProps) {
   const { icon } = sizes[size];
 
   return (
@@ -45,19 +47,27 @@ export function LogoIcon({ className, size = "md" }: Omit<LogoProps, "showText">
         height={icon}
         className="h-auto w-auto"
         priority
+        unoptimized
       />
     </Link>
   );
 }
 
-// Flexible logo - icon or full based on prop
-export function LogoBrand({ 
-  className, 
-  size = "md", 
-  variant = "full" 
-}: LogoProps & { variant?: "full" | "icon" }) {
-  if (variant === "icon") {
-    return <LogoIcon className={className} size={size} />;
-  }
-  return <Logo className={className} size={size} />;
+// Logo mark without link
+export function LogoMark({ className, size = "md" }: Omit<LogoProps, "className"> & { className?: string }) {
+  const { icon } = sizes[size];
+
+  return (
+    <div className={cn("inline-block", className)}>
+      <Image
+        src="/Untitled design (2).png"
+        alt="Vistrial"
+        width={icon}
+        height={icon}
+        className="h-auto w-auto"
+        priority
+        unoptimized
+      />
+    </div>
+  );
 }

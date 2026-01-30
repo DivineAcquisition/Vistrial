@@ -1,12 +1,12 @@
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import {
-  Calendar,
-  Users,
-  DollarSign,
-  Clock,
-  ArrowRight,
-} from "lucide-react";
+  RiCalendarLine,
+  RiTeamLine,
+  RiMoneyDollarCircleLine,
+  RiTimeLine,
+  RiArrowRightLine,
+} from "@remixicon/react";
 import Link from "next/link";
 import { formatCurrency, formatTime } from "@/lib/utils/format";
 
@@ -132,104 +132,104 @@ export default async function DashboardPage() {
     <div className="space-y-6">
       {/* Welcome */}
       <div>
-        <h1 className="text-2xl font-bold text-slate-900">
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-50">
           Welcome back, {user.user_metadata?.full_name?.split(" ")[0] || "there"}!
         </h1>
-        <p className="text-slate-500">Here&apos;s what&apos;s happening with your business today.</p>
+        <p className="text-gray-500 dark:text-gray-400">Here&apos;s what&apos;s happening with your business today.</p>
       </div>
 
       {/* Stats */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-white rounded-xl border p-6">
+        <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-6">
           <div className="flex items-center gap-4">
-            <div className="w-12 h-12 bg-violet-100 rounded-xl flex items-center justify-center">
-              <Calendar className="w-6 h-6 text-violet-600" />
+            <div className="w-12 h-12 bg-brand-100 dark:bg-brand-900/30 rounded-xl flex items-center justify-center">
+              <RiCalendarLine className="w-6 h-6 text-brand-600 dark:text-brand-400" />
             </div>
             <div>
-              <p className="text-sm text-slate-500">Today&apos;s Bookings</p>
-              <p className="text-2xl font-bold text-slate-900">{todayCount}</p>
+              <p className="text-sm text-gray-500 dark:text-gray-400">Today&apos;s Bookings</p>
+              <p className="text-2xl font-bold text-gray-900 dark:text-gray-50">{todayCount}</p>
             </div>
           </div>
         </div>
 
-        <div className="bg-white rounded-xl border p-6">
+        <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-6">
           <div className="flex items-center gap-4">
-            <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center">
-              <Clock className="w-6 h-6 text-blue-600" />
+            <div className="w-12 h-12 bg-blue-100 dark:bg-blue-900/30 rounded-xl flex items-center justify-center">
+              <RiTimeLine className="w-6 h-6 text-blue-600 dark:text-blue-400" />
             </div>
             <div>
-              <p className="text-sm text-slate-500">This Week</p>
-              <p className="text-2xl font-bold text-slate-900">{weekBookings}</p>
+              <p className="text-sm text-gray-500 dark:text-gray-400">This Week</p>
+              <p className="text-2xl font-bold text-gray-900 dark:text-gray-50">{weekBookings}</p>
             </div>
           </div>
         </div>
 
-        <div className="bg-white rounded-xl border p-6">
+        <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-6">
           <div className="flex items-center gap-4">
-            <div className="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center">
-              <Users className="w-6 h-6 text-green-600" />
+            <div className="w-12 h-12 bg-green-100 dark:bg-green-900/30 rounded-xl flex items-center justify-center">
+              <RiTeamLine className="w-6 h-6 text-green-600 dark:text-green-400" />
             </div>
             <div>
-              <p className="text-sm text-slate-500">Active Members</p>
-              <p className="text-2xl font-bold text-slate-900">{activeMembers}</p>
+              <p className="text-sm text-gray-500 dark:text-gray-400">Active Members</p>
+              <p className="text-2xl font-bold text-gray-900 dark:text-gray-50">{activeMembers}</p>
             </div>
           </div>
         </div>
 
-        <div className="bg-white rounded-xl border p-6">
+        <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-6">
           <div className="flex items-center gap-4">
-            <div className="w-12 h-12 bg-amber-100 rounded-xl flex items-center justify-center">
-              <DollarSign className="w-6 h-6 text-amber-600" />
+            <div className="w-12 h-12 bg-amber-100 dark:bg-amber-900/30 rounded-xl flex items-center justify-center">
+              <RiMoneyDollarCircleLine className="w-6 h-6 text-amber-600 dark:text-amber-400" />
             </div>
             <div>
-              <p className="text-sm text-slate-500">Month Revenue</p>
-              <p className="text-2xl font-bold text-slate-900">{formatCurrency(monthRevenue)}</p>
+              <p className="text-sm text-gray-500 dark:text-gray-400">Month Revenue</p>
+              <p className="text-2xl font-bold text-gray-900 dark:text-gray-50">{formatCurrency(monthRevenue)}</p>
             </div>
           </div>
         </div>
       </div>
 
       {/* Today's Schedule */}
-      <div className="bg-white rounded-xl border">
-        <div className="p-6 border-b flex items-center justify-between">
-          <h2 className="text-lg font-semibold text-slate-900">Today&apos;s Schedule</h2>
+      <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800">
+        <div className="p-6 border-b border-gray-200 dark:border-gray-800 flex items-center justify-between">
+          <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-50">Today&apos;s Schedule</h2>
           <Link
             href="/bookings"
-            className="text-sm text-violet-600 hover:text-violet-700 font-medium flex items-center gap-1"
+            className="text-sm text-brand-600 dark:text-brand-400 hover:text-brand-700 dark:hover:text-brand-300 font-medium flex items-center gap-1"
           >
             View all
-            <ArrowRight className="w-4 h-4" />
+            <RiArrowRightLine className="w-4 h-4" />
           </Link>
         </div>
 
         {todayBookings && todayBookings.length > 0 ? (
-          <div className="divide-y">
+          <div className="divide-y divide-gray-200 dark:divide-gray-800">
             {todayBookings.map((booking) => (
               <div key={booking.id} className="p-4 flex items-center justify-between">
                 <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 bg-slate-100 rounded-lg flex items-center justify-center">
-                    <Clock className="w-5 h-5 text-slate-500" />
+                  <div className="w-12 h-12 bg-gray-100 dark:bg-gray-800 rounded-lg flex items-center justify-center">
+                    <RiTimeLine className="w-5 h-5 text-gray-500 dark:text-gray-400" />
                   </div>
                   <div>
-                    <p className="font-medium text-slate-900">
+                    <p className="font-medium text-gray-900 dark:text-gray-50">
                       {booking.contacts?.first_name} {booking.contacts?.last_name}
                     </p>
-                    <p className="text-sm text-slate-500">
+                    <p className="text-sm text-gray-500 dark:text-gray-400">
                       {formatTime(booking.scheduled_time)} · {booking.address_line1 || "No address"}
                     </p>
                   </div>
                 </div>
                 <div className="text-right">
-                  <p className="font-semibold text-slate-900">
+                  <p className="font-semibold text-gray-900 dark:text-gray-50">
                     {formatCurrency(booking.total)}
                   </p>
                   <span
                     className={`text-xs px-2 py-1 rounded-full ${
                       booking.status === "confirmed"
-                        ? "bg-green-100 text-green-700"
+                        ? "bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400"
                         : booking.status === "pending"
-                        ? "bg-amber-100 text-amber-700"
-                        : "bg-slate-100 text-slate-600"
+                        ? "bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400"
+                        : "bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400"
                     }`}
                   >
                     {booking.status}
@@ -240,14 +240,14 @@ export default async function DashboardPage() {
           </div>
         ) : (
           <div className="p-8 text-center">
-            <Calendar className="w-12 h-12 text-slate-300 mx-auto mb-3" />
-            <p className="text-slate-500">No bookings scheduled for today</p>
+            <RiCalendarLine className="w-12 h-12 text-gray-300 dark:text-gray-600 mx-auto mb-3" />
+            <p className="text-gray-500 dark:text-gray-400">No bookings scheduled for today</p>
             <Link
               href="/bookings/new"
-              className="mt-4 inline-flex items-center gap-2 text-violet-600 hover:text-violet-700 font-medium"
+              className="mt-4 inline-flex items-center gap-2 text-brand-600 dark:text-brand-400 hover:text-brand-700 dark:hover:text-brand-300 font-medium"
             >
               Create a booking
-              <ArrowRight className="w-4 h-4" />
+              <RiArrowRightLine className="w-4 h-4" />
             </Link>
           </div>
         )}
@@ -258,7 +258,7 @@ export default async function DashboardPage() {
         <Link
           href={`https://book.vistrial.io/${business.slug}`}
           target="_blank"
-          className="bg-gradient-to-r from-violet-600 to-indigo-600 text-white rounded-xl p-6 hover:opacity-90 transition-opacity"
+          className="bg-gradient-to-r from-brand-600 to-indigo-600 text-white rounded-xl p-6 hover:opacity-90 transition-opacity"
         >
           <h3 className="font-semibold mb-1">View Booking Page</h3>
           <p className="text-sm text-white/80">See what your customers see</p>
@@ -266,18 +266,18 @@ export default async function DashboardPage() {
 
         <Link
           href="/quotes/new"
-          className="bg-white border rounded-xl p-6 hover:border-violet-300 transition-colors"
+          className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-6 hover:border-brand-300 dark:hover:border-brand-700 transition-colors"
         >
-          <h3 className="font-semibold text-slate-900 mb-1">Create Quote</h3>
-          <p className="text-sm text-slate-500">Send a quote with auto follow-up</p>
+          <h3 className="font-semibold text-gray-900 dark:text-gray-50 mb-1">Create Quote</h3>
+          <p className="text-sm text-gray-500 dark:text-gray-400">Send a quote with auto follow-up</p>
         </Link>
 
         <Link
           href="/settings/embed"
-          className="bg-white border rounded-xl p-6 hover:border-violet-300 transition-colors"
+          className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-6 hover:border-brand-300 dark:hover:border-brand-700 transition-colors"
         >
-          <h3 className="font-semibold text-slate-900 mb-1">Get Embed Code</h3>
-          <p className="text-sm text-slate-500">Add booking to your website</p>
+          <h3 className="font-semibold text-gray-900 dark:text-gray-50 mb-1">Get Embed Code</h3>
+          <p className="text-sm text-gray-500 dark:text-gray-400">Add booking to your website</p>
         </Link>
       </div>
     </div>

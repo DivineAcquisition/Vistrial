@@ -38,8 +38,24 @@ export default async function QuotesPage() {
     console.error("Error fetching quotes:", quotesError)
   }
 
+  // Define shape of data from Supabase
+  interface QuoteData {
+    id: string
+    created_at: string
+    status: string
+    total: number | null
+    profit_margin: number | null
+    leads?: {
+      id: string
+      name?: string
+      phone?: string
+      email?: string
+    } | null
+    [key: string]: unknown
+  }
+
   // Transform to match Quote type
-  const quotes: Quote[] = (quotesData || []).map((q) => ({
+  const quotes: Quote[] = (quotesData || []).map((q: QuoteData) => ({
     ...q,
     contact: q.leads
       ? {

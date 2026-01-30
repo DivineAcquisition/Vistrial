@@ -2,18 +2,19 @@
 
 import { useState } from "react"
 import {
-  RiExternalLinkLine,
-  RiFileCopyLine,
   RiCheckLine,
-  RiQuestionLine,
-  RiArrowDownSLine,
+  RiArrowRightLine,
+  RiArrowLeftLine,
+  RiPhoneLine,
+  RiKey2Line,
+  RiLockLine,
+  RiExternalLinkLine,
+  RiInformationLine,
+  RiCheckboxCircleLine,
   RiLoader4Line,
 } from "@remixicon/react"
-import { Button } from "@/components/Button"
-import { Input } from "@/components/Input"
-import { Label } from "@/components/Label"
-import { cx } from "@/lib/utils"
-import type { OnboardingData } from "@/lib/onboarding/types"
+import { cn } from "@/lib/utils/cn"
+import { type OnboardingData } from "@/lib/onboarding/types"
 
 interface StepTwilioProps {
   data: OnboardingData
@@ -24,27 +25,15 @@ interface StepTwilioProps {
 
 export function StepTwilio({ data, onUpdate, onNext, onBack }: StepTwilioProps) {
   const [errors, setErrors] = useState<Record<string, string>>({})
-  const [showWhy, setShowWhy] = useState(false)
-  const [hasAccount, setHasAccount] = useState<boolean | null>(null)
-  const [copied, setCopied] = useState(false)
+  const [focusedField, setFocusedField] = useState<string | null>(null)
   const [testing, setTesting] = useState(false)
-  const [testResult, setTestResult] = useState<{ success: boolean; message: string } | null>(null)
+  const [testResult, setTestResult] = useState<"success" | "error" | null>(null)
+  const [skipTwilio, setSkipTwilio] = useState(false)
 
-  const webhookUrl = typeof window !== "undefined" 
-    ? `${window.location.origin}/api/webhooks/twilio`
-    : "https://app.vistrial.com/api/webhooks/twilio"
-
-  const handleCopyWebhook = async () => {
-    await navigator.clipboard.writeText(webhookUrl)
-    setCopied(true)
-    setTimeout(() => setCopied(false), 2000)
-  }
-
-  const handleTestConnection = async () => {
-    if (!data.twilioAccountSid || !data.twilioAuthToken) {
+  const handleTest = async () => {
+    if (!data.twilioAccountSid || !data.twilioAuthToken || !data.twilioPhoneNumber) {
       setErrors({
-        twilioAccountSid: !data.twilioAccountSid ? "Account SID is required" : "",
-        twilioAuthToken: !data.twilioAuthToken ? "Auth Token is required" : "",
+        general: "Please fill in all Twilio credentials first"
       })
       return
     }
@@ -53,51 +42,47 @@ export function StepTwilio({ data, onUpdate, onNext, onBack }: StepTwilioProps) 
     setTestResult(null)
 
     try {
-      // Test connection via API
       const response = await fetch("/api/twilio/test", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           accountSid: data.twilioAccountSid,
           authToken: data.twilioAuthToken,
+          phoneNumber: data.twilioPhoneNumber,
         }),
       })
 
-      const result = await response.json()
-
-      if (response.ok && result.success) {
-        setTestResult({ success: true, message: "Connection successful!" })
+      if (response.ok) {
+        setTestResult("success")
+        onUpdate({ webhookConfigured: true })
       } else {
-        setTestResult({ success: false, message: result.error || "Connection failed" })
+        setTestResult("error")
       }
     } catch {
-      setTestResult({ success: false, message: "Connection test failed. Check your credentials." })
+      setTestResult("error")
     } finally {
       setTesting(false)
     }
   }
 
   const handleSubmit = () => {
+    if (skipTwilio) {
+      onNext()
+      return
+    }
+
     const newErrors: Record<string, string> = {}
 
     if (!data.twilioAccountSid.trim()) {
-      newErrors.twilioAccountSid = "Account SID is required"
-    } else if (!data.twilioAccountSid.startsWith("AC")) {
-      newErrors.twilioAccountSid = "Account SID should start with AC"
+      newErrors.accountSid = "Account SID is required"
     }
 
     if (!data.twilioAuthToken.trim()) {
-      newErrors.twilioAuthToken = "Auth Token is required"
+      newErrors.authToken = "Auth Token is required"
     }
 
     if (!data.twilioPhoneNumber.trim()) {
-      newErrors.twilioPhoneNumber = "Phone number is required"
-    } else if (!data.twilioPhoneNumber.startsWith("+")) {
-      newErrors.twilioPhoneNumber = "Phone number should start with + (e.g., +15551234567)"
-    }
-
-    if (!data.webhookConfigured) {
-      newErrors.webhookConfigured = "Please confirm you have set up the webhook"
+      newErrors.phoneNumber = "Phone number is required"
     }
 
     if (Object.keys(newErrors).length > 0) {
@@ -109,315 +94,231 @@ export function StepTwilio({ data, onUpdate, onNext, onBack }: StepTwilioProps) 
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       {/* Header */}
-      <div className="text-center">
-        <h2 className="text-2xl font-bold text-gray-900 dark:text-white sm:text-3xl">
-          Let&apos;s set up your texting number
+      <div className="text-center space-y-3">
+        <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-brand-500/10 border border-brand-500/20">
+          <span className="relative flex h-2 w-2">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-brand-400 opacity-75"></span>
+            <span className="relative inline-flex rounded-full h-2 w-2 bg-brand-500"></span>
+          </span>
+          <span className="text-sm font-medium text-brand-400">Step 3 of 5</span>
+        </div>
+        <h2 className="text-3xl sm:text-4xl font-bold bg-gradient-to-r from-white via-gray-100 to-gray-300 bg-clip-text text-transparent">
+          Connect your texting number
         </h2>
-        <p className="mt-2 text-gray-600 dark:text-gray-400">
-          This takes about 3 minutes. We&apos;ll walk you through it.
+        <p className="text-gray-400 max-w-lg mx-auto">
+          We use Twilio to send texts from your own business number.
         </p>
       </div>
 
-      {/* Why section (collapsible) */}
-      <div className="rounded-lg border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-800">
-        <button
-          type="button"
-          onClick={() => setShowWhy(!showWhy)}
-          className="flex w-full items-center justify-between p-4"
-        >
-          <span className="flex items-center gap-2 text-sm font-medium text-gray-900 dark:text-white">
-            <RiQuestionLine className="h-5 w-5 text-brand-600 dark:text-brand-400" />
-            Why can&apos;t I just use my regular phone number?
-          </span>
-          <RiArrowDownSLine
-            className={cx(
-              "h-5 w-5 text-gray-400 transition-transform",
-              showWhy && "rotate-180"
-            )}
-          />
-        </button>
-        {showWhy && (
-          <div className="border-t border-gray-200 p-4 dark:border-gray-700">
-            <div className="space-y-3 text-sm text-gray-600 dark:text-gray-400">
-              <p><strong>1. AUTOMATION</strong> - Your personal phone can&apos;t auto-send texts while you&apos;re on a job</p>
-              <p><strong>2. SEPARATION</strong> - Keep work texts separate from personal</p>
-              <p><strong>3. TRACKING</strong> - See exactly which messages get responses</p>
-              <p><strong>4. COMPLIANCE</strong> - Business texting has legal requirements (we handle most of this)</p>
-              <p className="mt-4 rounded bg-gray-100 p-3 dark:bg-gray-900">
-                We use Twilio - the same service used by Uber, Airbnb, and most businesses that text customers. 
-                It costs about <strong>$1/month</strong> for the number + ~1 cent per text.
-              </p>
-            </div>
+      {/* Info Banner */}
+      <div className="relative overflow-hidden rounded-xl border border-blue-500/20 bg-blue-500/10 p-4">
+        <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/10 rounded-full blur-2xl" />
+        <div className="relative flex items-start gap-3">
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-500/20">
+            <RiInformationLine className="h-4 w-4 text-blue-400" />
           </div>
-        )}
+          <div>
+            <p className="text-sm text-blue-200">
+              Don&apos;t have Twilio yet?{" "}
+              <a
+                href="https://www.twilio.com/try-twilio"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-blue-400 hover:text-blue-300 underline inline-flex items-center gap-1"
+              >
+                Create a free account
+                <RiExternalLinkLine className="h-3 w-3" />
+              </a>
+            </p>
+            <p className="text-xs text-blue-300/70 mt-1">
+              You get $15 free credits to start
+            </p>
+          </div>
+        </div>
       </div>
 
-      {/* Account selection */}
-      {hasAccount === null && (
-        <div className="flex gap-3">
-          <button
-            type="button"
-            onClick={() => setHasAccount(true)}
-            className="flex-1 rounded-lg border-2 border-gray-200 bg-white px-4 py-4 text-center transition hover:border-brand-300 dark:border-gray-700 dark:bg-gray-800 dark:hover:border-brand-600"
-          >
-            <span className="block font-medium text-gray-900 dark:text-white">
-              I already have a Twilio account
-            </span>
-            <span className="mt-1 block text-sm text-gray-500 dark:text-gray-400">
-              Enter credentials
-            </span>
-          </button>
-          <button
-            type="button"
-            onClick={() => setHasAccount(false)}
-            className="flex-1 rounded-lg border-2 border-brand-200 bg-brand-50 px-4 py-4 text-center transition hover:border-brand-400 dark:border-brand-800 dark:bg-brand-900/20 dark:hover:border-brand-600"
-          >
-            <span className="block font-medium text-brand-700 dark:text-brand-300">
-              I need to create one
-            </span>
-            <span className="mt-1 block text-sm text-brand-600 dark:text-brand-400">
-              Most people (5 min)
-            </span>
-          </button>
+      {/* Skip Option */}
+      <label className="flex items-center gap-3 cursor-pointer group">
+        <div className={cn(
+          "relative w-5 h-5 rounded border-2 transition-all duration-200",
+          skipTwilio 
+            ? "bg-brand-500 border-brand-500" 
+            : "border-white/30 group-hover:border-white/50"
+        )}>
+          {skipTwilio && <RiCheckLine className="absolute inset-0 m-auto h-3 w-3 text-white" />}
         </div>
-      )}
+        <input
+          type="checkbox"
+          checked={skipTwilio}
+          onChange={(e) => setSkipTwilio(e.target.checked)}
+          className="sr-only"
+        />
+        <span className="text-sm text-gray-400 group-hover:text-gray-300">
+          Skip for now — I&apos;ll set up Twilio later
+        </span>
+      </label>
 
-      {/* Guide for new accounts */}
-      {hasAccount === false && (
-        <div className="space-y-4 rounded-lg border border-gray-200 bg-white p-6 dark:border-gray-700 dark:bg-gray-800">
-          <h3 className="font-semibold text-gray-900 dark:text-white">Quick Setup Guide</h3>
-
-          <div className="space-y-4">
-            <div className="flex gap-3">
-              <div className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-brand-100 text-sm font-bold text-brand-700 dark:bg-brand-900/30 dark:text-brand-400">
-                1
-              </div>
-              <div>
-                <p className="font-medium text-gray-900 dark:text-white">Create your free Twilio account</p>
-                <p className="text-sm text-gray-500 dark:text-gray-400">You&apos;ll get $15 free credit - enough for ~1,500 texts</p>
-                <a
-                  href="https://www.twilio.com/try-twilio"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="mt-2 inline-flex items-center gap-1 text-sm font-medium text-brand-600 hover:text-brand-700 dark:text-brand-400 dark:hover:text-brand-300"
-                >
-                  Open Twilio Sign-Up <RiExternalLinkLine className="h-4 w-4" />
-                </a>
-              </div>
-            </div>
-
-            <div className="flex gap-3">
-              <div className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-brand-100 text-sm font-bold text-brand-700 dark:bg-brand-900/30 dark:text-brand-400">
-                2
-              </div>
-              <div>
-                <p className="font-medium text-gray-900 dark:text-white">Verify your phone number</p>
-                <p className="text-sm text-gray-500 dark:text-gray-400">Twilio will text you a code. Standard stuff.</p>
-              </div>
-            </div>
-
-            <div className="flex gap-3">
-              <div className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-brand-100 text-sm font-bold text-brand-700 dark:bg-brand-900/30 dark:text-brand-400">
-                3
-              </div>
-              <div>
-                <p className="font-medium text-gray-900 dark:text-white">Buy a phone number (~$1/month)</p>
-                <p className="text-sm text-gray-500 dark:text-gray-400">
-                  Go to: Phone Numbers → Buy a Number → Pick any local number with SMS capability
-                </p>
-              </div>
-            </div>
-
-            <div className="flex gap-3">
-              <div className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-brand-100 text-sm font-bold text-brand-700 dark:bg-brand-900/30 dark:text-brand-400">
-                4
-              </div>
-              <div>
-                <p className="font-medium text-gray-900 dark:text-white">Copy your credentials</p>
-                <p className="text-sm text-gray-500 dark:text-gray-400">
-                  On your Twilio Dashboard: Account SID (starts with &quot;AC&quot;) and Auth Token (click &quot;Show&quot;)
-                </p>
-              </div>
-            </div>
-          </div>
-
-          <Button
-            variant="secondary"
-            onClick={() => setHasAccount(true)}
-            className="mt-4 w-full"
-          >
-            I&apos;ve done this - enter credentials
-          </Button>
-        </div>
-      )}
-
-      {/* Credential inputs */}
-      {hasAccount === true && (
-        <div className="space-y-4">
-          <div className="rounded-lg border border-gray-200 bg-white p-6 dark:border-gray-700 dark:bg-gray-800">
-            <h3 className="mb-4 font-semibold text-gray-900 dark:text-white">Your Twilio Credentials</h3>
-            
-            <div className="space-y-4">
-              <div>
-                <Label htmlFor="accountSid">Account SID</Label>
-                <Input
-                  id="accountSid"
+      {/* Twilio Credentials */}
+      {!skipTwilio && (
+        <div className="relative">
+          <div className="absolute -inset-0.5 bg-gradient-to-r from-brand-500/30 to-indigo-500/30 rounded-2xl blur opacity-50" />
+          <div className="relative space-y-5 rounded-xl border border-white/10 bg-gray-900/50 backdrop-blur-sm p-6">
+            {/* Account SID */}
+            <div>
+              <label className="flex items-center gap-2 text-sm font-medium text-gray-300 mb-2">
+                <RiKey2Line className="h-4 w-4 text-gray-500" />
+                Account SID
+                <span className="text-brand-400">*</span>
+              </label>
+              <div className={cn(
+                "relative rounded-xl transition-all duration-300",
+                focusedField === "accountSid" && "ring-2 ring-brand-500/50"
+              )}>
+                <input
                   type="text"
-                  placeholder="AC..."
+                  placeholder="ACxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
                   value={data.twilioAccountSid}
                   onChange={(e) => {
                     onUpdate({ twilioAccountSid: e.target.value })
-                    setErrors((prev) => ({ ...prev, twilioAccountSid: "" }))
-                    setTestResult(null)
+                    setErrors((prev) => ({ ...prev, accountSid: "" }))
                   }}
-                  className={cx("mt-1 font-mono", errors.twilioAccountSid && "border-red-500")}
+                  onFocus={() => setFocusedField("accountSid")}
+                  onBlur={() => setFocusedField(null)}
+                  className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:border-brand-500/50 transition-colors font-mono text-sm"
                 />
-                <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                  Starts with &quot;AC&quot; - found on your Twilio Dashboard
-                </p>
-                {errors.twilioAccountSid && (
-                  <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.twilioAccountSid}</p>
-                )}
               </div>
+              {errors.accountSid && (
+                <p className="mt-2 text-sm text-red-400">{errors.accountSid}</p>
+              )}
+            </div>
 
-              <div>
-                <Label htmlFor="authToken">Auth Token</Label>
-                <Input
-                  id="authToken"
+            {/* Auth Token */}
+            <div>
+              <label className="flex items-center gap-2 text-sm font-medium text-gray-300 mb-2">
+                <RiLockLine className="h-4 w-4 text-gray-500" />
+                Auth Token
+                <span className="text-brand-400">*</span>
+              </label>
+              <div className={cn(
+                "relative rounded-xl transition-all duration-300",
+                focusedField === "authToken" && "ring-2 ring-brand-500/50"
+              )}>
+                <input
                   type="password"
-                  placeholder="Your auth token..."
+                  placeholder="xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
                   value={data.twilioAuthToken}
                   onChange={(e) => {
                     onUpdate({ twilioAuthToken: e.target.value })
-                    setErrors((prev) => ({ ...prev, twilioAuthToken: "" }))
-                    setTestResult(null)
+                    setErrors((prev) => ({ ...prev, authToken: "" }))
                   }}
-                  className={cx("mt-1 font-mono", errors.twilioAuthToken && "border-red-500")}
+                  onFocus={() => setFocusedField("authToken")}
+                  onBlur={() => setFocusedField(null)}
+                  className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:border-brand-500/50 transition-colors font-mono text-sm"
                 />
-                <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                  Click &quot;Show&quot; on your Dashboard to reveal this
-                </p>
-                {errors.twilioAuthToken && (
-                  <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.twilioAuthToken}</p>
-                )}
               </div>
+              {errors.authToken && (
+                <p className="mt-2 text-sm text-red-400">{errors.authToken}</p>
+              )}
+            </div>
 
-              <div>
-                <Label htmlFor="phoneNumber">Your Twilio Phone Number</Label>
-                <Input
-                  id="phoneNumber"
+            {/* Phone Number */}
+            <div>
+              <label className="flex items-center gap-2 text-sm font-medium text-gray-300 mb-2">
+                <RiPhoneLine className="h-4 w-4 text-gray-500" />
+                Twilio Phone Number
+                <span className="text-brand-400">*</span>
+              </label>
+              <div className={cn(
+                "relative rounded-xl transition-all duration-300",
+                focusedField === "phoneNumber" && "ring-2 ring-brand-500/50"
+              )}>
+                <input
                   type="tel"
-                  placeholder="+15551234567"
+                  placeholder="+1234567890"
                   value={data.twilioPhoneNumber}
                   onChange={(e) => {
                     onUpdate({ twilioPhoneNumber: e.target.value })
-                    setErrors((prev) => ({ ...prev, twilioPhoneNumber: "" }))
+                    setErrors((prev) => ({ ...prev, phoneNumber: "" }))
                   }}
-                  className={cx("mt-1 font-mono", errors.twilioPhoneNumber && "border-red-500")}
+                  onFocus={() => setFocusedField("phoneNumber")}
+                  onBlur={() => setFocusedField(null)}
+                  className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:border-brand-500/50 transition-colors font-mono text-sm"
                 />
-                <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                  The number you bought (include +1)
-                </p>
-                {errors.twilioPhoneNumber && (
-                  <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.twilioPhoneNumber}</p>
-                )}
               </div>
-
-              {/* Test connection button */}
-              <div className="flex items-center gap-3">
-                <Button
-                  type="button"
-                  variant="secondary"
-                  onClick={handleTestConnection}
-                  disabled={testing}
-                  className="gap-2"
-                >
-                  {testing && <RiLoader4Line className="h-4 w-4 animate-spin" />}
-                  Test Connection
-                </Button>
-                {testResult && (
-                  <span
-                    className={cx(
-                      "text-sm font-medium",
-                      testResult.success ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"
-                    )}
-                  >
-                    {testResult.message}
-                  </span>
-                )}
-              </div>
+              {errors.phoneNumber && (
+                <p className="mt-2 text-sm text-red-400">{errors.phoneNumber}</p>
+              )}
+              <p className="mt-1.5 text-xs text-gray-500">
+                Include country code (e.g., +1 for US)
+              </p>
             </div>
-          </div>
 
-          {/* Webhook setup */}
-          <div className="rounded-lg border-2 border-amber-200 bg-amber-50 p-6 dark:border-amber-800 dark:bg-amber-900/20">
-            <h3 className="flex items-center gap-2 font-semibold text-amber-800 dark:text-amber-200">
-              ⚠️ One More Thing (Important!)
-            </h3>
-            <p className="mt-2 text-sm text-amber-700 dark:text-amber-300">
-              For customers to reply to your texts, you need to tell Twilio where to send their responses.
-            </p>
-
-            <ol className="mt-4 list-inside list-decimal space-y-2 text-sm text-amber-800 dark:text-amber-200">
-              <li>In Twilio, go to: Phone Numbers → Your Number</li>
-              <li>Scroll to &quot;Messaging&quot;</li>
-              <li>Under &quot;A MESSAGE COMES IN&quot;, paste this URL:</li>
-            </ol>
-
-            <div className="mt-3 flex items-center gap-2">
-              <code className="flex-1 rounded bg-white px-3 py-2 font-mono text-xs text-gray-800 dark:bg-gray-900 dark:text-gray-200">
-                {webhookUrl}
-              </code>
-              <Button
-                type="button"
-                variant="secondary"
-                size="sm"
-                onClick={handleCopyWebhook}
-                className="gap-1"
+            {/* Test Connection Button */}
+            <div className="pt-2">
+              <button
+                onClick={handleTest}
+                disabled={testing}
+                className={cn(
+                  "w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl font-medium transition-all duration-300",
+                  testResult === "success"
+                    ? "bg-green-500/20 border border-green-500/30 text-green-400"
+                    : testResult === "error"
+                    ? "bg-red-500/20 border border-red-500/30 text-red-400"
+                    : "bg-white/5 border border-white/10 text-white hover:bg-white/10"
+                )}
               >
-                {copied ? <RiCheckLine className="h-4 w-4" /> : <RiFileCopyLine className="h-4 w-4" />}
-                {copied ? "Copied!" : "Copy"}
-              </Button>
+                {testing ? (
+                  <>
+                    <RiLoader4Line className="h-5 w-5 animate-spin" />
+                    Testing connection...
+                  </>
+                ) : testResult === "success" ? (
+                  <>
+                    <RiCheckboxCircleLine className="h-5 w-5" />
+                    Connection successful!
+                  </>
+                ) : testResult === "error" ? (
+                  <>
+                    <RiInformationLine className="h-5 w-5" />
+                    Connection failed — check credentials
+                  </>
+                ) : (
+                  <>
+                    <RiPhoneLine className="h-5 w-5" />
+                    Test Connection
+                  </>
+                )}
+              </button>
             </div>
 
-            <ol start={4} className="mt-3 list-inside list-decimal space-y-2 text-sm text-amber-800 dark:text-amber-200">
-              <li>Make sure it&apos;s set to HTTP POST</li>
-              <li>Save</li>
-            </ol>
-
-            <label className="mt-4 flex items-start gap-3">
-              <input
-                type="checkbox"
-                checked={data.webhookConfigured}
-                onChange={(e) => {
-                  onUpdate({ webhookConfigured: e.target.checked })
-                  setErrors((prev) => ({ ...prev, webhookConfigured: "" }))
-                }}
-                className="mt-0.5 h-4 w-4 rounded border-gray-300 text-brand-600 focus:ring-brand-500"
-              />
-              <span className="text-sm text-amber-800 dark:text-amber-200">
-                I&apos;ve configured the webhook URL in Twilio
-              </span>
-            </label>
-            {errors.webhookConfigured && (
-              <p className="mt-2 text-sm text-red-600 dark:text-red-400">{errors.webhookConfigured}</p>
+            {errors.general && (
+              <p className="text-sm text-red-400 text-center">{errors.general}</p>
             )}
           </div>
         </div>
       )}
 
-      {/* Navigation */}
-      <div className="flex justify-between">
-        <Button variant="secondary" onClick={onBack}>
+      {/* Navigation Buttons */}
+      <div className="flex justify-between pt-4">
+        <button
+          onClick={onBack}
+          className="group inline-flex items-center gap-2 px-6 py-3 rounded-xl font-medium text-gray-400 hover:text-white border border-white/10 hover:border-white/20 bg-white/5 hover:bg-white/10 transition-all duration-300"
+        >
+          <RiArrowLeftLine className="h-5 w-5 group-hover:-translate-x-1 transition-transform" />
           Back
-        </Button>
-        {hasAccount === true && (
-          <Button onClick={handleSubmit} className="px-8">
-            Continue
-          </Button>
-        )}
+        </button>
+        <button
+          onClick={handleSubmit}
+          className="group relative inline-flex items-center gap-2 px-8 py-3 rounded-xl font-semibold text-white overflow-hidden transition-all duration-300 hover:scale-[1.02] active:scale-[0.98]"
+        >
+          <div className="absolute inset-0 bg-gradient-to-r from-brand-500 to-brand-600" />
+          <div className="absolute inset-0 bg-gradient-to-r from-brand-400 to-brand-500 opacity-0 group-hover:opacity-100 transition-opacity" />
+          <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700" />
+          <span className="relative">{skipTwilio ? "Skip" : "Continue"}</span>
+          <RiArrowRightLine className="relative h-5 w-5 group-hover:translate-x-1 transition-transform" />
+        </button>
       </div>
     </div>
   )

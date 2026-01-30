@@ -1,16 +1,16 @@
 "use client"
 
-import { useState } from "react"
 import {
-  RiTimeLine,
+  RiCheckLine,
+  RiArrowLeftLine,
   RiMessage2Line,
+  RiTimeLine,
   RiEditLine,
-  RiArrowGoBackLine,
+  RiMagicLine,
+  RiSparklingLine,
 } from "@remixicon/react"
-import { Button } from "@/components/Button"
-import { cx } from "@/lib/utils"
-import type { OnboardingData } from "@/lib/onboarding/types"
-import { getTradeConfig } from "@/lib/onboarding/trade-config"
+import { cn } from "@/lib/utils/cn"
+import { type OnboardingData } from "@/lib/onboarding/types"
 
 interface StepSequenceProps {
   data: OnboardingData
@@ -19,217 +19,248 @@ interface StepSequenceProps {
   onBack: () => void
 }
 
+const DEFAULT_SEQUENCE = [
+  {
+    day: "Day 1",
+    delay: "Same day",
+    message: "Hi {name}! Thanks for getting a quote from {business}. Just wanted to check in—any questions about the estimate I sent over?",
+  },
+  {
+    day: "Day 3",
+    delay: "2 days later",
+    message: "Hey {name}, following up on your quote. I can usually get you on the schedule within the next week or two. Want me to lock in a date?",
+  },
+  {
+    day: "Day 5",
+    delay: "2 days later",
+    message: "Hi {name}—I know you're probably busy. Just a quick note that our schedule is filling up. Let me know if you'd like to move forward with the work!",
+  },
+  {
+    day: "Day 7",
+    delay: "2 days later",
+    message: "Last check-in, {name}! If you're still interested in the quote, I'm happy to answer any questions. If not, no worries at all. Take care! - {owner}",
+  },
+]
+
 export function StepSequence({ data, onUpdate, onNext, onBack }: StepSequenceProps) {
-  const [isEditing, setIsEditing] = useState(false)
-  const [editedMessages, setEditedMessages] = useState<Record<string, string>>({})
 
-  // Get trade-specific config
-  const tradeConfig = data.trade ? getTradeConfig(data.trade) : null
-  const tradeName = tradeConfig?.name || "Service"
-
-  // Get default messages for the trade
-  const defaultMessages = tradeConfig?.defaultMessages || {
-    step1: `Hi {{first_name}}, this is {{business_name}} confirming your quote for {{quote_amount}}. Any questions? Just reply here or call {{business_phone}}. Reply STOP to opt out.`,
-    step2: `Hey {{first_name}}, following up on your quote. I've got availability this week if you're ready. Let me know!`,
-    step3: `{{first_name}}, final follow-up on your quote. Reply YES to schedule, or let me know if you have questions. Thanks!`,
-  }
-
-  // Calculate delay labels based on trade
-  const sequenceDays = tradeConfig?.sequenceDays || 7
-  const delays = {
-    step1: "Sent immediately",
-    step2: `${Math.ceil(sequenceDays / 3)} days later`,
-    step3: `${sequenceDays} days after quote`,
-    step4: tradeConfig?.defaultMessages.step4 ? `${sequenceDays * 2} days after quote` : undefined,
-  }
-
-  // Replace template variables with preview values
-  const previewMessage = (template: string): string => {
-    return template
-      .replace(/\{\{first_name\}\}/gi, "John")
-      .replace(/\{\{name\}\}/gi, "John Smith")
-      .replace(/\{\{quote_amount\}\}/gi, "$850")
-      .replace(/\{\{business_name\}\}/gi, data.businessName || "Pro Service")
-      .replace(/\{\{business_phone\}\}/gi, data.businessPhone || "(555) 123-4567")
-  }
-
-  const getCurrentMessage = (step: keyof typeof defaultMessages): string => {
-    if (data.sequenceTemplate === "custom" && data.customMessages?.[step]) {
-      return data.customMessages[step] as string
-    }
-    return editedMessages[step] || defaultMessages[step] || ""
-  }
-
-  const handleEditMessage = (step: string, value: string) => {
-    setEditedMessages((prev) => ({ ...prev, [step]: value }))
-  }
-
-  const handleSaveCustom = () => {
-    onUpdate({
-      sequenceTemplate: "custom",
-      customMessages: editedMessages,
-    })
-    setIsEditing(false)
-  }
-
-  const handleUseDefault = () => {
-    onUpdate({
-      sequenceTemplate: "default",
-      customMessages: undefined,
-    })
-    setIsEditing(false)
-    setEditedMessages({})
+  const handleTemplateSelect = (template: "default" | "custom") => {
+    onUpdate({ sequenceTemplate: template })
   }
 
   const handleSubmit = () => {
-    // If editing, save changes first
-    if (isEditing && Object.keys(editedMessages).length > 0) {
-      onUpdate({
-        sequenceTemplate: "custom",
-        customMessages: editedMessages,
-      })
-    }
     onNext()
   }
 
-  const messageSteps = [
-    { key: "step1" as const, label: "Message 1", delay: delays.step1 },
-    { key: "step2" as const, label: "Message 2", delay: delays.step2 },
-    { key: "step3" as const, label: "Message 3", delay: delays.step3 },
-    ...(defaultMessages.step4
-      ? [{ key: "step4" as const, label: "Message 4", delay: delays.step4 }]
-      : []),
-  ]
-
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       {/* Header */}
-      <div className="text-center">
-        <h2 className="text-2xl font-bold text-gray-900 dark:text-white sm:text-3xl">
-          Your follow-up sequence is ready
+      <div className="text-center space-y-3">
+        <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-brand-500/10 border border-brand-500/20">
+          <span className="relative flex h-2 w-2">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-brand-400 opacity-75"></span>
+            <span className="relative inline-flex rounded-full h-2 w-2 bg-brand-500"></span>
+          </span>
+          <span className="text-sm font-medium text-brand-400">Step 5 of 5</span>
+        </div>
+        <h2 className="text-3xl sm:text-4xl font-bold bg-gradient-to-r from-white via-gray-100 to-gray-300 bg-clip-text text-transparent">
+          Your follow-up sequence
         </h2>
-        <p className="mt-2 text-gray-600 dark:text-gray-400">
-          We built this based on what works for {tradeName.toLowerCase()}. 
-          Tweak it or use it as-is.
+        <p className="text-gray-400 max-w-lg mx-auto">
+          This is what we&apos;ll send to customers who got a quote but haven&apos;t booked yet.
         </p>
       </div>
 
-      {/* Sequence Card */}
-      <div className="rounded-xl border border-gray-200 bg-white overflow-hidden dark:border-gray-700 dark:bg-gray-800">
-        {/* Header */}
-        <div className="border-b border-gray-200 bg-gray-50 px-6 py-4 dark:border-gray-700 dark:bg-gray-900">
-          <div className="flex items-center justify-between">
-            <div>
-              <h3 className="font-semibold text-gray-900 dark:text-white">
-                Standard {tradeName} Follow-Up
-              </h3>
-              <p className="text-sm text-gray-500 dark:text-gray-400">
-                {messageSteps.length} messages over {sequenceDays} days
-              </p>
-            </div>
-            {!isEditing && (
-              <Button
-                variant="secondary"
-                size="sm"
-                onClick={() => setIsEditing(true)}
-                className="gap-1"
-              >
-                <RiEditLine className="h-4 w-4" />
-                Edit Messages
-              </Button>
-            )}
+      {/* Template Selection */}
+      <div className="grid grid-cols-2 gap-4">
+        <button
+          onClick={() => handleTemplateSelect("default")}
+          className={cn(
+            "group relative flex flex-col items-center gap-3 rounded-xl p-6 text-center transition-all duration-300",
+            "border-2 hover:scale-[1.02] active:scale-[0.98]",
+            data.sequenceTemplate === "default"
+              ? "border-brand-500 bg-brand-500/10"
+              : "border-white/10 bg-white/5 hover:border-white/20 hover:bg-white/10"
+          )}
+        >
+          {data.sequenceTemplate === "default" && (
+            <div className="absolute inset-0 rounded-xl bg-brand-500/20 blur-xl -z-10" />
+          )}
+          <div className={cn(
+            "flex h-14 w-14 items-center justify-center rounded-xl transition-all",
+            data.sequenceTemplate === "default"
+              ? "bg-gradient-to-br from-brand-400 to-brand-600 shadow-lg shadow-brand-500/30"
+              : "bg-white/10 group-hover:bg-white/20"
+          )}>
+            <RiMagicLine className={cn(
+              "h-7 w-7",
+              data.sequenceTemplate === "default" ? "text-white" : "text-gray-400"
+            )} />
           </div>
-        </div>
+          <div>
+            <h3 className={cn(
+              "font-semibold transition-colors",
+              data.sequenceTemplate === "default" ? "text-white" : "text-gray-300"
+            )}>
+              Use recommended
+            </h3>
+            <p className="text-xs text-gray-500 mt-1">
+              Battle-tested messages
+            </p>
+          </div>
+          {data.sequenceTemplate === "default" && (
+            <div className="absolute top-3 right-3 flex h-6 w-6 items-center justify-center rounded-full bg-brand-500">
+              <RiCheckLine className="h-4 w-4 text-white" />
+            </div>
+          )}
+        </button>
 
-        {/* Messages */}
-        <div className="divide-y divide-gray-200 dark:divide-gray-700">
-          {messageSteps.map((step) => (
-            <div key={step.key} className="p-6">
-              {/* Step header */}
-              <div className="mb-3 flex items-center gap-3">
-                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-brand-100 dark:bg-brand-900/30">
-                  <RiMessage2Line className="h-4 w-4 text-brand-600 dark:text-brand-400" />
-                </div>
-                <div>
-                  <span className="font-medium text-gray-900 dark:text-white">
-                    {step.label}
-                  </span>
-                  <span className="mx-2 text-gray-400">•</span>
-                  <span className="flex items-center gap-1 text-sm text-gray-500 dark:text-gray-400">
-                    <RiTimeLine className="h-3.5 w-3.5" />
-                    {step.delay}
-                  </span>
+        <button
+          onClick={() => handleTemplateSelect("custom")}
+          className={cn(
+            "group relative flex flex-col items-center gap-3 rounded-xl p-6 text-center transition-all duration-300",
+            "border-2 hover:scale-[1.02] active:scale-[0.98]",
+            data.sequenceTemplate === "custom"
+              ? "border-brand-500 bg-brand-500/10"
+              : "border-white/10 bg-white/5 hover:border-white/20 hover:bg-white/10"
+          )}
+        >
+          {data.sequenceTemplate === "custom" && (
+            <div className="absolute inset-0 rounded-xl bg-brand-500/20 blur-xl -z-10" />
+          )}
+          <div className={cn(
+            "flex h-14 w-14 items-center justify-center rounded-xl transition-all",
+            data.sequenceTemplate === "custom"
+              ? "bg-gradient-to-br from-brand-400 to-brand-600 shadow-lg shadow-brand-500/30"
+              : "bg-white/10 group-hover:bg-white/20"
+          )}>
+            <RiEditLine className={cn(
+              "h-7 w-7",
+              data.sequenceTemplate === "custom" ? "text-white" : "text-gray-400"
+            )} />
+          </div>
+          <div>
+            <h3 className={cn(
+              "font-semibold transition-colors",
+              data.sequenceTemplate === "custom" ? "text-white" : "text-gray-300"
+            )}>
+              Customize later
+            </h3>
+            <p className="text-xs text-gray-500 mt-1">
+              Edit after setup
+            </p>
+          </div>
+          {data.sequenceTemplate === "custom" && (
+            <div className="absolute top-3 right-3 flex h-6 w-6 items-center justify-center rounded-full bg-brand-500">
+              <RiCheckLine className="h-4 w-4 text-white" />
+            </div>
+          )}
+        </button>
+      </div>
+
+      {/* Sequence Preview */}
+      <div className="relative">
+        <div className="absolute -inset-0.5 bg-gradient-to-r from-brand-500/30 to-indigo-500/30 rounded-2xl blur opacity-50" />
+        <div className="relative rounded-xl border border-white/10 bg-gray-900/50 backdrop-blur-sm overflow-hidden">
+          <div className="flex items-center gap-2 px-5 py-4 border-b border-white/10 bg-white/5">
+            <RiSparklingLine className="h-5 w-5 text-brand-400" />
+            <h3 className="font-semibold text-white">Preview: 4-message sequence</h3>
+          </div>
+
+          <div className="p-5 space-y-4">
+            {DEFAULT_SEQUENCE.map((step, index) => (
+              <div
+                key={index}
+                className="group relative"
+              >
+                {/* Timeline connector */}
+                {index < DEFAULT_SEQUENCE.length - 1 && (
+                  <div className="absolute left-[19px] top-[40px] bottom-[-16px] w-0.5 bg-gradient-to-b from-brand-500/50 to-brand-500/20" />
+                )}
+
+                <div className="flex gap-4">
+                  {/* Day badge */}
+                  <div className="flex flex-col items-center">
+                    <div className={cn(
+                      "flex h-10 w-10 items-center justify-center rounded-full transition-all",
+                      index === 0
+                        ? "bg-gradient-to-br from-brand-400 to-brand-600 shadow-lg shadow-brand-500/30"
+                        : "bg-white/10 border border-white/10"
+                    )}>
+                      <span className={cn(
+                        "text-sm font-bold",
+                        index === 0 ? "text-white" : "text-gray-400"
+                      )}>
+                        {index + 1}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Message card */}
+                  <div className="flex-1 pb-4">
+                    <div className="flex items-center gap-3 mb-2">
+                      <span className="font-semibold text-white">{step.day}</span>
+                      <span className="flex items-center gap-1 text-xs text-gray-500">
+                        <RiTimeLine className="h-3 w-3" />
+                        {step.delay}
+                      </span>
+                    </div>
+                    <div className="relative rounded-lg bg-white/5 border border-white/10 p-4 group-hover:bg-white/10 transition-colors">
+                      {/* Message bubble tail */}
+                      <div className="absolute left-[-6px] top-4 w-3 h-3 bg-white/5 border-l border-b border-white/10 rotate-45 group-hover:bg-white/10 transition-colors" />
+                      
+                      <div className="flex items-start gap-2">
+                        <RiMessage2Line className="h-4 w-4 text-brand-400 mt-0.5 flex-shrink-0" />
+                        <p className="text-sm text-gray-300 leading-relaxed">
+                          {step.message}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
+            ))}
+          </div>
 
-              {/* Message content */}
-              {isEditing ? (
-                <div>
-                  <textarea
-                    value={editedMessages[step.key] ?? defaultMessages[step.key]}
-                    onChange={(e) => handleEditMessage(step.key, e.target.value)}
-                    rows={4}
-                    className={cx(
-                      "w-full rounded-lg border border-gray-200 bg-white p-3 text-sm",
-                      "focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500",
-                      "dark:border-gray-600 dark:bg-gray-900 dark:text-white"
-                    )}
-                  />
-                  <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
-                    Available variables: {`{{first_name}}`}, {`{{quote_amount}}`}, {`{{business_name}}`}, {`{{business_phone}}`}
-                  </p>
-                </div>
-              ) : (
-                <div className="rounded-lg bg-gray-50 p-4 dark:bg-gray-900">
-                  <p className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap">
-                    {previewMessage(getCurrentMessage(step.key))}
-                  </p>
-                </div>
-              )}
+          {/* Variables legend */}
+          <div className="px-5 py-3 border-t border-white/10 bg-white/5">
+            <div className="flex flex-wrap gap-3 text-xs text-gray-400">
+              <span className="flex items-center gap-1">
+                <code className="px-1.5 py-0.5 rounded bg-brand-500/20 text-brand-400">{"{name}"}</code>
+                Customer&apos;s name
+              </span>
+              <span className="flex items-center gap-1">
+                <code className="px-1.5 py-0.5 rounded bg-brand-500/20 text-brand-400">{"{business}"}</code>
+                Your business name
+              </span>
+              <span className="flex items-center gap-1">
+                <code className="px-1.5 py-0.5 rounded bg-brand-500/20 text-brand-400">{"{owner}"}</code>
+                Your name
+              </span>
             </div>
-          ))}
+          </div>
         </div>
       </div>
 
-      {/* Edit mode actions */}
-      {isEditing && (
-        <div className="flex items-center justify-between rounded-lg border border-brand-200 bg-brand-50 p-4 dark:border-brand-800 dark:bg-brand-900/20">
-          <Button
-            variant="secondary"
-            size="sm"
-            onClick={handleUseDefault}
-            className="gap-1"
-          >
-            <RiArrowGoBackLine className="h-4 w-4" />
-            Reset to Default
-          </Button>
-          <Button
-            size="sm"
-            onClick={handleSaveCustom}
-          >
-            Save Changes
-          </Button>
-        </div>
-      )}
-
-      {/* Skip customization note */}
-      {!isEditing && (
-        <div className="rounded-lg border border-gray-200 bg-gray-50 p-4 text-center dark:border-gray-700 dark:bg-gray-800">
-          <p className="text-sm text-gray-600 dark:text-gray-400">
-            <strong>Want to customize this later?</strong> You can always edit your sequences in Settings. 
-            Most contractors start with the default and tweak it after seeing how customers respond.
-          </p>
-        </div>
-      )}
-
-      {/* Navigation */}
-      <div className="flex justify-between">
-        <Button variant="secondary" onClick={onBack}>
+      {/* Navigation Buttons */}
+      <div className="flex justify-between pt-4">
+        <button
+          onClick={onBack}
+          className="group inline-flex items-center gap-2 px-6 py-3 rounded-xl font-medium text-gray-400 hover:text-white border border-white/10 hover:border-white/20 bg-white/5 hover:bg-white/10 transition-all duration-300"
+        >
+          <RiArrowLeftLine className="h-5 w-5 group-hover:-translate-x-1 transition-transform" />
           Back
-        </Button>
-        <Button onClick={handleSubmit} className="px-8">
-          {isEditing ? "Save & Continue" : "Looks Good"}
-        </Button>
+        </button>
+        <button
+          onClick={handleSubmit}
+          className="group relative inline-flex items-center gap-2 px-8 py-3 rounded-xl font-semibold text-white overflow-hidden transition-all duration-300 hover:scale-[1.02] active:scale-[0.98]"
+        >
+          <div className="absolute inset-0 bg-gradient-to-r from-green-500 to-emerald-600" />
+          <div className="absolute inset-0 bg-gradient-to-r from-green-400 to-emerald-500 opacity-0 group-hover:opacity-100 transition-opacity" />
+          <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700" />
+          <span className="relative">Complete Setup</span>
+          <RiCheckLine className="relative h-5 w-5" />
+        </button>
       </div>
     </div>
   )

@@ -105,7 +105,7 @@ export default function OnboardingPage() {
   }
 
   const handleDashboard = () => {
-    router.push("/overview")
+    router.push("/dashboard")
   }
 
   // Completion screen (after step 5)

@@ -21,3 +21,6 @@ export type OverviewData = {
 
 // Re-export booking customization schema
 export * from './booking-schema'
+
+// Re-export booking schema mappers for database operations
+export * from './booking-schema-mappers'

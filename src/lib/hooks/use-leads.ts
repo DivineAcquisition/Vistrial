@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState, useCallback } from "react"
+import { useEffect, useState, useCallback, useMemo } from "react"
 import { createClient } from "@/lib/supabase/client"
 import type { Lead, LeadStatus, LeadInput } from "@/types/database"
 
@@ -16,7 +16,7 @@ export function useLeads(options: UseLeadsOptions = {}) {
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<Error | null>(null)
 
-  const supabase = createClient()
+  const supabase = useMemo(() => createClient(), [])
   const { status = "all", search, sequenceId, limit = 100 } = options
 
   const fetchLeads = useCallback(async () => {
@@ -51,7 +51,7 @@ export function useLeads(options: UseLeadsOptions = {}) {
     } finally {
       setIsLoading(false)
     }
-  }, [status, search, sequenceId, limit])
+  }, [supabase, status, search, sequenceId, limit])
 
   useEffect(() => {
     fetchLeads()

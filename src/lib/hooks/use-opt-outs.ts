@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState, useCallback } from "react"
+import { useEffect, useState, useCallback, useMemo } from "react"
 import { createClient } from "@/lib/supabase/client"
 import type { OptOut, OptOutInput } from "@/types/database"
 
@@ -13,7 +13,7 @@ export function useOptOuts(options: UseOptOutsOptions = {}) {
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<Error | null>(null)
 
-  const supabase = createClient()
+  const supabase = useMemo(() => createClient(), [])
   const { limit = 100 } = options
 
   const fetchOptOuts = useCallback(async () => {
@@ -34,7 +34,7 @@ export function useOptOuts(options: UseOptOutsOptions = {}) {
     } finally {
       setIsLoading(false)
     }
-  }, [limit])
+  }, [supabase, limit])
 
   useEffect(() => {
     fetchOptOuts()
@@ -57,7 +57,7 @@ export function useOptOuts(options: UseOptOutsOptions = {}) {
 
       return !!data
     },
-    []
+    [supabase]
   )
 
   /**
@@ -135,7 +135,7 @@ export function useOptOuts(options: UseOptOutsOptions = {}) {
 
       return data
     },
-    []
+    [supabase]
   )
 
   /**
@@ -155,7 +155,7 @@ export function useOptOuts(options: UseOptOutsOptions = {}) {
       const optedOutPhones = new Set(data?.map((o: { phone: string }) => o.phone) || [])
       return new Map(phones.map((p) => [p, optedOutPhones.has(p)]))
     },
-    []
+    [supabase]
   )
 
   return {
@@ -178,7 +178,7 @@ export function useIsOptedOut(phone: string) {
   const [isOptedOut, setIsOptedOut] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
 
-  const supabase = createClient()
+  const supabase = useMemo(() => createClient(), [])
 
   useEffect(() => {
     if (!phone) {
@@ -211,7 +211,7 @@ export function useIsOptedOut(phone: string) {
     }
 
     checkOptOut()
-  }, [phone])
+  }, [supabase, phone])
 
   return { isOptedOut, isLoading }
 }

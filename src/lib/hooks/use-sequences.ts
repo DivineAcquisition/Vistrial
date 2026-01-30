@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState, useCallback } from "react"
+import { useEffect, useState, useCallback, useMemo } from "react"
 import { createClient } from "@/lib/supabase/client"
 import type { Sequence, SequenceStep, SequenceInput, SequenceStepInput } from "@/types/database"
 
@@ -9,7 +9,7 @@ export function useSequences() {
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<Error | null>(null)
 
-  const supabase = createClient()
+  const supabase = useMemo(() => createClient(), [])
 
   const fetchSequences = useCallback(async () => {
     try {
@@ -28,7 +28,7 @@ export function useSequences() {
     } finally {
       setIsLoading(false)
     }
-  }, [])
+  }, [supabase])
 
   useEffect(() => {
     fetchSequences()
@@ -91,7 +91,7 @@ export function useSequenceSteps(sequenceId: string) {
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<Error | null>(null)
 
-  const supabase = createClient()
+  const supabase = useMemo(() => createClient(), [])
 
   const fetchSteps = useCallback(async () => {
     try {
@@ -111,7 +111,7 @@ export function useSequenceSteps(sequenceId: string) {
     } finally {
       setIsLoading(false)
     }
-  }, [sequenceId])
+  }, [supabase, sequenceId])
 
   useEffect(() => {
     if (sequenceId) {

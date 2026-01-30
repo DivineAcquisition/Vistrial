@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState, useCallback } from "react"
+import { useEffect, useState, useCallback, useMemo } from "react"
 import { createClient } from "@/lib/supabase/client"
 import type { Message } from "@/types/database"
 import type { RealtimePostgresInsertPayload, RealtimePostgresUpdatePayload } from "@supabase/supabase-js"
@@ -10,7 +10,7 @@ export function useMessages(leadId: string) {
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<Error | null>(null)
 
-  const supabase = createClient()
+  const supabase = useMemo(() => createClient(), [])
 
   const fetchMessages = useCallback(async () => {
     try {
@@ -30,7 +30,7 @@ export function useMessages(leadId: string) {
     } finally {
       setIsLoading(false)
     }
-  }, [leadId])
+  }, [supabase, leadId])
 
   useEffect(() => {
     if (leadId) {
@@ -75,7 +75,7 @@ export function useMessages(leadId: string) {
     return () => {
       supabase.removeChannel(channel)
     }
-  }, [leadId])
+  }, [supabase, leadId])
 
   const sendMessage = async (body: string) => {
     const response = await fetch("/api/twilio/send", {

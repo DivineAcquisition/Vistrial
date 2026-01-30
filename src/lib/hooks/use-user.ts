@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, useMemo } from "react"
 import { createClient } from "@/lib/supabase/client"
 import type { Profile } from "@/types/database"
 import type { User, AuthChangeEvent, Session } from "@supabase/supabase-js"
@@ -11,7 +11,7 @@ export function useUser() {
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<Error | null>(null)
 
-  const supabase = createClient()
+  const supabase = useMemo(() => createClient(), [])
 
   useEffect(() => {
     async function getUser() {
@@ -63,7 +63,7 @@ export function useUser() {
     return () => {
       subscription.unsubscribe()
     }
-  }, [])
+  }, [supabase])
 
   const updateProfile = async (updates: Partial<Profile>) => {
     if (!user) throw new Error("Not authenticated")

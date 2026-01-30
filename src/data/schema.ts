@@ -18,3 +18,6 @@ export type OverviewData = {
   "Sign outs": number
   "Support calls": number
 }
+
+// Re-export booking customization schema
+export * from './booking-schema'

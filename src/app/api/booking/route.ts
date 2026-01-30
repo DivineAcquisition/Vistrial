@@ -1,12 +1,29 @@
 /**
  * Public Booking API Route
  * POST - Create a new booking from embed/public booking page
+ * 
+ * This endpoint is called from:
+ * - book.vistrial.io (public booking pages)
+ * - embed.vistrial.io (iframe embeds)
+ * - Third-party websites via embed script
  */
 
 import { NextRequest, NextResponse } from "next/server"
 import { createAdminClient } from "@/lib/supabase/server"
 import { sendSMS } from "@/lib/twilio/send-sms"
 import { formatPhoneE164 } from "@/lib/twilio/format-phone"
+
+// CORS headers for cross-origin iframe requests
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*", // Allow all origins (embedded on various websites)
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
+  "Access-Control-Allow-Headers": "Content-Type",
+}
+
+// Handle preflight requests
+export async function OPTIONS() {
+  return NextResponse.json({}, { headers: corsHeaders })
+}
 
 interface BookingRequest {
   businessId: string
@@ -61,7 +78,7 @@ export async function POST(request: NextRequest) {
     if (!businessId || !scheduledDate || !scheduledTime || !firstName || !phone || !email || !address) {
       return NextResponse.json(
         { error: "Missing required fields" },
-        { status: 400 }
+        { status: 400, headers: corsHeaders }
       )
     }
 
@@ -75,7 +92,7 @@ export async function POST(request: NextRequest) {
     if (profileError || !profile) {
       return NextResponse.json(
         { error: "Business not found" },
-        { status: 404 }
+        { status: 404, headers: corsHeaders }
       )
     }
 
@@ -124,7 +141,7 @@ export async function POST(request: NextRequest) {
         console.error("Error creating lead:", leadError)
         return NextResponse.json(
           { error: "Failed to create customer record" },
-          { status: 500 }
+          { status: 500, headers: corsHeaders }
         )
       }
       lead = newLead
@@ -201,12 +218,12 @@ export async function POST(request: NextRequest) {
         id: lead.id,
         name: `${firstName} ${lastName}`,
       },
-    })
+    }, { headers: corsHeaders })
   } catch (error) {
     console.error("Booking error:", error)
     return NextResponse.json(
       { error: "Failed to create booking" },
-      { status: 500 }
+      { status: 500, headers: corsHeaders }
     )
   }
 }

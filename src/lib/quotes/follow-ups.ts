@@ -5,6 +5,7 @@
 
 import { createAdminClient } from "@/lib/supabase/server"
 import { sendSMS } from "@/lib/twilio/send-sms"
+import { getQuoteUrl } from "@/lib/constants/domains"
 
 // Follow-up schedule configuration
 export const FOLLOW_UP_SCHEDULE = [
@@ -167,8 +168,10 @@ export async function processPendingFollowUps(): Promise<{ processed: number; fa
       DEFAULT_FOLLOW_UP_TEMPLATES[followUp.template_key as keyof typeof DEFAULT_FOLLOW_UP_TEMPLATES] ||
       DEFAULT_FOLLOW_UP_TEMPLATES.follow_up_day_1
 
-    // Build message
-    const quoteLink = `${process.env.NEXT_PUBLIC_APP_URL}/q/${quote.access_token}`
+    // Build message with proper subdomain
+    const quoteLink = process.env.NODE_ENV === "development"
+      ? `${process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"}/q/${quote.access_token}`
+      : getQuoteUrl(quote.access_token)
     const message = templateBody
       .replace(/\{\{first_name\}\}/g, lead.name?.split(" ")[0] || "there")
       .replace(/\{\{total\}\}/g, quote.total.toString())

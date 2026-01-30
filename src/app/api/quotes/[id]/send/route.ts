@@ -7,6 +7,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
 import { sendSMS } from "@/lib/twilio/send-sms"
 import { scheduleQuoteFollowUps, processQuoteTemplate, DEFAULT_FOLLOW_UP_TEMPLATES } from "@/lib/quotes/follow-ups"
+import { getQuoteUrl } from "@/lib/constants/domains"
 
 interface RouteParams {
   params: Promise<{ id: string }>
@@ -61,8 +62,10 @@ export async function POST(_request: NextRequest, { params }: RouteParams) {
       return NextResponse.json({ error: "Contact not found" }, { status: 404 })
     }
 
-    // Build quote link
-    const quoteLink = `${process.env.NEXT_PUBLIC_APP_URL}/q/${quote.access_token}`
+    // Build quote link using proper subdomain
+    const quoteLink = process.env.NODE_ENV === "development"
+      ? `${process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"}/q/${quote.access_token}`
+      : getQuoteUrl(quote.access_token)
 
     // Get custom template or use default
     const { data: template } = await supabase

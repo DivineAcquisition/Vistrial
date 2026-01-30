@@ -22,7 +22,6 @@ import {
   RiCodeLine,
   RiBarChart2Line,
 } from "@remixicon/react"
-
 export default function LandingPage() {
   const [, setShowDemo] = useState(false)
 

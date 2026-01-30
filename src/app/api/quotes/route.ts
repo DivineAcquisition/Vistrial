@@ -9,6 +9,7 @@ import { createClient, createAdminClient } from "@/lib/supabase/server"
 import { calculateQuote, DEFAULT_COST_SETTINGS } from "@/lib/quotes/calculations"
 import { scheduleQuoteFollowUps, processQuoteTemplate, DEFAULT_FOLLOW_UP_TEMPLATES } from "@/lib/quotes/follow-ups"
 import { sendSMS } from "@/lib/twilio/send-sms"
+import { getQuoteUrl } from "@/lib/constants/domains"
 import type { QuoteInput, CostSettings, PricingTemplate } from "@/types/quotes"
 
 // Generate a random access token
@@ -223,7 +224,10 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    const quoteLink = `${process.env.NEXT_PUBLIC_APP_URL}/q/${accessToken}`
+    // Generate quote link using proper subdomain
+    const quoteLink = process.env.NODE_ENV === "development"
+      ? `${process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"}/q/${accessToken}`
+      : getQuoteUrl(accessToken)
 
     // Send quote if requested
     if (body.send_immediately && profile.twilio_phone_number) {

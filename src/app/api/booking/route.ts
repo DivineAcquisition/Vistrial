@@ -1,56 +1,22 @@
-/**
- * Public Booking API Route
- * POST - Create a new booking from embed/public booking page
- * 
- * This endpoint is called from:
- * - book.vistrial.io (public booking pages)
- * - embed.vistrial.io (iframe embeds)
- * - Third-party websites via embed script
- */
+import { NextRequest, NextResponse } from "next/server";
+import { createAdminClient } from "@/lib/supabase/admin";
+// import { sendSMS } from "@/lib/twilio/client"; // Uncomment when Twilio is set up
 
-import { NextRequest, NextResponse } from "next/server"
-import { createAdminClient } from "@/lib/supabase/server"
-import { sendSMS } from "@/lib/twilio/send-sms"
-import { formatPhoneE164 } from "@/lib/twilio/format-phone"
-
-// CORS headers for cross-origin iframe requests
+// CORS headers for embeddable booking widget
 const corsHeaders = {
-  "Access-Control-Allow-Origin": "*", // Allow all origins (embedded on various websites)
+  "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
   "Access-Control-Allow-Headers": "Content-Type",
-}
+};
 
-// Handle preflight requests
 export async function OPTIONS() {
-  return NextResponse.json({}, { headers: corsHeaders })
-}
-
-interface BookingRequest {
-  businessId: string
-  serviceTypeId?: string
-  scheduledDate: string
-  scheduledTime: string
-  firstName: string
-  lastName: string
-  phone: string
-  email: string
-  address: string
-  city: string
-  state: string
-  zip: string
-  instructions?: string
-  bedrooms: number
-  bathrooms: number
-  hasPets: boolean
-  frequency: "onetime" | "weekly" | "biweekly" | "monthly"
-  total: number
-  depositAmount: number
+  return NextResponse.json({}, { headers: corsHeaders });
 }
 
 export async function POST(request: NextRequest) {
   try {
-    const body: BookingRequest = await request.json()
-    const supabase = createAdminClient()
+    const body = await request.json();
+    const supabase = createAdminClient();
 
     const {
       businessId,
@@ -65,165 +31,210 @@ export async function POST(request: NextRequest) {
       city,
       state,
       zip,
-      instructions,
       bedrooms,
       bathrooms,
+      sqft,
       hasPets,
+      instructions,
       frequency,
+      subtotal,
+      discount,
       total,
-      depositAmount,
-    } = body
+      deposit,
+    } = body;
 
-    // Validate required fields
-    if (!businessId || !scheduledDate || !scheduledTime || !firstName || !phone || !email || !address) {
-      return NextResponse.json(
-        { error: "Missing required fields" },
-        { status: 400, headers: corsHeaders }
-      )
-    }
+    // 1. Find or create contact
+    let contactId: string;
 
-    // Get the business profile
-    const { data: profile, error: profileError } = await supabase
-      .from("profiles")
-      .select("*")
-      .eq("id", businessId)
-      .single()
+    const { data: existingContact } = await supabase
+      .from("contacts")
+      .select("id")
+      .eq("business_id", businessId)
+      .eq("phone", phone.replace(/\D/g, ""))
+      .single();
 
-    if (profileError || !profile) {
-      return NextResponse.json(
-        { error: "Business not found" },
-        { status: 404, headers: corsHeaders }
-      )
-    }
+    if (existingContact) {
+      contactId = existingContact.id;
 
-    // Format phone number
-    const formattedPhone = formatPhoneE164(phone) || phone
-
-    // Create or find existing lead/customer
-    let lead = null
-    const { data: existingLead } = await supabase
-      .from("leads")
-      .select("*")
-      .eq("user_id", businessId)
-      .eq("phone", formattedPhone)
-      .single()
-
-    if (existingLead) {
-      lead = existingLead
-      // Update lead info
+      // Update contact info
       await supabase
-        .from("leads")
+        .from("contacts")
         .update({
-          name: `${firstName} ${lastName}`,
+          first_name: firstName,
+          last_name: lastName,
           email,
-          status: "booked",
-          updated_at: new Date().toISOString(),
+          address_line1: address,
+          city,
+          state,
+          zip,
         })
-        .eq("id", lead.id)
+        .eq("id", contactId);
     } else {
-      // Create new lead
-      const { data: newLead, error: leadError } = await supabase
-        .from("leads")
+      // Create new contact
+      const { data: newContact, error: contactError } = await supabase
+        .from("contacts")
         .insert({
-          user_id: businessId,
-          name: `${firstName} ${lastName}`,
-          phone: formattedPhone,
+          business_id: businessId,
+          first_name: firstName,
+          last_name: lastName,
+          phone: phone.replace(/\D/g, ""),
           email,
-          status: "booked",
-          notes: instructions,
-          consent_method: "online_booking",
-          consent_timestamp: new Date().toISOString(),
+          address_line1: address,
+          city,
+          state,
+          zip,
+          source: "booking_page",
+          status: "customer",
         })
         .select()
-        .single()
+        .single();
 
-      if (leadError) {
-        console.error("Error creating lead:", leadError)
+      if (contactError) {
+        console.error("Contact creation error:", contactError);
         return NextResponse.json(
-          { error: "Failed to create customer record" },
+          { error: "Failed to create contact" },
           { status: 500, headers: corsHeaders }
-        )
+        );
       }
-      lead = newLead
+
+      contactId = newContact.id;
     }
 
-    // Create booking record
-    const bookingData = {
-      user_id: businessId,
-      lead_id: lead.id,
-      service_type_id: serviceTypeId || null,
-      scheduled_date: scheduledDate,
-      scheduled_time: scheduledTime,
-      address_line1: address,
-      city,
-      state,
-      zip,
-      bedrooms,
-      bathrooms,
-      has_pets: hasPets,
-      frequency,
-      total,
-      deposit_amount: depositAmount,
-      deposit_paid: false,
-      status: "confirmed",
-      special_instructions: instructions,
-      created_at: new Date().toISOString(),
-    }
+    // 2. Get service details
+    const { data: service } = await supabase
+      .from("service_types")
+      .select("*")
+      .eq("id", serviceTypeId)
+      .single();
+
+    // 3. Create booking
+    const estimatedDuration = service?.estimated_duration_minutes || 120;
 
     const { data: booking, error: bookingError } = await supabase
       .from("bookings")
-      .insert(bookingData)
+      .insert({
+        business_id: businessId,
+        contact_id: contactId,
+        service_type_id: serviceTypeId,
+        scheduled_date: scheduledDate,
+        scheduled_time: scheduledTime,
+        estimated_duration_minutes: estimatedDuration,
+        address_line1: address,
+        city,
+        state,
+        zip,
+        bedrooms,
+        bathrooms,
+        sqft,
+        has_pets: hasPets,
+        customer_notes: instructions,
+        status: "confirmed",
+        subtotal,
+        discount_amount: discount,
+        total,
+        deposit_amount: deposit,
+        deposit_paid: false, // Will be true after Stripe payment
+        payment_status: "pending",
+      })
       .select()
-      .single()
+      .single();
 
     if (bookingError) {
-      console.error("Error creating booking:", bookingError)
-      // Continue even if bookings table doesn't exist
+      console.error("Booking creation error:", bookingError);
+      return NextResponse.json(
+        { error: "Failed to create booking" },
+        { status: 500, headers: corsHeaders }
+      );
     }
 
-    // Send confirmation SMS if Twilio is configured
-    if (profile.twilio_phone_number) {
-      const confirmationMessage = `Hi ${firstName}! Your cleaning with ${profile.business_name || "us"} is confirmed for ${scheduledDate} at ${scheduledTime}. We'll text you a reminder the day before. Reply STOP to opt out.`
+    // 4. Create membership if recurring
+    if (frequency !== "onetime" && service?.is_recurring_eligible !== false) {
+      const frequencyDays: Record<string, number> = {
+        weekly: 7,
+        biweekly: 14,
+        monthly: 30,
+      };
 
-      try {
-        await sendSMS({
-          to: formattedPhone,
-          from: profile.twilio_phone_number,
-          body: confirmationMessage,
-          accountSid: profile.twilio_account_sid,
-          authToken: profile.twilio_auth_token,
-        })
+      const { error: membershipError } = await supabase
+        .from("memberships")
+        .insert({
+          business_id: businessId,
+          contact_id: contactId,
+          service_type_id: serviceTypeId,
+          frequency,
+          frequency_days: frequencyDays[frequency] || 14,
+          price_per_service: total,
+          status: "active",
+          next_service_date: scheduledDate,
+          preferred_day_of_week: new Date(scheduledDate).getDay(),
+          preferred_time: scheduledTime,
+          address_line1: address,
+          city,
+          state,
+          zip,
+          bedrooms,
+          bathrooms,
+          has_pets: hasPets,
+        });
 
-        // Log the message
-        await supabase.from("messages").insert({
-          lead_id: lead.id,
-          user_id: businessId,
-          direction: "outbound",
-          status: "sent",
-          to_phone: formattedPhone,
-          from_phone: profile.twilio_phone_number,
-          body: confirmationMessage,
-          sent_at: new Date().toISOString(),
-        })
-      } catch (smsError) {
-        console.error("SMS error:", smsError)
-        // Continue even if SMS fails
+      if (membershipError) {
+        console.error("Membership creation error:", membershipError);
+        // Don't fail the booking if membership creation fails
       }
     }
 
-    return NextResponse.json({
-      success: true,
-      booking: booking || { id: "pending" },
-      customer: {
-        id: lead.id,
-        name: `${firstName} ${lastName}`,
-      },
-    }, { headers: corsHeaders })
-  } catch (error) {
-    console.error("Booking error:", error)
+    // 5. Get business for SMS (used when Twilio is configured)
+    const { data: _business } = await supabase
+      .from("businesses")
+      .select("name, phone")
+      .eq("id", businessId)
+      .single();
+
+    // 6. Send confirmation SMS (uncomment when Twilio is configured)
+    /*
+    const formattedDate = new Date(scheduledDate).toLocaleDateString("en-US", {
+      weekday: "long",
+      month: "short",
+      day: "numeric",
+    });
+    
+    const formattedTime = (() => {
+      const [hours] = scheduledTime.split(":");
+      const hour = parseInt(hours, 10);
+      const ampm = hour >= 12 ? "PM" : "AM";
+      const hour12 = hour % 12 || 12;
+      return `${hour12}:00 ${ampm}`;
+    })();
+
+    await sendSMS(
+      phone,
+      `✅ Confirmed! Your cleaning with ${business?.name} is scheduled for ${formattedDate} at ${formattedTime}. We'll text you a reminder the day before!`
+    );
+    */
+
+    // 7. Log the message
+    await supabase.from("messages").insert({
+      business_id: businessId,
+      contact_id: contactId,
+      direction: "outbound",
+      channel: "sms",
+      body: `Booking confirmed for ${scheduledDate} at ${scheduledTime}`,
+      status: "pending", // Will be 'sent' after Twilio sends
+      booking_id: booking.id,
+    });
+
     return NextResponse.json(
-      { error: "Failed to create booking" },
+      {
+        success: true,
+        bookingId: booking.id,
+      },
+      { headers: corsHeaders }
+    );
+  } catch (error) {
+    console.error("Booking API error:", error);
+    return NextResponse.json(
+      { error: "Internal server error" },
       { status: 500, headers: corsHeaders }
-    )
+    );
   }
 }

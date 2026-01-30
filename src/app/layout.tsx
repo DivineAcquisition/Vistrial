@@ -43,7 +43,7 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body
-        className={`${inter.className} overflow-hidden antialiased selection:bg-brand-100 selection:text-brand-600 bg-white dark:bg-gray-950`}
+        className={`${inter.className} antialiased selection:bg-brand-100 selection:text-brand-600 bg-white dark:bg-gray-950`}
         suppressHydrationWarning
       >
         <ThemeProvider defaultTheme="system" attribute="class">

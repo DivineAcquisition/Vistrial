@@ -32,20 +32,20 @@ export default function ForgotPasswordPage() {
   if (success) {
     return (
       <div className="w-full text-center">
-        <div className="w-12 h-12 bg-green-500/10 border border-green-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
-          <RiCheckLine className="w-6 h-6 text-green-400" />
+        <div className="w-14 h-14 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+          <RiCheckLine className="w-7 h-7 text-green-600" />
         </div>
-        <h1 className="text-lg font-bold text-white mb-1">
+        <h1 className="text-xl font-bold text-gray-900 mb-1">
           Check your email
         </h1>
-        <p className="text-xs text-gray-400 mb-6">
+        <p className="text-sm text-gray-500 mb-6">
           We&apos;ve sent a password reset link to your email.
         </p>
         <Link
           href="/login"
-          className="inline-flex items-center gap-1.5 text-xs text-brand-400 font-medium hover:text-brand-300 transition-colors"
+          className="inline-flex items-center gap-1.5 text-sm text-brand-600 font-medium hover:text-brand-700 transition-colors"
         >
-          <RiArrowLeftLine className="w-3.5 h-3.5" />
+          <RiArrowLeftLine className="w-4 h-4" />
           Back to sign in
         </Link>
       </div>
@@ -55,30 +55,30 @@ export default function ForgotPasswordPage() {
   return (
     <div className="w-full">
       {/* Header */}
-      <div className="text-center mb-5">
-        <h1 className="text-xl font-bold text-white mb-1">
+      <div className="text-center mb-6">
+        <h1 className="text-2xl font-bold text-gray-900 mb-1">
           Reset password
         </h1>
-        <p className="text-xs text-gray-400">
+        <p className="text-sm text-gray-500">
           Enter your email for a reset link
         </p>
       </div>
 
       {/* Error Message */}
       {error && (
-        <div className="mb-4 p-3 bg-red-500/10 border border-red-500/30 rounded-lg text-red-400 text-xs flex items-center gap-2">
-          <span className="h-1.5 w-1.5 rounded-full bg-red-400 flex-shrink-0" />
+        <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-xl text-red-600 text-sm flex items-center gap-2">
+          <span className="h-1.5 w-1.5 rounded-full bg-red-500 flex-shrink-0" />
           {error}
         </div>
       )}
 
       {/* Form */}
-      <form action={handleSubmit} className="space-y-3.5">
+      <form action={handleSubmit} className="space-y-4">
         {/* Email */}
         <div>
           <label
             htmlFor="email"
-            className="block text-xs font-medium text-gray-400 mb-1.5"
+            className="block text-sm font-medium text-gray-700 mb-1.5"
           >
             Email
           </label>
@@ -89,7 +89,7 @@ export default function ForgotPasswordPage() {
             autoComplete="email"
             required
             placeholder="you@example.com"
-            className="w-full px-3 py-2.5 text-sm bg-white/5 border border-white/10 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-brand-500/50 focus:ring-1 focus:ring-brand-500/25 transition-colors"
+            className="w-full px-4 py-3 text-sm bg-gray-50 border border-gray-200 rounded-xl text-gray-900 placeholder-gray-400 focus:outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 transition-all"
           />
         </div>
 
@@ -97,11 +97,11 @@ export default function ForgotPasswordPage() {
         <button
           type="submit"
           disabled={loading}
-          className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-sm font-semibold text-white bg-gradient-to-r from-brand-500 to-brand-600 hover:from-brand-400 hover:to-brand-500 transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 shadow-lg shadow-brand-500/20"
+          className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl text-sm font-semibold text-white bg-gradient-to-r from-brand-500 to-brand-600 hover:from-brand-600 hover:to-brand-700 transition-all duration-200 hover:scale-[1.01] active:scale-[0.99] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 shadow-lg shadow-brand-500/25"
         >
           {loading ? (
             <>
-              <RiLoader4Line className="w-4 h-4 animate-spin" />
+              <RiLoader4Line className="w-5 h-5 animate-spin" />
               <span>Sending...</span>
             </>
           ) : (
@@ -111,12 +111,12 @@ export default function ForgotPasswordPage() {
       </form>
 
       {/* Back to login */}
-      <p className="text-center mt-5">
+      <p className="text-center mt-6">
         <Link
           href="/login"
-          className="inline-flex items-center gap-1.5 text-xs text-gray-500 hover:text-gray-300 transition-colors"
+          className="inline-flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-700 transition-colors"
         >
-          <RiArrowLeftLine className="w-3.5 h-3.5" />
+          <RiArrowLeftLine className="w-4 h-4" />
           Back to sign in
         </Link>
       </p>

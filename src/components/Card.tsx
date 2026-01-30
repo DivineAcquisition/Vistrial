@@ -1,7 +1,7 @@
-// Tremor Raw Card [v0.0.1]
+// Tremor Card [v0.0.2]
 
-import { Slot } from "@radix-ui/react-slot"
 import React from "react"
+import { Slot } from "@radix-ui/react-slot"
 
 import { cx } from "@/lib/utils"
 
@@ -18,20 +18,25 @@ const Card = React.forwardRef<HTMLDivElement, CardProps>(
         ref={forwardedRef}
         className={cx(
           // base
-          "relative w-full rounded-2xl border p-6 text-left",
-          // default variant (dark glassmorphism)
+          "relative w-full rounded-xl text-left transition-all duration-200",
+          // border
+          "border",
+          // variant styles
           variant === "default" && [
-            "bg-gray-900/80 backdrop-blur-xl",
-            "border-white/10",
+            "bg-white",
+            "border-gray-200",
+            "shadow-sm",
           ],
-          // glass variant with glow
           variant === "glass" && [
-            "bg-gray-900/80 backdrop-blur-xl",
-            "border-white/10",
-            "shadow-lg shadow-brand-500/5",
+            "bg-white/80 backdrop-blur-xl",
+            "border-gray-200/60",
+            "shadow-xl shadow-gray-200/40",
           ],
+          // padding
+          "p-6",
           className,
         )}
+        tremor-id="tremor-raw"
         {...props}
       />
     )

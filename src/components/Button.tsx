@@ -1,8 +1,8 @@
-// Tremor Raw Button [v0.1.1]
+// Tremor Button [v0.2.2]
 
+import React from "react"
 import { Slot } from "@radix-ui/react-slot"
 import { RiLoader2Fill } from "@remixicon/react"
-import React from "react"
 import { tv, type VariantProps } from "tailwind-variants"
 
 import { cx, focusRing } from "@/lib/utils"
@@ -19,70 +19,59 @@ const buttonVariants = tv({
   variants: {
     variant: {
       primary: [
-        // border
+        // base
         "border-transparent",
-        // text color
         "text-white",
-        // background color
         "bg-gradient-to-r from-brand-500 to-brand-600",
-        // hover color
-        "hover:from-brand-400 hover:to-brand-500",
-        // shadow
+        // hover
+        "hover:from-brand-600 hover:to-brand-700",
+        // shadow & scale
         "shadow-lg shadow-brand-500/25",
-        // hover scale
+        "hover:shadow-xl hover:shadow-brand-500/30",
         "hover:scale-[1.02] active:scale-[0.98]",
       ],
       secondary: [
-        // border
-        "border-white/10",
-        // text color
-        "text-gray-300",
-        // background color
-        "bg-white/5",
-        //hover color
-        "hover:bg-white/10 hover:text-white",
-        // hover border
-        "hover:border-white/20",
+        // base
+        "border-gray-200",
+        "text-gray-700",
+        "bg-white",
+        // hover
+        "hover:bg-gray-50 hover:text-gray-900",
+        "hover:border-gray-300",
       ],
       light: [
         // base
-        "shadow-none",
-        // border
-        "border-transparent",
-        // text color
-        "text-white",
-        // background color
-        "bg-white/10",
-        // hover color
-        "hover:bg-white/20",
+        "border-gray-200",
+        "text-gray-900",
+        "bg-white",
+        // hover
+        "hover:bg-gray-50",
       ],
       ghost: [
         // base
-        "shadow-none",
-        // border
         "border-transparent",
-        // text color
-        "text-gray-400",
-        // hover color
-        "bg-transparent hover:bg-white/5 hover:text-white",
+        "text-gray-700",
+        "bg-transparent",
+        // hover
+        "hover:bg-gray-100",
+        "hover:text-gray-900",
       ],
       destructive: [
-        // text color
-        "text-white",
-        // border
+        // base
         "border-transparent",
-        // background color
+        "text-white",
         "bg-red-600",
-        // hover color
-        "hover:bg-red-500",
+        // hover
+        "hover:bg-red-700",
         // shadow
         "shadow-lg shadow-red-500/25",
       ],
     },
     size: {
-      sm: "px-3 py-1.5 text-xs",
-      md: "px-4 py-2 text-sm",
-      lg: "px-5 py-2.5 text-sm",
+      sm: "h-8 px-3 text-sm",
+      md: "h-10 px-4 text-sm",
+      lg: "h-12 px-6 text-base",
+      xl: "h-14 px-8 text-lg",
     },
   },
   defaultVariants: {
@@ -120,6 +109,7 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
         ref={forwardedRef}
         className={cx(buttonVariants({ variant, size }), className)}
         disabled={disabled || isLoading}
+        tremor-id="tremor-raw"
         {...props}
       >
         {isLoading ? (

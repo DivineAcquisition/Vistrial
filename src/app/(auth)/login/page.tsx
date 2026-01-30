@@ -36,30 +36,30 @@ function LoginForm() {
   return (
     <div className="w-full">
       {/* Header */}
-      <div className="text-center mb-5">
-        <h1 className="text-xl font-bold text-white mb-1">
+      <div className="text-center mb-6">
+        <h1 className="text-2xl font-bold text-gray-900 mb-1">
           Welcome back
         </h1>
-        <p className="text-xs text-gray-400">
-          Sign in to continue to your dashboard
+        <p className="text-sm text-gray-500">
+          Sign in to your account
         </p>
       </div>
 
       {/* Error Message */}
       {error && (
-        <div className="mb-4 p-3 bg-red-500/10 border border-red-500/30 rounded-lg text-red-400 text-xs flex items-center gap-2">
-          <span className="h-1.5 w-1.5 rounded-full bg-red-400 flex-shrink-0" />
+        <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-xl text-red-600 text-sm flex items-center gap-2">
+          <span className="h-1.5 w-1.5 rounded-full bg-red-500 flex-shrink-0" />
           {error}
         </div>
       )}
 
       {/* Form */}
-      <form action={handleSubmit} className="space-y-3.5">
+      <form action={handleSubmit} className="space-y-4">
         {/* Email */}
         <div>
           <label
             htmlFor="email"
-            className="block text-xs font-medium text-gray-400 mb-1.5"
+            className="block text-sm font-medium text-gray-700 mb-1.5"
           >
             Email
           </label>
@@ -70,7 +70,7 @@ function LoginForm() {
             autoComplete="email"
             required
             placeholder="you@example.com"
-            className="w-full px-3 py-2.5 text-sm bg-white/5 border border-white/10 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-brand-500/50 focus:ring-1 focus:ring-brand-500/25 transition-colors"
+            className="w-full px-4 py-3 text-sm bg-gray-50 border border-gray-200 rounded-xl text-gray-900 placeholder-gray-400 focus:outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 transition-all"
           />
         </div>
 
@@ -79,13 +79,13 @@ function LoginForm() {
           <div className="flex items-center justify-between mb-1.5">
             <label
               htmlFor="password"
-              className="block text-xs font-medium text-gray-400"
+              className="block text-sm font-medium text-gray-700"
             >
               Password
             </label>
             <Link
               href="/forgot-password"
-              className="text-xs text-brand-400 hover:text-brand-300 transition-colors"
+              className="text-sm text-brand-600 hover:text-brand-700 font-medium transition-colors"
             >
               Forgot?
             </Link>
@@ -98,17 +98,17 @@ function LoginForm() {
               autoComplete="current-password"
               required
               placeholder="••••••••"
-              className="w-full px-3 py-2.5 pr-10 text-sm bg-white/5 border border-white/10 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-brand-500/50 focus:ring-1 focus:ring-brand-500/25 transition-colors"
+              className="w-full px-4 py-3 pr-11 text-sm bg-gray-50 border border-gray-200 rounded-xl text-gray-900 placeholder-gray-400 focus:outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 transition-all"
             />
             <button
               type="button"
               onClick={() => setShowPassword(!showPassword)}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-300 transition-colors"
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
             >
               {showPassword ? (
-                <RiEyeOffLine className="w-4 h-4" />
+                <RiEyeOffLine className="w-5 h-5" />
               ) : (
-                <RiEyeLine className="w-4 h-4" />
+                <RiEyeLine className="w-5 h-5" />
               )}
             </button>
           </div>
@@ -118,28 +118,28 @@ function LoginForm() {
         <button
           type="submit"
           disabled={loading}
-          className="w-full flex items-center justify-center gap-2 px-4 py-2.5 mt-1 rounded-lg text-sm font-semibold text-white bg-gradient-to-r from-brand-500 to-brand-600 hover:from-brand-400 hover:to-brand-500 transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 shadow-lg shadow-brand-500/20"
+          className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl text-sm font-semibold text-white bg-gradient-to-r from-brand-500 to-brand-600 hover:from-brand-600 hover:to-brand-700 transition-all duration-200 hover:scale-[1.01] active:scale-[0.99] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 shadow-lg shadow-brand-500/25 hover:shadow-xl hover:shadow-brand-500/30"
         >
           {loading ? (
             <>
-              <RiLoader4Line className="w-4 h-4 animate-spin" />
+              <RiLoader4Line className="w-5 h-5 animate-spin" />
               <span>Signing in...</span>
             </>
           ) : (
             <>
               <span>Sign in</span>
-              <RiArrowRightLine className="w-4 h-4" />
+              <RiArrowRightLine className="w-5 h-5" />
             </>
           )}
         </button>
       </form>
 
       {/* Sign up link */}
-      <p className="text-center text-xs text-gray-500 mt-5">
+      <p className="text-center text-sm text-gray-500 mt-6">
         Don&apos;t have an account?{" "}
         <Link
           href="/signup"
-          className="text-brand-400 font-medium hover:text-brand-300 transition-colors"
+          className="text-brand-600 font-semibold hover:text-brand-700 transition-colors"
         >
           Sign up free
         </Link>
@@ -153,7 +153,7 @@ export default function LoginPage() {
     <Suspense
       fallback={
         <div className="w-full flex items-center justify-center p-6">
-          <RiLoader4Line className="w-6 h-6 animate-spin text-brand-400" />
+          <RiLoader4Line className="w-6 h-6 animate-spin text-brand-500" />
         </div>
       }
     >

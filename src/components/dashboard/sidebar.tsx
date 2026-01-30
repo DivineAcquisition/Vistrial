@@ -47,10 +47,14 @@ export function DashboardSidebar({ business }: SidebarProps) {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [copied, setCopied] = useState(false);
 
-  const bookingUrl = `book.vistrial.io/${business.slug}`;
+  // Use local path for development, subdomain in production
+  const isProduction = typeof window !== "undefined" && window.location.hostname.includes("vistrial.io");
+  const bookingUrl = isProduction 
+    ? `book.vistrial.io/${business.slug}`
+    : `${typeof window !== "undefined" ? window.location.origin : ""}/book/${business.slug}`;
 
   const copyLink = () => {
-    navigator.clipboard.writeText(`https://${bookingUrl}`);
+    navigator.clipboard.writeText(bookingUrl.startsWith("http") ? bookingUrl : `https://${bookingUrl}`);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
@@ -66,6 +70,7 @@ export function DashboardSidebar({ business }: SidebarProps) {
             width={36}
             height={36}
             className="rounded-lg"
+            unoptimized
           />
           <Image
             src="/VISTRIAL.png"
@@ -73,6 +78,7 @@ export function DashboardSidebar({ business }: SidebarProps) {
             width={100}
             height={28}
             className="h-7 w-auto"
+            unoptimized
           />
         </Link>
       </div>
@@ -95,7 +101,7 @@ export function DashboardSidebar({ business }: SidebarProps) {
           )}
           <div className="flex-1 min-w-0">
             <p className="font-medium text-gray-900 dark:text-gray-50 truncate">{business.name}</p>
-            <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{bookingUrl}</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400 truncate">/book/{business.slug}</p>
           </div>
         </div>
 
@@ -117,14 +123,13 @@ export function DashboardSidebar({ business }: SidebarProps) {
               </>
             )}
           </button>
-          <a
-            href={`https://${bookingUrl}`}
+          <Link
+            href={`/book/${business.slug}`}
             target="_blank"
-            rel="noopener noreferrer"
             className="flex items-center justify-center px-3 py-2 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg transition-colors"
           >
             <RiExternalLinkLine className="w-4 h-4" />
-          </a>
+          </Link>
         </div>
       </div>
 

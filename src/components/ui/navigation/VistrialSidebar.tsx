@@ -9,6 +9,7 @@ import {
   RiSettings4Line,
   RiMenuFoldLine,
   RiMenuUnfoldLine,
+  RiFileTextLine,
 } from "@remixicon/react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
@@ -17,6 +18,7 @@ import { DropdownUserProfile } from "./DropdownUserProfile"
 const navigation = [
   { name: "Dashboard", href: siteConfig.baseLinks.overview, icon: RiDashboardLine },
   { name: "Leads", href: siteConfig.baseLinks.details, icon: RiUserLine },
+  { name: "Quotes", href: "/quotes", icon: RiFileTextLine },
   { name: "Sequences", href: "/sequences", icon: RiFlashlightLine },
   { name: "Settings", href: siteConfig.baseLinks.settings.general, icon: RiSettings4Line },
 ] as const
@@ -35,6 +37,9 @@ export function VistrialSidebar({ isCollapsed, onToggle }: VistrialSidebarProps)
     }
     if (itemHref === "/sequences") {
       return pathname.startsWith("/sequences")
+    }
+    if (itemHref === "/quotes") {
+      return pathname.startsWith("/quotes")
     }
     return pathname === itemHref || pathname.startsWith(itemHref)
   }

@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useMemo } from "react"
 import { Button } from "@/components/Button"
 import { Input } from "@/components/Input"
 import { Label } from "@/components/Label"
@@ -51,7 +51,7 @@ export function AddLeadModal({ onClose, onSubmit, jobTypes = [] }: AddLeadModalP
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [sequences, setSequences] = useState<Sequence[]>([])
   
-  const supabase = createClient()
+  const supabase = useMemo(() => createClient(), [])
 
   // Fetch sequences
   useEffect(() => {
@@ -76,7 +76,7 @@ export function AddLeadModal({ onClose, onSubmit, jobTypes = [] }: AddLeadModalP
     }
 
     fetchSequences()
-  }, [])
+  }, [supabase])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()

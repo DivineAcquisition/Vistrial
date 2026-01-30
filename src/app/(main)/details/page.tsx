@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState, useCallback } from "react"
+import { useEffect, useState, useCallback, useMemo } from "react"
 import { Button } from "@/components/Button"
 import { Input } from "@/components/Input"
 import { Card } from "@/components/Card"
@@ -62,7 +62,7 @@ export default function LeadsPage() {
   const [page, setPage] = useState(1)
   const pageSize = 20
 
-  const supabase = createClient()
+  const supabase = useMemo(() => createClient(), [])
 
   const fetchLeads = useCallback(async () => {
     try {
@@ -164,7 +164,7 @@ export default function LeadsPage() {
     } finally {
       setIsLoading(false)
     }
-  }, [statusFilter, searchTerm, jobTypeFilter, page])
+  }, [supabase, statusFilter, searchTerm, jobTypeFilter, page])
 
   useEffect(() => {
     fetchLeads()

@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState, useCallback } from "react"
+import { useEffect, useState, useCallback, useMemo } from "react"
 import { createClient } from "@/lib/supabase/client"
 import type { DashboardStats } from "@/types/database"
 
@@ -14,7 +14,7 @@ export function useDashboardStats(options: UseDashboardStatsOptions = {}) {
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<Error | null>(null)
 
-  const supabase = createClient()
+  const supabase = useMemo(() => createClient(), [])
   const { startDate, endDate } = options
 
   const fetchStats = useCallback(async () => {
@@ -41,7 +41,7 @@ export function useDashboardStats(options: UseDashboardStatsOptions = {}) {
     } finally {
       setIsLoading(false)
     }
-  }, [startDate, endDate])
+  }, [supabase, startDate, endDate])
 
   useEffect(() => {
     fetchStats()

@@ -5,7 +5,7 @@
  * Customers view and accept quotes at q.vistrial.io/[token]
  */
 
-import { useState, useEffect, use } from "react"
+import { useState, useEffect, use, useCallback } from "react"
 import {
   RiCheckLine,
   RiCloseLine,
@@ -64,11 +64,7 @@ export default function QuoteViewPage({ params }: QuoteViewPageProps) {
   const [selectedDate, setSelectedDate] = useState("")
   const [notes, setNotes] = useState("")
 
-  useEffect(() => {
-    fetchQuote()
-  }, [token])
-
-  const fetchQuote = async () => {
+  const fetchQuote = useCallback(async () => {
     try {
       const response = await fetch(`/api/quotes/public/${token}`)
       if (response.ok) {
@@ -82,7 +78,11 @@ export default function QuoteViewPage({ params }: QuoteViewPageProps) {
     } finally {
       setLoading(false)
     }
-  }
+  }, [token])
+
+  useEffect(() => {
+    fetchQuote()
+  }, [fetchQuote])
 
   const handleAccept = async () => {
     if (!quote) return

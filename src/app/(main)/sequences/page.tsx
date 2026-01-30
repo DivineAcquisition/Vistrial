@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useCallback } from "react"
+import { useState, useEffect, useCallback, useMemo } from "react"
 import { Button } from "@/components/Button"
 import { Card } from "@/components/Card"
 import { Badge } from "@/components/Badge"
@@ -40,7 +40,7 @@ export default function SequencesPage() {
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
-  const supabase = createClient()
+  const supabase = useMemo(() => createClient(), [])
 
   const fetchSequences = useCallback(async () => {
     try {
@@ -123,8 +123,8 @@ export default function SequencesPage() {
       setSequences(sequencesWithStats)
 
       // Select first sequence by default for preview
-      if (sequencesWithStats.length > 0 && !selectedSequence) {
-        setSelectedSequence(sequencesWithStats[0])
+      if (sequencesWithStats.length > 0) {
+        setSelectedSequence((prev) => prev || sequencesWithStats[0])
       }
     } catch (err) {
       console.error("Sequences error:", err)
@@ -132,7 +132,7 @@ export default function SequencesPage() {
     } finally {
       setIsLoading(false)
     }
-  }, [])
+  }, [supabase])
 
   useEffect(() => {
     fetchSequences()

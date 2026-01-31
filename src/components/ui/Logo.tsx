@@ -1,5 +1,6 @@
 "use client"
 
+import Image from "next/image"
 import { cn } from "@/lib/utils/cn"
 
 interface LogoIconProps {
@@ -7,27 +8,24 @@ interface LogoIconProps {
   size?: number
 }
 
-// SVG Logo Icon (V shape)
+// Logo Icon using VISTRIAL.png
 export function LogoIcon({ className, size = 32 }: LogoIconProps) {
   return (
     <div 
       className={cn(
-        "flex items-center justify-center rounded-xl bg-gradient-to-br from-brand-400 to-brand-600 shadow-lg shadow-brand-500/25",
+        "flex items-center justify-center",
         className
       )}
       style={{ width: size, height: size }}
     >
-      <svg
-        viewBox="0 0 24 24"
-        fill="none"
-        className="text-white"
-        style={{ width: size * 0.6, height: size * 0.6 }}
-      >
-        <path
-          d="M12 4L4 20h4l4-10 4 10h4L12 4z"
-          fill="currentColor"
-        />
-      </svg>
+      <Image
+        src="/VISTRIAL.png"
+        alt="Vistrial"
+        width={size}
+        height={size}
+        className="object-contain"
+        priority
+      />
     </div>
   )
 }

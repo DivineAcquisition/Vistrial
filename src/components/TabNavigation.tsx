@@ -1,4 +1,4 @@
-// Tremor Raw TabNavigation [v0.0.1]
+// Vistrial TabNavigation [v0.0.1]
 
 import * as NavigationMenuPrimitives from "@radix-ui/react-navigation-menu"
 import React from "react"

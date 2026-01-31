@@ -1,4 +1,4 @@
-// Tremor Raw Checkbox [v0.0.2]
+// Vistrial Checkbox [v0.0.2]
 
 import * as CheckboxPrimitives from "@radix-ui/react-checkbox"
 import React from "react"

@@ -1,4 +1,4 @@
-// Tremor Raw ProgressBar [v0.0.1]
+// Vistrial ProgressBar [v0.0.1]
 
 import React from "react"
 import { tv, type VariantProps } from "tailwind-variants"

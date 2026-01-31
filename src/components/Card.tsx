@@ -1,4 +1,4 @@
-// Tremor Raw Card [v0.0.1]
+// Vistrial Card [v0.0.1]
 
 import { Slot } from "@radix-ui/react-slot"
 import React from "react"

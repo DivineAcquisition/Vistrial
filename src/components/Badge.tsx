@@ -1,4 +1,4 @@
-// Tremor Raw Badge [v0.0.0]
+// Vistrial Badge [v0.0.0]
 
 import React from "react"
 import { tv, type VariantProps } from "tailwind-variants"

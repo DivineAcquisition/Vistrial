@@ -1,4 +1,4 @@
-// Tremor Raw cx [v0.0.0]
+// Vistrial cx [v0.0.0]
 
 import clsx, { type ClassValue } from "clsx"
 import { twMerge } from "tailwind-merge"
@@ -7,7 +7,7 @@ export function cx(...args: ClassValue[]) {
   return twMerge(clsx(...args))
 }
 
-// Tremor Raw focusInput [v0.0.1]
+// Vistrial focusInput [v0.0.1]
 
 export const focusInput = [
   // base
@@ -18,7 +18,7 @@ export const focusInput = [
   "focus:border-indigo-500 focus:dark:border-indigo-700",
 ]
 
-// Tremor Raw focusRing [v0.0.1]
+// Vistrial focusRing [v0.0.1]
 
 export const focusRing = [
   // base
@@ -27,7 +27,7 @@ export const focusRing = [
   "outline-indigo-500 dark:outline-indigo-500",
 ]
 
-// Tremor Raw hasErrorInput [v0.0.1]
+// Vistrial hasErrorInput [v0.0.1]
 
 export const hasErrorInput = [
   // base

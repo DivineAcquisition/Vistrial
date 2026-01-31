@@ -1,17 +1,7 @@
 export const siteConfig = {
-  name: "Dashboard",
-  url: "https://dashboard.tremor.so",
-  description: "The only dashboard you will ever need.",
-  baseLinks: {
-    home: "/",
-    overview: "/overview",
-    details: "/details",
-    settings: {
-      general: "/settings/general",
-      billing: "/settings/billing",
-      users: "/settings/users",
-    },
-  },
+  name: "Vistrial",
+  url: "https://vistrial.com",
+  description: "A modern React component library for building beautiful interfaces.",
 }
 
 export type siteConfig = typeof siteConfig

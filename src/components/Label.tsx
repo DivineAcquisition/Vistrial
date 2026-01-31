@@ -1,4 +1,4 @@
-// Tremor Raw Label [v0.0.0]
+// Vistrial Label [v0.0.0]
 
 import * as LabelPrimitives from "@radix-ui/react-label"
 import * as React from "react"

@@ -1,4 +1,4 @@
-// Custom Select [v0.0.0]
+// Vistrial Select [v0.0.0]
 
 import * as SelectPrimitives from "@radix-ui/react-select"
 import { RiArrowDownSLine, RiArrowUpSLine, RiCheckLine } from "@remixicon/react"

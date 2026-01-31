@@ -1,12 +1,11 @@
 import { createBrowserClient } from "@supabase/ssr";
 
 export function createClient() {
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
-  if (!supabaseUrl || !supabaseAnonKey) {
-    // Return a minimal mock client for build time
-    const mockResponse = { data: null, error: { message: "Supabase not configured" } };
+  if (!url || !key) {
+    // Return a mock client for build time
     const mockChain = (): any => ({
       select: mockChain,
       insert: mockChain,
@@ -19,38 +18,25 @@ export function createClient() {
       gte: mockChain,
       lt: mockChain,
       lte: mockChain,
-      like: mockChain,
-      ilike: mockChain,
-      is: mockChain,
-      in: mockChain,
-      contains: mockChain,
-      containedBy: mockChain,
-      range: mockChain,
       order: mockChain,
       limit: mockChain,
-      single: async () => mockResponse,
-      maybeSingle: async () => mockResponse,
-      then: (resolve: (value: typeof mockResponse) => void) => Promise.resolve(mockResponse).then(resolve),
+      single: async () => ({ data: null, error: null }),
+      maybeSingle: async () => ({ data: null, error: null }),
     });
 
     return {
       auth: {
         getUser: async () => ({ data: { user: null }, error: null }),
         getSession: async () => ({ data: { session: null }, error: null }),
-        signUp: async () => ({ data: null, error: { message: "Supabase not configured" } }),
-        signInWithPassword: async () => ({ data: null, error: { message: "Supabase not configured" } }),
+        signUp: async () => ({ data: null, error: { message: "Not configured" } }),
+        signInWithPassword: async () => ({ data: null, error: { message: "Not configured" } }),
+        signInWithOAuth: async () => ({ data: null, error: { message: "Not configured" } }),
         signOut: async () => ({ error: null }),
         onAuthStateChange: () => ({ data: { subscription: { unsubscribe: () => {} } } }),
-        resetPasswordForEmail: async () => ({ error: null }),
-        updateUser: async () => ({ data: null, error: null }),
       },
       from: () => mockChain(),
-      rpc: async () => mockResponse,
-      channel: () => ({
-        on: () => ({ subscribe: () => ({ unsubscribe: () => {} }) }),
-      }),
     } as ReturnType<typeof createBrowserClient>;
   }
 
-  return createBrowserClient(supabaseUrl, supabaseAnonKey);
+  return createBrowserClient(url, key);
 }

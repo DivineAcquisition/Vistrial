@@ -1,19 +1,9 @@
 import { redirect } from "next/navigation";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { DashboardSidebar } from "@/components/dashboard/sidebar";
 import { DashboardHeader } from "@/components/dashboard/header";
 import { AnimatedBackground } from "@/components/ui/AnimatedBackground";
-
-interface Business {
-  id: string;
-  name: string;
-  slug: string;
-  logo_url?: string;
-  trade?: string;
-  phone?: string;
-  email?: string;
-  onboarding_completed?: boolean;
-}
 
 export default async function DashboardLayout({
   children,
@@ -31,91 +21,65 @@ export default async function DashboardLayout({
     redirect("/login");
   }
 
-  // Get user's business membership
-  let business: Business | null = null;
-
-  // 1. Try business_users first (new system)
-  const { data: membership } = await supabase
-    .from("business_users")
-    .select("role, businesses(*)")
-    .eq("user_id", user.id)
+  // Get user's business
+  let { data: business } = await supabase
+    .from("businesses")
+    .select("*")
+    .eq("owner_id", user.id)
     .maybeSingle();
 
-  if (membership?.businesses) {
-    const biz = membership.businesses as any;
-    business = {
-      id: biz.id,
-      name: biz.name || "My Business",
-      slug: biz.slug || "my-business",
-      logo_url: biz.logo_url,
-      trade: biz.trade,
-      phone: biz.phone,
-      email: biz.email,
-      onboarding_completed: biz.onboarding_completed,
-    };
-
-    // Redirect to onboarding if not completed
-    if (!biz.onboarding_completed) {
-      redirect("/onboarding");
-    }
-  }
-
-  // 2. Fallback: check businesses table directly (owner)
+  // If no business exists, create one automatically (NO redirect to onboarding)
   if (!business) {
-    const { data: ownedBusiness } = await supabase
+    const admin = createAdminClient();
+    const fullName =
+      user.user_metadata?.full_name ||
+      user.email?.split("@")[0] ||
+      "User";
+
+    const baseSlug = fullName
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-|-$/g, "")
+      .slice(0, 50);
+
+    // Ensure unique slug
+    let slug = baseSlug;
+    let counter = 1;
+    while (true) {
+      const { data: existing } = await admin
+        .from("businesses")
+        .select("id")
+        .eq("slug", slug)
+        .maybeSingle();
+      if (!existing) break;
+      slug = `${baseSlug}-${counter}`;
+      counter++;
+    }
+
+    // Create business
+    const { data: newBusiness } = await admin
       .from("businesses")
-      .select("*")
-      .eq("owner_id", user.id)
-      .maybeSingle();
+      .insert({
+        owner_id: user.id,
+        name: `${fullName}'s Business`,
+        slug,
+        email: user.email,
+        phone: user.user_metadata?.phone,
+        is_active: true,
+      })
+      .select()
+      .single();
 
-    if (ownedBusiness) {
-      business = {
-        id: ownedBusiness.id,
-        name: ownedBusiness.name || "My Business",
-        slug: ownedBusiness.slug || "my-business",
-        logo_url: ownedBusiness.logo_url,
-        trade: ownedBusiness.trade,
-        phone: ownedBusiness.phone,
-        email: ownedBusiness.email,
-        onboarding_completed: ownedBusiness.onboarding_completed,
-      };
-
-      if (!ownedBusiness.onboarding_completed) {
-        redirect("/onboarding");
-      }
-    }
+    business = newBusiness;
   }
 
-  // 3. Fallback: check profiles table (legacy)
-  if (!business) {
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("*")
-      .eq("id", user.id)
-      .maybeSingle();
-
-    if (profile) {
-      if (!profile.onboarding_completed) {
-        redirect("/onboarding");
-      }
-      
-      business = {
-        id: profile.id,
-        name: profile.business_name || "My Business",
-        slug: profile.business_slug || "my-business",
-        logo_url: profile.logo_url,
-        trade: profile.trade,
-        phone: profile.phone,
-        email: profile.email,
-        onboarding_completed: true,
-      };
-    }
-  }
-
-  // 4. No business found at all - redirect to onboarding
-  if (!business) {
-    redirect("/onboarding");
-  }
+  // Fallback business object if still null (shouldn't happen)
+  const businessData = business || {
+    id: user.id,
+    name: "My Business",
+    slug: "my-business",
+    email: user.email,
+  };
 
   return (
     <div className="min-h-screen bg-gray-950 relative overflow-hidden">
@@ -125,12 +89,12 @@ export default async function DashboardLayout({
       {/* Content wrapper */}
       <div className="relative z-10">
         {/* Sidebar */}
-        <DashboardSidebar business={business} />
+        <DashboardSidebar business={businessData} />
 
         {/* Main content */}
         <div className="lg:pl-64">
           {/* Header */}
-          <DashboardHeader user={user} business={business} />
+          <DashboardHeader user={user} business={businessData} />
 
           {/* Page content */}
           <main className="p-6">{children}</main>

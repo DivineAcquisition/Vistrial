@@ -55,7 +55,7 @@ export default async function QuotesPage() {
   }
 
   // Transform to match Quote type
-  const quotes: Quote[] = (quotesData || []).map((q: QuoteData) => ({
+  const quotes = (quotesData || []).map((q: QuoteData) => ({
     ...q,
     contact: q.leads
       ? {
@@ -66,7 +66,7 @@ export default async function QuotesPage() {
           email: q.leads.email || null,
         }
       : undefined,
-  }))
+  })) as Quote[]
 
   // Calculate stats
   const now = new Date()

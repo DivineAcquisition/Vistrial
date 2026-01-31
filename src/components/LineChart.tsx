@@ -29,7 +29,20 @@ import {
 import { useOnWindowResize } from "@/lib/useOnWindowResize"
 import { cx, percentageFormatter } from "@/lib/utils"
 import { Badge } from "./Badge"
-import { getBadgeType } from "./ui/overview/DashboardChartCard"
+
+// Badge type helper for chart tooltips
+export const getBadgeType = (value: number) => {
+  if (value > 0) {
+    return "success"
+  } else if (value < 0) {
+    if (value < -50) {
+      return "warning"
+    }
+    return "error"
+  } else {
+    return "neutral"
+  }
+}
 
 //#region Legend
 

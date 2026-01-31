@@ -203,7 +203,7 @@ export default function VerifyPage() {
         <button
           onClick={handleResend}
           disabled={resendCooldown > 0 || isResending}
-          className="font-medium text-indigo-600 hover:text-indigo-500 disabled:cursor-not-allowed disabled:text-gray-400 dark:text-indigo-400 dark:hover:text-indigo-300"
+          className="font-medium text-brand-600 hover:text-brand-500 disabled:cursor-not-allowed disabled:text-gray-400 dark:text-brand-400 dark:hover:text-brand-300"
         >
           {isResending ? "Sending..." : resendCooldown > 0 ? `Resend in ${resendCooldown}s` : "Resend"}
         </button>

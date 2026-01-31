@@ -12,7 +12,7 @@ export default function AuthLayout({
         <header className="border-b border-gray-200 bg-white px-4 py-4 dark:border-gray-800 dark:bg-gray-950">
           <div className="mx-auto max-w-screen-2xl">
             <div className="flex items-center gap-2">
-              <div className="flex h-8 w-8 items-center justify-center rounded-md bg-indigo-600 dark:bg-indigo-500">
+              <div className="flex h-8 w-8 items-center justify-center rounded-md bg-brand-600 dark:bg-brand-500">
                 <svg
                   className="h-4 w-4 text-white dark:text-gray-900"
                   fill="none"

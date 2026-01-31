@@ -13,9 +13,9 @@ export const focusInput = [
   // base
   "focus:ring-2",
   // ring color
-  "focus:ring-indigo-200 focus:dark:ring-indigo-700/30",
+  "focus:ring-brand-200 focus:dark:ring-brand-700/30",
   // border color
-  "focus:border-indigo-500 focus:dark:border-indigo-700",
+  "focus:border-brand-500 focus:dark:border-brand-700",
 ]
 
 // Tremor Raw focusRing [v0.0.1]
@@ -24,7 +24,7 @@ export const focusRing = [
   // base
   "outline outline-offset-2 outline-0 focus-visible:outline-2",
   // outline color
-  "outline-indigo-500 dark:outline-indigo-500",
+  "outline-brand-500 dark:outline-brand-500",
 ]
 
 // Tremor Raw hasErrorInput [v0.0.1]

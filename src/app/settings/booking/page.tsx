@@ -86,8 +86,8 @@ function SectionHeader({
 }) {
   return (
     <div className="flex items-start gap-3">
-      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-indigo-50 dark:bg-indigo-950">
-        <Icon className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
+      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-brand-50 dark:bg-brand-950">
+        <Icon className="h-5 w-5 text-brand-600 dark:text-brand-400" />
       </div>
       <div>
         <h2 className="font-semibold text-gray-900 dark:text-gray-50">

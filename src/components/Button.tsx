@@ -85,6 +85,20 @@ const buttonVariants = tv({
         "disabled:bg-red-300 disabled:text-white",
         "disabled:dark:bg-red-950 disabled:dark:text-red-400",
       ],
+      gradient: [
+        // border
+        "border-transparent",
+        // text color
+        "text-white",
+        // background gradient (light purple to dark purple)
+        "bg-gradient-to-r from-brand-400 to-brand-600",
+        // hover gradient
+        "hover:from-brand-500 hover:to-brand-700",
+        // shadow
+        "shadow-lg hover:shadow-xl",
+        // disabled
+        "disabled:from-brand-200 disabled:to-brand-400 disabled:text-white/70",
+      ],
     },
   },
   defaultVariants: {

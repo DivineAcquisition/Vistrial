@@ -1,4 +1,4 @@
-// Tremor Raw Tooltip [v0.0.1]
+// Vistrial Tooltip [v0.0.1]
 
 "use client"
 

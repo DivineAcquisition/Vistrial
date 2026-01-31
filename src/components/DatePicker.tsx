@@ -1,4 +1,4 @@
-// Tremor Date Picker [v1.0.5]
+// Vistrial Date Picker [v1.0.5]
 
 "use client"
 
@@ -601,7 +601,7 @@ const SingleDatePicker = ({
 
   return (
     <PopoverPrimitives.Root
-      tremor-id="tremor-raw"
+      data-vistrial="true"
       open={open}
       onOpenChange={onOpenChange}
     >
@@ -903,7 +903,7 @@ const RangeDatePicker = ({
 
   return (
     <PopoverPrimitives.Root
-      tremor-id="tremor-raw"
+      data-vistrial="true"
       open={open}
       onOpenChange={onOpenChange}
     >

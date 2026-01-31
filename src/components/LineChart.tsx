@@ -1,4 +1,4 @@
-// Tremor Raw LineChart [v0.0.0]
+// Vistrial LineChart [v0.0.0]
 
 "use client"
 

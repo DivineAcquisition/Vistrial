@@ -1,7 +1,7 @@
 export const siteConfig = {
-  name: "Dashboard",
-  url: "https://dashboard.tremor.so",
-  description: "The only dashboard you will ever need.",
+  name: "Vistrial",
+  url: "https://vistrial.com",
+  description: "Powerful analytics and insights for your business.",
   baseLinks: {
     home: "/",
     overview: "/overview",

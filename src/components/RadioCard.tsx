@@ -1,4 +1,4 @@
-// Tremor Raw Radio Card [v0.0.0]
+// Vistrial Radio Card [v0.0.0]
 
 import * as RadioGroupPrimitives from "@radix-ui/react-radio-group"
 import * as React from "react"

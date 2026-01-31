@@ -1,4 +1,4 @@
-// Tremor Raw Calendar [v0.0.4]
+// Vistrial Calendar [v0.0.4]
 
 "use client"
 

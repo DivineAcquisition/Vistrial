@@ -1,4 +1,4 @@
-// Tremor Raw Divider [v0.0.1]
+// Vistrial Divider [v0.0.1]
 
 import React from "react"
 

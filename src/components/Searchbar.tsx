@@ -1,4 +1,4 @@
-// Tremor Raw Input [v1.0.0]
+// Vistrial Searchbar [v1.0.0]
 
 import { RiSearchLine } from "@remixicon/react"
 import * as React from "react"

@@ -1,8 +1,6 @@
-# Tremor – Dashboard
+# Vistrial
 
-`Dashboard` is a SaaS application template from [Tremor](https://tremor.so). It's built
-using [`Tremor Raw`](https://raw.tremor.so/docs/getting-started/installation)
-and [Next.js](https://nextjs.org).
+Vistrial is a powerful analytics and insights platform built with [Next.js](https://nextjs.org) and modern React components.
 
 ## Getting started
 
@@ -20,31 +18,25 @@ pnpm run dev
 ```
 
 3. Visit [http://localhost:3000](http://localhost:3000) in your browser to view
-   the template.
+   the application.
 
-## Notes
+## Tech Stack
 
-This project uses
-[`next/font`](https://nextjs.org/docs/basic-features/font-optimization) to
-automatically optimize and load Inter, a custom Google Font.
+- [Next.js](https://nextjs.org/docs) - React framework
+- [Tailwind CSS](https://tailwindcss.com) - Utility-first CSS framework
+- [Radix UI](https://www.radix-ui.com) - Headless UI primitives
+- [Recharts](https://recharts.org) - Charts library
+- [TanStack Table](https://tanstack.com/table/latest) - Data table
 
-This project uses
-[`Tremor Raw`](https://raw.tremor.so/docs/getting-started/installation)
-components for the UI.
+## Features
+
+- Dashboard analytics with interactive charts
+- Date range filtering with period comparisons
+- Advanced data tables with filtering, sorting, and pagination
+- User management and workspace settings
+- Dark/Light theme support
+- Fully responsive design
 
 ## License
 
-This site template is a commercial product and is licensed under the
-[Tremor License](https://blocks.tremor.so/license).
-
-## Learn more
-
-For a deeper understanding of the technologies used in this template, check out
-the resources listed below:
-
-- [Tremor Raw](https://raw.tremor.so) - Tremor Raw documentation
-- [Tailwind CSS](https://tailwindcss.com) - A utility-first CSS framework
-- [Next.js](https://nextjs.org/docs) - Next.js documentation
-- [Radix UI](https://www.radix-ui.com) - Radix UI Website
-- [Recharts](https://recharts.org) - Recharts documentation and website
-- [Tanstack](https://tanstack.com/table/latest) - TanStack table documentation
+See [LICENSE.md](./LICENSE.md) for details.

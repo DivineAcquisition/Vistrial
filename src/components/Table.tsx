@@ -1,4 +1,4 @@
-// Tremor Raw Table [v0.0.2]
+// Vistrial Table [v0.0.2]
 
 import React from "react"
 

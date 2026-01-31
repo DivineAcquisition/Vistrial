@@ -30,11 +30,38 @@ const buttonVariants = tv({
         "hover:shadow-xl hover:shadow-brand-500/30",
         "hover:scale-[1.02] active:scale-[0.98]",
       ],
+      // Primary with 3D inner line effect
+      primary3d: [
+        // base
+        "border-transparent",
+        "text-white",
+        "bg-gradient-to-r from-brand-500 to-brand-600",
+        // 3D inner highlight effect
+        "before:absolute before:inset-[1px] before:rounded-[10px] before:border before:border-white/20 before:border-b-transparent before:border-r-transparent before:pointer-events-none",
+        // hover
+        "hover:from-brand-600 hover:to-brand-700",
+        // shadow & scale
+        "shadow-lg shadow-brand-500/25",
+        "hover:shadow-xl hover:shadow-brand-500/30",
+        "hover:scale-[1.02] active:scale-[0.98]",
+      ],
       secondary: [
         // base
         "border-gray-200",
         "text-gray-700",
         "bg-white",
+        // hover
+        "hover:bg-gray-50 hover:text-gray-900",
+        "hover:border-gray-300",
+      ],
+      // Secondary with 3D inner line effect
+      secondary3d: [
+        // base
+        "border-gray-200",
+        "text-gray-700",
+        "bg-white",
+        // 3D inner highlight effect
+        "before:absolute before:inset-[1px] before:rounded-[10px] before:border before:border-white/80 before:border-b-gray-100 before:border-r-gray-100 before:pointer-events-none",
         // hover
         "hover:bg-gray-50 hover:text-gray-900",
         "hover:border-gray-300",
@@ -66,8 +93,39 @@ const buttonVariants = tv({
         // shadow
         "shadow-lg shadow-red-500/25",
       ],
+      // Destructive with 3D effect
+      destructive3d: [
+        // base
+        "border-transparent",
+        "text-white",
+        "bg-gradient-to-r from-red-500 to-red-600",
+        // 3D inner highlight effect
+        "before:absolute before:inset-[1px] before:rounded-[10px] before:border before:border-white/20 before:border-b-transparent before:border-r-transparent before:pointer-events-none",
+        // hover
+        "hover:from-red-600 hover:to-red-700",
+        // shadow
+        "shadow-lg shadow-red-500/25",
+        "hover:shadow-xl hover:shadow-red-500/30",
+        "hover:scale-[1.02] active:scale-[0.98]",
+      ],
+      // Dark variant with 3D effect
+      dark3d: [
+        // base
+        "border-transparent",
+        "text-white",
+        "bg-gradient-to-r from-gray-800 to-gray-900",
+        // 3D inner highlight effect
+        "before:absolute before:inset-[1px] before:rounded-[10px] before:border before:border-white/10 before:border-b-transparent before:border-r-transparent before:pointer-events-none",
+        // hover
+        "hover:from-gray-700 hover:to-gray-800",
+        // shadow
+        "shadow-lg shadow-gray-900/25",
+        "hover:shadow-xl hover:shadow-gray-900/30",
+        "hover:scale-[1.02] active:scale-[0.98]",
+      ],
     },
     size: {
+      xs: "h-7 px-2.5 text-xs",
       sm: "h-8 px-3 text-sm",
       md: "h-10 px-4 text-sm",
       lg: "h-12 px-6 text-base",

@@ -4,6 +4,12 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { generateVerificationCode, sendVerificationEmail } from "@/lib/email/resend";
+
+// Declare global type for verification codes storage
+declare global {
+  var verificationCodes: Map<string, { code: string; expiresAt: Date; verified: boolean }> | undefined;
+}
 
 function generateSlug(businessName: string): string {
   return businessName
@@ -50,6 +56,7 @@ export async function signUp(formData: FormData) {
     options: {
       data: {
         full_name: fullName,
+        business_name: businessName,
       },
     },
   });
@@ -62,143 +69,68 @@ export async function signUp(formData: FormData) {
     return { error: "Failed to create user" };
   }
 
-  // 2. Generate unique slug
+  // 2. Generate and send verification code
+  const verificationCode = generateVerificationCode();
+  const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+
+  // Store the verification code
+  try {
+    await admin.from("verification_codes").upsert(
+      {
+        email,
+        code: verificationCode,
+        expires_at: expiresAt.toISOString(),
+        verified: false,
+        created_at: new Date().toISOString(),
+      },
+      { onConflict: "email" }
+    );
+  } catch (dbError) {
+    console.log("verification_codes table may not exist, using memory storage");
+    // Store in global memory as fallback
+    if (!global.verificationCodes) {
+      global.verificationCodes = new Map();
+    }
+    global.verificationCodes.set(email, {
+      code: verificationCode,
+      expiresAt,
+      verified: false,
+    });
+  }
+
+  // Send the verification email
+  const emailResult = await sendVerificationEmail(email, verificationCode, businessName);
+  if (!emailResult.success) {
+    console.log(`[DEV] Verification code for ${email}: ${verificationCode}`);
+  }
+
+  // 3. Generate unique slug
   const baseSlug = generateSlug(businessName);
   const slug = await ensureUniqueSlug(baseSlug);
 
-  // 3. Create business record (using admin to bypass RLS)
-  const { data: business, error: businessError } = await admin
-    .from("businesses")
-    .insert({
-      owner_id: authData.user.id,
-      name: businessName,
-      slug,
+  // 4. Create a profile record with pending verification status
+  const { error: profileError } = await admin
+    .from("profiles")
+    .upsert({
+      id: authData.user.id,
+      business_name: businessName,
+      business_slug: slug,
       email,
       phone,
-      is_active: true,
-      settings: {
-        timezone: "America/New_York",
-        currency: "USD",
-      },
-    })
-    .select()
-    .single();
+      onboarding_completed: false, // Not complete until email verified
+      email_verified: false,
+      full_name: fullName,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    }, { onConflict: "id" });
 
-  if (businessError) {
-    console.error("Business creation error:", businessError);
-    // Try creating a profile instead if businesses table doesn't exist
-    const { error: profileError } = await admin
-      .from("profiles")
-      .upsert({
-        id: authData.user.id,
-        business_name: businessName,
-        business_slug: slug,
-        email,
-        phone,
-        onboarding_completed: true,
-      });
-    
-    if (profileError) {
-      console.error("Profile creation error:", profileError);
-      // If both business and profile creation failed, send to onboarding
-      revalidatePath("/", "layout");
-      redirect("/onboarding");
-    }
-    
-    revalidatePath("/", "layout");
-    redirect("/dashboard");
+  if (profileError) {
+    console.error("Profile creation error:", profileError);
   }
 
-  // 4. Create default cost settings (if table exists)
-  try {
-    await admin.from("cost_settings").insert({
-      business_id: business.id,
-      hourly_labor_rate: 18,
-      cleaner_count_default: 1,
-      supply_cost_per_job: 5,
-      travel_cost_per_mile: 0.67,
-      average_travel_miles: 10,
-      target_profit_margin: 30,
-      minimum_profit_margin: 15,
-      minimum_job_price: 75,
-      sqft_per_hour: 500,
-    });
-  } catch (e) {
-    console.log("cost_settings table may not exist:", e);
-  }
-
-  // 5. Create default service types (if table exists)
-  try {
-    const defaultServices = [
-      {
-        business_id: business.id,
-        name: "Standard Cleaning",
-        description: "Regular maintenance cleaning for homes",
-        pricing_type: "variable",
-        price_1bed: 100,
-        price_2bed: 120,
-        price_3bed: 140,
-        price_4bed: 180,
-        price_5bed_plus: 220,
-        price_per_bathroom: 15,
-        estimated_duration_minutes: 120,
-        is_active: true,
-        display_order: 1,
-      },
-      {
-        business_id: business.id,
-        name: "Deep Cleaning",
-        description: "Thorough top-to-bottom cleaning",
-        pricing_type: "variable",
-        price_1bed: 150,
-        price_2bed: 180,
-        price_3bed: 220,
-        price_4bed: 280,
-        price_5bed_plus: 350,
-        price_per_bathroom: 25,
-        estimated_duration_minutes: 240,
-        is_active: true,
-        display_order: 2,
-      },
-      {
-        business_id: business.id,
-        name: "Move In/Out Cleaning",
-        description: "Complete cleaning for empty homes",
-        pricing_type: "variable",
-        price_1bed: 180,
-        price_2bed: 220,
-        price_3bed: 280,
-        price_4bed: 350,
-        price_5bed_plus: 450,
-        price_per_bathroom: 30,
-        estimated_duration_minutes: 300,
-        is_active: true,
-        display_order: 3,
-      },
-    ];
-
-    await admin.from("service_types").insert(defaultServices);
-  } catch (e) {
-    console.log("service_types table may not exist:", e);
-  }
-
-  // 6. Create default availability (Mon-Fri 8am-5pm) (if table exists)
-  try {
-    const defaultAvailability = [1, 2, 3, 4, 5].map((day) => ({
-      business_id: business.id,
-      day_of_week: day,
-      start_time: "08:00",
-      end_time: "17:00",
-      is_available: true,
-    }));
-
-    await admin.from("availability").insert(defaultAvailability);
-  } catch (e) {
-    console.log("availability table may not exist:", e);
-  }
-
+  // 5. Redirect to onboarding for email verification
   revalidatePath("/", "layout");
-  redirect("/dashboard");
+  redirect("/onboarding");
 }
 
 export async function signIn(formData: FormData) {

@@ -6,10 +6,11 @@ interface OnboardingPayload {
   businessName: string;
   ownerName: string;
   phone?: string;
+  email?: string;
   monthlyQuotes?: string;
   goals?: string[];
-  bookingPageEnabled?: boolean;
-  smsEnabled?: boolean;
+  primaryFeature?: string;
+  isVerified?: boolean;
 }
 
 export async function POST(request: NextRequest) {
@@ -106,6 +107,7 @@ export async function POST(request: NextRequest) {
           business_slug: slug,
           business_phone: payload.phone || null,
           onboarding_completed: true,
+          email_verified: payload.isVerified || true, // Mark as verified since they completed onboarding
           updated_at: new Date().toISOString(),
         })
         .eq("id", user.id)
@@ -116,11 +118,12 @@ export async function POST(request: NextRequest) {
         // Try insert if update fails (profile might not exist)
         const { error: insertError } = await supabase.from("profiles").insert({
           id: user.id,
-          email: user.email,
+          email: user.email || payload.email,
           business_name: payload.businessName,
           business_slug: slug,
           business_phone: payload.phone || null,
           onboarding_completed: true,
+          email_verified: payload.isVerified || true,
         });
 
         if (!insertError) {

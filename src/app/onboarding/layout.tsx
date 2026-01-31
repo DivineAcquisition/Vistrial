@@ -41,11 +41,12 @@ export default async function OnboardingLayout({
       // Check profiles table
       const { data: profile } = await supabase
         .from("profiles")
-        .select("id, onboarding_completed, business_name")
+        .select("id, onboarding_completed, business_name, email_verified")
         .eq("id", user.id)
         .single();
 
-      if (profile?.onboarding_completed || profile?.business_name) {
+      // Only consider onboarding complete if both email is verified and onboarding completed
+      if (profile?.onboarding_completed && profile?.email_verified && profile?.business_name) {
         hasCompletedOnboarding = true;
       }
     } catch {

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { Logo } from "@/components/ui/Logo";
 import { createClient } from "@/lib/supabase/client";
@@ -27,13 +27,16 @@ import {
   RiBarChart2Line,
   RiTimeLine,
   RiMoneyDollarCircleLine,
-  RiNotification3Line,
-  RiGlobalLine,
   RiRefreshLine,
+  RiMailLine,
+  RiShieldCheckLine,
 } from "@remixicon/react";
 import { cn } from "@/lib/utils/cn";
 
 interface OnboardingData {
+  email: string;
+  verificationCode: string;
+  isVerified: boolean;
   trade: string;
   businessName: string;
   ownerName: string;
@@ -96,12 +99,13 @@ const FEATURE_OPTIONS = [
 ];
 
 const STEPS = [
-  { id: 1, title: "Industry" },
-  { id: 2, title: "Business" },
-  { id: 3, title: "Volume" },
-  { id: 4, title: "Goals" },
-  { id: 5, title: "Features" },
-  { id: 6, title: "Complete" },
+  { id: 1, title: "Verify" },
+  { id: 2, title: "Industry" },
+  { id: 3, title: "Business" },
+  { id: 4, title: "Volume" },
+  { id: 5, title: "Goals" },
+  { id: 6, title: "Features" },
+  { id: 7, title: "Complete" },
 ];
 
 export default function OnboardingPage() {
@@ -109,9 +113,18 @@ export default function OnboardingPage() {
   const [currentStep, setCurrentStep] = useState(1);
   const [isLoading, setIsLoading] = useState(false);
   const [isCheckingAuth, setIsCheckingAuth] = useState(true);
+  const [isSendingCode, setIsSendingCode] = useState(false);
+  const [isVerifying, setIsVerifying] = useState(false);
   const [error, setError] = useState("");
+  const [codeSent, setCodeSent] = useState(false);
+  const [codeResendTimer, setCodeResendTimer] = useState(0);
   const [userId, setUserId] = useState<string | null>(null);
+  const codeInputRefs = useRef<(HTMLInputElement | null)[]>([]);
+  
   const [data, setData] = useState<OnboardingData>({
+    email: "",
+    verificationCode: "",
+    isVerified: false,
     trade: "",
     businessName: "",
     ownerName: "",
@@ -130,58 +143,157 @@ export default function OnboardingPage() {
       const supabase = createClient();
       const { data: { user } } = await supabase.auth.getUser();
       
-      if (!user) {
-        // Not authenticated, redirect to signup
-        router.push("/signup");
-        return;
+      if (user) {
+        setUserId(user.id);
+        setData(prev => ({ ...prev, email: user.email || "" }));
+        // If user is already authenticated, they might have verified email
+        // Check if email is verified
+        if (user.email_confirmed_at) {
+          setData(prev => ({ ...prev, isVerified: true }));
+          setCurrentStep(2); // Skip to industry selection
+        }
       }
       
-      setUserId(user.id);
       setIsCheckingAuth(false);
     }
     
     checkAuth();
-  }, [router]);
-
-  // Check if user came from failed attempt - restore data
-  useEffect(() => {
-    const saved = localStorage.getItem("onboarding_data");
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved);
-        setData(parsed);
-      } catch {
-        // Ignore
-      }
-    }
   }, []);
 
-  // Save data as user progresses
+  // Resend timer countdown
   useEffect(() => {
-    if (data.trade || data.businessName) {
-      localStorage.setItem("onboarding_data", JSON.stringify(data));
+    if (codeResendTimer > 0) {
+      const timer = setTimeout(() => setCodeResendTimer(codeResendTimer - 1), 1000);
+      return () => clearTimeout(timer);
     }
-  }, [data]);
+  }, [codeResendTimer]);
 
-  // Show loading while checking auth
-  if (isCheckingAuth) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-100 flex items-center justify-center">
-        <div className="text-center">
-          <RiLoader4Line className="w-8 h-8 animate-spin text-brand-500 mx-auto mb-4" />
-          <p className="text-gray-500">Loading...</p>
-        </div>
-      </div>
-    );
-  }
+  // Handle verification code input
+  const handleCodeInput = (index: number, value: string) => {
+    if (value.length > 1) {
+      value = value[0];
+    }
+    
+    if (!/^\d*$/.test(value)) return;
+    
+    const newCode = data.verificationCode.split("");
+    newCode[index] = value;
+    const updatedCode = newCode.join("").substring(0, 6);
+    
+    setData(prev => ({ ...prev, verificationCode: updatedCode }));
+    
+    // Auto-focus next input
+    if (value && index < 5) {
+      codeInputRefs.current[index + 1]?.focus();
+    }
+    
+    // Auto-verify when all 6 digits entered
+    if (updatedCode.length === 6) {
+      verifyCode(updatedCode);
+    }
+  };
+
+  const handleCodeKeyDown = (index: number, e: React.KeyboardEvent) => {
+    if (e.key === "Backspace" && !data.verificationCode[index] && index > 0) {
+      codeInputRefs.current[index - 1]?.focus();
+    }
+  };
+
+  const handleCodePaste = (e: React.ClipboardEvent) => {
+    e.preventDefault();
+    const pastedData = e.clipboardData.getData("text").replace(/\D/g, "").substring(0, 6);
+    setData(prev => ({ ...prev, verificationCode: pastedData }));
+    
+    if (pastedData.length === 6) {
+      verifyCode(pastedData);
+    } else {
+      codeInputRefs.current[pastedData.length]?.focus();
+    }
+  };
+
+  const sendVerificationCode = async () => {
+    if (!data.email) {
+      setError("Please enter your email address");
+      return;
+    }
+
+    setIsSendingCode(true);
+    setError("");
+
+    try {
+      const response = await fetch("/api/auth/send-code", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ 
+          email: data.email,
+          businessName: data.businessName || undefined,
+        }),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || "Failed to send code");
+      }
+
+      setCodeSent(true);
+      setCodeResendTimer(60); // 60 second cooldown
+      
+      // For development, show the code
+      if (result.devCode) {
+        console.log("DEV: Verification code:", result.devCode);
+      }
+    } catch (err) {
+      console.error("Send code error:", err);
+      setError(err instanceof Error ? err.message : "Failed to send verification code");
+    } finally {
+      setIsSendingCode(false);
+    }
+  };
+
+  const verifyCode = async (code: string) => {
+    setIsVerifying(true);
+    setError("");
+
+    try {
+      const response = await fetch("/api/auth/verify", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ 
+          email: data.email,
+          code,
+        }),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || "Invalid code");
+      }
+
+      setData(prev => ({ ...prev, isVerified: true }));
+      
+      // Move to next step after short delay to show success
+      setTimeout(() => {
+        setCurrentStep(2);
+      }, 500);
+    } catch (err) {
+      console.error("Verify error:", err);
+      setError(err instanceof Error ? err.message : "Invalid verification code");
+      setData(prev => ({ ...prev, verificationCode: "" }));
+    } finally {
+      setIsVerifying(false);
+    }
+  };
 
   const canProceed = () => {
     switch (currentStep) {
-      case 1: return data.trade !== "";
-      case 2: return data.businessName.trim() !== "" && data.ownerName.trim() !== "";
-      case 3: return data.monthlyQuotes !== "";
-      case 4: return data.goals.length > 0;
-      case 5: return data.primaryFeature !== "";
+      case 1: return data.isVerified;
+      case 2: return data.trade !== "";
+      case 3: return data.businessName.trim() !== "" && data.ownerName.trim() !== "";
+      case 4: return data.monthlyQuotes !== "";
+      case 5: return data.goals.length > 0;
+      case 6: return data.primaryFeature !== "";
       default: return true;
     }
   };
@@ -189,13 +301,12 @@ export default function OnboardingPage() {
   const handleNext = async () => {
     setError("");
     
-    if (currentStep === 5) {
+    if (currentStep === 6) {
       // Submit data before going to completion
       setIsLoading(true);
       let success = false;
       
       try {
-        // First try the API
         const response = await fetch("/api/onboarding/simple", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -227,15 +338,16 @@ export default function OnboardingPage() {
             .replace(/^-|-$/g, "")
             .substring(0, 50);
 
-          // Try to upsert profile directly from client
           const { error: profileError } = await supabase
             .from("profiles")
             .upsert({
               id: userId,
+              email: data.email,
               business_name: data.businessName,
               business_slug: slug,
               business_phone: data.phone || null,
               onboarding_completed: true,
+              email_verified: true,
               updated_at: new Date().toISOString(),
             }, { onConflict: "id" });
 
@@ -253,6 +365,7 @@ export default function OnboardingPage() {
       // Mark completion in localStorage
       localStorage.setItem("onboarding_completed", "true");
       localStorage.setItem("onboarding_user_id", userId || "");
+      localStorage.setItem("onboarding_email_verified", "true");
       localStorage.setItem("onboarding_business_name", data.businessName);
       localStorage.removeItem("onboarding_data");
       
@@ -261,18 +374,21 @@ export default function OnboardingPage() {
       }
       
       setIsLoading(false);
-      setCurrentStep(6);
+      setCurrentStep(7);
     } else {
       setCurrentStep((prev) => Math.min(prev + 1, totalSteps));
     }
   };
 
   const handleBack = () => {
+    // Don't go back past verification if verified
+    if (currentStep === 2 && data.isVerified) {
+      return;
+    }
     setCurrentStep((prev) => Math.max(prev - 1, 1));
   };
 
   const handleComplete = () => {
-    // Add a flag to indicate onboarding was just completed
     router.push("/dashboard?onboarding=complete");
   };
 
@@ -284,6 +400,18 @@ export default function OnboardingPage() {
         : [...prev.goals, goalId],
     }));
   };
+
+  // Show loading while checking auth
+  if (isCheckingAuth) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-100 flex items-center justify-center">
+        <div className="text-center">
+          <RiLoader4Line className="w-8 h-8 animate-spin text-brand-500 mx-auto mb-4" />
+          <p className="text-gray-500">Loading...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-100 relative overflow-hidden">
@@ -312,7 +440,7 @@ export default function OnboardingPage() {
                     className={cn(
                       "h-1.5 rounded-full transition-all duration-300",
                       step.id <= currentStep
-                        ? "w-6 md:w-8 bg-gradient-to-r from-brand-500 to-brand-600"
+                        ? "w-4 md:w-6 bg-gradient-to-r from-brand-500 to-brand-600"
                         : "w-1.5 md:w-2 bg-gray-200"
                     )}
                   />
@@ -325,8 +453,160 @@ export default function OnboardingPage() {
         {/* Main content */}
         <main className="flex-1 flex items-center justify-center px-4 md:px-6 py-6 md:py-12">
           <div className="w-full max-w-2xl">
-            {/* Step 1: Trade Selection */}
+            
+            {/* Step 1: Email Verification */}
             {currentStep === 1 && (
+              <div className="space-y-6 md:space-y-8 animate-fade-in">
+                <div className="text-center space-y-2">
+                  <div className="w-16 h-16 bg-gradient-to-br from-brand-400 to-brand-600 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg shadow-brand-500/30">
+                    {data.isVerified ? (
+                      <RiShieldCheckLine className="w-8 h-8 text-white" />
+                    ) : (
+                      <RiMailLine className="w-8 h-8 text-white" />
+                    )}
+                  </div>
+                  <h1 className="text-2xl md:text-3xl font-bold text-gray-900">
+                    {data.isVerified ? "Email Verified!" : "Verify your email"}
+                  </h1>
+                  <p className="text-sm md:text-base text-gray-500 max-w-md mx-auto">
+                    {data.isVerified 
+                      ? "Your email has been verified. Let's continue setting up your account."
+                      : "We'll send you a 6-digit code to verify your email address."
+                    }
+                  </p>
+                </div>
+
+                {!data.isVerified && (
+                  <div className="bg-white rounded-xl md:rounded-2xl border border-gray-200 shadow-xl shadow-gray-200/50 p-5 md:p-6 space-y-5">
+                    {!codeSent ? (
+                      <>
+                        {/* Email Input */}
+                        <div className="space-y-2">
+                          <label className="block text-xs md:text-sm font-medium text-gray-700">
+                            Email Address
+                          </label>
+                          <div className="relative">
+                            <RiMailLine className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                            <input
+                              type="email"
+                              value={data.email}
+                              onChange={(e) => setData(prev => ({ ...prev, email: e.target.value }))}
+                              placeholder="you@example.com"
+                              className="w-full pl-10 pr-4 py-3 text-sm bg-gray-50 border border-gray-200 rounded-xl text-gray-900 placeholder-gray-400 focus:outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 transition-all"
+                            />
+                          </div>
+                        </div>
+
+                        <button
+                          onClick={sendVerificationCode}
+                          disabled={!data.email || isSendingCode}
+                          className={cn(
+                            "relative w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl text-sm font-semibold transition-all",
+                            data.email && !isSendingCode
+                              ? "bg-gradient-to-r from-brand-500 to-brand-600 text-white hover:from-brand-600 hover:to-brand-700 shadow-lg shadow-brand-500/25 hover:shadow-xl hover:scale-[1.01] active:scale-[0.99]"
+                              : "bg-gray-200 text-gray-400 cursor-not-allowed"
+                          )}
+                        >
+                          {isSendingCode ? (
+                            <>
+                              <RiLoader4Line className="w-4 h-4 animate-spin" />
+                              Sending code...
+                            </>
+                          ) : (
+                            <>
+                              Send Verification Code
+                              <RiArrowRightLine className="w-4 h-4" />
+                            </>
+                          )}
+                        </button>
+                      </>
+                    ) : (
+                      <>
+                        {/* Code Input */}
+                        <div className="text-center space-y-4">
+                          <div className="flex items-center justify-center gap-2 text-sm text-gray-600">
+                            <RiMailLine className="w-4 h-4" />
+                            Code sent to <span className="font-medium">{data.email}</span>
+                          </div>
+
+                          {/* 6-digit code input */}
+                          <div className="flex justify-center gap-2 md:gap-3" onPaste={handleCodePaste}>
+                            {[0, 1, 2, 3, 4, 5].map((index) => (
+                              <input
+                                key={index}
+                                ref={(el) => { codeInputRefs.current[index] = el; }}
+                                type="text"
+                                inputMode="numeric"
+                                maxLength={1}
+                                value={data.verificationCode[index] || ""}
+                                onChange={(e) => handleCodeInput(index, e.target.value)}
+                                onKeyDown={(e) => handleCodeKeyDown(index, e)}
+                                className={cn(
+                                  "w-10 h-12 md:w-12 md:h-14 text-center text-lg md:text-xl font-bold rounded-lg border-2 transition-all focus:outline-none",
+                                  data.verificationCode[index]
+                                    ? "border-brand-500 bg-brand-50 text-brand-700"
+                                    : "border-gray-200 bg-gray-50 text-gray-900",
+                                  "focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20"
+                                )}
+                              />
+                            ))}
+                          </div>
+
+                          {isVerifying && (
+                            <div className="flex items-center justify-center gap-2 text-brand-600">
+                              <RiLoader4Line className="w-4 h-4 animate-spin" />
+                              Verifying...
+                            </div>
+                          )}
+
+                          {/* Resend code */}
+                          <div className="pt-4">
+                            {codeResendTimer > 0 ? (
+                              <p className="text-sm text-gray-500">
+                                Resend code in {codeResendTimer}s
+                              </p>
+                            ) : (
+                              <button
+                                onClick={sendVerificationCode}
+                                disabled={isSendingCode}
+                                className="text-sm text-brand-600 hover:text-brand-700 font-medium"
+                              >
+                                Didn&apos;t receive the code? Resend
+                              </button>
+                            )}
+                          </div>
+
+                          <button
+                            onClick={() => {
+                              setCodeSent(false);
+                              setData(prev => ({ ...prev, verificationCode: "" }));
+                            }}
+                            className="text-sm text-gray-500 hover:text-gray-700"
+                          >
+                            Change email address
+                          </button>
+                        </div>
+                      </>
+                    )}
+                  </div>
+                )}
+
+                {data.isVerified && (
+                  <div className="flex justify-center">
+                    <button
+                      onClick={() => setCurrentStep(2)}
+                      className="relative flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-brand-500 to-brand-600 text-white rounded-xl font-semibold hover:from-brand-600 hover:to-brand-700 shadow-lg shadow-brand-500/25 hover:shadow-xl hover:scale-[1.02] active:scale-[0.98] transition-all"
+                    >
+                      Continue Setup
+                      <RiArrowRightLine className="w-5 h-5" />
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Step 2: Trade Selection */}
+            {currentStep === 2 && (
               <div className="space-y-6 md:space-y-8 animate-fade-in">
                 <div className="text-center space-y-2">
                   <h1 className="text-2xl md:text-3xl font-bold text-gray-900">
@@ -380,8 +660,8 @@ export default function OnboardingPage() {
               </div>
             )}
 
-            {/* Step 2: Business Details */}
-            {currentStep === 2 && (
+            {/* Step 3: Business Details */}
+            {currentStep === 3 && (
               <div className="space-y-6 md:space-y-8 animate-fade-in">
                 <div className="text-center space-y-2">
                   <div className="flex items-center justify-center gap-2 mb-3 md:mb-4">
@@ -453,8 +733,8 @@ export default function OnboardingPage() {
               </div>
             )}
 
-            {/* Step 3: Volume */}
-            {currentStep === 3 && (
+            {/* Step 4: Volume */}
+            {currentStep === 4 && (
               <div className="space-y-6 md:space-y-8 animate-fade-in">
                 <div className="text-center space-y-2">
                   <h1 className="text-2xl md:text-3xl font-bold text-gray-900">
@@ -504,7 +784,6 @@ export default function OnboardingPage() {
                       <p className="text-sm font-medium text-amber-800">Did you know?</p>
                       <p className="text-xs md:text-sm text-amber-700">
                         Businesses that follow up on quotes within 24 hours close 60% more deals.
-                        Vistrial automates this for you.
                       </p>
                     </div>
                   </div>
@@ -512,15 +791,15 @@ export default function OnboardingPage() {
               </div>
             )}
 
-            {/* Step 4: Goals */}
-            {currentStep === 4 && (
+            {/* Step 5: Goals */}
+            {currentStep === 5 && (
               <div className="space-y-6 md:space-y-8 animate-fade-in">
                 <div className="text-center space-y-2">
                   <h1 className="text-2xl md:text-3xl font-bold text-gray-900">
                     What are your main goals?
                   </h1>
                   <p className="text-sm md:text-base text-gray-500">
-                    Select all that apply - we&apos;ll prioritize these features
+                    Select all that apply
                   </p>
                 </div>
 
@@ -562,24 +841,18 @@ export default function OnboardingPage() {
                     </button>
                   ))}
                 </div>
-
-                {data.goals.length > 0 && (
-                  <p className="text-center text-xs md:text-sm text-gray-500">
-                    {data.goals.length} goal{data.goals.length > 1 ? "s" : ""} selected
-                  </p>
-                )}
               </div>
             )}
 
-            {/* Step 5: Feature Selection */}
-            {currentStep === 5 && (
+            {/* Step 6: Feature Selection */}
+            {currentStep === 6 && (
               <div className="space-y-6 md:space-y-8 animate-fade-in">
                 <div className="text-center space-y-2">
                   <h1 className="text-2xl md:text-3xl font-bold text-gray-900">
                     What would you like to set up first?
                   </h1>
                   <p className="text-sm md:text-base text-gray-500">
-                    Don&apos;t worry, you can use all features - this just helps us guide you
+                    You can use all features - this helps us guide you
                   </p>
                 </div>
 
@@ -626,24 +899,11 @@ export default function OnboardingPage() {
                     </button>
                   ))}
                 </div>
-
-                <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
-                  <div className="flex gap-3">
-                    <RiNotification3Line className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
-                    <div>
-                      <p className="text-sm font-medium text-blue-800">Pro tip</p>
-                      <p className="text-xs md:text-sm text-blue-700">
-                        Most businesses start with the Booking Page to get customers 
-                        scheduling immediately, then add Quote Follow-ups to close more deals.
-                      </p>
-                    </div>
-                  </div>
-                </div>
               </div>
             )}
 
-            {/* Step 6: Complete */}
-            {currentStep === 6 && (
+            {/* Step 7: Complete */}
+            {currentStep === 7 && (
               <div className="space-y-6 md:space-y-8 animate-fade-in">
                 <div className="text-center space-y-3 md:space-y-4">
                   <div className="w-16 h-16 md:w-20 md:h-20 bg-gradient-to-br from-green-400 to-green-600 rounded-full flex items-center justify-center mx-auto shadow-xl shadow-green-500/30">
@@ -653,16 +913,23 @@ export default function OnboardingPage() {
                     Welcome to Vistrial, {data.ownerName.split(" ")[0]}!
                   </h1>
                   <p className="text-sm md:text-base text-gray-500 max-w-md mx-auto">
-                    Your account is ready. Here&apos;s what you can do next:
+                    Your account is verified and ready. Let&apos;s get started!
                   </p>
                 </div>
 
                 {/* Summary Card */}
                 <div className="bg-white rounded-xl md:rounded-2xl border border-gray-200 shadow-xl shadow-gray-200/50 overflow-hidden">
                   <div className="p-4 md:p-5 border-b border-gray-100 bg-gray-50">
-                    <p className="text-sm font-medium text-gray-700">Your Setup</p>
+                    <div className="flex items-center gap-2">
+                      <RiShieldCheckLine className="w-5 h-5 text-green-600" />
+                      <p className="text-sm font-medium text-gray-700">Account Verified</p>
+                    </div>
                   </div>
                   <div className="p-4 md:p-5 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-gray-500">Email</span>
+                      <span className="text-sm font-medium text-gray-900">{data.email}</span>
+                    </div>
                     <div className="flex items-center justify-between">
                       <span className="text-sm text-gray-500">Business</span>
                       <span className="text-sm font-medium text-gray-900">{data.businessName}</span>
@@ -670,37 +937,6 @@ export default function OnboardingPage() {
                     <div className="flex items-center justify-between">
                       <span className="text-sm text-gray-500">Industry</span>
                       <span className="text-sm font-medium text-gray-900">{selectedTrade?.label}</span>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm text-gray-500">First Feature</span>
-                      <span className="text-sm font-medium text-gray-900">
-                        {FEATURE_OPTIONS.find(f => f.id === data.primaryFeature)?.label}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Quick Start Actions */}
-                <div className="space-y-3">
-                  <p className="text-sm font-medium text-gray-700 text-center">Recommended first steps:</p>
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 md:gap-3">
-                    <div className="flex items-center gap-2 p-3 bg-brand-50 border border-brand-100 rounded-xl">
-                      <div className="w-8 h-8 bg-brand-500 rounded-lg flex items-center justify-center">
-                        <RiGlobalLine className="w-4 h-4 text-white" />
-                      </div>
-                      <span className="text-xs md:text-sm font-medium text-brand-700">Create booking page</span>
-                    </div>
-                    <div className="flex items-center gap-2 p-3 bg-green-50 border border-green-100 rounded-xl">
-                      <div className="w-8 h-8 bg-green-500 rounded-lg flex items-center justify-center">
-                        <RiFileTextLine className="w-4 h-4 text-white" />
-                      </div>
-                      <span className="text-xs md:text-sm font-medium text-green-700">Send first quote</span>
-                    </div>
-                    <div className="flex items-center gap-2 p-3 bg-blue-50 border border-blue-100 rounded-xl">
-                      <div className="w-8 h-8 bg-blue-500 rounded-lg flex items-center justify-center">
-                        <RiMessage2Line className="w-4 h-4 text-white" />
-                      </div>
-                      <span className="text-xs md:text-sm font-medium text-blue-700">Set up SMS</span>
                     </div>
                   </div>
                 </div>
@@ -723,15 +959,15 @@ export default function OnboardingPage() {
               </div>
             )}
 
-            {/* Navigation buttons (for steps 1-5) */}
-            {currentStep < 6 && (
+            {/* Navigation buttons (for steps 2-6) */}
+            {currentStep > 1 && currentStep < 7 && (
               <div className="mt-6 md:mt-8 flex items-center justify-between">
                 <button
                   onClick={handleBack}
-                  disabled={currentStep === 1}
+                  disabled={currentStep === 2 && data.isVerified}
                   className={cn(
                     "flex items-center gap-2 px-3 md:px-4 py-2 rounded-lg md:rounded-xl text-sm font-medium transition-all",
-                    currentStep === 1
+                    (currentStep === 2 && data.isVerified)
                       ? "text-gray-300 cursor-not-allowed"
                       : "text-gray-600 hover:text-gray-900 hover:bg-gray-100"
                   )}
@@ -755,7 +991,7 @@ export default function OnboardingPage() {
                       <RiLoader4Line className="w-4 h-4 animate-spin" />
                       Setting up...
                     </>
-                  ) : currentStep === 5 ? (
+                  ) : currentStep === 6 ? (
                     <>
                       Complete Setup
                       <RiCheckLine className="w-4 h-4" />

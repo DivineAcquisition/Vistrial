@@ -38,12 +38,15 @@ export default async function DashboardLayout({
       .single();
 
     if (profile) {
-      business = {
-        id: profile.id,
-        name: profile.business_name || "My Business",
-        slug: profile.business_slug || "my-business",
-        logo_url: profile.logo_url,
-      };
+      // Check if onboarding is completed or if they have a business name
+      if (profile.onboarding_completed || profile.business_name) {
+        business = {
+          id: profile.id,
+          name: profile.business_name || "My Business",
+          slug: profile.business_slug || "my-business",
+          logo_url: profile.logo_url,
+        };
+      }
     }
   }
 

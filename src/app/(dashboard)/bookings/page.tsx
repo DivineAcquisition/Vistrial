@@ -42,7 +42,7 @@ export default async function BookingsPage({ searchParams }: BookingsPageProps) 
       .eq("id", user.id)
       .single();
 
-    if (profile) {
+    if (profile && (profile.onboarding_completed || profile.business_name)) {
       business = {
         id: profile.id,
         name: profile.business_name || "My Business",

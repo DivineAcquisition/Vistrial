@@ -11,6 +11,7 @@ interface Business {
   logo_url?: string;
   trade?: string;
   phone?: string;
+  email?: string;
   onboarding_completed?: boolean;
 }
 
@@ -33,12 +34,12 @@ export default async function DashboardLayout({
   // Get user's business membership
   let business: Business | null = null;
 
-  // Try business_users first (new system)
+  // 1. Try business_users first (new system)
   const { data: membership } = await supabase
     .from("business_users")
     .select("role, businesses(*)")
     .eq("user_id", user.id)
-    .single();
+    .maybeSingle();
 
   if (membership?.businesses) {
     const biz = membership.businesses as any;
@@ -49,6 +50,7 @@ export default async function DashboardLayout({
       logo_url: biz.logo_url,
       trade: biz.trade,
       phone: biz.phone,
+      email: biz.email,
       onboarding_completed: biz.onboarding_completed,
     };
 
@@ -56,13 +58,15 @@ export default async function DashboardLayout({
     if (!biz.onboarding_completed) {
       redirect("/onboarding");
     }
-  } else {
-    // Fallback: check businesses table directly (owner)
+  }
+
+  // 2. Fallback: check businesses table directly (owner)
+  if (!business) {
     const { data: ownedBusiness } = await supabase
       .from("businesses")
       .select("*")
       .eq("owner_id", user.id)
-      .single();
+      .maybeSingle();
 
     if (ownedBusiness) {
       business = {
@@ -72,35 +76,45 @@ export default async function DashboardLayout({
         logo_url: ownedBusiness.logo_url,
         trade: ownedBusiness.trade,
         phone: ownedBusiness.phone,
+        email: ownedBusiness.email,
         onboarding_completed: ownedBusiness.onboarding_completed,
       };
 
       if (!ownedBusiness.onboarding_completed) {
         redirect("/onboarding");
       }
-    } else {
-      // Fallback: check profiles table (legacy)
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("*")
-        .eq("id", user.id)
-        .single();
+    }
+  }
 
-      if (profile?.onboarding_completed) {
-        business = {
-          id: profile.id,
-          name: profile.business_name || "My Business",
-          slug: profile.business_slug || "my-business",
-          logo_url: profile.logo_url,
-          trade: profile.trade,
-          phone: profile.phone,
-          onboarding_completed: true,
-        };
-      } else {
-        // No business found at all - redirect to onboarding
+  // 3. Fallback: check profiles table (legacy)
+  if (!business) {
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("*")
+      .eq("id", user.id)
+      .maybeSingle();
+
+    if (profile) {
+      if (!profile.onboarding_completed) {
         redirect("/onboarding");
       }
+      
+      business = {
+        id: profile.id,
+        name: profile.business_name || "My Business",
+        slug: profile.business_slug || "my-business",
+        logo_url: profile.logo_url,
+        trade: profile.trade,
+        phone: profile.phone,
+        email: profile.email,
+        onboarding_completed: true,
+      };
     }
+  }
+
+  // 4. No business found at all - redirect to onboarding
+  if (!business) {
+    redirect("/onboarding");
   }
 
   return (

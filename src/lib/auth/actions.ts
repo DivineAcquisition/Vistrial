@@ -45,6 +45,8 @@ export async function signUp(data: SignUpData) {
       data: {
         first_name: data.firstName,
         last_name: data.lastName,
+        business_name: data.businessName,
+        phone: data.phone,
       },
     },
   });
@@ -67,18 +69,18 @@ export async function signUp(data: SignUpData) {
     .replace(/^-|-$/g, "")
     .slice(0, 50);
 
-  // Check for uniqueness
+  // Check for uniqueness and append if needed
   const { data: existingBusiness } = await admin
     .from("businesses")
     .select("id")
     .eq("slug", slug)
-    .single();
+    .maybeSingle();
 
   if (existingBusiness) {
     slug = `${slug}-${Date.now().toString(36)}`;
   }
 
-  // 3. Create business
+  // 3. Create business record
   const { data: business, error: businessError } = await admin
     .from("businesses")
     .insert({
@@ -87,18 +89,33 @@ export async function signUp(data: SignUpData) {
       slug,
       email: data.email,
       phone: data.phone || null,
+      onboarding_completed: false,
+      onboarding_step: 1,
     })
     .select()
     .single();
 
   if (businessError) {
     console.error("Business creation error:", businessError);
-    // Don't fail - they can complete this in onboarding
-  }
-
-  // 4. Add owner as business_user (if business was created)
-  if (business) {
-    await admin.from("business_users").insert({
+    // Try to create in profiles table as fallback
+    const { error: profileError } = await admin
+      .from("profiles")
+      .upsert({
+        id: userId,
+        email: data.email,
+        full_name: `${data.firstName} ${data.lastName}`,
+        business_name: data.businessName,
+        business_slug: slug,
+        phone: data.phone || null,
+        onboarding_completed: false,
+      });
+    
+    if (profileError) {
+      console.error("Profile creation error:", profileError);
+    }
+  } else if (business) {
+    // 4. Add owner as business_user
+    const { error: memberError } = await admin.from("business_users").insert({
       business_id: business.id,
       user_id: userId,
       role: "owner",
@@ -106,8 +123,17 @@ export async function signUp(data: SignUpData) {
       joined_at: new Date().toISOString(),
     });
 
-    // 5. Seed default data
-    await seedBusinessDefaults(admin, business.id);
+    if (memberError) {
+      console.error("Business user creation error:", memberError);
+    }
+
+    // 5. Create user profile
+    await admin.from("user_profiles").upsert({
+      id: userId,
+      first_name: data.firstName,
+      last_name: data.lastName,
+      phone: data.phone || null,
+    });
   }
 
   revalidatePath("/", "layout");
@@ -219,7 +245,7 @@ export async function inviteTeamMember(data: InviteUserData) {
     .eq("business_id", data.businessId)
     .eq("email", data.email)
     .eq("status", "pending")
-    .single();
+    .maybeSingle();
 
   if (existingInvite) {
     return { error: "An invitation has already been sent to this email" };
@@ -315,7 +341,7 @@ export async function acceptInvitation(token: string, password?: string) {
     .select("id")
     .eq("business_id", invitation.business_id)
     .eq("user_id", userId)
-    .single();
+    .maybeSingle();
 
   if (existingMember) {
     return { error: "You are already a member of this team" };
@@ -498,6 +524,72 @@ export async function removeTeamMember(memberId: string) {
 // ONBOARDING
 // ============================================
 
+export async function createBusinessForUser(userId: string, data: {
+  businessName: string;
+  email: string;
+  firstName: string;
+  lastName: string;
+  phone?: string;
+}) {
+  const admin = createAdminClient();
+
+  // Generate unique slug
+  let slug = data.businessName
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-|-$/g, "")
+    .slice(0, 50);
+
+  const { data: existingBusiness } = await admin
+    .from("businesses")
+    .select("id")
+    .eq("slug", slug)
+    .maybeSingle();
+
+  if (existingBusiness) {
+    slug = `${slug}-${Date.now().toString(36)}`;
+  }
+
+  // Create business
+  const { data: business, error: businessError } = await admin
+    .from("businesses")
+    .insert({
+      owner_id: userId,
+      name: data.businessName,
+      slug,
+      email: data.email,
+      phone: data.phone || null,
+      onboarding_completed: false,
+      onboarding_step: 1,
+    })
+    .select()
+    .single();
+
+  if (businessError) {
+    console.error("Business creation error:", businessError);
+    return { error: businessError.message };
+  }
+
+  // Add owner as business_user
+  await admin.from("business_users").insert({
+    business_id: business.id,
+    user_id: userId,
+    role: "owner",
+    display_name: `${data.firstName} ${data.lastName}`,
+    joined_at: new Date().toISOString(),
+  });
+
+  // Create user profile
+  await admin.from("user_profiles").upsert({
+    id: userId,
+    first_name: data.firstName,
+    last_name: data.lastName,
+    phone: data.phone || null,
+  });
+
+  return { business };
+}
+
 export async function updateOnboardingStep(businessId: string, step: number) {
   const admin = createAdminClient();
 
@@ -509,112 +601,49 @@ export async function updateOnboardingStep(businessId: string, step: number) {
   return { success: true };
 }
 
-export async function completeOnboarding(businessId: string) {
+export async function updateBusinessOnboarding(businessId: string, data: {
+  trade?: string;
+  onboarding_step?: number;
+  onboarding_completed?: boolean;
+}) {
   const admin = createAdminClient();
 
-  await admin
+  const { error } = await admin
     .from("businesses")
-    .update({ 
-      onboarding_completed: true,
-      onboarding_step: 5,
+    .update({
+      ...data,
+      updated_at: new Date().toISOString(),
     })
     .eq("id", businessId);
+
+  if (error) {
+    console.error("Update business error:", error);
+    return { error: error.message };
+  }
 
   revalidatePath("/", "layout");
   return { success: true };
 }
 
-// ============================================
-// HELPER: Seed Business Defaults
-// ============================================
+export async function completeOnboarding(businessId: string) {
+  const admin = createAdminClient();
 
-async function seedBusinessDefaults(admin: ReturnType<typeof createAdminClient>, businessId: string) {
-  try {
-    // Create default service types
-    await admin.from("service_types").insert([
-      {
-        business_id: businessId,
-        name: "Standard Cleaning",
-        description: "Regular maintenance cleaning",
-        pricing_type: "variable",
-        price_1bed: 100,
-        price_2bed: 120,
-        price_3bed: 140,
-        price_4bed: 180,
-        price_5bed_plus: 220,
-        price_per_bathroom: 15,
-        estimated_duration_minutes: 120,
-        is_active: true,
-        display_order: 1,
-      },
-      {
-        business_id: businessId,
-        name: "Deep Cleaning",
-        description: "Thorough top-to-bottom cleaning",
-        pricing_type: "variable",
-        price_1bed: 150,
-        price_2bed: 180,
-        price_3bed: 220,
-        price_4bed: 280,
-        price_5bed_plus: 350,
-        price_per_bathroom: 25,
-        estimated_duration_minutes: 240,
-        is_active: true,
-        display_order: 2,
-      },
-      {
-        business_id: businessId,
-        name: "Move In/Out Cleaning",
-        description: "Complete cleaning for empty homes",
-        pricing_type: "variable",
-        price_1bed: 180,
-        price_2bed: 220,
-        price_3bed: 280,
-        price_4bed: 350,
-        price_5bed_plus: 450,
-        price_per_bathroom: 30,
-        estimated_duration_minutes: 300,
-        is_active: true,
-        display_order: 3,
-      },
-    ]);
-  } catch (e) {
-    console.log("service_types seeding skipped:", e);
+  const { error } = await admin
+    .from("businesses")
+    .update({ 
+      onboarding_completed: true,
+      onboarding_step: 5,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", businessId);
+
+  if (error) {
+    console.error("Complete onboarding error:", error);
+    return { error: error.message };
   }
 
-  try {
-    // Create default availability (Mon-Fri 8am-5pm)
-    const days = [1, 2, 3, 4, 5];
-    await admin.from("availability").insert(
-      days.map((day) => ({
-        business_id: businessId,
-        day_of_week: day,
-        start_time: "08:00",
-        end_time: "17:00",
-        is_available: true,
-      }))
-    );
-  } catch (e) {
-    console.log("availability seeding skipped:", e);
-  }
-
-  try {
-    // Create default cost settings
-    await admin.from("cost_settings").insert({
-      business_id: businessId,
-      hourly_labor_rate: 18,
-      cleaner_count_default: 1,
-      supply_cost_per_job: 5,
-      travel_cost_per_mile: 0.67,
-      average_travel_miles: 10,
-      target_profit_margin: 30,
-      minimum_profit_margin: 15,
-      minimum_job_price: 75,
-      sqft_per_hour: 500,
-    });
-  } catch (e) {
-    console.log("cost_settings seeding skipped:", e);
-  }
+  revalidatePath("/", "layout");
+  return { success: true };
 }
 
 // ============================================
@@ -638,7 +667,7 @@ export async function getCurrentBusiness() {
     .from("business_users")
     .select("business_id, role, businesses(*)")
     .eq("user_id", user.id)
-    .single();
+    .maybeSingle();
 
   if (membership?.businesses) {
     return {
@@ -652,11 +681,31 @@ export async function getCurrentBusiness() {
     .from("businesses")
     .select("*")
     .eq("owner_id", user.id)
-    .single();
+    .maybeSingle();
 
   if (ownedBusiness) {
     return {
       ...ownedBusiness,
+      role: "owner",
+    };
+  }
+
+  // Fallback: check profiles table
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("*")
+    .eq("id", user.id)
+    .maybeSingle();
+
+  if (profile) {
+    return {
+      id: profile.id,
+      name: profile.business_name,
+      slug: profile.business_slug,
+      email: profile.email,
+      phone: profile.phone,
+      trade: profile.trade,
+      onboarding_completed: profile.onboarding_completed,
       role: "owner",
     };
   }

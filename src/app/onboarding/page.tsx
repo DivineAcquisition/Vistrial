@@ -24,7 +24,6 @@ import {
   RiGlobalLine,
 } from "@remixicon/react";
 import { cn } from "@/lib/utils/cn";
-import { completeOnboarding, updateOnboardingStep } from "@/lib/auth/actions";
 
 interface Business {
   id: string;
@@ -32,6 +31,15 @@ interface Business {
   slug: string;
   onboarding_step: number;
   trade?: string;
+}
+
+interface UserData {
+  id: string;
+  email: string;
+  firstName: string;
+  lastName: string;
+  businessName: string;
+  phone?: string;
 }
 
 const TRADE_OPTIONS = [
@@ -61,6 +69,7 @@ export default function OnboardingPage() {
   const [isCheckingAuth, setIsCheckingAuth] = useState(true);
   const [error, setError] = useState("");
   const [business, setBusiness] = useState<Business | null>(null);
+  const [userData, setUserData] = useState<UserData | null>(null);
   
   const [data, setData] = useState({
     trade: "",
@@ -81,24 +90,84 @@ export default function OnboardingPage() {
           return;
         }
         
-        // Get user's business
+        // Store user data for potential business creation
+        const metadata = user.user_metadata || {};
+        setUserData({
+          id: user.id,
+          email: user.email || "",
+          firstName: metadata.first_name || "",
+          lastName: metadata.last_name || "",
+          businessName: metadata.business_name || "",
+          phone: metadata.phone || "",
+        });
+        
+        // Try to get business from business_users table
         const { data: membership } = await supabase
           .from("business_users")
           .select("business_id, businesses(*)")
           .eq("user_id", user.id)
-          .single();
+          .maybeSingle();
         
         if (membership?.businesses) {
-          const biz = membership.businesses as Business;
+          const biz = membership.businesses as unknown as Business;
           setBusiness(biz);
           setData(prev => ({
             ...prev,
             trade: biz.trade || "",
           }));
           setCurrentStep(biz.onboarding_step || 1);
+          
+          // If onboarding is already complete, redirect to dashboard
+          if ((membership.businesses as any).onboarding_completed) {
+            router.push("/dashboard");
+            return;
+          }
+        } else {
+          // Try direct business lookup as owner
+          const { data: ownedBusiness } = await supabase
+            .from("businesses")
+            .select("*")
+            .eq("owner_id", user.id)
+            .maybeSingle();
+          
+          if (ownedBusiness) {
+            setBusiness({
+              id: ownedBusiness.id,
+              name: ownedBusiness.name,
+              slug: ownedBusiness.slug,
+              onboarding_step: ownedBusiness.onboarding_step || 1,
+              trade: ownedBusiness.trade,
+            });
+            setData(prev => ({
+              ...prev,
+              trade: ownedBusiness.trade || "",
+            }));
+            setCurrentStep(ownedBusiness.onboarding_step || 1);
+            
+            if (ownedBusiness.onboarding_completed) {
+              router.push("/dashboard");
+              return;
+            }
+          } else {
+            // Try profiles table (legacy)
+            const { data: profile } = await supabase
+              .from("profiles")
+              .select("*")
+              .eq("id", user.id)
+              .maybeSingle();
+            
+            if (profile?.onboarding_completed) {
+              router.push("/dashboard");
+              return;
+            }
+            
+            // No business exists - we'll create one when they complete step 1
+            console.log("No business found - will create during onboarding");
+          }
         }
       } catch (err) {
         console.error("Auth check error:", err);
+        setError("Failed to load user data. Please try again.");
       }
       
       setIsCheckingAuth(false);
@@ -116,33 +185,118 @@ export default function OnboardingPage() {
     }
   };
 
+  const createBusinessIfNeeded = async () => {
+    if (business || !userData) return business;
+
+    // Generate slug
+    let slug = (userData.businessName || "my-business")
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-|-$/g, "")
+      .slice(0, 50);
+
+    // Check for uniqueness
+    const { data: existing } = await supabase
+      .from("businesses")
+      .select("id")
+      .eq("slug", slug)
+      .maybeSingle();
+
+    if (existing) {
+      slug = `${slug}-${Date.now().toString(36)}`;
+    }
+
+    // Create business
+    const { data: newBusiness, error: createError } = await supabase
+      .from("businesses")
+      .insert({
+        owner_id: userData.id,
+        name: userData.businessName || "My Business",
+        slug,
+        email: userData.email,
+        phone: userData.phone || null,
+        trade: data.trade,
+        onboarding_completed: false,
+        onboarding_step: 1,
+      })
+      .select()
+      .single();
+
+    if (createError) {
+      console.error("Business creation error:", createError);
+      // Try profiles table as fallback
+      await supabase.from("profiles").upsert({
+        id: userData.id,
+        email: userData.email,
+        full_name: `${userData.firstName} ${userData.lastName}`,
+        business_name: userData.businessName || "My Business",
+        business_slug: slug,
+        phone: userData.phone || null,
+        trade: data.trade,
+        onboarding_completed: false,
+      });
+      return null;
+    }
+
+    // Add user as business owner
+    await supabase.from("business_users").insert({
+      business_id: newBusiness.id,
+      user_id: userData.id,
+      role: "owner",
+      display_name: `${userData.firstName} ${userData.lastName}`,
+      joined_at: new Date().toISOString(),
+    });
+
+    setBusiness(newBusiness);
+    return newBusiness;
+  };
+
   const handleNext = async () => {
     setError("");
     setIsLoading(true);
 
-    if (!business) {
-      setError("No business found");
-      setIsLoading(false);
-      return;
-    }
+    try {
+      // Create business if it doesn't exist (on step 1 completion)
+      let currentBusiness = business;
+      if (currentStep === 1) {
+        currentBusiness = await createBusinessIfNeeded();
+      }
 
-    // Save trade selection
-    if (currentStep === 1 && data.trade) {
-      await supabase
-        .from("businesses")
-        .update({ trade: data.trade })
-        .eq("id", business.id);
-    }
+      if (currentBusiness) {
+        // Save trade selection and step progress
+        const updateData: Record<string, any> = {
+          onboarding_step: currentStep + 1,
+        };
+        
+        if (currentStep === 1 && data.trade) {
+          updateData.trade = data.trade;
+        }
+        
+        if (currentStep === totalSteps) {
+          updateData.onboarding_completed = true;
+        }
 
-    // Save step progress
-    const nextStep = currentStep + 1;
-    await updateOnboardingStep(business.id, nextStep);
-    
-    if (currentStep === totalSteps) {
-      await completeOnboarding(business.id);
-      router.push("/dashboard");
-    } else {
-      setCurrentStep(nextStep);
+        await supabase
+          .from("businesses")
+          .update(updateData)
+          .eq("id", currentBusiness.id);
+      } else if (userData && currentStep === totalSteps) {
+        // Fallback: save to profiles table
+        await supabase.from("profiles").upsert({
+          id: userData.id,
+          trade: data.trade,
+          onboarding_completed: true,
+        });
+      }
+
+      if (currentStep === totalSteps) {
+        router.push("/dashboard");
+      } else {
+        setCurrentStep(currentStep + 1);
+      }
+    } catch (err) {
+      console.error("Save error:", err);
+      setError("Failed to save progress. Please try again.");
     }
     
     setIsLoading(false);
@@ -155,9 +309,30 @@ export default function OnboardingPage() {
   };
 
   const handleSkip = async () => {
-    if (!business) return;
-    await completeOnboarding(business.id);
-    router.push("/dashboard");
+    setIsLoading(true);
+    try {
+      let currentBusiness = business;
+      if (!currentBusiness) {
+        currentBusiness = await createBusinessIfNeeded();
+      }
+
+      if (currentBusiness) {
+        await supabase
+          .from("businesses")
+          .update({ onboarding_completed: true })
+          .eq("id", currentBusiness.id);
+      } else if (userData) {
+        await supabase.from("profiles").upsert({
+          id: userData.id,
+          onboarding_completed: true,
+        });
+      }
+      router.push("/dashboard");
+    } catch (err) {
+      console.error("Skip error:", err);
+      setError("Failed to skip. Please try again.");
+      setIsLoading(false);
+    }
   };
 
   const addZipCode = () => {
@@ -194,10 +369,21 @@ export default function OnboardingPage() {
       {/* Header */}
       <header className="bg-white border-b">
         <div className="max-w-4xl mx-auto px-4 py-4 flex items-center justify-between">
-          <Logo size="sm" variant="dark" showText={true} />
+          <div className="flex items-center gap-3">
+            <Logo size="sm" variant="dark" showText={true} />
+            {(business?.name || userData?.businessName) && (
+              <span className="text-slate-400">|</span>
+            )}
+            {(business?.name || userData?.businessName) && (
+              <span className="font-medium text-slate-700">
+                {business?.name || userData?.businessName}
+              </span>
+            )}
+          </div>
           <button
             onClick={handleSkip}
-            className="text-sm text-slate-500 hover:text-slate-700"
+            disabled={isLoading}
+            className="text-sm text-slate-500 hover:text-slate-700 disabled:opacity-50"
           >
             Skip for now
           </button>
@@ -401,16 +587,16 @@ export default function OnboardingPage() {
                 </p>
               </div>
 
-              {business && (
+              {(business?.slug || userData?.businessName) && (
                 <div className="bg-slate-50 rounded-lg p-4 inline-block">
                   <p className="text-sm text-slate-500 mb-1">Your booking page</p>
                   <a
-                    href={`https://book.vistrial.io/${business.slug}`}
+                    href={`https://book.vistrial.io/${business?.slug || userData?.businessName?.toLowerCase().replace(/\s+/g, "-")}`}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="text-violet-600 font-medium hover:underline"
                   >
-                    book.vistrial.io/{business.slug}
+                    book.vistrial.io/{business?.slug || userData?.businessName?.toLowerCase().replace(/\s+/g, "-")}
                   </a>
                 </div>
               )}
@@ -429,7 +615,7 @@ export default function OnboardingPage() {
         <div className="flex justify-between mt-6">
           <button
             onClick={handleBack}
-            disabled={currentStep === 1}
+            disabled={currentStep === 1 || isLoading}
             className="flex items-center gap-2 px-6 py-3 border border-slate-200 rounded-lg font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <RiArrowLeftLine className="w-4 h-4" />

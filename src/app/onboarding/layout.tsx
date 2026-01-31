@@ -18,45 +18,20 @@ export default async function OnboardingLayout({
     redirect("/signup");
   }
 
-  // Check if user already has a business set up
-  let hasCompletedOnboarding = false;
-
+  // Check if user already completed onboarding
   try {
-    // Check businesses table
-    const { data: business } = await supabase
-      .from("businesses")
-      .select("id")
-      .eq("owner_id", user.id)
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("onboarding_completed")
+      .eq("id", user.id)
       .single();
 
-    if (business) {
-      hasCompletedOnboarding = true;
+    // If onboarding already completed, redirect to dashboard
+    if (profile?.onboarding_completed) {
+      redirect("/dashboard");
     }
   } catch {
-    // Table might not exist
-  }
-
-  if (!hasCompletedOnboarding) {
-    try {
-      // Check profiles table
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("id, onboarding_completed, business_name, email_verified")
-        .eq("id", user.id)
-        .single();
-
-      // Only consider onboarding complete if both email is verified and onboarding completed
-      if (profile?.onboarding_completed && profile?.email_verified && profile?.business_name) {
-        hasCompletedOnboarding = true;
-      }
-    } catch {
-      // Table might not exist
-    }
-  }
-
-  // If already completed onboarding, redirect to dashboard
-  if (hasCompletedOnboarding) {
-    redirect("/dashboard");
+    // Profile might not exist yet - that's fine, let them continue onboarding
   }
 
   return <>{children}</>;

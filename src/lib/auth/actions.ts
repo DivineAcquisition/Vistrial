@@ -3,45 +3,9 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
-import { createAdminClient } from "@/lib/supabase/admin";
-import { generateVerificationCode, sendVerificationEmail } from "@/lib/email/resend";
-
-// Declare global type for verification codes storage
-declare global {
-  var verificationCodes: Map<string, { code: string; expiresAt: Date; verified: boolean }> | undefined;
-}
-
-function generateSlug(businessName: string): string {
-  return businessName
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-|-$/g, "")
-    .slice(0, 50);
-}
-
-async function ensureUniqueSlug(baseSlug: string): Promise<string> {
-  const admin = createAdminClient();
-  let slug = baseSlug;
-  let counter = 1;
-
-  while (true) {
-    const { data } = await admin
-      .from("businesses")
-      .select("id")
-      .eq("slug", slug)
-      .single();
-
-    if (!data) break;
-    slug = `${baseSlug}-${counter}`;
-    counter++;
-  }
-
-  return slug;
-}
 
 export async function signUp(formData: FormData) {
   const supabase = await createServerSupabaseClient();
-  const admin = createAdminClient();
 
   const email = formData.get("email") as string;
   const password = formData.get("password") as string;
@@ -49,7 +13,7 @@ export async function signUp(formData: FormData) {
   const businessName = formData.get("businessName") as string;
   const phone = formData.get("phone") as string;
 
-  // 1. Create auth user
+  // Create auth user with metadata
   const { data: authData, error: authError } = await supabase.auth.signUp({
     email,
     password,
@@ -57,11 +21,13 @@ export async function signUp(formData: FormData) {
       data: {
         full_name: fullName,
         business_name: businessName,
+        phone: phone,
       },
     },
   });
 
   if (authError) {
+    console.error("Auth signup error:", authError);
     return { error: authError.message };
   }
 
@@ -69,66 +35,32 @@ export async function signUp(formData: FormData) {
     return { error: "Failed to create user" };
   }
 
-  // 2. Generate and send verification code
-  const verificationCode = generateVerificationCode();
-  const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+  // Create profile record
+  const slug = businessName
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-|-$/g, "")
+    .slice(0, 50);
 
-  // Store the verification code
-  try {
-    await admin.from("verification_codes").upsert(
-      {
-        email,
-        code: verificationCode,
-        expires_at: expiresAt.toISOString(),
-        verified: false,
-        created_at: new Date().toISOString(),
-      },
-      { onConflict: "email" }
-    );
-  } catch (dbError) {
-    console.log("verification_codes table may not exist, using memory storage");
-    // Store in global memory as fallback
-    if (!global.verificationCodes) {
-      global.verificationCodes = new Map();
-    }
-    global.verificationCodes.set(email, {
-      code: verificationCode,
-      expiresAt,
-      verified: false,
-    });
-  }
-
-  // Send the verification email
-  const emailResult = await sendVerificationEmail(email, verificationCode, businessName);
-  if (!emailResult.success) {
-    console.log(`[DEV] Verification code for ${email}: ${verificationCode}`);
-  }
-
-  // 3. Generate unique slug
-  const baseSlug = generateSlug(businessName);
-  const slug = await ensureUniqueSlug(baseSlug);
-
-  // 4. Create a profile record with pending verification status
-  const { error: profileError } = await admin
+  const { error: profileError } = await supabase
     .from("profiles")
-    .upsert({
+    .insert({
       id: authData.user.id,
+      email: email,
+      full_name: fullName,
       business_name: businessName,
       business_slug: slug,
-      email,
-      phone,
-      onboarding_completed: false, // Not complete until email verified
-      email_verified: false,
-      full_name: fullName,
+      phone: phone,
+      onboarding_completed: false,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
-    }, { onConflict: "id" });
+    });
 
   if (profileError) {
     console.error("Profile creation error:", profileError);
+    // Don't fail signup if profile creation fails - we can handle this in onboarding
   }
 
-  // 5. Redirect to onboarding for email verification
   revalidatePath("/", "layout");
   redirect("/onboarding");
 }
@@ -146,6 +78,7 @@ export async function signIn(formData: FormData) {
   });
 
   if (error) {
+    console.error("Auth signin error:", error);
     return { error: error.message };
   }
 

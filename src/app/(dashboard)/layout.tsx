@@ -11,6 +11,7 @@ export default async function DashboardLayout({
 }) {
   const supabase = await createServerSupabaseClient();
 
+  // Check authentication
   const {
     data: { user },
   } = await supabase.auth.getUser();
@@ -19,69 +20,34 @@ export default async function DashboardLayout({
     redirect("/login");
   }
 
-  // Try businesses table first
-  let business = null;
-  
+  // Get user's profile
+  let profile = null;
   try {
-    const { data: businessData } = await supabase
-      .from("businesses")
+    const { data } = await supabase
+      .from("profiles")
       .select("*")
-      .eq("owner_id", user.id)
+      .eq("id", user.id)
       .single();
-
-    if (businessData) {
-      business = businessData;
-    }
+    
+    profile = data;
   } catch {
-    // Business table might not exist, continue to profile check
+    // Profile might not exist
   }
 
-  if (!business) {
-    // Fall back to profiles table for legacy support
-    try {
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("*")
-        .eq("id", user.id)
-        .single();
-
-      if (profile) {
-        // Check if onboarding is completed or if they have a business name
-        if (profile.onboarding_completed || profile.business_name) {
-          business = {
-            id: profile.id,
-            name: profile.business_name || "My Business",
-            slug: profile.business_slug || "my-business",
-            logo_url: profile.logo_url,
-          };
-        }
-      }
-    } catch {
-      // Profile table might not exist or other error
-    }
+  // Check if onboarding is completed
+  if (!profile?.onboarding_completed) {
+    redirect("/onboarding");
   }
 
-  // Last resort - create a default business object if user exists
-  // This prevents looping when tables don't exist or have issues
-  if (!business) {
-    // For new users (created in last 30 seconds), redirect to onboarding
-    // This gives a small window for legitimate new signups
-    const userCreatedAt = new Date(user.created_at || Date.now());
-    const thirtySecondsAgo = new Date(Date.now() - 30 * 1000);
-    
-    if (userCreatedAt > thirtySecondsAgo) {
-      redirect("/onboarding");
-    }
-    
-    // For older users without business records, create a fallback
-    // This handles edge cases where DB writes failed but user completed onboarding
-    business = {
-      id: user.id,
-      name: user.email?.split("@")[0] || "My Business",
-      slug: "my-business",
-      logo_url: null,
-    };
-  }
+  // Build business object from profile
+  const business = {
+    id: profile.id,
+    name: profile.business_name || "My Business",
+    slug: profile.business_slug || "my-business",
+    logo_url: profile.logo_url || null,
+    trade: profile.trade,
+    phone: profile.phone,
+  };
 
   return (
     <div className="min-h-screen bg-gray-950 relative overflow-hidden">

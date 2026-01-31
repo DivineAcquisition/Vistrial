@@ -4,15 +4,15 @@ export function createClient() {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
-  // During build/SSR, return a mock client if credentials are not available
   if (!supabaseUrl || !supabaseAnonKey) {
     // Return a minimal mock client for build time
     const mockResponse = { data: null, error: { message: "Supabase not configured" } };
-    const mockChain = () => ({
+    const mockChain = (): any => ({
       select: mockChain,
       insert: mockChain,
       update: mockChain,
       delete: mockChain,
+      upsert: mockChain,
       eq: mockChain,
       neq: mockChain,
       gt: mockChain,
@@ -41,8 +41,11 @@ export function createClient() {
         signInWithPassword: async () => ({ data: null, error: { message: "Supabase not configured" } }),
         signOut: async () => ({ error: null }),
         onAuthStateChange: () => ({ data: { subscription: { unsubscribe: () => {} } } }),
+        resetPasswordForEmail: async () => ({ error: null }),
+        updateUser: async () => ({ data: null, error: null }),
       },
       from: () => mockChain(),
+      rpc: async () => mockResponse,
       channel: () => ({
         on: () => ({ subscribe: () => ({ unsubscribe: () => {} }) }),
       }),

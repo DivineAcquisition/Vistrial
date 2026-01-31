@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
-import { createAdminClient } from "@/lib/supabase/server"
+import { createAdminClient } from "@/lib/supabase/admin"
 import { sendSMS } from "@/lib/twilio/send-sms"
 import { processTemplate, getTemplateVariables } from "@/lib/constants/template-variables"
 import { checkSendCompliance } from "@/lib/sms/compliance"

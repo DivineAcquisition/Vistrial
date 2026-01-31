@@ -6,17 +6,35 @@ import {
   RiEyeLine,
   RiEyeOffLine,
   RiLoader4Line,
-  RiArrowRightLine,
+  RiUserLine,
+  RiBuilding2Line,
+  RiMailLine,
+  RiLockLine,
+  RiPhoneLine,
   RiCheckLine,
 } from "@remixicon/react";
 import { signUp } from "@/lib/auth/actions";
 
-export default function SignupPage() {
+export default function SignUpPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  async function handleSubmit(formData: FormData) {
+  const [formData, setFormData] = useState({
+    firstName: "",
+    lastName: "",
+    businessName: "",
+    email: "",
+    phone: "",
+    password: "",
+  });
+
+  const updateField = (field: string, value: string) => {
+    setFormData((prev) => ({ ...prev, [field]: value }));
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
     setLoading(true);
     setError("");
 
@@ -26,171 +44,192 @@ export default function SignupPage() {
       setError(result.error);
       setLoading(false);
     }
-  }
+  };
+
+  const isValid =
+    formData.firstName &&
+    formData.lastName &&
+    formData.businessName &&
+    formData.email &&
+    formData.password.length >= 8;
 
   return (
-    <div className="w-full">
-      {/* Header */}
-      <div className="text-center mb-4 md:mb-6">
-        <h1 className="text-xl md:text-2xl font-bold text-gray-900 mb-1">
-          Create account
-        </h1>
-        <p className="text-xs md:text-sm text-gray-500">
-          Start your free trial today
+    <div className="w-full max-w-md">
+      <div className="bg-white rounded-2xl shadow-xl border p-8">
+        {/* Header */}
+        <div className="text-center mb-8">
+          <h1 className="text-2xl font-bold text-slate-900">Create your account</h1>
+          <p className="text-slate-500 mt-1">Start your 14-day free trial</p>
+        </div>
+
+        {/* Error */}
+        {error && (
+          <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg text-red-600 text-sm">
+            {error}
+          </div>
+        )}
+
+        {/* Form */}
+        <form onSubmit={handleSubmit} className="space-y-4">
+          {/* Name Row */}
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">
+                First name
+              </label>
+              <div className="relative">
+                <RiUserLine className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+                <input
+                  type="text"
+                  value={formData.firstName}
+                  onChange={(e) => updateField("firstName", e.target.value)}
+                  placeholder="John"
+                  required
+                  className="w-full pl-10 pr-4 py-3 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent text-slate-900"
+                />
+              </div>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">
+                Last name
+              </label>
+              <input
+                type="text"
+                value={formData.lastName}
+                onChange={(e) => updateField("lastName", e.target.value)}
+                placeholder="Smith"
+                required
+                className="w-full px-4 py-3 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent text-slate-900"
+              />
+            </div>
+          </div>
+
+          {/* Business Name */}
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-1">
+              Business name
+            </label>
+            <div className="relative">
+              <RiBuilding2Line className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+              <input
+                type="text"
+                value={formData.businessName}
+                onChange={(e) => updateField("businessName", e.target.value)}
+                placeholder="Sparkle Clean Co"
+                required
+                className="w-full pl-10 pr-4 py-3 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent text-slate-900"
+              />
+            </div>
+            {formData.businessName && (
+              <p className="text-xs text-slate-500 mt-1">
+                Your booking link: book.vistrial.io/
+                {formData.businessName.toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, "")}
+              </p>
+            )}
+          </div>
+
+          {/* Email */}
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-1">
+              Email
+            </label>
+            <div className="relative">
+              <RiMailLine className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+              <input
+                type="email"
+                value={formData.email}
+                onChange={(e) => updateField("email", e.target.value)}
+                placeholder="john@sparkleclean.com"
+                required
+                className="w-full pl-10 pr-4 py-3 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent text-slate-900"
+              />
+            </div>
+          </div>
+
+          {/* Phone */}
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-1">
+              Phone <span className="text-slate-400">(optional)</span>
+            </label>
+            <div className="relative">
+              <RiPhoneLine className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+              <input
+                type="tel"
+                value={formData.phone}
+                onChange={(e) => updateField("phone", e.target.value)}
+                placeholder="(555) 123-4567"
+                className="w-full pl-10 pr-4 py-3 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent text-slate-900"
+              />
+            </div>
+          </div>
+
+          {/* Password */}
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-1">
+              Password
+            </label>
+            <div className="relative">
+              <RiLockLine className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+              <input
+                type={showPassword ? "text" : "password"}
+                value={formData.password}
+                onChange={(e) => updateField("password", e.target.value)}
+                placeholder="••••••••"
+                required
+                minLength={8}
+                className="w-full pl-10 pr-12 py-3 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent text-slate-900"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+              >
+                {showPassword ? <RiEyeOffLine className="w-5 h-5" /> : <RiEyeLine className="w-5 h-5" />}
+              </button>
+            </div>
+            <p className="text-xs text-slate-500 mt-1">At least 8 characters</p>
+          </div>
+
+          {/* Submit */}
+          <button
+            type="submit"
+            disabled={loading || !isValid}
+            className="w-full bg-violet-600 text-white py-3 rounded-lg font-semibold hover:bg-violet-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2"
+          >
+            {loading ? (
+              <>
+                <RiLoader4Line className="w-5 h-5 animate-spin" />
+                Creating account...
+              </>
+            ) : (
+              "Create account"
+            )}
+          </button>
+        </form>
+
+        {/* Features */}
+        <div className="mt-6 pt-6 border-t">
+          <p className="text-xs text-slate-500 mb-3 text-center">Includes:</p>
+          <div className="grid grid-cols-2 gap-2">
+            {["Booking page", "Customer portal", "SMS notifications", "First 10 members free"].map(
+              (feature) => (
+                <div key={feature} className="flex items-center gap-2 text-sm text-slate-600">
+                  <RiCheckLine className="w-4 h-4 text-green-500 flex-shrink-0" />
+                  {feature}
+                </div>
+              )
+            )}
+          </div>
+        </div>
+
+        {/* Sign in link */}
+        <p className="text-center text-slate-600 mt-6">
+          Already have an account?{" "}
+          <Link href="/login" className="text-violet-600 font-semibold hover:text-violet-700">
+            Sign in
+          </Link>
         </p>
       </div>
-
-      {/* Error Message */}
-      {error && (
-        <div className="mb-3 md:mb-4 p-2.5 md:p-3 bg-red-50 border border-red-200 rounded-lg md:rounded-xl text-red-600 text-xs md:text-sm flex items-center gap-2">
-          <span className="h-1.5 w-1.5 rounded-full bg-red-500 flex-shrink-0" />
-          {error}
-        </div>
-      )}
-
-      {/* Form */}
-      <form action={handleSubmit} className="space-y-2.5 md:space-y-3.5">
-        {/* Full Name */}
-        <div>
-          <label htmlFor="fullName" className="block text-xs md:text-sm font-medium text-gray-700 mb-1 md:mb-1.5">
-            Your name
-          </label>
-          <input
-            id="fullName"
-            name="fullName"
-            type="text"
-            autoComplete="name"
-            required
-            placeholder="John Smith"
-            className="w-full px-3 md:px-4 py-2.5 md:py-3 text-sm bg-gray-50 border border-gray-200 rounded-lg md:rounded-xl text-gray-900 placeholder-gray-400 focus:outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 transition-all"
-          />
-        </div>
-
-        {/* Business Name */}
-        <div>
-          <label htmlFor="businessName" className="block text-xs md:text-sm font-medium text-gray-700 mb-1 md:mb-1.5">
-            Business name
-          </label>
-          <input
-            id="businessName"
-            name="businessName"
-            type="text"
-            required
-            placeholder="Sparkle Clean Co"
-            className="w-full px-3 md:px-4 py-2.5 md:py-3 text-sm bg-gray-50 border border-gray-200 rounded-lg md:rounded-xl text-gray-900 placeholder-gray-400 focus:outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 transition-all"
-          />
-        </div>
-
-        {/* Phone */}
-        <div>
-          <label htmlFor="phone" className="block text-xs md:text-sm font-medium text-gray-700 mb-1 md:mb-1.5">
-            Phone
-          </label>
-          <input
-            id="phone"
-            name="phone"
-            type="tel"
-            autoComplete="tel"
-            required
-            placeholder="(555) 123-4567"
-            className="w-full px-3 md:px-4 py-2.5 md:py-3 text-sm bg-gray-50 border border-gray-200 rounded-lg md:rounded-xl text-gray-900 placeholder-gray-400 focus:outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 transition-all"
-          />
-        </div>
-
-        {/* Email */}
-        <div>
-          <label htmlFor="email" className="block text-xs md:text-sm font-medium text-gray-700 mb-1 md:mb-1.5">
-            Email
-          </label>
-          <input
-            id="email"
-            name="email"
-            type="email"
-            autoComplete="email"
-            required
-            placeholder="john@company.com"
-            className="w-full px-3 md:px-4 py-2.5 md:py-3 text-sm bg-gray-50 border border-gray-200 rounded-lg md:rounded-xl text-gray-900 placeholder-gray-400 focus:outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 transition-all"
-          />
-        </div>
-
-        {/* Password */}
-        <div>
-          <label htmlFor="password" className="block text-xs md:text-sm font-medium text-gray-700 mb-1 md:mb-1.5">
-            Password
-          </label>
-          <div className="relative">
-            <input
-              id="password"
-              name="password"
-              type={showPassword ? "text" : "password"}
-              autoComplete="new-password"
-              required
-              minLength={8}
-              placeholder="••••••••"
-              className="w-full px-3 md:px-4 py-2.5 md:py-3 pr-10 md:pr-11 text-sm bg-gray-50 border border-gray-200 rounded-lg md:rounded-xl text-gray-900 placeholder-gray-400 focus:outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 transition-all"
-            />
-            <button
-              type="button"
-              onClick={() => setShowPassword(!showPassword)}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
-            >
-              {showPassword ? (
-                <RiEyeOffLine className="w-4 h-4 md:w-5 md:h-5" />
-              ) : (
-                <RiEyeLine className="w-4 h-4 md:w-5 md:h-5" />
-              )}
-            </button>
-          </div>
-          <p className="text-[10px] md:text-xs text-gray-400 mt-1">
-            At least 8 characters
-          </p>
-        </div>
-
-        {/* Submit */}
-        <button
-          type="submit"
-          disabled={loading}
-          className="relative w-full flex items-center justify-center gap-2 px-4 py-2.5 md:py-3 rounded-lg md:rounded-xl text-sm font-semibold text-white bg-gradient-to-r from-brand-500 to-brand-600 hover:from-brand-600 hover:to-brand-700 transition-all duration-200 hover:scale-[1.01] active:scale-[0.99] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 shadow-lg shadow-brand-500/25 hover:shadow-xl hover:shadow-brand-500/30 mt-1 before:absolute before:inset-[1px] before:rounded-[7px] md:before:rounded-[10px] before:border before:border-white/20 before:border-b-transparent before:border-r-transparent before:pointer-events-none"
-        >
-          {loading ? (
-            <>
-              <RiLoader4Line className="w-4 h-4 md:w-5 md:h-5 animate-spin" />
-              <span>Creating account...</span>
-            </>
-          ) : (
-            <>
-              <span>Create account</span>
-              <RiArrowRightLine className="w-4 h-4 md:w-5 md:h-5" />
-            </>
-          )}
-        </button>
-      </form>
-
-      {/* Features */}
-      <div className="mt-4 md:mt-5 pt-4 md:pt-5 border-t border-gray-100">
-        <div className="flex flex-wrap gap-x-3 md:gap-x-4 gap-y-1 md:gap-y-1.5 justify-center">
-          {["Free trial", "No credit card", "Cancel anytime"].map((feature) => (
-            <div
-              key={feature}
-              className="flex items-center gap-1 md:gap-1.5 text-[10px] md:text-xs text-gray-500"
-            >
-              <RiCheckLine className="w-3 h-3 md:w-3.5 md:h-3.5 text-green-500" />
-              <span>{feature}</span>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* Sign in link */}
-      <p className="text-center text-xs md:text-sm text-gray-500 mt-4 md:mt-5">
-        Already have an account?{" "}
-        <Link
-          href="/login"
-          className="text-brand-600 font-semibold hover:text-brand-700 transition-colors"
-        >
-          Sign in
-        </Link>
-      </p>
     </div>
   );
 }

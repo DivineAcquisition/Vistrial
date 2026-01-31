@@ -13,25 +13,26 @@ export default async function OnboardingLayout({
     data: { user },
   } = await supabase.auth.getUser();
 
-  // If not authenticated, redirect to signup
   if (!user) {
     redirect("/signup");
   }
 
-  // Check if user already completed onboarding
-  try {
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("onboarding_completed")
-      .eq("id", user.id)
-      .single();
+  // Check if user has a business
+  const { data: membership } = await supabase
+    .from("business_users")
+    .select("business_id, businesses(onboarding_completed)")
+    .eq("user_id", user.id)
+    .single();
 
-    // If onboarding already completed, redirect to dashboard
-    if (profile?.onboarding_completed) {
-      redirect("/dashboard");
-    }
-  } catch {
-    // Profile might not exist yet - that's fine, let them continue onboarding
+  // If no business, allow access to onboarding to set one up
+  if (!membership?.businesses) {
+    return <>{children}</>;
+  }
+
+  // If onboarding already completed, redirect to dashboard
+  const business = membership.businesses as { onboarding_completed: boolean };
+  if (business.onboarding_completed) {
+    redirect("/dashboard");
   }
 
   return <>{children}</>;

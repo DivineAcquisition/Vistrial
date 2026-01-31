@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
-import { createAdminClient } from "@/lib/supabase/server"
+import { createAdminClient } from "@/lib/supabase/admin"
 import { parseTwilioWebhook, generateTwiMLResponse } from "@/lib/twilio/validate-webhook"
 import {
   isOptOutMessage,

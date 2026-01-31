@@ -29,7 +29,7 @@ export function getTwilioClient() {
  */
 export async function getUserTwilioClient(userId: string) {
   // Dynamic import to avoid circular dependencies
-  const { createAdminClient } = await import("@/lib/supabase/server")
+  const { createAdminClient } = await import("@/lib/supabase/admin")
   const supabase = createAdminClient()
 
   const { data: profile, error } = await supabase

@@ -4,6 +4,16 @@ import { DashboardSidebar } from "@/components/dashboard/sidebar";
 import { DashboardHeader } from "@/components/dashboard/header";
 import { AnimatedBackground } from "@/components/ui/AnimatedBackground";
 
+interface Business {
+  id: string;
+  name: string;
+  slug: string;
+  logo_url?: string;
+  trade?: string;
+  phone?: string;
+  onboarding_completed?: boolean;
+}
+
 export default async function DashboardLayout({
   children,
 }: {
@@ -20,34 +30,78 @@ export default async function DashboardLayout({
     redirect("/login");
   }
 
-  // Get user's profile
-  let profile = null;
-  try {
-    const { data } = await supabase
-      .from("profiles")
+  // Get user's business membership
+  let business: Business | null = null;
+
+  // Try business_users first (new system)
+  const { data: membership } = await supabase
+    .from("business_users")
+    .select("role, businesses(*)")
+    .eq("user_id", user.id)
+    .single();
+
+  if (membership?.businesses) {
+    const biz = membership.businesses as any;
+    business = {
+      id: biz.id,
+      name: biz.name || "My Business",
+      slug: biz.slug || "my-business",
+      logo_url: biz.logo_url,
+      trade: biz.trade,
+      phone: biz.phone,
+      onboarding_completed: biz.onboarding_completed,
+    };
+
+    // Redirect to onboarding if not completed
+    if (!biz.onboarding_completed) {
+      redirect("/onboarding");
+    }
+  } else {
+    // Fallback: check businesses table directly (owner)
+    const { data: ownedBusiness } = await supabase
+      .from("businesses")
       .select("*")
-      .eq("id", user.id)
+      .eq("owner_id", user.id)
       .single();
-    
-    profile = data;
-  } catch {
-    // Profile might not exist
-  }
 
-  // Check if onboarding is completed
-  if (!profile?.onboarding_completed) {
-    redirect("/onboarding");
-  }
+    if (ownedBusiness) {
+      business = {
+        id: ownedBusiness.id,
+        name: ownedBusiness.name || "My Business",
+        slug: ownedBusiness.slug || "my-business",
+        logo_url: ownedBusiness.logo_url,
+        trade: ownedBusiness.trade,
+        phone: ownedBusiness.phone,
+        onboarding_completed: ownedBusiness.onboarding_completed,
+      };
 
-  // Build business object from profile
-  const business = {
-    id: profile.id,
-    name: profile.business_name || "My Business",
-    slug: profile.business_slug || "my-business",
-    logo_url: profile.logo_url || null,
-    trade: profile.trade,
-    phone: profile.phone,
-  };
+      if (!ownedBusiness.onboarding_completed) {
+        redirect("/onboarding");
+      }
+    } else {
+      // Fallback: check profiles table (legacy)
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("*")
+        .eq("id", user.id)
+        .single();
+
+      if (profile?.onboarding_completed) {
+        business = {
+          id: profile.id,
+          name: profile.business_name || "My Business",
+          slug: profile.business_slug || "my-business",
+          logo_url: profile.logo_url,
+          trade: profile.trade,
+          phone: profile.phone,
+          onboarding_completed: true,
+        };
+      } else {
+        // No business found at all - redirect to onboarding
+        redirect("/onboarding");
+      }
+    }
+  }
 
   return (
     <div className="min-h-screen bg-gray-950 relative overflow-hidden">

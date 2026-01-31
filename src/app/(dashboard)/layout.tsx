@@ -64,18 +64,17 @@ export default async function DashboardLayout({
   // Last resort - create a default business object if user exists
   // This prevents looping when tables don't exist or have issues
   if (!business) {
-    // Check if this might be a new user who just signed up
-    // Give them a default business to prevent redirect loop
+    // For new users (created in last 30 seconds), redirect to onboarding
+    // This gives a small window for legitimate new signups
     const userCreatedAt = new Date(user.created_at || Date.now());
-    const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000);
+    const thirtySecondsAgo = new Date(Date.now() - 30 * 1000);
     
-    // If user was created in the last 5 minutes, redirect to onboarding
-    if (userCreatedAt > fiveMinutesAgo) {
+    if (userCreatedAt > thirtySecondsAgo) {
       redirect("/onboarding");
     }
     
-    // Otherwise, create a fallback business object
-    // This handles edge cases where DB writes failed
+    // For older users without business records, create a fallback
+    // This handles edge cases where DB writes failed but user completed onboarding
     business = {
       id: user.id,
       name: user.email?.split("@")[0] || "My Business",

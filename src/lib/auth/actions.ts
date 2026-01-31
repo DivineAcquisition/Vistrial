@@ -95,10 +95,14 @@ export async function signUp(formData: FormData) {
         business_slug: slug,
         email,
         phone,
+        onboarding_completed: true,
       });
     
     if (profileError) {
       console.error("Profile creation error:", profileError);
+      // If both business and profile creation failed, send to onboarding
+      revalidatePath("/", "layout");
+      redirect("/onboarding");
     }
     
     revalidatePath("/", "layout");

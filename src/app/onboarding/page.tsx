@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Logo } from "@/components/ui/Logo";
+import { createClient } from "@/lib/supabase/client";
 import {
   RiArrowRightLine,
   RiArrowLeftLine,
@@ -107,7 +108,9 @@ export default function OnboardingPage() {
   const router = useRouter();
   const [currentStep, setCurrentStep] = useState(1);
   const [isLoading, setIsLoading] = useState(false);
+  const [isCheckingAuth, setIsCheckingAuth] = useState(true);
   const [error, setError] = useState("");
+  const [userId, setUserId] = useState<string | null>(null);
   const [data, setData] = useState<OnboardingData>({
     trade: "",
     businessName: "",
@@ -120,6 +123,25 @@ export default function OnboardingPage() {
 
   const selectedTrade = TRADE_OPTIONS.find((t) => t.id === data.trade);
   const totalSteps = STEPS.length;
+
+  // Check authentication on mount
+  useEffect(() => {
+    async function checkAuth() {
+      const supabase = createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (!user) {
+        // Not authenticated, redirect to signup
+        router.push("/signup");
+        return;
+      }
+      
+      setUserId(user.id);
+      setIsCheckingAuth(false);
+    }
+    
+    checkAuth();
+  }, [router]);
 
   // Check if user came from failed attempt - restore data
   useEffect(() => {
@@ -141,6 +163,18 @@ export default function OnboardingPage() {
     }
   }, [data]);
 
+  // Show loading while checking auth
+  if (isCheckingAuth) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-100 flex items-center justify-center">
+        <div className="text-center">
+          <RiLoader4Line className="w-8 h-8 animate-spin text-brand-500 mx-auto mb-4" />
+          <p className="text-gray-500">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
   const canProceed = () => {
     switch (currentStep) {
       case 1: return data.trade !== "";
@@ -158,36 +192,76 @@ export default function OnboardingPage() {
     if (currentStep === 5) {
       // Submit data before going to completion
       setIsLoading(true);
+      let success = false;
+      
       try {
+        // First try the API
         const response = await fetch("/api/onboarding/simple", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
+          credentials: "include",
           body: JSON.stringify({
             ...data,
             goals: data.goals,
+            userId,
           }),
         });
 
         const result = await response.json();
+        console.log("Onboarding API response:", result);
         
-        if (!response.ok) {
-          throw new Error(result.error || "Failed to complete onboarding");
+        if (response.ok && (result.businessCreated || result.profileUpdated)) {
+          success = true;
         }
-
-        // Mark completion in localStorage as backup
-        localStorage.setItem("onboarding_completed", "true");
-        localStorage.removeItem("onboarding_data");
-        
-        setCurrentStep(6);
       } catch (err) {
-        console.error("Onboarding error:", err);
-        setError("Something went wrong. Please try again.");
-        // Still proceed to show completion - user can retry from dashboard
-        localStorage.setItem("onboarding_completed", "true");
-        setCurrentStep(6);
-      } finally {
-        setIsLoading(false);
+        console.error("API error:", err);
       }
+
+      // If API failed, try direct Supabase update as fallback
+      if (!success && userId) {
+        try {
+          const supabase = createClient();
+          const slug = data.businessName
+            .toLowerCase()
+            .replace(/[^a-z0-9]+/g, "-")
+            .replace(/^-|-$/g, "")
+            .substring(0, 50);
+
+          // Try to upsert profile directly from client
+          const { error: profileError } = await supabase
+            .from("profiles")
+            .upsert({
+              id: userId,
+              business_name: data.businessName,
+              business_slug: slug,
+              business_phone: data.phone || null,
+              onboarding_completed: true,
+              updated_at: new Date().toISOString(),
+            }, { onConflict: "id" });
+
+          if (!profileError) {
+            console.log("Profile updated via client");
+            success = true;
+          } else {
+            console.error("Client profile update error:", profileError);
+          }
+        } catch (clientErr) {
+          console.error("Client fallback error:", clientErr);
+        }
+      }
+
+      // Mark completion in localStorage
+      localStorage.setItem("onboarding_completed", "true");
+      localStorage.setItem("onboarding_user_id", userId || "");
+      localStorage.setItem("onboarding_business_name", data.businessName);
+      localStorage.removeItem("onboarding_data");
+      
+      if (!success) {
+        setError("Setup saved locally. You may need to complete setup in settings.");
+      }
+      
+      setIsLoading(false);
+      setCurrentStep(6);
     } else {
       setCurrentStep((prev) => Math.min(prev + 1, totalSteps));
     }
@@ -198,7 +272,8 @@ export default function OnboardingPage() {
   };
 
   const handleComplete = () => {
-    router.push("/dashboard");
+    // Add a flag to indicate onboarding was just completed
+    router.push("/dashboard?onboarding=complete");
   };
 
   const toggleGoal = (goalId: string) => {

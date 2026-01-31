@@ -1,14 +1,22 @@
 "use client"
 
 import { siteConfig } from "@/app/siteConfig"
-import { TabNavigation, TabNavigationLink } from "@/components/TabNavigation"
+import { VistrialLayout } from "@/components/ui/navigation/VistrialLayout"
+import { cx } from "@/lib/utils"
+import {
+  RiUserLine,
+  RiPhoneLine,
+  RiFlashlightLine,
+  RiNotification3Line,
+} from "@remixicon/react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 
 const navigationSettings = [
-  { name: "General", href: siteConfig.baseLinks.settings.general },
-  { name: "Billing & Usage", href: siteConfig.baseLinks.settings.billing },
-  { name: "Users", href: siteConfig.baseLinks.settings.users },
+  { name: "Profile", href: siteConfig.baseLinks.settings.general, icon: RiUserLine },
+  { name: "Twilio Setup", href: siteConfig.baseLinks.settings.billing, icon: RiPhoneLine },
+  { name: "Job Types", href: siteConfig.baseLinks.settings.users, icon: RiFlashlightLine },
+  { name: "Notifications", href: "#", icon: RiNotification3Line },
 ]
 
 export default function Layout({
@@ -18,22 +26,58 @@ export default function Layout({
 }>) {
   const pathname = usePathname()
   return (
-    <div className="p-4 sm:px-6 sm:pb-10 sm:pt-10 lg:px-10 lg:pt-7">
-      <h1 className="text-lg font-semibold text-gray-900 sm:text-xl dark:text-gray-50">
-        Settings
-      </h1>
-      <TabNavigation className="mt-4 sm:mt-6 lg:mt-10">
-        {navigationSettings.map((item) => (
-          <TabNavigationLink
-            key={item.name}
-            asChild
-            active={pathname === item.href}
-          >
-            <Link href={item.href}>{item.name}</Link>
-          </TabNavigationLink>
-        ))}
-      </TabNavigation>
-      <div className="pt-6">{children}</div>
-    </div>
+    <VistrialLayout>
+      <div className="space-y-6">
+        <div className="space-y-2">
+          <h2 className="text-2xl font-bold text-gray-900">
+            Settings
+          </h2>
+          <p className="text-gray-500">
+            Manage your account and integrations
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+          {/* Sidebar */}
+          <div className="h-fit">
+            <div className="bg-white rounded-xl border border-gray-200 p-4 shadow-sm">
+              <nav className="space-y-1">
+                {navigationSettings.map((item) => {
+                  const active = pathname === item.href
+                  return (
+                    <Link
+                      key={item.name}
+                      href={item.href}
+                      className={cx(
+                        "group flex w-full items-center gap-3 rounded-xl px-3 py-2.5 transition-all duration-200",
+                        active
+                          ? "bg-brand-50 text-brand-700 border border-brand-200"
+                          : "text-gray-600 hover:text-gray-900 hover:bg-gray-100"
+                      )}
+                    >
+                      <div className={cx(
+                        "flex h-8 w-8 items-center justify-center rounded-lg transition-all duration-200",
+                        active
+                          ? "bg-gradient-to-br from-brand-500 to-brand-600 shadow-lg shadow-brand-500/25"
+                          : "bg-gray-100 group-hover:bg-gray-200"
+                      )}>
+                        <item.icon className={cx(
+                          "h-4 w-4",
+                          active ? "text-white" : "text-gray-500 group-hover:text-gray-700"
+                        )} />
+                      </div>
+                      <span className="font-medium">{item.name}</span>
+                    </Link>
+                  )
+                })}
+              </nav>
+            </div>
+          </div>
+
+          {/* Content */}
+          <div className="space-y-6 lg:col-span-2">{children}</div>
+        </div>
+      </div>
+    </VistrialLayout>
   )
 }

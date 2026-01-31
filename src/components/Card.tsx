@@ -1,29 +1,42 @@
-// Tremor Raw Card [v0.0.1]
+// Tremor Card [v0.0.2]
 
-import { Slot } from "@radix-ui/react-slot"
 import React from "react"
+import { Slot } from "@radix-ui/react-slot"
 
 import { cx } from "@/lib/utils"
 
 interface CardProps extends React.ComponentPropsWithoutRef<"div"> {
   asChild?: boolean
+  variant?: "default" | "glass"
 }
 
 const Card = React.forwardRef<HTMLDivElement, CardProps>(
-  ({ className, asChild, ...props }, forwardedRef) => {
+  ({ className, asChild, variant = "default", ...props }, forwardedRef) => {
     const Component = asChild ? Slot : "div"
     return (
       <Component
         ref={forwardedRef}
         className={cx(
           // base
-          "relative w-full rounded-lg border p-6 text-left shadow-sm",
-          // background color
-          "bg-white dark:bg-[#090E1A]",
-          // border color
-          "border-gray-200 dark:border-gray-900",
+          "relative w-full rounded-xl text-left transition-all duration-200",
+          // border
+          "border",
+          // variant styles
+          variant === "default" && [
+            "bg-white",
+            "border-gray-200",
+            "shadow-sm",
+          ],
+          variant === "glass" && [
+            "bg-white/80 backdrop-blur-xl",
+            "border-gray-200/60",
+            "shadow-xl shadow-gray-200/40",
+          ],
+          // padding
+          "p-6",
           className,
         )}
+        tremor-id="tremor-raw"
         {...props}
       />
     )

@@ -1,5 +1,6 @@
-import { PeriodValue } from "@/app/(main)/overview/page"
 import { Badge } from "@/components/Badge"
+
+export type PeriodValue = "previous-period" | "last-year" | "no-comparison"
 import { LineChart } from "@/components/LineChart"
 import { overviews } from "@/data/overview-data"
 import { OverviewData } from "@/data/schema"
@@ -145,7 +146,7 @@ export function ChartCard({
         className="mt-6 h-32"
         data={chartData || []}
         index="formattedDate"
-        colors={["indigo", "gray"]}
+        colors={["brand", "gray"]}
         startEndOnly={true}
         valueFormatter={(value) => formatter(value as number)}
         showYAxis={false}

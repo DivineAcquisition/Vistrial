@@ -4,8 +4,6 @@ import { Inter } from "next/font/google"
 import "./globals.css"
 import { siteConfig } from "./siteConfig"
 
-import { Sidebar } from "@/components/ui/navigation/Sidebar"
-
 const inter = Inter({
   subsets: ["latin"],
   display: "swap",
@@ -13,17 +11,17 @@ const inter = Inter({
 })
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://yoururl.com"),
+  metadataBase: new URL("https://vistrial.com"),
   title: siteConfig.name,
   description: siteConfig.description,
-  keywords: [],
+  keywords: ["quote follow-up", "home service", "automation", "SMS"],
   authors: [
     {
-      name: "yourname",
-      url: "",
+      name: "Vistrial",
+      url: "https://vistrial.com",
     },
   ],
-  creator: "yourname",
+  creator: "Vistrial",
   openGraph: {
     type: "website",
     locale: "en_US",
@@ -45,15 +43,12 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body
-        className={`${inter.className} overflow-y-scroll scroll-auto antialiased selection:bg-indigo-100 selection:text-indigo-700 dark:bg-gray-950`}
+        className={`${inter.className} antialiased selection:bg-brand-100 selection:text-brand-600 bg-white dark:bg-gray-950`}
         suppressHydrationWarning
       >
-        <div className="mx-auto max-w-screen-2xl">
-          <ThemeProvider defaultTheme="system" attribute="class">
-            <Sidebar />
-            <main className="lg:pl-72">{children}</main>
-          </ThemeProvider>
-        </div>
+        <ThemeProvider defaultTheme="system" attribute="class">
+          {children}
+        </ThemeProvider>
       </body>
     </html>
   )

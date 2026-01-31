@@ -1,8 +1,8 @@
-// Tremor Raw Button [v0.1.1]
+// Tremor Button [v0.2.2]
 
+import React from "react"
 import { Slot } from "@radix-ui/react-slot"
 import { RiLoader2Fill } from "@remixicon/react"
-import React from "react"
 import { tv, type VariantProps } from "tailwind-variants"
 
 import { cx, focusRing } from "@/lib/utils"
@@ -10,85 +10,131 @@ import { cx, focusRing } from "@/lib/utils"
 const buttonVariants = tv({
   base: [
     // base
-    "relative inline-flex items-center justify-center whitespace-nowrap rounded-md border px-3 py-2 text-center text-sm font-medium shadow-sm transition-all duration-100 ease-in-out",
+    "relative inline-flex items-center justify-center whitespace-nowrap rounded-xl border text-center font-medium transition-all duration-200 ease-in-out",
     // disabled
-    "disabled:pointer-events-none disabled:shadow-none",
+    "disabled:pointer-events-none disabled:opacity-50",
     // focus
     focusRing,
   ],
   variants: {
     variant: {
       primary: [
-        // border
+        // base
         "border-transparent",
-        // text color
-        "text-white dark:text-gray-900",
-        // background color
-        "bg-indigo-600 dark:bg-indigo-500",
-        // hover color
-        "hover:bg-indigo-500 dark:hover:bg-indigo-600",
-        // disabled
-        "disabled:bg-indigo-100 disabled:text-gray-400",
-        "disabled:dark:bg-indigo-800 disabled:dark:text-indigo-400",
+        "text-white",
+        "bg-gradient-to-r from-brand-500 to-brand-600",
+        // hover
+        "hover:from-brand-600 hover:to-brand-700",
+        // shadow & scale
+        "shadow-lg shadow-brand-500/25",
+        "hover:shadow-xl hover:shadow-brand-500/30",
+        "hover:scale-[1.02] active:scale-[0.98]",
+      ],
+      // Primary with 3D inner line effect
+      primary3d: [
+        // base
+        "border-transparent",
+        "text-white",
+        "bg-gradient-to-r from-brand-500 to-brand-600",
+        // 3D inner highlight effect
+        "before:absolute before:inset-[1px] before:rounded-[10px] before:border before:border-white/20 before:border-b-transparent before:border-r-transparent before:pointer-events-none",
+        // hover
+        "hover:from-brand-600 hover:to-brand-700",
+        // shadow & scale
+        "shadow-lg shadow-brand-500/25",
+        "hover:shadow-xl hover:shadow-brand-500/30",
+        "hover:scale-[1.02] active:scale-[0.98]",
       ],
       secondary: [
-        // border
-        "border-gray-300 dark:border-gray-800",
-        // text color
-        "text-gray-900 dark:text-gray-50",
-        // background color
-        "bg-white dark:bg-gray-950",
-        //hover color
-        "hover:bg-gray-50 dark:hover:bg-gray-900/60",
-        // disabled
-        "disabled:text-gray-400",
-        "disabled:dark:text-gray-600",
+        // base
+        "border-gray-200",
+        "text-gray-700",
+        "bg-white",
+        // hover
+        "hover:bg-gray-50 hover:text-gray-900",
+        "hover:border-gray-300",
+      ],
+      // Secondary with 3D inner line effect
+      secondary3d: [
+        // base
+        "border-gray-200",
+        "text-gray-700",
+        "bg-white",
+        // 3D inner highlight effect
+        "before:absolute before:inset-[1px] before:rounded-[10px] before:border before:border-white/80 before:border-b-gray-100 before:border-r-gray-100 before:pointer-events-none",
+        // hover
+        "hover:bg-gray-50 hover:text-gray-900",
+        "hover:border-gray-300",
       ],
       light: [
         // base
-        "shadow-none",
-        // border
-        "border-transparent",
-        // text color
-        "text-gray-900 dark:text-gray-50",
-        // background color
-        "bg-gray-200 dark:bg-gray-900",
-        // hover color
-        "hover:bg-gray-300/70 dark:hover:bg-gray-800/80",
-        // disabled
-        "disabled:bg-gray-100 disabled:text-gray-400",
-        "disabled:dark:bg-gray-800 disabled:dark:text-gray-600",
+        "border-gray-200",
+        "text-gray-900",
+        "bg-white",
+        // hover
+        "hover:bg-gray-50",
       ],
       ghost: [
         // base
-        "shadow-none",
-        // border
         "border-transparent",
-        // text color
-        "text-gray-900 dark:text-gray-50",
-        // hover color
-        "bg-transparent hover:bg-gray-100 dark:hover:bg-gray-800/80",
-        // disabled
-        "disabled:text-gray-400",
-        "disabled:dark:text-gray-600",
+        "text-gray-700",
+        "bg-transparent",
+        // hover
+        "hover:bg-gray-100",
+        "hover:text-gray-900",
       ],
       destructive: [
-        // text color
-        "text-white",
-        // border
+        // base
         "border-transparent",
-        // background color
-        "bg-red-600 dark:bg-red-700",
-        // hover color
-        "hover:bg-red-700 dark:hover:bg-red-600",
-        // disabled
-        "disabled:bg-red-300 disabled:text-white",
-        "disabled:dark:bg-red-950 disabled:dark:text-red-400",
+        "text-white",
+        "bg-red-600",
+        // hover
+        "hover:bg-red-700",
+        // shadow
+        "shadow-lg shadow-red-500/25",
       ],
+      // Destructive with 3D effect
+      destructive3d: [
+        // base
+        "border-transparent",
+        "text-white",
+        "bg-gradient-to-r from-red-500 to-red-600",
+        // 3D inner highlight effect
+        "before:absolute before:inset-[1px] before:rounded-[10px] before:border before:border-white/20 before:border-b-transparent before:border-r-transparent before:pointer-events-none",
+        // hover
+        "hover:from-red-600 hover:to-red-700",
+        // shadow
+        "shadow-lg shadow-red-500/25",
+        "hover:shadow-xl hover:shadow-red-500/30",
+        "hover:scale-[1.02] active:scale-[0.98]",
+      ],
+      // Dark variant with 3D effect
+      dark3d: [
+        // base
+        "border-transparent",
+        "text-white",
+        "bg-gradient-to-r from-gray-800 to-gray-900",
+        // 3D inner highlight effect
+        "before:absolute before:inset-[1px] before:rounded-[10px] before:border before:border-white/10 before:border-b-transparent before:border-r-transparent before:pointer-events-none",
+        // hover
+        "hover:from-gray-700 hover:to-gray-800",
+        // shadow
+        "shadow-lg shadow-gray-900/25",
+        "hover:shadow-xl hover:shadow-gray-900/30",
+        "hover:scale-[1.02] active:scale-[0.98]",
+      ],
+    },
+    size: {
+      xs: "h-7 px-2.5 text-xs",
+      sm: "h-8 px-3 text-sm",
+      md: "h-10 px-4 text-sm",
+      lg: "h-12 px-6 text-base",
+      xl: "h-14 px-8 text-lg",
     },
   },
   defaultVariants: {
     variant: "primary",
+    size: "md",
   },
 })
 
@@ -109,6 +155,7 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
       className,
       disabled,
       variant,
+      size,
       children,
       ...props
     }: ButtonProps,
@@ -118,8 +165,9 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
     return (
       <Component
         ref={forwardedRef}
-        className={cx(buttonVariants({ variant }), className)}
+        className={cx(buttonVariants({ variant, size }), className)}
         disabled={disabled || isLoading}
+        tremor-id="tremor-raw"
         {...props}
       >
         {isLoading ? (

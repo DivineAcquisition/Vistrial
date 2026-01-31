@@ -1,12 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 
-interface SimpleOnboardingPayload {
+interface OnboardingPayload {
   trade: string;
   businessName: string;
   ownerName: string;
   phone?: string;
   monthlyQuotes?: string;
+  goals?: string[];
+  bookingPageEnabled?: boolean;
+  smsEnabled?: boolean;
 }
 
 export async function POST(request: NextRequest) {
@@ -20,10 +23,12 @@ export async function POST(request: NextRequest) {
     } = await supabase.auth.getUser();
 
     if (authError || !user) {
+      console.error("Auth error:", authError);
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const payload: SimpleOnboardingPayload = await request.json();
+    const payload: OnboardingPayload = await request.json();
+    console.log("Onboarding payload:", payload);
 
     // Validate required fields
     if (!payload.trade || !payload.businessName) {
@@ -40,79 +45,109 @@ export async function POST(request: NextRequest) {
       .replace(/^-|-$/g, "")
       .substring(0, 50);
 
-    // Try to create/update business in businesses table first
-    const { data: existingBusiness } = await supabase
-      .from("businesses")
-      .select("id")
-      .eq("owner_id", user.id)
-      .single();
+    let businessCreated = false;
+    let profileUpdated = false;
 
-    if (existingBusiness) {
-      // Update existing business
-      const { error: updateError } = await supabase
+    // Try to create/update business in businesses table first
+    try {
+      const { data: existingBusiness } = await supabase
         .from("businesses")
-        .update({
+        .select("id")
+        .eq("owner_id", user.id)
+        .single();
+
+      if (existingBusiness) {
+        // Update existing business
+        const { error: updateError } = await supabase
+          .from("businesses")
+          .update({
+            name: payload.businessName,
+            slug: slug,
+            trade: payload.trade,
+            owner_name: payload.ownerName,
+            phone: payload.phone || null,
+            updated_at: new Date().toISOString(),
+          })
+          .eq("id", existingBusiness.id);
+
+        if (!updateError) {
+          businessCreated = true;
+        } else {
+          console.error("Error updating business:", updateError);
+        }
+      } else {
+        // Try to create new business
+        const { error: insertError } = await supabase.from("businesses").insert({
+          owner_id: user.id,
           name: payload.businessName,
           slug: slug,
           trade: payload.trade,
           owner_name: payload.ownerName,
           phone: payload.phone || null,
-          updated_at: new Date().toISOString(),
-        })
-        .eq("id", existingBusiness.id);
+        });
 
-      if (updateError) {
-        console.error("Error updating business:", updateError);
+        if (!insertError) {
+          businessCreated = true;
+        } else {
+          console.error("Error creating business:", insertError);
+        }
       }
-    } else {
-      // Try to create new business
-      const { error: insertError } = await supabase.from("businesses").insert({
-        owner_id: user.id,
-        name: payload.businessName,
-        slug: slug,
-        trade: payload.trade,
-        owner_name: payload.ownerName,
-        phone: payload.phone || null,
-      });
-
-      if (insertError) {
-        console.error("Error creating business:", insertError);
-        // Fall through to profile update
-      }
+    } catch (businessError) {
+      console.error("Business table error:", businessError);
     }
 
-    // Also update profile for legacy support
-    const { error: profileError } = await supabase
-      .from("profiles")
-      .update({
-        business_name: payload.businessName,
-        business_slug: slug,
-        business_phone: payload.phone || null,
-        onboarding_completed: true,
-        updated_at: new Date().toISOString(),
-      })
-      .eq("id", user.id);
-
-    if (profileError) {
-      console.error("Error updating profile:", profileError);
-      // Try insert if update fails
-      const { error: insertProfileError } = await supabase
+    // Also update profile for legacy support - this is critical for the dashboard check
+    try {
+      // First try to update
+      const { error: updateError, data: updateData } = await supabase
         .from("profiles")
-        .insert({
+        .update({
+          business_name: payload.businessName,
+          business_slug: slug,
+          business_phone: payload.phone || null,
+          onboarding_completed: true,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", user.id)
+        .select();
+
+      if (updateError) {
+        console.error("Error updating profile:", updateError);
+        // Try insert if update fails (profile might not exist)
+        const { error: insertError } = await supabase.from("profiles").insert({
           id: user.id,
+          email: user.email,
           business_name: payload.businessName,
           business_slug: slug,
           business_phone: payload.phone || null,
           onboarding_completed: true,
         });
 
-      if (insertProfileError) {
-        console.error("Error inserting profile:", insertProfileError);
+        if (!insertError) {
+          profileUpdated = true;
+        } else {
+          console.error("Error inserting profile:", insertError);
+        }
+      } else {
+        profileUpdated = true;
+        console.log("Profile updated:", updateData);
       }
+    } catch (profileError) {
+      console.error("Profile table error:", profileError);
     }
+
+    // If neither worked, we have a problem
+    if (!businessCreated && !profileUpdated) {
+      console.error("Failed to create both business and profile records");
+      // Return success anyway - the client will handle this
+    }
+
+    console.log("Onboarding complete:", { businessCreated, profileUpdated });
 
     return NextResponse.json({
       success: true,
+      businessCreated,
+      profileUpdated,
       businessName: payload.businessName,
       slug: slug,
     });

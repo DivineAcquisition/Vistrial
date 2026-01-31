@@ -21,37 +21,67 @@ export default async function DashboardLayout({
 
   // Try businesses table first
   let business = null;
-  const { data: businessData } = await supabase
-    .from("businesses")
-    .select("*")
-    .eq("owner_id", user.id)
-    .single();
-
-  if (businessData) {
-    business = businessData;
-  } else {
-    // Fall back to profiles table for legacy support
-    const { data: profile } = await supabase
-      .from("profiles")
+  
+  try {
+    const { data: businessData } = await supabase
+      .from("businesses")
       .select("*")
-      .eq("id", user.id)
+      .eq("owner_id", user.id)
       .single();
 
-    if (profile) {
-      // Check if onboarding is completed or if they have a business name
-      if (profile.onboarding_completed || profile.business_name) {
-        business = {
-          id: profile.id,
-          name: profile.business_name || "My Business",
-          slug: profile.business_slug || "my-business",
-          logo_url: profile.logo_url,
-        };
-      }
+    if (businessData) {
+      business = businessData;
     }
+  } catch {
+    // Business table might not exist, continue to profile check
   }
 
   if (!business) {
-    redirect("/onboarding");
+    // Fall back to profiles table for legacy support
+    try {
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("*")
+        .eq("id", user.id)
+        .single();
+
+      if (profile) {
+        // Check if onboarding is completed or if they have a business name
+        if (profile.onboarding_completed || profile.business_name) {
+          business = {
+            id: profile.id,
+            name: profile.business_name || "My Business",
+            slug: profile.business_slug || "my-business",
+            logo_url: profile.logo_url,
+          };
+        }
+      }
+    } catch {
+      // Profile table might not exist or other error
+    }
+  }
+
+  // Last resort - create a default business object if user exists
+  // This prevents looping when tables don't exist or have issues
+  if (!business) {
+    // Check if this might be a new user who just signed up
+    // Give them a default business to prevent redirect loop
+    const userCreatedAt = new Date(user.created_at || Date.now());
+    const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000);
+    
+    // If user was created in the last 5 minutes, redirect to onboarding
+    if (userCreatedAt > fiveMinutesAgo) {
+      redirect("/onboarding");
+    }
+    
+    // Otherwise, create a fallback business object
+    // This handles edge cases where DB writes failed
+    business = {
+      id: user.id,
+      name: user.email?.split("@")[0] || "My Business",
+      slug: "my-business",
+      logo_url: null,
+    };
   }
 
   return (

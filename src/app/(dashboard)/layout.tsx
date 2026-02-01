@@ -20,12 +20,15 @@ export default async function DashboardLayout({
     redirect("/login");
   }
 
-  // Get user's business
-  const { data: business } = await supabase
+  // Get user's business (handle multiple businesses gracefully)
+  const { data: businesses } = await supabase
     .from("businesses")
     .select("*")
     .eq("owner_id", user.id)
-    .maybeSingle();
+    .order("created_at", { ascending: false })
+    .limit(1);
+
+  const business = businesses?.[0] || null;
 
   // If no business exists, redirect to onboarding
   if (!business) {

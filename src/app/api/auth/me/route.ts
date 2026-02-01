@@ -11,12 +11,15 @@ export async function GET() {
       return NextResponse.json({ user: null, business: null });
     }
 
-    // Check for existing business
-    const { data: business } = await supabase
+    // Check for existing business (handle duplicates by getting most recent)
+    const { data: businesses } = await supabase
       .from("businesses")
       .select("id, name, onboarding_completed")
       .eq("owner_id", user.id)
-      .maybeSingle();
+      .order("created_at", { ascending: false })
+      .limit(1);
+
+    const business = businesses?.[0] || null;
 
     return NextResponse.json({ user, business });
   } catch (error) {

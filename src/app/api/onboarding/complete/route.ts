@@ -92,13 +92,14 @@ export async function POST(request: NextRequest) {
         ? `+${phoneDigits}` 
         : null;
 
-    // Check if user already has a business
+    // Check if user already has a business (handle duplicates gracefully)
     console.log("Checking for existing business...");
-    const { data: existingBusiness, error: checkError } = await admin
+    const { data: existingBusinesses, error: checkError } = await admin
       .from("businesses")
-      .select("id, onboarding_completed")
+      .select("id, onboarding_completed, created_at")
       .eq("owner_id", userId)
-      .maybeSingle();
+      .order("created_at", { ascending: false })
+      .limit(10);
 
     if (checkError) {
       console.error("Error checking existing business:", checkError);
@@ -108,7 +109,29 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    console.log("Existing business:", existingBusiness);
+    // Get the first (most recent) business if any exist
+    const existingBusiness = existingBusinesses && existingBusinesses.length > 0 
+      ? existingBusinesses[0] 
+      : null;
+    
+    console.log("Found businesses:", existingBusinesses?.length || 0);
+    console.log("Using business:", existingBusiness);
+    
+    // If there are duplicate businesses, clean them up (keep only the most recent)
+    if (existingBusinesses && existingBusinesses.length > 1) {
+      console.log("Found duplicate businesses, cleaning up...");
+      const idsToDelete = existingBusinesses.slice(1).map(b => b.id);
+      const { error: deleteError } = await admin
+        .from("businesses")
+        .delete()
+        .in("id", idsToDelete);
+      
+      if (deleteError) {
+        console.warn("Failed to clean up duplicate businesses:", deleteError);
+      } else {
+        console.log("Cleaned up", idsToDelete.length, "duplicate businesses");
+      }
+    }
 
     const businessData = {
       name: businessName.trim(),
@@ -141,8 +164,7 @@ export async function POST(request: NextRequest) {
         .from("businesses")
         .update(businessData)
         .eq("id", existingBusiness.id)
-        .select()
-        .single();
+        .select();
 
       if (error) {
         console.error("Business update error:", error);
@@ -151,7 +173,7 @@ export async function POST(request: NextRequest) {
           { status: 500 }
         );
       }
-      result = data;
+      result = data?.[0] || null;
       console.log("Business updated successfully:", result?.id);
     } else {
       // Create new business
@@ -164,8 +186,7 @@ export async function POST(request: NextRequest) {
           slug,
           created_at: new Date().toISOString(),
         })
-        .select()
-        .single();
+        .select();
 
       if (error) {
         console.error("Business insert error:", error);
@@ -187,7 +208,7 @@ export async function POST(request: NextRequest) {
           { status: 500 }
         );
       }
-      result = data;
+      result = data?.[0] || null;
       console.log("Business created successfully:", result?.id);
     }
 

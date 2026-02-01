@@ -123,11 +123,60 @@ export async function signUpStep2(data: SignUpStep2Data) {
     redirect(loginUrl);
   }
 
+  // Auto-create business for the new user
+  await ensureBusinessExists(authData.user);
+
   revalidatePath("/", "layout");
   
-  // Redirect to app domain for onboarding
-  const onboardingUrl = IS_PRODUCTION ? `${APP_URL}/onboarding` : "/onboarding";
-  redirect(onboardingUrl);
+  // Redirect straight to dashboard
+  const dashboardUrl = IS_PRODUCTION ? `${APP_URL}/dashboard` : "/dashboard";
+  redirect(dashboardUrl);
+}
+
+// Auto-create business for new users
+async function ensureBusinessExists(user: any) {
+  try {
+    const admin = createAdminClient();
+    
+    // Check if business exists
+    const { data: businesses } = await admin
+      .from("businesses")
+      .select("id")
+      .eq("owner_id", user.id)
+      .limit(1);
+
+    if (businesses && businesses.length > 0) {
+      return; // Already exists
+    }
+
+    // Create business
+    const userName = user.user_metadata?.full_name || user.user_metadata?.name || user.email?.split("@")[0] || "User";
+    const businessName = user.user_metadata?.business_name || `${userName}'s Business`;
+    const slug = `${businessName.toLowerCase().replace(/[^a-z0-9]+/g, "-").slice(0, 40)}-${Date.now().toString(36)}`;
+
+    await admin
+      .from("businesses")
+      .insert({
+        owner_id: user.id,
+        name: businessName,
+        slug: slug,
+        trade: "cleaning",
+        email: user.email,
+        phone: user.user_metadata?.phone || null,
+        primary_color: "#6E47D1",
+        settings: {
+          timezone: "America/New_York",
+          currency: "USD",
+          owner_name: userName,
+        },
+        onboarding_completed: true,
+        is_active: true,
+      });
+
+    console.log("Created business for user:", user.id);
+  } catch (err) {
+    console.error("Error creating business:", err);
+  }
 }
 
 // ============================================
@@ -150,29 +199,17 @@ export async function signIn(formData: FormData) {
     return { error: error.message };
   }
 
-  // Check if user has completed onboarding
   if (authData.user) {
-    const { data: businesses } = await supabase
-      .from("businesses")
-      .select("id, onboarding_completed")
-      .eq("owner_id", authData.user.id)
-      .order("created_at", { ascending: false })
-      .limit(1);
-
-    const business = businesses?.[0] || null;
+    // Auto-create business if none exists
+    await ensureBusinessExists(authData.user);
 
     revalidatePath("/", "layout");
 
     // Determine redirect destination
     let destination: string;
     if (redirectTo && redirectTo.startsWith("http")) {
-      // External redirect URL provided
       destination = redirectTo;
-    } else if (!business || !business.onboarding_completed) {
-      // No business or onboarding not complete - go to onboarding
-      destination = IS_PRODUCTION ? `${APP_URL}/onboarding` : "/onboarding";
     } else {
-      // Onboarding complete - go to dashboard or specified path
       const path = redirectTo || "/dashboard";
       destination = IS_PRODUCTION ? `${APP_URL}${path}` : path;
     }
@@ -323,16 +360,25 @@ export async function requireBusiness() {
     .order("created_at", { ascending: false })
     .limit(1);
 
-  const business = businesses?.[0] || null;
+  let business = businesses?.[0] || null;
 
-  // If no business exists, redirect to onboarding
+  // Auto-create business if none exists
   if (!business) {
-    redirect("/onboarding");
+    await ensureBusinessExists(user);
+    
+    // Fetch the newly created business
+    const { data: newBusinesses } = await supabase
+      .from("businesses")
+      .select("*")
+      .eq("owner_id", user.id)
+      .order("created_at", { ascending: false })
+      .limit(1);
+    
+    business = newBusinesses?.[0] || null;
   }
 
-  // If onboarding not completed, redirect to onboarding
-  if (!business.onboarding_completed) {
-    redirect("/onboarding");
+  if (!business) {
+    throw new Error("Failed to create business");
   }
 
   return { user, business };

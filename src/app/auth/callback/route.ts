@@ -1,4 +1,5 @@
 import { createServerSupabaseClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { NextResponse } from "next/server";
 
 // Domain configuration
@@ -36,28 +37,10 @@ export async function GET(request: Request) {
     if (data.user) {
       console.log("OAuth login successful for user:", data.user.id);
       
-      // Check if user has a business (handle duplicates)
-      const { data: businesses, error: businessError } = await supabase
-        .from("businesses")
-        .select("id, onboarding_completed")
-        .eq("owner_id", data.user.id)
-        .order("created_at", { ascending: false })
-        .limit(1);
+      // Auto-create business if none exists
+      await ensureBusinessExists(data.user);
 
-      if (businessError) {
-        console.error("Error checking business:", businessError);
-      }
-
-      const business = businesses?.[0] || null;
-
-      // Redirect to app domain for onboarding or dashboard
-      if (!business || !business.onboarding_completed) {
-        console.log("No business or onboarding not completed, redirecting to onboarding");
-        return NextResponse.redirect(`${appOrigin}/onboarding`);
-      }
-
-      // Redirect to the specified location or dashboard
-      // If redirect URL is provided and is a full URL, use it; otherwise prepend app origin
+      // Redirect to dashboard (or specified redirect)
       let destination = redirect || "/dashboard";
       if (destination.startsWith("http")) {
         return NextResponse.redirect(destination);
@@ -71,4 +54,55 @@ export async function GET(request: Request) {
   // No code provided - redirect to login
   console.error("No auth code provided in callback");
   return NextResponse.redirect(`${accessOrigin}/login?error=no_code`);
+}
+
+// Auto-create business for new users
+async function ensureBusinessExists(user: any) {
+  try {
+    const admin = createAdminClient();
+    
+    // Check if business exists
+    const { data: businesses } = await admin
+      .from("businesses")
+      .select("id")
+      .eq("owner_id", user.id)
+      .limit(1);
+
+    if (businesses && businesses.length > 0) {
+      console.log("Business already exists for user");
+      return;
+    }
+
+    // Create business
+    const userName = user.user_metadata?.full_name || user.user_metadata?.name || user.email?.split("@")[0] || "User";
+    const businessName = user.user_metadata?.business_name || `${userName}'s Business`;
+    const slug = `${businessName.toLowerCase().replace(/[^a-z0-9]+/g, "-").slice(0, 40)}-${Date.now().toString(36)}`;
+
+    const { error: insertError } = await admin
+      .from("businesses")
+      .insert({
+        owner_id: user.id,
+        name: businessName,
+        slug: slug,
+        trade: "cleaning",
+        email: user.email,
+        phone: user.user_metadata?.phone || null,
+        primary_color: "#6E47D1",
+        settings: {
+          timezone: "America/New_York",
+          currency: "USD",
+          owner_name: userName,
+        },
+        onboarding_completed: true,
+        is_active: true,
+      });
+
+    if (insertError) {
+      console.error("Failed to create business:", insertError);
+    } else {
+      console.log("Created business for user:", user.id);
+    }
+  } catch (err) {
+    console.error("Error ensuring business exists:", err);
+  }
 }

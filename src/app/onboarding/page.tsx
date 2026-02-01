@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
@@ -47,10 +47,14 @@ export default function OnboardingPage() {
     tagline: "",
   });
 
-  const supabase = createBrowserClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  );
+  // Create Supabase client lazily to avoid SSR issues
+  const supabase = useMemo(() => {
+    if (typeof window === "undefined") return null;
+    return createBrowserClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+    );
+  }, []);
 
   const updateField = (field: string, value: string) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
@@ -76,6 +80,11 @@ export default function OnboardingPage() {
   };
 
   const handleComplete = async () => {
+    if (!supabase) {
+      setError("Unable to connect. Please refresh the page.");
+      return;
+    }
+
     setLoading(true);
     setError("");
 
@@ -174,7 +183,7 @@ export default function OnboardingPage() {
           <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
             <RiCheckLine className="w-10 h-10 text-green-600" />
           </div>
-          <h1 className="text-2xl font-bold text-slate-900 mb-2">You're all set!</h1>
+          <h1 className="text-2xl font-bold text-slate-900 mb-2">You&apos;re all set!</h1>
           <p className="text-slate-500 mb-6">
             Your business profile has been created. Redirecting you to your dashboard...
           </p>

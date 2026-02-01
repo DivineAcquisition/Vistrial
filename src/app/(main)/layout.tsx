@@ -1,68 +1,39 @@
-"use client"
+import { redirect } from "next/navigation";
+import { createServerSupabaseClient } from "@/lib/supabase/server";
+import { VistrialLayoutWrapper } from "@/components/ui/navigation/VistrialLayoutWrapper";
 
-import { VistrialLayout } from "@/components/ui/navigation/VistrialLayout"
-import { useState } from "react"
-import { AddLeadModal } from "@/components/ui/leads/AddLeadModal"
-import { createClient } from "@/lib/supabase/client"
-import { useRouter } from "next/navigation"
-
-export default function Layout({
+export default async function Layout({
   children,
 }: Readonly<{
-  children: React.ReactNode
+  children: React.ReactNode;
 }>) {
-  const [showAddLeadModal, setShowAddLeadModal] = useState(false)
-  const router = useRouter()
-  const supabase = createClient()
+  const supabase = await createServerSupabaseClient();
 
-  const handleAddLead = async (leadData: {
-    name: string
-    phone: string
-    email?: string
-    quoteAmount: number
-    jobTypeId?: string
-    sequenceId?: string
-    notes?: string
-  }) => {
-    try {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) throw new Error("Not authenticated")
+  // Check authentication
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
 
-      const { error } = await supabase.from("leads").insert({
-        user_id: user.id,
-        name: leadData.name,
-        phone: leadData.phone,
-        email: leadData.email,
-        quote_amount: leadData.quoteAmount,
-        job_type_id: leadData.jobTypeId || null,
-        sequence_id: leadData.sequenceId || null,
-        notes: leadData.notes,
-        status: leadData.sequenceId ? "in_sequence" : "new",
-        consent_method: "manual",
-        consent_timestamp: new Date().toISOString(),
-      })
-
-      if (error) throw error
-
-      setShowAddLeadModal(false)
-      router.refresh()
-    } catch (err) {
-      console.error("Error adding lead:", err)
-      alert("Failed to add lead")
-    }
+  if (!user) {
+    redirect("/login");
   }
 
-  return (
-    <>
-      <VistrialLayout onAddLead={() => setShowAddLeadModal(true)}>
-        {children}
-      </VistrialLayout>
-      {showAddLeadModal && (
-        <AddLeadModal
-          onClose={() => setShowAddLeadModal(false)}
-          onSubmit={handleAddLead}
-        />
-      )}
-    </>
-  )
+  // Get user's business
+  const { data: business } = await supabase
+    .from("businesses")
+    .select("*")
+    .eq("owner_id", user.id)
+    .maybeSingle();
+
+  // If no business exists, redirect to onboarding
+  if (!business) {
+    redirect("/onboarding");
+  }
+
+  // If onboarding not completed, redirect to onboarding
+  if (!business.onboarding_completed) {
+    redirect("/onboarding");
+  }
+
+  return <VistrialLayoutWrapper>{children}</VistrialLayoutWrapper>;
 }

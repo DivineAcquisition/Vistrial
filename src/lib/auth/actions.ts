@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { sendVerificationCode, verifyCode } from "@/lib/verification/send-code";
 
 // ============================================
@@ -49,6 +50,7 @@ export async function signUpStep1(data: SignUpStep1Data) {
 
 export async function signUpStep2(data: SignUpStep2Data) {
   const supabase = await createServerSupabaseClient();
+  const admin = createAdminClient();
 
   // 1. Verify the code
   const destination = data.verifyVia === "email" ? data.email : data.phone;
@@ -63,19 +65,25 @@ export async function signUpStep2(data: SignUpStep2Data) {
   const firstName = nameParts[0] || "";
   const lastName = nameParts.slice(1).join(" ") || "";
 
-  // 3. Create auth user (business created during onboarding)
-  const { data: authData, error: authError } = await supabase.auth.signUp({
+  // 3. Check if user already exists
+  const { data: existingUsers } = await admin.auth.admin.listUsers();
+  const userExists = existingUsers?.users?.some(u => u.email === data.email);
+  
+  if (userExists) {
+    return { error: "An account with this email already exists. Please sign in instead." };
+  }
+
+  // 4. Create auth user using admin client (bypasses RLS/triggers issues)
+  const { data: authData, error: authError } = await admin.auth.admin.createUser({
     email: data.email,
     password: data.password,
-    options: {
-      data: {
-        full_name: data.fullName,
-        first_name: firstName,
-        last_name: lastName,
-        phone: data.phone,
-        business_name: data.businessName, // Store for use in onboarding
-      },
-      emailRedirectTo: `${process.env.NEXT_PUBLIC_APP_URL}/onboarding`,
+    email_confirm: true, // Auto-confirm since we verified via code
+    user_metadata: {
+      full_name: data.fullName,
+      first_name: firstName,
+      last_name: lastName,
+      phone: data.phone,
+      business_name: data.businessName,
     },
   });
 
@@ -86,6 +94,26 @@ export async function signUpStep2(data: SignUpStep2Data) {
 
   if (!authData.user) {
     return { error: "Failed to create account" };
+  }
+
+  // 5. Create user profile manually (in case trigger doesn't fire with admin create)
+  await admin.from("user_profiles").upsert({
+    id: authData.user.id,
+    first_name: firstName,
+    last_name: lastName,
+    phone: data.phone,
+  }, { onConflict: "id" });
+
+  // 6. Sign the user in
+  const { error: signInError } = await supabase.auth.signInWithPassword({
+    email: data.email,
+    password: data.password,
+  });
+
+  if (signInError) {
+    console.error("Auto sign-in error:", signInError);
+    // User was created, just redirect to login
+    redirect("/login?message=Account created. Please sign in.");
   }
 
   revalidatePath("/", "layout");

@@ -7,19 +7,20 @@ import { useAuth } from './AuthProvider';
 // Business type based on your schema
 interface Business {
   id: string;
-  user_id: string;
+  owner_id: string;
   name: string;
   slug: string;
+  trade: string | null;
   phone: string | null;
   email: string | null;
-  address: string | null;
+  address_line1: string | null;
   city: string | null;
   state: string | null;
   zip: string | null;
-  timezone: string;
-  logo_url: string | null;
-  brand_color: string | null;
+  primary_color: string | null;
+  settings: Record<string, unknown> | null;
   onboarding_completed: boolean;
+  is_active: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -64,7 +65,7 @@ export function BusinessProvider({ children }: { children: ReactNode }) {
       const { data, error: fetchError } = await supabase
         .from('businesses')
         .select('*')
-        .eq('user_id', user.id)
+        .eq('owner_id', user.id)
         .maybeSingle();
 
       if (fetchError) {

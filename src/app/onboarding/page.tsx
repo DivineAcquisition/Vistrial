@@ -200,64 +200,61 @@ export default function OnboardingPage() {
         .eq("owner_id", user.id)
         .maybeSingle();
 
+      const businessData = {
+        name: formData.businessName,
+        trade: formData.businessType,
+        phone: formattedPhone,
+        address_line1: formData.address,
+        city: formData.city,
+        state: formData.state,
+        zip: formData.zip,
+        primary_color: formData.primaryColor,
+        settings: {
+          timezone: "America/New_York",
+          currency: "USD",
+          date_format: "MM/DD/YYYY",
+          time_format: "12h",
+          tagline: formData.tagline,
+        },
+        onboarding_completed: true,
+        is_active: true,
+      };
+
       if (existingBusiness) {
         // Update existing business
+        console.log("Updating existing business:", existingBusiness.id);
         const { error: updateError } = await supabase
           .from("businesses")
-          .update({
-            name: formData.businessName,
-            trade: formData.businessType,
-            phone: formattedPhone,
-            address_line1: formData.address,
-            city: formData.city,
-            state: formData.state,
-            zip: formData.zip,
-            primary_color: formData.primaryColor,
-            settings: {
-              timezone: "America/New_York",
-              currency: "USD",
-              date_format: "MM/DD/YYYY",
-              time_format: "12h",
-              tagline: formData.tagline,
-            },
-            onboarding_completed: true,
-            is_active: true,
-          })
+          .update(businessData)
           .eq("id", existingBusiness.id);
 
         if (updateError) {
-          console.error("Update error:", updateError);
-          throw updateError;
+          console.error("Update error details:", JSON.stringify(updateError, null, 2));
+          throw new Error(`Failed to update business: ${updateError.message || updateError.code || 'Unknown error'}`);
         }
+        console.log("Business updated successfully");
       } else {
         // Create new business
-        const { error: insertError } = await supabase.from("businesses").insert({
+        console.log("Creating new business for user:", user.id);
+        const insertData = {
+          ...businessData,
           owner_id: user.id,
-          name: formData.businessName,
           slug,
-          trade: formData.businessType,
           email: user.email,
-          phone: formattedPhone,
-          address_line1: formData.address,
-          city: formData.city,
-          state: formData.state,
-          zip: formData.zip,
-          primary_color: formData.primaryColor,
-          settings: {
-            timezone: "America/New_York",
-            currency: "USD",
-            date_format: "MM/DD/YYYY",
-            time_format: "12h",
-            tagline: formData.tagline,
-          },
-          onboarding_completed: true,
-          is_active: true,
-        });
+        };
+        console.log("Insert data:", JSON.stringify(insertData, null, 2));
+        
+        const { data: insertedBusiness, error: insertError } = await supabase
+          .from("businesses")
+          .insert(insertData)
+          .select()
+          .single();
 
         if (insertError) {
-          console.error("Insert error:", insertError);
-          throw insertError;
+          console.error("Insert error details:", JSON.stringify(insertError, null, 2));
+          throw new Error(`Failed to create business: ${insertError.message || insertError.code || 'Unknown error'}`);
         }
+        console.log("Business created successfully:", insertedBusiness?.id);
       }
 
       setCurrentStep("complete");
@@ -266,9 +263,11 @@ export default function OnboardingPage() {
       setTimeout(() => {
         router.push("/dashboard");
       }, 2500);
-    } catch (err: any) {
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : "Something went wrong. Please try again.";
       console.error("Onboarding error:", err);
-      setError(err?.message || "Something went wrong. Please try again.");
+      console.error("Error message:", errorMessage);
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }

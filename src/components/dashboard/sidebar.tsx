@@ -29,6 +29,7 @@ interface SidebarProps {
     slug: string;
     logo_url?: string;
     owner_name?: string;
+    settings?: Record<string, unknown>;
   };
   user?: {
     email?: string;
@@ -156,14 +157,17 @@ export function DashboardSidebar({ business, user }: SidebarProps) {
     setTimeout(() => setCopied(false), 2000);
   };
 
-  const initials = business?.owner_name
-    ? business.owner_name
+  // Get owner name from business settings or use business name
+  const ownerName = business?.owner_name || (business?.settings as any)?.owner_name || "";
+  
+  const initials = ownerName
+    ? ownerName
         .split(" ")
-        .map((n) => n[0])
+        .map((n: string) => n[0])
         .join("")
         .toUpperCase()
         .slice(0, 2)
-    : business.name.charAt(0).toUpperCase();
+    : (business?.name?.charAt(0) || "V").toUpperCase();
 
   const SidebarContent = () => (
     <div className="flex flex-col h-full bg-gray-900">

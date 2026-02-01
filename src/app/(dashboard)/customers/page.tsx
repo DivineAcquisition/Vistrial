@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { requireBusiness } from "@/lib/auth/actions";
-import { getCustomers, getCustomerStats } from "@/lib/data/customers";
+import { getCustomers, getCustomerStats, getCustomerTags } from "@/lib/data/customers";
 import {
   RiUserLine,
   RiUserAddLine,
@@ -9,6 +9,8 @@ import {
   RiArrowRightLine,
   RiPhoneLine,
   RiMailLine,
+  RiAlertLine,
+  RiMoneyDollarCircleLine,
 } from "@remixicon/react";
 import { formatCurrency } from "@/lib/utils/format";
 
@@ -17,7 +19,11 @@ export const dynamic = "force-dynamic";
 interface CustomersPageProps {
   searchParams: Promise<{
     status?: string;
+    lifecycle?: string;
     search?: string;
+    tags?: string;
+    sort?: string;
+    order?: string;
     page?: string;
   }>;
 }
@@ -28,13 +34,18 @@ export default async function CustomersPage({ searchParams }: CustomersPageProps
 
   const filters = {
     status: params.status,
+    lifecycleStage: params.lifecycle,
     search: params.search,
+    tags: params.tags?.split(",").filter(Boolean),
+    sortBy: params.sort || "created_at",
+    sortOrder: (params.order as "asc" | "desc") || "desc",
     page: params.page ? parseInt(params.page) : 1,
   };
 
-  const [{ customers, total, page, totalPages }, stats] = await Promise.all([
+  const [{ customers, total, page, totalPages }, stats, tags] = await Promise.all([
     getCustomers(business.id, filters),
     getCustomerStats(business.id),
+    getCustomerTags(business.id),
   ]);
 
   return (
@@ -55,7 +66,7 @@ export default async function CustomersPage({ searchParams }: CustomersPageProps
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
         <div className="relative group">
           <div className="absolute -inset-0.5 bg-gradient-to-r from-brand-500/20 to-brand-600/20 rounded-2xl blur opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
           <div className="relative bg-gray-900/80 backdrop-blur-xl rounded-2xl border border-white/10 p-6">
@@ -64,8 +75,23 @@ export default async function CustomersPage({ searchParams }: CustomersPageProps
                 <RiUserLine className="w-6 h-6 text-brand-400" />
               </div>
               <div>
-                <p className="text-sm text-gray-400">Total Customers</p>
+                <p className="text-sm text-gray-400">Total</p>
                 <p className="text-2xl font-bold text-white">{stats.total}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="relative group">
+          <div className="absolute -inset-0.5 bg-gradient-to-r from-amber-500/20 to-amber-600/20 rounded-2xl blur opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+          <div className="relative bg-gray-900/80 backdrop-blur-xl rounded-2xl border border-white/10 p-6">
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 bg-gradient-to-br from-amber-400/20 to-amber-600/20 rounded-xl flex items-center justify-center">
+                <RiUserAddLine className="w-6 h-6 text-amber-400" />
+              </div>
+              <div>
+                <p className="text-sm text-gray-400">Leads</p>
+                <p className="text-2xl font-bold text-white">{stats.leads}</p>
               </div>
             </div>
           </div>
@@ -79,8 +105,23 @@ export default async function CustomersPage({ searchParams }: CustomersPageProps
                 <RiVipCrownLine className="w-6 h-6 text-green-400" />
               </div>
               <div>
-                <p className="text-sm text-gray-400">Active Members</p>
-                <p className="text-2xl font-bold text-white">{stats.activeMembers}</p>
+                <p className="text-sm text-gray-400">Members</p>
+                <p className="text-2xl font-bold text-white">{stats.members}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="relative group">
+          <div className="absolute -inset-0.5 bg-gradient-to-r from-red-500/20 to-red-600/20 rounded-2xl blur opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+          <div className="relative bg-gray-900/80 backdrop-blur-xl rounded-2xl border border-white/10 p-6">
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 bg-gradient-to-br from-red-400/20 to-red-600/20 rounded-xl flex items-center justify-center">
+                <RiAlertLine className="w-6 h-6 text-red-400" />
+              </div>
+              <div>
+                <p className="text-sm text-gray-400">At Risk</p>
+                <p className="text-2xl font-bold text-white">{stats.atRisk}</p>
               </div>
             </div>
           </div>
@@ -91,11 +132,11 @@ export default async function CustomersPage({ searchParams }: CustomersPageProps
           <div className="relative bg-gray-900/80 backdrop-blur-xl rounded-2xl border border-white/10 p-6">
             <div className="flex items-center gap-4">
               <div className="w-12 h-12 bg-gradient-to-br from-blue-400/20 to-blue-600/20 rounded-xl flex items-center justify-center">
-                <RiUserAddLine className="w-6 h-6 text-blue-400" />
+                <RiMoneyDollarCircleLine className="w-6 h-6 text-blue-400" />
               </div>
               <div>
-                <p className="text-sm text-gray-400">New This Month</p>
-                <p className="text-2xl font-bold text-white">{stats.newThisMonth}</p>
+                <p className="text-sm text-gray-400">Avg LTV</p>
+                <p className="text-2xl font-bold text-white">{formatCurrency(stats.averageLTV)}</p>
               </div>
             </div>
           </div>
@@ -103,8 +144,8 @@ export default async function CustomersPage({ searchParams }: CustomersPageProps
       </div>
 
       {/* Filters */}
-      <div className="flex items-center gap-4">
-        <form className="flex-1 relative">
+      <div className="flex items-center gap-4 flex-wrap">
+        <form className="flex-1 min-w-[200px] relative">
           <RiSearchLine className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500" />
           <input
             type="text"
@@ -123,8 +164,35 @@ export default async function CustomersPage({ searchParams }: CustomersPageProps
           <option value="all">All Status</option>
           <option value="lead">Leads</option>
           <option value="customer">Customers</option>
-          <option value="vip">VIP</option>
+          <option value="member">Members</option>
+          <option value="inactive">Inactive</option>
         </select>
+
+        <select
+          name="lifecycle"
+          defaultValue={params.lifecycle || "all"}
+          className="px-4 py-2.5 bg-gray-900/80 border border-white/10 rounded-xl text-white focus:outline-none focus:border-brand-500/50"
+        >
+          <option value="all">All Lifecycle</option>
+          <option value="new">New</option>
+          <option value="engaged">Engaged</option>
+          <option value="converted">Converted</option>
+          <option value="loyal">Loyal</option>
+          <option value="at_risk">At Risk</option>
+        </select>
+
+        {tags.length > 0 && (
+          <select
+            name="tags"
+            defaultValue=""
+            className="px-4 py-2.5 bg-gray-900/80 border border-white/10 rounded-xl text-white focus:outline-none focus:border-brand-500/50"
+          >
+            <option value="">All Tags</option>
+            {tags.map((tag: any) => (
+              <option key={tag.id} value={tag.id}>{tag.name}</option>
+            ))}
+          </select>
+        )}
       </div>
 
       {/* Customer List */}
@@ -172,17 +240,32 @@ export default async function CustomersPage({ searchParams }: CustomersPageProps
                     <div className="flex items-center gap-6">
                       <div className="text-right">
                         <p className="text-sm text-gray-400">Bookings</p>
-                        <p className="font-semibold text-white">{customer.bookings_count}</p>
+                        <p className="font-semibold text-white">{customer.total_bookings || 0}</p>
                       </div>
                       <div className="text-right">
                         <p className="text-sm text-gray-400">Total Spent</p>
-                        <p className="font-semibold text-white">{formatCurrency(customer.total_spent)}</p>
+                        <p className="font-semibold text-white">{formatCurrency(customer.total_spent || 0)}</p>
                       </div>
-                      {customer.memberships?.some((m) => m.status === "active") && (
-                        <span className="px-2.5 py-1 bg-green-500/20 text-green-400 text-xs font-medium rounded-full border border-green-500/30">
-                          Member
-                        </span>
-                      )}
+                      <div className="flex items-center gap-2">
+                        {customer.tags?.slice(0, 2).map((tag: any) => (
+                          <span
+                            key={tag.id}
+                            className="px-2 py-0.5 text-xs font-medium rounded-full border"
+                            style={{
+                              backgroundColor: `${tag.color}20`,
+                              color: tag.color,
+                              borderColor: `${tag.color}40`,
+                            }}
+                          >
+                            {tag.name}
+                          </span>
+                        ))}
+                        {customer.memberships?.some((m: any) => m.status === "active") && (
+                          <span className="px-2.5 py-1 bg-green-500/20 text-green-400 text-xs font-medium rounded-full border border-green-500/30">
+                            Member
+                          </span>
+                        )}
+                      </div>
                       <RiArrowRightLine className="w-5 h-5 text-gray-500" />
                     </div>
                   </div>

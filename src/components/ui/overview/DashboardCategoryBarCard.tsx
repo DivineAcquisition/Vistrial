@@ -1,7 +1,12 @@
 import { Badge } from "@/components/Badge"
 import { cx } from "@/lib/utils"
 
-import type { KpiEntryExtended } from "@/app/(main)/overview/page"
+export type KpiEntryExtended = {
+  title: string
+  percentage: number
+  value: string
+  color: string
+}
 
 export type CardProps = {
   title: string
@@ -75,7 +80,7 @@ export function CategoryBarCard({
         </div>
         <p className="mt-6 text-xs text-gray-500">
           {ctaDescription}{" "}
-          <a href={ctaLink} className="text-indigo-600 dark:text-indigo-400">
+          <a href={ctaLink} className="text-brand-600 dark:text-brand-400">
             {ctaText}
           </a>
         </p>

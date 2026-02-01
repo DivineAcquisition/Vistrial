@@ -114,18 +114,18 @@ export const columns = [
           category = "good"
         }
 
-        const getBarClass = (index: number) => {
-          if (category === "zero") {
+          const getBarClass = (index: number) => {
+            if (category === "zero") {
+              return "bg-gray-300 dark:bg-gray-800"
+            } else if (category === "good") {
+              return "bg-brand-600 dark:bg-brand-400"
+            } else if (category === "ok" && index < 2) {
+              return "bg-brand-600 dark:bg-brand-400"
+            } else if (category === "bad" && index < 1) {
+              return "bg-brand-600 dark:bg-brand-400"
+            }
             return "bg-gray-300 dark:bg-gray-800"
-          } else if (category === "good") {
-            return "bg-indigo-600 dark:bg-indigo-500"
-          } else if (category === "ok" && index < 2) {
-            return "bg-indigo-600 dark:bg-indigo-500"
-          } else if (category === "bad" && index < 1) {
-            return "bg-indigo-600 dark:bg-indigo-500"
           }
-          return "bg-gray-300 dark:bg-gray-800"
-        }
 
         return (
           <div className="flex gap-0.5">

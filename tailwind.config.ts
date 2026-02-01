@@ -5,6 +5,21 @@ const config: Config = {
   content: ["./src/**/*.{js,ts,jsx,tsx,mdx}"],
   theme: {
     extend: {
+      colors: {
+        brand: {
+          50: "#F5F4FF",
+          100: "#ECEAFF",
+          200: "#DCD9FF",
+          300: "#C4BFFF",
+          400: "#A39EFF",  // Lighter brand color
+          500: "#8B7FFF",
+          600: "#6E47D1",  // Darker brand color (primary)
+          700: "#5C3BAF",
+          800: "#4A2F8D",
+          900: "#38236B",
+          950: "#1E1338",
+        },
+      },
       keyframes: {
         hide: {
           from: { opacity: "1" },

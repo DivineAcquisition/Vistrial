@@ -58,13 +58,20 @@ export async function signUpStep2(data: SignUpStep2Data) {
     return { error: verification.error || "Invalid verification code" };
   }
 
-  // 2. Create auth user (business created during onboarding)
+  // 2. Parse full name into first/last for database trigger compatibility
+  const nameParts = data.fullName.trim().split(/\s+/);
+  const firstName = nameParts[0] || "";
+  const lastName = nameParts.slice(1).join(" ") || "";
+
+  // 3. Create auth user (business created during onboarding)
   const { data: authData, error: authError } = await supabase.auth.signUp({
     email: data.email,
     password: data.password,
     options: {
       data: {
         full_name: data.fullName,
+        first_name: firstName,
+        last_name: lastName,
         phone: data.phone,
         business_name: data.businessName, // Store for use in onboarding
       },
@@ -73,6 +80,7 @@ export async function signUpStep2(data: SignUpStep2Data) {
   });
 
   if (authError) {
+    console.error("Signup auth error:", authError);
     return { error: authError.message };
   }
 

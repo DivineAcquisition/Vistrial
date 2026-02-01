@@ -8,7 +8,7 @@
 
 import { useState } from "react"
 import Link from "next/link"
-import { LogoIcon, LogoText } from "@/components/ui/Logo"
+import { Logo } from "@/components/ui/Logo"
 import {
   RiCalendarLine,
   RiMessage2Line,
@@ -40,9 +40,8 @@ export default function LandingPage() {
       {/* Navigation */}
       <nav className="fixed top-0 left-0 right-0 z-50 bg-white/80 backdrop-blur-xl border-b border-gray-100">
         <div className="max-w-6xl mx-auto px-4 py-3 md:py-4 flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-2">
-            <LogoIcon size={28} className="md:w-8 md:h-8" />
-            <LogoText className="text-gray-900 text-sm md:text-base" />
+          <Link href="/" className="flex items-center">
+            <Logo size="sm" />
           </Link>
           
           {/* Desktop Nav */}
@@ -701,9 +700,8 @@ export default function LandingPage() {
       <footer className="py-8 md:py-12 px-4 border-t border-gray-100 bg-white">
         <div className="max-w-5xl mx-auto">
           <div className="flex flex-col md:flex-row items-center justify-between gap-4 md:gap-6">
-            <div className="flex items-center gap-2">
-              <LogoIcon size={28} />
-              <LogoText className="text-gray-900 text-sm" />
+            <div className="flex items-center">
+              <Logo size="sm" />
             </div>
             <div className="flex items-center gap-6 md:gap-8 text-xs md:text-sm text-gray-500">
               <a href="#" className="hover:text-gray-700">Privacy</a>

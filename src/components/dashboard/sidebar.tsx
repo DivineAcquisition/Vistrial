@@ -19,7 +19,7 @@ import {
   RiSparklingLine,
 } from "@remixicon/react";
 import { cn } from "@/lib/utils/cn";
-import { LogoIcon } from "@/components/ui/Logo";
+import { Logo } from "@/components/ui/Logo";
 
 interface SidebarProps {
   business: {
@@ -64,12 +64,8 @@ export function DashboardSidebar({ business }: SidebarProps) {
     <div className="flex flex-col h-full">
       {/* Logo */}
       <div className="p-4 border-b border-gray-100">
-        <Link href="/dashboard" className="flex items-center gap-3">
-          <LogoIcon size={40} />
-          <div>
-            <h1 className="text-lg font-bold text-gray-900">Vistrial</h1>
-            <p className="text-xs text-gray-500">Quote Follow-Up</p>
-          </div>
+        <Link href="/dashboard" className="flex items-center">
+          <Logo size="md" />
         </Link>
       </div>
 

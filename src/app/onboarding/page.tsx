@@ -16,7 +16,7 @@ import {
   RiSparklingLine,
 } from "@remixicon/react";
 import { cn } from "@/lib/utils/cn";
-import { createBrowserClient } from "@supabase/ssr";
+import { createClient } from "@/lib/supabase/client";
 
 type Step = "business" | "contact" | "branding" | "complete";
 
@@ -50,10 +50,7 @@ export default function OnboardingPage() {
   // Create Supabase client lazily to avoid SSR issues
   const supabase = useMemo(() => {
     if (typeof window === "undefined") return null;
-    return createBrowserClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-    );
+    return createClient();
   }, []);
 
   const updateField = (field: string, value: string) => {
@@ -89,62 +86,89 @@ export default function OnboardingPage() {
     setError("");
 
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      const { data: { user }, error: userError } = await supabase.auth.getUser();
       
-      if (!user) {
+      if (userError || !user) {
+        console.error("Auth error:", userError);
         router.push("/login");
         return;
       }
 
       // Generate slug from business name
-      const slug = formData.businessName
+      const baseSlug = formData.businessName
         .toLowerCase()
         .replace(/[^a-z0-9]+/g, "-")
         .replace(/^-|-$/g, "")
         .slice(0, 50);
 
-      // Update or create business
-      const { error: upsertError } = await supabase
-        .from("businesses")
-        .upsert({
-          owner_id: user.id,
-          name: formData.businessName,
-          slug,
-          phone: formData.phone,
-          address: formData.address,
-          city: formData.city,
-          state: formData.state,
-          zip: formData.zip,
-          primary_color: formData.primaryColor,
-          tagline: formData.tagline,
-          business_type: formData.businessType,
-          onboarding_complete: true,
-          is_active: true,
-        }, {
-          onConflict: "owner_id"
-        });
+      // Make slug unique by adding random suffix
+      const slug = `${baseSlug}-${Date.now().toString(36)}`;
 
-      if (upsertError) {
-        // Try insert if upsert fails
+      // Check if user already has a business
+      const { data: existingBusiness } = await supabase
+        .from("businesses")
+        .select("id")
+        .eq("owner_id", user.id)
+        .maybeSingle();
+
+      if (existingBusiness) {
+        // Update existing business
+        const { error: updateError } = await supabase
+          .from("businesses")
+          .update({
+            name: formData.businessName,
+            trade: formData.businessType,
+            phone: formData.phone,
+            address_line1: formData.address,
+            city: formData.city,
+            state: formData.state,
+            zip: formData.zip,
+            primary_color: formData.primaryColor,
+            settings: {
+              timezone: "America/New_York",
+              currency: "USD",
+              date_format: "MM/DD/YYYY",
+              time_format: "12h",
+              tagline: formData.tagline,
+            },
+            onboarding_completed: true,
+            is_active: true,
+          })
+          .eq("id", existingBusiness.id);
+
+        if (updateError) {
+          console.error("Update error:", updateError);
+          throw updateError;
+        }
+      } else {
+        // Create new business
         const { error: insertError } = await supabase
           .from("businesses")
           .insert({
             owner_id: user.id,
             name: formData.businessName,
             slug,
+            trade: formData.businessType,
+            email: user.email,
             phone: formData.phone,
-            address: formData.address,
+            address_line1: formData.address,
             city: formData.city,
             state: formData.state,
             zip: formData.zip,
             primary_color: formData.primaryColor,
-            tagline: formData.tagline,
-            business_type: formData.businessType,
-            onboarding_complete: true,
+            settings: {
+              timezone: "America/New_York",
+              currency: "USD",
+              date_format: "MM/DD/YYYY",
+              time_format: "12h",
+              tagline: formData.tagline,
+            },
+            onboarding_completed: true,
             is_active: true,
           });
 
         if (insertError) {
+          console.error("Insert error:", insertError);
           throw insertError;
         }
       }
@@ -155,9 +179,9 @@ export default function OnboardingPage() {
       setTimeout(() => {
         router.push("/dashboard");
       }, 2000);
-    } catch (err) {
+    } catch (err: any) {
       console.error("Onboarding error:", err);
-      setError("Something went wrong. Please try again.");
+      setError(err?.message || "Something went wrong. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -200,15 +224,15 @@ export default function OnboardingPage() {
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 flex flex-col">
       {/* Header */}
       <header className="p-6">
-        <Link href="/" className="flex items-center gap-2">
+        <Link href="/" className="inline-block">
           <Image
             src="/VISTRIAL.png"
             alt="Vistrial"
-            width={36}
-            height={36}
+            width={140}
+            height={48}
             className="object-contain"
+            priority
           />
-          <span className="text-xl font-bold text-slate-900">Vistrial</span>
         </Link>
       </header>
 

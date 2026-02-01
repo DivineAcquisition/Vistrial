@@ -2,7 +2,7 @@
 
 import { siteConfig } from "@/app/siteConfig"
 import { cx } from "@/lib/utils"
-import { LogoIcon } from "@/components/ui/Logo"
+import { Logo } from "@/components/ui/Logo"
 import {
   RiDashboardLine,
   RiUserLine,
@@ -55,13 +55,11 @@ export function VistrialSidebar({ isCollapsed, onToggle }: VistrialSidebarProps)
     >
       {/* Logo */}
       <div className="border-b border-gray-100 p-4">
-        <Link href="/overview" className="flex items-center gap-3">
-          <LogoIcon size={40} />
-          {!isCollapsed && (
-            <div>
-              <h1 className="text-lg font-bold text-gray-900">Vistrial</h1>
-              <p className="text-xs text-gray-500">Quote Follow-Up</p>
-            </div>
+        <Link href="/overview" className="flex items-center">
+          {isCollapsed ? (
+            <Logo size="sm" />
+          ) : (
+            <Logo size="md" />
           )}
         </Link>
       </div>

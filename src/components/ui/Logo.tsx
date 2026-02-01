@@ -8,7 +8,7 @@ interface LogoIconProps {
   size?: number
 }
 
-// Logo Icon using VISTRIAL.png
+// Logo Icon using VISTRIAL.png (contains both icon and text)
 export function LogoIcon({ className, size = 32 }: LogoIconProps) {
   return (
     <div 
@@ -16,7 +16,6 @@ export function LogoIcon({ className, size = 32 }: LogoIconProps) {
         "flex items-center justify-center",
         className
       )}
-      style={{ width: size, height: size }}
     >
       <Image
         src="/VISTRIAL.png"
@@ -34,7 +33,7 @@ interface LogoTextProps {
   className?: string
 }
 
-// Text logo "Vistrial"
+// Text logo "Vistrial" - kept for backwards compatibility but typically not needed
 export function LogoText({ className }: LogoTextProps) {
   return (
     <span className={cn("text-xl font-bold tracking-tight", className)}>
@@ -46,44 +45,46 @@ export function LogoText({ className }: LogoTextProps) {
 interface LogoProps {
   className?: string
   showText?: boolean
-  size?: "sm" | "md" | "lg"
+  size?: "sm" | "md" | "lg" | "xl"
   variant?: "light" | "dark"
 }
 
-// Full logo with icon and text
-export function Logo({ className, showText = true, size = "md", variant = "dark" }: LogoProps) {
+// Full logo - PNG already contains icon + text, so this just displays the image
+export function Logo({ className, size = "md" }: LogoProps) {
+  // Sizes are now width-based since PNG is horizontal with text
   const sizes = {
-    sm: { icon: 28, gap: "gap-2" },
-    md: { icon: 36, gap: "gap-2.5" },
-    lg: { icon: 44, gap: "gap-3" },
-  }
-
-  const textColors = {
-    light: "text-white",
-    dark: "text-gray-900",
+    sm: { width: 100, height: 32 },
+    md: { width: 140, height: 44 },
+    lg: { width: 180, height: 56 },
+    xl: { width: 220, height: 68 },
   }
 
   return (
-    <div className={cn("flex items-center", sizes[size].gap, className)}>
-      <LogoIcon size={sizes[size].icon} />
-      {showText && (
-        <div className="flex flex-col">
-          <LogoText className={textColors[variant]} />
-          <span className={cn("text-xs", variant === "light" ? "text-gray-400" : "text-gray-500")}>
-            Quote Follow-Up
-          </span>
-        </div>
-      )}
+    <div className={cn("flex items-center", className)}>
+      <Image
+        src="/VISTRIAL.png"
+        alt="Vistrial"
+        width={sizes[size].width}
+        height={sizes[size].height}
+        className="object-contain"
+        priority
+      />
     </div>
   )
 }
 
-// Simple inline logo for headers
-export function LogoInline({ className, variant = "dark" }: { className?: string; variant?: "light" | "dark" }) {
+// Simple inline logo for headers - same as Logo since PNG has text
+export function LogoInline({ className }: { className?: string; variant?: "light" | "dark" }) {
   return (
-    <div className={cn("flex items-center gap-2", className)}>
-      <LogoIcon size={28} />
-      <LogoText className={variant === "light" ? "text-white" : "text-gray-900"} />
+    <div className={cn("flex items-center", className)}>
+      <Image
+        src="/VISTRIAL.png"
+        alt="Vistrial"
+        width={120}
+        height={38}
+        className="object-contain"
+        priority
+      />
     </div>
   )
 }

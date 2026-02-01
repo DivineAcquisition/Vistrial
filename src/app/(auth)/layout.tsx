@@ -11,7 +11,7 @@ export default function AuthLayout({
       {/* Header */}
       <header className="p-6">
         <Link href="/">
-          <Logo size="md" variant="dark" showText />
+          <Logo size="lg" />
         </Link>
       </header>
 

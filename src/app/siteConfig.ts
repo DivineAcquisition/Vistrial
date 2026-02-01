@@ -20,9 +20,10 @@ export const siteConfig = {
   // Dashboard links
   baseLinks: {
     home: "/",
-    overview: "/overview",
-    details: "/details",
-    leads: "/leads",
+    dashboard: "/dashboard",
+    bookings: "/bookings",
+    customers: "/customers",
+    memberships: "/memberships",
     quotes: "/quotes",
     sequences: "/sequences",
     settings: {

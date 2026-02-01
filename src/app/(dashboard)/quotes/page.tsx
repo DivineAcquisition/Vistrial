@@ -3,7 +3,7 @@
  * Display all quotes with stats and filtering
  */
 
-import { createClient } from "@/lib/supabase/server"
+import { createServerSupabaseClient as createClient } from "@/lib/supabase/server"
 import { redirect } from "next/navigation"
 import { QuotesDashboard } from "@/components/quotes/QuotesDashboard"
 import type { Quote, QuoteStats } from "@/types/quotes"

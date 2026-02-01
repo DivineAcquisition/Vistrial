@@ -1,257 +1,295 @@
-"use client"
+"use client";
 
-import { Button } from "@/components/Button"
-import { Card } from "@/components/Card"
+import { useState, useEffect } from "react";
+import { Button } from "@/components/Button";
+import { Input } from "@/components/Input";
+import { Label } from "@/components/Label";
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/Dropdown"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/Select"
-import { Tooltip } from "@/components/Tooltip"
-import { ModalAddUser } from "@/components/ui/settings/ModalAddUser"
-import { invitedUsers, roles, users } from "@/data/data"
-import { RiAddLine, RiMore2Fill, RiTeamLine, RiTimeLine } from "@remixicon/react"
+  RiFlashlightLine,
+  RiLoader4Line,
+  RiAddLine,
+  RiDeleteBinLine,
+  RiCheckLine,
+  RiTimeLine,
+  RiPriceTag3Line,
+} from "@remixicon/react";
 
-export default function Users() {
-  return (
-    <>
-      {/* Existing Users Section */}
-      <div className="relative">
-        <div className="absolute -inset-0.5 bg-gradient-to-r from-brand-500/10 via-brand-600/10 to-indigo-500/10 rounded-2xl blur opacity-50" />
-        <Card className="relative">
-          {/* Top accent line */}
-          <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-brand-500/50 to-transparent" />
-          
-          <section aria-labelledby="existing-users">
-            <div className="sm:flex sm:items-center sm:justify-between mb-6">
-              <div className="flex items-center gap-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-to-br from-brand-400/20 to-brand-600/20">
-                  <RiTeamLine className="h-5 w-5 text-brand-400" />
-                </div>
-                <div>
-                  <h3
-                    id="existing-users"
-                    className="scroll-mt-10 font-semibold text-white"
-                  >
-                    Users
-                  </h3>
-                  <p className="text-sm text-gray-400">
-                    Workspace administrators can add, manage, and remove users.
-                  </p>
-                </div>
-              </div>
-              <ModalAddUser>
-                <Button className="mt-4 w-full gap-2 sm:mt-0 sm:w-fit">
-                  <RiAddLine className="-ml-1 size-4 shrink-0" aria-hidden="true" />
-                  Add user
-                </Button>
-              </ModalAddUser>
-            </div>
-            <ul
-              role="list"
-              className="divide-y divide-white/10"
-            >
-              {users.map((user) => (
-                <li
-                  key={user.name}
-                  className="flex items-center justify-between gap-x-6 py-4"
-                >
-                  <div className="flex items-center gap-x-4 truncate">
-                    <span
-                      className="hidden size-10 shrink-0 items-center justify-center rounded-xl border border-white/10 bg-white/5 text-sm text-gray-300 sm:flex"
-                      aria-hidden="true"
-                    >
-                      {user.initials}
-                    </span>
-                    <div className="truncate">
-                      <p className="truncate text-sm font-medium text-white">
-                        {user.name}
-                      </p>
-                      <p className="truncate text-xs text-gray-500">{user.email}</p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    {user.role === "admin" ? (
-                      <Tooltip
-                        content="A workspace must have at least one admin"
-                        className="max-w-44 text-xs"
-                        sideOffset={5}
-                        triggerAsChild={true}
-                      >
-                        <div>
-                          <Select
-                            defaultValue={user.role}
-                            disabled={user.role === "admin"}
-                          >
-                            <SelectTrigger className="h-8 w-32">
-                              <SelectValue placeholder="Select" />
-                            </SelectTrigger>
-                            <SelectContent align="end">
-                              {roles.map((role) => (
-                                <SelectItem
-                                  key={role.value}
-                                  value={role.value}
-                                  disabled={role.value === "admin"}
-                                >
-                                  {role.label}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </div>
-                      </Tooltip>
-                    ) : (
-                      <Select
-                        defaultValue={user.role}
-                        disabled={user.role === "admin"}
-                      >
-                        <SelectTrigger className="h-8 w-32">
-                          <SelectValue placeholder="Select" />
-                        </SelectTrigger>
-                        <SelectContent align="end">
-                          {roles.map((role) => (
-                            <SelectItem
-                              key={role.value}
-                              value={role.value}
-                              disabled={role.value === "admin"}
-                            >
-                              {role.label}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    )}
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button
-                          variant="ghost"
-                          className="group size-8 hover:bg-white/10"
-                        >
-                          <RiMore2Fill
-                            className="size-4 shrink-0 text-gray-500 group-hover:text-gray-300"
-                            aria-hidden="true"
-                          />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end" className="w-36">
-                        <DropdownMenuItem disabled={user.role === "admin"}>
-                          View details
-                        </DropdownMenuItem>
-                        <DropdownMenuItem
-                          className="text-red-400"
-                          disabled={user.role === "admin"}
-                        >
-                          Delete
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </div>
-                </li>
-              ))}
-            </ul>
-          </section>
-        </Card>
+interface ServiceType {
+  id: string;
+  name: string;
+  description: string | null;
+  base_price: number;
+  duration_minutes: number;
+  is_active: boolean;
+}
+
+export default function ServiceTypesPage() {
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [services, setServices] = useState<ServiceType[]>([]);
+  const [showAddForm, setShowAddForm] = useState(false);
+  const [error, setError] = useState("");
+
+  const [formData, setFormData] = useState({
+    name: "",
+    description: "",
+    base_price: "",
+    duration_minutes: "60",
+  });
+
+  useEffect(() => {
+    fetchServices();
+  }, []);
+
+  const fetchServices = async () => {
+    try {
+      const res = await fetch("/api/settings/service-types");
+      if (res.ok) {
+        const data = await res.json();
+        setServices(data.services || []);
+      }
+    } catch (err) {
+      console.error("Failed to fetch services:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleAdd = async () => {
+    if (!formData.name) return;
+    setSaving(true);
+    setError("");
+
+    try {
+      const res = await fetch("/api/settings/service-types", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: formData.name,
+          description: formData.description || null,
+          base_price: parseFloat(formData.base_price) || 0,
+          duration_minutes: parseInt(formData.duration_minutes) || 60,
+        }),
+      });
+
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || "Failed to add service");
+      }
+
+      await fetchServices();
+      setShowAddForm(false);
+      setFormData({ name: "", description: "", base_price: "", duration_minutes: "60" });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to add service");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    if (!confirm("Are you sure you want to delete this service type?")) return;
+
+    try {
+      const res = await fetch(`/api/settings/service-types?id=${id}`, {
+        method: "DELETE",
+      });
+
+      if (res.ok) {
+        setServices(services.filter((s) => s.id !== id));
+      }
+    } catch (err) {
+      console.error("Failed to delete service:", err);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <RiLoader4Line className="w-8 h-8 animate-spin text-brand-600" />
       </div>
+    );
+  }
 
-      {/* Pending Invitations Section */}
-      <div className="relative mt-6">
-        <div className="absolute -inset-0.5 bg-gradient-to-r from-amber-500/10 via-amber-600/10 to-orange-500/10 rounded-2xl blur opacity-50" />
-        <Card className="relative">
-          <section aria-labelledby="pending-invitations">
-            <div className="flex items-center gap-3 mb-6">
-              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-to-br from-amber-400/20 to-amber-600/20">
-                <RiTimeLine className="h-5 w-5 text-amber-400" />
+  return (
+    <div className="space-y-6">
+      {/* Service Types */}
+      <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+        <div className="px-6 py-4 border-b border-gray-100 bg-gray-50/50">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-to-br from-brand-500 to-brand-600 shadow-lg shadow-brand-500/25">
+                <RiFlashlightLine className="h-5 w-5 text-white" />
               </div>
               <div>
-                <h2
-                  id="pending-invitations"
-                  className="scroll-mt-10 font-semibold text-white"
-                >
-                  Pending invitations
-                </h2>
-                <p className="text-sm text-gray-400">
-                  Users who have been invited but haven&apos;t joined yet.
+                <h3 className="text-lg font-semibold text-gray-900">
+                  Service Types
+                </h3>
+                <p className="text-sm text-gray-500">
+                  Manage the services you offer
                 </p>
               </div>
             </div>
-            <ul
-              role="list"
-              className="divide-y divide-white/10"
+            <Button
+              onClick={() => setShowAddForm(true)}
+              size="sm"
+              disabled={showAddForm}
             >
-              {invitedUsers.map((user) => (
-                <li
-                  key={user.initials}
-                  className="flex items-center justify-between gap-x-6 py-4"
+              <RiAddLine className="w-4 h-4 mr-1" />
+              Add Service
+            </Button>
+          </div>
+        </div>
+
+        <div className="p-6">
+          {error && (
+            <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-600 text-sm">
+              {error}
+            </div>
+          )}
+
+          {/* Add Form */}
+          {showAddForm && (
+            <div className="mb-6 p-4 bg-gray-50 rounded-lg border border-gray-200">
+              <h4 className="font-medium text-gray-900 mb-4">Add New Service</h4>
+              <div className="grid grid-cols-2 gap-4 mb-4">
+                <div>
+                  <Label htmlFor="name" className="mb-2">
+                    Service Name *
+                  </Label>
+                  <Input
+                    id="name"
+                    value={formData.name}
+                    onChange={(e) =>
+                      setFormData({ ...formData, name: e.target.value })
+                    }
+                    placeholder="e.g., Deep Clean"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="price" className="mb-2">
+                    Base Price ($)
+                  </Label>
+                  <Input
+                    id="price"
+                    type="number"
+                    value={formData.base_price}
+                    onChange={(e) =>
+                      setFormData({ ...formData, base_price: e.target.value })
+                    }
+                    placeholder="0.00"
+                  />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4 mb-4">
+                <div>
+                  <Label htmlFor="description" className="mb-2">
+                    Description
+                  </Label>
+                  <Input
+                    id="description"
+                    value={formData.description}
+                    onChange={(e) =>
+                      setFormData({ ...formData, description: e.target.value })
+                    }
+                    placeholder="Brief description"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="duration" className="mb-2">
+                    Duration (minutes)
+                  </Label>
+                  <Input
+                    id="duration"
+                    type="number"
+                    value={formData.duration_minutes}
+                    onChange={(e) =>
+                      setFormData({ ...formData, duration_minutes: e.target.value })
+                    }
+                    placeholder="60"
+                  />
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <Button onClick={handleAdd} disabled={saving || !formData.name}>
+                  {saving ? (
+                    <RiLoader4Line className="w-4 h-4 animate-spin mr-1" />
+                  ) : (
+                    <RiCheckLine className="w-4 h-4 mr-1" />
+                  )}
+                  Save Service
+                </Button>
+                <Button
+                  variant="secondary"
+                  onClick={() => {
+                    setShowAddForm(false);
+                    setFormData({ name: "", description: "", base_price: "", duration_minutes: "60" });
+                  }}
                 >
-                  <div className="flex items-center gap-x-4">
-                    <span
-                      className="hidden size-10 shrink-0 items-center justify-center rounded-xl border border-dashed border-white/20 bg-white/5 text-sm text-gray-400 sm:flex"
-                      aria-hidden="true"
-                    >
-                      {user.initials}
-                    </span>
+                  Cancel
+                </Button>
+              </div>
+            </div>
+          )}
+
+          {/* Services List */}
+          {services.length === 0 ? (
+            <div className="text-center py-8">
+              <div className="w-16 h-16 rounded-2xl bg-gray-100 flex items-center justify-center mx-auto mb-4">
+                <RiFlashlightLine className="w-8 h-8 text-gray-400" />
+              </div>
+              <h3 className="text-lg font-semibold text-gray-900 mb-1">
+                No services yet
+              </h3>
+              <p className="text-gray-500 mb-4">
+                Add your first service type to get started
+              </p>
+              {!showAddForm && (
+                <Button onClick={() => setShowAddForm(true)}>
+                  <RiAddLine className="w-4 h-4 mr-1" />
+                  Add Your First Service
+                </Button>
+              )}
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {services.map((service) => (
+                <div
+                  key={service.id}
+                  className="flex items-center justify-between p-4 bg-gray-50 rounded-lg border border-gray-200 hover:border-brand-300 transition-colors"
+                >
+                  <div className="flex items-center gap-4">
+                    <div className="w-10 h-10 rounded-lg bg-brand-100 flex items-center justify-center">
+                      <RiFlashlightLine className="w-5 h-5 text-brand-600" />
+                    </div>
                     <div>
-                      <p className="text-sm font-medium text-white">
-                        {user.email}
-                      </p>
-                      <p className="text-xs text-gray-500">
-                        Expires in {user.expires} days
-                      </p>
+                      <h4 className="font-medium text-gray-900">{service.name}</h4>
+                      <div className="flex items-center gap-4 text-sm text-gray-500">
+                        <span className="flex items-center gap-1">
+                          <RiPriceTag3Line className="w-3.5 h-3.5" />
+                          ${service.base_price?.toFixed(2) || "0.00"}
+                        </span>
+                        <span className="flex items-center gap-1">
+                          <RiTimeLine className="w-3.5 h-3.5" />
+                          {service.duration_minutes || 60} min
+                        </span>
+                      </div>
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
-                    <Select defaultValue={user.role}>
-                      <SelectTrigger className="h-8 w-32">
-                        <SelectValue placeholder="Select" />
-                      </SelectTrigger>
-                      <SelectContent align="end">
-                        {roles.map((role) => (
-                          <SelectItem
-                            key={role.value}
-                            value={role.value}
-                            disabled={role.value === "admin"}
-                          >
-                            {role.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button
-                          variant="ghost"
-                          className="group size-8 hover:bg-white/10"
-                        >
-                          <RiMore2Fill
-                            className="size-4 shrink-0 text-gray-500 group-hover:text-gray-300"
-                            aria-hidden="true"
-                          />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end" className="w-36">
-                        <DropdownMenuItem
-                          className="text-red-400"
-                          disabled={user.role === "admin"}
-                        >
-                          Revoke invitation
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
+                    <button
+                      onClick={() => handleDelete(service.id)}
+                      className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                    >
+                      <RiDeleteBinLine className="w-4 h-4" />
+                    </button>
                   </div>
-                </li>
+                </div>
               ))}
-            </ul>
-          </section>
-        </Card>
+            </div>
+          )}
+        </div>
       </div>
-    </>
-  )
+    </div>
+  );
 }

@@ -10,17 +10,12 @@ import {
   RiVipCrownLine,
   RiFileTextLine,
   RiSettings4Line,
-  RiQuestionLine,
   RiMenuLine,
   RiCloseLine,
   RiExternalLinkLine,
   RiFileCopyLine,
   RiCheckLine,
-  RiMailLine,
-  RiLineChartLine,
   RiFlashlightLine,
-  RiWalletLine,
-  RiPlugLine,
   RiSearchLine,
   RiLogoutBoxRLine,
 } from "@remixicon/react";
@@ -50,7 +45,6 @@ interface NavItem {
 
 const mainNavigation: NavItem[] = [
   { name: "Dashboard", href: "/dashboard", icon: RiDashboardLine },
-  { name: "Inbox", href: "/inbox", icon: RiMailLine, showBadge: true },
 ];
 
 const manageNavigation: NavItem[] = [
@@ -64,15 +58,8 @@ const engageNavigation: NavItem[] = [
   { name: "Sequences", href: "/sequences", icon: RiFlashlightLine },
 ];
 
-const analyzeNavigation: NavItem[] = [
-  { name: "Analytics", href: "/analytics", icon: RiLineChartLine },
-];
-
 const settingsNavigation: NavItem[] = [
-  { name: "Connections", href: "/connections", icon: RiPlugLine },
-  { name: "Billing", href: "/billing", icon: RiWalletLine },
-  { name: "Settings", href: "/settings", icon: RiSettings4Line },
-  { name: "Help", href: "/help", icon: RiQuestionLine },
+  { name: "Settings", href: "/settings/general", icon: RiSettings4Line },
 ];
 
 function NavLink({
@@ -135,9 +122,11 @@ function NavSection({
 }) {
   return (
     <div className="space-y-1">
-      <p className="px-3 mb-2 text-[11px] font-semibold text-gray-500 uppercase tracking-wider">
-        {label}
-      </p>
+      {label && (
+        <p className="px-3 mb-2 text-[11px] font-semibold text-gray-500 uppercase tracking-wider">
+          {label}
+        </p>
+      )}
       {items.map((item) => (
         <NavLink key={item.name} item={item} pathname={pathname} />
       ))}
@@ -216,12 +205,11 @@ export function DashboardSidebar({ business, user }: SidebarProps) {
 
         <NavSection label="Manage" items={manageNavigation} pathname={pathname} />
         <NavSection label="Engage" items={engageNavigation} pathname={pathname} />
-        <NavSection label="Analyze" items={analyzeNavigation} pathname={pathname} />
 
         {/* Divider */}
         <div className="h-px bg-white/10" />
 
-        <NavSection label="Settings" items={settingsNavigation} pathname={pathname} />
+        <NavSection label="" items={settingsNavigation} pathname={pathname} />
       </nav>
 
       {/* Booking Link Card */}

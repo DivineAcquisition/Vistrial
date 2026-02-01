@@ -18,10 +18,10 @@ import { usePathname } from "next/navigation"
 import { DropdownUserProfile } from "./DropdownUserProfile"
 
 const navigation = [
-  { name: "Dashboard", href: siteConfig.baseLinks.overview, icon: RiDashboardLine },
-  { name: "Leads", href: siteConfig.baseLinks.details, icon: RiUserLine },
-  { name: "Quotes", href: "/quotes", icon: RiFileTextLine },
-  { name: "Sequences", href: "/sequences", icon: RiFlashlightLine },
+  { name: "Dashboard", href: siteConfig.baseLinks.dashboard, icon: RiDashboardLine },
+  { name: "Bookings", href: siteConfig.baseLinks.bookings, icon: RiUserLine },
+  { name: "Quotes", href: siteConfig.baseLinks.quotes, icon: RiFileTextLine },
+  { name: "Sequences", href: siteConfig.baseLinks.sequences, icon: RiFlashlightLine },
   { name: "Settings", href: siteConfig.baseLinks.settings.general, icon: RiSettings4Line },
 ] as const
 

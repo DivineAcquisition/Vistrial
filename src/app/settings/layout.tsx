@@ -7,16 +7,14 @@ import {
   RiUserLine,
   RiPhoneLine,
   RiFlashlightLine,
-  RiNotification3Line,
 } from "@remixicon/react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 
 const navigationSettings = [
-  { name: "Profile", href: siteConfig.baseLinks.settings.general, icon: RiUserLine },
-  { name: "Twilio Setup", href: siteConfig.baseLinks.settings.billing, icon: RiPhoneLine },
-  { name: "Job Types", href: siteConfig.baseLinks.settings.users, icon: RiFlashlightLine },
-  { name: "Notifications", href: "#", icon: RiNotification3Line },
+  { name: "Business Profile", href: siteConfig.baseLinks.settings.general, icon: RiUserLine },
+  { name: "Integrations", href: siteConfig.baseLinks.settings.billing, icon: RiPhoneLine },
+  { name: "Service Types", href: siteConfig.baseLinks.settings.users, icon: RiFlashlightLine },
 ]
 
 export default function Layout({

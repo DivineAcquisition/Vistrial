@@ -6,6 +6,12 @@ import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { sendVerificationCode, verifyCode } from "@/lib/verification/send-code";
 
+// Domain configuration
+const BASE_DOMAIN = process.env.NEXT_PUBLIC_BASE_DOMAIN || "vistrial.io";
+const APP_URL = `https://app.${BASE_DOMAIN}`;
+const ACCESS_URL = `https://access.${BASE_DOMAIN}`;
+const IS_PRODUCTION = process.env.NODE_ENV === "production";
+
 // ============================================
 // TYPES
 // ============================================
@@ -113,11 +119,15 @@ export async function signUpStep2(data: SignUpStep2Data) {
   if (signInError) {
     console.error("Auto sign-in error:", signInError);
     // User was created, just redirect to login
-    redirect("/login?message=Account created. Please sign in.");
+    const loginUrl = IS_PRODUCTION ? `${ACCESS_URL}/login?message=Account created. Please sign in.` : "/login?message=Account created. Please sign in.";
+    redirect(loginUrl);
   }
 
   revalidatePath("/", "layout");
-  redirect("/onboarding");
+  
+  // Redirect to app domain for onboarding
+  const onboardingUrl = IS_PRODUCTION ? `${APP_URL}/onboarding` : "/onboarding";
+  redirect(onboardingUrl);
 }
 
 // ============================================
@@ -129,9 +139,9 @@ export async function signIn(formData: FormData) {
 
   const email = formData.get("email") as string;
   const password = formData.get("password") as string;
-  const redirectTo = (formData.get("redirect") as string) || "/dashboard";
+  const redirectTo = formData.get("redirect") as string;
 
-  const { error } = await supabase.auth.signInWithPassword({
+  const { data: authData, error } = await supabase.auth.signInWithPassword({
     email,
     password,
   });
@@ -140,8 +150,39 @@ export async function signIn(formData: FormData) {
     return { error: error.message };
   }
 
+  // Check if user has completed onboarding
+  if (authData.user) {
+    const { data: businesses } = await supabase
+      .from("businesses")
+      .select("id, onboarding_completed")
+      .eq("owner_id", authData.user.id)
+      .order("created_at", { ascending: false })
+      .limit(1);
+
+    const business = businesses?.[0] || null;
+
+    revalidatePath("/", "layout");
+
+    // Determine redirect destination
+    let destination: string;
+    if (redirectTo && redirectTo.startsWith("http")) {
+      // External redirect URL provided
+      destination = redirectTo;
+    } else if (!business || !business.onboarding_completed) {
+      // No business or onboarding not complete - go to onboarding
+      destination = IS_PRODUCTION ? `${APP_URL}/onboarding` : "/onboarding";
+    } else {
+      // Onboarding complete - go to dashboard or specified path
+      const path = redirectTo || "/dashboard";
+      destination = IS_PRODUCTION ? `${APP_URL}${path}` : path;
+    }
+
+    redirect(destination);
+  }
+
   revalidatePath("/", "layout");
-  redirect(redirectTo);
+  const defaultDestination = IS_PRODUCTION ? `${APP_URL}/dashboard` : "/dashboard";
+  redirect(defaultDestination);
 }
 
 // ============================================
@@ -151,11 +192,18 @@ export async function signIn(formData: FormData) {
 export async function signInWithGoogle(redirectTo?: string) {
   const supabase = await createServerSupabaseClient();
 
+  // Determine callback URL - use app domain in production
+  const callbackBase = IS_PRODUCTION 
+    ? APP_URL 
+    : (process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000");
+  
+  const callbackUrl = `${callbackBase}/auth/callback${redirectTo ? `?redirect=${encodeURIComponent(redirectTo)}` : ""}`;
+
   // Auth callback will check for business and redirect appropriately
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: "google",
     options: {
-      redirectTo: `${process.env.NEXT_PUBLIC_APP_URL}/auth/callback${redirectTo ? `?redirect=${redirectTo}` : ""}`,
+      redirectTo: callbackUrl,
     },
   });
 

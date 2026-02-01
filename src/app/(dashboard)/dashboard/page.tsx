@@ -1,5 +1,8 @@
-import { createServerSupabaseClient } from "@/lib/supabase/server";
-import { redirect } from "next/navigation";
+import Link from "next/link";
+import { requireBusiness } from "@/lib/auth/actions";
+import { getBookingStats, getTodaysBookings, getUpcomingBookings } from "@/lib/data/bookings";
+import { getCustomerStats } from "@/lib/data/customers";
+import { getMembershipStats } from "@/lib/data/memberships";
 import {
   RiCalendarLine,
   RiTeamLine,
@@ -8,128 +11,36 @@ import {
   RiArrowRightLine,
   RiExternalLinkLine,
   RiFileTextLine,
-  RiCodeSSlashLine,
+  RiVipCrownLine,
 } from "@remixicon/react";
-import Link from "next/link";
-import { formatCurrency, formatTime } from "@/lib/utils/format";
+import { formatCurrency } from "@/lib/utils/format";
+
+export const dynamic = "force-dynamic";
+
+function formatTime(time: string) {
+  if (!time) return "";
+  try {
+    const [hours, minutes] = time.split(":");
+    const h = parseInt(hours);
+    const ampm = h >= 12 ? "PM" : "AM";
+    const hour12 = h % 12 || 12;
+    return `${hour12}:${minutes} ${ampm}`;
+  } catch {
+    return time;
+  }
+}
 
 export default async function DashboardPage() {
-  const supabase = await createServerSupabaseClient();
+  const { user, business } = await requireBusiness();
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) redirect("/login");
-
-  // Try businesses table first
-  let business = null;
-  const { data: businessData } = await supabase
-    .from("businesses")
-    .select("*")
-    .eq("owner_id", user.id)
-    .single();
-
-  if (businessData) {
-    business = businessData;
-  } else {
-    // Fall back to profiles table
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("*")
-      .eq("id", user.id)
-      .single();
-
-    if (profile) {
-      business = {
-        id: profile.id,
-        name: profile.business_name || "My Business",
-        slug: profile.business_slug || "my-business",
-      };
-    }
-  }
-
-  if (!business) redirect("/onboarding");
-
-  // Initialize stats
-  let todayCount = 0;
-  let weekBookings = 0;
-  let activeMembers = 0;
-  let monthRevenue = 0;
-  let todayBookings: Array<{
-    id: string;
-    scheduled_time: string;
-    address_line1?: string;
-    total: number;
-    status: string;
-    contacts?: { first_name?: string; last_name?: string; phone?: string };
-  }> = [];
-
-  const today = new Date().toISOString().split("T")[0];
-
-  // Try to get today's bookings
-  try {
-    const { data, count } = await supabase
-      .from("bookings")
-      .select("*, contacts(first_name, last_name, phone)", { count: "exact" })
-      .eq("business_id", business.id)
-      .eq("scheduled_date", today)
-      .order("scheduled_time");
-    
-    todayBookings = data || [];
-    todayCount = count || 0;
-  } catch {
-    // Bookings table may not exist
-  }
-
-  // Try to get week's bookings
-  try {
-    const startOfWeek = new Date();
-    startOfWeek.setDate(startOfWeek.getDate() - startOfWeek.getDay());
-    const endOfWeek = new Date(startOfWeek);
-    endOfWeek.setDate(endOfWeek.getDate() + 6);
-
-    const { count } = await supabase
-      .from("bookings")
-      .select("*", { count: "exact", head: true })
-      .eq("business_id", business.id)
-      .gte("scheduled_date", startOfWeek.toISOString().split("T")[0])
-      .lte("scheduled_date", endOfWeek.toISOString().split("T")[0]);
-    
-    weekBookings = count || 0;
-  } catch {
-    // Table may not exist
-  }
-
-  // Try to get active members
-  try {
-    const { count } = await supabase
-      .from("memberships")
-      .select("*", { count: "exact", head: true })
-      .eq("business_id", business.id)
-      .eq("status", "active");
-    
-    activeMembers = count || 0;
-  } catch {
-    // Table may not exist
-  }
-
-  // Try to get month's revenue
-  try {
-    const startOfMonth = new Date();
-    startOfMonth.setDate(1);
-    
-    const { data: revenueData } = await supabase
-      .from("bookings")
-      .select("total")
-      .eq("business_id", business.id)
-      .eq("payment_status", "paid")
-      .gte("scheduled_date", startOfMonth.toISOString().split("T")[0]);
-
-    monthRevenue = revenueData?.reduce((sum: number, b: { total?: number }) => sum + (b.total || 0), 0) || 0;
-  } catch {
-    // Table may not exist
-  }
+  const [bookingStats, customerStats, membershipStats, todaysData, upcoming] =
+    await Promise.all([
+      getBookingStats(business.id),
+      getCustomerStats(business.id),
+      getMembershipStats(business.id),
+      getTodaysBookings(business.id),
+      getUpcomingBookings(business.id, 5),
+    ]);
 
   return (
     <div className="space-y-6">
@@ -152,7 +63,7 @@ export default async function DashboardPage() {
               </div>
               <div>
                 <p className="text-sm text-gray-400">Today&apos;s Bookings</p>
-                <p className="text-2xl font-bold text-white">{todayCount}</p>
+                <p className="text-2xl font-bold text-white">{bookingStats.today}</p>
               </div>
             </div>
           </div>
@@ -167,7 +78,7 @@ export default async function DashboardPage() {
               </div>
               <div>
                 <p className="text-sm text-gray-400">This Week</p>
-                <p className="text-2xl font-bold text-white">{weekBookings}</p>
+                <p className="text-2xl font-bold text-white">{bookingStats.thisWeek}</p>
               </div>
             </div>
           </div>
@@ -178,11 +89,11 @@ export default async function DashboardPage() {
           <div className="relative bg-gray-900/80 backdrop-blur-xl rounded-2xl border border-white/10 p-6 hover:border-white/20 transition-all">
             <div className="flex items-center gap-4">
               <div className="w-12 h-12 bg-gradient-to-br from-green-400/20 to-green-600/20 rounded-xl flex items-center justify-center">
-                <RiTeamLine className="w-6 h-6 text-green-400" />
+                <RiVipCrownLine className="w-6 h-6 text-green-400" />
               </div>
               <div>
                 <p className="text-sm text-gray-400">Active Members</p>
-                <p className="text-2xl font-bold text-white">{activeMembers}</p>
+                <p className="text-2xl font-bold text-white">{membershipStats.active}</p>
               </div>
             </div>
           </div>
@@ -197,89 +108,142 @@ export default async function DashboardPage() {
               </div>
               <div>
                 <p className="text-sm text-gray-400">Month Revenue</p>
-                <p className="text-2xl font-bold text-white">{formatCurrency(monthRevenue)}</p>
+                <p className="text-2xl font-bold text-white">{formatCurrency(bookingStats.monthRevenue)}</p>
               </div>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Today's Schedule */}
-      <div className="relative">
-        <div className="absolute -inset-0.5 bg-gradient-to-r from-brand-500/10 via-brand-600/10 to-indigo-500/10 rounded-2xl blur opacity-50" />
-        <div className="relative bg-gray-900/80 backdrop-blur-xl rounded-2xl border border-white/10 overflow-hidden">
-          {/* Top accent line */}
-          <div className="h-px bg-gradient-to-r from-transparent via-brand-500/50 to-transparent" />
-          
-          <div className="p-6 border-b border-white/10 flex items-center justify-between">
-            <h2 className="text-lg font-semibold text-white">Today&apos;s Schedule</h2>
-            <Link
-              href="/bookings"
-              className="text-sm text-brand-400 hover:text-brand-300 font-medium flex items-center gap-1 transition-colors"
-            >
-              View all
-              <RiArrowRightLine className="w-4 h-4" />
-            </Link>
-          </div>
+      {/* Two column layout */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Today's Schedule */}
+        <div className="relative">
+          <div className="absolute -inset-0.5 bg-gradient-to-r from-brand-500/10 via-brand-600/10 to-indigo-500/10 rounded-2xl blur opacity-50" />
+          <div className="relative bg-gray-900/80 backdrop-blur-xl rounded-2xl border border-white/10 overflow-hidden">
+            <div className="h-px bg-gradient-to-r from-transparent via-brand-500/50 to-transparent" />
 
-          {todayBookings && todayBookings.length > 0 ? (
-            <div className="divide-y divide-white/5">
-              {todayBookings.map((booking) => (
-                <div key={booking.id} className="p-4 flex items-center justify-between hover:bg-white/5 transition-colors">
-                  <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 bg-white/5 rounded-xl flex items-center justify-center border border-white/10">
-                      <RiTimeLine className="w-5 h-5 text-gray-400" />
-                    </div>
-                    <div>
-                      <p className="font-medium text-white">
-                        {booking.contacts?.first_name} {booking.contacts?.last_name}
-                      </p>
-                      <p className="text-sm text-gray-400">
-                        {formatTime(booking.scheduled_time)} · {booking.address_line1 || "No address"}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <p className="font-semibold text-white">
-                      {formatCurrency(booking.total)}
-                    </p>
-                    <span
-                      className={`text-xs px-2.5 py-1 rounded-full ${
-                        booking.status === "confirmed"
-                          ? "bg-green-500/20 text-green-400 border border-green-500/30"
-                          : booking.status === "pending"
-                          ? "bg-amber-500/20 text-amber-400 border border-amber-500/30"
-                          : "bg-white/10 text-gray-400 border border-white/10"
-                      }`}
-                    >
-                      {booking.status}
-                    </span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <div className="p-12 text-center">
-              <div className="w-16 h-16 bg-white/5 rounded-2xl flex items-center justify-center mx-auto mb-4 border border-white/10">
-                <RiCalendarLine className="w-8 h-8 text-gray-500" />
-              </div>
-              <p className="text-gray-400 mb-4">No bookings scheduled for today</p>
+            <div className="p-6 border-b border-white/10 flex items-center justify-between">
+              <h2 className="text-lg font-semibold text-white">Today&apos;s Schedule</h2>
               <Link
-                href="/bookings/new"
-                className="inline-flex items-center gap-2 text-brand-400 hover:text-brand-300 font-medium transition-colors"
+                href="/bookings"
+                className="text-sm text-brand-400 hover:text-brand-300 font-medium flex items-center gap-1 transition-colors"
               >
-                Create a booking
+                View all
                 <RiArrowRightLine className="w-4 h-4" />
               </Link>
             </div>
-          )}
+
+            {todaysData.bookings && todaysData.bookings.length > 0 ? (
+              <div className="divide-y divide-white/5">
+                {todaysData.bookings.map((booking: any) => (
+                  <div key={booking.id} className="p-4 flex items-center justify-between hover:bg-white/5 transition-colors">
+                    <div className="flex items-center gap-4">
+                      <div className="w-12 h-12 bg-white/5 rounded-xl flex items-center justify-center border border-white/10">
+                        <RiTimeLine className="w-5 h-5 text-gray-400" />
+                      </div>
+                      <div>
+                        <p className="font-medium text-white">
+                          {booking.contacts?.first_name} {booking.contacts?.last_name}
+                        </p>
+                        <p className="text-sm text-gray-400">
+                          {formatTime(booking.scheduled_time)} · {booking.address_line1 || "No address"}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <p className="font-semibold text-white">
+                        {formatCurrency(booking.total)}
+                      </p>
+                      <span
+                        className={`text-xs px-2.5 py-1 rounded-full ${
+                          booking.status === "confirmed"
+                            ? "bg-green-500/20 text-green-400 border border-green-500/30"
+                            : booking.status === "pending"
+                            ? "bg-amber-500/20 text-amber-400 border border-amber-500/30"
+                            : "bg-white/10 text-gray-400 border border-white/10"
+                        }`}
+                      >
+                        {booking.status}
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="p-12 text-center">
+                <div className="w-16 h-16 bg-white/5 rounded-2xl flex items-center justify-center mx-auto mb-4 border border-white/10">
+                  <RiCalendarLine className="w-8 h-8 text-gray-500" />
+                </div>
+                <p className="text-gray-400 mb-4">No bookings scheduled for today</p>
+                <Link
+                  href="/bookings/new"
+                  className="inline-flex items-center gap-2 text-brand-400 hover:text-brand-300 font-medium transition-colors"
+                >
+                  Create a booking
+                  <RiArrowRightLine className="w-4 h-4" />
+                </Link>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Upcoming Bookings */}
+        <div className="relative">
+          <div className="absolute -inset-0.5 bg-gradient-to-r from-blue-500/10 via-blue-600/10 to-indigo-500/10 rounded-2xl blur opacity-50" />
+          <div className="relative bg-gray-900/80 backdrop-blur-xl rounded-2xl border border-white/10 overflow-hidden">
+            <div className="h-px bg-gradient-to-r from-transparent via-blue-500/50 to-transparent" />
+
+            <div className="p-6 border-b border-white/10 flex items-center justify-between">
+              <h2 className="text-lg font-semibold text-white">Upcoming</h2>
+              <Link
+                href="/bookings?from=${new Date().toISOString().split('T')[0]}"
+                className="text-sm text-blue-400 hover:text-blue-300 font-medium flex items-center gap-1 transition-colors"
+              >
+                View all
+                <RiArrowRightLine className="w-4 h-4" />
+              </Link>
+            </div>
+
+            {upcoming && upcoming.length > 0 ? (
+              <div className="divide-y divide-white/5">
+                {upcoming.map((booking: any) => (
+                  <div key={booking.id} className="p-4 flex items-center justify-between hover:bg-white/5 transition-colors">
+                    <div className="flex items-center gap-4">
+                      <div className="w-12 h-12 bg-white/5 rounded-xl flex items-center justify-center border border-white/10">
+                        <RiCalendarLine className="w-5 h-5 text-gray-400" />
+                      </div>
+                      <div>
+                        <p className="font-medium text-white">
+                          {booking.contacts?.first_name} {booking.contacts?.last_name}
+                        </p>
+                        <p className="text-sm text-gray-400">
+                          {new Date(booking.scheduled_date).toLocaleDateString()} · {formatTime(booking.scheduled_time)}
+                        </p>
+                      </div>
+                    </div>
+                    <div>
+                      <p className="text-sm text-gray-400">{booking.service_types?.name}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="p-12 text-center">
+                <div className="w-16 h-16 bg-white/5 rounded-2xl flex items-center justify-center mx-auto mb-4 border border-white/10">
+                  <RiTimeLine className="w-8 h-8 text-gray-500" />
+                </div>
+                <p className="text-gray-400">No upcoming bookings</p>
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
       {/* Quick Actions */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <Link
-          href={`https://book.vistrial.io/${business.slug}`}
+          href={`/book/${business.slug}`}
           target="_blank"
           className="group relative overflow-hidden rounded-2xl p-6 transition-all duration-300 hover:scale-[1.02]"
         >
@@ -314,17 +278,17 @@ export default async function DashboardPage() {
         </Link>
 
         <Link
-          href="/settings/embed"
+          href="/customers"
           className="group relative bg-gray-900/80 backdrop-blur-xl border border-white/10 rounded-2xl p-6 hover:border-brand-500/50 transition-all duration-300"
         >
           <div className="absolute inset-0 rounded-2xl bg-brand-500/5 opacity-0 group-hover:opacity-100 transition-opacity" />
           <div className="relative flex items-center gap-4">
             <div className="w-12 h-12 bg-white/5 group-hover:bg-brand-500/20 rounded-xl flex items-center justify-center border border-white/10 transition-colors">
-              <RiCodeSSlashLine className="w-6 h-6 text-gray-400 group-hover:text-brand-400 transition-colors" />
+              <RiTeamLine className="w-6 h-6 text-gray-400 group-hover:text-brand-400 transition-colors" />
             </div>
             <div>
-              <h3 className="font-semibold text-white mb-0.5">Get Embed Code</h3>
-              <p className="text-sm text-gray-400">Add booking to your website</p>
+              <h3 className="font-semibold text-white mb-0.5">View Customers</h3>
+              <p className="text-sm text-gray-400">{customerStats.total} total customers</p>
             </div>
           </div>
         </Link>

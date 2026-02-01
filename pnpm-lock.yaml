@@ -68,6 +68,9 @@ importers:
       '@remixicon/react':
         specifier: ^4.6.0
         version: 4.6.0(react@18.2.0)
+      '@stripe/stripe-js':
+        specifier: ^8.7.0
+        version: 8.7.0
       '@supabase/ssr':
         specifier: ^0.8.0
         version: 0.8.0(@supabase/supabase-js@2.93.2)
@@ -107,6 +110,9 @@ importers:
       resend:
         specifier: ^6.9.1
         version: 6.9.1
+      stripe:
+        specifier: ^20.3.0
+        version: 20.3.0(@types/node@22.18.9)
       tailwind-merge:
         specifier: ^2.6.0
         version: 2.6.0
@@ -1019,6 +1025,10 @@ packages:
 
   '@statsig/js-client@3.26.0':
     resolution: {integrity: sha512-4qGRvt0J8TZ67GYe/ZZ6n55lf51eqCSaOhnrW5MG1zjczuVfjWd+9fScXnEB5zBXun6SEF8KiM7lrBIOYV6PJQ==}
+
+  '@stripe/stripe-js@8.7.0':
+    resolution: {integrity: sha512-tNUerSstwNC1KuHgX4CASGO0Md3CB26IJzSXmVlSuFvhsBP4ZaEPpY4jxWOn9tfdDscuVT4Kqb8cZ2o9nLCgRQ==}
+    engines: {node: '>=12.16'}
 
   '@supabase/auth-js@2.93.2':
     resolution: {integrity: sha512-uifI5vkhvHCQjn+LUPL5QlsuDMP4oVBD5SiliREgYuTJvCkbPLOcAPGrw88q7VUX9S0J0QuJn+37hrcTITisuw==}
@@ -2970,6 +2980,15 @@ packages:
     resolution: {integrity: sha512-6fPc+R4ihwqP6N/aIv2f1gMH8lOVtWQHoqC4yK6oSDVVocumAsfCqjkXnqiYMhmMwS/mEHLp7Vehlt3ql6lEig==}
     engines: {node: '>=8'}
 
+  stripe@20.3.0:
+    resolution: {integrity: sha512-DYzcmV1MfYhycr1GwjCjeQVYk9Gu8dpxyTlu7qeDCsuguug7oUTxPsUQuZeSf/OPzK7pofqobvOKVqAwlpgf/Q==}
+    engines: {node: '>=16'}
+    peerDependencies:
+      '@types/node': '>=16'
+    peerDependenciesMeta:
+      '@types/node':
+        optional: true
+
   styled-jsx@5.1.1:
     resolution: {integrity: sha512-pW7uC1l4mBZ8ugbiZrcIsiIvVx1UmTfw7UkC3Um2tmfUq9Bhk8IiyEIPl6F8agHgjzku6j0xQEZbfA5uSgSaCw==}
     engines: {node: '>= 12.0.0'}
@@ -4241,6 +4260,8 @@ snapshots:
   '@statsig/js-client@3.26.0':
     dependencies:
       '@statsig/client-core': 3.26.0
+
+  '@stripe/stripe-js@8.7.0': {}
 
   '@supabase/auth-js@2.93.2':
     dependencies:
@@ -6366,6 +6387,10 @@ snapshots:
   strip-bom@3.0.0: {}
 
   strip-json-comments@3.1.1: {}
+
+  stripe@20.3.0(@types/node@22.18.9):
+    optionalDependencies:
+      '@types/node': 22.18.9
 
   styled-jsx@5.1.1(react@18.2.0):
     dependencies:

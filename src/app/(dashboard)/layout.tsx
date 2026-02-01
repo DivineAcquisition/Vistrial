@@ -89,7 +89,10 @@ export default async function DashboardLayout({
       {/* Content wrapper */}
       <div className="relative z-10">
         {/* Sidebar */}
-        <DashboardSidebar business={businessData} />
+        <DashboardSidebar 
+          business={businessData} 
+          user={{ email: user.email || "" }}
+        />
 
         {/* Main content */}
         <div className="lg:pl-64">
@@ -97,7 +100,7 @@ export default async function DashboardLayout({
           <DashboardHeader user={user} business={businessData} />
 
           {/* Page content */}
-          <main className="p-6">{children}</main>
+          <main className="p-4 md:p-6">{children}</main>
         </div>
       </div>
     </div>

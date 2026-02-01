@@ -74,21 +74,44 @@ export default function OnboardingPage() {
     return createClient();
   }, []);
 
-  // Get user info on mount
+  // Get user info on mount and pre-fill form data
   useEffect(() => {
     const fetchUser = async () => {
       if (!supabase) return;
       const {
         data: { user },
       } = await supabase.auth.getUser();
-      if (user?.user_metadata?.full_name) {
+      
+      if (!user) {
+        router.push("/login");
+        return;
+      }
+      
+      // Pre-fill owner name
+      if (user.user_metadata?.full_name) {
         setOwnerName(user.user_metadata.full_name);
-      } else if (user?.user_metadata?.name) {
+      } else if (user.user_metadata?.name) {
         setOwnerName(user.user_metadata.name);
+      }
+      
+      // Pre-fill business name from signup if available
+      if (user.user_metadata?.business_name) {
+        setFormData((prev) => ({
+          ...prev,
+          businessName: user.user_metadata.business_name,
+        }));
+      }
+      
+      // Pre-fill phone from signup if available
+      if (user.user_metadata?.phone) {
+        setFormData((prev) => ({
+          ...prev,
+          phone: formatPhoneInput(user.user_metadata.phone),
+        }));
       }
     };
     fetchUser();
-  }, [supabase]);
+  }, [supabase, router]);
 
   const updateField = (field: string, value: string) => {
     setFormData((prev) => ({ ...prev, [field]: value }));

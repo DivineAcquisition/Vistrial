@@ -3,7 +3,6 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
-import { createAdminClient } from "@/lib/supabase/admin";
 import { sendVerificationCode, verifyCode } from "@/lib/verification/send-code";
 
 // ============================================
@@ -29,38 +28,6 @@ interface SignUpStep2Data {
 }
 
 // ============================================
-// HELPER FUNCTIONS
-// ============================================
-
-function generateSlug(businessName: string): string {
-  return businessName
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-|-$/g, "")
-    .slice(0, 50);
-}
-
-async function ensureUniqueSlug(baseSlug: string): Promise<string> {
-  const admin = createAdminClient();
-  let slug = baseSlug;
-  let counter = 1;
-
-  while (true) {
-    const { data } = await admin
-      .from("businesses")
-      .select("id")
-      .eq("slug", slug)
-      .maybeSingle();
-
-    if (!data) break;
-    slug = `${baseSlug}-${counter}`;
-    counter++;
-  }
-
-  return slug;
-}
-
-// ============================================
 // SIGNUP STEP 1: Send Verification Code
 // ============================================
 
@@ -82,7 +49,6 @@ export async function signUpStep1(data: SignUpStep1Data) {
 
 export async function signUpStep2(data: SignUpStep2Data) {
   const supabase = await createServerSupabaseClient();
-  const admin = createAdminClient();
 
   // 1. Verify the code
   const destination = data.verifyVia === "email" ? data.email : data.phone;
@@ -92,7 +58,7 @@ export async function signUpStep2(data: SignUpStep2Data) {
     return { error: verification.error || "Invalid verification code" };
   }
 
-  // 2. Create auth user
+  // 2. Create auth user (business created during onboarding)
   const { data: authData, error: authError } = await supabase.auth.signUp({
     email: data.email,
     password: data.password,
@@ -100,8 +66,9 @@ export async function signUpStep2(data: SignUpStep2Data) {
       data: {
         full_name: data.fullName,
         phone: data.phone,
+        business_name: data.businessName, // Store for use in onboarding
       },
-      emailRedirectTo: `${process.env.NEXT_PUBLIC_APP_URL}/dashboard`,
+      emailRedirectTo: `${process.env.NEXT_PUBLIC_APP_URL}/onboarding`,
     },
   });
 
@@ -113,26 +80,8 @@ export async function signUpStep2(data: SignUpStep2Data) {
     return { error: "Failed to create account" };
   }
 
-  // 3. Generate unique slug and create business
-  const baseSlug = generateSlug(data.businessName);
-  const slug = await ensureUniqueSlug(baseSlug);
-
-  const { error: businessError } = await admin.from("businesses").insert({
-    owner_id: authData.user.id,
-    name: data.businessName,
-    slug,
-    email: data.email,
-    phone: data.phone,
-    is_active: true,
-  });
-
-  if (businessError) {
-    console.error("Business creation error:", businessError);
-    // Continue anyway - user can set up business later
-  }
-
   revalidatePath("/", "layout");
-  redirect("/dashboard");
+  redirect("/onboarding");
 }
 
 // ============================================
@@ -166,10 +115,11 @@ export async function signIn(formData: FormData) {
 export async function signInWithGoogle(redirectTo?: string) {
   const supabase = await createServerSupabaseClient();
 
+  // Auth callback will check for business and redirect appropriately
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: "google",
     options: {
-      redirectTo: `${process.env.NEXT_PUBLIC_APP_URL}/auth/callback?next=${redirectTo || "/dashboard"}`,
+      redirectTo: `${process.env.NEXT_PUBLIC_APP_URL}/auth/callback${redirectTo ? `?redirect=${redirectTo}` : ""}`,
     },
   });
 
@@ -285,27 +235,14 @@ export async function requireBusiness() {
     .eq("owner_id", user.id)
     .maybeSingle();
 
-  // If no business, create a default one
+  // If no business exists, redirect to onboarding
   if (!business) {
-    const admin = createAdminClient();
-    const fullName = user.user_metadata?.full_name || user.email?.split("@")[0] || "User";
-    const defaultName = `${fullName}'s Business`;
-    const slug = await ensureUniqueSlug(generateSlug(defaultName));
+    redirect("/onboarding");
+  }
 
-    const { data: newBusiness } = await admin
-      .from("businesses")
-      .insert({
-        owner_id: user.id,
-        name: defaultName,
-        slug,
-        email: user.email,
-        phone: user.user_metadata?.phone,
-        is_active: true,
-      })
-      .select()
-      .single();
-
-    return { user, business: newBusiness };
+  // If onboarding not completed, redirect to onboarding
+  if (!business.onboarding_completed) {
+    redirect("/onboarding");
   }
 
   return { user, business };

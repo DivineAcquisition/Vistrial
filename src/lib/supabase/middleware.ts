@@ -60,15 +60,41 @@ export async function updateSession(request: NextRequest) {
   const isAuthPath = authPaths.some((path) => pathname === path);
 
   if (isAuthPath && user) {
-    // Check if user has a business
+    // Check if user has a business with completed onboarding
     const { data: business } = await supabase
       .from("businesses")
-      .select("id")
+      .select("id, onboarding_completed")
       .eq("owner_id", user.id)
       .maybeSingle();
 
     const url = request.nextUrl.clone();
-    url.pathname = business ? "/dashboard" : "/dashboard";
+    
+    // No business or onboarding not completed -> go to onboarding
+    if (!business || !business.onboarding_completed) {
+      url.pathname = "/onboarding";
+    } else {
+      url.pathname = "/dashboard";
+    }
+    
+    return NextResponse.redirect(url);
+  }
+
+  // Redirect authenticated users from landing page to dashboard/onboarding
+  if (pathname === "/" && user) {
+    const { data: business } = await supabase
+      .from("businesses")
+      .select("id, onboarding_completed")
+      .eq("owner_id", user.id)
+      .maybeSingle();
+
+    const url = request.nextUrl.clone();
+    
+    if (!business || !business.onboarding_completed) {
+      url.pathname = "/onboarding";
+    } else {
+      url.pathname = "/dashboard";
+    }
+    
     return NextResponse.redirect(url);
   }
 

@@ -246,13 +246,15 @@ export async function getCurrentBusiness() {
   
   if (!user) return null;
 
-  const { data: business } = await supabase
+  // Handle potential duplicates by getting most recent
+  const { data: businesses } = await supabase
     .from("businesses")
     .select("*")
     .eq("owner_id", user.id)
-    .maybeSingle();
+    .order("created_at", { ascending: false })
+    .limit(1);
 
-  return business;
+  return businesses?.[0] || null;
 }
 
 export async function requireAuth() {
@@ -265,11 +267,15 @@ export async function requireBusiness() {
   const user = await requireAuth();
   const supabase = await createServerSupabaseClient();
 
-  const { data: business } = await supabase
+  // Handle potential duplicates by getting most recent
+  const { data: businesses } = await supabase
     .from("businesses")
     .select("*")
     .eq("owner_id", user.id)
-    .maybeSingle();
+    .order("created_at", { ascending: false })
+    .limit(1);
+
+  const business = businesses?.[0] || null;
 
   // If no business exists, redirect to onboarding
   if (!business) {

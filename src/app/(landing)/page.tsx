@@ -62,9 +62,9 @@ function HeroSection() {
         />
         
         {/* Gradient blobs */}
-        <div className="absolute top-20 -left-32 w-[600px] h-[600px] bg-violet-500/10 rounded-full blur-[100px]" />
-        <div className="absolute bottom-20 -right-32 w-[500px] h-[500px] bg-purple-500/10 rounded-full blur-[100px]" />
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-gradient-to-br from-violet-500/5 to-purple-500/5 rounded-full blur-[80px]" />
+        <div className="absolute top-20 -left-32 w-[600px] h-[600px] bg-brand-500/10 rounded-full blur-[100px]" />
+        <div className="absolute bottom-20 -right-32 w-[500px] h-[500px] bg-brand-400/10 rounded-full blur-[100px]" />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-gradient-to-br from-brand-500/5 to-brand-400/5 rounded-full blur-[80px]" />
       </div>
       
       <div className="relative z-10 max-w-7xl mx-auto px-6 py-24">
@@ -72,18 +72,18 @@ function HeroSection() {
           {/* Left - Content */}
           <div className="text-center lg:text-left">
             {/* Badge */}
-            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-violet-100 border border-violet-200 mb-8">
+            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-brand-100 border border-brand-200 mb-8">
               <span className="relative flex h-2 w-2">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-violet-500 opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-violet-500"></span>
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-brand-500 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-brand-500"></span>
               </span>
-              <span className="text-sm font-medium text-violet-700">Smart booking automation</span>
+              <span className="text-sm font-medium text-brand-700">Smart booking automation</span>
             </div>
             
             <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-gray-900 leading-[1.1] mb-6">
               Book more jobs.
               <br />
-              <span className="bg-gradient-to-r from-violet-600 via-purple-500 to-violet-600 bg-clip-text text-transparent">
+              <span className="bg-gradient-to-r from-brand-600 via-brand-500 to-brand-600 bg-clip-text text-transparent">
                 Automatically.
               </span>
             </h1>
@@ -124,7 +124,7 @@ function HeroSection() {
           <div>
             <div className="relative">
               {/* Card shadow/glow */}
-              <div className="absolute -inset-1 bg-gradient-to-r from-violet-500/20 via-purple-500/20 to-violet-500/20 rounded-3xl blur-xl" />
+              <div className="absolute -inset-1 bg-gradient-to-r from-brand-500/20 via-brand-400/20 to-brand-500/20 rounded-3xl blur-xl" />
               
               <div className="relative bg-white border border-gray-200 rounded-2xl p-8 shadow-2xl shadow-gray-200/50">
                 {!submitted ? (
@@ -144,7 +144,7 @@ function HeroSection() {
                             value={fullName}
                             onChange={(e) => setFullName(e.target.value)}
                             placeholder="John Smith"
-                            className="w-full h-12 pl-11 pr-4 bg-gray-50 border border-gray-200 rounded-xl text-gray-900 placeholder:text-gray-400 focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 transition-all"
+                            className="w-full h-12 pl-11 pr-4 bg-gray-50 border border-gray-200 rounded-xl text-gray-900 placeholder:text-gray-400 focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 transition-all"
                             required
                           />
                         </div>
@@ -159,7 +159,7 @@ function HeroSection() {
                             value={email}
                             onChange={(e) => setEmail(e.target.value)}
                             placeholder="john@company.com"
-                            className="w-full h-12 pl-11 pr-4 bg-gray-50 border border-gray-200 rounded-xl text-gray-900 placeholder:text-gray-400 focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 transition-all"
+                            className="w-full h-12 pl-11 pr-4 bg-gray-50 border border-gray-200 rounded-xl text-gray-900 placeholder:text-gray-400 focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 transition-all"
                             required
                           />
                         </div>
@@ -168,7 +168,7 @@ function HeroSection() {
                       <button
                         type="submit"
                         disabled={isSubmitting}
-                        className="group w-full h-12 bg-gradient-to-r from-violet-600 to-purple-600 hover:opacity-90 text-white font-medium rounded-xl shadow-lg shadow-violet-500/25 flex items-center justify-center gap-2 transition-all disabled:opacity-50"
+                        className="group relative w-full h-12 bg-gradient-to-r from-brand-500 to-brand-600 hover:from-brand-600 hover:to-brand-700 text-white font-medium rounded-xl shadow-lg shadow-brand-500/25 hover:shadow-xl hover:shadow-brand-500/30 flex items-center justify-center gap-2 transition-all disabled:opacity-50 hover:scale-[1.02] active:scale-[0.98] before:absolute before:inset-[1px] before:rounded-[10px] before:border before:border-white/20 before:border-b-transparent before:border-r-transparent before:pointer-events-none"
                       >
                         {isSubmitting ? (
                           <span className="flex items-center gap-2">
@@ -186,8 +186,8 @@ function HeroSection() {
                     
                     <p className="text-center text-xs text-gray-500 mt-6">
                       By signing up, you agree to our{' '}
-                      <Link href="/terms" className="text-violet-600 hover:underline">Terms</Link> and{' '}
-                      <Link href="/privacy" className="text-violet-600 hover:underline">Privacy Policy</Link>
+                      <Link href="/terms" className="text-brand-600 hover:underline">Terms</Link> and{' '}
+                      <Link href="/privacy" className="text-brand-600 hover:underline">Privacy Policy</Link>
                     </p>
                   </div>
                 ) : (
@@ -198,7 +198,7 @@ function HeroSection() {
                     <h3 className="text-xl font-bold text-gray-900 mb-2">You&apos;re in!</h3>
                     <p className="text-gray-500 mb-6">Check your email to complete setup.</p>
                     <Link href="/signup">
-                      <button className="bg-gradient-to-r from-violet-600 to-purple-600 text-white px-6 py-3 rounded-xl font-medium shadow-lg shadow-violet-500/25 hover:opacity-90 transition-all">
+                      <button className="relative bg-gradient-to-r from-brand-500 to-brand-600 hover:from-brand-600 hover:to-brand-700 text-white px-6 py-3 rounded-xl font-medium shadow-lg shadow-brand-500/25 hover:shadow-xl hover:shadow-brand-500/30 transition-all hover:scale-[1.02] active:scale-[0.98] before:absolute before:inset-[1px] before:rounded-[10px] before:border before:border-white/20 before:border-b-transparent before:border-r-transparent before:pointer-events-none">
                         Continue to Dashboard
                       </button>
                     </Link>
@@ -241,7 +241,7 @@ function BookingDemo() {
   return (
     <div className="bg-white rounded-2xl border border-gray-200 shadow-xl overflow-hidden">
       {/* Widget Header */}
-      <div className="px-6 py-4 bg-gradient-to-r from-violet-600 to-purple-600 text-white">
+      <div className="px-6 py-4 bg-gradient-to-r from-brand-500 to-brand-600 text-white">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-lg bg-white/20 flex items-center justify-center font-bold">
             SC
@@ -265,14 +265,14 @@ function BookingDemo() {
             <div key={i} className="flex items-center">
               <div className={cn(
                 "w-6 h-6 rounded-full flex items-center justify-center text-xs font-medium transition-all",
-                i <= step ? "bg-violet-600 text-white" : "bg-gray-200 text-gray-500"
+                i <= step ? "bg-brand-600 text-white" : "bg-gray-200 text-gray-500"
               )}>
                 {i + 1}
               </div>
               {i < steps.length - 1 && (
                 <div className={cn(
                   "w-8 h-0.5 mx-1 transition-all",
-                  i < step ? "bg-violet-600" : "bg-gray-200"
+                  i < step ? "bg-brand-600" : "bg-gray-200"
                 )} />
               )}
             </div>
@@ -289,10 +289,10 @@ function BookingDemo() {
               {['Standard Clean', 'Deep Clean', 'Move-Out', 'Recurring'].map((service, i) => (
                 <div key={i} className={cn(
                   "p-3 border rounded-lg text-center cursor-pointer transition-all",
-                  i === 1 ? "border-violet-500 bg-violet-50" : "border-gray-200 hover:border-violet-300"
+                  i === 1 ? "border-brand-500 bg-brand-50" : "border-gray-200 hover:border-brand-300"
                 )}>
                   <p className="font-medium text-sm">{service}</p>
-                  <p className="text-violet-600 font-bold">${149 + (i * 50)}</p>
+                  <p className="text-brand-600 font-bold">${149 + (i * 50)}</p>
                 </div>
               ))}
             </div>
@@ -324,7 +324,7 @@ function BookingDemo() {
               {['9:00 AM', '11:00 AM', '1:00 PM', '3:00 PM', '5:00 PM'].map((time, i) => (
                 <div key={i} className={cn(
                   "p-2 border rounded-lg text-center text-sm cursor-pointer transition-all",
-                  i === 1 ? "border-violet-500 bg-violet-50 text-violet-700 font-medium" : "border-gray-200"
+                  i === 1 ? "border-brand-500 bg-brand-50 text-brand-700 font-medium" : "border-gray-200"
                 )}>
                   {time}
                 </div>
@@ -350,7 +350,7 @@ function BookingDemo() {
               </div>
               <div className="border-t pt-2 mt-2 flex justify-between font-semibold">
                 <span>Total</span>
-                <span className="text-violet-600">$159</span>
+                <span className="text-brand-600">$159</span>
               </div>
             </div>
           </div>
@@ -400,7 +400,7 @@ function QuoteFollowUpDemo() {
                 <div className={cn(
                   "relative z-10 w-10 h-10 rounded-full flex items-center justify-center transition-all",
                   step.status === 'completed' && "bg-green-500 text-white",
-                  step.status === 'active' && "bg-violet-600 text-white ring-4 ring-violet-100",
+                  step.status === 'active' && "bg-brand-600 text-white ring-4 ring-brand-100",
                   step.status === 'pending' && "bg-gray-200 text-gray-500"
                 )}>
                   <step.icon className="w-4 h-4" />
@@ -410,7 +410,7 @@ function QuoteFollowUpDemo() {
                   <div className="flex items-center justify-between">
                     <p className={cn(
                       "font-medium",
-                      step.status === 'active' ? 'text-violet-600' : 'text-gray-900'
+                      step.status === 'active' ? 'text-brand-600' : 'text-gray-900'
                     )}>
                       {step.action}
                     </p>
@@ -459,7 +459,7 @@ function FeaturesSection() {
     <section id="features" className="py-24 bg-gray-50">
       <div className="max-w-7xl mx-auto px-6">
         <div className="text-center mb-16">
-          <span className="inline-flex items-center gap-1.5 px-4 py-1.5 bg-violet-100 text-violet-700 text-sm font-medium rounded-full mb-4">
+          <span className="inline-flex items-center gap-1.5 px-4 py-1.5 bg-brand-100 text-brand-700 text-sm font-medium rounded-full mb-4">
             <RiSparklingLine className="w-4 h-4" />
             Features
           </span>
@@ -485,7 +485,7 @@ function FeaturesSection() {
                 <h3 className="text-2xl font-bold text-gray-900 mb-4">{feature.title}</h3>
                 <p className="text-gray-600 mb-6">{feature.description}</p>
                 <Link href="/signup">
-                  <button className="group bg-gradient-to-r from-violet-600 to-purple-600 text-white px-6 py-3 rounded-xl font-medium shadow-lg shadow-violet-500/25 hover:opacity-90 transition-all flex items-center gap-2">
+                  <button className="group relative bg-gradient-to-r from-brand-500 to-brand-600 hover:from-brand-600 hover:to-brand-700 text-white px-6 py-3 rounded-xl font-medium shadow-lg shadow-brand-500/25 hover:shadow-xl hover:shadow-brand-500/30 transition-all flex items-center gap-2 hover:scale-[1.02] active:scale-[0.98] before:absolute before:inset-[1px] before:rounded-[10px] before:border before:border-white/20 before:border-b-transparent before:border-r-transparent before:pointer-events-none">
                     Learn More
                     <RiArrowRightLine className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
                   </button>
@@ -532,7 +532,7 @@ function TestimonialsSection() {
     <section className="py-24 bg-white">
       <div className="max-w-7xl mx-auto px-6">
         <div className="text-center mb-16">
-          <span className="inline-flex items-center gap-1.5 px-4 py-1.5 bg-violet-100 text-violet-700 text-sm font-medium rounded-full mb-4">
+          <span className="inline-flex items-center gap-1.5 px-4 py-1.5 bg-brand-100 text-brand-700 text-sm font-medium rounded-full mb-4">
             <RiHeartLine className="w-4 h-4" />
             Testimonials
           </span>
@@ -559,7 +559,7 @@ function TestimonialsSection() {
               <p className="text-gray-600 mb-6 leading-relaxed">&quot;{testimonial.quote}&quot;</p>
               
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-violet-600 to-purple-600 flex items-center justify-center text-white text-sm font-semibold">
+                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-brand-500 to-brand-600 flex items-center justify-center text-white text-sm font-semibold">
                   {testimonial.avatar}
                 </div>
                 <div>
@@ -585,9 +585,9 @@ function CTASection() {
       <div className="max-w-4xl mx-auto px-6">
         <div className="relative">
           {/* Glow */}
-          <div className="absolute -inset-4 bg-gradient-to-r from-violet-500/20 via-purple-500/20 to-violet-500/20 rounded-3xl blur-2xl" />
+          <div className="absolute -inset-4 bg-gradient-to-r from-brand-500/20 via-brand-400/20 to-brand-500/20 rounded-3xl blur-2xl" />
           
-          <div className="relative bg-gradient-to-br from-violet-600 to-purple-600 rounded-3xl p-12 text-center overflow-hidden">
+          <div className="relative bg-gradient-to-br from-brand-500 to-brand-600 rounded-3xl p-12 text-center overflow-hidden">
             {/* Background pattern */}
             <div className="absolute inset-0 opacity-10">
               <div className="absolute inset-0" style={{
@@ -607,13 +607,13 @@ function CTASection() {
               
               <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
                 <Link href="/signup">
-                  <button className="group bg-white text-violet-700 px-8 py-4 rounded-xl font-semibold shadow-lg hover:bg-gray-100 transition-all flex items-center gap-2">
+                  <button className="group relative bg-white text-brand-700 px-8 py-4 rounded-xl font-semibold shadow-lg hover:bg-gray-50 transition-all flex items-center gap-2 hover:scale-[1.02] active:scale-[0.98] before:absolute before:inset-[1px] before:rounded-[10px] before:border before:border-white/80 before:border-b-gray-100 before:border-r-gray-100 before:pointer-events-none">
                     Start Free Trial
                     <RiArrowRightLine className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
                   </button>
                 </Link>
                 <a href="#demo">
-                  <button className="border-2 border-white/30 text-white px-8 py-4 rounded-xl font-medium hover:bg-white/10 transition-all flex items-center gap-2">
+                  <button className="relative border-2 border-white/30 text-white px-8 py-4 rounded-xl font-medium hover:bg-white/10 transition-all flex items-center gap-2 before:absolute before:inset-[1px] before:rounded-[9px] before:border before:border-white/10 before:border-b-transparent before:border-r-transparent before:pointer-events-none">
                     <RiPlayLine className="w-4 h-4" />
                     Watch Demo
                   </button>
@@ -663,7 +663,7 @@ function Navigation() {
             Log in
           </Link>
           <Link href="/signup">
-            <button className="group bg-gradient-to-r from-violet-600 to-purple-600 text-white px-5 py-2.5 rounded-xl text-sm font-medium hover:opacity-90 transition-all shadow-lg shadow-violet-500/25 flex items-center gap-2">
+            <button className="group relative bg-gradient-to-r from-brand-500 to-brand-600 hover:from-brand-600 hover:to-brand-700 text-white px-5 py-2.5 rounded-xl text-sm font-medium transition-all shadow-lg shadow-brand-500/25 hover:shadow-xl hover:shadow-brand-500/30 flex items-center gap-2 hover:scale-[1.02] active:scale-[0.98] before:absolute before:inset-[1px] before:rounded-[10px] before:border before:border-white/20 before:border-b-transparent before:border-r-transparent before:pointer-events-none">
               Get Started
               <RiArrowRightLine className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
             </button>

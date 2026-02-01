@@ -70,7 +70,7 @@ export default function ForgotPasswordPage() {
       {/* Header */}
       <div className="space-y-3">
         <div className="flex items-center gap-2">
-          <span className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-violet-700 bg-violet-100 rounded-full">
+          <span className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-brand-700 bg-brand-100 rounded-full">
             <RiLockUnlockLine className="w-3.5 h-3.5" />
             Password reset
           </span>
@@ -105,7 +105,7 @@ export default function ForgotPasswordPage() {
               required
               disabled={loading}
               placeholder="you@company.com"
-              className="w-full h-12 pl-11 pr-4 text-sm border border-slate-200 rounded-xl focus:outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 text-slate-900 placeholder:text-slate-400 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+              className="w-full h-12 pl-11 pr-4 text-sm border border-slate-200 rounded-xl focus:outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 text-slate-900 placeholder:text-slate-400 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
             />
           </div>
         </div>
@@ -113,7 +113,7 @@ export default function ForgotPasswordPage() {
         <button
           type="submit"
           disabled={loading}
-          className="group relative w-full h-12 text-sm font-semibold rounded-xl bg-gradient-to-r from-violet-600 to-purple-600 text-white hover:opacity-90 hover:shadow-lg hover:shadow-violet-500/25 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 flex items-center justify-center gap-2"
+          className="group relative w-full h-12 text-sm font-semibold rounded-xl bg-gradient-to-r from-brand-500 to-brand-600 hover:from-brand-600 hover:to-brand-700 text-white shadow-lg shadow-brand-500/25 hover:shadow-xl hover:shadow-brand-500/30 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 flex items-center justify-center gap-2 hover:scale-[1.02] active:scale-[0.98] before:absolute before:inset-[1px] before:rounded-[10px] before:border before:border-white/20 before:border-b-transparent before:border-r-transparent before:pointer-events-none"
         >
           {loading ? (
             <>
@@ -137,7 +137,7 @@ export default function ForgotPasswordPage() {
         <div className="relative flex justify-center">
           <Link
             href="/login"
-            className="px-4 bg-gradient-to-br from-slate-50 to-slate-100 inline-flex items-center gap-2 text-sm text-violet-600 font-semibold hover:text-violet-700 transition-colors"
+            className="px-4 bg-gradient-to-br from-slate-50 to-slate-100 inline-flex items-center gap-2 text-sm text-brand-600 font-semibold hover:text-brand-700 transition-colors"
           >
             <RiArrowLeftLine className="w-4 h-4" />
             Back to sign in

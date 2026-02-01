@@ -11,11 +11,11 @@ export default function AuthLayout({
       {/* Left side - Branding Panel */}
       <div className="hidden lg:flex lg:w-[45%] relative overflow-hidden">
         {/* Background gradient */}
-        <div className="absolute inset-0 bg-gradient-to-br from-violet-600 via-violet-600 to-purple-500" />
+        <div className="absolute inset-0 bg-gradient-to-br from-brand-500 via-brand-600 to-brand-700" />
 
         {/* Animated gradient orbs */}
         <div className="absolute top-20 -left-32 w-[500px] h-[500px] bg-white/10 rounded-full blur-3xl animate-pulse" />
-        <div className="absolute bottom-20 -right-32 w-[400px] h-[400px] bg-purple-400/40 rounded-full blur-3xl" />
+        <div className="absolute bottom-20 -right-32 w-[400px] h-[400px] bg-brand-400/40 rounded-full blur-3xl" />
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[300px] h-[300px] bg-white/5 rounded-full blur-2xl" />
 
         {/* Grid pattern overlay */}

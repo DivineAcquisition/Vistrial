@@ -195,14 +195,14 @@ export default function SignUpPage() {
               placeholder="000000"
               maxLength={6}
               autoFocus
-              className="w-full text-center text-2xl font-mono tracking-[0.5em] h-16 border border-slate-200 rounded-xl focus:outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 text-slate-900 transition-all"
+              className="w-full text-center text-2xl font-mono tracking-[0.5em] h-16 border border-slate-200 rounded-xl focus:outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 text-slate-900 transition-all"
             />
           </div>
 
           <button
             type="submit"
             disabled={loading || formData.code.length !== 6}
-            className="group relative w-full h-12 text-sm font-semibold rounded-xl bg-gradient-to-r from-violet-600 to-purple-600 text-white hover:opacity-90 hover:shadow-lg hover:shadow-violet-500/25 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 flex items-center justify-center gap-2"
+            className="group relative w-full h-12 text-sm font-semibold rounded-xl bg-gradient-to-r from-brand-500 to-brand-600 hover:from-brand-600 hover:to-brand-700 text-white shadow-lg shadow-brand-500/25 hover:shadow-xl hover:shadow-brand-500/30 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 flex items-center justify-center gap-2 hover:scale-[1.02] active:scale-[0.98] before:absolute before:inset-[1px] before:rounded-[10px] before:border before:border-white/20 before:border-b-transparent before:border-r-transparent before:pointer-events-none"
           >
             {loading ? (
               <RiLoader4Line className="w-5 h-5 animate-spin" />
@@ -219,7 +219,7 @@ export default function SignUpPage() {
               type="button"
               onClick={handleResend}
               disabled={resendCountdown > 0 || loading}
-              className="text-sm text-violet-600 hover:text-violet-700 disabled:text-slate-400 font-medium transition-colors"
+              className="text-sm text-brand-600 hover:text-brand-700 disabled:text-slate-400 font-medium transition-colors"
             >
               {resendCountdown > 0
                 ? `Resend code in ${resendCountdown}s`
@@ -235,7 +235,7 @@ export default function SignUpPage() {
     <div className="space-y-8">
       {/* Header */}
       <div className="space-y-3">
-        <span className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-violet-700 bg-violet-100 rounded-full">
+        <span className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-brand-700 bg-brand-100 rounded-full">
           <RiSparklingLine className="w-3.5 h-3.5" />
           Start free today
         </span>
@@ -255,14 +255,14 @@ export default function SignUpPage() {
             className={cn(
               "flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm transition-all duration-300",
               benefit.highlight
-                ? "bg-gradient-to-r from-violet-100 to-purple-100 text-violet-700 font-medium border border-violet-200"
-                : "bg-gradient-to-r from-slate-50 to-slate-100 text-slate-600 border border-slate-200/50 hover:border-violet-300"
+                ? "bg-gradient-to-r from-brand-100 to-brand-200 text-brand-700 font-medium border border-brand-200"
+                : "bg-gradient-to-r from-slate-50 to-slate-100 text-slate-600 border border-slate-200/50 hover:border-brand-300"
             )}
           >
             <benefit.icon
               className={cn(
                 "w-3.5 h-3.5",
-                benefit.highlight ? "text-violet-600" : "text-slate-500"
+                benefit.highlight ? "text-brand-600" : "text-slate-500"
               )}
             />
             {benefit.text}
@@ -323,7 +323,7 @@ export default function SignUpPage() {
               placeholder="John Smith"
               required
               disabled={loading}
-              className="w-full h-12 pl-11 pr-4 text-sm border border-slate-200 rounded-xl focus:outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 text-slate-900 placeholder:text-slate-400 disabled:opacity-50 transition-all"
+              className="w-full h-12 pl-11 pr-4 text-sm border border-slate-200 rounded-xl focus:outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 text-slate-900 placeholder:text-slate-400 disabled:opacity-50 transition-all"
             />
           </div>
         </div>
@@ -342,7 +342,7 @@ export default function SignUpPage() {
               placeholder="Sparkle Clean Co"
               required
               disabled={loading}
-              className="w-full h-12 pl-11 pr-4 text-sm border border-slate-200 rounded-xl focus:outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 text-slate-900 placeholder:text-slate-400 disabled:opacity-50 transition-all"
+              className="w-full h-12 pl-11 pr-4 text-sm border border-slate-200 rounded-xl focus:outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 text-slate-900 placeholder:text-slate-400 disabled:opacity-50 transition-all"
             />
           </div>
         </div>
@@ -361,7 +361,7 @@ export default function SignUpPage() {
               placeholder="john@sparkleclean.com"
               required
               disabled={loading}
-              className="w-full h-12 pl-11 pr-4 text-sm border border-slate-200 rounded-xl focus:outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 text-slate-900 placeholder:text-slate-400 disabled:opacity-50 transition-all"
+              className="w-full h-12 pl-11 pr-4 text-sm border border-slate-200 rounded-xl focus:outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 text-slate-900 placeholder:text-slate-400 disabled:opacity-50 transition-all"
             />
           </div>
         </div>
@@ -380,7 +380,7 @@ export default function SignUpPage() {
               placeholder="+1 (555) 123-4567"
               required
               disabled={loading}
-              className="w-full h-12 pl-11 pr-4 text-sm border border-slate-200 rounded-xl focus:outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 text-slate-900 placeholder:text-slate-400 disabled:opacity-50 transition-all"
+              className="w-full h-12 pl-11 pr-4 text-sm border border-slate-200 rounded-xl focus:outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 text-slate-900 placeholder:text-slate-400 disabled:opacity-50 transition-all"
             />
           </div>
         </div>
@@ -400,7 +400,7 @@ export default function SignUpPage() {
               required
               minLength={8}
               disabled={loading}
-              className="w-full h-12 pl-11 pr-12 text-sm border border-slate-200 rounded-xl focus:outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 text-slate-900 placeholder:text-slate-400 disabled:opacity-50 transition-all"
+              className="w-full h-12 pl-11 pr-12 text-sm border border-slate-200 rounded-xl focus:outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 text-slate-900 placeholder:text-slate-400 disabled:opacity-50 transition-all"
             />
             <button
               type="button"
@@ -430,7 +430,7 @@ export default function SignUpPage() {
               className={cn(
                 "flex-1 h-11 px-4 rounded-xl border text-sm font-medium transition-all flex items-center justify-center gap-2",
                 formData.verifyVia === "email"
-                  ? "border-violet-500 bg-violet-50 text-violet-700"
+                  ? "border-brand-500 bg-brand-50 text-brand-700"
                   : "border-slate-200 text-slate-600 hover:border-slate-300"
               )}
             >
@@ -446,7 +446,7 @@ export default function SignUpPage() {
               className={cn(
                 "flex-1 h-11 px-4 rounded-xl border text-sm font-medium transition-all flex items-center justify-center gap-2",
                 formData.verifyVia === "sms"
-                  ? "border-violet-500 bg-violet-50 text-violet-700"
+                  ? "border-brand-500 bg-brand-50 text-brand-700"
                   : "border-slate-200 text-slate-600 hover:border-slate-300"
               )}
             >
@@ -462,7 +462,7 @@ export default function SignUpPage() {
         <button
           type="submit"
           disabled={loading || !isStep1Valid || googleLoading}
-          className="group relative w-full h-12 text-sm font-semibold rounded-xl bg-gradient-to-r from-violet-600 to-purple-600 text-white hover:opacity-90 hover:shadow-lg hover:shadow-violet-500/25 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 flex items-center justify-center gap-2 mt-6"
+          className="group relative w-full h-12 text-sm font-semibold rounded-xl bg-gradient-to-r from-brand-500 to-brand-600 hover:from-brand-600 hover:to-brand-700 text-white shadow-lg shadow-brand-500/25 hover:shadow-xl hover:shadow-brand-500/30 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 flex items-center justify-center gap-2 mt-6 hover:scale-[1.02] active:scale-[0.98] before:absolute before:inset-[1px] before:rounded-[10px] before:border before:border-white/20 before:border-b-transparent before:border-r-transparent before:pointer-events-none"
         >
           {loading ? (
             <>
@@ -481,11 +481,11 @@ export default function SignUpPage() {
       {/* Terms */}
       <p className="text-center text-xs text-slate-400">
         By signing up, you agree to our{" "}
-        <Link href="/terms" className="text-violet-600 hover:underline">
+        <Link href="/terms" className="text-brand-600 hover:underline">
           Terms of Service
         </Link>{" "}
         and{" "}
-        <Link href="/privacy" className="text-violet-600 hover:underline">
+        <Link href="/privacy" className="text-brand-600 hover:underline">
           Privacy Policy
         </Link>
       </p>
@@ -496,7 +496,7 @@ export default function SignUpPage() {
           Already have an account?{" "}
           <Link
             href="/login"
-            className="text-violet-600 hover:text-violet-700 font-semibold transition-colors"
+            className="text-brand-600 hover:text-brand-700 font-semibold transition-colors"
           >
             Sign in
           </Link>

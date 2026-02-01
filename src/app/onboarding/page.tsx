@@ -372,7 +372,7 @@ export default function OnboardingPage() {
             {/* Next Steps */}
             <div className="bg-white rounded-2xl shadow-xl p-6 text-left">
               <h3 className="font-semibold text-slate-900 mb-5 flex items-center gap-2">
-                <RiSparklingLine className="w-5 h-5 text-violet-600" />
+                <RiSparklingLine className="w-5 h-5 text-brand-600" />
                 Quick Start Guide
               </h3>
 
@@ -382,7 +382,7 @@ export default function OnboardingPage() {
                     key={item.num}
                     className="flex items-start gap-4 p-3 bg-slate-50 rounded-xl"
                   >
-                    <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-600 to-purple-600 text-white flex items-center justify-center text-sm font-bold flex-shrink-0 shadow-lg shadow-violet-500/20">
+                    <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-brand-500 to-brand-600 text-white flex items-center justify-center text-sm font-bold flex-shrink-0 shadow-lg shadow-brand-500/20">
                       {item.num}
                     </div>
                     <div className="flex-1">
@@ -395,7 +395,7 @@ export default function OnboardingPage() {
               </div>
             </div>
 
-            <div className="flex items-center justify-center gap-3 text-violet-600">
+            <div className="flex items-center justify-center gap-3 text-brand-600">
               <RiLoader4Line className="w-5 h-5 animate-spin" />
               <span>Loading your dashboard...</span>
             </div>
@@ -428,7 +428,7 @@ export default function OnboardingPage() {
           {currentStep !== "welcome" && (
             <div className="flex items-center gap-2 text-sm">
               <span className="text-slate-400">Step</span>
-              <span className="inline-flex items-center px-2.5 py-1 text-xs font-semibold text-violet-700 bg-violet-100 rounded-full">
+              <span className="inline-flex items-center px-2.5 py-1 text-xs font-semibold text-brand-700 bg-brand-100 rounded-full">
                 {getCurrentStepIndex() + 1} of {steps.length}
               </span>
             </div>
@@ -443,14 +443,14 @@ export default function OnboardingPage() {
           {currentStep === "welcome" && (
             <div className="text-center space-y-8 animate-fade-in">
               <div className="space-y-4">
-                <span className="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-violet-700 bg-violet-100 rounded-full">
+                <span className="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-brand-700 bg-brand-100 rounded-full">
                   <RiSparklingLine className="w-4 h-4" />
                   Welcome to Vistrial
                 </span>
 
                 <h1 className="text-4xl md:text-5xl font-bold tracking-tight text-slate-900">
                   Let&apos;s set up your
-                  <span className="text-transparent bg-clip-text bg-gradient-to-r from-violet-600 to-purple-600 block mt-2">
+                  <span className="text-transparent bg-clip-text bg-gradient-to-r from-brand-500 to-brand-600 block mt-2">
                     cleaning business
                   </span>
                 </h1>
@@ -486,7 +486,7 @@ export default function OnboardingPage() {
 
               <button
                 onClick={goToNextStep}
-                className="group h-14 px-10 text-lg font-semibold gap-2 bg-gradient-to-r from-violet-600 to-purple-600 text-white hover:opacity-90 rounded-xl shadow-lg shadow-violet-500/25 inline-flex items-center justify-center transition-all"
+                className="group relative h-14 px-10 text-lg font-semibold gap-2 bg-gradient-to-r from-brand-500 to-brand-600 hover:from-brand-600 hover:to-brand-700 text-white rounded-xl shadow-lg shadow-brand-500/25 hover:shadow-xl hover:shadow-brand-500/30 inline-flex items-center justify-center transition-all hover:scale-[1.02] active:scale-[0.98] before:absolute before:inset-[1px] before:rounded-[10px] before:border before:border-white/20 before:border-b-transparent before:border-r-transparent before:pointer-events-none"
               >
                 Get Started
                 <RiArrowRightLine className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
@@ -504,7 +504,7 @@ export default function OnboardingPage() {
                   {/* Progress line */}
                   <div className="absolute left-0 right-0 top-1/2 h-0.5 bg-slate-200 -translate-y-1/2" />
                   <div
-                    className="absolute left-0 top-1/2 h-0.5 bg-violet-500 -translate-y-1/2 transition-all duration-300"
+                    className="absolute left-0 top-1/2 h-0.5 bg-brand-500 -translate-y-1/2 transition-all duration-300"
                     style={{
                       width: `${(getCurrentStepIndex() / (steps.length - 1)) * 100}%`,
                     }}
@@ -523,9 +523,9 @@ export default function OnboardingPage() {
                           className={cn(
                             "w-10 h-10 rounded-full flex items-center justify-center transition-all duration-300",
                             isCompleted
-                              ? "bg-violet-500 text-white"
+                              ? "bg-brand-500 text-white"
                               : isCurrent
-                                ? "bg-violet-500 text-white ring-4 ring-violet-100"
+                                ? "bg-brand-500 text-white ring-4 ring-brand-100"
                                 : "bg-white text-slate-400 border-2 border-slate-200"
                           )}
                         >
@@ -538,7 +538,7 @@ export default function OnboardingPage() {
                         <span
                           className={cn(
                             "text-xs mt-2 font-medium",
-                            isCurrent ? "text-violet-600" : "text-slate-400"
+                            isCurrent ? "text-brand-600" : "text-slate-400"
                           )}
                         >
                           {step.name}
@@ -561,7 +561,7 @@ export default function OnboardingPage() {
                 {currentStep === "business" && (
                   <div>
                     <div className="text-center mb-8">
-                      <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-violet-600 to-purple-600 flex items-center justify-center mx-auto mb-4 shadow-lg shadow-violet-500/20">
+                      <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-brand-500 to-brand-600 flex items-center justify-center mx-auto mb-4 shadow-lg shadow-brand-500/20">
                         <RiBuilding2Line className="w-8 h-8 text-white" />
                       </div>
                       <h2 className="text-2xl font-bold text-slate-900 mb-2">
@@ -586,7 +586,7 @@ export default function OnboardingPage() {
                               updateField("businessName", e.target.value)
                             }
                             placeholder="Sparkle Clean Co"
-                            className="w-full h-12 pl-11 pr-4 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500 text-slate-900 transition-all"
+                            className="w-full h-12 pl-11 pr-4 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 text-slate-900 transition-all"
                           />
                         </div>
                       </div>
@@ -600,7 +600,7 @@ export default function OnboardingPage() {
                           onChange={(e) =>
                             updateField("businessType", e.target.value)
                           }
-                          className="w-full h-12 px-4 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500 text-slate-900 bg-white transition-all"
+                          className="w-full h-12 px-4 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 text-slate-900 bg-white transition-all"
                         >
                           <option value="cleaning">Cleaning Services</option>
                           <option value="plumbing">Plumbing</option>
@@ -622,7 +622,7 @@ export default function OnboardingPage() {
                 {currentStep === "contact" && (
                   <div>
                     <div className="text-center mb-8">
-                      <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-violet-600 to-purple-600 flex items-center justify-center mx-auto mb-4 shadow-lg shadow-violet-500/20">
+                      <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-brand-500 to-brand-600 flex items-center justify-center mx-auto mb-4 shadow-lg shadow-brand-500/20">
                         <RiPhoneLine className="w-8 h-8 text-white" />
                       </div>
                       <h2 className="text-2xl font-bold text-slate-900 mb-2">
@@ -650,7 +650,7 @@ export default function OnboardingPage() {
                               )
                             }
                             placeholder="(555) 123-4567"
-                            className="w-full h-12 pl-11 pr-4 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500 text-slate-900 transition-all"
+                            className="w-full h-12 pl-11 pr-4 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 text-slate-900 transition-all"
                           />
                         </div>
                       </div>
@@ -669,7 +669,7 @@ export default function OnboardingPage() {
                               updateField("address", e.target.value)
                             }
                             placeholder="123 Main Street"
-                            className="w-full h-12 pl-11 pr-4 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500 text-slate-900 transition-all"
+                            className="w-full h-12 pl-11 pr-4 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 text-slate-900 transition-all"
                           />
                         </div>
                       </div>
@@ -684,7 +684,7 @@ export default function OnboardingPage() {
                             value={formData.city}
                             onChange={(e) => updateField("city", e.target.value)}
                             placeholder="City"
-                            className="w-full h-12 px-4 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500 text-slate-900 transition-all"
+                            className="w-full h-12 px-4 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 text-slate-900 transition-all"
                           />
                         </div>
                         <div>
@@ -699,7 +699,7 @@ export default function OnboardingPage() {
                             }
                             placeholder="CA"
                             maxLength={2}
-                            className="w-full h-12 px-4 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500 text-slate-900 transition-all"
+                            className="w-full h-12 px-4 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 text-slate-900 transition-all"
                           />
                         </div>
                         <div>
@@ -712,7 +712,7 @@ export default function OnboardingPage() {
                             onChange={(e) => updateField("zip", e.target.value)}
                             placeholder="90210"
                             maxLength={10}
-                            className="w-full h-12 px-4 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500 text-slate-900 transition-all"
+                            className="w-full h-12 px-4 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 text-slate-900 transition-all"
                           />
                         </div>
                       </div>
@@ -724,7 +724,7 @@ export default function OnboardingPage() {
                 {currentStep === "branding" && (
                   <div>
                     <div className="text-center mb-8">
-                      <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-violet-600 to-purple-600 flex items-center justify-center mx-auto mb-4 shadow-lg shadow-violet-500/20">
+                      <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-brand-500 to-brand-600 flex items-center justify-center mx-auto mb-4 shadow-lg shadow-brand-500/20">
                         <RiPaletteLine className="w-8 h-8 text-white" />
                       </div>
                       <h2 className="text-2xl font-bold text-slate-900 mb-2">
@@ -755,7 +755,7 @@ export default function OnboardingPage() {
                             onChange={(e) =>
                               updateField("primaryColor", e.target.value)
                             }
-                            className="flex-1 h-12 px-4 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500 text-slate-900 font-mono transition-all"
+                            className="flex-1 h-12 px-4 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 text-slate-900 font-mono transition-all"
                           />
                         </div>
                       </div>
@@ -772,7 +772,7 @@ export default function OnboardingPage() {
                             updateField("tagline", e.target.value)
                           }
                           placeholder="Quality service you can trust"
-                          className="w-full h-12 px-4 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500 text-slate-900 transition-all"
+                          className="w-full h-12 px-4 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 text-slate-900 transition-all"
                         />
                       </div>
 
@@ -816,7 +816,7 @@ export default function OnboardingPage() {
                     <button
                       onClick={goToNextStep}
                       disabled={!isStepValid()}
-                      className="group flex items-center gap-2 bg-gradient-to-r from-violet-600 to-purple-600 text-white px-6 py-3 rounded-xl font-semibold hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-lg shadow-violet-500/25"
+                      className="group relative flex items-center gap-2 bg-gradient-to-r from-brand-500 to-brand-600 hover:from-brand-600 hover:to-brand-700 text-white px-6 py-3 rounded-xl font-semibold disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-lg shadow-brand-500/25 hover:shadow-xl hover:shadow-brand-500/30 hover:scale-[1.02] active:scale-[0.98] before:absolute before:inset-[1px] before:rounded-[10px] before:border before:border-white/20 before:border-b-transparent before:border-r-transparent before:pointer-events-none"
                     >
                       Continue
                       <RiArrowRightLine className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
@@ -825,7 +825,7 @@ export default function OnboardingPage() {
                     <button
                       onClick={handleComplete}
                       disabled={loading}
-                      className="group flex items-center gap-2 bg-gradient-to-r from-violet-600 to-purple-600 text-white px-6 py-3 rounded-xl font-semibold hover:opacity-90 disabled:opacity-50 transition-all shadow-lg shadow-violet-500/25"
+                      className="group relative flex items-center gap-2 bg-gradient-to-r from-brand-500 to-brand-600 hover:from-brand-600 hover:to-brand-700 text-white px-6 py-3 rounded-xl font-semibold disabled:opacity-50 transition-all shadow-lg shadow-brand-500/25 hover:shadow-xl hover:shadow-brand-500/30 hover:scale-[1.02] active:scale-[0.98] before:absolute before:inset-[1px] before:rounded-[10px] before:border before:border-white/20 before:border-b-transparent before:border-r-transparent before:pointer-events-none"
                     >
                       {loading ? (
                         <>

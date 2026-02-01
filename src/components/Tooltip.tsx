@@ -92,4 +92,7 @@ const Tooltip = React.forwardRef<
 
 Tooltip.displayName = "Tooltip"
 
-export { Tooltip, type TooltipProps }
+// TooltipProvider for wrapping the app
+const TooltipProvider = TooltipPrimitives.Provider
+
+export { Tooltip, TooltipProvider, type TooltipProps }

@@ -1,46 +1,47 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import {
-  RiCheckboxCircleLine,
-  RiKeyLine,
-  RiMessageLine,
-  RiLoader4Line,
-  RiAlertLine,
-  RiMailLine,
-} from "@remixicon/react";
+import { RiCheckLine, RiCloseLine, RiLoader4Line, RiPhoneLine, RiMailLine, RiBankCardLine } from "@remixicon/react";
 
 interface IntegrationStatus {
-  twilio: boolean;
-  stripe: boolean;
-  resend: boolean;
+  twilio: {
+    connected: boolean;
+    phone?: string;
+  };
+  resend: {
+    connected: boolean;
+    domain?: string;
+  };
+  stripe: {
+    connected: boolean;
+    account_id?: string;
+  };
 }
 
 export default function IntegrationsPage() {
   const [loading, setLoading] = useState(true);
   const [status, setStatus] = useState<IntegrationStatus>({
-    twilio: false,
-    stripe: false,
-    resend: false,
+    twilio: { connected: false },
+    resend: { connected: false },
+    stripe: { connected: false },
   });
 
   useEffect(() => {
-    checkIntegrations();
-  }, []);
-
-  const checkIntegrations = async () => {
-    try {
-      const res = await fetch("/api/settings/integrations");
-      if (res.ok) {
-        const data = await res.json();
-        setStatus(data.status);
+    async function loadStatus() {
+      try {
+        const res = await fetch("/api/settings/integrations");
+        if (res.ok) {
+          const data = await res.json();
+          setStatus(data);
+        }
+      } catch (error) {
+        console.error("Failed to load integrations:", error);
+      } finally {
+        setLoading(false);
       }
-    } catch (err) {
-      console.error("Failed to check integrations:", err);
-    } finally {
-      setLoading(false);
     }
-  };
+    loadStatus();
+  }, []);
 
   if (loading) {
     return (
@@ -50,155 +51,99 @@ export default function IntegrationsPage() {
     );
   }
 
+  const integrations = [
+    {
+      name: "Twilio",
+      description: "SMS messaging for quotes and follow-ups",
+      icon: RiPhoneLine,
+      connected: status.twilio.connected,
+      details: status.twilio.phone ? `Phone: ${status.twilio.phone}` : null,
+      color: "red",
+    },
+    {
+      name: "Resend",
+      description: "Transactional email delivery",
+      icon: RiMailLine,
+      connected: status.resend.connected,
+      details: status.resend.domain ? `Domain: ${status.resend.domain}` : null,
+      color: "blue",
+    },
+    {
+      name: "Stripe",
+      description: "Payment processing and invoicing",
+      icon: RiBankCardLine,
+      connected: status.stripe.connected,
+      details: status.stripe.account_id ? `Account: ${status.stripe.account_id.slice(0, 12)}...` : null,
+      color: "purple",
+    },
+  ];
+
   return (
     <div className="space-y-6">
-      {/* Twilio Integration */}
-      <div className="bg-gray-900/80 backdrop-blur-xl rounded-2xl border border-white/10 overflow-hidden">
-        <div className="px-6 py-4 border-b border-white/10">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-brand-500 to-brand-600 shadow-lg shadow-brand-500/25">
-                <RiMessageLine className="h-5 w-5 text-white" />
-              </div>
-              <div>
-                <h3 className="text-lg font-semibold text-white">Twilio SMS</h3>
-                <p className="text-sm text-gray-400">Send SMS notifications to customers</p>
-              </div>
-            </div>
-            {status.twilio ? (
-              <div className="flex items-center gap-2 rounded-full bg-green-500/20 px-3 py-1.5 text-sm font-medium text-green-400 border border-green-500/30">
-                <RiCheckboxCircleLine className="h-4 w-4" />
-                Connected
-              </div>
-            ) : (
-              <div className="flex items-center gap-2 rounded-full bg-amber-500/20 px-3 py-1.5 text-sm font-medium text-amber-400 border border-amber-500/30">
-                <RiAlertLine className="h-4 w-4" />
-                Not configured
-              </div>
-            )}
-          </div>
+      <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+        <div className="p-6 border-b border-gray-100">
+          <h3 className="text-lg font-semibold text-gray-900">Integrations</h3>
+          <p className="text-sm text-gray-500 mt-1">
+            Connect third-party services to enhance your workflow.
+          </p>
         </div>
 
-        <div className="p-6">
-          {status.twilio ? (
-            <p className="text-sm text-gray-400">
-              Your Twilio account is connected. SMS notifications are active.
-            </p>
-          ) : (
-            <div className="space-y-4">
-              <p className="text-sm text-gray-400">
-                Connect your Twilio account to enable SMS notifications for bookings, reminders, and follow-ups.
-              </p>
-              <div className="p-4 bg-white/5 rounded-xl border border-white/10">
-                <p className="text-sm text-gray-500 mb-3">Add these environment variables to enable Twilio:</p>
-                <code className="text-xs bg-white/10 px-2 py-1 rounded text-gray-300 block mb-2">
-                  TWILIO_ACCOUNT_SID=your_account_sid
-                </code>
-                <code className="text-xs bg-white/10 px-2 py-1 rounded text-gray-300 block mb-2">
-                  TWILIO_AUTH_TOKEN=your_auth_token
-                </code>
-                <code className="text-xs bg-white/10 px-2 py-1 rounded text-gray-300 block">
-                  TWILIO_PHONE_NUMBER=+1234567890
-                </code>
+        <div className="divide-y divide-gray-100">
+          {integrations.map((integration) => (
+            <div key={integration.name} className="p-6 flex items-center gap-4">
+              <div className={`w-12 h-12 rounded-xl bg-${integration.color}-50 flex items-center justify-center`}>
+                <integration.icon className={`w-6 h-6 text-${integration.color}-600`} />
               </div>
+              
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2">
+                  <h4 className="font-medium text-gray-900">{integration.name}</h4>
+                  {integration.connected ? (
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-700">
+                      <RiCheckLine className="w-3 h-3" />
+                      Connected
+                    </span>
+                  ) : (
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600">
+                      <RiCloseLine className="w-3 h-3" />
+                      Not connected
+                    </span>
+                  )}
+                </div>
+                <p className="text-sm text-gray-500 mt-0.5">
+                  {integration.description}
+                </p>
+                {integration.details && (
+                  <p className="text-xs text-gray-400 mt-1 font-mono">
+                    {integration.details}
+                  </p>
+                )}
+              </div>
+
+              <button className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors">
+                {integration.connected ? "Configure" : "Connect"}
+              </button>
             </div>
-          )}
+          ))}
         </div>
       </div>
 
-      {/* Stripe Integration */}
-      <div className="bg-gray-900/80 backdrop-blur-xl rounded-2xl border border-white/10 overflow-hidden">
-        <div className="px-6 py-4 border-b border-white/10">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-500 to-indigo-600 shadow-lg shadow-indigo-500/25">
-                <RiKeyLine className="h-5 w-5 text-white" />
-              </div>
-              <div>
-                <h3 className="text-lg font-semibold text-white">Stripe Payments</h3>
-                <p className="text-sm text-gray-400">Accept online payments from customers</p>
-              </div>
-            </div>
-            {status.stripe ? (
-              <div className="flex items-center gap-2 rounded-full bg-green-500/20 px-3 py-1.5 text-sm font-medium text-green-400 border border-green-500/30">
-                <RiCheckboxCircleLine className="h-4 w-4" />
-                Connected
-              </div>
-            ) : (
-              <div className="flex items-center gap-2 rounded-full bg-amber-500/20 px-3 py-1.5 text-sm font-medium text-amber-400 border border-amber-500/30">
-                <RiAlertLine className="h-4 w-4" />
-                Not configured
-              </div>
-            )}
-          </div>
-        </div>
-
-        <div className="p-6">
-          {status.stripe ? (
-            <p className="text-sm text-gray-400">
-              Your Stripe account is connected. Online payments are enabled.
-            </p>
-          ) : (
-            <div className="space-y-4">
-              <p className="text-sm text-gray-400">
-                Connect Stripe to accept deposits and payments through your booking page.
-              </p>
-              <div className="p-4 bg-white/5 rounded-xl border border-white/10">
-                <p className="text-sm text-gray-500 mb-3">Add this environment variable to enable Stripe:</p>
-                <code className="text-xs bg-white/10 px-2 py-1 rounded text-gray-300 block">
-                  STRIPE_SECRET_KEY=sk_live_...
-                </code>
-              </div>
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* Resend Email */}
-      <div className="bg-gray-900/80 backdrop-blur-xl rounded-2xl border border-white/10 overflow-hidden">
-        <div className="px-6 py-4 border-b border-white/10">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-emerald-500 to-emerald-600 shadow-lg shadow-emerald-500/25">
-                <RiMailLine className="h-5 w-5 text-white" />
-              </div>
-              <div>
-                <h3 className="text-lg font-semibold text-white">Resend Email</h3>
-                <p className="text-sm text-gray-400">Send email notifications and quotes</p>
-              </div>
-            </div>
-            {status.resend ? (
-              <div className="flex items-center gap-2 rounded-full bg-green-500/20 px-3 py-1.5 text-sm font-medium text-green-400 border border-green-500/30">
-                <RiCheckboxCircleLine className="h-4 w-4" />
-                Connected
-              </div>
-            ) : (
-              <div className="flex items-center gap-2 rounded-full bg-amber-500/20 px-3 py-1.5 text-sm font-medium text-amber-400 border border-amber-500/30">
-                <RiAlertLine className="h-4 w-4" />
-                Not configured
-              </div>
-            )}
-          </div>
-        </div>
-
-        <div className="p-6">
-          {status.resend ? (
-            <p className="text-sm text-gray-400">
-              Your Resend account is connected. Email notifications are active.
-            </p>
-          ) : (
-            <div className="space-y-4">
-              <p className="text-sm text-gray-400">
-                Connect Resend to send email confirmations, quotes, and follow-ups.
-              </p>
-              <div className="p-4 bg-white/5 rounded-xl border border-white/10">
-                <p className="text-sm text-gray-500 mb-3">Add this environment variable to enable Resend:</p>
-                <code className="text-xs bg-white/10 px-2 py-1 rounded text-gray-300 block">
-                  RESEND_API_KEY=re_...
-                </code>
-              </div>
-            </div>
-          )}
+      {/* Environment Variables Help */}
+      <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
+        <h4 className="font-medium text-gray-900 mb-2">Setup Instructions</h4>
+        <p className="text-sm text-gray-500 mb-4">
+          Add the following environment variables to connect your services:
+        </p>
+        <div className="bg-gray-50 rounded-lg p-4 font-mono text-xs text-gray-700 space-y-1">
+          <p># Twilio</p>
+          <p>TWILIO_ACCOUNT_SID=your_account_sid</p>
+          <p>TWILIO_AUTH_TOKEN=your_auth_token</p>
+          <p>TWILIO_PHONE_NUMBER=+1234567890</p>
+          <p className="pt-2"># Resend</p>
+          <p>RESEND_API_KEY=your_api_key</p>
+          <p className="pt-2"># Stripe</p>
+          <p>STRIPE_SECRET_KEY=your_secret_key</p>
+          <p>STRIPE_WEBHOOK_SECRET=your_webhook_secret</p>
         </div>
       </div>
     </div>

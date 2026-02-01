@@ -1,91 +1,67 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import {
-  RiBuilding2Line,
-  RiPhoneLine,
-  RiMailLine,
-  RiMapPinLine,
-  RiGlobalLine,
-  RiLoader4Line,
-  RiCheckLine,
-} from "@remixicon/react";
+import { Label } from "@/components/Label";
+import { Input } from "@/components/Input";
+import { Button } from "@/components/Button";
+import { RiSaveLine, RiLoader4Line } from "@remixicon/react";
 
-export default function GeneralSettings() {
+export default function BusinessProfilePage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [saved, setSaved] = useState(false);
-  const [error, setError] = useState("");
-
   const [formData, setFormData] = useState({
     name: "",
-    phone: "",
     email: "",
-    address_line1: "",
+    phone: "",
+    address: "",
     city: "",
     state: "",
     zip: "",
-    website: "",
+    description: "",
   });
 
   useEffect(() => {
-    fetchBusiness();
+    // Load business data
+    async function loadBusiness() {
+      try {
+        const res = await fetch("/api/settings/business");
+        if (res.ok) {
+          const data = await res.json();
+          setFormData({
+            name: data.name || "",
+            email: data.email || "",
+            phone: data.phone || "",
+            address: data.address || "",
+            city: data.city || "",
+            state: data.state || "",
+            zip: data.zip || "",
+            description: data.description || "",
+          });
+        }
+      } catch (error) {
+        console.error("Failed to load business:", error);
+      } finally {
+        setLoading(false);
+      }
+    }
+    loadBusiness();
   }, []);
 
-  const fetchBusiness = async () => {
-    try {
-      const res = await fetch("/api/settings/business");
-      const data = await res.json();
-
-      if (data.business) {
-        setFormData({
-          name: data.business.name || "",
-          phone: data.business.phone || "",
-          email: data.business.email || "",
-          address_line1: data.business.address_line1 || "",
-          city: data.business.city || "",
-          state: data.business.state || "",
-          zip: data.business.zip || "",
-          website: data.business.website || "",
-        });
-      }
-    } catch (err) {
-      console.error("Failed to fetch business:", err);
-      setError("Failed to load settings");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleSave = async () => {
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
     setSaving(true);
-    setError("");
-    setSaved(false);
-
     try {
       const res = await fetch("/api/settings/business", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(formData),
       });
-
-      const data = await res.json();
-
-      if (!res.ok) {
-        throw new Error(data.error || "Failed to save");
-      }
-
-      setSaved(true);
-      setTimeout(() => setSaved(false), 3000);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to save settings");
+      if (!res.ok) throw new Error("Failed to save");
+    } catch (error) {
+      console.error("Failed to save:", error);
     } finally {
       setSaving(false);
     }
-  };
-
-  const updateField = (field: string, value: string) => {
-    setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
   if (loading) {
@@ -98,157 +74,120 @@ export default function GeneralSettings() {
 
   return (
     <div className="space-y-6">
-      {/* Profile Information */}
-      <div className="bg-gray-900/80 backdrop-blur-xl rounded-2xl border border-white/10 overflow-hidden">
-        <div className="px-6 py-4 border-b border-white/10">
-          <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-brand-500 to-brand-600 shadow-lg shadow-brand-500/25">
-              <RiBuilding2Line className="h-5 w-5 text-white" />
-            </div>
-            <div>
-              <h3 className="text-lg font-semibold text-white">Business Profile</h3>
-              <p className="text-sm text-gray-400">Update your business information</p>
-            </div>
-          </div>
+      <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+        <div className="p-6 border-b border-gray-100">
+          <h3 className="text-lg font-semibold text-gray-900">Business Profile</h3>
+          <p className="text-sm text-gray-500 mt-1">
+            Update your business information and contact details.
+          </p>
         </div>
 
-        <div className="p-6 space-y-5">
-          {error && (
-            <div className="p-3 bg-red-500/20 border border-red-500/30 rounded-xl text-red-400 text-sm">
-              {error}
-            </div>
-          )}
-
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-            <div>
-              <label className="flex items-center gap-2 mb-2 text-sm font-medium text-gray-300">
-                <RiBuilding2Line className="h-4 w-4 text-gray-500" />
-                Business Name
-              </label>
-              <input
-                type="text"
+        <form onSubmit={handleSubmit} className="p-6 space-y-6">
+          <div className="grid gap-6 md:grid-cols-2">
+            <div className="md:col-span-2">
+              <Label htmlFor="name" className="text-gray-700">Business Name</Label>
+              <Input
+                id="name"
                 value={formData.name}
-                onChange={(e) => updateField("name", e.target.value)}
-                placeholder="Your Business Name"
-                className="w-full px-4 py-2.5 bg-white/5 border border-white/10 rounded-xl text-white placeholder:text-gray-500 focus:outline-none focus:border-brand-500/50 focus:ring-1 focus:ring-brand-500/50"
+                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                className="mt-2 bg-gray-50 border-gray-200 focus:bg-white focus:border-brand-500 focus:ring-brand-500/20"
+                placeholder="Your business name"
               />
             </div>
-            <div>
-              <label className="flex items-center gap-2 mb-2 text-sm font-medium text-gray-300">
-                <RiPhoneLine className="h-4 w-4 text-gray-500" />
-                Phone Number
-              </label>
-              <input
-                type="tel"
-                value={formData.phone}
-                onChange={(e) => updateField("phone", e.target.value)}
-                placeholder="(555) 123-4567"
-                className="w-full px-4 py-2.5 bg-white/5 border border-white/10 rounded-xl text-white placeholder:text-gray-500 focus:outline-none focus:border-brand-500/50 focus:ring-1 focus:ring-brand-500/50"
-              />
-            </div>
-          </div>
 
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
             <div>
-              <label className="flex items-center gap-2 mb-2 text-sm font-medium text-gray-300">
-                <RiMailLine className="h-4 w-4 text-gray-500" />
-                Business Email
-              </label>
-              <input
+              <Label htmlFor="email" className="text-gray-700">Email</Label>
+              <Input
+                id="email"
                 type="email"
                 value={formData.email}
-                onChange={(e) => updateField("email", e.target.value)}
-                placeholder="hello@business.com"
-                className="w-full px-4 py-2.5 bg-white/5 border border-white/10 rounded-xl text-white placeholder:text-gray-500 focus:outline-none focus:border-brand-500/50 focus:ring-1 focus:ring-brand-500/50"
+                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                className="mt-2 bg-gray-50 border-gray-200 focus:bg-white focus:border-brand-500 focus:ring-brand-500/20"
+                placeholder="email@business.com"
               />
             </div>
+
             <div>
-              <label className="flex items-center gap-2 mb-2 text-sm font-medium text-gray-300">
-                <RiGlobalLine className="h-4 w-4 text-gray-500" />
-                Website
-              </label>
-              <input
-                type="url"
-                value={formData.website}
-                onChange={(e) => updateField("website", e.target.value)}
-                placeholder="https://yourbusiness.com"
-                className="w-full px-4 py-2.5 bg-white/5 border border-white/10 rounded-xl text-white placeholder:text-gray-500 focus:outline-none focus:border-brand-500/50 focus:ring-1 focus:ring-brand-500/50"
+              <Label htmlFor="phone" className="text-gray-700">Phone</Label>
+              <Input
+                id="phone"
+                type="tel"
+                value={formData.phone}
+                onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                className="mt-2 bg-gray-50 border-gray-200 focus:bg-white focus:border-brand-500 focus:ring-brand-500/20"
+                placeholder="(555) 123-4567"
               />
             </div>
-          </div>
 
-          <div>
-            <label className="flex items-center gap-2 mb-2 text-sm font-medium text-gray-300">
-              <RiMapPinLine className="h-4 w-4 text-gray-500" />
-              Address
-            </label>
-            <input
-              type="text"
-              value={formData.address_line1}
-              onChange={(e) => updateField("address_line1", e.target.value)}
-              placeholder="123 Main Street"
-              className="w-full px-4 py-2.5 bg-white/5 border border-white/10 rounded-xl text-white placeholder:text-gray-500 focus:outline-none focus:border-brand-500/50 focus:ring-1 focus:ring-brand-500/50"
-            />
-          </div>
+            <div className="md:col-span-2">
+              <Label htmlFor="address" className="text-gray-700">Address</Label>
+              <Input
+                id="address"
+                value={formData.address}
+                onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+                className="mt-2 bg-gray-50 border-gray-200 focus:bg-white focus:border-brand-500 focus:ring-brand-500/20"
+                placeholder="123 Main St"
+              />
+            </div>
 
-          <div className="grid grid-cols-3 gap-4">
             <div>
-              <label className="block mb-2 text-sm font-medium text-gray-300">City</label>
-              <input
-                type="text"
+              <Label htmlFor="city" className="text-gray-700">City</Label>
+              <Input
+                id="city"
                 value={formData.city}
-                onChange={(e) => updateField("city", e.target.value)}
+                onChange={(e) => setFormData({ ...formData, city: e.target.value })}
+                className="mt-2 bg-gray-50 border-gray-200 focus:bg-white focus:border-brand-500 focus:ring-brand-500/20"
                 placeholder="City"
-                className="w-full px-4 py-2.5 bg-white/5 border border-white/10 rounded-xl text-white placeholder:text-gray-500 focus:outline-none focus:border-brand-500/50 focus:ring-1 focus:ring-brand-500/50"
               />
             </div>
-            <div>
-              <label className="block mb-2 text-sm font-medium text-gray-300">State</label>
-              <input
-                type="text"
-                value={formData.state}
-                onChange={(e) => updateField("state", e.target.value.toUpperCase())}
-                placeholder="CA"
-                maxLength={2}
-                className="w-full px-4 py-2.5 bg-white/5 border border-white/10 rounded-xl text-white placeholder:text-gray-500 focus:outline-none focus:border-brand-500/50 focus:ring-1 focus:ring-brand-500/50"
-              />
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="state" className="text-gray-700">State</Label>
+                <Input
+                  id="state"
+                  value={formData.state}
+                  onChange={(e) => setFormData({ ...formData, state: e.target.value })}
+                  className="mt-2 bg-gray-50 border-gray-200 focus:bg-white focus:border-brand-500 focus:ring-brand-500/20"
+                  placeholder="State"
+                />
+              </div>
+              <div>
+                <Label htmlFor="zip" className="text-gray-700">ZIP</Label>
+                <Input
+                  id="zip"
+                  value={formData.zip}
+                  onChange={(e) => setFormData({ ...formData, zip: e.target.value })}
+                  className="mt-2 bg-gray-50 border-gray-200 focus:bg-white focus:border-brand-500 focus:ring-brand-500/20"
+                  placeholder="12345"
+                />
+              </div>
             </div>
-            <div>
-              <label className="block mb-2 text-sm font-medium text-gray-300">ZIP Code</label>
-              <input
-                type="text"
-                value={formData.zip}
-                onChange={(e) => updateField("zip", e.target.value)}
-                placeholder="90210"
-                className="w-full px-4 py-2.5 bg-white/5 border border-white/10 rounded-xl text-white placeholder:text-gray-500 focus:outline-none focus:border-brand-500/50 focus:ring-1 focus:ring-brand-500/50"
+
+            <div className="md:col-span-2">
+              <Label htmlFor="description" className="text-gray-700">Description</Label>
+              <textarea
+                id="description"
+                value={formData.description}
+                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                rows={4}
+                className="mt-2 w-full rounded-xl bg-gray-50 border border-gray-200 px-4 py-3 text-gray-900 placeholder:text-gray-400 focus:bg-white focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 focus:outline-none transition-all"
+                placeholder="Tell customers about your business..."
               />
             </div>
           </div>
-        </div>
 
-        <div className="px-6 py-4 border-t border-white/10 flex items-center justify-between">
-          {saved && (
-            <div className="flex items-center gap-2 text-green-400 text-sm">
-              <RiCheckLine className="w-4 h-4" />
-              Settings saved successfully
-            </div>
-          )}
-          {!saved && <div />}
-          <button
-            onClick={handleSave}
-            disabled={saving}
-            className="flex items-center gap-2 bg-gradient-to-r from-brand-500 to-brand-600 hover:from-brand-600 hover:to-brand-700 text-white px-5 py-2.5 rounded-xl font-medium transition-all disabled:opacity-50"
-          >
-            {saving ? (
-              <>
+          <div className="flex justify-end pt-4 border-t border-gray-100">
+            <Button type="submit" disabled={saving} className="gap-2">
+              {saving ? (
                 <RiLoader4Line className="w-4 h-4 animate-spin" />
-                Saving...
-              </>
-            ) : (
-              "Save Changes"
-            )}
-          </button>
-        </div>
+              ) : (
+                <RiSaveLine className="w-4 h-4" />
+              )}
+              Save Changes
+            </Button>
+          </div>
+        </form>
       </div>
     </div>
   );

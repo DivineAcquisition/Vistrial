@@ -127,58 +127,58 @@ export default async function DashboardPage() {
         {/* Today's Bookings */}
         <Link
           href="/bookings?date=today"
-          className="group relative bg-gray-900/80 backdrop-blur-xl rounded-2xl border border-white/10 p-5 hover:border-brand-500/30 transition-all cursor-pointer"
+          className="group relative bg-white rounded-2xl border border-gray-200 p-5 hover:border-brand-300 hover:shadow-lg hover:shadow-brand-500/5 transition-all cursor-pointer"
         >
           <div className="flex items-center justify-between mb-3">
-            <div className="p-2.5 rounded-xl bg-brand-500/10 text-brand-400 group-hover:bg-brand-500 group-hover:text-white transition-colors">
+            <div className="p-2.5 rounded-xl bg-brand-50 text-brand-500 group-hover:bg-brand-500 group-hover:text-white transition-colors">
               <RiCalendarLine className="w-5 h-5" />
             </div>
-            <RiArrowRightLine className="w-4 h-4 text-gray-600 group-hover:text-brand-400 group-hover:translate-x-1 transition-all" />
+            <RiArrowRightLine className="w-4 h-4 text-gray-300 group-hover:text-brand-500 group-hover:translate-x-1 transition-all" />
           </div>
-          <div className="text-3xl font-bold text-white mb-1">{bookingStats.today}</div>
+          <div className="text-3xl font-bold text-gray-900 mb-1">{bookingStats.today}</div>
           <p className="text-sm text-gray-500">Today&apos;s Bookings</p>
         </Link>
 
         {/* This Week */}
-        <div className="group relative bg-gray-900/80 backdrop-blur-xl rounded-2xl border border-white/10 p-5">
+        <div className="group relative bg-white rounded-2xl border border-gray-200 p-5 hover:shadow-md transition-all">
           <div className="flex items-center justify-between mb-3">
-            <div className="p-2.5 rounded-xl bg-blue-500/10 text-blue-400 group-hover:bg-blue-500 group-hover:text-white transition-colors">
+            <div className="p-2.5 rounded-xl bg-blue-50 text-blue-500 group-hover:bg-blue-500 group-hover:text-white transition-colors">
               <RiTimeLine className="w-5 h-5" />
             </div>
           </div>
-          <div className="text-3xl font-bold text-white mb-1">{bookingStats.thisWeek}</div>
+          <div className="text-3xl font-bold text-gray-900 mb-1">{bookingStats.thisWeek}</div>
           <p className="text-sm text-gray-500">This Week</p>
         </div>
 
         {/* Active Members */}
         <Link
           href="/memberships?status=active"
-          className="group relative bg-gray-900/80 backdrop-blur-xl rounded-2xl border border-white/10 p-5 hover:border-green-500/30 transition-all cursor-pointer"
+          className="group relative bg-white rounded-2xl border border-gray-200 p-5 hover:border-green-300 hover:shadow-lg hover:shadow-green-500/5 transition-all cursor-pointer"
         >
           <div className="flex items-center justify-between mb-3">
-            <div className="p-2.5 rounded-xl bg-green-500/10 text-green-400 group-hover:bg-green-500 group-hover:text-white transition-colors">
+            <div className="p-2.5 rounded-xl bg-green-50 text-green-500 group-hover:bg-green-500 group-hover:text-white transition-colors">
               <RiVipCrownLine className="w-5 h-5" />
             </div>
-            <RiArrowRightLine className="w-4 h-4 text-gray-600 group-hover:text-green-400 group-hover:translate-x-1 transition-all" />
+            <RiArrowRightLine className="w-4 h-4 text-gray-300 group-hover:text-green-500 group-hover:translate-x-1 transition-all" />
           </div>
-          <div className="text-3xl font-bold text-white mb-1">{membershipStats.active}</div>
+          <div className="text-3xl font-bold text-gray-900 mb-1">{membershipStats.active}</div>
           <p className="text-sm text-gray-500">Active Members</p>
           {membershipStats.mrr > 0 && (
-            <p className="text-xs text-green-400 font-medium mt-1">
+            <p className="text-xs text-green-600 font-medium mt-1">
               {formatCurrency(membershipStats.mrr)}/mo
             </p>
           )}
         </Link>
 
         {/* Month Revenue */}
-        <div className="group relative bg-gray-900/80 backdrop-blur-xl rounded-2xl border border-white/10 p-5 bg-gradient-to-br from-amber-500/5 to-transparent">
+        <div className="group relative bg-white rounded-2xl border border-gray-200 p-5 bg-gradient-to-br from-amber-50/50 to-transparent hover:shadow-md transition-all">
           <div className="flex items-center justify-between mb-3">
-            <div className="p-2.5 rounded-xl bg-amber-500/10 text-amber-400">
+            <div className="p-2.5 rounded-xl bg-amber-50 text-amber-500">
               <RiMoneyDollarCircleLine className="w-5 h-5" />
             </div>
-            <RiSparklingLine className="w-4 h-4 text-amber-400 animate-pulse" />
+            <RiSparklingLine className="w-4 h-4 text-amber-500 animate-pulse" />
           </div>
-          <div className="text-3xl font-bold text-white mb-1">
+          <div className="text-3xl font-bold text-gray-900 mb-1">
             {formatCurrency(bookingStats.monthRevenue)}
           </div>
           <p className="text-sm text-gray-500">Month Revenue</p>
@@ -189,14 +189,14 @@ export default async function DashboardPage() {
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <Link
           href="/quotes/new"
-          className="group p-4 rounded-xl border border-white/10 bg-gray-900/80 hover:border-brand-500/30 hover:shadow-lg hover:shadow-brand-500/5 transition-all text-left"
+          className="group p-4 rounded-xl border border-gray-200 bg-white hover:border-brand-300 hover:shadow-lg hover:shadow-brand-500/5 transition-all text-left"
         >
           <div className="flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-brand-500/10 text-brand-400 group-hover:bg-brand-500 group-hover:text-white transition-colors">
+            <div className="p-2 rounded-lg bg-brand-50 text-brand-500 group-hover:bg-brand-500 group-hover:text-white transition-colors">
               <RiAddLine className="w-5 h-5" />
             </div>
             <div>
-              <p className="font-medium text-white">Add Quote</p>
+              <p className="font-medium text-gray-900">Add Quote</p>
               <p className="text-xs text-gray-500">Create new</p>
             </div>
           </div>
@@ -204,14 +204,14 @@ export default async function DashboardPage() {
 
         <Link
           href="/sequences"
-          className="group p-4 rounded-xl border border-white/10 bg-gray-900/80 hover:border-purple-500/30 hover:shadow-lg hover:shadow-purple-500/5 transition-all text-left"
+          className="group p-4 rounded-xl border border-gray-200 bg-white hover:border-purple-300 hover:shadow-lg hover:shadow-purple-500/5 transition-all text-left"
         >
           <div className="flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-purple-500/10 text-purple-400 group-hover:bg-purple-500 group-hover:text-white transition-colors">
+            <div className="p-2 rounded-lg bg-purple-50 text-purple-500 group-hover:bg-purple-500 group-hover:text-white transition-colors">
               <RiFlashlightLine className="w-5 h-5" />
             </div>
             <div>
-              <p className="font-medium text-white">Sequences</p>
+              <p className="font-medium text-gray-900">Sequences</p>
               <p className="text-xs text-gray-500">Automations</p>
             </div>
           </div>
@@ -219,14 +219,14 @@ export default async function DashboardPage() {
 
         <Link
           href="/customers"
-          className="group p-4 rounded-xl border border-white/10 bg-gray-900/80 hover:border-blue-500/30 hover:shadow-lg hover:shadow-blue-500/5 transition-all text-left"
+          className="group p-4 rounded-xl border border-gray-200 bg-white hover:border-blue-300 hover:shadow-lg hover:shadow-blue-500/5 transition-all text-left"
         >
           <div className="flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-blue-500/10 text-blue-400 group-hover:bg-blue-500 group-hover:text-white transition-colors">
+            <div className="p-2 rounded-lg bg-blue-50 text-blue-500 group-hover:bg-blue-500 group-hover:text-white transition-colors">
               <RiTeamLine className="w-5 h-5" />
             </div>
             <div>
-              <p className="font-medium text-white">Customers</p>
+              <p className="font-medium text-gray-900">Customers</p>
               <p className="text-xs text-gray-500">{customerStats.total} total</p>
             </div>
           </div>
@@ -234,14 +234,14 @@ export default async function DashboardPage() {
 
         <Link
           href="/analytics"
-          className="group p-4 rounded-xl border border-white/10 bg-gray-900/80 hover:border-green-500/30 hover:shadow-lg hover:shadow-green-500/5 transition-all text-left"
+          className="group p-4 rounded-xl border border-gray-200 bg-white hover:border-green-300 hover:shadow-lg hover:shadow-green-500/5 transition-all text-left"
         >
           <div className="flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-green-500/10 text-green-400 group-hover:bg-green-500 group-hover:text-white transition-colors">
+            <div className="p-2 rounded-lg bg-green-50 text-green-500 group-hover:bg-green-500 group-hover:text-white transition-colors">
               <RiLineChartLine className="w-5 h-5" />
             </div>
             <div>
-              <p className="font-medium text-white">Analytics</p>
+              <p className="font-medium text-gray-900">Analytics</p>
               <p className="text-xs text-gray-500">Reports</p>
             </div>
           </div>
@@ -253,18 +253,18 @@ export default async function DashboardPage() {
         {/* Today's Schedule + Upcoming */}
         <div className="xl:col-span-2 space-y-6">
           {/* Today's Schedule */}
-          <div className="relative bg-gray-900/80 backdrop-blur-xl rounded-2xl border border-white/10 overflow-hidden">
-            <div className="h-px bg-gradient-to-r from-transparent via-brand-500/50 to-transparent" />
-            <div className="p-6 border-b border-white/10 flex items-center justify-between">
+          <div className="relative bg-white rounded-2xl border border-gray-200 overflow-hidden shadow-sm">
+            <div className="h-px bg-gradient-to-r from-transparent via-brand-500 to-transparent" />
+            <div className="p-6 border-b border-gray-100 flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <h2 className="text-lg font-semibold text-white">Today&apos;s Schedule</h2>
-                <span className="px-2 py-0.5 text-xs font-medium bg-brand-500/20 text-brand-400 rounded-full">
+                <h2 className="text-lg font-semibold text-gray-900">Today&apos;s Schedule</h2>
+                <span className="px-2 py-0.5 text-xs font-medium bg-brand-50 text-brand-600 rounded-full border border-brand-200">
                   {todaysData.bookings?.length || 0} bookings
                 </span>
               </div>
               <Link
                 href="/bookings"
-                className="text-sm text-brand-400 hover:text-brand-300 font-medium flex items-center gap-1 transition-colors"
+                className="text-sm text-brand-600 hover:text-brand-700 font-medium flex items-center gap-1 transition-colors"
               >
                 View all
                 <RiArrowRightLine className="w-4 h-4" />
@@ -272,37 +272,37 @@ export default async function DashboardPage() {
             </div>
 
             {todaysData.bookings && todaysData.bookings.length > 0 ? (
-              <div className="divide-y divide-white/5">
+              <div className="divide-y divide-gray-100">
                 {todaysData.bookings.slice(0, 5).map((booking: any) => (
                   <div
                     key={booking.id}
-                    className="p-4 flex items-center justify-between hover:bg-white/5 transition-colors"
+                    className="p-4 flex items-center justify-between hover:bg-gray-50 transition-colors"
                   >
                     <div className="flex items-center gap-4">
-                      <div className="w-12 h-12 bg-white/5 rounded-xl flex items-center justify-center border border-white/10">
+                      <div className="w-12 h-12 bg-gray-50 rounded-xl flex items-center justify-center border border-gray-200">
                         <RiTimeLine className="w-5 h-5 text-gray-400" />
                       </div>
                       <div>
-                        <p className="font-medium text-white">
+                        <p className="font-medium text-gray-900">
                           {booking.contacts?.first_name} {booking.contacts?.last_name}
                         </p>
-                        <p className="text-sm text-gray-400">
+                        <p className="text-sm text-gray-500">
                           {formatTime(booking.scheduled_time)} ·{" "}
                           {booking.address_line1 || "No address"}
                         </p>
                       </div>
                     </div>
                     <div className="text-right">
-                      <p className="font-semibold text-white">
+                      <p className="font-semibold text-gray-900">
                         {formatCurrency(booking.total)}
                       </p>
                       <span
                         className={`text-xs px-2.5 py-1 rounded-full ${
                           booking.status === "confirmed"
-                            ? "bg-green-500/20 text-green-400 border border-green-500/30"
+                            ? "bg-green-50 text-green-700 border border-green-200"
                             : booking.status === "pending"
-                            ? "bg-amber-500/20 text-amber-400 border border-amber-500/30"
-                            : "bg-white/10 text-gray-400 border border-white/10"
+                            ? "bg-amber-50 text-amber-700 border border-amber-200"
+                            : "bg-gray-50 text-gray-600 border border-gray-200"
                         }`}
                       >
                         {booking.status}
@@ -313,13 +313,13 @@ export default async function DashboardPage() {
               </div>
             ) : (
               <div className="p-12 text-center">
-                <div className="w-16 h-16 bg-white/5 rounded-2xl flex items-center justify-center mx-auto mb-4 border border-white/10">
-                  <RiCalendarLine className="w-8 h-8 text-gray-500" />
+                <div className="w-16 h-16 bg-gray-50 rounded-2xl flex items-center justify-center mx-auto mb-4 border border-gray-200">
+                  <RiCalendarLine className="w-8 h-8 text-gray-400" />
                 </div>
-                <p className="text-gray-400 mb-4">No bookings scheduled for today</p>
+                <p className="text-gray-500 mb-4">No bookings scheduled for today</p>
                 <Link
                   href="/bookings/new"
-                  className="inline-flex items-center gap-2 text-brand-400 hover:text-brand-300 font-medium transition-colors"
+                  className="inline-flex items-center gap-2 text-brand-600 hover:text-brand-700 font-medium transition-colors"
                 >
                   Create a booking
                   <RiArrowRightLine className="w-4 h-4" />
@@ -329,13 +329,13 @@ export default async function DashboardPage() {
           </div>
 
           {/* Upcoming */}
-          <div className="relative bg-gray-900/80 backdrop-blur-xl rounded-2xl border border-white/10 overflow-hidden">
-            <div className="h-px bg-gradient-to-r from-transparent via-blue-500/50 to-transparent" />
-            <div className="p-6 border-b border-white/10 flex items-center justify-between">
-              <h2 className="text-lg font-semibold text-white">Upcoming</h2>
+          <div className="relative bg-white rounded-2xl border border-gray-200 overflow-hidden shadow-sm">
+            <div className="h-px bg-gradient-to-r from-transparent via-blue-500 to-transparent" />
+            <div className="p-6 border-b border-gray-100 flex items-center justify-between">
+              <h2 className="text-lg font-semibold text-gray-900">Upcoming</h2>
               <Link
                 href="/bookings"
-                className="text-sm text-blue-400 hover:text-blue-300 font-medium flex items-center gap-1 transition-colors"
+                className="text-sm text-blue-600 hover:text-blue-700 font-medium flex items-center gap-1 transition-colors"
               >
                 View all
                 <RiArrowRightLine className="w-4 h-4" />
@@ -343,38 +343,38 @@ export default async function DashboardPage() {
             </div>
 
             {upcoming && upcoming.length > 0 ? (
-              <div className="divide-y divide-white/5">
+              <div className="divide-y divide-gray-100">
                 {upcoming.map((booking: any) => (
                   <div
                     key={booking.id}
-                    className="p-4 flex items-center justify-between hover:bg-white/5 transition-colors"
+                    className="p-4 flex items-center justify-between hover:bg-gray-50 transition-colors"
                   >
                     <div className="flex items-center gap-4">
-                      <div className="w-12 h-12 bg-white/5 rounded-xl flex items-center justify-center border border-white/10">
+                      <div className="w-12 h-12 bg-gray-50 rounded-xl flex items-center justify-center border border-gray-200">
                         <RiCalendarLine className="w-5 h-5 text-gray-400" />
                       </div>
                       <div>
-                        <p className="font-medium text-white">
+                        <p className="font-medium text-gray-900">
                           {booking.contacts?.first_name} {booking.contacts?.last_name}
                         </p>
-                        <p className="text-sm text-gray-400">
+                        <p className="text-sm text-gray-500">
                           {new Date(booking.scheduled_date).toLocaleDateString()} ·{" "}
                           {formatTime(booking.scheduled_time)}
                         </p>
                       </div>
                     </div>
                     <div>
-                      <p className="text-sm text-gray-400">{booking.service_types?.name}</p>
+                      <p className="text-sm text-gray-500">{booking.service_types?.name}</p>
                     </div>
                   </div>
                 ))}
               </div>
             ) : (
               <div className="p-12 text-center">
-                <div className="w-16 h-16 bg-white/5 rounded-2xl flex items-center justify-center mx-auto mb-4 border border-white/10">
-                  <RiTimeLine className="w-8 h-8 text-gray-500" />
+                <div className="w-16 h-16 bg-gray-50 rounded-2xl flex items-center justify-center mx-auto mb-4 border border-gray-200">
+                  <RiTimeLine className="w-8 h-8 text-gray-400" />
                 </div>
-                <p className="text-gray-400">No upcoming bookings</p>
+                <p className="text-gray-500">No upcoming bookings</p>
               </div>
             )}
           </div>
@@ -383,54 +383,54 @@ export default async function DashboardPage() {
         {/* Sidebar - Insights & Quick Links */}
         <div className="space-y-6">
           {/* AI Insights Card */}
-          <div className="relative bg-gradient-to-br from-brand-500/10 via-purple-500/10 to-brand-500/5 rounded-2xl border border-brand-500/20 p-5">
+          <div className="relative bg-gradient-to-br from-brand-50 via-purple-50/50 to-brand-50/30 rounded-2xl border border-brand-200 p-5">
             <div className="flex items-center gap-3 mb-4">
               <div className="p-2 rounded-lg bg-gradient-to-br from-brand-500 to-purple-500">
                 <RiSparklingLine className="w-5 h-5 text-white" />
               </div>
               <div>
-                <h3 className="font-semibold text-white">Insights</h3>
+                <h3 className="font-semibold text-gray-900">Insights</h3>
                 <p className="text-xs text-gray-500">Smart recommendations</p>
               </div>
             </div>
 
             <div className="space-y-3">
               {bookingStats.pending > 0 && (
-                <div className="flex items-start gap-3 p-3 rounded-lg bg-amber-500/10 border border-amber-500/20">
-                  <RiAlertLine className="w-4 h-4 text-amber-400 mt-0.5 flex-shrink-0" />
+                <div className="flex items-start gap-3 p-3 rounded-lg bg-amber-50 border border-amber-200">
+                  <RiAlertLine className="w-4 h-4 text-amber-600 mt-0.5 flex-shrink-0" />
                   <div>
-                    <p className="text-sm font-medium text-amber-300">
+                    <p className="text-sm font-medium text-amber-700">
                       {bookingStats.pending} pending confirmations
                     </p>
-                    <p className="text-xs text-amber-400/70">Need attention</p>
+                    <p className="text-xs text-amber-600/70">Need attention</p>
                   </div>
                 </div>
               )}
 
-              <div className="flex items-start gap-3 p-3 rounded-lg bg-green-500/10 border border-green-500/20">
-                <RiCheckboxCircleLine className="w-4 h-4 text-green-400 mt-0.5 flex-shrink-0" />
+              <div className="flex items-start gap-3 p-3 rounded-lg bg-green-50 border border-green-200">
+                <RiCheckboxCircleLine className="w-4 h-4 text-green-600 mt-0.5 flex-shrink-0" />
                 <div>
-                  <p className="text-sm font-medium text-green-300">
+                  <p className="text-sm font-medium text-green-700">
                     {formatCurrency(bookingStats.monthRevenue)} this month
                   </p>
-                  <p className="text-xs text-green-400/70">Keep it up!</p>
+                  <p className="text-xs text-green-600/70">Keep it up!</p>
                 </div>
               </div>
 
-              <div className="flex items-start gap-3 p-3 rounded-lg bg-blue-500/10 border border-blue-500/20">
-                <RiSendPlaneLine className="w-4 h-4 text-blue-400 mt-0.5 flex-shrink-0" />
+              <div className="flex items-start gap-3 p-3 rounded-lg bg-blue-50 border border-blue-200">
+                <RiSendPlaneLine className="w-4 h-4 text-blue-600 mt-0.5 flex-shrink-0" />
                 <div>
-                  <p className="text-sm font-medium text-blue-300">
+                  <p className="text-sm font-medium text-blue-700">
                     {customerStats.newThisMonth} new customers
                   </p>
-                  <p className="text-xs text-blue-400/70">This month</p>
+                  <p className="text-xs text-blue-600/70">This month</p>
                 </div>
               </div>
             </div>
 
             <Link
               href="/analytics"
-              className="flex items-center justify-center gap-1 w-full mt-4 py-2 text-sm text-brand-400 hover:text-brand-300 transition-colors"
+              className="flex items-center justify-center gap-1 w-full mt-4 py-2 text-sm text-brand-600 hover:text-brand-700 transition-colors"
             >
               View detailed insights
               <RiArrowRightLine className="w-4 h-4" />
@@ -438,36 +438,36 @@ export default async function DashboardPage() {
           </div>
 
           {/* Quick Links */}
-          <div className="relative bg-gray-900/80 backdrop-blur-xl rounded-2xl border border-white/10 p-5">
-            <h3 className="font-semibold text-white mb-4">Quick Links</h3>
+          <div className="relative bg-white rounded-2xl border border-gray-200 p-5 shadow-sm">
+            <h3 className="font-semibold text-gray-900 mb-4">Quick Links</h3>
             <div className="space-y-2">
               <Link
                 href={`/book/${business.slug}`}
                 target="_blank"
-                className="flex items-center gap-3 p-3 rounded-lg hover:bg-white/5 transition-colors group"
+                className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-50 transition-colors group"
               >
-                <div className="p-2 rounded-lg bg-brand-500/10 text-brand-400 group-hover:bg-brand-500 group-hover:text-white transition-colors">
+                <div className="p-2 rounded-lg bg-brand-50 text-brand-500 group-hover:bg-brand-500 group-hover:text-white transition-colors">
                   <RiExternalLinkLine className="w-4 h-4" />
                 </div>
                 <div className="flex-1">
-                  <p className="text-sm font-medium text-white">Booking Page</p>
+                  <p className="text-sm font-medium text-gray-900">Booking Page</p>
                   <p className="text-xs text-gray-500">View live page</p>
                 </div>
-                <RiArrowRightLine className="w-4 h-4 text-gray-600 group-hover:text-brand-400 transition-colors" />
+                <RiArrowRightLine className="w-4 h-4 text-gray-300 group-hover:text-brand-500 transition-colors" />
               </Link>
 
               <Link
                 href="/settings"
-                className="flex items-center gap-3 p-3 rounded-lg hover:bg-white/5 transition-colors group"
+                className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-50 transition-colors group"
               >
-                <div className="p-2 rounded-lg bg-gray-500/10 text-gray-400 group-hover:bg-gray-500 group-hover:text-white transition-colors">
+                <div className="p-2 rounded-lg bg-gray-100 text-gray-500 group-hover:bg-gray-500 group-hover:text-white transition-colors">
                   <RiFileTextLine className="w-4 h-4" />
                 </div>
                 <div className="flex-1">
-                  <p className="text-sm font-medium text-white">Settings</p>
+                  <p className="text-sm font-medium text-gray-900">Settings</p>
                   <p className="text-xs text-gray-500">Configure business</p>
                 </div>
-                <RiArrowRightLine className="w-4 h-4 text-gray-600 group-hover:text-gray-400 transition-colors" />
+                <RiArrowRightLine className="w-4 h-4 text-gray-300 group-hover:text-gray-500 transition-colors" />
               </Link>
             </div>
           </div>

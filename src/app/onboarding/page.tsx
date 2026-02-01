@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
 import {
@@ -22,7 +21,6 @@ import { cn } from "@/lib/utils/cn";
 type Step = 1 | 2 | 3;
 
 export default function OnboardingPage() {
-  const router = useRouter();
   const [currentStep, setCurrentStep] = useState<Step>(1);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -45,15 +43,21 @@ export default function OnboardingPage() {
     zip: "",
   });
 
+  const [initialLoading, setInitialLoading] = useState(true);
+
   // Check auth on mount
   useEffect(() => {
     const checkAuth = async () => {
       try {
+        console.log("Checking auth status...");
         const res = await fetch("/api/auth/me");
         const data = await res.json();
         
+        console.log("Auth check response:", data);
+        
         if (!data.user) {
-          router.push("/login");
+          console.log("No user found, redirecting to login");
+          window.location.href = "/login";
           return;
         }
         
@@ -74,15 +78,20 @@ export default function OnboardingPage() {
         
         // Check if already has completed business
         if (data.business?.onboarding_completed) {
-          router.push("/dashboard");
+          console.log("Business already completed, redirecting to dashboard");
+          window.location.href = "/dashboard";
+          return;
         }
+        
+        setInitialLoading(false);
       } catch (err) {
         console.error("Auth check failed:", err);
+        setInitialLoading(false);
       }
     };
     
     checkAuth();
-  }, [router]);
+  }, []);
 
   const updateField = (field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -140,19 +149,34 @@ export default function OnboardingPage() {
         throw new Error(data.error || "Failed to complete setup");
       }
 
+      console.log("Onboarding API response:", data);
       setSuccess(true);
       
-      // Redirect after showing success
+      // Force hard redirect to dashboard after showing success
       setTimeout(() => {
-        router.push("/dashboard");
-      }, 2000);
+        console.log("Redirecting to dashboard...");
+        // Use window.location for a full page refresh to ensure middleware re-evaluates
+        window.location.href = data.redirectTo || "/dashboard";
+      }, 1500);
     } catch (err) {
       console.error("Onboarding error:", err);
-      setError(err instanceof Error ? err.message : "Something went wrong");
+      setError(err instanceof Error ? err.message : "Something went wrong. Please try again.");
     } finally {
       setLoading(false);
     }
   };
+
+  // Initial loading state
+  if (initialLoading) {
+    return (
+      <div className="min-h-screen bg-white flex items-center justify-center">
+        <div className="text-center">
+          <RiLoader4Line className="w-8 h-8 animate-spin text-brand-600 mx-auto mb-4" />
+          <p className="text-gray-500">Loading...</p>
+        </div>
+      </div>
+    );
+  }
 
   // Success screen
   if (success) {

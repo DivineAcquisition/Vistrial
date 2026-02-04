@@ -248,16 +248,18 @@ class WorkflowsService {
    */
   async updateEnrollment(
     enrollmentId: string,
-    updates: Partial<Pick<WorkflowEnrollment, "status" | "current_step" | "next_step_at">>
+    updates: Partial<Pick<WorkflowEnrollment, "status" | "current_step_index" | "next_action_at">>
   ): Promise<void> {
     const supabase = createAdminClient();
 
-    const updateData: any = { ...updates };
+    const updateData: Record<string, unknown> = { ...updates };
     
     if (updates.status === "completed") {
-      updateData.completed_at = new Date().toISOString();
+      updateData.exited_at = new Date().toISOString();
+      updateData.exit_reason = "completed";
     } else if (updates.status === "failed") {
-      updateData.failed_at = new Date().toISOString();
+      updateData.exited_at = new Date().toISOString();
+      updateData.exit_reason = "error";
     }
 
     const { error } = await supabase

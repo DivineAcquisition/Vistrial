@@ -35,7 +35,7 @@ export function createClient() {
         onAuthStateChange: () => ({ data: { subscription: { unsubscribe: () => {} } } }),
       },
       from: () => mockChain(),
-    } as ReturnType<typeof createBrowserClient>;
+    } as unknown as ReturnType<typeof createBrowserClient>;
   }
 
   return createBrowserClient(url, key);

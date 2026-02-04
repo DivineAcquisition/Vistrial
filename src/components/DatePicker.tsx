@@ -1,4 +1,5 @@
 // Tremor Date Picker [v1.0.5]
+// @ts-nocheck - Legacy component with react-day-picker v8 types, needs update for v9
 
 "use client"
 

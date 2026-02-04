@@ -1,80 +1,94 @@
-import type { Config } from "tailwindcss"
+import type { Config } from "tailwindcss";
 
-const config: Config = {
-  darkMode: "selector",
-  content: ["./src/**/*.{js,ts,jsx,tsx,mdx}"],
+const config = {
+  darkMode: ["class"],
+  content: [
+    "./pages/**/*.{ts,tsx}",
+    "./components/**/*.{ts,tsx}",
+    "./app/**/*.{ts,tsx}",
+    "./src/**/*.{ts,tsx}",
+  ],
+  prefix: "",
   theme: {
+    container: {
+      center: true,
+      padding: "2rem",
+      screens: {
+        "2xl": "1400px",
+      },
+    },
     extend: {
       colors: {
+        border: "hsl(var(--border))",
+        input: "hsl(var(--input))",
+        ring: "hsl(var(--ring))",
+        background: "hsl(var(--background))",
+        foreground: "hsl(var(--foreground))",
+        primary: {
+          DEFAULT: "hsl(var(--primary))",
+          foreground: "hsl(var(--primary-foreground))",
+        },
+        secondary: {
+          DEFAULT: "hsl(var(--secondary))",
+          foreground: "hsl(var(--secondary-foreground))",
+        },
+        destructive: {
+          DEFAULT: "hsl(var(--destructive))",
+          foreground: "hsl(var(--destructive-foreground))",
+        },
+        muted: {
+          DEFAULT: "hsl(var(--muted))",
+          foreground: "hsl(var(--muted-foreground))",
+        },
+        accent: {
+          DEFAULT: "hsl(var(--accent))",
+          foreground: "hsl(var(--accent-foreground))",
+        },
+        popover: {
+          DEFAULT: "hsl(var(--popover))",
+          foreground: "hsl(var(--popover-foreground))",
+        },
+        card: {
+          DEFAULT: "hsl(var(--card))",
+          foreground: "hsl(var(--card-foreground))",
+        },
+        // Brand colors for Vistrial
         brand: {
-          50: "#F5F4FF",
-          100: "#ECEAFF",
-          200: "#DCD9FF",
-          300: "#C4BFFF",
-          400: "#A39EFF",  // Lighter brand color
-          500: "#8B7FFF",
-          600: "#6E47D1",  // Darker brand color (primary)
-          700: "#5C3BAF",
-          800: "#4A2F8D",
-          900: "#38236B",
-          950: "#1E1338",
+          50: "#f5f3ff",
+          100: "#ede9fe",
+          200: "#ddd6fe",
+          300: "#c4b5fd",
+          400: "#a78bfa",
+          500: "#8b5cf6",
+          600: "#7c3aed",
+          700: "#6d28d9",
+          800: "#5b21b6",
+          900: "#4c1d95",
+          950: "#2e1065",
         },
       },
+      borderRadius: {
+        lg: "var(--radius)",
+        md: "calc(var(--radius) - 2px)",
+        sm: "calc(var(--radius) - 4px)",
+      },
       keyframes: {
-        hide: {
-          from: { opacity: "1" },
-          to: { opacity: "0" },
+        "accordion-down": {
+          from: { height: "0" },
+          to: { height: "var(--radix-accordion-content-height)" },
         },
-        slideDownAndFade: {
-          from: { opacity: "0", transform: "translateY(-6px)" },
-          to: { opacity: "1", transform: "translateY(0)" },
-        },
-        slideLeftAndFade: {
-          from: { opacity: "0", transform: "translateX(6px)" },
-          to: { opacity: "1", transform: "translateX(0)" },
-        },
-        slideUpAndFade: {
-          from: { opacity: "0", transform: "translateY(6px)" },
-          to: { opacity: "1", transform: "translateY(0)" },
-        },
-        slideRightAndFade: {
-          from: { opacity: "0", transform: "translateX(-6px)" },
-          to: { opacity: "1", transform: "translateX(0)" },
-        },
-        dialogOverlayShow: {
-          from: { opacity: "0" },
-          to: { opacity: "1" },
-        },
-        dialogContentShow: {
-          from: {
-            opacity: "0",
-            transform: "translate(-50%, -45%) scale(0.95)",
-          },
-          to: { opacity: "1", transform: "translate(-50%, -50%) scale(1)" },
-        },
-        drawerSlideLeftAndFade: {
-          from: { opacity: "0", transform: "translateX(50%)" },
-          to: { opacity: "1", transform: "translateX(0)" },
+        "accordion-up": {
+          from: { height: "var(--radix-accordion-content-height)" },
+          to: { height: "0" },
         },
       },
       animation: {
-        hide: "hide 150ms cubic-bezier(0.16, 1, 0.3, 1)",
-        slideDownAndFade:
-          "slideDownAndFade 150ms cubic-bezier(0.16, 1, 0.3, 1)",
-        slideLeftAndFade:
-          "slideLeftAndFade 150ms cubic-bezier(0.16, 1, 0.3, 1)",
-        slideUpAndFade: "slideUpAndFade 150ms cubic-bezier(0.16, 1, 0.3, 1)",
-        slideRightAndFade:
-          "slideRightAndFade 150ms cubic-bezier(0.16, 1, 0.3, 1)",
-        drawerSlideLeftAndFade:
-          "drawerSlideLeftAndFade 150ms cubic-bezier(0.16, 1, 0.3, 1)",
-        dialogOverlayShow:
-          "dialogOverlayShow 150ms cubic-bezier(0.16, 1, 0.3, 1)",
-        dialogContentShow:
-          "dialogContentShow 150ms cubic-bezier(0.16, 1, 0.3, 1)",
+        "accordion-down": "accordion-down 0.2s ease-out",
+        "accordion-up": "accordion-up 0.2s ease-out",
       },
     },
   },
-  plugins: [require("@tailwindcss/forms")],
-}
-export default config
+  plugins: [require("tailwindcss-animate")],
+} satisfies Config;
+
+export default config;

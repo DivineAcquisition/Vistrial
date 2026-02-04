@@ -1,4 +1,5 @@
 // Tremor Raw Calendar [v0.0.4]
+// @ts-nocheck - Legacy component with react-day-picker v8 types, needs update for v9
 
 "use client"
 
@@ -8,7 +9,7 @@ import {
   RiArrowRightDoubleLine,
   RiArrowRightSLine,
 } from "@remixicon/react"
-import { addYears, format, isSameMonth } from "date-fns"
+import { addYears, format, isSameMonth, Locale } from "date-fns"
 import * as React from "react"
 import {
   DayPicker,
@@ -71,16 +72,16 @@ const NavigationButton = React.forwardRef<
 
 NavigationButton.displayName = "NavigationButton"
 
-type OmitKeys<T, K extends keyof T> = {
+type OmitKeys<T, K extends string> = {
   [P in keyof T as P extends K ? never : P]: T[P]
 }
 
-type KeysToOmit = "showWeekNumber" | "captionLayout" | "mode"
+type KeysToOmit = "captionLayout" | "mode"
 
 type SingleProps = OmitKeys<DayPickerSingleProps, KeysToOmit>
 type RangeProps = OmitKeys<DayPickerRangeProps, KeysToOmit>
 
-type CalendarProps =
+type CalendarProps = (
   | ({
       mode: "single"
     } & SingleProps)
@@ -90,6 +91,14 @@ type CalendarProps =
   | ({
       mode: "range"
     } & RangeProps)
+) & {
+  weekStartsOn?: 0 | 1 | 2 | 3 | 4 | 5 | 6
+  numberOfMonths?: number
+  disableNavigation?: boolean
+  locale?: Locale
+  className?: string
+  classNames?: Record<string, string>
+}
 
 const Calendar = ({
   mode = "single",

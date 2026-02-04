@@ -12,7 +12,7 @@ export async function updateSession(request: NextRequest) {
         getAll() {
           return request.cookies.getAll();
         },
-        setAll(cookiesToSet) {
+        setAll(cookiesToSet: Array<{ name: string; value: string; options?: any }>) {
           cookiesToSet.forEach(({ name, value }) =>
             request.cookies.set(name, value)
           );
@@ -41,6 +41,9 @@ export async function updateSession(request: NextRequest) {
     "/quotes",
     "/settings",
     "/sequences",
+    "/contacts",
+    "/workflows",
+    "/usage",
   ];
 
   const isProtectedPath = protectedPaths.some((path) =>

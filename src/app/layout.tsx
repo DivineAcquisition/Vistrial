@@ -3,6 +3,8 @@ import { ThemeProvider } from "next-themes"
 import { Inter } from "next/font/google"
 import "./globals.css"
 import { siteConfig } from "./siteConfig"
+import { AuthProvider } from "@/components/auth/auth-provider"
+import { Toaster } from "@/components/ui/toaster"
 
 const inter = Inter({
   subsets: ["latin"],
@@ -47,7 +49,10 @@ export default function RootLayout({
         suppressHydrationWarning
       >
         <ThemeProvider defaultTheme="system" attribute="class">
-          {children}
+          <AuthProvider>
+            {children}
+            <Toaster />
+          </AuthProvider>
         </ThemeProvider>
       </body>
     </html>

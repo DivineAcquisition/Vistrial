@@ -8,3 +8,4 @@ export { ContactsFilters } from './contacts-filters';
 export { ContactsSearch } from './contacts-search';
 export { ContactActions } from './contact-actions';
 export { AddContactForm } from './add-contact-form';
+export { CsvUploadWizard } from './csv-upload-wizard';

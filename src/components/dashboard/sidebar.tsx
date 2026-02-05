@@ -17,6 +17,7 @@ import {
   RiSearchLine,
   RiLogoutBoxRLine,
   RiAddLine,
+  RiInboxLine,
 } from '@remixicon/react';
 import { cn } from '@/lib/utils/cn';
 import { Logo } from '@/components/ui/Logo';
@@ -46,6 +47,7 @@ interface NavItem {
 
 const mainNavigation: NavItem[] = [
   { name: 'Dashboard', href: '/dashboard', icon: RiDashboardLine },
+  { name: 'Inbox', href: '/inbox', icon: RiInboxLine },
   { name: 'Contacts', href: '/contacts', icon: RiContactsLine },
   { name: 'Workflows', href: '/workflows', icon: RiFlowChart },
   { name: 'Bookings', href: '/bookings', icon: RiCalendarLine },

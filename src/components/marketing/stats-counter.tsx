@@ -2,7 +2,7 @@
 
 // ============================================
 // STATS COUNTER
-// Animated statistics
+// Animated statistics display
 // ============================================
 
 import { useEffect, useState, useRef } from 'react';
@@ -14,24 +14,45 @@ interface Stat {
 }
 
 const stats: Stat[] = [
-  { value: 2.4, suffix: 'M+', label: 'Messages Sent' },
-  { value: 47, suffix: 'K+', label: 'Leads Reactivated' },
-  { value: 8.2, suffix: 'M', label: 'Revenue Generated' },
-  { value: 94, suffix: '%', label: 'Customer Satisfaction' },
+  { value: 847, suffix: 'K+', label: 'Messages Delivered' },
+  { value: 15, suffix: '%', label: 'Average Response Rate' },
+  { value: 2.4, suffix: 'M', label: 'Revenue Generated' },
+  { value: 98, suffix: '%', label: 'Customer Satisfaction' },
 ];
 
-export function StatsCounter() {
-  const [isVisible, setIsVisible] = useState(false);
+function AnimatedNumber({
+  value,
+  suffix,
+}: {
+  value: number;
+  suffix: string;
+}) {
+  const [display, setDisplay] = useState(0);
   const ref = useRef<HTMLDivElement>(null);
+  const [hasAnimated, setHasAnimated] = useState(false);
 
   useEffect(() => {
     const observer = new IntersectionObserver(
       ([entry]) => {
-        if (entry.isIntersecting) {
-          setIsVisible(true);
+        if (entry.isIntersecting && !hasAnimated) {
+          setHasAnimated(true);
+          const duration = 2000;
+          const steps = 60;
+          const increment = value / steps;
+          let current = 0;
+
+          const timer = setInterval(() => {
+            current += increment;
+            if (current >= value) {
+              setDisplay(value);
+              clearInterval(timer);
+            } else {
+              setDisplay(current);
+            }
+          }, duration / steps);
         }
       },
-      { threshold: 0.1 }
+      { threshold: 0.5 }
     );
 
     if (ref.current) {
@@ -39,55 +60,34 @@ export function StatsCounter() {
     }
 
     return () => observer.disconnect();
-  }, []);
+  }, [value, hasAnimated]);
 
   return (
-    <div ref={ref} className="grid grid-cols-2 md:grid-cols-4 gap-8">
-      {stats.map((stat, index) => (
-        <div key={index} className="text-center">
-          <div className="text-4xl md:text-5xl font-bold mb-2">
-            {isVisible ? (
-              <CountUp value={stat.value} suffix={stat.suffix} />
-            ) : (
-              `0${stat.suffix}`
-            )}
-          </div>
-          <div className="text-white/70">{stat.label}</div>
-        </div>
-      ))}
+    <div ref={ref} className="text-4xl sm:text-5xl font-bold text-white">
+      {value === Math.floor(value) ? Math.floor(display) : display.toFixed(1)}
+      {suffix}
     </div>
   );
 }
 
-function CountUp({ value, suffix }: { value: number; suffix: string }) {
-  const [count, setCount] = useState(0);
-
-  useEffect(() => {
-    const duration = 2000;
-    const steps = 60;
-    const increment = value / steps;
-    let current = 0;
-
-    const timer = setInterval(() => {
-      current += increment;
-      if (current >= value) {
-        setCount(value);
-        clearInterval(timer);
-      } else {
-        setCount(current);
-      }
-    }, duration / steps);
-
-    return () => clearInterval(timer);
-  }, [value]);
-
-  const displayValue = value >= 1 ? count.toFixed(1) : count.toFixed(0);
-
+export function StatsCounter() {
   return (
-    <>
-      {suffix.startsWith('$') ? '$' : ''}
-      {displayValue}
-      {suffix.replace('$', '')}
-    </>
+    <div className="text-center">
+      <h2 className="text-2xl sm:text-3xl font-bold mb-2 text-white">
+        Trusted by home service businesses nationwide
+      </h2>
+      <p className="text-white/70 mb-12 max-w-2xl mx-auto">
+        Join hundreds of cleaning, HVAC, plumbing, and landscaping companies already using Vistrial to reactivate their customer base.
+      </p>
+
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-8">
+        {stats.map((stat) => (
+          <div key={stat.label}>
+            <AnimatedNumber value={stat.value} suffix={stat.suffix} />
+            <p className="text-white/70 mt-2">{stat.label}</p>
+          </div>
+        ))}
+      </div>
+    </div>
   );
 }

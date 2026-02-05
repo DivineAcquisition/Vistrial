@@ -81,7 +81,7 @@ export default async function DashboardPage() {
   return (
     <div className="space-y-6">
       {/* Hero Section */}
-      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-violet-500 via-violet-600 to-purple-600 p-6 md:p-8 text-white">
+      <div className="relative overflow-hidden rounded-2xl bg-brand-gradient p-6 md:p-8 text-white">
         <div className="absolute inset-0 overflow-hidden">
           <div className="absolute -top-24 -right-24 w-64 h-64 bg-white/10 rounded-full blur-3xl" />
           <div className="absolute -bottom-32 -left-32 w-80 h-80 bg-white/5 rounded-full blur-3xl" />
@@ -115,7 +115,7 @@ export default async function DashboardPage() {
             <div className="flex items-center gap-3">
               <Link
                 href="/workflows/new"
-                className="flex items-center gap-2 px-4 py-2.5 bg-white text-violet-600 rounded-xl font-medium hover:bg-white/90 shadow-xl shadow-black/10 transition-all"
+                className="flex items-center gap-2 px-4 py-2.5 bg-white text-brand-600 rounded-xl font-medium hover:bg-white/90 shadow-xl shadow-black/10 transition-all"
               >
                 <RiAddLine className="w-5 h-5" />
                 New Workflow
@@ -136,13 +136,13 @@ export default async function DashboardPage() {
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <Link
           href="/contacts"
-          className="group relative bg-gray-900/80 backdrop-blur-xl rounded-2xl border border-white/10 p-5 hover:border-violet-500/30 transition-all"
+          className="group relative bg-gray-900/80 backdrop-blur-xl rounded-2xl border border-white/10 p-5 hover:border-brand-500/30 transition-all"
         >
           <div className="flex items-center justify-between mb-3">
-            <div className="p-2.5 rounded-xl bg-violet-500/10 text-violet-400 group-hover:bg-violet-500 group-hover:text-white transition-colors">
+            <div className="p-2.5 rounded-xl bg-brand-500/10 text-brand-400 group-hover:bg-brand-500 group-hover:text-white transition-colors">
               <RiContactsLine className="w-5 h-5" />
             </div>
-            <RiArrowRightLine className="w-4 h-4 text-gray-600 group-hover:text-violet-400 group-hover:translate-x-1 transition-all" />
+            <RiArrowRightLine className="w-4 h-4 text-gray-600 group-hover:text-brand-400 group-hover:translate-x-1 transition-all" />
           </div>
           <div className="text-3xl font-bold text-white mb-1">
             {contactCount || 0}
@@ -152,13 +152,13 @@ export default async function DashboardPage() {
 
         <Link
           href="/workflows"
-          className="group relative bg-gray-900/80 backdrop-blur-xl rounded-2xl border border-white/10 p-5 hover:border-blue-500/30 transition-all"
+          className="group relative bg-gray-900/80 backdrop-blur-xl rounded-2xl border border-white/10 p-5 hover:border-brand-400/30 transition-all"
         >
           <div className="flex items-center justify-between mb-3">
-            <div className="p-2.5 rounded-xl bg-blue-500/10 text-blue-400 group-hover:bg-blue-500 group-hover:text-white transition-colors">
+            <div className="p-2.5 rounded-xl bg-brand-400/10 text-brand-400 group-hover:bg-brand-400 group-hover:text-white transition-colors">
               <RiFlowChart className="w-5 h-5" />
             </div>
-            <RiArrowRightLine className="w-4 h-4 text-gray-600 group-hover:text-blue-400 group-hover:translate-x-1 transition-all" />
+            <RiArrowRightLine className="w-4 h-4 text-gray-600 group-hover:text-brand-400 group-hover:translate-x-1 transition-all" />
           </div>
           <div className="text-3xl font-bold text-white mb-1">
             {workflowCount || 0}
@@ -195,10 +195,10 @@ export default async function DashboardPage() {
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <Link
           href="/workflows/new"
-          className="group p-4 rounded-xl border border-white/10 bg-gray-900/80 hover:border-violet-500/30 transition-all"
+          className="group p-4 rounded-xl border border-white/10 bg-gray-900/80 hover:border-brand-500/30 transition-all"
         >
           <div className="flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-violet-500/10 text-violet-400 group-hover:bg-violet-500 group-hover:text-white transition-colors">
+            <div className="p-2 rounded-lg bg-brand-500/10 text-brand-400 group-hover:bg-brand-500 group-hover:text-white transition-colors">
               <RiAddLine className="w-5 h-5" />
             </div>
             <div>
@@ -210,10 +210,10 @@ export default async function DashboardPage() {
 
         <Link
           href="/contacts/upload"
-          className="group p-4 rounded-xl border border-white/10 bg-gray-900/80 hover:border-blue-500/30 transition-all"
+          className="group p-4 rounded-xl border border-white/10 bg-gray-900/80 hover:border-brand-400/30 transition-all"
         >
           <div className="flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-blue-500/10 text-blue-400 group-hover:bg-blue-500 group-hover:text-white transition-colors">
+            <div className="p-2 rounded-lg bg-brand-400/10 text-brand-400 group-hover:bg-brand-400 group-hover:text-white transition-colors">
               <RiContactsLine className="w-5 h-5" />
             </div>
             <div>
@@ -240,10 +240,10 @@ export default async function DashboardPage() {
 
         <Link
           href="/settings"
-          className="group p-4 rounded-xl border border-white/10 bg-gray-900/80 hover:border-purple-500/30 transition-all"
+          className="group p-4 rounded-xl border border-white/10 bg-gray-900/80 hover:border-brand-600/30 transition-all"
         >
           <div className="flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-purple-500/10 text-purple-400 group-hover:bg-purple-500 group-hover:text-white transition-colors">
+            <div className="p-2 rounded-lg bg-brand-600/10 text-brand-400 group-hover:bg-brand-600 group-hover:text-white transition-colors">
               <RiTimeLine className="w-5 h-5" />
             </div>
             <div>
@@ -256,12 +256,12 @@ export default async function DashboardPage() {
 
       {/* Recent Workflows */}
       <div className="relative bg-gray-900/80 backdrop-blur-xl rounded-2xl border border-white/10 overflow-hidden">
-        <div className="h-px bg-gradient-to-r from-transparent via-violet-500/50 to-transparent" />
+        <div className="h-px bg-gradient-to-r from-transparent via-brand-500/50 to-transparent" />
         <div className="p-6 border-b border-white/10 flex items-center justify-between">
           <h2 className="text-lg font-semibold text-white">Recent Workflows</h2>
           <Link
             href="/workflows"
-            className="text-sm text-violet-400 hover:text-violet-300 font-medium flex items-center gap-1 transition-colors"
+            className="text-sm text-brand-400 hover:text-brand-300 font-medium flex items-center gap-1 transition-colors"
           >
             View all
             <RiArrowRightLine className="w-4 h-4" />
@@ -312,7 +312,7 @@ export default async function DashboardPage() {
             <p className="text-gray-400 mb-4">No workflows yet</p>
             <Link
               href="/workflows/new"
-              className="inline-flex items-center gap-2 text-violet-400 hover:text-violet-300 font-medium transition-colors"
+              className="inline-flex items-center gap-2 text-brand-400 hover:text-brand-300 font-medium transition-colors"
             >
               Create your first workflow
               <RiArrowRightLine className="w-4 h-4" />

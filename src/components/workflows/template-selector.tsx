@@ -61,7 +61,7 @@ export function TemplateSelector({
     <div className="space-y-6">
       {/* Start from scratch */}
       <Card
-        className="border-dashed border-2 border-white/20 bg-gray-900/50 cursor-pointer hover:border-violet-500/50 transition-colors"
+        className="border-dashed border-2 border-white/20 bg-gray-900/50 cursor-pointer hover:border-brand-500/50 transition-colors"
         onClick={onStartFromScratch}
       >
         <CardContent className="flex items-center justify-center py-8">
@@ -90,7 +90,7 @@ export function TemplateSelector({
             return (
               <Card
                 key={template.id}
-                className="bg-gray-900/80 border-white/10 cursor-pointer hover:border-violet-500/50 transition-all"
+                className="bg-gray-900/80 border-white/10 cursor-pointer hover:border-brand-500/50 transition-all"
                 onClick={() => onSelect(template)}
               >
                 <CardHeader className="pb-3">
@@ -126,7 +126,7 @@ export function TemplateSelector({
                       </div>
                     )}
                   </div>
-                  <Button className="w-full mt-4 bg-violet-600/20 text-violet-400 hover:bg-violet-600 hover:text-white border border-violet-500/30">
+                  <Button className="w-full mt-4 bg-brand-600/20 text-brand-400 hover:bg-brand-600 hover:text-white border border-brand-500/30">
                     Use Template
                   </Button>
                 </CardContent>

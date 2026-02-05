@@ -66,7 +66,7 @@ export function PreviewStep({
         <CardContent>
           <div className="grid grid-cols-3 gap-4">
             <div className="text-center p-4 bg-gray-800/50 rounded-lg">
-              <Users className="h-8 w-8 mx-auto mb-2 text-violet-400" />
+              <Users className="h-8 w-8 mx-auto mb-2 text-brand-400" />
               <p className="text-2xl font-bold text-white">{data.totalRows}</p>
               <p className="text-sm text-gray-400">Contacts to Import</p>
             </div>

@@ -82,7 +82,7 @@ export default async function OrganizationSettingsPage() {
               <Building2 className="w-8 h-8 text-gray-500" />
             </div>
             <div>
-              <button className="px-4 py-2 bg-violet-600 text-white rounded-lg font-medium hover:bg-violet-700 transition-colors text-sm">
+              <button className="px-4 py-2 bg-brand-600 text-white rounded-lg font-medium hover:bg-brand-700 transition-colors text-sm">
                 Upload Logo
               </button>
               <p className="text-gray-500 text-xs mt-2">PNG, JPG up to 2MB</p>
@@ -97,7 +97,7 @@ export default async function OrganizationSettingsPage() {
             <input
               type="text"
               defaultValue="My Business"
-              className="w-full px-4 py-2.5 bg-gray-800 border border-white/10 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-violet-500"
+              className="w-full px-4 py-2.5 bg-gray-800 border border-white/10 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-brand-500"
             />
           </div>
 
@@ -111,7 +111,7 @@ export default async function OrganizationSettingsPage() {
               <input
                 type="email"
                 placeholder="contact@example.com"
-                className="w-full px-4 py-2.5 bg-gray-800 border border-white/10 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-violet-500"
+                className="w-full px-4 py-2.5 bg-gray-800 border border-white/10 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-brand-500"
               />
             </div>
             <div>
@@ -122,7 +122,7 @@ export default async function OrganizationSettingsPage() {
               <input
                 type="tel"
                 placeholder="+1 (555) 000-0000"
-                className="w-full px-4 py-2.5 bg-gray-800 border border-white/10 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-violet-500"
+                className="w-full px-4 py-2.5 bg-gray-800 border border-white/10 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-brand-500"
               />
             </div>
           </div>
@@ -136,12 +136,12 @@ export default async function OrganizationSettingsPage() {
             <input
               type="text"
               placeholder="123 Main St, City, State 12345"
-              className="w-full px-4 py-2.5 bg-gray-800 border border-white/10 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-violet-500"
+              className="w-full px-4 py-2.5 bg-gray-800 border border-white/10 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-brand-500"
             />
           </div>
 
           <div className="pt-4 border-t border-white/10 flex justify-end">
-            <button className="px-6 py-2.5 bg-violet-600 text-white rounded-xl font-medium hover:bg-violet-700 transition-colors">
+            <button className="px-6 py-2.5 bg-brand-600 text-white rounded-xl font-medium hover:bg-brand-700 transition-colors">
               Save Changes
             </button>
           </div>
@@ -157,7 +157,7 @@ export default async function OrganizationSettingsPage() {
             </div>
             <h2 className="text-lg font-semibold text-white">Business Hours</h2>
           </div>
-          <button className="text-violet-400 hover:text-violet-300 font-medium text-sm flex items-center gap-1">
+          <button className="text-brand-400 hover:text-brand-300 font-medium text-sm flex items-center gap-1">
             <Edit2 className="w-4 h-4" />
             Edit
           </button>
@@ -190,7 +190,7 @@ export default async function OrganizationSettingsPage() {
             </div>
             <h2 className="text-lg font-semibold text-white">Team Members</h2>
           </div>
-          <button className="inline-flex items-center gap-2 px-3 py-1.5 text-sm bg-violet-600 text-white rounded-lg hover:bg-violet-700 transition-colors">
+          <button className="inline-flex items-center gap-2 px-3 py-1.5 text-sm bg-brand-600 text-white rounded-lg hover:bg-brand-700 transition-colors">
             <Plus className="w-4 h-4" />
             Invite
           </button>
@@ -214,7 +214,7 @@ export default async function OrganizationSettingsPage() {
                 </div>
               </div>
               <div className="flex items-center gap-4">
-                <span className="px-2 py-1 text-xs font-medium bg-violet-500/20 text-violet-400 rounded">
+                <span className="px-2 py-1 text-xs font-medium bg-brand-500/20 text-brand-400 rounded">
                   {member.role}
                 </span>
                 <button className="p-2 text-gray-400 hover:text-white rounded-lg hover:bg-white/5">
@@ -261,7 +261,7 @@ export default async function OrganizationSettingsPage() {
                 <p className="text-white font-medium">{role.name}</p>
                 <p className="text-gray-400 text-sm">{role.description}</p>
               </div>
-              <button className="text-violet-400 hover:text-violet-300 font-medium text-sm">
+              <button className="text-brand-400 hover:text-brand-300 font-medium text-sm">
                 Edit
               </button>
             </div>

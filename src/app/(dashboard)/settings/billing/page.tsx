@@ -105,7 +105,7 @@ export default async function BillingSettingsPage() {
             <p className="text-2xl font-bold text-white">Starter</p>
             <p className="text-gray-400">$49/month · Renews on Feb 28, 2026</p>
           </div>
-          <button className="px-4 py-2 bg-violet-600 text-white rounded-xl font-medium hover:bg-violet-700 transition-colors">
+          <button className="px-4 py-2 bg-brand-600 text-white rounded-xl font-medium hover:bg-brand-700 transition-colors">
             Upgrade Plan
           </button>
         </div>
@@ -120,14 +120,14 @@ export default async function BillingSettingsPage() {
               key={plan.id}
               className={`relative bg-gray-900/80 backdrop-blur-xl rounded-2xl border p-6 ${
                 plan.popular 
-                  ? "border-violet-500/50" 
+                  ? "border-brand-500/50" 
                   : plan.current 
                     ? "border-green-500/30" 
                     : "border-white/10"
               }`}
             >
               {plan.popular && (
-                <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 bg-violet-600 text-white text-xs font-medium rounded-full">
+                <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 bg-brand-600 text-white text-xs font-medium rounded-full">
                   Most Popular
                 </div>
               )}
@@ -161,7 +161,7 @@ export default async function BillingSettingsPage() {
                   plan.current
                     ? "bg-gray-800 text-gray-400 cursor-default"
                     : plan.popular
-                      ? "bg-violet-600 text-white hover:bg-violet-700"
+                      ? "bg-brand-600 text-white hover:bg-brand-700"
                       : "bg-white/10 text-white hover:bg-white/20"
                 }`}
                 disabled={plan.current}
@@ -177,7 +177,7 @@ export default async function BillingSettingsPage() {
       <div className="bg-gray-900/80 backdrop-blur-xl rounded-2xl border border-white/10 p-6">
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-lg font-semibold text-white">Payment Method</h2>
-          <button className="inline-flex items-center gap-2 text-violet-400 hover:text-violet-300 font-medium text-sm">
+          <button className="inline-flex items-center gap-2 text-brand-400 hover:text-brand-300 font-medium text-sm">
             <Plus className="w-4 h-4" />
             Add new
           </button>
@@ -200,7 +200,7 @@ export default async function BillingSettingsPage() {
       {/* Auto-Refill */}
       <div className="bg-gray-900/80 backdrop-blur-xl rounded-2xl border border-white/10 p-6">
         <div className="flex items-center gap-3 mb-4">
-          <RefreshCw className="w-5 h-5 text-violet-400" />
+          <RefreshCw className="w-5 h-5 text-brand-400" />
           <h2 className="text-lg font-semibold text-white">Auto-Refill Credits</h2>
         </div>
         <p className="text-gray-400 text-sm mb-4">
@@ -229,7 +229,7 @@ export default async function BillingSettingsPage() {
             </select>
           </div>
           <div className="flex items-end">
-            <button className="w-full py-2.5 bg-violet-600 text-white rounded-xl font-medium hover:bg-violet-700 transition-colors">
+            <button className="w-full py-2.5 bg-brand-600 text-white rounded-xl font-medium hover:bg-brand-700 transition-colors">
               Enable Auto-Refill
             </button>
           </div>
@@ -240,7 +240,7 @@ export default async function BillingSettingsPage() {
       <div className="bg-gray-900/80 backdrop-blur-xl rounded-2xl border border-white/10 overflow-hidden">
         <div className="p-6 border-b border-white/10 flex items-center justify-between">
           <h2 className="text-lg font-semibold text-white">Invoice History</h2>
-          <button className="text-violet-400 hover:text-violet-300 font-medium text-sm">
+          <button className="text-brand-400 hover:text-brand-300 font-medium text-sm">
             View all
           </button>
         </div>

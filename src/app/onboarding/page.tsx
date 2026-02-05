@@ -212,7 +212,7 @@ export default function OnboardingPage() {
           <p className="text-slate-500 mb-6">
             Your business profile has been created. Redirecting you to your dashboard...
           </p>
-          <div className="flex items-center justify-center gap-2 text-violet-600">
+          <div className="flex items-center justify-center gap-2 text-brand-600">
             <RiLoader4Line className="w-5 h-5 animate-spin" />
             <span>Loading dashboard...</span>
           </div>
@@ -246,7 +246,7 @@ export default function OnboardingPage() {
               {/* Progress line */}
               <div className="absolute left-0 right-0 top-1/2 h-0.5 bg-slate-200 -translate-y-1/2" />
               <div 
-                className="absolute left-0 top-1/2 h-0.5 bg-violet-500 -translate-y-1/2 transition-all duration-300"
+                className="absolute left-0 top-1/2 h-0.5 bg-brand-500 -translate-y-1/2 transition-all duration-300"
                 style={{ width: `${(getCurrentStepIndex() / (steps.length - 1)) * 100}%` }}
               />
               
@@ -260,9 +260,9 @@ export default function OnboardingPage() {
                       className={cn(
                         "w-10 h-10 rounded-full flex items-center justify-center transition-all duration-300",
                         isCompleted
-                          ? "bg-violet-500 text-white"
+                          ? "bg-brand-500 text-white"
                           : isCurrent
-                          ? "bg-violet-500 text-white ring-4 ring-violet-100"
+                          ? "bg-brand-500 text-white ring-4 ring-brand-100"
                           : "bg-white text-slate-400 border-2 border-slate-200"
                       )}
                     >
@@ -275,7 +275,7 @@ export default function OnboardingPage() {
                     <span
                       className={cn(
                         "text-xs mt-2 font-medium",
-                        isCurrent ? "text-violet-600" : "text-slate-400"
+                        isCurrent ? "text-brand-600" : "text-slate-400"
                       )}
                     >
                       {step.name}
@@ -312,7 +312,7 @@ export default function OnboardingPage() {
                         value={formData.businessName}
                         onChange={(e) => updateField("businessName", e.target.value)}
                         placeholder="Sparkle Clean Co"
-                        className="w-full pl-10 pr-4 py-3 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-500 text-slate-900"
+                        className="w-full pl-10 pr-4 py-3 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-500 text-slate-900"
                       />
                     </div>
                   </div>
@@ -324,7 +324,7 @@ export default function OnboardingPage() {
                     <select
                       value={formData.businessType}
                       onChange={(e) => updateField("businessType", e.target.value)}
-                      className="w-full px-4 py-3 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-500 text-slate-900 bg-white"
+                      className="w-full px-4 py-3 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-500 text-slate-900 bg-white"
                     >
                       <option value="">Select your industry</option>
                       <option value="cleaning">Cleaning Services</option>
@@ -361,7 +361,7 @@ export default function OnboardingPage() {
                         value={formData.phone}
                         onChange={(e) => updateField("phone", e.target.value)}
                         placeholder="+1 (555) 123-4567"
-                        className="w-full pl-10 pr-4 py-3 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-500 text-slate-900"
+                        className="w-full pl-10 pr-4 py-3 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-500 text-slate-900"
                       />
                     </div>
                   </div>
@@ -377,7 +377,7 @@ export default function OnboardingPage() {
                         value={formData.address}
                         onChange={(e) => updateField("address", e.target.value)}
                         placeholder="123 Main Street"
-                        className="w-full pl-10 pr-4 py-3 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-500 text-slate-900"
+                        className="w-full pl-10 pr-4 py-3 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-500 text-slate-900"
                       />
                     </div>
                   </div>
@@ -392,7 +392,7 @@ export default function OnboardingPage() {
                         value={formData.city}
                         onChange={(e) => updateField("city", e.target.value)}
                         placeholder="City"
-                        className="w-full px-4 py-3 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-500 text-slate-900"
+                        className="w-full px-4 py-3 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-500 text-slate-900"
                       />
                     </div>
                     <div>
@@ -405,7 +405,7 @@ export default function OnboardingPage() {
                         onChange={(e) => updateField("state", e.target.value)}
                         placeholder="CA"
                         maxLength={2}
-                        className="w-full px-4 py-3 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-500 text-slate-900"
+                        className="w-full px-4 py-3 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-500 text-slate-900"
                       />
                     </div>
                     <div>
@@ -418,7 +418,7 @@ export default function OnboardingPage() {
                         onChange={(e) => updateField("zip", e.target.value)}
                         placeholder="90210"
                         maxLength={10}
-                        className="w-full px-4 py-3 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-500 text-slate-900"
+                        className="w-full px-4 py-3 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-500 text-slate-900"
                       />
                     </div>
                   </div>
@@ -448,7 +448,7 @@ export default function OnboardingPage() {
                         type="text"
                         value={formData.primaryColor}
                         onChange={(e) => updateField("primaryColor", e.target.value)}
-                        className="flex-1 px-4 py-3 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-500 text-slate-900 font-mono"
+                        className="flex-1 px-4 py-3 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-500 text-slate-900 font-mono"
                       />
                     </div>
                   </div>
@@ -462,7 +462,7 @@ export default function OnboardingPage() {
                       value={formData.tagline}
                       onChange={(e) => updateField("tagline", e.target.value)}
                       placeholder="Quality service you can trust"
-                      className="w-full px-4 py-3 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-500 text-slate-900"
+                      className="w-full px-4 py-3 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-500 text-slate-900"
                     />
                   </div>
 
@@ -508,7 +508,7 @@ export default function OnboardingPage() {
                 <button
                   onClick={goToNextStep}
                   disabled={!isStepValid()}
-                  className="flex items-center gap-2 bg-violet-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-violet-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  className="flex items-center gap-2 bg-brand-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-brand-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 >
                   Continue
                   <RiArrowRightLine className="w-4 h-4" />
@@ -517,7 +517,7 @@ export default function OnboardingPage() {
                 <button
                   onClick={handleComplete}
                   disabled={loading}
-                  className="flex items-center gap-2 bg-violet-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-violet-700 disabled:opacity-50 transition-colors"
+                  className="flex items-center gap-2 bg-brand-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-brand-700 disabled:opacity-50 transition-colors"
                 >
                   {loading ? (
                     <>

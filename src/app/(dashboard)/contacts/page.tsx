@@ -45,7 +45,7 @@ export default async function ContactsPage() {
         </div>
         <Link
           href="/contacts/upload"
-          className="inline-flex items-center gap-2 px-4 py-2.5 bg-violet-600 text-white rounded-xl font-medium hover:bg-violet-700 transition-colors"
+          className="inline-flex items-center gap-2 px-4 py-2.5 bg-brand-600 text-white rounded-xl font-medium hover:bg-brand-700 transition-colors"
         >
           <Upload className="w-5 h-5" />
           Import Contacts
@@ -59,7 +59,7 @@ export default async function ContactsPage() {
           <input
             type="text"
             placeholder="Search contacts..."
-            className="w-full pl-10 pr-4 py-2.5 bg-gray-900 border border-white/10 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-violet-500"
+            className="w-full pl-10 pr-4 py-2.5 bg-gray-900 border border-white/10 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-brand-500"
           />
         </div>
         <button className="inline-flex items-center gap-2 px-4 py-2.5 bg-gray-900 border border-white/10 rounded-xl text-gray-300 hover:bg-gray-800 transition-colors">
@@ -97,7 +97,7 @@ export default async function ContactsPage() {
                     <p className="text-gray-400 mb-4">No contacts yet</p>
                     <Link
                       href="/contacts/upload"
-                      className="inline-flex items-center gap-2 text-violet-400 hover:text-violet-300 font-medium"
+                      className="inline-flex items-center gap-2 text-brand-400 hover:text-brand-300 font-medium"
                     >
                       <Upload className="w-4 h-4" />
                       Import your first contacts

@@ -55,19 +55,19 @@ export function WorkflowCard({ workflow, onActivate, onPause }: WorkflowCardProp
   const status = statusConfig[workflow.status];
 
   return (
-    <div className="group bg-gray-900/80 backdrop-blur-xl rounded-2xl border border-white/10 p-6 hover:border-violet-500/30 transition-all">
+    <div className="group bg-gray-900/80 backdrop-blur-xl rounded-2xl border border-white/10 p-6 hover:border-brand-500/30 transition-all">
       {/* Header */}
       <div className="flex items-start justify-between mb-4">
         <div className="flex items-center gap-3">
           {/* Type Icons */}
           <div className="flex items-center gap-1">
             {workflow.has_sms && (
-              <div className="p-2 rounded-lg bg-violet-500/10 text-violet-400">
+              <div className="p-2 rounded-lg bg-brand-500/10 text-brand-400">
                 <MessageSquare className="w-4 h-4" />
               </div>
             )}
             {workflow.has_voice && (
-              <div className="p-2 rounded-lg bg-blue-500/10 text-blue-400">
+              <div className="p-2 rounded-lg bg-brand-400/10 text-brand-400">
                 <Phone className="w-4 h-4" />
               </div>
             )}
@@ -83,7 +83,7 @@ export function WorkflowCard({ workflow, onActivate, onPause }: WorkflowCardProp
 
       {/* Content */}
       <Link href={`/workflows/${workflow.id}`}>
-        <h3 className="text-lg font-semibold text-white mb-2 group-hover:text-violet-400 transition-colors">
+        <h3 className="text-lg font-semibold text-white mb-2 group-hover:text-brand-400 transition-colors">
           {workflow.name}
         </h3>
         {workflow.description && (
@@ -138,7 +138,7 @@ export function WorkflowCard({ workflow, onActivate, onPause }: WorkflowCardProp
           )}
           <Link 
             href={`/workflows/${workflow.id}`}
-            className="p-2 text-violet-400 hover:bg-violet-500/10 rounded-lg transition-colors"
+            className="p-2 text-brand-400 hover:bg-brand-500/10 rounded-lg transition-colors"
           >
             <ArrowRight className="w-4 h-4" />
           </Link>

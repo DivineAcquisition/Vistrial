@@ -253,7 +253,7 @@ export function CsvUploadWizard({
               <div
                 className={`flex items-center justify-center w-8 h-8 rounded-full text-sm font-medium ${
                   index <= currentStepIndex
-                    ? 'bg-violet-600 text-white'
+                    ? 'bg-brand-600 text-white'
                     : 'bg-gray-800 text-gray-500'
                 }`}
               >
@@ -271,7 +271,7 @@ export function CsvUploadWizard({
               {index < steps.length - 2 && (
                 <div
                   className={`w-12 h-1 mx-4 ${
-                    index < currentStepIndex ? 'bg-violet-600' : 'bg-gray-800'
+                    index < currentStepIndex ? 'bg-brand-600' : 'bg-gray-800'
                   }`}
                 />
               )}
@@ -340,7 +340,7 @@ export function CsvUploadWizard({
           <Button 
             onClick={handleNext} 
             disabled={!canProceed()}
-            className="bg-violet-600 hover:bg-violet-700"
+            className="bg-brand-600 hover:bg-brand-700"
           >
             {currentStep === 'preview' ? (
               <>

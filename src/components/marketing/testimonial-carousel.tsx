@@ -69,11 +69,11 @@ export function TestimonialCarousel() {
         >
           {testimonials.map((testimonial, index) => (
             <div key={index} className="w-full flex-shrink-0 px-4">
-              <Card className="max-w-3xl mx-auto">
+              <Card className="max-w-3xl mx-auto bg-white border-gray-200">
                 <CardContent className="pt-8 pb-8">
-                  <Quote className="h-10 w-10 text-blue-200 mb-4" />
+                  <Quote className="h-10 w-10 text-brand-200 mb-4" />
                   
-                  <p className="text-xl mb-6 text-foreground leading-relaxed">
+                  <p className="text-xl mb-6 text-gray-900 leading-relaxed">
                     &ldquo;{testimonial.quote}&rdquo;
                   </p>
 
@@ -91,15 +91,15 @@ export function TestimonialCarousel() {
                   </div>
 
                   <div className="flex items-center gap-4">
-                    <div className="w-14 h-14 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-white font-bold text-lg">
+                    <div className="w-14 h-14 rounded-full bg-brand-gradient flex items-center justify-center text-white font-bold text-lg">
                       {testimonial.name.charAt(0)}
                     </div>
                     <div>
-                      <p className="font-semibold">{testimonial.name}</p>
-                      <p className="text-muted-foreground text-sm">
+                      <p className="font-semibold text-gray-900">{testimonial.name}</p>
+                      <p className="text-gray-500 text-sm">
                         {testimonial.business}
                       </p>
-                      <p className="text-muted-foreground text-sm">
+                      <p className="text-gray-500 text-sm">
                         {testimonial.location}
                       </p>
                     </div>
@@ -113,7 +113,7 @@ export function TestimonialCarousel() {
 
       {/* Navigation */}
       <div className="flex items-center justify-center gap-4 mt-8">
-        <Button variant="outline" size="icon" onClick={prev}>
+        <Button variant="outline" size="icon" onClick={prev} className="border-gray-300 text-gray-600 hover:bg-gray-50">
           <ChevronLeft className="h-4 w-4" />
         </Button>
 
@@ -123,13 +123,13 @@ export function TestimonialCarousel() {
               key={index}
               onClick={() => setCurrentIndex(index)}
               className={`w-2 h-2 rounded-full transition-colors ${
-                index === currentIndex ? 'bg-blue-600' : 'bg-muted-foreground/30'
+                index === currentIndex ? 'bg-brand-600' : 'bg-gray-300'
               }`}
             />
           ))}
         </div>
 
-        <Button variant="outline" size="icon" onClick={next}>
+        <Button variant="outline" size="icon" onClick={next} className="border-gray-300 text-gray-600 hover:bg-gray-50">
           <ChevronRight className="h-4 w-4" />
         </Button>
       </div>

@@ -63,7 +63,7 @@ function SettingsCard({
   color 
 }: typeof settingsCategories[0]) {
   const colorClasses = {
-    violet: "bg-violet-500/10 text-violet-400 group-hover:bg-violet-500",
+    violet: "bg-brand-500/10 text-brand-400 group-hover:bg-brand-500",
     blue: "bg-blue-500/10 text-blue-400 group-hover:bg-blue-500",
     amber: "bg-amber-500/10 text-amber-400 group-hover:bg-amber-500",
     green: "bg-green-500/10 text-green-400 group-hover:bg-green-500",
@@ -129,7 +129,7 @@ export default async function SettingsPage() {
               <p className="text-white font-medium">Password</p>
               <p className="text-gray-400 text-sm">Last changed never</p>
             </div>
-            <button className="text-violet-400 hover:text-violet-300 font-medium text-sm">
+            <button className="text-brand-400 hover:text-brand-300 font-medium text-sm">
               Change
             </button>
           </div>
@@ -139,7 +139,7 @@ export default async function SettingsPage() {
               <p className="text-white font-medium">Two-factor authentication</p>
               <p className="text-gray-400 text-sm">Add an extra layer of security</p>
             </div>
-            <button className="text-violet-400 hover:text-violet-300 font-medium text-sm">
+            <button className="text-brand-400 hover:text-brand-300 font-medium text-sm">
               Enable
             </button>
           </div>
@@ -149,7 +149,7 @@ export default async function SettingsPage() {
       {/* Messaging Settings */}
       <div className="bg-gray-900/80 backdrop-blur-xl rounded-2xl border border-white/10 p-6">
         <div className="flex items-center gap-3 mb-6">
-          <div className="p-2 rounded-lg bg-violet-500/10 text-violet-400">
+          <div className="p-2 rounded-lg bg-brand-500/10 text-brand-400">
             <MessageSquare className="w-5 h-5" />
           </div>
           <h2 className="text-lg font-semibold text-white">Messaging Defaults</h2>
@@ -177,7 +177,7 @@ export default async function SettingsPage() {
               <p className="text-white font-medium">Timezone handling</p>
               <p className="text-gray-400 text-sm">Use contact&apos;s local timezone</p>
             </div>
-            <button className="text-violet-400 hover:text-violet-300 font-medium text-sm">
+            <button className="text-brand-400 hover:text-brand-300 font-medium text-sm">
               Configure
             </button>
           </div>

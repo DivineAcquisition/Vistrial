@@ -67,7 +67,7 @@ function StepCard({ step, index }: { step: WorkflowStep; index: number }) {
       </button>
 
       {/* Step Number */}
-      <div className="flex-shrink-0 w-8 h-8 rounded-full bg-violet-500/20 text-violet-400 flex items-center justify-center text-sm font-medium">
+      <div className="flex-shrink-0 w-8 h-8 rounded-full bg-brand-500/20 text-brand-400 flex items-center justify-center text-sm font-medium">
         {index + 1}
       </div>
 
@@ -140,7 +140,7 @@ export default async function WorkflowDetailPage({ params }: PageProps) {
           <div className="bg-gray-900/80 backdrop-blur-xl rounded-2xl border border-white/10 p-6">
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-lg font-semibold text-white">Workflow Steps</h2>
-              <button className="inline-flex items-center gap-2 px-3 py-1.5 text-sm bg-violet-500/10 text-violet-400 rounded-lg hover:bg-violet-500/20 transition-colors">
+              <button className="inline-flex items-center gap-2 px-3 py-1.5 text-sm bg-brand-500/10 text-brand-400 rounded-lg hover:bg-brand-500/20 transition-colors">
                 <Plus className="w-4 h-4" />
                 Add Step
               </button>
@@ -161,7 +161,7 @@ export default async function WorkflowDetailPage({ params }: PageProps) {
             </div>
 
             {/* Add Step Button */}
-            <button className="w-full mt-4 p-4 border-2 border-dashed border-white/10 rounded-xl text-gray-400 hover:border-violet-500/30 hover:text-violet-400 transition-all flex items-center justify-center gap-2">
+            <button className="w-full mt-4 p-4 border-2 border-dashed border-white/10 rounded-xl text-gray-400 hover:border-brand-500/30 hover:text-brand-400 transition-all flex items-center justify-center gap-2">
               <Plus className="w-5 h-5" />
               Add another step
             </button>
@@ -169,7 +169,7 @@ export default async function WorkflowDetailPage({ params }: PageProps) {
 
           {/* Save Button */}
           <div className="flex justify-end">
-            <button className="inline-flex items-center gap-2 px-6 py-2.5 bg-violet-600 text-white rounded-xl font-medium hover:bg-violet-700 transition-colors">
+            <button className="inline-flex items-center gap-2 px-6 py-2.5 bg-brand-600 text-white rounded-xl font-medium hover:bg-brand-700 transition-colors">
               <Save className="w-5 h-5" />
               Save Changes
             </button>
@@ -205,7 +205,7 @@ export default async function WorkflowDetailPage({ params }: PageProps) {
           <div className="bg-gray-900/80 backdrop-blur-xl rounded-2xl border border-white/10 p-6">
             <div className="flex items-center justify-between mb-4">
               <h3 className="font-semibold text-white">Enrolled Contacts</h3>
-              <Link href="/contacts" className="text-sm text-violet-400 hover:text-violet-300">
+              <Link href="/contacts" className="text-sm text-brand-400 hover:text-brand-300">
                 View all
               </Link>
             </div>
@@ -233,7 +233,7 @@ export default async function WorkflowDetailPage({ params }: PageProps) {
                 <span className="text-gray-300">Contact&apos;s local time</span>
               </div>
             </div>
-            <button className="w-full mt-4 py-2 text-sm text-violet-400 hover:text-violet-300 transition-colors">
+            <button className="w-full mt-4 py-2 text-sm text-brand-400 hover:text-brand-300 transition-colors">
               Edit settings
             </button>
           </div>

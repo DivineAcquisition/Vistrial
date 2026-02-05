@@ -37,7 +37,7 @@ export function Loading({
     return (
       <div className={`fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm ${className}`}>
         <div className="bg-gray-900 rounded-2xl p-8 flex flex-col items-center gap-4">
-          <Loader2 className={`${sizeClasses.lg} text-violet-400 animate-spin`} />
+          <Loader2 className={`${sizeClasses.lg} text-brand-400 animate-spin`} />
           {text && <p className="text-white font-medium">{text}</p>}
         </div>
       </div>
@@ -53,7 +53,7 @@ export function Loading({
   if (variant === "inline") {
     return (
       <span className={`inline-flex items-center gap-2 ${className}`}>
-        <Loader2 className={`${sizeClasses[size]} text-violet-400 animate-spin`} />
+        <Loader2 className={`${sizeClasses[size]} text-brand-400 animate-spin`} />
         {text && <span className="text-gray-400">{text}</span>}
       </span>
     );
@@ -62,7 +62,7 @@ export function Loading({
   // Default spinner
   return (
     <div className={`flex items-center justify-center ${className}`}>
-      <Loader2 className={`${sizeClasses[size]} text-violet-400 animate-spin`} />
+      <Loader2 className={`${sizeClasses[size]} text-brand-400 animate-spin`} />
       {text && <span className="ml-3 text-gray-400">{text}</span>}
     </div>
   );

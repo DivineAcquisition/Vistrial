@@ -36,7 +36,7 @@ export default async function BookingsPage() {
         <Link
           href={`/book/${organization.slug}`}
           target="_blank"
-          className="flex items-center gap-2 bg-violet-600 text-white px-4 py-2.5 rounded-xl font-medium hover:bg-violet-700 transition-all"
+          className="flex items-center gap-2 bg-brand-600 text-white px-4 py-2.5 rounded-xl font-medium hover:bg-brand-700 transition-all"
         >
           <RiExternalLinkLine className="w-5 h-5" />
           View Booking Page
@@ -45,11 +45,11 @@ export default async function BookingsPage() {
 
       {/* Booking Page Info */}
       <div className="relative bg-gray-900/80 backdrop-blur-xl rounded-2xl border border-white/10 overflow-hidden">
-        <div className="h-px bg-gradient-to-r from-transparent via-violet-500/50 to-transparent" />
+        <div className="h-px bg-gradient-to-r from-transparent via-brand-500/50 to-transparent" />
         <div className="p-8">
           <div className="max-w-xl mx-auto text-center">
-            <div className="w-20 h-20 bg-violet-500/10 rounded-2xl flex items-center justify-center mx-auto mb-6 border border-violet-500/20">
-              <RiCalendarLine className="w-10 h-10 text-violet-400" />
+            <div className="w-20 h-20 bg-brand-500/10 rounded-2xl flex items-center justify-center mx-auto mb-6 border border-brand-500/20">
+              <RiCalendarLine className="w-10 h-10 text-brand-400" />
             </div>
             
             <h2 className="text-xl font-semibold text-white mb-3">
@@ -61,7 +61,7 @@ export default async function BookingsPage() {
 
             <div className="p-4 bg-gray-800/50 rounded-xl border border-white/10 mb-6">
               <p className="text-sm text-gray-500 mb-2">Your booking URL:</p>
-              <p className="text-violet-400 font-mono text-sm break-all">
+              <p className="text-brand-400 font-mono text-sm break-all">
                 {typeof window !== 'undefined' 
                   ? `${window.location.origin}/book/${organization.slug}`
                   : `/book/${organization.slug}`
@@ -73,7 +73,7 @@ export default async function BookingsPage() {
               <Link
                 href={`/book/${organization.slug}`}
                 target="_blank"
-                className="flex items-center gap-2 px-6 py-3 bg-violet-600 text-white rounded-xl font-medium hover:bg-violet-700 transition-all"
+                className="flex items-center gap-2 px-6 py-3 bg-brand-600 text-white rounded-xl font-medium hover:bg-brand-700 transition-all"
               >
                 <RiExternalLinkLine className="w-5 h-5" />
                 Open Booking Page

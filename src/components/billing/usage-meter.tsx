@@ -47,7 +47,7 @@ export function UsageMeter({ credits, breakdown, showRefill = true, compact = fa
                   ? "bg-red-500" 
                   : isLow 
                     ? "bg-amber-500" 
-                    : "bg-gradient-to-r from-violet-500 to-blue-500"
+                    : "bg-gradient-to-r from-brand-500 to-blue-500"
               }`}
               style={{ width: `${percentRemaining}%` }}
             />
@@ -68,7 +68,7 @@ export function UsageMeter({ credits, breakdown, showRefill = true, compact = fa
         {showRefill && (
           <Link
             href="/usage"
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm text-violet-400 hover:bg-violet-500/10 rounded-lg transition-colors"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm text-brand-400 hover:bg-brand-500/10 rounded-lg transition-colors"
           >
             <RefreshCw className="w-4 h-4" />
             Add Credits
@@ -98,7 +98,7 @@ export function UsageMeter({ credits, breakdown, showRefill = true, compact = fa
                 ? "bg-gradient-to-r from-red-600 to-red-400" 
                 : isLow 
                   ? "bg-gradient-to-r from-amber-600 to-amber-400" 
-                  : "bg-gradient-to-r from-violet-500 to-blue-500"
+                  : "bg-gradient-to-r from-brand-500 to-blue-500"
             }`}
             style={{ width: `${percentRemaining}%` }}
           />

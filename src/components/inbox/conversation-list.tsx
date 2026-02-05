@@ -36,7 +36,7 @@ const statusIcons: Record<string, React.ElementType> = {
 };
 
 const statusColors: Record<string, string> = {
-  new: 'bg-blue-100 text-blue-700',
+  new: 'bg-brand-100 text-brand-700',
   interested: 'bg-yellow-100 text-yellow-700',
   needs_response: 'bg-orange-100 text-orange-700',
   booked: 'bg-green-100 text-green-700',
@@ -68,9 +68,9 @@ export function ConversationList({
   if (conversations.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center h-full p-8 text-center">
-        <MessageSquare className="h-12 w-12 text-muted-foreground mb-4" />
-        <p className="text-muted-foreground">No conversations yet</p>
-        <p className="text-sm text-muted-foreground">
+        <MessageSquare className="h-12 w-12 text-gray-400 mb-4" />
+        <p className="text-gray-600">No conversations yet</p>
+        <p className="text-sm text-gray-500">
           When contacts respond to your campaigns, they&apos;ll appear here
         </p>
       </div>
@@ -79,7 +79,7 @@ export function ConversationList({
 
   return (
     <ScrollArea className="flex-1">
-      <div className="divide-y">
+      <div className="divide-y divide-gray-100">
         {conversations.map((conversation) => {
           const StatusIcon = statusIcons[conversation.status] || MessageSquare;
 
@@ -88,14 +88,14 @@ export function ConversationList({
               key={conversation.id}
               onClick={() => onSelect(conversation.id)}
               className={cn(
-                'w-full p-4 text-left hover:bg-muted/50 transition-colors',
-                selectedId === conversation.id && 'bg-muted',
-                conversation.unread_count > 0 && 'bg-blue-50/50'
+                'w-full p-4 text-left hover:bg-gray-50 transition-colors',
+                selectedId === conversation.id && 'bg-brand-50',
+                conversation.unread_count > 0 && 'bg-brand-50/50'
               )}
             >
               <div className="flex items-start gap-3">
                 <Avatar className="h-10 w-10">
-                  <AvatarFallback className="bg-gradient-to-br from-blue-400 to-blue-600 text-white">
+                  <AvatarFallback className="bg-brand-gradient text-white">
                     {conversation.contact_name?.charAt(0) || '?'}
                   </AvatarFallback>
                 </Avatar>
@@ -104,13 +104,13 @@ export function ConversationList({
                   <div className="flex items-center justify-between gap-2">
                     <span
                       className={cn(
-                        'font-medium truncate',
+                        'font-medium text-gray-900 truncate',
                         conversation.unread_count > 0 && 'font-semibold'
                       )}
                     >
                       {conversation.contact_name || 'Unknown'}
                     </span>
-                    <span className="text-xs text-muted-foreground shrink-0">
+                    <span className="text-xs text-gray-500 shrink-0">
                       {formatDistanceToNow(new Date(conversation.last_message_at), {
                         addSuffix: false,
                       })}
@@ -121,12 +121,12 @@ export function ConversationList({
                     className={cn(
                       'text-sm truncate mt-0.5',
                       conversation.unread_count > 0
-                        ? 'text-foreground font-medium'
-                        : 'text-muted-foreground'
+                        ? 'text-gray-900 font-medium'
+                        : 'text-gray-500'
                     )}
                   >
                     {conversation.last_message_direction === 'outbound' && (
-                      <span className="text-muted-foreground">You: </span>
+                      <span className="text-gray-500">You: </span>
                     )}
                     {conversation.last_message}
                   </p>
@@ -134,20 +134,20 @@ export function ConversationList({
                   <div className="flex items-center gap-2 mt-2">
                     <Badge
                       variant="secondary"
-                      className={cn('text-xs', statusColors[conversation.status])}
+                      className={cn('text-xs border-0', statusColors[conversation.status])}
                     >
                       <StatusIcon className="h-3 w-3 mr-1" />
                       {conversation.status.replace('_', ' ')}
                     </Badge>
 
                     {conversation.unread_count > 0 && (
-                      <Badge variant="default" className="rounded-full h-5 w-5 p-0 justify-center">
+                      <Badge className="rounded-full h-5 w-5 p-0 justify-center bg-brand-600 text-white border-0">
                         {conversation.unread_count}
                       </Badge>
                     )}
 
                     {conversation.workflow_name && (
-                      <span className="text-xs text-muted-foreground truncate">
+                      <span className="text-xs text-gray-500 truncate">
                         {conversation.workflow_name}
                       </span>
                     )}

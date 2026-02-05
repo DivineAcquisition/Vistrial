@@ -49,15 +49,15 @@ export function ROICalculator() {
 
   return (
     <div className="max-w-4xl mx-auto">
-      <Card>
+      <Card className="bg-white border-gray-200">
         <CardContent className="p-8">
           <div className="grid md:grid-cols-2 gap-8">
             {/* Inputs */}
             <div className="space-y-8">
               <div className="space-y-4">
                 <div className="flex justify-between">
-                  <Label>Dormant Customers</Label>
-                  <span className="font-semibold">{contacts.toLocaleString()}</span>
+                  <Label className="text-gray-700">Dormant Customers</Label>
+                  <span className="font-semibold text-gray-900">{contacts.toLocaleString()}</span>
                 </div>
                 <Slider
                   value={[contacts]}
@@ -65,16 +65,17 @@ export function ROICalculator() {
                   min={100}
                   max={10000}
                   step={100}
+                  className="[&_[role=slider]]:bg-brand-600"
                 />
-                <p className="text-xs text-muted-foreground">
+                <p className="text-xs text-gray-500">
                   Customers who haven&apos;t booked in 90+ days
                 </p>
               </div>
 
               <div className="space-y-4">
                 <div className="flex justify-between">
-                  <Label>Average Job Value</Label>
-                  <span className="font-semibold">${avgJobValue}</span>
+                  <Label className="text-gray-700">Average Job Value</Label>
+                  <span className="font-semibold text-gray-900">${avgJobValue}</span>
                 </div>
                 <Slider
                   value={[avgJobValue]}
@@ -82,16 +83,17 @@ export function ROICalculator() {
                   min={50}
                   max={1000}
                   step={25}
+                  className="[&_[role=slider]]:bg-brand-600"
                 />
-                <p className="text-xs text-muted-foreground">
+                <p className="text-xs text-gray-500">
                   Your typical service ticket
                 </p>
               </div>
 
               <div className="space-y-4">
                 <div className="flex justify-between">
-                  <Label>Expected Reactivation Rate</Label>
-                  <span className="font-semibold">{reactivationRate}%</span>
+                  <Label className="text-gray-700">Expected Reactivation Rate</Label>
+                  <span className="font-semibold text-gray-900">{reactivationRate}%</span>
                 </div>
                 <Slider
                   value={[reactivationRate]}
@@ -99,15 +101,16 @@ export function ROICalculator() {
                   min={1}
                   max={15}
                   step={1}
+                  className="[&_[role=slider]]:bg-brand-600"
                 />
-                <p className="text-xs text-muted-foreground">
+                <p className="text-xs text-gray-500">
                   Industry average is 3-8% for dormant reactivation
                 </p>
               </div>
             </div>
 
             {/* Results */}
-            <div className="bg-gradient-to-br from-blue-600 to-blue-700 rounded-xl p-6 text-white">
+            <div className="bg-brand-gradient rounded-xl p-6 text-white">
               <h3 className="text-lg font-semibold mb-6">Your Potential Results</h3>
 
               <div className="space-y-4">
@@ -146,7 +149,7 @@ export function ROICalculator() {
               <Link href="/signup" className="block mt-6">
                 <Button
                   variant="secondary"
-                  className="w-full bg-white text-blue-600 hover:bg-white/90"
+                  className="w-full bg-white text-brand-600 hover:bg-white/90"
                 >
                   Start Generating Revenue
                   <ArrowRight className="ml-2 h-4 w-4" />

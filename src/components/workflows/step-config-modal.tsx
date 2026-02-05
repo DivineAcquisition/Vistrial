@@ -96,10 +96,10 @@ export function StepConfigModal({
 
         <Tabs defaultValue="content" className="space-y-4">
           <TabsList className="bg-gray-800/50 border border-white/10">
-            <TabsTrigger value="content" className="data-[state=active]:bg-violet-600">Content</TabsTrigger>
-            <TabsTrigger value="timing" className="data-[state=active]:bg-violet-600">Timing</TabsTrigger>
+            <TabsTrigger value="content" className="data-[state=active]:bg-brand-600">Content</TabsTrigger>
+            <TabsTrigger value="timing" className="data-[state=active]:bg-brand-600">Timing</TabsTrigger>
             {formData.type === 'voice_drop' && (
-              <TabsTrigger value="voice" className="data-[state=active]:bg-violet-600">Voice</TabsTrigger>
+              <TabsTrigger value="voice" className="data-[state=active]:bg-brand-600">Voice</TabsTrigger>
             )}
           </TabsList>
 
@@ -112,7 +112,7 @@ export function StepConfigModal({
                   <Badge
                     key={variable.key}
                     variant="outline"
-                    className="cursor-pointer border-white/20 text-gray-400 hover:bg-violet-600/20 hover:text-violet-400"
+                    className="cursor-pointer border-white/20 text-gray-400 hover:bg-brand-600/20 hover:text-brand-400"
                     onClick={() => handleInsertVariable(variable.key)}
                   >
                     {variable.label}
@@ -258,7 +258,7 @@ export function StepConfigModal({
           <Button variant="outline" onClick={onCancel} className="border-white/10 text-white hover:bg-gray-800">
             Cancel
           </Button>
-          <Button onClick={handleSave} disabled={!formData.template.trim()} className="bg-violet-600 hover:bg-violet-700">
+          <Button onClick={handleSave} disabled={!formData.template.trim()} className="bg-brand-600 hover:bg-brand-700">
             Save Step
           </Button>
         </DialogFooter>

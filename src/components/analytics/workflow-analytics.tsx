@@ -130,7 +130,7 @@ export async function WorkflowAnalytics({
                       <TableCell>
                         <Link
                           href={`/workflows/${workflow.id}`}
-                          className="font-medium text-white hover:text-violet-400 transition-colors"
+                          className="font-medium text-white hover:text-brand-400 transition-colors"
                         >
                           {workflow.name}
                         </Link>

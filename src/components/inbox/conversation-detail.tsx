@@ -47,7 +47,7 @@ interface ConversationDetailProps {
 }
 
 const statusOptions = [
-  { value: 'new', label: 'New', icon: MessageSquare, color: 'text-blue-600' },
+  { value: 'new', label: 'New', icon: MessageSquare, color: 'text-brand-600' },
   { value: 'interested', label: 'Interested', icon: Star, color: 'text-yellow-600' },
   { value: 'needs_response', label: 'Needs Response', icon: Clock, color: 'text-orange-600' },
   { value: 'booked', label: 'Booked', icon: CheckCircle, color: 'text-green-600' },
@@ -107,16 +107,16 @@ export function ConversationDetail({
   return (
     <>
       {/* Header */}
-      <div className="border-b p-4 flex items-center justify-between bg-muted/30">
+      <div className="border-b p-4 flex items-center justify-between bg-gray-50">
         <div className="flex items-center gap-3">
           <Avatar className="h-10 w-10">
-            <AvatarFallback className="bg-gradient-to-br from-blue-400 to-blue-600 text-white">
+            <AvatarFallback className="bg-brand-gradient text-white">
               {conversation.contact_name?.charAt(0) || '?'}
             </AvatarFallback>
           </Avatar>
           <div>
-            <h2 className="font-semibold">{conversation.contact_name || 'Unknown'}</h2>
-            <div className="flex items-center gap-3 text-sm text-muted-foreground">
+            <h2 className="font-semibold text-gray-900">{conversation.contact_name || 'Unknown'}</h2>
+            <div className="flex items-center gap-3 text-sm text-gray-500">
               {conversation.contact_phone && (
                 <span className="flex items-center gap-1">
                   <Phone className="h-3 w-3" />
@@ -137,7 +137,7 @@ export function ConversationDetail({
           {/* Status Dropdown */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="sm">
+              <Button variant="outline" size="sm" className="border-gray-300">
                 {currentStatus && (
                   <currentStatus.icon className={cn('h-4 w-4 mr-2', currentStatus.color)} />
                 )}
@@ -207,7 +207,7 @@ export function ConversationDetail({
                 <div key={msg.id}>
                   {showDate && (
                     <div className="flex items-center justify-center my-4">
-                      <span className="text-xs text-muted-foreground bg-muted px-3 py-1 rounded-full">
+                      <span className="text-xs text-gray-500 bg-gray-100 px-3 py-1 rounded-full">
                         {format(new Date(msg.created_at), 'MMMM d, yyyy')}
                       </span>
                     </div>
@@ -218,15 +218,15 @@ export function ConversationDetail({
                       className={cn(
                         'max-w-[70%] rounded-lg px-4 py-2',
                         isOutbound
-                          ? 'bg-blue-600 text-white'
-                          : 'bg-muted'
+                          ? 'bg-brand-600 text-white'
+                          : 'bg-gray-100 text-gray-900'
                       )}
                     >
                       <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
                       <div
                         className={cn(
                           'flex items-center gap-2 mt-1 text-xs',
-                          isOutbound ? 'text-white/70' : 'text-muted-foreground'
+                          isOutbound ? 'text-white/70' : 'text-gray-500'
                         )}
                       >
                         <span>{format(new Date(msg.created_at), 'h:mm a')}</span>
@@ -248,7 +248,7 @@ export function ConversationDetail({
       </ScrollArea>
 
       {/* Reply Input */}
-      <div className="border-t p-4">
+      <div className="border-t p-4 bg-white">
         {showTemplates && (
           <QuickReplyTemplates
             onSelect={handleSelectTemplate}
@@ -264,7 +264,7 @@ export function ConversationDetail({
               onChange={(e) => setMessage(e.target.value)}
               onKeyDown={handleKeyDown}
               placeholder="Type your message..."
-              className="min-h-[80px] max-h-[200px] resize-none pr-20"
+              className="min-h-[80px] max-h-[200px] resize-none pr-20 border-gray-300"
               disabled={isSending}
             />
             <div className="absolute bottom-2 right-2 flex items-center gap-1">
@@ -272,7 +272,7 @@ export function ConversationDetail({
                 variant="ghost"
                 size="sm"
                 onClick={() => setShowTemplates(!showTemplates)}
-                className="h-8 px-2 text-muted-foreground"
+                className="h-8 px-2 text-gray-500 hover:text-brand-600"
               >
                 <Zap className="h-4 w-4" />
               </Button>
@@ -281,14 +281,14 @@ export function ConversationDetail({
           <Button
             onClick={handleSend}
             disabled={!message.trim() || isSending}
-            className="h-10"
+            className="h-10 bg-brand-600 hover:bg-brand-700"
           >
             <Send className="h-4 w-4 mr-2" />
             Send
           </Button>
         </div>
 
-        <p className="text-xs text-muted-foreground mt-2">
+        <p className="text-xs text-gray-500 mt-2">
           Press Enter to send, Shift+Enter for new line
         </p>
       </div>

@@ -86,7 +86,7 @@ function StepEditor({
       </button>
 
       {/* Step Number */}
-      <div className="flex-shrink-0 w-8 h-8 rounded-full bg-violet-500/20 text-violet-400 flex items-center justify-center text-sm font-medium">
+      <div className="flex-shrink-0 w-8 h-8 rounded-full bg-brand-500/20 text-brand-400 flex items-center justify-center text-sm font-medium">
         {step.order}
       </div>
 
@@ -151,7 +151,7 @@ function StepEditor({
               </button>
               <button
                 onClick={handleSave}
-                className="px-3 py-1.5 text-sm bg-violet-600 text-white rounded hover:bg-violet-700"
+                className="px-3 py-1.5 text-sm bg-brand-600 text-white rounded hover:bg-brand-700"
               >
                 Save
               </button>
@@ -248,7 +248,7 @@ export function WorkflowBuilder({ steps, onChange, onSave, saving }: WorkflowBui
       <div className="relative">
         <button
           onClick={() => setShowAddMenu(!showAddMenu)}
-          className="w-full p-4 border-2 border-dashed border-white/10 rounded-xl text-gray-400 hover:border-violet-500/30 hover:text-violet-400 transition-all flex items-center justify-center gap-2"
+          className="w-full p-4 border-2 border-dashed border-white/10 rounded-xl text-gray-400 hover:border-brand-500/30 hover:text-brand-400 transition-all flex items-center justify-center gap-2"
         >
           <Plus className="w-5 h-5" />
           Add step
@@ -280,7 +280,7 @@ export function WorkflowBuilder({ steps, onChange, onSave, saving }: WorkflowBui
         <button
           onClick={onSave}
           disabled={saving}
-          className="inline-flex items-center gap-2 px-6 py-2.5 bg-violet-600 text-white rounded-xl font-medium hover:bg-violet-700 disabled:opacity-50 transition-colors"
+          className="inline-flex items-center gap-2 px-6 py-2.5 bg-brand-600 text-white rounded-xl font-medium hover:bg-brand-700 disabled:opacity-50 transition-colors"
         >
           <Save className="w-5 h-5" />
           {saving ? "Saving..." : "Save Workflow"}

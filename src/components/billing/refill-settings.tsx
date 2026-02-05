@@ -71,7 +71,7 @@ export function RefillSettings({
     <div className="bg-gray-900/80 backdrop-blur-xl rounded-2xl border border-white/10 p-6">
       {/* Header */}
       <div className="flex items-center gap-3 mb-6">
-        <div className="p-2 rounded-lg bg-violet-500/10 text-violet-400">
+        <div className="p-2 rounded-lg bg-brand-500/10 text-brand-400">
           <RefreshCw className="w-5 h-5" />
         </div>
         <div>
@@ -88,7 +88,7 @@ export function RefillSettings({
         <button
           onClick={() => setEnabled(!enabled)}
           className={`relative w-12 h-6 rounded-full transition-colors ${
-            enabled ? "bg-violet-600" : "bg-gray-700"
+            enabled ? "bg-brand-600" : "bg-gray-700"
           }`}
         >
           <div
@@ -113,7 +113,7 @@ export function RefillSettings({
                   onClick={() => setThreshold(option)}
                   className={`py-2 px-3 rounded-lg text-sm font-medium transition-colors ${
                     threshold === option
-                      ? "bg-violet-600 text-white"
+                      ? "bg-brand-600 text-white"
                       : "bg-white/5 text-gray-300 hover:bg-white/10"
                   }`}
                 >
@@ -135,14 +135,14 @@ export function RefillSettings({
                   onClick={() => setRefillAmount(option.credits)}
                   className={`p-4 rounded-xl text-left transition-colors ${
                     refillAmount === option.credits
-                      ? "bg-violet-600 text-white"
+                      ? "bg-brand-600 text-white"
                       : "bg-white/5 text-gray-300 hover:bg-white/10"
                   }`}
                 >
                   <div className="text-lg font-semibold">
                     {option.credits.toLocaleString()} credits
                   </div>
-                  <div className={refillAmount === option.credits ? "text-violet-200" : "text-gray-500"}>
+                  <div className={refillAmount === option.credits ? "text-brand-200" : "text-gray-500"}>
                     ${option.price}
                   </div>
                 </button>
@@ -163,7 +163,7 @@ export function RefillSettings({
                   <span className="text-amber-400">No payment method</span>
                 )}
               </div>
-              <button className="text-sm text-violet-400 hover:text-violet-300">
+              <button className="text-sm text-brand-400 hover:text-brand-300">
                 Change
               </button>
             </div>
@@ -181,8 +181,8 @@ export function RefillSettings({
 
       {/* Summary */}
       {enabled && paymentMethod && (
-        <div className="mt-6 p-4 bg-violet-500/10 border border-violet-500/20 rounded-xl">
-          <p className="text-violet-300 text-sm">
+        <div className="mt-6 p-4 bg-brand-500/10 border border-brand-500/20 rounded-xl">
+          <p className="text-brand-300 text-sm">
             When your balance drops below <strong>{threshold} credits</strong>, we&apos;ll automatically charge{" "}
             <strong>${selectedRefill.price}</strong> to add{" "}
             <strong>{selectedRefill.credits.toLocaleString()} credits</strong>.
@@ -195,7 +195,7 @@ export function RefillSettings({
         <button
           onClick={handleSave}
           disabled={saving || (!enabled && !initialEnabled)}
-          className="inline-flex items-center gap-2 px-6 py-2.5 bg-violet-600 text-white rounded-xl font-medium hover:bg-violet-700 disabled:opacity-50 transition-colors"
+          className="inline-flex items-center gap-2 px-6 py-2.5 bg-brand-600 text-white rounded-xl font-medium hover:bg-brand-700 disabled:opacity-50 transition-colors"
         >
           {saved ? (
             <>

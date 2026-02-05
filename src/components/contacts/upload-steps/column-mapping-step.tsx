@@ -147,7 +147,7 @@ export function ColumnMappingStep({
                       <div className="flex items-center gap-2">
                         <span className="font-medium text-white">{header}</span>
                         {suggestedMapping[header] && (
-                          <Badge variant="outline" className="text-xs border-violet-500/50 text-violet-400">
+                          <Badge variant="outline" className="text-xs border-brand-500/50 text-brand-400">
                             Suggested
                           </Badge>
                         )}
@@ -211,7 +211,7 @@ export function ColumnMappingStep({
             {CONTACT_FIELDS.filter((field) =>
               Object.values(mapping).includes(field.value)
             ).map((field) => (
-              <Badge key={field.value} variant="secondary" className="bg-violet-600/20 text-violet-400">
+              <Badge key={field.value} variant="secondary" className="bg-brand-600/20 text-brand-400">
                 {field.label}
               </Badge>
             ))}

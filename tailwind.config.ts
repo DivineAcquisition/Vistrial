@@ -52,19 +52,25 @@ const config = {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
         },
-        // Brand colors for Vistrial
+        // Brand colors for Vistrial - #A39EFF (light) & #6E47D1 (dark)
         brand: {
           50: "#f5f3ff",
           100: "#ede9fe",
           200: "#ddd6fe",
           300: "#c4b5fd",
-          400: "#a78bfa",
-          500: "#8b5cf6",
-          600: "#7c3aed",
-          700: "#6d28d9",
-          800: "#5b21b6",
-          900: "#4c1d95",
-          950: "#2e1065",
+          400: "#a39eff",  // Primary light - #A39EFF
+          500: "#8b7cf7",
+          600: "#6e47d1",  // Primary dark - #6E47D1
+          700: "#5c3bb8",
+          800: "#4c319d",
+          900: "#3f2a7e",
+          950: "#261854",
+        },
+        // Convenient aliases for primary brand colors
+        vistrial: {
+          light: "#a39eff",
+          DEFAULT: "#6e47d1",
+          dark: "#5c3bb8",
         },
       },
       borderRadius: {
@@ -85,6 +91,11 @@ const config = {
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up": "accordion-up 0.2s ease-out",
+      },
+      backgroundImage: {
+        'brand-gradient': 'linear-gradient(135deg, #a39eff 0%, #6e47d1 100%)',
+        'brand-gradient-reverse': 'linear-gradient(135deg, #6e47d1 0%, #a39eff 100%)',
+        'brand-gradient-subtle': 'linear-gradient(135deg, rgba(163, 158, 255, 0.1) 0%, rgba(110, 71, 209, 0.1) 100%)',
       },
     },
   },

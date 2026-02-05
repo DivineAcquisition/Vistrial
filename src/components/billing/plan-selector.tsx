@@ -47,7 +47,7 @@ export function PlanSelector({ plans, currentPlanId, onSelect, loading }: PlanSe
         <button
           onClick={() => setInterval(interval === "monthly" ? "annual" : "monthly")}
           className={`relative w-14 h-7 rounded-full transition-colors ${
-            interval === "annual" ? "bg-violet-600" : "bg-gray-700"
+            interval === "annual" ? "bg-brand-600" : "bg-gray-700"
           }`}
         >
           <div
@@ -73,7 +73,7 @@ export function PlanSelector({ plans, currentPlanId, onSelect, loading }: PlanSe
               key={plan.id}
               className={`relative bg-gray-900/80 backdrop-blur-xl rounded-2xl border p-6 ${
                 plan.popular 
-                  ? "border-violet-500/50" 
+                  ? "border-brand-500/50" 
                   : isCurrent 
                     ? "border-green-500/30" 
                     : "border-white/10"
@@ -81,7 +81,7 @@ export function PlanSelector({ plans, currentPlanId, onSelect, loading }: PlanSe
             >
               {/* Badges */}
               {plan.popular && (
-                <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 bg-violet-600 text-white text-xs font-medium rounded-full flex items-center gap-1">
+                <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 bg-brand-600 text-white text-xs font-medium rounded-full flex items-center gap-1">
                   <Sparkles className="w-3 h-3" />
                   Most Popular
                 </div>
@@ -127,7 +127,7 @@ export function PlanSelector({ plans, currentPlanId, onSelect, loading }: PlanSe
                   isCurrent
                     ? "bg-gray-800 text-gray-400 cursor-default"
                     : plan.popular
-                      ? "bg-violet-600 text-white hover:bg-violet-700"
+                      ? "bg-brand-600 text-white hover:bg-brand-700"
                       : "bg-white/10 text-white hover:bg-white/20"
                 }`}
               >

@@ -72,7 +72,7 @@ function NavLink({ item, pathname }: { item: NavItem; pathname: string }) {
       className={cn(
         'group flex items-center justify-between gap-2.5 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200',
         isActive
-          ? 'bg-violet-500/10 text-violet-400'
+          ? 'bg-brand-600/10 text-brand-400'
           : 'text-gray-400 hover:bg-white/5 hover:text-white'
       )}
     >
@@ -80,12 +80,12 @@ function NavLink({ item, pathname }: { item: NavItem; pathname: string }) {
         <item.icon
           className={cn(
             'w-5 h-5 transition-colors',
-            isActive ? 'text-violet-400' : 'text-gray-500 group-hover:text-gray-300'
+            isActive ? 'text-brand-400' : 'text-gray-500 group-hover:text-gray-300'
           )}
         />
         <span>{item.name}</span>
         {item.badge && (
-          <span className="px-1.5 py-0.5 text-[9px] font-bold rounded bg-violet-500/20 text-violet-400">
+          <span className="px-1.5 py-0.5 text-[9px] font-bold rounded bg-brand-600/20 text-brand-400">
             {item.badge}
           </span>
         )}
@@ -139,7 +139,7 @@ export function DashboardSidebar({ organization, user }: SidebarProps) {
       <div className="px-3 pb-3">
         <Link
           href="/workflows/new"
-          className="w-full flex items-center justify-center gap-2 h-9 px-3 text-sm bg-violet-600 hover:bg-violet-700 rounded-lg text-white font-medium transition-colors"
+          className="w-full flex items-center justify-center gap-2 h-9 px-3 text-sm bg-brand-600 hover:bg-brand-700 rounded-lg text-white font-medium transition-colors"
         >
           <RiAddLine className="w-4 h-4" />
           New Workflow
@@ -162,8 +162,8 @@ export function DashboardSidebar({ organization, user }: SidebarProps) {
 
       {/* Organization Info */}
       <div className="px-3 py-2 border-t border-white/10">
-        <div className="p-3 rounded-xl bg-gradient-to-br from-violet-500/10 via-violet-500/5 to-purple-500/10 border border-violet-500/20">
-          <p className="text-xs font-semibold text-violet-400 mb-1">
+        <div className="p-3 rounded-xl bg-gradient-to-br from-brand-600/10 via-brand-400/5 to-brand-600/10 border border-brand-600/20">
+          <p className="text-xs font-semibold text-brand-400 mb-1">
             Organization
           </p>
           <p className="text-sm text-white truncate">{organization.name}</p>
@@ -174,7 +174,7 @@ export function DashboardSidebar({ organization, user }: SidebarProps) {
       {/* User section */}
       <div className="border-t border-white/10 p-3">
         <div className="flex items-center gap-3 p-2 rounded-lg hover:bg-white/5 transition-colors group">
-          <div className="flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-br from-violet-500 to-purple-600 text-white text-xs font-semibold shadow-sm shadow-violet-500/30">
+          <div className="flex h-9 w-9 items-center justify-center rounded-full bg-brand-gradient text-white text-xs font-semibold shadow-sm shadow-brand-600/30">
             {initials}
           </div>
           <div className="flex-1 min-w-0">

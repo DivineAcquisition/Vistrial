@@ -103,8 +103,8 @@ export function ContactDetails({
         <div className="p-4 space-y-6">
           {/* Contact Avatar & Name */}
           <div className="text-center">
-            <div className="w-20 h-20 bg-violet-500/20 rounded-full flex items-center justify-center mx-auto mb-3">
-              <span className="text-2xl font-bold text-violet-400">
+            <div className="w-20 h-20 bg-brand-500/20 rounded-full flex items-center justify-center mx-auto mb-3">
+              <span className="text-2xl font-bold text-brand-400">
                 {contact.first_name.charAt(0)}
               </span>
             </div>
@@ -136,7 +136,7 @@ export function ContactDetails({
           <div className="flex items-center justify-center gap-3">
             <button
               onClick={() => onSendSms?.(contact)}
-              className="flex items-center gap-2 px-4 py-2 bg-violet-600 text-white rounded-lg hover:bg-violet-700 transition-colors"
+              className="flex items-center gap-2 px-4 py-2 bg-brand-600 text-white rounded-lg hover:bg-brand-700 transition-colors"
             >
               <MessageSquare className="w-4 h-4" />
               SMS
@@ -249,7 +249,7 @@ export function ContactDetails({
                 <button
                   onClick={handleSave}
                   disabled={saving}
-                  className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-violet-600 text-white rounded-lg hover:bg-violet-700 disabled:opacity-50"
+                  className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-brand-600 text-white rounded-lg hover:bg-brand-700 disabled:opacity-50"
                 >
                   <Save className="w-4 h-4" />
                   {saving ? "Saving..." : "Save"}

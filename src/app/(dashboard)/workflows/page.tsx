@@ -58,7 +58,7 @@ const workflowTemplates = [
 function WorkflowCard({ workflow }: { workflow: typeof workflowTemplates[0] }) {
   const Icon = workflow.icon;
   const colorClasses = {
-    violet: "bg-violet-500/10 text-violet-400 border-violet-500/20",
+    violet: "bg-brand-500/10 text-brand-400 border-brand-500/20",
     blue: "bg-blue-500/10 text-blue-400 border-blue-500/20",
     amber: "bg-amber-500/10 text-amber-400 border-amber-500/20",
   };
@@ -66,7 +66,7 @@ function WorkflowCard({ workflow }: { workflow: typeof workflowTemplates[0] }) {
   return (
     <Link
       href={`/workflows/${workflow.id}`}
-      className="group bg-gray-900/80 backdrop-blur-xl rounded-2xl border border-white/10 p-6 hover:border-violet-500/30 transition-all"
+      className="group bg-gray-900/80 backdrop-blur-xl rounded-2xl border border-white/10 p-6 hover:border-brand-500/30 transition-all"
     >
       <div className="flex items-start justify-between mb-4">
         <div className={`p-3 rounded-xl ${colorClasses[workflow.color as keyof typeof colorClasses]}`}>
@@ -90,7 +90,7 @@ function WorkflowCard({ workflow }: { workflow: typeof workflowTemplates[0] }) {
       </div>
       
       <div className="flex items-center gap-2 mt-4 pt-4 border-t border-white/5">
-        <span className="text-violet-400 text-sm font-medium group-hover:text-violet-300 transition-colors flex items-center gap-1">
+        <span className="text-brand-400 text-sm font-medium group-hover:text-brand-300 transition-colors flex items-center gap-1">
           Configure workflow
           <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
         </span>
@@ -114,7 +114,7 @@ export default async function WorkflowsPage() {
             Automate your lead reactivation with SMS and voice workflows
           </p>
         </div>
-        <button className="inline-flex items-center gap-2 px-4 py-2.5 bg-violet-600 text-white rounded-xl font-medium hover:bg-violet-700 transition-colors">
+        <button className="inline-flex items-center gap-2 px-4 py-2.5 bg-brand-600 text-white rounded-xl font-medium hover:bg-brand-700 transition-colors">
           <Plus className="w-5 h-5" />
           Create Workflow
         </button>

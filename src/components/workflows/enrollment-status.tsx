@@ -97,7 +97,7 @@ export function EnrollmentStatus({
       <div className="mb-4">
         <div className="h-2 bg-gray-800 rounded-full overflow-hidden">
           <div 
-            className="h-full bg-gradient-to-r from-violet-500 to-blue-500 rounded-full transition-all duration-500"
+            className="h-full bg-gradient-to-r from-brand-500 to-blue-500 rounded-full transition-all duration-500"
             style={{ width: `${progressPercentage}%` }}
           />
         </div>
@@ -136,7 +136,7 @@ export function EnrollmentStatus({
             </button>
             <button
               onClick={() => onAdvance?.(enrollment.id)}
-              className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-violet-400 hover:bg-violet-500/10 rounded-lg transition-colors"
+              className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-brand-400 hover:bg-brand-500/10 rounded-lg transition-colors"
             >
               <ArrowRight className="w-4 h-4" />
               Advance

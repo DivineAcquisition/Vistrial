@@ -122,7 +122,7 @@ export function CreditsCard({ organizationId, credits }: CreditsCardProps) {
         <div className="flex items-center justify-between">
           <div>
             <CardTitle className="flex items-center gap-2 text-white">
-              <Coins className="h-5 w-5 text-violet-400" />
+              <Coins className="h-5 w-5 text-brand-400" />
               Message Credits
             </CardTitle>
             <CardDescription className="text-gray-400">Credits for SMS and voice drops</CardDescription>
@@ -165,7 +165,7 @@ export function CreditsCard({ organizationId, credits }: CreditsCardProps) {
                 ))}
               </SelectContent>
             </Select>
-            <Button onClick={handleRefill} disabled={isLoading} className="bg-violet-600 hover:bg-violet-700">
+            <Button onClick={handleRefill} disabled={isLoading} className="bg-brand-600 hover:bg-brand-700">
               {isLoading ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
               ) : (

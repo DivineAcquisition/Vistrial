@@ -239,7 +239,7 @@ export function WorkflowCreator({
           <Button 
             onClick={() => handleSave(true)} 
             disabled={isSaving}
-            className="bg-violet-600 hover:bg-violet-700"
+            className="bg-brand-600 hover:bg-brand-700"
           >
             {isSaving ? (
               <Loader2 className="h-4 w-4 animate-spin" />
@@ -256,10 +256,10 @@ export function WorkflowCreator({
       {/* Builder Tabs */}
       <Tabs defaultValue="steps" className="space-y-6">
         <TabsList className="bg-gray-800/50 border border-white/10">
-          <TabsTrigger value="steps" className="data-[state=active]:bg-violet-600">Steps</TabsTrigger>
-          <TabsTrigger value="settings" className="data-[state=active]:bg-violet-600">Settings</TabsTrigger>
-          <TabsTrigger value="criteria" className="data-[state=active]:bg-violet-600">Enrollment</TabsTrigger>
-          <TabsTrigger value="preview" className="data-[state=active]:bg-violet-600">Preview</TabsTrigger>
+          <TabsTrigger value="steps" className="data-[state=active]:bg-brand-600">Steps</TabsTrigger>
+          <TabsTrigger value="settings" className="data-[state=active]:bg-brand-600">Settings</TabsTrigger>
+          <TabsTrigger value="criteria" className="data-[state=active]:bg-brand-600">Enrollment</TabsTrigger>
+          <TabsTrigger value="preview" className="data-[state=active]:bg-brand-600">Preview</TabsTrigger>
         </TabsList>
 
         <TabsContent value="steps" className="space-y-6">

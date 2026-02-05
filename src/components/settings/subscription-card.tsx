@@ -129,7 +129,7 @@ export function SubscriptionCard({ organization }: SubscriptionCardProps) {
               </div>
             </div>
 
-            <Button onClick={handleManageBilling} disabled={isLoading} className="w-full bg-violet-600 hover:bg-violet-700">
+            <Button onClick={handleManageBilling} disabled={isLoading} className="w-full bg-brand-600 hover:bg-brand-700">
               {isLoading ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
               ) : (
@@ -150,7 +150,7 @@ export function SubscriptionCard({ organization }: SubscriptionCardProps) {
               <div
                 key={key}
                 className={`p-4 border rounded-lg ${
-                  plan.recommended ? 'border-violet-500/50 ring-1 ring-violet-500/30' : 'border-white/10'
+                  plan.recommended ? 'border-brand-500/50 ring-1 ring-brand-500/30' : 'border-white/10'
                 } bg-gray-800/50`}
               >
                 <div className="flex items-center justify-between mb-3">
@@ -164,7 +164,7 @@ export function SubscriptionCard({ organization }: SubscriptionCardProps) {
                     </p>
                   </div>
                   {plan.recommended && (
-                    <Badge className="bg-violet-500/20 text-violet-400">Recommended</Badge>
+                    <Badge className="bg-brand-500/20 text-brand-400">Recommended</Badge>
                   )}
                 </div>
 
@@ -181,7 +181,7 @@ export function SubscriptionCard({ organization }: SubscriptionCardProps) {
                   onClick={() => handleSubscribe(key)}
                   disabled={isLoading}
                   variant={plan.recommended ? 'default' : 'outline'}
-                  className={plan.recommended ? 'w-full bg-violet-600 hover:bg-violet-700' : 'w-full border-white/10 bg-gray-800 hover:bg-gray-700 text-white'}
+                  className={plan.recommended ? 'w-full bg-brand-600 hover:bg-brand-700' : 'w-full border-white/10 bg-gray-800 hover:bg-gray-700 text-white'}
                 >
                   {loadingPlan === key ? (
                     <Loader2 className="h-4 w-4 animate-spin" />

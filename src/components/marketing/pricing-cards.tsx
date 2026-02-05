@@ -79,7 +79,7 @@ export function PricingCards() {
       <div className="flex items-center justify-center gap-4 mb-8">
         <Label
           htmlFor="billing"
-          className={annual ? 'text-muted-foreground' : 'font-medium'}
+          className={annual ? 'text-gray-400' : 'font-medium text-gray-900'}
         >
           Monthly
         </Label>
@@ -90,10 +90,10 @@ export function PricingCards() {
         />
         <Label
           htmlFor="billing"
-          className={annual ? 'font-medium' : 'text-muted-foreground'}
+          className={annual ? 'font-medium text-gray-900' : 'text-gray-400'}
         >
           Annual
-          <Badge variant="secondary" className="ml-2 bg-green-100 text-green-700">
+          <Badge variant="secondary" className="ml-2 bg-green-100 text-green-700 border-0">
             Save 20%
           </Badge>
         </Label>
@@ -104,36 +104,36 @@ export function PricingCards() {
         {plans.map((plan) => (
           <Card
             key={plan.name}
-            className={`relative ${
-              plan.popular ? 'border-blue-600 border-2 shadow-lg' : ''
+            className={`relative bg-white ${
+              plan.popular ? 'border-brand-600 border-2 shadow-lg shadow-brand-100' : 'border-gray-200'
             }`}
           >
             {plan.popular && (
               <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-                <Badge className="bg-blue-600">Most Popular</Badge>
+                <Badge className="bg-brand-600 text-white border-0">Most Popular</Badge>
               </div>
             )}
 
             <CardHeader className="text-center pb-4">
-              <CardTitle className="text-xl">{plan.name}</CardTitle>
-              <p className="text-sm text-muted-foreground">{plan.description}</p>
+              <CardTitle className="text-xl text-gray-900">{plan.name}</CardTitle>
+              <p className="text-sm text-gray-500">{plan.description}</p>
             </CardHeader>
 
             <CardContent className="space-y-6">
               {/* Price */}
               <div className="text-center">
                 <div className="flex items-baseline justify-center gap-1">
-                  <span className="text-4xl font-bold">
+                  <span className="text-4xl font-bold text-gray-900">
                     ${annual ? plan.annualPrice : plan.monthlyPrice}
                   </span>
-                  <span className="text-muted-foreground">/month</span>
+                  <span className="text-gray-500">/month</span>
                 </div>
                 {annual && (
-                  <p className="text-sm text-muted-foreground">
+                  <p className="text-sm text-gray-500">
                     Billed annually (${plan.annualPrice * 12}/year)
                   </p>
                 )}
-                <p className="text-sm font-medium text-blue-600 mt-2">
+                <p className="text-sm font-medium text-brand-600 mt-2">
                   {plan.contactLimit} contacts included
                 </p>
               </div>
@@ -143,7 +143,7 @@ export function PricingCards() {
                 {plan.features.map((feature) => (
                   <li key={feature} className="flex items-start gap-2">
                     <CheckCircle className="h-5 w-5 text-green-600 shrink-0 mt-0.5" />
-                    <span className="text-sm">{feature}</span>
+                    <span className="text-sm text-gray-700">{feature}</span>
                   </li>
                 ))}
               </ul>
@@ -151,7 +151,11 @@ export function PricingCards() {
               {/* CTA */}
               <Link href={plan.cta === 'Contact Sales' ? '/contact' : '/signup'}>
                 <Button
-                  className="w-full"
+                  className={`w-full ${
+                    plan.popular 
+                      ? 'bg-brand-600 hover:bg-brand-700 text-white' 
+                      : 'bg-white text-gray-900 border-gray-300 hover:bg-gray-50'
+                  }`}
                   variant={plan.popular ? 'default' : 'outline'}
                 >
                   {plan.cta}
@@ -164,19 +168,19 @@ export function PricingCards() {
 
       {/* Usage Pricing */}
       <div className="mt-12 text-center">
-        <p className="text-muted-foreground mb-4">
+        <p className="text-gray-500 mb-4">
           Plus pay-as-you-go messaging:
         </p>
         <div className="flex items-center justify-center gap-8 flex-wrap">
           <div className="flex items-center gap-2">
-            <Badge variant="outline">SMS</Badge>
-            <span className="font-medium">$0.015</span>
-            <span className="text-muted-foreground">per message</span>
+            <Badge variant="outline" className="border-gray-300 text-gray-600">SMS</Badge>
+            <span className="font-medium text-gray-900">$0.015</span>
+            <span className="text-gray-500">per message</span>
           </div>
           <div className="flex items-center gap-2">
-            <Badge variant="outline">Voice Drop</Badge>
-            <span className="font-medium">$0.05</span>
-            <span className="text-muted-foreground">per drop</span>
+            <Badge variant="outline" className="border-gray-300 text-gray-600">Voice Drop</Badge>
+            <span className="font-medium text-gray-900">$0.05</span>
+            <span className="text-gray-500">per drop</span>
           </div>
         </div>
       </div>

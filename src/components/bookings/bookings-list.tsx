@@ -71,7 +71,7 @@ export function BookingsList({
   if (bookings.length === 0) {
     return (
       <div className="relative">
-        <div className="absolute -inset-0.5 bg-gradient-to-r from-brand-500/10 via-brand-600/10 to-indigo-500/10 rounded-2xl blur opacity-50" />
+        <div className="absolute -inset-0.5 bg-gradient-to-r from-brand-500/10 via-brand-600/10 to-brand-500/10 rounded-2xl blur opacity-50" />
         <div className="relative bg-gray-900/80 backdrop-blur-xl rounded-2xl border border-white/10 p-12 text-center">
           <div className="w-16 h-16 bg-white/5 rounded-2xl flex items-center justify-center mx-auto mb-4 border border-white/10">
             <RiCalendarLine className="w-8 h-8 text-gray-500" />
@@ -96,7 +96,7 @@ export function BookingsList({
 
   return (
     <div className="relative">
-      <div className="absolute -inset-0.5 bg-gradient-to-r from-brand-500/10 via-brand-600/10 to-indigo-500/10 rounded-2xl blur opacity-50" />
+      <div className="absolute -inset-0.5 bg-gradient-to-r from-brand-500/10 via-brand-600/10 to-brand-500/10 rounded-2xl blur opacity-50" />
       <div className="relative bg-gray-900/80 backdrop-blur-xl rounded-2xl border border-white/10 overflow-hidden">
         {/* Top accent line */}
         <div className="h-px bg-gradient-to-r from-transparent via-brand-500/50 to-transparent" />

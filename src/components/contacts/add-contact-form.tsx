@@ -128,7 +128,7 @@ export function AddContactForm({ organizationId, onSuccess }: AddContactFormProp
         />
       </div>
 
-      <Button type="submit" className="w-full bg-violet-600 hover:bg-violet-700" disabled={isLoading}>
+      <Button type="submit" className="w-full bg-brand-600 hover:bg-brand-700" disabled={isLoading}>
         {isLoading ? (
           <>
             <Loader2 className="h-4 w-4 mr-2 animate-spin" />

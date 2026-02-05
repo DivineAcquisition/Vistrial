@@ -110,7 +110,7 @@ export function UploadModal({ isOpen, onClose, onUpload }: UploadModalProps) {
           className={`
             relative border-2 border-dashed rounded-xl p-8 text-center transition-all
             ${isDragging 
-              ? "border-violet-500 bg-violet-500/10" 
+              ? "border-brand-500 bg-brand-500/10" 
               : "border-white/20 hover:border-white/40"
             }
             ${file ? "border-green-500 bg-green-500/10" : ""}
@@ -166,7 +166,7 @@ export function UploadModal({ isOpen, onClose, onUpload }: UploadModalProps) {
           <button
             onClick={handleUpload}
             disabled={!file || uploading}
-            className="px-6 py-2 bg-violet-600 text-white rounded-lg font-medium hover:bg-violet-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            className="px-6 py-2 bg-brand-600 text-white rounded-lg font-medium hover:bg-brand-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
             {uploading ? "Uploading..." : "Upload"}
           </button>

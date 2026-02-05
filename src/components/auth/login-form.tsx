@@ -1,118 +1,142 @@
-/**
- * Login Form Component
- * 
- * Reusable login form with:
- * - Email/password fields with validation
- * - Google OAuth option
- * - Remember me checkbox
- * - Forgot password link
- * - Loading states
- * - Error display
- * 
- * Used in: /login page
- */
+'use client';
 
-"use client";
+// ============================================
+// LOGIN FORM COMPONENT
+// ============================================
 
-import { useState } from "react";
-import Link from "next/link";
-import { Eye, EyeOff, Loader2, Mail, Lock } from "lucide-react";
+import { useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import Link from 'next/link';
+import { useAuth } from './auth-provider';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Loader2, Mail, Lock, AlertCircle, Eye, EyeOff } from 'lucide-react';
 
 interface LoginFormProps {
-  onSubmit: (email: string, password: string) => Promise<void>;
+  onSubmit?: (email: string, password: string) => Promise<void>;
   onGoogleSignIn?: () => Promise<void>;
   redirectUrl?: string;
 }
 
-export function LoginForm({ onSubmit, onGoogleSignIn, redirectUrl }: LoginFormProps) {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+export function LoginForm({ onSubmit, redirectUrl }: LoginFormProps) {
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+
+  const { signIn } = useAuth();
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const redirectTo = redirectUrl || searchParams.get('redirect') || '/dashboard';
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
-    setError("");
+    setError(null);
+    setIsLoading(true);
 
     try {
-      await onSubmit(email, password);
+      // Use custom onSubmit if provided, otherwise use auth context
+      if (onSubmit) {
+        await onSubmit(email, password);
+      } else {
+        const { error: signInError } = await signIn(email, password);
+
+        if (signInError) {
+          if (signInError.message.includes('Invalid login credentials')) {
+            setError('Invalid email or password. Please try again.');
+          } else if (signInError.message.includes('Email not confirmed')) {
+            setError('Please verify your email before logging in.');
+          } else {
+            setError(signInError.message);
+          }
+          return;
+        }
+
+        router.push(redirectTo);
+      }
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to sign in");
+      setError(err instanceof Error ? err.message : 'An unexpected error occurred. Please try again.');
     } finally {
-      setLoading(false);
+      setIsLoading(false);
     }
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-5">
+    <form onSubmit={handleSubmit} className="space-y-6">
       {error && (
-        <div className="p-4 bg-red-50 border border-red-200 rounded-lg text-red-600 text-sm">
-          {error}
+        <div className="p-4 bg-red-50 border border-red-200 rounded-lg text-red-600 text-sm flex items-start gap-2">
+          <AlertCircle className="h-4 w-4 mt-0.5 flex-shrink-0" />
+          <span>{error}</span>
         </div>
       )}
 
-      <div>
-        <label className="block text-sm font-medium text-slate-700 mb-1">
-          Email address
-        </label>
+      <div className="space-y-2">
+        <Label htmlFor="email">Email</Label>
         <div className="relative">
-          <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
-          <input
+          <Mail className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            id="email"
             type="email"
+            placeholder="you@company.com"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            placeholder="you@example.com"
+            className="pl-10"
             required
-            className="w-full pl-10 pr-4 py-3 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-500 text-slate-900"
+            disabled={isLoading}
+            autoComplete="email"
           />
         </div>
       </div>
 
-      <div>
-        <div className="flex items-center justify-between mb-1">
-          <label className="block text-sm font-medium text-slate-700">
-            Password
-          </label>
-          <Link href="/forgot-password" className="text-sm text-violet-600 hover:text-violet-700">
+      <div className="space-y-2">
+        <div className="flex items-center justify-between">
+          <Label htmlFor="password">Password</Label>
+          <Link href="/forgot-password" className="text-sm text-primary hover:underline">
             Forgot password?
           </Link>
         </div>
         <div className="relative">
-          <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
-          <input
-            type={showPassword ? "text" : "password"}
+          <Lock className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            id="password"
+            type={showPassword ? 'text' : 'password'}
+            placeholder="••••••••"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            placeholder="••••••••"
+            className="pl-10 pr-10"
             required
-            className="w-full pl-10 pr-12 py-3 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-500 text-slate-900"
+            disabled={isLoading}
+            autoComplete="current-password"
           />
           <button
             type="button"
             onClick={() => setShowPassword(!showPassword)}
-            className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
           >
-            {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+            {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
           </button>
         </div>
       </div>
 
-      <button
-        type="submit"
-        disabled={loading}
-        className="w-full bg-violet-600 text-white py-3 rounded-lg font-semibold hover:bg-violet-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2"
-      >
-        {loading ? (
+      <Button type="submit" className="w-full" disabled={isLoading}>
+        {isLoading ? (
           <>
-            <Loader2 className="w-5 h-5 animate-spin" />
+            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
             Signing in...
           </>
         ) : (
-          "Sign in"
+          'Sign in'
         )}
-      </button>
+      </Button>
+
+      <p className="text-center text-sm text-muted-foreground">
+        Don&apos;t have an account?{' '}
+        <Link href="/signup" className="text-primary hover:underline">
+          Sign up
+        </Link>
+      </p>
     </form>
   );
 }

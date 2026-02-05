@@ -1,24 +1,39 @@
-/**
- * Signup Form Component
- * 
- * Multi-step signup form with:
- * - Step 1: User info (name, email, phone, password)
- * - Step 2: Phone/email verification
- * - Business name field
- * - Password strength indicator
- * - Terms acceptance
- * 
- * Used in: /signup page
- */
+'use client';
 
-"use client";
+// ============================================
+// SIGNUP FORM COMPONENT
+// ============================================
 
-import { useState } from "react";
-import { Eye, EyeOff, Loader2, Mail, Lock, User, Building2, Phone } from "lucide-react";
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
+import Link from 'next/link';
+import { useAuth } from './auth-provider';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import {
+  Loader2,
+  Mail,
+  Lock,
+  User,
+  Building2,
+  AlertCircle,
+  CheckCircle,
+  Eye,
+  EyeOff,
+} from 'lucide-react';
+import { BUSINESS_TYPES } from '@/constants/business-types';
 
 interface SignupFormProps {
-  onSubmit: (data: SignupData) => Promise<void>;
-  onVerify: (code: string) => Promise<void>;
+  onSubmit?: (data: SignupData) => Promise<void>;
+  onVerify?: (code: string) => Promise<void>;
 }
 
 interface SignupData {
@@ -29,189 +44,324 @@ interface SignupData {
   password: string;
 }
 
-export function SignupForm({ onSubmit, onVerify }: SignupFormProps) {
-  const [step, setStep] = useState<"info" | "verify">("info");
+export function SignupForm({ onSubmit: customOnSubmit, onVerify }: SignupFormProps) {
+  const [step, setStep] = useState(1);
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
-  const [formData, setFormData] = useState<SignupData>({
-    fullName: "",
-    businessName: "",
-    email: "",
-    phone: "",
-    password: "",
-  });
-  const [verificationCode, setVerificationCode] = useState("");
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
+  const [organizationName, setOrganizationName] = useState('');
+  const [businessType, setBusinessType] = useState('');
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
-  const updateField = (field: keyof SignupData, value: string) => {
-    setFormData((prev) => ({ ...prev, [field]: value }));
+  const { signUp } = useAuth();
+  const router = useRouter();
+
+  const validateStep1 = () => {
+    if (!email || !password || !confirmPassword) {
+      setError('Please fill in all fields.');
+      return false;
+    }
+
+    if (password.length < 8) {
+      setError('Password must be at least 8 characters.');
+      return false;
+    }
+
+    if (password !== confirmPassword) {
+      setError('Passwords do not match.');
+      return false;
+    }
+
+    return true;
   };
 
-  const handleInfoSubmit = async (e: React.FormEvent) => {
+  const handleStep1Submit = (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
-    setError("");
+    setError(null);
 
-    try {
-      await onSubmit(formData);
-      setStep("verify");
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to create account");
-    } finally {
-      setLoading(false);
+    if (validateStep1()) {
+      setStep(2);
     }
   };
 
-  const handleVerifySubmit = async (e: React.FormEvent) => {
+  const handleStep2Submit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
-    setError("");
+    setError(null);
+
+    if (!firstName || !organizationName || !businessType) {
+      setError('Please fill in all fields.');
+      return;
+    }
+
+    setIsLoading(true);
 
     try {
-      await onVerify(verificationCode);
+      // Handle custom onSubmit if provided (legacy support)
+      if (customOnSubmit) {
+        await customOnSubmit({
+          fullName: `${firstName} ${lastName}`.trim(),
+          businessName: organizationName,
+          email,
+          phone: '',
+          password,
+        });
+        return;
+      }
+
+      const { error: signUpError, user } = await signUp(email, password, {
+        first_name: firstName,
+        last_name: lastName,
+        organization_name: organizationName,
+        business_type: businessType,
+      });
+
+      if (signUpError) {
+        if (signUpError.message.includes('already registered')) {
+          setError('An account with this email already exists.');
+        } else {
+          setError(signUpError.message);
+        }
+        return;
+      }
+
+      // Create organization via API
+      const response = await fetch('/api/auth/setup-organization', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: organizationName,
+          business_type: businessType,
+          user_id: user?.id,
+          first_name: firstName,
+          last_name: lastName,
+        }),
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        setError(data.error || 'Failed to create organization.');
+        return;
+      }
+
+      setSuccess(true);
+
+      // Redirect to dashboard after short delay
+      setTimeout(() => {
+        router.push('/dashboard');
+      }, 2000);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Invalid verification code");
+      setError('An unexpected error occurred. Please try again.');
     } finally {
-      setLoading(false);
+      setIsLoading(false);
     }
   };
 
-  if (step === "verify") {
+  if (success) {
     return (
-      <form onSubmit={handleVerifySubmit} className="space-y-6">
-        {error && (
-          <div className="p-4 bg-red-50 border border-red-200 rounded-lg text-red-600 text-sm">
-            {error}
-          </div>
-        )}
-        
-        <div className="text-center">
-          <p className="text-slate-600">
-            Enter the verification code sent to your email
-          </p>
+      <div className="text-center space-y-4">
+        <div className="mx-auto w-12 h-12 rounded-full bg-green-100 flex items-center justify-center">
+          <CheckCircle className="h-6 w-6 text-green-600" />
         </div>
-
-        <input
-          type="text"
-          value={verificationCode}
-          onChange={(e) => setVerificationCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
-          placeholder="000000"
-          maxLength={6}
-          className="w-full text-center text-2xl font-mono tracking-[0.5em] py-4 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-500"
-        />
-
-        <button
-          type="submit"
-          disabled={loading || verificationCode.length !== 6}
-          className="w-full bg-violet-600 text-white py-3 rounded-lg font-semibold hover:bg-violet-700 disabled:opacity-50 transition-colors flex items-center justify-center gap-2"
-        >
-          {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : null}
-          Create Account
-        </button>
-      </form>
+        <h3 className="text-lg font-semibold">Account Created!</h3>
+        <p className="text-muted-foreground">
+          Your account has been created successfully. Redirecting to dashboard...
+        </p>
+      </div>
     );
   }
 
   return (
-    <form onSubmit={handleInfoSubmit} className="space-y-4">
+    <div className="space-y-6">
+      {/* Progress indicator */}
+      <div className="flex items-center justify-center space-x-2">
+        <div
+          className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
+            step >= 1 ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'
+          }`}
+        >
+          1
+        </div>
+        <div className={`w-12 h-1 ${step >= 2 ? 'bg-primary' : 'bg-muted'}`} />
+        <div
+          className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
+            step >= 2 ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'
+          }`}
+        >
+          2
+        </div>
+      </div>
+
       {error && (
-        <div className="p-4 bg-red-50 border border-red-200 rounded-lg text-red-600 text-sm">
-          {error}
+        <div className="p-4 bg-red-50 border border-red-200 rounded-lg text-red-600 text-sm flex items-start gap-2">
+          <AlertCircle className="h-4 w-4 mt-0.5 flex-shrink-0" />
+          <span>{error}</span>
         </div>
       )}
 
-      <div>
-        <label className="block text-sm font-medium text-slate-700 mb-1">Your name</label>
-        <div className="relative">
-          <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
-          <input
-            type="text"
-            value={formData.fullName}
-            onChange={(e) => updateField("fullName", e.target.value)}
-            placeholder="John Smith"
-            required
-            className="w-full pl-10 pr-4 py-3 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-500"
-          />
-        </div>
-      </div>
+      {step === 1 && (
+        <form onSubmit={handleStep1Submit} className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="email">Email</Label>
+            <div className="relative">
+              <Mail className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                id="email"
+                type="email"
+                placeholder="you@company.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="pl-10"
+                required
+                autoComplete="email"
+              />
+            </div>
+          </div>
 
-      <div>
-        <label className="block text-sm font-medium text-slate-700 mb-1">Business name</label>
-        <div className="relative">
-          <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
-          <input
-            type="text"
-            value={formData.businessName}
-            onChange={(e) => updateField("businessName", e.target.value)}
-            placeholder="Sparkle Clean Co"
-            required
-            className="w-full pl-10 pr-4 py-3 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-500"
-          />
-        </div>
-      </div>
+          <div className="space-y-2">
+            <Label htmlFor="password">Password</Label>
+            <div className="relative">
+              <Lock className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                id="password"
+                type={showPassword ? 'text' : 'password'}
+                placeholder="At least 8 characters"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="pl-10 pr-10"
+                required
+                autoComplete="new-password"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+              >
+                {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+              </button>
+            </div>
+          </div>
 
-      <div>
-        <label className="block text-sm font-medium text-slate-700 mb-1">Email address</label>
-        <div className="relative">
-          <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
-          <input
-            type="email"
-            value={formData.email}
-            onChange={(e) => updateField("email", e.target.value)}
-            placeholder="john@sparkleclean.com"
-            required
-            className="w-full pl-10 pr-4 py-3 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-500"
-          />
-        </div>
-      </div>
+          <div className="space-y-2">
+            <Label htmlFor="confirmPassword">Confirm Password</Label>
+            <div className="relative">
+              <Lock className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                id="confirmPassword"
+                type={showPassword ? 'text' : 'password'}
+                placeholder="Confirm your password"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                className="pl-10"
+                required
+                autoComplete="new-password"
+              />
+            </div>
+          </div>
 
-      <div>
-        <label className="block text-sm font-medium text-slate-700 mb-1">Phone number</label>
-        <div className="relative">
-          <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
-          <input
-            type="tel"
-            value={formData.phone}
-            onChange={(e) => updateField("phone", e.target.value)}
-            placeholder="+1 (555) 123-4567"
-            required
-            className="w-full pl-10 pr-4 py-3 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-500"
-          />
-        </div>
-      </div>
+          <Button type="submit" className="w-full">
+            Continue
+          </Button>
+        </form>
+      )}
 
-      <div>
-        <label className="block text-sm font-medium text-slate-700 mb-1">Password</label>
-        <div className="relative">
-          <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
-          <input
-            type={showPassword ? "text" : "password"}
-            value={formData.password}
-            onChange={(e) => updateField("password", e.target.value)}
-            placeholder="••••••••"
-            required
-            minLength={8}
-            className="w-full pl-10 pr-12 py-3 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-500"
-          />
-          <button
-            type="button"
-            onClick={() => setShowPassword(!showPassword)}
-            className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
-          >
-            {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-          </button>
-        </div>
-        <p className="text-xs text-slate-400 mt-1">At least 8 characters</p>
-      </div>
+      {step === 2 && (
+        <form onSubmit={handleStep2Submit} className="space-y-4">
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="firstName">First Name</Label>
+              <div className="relative">
+                <User className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  id="firstName"
+                  placeholder="John"
+                  value={firstName}
+                  onChange={(e) => setFirstName(e.target.value)}
+                  className="pl-10"
+                  required
+                  disabled={isLoading}
+                />
+              </div>
+            </div>
 
-      <button
-        type="submit"
-        disabled={loading}
-        className="w-full bg-violet-600 text-white py-3 rounded-lg font-semibold hover:bg-violet-700 disabled:opacity-50 transition-colors flex items-center justify-center gap-2 mt-6"
-      >
-        {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : null}
-        Continue
-      </button>
-    </form>
+            <div className="space-y-2">
+              <Label htmlFor="lastName">Last Name</Label>
+              <Input
+                id="lastName"
+                placeholder="Doe"
+                value={lastName}
+                onChange={(e) => setLastName(e.target.value)}
+                disabled={isLoading}
+              />
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="organizationName">Business Name</Label>
+            <div className="relative">
+              <Building2 className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                id="organizationName"
+                placeholder="Acme Cleaning Services"
+                value={organizationName}
+                onChange={(e) => setOrganizationName(e.target.value)}
+                className="pl-10"
+                required
+                disabled={isLoading}
+              />
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="businessType">Business Type</Label>
+            <Select value={businessType} onValueChange={setBusinessType} disabled={isLoading}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select your business type" />
+              </SelectTrigger>
+              <SelectContent>
+                {BUSINESS_TYPES.map((type) => (
+                  <SelectItem key={type.id} value={type.id}>
+                    {type.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="flex space-x-3">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setStep(1)}
+              disabled={isLoading}
+              className="flex-1"
+            >
+              Back
+            </Button>
+            <Button type="submit" disabled={isLoading} className="flex-1">
+              {isLoading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Creating...
+                </>
+              ) : (
+                'Create Account'
+              )}
+            </Button>
+          </div>
+        </form>
+      )}
+
+      <p className="text-center text-sm text-muted-foreground">
+        Already have an account?{' '}
+        <Link href="/login" className="text-primary hover:underline">
+          Sign in
+        </Link>
+      </p>
+    </div>
   );
 }

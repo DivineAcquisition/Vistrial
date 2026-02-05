@@ -24,3 +24,4 @@ export { Tabs, TabsList, TabsTrigger, TabsContent } from './tabs';
 export { Textarea } from './textarea';
 export { Toast, ToastAction, ToastClose, ToastDescription, ToastProvider, ToastTitle, ToastViewport } from './toast';
 export { Toaster } from './toaster';
+export { Switch } from './switch';

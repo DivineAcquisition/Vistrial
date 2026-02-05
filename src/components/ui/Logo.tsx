@@ -1,90 +1,76 @@
-"use client"
+'use client';
 
-import Image from "next/image"
-import { cn } from "@/lib/utils/cn"
+import { cn } from '@/lib/utils/cn';
 
-interface LogoIconProps {
-  className?: string
-  size?: number
+interface LogoProps {
+  size?: 'sm' | 'md' | 'lg';
+  variant?: 'light' | 'dark';
+  className?: string;
 }
 
-// Logo Icon using VISTRIAL.png (contains both icon and text)
-export function LogoIcon({ className, size = 32 }: LogoIconProps) {
+const sizes = {
+  sm: { icon: 24, text: 'text-lg' },
+  md: { icon: 32, text: 'text-xl' },
+  lg: { icon: 40, text: 'text-2xl' },
+};
+
+export function LogoIcon({ size = 32, className }: { size?: number; className?: string }) {
   return (
-    <div 
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 40 40"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+      className={className}
+    >
+      <rect width="40" height="40" rx="8" fill="url(#gradient)" />
+      <path
+        d="M12 28L20 12L28 28H12Z"
+        stroke="white"
+        strokeWidth="2.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        fill="none"
+      />
+      <circle cx="20" cy="22" r="3" fill="white" />
+      <defs>
+        <linearGradient id="gradient" x1="0" y1="0" x2="40" y2="40">
+          <stop stopColor="#8B5CF6" />
+          <stop offset="1" stopColor="#6366F1" />
+        </linearGradient>
+      </defs>
+    </svg>
+  );
+}
+
+export function LogoText({
+  className,
+  variant = 'dark',
+}: {
+  className?: string;
+  variant?: 'light' | 'dark';
+}) {
+  return (
+    <span
       className={cn(
-        "flex items-center justify-center",
+        'font-bold tracking-tight',
+        variant === 'dark' ? 'text-white' : 'text-gray-900',
         className
       )}
     >
-      <Image
-        src="/VISTRIAL.png"
-        alt="Vistrial"
-        width={size}
-        height={size}
-        className="object-contain"
-        priority
-      />
-    </div>
-  )
-}
-
-interface LogoTextProps {
-  className?: string
-}
-
-// Text logo "Vistrial" - kept for backwards compatibility but typically not needed
-export function LogoText({ className }: LogoTextProps) {
-  return (
-    <span className={cn("text-xl font-bold tracking-tight", className)}>
       Vistrial
     </span>
-  )
+  );
 }
 
-interface LogoProps {
-  className?: string
-  showText?: boolean
-  size?: "sm" | "md" | "lg" | "xl"
-  variant?: "light" | "dark"
-}
-
-// Full logo - PNG already contains icon + text, so this just displays the image
-export function Logo({ className, size = "md" }: LogoProps) {
-  // Sizes are now width-based since PNG is horizontal with text
-  const sizes = {
-    sm: { width: 100, height: 32 },
-    md: { width: 140, height: 44 },
-    lg: { width: 180, height: 56 },
-    xl: { width: 220, height: 68 },
-  }
+export function Logo({ size = 'md', variant = 'dark', className }: LogoProps) {
+  const sizeConfig = sizes[size];
 
   return (
-    <div className={cn("flex items-center", className)}>
-      <Image
-        src="/VISTRIAL.png"
-        alt="Vistrial"
-        width={sizes[size].width}
-        height={sizes[size].height}
-        className="object-contain"
-        priority
-      />
+    <div className={cn('flex items-center gap-2', className)}>
+      <LogoIcon size={sizeConfig.icon} />
+      <LogoText className={sizeConfig.text} variant={variant} />
     </div>
-  )
-}
-
-// Simple inline logo for headers - same as Logo since PNG has text
-export function LogoInline({ className }: { className?: string; variant?: "light" | "dark" }) {
-  return (
-    <div className={cn("flex items-center", className)}>
-      <Image
-        src="/VISTRIAL.png"
-        alt="Vistrial"
-        width={120}
-        height={38}
-        className="object-contain"
-        priority
-      />
-    </div>
-  )
+  );
 }

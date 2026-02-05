@@ -15,7 +15,7 @@ import {
   RiBankCardLine,
   RiSparklingLine,
 } from "@remixicon/react"
-import { cx } from "@/lib/utils"
+import { cn } from "@/lib/utils/cn"
 
 interface ServiceType {
   id: string
@@ -269,7 +269,7 @@ export function EmbedBookingFlow({
             {steps.map((s, i) => (
               <div key={s.key} className="flex items-center">
                 <div
-                  className={cx(
+                  className={cn(
                     "w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium transition-colors",
                     i < currentStepIndex
                       ? "bg-green-500 text-white"
@@ -283,7 +283,7 @@ export function EmbedBookingFlow({
                 </div>
                 {i < steps.length - 1 && (
                   <div 
-                    className={cx(
+                    className={cn(
                       "w-8 h-0.5 mx-1",
                       i < currentStepIndex ? "bg-green-500" : "bg-gray-200"
                     )}
@@ -306,7 +306,7 @@ export function EmbedBookingFlow({
                 <button
                   key={service.id}
                   onClick={() => setSelectedService(service)}
-                  className={cx(
+                  className={cn(
                     "w-full p-4 rounded-xl border-2 text-left transition-all",
                     selectedService?.id === service.id
                       ? "border-brand-600 bg-brand-50"
@@ -417,7 +417,7 @@ export function EmbedBookingFlow({
                   <button
                     key={option.value}
                     onClick={() => setFrequency(option.value)}
-                    className={cx(
+                    className={cn(
                       "p-3 rounded-lg border-2 text-left transition-all",
                       frequency === option.value
                         ? "border-brand-600 bg-brand-50"
@@ -488,7 +488,7 @@ export function EmbedBookingFlow({
                       key={i}
                       onClick={() => setSelectedDate(date)}
                       disabled={isWeekend}
-                      className={cx(
+                      className={cn(
                         "py-2 text-sm rounded-lg transition-colors",
                         isSelected
                           ? "text-white"
@@ -517,7 +517,7 @@ export function EmbedBookingFlow({
                       key={slot.time}
                       onClick={() => setSelectedTime(slot.time)}
                       disabled={!slot.available}
-                      className={cx(
+                      className={cn(
                         "p-2 text-sm rounded-lg border transition-colors",
                         selectedTime === slot.time
                           ? "text-white border-transparent"

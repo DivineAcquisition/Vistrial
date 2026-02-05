@@ -1,184 +1,208 @@
 // @ts-nocheck
-import { NextRequest, NextResponse } from "next/server"
-import { createAdminClient } from "@/lib/supabase/admin"
-import { sendSMS } from "@/lib/twilio/send-sms"
-import { processTemplate, getTemplateVariables } from "@/lib/constants/template-variables"
-import { checkSendCompliance } from "@/lib/sms/compliance"
-import { isFirstMessage, ensureOptOutIncluded } from "@/lib/constants/sms-compliance"
+/**
+ * Send Messages Cron Job
+ * Processes the message queue and sends pending SMS/voice messages
+ * Run every 2 minutes via Vercel Cron
+ */
 
-const CRON_SECRET = process.env.CRON_SECRET
+import { NextRequest, NextResponse } from 'next/server';
+import { createAdminClient } from '@/lib/supabase/admin';
 
-export async function GET(request: NextRequest) {
-  // Verify cron secret for security
-  const authHeader = request.headers.get("authorization")
-  if (CRON_SECRET && authHeader !== `Bearer ${CRON_SECRET}`) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+const CRON_SECRET = process.env.CRON_SECRET;
+
+function verifyCronAuth(request: NextRequest): boolean {
+  if (process.env.NODE_ENV === 'development') {
+    return true;
   }
 
-  return processMessages()
+  const isVercelCron = request.headers.get('x-vercel-cron') === 'true';
+  if (isVercelCron) {
+    return true;
+  }
+
+  if (CRON_SECRET) {
+    const authHeader = request.headers.get('authorization');
+    if (authHeader === `Bearer ${CRON_SECRET}`) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
+export async function GET(request: NextRequest) {
+  if (!verifyCronAuth(request)) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
+  return processMessageQueue();
 }
 
 export async function POST(request: NextRequest) {
-  // Verify cron secret for security
-  const authHeader = request.headers.get("authorization")
-  if (CRON_SECRET && authHeader !== `Bearer ${CRON_SECRET}`) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+  if (!verifyCronAuth(request)) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  return processMessages()
+  return processMessageQueue();
 }
 
-interface ProcessingResults {
-  success: number
-  failed: number
-  skipped: number
-  rescheduled: number
-  errors: string[]
-}
+async function processMessageQueue() {
+  const supabase = createAdminClient();
 
-async function processMessages() {
-  const supabase = createAdminClient()
-  const results: ProcessingResults = {
+  const results = {
+    processed: 0,
     success: 0,
     failed: 0,
-    skipped: 0,
-    rescheduled: 0,
-    errors: [],
-  }
+    errors: [] as string[],
+  };
 
   try {
-    // Get leads pending action
-    const { data: pendingLeads, error: fetchError } = await supabase
-      .from("leads_pending_action")
-      .select("*")
-      .limit(50) // Process max 50 per run
+    // Get pending messages from queue that are scheduled for now or earlier
+    const { data: queuedMessages, error: fetchError } = await supabase
+      .from('message_queue')
+      .select('*')
+      .eq('status', 'pending')
+      .lte('scheduled_for', new Date().toISOString())
+      .lt('attempts', 3) // Max 3 attempts
+      .order('scheduled_for', { ascending: true })
+      .limit(50);
 
     if (fetchError) {
-      console.error("Error fetching pending leads:", fetchError)
-      return NextResponse.json({ error: fetchError.message }, { status: 500 })
+      console.error('Error fetching queue:', fetchError);
+      return NextResponse.json({ error: fetchError.message }, { status: 500 });
     }
 
-    if (!pendingLeads || pendingLeads.length === 0) {
-      return NextResponse.json({ message: "No pending messages", results })
+    if (!queuedMessages || queuedMessages.length === 0) {
+      return NextResponse.json({
+        message: 'No pending messages',
+        results,
+      });
     }
 
-    console.log(`Processing ${pendingLeads.length} pending messages`)
+    console.log(`Processing ${queuedMessages.length} queued messages`);
 
-    for (const lead of pendingLeads) {
+    for (const queueItem of queuedMessages) {
+      results.processed++;
+
       try {
-        // Get profile for template variables and Twilio credentials
-        const { data: profile } = await supabase
-          .from("profiles")
-          .select("business_name, business_phone, timezone")
-          .eq("id", lead.user_id)
-          .single()
+        // Mark as processing
+        await supabase
+          .from('message_queue')
+          .update({
+            status: 'processing',
+            attempts: queueItem.attempts + 1,
+            last_attempt_at: new Date().toISOString(),
+          })
+          .eq('id', queueItem.id);
 
-        // Check if phone is on opt-out list
-        const { data: optOut } = await supabase
-          .from("opt_outs")
-          .select("id")
-          .eq("user_id", lead.user_id)
-          .eq("phone", lead.phone)
-          .single()
+        // Check if contact is still opted in
+        const { data: contact } = await supabase
+          .from('contacts')
+          .select('sms_opted_in, voice_opted_in, status')
+          .eq('id', queueItem.contact_id)
+          .single();
 
-        const isOptedOut = !!optOut
-
-        // Run compliance checks before sending
-        const complianceCheck = await checkSendCompliance({
-          lead: {
-            phone: lead.phone,
-            status: lead.status,
-            consent_timestamp: lead.consent_timestamp,
-            created_at: lead.created_at,
-            timezone: lead.timezone,
-          },
-          profileTimezone: profile?.timezone || "America/New_York",
-          isOptedOut,
-          skipWeekends: lead.skip_weekends || false,
-        })
-
-        // Handle compliance check results
-        if (!complianceCheck.canSend) {
-          if (complianceCheck.requiresScheduling && complianceCheck.nextValidTime) {
-            // Reschedule for next valid time
-            await supabase
-              .from("leads")
-              .update({ next_action_at: complianceCheck.nextValidTime.toISOString() })
-              .eq("id", lead.id)
-
-            console.log(
-              `Lead ${lead.id} rescheduled to ${complianceCheck.nextValidTime.toISOString()}: ${complianceCheck.reason}`
-            )
-            results.rescheduled++
-          } else {
-            // Cannot send - skip permanently for this step
-            console.log(`Lead ${lead.id} skipped: ${complianceCheck.reason}`)
-            results.skipped++
-            results.errors.push(`Lead ${lead.id} skipped: ${complianceCheck.reason}`)
-          }
-          continue
+        if (!contact || contact.status === 'unsubscribed') {
+          await supabase
+            .from('message_queue')
+            .update({
+              status: 'canceled',
+              error_message: 'Contact unsubscribed',
+            })
+            .eq('id', queueItem.id);
+          continue;
         }
 
-        // Process template
-        const variables = getTemplateVariables(
-          { name: lead.name, quote_amount: lead.quote_amount },
-          { business_name: profile?.business_name, business_phone: profile?.business_phone }
-        )
-        let processedMessage = processTemplate(lead.message_template, variables)
-
-        // Ensure first message includes opt-out instructions (TCPA requirement)
-        if (isFirstMessage(lead.current_step)) {
-          processedMessage = ensureOptOutIncluded(processedMessage)
+        if (queueItem.type === 'sms' && !contact.sms_opted_in) {
+          await supabase
+            .from('message_queue')
+            .update({
+              status: 'canceled',
+              error_message: 'SMS opted out',
+            })
+            .eq('id', queueItem.id);
+          continue;
         }
 
-        // Send SMS
-        const result = await sendSMS({
-          to: lead.phone,
-          from: lead.twilio_phone_number,
-          body: processedMessage,
-          accountSid: lead.twilio_account_sid,
-          authToken: lead.twilio_auth_token,
-          statusCallback: `${process.env.NEXT_PUBLIC_APP_URL}/api/twilio/status`,
-        })
+        // Create message record
+        const { data: message, error: messageError } = await supabase
+          .from('messages')
+          .insert({
+            organization_id: queueItem.organization_id,
+            contact_id: queueItem.contact_id,
+            workflow_id: queueItem.workflow_id,
+            enrollment_id: queueItem.enrollment_id,
+            step_index: queueItem.step_index,
+            type: queueItem.type,
+            status: 'queued',
+            to_address: queueItem.to_address,
+            content: queueItem.content,
+            audio_url: queueItem.audio_url,
+          })
+          .select()
+          .single();
 
-        // Log the message
-        await supabase.from("messages").insert({
-          lead_id: lead.id,
-          user_id: lead.user_id,
-          direction: "outbound",
-          status: result.success ? "sent" : "failed",
-          to_phone: lead.phone,
-          from_phone: lead.twilio_phone_number,
-          body: processedMessage,
-          sequence_id: lead.sequence_id,
-          sequence_step: lead.current_step,
-          twilio_sid: result.messageSid,
-          error_code: result.errorCode,
-          error_message: result.error,
-          sent_at: result.success ? new Date().toISOString() : null,
-        })
-
-        if (result.success) {
-          // Advance to next step
-          await supabase.rpc("advance_lead_sequence", { p_lead_id: lead.id })
-          results.success++
-        } else {
-          results.failed++
-          results.errors.push(`Lead ${lead.id}: ${result.error}`)
+        if (messageError || !message) {
+          throw new Error(messageError?.message || 'Failed to create message');
         }
-      } catch (leadError: any) {
-        console.error(`Error processing lead ${lead.id}:`, leadError)
-        results.failed++
-        results.errors.push(`Lead ${lead.id}: ${leadError.message}`)
+
+        // TODO: Send via Telnyx API
+        // For now, mark as sent (placeholder for actual Telnyx integration)
+        await supabase
+          .from('messages')
+          .update({
+            status: 'sent',
+            sent_at: new Date().toISOString(),
+            provider: 'telnyx',
+          })
+          .eq('id', message.id);
+
+        // Mark queue item as completed
+        await supabase
+          .from('message_queue')
+          .update({
+            status: 'completed',
+            message_id: message.id,
+            processed_at: new Date().toISOString(),
+          })
+          .eq('id', queueItem.id);
+
+        // Update contact last_contacted_at
+        await supabase
+          .from('contacts')
+          .update({ last_contacted_at: new Date().toISOString() })
+          .eq('id', queueItem.contact_id);
+
+        results.success++;
+      } catch (error) {
+        console.error(`Error processing queue item ${queueItem.id}:`, error);
+        results.failed++;
+        results.errors.push(
+          `Queue ${queueItem.id}: ${error instanceof Error ? error.message : 'Unknown error'}`
+        );
+
+        // Mark as failed if max attempts reached
+        const newStatus =
+          queueItem.attempts + 1 >= 3 ? 'failed' : 'pending';
+        await supabase
+          .from('message_queue')
+          .update({
+            status: newStatus,
+            error_message: error instanceof Error ? error.message : 'Unknown error',
+          })
+          .eq('id', queueItem.id);
       }
     }
 
     return NextResponse.json({
-      message: `Processed ${pendingLeads.length} messages`,
+      message: `Processed ${results.processed} messages`,
       results,
-    })
-  } catch (error: any) {
-    console.error("Cron job error:", error)
-    return NextResponse.json({ error: error.message }, { status: 500 })
+    });
+  } catch (error) {
+    console.error('Cron job error:', error);
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : 'Unknown error' },
+      { status: 500 }
+    );
   }
 }

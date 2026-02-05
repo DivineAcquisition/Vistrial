@@ -1,23 +1,26 @@
-"use client";
+'use client';
 
-import { useState } from "react";
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import {
   RiEyeLine,
   RiEyeOffLine,
   RiLoader4Line,
   RiLockLine,
-} from "@remixicon/react";
-import { updatePassword } from "@/lib/auth/actions";
-import { Logo } from "@/components/ui/Logo";
+} from '@remixicon/react';
+import { createClient } from '@/lib/supabase/client';
+import { Logo } from '@/components/ui/Logo';
 
 export default function ResetPasswordPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
+  const [error, setError] = useState('');
+  const router = useRouter();
+  const supabase = createClient();
 
   async function handleSubmit(formData: FormData) {
-    const password = formData.get("password") as string;
-    const confirmPassword = formData.get("confirmPassword") as string;
+    const password = formData.get('password') as string;
+    const confirmPassword = formData.get('confirmPassword') as string;
 
     if (password !== confirmPassword) {
       setError("Passwords don't match");
@@ -25,18 +28,20 @@ export default function ResetPasswordPage() {
     }
 
     if (password.length < 8) {
-      setError("Password must be at least 8 characters");
+      setError('Password must be at least 8 characters');
       return;
     }
 
     setLoading(true);
-    setError("");
+    setError('');
 
-    const result = await updatePassword(formData);
+    const { error: updateError } = await supabase.auth.updateUser({ password });
 
-    if (result?.error) {
-      setError(result.error);
+    if (updateError) {
+      setError(updateError.message);
       setLoading(false);
+    } else {
+      router.push('/dashboard');
     }
   }
 

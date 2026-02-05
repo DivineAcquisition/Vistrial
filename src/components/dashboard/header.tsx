@@ -1,14 +1,13 @@
-"use client";
+'use client';
 
-import { useState, useEffect, useCallback } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useEffect, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
 import {
   RiNotification3Line,
   RiSearchLine,
   RiAddLine,
-  RiFileTextLine,
-  RiCalendarLine,
-  RiTeamLine,
+  RiFlowChart,
+  RiContactsLine,
   RiCheckLine,
   RiMessage2Line,
   RiArrowRightLine,
@@ -16,13 +15,13 @@ import {
   RiLineChartLine,
   RiSettings4Line,
   RiCloseLine,
-} from "@remixicon/react";
-import { UserMenu } from "@/components/auth/user-menu";
-import type { User } from "@supabase/supabase-js";
+} from '@remixicon/react';
+import { UserMenu } from '@/components/auth/user-menu';
+import type { User } from '@supabase/supabase-js';
 
 interface HeaderProps {
   user: User;
-  business: {
+  organization: {
     name: string;
     logo_url?: string;
   };
@@ -42,45 +41,40 @@ interface NavigationItem {
 }
 
 const quickActions: QuickAction[] = [
-  { label: "New Quote", icon: RiFileTextLine, href: "/quotes/new", shortcut: "Q" },
-  { label: "New Booking", icon: RiCalendarLine, href: "/bookings/new", shortcut: "B" },
-  { label: "New Customer", icon: RiTeamLine, href: "/customers/new", shortcut: "C" },
+  { label: 'New Workflow', icon: RiFlowChart, href: '/workflows/new', shortcut: 'W' },
+  { label: 'Import Contacts', icon: RiContactsLine, href: '/contacts/upload', shortcut: 'C' },
 ];
 
 const navigationItems: NavigationItem[] = [
-  { label: "Dashboard", icon: RiDashboardLine, href: "/dashboard" },
-  { label: "Quotes", icon: RiFileTextLine, href: "/quotes" },
-  { label: "Bookings", icon: RiCalendarLine, href: "/bookings" },
-  { label: "Customers", icon: RiTeamLine, href: "/customers" },
-  { label: "Analytics", icon: RiLineChartLine, href: "/analytics" },
-  { label: "Settings", icon: RiSettings4Line, href: "/settings" },
+  { label: 'Dashboard', icon: RiDashboardLine, href: '/dashboard' },
+  { label: 'Contacts', icon: RiContactsLine, href: '/contacts' },
+  { label: 'Workflows', icon: RiFlowChart, href: '/workflows' },
+  { label: 'Analytics', icon: RiLineChartLine, href: '/analytics' },
+  { label: 'Settings', icon: RiSettings4Line, href: '/settings' },
 ];
 
-export function DashboardHeader({ user, business }: HeaderProps) {
+export function DashboardHeader({ user, organization }: HeaderProps) {
   const router = useRouter();
   const [commandOpen, setCommandOpen] = useState(false);
   const [createOpen, setCreateOpen] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
-  const [searchQuery, setSearchQuery] = useState("");
+  const [searchQuery, setSearchQuery] = useState('');
 
-  // Handle keyboard shortcuts
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      // Command/Ctrl + K for search
-      if ((e.metaKey || e.ctrlKey) && e.key === "k") {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
         e.preventDefault();
         setCommandOpen(true);
       }
-      // Escape to close
-      if (e.key === "Escape") {
+      if (e.key === 'Escape') {
         setCommandOpen(false);
         setCreateOpen(false);
         setNotificationsOpen(false);
       }
     };
 
-    document.addEventListener("keydown", handleKeyDown);
-    return () => document.removeEventListener("keydown", handleKeyDown);
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
   }, []);
 
   const filteredActions = quickActions.filter((action) =>
@@ -95,7 +89,7 @@ export function DashboardHeader({ user, business }: HeaderProps) {
     (href: string) => {
       router.push(href);
       setCommandOpen(false);
-      setSearchQuery("");
+      setSearchQuery('');
     },
     [router]
   );
@@ -119,19 +113,11 @@ export function DashboardHeader({ user, business }: HeaderProps) {
 
         {/* Right: Actions */}
         <div className="flex items-center gap-2">
-          {/* Mobile Search */}
-          <button
-            onClick={() => setCommandOpen(true)}
-            className="md:hidden p-2.5 text-gray-400 hover:text-white bg-white/5 hover:bg-white/10 border border-white/10 rounded-lg transition-all"
-          >
-            <RiSearchLine className="w-5 h-5" />
-          </button>
-
           {/* Create Dropdown */}
           <div className="relative">
             <button
               onClick={() => setCreateOpen(!createOpen)}
-              className="flex items-center gap-1.5 h-9 px-3 md:px-4 bg-brand-500 text-white rounded-lg hover:bg-brand-600 transition-all shadow-sm shadow-brand-500/20 hover:shadow-md hover:shadow-brand-500/30"
+              className="flex items-center gap-1.5 h-9 px-3 md:px-4 bg-violet-500 text-white rounded-lg hover:bg-violet-600 transition-all shadow-sm shadow-violet-500/20"
             >
               <RiAddLine className="w-4 h-4" />
               <span className="hidden md:inline text-sm font-medium">Create</span>
@@ -175,10 +161,6 @@ export function DashboardHeader({ user, business }: HeaderProps) {
               className="relative p-2.5 text-gray-400 hover:text-white bg-white/5 hover:bg-white/10 border border-white/10 rounded-lg transition-all"
             >
               <RiNotification3Line className="w-5 h-5" />
-              <span className="absolute top-1.5 right-1.5 flex h-2 w-2">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-brand-400 opacity-75" />
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-brand-500" />
-              </span>
             </button>
 
             {notificationsOpen && (
@@ -192,44 +174,9 @@ export function DashboardHeader({ user, business }: HeaderProps) {
                     <span className="text-sm font-semibold text-white">
                       Notifications
                     </span>
-                    <span className="px-1.5 py-0.5 text-[10px] bg-brand-500/20 text-brand-400 rounded">
-                      3 new
-                    </span>
                   </div>
-                  <div className="divide-y divide-white/5">
-                    <div className="flex items-start gap-3 p-4 hover:bg-white/5 cursor-pointer transition-colors">
-                      <div className="p-1.5 rounded-full bg-green-500/20 text-green-400">
-                        <RiCheckLine className="w-4 h-4" />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-white">
-                          Quote Won
-                        </p>
-                        <p className="text-xs text-gray-500 truncate">
-                          John Doe accepted your quote
-                        </p>
-                        <p className="text-xs text-gray-600 mt-1">2 min ago</p>
-                      </div>
-                    </div>
-                    <div className="flex items-start gap-3 p-4 hover:bg-white/5 cursor-pointer transition-colors">
-                      <div className="p-1.5 rounded-full bg-blue-500/20 text-blue-400">
-                        <RiMessage2Line className="w-4 h-4" />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-white">
-                          New Message
-                        </p>
-                        <p className="text-xs text-gray-500 truncate">
-                          Jane replied to your follow-up
-                        </p>
-                        <p className="text-xs text-gray-600 mt-1">15 min ago</p>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="p-2 border-t border-white/10">
-                    <button className="w-full text-center py-2 text-sm text-brand-400 hover:text-brand-300 transition-colors">
-                      View all notifications
-                    </button>
+                  <div className="p-8 text-center text-gray-500 text-sm">
+                    No new notifications
                   </div>
                 </div>
               </>
@@ -237,7 +184,7 @@ export function DashboardHeader({ user, business }: HeaderProps) {
           </div>
 
           {/* User menu */}
-          <UserMenu user={user} business={business} />
+          <UserMenu user={user} organization={organization} />
         </div>
       </header>
 
@@ -248,11 +195,10 @@ export function DashboardHeader({ user, business }: HeaderProps) {
             className="fixed inset-0 bg-black/60 backdrop-blur-sm"
             onClick={() => {
               setCommandOpen(false);
-              setSearchQuery("");
+              setSearchQuery('');
             }}
           />
           <div className="relative w-full max-w-lg bg-gray-900 border border-white/10 rounded-xl shadow-2xl overflow-hidden">
-            {/* Search Input */}
             <div className="flex items-center gap-3 px-4 border-b border-white/10">
               <RiSearchLine className="w-5 h-5 text-gray-500" />
               <input
@@ -266,7 +212,7 @@ export function DashboardHeader({ user, business }: HeaderProps) {
               <button
                 onClick={() => {
                   setCommandOpen(false);
-                  setSearchQuery("");
+                  setSearchQuery('');
                 }}
                 className="p-1 text-gray-500 hover:text-white transition-colors"
               >
@@ -274,7 +220,6 @@ export function DashboardHeader({ user, business }: HeaderProps) {
               </button>
             </div>
 
-            {/* Results */}
             <div className="max-h-[400px] overflow-y-auto py-2">
               {filteredActions.length > 0 && (
                 <div className="px-2 py-2">
@@ -319,33 +264,6 @@ export function DashboardHeader({ user, business }: HeaderProps) {
                   No results found for &ldquo;{searchQuery}&rdquo;
                 </div>
               )}
-            </div>
-
-            {/* Footer */}
-            <div className="flex items-center justify-between px-4 py-2 border-t border-white/10 text-xs text-gray-600">
-              <div className="flex items-center gap-4">
-                <span className="flex items-center gap-1">
-                  <kbd className="px-1.5 py-0.5 bg-white/5 rounded border border-white/10">
-                    ↑
-                  </kbd>
-                  <kbd className="px-1.5 py-0.5 bg-white/5 rounded border border-white/10">
-                    ↓
-                  </kbd>
-                  <span className="ml-1">Navigate</span>
-                </span>
-                <span className="flex items-center gap-1">
-                  <kbd className="px-1.5 py-0.5 bg-white/5 rounded border border-white/10">
-                    ↵
-                  </kbd>
-                  <span className="ml-1">Select</span>
-                </span>
-              </div>
-              <span className="flex items-center gap-1">
-                <kbd className="px-1.5 py-0.5 bg-white/5 rounded border border-white/10">
-                  esc
-                </kbd>
-                <span className="ml-1">Close</span>
-              </span>
             </div>
           </div>
         </div>

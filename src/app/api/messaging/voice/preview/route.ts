@@ -1,12 +1,12 @@
 // @ts-nocheck
 // ============================================
-// VOICE DROP API
-// Manual voice drop sending endpoint
+// VOICE PREVIEW API
+// Generate voice preview without sending
 // ============================================
 
 import { NextRequest, NextResponse } from 'next/server';
 import { getAuthenticatedContext } from '@/lib/supabase/server';
-import { sendVoiceDrop } from '@/services/voicedrop.service';
+import { generateVoicePreview } from '@/services/voicedrop.service';
 
 export async function POST(request: NextRequest) {
   try {
@@ -17,50 +17,46 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { contact_id, text, voice_id } = body as {
-      contact_id: string;
+    const { text, voice_id } = body as {
       text: string;
       voice_id?: string;
     };
 
-    if (!contact_id || !text) {
+    if (!text) {
       return NextResponse.json(
-        { error: 'Missing required fields: contact_id, text' },
+        { error: 'Missing required field: text' },
         { status: 400 }
       );
     }
 
-    // Limit text length for voice drops
-    if (text.length > 1000) {
+    // Limit preview text
+    if (text.length > 500) {
       return NextResponse.json(
-        { error: 'Voice drop text too long (max 1000 characters)' },
+        { error: 'Preview text too long (max 500 characters)' },
         { status: 400 }
       );
     }
 
-    const result = await sendVoiceDrop({
-      organizationId: context.organization.id,
-      contactId: contact_id,
+    const result = await generateVoicePreview({
       text,
       voiceId: voice_id,
+      organizationId: context.organization.id,
     });
 
     if (!result.success) {
       return NextResponse.json(
-        { error: result.error || 'Failed to send voice drop' },
+        { error: result.error || 'Failed to generate preview' },
         { status: 400 }
       );
     }
 
     return NextResponse.json({
       success: true,
-      message_id: result.dbMessageId,
       audio_url: result.audioUrl,
       duration_seconds: result.durationSeconds,
-      cost_cents: result.costCents,
     });
   } catch (error) {
-    console.error('Voice drop send error:', error);
-    return NextResponse.json({ error: 'Failed to send voice drop' }, { status: 500 });
+    console.error('Voice preview error:', error);
+    return NextResponse.json({ error: 'Failed to generate preview' }, { status: 500 });
   }
 }

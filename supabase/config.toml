@@ -1,0 +1,180 @@
+# ===========================================
+# SUPABASE LOCAL DEVELOPMENT CONFIGURATION
+# ===========================================
+# This file configures the local Supabase development environment
+# Run `supabase start` to start all services locally
+
+[api]
+enabled = true
+# Port to use for the API server
+port = 54321
+# Schemas to expose via the API
+schemas = ["public", "storage", "graphql_public"]
+# Extra schemas to add to the search path
+extra_search_path = ["public", "extensions"]
+# Maximum number of rows to return from a query
+max_rows = 1000
+
+[api.tls]
+enabled = false
+
+[db]
+# Port to use for the local Postgres database
+port = 54322
+# Port for the shadow database (used for migrations)
+shadow_port = 54320
+# Major version of Postgres to use
+major_version = 15
+
+[db.pooler]
+enabled = false
+port = 54329
+pool_mode = "transaction"
+default_pool_size = 20
+max_client_conn = 100
+
+[studio]
+enabled = true
+# Port to use for Supabase Studio
+port = 54323
+api_url = "http://127.0.0.1"
+
+[inbucket]
+enabled = true
+# Port for the email testing server
+port = 54324
+# Web interface port
+smtp_port = 54325
+pop3_port = 54326
+
+[storage]
+enabled = true
+# Maximum file size allowed for uploads
+file_size_limit = "50MiB"
+
+[storage.image_transformation]
+enabled = true
+
+# ===========================================
+# AUTHENTICATION CONFIGURATION
+# ===========================================
+
+[auth]
+enabled = true
+# The base URL of your site (used for auth redirects)
+site_url = "http://localhost:3000"
+# URLs that are allowed for OAuth redirect
+additional_redirect_urls = [
+  "http://localhost:3000",
+  "http://localhost:3000/auth/callback",
+  "https://localhost:3000",
+  "https://localhost:3000/auth/callback"
+]
+# JWT token expiry (in seconds) - 1 hour
+jwt_expiry = 3600
+# Enable refresh token rotation for security
+enable_refresh_token_rotation = true
+# Interval (in seconds) for refresh token reuse detection
+refresh_token_reuse_interval = 10
+# Allow new user signups
+enable_signup = true
+# Enable anonymous sign-ins
+enable_anonymous_sign_ins = false
+
+[auth.email]
+# Allow email/password signups
+enable_signup = true
+# Require confirmation when changing email
+double_confirm_changes = true
+# Require email confirmation for new signups (disabled for local dev)
+enable_confirmations = false
+# Secure email change settings
+secure_password_change = true
+# Max frequency of sending emails (in seconds)
+max_frequency = 60
+
+[auth.email.template.invite]
+subject = "You've been invited to Vistrial"
+content_path = "./supabase/templates/invite.html"
+
+[auth.email.template.confirmation]
+subject = "Confirm your Vistrial account"
+content_path = "./supabase/templates/confirmation.html"
+
+[auth.email.template.recovery]
+subject = "Reset your Vistrial password"
+content_path = "./supabase/templates/recovery.html"
+
+[auth.email.template.magic_link]
+subject = "Your Vistrial login link"
+content_path = "./supabase/templates/magic_link.html"
+
+[auth.email.template.email_change]
+subject = "Confirm your email change"
+content_path = "./supabase/templates/email_change.html"
+
+[auth.sms]
+enable_signup = false
+enable_confirmations = false
+
+[auth.mfa]
+enabled = false
+
+[auth.mfa.totp]
+enroll_enabled = false
+verify_enabled = false
+
+# ===========================================
+# EXTERNAL AUTH PROVIDERS
+# ===========================================
+# Configure OAuth providers for production in Supabase Dashboard
+
+[auth.external.google]
+enabled = false
+client_id = "env(GOOGLE_CLIENT_ID)"
+secret = "env(GOOGLE_CLIENT_SECRET)"
+redirect_uri = ""
+skip_nonce_check = false
+
+# ===========================================
+# REALTIME CONFIGURATION
+# ===========================================
+
+[realtime]
+enabled = true
+# Additional configuration for production:
+# ip_version = 6
+# tenant_isolation = true
+
+[realtime.tenants]
+enabled = true
+
+# ===========================================
+# ANALYTICS (Local Only)
+# ===========================================
+
+[analytics]
+enabled = false
+port = 54327
+backend = "postgres"
+
+# ===========================================
+# EDGE FUNCTIONS
+# ===========================================
+
+[edge_runtime]
+enabled = true
+policy = "oneshot"
+inspector_port = 8083
+
+# ===========================================
+# EXPERIMENTAL FEATURES
+# ===========================================
+
+[experimental]
+# Enable experimental features for local development
+# orioledb_version = "16"
+# s3_host = "env(S3_HOST)"
+# s3_region = "env(S3_REGION)"
+# s3_access_key = "env(S3_ACCESS_KEY)"
+# s3_secret_key = "env(S3_SECRET_KEY)"

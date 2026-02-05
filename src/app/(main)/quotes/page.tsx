@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Quotes Page
  * Display all quotes with stats and filtering

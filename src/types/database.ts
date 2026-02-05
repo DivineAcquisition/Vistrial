@@ -627,6 +627,17 @@ export interface Database {
         Insert: Omit<InboundMessage, 'id' | 'created_at'>;
         Update: Partial<Omit<InboundMessage, 'id' | 'created_at'>>;
       };
+      // Legacy table aliases for backward compatibility
+      businesses: {
+        Row: LegacyBusiness;
+        Insert: Omit<LegacyBusiness, 'id' | 'created_at' | 'updated_at'> & { id?: string };
+        Update: Partial<Omit<LegacyBusiness, 'id' | 'created_at' | 'updated_at'>>;
+      };
+      profiles: {
+        Row: Profile;
+        Insert: Omit<Profile, 'created_at' | 'updated_at'>;
+        Update: Partial<Omit<Profile, 'id' | 'created_at' | 'updated_at'>>;
+      };
     };
     Enums: {
       business_type: BusinessType;
@@ -685,6 +696,36 @@ export interface Profile {
   leads_limit: number;
   billing_cycle_start: string;
   onboarding_completed: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface LegacyBusiness {
+  id: string;
+  owner_id: string;
+  name: string;
+  slug: string;
+  email: string | null;
+  phone: string | null;
+  website: string | null;
+  address: string | null;
+  city: string | null;
+  state: string | null;
+  zip_code: string | null;
+  logo_url: string | null;
+  is_active: boolean;
+  stripe_customer_id: string | null;
+  stripe_subscription_id: string | null;
+  subscription_status: string | null;
+  subscription_plan: string | null;
+  subscription_period_end: string | null;
+  twilio_account_sid: string | null;
+  twilio_auth_token: string | null;
+  twilio_phone_number: string | null;
+  auto_refill_enabled: boolean;
+  auto_refill_threshold: number | null;
+  auto_refill_amount: number | null;
+  settings: Json;
   created_at: string;
   updated_at: string;
 }

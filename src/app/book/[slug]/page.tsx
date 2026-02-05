@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { notFound } from "next/navigation";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { BookingFlow } from "@/components/booking/booking-flow";

@@ -1,77 +1,109 @@
-import { createServerClient } from "@supabase/ssr";
-import { NextResponse, type NextRequest } from "next/server";
+// ============================================
+// SUPABASE MIDDLEWARE HELPER
+// Used to refresh auth session in middleware
+// ============================================
+
+import { createServerClient } from '@supabase/ssr';
+import { NextResponse, type NextRequest } from 'next/server';
+import type { Database } from '@/types/database';
 
 export async function updateSession(request: NextRequest) {
-  let supabaseResponse = NextResponse.next({ request });
+  let supabaseResponse = NextResponse.next({
+    request,
+  });
 
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        getAll() {
-          return request.cookies.getAll();
-        },
-        setAll(cookiesToSet: Array<{ name: string; value: string; options?: any }>) {
-          cookiesToSet.forEach(({ name, value }) =>
-            request.cookies.set(name, value)
-          );
-          supabaseResponse = NextResponse.next({ request });
-          cookiesToSet.forEach(({ name, value, options }) =>
-            supabaseResponse.cookies.set(name, value, options)
-          );
-        },
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
+  if (!url || !key) {
+    // No Supabase configured, just pass through
+    return supabaseResponse;
+  }
+
+  const supabase = createServerClient<Database>(url, key, {
+    cookies: {
+      getAll() {
+        return request.cookies.getAll();
       },
-    }
-  );
+      setAll(cookiesToSet: Array<{ name: string; value: string; options?: Record<string, unknown> }>) {
+        cookiesToSet.forEach(({ name, value }) =>
+          request.cookies.set(name, value)
+        );
+        supabaseResponse = NextResponse.next({
+          request,
+        });
+        cookiesToSet.forEach(({ name, value, options }) =>
+          supabaseResponse.cookies.set(name, value, options)
+        );
+      },
+    },
+  });
 
-  // Refresh session
+  // IMPORTANT: Avoid writing any logic between createServerClient and
+  // supabase.auth.getUser(). A simple mistake could make it very hard to debug
+  // issues with users being randomly logged out.
+
   const {
     data: { user },
   } = await supabase.auth.getUser();
 
-  const pathname = request.nextUrl.pathname;
-
-  // Protected routes - require auth
-  const protectedPaths = [
-    "/dashboard",
-    "/bookings",
-    "/customers",
-    "/memberships",
-    "/quotes",
-    "/settings",
-    "/sequences",
-    "/contacts",
-    "/workflows",
-    "/usage",
+  // Define public routes that don't require authentication
+  const publicRoutes = [
+    '/',
+    '/login',
+    '/signup',
+    '/forgot-password',
+    '/auth/callback',
+    '/auth/reset-password',
+    '/onboarding',
   ];
 
-  const isProtectedPath = protectedPaths.some((path) =>
-    pathname.startsWith(path)
+  // Define routes that should always be public (webhooks, public pages)
+  const alwaysPublicPrefixes = [
+    '/api/webhooks/',
+    '/book/',
+    '/embed/',
+    '/q/',
+  ];
+
+  const isPublicRoute = publicRoutes.some(
+    (route) => request.nextUrl.pathname === route
   );
 
-  // Redirect unauthenticated users from protected routes
-  if (isProtectedPath && !user) {
+  const isAlwaysPublic = alwaysPublicPrefixes.some(
+    (prefix) => request.nextUrl.pathname.startsWith(prefix)
+  );
+
+  // Protected routes that require authentication
+  const protectedPaths = [
+    '/dashboard',
+    '/contacts',
+    '/workflows',
+    '/usage',
+    '/settings',
+    '/bookings',
+    '/customers',
+    '/quotes',
+    '/sequences',
+    '/memberships',
+  ];
+
+  const isProtectedRoute = protectedPaths.some(
+    (path) => request.nextUrl.pathname.startsWith(path)
+  );
+
+  // Redirect unauthenticated users to login for protected routes
+  if (!user && isProtectedRoute) {
     const url = request.nextUrl.clone();
-    url.pathname = "/login";
-    url.searchParams.set("redirect", pathname);
+    url.pathname = '/login';
+    url.searchParams.set('redirect', request.nextUrl.pathname);
     return NextResponse.redirect(url);
   }
 
   // Redirect authenticated users away from auth pages
-  const authPaths = ["/login", "/signup", "/verify"];
-  const isAuthPath = authPaths.some((path) => pathname === path);
-
-  if (isAuthPath && user) {
-    // Check if user has a business
-    const { data: business } = await supabase
-      .from("businesses")
-      .select("id")
-      .eq("owner_id", user.id)
-      .maybeSingle();
-
+  if (user && (request.nextUrl.pathname === '/login' || request.nextUrl.pathname === '/signup')) {
     const url = request.nextUrl.clone();
-    url.pathname = business ? "/dashboard" : "/dashboard";
+    url.pathname = '/dashboard';
     return NextResponse.redirect(url);
   }
 

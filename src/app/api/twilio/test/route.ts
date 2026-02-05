@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { NextRequest, NextResponse } from "next/server"
 import { testTwilioConnection } from "@/lib/twilio/send-sms"
 

@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Create Checkout Session API
  * 

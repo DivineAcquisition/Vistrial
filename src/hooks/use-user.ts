@@ -1,113 +1,92 @@
-/**
- * useUser Hook
- * 
- * Hook for accessing current user data:
- * - User authentication state
- * - User profile data
- * - Loading and error states
- * - Refresh functionality
- */
+// ============================================
+// USER HOOK
+// Provides current user state in React components
+// ============================================
 
-"use client";
+'use client';
 
-import { useState, useEffect, useCallback } from "react";
-import { User } from "@supabase/supabase-js";
-import { createClient } from "@/lib/supabase/client";
-
-interface UserProfile {
-  id: string;
-  email: string;
-  full_name?: string;
-  avatar_url?: string;
-  phone?: string;
-}
+import { useEffect, useState, useCallback } from 'react';
+import { User, Session } from '@supabase/supabase-js';
+import { useSupabase } from './use-supabase';
 
 interface UseUserReturn {
   user: User | null;
-  profile: UserProfile | null;
-  loading: boolean;
+  session: Session | null;
+  isLoading: boolean;
   error: Error | null;
   refresh: () => Promise<void>;
   signOut: () => Promise<void>;
 }
 
 export function useUser(): UseUserReturn {
+  const supabase = useSupabase();
   const [user, setUser] = useState<User | null>(null);
-  const [profile, setProfile] = useState<UserProfile | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [session, setSession] = useState<Session | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
 
-  const fetchUser = useCallback(async () => {
+  const refresh = useCallback(async () => {
     try {
-      setLoading(true);
+      setIsLoading(true);
       setError(null);
 
-      const supabase = createClient();
-      const { data: { user }, error: authError } = await supabase.auth.getUser();
+      const {
+        data: { session: currentSession },
+        error: sessionError,
+      } = await supabase.auth.getSession();
 
-      if (authError) throw authError;
-      
-      setUser(user);
-
-      if (user) {
-        // Build profile from user metadata
-        setProfile({
-          id: user.id,
-          email: user.email || "",
-          full_name: user.user_metadata?.full_name,
-          avatar_url: user.user_metadata?.avatar_url,
-          phone: user.user_metadata?.phone,
-        });
-      } else {
-        setProfile(null);
+      if (sessionError) {
+        throw sessionError;
       }
+
+      setSession(currentSession);
+      setUser(currentSession?.user ?? null);
     } catch (err) {
-      setError(err instanceof Error ? err : new Error("Failed to fetch user"));
+      setError(err instanceof Error ? err : new Error('Failed to fetch user'));
+      setUser(null);
+      setSession(null);
     } finally {
-      setLoading(false);
+      setIsLoading(false);
     }
-  }, []);
+  }, [supabase]);
 
   const signOut = useCallback(async () => {
-    const supabase = createClient();
-    await supabase.auth.signOut();
-    setUser(null);
-    setProfile(null);
-  }, []);
+    try {
+      setIsLoading(true);
+      await supabase.auth.signOut();
+      setUser(null);
+      setSession(null);
+    } catch (err) {
+      setError(err instanceof Error ? err : new Error('Failed to sign out'));
+    } finally {
+      setIsLoading(false);
+    }
+  }, [supabase]);
 
   useEffect(() => {
-    fetchUser();
+    // Initial fetch
+    refresh();
 
-    // Listen for auth state changes
-    const supabase = createClient();
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (_event, session) => {
-        setUser(session?.user ?? null);
-        if (session?.user) {
-          setProfile({
-            id: session.user.id,
-            email: session.user.email || "",
-            full_name: session.user.user_metadata?.full_name,
-            avatar_url: session.user.user_metadata?.avatar_url,
-            phone: session.user.user_metadata?.phone,
-          });
-        } else {
-          setProfile(null);
-        }
-      }
-    );
+    // Listen for auth changes
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange(async (event, currentSession) => {
+      setSession(currentSession);
+      setUser(currentSession?.user ?? null);
+      setIsLoading(false);
+    });
 
     return () => {
       subscription.unsubscribe();
     };
-  }, [fetchUser]);
+  }, [supabase, refresh]);
 
   return {
     user,
-    profile,
-    loading,
+    session,
+    isLoading,
     error,
-    refresh: fetchUser,
+    refresh,
     signOut,
   };
 }

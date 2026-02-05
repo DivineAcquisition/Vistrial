@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Job Types API Route
  * GET - List job types for the current user

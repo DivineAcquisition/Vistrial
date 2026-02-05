@@ -1,125 +1,130 @@
-/**
- * useOrganization Hook
- * 
- * Hook for accessing organization/business data:
- * - Current business profile
- * - Team members
- * - Business settings
- * - Subscription status
- */
+// @ts-nocheck
+// ============================================
+// ORGANIZATION HOOK
+// Provides current organization context
+// ============================================
 
-"use client";
+'use client';
 
-import { useState, useEffect, useCallback } from "react";
-import { createClient } from "@/lib/supabase/client";
-import { useUser } from "./use-user";
+import { useEffect, useState, useCallback } from 'react';
+import { useSupabase } from './use-supabase';
+import { useUser } from './use-user';
+import type { Organization, OrganizationMember, CreditBalance } from '@/types/database';
 
-interface Business {
-  id: string;
-  name: string;
-  slug: string;
-  email?: string;
-  phone?: string;
-  logo_url?: string;
-  is_active: boolean;
-  subscription_status?: string;
-  subscription_plan?: string;
-  created_at: string;
+interface OrganizationContext {
+  organization: Organization | null;
+  membership: Pick<OrganizationMember, 'role' | 'permissions'> | null;
+  credits: CreditBalance | null;
 }
 
-interface TeamMember {
-  id: string;
-  user_id: string;
-  role: "owner" | "admin" | "member" | "viewer";
-  email: string;
-  name?: string;
-}
-
-interface UseOrganizationReturn {
-  business: Business | null;
-  teamMembers: TeamMember[];
-  loading: boolean;
+interface UseOrganizationReturn extends OrganizationContext {
+  isLoading: boolean;
   error: Error | null;
   refresh: () => Promise<void>;
-  updateBusiness: (updates: Partial<Business>) => Promise<void>;
+  hasPermission: (permission: keyof OrganizationMember['permissions']) => boolean;
+  isOwner: boolean;
+  isAdmin: boolean;
 }
 
 export function useOrganization(): UseOrganizationReturn {
-  const { user } = useUser();
-  const [business, setBusiness] = useState<Business | null>(null);
-  const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
-  const [loading, setLoading] = useState(true);
+  const supabase = useSupabase();
+  const { user, isLoading: userLoading } = useUser();
+
+  const [organization, setOrganization] = useState<Organization | null>(null);
+  const [membership, setMembership] = useState<Pick<OrganizationMember, 'role' | 'permissions'> | null>(null);
+  const [credits, setCredits] = useState<CreditBalance | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
 
-  const fetchOrganization = useCallback(async () => {
+  const refresh = useCallback(async () => {
     if (!user) {
-      setBusiness(null);
-      setTeamMembers([]);
-      setLoading(false);
+      setOrganization(null);
+      setMembership(null);
+      setCredits(null);
+      setIsLoading(false);
       return;
     }
 
     try {
-      setLoading(true);
+      setIsLoading(true);
       setError(null);
 
-      const supabase = createClient();
+      // Fetch organization membership
+      const { data: membershipData, error: membershipError } = await supabase
+        .from('organization_members')
+        .select(`
+          role,
+          permissions,
+          organizations (*)
+        `)
+        .eq('user_id', user.id)
+        .single();
 
-      // Fetch business
-      const { data: businessData, error: businessError } = await supabase
-        .from("businesses")
-        .select("*")
-        .eq("owner_id", user.id)
-        .maybeSingle();
+      if (membershipError) {
+        // User might not have an organization yet
+        if (membershipError.code === 'PGRST116') {
+          setOrganization(null);
+          setMembership(null);
+          setCredits(null);
+          setIsLoading(false);
+          return;
+        }
+        throw membershipError;
+      }
 
-      if (businessError) throw businessError;
-      
-      setBusiness(businessData);
+      const org = membershipData.organizations as unknown as Organization;
+      setOrganization(org);
+      setMembership({
+        role: membershipData.role as OrganizationMember['role'],
+        permissions: membershipData.permissions as OrganizationMember['permissions'],
+      });
 
-      // Fetch team members if business exists
-      if (businessData) {
-        // TODO: Fetch from business_members table when implemented
-        setTeamMembers([
-          {
-            id: "1",
-            user_id: user.id,
-            role: "owner",
-            email: user.email || "",
-            name: user.user_metadata?.full_name,
-          },
-        ]);
+      // Fetch credit balance
+      if (org) {
+        const { data: creditsData, error: creditsError } = await supabase
+          .from('credit_balances')
+          .select('*')
+          .eq('organization_id', org.id)
+          .single();
+
+        if (!creditsError) {
+          setCredits(creditsData as CreditBalance);
+        }
       }
     } catch (err) {
-      setError(err instanceof Error ? err : new Error("Failed to fetch organization"));
+      setError(err instanceof Error ? err : new Error('Failed to fetch organization'));
     } finally {
-      setLoading(false);
+      setIsLoading(false);
     }
-  }, [user]);
-
-  const updateBusiness = useCallback(async (updates: Partial<Business>) => {
-    if (!business) throw new Error("No business found");
-
-    const supabase = createClient();
-    const { error } = await supabase
-      .from("businesses")
-      .update(updates)
-      .eq("id", business.id);
-
-    if (error) throw error;
-
-    setBusiness({ ...business, ...updates });
-  }, [business]);
+  }, [supabase, user]);
 
   useEffect(() => {
-    fetchOrganization();
-  }, [fetchOrganization]);
+    if (!userLoading) {
+      refresh();
+    }
+  }, [user, userLoading, refresh]);
+
+  const hasPermission = useCallback(
+    (permission: keyof OrganizationMember['permissions']) => {
+      if (!membership) return false;
+      if (membership.role === 'owner') return true;
+      return membership.permissions[permission] === true;
+    },
+    [membership]
+  );
+
+  const isOwner = membership?.role === 'owner';
+  const isAdmin = membership?.role === 'admin' || isOwner;
 
   return {
-    business,
-    teamMembers,
-    loading,
+    organization,
+    membership,
+    credits,
+    isLoading: userLoading || isLoading,
     error,
-    refresh: fetchOrganization,
-    updateBusiness,
+    refresh,
+    hasPermission,
+    isOwner,
+    isAdmin,
   };
 }

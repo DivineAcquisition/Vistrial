@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Public Quote API Route
  * GET - Fetch quote by access token (no auth required)

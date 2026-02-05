@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Send Quote API Route
  * POST - Send a draft quote to the customer

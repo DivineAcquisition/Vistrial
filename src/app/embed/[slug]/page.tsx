@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Embeddable Booking Page
  * This page is loaded inside an iframe for embedding

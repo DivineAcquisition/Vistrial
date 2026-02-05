@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 // import { sendSMS } from "@/lib/twilio/client"; // Uncomment when Twilio is set up

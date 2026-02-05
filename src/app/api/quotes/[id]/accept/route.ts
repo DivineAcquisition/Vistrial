@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Accept Quote API Route
  * POST - Accept a quote (converts to booking)

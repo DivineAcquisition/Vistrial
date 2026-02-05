@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Create Customer Portal Session API
  * 

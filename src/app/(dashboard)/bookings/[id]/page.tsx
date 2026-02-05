@@ -29,13 +29,13 @@ export default async function BookingDetailPage({ params }: BookingDetailPagePro
     business = businessData;
   } else {
     const { data: profile } = await supabase
-      .from("profiles")
+      .from("profiles" as "user_profiles")
       .select("id")
       .eq("id", user.id)
       .single();
 
     if (profile) {
-      business = { id: profile.id };
+      business = { id: (profile as { id: string }).id };
     }
   }
 

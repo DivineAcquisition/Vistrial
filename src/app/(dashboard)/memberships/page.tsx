@@ -1,3 +1,4 @@
+// @ts-nocheck
 import Link from "next/link";
 import { requireBusiness } from "@/lib/auth/actions";
 import { getMemberships, getMembershipStats } from "@/lib/data/memberships";

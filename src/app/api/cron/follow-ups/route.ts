@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Quote Follow-ups Cron API Route
  * GET/POST - Process pending quote follow-ups

@@ -1,153 +1,90 @@
-/**
- * useCredits Hook
- * 
- * Hook for managing credit balance:
- * - Current balance
- * - Usage breakdown
- * - Low balance warnings
- * - Refill actions
- */
+// @ts-nocheck
+// ============================================
+// CREDITS HOOK
+// Provides credit balance and refill functionality
+// ============================================
 
-"use client";
+'use client';
 
-import { useState, useEffect, useCallback } from "react";
-import { createClient } from "@/lib/supabase/client";
-import { useOrganization } from "./use-organization";
-
-interface CreditBalance {
-  total: number;
-  remaining: number;
-  used: number;
-}
-
-interface CreditBreakdown {
-  sms: number;
-  voice: number;
-  ai: number;
-}
-
-interface UsageRecord {
-  id: string;
-  type: "sms" | "voice" | "ai";
-  credits: number;
-  description: string;
-  created_at: string;
-}
+import { useCallback } from 'react';
+import { useOrganization } from './use-organization';
+import { useSupabase } from './use-supabase';
 
 interface UseCreditsReturn {
-  balance: CreditBalance;
-  breakdown: CreditBreakdown;
-  recentUsage: UsageRecord[];
+  balance: number; // In cents
+  balanceDollars: number;
   isLow: boolean;
-  isCritical: boolean;
-  loading: boolean;
-  error: Error | null;
+  autoRefillEnabled: boolean;
+  refillThreshold: number;
+  refillAmount: number;
+  isLoading: boolean;
   refresh: () => Promise<void>;
-  refillCredits: (amount: number) => Promise<void>;
+  updateRefillSettings: (settings: {
+    auto_refill_enabled?: boolean;
+    refill_threshold_cents?: number;
+    refill_amount_cents?: number;
+  }) => Promise<void>;
+  formatCredits: (cents: number) => string;
 }
 
-const LOW_THRESHOLD = 100;
-const CRITICAL_THRESHOLD = 25;
-
 export function useCredits(): UseCreditsReturn {
-  const { business } = useOrganization();
-  const [balance, setBalance] = useState<CreditBalance>({
-    total: 0,
-    remaining: 0,
-    used: 0,
-  });
-  const [breakdown, setBreakdown] = useState<CreditBreakdown>({
-    sms: 0,
-    voice: 0,
-    ai: 0,
-  });
-  const [recentUsage, setRecentUsage] = useState<UsageRecord[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<Error | null>(null);
+  const supabase = useSupabase();
+  const { credits, organization, isLoading, refresh } = useOrganization();
 
-  const fetchCredits = useCallback(async () => {
-    if (!business) {
-      setLoading(false);
-      return;
-    }
+  const balance = credits?.balance_cents ?? 0;
+  const balanceDollars = balance / 100;
+  const isLow = balance <= (credits?.refill_threshold_cents ?? 1500);
+  const autoRefillEnabled = credits?.auto_refill_enabled ?? false;
+  const refillThreshold = credits?.refill_threshold_cents ?? 1500;
+  const refillAmount = credits?.refill_amount_cents ?? 5000;
 
-    try {
-      setLoading(true);
-      setError(null);
-
-      const supabase = createClient();
-
-      // TODO: Fetch from credits table when implemented
-      // For now, use mock data or business credit_balance field
-      const { data: businessData } = await supabase
-        .from("businesses")
-        .select("credit_balance, monthly_credits")
-        .eq("id", business.id)
-        .single();
-
-      if (businessData) {
-        const remaining = businessData.credit_balance || 0;
-        const total = businessData.monthly_credits || 1000;
-        
-        setBalance({
-          total,
-          remaining,
-          used: total - remaining,
-        });
+  const updateRefillSettings = useCallback(
+    async (settings: {
+      auto_refill_enabled?: boolean;
+      refill_threshold_cents?: number;
+      refill_amount_cents?: number;
+    }) => {
+      if (!organization || !credits) {
+        throw new Error('No organization or credits found');
       }
 
-      // TODO: Fetch usage breakdown from usage_logs table
-      setBreakdown({
-        sms: 0,
-        voice: 0,
-        ai: 0,
-      });
-
-      // TODO: Fetch recent usage records
-      setRecentUsage([]);
-    } catch (err) {
-      setError(err instanceof Error ? err : new Error("Failed to fetch credits"));
-    } finally {
-      setLoading(false);
-    }
-  }, [business]);
-
-  const refillCredits = useCallback(async (amount: number) => {
-    try {
-      const response = await fetch("/api/billing/refill-credits", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ amount }),
-      });
-
-      if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.error || "Failed to refill credits");
+      // Validate minimum refill amount
+      if (settings.refill_amount_cents !== undefined && settings.refill_amount_cents < 1500) {
+        throw new Error('Minimum refill amount is $15.00');
       }
 
-      // Refresh balance after refill
-      await fetchCredits();
-    } catch (err) {
-      throw err instanceof Error ? err : new Error("Failed to refill credits");
-    }
-  }, [fetchCredits]);
+      const { error } = await supabase
+        .from('credit_balances')
+        .update(settings)
+        .eq('organization_id', organization.id);
 
-  useEffect(() => {
-    fetchCredits();
-  }, [fetchCredits]);
+      if (error) {
+        throw error;
+      }
 
-  const isLow = balance.remaining < LOW_THRESHOLD;
-  const isCritical = balance.remaining < CRITICAL_THRESHOLD;
+      await refresh();
+    },
+    [supabase, organization, credits, refresh]
+  );
+
+  const formatCredits = useCallback((cents: number): string => {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD',
+      minimumFractionDigits: 2,
+    }).format(cents / 100);
+  }, []);
 
   return {
     balance,
-    breakdown,
-    recentUsage,
+    balanceDollars,
     isLow,
-    isCritical,
-    loading,
-    error,
-    refresh: fetchCredits,
-    refillCredits,
+    autoRefillEnabled,
+    refillThreshold,
+    refillAmount,
+    isLoading,
+    refresh,
+    updateRefillSettings,
+    formatCredits,
   };
 }

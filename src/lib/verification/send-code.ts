@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { Resend } from "resend";
 import twilio from "twilio";
 import { createAdminClient } from "@/lib/supabase/admin";

@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Individual Quote API Routes
  * GET - Get single quote

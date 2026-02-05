@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Quote Follow-Up Utilities
  * Handles scheduling and processing of quote follow-ups

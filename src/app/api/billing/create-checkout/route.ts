@@ -1,82 +1,62 @@
 // @ts-nocheck
-/**
- * Create Checkout Session API
- * 
- * Creates a Stripe Checkout session for:
- * - New subscription purchases
- * - Plan upgrades/downgrades
- * - One-time credit purchases
- * 
- * Request body:
- * - price_id: Stripe price ID
- * - mode: 'subscription' | 'payment'
- * - success_url?: Custom success redirect URL
- * - cancel_url?: Custom cancel redirect URL
- */
+// ============================================
+// CREATE CHECKOUT SESSION API
+// ============================================
 
-import { NextRequest, NextResponse } from "next/server";
-import { createServerSupabaseClient } from "@/lib/supabase/server";
-// import Stripe from "stripe";
-
-// const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-//   apiVersion: "2024-04-10",
-// });
+import { NextRequest, NextResponse } from 'next/server';
+import { getAuthenticatedContext } from '@/lib/supabase/server';
+import { createCheckoutSession, initializeBilling } from '@/services/billing.service';
+import type { PlanTier } from '@/types/database';
 
 export async function POST(request: NextRequest) {
   try {
-    const supabase = await createServerSupabaseClient();
-    
-    // Check authentication
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
-    if (authError || !user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const context = await getAuthenticatedContext();
+
+    if (!context?.user || !context.organization) {
+      return NextResponse.json(
+        { error: 'Unauthorized' },
+        { status: 401 }
+      );
     }
 
     const body = await request.json();
-    const { price_id, mode: _mode = "subscription", success_url: _successUrl, cancel_url: _cancelUrl } = body;
-    void _mode; void _successUrl; void _cancelUrl; // Reserved for implementation
+    const { plan_tier } = body as { plan_tier: PlanTier };
 
-    if (!price_id) {
+    if (!plan_tier || !['starter', 'growth'].includes(plan_tier)) {
       return NextResponse.json(
-        { error: "Missing price_id" },
+        { error: 'Invalid plan tier' },
         { status: 400 }
       );
     }
 
-    // TODO: Get or create Stripe customer for user
-    // const { data: business } = await supabase
-    //   .from("businesses")
-    //   .select("stripe_customer_id")
-    //   .eq("owner_id", user.id)
-    //   .single();
+    // Ensure organization has Stripe customer
+    let stripeCustomerId = context.organization.stripe_customer_id;
 
-    // let customerId = business?.stripe_customer_id;
-    // if (!customerId) {
-    //   const customer = await stripe.customers.create({
-    //     email: user.email,
-    //     metadata: { user_id: user.id },
-    //   });
-    //   customerId = customer.id;
-    //   // Save customer ID to database
-    // }
+    if (!stripeCustomerId) {
+      stripeCustomerId = await initializeBilling({
+        organizationId: context.organization.id,
+        organizationName: context.organization.name,
+        email: context.user.email!,
+      });
+    }
 
-    // TODO: Create checkout session
-    // const session = await stripe.checkout.sessions.create({
-    //   customer: customerId,
-    //   mode: mode as "subscription" | "payment",
-    //   line_items: [{ price: price_id, quantity: 1 }],
-    //   success_url: success_url || `${process.env.NEXT_PUBLIC_APP_URL}/settings/billing?success=true`,
-    //   cancel_url: cancel_url || `${process.env.NEXT_PUBLIC_APP_URL}/settings/billing?canceled=true`,
-    //   metadata: { user_id: user.id },
-    // });
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
 
-    return NextResponse.json({
-      url: null, // session.url
+    const { sessionId, url } = await createCheckoutSession({
+      organization: {
+        ...context.organization,
+        stripe_customer_id: stripeCustomerId,
+      } as any,
+      planTier: plan_tier,
+      successUrl: `${baseUrl}/settings/billing?success=true`,
+      cancelUrl: `${baseUrl}/settings/billing?canceled=true`,
     });
+
+    return NextResponse.json({ sessionId, url });
   } catch (error) {
-    console.error("Create checkout error:", error);
+    console.error('Create checkout error:', error);
     return NextResponse.json(
-      { error: "Failed to create checkout session" },
+      { error: 'Failed to create checkout session' },
       { status: 500 }
     );
   }

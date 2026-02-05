@@ -1,92 +1,74 @@
 // @ts-nocheck
-/**
- * Refill Credits API
- * 
- * Handles credit refill purchases:
- * - POST: Purchase additional credits
- * 
- * Request body:
- * - amount: Number of credits to purchase
- * - auto_refill?: Boolean to enable auto-refill after this purchase
- * 
- * This endpoint can be called:
- * - Manually by user from the usage page
- * - Automatically by the check-balances cron job when auto-refill is enabled
- */
+// ============================================
+// REFILL CREDITS API
+// ============================================
 
-import { NextRequest, NextResponse } from "next/server";
-import { createServerSupabaseClient } from "@/lib/supabase/server";
-// import Stripe from "stripe";
-// import { creditsService } from "@/services/credits.service";
-
-// const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-//   apiVersion: "2024-04-10",
-// });
-
-// Credit packages with pricing
-const CREDIT_PACKAGES = {
-  500: { price: 2500, price_id: "price_credits_500" }, // $25
-  1000: { price: 4500, price_id: "price_credits_1000" }, // $45
-  5000: { price: 20000, price_id: "price_credits_5000" }, // $200
-};
+import { NextRequest, NextResponse } from 'next/server';
+import { getAuthenticatedContext } from '@/lib/supabase/server';
+import { processCreditsRefill } from '@/services/billing.service';
+import { MIN_REFILL_AMOUNT, isValidRefillAmount } from '@/lib/stripe/prices';
 
 export async function POST(request: NextRequest) {
   try {
-    const supabase = await createServerSupabaseClient();
-    
-    // Check authentication
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
-    if (authError || !user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const context = await getAuthenticatedContext();
+
+    if (!context?.user || !context.organization) {
+      return NextResponse.json(
+        { error: 'Unauthorized' },
+        { status: 401 }
+      );
     }
 
-    const body = await request.json();
-    const { amount, auto_refill: _autoRefill } = body;
-    void _autoRefill; // Reserved for implementation
-
-    // Validate amount
-    if (!amount || !Object.keys(CREDIT_PACKAGES).includes(String(amount))) {
+    // Check billing permission
+    if (
+      context.membership?.role !== 'owner' &&
+      !context.membership?.permissions.billing
+    ) {
       return NextResponse.json(
-        { error: "Invalid credit amount. Choose 500, 1000, or 5000." },
+        { error: 'No permission to manage billing' },
+        { status: 403 }
+      );
+    }
+
+    if (!context.organization.stripe_customer_id) {
+      return NextResponse.json(
+        { error: 'No billing account found. Please subscribe to a plan first.' },
         { status: 400 }
       );
     }
 
-    const _package = CREDIT_PACKAGES[amount as keyof typeof CREDIT_PACKAGES];
-    void _package; // Reserved for implementation
+    const body = await request.json();
+    const { amount_cents } = body as { amount_cents: number };
 
-    // TODO: Get Stripe customer ID
-    // TODO: Charge using saved payment method
-    // TODO: Add credits to user's balance
-    // TODO: Update auto-refill settings if specified
+    if (!amount_cents || !isValidRefillAmount(amount_cents)) {
+      return NextResponse.json(
+        { error: `Minimum refill amount is $${(MIN_REFILL_AMOUNT / 100).toFixed(2)}` },
+        { status: 400 }
+      );
+    }
 
-    // const paymentIntent = await stripe.paymentIntents.create({
-    //   amount: package_.price,
-    //   currency: "usd",
-    //   customer: stripeCustomerId,
-    //   payment_method: defaultPaymentMethodId,
-    //   confirm: true,
-    //   metadata: {
-    //     user_id: user.id,
-    //     credits: amount,
-    //     type: "credit_refill",
-    //   },
-    // });
+    const result = await processCreditsRefill({
+      organizationId: context.organization.id,
+      amountCents: amount_cents,
+      stripeCustomerId: context.organization.stripe_customer_id,
+      isAutoRefill: false,
+    });
 
-    // await creditsService.addCredits(user.id, amount, {
-    //   type: "purchase",
-    //   payment_intent_id: paymentIntent.id,
-    // });
+    if (!result.success) {
+      return NextResponse.json(
+        { error: result.error || 'Payment failed' },
+        { status: 400 }
+      );
+    }
 
     return NextResponse.json({
       success: true,
-      credits_added: amount,
-      new_balance: 0, // creditsService.getBalance(user.id)
+      new_balance_cents: result.newBalance,
     });
   } catch (error) {
-    console.error("Refill credits error:", error);
+    console.error('Refill credits error:', error);
     return NextResponse.json(
-      { error: "Failed to refill credits" },
+      { error: 'Failed to refill credits' },
       { status: 500 }
     );
   }

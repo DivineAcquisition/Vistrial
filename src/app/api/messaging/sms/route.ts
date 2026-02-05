@@ -1,81 +1,66 @@
 // @ts-nocheck
-/**
- * SMS Messaging API
- * 
- * Endpoints for sending SMS messages:
- * - POST: Send an SMS message to a contact
- * 
- * Request body:
- * - to: Phone number (E.164 format) or contact_id
- * - message: Message content
- * - workflow_id?: Associated workflow (for tracking)
- * - scheduled_at?: Schedule for later sending
- * 
- * Features:
- * - Template variable replacement ({{first_name}}, etc.)
- * - Credit deduction and validation
- * - Opt-out checking before sending
- * - Rate limiting per business
- */
+// ============================================
+// SMS SEND API
+// Manual SMS sending endpoint
+// ============================================
 
-import { NextRequest, NextResponse } from "next/server";
-import { createServerSupabaseClient } from "@/lib/supabase/server";
-// import { messagingService } from "@/services/messaging.service";
-// import { creditsService } from "@/services/credits.service";
+import { NextRequest, NextResponse } from 'next/server';
+import { getAuthenticatedContext } from '@/lib/supabase/server';
+import { sendSmsMessage } from '@/services/messaging.service';
 
 export async function POST(request: NextRequest) {
   try {
-    const supabase = await createServerSupabaseClient();
-    
-    // Check authentication
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
-    if (authError || !user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const context = await getAuthenticatedContext();
+
+    if (!context?.user || !context.organization) {
+      return NextResponse.json(
+        { error: 'Unauthorized' },
+        { status: 401 }
+      );
     }
 
     const body = await request.json();
-    const { to, message, workflow_id, scheduled_at } = body;
+    const { contact_id, content } = body as {
+      contact_id: string;
+      content: string;
+    };
 
-    // Validate required fields
-    if (!to || !message) {
+    if (!contact_id || !content) {
       return NextResponse.json(
-        { error: "Missing required fields: to, message" },
+        { error: 'Missing required fields: contact_id, content' },
         { status: 400 }
       );
     }
 
-    // TODO: Check credit balance
-    // const hasCredits = await creditsService.checkBalance(user.id, 'sms');
-    // if (!hasCredits) {
-    //   return NextResponse.json(
-    //     { error: "Insufficient credits" },
-    //     { status: 402 }
-    //   );
-    // }
+    if (content.length > 1600) {
+      return NextResponse.json(
+        { error: 'Message content too long (max 1600 characters)' },
+        { status: 400 }
+      );
+    }
 
-    // TODO: Check if contact has opted out
-    // TODO: Replace template variables
-    // TODO: Send via Telnyx
-    // TODO: Deduct credits
-    // TODO: Log message in database
+    const result = await sendSmsMessage({
+      organizationId: context.organization.id,
+      contactId: contact_id,
+      content,
+    });
 
-    // const result = await messagingService.sendSms({
-    //   businessId: user.id,
-    //   to,
-    //   message,
-    //   workflowId: workflow_id,
-    //   scheduledAt: scheduled_at,
-    // });
+    if (!result.success) {
+      return NextResponse.json(
+        { error: result.error || 'Failed to send message' },
+        { status: 400 }
+      );
+    }
 
     return NextResponse.json({
       success: true,
-      message_id: null,
-      credits_used: 1,
+      message_id: result.dbMessageId,
+      cost_cents: result.costCents,
     });
   } catch (error) {
-    console.error("SMS send error:", error);
+    console.error('SMS send error:', error);
     return NextResponse.json(
-      { error: "Failed to send SMS" },
+      { error: 'Failed to send SMS' },
       { status: 500 }
     );
   }

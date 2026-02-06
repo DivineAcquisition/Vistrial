@@ -9,61 +9,28 @@ import type { Database } from '@/types/database';
 let client: ReturnType<typeof createBrowserClient<Database>> | null = null;
 
 export function getSupabaseBrowserClient() {
-  if (client) {
-    return client;
-  }
+  if (client) return client;
 
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
   if (!url || !key) {
-    // Return a mock client for build time
-    const mockChain = (): unknown => ({
-      select: mockChain,
-      insert: mockChain,
-      update: mockChain,
-      delete: mockChain,
-      upsert: mockChain,
-      eq: mockChain,
-      neq: mockChain,
-      gt: mockChain,
-      gte: mockChain,
-      lt: mockChain,
-      lte: mockChain,
-      in: mockChain,
-      order: mockChain,
-      limit: mockChain,
-      range: mockChain,
-      filter: mockChain,
-      match: mockChain,
-      single: async () => ({ data: null, error: null }),
-      maybeSingle: async () => ({ data: null, error: null }),
-    });
-
-    return {
-      auth: {
-        getUser: async () => ({ data: { user: null }, error: null }),
-        getSession: async () => ({ data: { session: null }, error: null }),
-        signUp: async () => ({ data: null, error: { message: "Supabase not configured" } }),
-        signInWithPassword: async () => ({ data: null, error: { message: "Supabase not configured" } }),
-        signInWithOAuth: async () => ({ data: null, error: { message: "Supabase not configured" } }),
-        signOut: async () => ({ error: null }),
-        resetPasswordForEmail: async () => ({ error: null }),
-        updateUser: async () => ({ data: null, error: null }),
-        onAuthStateChange: () => ({ data: { subscription: { unsubscribe: () => {} } } }),
+    // During build/prerender, env vars may not exist.
+    // Throw at runtime, but during SSG just return a dummy that won't be called.
+    if (typeof window !== 'undefined') {
+      throw new Error('Missing NEXT_PUBLIC_SUPABASE_URL or NEXT_PUBLIC_SUPABASE_ANON_KEY');
+    }
+    // SSG/build: return a no-op proxy that won't actually be used
+    return new Proxy({} as ReturnType<typeof createBrowserClient<Database>>, {
+      get() {
+        return () => ({ data: null, error: null });
       },
-      from: () => mockChain(),
-      rpc: async () => ({ data: null, error: null }),
-    } as unknown as ReturnType<typeof createBrowserClient<Database>>;
+    });
   }
 
   client = createBrowserClient<Database>(url, key);
-
   return client;
 }
 
-// Convenience export for direct usage
-export const supabase = getSupabaseBrowserClient();
-
-// Backward compatibility alias
+// Backward compatibility aliases
 export const createClient = getSupabaseBrowserClient;

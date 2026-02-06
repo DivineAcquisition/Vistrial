@@ -66,7 +66,7 @@ export default function SignupPage() {
         return;
       }
 
-      router.push('/login?message=Check your email to confirm your account');
+      window.location.href = '/login?message=Check your email to confirm your account';
     } catch {
       setError('An unexpected error occurred');
     } finally {
@@ -239,9 +239,30 @@ export default function SignupPage() {
         variant="outline"
         className="w-full transition-all duration-200 hover:scale-[1.02]"
         size="lg"
+        disabled={isLoading}
+        onClick={async () => {
+          try {
+            const supabase = createClient();
+            const { data, error } = await supabase.auth.signInWithOAuth({
+              provider: 'google',
+              options: {
+                redirectTo: `${window.location.origin}/auth/callback`,
+              },
+            });
+            if (error) {
+              setError(error.message);
+              return;
+            }
+            if (data?.url) {
+              window.location.href = data.url;
+            }
+          } catch {
+            setError('Failed to connect to Google.');
+          }
+        }}
       >
         <RiGoogleFill className="mr-2 h-5 w-5 text-gray-600" />
-        Google
+        Continue with Google
       </Button>
 
       {/* Terms */}

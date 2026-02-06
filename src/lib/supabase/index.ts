@@ -3,7 +3,7 @@
 // ============================================
 
 // Browser client (for Client Components)
-export { getSupabaseBrowserClient, supabase, createClient } from './client';
+export { getSupabaseBrowserClient, createClient } from './client';
 
 // Server client (for Server Components, Route Handlers, Server Actions)
 export {

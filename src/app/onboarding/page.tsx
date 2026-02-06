@@ -3,7 +3,6 @@
 
 import { useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
-import Image from "next/image";
 import Link from "next/link";
 import {
   RiBuilding2Line,
@@ -17,7 +16,7 @@ import {
   RiSparklingLine,
 } from "@remixicon/react";
 import { cn } from "@/lib/utils/cn";
-import { createClient } from "@/lib/supabase/client";
+import { getSupabaseBrowserClient } from "@/lib/supabase/client";
 
 type Step = "business" | "contact" | "branding" | "complete";
 
@@ -26,6 +25,20 @@ const steps = [
   { id: "contact", name: "Contact Details", icon: RiPhoneLine },
   { id: "branding", name: "Branding", icon: RiPaletteLine },
 ] as const;
+
+// Map UI business types to database enum values
+const BUSINESS_TYPE_MAP: Record<string, string> = {
+  cleaning: "cleaning_residential",
+  plumbing: "plumbing",
+  electrical: "electrical",
+  hvac: "hvac",
+  landscaping: "landscaping",
+  painting: "painting",
+  roofing: "roofing",
+  pest_control: "pest_control",
+  handyman: "handyman",
+  other: "other",
+};
 
 export default function OnboardingPage() {
   const router = useRouter();
@@ -51,7 +64,7 @@ export default function OnboardingPage() {
   // Create Supabase client lazily to avoid SSR issues
   const supabase = useMemo(() => {
     if (typeof window === "undefined") return null;
-    return createClient();
+    return getSupabaseBrowserClient();
   }, []);
 
   const updateField = (field: string, value: string) => {
@@ -87,91 +100,53 @@ export default function OnboardingPage() {
     setError("");
 
     try {
-      const { data: { user }, error: userError } = await supabase.auth.getUser();
-      
+      const {
+        data: { user },
+        error: userError,
+      } = await supabase.auth.getUser();
+
       if (userError || !user) {
         console.error("Auth error:", userError);
         router.push("/login");
         return;
       }
 
-      // Generate slug from business name
-      const baseSlug = formData.businessName
-        .toLowerCase()
-        .replace(/[^a-z0-9]+/g, "-")
-        .replace(/^-|-$/g, "")
-        .slice(0, 50);
+      // Map the UI business type to the database enum value
+      const dbBusinessType =
+        BUSINESS_TYPE_MAP[formData.businessType] || "other";
 
-      // Make slug unique by adding random suffix
-      const slug = `${baseSlug}-${Date.now().toString(36)}`;
+      // Use the setup-organization API to create the org and membership
+      // This uses the admin client server-side to bypass RLS
+      const response = await fetch("/api/auth/setup-organization", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: formData.businessName,
+          business_type: dbBusinessType,
+          user_id: user.id,
+          first_name:
+            user.user_metadata?.first_name ||
+            user.email?.split("@")[0] ||
+            "",
+          last_name: user.user_metadata?.last_name || "",
+          // Pass extra fields for organization update
+          phone: formData.phone,
+          address_line1: formData.address,
+          city: formData.city,
+          state: formData.state,
+          zip_code: formData.zip,
+          primary_color: formData.primaryColor,
+          settings: {
+            timezone: "America/New_York",
+            currency: "USD",
+            tagline: formData.tagline,
+          },
+        }),
+      });
 
-      // Check if user already has a business
-      const { data: existingBusiness } = await supabase
-        .from("businesses")
-        .select("id")
-        .eq("owner_id", user.id)
-        .maybeSingle();
-
-      if (existingBusiness) {
-        // Update existing business
-        const { error: updateError } = await supabase
-          .from("businesses")
-          .update({
-            name: formData.businessName,
-            trade: formData.businessType,
-            phone: formData.phone,
-            address_line1: formData.address,
-            city: formData.city,
-            state: formData.state,
-            zip: formData.zip,
-            primary_color: formData.primaryColor,
-            settings: {
-              timezone: "America/New_York",
-              currency: "USD",
-              date_format: "MM/DD/YYYY",
-              time_format: "12h",
-              tagline: formData.tagline,
-            },
-            onboarding_completed: true,
-            is_active: true,
-          })
-          .eq("id", existingBusiness.id);
-
-        if (updateError) {
-          console.error("Update error:", updateError);
-          throw updateError;
-        }
-      } else {
-        // Create new business
-        const { error: insertError } = await supabase
-          .from("businesses")
-          .insert({
-            owner_id: user.id,
-            name: formData.businessName,
-            slug,
-            trade: formData.businessType,
-            email: user.email,
-            phone: formData.phone,
-            address_line1: formData.address,
-            city: formData.city,
-            state: formData.state,
-            zip: formData.zip,
-            primary_color: formData.primaryColor,
-            settings: {
-              timezone: "America/New_York",
-              currency: "USD",
-              date_format: "MM/DD/YYYY",
-              time_format: "12h",
-              tagline: formData.tagline,
-            },
-            onboarding_completed: true,
-            is_active: true,
-          });
-
-        if (insertError) {
-          console.error("Insert error:", insertError);
-          throw insertError;
-        }
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || "Failed to create organization");
       }
 
       setCurrentStep("complete");
@@ -191,7 +166,9 @@ export default function OnboardingPage() {
   const isStepValid = () => {
     switch (currentStep) {
       case "business":
-        return formData.businessName.length >= 2 && formData.businessType.length > 0;
+        return (
+          formData.businessName.length >= 2 && formData.businessType.length > 0
+        );
       case "contact":
         return formData.phone.length >= 10;
       case "branding":
@@ -208,9 +185,12 @@ export default function OnboardingPage() {
           <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
             <RiCheckLine className="w-10 h-10 text-green-600" />
           </div>
-          <h1 className="text-2xl font-bold text-slate-900 mb-2">You&apos;re all set!</h1>
+          <h1 className="text-2xl font-bold text-slate-900 mb-2">
+            You&apos;re all set!
+          </h1>
           <p className="text-slate-500 mb-6">
-            Your business profile has been created. Redirecting you to your dashboard...
+            Your business profile has been created. Redirecting you to your
+            dashboard...
           </p>
           <div className="flex items-center justify-center gap-2 text-violet-600">
             <RiLoader4Line className="w-5 h-5 animate-spin" />
@@ -225,15 +205,11 @@ export default function OnboardingPage() {
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 flex flex-col">
       {/* Header */}
       <header className="p-6">
-        <Link href="/" className="inline-block">
-          <Image
-            src="/VISTRIAL.png"
-            alt="Vistrial"
-            width={140}
-            height={48}
-            className="object-contain"
-            priority
-          />
+        <Link href="/" className="inline-flex items-center space-x-2">
+          <div className="w-8 h-8 rounded-lg bg-violet-600 flex items-center justify-center">
+            <span className="text-white font-bold text-lg">V</span>
+          </div>
+          <span className="font-semibold text-xl text-slate-900">Vistrial</span>
         </Link>
       </header>
 
@@ -245,25 +221,30 @@ export default function OnboardingPage() {
             <div className="flex items-center justify-between relative">
               {/* Progress line */}
               <div className="absolute left-0 right-0 top-1/2 h-0.5 bg-slate-200 -translate-y-1/2" />
-              <div 
+              <div
                 className="absolute left-0 top-1/2 h-0.5 bg-violet-500 -translate-y-1/2 transition-all duration-300"
-                style={{ width: `${(getCurrentStepIndex() / (steps.length - 1)) * 100}%` }}
+                style={{
+                  width: `${(getCurrentStepIndex() / (steps.length - 1)) * 100}%`,
+                }}
               />
-              
+
               {steps.map((step, index) => {
                 const isCompleted = index < getCurrentStepIndex();
                 const isCurrent = step.id === currentStep;
-                
+
                 return (
-                  <div key={step.id} className="relative z-10 flex flex-col items-center">
+                  <div
+                    key={step.id}
+                    className="relative z-10 flex flex-col items-center"
+                  >
                     <div
                       className={cn(
                         "w-10 h-10 rounded-full flex items-center justify-center transition-all duration-300",
                         isCompleted
                           ? "bg-violet-500 text-white"
                           : isCurrent
-                          ? "bg-violet-500 text-white ring-4 ring-violet-100"
-                          : "bg-white text-slate-400 border-2 border-slate-200"
+                            ? "bg-violet-500 text-white ring-4 ring-violet-100"
+                            : "bg-white text-slate-400 border-2 border-slate-200"
                       )}
                     >
                       {isCompleted ? (
@@ -297,8 +278,12 @@ export default function OnboardingPage() {
             {/* Business Info Step */}
             {currentStep === "business" && (
               <div>
-                <h2 className="text-2xl font-bold text-slate-900 mb-2">Tell us about your business</h2>
-                <p className="text-slate-500 mb-6">This helps us customize your experience.</p>
+                <h2 className="text-2xl font-bold text-slate-900 mb-2">
+                  Tell us about your business
+                </h2>
+                <p className="text-slate-500 mb-6">
+                  This helps us customize your experience.
+                </p>
 
                 <div className="space-y-4">
                   <div>
@@ -310,7 +295,9 @@ export default function OnboardingPage() {
                       <input
                         type="text"
                         value={formData.businessName}
-                        onChange={(e) => updateField("businessName", e.target.value)}
+                        onChange={(e) =>
+                          updateField("businessName", e.target.value)
+                        }
                         placeholder="Sparkle Clean Co"
                         className="w-full pl-10 pr-4 py-3 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-500 text-slate-900"
                       />
@@ -323,7 +310,9 @@ export default function OnboardingPage() {
                     </label>
                     <select
                       value={formData.businessType}
-                      onChange={(e) => updateField("businessType", e.target.value)}
+                      onChange={(e) =>
+                        updateField("businessType", e.target.value)
+                      }
                       className="w-full px-4 py-3 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-500 text-slate-900 bg-white"
                     >
                       <option value="">Select your industry</option>
@@ -346,8 +335,12 @@ export default function OnboardingPage() {
             {/* Contact Details Step */}
             {currentStep === "contact" && (
               <div>
-                <h2 className="text-2xl font-bold text-slate-900 mb-2">Contact information</h2>
-                <p className="text-slate-500 mb-6">How can your customers reach you?</p>
+                <h2 className="text-2xl font-bold text-slate-900 mb-2">
+                  Contact information
+                </h2>
+                <p className="text-slate-500 mb-6">
+                  How can your customers reach you?
+                </p>
 
                 <div className="space-y-4">
                   <div>
@@ -429,8 +422,12 @@ export default function OnboardingPage() {
             {/* Branding Step */}
             {currentStep === "branding" && (
               <div>
-                <h2 className="text-2xl font-bold text-slate-900 mb-2">Customize your brand</h2>
-                <p className="text-slate-500 mb-6">Make your booking page feel like yours.</p>
+                <h2 className="text-2xl font-bold text-slate-900 mb-2">
+                  Customize your brand
+                </h2>
+                <p className="text-slate-500 mb-6">
+                  Make your booking page feel like yours.
+                </p>
 
                 <div className="space-y-4">
                   <div>
@@ -441,13 +438,17 @@ export default function OnboardingPage() {
                       <input
                         type="color"
                         value={formData.primaryColor}
-                        onChange={(e) => updateField("primaryColor", e.target.value)}
+                        onChange={(e) =>
+                          updateField("primaryColor", e.target.value)
+                        }
                         className="w-12 h-12 rounded-lg cursor-pointer border border-slate-200"
                       />
                       <input
                         type="text"
                         value={formData.primaryColor}
-                        onChange={(e) => updateField("primaryColor", e.target.value)}
+                        onChange={(e) =>
+                          updateField("primaryColor", e.target.value)
+                        }
                         className="flex-1 px-4 py-3 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-500 text-slate-900 font-mono"
                       />
                     </div>
@@ -481,7 +482,9 @@ export default function OnboardingPage() {
                           {formData.businessName || "Your Business"}
                         </p>
                         {formData.tagline && (
-                          <p className="text-sm text-slate-500">{formData.tagline}</p>
+                          <p className="text-sm text-slate-500">
+                            {formData.tagline}
+                          </p>
                         )}
                       </div>
                     </div>

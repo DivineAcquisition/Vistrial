@@ -576,13 +576,19 @@ CREATE TRIGGER update_message_queue_updated_at
   BEFORE UPDATE ON public.message_queue
   FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
 
--- Auto-create user profile on signup
+-- Auto-create user profile on signup (with first/last name from metadata)
 CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS TRIGGER AS $$
 BEGIN
-  INSERT INTO public.user_profiles (id)
-  VALUES (NEW.id)
-  ON CONFLICT (id) DO NOTHING;
+  INSERT INTO public.user_profiles (id, first_name, last_name)
+  VALUES (
+    NEW.id,
+    COALESCE(NEW.raw_user_meta_data->>'first_name', ''),
+    COALESCE(NEW.raw_user_meta_data->>'last_name', '')
+  )
+  ON CONFLICT (id) DO UPDATE SET
+    first_name = COALESCE(NULLIF(EXCLUDED.first_name, ''), public.user_profiles.first_name),
+    last_name = COALESCE(NULLIF(EXCLUDED.last_name, ''), public.user_profiles.last_name);
   RETURN NEW;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
@@ -647,6 +653,11 @@ DROP POLICY IF EXISTS "Users can view their org memberships" ON public.organizat
 CREATE POLICY "Users can view their org memberships"
   ON public.organization_members FOR SELECT
   USING (auth.uid() = user_id);
+
+DROP POLICY IF EXISTS "Users can insert their own membership" ON public.organization_members;
+CREATE POLICY "Users can insert their own membership"
+  ON public.organization_members FOR INSERT
+  WITH CHECK (auth.uid() = user_id);
 
 -- Organizations
 DROP POLICY IF EXISTS "Users can view their organizations" ON public.organizations;

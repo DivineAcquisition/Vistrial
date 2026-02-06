@@ -56,6 +56,7 @@ export function SignupForm({ onSubmit: customOnSubmit, onVerify }: SignupFormPro
   const [businessType, setBusinessType] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
+  const [needsConfirmation, setNeedsConfirmation] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
   const { signUp } = useAuth();
@@ -123,20 +124,34 @@ export function SignupForm({ onSubmit: customOnSubmit, onVerify }: SignupFormPro
       if (signUpError) {
         if (signUpError.message.includes('already registered')) {
           setError('An account with this email already exists.');
+        } else if (signUpError.message.includes('not configured')) {
+          setError('Authentication is not configured. Please check your Supabase settings.');
         } else {
           setError(signUpError.message);
         }
         return;
       }
 
-      // Create organization via API
+      if (!user) {
+        // Supabase returned no error but also no user - shouldn't happen
+        setError('Something went wrong creating your account. Please try again.');
+        return;
+      }
+
+      // Check if email confirmation is required
+      // If user has identities but email is not confirmed, they need to verify
+      const needsEmailConfirmation =
+        user.identities?.length === 0 || // No identities means email already taken
+        (user.email_confirmed_at === null && user.confirmed_at === null);
+
+      // Create organization via API (uses admin client, so works even before email confirmation)
       const response = await fetch('/api/auth/setup-organization', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           name: organizationName,
           business_type: businessType,
-          user_id: user?.id,
+          user_id: user.id,
           first_name: firstName,
           last_name: lastName,
         }),
@@ -150,10 +165,15 @@ export function SignupForm({ onSubmit: customOnSubmit, onVerify }: SignupFormPro
 
       setSuccess(true);
 
-      // Redirect to dashboard after short delay
-      setTimeout(() => {
-        router.push('/dashboard');
-      }, 2000);
+      if (needsEmailConfirmation) {
+        // Don't redirect - show success message asking them to check email
+        setNeedsConfirmation(true);
+      } else {
+        // Redirect to dashboard after short delay
+        setTimeout(() => {
+          router.push('/dashboard');
+        }, 2000);
+      }
     } catch (err) {
       setError('An unexpected error occurred. Please try again.');
     } finally {
@@ -168,9 +188,25 @@ export function SignupForm({ onSubmit: customOnSubmit, onVerify }: SignupFormPro
           <CheckCircle className="h-6 w-6 text-green-600" />
         </div>
         <h3 className="text-lg font-semibold">Account Created!</h3>
-        <p className="text-muted-foreground">
-          Your account has been created successfully. Redirecting to dashboard...
-        </p>
+        {needsConfirmation ? (
+          <div className="space-y-3">
+            <p className="text-muted-foreground">
+              We&apos;ve sent a confirmation link to <strong>{email}</strong>.
+              Please check your email and click the link to activate your account.
+            </p>
+            <p className="text-sm text-muted-foreground">
+              After confirming, you can{' '}
+              <a href="/login" className="text-primary hover:underline">
+                sign in here
+              </a>
+              .
+            </p>
+          </div>
+        ) : (
+          <p className="text-muted-foreground">
+            Your account has been created successfully. Redirecting to dashboard...
+          </p>
+        )}
       </div>
     );
   }

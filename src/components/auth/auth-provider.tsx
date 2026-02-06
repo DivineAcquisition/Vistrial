@@ -17,6 +17,7 @@ interface AuthContextType {
   // Legacy alias for backward compatibility
   loading: boolean;
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
+  signInWithGoogle: () => Promise<{ error: Error | null }>;
   signUp: (
     email: string,
     password: string,
@@ -92,6 +93,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const signInWithGoogle = async () => {
+    try {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: `${window.location.origin}/auth/callback`,
+        },
+      });
+
+      if (error) {
+        return { error };
+      }
+
+      return { error: null };
+    } catch (error) {
+      return { error: error as Error };
+    }
+  };
+
   const signUp = async (
     email: string,
     password: string,
@@ -152,6 +172,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         isLoading,
         loading: isLoading, // Legacy alias
         signIn,
+        signInWithGoogle,
         signUp,
         signOut,
         resetPassword,

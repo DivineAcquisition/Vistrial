@@ -44,7 +44,7 @@ export default function OnboardingPage() {
     state: "",
     zip: "",
     // Branding
-    primaryColor: "#6E47D1",
+    primaryColor: "#5400FF",
     tagline: "",
   });
 

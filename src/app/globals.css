@@ -10,19 +10,19 @@
     --card-foreground: 240 10% 3.9%;
     --popover: 0 0% 100%;
     --popover-foreground: 240 10% 3.9%;
-    --primary: 257 58% 55%;  /* #6E47D1 */
+    --primary: 265 100% 50%;  /* #5400FF */
     --primary-foreground: 0 0% 100%;
     --secondary: 240 4.8% 95.9%;
     --secondary-foreground: 240 5.9% 10%;
     --muted: 240 4.8% 95.9%;
     --muted-foreground: 240 3.8% 46.1%;
-    --accent: 244 100% 81%;  /* #A39EFF */
+    --accent: 240 96% 81%;  /* #A2A2FD */
     --accent-foreground: 240 5.9% 10%;
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 0 0% 98%;
     --border: 240 5.9% 90%;
     --input: 240 5.9% 90%;
-    --ring: 257 58% 55%;  /* #6E47D1 */
+    --ring: 265 100% 50%;  /* #5400FF */
     --radius: 0.5rem;
   }
 
@@ -247,7 +247,7 @@
 }
 
 .gradient-text-brand {
-  background: linear-gradient(135deg, #6e47d1 0%, #a39eff 100%);
+  background: linear-gradient(135deg, #5400ff 0%, #a2a2fd 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -255,11 +255,11 @@
 
 /* Brand gradient backgrounds */
 .bg-brand-gradient {
-  background: linear-gradient(135deg, #a39eff 0%, #6e47d1 100%);
+  background: linear-gradient(135deg, #a2a2fd 0%, #5400ff 100%);
 }
 
 .bg-brand-gradient-reverse {
-  background: linear-gradient(135deg, #6e47d1 0%, #a39eff 100%);
+  background: linear-gradient(135deg, #5400ff 0%, #a2a2fd 100%);
 }
 
 .bg-brand-gradient-subtle {
@@ -327,7 +327,7 @@
 /* Button primary with brand gradient */
 .btn-primary {
   @apply relative px-6 py-3 text-white font-semibold rounded-lg overflow-hidden transition-all duration-300 hover:scale-[1.02] active:scale-[0.98];
-  background: linear-gradient(135deg, #6e47d1 0%, #a39eff 100%);
+  background: linear-gradient(135deg, #5400ff 0%, #a2a2fd 100%);
   box-shadow: 0 4px 15px rgba(110, 71, 209, 0.25);
 }
 
@@ -400,7 +400,7 @@
   left: 0;
   width: 0;
   height: 2px;
-  background: linear-gradient(135deg, #6e47d1 0%, #a39eff 100%);
+  background: linear-gradient(135deg, #5400ff 0%, #a2a2fd 100%);
   transition: width 0.3s ease;
 }
 

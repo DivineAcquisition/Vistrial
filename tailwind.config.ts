@@ -18,6 +18,10 @@ const config = {
       },
     },
     extend: {
+      fontFamily: {
+        sans: ["var(--font-geist-sans)", "system-ui", "sans-serif"],
+        mono: ["var(--font-geist-mono)", "monospace"],
+      },
       colors: {
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
@@ -78,6 +82,13 @@ const config = {
         md: "calc(var(--radius) - 2px)",
         sm: "calc(var(--radius) - 4px)",
       },
+      boxShadow: {
+        // Enhanced shadows for depth
+        'xs': '0 1px 2px 0 rgb(0 0 0 / 0.05)',
+        'inner-border': 'inset 0 0 0 1px rgb(255 255 255 / 0.1)',
+        'ring-brand': '0 0 0 2px rgb(110 71 209 / 0.2)',
+        'ring-brand-lg': '0 0 0 4px rgb(110 71 209 / 0.15)',
+      },
       keyframes: {
         "accordion-down": {
           from: { height: "0" },
@@ -87,10 +98,30 @@ const config = {
           from: { height: "var(--radix-accordion-content-height)" },
           to: { height: "0" },
         },
+        "fade-in": {
+          from: { opacity: "0" },
+          to: { opacity: "1" },
+        },
+        "fade-out": {
+          from: { opacity: "1" },
+          to: { opacity: "0" },
+        },
+        "slide-in-from-top": {
+          from: { transform: "translateY(-10px)", opacity: "0" },
+          to: { transform: "translateY(0)", opacity: "1" },
+        },
+        "slide-in-from-bottom": {
+          from: { transform: "translateY(10px)", opacity: "0" },
+          to: { transform: "translateY(0)", opacity: "1" },
+        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up": "accordion-up 0.2s ease-out",
+        "fade-in": "fade-in 0.2s ease-out",
+        "fade-out": "fade-out 0.2s ease-out",
+        "slide-in-from-top": "slide-in-from-top 0.2s ease-out",
+        "slide-in-from-bottom": "slide-in-from-bottom 0.2s ease-out",
       },
       backgroundImage: {
         'brand-gradient': 'linear-gradient(135deg, #a39eff 0%, #6e47d1 100%)',

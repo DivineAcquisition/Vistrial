@@ -146,16 +146,46 @@ async function processMessageQueue() {
           throw new Error(messageError?.message || 'Failed to create message');
         }
 
-        // TODO: Send via Telnyx API
-        // For now, mark as sent (placeholder for actual Telnyx integration)
-        await supabase
-          .from('messages')
-          .update({
-            status: 'sent',
-            sent_at: new Date().toISOString(),
-            provider: 'telnyx',
-          })
-          .eq('id', message.id);
+        // Send via the appropriate provider based on type
+        if (queueItem.type === 'email') {
+          // Send email via Resend
+          const { sendEmailWithRetry, generateWorkflowEmailHtml } = await import('@/lib/resend');
+
+          const htmlContent = generateWorkflowEmailHtml(queueItem.content, {});
+          const emailResult = await sendEmailWithRetry({
+            to: queueItem.to_address,
+            subject: (queueItem as any).metadata?.subject || 'Message from Vistrial',
+            html: htmlContent,
+            text: queueItem.content,
+            from: 'Vistrial <noreply@mail.vistrial.io>',
+            replyTo: 'support@vistrial.io',
+          });
+
+          if (!emailResult.success) {
+            throw new Error(emailResult.error || 'Failed to send email via Resend');
+          }
+
+          await supabase
+            .from('messages')
+            .update({
+              status: 'sent',
+              sent_at: new Date().toISOString(),
+              provider: 'resend',
+              provider_message_id: emailResult.messageId,
+            })
+            .eq('id', message.id);
+        } else {
+          // Send SMS/voice via Telnyx
+          // TODO: Full Telnyx integration for queue-based sending
+          await supabase
+            .from('messages')
+            .update({
+              status: 'sent',
+              sent_at: new Date().toISOString(),
+              provider: 'telnyx',
+            })
+            .eq('id', message.id);
+        }
 
         // Mark queue item as completed
         await supabase

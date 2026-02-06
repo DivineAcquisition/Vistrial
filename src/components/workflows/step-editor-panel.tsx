@@ -27,6 +27,7 @@ import {
   GripVertical,
   MessageSquare,
   Phone,
+  Mail,
   Trash2,
   Edit,
   Clock,
@@ -46,15 +47,19 @@ export function StepEditorPanel({ steps, onChange }: StepEditorPanelProps) {
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
 
-  const handleAddStep = (type: 'sms' | 'voice_drop') => {
+  const handleAddStep = (type: 'sms' | 'email' | 'voice_drop') => {
+    const defaultTemplates: Record<string, string> = {
+      sms: 'Hi {{first_name}}, this is {{business_name}}. ',
+      email: 'Following up from {{business_name}}\nHi {{first_name}},\n\nWe wanted to reach out and check in with you. We hope you had a great experience with {{business_name}}!\n\nIf there is anything we can help with, please don\'t hesitate to reply to this email.\n\nBest regards,\n{{business_name}}',
+      voice_drop: 'Hi {{first_name}}, this is {{business_name}} calling to check in with you.',
+    };
+
     const newStep: WorkflowStep = {
       id: `step_${Date.now()}`,
       type,
       delay_days: steps.length === 0 ? 0 : 3,
       delay_hours: 0,
-      template: type === 'sms'
-        ? 'Hi {{first_name}}, this is {{business_name}}. '
-        : 'Hi {{first_name}}, this is {{business_name}} calling to check in with you.',
+      template: defaultTemplates[type] || '',
     };
 
     setEditingStep(newStep);
@@ -157,11 +162,15 @@ export function StepEditorPanel({ steps, onChange }: StepEditorPanelProps) {
                       'p-2 rounded-lg',
                       step.type === 'sms'
                         ? 'bg-blue-500/20 text-blue-400'
+                        : step.type === 'email'
+                        ? 'bg-green-500/20 text-green-400'
                         : 'bg-purple-500/20 text-purple-400'
                     )}
                   >
                     {step.type === 'sms' ? (
                       <MessageSquare className="h-5 w-5" />
+                    ) : step.type === 'email' ? (
+                      <Mail className="h-5 w-5" />
                     ) : (
                       <Phone className="h-5 w-5" />
                     )}
@@ -173,7 +182,7 @@ export function StepEditorPanel({ steps, onChange }: StepEditorPanelProps) {
                         Step {index + 1}
                       </Badge>
                       <span className="text-sm font-medium text-white">
-                        {step.type === 'sms' ? 'SMS Message' : 'Voice Drop'}
+                        {step.type === 'sms' ? 'SMS Message' : step.type === 'email' ? 'Email' : 'Voice Drop'}
                       </span>
                     </div>
                     <p className="text-sm text-gray-400 line-clamp-2">
@@ -214,7 +223,7 @@ export function StepEditorPanel({ steps, onChange }: StepEditorPanelProps) {
                 Choose the type of message to add
               </DialogDescription>
             </DialogHeader>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-3 gap-4">
               <Card
                 className="bg-gray-800/50 border-white/10 cursor-pointer hover:border-blue-500/50 transition-colors"
                 onClick={() => handleAddStep('sms')}
@@ -225,6 +234,18 @@ export function StepEditorPanel({ steps, onChange }: StepEditorPanelProps) {
                   </div>
                   <p className="font-medium text-white">SMS Message</p>
                   <p className="text-xs text-gray-400">$0.015 per message</p>
+                </CardContent>
+              </Card>
+              <Card
+                className="bg-gray-800/50 border-white/10 cursor-pointer hover:border-green-500/50 transition-colors"
+                onClick={() => handleAddStep('email')}
+              >
+                <CardContent className="flex flex-col items-center justify-center py-6">
+                  <div className="p-3 rounded-lg bg-green-500/20 mb-3">
+                    <Mail className="h-6 w-6 text-green-400" />
+                  </div>
+                  <p className="font-medium text-white">Email</p>
+                  <p className="text-xs text-gray-400">$0.003 per email</p>
                 </CardContent>
               </Card>
               <Card

@@ -26,6 +26,9 @@ export const DOMAINS = {
   
   // Quote view pages
   quote: `https://q.${BASE_DOMAIN}`,
+
+  // Email sending subdomain (Resend)
+  mail: `https://mail.${BASE_DOMAIN}`,
 } as const
 
 // Helper functions

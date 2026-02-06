@@ -1,24 +1,23 @@
-// @ts-nocheck
 'use client';
 
 // ============================================
-// STEP CONFIGURATION MODAL
-// Configure individual workflow step
+// STEP CONFIG MODAL
+// Configure individual workflow steps with email support
 // ============================================
 
 import { useState } from 'react';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { Badge } from '@/components/ui/badge';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from '@/components/ui/dialog';
 import {
   Select,
   SelectContent,
@@ -26,241 +25,355 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { MessageSquare, Phone, Volume2 } from 'lucide-react';
+import { Card, CardContent } from '@/components/ui/card';
+import { RiMessage2Line, RiMailLine, RiPhoneLine, RiTimeLine } from '@remixicon/react';
 import type { WorkflowStep } from '@/types/workflows';
+import { TEMPLATE_VARIABLES } from '@/types/workflows';
 
 interface StepConfigModalProps {
   step: WorkflowStep;
-  isFirst: boolean;
+  isFirstStep: boolean;
   onSave: (step: WorkflowStep) => void;
-  onCancel: () => void;
+  onClose: () => void;
 }
 
-const TEMPLATE_VARIABLES = [
-  { key: '{{first_name}}', label: 'First Name' },
-  { key: '{{last_name}}', label: 'Last Name' },
-  { key: '{{business_name}}', label: 'Business Name' },
-  { key: '{{business_phone}}', label: 'Business Phone' },
-  { key: '{{review_link}}', label: 'Review Link' },
-  { key: '{{booking_link}}', label: 'Booking Link' },
+const VOICE_OPTIONS = [
+  { id: 'rachel', name: 'Rachel', description: 'Friendly, professional female voice' },
+  { id: 'bella', name: 'Bella', description: 'Warm, conversational female voice' },
+  { id: 'antoni', name: 'Antoni', description: 'Professional male voice' },
+  { id: 'adam', name: 'Adam', description: 'Friendly, casual male voice' },
 ];
 
 export function StepConfigModal({
   step,
-  isFirst,
+  isFirstStep,
   onSave,
-  onCancel,
+  onClose,
 }: StepConfigModalProps) {
-  const [formData, setFormData] = useState<WorkflowStep>({ ...step });
+  const [editedStep, setEditedStep] = useState<WorkflowStep>(step);
 
-  const handleInsertVariable = (variable: string) => {
-    setFormData({
-      ...formData,
-      template: formData.template + variable,
-    });
+  const handleChange = (field: keyof WorkflowStep, value: string | number) => {
+    setEditedStep((prev) => ({ ...prev, [field]: value }));
+  };
+
+  const insertVariable = (field: 'template' | 'email_subject' | 'email_body' | 'voice_script', variable: string) => {
+    const currentValue = editedStep[field] || '';
+    handleChange(field, currentValue + `{{${variable}}}`);
   };
 
   const handleSave = () => {
-    if (!formData.template.trim()) {
-      return;
-    }
-    onSave(formData);
+    onSave(editedStep);
   };
 
-  const characterCount = formData.template.length;
-  const smsSegments = Math.ceil(characterCount / 160);
+  // Calculate costs
+  const smsSegments = Math.ceil((editedStep.template?.length || 0) / 160);
+  const smsCost = (smsSegments * 0.015).toFixed(3);
+  const emailCost = '0.001'; // Roughly $1 per 1000 emails
+  const voiceCost = '0.05';
 
   return (
-    <Dialog open onOpenChange={(open) => !open && onCancel()}>
-      <DialogContent className="max-w-2xl bg-white border-gray-200">
+    <Dialog open onOpenChange={onClose}>
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2 text-gray-900">
-            {formData.type === 'sms' ? (
-              <>
-                <MessageSquare className="h-5 w-5 text-blue-400" />
-                Configure SMS Message
-              </>
-            ) : (
-              <>
-                <Phone className="h-5 w-5 text-purple-400" />
-                Configure Voice Drop
-              </>
-            )}
+          <DialogTitle className="flex items-center gap-2">
+            {step.type === 'sms' && <RiMessage2Line className="h-5 w-5 text-blue-600" />}
+            {step.type === 'email' && <RiMailLine className="h-5 w-5 text-purple-600" />}
+            {step.type === 'voice_drop' && <RiPhoneLine className="h-5 w-5 text-green-600" />}
+            Configure {step.type === 'sms' ? 'SMS Message' : step.type === 'email' ? 'Email' : 'Voice Drop'}
           </DialogTitle>
-          <DialogDescription className="text-gray-400">
-            Set up the timing and content for this step
-          </DialogDescription>
         </DialogHeader>
 
-        <Tabs defaultValue="content" className="space-y-4">
-          <TabsList className="bg-gray-800/50 border border-gray-200">
-            <TabsTrigger value="content" className="data-[state=active]:bg-brand-600">Content</TabsTrigger>
-            <TabsTrigger value="timing" className="data-[state=active]:bg-brand-600">Timing</TabsTrigger>
-            {formData.type === 'voice_drop' && (
-              <TabsTrigger value="voice" className="data-[state=active]:bg-brand-600">Voice</TabsTrigger>
+        <Tabs defaultValue="content" className="mt-4">
+          <TabsList className="grid w-full grid-cols-3">
+            <TabsTrigger value="content">Content</TabsTrigger>
+            <TabsTrigger value="timing">Timing</TabsTrigger>
+            {step.type === 'voice_drop' && (
+              <TabsTrigger value="voice">Voice</TabsTrigger>
+            )}
+            {step.type !== 'voice_drop' && (
+              <TabsTrigger value="preview">Preview</TabsTrigger>
             )}
           </TabsList>
 
-          <TabsContent value="content" className="space-y-4">
+          {/* CONTENT TAB */}
+          <TabsContent value="content" className="space-y-4 mt-4">
             {/* Template Variables */}
-            <div className="space-y-2">
-              <Label className="text-gray-300">Insert Variable</Label>
-              <div className="flex flex-wrap gap-2">
-                {TEMPLATE_VARIABLES.map((variable) => (
+            <div>
+              <Label className="text-xs text-muted-foreground">
+                Click to insert variable
+              </Label>
+              <div className="flex flex-wrap gap-2 mt-2">
+                {TEMPLATE_VARIABLES.map((v) => (
                   <Badge
-                    key={variable.key}
+                    key={v.key}
                     variant="outline"
-                    className="cursor-pointer border-gray-300 text-gray-400 hover:bg-brand-600/20 hover:text-brand-400"
-                    onClick={() => handleInsertVariable(variable.key)}
+                    className="cursor-pointer hover:bg-muted"
+                    onClick={() =>
+                      insertVariable(
+                        step.type === 'sms'
+                          ? 'template'
+                          : step.type === 'email'
+                          ? 'email_body'
+                          : 'voice_script',
+                        v.key
+                      )
+                    }
                   >
-                    {variable.label}
+                    {`{{${v.key}}}`}
                   </Badge>
                 ))}
               </div>
             </div>
 
-            {/* Message Content */}
-            <div className="space-y-2">
-              <Label htmlFor="template" className="text-gray-300">
-                {formData.type === 'sms' ? 'Message Text' : 'Voice Script'}
-              </Label>
-              <Textarea
-                id="template"
-                value={formData.template}
-                onChange={(e) => setFormData({ ...formData, template: e.target.value })}
-                placeholder={
-                  formData.type === 'sms'
-                    ? 'Hi {{first_name}}, this is {{business_name}}...'
-                    : 'Hi {{first_name}}, this is {{business_name}} calling...'
-                }
-                rows={6}
-                className="bg-gray-800 border-gray-200 text-gray-900"
-              />
-              <div className="flex justify-between text-xs text-gray-500">
-                <span>{characterCount} characters</span>
-                {formData.type === 'sms' && (
+            {/* SMS Content */}
+            {step.type === 'sms' && (
+              <div className="space-y-2">
+                <Label htmlFor="template">Message</Label>
+                <Textarea
+                  id="template"
+                  value={editedStep.template || ''}
+                  onChange={(e) => handleChange('template', e.target.value)}
+                  placeholder="Hi {{first_name}}, it's been a while since your last visit..."
+                  rows={4}
+                />
+                <div className="flex justify-between text-xs text-muted-foreground">
+                  <span>{editedStep.template?.length || 0} characters</span>
                   <span>
-                    {smsSegments} SMS segment{smsSegments !== 1 ? 's' : ''} 
-                    (≈ ${(smsSegments * 0.015).toFixed(3)})
+                    {smsSegments} segment{smsSegments !== 1 ? 's' : ''} • ~${smsCost} per contact
                   </span>
-                )}
+                </div>
               </div>
-            </div>
+            )}
 
-            {/* Preview */}
-            <div className="space-y-2">
-              <Label className="text-gray-300">Preview</Label>
-              <div className="p-4 bg-gray-800/50 rounded-lg text-sm text-gray-300">
-                {formData.template
-                  .replace('{{first_name}}', 'John')
-                  .replace('{{last_name}}', 'Smith')
-                  .replace('{{business_name}}', 'Acme Cleaning')
-                  .replace('{{business_phone}}', '(555) 123-4567')
-                  .replace('{{review_link}}', 'https://g.page/review')
-                  .replace('{{booking_link}}', 'https://book.acme.com')}
-              </div>
-            </div>
-          </TabsContent>
-
-          <TabsContent value="timing" className="space-y-4">
-            {isFirst ? (
-              <div className="p-4 bg-gray-800/50 rounded-lg text-sm text-gray-400">
-                This is the first step. It will be sent immediately when a contact is enrolled.
-              </div>
-            ) : (
+            {/* Email Content */}
+            {step.type === 'email' && (
               <>
                 <div className="space-y-2">
-                  <Label className="text-gray-300">Wait Before Sending</Label>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="delay_days" className="text-sm text-gray-500">
-                        Days
-                      </Label>
-                      <Input
-                        id="delay_days"
-                        type="number"
-                        min="0"
-                        max="90"
-                        value={formData.delay_days}
-                        onChange={(e) =>
-                          setFormData({ ...formData, delay_days: parseInt(e.target.value) || 0 })
-                        }
-                        className="bg-gray-800 border-gray-200 text-gray-900"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="delay_hours" className="text-sm text-gray-500">
-                        Hours
-                      </Label>
-                      <Input
-                        id="delay_hours"
-                        type="number"
-                        min="0"
-                        max="23"
-                        value={formData.delay_hours}
-                        onChange={(e) =>
-                          setFormData({ ...formData, delay_hours: parseInt(e.target.value) || 0 })
-                        }
-                        className="bg-gray-800 border-gray-200 text-gray-900"
-                      />
-                    </div>
+                  <Label htmlFor="email_subject">Subject Line</Label>
+                  <Input
+                    id="email_subject"
+                    value={editedStep.email_subject || ''}
+                    onChange={(e) => handleChange('email_subject', e.target.value)}
+                    placeholder="We miss you, {{first_name}}!"
+                  />
+                  <div className="flex gap-2">
+                    {TEMPLATE_VARIABLES.slice(0, 3).map((v) => (
+                      <Badge
+                        key={v.key}
+                        variant="outline"
+                        className="cursor-pointer hover:bg-muted text-xs"
+                        onClick={() => insertVariable('email_subject', v.key)}
+                      >
+                        {v.label}
+                      </Badge>
+                    ))}
                   </div>
-                  <p className="text-xs text-gray-500">
-                    This step will be sent {formData.delay_days} day{formData.delay_days !== 1 ? 's' : ''}
-                    {formData.delay_hours > 0 && ` and ${formData.delay_hours} hour${formData.delay_hours !== 1 ? 's' : ''}`} after the previous step.
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="email_body">Email Body</Label>
+                  <Textarea
+                    id="email_body"
+                    value={editedStep.email_body || ''}
+                    onChange={(e) => handleChange('email_body', e.target.value)}
+                    placeholder={`Hi {{first_name}},
+
+It's been a while since your last visit with {{business_name}}. We'd love to have you back!
+
+Ready to schedule? Just reply to this email or click the button below.`}
+                    rows={8}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Use blank lines to create paragraphs. ~${emailCost} per email.
                   </p>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="email_cta_text">Button Text (optional)</Label>
+                    <Input
+                      id="email_cta_text"
+                      value={editedStep.email_cta_text || ''}
+                      onChange={(e) => handleChange('email_cta_text', e.target.value)}
+                      placeholder="Book Now"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="email_cta_url">Button URL</Label>
+                    <Input
+                      id="email_cta_url"
+                      value={editedStep.email_cta_url || ''}
+                      onChange={(e) => handleChange('email_cta_url', e.target.value)}
+                      placeholder="{{booking_link}}"
+                    />
+                  </div>
                 </div>
               </>
             )}
+
+            {/* Voice Drop Content */}
+            {step.type === 'voice_drop' && (
+              <div className="space-y-2">
+                <Label htmlFor="voice_script">Voice Script</Label>
+                <Textarea
+                  id="voice_script"
+                  value={editedStep.voice_script || ''}
+                  onChange={(e) => handleChange('voice_script', e.target.value)}
+                  placeholder="Hi {{first_name}}, this is a quick message from {{business_name}}..."
+                  rows={6}
+                />
+                <p className="text-xs text-muted-foreground">
+                  Keep it under 30 seconds for best results. ~${voiceCost} per drop.
+                </p>
+              </div>
+            )}
           </TabsContent>
 
-          {formData.type === 'voice_drop' && (
-            <TabsContent value="voice" className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="voice_id" className="text-gray-300">Voice</Label>
-                <Select
-                  value={formData.voice_id || 'default'}
-                  onValueChange={(value) =>
-                    setFormData({ ...formData, voice_id: value === 'default' ? undefined : value })
-                  }
-                >
-                  <SelectTrigger className="bg-gray-800 border-gray-200 text-gray-900">
-                    <SelectValue placeholder="Select a voice" />
-                  </SelectTrigger>
-                  <SelectContent className="bg-gray-800 border-gray-200">
-                    <SelectItem value="default">Rachel (Default)</SelectItem>
-                    <SelectItem value="EXAVITQu4vr4xnSDxMaL">Bella (Warm)</SelectItem>
-                    <SelectItem value="ErXwobaYiN019PkySvjV">Antoni (Professional)</SelectItem>
-                    <SelectItem value="pNInz6obpgDQGcFmaJgB">Adam (Deep)</SelectItem>
-                  </SelectContent>
-                </Select>
+          {/* TIMING TAB */}
+          <TabsContent value="timing" className="space-y-4 mt-4">
+            {isFirstStep ? (
+              <Card className="bg-muted/50">
+                <CardContent className="pt-4">
+                  <div className="flex items-center gap-2">
+                    <RiTimeLine className="h-4 w-4 text-muted-foreground" />
+                    <span className="text-sm text-muted-foreground">
+                      First step sends immediately after enrollment
+                    </span>
+                  </div>
+                </CardContent>
+              </Card>
+            ) : (
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="delay_days">Days to wait</Label>
+                  <Select
+                    value={String(editedStep.delay_days)}
+                    onValueChange={(v) => handleChange('delay_days', parseInt(v))}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {Array.from({ length: 31 }, (_, i) => (
+                        <SelectItem key={i} value={String(i)}>
+                          {i} day{i !== 1 ? 's' : ''}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="delay_hours">Hours to wait</Label>
+                  <Select
+                    value={String(editedStep.delay_hours)}
+                    onValueChange={(v) => handleChange('delay_hours', parseInt(v))}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {Array.from({ length: 24 }, (_, i) => (
+                        <SelectItem key={i} value={String(i)}>
+                          {i} hour{i !== 1 ? 's' : ''}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
+            )}
+          </TabsContent>
 
-              <Button
-                variant="outline"
-                className="border-gray-200 text-gray-900 hover:bg-gray-50"
-                disabled={!formData.template.trim()}
-              >
-                <Volume2 className="h-4 w-4 mr-2" />
-                Preview Voice
-              </Button>
+          {/* VOICE TAB */}
+          {step.type === 'voice_drop' && (
+            <TabsContent value="voice" className="space-y-4 mt-4">
+              <div className="space-y-2">
+                <Label>Select Voice</Label>
+                <div className="grid grid-cols-2 gap-3">
+                  {VOICE_OPTIONS.map((voice) => (
+                    <button
+                      key={voice.id}
+                      type="button"
+                      onClick={() => handleChange('voice_id', voice.id)}
+                      className={`p-4 rounded-lg border text-left transition-colors ${
+                        editedStep.voice_id === voice.id
+                          ? 'border-primary bg-primary/5'
+                          : 'hover:border-muted-foreground/50'
+                      }`}
+                    >
+                      <p className="font-medium">{voice.name}</p>
+                      <p className="text-xs text-muted-foreground">{voice.description}</p>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </TabsContent>
+          )}
 
-              <p className="text-xs text-gray-500">
-                Voice drops cost approximately $0.05 each and are delivered as ringless voicemails.
-              </p>
+          {/* PREVIEW TAB */}
+          {step.type !== 'voice_drop' && (
+            <TabsContent value="preview" className="mt-4">
+              <Card>
+                <CardContent className="pt-4">
+                  <p className="text-sm text-muted-foreground mb-3">
+                    Preview with sample data:
+                  </p>
+                  {step.type === 'sms' && (
+                    <div className="bg-blue-600 text-white rounded-lg p-4 max-w-xs">
+                      <p className="text-sm">
+                        {(editedStep.template || '')
+                          .replace(/\{\{first_name\}\}/g, 'Sarah')
+                          .replace(/\{\{last_name\}\}/g, 'Johnson')
+                          .replace(/\{\{business_name\}\}/g, 'Sparkle Cleaning')
+                          .replace(/\{\{booking_link\}\}/g, 'https://book.example.com')
+                          .replace(/\{\{review_link\}\}/g, 'https://g.page/review')
+                          || 'Your message will appear here...'}
+                      </p>
+                    </div>
+                  )}
+                  {step.type === 'email' && (
+                    <div className="border rounded-lg overflow-hidden">
+                      <div className="bg-muted px-4 py-2 border-b">
+                        <p className="font-medium text-sm">
+                          {(editedStep.email_subject || 'Subject line')
+                            .replace(/\{\{first_name\}\}/g, 'Sarah')
+                            .replace(/\{\{business_name\}\}/g, 'Sparkle Cleaning')}
+                        </p>
+                      </div>
+                      <div className="p-4">
+                        <div className="prose prose-sm max-w-none">
+                          {(editedStep.email_body || '')
+                            .replace(/\{\{first_name\}\}/g, 'Sarah')
+                            .replace(/\{\{last_name\}\}/g, 'Johnson')
+                            .replace(/\{\{business_name\}\}/g, 'Sparkle Cleaning')
+                            .replace(/\{\{booking_link\}\}/g, 'https://book.example.com')
+                            .split('\n')
+                            .map((line, i) => (
+                              <p key={i} className={line ? '' : 'h-4'}>
+                                {line}
+                              </p>
+                            ))}
+                        </div>
+                        {editedStep.email_cta_text && (
+                          <div className="mt-4">
+                            <Button size="sm">{editedStep.email_cta_text}</Button>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
             </TabsContent>
           )}
         </Tabs>
 
-        <DialogFooter>
-          <Button variant="outline" onClick={onCancel} className="border-gray-200 text-gray-900 hover:bg-gray-50">
+        <DialogFooter className="mt-6">
+          <Button variant="outline" onClick={onClose}>
             Cancel
           </Button>
-          <Button onClick={handleSave} disabled={!formData.template.trim()} className="bg-brand-600 hover:bg-brand-700">
-            Save Step
-          </Button>
+          <Button onClick={handleSave}>Save Step</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

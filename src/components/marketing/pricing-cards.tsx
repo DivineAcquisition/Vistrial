@@ -13,6 +13,7 @@ import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { CheckCircle } from 'lucide-react';
+import { DemoButton } from './demo-popup';
 
 export function PricingCards() {
   const [annual, setAnnual] = useState(false);
@@ -149,18 +150,27 @@ export function PricingCards() {
               </ul>
 
               {/* CTA */}
-              <Link href={plan.cta === 'Contact Sales' ? '/contact' : '/signup'}>
-                <Button
-                  className={`w-full ${
-                    plan.popular 
-                      ? 'bg-brand-600 hover:bg-brand-700 text-white' 
-                      : 'bg-white text-gray-900 border-gray-300 hover:bg-gray-50'
-                  }`}
-                  variant={plan.popular ? 'default' : 'outline'}
+              {plan.cta === 'Contact Sales' ? (
+                <DemoButton
+                  variant="outline"
+                  className="w-full bg-white text-gray-900 border-gray-300 hover:bg-gray-50"
                 >
-                  {plan.cta}
-                </Button>
-              </Link>
+                  Book a Demo
+                </DemoButton>
+              ) : (
+                <Link href="/signup">
+                  <Button
+                    className={`w-full ${
+                      plan.popular 
+                        ? 'bg-brand-600 hover:bg-brand-700 text-white' 
+                        : 'bg-white text-gray-900 border-gray-300 hover:bg-gray-50'
+                    }`}
+                    variant={plan.popular ? 'default' : 'outline'}
+                  >
+                    {plan.cta}
+                  </Button>
+                </Link>
+              )}
             </CardContent>
           </Card>
         ))}

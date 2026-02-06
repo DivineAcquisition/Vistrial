@@ -94,13 +94,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signInWithGoogle = async () => {
     try {
-      const { error } = await supabase.auth.signInWithOAuth({
+      const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
           redirectTo: `${window.location.origin}/auth/callback`,
+          skipBrowserRedirect: false,
         },
       });
-      return { error: error as Error | null };
+
+      if (error) {
+        return { error: error as Error };
+      }
+
+      // If the browser client didn't auto-redirect, do it manually
+      if (data?.url) {
+        window.location.href = data.url;
+      }
+
+      return { error: null };
     } catch (error) {
       return { error: error as Error };
     }

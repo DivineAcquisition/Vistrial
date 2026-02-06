@@ -55,9 +55,10 @@ export function LoginForm({ redirectUrl }: { redirectUrl?: string }) {
     try {
       const { error: googleError } = await signInWithGoogle();
       if (googleError) {
-        setError(googleError.message);
+        setError(googleError.message || 'Google sign-in failed. Make sure Google provider is enabled in Supabase.');
         setIsGoogleLoading(false);
       }
+      // If successful, the browser will redirect to Google OAuth page
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to sign in with Google.');
       setIsGoogleLoading(false);

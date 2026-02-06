@@ -99,22 +99,30 @@ export async function sendEmail(
       };
     }
 
-    const { data, error } = await resend.emails.send({
+    // Build the base options
+    const toAddresses = Array.isArray(params.to) ? params.to : [params.to];
+    const ccAddresses = params.cc
+      ? Array.isArray(params.cc) ? params.cc : [params.cc]
+      : undefined;
+    const bccAddresses = params.bcc
+      ? Array.isArray(params.bcc) ? params.bcc : [params.bcc]
+      : undefined;
+
+    // Resend SDK uses a discriminated union; build the payload with
+    // concrete html/text so TypeScript can narrow the type properly.
+    const payload = {
       from: params.from || DEFAULT_FROM_EMAIL,
-      to: Array.isArray(params.to) ? params.to : [params.to],
+      to: toAddresses,
       subject: params.subject,
-      html: params.html,
-      text: params.text,
+      html: params.html || params.text || '',
       replyTo: params.replyTo || DEFAULT_REPLY_TO,
-      cc: params.cc ? (Array.isArray(params.cc) ? params.cc : [params.cc]) : undefined,
-      bcc: params.bcc
-        ? Array.isArray(params.bcc)
-          ? params.bcc
-          : [params.bcc]
-        : undefined,
+      cc: ccAddresses,
+      bcc: bccAddresses,
       tags: params.tags,
       headers: params.headers,
-    });
+    } as const;
+
+    const { data, error } = await resend.emails.send(payload);
 
     if (error) {
       console.error('Resend email error:', error);

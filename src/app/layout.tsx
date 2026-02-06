@@ -3,6 +3,8 @@ import { ThemeProvider } from "next-themes"
 import { Inter } from "next/font/google"
 import "./globals.css"
 import { siteConfig } from "./siteConfig"
+import { AuthProvider } from "@/components/auth/auth-provider"
+import { Toaster } from "@/components/ui/toaster"
 
 const inter = Inter({
   subsets: ["latin"],
@@ -46,8 +48,11 @@ export default function RootLayout({
         className={`${inter.className} antialiased selection:bg-brand-100 selection:text-brand-600 bg-white dark:bg-gray-950`}
         suppressHydrationWarning
       >
-        <ThemeProvider defaultTheme="system" attribute="class">
-          {children}
+        <ThemeProvider defaultTheme="light" attribute="class" forcedTheme="light">
+          <AuthProvider>
+            {children}
+            <Toaster />
+          </AuthProvider>
         </ThemeProvider>
       </body>
     </html>

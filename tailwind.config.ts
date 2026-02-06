@@ -18,6 +18,10 @@ const config = {
       },
     },
     extend: {
+      fontFamily: {
+        sans: ["var(--font-geist-sans)", "system-ui", "sans-serif"],
+        mono: ["var(--font-geist-mono)", "monospace"],
+      },
       colors: {
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
@@ -52,25 +56,41 @@ const config = {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
         },
-        // Brand colors for Vistrial
+        // Brand colors for Vistrial - #A39EFF (light) & #5347D1 (dark)
         brand: {
-          50: "#f5f3ff",
-          100: "#ede9fe",
-          200: "#ddd6fe",
-          300: "#c4b5fd",
-          400: "#a78bfa",
-          500: "#8b5cf6",
-          600: "#7c3aed",
-          700: "#6d28d9",
-          800: "#5b21b6",
-          900: "#4c1d95",
-          950: "#2e1065",
+          50: "#f5f4ff",
+          100: "#edebfe",
+          200: "#ddd9fd",
+          300: "#c5bffc",
+          400: "#a39eff",  // Primary light - #A39EFF
+          500: "#7c72e6",
+          600: "#5347d1",  // Primary dark - #5347D1
+          700: "#463cb3",
+          800: "#3a3295",
+          900: "#2e2877",
+          950: "#1b184d",
+        },
+        // Convenient aliases for primary brand colors
+        vistrial: {
+          light: "#a39eff",
+          DEFAULT: "#5347d1",
+          dark: "#463cb3",
         },
       },
       borderRadius: {
         lg: "var(--radius)",
         md: "calc(var(--radius) - 2px)",
         sm: "calc(var(--radius) - 4px)",
+      },
+      boxShadow: {
+        // Enhanced shadows for depth
+        'xs': '0 1px 2px 0 rgb(0 0 0 / 0.05)',
+        'inner-border': 'inset 0 0 0 1px rgb(255 255 255 / 0.1)',
+        'ring-brand': '0 0 0 2px rgb(83 71 209 / 0.2)',
+        'ring-brand-lg': '0 0 0 4px rgb(83 71 209 / 0.15)',
+        // 3D button effects
+        'btn-3d': 'inset 0 1px 0 0 rgba(255, 255, 255, 0.2), inset 0 -2px 0 0 rgba(0, 0, 0, 0.1)',
+        'btn-3d-pressed': 'inset 0 2px 4px 0 rgba(0, 0, 0, 0.15)',
       },
       keyframes: {
         "accordion-down": {
@@ -81,10 +101,35 @@ const config = {
           from: { height: "var(--radix-accordion-content-height)" },
           to: { height: "0" },
         },
+        "fade-in": {
+          from: { opacity: "0" },
+          to: { opacity: "1" },
+        },
+        "fade-out": {
+          from: { opacity: "1" },
+          to: { opacity: "0" },
+        },
+        "slide-in-from-top": {
+          from: { transform: "translateY(-10px)", opacity: "0" },
+          to: { transform: "translateY(0)", opacity: "1" },
+        },
+        "slide-in-from-bottom": {
+          from: { transform: "translateY(10px)", opacity: "0" },
+          to: { transform: "translateY(0)", opacity: "1" },
+        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up": "accordion-up 0.2s ease-out",
+        "fade-in": "fade-in 0.2s ease-out",
+        "fade-out": "fade-out 0.2s ease-out",
+        "slide-in-from-top": "slide-in-from-top 0.2s ease-out",
+        "slide-in-from-bottom": "slide-in-from-bottom 0.2s ease-out",
+      },
+      backgroundImage: {
+        'brand-gradient': 'linear-gradient(135deg, #a39eff 0%, #5347d1 100%)',
+        'brand-gradient-reverse': 'linear-gradient(135deg, #5347d1 0%, #a39eff 100%)',
+        'brand-gradient-subtle': 'linear-gradient(135deg, rgba(163, 158, 255, 0.1) 0%, rgba(83, 71, 209, 0.1) 100%)',
       },
     },
   },

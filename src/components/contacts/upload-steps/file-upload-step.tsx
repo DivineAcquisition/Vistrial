@@ -72,8 +72,8 @@ export function FileUploadStep({ onFileSelected }: FileUploadStepProps) {
             className={cn(
               'border-2 border-dashed rounded-lg p-12 text-center cursor-pointer transition-colors',
               isDragActive
-                ? 'border-violet-500 bg-violet-500/10'
-                : 'border-white/20 hover:border-violet-500/50',
+                ? 'border-brand-500 bg-brand-500/10'
+                : 'border-white/20 hover:border-brand-500/50',
               error && 'border-red-500'
             )}
           >
@@ -123,31 +123,31 @@ export function FileUploadStep({ onFileSelected }: FileUploadStepProps) {
           <h3 className="font-semibold text-white mb-4">CSV File Requirements</h3>
           <ul className="space-y-2 text-sm text-gray-400">
             <li className="flex items-start gap-2">
-              <FileSpreadsheet className="h-4 w-4 mt-0.5 text-violet-400" />
+              <FileSpreadsheet className="h-4 w-4 mt-0.5 text-brand-400" />
               <span>
                 File must be in CSV format with comma-separated values
               </span>
             </li>
             <li className="flex items-start gap-2">
-              <FileSpreadsheet className="h-4 w-4 mt-0.5 text-violet-400" />
+              <FileSpreadsheet className="h-4 w-4 mt-0.5 text-brand-400" />
               <span>
                 First row should contain column headers
               </span>
             </li>
             <li className="flex items-start gap-2">
-              <FileSpreadsheet className="h-4 w-4 mt-0.5 text-violet-400" />
+              <FileSpreadsheet className="h-4 w-4 mt-0.5 text-brand-400" />
               <span>
                 Each contact should have at least a name, email, or phone number
               </span>
             </li>
             <li className="flex items-start gap-2">
-              <FileSpreadsheet className="h-4 w-4 mt-0.5 text-violet-400" />
+              <FileSpreadsheet className="h-4 w-4 mt-0.5 text-brand-400" />
               <span>
                 Phone numbers should include country code (e.g., +1 for US)
               </span>
             </li>
             <li className="flex items-start gap-2">
-              <FileSpreadsheet className="h-4 w-4 mt-0.5 text-violet-400" />
+              <FileSpreadsheet className="h-4 w-4 mt-0.5 text-brand-400" />
               <span>
                 Maximum file size: 10MB (approximately 100,000 contacts)
               </span>

@@ -21,34 +21,25 @@ export default async function DashboardLayout({
   }
 
   return (
-    <div className="min-h-screen bg-gray-950 relative">
-      {/* Gradient background */}
-      <div className="fixed inset-0 z-0 pointer-events-none">
-        <div className="absolute top-0 right-0 w-[800px] h-[800px] bg-violet-500/5 rounded-full blur-3xl" />
-        <div className="absolute bottom-0 left-0 w-[600px] h-[600px] bg-indigo-500/5 rounded-full blur-3xl" />
-      </div>
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-950">
+      {/* Sidebar */}
+      <DashboardSidebar
+        organization={{
+          id: organization.id,
+          name: organization.name,
+          slug: organization.slug,
+          logo_url: organization.logo_url || undefined,
+        }}
+        user={{
+          email: user?.email || '',
+          user_metadata: user?.user_metadata,
+        }}
+      />
 
-      {/* Content wrapper */}
-      <div className="relative z-10">
-        {/* Sidebar */}
-        <DashboardSidebar
-          organization={{
-            id: organization.id,
-            name: organization.name,
-            slug: organization.slug,
-            logo_url: organization.logo_url || undefined,
-          }}
-          user={{
-            email: user?.email || '',
-            user_metadata: user?.user_metadata,
-          }}
-        />
-
-        {/* Main content */}
-        <div className="lg:pl-64">
-          {/* Page content */}
-          <main className="p-4 md:p-6 pt-16 lg:pt-6">{children}</main>
-        </div>
+      {/* Main content */}
+      <div className="lg:pl-72">
+        {/* Page content */}
+        <main className="min-h-screen p-4 pt-16 md:p-6 lg:pt-6">{children}</main>
       </div>
     </div>
   );

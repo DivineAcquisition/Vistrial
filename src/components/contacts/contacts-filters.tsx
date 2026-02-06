@@ -52,11 +52,11 @@ export function ContactsFilters() {
   const hasActiveFilters = searchParams.toString().length > 0;
 
   return (
-    <div className="bg-gray-900/80 backdrop-blur-xl rounded-2xl border border-white/10 p-4 space-y-6">
+    <div className="bg-white rounded-2xl border border-gray-200 p-4 space-y-6">
       <div className="flex items-center justify-between">
-        <h3 className="font-semibold text-white">Filters</h3>
+        <h3 className="font-semibold text-gray-900">Filters</h3>
         {hasActiveFilters && (
-          <Button variant="ghost" size="sm" onClick={clearFilters} className="text-gray-400 hover:text-white">
+          <Button variant="ghost" size="sm" onClick={clearFilters} className="text-gray-400 hover:text-gray-900">
             <X className="h-4 w-4 mr-1" />
             Clear
           </Button>
@@ -73,7 +73,7 @@ export function ContactsFilters() {
                 id={`status-${option.value}`}
                 checked={currentStatus.includes(option.value)}
                 onCheckedChange={() => toggleStatus(option.value)}
-                className="border-white/20"
+                className="border-gray-300"
               />
               <label
                 htmlFor={`status-${option.value}`}
@@ -95,7 +95,7 @@ export function ContactsFilters() {
           <Button
             variant="outline"
             size="sm"
-            className="w-full justify-start border-white/10 bg-gray-800/50 hover:bg-gray-800 text-gray-300"
+            className="w-full justify-start border-gray-200 bg-gray-800/50 hover:bg-gray-50 text-gray-300"
             onClick={() => updateFilters('has_phone', 'true')}
           >
             Has Phone Number
@@ -103,7 +103,7 @@ export function ContactsFilters() {
           <Button
             variant="outline"
             size="sm"
-            className="w-full justify-start border-white/10 bg-gray-800/50 hover:bg-gray-800 text-gray-300"
+            className="w-full justify-start border-gray-200 bg-gray-800/50 hover:bg-gray-50 text-gray-300"
             onClick={() => updateFilters('has_email', 'true')}
           >
             Has Email

@@ -229,12 +229,12 @@ export function CsvUploadWizard({
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <Button variant="ghost" onClick={handleCancel} className="text-gray-400 hover:text-white">
+          <Button variant="ghost" onClick={handleCancel} className="text-gray-400 hover:text-gray-900">
             <X className="h-4 w-4 mr-2" />
             Cancel
           </Button>
           <div>
-            <h1 className="text-2xl font-bold text-white flex items-center gap-2">
+            <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
               <Upload className="h-6 w-6" />
               Import Contacts
             </h1>
@@ -253,7 +253,7 @@ export function CsvUploadWizard({
               <div
                 className={`flex items-center justify-center w-8 h-8 rounded-full text-sm font-medium ${
                   index <= currentStepIndex
-                    ? 'bg-violet-600 text-white'
+                    ? 'bg-brand-600 text-gray-900'
                     : 'bg-gray-800 text-gray-500'
                 }`}
               >
@@ -262,7 +262,7 @@ export function CsvUploadWizard({
               <span
                 className={`ml-2 text-sm ${
                   index <= currentStepIndex
-                    ? 'text-white'
+                    ? 'text-gray-900'
                     : 'text-gray-500'
                 }`}
               >
@@ -271,7 +271,7 @@ export function CsvUploadWizard({
               {index < steps.length - 2 && (
                 <div
                   className={`w-12 h-1 mx-4 ${
-                    index < currentStepIndex ? 'bg-violet-600' : 'bg-gray-800'
+                    index < currentStepIndex ? 'bg-brand-600' : 'bg-gray-800'
                   }`}
                 />
               )}
@@ -327,12 +327,12 @@ export function CsvUploadWizard({
 
       {/* Navigation Buttons */}
       {currentStep !== 'importing' && currentStep !== 'complete' && (
-        <div className="flex justify-between pt-6 border-t border-white/10">
+        <div className="flex justify-between pt-6 border-t border-gray-200">
           <Button
             variant="outline"
             onClick={handleBack}
             disabled={currentStep === 'upload'}
-            className="border-white/10 text-white hover:bg-gray-800"
+            className="border-gray-200 text-gray-900 hover:bg-gray-50"
           >
             <ArrowLeft className="h-4 w-4 mr-2" />
             Back
@@ -340,7 +340,7 @@ export function CsvUploadWizard({
           <Button 
             onClick={handleNext} 
             disabled={!canProceed()}
-            className=""
+            className="bg-brand-600 hover:bg-brand-700"
           >
             {currentStep === 'preview' ? (
               <>

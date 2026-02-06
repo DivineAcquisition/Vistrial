@@ -12,15 +12,15 @@
 
 import Link from "next/link";
 import { 
-  CreditCard,
-  Building2,
-  Bell,
-  Plug,
-  User,
-  Shield,
-  ArrowRight,
-  MessageSquare
-} from "lucide-react";
+  RiBankCardLine,
+  RiBuilding2Line,
+  RiNotification3Line,
+  RiPlugLine,
+  RiUserLine,
+  RiShieldLine,
+  RiArrowRightSLine,
+  RiMessage2Line,
+} from "@remixicon/react";
 
 export const dynamic = "force-dynamic";
 
@@ -28,28 +28,28 @@ const settingsCategories = [
   {
     title: "Billing & Subscription",
     description: "Manage your plan, payment methods, and invoices",
-    icon: CreditCard,
+    icon: RiBankCardLine,
     href: "/settings/billing",
-    color: "violet",
+    color: "brand",
   },
   {
     title: "Organization",
     description: "Company details, team members, and permissions",
-    icon: Building2,
+    icon: RiBuilding2Line,
     href: "/settings/organization",
     color: "blue",
   },
   {
     title: "Notifications",
     description: "Email, SMS, and in-app notification preferences",
-    icon: Bell,
+    icon: RiNotification3Line,
     href: "#notifications",
     color: "amber",
   },
   {
     title: "API & Integrations",
     description: "API keys, webhooks, and third-party connections",
-    icon: Plug,
+    icon: RiPlugLine,
     href: "#integrations",
     color: "green",
   },
@@ -63,38 +63,36 @@ function SettingsCard({
   color 
 }: typeof settingsCategories[0]) {
   const colorClasses = {
-    violet: "bg-violet-500/10 text-violet-400 group-hover:bg-violet-500",
-    blue: "bg-blue-500/10 text-blue-400 group-hover:bg-blue-500",
-    amber: "bg-amber-500/10 text-amber-400 group-hover:bg-amber-500",
-    green: "bg-green-500/10 text-green-400 group-hover:bg-green-500",
+    brand: "bg-brand-50 text-brand-600 ring-1 ring-inset ring-brand-600/10 group-hover:bg-brand-600 group-hover:text-white group-hover:ring-0",
+    blue: "bg-blue-50 text-blue-600 ring-1 ring-inset ring-blue-600/10 group-hover:bg-blue-600 group-hover:text-white group-hover:ring-0",
+    amber: "bg-amber-50 text-amber-600 ring-1 ring-inset ring-amber-600/10 group-hover:bg-amber-600 group-hover:text-white group-hover:ring-0",
+    green: "bg-green-50 text-green-600 ring-1 ring-inset ring-green-600/10 group-hover:bg-green-600 group-hover:text-white group-hover:ring-0",
   };
 
   return (
     <Link
       href={href}
-      className="group bg-gray-900/80 backdrop-blur-xl rounded-2xl border border-white/10 p-6 hover:border-white/20 transition-all"
+      className="group rounded-xl border border-gray-200 bg-white p-6 shadow-sm transition-all duration-200 hover:border-gray-300 hover:shadow-md"
     >
       <div className="flex items-start justify-between">
-        <div className={`p-3 rounded-xl ${colorClasses[color as keyof typeof colorClasses]} group-hover:text-white transition-colors`}>
+        <div className={`p-3 rounded-xl transition-colors ${colorClasses[color as keyof typeof colorClasses]}`}>
           <Icon className="w-6 h-6" />
         </div>
-        <ArrowRight className="w-5 h-5 text-gray-500 group-hover:text-white group-hover:translate-x-1 transition-all" />
+        <RiArrowRightSLine className="w-5 h-5 text-gray-400 group-hover:text-gray-600 group-hover:translate-x-0.5 transition-all" />
       </div>
-      <h3 className="text-lg font-semibold text-white mt-4 mb-2">{title}</h3>
-      <p className="text-gray-400 text-sm">{description}</p>
+      <h3 className="text-lg font-semibold text-gray-900 mt-4 mb-2">{title}</h3>
+      <p className="text-gray-500 text-sm">{description}</p>
     </Link>
   );
 }
 
 export default async function SettingsPage() {
-  // TODO: Fetch user settings from database
-
   return (
     <div className="max-w-4xl mx-auto space-y-8">
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-bold text-white">Settings</h1>
-        <p className="text-gray-400 mt-1">
+        <h1 className="text-2xl font-bold text-gray-900">Settings</h1>
+        <p className="text-gray-500 mt-1">
           Manage your account and application preferences
         </p>
       </div>
@@ -107,39 +105,39 @@ export default async function SettingsPage() {
       </div>
 
       {/* Account Settings */}
-      <div className="bg-gray-900/80 backdrop-blur-xl rounded-2xl border border-white/10 p-6">
+      <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
         <div className="flex items-center gap-3 mb-6">
-          <div className="p-2 rounded-lg bg-gray-500/10 text-gray-400">
-            <User className="w-5 h-5" />
+          <div className="p-2 rounded-lg bg-gray-100 text-gray-600">
+            <RiUserLine className="w-5 h-5" />
           </div>
-          <h2 className="text-lg font-semibold text-white">Account</h2>
+          <h2 className="text-lg font-semibold text-gray-900">Account</h2>
         </div>
         
         <div className="space-y-4">
-          <div className="flex items-center justify-between py-3 border-b border-white/5">
+          <div className="flex items-center justify-between py-3 border-b border-gray-100">
             <div>
-              <p className="text-white font-medium">Email</p>
-              <p className="text-gray-400 text-sm">Your account email address</p>
+              <p className="text-gray-900 font-medium">Email</p>
+              <p className="text-gray-500 text-sm">Your account email address</p>
             </div>
-            <p className="text-gray-300">user@example.com</p>
+            <p className="text-gray-600">user@example.com</p>
           </div>
           
-          <div className="flex items-center justify-between py-3 border-b border-white/5">
+          <div className="flex items-center justify-between py-3 border-b border-gray-100">
             <div>
-              <p className="text-white font-medium">Password</p>
-              <p className="text-gray-400 text-sm">Last changed never</p>
+              <p className="text-gray-900 font-medium">Password</p>
+              <p className="text-gray-500 text-sm">Last changed never</p>
             </div>
-            <button className="text-violet-400 hover:text-violet-300 font-medium text-sm">
+            <button className="text-brand-600 hover:text-brand-700 font-medium text-sm">
               Change
             </button>
           </div>
           
           <div className="flex items-center justify-between py-3">
             <div>
-              <p className="text-white font-medium">Two-factor authentication</p>
-              <p className="text-gray-400 text-sm">Add an extra layer of security</p>
+              <p className="text-gray-900 font-medium">Two-factor authentication</p>
+              <p className="text-gray-500 text-sm">Add an extra layer of security</p>
             </div>
-            <button className="text-violet-400 hover:text-violet-300 font-medium text-sm">
+            <button className="text-brand-600 hover:text-brand-700 font-medium text-sm">
               Enable
             </button>
           </div>
@@ -147,37 +145,37 @@ export default async function SettingsPage() {
       </div>
 
       {/* Messaging Settings */}
-      <div className="bg-gray-900/80 backdrop-blur-xl rounded-2xl border border-white/10 p-6">
+      <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
         <div className="flex items-center gap-3 mb-6">
-          <div className="p-2 rounded-lg bg-violet-500/10 text-violet-400">
-            <MessageSquare className="w-5 h-5" />
+          <div className="p-2 rounded-lg bg-brand-50 text-brand-600 ring-1 ring-inset ring-brand-600/10">
+            <RiMessage2Line className="w-5 h-5" />
           </div>
-          <h2 className="text-lg font-semibold text-white">Messaging Defaults</h2>
+          <h2 className="text-lg font-semibold text-gray-900">Messaging Defaults</h2>
         </div>
         
         <div className="space-y-4">
-          <div className="flex items-center justify-between py-3 border-b border-white/5">
+          <div className="flex items-center justify-between py-3 border-b border-gray-100">
             <div>
-              <p className="text-white font-medium">Default sender number</p>
-              <p className="text-gray-400 text-sm">Phone number for outbound SMS</p>
+              <p className="text-gray-900 font-medium">Default sender number</p>
+              <p className="text-gray-500 text-sm">Phone number for outbound SMS</p>
             </div>
-            <p className="text-gray-300">Not configured</p>
+            <p className="text-gray-600">Not configured</p>
           </div>
           
-          <div className="flex items-center justify-between py-3 border-b border-white/5">
+          <div className="flex items-center justify-between py-3 border-b border-gray-100">
             <div>
-              <p className="text-white font-medium">Sending hours</p>
-              <p className="text-gray-400 text-sm">Only send during business hours</p>
+              <p className="text-gray-900 font-medium">Sending hours</p>
+              <p className="text-gray-500 text-sm">Only send during business hours</p>
             </div>
-            <p className="text-gray-300">9 AM - 8 PM</p>
+            <p className="text-gray-600">9 AM - 8 PM</p>
           </div>
           
           <div className="flex items-center justify-between py-3">
             <div>
-              <p className="text-white font-medium">Timezone handling</p>
-              <p className="text-gray-400 text-sm">Use contact&apos;s local timezone</p>
+              <p className="text-gray-900 font-medium">Timezone handling</p>
+              <p className="text-gray-500 text-sm">Use contact&apos;s local timezone</p>
             </div>
-            <button className="text-violet-400 hover:text-violet-300 font-medium text-sm">
+            <button className="text-brand-600 hover:text-brand-700 font-medium text-sm">
               Configure
             </button>
           </div>
@@ -185,17 +183,17 @@ export default async function SettingsPage() {
       </div>
 
       {/* Danger Zone */}
-      <div className="bg-red-500/5 border border-red-500/20 rounded-2xl p-6">
+      <div className="rounded-xl border border-red-200 bg-red-50 p-6">
         <div className="flex items-center gap-3 mb-4">
-          <div className="p-2 rounded-lg bg-red-500/10 text-red-400">
-            <Shield className="w-5 h-5" />
+          <div className="p-2 rounded-lg bg-red-100 text-red-600">
+            <RiShieldLine className="w-5 h-5" />
           </div>
-          <h2 className="text-lg font-semibold text-white">Danger Zone</h2>
+          <h2 className="text-lg font-semibold text-gray-900">Danger Zone</h2>
         </div>
-        <p className="text-gray-400 text-sm mb-4">
+        <p className="text-gray-600 text-sm mb-4">
           Irreversible actions that affect your account
         </p>
-        <button className="px-4 py-2 bg-red-500/10 border border-red-500/30 text-red-400 rounded-lg font-medium hover:bg-red-500/20 transition-colors">
+        <button className="px-4 py-2 bg-white border border-red-300 text-red-600 rounded-lg font-medium hover:bg-red-50 transition-colors">
           Delete Account
         </button>
       </div>

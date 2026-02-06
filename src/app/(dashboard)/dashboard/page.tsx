@@ -6,11 +6,11 @@ import { getSupabaseServerClient } from '@/lib/supabase/server';
 import {
   RiContactsLine,
   RiFlowChart,
-  RiBarChartLine,
-  RiArrowRightLine,
+  RiBarChartBoxLine,
+  RiArrowRightSLine,
   RiAddLine,
-  RiMessageLine,
-  RiTimeLine,
+  RiMessage2Line,
+  RiSettings4Line,
   RiSparklingLine,
 } from '@remixicon/react';
 
@@ -81,31 +81,31 @@ export default async function DashboardPage() {
   return (
     <div className="space-y-6">
       {/* Hero Section */}
-      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-violet-500 via-violet-600 to-purple-600 p-6 md:p-8 text-white">
+      <div className="relative overflow-hidden rounded-2xl bg-brand-gradient p-6 text-white shadow-lg shadow-brand-600/20 md:p-8">
         <div className="absolute inset-0 overflow-hidden">
-          <div className="absolute -top-24 -right-24 w-64 h-64 bg-white/10 rounded-full blur-3xl" />
-          <div className="absolute -bottom-32 -left-32 w-80 h-80 bg-white/5 rounded-full blur-3xl" />
+          <div className="absolute -right-24 -top-24 h-64 w-64 rounded-full bg-white/10 blur-3xl" />
+          <div className="absolute -bottom-32 -left-32 h-80 w-80 rounded-full bg-white/5 blur-3xl" />
         </div>
 
         <div className="relative z-10">
-          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
+          <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
             <div>
-              <div className="flex items-center gap-2 mb-2">
-                <RiSparklingLine className="w-5 h-5 animate-pulse" />
+              <div className="mb-2 flex items-center gap-2">
+                <RiSparklingLine className="h-5 w-5 animate-pulse" />
                 <span className="text-sm font-medium text-white/80">
                   {getGreeting()}
                 </span>
               </div>
-              <h1 className="text-2xl md:text-3xl font-bold mb-2">
+              <h1 className="mb-2 text-2xl font-bold md:text-3xl">
                 Welcome back, {firstName}!
               </h1>
-              <p className="text-white/70 max-w-lg">
+              <p className="max-w-lg text-white/70">
                 You have{' '}
-                <span className="text-white font-semibold">
+                <span className="font-semibold text-white">
                   {activeWorkflows || 0} active workflows
                 </span>{' '}
                 reaching{' '}
-                <span className="text-white font-semibold">
+                <span className="font-semibold text-white">
                   {contactCount || 0} contacts
                 </span>
                 .
@@ -115,16 +115,16 @@ export default async function DashboardPage() {
             <div className="flex items-center gap-3">
               <Link
                 href="/workflows/new"
-                className="flex items-center gap-2 px-4 py-2.5 bg-white text-violet-600 rounded-xl font-medium hover:bg-white/90 shadow-xl shadow-black/10 transition-all"
+                className="flex items-center gap-2 rounded-xl bg-white px-4 py-2.5 font-medium text-brand-600 shadow-xl shadow-black/10 transition-all hover:bg-white/90"
               >
-                <RiAddLine className="w-5 h-5" />
+                <RiAddLine className="h-5 w-5" />
                 New Workflow
               </Link>
               <Link
                 href="/contacts"
-                className="flex items-center gap-2 px-4 py-2.5 text-white border border-white/20 rounded-xl font-medium hover:bg-white/10 transition-all"
+                className="flex items-center gap-2 rounded-xl border border-white/20 px-4 py-2.5 font-medium text-white transition-all hover:bg-white/10"
               >
-                <RiContactsLine className="w-5 h-5" />
+                <RiContactsLine className="h-5 w-5" />
                 Contacts
               </Link>
             </div>
@@ -133,18 +133,18 @@ export default async function DashboardPage() {
       </div>
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
         <Link
           href="/contacts"
-          className="group relative bg-gray-900/80 backdrop-blur-xl rounded-2xl border border-white/10 p-5 hover:border-violet-500/30 transition-all"
+          className="group relative rounded-xl border border-gray-200 bg-white p-5 shadow-sm transition-all hover:border-gray-300 hover:shadow-md"
         >
-          <div className="flex items-center justify-between mb-3">
-            <div className="p-2.5 rounded-xl bg-violet-500/10 text-violet-400 group-hover:bg-violet-500 group-hover:text-white transition-colors">
-              <RiContactsLine className="w-5 h-5" />
+          <div className="mb-3 flex items-center justify-between">
+            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-brand-50 text-brand-600 ring-1 ring-inset ring-brand-600/10 transition-colors group-hover:bg-brand-600 group-hover:text-white group-hover:ring-0">
+              <RiContactsLine className="h-5 w-5" />
             </div>
-            <RiArrowRightLine className="w-4 h-4 text-gray-600 group-hover:text-violet-400 group-hover:translate-x-1 transition-all" />
+            <RiArrowRightSLine className="h-5 w-5 text-gray-400 transition-transform group-hover:translate-x-0.5 group-hover:text-brand-600" />
           </div>
-          <div className="text-3xl font-bold text-white mb-1">
+          <div className="mb-1 text-3xl font-bold text-gray-900">
             {contactCount || 0}
           </div>
           <p className="text-sm text-gray-500">Total Contacts</p>
@@ -152,39 +152,39 @@ export default async function DashboardPage() {
 
         <Link
           href="/workflows"
-          className="group relative bg-gray-900/80 backdrop-blur-xl rounded-2xl border border-white/10 p-5 hover:border-blue-500/30 transition-all"
+          className="group relative rounded-xl border border-gray-200 bg-white p-5 shadow-sm transition-all hover:border-gray-300 hover:shadow-md"
         >
-          <div className="flex items-center justify-between mb-3">
-            <div className="p-2.5 rounded-xl bg-blue-500/10 text-blue-400 group-hover:bg-blue-500 group-hover:text-white transition-colors">
-              <RiFlowChart className="w-5 h-5" />
+          <div className="mb-3 flex items-center justify-between">
+            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-brand-50 text-brand-600 ring-1 ring-inset ring-brand-600/10 transition-colors group-hover:bg-brand-600 group-hover:text-white group-hover:ring-0">
+              <RiFlowChart className="h-5 w-5" />
             </div>
-            <RiArrowRightLine className="w-4 h-4 text-gray-600 group-hover:text-blue-400 group-hover:translate-x-1 transition-all" />
+            <RiArrowRightSLine className="h-5 w-5 text-gray-400 transition-transform group-hover:translate-x-0.5 group-hover:text-brand-600" />
           </div>
-          <div className="text-3xl font-bold text-white mb-1">
+          <div className="mb-1 text-3xl font-bold text-gray-900">
             {workflowCount || 0}
           </div>
           <p className="text-sm text-gray-500">Workflows</p>
         </Link>
 
-        <div className="group relative bg-gray-900/80 backdrop-blur-xl rounded-2xl border border-white/10 p-5">
-          <div className="flex items-center justify-between mb-3">
-            <div className="p-2.5 rounded-xl bg-green-500/10 text-green-400">
-              <RiFlowChart className="w-5 h-5" />
+        <div className="group relative rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
+          <div className="mb-3 flex items-center justify-between">
+            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-green-50 text-green-600 ring-1 ring-inset ring-green-600/10">
+              <RiFlowChart className="h-5 w-5" />
             </div>
           </div>
-          <div className="text-3xl font-bold text-white mb-1">
+          <div className="mb-1 text-3xl font-bold text-gray-900">
             {activeWorkflows || 0}
           </div>
           <p className="text-sm text-gray-500">Active Workflows</p>
         </div>
 
-        <div className="group relative bg-gray-900/80 backdrop-blur-xl rounded-2xl border border-white/10 p-5">
-          <div className="flex items-center justify-between mb-3">
-            <div className="p-2.5 rounded-xl bg-amber-500/10 text-amber-400">
-              <RiMessageLine className="w-5 h-5" />
+        <div className="group relative rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
+          <div className="mb-3 flex items-center justify-between">
+            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-amber-50 text-amber-600 ring-1 ring-inset ring-amber-600/10">
+              <RiMessage2Line className="h-5 w-5" />
             </div>
           </div>
-          <div className="text-3xl font-bold text-white mb-1">
+          <div className="mb-1 text-3xl font-bold text-gray-900">
             {messagesToday || 0}
           </div>
           <p className="text-sm text-gray-500">Messages Today</p>
@@ -192,97 +192,88 @@ export default async function DashboardPage() {
       </div>
 
       {/* Quick Actions */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
         <Link
           href="/workflows/new"
-          className="group p-4 rounded-xl border border-white/10 bg-gray-900/80 hover:border-violet-500/30 transition-all"
+          className="group flex items-center gap-3 rounded-xl border border-gray-200 bg-white p-4 shadow-sm transition-all hover:border-gray-300 hover:shadow-md"
         >
-          <div className="flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-violet-500/10 text-violet-400 group-hover:bg-violet-500 group-hover:text-white transition-colors">
-              <RiAddLine className="w-5 h-5" />
-            </div>
-            <div>
-              <p className="font-medium text-white">New Workflow</p>
-              <p className="text-xs text-gray-500">Create automation</p>
-            </div>
+          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-brand-50 text-brand-600 ring-1 ring-inset ring-brand-600/10 transition-colors group-hover:bg-brand-600 group-hover:text-white group-hover:ring-0">
+            <RiAddLine className="h-5 w-5" />
+          </div>
+          <div>
+            <p className="font-medium text-gray-900">New Workflow</p>
+            <p className="text-xs text-gray-500">Create automation</p>
           </div>
         </Link>
 
         <Link
           href="/contacts/upload"
-          className="group p-4 rounded-xl border border-white/10 bg-gray-900/80 hover:border-blue-500/30 transition-all"
+          className="group flex items-center gap-3 rounded-xl border border-gray-200 bg-white p-4 shadow-sm transition-all hover:border-gray-300 hover:shadow-md"
         >
-          <div className="flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-blue-500/10 text-blue-400 group-hover:bg-blue-500 group-hover:text-white transition-colors">
-              <RiContactsLine className="w-5 h-5" />
-            </div>
-            <div>
-              <p className="font-medium text-white">Import Contacts</p>
-              <p className="text-xs text-gray-500">Upload CSV</p>
-            </div>
+          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-brand-50 text-brand-600 ring-1 ring-inset ring-brand-600/10 transition-colors group-hover:bg-brand-600 group-hover:text-white group-hover:ring-0">
+            <RiContactsLine className="h-5 w-5" />
+          </div>
+          <div>
+            <p className="font-medium text-gray-900">Import Contacts</p>
+            <p className="text-xs text-gray-500">Upload CSV</p>
           </div>
         </Link>
 
         <Link
           href="/analytics"
-          className="group p-4 rounded-xl border border-white/10 bg-gray-900/80 hover:border-green-500/30 transition-all"
+          className="group flex items-center gap-3 rounded-xl border border-gray-200 bg-white p-4 shadow-sm transition-all hover:border-gray-300 hover:shadow-md"
         >
-          <div className="flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-green-500/10 text-green-400 group-hover:bg-green-500 group-hover:text-white transition-colors">
-              <RiBarChartLine className="w-5 h-5" />
-            </div>
-            <div>
-              <p className="font-medium text-white">Analytics</p>
-              <p className="text-xs text-gray-500">View reports</p>
-            </div>
+          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-green-50 text-green-600 ring-1 ring-inset ring-green-600/10 transition-colors group-hover:bg-green-600 group-hover:text-white group-hover:ring-0">
+            <RiBarChartBoxLine className="h-5 w-5" />
+          </div>
+          <div>
+            <p className="font-medium text-gray-900">Analytics</p>
+            <p className="text-xs text-gray-500">View reports</p>
           </div>
         </Link>
 
         <Link
           href="/settings"
-          className="group p-4 rounded-xl border border-white/10 bg-gray-900/80 hover:border-purple-500/30 transition-all"
+          className="group flex items-center gap-3 rounded-xl border border-gray-200 bg-white p-4 shadow-sm transition-all hover:border-gray-300 hover:shadow-md"
         >
-          <div className="flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-purple-500/10 text-purple-400 group-hover:bg-purple-500 group-hover:text-white transition-colors">
-              <RiTimeLine className="w-5 h-5" />
-            </div>
-            <div>
-              <p className="font-medium text-white">Settings</p>
-              <p className="text-xs text-gray-500">Configure</p>
-            </div>
+          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gray-100 text-gray-600 ring-1 ring-inset ring-gray-900/5 transition-colors group-hover:bg-gray-900 group-hover:text-white group-hover:ring-0">
+            <RiSettings4Line className="h-5 w-5" />
+          </div>
+          <div>
+            <p className="font-medium text-gray-900">Settings</p>
+            <p className="text-xs text-gray-500">Configure</p>
           </div>
         </Link>
       </div>
 
       {/* Recent Workflows */}
-      <div className="relative bg-gray-900/80 backdrop-blur-xl rounded-2xl border border-white/10 overflow-hidden">
-        <div className="h-px bg-gradient-to-r from-transparent via-violet-500/50 to-transparent" />
-        <div className="p-6 border-b border-white/10 flex items-center justify-between">
-          <h2 className="text-lg font-semibold text-white">Recent Workflows</h2>
+      <div className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
+        <div className="flex items-center justify-between border-b border-gray-200 px-6 py-4">
+          <h2 className="text-lg font-semibold text-gray-900">Recent Workflows</h2>
           <Link
             href="/workflows"
-            className="text-sm text-violet-400 hover:text-violet-300 font-medium flex items-center gap-1 transition-colors"
+            className="flex items-center gap-1 text-sm font-medium text-brand-600 transition-colors hover:text-brand-700"
           >
             View all
-            <RiArrowRightLine className="w-4 h-4" />
+            <RiArrowRightSLine className="h-4 w-4" />
           </Link>
         </div>
 
         {recentWorkflows && recentWorkflows.length > 0 ? (
-          <div className="divide-y divide-white/5">
+          <div className="divide-y divide-gray-100">
             {recentWorkflows.map((workflow) => (
               <Link
                 key={workflow.id}
                 href={`/workflows/${workflow.id}`}
-                className="block p-4 hover:bg-white/5 transition-colors"
+                className="block px-6 py-4 transition-colors hover:bg-gray-50"
               >
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-4">
-                    <div className="w-10 h-10 bg-white/5 rounded-xl flex items-center justify-center border border-white/10">
-                      <RiFlowChart className="w-5 h-5 text-gray-400" />
+                    <div className="flex h-10 w-10 items-center justify-center rounded-lg border border-gray-200 bg-gray-50">
+                      <RiFlowChart className="h-5 w-5 text-gray-400" />
                     </div>
                     <div>
-                      <p className="font-medium text-white">{workflow.name}</p>
+                      <p className="font-medium text-gray-900">{workflow.name}</p>
                       <p className="text-sm text-gray-500">
                         {workflow.total_enrolled || 0} enrolled ·{' '}
                         {workflow.total_responses || 0} responses
@@ -290,12 +281,12 @@ export default async function DashboardPage() {
                     </div>
                   </div>
                   <span
-                    className={`px-2.5 py-1 text-xs font-medium rounded-full ${
+                    className={`inline-flex items-center rounded-md px-2 py-1 text-xs font-medium ring-1 ring-inset ${
                       workflow.status === 'active'
-                        ? 'bg-green-500/20 text-green-400 border border-green-500/30'
+                        ? 'bg-green-50 text-green-700 ring-green-600/20'
                         : workflow.status === 'paused'
-                        ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30'
-                        : 'bg-white/10 text-gray-400 border border-white/10'
+                        ? 'bg-amber-50 text-amber-700 ring-amber-600/20'
+                        : 'bg-gray-50 text-gray-600 ring-gray-500/20'
                     }`}
                   >
                     {workflow.status}
@@ -306,16 +297,16 @@ export default async function DashboardPage() {
           </div>
         ) : (
           <div className="p-12 text-center">
-            <div className="w-16 h-16 bg-white/5 rounded-2xl flex items-center justify-center mx-auto mb-4 border border-white/10">
-              <RiFlowChart className="w-8 h-8 text-gray-500" />
+            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl border border-gray-200 bg-gray-50">
+              <RiFlowChart className="h-8 w-8 text-gray-400" />
             </div>
-            <p className="text-gray-400 mb-4">No workflows yet</p>
+            <p className="mb-4 text-gray-500">No workflows yet</p>
             <Link
               href="/workflows/new"
-              className="inline-flex items-center gap-2 text-violet-400 hover:text-violet-300 font-medium transition-colors"
+              className="inline-flex items-center gap-2 font-medium text-brand-600 transition-colors hover:text-brand-700"
             >
               Create your first workflow
-              <RiArrowRightLine className="w-4 h-4" />
+              <RiArrowRightSLine className="h-4 w-4" />
             </Link>
           </div>
         )}

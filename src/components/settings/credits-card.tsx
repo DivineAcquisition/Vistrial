@@ -117,12 +117,12 @@ export function CreditsCard({ organizationId, credits }: CreditsCardProps) {
   };
 
   return (
-    <Card className="bg-gray-900/80 border-white/10">
+    <Card className="bg-white/80 border-gray-200">
       <CardHeader>
         <div className="flex items-center justify-between">
           <div>
-            <CardTitle className="flex items-center gap-2 text-white">
-              <Coins className="h-5 w-5 text-violet-400" />
+            <CardTitle className="flex items-center gap-2 text-gray-900">
+              <Coins className="h-5 w-5 text-brand-400" />
               Message Credits
             </CardTitle>
             <CardDescription className="text-gray-400">Credits for SMS and voice drops</CardDescription>
@@ -137,9 +137,9 @@ export function CreditsCard({ organizationId, credits }: CreditsCardProps) {
       </CardHeader>
       <CardContent className="space-y-6">
         {/* Current Balance */}
-        <div className="p-4 bg-gray-800/50 rounded-lg border border-white/5">
+        <div className="p-4 bg-gray-800/50 rounded-lg border border-gray-100">
           <p className="text-sm text-gray-400 mb-1">Current Balance</p>
-          <p className="text-3xl font-bold text-white">{formatCentsToDollars(balance)}</p>
+          <p className="text-3xl font-bold text-gray-900">{formatCentsToDollars(balance)}</p>
           <div className="mt-2 grid grid-cols-2 gap-2 text-xs text-gray-500">
             <div>≈ {Math.floor(balance / 1.5)} SMS messages</div>
             <div>≈ {Math.floor(balance / 5)} voice drops</div>
@@ -154,18 +154,18 @@ export function CreditsCard({ organizationId, credits }: CreditsCardProps) {
               value={selectedAmount.toString()}
               onValueChange={(v) => setSelectedAmount(parseInt(v))}
             >
-              <SelectTrigger className="flex-1 bg-gray-800 border-white/10 text-white">
+              <SelectTrigger className="flex-1 bg-gray-800 border-gray-200 text-gray-900">
                 <SelectValue />
               </SelectTrigger>
-              <SelectContent className="bg-gray-900 border-white/10">
+              <SelectContent className="bg-white border-gray-200">
                 {REFILL_OPTIONS.map((amount) => (
-                  <SelectItem key={amount} value={amount.toString()} className="text-gray-300 focus:text-white focus:bg-white/5">
+                  <SelectItem key={amount} value={amount.toString()} className="text-gray-300 focus:text-gray-900 focus:bg-gray-50">
                     {formatCentsToDollars(amount)}
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
-            <Button onClick={handleRefill} disabled={isLoading} className="">
+            <Button onClick={handleRefill} disabled={isLoading} className="bg-brand-600 hover:bg-brand-700">
               {isLoading ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
               ) : (
@@ -176,7 +176,7 @@ export function CreditsCard({ organizationId, credits }: CreditsCardProps) {
         </div>
 
         {/* Auto-Refill Settings */}
-        <div className="space-y-4 pt-4 border-t border-white/10">
+        <div className="space-y-4 pt-4 border-t border-gray-200">
           <div className="flex items-center justify-between">
             <div>
               <Label htmlFor="auto-refill" className="text-gray-300">Auto-Refill</Label>
@@ -198,12 +198,12 @@ export function CreditsCard({ organizationId, credits }: CreditsCardProps) {
                 value={autoRefillAmount.toString()}
                 onValueChange={(v) => setAutoRefillAmount(parseInt(v))}
               >
-                <SelectTrigger className="bg-gray-800 border-white/10 text-white">
+                <SelectTrigger className="bg-gray-800 border-gray-200 text-gray-900">
                   <SelectValue />
                 </SelectTrigger>
-                <SelectContent className="bg-gray-900 border-white/10">
+                <SelectContent className="bg-white border-gray-200">
                   {REFILL_OPTIONS.map((amount) => (
-                    <SelectItem key={amount} value={amount.toString()} className="text-gray-300 focus:text-white focus:bg-white/5">
+                    <SelectItem key={amount} value={amount.toString()} className="text-gray-300 focus:text-gray-900 focus:bg-gray-50">
                       {formatCentsToDollars(amount)}
                     </SelectItem>
                   ))}
@@ -219,7 +219,7 @@ export function CreditsCard({ organizationId, credits }: CreditsCardProps) {
             variant="outline"
             onClick={handleSaveAutoRefill}
             disabled={isLoading}
-            className="w-full border-white/10 bg-gray-800 hover:bg-gray-700 text-white"
+            className="w-full border-gray-200 bg-gray-800 hover:bg-gray-100 text-gray-900"
           >
             {isLoading ? (
               <Loader2 className="h-4 w-4 animate-spin" />

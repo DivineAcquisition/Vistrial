@@ -80,7 +80,7 @@ export function ContactsTable({ contacts, loading, onSelect, onAction }: Contact
   if (contacts.length === 0) {
     return (
       <div className="p-12 text-center">
-        <div className="w-16 h-16 bg-white/5 rounded-2xl flex items-center justify-center mx-auto mb-4 border border-white/10">
+        <div className="w-16 h-16 bg-gray-50 rounded-2xl flex items-center justify-center mx-auto mb-4 border border-gray-200">
           <User className="w-8 h-8 text-gray-500" />
         </div>
         <p className="text-gray-400">No contacts found</p>
@@ -92,7 +92,7 @@ export function ContactsTable({ contacts, loading, onSelect, onAction }: Contact
     <div className="overflow-x-auto">
       <table className="w-full">
         <thead>
-          <tr className="border-b border-white/10">
+          <tr className="border-b border-gray-200">
             <th className="text-left p-4">
               <input
                 type="checkbox"
@@ -110,11 +110,11 @@ export function ContactsTable({ contacts, loading, onSelect, onAction }: Contact
             <th className="text-left p-4"></th>
           </tr>
         </thead>
-        <tbody className="divide-y divide-white/5">
+        <tbody className="divide-y divide-gray-100">
           {contacts.map((contact) => {
             const status = statusConfig[contact.status];
             return (
-              <tr key={contact.id} className="hover:bg-white/5 transition-colors">
+              <tr key={contact.id} className="hover:bg-gray-50 transition-colors">
                 <td className="p-4">
                   <input
                     type="checkbox"
@@ -126,11 +126,11 @@ export function ContactsTable({ contacts, loading, onSelect, onAction }: Contact
                 <td className="p-4">
                   <div className="flex items-center gap-3">
                     <div className="w-8 h-8 bg-gray-700 rounded-full flex items-center justify-center">
-                      <span className="text-white text-sm font-medium">
+                      <span className="text-gray-900 text-sm font-medium">
                         {contact.first_name.charAt(0)}
                       </span>
                     </div>
-                    <span className="text-white font-medium">
+                    <span className="text-gray-900 font-medium">
                       {contact.first_name} {contact.last_name}
                     </span>
                   </div>
@@ -155,7 +155,7 @@ export function ContactsTable({ contacts, loading, onSelect, onAction }: Contact
                 <td className="p-4">
                   <button
                     onClick={() => onAction?.("menu", contact)}
-                    className="p-2 text-gray-400 hover:text-white rounded-lg hover:bg-white/5"
+                    className="p-2 text-gray-400 hover:text-gray-900 rounded-lg hover:bg-gray-50"
                   >
                     <MoreHorizontal className="w-4 h-4" />
                   </button>

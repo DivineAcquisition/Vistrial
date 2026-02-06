@@ -1,61 +1,96 @@
+// ============================================
+// LOGO COMPONENT
+// Vistrial brand logo with brand colors
+// ============================================
+
 'use client';
 
+import Image from 'next/image';
 import { cn } from '@/lib/utils/cn';
 
 interface LogoProps {
-  size?: 'sm' | 'md' | 'lg';
-  variant?: 'light' | 'dark';
+  size?: 'sm' | 'md' | 'lg' | 'xl';
+  variant?: 'dark' | 'light';
   className?: string;
+  showText?: boolean;
 }
 
 const sizes = {
-  sm: { icon: 24, text: 'text-lg' },
-  md: { icon: 32, text: 'text-xl' },
-  lg: { icon: 40, text: 'text-2xl' },
+  sm: {
+    icon: 'h-8 w-8',
+    iconPx: 32,
+    text: 'text-lg',
+    image: { width: 120, height: 60 },
+  },
+  md: {
+    icon: 'h-10 w-10',
+    iconPx: 40,
+    text: 'text-xl',
+    image: { width: 150, height: 75 },
+  },
+  lg: {
+    icon: 'h-12 w-12',
+    iconPx: 48,
+    text: 'text-2xl',
+    image: { width: 180, height: 90 },
+  },
+  xl: {
+    icon: 'h-16 w-16',
+    iconPx: 64,
+    text: 'text-3xl',
+    image: { width: 240, height: 120 },
+  },
 };
 
-export function LogoIcon({ size = 32, className }: { size?: number; className?: string }) {
+// Logo icon component (just the icon)
+export function LogoIcon({ 
+  size = 'h-9 w-9', 
+  iconSize = 'h-5 w-5',
+  className 
+}: { 
+  size?: string; 
+  iconSize?: string;
+  className?: string;
+}) {
   return (
-    <svg
-      width={size}
-      height={size}
-      viewBox="0 0 40 40"
-      fill="none"
-      xmlns="http://www.w3.org/2000/svg"
-      className={className}
-    >
-      <rect width="40" height="40" rx="8" fill="url(#gradient)" />
-      <path
-        d="M12 28L20 12L28 28H12Z"
-        stroke="white"
-        strokeWidth="2.5"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        fill="none"
-      />
-      <circle cx="20" cy="22" r="3" fill="white" />
-      <defs>
-        <linearGradient id="gradient" x1="0" y1="0" x2="40" y2="40">
-          <stop stopColor="#8B5CF6" />
-          <stop offset="1" stopColor="#6366F1" />
-        </linearGradient>
-      </defs>
-    </svg>
+    <div className={cn(
+      'relative flex items-center justify-center rounded-xl bg-brand-gradient shadow-lg shadow-brand-600/25',
+      size,
+      className
+    )}>
+      {/* Inner glow effect */}
+      <div className="absolute inset-0 rounded-xl bg-gradient-to-br from-white/20 to-transparent" />
+      {/* V letter mark */}
+      <svg 
+        viewBox="0 0 24 24" 
+        fill="none" 
+        className={cn('relative text-white', iconSize)}
+      >
+        <path 
+          d="M4 4L12 20L20 4" 
+          stroke="currentColor" 
+          strokeWidth="3" 
+          strokeLinecap="round" 
+          strokeLinejoin="round"
+        />
+      </svg>
+    </div>
   );
 }
 
-export function LogoText({
-  className,
-  variant = 'dark',
-}: {
-  className?: string;
-  variant?: 'light' | 'dark';
+// Logo text component
+export function LogoText({ 
+  className, 
+  variant = 'dark' 
+}: { 
+  className?: string; 
+  variant?: 'dark' | 'light';
 }) {
   return (
     <span
       className={cn(
         'font-bold tracking-tight',
-        variant === 'dark' ? 'text-white' : 'text-gray-900',
+        variant === 'dark' ? 'text-gray-900' : 'text-white',
         className
       )}
     >
@@ -64,13 +99,39 @@ export function LogoText({
   );
 }
 
-export function Logo({ size = 'md', variant = 'dark', className }: LogoProps) {
+// Full logo with image (uses VistrialLT.png)
+export function LogoFull({ 
+  size = 'md', 
+  className,
+  variant = 'dark'
+}: LogoProps) {
   const sizeConfig = sizes[size];
 
   return (
-    <div className={cn('flex items-center gap-2', className)}>
-      <LogoIcon size={sizeConfig.icon} />
-      <LogoText className={sizeConfig.text} variant={variant} />
+    <div className={cn('flex items-center', className)}>
+      <Image
+        src="/VistrialLT.png"
+        alt="Vistrial"
+        width={sizeConfig.image.width}
+        height={sizeConfig.image.height}
+        className={cn(
+          'object-contain',
+          variant === 'light' && 'brightness-0 invert'
+        )}
+        priority
+      />
+    </div>
+  );
+}
+
+// Default logo (icon + text)
+export function Logo({ size = 'md', variant = 'dark', className, showText = true }: LogoProps) {
+  const sizeConfig = sizes[size];
+
+  return (
+    <div className={cn('flex items-center gap-2.5', className)}>
+      <LogoIcon size={sizeConfig.icon} iconSize={`h-${sizeConfig.iconPx / 8} w-${sizeConfig.iconPx / 8}`} />
+      {showText && <LogoText className={sizeConfig.text} variant={variant} />}
     </div>
   );
 }

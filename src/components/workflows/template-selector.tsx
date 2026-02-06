@@ -61,7 +61,7 @@ export function TemplateSelector({
     <div className="space-y-6">
       {/* Start from scratch */}
       <Card
-        className="border-dashed border-2 border-white/20 bg-gray-900/50 cursor-pointer hover:border-violet-500/50 transition-colors"
+        className="border-dashed border-2 border-gray-300 bg-gray-500 cursor-pointer hover:border-brand-500/50 transition-colors"
         onClick={onStartFromScratch}
       >
         <CardContent className="flex items-center justify-center py-8">
@@ -69,7 +69,7 @@ export function TemplateSelector({
             <div className="w-12 h-12 rounded-full bg-gray-800 flex items-center justify-center mx-auto mb-3">
               <Plus className="h-6 w-6 text-gray-400" />
             </div>
-            <p className="font-medium text-white">Start from Scratch</p>
+            <p className="font-medium text-gray-900">Start from Scratch</p>
             <p className="text-sm text-gray-400">
               Build a custom workflow step by step
             </p>
@@ -79,7 +79,7 @@ export function TemplateSelector({
 
       {/* Templates grid */}
       <div>
-        <h2 className="text-lg font-semibold text-white mb-4">Pre-built Templates</h2>
+        <h2 className="text-lg font-semibold text-gray-900 mb-4">Pre-built Templates</h2>
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           {templates.map((template) => {
             const Icon = categoryIcons[template.category] || RefreshCw;
@@ -90,7 +90,7 @@ export function TemplateSelector({
             return (
               <Card
                 key={template.id}
-                className="bg-gray-900/80 border-white/10 cursor-pointer hover:border-violet-500/50 transition-all"
+                className="bg-white/80 border-gray-200 cursor-pointer hover:border-brand-500/50 transition-all"
                 onClick={() => onSelect(template)}
               >
                 <CardHeader className="pb-3">
@@ -102,11 +102,11 @@ export function TemplateSelector({
                     >
                       <Icon className="h-5 w-5" />
                     </div>
-                    <Badge variant="outline" className="text-xs border-white/20 text-gray-400">
+                    <Badge variant="outline" className="text-xs border-gray-300 text-gray-400">
                       {steps?.length || 0} steps
                     </Badge>
                   </div>
-                  <CardTitle className="text-lg mt-3 text-white">{template.name}</CardTitle>
+                  <CardTitle className="text-lg mt-3 text-gray-900">{template.name}</CardTitle>
                   <CardDescription className="line-clamp-2 text-gray-400">
                     {template.description}
                   </CardDescription>
@@ -126,7 +126,7 @@ export function TemplateSelector({
                       </div>
                     )}
                   </div>
-                  <Button className="w-full mt-4 bg-violet-600/20 text-violet-400 hover:bg-violet-600 hover:text-white border border-violet-500/30">
+                  <Button className="w-full mt-4 bg-brand-600/20 text-brand-400 hover:bg-brand-600 hover:text-gray-900 border border-brand-500/30">
                     Use Template
                   </Button>
                 </CardContent>

@@ -55,19 +55,19 @@ export function WorkflowCard({ workflow, onActivate, onPause }: WorkflowCardProp
   const status = statusConfig[workflow.status];
 
   return (
-    <div className="group bg-gray-900/80 backdrop-blur-xl rounded-2xl border border-white/10 p-6 hover:border-violet-500/30 transition-all">
+    <div className="group bg-white rounded-2xl border border-gray-200 p-6 hover:border-brand-500/30 transition-all">
       {/* Header */}
       <div className="flex items-start justify-between mb-4">
         <div className="flex items-center gap-3">
           {/* Type Icons */}
           <div className="flex items-center gap-1">
             {workflow.has_sms && (
-              <div className="p-2 rounded-lg bg-violet-500/10 text-violet-400">
+              <div className="p-2 rounded-lg bg-brand-500/10 text-brand-400">
                 <MessageSquare className="w-4 h-4" />
               </div>
             )}
             {workflow.has_voice && (
-              <div className="p-2 rounded-lg bg-blue-500/10 text-blue-400">
+              <div className="p-2 rounded-lg bg-brand-400/10 text-brand-400">
                 <Phone className="w-4 h-4" />
               </div>
             )}
@@ -76,14 +76,14 @@ export function WorkflowCard({ workflow, onActivate, onPause }: WorkflowCardProp
             {status.label}
           </span>
         </div>
-        <button className="p-2 text-gray-400 hover:text-white opacity-0 group-hover:opacity-100 transition-all rounded-lg hover:bg-white/5">
+        <button className="p-2 text-gray-400 hover:text-gray-900 opacity-0 group-hover:opacity-100 transition-all rounded-lg hover:bg-gray-50">
           <MoreHorizontal className="w-4 h-4" />
         </button>
       </div>
 
       {/* Content */}
       <Link href={`/workflows/${workflow.id}`}>
-        <h3 className="text-lg font-semibold text-white mb-2 group-hover:text-violet-400 transition-colors">
+        <h3 className="text-lg font-semibold text-gray-900 mb-2 group-hover:text-brand-400 transition-colors">
           {workflow.name}
         </h3>
         {workflow.description && (
@@ -95,28 +95,28 @@ export function WorkflowCard({ workflow, onActivate, onPause }: WorkflowCardProp
 
       {/* Stats */}
       <div className="grid grid-cols-3 gap-3 mb-4">
-        <div className="text-center p-2 bg-white/5 rounded-lg">
+        <div className="text-center p-2 bg-gray-50 rounded-lg">
           <div className="flex items-center justify-center gap-1 text-gray-400 mb-1">
             <Users className="w-3 h-3" />
           </div>
-          <p className="text-lg font-semibold text-white">{workflow.enrolled_count}</p>
+          <p className="text-lg font-semibold text-gray-900">{workflow.enrolled_count}</p>
           <p className="text-xs text-gray-500">Enrolled</p>
         </div>
-        <div className="text-center p-2 bg-white/5 rounded-lg">
+        <div className="text-center p-2 bg-gray-50 rounded-lg">
           <div className="flex items-center justify-center gap-1 text-gray-400 mb-1">
             <TrendingUp className="w-3 h-3" />
           </div>
-          <p className="text-lg font-semibold text-white">{workflow.completed_count}</p>
+          <p className="text-lg font-semibold text-gray-900">{workflow.completed_count}</p>
           <p className="text-xs text-gray-500">Completed</p>
         </div>
-        <div className="text-center p-2 bg-white/5 rounded-lg">
+        <div className="text-center p-2 bg-gray-50 rounded-lg">
           <p className="text-lg font-semibold text-green-400">{workflow.response_rate}%</p>
           <p className="text-xs text-gray-500">Response</p>
         </div>
       </div>
 
       {/* Footer */}
-      <div className="flex items-center justify-between pt-4 border-t border-white/5">
+      <div className="flex items-center justify-between pt-4 border-t border-gray-100">
         <span className="text-sm text-gray-400">{workflow.step_count} steps</span>
         <div className="flex items-center gap-2">
           {workflow.status === "active" ? (
@@ -138,7 +138,7 @@ export function WorkflowCard({ workflow, onActivate, onPause }: WorkflowCardProp
           )}
           <Link 
             href={`/workflows/${workflow.id}`}
-            className="p-2 text-violet-400 hover:bg-violet-500/10 rounded-lg transition-colors"
+            className="p-2 text-brand-400 hover:bg-brand-500/10 rounded-lg transition-colors"
           >
             <ArrowRight className="w-4 h-4" />
           </Link>

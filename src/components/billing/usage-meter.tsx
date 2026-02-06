@@ -47,13 +47,13 @@ export function UsageMeter({ credits, breakdown, showRefill = true, compact = fa
                   ? "bg-red-500" 
                   : isLow 
                     ? "bg-amber-500" 
-                    : "bg-gradient-to-r from-violet-500 to-blue-500"
+                    : "bg-gradient-to-r from-brand-500 to-blue-500"
               }`}
               style={{ width: `${percentRemaining}%` }}
             />
           </div>
         </div>
-        <span className={`text-sm font-medium ${isCritical ? "text-red-400" : isLow ? "text-amber-400" : "text-white"}`}>
+        <span className={`text-sm font-medium ${isCritical ? "text-red-400" : isLow ? "text-amber-400" : "text-gray-900"}`}>
           {credits.remaining}
         </span>
       </div>
@@ -61,14 +61,14 @@ export function UsageMeter({ credits, breakdown, showRefill = true, compact = fa
   }
 
   return (
-    <div className="bg-gray-900/80 backdrop-blur-xl rounded-2xl border border-white/10 p-6">
+    <div className="bg-white rounded-2xl border border-gray-200 p-6">
       {/* Header */}
       <div className="flex items-center justify-between mb-4">
-        <h3 className="text-lg font-semibold text-white">Credit Balance</h3>
+        <h3 className="text-lg font-semibold text-gray-900">Credit Balance</h3>
         {showRefill && (
           <Link
             href="/usage"
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm text-violet-400 hover:bg-violet-500/10 rounded-lg transition-colors"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm text-brand-400 hover:bg-brand-500/10 rounded-lg transition-colors"
           >
             <RefreshCw className="w-4 h-4" />
             Add Credits
@@ -81,7 +81,7 @@ export function UsageMeter({ credits, breakdown, showRefill = true, compact = fa
         <div className="flex items-end justify-between mb-2">
           <div>
             <span className={`text-4xl font-bold ${
-              isCritical ? "text-red-400" : isLow ? "text-amber-400" : "text-white"
+              isCritical ? "text-red-400" : isLow ? "text-amber-400" : "text-gray-900"
             }`}>
               {credits.remaining.toLocaleString()}
             </span>
@@ -98,7 +98,7 @@ export function UsageMeter({ credits, breakdown, showRefill = true, compact = fa
                 ? "bg-gradient-to-r from-red-600 to-red-400" 
                 : isLow 
                   ? "bg-gradient-to-r from-amber-600 to-amber-400" 
-                  : "bg-gradient-to-r from-violet-500 to-blue-500"
+                  : "bg-gradient-to-r from-brand-500 to-blue-500"
             }`}
             style={{ width: `${percentRemaining}%` }}
           />
@@ -121,27 +121,27 @@ export function UsageMeter({ credits, breakdown, showRefill = true, compact = fa
 
       {/* Breakdown */}
       {breakdown && (
-        <div className="grid grid-cols-3 gap-3 pt-4 border-t border-white/5">
+        <div className="grid grid-cols-3 gap-3 pt-4 border-t border-gray-100">
           <div className="text-center">
             <div className="flex items-center justify-center gap-1 text-gray-400 mb-1">
               <MessageSquare className="w-3 h-3" />
               <span className="text-xs">SMS</span>
             </div>
-            <p className="text-lg font-semibold text-white">{breakdown.sms}</p>
+            <p className="text-lg font-semibold text-gray-900">{breakdown.sms}</p>
           </div>
           <div className="text-center">
             <div className="flex items-center justify-center gap-1 text-gray-400 mb-1">
               <Phone className="w-3 h-3" />
               <span className="text-xs">Voice</span>
             </div>
-            <p className="text-lg font-semibold text-white">{breakdown.voice}</p>
+            <p className="text-lg font-semibold text-gray-900">{breakdown.voice}</p>
           </div>
           <div className="text-center">
             <div className="flex items-center justify-center gap-1 text-gray-400 mb-1">
               <Sparkles className="w-3 h-3" />
               <span className="text-xs">AI</span>
             </div>
-            <p className="text-lg font-semibold text-white">{breakdown.ai}</p>
+            <p className="text-lg font-semibold text-gray-900">{breakdown.ai}</p>
           </div>
         </div>
       )}

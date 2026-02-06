@@ -52,10 +52,10 @@ export function EmptyState({
 
   return (
     <div className={`text-center py-12 px-4 ${className}`}>
-      <div className="w-16 h-16 bg-white/5 rounded-2xl flex items-center justify-center mx-auto mb-4 border border-white/10">
+      <div className="w-16 h-16 bg-gray-50 rounded-2xl flex items-center justify-center mx-auto mb-4 border border-gray-200">
         <Icon className="w-8 h-8 text-gray-500" />
       </div>
-      <h3 className="text-lg font-semibold text-white mb-2">{title}</h3>
+      <h3 className="text-lg font-semibold text-gray-900 mb-2">{title}</h3>
       {description && (
         <p className="text-gray-400 max-w-sm mx-auto mb-6">{description}</p>
       )}
@@ -63,7 +63,7 @@ export function EmptyState({
         action.href ? (
           <Link
             href={action.href}
-            className="inline-flex items-center gap-2 px-4 py-2.5 bg-violet-600 text-white rounded-xl font-medium hover:bg-violet-700 transition-colors"
+            className="inline-flex items-center gap-2 px-4 py-2.5 bg-brand-600 text-gray-900 rounded-xl font-medium hover:bg-brand-700 transition-colors"
           >
             <ActionIcon className="w-5 h-5" />
             {action.label}
@@ -71,7 +71,7 @@ export function EmptyState({
         ) : (
           <button
             onClick={action.onClick}
-            className="inline-flex items-center gap-2 px-4 py-2.5 bg-violet-600 text-white rounded-xl font-medium hover:bg-violet-700 transition-colors"
+            className="inline-flex items-center gap-2 px-4 py-2.5 bg-brand-600 text-gray-900 rounded-xl font-medium hover:bg-brand-700 transition-colors"
           >
             <ActionIcon className="w-5 h-5" />
             {action.label}

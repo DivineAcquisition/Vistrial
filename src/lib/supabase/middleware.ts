@@ -56,7 +56,6 @@ export async function updateSession(request: NextRequest) {
     '/auth/callback',
     '/auth/reset-password',
     '/onboarding',
-    '/unsubscribe',
   ];
 
   // Define routes that should always be public (webhooks, public pages)
@@ -65,8 +64,6 @@ export async function updateSession(request: NextRequest) {
     '/book/',
     '/embed/',
     '/q/',
-    '/lite',
-    '/compliance',
   ];
 
   const isPublicRoute = publicRoutes.some(

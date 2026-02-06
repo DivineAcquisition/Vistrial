@@ -16,7 +16,6 @@ import {
 } from '@/lib/telnyx';
 import {
   sendEmailWithRetry,
-  processEmailTemplate,
   generateWorkflowEmailHtml,
   isValidEmail as isValidResendEmail,
 } from '@/lib/resend';
@@ -301,7 +300,6 @@ export async function sendWorkflowStepMessage(params: {
 
   // Email sending via Resend
   if (step.type === 'email') {
-    // Extract subject from the first line or use a default
     const lines = content.split('\n');
     const subject = lines.length > 1 ? lines[0] : `Message from ${organization.name}`;
     const body = lines.length > 1 ? lines.slice(1).join('\n').trim() : content;
@@ -354,7 +352,6 @@ export interface SendEmailMessageParams {
 export async function sendEmailMessage(params: SendEmailMessageParams): Promise<SendMessageResult> {
   const admin = getSupabaseAdminClient();
 
-  // Get contact
   const { data: contact, error: contactError } = await admin
     .from('contacts')
     .select('*')
@@ -362,42 +359,23 @@ export async function sendEmailMessage(params: SendEmailMessageParams): Promise<
     .single();
 
   if (contactError || !contact) {
-    return {
-      success: false,
-      costCents: 0,
-      error: 'Contact not found',
-    };
+    return { success: false, costCents: 0, error: 'Contact not found' };
   }
 
-  // Check if contact has valid email and is opted in
   if (!contact.email || !isValidResendEmail(contact.email)) {
-    return {
-      success: false,
-      costCents: 0,
-      error: 'Contact does not have a valid email address',
-    };
+    return { success: false, costCents: 0, error: 'Contact does not have a valid email address' };
   }
 
   if (!contact.email_opted_in) {
-    return {
-      success: false,
-      costCents: 0,
-      error: 'Contact has opted out of email',
-    };
+    return { success: false, costCents: 0, error: 'Contact has opted out of email' };
   }
 
   if (contact.status === 'unsubscribed' || contact.status === 'do_not_contact') {
-    return {
-      success: false,
-      costCents: 0,
-      error: `Contact status is ${contact.status}`,
-    };
+    return { success: false, costCents: 0, error: `Contact status is ${contact.status}` };
   }
 
-  // Calculate cost
   const costCents = Math.ceil(getMessageCost('email'));
 
-  // Check credit balance
   const { data: credits } = await admin
     .from('credit_balances')
     .select('balance_cents')
@@ -405,14 +383,9 @@ export async function sendEmailMessage(params: SendEmailMessageParams): Promise<
     .single();
 
   if (!credits || credits.balance_cents < costCents) {
-    return {
-      success: false,
-      costCents: 0,
-      error: 'Insufficient credits',
-    };
+    return { success: false, costCents: 0, error: 'Insufficient credits' };
   }
 
-  // Create message record (queued status)
   const messageInsert: MessageInsert = {
     organization_id: params.organizationId,
     contact_id: params.contactId,
@@ -435,14 +408,9 @@ export async function sendEmailMessage(params: SendEmailMessageParams): Promise<
     .single();
 
   if (messageError || !message) {
-    return {
-      success: false,
-      costCents: 0,
-      error: 'Failed to create message record',
-    };
+    return { success: false, costCents: 0, error: 'Failed to create message record' };
   }
 
-  // Deduct credits
   const { data: deductSuccess } = await admin.rpc('deduct_credits', {
     p_organization_id: params.organizationId,
     p_amount_cents: costCents,
@@ -450,38 +418,25 @@ export async function sendEmailMessage(params: SendEmailMessageParams): Promise<
   });
 
   if (!deductSuccess) {
-    await admin
-      .from('messages')
-      .update({ status: 'failed', failed_at: new Date().toISOString() })
-      .eq('id', message.id);
-
-    return {
-      success: false,
-      dbMessageId: message.id,
-      costCents: 0,
-      error: 'Failed to deduct credits',
-    };
+    await admin.from('messages').update({ status: 'failed', failed_at: new Date().toISOString() }).eq('id', message.id);
+    return { success: false, dbMessageId: message.id, costCents: 0, error: 'Failed to deduct credits' };
   }
 
-  // Get organization for branding
   const { data: org } = await admin
     .from('organizations')
     .select('name, primary_color, email')
     .eq('id', params.organizationId)
     .single();
 
-  // Build from address using the org name with the mail subdomain
   const fromName = org?.name || 'Vistrial';
   const fromEmail = `${fromName} <noreply@mail.vistrial.io>`;
   const replyTo = org?.email || 'support@vistrial.io';
 
-  // Generate branded HTML email from the content template
   const htmlContent = generateWorkflowEmailHtml(params.content, {
     businessName: org?.name,
     businessColor: org?.primary_color || '#8b5cf6',
   });
 
-  // Send via Resend
   const sendResult = await sendEmailWithRetry({
     to: contact.email,
     subject: params.subject,
@@ -496,53 +451,21 @@ export async function sendEmailMessage(params: SendEmailMessageParams): Promise<
     ],
   });
 
-  // Update message record
   if (sendResult.success) {
-    await admin
-      .from('messages')
-      .update({
-        status: 'sent',
-        sent_at: new Date().toISOString(),
-        provider: 'resend',
-        provider_message_id: sendResult.messageId,
-      })
-      .eq('id', message.id);
+    await admin.from('messages').update({
+      status: 'sent',
+      sent_at: new Date().toISOString(),
+      provider: 'resend',
+      provider_message_id: sendResult.messageId,
+    }).eq('id', message.id);
 
-    // Update contact last_contacted_at
-    await admin
-      .from('contacts')
-      .update({ last_contacted_at: new Date().toISOString() })
-      .eq('id', params.contactId);
+    await admin.from('contacts').update({ last_contacted_at: new Date().toISOString() }).eq('id', params.contactId);
 
-    return {
-      success: true,
-      messageId: sendResult.messageId,
-      dbMessageId: message.id,
-      costCents,
-    };
+    return { success: true, messageId: sendResult.messageId, dbMessageId: message.id, costCents };
   } else {
-    // Refund credits on failure
-    await admin.rpc('add_credits', {
-      p_organization_id: params.organizationId,
-      p_amount_cents: costCents,
-      p_is_purchase: false,
-    });
-
-    await admin
-      .from('messages')
-      .update({
-        status: 'failed',
-        failed_at: new Date().toISOString(),
-        provider_error: sendResult.error,
-      })
-      .eq('id', message.id);
-
-    return {
-      success: false,
-      dbMessageId: message.id,
-      costCents: 0,
-      error: sendResult.error,
-    };
+    await admin.rpc('add_credits', { p_organization_id: params.organizationId, p_amount_cents: costCents, p_is_purchase: false });
+    await admin.from('messages').update({ status: 'failed', failed_at: new Date().toISOString(), provider_error: sendResult.error }).eq('id', message.id);
+    return { success: false, dbMessageId: message.id, costCents: 0, error: sendResult.error };
   }
 }
 

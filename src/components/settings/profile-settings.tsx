@@ -67,9 +67,9 @@ export function ProfileSettings({ user }: ProfileSettingsProps) {
 
   return (
     <div className="space-y-6">
-      <Card className="bg-gray-900/80 border-white/10">
+      <Card className="bg-white/80 border-gray-200">
         <CardHeader>
-          <CardTitle className="text-white">Profile Information</CardTitle>
+          <CardTitle className="text-gray-900">Profile Information</CardTitle>
           <CardDescription className="text-gray-400">
             Update your personal information
           </CardDescription>
@@ -84,7 +84,7 @@ export function ProfileSettings({ user }: ProfileSettingsProps) {
                   value={firstName}
                   onChange={(e) => setFirstName(e.target.value)}
                   disabled={isLoading}
-                  className="bg-gray-800 border-white/10 text-white"
+                  className="bg-gray-800 border-gray-200 text-gray-900"
                 />
               </div>
               <div className="space-y-2">
@@ -94,7 +94,7 @@ export function ProfileSettings({ user }: ProfileSettingsProps) {
                   value={lastName}
                   onChange={(e) => setLastName(e.target.value)}
                   disabled={isLoading}
-                  className="bg-gray-800 border-white/10 text-white"
+                  className="bg-gray-800 border-gray-200 text-gray-900"
                 />
               </div>
             </div>
@@ -106,14 +106,14 @@ export function ProfileSettings({ user }: ProfileSettingsProps) {
                 type="email"
                 value={user.email || ''}
                 disabled
-                className="bg-gray-800/50 border-white/10 text-gray-400"
+                className="bg-gray-800/50 border-gray-200 text-gray-400"
               />
               <p className="text-xs text-gray-500">
                 Contact support to change your email address
               </p>
             </div>
 
-            <Button type="submit" disabled={isLoading} className="">
+            <Button type="submit" disabled={isLoading} className="bg-brand-600 hover:bg-brand-700">
               {isLoading ? (
                 <>
                   <Loader2 className="h-4 w-4 mr-2 animate-spin" />
@@ -127,9 +127,9 @@ export function ProfileSettings({ user }: ProfileSettingsProps) {
         </CardContent>
       </Card>
 
-      <Card className="bg-gray-900/80 border-white/10">
+      <Card className="bg-white/80 border-gray-200">
         <CardHeader>
-          <CardTitle className="text-white">Password</CardTitle>
+          <CardTitle className="text-gray-900">Password</CardTitle>
           <CardDescription className="text-gray-400">
             Change your password
           </CardDescription>
@@ -213,11 +213,11 @@ function ChangePasswordForm() {
           value={currentPassword}
           onChange={(e) => setCurrentPassword(e.target.value)}
           disabled={isLoading}
-          className="bg-gray-800 border-white/10 text-white"
+          className="bg-gray-800 border-gray-200 text-gray-900"
         />
       </div>
 
-      <Separator className="bg-white/10" />
+      <Separator className="bg-gray-100" />
 
       <div className="space-y-2">
         <Label htmlFor="newPassword" className="text-gray-300">New Password</Label>
@@ -227,7 +227,7 @@ function ChangePasswordForm() {
           value={newPassword}
           onChange={(e) => setNewPassword(e.target.value)}
           disabled={isLoading}
-          className="bg-gray-800 border-white/10 text-white"
+          className="bg-gray-800 border-gray-200 text-gray-900"
         />
       </div>
 
@@ -239,11 +239,11 @@ function ChangePasswordForm() {
           value={confirmPassword}
           onChange={(e) => setConfirmPassword(e.target.value)}
           disabled={isLoading}
-          className="bg-gray-800 border-white/10 text-white"
+          className="bg-gray-800 border-gray-200 text-gray-900"
         />
       </div>
 
-      <Button type="submit" disabled={isLoading} className="">
+      <Button type="submit" disabled={isLoading} className="bg-brand-600 hover:bg-brand-700">
         {isLoading ? (
           <>
             <Loader2 className="h-4 w-4 mr-2 animate-spin" />

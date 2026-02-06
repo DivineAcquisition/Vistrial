@@ -44,9 +44,9 @@ export function WorkflowSettingsPanel({ settings, onChange }: WorkflowSettingsPa
 
   return (
     <div className="space-y-6">
-      <Card className="bg-gray-900/80 border-white/10">
+      <Card className="bg-white/80 border-gray-200">
         <CardHeader>
-          <CardTitle className="text-white">Send Window</CardTitle>
+          <CardTitle className="text-gray-900">Send Window</CardTitle>
           <CardDescription className="text-gray-400">
             Configure when messages can be sent
           </CardDescription>
@@ -63,7 +63,7 @@ export function WorkflowSettingsPanel({ settings, onChange }: WorkflowSettingsPa
                 onChange={(e) =>
                   onChange({ ...settings, send_window_start: e.target.value })
                 }
-                className="bg-gray-800 border-white/10 text-white"
+                className="bg-gray-800 border-gray-200 text-gray-900"
               />
             </div>
             <div className="space-y-2">
@@ -75,7 +75,7 @@ export function WorkflowSettingsPanel({ settings, onChange }: WorkflowSettingsPa
                 onChange={(e) =>
                   onChange({ ...settings, send_window_end: e.target.value })
                 }
-                className="bg-gray-800 border-white/10 text-white"
+                className="bg-gray-800 border-gray-200 text-gray-900"
               />
             </div>
           </div>
@@ -93,7 +93,7 @@ export function WorkflowSettingsPanel({ settings, onChange }: WorkflowSettingsPa
                     id={`day-${day.value}`}
                     checked={settings.send_days.includes(day.value as any)}
                     onCheckedChange={() => toggleDay(day.value)}
-                    className="border-white/20"
+                    className="border-gray-300"
                   />
                   <label
                     htmlFor={`day-${day.value}`}
@@ -124,9 +124,9 @@ export function WorkflowSettingsPanel({ settings, onChange }: WorkflowSettingsPa
         </CardContent>
       </Card>
 
-      <Card className="bg-gray-900/80 border-white/10">
+      <Card className="bg-white/80 border-gray-200">
         <CardHeader>
-          <CardTitle className="text-white">Behavior</CardTitle>
+          <CardTitle className="text-gray-900">Behavior</CardTitle>
           <CardDescription className="text-gray-400">
             Configure how the workflow responds to actions
           </CardDescription>

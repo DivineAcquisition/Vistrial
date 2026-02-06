@@ -1,7 +1,10 @@
 // @ts-nocheck
 // ============================================
 // AUTH CALLBACK HANDLER
-// Handles OAuth callbacks AND email verification/magic links
+// Handles:
+//   1. OAuth code exchange (Google, etc.) - needs PKCE verifier in cookies
+//   2. Email confirmation via token_hash - NO PKCE needed (safe across browsers)
+//   3. Password recovery
 // ============================================
 
 import { NextRequest, NextResponse } from 'next/server';
@@ -15,12 +18,22 @@ export async function GET(request: NextRequest) {
   const token_hash = searchParams.get('token_hash');
   const type = searchParams.get('type');
   const next = searchParams.get('next') || '/dashboard';
+  const error_param = searchParams.get('error');
+  const error_description = searchParams.get('error_description');
   const origin = new URL(request.url).origin;
+
+  // If Supabase sent an error directly (e.g. access_denied)
+  if (error_param) {
+    const msg = error_description || error_param;
+    return NextResponse.redirect(
+      new URL(`/login?error=${encodeURIComponent(msg)}`, origin)
+    );
+  }
 
   const cookieStore = await cookies();
 
-  // Create Supabase client that writes cookies into the response
-  let response = NextResponse.redirect(new URL(next, origin));
+  let redirectUrl = new URL(next, origin);
+  let response = NextResponse.redirect(redirectUrl);
 
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -31,10 +44,13 @@ export async function GET(request: NextRequest) {
           return cookieStore.getAll();
         },
         setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value, options }) => {
-            cookieStore.set(name, value, options);
-          });
-          response = NextResponse.redirect(new URL(next, origin));
+          try {
+            cookiesToSet.forEach(({ name, value, options }) => {
+              cookieStore.set(name, value, options);
+            });
+          } catch {}
+          // Recreate response with cookies
+          response = NextResponse.redirect(redirectUrl);
           cookiesToSet.forEach(({ name, value, options }) => {
             response.cookies.set(name, value, options);
           });
@@ -43,19 +59,25 @@ export async function GET(request: NextRequest) {
     }
   );
 
-  // --- Flow 1: OAuth code exchange (Google, GitHub, etc.) ---
-  if (code) {
-    const { data, error } = await supabase.auth.exchangeCodeForSession(code);
+  // ---- Flow 1: token_hash (email confirmation, magic links) ----
+  // This does NOT need PKCE. Safe when opened in different browser/device.
+  // Check this FIRST because it's the most common email confirmation flow.
+  if (token_hash && type) {
+    const { data, error } = await supabase.auth.verifyOtp({
+      token_hash,
+      type: type,
+    });
 
     if (error) {
-      console.error('Auth callback code exchange error:', error);
+      console.error('OTP verify error:', error);
       return NextResponse.redirect(
         new URL(`/login?error=${encodeURIComponent(error.message)}`, origin)
       );
     }
 
     if (type === 'recovery') {
-      return NextResponse.redirect(new URL('/auth/reset-password', origin));
+      redirectUrl = new URL('/auth/reset-password', origin);
+      response = NextResponse.redirect(redirectUrl);
     }
 
     if (data?.user) {
@@ -65,22 +87,35 @@ export async function GET(request: NextRequest) {
     return response;
   }
 
-  // --- Flow 2: Email confirmation / magic link (token_hash) ---
-  if (token_hash && type) {
-    const { data, error } = await supabase.auth.verifyOtp({
-      token_hash,
-      type: type as any,
-    });
+  // ---- Flow 2: OAuth code exchange (Google, etc.) ----
+  // This REQUIRES the PKCE verifier cookie from the same browser session.
+  if (code) {
+    const { data, error } = await supabase.auth.exchangeCodeForSession(code);
 
     if (error) {
-      console.error('Auth callback OTP verify error:', error);
+      console.error('Code exchange error:', error);
+
+      // If PKCE verifier missing, give the user a clear message
+      if (error.message.includes('code verifier')) {
+        return NextResponse.redirect(
+          new URL(
+            '/login?error=' +
+              encodeURIComponent(
+                'Your email was confirmed but the session expired. Please sign in with your email and password.'
+              ),
+            origin
+          )
+        );
+      }
+
       return NextResponse.redirect(
         new URL(`/login?error=${encodeURIComponent(error.message)}`, origin)
       );
     }
 
     if (type === 'recovery') {
-      return NextResponse.redirect(new URL('/auth/reset-password', origin));
+      redirectUrl = new URL('/auth/reset-password', origin);
+      response = NextResponse.redirect(redirectUrl);
     }
 
     if (data?.user) {
@@ -91,11 +126,13 @@ export async function GET(request: NextRequest) {
   }
 
   // No code or token_hash
-  return NextResponse.redirect(new URL('/login?error=auth_callback_error', origin));
+  return NextResponse.redirect(
+    new URL('/login?error=' + encodeURIComponent('Invalid callback. Please try signing in again.'), origin)
+  );
 }
 
 // ============================================
-// Helper: auto-create org for new users
+// Auto-create organization for new users
 // ============================================
 async function ensureOrganization(user) {
   try {

@@ -91,94 +91,33 @@ export default function OnboardingPage() {
       
       if (userError || !user) {
         console.error("Auth error:", userError);
-        router.push("/login");
+        window.location.href = "/login";
         return;
       }
 
-      // Generate slug from business name
-      const baseSlug = formData.businessName
-        .toLowerCase()
-        .replace(/[^a-z0-9]+/g, "-")
-        .replace(/^-|-$/g, "")
-        .slice(0, 50);
+      // Use the setup-organization API to create org + membership
+      const response = await fetch("/api/auth/setup-organization", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: formData.businessName,
+          business_type: formData.businessType || "other",
+          user_id: user.id,
+          first_name: user.user_metadata?.first_name || formData.businessName.split(" ")[0],
+          last_name: user.user_metadata?.last_name || "",
+        }),
+      });
 
-      // Make slug unique by adding random suffix
-      const slug = `${baseSlug}-${Date.now().toString(36)}`;
-
-      // Check if user already has a business
-      const { data: existingBusiness } = await supabase
-        .from("businesses")
-        .select("id")
-        .eq("owner_id", user.id)
-        .maybeSingle();
-
-      if (existingBusiness) {
-        // Update existing business
-        const { error: updateError } = await supabase
-          .from("businesses")
-          .update({
-            name: formData.businessName,
-            trade: formData.businessType,
-            phone: formData.phone,
-            address_line1: formData.address,
-            city: formData.city,
-            state: formData.state,
-            zip: formData.zip,
-            primary_color: formData.primaryColor,
-            settings: {
-              timezone: "America/New_York",
-              currency: "USD",
-              date_format: "MM/DD/YYYY",
-              time_format: "12h",
-              tagline: formData.tagline,
-            },
-            onboarding_completed: true,
-            is_active: true,
-          })
-          .eq("id", existingBusiness.id);
-
-        if (updateError) {
-          console.error("Update error:", updateError);
-          throw updateError;
-        }
-      } else {
-        // Create new business
-        const { error: insertError } = await supabase
-          .from("businesses")
-          .insert({
-            owner_id: user.id,
-            name: formData.businessName,
-            slug,
-            trade: formData.businessType,
-            email: user.email,
-            phone: formData.phone,
-            address_line1: formData.address,
-            city: formData.city,
-            state: formData.state,
-            zip: formData.zip,
-            primary_color: formData.primaryColor,
-            settings: {
-              timezone: "America/New_York",
-              currency: "USD",
-              date_format: "MM/DD/YYYY",
-              time_format: "12h",
-              tagline: formData.tagline,
-            },
-            onboarding_completed: true,
-            is_active: true,
-          });
-
-        if (insertError) {
-          console.error("Insert error:", insertError);
-          throw insertError;
-        }
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || "Failed to create organization");
       }
 
       setCurrentStep("complete");
 
-      // Redirect to dashboard after a short delay
+      // Hard navigation to dashboard
       setTimeout(() => {
-        router.push("/dashboard");
+        window.location.href = "/dashboard";
       }, 2000);
     } catch (err: any) {
       console.error("Onboarding error:", err);

@@ -3,9 +3,9 @@
 // ============================================
 
 import { Metadata } from 'next';
+import { SignupForm } from '@/components/auth/signup-form';
 
 export const dynamic = 'force-dynamic';
-import { SignupForm } from '@/components/auth/signup-form';
 
 export const metadata: Metadata = {
   title: 'Sign Up | Vistrial',
@@ -14,13 +14,19 @@ export const metadata: Metadata = {
 
 export default function SignupPage() {
   return (
-    <div className="space-y-6">
-      <div className="text-center space-y-2">
-        <h1 className="text-2xl font-bold">Create your account</h1>
-        <p className="text-muted-foreground">Start reactivating your leads in minutes</p>
+    <div className="space-y-8">
+      {/* Header */}
+      <div className="space-y-2">
+        <h1 className="text-2xl font-bold tracking-tight text-gray-900">
+          Create your account
+        </h1>
+        <p className="text-sm text-gray-500">
+          Start reactivating your leads in minutes
+        </p>
       </div>
 
-      <div className="bg-card border rounded-lg p-6 shadow-sm">
+      {/* Card */}
+      <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm shadow-gray-100/50">
         <SignupForm />
       </div>
     </div>

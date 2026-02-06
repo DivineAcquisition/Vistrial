@@ -1,6 +1,6 @@
 // ============================================
 // SIGNUP PAGE
-// User registration page
+// User registration page with animations
 // ============================================
 
 'use client';
@@ -11,8 +11,17 @@ import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { AlertCircle, Loader2, CheckCircle } from 'lucide-react';
+import {
+  RiMailLine,
+  RiLockPasswordLine,
+  RiUserLine,
+  RiBuildingLine,
+  RiArrowRightLine,
+  RiErrorWarningLine,
+  RiLoader4Line,
+  RiCheckLine,
+  RiGoogleFill,
+} from '@remixicon/react';
 import { createClient } from '@/lib/supabase/client';
 
 export default function SignupPage() {
@@ -65,24 +74,59 @@ export default function SignupPage() {
     }
   };
 
-  return (
-    <Card className="shadow-xl border-gray-200">
-      <CardHeader className="text-center">
-        <CardTitle className="text-2xl text-gray-900">Start your free trial</CardTitle>
-        <CardDescription>No credit card required. Start reactivating customers today.</CardDescription>
-      </CardHeader>
-      <CardContent>
-        {/* Error Message */}
-        {error && (
-          <div className="mb-4 flex items-center gap-2 text-sm text-red-700 bg-red-50 p-3 rounded-lg border border-red-200">
-            <AlertCircle className="h-4 w-4" />
-            <span>{error}</span>
-          </div>
-        )}
+  const benefits = [
+    '14-day free trial',
+    'No credit card required',
+    'Unlimited campaigns',
+    'Cancel anytime',
+  ];
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="fullName">Full name</Label>
+  return (
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="space-y-2 text-center">
+        <h1 className="text-3xl font-bold tracking-tight text-gray-900">
+          Start your free trial
+        </h1>
+        <p className="text-gray-500">
+          No credit card required. Start reactivating customers today.
+        </p>
+      </div>
+
+      {/* Benefits */}
+      <div className="grid grid-cols-2 gap-2">
+        {benefits.map((benefit, index) => (
+          <div
+            key={benefit}
+            className="flex items-center gap-2 text-sm text-gray-600 animate-fade-in"
+            style={{ animationDelay: `${index * 100}ms` }}
+          >
+            <div className="flex h-5 w-5 items-center justify-center rounded-full bg-green-100">
+              <RiCheckLine className="h-3 w-3 text-green-600" />
+            </div>
+            {benefit}
+          </div>
+        ))}
+      </div>
+
+      {/* Error Message */}
+      {error && (
+        <div className="flex items-center gap-3 rounded-xl border border-red-200 bg-red-50 p-4 text-red-700 animate-slide-in-from-top">
+          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-red-100">
+            <RiErrorWarningLine className="h-4 w-4" />
+          </div>
+          <span className="text-sm">{error}</span>
+        </div>
+      )}
+
+      <form onSubmit={handleSubmit} className="space-y-4">
+        {/* Full Name Field */}
+        <div className="space-y-2">
+          <Label htmlFor="fullName" className="text-gray-700">Full name</Label>
+          <div className="relative">
+            <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
+              <RiUserLine className="h-5 w-5 text-gray-400" />
+            </div>
             <Input
               id="fullName"
               name="fullName"
@@ -91,12 +135,18 @@ export default function SignupPage() {
               value={formData.fullName}
               onChange={handleChange}
               required
-              className="border-gray-300 focus:border-brand-600 focus:ring-brand-600"
+              className="pl-10 transition-all duration-200 focus:scale-[1.01]"
             />
           </div>
+        </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="businessName">Business name</Label>
+        {/* Business Name Field */}
+        <div className="space-y-2">
+          <Label htmlFor="businessName" className="text-gray-700">Business name</Label>
+          <div className="relative">
+            <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
+              <RiBuildingLine className="h-5 w-5 text-gray-400" />
+            </div>
             <Input
               id="businessName"
               name="businessName"
@@ -105,12 +155,18 @@ export default function SignupPage() {
               value={formData.businessName}
               onChange={handleChange}
               required
-              className="border-gray-300 focus:border-brand-600 focus:ring-brand-600"
+              className="pl-10 transition-all duration-200 focus:scale-[1.01]"
             />
           </div>
+        </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="email">Work email</Label>
+        {/* Email Field */}
+        <div className="space-y-2">
+          <Label htmlFor="email" className="text-gray-700">Work email</Label>
+          <div className="relative">
+            <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
+              <RiMailLine className="h-5 w-5 text-gray-400" />
+            </div>
             <Input
               id="email"
               name="email"
@@ -119,12 +175,18 @@ export default function SignupPage() {
               value={formData.email}
               onChange={handleChange}
               required
-              className="border-gray-300 focus:border-brand-600 focus:ring-brand-600"
+              className="pl-10 transition-all duration-200 focus:scale-[1.01]"
             />
           </div>
+        </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="password">Password</Label>
+        {/* Password Field */}
+        <div className="space-y-2">
+          <Label htmlFor="password" className="text-gray-700">Password</Label>
+          <div className="relative">
+            <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
+              <RiLockPasswordLine className="h-5 w-5 text-gray-400" />
+            </div>
             <Input
               id="password"
               name="password"
@@ -134,63 +196,76 @@ export default function SignupPage() {
               onChange={handleChange}
               required
               minLength={8}
-              className="border-gray-300 focus:border-brand-600 focus:ring-brand-600"
+              className="pl-10 transition-all duration-200 focus:scale-[1.01]"
             />
-            <p className="text-xs text-gray-500">Minimum 8 characters</p>
           </div>
-
-          <Button
-            type="submit"
-            className="w-full bg-brand-600 hover:bg-brand-700"
-            disabled={isLoading}
-          >
-            {isLoading ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Creating account...
-              </>
-            ) : (
-              'Start free trial'
-            )}
-          </Button>
-        </form>
-
-        <p className="mt-4 text-xs text-gray-500 text-center">
-          By signing up, you agree to our{' '}
-          <Link href="/terms" className="text-brand-600 hover:underline">
-            Terms of Service
-          </Link>{' '}
-          and{' '}
-          <Link href="/privacy" className="text-brand-600 hover:underline">
-            Privacy Policy
-          </Link>
-        </p>
-
-        <div className="mt-6 text-center text-sm">
-          <span className="text-gray-600">Already have an account?</span>{' '}
-          <Link href="/login" className="text-brand-600 hover:text-brand-700 font-medium">
-            Sign in
-          </Link>
+          <p className="text-xs text-gray-500">Minimum 8 characters</p>
         </div>
 
-        {/* Benefits */}
-        <div className="mt-8 pt-6 border-t border-gray-200">
-          <p className="text-sm font-medium text-gray-900 mb-3">What&apos;s included:</p>
-          <ul className="space-y-2">
-            {[
-              '14-day free trial',
-              'Unlimited campaigns',
-              'SMS & voice messaging',
-              'No credit card required',
-            ].map((benefit) => (
-              <li key={benefit} className="flex items-center gap-2 text-sm text-gray-600">
-                <CheckCircle className="h-4 w-4 text-green-600" />
-                {benefit}
-              </li>
-            ))}
-          </ul>
+        {/* Submit Button */}
+        <Button
+          type="submit"
+          className="w-full transition-all duration-200 hover:scale-[1.02] active:scale-[0.98]"
+          size="lg"
+          disabled={isLoading}
+        >
+          {isLoading ? (
+            <>
+              <RiLoader4Line className="mr-2 h-4 w-4 animate-spin" />
+              Creating account...
+            </>
+          ) : (
+            <>
+              Start free trial
+              <RiArrowRightLine className="ml-2 h-4 w-4" />
+            </>
+          )}
+        </Button>
+      </form>
+
+      {/* Divider */}
+      <div className="relative">
+        <div className="absolute inset-0 flex items-center">
+          <div className="w-full border-t border-gray-200" />
         </div>
-      </CardContent>
-    </Card>
+        <div className="relative flex justify-center text-sm">
+          <span className="bg-white px-4 text-gray-500">or continue with</span>
+        </div>
+      </div>
+
+      {/* Social Login */}
+      <Button
+        type="button"
+        variant="outline"
+        className="w-full transition-all duration-200 hover:scale-[1.02]"
+        size="lg"
+      >
+        <RiGoogleFill className="mr-2 h-5 w-5 text-gray-600" />
+        Google
+      </Button>
+
+      {/* Terms */}
+      <p className="text-center text-xs text-gray-500">
+        By signing up, you agree to our{' '}
+        <Link href="/terms" className="text-brand-600 hover:underline">
+          Terms of Service
+        </Link>{' '}
+        and{' '}
+        <Link href="/privacy" className="text-brand-600 hover:underline">
+          Privacy Policy
+        </Link>
+      </p>
+
+      {/* Sign in link */}
+      <p className="text-center text-sm text-gray-600">
+        Already have an account?{' '}
+        <Link 
+          href="/login" 
+          className="font-semibold text-brand-600 transition-colors hover:text-brand-700"
+        >
+          Sign in
+        </Link>
+      </p>
+    </div>
   );
 }

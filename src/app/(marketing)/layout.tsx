@@ -5,45 +5,50 @@
 
 import { ReactNode } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { Button } from '@/components/ui/button';
-import { RiFlashlightLine, RiArrowRightLine } from '@remixicon/react';
+import { RiArrowRightLine } from '@remixicon/react';
 
 export default function MarketingLayout({ children }: { children: ReactNode }) {
   return (
     <div className="min-h-screen bg-white">
       {/* Navigation */}
-      <nav className="fixed top-0 left-0 right-0 z-50 border-b border-gray-200/80 bg-white/80 backdrop-blur-lg">
+      <nav className="fixed left-0 right-0 top-0 z-50 border-b border-gray-200/80 bg-white/80 backdrop-blur-lg">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="flex h-16 items-center justify-between">
-            <Link href="/" className="flex items-center gap-x-2">
-              <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-brand-gradient shadow-sm ring-1 ring-inset ring-black/5">
-                <RiFlashlightLine className="h-5 w-5 text-white" />
-              </div>
-              <span className="text-xl font-bold text-gray-900">Vistrial</span>
+            <Link href="/" className="flex items-center">
+              <Image
+                src="/VistrialLT.png"
+                alt="Vistrial"
+                width={140}
+                height={70}
+                className="h-10 w-auto object-contain"
+                priority
+              />
             </Link>
 
             <div className="hidden items-center gap-x-8 md:flex">
               <Link
                 href="#features"
-                className="text-sm font-medium text-gray-600 transition-colors hover:text-gray-900"
+                className="text-sm font-medium text-gray-600 transition-colors hover:text-brand-600"
               >
                 Features
               </Link>
               <Link
                 href="#how-it-works"
-                className="text-sm font-medium text-gray-600 transition-colors hover:text-gray-900"
+                className="text-sm font-medium text-gray-600 transition-colors hover:text-brand-600"
               >
                 How It Works
               </Link>
               <Link
                 href="#pricing"
-                className="text-sm font-medium text-gray-600 transition-colors hover:text-gray-900"
+                className="text-sm font-medium text-gray-600 transition-colors hover:text-brand-600"
               >
                 Pricing
               </Link>
               <Link
                 href="#faq"
-                className="text-sm font-medium text-gray-600 transition-colors hover:text-gray-900"
+                className="text-sm font-medium text-gray-600 transition-colors hover:text-brand-600"
               >
                 FAQ
               </Link>
@@ -56,9 +61,9 @@ export default function MarketingLayout({ children }: { children: ReactNode }) {
                 </Button>
               </Link>
               <Link href="/signup">
-                <Button size="sm">
+                <Button size="sm" className="group">
                   Start Free Trial
-                  <RiArrowRightLine className="ml-1.5 h-4 w-4" />
+                  <RiArrowRightLine className="ml-1.5 h-4 w-4 transition-transform group-hover:translate-x-0.5" />
                 </Button>
               </Link>
             </div>
@@ -74,11 +79,14 @@ export default function MarketingLayout({ children }: { children: ReactNode }) {
         <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
           <div className="grid grid-cols-2 gap-8 md:grid-cols-4">
             <div className="col-span-2 md:col-span-1">
-              <Link href="/" className="mb-4 flex items-center gap-x-2">
-                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-brand-gradient ring-1 ring-inset ring-black/5">
-                  <RiFlashlightLine className="h-4 w-4 text-white" />
-                </div>
-                <span className="font-bold text-gray-900">Vistrial</span>
+              <Link href="/" className="mb-4 inline-block">
+                <Image
+                  src="/VistrialLT.png"
+                  alt="Vistrial"
+                  width={120}
+                  height={60}
+                  className="h-8 w-auto object-contain"
+                />
               </Link>
               <p className="text-sm text-gray-600">
                 Turn your dormant customer database into predictable revenue with automated reactivation campaigns.

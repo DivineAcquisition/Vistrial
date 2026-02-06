@@ -2,15 +2,22 @@
 
 // ============================================
 // HERO ANIMATION
-// Animated dashboard preview
+// Animated dashboard preview with effects
 // ============================================
 
 import { useEffect, useState } from 'react';
 import { Badge } from '@/components/ui/badge';
-import { CheckCircle, MessageSquare, Phone, TrendingUp } from 'lucide-react';
+import {
+  RiCheckLine,
+  RiMessage2Line,
+  RiPhoneLine,
+  RiLineChartLine,
+  RiNotification3Line,
+} from '@remixicon/react';
 
 export function HeroAnimation() {
   const [activeMessage, setActiveMessage] = useState(0);
+  const [showNotification, setShowNotification] = useState(false);
 
   const messages = [
     {
@@ -31,103 +38,118 @@ export function HeroAnimation() {
   ];
 
   useEffect(() => {
-    const interval = setInterval(() => {
+    const messageInterval = setInterval(() => {
       setActiveMessage((prev) => (prev + 1) % (messages.length + 1));
     }, 2000);
-    return () => clearInterval(interval);
+
+    const notificationInterval = setInterval(() => {
+      setShowNotification(true);
+      setTimeout(() => setShowNotification(false), 3000);
+    }, 8000);
+
+    // Show initial notification after 2 seconds
+    setTimeout(() => setShowNotification(true), 2000);
+    setTimeout(() => setShowNotification(false), 5000);
+
+    return () => {
+      clearInterval(messageInterval);
+      clearInterval(notificationInterval);
+    };
   }, [messages.length]);
 
   return (
-    <div className="relative max-w-5xl mx-auto">
+    <div className="relative mx-auto max-w-5xl">
       {/* Main Dashboard Preview */}
-      <div className="bg-white rounded-2xl shadow-2xl border border-gray-100 overflow-hidden">
+      <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-2xl shadow-gray-300/50">
         {/* Browser Chrome */}
-        <div className="bg-gray-50 px-4 py-3 border-b border-gray-100 flex items-center gap-2">
+        <div className="flex items-center gap-2 border-b border-gray-100 bg-gray-50 px-4 py-3">
           <div className="flex gap-1.5">
-            <div className="w-3 h-3 rounded-full bg-red-400" />
-            <div className="w-3 h-3 rounded-full bg-yellow-400" />
-            <div className="w-3 h-3 rounded-full bg-green-400" />
+            <div className="h-3 w-3 rounded-full bg-red-400" />
+            <div className="h-3 w-3 rounded-full bg-yellow-400" />
+            <div className="h-3 w-3 rounded-full bg-green-400" />
           </div>
-          <div className="flex-1 mx-4">
-            <div className="bg-white rounded-md px-3 py-1.5 text-sm text-gray-500 max-w-md mx-auto border border-gray-200">
+          <div className="mx-4 flex-1">
+            <div className="mx-auto max-w-md rounded-md border border-gray-200 bg-white px-3 py-1.5 text-center text-sm text-gray-500">
               app.vistrial.com/dashboard
             </div>
           </div>
         </div>
 
         {/* Dashboard Content */}
-        <div className="p-6 bg-gray-50/50">
-          <div className="grid lg:grid-cols-3 gap-6">
+        <div className="bg-gray-50/50 p-6">
+          <div className="grid gap-6 lg:grid-cols-3">
             {/* Stats Cards */}
-            <div className="lg:col-span-2 grid grid-cols-3 gap-4">
-              <div className="bg-white rounded-lg p-4 border border-gray-100 shadow-sm">
-                <div className="flex items-center gap-2 text-gray-500 mb-2">
-                  <MessageSquare className="h-4 w-4" />
-                  <span className="text-xs">Messages Sent</span>
+            <div className="space-y-4 lg:col-span-2">
+              <div className="grid grid-cols-3 gap-4">
+                <div className="rounded-xl border border-gray-100 bg-white p-4 shadow-sm transition-all duration-300 hover:shadow-md animate-fade-in" style={{ animationDelay: '0.1s' }}>
+                  <div className="mb-2 flex items-center gap-2 text-gray-500">
+                    <RiMessage2Line className="h-4 w-4" />
+                    <span className="text-xs">Messages Sent</span>
+                  </div>
+                  <p className="text-2xl font-bold text-gray-900">2,847</p>
+                  <p className="text-xs text-green-600">↑ 12% this week</p>
                 </div>
-                <p className="text-2xl font-bold text-gray-900">2,847</p>
-                <p className="text-xs text-green-600">↑ 12% this week</p>
-              </div>
-              <div className="bg-white rounded-lg p-4 border border-gray-100 shadow-sm">
-                <div className="flex items-center gap-2 text-gray-500 mb-2">
-                  <TrendingUp className="h-4 w-4" />
-                  <span className="text-xs">Response Rate</span>
+                <div className="rounded-xl border border-gray-100 bg-white p-4 shadow-sm transition-all duration-300 hover:shadow-md animate-fade-in" style={{ animationDelay: '0.2s' }}>
+                  <div className="mb-2 flex items-center gap-2 text-gray-500">
+                    <RiLineChartLine className="h-4 w-4" />
+                    <span className="text-xs">Response Rate</span>
+                  </div>
+                  <p className="text-2xl font-bold text-gray-900">14.2%</p>
+                  <p className="text-xs text-green-600">↑ 3.1% this week</p>
                 </div>
-                <p className="text-2xl font-bold text-gray-900">14.2%</p>
-                <p className="text-xs text-green-600">↑ 3.1% this week</p>
-              </div>
-              <div className="bg-white rounded-lg p-4 border border-gray-100 shadow-sm">
-                <div className="flex items-center gap-2 text-gray-500 mb-2">
-                  <CheckCircle className="h-4 w-4" />
-                  <span className="text-xs">Jobs Booked</span>
+                <div className="rounded-xl border border-gray-100 bg-white p-4 shadow-sm transition-all duration-300 hover:shadow-md animate-fade-in" style={{ animationDelay: '0.3s' }}>
+                  <div className="mb-2 flex items-center gap-2 text-gray-500">
+                    <RiCheckLine className="h-4 w-4" />
+                    <span className="text-xs">Jobs Booked</span>
+                  </div>
+                  <p className="text-2xl font-bold text-gray-900">47</p>
+                  <p className="text-xs text-gray-500">$14,100 revenue</p>
                 </div>
-                <p className="text-2xl font-bold text-gray-900">47</p>
-                <p className="text-xs text-gray-500">$14,100 revenue</p>
               </div>
 
               {/* Active Campaign */}
-              <div className="col-span-3 bg-white rounded-lg p-4 border border-gray-100 shadow-sm">
-                <div className="flex items-center justify-between mb-4">
+              <div className="rounded-xl border border-gray-100 bg-white p-4 shadow-sm animate-fade-in" style={{ animationDelay: '0.4s' }}>
+                <div className="mb-4 flex items-center justify-between">
                   <div>
                     <h3 className="font-semibold text-gray-900">90-Day Reactivation</h3>
                     <p className="text-sm text-gray-500">847 contacts enrolled</p>
                   </div>
-                  <Badge className="bg-green-100 text-green-700 border-0">Active</Badge>
+                  <Badge variant="success">Active</Badge>
                 </div>
-                <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
+                <div className="h-2 overflow-hidden rounded-full bg-gray-100">
                   <div
-                    className="h-full bg-brand-gradient rounded-full transition-all duration-1000"
+                    className="h-full rounded-full bg-brand-gradient transition-all duration-1000"
                     style={{ width: '68%' }}
                   />
                 </div>
-                <p className="text-xs text-gray-500 mt-2">576 of 847 contacts reached</p>
+                <p className="mt-2 text-xs text-gray-500">576 of 847 contacts reached</p>
               </div>
             </div>
 
             {/* Conversation Preview */}
-            <div className="bg-white rounded-lg border border-gray-100 shadow-sm overflow-hidden">
-              <div className="px-4 py-3 border-b border-gray-100 bg-gray-50">
-                <p className="font-medium text-sm text-gray-900">Recent Conversation</p>
+            <div className="overflow-hidden rounded-xl border border-gray-100 bg-white shadow-sm animate-fade-in" style={{ animationDelay: '0.5s' }}>
+              <div className="border-b border-gray-100 bg-gray-50 px-4 py-3">
+                <p className="text-sm font-medium text-gray-900">Recent Conversation</p>
               </div>
-              <div className="p-4 space-y-3 min-h-[250px]">
+              <div className="min-h-[250px] space-y-3 p-4">
                 {messages.map((msg, index) => (
                   <div
                     key={index}
                     className={`transition-all duration-500 ${
-                      index <= activeMessage ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
+                      index <= activeMessage ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'
                     }`}
                   >
                     <div
                       className={`rounded-lg p-3 text-sm ${
                         msg.type === 'sent'
-                          ? 'bg-brand-600 text-white ml-4'
-                          : 'bg-gray-100 text-gray-900 mr-4'
+                          ? 'ml-4 bg-brand-600 text-white'
+                          : 'mr-4 bg-gray-100 text-gray-900'
                       }`}
                     >
                       {msg.text}
                     </div>
                     <p
-                      className={`text-xs text-gray-500 mt-1 ${
+                      className={`mt-1 text-xs text-gray-500 ${
                         msg.type === 'sent' ? 'text-right' : ''
                       }`}
                     >
@@ -141,11 +163,17 @@ export function HeroAnimation() {
         </div>
       </div>
 
-      {/* Floating Elements */}
-      <div className="absolute -top-4 -right-4 bg-white rounded-lg shadow-lg p-3 border border-gray-100 animate-bounce-slow">
+      {/* Floating Notification - New Booking */}
+      <div
+        className={`absolute -right-4 -top-4 rounded-xl border border-gray-200 bg-white p-3 shadow-lg transition-all duration-500 ${
+          showNotification
+            ? 'translate-y-0 opacity-100'
+            : '-translate-y-4 opacity-0'
+        }`}
+      >
         <div className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center">
-            <CheckCircle className="h-4 w-4 text-green-600" />
+          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-green-100">
+            <RiCheckLine className="h-4 w-4 text-green-600" />
           </div>
           <div>
             <p className="text-xs font-medium text-gray-900">New Booking!</p>
@@ -154,10 +182,11 @@ export function HeroAnimation() {
         </div>
       </div>
 
-      <div className="absolute -bottom-4 -left-4 bg-white rounded-lg shadow-lg p-3 border border-gray-100">
+      {/* Floating Element - Voice Drop */}
+      <div className="absolute -bottom-4 -left-4 rounded-xl border border-gray-200 bg-white p-3 shadow-lg animate-bounce-slow">
         <div className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-full bg-brand-100 flex items-center justify-center">
-            <Phone className="h-4 w-4 text-brand-600" />
+          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-brand-100">
+            <RiPhoneLine className="h-4 w-4 text-brand-600" />
           </div>
           <div>
             <p className="text-xs font-medium text-gray-900">Voice Drop Delivered</p>
@@ -165,6 +194,10 @@ export function HeroAnimation() {
           </div>
         </div>
       </div>
+
+      {/* Background decoration */}
+      <div className="absolute -bottom-10 -right-10 -z-10 h-40 w-40 rounded-full bg-brand-100/50 blur-3xl" />
+      <div className="absolute -left-10 -top-10 -z-10 h-40 w-40 rounded-full bg-brand-200/30 blur-3xl" />
     </div>
   );
 }

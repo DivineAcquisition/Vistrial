@@ -1,6 +1,6 @@
 // ============================================
 // LOGIN PAGE
-// User authentication page
+// User authentication page with animations
 // ============================================
 
 'use client';
@@ -11,8 +11,15 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { AlertCircle, Loader2, CheckCircle } from 'lucide-react';
+import {
+  RiMailLine,
+  RiLockPasswordLine,
+  RiArrowRightLine,
+  RiCheckLine,
+  RiErrorWarningLine,
+  RiLoader4Line,
+  RiGoogleFill,
+} from '@remixicon/react';
 import { createClient } from '@/lib/supabase/client';
 
 function LoginForm() {
@@ -53,31 +60,45 @@ function LoginForm() {
   };
 
   return (
-    <Card className="shadow-xl border-gray-200">
-      <CardHeader className="text-center">
-        <CardTitle className="text-2xl text-gray-900">Welcome back</CardTitle>
-        <CardDescription>Sign in to your account to continue</CardDescription>
-      </CardHeader>
-      <CardContent>
-        {/* Success Message */}
-        {message && (
-          <div className="mb-4 flex items-center gap-2 text-sm text-green-700 bg-green-50 p-3 rounded-lg border border-green-200">
-            <CheckCircle className="h-4 w-4" />
-            <span>{message}</span>
-          </div>
-        )}
+    <div className="space-y-8">
+      {/* Header */}
+      <div className="space-y-2 text-center">
+        <h1 className="text-3xl font-bold tracking-tight text-gray-900">
+          Welcome back
+        </h1>
+        <p className="text-gray-500">
+          Sign in to your account to continue
+        </p>
+      </div>
 
-        {/* Error Message */}
-        {error && (
-          <div className="mb-4 flex items-center gap-2 text-sm text-red-700 bg-red-50 p-3 rounded-lg border border-red-200">
-            <AlertCircle className="h-4 w-4" />
-            <span>{error}</span>
+      {/* Success Message */}
+      {message && (
+        <div className="flex items-center gap-3 rounded-xl border border-green-200 bg-green-50 p-4 text-green-700 animate-slide-in-from-top">
+          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-green-100">
+            <RiCheckLine className="h-4 w-4" />
           </div>
-        )}
+          <span className="text-sm">{message}</span>
+        </div>
+      )}
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="email">Email</Label>
+      {/* Error Message */}
+      {error && (
+        <div className="flex items-center gap-3 rounded-xl border border-red-200 bg-red-50 p-4 text-red-700 animate-slide-in-from-top">
+          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-red-100">
+            <RiErrorWarningLine className="h-4 w-4" />
+          </div>
+          <span className="text-sm">{error}</span>
+        </div>
+      )}
+
+      <form onSubmit={handleSubmit} className="space-y-5">
+        {/* Email Field */}
+        <div className="space-y-2">
+          <Label htmlFor="email" className="text-gray-700">Email</Label>
+          <div className="relative">
+            <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
+              <RiMailLine className="h-5 w-5 text-gray-400" />
+            </div>
             <Input
               id="email"
               type="email"
@@ -85,19 +106,25 @@ function LoginForm() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
-              className="border-gray-300 focus:border-brand-600 focus:ring-brand-600"
+              className="pl-10 transition-all duration-200 focus:scale-[1.01]"
             />
           </div>
+        </div>
 
-          <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <Label htmlFor="password">Password</Label>
-              <Link
-                href="/forgot-password"
-                className="text-sm text-brand-600 hover:text-brand-700"
-              >
-                Forgot password?
-              </Link>
+        {/* Password Field */}
+        <div className="space-y-2">
+          <div className="flex items-center justify-between">
+            <Label htmlFor="password" className="text-gray-700">Password</Label>
+            <Link
+              href="/forgot-password"
+              className="text-sm font-medium text-brand-600 transition-colors hover:text-brand-700"
+            >
+              Forgot password?
+            </Link>
+          </div>
+          <div className="relative">
+            <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
+              <RiLockPasswordLine className="h-5 w-5 text-gray-400" />
             </div>
             <Input
               id="password"
@@ -106,51 +133,73 @@ function LoginForm() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
-              className="border-gray-300 focus:border-brand-600 focus:ring-brand-600"
+              className="pl-10 transition-all duration-200 focus:scale-[1.01]"
             />
           </div>
-
-          <Button
-            type="submit"
-            className="w-full bg-brand-600 hover:bg-brand-700"
-            disabled={isLoading}
-          >
-            {isLoading ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Signing in...
-              </>
-            ) : (
-              'Sign in'
-            )}
-          </Button>
-        </form>
-
-        <div className="mt-6 text-center text-sm">
-          <span className="text-gray-600">Don&apos;t have an account?</span>{' '}
-          <Link href="/signup" className="text-brand-600 hover:text-brand-700 font-medium">
-            Sign up
-          </Link>
         </div>
-      </CardContent>
-    </Card>
+
+        {/* Submit Button */}
+        <Button
+          type="submit"
+          className="w-full transition-all duration-200 hover:scale-[1.02] active:scale-[0.98]"
+          size="lg"
+          disabled={isLoading}
+        >
+          {isLoading ? (
+            <>
+              <RiLoader4Line className="mr-2 h-4 w-4 animate-spin" />
+              Signing in...
+            </>
+          ) : (
+            <>
+              Sign in
+              <RiArrowRightLine className="ml-2 h-4 w-4" />
+            </>
+          )}
+        </Button>
+      </form>
+
+      {/* Divider */}
+      <div className="relative">
+        <div className="absolute inset-0 flex items-center">
+          <div className="w-full border-t border-gray-200" />
+        </div>
+        <div className="relative flex justify-center text-sm">
+          <span className="bg-white px-4 text-gray-500">or continue with</span>
+        </div>
+      </div>
+
+      {/* Social Login */}
+      <Button
+        type="button"
+        variant="outline"
+        className="w-full transition-all duration-200 hover:scale-[1.02]"
+        size="lg"
+      >
+        <RiGoogleFill className="mr-2 h-5 w-5 text-gray-600" />
+        Google
+      </Button>
+
+      {/* Sign up link */}
+      <p className="text-center text-sm text-gray-600">
+        Don&apos;t have an account?{' '}
+        <Link 
+          href="/signup" 
+          className="font-semibold text-brand-600 transition-colors hover:text-brand-700"
+        >
+          Start free trial
+        </Link>
+      </p>
+    </div>
   );
 }
 
 export default function LoginPage() {
   return (
     <Suspense fallback={
-      <Card className="shadow-xl border-gray-200">
-        <CardHeader className="text-center">
-          <CardTitle className="text-2xl text-gray-900">Welcome back</CardTitle>
-          <CardDescription>Sign in to your account to continue</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="flex justify-center py-8">
-            <Loader2 className="h-8 w-8 animate-spin text-brand-600" />
-          </div>
-        </CardContent>
-      </Card>
+      <div className="flex items-center justify-center py-16">
+        <RiLoader4Line className="h-8 w-8 animate-spin text-brand-600" />
+      </div>
     }>
       <LoginForm />
     </Suspense>

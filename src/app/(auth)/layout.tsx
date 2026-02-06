@@ -1,44 +1,123 @@
 // ============================================
 // AUTH LAYOUT
-// Layout for authentication pages
+// Unique aesthetic auth page layout
 // ============================================
 
 import { ReactNode } from 'react';
 import Link from 'next/link';
-import { Zap } from 'lucide-react';
+import Image from 'next/image';
+import { LogoIcon } from '@/components/ui/Logo';
 
 export default function AuthLayout({ children }: { children: ReactNode }) {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex flex-col">
-      {/* Decorative background elements */}
-      <div className="fixed inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute -top-40 -right-40 w-80 h-80 bg-brand-400/10 rounded-full blur-3xl" />
-        <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-brand-600/10 rounded-full blur-3xl" />
+    <div className="flex min-h-screen">
+      {/* Left side - Branding */}
+      <div className="relative hidden w-1/2 lg:block">
+        {/* Gradient background */}
+        <div className="absolute inset-0 bg-brand-gradient" />
+        
+        {/* Animated background elements */}
+        <div className="absolute inset-0 overflow-hidden">
+          {/* Floating orbs */}
+          <div className="absolute -left-20 -top-20 h-96 w-96 animate-float rounded-full bg-white/10 blur-3xl" />
+          <div className="absolute -bottom-32 -right-32 h-[500px] w-[500px] animate-float-delayed rounded-full bg-brand-400/30 blur-3xl" />
+          <div className="absolute left-1/3 top-1/2 h-64 w-64 animate-float-slow rounded-full bg-white/5 blur-2xl" />
+          
+          {/* Grid pattern overlay */}
+          <div className="absolute inset-0 bg-grid-pattern opacity-20" />
+          
+          {/* Gradient overlay */}
+          <div className="absolute inset-0 bg-gradient-to-t from-brand-600/50 via-transparent to-transparent" />
+        </div>
+        
+        {/* Content */}
+        <div className="relative flex h-full flex-col justify-between p-12">
+          {/* Logo */}
+          <Link href="/" className="flex items-center gap-3">
+            <LogoIcon size="h-12 w-12" iconSize="h-6 w-6" />
+            <span className="text-2xl font-bold text-white">Vistrial</span>
+          </Link>
+          
+          {/* Main content */}
+          <div className="space-y-8">
+            <div className="space-y-4">
+              <h1 className="text-4xl font-bold leading-tight text-white lg:text-5xl">
+                Turn dormant leads into{' '}
+                <span className="text-brand-200">revenue.</span>
+              </h1>
+              <p className="max-w-md text-lg text-white/80">
+                Automatically reactivate your past customers with SMS and voice campaigns. 
+                See 15-30% of dormant leads convert.
+              </p>
+            </div>
+            
+            {/* Stats */}
+            <div className="flex gap-12">
+              <div>
+                <div className="text-3xl font-bold text-white">98%</div>
+                <div className="text-sm text-white/60">SMS Open Rate</div>
+              </div>
+              <div>
+                <div className="text-3xl font-bold text-white">15-30%</div>
+                <div className="text-sm text-white/60">Reactivation Rate</div>
+              </div>
+              <div>
+                <div className="text-3xl font-bold text-white">10x</div>
+                <div className="text-sm text-white/60">Average ROI</div>
+              </div>
+            </div>
+          </div>
+          
+          {/* Testimonial */}
+          <div className="rounded-2xl border border-white/10 bg-white/5 p-6 backdrop-blur-sm">
+            <p className="mb-4 text-white/90">
+              &ldquo;First campaign brought back 67 customers. That&apos;s over $15,000 in revenue from customers I&apos;d basically forgotten about.&rdquo;
+            </p>
+            <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white/20 font-semibold text-white">
+                MT
+              </div>
+              <div>
+                <div className="font-medium text-white">Mike Thompson</div>
+                <div className="text-sm text-white/60">Thompson Cleaning Services</div>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
 
-      {/* Header */}
-      <header className="relative z-10 border-b bg-white/80 backdrop-blur-sm">
-        <div className="container mx-auto px-4 h-16 flex items-center">
-          <Link href="/" className="flex items-center space-x-2">
-            <div className="w-8 h-8 rounded-lg bg-brand-gradient flex items-center justify-center">
-              <Zap className="h-4 w-4 text-white" />
-            </div>
-            <span className="font-semibold text-xl text-gray-900">Vistrial</span>
-          </Link>
+      {/* Right side - Auth form */}
+      <div className="relative flex w-full flex-col lg:w-1/2">
+        {/* Background decoration */}
+        <div className="absolute inset-0 overflow-hidden">
+          <div className="absolute -right-64 -top-64 h-[500px] w-[500px] rounded-full bg-brand-100/50 blur-3xl" />
+          <div className="absolute -bottom-64 -left-64 h-[400px] w-[400px] rounded-full bg-brand-50/50 blur-3xl" />
         </div>
-      </header>
+        
+        {/* Mobile header */}
+        <header className="relative border-b border-gray-200 bg-white/80 backdrop-blur-sm lg:hidden">
+          <div className="container mx-auto flex h-16 items-center px-4">
+            <Link href="/" className="flex items-center gap-2">
+              <LogoIcon size="h-8 w-8" iconSize="h-4 w-4" />
+              <span className="text-xl font-bold text-gray-900">Vistrial</span>
+            </Link>
+          </div>
+        </header>
 
-      {/* Main content */}
-      <main className="relative z-10 flex-1 flex items-center justify-center p-4">
-        <div className="w-full max-w-md">{children}</div>
-      </main>
+        {/* Form container */}
+        <main className="relative flex flex-1 items-center justify-center p-4 sm:p-8">
+          <div className="w-full max-w-md animate-fade-in">
+            {children}
+          </div>
+        </main>
 
-      {/* Footer */}
-      <footer className="relative z-10 border-t bg-white/80 backdrop-blur-sm py-6">
-        <div className="container mx-auto px-4 text-center text-sm text-gray-500">
-          © {new Date().getFullYear()} Vistrial. All rights reserved.
-        </div>
-      </footer>
+        {/* Footer */}
+        <footer className="relative border-t border-gray-200 bg-white/80 py-4 backdrop-blur-sm">
+          <div className="container mx-auto px-4 text-center text-sm text-gray-500">
+            © {new Date().getFullYear()} Vistrial. All rights reserved.
+          </div>
+        </footer>
+      </div>
     </div>
   );
 }

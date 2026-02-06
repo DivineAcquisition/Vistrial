@@ -31,13 +31,15 @@ export function LoginForm({ onSubmit, redirectUrl }: LoginFormProps) {
   const searchParams = useSearchParams();
   const redirectTo = redirectUrl || searchParams.get('redirect') || '/dashboard';
 
+  // Show errors from URL params (e.g. callback errors)
+  const urlError = searchParams.get('error');
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
     setIsLoading(true);
 
     try {
-      // Use custom onSubmit if provided, otherwise use auth context
       if (onSubmit) {
         await onSubmit(email, password);
       } else {
@@ -51,24 +53,28 @@ export function LoginForm({ onSubmit, redirectUrl }: LoginFormProps) {
           } else {
             setError(signInError.message);
           }
+          setIsLoading(false);
           return;
         }
 
-        router.push(redirectTo);
+        // MUST use window.location for a hard navigation so the server
+        // middleware picks up the freshly-set auth cookies. router.push()
+        // is a soft client-side nav that skips middleware.
+        window.location.href = redirectTo;
+        return; // keep spinner while navigating
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An unexpected error occurred. Please try again.');
-    } finally {
       setIsLoading(false);
     }
   };
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
-      {error && (
-        <div className="p-4 bg-red-50 border border-red-200 rounded-lg text-red-600 text-sm flex items-start gap-2">
+      {(error || urlError) && (
+        <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-red-600 text-sm flex items-start gap-2">
           <AlertCircle className="h-4 w-4 mt-0.5 flex-shrink-0" />
-          <span>{error}</span>
+          <span>{error || urlError}</span>
         </div>
       )}
 

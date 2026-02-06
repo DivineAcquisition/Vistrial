@@ -151,8 +151,9 @@ export function SignupForm({ onSubmit: customOnSubmit, onVerify }: SignupFormPro
       setSuccess(true);
 
       // Redirect to dashboard after short delay
+      // Hard navigation so middleware sees the session cookie
       setTimeout(() => {
-        router.push('/dashboard');
+        window.location.href = '/dashboard';
       }, 2000);
     } catch (err) {
       setError('An unexpected error occurred. Please try again.');

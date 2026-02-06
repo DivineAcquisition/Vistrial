@@ -31,6 +31,7 @@ export function LoginForm({ onSubmit, redirectUrl }: LoginFormProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const redirectTo = redirectUrl || searchParams.get('redirect') || '/dashboard';
+  const urlError = searchParams.get('error');
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -55,7 +56,9 @@ export function LoginForm({ onSubmit, redirectUrl }: LoginFormProps) {
           return;
         }
 
-        // Hard navigation so the server middleware picks up the new session cookie
+        // Small delay to let @supabase/ssr flush the session cookies
+        // before the hard navigation, so middleware sees the session
+        await new Promise((resolve) => setTimeout(resolve, 150));
         window.location.href = redirectTo;
       }
     } catch (err) {
@@ -84,10 +87,10 @@ export function LoginForm({ onSubmit, redirectUrl }: LoginFormProps) {
 
   return (
     <div className="space-y-6">
-      {error && (
-        <div className="p-4 bg-red-50 border border-red-200 rounded-lg text-red-600 text-sm flex items-start gap-2">
+      {(error || urlError) && (
+        <div className="p-3 bg-red-50 border border-red-200 rounded-xl text-red-600 text-sm flex items-start gap-2">
           <AlertCircle className="h-4 w-4 mt-0.5 flex-shrink-0" />
-          <span>{error}</span>
+          <span>{error || urlError}</span>
         </div>
       )}
 

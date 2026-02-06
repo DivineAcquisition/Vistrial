@@ -107,7 +107,7 @@ const buttonSection = {
 };
 
 const button = {
-  backgroundColor: '#5400ff',
+  backgroundColor: '#5347d1',
   borderRadius: '6px',
   color: '#ffffff',
   fontSize: '16px',
@@ -131,7 +131,7 @@ const footerText = {
 };
 
 const unsubscribeLink = {
-  color: '#5400ff',
+  color: '#5347d1',
   textDecoration: 'underline',
 };
 

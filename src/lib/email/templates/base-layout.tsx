@@ -122,6 +122,6 @@ const footerAddress = {
 };
 
 const link = {
-  color: '#5400ff',
+  color: '#5347d1',
   textDecoration: 'none',
 };

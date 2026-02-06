@@ -56,25 +56,25 @@ const config = {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
         },
-        // Brand colors for Vistrial - #A2A2FD (light) & #5400FF (dark)
+        // Brand colors for Vistrial - #A39EFF (light) & #5347D1 (dark)
         brand: {
-          50: "#f5f3ff",
-          100: "#ede9fe",
-          200: "#ddd6fe",
-          300: "#c4b5fd",
-          400: "#a2a2fd",  // Primary light - #A2A2FD
-          500: "#7c5cff",
-          600: "#5400ff",  // Primary dark - #5400FF
-          700: "#4500d6",
-          800: "#3900ad",
-          900: "#2d0085",
-          950: "#1a004d",
+          50: "#f5f4ff",
+          100: "#edebfe",
+          200: "#ddd9fd",
+          300: "#c5bffc",
+          400: "#a39eff",  // Primary light - #A39EFF
+          500: "#7c72e6",
+          600: "#5347d1",  // Primary dark - #5347D1
+          700: "#463cb3",
+          800: "#3a3295",
+          900: "#2e2877",
+          950: "#1b184d",
         },
         // Convenient aliases for primary brand colors
         vistrial: {
-          light: "#a2a2fd",
-          DEFAULT: "#5400ff",
-          dark: "#4500d6",
+          light: "#a39eff",
+          DEFAULT: "#5347d1",
+          dark: "#463cb3",
         },
       },
       borderRadius: {
@@ -86,8 +86,8 @@ const config = {
         // Enhanced shadows for depth
         'xs': '0 1px 2px 0 rgb(0 0 0 / 0.05)',
         'inner-border': 'inset 0 0 0 1px rgb(255 255 255 / 0.1)',
-        'ring-brand': '0 0 0 2px rgb(84 0 255 / 0.2)',
-        'ring-brand-lg': '0 0 0 4px rgb(84 0 255 / 0.15)',
+        'ring-brand': '0 0 0 2px rgb(83 71 209 / 0.2)',
+        'ring-brand-lg': '0 0 0 4px rgb(83 71 209 / 0.15)',
         // 3D button effects
         'btn-3d': 'inset 0 1px 0 0 rgba(255, 255, 255, 0.2), inset 0 -2px 0 0 rgba(0, 0, 0, 0.1)',
         'btn-3d-pressed': 'inset 0 2px 4px 0 rgba(0, 0, 0, 0.15)',
@@ -127,9 +127,9 @@ const config = {
         "slide-in-from-bottom": "slide-in-from-bottom 0.2s ease-out",
       },
       backgroundImage: {
-        'brand-gradient': 'linear-gradient(135deg, #a2a2fd 0%, #5400ff 100%)',
-        'brand-gradient-reverse': 'linear-gradient(135deg, #5400ff 0%, #a2a2fd 100%)',
-        'brand-gradient-subtle': 'linear-gradient(135deg, rgba(162, 162, 253, 0.1) 0%, rgba(84, 0, 255, 0.1) 100%)',
+        'brand-gradient': 'linear-gradient(135deg, #a39eff 0%, #5347d1 100%)',
+        'brand-gradient-reverse': 'linear-gradient(135deg, #5347d1 0%, #a39eff 100%)',
+        'brand-gradient-subtle': 'linear-gradient(135deg, rgba(163, 158, 255, 0.1) 0%, rgba(83, 71, 209, 0.1) 100%)',
       },
     },
   },

@@ -70,7 +70,7 @@ export async function sendWelcomeEmail(
       </head>
       <body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #f5f5f5;">
         <div style="max-width: 600px; margin: 0 auto; padding: 40px 20px;">
-          <div style="background: linear-gradient(135deg, #a2a2fd 0%, #5400ff 100%); border-radius: 16px 16px 0 0; padding: 40px; text-align: center;">
+          <div style="background: linear-gradient(135deg, #a39eff 0%, #5347d1 100%); border-radius: 16px 16px 0 0; padding: 40px; text-align: center;">
             <h1 style="color: white; margin: 0; font-size: 28px; font-weight: bold;">Welcome to Vistrial!</h1>
           </div>
           <div style="background: white; border-radius: 0 0 16px 16px; padding: 40px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
@@ -89,7 +89,7 @@ export async function sendWelcomeEmail(
               <li>Watch the bookings roll in</li>
             </ul>
             <div style="text-align: center; margin: 30px 0;">
-              <a href="${process.env.NEXT_PUBLIC_APP_URL}/dashboard" style="display: inline-block; background: linear-gradient(135deg, #a2a2fd 0%, #5400ff 100%); color: white; padding: 14px 32px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 16px;">
+              <a href="${process.env.NEXT_PUBLIC_APP_URL}/dashboard" style="display: inline-block; background: linear-gradient(135deg, #a39eff 0%, #5347d1 100%); color: white; padding: 14px 32px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 16px;">
                 Go to Dashboard
               </a>
             </div>
@@ -137,11 +137,11 @@ export async function sendCampaignNotification(
             </p>
             <div style="display: flex; gap: 20px; margin-bottom: 30px;">
               <div style="flex: 1; background: #f3f4f6; border-radius: 12px; padding: 20px; text-align: center;">
-                <div style="font-size: 32px; font-weight: bold; color: #5400ff;">${stats.sent}</div>
+                <div style="font-size: 32px; font-weight: bold; color: #5347d1;">${stats.sent}</div>
                 <div style="font-size: 14px; color: #6b7280;">Messages Sent</div>
               </div>
               <div style="flex: 1; background: #f3f4f6; border-radius: 12px; padding: 20px; text-align: center;">
-                <div style="font-size: 32px; font-weight: bold; color: #5400ff;">${stats.responses}</div>
+                <div style="font-size: 32px; font-weight: bold; color: #5347d1;">${stats.responses}</div>
                 <div style="font-size: 14px; color: #6b7280;">Responses</div>
               </div>
               <div style="flex: 1; background: #ecfdf5; border-radius: 12px; padding: 20px; text-align: center;">
@@ -150,7 +150,7 @@ export async function sendCampaignNotification(
               </div>
             </div>
             <div style="text-align: center;">
-              <a href="${process.env.NEXT_PUBLIC_APP_URL}/analytics" style="display: inline-block; background: linear-gradient(135deg, #a2a2fd 0%, #5400ff 100%); color: white; padding: 14px 32px; border-radius: 8px; text-decoration: none; font-weight: 600;">
+              <a href="${process.env.NEXT_PUBLIC_APP_URL}/analytics" style="display: inline-block; background: linear-gradient(135deg, #a39eff 0%, #5347d1 100%); color: white; padding: 14px 32px; border-radius: 8px; text-decoration: none; font-weight: 600;">
                 View Full Report
               </a>
             </div>

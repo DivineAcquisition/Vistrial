@@ -146,7 +146,7 @@ export function BookingFlow({ business, services, serviceAreas, availability }: 
   });
 
   // Brand color
-  const brandColor = business.primary_color || "#5400FF";
+  const brandColor = business.primary_color || "#5347D1";
 
   // Calculate price whenever relevant fields change
   const selectedService = useMemo(

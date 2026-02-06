@@ -266,7 +266,8 @@ export default function OnboardingPage() {
                       className="w-full px-4 py-3 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-500 text-slate-900 bg-white"
                     >
                       <option value="">Select your industry</option>
-                      <option value="cleaning">Cleaning Services</option>
+                      <option value="cleaning_residential">Residential Cleaning</option>
+                      <option value="cleaning_commercial">Commercial Cleaning</option>
                       <option value="plumbing">Plumbing</option>
                       <option value="electrical">Electrical</option>
                       <option value="hvac">HVAC</option>
@@ -275,6 +276,12 @@ export default function OnboardingPage() {
                       <option value="roofing">Roofing</option>
                       <option value="pest_control">Pest Control</option>
                       <option value="handyman">Handyman</option>
+                      <option value="carpet_cleaning">Carpet Cleaning</option>
+                      <option value="window_cleaning">Window Cleaning</option>
+                      <option value="pressure_washing">Pressure Washing</option>
+                      <option value="pool_service">Pool Service</option>
+                      <option value="appliance_repair">Appliance Repair</option>
+                      <option value="junk_removal">Junk Removal</option>
                       <option value="other">Other</option>
                     </select>
                   </div>

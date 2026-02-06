@@ -46,7 +46,12 @@ export async function POST(request: NextRequest) {
 
     if (orgError || !organization) {
       console.error('Organization creation error:', orgError);
-      return NextResponse.json({ error: 'Failed to create organization' }, { status: 500 });
+      return NextResponse.json({ 
+        error: `Failed to create organization: ${orgError?.message || 'Unknown error'}`,
+        details: orgError?.details || null,
+        hint: orgError?.hint || null,
+        code: orgError?.code || null,
+      }, { status: 500 });
     }
 
     // Create membership (owner)

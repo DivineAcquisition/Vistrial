@@ -62,9 +62,9 @@ export async function ResponseAnalytics({
   const totalResponses = responses?.length || 0;
 
   return (
-    <Card className="bg-gray-900/80 border-white/10">
+    <Card className="bg-white/80 border-gray-200">
       <CardHeader>
-        <CardTitle className="text-white">Response Analysis</CardTitle>
+        <CardTitle className="text-gray-900">Response Analysis</CardTitle>
         <CardDescription className="text-gray-400">
           Breakdown of {totalResponses.toLocaleString()} responses by sentiment
         </CardDescription>
@@ -84,7 +84,7 @@ export async function ResponseAnalytics({
                       className="w-3 h-3 rounded-full"
                       style={{ backgroundColor: item.color }}
                     />
-                    <span className="text-sm text-white">{item.name}</span>
+                    <span className="text-sm text-gray-900">{item.name}</span>
                   </div>
                   <Badge variant="secondary" className="bg-gray-700 text-gray-300">
                     {item.value} ({((item.value / totalResponses) * 100).toFixed(0)}%)

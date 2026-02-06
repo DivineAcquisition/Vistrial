@@ -12,15 +12,15 @@
 
 import Link from "next/link";
 import { 
-  Workflow, 
-  Plus, 
-  Play, 
-  Users, 
-  MessageSquare,
-  Phone,
-  MoreHorizontal,
-  ArrowRight
-} from "lucide-react";
+  RiFlowChart,
+  RiAddLine,
+  RiPlayLine,
+  RiGroupLine,
+  RiMessage2Line,
+  RiPhoneLine,
+  RiMoreLine,
+  RiArrowRightSLine,
+} from "@remixicon/react";
 
 export const dynamic = "force-dynamic";
 
@@ -30,8 +30,8 @@ const workflowTemplates = [
     id: "reactivation-sms",
     name: "SMS Reactivation",
     description: "Re-engage dormant leads with a personalized SMS sequence",
-    icon: MessageSquare,
-    color: "violet",
+    icon: RiMessage2Line,
+    color: "brand",
     steps: 5,
     defaultDelay: "3 days",
   },
@@ -39,7 +39,7 @@ const workflowTemplates = [
     id: "reactivation-voice",
     name: "Voice Reactivation",
     description: "Automated voice calls to reconnect with past customers",
-    icon: Phone,
+    icon: RiPhoneLine,
     color: "blue",
     steps: 3,
     defaultDelay: "7 days",
@@ -48,7 +48,7 @@ const workflowTemplates = [
     id: "reactivation-combo",
     name: "Multi-Channel Reactivation",
     description: "Combine SMS and voice for maximum engagement",
-    icon: Workflow,
+    icon: RiFlowChart,
     color: "amber",
     steps: 7,
     defaultDelay: "5 days",
@@ -58,15 +58,15 @@ const workflowTemplates = [
 function WorkflowCard({ workflow }: { workflow: typeof workflowTemplates[0] }) {
   const Icon = workflow.icon;
   const colorClasses = {
-    violet: "bg-brand-500/10 text-brand-400 border-brand-500/20",
-    blue: "bg-blue-500/10 text-blue-400 border-blue-500/20",
-    amber: "bg-amber-500/10 text-amber-400 border-amber-500/20",
+    brand: "bg-brand-50 text-brand-600 ring-1 ring-inset ring-brand-600/10",
+    blue: "bg-blue-50 text-blue-600 ring-1 ring-inset ring-blue-600/10",
+    amber: "bg-amber-50 text-amber-600 ring-1 ring-inset ring-amber-600/10",
   };
 
   return (
     <Link
       href={`/workflows/${workflow.id}`}
-      className="group bg-gray-900/80 backdrop-blur-xl rounded-2xl border border-white/10 p-6 hover:border-brand-500/30 transition-all"
+      className="group rounded-xl border border-gray-200 bg-white p-6 shadow-sm transition-all duration-200 hover:border-gray-300 hover:shadow-md"
     >
       <div className="flex items-start justify-between mb-4">
         <div className={`p-3 rounded-xl ${colorClasses[workflow.color as keyof typeof colorClasses]}`}>
@@ -74,14 +74,14 @@ function WorkflowCard({ workflow }: { workflow: typeof workflowTemplates[0] }) {
         </div>
         <button 
           onClick={(e) => e.preventDefault()}
-          className="p-2 text-gray-400 hover:text-white opacity-0 group-hover:opacity-100 transition-all"
+          className="p-2 text-gray-400 hover:text-gray-600 opacity-0 group-hover:opacity-100 transition-all rounded-lg hover:bg-gray-100"
         >
-          <MoreHorizontal className="w-5 h-5" />
+          <RiMoreLine className="w-5 h-5" />
         </button>
       </div>
       
-      <h3 className="text-lg font-semibold text-white mb-2">{workflow.name}</h3>
-      <p className="text-gray-400 text-sm mb-4">{workflow.description}</p>
+      <h3 className="text-lg font-semibold text-gray-900 mb-2">{workflow.name}</h3>
+      <p className="text-gray-500 text-sm mb-4">{workflow.description}</p>
       
       <div className="flex items-center gap-4 text-sm text-gray-500">
         <span>{workflow.steps} steps</span>
@@ -89,10 +89,10 @@ function WorkflowCard({ workflow }: { workflow: typeof workflowTemplates[0] }) {
         <span>{workflow.defaultDelay} between steps</span>
       </div>
       
-      <div className="flex items-center gap-2 mt-4 pt-4 border-t border-white/5">
-        <span className="text-brand-400 text-sm font-medium group-hover:text-brand-300 transition-colors flex items-center gap-1">
+      <div className="flex items-center gap-2 mt-4 pt-4 border-t border-gray-100">
+        <span className="text-brand-600 text-sm font-medium group-hover:text-brand-700 transition-colors flex items-center gap-1">
           Configure workflow
-          <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+          <RiArrowRightSLine className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
         </span>
       </div>
     </Link>
@@ -100,32 +100,31 @@ function WorkflowCard({ workflow }: { workflow: typeof workflowTemplates[0] }) {
 }
 
 export default async function WorkflowsPage() {
-  // TODO: Implement with workflows.service.ts
-  // - Fetch user's active workflows
-  // - Include enrollment counts and stats
-
   return (
     <div className="space-y-6">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-white">Workflows</h1>
-          <p className="text-gray-400 mt-1">
+          <h1 className="text-2xl font-bold text-gray-900">Workflows</h1>
+          <p className="text-gray-500 mt-1">
             Automate your lead reactivation with SMS and voice workflows
           </p>
         </div>
-        <button className="inline-flex items-center gap-2 px-4 py-2.5 bg-brand-600 text-white rounded-xl font-medium hover:bg-brand-700 transition-colors">
-          <Plus className="w-5 h-5" />
+        <Link 
+          href="/workflows/new"
+          className="inline-flex items-center gap-2 px-4 py-2.5 bg-brand-600 text-white rounded-lg font-medium shadow-sm shadow-brand-600/20 hover:bg-brand-700 transition-colors"
+        >
+          <RiAddLine className="w-5 h-5" />
           Create Workflow
-        </button>
+        </Link>
       </div>
 
       {/* Active Workflows Section */}
-      <div className="bg-gray-900/80 backdrop-blur-xl rounded-2xl border border-white/10 p-6">
+      <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
         <div className="flex items-center justify-between mb-6">
-          <h2 className="text-lg font-semibold text-white">Active Workflows</h2>
+          <h2 className="text-lg font-semibold text-gray-900">Active Workflows</h2>
           <div className="flex items-center gap-2">
-            <span className="px-2 py-1 text-xs font-medium bg-green-500/20 text-green-400 rounded-full">
+            <span className="px-2.5 py-1 text-xs font-medium bg-green-50 text-green-700 ring-1 ring-inset ring-green-600/20 rounded-full">
               0 active
             </span>
           </div>
@@ -133,10 +132,10 @@ export default async function WorkflowsPage() {
         
         {/* Empty State */}
         <div className="text-center py-8">
-          <div className="w-16 h-16 bg-white/5 rounded-2xl flex items-center justify-center mx-auto mb-4 border border-white/10">
-            <Workflow className="w-8 h-8 text-gray-500" />
+          <div className="w-16 h-16 bg-gray-50 rounded-2xl flex items-center justify-center mx-auto mb-4 border border-gray-200">
+            <RiFlowChart className="w-8 h-8 text-gray-400" />
           </div>
-          <p className="text-gray-400 mb-2">No active workflows</p>
+          <p className="text-gray-600 mb-2">No active workflows</p>
           <p className="text-gray-500 text-sm">
             Choose a template below to get started
           </p>
@@ -145,7 +144,7 @@ export default async function WorkflowsPage() {
 
       {/* Workflow Templates */}
       <div>
-        <h2 className="text-lg font-semibold text-white mb-4">Workflow Templates</h2>
+        <h2 className="text-lg font-semibold text-gray-900 mb-4">Workflow Templates</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {workflowTemplates.map((template) => (
             <WorkflowCard key={template.id} workflow={template} />
@@ -155,33 +154,33 @@ export default async function WorkflowsPage() {
 
       {/* Stats Overview */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <div className="bg-gray-900/80 backdrop-blur-xl rounded-xl border border-white/10 p-4">
-          <div className="flex items-center gap-2 text-gray-400 mb-2">
-            <Users className="w-4 h-4" />
+        <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
+          <div className="flex items-center gap-2 text-gray-500 mb-2">
+            <RiGroupLine className="w-4 h-4" />
             <span className="text-sm">Total Enrolled</span>
           </div>
-          <p className="text-2xl font-bold text-white">0</p>
+          <p className="text-2xl font-bold text-gray-900">0</p>
         </div>
-        <div className="bg-gray-900/80 backdrop-blur-xl rounded-xl border border-white/10 p-4">
-          <div className="flex items-center gap-2 text-gray-400 mb-2">
-            <MessageSquare className="w-4 h-4" />
+        <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
+          <div className="flex items-center gap-2 text-gray-500 mb-2">
+            <RiMessage2Line className="w-4 h-4" />
             <span className="text-sm">SMS Sent</span>
           </div>
-          <p className="text-2xl font-bold text-white">0</p>
+          <p className="text-2xl font-bold text-gray-900">0</p>
         </div>
-        <div className="bg-gray-900/80 backdrop-blur-xl rounded-xl border border-white/10 p-4">
-          <div className="flex items-center gap-2 text-gray-400 mb-2">
-            <Phone className="w-4 h-4" />
+        <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
+          <div className="flex items-center gap-2 text-gray-500 mb-2">
+            <RiPhoneLine className="w-4 h-4" />
             <span className="text-sm">Calls Made</span>
           </div>
-          <p className="text-2xl font-bold text-white">0</p>
+          <p className="text-2xl font-bold text-gray-900">0</p>
         </div>
-        <div className="bg-gray-900/80 backdrop-blur-xl rounded-xl border border-white/10 p-4">
-          <div className="flex items-center gap-2 text-green-400 mb-2">
-            <Play className="w-4 h-4" />
+        <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
+          <div className="flex items-center gap-2 text-green-600 mb-2">
+            <RiPlayLine className="w-4 h-4" />
             <span className="text-sm">Response Rate</span>
           </div>
-          <p className="text-2xl font-bold text-white">0%</p>
+          <p className="text-2xl font-bold text-gray-900">0%</p>
         </div>
       </div>
     </div>

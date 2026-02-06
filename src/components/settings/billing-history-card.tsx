@@ -43,9 +43,9 @@ const statusColors: Record<string, string> = {
 
 export function BillingHistoryCard({ transactions }: BillingHistoryCardProps) {
   return (
-    <Card className="bg-gray-900/80 border-white/10">
+    <Card className="bg-white/80 border-gray-200">
       <CardHeader>
-        <CardTitle className="text-white">Billing History</CardTitle>
+        <CardTitle className="text-gray-900">Billing History</CardTitle>
         <CardDescription className="text-gray-400">
           Recent transactions and payments
         </CardDescription>
@@ -54,7 +54,7 @@ export function BillingHistoryCard({ transactions }: BillingHistoryCardProps) {
         {transactions.length > 0 ? (
           <Table>
             <TableHeader>
-              <TableRow className="border-white/10 hover:bg-transparent">
+              <TableRow className="border-gray-200 hover:bg-transparent">
                 <TableHead className="text-gray-400">Date</TableHead>
                 <TableHead className="text-gray-400">Type</TableHead>
                 <TableHead className="text-gray-400">Description</TableHead>
@@ -64,7 +64,7 @@ export function BillingHistoryCard({ transactions }: BillingHistoryCardProps) {
             </TableHeader>
             <TableBody>
               {transactions.map((transaction) => (
-                <TableRow key={transaction.id} className="border-white/10 hover:bg-white/5">
+                <TableRow key={transaction.id} className="border-gray-200 hover:bg-gray-50">
                   <TableCell className="text-gray-300">
                     {format(new Date(transaction.created_at), 'MMM d, yyyy')}
                   </TableCell>
@@ -82,7 +82,7 @@ export function BillingHistoryCard({ transactions }: BillingHistoryCardProps) {
                       {transaction.status}
                     </Badge>
                   </TableCell>
-                  <TableCell className="text-right font-medium text-white">
+                  <TableCell className="text-right font-medium text-gray-900">
                     {formatCentsToDollars(transaction.amount_cents)}
                   </TableCell>
                 </TableRow>

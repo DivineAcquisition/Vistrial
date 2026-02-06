@@ -74,9 +74,9 @@ export function StepConfigModal({
 
   return (
     <Dialog open onOpenChange={(open) => !open && onCancel()}>
-      <DialogContent className="max-w-2xl bg-gray-900 border-white/10">
+      <DialogContent className="max-w-2xl bg-white border-gray-200">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2 text-white">
+          <DialogTitle className="flex items-center gap-2 text-gray-900">
             {formData.type === 'sms' ? (
               <>
                 <MessageSquare className="h-5 w-5 text-blue-400" />
@@ -95,7 +95,7 @@ export function StepConfigModal({
         </DialogHeader>
 
         <Tabs defaultValue="content" className="space-y-4">
-          <TabsList className="bg-gray-800/50 border border-white/10">
+          <TabsList className="bg-gray-800/50 border border-gray-200">
             <TabsTrigger value="content" className="data-[state=active]:bg-brand-600">Content</TabsTrigger>
             <TabsTrigger value="timing" className="data-[state=active]:bg-brand-600">Timing</TabsTrigger>
             {formData.type === 'voice_drop' && (
@@ -112,7 +112,7 @@ export function StepConfigModal({
                   <Badge
                     key={variable.key}
                     variant="outline"
-                    className="cursor-pointer border-white/20 text-gray-400 hover:bg-brand-600/20 hover:text-brand-400"
+                    className="cursor-pointer border-gray-300 text-gray-400 hover:bg-brand-600/20 hover:text-brand-400"
                     onClick={() => handleInsertVariable(variable.key)}
                   >
                     {variable.label}
@@ -136,7 +136,7 @@ export function StepConfigModal({
                     : 'Hi {{first_name}}, this is {{business_name}} calling...'
                 }
                 rows={6}
-                className="bg-gray-800 border-white/10 text-white"
+                className="bg-gray-800 border-gray-200 text-gray-900"
               />
               <div className="flex justify-between text-xs text-gray-500">
                 <span>{characterCount} characters</span>
@@ -187,7 +187,7 @@ export function StepConfigModal({
                         onChange={(e) =>
                           setFormData({ ...formData, delay_days: parseInt(e.target.value) || 0 })
                         }
-                        className="bg-gray-800 border-white/10 text-white"
+                        className="bg-gray-800 border-gray-200 text-gray-900"
                       />
                     </div>
                     <div className="space-y-2">
@@ -203,7 +203,7 @@ export function StepConfigModal({
                         onChange={(e) =>
                           setFormData({ ...formData, delay_hours: parseInt(e.target.value) || 0 })
                         }
-                        className="bg-gray-800 border-white/10 text-white"
+                        className="bg-gray-800 border-gray-200 text-gray-900"
                       />
                     </div>
                   </div>
@@ -226,10 +226,10 @@ export function StepConfigModal({
                     setFormData({ ...formData, voice_id: value === 'default' ? undefined : value })
                   }
                 >
-                  <SelectTrigger className="bg-gray-800 border-white/10 text-white">
+                  <SelectTrigger className="bg-gray-800 border-gray-200 text-gray-900">
                     <SelectValue placeholder="Select a voice" />
                   </SelectTrigger>
-                  <SelectContent className="bg-gray-800 border-white/10">
+                  <SelectContent className="bg-gray-800 border-gray-200">
                     <SelectItem value="default">Rachel (Default)</SelectItem>
                     <SelectItem value="EXAVITQu4vr4xnSDxMaL">Bella (Warm)</SelectItem>
                     <SelectItem value="ErXwobaYiN019PkySvjV">Antoni (Professional)</SelectItem>
@@ -240,7 +240,7 @@ export function StepConfigModal({
 
               <Button
                 variant="outline"
-                className="border-white/10 text-white hover:bg-gray-800"
+                className="border-gray-200 text-gray-900 hover:bg-gray-50"
                 disabled={!formData.template.trim()}
               >
                 <Volume2 className="h-4 w-4 mr-2" />
@@ -255,7 +255,7 @@ export function StepConfigModal({
         </Tabs>
 
         <DialogFooter>
-          <Button variant="outline" onClick={onCancel} className="border-white/10 text-white hover:bg-gray-800">
+          <Button variant="outline" onClick={onCancel} className="border-gray-200 text-gray-900 hover:bg-gray-50">
             Cancel
           </Button>
           <Button onClick={handleSave} disabled={!formData.template.trim()} className="bg-brand-600 hover:bg-brand-700">

@@ -29,7 +29,7 @@ export function ContactsHeader({ organizationId }: ContactsHeaderProps) {
   return (
     <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
       <div>
-        <h1 className="text-2xl font-bold flex items-center gap-2 text-white">
+        <h1 className="text-2xl font-bold flex items-center gap-2 text-gray-900">
           <Users className="h-6 w-6" />
           Contacts
         </h1>
@@ -40,7 +40,7 @@ export function ContactsHeader({ organizationId }: ContactsHeaderProps) {
 
       <div className="flex items-center gap-3">
         <Link href="/contacts/upload">
-          <Button variant="outline" className="border-white/10 bg-gray-900 hover:bg-gray-800 text-gray-300">
+          <Button variant="outline" className="border-gray-200 bg-white hover:bg-gray-50 text-gray-300">
             <Upload className="h-4 w-4 mr-2" />
             Import CSV
           </Button>
@@ -53,9 +53,9 @@ export function ContactsHeader({ organizationId }: ContactsHeaderProps) {
               Add Contact
             </Button>
           </DialogTrigger>
-          <DialogContent className="bg-gray-900 border-white/10">
+          <DialogContent className="bg-white border-gray-200">
             <DialogHeader>
-              <DialogTitle className="text-white">Add New Contact</DialogTitle>
+              <DialogTitle className="text-gray-900">Add New Contact</DialogTitle>
               <DialogDescription className="text-gray-400">
                 Add a single contact to your database
               </DialogDescription>

@@ -97,9 +97,9 @@ export async function WorkflowAnalytics({
   };
 
   return (
-    <Card className="bg-gray-900/80 border-white/10">
+    <Card className="bg-white/80 border-gray-200">
       <CardHeader>
-        <CardTitle className="text-white">Workflow Performance</CardTitle>
+        <CardTitle className="text-gray-900">Workflow Performance</CardTitle>
         <CardDescription className="text-gray-400">
           Performance metrics for your workflows during this period
         </CardDescription>
@@ -109,7 +109,7 @@ export async function WorkflowAnalytics({
           <div className="overflow-x-auto">
             <Table>
               <TableHeader>
-                <TableRow className="border-white/10 hover:bg-transparent">
+                <TableRow className="border-gray-200 hover:bg-transparent">
                   <TableHead className="text-gray-400">Workflow</TableHead>
                   <TableHead className="text-gray-400">Status</TableHead>
                   <TableHead className="text-gray-400 text-right">Enrolled</TableHead>
@@ -126,11 +126,11 @@ export async function WorkflowAnalytics({
                     : 0;
 
                   return (
-                    <TableRow key={workflow.id} className="border-white/10 hover:bg-gray-800/50">
+                    <TableRow key={workflow.id} className="border-gray-200 hover:bg-gray-50/50">
                       <TableCell>
                         <Link
                           href={`/workflows/${workflow.id}`}
-                          className="font-medium text-white hover:text-brand-400 transition-colors"
+                          className="font-medium text-gray-900 hover:text-brand-400 transition-colors"
                         >
                           {workflow.name}
                         </Link>
@@ -146,9 +146,9 @@ export async function WorkflowAnalytics({
                           {workflow.status}
                         </Badge>
                       </TableCell>
-                      <TableCell className="text-right text-white">{stats.enrolled}</TableCell>
-                      <TableCell className="text-right text-white">{stats.completed}</TableCell>
-                      <TableCell className="text-right text-white">{stats.responded}</TableCell>
+                      <TableCell className="text-right text-gray-900">{stats.enrolled}</TableCell>
+                      <TableCell className="text-right text-gray-900">{stats.completed}</TableCell>
+                      <TableCell className="text-right text-gray-900">{stats.responded}</TableCell>
                       <TableCell>
                         <div className="flex items-center gap-2">
                           <Progress value={responseRate} className="w-16 h-2 bg-gray-700" />

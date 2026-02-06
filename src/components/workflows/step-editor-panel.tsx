@@ -105,9 +105,9 @@ export function StepEditorPanel({ steps, onChange }: StepEditorPanelProps) {
   };
 
   return (
-    <Card className="bg-gray-900/80 border-white/10">
+    <Card className="bg-white/80 border-gray-200">
       <CardHeader className="flex flex-row items-center justify-between">
-        <CardTitle className="text-white">Workflow Steps</CardTitle>
+        <CardTitle className="text-gray-900">Workflow Steps</CardTitle>
         <Button onClick={() => setShowAddDialog(true)} className="bg-brand-600 hover:bg-brand-700">
           <Plus className="h-4 w-4 mr-2" />
           Add Step
@@ -115,7 +115,7 @@ export function StepEditorPanel({ steps, onChange }: StepEditorPanelProps) {
       </CardHeader>
       <CardContent>
         {steps.length === 0 ? (
-          <div className="text-center py-12 border-2 border-dashed border-white/10 rounded-lg">
+          <div className="text-center py-12 border-2 border-dashed border-gray-200 rounded-lg">
             <MessageSquare className="h-12 w-12 text-gray-500 mx-auto mb-4" />
             <p className="text-gray-400 mb-4">
               No steps yet. Add your first message to get started.
@@ -144,7 +144,7 @@ export function StepEditorPanel({ steps, onChange }: StepEditorPanelProps) {
                   onDragOver={(e) => handleDragOver(e, index)}
                   onDragEnd={handleDragEnd}
                   className={cn(
-                    'flex items-start gap-3 p-4 border border-white/10 rounded-lg bg-gray-800/50 transition-all hover:border-white/20',
+                    'flex items-start gap-3 p-4 border border-gray-200 rounded-lg bg-gray-800/50 transition-all hover:border-gray-300',
                     draggedIndex === index && 'opacity-50 scale-95'
                   )}
                 >
@@ -169,10 +169,10 @@ export function StepEditorPanel({ steps, onChange }: StepEditorPanelProps) {
 
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-1">
-                      <Badge variant="outline" className="text-xs border-white/20 text-gray-400">
+                      <Badge variant="outline" className="text-xs border-gray-300 text-gray-400">
                         Step {index + 1}
                       </Badge>
-                      <span className="text-sm font-medium text-white">
+                      <span className="text-sm font-medium text-gray-900">
                         {step.type === 'sms' ? 'SMS Message' : 'Voice Drop'}
                       </span>
                     </div>
@@ -186,7 +186,7 @@ export function StepEditorPanel({ steps, onChange }: StepEditorPanelProps) {
                       variant="ghost"
                       size="icon"
                       onClick={() => handleEditStep(index)}
-                      className="text-gray-400 hover:text-white"
+                      className="text-gray-400 hover:text-gray-900"
                     >
                       <Edit className="h-4 w-4" />
                     </Button>
@@ -207,35 +207,35 @@ export function StepEditorPanel({ steps, onChange }: StepEditorPanelProps) {
 
         {/* Add Step Dialog */}
         <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
-          <DialogContent className="bg-gray-900 border-white/10">
+          <DialogContent className="bg-white border-gray-200">
             <DialogHeader>
-              <DialogTitle className="text-white">Add Step</DialogTitle>
+              <DialogTitle className="text-gray-900">Add Step</DialogTitle>
               <DialogDescription className="text-gray-400">
                 Choose the type of message to add
               </DialogDescription>
             </DialogHeader>
             <div className="grid grid-cols-2 gap-4">
               <Card
-                className="bg-gray-800/50 border-white/10 cursor-pointer hover:border-blue-500/50 transition-colors"
+                className="bg-gray-800/50 border-gray-200 cursor-pointer hover:border-blue-500/50 transition-colors"
                 onClick={() => handleAddStep('sms')}
               >
                 <CardContent className="flex flex-col items-center justify-center py-6">
                   <div className="p-3 rounded-lg bg-blue-500/20 mb-3">
                     <MessageSquare className="h-6 w-6 text-blue-400" />
                   </div>
-                  <p className="font-medium text-white">SMS Message</p>
+                  <p className="font-medium text-gray-900">SMS Message</p>
                   <p className="text-xs text-gray-400">$0.015 per message</p>
                 </CardContent>
               </Card>
               <Card
-                className="bg-gray-800/50 border-white/10 cursor-pointer hover:border-purple-500/50 transition-colors"
+                className="bg-gray-800/50 border-gray-200 cursor-pointer hover:border-purple-500/50 transition-colors"
                 onClick={() => handleAddStep('voice_drop')}
               >
                 <CardContent className="flex flex-col items-center justify-center py-6">
                   <div className="p-3 rounded-lg bg-purple-500/20 mb-3">
                     <Phone className="h-6 w-6 text-purple-400" />
                   </div>
-                  <p className="font-medium text-white">Voice Drop</p>
+                  <p className="font-medium text-gray-900">Voice Drop</p>
                   <p className="text-xs text-gray-400">$0.05 per drop</p>
                 </CardContent>
               </Card>

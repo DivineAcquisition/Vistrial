@@ -260,9 +260,9 @@ export default function OnboardingPage() {
                       className={cn(
                         "w-10 h-10 rounded-full flex items-center justify-center transition-all duration-300",
                         isCompleted
-                          ? "bg-brand-500 text-white"
+                          ? "bg-brand-500 text-gray-900"
                           : isCurrent
-                          ? "bg-brand-500 text-white ring-4 ring-brand-100"
+                          ? "bg-brand-500 text-gray-900 ring-4 ring-brand-100"
                           : "bg-white text-slate-400 border-2 border-slate-200"
                       )}
                     >
@@ -471,7 +471,7 @@ export default function OnboardingPage() {
                     <p className="text-xs text-slate-500 mb-3">Preview</p>
                     <div className="flex items-center gap-3">
                       <div
-                        className="w-12 h-12 rounded-xl flex items-center justify-center text-white font-bold text-xl"
+                        className="w-12 h-12 rounded-xl flex items-center justify-center text-gray-900 font-bold text-xl"
                         style={{ backgroundColor: formData.primaryColor }}
                       >
                         {formData.businessName?.[0]?.toUpperCase() || "B"}
@@ -508,7 +508,7 @@ export default function OnboardingPage() {
                 <button
                   onClick={goToNextStep}
                   disabled={!isStepValid()}
-                  className="flex items-center gap-2 bg-brand-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-brand-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  className="flex items-center gap-2 bg-brand-600 text-gray-900 px-6 py-3 rounded-lg font-semibold hover:bg-brand-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 >
                   Continue
                   <RiArrowRightLine className="w-4 h-4" />
@@ -517,7 +517,7 @@ export default function OnboardingPage() {
                 <button
                   onClick={handleComplete}
                   disabled={loading}
-                  className="flex items-center gap-2 bg-brand-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-brand-700 disabled:opacity-50 transition-colors"
+                  className="flex items-center gap-2 bg-brand-600 text-gray-900 px-6 py-3 rounded-lg font-semibold hover:bg-brand-700 disabled:opacity-50 transition-colors"
                 >
                   {loading ? (
                     <>

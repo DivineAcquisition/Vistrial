@@ -87,13 +87,13 @@ export function ContactDetails({
       />
 
       {/* Panel */}
-      <div className="relative w-full max-w-md bg-gray-900 border-l border-white/10 h-full overflow-y-auto">
+      <div className="relative w-full max-w-md bg-white border-l border-gray-200 h-full overflow-y-auto">
         {/* Header */}
-        <div className="sticky top-0 bg-gray-900 border-b border-white/10 p-4 flex items-center justify-between">
-          <h2 className="text-lg font-semibold text-white">Contact Details</h2>
+        <div className="sticky top-0 bg-white border-b border-gray-200 p-4 flex items-center justify-between">
+          <h2 className="text-lg font-semibold text-gray-900">Contact Details</h2>
           <button
             onClick={onClose}
-            className="p-2 text-gray-400 hover:text-white rounded-lg hover:bg-white/5"
+            className="p-2 text-gray-400 hover:text-gray-900 rounded-lg hover:bg-gray-50"
           >
             <X className="w-5 h-5" />
           </button>
@@ -114,19 +114,19 @@ export function ContactDetails({
                   type="text"
                   value={editedContact.first_name}
                   onChange={(e) => setEditedContact({ ...editedContact, first_name: e.target.value })}
-                  className="w-full px-3 py-2 bg-gray-800 border border-white/10 rounded-lg text-white text-center"
+                  className="w-full px-3 py-2 bg-gray-800 border border-gray-200 rounded-lg text-gray-900 text-center"
                   placeholder="First name"
                 />
                 <input
                   type="text"
                   value={editedContact.last_name || ""}
                   onChange={(e) => setEditedContact({ ...editedContact, last_name: e.target.value })}
-                  className="w-full px-3 py-2 bg-gray-800 border border-white/10 rounded-lg text-white text-center"
+                  className="w-full px-3 py-2 bg-gray-800 border border-gray-200 rounded-lg text-gray-900 text-center"
                   placeholder="Last name"
                 />
               </div>
             ) : (
-              <h3 className="text-xl font-semibold text-white">
+              <h3 className="text-xl font-semibold text-gray-900">
                 {contact.first_name} {contact.last_name}
               </h3>
             )}
@@ -136,14 +136,14 @@ export function ContactDetails({
           <div className="flex items-center justify-center gap-3">
             <button
               onClick={() => onSendSms?.(contact)}
-              className="flex items-center gap-2 px-4 py-2 bg-brand-600 text-white rounded-lg hover:bg-brand-700 transition-colors"
+              className="flex items-center gap-2 px-4 py-2 bg-brand-600 text-gray-900 rounded-lg hover:bg-brand-700 transition-colors"
             >
               <MessageSquare className="w-4 h-4" />
               SMS
             </button>
             <button
               onClick={() => onCall?.(contact)}
-              className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+              className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-gray-900 rounded-lg hover:bg-blue-700 transition-colors"
             >
               <PhoneCall className="w-4 h-4" />
               Call
@@ -151,7 +151,7 @@ export function ContactDetails({
           </div>
 
           {/* Contact Info */}
-          <div className="bg-white/5 rounded-xl p-4 space-y-4">
+          <div className="bg-gray-50 rounded-xl p-4 space-y-4">
             <div className="flex items-center gap-3">
               <Phone className="w-5 h-5 text-gray-400" />
               {isEditing ? (
@@ -159,10 +159,10 @@ export function ContactDetails({
                   type="tel"
                   value={editedContact.phone}
                   onChange={(e) => setEditedContact({ ...editedContact, phone: e.target.value })}
-                  className="flex-1 px-3 py-1.5 bg-gray-800 border border-white/10 rounded text-white"
+                  className="flex-1 px-3 py-1.5 bg-gray-800 border border-gray-200 rounded text-gray-900"
                 />
               ) : (
-                <span className="text-white">{contact.phone}</span>
+                <span className="text-gray-900">{contact.phone}</span>
               )}
             </div>
             <div className="flex items-center gap-3">
@@ -172,11 +172,11 @@ export function ContactDetails({
                   type="email"
                   value={editedContact.email || ""}
                   onChange={(e) => setEditedContact({ ...editedContact, email: e.target.value })}
-                  className="flex-1 px-3 py-1.5 bg-gray-800 border border-white/10 rounded text-white"
+                  className="flex-1 px-3 py-1.5 bg-gray-800 border border-gray-200 rounded text-gray-900"
                   placeholder="Email address"
                 />
               ) : (
-                <span className="text-white">{contact.email || "No email"}</span>
+                <span className="text-gray-900">{contact.email || "No email"}</span>
               )}
             </div>
             <div className="flex items-center gap-3">
@@ -186,17 +186,17 @@ export function ContactDetails({
                   type="text"
                   value={editedContact.address || ""}
                   onChange={(e) => setEditedContact({ ...editedContact, address: e.target.value })}
-                  className="flex-1 px-3 py-1.5 bg-gray-800 border border-white/10 rounded text-white"
+                  className="flex-1 px-3 py-1.5 bg-gray-800 border border-gray-200 rounded text-gray-900"
                   placeholder="Address"
                 />
               ) : (
-                <span className="text-white">{contact.address || "No address"}</span>
+                <span className="text-gray-900">{contact.address || "No address"}</span>
               )}
             </div>
           </div>
 
           {/* Status */}
-          <div className="bg-white/5 rounded-xl p-4">
+          <div className="bg-gray-50 rounded-xl p-4">
             <div className="flex items-center justify-between mb-2">
               <span className="text-gray-400">Status</span>
               <span className={`px-2 py-1 text-xs font-medium rounded ${
@@ -209,21 +209,21 @@ export function ContactDetails({
             </div>
             <div className="flex items-center justify-between">
               <span className="text-gray-400">Added</span>
-              <span className="text-white text-sm">
+              <span className="text-gray-900 text-sm">
                 {new Date(contact.created_at).toLocaleDateString()}
               </span>
             </div>
           </div>
 
           {/* Notes */}
-          <div className="bg-white/5 rounded-xl p-4">
+          <div className="bg-gray-50 rounded-xl p-4">
             <label className="block text-sm font-medium text-gray-400 mb-2">Notes</label>
             {isEditing ? (
               <textarea
                 value={editedContact.notes || ""}
                 onChange={(e) => setEditedContact({ ...editedContact, notes: e.target.value })}
                 rows={3}
-                className="w-full px-3 py-2 bg-gray-800 border border-white/10 rounded-lg text-white resize-none"
+                className="w-full px-3 py-2 bg-gray-800 border border-gray-200 rounded-lg text-gray-900 resize-none"
                 placeholder="Add notes about this contact..."
               />
             ) : (
@@ -242,14 +242,14 @@ export function ContactDetails({
                     setIsEditing(false);
                     setEditedContact(contact);
                   }}
-                  className="flex-1 px-4 py-2 text-gray-300 hover:text-white transition-colors"
+                  className="flex-1 px-4 py-2 text-gray-300 hover:text-gray-900 transition-colors"
                 >
                   Cancel
                 </button>
                 <button
                   onClick={handleSave}
                   disabled={saving}
-                  className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-brand-600 text-white rounded-lg hover:bg-brand-700 disabled:opacity-50"
+                  className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-brand-600 text-gray-900 rounded-lg hover:bg-brand-700 disabled:opacity-50"
                 >
                   <Save className="w-4 h-4" />
                   {saving ? "Saving..." : "Save"}
@@ -259,7 +259,7 @@ export function ContactDetails({
               <>
                 <button
                   onClick={() => setIsEditing(true)}
-                  className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-white/10 text-white rounded-lg hover:bg-white/20 transition-colors"
+                  className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-gray-100 text-gray-900 rounded-lg hover:bg-white/20 transition-colors"
                 >
                   <Edit2 className="w-4 h-4" />
                   Edit

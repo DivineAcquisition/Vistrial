@@ -41,7 +41,7 @@ export function PlanSelector({ plans, currentPlanId, onSelect, loading }: PlanSe
     <div className="space-y-6">
       {/* Interval Toggle */}
       <div className="flex items-center justify-center gap-4">
-        <span className={`text-sm ${interval === "monthly" ? "text-white" : "text-gray-400"}`}>
+        <span className={`text-sm ${interval === "monthly" ? "text-gray-900" : "text-gray-400"}`}>
           Monthly
         </span>
         <button
@@ -56,7 +56,7 @@ export function PlanSelector({ plans, currentPlanId, onSelect, loading }: PlanSe
             }`}
           />
         </button>
-        <span className={`text-sm ${interval === "annual" ? "text-white" : "text-gray-400"}`}>
+        <span className={`text-sm ${interval === "annual" ? "text-gray-900" : "text-gray-400"}`}>
           Annual
           <span className="ml-1 text-green-400 text-xs">(Save 20%)</span>
         </span>
@@ -71,36 +71,36 @@ export function PlanSelector({ plans, currentPlanId, onSelect, loading }: PlanSe
           return (
             <div
               key={plan.id}
-              className={`relative bg-gray-900/80 backdrop-blur-xl rounded-2xl border p-6 ${
+              className={`relative bg-white rounded-2xl border p-6 ${
                 plan.popular 
                   ? "border-brand-500/50" 
                   : isCurrent 
                     ? "border-green-500/30" 
-                    : "border-white/10"
+                    : "border-gray-200"
               }`}
             >
               {/* Badges */}
               {plan.popular && (
-                <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 bg-brand-600 text-white text-xs font-medium rounded-full flex items-center gap-1">
+                <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 bg-brand-600 text-gray-900 text-xs font-medium rounded-full flex items-center gap-1">
                   <Sparkles className="w-3 h-3" />
                   Most Popular
                 </div>
               )}
               {isCurrent && !plan.popular && (
-                <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 bg-green-600 text-white text-xs font-medium rounded-full">
+                <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 bg-green-600 text-gray-900 text-xs font-medium rounded-full">
                   Current Plan
                 </div>
               )}
 
               {/* Content */}
               <div className="mb-4">
-                <h3 className="text-xl font-bold text-white">{plan.name}</h3>
+                <h3 className="text-xl font-bold text-gray-900">{plan.name}</h3>
                 <p className="text-gray-400 text-sm mt-1">{plan.description}</p>
               </div>
 
               {/* Price */}
               <div className="mb-6">
-                <span className="text-4xl font-bold text-white">${Math.round(price)}</span>
+                <span className="text-4xl font-bold text-gray-900">${Math.round(price)}</span>
                 <span className="text-gray-400">/month</span>
                 {interval === "annual" && (
                   <p className="text-green-400 text-sm mt-1">
@@ -127,8 +127,8 @@ export function PlanSelector({ plans, currentPlanId, onSelect, loading }: PlanSe
                   isCurrent
                     ? "bg-gray-800 text-gray-400 cursor-default"
                     : plan.popular
-                      ? "bg-brand-600 text-white hover:bg-brand-700"
-                      : "bg-white/10 text-white hover:bg-white/20"
+                      ? "bg-brand-600 text-gray-900 hover:bg-brand-700"
+                      : "bg-gray-100 text-gray-900 hover:bg-white/20"
                 }`}
               >
                 {isCurrent ? "Current Plan" : loading ? "Loading..." : "Select Plan"}

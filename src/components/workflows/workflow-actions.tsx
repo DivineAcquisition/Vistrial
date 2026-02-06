@@ -78,38 +78,38 @@ export function WorkflowActions({ workflow }: WorkflowActionsProps) {
     <>
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Button variant="ghost" size="icon" className="h-8 w-8 text-gray-400 hover:text-white" disabled={isLoading}>
+          <Button variant="ghost" size="icon" className="h-8 w-8 text-gray-400 hover:text-gray-900" disabled={isLoading}>
             <MoreHorizontal className="h-4 w-4" />
           </Button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="bg-gray-900 border-white/10">
+        <DropdownMenuContent align="end" className="bg-white border-gray-200">
           {workflow.status === 'draft' && (
-            <DropdownMenuItem onClick={() => handleAction('activate')} className="text-gray-300 focus:text-white focus:bg-white/5">
+            <DropdownMenuItem onClick={() => handleAction('activate')} className="text-gray-300 focus:text-gray-900 focus:bg-gray-50">
               <Play className="h-4 w-4 mr-2" />
               Activate
             </DropdownMenuItem>
           )}
           {workflow.status === 'active' && (
-            <DropdownMenuItem onClick={() => handleAction('pause')} className="text-gray-300 focus:text-white focus:bg-white/5">
+            <DropdownMenuItem onClick={() => handleAction('pause')} className="text-gray-300 focus:text-gray-900 focus:bg-gray-50">
               <Pause className="h-4 w-4 mr-2" />
               Pause
             </DropdownMenuItem>
           )}
           {workflow.status === 'paused' && (
-            <DropdownMenuItem onClick={() => handleAction('resume')} className="text-gray-300 focus:text-white focus:bg-white/5">
+            <DropdownMenuItem onClick={() => handleAction('resume')} className="text-gray-300 focus:text-gray-900 focus:bg-gray-50">
               <Play className="h-4 w-4 mr-2" />
               Resume
             </DropdownMenuItem>
           )}
-          <DropdownMenuItem onClick={() => router.push(`/workflows/${workflow.id}/enroll`)} className="text-gray-300 focus:text-white focus:bg-white/5">
+          <DropdownMenuItem onClick={() => router.push(`/workflows/${workflow.id}/enroll`)} className="text-gray-300 focus:text-gray-900 focus:bg-gray-50">
             <Users className="h-4 w-4 mr-2" />
             Enroll Contacts
           </DropdownMenuItem>
-          <DropdownMenuItem onClick={() => router.push(`/workflows/${workflow.id}/settings`)} className="text-gray-300 focus:text-white focus:bg-white/5">
+          <DropdownMenuItem onClick={() => router.push(`/workflows/${workflow.id}/settings`)} className="text-gray-300 focus:text-gray-900 focus:bg-gray-50">
             <Settings className="h-4 w-4 mr-2" />
             Settings
           </DropdownMenuItem>
-          <DropdownMenuSeparator className="bg-white/10" />
+          <DropdownMenuSeparator className="bg-gray-100" />
           <DropdownMenuItem
             onClick={() => setArchiveDialogOpen(true)}
             className="text-red-400 focus:text-red-300 focus:bg-red-500/10"
@@ -121,20 +121,20 @@ export function WorkflowActions({ workflow }: WorkflowActionsProps) {
       </DropdownMenu>
 
       <AlertDialog open={archiveDialogOpen} onOpenChange={setArchiveDialogOpen}>
-        <AlertDialogContent className="bg-gray-900 border-white/10">
+        <AlertDialogContent className="bg-white border-gray-200">
           <AlertDialogHeader>
-            <AlertDialogTitle className="text-white">Archive Workflow</AlertDialogTitle>
+            <AlertDialogTitle className="text-gray-900">Archive Workflow</AlertDialogTitle>
             <AlertDialogDescription className="text-gray-400">
               Are you sure you want to archive &ldquo;{workflow.name}&rdquo;? All active enrollments
               will be completed and no new messages will be sent.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel disabled={isLoading} className="border-white/10 bg-gray-800 text-gray-300 hover:bg-gray-700">Cancel</AlertDialogCancel>
+            <AlertDialogCancel disabled={isLoading} className="border-gray-200 bg-gray-800 text-gray-300 hover:bg-gray-100">Cancel</AlertDialogCancel>
             <AlertDialogAction
               onClick={() => handleAction('archive')}
               disabled={isLoading}
-              className="bg-red-600 text-white hover:bg-red-700"
+              className="bg-red-600 text-gray-900 hover:bg-red-700"
             >
               {isLoading ? 'Archiving...' : 'Archive'}
             </AlertDialogAction>

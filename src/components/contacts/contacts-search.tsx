@@ -40,7 +40,7 @@ export function ContactsSearch({ initialValue }: ContactsSearchProps) {
         placeholder="Search contacts..."
         value={value}
         onChange={(e) => setValue(e.target.value)}
-        className="pl-9 bg-gray-900 border-white/10 text-white placeholder:text-gray-500"
+        className="pl-9 bg-white border-gray-200 text-gray-900 placeholder:text-gray-500"
       />
     </div>
   );

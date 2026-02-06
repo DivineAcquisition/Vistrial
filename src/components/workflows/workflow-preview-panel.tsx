@@ -52,9 +52,9 @@ export function WorkflowPreviewPanel({
   return (
     <div className="space-y-6">
       {/* Summary */}
-      <Card className="bg-gray-900/80 border-white/10">
+      <Card className="bg-white/80 border-gray-200">
         <CardHeader>
-          <CardTitle className="text-white">Workflow Summary</CardTitle>
+          <CardTitle className="text-gray-900">Workflow Summary</CardTitle>
           <CardDescription className="text-gray-400">
             Review your workflow before saving
           </CardDescription>
@@ -62,19 +62,19 @@ export function WorkflowPreviewPanel({
         <CardContent>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <div className="text-center p-4 bg-gray-800/50 rounded-lg">
-              <p className="text-2xl font-bold text-white">{steps.length}</p>
+              <p className="text-2xl font-bold text-gray-900">{steps.length}</p>
               <p className="text-sm text-gray-400">Total Steps</p>
             </div>
             <div className="text-center p-4 bg-gray-800/50 rounded-lg">
-              <p className="text-2xl font-bold text-white">{totalDays}</p>
+              <p className="text-2xl font-bold text-gray-900">{totalDays}</p>
               <p className="text-sm text-gray-400">Days Duration</p>
             </div>
             <div className="text-center p-4 bg-gray-800/50 rounded-lg">
-              <p className="text-2xl font-bold text-white">{smsCount + voiceCount}</p>
+              <p className="text-2xl font-bold text-gray-900">{smsCount + voiceCount}</p>
               <p className="text-sm text-gray-400">Messages</p>
             </div>
             <div className="text-center p-4 bg-gray-800/50 rounded-lg">
-              <p className="text-2xl font-bold text-white">${totalCostPerContact.toFixed(2)}</p>
+              <p className="text-2xl font-bold text-gray-900">${totalCostPerContact.toFixed(2)}</p>
               <p className="text-sm text-gray-400">Per Contact</p>
             </div>
           </div>
@@ -82,9 +82,9 @@ export function WorkflowPreviewPanel({
       </Card>
 
       {/* Timeline */}
-      <Card className="bg-gray-900/80 border-white/10">
+      <Card className="bg-white/80 border-gray-200">
         <CardHeader>
-          <CardTitle className="text-white">Message Timeline</CardTitle>
+          <CardTitle className="text-gray-900">Message Timeline</CardTitle>
           <CardDescription className="text-gray-400">
             Visual representation of the workflow sequence
           </CardDescription>
@@ -121,15 +121,15 @@ export function WorkflowPreviewPanel({
                         )}
                       </div>
                       {index < steps.length - 1 && (
-                        <div className="w-0.5 h-full bg-white/10 mt-2" />
+                        <div className="w-0.5 h-full bg-gray-100 mt-2" />
                       )}
                     </div>
 
                     {/* Content */}
                     <div className="flex-1 pb-6">
                       <div className="flex items-center gap-2 mb-2">
-                        <Badge variant="outline" className="border-white/20 text-gray-400">Day {dayOffset}</Badge>
-                        <span className="font-medium text-white">
+                        <Badge variant="outline" className="border-gray-300 text-gray-400">Day {dayOffset}</Badge>
+                        <span className="font-medium text-gray-900">
                           {step.type === 'sms' ? 'SMS Message' : 'Voice Drop'}
                         </span>
                       </div>
@@ -153,9 +153,9 @@ export function WorkflowPreviewPanel({
 
       {/* Settings Summary */}
       <div className="grid md:grid-cols-2 gap-6">
-        <Card className="bg-gray-900/80 border-white/10">
+        <Card className="bg-white/80 border-gray-200">
           <CardHeader>
-            <CardTitle className="text-base text-white">Send Window</CardTitle>
+            <CardTitle className="text-base text-gray-900">Send Window</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
             <div className="flex items-center gap-2 text-sm text-gray-300">
@@ -182,9 +182,9 @@ export function WorkflowPreviewPanel({
           </CardContent>
         </Card>
 
-        <Card className="bg-gray-900/80 border-white/10">
+        <Card className="bg-white/80 border-gray-200">
           <CardHeader>
-            <CardTitle className="text-base text-white">Enrollment Criteria</CardTitle>
+            <CardTitle className="text-base text-gray-900">Enrollment Criteria</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
             <div className="flex items-center gap-2 text-sm text-gray-300">

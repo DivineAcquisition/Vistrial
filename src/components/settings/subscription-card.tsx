@@ -96,11 +96,11 @@ export function SubscriptionCard({ organization }: SubscriptionCardProps) {
   };
 
   return (
-    <Card className="bg-gray-900/80 border-white/10">
+    <Card className="bg-white/80 border-gray-200">
       <CardHeader>
         <div className="flex items-center justify-between">
           <div>
-            <CardTitle className="text-white">Subscription</CardTitle>
+            <CardTitle className="text-gray-900">Subscription</CardTitle>
             <CardDescription className="text-gray-400">Your current plan and billing</CardDescription>
           </div>
           <Badge
@@ -114,16 +114,16 @@ export function SubscriptionCard({ organization }: SubscriptionCardProps) {
       <CardContent className="space-y-6">
         {isSubscribed ? (
           <>
-            <div className="flex items-center justify-between p-4 bg-gray-800/50 rounded-lg border border-white/5">
+            <div className="flex items-center justify-between p-4 bg-gray-800/50 rounded-lg border border-gray-100">
               <div>
-                <p className="font-semibold text-lg text-white">{currentPlan.name}</p>
+                <p className="font-semibold text-lg text-gray-900">{currentPlan.name}</p>
                 <p className="text-gray-400">
                   ${currentPlan.priceMonthly}/month
                 </p>
               </div>
               <div className="text-right">
                 <p className="text-sm text-gray-400">Contact Limit</p>
-                <p className="font-semibold text-white">
+                <p className="font-semibold text-gray-900">
                   {currentPlan.contactLimit.toLocaleString()}
                 </p>
               </div>
@@ -150,13 +150,13 @@ export function SubscriptionCard({ organization }: SubscriptionCardProps) {
               <div
                 key={key}
                 className={`p-4 border rounded-lg ${
-                  plan.recommended ? 'border-brand-500/50 ring-1 ring-brand-500/30' : 'border-white/10'
+                  plan.recommended ? 'border-brand-500/50 ring-1 ring-brand-500/30' : 'border-gray-200'
                 } bg-gray-800/50`}
               >
                 <div className="flex items-center justify-between mb-3">
                   <div>
-                    <p className="font-semibold text-white">{plan.name}</p>
-                    <p className="text-2xl font-bold text-white">
+                    <p className="font-semibold text-gray-900">{plan.name}</p>
+                    <p className="text-2xl font-bold text-gray-900">
                       ${plan.priceMonthly}
                       <span className="text-sm font-normal text-gray-400">
                         /month
@@ -181,7 +181,7 @@ export function SubscriptionCard({ organization }: SubscriptionCardProps) {
                   onClick={() => handleSubscribe(key)}
                   disabled={isLoading}
                   variant={plan.recommended ? 'default' : 'outline'}
-                  className={plan.recommended ? 'w-full bg-brand-600 hover:bg-brand-700' : 'w-full border-white/10 bg-gray-800 hover:bg-gray-700 text-white'}
+                  className={plan.recommended ? 'w-full bg-brand-600 hover:bg-brand-700' : 'w-full border-gray-200 bg-gray-800 hover:bg-gray-100 text-gray-900'}
                 >
                   {loadingPlan === key ? (
                     <Loader2 className="h-4 w-4 animate-spin" />

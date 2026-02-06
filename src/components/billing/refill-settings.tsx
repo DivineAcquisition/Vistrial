@@ -68,14 +68,14 @@ export function RefillSettings({
   const selectedRefill = refillOptions.find(o => o.credits === refillAmount) || refillOptions[0];
 
   return (
-    <div className="bg-gray-900/80 backdrop-blur-xl rounded-2xl border border-white/10 p-6">
+    <div className="bg-white rounded-2xl border border-gray-200 p-6">
       {/* Header */}
       <div className="flex items-center gap-3 mb-6">
         <div className="p-2 rounded-lg bg-brand-500/10 text-brand-400">
           <RefreshCw className="w-5 h-5" />
         </div>
         <div>
-          <h3 className="text-lg font-semibold text-white">Auto-Refill</h3>
+          <h3 className="text-lg font-semibold text-gray-900">Auto-Refill</h3>
           <p className="text-sm text-gray-400">
             Automatically add credits when balance is low
           </p>
@@ -83,8 +83,8 @@ export function RefillSettings({
       </div>
 
       {/* Enable Toggle */}
-      <div className="flex items-center justify-between p-4 bg-white/5 rounded-xl mb-6">
-        <span className="text-white font-medium">Enable Auto-Refill</span>
+      <div className="flex items-center justify-between p-4 bg-gray-50 rounded-xl mb-6">
+        <span className="text-gray-900 font-medium">Enable Auto-Refill</span>
         <button
           onClick={() => setEnabled(!enabled)}
           className={`relative w-12 h-6 rounded-full transition-colors ${
@@ -113,8 +113,8 @@ export function RefillSettings({
                   onClick={() => setThreshold(option)}
                   className={`py-2 px-3 rounded-lg text-sm font-medium transition-colors ${
                     threshold === option
-                      ? "bg-brand-600 text-white"
-                      : "bg-white/5 text-gray-300 hover:bg-white/10"
+                      ? "bg-brand-600 text-gray-900"
+                      : "bg-gray-50 text-gray-300 hover:bg-gray-100"
                   }`}
                 >
                   {option} credits
@@ -135,8 +135,8 @@ export function RefillSettings({
                   onClick={() => setRefillAmount(option.credits)}
                   className={`p-4 rounded-xl text-left transition-colors ${
                     refillAmount === option.credits
-                      ? "bg-brand-600 text-white"
-                      : "bg-white/5 text-gray-300 hover:bg-white/10"
+                      ? "bg-brand-600 text-gray-900"
+                      : "bg-gray-50 text-gray-300 hover:bg-gray-100"
                   }`}
                 >
                   <div className="text-lg font-semibold">
@@ -151,12 +151,12 @@ export function RefillSettings({
           </div>
 
           {/* Payment Method */}
-          <div className="p-4 bg-white/5 rounded-xl">
+          <div className="p-4 bg-gray-50 rounded-xl">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <CreditCard className="w-5 h-5 text-gray-400" />
                 {paymentMethod ? (
-                  <span className="text-white">
+                  <span className="text-gray-900">
                     {paymentMethod.brand} •••• {paymentMethod.last4}
                   </span>
                 ) : (
@@ -191,11 +191,11 @@ export function RefillSettings({
       )}
 
       {/* Save Button */}
-      <div className="flex justify-end mt-6 pt-6 border-t border-white/5">
+      <div className="flex justify-end mt-6 pt-6 border-t border-gray-100">
         <button
           onClick={handleSave}
           disabled={saving || (!enabled && !initialEnabled)}
-          className="inline-flex items-center gap-2 px-6 py-2.5 bg-brand-600 text-white rounded-xl font-medium hover:bg-brand-700 disabled:opacity-50 transition-colors"
+          className="inline-flex items-center gap-2 px-6 py-2.5 bg-brand-600 text-gray-900 rounded-xl font-medium hover:bg-brand-700 disabled:opacity-50 transition-colors"
         >
           {saved ? (
             <>

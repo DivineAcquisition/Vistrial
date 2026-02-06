@@ -153,7 +153,7 @@ export async function AnalyticsOverview({
         const isPositive = change >= 0;
 
         return (
-          <Card key={metric.title} className="bg-gray-900/80 border-white/10">
+          <Card key={metric.title} className="bg-white/80 border-gray-200">
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <p className="text-sm font-medium text-gray-400">
@@ -164,7 +164,7 @@ export async function AnalyticsOverview({
                 </div>
               </div>
               <div className="mt-3">
-                <p className="text-3xl font-bold text-white">
+                <p className="text-3xl font-bold text-gray-900">
                   {metric.isPercentage
                     ? `${metric.value.toFixed(1)}%`
                     : metric.value.toLocaleString()}

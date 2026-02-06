@@ -43,9 +43,9 @@ export function EnrollmentCriteriaPanel({
 
   return (
     <div className="space-y-6">
-      <Card className="bg-gray-900/80 border-white/10">
+      <Card className="bg-white/80 border-gray-200">
         <CardHeader>
-          <CardTitle className="text-white">Contact Criteria</CardTitle>
+          <CardTitle className="text-gray-900">Contact Criteria</CardTitle>
           <CardDescription className="text-gray-400">
             Define which contacts are eligible for this workflow
           </CardDescription>
@@ -61,7 +61,7 @@ export function EnrollmentCriteriaPanel({
                     id={`status-${status.value}`}
                     checked={criteria.status?.includes(status.value as any)}
                     onCheckedChange={() => toggleStatus(status.value)}
-                    className="border-white/20"
+                    className="border-gray-300"
                   />
                   <label
                     htmlFor={`status-${status.value}`}
@@ -84,7 +84,7 @@ export function EnrollmentCriteriaPanel({
                   id="last_contacted"
                   type="number"
                   min="0"
-                  className="w-20 bg-gray-800 border-white/10 text-white"
+                  className="w-20 bg-gray-800 border-gray-200 text-gray-900"
                   value={criteria.last_contacted_before_days || ''}
                   onChange={(e) =>
                     onChange({
@@ -105,7 +105,7 @@ export function EnrollmentCriteriaPanel({
                   id="last_job"
                   type="number"
                   min="0"
-                  className="w-20 bg-gray-800 border-white/10 text-white"
+                  className="w-20 bg-gray-800 border-gray-200 text-gray-900"
                   value={criteria.last_job_before_days || ''}
                   onChange={(e) =>
                     onChange({
@@ -124,7 +124,7 @@ export function EnrollmentCriteriaPanel({
             <Label className="text-gray-300">Contact Requirements</Label>
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-white">Must have phone number</p>
+                <p className="text-sm text-gray-900">Must have phone number</p>
                 <p className="text-xs text-gray-500">
                   Required for SMS and voice messages
                 </p>
@@ -138,7 +138,7 @@ export function EnrollmentCriteriaPanel({
             </div>
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-white">Must have email</p>
+                <p className="text-sm text-gray-900">Must have email</p>
                 <p className="text-xs text-gray-500">
                   Required for email messages
                 </p>
@@ -154,9 +154,9 @@ export function EnrollmentCriteriaPanel({
         </CardContent>
       </Card>
 
-      <Card className="bg-gray-900/80 border-white/10">
+      <Card className="bg-white/80 border-gray-200">
         <CardHeader>
-          <CardTitle className="text-white">Tag Filters</CardTitle>
+          <CardTitle className="text-gray-900">Tag Filters</CardTitle>
           <CardDescription className="text-gray-400">
             Include or exclude contacts based on tags
           </CardDescription>
@@ -167,7 +167,7 @@ export function EnrollmentCriteriaPanel({
             <Input
               id="include_tags"
               placeholder="Enter tags separated by commas"
-              className="bg-gray-800 border-white/10 text-white"
+              className="bg-gray-800 border-gray-200 text-gray-900"
               value={criteria.tags_include?.join(', ') || ''}
               onChange={(e) =>
                 onChange({
@@ -185,7 +185,7 @@ export function EnrollmentCriteriaPanel({
             <Input
               id="exclude_tags"
               placeholder="Enter tags separated by commas"
-              className="bg-gray-800 border-white/10 text-white"
+              className="bg-gray-800 border-gray-200 text-gray-900"
               value={criteria.tags_exclude?.join(', ') || ''}
               onChange={(e) =>
                 onChange({

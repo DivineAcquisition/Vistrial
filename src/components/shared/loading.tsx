@@ -36,9 +36,9 @@ export function Loading({
   if (variant === "overlay") {
     return (
       <div className={`fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm ${className}`}>
-        <div className="bg-gray-900 rounded-2xl p-8 flex flex-col items-center gap-4">
+        <div className="bg-white rounded-2xl p-8 flex flex-col items-center gap-4">
           <Loader2 className={`${sizeClasses.lg} text-brand-400 animate-spin`} />
-          {text && <p className="text-white font-medium">{text}</p>}
+          {text && <p className="text-gray-900 font-medium">{text}</p>}
         </div>
       </div>
     );
@@ -71,7 +71,7 @@ export function Loading({
 // Skeleton variants
 export function SkeletonCard({ className = "" }: { className?: string }) {
   return (
-    <div className={`animate-pulse bg-gray-900/80 rounded-2xl border border-white/10 p-6 ${className}`}>
+    <div className={`animate-pulse bg-white/80 rounded-2xl border border-gray-200 p-6 ${className}`}>
       <div className="flex items-center gap-4 mb-4">
         <div className="w-12 h-12 bg-gray-800 rounded-xl" />
         <div className="flex-1 space-y-2">

@@ -76,7 +76,7 @@ export function AddContactForm({ organizationId, onSuccess }: AddContactFormProp
             value={formData.first_name}
             onChange={(e) => setFormData({ ...formData, first_name: e.target.value })}
             disabled={isLoading}
-            className="bg-gray-800 border-white/10 text-white"
+            className="bg-gray-800 border-gray-200 text-gray-900"
           />
         </div>
         <div className="space-y-2">
@@ -86,7 +86,7 @@ export function AddContactForm({ organizationId, onSuccess }: AddContactFormProp
             value={formData.last_name}
             onChange={(e) => setFormData({ ...formData, last_name: e.target.value })}
             disabled={isLoading}
-            className="bg-gray-800 border-white/10 text-white"
+            className="bg-gray-800 border-gray-200 text-gray-900"
           />
         </div>
       </div>
@@ -99,7 +99,7 @@ export function AddContactForm({ organizationId, onSuccess }: AddContactFormProp
           value={formData.email}
           onChange={(e) => setFormData({ ...formData, email: e.target.value })}
           disabled={isLoading}
-          className="bg-gray-800 border-white/10 text-white"
+          className="bg-gray-800 border-gray-200 text-gray-900"
         />
       </div>
 
@@ -112,7 +112,7 @@ export function AddContactForm({ organizationId, onSuccess }: AddContactFormProp
           value={formData.phone}
           onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
           disabled={isLoading}
-          className="bg-gray-800 border-white/10 text-white"
+          className="bg-gray-800 border-gray-200 text-gray-900"
         />
       </div>
 
@@ -124,7 +124,7 @@ export function AddContactForm({ organizationId, onSuccess }: AddContactFormProp
           onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
           disabled={isLoading}
           rows={3}
-          className="bg-gray-800 border-white/10 text-white"
+          className="bg-gray-800 border-gray-200 text-gray-900"
         />
       </div>
 

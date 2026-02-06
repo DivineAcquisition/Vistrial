@@ -37,7 +37,7 @@ export function BookingsHeader({
             </div>
             <div>
               <span className="text-gray-500">Today</span>
-              <span className="ml-2 font-semibold text-white">{todayCount}</span>
+              <span className="ml-2 font-semibold text-gray-900">{todayCount}</span>
             </div>
           </div>
           <div className="flex items-center gap-2">
@@ -46,7 +46,7 @@ export function BookingsHeader({
             </div>
             <div>
               <span className="text-gray-500">Pending</span>
-              <span className="ml-2 font-semibold text-white">{pendingCount}</span>
+              <span className="ml-2 font-semibold text-gray-900">{pendingCount}</span>
             </div>
           </div>
           <div className="flex items-center gap-2">
@@ -55,14 +55,14 @@ export function BookingsHeader({
             </div>
             <div>
               <span className="text-gray-500">Upcoming</span>
-              <span className="ml-2 font-semibold text-white">{confirmedCount}</span>
+              <span className="ml-2 font-semibold text-gray-900">{confirmedCount}</span>
             </div>
           </div>
         </div>
 
         <Link
           href="/bookings/new"
-          className="group relative inline-flex items-center gap-2 px-5 py-2.5 rounded-xl font-medium text-white overflow-hidden transition-all duration-300 hover:scale-[1.02]"
+          className="group relative inline-flex items-center gap-2 px-5 py-2.5 rounded-xl font-medium text-gray-900 overflow-hidden transition-all duration-300 hover:scale-[1.02]"
         >
           <div className="absolute inset-0 bg-gradient-to-r from-brand-500 to-brand-600" />
           <div className="absolute inset-0 bg-gradient-to-r from-brand-400 to-brand-500 opacity-0 group-hover:opacity-100 transition-opacity" />

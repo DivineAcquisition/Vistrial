@@ -40,7 +40,7 @@ function LoginForm() {
 
     try {
       const supabase = createClient();
-      const { error } = await supabase.auth.signInWithPassword({ email, password });
+      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
 
       if (error) {
         if (error.message.includes('Invalid login credentials')) {
@@ -50,6 +50,13 @@ function LoginForm() {
         } else {
           setError(error.message);
         }
+        setIsLoading(false);
+        return;
+      }
+
+      // Verify we actually got a session
+      if (!data?.session) {
+        setError('Sign in succeeded but no session was created. Please try again.');
         setIsLoading(false);
         return;
       }

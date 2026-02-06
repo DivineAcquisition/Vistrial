@@ -182,7 +182,7 @@ export function OrganizationSettings({
             </div>
 
             {isOwner && (
-              <Button type="submit" disabled={isLoading} className="bg-violet-600 hover:bg-violet-700">
+              <Button type="submit" disabled={isLoading} className="">
                 {isLoading ? (
                   <>
                     <Loader2 className="h-4 w-4 mr-2 animate-spin" />
@@ -302,7 +302,7 @@ function MessagingSettings({
       </div>
 
       {isOwner && (
-        <Button type="submit" disabled={isLoading} className="bg-violet-600 hover:bg-violet-700">
+        <Button type="submit" disabled={isLoading} className="">
           {isLoading ? (
             <>
               <Loader2 className="h-4 w-4 mr-2 animate-spin" />

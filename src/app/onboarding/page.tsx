@@ -508,7 +508,7 @@ export default function OnboardingPage() {
                 <button
                   onClick={goToNextStep}
                   disabled={!isStepValid()}
-                  className="flex items-center gap-2 bg-violet-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-violet-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  className="flex items-center gap-2 bg-gradient-to-r from-brand-500 to-brand-600 text-white px-6 py-3 rounded-xl font-semibold hover:from-brand-600 hover:to-brand-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-lg shadow-brand-500/20 hover:shadow-xl hover:shadow-brand-500/25 active:scale-[0.98]"
                 >
                   Continue
                   <RiArrowRightLine className="w-4 h-4" />
@@ -517,7 +517,7 @@ export default function OnboardingPage() {
                 <button
                   onClick={handleComplete}
                   disabled={loading}
-                  className="flex items-center gap-2 bg-violet-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-violet-700 disabled:opacity-50 transition-colors"
+                  className="flex items-center gap-2 bg-gradient-to-r from-brand-500 to-brand-600 text-white px-6 py-3 rounded-xl font-semibold hover:from-brand-600 hover:to-brand-700 disabled:opacity-50 transition-all shadow-lg shadow-brand-500/20 hover:shadow-xl hover:shadow-brand-500/25 active:scale-[0.98]"
                 >
                   {loading ? (
                     <>

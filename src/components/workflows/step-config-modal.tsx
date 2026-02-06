@@ -258,7 +258,7 @@ export function StepConfigModal({
           <Button variant="outline" onClick={onCancel} className="border-white/10 text-white hover:bg-gray-800">
             Cancel
           </Button>
-          <Button onClick={handleSave} disabled={!formData.template.trim()} className="bg-violet-600 hover:bg-violet-700">
+          <Button onClick={handleSave} disabled={!formData.template.trim()}>
             Save Step
           </Button>
         </DialogFooter>

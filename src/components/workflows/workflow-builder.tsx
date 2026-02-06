@@ -248,7 +248,7 @@ export function WorkflowBuilder({ steps, onChange, onSave, saving }: WorkflowBui
       <div className="relative">
         <button
           onClick={() => setShowAddMenu(!showAddMenu)}
-          className="w-full p-4 border-2 border-dashed border-white/10 rounded-xl text-gray-400 hover:border-violet-500/30 hover:text-violet-400 transition-all flex items-center justify-center gap-2"
+          className="w-full p-4 border-2 border-dashed border-white/10 rounded-xl text-gray-400 hover:border-brand-500/30 hover:text-brand-400 transition-all flex items-center justify-center gap-2"
         >
           <Plus className="w-5 h-5" />
           Add step
@@ -280,7 +280,7 @@ export function WorkflowBuilder({ steps, onChange, onSave, saving }: WorkflowBui
         <button
           onClick={onSave}
           disabled={saving}
-          className="inline-flex items-center gap-2 px-6 py-2.5 bg-violet-600 text-white rounded-xl font-medium hover:bg-violet-700 disabled:opacity-50 transition-colors"
+          className="inline-flex items-center gap-2 px-6 py-2.5 bg-gradient-to-r from-brand-500 to-brand-600 text-white rounded-xl font-medium hover:from-brand-600 hover:to-brand-700 disabled:opacity-50 transition-all shadow-lg shadow-brand-500/20 hover:shadow-xl hover:shadow-brand-500/25 active:scale-[0.98]"
         >
           <Save className="w-5 h-5" />
           {saving ? "Saving..." : "Save Workflow"}

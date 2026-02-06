@@ -340,7 +340,7 @@ export function CsvUploadWizard({
           <Button 
             onClick={handleNext} 
             disabled={!canProceed()}
-            className="bg-violet-600 hover:bg-violet-700"
+            className=""
           >
             {currentStep === 'preview' ? (
               <>

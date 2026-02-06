@@ -239,7 +239,6 @@ export function WorkflowCreator({
           <Button 
             onClick={() => handleSave(true)} 
             disabled={isSaving}
-            className="bg-violet-600 hover:bg-violet-700"
           >
             {isSaving ? (
               <Loader2 className="h-4 w-4 animate-spin" />

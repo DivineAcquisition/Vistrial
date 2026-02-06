@@ -113,7 +113,7 @@ export function StepEditorPanel({ steps, onChange }: StepEditorPanelProps) {
     <Card className="bg-gray-900/80 border-white/10">
       <CardHeader className="flex flex-row items-center justify-between">
         <CardTitle className="text-white">Workflow Steps</CardTitle>
-        <Button onClick={() => setShowAddDialog(true)} className="bg-violet-600 hover:bg-violet-700">
+        <Button onClick={() => setShowAddDialog(true)} className="bg-gradient-to-r from-brand-500 to-brand-600 hover:from-brand-600 hover:to-brand-700 shadow-lg shadow-brand-500/20">
           <Plus className="h-4 w-4 mr-2" />
           Add Step
         </Button>
@@ -125,7 +125,7 @@ export function StepEditorPanel({ steps, onChange }: StepEditorPanelProps) {
             <p className="text-gray-400 mb-4">
               No steps yet. Add your first message to get started.
             </p>
-            <Button onClick={() => setShowAddDialog(true)} className="bg-violet-600 hover:bg-violet-700">
+            <Button onClick={() => setShowAddDialog(true)} className="bg-gradient-to-r from-brand-500 to-brand-600 hover:from-brand-600 hover:to-brand-700 shadow-lg shadow-brand-500/20">
               <Plus className="h-4 w-4 mr-2" />
               Add First Step
             </Button>

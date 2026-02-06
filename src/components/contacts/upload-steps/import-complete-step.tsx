@@ -136,7 +136,7 @@ export function ImportCompleteStep({
               <RefreshCw className="h-4 w-4 mr-2" />
               Import More
             </Button>
-            <Button onClick={onViewContacts} className="bg-violet-600 hover:bg-violet-700">
+            <Button onClick={onViewContacts} className="">
               <Users className="h-4 w-4 mr-2" />
               View Contacts
               <ArrowRight className="h-4 w-4 ml-2" />

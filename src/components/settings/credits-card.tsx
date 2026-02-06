@@ -165,7 +165,7 @@ export function CreditsCard({ organizationId, credits }: CreditsCardProps) {
                 ))}
               </SelectContent>
             </Select>
-            <Button onClick={handleRefill} disabled={isLoading} className="bg-violet-600 hover:bg-violet-700">
+            <Button onClick={handleRefill} disabled={isLoading} className="">
               {isLoading ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
               ) : (

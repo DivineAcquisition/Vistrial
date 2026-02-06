@@ -48,7 +48,7 @@ export function ContactsHeader({ organizationId }: ContactsHeaderProps) {
 
         <Dialog open={addDialogOpen} onOpenChange={setAddDialogOpen}>
           <DialogTrigger asChild>
-            <Button className="bg-violet-600 hover:bg-violet-700">
+            <Button>
               <Plus className="h-4 w-4 mr-2" />
               Add Contact
             </Button>

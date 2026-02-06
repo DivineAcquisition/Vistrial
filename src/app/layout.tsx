@@ -43,7 +43,7 @@ export default function RootLayout({
         className={`${GeistSans.className} antialiased selection:bg-brand-100 selection:text-brand-600 bg-white dark:bg-gray-950`}
         suppressHydrationWarning
       >
-        <ThemeProvider defaultTheme="system" attribute="class">
+        <ThemeProvider defaultTheme="light" attribute="class" forcedTheme="light">
           <AuthProvider>
             {children}
             <Toaster />

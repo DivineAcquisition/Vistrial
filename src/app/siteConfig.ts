@@ -1,16 +1,14 @@
 export const siteConfig = {
-  name: "Dashboard",
-  url: "https://dashboard.tremor.so",
-  description: "The only dashboard you will ever need.",
+  name: "Vistrial",
+  url: "https://app.vistrial.io",
+  description: "The booking platform for cleaning businesses.",
   baseLinks: {
     home: "/",
-    overview: "/overview",
-    details: "/details",
-    settings: {
-      general: "/settings/general",
-      billing: "/settings/billing",
-      users: "/settings/users",
-    },
+    dashboard: "/overview",
+    bookings: "/bookings",
+    conversions: "/conversions",
+    contacts: "/contacts",
+    settings: "/settings",
   },
 }
 

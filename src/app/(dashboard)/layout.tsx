@@ -20,6 +20,9 @@ export default async function DashboardLayout({
     redirect('/onboarding');
   }
 
+  // Safely access organization fields
+  const org = organization as Record<string, any>;
+
   return (
     <div className="min-h-screen bg-[#fafafa]">
       {/* Subtle ambient gradient */}
@@ -31,10 +34,10 @@ export default async function DashboardLayout({
       {/* Sidebar */}
       <DashboardSidebar
         organization={{
-          id: organization.id,
-          name: organization.name,
-          slug: organization.slug,
-          logo_url: organization.logo_url || undefined,
+          id: org.id || '',
+          name: org.name || 'My Business',
+          slug: org.slug || 'my-business',
+          logo_url: org.logo_url || undefined,
         }}
         user={{
           email: user?.email || '',

@@ -12,6 +12,7 @@
     "db:reset": "supabase db reset"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.73.0",
     "@atlaskit/pragmatic-drag-and-drop": "^1.7.7",
     "@atlaskit/pragmatic-drag-and-drop-flourish": "^2.0.12",
     "@atlaskit/pragmatic-drag-and-drop-hitbox": "^1.1.0",
@@ -58,6 +59,7 @@
     "next": "14.2.0",
     "next-themes": "^0.4.6",
     "papaparse": "^5.4.0",
+    "pdf-parse": "^2.4.5",
     "react": "^18.2.0",
     "react-day-picker": "^9.13.0",
     "react-dom": "^18.2.0",

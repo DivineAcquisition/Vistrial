@@ -101,3 +101,33 @@ DROP POLICY IF EXISTS "Public can create booking requests" ON booking_requests;
 CREATE POLICY "Public can create booking requests"
   ON booking_requests FOR INSERT
   WITH CHECK (true);
+
+-- ============================================
+-- BOOKING REQUEST ACTIVITIES TABLE
+-- Track activities and notes for booking requests
+-- ============================================
+
+CREATE TABLE IF NOT EXISTS booking_request_activities (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  booking_request_id UUID NOT NULL REFERENCES booking_requests(id) ON DELETE CASCADE,
+  organization_id UUID NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
+  user_id UUID REFERENCES auth.users(id) ON DELETE SET NULL,
+  type TEXT NOT NULL,
+  content TEXT NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_booking_activities_request ON booking_request_activities(booking_request_id);
+CREATE INDEX IF NOT EXISTS idx_booking_activities_created ON booking_request_activities(created_at DESC);
+
+ALTER TABLE booking_request_activities ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Users can view own org activities" ON booking_request_activities;
+CREATE POLICY "Users can view own org activities"
+  ON booking_request_activities FOR SELECT
+  USING (organization_id IN (SELECT organization_id FROM organization_members WHERE user_id = auth.uid()));
+
+DROP POLICY IF EXISTS "Users can create activities for own org" ON booking_request_activities;
+CREATE POLICY "Users can create activities for own org"
+  ON booking_request_activities FOR INSERT
+  WITH CHECK (organization_id IN (SELECT organization_id FROM organization_members WHERE user_id = auth.uid()));

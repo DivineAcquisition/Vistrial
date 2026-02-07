@@ -21,7 +21,13 @@ export default async function DashboardLayout({
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-950">
+    <div className="min-h-screen bg-[#fafafa]">
+      {/* Subtle ambient gradient */}
+      <div className="fixed inset-0 pointer-events-none z-0">
+        <div className="absolute top-0 right-[20%] w-[600px] h-[600px] rounded-full bg-brand-400/[0.03] blur-3xl" />
+        <div className="absolute bottom-0 left-[10%] w-[500px] h-[500px] rounded-full bg-brand-600/[0.02] blur-3xl" />
+      </div>
+
       {/* Sidebar */}
       <DashboardSidebar
         organization={{
@@ -37,9 +43,10 @@ export default async function DashboardLayout({
       />
 
       {/* Main content */}
-      <div className="lg:pl-72">
-        {/* Page content */}
-        <main className="min-h-screen p-4 pt-16 md:p-6 lg:pt-6">{children}</main>
+      <div className="relative z-10 lg:pl-[270px]">
+        <main className="min-h-screen p-4 pt-16 md:p-8 lg:pt-8 max-w-[1400px]">
+          {children}
+        </main>
       </div>
     </div>
   );

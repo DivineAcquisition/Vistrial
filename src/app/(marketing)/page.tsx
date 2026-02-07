@@ -536,26 +536,117 @@ export default function LandingPage() {
         </div>
       </section>
 
+      {/* ==================== BOOK A DEMO ==================== */}
+      <section id="demo" className="relative py-24 overflow-hidden">
+        {/* Background */}
+        <div className="absolute inset-0 bg-gradient-to-b from-gray-50 to-white" />
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[800px] rounded-full bg-brand-400/[0.04] blur-3xl" />
+
+        <div className="relative mx-auto max-w-5xl px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-12">
+            <Badge variant="gradient" className="mb-4">
+              <RiCalendarLine className="h-3.5 w-3.5" />
+              See it in action
+            </Badge>
+            <h2 className="text-3xl font-bold text-gray-900 sm:text-4xl tracking-tight">
+              Book a personalized demo
+            </h2>
+            <p className="mx-auto mt-4 max-w-2xl text-lg text-gray-600">
+              See exactly how Vistrial can reactivate your dormant customers. We&apos;ll walk you through the platform and build a custom campaign for your business.
+            </p>
+          </div>
+
+          <div className="grid md:grid-cols-2 gap-8 items-center">
+            {/* Left - Benefits */}
+            <div className="space-y-6">
+              {[
+                { title: '15-minute walkthrough', desc: 'Quick overview tailored to your business type' },
+                { title: 'Custom campaign built live', desc: 'We\'ll create a reactivation workflow for you on the call' },
+                { title: 'ROI projection', desc: 'See projected revenue based on your contact list size' },
+                { title: 'Q&A with our team', desc: 'Get answers to all your questions about the platform' },
+              ].map((item, i) => (
+                <div key={i} className="flex gap-4 items-start">
+                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-brand-50 text-brand-600 mt-0.5">
+                    <RiCheckLine className="h-4 w-4" />
+                  </div>
+                  <div>
+                    <p className="font-semibold text-gray-900">{item.title}</p>
+                    <p className="text-sm text-gray-500 mt-0.5">{item.desc}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Right - CTA Card */}
+            <div className="relative">
+              <div className="absolute -inset-4 bg-brand-gradient rounded-3xl opacity-[0.04] blur-xl" />
+              <Card className="relative p-8 text-center shadow-soft-lg border-gray-200/80">
+                <div className="w-16 h-16 mx-auto mb-6 rounded-2xl bg-brand-gradient flex items-center justify-center shadow-[0_8px_30px_rgba(83,71,209,0.3)]">
+                  <RiCalendarLine className="h-7 w-7 text-white" />
+                </div>
+                <h3 className="text-xl font-bold text-gray-900 mb-2">Schedule Your Demo</h3>
+                <p className="text-gray-500 mb-6 text-sm">
+                  Pick a time that works for you. No commitment, no pressure.
+                </p>
+                <div className="space-y-3">
+                  <a
+                    href="https://calendly.com/vistrial/demo"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="btn-primary flex items-center justify-center gap-2 w-full py-3.5 rounded-xl text-sm"
+                  >
+                    <RiCalendarLine className="h-4 w-4" />
+                    Book a Demo Call
+                  </a>
+                  <Link href="/signup">
+                    <Button variant="outline" size="lg" className="w-full">
+                      Or start your free trial
+                      <RiArrowRightLine className="ml-1 h-4 w-4" />
+                    </Button>
+                  </Link>
+                </div>
+                <p className="text-xs text-gray-400 mt-4">
+                  Free 14-day trial • No credit card required
+                </p>
+              </Card>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* ==================== FINAL CTA ==================== */}
-      <section className="bg-brand-gradient py-24 text-white">
-        <div className="mx-auto max-w-4xl px-4 text-center sm:px-6 lg:px-8">
-          <h2 className="text-3xl font-bold sm:text-4xl">
+      <section className="relative py-24 text-white overflow-hidden">
+        {/* Background gradient */}
+        <div className="absolute inset-0 bg-gradient-to-br from-brand-600 via-brand-600 to-brand-700" />
+        <div className="absolute inset-0 bg-[url('data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2240%22%20height%3D%2240%22%20viewBox%3D%220%200%2040%2040%22%3E%3Cg%20fill%3D%22none%22%20stroke%3D%22%23ffffff%22%20stroke-opacity%3D%220.05%22%20stroke-width%3D%221%22%3E%3Cpath%20d%3D%22M0%2020h40M20%200v40%22%2F%3E%3C%2Fg%3E%3C%2Fsvg%3E')]" />
+        <div className="absolute top-0 left-1/4 w-[500px] h-[500px] rounded-full bg-brand-400/20 blur-3xl" />
+        <div className="absolute bottom-0 right-1/4 w-[400px] h-[400px] rounded-full bg-brand-300/10 blur-3xl" />
+
+        <div className="relative mx-auto max-w-4xl px-4 text-center sm:px-6 lg:px-8">
+          <h2 className="text-3xl font-bold sm:text-4xl tracking-tight">
             Stop paying for new customers when your old ones are waiting.
           </h2>
-          <p className="mx-auto mt-6 max-w-2xl text-xl text-white/80">
+          <p className="mx-auto mt-6 max-w-2xl text-xl text-white/70 leading-relaxed">
             Every day you wait is another day your competitors are reaching out to your past customers. Start your free trial in the next 5 minutes.
           </p>
           <div className="mt-10 flex flex-col items-center justify-center gap-4 sm:flex-row">
             <Link href="/signup">
-              <Button size="xl" variant="secondary" className="bg-white text-brand-600 hover:bg-white/90">
+              <Button size="xl" className="bg-white text-brand-600 hover:bg-white/90 shadow-[0_4px_20px_rgba(0,0,0,0.15)] hover:shadow-[0_8px_30px_rgba(0,0,0,0.2)] hover:-translate-y-0.5 transition-all duration-200 rounded-xl">
                 Start Free Trial
                 <RiArrowRightLine className="ml-2 h-5 w-5" />
               </Button>
             </Link>
-            <p className="text-sm text-white/60">
-              Free 14-day trial • No credit card required
-            </p>
+            <a
+              href="#demo"
+              className="text-sm font-medium text-white/80 hover:text-white flex items-center gap-1.5 transition-colors"
+            >
+              <RiCalendarLine className="h-4 w-4" />
+              Or book a demo first
+            </a>
           </div>
+          <p className="mt-6 text-sm text-white/50">
+            Free 14-day trial • No credit card required
+          </p>
         </div>
       </section>
     </>

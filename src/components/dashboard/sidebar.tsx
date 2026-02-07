@@ -30,6 +30,8 @@ import {
   RiBuilding2Line,
   RiArrowRightSLine,
   RiSparklingLine,
+  RiCalendarCheckLine,
+  RiCalendarCheckFill,
 } from '@remixicon/react';
 import { cn } from '@/lib/utils/cn';
 import { createClient } from '@/lib/supabase/client';
@@ -62,6 +64,7 @@ const mainNavigation: NavItem[] = [
   { name: 'Inbox', href: '/inbox', icon: RiInboxLine, iconActive: RiInboxFill },
   { name: 'Contacts', href: '/contacts', icon: RiContactsLine, iconActive: RiContactsFill },
   { name: 'Workflows', href: '/workflows', icon: RiFlowChart, iconActive: RiFlowChart },
+  { name: 'Booking Pages', href: '/booking', icon: RiCalendarCheckLine, iconActive: RiCalendarCheckFill },
   { name: 'Bookings', href: '/bookings', icon: RiCalendarLine, iconActive: RiCalendarFill },
   { name: 'Analytics', href: '/analytics', icon: RiLineChartLine, iconActive: RiLineChartFill },
 ];

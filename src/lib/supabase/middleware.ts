@@ -121,6 +121,7 @@ export async function updateSession(request: NextRequest) {
     '/workflows',
     '/settings',
     '/bookings',
+    '/booking',
     '/analytics',
     '/inbox',
   ];

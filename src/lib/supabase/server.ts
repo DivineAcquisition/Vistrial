@@ -1,141 +1,38 @@
-// @ts-nocheck
 // ============================================
-// SUPABASE SERVER CLIENT
-// Used in Server Components, Route Handlers, Server Actions
+// Supabase Server Client
+// Creates a Supabase client for server-side operations
 // ============================================
 
-import { createServerClient } from '@supabase/ssr';
-import { cookies } from 'next/headers';
-import type { Database } from '@/types/database';
+import { createClient, SupabaseClient } from "@supabase/supabase-js";
+import { cookies } from "next/headers";
 
-export async function getSupabaseServerClient() {
+// Type for the Supabase client - can be extended with database types
+export type ServerSupabaseClient = SupabaseClient;
+
+/**
+ * Creates a Supabase client for server-side operations
+ * This client uses the service role key and handles auth via cookies
+ */
+export async function createServerSupabaseClient(): Promise<ServerSupabaseClient> {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
+  if (!supabaseUrl || !supabaseAnonKey) {
+    throw new Error("Missing Supabase environment variables");
+  }
+
   const cookieStore = await cookies();
 
-  return createServerClient<Database>(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        getAll() {
-          return cookieStore.getAll();
-        },
-        setAll(cookiesToSet) {
-          try {
-            cookiesToSet.forEach(({ name, value, options }) => {
-              cookieStore.set(name, value, options);
-            });
-          } catch {
-            // setAll called from a Server Component - ignored,
-            // middleware handles session refresh
-          }
-        },
-      },
-    }
-  );
-}
-
-// Backward compatibility alias
-export const createServerSupabaseClient = getSupabaseServerClient;
-
-// Helper to get current user on the server
-export async function getServerUser() {
-  const supabase = await getSupabaseServerClient();
-  const {
-    data: { user },
-    error,
-  } = await supabase.auth.getUser();
-
-  if (error || !user) {
-    return null;
-  }
-
-  return user;
-}
-
-// Helper to get current session on the server
-export async function getServerSession() {
-  const supabase = await getSupabaseServerClient();
-  const {
-    data: { session },
-    error,
-  } = await supabase.auth.getSession();
-
-  if (error || !session) {
-    return null;
-  }
-
-  return session;
-}
-
-// Helper to require authentication (throws redirect if not authenticated)
-export async function requireAuth() {
-  const user = await getServerUser();
-
-  if (!user) {
-    throw new Error('Unauthorized');
-  }
-
-  return user;
-}
-
-// Helper to get user's organization
-export async function getUserOrganization(userId: string) {
-  const supabase = await getSupabaseServerClient();
-
-  const { data: membership, error } = await supabase
-    .from('organization_members')
-    .select(`
-      organization_id,
-      role,
-      permissions,
-      organizations (
-        id,
-        name,
-        slug,
-        business_type,
-        plan_tier,
-        subscription_status,
-        contact_limit,
-        settings
-      )
-    `)
-    .eq('user_id', userId)
-    .single();
-
-  if (error || !membership) {
-    return null;
-  }
-
-  return {
-    membership: {
-      organization_id: membership.organization_id,
-      role: membership.role,
-      permissions: membership.permissions,
+  const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+    auth: {
+      persistSession: false,
     },
-    organization: membership.organizations,
-  };
+    global: {
+      headers: {
+        cookie: cookieStore.toString(),
+      },
+    },
+  });
+
+  return supabase;
 }
-
-// Helper to get user with organization context
-export async function getAuthenticatedContext() {
-  const user = await getServerUser();
-
-  if (!user) {
-    return null;
-  }
-
-  const orgData = await getUserOrganization(user.id);
-
-  if (!orgData) {
-    return { user, organization: null, membership: null };
-  }
-
-  return {
-    user,
-    organization: orgData.organization,
-    membership: orgData.membership,
-  };
-}
-
-// Alias for backward compatibility
-export const createClient = getSupabaseServerClient;

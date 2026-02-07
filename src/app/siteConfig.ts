@@ -20,16 +20,11 @@ export const siteConfig = {
   // Dashboard links (app.vistrial.io)
   baseLinks: {
     home: "/",
-    overview: "/overview",
-    details: "/details",
-    leads: "/leads",
-    quotes: "/quotes",
-    sequences: "/sequences",
-    settings: {
-      general: "/settings/general",
-      billing: "/settings/billing",
-      users: "/settings/users",
-    },
+    dashboard: "/overview",
+    bookings: "/bookings",
+    conversions: "/conversions",
+    contacts: "/contacts",
+    settings: "/settings",
   },
   
   // Marketing links (access.vistrial.io)

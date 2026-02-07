@@ -1,39 +1,15 @@
 // ============================================
-// STRIPE BROWSER CLIENT
-// Used for client-side Stripe.js operations
+// Stripe client setup
 // ============================================
 
-import { loadStripe, Stripe } from '@stripe/stripe-js';
+import Stripe from "stripe";
 
-let stripePromise: Promise<Stripe | null> | null = null;
+export const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
+  apiVersion: "2026-01-28.clover",
+  typescript: true,
+});
 
-export function getStripeClient() {
-  if (!stripePromise) {
-    stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!);
-  }
-  return stripePromise;
-}
-
-/**
- * Redirect to Stripe Checkout
- */
-export async function redirectToCheckout(sessionId: string) {
-  const stripe = await getStripeClient();
-  
-  if (!stripe) {
-    throw new Error('Stripe failed to load');
-  }
-
-  const { error } = await stripe.redirectToCheckout({ sessionId });
-  
-  if (error) {
-    throw error;
-  }
-}
-
-/**
- * Redirect to Stripe Customer Portal
- */
-export async function redirectToPortal(portalUrl: string) {
-  window.location.href = portalUrl;
-}
+// For client-side
+export const getStripePublishableKey = () => {
+  return process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!;
+};

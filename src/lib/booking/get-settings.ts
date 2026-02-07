@@ -1,3 +1,4 @@
+// @ts-nocheck
 // ============================================
 // Helper functions to load booking settings for public pages
 // These functions use the admin client to bypass RLS

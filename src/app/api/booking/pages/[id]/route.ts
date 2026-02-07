@@ -31,6 +31,7 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
     if (body.settings !== undefined) u.settings = body.settings;
     if (body.customization !== undefined) u.customization = body.customization;
     if (body.active !== undefined) u.active = body.active;
+    if (body.seo !== undefined) u.seo = body.seo;
     const { data, error } = await admin.from('booking_pages').update(u).eq('id', params.id).eq('organization_id', context.organization.id).select().single();
     if (error) throw error;
     return NextResponse.json({ bookingPage: data });

@@ -131,3 +131,11 @@ DROP POLICY IF EXISTS "Users can create activities for own org" ON booking_reque
 CREATE POLICY "Users can create activities for own org"
   ON booking_request_activities FOR INSERT
   WITH CHECK (organization_id IN (SELECT organization_id FROM organization_members WHERE user_id = auth.uid()));
+
+-- Add SEO column to booking_pages
+ALTER TABLE booking_pages ADD COLUMN IF NOT EXISTS seo JSONB DEFAULT '{}';
+
+-- Add booking tracking to workflow_enrollments
+ALTER TABLE workflow_enrollments ADD COLUMN IF NOT EXISTS booking_request_id UUID REFERENCES booking_requests(id) ON DELETE SET NULL;
+ALTER TABLE workflow_enrollments ADD COLUMN IF NOT EXISTS completion_reason TEXT;
+CREATE INDEX IF NOT EXISTS idx_enrollments_booking ON workflow_enrollments(booking_request_id) WHERE booking_request_id IS NOT NULL;

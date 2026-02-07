@@ -64,8 +64,8 @@ const mainNavigation: NavItem[] = [
   { name: 'Inbox', href: '/inbox', icon: RiInboxLine, iconActive: RiInboxFill },
   { name: 'Contacts', href: '/contacts', icon: RiContactsLine, iconActive: RiContactsFill },
   { name: 'Workflows', href: '/workflows', icon: RiFlowChart, iconActive: RiFlowChart },
-  { name: 'Booking Pages', href: '/booking', icon: RiCalendarCheckLine, iconActive: RiCalendarCheckFill },
-  { name: 'Bookings', href: '/bookings', icon: RiCalendarLine, iconActive: RiCalendarFill },
+  { name: 'Quote Pages', href: '/booking', icon: RiCalendarCheckLine, iconActive: RiCalendarCheckFill },
+  { name: 'Schedule', href: '/bookings', icon: RiCalendarLine, iconActive: RiCalendarFill },
   { name: 'Analytics', href: '/analytics', icon: RiLineChartLine, iconActive: RiLineChartFill },
 ];
 
@@ -281,7 +281,7 @@ export function DashboardSidebar({ organization, user }: SidebarProps) {
       )}
 
       {/* Desktop sidebar */}
-      <div className="hidden lg:fixed lg:inset-y-0 lg:flex lg:w-[270px] lg:flex-col">
+      <div className="hidden lg:fixed lg:inset-y-0 lg:z-30 lg:flex lg:w-[270px] lg:flex-col">
         <div className="flex grow flex-col border-r border-gray-200/80">
           <SidebarContent />
         </div>

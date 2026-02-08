@@ -99,7 +99,7 @@ export function LogoText({
   );
 }
 
-// Full logo with image (uses VistrialLT.png)
+// Full logo with image (uses vsds.png - logo + company name)
 export function LogoFull({ 
   size = 'md', 
   className,
@@ -110,7 +110,7 @@ export function LogoFull({
   return (
     <div className={cn('flex items-center', className)}>
       <Image
-        src="/VistrialLT.png"
+        src="/vsds.png"
         alt="Vistrial"
         width={sizeConfig.image.width}
         height={sizeConfig.image.height}

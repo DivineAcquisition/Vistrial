@@ -18,7 +18,7 @@ export default function MarketingLayout({ children }: { children: ReactNode }) {
           <div className="flex h-16 items-center justify-between">
             <Link href="/" className="flex items-center">
               <Image
-                src="/VistrialLT.png"
+                src="/vsds.png"
                 alt="Vistrial"
                 width={140}
                 height={70}
@@ -81,11 +81,11 @@ export default function MarketingLayout({ children }: { children: ReactNode }) {
             <div className="col-span-2 md:col-span-1">
               <Link href="/" className="mb-4 inline-block">
                 <Image
-                  src="/VistrialLT.png"
-                  alt="Vistrial"
-                  width={120}
-                  height={60}
-                  className="h-8 w-auto object-contain"
+                src="/vsds.png"
+                alt="Vistrial"
+                width={120}
+                height={60}
+                className="h-8 w-auto object-contain"
                 />
               </Link>
               <p className="text-sm text-gray-600">

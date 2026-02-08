@@ -2,7 +2,7 @@ import { Metadata } from 'next';
 import { redirect } from 'next/navigation';
 import { getAuthenticatedContext } from '@/lib/supabase/server';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { MessageSquare } from 'lucide-react';
+import { MessageSquare, Webhook } from 'lucide-react';
 
 export const metadata: Metadata = { title: 'Messaging Settings | Vistrial' };
 export const dynamic = 'force-dynamic';
@@ -11,6 +11,9 @@ export default async function MessagingSettingsPage() {
   const context = await getAuthenticatedContext();
   if (!context?.organization) redirect('/login');
   const org = context.organization as Record<string, any>;
+
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://app.vistrial.io';
+  const telnyxWebhookUrl = `${appUrl}/api/webhooks/telnyx`;
 
   return (
     <div className="space-y-6">
@@ -35,6 +38,26 @@ export default async function MessagingSettingsPage() {
           <div className="flex items-center justify-between py-3">
             <div><p className="font-medium text-sm">Sending Hours</p><p className="text-xs text-gray-500">Only send during business hours</p></div>
             <p className="text-sm text-gray-600">9:00 AM - 8:00 PM</p>
+          </div>
+        </CardContent>
+      </Card>
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base flex items-center gap-2"><Webhook className="h-4 w-4" /> Telnyx Inbound Webhook URLs</CardTitle>
+          <CardDescription>Configure these URLs in your Telnyx Messaging Profile&apos;s Inbound Settings</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="flex items-center justify-between py-3 border-b border-gray-100">
+            <div><p className="font-medium text-sm">Webhook URL</p><p className="text-xs text-gray-500">Primary webhook for inbound messages and delivery receipts</p></div>
+            <p className="text-sm text-gray-600 font-mono bg-gray-50 px-3 py-1.5 rounded-md select-all">{telnyxWebhookUrl}</p>
+          </div>
+          <div className="flex items-center justify-between py-3 border-b border-gray-100">
+            <div><p className="font-medium text-sm">Webhook Failover URL</p><p className="text-xs text-gray-500">Backup URL if the primary webhook fails</p></div>
+            <p className="text-sm text-gray-600 font-mono bg-gray-50 px-3 py-1.5 rounded-md select-all">{telnyxWebhookUrl}</p>
+          </div>
+          <div className="flex items-center justify-between py-3">
+            <div><p className="font-medium text-sm">Webhook API Version</p><p className="text-xs text-gray-500">Required API version for webhook payloads</p></div>
+            <p className="text-sm text-gray-600 font-mono bg-gray-50 px-3 py-1.5 rounded-md">v2</p>
           </div>
         </CardContent>
       </Card>

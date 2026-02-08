@@ -71,7 +71,7 @@ const mainNavigation: NavItem[] = [
 
 const settingsNavigation: NavItem[] = [
   { name: 'Billing', href: '/settings/billing', icon: RiWalletLine, iconActive: RiWalletFill },
-  { name: 'Settings', href: '/settings', icon: RiSettings4Line, iconActive: RiSettings4Fill },
+  { name: 'Settings', href: '/settings/profile', icon: RiSettings4Line, iconActive: RiSettings4Fill },
   { name: 'Help', href: '/help', icon: RiQuestionLine, iconActive: RiQuestionFill },
 ];
 
@@ -79,7 +79,7 @@ function NavLink({ item, pathname }: { item: NavItem; pathname: string }) {
   const isActive =
     pathname === item.href ||
     (item.href !== '/dashboard' && pathname.startsWith(item.href + '/')) ||
-    (item.href === '/settings' && pathname.startsWith('/settings') && !pathname.includes('/billing'));
+    (item.href === '/settings/profile' && pathname.startsWith('/settings') && !pathname.includes('/billing'));
 
   const Icon = isActive ? item.iconActive : item.icon;
 

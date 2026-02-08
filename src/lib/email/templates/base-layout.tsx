@@ -32,7 +32,7 @@ export function BaseLayout({ preview, children, footerText }: BaseLayoutProps) {
           {/* Header */}
           <Section style={header}>
             <Img
-              src="https://vistrial.com/VistrialLT.png"
+              src="https://vistrial.io/vsds.png"
               width="120"
               height="36"
               alt="Vistrial"

@@ -166,7 +166,7 @@ export default function OnboardingPage() {
       <header className="p-6">
         <Link href="/" className="inline-block">
           <Image
-            src="/VISTRIAL.png"
+            src="/vsds.png"
             alt="Vistrial"
             width={140}
             height={48}

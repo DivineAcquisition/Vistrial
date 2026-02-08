@@ -22,14 +22,14 @@ const imageSizes = {
   lg: { width: 180, height: 90, className: "h-12 w-auto" },
 };
 
-// Full logo with image (uses VistrialLT.png)
+// Full logo with image (uses vsds.png - logo + company name)
 export function FullLogo({ className, size = "md" }: LogoProps) {
   const imgSize = imageSizes[size];
   
   return (
     <Link href="/" className={cn("block", className)}>
       <Image
-        src="/VistrialLT.png"
+        src="/vsds.png"
         alt="Vistrial"
         width={imgSize.width}
         height={imgSize.height}

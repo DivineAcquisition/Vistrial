@@ -150,7 +150,7 @@ export function DashboardSidebar({ organization, user }: SidebarProps) {
       <div className="flex h-16 shrink-0 items-center gap-x-4 border-b border-gray-100 px-6">
         <Link href="/dashboard" className="flex items-center">
           <Image
-            src="/VistrialLT.png"
+            src="/vsds.png"
             alt="Vistrial"
             width={120}
             height={60}

@@ -60,7 +60,7 @@ function StepCard({ step, index }: { step: WorkflowStep; index: number }) {
   const config = typeConfig[step.type];
 
   return (
-    <div className="group relative flex items-start gap-4 p-4 bg-gray-800/50 rounded-xl border border-gray-200 hover:border-white/20 transition-all">
+    <div className="group relative flex items-start gap-4 p-4 bg-white rounded-xl border border-gray-200 hover:border-gray-300 transition-all">
       {/* Drag Handle */}
       <button className="p-1 text-gray-500 hover:text-gray-600 cursor-grab opacity-0 group-hover:opacity-100 transition-opacity">
         <GripVertical className="w-4 h-4" />
@@ -123,11 +123,11 @@ export default async function WorkflowDetailPage({ params }: PageProps) {
           </p>
         </div>
         <div className="flex items-center gap-3">
-          <button className="inline-flex items-center gap-2 px-4 py-2.5 bg-gray-800 border border-gray-200 text-gray-900 rounded-xl font-medium hover:bg-gray-700 transition-colors">
+          <button className="inline-flex items-center gap-2 px-4 py-2.5 bg-white border border-gray-200 text-gray-900 rounded-xl font-medium hover:bg-gray-50 transition-colors">
             <Settings className="w-5 h-5" />
             Settings
           </button>
-          <button className="inline-flex items-center gap-2 px-4 py-2.5 bg-green-600 text-gray-900 rounded-xl font-medium hover:bg-green-700 transition-colors">
+          <button className="inline-flex items-center gap-2 px-4 py-2.5 bg-green-600 text-white rounded-xl font-medium hover:bg-green-700 transition-colors">
             <Play className="w-5 h-5" />
             Activate
           </button>
@@ -169,7 +169,7 @@ export default async function WorkflowDetailPage({ params }: PageProps) {
 
           {/* Save Button */}
           <div className="flex justify-end">
-            <button className="inline-flex items-center gap-2 px-6 py-2.5 bg-brand-600 text-gray-900 rounded-xl font-medium hover:bg-brand-700 transition-colors">
+            <button className="inline-flex items-center gap-2 px-6 py-2.5 bg-brand-600 text-white rounded-xl font-medium hover:bg-brand-700 transition-colors">
               <Save className="w-5 h-5" />
               Save Changes
             </button>

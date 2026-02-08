@@ -137,7 +137,7 @@ export function CreditsCard({ organizationId, credits }: CreditsCardProps) {
       </CardHeader>
       <CardContent className="space-y-6">
         {/* Current Balance */}
-        <div className="p-4 bg-gray-800/50 rounded-lg border border-gray-100">
+        <div className="p-4 bg-gray-50 rounded-lg border border-gray-100">
           <p className="text-sm text-gray-400 mb-1">Current Balance</p>
           <p className="text-3xl font-bold text-gray-900">{formatCentsToDollars(balance)}</p>
           <div className="mt-2 grid grid-cols-2 gap-2 text-xs text-gray-500">
@@ -154,7 +154,7 @@ export function CreditsCard({ organizationId, credits }: CreditsCardProps) {
               value={selectedAmount.toString()}
               onValueChange={(v) => setSelectedAmount(parseInt(v))}
             >
-              <SelectTrigger className="flex-1 bg-gray-800 border-gray-200 text-gray-900">
+              <SelectTrigger className="flex-1 bg-white border-gray-200 text-gray-900">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent className="bg-white border-gray-200">
@@ -198,7 +198,7 @@ export function CreditsCard({ organizationId, credits }: CreditsCardProps) {
                 value={autoRefillAmount.toString()}
                 onValueChange={(v) => setAutoRefillAmount(parseInt(v))}
               >
-                <SelectTrigger className="bg-gray-800 border-gray-200 text-gray-900">
+                <SelectTrigger className="bg-white border-gray-200 text-gray-900">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent className="bg-white border-gray-200">
@@ -219,7 +219,7 @@ export function CreditsCard({ organizationId, credits }: CreditsCardProps) {
             variant="outline"
             onClick={handleSaveAutoRefill}
             disabled={isLoading}
-            className="w-full border-gray-200 bg-gray-800 hover:bg-gray-100 text-gray-900"
+            className="w-full border-gray-200 bg-white hover:bg-gray-100 text-gray-900"
           >
             {isLoading ? (
               <Loader2 className="h-4 w-4 animate-spin" />

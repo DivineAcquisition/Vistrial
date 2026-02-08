@@ -63,7 +63,7 @@ export function WorkflowSettingsPanel({ settings, onChange }: WorkflowSettingsPa
                 onChange={(e) =>
                   onChange({ ...settings, send_window_start: e.target.value })
                 }
-                className="bg-gray-800 border-gray-200 text-gray-900"
+                className="bg-white border-gray-200 text-gray-900"
               />
             </div>
             <div className="space-y-2">
@@ -75,7 +75,7 @@ export function WorkflowSettingsPanel({ settings, onChange }: WorkflowSettingsPa
                 onChange={(e) =>
                   onChange({ ...settings, send_window_end: e.target.value })
                 }
-                className="bg-gray-800 border-gray-200 text-gray-900"
+                className="bg-white border-gray-200 text-gray-900"
               />
             </div>
           </div>

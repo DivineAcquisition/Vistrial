@@ -36,7 +36,7 @@ export default async function BookingsPage() {
         <Link
           href={`/book/${organization.slug}`}
           target="_blank"
-          className="flex items-center gap-2 bg-brand-600 text-gray-900 px-4 py-2.5 rounded-xl font-medium hover:bg-brand-700 transition-all"
+          className="flex items-center gap-2 bg-brand-600 text-white px-4 py-2.5 rounded-xl font-medium hover:bg-brand-700 transition-all"
         >
           <RiExternalLinkLine className="w-5 h-5" />
           View Booking Page
@@ -59,7 +59,7 @@ export default async function BookingsPage() {
               Share your booking page with customers to let them schedule services directly.
             </p>
 
-            <div className="p-4 bg-gray-800/50 rounded-xl border border-gray-200 mb-6">
+            <div className="p-4 bg-gray-50 rounded-xl border border-gray-200 mb-6">
               <p className="text-sm text-gray-500 mb-2">Your booking URL:</p>
               <p className="text-brand-400 font-mono text-sm break-all">
                 {typeof window !== 'undefined' 
@@ -73,7 +73,7 @@ export default async function BookingsPage() {
               <Link
                 href={`/book/${organization.slug}`}
                 target="_blank"
-                className="flex items-center gap-2 px-6 py-3 bg-brand-600 text-gray-900 rounded-xl font-medium hover:bg-brand-700 transition-all"
+                className="flex items-center gap-2 px-6 py-3 bg-brand-600 text-white rounded-xl font-medium hover:bg-brand-700 transition-all"
               >
                 <RiExternalLinkLine className="w-5 h-5" />
                 Open Booking Page
@@ -94,19 +94,19 @@ export default async function BookingsPage() {
       <div className="relative bg-white rounded-2xl border border-gray-200 p-6">
         <h3 className="text-lg font-semibold text-gray-900 mb-4">Coming Soon</h3>
         <div className="grid md:grid-cols-3 gap-4">
-          <div className="p-4 bg-gray-800/50 rounded-xl border border-gray-100">
+          <div className="p-4 bg-gray-50 rounded-xl border border-gray-100">
             <p className="font-medium text-gray-900 mb-1">Calendar Sync</p>
             <p className="text-sm text-gray-500">
               Sync with Google Calendar and Outlook
             </p>
           </div>
-          <div className="p-4 bg-gray-800/50 rounded-xl border border-gray-100">
+          <div className="p-4 bg-gray-50 rounded-xl border border-gray-100">
             <p className="font-medium text-gray-900 mb-1">Service Packages</p>
             <p className="text-sm text-gray-500">
               Create and manage service offerings
             </p>
           </div>
-          <div className="p-4 bg-gray-800/50 rounded-xl border border-gray-100">
+          <div className="p-4 bg-gray-50 rounded-xl border border-gray-100">
             <p className="font-medium text-gray-900 mb-1">Team Scheduling</p>
             <p className="text-sm text-gray-500">
               Assign bookings to team members

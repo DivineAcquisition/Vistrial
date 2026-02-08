@@ -40,7 +40,7 @@ export function UsageMeter({ credits, breakdown, showRefill = true, compact = fa
     return (
       <div className="flex items-center gap-3">
         <div className="flex-1">
-          <div className="h-2 bg-gray-800 rounded-full overflow-hidden">
+          <div className="h-2 bg-white rounded-full overflow-hidden">
             <div 
               className={`h-full rounded-full transition-all ${
                 isCritical 
@@ -91,7 +91,7 @@ export function UsageMeter({ credits, breakdown, showRefill = true, compact = fa
         </div>
 
         {/* Progress Bar */}
-        <div className="h-3 bg-gray-800 rounded-full overflow-hidden">
+        <div className="h-3 bg-white rounded-full overflow-hidden">
           <div 
             className={`h-full rounded-full transition-all ${
               isCritical 

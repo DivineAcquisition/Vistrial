@@ -454,7 +454,7 @@ export default function OnboardingPage() {
                 <button
                   onClick={goToNextStep}
                   disabled={!isStepValid()}
-                  className="flex items-center gap-2 bg-brand-600 text-gray-900 px-6 py-3 rounded-lg font-semibold hover:bg-brand-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  className="flex items-center gap-2 bg-brand-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-brand-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 >
                   Continue
                   <RiArrowRightLine className="w-4 h-4" />
@@ -463,7 +463,7 @@ export default function OnboardingPage() {
                 <button
                   onClick={handleComplete}
                   disabled={loading}
-                  className="flex items-center gap-2 bg-brand-600 text-gray-900 px-6 py-3 rounded-lg font-semibold hover:bg-brand-700 disabled:opacity-50 transition-colors"
+                  className="flex items-center gap-2 bg-brand-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-brand-700 disabled:opacity-50 transition-colors"
                 >
                   {loading ? (
                     <>

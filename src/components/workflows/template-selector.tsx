@@ -66,7 +66,7 @@ export function TemplateSelector({
       >
         <CardContent className="flex items-center justify-center py-8">
           <div className="text-center">
-            <div className="w-12 h-12 rounded-full bg-gray-800 flex items-center justify-center mx-auto mb-3">
+            <div className="w-12 h-12 rounded-full bg-white flex items-center justify-center mx-auto mb-3">
               <Plus className="h-6 w-6 text-gray-400" />
             </div>
             <p className="font-medium text-gray-900">Start from Scratch</p>

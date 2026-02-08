@@ -61,19 +61,19 @@ export function WorkflowPreviewPanel({
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <div className="text-center p-4 bg-gray-800/50 rounded-lg">
+            <div className="text-center p-4 bg-gray-50 rounded-lg">
               <p className="text-2xl font-bold text-gray-900">{steps.length}</p>
               <p className="text-sm text-gray-400">Total Steps</p>
             </div>
-            <div className="text-center p-4 bg-gray-800/50 rounded-lg">
+            <div className="text-center p-4 bg-gray-50 rounded-lg">
               <p className="text-2xl font-bold text-gray-900">{totalDays}</p>
               <p className="text-sm text-gray-400">Days Duration</p>
             </div>
-            <div className="text-center p-4 bg-gray-800/50 rounded-lg">
+            <div className="text-center p-4 bg-gray-50 rounded-lg">
               <p className="text-2xl font-bold text-gray-900">{smsCount + voiceCount}</p>
               <p className="text-sm text-gray-400">Messages</p>
             </div>
-            <div className="text-center p-4 bg-gray-800/50 rounded-lg">
+            <div className="text-center p-4 bg-gray-50 rounded-lg">
               <p className="text-2xl font-bold text-gray-900">${totalCostPerContact.toFixed(2)}</p>
               <p className="text-sm text-gray-400">Per Contact</p>
             </div>
@@ -133,7 +133,7 @@ export function WorkflowPreviewPanel({
                           {step.type === 'sms' ? 'SMS Message' : 'Voice Drop'}
                         </span>
                       </div>
-                      <div className="p-3 bg-gray-800/50 rounded-lg text-sm text-gray-300">
+                      <div className="p-3 bg-gray-50 rounded-lg text-sm text-gray-300">
                         {step.template
                           .replace('{{first_name}}', 'John')
                           .replace('{{last_name}}', 'Smith')
@@ -170,13 +170,13 @@ export function WorkflowPreviewPanel({
             </div>
             <div className="flex flex-wrap gap-2">
               {settings.stop_on_response && (
-                <Badge variant="secondary" className="bg-gray-800 text-gray-400">Stop on response</Badge>
+                <Badge variant="secondary" className="bg-white text-gray-400">Stop on response</Badge>
               )}
               {settings.stop_on_booking && (
-                <Badge variant="secondary" className="bg-gray-800 text-gray-400">Stop on booking</Badge>
+                <Badge variant="secondary" className="bg-white text-gray-400">Stop on booking</Badge>
               )}
               {settings.respect_timezone && (
-                <Badge variant="secondary" className="bg-gray-800 text-gray-400">Respect timezone</Badge>
+                <Badge variant="secondary" className="bg-white text-gray-400">Respect timezone</Badge>
               )}
             </div>
           </CardContent>
@@ -207,10 +207,10 @@ export function WorkflowPreviewPanel({
             )}
             <div className="flex flex-wrap gap-2">
               {criteria.has_phone && (
-                <Badge variant="secondary" className="bg-gray-800 text-gray-400">Has phone</Badge>
+                <Badge variant="secondary" className="bg-white text-gray-400">Has phone</Badge>
               )}
               {criteria.has_email && (
-                <Badge variant="secondary" className="bg-gray-800 text-gray-400">Has email</Badge>
+                <Badge variant="secondary" className="bg-white text-gray-400">Has email</Badge>
               )}
             </div>
           </CardContent>

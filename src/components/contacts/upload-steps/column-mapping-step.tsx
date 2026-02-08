@@ -127,7 +127,7 @@ export function ColumnMappingStep({
           {/* Mapping Table */}
           <div className="border border-white/10 rounded-lg overflow-hidden">
             <table className="w-full">
-              <thead className="bg-gray-800/50">
+              <thead className="bg-gray-50">
                 <tr>
                   <th className="px-4 py-3 text-left text-sm font-medium text-gray-300">
                     CSV Column
@@ -167,10 +167,10 @@ export function ColumnMappingStep({
                           handleMappingChange(header, value)
                         }
                       >
-                        <SelectTrigger className="w-48 bg-gray-800 border-white/10 text-white">
+                        <SelectTrigger className="w-48 bg-white border-white/10 text-white">
                           <SelectValue placeholder="Skip this column" />
                         </SelectTrigger>
-                        <SelectContent className="bg-gray-800 border-white/10">
+                        <SelectContent className="bg-white border-white/10">
                           <SelectItem value="skip" className="text-gray-400">
                             Skip this column
                           </SelectItem>

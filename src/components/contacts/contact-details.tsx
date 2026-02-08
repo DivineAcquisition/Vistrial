@@ -114,14 +114,14 @@ export function ContactDetails({
                   type="text"
                   value={editedContact.first_name}
                   onChange={(e) => setEditedContact({ ...editedContact, first_name: e.target.value })}
-                  className="w-full px-3 py-2 bg-gray-800 border border-gray-200 rounded-lg text-gray-900 text-center"
+                  className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg text-gray-900 text-center"
                   placeholder="First name"
                 />
                 <input
                   type="text"
                   value={editedContact.last_name || ""}
                   onChange={(e) => setEditedContact({ ...editedContact, last_name: e.target.value })}
-                  className="w-full px-3 py-2 bg-gray-800 border border-gray-200 rounded-lg text-gray-900 text-center"
+                  className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg text-gray-900 text-center"
                   placeholder="Last name"
                 />
               </div>
@@ -136,7 +136,7 @@ export function ContactDetails({
           <div className="flex items-center justify-center gap-3">
             <button
               onClick={() => onSendSms?.(contact)}
-              className="flex items-center gap-2 px-4 py-2 bg-brand-600 text-gray-900 rounded-lg hover:bg-brand-700 transition-colors"
+              className="flex items-center gap-2 px-4 py-2 bg-brand-600 text-white rounded-lg hover:bg-brand-700 transition-colors"
             >
               <MessageSquare className="w-4 h-4" />
               SMS
@@ -159,7 +159,7 @@ export function ContactDetails({
                   type="tel"
                   value={editedContact.phone}
                   onChange={(e) => setEditedContact({ ...editedContact, phone: e.target.value })}
-                  className="flex-1 px-3 py-1.5 bg-gray-800 border border-gray-200 rounded text-gray-900"
+                  className="flex-1 px-3 py-1.5 bg-white border border-gray-200 rounded text-gray-900"
                 />
               ) : (
                 <span className="text-gray-900">{contact.phone}</span>
@@ -172,7 +172,7 @@ export function ContactDetails({
                   type="email"
                   value={editedContact.email || ""}
                   onChange={(e) => setEditedContact({ ...editedContact, email: e.target.value })}
-                  className="flex-1 px-3 py-1.5 bg-gray-800 border border-gray-200 rounded text-gray-900"
+                  className="flex-1 px-3 py-1.5 bg-white border border-gray-200 rounded text-gray-900"
                   placeholder="Email address"
                 />
               ) : (
@@ -186,7 +186,7 @@ export function ContactDetails({
                   type="text"
                   value={editedContact.address || ""}
                   onChange={(e) => setEditedContact({ ...editedContact, address: e.target.value })}
-                  className="flex-1 px-3 py-1.5 bg-gray-800 border border-gray-200 rounded text-gray-900"
+                  className="flex-1 px-3 py-1.5 bg-white border border-gray-200 rounded text-gray-900"
                   placeholder="Address"
                 />
               ) : (
@@ -223,7 +223,7 @@ export function ContactDetails({
                 value={editedContact.notes || ""}
                 onChange={(e) => setEditedContact({ ...editedContact, notes: e.target.value })}
                 rows={3}
-                className="w-full px-3 py-2 bg-gray-800 border border-gray-200 rounded-lg text-gray-900 resize-none"
+                className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg text-gray-900 resize-none"
                 placeholder="Add notes about this contact..."
               />
             ) : (
@@ -249,7 +249,7 @@ export function ContactDetails({
                 <button
                   onClick={handleSave}
                   disabled={saving}
-                  className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-brand-600 text-gray-900 rounded-lg hover:bg-brand-700 disabled:opacity-50"
+                  className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-brand-600 text-white rounded-lg hover:bg-brand-700 disabled:opacity-50"
                 >
                   <Save className="w-4 h-4" />
                   {saving ? "Saving..." : "Save"}

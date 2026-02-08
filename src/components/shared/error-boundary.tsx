@@ -73,14 +73,14 @@ export class ErrorBoundary extends Component<Props, State> {
             <div className="flex items-center justify-center gap-3">
               <button
                 onClick={this.handleRetry}
-                className="inline-flex items-center gap-2 px-4 py-2 bg-brand-600 text-gray-900 rounded-lg hover:bg-brand-700 transition-colors"
+                className="inline-flex items-center gap-2 px-4 py-2 bg-brand-600 text-white rounded-lg hover:bg-brand-700 transition-colors"
               >
                 <RefreshCw className="w-4 h-4" />
                 Try Again
               </button>
               <Link
                 href="/dashboard"
-                className="inline-flex items-center gap-2 px-4 py-2 bg-gray-800 text-gray-900 rounded-lg hover:bg-gray-700 transition-colors"
+                className="inline-flex items-center gap-2 px-4 py-2 bg-white text-gray-900 rounded-lg hover:bg-gray-700 transition-colors"
               >
                 <Home className="w-4 h-4" />
                 Go Home

@@ -49,10 +49,10 @@ export function AnalyticsHeader({ currentRange }: AnalyticsHeaderProps) {
 
       <div className="flex items-center gap-3">
         <Select value={currentRange} onValueChange={handleRangeChange}>
-          <SelectTrigger className="w-40 bg-gray-800 border-gray-200 text-gray-900">
+          <SelectTrigger className="w-40 bg-white border-gray-200 text-gray-900">
             <SelectValue />
           </SelectTrigger>
-          <SelectContent className="bg-gray-800 border-gray-200">
+          <SelectContent className="bg-white border-gray-200">
             {DATE_RANGES.map((range) => (
               <SelectItem 
                 key={range.value} 

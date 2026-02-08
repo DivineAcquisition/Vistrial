@@ -78,11 +78,11 @@ export default async function OrganizationSettingsPage() {
         <div className="space-y-6">
           {/* Logo */}
           <div className="flex items-center gap-6">
-            <div className="w-20 h-20 bg-gray-800 rounded-2xl border border-gray-200 flex items-center justify-center">
+            <div className="w-20 h-20 bg-white rounded-2xl border border-gray-200 flex items-center justify-center">
               <Building2 className="w-8 h-8 text-gray-500" />
             </div>
             <div>
-              <button className="px-4 py-2 bg-brand-600 text-gray-900 rounded-lg font-medium hover:bg-brand-700 transition-colors text-sm">
+              <button className="px-4 py-2 bg-brand-600 text-white rounded-lg font-medium hover:bg-brand-700 transition-colors text-sm">
                 Upload Logo
               </button>
               <p className="text-gray-500 text-xs mt-2">PNG, JPG up to 2MB</p>
@@ -97,7 +97,7 @@ export default async function OrganizationSettingsPage() {
             <input
               type="text"
               defaultValue="My Business"
-              className="w-full px-4 py-2.5 bg-gray-800 border border-gray-200 rounded-xl text-gray-900 focus:outline-none focus:ring-2 focus:ring-brand-500"
+              className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-xl text-gray-900 focus:outline-none focus:ring-2 focus:ring-brand-500"
             />
           </div>
 
@@ -111,7 +111,7 @@ export default async function OrganizationSettingsPage() {
               <input
                 type="email"
                 placeholder="contact@example.com"
-                className="w-full px-4 py-2.5 bg-gray-800 border border-gray-200 rounded-xl text-gray-900 focus:outline-none focus:ring-2 focus:ring-brand-500"
+                className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-xl text-gray-900 focus:outline-none focus:ring-2 focus:ring-brand-500"
               />
             </div>
             <div>
@@ -122,7 +122,7 @@ export default async function OrganizationSettingsPage() {
               <input
                 type="tel"
                 placeholder="+1 (555) 000-0000"
-                className="w-full px-4 py-2.5 bg-gray-800 border border-gray-200 rounded-xl text-gray-900 focus:outline-none focus:ring-2 focus:ring-brand-500"
+                className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-xl text-gray-900 focus:outline-none focus:ring-2 focus:ring-brand-500"
               />
             </div>
           </div>
@@ -136,12 +136,12 @@ export default async function OrganizationSettingsPage() {
             <input
               type="text"
               placeholder="123 Main St, City, State 12345"
-              className="w-full px-4 py-2.5 bg-gray-800 border border-gray-200 rounded-xl text-gray-900 focus:outline-none focus:ring-2 focus:ring-brand-500"
+              className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-xl text-gray-900 focus:outline-none focus:ring-2 focus:ring-brand-500"
             />
           </div>
 
           <div className="pt-4 border-t border-gray-200 flex justify-end">
-            <button className="px-6 py-2.5 bg-brand-600 text-gray-900 rounded-xl font-medium hover:bg-brand-700 transition-colors">
+            <button className="px-6 py-2.5 bg-brand-600 text-white rounded-xl font-medium hover:bg-brand-700 transition-colors">
               Save Changes
             </button>
           </div>
@@ -190,7 +190,7 @@ export default async function OrganizationSettingsPage() {
             </div>
             <h2 className="text-lg font-semibold text-gray-900">Team Members</h2>
           </div>
-          <button className="inline-flex items-center gap-2 px-3 py-1.5 text-sm bg-brand-600 text-gray-900 rounded-lg hover:bg-brand-700 transition-colors">
+          <button className="inline-flex items-center gap-2 px-3 py-1.5 text-sm bg-brand-600 text-white rounded-lg hover:bg-brand-700 transition-colors">
             <Plus className="w-4 h-4" />
             Invite
           </button>
@@ -233,9 +233,9 @@ export default async function OrganizationSettingsPage() {
               type="text"
               value="https://app.vistrial.com/invite/abc123"
               readOnly
-              className="flex-1 px-3 py-2 bg-gray-800 border border-gray-200 rounded-lg text-gray-600 text-sm"
+              className="flex-1 px-3 py-2 bg-white border border-gray-200 rounded-lg text-gray-600 text-sm"
             />
-            <button className="px-4 py-2 bg-gray-800 text-gray-900 rounded-lg text-sm hover:bg-gray-700 transition-colors">
+            <button className="px-4 py-2 bg-white text-gray-900 rounded-lg text-sm hover:bg-gray-100 transition-colors">
               Copy
             </button>
           </div>

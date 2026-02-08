@@ -77,7 +77,7 @@ export async function ResponseAnalytics({
               {chartData.map((item) => (
                 <div
                   key={item.name}
-                  className="flex items-center justify-between p-2 rounded-lg bg-gray-800/50"
+                  className="flex items-center justify-between p-2 rounded-lg bg-gray-50"
                 >
                   <div className="flex items-center gap-2">
                     <div

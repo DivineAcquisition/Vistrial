@@ -26,7 +26,7 @@ export default function NotFound() {
         <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
           <Link
             href="/"
-            className="flex items-center gap-2 px-6 py-3 bg-brand-600 text-gray-900 rounded-xl font-medium hover:bg-brand-700 transition-colors"
+            className="flex items-center gap-2 px-6 py-3 bg-brand-600 text-white rounded-xl font-medium hover:bg-brand-700 transition-colors"
           >
             <RiHome4Line className="w-5 h-5" />
             Go Home

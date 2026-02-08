@@ -255,7 +255,7 @@ export function WorkflowCreator({
 
       {/* Builder Tabs */}
       <Tabs defaultValue="steps" className="space-y-6">
-        <TabsList className="bg-gray-800/50 border border-gray-200">
+        <TabsList className="bg-gray-50 border border-gray-200">
           <TabsTrigger value="steps" className="data-[state=active]:bg-brand-600">Steps</TabsTrigger>
           <TabsTrigger value="settings" className="data-[state=active]:bg-brand-600">Settings</TabsTrigger>
           <TabsTrigger value="criteria" className="data-[state=active]:bg-brand-600">Enrollment</TabsTrigger>
@@ -277,16 +277,16 @@ export function WorkflowCreator({
                     value={name}
                     onChange={(e) => setName(e.target.value)}
                     placeholder="e.g., 90-Day Reactivation"
-                    className="bg-gray-800 border-gray-200 text-gray-900"
+                    className="bg-white border-gray-200 text-gray-900"
                   />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="category" className="text-gray-300">Category</Label>
                   <Select value={category} onValueChange={setCategory}>
-                    <SelectTrigger className="bg-gray-800 border-gray-200 text-gray-900">
+                    <SelectTrigger className="bg-white border-gray-200 text-gray-900">
                       <SelectValue />
                     </SelectTrigger>
-                    <SelectContent className="bg-gray-800 border-gray-200">
+                    <SelectContent className="bg-white border-gray-200">
                       <SelectItem value="reactivation">Reactivation</SelectItem>
                       <SelectItem value="retention">Retention</SelectItem>
                       <SelectItem value="seasonal">Seasonal</SelectItem>
@@ -305,7 +305,7 @@ export function WorkflowCreator({
                   onChange={(e) => setDescription(e.target.value)}
                   placeholder="Describe what this workflow does..."
                   rows={2}
-                  className="bg-gray-800 border-gray-200 text-gray-900"
+                  className="bg-white border-gray-200 text-gray-900"
                 />
               </div>
             </CardContent>

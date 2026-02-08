@@ -237,7 +237,7 @@ export function BookingPageEditor({
     }
   };
 
-  const bookingUrl = `https://vistrial.io/book/${formData.slug}`;
+  const bookingUrl = `https://book.vistrial.io/${formData.slug}`;
 
   return (
     <div className="h-[calc(100vh-4rem)] flex flex-col -m-4 md:-m-8 lg:-mt-8">
@@ -261,7 +261,7 @@ export function BookingPageEditor({
               )}
             </div>
             <p className="text-[11px] text-gray-400">
-              vistrial.io/book/{formData.slug}
+              book.vistrial.io/{formData.slug}
             </p>
           </div>
         </div>
@@ -388,7 +388,7 @@ export function BookingPageEditor({
                   <Label className="text-xs">Page URL</Label>
                   <div className="flex">
                     <span className="inline-flex items-center px-2.5 rounded-l-xl border border-r-0 bg-gray-50 text-xs text-gray-400">
-                      /book/
+                      book.vistrial.io/
                     </span>
                     <Input
                       value={formData.slug}

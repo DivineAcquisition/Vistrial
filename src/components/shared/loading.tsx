@@ -46,7 +46,7 @@ export function Loading({
 
   if (variant === "skeleton") {
     return (
-      <div className={`animate-pulse bg-gray-800 rounded ${className}`} />
+      <div className={`animate-pulse bg-white rounded ${className}`} />
     );
   }
 
@@ -73,15 +73,15 @@ export function SkeletonCard({ className = "" }: { className?: string }) {
   return (
     <div className={`animate-pulse bg-white/80 rounded-2xl border border-gray-200 p-6 ${className}`}>
       <div className="flex items-center gap-4 mb-4">
-        <div className="w-12 h-12 bg-gray-800 rounded-xl" />
+        <div className="w-12 h-12 bg-white rounded-xl" />
         <div className="flex-1 space-y-2">
-          <div className="h-4 bg-gray-800 rounded w-1/3" />
-          <div className="h-3 bg-gray-800 rounded w-1/2" />
+          <div className="h-4 bg-white rounded w-1/3" />
+          <div className="h-3 bg-white rounded w-1/2" />
         </div>
       </div>
       <div className="space-y-3">
-        <div className="h-3 bg-gray-800 rounded" />
-        <div className="h-3 bg-gray-800 rounded w-4/5" />
+        <div className="h-3 bg-white rounded" />
+        <div className="h-3 bg-white rounded w-4/5" />
       </div>
     </div>
   );
@@ -90,9 +90,9 @@ export function SkeletonCard({ className = "" }: { className?: string }) {
 export function SkeletonTable({ rows = 5 }: { rows?: number }) {
   return (
     <div className="animate-pulse">
-      <div className="h-12 bg-gray-800 rounded-t-xl mb-px" />
+      <div className="h-12 bg-white rounded-t-xl mb-px" />
       {Array.from({ length: rows }).map((_, i) => (
-        <div key={i} className="h-16 bg-gray-800/50 mb-px" />
+        <div key={i} className="h-16 bg-gray-50 mb-px" />
       ))}
     </div>
   );
@@ -104,7 +104,7 @@ export function SkeletonText({ lines = 3, className = "" }: { lines?: number; cl
       {Array.from({ length: lines }).map((_, i) => (
         <div 
           key={i} 
-          className="h-4 bg-gray-800 rounded" 
+          className="h-4 bg-white rounded" 
           style={{ width: i === lines - 1 ? "60%" : "100%" }} 
         />
       ))}

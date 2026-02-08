@@ -56,7 +56,7 @@ export function EmbedCodeGenerator({
     setTimeout(() => setCopiedType(null), 2000);
   };
 
-  const embedUrl = `${bookingUrl}?embed=true`;
+  const embedUrl = `https://embed.vistrial.io/${slug}`;
 
   const iframeCode = responsiveEmbed
     ? `<div style="position: relative; width: 100%; max-width: 600px; margin: 0 auto;">
@@ -285,7 +285,7 @@ function BookingEmbed() {
         </Label>
         <div className="p-3 bg-gray-50 rounded-xl border border-gray-100">
           <code className="text-[11px] break-all text-gray-600">
-            {bookingUrl}?campaign={'{{campaign_id}}'}&workflow=
+            https://q.vistrial.io/{slug}?campaign={'{{campaign_id}}'}&workflow=
             {'{{workflow_id}}'}
           </code>
         </div>

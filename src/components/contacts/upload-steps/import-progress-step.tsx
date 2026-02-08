@@ -46,7 +46,7 @@ export function ImportProgressStep({ totalRows }: ImportProgressStepProps) {
             Please wait while we import your {totalRows} contacts...
           </p>
           <div className="w-full max-w-md">
-            <Progress value={progress} className="h-2 bg-gray-800" />
+            <Progress value={progress} className="h-2 bg-white" />
             <p className="text-sm text-gray-500 text-center mt-2">
               {Math.round(progress)}% complete
             </p>

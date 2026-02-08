@@ -84,7 +84,7 @@ export function EnrollmentCriteriaPanel({
                   id="last_contacted"
                   type="number"
                   min="0"
-                  className="w-20 bg-gray-800 border-gray-200 text-gray-900"
+                  className="w-20 bg-white border-gray-200 text-gray-900"
                   value={criteria.last_contacted_before_days || ''}
                   onChange={(e) =>
                     onChange({
@@ -105,7 +105,7 @@ export function EnrollmentCriteriaPanel({
                   id="last_job"
                   type="number"
                   min="0"
-                  className="w-20 bg-gray-800 border-gray-200 text-gray-900"
+                  className="w-20 bg-white border-gray-200 text-gray-900"
                   value={criteria.last_job_before_days || ''}
                   onChange={(e) =>
                     onChange({
@@ -167,7 +167,7 @@ export function EnrollmentCriteriaPanel({
             <Input
               id="include_tags"
               placeholder="Enter tags separated by commas"
-              className="bg-gray-800 border-gray-200 text-gray-900"
+              className="bg-white border-gray-200 text-gray-900"
               value={criteria.tags_include?.join(', ') || ''}
               onChange={(e) =>
                 onChange({
@@ -185,7 +185,7 @@ export function EnrollmentCriteriaPanel({
             <Input
               id="exclude_tags"
               placeholder="Enter tags separated by commas"
-              className="bg-gray-800 border-gray-200 text-gray-900"
+              className="bg-white border-gray-200 text-gray-900"
               value={criteria.tags_exclude?.join(', ') || ''}
               onChange={(e) =>
                 onChange({

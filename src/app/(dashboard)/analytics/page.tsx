@@ -106,12 +106,12 @@ function OverviewSkeleton() {
   return (
     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
       {Array.from({ length: 4 }).map((_, i) => (
-        <Skeleton key={i} className="h-32 bg-gray-800/50" />
+        <Skeleton key={i} className="h-32 bg-gray-50" />
       ))}
     </div>
   );
 }
 
 function ChartSkeleton() {
-  return <Skeleton className="h-80 bg-gray-800/50" />;
+  return <Skeleton className="h-80 bg-gray-50" />;
 }

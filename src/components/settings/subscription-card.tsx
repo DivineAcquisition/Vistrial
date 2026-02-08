@@ -114,7 +114,7 @@ export function SubscriptionCard({ organization }: SubscriptionCardProps) {
       <CardContent className="space-y-6">
         {isSubscribed ? (
           <>
-            <div className="flex items-center justify-between p-4 bg-gray-800/50 rounded-lg border border-gray-100">
+            <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg border border-gray-100">
               <div>
                 <p className="font-semibold text-lg text-gray-900">{currentPlan.name}</p>
                 <p className="text-gray-400">
@@ -151,7 +151,7 @@ export function SubscriptionCard({ organization }: SubscriptionCardProps) {
                 key={key}
                 className={`p-4 border rounded-lg ${
                   plan.recommended ? 'border-brand-500/50 ring-1 ring-brand-500/30' : 'border-gray-200'
-                } bg-gray-800/50`}
+                } bg-gray-50`}
               >
                 <div className="flex items-center justify-between mb-3">
                   <div>
@@ -181,7 +181,7 @@ export function SubscriptionCard({ organization }: SubscriptionCardProps) {
                   onClick={() => handleSubscribe(key)}
                   disabled={isLoading}
                   variant={plan.recommended ? 'default' : 'outline'}
-                  className={plan.recommended ? 'w-full bg-brand-600 hover:bg-brand-700' : 'w-full border-gray-200 bg-gray-800 hover:bg-gray-100 text-gray-900'}
+                  className={plan.recommended ? 'w-full bg-brand-600 hover:bg-brand-700' : 'w-full border-gray-200 bg-white hover:bg-gray-100 text-gray-900'}
                 >
                   {loadingPlan === key ? (
                     <Loader2 className="h-4 w-4 animate-spin" />

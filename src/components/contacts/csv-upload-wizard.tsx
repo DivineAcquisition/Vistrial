@@ -253,7 +253,7 @@ export function CsvUploadWizard({
               <div
                 className={`flex items-center justify-center w-8 h-8 rounded-full text-sm font-medium ${
                   index <= currentStepIndex
-                    ? 'bg-brand-600 text-gray-900'
+                    ? 'bg-brand-600 text-white'
                     : 'bg-gray-800 text-gray-500'
                 }`}
               >

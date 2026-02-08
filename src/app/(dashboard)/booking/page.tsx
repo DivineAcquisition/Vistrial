@@ -82,7 +82,7 @@ export default async function BookingDashboardPage() {
                         </div>
                         <div>
                           <p className="font-semibold text-sm">{page.name}</p>
-                          <p className="text-xs text-gray-400">vistrial.io/book/{page.slug}</p>
+                          <p className="text-xs text-gray-400">book.vistrial.io/{page.slug}</p>
                         </div>
                       </div>
                       <div className="flex items-center gap-2">

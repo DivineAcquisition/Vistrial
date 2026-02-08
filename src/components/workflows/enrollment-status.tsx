@@ -95,7 +95,7 @@ export function EnrollmentStatus({
 
       {/* Progress Bar */}
       <div className="mb-4">
-        <div className="h-2 bg-gray-800 rounded-full overflow-hidden">
+        <div className="h-2 bg-white rounded-full overflow-hidden">
           <div 
             className="h-full bg-gradient-to-r from-brand-500 to-blue-500 rounded-full transition-all duration-500"
             style={{ width: `${progressPercentage}%` }}

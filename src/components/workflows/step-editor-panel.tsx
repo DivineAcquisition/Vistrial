@@ -144,7 +144,7 @@ export function StepEditorPanel({ steps, onChange }: StepEditorPanelProps) {
                   onDragOver={(e) => handleDragOver(e, index)}
                   onDragEnd={handleDragEnd}
                   className={cn(
-                    'flex items-start gap-3 p-4 border border-gray-200 rounded-lg bg-gray-800/50 transition-all hover:border-gray-300',
+                    'flex items-start gap-3 p-4 border border-gray-200 rounded-lg bg-gray-50 transition-all hover:border-gray-300',
                     draggedIndex === index && 'opacity-50 scale-95'
                   )}
                 >
@@ -216,7 +216,7 @@ export function StepEditorPanel({ steps, onChange }: StepEditorPanelProps) {
             </DialogHeader>
             <div className="grid grid-cols-2 gap-4">
               <Card
-                className="bg-gray-800/50 border-gray-200 cursor-pointer hover:border-blue-500/50 transition-colors"
+                className="bg-gray-50 border-gray-200 cursor-pointer hover:border-blue-500/50 transition-colors"
                 onClick={() => handleAddStep('sms')}
               >
                 <CardContent className="flex flex-col items-center justify-center py-6">
@@ -228,7 +228,7 @@ export function StepEditorPanel({ steps, onChange }: StepEditorPanelProps) {
                 </CardContent>
               </Card>
               <Card
-                className="bg-gray-800/50 border-gray-200 cursor-pointer hover:border-purple-500/50 transition-colors"
+                className="bg-gray-50 border-gray-200 cursor-pointer hover:border-purple-500/50 transition-colors"
                 onClick={() => handleAddStep('voice_drop')}
               >
                 <CardContent className="flex flex-col items-center justify-center py-6">

@@ -71,7 +71,7 @@ export function ContactsTable({ contacts, loading, onSelect, onAction }: Contact
     return (
       <div className="animate-pulse space-y-4 p-4">
         {[...Array(5)].map((_, i) => (
-          <div key={i} className="h-16 bg-gray-800/50 rounded" />
+          <div key={i} className="h-16 bg-gray-50 rounded" />
         ))}
       </div>
     );

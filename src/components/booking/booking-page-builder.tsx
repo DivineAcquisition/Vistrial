@@ -65,7 +65,7 @@ export function BookingPageBuilder({ organization, pricingMatrices, existingPage
     finally { setIsSaving(false); }
   };
 
-  const bookingUrl = `https://vistrial.io/book/${fd.slug}`;
+  const bookingUrl = `https://book.vistrial.io/${fd.slug}`;
   const embedCode = `<iframe src="${bookingUrl}?embed=true" width="100%" height="800" frameborder="0"></iframe>`;
   const copyLink = () => { navigator.clipboard.writeText(bookingUrl); setCopiedLink(true); setTimeout(() => setCopiedLink(false), 2000); };
   const copyEmbed = () => { navigator.clipboard.writeText(embedCode); setCopiedEmbed(true); setTimeout(() => setCopiedEmbed(false), 2000); };
@@ -91,7 +91,7 @@ export function BookingPageBuilder({ organization, pricingMatrices, existingPage
             <TabsContent value="basics" className="space-y-4 mt-4">
               <Card><CardHeader><CardTitle className="text-base">Page Details</CardTitle></CardHeader><CardContent className="space-y-4">
                 <div className="space-y-2"><Label>Page Name</Label><Input value={fd.name} onChange={(e) => set('name', e.target.value)} /></div>
-                <div className="space-y-2"><Label>Page URL</Label><div className="flex"><span className="inline-flex items-center px-3 rounded-l-xl border border-r-0 bg-gray-50 text-sm text-gray-500">vistrial.io/book/</span><Input value={fd.slug} onChange={(e) => set('slug', e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ''))} className="rounded-l-none" /></div></div>
+                <div className="space-y-2"><Label>Page URL</Label><div className="flex"><span className="inline-flex items-center px-3 rounded-l-xl border border-r-0 bg-gray-50 text-sm text-gray-500">book.vistrial.io/</span><Input value={fd.slug} onChange={(e) => set('slug', e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ''))} className="rounded-l-none" /></div></div>
                 <div className="space-y-2"><Label>Pricing Matrix</Label>
                   <Select value={fd.pricingMatrixId} onValueChange={(v) => set('pricingMatrixId', v)}><SelectTrigger><SelectValue placeholder="Select pricing..." /></SelectTrigger><SelectContent>{pricingMatrices.map(m => <SelectItem key={m.id} value={m.id}>{m.name} ({m.services?.length || 0} services)</SelectItem>)}</SelectContent></Select>
                   {pricingMatrices.length === 0 && <p className="text-sm text-gray-500">No pricing matrices. <Link href="/booking/pricing" className="text-brand-600 underline">Create one first</Link></p>}

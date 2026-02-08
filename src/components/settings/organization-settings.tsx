@@ -100,7 +100,7 @@ export function OrganizationSettings({
                 value={formData.name}
                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                 disabled={isLoading || !isOwner}
-                className="bg-gray-800 border-gray-200 text-gray-900"
+                className="bg-white border-gray-200 text-gray-900"
               />
             </div>
 
@@ -111,7 +111,7 @@ export function OrganizationSettings({
                 onValueChange={(value) => setFormData({ ...formData, business_type: value })}
                 disabled={isLoading || !isOwner}
               >
-                <SelectTrigger className="bg-gray-800 border-gray-200 text-gray-900">
+                <SelectTrigger className="bg-white border-gray-200 text-gray-900">
                   <SelectValue placeholder="Select business type" />
                 </SelectTrigger>
                 <SelectContent className="bg-white border-gray-200">
@@ -133,7 +133,7 @@ export function OrganizationSettings({
                   value={formData.phone}
                   onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                   disabled={isLoading || !isOwner}
-                  className="bg-gray-800 border-gray-200 text-gray-900"
+                  className="bg-white border-gray-200 text-gray-900"
                 />
               </div>
               <div className="space-y-2">
@@ -144,7 +144,7 @@ export function OrganizationSettings({
                   value={formData.email}
                   onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                   disabled={isLoading || !isOwner}
-                  className="bg-gray-800 border-gray-200 text-gray-900"
+                  className="bg-white border-gray-200 text-gray-900"
                 />
               </div>
             </div>
@@ -158,7 +158,7 @@ export function OrganizationSettings({
                 value={formData.website}
                 onChange={(e) => setFormData({ ...formData, website: e.target.value })}
                 disabled={isLoading || !isOwner}
-                className="bg-gray-800 border-gray-200 text-gray-900"
+                className="bg-white border-gray-200 text-gray-900"
               />
             </div>
 
@@ -169,7 +169,7 @@ export function OrganizationSettings({
                 onValueChange={(value) => setFormData({ ...formData, timezone: value })}
                 disabled={isLoading || !isOwner}
               >
-                <SelectTrigger className="bg-gray-800 border-gray-200 text-gray-900">
+                <SelectTrigger className="bg-white border-gray-200 text-gray-900">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent className="bg-white border-gray-200">
@@ -278,7 +278,7 @@ function MessagingSettings({
           value={reviewLink}
           onChange={(e) => setReviewLink(e.target.value)}
           disabled={isLoading || !isOwner}
-          className="bg-gray-800 border-gray-200 text-gray-900"
+          className="bg-white border-gray-200 text-gray-900"
         />
         <p className="text-xs text-gray-500">
           Used in review request workflows (&#123;&#123;review_link&#125;&#125;)
@@ -294,7 +294,7 @@ function MessagingSettings({
           value={bookingLink}
           onChange={(e) => setBookingLink(e.target.value)}
           disabled={isLoading || !isOwner}
-          className="bg-gray-800 border-gray-200 text-gray-900"
+          className="bg-white border-gray-200 text-gray-900"
         />
         <p className="text-xs text-gray-500">
           Used in booking workflows (&#123;&#123;booking_link&#125;&#125;)

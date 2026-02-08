@@ -95,7 +95,7 @@ export function ContactsFilters() {
           <Button
             variant="outline"
             size="sm"
-            className="w-full justify-start border-gray-200 bg-gray-800/50 hover:bg-gray-50 text-gray-300"
+            className="w-full justify-start border-gray-200 bg-gray-50 hover:bg-gray-50 text-gray-300"
             onClick={() => updateFilters('has_phone', 'true')}
           >
             Has Phone Number
@@ -103,7 +103,7 @@ export function ContactsFilters() {
           <Button
             variant="outline"
             size="sm"
-            className="w-full justify-start border-gray-200 bg-gray-800/50 hover:bg-gray-50 text-gray-300"
+            className="w-full justify-start border-gray-200 bg-gray-50 hover:bg-gray-50 text-gray-300"
             onClick={() => updateFilters('has_email', 'true')}
           >
             Has Email

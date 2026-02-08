@@ -113,7 +113,7 @@ export function RefillSettings({
                   onClick={() => setThreshold(option)}
                   className={`py-2 px-3 rounded-lg text-sm font-medium transition-colors ${
                     threshold === option
-                      ? "bg-brand-600 text-gray-900"
+                      ? "bg-brand-600 text-white"
                       : "bg-gray-50 text-gray-300 hover:bg-gray-100"
                   }`}
                 >
@@ -135,7 +135,7 @@ export function RefillSettings({
                   onClick={() => setRefillAmount(option.credits)}
                   className={`p-4 rounded-xl text-left transition-colors ${
                     refillAmount === option.credits
-                      ? "bg-brand-600 text-gray-900"
+                      ? "bg-brand-600 text-white"
                       : "bg-gray-50 text-gray-300 hover:bg-gray-100"
                   }`}
                 >
@@ -195,7 +195,7 @@ export function RefillSettings({
         <button
           onClick={handleSave}
           disabled={saving || (!enabled && !initialEnabled)}
-          className="inline-flex items-center gap-2 px-6 py-2.5 bg-brand-600 text-gray-900 rounded-xl font-medium hover:bg-brand-700 disabled:opacity-50 transition-colors"
+          className="inline-flex items-center gap-2 px-6 py-2.5 bg-brand-600 text-white rounded-xl font-medium hover:bg-brand-700 disabled:opacity-50 transition-colors"
         >
           {saved ? (
             <>

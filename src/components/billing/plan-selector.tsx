@@ -81,13 +81,13 @@ export function PlanSelector({ plans, currentPlanId, onSelect, loading }: PlanSe
             >
               {/* Badges */}
               {plan.popular && (
-                <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 bg-brand-600 text-gray-900 text-xs font-medium rounded-full flex items-center gap-1">
+                <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 bg-brand-600 text-white text-xs font-medium rounded-full flex items-center gap-1">
                   <Sparkles className="w-3 h-3" />
                   Most Popular
                 </div>
               )}
               {isCurrent && !plan.popular && (
-                <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 bg-green-600 text-gray-900 text-xs font-medium rounded-full">
+                <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 bg-green-600 text-white text-xs font-medium rounded-full">
                   Current Plan
                 </div>
               )}
@@ -125,9 +125,9 @@ export function PlanSelector({ plans, currentPlanId, onSelect, loading }: PlanSe
                 disabled={isCurrent || loading}
                 className={`w-full py-2.5 rounded-xl font-medium transition-colors ${
                   isCurrent
-                    ? "bg-gray-800 text-gray-400 cursor-default"
+                    ? "bg-white text-gray-400 cursor-default"
                     : plan.popular
-                      ? "bg-brand-600 text-gray-900 hover:bg-brand-700"
+                      ? "bg-brand-600 text-white hover:bg-brand-700"
                       : "bg-gray-100 text-gray-900 hover:bg-white/20"
                 }`}
               >

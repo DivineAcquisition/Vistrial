@@ -106,7 +106,7 @@ export function ContactActions({ contact }: ContactActionsProps) {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel disabled={isDeleting} className="border-gray-200 bg-gray-800 text-gray-300 hover:bg-gray-100">Cancel</AlertDialogCancel>
+            <AlertDialogCancel disabled={isDeleting} className="border-gray-200 bg-white text-gray-300 hover:bg-gray-100">Cancel</AlertDialogCancel>
             <AlertDialogAction
               onClick={handleDelete}
               disabled={isDeleting}

@@ -130,7 +130,7 @@ export function WorkflowActions({ workflow }: WorkflowActionsProps) {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel disabled={isLoading} className="border-gray-200 bg-gray-800 text-gray-300 hover:bg-gray-100">Cancel</AlertDialogCancel>
+            <AlertDialogCancel disabled={isLoading} className="border-gray-200 bg-white text-gray-300 hover:bg-gray-100">Cancel</AlertDialogCancel>
             <AlertDialogAction
               onClick={() => handleAction('archive')}
               disabled={isLoading}

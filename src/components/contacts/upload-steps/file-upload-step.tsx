@@ -92,7 +92,7 @@ export function FileUploadStep({ onFileSelected }: FileUploadStepProps) {
                 </>
               ) : (
                 <>
-                  <div className="w-16 h-16 rounded-full bg-gray-800 flex items-center justify-center mb-4">
+                  <div className="w-16 h-16 rounded-full bg-white flex items-center justify-center mb-4">
                     <Upload className="h-8 w-8 text-gray-400" />
                   </div>
                   <p className="font-medium text-white">
@@ -154,7 +154,7 @@ export function FileUploadStep({ onFileSelected }: FileUploadStepProps) {
             </li>
           </ul>
 
-          <div className="mt-4 p-4 bg-gray-800/50 rounded-lg">
+          <div className="mt-4 p-4 bg-gray-50 rounded-lg">
             <p className="text-sm font-medium text-white mb-2">Example CSV format:</p>
             <code className="text-xs text-gray-400">
               first_name,last_name,email,phone

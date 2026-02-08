@@ -157,6 +157,29 @@ The `vercel.json` includes:
 3. Configure authentication providers in the dashboard
 4. Set up Row Level Security policies
 
+### Telnyx Setup
+
+1. Sign up at [telnyx.com](https://telnyx.com) and get your API key from the [API Keys page](https://portal.telnyx.com/#/app/api-keys)
+2. Purchase a phone number and create a **Messaging Profile** in the [Telnyx Portal](https://portal.telnyx.com/#/app/messaging)
+3. In your Messaging Profile's **Inbound Settings**, configure the following webhook URLs:
+
+| Setting | URL |
+|---------|-----|
+| **Webhook URL** | `https://<your-domain>/api/webhooks/telnyx` |
+| **Webhook Failover URL** | `https://<your-domain>/api/webhooks/telnyx` |
+
+> Replace `<your-domain>` with the value of your `NEXT_PUBLIC_APP_URL` environment variable (e.g., `https://app.vistrial.io`).
+
+4. Set the **Webhook API Version** to **v2**
+5. Copy the **Messaging Profile ID** and set it as `TELNYX_MESSAGING_PROFILE_ID` in your environment
+6. (Optional) Set a webhook signing secret as `TELNYX_WEBHOOK_SECRET` for signature verification
+
+The webhook handler at `/api/webhooks/telnyx` processes:
+- `message.received` — Inbound SMS messages
+- `message.sent` — Outbound message sent confirmations
+- `message.finalized` — Delivery receipts (delivered, failed, etc.)
+- `call.initiated` / `call.answered` / `call.hangup` — Voice call events
+
 ### Stripe Setup
 
 1. Create products and prices in Stripe Dashboard

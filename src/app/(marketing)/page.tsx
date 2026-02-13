@@ -6,6 +6,7 @@
 import { Metadata } from 'next';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
+import { getSignupHref } from '@/lib/constants/domains';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import {
@@ -87,12 +88,12 @@ export default function LandingPage() {
 
             {/* CTA Buttons */}
             <div className="mt-10 flex flex-col items-center justify-center gap-4 sm:flex-row">
-              <Link href="/signup">
+              <a href={getSignupHref()}>
                 <Button size="xl" className="text-base">
                   Start Free Trial
                   <RiArrowRightLine className="ml-2 h-5 w-5" />
                 </Button>
-              </Link>
+              </a>
               <Link href="#demo">
                 <Button size="xl" variant="outline" className="text-base">
                   <RiPlayCircleLine className="mr-2 h-5 w-5" />
@@ -598,12 +599,12 @@ export default function LandingPage() {
                     <RiCalendarLine className="h-4 w-4" />
                     Book a Demo Call
                   </a>
-                  <Link href="/signup">
+                  <a href={getSignupHref()}>
                     <Button variant="outline" size="lg" className="w-full">
                       Or start your free trial
                       <RiArrowRightLine className="ml-1 h-4 w-4" />
                     </Button>
-                  </Link>
+                  </a>
                 </div>
                 <p className="text-xs text-gray-400 mt-4">
                   Free 14-day trial • No credit card required
@@ -630,12 +631,12 @@ export default function LandingPage() {
             Every day you wait is another day your competitors are reaching out to your past customers. Start your free trial in the next 5 minutes.
           </p>
           <div className="mt-10 flex flex-col items-center justify-center gap-4 sm:flex-row">
-            <Link href="/signup">
+            <a href={getSignupHref()}>
               <Button size="xl" className="bg-white text-brand-600 hover:bg-white/90 shadow-[0_4px_20px_rgba(0,0,0,0.15)] hover:shadow-[0_8px_30px_rgba(0,0,0,0.2)] hover:-translate-y-0.5 transition-all duration-200 rounded-xl">
                 Start Free Trial
                 <RiArrowRightLine className="ml-2 h-5 w-5" />
               </Button>
-            </Link>
+            </a>
             <a
               href="#demo"
               className="text-sm font-medium text-white/80 hover:text-white flex items-center gap-1.5 transition-colors"

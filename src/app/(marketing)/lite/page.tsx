@@ -6,6 +6,7 @@
 import { Metadata } from 'next';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
+import { getSignupHref } from '@/lib/constants/domains';
 import { Badge } from '@/components/ui/badge';
 import {
   Card,
@@ -64,12 +65,12 @@ export default function LitePage() {
           </p>
 
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-8">
-            <Link href="/signup?plan=lite">
+            <a href={getSignupHref("plan=lite")}>
               <Button size="xl" className="text-lg px-8 h-12 bg-green-600 hover:bg-green-700">
                 Start Free 7-Day Trial
                 <RiArrowRightLine className="ml-2 h-5 w-5" />
               </Button>
-            </Link>
+            </a>
           </div>
 
           <div className="flex flex-wrap items-center justify-center gap-6 text-sm text-gray-600">
@@ -216,11 +217,11 @@ export default function LitePage() {
                 <FeatureRow>Priority support</FeatureRow>
 
                 <div className="pt-4">
-                  <Link href="/signup?plan=lite">
+                  <a href={getSignupHref("plan=lite")}>
                     <Button className="w-full bg-green-600 hover:bg-green-700">
                       Start Free Trial
                     </Button>
-                  </Link>
+                  </a>
                 </div>
               </CardContent>
             </Card>
@@ -396,7 +397,7 @@ export default function LitePage() {
           <p className="text-xl text-white/80 mb-8">
             Start your free 7-day trial. No credit card required.
           </p>
-          <Link href="/signup?plan=lite">
+          <a href={getSignupHref("plan=lite")}>
             <Button
               size="xl"
               variant="secondary"
@@ -405,7 +406,7 @@ export default function LitePage() {
               Start Free Trial
               <RiArrowRightLine className="ml-2 h-5 w-5" />
             </Button>
-          </Link>
+          </a>
         </div>
       </section>
     </>

@@ -2,9 +2,9 @@
 // SUPABASE MIDDLEWARE HELPER
 // Refreshes auth session on every request
 // Handles domain-based routing:
-//   app.vistrial.io   → core app (dashboard, workflows, etc.)
-//   access.vistrial.io → early access signup (50% off all plans)
-//   vistrial.io        → marketing site
+//   access.vistrial.io → landing / marketing site only
+//   app.vistrial.io    → signup, login, dashboard & full app
+//   vistrial.io        → marketing site (same as access)
 // ============================================
 
 import { createServerClient } from '@supabase/ssr';
@@ -50,41 +50,67 @@ export async function updateSession(request: NextRequest) {
   // DOMAIN-BASED ROUTING
   // ============================================
 
-  // access.vistrial.io → only allow signup/login and early access pages
-  if (hostname.startsWith('access.') || hostname.includes('access.vistrial')) {
-    // On the access subdomain, allow: signup, login, auth routes, onboarding
-    const accessAllowed = [
-      '/signup', '/login', '/forgot-password',
-      '/auth/callback', '/auth/confirm', '/auth/reset-password',
-      '/onboarding', '/lite',
-    ];
-    const accessPrefixes = ['/api/', '/_next/', '/lite'];
+  const baseDomain = process.env.NEXT_PUBLIC_BASE_DOMAIN || 'vistrial.io';
+  const isAccessDomain = hostname.startsWith('access.') || hostname.includes(`access.${baseDomain}`);
+  const isAppDomain = hostname.startsWith('app.') || hostname.includes(`app.${baseDomain}`);
 
-    const isAccessAllowed =
-      pathname === '/' || // root redirects to /signup
-      accessAllowed.includes(pathname) ||
-      accessPrefixes.some(p => pathname.startsWith(p));
+  // --------------------------------------------------
+  // access.vistrial.io → landing / marketing pages only
+  // --------------------------------------------------
+  if (isAccessDomain) {
+    // Paths allowed on the landing-page domain
+    const landingAllowed = ['/', '/lite'];
+    const landingPrefixes = ['/api/', '/_next/', '/lite', '/compliance', '/book/', '/embed/', '/q/'];
 
-    // Redirect root to signup on access subdomain
-    if (pathname === '/') {
-      const signupUrl = request.nextUrl.clone();
-      signupUrl.pathname = '/signup';
-      return NextResponse.redirect(signupUrl);
+    const isLandingAllowed =
+      landingAllowed.includes(pathname) ||
+      landingPrefixes.some(p => pathname.startsWith(p));
+
+    // Auth-related routes should live on the app domain – redirect there
+    const authRoutes = ['/signup', '/login', '/forgot-password', '/auth/callback', '/auth/confirm', '/auth/reset-password', '/onboarding'];
+    const isAuthRoute = authRoutes.includes(pathname);
+
+    if (isAuthRoute) {
+      const appUrl = new URL(`https://app.${baseDomain}${pathname}`);
+      // Preserve any query params (e.g. ?plan=lite, ?redirect=…)
+      request.nextUrl.searchParams.forEach((value, key) => {
+        appUrl.searchParams.set(key, value);
+      });
+      return NextResponse.redirect(appUrl);
     }
 
-    // If authenticated on access domain, let them through to dashboard pages too
-    if (user) {
-      // Authenticated users on access domain can use the full app
-      // (they already signed up through early access)
-    } else if (!isAccessAllowed) {
-      const signupUrl = request.nextUrl.clone();
-      signupUrl.pathname = '/signup';
-      return NextResponse.redirect(signupUrl);
+    // Dashboard / protected routes should also go to the app domain
+    const protectedPrefixes = ['/dashboard', '/contacts', '/workflows', '/settings', '/bookings', '/booking', '/analytics', '/inbox'];
+    const isProtectedRoute = protectedPrefixes.some(p => pathname.startsWith(p));
+
+    if (isProtectedRoute) {
+      const appUrl = new URL(`https://app.${baseDomain}${pathname}`);
+      return NextResponse.redirect(appUrl);
     }
+
+    // Any other unrecognised path on access domain → redirect to landing root
+    if (!isLandingAllowed) {
+      const homeUrl = request.nextUrl.clone();
+      homeUrl.pathname = '/';
+      return NextResponse.redirect(homeUrl);
+    }
+
+    // Landing pages don't need further auth checks
+    return supabaseResponse;
+  }
+
+  // --------------------------------------------------
+  // app.vistrial.io → auth + dashboard (full application)
+  // --------------------------------------------------
+  // When on the app domain, redirect bare "/" to dashboard (authenticated) or login
+  if (isAppDomain && pathname === '/') {
+    const dest = request.nextUrl.clone();
+    dest.pathname = user ? '/dashboard' : '/login';
+    return NextResponse.redirect(dest);
   }
 
   // ============================================
-  // STANDARD AUTH ROUTING
+  // STANDARD AUTH ROUTING (applies to app domain & development)
   // ============================================
 
   // Public routes - no auth required
@@ -136,7 +162,7 @@ export async function updateSession(request: NextRequest) {
     return NextResponse.redirect(loginUrl);
   }
 
-  // Redirect authenticated users away from login/signup
+  // Redirect authenticated users away from login/signup to dashboard
   if (user && (pathname === '/login' || pathname === '/signup')) {
     const dashUrl = request.nextUrl.clone();
     dashUrl.pathname = '/dashboard';

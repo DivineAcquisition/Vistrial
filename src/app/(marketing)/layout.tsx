@@ -8,6 +8,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import { RiArrowRightLine } from '@remixicon/react';
+import { getLoginHref, getSignupHref } from '@/lib/constants/domains';
 
 export default function MarketingLayout({ children }: { children: ReactNode }) {
   return (
@@ -55,17 +56,17 @@ export default function MarketingLayout({ children }: { children: ReactNode }) {
             </div>
 
             <div className="flex items-center gap-x-3">
-              <Link href="/login">
+              <a href={getLoginHref()}>
                 <Button variant="ghost" size="sm">
                   Sign In
                 </Button>
-              </Link>
-              <Link href="/signup">
+              </a>
+              <a href={getSignupHref()}>
                 <Button size="sm" className="group">
                   Start Free Trial
                   <RiArrowRightLine className="ml-1.5 h-4 w-4 transition-transform group-hover:translate-x-0.5" />
                 </Button>
-              </Link>
+              </a>
             </div>
           </div>
         </div>
@@ -99,7 +100,7 @@ export default function MarketingLayout({ children }: { children: ReactNode }) {
                 <li><Link href="#features" className="transition-colors hover:text-brand-600">Features</Link></li>
                 <li><Link href="#pricing" className="transition-colors hover:text-brand-600">Pricing</Link></li>
                 <li><Link href="#how-it-works" className="transition-colors hover:text-brand-600">How It Works</Link></li>
-                <li><Link href="/signup" className="transition-colors hover:text-brand-600">Get Started</Link></li>
+                <li><a href={getSignupHref()} className="transition-colors hover:text-brand-600">Get Started</a></li>
               </ul>
             </div>
 

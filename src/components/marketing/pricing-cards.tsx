@@ -13,6 +13,7 @@ import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { CheckCircle } from 'lucide-react';
+import { getSignupHref } from '@/lib/constants/domains';
 import { DemoButton } from './demo-popup';
 
 export function PricingCards() {
@@ -158,7 +159,7 @@ export function PricingCards() {
                   Book a Demo
                 </DemoButton>
               ) : (
-                <Link href="/signup">
+                <a href={getSignupHref()}>
                   <Button
                     className={`w-full ${
                       plan.popular 
@@ -169,7 +170,7 @@ export function PricingCards() {
                   >
                     {plan.cta}
                   </Button>
-                </Link>
+                </a>
               )}
             </CardContent>
           </Card>

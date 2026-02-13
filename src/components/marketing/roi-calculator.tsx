@@ -12,6 +12,7 @@ import { Slider } from '@/components/ui/slider';
 import { Button } from '@/components/ui/button';
 import { ArrowRight, TrendingUp } from 'lucide-react';
 import Link from 'next/link';
+import { getSignupHref } from '@/lib/constants/domains';
 
 export function ROICalculator() {
   const [contacts, setContacts] = useState(1000);
@@ -146,7 +147,7 @@ export function ROICalculator() {
                 </div>
               </div>
 
-              <Link href="/signup" className="block mt-6">
+              <a href={getSignupHref()} className="block mt-6">
                 <Button
                   variant="secondary"
                   className="w-full bg-white text-brand-600 hover:bg-white/90"
@@ -154,7 +155,7 @@ export function ROICalculator() {
                   Start Generating Revenue
                   <ArrowRight className="ml-2 h-4 w-4" />
                 </Button>
-              </Link>
+              </a>
             </div>
           </div>
         </CardContent>

@@ -176,7 +176,7 @@ export async function lookupNumbers(
   } = options;
 
   const results: NumberLookupResult[] = [];
-  const uniqueNumbers = [...new Set(phoneNumbers.map(formatToE164))];
+  const uniqueNumbers = Array.from(new Set(phoneNumbers.map((p) => formatToE164(p))));
 
   // Process in batches
   for (let i = 0; i < uniqueNumbers.length; i += batchSize) {

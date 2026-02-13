@@ -1,5 +1,5 @@
 // ============================================
-// TELNYX WEBHOOK ENDPOINT
+// TELNYX FAILOVER WEBHOOK
 // ============================================
 
 import { NextRequest, NextResponse } from 'next/server';
@@ -9,7 +9,7 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
 
-    console.log('Telnyx webhook received:', JSON.stringify(body, null, 2));
+    console.log('Telnyx FAILOVER webhook received:', JSON.stringify(body, null, 2));
 
     const eventType = body.data?.event_type || body.event_type;
 
@@ -27,11 +27,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ received: true });
   } catch (error) {
-    console.error('Telnyx webhook error:', error);
+    console.error('Telnyx failover webhook error:', error);
     return NextResponse.json({ received: true, error: 'Processing failed' });
   }
-}
-
-export async function GET() {
-  return NextResponse.json({ status: 'Telnyx webhook endpoint active' });
 }

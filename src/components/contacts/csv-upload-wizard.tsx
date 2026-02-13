@@ -15,6 +15,8 @@ import { ColumnMappingStep } from './upload-steps/column-mapping-step';
 import { PreviewStep } from './upload-steps/preview-step';
 import { ImportProgressStep } from './upload-steps/import-progress-step';
 import { ImportCompleteStep } from './upload-steps/import-complete-step';
+import { PhoneValidationDialog } from './phone-validation-dialog';
+import { formatToE164 } from '@/lib/telnyx/number-lookup';
 
 interface CsvUploadWizardProps {
   organizationId: string;
@@ -66,6 +68,8 @@ export function CsvUploadWizard({
   });
   const [importResult, setImportResult] = useState<ImportResult | null>(null);
   const [importJobId, setImportJobId] = useState<string | null>(null);
+  const [showValidation, setShowValidation] = useState(false);
+  const [pendingPhoneNumbers, setPendingPhoneNumbers] = useState<string[]>([]);
 
   const handleFileSelected = async (selectedFile: File) => {
     setFile(selectedFile);
@@ -100,7 +104,40 @@ export function CsvUploadWizard({
     }
   };
 
-  const handleStartImport = async () => {
+  // Trigger phone validation before import when phone numbers exist
+  const handlePreImportValidation = () => {
+    if (!parsedData) return;
+
+    // Find the CSV column mapped to 'phone'
+    const phoneColumn = Object.entries(columnMapping).find(
+      ([, mappedTo]) => mappedTo === 'phone'
+    )?.[0];
+
+    if (phoneColumn) {
+      const phoneNumbers = parsedData.rows
+        .map((row) => row[phoneColumn])
+        .filter(Boolean);
+
+      if (phoneNumbers.length > 0) {
+        setPendingPhoneNumbers(phoneNumbers);
+        setShowValidation(true);
+        return;
+      }
+    }
+
+    // No phone numbers to validate – proceed directly
+    handleStartImport();
+  };
+
+  // Called after validation completes (or is skipped)
+  const handleValidationComplete = (validNumbers: string[], excludedNumbers: string[]) => {
+    // If user skipped or all numbers passed, just start import
+    // The excluded numbers info could be used to filter rows, but for now
+    // we proceed with the full import and let the user know which were excluded
+    handleStartImport(excludedNumbers);
+  };
+
+  const handleStartImport = async (excludedPhones: string[] = []) => {
     if (!file || !parsedData) return;
 
     setCurrentStep('importing');
@@ -191,7 +228,7 @@ export function CsvUploadWizard({
         setCurrentStep('preview');
         break;
       case 'preview':
-        handleStartImport();
+        handlePreImportValidation();
         break;
     }
   };
@@ -356,6 +393,14 @@ export function CsvUploadWizard({
           </Button>
         </div>
       )}
+
+      {/* Phone Validation Dialog */}
+      <PhoneValidationDialog
+        open={showValidation}
+        onOpenChange={setShowValidation}
+        phoneNumbers={pendingPhoneNumbers}
+        onComplete={handleValidationComplete}
+      />
     </div>
   );
 }

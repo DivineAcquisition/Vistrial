@@ -12,7 +12,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2 } from 'lucide-react';
+import { Loader2, AlertTriangle } from 'lucide-react';
+import { SingleNumberValidator } from './single-number-validator';
 
 interface AddContactFormProps {
   organizationId: string;
@@ -21,6 +22,7 @@ interface AddContactFormProps {
 
 export function AddContactForm({ organizationId, onSuccess }: AddContactFormProps) {
   const [isLoading, setIsLoading] = useState(false);
+  const [phoneWarning, setPhoneWarning] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     first_name: '',
     last_name: '',
@@ -110,10 +112,36 @@ export function AddContactForm({ organizationId, onSuccess }: AddContactFormProp
           type="tel"
           placeholder="+1 (555) 123-4567"
           value={formData.phone}
-          onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+          onChange={(e) => {
+            setFormData({ ...formData, phone: e.target.value });
+            setPhoneWarning(null);
+          }}
           disabled={isLoading}
           className="bg-white border-gray-200 text-gray-900"
         />
+        {formData.phone && (
+          <SingleNumberValidator
+            showInput={false}
+            phoneNumber={formData.phone}
+            onValidated={(result) => {
+              if (!result.canReceiveSMS) {
+                setPhoneWarning(
+                  result.phoneType === 'landline'
+                    ? 'This appears to be a landline and cannot receive SMS'
+                    : 'This number may not be able to receive SMS'
+                );
+              } else {
+                setPhoneWarning(null);
+              }
+            }}
+          />
+        )}
+        {phoneWarning && (
+          <p className="text-sm text-amber-600 flex items-center gap-1">
+            <AlertTriangle className="h-3 w-3" />
+            {phoneWarning}
+          </p>
+        )}
       </div>
 
       <div className="space-y-2">

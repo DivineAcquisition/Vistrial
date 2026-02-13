@@ -103,3 +103,48 @@ export function formatTime(time: string): string {
   const displayHours = hours % 12 || 12;
   return `${displayHours}:${minutes.toString().padStart(2, "0")} ${period}`;
 }
+
+/**
+ * Format number with abbreviation (1K, 1M, etc.)
+ */
+export function formatNumber(num: number | null | undefined): string {
+  if (num === null || num === undefined) return "0";
+  if (num >= 1000000) {
+    return (num / 1000000).toFixed(1).replace(/\.0$/, "") + "M";
+  }
+  if (num >= 1000) {
+    return (num / 1000).toFixed(1).replace(/\.0$/, "") + "K";
+  }
+  return num.toString();
+}
+
+/**
+ * Format percentage
+ */
+export function formatPercent(value: number | null | undefined, decimals = 1): string {
+  if (value === null || value === undefined) return "0%";
+  return `${value.toFixed(decimals)}%`;
+}
+
+/**
+ * Get initials from name
+ */
+export function getInitials(firstName?: string | null, lastName?: string | null): string {
+  const first = firstName?.charAt(0)?.toUpperCase() || "";
+  const last = lastName?.charAt(0)?.toUpperCase() || "";
+  return first + last || "?";
+}
+
+/**
+ * Truncate text with ellipsis
+ */
+export function truncate(text: string | null | undefined, maxLength: number): string {
+  if (!text) return "";
+  if (text.length <= maxLength) return text;
+  return text.slice(0, maxLength - 3) + "...";
+}
+
+/**
+ * Format phone number for display (alias for formatPhone)
+ */
+export const formatPhoneNumber = formatPhone;

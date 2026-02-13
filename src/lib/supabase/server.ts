@@ -110,3 +110,17 @@ export async function getAuthenticatedContext() {
     membership: orgData.membership,
   };
 }
+
+// Check if user has specific role or higher
+export function hasRole(
+  context: { membership?: { role?: string } | null } | null,
+  requiredRole: 'owner' | 'admin' | 'member' | 'viewer'
+): boolean {
+  if (!context?.membership?.role) return false;
+
+  const roleHierarchy = ['viewer', 'member', 'admin', 'owner'];
+  const userRoleIndex = roleHierarchy.indexOf(context.membership.role);
+  const requiredRoleIndex = roleHierarchy.indexOf(requiredRole);
+
+  return userRoleIndex >= requiredRoleIndex;
+}

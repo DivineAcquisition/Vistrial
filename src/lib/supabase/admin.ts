@@ -28,6 +28,9 @@ export function getSupabaseAdminClient() {
 // Backward compatibility alias
 export const createAdminClient = getSupabaseAdminClient;
 
+// Convenience export
+export const adminDb = () => getSupabaseAdminClient();
+
 // Helper functions
 export async function getOrganizationByStripeCustomerId(stripeCustomerId: string) {
   const admin = getSupabaseAdminClient();

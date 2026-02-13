@@ -153,6 +153,28 @@ export const voiceCallSchema = z.object({
 export type VoiceCallInput = z.infer<typeof voiceCallSchema>;
 
 /**
+ * Validate URL format
+ */
+export function isValidUrl(url: string): boolean {
+  try {
+    new URL(url);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Sanitize phone number to E.164 format (alias for normalizePhoneNumber)
+ */
+export const sanitizePhone = normalizePhoneNumber;
+
+/**
+ * Validate phone number (alias for isValidPhoneNumber)
+ */
+export const isValidPhone = isValidPhoneNumber;
+
+/**
  * Validate and parse with helpful error messages
  */
 export function validateInput<T>(

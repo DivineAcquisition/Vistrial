@@ -5,7 +5,7 @@
 // Shows validation results after CSV upload
 // ============================================
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -23,11 +23,9 @@ import {
   Loader2,
   CheckCircle2,
   XCircle,
-  AlertTriangle,
   Phone,
   Smartphone,
   PhoneOff,
-  HelpCircle,
   DollarSign,
 } from 'lucide-react';
 
@@ -139,11 +137,19 @@ export function PhoneValidationDialog({
   };
 
   // Initialize estimate on open
-  useState(() => {
-    if (open && status === 'idle') {
+  useEffect(() => {
+    if (open && status === 'idle' && estimatedCost === 0) {
       fetchEstimate();
     }
-  });
+    // Reset state when dialog closes
+    if (!open) {
+      setStatus('idle');
+      setProgress(0);
+      setResult(null);
+      setEstimatedCost(0);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open]);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>

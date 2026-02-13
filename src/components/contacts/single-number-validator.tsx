@@ -5,7 +5,7 @@
 // Quick inline validation for manual entry
 // ============================================
 
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -42,6 +42,22 @@ export function SingleNumberValidator({
   const [phone, setPhone] = useState(initialPhone);
   const [isLoading, setIsLoading] = useState(false);
   const [result, setResult] = useState<ValidationResult | null>(null);
+  const debounceRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Auto-validate when used without input (e.g. embedded in a form)
+  // Debounce by 800ms so we don't fire on every keystroke
+  useEffect(() => {
+    if (!showInput && initialPhone && initialPhone.length >= 10) {
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+      debounceRef.current = setTimeout(() => {
+        validate(initialPhone);
+      }, 800);
+    }
+    return () => {
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialPhone, showInput]);
 
   const validate = async (numberToValidate?: string) => {
     const phoneToCheck = numberToValidate || phone;

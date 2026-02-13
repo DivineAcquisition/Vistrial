@@ -24,3 +24,14 @@ export {
 } from './client';
 
 export type { SendSmsParams, SendSmsResult, BatchSmsParams, BatchSmsResult } from './client';
+
+// Number lookup / phone validation
+export {
+  lookupNumber,
+  lookupNumbers,
+  canReceiveSMS,
+  estimateLookupCost,
+  formatToE164 as formatToE164Lookup,
+} from './number-lookup';
+
+export type { NumberLookupResult, BulkValidationResult } from './number-lookup';

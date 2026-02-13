@@ -16,7 +16,6 @@ import { PreviewStep } from './upload-steps/preview-step';
 import { ImportProgressStep } from './upload-steps/import-progress-step';
 import { ImportCompleteStep } from './upload-steps/import-complete-step';
 import { PhoneValidationDialog } from './phone-validation-dialog';
-import { formatToE164 } from '@/lib/telnyx/number-lookup';
 
 interface CsvUploadWizardProps {
   organizationId: string;

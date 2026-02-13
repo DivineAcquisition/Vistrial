@@ -6,7 +6,6 @@
 import { ReactNode } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { LogoIcon } from '@/components/ui/Logo';
 
 export default function AuthLayout({ children }: { children: ReactNode }) {
   return (
@@ -33,9 +32,15 @@ export default function AuthLayout({ children }: { children: ReactNode }) {
         {/* Content */}
         <div className="relative flex h-full flex-col justify-between p-12">
           {/* Logo */}
-          <Link href="/" className="flex items-center gap-3">
-            <LogoIcon size="h-12 w-12" iconSize="h-6 w-6" />
-            <span className="text-2xl font-bold text-white">Vistrial</span>
+          <Link href="/" className="inline-block">
+            <Image
+              src="/vsds.png"
+              alt="Vistrial"
+              width={180}
+              height={90}
+              className="h-12 w-auto object-contain brightness-0 invert"
+              priority
+            />
           </Link>
           
           {/* Main content */}
@@ -97,9 +102,15 @@ export default function AuthLayout({ children }: { children: ReactNode }) {
         {/* Mobile header */}
         <header className="relative border-b border-gray-200 bg-white/80 backdrop-blur-sm lg:hidden">
           <div className="container mx-auto flex h-16 items-center px-4">
-            <Link href="/" className="flex items-center gap-2">
-              <LogoIcon size="h-8 w-8" iconSize="h-4 w-4" />
-              <span className="text-xl font-bold text-gray-900">Vistrial</span>
+            <Link href="/" className="inline-block">
+              <Image
+                src="/vsds.png"
+                alt="Vistrial"
+                width={140}
+                height={70}
+                className="h-9 w-auto object-contain"
+                priority
+              />
             </Link>
           </div>
         </header>

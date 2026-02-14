@@ -148,7 +148,9 @@ export function OnboardingWizard({
       if (nextStep >= STEPS.length) {
         await fetch('/api/onboarding/complete', { method: 'POST' });
         toast({ title: 'Setup complete!', description: 'Welcome to Vistrial!' });
-        router.push('/dashboard');
+        // Hard navigation so the dashboard server component picks up the updated org data
+        window.location.href = '/dashboard';
+        return;
       } else {
         setStep(nextStep);
       }

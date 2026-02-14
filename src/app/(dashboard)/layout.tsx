@@ -23,6 +23,11 @@ export default async function DashboardLayout({
   // Safely access organization fields
   const org = organization as Record<string, any>;
 
+  // If onboarding not completed, redirect to onboarding
+  if (org.onboarding_completed !== true) {
+    redirect('/onboarding');
+  }
+
   return (
     <div className="min-h-screen bg-[#fafafa]">
       {/* Subtle ambient gradient */}

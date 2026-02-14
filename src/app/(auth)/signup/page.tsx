@@ -50,7 +50,7 @@ export default function SignupPage() {
     try {
       const supabase = createClient();
 
-      const { error } = await supabase.auth.signUp({
+      const { data, error } = await supabase.auth.signUp({
         email: formData.email,
         password: formData.password,
         options: {
@@ -66,6 +66,30 @@ export default function SignupPage() {
         return;
       }
 
+      // If session exists, Supabase auto-confirmed the user (email confirm disabled)
+      // → Create org immediately and go to onboarding
+      if (data?.session) {
+        try {
+          await fetch('/api/auth/setup-organization', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              name: formData.businessName,
+              business_type: 'other',
+              user_id: data.user?.id,
+              first_name: formData.fullName.split(' ')[0],
+              last_name: formData.fullName.split(' ').slice(1).join(' '),
+            }),
+          });
+        } catch (orgError) {
+          console.error('Failed to create org during signup:', orgError);
+          // Don't block — ensureOrganization in auth callback will retry
+        }
+        window.location.href = '/onboarding';
+        return;
+      }
+
+      // Email confirmation required → send to login with message
       window.location.href = '/login?message=Check your email to confirm your account';
     } catch {
       setError('An unexpected error occurred');

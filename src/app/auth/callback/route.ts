@@ -17,7 +17,7 @@ export async function GET(request: NextRequest) {
   const code = searchParams.get('code');
   const token_hash = searchParams.get('token_hash');
   const type = searchParams.get('type');
-  const next = searchParams.get('next') || '/dashboard';
+  const next = searchParams.get('next') || '/onboarding';
   const error_param = searchParams.get('error');
   const error_description = searchParams.get('error_description');
   const origin = new URL(request.url).origin;
@@ -138,6 +138,7 @@ async function ensureOrganization(user) {
   try {
     const admin = getSupabaseAdminClient();
 
+    // Check if user already has an organization
     const { data: membership } = await admin
       .from('organization_members')
       .select('organization_id')
@@ -146,17 +147,21 @@ async function ensureOrganization(user) {
 
     if (membership) return;
 
+    // Extract user metadata from signup form
     const fullName =
       user.user_metadata?.full_name ||
       user.user_metadata?.first_name ||
       user.email?.split('@')[0] ||
       'User';
+    const businessName =
+      user.user_metadata?.business_name || `${fullName}'s Business`;
 
     const nameParts = fullName.split(' ');
     const firstName = nameParts[0];
     const lastName = nameParts.slice(1).join(' ');
 
-    const baseSlug = fullName
+    // Generate unique slug from business name
+    const baseSlug = businessName
       .toLowerCase()
       .replace(/[^a-z0-9]+/g, '-')
       .replace(/^-|-$/g, '')
@@ -175,15 +180,18 @@ async function ensureOrganization(user) {
       counter++;
     }
 
+    // Create organization with the actual business name from signup
     const { data: organization, error: orgError } = await admin
       .from('organizations')
       .insert({
-        name: `${fullName}'s Business`,
+        name: businessName,
         slug,
         business_type: 'other',
         plan_tier: 'starter',
         subscription_status: 'incomplete',
         contact_limit: 1000,
+        onboarding_completed: false,
+        onboarding_step: 0,
       })
       .select()
       .single();
@@ -193,6 +201,7 @@ async function ensureOrganization(user) {
       return;
     }
 
+    // Create owner membership
     await admin.from('organization_members').insert({
       organization_id: organization.id,
       user_id: user.id,
@@ -201,6 +210,7 @@ async function ensureOrganization(user) {
       accepted_at: new Date().toISOString(),
     });
 
+    // Save user profile with name
     await admin
       .from('user_profiles')
       .update({
@@ -209,6 +219,8 @@ async function ensureOrganization(user) {
         default_organization_id: organization.id,
       })
       .eq('id', user.id);
+
+    console.log(`Organization "${businessName}" created for user ${user.id}`);
   } catch (err) {
     console.error('ensureOrganization error:', err);
   }

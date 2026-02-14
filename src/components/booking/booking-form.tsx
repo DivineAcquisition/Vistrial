@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Loader2, CheckCircle, DollarSign } from 'lucide-react';
@@ -33,6 +34,7 @@ export function BookingForm({ bookingPage, pricingMatrix, organization, attribut
   const [selectedAddOns, setSelectedAddOns] = useState<string[]>([]);
   const [preferredDate, setPreferredDate] = useState('');
   const [customerInfo, setCustomerInfo] = useState({ name: '', phone: '', email: '', address: '', notes: '' });
+  const [smsConsent, setSmsConsent] = useState(false);
 
   const settings = bookingPage.settings || {};
   const customization = bookingPage.customization || {};
@@ -68,6 +70,7 @@ export function BookingForm({ bookingPage, pricingMatrix, organization, attribut
           source: attribution.source,
           campaignId: attribution.campaignId,
           workflowId: attribution.workflowId,
+          smsConsent,
         }),
       });
       if (!response.ok) throw new Error('Failed to submit booking');
@@ -247,6 +250,20 @@ export function BookingForm({ bookingPage, pricingMatrix, organization, attribut
                   <Label>Notes</Label>
                   <Textarea value={customerInfo.notes} onChange={(e) => setCustomerInfo(prev => ({ ...prev, notes: e.target.value }))} placeholder="Anything else we should know?" rows={3} />
                 </div>
+
+                {/* SMS Consent (TCPA compliance) */}
+                <div className="flex items-start gap-3 mt-4">
+                  <Checkbox
+                    id="smsConsent"
+                    checked={smsConsent}
+                    onCheckedChange={(checked) => setSmsConsent(checked === true)}
+                  />
+                  <label htmlFor="smsConsent" className="text-sm text-muted-foreground leading-relaxed cursor-pointer">
+                    I agree to receive SMS messages from {organization?.name || 'this business'} including
+                    appointment reminders and promotional offers. Message frequency
+                    varies. Msg &amp; data rates may apply. Reply STOP to unsubscribe.
+                  </label>
+                </div>
               </CardContent>
             </Card>
           )}
@@ -294,7 +311,7 @@ export function BookingForm({ bookingPage, pricingMatrix, organization, attribut
                 {selectedService && (
                   <Button
                     onClick={handleSubmit}
-                    disabled={isSubmitting || !customerInfo.name || !customerInfo.phone}
+                    disabled={isSubmitting || !customerInfo.name || !customerInfo.phone || !smsConsent}
                     className="w-full mt-4"
                     variant="gradient"
                   >

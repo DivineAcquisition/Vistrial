@@ -150,11 +150,13 @@ async function ensureOrganization(user) {
     // Extract user metadata from signup form
     const fullName =
       user.user_metadata?.full_name ||
+      user.user_metadata?.name ||
       user.user_metadata?.first_name ||
       user.email?.split('@')[0] ||
       'User';
     const businessName =
       user.user_metadata?.business_name || `${fullName}'s Business`;
+    const phone = user.user_metadata?.phone || null;
 
     const nameParts = fullName.split(' ');
     const firstName = nameParts[0];
@@ -181,18 +183,21 @@ async function ensureOrganization(user) {
     }
 
     // Create organization with the actual business name from signup
+    const orgInsert: Record<string, any> = {
+      name: businessName,
+      slug,
+      business_type: 'other',
+      plan_tier: 'starter',
+      subscription_status: 'incomplete',
+      contact_limit: 1000,
+      onboarding_completed: false,
+      onboarding_step: 0,
+    };
+    if (phone) orgInsert.phone = phone;
+
     const { data: organization, error: orgError } = await admin
       .from('organizations')
-      .insert({
-        name: businessName,
-        slug,
-        business_type: 'other',
-        plan_tier: 'starter',
-        subscription_status: 'incomplete',
-        contact_limit: 1000,
-        onboarding_completed: false,
-        onboarding_step: 0,
-      })
+      .insert(orgInsert)
       .select()
       .single();
 
@@ -210,14 +215,17 @@ async function ensureOrganization(user) {
       accepted_at: new Date().toISOString(),
     });
 
-    // Save user profile with name
+    // Save user profile with name and phone
+    const profileUpdate: Record<string, any> = {
+      first_name: firstName,
+      last_name: lastName || null,
+      default_organization_id: organization.id,
+    };
+    if (phone) profileUpdate.phone = phone;
+
     await admin
       .from('user_profiles')
-      .update({
-        first_name: firstName,
-        last_name: lastName || null,
-        default_organization_id: organization.id,
-      })
+      .update(profileUpdate)
       .eq('id', user.id);
 
     console.log(`Organization "${businessName}" created for user ${user.id}`);

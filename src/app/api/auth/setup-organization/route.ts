@@ -11,7 +11,7 @@ import { initializeBilling } from '@/services/billing.service';
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { name, business_type, user_id, first_name, last_name } = body;
+    const { name, business_type, user_id, first_name, last_name, phone } = body;
 
     if (!name || !business_type || !user_id) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
@@ -31,16 +31,21 @@ export async function POST(request: NextRequest) {
     }
 
     // Create organization
+    const orgInsert: Record<string, any> = {
+      name,
+      slug,
+      business_type,
+      plan_tier: 'starter',
+      subscription_status: 'incomplete',
+      contact_limit: 1000,
+      onboarding_completed: false,
+      onboarding_step: 0,
+    };
+    if (phone) orgInsert.phone = phone;
+
     const { data: organization, error: orgError } = await admin
       .from('organizations')
-      .insert({
-        name,
-        slug,
-        business_type,
-        plan_tier: 'starter',
-        subscription_status: 'incomplete',
-        contact_limit: 1000,
-      })
+      .insert(orgInsert)
       .select()
       .single();
 

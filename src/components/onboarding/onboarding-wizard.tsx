@@ -50,8 +50,10 @@ const STEPS = [
   { id: 3, title: 'Ready to Go', icon: Rocket, description: 'Start reactivating' },
 ];
 
+// Values must match the public.business_type enum in the database
 const BUSINESS_TYPES = [
-  { value: 'cleaning', label: 'Cleaning Service' },
+  { value: 'cleaning_residential', label: 'Residential Cleaning' },
+  { value: 'cleaning_commercial', label: 'Commercial Cleaning' },
   { value: 'hvac', label: 'HVAC' },
   { value: 'plumbing', label: 'Plumbing' },
   { value: 'electrical', label: 'Electrical' },
@@ -59,7 +61,7 @@ const BUSINESS_TYPES = [
   { value: 'roofing', label: 'Roofing' },
   { value: 'painting', label: 'Painting' },
   { value: 'pest_control', label: 'Pest Control' },
-  { value: 'general_contractor', label: 'General Contractor' },
+  { value: 'handyman', label: 'Handyman / General Contractor' },
   { value: 'moving', label: 'Moving Service' },
   { value: 'carpet_cleaning', label: 'Carpet Cleaning' },
   { value: 'window_cleaning', label: 'Window Cleaning' },
@@ -68,6 +70,7 @@ const BUSINESS_TYPES = [
   { value: 'appliance_repair', label: 'Appliance Repair' },
   { value: 'locksmith', label: 'Locksmith' },
   { value: 'garage_door', label: 'Garage Door Service' },
+  { value: 'junk_removal', label: 'Junk Removal' },
   { value: 'other', label: 'Other Home Service' },
 ];
 

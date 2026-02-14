@@ -75,11 +75,7 @@ export async function getUserOrganization(userId: string) {
       organization_id,
       role,
       permissions,
-      organizations (
-        id, name, slug, business_type, plan_tier,
-        subscription_status, contact_limit, settings,
-        logo_url, email, phone
-      )
+      organizations (*)
     `)
     .eq('user_id', userId)
     .single();

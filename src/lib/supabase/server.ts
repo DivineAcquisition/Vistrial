@@ -67,29 +67,64 @@ export async function requireAuth() {
 }
 
 // Helper to get user's organization
+// Uses admin client to bypass RLS — this is server-side only
 export async function getUserOrganization(userId: string) {
-  const supabase = await getSupabaseServerClient();
-  const { data: membership, error } = await supabase
-    .from('organization_members')
-    .select(`
-      organization_id,
-      role,
-      permissions,
-      organizations (*)
-    `)
-    .eq('user_id', userId)
-    .single();
+  // Try admin client first (bypasses RLS, works reliably)
+  try {
+    const { getSupabaseAdminClient } = await import('./admin');
+    const admin = getSupabaseAdminClient();
 
-  if (error || !membership) return null;
+    const { data: membership, error } = await admin
+      .from('organization_members')
+      .select(`
+        organization_id,
+        role,
+        permissions,
+        organizations (*)
+      `)
+      .eq('user_id', userId)
+      .single();
 
-  return {
-    membership: {
-      organization_id: membership.organization_id,
-      role: membership.role,
-      permissions: membership.permissions,
-    },
-    organization: membership.organizations,
-  };
+    if (error || !membership) {
+      console.log('getUserOrganization: no membership found for user', userId, error?.message);
+      return null;
+    }
+
+    return {
+      membership: {
+        organization_id: membership.organization_id,
+        role: membership.role,
+        permissions: membership.permissions,
+      },
+      organization: (membership as any).organizations,
+    };
+  } catch (adminError) {
+    console.error('getUserOrganization admin error, falling back to anon:', adminError);
+
+    // Fallback to anon client
+    const supabase = await getSupabaseServerClient();
+    const { data: membership, error } = await supabase
+      .from('organization_members')
+      .select(`
+        organization_id,
+        role,
+        permissions,
+        organizations (*)
+      `)
+      .eq('user_id', userId)
+      .single();
+
+    if (error || !membership) return null;
+
+    return {
+      membership: {
+        organization_id: membership.organization_id,
+        role: membership.role,
+        permissions: membership.permissions,
+      },
+      organization: (membership as any).organizations,
+    };
+  }
 }
 
 // Helper to get user with organization context

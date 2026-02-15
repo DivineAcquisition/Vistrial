@@ -146,7 +146,15 @@ export function OnboardingWizard({
       if (!response.ok) throw new Error('Failed to save');
 
       if (nextStep >= STEPS.length) {
-        await fetch('/api/onboarding/complete', { method: 'POST' });
+        const completeRes = await fetch('/api/onboarding/complete', { method: 'POST' });
+        const completeData = await completeRes.json().catch(() => ({}));
+        
+        if (!completeRes.ok) {
+          console.error('Complete onboarding failed:', completeData);
+          toast({ title: 'Error', description: 'Failed to complete setup. Please try again.', variant: 'destructive' });
+          return;
+        }
+        
         toast({ title: 'Setup complete!', description: 'Welcome to Vistrial!' });
         // Hard navigation so the dashboard server component picks up the updated org data
         window.location.href = '/dashboard';

@@ -350,6 +350,14 @@ export default function SignupPage() {
           )}
         </div>
 
+        {/* Fallback for email link confirmation */}
+        <div className="rounded-lg border border-gray-200 bg-gray-50 p-4 text-center space-y-2">
+          <p className="text-xs text-gray-500">
+            If you received an email link instead of a code, click the link to verify,
+            then <Link href="/login" className="text-brand-600 font-semibold hover:underline">sign in here</Link>.
+          </p>
+        </div>
+
         <button
           onClick={() => { setStep('info'); setError(''); }}
           className="flex items-center justify-center gap-1 w-full text-sm text-gray-500 hover:text-gray-700"

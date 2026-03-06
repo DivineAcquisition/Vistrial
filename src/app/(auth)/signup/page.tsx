@@ -1,14 +1,6 @@
 // @ts-nocheck
 'use client';
 
-// ============================================
-// SIGNUP PAGE
-// Step 1: Collect info (name, business, email, phone, password)
-// Step 2: Verify email with 6-digit OTP code
-// Step 3: Create org → redirect to /onboarding
-// Google OAuth: after Google auth, collect business name + phone
-// ============================================
-
 import { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
@@ -38,6 +30,7 @@ export default function SignupPage() {
     fullName: '',
     email: '',
     password: '',
+    confirmPassword: '',
     businessName: '',
     phone: '',
   });
@@ -49,7 +42,6 @@ export default function SignupPage() {
 
   const otpRefs = useRef<(HTMLInputElement | null)[]>([]);
 
-  // Resend countdown timer
   useEffect(() => {
     if (resendCountdown <= 0) return;
     const timer = setTimeout(() => setResendCountdown((c) => c - 1), 1000);
@@ -61,10 +53,20 @@ export default function SignupPage() {
     setError('');
   };
 
-  // ── Step 1: Submit signup form → send OTP ──
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+
+    if (formData.password !== formData.confirmPassword) {
+      setError('Passwords do not match');
+      return;
+    }
+
+    if (formData.password.length < 8) {
+      setError('Password must be at least 8 characters');
+      return;
+    }
+
     setIsLoading(true);
 
     try {
@@ -87,13 +89,11 @@ export default function SignupPage() {
         return;
       }
 
-      // If auto-confirmed (no email verification required), create org and go
       if (data?.session) {
         await createOrgAndRedirect(data.user?.id);
         return;
       }
 
-      // Email verification required → show OTP input
       setStep('verify');
       setResendCountdown(60);
     } catch {
@@ -103,7 +103,6 @@ export default function SignupPage() {
     }
   };
 
-  // ── Step 2: Verify 6-digit OTP ──
   const handleVerifyOTP = async () => {
     const code = otpDigits.join('');
     if (code.length !== 6) {
@@ -138,7 +137,6 @@ export default function SignupPage() {
     }
   };
 
-  // ── Resend OTP ──
   const handleResendOTP = async () => {
     if (resendCountdown > 0) return;
     setError('');
@@ -160,20 +158,17 @@ export default function SignupPage() {
     }
   };
 
-  // ── OTP input handling ──
   const handleOtpChange = (index: number, value: string) => {
-    if (!/^\d*$/.test(value)) return; // digits only
+    if (!/^\d*$/.test(value)) return;
     const newDigits = [...otpDigits];
-    newDigits[index] = value.slice(-1); // single digit
+    newDigits[index] = value.slice(-1);
     setOtpDigits(newDigits);
     setError('');
 
-    // Auto-focus next input
     if (value && index < 5) {
       otpRefs.current[index + 1]?.focus();
     }
 
-    // Auto-submit when all 6 digits entered
     if (newDigits.every((d) => d !== '') && newDigits.join('').length === 6) {
       setTimeout(() => handleVerifyOTP(), 100);
     }
@@ -198,7 +193,6 @@ export default function SignupPage() {
     otpRefs.current[focusIndex]?.focus();
   };
 
-  // ── Create org and redirect ──
   const createOrgAndRedirect = async (userId?: string) => {
     if (!userId) {
       window.location.href = '/onboarding';
@@ -225,9 +219,7 @@ export default function SignupPage() {
     window.location.href = '/onboarding';
   };
 
-  // ── Google OAuth ──
   const handleGoogleSignIn = async () => {
-    // If business name + phone not filled, prompt for them first
     if (!formData.businessName || !formData.phone) {
       setStep('google-info');
       return;
@@ -239,7 +231,6 @@ export default function SignupPage() {
     try {
       const supabase = createClient();
 
-      // Store business info in localStorage so auth callback can use it
       localStorage.setItem(
         'vistrial_signup_data',
         JSON.stringify({
@@ -270,13 +261,6 @@ export default function SignupPage() {
     }
   };
 
-  const benefits = [
-    '14-day free trial',
-    'No credit card required',
-    'Unlimited campaigns',
-    'Cancel anytime',
-  ];
-
   // ══════════════════════════════════════════
   // STEP: Verify OTP
   // ══════════════════════════════════════════
@@ -302,7 +286,6 @@ export default function SignupPage() {
           </div>
         )}
 
-        {/* OTP Input */}
         <div className="flex justify-center gap-2" onPaste={handleOtpPaste}>
           {otpDigits.map((digit, i) => (
             <input
@@ -350,7 +333,6 @@ export default function SignupPage() {
           )}
         </div>
 
-        {/* Fallback for email link confirmation */}
         <div className="rounded-lg border border-gray-200 bg-gray-50 p-4 text-center space-y-2">
           <p className="text-xs text-gray-500">
             If you received an email link instead of a code, click the link to verify,
@@ -396,7 +378,7 @@ export default function SignupPage() {
 
         <div className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="googleBusinessName" className="text-gray-700">Business name</Label>
+            <Label htmlFor="googleBusinessName" className="text-gray-700">Your cleaning company name</Label>
             <div className="relative">
               <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
                 <RiBuildingLine className="h-5 w-5 text-gray-400" />
@@ -413,7 +395,7 @@ export default function SignupPage() {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="googlePhone" className="text-gray-700">Phone number</Label>
+            <Label htmlFor="googlePhone" className="text-gray-700">Your business phone</Label>
             <div className="relative">
               <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
                 <RiPhoneLine className="h-5 w-5 text-gray-400" />
@@ -464,27 +446,11 @@ export default function SignupPage() {
       {/* Header */}
       <div className="space-y-2 text-center">
         <h1 className="text-3xl font-bold tracking-tight text-gray-900">
-          Start your free trial
+          Start Converting One-Time Clients to Recurring Revenue
         </h1>
         <p className="text-gray-500">
-          No credit card required. Start reactivating customers today.
+          Set up your account in 2 minutes
         </p>
-      </div>
-
-      {/* Benefits */}
-      <div className="grid grid-cols-2 gap-2">
-        {benefits.map((benefit, index) => (
-          <div
-            key={benefit}
-            className="flex items-center gap-2 text-sm text-gray-600 animate-fade-in"
-            style={{ animationDelay: `${index * 100}ms` }}
-          >
-            <div className="flex h-5 w-5 items-center justify-center rounded-full bg-green-100">
-              <RiCheckLine className="h-3 w-3 text-green-600" />
-            </div>
-            {benefit}
-          </div>
-        ))}
       </div>
 
       {/* Error Message */}
@@ -511,7 +477,7 @@ export default function SignupPage() {
 
         {/* Business Name */}
         <div className="space-y-2">
-          <Label htmlFor="businessName" className="text-gray-700">Business name</Label>
+          <Label htmlFor="businessName" className="text-gray-700">Your cleaning company name</Label>
           <div className="relative">
             <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
               <RiBuildingLine className="h-5 w-5 text-gray-400" />
@@ -522,7 +488,7 @@ export default function SignupPage() {
 
         {/* Email */}
         <div className="space-y-2">
-          <Label htmlFor="email" className="text-gray-700">Work email</Label>
+          <Label htmlFor="email" className="text-gray-700">Email</Label>
           <div className="relative">
             <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
               <RiMailLine className="h-5 w-5 text-gray-400" />
@@ -533,7 +499,7 @@ export default function SignupPage() {
 
         {/* Phone */}
         <div className="space-y-2">
-          <Label htmlFor="phone" className="text-gray-700">Phone number</Label>
+          <Label htmlFor="phone" className="text-gray-700">Your business phone</Label>
           <div className="relative">
             <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
               <RiPhoneLine className="h-5 w-5 text-gray-400" />
@@ -552,6 +518,30 @@ export default function SignupPage() {
             <Input id="password" name="password" type="password" placeholder="Create a strong password" value={formData.password} onChange={handleChange} required minLength={8} className="pl-10" />
           </div>
           <p className="text-xs text-gray-500">Minimum 8 characters</p>
+        </div>
+
+        {/* Confirm Password */}
+        <div className="space-y-2">
+          <Label htmlFor="confirmPassword" className="text-gray-700">Confirm password</Label>
+          <div className="relative">
+            <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
+              <RiLockPasswordLine className="h-5 w-5 text-gray-400" />
+            </div>
+            <Input
+              id="confirmPassword"
+              name="confirmPassword"
+              type="password"
+              placeholder="Confirm your password"
+              value={formData.confirmPassword}
+              onChange={handleChange}
+              required
+              minLength={8}
+              className="pl-10"
+            />
+          </div>
+          {formData.confirmPassword && formData.password !== formData.confirmPassword && (
+            <p className="text-xs text-red-500">Passwords do not match</p>
+          )}
         </div>
 
         {/* Submit */}
@@ -592,6 +582,13 @@ export default function SignupPage() {
         <RiGoogleFill className="mr-2 h-5 w-5 text-gray-600" />
         Continue with Google
       </Button>
+
+      {/* Social proof */}
+      <div className="rounded-xl border border-gray-200 bg-gray-50 p-4 text-center">
+        <p className="text-sm text-gray-600 font-medium">
+          Join 50+ cleaning companies converting more one-time clients to recurring
+        </p>
+      </div>
 
       {/* Terms */}
       <p className="text-center text-xs text-gray-500">

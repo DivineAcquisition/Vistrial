@@ -11,6 +11,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import { getSupabaseAdminClient } from '@/lib/supabase/admin';
+import { seedOrganizationDefaults } from '@/lib/services/org-defaults.service';
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
@@ -182,7 +183,6 @@ async function ensureOrganization(user) {
       counter++;
     }
 
-    // Create organization with the actual business name from signup
     const orgInsert: Record<string, any> = {
       name: businessName,
       slug,
@@ -192,6 +192,26 @@ async function ensureOrganization(user) {
       contact_limit: 1000,
       onboarding_completed: false,
       onboarding_step: 0,
+      industry: 'residential_cleaning',
+      timezone: 'America/New_York',
+      settings: {
+        business_hours: { start: '08:00', end: '18:00' },
+        conversion_settings: {
+          auto_enter_pipeline: true,
+          default_sequence_enabled: true,
+          satisfaction_check_delay_hours: 2,
+          stage_timing: {
+            post_service_glow: { delay_hours: 2, duration_days: 1 },
+            value_anchoring: { delay_days: 2, duration_days: 3 },
+            incentive_window: { delay_days: 5, duration_days: 5 },
+            social_proof: { delay_days: 10, duration_days: 8 },
+            final_conversion: { delay_days: 18, duration_days: 12 },
+          },
+          working_hours: { start: '09:00', end: '20:00' },
+          working_days: ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'],
+          max_messages_per_day_per_contact: 2,
+        },
+      },
     };
     if (phone) orgInsert.phone = phone;
 
@@ -227,6 +247,12 @@ async function ensureOrganization(user) {
       .from('user_profiles')
       .update(profileUpdate)
       .eq('id', user.id);
+
+    try {
+      await seedOrganizationDefaults(organization.id);
+    } catch (seedErr) {
+      console.error('Seed defaults error (non-blocking):', seedErr);
+    }
 
     console.log(`Organization "${businessName}" created for user ${user.id}`);
   } catch (err) {

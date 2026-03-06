@@ -1,13 +1,24 @@
 // @ts-nocheck
-// ============================================
-// SETUP ORGANIZATION API
-// Creates organization and membership after signup
-// ============================================
-
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseAdminClient } from '@/lib/supabase/admin';
 import { initializeBilling } from '@/services/billing.service';
 import { seedOrganizationDefaults } from '@/lib/services/org-defaults.service';
+
+const DEFAULT_CONVERSION_SETTINGS = {
+  auto_enter_pipeline: true,
+  default_sequence_enabled: true,
+  satisfaction_check_delay_hours: 2,
+  stage_timing: {
+    post_service_glow: { delay_hours: 2, duration_days: 1 },
+    value_anchoring: { delay_days: 2, duration_days: 3 },
+    incentive_window: { delay_days: 5, duration_days: 5 },
+    social_proof: { delay_days: 10, duration_days: 8 },
+    final_conversion: { delay_days: 18, duration_days: 12 },
+  },
+  working_hours: { start: '09:00', end: '20:00' },
+  working_days: ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'],
+  max_messages_per_day_per_contact: 2,
+};
 
 export async function POST(request: NextRequest) {
   try {
@@ -20,18 +31,14 @@ export async function POST(request: NextRequest) {
 
     const admin = getSupabaseAdminClient();
 
-    // Generate slug from name
     let slug: string;
     try {
-      const { data: slugData } = await admin.rpc('generate_org_slug', {
-        name,
-      });
+      const { data: slugData } = await admin.rpc('generate_org_slug', { name });
       slug = slugData || name.toLowerCase().replace(/[^a-z0-9]+/g, '-');
     } catch {
       slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-');
     }
 
-    // Create organization
     const orgInsert: Record<string, any> = {
       name,
       slug,
@@ -41,6 +48,12 @@ export async function POST(request: NextRequest) {
       contact_limit: 1000,
       onboarding_completed: false,
       onboarding_step: 0,
+      industry: 'residential_cleaning',
+      timezone: 'America/New_York',
+      settings: {
+        business_hours: { start: '08:00', end: '18:00' },
+        conversion_settings: DEFAULT_CONVERSION_SETTINGS,
+      },
     };
     if (phone) orgInsert.phone = phone;
 
@@ -60,7 +73,6 @@ export async function POST(request: NextRequest) {
       }, { status: 500 });
     }
 
-    // Create membership (owner)
     const { error: memberError } = await admin.from('organization_members').insert({
       organization_id: organization.id,
       user_id,
@@ -76,12 +88,10 @@ export async function POST(request: NextRequest) {
 
     if (memberError) {
       console.error('Membership creation error:', memberError);
-      // Rollback organization
       await admin.from('organizations').delete().eq('id', organization.id);
       return NextResponse.json({ error: 'Failed to create membership' }, { status: 500 });
     }
 
-    // Update user profile
     await admin
       .from('user_profiles')
       .update({
@@ -91,10 +101,8 @@ export async function POST(request: NextRequest) {
       })
       .eq('id', user_id);
 
-    // Get user email for Stripe
     const { data: user } = await admin.auth.admin.getUserById(user_id);
 
-    // Initialize billing (create Stripe customer)
     if (user?.user?.email) {
       try {
         await initializeBilling({
@@ -104,11 +112,9 @@ export async function POST(request: NextRequest) {
         });
       } catch (billingError) {
         console.error('Billing initialization error:', billingError);
-        // Don't fail signup if billing fails - can be set up later
       }
     }
 
-    // Seed organization defaults (service types, offers, sequence templates)
     try {
       await seedOrganizationDefaults(organization.id);
     } catch (seedError) {

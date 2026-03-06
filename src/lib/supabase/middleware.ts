@@ -1,12 +1,3 @@
-// ============================================
-// SUPABASE MIDDLEWARE HELPER
-// Refreshes auth session on every request
-// Handles domain-based routing:
-//   access.vistrial.io → landing / marketing site only
-//   app.vistrial.io    → signup, login, dashboard & full app
-//   vistrial.io        → marketing site (same as access)
-// ============================================
-
 import { createServerClient } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
 
@@ -16,7 +7,6 @@ export async function updateSession(request: NextRequest) {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
-  // If Supabase is not configured, just pass through
   if (!url || !key) {
     return supabaseResponse;
   }
@@ -38,7 +28,6 @@ export async function updateSession(request: NextRequest) {
     },
   });
 
-  // IMPORTANT: DO NOT add logic between createServerClient and getUser()
   const {
     data: { user },
   } = await supabase.auth.getUser();
@@ -54,11 +43,7 @@ export async function updateSession(request: NextRequest) {
   const isAccessDomain = hostname.startsWith('access.') || hostname.includes(`access.${baseDomain}`);
   const isAppDomain = hostname.startsWith('app.') || hostname.includes(`app.${baseDomain}`);
 
-  // --------------------------------------------------
-  // access.vistrial.io → landing / marketing pages only
-  // --------------------------------------------------
   if (isAccessDomain) {
-    // Paths allowed on the landing-page domain
     const landingAllowed = ['/', '/lite'];
     const landingPrefixes = ['/api/', '/_next/', '/lite', '/compliance', '/book/', '/embed/', '/q/'];
 
@@ -66,20 +51,17 @@ export async function updateSession(request: NextRequest) {
       landingAllowed.includes(pathname) ||
       landingPrefixes.some(p => pathname.startsWith(p));
 
-    // Auth-related routes should live on the app domain – redirect there
     const authRoutes = ['/signup', '/login', '/forgot-password', '/auth/callback', '/auth/confirm', '/auth/reset-password', '/onboarding'];
     const isAuthRoute = authRoutes.includes(pathname);
 
     if (isAuthRoute) {
       const appUrl = new URL(`https://app.${baseDomain}${pathname}`);
-      // Preserve any query params (e.g. ?plan=lite, ?redirect=…)
       request.nextUrl.searchParams.forEach((value, key) => {
         appUrl.searchParams.set(key, value);
       });
       return NextResponse.redirect(appUrl);
     }
 
-    // Dashboard / protected routes should also go to the app domain
     const protectedPrefixes = ['/dashboard', '/contacts', '/workflows', '/settings', '/bookings', '/booking', '/analytics', '/inbox'];
     const isProtectedRoute = protectedPrefixes.some(p => pathname.startsWith(p));
 
@@ -88,21 +70,15 @@ export async function updateSession(request: NextRequest) {
       return NextResponse.redirect(appUrl);
     }
 
-    // Any other unrecognised path on access domain → redirect to landing root
     if (!isLandingAllowed) {
       const homeUrl = request.nextUrl.clone();
       homeUrl.pathname = '/';
       return NextResponse.redirect(homeUrl);
     }
 
-    // Landing pages don't need further auth checks
     return supabaseResponse;
   }
 
-  // --------------------------------------------------
-  // app.vistrial.io → auth + dashboard (full application)
-  // --------------------------------------------------
-  // When on the app domain, redirect bare "/" to dashboard (authenticated) or login
   if (isAppDomain && pathname === '/') {
     const dest = request.nextUrl.clone();
     dest.pathname = user ? '/dashboard' : '/login';
@@ -110,10 +86,9 @@ export async function updateSession(request: NextRequest) {
   }
 
   // ============================================
-  // STANDARD AUTH ROUTING (applies to app domain & development)
+  // STANDARD AUTH ROUTING
   // ============================================
 
-  // Public routes - no auth required
   const publicRoutes = [
     '/',
     '/login',
@@ -122,7 +97,6 @@ export async function updateSession(request: NextRequest) {
     '/auth/callback',
     '/auth/confirm',
     '/auth/reset-password',
-    '/onboarding',
     '/unsubscribe',
   ];
 
@@ -140,7 +114,6 @@ export async function updateSession(request: NextRequest) {
     publicRoutes.includes(pathname) ||
     alwaysPublicPrefixes.some((p) => pathname.startsWith(p));
 
-  // Protected routes
   const protectedPrefixes = [
     '/dashboard',
     '/contacts',
@@ -154,8 +127,8 @@ export async function updateSession(request: NextRequest) {
   ];
 
   const isProtected = protectedPrefixes.some((p) => pathname.startsWith(p));
+  const isOnboarding = pathname === '/onboarding' || pathname.startsWith('/onboarding');
 
-  // Redirect unauthenticated users away from protected routes
   if (!user && isProtected) {
     const loginUrl = request.nextUrl.clone();
     loginUrl.pathname = '/login';
@@ -163,11 +136,62 @@ export async function updateSession(request: NextRequest) {
     return NextResponse.redirect(loginUrl);
   }
 
-  // Redirect authenticated users away from login/signup to dashboard
+  if (!user && isOnboarding) {
+    const loginUrl = request.nextUrl.clone();
+    loginUrl.pathname = '/login';
+    return NextResponse.redirect(loginUrl);
+  }
+
   if (user && (pathname === '/login' || pathname === '/signup')) {
     const dashUrl = request.nextUrl.clone();
     dashUrl.pathname = '/dashboard';
     return NextResponse.redirect(dashUrl);
+  }
+
+  // ============================================
+  // ONBOARDING ENFORCEMENT
+  // If user is authenticated and on a protected route,
+  // check onboarding status and redirect if not completed.
+  // We use a lightweight API check to avoid heavy DB calls in middleware.
+  // The dashboard layout also enforces this as a secondary check.
+  // ============================================
+  if (user && (isProtected || isOnboarding)) {
+    try {
+      const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+      if (serviceRoleKey) {
+        const adminClient = createServerClient(url, serviceRoleKey, {
+          cookies: {
+            getAll() { return []; },
+            setAll() {},
+          },
+        });
+
+        const { data: membership } = await adminClient
+          .from('organization_members')
+          .select('organization_id, organizations(onboarding_completed)')
+          .eq('user_id', user.id)
+          .limit(1)
+          .maybeSingle();
+
+        const org = (membership as any)?.organizations;
+        const onboardingCompleted = org?.onboarding_completed === true;
+
+        if (isProtected && !onboardingCompleted) {
+          const onboardingUrl = request.nextUrl.clone();
+          onboardingUrl.pathname = '/onboarding';
+          return NextResponse.redirect(onboardingUrl);
+        }
+
+        if (isOnboarding && onboardingCompleted) {
+          const dashUrl = request.nextUrl.clone();
+          dashUrl.pathname = '/dashboard';
+          return NextResponse.redirect(dashUrl);
+        }
+      }
+    } catch (err) {
+      // If the check fails, let the page-level checks handle it
+      console.error('Middleware onboarding check error:', err);
+    }
   }
 
   return supabaseResponse;

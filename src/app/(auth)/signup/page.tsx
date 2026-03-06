@@ -22,7 +22,7 @@ import {
 } from '@remixicon/react';
 import { createClient } from '@/lib/supabase/client';
 
-type SignupStep = 'info' | 'verify' | 'google-info';
+type SignupStep = 'info' | 'verify' | 'setting-up' | 'google-info';
 
 export default function SignupPage() {
   const [step, setStep] = useState<SignupStep>('info');
@@ -39,6 +39,7 @@ export default function SignupPage() {
   const [isVerifying, setIsVerifying] = useState(false);
   const [error, setError] = useState('');
   const [resendCountdown, setResendCountdown] = useState(0);
+  const [userId, setUserId] = useState<string | null>(null);
 
   const otpRefs = useRef<(HTMLInputElement | null)[]>([]);
 
@@ -89,11 +90,18 @@ export default function SignupPage() {
         return;
       }
 
-      if (data?.session) {
-        await createOrgAndRedirect(data.user?.id);
+      if (data?.user) {
+        setUserId(data.user.id);
+      }
+
+      // If Supabase returned a session (auto-confirm enabled), the user is already verified.
+      // Go straight to org creation.
+      if (data?.session && data?.user) {
+        await setupOrgAndRedirect(data.user.id);
         return;
       }
 
+      // Email verification required — show OTP input
       setStep('verify');
       setResendCountdown(60);
     } catch {
@@ -128,13 +136,42 @@ export default function SignupPage() {
       }
 
       if (data?.user) {
-        await createOrgAndRedirect(data.user.id);
+        await setupOrgAndRedirect(data.user.id);
       }
     } catch {
       setError('Verification failed. Please try again.');
     } finally {
       setIsVerifying(false);
     }
+  };
+
+  const setupOrgAndRedirect = async (uid: string) => {
+    setStep('setting-up');
+    setError('');
+
+    try {
+      const res = await fetch('/api/auth/setup-organization', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: formData.businessName,
+          business_type: 'other',
+          user_id: uid,
+          first_name: formData.fullName.split(' ')[0],
+          last_name: formData.fullName.split(' ').slice(1).join(' '),
+          phone: formData.phone,
+        }),
+      });
+
+      if (!res.ok) {
+        const result = await res.json().catch(() => ({}));
+        console.error('Org creation failed:', result);
+      }
+    } catch (err) {
+      console.error('Org creation error:', err);
+    }
+
+    window.location.href = '/onboarding';
   };
 
   const handleResendOTP = async () => {
@@ -193,32 +230,6 @@ export default function SignupPage() {
     otpRefs.current[focusIndex]?.focus();
   };
 
-  const createOrgAndRedirect = async (userId?: string) => {
-    if (!userId) {
-      window.location.href = '/onboarding';
-      return;
-    }
-
-    try {
-      await fetch('/api/auth/setup-organization', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name: formData.businessName,
-          business_type: 'other',
-          user_id: userId,
-          first_name: formData.fullName.split(' ')[0],
-          last_name: formData.fullName.split(' ').slice(1).join(' '),
-          phone: formData.phone,
-        }),
-      });
-    } catch (err) {
-      console.error('Org creation error (will retry in callback):', err);
-    }
-
-    window.location.href = '/onboarding';
-  };
-
   const handleGoogleSignIn = async () => {
     if (!formData.businessName || !formData.phone) {
       setStep('google-info');
@@ -260,6 +271,47 @@ export default function SignupPage() {
       setIsLoading(false);
     }
   };
+
+  // ══════════════════════════════════════════
+  // STEP: Setting up account
+  // ══════════════════════════════════════════
+  if (step === 'setting-up') {
+    return (
+      <div className="space-y-6">
+        <div className="space-y-3 text-center">
+          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-brand-100 mb-2">
+            <RiLoader4Line className="h-7 w-7 text-brand-600 animate-spin" />
+          </div>
+          <h1 className="text-2xl font-bold tracking-tight text-gray-900">
+            Setting up your account
+          </h1>
+          <p className="text-gray-500 text-sm">
+            Creating your workspace and preparing your conversion engine...
+          </p>
+          <div className="pt-4 space-y-3">
+            <div className="flex items-center gap-3 text-sm text-gray-600">
+              <div className="flex h-6 w-6 items-center justify-center rounded-full bg-emerald-100">
+                <RiCheckLine className="h-3.5 w-3.5 text-emerald-600" />
+              </div>
+              Email verified
+            </div>
+            <div className="flex items-center gap-3 text-sm text-gray-600">
+              <div className="flex h-6 w-6 items-center justify-center rounded-full bg-brand-100">
+                <RiLoader4Line className="h-3.5 w-3.5 text-brand-600 animate-spin" />
+              </div>
+              Creating your workspace...
+            </div>
+            <div className="flex items-center gap-3 text-sm text-gray-400">
+              <div className="flex h-6 w-6 items-center justify-center rounded-full bg-gray-100">
+                <span className="text-[10px] font-bold text-gray-400">3</span>
+              </div>
+              Preparing conversion engine
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   // ══════════════════════════════════════════
   // STEP: Verify OTP
@@ -443,7 +495,6 @@ export default function SignupPage() {
   // ══════════════════════════════════════════
   return (
     <div className="space-y-6">
-      {/* Header */}
       <div className="space-y-2 text-center">
         <h1 className="text-3xl font-bold tracking-tight text-gray-900">
           Start Converting One-Time Clients to Recurring Revenue
@@ -453,7 +504,6 @@ export default function SignupPage() {
         </p>
       </div>
 
-      {/* Error Message */}
       {error && (
         <div className="flex items-center gap-3 rounded-xl border border-red-200 bg-red-50 p-4 text-red-700 animate-slide-in-from-top">
           <div className="flex h-8 w-8 items-center justify-center rounded-full bg-red-100">
@@ -464,7 +514,6 @@ export default function SignupPage() {
       )}
 
       <form onSubmit={handleSubmit} className="space-y-4">
-        {/* Full Name */}
         <div className="space-y-2">
           <Label htmlFor="fullName" className="text-gray-700">Full name</Label>
           <div className="relative">
@@ -475,7 +524,6 @@ export default function SignupPage() {
           </div>
         </div>
 
-        {/* Business Name */}
         <div className="space-y-2">
           <Label htmlFor="businessName" className="text-gray-700">Your cleaning company name</Label>
           <div className="relative">
@@ -486,7 +534,6 @@ export default function SignupPage() {
           </div>
         </div>
 
-        {/* Email */}
         <div className="space-y-2">
           <Label htmlFor="email" className="text-gray-700">Email</Label>
           <div className="relative">
@@ -497,7 +544,6 @@ export default function SignupPage() {
           </div>
         </div>
 
-        {/* Phone */}
         <div className="space-y-2">
           <Label htmlFor="phone" className="text-gray-700">Your business phone</Label>
           <div className="relative">
@@ -508,7 +554,6 @@ export default function SignupPage() {
           </div>
         </div>
 
-        {/* Password */}
         <div className="space-y-2">
           <Label htmlFor="password" className="text-gray-700">Password</Label>
           <div className="relative">
@@ -520,7 +565,6 @@ export default function SignupPage() {
           <p className="text-xs text-gray-500">Minimum 8 characters</p>
         </div>
 
-        {/* Confirm Password */}
         <div className="space-y-2">
           <Label htmlFor="confirmPassword" className="text-gray-700">Confirm password</Label>
           <div className="relative">
@@ -544,7 +588,6 @@ export default function SignupPage() {
           )}
         </div>
 
-        {/* Submit */}
         <Button type="submit" className="w-full" size="lg" disabled={isLoading}>
           {isLoading ? (
             <>
@@ -560,7 +603,6 @@ export default function SignupPage() {
         </Button>
       </form>
 
-      {/* Divider */}
       <div className="relative">
         <div className="absolute inset-0 flex items-center">
           <div className="w-full border-t border-gray-200" />
@@ -570,7 +612,6 @@ export default function SignupPage() {
         </div>
       </div>
 
-      {/* Google OAuth */}
       <Button
         type="button"
         variant="outline"
@@ -583,14 +624,12 @@ export default function SignupPage() {
         Continue with Google
       </Button>
 
-      {/* Social proof */}
       <div className="rounded-xl border border-gray-200 bg-gray-50 p-4 text-center">
         <p className="text-sm text-gray-600 font-medium">
           Join 50+ cleaning companies converting more one-time clients to recurring
         </p>
       </div>
 
-      {/* Terms */}
       <p className="text-center text-xs text-gray-500">
         By signing up, you agree to our{' '}
         <Link href="/terms" className="text-brand-600 hover:underline">Terms of Service</Link>
@@ -598,7 +637,6 @@ export default function SignupPage() {
         <Link href="/privacy" className="text-brand-600 hover:underline">Privacy Policy</Link>
       </p>
 
-      {/* Sign in link */}
       <p className="text-center text-sm text-gray-600">
         Already have an account?{' '}
         <Link href="/login" className="font-semibold text-brand-600 hover:text-brand-700">

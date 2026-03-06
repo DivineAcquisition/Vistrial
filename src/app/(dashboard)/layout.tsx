@@ -23,7 +23,7 @@ export default async function DashboardLayout({
   // Safely access organization fields
   const org = organization as Record<string, any>;
 
-  // If onboarding not completed, redirect to onboarding
+  // If onboarding not completed, redirect to onboarding wizard
   if (org.onboarding_completed !== true) {
     redirect('/onboarding');
   }

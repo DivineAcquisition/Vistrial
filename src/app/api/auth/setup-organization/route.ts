@@ -7,6 +7,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseAdminClient } from '@/lib/supabase/admin';
 import { initializeBilling } from '@/services/billing.service';
+import { seedOrganizationDefaults } from '@/lib/services/org-defaults.service';
 
 export async function POST(request: NextRequest) {
   try {
@@ -105,6 +106,13 @@ export async function POST(request: NextRequest) {
         console.error('Billing initialization error:', billingError);
         // Don't fail signup if billing fails - can be set up later
       }
+    }
+
+    // Seed organization defaults (service types, offers, sequence templates)
+    try {
+      await seedOrganizationDefaults(organization.id);
+    } catch (seedError) {
+      console.error('Seed defaults error (non-blocking):', seedError);
     }
 
     return NextResponse.json({

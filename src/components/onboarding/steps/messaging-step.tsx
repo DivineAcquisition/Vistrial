@@ -12,7 +12,7 @@ import { Loader2, ArrowLeft, MessageSquare, Shield, Rocket, AlertCircle, CheckCi
 const US_STATES = ['AL','AK','AZ','AR','CA','CO','CT','DE','FL','GA','HI','ID','IL','IN','IA','KS','KY','LA','ME','MD','MA','MI','MN','MS','MO','MT','NE','NV','NH','NJ','NM','NY','NC','ND','OH','OK','OR','PA','RI','SC','SD','TN','TX','UT','VT','VA','WA','WV','WI','WY','DC'];
 
 export function MessagingStep({ organization, messaging, onSubmit, onSkip, onBack }: { organization: any; messaging: any; onSubmit: (data: any) => Promise<any>; onSkip: () => void; onBack: () => void }) {
-  const org = organization as Record<string, any>;
+  const org = (organization || {}) as Record<string, any>;
   const [saving, setSaving] = useState(false);
   const [skipping, setSkipping] = useState(false);
   const [fd, setFd] = useState({

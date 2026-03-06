@@ -16,7 +16,7 @@ const SOURCES = [
 ];
 
 export function JobSourceStep({ organization, onSubmit, onBack }: { organization: any; onSubmit: (data: any) => Promise<any>; onBack: () => void }) {
-  const org = organization as Record<string, any>;
+  const org = (organization || {}) as Record<string, any>;
   const settings = (org.settings || {}) as Record<string, any>;
   const tools = settings.job_tracking_tools || [];
   const [saving, setSaving] = useState(false);

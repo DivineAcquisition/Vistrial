@@ -21,7 +21,7 @@ const TIMEZONES = [
 const TOOLS = ['GoHighLevel', 'Jobber', 'Housecall Pro', 'BookingKoala', 'Google Calendar', 'Spreadsheet/Manual', 'Other'];
 
 export function BusinessProfileStep({ organization, user, onSubmit }: { organization: any; user: any; onSubmit: (data: any) => Promise<any> }) {
-  const org = organization as Record<string, any>;
+  const org = (organization || {}) as Record<string, any>;
   const settings = (org.settings || {}) as Record<string, any>;
   const [saving, setSaving] = useState(false);
   const [fd, setFd] = useState({

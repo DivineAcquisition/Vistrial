@@ -150,6 +150,7 @@ export async function updateSession(request: NextRequest) {
     '/booking',
     '/analytics',
     '/inbox',
+    '/messaging',
   ];
 
   const isProtected = protectedPrefixes.some((p) => pathname.startsWith(p));

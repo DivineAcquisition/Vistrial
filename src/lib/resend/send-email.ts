@@ -4,7 +4,11 @@
 
 import { Resend } from 'resend';
 
-const resend = new Resend(process.env.RESEND_API_KEY);
+function getResendClient() {
+  const key = process.env.RESEND_API_KEY;
+  if (!key) throw new Error('RESEND_API_KEY is not configured');
+  return new Resend(key);
+}
 const EMAIL_FROM = process.env.EMAIL_FROM || process.env.RESEND_FROM_EMAIL || 'Vistrial <notifications@vistrial.io>';
 
 export interface SendEmailParams {
@@ -30,7 +34,7 @@ export async function sendEmail(params: SendEmailParams): Promise<SendEmailResul
   const { to, subject, html, text, from = EMAIL_FROM, replyTo } = params;
 
   try {
-    const { data, error } = await resend.emails.send({
+    const { data, error } = await getResendClient().emails.send({
       from,
       to: Array.isArray(to) ? to : [to],
       subject,

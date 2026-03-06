@@ -6,7 +6,11 @@
 import { Resend } from 'resend';
 
 // Initialize Resend client
-const resend = new Resend(process.env.RESEND_API_KEY);
+function getResend() {
+  const key = process.env.RESEND_API_KEY;
+  if (!key) throw new Error('RESEND_API_KEY is not configured');
+  return new Resend(key);
+}
 
 export interface SendEmailOptions {
   to: string | string[];
@@ -28,7 +32,7 @@ export interface SendEmailResult {
  */
 export async function sendEmail(options: SendEmailOptions): Promise<SendEmailResult> {
   try {
-    const { data, error } = await resend.emails.send({
+    const { data, error } = await getResend().emails.send({
       from: options.from || process.env.RESEND_FROM_EMAIL || 'Vistrial <noreply@vistrial.com>',
       to: options.to,
       subject: options.subject,
@@ -167,4 +171,4 @@ export async function sendCampaignNotification(
   });
 }
 
-export { resend };
+export { getResend as resend };

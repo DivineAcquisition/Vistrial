@@ -32,6 +32,8 @@ import {
   RiSparklingLine,
   RiCalendarCheckLine,
   RiCalendarCheckFill,
+  RiMessage3Line,
+  RiMessage3Fill,
 } from '@remixicon/react';
 import { cn } from '@/lib/utils/cn';
 import { createClient } from '@/lib/supabase/client';
@@ -67,6 +69,7 @@ const mainNavigation: NavItem[] = [
   { name: 'Quote Pages', href: '/booking', icon: RiCalendarCheckLine, iconActive: RiCalendarCheckFill },
   { name: 'Schedule', href: '/bookings', icon: RiCalendarLine, iconActive: RiCalendarFill },
   { name: 'Analytics', href: '/analytics', icon: RiLineChartLine, iconActive: RiLineChartFill },
+  { name: 'Messaging', href: '/messaging', icon: RiMessage3Line, iconActive: RiMessage3Fill },
 ];
 
 const settingsNavigation: NavItem[] = [

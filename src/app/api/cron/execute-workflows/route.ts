@@ -4,7 +4,8 @@
 // ============================================
 
 import { NextRequest, NextResponse } from 'next/server';
-import { executeScheduledSteps } from '@/lib/cron/workflow-executor';
+
+export const dynamic = 'force-dynamic';
 
 const CRON_SECRET = process.env.CRON_SECRET;
 
@@ -21,6 +22,7 @@ export async function GET(request: NextRequest) {
     console.log('Starting workflow execution cron...');
     const startTime = Date.now();
 
+    const { executeScheduledSteps } = await import('@/lib/cron/workflow-executor');
     const result = await executeScheduledSteps();
 
     const duration = Date.now() - startTime;

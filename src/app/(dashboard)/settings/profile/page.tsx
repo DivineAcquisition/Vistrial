@@ -9,7 +9,7 @@ import { getSupabaseAdminClient } from '@/lib/supabase/admin';
 import { ProfileSettingsForm } from '@/components/settings/profile-settings-form';
 
 export const metadata: Metadata = {
-  title: 'Profile Settings | Vistrial',
+  title: 'Profile Settings',
 };
 
 export const dynamic = 'force-dynamic';

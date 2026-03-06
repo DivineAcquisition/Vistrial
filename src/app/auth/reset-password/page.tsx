@@ -8,8 +8,8 @@ import {
   RiLoader4Line,
   RiLockLine,
 } from '@remixicon/react';
+import Image from 'next/image';
 import { createClient } from '@/lib/supabase/client';
-import { Logo } from '@/components/ui/Logo';
 
 export default function ResetPasswordPage() {
   const [showPassword, setShowPassword] = useState(false);
@@ -52,7 +52,14 @@ export default function ResetPasswordPage() {
           {/* Header */}
           <div className="text-center mb-8">
             <div className="flex justify-center mb-4">
-              <Logo size="lg" variant="dark" />
+              <Image
+                src="/vsds.png"
+                alt="Vistrial"
+                width={180}
+                height={90}
+                className="h-12 w-auto object-contain"
+                priority
+              />
             </div>
             <h1 className="text-2xl font-bold text-slate-900">Set new password</h1>
             <p className="text-slate-500 mt-1">Enter your new password below</p>

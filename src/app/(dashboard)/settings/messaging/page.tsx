@@ -4,7 +4,7 @@ import { getAuthenticatedContext } from '@/lib/supabase/server';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { MessageSquare } from 'lucide-react';
 
-export const metadata: Metadata = { title: 'Messaging Settings | Vistrial' };
+export const metadata: Metadata = { title: 'Messaging Settings' };
 export const dynamic = 'force-dynamic';
 
 export default async function MessagingSettingsPage() {

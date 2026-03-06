@@ -23,7 +23,7 @@ export async function generateMetadata({ params }: BookingPageProps) {
   }
 
   return {
-    title: `Book with ${business.name} | Vistrial`,
+    title: `Book with ${business.name}`,
     description: `Schedule your cleaning appointment with ${business.name}`,
   };
 }

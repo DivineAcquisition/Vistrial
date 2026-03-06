@@ -9,7 +9,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Plus, FileText, Calendar, DollarSign, ExternalLink, ArrowRight, Inbox } from 'lucide-react';
 
-export const metadata: Metadata = { title: 'Booking Pages | Vistrial' };
+export const metadata: Metadata = { title: 'Booking Pages' };
 export const dynamic = 'force-dynamic';
 
 export default async function BookingDashboardPage() {

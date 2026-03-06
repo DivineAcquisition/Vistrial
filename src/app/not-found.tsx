@@ -1,6 +1,6 @@
 import Link from 'next/link';
+import Image from 'next/image';
 import { RiHome4Line, RiArrowRightLine } from '@remixicon/react';
-import { Logo } from '@/components/ui/Logo';
 
 export default function NotFound() {
   return (
@@ -13,7 +13,14 @@ export default function NotFound() {
 
       <div className="relative z-10 text-center">
         <Link href="/" className="inline-block mb-8">
-          <Logo size="lg" />
+          <Image
+            src="/vsds.png"
+            alt="Vistrial"
+            width={180}
+            height={90}
+            className="h-12 w-auto object-contain"
+            priority
+          />
         </Link>
 
         <p className="text-7xl font-bold text-brand-400 mb-4">404</p>

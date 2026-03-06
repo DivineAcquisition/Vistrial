@@ -8,7 +8,7 @@ import { Metadata } from 'next';
 import { BookingFormPreviewClient } from './client';
 
 export const metadata: Metadata = {
-  title: 'Booking Form Preview | Vistrial',
+  title: 'Booking Form Preview',
   description: 'Preview of the Vistrial booking form with SMS consent',
 };
 

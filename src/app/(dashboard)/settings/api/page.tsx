@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Key, Lock } from 'lucide-react';
 
-export const metadata: Metadata = { title: 'API Keys | Vistrial' };
+export const metadata: Metadata = { title: 'API Keys' };
 export const dynamic = 'force-dynamic';
 
 export default async function ApiSettingsPage() {

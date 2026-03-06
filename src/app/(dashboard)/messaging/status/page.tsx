@@ -5,7 +5,7 @@ import { getAuthenticatedContext } from '@/lib/supabase/server';
 import { getSupabaseAdminClient } from '@/lib/supabase/admin';
 import { MessagingStatusTracker } from '@/components/messaging/messaging-status-tracker';
 
-export const metadata: Metadata = { title: 'Messaging Status | Vistrial' };
+export const metadata: Metadata = { title: 'Messaging Status' };
 export const dynamic = 'force-dynamic';
 
 export default async function MessagingStatusPage() {

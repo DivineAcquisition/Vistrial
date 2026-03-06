@@ -22,7 +22,7 @@ import {
 } from '@remixicon/react';
 
 export const metadata: Metadata = {
-  title: 'SMS Opt-In Workflow | Vistrial Compliance',
+  title: 'SMS Opt-In Workflow',
   description: 'How Vistrial handles SMS consent and opt-in for customer reactivation campaigns.',
 };
 

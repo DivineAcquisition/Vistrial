@@ -10,7 +10,7 @@ import { checkUsageLimit } from '@/lib/middleware/usage-enforcement';
 import { PLANS } from '@/lib/stripe/plans';
 import { TeamSettingsView } from '@/components/settings/team-settings-view';
 
-export const metadata: Metadata = { title: 'Team | Vistrial' };
+export const metadata: Metadata = { title: 'Team' };
 export const dynamic = 'force-dynamic';
 
 export default async function TeamPage() {

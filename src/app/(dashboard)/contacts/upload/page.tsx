@@ -10,7 +10,7 @@ import { getAuthenticatedContext } from '@/lib/supabase/server';
 import { CsvUploadWizard } from '@/components/contacts/csv-upload-wizard';
 
 export const metadata: Metadata = {
-  title: 'Import Contacts | Vistrial',
+  title: 'Import Contacts',
 };
 
 export const dynamic = 'force-dynamic';

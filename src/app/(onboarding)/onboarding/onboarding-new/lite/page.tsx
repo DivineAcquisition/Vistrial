@@ -9,7 +9,7 @@ import { getAuthenticatedContext } from '@/lib/supabase/server';
 import { LiteOnboardingWizard } from '@/components/lite/lite-onboarding-wizard';
 
 export const metadata: Metadata = {
-  title: 'Get Started | Vistrial Lite',
+  title: 'Get Started',
 };
 
 export default async function LiteOnboardingPage() {

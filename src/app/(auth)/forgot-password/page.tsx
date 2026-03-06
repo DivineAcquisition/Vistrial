@@ -8,7 +8,7 @@ export const dynamic = 'force-dynamic';
 import { ForgotPasswordForm } from '@/components/auth/forgot-password-form';
 
 export const metadata: Metadata = {
-  title: 'Reset Password | Vistrial',
+  title: 'Reset Password',
   description: 'Reset your Vistrial password',
 };
 

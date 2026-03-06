@@ -5,7 +5,7 @@ import { getAuthenticatedContext } from '@/lib/supabase/server';
 import { getSupabaseAdminClient } from '@/lib/supabase/admin';
 import { BookingPageBuilder } from '@/components/booking/booking-page-builder';
 
-export const metadata: Metadata = { title: 'New Booking Page | Vistrial' };
+export const metadata: Metadata = { title: 'New Booking Page' };
 export const dynamic = 'force-dynamic';
 
 export default async function NewBookingPagePage() {

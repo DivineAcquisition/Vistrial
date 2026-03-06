@@ -12,7 +12,7 @@ import { getOrganizationUsage, calculateOverageCharges } from '@/lib/stripe/usag
 import type { UsageData } from '@/lib/stripe/usage';
 
 export const metadata: Metadata = {
-  title: 'Billing | Vistrial',
+  title: 'Billing',
 };
 
 export const dynamic = 'force-dynamic';

@@ -5,7 +5,7 @@ import { getAuthenticatedContext } from '@/lib/supabase/server';
 import { getSupabaseAdminClient } from '@/lib/supabase/admin';
 import { PricingMatrixEditor } from '@/components/booking/pricing-matrix-editor';
 
-export const metadata: Metadata = { title: 'Edit Pricing | Vistrial' };
+export const metadata: Metadata = { title: 'Edit Pricing' };
 export const dynamic = 'force-dynamic';
 
 export default async function EditPricingPage({ params }: { params: { id: string } }) {

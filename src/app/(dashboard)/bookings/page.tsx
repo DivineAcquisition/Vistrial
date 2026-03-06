@@ -9,7 +9,7 @@ import {
 } from '@remixicon/react';
 
 export const metadata: Metadata = {
-  title: 'Bookings | Vistrial',
+  title: 'Bookings',
 };
 
 export const dynamic = 'force-dynamic';

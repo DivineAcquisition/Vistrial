@@ -5,7 +5,7 @@ import { getAuthenticatedContext } from '@/lib/supabase/server';
 import { getSupabaseAdminClient } from '@/lib/supabase/admin';
 import { MessagingSetupForm } from '@/components/messaging/messaging-setup-form';
 
-export const metadata: Metadata = { title: 'Activate Messaging | Vistrial' };
+export const metadata: Metadata = { title: 'Activate Messaging' };
 export const dynamic = 'force-dynamic';
 
 export default async function MessagingSetupPage() {

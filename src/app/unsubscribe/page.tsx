@@ -7,7 +7,7 @@ import { Metadata } from 'next';
 import { UnsubscribeForm } from '@/components/unsubscribe/unsubscribe-form';
 
 export const metadata: Metadata = {
-  title: 'Unsubscribe | Vistrial',
+  title: 'Unsubscribe',
 };
 
 export default function UnsubscribePage({

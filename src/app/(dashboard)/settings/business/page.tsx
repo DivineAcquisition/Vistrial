@@ -8,7 +8,7 @@ import { getAuthenticatedContext } from '@/lib/supabase/server';
 import { getSupabaseAdminClient } from '@/lib/supabase/admin';
 import { BusinessSettingsForm } from '@/components/settings/business-settings-form';
 
-export const metadata: Metadata = { title: 'Business Settings | Vistrial' };
+export const metadata: Metadata = { title: 'Business Settings' };
 export const dynamic = 'force-dynamic';
 
 export default async function BusinessSettingsPage() {

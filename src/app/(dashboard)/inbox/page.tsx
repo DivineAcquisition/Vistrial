@@ -9,7 +9,7 @@ import { getAuthenticatedContext } from '@/lib/supabase/server';
 import { InboxLayout } from '@/components/inbox/inbox-layout';
 
 export const metadata: Metadata = {
-  title: 'Inbox | Vistrial',
+  title: 'Inbox',
 };
 
 export default async function InboxPage({

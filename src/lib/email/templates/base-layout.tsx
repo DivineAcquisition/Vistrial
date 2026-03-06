@@ -45,18 +45,18 @@ export function BaseLayout({ preview, children, footerText }: BaseLayoutProps) {
           {/* Footer */}
           <Section style={footer}>
             <Text style={footerTextStyle}>
-              {footerText || 'Sent by Vistrial - Automated customer reactivation for home services'}
+              {footerText || 'Sent by Vistrial — One-Time to Recurring Conversion Engine'}
             </Text>
             <Text style={footerLinks}>
-              <Link href="https://vistrial.com" style={link}>
+              <Link href="https://vistrial.io" style={link}>
                 Website
               </Link>
               {' • '}
-              <Link href="https://vistrial.com/help" style={link}>
+              <Link href="https://vistrial.io/help" style={link}>
                 Help Center
               </Link>
               {' • '}
-              <Link href="https://vistrial.com/unsubscribe" style={link}>
+              <Link href="https://vistrial.io/unsubscribe" style={link}>
                 Unsubscribe
               </Link>
             </Text>

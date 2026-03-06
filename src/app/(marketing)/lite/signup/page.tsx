@@ -7,7 +7,7 @@ import { Metadata } from 'next';
 import { LiteSignupForm } from '@/components/lite/lite-signup-form';
 
 export const metadata: Metadata = {
-  title: 'Start Your Free Trial | Vistrial Lite',
+  title: 'Start Your Free Trial',
 };
 
 export default function LiteSignupPage() {

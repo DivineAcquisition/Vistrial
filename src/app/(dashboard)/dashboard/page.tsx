@@ -22,7 +22,8 @@ import {
 import { getSupabaseAdminClient } from '@/lib/supabase/admin';
 
 export const metadata: Metadata = {
-  title: 'Dashboard | Vistrial',
+  title: 'Dashboard',
+  description: 'Your conversion engine scoreboard — track one-time to recurring client conversions.',
 };
 
 export const dynamic = 'force-dynamic';

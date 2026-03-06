@@ -5,7 +5,7 @@ import { getAuthenticatedContext } from '@/lib/supabase/server';
 import { getSupabaseAdminClient } from '@/lib/supabase/admin';
 import { PricingMatrixList } from '@/components/booking/pricing-matrix-list';
 
-export const metadata: Metadata = { title: 'Pricing | Vistrial' };
+export const metadata: Metadata = { title: 'Pricing' };
 export const dynamic = 'force-dynamic';
 
 export default async function PricingPage() {

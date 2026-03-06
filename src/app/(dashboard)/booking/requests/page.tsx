@@ -5,7 +5,7 @@ import { getAuthenticatedContext } from '@/lib/supabase/server';
 import { getSupabaseAdminClient } from '@/lib/supabase/admin';
 import { BookingRequestsList } from '@/components/booking/booking-requests-list';
 
-export const metadata: Metadata = { title: 'Booking Requests | Vistrial' };
+export const metadata: Metadata = { title: 'Booking Requests' };
 export const dynamic = 'force-dynamic';
 
 export default async function BookingRequestsPage() {

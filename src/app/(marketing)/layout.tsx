@@ -90,7 +90,7 @@ export default function MarketingLayout({ children }: { children: ReactNode }) {
                 />
               </Link>
               <p className="text-sm text-gray-600">
-                Turn your dormant customer database into predictable revenue with automated reactivation campaigns.
+                Convert one-time cleaning clients into recurring revenue with automated SMS sequences.
               </p>
             </div>
 
@@ -128,7 +128,7 @@ export default function MarketingLayout({ children }: { children: ReactNode }) {
               © {new Date().getFullYear()} Vistrial. All rights reserved.
             </p>
             <p className="text-sm text-gray-500">
-              Made for home service businesses that want to grow.
+              The conversion engine for residential cleaning companies.
             </p>
           </div>
         </div>

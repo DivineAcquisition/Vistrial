@@ -8,7 +8,7 @@ import { getAuthenticatedContext } from '@/lib/supabase/server';
 import { getSupabaseAdminClient } from '@/lib/supabase/admin';
 import { NotificationSettingsForm } from '@/components/settings/notification-settings-form';
 
-export const metadata: Metadata = { title: 'Notification Settings | Vistrial' };
+export const metadata: Metadata = { title: 'Notification Settings' };
 export const dynamic = 'force-dynamic';
 
 export default async function NotificationSettingsPage() {

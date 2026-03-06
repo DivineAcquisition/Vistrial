@@ -16,7 +16,7 @@ import { ResponseAnalytics } from '@/components/analytics/response-analytics';
 import { Skeleton } from '@/components/ui/skeleton';
 
 export const metadata: Metadata = {
-  title: 'Analytics | Vistrial',
+  title: 'Analytics',
 };
 
 export const dynamic = 'force-dynamic';

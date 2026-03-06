@@ -1,152 +1,37 @@
-// @ts-nocheck
 // ============================================
-// TELNYX WEBHOOK HANDLER
-// Processes delivery receipts and inbound messages
+// TELNYX WEBHOOK ENDPOINT
 // ============================================
 
 import { NextRequest, NextResponse } from 'next/server';
-import { verifyWebhookSignature } from '@/lib/telnyx';
-import {
-  processInboundMessage,
-  updateDeliveryStatus,
-} from '@/services/messaging.service';
+import { handleInboundMessage, handleDeliveryStatus } from '@/lib/telnyx/webhook-handlers';
 
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.text();
+    const body = await request.json();
 
-    // Verify webhook signature if secret is configured
-    const signature = request.headers.get('telnyx-signature-ed25519') || '';
-    const timestamp = request.headers.get('telnyx-timestamp') || '';
+    console.log('Telnyx webhook received:', JSON.stringify(body, null, 2));
 
-    if (process.env.TELNYX_WEBHOOK_SECRET) {
-      if (!verifyWebhookSignature(body, signature, timestamp)) {
-        console.error('Invalid Telnyx webhook signature');
-        return NextResponse.json(
-          { error: 'Invalid signature' },
-          { status: 401 }
-        );
-      }
-    }
-
-    const payload = JSON.parse(body);
-    const eventType = payload.data?.event_type;
-
-    console.log('Telnyx webhook received:', eventType);
+    const eventType = body.data?.event_type || body.event_type;
 
     switch (eventType) {
-      case 'message.sent':
-        await handleMessageSent(payload.data.payload);
-        break;
-
-      case 'message.finalized':
-        await handleMessageFinalized(payload.data.payload);
-        break;
-
       case 'message.received':
-        await handleMessageReceived(payload.data.payload);
+        await handleInboundMessage(body);
         break;
-
-      case 'call.initiated':
-      case 'call.answered':
-      case 'call.hangup':
-        // Handle voice call events
-        // TODO: Implement voice call tracking
-        console.log('Voice call event:', eventType, payload.data.payload);
+      case 'message.sent':
+      case 'message.finalized':
+        await handleDeliveryStatus(body);
         break;
-
       default:
-        console.log('Unhandled Telnyx event type:', eventType);
+        console.log('Unhandled event type:', eventType);
     }
 
     return NextResponse.json({ received: true });
   } catch (error) {
     console.error('Telnyx webhook error:', error);
-    return NextResponse.json(
-      { error: 'Webhook processing failed' },
-      { status: 500 }
-    );
+    return NextResponse.json({ received: true, error: 'Processing failed' });
   }
 }
 
-/**
- * Handle message.sent event
- */
-async function handleMessageSent(payload: any) {
-  const messageId = payload.id;
-
-  await updateDeliveryStatus({
-    providerMessageId: messageId,
-    status: 'sent',
-  });
-}
-
-/**
- * Handle message.finalized event (delivery receipt)
- */
-async function handleMessageFinalized(payload: any) {
-  const messageId = payload.id;
-  const toResults = payload.to || [];
-
-  // Get the delivery status from the first recipient
-  const firstRecipient = toResults[0];
-
-  if (!firstRecipient) {
-    console.warn('No recipient in finalized message:', messageId);
-    return;
-  }
-
-  const status = firstRecipient.status;
-
-  // Map Telnyx statuses to our statuses
-  let mappedStatus: 'delivered' | 'sent' | 'failed' | 'undelivered';
-
-  switch (status) {
-    case 'delivered':
-    case 'delivery_confirmed':
-      mappedStatus = 'delivered';
-      break;
-    case 'sent':
-    case 'sending':
-      mappedStatus = 'sent';
-      break;
-    case 'delivery_failed':
-    case 'sending_failed':
-      mappedStatus = 'failed';
-      break;
-    case 'delivery_unconfirmed':
-      mappedStatus = 'undelivered';
-      break;
-    default:
-      mappedStatus = 'sent';
-  }
-
-  await updateDeliveryStatus({
-    providerMessageId: messageId,
-    status: mappedStatus,
-    errorCode: firstRecipient.error_code,
-    errorMessage: firstRecipient.error_message,
-  });
-}
-
-/**
- * Handle message.received event (inbound SMS)
- */
-async function handleMessageReceived(payload: any) {
-  const from = payload.from?.phone_number;
-  const to = payload.to?.[0]?.phone_number;
-  const text = payload.text;
-  const messageId = payload.id;
-
-  if (!from || !to || !text) {
-    console.warn('Incomplete inbound message:', payload);
-    return;
-  }
-
-  await processInboundMessage({
-    from,
-    to,
-    text,
-    providerMessageId: messageId,
-  });
+export async function GET() {
+  return NextResponse.json({ status: 'Telnyx webhook endpoint active' });
 }

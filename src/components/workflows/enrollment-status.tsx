@@ -78,11 +78,11 @@ export function EnrollmentStatus({
   const progressPercentage = (enrollment.current_step / enrollment.total_steps) * 100;
 
   return (
-    <div className="bg-gray-900/80 backdrop-blur-xl rounded-xl border border-white/10 p-4">
+    <div className="bg-white rounded-xl border border-gray-200 p-4">
       {/* Header */}
       <div className="flex items-center justify-between mb-4">
         <div>
-          <h4 className="font-medium text-white">{enrollment.workflow_name}</h4>
+          <h4 className="font-medium text-gray-900">{enrollment.workflow_name}</h4>
           <p className="text-sm text-gray-400">
             Step {enrollment.current_step} of {enrollment.total_steps}
           </p>
@@ -95,9 +95,9 @@ export function EnrollmentStatus({
 
       {/* Progress Bar */}
       <div className="mb-4">
-        <div className="h-2 bg-gray-800 rounded-full overflow-hidden">
+        <div className="h-2 bg-white rounded-full overflow-hidden">
           <div 
-            className="h-full bg-gradient-to-r from-violet-500 to-blue-500 rounded-full transition-all duration-500"
+            className="h-full bg-gradient-to-r from-brand-500 to-blue-500 rounded-full transition-all duration-500"
             style={{ width: `${progressPercentage}%` }}
           />
         </div>
@@ -124,7 +124,7 @@ export function EnrollmentStatus({
       )}
 
       {/* Actions */}
-      <div className="flex items-center gap-2 pt-3 border-t border-white/5">
+      <div className="flex items-center gap-2 pt-3 border-t border-gray-100">
         {enrollment.status === "in_progress" && (
           <>
             <button
@@ -136,7 +136,7 @@ export function EnrollmentStatus({
             </button>
             <button
               onClick={() => onAdvance?.(enrollment.id)}
-              className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-violet-400 hover:bg-violet-500/10 rounded-lg transition-colors"
+              className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-brand-400 hover:bg-brand-500/10 rounded-lg transition-colors"
             >
               <ArrowRight className="w-4 h-4" />
               Advance

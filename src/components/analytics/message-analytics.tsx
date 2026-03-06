@@ -71,9 +71,9 @@ export async function MessageAnalytics({
   const totalVoice = chartData.reduce((sum, d) => sum + d.voice, 0);
 
   return (
-    <Card className="bg-gray-900/80 border-white/10">
+    <Card className="bg-white/80 border-gray-200">
       <CardHeader>
-        <CardTitle className="text-white">Messages Sent</CardTitle>
+        <CardTitle className="text-gray-900">Messages Sent</CardTitle>
         <CardDescription className="text-gray-400">
           {totalSms.toLocaleString()} SMS and {totalVoice.toLocaleString()} voice drops
         </CardDescription>

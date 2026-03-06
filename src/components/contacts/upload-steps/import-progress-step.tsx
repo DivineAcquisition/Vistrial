@@ -40,13 +40,13 @@ export function ImportProgressStep({ totalRows }: ImportProgressStepProps) {
     <Card className="bg-gray-900/80 border-white/10">
       <CardContent className="pt-6">
         <div className="flex flex-col items-center justify-center py-12">
-          <Loader2 className="h-12 w-12 animate-spin text-violet-400 mb-6" />
+          <Loader2 className="h-12 w-12 animate-spin text-brand-400 mb-6" />
           <h3 className="text-lg font-semibold text-white mb-2">Importing Contacts</h3>
           <p className="text-gray-400 mb-6">
             Please wait while we import your {totalRows} contacts...
           </p>
           <div className="w-full max-w-md">
-            <Progress value={progress} className="h-2 bg-gray-800" />
+            <Progress value={progress} className="h-2 bg-white" />
             <p className="text-sm text-gray-500 text-center mt-2">
               {Math.round(progress)}% complete
             </p>

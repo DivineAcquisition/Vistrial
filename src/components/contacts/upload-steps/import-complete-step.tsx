@@ -73,7 +73,7 @@ export function ImportCompleteStep({
 
           {/* Stats */}
           <div className="grid grid-cols-4 gap-4 w-full max-w-lg mb-8">
-            <div className="text-center p-4 bg-gray-800/50 rounded-lg">
+            <div className="text-center p-4 bg-gray-50 rounded-lg">
               <p className="text-2xl font-bold text-white">
                 {result.total}
               </p>
@@ -136,7 +136,7 @@ export function ImportCompleteStep({
               <RefreshCw className="h-4 w-4 mr-2" />
               Import More
             </Button>
-            <Button onClick={onViewContacts} className="bg-violet-600 hover:bg-violet-700">
+            <Button onClick={onViewContacts} className="bg-brand-600 hover:bg-brand-700">
               <Users className="h-4 w-4 mr-2" />
               View Contacts
               <ArrowRight className="h-4 w-4 ml-2" />

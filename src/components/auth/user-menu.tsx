@@ -62,7 +62,7 @@ export function UserMenu({ user, organization }: UserMenuProps) {
           />
         ) : (
           <div className="w-8 h-8 bg-violet-900/30 rounded-full flex items-center justify-center">
-            <RiUserLine className="w-4 h-4 text-violet-400" />
+            <RiUserLine className="w-4 h-4 text-brand-400" />
           </div>
         )}
         <div className="text-left hidden sm:block">

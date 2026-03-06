@@ -146,7 +146,7 @@ export function BookingFlow({ business, services, serviceAreas, availability }: 
   });
 
   // Brand color
-  const brandColor = business.primary_color || "#6E47D1";
+  const brandColor = business.primary_color || "#5347D1";
 
   // Calculate price whenever relevant fields change
   const selectedService = useMemo(
@@ -249,10 +249,10 @@ export function BookingFlow({ business, services, serviceAreas, availability }: 
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-950">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-50">
       {/* Header */}
       <header
-        className="sticky top-0 z-50 text-white"
+        className="sticky top-0 z-50 text-gray-900"
         style={{ backgroundColor: brandColor }}
       >
         <div className="max-w-3xl mx-auto px-4 py-4">
@@ -261,7 +261,7 @@ export function BookingFlow({ business, services, serviceAreas, availability }: 
               <img
                 src={business.logo_url}
                 alt=""
-                className="w-10 h-10 rounded-lg object-cover bg-white/10"
+                className="w-10 h-10 rounded-lg object-cover bg-gray-100"
               />
             ) : (
               <div className="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center">
@@ -270,14 +270,14 @@ export function BookingFlow({ business, services, serviceAreas, availability }: 
             )}
             <div>
               <h1 className="font-bold text-lg">{business.name}</h1>
-              <p className="text-sm text-white/80">Book your cleaning</p>
+              <p className="text-sm text-gray-900/80">Book your cleaning</p>
             </div>
           </div>
         </div>
       </header>
 
       {/* Progress Steps */}
-      <div className="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 sticky top-[72px] z-40">
+      <div className="bg-white dark:bg-white border-b border-gray-200 dark:border-gray-800 sticky top-[72px] z-40">
         <div className="max-w-3xl mx-auto px-4 py-3">
           <div className="flex items-center justify-between">
             {STEPS.map((s, i) => {
@@ -299,9 +299,9 @@ export function BookingFlow({ business, services, serviceAreas, availability }: 
                     className={cn(
                       "w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium transition-all",
                       isComplete
-                        ? "bg-green-500 text-white"
+                        ? "bg-green-500 text-gray-900"
                         : isCurrent
-                        ? "text-white"
+                        ? "text-gray-900"
                         : "bg-gray-200 dark:bg-gray-700 text-gray-500 dark:text-gray-400"
                     )}
                     style={isCurrent ? { backgroundColor: brandColor } : {}}
@@ -395,7 +395,7 @@ export function BookingFlow({ business, services, serviceAreas, availability }: 
           {/* Price Summary Sidebar */}
           {step !== "service" && (
             <div className="lg:col-span-1">
-              <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 sticky top-[140px]">
+              <div className="bg-white dark:bg-white rounded-xl border border-gray-200 dark:border-gray-800 p-4 sticky top-[140px]">
                 <h3 className="font-semibold text-gray-900 dark:text-gray-50 mb-4">Your Booking</h3>
 
                 <div className="space-y-3 text-sm">
@@ -490,7 +490,7 @@ export function BookingFlow({ business, services, serviceAreas, availability }: 
       </main>
 
       {/* Footer */}
-      <footer className="border-t border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 mt-auto">
+      <footer className="border-t border-gray-200 dark:border-gray-800 bg-white dark:bg-white mt-auto">
         <div className="max-w-3xl mx-auto px-4 py-4">
           <div className="flex items-center justify-center gap-6 text-sm text-gray-500 dark:text-gray-400">
             <a href={`tel:${business.phone}`} className="flex items-center gap-1 hover:text-gray-700 dark:hover:text-gray-300">

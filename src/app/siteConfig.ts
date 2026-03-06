@@ -17,26 +17,21 @@ export const siteConfig = {
     quote: `https://q.${BASE_DOMAIN}`,
   },
   
-  // Dashboard links (app.vistrial.io)
+  // App links — served on app.vistrial.io (auth + dashboard)
   baseLinks: {
     home: "/",
-    overview: "/overview",
-    details: "/details",
-    leads: "/leads",
-    quotes: "/quotes",
-    sequences: "/sequences",
-    settings: {
-      general: "/settings/general",
-      billing: "/settings/billing",
-      users: "/settings/users",
-    },
-  },
-  
-  // Marketing links (access.vistrial.io)
-  marketingLinks: {
-    home: "/",
+    dashboard: "/overview",
+    bookings: "/bookings",
+    conversions: "/conversions",
+    contacts: "/contacts",
+    settings: "/settings",
     login: "/login",
     signup: "/signup",
+  },
+  
+  // Marketing / landing page links — served on access.vistrial.io
+  marketingLinks: {
+    home: "/",
     pricing: "/pricing",
     features: "/features",
     demo: "/demo",

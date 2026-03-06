@@ -15,6 +15,7 @@ import { ColumnMappingStep } from './upload-steps/column-mapping-step';
 import { PreviewStep } from './upload-steps/preview-step';
 import { ImportProgressStep } from './upload-steps/import-progress-step';
 import { ImportCompleteStep } from './upload-steps/import-complete-step';
+import { PhoneValidationDialog } from './phone-validation-dialog';
 
 interface CsvUploadWizardProps {
   organizationId: string;
@@ -66,6 +67,8 @@ export function CsvUploadWizard({
   });
   const [importResult, setImportResult] = useState<ImportResult | null>(null);
   const [importJobId, setImportJobId] = useState<string | null>(null);
+  const [showValidation, setShowValidation] = useState(false);
+  const [pendingPhoneNumbers, setPendingPhoneNumbers] = useState<string[]>([]);
 
   const handleFileSelected = async (selectedFile: File) => {
     setFile(selectedFile);
@@ -100,7 +103,40 @@ export function CsvUploadWizard({
     }
   };
 
-  const handleStartImport = async () => {
+  // Trigger phone validation before import when phone numbers exist
+  const handlePreImportValidation = () => {
+    if (!parsedData) return;
+
+    // Find the CSV column mapped to 'phone'
+    const phoneColumn = Object.entries(columnMapping).find(
+      ([, mappedTo]) => mappedTo === 'phone'
+    )?.[0];
+
+    if (phoneColumn) {
+      const phoneNumbers = parsedData.rows
+        .map((row) => row[phoneColumn])
+        .filter(Boolean);
+
+      if (phoneNumbers.length > 0) {
+        setPendingPhoneNumbers(phoneNumbers);
+        setShowValidation(true);
+        return;
+      }
+    }
+
+    // No phone numbers to validate – proceed directly
+    handleStartImport();
+  };
+
+  // Called after validation completes (or is skipped)
+  const handleValidationComplete = (validNumbers: string[], excludedNumbers: string[]) => {
+    // If user skipped or all numbers passed, just start import
+    // The excluded numbers info could be used to filter rows, but for now
+    // we proceed with the full import and let the user know which were excluded
+    handleStartImport(excludedNumbers);
+  };
+
+  const handleStartImport = async (excludedPhones: string[] = []) => {
     if (!file || !parsedData) return;
 
     setCurrentStep('importing');
@@ -191,7 +227,7 @@ export function CsvUploadWizard({
         setCurrentStep('preview');
         break;
       case 'preview':
-        handleStartImport();
+        handlePreImportValidation();
         break;
     }
   };
@@ -229,12 +265,12 @@ export function CsvUploadWizard({
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <Button variant="ghost" onClick={handleCancel} className="text-gray-400 hover:text-white">
+          <Button variant="ghost" onClick={handleCancel} className="text-gray-400 hover:text-gray-900">
             <X className="h-4 w-4 mr-2" />
             Cancel
           </Button>
           <div>
-            <h1 className="text-2xl font-bold text-white flex items-center gap-2">
+            <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
               <Upload className="h-6 w-6" />
               Import Contacts
             </h1>
@@ -253,7 +289,7 @@ export function CsvUploadWizard({
               <div
                 className={`flex items-center justify-center w-8 h-8 rounded-full text-sm font-medium ${
                   index <= currentStepIndex
-                    ? 'bg-violet-600 text-white'
+                    ? 'bg-brand-600 text-white'
                     : 'bg-gray-800 text-gray-500'
                 }`}
               >
@@ -262,7 +298,7 @@ export function CsvUploadWizard({
               <span
                 className={`ml-2 text-sm ${
                   index <= currentStepIndex
-                    ? 'text-white'
+                    ? 'text-gray-900'
                     : 'text-gray-500'
                 }`}
               >
@@ -271,7 +307,7 @@ export function CsvUploadWizard({
               {index < steps.length - 2 && (
                 <div
                   className={`w-12 h-1 mx-4 ${
-                    index < currentStepIndex ? 'bg-violet-600' : 'bg-gray-800'
+                    index < currentStepIndex ? 'bg-brand-600' : 'bg-gray-800'
                   }`}
                 />
               )}
@@ -327,12 +363,12 @@ export function CsvUploadWizard({
 
       {/* Navigation Buttons */}
       {currentStep !== 'importing' && currentStep !== 'complete' && (
-        <div className="flex justify-between pt-6 border-t border-white/10">
+        <div className="flex justify-between pt-6 border-t border-gray-200">
           <Button
             variant="outline"
             onClick={handleBack}
             disabled={currentStep === 'upload'}
-            className="border-white/10 text-white hover:bg-gray-800"
+            className="border-gray-200 text-gray-900 hover:bg-gray-50"
           >
             <ArrowLeft className="h-4 w-4 mr-2" />
             Back
@@ -340,7 +376,7 @@ export function CsvUploadWizard({
           <Button 
             onClick={handleNext} 
             disabled={!canProceed()}
-            className="bg-violet-600 hover:bg-violet-700"
+            className="bg-brand-600 hover:bg-brand-700"
           >
             {currentStep === 'preview' ? (
               <>
@@ -356,6 +392,14 @@ export function CsvUploadWizard({
           </Button>
         </div>
       )}
+
+      {/* Phone Validation Dialog */}
+      <PhoneValidationDialog
+        open={showValidation}
+        onOpenChange={setShowValidation}
+        phoneNumbers={pendingPhoneNumbers}
+        onComplete={handleValidationComplete}
+      />
     </div>
   );
 }

@@ -14,6 +14,11 @@ import {
   detectMessageIntent,
   initiateCall,
 } from '@/lib/telnyx';
+import {
+  sendEmailWithRetry,
+  generateWorkflowEmailHtml,
+  isValidEmail as isValidResendEmail,
+} from '@/lib/resend';
 import { textToSpeech } from '@/lib/elevenlabs/client';
 import { getSupabaseAdminClient, getContactByPhone } from '@/lib/supabase/admin';
 import { getMessageCost, CREDIT_COSTS } from '@/lib/stripe/prices';
@@ -293,6 +298,23 @@ export async function sendWorkflowStepMessage(params: {
     });
   }
 
+  // Email sending via Resend
+  if (step.type === 'email') {
+    const lines = content.split('\n');
+    const subject = lines.length > 1 ? lines[0] : `Message from ${organization.name}`;
+    const body = lines.length > 1 ? lines.slice(1).join('\n').trim() : content;
+
+    return sendEmailMessage({
+      organizationId: organization.id,
+      contactId: contact.id,
+      subject,
+      content: body,
+      workflowId: workflow.id,
+      enrollmentId: enrollment.id,
+      stepIndex,
+    });
+  }
+
   // Voice drops handled separately
   if (step.type === 'voice_drop') {
     // TODO: Implement voice drop sending
@@ -308,6 +330,143 @@ export async function sendWorkflowStepMessage(params: {
     costCents: 0,
     error: `Unknown message type: ${step.type}`,
   };
+}
+
+// ============================================
+// EMAIL SENDING
+// ============================================
+
+export interface SendEmailMessageParams {
+  organizationId: string;
+  contactId: string;
+  subject: string;
+  content: string;
+  workflowId?: string;
+  enrollmentId?: string;
+  stepIndex?: number;
+}
+
+/**
+ * Send an email message via Resend and record in database
+ */
+export async function sendEmailMessage(params: SendEmailMessageParams): Promise<SendMessageResult> {
+  const admin = getSupabaseAdminClient();
+
+  const { data: contact, error: contactError } = await admin
+    .from('contacts')
+    .select('*')
+    .eq('id', params.contactId)
+    .single();
+
+  if (contactError || !contact) {
+    return { success: false, costCents: 0, error: 'Contact not found' };
+  }
+
+  if (!contact.email || !isValidResendEmail(contact.email)) {
+    return { success: false, costCents: 0, error: 'Contact does not have a valid email address' };
+  }
+
+  if (!contact.email_opted_in) {
+    return { success: false, costCents: 0, error: 'Contact has opted out of email' };
+  }
+
+  if (contact.status === 'unsubscribed' || contact.status === 'do_not_contact') {
+    return { success: false, costCents: 0, error: `Contact status is ${contact.status}` };
+  }
+
+  const costCents = Math.ceil(getMessageCost('email'));
+
+  const { data: credits } = await admin
+    .from('credit_balances')
+    .select('balance_cents')
+    .eq('organization_id', params.organizationId)
+    .single();
+
+  if (!credits || credits.balance_cents < costCents) {
+    return { success: false, costCents: 0, error: 'Insufficient credits' };
+  }
+
+  const messageInsert: MessageInsert = {
+    organization_id: params.organizationId,
+    contact_id: params.contactId,
+    workflow_id: params.workflowId || null,
+    enrollment_id: params.enrollmentId || null,
+    step_index: params.stepIndex ?? null,
+    type: 'email',
+    status: 'queued',
+    to_address: contact.email,
+    content: params.content,
+    cost_cents: costCents,
+    queued_at: new Date().toISOString(),
+    metadata: { subject: params.subject },
+  };
+
+  const { data: message, error: messageError } = await admin
+    .from('messages')
+    .insert(messageInsert)
+    .select()
+    .single();
+
+  if (messageError || !message) {
+    return { success: false, costCents: 0, error: 'Failed to create message record' };
+  }
+
+  const { data: deductSuccess } = await admin.rpc('deduct_credits', {
+    p_organization_id: params.organizationId,
+    p_amount_cents: costCents,
+    p_description: `Email to ${contact.email}`,
+  });
+
+  if (!deductSuccess) {
+    await admin.from('messages').update({ status: 'failed', failed_at: new Date().toISOString() }).eq('id', message.id);
+    return { success: false, dbMessageId: message.id, costCents: 0, error: 'Failed to deduct credits' };
+  }
+
+  const { data: org } = await admin
+    .from('organizations')
+    .select('name, primary_color, email')
+    .eq('id', params.organizationId)
+    .single();
+
+  const fromName = org?.name || 'Vistrial';
+  const fromEmail = `${fromName} <noreply@mail.vistrial.io>`;
+  const replyTo = org?.email || 'support@vistrial.io';
+
+  const htmlContent = generateWorkflowEmailHtml(params.content, {
+    businessName: org?.name,
+    businessColor: org?.primary_color || '#8b5cf6',
+  });
+
+  const sendResult = await sendEmailWithRetry({
+    to: contact.email,
+    subject: params.subject,
+    html: htmlContent,
+    text: params.content,
+    from: fromEmail,
+    replyTo,
+    tags: [
+      { name: 'organization_id', value: params.organizationId },
+      { name: 'contact_id', value: params.contactId },
+      ...(params.workflowId ? [{ name: 'workflow_id', value: params.workflowId }] : []),
+    ],
+  });
+
+  if (sendResult.success) {
+    await admin.from('messages').update({
+      status: 'sent',
+      sent_at: new Date().toISOString(),
+      provider: 'resend',
+      provider_message_id: sendResult.messageId,
+    }).eq('id', message.id);
+
+    await admin.from('contacts').update({ last_contacted_at: new Date().toISOString() }).eq('id', params.contactId);
+
+    return { success: true, messageId: sendResult.messageId, dbMessageId: message.id, costCents };
+  } else {
+    await admin.rpc('add_credits', { p_organization_id: params.organizationId, p_amount_cents: costCents, p_is_purchase: false });
+    await admin.from('messages').update({ status: 'failed', failed_at: new Date().toISOString(), provider_error: sendResult.error }).eq('id', message.id);
+    return { success: false, dbMessageId: message.id, costCents: 0, error: sendResult.error };
+  }
 }
 
 // ============================================

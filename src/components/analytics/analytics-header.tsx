@@ -38,7 +38,7 @@ export function AnalyticsHeader({ currentRange }: AnalyticsHeaderProps) {
   return (
     <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
       <div>
-        <h1 className="text-2xl font-bold text-white flex items-center gap-2">
+        <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
           <BarChart3 className="h-6 w-6" />
           Analytics
         </h1>
@@ -49,15 +49,15 @@ export function AnalyticsHeader({ currentRange }: AnalyticsHeaderProps) {
 
       <div className="flex items-center gap-3">
         <Select value={currentRange} onValueChange={handleRangeChange}>
-          <SelectTrigger className="w-40 bg-gray-800 border-white/10 text-white">
+          <SelectTrigger className="w-40 bg-white border-gray-200 text-gray-900">
             <SelectValue />
           </SelectTrigger>
-          <SelectContent className="bg-gray-800 border-white/10">
+          <SelectContent className="bg-white border-gray-200">
             {DATE_RANGES.map((range) => (
               <SelectItem 
                 key={range.value} 
                 value={range.value}
-                className="text-white hover:bg-gray-700 focus:bg-gray-700"
+                className="text-gray-900 hover:bg-gray-100 focus:bg-gray-700"
               >
                 {range.label}
               </SelectItem>
@@ -65,7 +65,7 @@ export function AnalyticsHeader({ currentRange }: AnalyticsHeaderProps) {
           </SelectContent>
         </Select>
 
-        <Button variant="outline" className="border-white/10 text-white hover:bg-gray-800">
+        <Button variant="outline" className="border-gray-200 text-gray-900 hover:bg-gray-50">
           <Download className="h-4 w-4 mr-2" />
           Export
         </Button>

@@ -1,55 +1,40 @@
 // @ts-nocheck
 // ============================================
 // WORKFLOWS API
-// List and create workflows
+// Create and list workflows
 // ============================================
 
 import { NextRequest, NextResponse } from 'next/server';
-import { getAuthenticatedContext, getSupabaseServerClient } from '@/lib/supabase/server';
-import {
-  createWorkflowFromTemplate,
-  createCustomWorkflow,
-} from '@/services/workflows.service';
+import { getAuthenticatedContext } from '@/lib/supabase/server';
+import { getSupabaseAdminClient } from '@/lib/supabase/admin';
 
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
     const context = await getAuthenticatedContext();
 
-    if (!context?.user || !context.organization) {
+    if (!context?.organization) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const supabase = await getSupabaseServerClient();
-    const { searchParams } = new URL(request.url);
+    const admin = getSupabaseAdminClient();
 
-    const status = searchParams.get('status');
-    const category = searchParams.get('category');
-
-    let query = supabase
+    const { data: workflows, error } = await admin
       .from('workflows')
       .select('*')
       .eq('organization_id', context.organization.id)
-      .is('deleted_at', null)
       .order('created_at', { ascending: false });
-
-    if (status) {
-      query = query.eq('status', status);
-    }
-
-    if (category) {
-      query = query.eq('category', category);
-    }
-
-    const { data: workflows, error } = await query;
 
     if (error) {
       throw error;
     }
 
-    return NextResponse.json({ workflows });
+    return NextResponse.json(workflows);
   } catch (error) {
-    console.error('List workflows error:', error);
-    return NextResponse.json({ error: 'Failed to list workflows' }, { status: 500 });
+    console.error('Get workflows error:', error);
+    return NextResponse.json(
+      { error: 'Failed to get workflows' },
+      { status: 500 }
+    );
   }
 }
 
@@ -57,50 +42,45 @@ export async function POST(request: NextRequest) {
   try {
     const context = await getAuthenticatedContext();
 
-    if (!context?.user || !context.organization) {
+    if (!context?.organization) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     const body = await request.json();
-    const { template_id, name, description, category, steps, settings, enrollment_criteria } =
-      body;
+    const { name, description, steps, settings, enrollment_criteria, status } = body;
 
-    let workflow;
-
-    if (template_id) {
-      // Create from template
-      workflow = await createWorkflowFromTemplate({
-        organizationId: context.organization.id,
-        templateId: template_id,
-        name,
-        settings,
-        enrollmentCriteria: enrollment_criteria,
-      });
-    } else {
-      // Create custom workflow
-      if (!name || !category || !steps) {
-        return NextResponse.json(
-          { error: 'Missing required fields: name, category, steps' },
-          { status: 400 }
-        );
-      }
-
-      workflow = await createCustomWorkflow({
-        organizationId: context.organization.id,
-        name,
-        description,
-        category,
-        steps,
-        settings,
-        enrollmentCriteria: enrollment_criteria,
-      });
+    if (!name || !steps || steps.length === 0) {
+      return NextResponse.json(
+        { error: 'Name and at least one step are required' },
+        { status: 400 }
+      );
     }
 
-    return NextResponse.json({ workflow });
+    const admin = getSupabaseAdminClient();
+
+    const { data: workflow, error } = await admin
+      .from('workflows')
+      .insert({
+        organization_id: context.organization.id,
+        name,
+        description: description || null,
+        steps,
+        settings: settings || {},
+        enrollment_criteria: enrollment_criteria || {},
+        status: status || 'draft',
+      })
+      .select()
+      .single();
+
+    if (error) {
+      throw error;
+    }
+
+    return NextResponse.json(workflow);
   } catch (error) {
     console.error('Create workflow error:', error);
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'Failed to create workflow' },
+      { error: 'Failed to create workflow' },
       { status: 500 }
     );
   }

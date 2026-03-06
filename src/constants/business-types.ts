@@ -1,7 +1,11 @@
 /**
  * Business Types Configuration
- * 
- * Predefined business types for home service companies
+ *
+ * IDs MUST match the public.business_type enum in the database:
+ * cleaning_residential, cleaning_commercial, hvac, plumbing, electrical,
+ * landscaping, pest_control, roofing, painting, handyman, moving,
+ * carpet_cleaning, window_cleaning, pressure_washing, pool_service,
+ * garage_door, appliance_repair, locksmith, junk_removal, other
  */
 
 export interface BusinessType {
@@ -15,15 +19,28 @@ export interface BusinessType {
 
 export const BUSINESS_TYPES: BusinessType[] = [
   {
-    id: "cleaning",
-    name: "Cleaning Services",
-    description: "Residential and commercial cleaning companies",
+    id: "cleaning_residential",
+    name: "Residential Cleaning",
+    description: "Residential cleaning companies",
     icon: "Sparkles",
     defaultServices: [
       "Deep Cleaning",
       "Regular Cleaning",
       "Move-in/Move-out Cleaning",
       "Post-Construction Cleaning",
+    ],
+    suggestedWorkflows: ["reactivation-sms-basic", "seasonal-reminder"],
+  },
+  {
+    id: "cleaning_commercial",
+    name: "Commercial Cleaning",
+    description: "Commercial and office cleaning companies",
+    icon: "Sparkles",
+    defaultServices: [
+      "Office Cleaning",
+      "Floor Stripping & Waxing",
+      "Janitorial Services",
+      "Post-Construction Cleanup",
     ],
     suggestedWorkflows: ["reactivation-sms-basic", "seasonal-reminder"],
   },
@@ -112,7 +129,7 @@ export const BUSINESS_TYPES: BusinessType[] = [
     suggestedWorkflows: ["reactivation-sms-basic", "seasonal-refresh"],
   },
   {
-    id: "pest-control",
+    id: "pest_control",
     name: "Pest Control",
     description: "Pest elimination and prevention",
     icon: "Bug",
@@ -126,7 +143,21 @@ export const BUSINESS_TYPES: BusinessType[] = [
     suggestedWorkflows: ["subscription-renewal", "seasonal-prevention"],
   },
   {
-    id: "pool-service",
+    id: "handyman",
+    name: "Handyman",
+    description: "General handyman and repair services",
+    icon: "Hammer",
+    defaultServices: [
+      "General Repairs",
+      "Furniture Assembly",
+      "Drywall Repair",
+      "Deck Building",
+      "Minor Remodeling",
+    ],
+    suggestedWorkflows: ["reactivation-voice", "project-followup"],
+  },
+  {
+    id: "pool_service",
     name: "Pool Service",
     description: "Pool cleaning and maintenance",
     icon: "Waves",
@@ -140,18 +171,56 @@ export const BUSINESS_TYPES: BusinessType[] = [
     suggestedWorkflows: ["seasonal-reminder", "subscription-renewal"],
   },
   {
-    id: "general-contractor",
-    name: "General Contractor",
-    description: "General construction and remodeling",
-    icon: "Hammer",
+    id: "carpet_cleaning",
+    name: "Carpet Cleaning",
+    description: "Carpet and upholstery cleaning",
+    icon: "Sparkles",
     defaultServices: [
-      "Kitchen Remodel",
-      "Bathroom Remodel",
-      "Room Addition",
-      "Deck Building",
-      "General Repairs",
+      "Carpet Cleaning",
+      "Upholstery Cleaning",
+      "Stain Removal",
+      "Area Rug Cleaning",
     ],
-    suggestedWorkflows: ["reactivation-voice", "project-followup"],
+    suggestedWorkflows: ["reactivation-sms-basic", "seasonal-reminder"],
+  },
+  {
+    id: "pressure_washing",
+    name: "Pressure Washing",
+    description: "Exterior pressure washing services",
+    icon: "Droplet",
+    defaultServices: [
+      "House Washing",
+      "Driveway Cleaning",
+      "Deck Cleaning",
+      "Fence Cleaning",
+    ],
+    suggestedWorkflows: ["reactivation-sms-basic", "seasonal-reminder"],
+  },
+  {
+    id: "window_cleaning",
+    name: "Window Cleaning",
+    description: "Window cleaning services",
+    icon: "Sparkles",
+    defaultServices: [
+      "Interior Windows",
+      "Exterior Windows",
+      "Screen Cleaning",
+      "Gutter Cleaning",
+    ],
+    suggestedWorkflows: ["reactivation-sms-basic", "seasonal-reminder"],
+  },
+  {
+    id: "junk_removal",
+    name: "Junk Removal",
+    description: "Junk and debris removal",
+    icon: "Trash",
+    defaultServices: [
+      "Residential Junk Removal",
+      "Commercial Cleanout",
+      "Construction Debris",
+      "Estate Cleanout",
+    ],
+    suggestedWorkflows: ["reactivation-sms-basic"],
   },
   {
     id: "other",

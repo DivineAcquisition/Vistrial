@@ -180,12 +180,12 @@ export function WorkflowCreator({
     return (
       <div className="space-y-6">
         <div className="flex items-center gap-4">
-          <Button variant="ghost" onClick={() => router.back()} className="text-gray-400 hover:text-white">
+          <Button variant="ghost" onClick={() => router.back()} className="text-gray-400 hover:text-gray-900">
             <ArrowLeft className="h-4 w-4 mr-2" />
             Back
           </Button>
           <div>
-            <h1 className="text-2xl font-bold text-white">Create Workflow</h1>
+            <h1 className="text-2xl font-bold text-gray-900">Create Workflow</h1>
             <p className="text-gray-400">
               Start with a template or build from scratch
             </p>
@@ -206,12 +206,12 @@ export function WorkflowCreator({
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <Button variant="ghost" onClick={() => setStep('template')} className="text-gray-400 hover:text-white">
+          <Button variant="ghost" onClick={() => setStep('template')} className="text-gray-400 hover:text-gray-900">
             <ArrowLeft className="h-4 w-4 mr-2" />
             Templates
           </Button>
           <div>
-            <h1 className="text-2xl font-bold text-white">
+            <h1 className="text-2xl font-bold text-gray-900">
               {name || 'New Workflow'}
             </h1>
             <p className="text-gray-400">
@@ -225,7 +225,7 @@ export function WorkflowCreator({
             variant="outline" 
             onClick={() => handleSave(false)} 
             disabled={isSaving}
-            className="border-white/10 text-white hover:bg-gray-800"
+            className="border-gray-200 text-gray-900 hover:bg-gray-50"
           >
             {isSaving ? (
               <Loader2 className="h-4 w-4 animate-spin" />
@@ -239,7 +239,7 @@ export function WorkflowCreator({
           <Button 
             onClick={() => handleSave(true)} 
             disabled={isSaving}
-            className="bg-violet-600 hover:bg-violet-700"
+            className="bg-brand-600 hover:bg-brand-700"
           >
             {isSaving ? (
               <Loader2 className="h-4 w-4 animate-spin" />
@@ -255,18 +255,18 @@ export function WorkflowCreator({
 
       {/* Builder Tabs */}
       <Tabs defaultValue="steps" className="space-y-6">
-        <TabsList className="bg-gray-800/50 border border-white/10">
-          <TabsTrigger value="steps" className="data-[state=active]:bg-violet-600">Steps</TabsTrigger>
-          <TabsTrigger value="settings" className="data-[state=active]:bg-violet-600">Settings</TabsTrigger>
-          <TabsTrigger value="criteria" className="data-[state=active]:bg-violet-600">Enrollment</TabsTrigger>
-          <TabsTrigger value="preview" className="data-[state=active]:bg-violet-600">Preview</TabsTrigger>
+        <TabsList className="bg-gray-50 border border-gray-200">
+          <TabsTrigger value="steps" className="data-[state=active]:bg-brand-600">Steps</TabsTrigger>
+          <TabsTrigger value="settings" className="data-[state=active]:bg-brand-600">Settings</TabsTrigger>
+          <TabsTrigger value="criteria" className="data-[state=active]:bg-brand-600">Enrollment</TabsTrigger>
+          <TabsTrigger value="preview" className="data-[state=active]:bg-brand-600">Preview</TabsTrigger>
         </TabsList>
 
         <TabsContent value="steps" className="space-y-6">
           {/* Basic Info */}
-          <Card className="bg-gray-900/80 border-white/10">
+          <Card className="bg-white/80 border-gray-200">
             <CardHeader>
-              <CardTitle className="text-white">Workflow Details</CardTitle>
+              <CardTitle className="text-gray-900">Workflow Details</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
@@ -277,16 +277,16 @@ export function WorkflowCreator({
                     value={name}
                     onChange={(e) => setName(e.target.value)}
                     placeholder="e.g., 90-Day Reactivation"
-                    className="bg-gray-800 border-white/10 text-white"
+                    className="bg-white border-gray-200 text-gray-900"
                   />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="category" className="text-gray-300">Category</Label>
                   <Select value={category} onValueChange={setCategory}>
-                    <SelectTrigger className="bg-gray-800 border-white/10 text-white">
+                    <SelectTrigger className="bg-white border-gray-200 text-gray-900">
                       <SelectValue />
                     </SelectTrigger>
-                    <SelectContent className="bg-gray-800 border-white/10">
+                    <SelectContent className="bg-white border-gray-200">
                       <SelectItem value="reactivation">Reactivation</SelectItem>
                       <SelectItem value="retention">Retention</SelectItem>
                       <SelectItem value="seasonal">Seasonal</SelectItem>
@@ -305,7 +305,7 @@ export function WorkflowCreator({
                   onChange={(e) => setDescription(e.target.value)}
                   placeholder="Describe what this workflow does..."
                   rows={2}
-                  className="bg-gray-800 border-white/10 text-white"
+                  className="bg-white border-gray-200 text-gray-900"
                 />
               </div>
             </CardContent>

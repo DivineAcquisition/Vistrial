@@ -133,7 +133,7 @@ export function BookingDetail({ booking, messages }: BookingDetailProps) {
         <div className="flex items-center gap-4">
           <Link
             href="/bookings"
-            className="p-2 hover:bg-white/10 rounded-lg transition-colors"
+            className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
           >
             <RiArrowLeftLine className="w-5 h-5 text-gray-400" />
           </Link>
@@ -161,14 +161,14 @@ export function BookingDetail({ booking, messages }: BookingDetailProps) {
             </button>
 
             {showStatusMenu && (
-              <div className="absolute right-0 mt-2 w-40 bg-gray-900 border border-white/10 rounded-xl shadow-lg z-10 overflow-hidden">
+              <div className="absolute right-0 mt-2 w-40 bg-white border border-gray-200 rounded-xl shadow-lg z-10 overflow-hidden">
                 {STATUS_OPTIONS.map((option) => (
                   <button
                     key={option.value}
                     onClick={() => updateStatus(option.value)}
-                    className={`w-full text-left px-4 py-2 text-sm hover:bg-white/10 transition-colors ${
+                    className={`w-full text-left px-4 py-2 text-sm hover:bg-gray-100 transition-colors ${
                       status === option.value
-                        ? "font-medium text-white"
+                        ? "font-medium text-gray-900"
                         : "text-gray-400"
                     }`}
                   >
@@ -179,7 +179,7 @@ export function BookingDetail({ booking, messages }: BookingDetailProps) {
             )}
           </div>
 
-          <button className="p-2 hover:bg-white/10 rounded-lg transition-colors">
+          <button className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
             <RiMoreLine className="w-5 h-5 text-gray-500" />
           </button>
         </div>
@@ -191,8 +191,8 @@ export function BookingDetail({ booking, messages }: BookingDetailProps) {
           {/* Schedule Card */}
           <div className="relative group">
             <div className="absolute -inset-0.5 bg-gradient-to-r from-brand-500/20 to-brand-600/20 rounded-2xl blur opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-            <div className="relative bg-gray-900/80 backdrop-blur-xl rounded-2xl border border-white/10 p-6">
-              <h2 className="font-semibold text-white mb-4">Schedule</h2>
+            <div className="relative bg-white rounded-2xl border border-gray-200 p-6">
+              <h2 className="font-semibold text-gray-900 mb-4">Schedule</h2>
               <div className="grid sm:grid-cols-2 gap-4">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 bg-brand-500/20 rounded-xl flex items-center justify-center">
@@ -200,7 +200,7 @@ export function BookingDetail({ booking, messages }: BookingDetailProps) {
                   </div>
                   <div>
                     <p className="text-sm text-gray-500">Date</p>
-                    <p className="font-medium text-white">
+                    <p className="font-medium text-gray-900">
                       {formatDate(booking.scheduled_date)}
                     </p>
                   </div>
@@ -211,7 +211,7 @@ export function BookingDetail({ booking, messages }: BookingDetailProps) {
                   </div>
                   <div>
                     <p className="text-sm text-gray-500">Time</p>
-                    <p className="font-medium text-white">
+                    <p className="font-medium text-gray-900">
                       {formatTime(booking.scheduled_time)}
                       {booking.estimated_duration_minutes && (
                         <span className="text-gray-500 font-normal">
@@ -229,12 +229,12 @@ export function BookingDetail({ booking, messages }: BookingDetailProps) {
           {/* Service Details Card */}
           <div className="relative group">
             <div className="absolute -inset-0.5 bg-gradient-to-r from-brand-500/20 to-brand-600/20 rounded-2xl blur opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-            <div className="relative bg-gray-900/80 backdrop-blur-xl rounded-2xl border border-white/10 p-6">
-              <h2 className="font-semibold text-white mb-4">Service Details</h2>
+            <div className="relative bg-white rounded-2xl border border-gray-200 p-6">
+              <h2 className="font-semibold text-gray-900 mb-4">Service Details</h2>
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="font-medium text-white">
+                    <p className="font-medium text-gray-900">
                       {booking.service_types.name}
                     </p>
                     <p className="text-sm text-gray-500">
@@ -252,7 +252,7 @@ export function BookingDetail({ booking, messages }: BookingDetailProps) {
 
                 {/* Add-ons */}
                 {booking.booking_addons && booking.booking_addons.length > 0 && (
-                  <div className="pt-4 border-t border-white/10">
+                  <div className="pt-4 border-t border-gray-200">
                     <p className="text-sm font-medium text-gray-400 mb-2">Add-ons</p>
                     <div className="space-y-2">
                       {booking.booking_addons.map((ba) => (
@@ -261,7 +261,7 @@ export function BookingDetail({ booking, messages }: BookingDetailProps) {
                             {ba.addon.name}
                             {ba.quantity > 1 && ` x${ba.quantity}`}
                           </span>
-                          <span className="text-white">
+                          <span className="text-gray-900">
                             {formatCurrency(ba.total_price)}
                           </span>
                         </div>
@@ -272,11 +272,11 @@ export function BookingDetail({ booking, messages }: BookingDetailProps) {
 
                 {/* Special instructions */}
                 {booking.customer_notes && (
-                  <div className="pt-4 border-t border-white/10">
+                  <div className="pt-4 border-t border-gray-200">
                     <p className="text-sm font-medium text-gray-400 mb-2">
                       Special Instructions
                     </p>
-                    <p className="text-sm text-gray-300 bg-white/5 rounded-xl p-3 border border-white/10">
+                    <p className="text-sm text-gray-300 bg-gray-50 rounded-xl p-3 border border-gray-200">
                       {booking.customer_notes}
                     </p>
                   </div>
@@ -288,14 +288,14 @@ export function BookingDetail({ booking, messages }: BookingDetailProps) {
           {/* Location Card */}
           <div className="relative group">
             <div className="absolute -inset-0.5 bg-gradient-to-r from-brand-500/20 to-brand-600/20 rounded-2xl blur opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-            <div className="relative bg-gray-900/80 backdrop-blur-xl rounded-2xl border border-white/10 p-6">
-              <h2 className="font-semibold text-white mb-4">Location</h2>
+            <div className="relative bg-white rounded-2xl border border-gray-200 p-6">
+              <h2 className="font-semibold text-gray-900 mb-4">Location</h2>
               <div className="flex items-start gap-3">
                 <div className="w-10 h-10 bg-amber-500/20 rounded-xl flex items-center justify-center flex-shrink-0">
                   <RiMapPinLine className="w-5 h-5 text-amber-400" />
                 </div>
                 <div>
-                  <p className="font-medium text-white">{booking.address_line1}</p>
+                  <p className="font-medium text-gray-900">{booking.address_line1}</p>
                   {booking.address_line2 && (
                     <p className="text-gray-400">{booking.address_line2}</p>
                   )}
@@ -321,9 +321,9 @@ export function BookingDetail({ booking, messages }: BookingDetailProps) {
           {/* Messages Card */}
           <div className="relative group">
             <div className="absolute -inset-0.5 bg-gradient-to-r from-brand-500/20 to-brand-600/20 rounded-2xl blur opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-            <div className="relative bg-gray-900/80 backdrop-blur-xl rounded-2xl border border-white/10 p-6">
+            <div className="relative bg-white rounded-2xl border border-gray-200 p-6">
               <div className="flex items-center justify-between mb-4">
-                <h2 className="font-semibold text-white">Message History</h2>
+                <h2 className="font-semibold text-gray-900">Message History</h2>
                 <button className="text-sm text-brand-400 hover:text-brand-300 transition-colors">
                   Send Message
                 </button>
@@ -342,7 +342,7 @@ export function BookingDetail({ booking, messages }: BookingDetailProps) {
                         className={`max-w-[80%] p-3 rounded-xl ${
                           msg.direction === "outbound"
                             ? "bg-brand-500/20 text-brand-100 border border-brand-500/30"
-                            : "bg-white/5 text-gray-300 border border-white/10"
+                            : "bg-gray-50 text-gray-300 border border-gray-200"
                         }`}
                       >
                         <p className="text-sm">{msg.body}</p>
@@ -365,15 +365,15 @@ export function BookingDetail({ booking, messages }: BookingDetailProps) {
           {/* Customer Card */}
           <div className="relative group">
             <div className="absolute -inset-0.5 bg-gradient-to-r from-brand-500/20 to-brand-600/20 rounded-2xl blur opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-            <div className="relative bg-gray-900/80 backdrop-blur-xl rounded-2xl border border-white/10 p-6">
-              <h2 className="font-semibold text-white mb-4">Customer</h2>
+            <div className="relative bg-white rounded-2xl border border-gray-200 p-6">
+              <h2 className="font-semibold text-gray-900 mb-4">Customer</h2>
               <div className="space-y-4">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 bg-brand-500/20 rounded-full flex items-center justify-center">
                     <RiUserLine className="w-5 h-5 text-brand-400" />
                   </div>
                   <div>
-                    <p className="font-medium text-white">
+                    <p className="font-medium text-gray-900">
                       {booking.contacts.first_name} {booking.contacts.last_name}
                     </p>
                     <Link
@@ -388,14 +388,14 @@ export function BookingDetail({ booking, messages }: BookingDetailProps) {
                 <div className="space-y-2">
                   <a
                     href={`tel:${booking.contacts.phone}`}
-                    className="flex items-center gap-2 text-gray-400 hover:text-white transition-colors"
+                    className="flex items-center gap-2 text-gray-400 hover:text-gray-900 transition-colors"
                   >
                     <RiPhoneLine className="w-4 h-4" />
                     {booking.contacts.phone}
                   </a>
                   <a
                     href={`mailto:${booking.contacts.email}`}
-                    className="flex items-center gap-2 text-gray-400 hover:text-white transition-colors"
+                    className="flex items-center gap-2 text-gray-400 hover:text-gray-900 transition-colors"
                   >
                     <RiMailLine className="w-4 h-4" />
                     {booking.contacts.email}
@@ -408,12 +408,12 @@ export function BookingDetail({ booking, messages }: BookingDetailProps) {
           {/* Payment Card */}
           <div className="relative group">
             <div className="absolute -inset-0.5 bg-gradient-to-r from-brand-500/20 to-brand-600/20 rounded-2xl blur opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-            <div className="relative bg-gray-900/80 backdrop-blur-xl rounded-2xl border border-white/10 p-6">
-              <h2 className="font-semibold text-white mb-4">Payment</h2>
+            <div className="relative bg-white rounded-2xl border border-gray-200 p-6">
+              <h2 className="font-semibold text-gray-900 mb-4">Payment</h2>
               <div className="space-y-3">
                 <div className="flex justify-between">
                   <span className="text-gray-500">Subtotal</span>
-                  <span className="text-white">{formatCurrency(booking.subtotal)}</span>
+                  <span className="text-gray-900">{formatCurrency(booking.subtotal)}</span>
                 </div>
                 {booking.discount_amount && booking.discount_amount > 0 && (
                   <div className="flex justify-between text-green-400">
@@ -421,12 +421,12 @@ export function BookingDetail({ booking, messages }: BookingDetailProps) {
                     <span>-{formatCurrency(booking.discount_amount)}</span>
                   </div>
                 )}
-                <div className="flex justify-between font-semibold text-lg border-t border-white/10 pt-3">
-                  <span className="text-white">Total</span>
-                  <span className="text-white">{formatCurrency(booking.total)}</span>
+                <div className="flex justify-between font-semibold text-lg border-t border-gray-200 pt-3">
+                  <span className="text-gray-900">Total</span>
+                  <span className="text-gray-900">{formatCurrency(booking.total)}</span>
                 </div>
 
-                <div className="pt-3 border-t border-white/10">
+                <div className="pt-3 border-t border-gray-200">
                   <div className="flex justify-between text-sm">
                     <span className="text-gray-500">Deposit</span>
                     <span
@@ -440,7 +440,7 @@ export function BookingDetail({ booking, messages }: BookingDetailProps) {
                   </div>
                   <div className="flex justify-between text-sm mt-1">
                     <span className="text-gray-500">Balance due</span>
-                    <span className="text-white">
+                    <span className="text-gray-900">
                       {formatCurrency(booking.total - (booking.deposit_amount || 0))}
                     </span>
                   </div>
@@ -464,14 +464,14 @@ export function BookingDetail({ booking, messages }: BookingDetailProps) {
           {/* Quick Actions Card */}
           <div className="relative group">
             <div className="absolute -inset-0.5 bg-gradient-to-r from-brand-500/20 to-brand-600/20 rounded-2xl blur opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-            <div className="relative bg-gray-900/80 backdrop-blur-xl rounded-2xl border border-white/10 p-6">
-              <h2 className="font-semibold text-white mb-4">Actions</h2>
+            <div className="relative bg-white rounded-2xl border border-gray-200 p-6">
+              <h2 className="font-semibold text-gray-900 mb-4">Actions</h2>
               <div className="space-y-2">
-                <button className="w-full flex items-center gap-2 px-4 py-2 border border-white/10 rounded-xl text-gray-300 hover:bg-white/5 hover:text-white transition-colors">
+                <button className="w-full flex items-center gap-2 px-4 py-2 border border-gray-200 rounded-xl text-gray-300 hover:bg-gray-50 hover:text-gray-900 transition-colors">
                   <RiSendPlaneLine className="w-4 h-4" />
                   Send Reminder
                 </button>
-                <button className="w-full flex items-center gap-2 px-4 py-2 border border-white/10 rounded-xl text-gray-300 hover:bg-white/5 hover:text-white transition-colors">
+                <button className="w-full flex items-center gap-2 px-4 py-2 border border-gray-200 rounded-xl text-gray-300 hover:bg-gray-50 hover:text-gray-900 transition-colors">
                   <RiEditLine className="w-4 h-4" />
                   Reschedule
                 </button>

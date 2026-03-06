@@ -72,8 +72,8 @@ export function FileUploadStep({ onFileSelected }: FileUploadStepProps) {
             className={cn(
               'border-2 border-dashed rounded-lg p-12 text-center cursor-pointer transition-colors',
               isDragActive
-                ? 'border-violet-500 bg-violet-500/10'
-                : 'border-white/20 hover:border-violet-500/50',
+                ? 'border-brand-500 bg-brand-500/10'
+                : 'border-white/20 hover:border-brand-500/50',
               error && 'border-red-500'
             )}
           >
@@ -92,7 +92,7 @@ export function FileUploadStep({ onFileSelected }: FileUploadStepProps) {
                 </>
               ) : (
                 <>
-                  <div className="w-16 h-16 rounded-full bg-gray-800 flex items-center justify-center mb-4">
+                  <div className="w-16 h-16 rounded-full bg-white flex items-center justify-center mb-4">
                     <Upload className="h-8 w-8 text-gray-400" />
                   </div>
                   <p className="font-medium text-white">
@@ -123,38 +123,38 @@ export function FileUploadStep({ onFileSelected }: FileUploadStepProps) {
           <h3 className="font-semibold text-white mb-4">CSV File Requirements</h3>
           <ul className="space-y-2 text-sm text-gray-400">
             <li className="flex items-start gap-2">
-              <FileSpreadsheet className="h-4 w-4 mt-0.5 text-violet-400" />
+              <FileSpreadsheet className="h-4 w-4 mt-0.5 text-brand-400" />
               <span>
                 File must be in CSV format with comma-separated values
               </span>
             </li>
             <li className="flex items-start gap-2">
-              <FileSpreadsheet className="h-4 w-4 mt-0.5 text-violet-400" />
+              <FileSpreadsheet className="h-4 w-4 mt-0.5 text-brand-400" />
               <span>
                 First row should contain column headers
               </span>
             </li>
             <li className="flex items-start gap-2">
-              <FileSpreadsheet className="h-4 w-4 mt-0.5 text-violet-400" />
+              <FileSpreadsheet className="h-4 w-4 mt-0.5 text-brand-400" />
               <span>
                 Each contact should have at least a name, email, or phone number
               </span>
             </li>
             <li className="flex items-start gap-2">
-              <FileSpreadsheet className="h-4 w-4 mt-0.5 text-violet-400" />
+              <FileSpreadsheet className="h-4 w-4 mt-0.5 text-brand-400" />
               <span>
                 Phone numbers should include country code (e.g., +1 for US)
               </span>
             </li>
             <li className="flex items-start gap-2">
-              <FileSpreadsheet className="h-4 w-4 mt-0.5 text-violet-400" />
+              <FileSpreadsheet className="h-4 w-4 mt-0.5 text-brand-400" />
               <span>
                 Maximum file size: 10MB (approximately 100,000 contacts)
               </span>
             </li>
           </ul>
 
-          <div className="mt-4 p-4 bg-gray-800/50 rounded-lg">
+          <div className="mt-4 p-4 bg-gray-50 rounded-lg">
             <p className="text-sm font-medium text-white mb-2">Example CSV format:</p>
             <code className="text-xs text-gray-400">
               first_name,last_name,email,phone

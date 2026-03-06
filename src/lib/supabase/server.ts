@@ -11,72 +11,31 @@ import type { Database } from '@/types/database';
 export async function getSupabaseServerClient() {
   const cookieStore = await cookies();
 
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-
-  if (!url || !key) {
-    // Return a mock client for build time
-    const mockChain = (): unknown => ({
-      select: mockChain,
-      insert: mockChain,
-      update: mockChain,
-      delete: mockChain,
-      upsert: mockChain,
-      eq: mockChain,
-      neq: mockChain,
-      gt: mockChain,
-      gte: mockChain,
-      lt: mockChain,
-      lte: mockChain,
-      in: mockChain,
-      order: mockChain,
-      limit: mockChain,
-      range: mockChain,
-      filter: mockChain,
-      match: mockChain,
-      single: async () => ({ data: null, error: null }),
-      maybeSingle: async () => ({ data: null, error: null }),
-    });
-
-    return {
-      auth: {
-        getUser: async () => ({ data: { user: null }, error: null }),
-        getSession: async () => ({ data: { session: null }, error: null }),
-        signUp: async () => ({ data: null, error: null }),
-        signInWithPassword: async () => ({ data: null, error: null }),
-        signInWithOAuth: async () => ({ data: null, error: null }),
-        signOut: async () => ({ error: null }),
-        resetPasswordForEmail: async () => ({ error: null }),
-        updateUser: async () => ({ data: null, error: null }),
-        exchangeCodeForSession: async () => ({ data: null, error: null }),
+  return createServerClient<Database>(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        getAll() {
+          return cookieStore.getAll();
+        },
+        setAll(cookiesToSet) {
+          try {
+            cookiesToSet.forEach(({ name, value, options }) => {
+              cookieStore.set(name, value, options);
+            });
+          } catch {
+            // setAll called from a Server Component - ignored
+          }
+        },
       },
-      from: () => mockChain(),
-      rpc: async () => ({ data: null, error: null }),
-    } as unknown as ReturnType<typeof createServerClient<Database>>;
-  }
-
-  return createServerClient<Database>(url, key, {
-    cookies: {
-      getAll() {
-        return cookieStore.getAll();
-      },
-      setAll(cookiesToSet: Array<{ name: string; value: string; options?: Record<string, unknown> }>) {
-        try {
-          cookiesToSet.forEach(({ name, value, options }) => {
-            cookieStore.set(name, value, options);
-          });
-        } catch {
-          // The `setAll` method was called from a Server Component.
-          // This can be ignored if you have middleware refreshing
-          // user sessions.
-        }
-      },
-    },
-  });
+    }
+  );
 }
 
-// Backward compatibility alias
+// Backward compatibility aliases
 export const createServerSupabaseClient = getSupabaseServerClient;
+export const createClient = getSupabaseServerClient;
 
 // Helper to get current user on the server
 export async function getServerUser() {
@@ -85,91 +44,96 @@ export async function getServerUser() {
     data: { user },
     error,
   } = await supabase.auth.getUser();
-
-  if (error || !user) {
-    return null;
-  }
-
+  if (error || !user) return null;
   return user;
 }
 
-// Helper to get current session on the server
+// Helper to get current session
 export async function getServerSession() {
   const supabase = await getSupabaseServerClient();
   const {
     data: { session },
     error,
   } = await supabase.auth.getSession();
-
-  if (error || !session) {
-    return null;
-  }
-
+  if (error || !session) return null;
   return session;
 }
 
-// Helper to require authentication (throws redirect if not authenticated)
+// Helper to require authentication
 export async function requireAuth() {
   const user = await getServerUser();
-
-  if (!user) {
-    throw new Error('Unauthorized');
-  }
-
+  if (!user) throw new Error('Unauthorized');
   return user;
 }
 
 // Helper to get user's organization
+// Uses admin client to bypass RLS — this is server-side only
 export async function getUserOrganization(userId: string) {
-  const supabase = await getSupabaseServerClient();
+  // Try admin client first (bypasses RLS, works reliably)
+  try {
+    const { getSupabaseAdminClient } = await import('./admin');
+    const admin = getSupabaseAdminClient();
 
-  const { data: membership, error } = await supabase
-    .from('organization_members')
-    .select(`
-      organization_id,
-      role,
-      permissions,
-      organizations (
-        id,
-        name,
-        slug,
-        business_type,
-        plan_tier,
-        subscription_status,
-        contact_limit,
-        settings
-      )
-    `)
-    .eq('user_id', userId)
-    .single();
+    const { data: membership, error } = await admin
+      .from('organization_members')
+      .select(`
+        organization_id,
+        role,
+        permissions,
+        organizations (*)
+      `)
+      .eq('user_id', userId)
+      .single();
 
-  if (error || !membership) {
-    return null;
+    if (error || !membership) {
+      console.log('getUserOrganization: no membership found for user', userId, error?.message);
+      return null;
+    }
+
+    return {
+      membership: {
+        organization_id: membership.organization_id,
+        role: membership.role,
+        permissions: membership.permissions,
+      },
+      organization: (membership as any).organizations,
+    };
+  } catch (adminError) {
+    console.error('getUserOrganization admin error, falling back to anon:', adminError);
+
+    // Fallback to anon client
+    const supabase = await getSupabaseServerClient();
+    const { data: membership, error } = await supabase
+      .from('organization_members')
+      .select(`
+        organization_id,
+        role,
+        permissions,
+        organizations (*)
+      `)
+      .eq('user_id', userId)
+      .single();
+
+    if (error || !membership) return null;
+
+    return {
+      membership: {
+        organization_id: membership.organization_id,
+        role: membership.role,
+        permissions: membership.permissions,
+      },
+      organization: (membership as any).organizations,
+    };
   }
-
-  return {
-    membership: {
-      organization_id: membership.organization_id,
-      role: membership.role,
-      permissions: membership.permissions,
-    },
-    organization: membership.organizations,
-  };
 }
 
 // Helper to get user with organization context
 export async function getAuthenticatedContext() {
   const user = await getServerUser();
-
-  if (!user) {
-    return null;
-  }
+  if (!user) return null;
 
   const orgData = await getUserOrganization(user.id);
-
-  if (!orgData) {
-    return { user, organization: null, membership: null };
-  }
+  if (!orgData) return { user, organization: null, membership: null };
 
   return {
     user,
@@ -178,5 +142,16 @@ export async function getAuthenticatedContext() {
   };
 }
 
-// Alias for backward compatibility
-export const createClient = getSupabaseServerClient;
+// Check if user has specific role or higher
+export function hasRole(
+  context: { membership?: { role?: string } | null } | null,
+  requiredRole: 'owner' | 'admin' | 'member' | 'viewer'
+): boolean {
+  if (!context?.membership?.role) return false;
+
+  const roleHierarchy = ['viewer', 'member', 'admin', 'owner'];
+  const userRoleIndex = roleHierarchy.indexOf(context.membership.role);
+  const requiredRoleIndex = roleHierarchy.indexOf(requiredRole);
+
+  return userRoleIndex >= requiredRoleIndex;
+}

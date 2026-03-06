@@ -117,7 +117,7 @@ export function DashboardHeader({ user, organization }: HeaderProps) {
           <div className="relative">
             <button
               onClick={() => setCreateOpen(!createOpen)}
-              className="flex items-center gap-1.5 h-9 px-3 md:px-4 bg-violet-500 text-white rounded-lg hover:bg-violet-600 transition-all shadow-sm shadow-violet-500/20"
+              className="flex items-center gap-1.5 h-9 px-3 md:px-4 bg-brand-500 text-white rounded-lg hover:bg-brand-600 transition-all shadow-sm shadow-brand-500/20"
             >
               <RiAddLine className="w-4 h-4" />
               <span className="hidden md:inline text-sm font-medium">Create</span>

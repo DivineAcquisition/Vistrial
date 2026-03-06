@@ -84,9 +84,9 @@ export function OrganizationSettings({
 
   return (
     <div className="space-y-6">
-      <Card className="bg-gray-900/80 border-white/10">
+      <Card className="bg-white/80 border-gray-200">
         <CardHeader>
-          <CardTitle className="text-white">Organization Details</CardTitle>
+          <CardTitle className="text-gray-900">Organization Details</CardTitle>
           <CardDescription className="text-gray-400">
             Basic information about your business
           </CardDescription>
@@ -100,7 +100,7 @@ export function OrganizationSettings({
                 value={formData.name}
                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                 disabled={isLoading || !isOwner}
-                className="bg-gray-800 border-white/10 text-white"
+                className="bg-white border-gray-200 text-gray-900"
               />
             </div>
 
@@ -111,12 +111,12 @@ export function OrganizationSettings({
                 onValueChange={(value) => setFormData({ ...formData, business_type: value })}
                 disabled={isLoading || !isOwner}
               >
-                <SelectTrigger className="bg-gray-800 border-white/10 text-white">
+                <SelectTrigger className="bg-white border-gray-200 text-gray-900">
                   <SelectValue placeholder="Select business type" />
                 </SelectTrigger>
-                <SelectContent className="bg-gray-900 border-white/10">
+                <SelectContent className="bg-white border-gray-200">
                   {BUSINESS_TYPES.map((type) => (
-                    <SelectItem key={type.value} value={type.value} className="text-gray-300 focus:text-white focus:bg-white/5">
+                    <SelectItem key={type.value} value={type.value} className="text-gray-300 focus:text-gray-900 focus:bg-gray-50">
                       {type.label}
                     </SelectItem>
                   ))}
@@ -133,7 +133,7 @@ export function OrganizationSettings({
                   value={formData.phone}
                   onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                   disabled={isLoading || !isOwner}
-                  className="bg-gray-800 border-white/10 text-white"
+                  className="bg-white border-gray-200 text-gray-900"
                 />
               </div>
               <div className="space-y-2">
@@ -144,7 +144,7 @@ export function OrganizationSettings({
                   value={formData.email}
                   onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                   disabled={isLoading || !isOwner}
-                  className="bg-gray-800 border-white/10 text-white"
+                  className="bg-white border-gray-200 text-gray-900"
                 />
               </div>
             </div>
@@ -158,7 +158,7 @@ export function OrganizationSettings({
                 value={formData.website}
                 onChange={(e) => setFormData({ ...formData, website: e.target.value })}
                 disabled={isLoading || !isOwner}
-                className="bg-gray-800 border-white/10 text-white"
+                className="bg-white border-gray-200 text-gray-900"
               />
             </div>
 
@@ -169,20 +169,20 @@ export function OrganizationSettings({
                 onValueChange={(value) => setFormData({ ...formData, timezone: value })}
                 disabled={isLoading || !isOwner}
               >
-                <SelectTrigger className="bg-gray-800 border-white/10 text-white">
+                <SelectTrigger className="bg-white border-gray-200 text-gray-900">
                   <SelectValue />
                 </SelectTrigger>
-                <SelectContent className="bg-gray-900 border-white/10">
-                  <SelectItem value="America/New_York" className="text-gray-300 focus:text-white focus:bg-white/5">Eastern Time</SelectItem>
-                  <SelectItem value="America/Chicago" className="text-gray-300 focus:text-white focus:bg-white/5">Central Time</SelectItem>
-                  <SelectItem value="America/Denver" className="text-gray-300 focus:text-white focus:bg-white/5">Mountain Time</SelectItem>
-                  <SelectItem value="America/Los_Angeles" className="text-gray-300 focus:text-white focus:bg-white/5">Pacific Time</SelectItem>
+                <SelectContent className="bg-white border-gray-200">
+                  <SelectItem value="America/New_York" className="text-gray-300 focus:text-gray-900 focus:bg-gray-50">Eastern Time</SelectItem>
+                  <SelectItem value="America/Chicago" className="text-gray-300 focus:text-gray-900 focus:bg-gray-50">Central Time</SelectItem>
+                  <SelectItem value="America/Denver" className="text-gray-300 focus:text-gray-900 focus:bg-gray-50">Mountain Time</SelectItem>
+                  <SelectItem value="America/Los_Angeles" className="text-gray-300 focus:text-gray-900 focus:bg-gray-50">Pacific Time</SelectItem>
                 </SelectContent>
               </Select>
             </div>
 
             {isOwner && (
-              <Button type="submit" disabled={isLoading} className="bg-violet-600 hover:bg-violet-700">
+              <Button type="submit" disabled={isLoading} className="bg-brand-600 hover:bg-brand-700">
                 {isLoading ? (
                   <>
                     <Loader2 className="h-4 w-4 mr-2 animate-spin" />
@@ -203,9 +203,9 @@ export function OrganizationSettings({
         </CardContent>
       </Card>
 
-      <Card className="bg-gray-900/80 border-white/10">
+      <Card className="bg-white/80 border-gray-200">
         <CardHeader>
-          <CardTitle className="text-white">Messaging Settings</CardTitle>
+          <CardTitle className="text-gray-900">Messaging Settings</CardTitle>
           <CardDescription className="text-gray-400">
             Configure links used in your message templates
           </CardDescription>
@@ -278,7 +278,7 @@ function MessagingSettings({
           value={reviewLink}
           onChange={(e) => setReviewLink(e.target.value)}
           disabled={isLoading || !isOwner}
-          className="bg-gray-800 border-white/10 text-white"
+          className="bg-white border-gray-200 text-gray-900"
         />
         <p className="text-xs text-gray-500">
           Used in review request workflows (&#123;&#123;review_link&#125;&#125;)
@@ -294,7 +294,7 @@ function MessagingSettings({
           value={bookingLink}
           onChange={(e) => setBookingLink(e.target.value)}
           disabled={isLoading || !isOwner}
-          className="bg-gray-800 border-white/10 text-white"
+          className="bg-white border-gray-200 text-gray-900"
         />
         <p className="text-xs text-gray-500">
           Used in booking workflows (&#123;&#123;booking_link&#125;&#125;)
@@ -302,7 +302,7 @@ function MessagingSettings({
       </div>
 
       {isOwner && (
-        <Button type="submit" disabled={isLoading} className="bg-violet-600 hover:bg-violet-700">
+        <Button type="submit" disabled={isLoading} className="bg-brand-600 hover:bg-brand-700">
           {isLoading ? (
             <>
               <Loader2 className="h-4 w-4 mr-2 animate-spin" />

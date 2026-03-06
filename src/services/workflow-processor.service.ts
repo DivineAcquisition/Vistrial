@@ -103,7 +103,7 @@ export async function processEnrollment(
   let result: ProcessingResult;
 
   try {
-    if (currentStep.type === 'sms') {
+    if (currentStep.type === 'sms' || currentStep.type === 'email') {
       const sendResult = await sendWorkflowStepMessage({
         enrollment,
         contact,

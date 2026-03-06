@@ -1,7 +1,9 @@
 /**
  * Vistrial Domain Configuration
  * 
- * Defines the subdomain structure for the application
+ * Defines the subdomain structure for the application:
+ *   access.vistrial.io → Landing / marketing site only
+ *   app.vistrial.io    → Signup, login, dashboard & full application
  */
 
 // Base domain
@@ -9,10 +11,10 @@ export const BASE_DOMAIN = process.env.NEXT_PUBLIC_BASE_DOMAIN || "vistrial.io"
 
 // Subdomain URLs
 export const DOMAINS = {
-  // Landing/marketing site
+  // Landing / marketing site (no auth pages)
   access: `https://access.${BASE_DOMAIN}`,
   
-  // Business dashboard (authenticated)
+  // Application: signup, login, dashboard (authenticated)
   app: `https://app.${BASE_DOMAIN}`,
   
   // Public booking pages
@@ -26,6 +28,9 @@ export const DOMAINS = {
   
   // Quote view pages
   quote: `https://q.${BASE_DOMAIN}`,
+
+  // Email sending subdomain (Resend)
+  mail: `https://mail.${BASE_DOMAIN}`,
 } as const
 
 // Helper functions
@@ -49,22 +54,27 @@ export function getDashboardUrl(path: string = ""): string {
   return `${DOMAINS.app}${path}`
 }
 
+/** Login lives on the app domain (app.vistrial.io) */
 export function getLoginUrl(): string {
-  return `${DOMAINS.access}/login`
+  return `${DOMAINS.app}/login`
 }
 
+/** Signup lives on the app domain (app.vistrial.io) */
 export function getSignupUrl(): string {
-  return `${DOMAINS.access}/signup`
+  return `${DOMAINS.app}/signup`
 }
 
-// For development, use relative URLs
+/**
+ * Returns a URL that is relative in development and absolute in production.
+ * Useful for cross-subdomain links (e.g. marketing pages linking to app auth).
+ */
 export function getRelativeOrAbsoluteUrl(
   subdomain: keyof typeof DOMAINS,
   path: string,
   isDevelopment: boolean = process.env.NODE_ENV === "development"
 ): string {
   if (isDevelopment) {
-    // In development, use relative paths
+    // In development, use relative paths (single localhost origin)
     switch (subdomain) {
       case "book":
         return `/book${path}`
@@ -84,4 +94,15 @@ export function getRelativeOrAbsoluteUrl(
   }
   
   return `${DOMAINS[subdomain]}${path}`
+}
+
+/** Convenience: get the signup URL respecting dev/prod environments */
+export function getSignupHref(queryString: string = ""): string {
+  const qs = queryString ? `?${queryString}` : ""
+  return getRelativeOrAbsoluteUrl("app", `/signup${qs}`)
+}
+
+/** Convenience: get the login URL respecting dev/prod environments */
+export function getLoginHref(): string {
+  return getRelativeOrAbsoluteUrl("app", "/login")
 }

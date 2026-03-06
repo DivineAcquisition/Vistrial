@@ -65,16 +65,16 @@ export function PreviewStep({
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-3 gap-4">
-            <div className="text-center p-4 bg-gray-800/50 rounded-lg">
-              <Users className="h-8 w-8 mx-auto mb-2 text-violet-400" />
+            <div className="text-center p-4 bg-gray-50 rounded-lg">
+              <Users className="h-8 w-8 mx-auto mb-2 text-brand-400" />
               <p className="text-2xl font-bold text-white">{data.totalRows}</p>
               <p className="text-sm text-gray-400">Contacts to Import</p>
             </div>
-            <div className="text-center p-4 bg-gray-800/50 rounded-lg">
+            <div className="text-center p-4 bg-gray-50 rounded-lg">
               <p className="text-2xl font-bold text-white">{mappedFields.length}</p>
               <p className="text-sm text-gray-400">Fields Mapped</p>
             </div>
-            <div className="text-center p-4 bg-gray-800/50 rounded-lg">
+            <div className="text-center p-4 bg-gray-50 rounded-lg">
               <p className="text-2xl font-bold text-white">{contactLimit}</p>
               <p className="text-sm text-gray-400">Contact Limit</p>
             </div>
@@ -114,7 +114,7 @@ export function PreviewStep({
               </TableHeader>
               <TableBody>
                 {data.rows.slice(0, 5).map((row, index) => (
-                  <TableRow key={index} className="border-white/10 hover:bg-gray-800/50">
+                  <TableRow key={index} className="border-white/10 hover:bg-gray-50">
                     {mappedFields.map(({ csvColumn, field }) => (
                       <TableCell key={field} className="text-white">{row[csvColumn] || '-'}</TableCell>
                     ))}
@@ -177,7 +177,7 @@ export function PreviewStep({
             <Input
               id="defaultTags"
               placeholder="Enter tags separated by commas"
-              className="bg-gray-800 border-white/10 text-white"
+              className="bg-white border-white/10 text-white"
               value={options.defaultTags.join(', ')}
               onChange={(e) =>
                 onOptionsChange({
@@ -199,7 +199,7 @@ export function PreviewStep({
             <Input
               id="source"
               placeholder="e.g., csv_import, marketing_list"
-              className="bg-gray-800 border-white/10 text-white"
+              className="bg-white border-white/10 text-white"
               value={options.source}
               onChange={(e) =>
                 onOptionsChange({ ...options, source: e.target.value })

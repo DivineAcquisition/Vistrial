@@ -41,14 +41,12 @@ export async function sendBookingNotifications(data: BookingNotificationData) {
   // Send email notification via Resend if configured
   if (notificationEmail && process.env.RESEND_API_KEY) {
     try {
-      const { Resend } = await import('resend');
-      const resend = new Resend(process.env.RESEND_API_KEY);
+      const { sendEmail: sendResendEmail } = await import('@/lib/resend/send-email');
       const dashUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'https://app.vistrial.io'}/booking/requests/${data.bookingRequestId}`;
       const priceText = data.priceType === 'quote' ? 'Quote requested' : data.estimatedPrice ? `$${data.estimatedPrice}` : '';
       const dateText = data.preferredDate ? `Preferred date: ${new Date(data.preferredDate).toLocaleDateString()}` : '';
 
-      await resend.emails.send({
-        from: process.env.RESEND_FROM_EMAIL || 'Vistrial <noreply@mail.vistrial.io>',
+      await sendResendEmail({
         to: notificationEmail,
         subject: `New Booking Request from ${data.customerName}`,
         html: `<div style="font-family:system-ui,sans-serif;max-width:600px;margin:0 auto">

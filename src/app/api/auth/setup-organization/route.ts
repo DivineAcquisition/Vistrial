@@ -31,6 +31,25 @@ export async function POST(request: NextRequest) {
 
     const admin = getSupabaseAdminClient();
 
+    // Prevent duplicate orgs — check if user already has one
+    const { data: existingMemberships } = await admin
+      .from('organization_members')
+      .select('organization_id')
+      .eq('user_id', user_id);
+
+    if (existingMemberships && existingMemberships.length > 0) {
+      const { data: existingOrg } = await admin
+        .from('organizations')
+        .select('*')
+        .eq('id', existingMemberships[0].organization_id)
+        .single();
+
+      return NextResponse.json({
+        organization: existingOrg,
+        message: 'Organization already exists',
+      });
+    }
+
     let slug: string;
     try {
       const { data: slugData } = await admin.rpc('generate_org_slug', { name });

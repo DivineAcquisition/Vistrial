@@ -69,12 +69,11 @@ export async function requireAuth() {
 // Helper to get user's organization
 // Uses admin client to bypass RLS — this is server-side only
 export async function getUserOrganization(userId: string) {
-  // Try admin client first (bypasses RLS, works reliably)
   try {
     const { getSupabaseAdminClient } = await import('./admin');
     const admin = getSupabaseAdminClient();
 
-    const { data: membership, error } = await admin
+    const { data: memberships, error } = await admin
       .from('organization_members')
       .select(`
         organization_id,
@@ -83,11 +82,22 @@ export async function getUserOrganization(userId: string) {
         organizations (*)
       `)
       .eq('user_id', userId)
-      .single();
+      .order('created_at', { ascending: false });
 
-    if (error || !membership) {
+    if (error || !memberships || memberships.length === 0) {
       console.log('getUserOrganization: no membership found for user', userId, error?.message);
       return null;
+    }
+
+    // If user has multiple orgs, prefer the one with onboarding not completed (most recent signup).
+    // Otherwise, pick the most recently created.
+    let membership = memberships[0];
+    for (const m of memberships) {
+      const org = (m as any).organizations;
+      if (org && org.onboarding_completed === false) {
+        membership = m;
+        break;
+      }
     }
 
     return {
@@ -101,9 +111,8 @@ export async function getUserOrganization(userId: string) {
   } catch (adminError) {
     console.error('getUserOrganization admin error, falling back to anon:', adminError);
 
-    // Fallback to anon client
     const supabase = await getSupabaseServerClient();
-    const { data: membership, error } = await supabase
+    const { data: memberships, error } = await supabase
       .from('organization_members')
       .select(`
         organization_id,
@@ -112,9 +121,18 @@ export async function getUserOrganization(userId: string) {
         organizations (*)
       `)
       .eq('user_id', userId)
-      .single();
+      .order('created_at', { ascending: false });
 
-    if (error || !membership) return null;
+    if (error || !memberships || memberships.length === 0) return null;
+
+    let membership = memberships[0];
+    for (const m of memberships) {
+      const org = (m as any).organizations;
+      if (org && org.onboarding_completed === false) {
+        membership = m;
+        break;
+      }
+    }
 
     return {
       membership: {

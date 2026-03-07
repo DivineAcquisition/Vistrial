@@ -139,14 +139,12 @@ async function ensureOrganization(user) {
   try {
     const admin = getSupabaseAdminClient();
 
-    // Check if user already has an organization
-    const { data: membership } = await admin
+    const { data: memberships } = await admin
       .from('organization_members')
       .select('organization_id')
-      .eq('user_id', user.id)
-      .maybeSingle();
+      .eq('user_id', user.id);
 
-    if (membership) return;
+    if (memberships && memberships.length > 0) return;
 
     // Extract user metadata from signup form
     const fullName =

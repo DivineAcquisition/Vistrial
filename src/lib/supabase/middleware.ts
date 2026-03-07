@@ -166,12 +166,13 @@ export async function updateSession(request: NextRequest) {
           },
         });
 
-        const { data: membership } = await adminClient
+        const { data: memberships } = await adminClient
           .from('organization_members')
           .select('organization_id, organizations(onboarding_completed)')
           .eq('user_id', user.id)
-          .limit(1)
-          .maybeSingle();
+          .order('created_at', { ascending: false });
+
+        const membership = memberships?.[0];
 
         const org = (membership as any)?.organizations;
         const onboardingCompleted = org?.onboarding_completed === true;

@@ -5,7 +5,7 @@
 // Create a new workflow from scratch or template
 // ============================================
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -40,6 +40,23 @@ export default function NewWorkflowPage() {
   const [steps, setSteps] = useState<WorkflowStep[]>([]);
   const [settings, setSettings] = useState<Settings>(DEFAULT_WORKFLOW_SETTINGS);
   const [criteria, setCriteria] = useState<EnrollmentCriteria>(DEFAULT_ENROLLMENT_CRITERIA);
+
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem('workflow_generated_data');
+      if (stored) {
+        const data = JSON.parse(stored);
+        if (data.name) setName(data.name);
+        if (data.description) setDescription(data.description);
+        if (Array.isArray(data.steps) && data.steps.length > 0) setSteps(data.steps);
+        if (data.settings) setSettings(data.settings);
+        if (data.enrollment_criteria) setCriteria(data.enrollment_criteria);
+        localStorage.removeItem('workflow_generated_data');
+      }
+    } catch {
+      // Ignore parse errors
+    }
+  }, []);
 
   const handleSelectTemplate = (template: WorkflowTemplate) => {
     setName(template.name);
@@ -126,11 +143,16 @@ export default function NewWorkflowPage() {
           </div>
         </div>
         <div className="flex items-center gap-2">
+          <Link href="/workflows/generate">
+            <Button variant="outline">
+              <RiSparklingLine className="h-4 w-4 mr-2" />
+              Generate with AI
+            </Button>
+          </Link>
           <Button
             variant="outline"
             onClick={() => setShowTemplatePicker(true)}
           >
-            <RiSparklingLine className="h-4 w-4 mr-2" />
             Use Template
           </Button>
           <Button onClick={handleSave} disabled={isLoading}>

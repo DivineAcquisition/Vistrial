@@ -36,8 +36,8 @@ export function OffersStep({ offers: initial, services, onSubmit, onBack }: { of
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="flex items-center gap-2"><Gift className="h-5 w-5 text-brand-600" />Your Recurring Service Offers</CardTitle>
-        <p className="text-sm text-gray-500">These are automatically presented to one-time clients during the conversion sequence. Customize anytime.</p>
+        <CardTitle className="flex items-center gap-2"><Gift className="h-5 w-5 text-brand-600" />Your Service Offers</CardTitle>
+        <p className="text-sm text-gray-500">These offers are sent to clients automatically through your workflows. Customize anytime in Settings.</p>
       </CardHeader>
       <CardContent className="space-y-4">
         {offers.map((offer, i) => {

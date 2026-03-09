@@ -67,7 +67,7 @@ export async function POST(request: NextRequest) {
       contact_limit: 1000,
       onboarding_completed: false,
       onboarding_step: 0,
-      industry: 'residential_cleaning',
+      industry: 'service_business',
       timezone: 'America/New_York',
       settings: {
         business_hours: { start: '08:00', end: '18:00' },

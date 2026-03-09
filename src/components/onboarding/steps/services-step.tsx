@@ -28,8 +28,8 @@ export function ServicesStep({ services: initial, onSubmit, onBack }: { services
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="flex items-center gap-2"><Sparkles className="h-5 w-5 text-brand-600" />What cleaning services do you offer?</CardTitle>
-        <p className="text-sm text-gray-500">We&apos;ll use this to match one-time clients with the right recurring offer.</p>
+        <CardTitle className="flex items-center gap-2"><Sparkles className="h-5 w-5 text-brand-600" />What services do you offer?</CardTitle>
+        <p className="text-sm text-gray-500">We&apos;ll use this to personalize your automated workflows and client offers.</p>
       </CardHeader>
       <CardContent className="space-y-4">
         {services.map((svc, i) => (

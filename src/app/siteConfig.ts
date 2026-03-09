@@ -3,9 +3,9 @@ const BASE_DOMAIN = process.env.NEXT_PUBLIC_BASE_DOMAIN || "vistrial.io"
 export const siteConfig = {
   name: "Vistrial",
   url: "https://vistrial.io",
-  description: "Convert one-time cleaning clients into recurring revenue with automated SMS sequences. The conversion engine built for residential cleaning companies.",
-  tagline: "One-Time to Recurring Conversion Engine",
-  
+  description: "The all-in-one operations platform for service businesses. Automate client follow-ups, manage contacts, run SMS workflows, and grow recurring revenue — from one dashboard.",
+  tagline: "Automate Your Service Business",
+
   domains: {
     base: BASE_DOMAIN,
     access: `https://access.${BASE_DOMAIN}`,
@@ -15,18 +15,19 @@ export const siteConfig = {
     portal: `https://portal.${BASE_DOMAIN}`,
     quote: `https://q.${BASE_DOMAIN}`,
   },
-  
+
   baseLinks: {
     home: "/",
-    dashboard: "/overview",
-    bookings: "/bookings",
-    conversions: "/conversions",
+    dashboard: "/dashboard",
     contacts: "/contacts",
+    workflows: "/workflows",
+    inbox: "/inbox",
+    analytics: "/analytics",
     settings: "/settings",
     login: "/login",
     signup: "/signup",
   },
-  
+
   marketingLinks: {
     home: "/",
     pricing: "/pricing",

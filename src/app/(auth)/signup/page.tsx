@@ -430,7 +430,7 @@ export default function SignupPage() {
 
         <div className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="googleBusinessName" className="text-gray-700">Your cleaning company name</Label>
+            <Label htmlFor="googleBusinessName" className="text-gray-700">Business name</Label>
             <div className="relative">
               <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
                 <RiBuildingLine className="h-5 w-5 text-gray-400" />
@@ -439,7 +439,7 @@ export default function SignupPage() {
                 id="googleBusinessName"
                 value={formData.businessName}
                 onChange={(e) => setFormData((prev) => ({ ...prev, businessName: e.target.value }))}
-                placeholder="Smith Cleaning Services"
+                placeholder="Acme Services"
                 required
                 className="pl-10"
               />
@@ -447,7 +447,7 @@ export default function SignupPage() {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="googlePhone" className="text-gray-700">Your business phone</Label>
+            <Label htmlFor="googlePhone" className="text-gray-700">Business phone</Label>
             <div className="relative">
               <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
                 <RiPhoneLine className="h-5 w-5 text-gray-400" />
@@ -497,10 +497,10 @@ export default function SignupPage() {
     <div className="space-y-6">
       <div className="space-y-2 text-center">
         <h1 className="text-3xl font-bold tracking-tight text-gray-900">
-          Start Converting One-Time Clients to Recurring Revenue
+          Automate your service business
         </h1>
         <p className="text-gray-500">
-          Set up your account in 2 minutes
+          Set up your account in 2 minutes. No credit card required.
         </p>
       </div>
 
@@ -525,12 +525,12 @@ export default function SignupPage() {
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="businessName" className="text-gray-700">Your cleaning company name</Label>
+          <Label htmlFor="businessName" className="text-gray-700">Business name</Label>
           <div className="relative">
             <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
               <RiBuildingLine className="h-5 w-5 text-gray-400" />
             </div>
-            <Input id="businessName" name="businessName" placeholder="Smith Cleaning Services" value={formData.businessName} onChange={handleChange} required className="pl-10" />
+            <Input id="businessName" name="businessName" placeholder="Acme Services" value={formData.businessName} onChange={handleChange} required className="pl-10" />
           </div>
         </div>
 
@@ -545,7 +545,7 @@ export default function SignupPage() {
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="phone" className="text-gray-700">Your business phone</Label>
+          <Label htmlFor="phone" className="text-gray-700">Business phone</Label>
           <div className="relative">
             <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
               <RiPhoneLine className="h-5 w-5 text-gray-400" />
@@ -626,7 +626,7 @@ export default function SignupPage() {
 
       <div className="rounded-xl border border-gray-200 bg-gray-50 p-4 text-center">
         <p className="text-sm text-gray-600 font-medium">
-          Join 50+ cleaning companies converting more one-time clients to recurring
+          Trusted by service businesses to automate follow-ups and grow revenue
         </p>
       </div>
 

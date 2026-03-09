@@ -15,16 +15,16 @@ export const metadata: Metadata = {
   },
   description: siteConfig.description,
   keywords: [
-    "cleaning business software",
-    "one-time to recurring conversion",
-    "residential cleaning",
-    "client retention",
+    "service business automation",
+    "client follow-up",
     "SMS automation",
+    "workflow automation",
+    "service business CRM",
+    "client retention",
     "recurring revenue",
-    "cleaning company CRM",
-    "conversion engine",
-    "customer follow-up",
-    "cleaning business growth",
+    "business operations platform",
+    "automated outreach",
+    "service business growth",
   ],
   authors: [{ name: "Vistrial", url: "https://vistrial.io" }],
   creator: "Vistrial",
@@ -41,10 +41,7 @@ export const metadata: Metadata = {
     title: `${siteConfig.name} — ${siteConfig.tagline}`,
     description: siteConfig.description,
   },
-  robots: {
-    index: true,
-    follow: true,
-  },
+  robots: { index: true, follow: true },
 }
 
 export default function RootLayout({

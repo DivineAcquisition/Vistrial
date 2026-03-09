@@ -23,7 +23,6 @@ import { getSupabaseAdminClient } from '@/lib/supabase/admin';
 
 export const metadata: Metadata = {
   title: 'Dashboard',
-  description: 'Your conversion engine scoreboard — track one-time to recurring client conversions.',
 };
 
 export const dynamic = 'force-dynamic';
@@ -145,8 +144,8 @@ export default async function DashboardPage() {
               <RiAlertLine className="h-5 w-5 text-amber-600" />
             </div>
             <div className="flex-1">
-              <h3 className="font-semibold text-amber-900 text-sm">Activate messaging to start your conversion sequences</h3>
-              <p className="text-amber-700 text-xs mt-0.5">Your SMS sequences won&apos;t send until messaging is activated. Complete your A2P registration to get started.</p>
+              <h3 className="font-semibold text-amber-900 text-sm">Activate messaging to start sending automated follow-ups</h3>
+              <p className="text-amber-700 text-xs mt-0.5">Your SMS workflows won&apos;t send until messaging is activated. Complete your A2P registration to get started.</p>
             </div>
             <Link
               href="/settings/messaging"
@@ -167,7 +166,7 @@ export default async function DashboardPage() {
             </div>
             <div className="flex-1">
               <h3 className="font-semibold text-blue-900 text-sm">Messaging Status: Pending Approval</h3>
-              <p className="text-blue-700 text-xs mt-0.5">Your A2P registration is being reviewed. This typically takes 3-7 business days. Your SMS sequences will activate once approved.</p>
+              <p className="text-blue-700 text-xs mt-0.5">Your A2P registration is being reviewed. This typically takes 3-7 business days. Your automated workflows will activate once approved.</p>
             </div>
           </div>
         </div>
@@ -190,10 +189,10 @@ export default async function DashboardPage() {
                 </div>
               </div>
               <h1 className="text-2xl md:text-3xl font-bold tracking-tight">
-                Your conversion engine is ready.
+                Your workspace is ready.
               </h1>
               <p className="text-white/70 text-[15px] max-w-xl leading-relaxed">
-                Here&apos;s how to get your first client into the pipeline. Once a one-time job is added, the conversion sequence starts automatically.
+                Here&apos;s how to get started. Add your clients, connect your tools, and let your automated workflows do the rest.
               </p>
             </div>
           </div>
@@ -208,11 +207,11 @@ export default async function DashboardPage() {
                   <RiAddLine className="w-5 h-5 text-brand-600" />
                 </div>
                 <div>
-                  <p className="font-semibold text-gray-900 text-sm mb-1">Add a completed job manually</p>
-                  <p className="text-xs text-gray-400 leading-relaxed">Enter details for a recent one-time clean and trigger the conversion sequence immediately.</p>
+                  <p className="font-semibold text-gray-900 text-sm mb-1">Add a client</p>
+                  <p className="text-xs text-gray-400 leading-relaxed">Add a contact manually and enroll them in an automated workflow.</p>
                 </div>
                 <span className="inline-flex items-center gap-1 text-sm text-brand-600 font-semibold group-hover:gap-2 transition-all">
-                  + Add Job
+                  + Add Contact
                   <RiArrowRightLine className="w-3.5 h-3.5" />
                 </span>
               </div>
@@ -227,11 +226,11 @@ export default async function DashboardPage() {
                   <RiLinkM className="w-5 h-5 text-blue-600" />
                 </div>
                 <div>
-                  <p className="font-semibold text-gray-900 text-sm mb-1">Connect your booking tool</p>
-                  <p className="text-xs text-gray-400 leading-relaxed">Set up a webhook from Jobber, GoHighLevel, or Housecall Pro to automate job imports.</p>
+                  <p className="font-semibold text-gray-900 text-sm mb-1">Connect your tools</p>
+                  <p className="text-xs text-gray-400 leading-relaxed">Set up webhooks to automatically trigger workflows when events happen in your other tools.</p>
                 </div>
                 <span className="inline-flex items-center gap-1 text-sm text-blue-600 font-semibold group-hover:gap-2 transition-all">
-                  Setup Webhook
+                  Setup Integrations
                   <RiArrowRightLine className="w-3.5 h-3.5" />
                 </span>
               </div>
@@ -246,8 +245,8 @@ export default async function DashboardPage() {
                   <RiUploadLine className="w-5 h-5 text-emerald-600" />
                 </div>
                 <div>
-                  <p className="font-semibold text-gray-900 text-sm mb-1">Import past one-time clients</p>
-                  <p className="text-xs text-gray-400 leading-relaxed">Upload a CSV of previous one-time clients to start converting them to recurring right away.</p>
+                  <p className="font-semibold text-gray-900 text-sm mb-1">Import your contacts</p>
+                  <p className="text-xs text-gray-400 leading-relaxed">Upload a CSV of your existing clients to get started with automated workflows immediately.</p>
                 </div>
                 <span className="inline-flex items-center gap-1 text-sm text-emerald-600 font-semibold group-hover:gap-2 transition-all">
                   Upload CSV

@@ -18,7 +18,7 @@ const TIMEZONES = [
   { value: 'Pacific/Honolulu', label: 'Hawaii (HT)' },
 ];
 
-const TOOLS = ['GoHighLevel', 'Jobber', 'Housecall Pro', 'BookingKoala', 'Google Calendar', 'Spreadsheet/Manual', 'Other'];
+const TOOLS = ['GoHighLevel', 'Jobber', 'Housecall Pro', 'ServiceTitan', 'Google Calendar', 'Spreadsheet/Manual', 'Other'];
 
 export function BusinessProfileStep({ organization, user, onSubmit }: { organization: any; user: any; onSubmit: (data: any) => Promise<any> }) {
   const org = (organization || {}) as Record<string, any>;
@@ -61,11 +61,11 @@ export function BusinessProfileStep({ organization, user, onSubmit }: { organiza
           <div className="space-y-1.5"><Label className="text-xs">Timezone</Label>
             <Select value={fd.timezone} onValueChange={v => setFd(p => ({ ...p, timezone: v }))}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{TIMEZONES.map(t => <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>)}</SelectContent></Select>
           </div>
-          <div className="space-y-1.5"><Label className="text-xs">Monthly One-Time Cleans</Label>
-            <Select value={fd.monthly_cleans} onValueChange={v => setFd(p => ({ ...p, monthly_cleans: v }))}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{['1-10', '10-25', '25-50', '50+'].map(v => <SelectItem key={v} value={v}>{v}</SelectItem>)}</SelectContent></Select>
+          <div className="space-y-1.5"><Label className="text-xs">Monthly Clients</Label>
+            <Select value={fd.monthly_cleans} onValueChange={v => setFd(p => ({ ...p, monthly_cleans: v }))}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{['1-10', '10-25', '25-50', '50-100', '100+'].map(v => <SelectItem key={v} value={v}>{v}</SelectItem>)}</SelectContent></Select>
           </div>
         </div>
-        <div className="space-y-2"><Label className="text-xs">How do you track jobs?</Label>
+        <div className="space-y-2"><Label className="text-xs">What tools do you use?</Label>
           <div className="flex flex-wrap gap-2">{TOOLS.map(t => (
             <button key={t} type="button" onClick={() => toggleTool(t)} className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-all ${fd.job_tracking_tools.includes(t) ? 'bg-brand-50 border-brand-300 text-brand-700' : 'bg-white border-gray-200 text-gray-600 hover:border-gray-300'}`}>{t}</button>
           ))}</div>

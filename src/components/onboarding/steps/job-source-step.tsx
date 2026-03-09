@@ -43,8 +43,8 @@ export function JobSourceStep({ organization, onSubmit, onBack }: { organization
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="flex items-center gap-2"><Webhook className="h-5 w-5 text-brand-600" />How should we know when a job is done?</CardTitle>
-        <p className="text-sm text-gray-500">When a one-time clean is completed, Vistrial automatically starts the conversion sequence.</p>
+        <CardTitle className="flex items-center gap-2"><Webhook className="h-5 w-5 text-brand-600" />Connect your tools</CardTitle>
+        <p className="text-sm text-gray-500">When a job is completed, Vistrial automatically triggers your follow-up workflows.</p>
       </CardHeader>
       <CardContent className="space-y-4">
         {/* Webhook URL */}

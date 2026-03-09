@@ -1,12 +1,11 @@
-// Base domain configuration
 const BASE_DOMAIN = process.env.NEXT_PUBLIC_BASE_DOMAIN || "vistrial.io"
 
 export const siteConfig = {
   name: "Vistrial",
-  url: "https://vistrial.com",
-  description: "Quote Follow-Up Automation for Home Service Pros",
-  
-  // Domain configuration
+  url: "https://vistrial.io",
+  description: "The all-in-one operations platform for service businesses. Automate client follow-ups, manage contacts, run SMS workflows, and grow recurring revenue — from one dashboard.",
+  tagline: "Automate Your Service Business",
+
   domains: {
     base: BASE_DOMAIN,
     access: `https://access.${BASE_DOMAIN}`,
@@ -16,20 +15,19 @@ export const siteConfig = {
     portal: `https://portal.${BASE_DOMAIN}`,
     quote: `https://q.${BASE_DOMAIN}`,
   },
-  
-  // App links — served on app.vistrial.io (auth + dashboard)
+
   baseLinks: {
     home: "/",
-    dashboard: "/overview",
-    bookings: "/bookings",
-    conversions: "/conversions",
+    dashboard: "/dashboard",
     contacts: "/contacts",
+    workflows: "/workflows",
+    inbox: "/inbox",
+    analytics: "/analytics",
     settings: "/settings",
     login: "/login",
     signup: "/signup",
   },
-  
-  // Marketing / landing page links — served on access.vistrial.io
+
   marketingLinks: {
     home: "/",
     pricing: "/pricing",

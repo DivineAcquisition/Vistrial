@@ -90,7 +90,7 @@ export default function MarketingLayout({ children }: { children: ReactNode }) {
                 />
               </Link>
               <p className="text-sm text-gray-600">
-                Turn your dormant customer database into predictable revenue with automated reactivation campaigns.
+                The all-in-one operations platform for service businesses. Automate follow-ups, manage clients, and grow revenue.
               </p>
             </div>
 
@@ -128,7 +128,7 @@ export default function MarketingLayout({ children }: { children: ReactNode }) {
               © {new Date().getFullYear()} Vistrial. All rights reserved.
             </p>
             <p className="text-sm text-gray-500">
-              Made for home service businesses that want to grow.
+              Built for service businesses that want to grow.
             </p>
           </div>
         </div>

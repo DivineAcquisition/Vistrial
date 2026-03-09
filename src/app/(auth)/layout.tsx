@@ -47,24 +47,24 @@ export default function AuthLayout({ children }: { children: ReactNode }) {
           <div className="space-y-8">
             <div className="space-y-4">
               <h1 className="text-4xl font-bold leading-tight text-white lg:text-5xl">
-                Turn one-time cleans into{' '}
-                <span className="text-brand-200">recurring revenue.</span>
+                Run your service business on{' '}
+                <span className="text-brand-200">autopilot.</span>
               </h1>
               <p className="max-w-md text-lg text-white/80">
-                Automatically convert your one-time cleaning clients into recurring customers
-                with smart SMS sequences. Average 25% conversion rate.
+                Automate follow-ups, manage clients, run SMS workflows,
+                and grow recurring revenue — all from one platform.
               </p>
             </div>
             
             {/* Stats */}
             <div className="flex gap-12">
               <div>
-                <div className="text-3xl font-bold text-white">25%</div>
-                <div className="text-sm text-white/60">Avg Conversion</div>
+                <div className="text-3xl font-bold text-white">98%</div>
+                <div className="text-sm text-white/60">SMS Open Rate</div>
               </div>
               <div>
-                <div className="text-3xl font-bold text-white">$2,400</div>
-                <div className="text-sm text-white/60">Revenue per Convert</div>
+                <div className="text-3xl font-bold text-white">10x</div>
+                <div className="text-sm text-white/60">Faster Follow-Up</div>
               </div>
               <div>
                 <div className="text-3xl font-bold text-white">5 min</div>
@@ -76,15 +76,15 @@ export default function AuthLayout({ children }: { children: ReactNode }) {
           {/* Testimonial */}
           <div className="rounded-2xl border border-white/10 bg-white/5 p-6 backdrop-blur-sm">
             <p className="mb-4 text-white/90">
-              &ldquo;We were losing 80% of one-time clients. Vistrial now converts 30% of them to biweekly recurring. That&apos;s an extra $8K/month in predictable revenue.&rdquo;
+              &ldquo;We used to lose leads because nobody followed up fast enough. Vistrial automated the entire process — now every client gets the right message at the right time. Revenue is up 40%.&rdquo;
             </p>
             <div className="flex items-center gap-3">
               <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white/20 font-semibold text-white">
-                MT
+                JR
               </div>
               <div>
-                <div className="font-medium text-white">Mike Thompson</div>
-                <div className="text-sm text-white/60">Thompson Cleaning Services</div>
+                <div className="font-medium text-white">James Rivera</div>
+                <div className="text-sm text-white/60">Rivera Home Services</div>
               </div>
             </div>
           </div>

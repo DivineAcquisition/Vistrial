@@ -8,29 +8,40 @@ import { AuthProvider } from "@/components/auth/auth-provider"
 import { Toaster } from "@/components/ui/toaster"
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://vistrial.com"),
-  title: siteConfig.name,
+  metadataBase: new URL("https://vistrial.io"),
+  title: {
+    default: `${siteConfig.name} — ${siteConfig.tagline}`,
+    template: `%s | ${siteConfig.name}`,
+  },
   description: siteConfig.description,
-  keywords: ["quote follow-up", "home service", "automation", "SMS"],
-  authors: [
-    {
-      name: "Vistrial",
-      url: "https://vistrial.com",
-    },
+  keywords: [
+    "service business automation",
+    "client follow-up",
+    "SMS automation",
+    "workflow automation",
+    "service business CRM",
+    "client retention",
+    "recurring revenue",
+    "business operations platform",
+    "automated outreach",
+    "service business growth",
   ],
+  authors: [{ name: "Vistrial", url: "https://vistrial.io" }],
   creator: "Vistrial",
   openGraph: {
     type: "website",
     locale: "en_US",
     url: siteConfig.url,
-    title: siteConfig.name,
-    description: siteConfig.description,
     siteName: siteConfig.name,
+    title: `${siteConfig.name} — ${siteConfig.tagline}`,
+    description: siteConfig.description,
   },
-  icons: {
-    icon: [{ url: "/icon.png", type: "image/png" }],
-    apple: [{ url: "/apple-icon.png", type: "image/png" }],
+  twitter: {
+    card: "summary_large_image",
+    title: `${siteConfig.name} — ${siteConfig.tagline}`,
+    description: siteConfig.description,
   },
+  robots: { index: true, follow: true },
 }
 
 export default function RootLayout({

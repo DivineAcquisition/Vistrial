@@ -62,8 +62,8 @@ export function OnboardingWizard({ organization, user, currentStep }: { organiza
     <div className="space-y-8">
       {/* Header */}
       <div className="text-center">
-        <h1 className="text-2xl font-bold tracking-tight text-gray-900">Set up your conversion engine</h1>
-        <p className="text-gray-500 text-sm mt-1">5 quick steps to start converting one-time clients to recurring revenue</p>
+        <h1 className="text-2xl font-bold tracking-tight text-gray-900">Set up your workspace</h1>
+        <p className="text-gray-500 text-sm mt-1">5 quick steps to get your automated operations running</p>
       </div>
 
       {/* Progress */}

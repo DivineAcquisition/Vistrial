@@ -37,7 +37,6 @@ export async function ResponseAnalytics({
     .gte('created_at', startDate.toISOString())
     .lte('created_at', endDate.toISOString());
 
-  // Count by status/type for now (can be extended with AI intent detection)
   const statusCounts: Record<string, number> = {
     positive: 0,
     negative: 0,
@@ -45,18 +44,28 @@ export async function ResponseAnalytics({
     neutral: 0,
   };
 
-  // Simple categorization based on response patterns
-  responses?.forEach((response) => {
-    // For now, distribute responses - in production, use AI intent detection
-    statusCounts.neutral++;
+  const optOutKeywords = ['stop', 'unsubscribe', 'cancel', 'quit', 'remove'];
+  const positiveKeywords = ['yes', 'interested', 'sure', 'book', 'schedule', 'thanks', 'great', 'love', 'awesome', 'absolutely'];
+  const negativeKeywords = ['no', 'not interested', 'don\'t', 'never', 'wrong', 'spam'];
+
+  responses?.forEach((response: any) => {
+    const text = (response.content || '').toLowerCase().trim();
+    if (optOutKeywords.some(k => text.includes(k))) {
+      statusCounts.opt_out++;
+    } else if (positiveKeywords.some(k => text.includes(k))) {
+      statusCounts.positive++;
+    } else if (negativeKeywords.some(k => text.includes(k))) {
+      statusCounts.negative++;
+    } else {
+      statusCounts.neutral++;
+    }
   });
 
-  // Create chart data based on actual responses
   const chartData = [
-    { name: 'Positive', value: Math.floor((responses?.length || 0) * 0.45), color: '#22c55e' },
-    { name: 'Neutral', value: Math.floor((responses?.length || 0) * 0.35), color: '#3b82f6' },
-    { name: 'Negative', value: Math.floor((responses?.length || 0) * 0.15), color: '#f97316' },
-    { name: 'Opt-out', value: Math.floor((responses?.length || 0) * 0.05), color: '#ef4444' },
+    { name: 'Positive', value: statusCounts.positive, color: '#22c55e' },
+    { name: 'Neutral', value: statusCounts.neutral, color: '#3b82f6' },
+    { name: 'Negative', value: statusCounts.negative, color: '#f97316' },
+    { name: 'Opt-out', value: statusCounts.opt_out, color: '#ef4444' },
   ].filter((d) => d.value > 0);
 
   const totalResponses = responses?.length || 0;

@@ -62,7 +62,7 @@ export async function updateSession(request: NextRequest) {
       return NextResponse.redirect(appUrl);
     }
 
-    const protectedPrefixes = ['/dashboard', '/contacts', '/workflows', '/settings', '/bookings', '/booking', '/analytics', '/inbox'];
+    const protectedPrefixes = ['/dashboard', '/contacts', '/clients', '/workflows', '/settings', '/bookings', '/booking', '/analytics', '/inbox', '/messaging', '/projects', '/team', '/reports'];
     const isProtectedRoute = protectedPrefixes.some(p => pathname.startsWith(p));
 
     if (isProtectedRoute) {

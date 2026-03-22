@@ -57,10 +57,12 @@ interface NavItem {
 
 const mainNavigation: NavItem[] = [
   { name: 'Dashboard', href: '/dashboard', icon: RiDashboardLine, iconActive: RiDashboardFill },
+  { name: 'Clients', href: '/clients', icon: RiContactsLine, iconActive: RiContactsFill },
+  { name: 'Projects', href: '/projects', icon: RiFlowChart, iconActive: RiFlowChart },
   { name: 'Inbox', href: '/inbox', icon: RiInboxLine, iconActive: RiInboxFill },
-  { name: 'Contacts', href: '/contacts', icon: RiContactsLine, iconActive: RiContactsFill },
+  { name: 'Team', href: '/team', icon: RiContactsLine, iconActive: RiContactsFill },
+  { name: 'Reports', href: '/reports', icon: RiLineChartLine, iconActive: RiLineChartFill },
   { name: 'Workflows', href: '/workflows', icon: RiFlowChart, iconActive: RiFlowChart },
-  { name: 'Analytics', href: '/analytics', icon: RiLineChartLine, iconActive: RiLineChartFill },
 ];
 
 const settingsNavigation: NavItem[] = [

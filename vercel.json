@@ -20,6 +20,9 @@
     }
   },
   "crons": [
+    { "path": "/api/agent/cron/queue-scans", "schedule": "0 7 * * *" },
+    { "path": "/api/agent/cron/process-scan", "schedule": "*/2 7-8 * * *" },
+    { "path": "/api/agent/cron/morning-brief", "schedule": "0 8 * * *" },
     { "path": "/api/cron/health-scan", "schedule": "0 6 * * *" },
     { "path": "/api/cron/weekly-brief", "schedule": "0 7 * * 1" },
     { "path": "/api/cron/morning-priorities", "schedule": "0 8 * * *" },
@@ -27,10 +30,22 @@
     { "path": "/api/cron/deadline-check", "schedule": "0 9 * * *" },
     { "path": "/api/cron/renewal-check", "schedule": "30 9 * * *" },
     { "path": "/api/cron/milestone-check", "schedule": "0 10 * * *" },
-    { "path": "/api/cron/execute-workflows", "schedule": "* * * * *" },
-    { "path": "/api/cron/process-workflows", "schedule": "*/5 * * * *" },
-    { "path": "/api/cron/send-messages", "schedule": "*/2 * * * *" },
-    { "path": "/api/cron/check-balances", "schedule": "*/15 * * * *" }
+    {
+      "path": "/api/cron/execute-workflows",
+      "schedule": "* * * * *"
+    },
+    {
+      "path": "/api/cron/process-workflows",
+      "schedule": "*/5 * * * *"
+    },
+    {
+      "path": "/api/cron/send-messages",
+      "schedule": "*/2 * * * *"
+    },
+    {
+      "path": "/api/cron/check-balances",
+      "schedule": "*/15 * * * *"
+    }
   ],
   "headers": [
     {

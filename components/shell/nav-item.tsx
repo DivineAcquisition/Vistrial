@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { ReactNode } from "react";
 
+import { toneValueClass, type Tone } from "@/components/ui/tone";
 import { cn } from "@/lib/utils";
 
 export function NavItem({
@@ -11,11 +12,13 @@ export function NavItem({
   label,
   icon,
   count,
+  countTone,
 }: {
   href: string;
   label: string;
   icon: ReactNode;
   count?: number;
+  countTone?: Tone;
 }) {
   const pathname = usePathname();
   const isActive = pathname.startsWith(href);
@@ -38,8 +41,12 @@ export function NavItem({
       {count ? (
         <span
           className={cn(
-            "text-xs tabular-nums",
-            isActive ? "text-brand-300" : "text-neutral-600"
+            "text-xs font-semibold tabular-nums",
+            countTone
+              ? toneValueClass(countTone)
+              : isActive
+                ? "text-brand-300"
+                : "text-neutral-600"
           )}
         >
           {count}

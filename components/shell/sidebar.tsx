@@ -3,8 +3,12 @@ import Link from "next/link";
 import Logo from "@/components/brand/logo";
 import { NavItem } from "@/components/shell/nav-item";
 import { APP_NAME, APP_OWNER, NAV_ITEMS } from "@/lib/constants";
+import { countUnresolvedEvents } from "@/lib/db/inbound-events";
 
-export function Sidebar() {
+export async function Sidebar() {
+  // Inbound events nobody could place are worth seeing without opening settings.
+  const unresolved = await countUnresolvedEvents();
+
   return (
     <aside className="fixed inset-y-0 left-0 flex w-60 flex-col border-r border-white/[0.06] bg-ink-900/40">
       <div className="flex h-16 items-center border-b border-white/[0.06] px-5">
@@ -27,6 +31,8 @@ export function Sidebar() {
             href={href}
             label={label}
             icon={<Icon className="size-4 shrink-0" />}
+            count={href === "/settings" && unresolved > 0 ? unresolved : undefined}
+            countTone="critical"
           />
         ))}
       </nav>

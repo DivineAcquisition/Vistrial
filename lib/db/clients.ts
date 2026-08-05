@@ -12,7 +12,7 @@ import type { Client, ClientInsert, ClientUpdate } from "@/types/database";
 export const clientInsertSchema = z.strictObject({
   name: z.string().min(2, "Client name must be at least 2 characters."),
   contact_name: z.string().nullish(),
-  contact_email: z.string().email("Contact email must be a valid email.").nullish(),
+  contact_email: z.email("Contact email must be a valid email.").nullish(),
   contact_phone: z.string().nullish(),
   status: z.enum(["Onboarding", "Active", "Paused", "Churned"]).optional(),
 

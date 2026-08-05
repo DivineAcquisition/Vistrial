@@ -1,4 +1,5 @@
 import { DataTable } from "@/components/ui/data-table";
+import { PageHeader } from "@/components/ui/page-header";
 import { SectionHeader } from "@/components/ui/section-header";
 
 const columns = [
@@ -12,7 +13,13 @@ const columns = [
 export default function LeadsPage() {
   return (
     <>
-      <SectionHeader title="LEADS" />
+      <PageHeader
+        eyebrow="Ledger"
+        title="Leads"
+        description="Response time is derived from touches, which are stamped once and never overwritten."
+      />
+
+      <SectionHeader title="Inbound leads" hint="Newest first." />
       <DataTable columns={columns} rows={[]} empty="No leads yet." />
     </>
   );

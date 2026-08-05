@@ -1,6 +1,7 @@
 import { DataTable } from "@/components/ui/data-table";
-import { KpiCard } from "@/components/ui/kpi-card";
+import { PageHeader } from "@/components/ui/page-header";
 import { SectionHeader } from "@/components/ui/section-header";
+import { StatGrid, StatTile } from "@/components/ui/stat-tile";
 
 const columns = [
   { key: "date", label: "Date" },
@@ -13,16 +14,23 @@ const columns = [
 export default function AppointmentsPage() {
   return (
     <>
-      <SectionHeader title="APPOINTMENTS" />
+      <PageHeader
+        eyebrow="Ledger"
+        title="Appointments"
+        description="Every appointment is the proof, the invoice line, and the analytics row. Nothing is billable until it is confirmed."
+      />
 
-      <div className="mb-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <KpiCard label="Pending Review" value="—" tone="warn" />
-        <KpiCard label="Confirmed This Cycle" value="—" tone="pos" />
-        <KpiCard label="Disputed" value="—" tone="neg" />
-        <KpiCard label="Cycle Total" value="—" tone="primary" />
+      <StatGrid>
+        <StatTile label="Pending review" value="—" tone="warning" />
+        <StatTile label="Confirmed this cycle" value="—" tone="good" />
+        <StatTile label="Disputed" value="—" tone="critical" />
+        <StatTile label="Cycle total" value="—" tone="brand" />
+      </StatGrid>
+
+      <div className="mt-8">
+        <SectionHeader title="Appointment log" hint="Newest first." />
+        <DataTable columns={columns} rows={[]} empty="No appointments yet." />
       </div>
-
-      <DataTable columns={columns} rows={[]} empty="No appointments yet." />
     </>
   );
 }

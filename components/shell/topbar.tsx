@@ -2,6 +2,7 @@
 
 import { usePathname } from "next/navigation";
 
+import { TonePill } from "@/components/ui/tone";
 import { NAV_ITEMS } from "@/lib/constants";
 
 function titleFromPathname(pathname: string): string {
@@ -17,14 +18,20 @@ export function Topbar() {
   const pathname = usePathname();
 
   return (
-    <header className="sticky top-0 z-20 flex h-14 items-center justify-between border-b border-border bg-background/85 px-6 backdrop-blur">
-      <span className="font-heading text-base font-semibold text-white">
-        {titleFromPathname(pathname)}
-      </span>
-      <div
-        aria-hidden
-        className="size-8 rounded-full border border-border bg-secondary"
-      />
+    <header className="sticky top-0 z-40 border-b border-white/[0.06] bg-ink-950/80 backdrop-blur-xl">
+      <div className="flex h-16 items-center justify-between gap-3 px-4 sm:px-6">
+        <p className="truncate text-sm font-semibold text-white">
+          {titleFromPathname(pathname)}
+        </p>
+
+        <div className="flex items-center gap-2">
+          <TonePill tone="brand">Admin</TonePill>
+          <span
+            aria-hidden
+            className="size-8 rounded-full border border-white/10 bg-white/[0.03]"
+          />
+        </div>
+      </div>
     </header>
   );
 }

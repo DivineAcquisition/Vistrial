@@ -3,19 +3,53 @@
 @import "shadcn/tailwind.css";
 
 /*
- * Vistrial Ledger is permanently dark. There is no light theme and no toggle:
- * the palette below is defined once on :root and mirrored on .dark so shadcn's
- * dark: variants resolve against the same tokens.
+ * Visual language ported from the Divine Acquisition repo (app/globals.css there)
+ * so the ledger and the rest of DA's properties read as one product. #9A88FC
+ * (brand-500) is the prime colour; the ink scale is a slightly violet-shifted
+ * neutral; flag colours carry status meaning a single hue cannot express.
+ *
+ * The app is permanently dark. There is no light theme and no toggle.
  */
 
 @custom-variant dark (&:is(.dark *));
 
+@theme {
+  /* Brand — #9A88FC is the prime colour (brand-500). */
+  --color-brand-50: #f5f3ff;
+  --color-brand-100: #ebe7ff;
+  --color-brand-200: #d9d1fe;
+  --color-brand-300: #c3b6fe;
+  --color-brand-400: #ae9dfd;
+  --color-brand-500: #9a88fc;
+  --color-brand-600: #7e67f2;
+  --color-brand-700: #6650d8;
+  --color-brand-800: #5140a9;
+  --color-brand-900: #3a2f78;
+  --color-brand-950: #1e1940;
+
+  /* Neutrals — very slightly violet-shifted so the brand sits naturally on top. */
+  --color-ink-950: #07070b;
+  --color-ink-900: #0b0a11;
+  --color-ink-850: #100f18;
+  --color-ink-800: #16151f;
+  --color-ink-700: #1e1d29;
+
+  /* Status only. Brand purple stays the action colour; these carry meaning that
+     a single hue cannot express, like a disputed appointment versus a clean one. */
+  --color-flag-critical: #f87171;
+  --color-flag-warning: #f0b45c;
+  --color-flag-good: #52d6a4;
+
+  --radius-4xl: 1.75rem;
+}
+
+/* shadcn's semantic tokens, mapped onto the DA palette above. */
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --font-sans: var(--font-body);
   --font-body: var(--font-body);
-  --font-heading: var(--font-heading);
+  --font-heading: var(--font-body);
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -51,66 +85,253 @@
   --radius-xl: calc(var(--radius) * 1.4);
   --radius-2xl: calc(var(--radius) * 1.8);
   --radius-3xl: calc(var(--radius) * 2.2);
-  --radius-4xl: calc(var(--radius) * 2.6);
-}
-
-/* Semantic tones. Metric values and status only, never UI chrome. */
-@theme {
-  --color-pos: #7aff8a;
-  --color-neg: #ff6a6a;
-  --color-warn: #ffd06a;
-  --color-silver: #b0aec0;
-  --color-dim: #6e6c80;
 }
 
 :root,
 .dark {
-  --background: #0b0b0f;
-  --foreground: #b0aec0;
-  --card: #1c1c26;
+  --brand: #9a88fc;
+  --brand-rgb: 154, 136, 252;
+  --brand-deep: #6650d8;
+  --page: #07070b;
+  --hairline: rgba(255, 255, 255, 0.07);
+
+  --background: #07070b;
+  --foreground: #ffffff;
+  --card: #0b0a11;
   --card-foreground: #ffffff;
-  --popover: #151520;
+  --popover: #100f18;
   --popover-foreground: #ffffff;
-  --primary: #b4a0ff;
-  --primary-foreground: #0b0b0f;
-  --secondary: #1e1a30;
-  --secondary-foreground: #c9b8ff;
-  --muted: #151520;
-  --muted-foreground: #6e6c80;
-  --accent: #2d2650;
-  --accent-foreground: #c9b8ff;
-  --destructive: #ff6a6a;
-  --destructive-foreground: #0b0b0f;
-  --border: #2a2a3a;
-  --input: #2a2a3a;
-  --ring: #b4a0ff;
+  --primary: #9a88fc;
+  --primary-foreground: #07070b;
+  --secondary: #16151f;
+  --secondary-foreground: #c3b6fe;
+  --muted: #100f18;
+  --muted-foreground: #737373;
+  --accent: #1e1940;
+  --accent-foreground: #d9d1fe;
+  --destructive: #f87171;
+  --destructive-foreground: #07070b;
+  --border: rgba(255, 255, 255, 0.07);
+  --input: rgba(255, 255, 255, 0.1);
+  --ring: rgba(154, 136, 252, 0.7);
   --radius: 0.75rem;
 
-  --chart-1: #b4a0ff;
-  --chart-2: #7aff8a;
-  --chart-3: #ffd06a;
-  --chart-4: #ff6a6a;
-  --chart-5: #b0aec0;
+  --chart-1: #9a88fc;
+  --chart-2: #52d6a4;
+  --chart-3: #f0b45c;
+  --chart-4: #f87171;
+  --chart-5: #a3a3a3;
 
-  --sidebar: #111116;
-  --sidebar-foreground: #b0aec0;
-  --sidebar-primary: #b4a0ff;
-  --sidebar-primary-foreground: #0b0b0f;
-  --sidebar-accent: #2d2650;
-  --sidebar-accent-foreground: #c9b8ff;
-  --sidebar-border: #2a2a3a;
-  --sidebar-ring: #b4a0ff;
+  --sidebar: #0b0a11;
+  --sidebar-foreground: #a3a3a3;
+  --sidebar-primary: #9a88fc;
+  --sidebar-primary-foreground: #07070b;
+  --sidebar-accent: #1e1940;
+  --sidebar-accent-foreground: #d9d1fe;
+  --sidebar-border: rgba(255, 255, 255, 0.07);
+  --sidebar-ring: rgba(154, 136, 252, 0.7);
 }
 
 @layer base {
   * {
-    @apply border-border outline-ring/50;
+    @apply border-border;
   }
-  body {
-    @apply bg-background text-foreground font-body antialiased;
-  }
+
   html {
-    @apply bg-background;
-    color-scheme: dark;
+    scroll-behavior: smooth;
+    -webkit-text-size-adjust: 100%;
+    text-rendering: optimizeLegibility;
+  }
+
+  /* `clip` rather than `hidden`: `overflow-x: hidden` turns these into scroll
+     containers, which silently disables `position: sticky` on the header. */
+  html,
+  body {
+    max-width: 100vw;
+    overflow-x: clip;
+  }
+
+  body {
+    font-feature-settings: "cv11", "ss03", "cv02", "ss01";
+    font-optical-sizing: auto;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    background-color: var(--page);
+    color: #fff;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    letter-spacing: -0.022em;
+    font-feature-settings: "cv11", "ss03", "cv02", "ss08", "ss01";
+    font-optical-sizing: auto;
+  }
+
+  h1 {
+    letter-spacing: -0.032em;
+  }
+
+  h1,
+  h2 {
+    text-wrap: balance;
+  }
+
+  p {
+    text-wrap: pretty;
+  }
+
+  ::selection {
+    background-color: rgba(var(--brand-rgb), 0.35);
+    color: #f6f4ff;
+  }
+
+  *:focus-visible {
+    outline: 2px solid rgba(var(--brand-rgb), 0.7);
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
+
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: #232131;
+    border-radius: 999px;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: #322f45;
+  }
+}
+
+/* ---------- Surfaces ---------- */
+
+/* Card with a 1px gradient edge that catches light at the top, the way most
+   modern dashboards render panels on dark backgrounds. */
+.panel {
+  position: relative;
+  background:
+    linear-gradient(
+      180deg,
+      rgba(255, 255, 255, 0.04) 0%,
+      rgba(255, 255, 255, 0.015) 100%
+    ),
+    #0b0a11;
+  border: 1px solid var(--hairline);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.05),
+    0 1px 2px rgba(0, 0, 0, 0.4);
+}
+
+.panel-hover {
+  transition:
+    border-color 0.25s ease,
+    background-color 0.25s ease,
+    box-shadow 0.25s ease,
+    transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.panel-hover:hover {
+  border-color: rgba(var(--brand-rgb), 0.4);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.07),
+    0 18px 40px -24px rgba(var(--brand-rgb), 0.55);
+  transform: translateY(-2px);
+}
+
+/* Thin luminous rule used to separate major bands. */
+.hairline-glow::before {
+  content: "";
+  position: absolute;
+  inset-inline: 0;
+  top: 0;
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(var(--brand-rgb), 0.45),
+    transparent
+  );
+}
+
+.text-gradient {
+  background: linear-gradient(
+    102deg,
+    #ffffff 0%,
+    #f1eeff 38%,
+    var(--brand) 78%,
+    var(--brand-deep) 100%
+  );
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
+}
+
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---------- Motion ---------- */
+
+@keyframes riseIn {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.animate-rise {
+  animation: riseIn 0.7s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.animate-fade {
+  animation: fadeIn 0.9s ease both;
+}
+
+.delay-1 {
+  animation-delay: 0.06s;
+}
+.delay-2 {
+  animation-delay: 0.12s;
+}
+.delay-3 {
+  animation-delay: 0.18s;
+}
+.delay-4 {
+  animation-delay: 0.24s;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
   }
 }

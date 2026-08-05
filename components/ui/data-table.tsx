@@ -32,15 +32,15 @@ export function DataTable({
   empty?: string;
 }) {
   return (
-    <div className="overflow-hidden rounded-lg border border-border">
+    <div className="panel overflow-hidden rounded-2xl">
       <Table>
         <TableHeader>
-          <TableRow className="bg-secondary hover:bg-secondary">
+          <TableRow className="border-white/[0.07] bg-white/[0.02] hover:bg-white/[0.02]">
             {columns.map((column) => (
               <TableHead
                 key={column.key}
                 className={cn(
-                  "text-[11px] font-medium tracking-wider text-secondary-foreground uppercase",
+                  "h-11 px-4 text-[10px] font-semibold tracking-[0.14em] text-neutral-500 uppercase",
                   alignClasses[column.align ?? "left"]
                 )}
               >
@@ -54,7 +54,7 @@ export function DataTable({
             <TableRow className="hover:bg-transparent">
               <TableCell
                 colSpan={columns.length}
-                className="py-10 text-center text-sm text-dim"
+                className="px-4 py-12 text-center text-sm text-neutral-500"
               >
                 {empty}
               </TableCell>
@@ -63,18 +63,16 @@ export function DataTable({
             rows.map((row, rowIndex) => (
               <TableRow
                 key={rowIndex}
-                className={cn(
-                  "border-b border-border/60",
-                  rowIndex % 2 === 1 && "bg-white/[0.015]"
-                )}
+                className="border-white/[0.05] hover:bg-white/[0.02]"
               >
                 {columns.map((column, columnIndex) => (
                   <TableCell
                     key={column.key}
                     className={cn(
+                      "px-4 py-3.5",
                       columnIndex === 0
                         ? "font-medium text-white"
-                        : "text-sm text-silver",
+                        : "text-neutral-300 tabular-nums",
                       alignClasses[column.align ?? "left"]
                     )}
                   >

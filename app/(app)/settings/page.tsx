@@ -1,13 +1,14 @@
-import { Card } from "@/components/ui/card";
-import { SectionHeader } from "@/components/ui/section-header";
+import { EmptyState } from "@/components/ui/empty-state";
+import { PageHeader } from "@/components/ui/page-header";
 
 export default function SettingsPage() {
   return (
     <>
-      <SectionHeader title="SETTINGS" />
-      <Card className="px-4 py-4">
-        <p className="text-sm text-dim">Settings arrive in a later prompt.</p>
-      </Card>
+      <PageHeader eyebrow="Ledger" title="Settings" />
+      <EmptyState
+        title="Settings arrive in a later prompt."
+        detail="Agency defaults, notification routing, and Stripe configuration all land once authentication is in place."
+      />
     </>
   );
 }

@@ -17,6 +17,7 @@ import { KpiCard, KpiGrid } from "@/components/ui/kpi-card";
 import { PageHeader } from "@/components/ui/page-header";
 import { Panel } from "@/components/ui/panel";
 import { SectionHeader } from "@/components/ui/section-header";
+import { TonePill } from "@/components/ui/tone";
 import { requireUser } from "@/lib/auth";
 import { listDefinitions } from "@/lib/db/appointment-definitions";
 import { listAppointments, showStats } from "@/lib/db/appointments";
@@ -67,7 +68,9 @@ export default async function ClientDetailPage({
   const reported = shows.showed + shows.notShown;
   const notShownRate = reported === 0 ? null : shows.notShown / reported;
 
-  const webhookUrl = `${origin}/api/webhooks/leads/${client.id}`;
+  // One endpoint receives everything. The secret in the header is what
+  // identifies the client, so the URL carries no id of its own.
+  const webhookUrl = `${origin}/api/webhooks/inbound`;
 
   return (
     <>
@@ -112,6 +115,17 @@ export default async function ClientDetailPage({
         />
       </KpiGrid>
 
+      {client.contact_email === null ? (
+        <Panel className="mt-6 flex flex-wrap items-center gap-3 border-l-2 border-l-flag-critical px-5 py-4">
+          <TonePill tone="critical">No contact email</TonePill>
+          <p className="text-sm text-silver">
+            Confirmations cannot be delivered, and a client can never be charged
+            for an appointment they were never told about. Add one before this
+            client&rsquo;s first cycle.
+          </p>
+        </Panel>
+      ) : null}
+
       <ClientTabs
         overview={
           <div className="space-y-8">
@@ -134,13 +148,16 @@ export default async function ClientDetailPage({
 
             <div>
               <SectionHeader
-                title="Lead ingestion"
-                hint="Configure these in GoHighLevel when ingestion goes live."
+                title="Inbound"
+                hint="Leads, touches, bookings, and show outcomes all post here. The secret identifies the client."
               />
               <Panel className="px-5 py-2">
                 <DefinitionList>
                   <KeyValue label="Webhook URL">
                     <CopyableValue value={webhookUrl} label="Webhook URL" />
+                  </KeyValue>
+                  <KeyValue label="Secret header">
+                    <span className="font-mono text-sm">x-vistrial-secret</span>
                   </KeyValue>
                   <KeyValue label="Webhook secret">
                     <WebhookSecretField secret={client.webhook_secret} />

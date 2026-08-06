@@ -12,10 +12,11 @@ simultaneously the proof, the invoice line, and the analytics row.
 
 ## Status
 
-Foundation only (Prompt 1): design system, app shell, Supabase wiring, and the
-full ledger schema. There is **no** authentication, no webhooks, no billing, and
-no business logic yet. Every table renders an empty state because nothing writes
-data yet.
+Design system, app shell, ledger schema, and **lead ingestion**: the inbound
+webhook, duplicate resolution, touch stamping, and response time. Appointments,
+billing, and Stripe are still empty shells, and there is still **no
+authentication** — every route, including the settings test tool, is open until
+auth lands.
 
 ## Stack
 
@@ -49,6 +50,7 @@ Visit http://localhost:3000 — it redirects to `/appointments`.
 | `npm run build` | Production build |
 | `npm run typecheck` | Route typegen + `tsc --noEmit` |
 | `npm run lint` | ESLint |
+| `npm test` | Ingestion tests (Node's test runner, no database needed) |
 
 ## Design system
 
@@ -89,32 +91,112 @@ Ported components:
 ```
 app/
   (app)/                 shell layout + appointments, leads, clients, billing, settings
+  (app)/settings/actions.ts  server actions: test tool, event resolution
   api/health/            GET { ok: true }
+  api/webhooks/inbound/  the one endpoint every provider posts to
   layout.tsx             fonts, dark theme, Toaster
   page.tsx               redirect → /appointments
 components/
   brand/                 DA logo (mark + wordmark)
+  leads/                 leads table, detail panel, filters, response value
+  settings/              unresolved event queue, inbound test tool
   shell/                 sidebar, topbar, nav-item
   ui/                    shadcn components + ported DA primitives, data-table, status-badge
 lib/
   constants.ts           APP_NAME, NAV_ITEMS
-  db/clients.ts          typed, validated data access (server-only)
+  db/                    typed, validated data access (server-only)
   format.ts              money / percent / date / em-dash formatters
+  ingest/normalise.ts    payload normalisation, event classification, idempotency key
+  ingest/pipeline.ts     authenticate → log → acknowledge → process
+  response-time.ts       response times, derived on read and stored nowhere
   ui.ts                  shared class recipes
   supabase/              browser + service-role clients
+tests/                   ingestion tests over an in-memory stand-in for Supabase
 types/database.ts        hand-written row types for every ledger table
-supabase/migrations/     001_ledger.sql, 002_harden_set_updated_at.sql
+supabase/migrations/     001_ledger.sql, 002_harden_set_updated_at.sql, 003_ingestion.sql
 ```
+
+## Lead ingestion
+
+One endpoint receives everything: GoHighLevel workflows, Facebook lead forms, and
+the landing page.
+
+```
+POST /api/webhooks/inbound
+x-vistrial-secret: <the client's webhook_secret>
+```
+
+The order is the point:
+
+1. **Authenticate.** The secret identifies the client. A missing or unmatched
+   secret is rejected with a 401 before the body is read, and nothing is written.
+2. **Log.** The raw payload is written to `inbound_events` before anything is
+   interpreted, including payloads that are not valid JSON. A payload that cannot
+   be parsed is still evidence and still replayable.
+3. **Acknowledge.** Recognised events, unrecognised ones, and events that fail to
+   process all return `200`. Returning an error to a provider triggers retry
+   storms, and every retry is a chance to duplicate a lead, an appointment, and a
+   charge. Failures are recorded on the stored event instead.
+4. **Process**, after the response, via `after()`.
+
+Four event types are recognised, declared by the sender under any of several
+common field names (`event_type`, `type`, `event`, …):
+
+| Type | Effect |
+|---|---|
+| `lead.received` | Creates a lead, or links to the original if it is a repeat |
+| `touch.system` | Stamps the first automated contact |
+| `touch.human` | Stamps the first human contact |
+| `contact.updated` | Revises an existing lead's contact fields |
+
+Anything else is stored as `unknown` and surfaced in settings. A contact attempt
+that does not declare whether it was system or human is stored as `unclassified`
+and stamps nothing: **the distinction is declared by the sender, never inferred
+from the message**, because a wrong stamp corrupts the figure the business is
+paid on.
+
+**Idempotency.** The insert into `inbound_events` is the gate. The key is the
+provider's own event id where one is supplied, and client + contact identity +
+timestamp where one is not; a unique index means a retried delivery is
+acknowledged and processed no further.
+
+**Duplicates.** A second submission from the same phone or email inside the
+client's window (`clients.duplicate_window_days`, default 30) is recorded against
+the original lead in `lead_submissions`. No second lead is created, and the
+original keeps its arrival timestamp and its touches — submitting twice does not
+reset the response clock or create a second billable path.
+
+**Touches.** Every contact attempt is stored. Only the first of each type carries
+`is_first_of_type`, and a partial unique index makes that a database guarantee
+rather than an application convention. Later contacts are history; they never
+move the first-touch values.
+
+**Response time** is computed from those touches on read and stored nowhere. A
+lead with no touch of a given type renders as "awaiting", never as zero. Time is
+raw clock time with no business-hours adjustment: a lead that arrives at nine at
+night and is answered at nine the next morning took twelve hours.
+
+### Testing without live traffic
+
+Settings carries a test tool that posts a chosen event type for a chosen client
+through the real endpoint using the real secret. It has no privileged path: same
+authentication, same logging, same idempotency, same processing. Reuse an event
+id to replay a delivery and watch the second one create nothing.
+
+`npm test` runs the same pipeline against an in-memory stand-in for Supabase that
+enforces the same unique indexes, so the rules can be checked without a database.
 
 ## Data model
 
-Nine tables, all with row level security enabled and **no policies** — service
+Ten tables, all with row level security enabled and **no policies** — service
 role only until auth lands:
 
 - `clients` — commercial terms (rate, minimum, cycle, review window, bill on booked/showed) and integration ids
 - `appointment_definitions` — versioned billability rules so changing the rules never reclassifies past appointments
-- `campaigns`, `ad_spend` — attribution and spend
-- `leads`, `touches` — inbound leads and immutable response-time stamps
+- `campaigns`, `ad_spend` — attribution and spend; an unknown campaign id is
+  created rather than dropped, because an attribution gap must never cost a lead
+- `leads`, `lead_submissions`, `touches` — inbound leads, every submission
+  including repeats, and the first-touch stamps response time is derived from
 - `appointments` — the billing unit and the proof record
 - `charges` — a billing cycle rolled up per client
 - `inbound_events` — immutable audit of every webhook payload before processing

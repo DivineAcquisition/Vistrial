@@ -13,12 +13,13 @@ Vistrial has a dedicated Supabase project in the **DivineAcquisition™** org:
 | Postgres | 17 |
 | Dashboard | https://supabase.com/dashboard/project/vsbzcbiyvaihhejjsypn |
 
-Both migrations in `migrations/` are **already applied** to it:
+Every migration in `migrations/` is **already applied** to it:
 
 | Version | Migration |
 |---|---|
 | `20260805224255` | `001_ledger` |
 | `20260805224440` | `002_harden_set_updated_at` |
+| `20260805233718` | `003_ingestion` |
 
 So there is nothing to run unless you are standing up a new project. If you are,
 paste each file into **SQL Editor → New query** in order.
@@ -36,23 +37,36 @@ paste each file into **SQL Editor → New query** in order.
 
 ## What is in the database
 
-Nine tables, verified on the live project after applying the migrations:
+Ten tables, verified on the live project after applying the migrations:
 
 - `clients`, `appointment_definitions`
 - `campaigns`, `ad_spend`
-- `leads`, `touches`
+- `leads`, `lead_submissions`, `touches`
 - `appointments`, `charges`
 - `inbound_events`
 
 Plus `public.set_updated_at()` with a pinned `search_path`, wired to
 `clients` and `appointments` via `before update` triggers.
 
+Three guarantees in `003_ingestion` are worth knowing about, because application
+code depends on the database enforcing them rather than on being careful:
+
+| Index | What it prevents |
+|---|---|
+| `inbound_events_idempotency_key` | A retried delivery becoming a second lead |
+| `touches_one_first_per_type` | A later contact overwriting a first-touch stamp |
+| `campaigns_client_external_id`, `campaigns_client_utm_campaign` | Two campaign rows racing into existence for one campaign |
+
+`leads.phone_key` and `leads.email_key` are generated columns (digits-only last
+ten, and lower-cased email). Duplicate resolution matches on those, so the match
+key can never drift from the contact details it came from.
+
 ## Row level security
 
 Every table has RLS **enabled with no policies**, so only the service role can
 read or write. That is deliberate until authentication lands, and it is why the
-Supabase security advisor reports nine `rls_enabled_no_policy` INFO lints. Server
-code must use `createServiceClient()` from `lib/supabase/server.ts`.
+Supabase security advisor reports one `rls_enabled_no_policy` INFO lint per
+table. Server code must use `createServiceClient()` from `lib/supabase/server.ts`.
 
 ## Sanity checks
 

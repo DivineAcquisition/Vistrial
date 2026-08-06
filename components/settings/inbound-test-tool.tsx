@@ -19,6 +19,15 @@ const EVENT_TYPES = [
   { value: "touch.human", label: "Human touch — a person made contact" },
   { value: "contact.updated", label: "Contact updated — revises an existing lead" },
   {
+    value: "appointment.booked",
+    label: "Appointment booked — creates or reschedules an appointment",
+  },
+  { value: "appointment.showed", label: "Showed — records the outcome" },
+  {
+    value: "appointment.no_show",
+    label: "No-show — rejects an appointment still awaiting review",
+  },
+  {
     value: "message.sent",
     label: "Message with no declared actor — stamps nothing",
   },
@@ -154,6 +163,36 @@ export function InboundTestTool({
                 </option>
               ))}
             </select>
+          </div>
+
+          <div>
+            <label className={labelClass} htmlFor="test-scheduled">
+              Scheduled for
+            </label>
+            <input
+              id="test-scheduled"
+              name="scheduledFor"
+              type="datetime-local"
+              className={`${inputClass} [color-scheme:dark]`}
+            />
+            <p className="mt-1.5 text-xs text-dim">
+              Bookings only. Blank books three days out.
+            </p>
+          </div>
+
+          <div>
+            <label className={labelClass} htmlFor="test-appointment-id">
+              Provider appointment id
+            </label>
+            <input
+              id="test-appointment-id"
+              name="appointmentId"
+              className={inputClass}
+              placeholder="Leave blank for a fresh id"
+            />
+            <p className="mt-1.5 text-xs text-dim">
+              Reuse an id with a new time to send a reschedule.
+            </p>
           </div>
 
           <div className="sm:col-span-2">

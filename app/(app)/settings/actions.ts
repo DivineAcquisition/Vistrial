@@ -22,9 +22,18 @@ const TEST_EVENT_TYPES = [
   "touch.system",
   "touch.human",
   "contact.updated",
+  "appointment.booked",
+  "appointment.showed",
+  "appointment.no_show",
   "message.sent",
   "widget.exploded",
 ] as const;
+
+const BOOKING_TYPES = new Set<string>([
+  "appointment.booked",
+  "appointment.showed",
+  "appointment.no_show",
+]);
 
 const testEventSchema = z.object({
   clientId: z.uuid("Choose a client."),
@@ -36,6 +45,8 @@ const testEventSchema = z.object({
   jobType: z.string().trim().max(120).optional(),
   channel: z.enum(["sms", "email", "call", "dm", "other"]).optional(),
   utmCampaign: z.string().trim().max(200).optional(),
+  scheduledFor: z.string().trim().max(60).optional(),
+  appointmentId: z.string().trim().max(200).optional(),
 });
 
 function value(formData: FormData, key: string): string | undefined {
@@ -81,6 +92,8 @@ export async function sendTestEvent(
     jobType: value(formData, "jobType"),
     channel: value(formData, "channel"),
     utmCampaign: value(formData, "utmCampaign"),
+    scheduledFor: value(formData, "scheduledFor"),
+    appointmentId: value(formData, "appointmentId"),
   });
 
   if (!parsed.success) {
@@ -117,7 +130,25 @@ export async function sendTestEvent(
     payload.utm_medium = input.utmCampaign ? "cpc" : null;
   }
 
-  if (input.eventType !== "lead.received" && input.eventType !== "contact.updated") {
+  if (BOOKING_TYPES.has(input.eventType)) {
+    payload.appointment_id = input.appointmentId ?? `test-appt-${crypto.randomUUID()}`;
+    payload.appointment_type = input.jobType ?? null;
+
+    if (input.eventType === "appointment.booked") {
+      // A booking with no time cannot become an appointment, so the tool
+      // defaults to one rather than silently sending an unusable payload.
+      const scheduled = input.scheduledFor
+        ? new Date(input.scheduledFor)
+        : new Date(Date.now() + 3 * 24 * 60 * 60 * 1000);
+
+      payload.start_time = Number.isNaN(scheduled.getTime())
+        ? input.scheduledFor ?? null
+        : scheduled.toISOString();
+    }
+  } else if (
+    input.eventType !== "lead.received" &&
+    input.eventType !== "contact.updated"
+  ) {
     payload.channel = input.channel ?? "sms";
   }
 
@@ -149,6 +180,8 @@ export async function sendTestEvent(
   await wait(SETTLE_MS);
   revalidatePath("/leads");
   revalidatePath("/settings");
+  revalidatePath("/appointments");
+  revalidatePath("/queue");
 
   if (!response.ok) {
     return {

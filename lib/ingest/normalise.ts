@@ -38,6 +38,18 @@ export type NormalisedEvent = {
   };
   jobType: string | null;
   channel: TouchChannel | null;
+  booking: {
+    /** When the appointment is scheduled for, ISO, or null when none was given. */
+    scheduledFor: string | null;
+    appointmentType: string | null;
+    /**
+     * The provider's identifier for the appointment itself, not for the
+     * delivery. The same booking rescheduled arrives carrying the same one.
+     */
+    providerAppointmentId: string | null;
+    /** The provider's own appointment status, verbatim, where it declared one. */
+    declaredStatus: string | null;
+  };
   campaign: {
     externalId: string | null;
     name: string | null;
@@ -187,6 +199,55 @@ const JOB_TYPE_PATHS = [
 
 const CHANNEL_PATHS = ["channel", "touch.channel", "message_type", "messageType"];
 
+const SCHEDULED_PATHS = [
+  "scheduled_for",
+  "scheduledFor",
+  "appointment.scheduled_for",
+  "appointment.start_time",
+  "appointment.startTime",
+  "appointment_time",
+  "appointmentTime",
+  "start_time",
+  "startTime",
+  "calendar.startTime",
+  "calendar.start_time",
+  "booking.start_time",
+  "booking.startTime",
+  "appointment_date",
+  "appointmentDate",
+];
+
+const APPOINTMENT_ID_PATHS = [
+  "appointment_id",
+  "appointmentId",
+  "appointment.id",
+  "calendar.appointmentId",
+  "calendar.appointment_id",
+  "booking_id",
+  "bookingId",
+  "booking.id",
+];
+
+const APPOINTMENT_TYPE_PATHS = [
+  "appointment_type",
+  "appointmentType",
+  "appointment.title",
+  "appointment.type",
+  "calendar.title",
+  "calendar_name",
+  "calendarName",
+  "booking.title",
+];
+
+const APPOINTMENT_STATUS_PATHS = [
+  "appointment_status",
+  "appointmentStatus",
+  "appointment.status",
+  "calendar.appointmentStatus",
+  "booking.status",
+  "status",
+];
+
 const CAMPAIGN_ID_PATHS = [
   "campaign_id",
   "campaignId",
@@ -285,6 +346,69 @@ const CONTACT_UPDATED_TYPES = new Set([
   "lead_updated",
 ]);
 
+const BOOKING_TYPES = new Set([
+  "appointment.booked",
+  "appointment_booked",
+  "appointment.created",
+  "appointment_created",
+  "appointmentcreate",
+  "appointment.scheduled",
+  "appointment.rescheduled",
+  "appointment_rescheduled",
+  "booking",
+  "booking.created",
+  "booking_created",
+]);
+
+const SHOWED_TYPES = new Set([
+  "appointment.showed",
+  "appointment_showed",
+  "appointment.completed",
+  "appointment_completed",
+  "appointmentcomplete",
+  "appointment.attended",
+  "showed",
+]);
+
+const NO_SHOW_TYPES = new Set([
+  "appointment.no_show",
+  "appointment.noshow",
+  "appointment_no_show",
+  "appointment_noshow",
+  "appointment.missed",
+  "no_show",
+  "noshow",
+]);
+
+/**
+ * Appointment events that say only that something changed. What changed is read
+ * from the provider's own appointment status, never inferred from the payload
+ * shape, because a booking mistaken for a show is a booking billed too early.
+ */
+const AMBIGUOUS_APPOINTMENT_TYPES = new Set([
+  "appointment",
+  "appointment.updated",
+  "appointment_updated",
+  "appointmentupdate",
+  "appointment.status_changed",
+  "booking.updated",
+  "bookingupdate",
+]);
+
+const SHOWED_STATUSES = new Set(["showed", "show", "completed", "attended", "complete"]);
+
+const NO_SHOW_STATUSES = new Set(["noshow", "no_show", "missed", "did_not_attend"]);
+
+const BOOKED_STATUSES = new Set([
+  "booked",
+  "confirmed",
+  "scheduled",
+  "new",
+  "rescheduled",
+  "pending",
+  "unconfirmed",
+]);
+
 /** Contact attempts that carry no actor of their own and must declare one. */
 const AMBIGUOUS_TOUCH_TYPES = new Set([
   "touch",
@@ -354,6 +478,28 @@ export function classifyEvent(payload: Payload): {
   if (SYSTEM_TOUCH_TYPES.has(key)) return recognised("system_touch");
   if (HUMAN_TOUCH_TYPES.has(key)) return recognised("human_touch");
   if (CONTACT_UPDATED_TYPES.has(key)) return recognised("contact_updated");
+  if (BOOKING_TYPES.has(key)) return recognised("appointment_booked");
+  if (SHOWED_TYPES.has(key)) return recognised("appointment_showed");
+  if (NO_SHOW_TYPES.has(key)) return recognised("appointment_no_show");
+
+  if (AMBIGUOUS_APPOINTMENT_TYPES.has(key)) {
+    const declared = first(payload, APPOINTMENT_STATUS_PATHS);
+    const status = declared === null ? null : normaliseKey(declared);
+
+    if (status !== null && SHOWED_STATUSES.has(status)) {
+      return recognised("appointment_showed");
+    }
+    if (status !== null && NO_SHOW_STATUSES.has(status)) {
+      return recognised("appointment_no_show");
+    }
+    if (status !== null && BOOKED_STATUSES.has(status)) {
+      return recognised("appointment_booked");
+    }
+
+    // A cancellation, or a status this system has no rule for. Guessing here
+    // would put a charge on the line, so it waits for an admin instead.
+    return { declaredType, classification: { kind: "unknown" } };
+  }
 
   if (AMBIGUOUS_TOUCH_TYPES.has(key)) {
     const actor = declaredActor(payload);
@@ -427,6 +573,13 @@ export function normaliseEvent(payload: Json): NormalisedEvent {
     },
     jobType: first(record, JOB_TYPE_PATHS),
     channel: normaliseChannel(first(record, CHANNEL_PATHS)),
+    booking: {
+      scheduledFor: normaliseTimestamp(first(record, SCHEDULED_PATHS)),
+      appointmentType:
+        first(record, APPOINTMENT_TYPE_PATHS) ?? first(record, JOB_TYPE_PATHS),
+      providerAppointmentId: first(record, APPOINTMENT_ID_PATHS),
+      declaredStatus: first(record, APPOINTMENT_STATUS_PATHS),
+    },
     campaign: {
       externalId: first(record, CAMPAIGN_ID_PATHS),
       name: first(record, CAMPAIGN_NAME_PATHS),

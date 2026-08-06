@@ -44,7 +44,20 @@ const UNIQUE_INDEXES: Record<string, UniqueIndex[]> = {
     },
   ],
   clients: [{ columns: ["ghl_location_id"], where: (row) => row.ghl_location_id != null }],
+  appointments: [
+    {
+      columns: ["client_id", "provider_appointment_id"],
+      where: (row) => row.provider_appointment_id != null && isLive(row),
+    },
+    { columns: ["client_id", "lead_id", "scheduled_for"], where: isLive },
+  ],
 };
+
+const LIVE = new Set(["pending", "confirmed", "disputed"]);
+
+function isLive(row: Row): boolean {
+  return LIVE.has(String(row.status));
+}
 
 const DEFAULTS: Record<string, () => Row> = {
   clients: () => ({
@@ -77,6 +90,7 @@ const DEFAULTS: Record<string, () => Row> = {
     job_type: null,
     raw_payload: null,
     arrival_source: "received",
+    origin: "inquiry",
     duplicate_of: null,
   }),
   touches: () => ({ channel: null, is_first_of_type: false, inbound_event_id: null }),
@@ -105,7 +119,82 @@ const DEFAULTS: Record<string, () => Row> = {
     external_campaign_id: null,
     utm_campaign: null,
   }),
+  appointments: () => ({
+    status: "pending",
+    appointment_type: null,
+    showed: null,
+    show_recorded_at: null,
+    confirmed_at: null,
+    review_window_ends_at: null,
+    rejected_reason: null,
+    disputed_at: null,
+    dispute_reason: null,
+    dispute_resolution: null,
+    charge_id: null,
+    rate_applied: null,
+    booking_source: "webhook",
+    provider_appointment_id: null,
+    previous_scheduled_for: null,
+    reschedule_count: 0,
+    notified_at: null,
+    created_by: null,
+    last_actor: null,
+    last_actor_id: null,
+    last_actor_label: null,
+    last_reason_code: null,
+    last_reason: null,
+  }),
 };
+
+/**
+ * The parts of `appointments_guard` and `appointments_history` in migration 006
+ * that the pipeline depends on. Derived values are computed by the database and
+ * never by the caller, so a test that trusted the caller would prove nothing.
+ */
+function appointmentTriggers(db: FakeDb, before: Row | null, after: Row): void {
+  const event = (extra: Row) => {
+    db.rows("appointment_events").push({
+      id: db.nextId(),
+      appointment_id: after.id,
+      from_status: null,
+      to_status: null,
+      previous_scheduled_for: null,
+      new_scheduled_for: null,
+      showed: null,
+      actor: after.last_actor ?? "system",
+      actor_label: after.last_actor_label ?? null,
+      reason_code: after.last_reason_code ?? null,
+      reason: after.last_reason ?? null,
+      occurred_at: new Date().toISOString(),
+      ...extra,
+    });
+  };
+
+  if (before === null) {
+    event({ kind: "created", to_status: after.status, new_scheduled_for: after.scheduled_for });
+    return;
+  }
+
+  if (before.scheduled_for !== after.scheduled_for) {
+    after.previous_scheduled_for = before.scheduled_for;
+    after.reschedule_count = Number(before.reschedule_count ?? 0) + 1;
+    event({
+      kind: "rescheduled",
+      previous_scheduled_for: before.scheduled_for,
+      new_scheduled_for: after.scheduled_for,
+    });
+  }
+
+  if (before.showed !== after.showed && after.showed != null) {
+    after.show_recorded_at = new Date().toISOString();
+    event({ kind: "show_recorded", showed: after.showed as boolean });
+  }
+
+  if (before.status !== after.status) {
+    if (after.status === "rejected") after.rejected_reason = after.last_reason ?? null;
+    event({ kind: "status_changed", from_status: before.status, to_status: after.status });
+  }
+}
 
 /** Mirrors the generated columns in migration 003. */
 function generated(table: string, row: Row): Row {
@@ -198,7 +287,53 @@ export class FakeDb {
     }
 
     this.rows(table).push(candidate);
+    if (table === "appointments") appointmentTriggers(this, null, candidate);
+
     return { row: candidate, error: null };
+  }
+
+  /**
+   * `capture_appointment` from migration 006. The definition version is read
+   * and stamped inside the insert, which is the whole reason it is a function.
+   */
+  rpc(name: string, params: Record<string, unknown>): Promise<QueryResult> {
+    if (name !== "capture_appointment") {
+      return Promise.resolve({
+        data: null,
+        error: { message: `unknown function ${name}` },
+      });
+    }
+
+    const [definition] = this.rows("appointment_definitions")
+      .filter((row) => row.client_id === params.p_client_id)
+      .sort((a, b) => Number(b.version) - Number(a.version));
+
+    if (!definition) {
+      return Promise.resolve({
+        data: null,
+        error: {
+          message:
+            "This client has no appointment definition to judge the appointment against.",
+        },
+      });
+    }
+
+    const { row, error } = this.insertRow("appointments", {
+      client_id: params.p_client_id,
+      lead_id: params.p_lead_id,
+      definition_version: definition.version,
+      definition_id: definition.id,
+      scheduled_for: params.p_scheduled_for,
+      appointment_type: params.p_appointment_type ?? null,
+      provider_appointment_id: params.p_provider_appointment_id ?? null,
+      booking_source: params.p_booking_source ?? "webhook",
+      showed: params.p_showed ?? null,
+      last_actor: params.p_actor,
+      last_actor_id: params.p_actor_id ?? null,
+      last_actor_label: params.p_actor_label ?? null,
+    });
+
+    return Promise.resolve({ data: row, error });
   }
 }
 
@@ -371,9 +506,11 @@ class FakeQuery implements PromiseLike<QueryResult> {
       .filter((row) => matches(row, this.filters));
 
     for (const row of updated) {
+      const before = { ...row };
       Object.assign(row, this.values ?? {});
       const regenerated = generated(this.table, row);
       Object.assign(row, regenerated);
+      if (this.table === "appointments") appointmentTriggers(this.db, before, row);
     }
 
     if (!this.returning) return { data: null, error: null };

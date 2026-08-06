@@ -1,6 +1,8 @@
 import { headers } from "next/headers";
 import { notFound } from "next/navigation";
 
+import { AppointmentsTable } from "@/components/appointments/appointments-table";
+import { toAppointmentRow } from "@/components/appointments/types";
 import { ClientDialog } from "@/components/clients/client-dialog";
 import { ClientStatusBadge } from "@/components/clients/client-status-badge";
 import { ClientTabs } from "@/components/clients/client-tabs";
@@ -17,8 +19,9 @@ import { Panel } from "@/components/ui/panel";
 import { SectionHeader } from "@/components/ui/section-header";
 import { requireUser } from "@/lib/auth";
 import { listDefinitions } from "@/lib/db/appointment-definitions";
+import { listAppointments, showStats } from "@/lib/db/appointments";
 import { getClient } from "@/lib/db/clients";
-import { formatMoney } from "@/lib/format";
+import { formatMoney, formatPercent } from "@/lib/format";
 import { btnSecondary, btnSizeSm } from "@/lib/ui";
 
 export const dynamic = "force-dynamic";
@@ -54,10 +57,15 @@ export default async function ClientDetailPage({
   const client = await getClient(id);
   if (!client) notFound();
 
-  const [definitions, origin] = await Promise.all([
+  const [definitions, origin, appointments, shows] = await Promise.all([
     listDefinitions(client.id),
     baseUrl(),
+    listAppointments({ clientId: client.id }),
+    showStats(client.id),
   ]);
+
+  const reported = shows.showed + shows.notShown;
+  const notShownRate = reported === 0 ? null : shows.notShown / reported;
 
   const webhookUrl = `${origin}/api/webhooks/leads/${client.id}`;
 
@@ -155,7 +163,50 @@ export default async function ClientDetailPage({
         definition={
           <DefinitionHistory clientId={client.id} definitions={definitions} />
         }
-        appointments={<EmptyState title="Arrives with lead ingestion." />}
+        appointments={
+          <div className="space-y-8">
+            <div>
+              <SectionHeader
+                title="Booked but not shown"
+                hint="Tracked regardless of billing basis. It is the clearest signal of whether this client's own process is working."
+              />
+              <KpiGrid>
+                <KpiCard
+                  label="Appointments held"
+                  value={String(shows.booked)}
+                  sub="Confirmed, disputed, billed, or rejected"
+                />
+                <KpiCard label="Showed" value={String(shows.showed)} tone="good" />
+                <KpiCard label="Did not show" value={String(shows.notShown)} tone="critical" />
+                <KpiCard
+                  label="No-show rate"
+                  value={notShownRate === null ? "—" : formatPercent(notShownRate)}
+                  tone={notShownRate === null ? "neutral" : "warning"}
+                  sub={
+                    shows.unreported > 0
+                      ? `${shows.unreported} never reported on, excluded`
+                      : "Of the outcomes reported"
+                  }
+                />
+              </KpiGrid>
+            </div>
+
+            <div>
+              <SectionHeader
+                title="Appointments"
+                hint={`Newest first. ${appointments.length} on record.`}
+              />
+              {appointments.length === 0 ? (
+                <EmptyState
+                  title="No appointments yet."
+                  detail="They appear the moment a booking arrives on the inbound webhook or an admin records one by hand."
+                />
+              ) : (
+                <AppointmentsTable rows={appointments.map(toAppointmentRow)} />
+              )}
+            </div>
+          </div>
+        }
         billing={<EmptyState title="Arrives with the billing engine." />}
       />
     </>

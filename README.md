@@ -12,14 +12,15 @@ simultaneously the proof, the invoice line, and the analytics row.
 
 ## Status
 
-Lead ingestion is live. There is **no** appointment capture, no billing, and no
-Stripe yet, so those tables render empty states.
+Lead ingestion and the appointment lifecycle are live. There is **no** charge
+assembly, no payment, and no Stripe yet, so billing renders an empty state.
 
 Working today: email/password sign in for administrators, client management with
 versioned appointment definitions, the inbound webhook with duplicate resolution
-and first-touch stamping, response-time measurement, the leads view, the
-unattributed/unknown event queue, and a test tool that exercises the real
-endpoint.
+and first-touch stamping, response-time measurement, the leads view, appointment
+capture from bookings and by hand, the confirmation queue, review windows,
+disputes, show outcomes, confirmation notifications, the unattributed/unknown
+event queue, and a test tool that exercises the real endpoint.
 
 ## Stack
 
@@ -122,8 +123,8 @@ bypasses RLS and is never given a session.
 
 ```
 app/
-  (app)/                 shell layout + appointments, leads, clients (list + detail),
-                         billing, settings
+  (app)/                 shell layout + queue, appointments, leads, clients
+                         (list + detail), billing, settings
   (auth)/login/          full-viewport login, no app shell
   api/health/            GET { ok: true }
   api/webhooks/inbound/  the single inbound endpoint
@@ -131,6 +132,7 @@ app/
   page.tsx               redirect → /appointments
 proxy.ts                 session refresh + route protection
 components/
+  appointments/          queue, table, evidence panel, decision dialogs, filters
   auth/                  login form
   brand/                 DA logo (mark + wordmark)
   clients/               client dialog, status badge, tabs, webhook config, definitions
@@ -139,21 +141,24 @@ components/
   shell/                 sidebar, topbar, nav-item, sign-out
   ui/                    shadcn components + ported DA primitives, data-table, kpi-card
 lib/
-  actions/               server actions (auth, clients, definitions)
+  actions/               server actions (auth, clients, definitions, appointments)
+  appointments/          capture decisions, status vocabulary, review window, shows
   auth.ts                getCurrentUser / requireUser
   constants.ts           APP_NAME, NAV_ITEMS
-  db/                    clients, appointment-definitions, leads, inbound-events
+  db/                    clients, appointment-definitions, appointments, leads,
+                         inbound-events
   format.ts              money / percent / date / em-dash formatters
-  ingest/                payload normalisation and the ingestion pipeline
+  ingest/                payload normalisation, the ingestion pipeline, bookings
+  notifications/         the confirmation a client is owed, and its delivery
   response-time.ts       derived response times, tones, and formatting
-  schemas/client.ts      zod schemas shared by forms and actions
+  schemas/               zod schemas shared by forms and actions
   ui.ts                  shared class recipes
   supabase/              browser, session, service-role clients + env
 types/database.ts        hand-written row types for every ledger table
-tests/                   ingestion pipeline tests against a fake database
+tests/                   pipeline and lifecycle tests against a fake database
 supabase/migrations/     001_ledger, 002_harden_set_updated_at,
                          003_client_definition_rpcs, 004_ingestion,
-                         005_client_duplicate_window
+                         005_client_duplicate_window, 006_appointment_lifecycle
 ```
 
 ## Lead ingestion
@@ -171,8 +176,12 @@ workflows, Facebook lead forms, and the landing page. The order is deliberate.
    because providers that wait retry, and retries are how duplicates get made. A
    recognised event that fails still returns success with the failure recorded on
    the stored event; an unrecognised type does too, stored as `unknown`.
-4. **Process.** Four event types are recognised: `lead_received`, `system_touch`,
-   `human_touch`, `contact_updated`.
+4. **Process.** Seven event types are recognised: `lead_received`,
+   `system_touch`, `human_touch`, `contact_updated`, `appointment_booked`,
+   `appointment_showed`, `appointment_no_show`. An appointment event that only
+   says something changed is read from the provider's own appointment status; a
+   status there is no rule for is stored as `unknown` rather than guessed at,
+   because guessing puts a charge on the line.
 
 **Idempotency.** Matched on the provider's own event id where one is supplied,
 and on client plus contact identity plus timestamp where it is not. A unique index
@@ -214,9 +223,63 @@ every later change inserts a new version with its own effective date. An
 appointment is judged against the version in effect when it was created; a new
 version never applies retroactively.
 
+## Appointments
+
+**Capture.** Bookings arrive on the same webhook as leads, or are recorded by
+hand. Every appointment belongs to a lead: where a booking matches none, one is
+created from whatever identity it carries and marked as originating from the
+booking. A booking with no phone and no email is refused rather than becoming an
+appointment nobody can explain.
+
+**One appointment, not two.** The same booking delivered twice produces one
+record. A booking for a lead that already holds a live appointment updates that
+one as a reschedule, retaining the time it replaced, so a reschedule can never
+become a second billable appointment. Matching only considers live appointments:
+a rejected one is a judgement already made, and a billed one is immutable, so a
+later booking on the same slot is genuinely new.
+
+**Version stamping.** The definition version in effect at creation is written
+onto the appointment inside the same statement that inserts it, and a trigger
+refuses any later change to it. Tightening the criteria in March cannot make
+February's confirmations questionable.
+
+**Five statuses.** `pending → confirmed | rejected`, `confirmed → disputed |
+billed`, `disputed → confirmed | rejected`. Nothing moves out of `rejected` or
+`billed`, and a billed appointment cannot be edited at all. Every transition
+records who made it, when, and why where a reason applies, written to
+`appointment_events` by the same trigger that allows the change.
+
+**The review window.** Confirming opens a window of the client's configured
+length (default 72 hours), computed by the database from the moment of
+confirmation. It is raw clock time with no weekend adjustment: a shorter
+effective window over a weekend is acceptable, silently extending one is not,
+because the billing date would drift. An appointment cannot become billable
+until the window has genuinely elapsed **and** the client has been notified —
+both enforced in the trigger, not only in the application.
+
+**Disputes.** Raising one holds billing immediately; the appointment leaves the
+pending charge rather than accruing toward it. Upholding rejects it, resolving
+returns it to confirmed with a fresh window. Every dispute and its outcome are
+kept permanently in `appointment_disputes`, with both parties' reasoning.
+Clients have no login yet, so an admin records the dispute on their behalf and
+the history says which admin recorded it.
+
+**Showed and no-shows.** A client billing on booked confirms as normal and the
+outcome is recorded when known. A client billing on showed cannot have an
+appointment confirmed before a show is recorded — the trigger refuses it — and
+the queue separates those so they are not mistaken for unreviewed work. A
+no-show on an appointment still awaiting review is rejected outright.
+Booked-but-not-shown is tracked per client regardless of billing basis.
+
+**Notification.** Confirming inserts a notification record before anything is
+sent, so a confirmed appointment can never exist without a record of what the
+client was owed. Delivery goes through Resend when `RESEND_API_KEY` and
+`NOTIFICATION_FROM` are set, and a failure stays visible and retryable rather
+than being swallowed.
+
 ## Data model
 
-Nine tables, all with row level security enabled and **no policies** — service
+Twelve tables, all with row level security enabled and **no policies** — service
 role only until auth lands:
 
 - `clients` — commercial terms (rate, minimum, cycle, review window, bill on booked/showed) and integration ids
@@ -224,11 +287,17 @@ role only until auth lands:
 - `campaigns`, `ad_spend` — attribution and spend
 - `leads`, `touches`, `lead_submissions` — inbound leads, immutable first-touch stamps, and every repeat submission
 - `appointments` — the billing unit and the proof record
+- `appointment_events` — every material change, in order, with who and why
+- `appointment_disputes` — permanent, outliving the status they produced
+- `appointment_notifications` — what the client was told and whether it arrived
 - `charges` — a billing cycle rolled up per client
 - `inbound_events` — immutable audit of every webhook payload before processing
 
 `public.set_updated_at()` (with a pinned `search_path`) keeps `updated_at` honest
-on `clients` and `appointments`.
+on `clients`, `appointments`, and `appointment_notifications`.
+`guard_appointment()` decides whether a change to an appointment is allowed and
+derives what the caller must not supply; `record_appointment_history()` writes
+the audit as part of the same statement.
 
 ## History
 

@@ -16,52 +16,43 @@
  * exercised in tests without a live Supabase project.
  */
 
-import type { SupabaseClient } from "@supabase/supabase-js";
-
 import {
-  emailKey,
+  handleAppointmentBooked,
+  handleAppointmentOutcome,
+} from "@/lib/ingest/booking";
+import {
+  findLeadForContact,
+  findOriginalLead,
+  resolveCampaign,
+} from "@/lib/ingest/leads";
+import {
   idempotencyKey,
   leadSource,
   normaliseEvent,
-  phoneKey,
   type NormalisedEvent,
 } from "@/lib/ingest/normalise";
+import {
+  isUniqueViolation,
+  message,
+  type LedgerDb,
+  type ProcessOutcome,
+} from "@/lib/ingest/types";
 import type {
   CanonicalEventType,
   Client,
   InboundEvent,
   InboundEventStatus,
   Json,
-  Lead,
   TouchType,
 } from "@/types/database";
 
-export type LedgerDb = SupabaseClient;
+export type { LedgerDb } from "@/lib/ingest/types";
 
 export type InboundReceipt = {
   status: number;
   body: Record<string, Json>;
   /** Work deliberately deferred until after the acknowledgement is sent. */
   process: (() => Promise<void>) | null;
-};
-
-const UNIQUE_VIOLATION = "23505";
-
-const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-
-function isUniqueViolation(error: { code?: string } | null): boolean {
-  return error?.code === UNIQUE_VIOLATION;
-}
-
-function message(error: unknown): string {
-  return error instanceof Error ? error.message : String(error);
-}
-
-type ProcessOutcome = {
-  status: Extract<InboundEventStatus, "processed" | "failed">;
-  leadId?: string | null;
-  touchId?: string | null;
-  error?: string | null;
 };
 
 /* -------------------------------------------------------------------------- */
@@ -269,6 +260,7 @@ async function runAndRecord(
       client_id: client.id,
       lead_id: outcome.leadId ?? null,
       touch_id: outcome.touchId ?? null,
+      appointment_id: outcome.appointmentId ?? null,
       error: outcome.error ?? null,
       location_mismatch: stored.location_mismatch,
       ...(extra?.resolutionNote
@@ -294,166 +286,18 @@ async function runEvent(
       return handleTouch(db, stored, client, event, "human");
     case "contact_updated":
       return handleContactUpdated(db, client, event);
+    case "appointment_booked":
+      return handleAppointmentBooked(db, stored, client, event);
+    case "appointment_showed":
+      return handleAppointmentOutcome(db, client, event, true);
+    case "appointment_no_show":
+      return handleAppointmentOutcome(db, client, event, false);
   }
-}
-
-/* -------------------------------------------------------------------------- */
-/* Attribution                                                                 */
-/* -------------------------------------------------------------------------- */
-
-type CampaignRow = { id: string };
-
-/**
- * A campaign identifier that does not exist yet is created rather than dropped.
- * Losing the attribution is a reporting gap; losing the lead is a lost sale.
- */
-async function resolveCampaign(
-  db: LedgerDb,
-  clientId: string,
-  event: NormalisedEvent
-): Promise<string | null> {
-  const externalId = event.campaign.externalId;
-  const utmCampaign = event.utm.campaign;
-
-  if (externalId === null && utmCampaign === null) return null;
-
-  const column = externalId !== null ? "external_campaign_id" : "utm_campaign";
-  const value = externalId ?? utmCampaign;
-
-  const find = async () => {
-    const { data } = await db
-      .from("campaigns")
-      .select("id")
-      .eq("client_id", clientId)
-      .eq(column, value)
-      .returns<CampaignRow[]>()
-      .maybeSingle();
-    return data?.id ?? null;
-  };
-
-  const existing = await find();
-  if (existing !== null) return existing;
-
-  const { data, error } = await db
-    .from("campaigns")
-    .insert({
-      client_id: clientId,
-      name: event.campaign.name ?? utmCampaign ?? `Campaign ${externalId}`,
-      platform: event.campaign.platform ?? "facebook",
-      external_campaign_id: externalId,
-      utm_campaign: utmCampaign,
-    })
-    .select("id")
-    .returns<CampaignRow[]>()
-    .single();
-
-  if (error) {
-    // Another delivery of the same campaign won the race.
-    if (isUniqueViolation(error)) return find();
-    return null;
-  }
-
-  return data.id;
 }
 
 /* -------------------------------------------------------------------------- */
 /* Leads                                                                       */
 /* -------------------------------------------------------------------------- */
-
-async function findLeadByKey(
-  db: LedgerDb,
-  clientId: string,
-  column: "phone_key" | "email_key",
-  value: string,
-  since: string | null,
-  order: "first" | "latest"
-): Promise<Lead | null> {
-  let query = db
-    .from("leads")
-    .select("*")
-    .eq("client_id", clientId)
-    .eq(column, value);
-
-  if (since !== null) query = query.gte("arrived_at", since);
-
-  const { data } = await query
-    .order("arrived_at", { ascending: order === "first" })
-    .limit(1)
-    .returns<Lead[]>()
-    .maybeSingle();
-
-  return data ?? null;
-}
-
-/**
- * Duplicate resolution. A second submission from the same phone or email inside
- * the client's window is the same lead, not a new one — this is the single most
- * common source of billing disputes in this model, and it is far cheaper to
- * catch at the door than to argue about later.
- */
-async function findOriginalLead(
-  db: LedgerDb,
-  client: Client,
-  event: NormalisedEvent,
-  arrivedAt: string
-): Promise<Lead | null> {
-  const since = new Date(
-    Date.parse(arrivedAt) - client.duplicate_window_days * 24 * 60 * 60 * 1000
-  ).toISOString();
-
-  const candidates: Lead[] = [];
-
-  const phone = phoneKey(event.contact.phone);
-  if (phone !== null) {
-    const match = await findLeadByKey(db, client.id, "phone_key", phone, since, "first");
-    if (match) candidates.push(match);
-  }
-
-  const email = emailKey(event.contact.email);
-  if (email !== null) {
-    const match = await findLeadByKey(db, client.id, "email_key", email, since, "first");
-    if (match) candidates.push(match);
-  }
-
-  if (candidates.length === 0) return null;
-
-  return candidates.reduce((earliest, candidate) =>
-    Date.parse(candidate.arrived_at) < Date.parse(earliest.arrived_at) ? candidate : earliest
-  );
-}
-
-/** The lead a touch or a contact update belongs to: the most recent match. */
-async function findLeadForContact(
-  db: LedgerDb,
-  clientId: string,
-  event: NormalisedEvent
-): Promise<Lead | null> {
-  const externalId = event.contact.externalId;
-  if (externalId !== null && UUID.test(externalId)) {
-    const { data } = await db
-      .from("leads")
-      .select("*")
-      .eq("id", externalId)
-      .eq("client_id", clientId)
-      .returns<Lead[]>()
-      .maybeSingle();
-    if (data) return data;
-  }
-
-  const phone = phoneKey(event.contact.phone);
-  if (phone !== null) {
-    const match = await findLeadByKey(db, clientId, "phone_key", phone, null, "latest");
-    if (match) return match;
-  }
-
-  const email = emailKey(event.contact.email);
-  if (email !== null) {
-    const match = await findLeadByKey(db, clientId, "email_key", email, null, "latest");
-    if (match) return match;
-  }
-
-  return null;
-}
 
 async function handleLeadReceived(
   db: LedgerDb,

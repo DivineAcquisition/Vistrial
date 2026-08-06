@@ -19,7 +19,9 @@ Both migrations in `migrations/` are **already applied** to it:
 |---|---|
 | `20260805224255` | `001_ledger` |
 | `20260805224440` | `002_harden_set_updated_at` |
-| `20260805231206` | `003_client_definition_rpcs` |
+| `20260805233235` | `003_client_definition_rpcs` |
+| `20260805233700` | `004_ingestion` (recorded as `003_ingestion`) |
+| `20260806002600` | `005_client_duplicate_window` |
 
 So there is nothing to run unless you are standing up a new project. If you are,
 paste each file into **SQL Editor → New query** in order.
@@ -51,9 +53,15 @@ Nine tables, verified on the live project after applying the migrations:
 
 - `clients`, `appointment_definitions`
 - `campaigns`, `ad_spend`
-- `leads`, `touches`
+- `leads`, `touches`, `lead_submissions`
 - `appointments`, `charges`
 - `inbound_events`
+
+Two guarantees live in indexes rather than application code: a partial unique
+index on `touches (lead_id, touch_type) where is_first_of_type` makes "stamps
+once, never overwritten" a database rule, and a unique index on
+`inbound_events (idempotency_key)` is what makes a retried delivery lose rather
+than duplicate.
 
 Plus these functions, all with a pinned `search_path`:
 
@@ -63,6 +71,10 @@ Plus these functions, all with a pinned `search_path`:
   a definition
 - `create_appointment_definition_version(...)` — inserts the next version for a
   client, computing the version number inside the insert
+
+`004_ingestion` was applied to the live project under the name `003_ingestion`
+before the file was renumbered to sit after `003_client_definition_rpcs`. The
+file order now matches the order the database applied them in.
 
 ## Row level security
 

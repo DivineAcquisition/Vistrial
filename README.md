@@ -12,13 +12,14 @@ simultaneously the proof, the invoice line, and the analytics row.
 
 ## Status
 
-Admin authentication and client management are in. There are **no** webhooks, no
-lead ingestion, no billing, and no Stripe yet, so the appointments, leads, and
-billing tables render empty states.
+Lead ingestion is live. There is **no** appointment capture, no billing, and no
+Stripe yet, so those tables render empty states.
 
-Working today: email/password sign in for administrators, the client list, the
-create/edit client dialog, the client detail page with its webhook configuration,
-and versioned appointment definitions.
+Working today: email/password sign in for administrators, client management with
+versioned appointment definitions, the inbound webhook with duplicate resolution
+and first-touch stamping, response-time measurement, the leads view, the
+unattributed/unknown event queue, and a test tool that exercises the real
+endpoint.
 
 ## Stack
 
@@ -52,6 +53,7 @@ Visit http://localhost:3000 — it redirects to `/appointments`.
 | `npm run build` | Production build |
 | `npm run typecheck` | Route typegen + `tsc --noEmit` |
 | `npm run lint` | ESLint |
+| `npm test` | Ingestion pipeline tests (node:test, no live database) |
 
 ## Design system
 
@@ -124,6 +126,7 @@ app/
                          billing, settings
   (auth)/login/          full-viewport login, no app shell
   api/health/            GET { ok: true }
+  api/webhooks/inbound/  the single inbound endpoint
   layout.tsx             fonts, dark theme, Toaster
   page.tsx               redirect → /appointments
 proxy.ts                 session refresh + route protection
@@ -131,20 +134,77 @@ components/
   auth/                  login form
   brand/                 DA logo (mark + wordmark)
   clients/               client dialog, status badge, tabs, webhook config, definitions
+  leads/                 leads table, filters, detail panel
+  settings/              unresolved event queue, inbound test tool
   shell/                 sidebar, topbar, nav-item, sign-out
   ui/                    shadcn components + ported DA primitives, data-table, kpi-card
 lib/
   actions/               server actions (auth, clients, definitions)
   auth.ts                getCurrentUser / requireUser
   constants.ts           APP_NAME, NAV_ITEMS
-  db/                    clients, appointment-definitions (server-only)
+  db/                    clients, appointment-definitions, leads, inbound-events
   format.ts              money / percent / date / em-dash formatters
+  ingest/                payload normalisation and the ingestion pipeline
+  response-time.ts       derived response times, tones, and formatting
   schemas/client.ts      zod schemas shared by forms and actions
   ui.ts                  shared class recipes
   supabase/              browser, session, service-role clients + env
 types/database.ts        hand-written row types for every ledger table
-supabase/migrations/     001_ledger, 002_harden_set_updated_at, 003_client_definition_rpcs
+tests/                   ingestion pipeline tests against a fake database
+supabase/migrations/     001_ledger, 002_harden_set_updated_at,
+                         003_client_definition_rpcs, 004_ingestion,
+                         005_client_duplicate_window
 ```
+
+## Lead ingestion
+
+One endpoint, `POST /api/webhooks/inbound`, receives everything: GoHighLevel
+workflows, Facebook lead forms, and the landing page. The order is deliberate.
+
+1. **Authenticate.** The shared secret in `x-vistrial-secret` identifies the
+   client. A missing or unmatched secret is rejected with 401 before the body is
+   parsed, and nothing is written.
+2. **Log before interpreting.** The raw payload lands in `inbound_events` first.
+   A payload that cannot be parsed is still evidence, still replayable, and still
+   the record of what arrived and when.
+3. **Acknowledge.** Success is returned immediately and processing happens after,
+   because providers that wait retry, and retries are how duplicates get made. A
+   recognised event that fails still returns success with the failure recorded on
+   the stored event; an unrecognised type does too, stored as `unknown`.
+4. **Process.** Four event types are recognised: `lead_received`, `system_touch`,
+   `human_touch`, `contact_updated`.
+
+**Idempotency.** Matched on the provider's own event id where one is supplied,
+and on client plus contact identity plus timestamp where it is not. A unique index
+on `inbound_events.idempotency_key` is the gate, so a retried delivery loses the
+insert rather than producing a second lead.
+
+**Duplicate resolution.** A second submission from the same phone or email inside
+the client's window (default 30 days, configurable per client) links to the
+original lead instead of creating a new one. The original keeps its arrival
+timestamp and its touches — submitting twice does not reset the response clock or
+create a second billable path — and every submission stays visible.
+
+**Touch stamping.** A touch of a given type stamps once per lead, on the first
+occurrence, and is never overwritten. Later contacts are still recorded as
+activity but do not move the figure response times are read from; a partial unique
+index on `touches (lead_id, touch_type) where is_first_of_type` enforces it in the
+database. System versus human is taken from what the sender declares, never
+inferred from the message. An event that declares neither stamps nothing and is
+surfaced for classification.
+
+**Nothing is discarded.** Events that cannot be attributed to a client, types the
+system does not recognise, and touches that declared neither kind all wait in
+settings, with the count shown on the Settings item in the sidebar.
+
+## Response time
+
+Three figures — system, human, and the gap between them — all computed from touch
+records on read. **None is stored on any record.** A lead with no touch of a given
+type renders "Awaiting" rather than zero, because zero and unanswered mean
+opposite things. Time is raw clock time with no business-hours adjustment: a lead
+arriving at nine at night and answered at nine the next morning took twelve hours,
+and that is the fact the offer exists to fix.
 
 ## Appointment definitions
 
@@ -162,7 +222,7 @@ role only until auth lands:
 - `clients` — commercial terms (rate, minimum, cycle, review window, bill on booked/showed) and integration ids
 - `appointment_definitions` — versioned billability rules so changing the rules never reclassifies past appointments
 - `campaigns`, `ad_spend` — attribution and spend
-- `leads`, `touches` — inbound leads and immutable response-time stamps
+- `leads`, `touches`, `lead_submissions` — inbound leads, immutable first-touch stamps, and every repeat submission
 - `appointments` — the billing unit and the proof record
 - `charges` — a billing cycle rolled up per client
 - `inbound_events` — immutable audit of every webhook payload before processing

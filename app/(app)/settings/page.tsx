@@ -1,7 +1,10 @@
 import { EmptyState } from "@/components/ui/empty-state";
 import { PageHeader } from "@/components/ui/page-header";
+import { requireUser } from "@/lib/auth";
 
-export default function SettingsPage() {
+export default async function SettingsPage() {
+  await requireUser();
+
   return (
     <>
       <PageHeader eyebrow="Ledger" title="Settings" />

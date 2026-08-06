@@ -1,6 +1,7 @@
 import { DataTable } from "@/components/ui/data-table";
 import { PageHeader } from "@/components/ui/page-header";
 import { SectionHeader } from "@/components/ui/section-header";
+import { requireUser } from "@/lib/auth";
 
 const columns = [
   { key: "arrived", label: "Arrived" },
@@ -10,7 +11,9 @@ const columns = [
   { key: "response", label: "Response", align: "right" as const },
 ];
 
-export default function LeadsPage() {
+export default async function LeadsPage() {
+  await requireUser();
+
   return (
     <>
       <PageHeader

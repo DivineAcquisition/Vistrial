@@ -1,6 +1,7 @@
 import { DataTable } from "@/components/ui/data-table";
 import { PageHeader } from "@/components/ui/page-header";
 import { SectionHeader } from "@/components/ui/section-header";
+import { requireUser } from "@/lib/auth";
 
 const columns = [
   { key: "period", label: "Period" },
@@ -10,7 +11,9 @@ const columns = [
   { key: "status", label: "Status" },
 ];
 
-export default function BillingPage() {
+export default async function BillingPage() {
+  await requireUser();
+
   return (
     <>
       <PageHeader

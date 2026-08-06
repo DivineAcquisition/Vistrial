@@ -8,7 +8,7 @@ export default function AppLayout({
   children: React.ReactNode;
 }) {
   return (
-    <div className="min-h-screen bg-ink-950 text-white antialiased">
+    <div className="min-h-screen bg-background text-white antialiased">
       <Sidebar />
       <div className="flex min-h-screen min-w-0 flex-col pl-60">
         <Topbar />
@@ -17,12 +17,12 @@ export default function AppLayout({
           <div className="mx-auto max-w-7xl">{children}</div>
         </main>
 
-        <footer className="border-t border-white/[0.06] px-4 py-5 sm:px-6">
+        <footer className="border-t border-border px-4 py-5 sm:px-6">
           <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-3">
-            <p className="text-xs text-neutral-600">
+            <p className="text-xs text-dim">
               {APP_NAME} appointment ledger · internal to {APP_OWNER}
             </p>
-            <p className="text-xs text-neutral-600">
+            <p className="text-xs text-dim">
               Paid per confirmed appointment
             </p>
           </div>

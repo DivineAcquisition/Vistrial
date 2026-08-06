@@ -1,7 +1,8 @@
 import { DataTable } from "@/components/ui/data-table";
+import { KpiCard, KpiGrid } from "@/components/ui/kpi-card";
 import { PageHeader } from "@/components/ui/page-header";
 import { SectionHeader } from "@/components/ui/section-header";
-import { StatGrid, StatTile } from "@/components/ui/stat-tile";
+import { requireUser } from "@/lib/auth";
 
 const columns = [
   { key: "date", label: "Date" },
@@ -11,7 +12,9 @@ const columns = [
   { key: "rate", label: "Rate", align: "right" as const },
 ];
 
-export default function AppointmentsPage() {
+export default async function AppointmentsPage() {
+  await requireUser();
+
   return (
     <>
       <PageHeader
@@ -20,12 +23,12 @@ export default function AppointmentsPage() {
         description="Every appointment is the proof, the invoice line, and the analytics row. Nothing is billable until it is confirmed."
       />
 
-      <StatGrid>
-        <StatTile label="Pending review" value="—" tone="warning" />
-        <StatTile label="Confirmed this cycle" value="—" tone="good" />
-        <StatTile label="Disputed" value="—" tone="critical" />
-        <StatTile label="Cycle total" value="—" tone="brand" />
-      </StatGrid>
+      <KpiGrid>
+        <KpiCard label="Pending review" value="—" tone="warning" />
+        <KpiCard label="Confirmed this cycle" value="—" tone="good" />
+        <KpiCard label="Disputed" value="—" tone="critical" />
+        <KpiCard label="Cycle total" value="—" tone="brand" />
+      </KpiGrid>
 
       <div className="mt-8">
         <SectionHeader title="Appointment log" hint="Newest first." />

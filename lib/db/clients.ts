@@ -1,56 +1,7 @@
 import "server-only";
 
-import { z } from "zod";
-
 import { createServiceClient } from "@/lib/supabase/server";
-import type { Client, ClientInsert, ClientUpdate } from "@/types/database";
-
-/**
- * `webhook_secret` is intentionally not part of this schema. The column default
- * generates it, and a strict object rejects it if a caller tries to send one.
- */
-export const clientInsertSchema = z.strictObject({
-  name: z.string().min(2, "Client name must be at least 2 characters."),
-  contact_name: z.string().nullish(),
-  contact_email: z.email("Contact email must be a valid email.").nullish(),
-  contact_phone: z.string().nullish(),
-  status: z.enum(["Onboarding", "Active", "Paused", "Churned"]).optional(),
-
-  rate_per_appointment: z
-    .number()
-    .positive("Rate per appointment must be greater than 0.")
-    .optional(),
-  monthly_minimum: z
-    .number()
-    .min(0, "Monthly minimum cannot be negative.")
-    .optional(),
-  billing_cycle_days: z
-    .number()
-    .int("Billing cycle must be a whole number of days.")
-    .positive("Billing cycle must be greater than 0 days.")
-    .optional(),
-  review_window_hours: z
-    .number()
-    .int("Review window must be a whole number of hours.")
-    .positive("Review window must be greater than 0 hours.")
-    .optional(),
-  bill_on: z.enum(["booked", "showed"]).optional(),
-
-  service_area: z.string().nullish(),
-  accepted_job_types: z.array(z.string()).nullish(),
-
-  ghl_location_id: z.string().nullish(),
-  stripe_customer_id: z.string().nullish(),
-  stripe_payment_method_id: z.string().nullish(),
-});
-
-export const clientUpdateSchema = clientInsertSchema.partial();
-
-function describe(error: z.ZodError): string {
-  return error.issues
-    .map((issue) => `${issue.path.join(".") || "input"}: ${issue.message}`)
-    .join("; ");
-}
+import type { Client, ClientUpdate } from "@/types/database";
 
 export async function listClients(): Promise<Client[]> {
   const supabase = createServiceClient();
@@ -104,40 +55,68 @@ export async function getClientByLocation(
   return data ?? null;
 }
 
-export async function createClient(input: ClientInsert): Promise<Client> {
-  const parsed = clientInsertSchema.safeParse(input);
-  if (!parsed.success) {
-    throw new Error(`Invalid client: ${describe(parsed.error)}`);
-  }
+export type NewClient = {
+  name: string;
+  contact_name: string | null;
+  contact_email: string | null;
+  contact_phone: string | null;
+  status: Client["status"];
+  rate_per_appointment: number;
+  monthly_minimum: number;
+  billing_cycle_days: number;
+  review_window_hours: number;
+  bill_on: Client["bill_on"];
+  ghl_location_id: string | null;
+  criteria: string;
+  service_area: string | null;
+  accepted_job_types: string[];
+};
 
+/**
+ * Creates the client and version one of its appointment definition in a single
+ * transaction. `webhook_secret` is never passed: the column default generates it.
+ */
+export async function createClientWithDefinition(
+  input: NewClient
+): Promise<Client> {
   const supabase = createServiceClient();
   const { data, error } = await supabase
-    .from("clients")
-    .insert(parsed.data)
-    .select("*")
-    .returns<Client[]>()
-    .single();
+    .rpc("create_client_with_definition", {
+      p_name: input.name,
+      p_criteria: input.criteria,
+      p_contact_name: input.contact_name,
+      p_contact_email: input.contact_email,
+      p_contact_phone: input.contact_phone,
+      p_status: input.status,
+      p_rate_per_appointment: input.rate_per_appointment,
+      p_monthly_minimum: input.monthly_minimum,
+      p_billing_cycle_days: input.billing_cycle_days,
+      p_review_window_hours: input.review_window_hours,
+      p_bill_on: input.bill_on,
+      p_service_area: input.service_area,
+      p_accepted_job_types: input.accepted_job_types,
+      p_ghl_location_id: input.ghl_location_id,
+    });
 
   if (error) {
     throw new Error(`Failed to create client: ${error.message}`);
   }
 
-  return data;
+  if (!data) {
+    throw new Error("Failed to create client: the database returned no row.");
+  }
+
+  return data as Client;
 }
 
 export async function updateClient(
   id: string,
   input: ClientUpdate
 ): Promise<Client> {
-  const parsed = clientUpdateSchema.safeParse(input);
-  if (!parsed.success) {
-    throw new Error(`Invalid client update: ${describe(parsed.error)}`);
-  }
-
   const supabase = createServiceClient();
   const { data, error } = await supabase
     .from("clients")
-    .update(parsed.data)
+    .update(input)
     .eq("id", id)
     .select("*")
     .returns<Client[]>()

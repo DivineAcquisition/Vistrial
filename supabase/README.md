@@ -19,6 +19,7 @@ Both migrations in `migrations/` are **already applied** to it:
 |---|---|
 | `20260805224255` | `001_ledger` |
 | `20260805224440` | `002_harden_set_updated_at` |
+| `20260805231206` | `003_client_definition_rpcs` |
 
 So there is nothing to run unless you are standing up a new project. If you are,
 paste each file into **SQL Editor → New query** in order.
@@ -34,6 +35,16 @@ paste each file into **SQL Editor → New query** in order.
 4. Restart `npm run dev` and open `/clients`. You should see the empty table
    rather than the "Supabase not connected" panel.
 
+## Creating an admin account
+
+There is no public signup anywhere in the application, by design. Administrators
+are created by hand:
+
+1. Open [Authentication → Users](https://supabase.com/dashboard/project/vsbzcbiyvaihhejjsypn/auth/users).
+2. **Add user → Create new user**, set the email and password, and tick
+   **Auto Confirm User** (an unconfirmed account cannot sign in).
+3. Sign in at `/login`.
+
 ## What is in the database
 
 Nine tables, verified on the live project after applying the migrations:
@@ -44,8 +55,14 @@ Nine tables, verified on the live project after applying the migrations:
 - `appointments`, `charges`
 - `inbound_events`
 
-Plus `public.set_updated_at()` with a pinned `search_path`, wired to
-`clients` and `appointments` via `before update` triggers.
+Plus these functions, all with a pinned `search_path`:
+
+- `set_updated_at()` — wired to `clients` and `appointments` via `before update` triggers
+- `create_client_with_definition(...)` — inserts a client and version one of its
+  appointment definition in one transaction, so a client can never exist without
+  a definition
+- `create_appointment_definition_version(...)` — inserts the next version for a
+  client, computing the version number inside the insert
 
 ## Row level security
 

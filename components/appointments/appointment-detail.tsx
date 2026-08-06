@@ -106,8 +106,8 @@ export function AppointmentDetail({ appointment }: { appointment: AppointmentRow
             tone="neutral"
             sub={
               appointment.rate === null
-                ? "Stamped when it is confirmed"
-                : "Stamped at confirmation, whatever the rate becomes later"
+                ? "Stamped when the charge is assembled"
+                : "Stamped at assembly, whatever the rate becomes later"
             }
           />
         </KpiGrid>

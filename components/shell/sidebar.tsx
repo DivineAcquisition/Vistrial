@@ -5,23 +5,34 @@ import { NavItem } from "@/components/shell/nav-item";
 import { SignOutButton } from "@/components/shell/sign-out-button";
 import { APP_NAME, APP_OWNER, NAV_ITEMS } from "@/lib/constants";
 import { countQueue } from "@/lib/db/appointments";
+import { countAttention } from "@/lib/db/billing";
 import { countUnresolvedEvents } from "@/lib/db/inbound-events";
 
+type Counts = { queue: number; attention: number; unresolved: number };
+
 /** Work worth seeing without opening the page it lives on. */
-function badge(href: string, queue: number, unresolved: number) {
-  if (href === "/queue" && queue > 0) return { count: queue, tone: "warning" as const };
-  if (href === "/settings" && unresolved > 0) {
-    return { count: unresolved, tone: "critical" as const };
+function badge(href: string, counts: Counts) {
+  if (href === "/queue" && counts.queue > 0) {
+    return { count: counts.queue, tone: "warning" as const };
+  }
+  if (href === "/billing" && counts.attention > 0) {
+    return { count: counts.attention, tone: "critical" as const };
+  }
+  if (href === "/settings" && counts.unresolved > 0) {
+    return { count: counts.unresolved, tone: "critical" as const };
   }
   return null;
 }
 
 export async function Sidebar() {
-  const [unresolved, queue] = await Promise.all([
+  const [unresolved, queue, attention] = await Promise.all([
     // Inbound events nobody could place are worth seeing without opening settings.
     countUnresolvedEvents(),
     countQueue(),
+    countAttention(),
   ]);
+
+  const counts: Counts = { queue, attention, unresolved };
 
   return (
     <aside className="fixed inset-y-0 left-0 flex w-60 flex-col border-r border-border bg-sidebar">
@@ -39,7 +50,7 @@ export async function Sidebar() {
 
       <nav className="flex flex-col">
         {NAV_ITEMS.map(({ href, label, icon: Icon }) => {
-          const marker = badge(href, queue, unresolved);
+          const marker = badge(href, counts);
 
           return (
             <NavItem

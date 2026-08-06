@@ -8,7 +8,16 @@
 
 export type Row = Record<string, unknown>;
 
-type FilterOperator = "eq" | "gte" | "lte" | "in";
+type FilterOperator =
+  | "eq"
+  | "neq"
+  | "gt"
+  | "gte"
+  | "lt"
+  | "lte"
+  | "in"
+  | "is"
+  | "notIs";
 
 type Filter = { op: FilterOperator; column: string; value: unknown };
 
@@ -119,6 +128,72 @@ const DEFAULTS: Record<string, () => Row> = {
     external_campaign_id: null,
     utm_campaign: null,
   }),
+  charges: () => ({
+    appointment_count: 0,
+    appointments_subtotal: 0,
+    minimum_adjustment: 0,
+    credits_applied: 0,
+    total: 0,
+    currency: "usd",
+    status: "draft",
+    minimum_month: null,
+    notified_at: null,
+    scheduled_for: null,
+    processed_at: null,
+    attempts: 0,
+    last_attempt_at: null,
+    next_attempt_at: null,
+    stripe_payment_intent_id: null,
+    failure_code: null,
+    failure_reason: null,
+  }),
+  charge_lines: () => ({ appointment_id: null, credit_id: null, sort: 0 }),
+  charge_notifications: () => ({
+    channel: null,
+    recipient: null,
+    subject: null,
+    body: null,
+    status: "pending",
+    error: null,
+    attempts: 0,
+    sent_at: null,
+  }),
+  charge_attempts: () => ({
+    processor_reference: null,
+    failure_code: null,
+    failure_message: null,
+  }),
+  credits: () => ({
+    appointment_id: null,
+    created_by: null,
+    created_by_label: null,
+    applied_charge_id: null,
+    applied_at: null,
+  }),
+  job_runs: () => ({
+    kind: "cycle",
+    trigger: "schedule",
+    started_at: new Date().toISOString(),
+    finished_at: null,
+    assembled: 0,
+    notified: 0,
+    processed: 0,
+    failed: 0,
+    skipped: 0,
+    error: null,
+  }),
+  job_run_entries: () => ({ client_id: null, charge_id: null }),
+  appointment_notifications: () => ({
+    kind: "confirmation",
+    channel: null,
+    recipient: null,
+    subject: null,
+    body: null,
+    status: "pending",
+    error: null,
+    attempts: 0,
+    sent_at: null,
+  }),
   appointments: () => ({
     status: "pending",
     appointment_type: null,
@@ -211,18 +286,36 @@ function generated(table: string, row: Row): Row {
   };
 }
 
+function compare(left: unknown, right: unknown): number {
+  if (typeof left === "number" && typeof right === "number") return left - right;
+
+  const a = String(left ?? "");
+  const b = String(right ?? "");
+  return a < b ? -1 : a > b ? 1 : 0;
+}
+
 function matches(row: Row, filters: Filter[]): boolean {
   return filters.every((filter) => {
     const value = row[filter.column];
     switch (filter.op) {
       case "eq":
         return value === filter.value;
+      case "neq":
+        return value !== filter.value;
+      case "gt":
+        return value != null && compare(value, filter.value) > 0;
       case "gte":
-        return String(value) >= String(filter.value);
+        return value != null && compare(value, filter.value) >= 0;
+      case "lt":
+        return value != null && compare(value, filter.value) < 0;
       case "lte":
-        return String(value) <= String(filter.value);
+        return value != null && compare(value, filter.value) <= 0;
       case "in":
         return Array.isArray(filter.value) && filter.value.includes(value);
+      case "is":
+        return filter.value === null ? value === null || value === undefined : value === filter.value;
+      case "notIs":
+        return filter.value === null ? value !== null && value !== undefined : value !== filter.value;
     }
   });
 }
@@ -281,6 +374,28 @@ export class FakeDb {
           error: {
             code: "23505",
             message: `duplicate key value violates unique constraint on ${table} (${index.columns.join(", ")})`,
+          },
+        };
+      }
+    }
+
+    // The exclusion constraint from migration 007: a client never holds two
+    // charges for overlapping periods, whatever the caller believes.
+    if (table === "charges") {
+      const clash = this.rows("charges").some(
+        (row) =>
+          row.client_id === candidate.client_id &&
+          String(row.period_start) <= String(candidate.period_end) &&
+          String(row.period_end) >= String(candidate.period_start)
+      );
+
+      if (clash) {
+        return {
+          row: null,
+          error: {
+            code: "23P01",
+            message:
+              "conflicting key value violates exclusion constraint charges_no_overlapping_periods",
           },
         };
       }
@@ -396,8 +511,23 @@ class FakeQuery implements PromiseLike<QueryResult> {
     return this;
   }
 
+  neq(column: string, value: unknown): this {
+    this.filters.push({ op: "neq", column, value });
+    return this;
+  }
+
+  gt(column: string, value: unknown): this {
+    this.filters.push({ op: "gt", column, value });
+    return this;
+  }
+
   gte(column: string, value: unknown): this {
     this.filters.push({ op: "gte", column, value });
+    return this;
+  }
+
+  lt(column: string, value: unknown): this {
+    this.filters.push({ op: "lt", column, value });
     return this;
   }
 
@@ -408,6 +538,17 @@ class FakeQuery implements PromiseLike<QueryResult> {
 
   in(column: string, value: unknown[]): this {
     this.filters.push({ op: "in", column, value });
+    return this;
+  }
+
+  is(column: string, value: unknown): this {
+    this.filters.push({ op: "is", column, value });
+    return this;
+  }
+
+  not(column: string, operator: string, value: unknown): this {
+    if (operator !== "is") throw new Error(`not(${operator}) is not modelled`);
+    this.filters.push({ op: "notIs", column, value });
     return this;
   }
 
@@ -461,9 +602,8 @@ class FakeQuery implements PromiseLike<QueryResult> {
     if (this.ordering) {
       const { column, ascending } = this.ordering;
       rows = [...rows].sort((a, b) => {
-        const left = String(a[column] ?? "");
-        const right = String(b[column] ?? "");
-        return ascending ? left.localeCompare(right) : right.localeCompare(left);
+        const difference = compare(a[column], b[column]);
+        return ascending ? difference : -difference;
       });
     }
 

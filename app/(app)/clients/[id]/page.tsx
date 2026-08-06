@@ -1,8 +1,8 @@
-import { headers } from "next/headers";
 import { notFound } from "next/navigation";
 
 import { AppointmentsTable } from "@/components/appointments/appointments-table";
 import { toAppointmentRow } from "@/components/appointments/types";
+import { ClientBilling } from "@/components/billing/client-billing";
 import { ClientDialog } from "@/components/clients/client-dialog";
 import { ClientStatusBadge } from "@/components/clients/client-status-badge";
 import { ClientTabs } from "@/components/clients/client-tabs";
@@ -21,27 +21,13 @@ import { TonePill } from "@/components/ui/tone";
 import { requireUser } from "@/lib/auth";
 import { listDefinitions } from "@/lib/db/appointment-definitions";
 import { listAppointments, showStats } from "@/lib/db/appointments";
+import { listCharges, listCredits, nextChargeFor } from "@/lib/db/billing";
 import { getClient } from "@/lib/db/clients";
 import { formatMoney, formatPercent } from "@/lib/format";
+import { baseUrl } from "@/lib/origin";
 import { btnSecondary, btnSizeSm } from "@/lib/ui";
 
 export const dynamic = "force-dynamic";
-
-async function baseUrl(): Promise<string> {
-  const configured = process.env.NEXT_PUBLIC_APP_URL?.trim();
-  if (configured) return configured.replace(/\/$/, "");
-
-  const headerList = await headers();
-  const host =
-    headerList.get("x-forwarded-host") ??
-    headerList.get("host") ??
-    "localhost:3000";
-  const protocol =
-    headerList.get("x-forwarded-proto") ??
-    (host.startsWith("localhost") ? "http" : "https");
-
-  return `${protocol}://${host}`;
-}
 
 function Gap() {
   return <span className="text-dim">—</span>;
@@ -58,12 +44,16 @@ export default async function ClientDetailPage({
   const client = await getClient(id);
   if (!client) notFound();
 
-  const [definitions, origin, appointments, shows] = await Promise.all([
-    listDefinitions(client.id),
-    baseUrl(),
-    listAppointments({ clientId: client.id }),
-    showStats(client.id),
-  ]);
+  const [definitions, origin, appointments, shows, charges, credits, next] =
+    await Promise.all([
+      listDefinitions(client.id),
+      baseUrl(),
+      listAppointments({ clientId: client.id }),
+      showStats(client.id),
+      listCharges({ clientId: client.id }),
+      listCredits(client.id),
+      nextChargeFor(client),
+    ]);
 
   const reported = shows.showed + shows.notShown;
   const notShownRate = reported === 0 ? null : shows.notShown / reported;
@@ -224,7 +214,14 @@ export default async function ClientDetailPage({
             </div>
           </div>
         }
-        billing={<EmptyState title="Arrives with the billing engine." />}
+        billing={
+          <ClientBilling
+            client={client}
+            charges={charges}
+            credits={credits}
+            next={next}
+          />
+        }
       />
     </>
   );

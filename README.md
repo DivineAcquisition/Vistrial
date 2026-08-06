@@ -12,15 +12,19 @@ simultaneously the proof, the invoice line, and the analytics row.
 
 ## Status
 
-Lead ingestion and the appointment lifecycle are live. There is **no** charge
-assembly, no payment, and no Stripe yet, so billing renders an empty state.
+Lead ingestion, the appointment lifecycle, and billing are live. There is **no**
+client portal yet, so the client-facing billing view is admin-only.
 
 Working today: email/password sign in for administrators, client management with
 versioned appointment definitions, the inbound webhook with duplicate resolution
 and first-touch stamping, response-time measurement, the leads view, appointment
 capture from bookings and by hand, the confirmation queue, review windows,
-disputes, show outcomes, confirmation notifications, the unattributed/unknown
-event queue, and a test tool that exercises the real endpoint.
+disputes, show outcomes, confirmation notifications, payment method capture
+through Stripe's hosted flow, cycle-based charge assembly with the monthly
+minimum, the pre-charge itemisation, automatic payment with retries and failure
+handling, credits, the attention view, the cycle job and its run log, the
+unattributed/unknown event queue, and a test tool that exercises the real
+endpoint.
 
 ## Stack
 
@@ -134,6 +138,8 @@ proxy.ts                 session refresh + route protection
 components/
   appointments/          queue, table, evidence panel, decision dialogs, filters
   auth/                  login form
+  billing/               attention list, charges table, itemisation, job log,
+                         payment method and credit controls
   brand/                 DA logo (mark + wordmark)
   clients/               client dialog, status badge, tabs, webhook config, definitions
   leads/                 leads table, filters, detail panel
@@ -141,24 +147,31 @@ components/
   shell/                 sidebar, topbar, nav-item, sign-out
   ui/                    shadcn components + ported DA primitives, data-table, kpi-card
 lib/
-  actions/               server actions (auth, clients, definitions, appointments)
+  actions/               server actions (auth, clients, definitions,
+                         appointments, billing)
   appointments/          capture decisions, status vocabulary, review window, shows
+  billing/               cycle arithmetic, the monthly minimum, assembly,
+                         payment and retries, the Stripe port, the cycle job
   auth.ts                getCurrentUser / requireUser
   constants.ts           APP_NAME, NAV_ITEMS
   db/                    clients, appointment-definitions, appointments, leads,
-                         inbound-events
+                         inbound-events, billing
   format.ts              money / percent / date / em-dash formatters
   ingest/                payload normalisation, the ingestion pipeline, bookings
-  notifications/         the confirmation a client is owed, and its delivery
+  notifications/         what a client is told about appointments and money,
+                         and the one place an email leaves
+  origin.ts              where this deployment answers
   response-time.ts       derived response times, tones, and formatting
   schemas/               zod schemas shared by forms and actions
   ui.ts                  shared class recipes
   supabase/              browser, session, service-role clients + env
 types/database.ts        hand-written row types for every ledger table
-tests/                   pipeline and lifecycle tests against a fake database
+tests/                   pipeline, lifecycle, and billing tests against a fake
+                         database
 supabase/migrations/     001_ledger, 002_harden_set_updated_at,
                          003_client_definition_rpcs, 004_ingestion,
-                         005_client_duplicate_window, 006_appointment_lifecycle
+                         005_client_duplicate_window, 006_appointment_lifecycle,
+                         007_billing
 ```
 
 ## Lead ingestion
@@ -277,10 +290,68 @@ client was owed. Delivery goes through Resend when `RESEND_API_KEY` and
 `NOTIFICATION_FROM` are set, and a failure stays visible and retryable rather
 than being swallowed.
 
+## Billing
+
+**Payment method.** Capture happens inside Stripe's own hosted setup flow: an
+admin issues a secure link, the client enters their card on Stripe's page, and
+Vistrial stores the customer reference, the payment method reference, and the
+brand, last four, and expiry Stripe reports back. No card number is stored,
+transmitted, or displayed, because none ever arrives. A client cannot be made
+active without a method on file — a database trigger refuses it — but their
+appointments still accumulate and are charged once one exists.
+
+**The cycle.** Seven, fourteen, or thirty days, anchored to the client's
+activation date rather than the calendar. An exclusion constraint on
+`(client_id, daterange(period_start, period_end))` means a client can never hold
+two charges for overlapping periods, whatever a job run believes.
+
+**Assembly.** At close, every appointment that is confirmed, out of its review
+window, not already on a charge, and whose confirmation actually reached the
+client. Anything still inside its window carries to the next cycle; a disputed
+appointment cannot qualify because a dispute moves it out of `confirmed`. The
+rate is written onto the appointment at assembly, so a later rate change never
+alters what a past appointment was billed at. A cycle with nothing to bill and
+no minimum due produces no charge at all.
+
+**The monthly minimum** is assessed across the calendar month and applied on the
+first cycle that closes after the month ends, as its own labelled line. It is
+never folded into the per-appointment figure: a client comparing their invoice
+to their appointment count and finding the arithmetic wrong is a trust problem
+that outlives the explanation.
+
+**The notice.** No client is charged for anything they have not seen itemised in
+advance. Assembly sends the full detail and schedules payment no less than
+twenty-four hours later. A charge whose notice did not deliver holds in
+`draft`, appears in the attention view, and cannot be marked paid — the trigger
+checks for a delivered `pre_charge` notification before it will allow it.
+
+**Payment** claims the charge with a conditional update and carries an
+idempotency key derived from the charge and the attempt number, so a duplicated
+job run replays rather than charging twice. Success locks every appointment on
+the charge to `billed` permanently and sends a receipt.
+
+**Failure** records the processor's own reason and retries three times across
+roughly a week (day zero, three, seven). The client hears on the first failure
+and the last, in plain language, with a way to replace the card when that is the
+problem. Delivery does not stop: the client appears in the attention view every
+day the failure persists, growing more prominent, and the admin decides. After
+the last attempt the appointments stay confirmed and locked, and the next
+successful charge picks them up. Nothing is silently forgiven.
+
+**Corrections.** A processed charge never changes. A correction is a credit with
+a required reason, visible on both sides, applied against the next charge; a
+credit larger than the charge is applied as far as it goes and the remainder is
+carried forward.
+
+**The job** runs at `POST /api/jobs/cycle` with the shared secret in
+`x-cron-secret`, or by hand from the billing screen. It assembles, notifies,
+processes, and retries, and records every run — including the runs that did
+nothing and the clients it skipped, with the reason.
+
 ## Data model
 
-Twelve tables, all with row level security enabled and **no policies** — service
-role only until auth lands:
+Eighteen tables, all with row level security enabled and **no policies** —
+service role only until auth lands:
 
 - `clients` — commercial terms (rate, minimum, cycle, review window, bill on booked/showed) and integration ids
 - `appointment_definitions` — versioned billability rules so changing the rules never reclassifies past appointments
@@ -290,14 +361,21 @@ role only until auth lands:
 - `appointment_events` — every material change, in order, with who and why
 - `appointment_disputes` — permanent, outliving the status they produced
 - `appointment_notifications` — what the client was told and whether it arrived
-- `charges` — a billing cycle rolled up per client
+- `charges` — a billing cycle rolled up per client, immutable once paid
+- `charge_lines` — the itemisation exactly as the client was shown it
+- `charge_attempts` — every payment attempt with the processor's own reason
+- `charge_notifications` — the itemisation, the receipt, and the failure notices
+- `credits` — corrections, each with a required reason
+- `job_runs`, `job_run_entries` — what the cycle job did, and what it skipped
 - `inbound_events` — immutable audit of every webhook payload before processing
 
-`public.set_updated_at()` (with a pinned `search_path`) keeps `updated_at` honest
-on `clients`, `appointments`, and `appointment_notifications`.
-`guard_appointment()` decides whether a change to an appointment is allowed and
-derives what the caller must not supply; `record_appointment_history()` writes
-the audit as part of the same statement.
+`public.set_updated_at()` (with a pinned `search_path`) keeps `updated_at`
+honest. `guard_appointment()` decides whether a change to an appointment is
+allowed and derives what the caller must not supply;
+`record_appointment_history()` writes the audit as part of the same statement.
+`guard_charge()` makes a paid charge immutable and refuses to let one be marked
+paid without a delivered notice; `guard_charge_line()` makes the itemisation
+write-once; `guard_client_activation()` holds the payment method gate.
 
 ## History
 

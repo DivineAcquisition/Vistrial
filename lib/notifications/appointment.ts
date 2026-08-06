@@ -10,19 +10,16 @@
 
 import { describeWindow, reviewWindow } from "@/lib/appointments/review-window";
 import { formatDateTime, formatMoney } from "@/lib/format";
+import { sendEmail, type DeliveryResult } from "@/lib/notifications/email";
 import type { LedgerDb } from "@/lib/supabase/ledger";
 import type {
   Appointment,
   AppointmentNotification,
   Client,
   Lead,
-  NotificationStatus,
 } from "@/types/database";
 
-export type DeliveryResult = {
-  status: NotificationStatus;
-  error: string | null;
-};
+export type { DeliveryResult };
 
 type Context = {
   appointment: Appointment;
@@ -69,54 +66,6 @@ export function composeConfirmation(context: Context): {
     .join("\n");
 
   return { subject, body };
-}
-
-async function sendEmail(
-  recipient: string,
-  subject: string,
-  body: string
-): Promise<DeliveryResult> {
-  const apiKey = process.env.RESEND_API_KEY?.trim();
-  const from = process.env.NOTIFICATION_FROM?.trim();
-
-  if (!apiKey || !from) {
-    return {
-      status: "failed",
-      error:
-        "No delivery channel is configured. Set RESEND_API_KEY and NOTIFICATION_FROM, then send it again.",
-    };
-  }
-
-  let response: Response;
-  try {
-    response = await fetch("https://api.resend.com/emails", {
-      method: "POST",
-      headers: {
-        authorization: `Bearer ${apiKey}`,
-        "content-type": "application/json",
-      },
-      body: JSON.stringify({ from, to: [recipient], subject, text: body }),
-    });
-  } catch (thrown) {
-    return {
-      status: "failed",
-      error: `Could not reach the email provider: ${
-        thrown instanceof Error ? thrown.message : String(thrown)
-      }`,
-    };
-  }
-
-  if (!response.ok) {
-    const detail = await response.text().catch(() => "");
-    return {
-      status: "failed",
-      error: `The email provider rejected the message (${response.status}): ${
-        detail.slice(0, 200) || "no reason given"
-      }`,
-    };
-  }
-
-  return { status: "sent", error: null };
 }
 
 type AppointmentContext = Appointment & {
@@ -174,16 +123,7 @@ export async function deliverConfirmation(
   });
 
   const recipient = notification.recipient ?? appointment.client.contact_email;
-
-  const result: DeliveryResult =
-    recipient === null || recipient.trim() === ""
-      ? {
-          status: "failed",
-          error:
-            "This client has no contact email, so there is nowhere to send the notification.",
-        }
-      : await sendEmail(recipient, subject, body);
-
+  const result = await sendEmail(recipient, subject, body);
   const sentAt = new Date().toISOString();
 
   await db

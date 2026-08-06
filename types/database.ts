@@ -58,6 +58,20 @@ export type ChargeStatus =
   | "paid"
   | "failed"
   | "credited";
+export type ChargeLineKind = "appointment" | "minimum_adjustment" | "credit";
+export type ChargeNotificationKind =
+  | "pre_charge"
+  | "receipt"
+  | "payment_failed"
+  | "payment_failed_final";
+export type PaymentOutcome = "succeeded" | "failed";
+export type JobAction =
+  | "assembled"
+  | "notified"
+  | "processed"
+  | "failed"
+  | "retried"
+  | "skipped";
 
 export type Json =
   | string
@@ -86,8 +100,24 @@ export interface Client {
 
   ghl_location_id: string | null;
   webhook_secret: string;
+
+  /**
+   * Processor references and the card metadata the processor reports back. No
+   * card number is ever stored, transmitted, or displayed.
+   */
   stripe_customer_id: string | null;
   stripe_payment_method_id: string | null;
+  card_brand: string | null;
+  card_last4: string | null;
+  card_exp_month: number | null;
+  card_exp_year: number | null;
+  payment_method_added_at: string | null;
+  payment_setup_session_id: string | null;
+
+  /** The cycle anchors to activation rather than to the calendar. */
+  activated_at: string | null;
+  next_cycle_close: string | null;
+  last_cycle_close: string | null;
 
   /**
    * How far back a matching phone or email counts as the same lead. A homeowner
@@ -321,12 +351,102 @@ export interface Charge {
   appointment_count: number;
   appointments_subtotal: number;
   minimum_adjustment: number;
+  credits_applied: number;
   total: number;
+  currency: string;
   status: ChargeStatus;
+  /** The calendar month a minimum adjustment on this charge settles. */
+  minimum_month: string | null;
   notified_at: string | null;
+  /** No earlier than twenty-four hours after the notification was sent. */
+  scheduled_for: string | null;
   processed_at: string | null;
+  attempts: number;
+  last_attempt_at: string | null;
+  next_attempt_at: string | null;
   stripe_payment_intent_id: string | null;
+  failure_code: string | null;
   failure_reason: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+/** The itemisation, exactly as the client was shown it. Written once. */
+export interface ChargeLine {
+  id: string;
+  charge_id: string;
+  kind: ChargeLineKind;
+  appointment_id: string | null;
+  credit_id: string | null;
+  description: string;
+  amount: number;
+  sort: number;
+  created_at: string;
+}
+
+export interface ChargeAttempt {
+  id: string;
+  charge_id: string;
+  attempt_no: number;
+  attempted_at: string;
+  outcome: PaymentOutcome;
+  processor_reference: string | null;
+  failure_code: string | null;
+  failure_message: string | null;
+}
+
+export interface ChargeNotification {
+  id: string;
+  charge_id: string;
+  client_id: string;
+  kind: ChargeNotificationKind;
+  channel: "email" | null;
+  recipient: string | null;
+  subject: string | null;
+  body: string | null;
+  status: NotificationStatus;
+  error: string | null;
+  attempts: number;
+  sent_at: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+/** A correction. A processed charge never changes, so this is how money moves back. */
+export interface Credit {
+  id: string;
+  client_id: string;
+  amount: number;
+  reason: string;
+  appointment_id: string | null;
+  created_by: string | null;
+  created_by_label: string | null;
+  applied_charge_id: string | null;
+  applied_at: string | null;
+  created_at: string;
+}
+
+export interface JobRun {
+  id: string;
+  kind: string;
+  trigger: "schedule" | "manual";
+  started_at: string;
+  finished_at: string | null;
+  assembled: number;
+  notified: number;
+  processed: number;
+  failed: number;
+  skipped: number;
+  error: string | null;
+}
+
+export interface JobRunEntry {
+  id: string;
+  run_id: string;
+  client_id: string | null;
+  charge_id: string | null;
+  action: JobAction;
+  detail: string;
   created_at: string;
 }
 

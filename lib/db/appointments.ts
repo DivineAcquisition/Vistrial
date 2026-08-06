@@ -257,8 +257,12 @@ export function summarise(appointments: readonly AppointmentView[]): Appointment
     ).length,
     confirmedThisCycle: confirmed.length,
     disputed: appointments.filter((appointment) => appointment.status === "disputed").length,
+    // The rate is stamped when the charge is assembled, so until then the
+    // client's current rate is the honest projection.
     cycleValue: confirmed.reduce(
-      (total, appointment) => total + (appointment.rate_applied ?? 0),
+      (total, appointment) =>
+        total +
+        Number(appointment.rate_applied ?? appointment.client?.rate_per_appointment ?? 0),
       0
     ),
   };

@@ -250,7 +250,11 @@ create trigger charges_guard
   before update or delete on public.charges
   for each row execute function public.guard_charge();
 
--- Lines are the invoice as it was shown. They are written once.
+-- Lines are the invoice as it was shown, so what the client read — the
+-- description and the amount — is written once and never edited. The
+-- references beside it are bookkeeping: an appointment deleted years later
+-- nulls its link without rewriting the invoice, which is why the description
+-- and amount are held on the line rather than read through the reference.
 create or replace function public.guard_charge_line()
 returns trigger
 language plpgsql
@@ -265,10 +269,22 @@ begin
   where id = coalesce(new.charge_id, old.charge_id);
 
   if v_status in ('paid', 'processing') then
-    raise exception 'The itemisation of a % charge cannot be changed.', v_status;
+    if tg_op <> 'UPDATE'
+       or new.description is distinct from old.description
+       or new.amount is distinct from old.amount
+       or new.kind is distinct from old.kind
+       or new.charge_id is distinct from old.charge_id then
+      raise exception 'The itemisation of a % charge cannot be changed.', v_status;
+    end if;
+
+    return new;
   end if;
 
-  if tg_op = 'UPDATE' then
+  if tg_op = 'UPDATE'
+     and (new.description is distinct from old.description
+          or new.amount is distinct from old.amount
+          or new.kind is distinct from old.kind
+          or new.charge_id is distinct from old.charge_id) then
     raise exception 'A charge line is written once and never edited.';
   end if;
 

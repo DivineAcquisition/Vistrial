@@ -10,12 +10,10 @@ export function NavItem({
   href,
   label,
   icon,
-  count,
 }: {
   href: string;
   label: string;
   icon: ReactNode;
-  count?: number;
 }) {
   const pathname = usePathname();
   const isActive = pathname.startsWith(href);
@@ -25,26 +23,20 @@ export function NavItem({
       href={href}
       aria-current={isActive ? "page" : undefined}
       className={cn(
-        "flex items-center justify-between rounded-xl px-3.5 py-2.5 text-sm font-medium transition-colors",
+        "relative flex w-full items-center gap-3 px-6 py-2.5 text-sm transition-colors",
         isActive
-          ? "bg-brand-500/[0.12] text-brand-100 ring-1 ring-brand-500/25 ring-inset"
-          : "text-neutral-400 hover:bg-white/[0.04] hover:text-white"
+          ? "bg-accent/40 text-brand-500"
+          : "text-dim hover:bg-white/[0.03] hover:text-silver"
       )}
     >
-      <span className="flex min-w-0 items-center gap-2.5">
-        {icon}
-        <span className="truncate">{label}</span>
-      </span>
-      {count ? (
+      {isActive ? (
         <span
-          className={cn(
-            "text-xs tabular-nums",
-            isActive ? "text-brand-300" : "text-neutral-600"
-          )}
-        >
-          {count}
-        </span>
+          aria-hidden
+          className="absolute top-0 bottom-0 left-0 w-[2px] bg-brand-500"
+        />
       ) : null}
+      {icon}
+      {label}
     </Link>
   );
 }

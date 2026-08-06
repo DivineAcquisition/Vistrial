@@ -13,9 +13,9 @@ export function EmptyState({
 }) {
   return (
     <Panel className="px-6 py-12 text-center">
-      <p className="text-sm font-medium text-neutral-300">{title}</p>
+      <p className="text-sm font-medium text-silver">{title}</p>
       {detail ? (
-        <p className="mx-auto mt-2 max-w-md text-sm leading-relaxed text-neutral-500">
+        <p className="mx-auto mt-2 max-w-md text-sm leading-relaxed text-dim">
           {detail}
         </p>
       ) : null}

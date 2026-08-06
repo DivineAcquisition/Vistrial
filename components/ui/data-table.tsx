@@ -35,12 +35,12 @@ export function DataTable({
     <div className="panel overflow-hidden rounded-2xl">
       <Table>
         <TableHeader>
-          <TableRow className="border-white/[0.07] bg-white/[0.02] hover:bg-white/[0.02]">
+          <TableRow className="border-border bg-secondary hover:bg-secondary">
             {columns.map((column) => (
               <TableHead
                 key={column.key}
                 className={cn(
-                  "h-11 px-4 text-[10px] font-semibold tracking-[0.14em] text-neutral-500 uppercase",
+                  "h-11 px-4 text-[10px] font-semibold tracking-[0.14em] text-secondary-foreground uppercase",
                   alignClasses[column.align ?? "left"]
                 )}
               >
@@ -54,7 +54,7 @@ export function DataTable({
             <TableRow className="hover:bg-transparent">
               <TableCell
                 colSpan={columns.length}
-                className="px-4 py-12 text-center text-sm text-neutral-500"
+                className="px-4 py-12 text-center text-sm text-dim"
               >
                 {empty}
               </TableCell>
@@ -63,7 +63,7 @@ export function DataTable({
             rows.map((row, rowIndex) => (
               <TableRow
                 key={rowIndex}
-                className="border-white/[0.05] hover:bg-white/[0.02]"
+                className="border-border/60 hover:bg-white/[0.02]"
               >
                 {columns.map((column, columnIndex) => (
                   <TableCell
@@ -72,7 +72,7 @@ export function DataTable({
                       "px-4 py-3.5",
                       columnIndex === 0
                         ? "font-medium text-white"
-                        : "text-neutral-300 tabular-nums",
+                        : "text-silver tabular-nums",
                       alignClasses[column.align ?? "left"]
                     )}
                   >

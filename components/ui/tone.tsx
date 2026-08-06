@@ -9,7 +9,7 @@ export type Tone = "brand" | "neutral" | "good" | "warning" | "critical";
 
 const TONE_CLASSES: Record<Tone, string> = {
   brand: "border-brand-500/30 bg-brand-500/[0.12] text-brand-200",
-  neutral: "border-white/10 bg-white/[0.04] text-neutral-300",
+  neutral: "border-border bg-white/[0.04] text-dim",
   good: "border-flag-good/30 bg-flag-good/[0.12] text-flag-good",
   warning: "border-flag-warning/30 bg-flag-warning/[0.12] text-flag-warning",
   critical: "border-flag-critical/30 bg-flag-critical/[0.12] text-flag-critical",
@@ -17,7 +17,7 @@ const TONE_CLASSES: Record<Tone, string> = {
 
 const DOT_CLASSES: Record<Tone, string> = {
   brand: "bg-brand-500",
-  neutral: "bg-neutral-600",
+  neutral: "bg-dim",
   good: "bg-flag-good",
   warning: "bg-flag-warning",
   critical: "bg-flag-critical",

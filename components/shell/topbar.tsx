@@ -18,7 +18,7 @@ export function Topbar() {
   const pathname = usePathname();
 
   return (
-    <header className="sticky top-0 z-40 border-b border-white/[0.06] bg-ink-950/80 backdrop-blur-xl">
+    <header className="sticky top-0 z-40 border-b border-border bg-background/85 backdrop-blur-xl">
       <div className="flex h-16 items-center justify-between gap-3 px-4 sm:px-6">
         <p className="truncate text-sm font-semibold text-white">
           {titleFromPathname(pathname)}

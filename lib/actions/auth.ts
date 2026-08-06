@@ -6,7 +6,7 @@ import { z } from "zod";
 import { homeForSession } from "@/lib/auth";
 import { createSessionClient } from "@/lib/supabase/session";
 
-const DEFAULT_DESTINATION = "/appointments";
+const DEFAULT_DESTINATION = "/attention";
 
 /** One message for every failure. Anything more tells an attacker which email
  * addresses have accounts. */

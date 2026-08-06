@@ -3,6 +3,7 @@ import {
   CalendarCheck,
   ClipboardCheck,
   CreditCard,
+  Eye,
   Settings,
   Users,
   type LucideIcon,
@@ -18,6 +19,7 @@ export type NavItem = {
 };
 
 export const NAV_ITEMS: NavItem[] = [
+  { label: "Attention", href: "/attention", icon: Eye },
   { label: "Queue", href: "/queue", icon: ClipboardCheck },
   { label: "Appointments", href: "/appointments", icon: CalendarCheck },
   { label: "Leads", href: "/leads", icon: Users },

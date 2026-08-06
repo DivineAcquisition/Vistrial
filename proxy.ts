@@ -4,7 +4,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { supabaseEnv } from "@/lib/supabase/env";
 
 const LOGIN_PATH = "/login";
-const ADMIN_HOME = "/appointments";
+const ADMIN_HOME = "/attention";
 const PORTAL_HOME = "/portal";
 
 /** Paths that never require a session. */

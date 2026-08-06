@@ -30,6 +30,7 @@ function failureMessage(error: unknown): string {
 }
 
 function refresh(clientId?: string | null): void {
+  revalidatePath("/attention");
   revalidatePath("/billing");
   revalidatePath("/clients");
   if (clientId) revalidatePath(`/clients/${clientId}`);

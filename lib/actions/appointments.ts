@@ -38,6 +38,7 @@ function failureMessage(error: unknown): string {
 }
 
 function refresh(clientId?: string | null): void {
+  revalidatePath("/attention");
   revalidatePath("/appointments");
   revalidatePath("/queue");
   revalidatePath("/leads");

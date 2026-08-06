@@ -108,7 +108,7 @@ export async function requireClient(): Promise<PortalSession> {
 
   if (!membership || !accessOpen(membership)) {
     // An admin who wanders into the portal goes back to the ledger.
-    if (!membership) redirect("/appointments");
+    if (!membership) redirect("/attention");
     redirect("/login?error=closed");
   }
 
@@ -124,5 +124,5 @@ export async function homeForSession(): Promise<string> {
   const membership = await getPortalMembership();
   if (membership && accessOpen(membership)) return "/portal";
   if (membership) return "/login";
-  return "/appointments";
+  return "/attention";
 }

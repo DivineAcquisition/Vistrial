@@ -1,3 +1,4 @@
+import { DigestSettings } from "@/components/settings/digest-settings";
 import { InboundTestTool } from "@/components/settings/inbound-test-tool";
 import {
   UnresolvedEvents,
@@ -7,9 +8,11 @@ import { PageHeader } from "@/components/ui/page-header";
 import { Panel } from "@/components/ui/panel";
 import { SectionHeader } from "@/components/ui/section-header";
 import { TonePill } from "@/components/ui/tone";
+import { DEFAULT_DIGEST_HOUR, getDigestHour } from "@/lib/attention/digest";
 import { requireAdmin } from "@/lib/auth";
 import { listClients } from "@/lib/db/clients";
 import { listUnresolvedEvents, STATUS_LABELS } from "@/lib/db/inbound-events";
+import { createServiceClient } from "@/lib/supabase/server";
 
 export const dynamic = "force-dynamic";
 
@@ -18,6 +21,7 @@ export default async function SettingsPage() {
 
   let clients: { id: string; name: string }[];
   let events: UnresolvedEventView[];
+  let digestHour = DEFAULT_DIGEST_HOUR;
 
   try {
     const [clientRows, eventRows] = await Promise.all([
@@ -36,6 +40,13 @@ export default async function SettingsPage() {
       note: event.error,
       payload: JSON.stringify(event.payload, null, 2),
     }));
+
+    try {
+      digestHour = await getDigestHour(createServiceClient());
+    } catch {
+      // Migration 010 may not be applied yet; the default hour still renders.
+      digestHour = DEFAULT_DIGEST_HOUR;
+    }
   } catch {
     return (
       <>
@@ -104,6 +115,16 @@ export default async function SettingsPage() {
           }
         />
         <UnresolvedEvents events={events} clients={clients} />
+      </section>
+
+      <section className="mb-10">
+        <SectionHeader
+          title="Daily attention digest"
+          hint="One email each morning when something is outstanding. An empty morning sends nothing."
+        />
+        <Panel className="px-5 py-4">
+          <DigestSettings hour={digestHour} />
+        </Panel>
       </section>
 
       <section>

@@ -84,6 +84,7 @@ export type ClientNotificationKind =
   | "weekly_summary"
   | "dispute_alert";
 export type ClientNotificationAudience = "client" | "admin";
+export type DigestDeliveryStatus = "pending" | "sent" | "failed" | "skipped";
 
 export type Json =
   | string
@@ -579,4 +580,26 @@ export interface InboundEvent {
   resolved_at: string | null;
   resolution_note: string | null;
   received_at: string;
+}
+
+export interface AppSetting {
+  key: string;
+  value: string;
+  updated_at: string;
+}
+
+/** One morning's attention digest attempt. */
+export interface AttentionDigest {
+  id: string;
+  digest_for: string;
+  recipient: string | null;
+  subject: string | null;
+  body: string | null;
+  item_count: number;
+  escalated_count: number;
+  value_at_risk: number;
+  status: DigestDeliveryStatus;
+  error: string | null;
+  sent_at: string | null;
+  created_at: string;
 }

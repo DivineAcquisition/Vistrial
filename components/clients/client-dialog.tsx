@@ -46,6 +46,7 @@ const emptyValues: ClientFormValues = {
   billing_cycle_days: "14",
   review_window_hours: "72",
   bill_on: "booked",
+  duplicate_window_days: "30",
   ghl_location_id: "",
   criteria: "",
   service_area: "",
@@ -64,6 +65,7 @@ function valuesFromClient(client: Client): ClientFormValues {
     billing_cycle_days: String(client.billing_cycle_days),
     review_window_hours: String(client.review_window_hours),
     bill_on: client.bill_on,
+    duplicate_window_days: String(client.duplicate_window_days),
     ghl_location_id: client.ghl_location_id ?? "",
     criteria: "",
     service_area: client.service_area ?? "",
@@ -279,6 +281,24 @@ export function ClientDialog({
                   </option>
                 ))}
               </select>
+            </div>
+            <div>
+              <label className={labelClass} htmlFor="duplicate_window_days">
+                Duplicate window
+              </label>
+              <input
+                id="duplicate_window_days"
+                type="number"
+                min="1"
+                max="365"
+                step="1"
+                required
+                className={inputClass}
+                {...register("duplicate_window_days")}
+              />
+              <p className={helperClass}>
+                Days within which a repeat phone or email is the same lead.
+              </p>
             </div>
             <div>
               <label className={labelClass} htmlFor="bill_on">

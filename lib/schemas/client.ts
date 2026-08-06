@@ -84,6 +84,14 @@ export const clientFieldsSchema = z.object({
     ),
   bill_on: z.enum(BILL_ON).default("booked"),
 
+  /** A homeowner asking twice in a week is one lead; the same person eight
+   * months later is genuinely new. */
+  duplicate_window_days: z.coerce
+    .number()
+    .int("Duplicate window must be a whole number of days.")
+    .min(1, "Duplicate window must be at least 1 day.")
+    .max(365, "Duplicate window cannot exceed 365 days."),
+
   ghl_location_id: optionalText,
 });
 
@@ -116,6 +124,7 @@ export type ClientFormValues = {
   billing_cycle_days: string;
   review_window_hours: string;
   bill_on: (typeof BILL_ON)[number];
+  duplicate_window_days: string;
   ghl_location_id: string;
   criteria: string;
   service_area: string;

@@ -66,6 +66,7 @@ export type NewClient = {
   billing_cycle_days: number;
   review_window_hours: number;
   bill_on: Client["bill_on"];
+  duplicate_window_days: number;
   ghl_location_id: string | null;
   criteria: string;
   service_area: string | null;
@@ -93,6 +94,7 @@ export async function createClientWithDefinition(
       p_billing_cycle_days: input.billing_cycle_days,
       p_review_window_hours: input.review_window_hours,
       p_bill_on: input.bill_on,
+      p_duplicate_window_days: input.duplicate_window_days,
       p_service_area: input.service_area,
       p_accepted_job_types: input.accepted_job_types,
       p_ghl_location_id: input.ghl_location_id,

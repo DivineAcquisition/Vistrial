@@ -9,7 +9,7 @@ import { Panel } from "@/components/ui/panel";
 import { SectionHeader } from "@/components/ui/section-header";
 import { KpiCard, KpiGrid } from "@/components/ui/kpi-card";
 import { TonePill } from "@/components/ui/tone";
-import { requireUser } from "@/lib/auth";
+import { requireAdmin } from "@/lib/auth";
 import { listClients } from "@/lib/db/clients";
 import { countUnresolvedEvents } from "@/lib/db/inbound-events";
 import { listLeads, type LeadFilters as Filters, type LeadWithResponse } from "@/lib/db/leads";
@@ -72,7 +72,7 @@ export default async function LeadsPage({
 }: {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
-  await requireUser();
+  await requireAdmin();
 
   const params = await searchParams;
 

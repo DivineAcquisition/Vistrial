@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 
-import { requireUser } from "@/lib/auth";
+import { requireAdmin } from "@/lib/auth";
 import { createDefinitionVersion } from "@/lib/db/appointment-definitions";
 import { createClientWithDefinition, updateClient } from "@/lib/db/clients";
 import {
@@ -30,7 +30,7 @@ function failureMessage(error: unknown): string {
 export async function createClientAction(
   input: unknown
 ): Promise<ActionResult<{ id: string }>> {
-  await requireUser();
+  await requireAdmin();
 
   const parsed = createClientSchema.safeParse(input);
   if (!parsed.success) {
@@ -63,7 +63,7 @@ export async function updateClientAction(
   id: string,
   input: unknown
 ): Promise<ActionResult> {
-  await requireUser();
+  await requireAdmin();
 
   const parsed = updateClientSchema.safeParse(input);
   if (!parsed.success) {
@@ -83,7 +83,7 @@ export async function updateClientAction(
 export async function createDefinitionVersionAction(
   input: unknown
 ): Promise<ActionResult<{ version: number }>> {
-  await requireUser();
+  await requireAdmin();
 
   const parsed = newDefinitionVersionSchema.safeParse(input);
   if (!parsed.success) {

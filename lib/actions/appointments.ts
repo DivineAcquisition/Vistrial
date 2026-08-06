@@ -6,7 +6,7 @@ import { captureAppointment } from "@/lib/appointments/capture";
 import { reviewWindow } from "@/lib/appointments/review-window";
 import { recordShow } from "@/lib/appointments/show";
 import { composeReason } from "@/lib/appointments/status";
-import { requireUser, type AdminUser } from "@/lib/auth";
+import { requireAdmin, type AdminUser } from "@/lib/auth";
 import { deliverConfirmation } from "@/lib/notifications/appointment";
 import {
   appointmentIdSchema,
@@ -83,7 +83,7 @@ async function loadCandidates(db: LedgerDb, ids: string[]): Promise<CandidateRow
 export async function confirmAppointmentsAction(
   input: unknown
 ): Promise<ActionResult<{ confirmed: number; skipped: string[] }>> {
-  const user = await requireUser();
+  const user = await requireAdmin();
 
   const parsed = confirmSchema.safeParse(input);
   if (!parsed.success) return { ok: false, error: describeIssues(parsed.error) };
@@ -147,7 +147,7 @@ export async function confirmAppointmentsAction(
 }
 
 export async function rejectAppointmentAction(input: unknown): Promise<ActionResult> {
-  const user = await requireUser();
+  const user = await requireAdmin();
 
   const parsed = rejectSchema.safeParse(input);
   if (!parsed.success) return { ok: false, error: describeIssues(parsed.error) };
@@ -188,11 +188,11 @@ export async function rejectAppointmentAction(input: unknown): Promise<ActionRes
 /**
  * Raising a dispute removes the appointment from the pending charge
  * immediately: it does not sit in limbo accruing toward a bill while under
- * discussion. Until clients have a login of their own an admin records it on
- * their behalf, and the history says so.
+ * discussion. When an admin records it on the client's behalf the history is
+ * attributed to the client and labelled with the admin who typed it.
  */
 export async function raiseDisputeAction(input: unknown): Promise<ActionResult> {
-  const user = await requireUser();
+  const user = await requireAdmin();
 
   const parsed = disputeSchema.safeParse(input);
   if (!parsed.success) return { ok: false, error: describeIssues(parsed.error) };
@@ -244,7 +244,7 @@ export async function raiseDisputeAction(input: unknown): Promise<ActionResult> 
  * confirmed with a fresh review window, which the database opens.
  */
 export async function settleDisputeAction(input: unknown): Promise<ActionResult> {
-  const user = await requireUser();
+  const user = await requireAdmin();
 
   const parsed = settleDisputeSchema.safeParse(input);
   if (!parsed.success) return { ok: false, error: describeIssues(parsed.error) };
@@ -284,7 +284,7 @@ export async function settleDisputeAction(input: unknown): Promise<ActionResult>
 export async function recordShowAction(
   input: unknown
 ): Promise<ActionResult<{ rejected: boolean }>> {
-  const user = await requireUser();
+  const user = await requireAdmin();
 
   const parsed = showSchema.safeParse(input);
   if (!parsed.success) return { ok: false, error: describeIssues(parsed.error) };
@@ -319,7 +319,7 @@ export async function recordShowAction(
 export async function recordAppointmentAction(
   input: unknown
 ): Promise<ActionResult<{ id: string; outcome: "created" | "duplicate" | "rescheduled" }>> {
-  const user = await requireUser();
+  const user = await requireAdmin();
 
   const parsed = recordAppointmentSchema.safeParse(input);
   if (!parsed.success) return { ok: false, error: describeIssues(parsed.error) };
@@ -366,7 +366,7 @@ export async function recordAppointmentAction(
 }
 
 export async function resendConfirmationAction(input: unknown): Promise<ActionResult> {
-  await requireUser();
+  await requireAdmin();
 
   const parsed = appointmentIdSchema.safeParse(input);
   if (!parsed.success) return { ok: false, error: describeIssues(parsed.error) };

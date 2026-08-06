@@ -7,7 +7,7 @@ import { PageHeader } from "@/components/ui/page-header";
 import { Panel } from "@/components/ui/panel";
 import { SectionHeader } from "@/components/ui/section-header";
 import { TonePill } from "@/components/ui/tone";
-import { requireUser } from "@/lib/auth";
+import { requireAdmin } from "@/lib/auth";
 import { listClients } from "@/lib/db/clients";
 import { formatDay, formatMoney } from "@/lib/format";
 import { btnPrimary, btnSizeSm } from "@/lib/ui";
@@ -35,7 +35,7 @@ async function loadClients(): Promise<
 }
 
 export default async function ClientsPage() {
-  await requireUser();
+  await requireAdmin();
   const result = await loadClients();
 
   return (

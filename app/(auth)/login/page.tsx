@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 
 import { LoginForm } from "@/components/auth/login-form";
-import { getCurrentUser } from "@/lib/auth";
+import { getCurrentUser, homeForSession } from "@/lib/auth";
 import { APP_NAME, APP_OWNER } from "@/lib/constants";
 
 export const metadata: Metadata = {
@@ -13,12 +13,15 @@ export const metadata: Metadata = {
 export default async function LoginPage({
   searchParams,
 }: {
-  searchParams: Promise<{ next?: string }>;
+  searchParams: Promise<{ next?: string; error?: string }>;
 }) {
   const user = await getCurrentUser();
-  if (user) redirect("/appointments");
+  if (user) {
+    const home = await homeForSession();
+    if (home !== "/login") redirect(home);
+  }
 
-  const { next } = await searchParams;
+  const { next, error } = await searchParams;
 
   return (
     <main className="flex min-h-screen items-center justify-center bg-background px-4">
@@ -27,6 +30,12 @@ export default async function LoginPage({
           {APP_NAME}
         </p>
         <p className="mt-1.5 text-center text-xs text-dim">{APP_OWNER}</p>
+
+        {error === "closed" ? (
+          <p role="alert" className="mt-4 text-center text-sm text-flag-critical">
+            This account no longer has access.
+          </p>
+        ) : null}
 
         <LoginForm next={next} />
       </div>

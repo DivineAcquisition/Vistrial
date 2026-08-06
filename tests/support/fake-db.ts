@@ -62,6 +62,18 @@ const UNIQUE_INDEXES: Record<string, UniqueIndex[]> = {
     },
     { columns: ["client_id", "lead_id", "scheduled_for"], where: isLive },
   ],
+  ad_spend: [
+    {
+      columns: ["client_id", "spend_date"],
+      where: (row) => row.campaign_id == null,
+    },
+    {
+      columns: ["campaign_id", "spend_date"],
+      where: (row) => row.campaign_id != null,
+    },
+  ],
+  client_users: [{ columns: ["user_id"], where: (row) => row.user_id != null }],
+  share_links: [{ columns: ["token_hash"] }],
 };
 
 const LIVE = new Set(["pending", "confirmed", "disputed"]);
@@ -129,6 +141,48 @@ const DEFAULTS: Record<string, () => Row> = {
     platform: "facebook",
     external_campaign_id: null,
     utm_campaign: null,
+  }),
+  ad_spend: () => ({
+    campaign_id: null,
+    amount: 0,
+    entered_by: null,
+    entered_by_label: null,
+    note: null,
+    updated_at: new Date().toISOString(),
+  }),
+  client_users: () => ({
+    user_id: null,
+    status: "invited",
+    weekly_summary: true,
+    invitation_token_hash: null,
+    invitation_expires_at: null,
+    invited_by: null,
+    invited_by_label: null,
+    invited_at: new Date().toISOString(),
+    accepted_at: null,
+    archived_at: null,
+    access_ends_at: null,
+    last_seen_at: null,
+  }),
+  share_links: () => ({
+    label: null,
+    created_by: null,
+    created_by_label: null,
+    revoked_at: null,
+  }),
+  client_notifications: () => ({
+    client_user_id: null,
+    audience: "client",
+    channel: null,
+    recipient: null,
+    subject: null,
+    body: null,
+    status: "pending",
+    error: null,
+    attempts: 0,
+    sent_at: null,
+    period_start: null,
+    period_end: null,
   }),
   charges: () => ({
     appointment_count: 0,

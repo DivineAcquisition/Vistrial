@@ -7,10 +7,12 @@ import { ClientDialog } from "@/components/clients/client-dialog";
 import { ClientStatusBadge } from "@/components/clients/client-status-badge";
 import { ClientTabs } from "@/components/clients/client-tabs";
 import { DefinitionHistory } from "@/components/clients/definition-history";
+import { PortalPanel } from "@/components/clients/portal-panel";
 import {
   CopyableValue,
   WebhookSecretField,
 } from "@/components/clients/webhook-config";
+import { CostHero } from "@/components/portal/cost-hero";
 import { DefinitionList, KeyValue } from "@/components/ui/definition-list";
 import { EmptyState } from "@/components/ui/empty-state";
 import { KpiCard, KpiGrid } from "@/components/ui/kpi-card";
@@ -18,11 +20,17 @@ import { PageHeader } from "@/components/ui/page-header";
 import { Panel } from "@/components/ui/panel";
 import { SectionHeader } from "@/components/ui/section-header";
 import { TonePill } from "@/components/ui/tone";
-import { requireUser } from "@/lib/auth";
+import { requireAdmin } from "@/lib/auth";
 import { listDefinitions } from "@/lib/db/appointment-definitions";
 import { listAppointments, showStats } from "@/lib/db/appointments";
+import { listAdSpend, listCampaigns } from "@/lib/db/ad-spend";
 import { listCharges, listCredits, nextChargeFor } from "@/lib/db/billing";
 import { getClient } from "@/lib/db/clients";
+import {
+  listClientUsers,
+  listShareLinks,
+  loadPortalDashboard,
+} from "@/lib/db/portal";
 import { formatMoney, formatPercent } from "@/lib/format";
 import { baseUrl } from "@/lib/origin";
 import { btnSecondary, btnSizeSm } from "@/lib/ui";
@@ -38,22 +46,39 @@ export default async function ClientDetailPage({
 }: {
   params: Promise<{ id: string }>;
 }) {
-  await requireUser();
+  await requireAdmin();
 
   const { id } = await params;
   const client = await getClient(id);
   if (!client) notFound();
 
-  const [definitions, origin, appointments, shows, charges, credits, next] =
-    await Promise.all([
-      listDefinitions(client.id),
-      baseUrl(),
-      listAppointments({ clientId: client.id }),
-      showStats(client.id),
-      listCharges({ clientId: client.id }),
-      listCredits(client.id),
-      nextChargeFor(client),
-    ]);
+  const [
+    definitions,
+    origin,
+    appointments,
+    shows,
+    charges,
+    credits,
+    next,
+    portalUsers,
+    shareLinks,
+    spend,
+    campaigns,
+    portalDashboard,
+  ] = await Promise.all([
+    listDefinitions(client.id),
+    baseUrl(),
+    listAppointments({ clientId: client.id }),
+    showStats(client.id),
+    listCharges({ clientId: client.id }),
+    listCredits(client.id),
+    nextChargeFor(client),
+    listClientUsers(client.id),
+    listShareLinks(client.id),
+    listAdSpend(client.id),
+    listCampaigns(client.id),
+    loadPortalDashboard(client.id),
+  ]);
 
   const reported = shows.showed + shows.notShown;
   const notShownRate = reported === 0 ? null : shows.notShown / reported;
@@ -221,6 +246,24 @@ export default async function ClientDetailPage({
             credits={credits}
             next={next}
           />
+        }
+        portal={
+          <div className="space-y-8">
+            <div>
+              <SectionHeader
+                title="Combined cost per appointment"
+                hint="The same figure the client sees. Unavailable when any day in the period has no spend row."
+              />
+              <CostHero cost={portalDashboard.cost} />
+            </div>
+            <PortalPanel
+              clientId={client.id}
+              users={portalUsers}
+              links={shareLinks}
+              spend={spend}
+              campaigns={campaigns}
+            />
+          </div>
         }
       />
     </>

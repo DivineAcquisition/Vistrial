@@ -77,6 +77,14 @@ export type JobAction =
   | "retried"
   | "skipped";
 
+/** Invite-only portal accounts. No row here means the session is an admin. */
+export type ClientUserStatus = "invited" | "active" | "archived" | "closed";
+export type ClientNotificationKind =
+  | "invitation"
+  | "weekly_summary"
+  | "dispute_alert";
+export type ClientNotificationAudience = "client" | "admin";
+
 export type Json =
   | string
   | number
@@ -189,7 +197,76 @@ export interface AdSpend {
   campaign_id: string | null;
   spend_date: string;
   amount: number;
+  entered_by: string | null;
+  entered_by_label: string | null;
+  note: string | null;
   created_at: string;
+  updated_at: string;
+}
+
+/**
+ * One person at one client business. Created by an administrator; there is no
+ * public signup path anywhere in the product.
+ */
+export interface ClientUser {
+  id: string;
+  client_id: string;
+  user_id: string | null;
+  name: string;
+  email: string;
+  status: ClientUserStatus;
+  weekly_summary: boolean;
+  invitation_token_hash: string | null;
+  invitation_expires_at: string | null;
+  invited_by: string | null;
+  invited_by_label: string | null;
+  invited_at: string;
+  accepted_at: string | null;
+  archived_at: string | null;
+  access_ends_at: string | null;
+  last_seen_at: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+/** Time-limited, revocable, view-only access to the portal dashboard. */
+export interface ShareLink {
+  id: string;
+  client_id: string;
+  token_hash: string;
+  label: string | null;
+  created_by: string | null;
+  created_by_label: string | null;
+  expires_at: string;
+  revoked_at: string | null;
+  created_at: string;
+}
+
+export interface ShareLinkView {
+  id: string;
+  link_id: string;
+  viewed_at: string;
+  user_agent: string | null;
+}
+
+export interface ClientNotification {
+  id: string;
+  client_id: string;
+  client_user_id: string | null;
+  audience: ClientNotificationAudience;
+  kind: ClientNotificationKind;
+  channel: "email" | null;
+  recipient: string | null;
+  subject: string | null;
+  body: string | null;
+  status: NotificationStatus;
+  error: string | null;
+  attempts: number;
+  sent_at: string | null;
+  period_start: string | null;
+  period_end: string | null;
+  created_at: string;
+  updated_at: string;
 }
 
 export interface Lead {

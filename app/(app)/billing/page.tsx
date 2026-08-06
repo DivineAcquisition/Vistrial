@@ -13,7 +13,7 @@ import { PageHeader } from "@/components/ui/page-header";
 import { Panel } from "@/components/ui/panel";
 import { SectionHeader } from "@/components/ui/section-header";
 import { TonePill } from "@/components/ui/tone";
-import { requireUser } from "@/lib/auth";
+import { requireAdmin } from "@/lib/auth";
 import { maximumCharge, stripeMode } from "@/lib/billing/stripe";
 import {
   attentionItems,
@@ -47,7 +47,7 @@ export default async function BillingPage({
 }: {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
-  await requireUser();
+  await requireAdmin();
 
   const params = await searchParams;
 

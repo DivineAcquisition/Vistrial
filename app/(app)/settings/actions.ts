@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { headers } from "next/headers";
 import { z } from "zod";
 
-import { requireUser } from "@/lib/auth";
+import { requireAdmin } from "@/lib/auth";
 import { dismissStoredEvent, processStoredEvent } from "@/lib/ingest/pipeline";
 import { createServiceClient } from "@/lib/supabase/server";
 import type { CanonicalEventType, Json } from "@/types/database";
@@ -80,7 +80,7 @@ export async function sendTestEvent(
   _previous: ActionState,
   formData: FormData
 ): Promise<ActionState> {
-  await requireUser();
+  await requireAdmin();
 
   const parsed = testEventSchema.safeParse({
     clientId: value(formData, "clientId"),
@@ -212,7 +212,7 @@ export async function resolveInboundEvent(
   _previous: ActionState,
   formData: FormData
 ): Promise<ActionState> {
-  await requireUser();
+  await requireAdmin();
 
   const eventId = value(formData, "eventId");
   const intent = value(formData, "intent");

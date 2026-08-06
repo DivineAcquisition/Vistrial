@@ -7,14 +7,14 @@ import { PageHeader } from "@/components/ui/page-header";
 import { Panel } from "@/components/ui/panel";
 import { SectionHeader } from "@/components/ui/section-header";
 import { TonePill } from "@/components/ui/tone";
-import { requireUser } from "@/lib/auth";
+import { requireAdmin } from "@/lib/auth";
 import { listClients } from "@/lib/db/clients";
 import { listUnresolvedEvents, STATUS_LABELS } from "@/lib/db/inbound-events";
 
 export const dynamic = "force-dynamic";
 
 export default async function SettingsPage() {
-  await requireUser();
+  await requireAdmin();
 
   let clients: { id: string; name: string }[];
   let events: UnresolvedEventView[];

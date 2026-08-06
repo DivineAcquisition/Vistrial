@@ -3,6 +3,7 @@
 import { redirect } from "next/navigation";
 import { z } from "zod";
 
+import { homeForSession } from "@/lib/auth";
 import { createSessionClient } from "@/lib/supabase/session";
 
 const DEFAULT_DESTINATION = "/appointments";
@@ -37,7 +38,7 @@ export async function signInAction(
 
   if (!parsed.success) return { error: GENERIC_FAILURE };
 
-  const destination = safeDestination(formData.get("next"));
+  const requested = safeDestination(formData.get("next"));
   const supabase = await createSessionClient();
   const { error } = await supabase.auth.signInWithPassword({
     email: parsed.data.email,
@@ -46,7 +47,17 @@ export async function signInAction(
 
   if (error) return { error: GENERIC_FAILURE };
 
-  redirect(destination);
+  // Prefer the role-appropriate home. A portal member who was sent to an admin
+  // `next` still lands in the portal; an admin keeps a deep link when it is
+  // safe.
+  const home = await homeForSession();
+  if (home === "/portal") redirect("/portal");
+  if (home === "/login") {
+    await supabase.auth.signOut();
+    return { error: "This account no longer has access." };
+  }
+
+  redirect(requested === DEFAULT_DESTINATION ? home : requested);
 }
 
 export async function signOutAction(): Promise<void> {

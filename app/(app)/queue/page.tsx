@@ -4,13 +4,13 @@ import { KpiCard, KpiGrid } from "@/components/ui/kpi-card";
 import { PageHeader } from "@/components/ui/page-header";
 import { Panel } from "@/components/ui/panel";
 import { TonePill } from "@/components/ui/tone";
-import { requireUser } from "@/lib/auth";
+import { requireAdmin } from "@/lib/auth";
 import { listQueue, type AppointmentView } from "@/lib/db/appointments";
 
 export const dynamic = "force-dynamic";
 
 export default async function QueuePage() {
-  await requireUser();
+  await requireAdmin();
 
   let queue: AppointmentView[];
   try {

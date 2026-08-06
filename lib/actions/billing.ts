@@ -6,7 +6,7 @@ import { z } from "zod";
 import { runCycleJob } from "@/lib/billing/job";
 import { storePaymentMethod } from "@/lib/billing/payment-method";
 import { createSetupSession, ensureCustomer } from "@/lib/billing/stripe";
-import { requireUser } from "@/lib/auth";
+import { requireAdmin } from "@/lib/auth";
 import { retryNotification } from "@/lib/notifications/charge";
 import { baseUrl } from "@/lib/origin";
 import { createServiceClient } from "@/lib/supabase/server";
@@ -55,7 +55,7 @@ const clientIdSchema = z.object({ client_id: z.uuid("Choose a client.") });
 export async function createPaymentLinkAction(
   input: unknown
 ): Promise<ActionResult<{ url: string }>> {
-  await requireUser();
+  await requireAdmin();
 
   const parsed = clientIdSchema.safeParse(input);
   if (!parsed.success) return { ok: false, error: describeIssues(parsed.error) };
@@ -102,7 +102,7 @@ export async function createPaymentLinkAction(
  * does this automatically; this is for when the client closed the tab.
  */
 export async function refreshPaymentMethodAction(input: unknown): Promise<ActionResult> {
-  await requireUser();
+  await requireAdmin();
 
   const parsed = clientIdSchema.safeParse(input);
   if (!parsed.success) return { ok: false, error: describeIssues(parsed.error) };
@@ -146,7 +146,7 @@ const creditSchema = z.object({
  * client, applied to reduce their next charge.
  */
 export async function createCreditAction(input: unknown): Promise<ActionResult> {
-  const user = await requireUser();
+  const user = await requireAdmin();
 
   const parsed = creditSchema.safeParse(input);
   if (!parsed.success) return { ok: false, error: describeIssues(parsed.error) };
@@ -176,7 +176,7 @@ const chargeIdSchema = z.object({ charge_id: z.uuid() });
 
 /** Re-attempts an itemisation that did not reach the client. */
 export async function resendChargeNoticeAction(input: unknown): Promise<ActionResult> {
-  await requireUser();
+  await requireAdmin();
 
   const parsed = chargeIdSchema.safeParse(input);
   if (!parsed.success) return { ok: false, error: describeIssues(parsed.error) };
@@ -227,7 +227,7 @@ export async function resendChargeNoticeAction(input: unknown): Promise<ActionRe
 export async function runCycleJobAction(): Promise<
   ActionResult<{ assembled: number; notified: number; processed: number; failed: number; skipped: number }>
 > {
-  await requireUser();
+  await requireAdmin();
 
   try {
     const summary = await runCycleJob(createServiceClient(), { trigger: "manual" });

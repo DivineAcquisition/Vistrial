@@ -14,7 +14,9 @@ import {
   explainFailure,
   isCardProblem,
   stripeConfigured,
+  stripeMode,
   type PaymentResult,
+  type ProcessorMode,
 } from "@/lib/billing/stripe";
 import { formatMoney } from "@/lib/format";
 import {
@@ -242,6 +244,7 @@ async function recordAttempt(
     reference?: string | null;
     code?: string | null;
     message?: string | null;
+    mode?: ProcessorMode | null;
     at: Date;
   }
 ): Promise<void> {
@@ -253,7 +256,72 @@ async function recordAttempt(
     processor_reference: input.reference ?? null,
     failure_code: input.code ?? null,
     failure_message: input.message ?? null,
+    processor_mode: input.mode ?? stripeMode(),
   });
+}
+
+/**
+ * Marks a charge paid, locks its appointments, and sends the receipt.
+ *
+ * Called from the payment attempt itself and again from Stripe's webhook,
+ * because with a live key those are genuinely two different arrivals of the
+ * same fact: a bank can accept after our request has already timed out. It is
+ * safe to call twice — a charge that is already paid is left exactly as it is.
+ */
+export async function settlePaid(
+  db: LedgerDb,
+  chargeId: string,
+  reference: string,
+  now: Date,
+  options: { attemptNo?: number; mode?: ProcessorMode | null } = {}
+): Promise<PaymentResultSummary> {
+  const loaded = await load(db, chargeId);
+  if (!loaded) return { kind: "skipped", reason: "That charge no longer exists." };
+
+  if (loaded.charge.status === "paid") {
+    return { kind: "skipped", reason: "Already paid. Nothing was settled twice." };
+  }
+
+  const attemptNo = options.attemptNo ?? loaded.charge.attempts + 1;
+
+  await recordAttempt(db, {
+    chargeId,
+    attemptNo,
+    outcome: "succeeded",
+    reference,
+    mode: options.mode,
+    at: now,
+  });
+
+  // Every appointment in the charge locks permanently.
+  await markAppointmentsBilled(db, loaded.charge);
+
+  const { data: paid } = await db
+    .from("charges")
+    .update({
+      status: "paid",
+      attempts: attemptNo,
+      processed_at: now.toISOString(),
+      stripe_payment_intent_id: reference,
+      processor_mode: options.mode ?? stripeMode(),
+      failure_code: null,
+      failure_reason: null,
+      next_attempt_at: null,
+    })
+    .eq("id", chargeId)
+    .neq("status", "paid")
+    .select("*")
+    .returns<Charge[]>()
+    .maybeSingle();
+
+  const context: ChargeContext = {
+    charge: paid ?? loaded.charge,
+    client: loaded.client,
+    lines: loaded.lines,
+  };
+  await notifyCharge(db, context, "receipt", composeReceipt(context));
+
+  return { kind: "paid", reference, total: Number(loaded.charge.total) };
 }
 
 /**
@@ -343,44 +411,8 @@ export async function processCharge(
     return { kind: "failed", reason, final, nextAttempt: final ? null : next };
   };
 
-  const settleSuccess = async (reference: string): Promise<PaymentResultSummary> => {
-    await recordAttempt(db, {
-      chargeId,
-      attemptNo,
-      outcome: "succeeded",
-      reference,
-      at: now,
-    });
-
-    // Every appointment in the charge locks permanently.
-    await markAppointmentsBilled(db, claimed);
-
-    const { data: paid } = await db
-      .from("charges")
-      .update({
-        status: "paid",
-        attempts: attemptNo,
-        processed_at: now.toISOString(),
-        stripe_payment_intent_id: reference,
-        failure_code: null,
-        failure_reason: null,
-        next_attempt_at: null,
-      })
-      .eq("id", chargeId)
-      .eq("status", "processing")
-      .select("*")
-      .returns<Charge[]>()
-      .maybeSingle();
-
-    const context: ChargeContext = {
-      charge: paid ?? claimed,
-      client,
-      lines: before.lines,
-    };
-    await notifyCharge(db, context, "receipt", composeReceipt(context));
-
-    return { kind: "paid", reference, total };
-  };
+  const settleSuccess = (reference: string): Promise<PaymentResultSummary> =>
+    settlePaid(db, chargeId, reference, now, { attemptNo });
 
   try {
     // A charge credited down to nothing still needs its appointments locked and

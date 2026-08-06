@@ -31,8 +31,34 @@ export type StripeFailure = {
 export type PaymentSuccess = { ok: true; reference: string };
 export type PaymentResult = PaymentSuccess | StripeFailure;
 
+export type ProcessorMode = "live" | "test";
+
 export function stripeConfigured(): boolean {
   return Boolean(process.env.STRIPE_SECRET_KEY?.trim());
+}
+
+/**
+ * Which account the key belongs to. Recorded on every attempt, because a
+ * test-mode row and a live-mode row are not the same fact, and shown in the
+ * interface, because someone reading a billing screen needs to know whether the
+ * numbers on it moved real money.
+ */
+export function stripeMode(): ProcessorMode | null {
+  const key = process.env.STRIPE_SECRET_KEY?.trim();
+  if (!key) return null;
+  return key.startsWith("sk_test_") || key.startsWith("rk_test_") ? "test" : "live";
+}
+
+/**
+ * The largest single charge this system will attempt. A pay-per-appointment
+ * cycle is tens of appointments, so a charge in the thousands is plausible and
+ * a charge in the tens of thousands is a bug. With a live key the difference
+ * between those two is a phone call to a client, so the ceiling refuses rather
+ * than collects and the charge lands in the attention view instead.
+ */
+export function maximumCharge(): number {
+  const configured = Number(process.env.STRIPE_MAX_CHARGE?.trim());
+  return Number.isFinite(configured) && configured > 0 ? configured : 10_000;
 }
 
 const NOT_CONFIGURED: StripeFailure = {
@@ -273,6 +299,30 @@ export async function readSetupSession(
   };
 }
 
+/** Reads back a card's metadata, for a method Stripe told us about itself. */
+export async function readPaymentMethod(
+  paymentMethodId: string
+): Promise<{ ok: true; card: CardDetails; customerId: string | null } | StripeFailure> {
+  const method = await request<PaymentMethod & { customer: string | null }>(
+    `/payment_methods/${paymentMethodId}`,
+    {},
+    { method: "GET" }
+  );
+
+  if (!method.ok) return method;
+
+  return {
+    ok: true,
+    customerId: method.data.customer ?? null,
+    card: {
+      brand: method.data.card?.brand ?? null,
+      last4: method.data.card?.last4 ?? null,
+      expMonth: method.data.card?.exp_month ?? null,
+      expYear: method.data.card?.exp_year ?? null,
+    },
+  };
+}
+
 /* -------------------------------------------------------------------------- */
 /* Taking payment                                                              */
 /* -------------------------------------------------------------------------- */
@@ -297,6 +347,21 @@ export async function chargeCustomer(input: {
   idempotencyKey: string;
   metadata: Record<string, string>;
 }): Promise<PaymentResult> {
+  const ceiling = maximumCharge();
+
+  if (input.amountCents > Math.round(ceiling * 100)) {
+    return {
+      ok: false,
+      code: "above_maximum_charge",
+      message: `This charge is ${(input.amountCents / 100).toFixed(
+        2
+      )}, above the ${ceiling.toFixed(
+        2
+      )} ceiling, so it was not attempted. Check the itemisation, then raise STRIPE_MAX_CHARGE if it is genuinely right.`,
+      retryable: false,
+    };
+  }
+
   const created = await request<PaymentIntent>(
     "/payment_intents",
     {
@@ -353,6 +418,8 @@ export function explainFailure(code: string, message: string): string {
       return "The payment could not be attempted because no processor is configured.";
     case "processor_unreachable":
       return "The payment processor could not be reached.";
+    case "above_maximum_charge":
+      return message;
     default:
       return message;
   }

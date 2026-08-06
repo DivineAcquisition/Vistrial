@@ -66,6 +66,14 @@ export type ChargeRow = {
   nextAttemptAt: string | null;
   failureReason: string | null;
   reference: string | null;
+  mode: "live" | "test" | null;
+  chargeback: {
+    at: string;
+    status: string;
+    reason: string | null;
+    amount: number | null;
+    reference: string | null;
+  } | null;
   createdAt: string;
   lines: LineRow[];
   notices: NoticeRow[];
@@ -97,6 +105,18 @@ export function toChargeRow(record: ChargeRecord): ChargeRow {
     nextAttemptAt: record.next_attempt_at,
     failureReason: record.failure_reason,
     reference: record.stripe_payment_intent_id,
+    mode: record.processor_mode,
+    chargeback:
+      record.chargeback_at === null
+        ? null
+        : {
+            at: record.chargeback_at,
+            status: record.chargeback_status ?? "open",
+            reason: record.chargeback_reason,
+            amount:
+              record.chargeback_amount === null ? null : Number(record.chargeback_amount),
+            reference: record.chargeback_reference,
+          },
     createdAt: record.created_at,
     lines: (record.lines ?? []).map((line) => ({
       id: line.id,

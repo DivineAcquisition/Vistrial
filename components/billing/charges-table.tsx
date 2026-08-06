@@ -79,10 +79,18 @@ export function ChargesTable({
                   {formatMoney(charge.total)}
                 </TableCell>
                 <TableCell className="px-4 py-3.5">
-                  <TonePill tone={CHARGE_TONES[charge.status]}>
-                    <Dot tone={CHARGE_TONES[charge.status]} />
-                    {CHARGE_STATUS_LABELS[charge.status]}
-                  </TonePill>
+                  <span className="flex flex-wrap items-center gap-1.5">
+                    <TonePill tone={CHARGE_TONES[charge.status]}>
+                      <Dot tone={CHARGE_TONES[charge.status]} />
+                      {CHARGE_STATUS_LABELS[charge.status]}
+                    </TonePill>
+                    {charge.chargeback ? (
+                      <TonePill tone="critical">Chargeback</TonePill>
+                    ) : null}
+                    {charge.mode === "test" ? (
+                      <TonePill tone="neutral">Test</TonePill>
+                    ) : null}
+                  </span>
                 </TableCell>
                 <TableCell className="px-4 py-3.5 text-silver tabular-nums">
                   {charge.status === "paid"

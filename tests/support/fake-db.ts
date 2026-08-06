@@ -53,6 +53,8 @@ const UNIQUE_INDEXES: Record<string, UniqueIndex[]> = {
     },
   ],
   clients: [{ columns: ["ghl_location_id"], where: (row) => row.ghl_location_id != null }],
+  stripe_events: [{ columns: ["stripe_event_id"] }],
+  charge_attempts: [{ columns: ["charge_id", "attempt_no"] }],
   appointments: [
     {
       columns: ["client_id", "provider_appointment_id"],
@@ -162,6 +164,17 @@ const DEFAULTS: Record<string, () => Row> = {
     processor_reference: null,
     failure_code: null,
     failure_message: null,
+    processor_mode: null,
+  }),
+  stripe_events: () => ({
+    livemode: false,
+    status: "pending",
+    charge_id: null,
+    client_id: null,
+    note: null,
+    error: null,
+    received_at: new Date().toISOString(),
+    processed_at: null,
   }),
   credits: () => ({
     appointment_id: null,

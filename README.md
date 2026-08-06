@@ -130,8 +130,11 @@ app/
   (app)/                 shell layout + queue, appointments, leads, clients
                          (list + detail), billing, settings
   (auth)/login/          full-viewport login, no app shell
+  api/billing/           where Stripe returns a client after adding a card
   api/health/            GET { ok: true }
-  api/webhooks/inbound/  the single inbound endpoint
+  api/jobs/cycle/        the scheduled billing job
+  api/webhooks/inbound/  the single inbound endpoint for leads and bookings
+  api/webhooks/stripe/   outcomes that arrive after a payment request returned
   layout.tsx             fonts, dark theme, Toaster
   page.tsx               redirect → /appointments
 proxy.ts                 session refresh + route protection
@@ -171,7 +174,7 @@ tests/                   pipeline, lifecycle, and billing tests against a fake
 supabase/migrations/     001_ledger, 002_harden_set_updated_at,
                          003_client_definition_rpcs, 004_ingestion,
                          005_client_duplicate_window, 006_appointment_lifecycle,
-                         007_billing
+                         007_billing, 008_stripe_live
 ```
 
 ## Lead ingestion
@@ -348,6 +351,40 @@ carried forward.
 processes, and retries, and records every run — including the runs that did
 nothing and the clients it skipped, with the reason.
 
+## Running against a live Stripe key
+
+A test key makes the synchronous response to a payment request the whole story.
+A live one does not, and three things change.
+
+**Outcomes arrive late.** A bank can accept after the request has timed out, and
+a payment can fail asynchronously. `POST /api/webhooks/stripe` takes
+`payment_intent.succeeded` and `payment_intent.payment_failed` and settles the
+charge either way, so the money and the appointment locks cannot come apart.
+Subscribe that endpoint to those two events, the `charge.dispute.*` family,
+`setup_intent.succeeded`, and `payment_method.automatically_updated`, and put
+the signing secret in `STRIPE_WEBHOOK_SECRET`.
+
+The signature is verified against the exact bytes Stripe sent, in constant time,
+with a five minute tolerance, before the body is parsed. An unverified request
+writes nothing at all. Everything verified is stored raw in `stripe_events`
+before it is interpreted, and the unique index on Stripe's own event id is what
+stops a redelivery — Stripe retries for three days — from settling a charge
+twice.
+
+**Chargebacks are real.** One lands on a charge that is already paid, which the
+immutability rule would otherwise refuse to record, so `guard_charge()` bends
+exactly that far: a paid charge may record `chargeback_*` and nothing else. The
+charge stays `paid`, because it was; the reversal is its own fact beside it, and
+it goes straight to the top of the attention view.
+
+**Mistakes cost money.** The billing screen states which mode it is in, every
+attempt records the mode it happened in, and a single charge above
+`STRIPE_MAX_CHARGE` (default 10,000) is refused and raised rather than
+collected — a cycle in the tens of thousands is an assembly bug, not a good day.
+
+A client who has ever been paid for cannot be deleted: the guard refuses to drop
+a paid charge, and the delete cascades into it. Churn them instead.
+
 ## Data model
 
 Eighteen tables, all with row level security enabled and **no policies** —
@@ -367,6 +404,7 @@ service role only until auth lands:
 - `charge_notifications` — the itemisation, the receipt, and the failure notices
 - `credits` — corrections, each with a required reason
 - `job_runs`, `job_run_entries` — what the cycle job did, and what it skipped
+- `stripe_events` — every event Stripe sent, stored before it was interpreted
 - `inbound_events` — immutable audit of every webhook payload before processing
 
 `public.set_updated_at()` (with a pinned `search_path`) keeps `updated_at`

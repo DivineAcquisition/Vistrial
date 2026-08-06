@@ -83,6 +83,35 @@ export function ChargeDetail({ charge }: { charge: ChargeRow }) {
           />
         </KpiGrid>
 
+        {charge.chargeback ? (
+          <Panel className="border-l-2 border-l-flag-critical px-4 py-3.5">
+            <div className="flex flex-wrap items-center gap-2">
+              <TonePill tone="critical">
+                Chargeback {charge.chargeback.status.replace("_", " ")}
+              </TonePill>
+              <span className="text-xs text-silver tabular-nums">
+                {formatDateTime(charge.chargeback.at)}
+              </span>
+              {charge.chargeback.amount !== null ? (
+                <span className="text-sm text-white tabular-nums">
+                  {formatMoney(charge.chargeback.amount)}
+                </span>
+              ) : null}
+              {charge.chargeback.reference ? (
+                <span className="ml-auto font-mono text-xs text-dim">
+                  {charge.chargeback.reference}
+                </span>
+              ) : null}
+            </div>
+            <p className="mt-2 text-sm leading-relaxed text-silver">
+              {charge.chargeback.reason ??
+                "The cardholder disputed this payment with their bank."}{" "}
+              The charge itself is unchanged — it was paid — and this is the record
+              that the money came back out. Respond through Stripe.
+            </p>
+          </Panel>
+        ) : null}
+
         <section>
           <SectionTitle>Itemisation</SectionTitle>
           <Panel className="px-4 py-2">

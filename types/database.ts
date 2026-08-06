@@ -65,6 +65,10 @@ export type ChargeNotificationKind =
   | "payment_failed"
   | "payment_failed_final";
 export type PaymentOutcome = "succeeded" | "failed";
+export type ProcessorMode = "live" | "test";
+/** Stripe's dispute vocabulary, reduced to the states worth acting on. */
+export type ChargebackStatus = "warning" | "open" | "under_review" | "won" | "lost";
+export type StripeEventStatus = "pending" | "processed" | "ignored" | "failed";
 export type JobAction =
   | "assembled"
   | "notified"
@@ -365,8 +369,20 @@ export interface Charge {
   last_attempt_at: string | null;
   next_attempt_at: string | null;
   stripe_payment_intent_id: string | null;
+  processor_mode: ProcessorMode | null;
   failure_code: string | null;
   failure_reason: string | null;
+
+  /**
+   * A reversal. The charge stays `paid`, because it was; this is the separate
+   * fact that the money came back out.
+   */
+  chargeback_at: string | null;
+  chargeback_status: ChargebackStatus | null;
+  chargeback_reason: string | null;
+  chargeback_amount: number | null;
+  chargeback_reference: string | null;
+
   created_at: string;
   updated_at: string;
 }
@@ -391,8 +407,25 @@ export interface ChargeAttempt {
   attempted_at: string;
   outcome: PaymentOutcome;
   processor_reference: string | null;
+  processor_mode: ProcessorMode | null;
   failure_code: string | null;
   failure_message: string | null;
+}
+
+/** Every event Stripe sent, stored before it was interpreted. */
+export interface StripeEvent {
+  id: string;
+  stripe_event_id: string;
+  type: string;
+  livemode: boolean;
+  payload: Json;
+  status: StripeEventStatus;
+  charge_id: string | null;
+  client_id: string | null;
+  note: string | null;
+  error: string | null;
+  received_at: string;
+  processed_at: string | null;
 }
 
 export interface ChargeNotification {

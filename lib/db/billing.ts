@@ -156,6 +156,8 @@ export async function billingMetrics(): Promise<BillingMetrics> {
 export type AttentionItem = {
   id: string;
   severity: "critical" | "warning";
+  /** Lower sorts higher. A chargeback outranks everything else here. */
+  priority?: number;
   clientId: string | null;
   clientName: string;
   headline: string;
@@ -287,10 +289,40 @@ export async function attentionItems(): Promise<AttentionItem[]> {
     }
   }
 
-  const order = { critical: 0, warning: 1 };
-  return items.sort(
-    (a, b) => order[a.severity] - order[b.severity] || (b.ageDays ?? 0) - (a.ageDays ?? 0)
-  );
+  // A chargeback lands on a charge that is already paid, so it is not in the
+  // sweep above — and it is the single loudest thing that can happen here.
+  const { data: reversed } = await supabase
+    .from("charges")
+    .select("*")
+    .not("chargeback_status", "is", null)
+    .neq("chargeback_status", "won")
+    .returns<Charge[]>();
+
+  for (const charge of reversed ?? []) {
+    items.push({
+      id: `chargeback-${charge.id}`,
+      severity: "critical",
+      priority: 0,
+      clientId: charge.client_id,
+      clientName: byId.get(charge.client_id) ?? "Unknown client",
+      headline:
+        charge.chargeback_status === "lost"
+          ? "Chargeback lost"
+          : charge.chargeback_status === "warning"
+            ? "Chargeback warning"
+            : "Chargeback opened",
+      detail: `${
+        charge.chargeback_reason ?? "The cardholder disputed this payment with their bank."
+      } Respond through Stripe; this threatens payment processing access, not just this charge.`,
+      ageDays: daysSince(charge.chargeback_at),
+      href: `/billing?charge=${charge.id}`,
+    });
+  }
+
+  const bySeverity = { critical: 1, warning: 2 };
+  const rank = (item: AttentionItem) => item.priority ?? bySeverity[item.severity];
+
+  return items.sort((a, b) => rank(a) - rank(b) || (b.ageDays ?? 0) - (a.ageDays ?? 0));
 }
 
 export async function countAttention(): Promise<number> {

@@ -14,6 +14,7 @@ import { Panel } from "@/components/ui/panel";
 import { SectionHeader } from "@/components/ui/section-header";
 import { TonePill } from "@/components/ui/tone";
 import { requireUser } from "@/lib/auth";
+import { maximumCharge, stripeMode } from "@/lib/billing/stripe";
 import {
   attentionItems,
   billingMetrics,
@@ -93,6 +94,7 @@ export default async function BillingPage({
   }
 
   const rows = charges.map(toChargeRow);
+  const mode = stripeMode();
 
   return (
     <>
@@ -102,6 +104,25 @@ export default async function BillingPage({
         description="One charge per client per cycle, assembled from appointments whose review window has fully elapsed. Nothing processes until the client has been sent the itemisation it contains."
         actions={<RunCycleJobButton />}
       />
+
+      <Panel
+        className={`mb-6 flex flex-wrap items-center gap-3 border-l-2 px-5 py-3.5 ${
+          mode === "live" ? "border-l-flag-critical" : "border-l-flag-warning"
+        }`}
+      >
+        <TonePill tone={mode === "live" ? "critical" : "warning"}>
+          {mode === "live" ? "Live mode" : mode === "test" ? "Test mode" : "No processor"}
+        </TonePill>
+        <span className="text-sm text-silver">
+          {mode === "live"
+            ? `Every payment on this screen moves real money. Single charges above ${formatMoney(
+                maximumCharge()
+              )} are refused rather than collected.`
+            : mode === "test"
+              ? "Payments are simulated against Stripe's test account. Nothing here moves real money."
+              : "STRIPE_SECRET_KEY is not set, so charges assemble and notify but cannot be collected."}
+        </span>
+      </Panel>
 
       <KpiGrid>
         <KpiCard

@@ -40,7 +40,7 @@ import {
   listTerritories,
 } from "@/lib/db/territory";
 import { formatMoney, formatPercent } from "@/lib/format";
-import { baseUrl } from "@/lib/origin";
+import { webhookBaseUrl } from "@/lib/settings/urls";
 import { btnSecondary, btnSizeSm } from "@/lib/ui";
 
 export const dynamic = "force-dynamic";
@@ -62,7 +62,7 @@ export default async function ClientDetailPage({
 
   const [
     definitions,
-    origin,
+    webhookOrigin,
     appointments,
     shows,
     charges,
@@ -79,7 +79,7 @@ export default async function ClientDetailPage({
     overrides,
   ] = await Promise.all([
     listDefinitions(client.id),
-    baseUrl(),
+    webhookBaseUrl(),
     listAppointments({ clientId: client.id }),
     showStats(client.id),
     listCharges({ clientId: client.id }),
@@ -104,9 +104,9 @@ export default async function ClientDetailPage({
   const reported = shows.showed + shows.notShown;
   const notShownRate = reported === 0 ? null : shows.notShown / reported;
 
-  // One endpoint receives everything. The secret in the header is what
-  // identifies the client, so the URL carries no id of its own.
-  const webhookUrl = `${origin}/api/webhooks/inbound`;
+  // One endpoint receives everything on the Supabase project. The secret in
+  // the header is what identifies the client, so the URL carries no id of its own.
+  const webhookUrl = webhookOrigin;
 
   return (
     <>

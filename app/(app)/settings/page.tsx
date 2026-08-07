@@ -1,5 +1,9 @@
 import { CategorySettings } from "@/components/settings/category-settings";
 import { DigestSettings } from "@/components/settings/digest-settings";
+import {
+  DomainSettings,
+  type DomainSettingsValues,
+} from "@/components/settings/domain-settings";
 import { InboundTestTool } from "@/components/settings/inbound-test-tool";
 import { IntegrationSecrets } from "@/components/settings/integration-secrets";
 import {
@@ -15,6 +19,14 @@ import { requireAdmin } from "@/lib/auth";
 import { listClients } from "@/lib/db/clients";
 import { listUnresolvedEvents, STATUS_LABELS } from "@/lib/db/inbound-events";
 import { listServiceCategories } from "@/lib/db/territory";
+import {
+  DEFAULT_CLIENT_BASE_URL,
+  DEFAULT_EMAIL_FROM,
+  DEFAULT_EMAIL_REPLY_TO,
+  DEFAULT_STAFF_BASE_URL,
+  DEFAULT_WEBHOOK_BASE_URL,
+  loadDomainSettings,
+} from "@/lib/settings/urls";
 import { DEFAULT_CROSS_CLIENT_WINDOW_DAYS } from "@/lib/territory/cross-client";
 import { createServiceClient } from "@/lib/supabase/server";
 import type { ServiceCategory } from "@/types/database";
@@ -30,6 +42,13 @@ export default async function SettingsPage() {
   let categories: ServiceCategory[] = [];
   let crossClientWindowDays = DEFAULT_CROSS_CLIENT_WINDOW_DAYS;
   let notifyEmail = process.env.ADMIN_NOTIFY_EMAIL?.trim() ?? "";
+  let domain: DomainSettingsValues = {
+    staffBaseUrl: DEFAULT_STAFF_BASE_URL,
+    clientBaseUrl: DEFAULT_CLIENT_BASE_URL,
+    webhookBaseUrl: DEFAULT_WEBHOOK_BASE_URL,
+    emailFrom: DEFAULT_EMAIL_FROM,
+    emailReplyTo: DEFAULT_EMAIL_REPLY_TO,
+  };
 
   try {
     const [clientRows, eventRows] = await Promise.all([
@@ -53,6 +72,12 @@ export default async function SettingsPage() {
       digestHour = await getDigestHour(createServiceClient());
     } catch {
       digestHour = DEFAULT_DIGEST_HOUR;
+    }
+
+    try {
+      domain = await loadDomainSettings();
+    } catch {
+      // defaults already assigned
     }
 
     try {
@@ -102,8 +127,18 @@ export default async function SettingsPage() {
 
       <section className="mb-10">
         <SectionHeader
+          title="Hosts and mail"
+          hint="Base URLs for each population, the Supabase webhook URL providers copy, and the Resend from-address. Changeable without a deploy."
+        />
+        <Panel className="px-5 py-4">
+          <DomainSettings values={domain} />
+        </Panel>
+      </section>
+
+      <section className="mb-10">
+        <SectionHeader
           title="Inbound endpoint"
-          hint="One endpoint receives everything. The secret identifies the client."
+          hint="One endpoint on Supabase receives everything. The secret identifies the client."
         />
         <Panel className="px-5 py-4">
           <dl className="grid gap-4 sm:grid-cols-2">
@@ -111,8 +146,8 @@ export default async function SettingsPage() {
               <dt className="text-[11px] font-semibold tracking-[0.12em] text-dim uppercase">
                 URL
               </dt>
-              <dd className="mt-1 font-mono text-sm text-silver">
-                POST /api/webhooks/inbound
+              <dd className="mt-1 break-all font-mono text-sm text-silver">
+                POST {domain.webhookBaseUrl}
               </dd>
             </div>
             <div>
@@ -128,7 +163,7 @@ export default async function SettingsPage() {
             A request with a missing or unmatched secret is rejected before its
             body is parsed. Every authenticated request is written to the inbound
             events table before anything is interpreted, so an unparseable payload
-            is still evidence.
+            is still evidence. This surface sets no cookies and reads no session.
           </p>
         </Panel>
       </section>
@@ -174,7 +209,7 @@ export default async function SettingsPage() {
       <section className="mb-10">
         <SectionHeader
           title="Inbound test tool"
-          hint="A development and configuration tool. It posts to the real endpoint with the client's real secret and gets no special treatment."
+          hint="Posts to the configured webhook base URL with the client's real secret and gets no special treatment."
         />
         <InboundTestTool clients={clients} />
       </section>

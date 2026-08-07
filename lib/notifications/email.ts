@@ -4,15 +4,25 @@
  * Delivery is never assumed. Every caller records what came back, because a
  * notification that quietly failed is the difference between a charge a client
  * expected and a chargeback.
+ *
+ * Sends through Resend from the mail subdomain (configurable from-address and
+ * reply-to in app_settings). Immediate API accept/reject remains the delivery
+ * status source recorded on each notification row.
  */
+
+import {
+  emailFromAddress,
+  emailReplyToAddress,
+} from "@/lib/settings/urls";
 
 export type DeliveryResult = {
   status: "sent" | "failed";
   error: string | null;
 };
 
-export function emailConfigured(): boolean {
-  return Boolean(process.env.RESEND_API_KEY?.trim() && process.env.NOTIFICATION_FROM?.trim());
+export async function emailConfigured(): Promise<boolean> {
+  const from = await emailFromAddress();
+  return Boolean(process.env.RESEND_API_KEY?.trim() && from?.trim());
 }
 
 export async function sendEmail(
@@ -28,14 +38,25 @@ export async function sendEmail(
   }
 
   const apiKey = process.env.RESEND_API_KEY?.trim();
-  const from = process.env.NOTIFICATION_FROM?.trim();
+  const from = (await emailFromAddress())?.trim();
+  const replyTo = (await emailReplyToAddress())?.trim();
 
   if (!apiKey || !from) {
     return {
       status: "failed",
       error:
-        "No delivery channel is configured. Set RESEND_API_KEY and NOTIFICATION_FROM, then send it again.",
+        "No delivery channel is configured. Set RESEND_API_KEY and the email from-address in Settings, then send it again.",
     };
+  }
+
+  const payload: Record<string, unknown> = {
+    from,
+    to: [recipient],
+    subject,
+    text: body,
+  };
+  if (replyTo) {
+    payload.reply_to = replyTo;
   }
 
   let response: Response;
@@ -46,7 +67,7 @@ export async function sendEmail(
         authorization: `Bearer ${apiKey}`,
         "content-type": "application/json",
       },
-      body: JSON.stringify({ from, to: [recipient], subject, text: body }),
+      body: JSON.stringify(payload),
     });
   } catch (thrown) {
     return {

@@ -18,7 +18,7 @@ import {
   updateTeamUser,
 } from "@/lib/db/team";
 import { deliverTeamPasswordReset } from "@/lib/notifications/team";
-import { baseUrl } from "@/lib/origin";
+import { staffBaseUrl } from "@/lib/settings/urls";
 import { hashToken, mintToken } from "@/lib/portal/tokens";
 import {
   completeResetSchema,
@@ -468,7 +468,7 @@ export async function requestPasswordResetAction(
     expires_at: expiresAt,
   });
 
-  const origin = await baseUrl();
+  const origin = await staffBaseUrl();
   await deliverTeamPasswordReset({
     email: team.email,
     resetUrl: `${origin}/login/reset/${token}`,

@@ -8,7 +8,7 @@ import { storePaymentMethod } from "@/lib/billing/payment-method";
 import { createSetupSession, ensureCustomer } from "@/lib/billing/stripe";
 import { requirePermission } from "@/lib/auth";
 import { retryNotification } from "@/lib/notifications/charge";
-import { baseUrl } from "@/lib/origin";
+import { staffBaseUrl } from "@/lib/settings/urls";
 import { createServiceClient } from "@/lib/supabase/server";
 import type { LedgerDb } from "@/lib/supabase/ledger";
 import type { ChargeNotification, Client } from "@/types/database";
@@ -78,7 +78,7 @@ export async function createPaymentLinkAction(
 
     const session = await createSetupSession({
       customerId: customer.customerId,
-      returnUrl: `${await baseUrl()}/api/billing/payment-method`,
+      returnUrl: `${await staffBaseUrl()}/api/billing/payment-method`,
     });
 
     if (!session.ok) return { ok: false, error: session.message };

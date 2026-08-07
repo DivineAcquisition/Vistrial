@@ -18,7 +18,7 @@ import {
   updateTeamUser,
 } from "@/lib/db/team";
 import { deliverTeamInvitation } from "@/lib/notifications/team";
-import { baseUrl } from "@/lib/origin";
+import { staffBaseUrl } from "@/lib/settings/urls";
 import { hashToken, mintToken } from "@/lib/portal/tokens";
 import {
   cancelInviteSchema,
@@ -156,7 +156,7 @@ export async function inviteTeamUserAction(
     }
 
     const { token, expiresAt } = await issueInviteToken(row.id);
-    const origin = await baseUrl();
+    const origin = await staffBaseUrl();
     const inviteUrl = `${origin}/onboarding/${token}`;
 
     const delivery = await deliverTeamInvitation({
@@ -208,7 +208,7 @@ export async function resendTeamInviteAction(
     }
 
     const { token, expiresAt } = await issueInviteToken(row.id);
-    const origin = await baseUrl();
+    const origin = await staffBaseUrl();
     const delivery = await deliverTeamInvitation({
       membership: row,
       inviteUrl: `${origin}/onboarding/${token}`,

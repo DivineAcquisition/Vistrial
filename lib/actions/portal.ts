@@ -10,7 +10,7 @@ import {
   deliverDisputeAlert,
   deliverInvitation,
 } from "@/lib/notifications/portal";
-import { baseUrl } from "@/lib/origin";
+import { clientBaseUrl, staffBaseUrl } from "@/lib/settings/urls";
 import { spreadAdSpend, upsertAdSpend } from "@/lib/portal/spend";
 import { hashToken, mintToken } from "@/lib/portal/tokens";
 import { createAuthIdentity } from "@/lib/team/auth-identity";
@@ -105,7 +105,7 @@ export async function inviteClientUserAction(
       throw new Error(error.message);
     }
 
-    const origin = await baseUrl();
+    const origin = await clientBaseUrl();
     const inviteUrl = `${origin}/invite/${token}`;
     const delivery = await deliverInvitation(db, {
       client,
@@ -289,7 +289,7 @@ export async function createShareLinkAction(
 
     if (error) throw new Error(error.message);
 
-    const origin = await baseUrl();
+    const origin = await clientBaseUrl();
     refreshClient(parsed.data.client_id);
     return {
       ok: true,
@@ -448,7 +448,7 @@ export async function portalDisputeAction(input: unknown): Promise<ActionResult>
       .maybeSingle();
 
     if (client) {
-      const origin = await baseUrl();
+      const origin = await staffBaseUrl();
       await deliverDisputeAlert(db, {
         client,
         membership: session.membership,

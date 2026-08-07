@@ -1,6 +1,11 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
+import { hostSurface, pathAllowedOnHost } from "@/lib/hosts";
+import {
+  authCookieOptions,
+  enforceHostOnlyCookieOptions,
+} from "@/lib/supabase/cookie-options";
 import { supabaseEnv } from "@/lib/supabase/env";
 
 const LOGIN_PATH = "/login";
@@ -19,22 +24,61 @@ function isPublicPath(pathname: string): boolean {
   return false;
 }
 
+function notFound(): NextResponse {
+  // Plain 404 — not a redirect and not a permission error. Cross-host probes
+  // must not learn that a route exists on the other surface.
+  return new NextResponse("Not Found", {
+    status: 404,
+    headers: { "content-type": "text/plain; charset=utf-8" },
+  });
+}
+
 /**
  * Refreshes the Supabase session on every request and gates the application.
  *
+ * Host matching runs first: admin.vistrial.io serves the staff workspace,
+ * app.vistrial.io serves the client portal, and anything else is not found.
  * Team and portal populations use separate sign-in surfaces. Membership is
  * enforced again in requireAdmin / requireClient on every page and action.
  */
 export async function proxy(request: NextRequest) {
   const env = supabaseEnv();
   const { pathname, search } = request.nextUrl;
+  const hostHeader = request.headers.get("x-forwarded-host") ?? request.headers.get("host");
+  const surface = hostSurface(hostHeader);
+
+  if (surface === "unknown") {
+    return notFound();
+  }
+
+  if (!pathAllowedOnHost(surface, pathname)) {
+    return notFound();
+  }
+
+  // Root resolves inside the originating host — never across surfaces.
+  if (pathname === "/") {
+    const url = request.nextUrl.clone();
+    url.search = "";
+    if (surface === "client") {
+      url.pathname = PORTAL_HOME;
+      return NextResponse.redirect(url);
+    }
+    if (surface === "staff") {
+      url.pathname = ADMIN_HOME;
+      return NextResponse.redirect(url);
+    }
+    // local: fall through to the root page's path-based resolution
+  }
+
   const publicPath = isPublicPath(pathname);
 
   if (!env) return NextResponse.next({ request });
 
   let response = NextResponse.next({ request });
+  const cookieDefaults = authCookieOptions({ hostHeader, surface });
 
   const supabase = createServerClient(env.url, env.publishableKey, {
+    cookieOptions: cookieDefaults,
     cookies: {
       getAll() {
         return request.cookies.getAll();
@@ -45,7 +89,11 @@ export async function proxy(request: NextRequest) {
         }
         response = NextResponse.next({ request });
         for (const { name, value, options } of cookiesToSet) {
-          response.cookies.set(name, value, options);
+          response.cookies.set(
+            name,
+            value,
+            enforceHostOnlyCookieOptions(options, cookieDefaults)
+          );
         }
       },
     },
@@ -58,12 +106,15 @@ export async function proxy(request: NextRequest) {
   if (!user && !publicPath) {
     const url = request.nextUrl.clone();
     const portalSurface =
-      pathname === PORTAL_HOME || pathname.startsWith(`${PORTAL_HOME}/`);
+      surface === "client" ||
+      (surface === "local" &&
+        (pathname === PORTAL_HOME || pathname.startsWith(`${PORTAL_HOME}/`)));
     url.pathname = portalSurface ? PORTAL_LOGIN_PATH : LOGIN_PATH;
     url.search = "";
     if (pathname !== "/") {
       url.searchParams.set("next", `${pathname}${search}`);
     }
+    // Relative redirect — stays on the originating host.
     return withCookies(NextResponse.redirect(url), response);
   }
 

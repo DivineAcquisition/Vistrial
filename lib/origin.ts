@@ -1,20 +1,16 @@
 import "server-only";
 
-import { headers } from "next/headers";
-
 /**
- * Where this deployment answers. Used for the webhook address shown to clients
- * and for the return address Stripe sends a client back to.
+ * @deprecated Use staffBaseUrl / clientBaseUrl / webhookBaseUrl from
+ * `@/lib/settings/urls`. Links must never be inferred from the request host.
+ *
+ * Kept as a thin alias to the staff base URL only where a caller has not yet
+ * been classified — prefer the explicit helpers.
  */
-export async function baseUrl(): Promise<string> {
-  const configured = process.env.NEXT_PUBLIC_APP_URL?.trim();
-  if (configured) return configured.replace(/\/$/, "");
+export { staffBaseUrl as baseUrl } from "@/lib/settings/urls";
 
-  const headerList = await headers();
-  const host =
-    headerList.get("x-forwarded-host") ?? headerList.get("host") ?? "localhost:3000";
-  const protocol =
-    headerList.get("x-forwarded-proto") ?? (host.startsWith("localhost") ? "http" : "https");
-
-  return `${protocol}://${host}`;
-}
+export {
+  clientBaseUrl,
+  staffBaseUrl,
+  webhookBaseUrl,
+} from "@/lib/settings/urls";

@@ -85,6 +85,20 @@ read or write. That is deliberate until authentication lands, and it is why the
 Supabase security advisor reports nine `rls_enabled_no_policy` INFO lints. Server
 code must use `createServiceClient()` from `lib/supabase/server.ts`.
 
+## Inbound webhook (Edge Function)
+
+Provider webhooks post to the Supabase project, not to `vistrial.io`:
+
+`https://vsbzcbiyvaihhejjsypn.supabase.co/functions/v1/inbound`
+
+Source: `supabase/functions/inbound` (`index.ts`, `normalise.ts`, `types.ts`).
+Deploy with `supabase functions deploy inbound --no-verify-jwt` (auth is the
+per-client secret header, not a JWT). Set function secrets `CRON_SECRET` (same
+value as the ledger) and optionally `STAFF_BASE_URL`. After acknowledge, the
+function calls `POST {staff_base_url}/api/jobs/process-inbound` so deep
+processing stays in `lib/ingest`. DNS for `admin` / `app` / `mail` is documented
+in [`docs/DNS-REFERENCE.md`](../docs/DNS-REFERENCE.md) (reference only).
+
 ## Sanity checks
 
 ```sql

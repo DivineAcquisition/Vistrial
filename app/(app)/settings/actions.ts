@@ -1,11 +1,18 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { headers } from "next/headers";
 import { z } from "zod";
 
 import { requirePermission } from "@/lib/auth";
 import { dismissStoredEvent, processStoredEvent } from "@/lib/ingest/pipeline";
+import {
+  CLIENT_BASE_URL_KEY,
+  EMAIL_FROM_KEY,
+  EMAIL_REPLY_TO_KEY,
+  STAFF_BASE_URL_KEY,
+  WEBHOOK_BASE_URL_KEY,
+  webhookBaseUrl,
+} from "@/lib/settings/urls";
 import { appendActivity } from "@/lib/team/activity";
 import { createServiceClient } from "@/lib/supabase/server";
 import type { CanonicalEventType, Json } from "@/types/database";
@@ -61,16 +68,15 @@ function describe(error: z.ZodError): string {
   return error.issues.map((issue) => issue.message).join(" ");
 }
 
-async function origin(): Promise<string> {
-  const headerList = await headers();
-  const host = headerList.get("host") ?? "localhost:3000";
-  const protocol =
-    headerList.get("x-forwarded-proto") ?? (host.startsWith("localhost") ? "http" : "https");
-
-  return `${protocol}://${host}`;
-}
-
 const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+const httpUrlSchema = z
+  .string()
+  .trim()
+  .url("Enter a valid URL.")
+  .refine((value) => value.startsWith("http://") || value.startsWith("https://"), {
+    message: "URL must start with http:// or https://.",
+  });
 
 /**
  * Sends a payload through the real endpoint with the client's real secret. It
@@ -155,7 +161,9 @@ export async function sendTestEvent(
 
   let response: Response;
   try {
-    response = await fetch(`${await origin()}/api/webhooks/inbound`, {
+    // Posts to the configured webhook base URL (Supabase Edge Function), never
+    // inferred from the incoming request host.
+    response = await fetch(await webhookBaseUrl(), {
       method: "POST",
       headers: {
         "content-type": "application/json",
@@ -285,6 +293,74 @@ export async function saveIntegrationNotifyEmailAction(input: {
     });
 
     revalidatePath("/settings");
+    return { ok: true };
+  } catch (error) {
+    return {
+      ok: false,
+      error: error instanceof Error ? error.message : "Something went wrong.",
+    };
+  }
+}
+
+const domainSettingsSchema = z.object({
+  staffBaseUrl: httpUrlSchema,
+  clientBaseUrl: httpUrlSchema,
+  webhookBaseUrl: httpUrlSchema,
+  emailFrom: z.string().trim().min(3, "Enter a from address."),
+  emailReplyTo: z.string().trim().email("Enter a valid reply-to email."),
+});
+
+/** Owner/Admin. Base URLs and mail identity — changeable without a deploy. */
+export async function saveDomainSettingsAction(input: {
+  staffBaseUrl: string;
+  clientBaseUrl: string;
+  webhookBaseUrl: string;
+  emailFrom: string;
+  emailReplyTo: string;
+}): Promise<{ ok: true } | { ok: false; error: string }> {
+  try {
+    const admin = await requirePermission("manage_commercial");
+    const parsed = domainSettingsSchema.safeParse(input);
+    if (!parsed.success) {
+      return {
+        ok: false,
+        error: parsed.error.issues.map((issue) => issue.message).join(" "),
+      };
+    }
+
+    const db = createServiceClient();
+    const rows = [
+      {
+        key: STAFF_BASE_URL_KEY,
+        value: parsed.data.staffBaseUrl.replace(/\/$/, ""),
+      },
+      {
+        key: CLIENT_BASE_URL_KEY,
+        value: parsed.data.clientBaseUrl.replace(/\/$/, ""),
+      },
+      {
+        key: WEBHOOK_BASE_URL_KEY,
+        value: parsed.data.webhookBaseUrl.replace(/\/$/, ""),
+      },
+      { key: EMAIL_FROM_KEY, value: parsed.data.emailFrom },
+      { key: EMAIL_REPLY_TO_KEY, value: parsed.data.emailReplyTo },
+    ];
+
+    for (const row of rows) {
+      const { error } = await db.from("app_settings").upsert(row);
+      if (error) return { ok: false, error: error.message };
+    }
+
+    await appendActivity(db, {
+      actorTeamUserId: admin.team.id,
+      actorEmail: admin.email,
+      action: "integration_settings_changed",
+      subjectTeamUserId: admin.team.id,
+      detail: { field: "domain_settings" },
+    });
+
+    revalidatePath("/settings");
+    revalidatePath("/clients");
     return { ok: true };
   } catch (error) {
     return {

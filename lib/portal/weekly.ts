@@ -7,7 +7,7 @@
 import { loadPortalDashboard, listClientUsers } from "@/lib/db/portal";
 import { listClients } from "@/lib/db/clients";
 import { deliverWeeklySummary } from "@/lib/notifications/portal";
-import { baseUrl } from "@/lib/origin";
+import { clientBaseUrl } from "@/lib/settings/urls";
 import { lastCompleteWeek } from "@/lib/portal/cpa";
 import type { LedgerDb } from "@/lib/supabase/ledger";
 
@@ -23,7 +23,7 @@ export async function runWeeklySummaries(
   now: Date | number = Date.now()
 ): Promise<WeeklySummaryResult> {
   const period = lastCompleteWeek(now);
-  const origin = await baseUrl();
+  const origin = await clientBaseUrl();
   const clients = await listClients();
 
   let considered = 0;

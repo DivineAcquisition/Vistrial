@@ -2,14 +2,15 @@ import { formatPercent } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
 /**
- * Status vocabulary ported from the Divine Acquisition repo. Brand purple stays
- * the action colour; the flag tones carry meaning a single hue cannot express.
+ * Status vocabulary ported from the DA hiring site. The brand stays the action
+ * colour; the flag tones carry meaning a single hue cannot express, like an
+ * overdue escalation versus a healthy one.
  */
 export type Tone = "brand" | "neutral" | "good" | "warning" | "critical";
 
 const TONE_CLASSES: Record<Tone, string> = {
   brand: "border-brand-500/30 bg-brand-500/[0.12] text-brand-200",
-  neutral: "border-border bg-white/[0.04] text-dim",
+  neutral: "border-white/10 bg-white/[0.04] text-silver",
   good: "border-flag-good/30 bg-flag-good/[0.12] text-flag-good",
   warning: "border-flag-warning/30 bg-flag-warning/[0.12] text-flag-warning",
   critical: "border-flag-critical/30 bg-flag-critical/[0.12] text-flag-critical",

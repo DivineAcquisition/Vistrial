@@ -1,5 +1,7 @@
 import type { ReactNode } from "react";
 
+import { eyebrow as eyebrowClass } from "@/lib/ui";
+
 export function PageHeader({
   eyebrow,
   title,
@@ -12,14 +14,10 @@ export function PageHeader({
   actions?: ReactNode;
 }) {
   return (
-    <header className="mb-7 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+    <header className="animate-rise mb-8 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
       <div className="min-w-0">
-        {eyebrow ? (
-          <p className="text-[11px] font-semibold tracking-[0.18em] text-brand-500 uppercase">
-            {eyebrow}
-          </p>
-        ) : null}
-        <h1 className="mt-2 text-2xl font-semibold text-white sm:text-[28px]">
+        {eyebrow ? <p className={eyebrowClass}>{eyebrow}</p> : null}
+        <h1 className="mt-4 text-2xl font-semibold text-white sm:text-[28px]">
           {title}
         </h1>
         {description ? (

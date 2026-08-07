@@ -62,62 +62,87 @@ Visit http://localhost:3000 — it redirects to `/appointments`.
 
 ## Design system
 
-The visual language is ported from the [Divine Acquisition
-repo](https://github.com/DivineAcquisition/DA) so the ledger and DA's other
-properties read as one product. The app is **permanently dark** — no light mode,
-no toggle. Tokens live in `app/globals.css`:
+The visual language comes from the hiring site in the [Divine Acquisition
+repo](https://github.com/DivineAcquisition/DA) (`app/hiring`, `app/globals.css`,
+`app/components/ui.ts`), so the careers pages, the ledger, and the client portal
+read as one product. The app is **permanently dark** — no light mode, no toggle.
+Tokens live in `app/globals.css`:
 
 | Colour | Token | Used for |
 |---|---|---|
-| DA Purple `#6A00FF` | `brand-700`, `--primary` | Filled primary buttons and the single most important emphasis on a screen. Nothing else. |
-| DA Light Purple `#937DFF` | `brand-500`, `--ring` | The default accent: section headers, active navigation, focus rings, links, icon accents, card top borders. |
-| Deep Purple `#241442` | `brand-950`, `--secondary` | Table header fills and dark panels. |
+| Brand `#9A88FC` | `brand-500`, `--primary`, `--ring` | The prime colour and the action colour: filled buttons, focus rings, active navigation, card top borders. |
+| `#C3B6FE` | `brand-300` | Eyebrows, section labels, links, and quieter accents. |
+| Deep `#1E1940` | `brand-950`, `--secondary` | Table header fills and active navigation ground. |
 
-DA Purple is heavily saturated and vibrates against dark backgrounds at scale, so
-it is confined to filled buttons; DA Light Purple carries everything else.
+`#9A88FC` is light enough that near-black type reads better on it than white, so
+filled buttons invert their label (`bg-brand-500 text-ink-950`). Never put white
+text on a brand fill.
 
-Surfaces: page `#0B0B0F`, cards `#1C1C26`, popovers and muted surfaces `#151520`,
-borders and inputs `#2A2A3A`. Text: body `#B0AEC0` (`silver`), card and heading
-`#FFFFFF`, dimmed `#6E6C80` (`dim`).
+Neutrals are violet-shifted so the brand sits naturally on top: page `#07070B`
+(`ink-950`), panels and cards `#0B0A11` (`ink-900`), popovers and muted surfaces
+`#100F18` (`ink-850`), then `#16151F` and `#1E1D29`. Hairlines, borders, and
+inputs are white at 6–10%. Text: body `#A3A3A3` (`silver`), headings `#FFFFFF`,
+dimmed `#737373` (`dim`).
 
 Semantic tones are for metric values and status indicators only, never interface
-chrome: `flag-good #7AFF8A` (confirmed, revenue, gains), `flag-critical #FF6A6A`
-(rejected, failed payments, losses), `flag-warning #FFD06A` (pending, disputed,
+chrome: `flag-good #52D6A4` (confirmed, revenue, gains), `flag-critical #F87171`
+(rejected, failed payments, losses), `flag-warning #F0B45C` (pending, disputed,
 needs attention).
 
 shadcn's semantic tokens (`background`, `card`, `primary`, `border`, …) are mapped
 onto those values, so shadcn components inherit the palette automatically.
 
-Surfaces and helpers, also from DA: `.panel` (gradient top edge over `#0B0A11`),
-`.panel-hover`, `.hairline-glow`, `.text-gradient`, `.tabular-nums`,
-`.animate-rise` / `.animate-fade`. Typography is Inter throughout with DA's
-`font-feature-settings` and heading letter-spacing.
+Surfaces and helpers, also from the hiring site: `.panel` (gradient top edge over
+`#0B0A11`), `.panel-hover`, `.hairline-glow`, `.text-gradient`, `.animate-rise` /
+`.animate-fade` / `.animate-ping` / `.animate-drift`, and `.delay-1`…`.delay-6`.
+They sit in `@layer components` so a Tailwind utility on the element still wins —
+unlayered rules used to swallow things like a KPI card's brand top border.
+Typography is Inter throughout with DA's `font-feature-settings` and heading
+letter-spacing.
 
 Ported components:
 
 | Where | What |
 |---|---|
+| `components/ui/backdrop.tsx` | `Backdrop` — the hiring hero's ambient grid, spotlight, and drifting orbs. Mounted by the admin shell, the portal shell, `AuthCard`, and the share view |
 | `components/ui/tone.tsx` | `Tone` vocabulary (`brand`/`neutral`/`good`/`warning`/`critical`), `TonePill`, `Dot`, `Meter`, `RatePill`, `rateTone` |
 | `components/ui/panel.tsx` | `Panel`, `PanelLink` |
-| `components/ui/kpi-card.tsx` | `KpiCard` (light purple top border, tone-coloured value), `KpiGrid` |
-| `components/ui/page-header.tsx`, `section-header.tsx` | page and section headers |
+| `components/ui/kpi-card.tsx` | `KpiCard` (brand top border, tone-coloured value), `KpiGrid` |
+| `components/ui/page-header.tsx`, `section-header.tsx` | page and section headers, using the hiring eyebrow pill and section label |
 | `components/ui/empty-state.tsx`, `avatar.tsx`, `definition-list.tsx` | `EmptyState`, `Avatar`, `DefinitionList` / `KeyValue` |
+| `components/auth/auth-card.tsx` | `AuthCard` — the one card every signed-out screen sits in |
 | `components/brand/logo.tsx` | DA trident mark + wordmark |
 | `lib/ui.ts` | button / input / label / eyebrow class recipes |
 | `lib/format.ts` | `formatMoney`, `formatPercent`, `formatRelative`, `orGap`, `initials`, date formatters |
 
 ## Authentication
 
-Email and password, administrators only. **There is no public signup anywhere.**
-Accounts are created by hand in the Supabase dashboard — see
-[`supabase/README.md`](./supabase/README.md).
+Email and password. **There is no public signup anywhere** — team accounts come
+from an Owner or Admin invitation, portal accounts from an administrator.
 
-`proxy.ts` refreshes the session on every request and gates the app: everything
-requires a session except `/login` and `/api/*` (webhooks authenticate with their
-own secret header). An unauthenticated request keeps its destination in `?next=`
-and lands there after signing in; a signed-in request to `/login` bounces into the
-app. A failed sign in always reads "Invalid email or password" and never reveals
-whether an account exists.
+Two populations, two tables, no crossover: `team_users` for Divine Acquisition,
+`client_users` for client contacts. A row in one never grants the other. Both can
+sign in at `/login`; `/portal/login` is the dedicated client surface. `proxy.ts`
+refreshes the session on every request and gates the app; an unauthenticated
+request keeps its destination in `?next=` and lands there after signing in. A
+failed sign in always reads "Invalid email or password" and never reveals whether
+an account exists, or which population an address belongs to.
+
+**Two-factor is a control, not a setting.** When an identity carries a verified
+factor, the password step alone does not complete a sign-in: the session stays at
+`aal1` and stops at `/login/verify`, and nothing is recorded until the code
+checks out. `requireAdmin` re-reads that gate on every team surface, and reads it
+from Auth rather than the `mfa_enabled` flag, so a factor deleted underneath us
+cannot pass as a satisfied one. Owners and Admins must hold a factor; Members may
+skip and are asked again at the next sign-in. Spending a recovery code retires
+the authenticator and sends the account back to enrolment — it is not a way past
+the factor.
+
+**One email, two accounts.** Supabase Auth keeps one identity per address, so
+where the same person exists on both sides, the second account's Auth identity
+gets a tagged alias (`dana+vt-team-3f9c1a@example.com`) recorded in `auth_email`.
+The contact address is what people type and what mail goes to; sign-in translates
+it before it reaches Auth. Nobody sees an alias, and the rows stay unlinked.
 
 Two server clients, deliberately separate: `lib/supabase/session.ts` carries the
 caller's session, and `lib/supabase/server.ts` is the service-role client that
@@ -129,7 +154,9 @@ bypasses RLS and is never given a session.
 app/
   (app)/                 shell layout + queue, appointments, leads, clients
                          (list + detail), billing, settings
-  (auth)/login/          full-viewport login, no app shell
+  (auth)/                full-viewport signed-out screens on the shared AuthCard:
+                         team and portal sign-in, /login/verify (two-factor),
+                         password reset, invitation, onboarding. No app shell
   api/billing/           where Stripe returns a client after adding a card
   api/health/            GET { ok: true }
   api/jobs/cycle/        the scheduled billing job

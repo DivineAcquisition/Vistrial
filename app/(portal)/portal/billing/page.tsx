@@ -1,5 +1,6 @@
 import { PortalShell } from "@/components/portal/shell";
 import { EmptyState } from "@/components/ui/empty-state";
+import { PageHeader } from "@/components/ui/page-header";
 import { Panel } from "@/components/ui/panel";
 import { TonePill } from "@/components/ui/tone";
 import { requireClient } from "@/lib/auth";
@@ -20,16 +21,11 @@ export default async function PortalBillingPage() {
       active="/portal/billing"
       readOnly={session.readOnly}
     >
-      <header className="mb-7">
-        <p className="text-[11px] font-semibold tracking-[0.18em] text-brand-500 uppercase">
-          Billing
-        </p>
-        <h1 className="mt-2 text-2xl font-semibold text-white">Charges</h1>
-        <p className="mt-2 max-w-2xl text-sm text-silver">
-          The same itemisation you were shown before each charge. Nothing here
-          can be edited from the portal.
-        </p>
-      </header>
+      <PageHeader
+        eyebrow="Billing"
+        title="Charges"
+        description="The same itemisation you were shown before each charge. Nothing here can be edited from the portal."
+      />
 
       {charges.length === 0 ? (
         <EmptyState

@@ -93,8 +93,12 @@ function accessOpen(membership: ClientUser, now = Date.now()): boolean {
  * One-time path for the Prompt-2 hand-created administrator. Creates the first
  * Owner without ever leaving the system at zero Owners. Skips the password
  * onboarding step because a password already exists.
+ *
+ * Exported so the sign-in action can take the same path: without it, the very
+ * first administrator authenticates correctly and is then refused for having no
+ * `team_users` row — the row this creates.
  */
-async function bootstrapOwnerIfNeeded(user: SessionUser): Promise<TeamUser | null> {
+export async function bootstrapOwnerIfNeeded(user: SessionUser): Promise<TeamUser | null> {
   const existing = await getTeamUserByAuthId(user.id);
   if (existing) return existing;
 

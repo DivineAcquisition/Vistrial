@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { z } from "zod";
 
 import {
+  bootstrapOwnerIfNeeded,
   getTeamMembership,
   homeForPortalSession,
   homeForTeamSession,
@@ -169,13 +170,23 @@ export async function signInAction(
     return { error: GENERIC_FAILURE };
   }
 
-  const membership = team ?? (await getTeamUserByAuthId(signedIn.user.id));
+  let membership = team ?? (await getTeamUserByAuthId(signedIn.user.id));
 
   // Not a team identity. If it is a portal one with an open window, send them
   // to the portal rather than rejecting a password that was correct.
   if (!membership) {
     const home = await homeForPortalSession();
     if (home === PORTAL_HOME) redirect(PORTAL_HOME);
+
+    // The very first administrator, hand-made in the Supabase dashboard before
+    // team accounts existed, has no row yet. This is the one path that makes one.
+    membership = await bootstrapOwnerIfNeeded({
+      id: signedIn.user.id,
+      email: signedIn.user.email ?? parsed.data.email,
+    });
+  }
+
+  if (!membership) {
     await supabase.auth.signOut();
     return { error: GENERIC_FAILURE };
   }

@@ -84,7 +84,7 @@ function Group({
 }) {
   return (
     <fieldset className="border-t border-border pt-4">
-      <legend className="pr-3 text-[11px] font-semibold tracking-[0.14em] text-brand-500 uppercase">
+      <legend className="pr-3 text-[11px] font-semibold tracking-[0.14em] text-brand-300 uppercase">
         {title}
       </legend>
       {hint ? <p className={helperClass}>{hint}</p> : null}

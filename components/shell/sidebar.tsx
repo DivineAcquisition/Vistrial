@@ -33,20 +33,18 @@ export async function Sidebar() {
   );
 
   return (
-    <aside className="fixed inset-y-0 left-0 flex w-60 flex-col border-r border-border bg-sidebar">
-      <div className="flex h-16 items-center gap-2.5 px-6">
+    <aside className="fixed inset-y-0 left-0 z-40 flex w-60 flex-col border-r border-white/[0.06] bg-ink-950/70 backdrop-blur-xl">
+      <div className="flex h-16 items-center px-5 sm:h-[72px]">
         <Link
           href="/attention"
-          className="flex items-center gap-2.5 transition-opacity hover:opacity-80"
+          aria-label={`${APP_NAME} home`}
+          className="shrink-0 transition-opacity hover:opacity-80"
         >
-          <Logo markOnly className="h-5 w-auto" />
-          <span className="text-base font-bold tracking-[0.22em] text-brand-500 uppercase">
-            {APP_NAME}
-          </span>
+          <Logo className="h-[22px] w-auto" />
         </Link>
       </div>
 
-      <nav className="flex flex-col">
+      <nav className="flex flex-col gap-1 px-3">
         {items.map(({ href, label, icon: Icon }) => {
           const marker = badge(href, counts);
 
@@ -63,10 +61,10 @@ export async function Sidebar() {
         })}
       </nav>
 
-      <div className="mt-auto border-t border-border px-6 py-5">
+      <div className="mt-auto border-t border-white/[0.06] px-5 py-5">
         <Link
           href="/account"
-          className="mb-3 block text-xs text-brand-500 hover:text-brand-400"
+          className="mb-3 block truncate text-xs text-brand-300 transition-colors hover:text-brand-200"
         >
           {admin.team.full_name ?? admin.email}
         </Link>

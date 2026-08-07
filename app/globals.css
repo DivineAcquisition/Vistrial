@@ -224,70 +224,71 @@
 
 /* ---------- Surfaces ---------- */
 
-/* Card with a 1px gradient edge that catches light at the top, the way most
-   modern dashboards render panels on dark backgrounds. */
-.panel {
-  position: relative;
-  background:
-    linear-gradient(
-      180deg,
-      rgba(255, 255, 255, 0.04) 0%,
-      rgba(255, 255, 255, 0.015) 100%
-    ),
-    #0b0a11;
-  border: 1px solid var(--hairline);
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.05),
-    0 1px 2px rgba(0, 0, 0, 0.4);
-}
+/* These live in the components layer on purpose. Unlayered rules beat every
+   Tailwind utility, which silently swallowed things like the brand top border
+   on a KPI card; inside the layer, a utility on the element still wins. */
+@layer components {
+  /* Card with a 1px gradient edge that catches light at the top, the way most
+     modern dashboards render panels on dark backgrounds. */
+  .panel {
+    position: relative;
+    background:
+      linear-gradient(
+        180deg,
+        rgba(255, 255, 255, 0.04) 0%,
+        rgba(255, 255, 255, 0.015) 100%
+      ),
+      #0b0a11;
+    border: 1px solid var(--hairline);
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.05),
+      0 1px 2px rgba(0, 0, 0, 0.4);
+  }
 
-.panel-hover {
-  transition:
-    border-color 0.25s ease,
-    background-color 0.25s ease,
-    box-shadow 0.25s ease,
-    transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
-}
+  .panel-hover {
+    transition:
+      border-color 0.25s ease,
+      background-color 0.25s ease,
+      box-shadow 0.25s ease,
+      transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  }
 
-.panel-hover:hover {
-  border-color: rgba(var(--brand-rgb), 0.4);
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.07),
-    0 18px 40px -24px rgba(var(--brand-rgb), 0.55);
-  transform: translateY(-2px);
-}
+  .panel-hover:hover {
+    border-color: rgba(var(--brand-rgb), 0.4);
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.07),
+      0 18px 40px -24px rgba(var(--brand-rgb), 0.55);
+    transform: translateY(-2px);
+  }
 
-/* Thin luminous rule used to separate major bands. */
-.hairline-glow::before {
-  content: "";
-  position: absolute;
-  inset-inline: 0;
-  top: 0;
-  height: 1px;
-  background: linear-gradient(
-    90deg,
-    transparent,
-    rgba(var(--brand-rgb), 0.45),
-    transparent
-  );
-}
+  /* Thin luminous rule used to separate major bands. */
+  .hairline-glow::before {
+    content: "";
+    position: absolute;
+    inset-inline: 0;
+    top: 0;
+    height: 1px;
+    background: linear-gradient(
+      90deg,
+      transparent,
+      rgba(var(--brand-rgb), 0.45),
+      transparent
+    );
+  }
 
-.text-gradient {
-  background: linear-gradient(
-    102deg,
-    #ffffff 0%,
-    #f1eeff 38%,
-    var(--brand) 78%,
-    var(--brand-deep) 100%
-  );
-  -webkit-background-clip: text;
-  background-clip: text;
-  -webkit-text-fill-color: transparent;
-  color: transparent;
-}
-
-.tabular-nums {
-  font-variant-numeric: tabular-nums;
+  .text-gradient {
+    background: linear-gradient(
+      102deg,
+      #ffffff 0%,
+      #f1eeff 38%,
+      var(--brand) 78%,
+      var(--brand-deep) 100%
+    );
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    color: transparent;
+  }
 }
 
 /* ---------- Motion ---------- */

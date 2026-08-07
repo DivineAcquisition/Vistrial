@@ -48,7 +48,7 @@ export default async function ActivityLogPage({
   return (
     <div className="space-y-8">
       <div>
-        <Link href="/team" className="text-xs text-brand-500 hover:text-brand-400">
+        <Link href="/team" className="text-xs text-brand-300 transition-colors hover:text-brand-200">
           ← Team
         </Link>
         <h1 className="mt-2 text-2xl font-semibold text-white">Activity log</h1>

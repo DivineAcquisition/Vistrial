@@ -17,6 +17,7 @@ import {
   helperClass,
   inputClass,
   labelClass,
+  selectClass,
 } from "@/lib/ui";
 import type {
   ExclusivityOverride,
@@ -121,16 +122,24 @@ export function ExclusivityPanel({
           </label>
           <select
             id="excl-status"
-            className={inputClass}
+            className={selectClass}
             value={status}
             onChange={(event) =>
               setStatus(event.target.value as ExclusivityStatus)
             }
           >
             <option value="active">Active</option>
-            <option value="overridden">Overridden</option>
+            {/* Not a choice — it is what recording an override leaves behind. */}
+            {status === "overridden" ? (
+              <option value="overridden">Overridden</option>
+            ) : null}
             <option value="not_offered">Not offered</option>
           </select>
+          <p className={helperClass}>
+            {status === "overridden"
+              ? "Overridden names one specific client. Every other client is still checked on save."
+              : "Not offered is the only setting that stops conflict checking."}
+          </p>
         </div>
 
         <button

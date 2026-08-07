@@ -1,9 +1,8 @@
-import nextDynamic from "next/dynamic";
-
 import { PageHeader } from "@/components/ui/page-header";
 import { Panel } from "@/components/ui/panel";
 import { TonePill } from "@/components/ui/tone";
 import type { MapTerritory } from "@/components/territory/map";
+import { TerritoryMapPanel } from "@/components/territory/map-panel";
 import { requireAdmin } from "@/lib/auth";
 import {
   listMapTerritories,
@@ -12,16 +11,6 @@ import {
 import { createServiceClient } from "@/lib/supabase/server";
 
 export const dynamic = "force-dynamic";
-
-const TerritoryMap = nextDynamic(
-  () => import("@/components/territory/map").then((mod) => mod.TerritoryMap),
-  {
-    ssr: false,
-    loading: () => (
-      <Panel className="px-5 py-10 text-sm text-dim">Loading map…</Panel>
-    ),
-  }
-);
 
 export default async function TerritoriesPage() {
   await requireAdmin();
@@ -86,7 +75,7 @@ export default async function TerritoriesPage() {
         title="Territory map"
         description="Active clients and the territories Divine Acquisition sold them. Filter by service category to see where you already have someone — and where you are open."
       />
-      <TerritoryMap territories={territories} categories={categories} />
+      <TerritoryMapPanel territories={territories} categories={categories} />
     </>
   );
 }

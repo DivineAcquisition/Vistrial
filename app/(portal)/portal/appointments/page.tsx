@@ -1,6 +1,7 @@
 import { PortalDisputeForm } from "@/components/portal/dispute-form";
 import { PortalShell } from "@/components/portal/shell";
 import { EmptyState } from "@/components/ui/empty-state";
+import { PageHeader } from "@/components/ui/page-header";
 import { Panel } from "@/components/ui/panel";
 import { TonePill } from "@/components/ui/tone";
 import { describeWindow, reviewWindow, windowTone } from "@/lib/appointments/review-window";
@@ -21,16 +22,11 @@ export default async function PortalAppointmentsPage() {
       active="/portal/appointments"
       readOnly={session.readOnly}
     >
-      <header className="mb-7">
-        <p className="text-[11px] font-semibold tracking-[0.18em] text-brand-500 uppercase">
-          Appointments
-        </p>
-        <h1 className="mt-2 text-2xl font-semibold text-white">Your appointments</h1>
-        <p className="mt-2 max-w-2xl text-sm text-silver">
-          Dispute only while the review window is open. Once it closes the
-          appointment is locked for billing.
-        </p>
-      </header>
+      <PageHeader
+        eyebrow="Appointments"
+        title="Your appointments"
+        description="Dispute only while the review window is open. Once it closes the appointment is locked for billing."
+      />
 
       {appointments.length === 0 ? (
         <EmptyState

@@ -65,7 +65,7 @@ export default async function ClientsPage() {
               name: (
                 <Link
                   href={`/clients/${client.id}`}
-                  className="text-white underline-offset-4 hover:text-brand-500 hover:underline"
+                  className="text-white underline-offset-4 hover:text-brand-300 hover:underline"
                 >
                   {client.name}
                 </Link>

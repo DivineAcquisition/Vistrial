@@ -225,7 +225,7 @@ function ReviewCard({
             checked={selected}
             onChange={onToggle}
             aria-label={`Select the appointment for ${appointment.lead?.name ?? "an unnamed lead"}`}
-            className="size-4 cursor-pointer accent-brand-700"
+            className="size-4 cursor-pointer accent-brand-500"
           />
         </label>
 

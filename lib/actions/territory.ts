@@ -16,6 +16,7 @@ import {
   setExclusivityStatus,
 } from "@/lib/db/territory";
 import {
+  exclusivityChecked,
   findConflicts,
   orderedPair,
   type TerritoryInput,
@@ -138,9 +139,8 @@ export async function setCategoryActiveAction(
 }
 
 /**
- * Save categories and exclusivity status. Blocks on conflict unless an override
- * already covers the pair, or the status is not_offered / overridden with reason
- * handled via overrideConflictAction.
+ * Save categories and exclusivity status. Blocks on any conflict that no
+ * recorded override covers.
  */
 export async function saveClientCategoriesAction(
   input: unknown
@@ -154,8 +154,22 @@ export async function saveClientCategoriesAction(
   try {
     const territories = (await listTerritories(parsed.data.client_id)).map(toInput);
 
+    if (parsed.data.exclusivity_status === "overridden") {
+      // `overridden` is a consequence of overrideConflictAction, never a status
+      // someone picks — otherwise it becomes a way to record a promise that was
+      // broken without saying against whom, or why.
+      const overrides = await listOverridesForClient(parsed.data.client_id);
+      if (overrides.length === 0) {
+        return {
+          ok: false,
+          error:
+            "Overridden is set by recording an override against a named client, with a reason. Choose Active or Not offered.",
+        };
+      }
+    }
+
     if (
-      parsed.data.exclusivity_status === "active" &&
+      exclusivityChecked(parsed.data.exclusivity_status) &&
       parsed.data.category_ids.length > 0 &&
       territories.length > 0
     ) {
@@ -219,7 +233,7 @@ export async function addTerritoryAction(
       .eq("id", parsed.data.client_id)
       .maybeSingle();
 
-    if (client?.exclusivity_status === "active") {
+    if (client && exclusivityChecked(client.exclusivity_status)) {
       const conflicts = await conflictsFor(parsed.data.client_id, categoryIds, [
         ...existing,
         draft,

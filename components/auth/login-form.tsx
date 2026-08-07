@@ -79,7 +79,7 @@ export function LoginForm({
       <p className="text-center text-xs text-dim">
         <Link
           href="/login/reset"
-          className="text-brand-500 transition-colors hover:text-brand-400"
+          className="text-brand-300 transition-colors hover:text-brand-200"
         >
           Reset password
         </Link>

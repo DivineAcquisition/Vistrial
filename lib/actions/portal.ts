@@ -13,6 +13,7 @@ import {
 import { baseUrl } from "@/lib/origin";
 import { spreadAdSpend, upsertAdSpend } from "@/lib/portal/spend";
 import { hashToken, mintToken } from "@/lib/portal/tokens";
+import { createAuthIdentity } from "@/lib/team/auth-identity";
 import {
   acceptInviteSchema,
   adSpendRangeSchema,
@@ -167,30 +168,25 @@ export async function acceptInviteAction(
     return { error: "That invitation has expired. Ask your administrator for a new one." };
   }
 
-  const { data: created, error: createError } = await db.auth.admin.createUser({
+  // The same address may already hold a Divine Acquisition team account. That
+  // does not block a portal account: Auth gets its own identity for this side,
+  // under a tagged alias when the plain address is taken.
+  const created = await createAuthIdentity(db, {
     email: membership.email,
     password: parsed.data.password,
-    email_confirm: true,
-    user_metadata: { name: membership.name, client_id: membership.client_id },
+    population: "portal",
+    userMetadata: { name: membership.name, client_id: membership.client_id },
   });
 
-  if (createError || !created.user) {
-    // A previous partial accept may have left an auth user; try linking by email.
-    if (createError?.message?.toLowerCase().includes("already")) {
-      return {
-        error:
-          "An account already exists for this email. Sign in instead, or ask for a fresh invitation.",
-      };
-    }
-    return {
-      error: createError?.message ?? "Could not create the portal account.",
-    };
+  if ("error" in created) {
+    return { error: created.error };
   }
 
   const { error: linkError } = await db
     .from("client_users")
     .update({
-      user_id: created.user.id,
+      user_id: created.userId,
+      auth_email: created.authEmail,
       status: "active",
       accepted_at: new Date().toISOString(),
       invitation_token_hash: null,
@@ -200,13 +196,13 @@ export async function acceptInviteAction(
     .eq("status", "invited");
 
   if (linkError) {
-    await db.auth.admin.deleteUser(created.user.id);
+    await db.auth.admin.deleteUser(created.userId);
     return { error: linkError.message };
   }
 
   const session = await createSessionClient();
   const { error: signInError } = await session.auth.signInWithPassword({
-    email: membership.email,
+    email: created.authEmail ?? membership.email,
     password: parsed.data.password,
   });
 

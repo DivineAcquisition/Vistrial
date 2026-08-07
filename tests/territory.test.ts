@@ -3,6 +3,7 @@ import { describe, it } from "node:test";
 
 import {
   compareTerritories,
+  exclusivityChecked,
   findConflicts,
   orderedPair,
 } from "@/lib/territory/conflict";
@@ -102,8 +103,49 @@ describe("conflict detection", () => {
     assert.equal(conflicts.length, 0);
   });
 
+  it("still catches a third client after one pair was overridden", () => {
+    const conflicts = findConflicts({
+      clientId: "new",
+      categoryIds: ["roof"],
+      categoryNamesById: new Map([["roof", "Roofing"]]),
+      territories: [{ kind: "postal_codes", postalCodes: ["19103"] }],
+      others: [
+        {
+          id: "waived",
+          name: "Waived",
+          categoryIds: ["roof"],
+          territories: [{ kind: "postal_codes", postalCodes: ["19103"] }],
+          overridden: true,
+        },
+        {
+          id: "third",
+          name: "Third",
+          categoryIds: ["roof"],
+          territories: [{ kind: "postal_codes", postalCodes: ["19103"] }],
+        },
+      ],
+    });
+
+    assert.equal(conflicts.length, 1);
+    assert.equal(conflicts[0]?.otherClientName, "Third");
+  });
+
   it("orders pair ids stably", () => {
     assert.deepEqual(orderedPair("b", "a"), ["a", "b"]);
+  });
+});
+
+describe("exclusivity status gating", () => {
+  it("keeps checking a client whose promise was overridden for one pair", () => {
+    assert.equal(exclusivityChecked("overridden"), true);
+  });
+
+  it("keeps checking an ordinary active client", () => {
+    assert.equal(exclusivityChecked("active"), true);
+  });
+
+  it("stops only where no exclusivity was promised at all", () => {
+    assert.equal(exclusivityChecked("not_offered"), false);
   });
 });
 

@@ -1,6 +1,7 @@
 import { PortalShell } from "@/components/portal/shell";
 import { DefinitionList, KeyValue } from "@/components/ui/definition-list";
 import { EmptyState } from "@/components/ui/empty-state";
+import { PageHeader } from "@/components/ui/page-header";
 import { Panel } from "@/components/ui/panel";
 import { requireClient } from "@/lib/auth";
 import { listDefinitions } from "@/lib/db/appointment-definitions";
@@ -21,18 +22,11 @@ export default async function PortalDefinitionPage() {
       active="/portal/definition"
       readOnly={session.readOnly}
     >
-      <header className="mb-7">
-        <p className="text-[11px] font-semibold tracking-[0.18em] text-brand-500 uppercase">
-          Definition
-        </p>
-        <h1 className="mt-2 text-2xl font-semibold text-white">
-          What counts as an appointment
-        </h1>
-        <p className="mt-2 max-w-2xl text-sm text-silver">
-          Every confirmed appointment is stamped with the version in force when
-          it was created. That version never changes after the fact.
-        </p>
-      </header>
+      <PageHeader
+        eyebrow="Definition"
+        title="What counts as an appointment"
+        description="Every confirmed appointment is stamped with the version in force when it was created. That version never changes after the fact."
+      />
 
       {!current ? (
         <EmptyState

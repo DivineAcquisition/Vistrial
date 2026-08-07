@@ -84,7 +84,7 @@ export default async function TeamPage() {
                     <td className="px-4 py-3">
                       <Link
                         href={`/team/${user.id}`}
-                        className="text-brand-500 hover:text-brand-400"
+                        className="text-brand-300 transition-colors hover:text-brand-200"
                       >
                         {user.full_name ?? "—"}
                       </Link>
@@ -117,7 +117,7 @@ export default async function TeamPage() {
           <h2 className="text-sm font-semibold text-white">Invitations</h2>
           <Link
             href="/team/activity"
-            className="text-xs text-brand-500 hover:text-brand-400"
+            className="text-xs text-brand-300 transition-colors hover:text-brand-200"
           >
             Activity log
           </Link>

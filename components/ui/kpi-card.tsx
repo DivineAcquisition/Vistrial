@@ -2,8 +2,8 @@ import { toneValueClass, type Tone } from "@/components/ui/tone";
 import { cn } from "@/lib/utils";
 
 /**
- * Metric card. The top border is always DA Light Purple; the tone colours the
- * value, never the chrome.
+ * Metric card. The top border is always the brand; the tone colours the value,
+ * never the chrome.
  */
 export function KpiCard({
   label,
@@ -21,7 +21,7 @@ export function KpiCard({
   return (
     <div
       className={cn(
-        "panel rounded-2xl border-t-2 border-t-brand-500 px-4 py-4",
+        "panel panel-hover rounded-2xl border-t-2 border-t-brand-500 px-5 py-4",
         className
       )}
     >

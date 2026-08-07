@@ -29,19 +29,12 @@ export function NavItem({
       href={href}
       aria-current={isActive ? "page" : undefined}
       className={cn(
-        "relative flex w-full items-center justify-between gap-3 px-6 py-2.5 text-sm transition-colors",
+        "flex w-full items-center justify-between gap-3 rounded-xl px-3.5 py-2.5 text-sm font-medium transition-colors",
         isActive
-          ? "bg-accent/40 text-brand-500"
-          : "text-dim hover:bg-white/[0.03] hover:text-silver"
+          ? "bg-brand-500/12 text-brand-100 ring-1 ring-brand-500/30 ring-inset"
+          : "text-silver hover:bg-white/[0.04] hover:text-white"
       )}
     >
-      {isActive ? (
-        <span
-          aria-hidden
-          className="absolute top-0 bottom-0 left-0 w-[2px] bg-brand-500"
-        />
-      ) : null}
-
       <span className="flex min-w-0 items-center gap-3">
         {icon}
         <span className="truncate">{label}</span>

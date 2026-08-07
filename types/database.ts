@@ -112,6 +112,9 @@ export type TeamActivityAction =
   | "password_reset_completed"
   | "mfa_enabled"
   | "mfa_disabled"
+  | "mfa_challenge_passed"
+  | "mfa_challenge_failed"
+  | "mfa_recovery_used"
   | "mfa_recovery_regenerated"
   | "sessions_revoked"
   | "session_revoked"
@@ -265,6 +268,8 @@ export interface ClientUser {
   user_id: string | null;
   name: string;
   email: string;
+  /** Auth identity address when the contact email is claimed by the team side. */
+  auth_email: string | null;
   status: ClientUserStatus;
   weekly_summary: boolean;
   invitation_token_hash: string | null;
@@ -721,6 +726,8 @@ export interface TeamUser {
   id: string;
   user_id: string | null;
   email: string;
+  /** Auth identity address when the contact email is claimed by the portal side. */
+  auth_email: string | null;
   full_name: string | null;
   job_title: string | null;
   phone: string | null;

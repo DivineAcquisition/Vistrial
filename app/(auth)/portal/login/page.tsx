@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { redirect } from "next/navigation";
 
+import { AuthCard } from "@/components/auth/auth-card";
 import { PortalLoginForm } from "@/components/auth/portal-login-form";
 import { getCurrentUser, homeForPortalSession } from "@/lib/auth";
 import { APP_NAME, APP_OWNER } from "@/lib/constants";
@@ -24,23 +26,28 @@ export default async function PortalLoginPage({
   const { error } = await searchParams;
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-background px-4">
-      <div className="panel w-full max-w-[380px] rounded-2xl px-7 py-8">
-        <p className="text-center text-lg font-semibold tracking-[0.25em] text-brand-500 uppercase">
-          {APP_NAME}
+    <AuthCard
+      eyebrowLabel={`${APP_OWNER} · Client portal`}
+      title="Client sign in"
+      subtitle="Your appointments, your definition, and what you have been charged."
+    >
+      {error === "closed" ? (
+        <p role="alert" className="text-center text-sm text-flag-critical">
+          This account no longer has access.
         </p>
-        <p className="mt-1.5 text-center text-xs text-dim">
-          {APP_OWNER} client portal
-        </p>
+      ) : null}
 
-        {error === "closed" ? (
-          <p role="alert" className="mt-4 text-center text-sm text-flag-critical">
-            This account no longer has access.
-          </p>
-        ) : null}
+      <PortalLoginForm />
 
-        <PortalLoginForm />
-      </div>
-    </main>
+      <p className="mt-4 text-center text-xs text-dim">
+        Part of the Divine Acquisition team?{" "}
+        <Link
+          href="/login"
+          className="text-brand-300 transition-colors hover:text-brand-200"
+        >
+          Sign in here
+        </Link>
+      </p>
+    </AuthCard>
   );
 }

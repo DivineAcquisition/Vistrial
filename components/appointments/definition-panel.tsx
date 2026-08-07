@@ -30,7 +30,7 @@ export function DefinitionPanel({
   return (
     <Panel className="border-l-2 border-l-brand-500 px-4 py-3.5">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <p className="text-[11px] font-semibold tracking-[0.14em] text-brand-500 uppercase">
+        <p className="text-[11px] font-semibold tracking-[0.14em] text-brand-300 uppercase">
           Governing definition · version {definition.version}
         </p>
         <p className="text-xs text-dim">

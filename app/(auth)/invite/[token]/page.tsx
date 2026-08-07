@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
+import { AuthCard } from "@/components/auth/auth-card";
 import { AcceptInviteForm } from "@/components/portal/accept-invite-form";
 import { getClientUserByInviteHash } from "@/lib/db/portal";
 import { getClient } from "@/lib/db/clients";
@@ -29,44 +30,31 @@ export default async function InvitePage({
     Date.parse(membership.invitation_expires_at) <= Date.now()
   ) {
     return (
-      <main className="flex min-h-screen items-center justify-center bg-background px-4">
-        <div className="panel w-full max-w-[420px] rounded-2xl px-7 py-8 text-center">
-          <p className="text-lg font-semibold tracking-[0.25em] text-brand-500 uppercase">
-            {APP_NAME}
-          </p>
-          <h1 className="mt-4 text-xl font-semibold text-white">
-            This invitation has expired
-          </h1>
-          <p className="mt-2 text-sm text-silver">
-            Ask Divine Acquisition to send a new one. There is no public signup.
-          </p>
-        </div>
-      </main>
+      <AuthCard
+        eyebrowLabel={`${APP_OWNER} · Client portal`}
+        title="This invitation has expired"
+        subtitle="Ask Divine Acquisition to send a new one. There is no public signup."
+      >
+        <p className="text-center text-sm text-dim">
+          Invitations last seven days and can only be used once.
+        </p>
+      </AuthCard>
     );
   }
 
   const client = await getClient(membership.client_id);
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-background px-4">
-      <div className="panel w-full max-w-[420px] rounded-2xl px-7 py-8">
-        <p className="text-center text-lg font-semibold tracking-[0.25em] text-brand-500 uppercase">
-          {APP_NAME}
-        </p>
-        <p className="mt-1.5 text-center text-xs text-dim">{APP_OWNER}</p>
-
-        <h1 className="mt-6 text-center text-xl font-semibold text-white">
-          Join the {client?.name ?? "client"} portal
-        </h1>
-        <p className="mt-2 text-center text-sm text-silver">
-          Invited as {membership.email}
-          {membership.invitation_expires_at
-            ? ` · expires ${formatDateTime(membership.invitation_expires_at)}`
-            : null}
-        </p>
-
-        <AcceptInviteForm token={token} />
-      </div>
-    </main>
+    <AuthCard
+      eyebrowLabel={`${APP_OWNER} · Client portal`}
+      title={`Join the ${client?.name ?? "client"} portal`}
+      subtitle={`Invited as ${membership.email}${
+        membership.invitation_expires_at
+          ? ` · expires ${formatDateTime(membership.invitation_expires_at)}`
+          : ""
+      }`}
+    >
+      <AcceptInviteForm token={token} />
+    </AuthCard>
   );
 }

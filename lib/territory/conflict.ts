@@ -14,6 +14,7 @@ import {
   regionsOverlap,
   type LatLng,
 } from "@/lib/territory/geo";
+import type { ExclusivityStatus } from "@/types/database";
 
 export type TerritoryKind = "radius" | "postal_codes" | "named_regions";
 
@@ -191,4 +192,18 @@ export function findConflicts(input: {
 /** Stable pair ordering for override / match rows. */
 export function orderedPair(a: string, b: string): [string, string] {
   return a < b ? [a, b] : [b, a];
+}
+
+/**
+ * Whether a client's saves still have to clear conflict detection.
+ *
+ * Conflicts are pair-level, so overrides are too. A client reading `overridden`
+ * has had one specific promise waived in writing; it is still promised
+ * exclusivity against every other client, and every later category or territory
+ * save is checked against them — `findConflicts` skips only the peers that
+ * carry an override. The single status that switches checking off is
+ * `not_offered`, where there is no promise to protect.
+ */
+export function exclusivityChecked(status: ExclusivityStatus): boolean {
+  return status !== "not_offered";
 }

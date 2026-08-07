@@ -2,9 +2,12 @@ import type { Metadata } from "next";
 import { headers } from "next/headers";
 import { notFound } from "next/navigation";
 
+import { AuthCard } from "@/components/auth/auth-card";
 import { CostHero } from "@/components/portal/cost-hero";
+import { Backdrop } from "@/components/ui/backdrop";
 import { Panel } from "@/components/ui/panel";
 import { APP_NAME } from "@/lib/constants";
+import { eyebrow } from "@/lib/ui";
 import {
   getShareLinkByHash,
   loadPortalDashboard,
@@ -31,19 +34,11 @@ export default async function SharePage({
 
   if (Date.parse(link.expires_at) <= Date.now()) {
     return (
-      <main className="flex min-h-screen items-center justify-center bg-background px-4">
-        <div className="panel max-w-md rounded-2xl px-7 py-8 text-center">
-          <p className="text-lg font-semibold tracking-[0.25em] text-brand-500 uppercase">
-            {APP_NAME}
-          </p>
-          <h1 className="mt-4 text-xl font-semibold text-white">
-            This link has expired
-          </h1>
-          <p className="mt-2 text-sm text-silver">
-            Ask Divine Acquisition for a fresh share link.
-          </p>
-        </div>
-      </main>
+      <AuthCard title="This link has expired">
+        <p className="text-center text-sm text-silver">
+          Ask Divine Acquisition for a fresh share link.
+        </p>
+      </AuthCard>
     );
   }
 
@@ -53,23 +48,25 @@ export default async function SharePage({
   const dashboard = await loadPortalDashboard(link.client_id);
 
   return (
-    <main className="min-h-screen bg-background text-white">
-      <div className="mx-auto max-w-5xl px-4 py-10 sm:px-6">
-        <p className="text-[11px] font-semibold tracking-[0.18em] text-brand-500 uppercase">
-          {APP_NAME} · view only
-        </p>
-        <h1 className="mt-2 text-2xl font-semibold">{link.client.name}</h1>
-        <p className="mt-2 text-sm text-dim">
+    <div className="relative min-h-screen bg-ink-950 text-white antialiased">
+      <Backdrop />
+
+      <main className="relative z-10 mx-auto max-w-5xl px-5 py-12 sm:px-6">
+        <p className={eyebrow}>{APP_NAME} · view only</p>
+        <h1 className="animate-rise delay-1 mt-5 text-2xl font-semibold sm:text-3xl">
+          {link.client.name}
+        </h1>
+        <p className="animate-rise delay-2 mt-2 text-sm text-silver">
           Shared dashboard · expires {formatDateTime(link.expires_at)}. Nothing
           on this page can be changed.
         </p>
 
-        <div className="mt-8">
+        <div className="animate-rise delay-3 mt-8">
           <CostHero cost={dashboard.cost} />
         </div>
 
         {dashboard.definition ? (
-          <Panel className="mt-8 px-5 py-4">
+          <Panel className="animate-rise delay-4 mt-8 px-5 py-4">
             <p className="text-xs text-dim">
               Appointment definition · version {dashboard.definition.version} ·
               effective {formatDayLong(dashboard.definition.effective_from)}
@@ -79,7 +76,7 @@ export default async function SharePage({
             </p>
           </Panel>
         ) : null}
-      </div>
-    </main>
+      </main>
+    </div>
   );
 }

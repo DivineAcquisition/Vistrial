@@ -10,7 +10,7 @@ export function CostHero({ cost }: { cost: CostBreakdown }) {
   return (
     <div className="space-y-4">
       <Panel className="border-t-2 border-t-brand-500 px-6 py-7">
-        <p className="text-[11px] font-semibold tracking-[0.18em] text-brand-500 uppercase">
+        <p className="text-[11px] font-semibold tracking-[0.18em] text-brand-300 uppercase">
           Combined cost per appointment
         </p>
         <p className="mt-1 text-xs text-dim">

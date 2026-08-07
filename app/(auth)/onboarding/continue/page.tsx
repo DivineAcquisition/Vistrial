@@ -12,6 +12,9 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false },
 };
 
+// Session + MFA gate — must not be prerendered as a baked redirect to /login.
+export const dynamic = "force-dynamic";
+
 /** Migrated Owner (and MFA re-prompts) resume here without an invite token. */
 export default async function OnboardingContinuePage({
   searchParams,

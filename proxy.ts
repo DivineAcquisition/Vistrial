@@ -5,7 +5,6 @@ import { supabaseEnv } from "@/lib/supabase/env";
 
 const LOGIN_PATH = "/login";
 const PORTAL_LOGIN_PATH = "/portal/login";
-const ADMIN_HOME = "/attention";
 const PORTAL_HOME = "/portal";
 
 /** Paths that never require a session. */
@@ -70,8 +69,12 @@ export async function proxy(request: NextRequest) {
   if (!user) return response;
 
   if (pathname === LOGIN_PATH) {
+    // Send authenticated visitors through `/`, which picks the real home
+    // (attention, MFA challenge, enrolment, password reset, portal). A hard
+    // jump to ADMIN_HOME skips those gates and, with a prerendered detour
+    // page, can loop login → continue → login until the browser gives up.
     const url = request.nextUrl.clone();
-    url.pathname = ADMIN_HOME;
+    url.pathname = "/";
     url.search = "";
     return withCookies(NextResponse.redirect(url), response);
   }

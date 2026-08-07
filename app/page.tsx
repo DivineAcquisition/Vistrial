@@ -8,6 +8,9 @@ import {
   homeForTeamSession,
 } from "@/lib/auth";
 
+// Chooses a home from the live session — must not prerender as /login forever.
+export const dynamic = "force-dynamic";
+
 export default async function RootPage() {
   const user = await getCurrentUser();
   if (!user) redirect("/login");

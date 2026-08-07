@@ -4,8 +4,9 @@ import { revalidatePath } from "next/cache";
 import { headers } from "next/headers";
 import { z } from "zod";
 
-import { requireAdmin } from "@/lib/auth";
+import { requirePermission } from "@/lib/auth";
 import { dismissStoredEvent, processStoredEvent } from "@/lib/ingest/pipeline";
+import { appendActivity } from "@/lib/team/activity";
 import { createServiceClient } from "@/lib/supabase/server";
 import type { CanonicalEventType, Json } from "@/types/database";
 
@@ -80,7 +81,7 @@ export async function sendTestEvent(
   _previous: ActionState,
   formData: FormData
 ): Promise<ActionState> {
-  await requireAdmin();
+  await requirePermission("manage_commercial");
 
   const parsed = testEventSchema.safeParse({
     clientId: value(formData, "clientId"),
@@ -212,7 +213,7 @@ export async function resolveInboundEvent(
   _previous: ActionState,
   formData: FormData
 ): Promise<ActionState> {
-  await requireAdmin();
+  await requirePermission("manage_commercial");
 
   const eventId = value(formData, "eventId");
   const intent = value(formData, "intent");
@@ -255,4 +256,40 @@ export async function resolveInboundEvent(
   revalidatePath("/settings");
   revalidatePath("/leads");
   return result;
+}
+
+/** Owner-only. Records the notify address used for lockouts and alerts. */
+export async function saveIntegrationNotifyEmailAction(input: {
+  email: string;
+}): Promise<{ ok: true } | { ok: false; error: string }> {
+  try {
+    const admin = await requirePermission("integration_secrets");
+    const email = input.email.trim();
+    if (!email || !email.includes("@")) {
+      return { ok: false, error: "Enter a valid email." };
+    }
+
+    const db = createServiceClient();
+    const { error } = await db.from("app_settings").upsert({
+      key: "admin_notify_email",
+      value: email,
+    });
+    if (error) return { ok: false, error: error.message };
+
+    await appendActivity(db, {
+      actorTeamUserId: admin.team.id,
+      actorEmail: admin.email,
+      action: "integration_settings_changed",
+      subjectTeamUserId: admin.team.id,
+      detail: { field: "admin_notify_email" },
+    });
+
+    revalidatePath("/settings");
+    return { ok: true };
+  } catch (error) {
+    return {
+      ok: false,
+      error: error instanceof Error ? error.message : "Something went wrong.",
+    };
+  }
 }

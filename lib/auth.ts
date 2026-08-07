@@ -3,14 +3,27 @@ import "server-only";
 import { redirect } from "next/navigation";
 import { cache } from "react";
 
+import {
+  countActiveOwners,
+  getTeamUserByAuthId,
+  insertTeamUser,
+  updateTeamUser,
+} from "@/lib/db/team";
+import { appendActivity } from "@/lib/team/activity";
+import {
+  assertRoleHas,
+  PermissionError,
+  type Permission,
+} from "@/lib/team/permissions";
 import { supabaseEnv } from "@/lib/supabase/env";
 import { createServiceClient } from "@/lib/supabase/server";
 import { createSessionClient } from "@/lib/supabase/session";
-import type { ClientUser } from "@/types/database";
+import type { ClientUser, TeamUser } from "@/types/database";
 
 export type SessionUser = { id: string; email: string };
 
-export type AdminUser = SessionUser;
+/** Authenticated team member. Replaces the Prompt-2 single-administrator model. */
+export type AdminUser = SessionUser & { team: TeamUser };
 
 export type PortalSession = {
   user: SessionUser;
@@ -37,10 +50,8 @@ export const getCurrentUser = cache(async (): Promise<SessionUser | null> => {
 });
 
 /**
- * The portal membership for the current auth user, if any. An authenticated
- * user with no row here is an administrator — that is the invite-only
- * invariant, and it is what keeps public signup from ever opening an admin
- * session by accident.
+ * The portal membership for the current auth user, if any. Portal and team
+ * populations are separate; having a row here never grants team access.
  */
 export const getPortalMembership = cache(async (): Promise<ClientUser | null> => {
   const user = await getCurrentUser();
@@ -61,6 +72,12 @@ export const getPortalMembership = cache(async (): Promise<ClientUser | null> =>
   return data ?? null;
 });
 
+export const getTeamMembership = cache(async (): Promise<TeamUser | null> => {
+  const user = await getCurrentUser();
+  if (!user) return null;
+  return getTeamUserByAuthId(user.id);
+});
+
 function accessOpen(membership: ClientUser, now = Date.now()): boolean {
   if (membership.status === "closed") return false;
   if (membership.status === "invited") return false;
@@ -72,6 +89,47 @@ function accessOpen(membership: ClientUser, now = Date.now()): boolean {
   return false;
 }
 
+/**
+ * One-time path for the Prompt-2 hand-created administrator. Creates the first
+ * Owner without ever leaving the system at zero Owners. Skips the password
+ * onboarding step because a password already exists.
+ */
+async function bootstrapOwnerIfNeeded(user: SessionUser): Promise<TeamUser | null> {
+  const existing = await getTeamUserByAuthId(user.id);
+  if (existing) return existing;
+
+  const owners = await countActiveOwners();
+  if (owners > 0) return null;
+
+  // A portal member must never be bootstrapped into the team population.
+  const portal = await getPortalMembership();
+  if (portal) return null;
+
+  const team = await insertTeamUser({
+    user_id: user.id,
+    email: user.email,
+    role: "owner",
+    status: "active",
+    onboarding_step: "profile",
+    password_set_at: new Date().toISOString(),
+    migrated_from_single_admin: true,
+    joined_at: new Date().toISOString(),
+    full_name: null,
+  });
+
+  const db = createServiceClient();
+  await appendActivity(db, {
+    actorTeamUserId: team.id,
+    actorEmail: team.email,
+    action: "owner_bootstrapped",
+    subjectTeamUserId: team.id,
+    detail: { source: "prompt_2_migration" },
+  });
+
+  // Never zero Owners: the insert above is the first active Owner.
+  return team;
+}
+
 /** Any authenticated session. Prefer requireAdmin / requireClient at boundaries. */
 export async function requireUser(): Promise<SessionUser> {
   const user = await getCurrentUser();
@@ -80,25 +138,60 @@ export async function requireUser(): Promise<SessionUser> {
 }
 
 /**
- * An administrator: authenticated, and not a portal member. Portal members who
- * hit an admin route are sent to their own dashboard rather than seeing data
- * for every client.
+ * An active team member. Portal members are sent to their own surface. Pending
+ * onboarding is sent back to the invite flow. Locked / deactivated accounts are
+ * signed out of the team surface.
  */
 export async function requireAdmin(): Promise<AdminUser> {
   const user = await requireUser();
-  const membership = await getPortalMembership();
 
-  if (membership && accessOpen(membership)) {
-    redirect("/portal");
+  // Prefer an existing team row; otherwise attempt the one-time Owner bootstrap.
+  let team = await getTeamUserByAuthId(user.id);
+  if (!team) {
+    team = await bootstrapOwnerIfNeeded(user);
   }
 
-  // A closed or expired membership still blocks the admin surface: the account
-  // was created for a client, not for Divine Acquisition.
-  if (membership) {
-    redirect("/login?error=closed");
+  if (!team) {
+    const membership = await getPortalMembership();
+    if (membership && accessOpen(membership)) redirect("/portal");
+    if (membership) redirect("/portal/login?error=closed");
+    redirect("/login");
   }
 
-  return user;
+  if (team.status === "locked") {
+    redirect("/login?error=locked");
+  }
+
+  if (team.status === "deactivated") {
+    redirect("/login?error=deactivated");
+  }
+
+  if (team.status === "pending" || team.onboarding_step !== "done") {
+    // Resume onboarding via the invite token route when possible; otherwise the
+    // migrated Owner continues at /onboarding/continue.
+    if (team.migrated_from_single_admin && team.onboarding_step !== "done") {
+      redirect("/onboarding/continue");
+    }
+    redirect("/login?error=pending");
+  }
+
+  if (team.status !== "active") {
+    redirect("/login");
+  }
+
+  // Members who skipped MFA are prompted again at sign-in (handled there);
+  // once inside, they may continue operational work.
+
+  return { id: user.id, email: user.email, team };
+}
+
+/** Same as requireAdmin, then refuses when the role lacks the permission. */
+export async function requirePermission(
+  permission: Permission
+): Promise<AdminUser> {
+  const admin = await requireAdmin();
+  assertRoleHas(admin.team.role, permission);
+  return admin;
 }
 
 /** A portal member with an open access window, scoped to one client. */
@@ -107,9 +200,12 @@ export async function requireClient(): Promise<PortalSession> {
   const membership = await getPortalMembership();
 
   if (!membership || !accessOpen(membership)) {
-    // An admin who wanders into the portal goes back to the ledger.
-    if (!membership) redirect("/attention");
-    redirect("/login?error=closed");
+    // A team member who wanders into the portal goes back to the ledger.
+    const team = await getTeamUserByAuthId(user.id);
+    if (team && team.status === "active" && team.onboarding_step === "done") {
+      redirect("/attention");
+    }
+    redirect("/portal/login?error=closed");
   }
 
   return {
@@ -119,10 +215,42 @@ export async function requireClient(): Promise<PortalSession> {
   };
 }
 
-/** Where a successful sign-in should land for this session. */
-export async function homeForSession(): Promise<string> {
-  const membership = await getPortalMembership();
-  if (membership && accessOpen(membership)) return "/portal";
-  if (membership) return "/login";
+/** Where a successful team sign-in should land. */
+export async function homeForTeamSession(): Promise<string> {
+  const team = await getTeamMembership();
+  if (!team) return "/login";
+  if (team.status === "locked") return "/login?error=locked";
+  if (team.status === "deactivated") return "/login?error=deactivated";
+  if (team.status === "pending" || team.onboarding_step !== "done") {
+    if (team.migrated_from_single_admin) return "/onboarding/continue";
+    return "/login?error=pending";
+  }
+  if (team.force_password_reset) return "/account/password";
+  if (
+    (team.role === "owner" || team.role === "admin") &&
+    !team.mfa_enabled
+  ) {
+    return "/onboarding/continue";
+  }
+  if (team.role === "member" && !team.mfa_enabled && team.mfa_skipped) {
+    // Prompt again at the next sign-in (Members may skip once per session cycle).
+    return "/onboarding/continue";
+  }
   return "/attention";
 }
+
+/** Where a successful portal sign-in should land. */
+export async function homeForPortalSession(): Promise<string> {
+  const membership = await getPortalMembership();
+  if (membership && accessOpen(membership)) return "/portal";
+  return "/portal/login";
+}
+
+/** @deprecated Use homeForTeamSession / homeForPortalSession. Kept for call sites mid-migration. */
+export async function homeForSession(): Promise<string> {
+  const team = await getTeamMembership();
+  if (team) return homeForTeamSession();
+  return homeForPortalSession();
+}
+
+export { PermissionError };

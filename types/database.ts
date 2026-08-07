@@ -77,8 +77,49 @@ export type JobAction =
   | "retried"
   | "skipped";
 
-/** Invite-only portal accounts. No row here means the session is an admin. */
+/**
+ * Invite-only portal accounts (Prompt 6). Separate from team_users — a portal
+ * membership never grants team access, and the reverse is never true.
+ */
 export type ClientUserStatus = "invited" | "active" | "archived" | "closed";
+export type TeamRole = "owner" | "admin" | "member";
+export type TeamUserStatus = "pending" | "active" | "deactivated" | "locked";
+export type TeamInvitationStatus =
+  | "pending"
+  | "accepted"
+  | "expired"
+  | "cancelled";
+export type TeamOnboardingStep =
+  | "password"
+  | "profile"
+  | "mfa"
+  | "orientation"
+  | "done";
+/** Security / permission events only — not operational appointment history. */
+export type TeamActivityAction =
+  | "sign_in"
+  | "sign_in_failed"
+  | "sign_out"
+  | "invitation_sent"
+  | "invitation_accepted"
+  | "invitation_resent"
+  | "invitation_cancelled"
+  | "role_changed"
+  | "user_deactivated"
+  | "user_reactivated"
+  | "password_changed"
+  | "password_reset_requested"
+  | "password_reset_completed"
+  | "mfa_enabled"
+  | "mfa_disabled"
+  | "mfa_recovery_regenerated"
+  | "sessions_revoked"
+  | "session_revoked"
+  | "force_password_reset"
+  | "integration_settings_changed"
+  | "account_locked"
+  | "account_unlocked"
+  | "owner_bootstrapped";
 export type ClientNotificationKind =
   | "invitation"
   | "weekly_summary"
@@ -672,5 +713,71 @@ export interface CrossClientMatch {
   acknowledged_at: string | null;
   acknowledged_by: string | null;
   acknowledged_by_label: string | null;
+  created_at: string;
+}
+
+/** Divine Acquisition team member — never a client portal account. */
+export interface TeamUser {
+  id: string;
+  user_id: string | null;
+  email: string;
+  full_name: string | null;
+  job_title: string | null;
+  phone: string | null;
+  timezone: string | null;
+  role: TeamRole;
+  status: TeamUserStatus;
+  invitation_token_hash: string | null;
+  invitation_expires_at: string | null;
+  invited_by: string | null;
+  invited_by_label: string | null;
+  invited_at: string | null;
+  invitation_accepted_at: string | null;
+  invitation_status: TeamInvitationStatus | null;
+  onboarding_step: TeamOnboardingStep;
+  password_set_at: string | null;
+  mfa_enabled: boolean;
+  mfa_skipped: boolean;
+  force_password_reset: boolean;
+  migrated_from_single_admin: boolean;
+  failed_sign_in_count: number;
+  locked_at: string | null;
+  last_sign_in_at: string | null;
+  joined_at: string | null;
+  deactivated_at: string | null;
+  deactivated_by: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface TeamSessionRow {
+  id: string;
+  team_user_id: string;
+  auth_session_id: string | null;
+  user_agent: string | null;
+  ip_address: string | null;
+  approx_location: string | null;
+  created_at: string;
+  last_seen_at: string;
+  revoked_at: string | null;
+}
+
+export interface TeamActivityLogEntry {
+  id: string;
+  actor_team_user_id: string | null;
+  actor_email: string | null;
+  action: TeamActivityAction | string;
+  subject_team_user_id: string | null;
+  detail: Json;
+  ip_address: string | null;
+  created_at: string;
+}
+
+export interface TeamPasswordReset {
+  id: string;
+  team_user_id: string;
+  token_hash: string;
+  expires_at: string;
+  used_at: string | null;
   created_at: string;
 }

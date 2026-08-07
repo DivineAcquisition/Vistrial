@@ -1,32 +1,22 @@
 "use client";
 
 import { Loader2Icon } from "lucide-react";
-import Link from "next/link";
 import { useActionState } from "react";
 
-import { signInAction, type SignInState } from "@/lib/actions/auth";
+import { signInPortalAction, type SignInState } from "@/lib/actions/auth";
 import { btnPrimary, btnSizeMd, inputClass, labelClass } from "@/lib/ui";
 
 const initialState: SignInState = { error: null };
 
-export function LoginForm({
-  next,
-  lockedMessage,
-}: {
-  next?: string;
-  lockedMessage?: string | null;
-}) {
+/** Client-population sign-in. Separate from the team form at /login. */
+export function PortalLoginForm() {
   const [state, formAction, pending] = useActionState(
-    signInAction,
+    signInPortalAction,
     initialState
   );
 
-  const error = state.error ?? lockedMessage ?? null;
-
   return (
     <form action={formAction} className="mt-6 space-y-4">
-      {next ? <input type="hidden" name="next" value={next} /> : null}
-
       <div>
         <label className={labelClass} htmlFor="email">
           Email
@@ -55,9 +45,9 @@ export function LoginForm({
         />
       </div>
 
-      {error ? (
+      {state.error ? (
         <p role="alert" className="text-sm text-flag-critical">
-          {error}
+          {state.error}
         </p>
       ) : null}
 
@@ -75,15 +65,6 @@ export function LoginForm({
           "Sign in"
         )}
       </button>
-
-      <p className="text-center text-xs text-dim">
-        <Link
-          href="/login/reset"
-          className="text-brand-500 transition-colors hover:text-brand-400"
-        >
-          Reset password
-        </Link>
-      </p>
     </form>
   );
 }

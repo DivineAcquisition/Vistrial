@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 
-import { requireAdmin } from "@/lib/auth";
+import { requireAdmin, requirePermission } from "@/lib/auth";
 import {
   createServiceCategory,
   listActiveExclusivityPeers,
@@ -106,7 +106,7 @@ async function conflictsFor(
 export async function createCategoryAction(
   input: unknown
 ): Promise<ActionResult<{ id: string }>> {
-  await requireAdmin();
+  await requirePermission("manage_commercial");
   const parsed = categoryCreateSchema.safeParse(input);
   if (!parsed.success) return { ok: false, error: describeIssues(parsed.error) };
 
@@ -122,7 +122,7 @@ export async function createCategoryAction(
 export async function setCategoryActiveAction(
   input: unknown
 ): Promise<ActionResult> {
-  await requireAdmin();
+  await requirePermission("manage_commercial");
   const parsed = z
     .object({ id: z.uuid(), active: z.boolean() })
     .safeParse(input);
@@ -145,7 +145,7 @@ export async function setCategoryActiveAction(
 export async function saveClientCategoriesAction(
   input: unknown
 ): Promise<ActionResult> {
-  await requireAdmin();
+  await requirePermission("manage_commercial");
   const parsed = setCategoriesSchema.safeParse(input);
   if (!parsed.success) return { ok: false, error: describeIssues(parsed.error) };
 
@@ -191,7 +191,7 @@ export async function saveClientCategoriesAction(
 export async function addTerritoryAction(
   input: unknown
 ): Promise<ActionResult<{ id: string }>> {
-  const user = await requireAdmin();
+  const user = await requirePermission("manage_commercial");
   const parsed = territorySchema.safeParse(input);
   if (!parsed.success) return { ok: false, error: describeIssues(parsed.error) };
 
@@ -274,7 +274,7 @@ export async function addTerritoryAction(
 export async function deleteTerritoryAction(
   input: unknown
 ): Promise<ActionResult> {
-  await requireAdmin();
+  await requirePermission("delete");
   const parsed = deleteTerritorySchema.safeParse(input);
   if (!parsed.success) return { ok: false, error: describeIssues(parsed.error) };
 
@@ -297,7 +297,7 @@ export async function deleteTerritoryAction(
 export async function overrideConflictAction(
   input: unknown
 ): Promise<ActionResult> {
-  const user = await requireAdmin();
+  const user = await requirePermission("territory_override");
   const parsed = overrideConflictSchema.safeParse(input);
   if (!parsed.success) return { ok: false, error: describeIssues(parsed.error) };
 
@@ -366,7 +366,7 @@ export async function acknowledgeCrossClientMatchAction(
 export async function setCrossClientWindowAction(
   input: unknown
 ): Promise<ActionResult> {
-  await requireAdmin();
+  await requirePermission("manage_commercial");
   const parsed = crossClientWindowSchema.safeParse(input);
   if (!parsed.success) return { ok: false, error: describeIssues(parsed.error) };
 
@@ -389,7 +389,7 @@ export async function setCrossClientWindowAction(
 export async function previewConflictsAction(
   input: unknown
 ): Promise<ActionResult<{ conflicts: ReturnType<typeof findConflicts> }>> {
-  await requireAdmin();
+  await requirePermission("manage_commercial");
   const parsed = z
     .object({
       client_id: z.uuid(),

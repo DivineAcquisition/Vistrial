@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
 import { reviewWindow } from "@/lib/appointments/review-window";
-import { requireAdmin, requireClient } from "@/lib/auth";
+import { requireClient, requirePermission } from "@/lib/auth";
 import { listAdSpend } from "@/lib/db/ad-spend";
 import {
   deliverDisputeAlert,
@@ -58,7 +58,7 @@ const INVITE_DAYS = 7;
 export async function inviteClientUserAction(
   input: unknown
 ): Promise<ActionResult<{ email: string }>> {
-  const user = await requireAdmin();
+  const user = await requirePermission("manage_commercial");
   const parsed = inviteSchema.safeParse(input);
   if (!parsed.success) return { ok: false, error: describeIssues(parsed.error) };
 
@@ -220,7 +220,7 @@ export async function acceptInviteAction(
 }
 
 export async function upsertAdSpendAction(input: unknown): Promise<ActionResult> {
-  const user = await requireAdmin();
+  const user = await requirePermission("manage_commercial");
   const parsed = adSpendSchema.safeParse(input);
   if (!parsed.success) return { ok: false, error: describeIssues(parsed.error) };
 
@@ -244,7 +244,7 @@ export async function upsertAdSpendAction(input: unknown): Promise<ActionResult>
 }
 
 export async function spreadAdSpendAction(input: unknown): Promise<ActionResult> {
-  const user = await requireAdmin();
+  const user = await requirePermission("manage_commercial");
   const parsed = adSpendRangeSchema.safeParse(input);
   if (!parsed.success) return { ok: false, error: describeIssues(parsed.error) };
 
@@ -271,7 +271,7 @@ export async function spreadAdSpendAction(input: unknown): Promise<ActionResult>
 export async function createShareLinkAction(
   input: unknown
 ): Promise<ActionResult<{ url: string; expiresAt: string }>> {
-  const user = await requireAdmin();
+  const user = await requirePermission("manage_commercial");
   const parsed = shareLinkSchema.safeParse(input);
   if (!parsed.success) return { ok: false, error: describeIssues(parsed.error) };
 
@@ -305,7 +305,7 @@ export async function createShareLinkAction(
 }
 
 export async function revokeShareLinkAction(input: unknown): Promise<ActionResult> {
-  await requireAdmin();
+  await requirePermission("manage_commercial");
   const parsed = revokeShareSchema.safeParse(input);
   if (!parsed.success) return { ok: false, error: describeIssues(parsed.error) };
 
@@ -332,7 +332,7 @@ export async function revokeShareLinkAction(input: unknown): Promise<ActionResul
 }
 
 export async function closePortalUserAction(input: unknown): Promise<ActionResult> {
-  await requireAdmin();
+  await requirePermission("manage_commercial");
   const parsed = closePortalUserSchema.safeParse(input);
   if (!parsed.success) return { ok: false, error: describeIssues(parsed.error) };
 
@@ -471,6 +471,6 @@ export async function portalDisputeAction(input: unknown): Promise<ActionResult>
 
 /** Re-export for admin UI that lists spend without a separate page load. */
 export async function listSpendForClient(clientId: string) {
-  await requireAdmin();
+  await requirePermission("manage_commercial");
   return listAdSpend(clientId);
 }

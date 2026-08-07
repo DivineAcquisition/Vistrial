@@ -1,6 +1,7 @@
 import { CategorySettings } from "@/components/settings/category-settings";
 import { DigestSettings } from "@/components/settings/digest-settings";
 import { InboundTestTool } from "@/components/settings/inbound-test-tool";
+import { IntegrationSecrets } from "@/components/settings/integration-secrets";
 import {
   UnresolvedEvents,
   type UnresolvedEventView,
@@ -21,13 +22,14 @@ import type { ServiceCategory } from "@/types/database";
 export const dynamic = "force-dynamic";
 
 export default async function SettingsPage() {
-  await requireAdmin();
+  const admin = await requireAdmin();
 
   let clients: { id: string; name: string }[];
   let events: UnresolvedEventView[];
   let digestHour = DEFAULT_DIGEST_HOUR;
   let categories: ServiceCategory[] = [];
   let crossClientWindowDays = DEFAULT_CROSS_CLIENT_WINDOW_DAYS;
+  let notifyEmail = process.env.ADMIN_NOTIFY_EMAIL?.trim() ?? "";
 
   try {
     const [clientRows, eventRows] = await Promise.all([
@@ -55,7 +57,8 @@ export default async function SettingsPage() {
 
     try {
       categories = await listServiceCategories();
-      const { data } = await createServiceClient()
+      const db = createServiceClient();
+      const { data } = await db
         .from("app_settings")
         .select("value")
         .eq("key", "cross_client_window_days")
@@ -63,6 +66,14 @@ export default async function SettingsPage() {
       const parsed = Number(data?.value);
       if (Number.isInteger(parsed) && parsed >= 1 && parsed <= 365) {
         crossClientWindowDays = parsed;
+      }
+      const { data: notify } = await db
+        .from("app_settings")
+        .select("value")
+        .eq("key", "admin_notify_email")
+        .maybeSingle();
+      if (typeof notify?.value === "string" && notify.value.includes("@")) {
+        notifyEmail = notify.value;
       }
     } catch {
       categories = [];
@@ -160,13 +171,32 @@ export default async function SettingsPage() {
         </Panel>
       </section>
 
-      <section>
+      <section className="mb-10">
         <SectionHeader
           title="Inbound test tool"
           hint="A development and configuration tool. It posts to the real endpoint with the client's real secret and gets no special treatment."
         />
         <InboundTestTool clients={clients} />
       </section>
+
+      {admin.team.role === "owner" ? (
+        <section>
+          <SectionHeader
+            title="Integration secrets"
+            hint="Owners only. Secret values stay in the environment; this records who changed related settings."
+          />
+          <Panel className="px-5 py-4">
+            <IntegrationSecrets
+              stripeConfigured={Boolean(process.env.STRIPE_SECRET_KEY?.trim())}
+              stripeWebhookConfigured={Boolean(
+                process.env.STRIPE_WEBHOOK_SECRET?.trim()
+              )}
+              resendConfigured={Boolean(process.env.RESEND_API_KEY?.trim())}
+              notifyEmail={notifyEmail}
+            />
+          </Panel>
+        </section>
+      ) : null}
     </>
   );
 }

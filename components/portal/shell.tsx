@@ -1,7 +1,7 @@
 import Link from "next/link";
 
 import Logo from "@/components/brand/logo";
-import { SignOutButton } from "@/components/shell/sign-out-button";
+import { PortalSignOutButton } from "@/components/shell/portal-sign-out-button";
 import { APP_NAME, APP_OWNER } from "@/lib/constants";
 import { cn } from "@/lib/utils";
 
@@ -42,7 +42,7 @@ export function PortalShell({
                 Read only
               </span>
             ) : null}
-            <SignOutButton />
+            <PortalSignOutButton />
           </div>
         </div>
         <nav className="mx-auto flex max-w-5xl gap-1 overflow-x-auto px-4 pb-3 sm:px-6">

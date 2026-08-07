@@ -25,10 +25,11 @@ export function Topbar() {
         </p>
 
         <div className="flex items-center gap-2">
-          <TonePill tone="brand">Admin</TonePill>
-          <span
-            aria-hidden
-            className="size-8 rounded-full border border-white/10 bg-white/[0.03]"
+          <TonePill tone="brand">Team</TonePill>
+          <a
+            href="/account"
+            className="size-8 rounded-full border border-white/10 bg-white/[0.03] transition-colors hover:border-brand-500/40"
+            aria-label="Your account"
           />
         </div>
       </div>

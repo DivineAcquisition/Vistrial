@@ -6,6 +6,7 @@ import {
   Eye,
   Map,
   Settings,
+  Shield,
   Users,
   type LucideIcon,
 } from "lucide-react";
@@ -17,6 +18,8 @@ export type NavItem = {
   label: string;
   href: string;
   icon: LucideIcon;
+  /** When set, only these roles see the nav item. Permission is still enforced server-side. */
+  roles?: Array<"owner" | "admin" | "member">;
 };
 
 export const NAV_ITEMS: NavItem[] = [
@@ -27,5 +30,11 @@ export const NAV_ITEMS: NavItem[] = [
   { label: "Clients", href: "/clients", icon: Building2 },
   { label: "Territories", href: "/territories", icon: Map },
   { label: "Billing", href: "/billing", icon: CreditCard },
+  {
+    label: "Team",
+    href: "/team",
+    icon: Shield,
+    roles: ["owner", "admin"],
+  },
   { label: "Settings", href: "/settings", icon: Settings },
 ];

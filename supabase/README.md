@@ -37,15 +37,17 @@ paste each file into **SQL Editor → New query** in order.
 4. Restart `npm run dev` and open `/clients`. You should see the empty table
    rather than the "Supabase not connected" panel.
 
-## Creating an admin account
+## Team accounts
 
-There is no public signup anywhere in the application, by design. Administrators
-are created by hand:
+There is no public signup anywhere in the application, by design. Team accounts
+exist only through invitation (Owners and Admins invite from `/team`).
 
-1. Open [Authentication → Users](https://supabase.com/dashboard/project/vsbzcbiyvaihhejjsypn/auth/users).
-2. **Add user → Create new user**, set the email and password, and tick
-   **Auto Confirm User** (an unconfirmed account cannot sign in).
-3. Sign in at `/login`.
+The hand-created administrator from earlier prompts becomes the first **Owner**
+automatically on next sign-in (profile + two-factor onboarding, password kept).
+The system never leaves itself with zero Owners.
+
+Client portal accounts (`client_users`) are a separate population with a
+separate sign-in surface at `/portal/login`.
 
 ## What is in the database
 

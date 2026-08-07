@@ -8,7 +8,7 @@ import {
   resendChargeNoticeAction,
 } from "@/lib/actions/billing";
 import { setDigestHour } from "@/lib/attention/digest";
-import { requireAdmin } from "@/lib/auth";
+import { requirePermission } from "@/lib/auth";
 import { processCharge } from "@/lib/billing/processing";
 import { createServiceClient } from "@/lib/supabase/server";
 
@@ -34,7 +34,7 @@ const hourSchema = z.object({
 export async function retryFailedChargeAction(
   input: unknown
 ): Promise<ActionResult> {
-  await requireAdmin();
+  await requirePermission("manage_charges");
   const parsed = chargeId.safeParse(input);
   if (!parsed.success) {
     return { ok: false, error: "Choose a charge." };
@@ -85,7 +85,7 @@ export async function attentionSendPaymentLinkAction(
 export async function setDigestHourAction(
   input: unknown
 ): Promise<ActionResult> {
-  await requireAdmin();
+  await requirePermission("manage_commercial");
   const parsed = hourSchema.safeParse(input);
   if (!parsed.success) {
     return { ok: false, error: "Choose an hour between 0 and 23 UTC." };

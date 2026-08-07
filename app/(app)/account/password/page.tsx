@@ -4,6 +4,9 @@ import { AccountPanel } from "@/components/account/account-panel";
 import { requireAdmin } from "@/lib/auth";
 import { listTeamSessions } from "@/lib/db/team";
 
+// Post-sign-in destination when force_password_reset is set.
+export const dynamic = "force-dynamic";
+
 /** Force-password-reset landing — same account UI, password section first. */
 export default async function ForcePasswordPage() {
   const admin = await requireAdmin();

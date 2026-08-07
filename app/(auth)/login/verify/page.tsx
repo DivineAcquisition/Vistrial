@@ -12,6 +12,9 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false },
 };
 
+// Reads the live session's AAL — must not be prerendered as a baked /login redirect.
+export const dynamic = "force-dynamic";
+
 /**
  * The second half of a team sign-in. The password already succeeded, so a
  * session exists — but it sits at aal1 and no team surface will serve it until

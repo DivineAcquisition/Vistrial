@@ -40,6 +40,25 @@ export async function getClientUser(id: string): Promise<ClientUser | null> {
   return data ?? null;
 }
 
+/**
+ * Every portal row that shares one contact address. A person may sit in more
+ * than one client, and each row can carry its own Auth alias when the plain
+ * address is spoken for elsewhere.
+ */
+export async function listClientUsersByEmail(
+  email: string
+): Promise<ClientUser[]> {
+  const db = createServiceClient();
+  const { data, error } = await db
+    .from("client_users")
+    .select("*")
+    .ilike("email", email.trim())
+    .returns<ClientUser[]>();
+
+  if (error) throw new Error(`Failed to look up portal users: ${error.message}`);
+  return data ?? [];
+}
+
 export async function getClientUserByInviteHash(
   hash: string
 ): Promise<ClientUser | null> {

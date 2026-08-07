@@ -7,6 +7,7 @@ import { ClientDialog } from "@/components/clients/client-dialog";
 import { ClientStatusBadge } from "@/components/clients/client-status-badge";
 import { ClientTabs } from "@/components/clients/client-tabs";
 import { DefinitionHistory } from "@/components/clients/definition-history";
+import { ExclusivityPanel } from "@/components/clients/exclusivity-panel";
 import { PortalPanel } from "@/components/clients/portal-panel";
 import {
   CopyableValue,
@@ -31,6 +32,13 @@ import {
   listShareLinks,
   loadPortalDashboard,
 } from "@/lib/db/portal";
+import {
+  countClientsSharingCategories,
+  listClientCategoryIds,
+  listOverridesForClient,
+  listServiceCategories,
+  listTerritories,
+} from "@/lib/db/territory";
 import { formatMoney, formatPercent } from "@/lib/format";
 import { baseUrl } from "@/lib/origin";
 import { btnSecondary, btnSizeSm } from "@/lib/ui";
@@ -65,6 +73,10 @@ export default async function ClientDetailPage({
     spend,
     campaigns,
     portalDashboard,
+    serviceCategories,
+    clientCategoryIds,
+    territories,
+    overrides,
   ] = await Promise.all([
     listDefinitions(client.id),
     baseUrl(),
@@ -78,7 +90,16 @@ export default async function ClientDetailPage({
     listAdSpend(client.id),
     listCampaigns(client.id),
     loadPortalDashboard(client.id),
+    listServiceCategories(),
+    listClientCategoryIds(client.id),
+    listTerritories(client.id),
+    listOverridesForClient(client.id),
   ]);
+
+  const peersSharingCategory = await countClientsSharingCategories(
+    clientCategoryIds,
+    client.id
+  );
 
   const reported = shows.showed + shows.notShown;
   const notShownRate = reported === 0 ? null : shows.notShown / reported;
@@ -194,6 +215,20 @@ export default async function ClientDetailPage({
         }
         definition={
           <DefinitionHistory clientId={client.id} definitions={definitions} />
+        }
+        exclusivity={
+          <ExclusivityPanel
+            clientId={client.id}
+            exclusivityStatus={client.exclusivity_status ?? "active"}
+            categories={serviceCategories}
+            selectedCategoryIds={clientCategoryIds}
+            territories={territories}
+            overrides={overrides}
+            peersSharingCategory={peersSharingCategory}
+            definitionServiceArea={
+              definitions[0]?.service_area ?? client.service_area
+            }
+          />
         }
         appointments={
           <div className="space-y-8">

@@ -91,6 +91,7 @@ const DEFAULTS: Record<string, () => Row> = {
     review_window_hours: 72,
     bill_on: "booked",
     duplicate_window_days: 30,
+    exclusivity_status: "active",
     ghl_location_id: null,
     contact_name: null,
     contact_email: null,

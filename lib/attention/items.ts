@@ -571,7 +571,174 @@ async function gather(query: AttentionQuery): Promise<AttentionItem[]> {
     );
   }
 
+  /* 11–13. Exclusivity additions (between disputes and pending in priority) */
+  await appendExclusivityAttention(items, query, now, byId);
+
   return items;
+}
+
+async function appendExclusivityAttention(
+  items: AttentionItem[],
+  query: AttentionQuery,
+  now: number,
+  byId: Map<string, Client>
+): Promise<void> {
+  const db = createServiceClient();
+
+  try {
+    const { listOpenCrossClientMatches } = await import("@/lib/db/territory");
+    const matches = await listOpenCrossClientMatches();
+
+    const leadIds = matches.flatMap((match) => [match.lead_a_id, match.lead_b_id]);
+    const confirmed = new Set<string>();
+
+    if (leadIds.length > 0) {
+      const { data: appointments } = await db
+        .from("appointments")
+        .select("lead_id")
+        .in("lead_id", leadIds)
+        .in("status", ["confirmed", "disputed", "billed"])
+        .returns<{ lead_id: string }[]>();
+
+      for (const row of appointments ?? []) confirmed.add(row.lead_id);
+    }
+
+    for (const match of matches) {
+      if (
+        query.clientId &&
+        match.client_a_id !== query.clientId &&
+        match.client_b_id !== query.clientId
+      ) {
+        continue;
+      }
+
+      const both =
+        confirmed.has(match.lead_a_id) && confirmed.has(match.lead_b_id);
+      const focusId =
+        query.clientId === match.client_b_id ? match.client_b_id : match.client_a_id;
+      const otherId =
+        focusId === match.client_a_id ? match.client_b_id : match.client_a_id;
+      const focusName =
+        (focusId === match.client_a_id ? match.client_a?.name : match.client_b?.name) ??
+        byId.get(focusId)?.name ??
+        "Client";
+      const otherName =
+        (otherId === match.client_a_id ? match.client_a?.name : match.client_b?.name) ??
+        "Other client";
+
+      const otherLead =
+        focusId === match.client_a_id ? match.lead_b : match.lead_a;
+
+      items.push(
+        item(
+          {
+            id: `${both ? "both" : "xdup"}-${match.id}-${focusId}`,
+            type: both ? "cross_client_both_confirmed" : "cross_client_duplicate",
+            clientId: focusId,
+            clientName: focusName,
+            since: match.created_at,
+            summary: both
+              ? `Both leads confirmed · also at ${otherName}`
+              : `Same ${match.match_on} as a lead at ${otherName}`,
+            detail: [
+              otherLead
+                ? `Other lead arrived ${formatWhen(otherLead.arrived_at)}.`
+                : null,
+              both
+                ? "Divine Acquisition is about to bill two clients for the same homeowner. Decide knowingly."
+                : "Neither lead is blocked. Acknowledge once you have seen it.",
+            ]
+              .filter(Boolean)
+              .join(" "),
+            valueAtRisk: 0,
+            actions: [
+              { kind: "acknowledge_match", matchId: match.id },
+              {
+                kind: "link",
+                href: `/leads?client=${focusId}`,
+                label: "Open leads",
+              },
+            ],
+          },
+          now
+        )
+      );
+    }
+
+    // Volume drop near a same-category peer.
+    const { listActiveExclusivityPeers } = await import("@/lib/db/territory");
+    const { peerNearby, volumeDroppedSharply } = await import(
+      "@/lib/territory/volume"
+    );
+
+    const peers = await listActiveExclusivityPeers();
+    const filteredPeers = query.clientId
+      ? peers.filter((peer) => peer.client.id === query.clientId)
+      : peers;
+
+    const recentStart = new Date(now - 14 * 24 * 60 * 60 * 1000).toISOString();
+    const priorStart = new Date(now - 28 * 24 * 60 * 60 * 1000).toISOString();
+
+    for (const peer of filteredPeers) {
+      if (peer.categoryIds.length === 0 || peer.territories.length === 0) continue;
+
+      const { count: recent } = await db
+        .from("appointments")
+        .select("id", { count: "exact", head: true })
+        .eq("client_id", peer.client.id)
+        .gte("created_at", recentStart);
+
+      const { count: priorTotal } = await db
+        .from("appointments")
+        .select("id", { count: "exact", head: true })
+        .eq("client_id", peer.client.id)
+        .gte("created_at", priorStart)
+        .lt("created_at", recentStart);
+
+      const recentCount = recent ?? 0;
+      const priorCount = priorTotal ?? 0;
+
+      if (!volumeDroppedSharply({
+        clientId: peer.client.id,
+        recent: recentCount,
+        prior: priorCount,
+      })) {
+        continue;
+      }
+
+      const rival = peers.find(
+        (other) =>
+          other.client.id !== peer.client.id &&
+          other.categoryIds.some((id) => peer.categoryIds.includes(id)) &&
+          peerNearby(peer.territories, other.territories)
+      );
+
+      if (!rival) continue;
+
+      items.push(
+        item(
+          {
+            id: `vol-${peer.client.id}`,
+            type: "volume_drop",
+            clientId: peer.client.id,
+            clientName: peer.client.name,
+            since: recentStart,
+            summary: `${recentCount} appointments in 14d vs ${priorCount} prior · peer ${rival.client.name}`,
+            detail:
+              "Volume dropped sharply while another active client shares a category and a nearby territory — the symptom of auction competition.",
+            valueAtRisk: 0,
+            actions: [
+              { kind: "link", href: `/clients/${peer.client.id}`, label: "Open client" },
+              { kind: "link", href: "/territories", label: "Territory map" },
+            ],
+          },
+          now
+        )
+      );
+    }
+  } catch {
+    // Exclusivity tables may not be migrated yet; the rest of attention still works.
+  }
 }
 
 function formatMoney(amount: number): string {

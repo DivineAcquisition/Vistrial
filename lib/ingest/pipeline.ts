@@ -346,8 +346,16 @@ async function handleLeadReceived(
       arrived_at: arrivedAt,
       arrival_source: arrivalSource,
     })
-    .select("id")
-    .returns<{ id: string }[]>()
+    .select("id, client_id, phone_key, email_key, arrived_at")
+    .returns<
+      {
+        id: string;
+        client_id: string;
+        phone_key: string | null;
+        email_key: string | null;
+        arrived_at: string;
+      }[]
+    >()
     .single();
 
   if (error) {
@@ -361,6 +369,14 @@ async function handleLeadReceived(
     submittedAt: arrivedAt,
     payload: stored.payload,
   });
+
+  // Cross-client match is a flag only — never blocks this lead or the other.
+  try {
+    const { flagCrossClientMatches } = await import("@/lib/territory/cross-client");
+    await flagCrossClientMatches(db, data);
+  } catch {
+    // A failed flag must not fail ingestion; the lead is already recorded.
+  }
 
   return { status: "processed", leadId: data.id };
 }

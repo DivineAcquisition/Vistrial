@@ -85,6 +85,9 @@ export type ClientNotificationKind =
   | "dispute_alert";
 export type ClientNotificationAudience = "client" | "admin";
 export type DigestDeliveryStatus = "pending" | "sent" | "failed" | "skipped";
+export type ExclusivityStatus = "active" | "overridden" | "not_offered";
+export type TerritoryKind = "radius" | "postal_codes" | "named_regions";
+export type CrossClientMatchOn = "phone" | "email";
 
 export type Json =
   | string
@@ -137,6 +140,12 @@ export interface Client {
    * asking twice in a week is one lead; the same person eight months later is not.
    */
   duplicate_window_days: number;
+
+  /**
+   * Whether Divine Acquisition has promised category×territory exclusivity for
+   * this client. Independent of the appointment-definition service area.
+   */
+  exclusivity_status: ExclusivityStatus;
 
   created_at: string;
   updated_at: string;
@@ -601,5 +610,67 @@ export interface AttentionDigest {
   status: DigestDeliveryStatus;
   error: string | null;
   sent_at: string | null;
+  created_at: string;
+}
+
+/** Maintained list — never free text on the client. */
+export interface ServiceCategory {
+  id: string;
+  slug: string;
+  name: string;
+  sort: number;
+  active: boolean;
+  created_at: string;
+}
+
+export interface ClientCategory {
+  client_id: string;
+  category_id: string;
+}
+
+/**
+ * Exclusivity geography. Separate from appointment_definitions.service_area —
+ * a client may accept occasional jobs outside the area they were sold
+ * exclusivity in.
+ */
+export interface Territory {
+  id: string;
+  client_id: string;
+  kind: TerritoryKind;
+  label: string | null;
+  center_lat: number | null;
+  center_lng: number | null;
+  center_address: string | null;
+  radius_miles: number | null;
+  postal_codes: string[];
+  region_names: string[];
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ExclusivityOverride {
+  id: string;
+  client_a_id: string;
+  client_b_id: string;
+  shared_category_ids: string[];
+  overlap_summary: string;
+  reason: string;
+  overridden_by: string | null;
+  overridden_by_label: string | null;
+  created_at: string;
+}
+
+/** Flag only — never blocks either lead. */
+export interface CrossClientMatch {
+  id: string;
+  lead_a_id: string;
+  lead_b_id: string;
+  client_a_id: string;
+  client_b_id: string;
+  match_on: CrossClientMatchOn;
+  match_key: string;
+  acknowledged_at: string | null;
+  acknowledged_by: string | null;
+  acknowledged_by_label: string | null;
   created_at: string;
 }

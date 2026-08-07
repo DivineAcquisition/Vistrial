@@ -7,12 +7,14 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 export function ClientTabs({
   overview,
   definition,
+  exclusivity,
   appointments,
   billing,
   portal,
 }: {
   overview: ReactNode;
   definition: ReactNode;
+  exclusivity: ReactNode;
   appointments: ReactNode;
   billing: ReactNode;
   portal: ReactNode;
@@ -22,6 +24,7 @@ export function ClientTabs({
       <TabsList>
         <TabsTrigger value="overview">Overview</TabsTrigger>
         <TabsTrigger value="definition">Definition</TabsTrigger>
+        <TabsTrigger value="exclusivity">Exclusivity</TabsTrigger>
         <TabsTrigger value="appointments">Appointments</TabsTrigger>
         <TabsTrigger value="billing">Billing</TabsTrigger>
         <TabsTrigger value="portal">Portal</TabsTrigger>
@@ -29,6 +32,7 @@ export function ClientTabs({
 
       <TabsContent value="overview">{overview}</TabsContent>
       <TabsContent value="definition">{definition}</TabsContent>
+      <TabsContent value="exclusivity">{exclusivity}</TabsContent>
       <TabsContent value="appointments">{appointments}</TabsContent>
       <TabsContent value="billing">{billing}</TabsContent>
       <TabsContent value="portal">{portal}</TabsContent>

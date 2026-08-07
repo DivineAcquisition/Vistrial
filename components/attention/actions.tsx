@@ -11,6 +11,7 @@ import {
   attentionSendPaymentLinkAction,
   retryFailedChargeAction,
 } from "@/lib/actions/attention";
+import { acknowledgeCrossClientMatchAction } from "@/lib/actions/territory";
 import type { AttentionAction } from "@/lib/attention/types";
 import { btnPrimary, btnSecondary, btnSizeSm } from "@/lib/ui";
 
@@ -148,6 +149,29 @@ function ActionButton({ action }: { action: AttentionAction }) {
       >
         {pending ? <Loader2Icon className="size-4 animate-spin" /> : null}
         Send payment link
+      </button>
+    );
+  }
+
+  if (action.kind === "acknowledge_match") {
+    return (
+      <button
+        type="button"
+        disabled={pending}
+        className={`${btnSecondary} ${btnSizeSm}`}
+        onClick={() =>
+          call(async () => {
+            const result = await acknowledgeCrossClientMatchAction({
+              id: action.matchId,
+            });
+            if (result.ok) toast.success("Acknowledged.");
+            else toast.error(result.error);
+            router.refresh();
+          })
+        }
+      >
+        {pending ? <Loader2Icon className="size-4 animate-spin" /> : null}
+        Acknowledge
       </button>
     );
   }

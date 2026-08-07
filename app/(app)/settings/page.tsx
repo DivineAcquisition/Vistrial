@@ -1,3 +1,4 @@
+import { CategorySettings } from "@/components/settings/category-settings";
 import { DigestSettings } from "@/components/settings/digest-settings";
 import { InboundTestTool } from "@/components/settings/inbound-test-tool";
 import {
@@ -12,7 +13,10 @@ import { DEFAULT_DIGEST_HOUR, getDigestHour } from "@/lib/attention/digest";
 import { requireAdmin } from "@/lib/auth";
 import { listClients } from "@/lib/db/clients";
 import { listUnresolvedEvents, STATUS_LABELS } from "@/lib/db/inbound-events";
+import { listServiceCategories } from "@/lib/db/territory";
+import { DEFAULT_CROSS_CLIENT_WINDOW_DAYS } from "@/lib/territory/cross-client";
 import { createServiceClient } from "@/lib/supabase/server";
+import type { ServiceCategory } from "@/types/database";
 
 export const dynamic = "force-dynamic";
 
@@ -22,6 +26,8 @@ export default async function SettingsPage() {
   let clients: { id: string; name: string }[];
   let events: UnresolvedEventView[];
   let digestHour = DEFAULT_DIGEST_HOUR;
+  let categories: ServiceCategory[] = [];
+  let crossClientWindowDays = DEFAULT_CROSS_CLIENT_WINDOW_DAYS;
 
   try {
     const [clientRows, eventRows] = await Promise.all([
@@ -44,8 +50,22 @@ export default async function SettingsPage() {
     try {
       digestHour = await getDigestHour(createServiceClient());
     } catch {
-      // Migration 010 may not be applied yet; the default hour still renders.
       digestHour = DEFAULT_DIGEST_HOUR;
+    }
+
+    try {
+      categories = await listServiceCategories();
+      const { data } = await createServiceClient()
+        .from("app_settings")
+        .select("value")
+        .eq("key", "cross_client_window_days")
+        .maybeSingle();
+      const parsed = Number(data?.value);
+      if (Number.isInteger(parsed) && parsed >= 1 && parsed <= 365) {
+        crossClientWindowDays = parsed;
+      }
+    } catch {
+      categories = [];
     }
   } catch {
     return (
@@ -115,6 +135,19 @@ export default async function SettingsPage() {
           }
         />
         <UnresolvedEvents events={events} clients={clients} />
+      </section>
+
+      <section className="mb-10">
+        <SectionHeader
+          title="Service categories"
+          hint="The unit of exclusivity is category crossed with territory. Maintained here — never free text on a client."
+        />
+        <Panel className="px-5 py-4">
+          <CategorySettings
+            categories={categories}
+            crossClientWindowDays={crossClientWindowDays}
+          />
+        </Panel>
       </section>
 
       <section className="mb-10">

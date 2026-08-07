@@ -4,6 +4,7 @@ import {
   ClipboardCheck,
   CreditCard,
   Eye,
+  Map,
   Settings,
   Users,
   type LucideIcon,
@@ -24,6 +25,7 @@ export const NAV_ITEMS: NavItem[] = [
   { label: "Appointments", href: "/appointments", icon: CalendarCheck },
   { label: "Leads", href: "/leads", icon: Users },
   { label: "Clients", href: "/clients", icon: Building2 },
+  { label: "Territories", href: "/territories", icon: Map },
   { label: "Billing", href: "/billing", icon: CreditCard },
   { label: "Settings", href: "/settings", icon: Settings },
 ];

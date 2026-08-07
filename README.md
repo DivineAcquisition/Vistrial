@@ -138,6 +138,10 @@ skip and are asked again at the next sign-in. Spending a recovery code retires
 the authenticator and sends the account back to enrolment — it is not a way past
 the factor.
 
+Because the gate is real, **TOTP has to be enabled in Supabase Auth** for the
+project. With it off, enrolment cannot complete and Owners and Admins will be
+held at `/onboarding/continue` with the reason shown on screen.
+
 **One email, two accounts.** Supabase Auth keeps one identity per address, so
 where the same person exists on both sides, the second account's Auth identity
 gets a tagged alias (`dana+vt-team-3f9c1a@example.com`) recorded in `auth_email`.

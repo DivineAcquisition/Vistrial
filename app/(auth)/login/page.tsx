@@ -1,9 +1,10 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 
+import { AuthCard } from "@/components/auth/auth-card";
 import { LoginForm } from "@/components/auth/login-form";
 import { getCurrentUser, getTeamMembership, homeForTeamSession } from "@/lib/auth";
-import { APP_NAME, APP_OWNER } from "@/lib/constants";
+import { APP_NAME } from "@/lib/constants";
 
 export const metadata: Metadata = {
   title: `Sign in — ${APP_NAME}`,
@@ -36,15 +37,11 @@ export default async function LoginPage({
           : null;
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-background px-4">
-      <div className="panel w-full max-w-[380px] rounded-2xl px-7 py-8">
-        <p className="text-center text-lg font-semibold tracking-[0.25em] text-brand-500 uppercase">
-          {APP_NAME}
-        </p>
-        <p className="mt-1.5 text-center text-xs text-dim">{APP_OWNER} team</p>
-
-        <LoginForm next={next} lockedMessage={lockedMessage} />
-      </div>
-    </main>
+    <AuthCard
+      title="Sign in"
+      subtitle="For the Divine Acquisition team and for client portal accounts."
+    >
+      <LoginForm next={next} lockedMessage={lockedMessage} />
+    </AuthCard>
   );
 }

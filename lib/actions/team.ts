@@ -34,10 +34,12 @@ import {
   updateOwnProfileSchema,
 } from "@/lib/schemas/team";
 import { appendActivity } from "@/lib/team/activity";
+import { authAddress, createAuthIdentity } from "@/lib/team/auth-identity";
 import {
   generateRecoveryCodes,
   replaceRecoveryCodes,
 } from "@/lib/team/mfa";
+import { mfaMandatoryFor } from "@/lib/team/mfa-session";
 import { isPasswordAcceptable } from "@/lib/team/password";
 import { PermissionError, isPermissionError } from "@/lib/team/permissions";
 import { requestMeta } from "@/lib/team/request-meta";
@@ -118,11 +120,10 @@ export async function inviteTeamUserAction(
       };
     }
 
-    // GAP: Supabase Auth allows one identity per email. A client portal user
-    // with the same address may still be invited here (populations are not
-    // linked in our tables). Accepting the invite will fail to create a second
-    // Auth user until that email is free in Auth — we do not block the invite
-    // and we do not join the rows.
+    // A client portal person may be invited here under the same address. The
+    // two rows are never joined; onboarding gives the team side its own Auth
+    // identity, aliased when Auth has already handed the plain address to the
+    // portal (see lib/team/auth-identity.ts).
 
     const { ipAddress } = await requestMeta();
     let row: TeamUser;
@@ -317,28 +318,24 @@ export async function onboardingSetPasswordAction(
 
     const db = createServiceClient();
 
+    // The address Auth will know this person by. Usually their own; a tagged
+    // alias when the portal already holds the plain one.
+    let identityAddress = authAddress(row);
+
     if (!row.user_id) {
-      const { data: created, error: createError } = await db.auth.admin.createUser({
+      const created = await createAuthIdentity(db, {
         email: row.email,
         password: parsed.data.password,
-        email_confirm: true,
-        app_metadata: { population: "team", team_user_id: row.id },
+        population: "team",
+        appMetadata: { team_user_id: row.id },
       });
 
-      if (createError || !created.user) {
-        // GAP: email already used in Auth (often a portal user). Populations
-        // stay unlinked — we refuse to attach this team row to that Auth user.
-        return {
-          ok: false,
-          error:
-            createError?.message?.toLowerCase().includes("already")
-              ? "An authentication identity already exists for this email in Supabase Auth. Team and portal accounts are separate; use a different email for the team invite, or free the address in Auth first."
-              : (createError?.message ?? "Could not create the account."),
-        };
-      }
+      if ("error" in created) return { ok: false, error: created.error };
 
+      identityAddress = created.authEmail ?? row.email;
       await updateTeamUser(row.id, {
-        user_id: created.user.id,
+        user_id: created.userId,
+        auth_email: created.authEmail,
         password_set_at: new Date().toISOString(),
         onboarding_step: "profile",
       });
@@ -356,7 +353,7 @@ export async function onboardingSetPasswordAction(
     // Sign them in so later steps have a session (MFA enroll needs one).
     const session = await createSessionClient();
     await session.auth.signInWithPassword({
-      email: row.email,
+      email: identityAddress,
       password: parsed.data.password,
     });
 
@@ -486,7 +483,7 @@ export async function onboardingSkipMfaAction(
     if (!parsed.success) return { ok: false, error: describeIssues(parsed.error) };
 
     const row = await loadInvitee(parsed.data.token);
-    if (row.role === "owner" || row.role === "admin") {
+    if (mfaMandatoryFor(row.role)) {
       return {
         ok: false,
         error: "Owners and Admins must enable two-factor authentication.",
@@ -509,6 +506,9 @@ export async function onboardingSkipMfaAction(
 export async function onboardingCompleteAction(
   input: unknown
 ): Promise<ActionResult> {
+  // Everything that can fail happens inside the try. The redirect is deliberately
+  // outside it: Next signals redirects by throwing, and a catch here would turn a
+  // successful hand-off into { ok: false } for an account already marked active.
   try {
     const parsed = onboardingMfaSkipSchema.safeParse(input);
     if (!parsed.success) return { ok: false, error: describeIssues(parsed.error) };
@@ -517,11 +517,14 @@ export async function onboardingCompleteAction(
     if (row.onboarding_step !== "orientation" && row.onboarding_step !== "done") {
       return { ok: false, error: "Finish the earlier onboarding steps first." };
     }
-    if ((row.role === "owner" || row.role === "admin") && !row.mfa_enabled) {
-      // Migrated Owner may still be on MFA step via continue.
-      if (row.onboarding_step !== "orientation") {
-        return { ok: false, error: "Enable two-factor authentication before finishing." };
-      }
+
+    // No exception for reaching orientation: an Owner or Admin without a factor
+    // could not sign in afterwards anyway, so let them fix it here.
+    if (mfaMandatoryFor(row.role) && !row.mfa_enabled) {
+      return {
+        ok: false,
+        error: "Enable two-factor authentication before finishing.",
+      };
     }
 
     const now = new Date().toISOString();
@@ -548,11 +551,11 @@ export async function onboardingCompleteAction(
       action: "invitation_accepted",
       subjectTeamUserId: row.id,
     });
-
-    redirect("/attention");
   } catch (error) {
     return { ok: false, error: failureMessage(error) };
   }
+
+  redirect("/attention");
 }
 
 /* -------------------------------------------------------------------------- */
@@ -781,42 +784,23 @@ export async function requireMfaResetAction(
     const target = await getTeamUserById(parsed.data.id);
     if (!target) return { ok: false, error: "User not found." };
 
+    // Leave onboarding_step alone. The account is still fully onboarded; it
+    // simply owes a new factor, and requireAdmin will route it to enrolment.
     await updateTeamUser(target.id, {
       mfa_enabled: false,
       mfa_skipped: false,
-      onboarding_step:
-        target.onboarding_step === "done" ? "mfa" : target.onboarding_step,
     });
 
     if (target.user_id) {
-      const db = createServiceClient();
-      try {
-        // GAP: Admin MFA factor APIs vary by supabase-js version; clear our flag
-        // even when factor deletion is unavailable.
-        const adminMfa = (
-          db.auth.admin as {
-            mfa?: {
-              listFactors: (args: { userId: string }) => Promise<{
-                data: { factors: { id: string }[] } | null;
-              }>;
-              deleteFactor: (args: {
-                id: string;
-                userId: string;
-              }) => Promise<unknown>;
-            };
-          }
-        ).mfa;
-        if (adminMfa) {
-          const factors = await adminMfa.listFactors({ userId: target.user_id });
-          for (const factor of factors.data?.factors ?? []) {
-            await adminMfa.deleteFactor({
-              id: factor.id,
-              userId: target.user_id,
-            });
-          }
-        }
-      } catch {
-        // Flag cleared below regardless.
+      const auth = createServiceClient();
+      const factors = await auth.auth.admin.mfa.listFactors({
+        userId: target.user_id,
+      });
+      for (const factor of factors.data?.factors ?? []) {
+        await auth.auth.admin.mfa.deleteFactor({
+          id: factor.id,
+          userId: target.user_id,
+        });
       }
     }
 
@@ -904,7 +888,9 @@ export async function changeOwnPasswordAction(
 
     const session = await createSessionClient();
     const attempt = await session.auth.signInWithPassword({
-      email: admin.email,
+      // The Auth address, which differs from the contact address whenever a
+      // portal account already claimed this email.
+      email: authAddress(admin.team),
       password: parsed.data.current_password,
     });
     if (attempt.error) {

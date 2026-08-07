@@ -7,9 +7,9 @@ import {
   countActiveOwners,
   getTeamUserByAuthId,
   insertTeamUser,
-  updateTeamUser,
 } from "@/lib/db/team";
 import { appendActivity } from "@/lib/team/activity";
+import { mfaDetour, teamMfaGate } from "@/lib/team/mfa-session";
 import {
   assertRoleHas,
   PermissionError,
@@ -138,9 +138,10 @@ export async function requireUser(): Promise<SessionUser> {
 }
 
 /**
- * An active team member. Portal members are sent to their own surface. Pending
- * onboarding is sent back to the invite flow. Locked / deactivated accounts are
- * signed out of the team surface.
+ * An active team member whose session has satisfied two-factor authentication.
+ * Portal members are sent to their own surface. Pending onboarding is sent back
+ * to the invite flow. Locked / deactivated accounts are signed out of the team
+ * surface.
  */
 export async function requireAdmin(): Promise<AdminUser> {
   const user = await requireUser();
@@ -179,10 +180,15 @@ export async function requireAdmin(): Promise<AdminUser> {
     redirect("/login");
   }
 
-  // Members who skipped MFA are prompted again at sign-in (handled there);
-  // once inside, they may continue operational work.
+  // Two-factor is enforced here, not only at the sign-in form: a session that
+  // never answered its factor challenge cannot reach a team surface by any
+  // route, and Owners and Admins without a factor are sent back to enrol.
+  const detour = mfaDetour(await teamMfaGate(team));
+  if (detour) redirect(detour);
 
-  return { id: user.id, email: user.email, team };
+  // The contact address, not the Supabase Auth address — the two differ when a
+  // portal account already claimed this email (see lib/team/auth-identity.ts).
+  return { id: user.id, email: team.email, team };
 }
 
 /** Same as requireAdmin, then refuses when the role lacks the permission. */
@@ -225,16 +231,15 @@ export async function homeForTeamSession(): Promise<string> {
     if (team.migrated_from_single_admin) return "/onboarding/continue";
     return "/login?error=pending";
   }
+
+  // Two-factor comes before everything else a signed-in session can reach.
+  const detour = mfaDetour(await teamMfaGate(team));
+  if (detour) return detour;
+
   if (team.force_password_reset) return "/account/password";
-  if (
-    (team.role === "owner" || team.role === "admin") &&
-    !team.mfa_enabled
-  ) {
-    return "/onboarding/continue";
-  }
   if (team.role === "member" && !team.mfa_enabled && team.mfa_skipped) {
-    // Prompt again at the next sign-in (Members may skip once per session cycle).
-    return "/onboarding/continue";
+    // Members may skip, and are asked again at the next sign-in.
+    return "/onboarding/continue?prompt=mfa";
   }
   return "/attention";
 }

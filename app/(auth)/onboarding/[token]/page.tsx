@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 
+import { AuthCard } from "@/components/auth/auth-card";
 import { OnboardingWizard } from "@/components/onboarding/wizard";
 import { getTeamUserByInviteHash, updateTeamUser } from "@/lib/db/team";
 import { APP_NAME } from "@/lib/constants";
@@ -21,13 +22,11 @@ export default async function OnboardingInvitePage({
 
   if (!row) {
     return (
-      <main className="flex min-h-screen items-center justify-center bg-background px-4">
-        <div className="panel max-w-md rounded-2xl px-7 py-8 text-center">
-          <p className="text-sm text-flag-critical">
-            That invitation is not valid, or it has already been used.
-          </p>
-        </div>
-      </main>
+      <AuthCard title="That invitation is not valid">
+        <p className="text-center text-sm text-flag-critical">
+          It may already have been used. Ask an Owner or Admin to resend it.
+        </p>
+      </AuthCard>
     );
   }
 
@@ -37,13 +36,11 @@ export default async function OnboardingInvitePage({
   ) {
     await updateTeamUser(row.id, { invitation_status: "expired" });
     return (
-      <main className="flex min-h-screen items-center justify-center bg-background px-4">
-        <div className="panel max-w-md rounded-2xl px-7 py-8 text-center">
-          <p className="text-sm text-flag-critical">
-            That invitation has expired. Ask an Owner or Admin to resend it.
-          </p>
-        </div>
-      </main>
+      <AuthCard title="That invitation has expired">
+        <p className="text-center text-sm text-flag-critical">
+          Ask an Owner or Admin to resend it. Invitations last seven days.
+        </p>
+      </AuthCard>
     );
   }
 
@@ -57,22 +54,19 @@ export default async function OnboardingInvitePage({
       : row.onboarding_step;
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-background px-4 py-10">
-      <div className="panel w-full max-w-xl rounded-2xl px-7 py-8">
-        <p className="text-center text-lg font-semibold tracking-[0.25em] text-brand-500 uppercase">
-          {APP_NAME}
-        </p>
-        <div className="mt-8">
-          <OnboardingWizard
-            token={token}
-            initialStep={step}
-            role={row.role}
-            email={row.email}
-            skipPassword={Boolean(row.password_set_at)}
-            defaultTimezone="America/New_York"
-          />
-        </div>
-      </div>
-    </main>
+    <AuthCard
+      width="wide"
+      title="Set up your team account"
+      subtitle="Four steps: a password, who you are, two-factor, and what the work is."
+    >
+      <OnboardingWizard
+        token={token}
+        initialStep={step}
+        role={row.role}
+        email={row.email}
+        skipPassword={Boolean(row.password_set_at)}
+        defaultTimezone="America/New_York"
+      />
+    </AuthCard>
   );
 }

@@ -3,15 +3,15 @@
 @import "shadcn/tailwind.css";
 
 /*
- * Divine Acquisition's brand palette, with the component vocabulary ported from
- * the DA repo.
+ * Divine Acquisition's palette, taken from the hiring site in the DA repo so the
+ * ledger, the portal, and the careers pages read as one product.
  *
- * The ramp is deliberately split. DA Purple (#6A00FF, brand-700) is heavily
- * saturated and vibrates against dark backgrounds when used at scale, so it is
- * confined to filled primary buttons and the single most important emphasis on a
- * screen. DA Light Purple (#937DFF, brand-500) carries everything else: section
- * headers, active navigation, focus rings, links, icon accents, card top borders.
- * Deep Purple (#241442, brand-950) fills table headers and dark panels.
+ * #9A88FC (brand-500) is the prime colour and the action colour — it is light
+ * enough that near-black type reads better on it than white, which is why filled
+ * buttons invert their label. brand-300 carries eyebrows, section labels, and
+ * links; brand-950 is the deep fill behind table headers and active navigation.
+ * Neutrals are very slightly violet-shifted (ink-*) so the brand sits naturally
+ * on top of them, and status green / amber / red never touch interface chrome.
  *
  * The app is permanently dark. There is no light theme and no toggle.
  */
@@ -19,25 +19,33 @@
 @custom-variant dark (&:is(.dark *));
 
 @theme {
-  --color-brand-100: #efeaff;
-  --color-brand-200: #d6ccff;
-  --color-brand-300: #c1b2ff;
-  --color-brand-400: #a695ff;
-  --color-brand-500: #937dff; /* DA Light Purple — the default accent */
-  --color-brand-600: #7c56ff;
-  --color-brand-700: #6a00ff; /* DA Purple — filled primary buttons only */
-  --color-brand-800: #5200c4;
-  --color-brand-900: #3b0a80;
-  --color-brand-950: #241442; /* Deep Purple — table headers, dark panels */
+  --color-brand-50: #f5f3ff;
+  --color-brand-100: #ebe7ff;
+  --color-brand-200: #d9d1fe;
+  --color-brand-300: #c3b6fe; /* eyebrows, section labels, links */
+  --color-brand-400: #ae9dfd;
+  --color-brand-500: #9a88fc; /* the prime colour and every filled action */
+  --color-brand-600: #7e67f2;
+  --color-brand-700: #6650d8;
+  --color-brand-800: #5140a9;
+  --color-brand-900: #3a2f78;
+  --color-brand-950: #1e1940; /* table headers, active navigation */
+
+  /* Neutrals, violet-shifted a touch so the brand sits naturally on top. */
+  --color-ink-950: #07070b; /* page */
+  --color-ink-900: #0b0a11; /* panels and cards */
+  --color-ink-850: #100f18; /* popovers, muted surfaces */
+  --color-ink-800: #16151f;
+  --color-ink-700: #1e1d29;
 
   /* Status only, for metric values and status indicators. Never interface chrome. */
-  --color-flag-good: #7aff8a;
-  --color-flag-warning: #ffd06a;
-  --color-flag-critical: #ff6a6a;
+  --color-flag-good: #52d6a4;
+  --color-flag-warning: #f0b45c;
+  --color-flag-critical: #f87171;
 
-  /* Text tones. */
-  --color-silver: #b0aec0;
-  --color-dim: #6e6c80;
+  /* Text tones: body copy and the quieter grade beneath it. */
+  --color-silver: #a3a3a3;
+  --color-dim: #737373;
 
   --radius-4xl: 1.75rem;
 }
@@ -88,47 +96,48 @@
 
 :root,
 .dark {
-  --brand: #937dff;
-  --brand-rgb: 147, 125, 255;
-  --brand-deep: #6a00ff;
-  --page: #0b0b0f;
-  --hairline: #2a2a3a;
+  --brand: #9a88fc;
+  --brand-rgb: 154, 136, 252;
+  --brand-deep: #6650d8;
+  --page: #07070b;
+  --hairline: rgba(255, 255, 255, 0.07);
 
-  --background: #0b0b0f;
-  --foreground: #b0aec0;
-  --card: #1c1c26;
+  --background: #07070b;
+  --foreground: #a3a3a3;
+  --card: #0b0a11;
   --card-foreground: #ffffff;
-  --popover: #151520;
+  --popover: #100f18;
   --popover-foreground: #ffffff;
-  --primary: #6a00ff;
-  --primary-foreground: #ffffff;
-  --secondary: #241442;
-  --secondary-foreground: #c1b2ff;
-  --muted: #151520;
-  --muted-foreground: #6e6c80;
-  --accent: #241442;
-  --accent-foreground: #c1b2ff;
-  --destructive: #ff6a6a;
-  --destructive-foreground: #0b0b0f;
-  --border: #2a2a3a;
-  --input: #2a2a3a;
-  --ring: #937dff;
+  /* Near-black type on the light brand — white washes out against #9A88FC. */
+  --primary: #9a88fc;
+  --primary-foreground: #07070b;
+  --secondary: #1e1940;
+  --secondary-foreground: #c3b6fe;
+  --muted: #100f18;
+  --muted-foreground: #737373;
+  --accent: #1e1940;
+  --accent-foreground: #c3b6fe;
+  --destructive: #f87171;
+  --destructive-foreground: #07070b;
+  --border: rgba(255, 255, 255, 0.07);
+  --input: rgba(255, 255, 255, 0.1);
+  --ring: #9a88fc;
   --radius: 0.75rem;
 
-  --chart-1: #937dff;
-  --chart-2: #7aff8a;
-  --chart-3: #ffd06a;
-  --chart-4: #ff6a6a;
-  --chart-5: #b0aec0;
+  --chart-1: #9a88fc;
+  --chart-2: #52d6a4;
+  --chart-3: #f0b45c;
+  --chart-4: #f87171;
+  --chart-5: #a3a3a3;
 
-  --sidebar: #151520;
-  --sidebar-foreground: #b0aec0;
-  --sidebar-primary: #937dff;
-  --sidebar-primary-foreground: #0b0b0f;
-  --sidebar-accent: #241442;
-  --sidebar-accent-foreground: #c1b2ff;
-  --sidebar-border: #2a2a3a;
-  --sidebar-ring: #937dff;
+  --sidebar: #0b0a11;
+  --sidebar-foreground: #a3a3a3;
+  --sidebar-primary: #9a88fc;
+  --sidebar-primary-foreground: #07070b;
+  --sidebar-accent: #1e1940;
+  --sidebar-accent-foreground: #c3b6fe;
+  --sidebar-border: rgba(255, 255, 255, 0.07);
+  --sidebar-ring: #9a88fc;
 }
 
 @layer base {
@@ -225,7 +234,7 @@
       rgba(255, 255, 255, 0.04) 0%,
       rgba(255, 255, 255, 0.015) 100%
     ),
-    #1c1c26;
+    #0b0a11;
   border: 1px solid var(--hairline);
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.05),
@@ -303,12 +312,38 @@
   }
 }
 
+@keyframes ping {
+  75%,
+  100% {
+    transform: scale(2);
+    opacity: 0;
+  }
+}
+
+@keyframes drift {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0);
+  }
+  50% {
+    transform: translate3d(0, -18px, 0);
+  }
+}
+
 .animate-rise {
   animation: riseIn 0.7s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
 .animate-fade {
   animation: fadeIn 0.9s ease both;
+}
+
+.animate-ping {
+  animation: ping 1.6s cubic-bezier(0, 0, 0.2, 1) infinite;
+}
+
+.animate-drift {
+  animation: drift 14s ease-in-out infinite;
 }
 
 .delay-1 {
@@ -322,6 +357,12 @@
 }
 .delay-4 {
   animation-delay: 0.24s;
+}
+.delay-5 {
+  animation-delay: 0.3s;
+}
+.delay-6 {
+  animation-delay: 0.36s;
 }
 
 @media (prefers-reduced-motion: reduce) {

@@ -45,13 +45,17 @@ const GENERIC_FAILURE = "Invalid email or password.";
 const LOCKED_MESSAGE =
   "This account is locked after too many failed sign-in attempts. An Owner has been notified.";
 const CONFIG_FAILURE =
-  "Sign-in is unavailable: SUPABASE_SERVICE_ROLE_KEY is not set on this deployment.";
+  "Sign-in is unavailable: Supabase server credentials are not set on this deployment.";
 
 export type SignInState = { error: string | null };
 
 function failureState(error: unknown): SignInState {
   const message = error instanceof Error ? error.message : "";
-  if (/SUPABASE_SERVICE_ROLE_KEY|Supabase is not configured/i.test(message)) {
+  if (
+    /SUPABASE_SERVICE_ROLE_KEY|SUPABASE_SECRET_KEY|Supabase is not configured/i.test(
+      message
+    )
+  ) {
     console.error("sign-in blocked by missing Supabase server config:", message);
     return { error: CONFIG_FAILURE };
   }

@@ -225,10 +225,12 @@ export async function requireClient(): Promise<PortalSession> {
   };
 }
 
-/** Where a successful team sign-in should land. */
-export async function homeForTeamSession(): Promise<string> {
-  const team = await getTeamMembership();
-  if (!team) return "/login";
+/**
+ * Where a known team membership should land. Prefer this inside sign-in
+ * actions: cookie-backed getTeamMembership() can still look empty in the same
+ * request that just wrote the session cookies.
+ */
+export async function homeForTeamMembership(team: TeamUser): Promise<string> {
   if (team.status === "locked") return "/login?error=locked";
   if (team.status === "deactivated") return "/login?error=deactivated";
   if (team.status === "pending" || team.onboarding_step !== "done") {
@@ -246,6 +248,13 @@ export async function homeForTeamSession(): Promise<string> {
     return "/onboarding/continue?prompt=mfa";
   }
   return "/attention";
+}
+
+/** Where a successful team sign-in should land, from the live session. */
+export async function homeForTeamSession(): Promise<string> {
+  const team = await getTeamMembership();
+  if (!team) return "/login";
+  return homeForTeamMembership(team);
 }
 
 /** Where a successful portal sign-in should land. */

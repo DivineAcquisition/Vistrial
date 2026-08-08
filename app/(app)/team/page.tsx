@@ -15,6 +15,8 @@ import type { TeamUser } from "@/types/database";
 
 export const metadata = { title: "Team" };
 
+export const dynamic = "force-dynamic";
+
 function statusLabel(user: TeamUser): string {
   if (user.status === "locked") return "Locked";
   if (user.status === "deactivated") return "Deactivated";

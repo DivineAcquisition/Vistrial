@@ -12,6 +12,8 @@ import {
 import { roleHas } from "@/lib/team/permissions";
 import { helperClass } from "@/lib/ui";
 
+export const dynamic = "force-dynamic";
+
 export default async function TeamUserDetailPage({
   params,
 }: {

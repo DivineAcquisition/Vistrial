@@ -8,7 +8,7 @@ import {
   bootstrapOwnerIfNeeded,
   getTeamMembership,
   homeForPortalSession,
-  homeForTeamSession,
+  homeForTeamMembership,
 } from "@/lib/auth";
 import { listClientUsersByEmail } from "@/lib/db/portal";
 import {
@@ -59,6 +59,10 @@ function failureState(error: unknown): SignInState {
     console.error("sign-in blocked by missing Supabase server config:", message);
     return { error: CONFIG_FAILURE };
   }
+  if (/invalid jwt|invalid api key|no api key found/i.test(message)) {
+    console.error("sign-in blocked by rejected Supabase API key:", message);
+    return { error: CONFIG_FAILURE };
+  }
   console.error("sign-in failed:", message || error);
   return { error: GENERIC_FAILURE };
 }
@@ -105,29 +109,37 @@ async function recordTeamSignIn(
 ): Promise<void> {
   const { ipAddress, userAgent } = await requestMeta();
 
-  await clearFailedSignIns(membership.id);
-  await updateTeamUser(membership.id, {
-    last_sign_in_at: new Date().toISOString(),
-    failed_sign_in_count: 0,
-  });
+  try {
+    await clearFailedSignIns(membership.id);
+    await updateTeamUser(membership.id, {
+      last_sign_in_at: new Date().toISOString(),
+      failed_sign_in_count: 0,
+    });
 
-  const db = createServiceClient();
-  await appendActivity(db, {
-    actorTeamUserId: membership.id,
-    actorEmail: membership.email,
-    action: "sign_in",
-    subjectTeamUserId: membership.id,
-    ipAddress,
-  });
+    const db = createServiceClient();
+    await appendActivity(db, {
+      actorTeamUserId: membership.id,
+      actorEmail: membership.email,
+      action: "sign_in",
+      subjectTeamUserId: membership.id,
+      ipAddress,
+    });
 
-  await insertTeamSession({
-    team_user_id: membership.id,
-    auth_session_id: accessToken ? hashToken(accessToken.slice(0, 32)) : null,
-    user_agent: userAgent,
-    ip_address: ipAddress,
-    // GAP: no geo-IP provider configured; approximate location left null.
-    approx_location: null,
-  });
+    await insertTeamSession({
+      team_user_id: membership.id,
+      auth_session_id: accessToken ? hashToken(accessToken.slice(0, 32)) : null,
+      user_agent: userAgent,
+      ip_address: ipAddress,
+      // GAP: no geo-IP provider configured; approximate location left null.
+      approx_location: null,
+    });
+  } catch (error) {
+    // Bookkeeping must not refuse a password that Auth already accepted.
+    console.error(
+      "recordTeamSignIn failed:",
+      error instanceof Error ? error.message : error
+    );
+  }
 }
 
 /**
@@ -230,7 +242,9 @@ export async function signInAction(
 
     await recordTeamSignIn(membership, signedIn.session?.access_token ?? null);
 
-    const home = await homeForTeamSession();
+    // Use the membership we already loaded — do not re-read the session cookie
+    // in this same request; it can still look empty and bounce us to /login.
+    const home = await homeForTeamMembership(membership);
     if (home.startsWith("/login")) {
       await supabase.auth.signOut();
       const err = new URL(home, "http://local").searchParams.get("error");
@@ -373,7 +387,7 @@ export async function verifyMfaAction(
   await recordTeamSignIn(membership, verified.data?.access_token ?? null);
 
   const requested = safeDestination(parsed.data.next ?? null, TEAM_HOME);
-  const home = await homeForTeamSession();
+  const home = await homeForTeamMembership(membership);
   if (home.startsWith("/login")) {
     await supabase.auth.signOut();
     return { error: GENERIC_FAILURE, notice: null };

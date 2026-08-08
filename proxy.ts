@@ -2,6 +2,7 @@ import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
 import { supabaseEnv } from "@/lib/supabase/env";
+import { fetchForSupabaseKey } from "@/lib/supabase/fetch";
 
 const LOGIN_PATH = "/login";
 const PORTAL_LOGIN_PATH = "/portal/login";
@@ -34,6 +35,7 @@ export async function proxy(request: NextRequest) {
   let response = NextResponse.next({ request });
 
   const supabase = createServerClient(env.url, env.publishableKey, {
+    global: { fetch: fetchForSupabaseKey(env.publishableKey) },
     cookies: {
       getAll() {
         return request.cookies.getAll();

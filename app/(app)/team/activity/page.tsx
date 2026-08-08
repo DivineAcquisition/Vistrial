@@ -8,6 +8,8 @@ import { helperClass, selectClass } from "@/lib/ui";
 
 export const metadata = { title: "Activity log" };
 
+export const dynamic = "force-dynamic";
+
 const ACTIONS = [
   "sign_in",
   "sign_in_failed",

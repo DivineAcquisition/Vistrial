@@ -4,6 +4,7 @@ import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 
 import { supabaseEnv } from "@/lib/supabase/env";
+import { fetchForSupabaseKey } from "@/lib/supabase/fetch";
 
 /**
  * Session-aware server client. One per render — never shared across requests,
@@ -21,6 +22,7 @@ export async function createSessionClient() {
   const cookieStore = await cookies();
 
   return createServerClient(env.url, env.publishableKey, {
+    global: { fetch: fetchForSupabaseKey(env.publishableKey) },
     cookies: {
       getAll() {
         return cookieStore.getAll();

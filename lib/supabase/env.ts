@@ -21,13 +21,19 @@ export function supabaseUrl(): string {
   return firstEnv("NEXT_PUBLIC_SUPABASE_URL", "SUPABASE_URL");
 }
 
-/** Anon / publishable key for session clients. */
+/**
+ * Anon / publishable key for session clients.
+ *
+ * Prefer the classic JWT `anon` key when both are present — Kong and older
+ * gateways always accept it as `Authorization: Bearer`. The Marketplace
+ * `sb_publishable_…` key still works once the fetch wrapper strips Bearer.
+ */
 export function supabasePublishableKey(): string {
   return firstEnv(
-    "NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY",
     "NEXT_PUBLIC_SUPABASE_ANON_KEY",
-    "SUPABASE_PUBLISHABLE_KEY",
-    "SUPABASE_ANON_KEY"
+    "SUPABASE_ANON_KEY",
+    "NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY",
+    "SUPABASE_PUBLISHABLE_KEY"
   );
 }
 

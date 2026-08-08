@@ -6,6 +6,7 @@ import {
   supabaseServiceRoleKey,
   supabaseUrl,
 } from "@/lib/supabase/env";
+import { fetchForSupabaseKey } from "@/lib/supabase/fetch";
 
 /**
  * Service-role client. Bypasses RLS, so it must never be imported into a
@@ -23,5 +24,6 @@ export function createServiceClient() {
 
   return createSupabaseClient(url, serviceRoleKey, {
     auth: { persistSession: false },
+    global: { fetch: fetchForSupabaseKey(serviceRoleKey) },
   });
 }

@@ -5,6 +5,8 @@ import { helperClass } from "@/lib/ui";
 
 export const metadata = { title: "Account" };
 
+export const dynamic = "force-dynamic";
+
 export default async function AccountPage() {
   const admin = await requireAdmin();
   const sessions = await listTeamSessions(admin.team.id);

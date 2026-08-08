@@ -1,5 +1,6 @@
 "use server";
 
+import { isRedirectError } from "next/dist/client/components/redirect-error";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 
@@ -43,13 +44,25 @@ const PORTAL_HOME = "/portal";
 const GENERIC_FAILURE = "Invalid email or password.";
 const LOCKED_MESSAGE =
   "This account is locked after too many failed sign-in attempts. An Owner has been notified.";
+const CONFIG_FAILURE =
+  "Sign-in is unavailable: SUPABASE_SERVICE_ROLE_KEY is not set on this deployment.";
+
+export type SignInState = { error: string | null };
+
+function failureState(error: unknown): SignInState {
+  const message = error instanceof Error ? error.message : "";
+  if (/SUPABASE_SERVICE_ROLE_KEY|Supabase is not configured/i.test(message)) {
+    console.error("sign-in blocked by missing Supabase server config:", message);
+    return { error: CONFIG_FAILURE };
+  }
+  console.error("sign-in failed:", message || error);
+  return { error: GENERIC_FAILURE };
+}
 
 const credentialsSchema = z.object({
   email: z.string().trim().min(1),
   password: z.string().min(1),
 });
-
-export type SignInState = { error: string | null };
 
 function safeDestination(
   value: FormDataEntryValue | null,
@@ -125,102 +138,108 @@ export async function signInAction(
   _previous: SignInState,
   formData: FormData
 ): Promise<SignInState> {
-  const parsed = credentialsSchema.safeParse({
-    email: formData.get("email"),
-    password: formData.get("password"),
-  });
-
-  if (!parsed.success) return { error: GENERIC_FAILURE };
-
-  const { ipAddress } = await requestMeta();
-  const team = await getTeamUserByEmail(parsed.data.email);
-
-  if (team?.status === "locked") {
-    return { error: LOCKED_MESSAGE };
-  }
-
-  if (team?.status === "deactivated") {
-    // Same generic copy — do not confirm the account exists as deactivated.
-    return { error: GENERIC_FAILURE };
-  }
-
-  const requested = safeDestination(formData.get("next"), TEAM_HOME);
-  const supabase = await createSessionClient();
-
-  let signedIn: Awaited<
-    ReturnType<typeof supabase.auth.signInWithPassword>
-  >["data"] | null = null;
-
-  for (const address of await authCandidates(parsed.data.email, team)) {
-    const { data, error } = await supabase.auth.signInWithPassword({
-      email: address,
-      password: parsed.data.password,
+  try {
+    const parsed = credentialsSchema.safeParse({
+      email: formData.get("email"),
+      password: formData.get("password"),
     });
-    if (!error && data.user) {
-      signedIn = data;
-      break;
+
+    if (!parsed.success) return { error: GENERIC_FAILURE };
+
+    const { ipAddress } = await requestMeta();
+    const team = await getTeamUserByEmail(parsed.data.email);
+
+    if (team?.status === "locked") {
+      return { error: LOCKED_MESSAGE };
     }
-  }
 
-  if (!signedIn?.user) {
-    if (team && team.status !== "pending") {
-      const { locked } = await recordFailedSignIn(team, ipAddress);
-      if (locked) return { error: LOCKED_MESSAGE };
+    if (team?.status === "deactivated") {
+      // Same generic copy — do not confirm the account exists as deactivated.
+      return { error: GENERIC_FAILURE };
     }
-    return { error: GENERIC_FAILURE };
+
+    const requested = safeDestination(formData.get("next"), TEAM_HOME);
+    const supabase = await createSessionClient();
+
+    let signedIn: Awaited<
+      ReturnType<typeof supabase.auth.signInWithPassword>
+    >["data"] | null = null;
+
+    for (const address of await authCandidates(parsed.data.email, team)) {
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: address,
+        password: parsed.data.password,
+      });
+      if (!error && data.user) {
+        signedIn = data;
+        break;
+      }
+    }
+
+    if (!signedIn?.user) {
+      if (team && team.status !== "pending") {
+        const { locked } = await recordFailedSignIn(team, ipAddress);
+        if (locked) return { error: LOCKED_MESSAGE };
+      }
+      return { error: GENERIC_FAILURE };
+    }
+
+    let membership = team ?? (await getTeamUserByAuthId(signedIn.user.id));
+
+    // Not a team identity. If it is a portal one with an open window, send them
+    // to the portal rather than rejecting a password that was correct.
+    if (!membership) {
+      const home = await homeForPortalSession();
+      if (home === PORTAL_HOME) redirect(PORTAL_HOME);
+
+      // The very first administrator, hand-made in the Supabase dashboard before
+      // team accounts existed, has no row yet. This is the one path that makes one.
+      membership = await bootstrapOwnerIfNeeded({
+        id: signedIn.user.id,
+        email: signedIn.user.email ?? parsed.data.email,
+      });
+    }
+
+    if (!membership) {
+      await supabase.auth.signOut();
+      return { error: GENERIC_FAILURE };
+    }
+
+    if (membership.status === "deactivated") {
+      await supabase.auth.signOut();
+      return { error: GENERIC_FAILURE };
+    }
+
+    if (membership.status === "locked") {
+      await supabase.auth.signOut();
+      return { error: LOCKED_MESSAGE };
+    }
+
+    // A verified factor exists but this session has not answered it. Hold the
+    // sign-in — no activity entry, no tracked session — until it does.
+    const gate = await teamMfaGate(membership);
+    if (gate.state === "challenge") {
+      const url = new URL(MFA_CHALLENGE_PATH, "http://local");
+      if (requested !== TEAM_HOME) url.searchParams.set("next", requested);
+      redirect(`${url.pathname}${url.search}`);
+    }
+
+    await recordTeamSignIn(membership, signedIn.session?.access_token ?? null);
+
+    const home = await homeForTeamSession();
+    if (home.startsWith("/login")) {
+      await supabase.auth.signOut();
+      const err = new URL(home, "http://local").searchParams.get("error");
+      if (err === "locked") return { error: LOCKED_MESSAGE };
+      return { error: GENERIC_FAILURE };
+    }
+
+    redirect(requested === TEAM_HOME ? home : requested);
+  } catch (error) {
+    // redirect() throws; that is success, not a failed action.
+    if (isRedirectError(error)) throw error;
+    return failureState(error);
   }
-
-  let membership = team ?? (await getTeamUserByAuthId(signedIn.user.id));
-
-  // Not a team identity. If it is a portal one with an open window, send them
-  // to the portal rather than rejecting a password that was correct.
-  if (!membership) {
-    const home = await homeForPortalSession();
-    if (home === PORTAL_HOME) redirect(PORTAL_HOME);
-
-    // The very first administrator, hand-made in the Supabase dashboard before
-    // team accounts existed, has no row yet. This is the one path that makes one.
-    membership = await bootstrapOwnerIfNeeded({
-      id: signedIn.user.id,
-      email: signedIn.user.email ?? parsed.data.email,
-    });
-  }
-
-  if (!membership) {
-    await supabase.auth.signOut();
-    return { error: GENERIC_FAILURE };
-  }
-
-  if (membership.status === "deactivated") {
-    await supabase.auth.signOut();
-    return { error: GENERIC_FAILURE };
-  }
-
-  if (membership.status === "locked") {
-    await supabase.auth.signOut();
-    return { error: LOCKED_MESSAGE };
-  }
-
-  // A verified factor exists but this session has not answered it. Hold the
-  // sign-in — no activity entry, no tracked session — until it does.
-  const gate = await teamMfaGate(membership);
-  if (gate.state === "challenge") {
-    const url = new URL(MFA_CHALLENGE_PATH, "http://local");
-    if (requested !== TEAM_HOME) url.searchParams.set("next", requested);
-    redirect(`${url.pathname}${url.search}`);
-  }
-
-  await recordTeamSignIn(membership, signedIn.session?.access_token ?? null);
-
-  const home = await homeForTeamSession();
-  if (home.startsWith("/login")) {
-    await supabase.auth.signOut();
-    const err = new URL(home, "http://local").searchParams.get("error");
-    if (err === "locked") return { error: LOCKED_MESSAGE };
-    return { error: GENERIC_FAILURE };
-  }
-
-  redirect(requested === TEAM_HOME ? home : requested);
 }
 
 /** Portal sign-in — the dedicated client surface. */
@@ -228,42 +247,47 @@ export async function signInPortalAction(
   _previous: SignInState,
   formData: FormData
 ): Promise<SignInState> {
-  const parsed = credentialsSchema.safeParse({
-    email: formData.get("email"),
-    password: formData.get("password"),
-  });
-
-  if (!parsed.success) return { error: GENERIC_FAILURE };
-
-  const supabase = await createSessionClient();
-  const portalFirst = [
-    ...(await listClientUsersByEmail(parsed.data.email)
-      .then((rows) => rows.map(authAddress))
-      .catch(() => [])),
-    parsed.data.email.trim(),
-  ];
-
-  let signedIn = false;
-  for (const address of [...new Set(portalFirst.map((a) => a.toLowerCase()))]) {
-    const { error } = await supabase.auth.signInWithPassword({
-      email: address,
-      password: parsed.data.password,
+  try {
+    const parsed = credentialsSchema.safeParse({
+      email: formData.get("email"),
+      password: formData.get("password"),
     });
-    if (!error) {
-      signedIn = true;
-      break;
+
+    if (!parsed.success) return { error: GENERIC_FAILURE };
+
+    const supabase = await createSessionClient();
+    const portalFirst = [
+      ...(await listClientUsersByEmail(parsed.data.email)
+        .then((rows) => rows.map(authAddress))
+        .catch(() => [])),
+      parsed.data.email.trim(),
+    ];
+
+    let signedIn = false;
+    for (const address of [...new Set(portalFirst.map((a) => a.toLowerCase()))]) {
+      const { error } = await supabase.auth.signInWithPassword({
+        email: address,
+        password: parsed.data.password,
+      });
+      if (!error) {
+        signedIn = true;
+        break;
+      }
     }
+
+    if (!signedIn) return { error: GENERIC_FAILURE };
+
+    const home = await homeForPortalSession();
+    if (home !== PORTAL_HOME) {
+      await supabase.auth.signOut();
+      return { error: "This account no longer has access." };
+    }
+
+    redirect(PORTAL_HOME);
+  } catch (error) {
+    if (isRedirectError(error)) throw error;
+    return failureState(error);
   }
-
-  if (!signedIn) return { error: GENERIC_FAILURE };
-
-  const home = await homeForPortalSession();
-  if (home !== PORTAL_HOME) {
-    await supabase.auth.signOut();
-    return { error: "This account no longer has access." };
-  }
-
-  redirect(PORTAL_HOME);
 }
 
 /* -------------------------------------------------------------------------- */

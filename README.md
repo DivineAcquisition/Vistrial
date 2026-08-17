@@ -34,8 +34,8 @@ never white on the brand fill.
 | `src/components/brand/logo.tsx` | DA trident + wordmark |
 
 ## Build order
-1. Foundation (this)
-2. Schema + multi-tenancy + RLS
+1. Foundation
+2. Schema + multi-tenancy + RLS (this)
 3. Auth + org membership
 4. App shell and navigation
 5. Readiness scoring engine
@@ -45,3 +45,13 @@ never white on the brand fill.
 9. Pre-Call Brief
 10. Follow-up drafting
 11. Reporting
+
+## Database
+
+The Case File spine lives in `supabase/migrations/`. Every table is org-scoped
+with RLS. Scores are append-only history; money is bigint cents. See
+[`supabase/README.md`](./supabase/README.md).
+
+```bash
+npm run db:verify
+```

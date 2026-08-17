@@ -21,7 +21,7 @@ export function AuthCard({
   /** Small pill above the title; defaults to the workspace name. */
   eyebrowLabel?: string;
   width?: "narrow" | "wide";
-  children: React.ReactNode;
+  children?: React.ReactNode;
 }) {
   return (
     <div className="relative min-h-screen bg-ink-950 text-white antialiased">
@@ -47,7 +47,7 @@ export function AuthCard({
             ) : null}
           </div>
 
-          <div className="mt-6">{children}</div>
+          {children ? <div className="mt-6">{children}</div> : null}
         </div>
 
         <p className="animate-fade delay-2 mt-8 text-xs text-dim">

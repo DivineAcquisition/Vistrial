@@ -19,10 +19,13 @@ run() {
 echo "Auth stub..."
 run "${ROOT}/supabase/tests/local-auth-stub.sql"
 
-echo "Migration..."
-run "${ROOT}/supabase/migrations/20260817040000_case_file_spine.sql"
+echo "Migrations..."
+for f in "${ROOT}/supabase/migrations/"*.sql; do
+  echo "  $(basename "$f")"
+  run "$f"
+done
 
-echo "RLS enabled on all twelve tables?"
+echo "RLS enabled on all thirteen tables?"
 "${PSQL[@]}" -d "${DB_NAME}" -c "
 SELECT c.relname, c.relrowsecurity
 FROM pg_class c
@@ -30,7 +33,7 @@ JOIN pg_namespace n ON n.oid = c.relnamespace
 WHERE n.nspname = 'public'
   AND c.relkind = 'r'
   AND c.relname IN (
-    'organizations','org_members','score_configs','leads','readiness_scores',
+    'organizations','org_members','org_invites','score_configs','leads','readiness_scores',
     'touches','calls','call_extractions','objections','next_actions',
     'revenue_log','webhook_events'
   )
@@ -46,4 +49,7 @@ run "${ROOT}/supabase/tests/verify-constraints.sql"
 echo "RLS checks..."
 run "${ROOT}/supabase/tests/verify-rls.sql"
 
-echo "OK: schema, seed, triggers, and RLS checks passed."
+echo "Invite checks..."
+run "${ROOT}/supabase/tests/verify-invites.sql"
+
+echo "OK: schema, seed, triggers, RLS, and invite checks passed."

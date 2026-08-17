@@ -1,5 +1,5 @@
 -- DEV ONLY. Do not run against production.
--- Placeholder owner auth user id is replaced in Prompt 3 once sign-in exists.
+-- Placeholder owner auth user id is replaced once a real owner signs in.
 
 CREATE EXTENSION IF NOT EXISTS pgcrypto;
 

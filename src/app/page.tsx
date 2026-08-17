@@ -1,3 +1,4 @@
+import Link from "next/link";
 import Logo from "@/components/brand/logo";
 import { Backdrop } from "@/components/ui/backdrop";
 import { KpiCard, KpiGrid } from "@/components/ui/kpi-card";
@@ -34,12 +35,12 @@ export default function Home() {
           </div>
           <p className="mt-4 text-sm leading-relaxed text-silver">
             Dark theme, hiring-site surfaces, and Supabase clients are wired.
-            Schema and tenancy come next.
+            Sign in to open the workspace.
           </p>
           <div className="mt-6 flex justify-center">
-            <span className={`${btnPrimary} ${btnSizeMd} w-full`}>
-              Open case file
-            </span>
+            <Link href="/login" className={`${btnPrimary} ${btnSizeMd} w-full`}>
+              Sign in
+            </Link>
           </div>
         </Panel>
 

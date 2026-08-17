@@ -35,9 +35,9 @@ never white on the brand fill.
 
 ## Build order
 1. Foundation
-2. Schema + multi-tenancy + RLS (this)
-3. Auth + org membership
-4. App shell and navigation
+2. Schema + multi-tenancy + RLS
+3. Auth + org membership (this)
+4. App shell and the Inbox
 5. Readiness scoring engine
 6. GHL sync and webhook ingestion
 7. Case File surfaces
@@ -49,8 +49,9 @@ never white on the brand fill.
 ## Database
 
 The Case File spine lives in `supabase/migrations/`. Every table is org-scoped
-with RLS. Scores are append-only history; money is bigint cents. See
-[`supabase/README.md`](./supabase/README.md).
+with RLS. Scores are append-only history; money is bigint cents. Auth is
+invite-only; see [`supabase/AUTH.md`](./supabase/AUTH.md) for dashboard
+settings. `org_invites` is the membership invite table.
 
 ```bash
 npm run db:verify

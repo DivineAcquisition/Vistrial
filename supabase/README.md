@@ -1,7 +1,5 @@
 # Vistrial database
 
-Schema-only. Auth pages and API routes come later.
-
 Use a **dedicated Vistrial** Supabase project. Do not apply these migrations
 to the DivineACQ control-plane database.
 
@@ -19,5 +17,10 @@ Local verification (no hosted project required):
 bash supabase/tests/verify.sh
 ```
 
-`seed.sql` is **dev only**. The placeholder owner user id
-`11111111-1111-4111-8111-111111111111` is replaced when sign-in lands.
+Auth dashboard settings (email + password, magic link, invite-only sign-up,
+Site URL, `/auth/callback` redirects, 1-hour JWT) are documented in
+[`AUTH.md`](./AUTH.md).
+
+`seed.sql` is **dev only**. Replace the placeholder owner user id
+`11111111-1111-4111-8111-111111111111` with the real Auth user after the
+first owner signs in.

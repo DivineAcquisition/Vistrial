@@ -19,6 +19,20 @@ Next.js 16 (App Router) · TypeScript · Tailwind CSS v4 + shadcn/ui · Supabase
 Domains (later): `app.vistrial.io` (operator app), `admin.vistrial.io` (DA
 staff console). API routes live inside this Next app.
 
+## Visual language
+
+The app is **permanently dark**. Tokens and surfaces come from the Divine
+Acquisition hiring site: brand `#9A88FC` on ink `#07070B`, Inter for type,
+JetBrains Mono for tabular scores. Filled actions invert to near-black type —
+never white on the brand fill.
+
+| Where | What |
+|---|---|
+| `src/app/globals.css` | Palette, semantic tokens, `.panel`, motion |
+| `src/lib/ui.ts` | Button / input / eyebrow class recipes |
+| `src/components/ui` | Panels, KPI cards, tones, backdrop, shadcn |
+| `src/components/brand/logo.tsx` | DA trident + wordmark |
+
 ## Build order
 1. Foundation (this)
 2. Schema + multi-tenancy + RLS

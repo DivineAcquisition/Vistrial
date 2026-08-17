@@ -3,7 +3,7 @@ import { Inter } from "next/font/google";
 
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { APP_NAME } from "@/lib/constants";
+import { APP_NAME, APP_OWNER } from "@/lib/constants";
 
 import "./globals.css";
 
@@ -14,9 +14,8 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: `${APP_NAME} — Appointment Ledger`,
-  description:
-    "Pay-per-appointment ledger for Divine Acquisition: leads, response times, appointments, and billing.",
+  title: APP_NAME,
+  description: `${APP_NAME} by ${APP_OWNER}.`,
 };
 
 export default function RootLayout({

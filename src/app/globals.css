@@ -57,9 +57,9 @@
   --popover: hsl(0 0% 100%);
   --popover-foreground: hsl(240 10% 10%);
 
-  /* Vistrial purple ramp — #4F38FF */
-  --primary: hsl(250 84% 61%);
-  --primary-foreground: hsl(0 0% 100%);
+  /* Vistrial purple ramp */
+  --primary: #4f38ff;
+  --primary-foreground: #ffffff;
 
   --secondary: hsl(250 30% 96%);
   --secondary-foreground: hsl(250 40% 25%);
@@ -78,7 +78,7 @@
 
   --border: hsl(240 6% 90%);
   --input: hsl(240 6% 90%);
-  --ring: hsl(250 84% 61%);
+  --ring: #4f38ff;
 
   --radius: 0.625rem;
 }

@@ -19,7 +19,7 @@ export type MemberActionResult =
 
 async function requireManager() {
   const ctx = await getAuthContext();
-  if (!canManageMembers(ctx.role)) {
+  if (!canManageMembers(ctx.role, ctx.isPlatformAdmin)) {
     return { ok: false as const, error: "You do not have permission to manage members.", ctx };
   }
   return { ok: true as const, ctx };
@@ -133,12 +133,20 @@ export async function updateMemberRole(
   const gate = await requireManager();
   if (!gate.ok) return { ok: false, error: gate.error };
 
-  if (role === "owner" && gate.ctx.role !== "owner") {
+  if (role === "owner" && gate.ctx.role !== "owner" && !gate.ctx.isPlatformAdmin) {
     return { ok: false, error: "Only an owner can grant the owner role." };
   }
 
   const member = await loadMember(gate.ctx.org.id, memberId);
   if (!member) return { ok: false, error: "Member not found." };
+
+  const supabase = await createClient();
+  const { data: isAdmin } = await supabase.rpc("is_platform_admin_user", {
+    p_user_id: member.user_id,
+  });
+  if (isAdmin) {
+    return { ok: false, error: "Platform admins cannot be demoted or deactivated." };
+  }
 
   const blocked = await guardLastOwner({
     orgId: gate.ctx.org.id,
@@ -148,7 +156,6 @@ export async function updateMemberRole(
   });
   if (blocked) return { ok: false, error: blocked };
 
-  const supabase = await createClient();
   const { error } = await supabase
     .from("org_members")
     .update({ role })
@@ -174,6 +181,14 @@ export async function setMemberActive(
   const member = await loadMember(gate.ctx.org.id, memberId);
   if (!member) return { ok: false, error: "Member not found." };
 
+  const supabase = await createClient();
+  const { data: isAdmin } = await supabase.rpc("is_platform_admin_user", {
+    p_user_id: member.user_id,
+  });
+  if (isAdmin) {
+    return { ok: false, error: "Platform admins cannot be demoted or deactivated." };
+  }
+
   const blocked = await guardLastOwner({
     orgId: gate.ctx.org.id,
     member,
@@ -182,7 +197,6 @@ export async function setMemberActive(
   });
   if (blocked) return { ok: false, error: blocked };
 
-  const supabase = await createClient();
   const { error } = await supabase
     .from("org_members")
     .update({ active })

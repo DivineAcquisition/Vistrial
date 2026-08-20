@@ -24,6 +24,7 @@ export type AuthContext = {
   member: Membership;
   org: OrgSummary;
   role: OrgRole;
+  isPlatformAdmin: boolean;
   memberships: Membership[];
   cookieNeedsReset: boolean;
 };
@@ -36,6 +37,7 @@ export type ClientOrgState = {
   };
   org: OrgSummary;
   role: OrgRole;
+  isPlatformAdmin: boolean;
   memberId: string;
   memberships: Array<{
     memberId: string;

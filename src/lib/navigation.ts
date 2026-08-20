@@ -23,7 +23,8 @@ export const PRIMARY_NAV: NavItem[] = [
   { href: "/app/settings", label: "Settings", match: "/app/settings" },
 ];
 
-export function navVisibleTo(item: NavItem, role: OrgRole): boolean {
+export function navVisibleTo(item: NavItem, role: OrgRole, isPlatformAdmin = false): boolean {
+  if (isPlatformAdmin) return true;
   if (!item.roles) return true;
   return item.roles.includes(role);
 }
@@ -44,8 +45,8 @@ export const SETTINGS_TABS: Array<{
   { href: "/app/settings/profile", label: "Profile", managerOnly: false },
 ];
 
-export function firstSettingsPath(role: OrgRole): string {
-  return canManageOrgSettings(role)
+export function firstSettingsPath(role: OrgRole, isPlatformAdmin = false): string {
+  return canManageOrgSettings(role, isPlatformAdmin)
     ? "/app/settings/organization"
     : "/app/settings/profile";
 }

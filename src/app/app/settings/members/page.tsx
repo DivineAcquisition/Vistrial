@@ -26,7 +26,7 @@ export default async function MembersSettingsPage() {
   const ctx = await requireMembersManager();
 
   const supabase = await createClient();
-  const [{ data: members }, { data: invites }] = await Promise.all([
+  const [{ data: members }, { data: invites }, { data: platformAdmins }] = await Promise.all([
     supabase
       .from("org_members")
       .select("id, display_name, email, role, active, user_id")
@@ -38,7 +38,10 @@ export default async function MembersSettingsPage() {
       .eq("org_id", ctx.org.id)
       .is("accepted_at", null)
       .order("created_at", { ascending: false }),
+    supabase.from("platform_admins").select("user_id"),
   ]);
+
+  const platformAdminIds = new Set((platformAdmins ?? []).map((row) => row.user_id));
 
   const activeOwners = (members ?? []).filter(
     (member) => member.active && member.role === "owner"
@@ -72,6 +75,7 @@ export default async function MembersSettingsPage() {
             {(members ?? []).map((member) => {
               const lastOwner =
                 member.role === "owner" && member.active && activeOwners <= 1;
+              const platformLocked = platformAdminIds.has(member.user_id);
               return (
                 <TableRow key={member.id}>
                   <TableCell className="text-white">{member.display_name}</TableCell>
@@ -80,9 +84,12 @@ export default async function MembersSettingsPage() {
                     <MemberRoleSelect
                       memberId={member.id}
                       role={member.role}
-                      disabled={lastOwner}
-                      canGrantOwner={ctx.role === "owner"}
+                      disabled={lastOwner || platformLocked}
+                      canGrantOwner={ctx.role === "owner" || ctx.isPlatformAdmin}
                     />
+                    {platformLocked ? (
+                      <p className={`${helperClass} mt-1`}>Super admin</p>
+                    ) : null}
                   </TableCell>
                   <TableCell>
                     <StatusBadge
@@ -94,7 +101,7 @@ export default async function MembersSettingsPage() {
                     <MemberActiveToggle
                       memberId={member.id}
                       active={member.active}
-                      disableDeactivate={lastOwner}
+                      disableDeactivate={lastOwner || platformLocked}
                     />
                   </TableCell>
                 </TableRow>

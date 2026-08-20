@@ -12,7 +12,9 @@ Dashboard: https://supabase.com/dashboard/project/jizzmlvpnykazrsiotqq/auth/prov
    - Allow password sign-in
    - Enable magic links (email OTP)
 2. **Disable public sign-ups.** This is a B2B tool: users arrive by invite.
-   The first owner of a new org is created in the dashboard or by seed.
+   Platform super-admins (`platform_admins`) are enrolled as owner in every
+   workspace and cannot be demoted. The first operator is created in Auth,
+   then inserted into `platform_admins`.
 3. **Authentication → URL configuration**
    - Site URL = `NEXT_PUBLIC_APP_URL` from `.env.local` (e.g. `http://localhost:3000`)
    - Redirect URLs:

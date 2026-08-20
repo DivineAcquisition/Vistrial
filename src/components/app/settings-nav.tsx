@@ -10,8 +10,8 @@ import { cn } from "@/lib/utils";
 
 export function SettingsNav() {
   const pathname = usePathname();
-  const { role } = useOrg();
-  const manager = canManageOrgSettings(role);
+  const { role, isPlatformAdmin } = useOrg();
+  const manager = canManageOrgSettings(role, isPlatformAdmin);
 
   return (
     <nav aria-label="Settings" className="mb-8 flex flex-wrap gap-1 border-b border-white/[0.08] pb-px">

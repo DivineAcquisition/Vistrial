@@ -55,8 +55,9 @@ DivineACQ control-plane database.
 The Case File spine lives in `supabase/migrations/`. Every table is org-scoped
 with RLS. Scores are append-only history; money is bigint cents. Auth is
 invite-only; see [`supabase/AUTH.md`](./supabase/AUTH.md) for dashboard
-settings. `org_invites` is the membership invite table. Score cache columns
-on `leads` are trigger-owned — clients cannot PATCH them.
+settings. `org_invites` is the membership invite table. DA operators live in
+`platform_admins` and are enrolled as owner in every workspace. Score cache
+columns on `leads` are trigger-owned — clients cannot PATCH them.
 
 ```bash
 npm run db:verify

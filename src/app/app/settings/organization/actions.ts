@@ -13,7 +13,7 @@ export async function updateOrganization(
   formData: FormData
 ): Promise<SettingsSaveResult> {
   const ctx = await getAuthContext();
-  if (!canManageOrgSettings(ctx.role)) {
+  if (!canManageOrgSettings(ctx.role, ctx.isPlatformAdmin)) {
     return {
       status: "error",
       error: "You do not have permission to change organization settings.",

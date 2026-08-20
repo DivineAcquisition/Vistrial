@@ -9,16 +9,16 @@ import type { AuthContext } from "@/lib/auth/types";
 
 export async function requireOrgSettingsManager(): Promise<AuthContext> {
   const ctx = await getAuthContext();
-  if (!canManageOrgSettings(ctx.role)) {
-    redirect(firstSettingsPath(ctx.role));
+  if (!canManageOrgSettings(ctx.role, ctx.isPlatformAdmin)) {
+    redirect(firstSettingsPath(ctx.role, ctx.isPlatformAdmin));
   }
   return ctx;
 }
 
 export async function requireMembersManager(): Promise<AuthContext> {
   const ctx = await getAuthContext();
-  if (!canManageMembers(ctx.role)) {
-    redirect(firstSettingsPath(ctx.role));
+  if (!canManageMembers(ctx.role, ctx.isPlatformAdmin)) {
+    redirect(firstSettingsPath(ctx.role, ctx.isPlatformAdmin));
   }
   return ctx;
 }

@@ -14,24 +14,29 @@ const ROLE_PERMISSIONS = {
 
 export type Permission = keyof typeof ROLE_PERMISSIONS;
 
-export function hasPermission(role: OrgRole, permission: Permission): boolean {
+export function hasPermission(
+  role: OrgRole,
+  permission: Permission,
+  isPlatformAdmin = false
+): boolean {
+  if (isPlatformAdmin) return true;
   return (ROLE_PERMISSIONS[permission] as readonly OrgRole[]).includes(role);
 }
 
-export function canManageMembers(role: OrgRole): boolean {
-  return hasPermission(role, "manageMembers");
+export function canManageMembers(role: OrgRole, isPlatformAdmin = false): boolean {
+  return hasPermission(role, "manageMembers", isPlatformAdmin);
 }
 
-export function canViewReporting(role: OrgRole): boolean {
-  return hasPermission(role, "viewRevenue");
+export function canViewReporting(role: OrgRole, isPlatformAdmin = false): boolean {
+  return hasPermission(role, "viewRevenue", isPlatformAdmin);
 }
 
-export function canManageOrgSettings(role: OrgRole): boolean {
-  return hasPermission(role, "manageOrgSettings");
+export function canManageOrgSettings(role: OrgRole, isPlatformAdmin = false): boolean {
+  return hasPermission(role, "manageOrgSettings", isPlatformAdmin);
 }
 
-export function canAssignLeads(role: OrgRole): boolean {
-  return hasPermission(role, "assignLeads");
+export function canAssignLeads(role: OrgRole, isPlatformAdmin = false): boolean {
+  return hasPermission(role, "assignLeads", isPlatformAdmin);
 }
 
 export function canOverrideLead(args: {
@@ -39,7 +44,9 @@ export function canOverrideLead(args: {
   memberId: string;
   assignedSetterId: string | null;
   assignedCloserId: string | null;
+  isPlatformAdmin?: boolean;
 }): boolean {
+  if (args.isPlatformAdmin) return true;
   if (args.role === "owner" || args.role === "admin") return true;
   if (args.role === "setter") return args.assignedSetterId === args.memberId;
   if (args.role === "closer") return args.assignedCloserId === args.memberId;

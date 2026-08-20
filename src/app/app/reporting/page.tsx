@@ -7,8 +7,8 @@ import { getAuthContext } from "@/lib/auth/session";
 import { DEFAULT_APP_PATH } from "@/lib/navigation";
 
 export default async function ReportingPage() {
-  const { role } = await getAuthContext();
-  if (!canViewReporting(role)) {
+  const { role, isPlatformAdmin } = await getAuthContext();
+  if (!canViewReporting(role, isPlatformAdmin)) {
     redirect(DEFAULT_APP_PATH);
   }
 

@@ -7,6 +7,7 @@ import { ORG_COOKIE_NAME } from "@/lib/auth/cookies";
 import { GHL_OAUTH_COOKIE, GHL_OAUTH_SCOPES } from "@/lib/ghl/constants";
 import { ghlClientId, ghlOAuthAuthorizeUrl, ghlOAuthConfigured, ghlOAuthRedirectUri } from "@/lib/ghl/env";
 import { createOAuthState } from "@/lib/ghl/oauth-state";
+import { createClient } from "@/lib/supabase/server";
 
 export const dynamic = "force-dynamic";
 
@@ -28,7 +29,13 @@ export async function GET() {
   if (!active) {
     return NextResponse.json({ error: "No workspace." }, { status: 403 });
   }
-  if (!canManageOrgSettings(active.role)) {
+  const supabase = await createClient();
+  const { data: platformAdmin } = await supabase
+    .from("platform_admins")
+    .select("user_id")
+    .eq("user_id", user.id)
+    .maybeSingle();
+  if (!canManageOrgSettings(active.role, Boolean(platformAdmin))) {
     return NextResponse.json({ error: "You do not have permission to connect the CRM." }, { status: 403 });
   }
 

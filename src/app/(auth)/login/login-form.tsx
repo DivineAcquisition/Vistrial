@@ -89,14 +89,17 @@ export function LoginForm({
         return;
       }
 
-      const { data: memberships } = await supabase
-        .from("org_members")
-        .select("id")
-        .eq("user_id", userId)
-        .eq("active", true)
-        .limit(1);
+      const [{ data: memberships }, { data: platformAdmin }] = await Promise.all([
+        supabase
+          .from("org_members")
+          .select("id")
+          .eq("user_id", userId)
+          .eq("active", true)
+          .limit(1),
+        supabase.from("platform_admins").select("user_id").eq("user_id", userId).maybeSingle(),
+      ]);
 
-      if (!memberships?.length) {
+      if (!memberships?.length && !platformAdmin) {
         setError("no_membership");
         return;
       }

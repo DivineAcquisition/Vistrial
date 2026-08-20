@@ -15,8 +15,9 @@ import { useOrg } from "@/components/app/org-provider";
 import { initials } from "@/lib/format";
 
 export function UserMenu() {
-  const { user, role } = useOrg();
+  const { user, role, isPlatformAdmin } = useOrg();
   const name = user.displayName || user.email;
+  const roleLabel = isPlatformAdmin ? "Super admin" : role;
 
   return (
     <DropdownMenu>
@@ -26,7 +27,7 @@ export function UserMenu() {
         </Avatar>
         <span className="min-w-0 flex-1">
           <span className="block truncate text-sm text-white">{name}</span>
-          <span className="block truncate text-[11px] capitalize text-dim">{role}</span>
+          <span className="block truncate text-[11px] capitalize text-dim">{roleLabel}</span>
         </span>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="start" className="w-56">

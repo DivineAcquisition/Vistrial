@@ -16,7 +16,7 @@ function forbidden(): SettingsSaveResult {
 
 async function requireManager() {
   const ctx = await getAuthContext();
-  if (!canManageOrgSettings(ctx.role)) return null;
+  if (!canManageOrgSettings(ctx.role, ctx.isPlatformAdmin)) return null;
   return ctx;
 }
 

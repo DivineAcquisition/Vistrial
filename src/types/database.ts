@@ -371,6 +371,21 @@ export type Database = {
           },
         ];
       };
+      platform_admins: {
+        Row: {
+          created_at: string;
+          user_id: string;
+        };
+        Insert: {
+          created_at?: string;
+          user_id: string;
+        };
+        Update: {
+          created_at?: string;
+          user_id?: string;
+        };
+        Relationships: [];
+      };
       org_invites: {
         Row: {
           accepted_at: string | null;
@@ -1123,6 +1138,14 @@ export type Database = {
       user_org_ids: {
         Args: Record<PropertyKey, never>;
         Returns: string[];
+      };
+      is_platform_admin: {
+        Args: Record<PropertyKey, never>;
+        Returns: boolean;
+      };
+      is_platform_admin_user: {
+        Args: { p_user_id: string };
+        Returns: boolean;
       };
     };
     Enums: {

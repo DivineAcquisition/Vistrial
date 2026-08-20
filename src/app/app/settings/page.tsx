@@ -4,6 +4,6 @@ import { getAuthContext } from "@/lib/auth/session";
 import { firstSettingsPath } from "@/lib/navigation";
 
 export default async function SettingsIndexPage() {
-  const { role } = await getAuthContext();
-  redirect(firstSettingsPath(role));
+  const { role, isPlatformAdmin } = await getAuthContext();
+  redirect(firstSettingsPath(role, isPlatformAdmin));
 }

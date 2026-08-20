@@ -68,8 +68,9 @@ describe("canOverrideLead", () => {
         memberId: "s",
         assignedSetterId: "other",
         assignedCloserId: null,
+        isPlatformAdmin: true,
       })
-    ).toBe(false);
+    ).toBe(true);
     expect(
       canOverrideLead({
         role: "setter",

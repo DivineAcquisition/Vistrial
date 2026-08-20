@@ -129,6 +129,14 @@ export const getAuthContext = cache(async (): Promise<AuthContext> => {
     redirect(`/login?redirect=${encodeURIComponent(dest)}`);
   }
 
+  const supabase = await createClient();
+  const { data: platformAdminRow } = await supabase
+    .from("platform_admins")
+    .select("user_id")
+    .eq("user_id", user.id)
+    .maybeSingle();
+  const isPlatformAdmin = Boolean(platformAdminRow);
+
   const memberships = await listActiveMemberships(user.id);
   if (memberships.length === 0) {
     redirect("/no-access");
@@ -150,6 +158,7 @@ export const getAuthContext = cache(async (): Promise<AuthContext> => {
     member: active,
     org: active.org,
     role: active.role,
+    isPlatformAdmin,
     memberships,
     cookieNeedsReset,
   };
@@ -164,6 +173,7 @@ export function toClientOrgState(ctx: AuthContext): ClientOrgState {
     },
     org: ctx.org,
     role: ctx.role,
+    isPlatformAdmin: ctx.isPlatformAdmin,
     memberId: ctx.member.id,
     memberships: ctx.memberships.map((membership) => ({
       memberId: membership.id,

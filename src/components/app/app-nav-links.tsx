@@ -9,11 +9,11 @@ import { cn } from "@/lib/utils";
 
 export function AppNavLinks({ onNavigate }: { onNavigate?: () => void }) {
   const pathname = usePathname();
-  const { role } = useOrg();
+  const { role, isPlatformAdmin } = useOrg();
 
   return (
     <nav className="flex flex-col gap-0.5">
-      {PRIMARY_NAV.filter((item) => navVisibleTo(item, role)).map((item) => {
+      {PRIMARY_NAV.filter((item) => navVisibleTo(item, role, isPlatformAdmin)).map((item) => {
         const active = isNavActive(pathname, item.match);
         return (
           <Link

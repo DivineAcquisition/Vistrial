@@ -37,7 +37,7 @@ never white on the brand fill.
 1. Foundation
 2. Schema + multi-tenancy + RLS
 3. Auth + org membership (this)
-4. App shell and the Inbox
+4. App shell and the Queue
 5. Readiness scoring engine
 6. GHL sync and webhook ingestion
 7. Case File surfaces

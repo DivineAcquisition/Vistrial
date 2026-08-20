@@ -27,7 +27,7 @@ function classifyAuthError(message: string, code?: string): Exclude<LoginError, 
 
 const ERROR_COPY: Record<Exclude<LoginError, null>, string> = {
   credentials: "That email or password is not right.",
-  unconfirmed: "Confirm your email before signing in. Check the inbox for that address.",
+    unconfirmed: "Confirm your email before signing in. Check that address for the confirmation message.",
   no_membership: "This account is not a member of any workspace. You need an invite.",
   generic: "Sign-in failed. Try again, or use a magic link.",
 };
@@ -101,7 +101,7 @@ export function LoginForm({
         return;
       }
 
-      router.replace(redirectTo.startsWith("/app") ? redirectTo : "/app");
+      router.replace(redirectTo.startsWith("/app") ? redirectTo : "/app/queue");
       router.refresh();
     } finally {
       setPending(false);
@@ -111,7 +111,7 @@ export function LoginForm({
   if (magicSent) {
     return (
       <p className="text-sm leading-relaxed text-silver">
-        Check {email || "your inbox"} for a sign-in link. It expires quickly; request another if it does not arrive.
+        Check {email || "that address"} for a sign-in link. It expires quickly; request another if it does not arrive.
       </p>
     );
   }

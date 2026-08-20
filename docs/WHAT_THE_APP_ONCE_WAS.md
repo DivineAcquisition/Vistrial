@@ -75,7 +75,7 @@ Support / brand domain historically referenced: `vistrial.io`.
 **Customer engagement & messaging**
 
 - Contact management with import (CSV), tags, validation, bulk actions, and unsubscribe flows
-- SMS marketing and conversational inbox
+- SMS marketing and two-way message threads (kept in the CRM, never rebuilt here)
 - Voice drops powered by ElevenLabs text-to-speech
 - Messaging providers: primarily Telnyx, with Twilio as an alternative
 - Email sending via Resend

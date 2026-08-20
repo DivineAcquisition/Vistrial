@@ -1,12 +1,11 @@
-import { redirect } from "next/navigation";
-
 import {
   InviteForm,
   MemberActiveToggle,
   MemberRoleSelect,
   RevokeInviteButton,
 } from "@/app/app/settings/members/members-forms";
-import { PageHeader } from "@/components/ui/page-header";
+import { PageFrame } from "@/components/app/page-frame";
+import { EmptyState } from "@/components/ui/empty-state";
 import { Panel } from "@/components/ui/panel";
 import { StatusBadge } from "@/components/ui/status-badge";
 import {
@@ -17,18 +16,14 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { canManageMembers } from "@/lib/auth/permissions";
+import { requireMembersManager } from "@/lib/auth/gates";
 import { inviteUrl } from "@/lib/auth/paths";
-import { getAuthContext } from "@/lib/auth/session";
 import { formatDayLong } from "@/lib/format";
 import { createClient } from "@/lib/supabase/server";
 import { helperClass } from "@/lib/ui";
 
 export default async function MembersSettingsPage() {
-  const ctx = await getAuthContext();
-  if (!canManageMembers(ctx.role)) {
-    redirect("/app");
-  }
+  const ctx = await requireMembersManager();
 
   const supabase = await createClient();
   const [{ data: members }, { data: invites }] = await Promise.all([
@@ -50,13 +45,10 @@ export default async function MembersSettingsPage() {
   ).length;
 
   return (
-    <>
-      <PageHeader
-        eyebrow="Settings"
-        title="Members"
-        description="Invite setters and closers. Deactivate instead of deleting — touches and calls keep attribution."
-      />
-
+    <PageFrame
+      title="Members"
+      description="Invite setters and closers. Deactivate instead of deleting — touches and calls keep attribution."
+    >
       <Panel className="mb-8 px-6 py-6">
         <h2 className="text-sm font-semibold text-white">Invite</h2>
         <div className="mt-4">
@@ -107,11 +99,18 @@ export default async function MembersSettingsPage() {
         </Table>
       </Panel>
 
-      <Panel className="overflow-hidden px-2 py-2 sm:px-4">
-        <h2 className="px-2 pt-3 text-sm font-semibold text-white">Pending invites</h2>
-        {(invites ?? []).length === 0 ? (
-          <p className={`${helperClass} px-2 pb-4`}>No pending invites.</p>
-        ) : (
+      {(invites ?? []).length === 0 ? (
+        <EmptyState
+          kind="empty"
+          title="No pending invites"
+          detail="There are no open invites for this workspace right now. Create one above when you need to add someone."
+        />
+      ) : (
+        <Panel className="overflow-hidden px-2 py-2 sm:px-4">
+          <h2 className="px-2 pt-3 text-sm font-semibold text-white">Pending invites</h2>
+          <p className={`${helperClass} px-2`}>
+            Share the link by hand until email delivery is wired.
+          </p>
           <Table>
             <TableHeader>
               <TableRow>
@@ -138,8 +137,8 @@ export default async function MembersSettingsPage() {
               ))}
             </TableBody>
           </Table>
-        )}
-      </Panel>
-    </>
+        </Panel>
+      )}
+    </PageFrame>
   );
 }

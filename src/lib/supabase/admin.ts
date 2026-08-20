@@ -7,7 +7,9 @@ import type { Database } from "@/types/database";
 
 /**
  * Service-role client. Bypasses RLS.
- * Only for webhook handlers, invite redemption, and background jobs.
+ * Only for webhook handlers, invite redemption, background jobs, and
+ * member self-profile writes (RLS lets owner/admin mutate org_members;
+ * setters still need to edit their own name and email).
  * Throws if it is ever imported into a browser bundle.
  *
  * Created on first use so `next build` can collect route data when Vercel

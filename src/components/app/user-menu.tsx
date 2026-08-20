@@ -35,6 +35,9 @@ export function UserMenu() {
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
         <DropdownMenuItem asChild>
+          <Link href="/app/settings/profile">Profile</Link>
+        </DropdownMenuItem>
+        <DropdownMenuItem asChild>
           <Link href="/auth/signout">Sign out</Link>
         </DropdownMenuItem>
       </DropdownMenuContent>

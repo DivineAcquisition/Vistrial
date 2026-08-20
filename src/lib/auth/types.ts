@@ -7,6 +7,7 @@ export type OrgSummary = {
   name: string;
   slug: string;
   timezone: string;
+  ghlLocationId: string | null;
 };
 
 export type Membership = {

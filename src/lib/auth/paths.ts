@@ -1,7 +1,7 @@
 /** Relative in-app paths only. Rejects protocol-relative and off-site URLs. */
 export function safeInternalPath(
   value: string | null | undefined,
-  fallback = "/app"
+  fallback = "/app/queue"
 ): string {
   if (!value) return fallback;
   if (!value.startsWith("/")) return fallback;

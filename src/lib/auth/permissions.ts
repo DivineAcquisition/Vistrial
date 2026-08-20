@@ -9,7 +9,7 @@ const ROLE_PERMISSIONS = {
   viewRevenue: ["owner", "admin"],
   manageOrgSettings: ["owner", "admin"],
   assignLeads: ["owner", "admin"],
-  workInbox: ["owner", "admin", "closer", "setter"],
+  workQueue: ["owner", "admin", "closer", "setter"],
 } as const satisfies Record<string, readonly OrgRole[]>;
 
 export type Permission = keyof typeof ROLE_PERMISSIONS;
@@ -22,7 +22,7 @@ export function canManageMembers(role: OrgRole): boolean {
   return hasPermission(role, "manageMembers");
 }
 
-export function canViewRevenue(role: OrgRole): boolean {
+export function canViewReporting(role: OrgRole): boolean {
   return hasPermission(role, "viewRevenue");
 }
 

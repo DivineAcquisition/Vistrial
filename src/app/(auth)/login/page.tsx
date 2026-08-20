@@ -16,7 +16,7 @@ export default async function LoginPage({
   if (user) {
     const memberships = await listActiveMemberships(user.id);
     if (memberships.length > 0) {
-      redirect(redirectTo.startsWith("/app") ? redirectTo : "/app");
+      redirect(redirectTo.startsWith("/app") ? redirectTo : "/app/queue");
     }
     redirect("/no-access");
   }

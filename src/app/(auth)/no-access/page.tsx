@@ -13,7 +13,7 @@ export default async function NoAccessPage() {
 
   const memberships = await listActiveMemberships(user.id);
   if (memberships.length > 0) {
-    redirect("/app");
+    redirect("/app/queue");
   }
 
   return (

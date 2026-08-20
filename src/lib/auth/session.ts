@@ -1,16 +1,26 @@
 import "server-only";
 
 import { cache } from "react";
-import { cookies } from "next/headers";
+import { cookies, headers } from "next/headers";
 import { redirect } from "next/navigation";
 import type { User } from "@supabase/supabase-js";
 
 import { ORG_COOKIE_NAME, orgCookieOptions } from "@/lib/auth/cookies";
+import { safeInternalPath } from "@/lib/auth/paths";
+import { DEFAULT_APP_PATH } from "@/lib/navigation";
 import { createClient } from "@/lib/supabase/server";
 import type { AuthContext, ClientOrgState, Membership, OrgSummary } from "@/lib/auth/types";
 import type { OrgRole } from "@/types/database";
 
 export type { AuthContext, ClientOrgState, Membership, OrgSummary } from "@/lib/auth/types";
+
+type OrgRow = {
+  id: string;
+  name: string;
+  slug: string;
+  timezone: string;
+  ghl_location_id: string | null;
+};
 
 type MemberRow = {
   id: string;
@@ -18,12 +28,19 @@ type MemberRow = {
   role: OrgRole;
   display_name: string;
   email: string;
-  organizations: OrgSummary | OrgSummary[] | null;
+  organizations: OrgRow | OrgRow[] | null;
 };
 
-function unwrapOrg(value: OrgSummary | OrgSummary[] | null): OrgSummary | null {
-  if (!value) return null;
-  return Array.isArray(value) ? (value[0] ?? null) : value;
+function unwrapOrg(value: OrgRow | OrgRow[] | null): OrgSummary | null {
+  const row = !value ? null : Array.isArray(value) ? (value[0] ?? null) : value;
+  if (!row) return null;
+  return {
+    id: row.id,
+    name: row.name,
+    slug: row.slug,
+    timezone: row.timezone,
+    ghlLocationId: row.ghl_location_id,
+  };
 }
 
 function toMembership(row: MemberRow): Membership | null {
@@ -53,7 +70,7 @@ export const listActiveMemberships = cache(
     const { data, error } = await supabase
       .from("org_members")
       .select(
-        "id, org_id, role, display_name, email, organizations ( id, name, slug, timezone )"
+        "id, org_id, role, display_name, email, organizations ( id, name, slug, timezone, ghl_location_id )"
       )
       .eq("user_id", userId)
       .eq("active", true)
@@ -106,7 +123,10 @@ async function writeOrgCookie(orgId: string) {
 export const getAuthContext = cache(async (): Promise<AuthContext> => {
   const user = await getSessionUser();
   if (!user) {
-    redirect("/login");
+    const headerStore = await headers();
+    const fromHeader = headerStore.get("x-vistrial-pathname");
+    const dest = safeInternalPath(fromHeader, DEFAULT_APP_PATH);
+    redirect(`/login?redirect=${encodeURIComponent(dest)}`);
   }
 
   const memberships = await listActiveMemberships(user.id);

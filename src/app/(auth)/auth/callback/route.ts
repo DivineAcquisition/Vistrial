@@ -8,6 +8,7 @@ import {
   safeInternalPath,
 } from "@/lib/auth/paths";
 import { listActiveMemberships } from "@/lib/auth/session";
+import { DEFAULT_APP_PATH } from "@/lib/navigation";
 import { createClient } from "@/lib/supabase/server";
 
 function redirectTo(request: NextRequest, path: string) {
@@ -45,7 +46,7 @@ export async function GET(request: NextRequest) {
     const result = await redeemInvite(pendingToken, user.id, user.email ?? null);
 
     const response = result.ok
-      ? redirectTo(request, "/app")
+      ? redirectTo(request, DEFAULT_APP_PATH)
       : result.error === "email_mismatch"
         ? redirectTo(request, `/accept-invite/${pendingToken}`)
         : isAcceptInvitePath(next)
@@ -68,5 +69,5 @@ export async function GET(request: NextRequest) {
     return redirectTo(request, "/no-access");
   }
 
-  return redirectTo(request, next.startsWith("/app") ? next : "/app");
+  return redirectTo(request, next.startsWith("/app") ? next : DEFAULT_APP_PATH);
 }

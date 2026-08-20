@@ -70,7 +70,7 @@ export async function createAccountFromInvite(
   const cookieStore = await cookies();
   cookieStore.set(ORG_COOKIE_NAME, result.orgId, orgCookieOptions);
   cookieStore.delete(PENDING_INVITE_COOKIE);
-  redirect("/app");
+  redirect("/app/queue");
 }
 
 export async function markPendingInvite(token: string) {

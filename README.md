@@ -48,8 +48,9 @@ never white on the brand fill.
 
 ## Database
 
-Use a **dedicated Vistrial** Supabase project. Do not apply these migrations
-to the DivineACQ control-plane database.
+Use the dedicated [Vistrial](https://supabase.com/dashboard/project/jizzmlvpnykazrsiotqq)
+Supabase project (`jizzmlvpnykazrsiotqq`). Do not apply these migrations to the
+DivineACQ control-plane database.
 
 The Case File spine lives in `supabase/migrations/`. Every table is org-scoped
 with RLS. Scores are append-only history; money is bigint cents. Auth is

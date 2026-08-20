@@ -5,6 +5,8 @@ Local `config.toml` mirrors them for `supabase start`.
 
 ## Hosted project
 
+Dashboard: https://supabase.com/dashboard/project/jizzmlvpnykazrsiotqq/auth/providers
+
 1. **Authentication → Providers → Email**
    - Enable the Email provider
    - Allow password sign-in

@@ -1,11 +1,18 @@
 # Vistrial database
 
-Use a **dedicated Vistrial** Supabase project. Do not apply these migrations
+Use the dedicated **Vistrial** Supabase project. Do not apply these migrations
 to the DivineACQ control-plane database.
+
+| | |
+|---|---|
+| Project | [Vistrial](https://supabase.com/dashboard/project/jizzmlvpnykazrsiotqq) |
+| Ref | `jizzmlvpnykazrsiotqq` |
+| Region | `us-east-1` |
+| Org | DA Enterprise Clients |
 
 ```bash
 npx supabase login
-npx supabase link --project-ref <vistrial-project-ref>
+npx supabase link --project-ref jizzmlvpnykazrsiotqq
 npx supabase db push
 npx supabase db query --linked -f supabase/seed.sql   # local/dev only
 npx supabase gen types typescript --linked --schema public > src/types/database.ts

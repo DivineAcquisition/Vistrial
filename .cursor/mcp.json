@@ -6,7 +6,7 @@
         "-y",
         "@supabase/mcp-server",
         "--project-ref",
-        "trqvwgefpznsbbtkowro",
+        "jizzmlvpnykazrsiotqq",
         "--access-token",
         "${SUPABASE_ACCESS_TOKEN}"
       ]

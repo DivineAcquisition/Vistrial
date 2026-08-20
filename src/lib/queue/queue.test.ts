@@ -4,6 +4,7 @@ import { canAssignLeadTo } from "@/lib/auth/permissions";
 import { ghlConversationUrl } from "@/lib/queue/crm-url";
 import { formatQueueDuration } from "@/lib/queue/duration";
 import { defaultAssignedFilter, parseQueueFilters } from "@/lib/queue/filters";
+import { queueEmptyKind } from "@/lib/queue/parse";
 
 describe("queue durations", () => {
   const now = "2026-08-20T12:00:00.000Z";
@@ -57,6 +58,43 @@ describe("CRM conversation link", () => {
   });
 });
 
+describe("queue empty states", () => {
+  const base = {
+    ghlLocationId: null,
+    unfilteredActionableCount: 0,
+    alarm: [] as [],
+    queue: [] as [],
+    hasMore: false,
+    members: [],
+    sources: [] as string[],
+  };
+
+  it("treats a missing CRM with no leads as not connected, not as no-leads-yet", () => {
+    expect(queueEmptyKind({ ...base, crmStatus: "missing", orgLeadCount: 0 })).toBe("not_connected");
+    expect(queueEmptyKind({ ...base, crmStatus: "active", orgLeadCount: 0 })).toBe("no_leads");
+    expect(queueEmptyKind({ ...base, crmStatus: "broken", orgLeadCount: 0 })).toBe("broken");
+  });
+
+  it("does not hide an existing queue behind a missing CRM", () => {
+    expect(
+      queueEmptyKind({
+        ...base,
+        crmStatus: "missing",
+        orgLeadCount: 4,
+        unfilteredActionableCount: 2,
+      })
+    ).toBeNull();
+    expect(
+      queueEmptyKind({
+        ...base,
+        crmStatus: "active",
+        orgLeadCount: 4,
+        unfilteredActionableCount: 0,
+      })
+    ).toBe("nothing_to_work");
+  });
+});
+
 describe("assignment permission", () => {
   it("lets a setter assign to themselves and refuses assigning to others", () => {
     expect(
@@ -71,6 +109,13 @@ describe("assignment permission", () => {
         role: "setter",
         actorMemberId: "me",
         targetMemberId: "other",
+      })
+    ).toBe(false);
+    expect(
+      canAssignLeadTo({
+        role: "setter",
+        actorMemberId: "me",
+        targetMemberId: null,
       })
     ).toBe(false);
     expect(

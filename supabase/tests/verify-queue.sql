@@ -19,6 +19,18 @@ BEGIN
   IF v_plan::text NOT ILIKE '%leads_never_touched_idx%' THEN
     RAISE EXCEPTION 'alarm query did not use leads_never_touched_idx: %', v_plan;
   END IF;
+
+  EXECUTE $q$
+    EXPLAIN (FORMAT JSON)
+    SELECT l.id
+    FROM public.leads l
+    WHERE l.org_id = '22222222-2222-4222-8222-222222222222'
+      AND l.status NOT IN ('closed_won', 'closed_lost', 'ghost')
+  $q$ INTO v_plan;
+
+  IF v_plan::text ILIKE '%Seq Scan%' AND v_plan::text NOT ILIKE '%Index%' THEN
+    RAISE EXCEPTION 'working-queue lead lookup used a sequential scan: %', v_plan;
+  END IF;
 END
 $$;
 
@@ -245,6 +257,78 @@ BEGIN
   WHERE id = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaa04';
   IF v_known <> 4 OR v_conf <> 'high' THEN
     RAISE EXCEPTION 'four-factor score confidence expected high/4, got % / %', v_conf, v_known;
+  END IF;
+END
+$$;
+
+INSERT INTO public.leads (
+  id, org_id, first_name, last_name, status, source, opted_in_at, ghl_contact_id
+) VALUES (
+  'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaa07',
+  '22222222-2222-4222-8222-222222222222',
+  'Overdue',
+  'Action',
+  'working',
+  'queue-test',
+  now() - interval '5 days',
+  'ghl_ct_overdue_action'
+);
+
+INSERT INTO public.readiness_scores (
+  org_id, lead_id,
+  timeline_raw, investment_capacity_raw, decision_authority_raw, pain_severity_raw,
+  total, reasoning, triggered_by
+) VALUES (
+  '22222222-2222-4222-8222-222222222222',
+  'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaa07',
+  40, 40, 40, 40, 40,
+  'Queue test: overdue next action, lower score.',
+  'manual'
+);
+
+INSERT INTO public.touches (
+  org_id, lead_id, type, channel, direction, actor_member_id, summary, occurred_at
+)
+SELECT
+  '22222222-2222-4222-8222-222222222222',
+  'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaa07',
+  'human',
+  'call',
+  'outbound',
+  id,
+  'Touched overdue fixture.',
+  now() - interval '2 days'
+FROM public.org_members
+WHERE id = '33333333-3333-4333-8333-333333333333';
+
+INSERT INTO public.next_actions (
+  org_id, lead_id, action_text, due_at, created_by
+) VALUES (
+  '22222222-2222-4222-8222-222222222222',
+  'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaa07',
+  'Call back yesterday',
+  now() - interval '3 hours',
+  'user'
+);
+
+DO $$
+DECLARE
+  v_overdue integer;
+  v_ready integer;
+BEGIN
+  SELECT q.urgency_rank INTO v_overdue
+  FROM public.queue_rows q
+  WHERE q.id = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaa07';
+
+  SELECT q.urgency_rank INTO v_ready
+  FROM public.queue_rows q
+  WHERE q.id = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaa02';
+
+  IF v_overdue IS DISTINCT FROM 2 THEN
+    RAISE EXCEPTION 'overdue next action expected rank 2, got %', v_overdue;
+  END IF;
+  IF v_ready IS NULL OR v_overdue >= v_ready THEN
+    RAISE EXCEPTION 'overdue rank % was not above contacted ready-track rank %', v_overdue, v_ready;
   END IF;
 END
 $$;

@@ -90,7 +90,6 @@ export function QueueScreen({
   const [now, setNow] = useState(() => new Date().toISOString());
   const [arrivingIds, setArrivingIds] = useState<Set<string>>(new Set());
   const [exitingAlarm, setExitingAlarm] = useState<QueueRow[]>([]);
-  const [interactingId, setInteractingId] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
   const [busyLeadId, setBusyLeadId] = useState<string | null>(null);
   const [loadingMore, setLoadingMore] = useState(false);
@@ -99,12 +98,9 @@ export function QueueScreen({
   const pendingLive = useRef<QueuePayload | null>(null);
   const snapshot = useRef<Snapshot | null>(null);
   const interactingRef = useRef<string | null>(null);
+  const busyRef = useRef<string | null>(null);
   const loadedCount = useRef(initial.queue.length);
   const alarmRef = useRef(initial.alarm);
-
-  useEffect(() => {
-    interactingRef.current = interactingId;
-  }, [interactingId]);
 
   useEffect(() => {
     alarmRef.current = alarm;
@@ -119,6 +115,13 @@ export function QueueScreen({
     members,
     sources,
   });
+  const connectionBanner =
+    meta.orgLeadCount > 0 &&
+    (meta.crmStatus === "broken" || meta.crmStatus === "missing" || meta.crmStatus === "inactive")
+      ? meta.crmStatus === "broken"
+        ? "broken"
+        : "not_connected"
+      : null;
 
   const applyPayload = useCallback((payload: QueuePayload, previousAlarm: QueueRow[]) => {
     const nextAlarm = payload.alarm;
@@ -138,6 +141,7 @@ export function QueueScreen({
       .map((row) => row.id)
       .filter((id) => !seenIds.current.has(id));
     if (fresh.length > 0) {
+      for (const id of fresh) seenIds.current.add(id);
       setArrivingIds((current) => new Set([...current, ...fresh]));
       window.setTimeout(() => {
         setArrivingIds((current) => {
@@ -145,7 +149,6 @@ export function QueueScreen({
           for (const id of fresh) next.delete(id);
           return next;
         });
-        for (const id of fresh) seenIds.current.add(id);
       }, 8000);
     }
 
@@ -164,7 +167,7 @@ export function QueueScreen({
 
   const applyLive = useCallback(
     (payload: QueuePayload, previousAlarm: QueueRow[]) => {
-      if (interactingRef.current) {
+      if (interactingRef.current || busyRef.current) {
         pendingLive.current = payload;
         return;
       }
@@ -215,19 +218,34 @@ export function QueueScreen({
     };
   }, [applyLive, filters, org.org.id]);
 
+  function flushPendingLive() {
+    if (interactingRef.current || busyRef.current || !pendingLive.current) return;
+    const pending = pendingLive.current;
+    pendingLive.current = null;
+    applyPayload(pending, alarmRef.current);
+  }
+
+  function reconcile(payload: QueuePayload) {
+    pendingLive.current = null;
+    applyPayload(payload, alarmRef.current);
+  }
+
   function setInteracting(leadId: string | null) {
-    setInteractingId(leadId);
-    if (!leadId && pendingLive.current) {
-      const pending = pendingLive.current;
-      pendingLive.current = null;
-      applyPayload(pending, alarmRef.current);
-    }
+    interactingRef.current = leadId;
+    if (!leadId) flushPendingLive();
   }
 
   function begin(leadId: string) {
     snapshot.current = { alarm, queue, hasMore };
+    busyRef.current = leadId;
     setBusyLeadId(leadId);
     setActionError(null);
+  }
+
+  function finishBusy() {
+    snapshot.current = null;
+    busyRef.current = null;
+    setBusyLeadId(null);
   }
 
   function revert(error: string) {
@@ -237,6 +255,8 @@ export function QueueScreen({
       setHasMore(snapshot.current.hasMore);
       setExitingAlarm([]);
     }
+    snapshot.current = null;
+    busyRef.current = null;
     setActionError(error);
     setBusyLeadId(null);
   }
@@ -278,12 +298,12 @@ export function QueueScreen({
       revert(result.error);
       return false;
     }
-    snapshot.current = null;
-    setBusyLeadId(null);
-    const payload = await refreshQueue(filters, {
-      limit: Math.max(QUEUE_PAGE_SIZE, loadedCount.current),
-    });
-    applyPayload(payload, alarmRef.current);
+    finishBusy();
+    reconcile(
+      await refreshQueue(filters, {
+        limit: Math.max(QUEUE_PAGE_SIZE, loadedCount.current),
+      })
+    );
     return true;
   }
 
@@ -313,31 +333,34 @@ export function QueueScreen({
       revert(result.error);
       return false;
     }
-    snapshot.current = null;
-    setBusyLeadId(null);
-    const assigned = await refreshQueue(filters, {
-      limit: Math.max(QUEUE_PAGE_SIZE, loadedCount.current),
-    });
-    applyPayload(assigned, alarmRef.current);
+    finishBusy();
+    reconcile(
+      await refreshQueue(filters, {
+        limit: Math.max(QUEUE_PAGE_SIZE, loadedCount.current),
+      })
+    );
     return true;
   }
 
   async function handleComplete(input: { leadId: string; nextActionId: string }) {
+    setInteracting(input.leadId);
     begin(input.leadId);
-    setQueue((rows) =>
-      rows.map((row) => (row.id === input.leadId ? { ...row, nextAction: null } : row))
-    );
+    const clearAction = (row: QueueRow) =>
+      row.id === input.leadId ? { ...row, nextAction: null } : row;
+    setAlarm((rows) => rows.map(clearAction));
+    setQueue((rows) => rows.map(clearAction));
     const result = await completeQueueNextAction(input);
     if (!result.ok) {
       revert(result.error);
+      setInteracting(null);
       return false;
     }
-    snapshot.current = null;
-    setBusyLeadId(null);
-    const completed = await refreshQueue(filters, {
-      limit: Math.max(QUEUE_PAGE_SIZE, loadedCount.current),
-    });
-    applyPayload(completed, alarmRef.current);
+    finishBusy();
+    reconcile(
+      await refreshQueue(filters, {
+        limit: Math.max(QUEUE_PAGE_SIZE, loadedCount.current),
+      })
+    );
     return true;
   }
 
@@ -352,12 +375,12 @@ export function QueueScreen({
       revert(result.error);
       return false;
     }
-    snapshot.current = null;
-    setBusyLeadId(null);
-    const followOn = await refreshQueue(filters, {
-      limit: Math.max(QUEUE_PAGE_SIZE, loadedCount.current),
-    });
-    applyPayload(followOn, alarmRef.current);
+    finishBusy();
+    reconcile(
+      await refreshQueue(filters, {
+        limit: Math.max(QUEUE_PAGE_SIZE, loadedCount.current),
+      })
+    );
     return true;
   }
 
@@ -397,6 +420,28 @@ export function QueueScreen({
   return (
     <div>
       {actionError ? <p className={`${errorClass} mb-4`}>{actionError}</p> : null}
+
+      {connectionBanner === "broken" ? (
+        <div className="mb-8">
+          <EmptyState
+            kind="unconfigured"
+            title="The CRM connection is broken"
+            detail="GoHighLevel is linked but token refresh failed. Reconnect in Integrations. Existing leads stay on this screen so the outage is not hidden."
+            action={integrations}
+          />
+        </div>
+      ) : null}
+
+      {connectionBanner === "not_connected" ? (
+        <div className="mb-8">
+          <EmptyState
+            kind="unconfigured"
+            title="The CRM is not connected"
+            detail="New inbound will not land until GoHighLevel is linked. Leads already in this workspace still need action below."
+            action={integrations}
+          />
+        </div>
+      ) : null}
 
       {emptyKind === "not_connected" ? (
         <EmptyState

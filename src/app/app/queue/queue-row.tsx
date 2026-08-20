@@ -230,10 +230,10 @@ export function QueueLeadRow({
           </div>
         </TableCell>
       </TableRow>
-      {reasoningOpen && row.scoreReasoning ? (
+      {reasoningOpen ? (
         <TableRow className="border-border/60 hover:bg-transparent">
           <TableCell colSpan={colSpan} className="px-4 py-3 whitespace-normal text-sm text-silver">
-            {row.scoreReasoning}
+            {row.scoreReasoning || "No reasoning was stored for this score."}
           </TableCell>
         </TableRow>
       ) : null}
@@ -462,9 +462,6 @@ function AssignPanel({
   const [closerId, setCloserId] = useState(row.assignedCloserId ?? "");
   const [pending, setPending] = useState(false);
 
-  const setterOptions = canOthers ? members : members.filter((member) => member.id === memberId);
-  const closerOptions = setterOptions;
-
   async function save() {
     const nextSetter = setterId || null;
     const nextCloser = closerId || null;
@@ -485,28 +482,26 @@ function AssignPanel({
         <p className={helperClass}>Setter and closer must be active members of this workspace.</p>
       )}
       <div className="mt-4 grid gap-4 sm:grid-cols-2">
-        <label className="block">
-          <span className={labelClass}>Setter</span>
-          <select className={selectClass} value={setterId} onChange={(event) => setSetterId(event.target.value)}>
-            {canOthers ? <option value="">Unassigned</option> : null}
-            {setterOptions.map((member) => (
-              <option key={member.id} value={member.id}>
-                {member.displayName}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label className="block">
-          <span className={labelClass}>Closer</span>
-          <select className={selectClass} value={closerId} onChange={(event) => setCloserId(event.target.value)}>
-            {canOthers ? <option value="">Unassigned</option> : null}
-            {closerOptions.map((member) => (
-              <option key={member.id} value={member.id}>
-                {member.displayName}
-              </option>
-            ))}
-          </select>
-        </label>
+        <AssignmentSelect
+          label="Setter"
+          value={setterId}
+          currentId={row.assignedSetterId}
+          currentName={row.assignedSetterName}
+          memberId={memberId}
+          members={members}
+          canOthers={canOthers}
+          onChange={setSetterId}
+        />
+        <AssignmentSelect
+          label="Closer"
+          value={closerId}
+          currentId={row.assignedCloserId}
+          currentName={row.assignedCloserName}
+          memberId={memberId}
+          members={members}
+          canOthers={canOthers}
+          onChange={setCloserId}
+        />
       </div>
       {!canOthers ? (
         <div className="mt-3 flex flex-wrap gap-2">
@@ -541,6 +536,50 @@ function AssignPanel({
       </div>
       {error ? <p className={errorClass}>{error}</p> : null}
     </div>
+  );
+}
+
+function AssignmentSelect({
+  label,
+  value,
+  currentId,
+  currentName,
+  memberId,
+  members,
+  canOthers,
+  onChange,
+}: {
+  label: string;
+  value: string;
+  currentId: string | null;
+  currentName: string | null;
+  memberId: string;
+  members: QueueMemberOption[];
+  canOthers: boolean;
+  onChange: (value: string) => void;
+}) {
+  const self = members.find((member) => member.id === memberId);
+  const keepCurrent = Boolean(currentId && currentId !== memberId);
+
+  return (
+    <label className="block">
+      <span className={labelClass}>{label}</span>
+      <select className={selectClass} value={value} onChange={(event) => onChange(event.target.value)}>
+        {canOthers || !currentId ? <option value="">Unassigned</option> : null}
+        {!canOthers && keepCurrent ? (
+          <option value={currentId ?? ""}>{currentName || "Currently assigned"}</option>
+        ) : null}
+        {canOthers
+          ? members.map((member) => (
+              <option key={member.id} value={member.id}>
+                {member.displayName}
+              </option>
+            ))
+          : self ? (
+              <option value={self.id}>{self.displayName}</option>
+            ) : null}
+      </select>
+    </label>
   );
 }
 

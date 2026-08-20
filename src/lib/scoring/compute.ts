@@ -24,11 +24,18 @@ function isIntInRange(value: number): boolean {
   return Number.isInteger(value) && value >= 0 && value <= 100;
 }
 
-function confidenceFor(knownCount: number): ScoreConfidence {
+export function scoreConfidenceFromKnownCount(
+  knownCount: number
+): ScoreConfidence | null {
+  if (knownCount <= 0) return null;
   if (knownCount >= 4) return "high";
   if (knownCount === 3) return "moderate";
   if (knownCount === 2) return "low";
   return "very_low";
+}
+
+function confidenceFor(knownCount: number): ScoreConfidence {
+  return scoreConfidenceFromKnownCount(knownCount) ?? "very_low";
 }
 
 function joinList(items: string[]): string {

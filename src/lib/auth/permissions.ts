@@ -39,6 +39,19 @@ export function canAssignLeads(role: OrgRole, isPlatformAdmin = false): boolean 
   return hasPermission(role, "assignLeads", isPlatformAdmin);
 }
 
+/** Anyone may assign a lead to themselves. Only owner/admin may assign to others. */
+export function canAssignLeadTo(args: {
+  role: OrgRole;
+  actorMemberId: string;
+  targetMemberId: string | null;
+  isPlatformAdmin?: boolean;
+}): boolean {
+  if (args.isPlatformAdmin) return true;
+  if (args.role === "owner" || args.role === "admin") return true;
+  if (!args.targetMemberId) return false;
+  return args.actorMemberId === args.targetMemberId;
+}
+
 export function canOverrideLead(args: {
   role: OrgRole;
   memberId: string;

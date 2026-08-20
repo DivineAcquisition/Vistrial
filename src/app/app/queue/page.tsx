@@ -1,36 +1,36 @@
 import { PageFrame } from "@/components/app/page-frame";
-import { CrmListPlaceholder } from "@/components/app/crm-list-placeholder";
+import { QueueScreen } from "@/app/app/queue/queue-screen";
+import { canManageOrgSettings } from "@/lib/auth/permissions";
+import { getAuthContext } from "@/lib/auth/session";
+import { parseQueueFilters, queueFiltersHref } from "@/lib/queue/filters";
+import { loadOrgQueue } from "@/lib/queue/load";
 import { throwIfForcedRouteError } from "@/lib/route-error";
 
 export default async function QueuePage({
   searchParams,
 }: {
-  searchParams: Promise<{ forceError?: string }>;
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const params = await searchParams;
   throwIfForcedRouteError(params.forceError);
 
+  const ctx = await getAuthContext();
+  const filters = parseQueueFilters(params, {
+    role: ctx.role,
+    isPlatformAdmin: ctx.isPlatformAdmin,
+  });
+  const payload = await loadOrgQueue(filters);
+
   return (
     <PageFrame
       title="Queue"
-      description="Leads ready to work, once the CRM is connected and scoring is running."
+      description="Who to contact next, and what you need to know before you do."
     >
-      <CrmListPlaceholder
-        missing={{
-          title: "The queue is empty until the CRM is connected",
-          detail:
-            "New leads will land here after GoHighLevel is linked and the scoring engine can rank them. Nothing is missing on your side yet — the connection has not been set up.",
-        }}
-        broken={{
-          title: "The queue cannot load while the CRM connection is broken",
-          detail:
-            "GoHighLevel is linked but token refresh failed. Reconnect in Integrations. Showing an empty queue would hide this outage.",
-        }}
-        empty={{
-          title: "The queue is empty",
-          detail:
-            "GoHighLevel is connected. There are no ranked leads to work yet. New contacts will appear here after they ingest and score.",
-        }}
+      <QueueScreen
+        key={queueFiltersHref(filters)}
+        initial={payload}
+        filters={filters}
+        canOpenIntegrations={canManageOrgSettings(ctx.role, ctx.isPlatformAdmin)}
       />
     </PageFrame>
   );

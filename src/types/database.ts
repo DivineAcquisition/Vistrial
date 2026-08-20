@@ -988,6 +988,7 @@ export type Database = {
           lead_id: string;
           occurred_at: string;
           org_id: string;
+          outcome: Database["public"]["Enums"]["touch_outcome"] | null;
           summary: string | null;
           type: Database["public"]["Enums"]["touch_type"];
         };
@@ -1001,6 +1002,7 @@ export type Database = {
           lead_id: string;
           occurred_at?: string;
           org_id: string;
+          outcome?: Database["public"]["Enums"]["touch_outcome"] | null;
           summary?: string | null;
           type: Database["public"]["Enums"]["touch_type"];
         };
@@ -1014,6 +1016,7 @@ export type Database = {
           lead_id?: string;
           occurred_at?: string;
           org_id?: string;
+          outcome?: Database["public"]["Enums"]["touch_outcome"] | null;
           summary?: string | null;
           type?: Database["public"]["Enums"]["touch_type"];
         };
@@ -1088,7 +1091,39 @@ export type Database = {
       };
     };
     Views: {
-      [_ in never]: never;
+      queue_rows: {
+        Row: {
+          id: string;
+          org_id: string;
+          name: string;
+          email: string | null;
+          source: string | null;
+          status: Database["public"]["Enums"]["lead_status"];
+          lead_type: Database["public"]["Enums"]["lead_type"] | null;
+          score: number | null;
+          score_confidence: string | null;
+          known_factor_count: number | null;
+          score_reasoning: string | null;
+          opted_in_at: string;
+          last_touch_at: string | null;
+          first_human_touch_at: string | null;
+          assigned_setter_id: string | null;
+          assigned_closer_id: string | null;
+          assigned_setter_name: string | null;
+          assigned_closer_name: string | null;
+          ghl_contact_id: string | null;
+          crm_url: string | null;
+          next_action_id: string | null;
+          next_action_text: string | null;
+          next_action_due_at: string | null;
+          next_action_overdue: boolean | null;
+          in_alarm: boolean | null;
+          breach_seconds: number | null;
+          urgency_rank: number | null;
+          sort_score: number | null;
+        };
+        Relationships: [];
+      };
     };
     Functions: {
       redeem_org_invite: {
@@ -1147,6 +1182,28 @@ export type Database = {
         Args: { p_user_id: string };
         Returns: boolean;
       };
+      queue_row_to_json: {
+        Args: { r: Database["public"]["Views"]["queue_rows"]["Row"] };
+        Returns: Json;
+      };
+      alarm_band_leads: {
+        Args: { p_org_id: string };
+        Returns: { id: string; opted_in_at: string }[];
+      };
+      load_org_queue: {
+        Args: {
+          p_org_id: string;
+          p_assigned?: string | null;
+          p_track?: string | null;
+          p_status?: string | null;
+          p_source?: string | null;
+          p_score_min?: number | null;
+          p_score_max?: number | null;
+          p_cursor?: Json | null;
+          p_limit?: number | null;
+        };
+        Returns: Json;
+      };
     };
     Enums: {
       action_creator: "system" | "user";
@@ -1183,6 +1240,13 @@ export type Database = {
       touch_channel: "sms" | "email" | "call" | "dm" | "voicemail" | "other";
       touch_direction: "outbound" | "inbound";
       touch_type: "system" | "human";
+      touch_outcome:
+        | "connected"
+        | "no_answer"
+        | "left_voicemail"
+        | "replied"
+        | "booked"
+        | "not_interested";
       transcript_source: "fathom" | "fireflies" | "zoom" | "ghl" | "manual";
       webhook_source: "ghl" | "stripe" | "commas" | "transcript" | "other";
       ghl_connection_status: "active" | "broken" | "inactive";

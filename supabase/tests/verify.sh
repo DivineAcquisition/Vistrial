@@ -63,4 +63,7 @@ run "${ROOT}/supabase/tests/verify-ghl.sql"
 echo "Platform admin checks..."
 run "${ROOT}/supabase/tests/verify-platform-admin.sql"
 
-echo "OK: schema, seed, triggers, RLS, invite, scoring, GHL, and platform-admin checks passed."
+echo "Queue checks..."
+run "${ROOT}/supabase/tests/verify-queue.sql"
+
+echo "OK: schema, seed, triggers, RLS, invite, scoring, GHL, platform-admin, and queue checks passed."

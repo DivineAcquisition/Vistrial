@@ -37,7 +37,8 @@ WHERE n.nspname = 'public'
     'score_field_rules','leads','readiness_scores','touches','calls','call_extractions',
     'objections','next_actions','revenue_log','webhook_events','ghost_detector_runs',
     'ghl_connections','ghl_oauth_sessions','ghl_field_maps','ghl_dispatches',
-    'ghl_rate_windows','ghl_contact_locks','ingestion_alerts','platform_admins'
+    'ghl_rate_windows','ghl_contact_locks','ingestion_alerts','platform_admins',
+    'lead_status_changes'
   )
 ORDER BY 1;
 "
@@ -66,4 +67,7 @@ run "${ROOT}/supabase/tests/verify-platform-admin.sql"
 echo "Queue checks..."
 run "${ROOT}/supabase/tests/verify-queue.sql"
 
-echo "OK: schema, seed, triggers, RLS, invite, scoring, GHL, platform-admin, and queue checks passed."
+echo "Case file checks..."
+run "${ROOT}/supabase/tests/verify-case-files.sql"
+
+echo "OK: schema, seed, triggers, RLS, invite, scoring, GHL, platform-admin, queue, and case-file checks passed."

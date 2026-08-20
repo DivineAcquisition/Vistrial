@@ -1,9 +1,8 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
-
 import { canAssignLeadTo } from "@/lib/auth/permissions";
 import { getAuthContext } from "@/lib/auth/session";
+import { revalidateLeadSurfaces } from "@/lib/leads/revalidate";
 import type { QueueCursor } from "@/lib/queue/cursor";
 import { fetchOrgQueue, fetchQueueRow } from "@/lib/queue/load";
 import {
@@ -121,7 +120,7 @@ export async function logQueueOutcome(input: {
     return actionError(explainWriteError(error.message, "Could not log that outcome."));
   }
 
-  revalidatePath("/app/queue");
+  revalidateLeadSurfaces(input.leadId);
   const row = await fetchQueueRow(supabase, ctx.org.id, input.leadId);
   return { ok: true, row };
 }
@@ -196,7 +195,7 @@ export async function assignQueueLead(input: {
     return actionError(explainWriteError(error.message, "Could not update assignment."));
   }
 
-  revalidatePath("/app/queue");
+  revalidateLeadSurfaces(input.leadId);
   const row = await fetchQueueRow(supabase, ctx.org.id, input.leadId);
   return { ok: true, row };
 }
@@ -236,7 +235,7 @@ export async function completeQueueNextAction(input: {
   }
   if (!updated) return actionError("Could not complete that next action.");
 
-  revalidatePath("/app/queue");
+  revalidateLeadSurfaces(input.leadId);
   const row = await fetchQueueRow(supabase, ctx.org.id, input.leadId);
   return { ok: true, row };
 }
@@ -281,7 +280,7 @@ export async function createQueueFollowOn(input: {
     return actionError(explainWriteError(error.message, "Could not save the follow-on."));
   }
 
-  revalidatePath("/app/queue");
+  revalidateLeadSurfaces(input.leadId);
   const row = await fetchQueueRow(supabase, ctx.org.id, input.leadId);
   return { ok: true, row };
 }

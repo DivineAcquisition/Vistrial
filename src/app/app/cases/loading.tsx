@@ -4,7 +4,7 @@ export default function CasesLoading() {
   return (
     <TablePageSkeleton
       title="Case Files"
-      description="Every lead's persistent record, once contacts sync from the CRM."
+      description="Every lead in this workspace — the full record, not just who needs action now."
     />
   );
 }

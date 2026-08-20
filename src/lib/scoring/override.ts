@@ -1,9 +1,8 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
-
 import { getAuthContext } from "@/lib/auth/session";
 import { canOverrideLead } from "@/lib/auth/permissions";
+import { revalidateLeadSurfaces } from "@/lib/leads/revalidate";
 import { computeReadinessScore, type FactorValues } from "@/lib/scoring/compute";
 import { insertScoreRow, loadScoreConfig } from "@/lib/scoring/store";
 import { createClient } from "@/lib/supabase/server";
@@ -93,6 +92,6 @@ export async function overrideLeadScore(formData: FormData): Promise<OverrideSco
     return { ok: false, error: "Could not save the override." };
   }
 
-  revalidatePath("/app/settings/scoring");
+  revalidateLeadSurfaces(lead.id);
   return { ok: true, total: computed.total };
 }

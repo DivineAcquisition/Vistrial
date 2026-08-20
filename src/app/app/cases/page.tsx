@@ -1,28 +1,33 @@
 import { PageFrame } from "@/components/app/page-frame";
-import { CrmListPlaceholder } from "@/components/app/crm-list-placeholder";
+import { CasesScreen } from "@/app/app/cases/cases-screen";
+import { canManageOrgSettings } from "@/lib/auth/permissions";
+import { getAuthContext } from "@/lib/auth/session";
+import { caseFiltersHref, parseCaseListFilters } from "@/lib/cases/filters";
+import { loadOrgCaseList } from "@/lib/cases/load";
+import { throwIfForcedRouteError } from "@/lib/route-error";
 
-export default function CasesPage() {
+export default async function CasesPage({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
+  const params = await searchParams;
+  throwIfForcedRouteError(params.forceError);
+
+  const ctx = await getAuthContext();
+  const filters = parseCaseListFilters(params);
+  const payload = await loadOrgCaseList(filters);
+
   return (
     <PageFrame
       title="Case Files"
-      description="Every lead's persistent record, once contacts sync from the CRM."
+      description="Every lead in this workspace — the full record, not just who needs action now."
     >
-      <CrmListPlaceholder
-        missing={{
-          title: "Case files appear after the CRM is connected",
-          detail:
-            "Each inbound lead will get a case file here. That list stays empty until GoHighLevel sync is turned on.",
-        }}
-        broken={{
-          title: "Case files cannot load while the CRM connection is broken",
-          detail:
-            "The location is linked but the connection is broken. Reconnect in Integrations. This is not an empty caseload.",
-        }}
-        empty={{
-          title: "No case files yet",
-          detail:
-            "GoHighLevel is connected. Contacts will appear here after they ingest. There is nothing to open yet.",
-        }}
+      <CasesScreen
+        key={caseFiltersHref(filters)}
+        initial={payload}
+        filters={filters}
+        canOpenIntegrations={canManageOrgSettings(ctx.role, ctx.isPlatformAdmin)}
       />
     </PageFrame>
   );

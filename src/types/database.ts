@@ -280,6 +280,50 @@ export type Database = {
           },
         ];
       };
+      lead_status_changes: {
+        Row: {
+          actor_member_id: string | null;
+          created_at: string;
+          from_status: Database["public"]["Enums"]["lead_status"];
+          id: string;
+          lead_id: string;
+          note: string | null;
+          org_id: string;
+          source: Database["public"]["Enums"]["status_change_source"];
+          to_status: Database["public"]["Enums"]["lead_status"];
+        };
+        Insert: {
+          actor_member_id?: string | null;
+          created_at?: string;
+          from_status: Database["public"]["Enums"]["lead_status"];
+          id?: string;
+          lead_id: string;
+          note?: string | null;
+          org_id: string;
+          source: Database["public"]["Enums"]["status_change_source"];
+          to_status: Database["public"]["Enums"]["lead_status"];
+        };
+        Update: {
+          actor_member_id?: string | null;
+          created_at?: string;
+          from_status?: Database["public"]["Enums"]["lead_status"];
+          id?: string;
+          lead_id?: string;
+          note?: string | null;
+          org_id?: string;
+          source?: Database["public"]["Enums"]["status_change_source"];
+          to_status?: Database["public"]["Enums"]["lead_status"];
+        };
+        Relationships: [
+          {
+            foreignKeyName: "lead_status_changes_lead_org_fkey";
+            columns: ["lead_id", "org_id"];
+            isOneToOne: false;
+            referencedRelation: "leads";
+            referencedColumns: ["id", "org_id"];
+          },
+        ];
+      };
       objections: {
         Row: {
           call_id: string | null;
@@ -1124,6 +1168,28 @@ export type Database = {
         };
         Relationships: [];
       };
+      case_file_rows: {
+        Row: {
+          id: string;
+          org_id: string;
+          name: string;
+          first_name: string | null;
+          last_name: string | null;
+          email: string | null;
+          phone: string | null;
+          source: string | null;
+          status: Database["public"]["Enums"]["lead_status"];
+          lead_type: Database["public"]["Enums"]["lead_type"] | null;
+          score: number | null;
+          opted_in_at: string;
+          last_touch_at: string | null;
+          assigned_setter_id: string | null;
+          assigned_closer_id: string | null;
+          assigned_setter_name: string | null;
+          assigned_closer_name: string | null;
+        };
+        Relationships: [];
+      };
     };
     Functions: {
       redeem_org_invite: {
@@ -1213,6 +1279,52 @@ export type Database = {
         };
         Returns: Json;
       };
+      case_file_row_to_json: {
+        Args: { r: Database["public"]["Views"]["case_file_rows"]["Row"] };
+        Returns: Json;
+      };
+      load_org_case_list: {
+        Args: {
+          p_org_id: string;
+          p_q?: string | null;
+          p_status?: string | null;
+          p_track?: string | null;
+          p_source?: string | null;
+          p_setter_id?: string | null;
+          p_closer_id?: string | null;
+          p_score_min?: number | null;
+          p_score_max?: number | null;
+          p_opted_from?: string | null;
+          p_opted_to?: string | null;
+          p_sort?: string | null;
+          p_dir?: string | null;
+          p_cursor?: Json | null;
+          p_limit?: number | null;
+        };
+        Returns: Json;
+      };
+      load_org_case_file: {
+        Args: { p_org_id: string; p_lead_id: string; p_timeline_limit?: number | null };
+        Returns: Json;
+      };
+      load_org_case_timeline: {
+        Args: {
+          p_org_id: string;
+          p_lead_id: string;
+          p_cursor?: Json | null;
+          p_limit?: number | null;
+        };
+        Returns: Json;
+      };
+      change_org_lead_status: {
+        Args: {
+          p_org_id: string;
+          p_lead_id: string;
+          p_status: Database["public"]["Enums"]["lead_status"];
+          p_note?: string | null;
+        };
+        Returns: undefined;
+      };
     };
     Enums: {
       action_creator: "system" | "user";
@@ -1261,6 +1373,7 @@ export type Database = {
       ghl_connection_status: "active" | "broken" | "inactive";
       ghl_dispatch_status: "queued" | "sent" | "failed" | "suppressed";
       webhook_event_status: "pending" | "processed" | "dead" | "rejected";
+      status_change_source: "manual" | "event";
     };
     CompositeTypes: {
       [_ in never]: never;

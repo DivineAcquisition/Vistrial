@@ -1,3 +1,5 @@
+import { appUrl } from "@/lib/app-url";
+
 /** Relative in-app paths only. Rejects protocol-relative and off-site URLs. */
 export function safeInternalPath(
   value: string | null | undefined,
@@ -19,12 +21,7 @@ export function inviteTokenFromPath(path: string): string | null {
   return match?.[1] ?? null;
 }
 
-export function appUrl(): string {
-  return (process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000").replace(
-    /\/$/,
-    ""
-  );
-}
+export { appUrl };
 
 export function inviteUrl(token: string): string {
   return `${appUrl()}/accept-invite/${token}`;

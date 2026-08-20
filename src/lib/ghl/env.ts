@@ -1,4 +1,7 @@
+import { appUrl } from "@/lib/app-url";
 import { GHL_API_BASE, GHL_OAUTH_AUTHORIZE_DEFAULT } from "@/lib/ghl/constants";
+
+export { appUrl };
 
 export function ghlClientId(): string {
   return process.env.GHL_CLIENT_ID?.trim() ?? "";
@@ -10,10 +13,6 @@ export function ghlClientSecret(): string {
 
 export function ghlOAuthConfigured(): boolean {
   return Boolean(ghlClientId() && ghlClientSecret());
-}
-
-export function appUrl(): string {
-  return (process.env.NEXT_PUBLIC_APP_URL?.trim() || "http://localhost:3000").replace(/\/$/, "");
 }
 
 export function ghlOAuthRedirectUri(): string {

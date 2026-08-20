@@ -16,8 +16,9 @@ intelligence layer on top.
 Next.js 16 (App Router) · TypeScript · Tailwind CSS v4 + shadcn/ui · Supabase
 (Postgres, RLS, multi-tenant) · Anthropic API · GoHighLevel. Deploy on Vercel.
 
-Domains (later): `app.vistrial.io` (operator app), `admin.vistrial.io` (DA
-staff console). API routes live inside this Next app.
+Domains: [`app.vistrial.io`](https://app.vistrial.io) is the operator app.
+`admin.vistrial.io` (DA staff console) comes later. API routes live inside
+this Next app.
 
 ## Visual language
 

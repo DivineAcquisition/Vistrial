@@ -88,11 +88,40 @@ describe("payload parse", () => {
     expect(parsed.contactKey).toBe("loc-1:ct-1");
   });
 
-  it("still stores unparsed bodies", () => {
+  it("still stores unparsed bodies without the raw string", () => {
     const parsed = parseWebhookPayload("not-json");
     expect(parsed.parsed).toBe(false);
     expect(parsed.eventType).toBe("unparsed");
     expect(parsed.providerEventId).toBe(hashRawBody("not-json"));
+    expect(parsed.payload).toEqual({ _unparsed: true, bytes: "not-json".length });
+    expect(JSON.stringify(parsed.payload)).not.toContain("not-json");
+    expect(parsed.payload).not.toHaveProperty("raw");
+  });
+
+  it("redacts message bodies and keeps identity fields used to upsert leads", () => {
+    const parsed = parseWebhookPayload(
+      JSON.stringify({
+        type: "InboundMessage",
+        webhookId: "wh-body",
+        locationId: "loc-1",
+        contactId: "ct-1",
+        email: "maya@example.com",
+        phone: "+15555550101",
+        body: "Secret reply about budget",
+        message: "also a body",
+        data: { html: "<p>hi</p>", firstName: "Maya" },
+      })
+    );
+    expect(parsed.payload).toMatchObject({
+      email: "maya@example.com",
+      phone: "+15555550101",
+      body: { redacted: true },
+      message: { redacted: true },
+    });
+    const data = (parsed.payload as { data: Record<string, unknown> }).data;
+    expect(data.html).toEqual({ redacted: true });
+    expect(data.firstName).toBe("Maya");
+    expect(JSON.stringify(parsed.payload)).not.toContain("Secret reply");
   });
 });
 

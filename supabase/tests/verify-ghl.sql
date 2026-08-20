@@ -107,6 +107,11 @@ BEGIN
   IF v_has_token THEN
     RAISE EXCEPTION 'authenticated role could read access_token_encrypted';
   END IF;
+
+  PERFORM set_config('request.jwt.claim.sub', '11111111-1111-4111-8111-111111111111', false);
+  SET ROLE authenticated;
+  PERFORM last_setup_error FROM public.ghl_connections LIMIT 1;
+  RESET ROLE;
 END
 $$;
 

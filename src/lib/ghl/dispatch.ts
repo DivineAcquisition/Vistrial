@@ -79,7 +79,9 @@ export async function drainDispatchQueue(db: GhlDb, limit = 25): Promise<{ sent:
   const { data } = await db
     .from("ghl_dispatches")
     .select("id")
-    .eq("status", "queued")
+    .or(
+      "status.eq.queued,and(status.eq.failed,failure_reason.eq.touch_insert_failed)"
+    )
     .lte("available_at", new Date().toISOString())
     .order("available_at", { ascending: true })
     .limit(limit);
@@ -98,7 +100,13 @@ export async function drainDispatchQueue(db: GhlDb, limit = 25): Promise<{ sent:
 
 export async function sendQueuedDispatch(db: GhlDb, dispatchId: string): Promise<DispatchResult> {
   const { data: row } = await db.from("ghl_dispatches").select("*").eq("id", dispatchId).maybeSingle();
-  if (!row || row.status !== "queued") {
+  if (!row) {
+    return { status: "failed", dispatchId, reason: "not_queued" };
+  }
+  if (row.status === "failed" && row.failure_reason === "touch_insert_failed" && row.ghl_message_id) {
+    return recoverTouchAfterSend(db, row);
+  }
+  if (row.status !== "queued") {
     return { status: "failed", dispatchId, reason: "not_queued" };
   }
 
@@ -233,19 +241,18 @@ export async function sendQueuedDispatch(db: GhlDb, dispatchId: string): Promise
   }
 
   if (error || !touch) {
-    // Message went out. Record dispatch as sent; do not invent a second send.
     await db
       .from("ghl_dispatches")
       .update({
-        status: "sent",
+        status: "failed",
         ghl_message_id: ghlMessageId,
         body_text: null,
         sent_at: new Date().toISOString(),
         failure_reason: "touch_insert_failed",
       })
       .eq("id", row.id);
-    ghlError("ghl.dispatch.touch_missing", logFieldsFromRow(row, "sent", "touch_insert_failed"));
-    return { status: "sent", dispatchId: row.id, touchId: "", ghlMessageId };
+    ghlError("ghl.dispatch.touch_missing", logFieldsFromRow(row, "failed", "touch_insert_failed"));
+    return { status: "failed", dispatchId: row.id, reason: "touch_insert_failed" };
   }
 
   await db
@@ -260,6 +267,56 @@ export async function sendQueuedDispatch(db: GhlDb, dispatchId: string): Promise
     .eq("id", row.id);
 
   ghlLog("ghl.dispatch.sent", logFieldsFromRow(row, "sent"));
+  return { status: "sent", dispatchId: row.id, touchId: touch.id, ghlMessageId };
+}
+
+async function recoverTouchAfterSend(
+  db: GhlDb,
+  row: DatabaseRow & { ghl_message_id: string | null; channel: TouchChannel }
+): Promise<DispatchResult> {
+  const ghlMessageId = row.ghl_message_id;
+  if (!ghlMessageId) {
+    return { status: "failed", dispatchId: row.id, reason: "touch_insert_failed" };
+  }
+
+  const { data: existingTouch } = await db
+    .from("touches")
+    .select("id")
+    .eq("org_id", row.org_id)
+    .eq("ghl_message_id", ghlMessageId)
+    .maybeSingle();
+  if (existingTouch) {
+    await db
+      .from("ghl_dispatches")
+      .update({ status: "sent", failure_reason: null, body_text: null })
+      .eq("id", row.id);
+    return { status: "sent", dispatchId: row.id, touchId: existingTouch.id, ghlMessageId };
+  }
+
+  const type = row.actor_member_id ? "human" : "system";
+  const { data: touch, error } = await db
+    .from("touches")
+    .insert({
+      org_id: row.org_id,
+      lead_id: row.lead_id,
+      type,
+      channel: row.channel,
+      direction: "outbound",
+      actor_member_id: row.actor_member_id,
+      summary: outboundTouchSummary(row.channel, type),
+      ghl_message_id: ghlMessageId,
+    })
+    .select("id")
+    .maybeSingle();
+
+  if (error || !touch) {
+    return { status: "failed", dispatchId: row.id, reason: "touch_insert_failed" };
+  }
+
+  await db
+    .from("ghl_dispatches")
+    .update({ status: "sent", failure_reason: null, body_text: null })
+    .eq("id", row.id);
   return { status: "sent", dispatchId: row.id, touchId: touch.id, ghlMessageId };
 }
 
@@ -344,6 +401,9 @@ type DatabaseRow = {
   attempt_count: number;
   body_text: string | null;
   email_subject: string | null;
+  ghl_message_id: string | null;
+  failure_reason: string | null;
+  status: "queued" | "sent" | "failed" | "suppressed";
 };
 
 function logFields(input: DispatchInput, result: string, reason?: string) {

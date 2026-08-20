@@ -34,7 +34,7 @@ async function activeOwnerCount(orgId: string) {
     .eq("role", "owner")
     .eq("active", true);
 
-  if (error) return Number.POSITIVE_INFINITY;
+  if (error) return Number.NaN;
   return count ?? 0;
 }
 
@@ -63,7 +63,7 @@ async function guardLastOwner(args: {
   }
 
   const owners = await activeOwnerCount(args.orgId);
-  if (owners <= 1) {
+  if (!Number.isFinite(owners) || owners <= 1) {
     return "The last active owner cannot be demoted or deactivated.";
   }
   return null;
@@ -132,6 +132,10 @@ export async function updateMemberRole(
 ): Promise<MemberActionResult> {
   const gate = await requireManager();
   if (!gate.ok) return { ok: false, error: gate.error };
+
+  if (role === "owner" && gate.ctx.role !== "owner") {
+    return { ok: false, error: "Only an owner can grant the owner role." };
+  }
 
   const member = await loadMember(gate.ctx.org.id, memberId);
   if (!member) return { ok: false, error: "Member not found." };

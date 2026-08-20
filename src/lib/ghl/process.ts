@@ -27,7 +27,7 @@ import { asJsonRecord } from "@/lib/ghl/payload";
 import { nextAttemptAt, shouldMarkDead } from "@/lib/ghl/retry";
 import { scoreInboundReplyAfterSilence, scoreLeadFromAnswerChange, scoreNoShow } from "@/lib/scoring/event-apply";
 import { scoreLeadOnIntake } from "@/lib/scoring/intake";
-import { loadScoreConfig } from "@/lib/scoring/store";
+import { assertScorePersisted, loadScoreConfig } from "@/lib/scoring/store";
 import { calendarDaysBetween } from "@/lib/scoring/timezone";
 import type { GhlDb } from "@/lib/ghl/tokens";
 import type { Database, Json } from "@/types/database";
@@ -137,8 +137,10 @@ async function processOneEvent(db: GhlDb, event: WebhookRow): Promise<void> {
       await disconnectGhl(db, orgId as string);
       break;
     case "install":
-    case "ignored":
       break;
+    case "ignored":
+      await markEventUnsupported(db, event);
+      return;
   }
 
   await markEventProcessed(db, event.id);
@@ -268,24 +270,30 @@ async function handleContact(
     .eq("org_id", orgId);
 
   if (created) {
-    await scoreLeadOnIntake(db, {
-      orgId,
-      leadId: lead.id,
-      answers: nextAnswers as Json,
-    });
+    assertScorePersisted(
+      await scoreLeadOnIntake(db, {
+        orgId,
+        leadId: lead.id,
+        answers: nextAnswers as Json,
+      })
+    );
   } else if (answersChanged) {
-    await scoreLeadFromAnswerChange(db, {
-      orgId,
-      leadId: lead.id,
-      answers: nextAnswers as Json,
-      idempotencyKey: `event:contact_update:${event.id}`,
-    });
+    assertScorePersisted(
+      await scoreLeadFromAnswerChange(db, {
+        orgId,
+        leadId: lead.id,
+        answers: nextAnswers as Json,
+        idempotencyKey: `event:contact_update:${event.id}`,
+      })
+    );
   } else if (createdEvent) {
-    await scoreLeadOnIntake(db, {
-      orgId,
-      leadId: lead.id,
-      answers: nextAnswers as Json,
-    });
+    assertScorePersisted(
+      await scoreLeadOnIntake(db, {
+        orgId,
+        leadId: lead.id,
+        answers: nextAnswers as Json,
+      })
+    );
   }
 }
 
@@ -331,13 +339,15 @@ async function handleInbound(db: GhlDb, orgId: string, event: WebhookRow, payloa
   if (error?.code === "23505") return;
   if (error || !touch) throw new Error("touch_insert_failed");
 
-  await scoreInboundReplyAfterSilence(db, {
-    orgId,
-    leadId: lead.id,
-    touchId: touch.id,
-    daysSilentBeforeTouch: daysSilent,
-    ghostDaysSoft: config.ghostDaysSoft,
-  });
+  assertScorePersisted(
+    await scoreInboundReplyAfterSilence(db, {
+      orgId,
+      leadId: lead.id,
+      touchId: touch.id,
+      daysSilentBeforeTouch: daysSilent,
+      ghostDaysSoft: config.ghostDaysSoft,
+    })
+  );
 }
 
 async function handleOutbound(db: GhlDb, orgId: string, _event: WebhookRow, payload: Record<string, unknown>) {
@@ -446,7 +456,7 @@ async function handleAppointmentStatus(db: GhlDb, orgId: string, _event: Webhook
   if (outcome === "no_show") {
     await db.from("leads").update({ status: "no_show" }).eq("id", lead.id).eq("org_id", orgId);
     if (callId) {
-      await scoreNoShow(db, { orgId, leadId: lead.id, callId });
+      assertScorePersisted(await scoreNoShow(db, { orgId, leadId: lead.id, callId }));
     }
   } else if (outcome === "cancelled") {
     await db.from("leads").update({ status: "follow_up" }).eq("id", lead.id).eq("org_id", orgId);
@@ -501,6 +511,22 @@ async function resolveActor(db: GhlDb, orgId: string, ghlUserId: string): Promis
   if (!byEmail) return null;
   await db.from("org_members").update({ ghl_user_id: ghlUserId }).eq("id", byEmail.id).eq("org_id", orgId);
   return byEmail.id;
+}
+
+async function markEventUnsupported(db: GhlDb, event: WebhookRow) {
+  ghlError("ghl.webhook.unsupported", {
+    eventId: event.id,
+    eventType: event.event_type,
+  });
+  await db
+    .from("webhook_events")
+    .update({
+      processed: true,
+      status: "dead",
+      processed_at: new Date().toISOString(),
+      error_text: "unsupported_event_type",
+    })
+    .eq("id", event.id);
 }
 
 async function markEventProcessed(db: GhlDb, id: string) {

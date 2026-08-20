@@ -53,7 +53,7 @@ export async function updateScoringConfig(
   }
 
   const supabase = await createClient();
-  const { error } = await supabase
+  const { data, error } = await supabase
     .from("score_configs")
     .update({
       timeline_weight: timeline as number,
@@ -65,9 +65,11 @@ export async function updateScoringConfig(
       ghost_days_soft: ghostSoft as number,
       ghost_days_hard: ghostHard as number,
     })
-    .eq("org_id", ctx.org.id);
+    .eq("org_id", ctx.org.id)
+    .select("id")
+    .maybeSingle();
 
-  if (error) {
+  if (error || !data) {
     return { status: "error", error: "Could not save scoring settings." };
   }
 

@@ -732,6 +732,7 @@ export type Database = {
           created_at: string;
           id: string;
           last_refresh_error: string | null;
+          last_setup_error: string | null;
           last_verified_at: string | null;
           location_id: string | null;
           location_name: string | null;
@@ -748,6 +749,7 @@ export type Database = {
           created_at?: string;
           id?: string;
           last_refresh_error?: string | null;
+          last_setup_error?: string | null;
           last_verified_at?: string | null;
           location_id?: string | null;
           location_name?: string | null;
@@ -764,6 +766,7 @@ export type Database = {
           created_at?: string;
           id?: string;
           last_refresh_error?: string | null;
+          last_setup_error?: string | null;
           last_verified_at?: string | null;
           location_id?: string | null;
           location_name?: string | null;
@@ -1104,6 +1107,14 @@ export type Database = {
       try_consume_ghl_rate: {
         Args: { p_org_id: string };
         Returns: boolean;
+      };
+      user_member_id: {
+        Args: { p_org_id: string };
+        Returns: string | null;
+      };
+      ghl_event_counts_24h: {
+        Args: { p_org_id: string };
+        Returns: { event_type: string; n: number }[];
       };
       user_has_org_role: {
         Args: { p_org_id: string; p_roles: Database["public"]["Enums"]["org_role"][] };

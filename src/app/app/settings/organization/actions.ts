@@ -34,12 +34,14 @@ export async function updateOrganization(
   }
 
   const supabase = await createClient();
-  const { error } = await supabase
+  const { data, error } = await supabase
     .from("organizations")
     .update({ name, timezone })
-    .eq("id", ctx.org.id);
+    .eq("id", ctx.org.id)
+    .select("id")
+    .maybeSingle();
 
-  if (error) {
+  if (error || !data) {
     return { status: "error", error: "Could not save organization settings." };
   }
 

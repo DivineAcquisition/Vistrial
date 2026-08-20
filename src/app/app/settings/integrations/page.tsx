@@ -67,11 +67,13 @@ export default async function IntegrationsSettingsPage({
           status: connection.data?.status ?? health.connectionStatus,
           locationName: connection.data?.location_name ?? health.locationName,
           lastVerifiedAt: connection.data?.last_verified_at ?? health.lastVerifiedAt,
+          lastSetupError: health.lastSetupError,
         }}
         health={{
           receivedLast24h: health.receivedLast24h,
           unprocessed: health.unprocessed,
           oldestUnprocessedAgeMs: health.oldestUnprocessedAgeMs,
+          deadCount: health.deadCount,
           dead: health.dead,
           lastProcessedAt: health.lastProcessedAt,
           lastProcessedAgeMs: health.lastProcessedAgeMs,

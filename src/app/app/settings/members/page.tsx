@@ -81,6 +81,7 @@ export default async function MembersSettingsPage() {
                       memberId={member.id}
                       role={member.role}
                       disabled={lastOwner}
+                      canGrantOwner={ctx.role === "owner"}
                     />
                   </TableCell>
                   <TableCell>
@@ -90,7 +91,11 @@ export default async function MembersSettingsPage() {
                     />
                   </TableCell>
                   <TableCell>
-                    <MemberActiveToggle memberId={member.id} active={member.active} />
+                    <MemberActiveToggle
+                      memberId={member.id}
+                      active={member.active}
+                      disableDeactivate={lastOwner}
+                    />
                   </TableCell>
                 </TableRow>
               );

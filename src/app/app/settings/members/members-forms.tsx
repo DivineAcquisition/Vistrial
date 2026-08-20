@@ -65,13 +65,16 @@ export function MemberRoleSelect({
   memberId,
   role,
   disabled,
+  canGrantOwner,
 }: {
   memberId: string;
   role: OrgRole;
   disabled?: boolean;
+  canGrantOwner: boolean;
 }) {
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
+  const showOwner = canGrantOwner || role === "owner";
 
   return (
     <div>
@@ -87,7 +90,7 @@ export function MemberRoleSelect({
           });
         }}
       >
-        <option value="owner">Owner</option>
+        {showOwner ? <option value="owner">Owner</option> : null}
         <option value="admin">Admin</option>
         <option value="closer">Closer</option>
         <option value="setter">Setter</option>
@@ -100,18 +103,21 @@ export function MemberRoleSelect({
 export function MemberActiveToggle({
   memberId,
   active,
+  disableDeactivate,
 }: {
   memberId: string;
   active: boolean;
+  disableDeactivate?: boolean;
 }) {
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
+  const blocked = Boolean(active && disableDeactivate);
 
   return (
     <div>
       <button
         type="button"
-        disabled={pending}
+        disabled={pending || blocked}
         className={`${btnSecondary} ${btnSizeSm}`}
         onClick={() => {
           startTransition(async () => {
@@ -122,6 +128,9 @@ export function MemberActiveToggle({
       >
         {active ? "Deactivate" : "Reactivate"}
       </button>
+      {blocked ? (
+        <p className={helperClass}>The last active owner cannot be deactivated.</p>
+      ) : null}
       {error ? <p className={errorClass}>{error}</p> : null}
     </div>
   );

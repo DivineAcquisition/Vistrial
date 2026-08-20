@@ -14,10 +14,12 @@ export type OrgIngestionHealth = {
   connectionStatus: "active" | "broken" | "inactive" | "missing";
   locationName: string | null;
   lastVerifiedAt: string | null;
+  lastSetupError: string | null;
   receivedLast24h: Record<string, number>;
   unprocessed: number;
   oldestUnprocessedAt: string | null;
   oldestUnprocessedAgeMs: number | null;
+  deadCount: number;
   dead: Array<{ id: string; eventType: string; errorText: string | null; receivedAt: string }>;
   lastProcessedAt: string | null;
   lastProcessedAgeMs: number | null;
@@ -66,24 +68,31 @@ export function isIngestionStale(args: {
 }
 
 export async function loadOrgIngestionHealth(db: GhlDb, orgId: string): Promise<OrgIngestionHealth> {
-  const since24h = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
   const now = Date.now();
 
-  const [connection, received, unprocessed, dead, lastProcessed] = await Promise.all([
-    db.from("ghl_connections").select("status, location_name, last_verified_at").eq("org_id", orgId).maybeSingle(),
+  const [connection, received, unprocessedCount, oldestPending, deadCount, dead, lastProcessed] = await Promise.all([
+    db.from("ghl_connections").select("status, location_name, last_verified_at, last_setup_error").eq("org_id", orgId).maybeSingle(),
+    db.rpc("ghl_event_counts_24h", { p_org_id: orgId }),
     db
       .from("webhook_events")
-      .select("event_type")
+      .select("id", { count: "exact", head: true })
       .eq("org_id", orgId)
-      .eq("source", "ghl")
-      .gte("received_at", since24h),
+      .eq("processed", false)
+      .eq("status", "pending"),
     db
       .from("webhook_events")
-      .select("id, received_at")
+      .select("received_at")
       .eq("org_id", orgId)
       .eq("processed", false)
       .eq("status", "pending")
-      .order("received_at", { ascending: true }),
+      .order("received_at", { ascending: true })
+      .limit(1)
+      .maybeSingle(),
+    db
+      .from("webhook_events")
+      .select("id", { count: "exact", head: true })
+      .eq("org_id", orgId)
+      .eq("status", "dead"),
     db
       .from("webhook_events")
       .select("id, event_type, error_text, received_at")
@@ -104,10 +113,10 @@ export async function loadOrgIngestionHealth(db: GhlDb, orgId: string): Promise<
 
   const receivedLast24h: Record<string, number> = {};
   for (const row of received.data ?? []) {
-    receivedLast24h[row.event_type] = (receivedLast24h[row.event_type] ?? 0) + 1;
+    receivedLast24h[row.event_type] = Number(row.n);
   }
-  const unprocessedRows = unprocessed.data ?? [];
-  const oldestUnprocessedAt = unprocessedRows[0]?.received_at ?? null;
+  const unprocessed = unprocessedCount.count ?? 0;
+  const oldestUnprocessedAt = oldestPending.data?.received_at ?? null;
   const oldestUnprocessedAgeMs = oldestUnprocessedAt ? now - Date.parse(oldestUnprocessedAt) : null;
   const lastProcessedAt = lastProcessed.data?.processed_at ?? null;
   const lastProcessedAgeMs = lastProcessedAt ? now - Date.parse(lastProcessedAt) : null;
@@ -116,7 +125,7 @@ export async function loadOrgIngestionHealth(db: GhlDb, orgId: string): Promise<
   const receivedCount = Object.values(receivedLast24h).reduce((sum, count) => sum + count, 0);
   const stale = isIngestionStale({
     connected: status === "active",
-    unprocessed: unprocessedRows.length,
+    unprocessed,
     oldestUnprocessedAgeMs,
     lastProcessedAgeMs,
     receivedLast24hCount: receivedCount,
@@ -128,10 +137,12 @@ export async function loadOrgIngestionHealth(db: GhlDb, orgId: string): Promise<
     connectionStatus: status,
     locationName: connection.data?.location_name ?? null,
     lastVerifiedAt: connection.data?.last_verified_at ?? null,
+    lastSetupError: connection.data?.last_setup_error ?? null,
     receivedLast24h,
-    unprocessed: unprocessedRows.length,
+    unprocessed,
     oldestUnprocessedAt,
     oldestUnprocessedAgeMs,
+    deadCount: deadCount.count ?? 0,
     dead: (dead.data ?? []).map((row) => ({
       id: row.id,
       eventType: row.event_type,

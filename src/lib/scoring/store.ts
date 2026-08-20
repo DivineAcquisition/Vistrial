@@ -191,6 +191,15 @@ export async function insertScoreRow(
   return { written: true, id: data.id };
 }
 
+/** Webhook processing must retry when a score row failed to persist. */
+export function assertScorePersisted(
+  result: WriteScoreResult | { written: false; reason: string }
+): void {
+  if (!result.written && result.reason === "db") {
+    throw new Error("score_write_failed");
+  }
+}
+
 export function scoreFromAnswers(
   answers: Record<string, unknown>,
   maps: ScoreFieldMap[],

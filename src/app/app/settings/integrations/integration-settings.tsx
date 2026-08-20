@@ -45,11 +45,13 @@ export type IntegrationSettingsProps = {
     status: "active" | "broken" | "inactive" | "missing";
     locationName: string | null;
     lastVerifiedAt: string | null;
+    lastSetupError: string | null;
   };
   health: {
     receivedLast24h: Record<string, number>;
     unprocessed: number;
     oldestUnprocessedAgeMs: number | null;
+    deadCount: number;
     dead: DeadEvent[];
     lastProcessedAt: string | null;
     lastProcessedAgeMs: number | null;
@@ -97,6 +99,27 @@ export function IntegrationSettings(props: IntegrationSettingsProps) {
             Token refresh failed. Outbound dispatch is halted until an owner or admin reconnects.
             Inbound events still store if the location is linked. This is an emergency for this
             product — reconnect now.
+          </p>
+        </Panel>
+      ) : null}
+
+      {props.connection.lastSetupError ? (
+        <Panel className="border-flag-warning/40 px-6 py-5">
+          <p className="text-sm font-semibold text-flag-warning">Webhook registration did not finish</p>
+          <p className="mt-2 text-sm leading-relaxed text-silver">
+            The location is linked, but HighLevel did not accept the webhook subscription. Inbound
+            events will not arrive until this is fixed. Reconnect, or check the marketplace app
+            webhook URL. Recorded cause: {props.connection.lastSetupError}.
+          </p>
+        </Panel>
+      ) : null}
+
+      {props.connection.status === "active" && props.maps.length === 0 ? (
+        <Panel className="border-flag-warning/40 px-6 py-5">
+          <p className="text-sm font-semibold text-flag-warning">No application field maps</p>
+          <p className="mt-2 text-sm leading-relaxed text-silver">
+            Contacts can ingest, but intake scores will stay empty until GHL custom fields are
+            mapped onto answer keys. A blank score is not a successful scoring setup.
           </p>
         </Panel>
       ) : null}
@@ -223,7 +246,12 @@ export function IntegrationSettings(props: IntegrationSettingsProps) {
           </div>
           <div>
             <dt className={labelClass}>Failed permanently</dt>
-            <dd className="text-sm text-white">{props.health.dead.length}</dd>
+            <dd className="text-sm text-white">{props.health.deadCount}</dd>
+            {props.health.deadCount > props.health.dead.length ? (
+              <p className={helperClass}>
+                Showing the latest {props.health.dead.length} of {props.health.deadCount}.
+              </p>
+            ) : null}
           </div>
         </dl>
 

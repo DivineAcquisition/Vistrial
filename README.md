@@ -36,8 +36,8 @@ never white on the brand fill.
 ## Build order
 1. Foundation
 2. Schema + multi-tenancy + RLS
-3. Auth + org membership (this)
-4. App shell and the Queue
+3. Auth + org membership
+4. App shell
 5. Readiness scoring engine
 6. GHL sync and webhook ingestion
 7. Case File surfaces
@@ -48,10 +48,14 @@ never white on the brand fill.
 
 ## Database
 
+Use a **dedicated Vistrial** Supabase project. Do not apply these migrations
+to the DivineACQ control-plane database.
+
 The Case File spine lives in `supabase/migrations/`. Every table is org-scoped
 with RLS. Scores are append-only history; money is bigint cents. Auth is
 invite-only; see [`supabase/AUTH.md`](./supabase/AUTH.md) for dashboard
-settings. `org_invites` is the membership invite table.
+settings. `org_invites` is the membership invite table. Score cache columns
+on `leads` are trigger-owned — clients cannot PATCH them.
 
 ```bash
 npm run db:verify

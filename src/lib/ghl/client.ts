@@ -314,11 +314,23 @@ export async function registerLocationWebhooks(db: GhlDb, orgId: string): Promis
   });
   if (!result.ok) {
     ghlWarn("ghl.webhook.register_failed", { orgId, status: result.status });
+    await db
+      .from("ghl_connections")
+      .update({ last_setup_error: `webhook_register_failed:${result.status}` })
+      .eq("org_id", orgId);
     return null;
   }
   const id = result.json?.id ?? result.json?.webhookId ?? null;
   if (id) {
-    await db.from("ghl_connections").update({ webhook_id: id }).eq("org_id", orgId);
+    await db
+      .from("ghl_connections")
+      .update({ webhook_id: id, last_setup_error: null })
+      .eq("org_id", orgId);
+  } else {
+    await db
+      .from("ghl_connections")
+      .update({ last_setup_error: "webhook_register_missing_id" })
+      .eq("org_id", orgId);
   }
   ghlLog("ghl.webhook.registered", { orgId, registered: Boolean(id) });
   return id;

@@ -20,6 +20,18 @@ export function OrgProvider({
     }
   }, [value.cookieNeedsReset, value.org.id]);
 
+  useEffect(() => {
+    if (typeof BroadcastChannel === "undefined") return;
+    const channel = new BroadcastChannel("vistrial-active-org");
+    channel.onmessage = (event: MessageEvent<{ orgId?: string }>) => {
+      if (typeof event.data?.orgId === "string" && event.data.orgId !== value.org.id) {
+        window.location.reload();
+      }
+    };
+    channel.postMessage({ orgId: value.org.id });
+    return () => channel.close();
+  }, [value.org.id]);
+
   return <OrgContext.Provider value={value}>{children}</OrgContext.Provider>;
 }
 

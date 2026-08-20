@@ -54,7 +54,7 @@ export function parseWebhookPayload(raw: string): ParsedWebhook {
     parsedValue = JSON.parse(raw);
   } catch {
     parsed = false;
-    parsedValue = { _unparsed: true, raw };
+    parsedValue = { _unparsed: true, bytes: raw.length };
   }
 
   const payload: Json =
@@ -77,13 +77,39 @@ export function parseWebhookPayload(raw: string): ParsedWebhook {
 
   return {
     parsed,
-    payload,
+    payload: stripMessageBodies(payload),
     eventType,
     providerEventId,
     locationId,
     contactId,
     contactKey: locationId && contactId ? `${locationId}:${contactId}` : contactId,
   };
+}
+
+/** Conversational copy is never stored. Identity fields used to upsert leads stay. */
+const BODY_KEY =
+  /^(body|html|text|content|raw|rawbody|raw_body|messagebody|message_body|attachments|sms|emailbody|email_body)$/i;
+
+function stripMessageBodies(value: Json, depth = 0): Json {
+  if (depth > 8 || value === null) return value;
+  if (typeof value !== "object") return value;
+  if (Array.isArray(value)) {
+    return value.slice(0, 100).map((item) => stripMessageBodies(item as Json, depth + 1));
+  }
+
+  const out: Record<string, Json> = {};
+  for (const [key, nested] of Object.entries(value)) {
+    if (BODY_KEY.test(key)) {
+      out[key] = { redacted: true };
+      continue;
+    }
+    if (key.toLowerCase() === "message" && typeof nested === "string") {
+      out[key] = { redacted: true };
+      continue;
+    }
+    out[key] = stripMessageBodies(nested as Json, depth + 1);
+  }
+  return out;
 }
 
 export function asJsonRecord(value: Json): Record<string, unknown> {

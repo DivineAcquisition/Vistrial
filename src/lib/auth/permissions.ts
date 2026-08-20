@@ -34,6 +34,18 @@ export function canAssignLeads(role: OrgRole): boolean {
   return hasPermission(role, "assignLeads");
 }
 
+export function canOverrideLead(args: {
+  role: OrgRole;
+  memberId: string;
+  assignedSetterId: string | null;
+  assignedCloserId: string | null;
+}): boolean {
+  if (args.role === "owner" || args.role === "admin") return true;
+  if (args.role === "setter") return args.assignedSetterId === args.memberId;
+  if (args.role === "closer") return args.assignedCloserId === args.memberId;
+  return false;
+}
+
 export const INVITABLE_ROLES = ["admin", "closer", "setter"] as const satisfies readonly OrgRole[];
 
 export type InvitableRole = (typeof INVITABLE_ROLES)[number];

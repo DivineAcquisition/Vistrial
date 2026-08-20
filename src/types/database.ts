@@ -150,6 +150,7 @@ export type Database = {
           email: string | null;
           first_human_touch_at: string | null;
           first_name: string | null;
+          ghost_approaching_at: string | null;
           ghl_contact_id: string | null;
           ghl_opportunity_id: string | null;
           id: string;
@@ -176,6 +177,7 @@ export type Database = {
           email?: string | null;
           first_human_touch_at?: string | null;
           first_name?: string | null;
+          ghost_approaching_at?: string | null;
           ghl_contact_id?: string | null;
           ghl_opportunity_id?: string | null;
           id?: string;
@@ -202,6 +204,7 @@ export type Database = {
           email?: string | null;
           first_human_touch_at?: string | null;
           first_name?: string | null;
+          ghost_approaching_at?: string | null;
           ghl_contact_id?: string | null;
           ghl_opportunity_id?: string | null;
           id?: string;
@@ -235,6 +238,7 @@ export type Database = {
           created_by: Database["public"]["Enums"]["action_creator"];
           due_at: string | null;
           id: string;
+          kind: string | null;
           lead_id: string;
           org_id: string;
           owner_member_id: string | null;
@@ -246,6 +250,7 @@ export type Database = {
           created_by: Database["public"]["Enums"]["action_creator"];
           due_at?: string | null;
           id?: string;
+          kind?: string | null;
           lead_id: string;
           org_id: string;
           owner_member_id?: string | null;
@@ -257,6 +262,7 @@ export type Database = {
           created_by?: Database["public"]["Enums"]["action_creator"];
           due_at?: string | null;
           id?: string;
+          kind?: string | null;
           lead_id?: string;
           org_id?: string;
           owner_member_id?: string | null;
@@ -444,45 +450,48 @@ export type Database = {
         Row: {
           call_id: string | null;
           created_at: string;
-          decision_authority_raw: number;
+          decision_authority_raw: number | null;
           id: string;
-          investment_capacity_raw: number;
+          idempotency_key: string | null;
+          investment_capacity_raw: number | null;
           lead_id: string;
           org_id: string;
-          pain_severity_raw: number;
-          reasoning: string | null;
+          pain_severity_raw: number | null;
+          reasoning: string;
           scored_by_member_id: string | null;
-          timeline_raw: number;
+          timeline_raw: number | null;
           total: number;
           triggered_by: Database["public"]["Enums"]["score_trigger"];
         };
         Insert: {
           call_id?: string | null;
           created_at?: string;
-          decision_authority_raw: number;
+          decision_authority_raw?: number | null;
           id?: string;
-          investment_capacity_raw: number;
+          idempotency_key?: string | null;
+          investment_capacity_raw?: number | null;
           lead_id: string;
           org_id: string;
-          pain_severity_raw: number;
-          reasoning?: string | null;
+          pain_severity_raw?: number | null;
+          reasoning: string;
           scored_by_member_id?: string | null;
-          timeline_raw: number;
+          timeline_raw?: number | null;
           total: number;
           triggered_by: Database["public"]["Enums"]["score_trigger"];
         };
         Update: {
           call_id?: string | null;
           created_at?: string;
-          decision_authority_raw?: number;
+          decision_authority_raw?: number | null;
           id?: string;
-          investment_capacity_raw?: number;
+          idempotency_key?: string | null;
+          investment_capacity_raw?: number | null;
           lead_id?: string;
           org_id?: string;
-          pain_severity_raw?: number;
-          reasoning?: string | null;
+          pain_severity_raw?: number | null;
+          reasoning?: string;
           scored_by_member_id?: string | null;
-          timeline_raw?: number;
+          timeline_raw?: number | null;
           total?: number;
           triggered_by?: Database["public"]["Enums"]["score_trigger"];
         };
@@ -599,6 +608,117 @@ export type Database = {
           },
         ];
       };
+      score_field_maps: {
+        Row: {
+          created_at: string;
+          factor: Database["public"]["Enums"]["score_factor"];
+          field_name: string;
+          id: string;
+          org_id: string;
+          updated_at: string;
+        };
+        Insert: {
+          created_at?: string;
+          factor: Database["public"]["Enums"]["score_factor"];
+          field_name: string;
+          id?: string;
+          org_id: string;
+          updated_at?: string;
+        };
+        Update: {
+          created_at?: string;
+          factor?: Database["public"]["Enums"]["score_factor"];
+          field_name?: string;
+          id?: string;
+          org_id?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "score_field_maps_org_id_fkey";
+            columns: ["org_id"];
+            isOneToOne: false;
+            referencedRelation: "organizations";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      score_field_rules: {
+        Row: {
+          answer_value: string | null;
+          created_at: string;
+          field_map_id: string;
+          id: string;
+          kind: Database["public"]["Enums"]["score_mapping_kind"];
+          org_id: string;
+          range_max: number | null;
+          range_min: number | null;
+          score: number;
+        };
+        Insert: {
+          answer_value?: string | null;
+          created_at?: string;
+          field_map_id: string;
+          id?: string;
+          kind: Database["public"]["Enums"]["score_mapping_kind"];
+          org_id: string;
+          range_max?: number | null;
+          range_min?: number | null;
+          score: number;
+        };
+        Update: {
+          answer_value?: string | null;
+          created_at?: string;
+          field_map_id?: string;
+          id?: string;
+          kind?: Database["public"]["Enums"]["score_mapping_kind"];
+          org_id?: string;
+          range_max?: number | null;
+          range_min?: number | null;
+          score?: number;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "score_field_rules_field_map_id_fkey";
+            columns: ["field_map_id"];
+            isOneToOne: false;
+            referencedRelation: "score_field_maps";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      ghost_detector_runs: {
+        Row: {
+          changed_count: number;
+          evaluated_count: number;
+          id: string;
+          org_id: string;
+          ran_at: string;
+        };
+        Insert: {
+          changed_count: number;
+          evaluated_count: number;
+          id?: string;
+          org_id: string;
+          ran_at?: string;
+        };
+        Update: {
+          changed_count?: number;
+          evaluated_count?: number;
+          id?: string;
+          org_id?: string;
+          ran_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "ghost_detector_runs_org_id_fkey";
+            columns: ["org_id"];
+            isOneToOne: false;
+            referencedRelation: "organizations";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       touches: {
         Row: {
           actor_member_id: string | null;
@@ -705,6 +825,14 @@ export type Database = {
         Args: { p_token: string; p_user_id: string };
         Returns: Json;
       };
+      seed_default_score_maps: {
+        Args: { p_org_id: string };
+        Returns: undefined;
+      };
+      replace_org_score_maps: {
+        Args: { p_maps: Json; p_org_id: string };
+        Returns: undefined;
+      };
       user_has_org_role: {
         Args: { p_org_id: string; p_roles: Database["public"]["Enums"]["org_role"][] };
         Returns: boolean;
@@ -739,6 +867,12 @@ export type Database = {
         | "other";
       org_role: "owner" | "admin" | "closer" | "setter";
       payment_type: "pif" | "plan" | "bnpl";
+      score_factor:
+        | "timeline"
+        | "investment_capacity"
+        | "decision_authority"
+        | "pain_severity";
+      score_mapping_kind: "choice" | "range";
       score_trigger: "intake" | "call" | "manual" | "event";
       touch_channel: "sms" | "email" | "call" | "dm" | "voicemail" | "other";
       touch_direction: "outbound" | "inbound";

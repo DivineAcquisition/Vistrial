@@ -52,8 +52,8 @@ BEGIN
   INSERT INTO public.readiness_scores (
     org_id, lead_id,
     timeline_raw, investment_capacity_raw, decision_authority_raw, pain_severity_raw,
-    total, triggered_by
-  ) VALUES (v_org, v_lead, 70, 70, 70, 70, 70, 'intake');
+    total, reasoning, triggered_by
+  ) VALUES (v_org, v_lead, 70, 70, 70, 70, 70, 'Trigger probe: above threshold.', 'intake');
 
   SELECT current_score, lead_type INTO v_score, v_type
   FROM public.leads WHERE id = v_lead;
@@ -66,8 +66,8 @@ BEGIN
   INSERT INTO public.readiness_scores (
     org_id, lead_id,
     timeline_raw, investment_capacity_raw, decision_authority_raw, pain_severity_raw,
-    total, triggered_by
-  ) VALUES (v_org, v_lead, 10, 10, 10, 10, 40, 'manual');
+    total, reasoning, triggered_by
+  ) VALUES (v_org, v_lead, 10, 10, 10, 10, 40, 'Trigger probe: below threshold.', 'manual');
 
   SELECT current_score, lead_type INTO v_score, v_type
   FROM public.leads WHERE id = v_lead;

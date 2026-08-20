@@ -247,7 +247,7 @@ VALUES (
   now() - interval '3 days'
 );
 
--- 4. Ghost at roughly three weeks.
+-- 4. Silent for three weeks — working, so the ghost detector can catch them.
 INSERT INTO public.leads (
   id,
   org_id,
@@ -266,7 +266,7 @@ VALUES (
   'Sam',
   'Ortiz',
   'sam.ortiz@example.com',
-  'ghost',
+  'working',
   now() - interval '24 days',
   now() - interval '21 days'
 )

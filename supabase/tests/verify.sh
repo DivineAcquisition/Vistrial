@@ -25,7 +25,7 @@ for f in "${ROOT}/supabase/migrations/"*.sql; do
   run "$f"
 done
 
-echo "RLS enabled on all thirteen tables?"
+echo "RLS enabled on scoring and case-file tables?"
 "${PSQL[@]}" -d "${DB_NAME}" -c "
 SELECT c.relname, c.relrowsecurity
 FROM pg_class c
@@ -33,9 +33,9 @@ JOIN pg_namespace n ON n.oid = c.relnamespace
 WHERE n.nspname = 'public'
   AND c.relkind = 'r'
   AND c.relname IN (
-    'organizations','org_members','org_invites','score_configs','leads','readiness_scores',
-    'touches','calls','call_extractions','objections','next_actions',
-    'revenue_log','webhook_events'
+    'organizations','org_members','org_invites','score_configs','score_field_maps',
+    'score_field_rules','leads','readiness_scores','touches','calls','call_extractions',
+    'objections','next_actions','revenue_log','webhook_events','ghost_detector_runs'
   )
 ORDER BY 1;
 "
@@ -52,4 +52,7 @@ run "${ROOT}/supabase/tests/verify-rls.sql"
 echo "Invite checks..."
 run "${ROOT}/supabase/tests/verify-invites.sql"
 
-echo "OK: schema, seed, triggers, RLS, and invite checks passed."
+echo "Scoring checks..."
+run "${ROOT}/supabase/tests/verify-scoring.sql"
+
+echo "OK: schema, seed, triggers, RLS, invite, and scoring checks passed."

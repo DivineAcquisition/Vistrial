@@ -7,6 +7,11 @@ import {
   retryWebhookEvent,
   saveGhlFieldMaps,
   selectGhlLocation,
+  saveTranscriptConnection,
+  rotateTranscriptWebhookToken,
+  pasteUnmatchedTranscript,
+  assignUnmatchedTranscript,
+  discardUnmatchedTranscript,
   type FieldMapPayload,
 } from "@/app/app/settings/integrations/actions";
 import type { SettingsSaveResult } from "@/app/app/settings/types";
@@ -14,6 +19,8 @@ import { DataTable } from "@/components/ui/data-table";
 import { Panel } from "@/components/ui/panel";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { formatRelative } from "@/lib/format";
+import { RECORDER_SOURCES } from "@/lib/transcripts/constants";
+import { TRANSCRIPT_SOURCE_LABELS } from "@/lib/leads/labels";
 import {
   btnPrimary,
   btnSecondary,
@@ -63,6 +70,30 @@ export type IntegrationSettingsProps = {
   flash: string | null;
   flashError: string | null;
   now: string;
+  appUrl: string;
+  transcriptHealth: {
+    unmatchedCount: number;
+    unmatchedOldestAgeMs: number | null;
+    deadExtractions: number;
+    connections: Array<{
+      source: string;
+      publicToken: string;
+      lastPullAt: string | null;
+      lastPullError: string | null;
+      hasWebhookSecret: boolean;
+      hasApiKey: boolean;
+    }>;
+  };
+  unmatched: Array<{
+    id: string;
+    source: string;
+    title: string | null;
+    occurredAt: string | null;
+    receivedAt: string;
+    participantEmails: string[];
+    providerCallId: string | null;
+  }>;
+  assignableCalls: Array<{ id: string; label: string }>;
 };
 
 const initial: SettingsSaveResult = { status: "idle" };
@@ -87,6 +118,9 @@ export function IntegrationSettings(props: IntegrationSettingsProps) {
   const [mapStatus, setMapStatus] = useState<SettingsSaveResult>(initial);
   const [retryStatus, setRetryStatus] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
+  const [transcriptStatus, setTranscriptStatus] = useState<string | null>(null);
+  const [pasteText, setPasteText] = useState("");
+  const [assignCallId, setAssignCallId] = useState<Record<string, string>>({});
 
   const counts = Object.entries(props.health.receivedLast24h).sort(([a], [b]) => a.localeCompare(b));
 
@@ -130,6 +164,20 @@ export function IntegrationSettings(props: IntegrationSettingsProps) {
           <p className="mt-2 text-sm leading-relaxed text-silver">
             {props.health.staleReason ??
               "No event has been processed recently. Leads will not appear until this is fixed."}
+          </p>
+        </Panel>
+      ) : null}
+
+      {props.transcriptHealth.unmatchedCount > 0 ? (
+        <Panel className="border-flag-warning/40 px-6 py-5">
+          <p className="text-sm font-semibold text-flag-warning">Unmatched transcripts need an operator</p>
+          <p className="mt-2 text-sm leading-relaxed text-silver">
+            {props.transcriptHealth.unmatchedCount} recording
+            {props.transcriptHealth.unmatchedCount === 1 ? "" : "s"} could not be attached to a call.
+            Assign them below. Vistrial will not guess.
+            {props.transcriptHealth.unmatchedOldestAgeMs !== null
+              ? ` Oldest is ${Math.round(props.transcriptHealth.unmatchedOldestAgeMs / 60000)}m old.`
+              : ""}
           </p>
         </Panel>
       ) : null}
@@ -237,6 +285,16 @@ export function IntegrationSettings(props: IntegrationSettingsProps) {
             </p>
           </div>
           <div>
+            <dt className={labelClass}>Unmatched transcripts</dt>
+            <dd className="text-sm text-white">{props.transcriptHealth.unmatchedCount}</dd>
+            <p className={helperClass}>
+              Oldest:{" "}
+              {props.transcriptHealth.unmatchedOldestAgeMs === null
+                ? "—"
+                : `${Math.round(props.transcriptHealth.unmatchedOldestAgeMs / 60000)}m`}
+            </p>
+          </div>
+          <div>
             <dt className={labelClass}>Last processed</dt>
             <dd className="text-sm text-white">
               {props.health.lastProcessedAt
@@ -247,11 +305,10 @@ export function IntegrationSettings(props: IntegrationSettingsProps) {
           <div>
             <dt className={labelClass}>Failed permanently</dt>
             <dd className="text-sm text-white">{props.health.deadCount}</dd>
-            {props.health.deadCount > props.health.dead.length ? (
-              <p className={helperClass}>
-                Showing the latest {props.health.dead.length} of {props.health.deadCount}.
-              </p>
-            ) : null}
+          </div>
+          <div>
+            <dt className={labelClass}>Failed extractions</dt>
+            <dd className="text-sm text-white">{props.transcriptHealth.deadExtractions}</dd>
           </div>
         </dl>
 
@@ -436,6 +493,182 @@ export function IntegrationSettings(props: IntegrationSettingsProps) {
             <p className="text-sm text-flag-good">Field mapping saved.</p>
           ) : null}
         </div>
+      </Panel>
+
+      <Panel className="px-6 py-6">
+        <h2 className="text-sm font-semibold text-white">Call recorders</h2>
+        <p className={helperClass}>
+          Webhooks for Fathom, Fireflies, Zoom, and GHL. Optional API key for scheduled pull.
+          Manual paste stays available as the fallback. Audio is never stored.
+        </p>
+        {transcriptStatus ? <p className="mt-3 text-sm text-silver">{transcriptStatus}</p> : null}
+        <div className="mt-5 space-y-6">
+          {RECORDER_SOURCES.map((source) => {
+            const connection = props.transcriptHealth.connections.find((row) => row.source === source);
+            const webhookUrl = connection
+              ? `${props.appUrl}/api/transcripts/webhooks/${source}/${connection.publicToken}`
+              : null;
+            return (
+              <form
+                key={source}
+                className="space-y-3 border-t border-white/[0.06] pt-4 first:border-t-0 first:pt-0"
+                onSubmit={(event) => {
+                  event.preventDefault();
+                  const form = new FormData(event.currentTarget);
+                  startTransition(async () => {
+                    const result = await saveTranscriptConnection({
+                      source,
+                      webhookSecret: String(form.get("webhook_secret") ?? ""),
+                      apiKey: String(form.get("api_key") ?? ""),
+                    });
+                    setTranscriptStatus(result.status === "error" ? result.error : `${TRANSCRIPT_SOURCE_LABELS[source]} saved.`);
+                  });
+                }}
+              >
+                <p className="text-sm font-medium text-white">{TRANSCRIPT_SOURCE_LABELS[source]}</p>
+                {webhookUrl ? (
+                  <p className="text-xs break-all text-dim">Webhook URL: {webhookUrl}</p>
+                ) : (
+                  <p className="text-xs text-dim">Save a webhook secret to mint the URL.</p>
+                )}
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <label className="block">
+                    <span className={labelClass}>Webhook secret</span>
+                    <input name="webhook_secret" className={inputClass} placeholder={connection?.hasWebhookSecret ? "Unchanged" : ""} />
+                  </label>
+                  <label className="block">
+                    <span className={labelClass}>API key for pull</span>
+                    <input name="api_key" className={inputClass} placeholder={connection?.hasApiKey ? "Unchanged" : ""} />
+                  </label>
+                </div>
+                {connection?.lastPullError ? (
+                  <p className={errorClass}>Last pull: {connection.lastPullError}</p>
+                ) : null}
+                <div className="flex flex-wrap gap-2">
+                  <button type="submit" className={`${btnPrimary} ${btnSizeSm}`} disabled={pending}>
+                    Save
+                  </button>
+                  {connection ? (
+                    <button
+                      type="button"
+                      className={`${btnSecondary} ${btnSizeSm}`}
+                      disabled={pending}
+                      onClick={() => {
+                        startTransition(async () => {
+                          const result = await rotateTranscriptWebhookToken(source);
+                          setTranscriptStatus(
+                            result.status === "error" ? result.error : `${TRANSCRIPT_SOURCE_LABELS[source]} webhook URL rotated.`
+                          );
+                        });
+                      }}
+                    >
+                      Rotate URL
+                    </button>
+                  ) : null}
+                </div>
+              </form>
+            );
+          })}
+        </div>
+      </Panel>
+
+      <Panel className="px-6 py-6">
+        <h2 className="text-sm font-semibold text-white">Unmatched transcripts</h2>
+        <p className={helperClass}>
+          These did not uniquely match a call. Assign them. Never auto-attach.
+        </p>
+        <div className="mt-4">
+          <DataTable
+            columns={[
+              { key: "source", label: "Source" },
+              { key: "when", label: "Received" },
+              { key: "who", label: "Participants" },
+              { key: "action", label: "" },
+            ]}
+            empty="No unmatched transcripts."
+            rows={props.unmatched.map((row) => ({
+              source: TRANSCRIPT_SOURCE_LABELS[row.source as keyof typeof TRANSCRIPT_SOURCE_LABELS] ?? row.source,
+              when: formatRelative(row.receivedAt, props.now),
+              who: row.participantEmails.join(", ") || "—",
+              action: (
+                <div className="flex flex-wrap items-center gap-2">
+                  <select
+                    className={selectClass}
+                    value={assignCallId[row.id] ?? ""}
+                    onChange={(event) =>
+                      setAssignCallId((current) => ({ ...current, [row.id]: event.target.value }))
+                    }
+                  >
+                    <option value="">Choose a call</option>
+                    {props.assignableCalls.map((call) => (
+                      <option key={call.id} value={call.id}>
+                        {call.label}
+                      </option>
+                    ))}
+                  </select>
+                  <button
+                    type="button"
+                    className={`${btnPrimary} ${btnSizeSm}`}
+                    disabled={pending || !assignCallId[row.id]}
+                    onClick={() => {
+                      startTransition(async () => {
+                        const result = await assignUnmatchedTranscript({
+                          unmatchedId: row.id,
+                          callId: assignCallId[row.id],
+                        });
+                        setTranscriptStatus(result.status === "error" ? result.error : "Transcript assigned.");
+                      });
+                    }}
+                  >
+                    Assign
+                  </button>
+                  <button
+                    type="button"
+                    className={`${btnSecondary} ${btnSizeSm}`}
+                    disabled={pending}
+                    onClick={() => {
+                      startTransition(async () => {
+                        const result = await discardUnmatchedTranscript(row.id);
+                        setTranscriptStatus(result.status === "error" ? result.error : "Transcript discarded.");
+                      });
+                    }}
+                  >
+                    Discard
+                  </button>
+                </div>
+              ),
+            }))}
+          />
+        </div>
+      </Panel>
+
+      <Panel className="px-6 py-6">
+        <h2 className="text-sm font-semibold text-white">Manual paste</h2>
+        <p className={helperClass}>
+          Permanent fallback. Lands in the unmatched queue so an operator attaches it to a call.
+        </p>
+        <form
+          className="mt-4 space-y-3"
+          onSubmit={(event) => {
+            event.preventDefault();
+            startTransition(async () => {
+              const result = await pasteUnmatchedTranscript(pasteText);
+              setTranscriptStatus(result.status === "error" ? result.error : "Transcript stored for assignment.");
+              if (result.status === "saved") setPasteText("");
+            });
+          }}
+        >
+          <textarea
+            className={inputClass}
+            rows={6}
+            value={pasteText}
+            onChange={(event) => setPasteText(event.target.value)}
+            required
+          />
+          <button type="submit" className={`${btnPrimary} ${btnSizeSm}`} disabled={pending || !pasteText.trim()}>
+            Store unmatched
+          </button>
+        </form>
       </Panel>
     </div>
   );

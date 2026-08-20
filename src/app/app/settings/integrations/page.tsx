@@ -4,8 +4,9 @@ import { requireOrgSettingsManager } from "@/lib/auth/gates";
 import { LOCATION_CLAIMED_MESSAGE } from "@/lib/ghl/constants";
 import { fetchCustomFields } from "@/lib/ghl/client";
 import { listSessionLocations } from "@/lib/ghl/connect";
-import { ghlOAuthConfigured } from "@/lib/ghl/env";
+import { appUrl, ghlOAuthConfigured } from "@/lib/ghl/env";
 import { loadOrgIngestionHealth } from "@/lib/ghl/health";
+import { loadOpenUnmatched, loadTranscriptHealth } from "@/lib/transcripts/health";
 import { getSupabaseAdmin } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 
@@ -28,7 +29,7 @@ export default async function IntegrationsSettingsPage({
   const admin = getSupabaseAdmin();
   const supabase = await createClient();
 
-  const [connection, health, maps] = await Promise.all([
+  const [connection, health, maps, transcriptHealth, unmatched] = await Promise.all([
     supabase
       .from("ghl_connections")
       .select("status, location_name, last_verified_at, location_id")
@@ -40,7 +41,29 @@ export default async function IntegrationsSettingsPage({
       .select("id, ghl_field_id, ghl_field_key, answer_key")
       .eq("org_id", ctx.org.id)
       .order("created_at", { ascending: true }),
+    loadTranscriptHealth(admin, ctx.org.id),
+    loadOpenUnmatched(admin, ctx.org.id),
   ]);
+
+  const { data: assignable } = await supabase
+    .from("calls")
+    .select("id, type, scheduled_at, occurred_at, lead_id")
+    .eq("org_id", ctx.org.id)
+    .is("raw_transcript", null)
+    .order("scheduled_at", { ascending: false })
+    .limit(50);
+
+  const leadIds = [...new Set((assignable ?? []).map((row) => row.lead_id))];
+  const { data: leadNames } =
+    leadIds.length > 0
+      ? await supabase.from("leads").select("id, first_name, last_name, email").eq("org_id", ctx.org.id).in("id", leadIds)
+      : { data: [] };
+  const nameByLead = new Map(
+    (leadNames ?? []).map((lead) => [
+      lead.id,
+      [lead.first_name, lead.last_name].filter(Boolean).join(" ") || lead.email || "Unnamed lead",
+    ])
+  );
 
   const selectLocation = params.select_location === "1";
   const locations = selectLocation ? await listSessionLocations(admin, ctx.org.id, ctx.member.id) : [];
@@ -90,6 +113,18 @@ export default async function IntegrationsSettingsPage({
         flash={params.connected === "1" ? "GoHighLevel is connected." : null}
         flashError={params.ghl_error ? FLASH_ERRORS[params.ghl_error] ?? FLASH_ERRORS.oauth_failed : null}
         now={new Date().toISOString()}
+        appUrl={appUrl()}
+        transcriptHealth={{
+          unmatchedCount: transcriptHealth.unmatched.count,
+          unmatchedOldestAgeMs: transcriptHealth.unmatched.oldestAgeMs,
+          deadExtractions: transcriptHealth.deadExtractions.count,
+          connections: transcriptHealth.connections,
+        }}
+        unmatched={unmatched}
+        assignableCalls={(assignable ?? []).map((row) => ({
+          id: row.id,
+          label: `${nameByLead.get(row.lead_id) ?? "Lead"} · ${row.type}`,
+        }))}
       />
     </PageFrame>
   );

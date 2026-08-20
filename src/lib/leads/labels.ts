@@ -73,6 +73,27 @@ export const PAYMENT_TYPE_LABELS: Record<Enums<"payment_type">, string> = {
   bnpl: "BNPL",
 };
 
+export const TRANSCRIPT_SOURCE_LABELS: Record<Enums<"transcript_source">, string> = {
+  fathom: "Fathom",
+  fireflies: "Fireflies",
+  zoom: "Zoom",
+  ghl: "GoHighLevel",
+  manual: "Manual paste",
+};
+
+export const SIGNAL_STATE_LABELS: Record<Enums<"extraction_signal_state">, string> = {
+  absent: "Not discussed",
+  unclear: "Mentioned, unclear",
+  present: "Stated",
+};
+
+export const EXTRACTION_STATUS_LABELS: Record<"none" | "pending" | "ready" | "failed", string> = {
+  none: "No extraction",
+  pending: "Extracting",
+  ready: "Extracted",
+  failed: "Extraction failed",
+};
+
 export function leadStatusTone(
   status: LeadStatus
 ): "brand" | "warning" | "critical" | "good" | "neutral" {

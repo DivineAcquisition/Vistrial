@@ -235,6 +235,15 @@ function parseCall(value: unknown): CaseCall | null {
     ranByName: asString(row.ranByName),
     hasTranscript: asBoolean(row.hasTranscript),
     hasExtraction: asBoolean(row.hasExtraction),
+    extractionStatus:
+      row.extractionStatus === "failed" ||
+      row.extractionStatus === "pending" ||
+      row.extractionStatus === "ready" ||
+      row.extractionStatus === "none"
+        ? row.extractionStatus
+        : asBoolean(row.hasExtraction)
+          ? "ready"
+          : "none",
   };
 }
 

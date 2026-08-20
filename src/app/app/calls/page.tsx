@@ -1,28 +1,25 @@
 import { PageFrame } from "@/components/app/page-frame";
-import { CrmListPlaceholder } from "@/components/app/crm-list-placeholder";
+import { CallsScreen } from "@/app/app/calls/calls-screen";
+import { canManageOrgSettings } from "@/lib/auth/permissions";
+import { getAuthContext } from "@/lib/auth/session";
+import { loadOrgCallList } from "@/lib/calls/load";
+import { throwIfForcedRouteError } from "@/lib/route-error";
 
-export default function CallsPage() {
+export default async function CallsPage({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
+  const params = await searchParams;
+  throwIfForcedRouteError(params.forceError);
+  const ctx = await getAuthContext();
+  const payload = await loadOrgCallList();
+
   return (
-    <PageFrame
-      title="Calls"
-      description="Recorded conversations and transcripts, once call capture is connected."
-    >
-      <CrmListPlaceholder
-        missing={{
-          title: "Calls appear after capture is connected",
-          detail:
-            "Booked and completed calls will list here once the CRM and transcript sources are linked. There is nothing to work yet because those connections are not in place.",
-        }}
-        broken={{
-          title: "Calls cannot load while the CRM connection is broken",
-          detail:
-            "Appointments will not sync until GoHighLevel is reconnected. This is not an empty call list.",
-        }}
-        empty={{
-          title: "No calls yet",
-          detail:
-            "GoHighLevel is connected. Booked appointments will list here after they ingest. There is nothing to open yet.",
-        }}
+    <PageFrame title="Calls" description="Recorded conversations, extractions, and the brief for the next dial.">
+      <CallsScreen
+        initial={payload}
+        canOpenIntegrations={canManageOrgSettings(ctx.role, ctx.isPlatformAdmin)}
       />
     </PageFrame>
   );

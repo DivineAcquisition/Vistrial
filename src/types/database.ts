@@ -17,48 +17,69 @@ export type Database = {
       call_extractions: {
         Row: {
           budget_signal: string | null;
+          budget_signal_state: Database["public"]["Enums"]["extraction_signal_state"];
           call_id: string;
           created_at: string;
           decision_process: string | null;
+          decision_process_state: Database["public"]["Enums"]["extraction_signal_state"];
           extracted_at: string;
           id: string;
+          input_tokens: number | null;
           model_version: string | null;
           next_step_agreed: string | null;
+          next_step_state: Database["public"]["Enums"]["extraction_signal_state"];
           org_id: string;
+          output_tokens: number | null;
           quotes: Json;
           stated_objection: string | null;
+          stated_objection_state: Database["public"]["Enums"]["extraction_signal_state"];
           summary: string | null;
           timeline_signal: string | null;
+          timeline_signal_state: Database["public"]["Enums"]["extraction_signal_state"];
         };
         Insert: {
           budget_signal?: string | null;
+          budget_signal_state?: Database["public"]["Enums"]["extraction_signal_state"];
           call_id: string;
           created_at?: string;
           decision_process?: string | null;
+          decision_process_state?: Database["public"]["Enums"]["extraction_signal_state"];
           extracted_at?: string;
           id?: string;
+          input_tokens?: number | null;
           model_version?: string | null;
           next_step_agreed?: string | null;
+          next_step_state?: Database["public"]["Enums"]["extraction_signal_state"];
           org_id: string;
+          output_tokens?: number | null;
           quotes?: Json;
           stated_objection?: string | null;
+          stated_objection_state?: Database["public"]["Enums"]["extraction_signal_state"];
           summary?: string | null;
           timeline_signal?: string | null;
+          timeline_signal_state?: Database["public"]["Enums"]["extraction_signal_state"];
         };
         Update: {
           budget_signal?: string | null;
+          budget_signal_state?: Database["public"]["Enums"]["extraction_signal_state"];
           call_id?: string;
           created_at?: string;
           decision_process?: string | null;
+          decision_process_state?: Database["public"]["Enums"]["extraction_signal_state"];
           extracted_at?: string;
           id?: string;
+          input_tokens?: number | null;
           model_version?: string | null;
           next_step_agreed?: string | null;
+          next_step_state?: Database["public"]["Enums"]["extraction_signal_state"];
           org_id?: string;
+          output_tokens?: number | null;
           quotes?: Json;
           stated_objection?: string | null;
+          stated_objection_state?: Database["public"]["Enums"]["extraction_signal_state"];
           summary?: string | null;
           timeline_signal?: string | null;
+          timeline_signal_state?: Database["public"]["Enums"]["extraction_signal_state"];
         };
         Relationships: [
           {
@@ -84,6 +105,7 @@ export type Database = {
           recording_url: string | null;
           scheduled_at: string | null;
           transcript_arrived_at: string | null;
+          transcript_provider_id: string | null;
           transcript_source:
             | Database["public"]["Enums"]["transcript_source"]
             | null;
@@ -104,6 +126,7 @@ export type Database = {
           recording_url?: string | null;
           scheduled_at?: string | null;
           transcript_arrived_at?: string | null;
+          transcript_provider_id?: string | null;
           transcript_source?:
             | Database["public"]["Enums"]["transcript_source"]
             | null;
@@ -124,6 +147,7 @@ export type Database = {
           recording_url?: string | null;
           scheduled_at?: string | null;
           transcript_arrived_at?: string | null;
+          transcript_provider_id?: string | null;
           transcript_source?:
             | Database["public"]["Enums"]["transcript_source"]
             | null;
@@ -140,6 +164,252 @@ export type Database = {
             referencedColumns: ["id", "org_id"];
           },
         ];
+      };
+      brief_openings: {
+        Row: {
+          cache_key: string;
+          created_at: string;
+          id: string;
+          lead_id: string;
+          model_version: string | null;
+          opening_text: string;
+          org_id: string;
+        };
+        Insert: {
+          cache_key: string;
+          created_at?: string;
+          id?: string;
+          lead_id: string;
+          model_version?: string | null;
+          opening_text: string;
+          org_id: string;
+        };
+        Update: {
+          cache_key?: string;
+          created_at?: string;
+          id?: string;
+          lead_id?: string;
+          model_version?: string | null;
+          opening_text?: string;
+          org_id?: string;
+        };
+        Relationships: [];
+      };
+      extraction_corrections: {
+        Row: {
+          actor_member_id: string;
+          call_id: string;
+          created_at: string;
+          extraction_id: string;
+          field_name: string;
+          id: string;
+          new_value: string | null;
+          org_id: string;
+          previous_value: string | null;
+        };
+        Insert: {
+          actor_member_id: string;
+          call_id: string;
+          created_at?: string;
+          extraction_id: string;
+          field_name: string;
+          id?: string;
+          new_value?: string | null;
+          org_id: string;
+          previous_value?: string | null;
+        };
+        Update: {
+          actor_member_id?: string;
+          call_id?: string;
+          created_at?: string;
+          extraction_id?: string;
+          field_name?: string;
+          id?: string;
+          new_value?: string | null;
+          org_id?: string;
+          previous_value?: string | null;
+        };
+        Relationships: [];
+      };
+      extraction_jobs: {
+        Row: {
+          attempt_count: number;
+          call_id: string;
+          created_at: string;
+          id: string;
+          last_error: string | null;
+          next_attempt_at: string;
+          org_id: string;
+          processed_at: string | null;
+          requested_by_member_id: string | null;
+          status: Database["public"]["Enums"]["extraction_job_status"];
+        };
+        Insert: {
+          attempt_count?: number;
+          call_id: string;
+          created_at?: string;
+          id?: string;
+          last_error?: string | null;
+          next_attempt_at?: string;
+          org_id: string;
+          processed_at?: string | null;
+          requested_by_member_id?: string | null;
+          status?: Database["public"]["Enums"]["extraction_job_status"];
+        };
+        Update: {
+          attempt_count?: number;
+          call_id?: string;
+          created_at?: string;
+          id?: string;
+          last_error?: string | null;
+          next_attempt_at?: string;
+          org_id?: string;
+          processed_at?: string | null;
+          requested_by_member_id?: string | null;
+          status?: Database["public"]["Enums"]["extraction_job_status"];
+        };
+        Relationships: [];
+      };
+      extraction_usage: {
+        Row: {
+          call_id: string;
+          created_at: string;
+          extraction_id: string | null;
+          id: string;
+          input_tokens: number;
+          model_version: string;
+          org_id: string;
+          output_tokens: number;
+        };
+        Insert: {
+          call_id: string;
+          created_at?: string;
+          extraction_id?: string | null;
+          id?: string;
+          input_tokens: number;
+          model_version: string;
+          org_id: string;
+          output_tokens: number;
+        };
+        Update: {
+          call_id?: string;
+          created_at?: string;
+          extraction_id?: string | null;
+          id?: string;
+          input_tokens?: number;
+          model_version?: string;
+          org_id?: string;
+          output_tokens?: number;
+        };
+        Relationships: [];
+      };
+      transcript_connections: {
+        Row: {
+          api_key_encrypted: string | null;
+          created_at: string;
+          id: string;
+          last_pull_at: string | null;
+          last_pull_error: string | null;
+          org_id: string;
+          public_token: string;
+          source: Database["public"]["Enums"]["transcript_source"];
+          updated_at: string;
+          webhook_secret_encrypted: string | null;
+        };
+        Insert: {
+          api_key_encrypted?: string | null;
+          created_at?: string;
+          id?: string;
+          last_pull_at?: string | null;
+          last_pull_error?: string | null;
+          org_id: string;
+          public_token: string;
+          source: Database["public"]["Enums"]["transcript_source"];
+          updated_at?: string;
+          webhook_secret_encrypted?: string | null;
+        };
+        Update: {
+          api_key_encrypted?: string | null;
+          created_at?: string;
+          id?: string;
+          last_pull_at?: string | null;
+          last_pull_error?: string | null;
+          org_id?: string;
+          public_token?: string;
+          source?: Database["public"]["Enums"]["transcript_source"];
+          updated_at?: string;
+          webhook_secret_encrypted?: string | null;
+        };
+        Relationships: [];
+      };
+      unmatched_transcripts: {
+        Row: {
+          assigned_at: string | null;
+          assigned_by_member_id: string | null;
+          assigned_call_id: string | null;
+          created_at: string;
+          discarded_at: string | null;
+          discarded_by_member_id: string | null;
+          duration_seconds: number | null;
+          id: string;
+          occurred_at: string | null;
+          org_id: string;
+          participant_emails: string[];
+          provider_call_id: string | null;
+          provider_event_id: string | null;
+          raw_transcript: string;
+          received_at: string;
+          scheduled_at: string | null;
+          source: Database["public"]["Enums"]["transcript_source"];
+          status: Database["public"]["Enums"]["unmatched_transcript_status"];
+          title: string | null;
+          webhook_event_id: string | null;
+        };
+        Insert: {
+          assigned_at?: string | null;
+          assigned_by_member_id?: string | null;
+          assigned_call_id?: string | null;
+          created_at?: string;
+          discarded_at?: string | null;
+          discarded_by_member_id?: string | null;
+          duration_seconds?: number | null;
+          id?: string;
+          occurred_at?: string | null;
+          org_id: string;
+          participant_emails?: string[];
+          provider_call_id?: string | null;
+          provider_event_id?: string | null;
+          raw_transcript: string;
+          received_at?: string;
+          scheduled_at?: string | null;
+          source: Database["public"]["Enums"]["transcript_source"];
+          status?: Database["public"]["Enums"]["unmatched_transcript_status"];
+          title?: string | null;
+          webhook_event_id?: string | null;
+        };
+        Update: {
+          assigned_at?: string | null;
+          assigned_by_member_id?: string | null;
+          assigned_call_id?: string | null;
+          created_at?: string;
+          discarded_at?: string | null;
+          discarded_by_member_id?: string | null;
+          duration_seconds?: number | null;
+          id?: string;
+          occurred_at?: string | null;
+          org_id?: string;
+          participant_emails?: string[];
+          provider_call_id?: string | null;
+          provider_event_id?: string | null;
+          raw_transcript?: string;
+          received_at?: string;
+          scheduled_at?: string | null;
+          source?: Database["public"]["Enums"]["transcript_source"];
+          status?: Database["public"]["Enums"]["unmatched_transcript_status"];
+          title?: string | null;
+          webhook_event_id?: string | null;
+        };
+        Relationships: [];
       };
       leads: {
         Row: {
@@ -1325,6 +1595,26 @@ export type Database = {
         };
         Returns: undefined;
       };
+      load_org_precall_brief: {
+        Args: { p_org_id: string; p_lead_id: string };
+        Returns: Json;
+      };
+      load_org_call_list: {
+        Args: { p_org_id: string; p_cursor?: Json | null; p_limit?: number | null };
+        Returns: Json;
+      };
+      load_org_call_detail: {
+        Args: { p_org_id: string; p_call_id: string };
+        Returns: Json;
+      };
+      claim_transcript_webhook: {
+        Args: Record<PropertyKey, never>;
+        Returns: string | null;
+      };
+      claim_extraction_job: {
+        Args: Record<PropertyKey, never>;
+        Returns: string | null;
+      };
     };
     Enums: {
       action_creator: "system" | "user";
@@ -1374,6 +1664,9 @@ export type Database = {
       ghl_dispatch_status: "queued" | "sent" | "failed" | "suppressed";
       webhook_event_status: "pending" | "processed" | "dead" | "rejected";
       status_change_source: "manual" | "event";
+      extraction_signal_state: "absent" | "unclear" | "present";
+      extraction_job_status: "pending" | "processed" | "dead";
+      unmatched_transcript_status: "open" | "assigned" | "discarded";
     };
     CompositeTypes: {
       [_ in never]: never;

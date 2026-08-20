@@ -133,6 +133,7 @@ export type CaseCall = {
   ranByName: string | null;
   hasTranscript: boolean;
   hasExtraction: boolean;
+  extractionStatus: "none" | "pending" | "ready" | "failed";
 };
 
 export type CaseFieldMap = {

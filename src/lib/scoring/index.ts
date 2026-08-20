@@ -1,5 +1,5 @@
 export { computeReadinessScore } from "@/lib/scoring/compute";
-export { extractFactors } from "@/lib/scoring/extract";
+export { extractFactors, extractCallFactors } from "@/lib/scoring/extract";
 export { overlayCallFactors, applyEventToFactors } from "@/lib/scoring/events";
 export { scoreLeadOnIntake } from "@/lib/scoring/intake";
 export { scoreLeadFromCall } from "@/lib/scoring/call";

@@ -378,6 +378,29 @@
   animation-delay: 0.36s;
 }
 
+@media print {
+  aside,
+  header,
+  nav[aria-label="Breadcrumb"] {
+    display: none !important;
+  }
+
+  main {
+    padding: 0 !important;
+  }
+
+  .brief-sheet {
+    height: auto !important;
+    overflow: visible !important;
+  }
+
+  .brief-sheet p,
+  .brief-sheet li,
+  .brief-sheet dd {
+    break-inside: avoid;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

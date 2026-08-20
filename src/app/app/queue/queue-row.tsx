@@ -178,6 +178,12 @@ export function QueueLeadRow({
                 Open in CRM
               </a>
             ) : null}
+            <a href={`/app/cases/${row.id}/brief`} className={`${btnSecondary} ${btnSizeSm}`}>
+              Brief
+            </a>
+            <a href={`/app/cases/${row.id}`} className={`${btnSecondary} ${btnSizeSm}`}>
+              Case file
+            </a>
             <button
               type="button"
               className={`${btnSecondary} ${btnSizeSm}`}

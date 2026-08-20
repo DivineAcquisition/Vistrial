@@ -1,6 +1,6 @@
 import { overlayCallFactors } from "@/lib/scoring/events";
 import { computeReadinessScore } from "@/lib/scoring/compute";
-import { extractFactors, extractionReasoning } from "@/lib/scoring/extract";
+import { extractCallFactors, extractionReasoning } from "@/lib/scoring/extract";
 import {
   insertScoreRow,
   loadLatestFactors,
@@ -9,10 +9,12 @@ import {
   type ScoringClient,
   type WriteScoreResult,
 } from "@/lib/scoring/store";
+import { callScoreReasoning, type CallScoreSignal } from "@/lib/scoring/call-reason";
+import type { Enums } from "@/types/database";
 
 /**
  * Re-score from a call extraction. Call-derived factors replace prior ones
- * where present; the rest stay. Prompt 8 lands the extraction and calls this.
+ * where present; the rest stay. Nothing is averaged.
  */
 export async function scoreLeadFromCall(
   client: ScoringClient,
@@ -20,6 +22,9 @@ export async function scoreLeadFromCall(
     orgId: string;
     leadId: string;
     callId: string;
+    extractionId?: string | null;
+    callType?: Enums<"call_type"> | null;
+    callAt?: string | null;
     signals: {
       timeline_signal: string | null;
       budget_signal: string | null;
@@ -27,29 +32,47 @@ export async function scoreLeadFromCall(
     };
   }
 ): Promise<WriteScoreResult | { written: false; reason: "unscored" }> {
+  if (!args.signals.timeline_signal && !args.signals.budget_signal && !args.signals.decision_process) {
+    return { written: false, reason: "unscored" };
+  }
+
   const [config, maps, previous] = await Promise.all([
     loadScoreConfig(client, args.orgId),
     loadScoreMaps(client, args.orgId),
     loadLatestFactors(client, args.orgId, args.leadId),
   ]);
 
-  const extracted = extractFactors(
-    {
-      timeline_signal: args.signals.timeline_signal ?? undefined,
-      budget_signal: args.signals.budget_signal ?? undefined,
-      decision_process: args.signals.decision_process ?? undefined,
-    },
-    maps
-  );
+  const extracted = extractCallFactors(args.signals, maps);
   const merged = overlayCallFactors(previous, extracted.factors);
   const computed = computeReadinessScore(merged, config.weights);
   if (computed.kind === "unscored") {
     return { written: false, reason: "unscored" };
   }
 
+  const namedSignals: CallScoreSignal[] = [];
+  if (args.signals.timeline_signal) {
+    namedSignals.push({ factor: "timeline", text: args.signals.timeline_signal });
+  }
+  if (args.signals.budget_signal) {
+    namedSignals.push({ factor: "investment capacity", text: args.signals.budget_signal });
+  }
+  if (args.signals.decision_process) {
+    namedSignals.push({ factor: "decision authority", text: args.signals.decision_process });
+  }
+
   const extraction = extractionReasoning(extracted.notes, extracted.ignoredFields);
-  const reasoning =
-    `${computed.explanation} Call evidence replaced application answers where they conflicted; nothing was averaged. ${extraction}`.trim();
+  const reasoning = callScoreReasoning({
+    callId: args.callId,
+    callType: args.callType ?? null,
+    callAt: args.callAt ?? null,
+    explanation: computed.explanation,
+    signals: namedSignals,
+    mapping: extraction,
+  });
+
+  const idempotencyKey = args.extractionId
+    ? `call:${args.callId}:extract:${args.extractionId}`
+    : `call:${args.callId}`;
 
   return insertScoreRow(client, {
     orgId: args.orgId,
@@ -59,6 +82,6 @@ export async function scoreLeadFromCall(
     reasoning,
     triggeredBy: "call",
     callId: args.callId,
-    idempotencyKey: `call:${args.callId}`,
+    idempotencyKey,
   });
 }

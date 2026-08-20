@@ -98,6 +98,103 @@ function matchRule(value: unknown, rules: ScoreFieldRule[]): ScoreFieldRule | nu
 }
 
 /**
+ * Call language is scored against the org's existing factor maps.
+ * A mapped answer that appears inside the spoken signal counts; the longest
+ * hit wins so “15k” beats “5k”. Unmatched speech leaves the factor unknown
+ * for overlay — never a guessed number.
+ */
+export function matchCallRule(text: string, rules: ScoreFieldRule[]): ScoreFieldRule | null {
+  const exact = matchRule(text, rules);
+  if (exact) return exact;
+
+  const normalized = normalizeChoice(text);
+  const hits = rules
+    .filter((rule) => {
+      if (rule.kind !== "choice" || !rule.answerValue) return false;
+      const answer = normalizeChoice(rule.answerValue);
+      return answer.length >= 3 && normalized.includes(answer);
+    })
+    .sort(
+      (a, b) => normalizeChoice(b.answerValue ?? "").length - normalizeChoice(a.answerValue ?? "").length
+    );
+  return hits[0] ?? null;
+}
+
+const CALL_SIGNAL_FACTORS = {
+  timeline_signal: "timeline",
+  budget_signal: "investment_capacity",
+  decision_process: "decision_authority",
+} as const;
+
+export type CallScoreSignals = {
+  timeline_signal: string | null;
+  budget_signal: string | null;
+  decision_process: string | null;
+};
+
+/**
+ * Map present call signals onto factors using every org map for that factor,
+ * not the application field name. Factors the call did not speak to stay null
+ * so overlay leaves them untouched.
+ */
+export function extractCallFactors(signals: CallScoreSignals, maps: ScoreFieldMap[]): ExtractionResult {
+  const factors = emptyFactors();
+  const notes: ExtractionNote[] = [];
+  const ignoredFields: string[] = [];
+
+  for (const [fieldName, factor] of Object.entries(CALL_SIGNAL_FACTORS) as Array<
+    [keyof CallScoreSignals, ScoreFactor]
+  >) {
+    const text = signals[fieldName];
+    if (!text) continue;
+
+    const factorMaps = maps.filter((map) => map.factor === factor);
+    if (factorMaps.length === 0) {
+      ignoredFields.push(fieldName);
+      notes.push({
+        fieldName,
+        factor,
+        read: text,
+        produced: null,
+        detail: `Call spoke to ${FACTOR_LABELS[factor]} but this workspace has no map for that factor, so it was left unchanged.`,
+      });
+      continue;
+    }
+
+    let matched: { map: ScoreFieldMap; rule: ScoreFieldRule } | null = null;
+    for (const map of factorMaps) {
+      const rule = matchCallRule(text, map.rules);
+      if (rule) {
+        matched = { map, rule };
+        break;
+      }
+    }
+
+    if (!matched) {
+      notes.push({
+        fieldName,
+        factor,
+        read: text,
+        produced: null,
+        detail: `Call spoke to ${FACTOR_LABELS[factor]} but the wording did not match a mapped answer, so that factor was left unchanged rather than guessed.`,
+      });
+      continue;
+    }
+
+    factors[factor] = matched.rule.score;
+    notes.push({
+      fieldName,
+      factor,
+      read: text,
+      produced: matched.rule.score,
+      detail: `Call “${matched.map.fieldName}” matched ${JSON.stringify(matched.rule.answerValue ?? matched.rule.score)} → ${FACTOR_LABELS[factor]} ${matched.rule.score}.`,
+    });
+  }
+
+  return { factors, notes, ignoredFields };
+}
+
+/**
  * Map application answers through org-configured field maps.
  * Unmapped fields are ignored. A mapped field with no matching rule yields
  * unknown for that factor — never a default number.

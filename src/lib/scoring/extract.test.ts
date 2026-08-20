@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { extractFactors, parseNumericAnswer, type ScoreFieldMap } from "@/lib/scoring/extract";
+import { extractCallFactors, extractFactors, parseNumericAnswer, type ScoreFieldMap } from "@/lib/scoring/extract";
 
 function maps(): ScoreFieldMap[] {
   return [
@@ -11,6 +11,7 @@ function maps(): ScoreFieldMap[] {
       rules: [
         { id: "r1", kind: "choice", answerValue: "30 days", rangeMin: null, rangeMax: null, score: 80 },
         { id: "r2", kind: "choice", answerValue: "this week", rangeMin: null, rangeMax: null, score: 95 },
+        { id: "r2b", kind: "choice", answerValue: "after q1", rangeMin: null, rangeMax: null, score: 30 },
       ],
     },
     {
@@ -78,8 +79,35 @@ describe("extractFactors", () => {
     expect(result.factors.investment_capacity).toBe(50);
   });
 
-  it("keeps the first mapped value when two fields target the same factor", () => {
-    const result = extractFactors({ budget: "15k", annual_revenue: 200000 }, maps());
+  it("maps a spoken call signal through the factor's maps, not the form field name", () => {
+    const result = extractCallFactors(
+      {
+        timeline_signal: "Realistically we are looking at after Q1.",
+        budget_signal: null,
+        decision_process: "My partner has to be in the room for this.",
+      },
+      maps()
+    );
+    expect(result.factors.timeline).toBe(30);
+    expect(result.factors.investment_capacity).toBeNull();
+    expect(result.factors.decision_authority).toBeNull();
+    expect(result.factors.pain_severity).toBeNull();
+  });
+
+  it("does not guess a number when the spoken signal matches no mapped answer", () => {
+    const result = extractCallFactors(
+      { timeline_signal: "whenever the stars align", budget_signal: null, decision_process: null },
+      maps()
+    );
+    expect(result.factors.timeline).toBeNull();
+    expect(result.notes.some((note) => note.detail.includes("left unchanged"))).toBe(true);
+  });
+
+  it("lets the longest mapped phrase win so 15k beats 5k", () => {
+    const result = extractCallFactors(
+      { timeline_signal: null, budget_signal: "we can do 15k this quarter", decision_process: null },
+      maps()
+    );
     expect(result.factors.investment_capacity).toBe(80);
   });
 });

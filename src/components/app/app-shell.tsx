@@ -39,12 +39,12 @@ export function AppShell({ children }: { children: ReactNode }) {
 
   return (
     <div className="flex min-h-screen bg-ink-950 text-white">
-      <aside className="sticky top-0 hidden h-svh w-56 shrink-0 flex-col border-r border-white/[0.08] bg-ink-900 md:flex">
+      <aside className="sticky top-0 hidden h-svh w-56 shrink-0 flex-col border-r border-white/[0.08] bg-ink-900 print:hidden md:flex">
         <ShellChrome />
       </aside>
 
       <div className="flex min-w-0 flex-1 flex-col">
-        <header className="flex items-center gap-3 border-b border-white/[0.08] bg-ink-900 px-4 py-3 md:hidden">
+        <header className="flex items-center gap-3 border-b border-white/[0.08] bg-ink-900 px-4 py-3 print:hidden md:hidden">
           <Sheet open={open} onOpenChange={setOpen}>
             <SheetTrigger
               className="rounded-xl p-2 text-silver hover:bg-white/[0.04] hover:text-white"

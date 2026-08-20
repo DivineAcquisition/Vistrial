@@ -4,6 +4,10 @@ import { revalidatePath } from "next/cache";
 export function revalidateLeadSurfaces(leadId?: string) {
   revalidatePath("/app/queue");
   revalidatePath("/app/cases");
-  if (leadId) revalidatePath(`/app/cases/${leadId}`);
+  if (leadId) {
+    revalidatePath(`/app/cases/${leadId}`);
+    revalidatePath(`/app/cases/${leadId}/brief`);
+  }
+  revalidatePath("/app/calls");
   revalidatePath("/app/settings/scoring");
 }

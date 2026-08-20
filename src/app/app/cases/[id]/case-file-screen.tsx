@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useState } from "react";
 
 import {
@@ -132,6 +133,9 @@ export function CaseFileScreen({ initial }: { initial: CaseFilePayload }) {
             </div>
           </div>
           <div className="flex flex-wrap gap-2">
+            <Link href={`/app/cases/${lead.id}/brief`} className={`${btnPrimary} ${btnSizeSm}`}>
+              Pre-call brief
+            </Link>
             {lead.crmUrl ? (
               <a
                 href={lead.crmUrl}
@@ -460,14 +464,17 @@ export function CaseFileScreen({ initial }: { initial: CaseFilePayload }) {
       </section>
 
       <section>
-        <SectionHeader title="Calls" hint="Transcript and extraction mount on each call later. Nothing from the conversation is shown here." />
+        <SectionHeader
+          title="Calls"
+          hint="Open a call for the extraction. The brief is one click away."
+        />
         <div className="space-y-3">
           {file.calls.length === 0 ? (
             <Panel className="px-6 py-5">
               <p className="text-sm text-dim">No calls yet.</p>
             </Panel>
           ) : (
-            file.calls.map((call) => <CallBlock key={call.id} call={call} now={now} />)
+            file.calls.map((call) => <CallBlock key={call.id} call={call} now={now} leadId={lead.id} />)
           )}
         </div>
       </section>
@@ -732,7 +739,7 @@ function TimelineEntry({
   );
 }
 
-function CallBlock({ call, now }: { call: CaseCall; now: string }) {
+function CallBlock({ call, now, leadId }: { call: CaseCall; now: string; leadId: string }) {
   return (
     <Panel className="px-6 py-5" as="article">
       <DefinitionList>
@@ -746,7 +753,26 @@ function CallBlock({ call, now }: { call: CaseCall; now: string }) {
         <KeyValue label="Duration">{formatCallDuration(call.durationSeconds)}</KeyValue>
         <KeyValue label="Outcome">{call.outcome ? CALL_OUTCOME_LABELS[call.outcome] : "—"}</KeyValue>
         <KeyValue label="Ran by">{call.ranByName || "—"}</KeyValue>
+        <KeyValue label="Extraction">
+          {call.extractionStatus === "failed"
+            ? "Extraction failed"
+            : call.extractionStatus === "pending"
+              ? "Extracting"
+              : call.hasExtraction
+                ? "Ready"
+                : call.hasTranscript
+                  ? "Transcript stored, not extracted"
+                  : "No transcript"}
+        </KeyValue>
       </DefinitionList>
+      <div className="mt-4 flex flex-wrap gap-2">
+        <a href={`/app/calls/${call.id}`} className={`${btnSecondary} ${btnSizeSm}`}>
+          Open call
+        </a>
+        <a href={`/app/cases/${leadId}/brief`} className={`${btnPrimary} ${btnSizeSm}`}>
+          Pre-call brief
+        </a>
+      </div>
     </Panel>
   );
 }

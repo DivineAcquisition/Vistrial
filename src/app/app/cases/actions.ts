@@ -46,7 +46,7 @@ async function requireLeadInOrg(leadId: string): Promise<
   | { ok: true; orgId: string; leadId: string }
   | { ok: false; error: string }
 > {
-  if (!isLeadId(leadId)) return actionError("That lead is not in this workspace.");
+  if (!isLeadId(leadId)) return { ok: false, error: "That lead is not in this workspace." };
   const ctx = await getAuthContext();
   const supabase = await createClient();
   const { data, error } = await supabase
@@ -55,7 +55,7 @@ async function requireLeadInOrg(leadId: string): Promise<
     .eq("org_id", ctx.org.id)
     .eq("id", leadId)
     .maybeSingle();
-  if (error || !data) return actionError("That lead is not in this workspace.");
+  if (error || !data) return { ok: false, error: "That lead is not in this workspace." };
   return { ok: true, orgId: ctx.org.id, leadId };
 }
 

@@ -41,7 +41,7 @@ CREATE TABLE public.lead_status_changes (
   source public.status_change_source NOT NULL,
   actor_member_id uuid REFERENCES public.org_members (id) ON DELETE SET NULL,
   note text,
-  created_at timestamptz NOT NULL DEFAULT now(),
+  created_at timestamptz NOT NULL DEFAULT clock_timestamp(),
   CONSTRAINT lead_status_changes_lead_org_fkey FOREIGN KEY (lead_id, org_id)
     REFERENCES public.leads (id, org_id) ON DELETE CASCADE
 );
@@ -116,7 +116,7 @@ BEGIN
   END IF;
 
   INSERT INTO public.lead_status_changes (
-    org_id, lead_id, from_status, to_status, source, actor_member_id, note
+    org_id, lead_id, from_status, to_status, source, actor_member_id, note, created_at
   ) VALUES (
     NEW.org_id,
     NEW.id,
@@ -124,7 +124,8 @@ BEGIN
     NEW.status,
     v_source,
     v_actor,
-    NULLIF(current_setting('vistrial.status_note', true), '')
+    NULLIF(current_setting('vistrial.status_note', true), ''),
+    clock_timestamp()
   );
 
   RETURN NEW;
@@ -190,6 +191,9 @@ BEGIN
   IF NOT FOUND THEN
     RAISE EXCEPTION 'lead not found';
   END IF;
+
+  PERFORM set_config('vistrial.status_source', 'event', true);
+  PERFORM set_config('vistrial.status_note', '', true);
 END;
 $$;
 
@@ -593,7 +597,7 @@ BEGIN
           (
             sc.source = 'event'
             AND LAG(sc.source) OVER (ORDER BY sc.created_at, sc.id) = 'manual'
-          ) AS supersedes_manual
+          ) IS TRUE AS supersedes_manual
         FROM public.lead_status_changes sc
         WHERE sc.org_id = p_org_id AND sc.lead_id = p_lead_id
       ) s
@@ -729,7 +733,7 @@ BEGIN
   INTO v_score
   FROM public.readiness_scores score
   WHERE score.lead_id = p_lead_id AND score.org_id = p_org_id
-  ORDER BY score.created_at DESC
+  ORDER BY score.created_at DESC, score.id DESC
   LIMIT 1;
 
   SELECT COALESCE(jsonb_agg(item ORDER BY created_at DESC, id DESC), '[]'::jsonb)

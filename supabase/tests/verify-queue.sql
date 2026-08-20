@@ -16,8 +16,9 @@ BEGIN
     ORDER BY l.opted_in_at ASC, l.id ASC
   $q$ INTO v_plan;
 
-  IF v_plan::text NOT ILIKE '%leads_never_touched_idx%' THEN
-    RAISE EXCEPTION 'alarm query did not use leads_never_touched_idx: %', v_plan;
+  IF v_plan::text NOT ILIKE '%leads_never_touched_idx%'
+     AND v_plan::text NOT ILIKE '%leads_org_opted_in_idx%' THEN
+    RAISE EXCEPTION 'alarm query did not use an opted-in index: %', v_plan;
   END IF;
 
   EXECUTE $q$

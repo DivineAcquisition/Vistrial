@@ -856,7 +856,9 @@ function StatusPanel({
   onCancel: () => void;
   onSubmit: (input: { status: string; note: string }) => Promise<void>;
 }) {
-  const [status, setStatus] = useState(current === "closed_won" ? "working" : current);
+  const [status, setStatus] = useState<Exclude<LeadStatus, "closed_won">>(
+    current === "closed_won" ? "working" : current
+  );
   const [note, setNote] = useState("");
   const [pending, setPending] = useState(false);
 
@@ -875,7 +877,11 @@ function StatusPanel({
       </p>
       <label className="mt-4 block">
         <span className={labelClass}>Status</span>
-        <select className={selectClass} value={status} onChange={(event) => setStatus(event.target.value as LeadStatus)}>
+        <select
+          className={selectClass}
+          value={status}
+          onChange={(event) => setStatus(event.target.value as Exclude<LeadStatus, "closed_won">)}
+        >
           {MANUAL_LEAD_STATUSES.map((value) => (
             <option key={value} value={value}>
               {LEAD_STATUS_LABELS[value]}

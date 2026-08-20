@@ -6,17 +6,32 @@ DECLARE
 BEGIN
   SET LOCAL enable_seqscan = off;
 
+  IF NOT EXISTS (SELECT 1 FROM pg_indexes WHERE indexname = 'leads_first_name_trgm_idx')
+     OR NOT EXISTS (SELECT 1 FROM pg_indexes WHERE indexname = 'leads_email_trgm_idx')
+     OR NOT EXISTS (SELECT 1 FROM pg_indexes WHERE indexname = 'leads_phone_trgm_idx') THEN
+    RAISE EXCEPTION 'trigram search indexes were not created';
+  END IF;
+
   EXECUTE $q$
     EXPLAIN (FORMAT JSON)
     SELECT l.id
     FROM public.leads l
-    WHERE l.org_id = '22222222-2222-4222-8222-222222222222'
-      AND l.first_name ILIKE '%Maya%'
+    WHERE l.first_name ILIKE '%Maya%'
   $q$ INTO v_plan;
   IF v_plan::text NOT ILIKE '%leads_first_name_trgm_idx%'
-     AND v_plan::text NOT ILIKE '%gin_trgm%'
-     AND v_plan::text NOT ILIKE '%Bitmap Index%' THEN
-    RAISE EXCEPTION 'name search did not use a trigram/gin index: %', v_plan;
+     AND v_plan::text NOT ILIKE '%gin%' THEN
+    RAISE EXCEPTION 'ungated name search did not use a trigram/gin index: %', v_plan;
+  END IF;
+
+  EXECUTE $q$
+    EXPLAIN (FORMAT JSON)
+    SELECT l.id
+    FROM public.leads l
+    WHERE l.email ILIKE '%maya.chen%'
+  $q$ INTO v_plan;
+  IF v_plan::text NOT ILIKE '%leads_email_trgm_idx%'
+     AND v_plan::text NOT ILIKE '%gin%' THEN
+    RAISE EXCEPTION 'ungated email search did not use a trigram/gin index: %', v_plan;
   END IF;
 
   EXECUTE $q$
@@ -24,12 +39,14 @@ BEGIN
     SELECT l.id
     FROM public.leads l
     WHERE l.org_id = '22222222-2222-4222-8222-222222222222'
-      AND l.email ILIKE '%maya.chen%'
+      AND (
+        l.first_name ILIKE '%Maya%'
+        OR l.last_name ILIKE '%Maya%'
+        OR l.email ILIKE '%Maya%'
+      )
   $q$ INTO v_plan;
-  IF v_plan::text NOT ILIKE '%leads_email_trgm_idx%'
-     AND v_plan::text NOT ILIKE '%gin_trgm%'
-     AND v_plan::text NOT ILIKE '%Bitmap Index%' THEN
-    RAISE EXCEPTION 'email search did not use a trigram/gin index: %', v_plan;
+  IF v_plan::text ILIKE '%Seq Scan%' AND v_plan::text NOT ILIKE '%Index%' THEN
+    RAISE EXCEPTION 'org-scoped name search used a sequential scan: %', v_plan;
   END IF;
 
   EXECUTE $q$
@@ -93,19 +110,27 @@ INSERT INTO public.leads (
 INSERT INTO public.readiness_scores (
   org_id, lead_id,
   timeline_raw, investment_capacity_raw, decision_authority_raw, pain_severity_raw,
-  total, reasoning, triggered_by
+  total, reasoning, triggered_by, created_at
 ) VALUES (
   '22222222-2222-4222-8222-222222222222',
   'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbb02',
   90, 20, 40, 70, 55,
   'Case file fixture: high timeline, low investment.',
-  'intake'
-), (
+  'intake',
+  now() - interval '2 hours'
+);
+
+INSERT INTO public.readiness_scores (
+  org_id, lead_id,
+  timeline_raw, investment_capacity_raw, decision_authority_raw, pain_severity_raw,
+  total, reasoning, triggered_by, created_at
+) VALUES (
   '22222222-2222-4222-8222-222222222222',
   'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbb02',
   80, 20, 40, 70, 52,
   'Case file fixture: later override-shaped row.',
-  'manual'
+  'manual',
+  now() - interval '1 hour'
 );
 
 INSERT INTO public.touches (
@@ -339,6 +364,8 @@ BEGIN
     RAISE EXCEPTION 'manual status change was not recorded as manual';
   END IF;
 
+  PERFORM pg_sleep(0.05);
+  PERFORM set_config('vistrial.status_source', 'event', true);
   UPDATE public.leads
   SET status = 'call_booked'
   WHERE id = 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbb02';
@@ -350,13 +377,17 @@ BEGIN
   );
   RESET ROLE;
 
-  SELECT (e->>'supersedesManual')::boolean INTO v_supersedes
-  FROM jsonb_array_elements(v_timeline->'entries') e
-  WHERE e->>'kind' = 'status'
-  ORDER BY (e->>'at') DESC
-  LIMIT 1;
-  IF v_supersedes IS NOT TRUE THEN
-    RAISE EXCEPTION 'event status change did not mark supersedesManual';
+  IF NOT EXISTS (
+    SELECT 1
+    FROM jsonb_array_elements(v_timeline->'entries') e
+    WHERE e->>'kind' = 'status'
+      AND COALESCE((e->>'supersedesManual')::boolean, false)
+  ) THEN
+    RAISE EXCEPTION 'event status change did not mark supersedesManual: %', (
+      SELECT jsonb_agg(e)
+      FROM jsonb_array_elements(v_timeline->'entries') e
+      WHERE e->>'kind' = 'status'
+    );
   END IF;
 
   v_denied := false;

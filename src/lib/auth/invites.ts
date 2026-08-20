@@ -5,7 +5,7 @@ import { randomBytes } from "node:crypto";
 import { INVITE_TTL_DAYS } from "@/lib/auth/cookies";
 import { emailsMatch } from "@/lib/auth/permissions";
 import { inviteUrl } from "@/lib/auth/paths";
-import { supabaseAdmin } from "@/lib/supabase/admin";
+import { getSupabaseAdmin } from "@/lib/supabase/admin";
 import type { OrgRole } from "@/types/database";
 
 export type InviteLookup =
@@ -38,7 +38,7 @@ function orgNameOf(value: InviteRow["organizations"]): string {
 }
 
 export async function lookupInviteByToken(token: string): Promise<InviteLookup> {
-  const { data, error } = await supabaseAdmin
+  const { data, error } = await getSupabaseAdmin()
     .from("org_invites")
     .select("id, email, role, org_id, expires_at, accepted_at, organizations ( name )")
     .eq("token", token)
@@ -88,7 +88,7 @@ export async function redeemInvite(
     return { ok: false, error: "email_mismatch" };
   }
 
-  const { data, error } = await supabaseAdmin.rpc("redeem_org_invite", {
+  const { data, error } = await getSupabaseAdmin().rpc("redeem_org_invite", {
     p_token: token,
     p_user_id: userId,
   });

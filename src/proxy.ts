@@ -2,6 +2,7 @@ import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
 import { safeInternalPath } from "@/lib/auth/paths";
+import { isSupabaseConfigured, supabasePublishableKey, supabaseUrl } from "@/lib/supabase/env";
 import type { Database } from "@/types/database";
 
 /**
@@ -10,13 +11,20 @@ import type { Database } from "@/types/database";
  *
  * Cookie writes must land on both the request and the response, or the
  * refreshed session will not persist.
+ *
+ * Do not set `runtime` in this file — Next.js 16 Proxy is Node.js only and
+ * throws if that segment config is present.
  */
 export async function proxy(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request });
 
+  if (!isSupabaseConfigured()) {
+    return supabaseResponse;
+  }
+
   const supabase = createServerClient<Database>(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    supabaseUrl(),
+    supabasePublishableKey(),
     {
       cookies: {
         getAll() {

@@ -5,7 +5,7 @@ import { redirect } from "next/navigation";
 
 import { ORG_COOKIE_NAME, PENDING_INVITE_COOKIE, orgCookieOptions, pendingInviteCookieOptions } from "@/lib/auth/cookies";
 import { lookupInviteByToken, redeemInvite } from "@/lib/auth/invites";
-import { supabaseAdmin } from "@/lib/supabase/admin";
+import { getSupabaseAdmin } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 
 export type AcceptInviteState = { error: string | null };
@@ -34,7 +34,7 @@ export async function createAccountFromInvite(
     return { error: "This invite belongs to a different email address." };
   }
 
-  const { data: created, error: createError } = await supabaseAdmin.auth.admin.createUser({
+  const { data: created, error: createError } = await getSupabaseAdmin().auth.admin.createUser({
     email,
     password,
     email_confirm: true,

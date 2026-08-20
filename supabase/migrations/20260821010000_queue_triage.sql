@@ -78,18 +78,78 @@ BEGIN
 END;
 $$;
 
-CREATE POLICY leads_update_self_assign
-  ON public.leads
-  FOR UPDATE
-  TO authenticated
-  USING (org_id IN (SELECT public.user_org_ids()))
-  WITH CHECK (
-    org_id IN (SELECT public.user_org_ids())
-    AND (
-      assigned_setter_id = public.user_member_id(org_id)
-      OR assigned_closer_id = public.user_member_id(org_id)
-    )
-  );
+CREATE OR REPLACE FUNCTION public.assign_org_lead(
+  p_org_id uuid,
+  p_lead_id uuid,
+  p_setter_id uuid,
+  p_closer_id uuid
+)
+RETURNS void
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  v_self uuid;
+  v_old_setter uuid;
+  v_old_closer uuid;
+BEGIN
+  IF p_org_id IS NULL OR p_org_id NOT IN (SELECT public.user_org_ids()) THEN
+    RAISE EXCEPTION 'not authorized to reassign leads';
+  END IF;
+
+  v_self := public.user_member_id(p_org_id);
+
+  SELECT assigned_setter_id, assigned_closer_id
+  INTO v_old_setter, v_old_closer
+  FROM public.leads
+  WHERE id = p_lead_id
+    AND org_id = p_org_id
+  FOR UPDATE;
+
+  IF NOT FOUND THEN
+    RAISE EXCEPTION 'lead not found';
+  END IF;
+
+  IF p_setter_id IS NOT NULL AND NOT EXISTS (
+    SELECT 1 FROM public.org_members
+    WHERE id = p_setter_id AND org_id = p_org_id AND active = true
+  ) THEN
+    RAISE EXCEPTION 'The setter must be an active member of this workspace.';
+  END IF;
+
+  IF p_closer_id IS NOT NULL AND NOT EXISTS (
+    SELECT 1 FROM public.org_members
+    WHERE id = p_closer_id AND org_id = p_org_id AND active = true
+  ) THEN
+    RAISE EXCEPTION 'The closer must be an active member of this workspace.';
+  END IF;
+
+  IF NOT public.user_has_org_role(p_org_id, 'owner', 'admin') THEN
+    IF v_self IS NULL THEN
+      RAISE EXCEPTION 'not authorized to reassign leads';
+    END IF;
+    IF p_setter_id IS DISTINCT FROM v_old_setter
+      AND p_setter_id IS DISTINCT FROM v_self THEN
+      RAISE EXCEPTION 'not authorized to reassign leads';
+    END IF;
+    IF p_closer_id IS DISTINCT FROM v_old_closer
+      AND p_closer_id IS DISTINCT FROM v_self THEN
+      RAISE EXCEPTION 'not authorized to reassign leads';
+    END IF;
+  END IF;
+
+  UPDATE public.leads
+  SET
+    assigned_setter_id = p_setter_id,
+    assigned_closer_id = p_closer_id
+  WHERE id = p_lead_id
+    AND org_id = p_org_id;
+END;
+$$;
+
+REVOKE ALL ON FUNCTION public.assign_org_lead(uuid, uuid, uuid, uuid) FROM PUBLIC, anon;
+GRANT EXECUTE ON FUNCTION public.assign_org_lead(uuid, uuid, uuid, uuid) TO authenticated, service_role;
 
 -- Operators on the queue must be able to log a human touch. Actor is self
 -- unless the caller is owner/admin (who may attribute another member).

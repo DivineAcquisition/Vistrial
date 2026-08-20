@@ -419,7 +419,6 @@ DECLARE
   v_setter uuid := '13131313-1313-4131-8131-131313131313';
   v_owner uuid := '33333333-3333-4333-8333-333333333333';
   v_denied boolean;
-  v_rows integer;
 BEGIN
   IF NOT EXISTS (SELECT 1 FROM public.org_members WHERE id = v_setter) THEN
     RAISE NOTICE 'setter fixture missing; skip assignment RLS checks';
@@ -429,20 +428,11 @@ BEGIN
   PERFORM set_config('request.jwt.claim.sub', '12121212-1212-4121-8121-121212121212', false);
   SET ROLE authenticated;
 
-  UPDATE public.leads
-  SET assigned_setter_id = v_setter
-  WHERE id = v_lead;
-  GET DIAGNOSTICS v_rows = ROW_COUNT;
-  IF v_rows <> 1 THEN
-    RESET ROLE;
-    RAISE EXCEPTION 'setter could not self-assign unassigned lead, rows=%', v_rows;
-  END IF;
+  PERFORM public.assign_org_lead(v_org, v_lead, v_setter, NULL);
 
   v_denied := false;
   BEGIN
-    UPDATE public.leads
-    SET assigned_setter_id = v_owner
-    WHERE id = v_lead;
+    PERFORM public.assign_org_lead(v_org, v_lead, v_owner, NULL);
   EXCEPTION
     WHEN OTHERS THEN
       IF SQLERRM ILIKE '%not authorized to reassign%' THEN

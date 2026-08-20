@@ -185,22 +185,15 @@ export async function assignQueueLead(input: {
     }
   }
 
-  const { data: updated, error } = await supabase
-    .from("leads")
-    .update({
-      assigned_setter_id: setterId,
-      assigned_closer_id: closerId,
-    })
-    .eq("org_id", ctx.org.id)
-    .eq("id", input.leadId)
-    .select("id")
-    .maybeSingle();
+  const { error } = await supabase.rpc("assign_org_lead", {
+    p_org_id: ctx.org.id,
+    p_lead_id: input.leadId,
+    p_setter_id: setterId,
+    p_closer_id: closerId,
+  });
 
   if (error) {
     return actionError(explainWriteError(error.message, "Could not update assignment."));
-  }
-  if (!updated) {
-    return actionError("You can assign this lead to yourself, but not to someone else.");
   }
 
   revalidatePath("/app/queue");

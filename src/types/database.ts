@@ -1182,6 +1182,15 @@ export type Database = {
         Args: { p_user_id: string };
         Returns: boolean;
       };
+      assign_org_lead: {
+        Args: {
+          p_org_id: string;
+          p_lead_id: string;
+          p_setter_id: string | null;
+          p_closer_id: string | null;
+        };
+        Returns: undefined;
+      };
       queue_row_to_json: {
         Args: { r: Database["public"]["Views"]["queue_rows"]["Row"] };
         Returns: Json;

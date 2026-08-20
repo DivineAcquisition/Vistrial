@@ -146,7 +146,7 @@ BEGIN
   v_denied := false;
   BEGIN
     UPDATE public.leads
-    SET assigned_closer_id = '13131313-1313-4131-8131-131313131313'
+    SET assigned_closer_id = '33333333-3333-4333-8333-333333333333'
     WHERE id = '44444444-4444-4444-8444-444444444442';
   EXCEPTION
     WHEN insufficient_privilege THEN

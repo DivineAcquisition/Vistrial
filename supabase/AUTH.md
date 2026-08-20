@@ -16,10 +16,10 @@ Dashboard: https://supabase.com/dashboard/project/jizzmlvpnykazrsiotqq/auth/prov
    workspace and cannot be demoted. The first operator is created in Auth,
    then inserted into `platform_admins`.
 3. **Authentication → URL configuration**
-   - Site URL = `NEXT_PUBLIC_APP_URL` from `.env.local` (e.g. `http://localhost:3000`)
+   - Site URL = `https://app.vistrial.io` in production (`NEXT_PUBLIC_APP_URL`)
    - Redirect URLs:
      - `http://localhost:3000/auth/callback`
-     - `https://<production-domain>/auth/callback`
+     - `https://app.vistrial.io/auth/callback`
 4. **JWT**
    - Expiry: 1 hour (3600 seconds)
    - Refresh tokens: enabled

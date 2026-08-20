@@ -1,12 +1,16 @@
 import { applyEventToFactors, type ScoringEvent } from "@/lib/scoring/events";
 import { computeReadinessScore } from "@/lib/scoring/compute";
 import {
+  answersFromJson,
   insertScoreRow,
   loadLatestFactors,
   loadScoreConfig,
+  loadScoreMaps,
+  scoreFromAnswers,
   type ScoringClient,
   type WriteScoreResult,
 } from "@/lib/scoring/store";
+import type { Json } from "@/types/database";
 
 export async function scoreLeadFromEvent(
   client: ScoringClient,
@@ -33,6 +37,42 @@ export async function scoreLeadFromEvent(
     factors: computed.factors,
     total: computed.total,
     reasoning: `${applied.summary} ${computed.explanation}`.trim(),
+    triggeredBy: "event",
+    idempotencyKey: args.idempotencyKey,
+  });
+}
+
+/**
+ * Contact-updated application answers. Writes an event-triggered score row.
+ * Never reuses the intake idempotency key and never writes the lead cache.
+ */
+export async function scoreLeadFromAnswerChange(
+  client: ScoringClient,
+  args: {
+    orgId: string;
+    leadId: string;
+    answers: Json;
+    idempotencyKey: string;
+  }
+): Promise<WriteScoreResult | { written: false; reason: "unscored" }> {
+  const [config, maps] = await Promise.all([
+    loadScoreConfig(client, args.orgId),
+    loadScoreMaps(client, args.orgId),
+  ]);
+  const { computed, extraction } = scoreFromAnswers(
+    answersFromJson(args.answers),
+    maps,
+    config.weights
+  );
+  if (computed.kind === "unscored") {
+    return { written: false, reason: "unscored" };
+  }
+  return insertScoreRow(client, {
+    orgId: args.orgId,
+    leadId: args.leadId,
+    factors: computed.factors,
+    total: computed.total,
+    reasoning: `${computed.explanation} ${extraction}`.trim(),
     triggeredBy: "event",
     idempotencyKey: args.idempotencyKey,
   });

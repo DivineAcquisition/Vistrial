@@ -3,6 +3,10 @@
     {
       "path": "/api/cron/ghost-detector",
       "schedule": "0 6 * * *"
+    },
+    {
+      "path": "/api/cron/ghl-ingest",
+      "schedule": "* * * * *"
     }
   ]
 }

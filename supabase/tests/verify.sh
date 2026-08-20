@@ -35,7 +35,9 @@ WHERE n.nspname = 'public'
   AND c.relname IN (
     'organizations','org_members','org_invites','score_configs','score_field_maps',
     'score_field_rules','leads','readiness_scores','touches','calls','call_extractions',
-    'objections','next_actions','revenue_log','webhook_events','ghost_detector_runs'
+    'objections','next_actions','revenue_log','webhook_events','ghost_detector_runs',
+    'ghl_connections','ghl_oauth_sessions','ghl_field_maps','ghl_dispatches',
+    'ghl_rate_windows','ghl_contact_locks','ingestion_alerts'
   )
 ORDER BY 1;
 "
@@ -55,4 +57,7 @@ run "${ROOT}/supabase/tests/verify-invites.sql"
 echo "Scoring checks..."
 run "${ROOT}/supabase/tests/verify-scoring.sql"
 
-echo "OK: schema, seed, triggers, RLS, invite, and scoring checks passed."
+echo "GHL ingest checks..."
+run "${ROOT}/supabase/tests/verify-ghl.sql"
+
+echo "OK: schema, seed, triggers, RLS, invite, scoring, and GHL checks passed."

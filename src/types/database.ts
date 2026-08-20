@@ -89,6 +89,7 @@ export type Database = {
             | null;
           type: Database["public"]["Enums"]["call_type"];
           updated_at: string;
+          ghl_appointment_id: string | null;
         };
         Insert: {
           created_at?: string;
@@ -108,6 +109,7 @@ export type Database = {
             | null;
           type: Database["public"]["Enums"]["call_type"];
           updated_at?: string;
+          ghl_appointment_id?: string | null;
         };
         Update: {
           created_at?: string;
@@ -127,6 +129,7 @@ export type Database = {
             | null;
           type?: Database["public"]["Enums"]["call_type"];
           updated_at?: string;
+          ghl_appointment_id?: string | null;
         };
         Relationships: [
           {
@@ -334,6 +337,7 @@ export type Database = {
           org_id: string;
           role: Database["public"]["Enums"]["org_role"];
           user_id: string;
+          ghl_user_id: string | null;
         };
         Insert: {
           active?: boolean;
@@ -344,6 +348,7 @@ export type Database = {
           org_id: string;
           role: Database["public"]["Enums"]["org_role"];
           user_id: string;
+          ghl_user_id?: string | null;
         };
         Update: {
           active?: boolean;
@@ -354,6 +359,7 @@ export type Database = {
           org_id?: string;
           role?: Database["public"]["Enums"]["org_role"];
           user_id?: string;
+          ghl_user_id?: string | null;
         };
         Relationships: [
           {
@@ -719,6 +725,240 @@ export type Database = {
           },
         ];
       };
+      ghl_connections: {
+        Row: {
+          access_token_encrypted: string | null;
+          company_id: string | null;
+          created_at: string;
+          id: string;
+          last_refresh_error: string | null;
+          last_verified_at: string | null;
+          location_id: string | null;
+          location_name: string | null;
+          org_id: string;
+          refresh_token_encrypted: string | null;
+          status: Database["public"]["Enums"]["ghl_connection_status"];
+          token_expires_at: string | null;
+          updated_at: string;
+          webhook_id: string | null;
+        };
+        Insert: {
+          access_token_encrypted?: string | null;
+          company_id?: string | null;
+          created_at?: string;
+          id?: string;
+          last_refresh_error?: string | null;
+          last_verified_at?: string | null;
+          location_id?: string | null;
+          location_name?: string | null;
+          org_id: string;
+          refresh_token_encrypted?: string | null;
+          status?: Database["public"]["Enums"]["ghl_connection_status"];
+          token_expires_at?: string | null;
+          updated_at?: string;
+          webhook_id?: string | null;
+        };
+        Update: {
+          access_token_encrypted?: string | null;
+          company_id?: string | null;
+          created_at?: string;
+          id?: string;
+          last_refresh_error?: string | null;
+          last_verified_at?: string | null;
+          location_id?: string | null;
+          location_name?: string | null;
+          org_id?: string;
+          refresh_token_encrypted?: string | null;
+          status?: Database["public"]["Enums"]["ghl_connection_status"];
+          token_expires_at?: string | null;
+          updated_at?: string;
+          webhook_id?: string | null;
+        };
+        Relationships: [];
+      };
+      ghl_oauth_sessions: {
+        Row: {
+          access_token_encrypted: string;
+          company_id: string | null;
+          created_at: string;
+          expires_at: string;
+          id: string;
+          member_id: string;
+          org_id: string;
+          refresh_token_encrypted: string;
+          token_expires_at: string | null;
+        };
+        Insert: {
+          access_token_encrypted: string;
+          company_id?: string | null;
+          created_at?: string;
+          expires_at: string;
+          id?: string;
+          member_id: string;
+          org_id: string;
+          refresh_token_encrypted: string;
+          token_expires_at?: string | null;
+        };
+        Update: {
+          access_token_encrypted?: string;
+          company_id?: string | null;
+          created_at?: string;
+          expires_at?: string;
+          id?: string;
+          member_id?: string;
+          org_id?: string;
+          refresh_token_encrypted?: string;
+          token_expires_at?: string | null;
+        };
+        Relationships: [];
+      };
+      ghl_field_maps: {
+        Row: {
+          answer_key: string;
+          created_at: string;
+          ghl_field_id: string | null;
+          ghl_field_key: string | null;
+          id: string;
+          org_id: string;
+          updated_at: string;
+        };
+        Insert: {
+          answer_key: string;
+          created_at?: string;
+          ghl_field_id?: string | null;
+          ghl_field_key?: string | null;
+          id?: string;
+          org_id: string;
+          updated_at?: string;
+        };
+        Update: {
+          answer_key?: string;
+          created_at?: string;
+          ghl_field_id?: string | null;
+          ghl_field_key?: string | null;
+          id?: string;
+          org_id?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
+      ghl_dispatches: {
+        Row: {
+          actor_member_id: string | null;
+          attempt_count: number;
+          available_at: string;
+          body_text: string | null;
+          channel: Database["public"]["Enums"]["touch_channel"];
+          created_at: string;
+          email_subject: string | null;
+          failure_reason: string | null;
+          ghl_message_id: string | null;
+          id: string;
+          idempotency_key: string | null;
+          lead_id: string;
+          org_id: string;
+          sent_at: string | null;
+          status: Database["public"]["Enums"]["ghl_dispatch_status"];
+        };
+        Insert: {
+          actor_member_id?: string | null;
+          attempt_count?: number;
+          available_at?: string;
+          body_text?: string | null;
+          channel: Database["public"]["Enums"]["touch_channel"];
+          created_at?: string;
+          email_subject?: string | null;
+          failure_reason?: string | null;
+          ghl_message_id?: string | null;
+          id?: string;
+          idempotency_key?: string | null;
+          lead_id: string;
+          org_id: string;
+          sent_at?: string | null;
+          status?: Database["public"]["Enums"]["ghl_dispatch_status"];
+        };
+        Update: {
+          actor_member_id?: string | null;
+          attempt_count?: number;
+          available_at?: string;
+          body_text?: string | null;
+          channel?: Database["public"]["Enums"]["touch_channel"];
+          created_at?: string;
+          email_subject?: string | null;
+          failure_reason?: string | null;
+          ghl_message_id?: string | null;
+          id?: string;
+          idempotency_key?: string | null;
+          lead_id?: string;
+          org_id?: string;
+          sent_at?: string | null;
+          status?: Database["public"]["Enums"]["ghl_dispatch_status"];
+        };
+        Relationships: [];
+      };
+      ghl_rate_windows: {
+        Row: {
+          org_id: string;
+          paused_until: string | null;
+          request_count: number;
+          window_started_at: string;
+        };
+        Insert: {
+          org_id: string;
+          paused_until?: string | null;
+          request_count?: number;
+          window_started_at?: string;
+        };
+        Update: {
+          org_id?: string;
+          paused_until?: string | null;
+          request_count?: number;
+          window_started_at?: string;
+        };
+        Relationships: [];
+      };
+      ghl_contact_locks: {
+        Row: {
+          claimed_at: string;
+          contact_key: string;
+        };
+        Insert: {
+          claimed_at?: string;
+          contact_key: string;
+        };
+        Update: {
+          claimed_at?: string;
+          contact_key?: string;
+        };
+        Relationships: [];
+      };
+      ingestion_alerts: {
+        Row: {
+          created_at: string;
+          detail: string;
+          id: string;
+          kind: string;
+          last_sent_at: string;
+          org_id: string;
+        };
+        Insert: {
+          created_at?: string;
+          detail: string;
+          id?: string;
+          kind: string;
+          last_sent_at?: string;
+          org_id: string;
+        };
+        Update: {
+          created_at?: string;
+          detail?: string;
+          id?: string;
+          kind?: string;
+          last_sent_at?: string;
+          org_id?: string;
+        };
+        Relationships: [];
+      };
       touches: {
         Row: {
           actor_member_id: string | null;
@@ -781,6 +1021,10 @@ export type Database = {
           processed_at: string | null;
           received_at: string;
           source: Database["public"]["Enums"]["webhook_source"];
+          provider_event_id: string | null;
+          contact_key: string | null;
+          status: Database["public"]["Enums"]["webhook_event_status"];
+          next_attempt_at: string;
         };
         Insert: {
           attempt_count?: number;
@@ -793,6 +1037,10 @@ export type Database = {
           processed_at?: string | null;
           received_at?: string;
           source: Database["public"]["Enums"]["webhook_source"];
+          provider_event_id?: string | null;
+          contact_key?: string | null;
+          status?: Database["public"]["Enums"]["webhook_event_status"];
+          next_attempt_at?: string;
         };
         Update: {
           attempt_count?: number;
@@ -805,6 +1053,10 @@ export type Database = {
           processed_at?: string | null;
           received_at?: string;
           source?: Database["public"]["Enums"]["webhook_source"];
+          provider_event_id?: string | null;
+          contact_key?: string | null;
+          status?: Database["public"]["Enums"]["webhook_event_status"];
+          next_attempt_at?: string;
         };
         Relationships: [
           {
@@ -832,6 +1084,26 @@ export type Database = {
       replace_org_score_maps: {
         Args: { p_maps: Json; p_org_id: string };
         Returns: undefined;
+      };
+      link_ghl_location: {
+        Args: { p_org_id: string; p_location_id: string };
+        Returns: Json;
+      };
+      unlink_ghl_location: {
+        Args: { p_org_id: string };
+        Returns: undefined;
+      };
+      claim_ghl_contact_key: {
+        Args: Record<PropertyKey, never>;
+        Returns: string | null;
+      };
+      release_ghl_contact_key: {
+        Args: { p_key: string };
+        Returns: undefined;
+      };
+      try_consume_ghl_rate: {
+        Args: { p_org_id: string };
+        Returns: boolean;
       };
       user_has_org_role: {
         Args: { p_org_id: string; p_roles: Database["public"]["Enums"]["org_role"][] };
@@ -879,6 +1151,9 @@ export type Database = {
       touch_type: "system" | "human";
       transcript_source: "fathom" | "fireflies" | "zoom" | "ghl" | "manual";
       webhook_source: "ghl" | "stripe" | "commas" | "transcript" | "other";
+      ghl_connection_status: "active" | "broken" | "inactive";
+      ghl_dispatch_status: "queued" | "sent" | "failed" | "suppressed";
+      webhook_event_status: "pending" | "processed" | "dead" | "rejected";
     };
     CompositeTypes: {
       [_ in never]: never;

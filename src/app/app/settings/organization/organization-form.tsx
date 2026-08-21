@@ -24,10 +24,14 @@ export function OrganizationForm({
   name,
   timezone,
   ghlLocationId,
+  salesCycleDays,
+  baselineLookbackDays,
 }: {
   name: string;
   timezone: string;
   ghlLocationId: string | null;
+  salesCycleDays: number;
+  baselineLookbackDays: number;
 }) {
   const [state, action, pending] = useActionState(updateOrganization, initial);
   const timezoneOptions = isOrgTimezone(timezone)
@@ -68,6 +72,46 @@ export function OrganizationForm({
               </option>
             ))}
           </select>
+        </div>
+
+        <div>
+          <label htmlFor="org-sales-cycle" className={labelClass}>
+            Sales cycle (days)
+          </label>
+          <input
+            id="org-sales-cycle"
+            name="sales_cycle_days"
+            type="number"
+            min={14}
+            max={365}
+            required
+            defaultValue={salesCycleDays}
+            className={inputClass}
+          />
+          <p className={helperClass}>
+            A lead cohort enters the headline outcome metric only after this many days. Default 60.
+            Maturing cohorts are shown separately and never blended into that number.
+          </p>
+        </div>
+
+        <div>
+          <label htmlFor="org-lookback" className={labelClass}>
+            Baseline lookback (days)
+          </label>
+          <input
+            id="org-lookback"
+            name="baseline_lookback_days"
+            type="number"
+            min={30}
+            max={730}
+            required
+            defaultValue={baselineLookbackDays}
+            className={inputClass}
+          />
+          <p className={helperClass}>
+            How far the automatic CRM history pull reaches. Default 365. Changing this does not
+            re-run the backfill by itself.
+          </p>
         </div>
 
         <div>

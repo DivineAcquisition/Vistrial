@@ -1,5 +1,6 @@
 import { PageFrame } from "@/components/app/page-frame";
 import { IntegrationSettings } from "@/app/app/settings/integrations/integration-settings";
+import { BaselineSettings } from "@/app/app/settings/integrations/baseline-settings";
 import { requireOrgSettingsManager } from "@/lib/auth/gates";
 import { LOCATION_CLAIMED_MESSAGE } from "@/lib/ghl/constants";
 import { fetchCustomFields } from "@/lib/ghl/client";
@@ -30,7 +31,8 @@ export default async function IntegrationsSettingsPage({
   const admin = getSupabaseAdmin();
   const supabase = await createClient();
 
-  const [connection, health, maps, transcriptHealth, unmatched, followUpHealth] = await Promise.all([
+  const [connection, health, maps, transcriptHealth, unmatched, followUpHealth, orgRow, baselineRun, selfReported] =
+    await Promise.all([
     supabase
       .from("ghl_connections")
       .select("status, location_name, last_verified_at, location_id")
@@ -45,6 +47,25 @@ export default async function IntegrationsSettingsPage({
     loadTranscriptHealth(admin, ctx.org.id),
     loadOpenUnmatched(admin, ctx.org.id),
     loadFollowUpHealth(admin, ctx.org.id),
+    supabase
+      .from("organizations")
+      .select("activated_at")
+      .eq("id", ctx.org.id)
+      .maybeSingle(),
+    supabase
+      .from("baseline_runs")
+      .select(
+        "status, grade, grade_reasons, progress, window_start, window_end, triggered_at, finished_at, error_text, contacts_seen, contacts_with_created_date, contacts_with_activity, opportunities_seen, opportunities_with_value, payments_seen, discontinuity_detected, discontinuity_month"
+      )
+      .eq("org_id", ctx.org.id)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle(),
+    supabase
+      .from("self_reported_baselines")
+      .select("leads_per_month, clients_closed_per_month, stated_at")
+      .eq("org_id", ctx.org.id)
+      .maybeSingle(),
   ]);
 
   const { data: assignable } = await supabase
@@ -84,6 +105,7 @@ export default async function IntegrationsSettingsPage({
       title="Integrations"
       description="The CRM connection for this workspace."
     >
+      <div className="space-y-8">
       <IntegrationSettings
         oauthConfigured={ghlOAuthConfigured()}
         selectLocation={selectLocation}
@@ -129,6 +151,45 @@ export default async function IntegrationsSettingsPage({
         }))}
         followUpHealth={followUpHealth}
       />
+      <BaselineSettings
+        activatedAt={orgRow.data?.activated_at ?? null}
+        backfill={{
+          status: baselineRun.data?.status ?? null,
+          grade: baselineRun.data?.grade ?? null,
+          gradeReasons: baselineRun.data?.grade_reasons ?? [],
+          progressPhase:
+            baselineRun.data?.progress && typeof baselineRun.data.progress === "object"
+              ? String((baselineRun.data.progress as { phase?: string }).phase ?? "")
+              : null,
+          windowStart: baselineRun.data?.window_start ?? null,
+          windowEnd: baselineRun.data?.window_end ?? null,
+          triggeredAt: baselineRun.data?.triggered_at ?? null,
+          finishedAt: baselineRun.data?.finished_at ?? null,
+          errorText: baselineRun.data?.error_text ?? null,
+          quality: baselineRun.data
+            ? {
+                contactsSeen: baselineRun.data.contacts_seen,
+                contactsWithCreatedDate: baselineRun.data.contacts_with_created_date,
+                contactsWithActivity: baselineRun.data.contacts_with_activity,
+                opportunitiesSeen: baselineRun.data.opportunities_seen,
+                opportunitiesWithValue: baselineRun.data.opportunities_with_value,
+                paymentsSeen: baselineRun.data.payments_seen,
+                discontinuityDetected: baselineRun.data.discontinuity_detected,
+                discontinuityMonth: baselineRun.data.discontinuity_month,
+              }
+            : null,
+        }}
+        selfReported={
+          selfReported.data
+            ? {
+                leadsPerMonth: selfReported.data.leads_per_month,
+                clientsClosedPerMonth: selfReported.data.clients_closed_per_month,
+                statedAt: selfReported.data.stated_at,
+              }
+            : null
+        }
+      />
+      </div>
     </PageFrame>
   );
 }

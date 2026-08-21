@@ -62,6 +62,7 @@ export async function GET(request: Request) {
       orgId: state.orgId,
       tokens,
       locationId,
+      memberId: state.memberId,
     });
     if (!linked.ok) {
       return redirectToIntegrations({

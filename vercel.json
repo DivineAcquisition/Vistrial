@@ -11,6 +11,14 @@
     {
       "path": "/api/cron/transcripts",
       "schedule": "* * * * *"
+    },
+    {
+      "path": "/api/cron/baseline-backfill",
+      "schedule": "* * * * *"
+    },
+    {
+      "path": "/api/cron/reporting",
+      "schedule": "0 * * * *"
     }
   ]
 }

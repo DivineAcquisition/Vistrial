@@ -28,6 +28,7 @@ export async function linkLocationToOrg(
     orgId: string;
     tokens: GhlTokenSet;
     locationId: string;
+    memberId?: string | null;
   }
 ): Promise<{ ok: true; locationName: string | null } | { ok: false; error: "location_claimed" | "org_missing" }> {
   const linked = await db.rpc("link_ghl_location", {
@@ -67,7 +68,14 @@ export async function linkLocationToOrg(
   }
 
   await persistTokens(db, args.orgId, args.tokens);
-  await db.rpc("mark_org_activated", { p_org_id: args.orgId });
+  const { error: enqueueError } = await db.rpc("enqueue_baseline_backfill", {
+    p_org_id: args.orgId,
+    p_member_id: args.memberId ?? null,
+    p_replace: false,
+  });
+  if (enqueueError) {
+    ghlError("ghl.oauth.backfill_enqueue_failed", { orgId: args.orgId, error: enqueueError.message });
+  }
   const locationName = await fetchLocationName(db, args.orgId, args.locationId);
   if (locationName) {
     await db.from("ghl_connections").update({ location_name: locationName }).eq("org_id", args.orgId);
@@ -146,6 +154,7 @@ export async function completeLocationSelection(
     orgId: args.orgId,
     tokens,
     locationId: args.locationId,
+    memberId: args.memberId,
   });
   await db.from("ghl_oauth_sessions").delete().eq("org_id", args.orgId);
   if (!linked.ok) {

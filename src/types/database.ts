@@ -1289,6 +1289,8 @@ export type Database = {
           slug: string;
           timezone: string;
           updated_at: string;
+          sales_cycle_days: number;
+          baseline_lookback_days: number;
         };
         Insert: {
           activated_at?: string | null;
@@ -1299,6 +1301,8 @@ export type Database = {
           slug: string;
           timezone?: string;
           updated_at?: string;
+          sales_cycle_days?: number;
+          baseline_lookback_days?: number;
         };
         Update: {
           activated_at?: string | null;
@@ -1309,6 +1313,8 @@ export type Database = {
           slug?: string;
           timezone?: string;
           updated_at?: string;
+          sales_cycle_days?: number;
+          baseline_lookback_days?: number;
         };
         Relationships: [];
       };
@@ -1940,6 +1946,333 @@ export type Database = {
           },
         ];
       };
+      baseline_runs: {
+        Row: {
+          id: string;
+          org_id: string;
+          status: Database["public"]["Enums"]["baseline_run_status"];
+          grade: Database["public"]["Enums"]["baseline_grade"] | null;
+          grade_reasons: string[];
+          lookback_days: number;
+          window_start: string;
+          window_end: string;
+          contacts_seen: number;
+          contacts_with_created_date: number;
+          contacts_with_activity: number;
+          opportunities_seen: number;
+          opportunities_with_value: number;
+          payments_seen: number;
+          appointments_seen: number;
+          messages_seen: number;
+          discontinuity_detected: boolean;
+          discontinuity_month: string | null;
+          usable_month_count: number | null;
+          triggered_by_member_id: string | null;
+          triggered_at: string;
+          started_at: string | null;
+          finished_at: string | null;
+          claimed_at: string | null;
+          error_text: string | null;
+          progress: Json;
+          replaced_run_id: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          org_id: string;
+          status?: Database["public"]["Enums"]["baseline_run_status"];
+          grade?: Database["public"]["Enums"]["baseline_grade"] | null;
+          grade_reasons?: string[];
+          lookback_days: number;
+          window_start: string;
+          window_end: string;
+          contacts_seen?: number;
+          contacts_with_created_date?: number;
+          contacts_with_activity?: number;
+          opportunities_seen?: number;
+          opportunities_with_value?: number;
+          payments_seen?: number;
+          appointments_seen?: number;
+          messages_seen?: number;
+          discontinuity_detected?: boolean;
+          discontinuity_month?: string | null;
+          usable_month_count?: number | null;
+          triggered_by_member_id?: string | null;
+          triggered_at?: string;
+          started_at?: string | null;
+          finished_at?: string | null;
+          claimed_at?: string | null;
+          error_text?: string | null;
+          progress?: Json;
+          replaced_run_id?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          status?: Database["public"]["Enums"]["baseline_run_status"];
+          grade?: Database["public"]["Enums"]["baseline_grade"] | null;
+          grade_reasons?: string[];
+          contacts_seen?: number;
+          contacts_with_created_date?: number;
+          contacts_with_activity?: number;
+          opportunities_seen?: number;
+          opportunities_with_value?: number;
+          payments_seen?: number;
+          appointments_seen?: number;
+          messages_seen?: number;
+          discontinuity_detected?: boolean;
+          discontinuity_month?: string | null;
+          usable_month_count?: number | null;
+          started_at?: string | null;
+          finished_at?: string | null;
+          claimed_at?: string | null;
+          error_text?: string | null;
+          progress?: Json;
+          replaced_run_id?: string | null;
+        };
+        Relationships: [];
+      };
+      baseline_leads: {
+        Row: {
+          id: string;
+          org_id: string;
+          run_id: string;
+          ghl_contact_id: string;
+          created_at_crm: string | null;
+          source: string | null;
+          campaign: string | null;
+          first_human_touch_at: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          org_id: string;
+          run_id: string;
+          ghl_contact_id: string;
+          created_at_crm?: string | null;
+          source?: string | null;
+          campaign?: string | null;
+          first_human_touch_at?: string | null;
+          created_at?: string;
+        };
+        Update: {
+          created_at_crm?: string | null;
+          source?: string | null;
+          campaign?: string | null;
+          first_human_touch_at?: string | null;
+        };
+        Relationships: [];
+      };
+      baseline_touches: {
+        Row: {
+          id: string;
+          org_id: string;
+          run_id: string;
+          baseline_lead_id: string;
+          type: Database["public"]["Enums"]["touch_type"];
+          channel: Database["public"]["Enums"]["touch_channel"];
+          direction: Database["public"]["Enums"]["touch_direction"];
+          ghl_user_id: string | null;
+          occurred_at: string;
+          summary: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          org_id: string;
+          run_id: string;
+          baseline_lead_id: string;
+          type: Database["public"]["Enums"]["touch_type"];
+          channel: Database["public"]["Enums"]["touch_channel"];
+          direction: Database["public"]["Enums"]["touch_direction"];
+          ghl_user_id?: string | null;
+          occurred_at: string;
+          summary?: string | null;
+          created_at?: string;
+        };
+        Update: {
+          first_human_touch_at?: string | null;
+          summary?: string | null;
+        };
+        Relationships: [];
+      };
+      baseline_calls: {
+        Row: {
+          id: string;
+          org_id: string;
+          run_id: string;
+          baseline_lead_id: string;
+          scheduled_at: string | null;
+          occurred_at: string | null;
+          outcome: Database["public"]["Enums"]["call_outcome"] | null;
+          ghl_appointment_id: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          org_id: string;
+          run_id: string;
+          baseline_lead_id: string;
+          scheduled_at?: string | null;
+          occurred_at?: string | null;
+          outcome?: Database["public"]["Enums"]["call_outcome"] | null;
+          ghl_appointment_id?: string | null;
+          created_at?: string;
+        };
+        Update: {
+          outcome?: Database["public"]["Enums"]["call_outcome"] | null;
+        };
+        Relationships: [];
+      };
+      baseline_revenue: {
+        Row: {
+          id: string;
+          org_id: string;
+          run_id: string;
+          baseline_lead_id: string | null;
+          amount_cents: number | null;
+          currency: string;
+          occurred_at: string;
+          source: string;
+          ghl_opportunity_id: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          org_id: string;
+          run_id: string;
+          baseline_lead_id?: string | null;
+          amount_cents?: number | null;
+          currency?: string;
+          occurred_at: string;
+          source: string;
+          ghl_opportunity_id?: string | null;
+          created_at?: string;
+        };
+        Update: {
+          amount_cents?: number | null;
+        };
+        Relationships: [];
+      };
+      self_reported_baselines: {
+        Row: {
+          org_id: string;
+          leads_per_month: number;
+          clients_closed_per_month: number;
+          stated_by_member_id: string;
+          stated_at: string;
+          note: string | null;
+        };
+        Insert: {
+          org_id: string;
+          leads_per_month: number;
+          clients_closed_per_month: number;
+          stated_by_member_id: string;
+          stated_at?: string;
+          note?: string | null;
+        };
+        Update: {
+          leads_per_month?: number;
+          clients_closed_per_month?: number;
+          stated_by_member_id?: string;
+          stated_at?: string;
+          note?: string | null;
+        };
+        Relationships: [];
+      };
+      reporting_job_runs: {
+        Row: {
+          id: string;
+          job_kind: Database["public"]["Enums"]["reporting_job_kind"];
+          org_id: string | null;
+          status: Database["public"]["Enums"]["reporting_job_status"];
+          started_at: string;
+          finished_at: string | null;
+          processed_count: number;
+          log: Json;
+          error_text: string | null;
+        };
+        Insert: {
+          id?: string;
+          job_kind: Database["public"]["Enums"]["reporting_job_kind"];
+          org_id?: string | null;
+          status?: Database["public"]["Enums"]["reporting_job_status"];
+          started_at?: string;
+          finished_at?: string | null;
+          processed_count?: number;
+          log?: Json;
+          error_text?: string | null;
+        };
+        Update: {
+          status?: Database["public"]["Enums"]["reporting_job_status"];
+          finished_at?: string | null;
+          processed_count?: number;
+          log?: Json;
+          error_text?: string | null;
+        };
+        Relationships: [];
+      };
+      reporting_snapshots: {
+        Row: {
+          id: string;
+          org_id: string;
+          range_key: Database["public"]["Enums"]["reporting_range_key"];
+          range_start: string;
+          range_end: string;
+          payload: Json;
+          computed_at: string;
+          job_run_id: string | null;
+        };
+        Insert: {
+          id?: string;
+          org_id: string;
+          range_key: Database["public"]["Enums"]["reporting_range_key"];
+          range_start: string;
+          range_end: string;
+          payload: Json;
+          computed_at?: string;
+          job_run_id?: string | null;
+        };
+        Update: {
+          range_start?: string;
+          range_end?: string;
+          payload?: Json;
+          computed_at?: string;
+          job_run_id?: string | null;
+        };
+        Relationships: [];
+      };
+      reporting_cohorts: {
+        Row: {
+          org_id: string;
+          side: Database["public"]["Enums"]["reporting_cohort_side"];
+          period_start: string;
+          lead_count: number;
+          closed_count: number;
+          status: Database["public"]["Enums"]["reporting_cohort_status"];
+          matured_at: string | null;
+          computed_at: string;
+        };
+        Insert: {
+          org_id: string;
+          side: Database["public"]["Enums"]["reporting_cohort_side"];
+          period_start: string;
+          lead_count?: number;
+          closed_count?: number;
+          status: Database["public"]["Enums"]["reporting_cohort_status"];
+          matured_at?: string | null;
+          computed_at?: string;
+        };
+        Update: {
+          lead_count?: number;
+          closed_count?: number;
+          status?: Database["public"]["Enums"]["reporting_cohort_status"];
+          matured_at?: string | null;
+          computed_at?: string;
+        };
+        Relationships: [];
+      };
     };
     Views: {
       queue_rows: {
@@ -2185,6 +2518,61 @@ export type Database = {
         Args: { p_org_id: string };
         Returns: string;
       };
+      enqueue_baseline_backfill: {
+        Args: { p_org_id: string; p_member_id?: string | null; p_replace?: boolean };
+        Returns: string;
+      };
+      skip_baseline_backfill: {
+        Args: { p_org_id: string; p_member_id: string };
+        Returns: string;
+      };
+      claim_baseline_run: {
+        Args: Record<PropertyKey, never>;
+        Returns: string | null;
+      };
+      complete_baseline_run: {
+        Args: { p_run_id: string; p_activate?: boolean };
+        Returns: undefined;
+      };
+      fail_baseline_run: {
+        Args: { p_run_id: string; p_error: string };
+        Returns: undefined;
+      };
+      upsert_self_reported_baseline: {
+        Args: {
+          p_org_id: string;
+          p_leads_per_month: number;
+          p_clients_closed_per_month: number;
+          p_note?: string | null;
+        };
+        Returns: undefined;
+      };
+      reporting_grade_baseline: {
+        Args: { p_run_id: string };
+        Returns: undefined;
+      };
+      reporting_org_state: {
+        Args: { p_org_id: string };
+        Returns: Json;
+      };
+      load_reporting_panel: {
+        Args: {
+          p_org_id: string;
+          p_panel: string;
+          p_from: string;
+          p_to: string;
+          p_range_key?: Database["public"]["Enums"]["reporting_range_key"];
+        };
+        Returns: Json;
+      };
+      reporting_refresh_org_snapshot: {
+        Args: { p_org_id: string; p_job_run_id?: string | null };
+        Returns: number;
+      };
+      reporting_mature_cohorts: {
+        Args: { p_org_id: string };
+        Returns: number;
+      };
       claim_ghl_dispatch: {
         Args: { p_id: string };
         Returns: Database["public"]["Tables"]["ghl_dispatches"]["Row"];
@@ -2302,6 +2690,13 @@ export type Database = {
       voice_suggestion_kind: "shorter" | "less_formal" | "drop_phrase";
       voice_suggestion_status: "pending" | "accepted" | "dismissed";
       follow_up_job_status: "pending" | "processed" | "dead";
+      baseline_run_status: "queued" | "running" | "completed" | "failed" | "skipped";
+      baseline_grade: "usable" | "partial" | "unusable";
+      reporting_job_kind: "aggregate" | "cohort_mature" | "baseline_backfill";
+      reporting_job_status: "running" | "completed" | "failed";
+      reporting_cohort_side: "live" | "baseline";
+      reporting_cohort_status: "maturing" | "mature";
+      reporting_range_key: "since_activation" | "last_30d" | "last_90d" | "custom";
     };
     CompositeTypes: {
       [_ in never]: never;

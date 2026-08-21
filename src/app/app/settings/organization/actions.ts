@@ -22,6 +22,8 @@ export async function updateOrganization(
 
   const name = String(formData.get("name") ?? "").trim();
   const timezone = String(formData.get("timezone") ?? "");
+  const salesCycleDays = Number(formData.get("sales_cycle_days"));
+  const baselineLookbackDays = Number(formData.get("baseline_lookback_days"));
 
   if (!name) {
     return { status: "error", error: "Organization name is required." };
@@ -32,11 +34,22 @@ export async function updateOrganization(
   if (!isOrgTimezone(timezone)) {
     return { status: "error", error: "Choose a supported timezone." };
   }
+  if (!Number.isInteger(salesCycleDays) || salesCycleDays < 14 || salesCycleDays > 365) {
+    return { status: "error", error: "Sales cycle must be between 14 and 365 days." };
+  }
+  if (!Number.isInteger(baselineLookbackDays) || baselineLookbackDays < 30 || baselineLookbackDays > 730) {
+    return { status: "error", error: "Baseline lookback must be between 30 and 730 days." };
+  }
 
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("organizations")
-    .update({ name, timezone })
+    .update({
+      name,
+      timezone,
+      sales_cycle_days: salesCycleDays,
+      baseline_lookback_days: baselineLookbackDays,
+    })
     .eq("id", ctx.org.id)
     .select("id")
     .maybeSingle();

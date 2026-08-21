@@ -81,4 +81,7 @@ run "${ROOT}/supabase/tests/verify-transcripts.sql"
 echo "Follow-up checks..."
 run "${ROOT}/supabase/tests/verify-follow-up.sql"
 
-echo "OK: schema, seed, triggers, RLS, invite, scoring, GHL, platform-admin, queue, case-file, transcript, and follow-up checks passed."
+echo "Integrity checks..."
+run "${ROOT}/supabase/tests/verify-integrity.sql"
+
+echo "OK: schema, seed, triggers, RLS, invite, scoring, GHL, platform-admin, queue, case-file, transcript, follow-up, and integrity checks passed."

@@ -88,7 +88,7 @@ async function logFailures(
   }
 ) {
   if (!args.failures.length) return;
-  await db.from("follow_up_quality_check_failures").insert(
+  const { error } = await db.from("follow_up_quality_check_failures").insert(
     args.failures.map((failure) => ({
       org_id: args.orgId,
       draft_id: args.draftId ?? null,
@@ -99,6 +99,13 @@ async function logFailures(
       detail: failure.detail,
     }))
   );
+  if (error) {
+    followUpError("follow_up.quality_log_failed", {
+      jobId: args.jobId ?? null,
+      draftId: args.draftId ?? null,
+      error: error.message,
+    });
+  }
 }
 
 async function recordEvent(
@@ -122,7 +129,40 @@ async function recordEvent(
   });
 }
 
+async function recordEnqueueFailed(
+  db: GhlDb,
+  args: { orgId: string; callId: string },
+  reason: string
+) {
+  const { error } = await db.from("follow_up_events").insert({
+    org_id: args.orgId,
+    draft_id: null,
+    sequence_run_id: null,
+    kind: "enqueue_failed",
+    payload: { reason, callId: args.callId } as Json,
+  });
+  if (error) {
+    followUpError("follow_up.enqueue_failed_log", {
+      callId: args.callId,
+      error: error.message,
+    });
+  }
+}
+
 export async function enqueueFollowUpAfterExtraction(
+  db: GhlDb,
+  args: { orgId: string; leadId: string; callId: string; extractionId: string | null }
+): Promise<void> {
+  try {
+    await enqueueFollowUpAfterExtractionInner(db, args);
+  } catch (cause) {
+    const reason = cause instanceof Error ? cause.message.slice(0, 80) : "enqueue_failed";
+    await recordEnqueueFailed(db, args, reason);
+    throw cause;
+  }
+}
+
+async function enqueueFollowUpAfterExtractionInner(
   db: GhlDb,
   args: { orgId: string; leadId: string; callId: string; extractionId: string | null }
 ): Promise<void> {
@@ -141,6 +181,7 @@ export async function enqueueFollowUpAfterExtraction(
   const routed = await resolveRoute(db, args);
   if (!routed) {
     followUpLog("follow_up.no_route", { callId: args.callId });
+    await recordEnqueueFailed(db, args, "no_route");
     return;
   }
 

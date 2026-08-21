@@ -22,6 +22,7 @@ import {
   occurredAtFromPayload,
   outboundTouchSummary,
   pick,
+  timezoneFromContact,
 } from "@/lib/ghl/message-meta";
 import { asJsonRecord } from "@/lib/ghl/payload";
 import { nextAttemptAt, shouldMarkDead } from "@/lib/ghl/retry";
@@ -186,6 +187,7 @@ function identityFromContact(contact: Record<string, unknown>) {
     source: pick(contact, ["source"]) ?? pick(attribution ?? null, ["sessionSource", "medium", "source"]),
     campaign: pick(contact, ["campaign"]) ?? pick(attribution ?? null, ["campaign", "utmCampaign"]),
     opted_in_at: pick(contact, ["dateAdded", "date_added", "createdAt"]),
+    timezone: timezoneFromContact(contact),
   };
 }
 
@@ -202,7 +204,19 @@ async function findOrCreateLead(
     .eq("org_id", orgId)
     .eq("ghl_contact_id", contactId)
     .maybeSingle();
-  if (existing) return { lead: existing, created: false };
+  if (existing) {
+    if (fields.timezone && existing.timezone !== fields.timezone) {
+      const { data: updated } = await db
+        .from("leads")
+        .update({ timezone: fields.timezone })
+        .eq("id", existing.id)
+        .eq("org_id", orgId)
+        .select("*")
+        .maybeSingle();
+      return { lead: updated ?? { ...existing, timezone: fields.timezone }, created: false };
+    }
+    return { lead: existing, created: false };
+  }
 
   const { data, error } = await db
     .from("leads")
@@ -217,6 +231,7 @@ async function findOrCreateLead(
       campaign: fields.campaign,
       application_answers: answers as Json,
       status: "new",
+      ...(fields.timezone ? { timezone: fields.timezone } : {}),
       ...(fields.opted_in_at ? { opted_in_at: fields.opted_in_at } : {}),
     })
     .select("*")
@@ -265,6 +280,7 @@ async function handleContact(
       source: identity.source ?? lead.source,
       campaign: identity.campaign ?? lead.campaign,
       application_answers: nextAnswers as Json,
+      ...(identity.timezone ? { timezone: identity.timezone } : {}),
     })
     .eq("id", lead.id)
     .eq("org_id", orgId);

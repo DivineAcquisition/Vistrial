@@ -67,6 +67,7 @@ export async function linkLocationToOrg(
   }
 
   await persistTokens(db, args.orgId, args.tokens);
+  await db.rpc("mark_org_activated", { p_org_id: args.orgId });
   const locationName = await fetchLocationName(db, args.orgId, args.locationId);
   if (locationName) {
     await db.from("ghl_connections").update({ location_name: locationName }).eq("org_id", args.orgId);

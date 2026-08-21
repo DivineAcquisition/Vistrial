@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 
+import { parseBriefPayload } from "@/lib/brief/parse";
 import { cursorFromCaseRow, decodeCaseCursor, encodeCaseCursor } from "@/lib/cases/cursor";
 import {
   caseFiltersHref,
@@ -142,5 +143,32 @@ describe("case file ids", () => {
   it("accepts uuids and rejects other strings", () => {
     expect(isLeadId("bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbb02")).toBe(true);
     expect(isLeadId("not-a-lead")).toBe(false);
+  });
+});
+
+describe("pre-call brief objections", () => {
+  it("keeps the source call id so the brief can link to it", () => {
+    const parsed = parseBriefPayload(
+      {
+        lead: { id: "l1", name: "Maya", optedInAt: "2026-08-01T00:00:00.000Z" },
+        openObjections: [
+          {
+            id: "o1",
+            type: "timing",
+            verbatim: "after Q1",
+            callId: "c1",
+            callType: "discovery",
+            callOccurredAt: "2026-08-20T12:00:00.000Z",
+          },
+        ],
+      },
+      "2026-08-21T00:00:00.000Z"
+    );
+    expect(parsed.openObjections[0]).toMatchObject({
+      id: "o1",
+      callId: "c1",
+      callType: "discovery",
+      callOccurredAt: "2026-08-20T12:00:00.000Z",
+    });
   });
 });

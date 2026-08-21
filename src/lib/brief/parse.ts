@@ -86,6 +86,7 @@ export function parseBriefPayload(raw: unknown, now: string): Omit<BriefPayload,
             id,
             type,
             verbatim,
+            callId: asString(objection.callId),
             callType: (asString(objection.callType) as Enums<"call_type"> | null) ?? null,
             callOccurredAt: asString(objection.callOccurredAt),
           };

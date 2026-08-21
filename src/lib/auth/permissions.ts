@@ -66,6 +66,17 @@ export function canOverrideLead(args: {
   return false;
 }
 
+/** Same assignment rule as override: a setter cannot approve another operator's draft. */
+export function canApproveFollowUp(args: {
+  role: OrgRole;
+  memberId: string;
+  assignedSetterId: string | null;
+  assignedCloserId: string | null;
+  isPlatformAdmin?: boolean;
+}): boolean {
+  return canOverrideLead(args);
+}
+
 export const INVITABLE_ROLES = ["admin", "closer", "setter"] as const satisfies readonly OrgRole[];
 
 export type InvitableRole = (typeof INVITABLE_ROLES)[number];

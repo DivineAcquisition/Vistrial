@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { calendarDaysBetween } from "@/lib/scoring/timezone";
+import { parseIanaTimeZone } from "@/lib/timezones";
 
 describe("calendarDaysBetween", () => {
   it("counts calendar dates in the org timezone, not the UTC date", () => {
@@ -15,5 +16,15 @@ describe("calendarDaysBetween", () => {
     const a = new Date("2026-06-01T04:00:00.000Z");
     const b = new Date("2026-06-01T06:00:00.000Z");
     expect(calendarDaysBetween(a, b, "America/New_York")).toBe(0);
+  });
+});
+
+describe("parseIanaTimeZone", () => {
+  it("accepts a real IANA zone and rejects garbage", () => {
+    expect(parseIanaTimeZone("America/Chicago")).toBe("America/Chicago");
+    expect(parseIanaTimeZone(" UTC ")).toBe("UTC");
+    expect(parseIanaTimeZone("NotAZone")).toBeNull();
+    expect(parseIanaTimeZone("")).toBeNull();
+    expect(parseIanaTimeZone(null)).toBeNull();
   });
 });

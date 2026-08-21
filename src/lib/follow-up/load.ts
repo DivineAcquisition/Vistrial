@@ -1,5 +1,6 @@
 import "server-only";
 
+import { canApproveFollowUp } from "@/lib/auth/permissions";
 import { getAuthContext } from "@/lib/auth/session";
 import { computeSendAt } from "@/lib/follow-up/quiet-hours";
 import { parseRoutingRule } from "@/lib/follow-up/routing";
@@ -102,7 +103,7 @@ export async function loadFollowUpReview(draftId: string): Promise<FollowUpRevie
   const [{ data: lead }, { data: call }, { data: extraction }, settings] = await Promise.all([
     supabase
       .from("leads")
-      .select("id, first_name, last_name, email, phone, source, offer_name, timezone")
+      .select("id, first_name, last_name, email, phone, source, offer_name, timezone, assigned_setter_id, assigned_closer_id")
       .eq("id", draft.lead_id)
       .eq("org_id", ctx.org.id)
       .maybeSingle(),
@@ -189,6 +190,13 @@ export async function loadFollowUpReview(draftId: string): Promise<FollowUpRevie
     settings,
     orgTimezone: ctx.org.timezone,
     proposedSendAt,
+    canApprove: canApproveFollowUp({
+      role: ctx.role,
+      memberId: ctx.member.id,
+      assignedSetterId: lead.assigned_setter_id,
+      assignedCloserId: lead.assigned_closer_id,
+      isPlatformAdmin: ctx.isPlatformAdmin,
+    }),
   };
 }
 

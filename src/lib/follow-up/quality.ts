@@ -28,14 +28,6 @@ const BUDGET_TOPIC =
 const TIMELINE_TOPIC = /\b(timeline|by q[1-4]|this quarter|next month|when (?:we|you) (?:start|begin|launch))\b/i;
 const DECISION_TOPIC = /\b(decision[- ]maker|my partner|spouse|need to talk (?:it )?over|committee)\b/i;
 
-const GENERIC_SPANS = [
-  "thanks for your time",
-  "looking forward",
-  "let me know",
-  "hope you are well",
-  "hope you're well",
-];
-
 function quotedSpans(body: string): string[] {
   const spans: string[] = [];
   const re = /[“"]([^”"]{12,})[”"]/g;
@@ -76,14 +68,6 @@ function loadBearing(input: QualityInput): boolean {
 
   const quoted = quotedSpans(body);
   if (quoted.some((span) => quoteAppearsInTranscript(span, input.transcript))) return true;
-
-  const window = 18;
-  const compact = body.replace(/\s+/g, " ").trim();
-  for (let i = 0; i + window <= compact.length; i += 6) {
-    const span = compact.slice(i, i + window);
-    if (GENERIC_SPANS.some((item) => span.toLowerCase().includes(item))) continue;
-    if (quoteAppearsInTranscript(span, input.transcript)) return true;
-  }
   return false;
 }
 

@@ -5,6 +5,7 @@ import { LOCATION_CLAIMED_MESSAGE } from "@/lib/ghl/constants";
 import { fetchCustomFields } from "@/lib/ghl/client";
 import { listSessionLocations } from "@/lib/ghl/connect";
 import { appUrl, ghlOAuthConfigured } from "@/lib/ghl/env";
+import { loadFollowUpHealth } from "@/lib/follow-up/health";
 import { loadOrgIngestionHealth } from "@/lib/ghl/health";
 import { loadOpenUnmatched, loadTranscriptHealth } from "@/lib/transcripts/health";
 import { getSupabaseAdmin } from "@/lib/supabase/admin";
@@ -29,7 +30,7 @@ export default async function IntegrationsSettingsPage({
   const admin = getSupabaseAdmin();
   const supabase = await createClient();
 
-  const [connection, health, maps, transcriptHealth, unmatched] = await Promise.all([
+  const [connection, health, maps, transcriptHealth, unmatched, followUpHealth] = await Promise.all([
     supabase
       .from("ghl_connections")
       .select("status, location_name, last_verified_at, location_id")
@@ -43,6 +44,7 @@ export default async function IntegrationsSettingsPage({
       .order("created_at", { ascending: true }),
     loadTranscriptHealth(admin, ctx.org.id),
     loadOpenUnmatched(admin, ctx.org.id),
+    loadFollowUpHealth(admin, ctx.org.id),
   ]);
 
   const { data: assignable } = await supabase
@@ -125,6 +127,7 @@ export default async function IntegrationsSettingsPage({
           id: row.id,
           label: `${nameByLead.get(row.lead_id) ?? "Lead"} · ${row.type}`,
         }))}
+        followUpHealth={followUpHealth}
       />
     </PageFrame>
   );

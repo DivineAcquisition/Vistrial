@@ -1281,6 +1281,7 @@ export type Database = {
       };
       organizations: {
         Row: {
+          activated_at: string | null;
           created_at: string;
           ghl_location_id: string | null;
           id: string;
@@ -1290,6 +1291,7 @@ export type Database = {
           updated_at: string;
         };
         Insert: {
+          activated_at?: string | null;
           created_at?: string;
           ghl_location_id?: string | null;
           id?: string;
@@ -1299,6 +1301,7 @@ export type Database = {
           updated_at?: string;
         };
         Update: {
+          activated_at?: string | null;
           created_at?: string;
           ghl_location_id?: string | null;
           id?: string;
@@ -1709,6 +1712,7 @@ export type Database = {
           available_at: string;
           body_text: string | null;
           channel: Database["public"]["Enums"]["touch_channel"];
+          claimed_at: string | null;
           created_at: string;
           email_subject: string | null;
           failure_reason: string | null;
@@ -1726,6 +1730,7 @@ export type Database = {
           available_at?: string;
           body_text?: string | null;
           channel: Database["public"]["Enums"]["touch_channel"];
+          claimed_at?: string | null;
           created_at?: string;
           email_subject?: string | null;
           failure_reason?: string | null;
@@ -1743,6 +1748,7 @@ export type Database = {
           available_at?: string;
           body_text?: string | null;
           channel?: Database["public"]["Enums"]["touch_channel"];
+          claimed_at?: string | null;
           created_at?: string;
           email_subject?: string | null;
           failure_reason?: string | null;
@@ -2175,6 +2181,23 @@ export type Database = {
         Args: { p_org_id: string };
         Returns: undefined;
       };
+      mark_org_activated: {
+        Args: { p_org_id: string };
+        Returns: string;
+      };
+      claim_ghl_dispatch: {
+        Args: { p_id: string };
+        Returns: Database["public"]["Tables"]["ghl_dispatches"]["Row"];
+      };
+      extraction_quotes_not_in_transcript: {
+        Args: Record<PropertyKey, never>;
+        Returns: {
+          extraction_id: string;
+          call_id: string;
+          org_id: string;
+          quote_text: string;
+        }[];
+      };
     };
     Enums: {
       action_creator: "system" | "user";
@@ -2259,7 +2282,8 @@ export type Database = {
         | "failed"
         | "regenerated"
         | "discarded"
-        | "quality_failed";
+        | "quality_failed"
+        | "enqueue_failed";
       follow_up_sequence_status: "active" | "halted" | "completed";
       follow_up_halt_reason:
         | "inbound_reply"

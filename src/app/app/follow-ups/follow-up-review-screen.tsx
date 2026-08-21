@@ -24,6 +24,7 @@ import {
 } from "@/lib/follow-up/labels";
 import type { FollowUpReviewPayload } from "@/lib/follow-up/types";
 import { formatDateTime } from "@/lib/format";
+import { formatQueueUntil } from "@/lib/queue/duration";
 import {
   btnGhost,
   btnPrimary,
@@ -42,14 +43,16 @@ export function FollowUpReviewScreen({ initial }: { initial: FollowUpReviewPaylo
   const [instruction, setInstruction] = useState("");
   const [rejectReason, setRejectReason] = useState("");
   const [confirming, setConfirming] = useState(false);
+  const [confirmLowConfidence, setConfirmLowConfidence] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [now] = useState(() => new Date().toISOString());
   const draft = file.draft;
   const recipient = draft.channel === "email" ? file.lead.email : file.lead.phone;
   const editable = draft.status === "pending" || draft.status === "failed" || draft.status === "expired";
   const stale = draft.stale || draft.status === "expired";
-  const canApprove = draft.status === "pending" && !stale;
-  const canRetry = draft.status === "failed";
+  const canApprove = file.canApprove && draft.status === "pending" && !stale;
+  const canRetry = file.canApprove && draft.status === "failed";
 
   async function reload() {
     const next = await refreshFollowUpReview(draft.id);
@@ -96,10 +99,18 @@ export function FollowUpReviewScreen({ initial }: { initial: FollowUpReviewPaylo
         </div>
         <DefinitionList>
           <KeyValue label="Model">{draft.modelVersion}</KeyValue>
-          <KeyValue label="Expires">{formatDateTime(draft.expiresAt)}</KeyValue>
+          <KeyValue label="Expires">{formatQueueUntil(draft.expiresAt, now)}</KeyValue>
           <KeyValue label="Recipient">{recipient || "Missing"}</KeyValue>
         </DefinitionList>
       </Panel>
+
+      {!file.canApprove && (draft.status === "pending" || draft.status === "failed") && !stale ? (
+        <Panel className="px-6 py-5">
+          <p className="text-sm text-flag-critical">
+            You can only approve drafts for leads assigned to you.
+          </p>
+        </Panel>
+      ) : null}
 
       {draft.lowConfidence ? (
         <Panel className="px-6 py-5">
@@ -291,11 +302,26 @@ export function FollowUpReviewScreen({ initial }: { initial: FollowUpReviewPaylo
                 <KeyValue label="Recipient">{recipient}</KeyValue>
                 <KeyValue label="Send time">{formatDateTime(file.proposedSendAt)}</KeyValue>
               </DefinitionList>
+              {draft.lowConfidence ? (
+                <label className="flex items-start gap-2 text-sm text-silver">
+                  <input
+                    type="checkbox"
+                    className="mt-1"
+                    checked={confirmLowConfidence}
+                    disabled={busy}
+                    onChange={(event) => setConfirmLowConfidence(event.target.checked)}
+                  />
+                  <span>
+                    This draft failed the quality check. I still want to send it to this
+                    person.
+                  </span>
+                </label>
+              ) : null}
               <div className="flex flex-wrap gap-2">
                 <button
                   type="button"
                   className={`${btnPrimary} ${btnSizeSm}`}
-                  disabled={busy}
+                  disabled={busy || (draft.lowConfidence && !confirmLowConfidence)}
                   onClick={() =>
                     run(() =>
                       approveFollowUp({
@@ -305,6 +331,7 @@ export function FollowUpReviewScreen({ initial }: { initial: FollowUpReviewPaylo
                         confirmChannel: draft.channel,
                         confirmRecipient: recipient ?? "",
                         confirmSendAt: file.proposedSendAt,
+                        confirmLowConfidence: draft.lowConfidence ? confirmLowConfidence : undefined,
                       })
                     )
                   }

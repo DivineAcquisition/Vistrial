@@ -1,14 +1,14 @@
 type LogFields = Record<string, unknown>;
 
 const FORBIDDEN =
-  /^(transcript|raw_transcript|rawtranscript|quotes|verbatim|summary|stated_objection|statedobjection|budget_signal|budgetsignal|timeline_signal|timelinesignal|decision_process|decisionprocess|next_step_agreed|nextstepagreed|opening|opening_text|content|text|payload)$/i;
+  /^(transcript|raw_transcript|rawtranscript|quotes|verbatim|summary|stated_objection|statedobjection|budget_signal|budgetsignal|timeline_signal|timelinesignal|decision_process|decisionprocess|next_step_agreed|nextstepagreed|opening|opening_text|content|text|payload|email|phone|first_name|last_name)$/i;
 
 function strip(fields: LogFields): LogFields {
   const out: LogFields = {};
   for (const [key, value] of Object.entries(fields)) {
     if (FORBIDDEN.test(key)) continue;
-    if (typeof value === "string" && value.length > 120) {
-      out[key] = `${value.slice(0, 40)}…`;
+    if (typeof value === "string" && value.length > 80) {
+      out[key] = "[omitted]";
       continue;
     }
     out[key] = value;

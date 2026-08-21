@@ -34,6 +34,7 @@ export type BriefPayload = {
     id: string;
     type: Enums<"objection_type">;
     verbatim: string;
+    callId: string | null;
     callType: Enums<"call_type"> | null;
     callOccurredAt: string | null;
   }>;

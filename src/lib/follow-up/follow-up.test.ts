@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 
+import { canApproveFollowUp } from "@/lib/auth/permissions";
 import { findBannedPhrases } from "@/lib/follow-up/banned";
 import { DEFAULT_ANTHROPIC_DRAFT_MODEL } from "@/lib/follow-up/constants";
 import { lengthRatio, wordEditDistance } from "@/lib/follow-up/edit-distance";
@@ -252,6 +253,32 @@ describe("draft quality check", () => {
     const result = checkDraftQuality(quality());
     expect(result).toEqual({ ok: true });
   });
+
+  it("does not treat an 18-character transcript overlap as load-bearing", () => {
+    const result = checkDraftQuality(
+      quality({
+        body: "Realistically we are looking at after Q1 — want to reconnect?",
+        quotes: [],
+        nextStepState: "absent",
+        nextStep: null,
+      })
+    );
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.failures.some((item) => item.type === "no_lead_specific")).toBe(true);
+  });
+
+  it("still accepts a draft that uses an extraction quote from the transcript", () => {
+    const result = checkDraftQuality(
+      quality({
+        body: "Realistically we are looking at after Q1. Tuesday at 3 still work?",
+        quotes: ["Realistically we are looking at after Q1."],
+        nextStepState: "present",
+        nextStep: "Tuesday callback",
+      })
+    );
+    expect(result).toEqual({ ok: true });
+  });
 });
 
 describe("banned constructions", () => {
@@ -394,5 +421,45 @@ describe("bounded sequences", () => {
     expect(boundedSequenceSteps(long, 3)).toHaveLength(3);
     expect(boundedSequenceSteps(long, 99)).toHaveLength(8);
     expect(boundedSequenceSteps([], 3)).toEqual([{ delayHours: 0, channel: undefined }]);
+  });
+});
+
+describe("canApproveFollowUp", () => {
+  it("blocks a setter on an unassigned lead", () => {
+    expect(
+      canApproveFollowUp({
+        role: "setter",
+        memberId: "s",
+        assignedSetterId: null,
+        assignedCloserId: null,
+      })
+    ).toBe(false);
+  });
+
+  it("matches override: setter only their assignment, owners anyone", () => {
+    expect(
+      canApproveFollowUp({
+        role: "setter",
+        memberId: "s",
+        assignedSetterId: "s",
+        assignedCloserId: null,
+      })
+    ).toBe(true);
+    expect(
+      canApproveFollowUp({
+        role: "setter",
+        memberId: "s",
+        assignedSetterId: "other",
+        assignedCloserId: null,
+      })
+    ).toBe(false);
+    expect(
+      canApproveFollowUp({
+        role: "owner",
+        memberId: "o",
+        assignedSetterId: null,
+        assignedCloserId: null,
+      })
+    ).toBe(true);
   });
 });

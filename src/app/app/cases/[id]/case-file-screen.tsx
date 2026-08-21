@@ -29,7 +29,6 @@ import { Panel } from "@/components/ui/panel";
 import { SectionHeader } from "@/components/ui/section-header";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { formatAnswer, formatCallDuration, formatCents } from "@/lib/cases/format";
-import { formatDateTime } from "@/lib/format";
 import { cursorFromTimelineEntry } from "@/lib/cases/cursor";
 import type {
   CaseCall,
@@ -358,7 +357,7 @@ export function CaseFileScreen({ initial }: { initial: CaseFilePayload }) {
                       {sequenceRun.nextPosition} of {sequenceRun.maxSteps}
                     </p>
                     <p className={helperClass}>
-                      Bounded to {sequenceRun.maxSteps} messages, ends {formatDateTime(sequenceRun.maxUntil)}.
+                      Bounded to {sequenceRun.maxSteps} messages, ends {formatQueueUntil(sequenceRun.maxUntil, now)}.
                       Halted automatically on reply, booking, payment, or a closed status.
                     </p>
                     <button
@@ -387,7 +386,7 @@ export function CaseFileScreen({ initial }: { initial: CaseFilePayload }) {
                       {item.stale ? " · stale" : ""}
                     </p>
                     <p className={helperClass}>
-                      {FOLLOW_UP_STATUS_LABELS[item.status]} · expires {formatDateTime(item.expiresAt)}
+                      {FOLLOW_UP_STATUS_LABELS[item.status]} · expires {formatQueueUntil(item.expiresAt, now)}
                       {item.lowConfidenceReason ? ` · ${item.lowConfidenceReason}` : ""}
                       {item.failureReason ? ` · ${item.failureReason}` : ""}
                     </p>

@@ -32,8 +32,8 @@ import {
   type TouchDirection,
   type TouchOutcome,
 } from "@/lib/queue/types";
-import { formatDateTime } from "@/lib/format";
 import { MIN_VOICE_EXAMPLES } from "@/lib/follow-up/constants";
+import { formatQueueUntil } from "@/lib/queue/duration";
 import {
   FOLLOW_UP_BRANCH_LABELS,
   FOLLOW_UP_CHANNEL_LABELS,
@@ -519,7 +519,7 @@ export function QueueScreen({
                       {item.stale ? " · stale" : ""}
                     </p>
                     <p className="mt-1 text-xs text-dim">
-                      {FOLLOW_UP_STATUS_LABELS[item.status]} · expires {formatDateTime(item.expiresAt)}
+                      {FOLLOW_UP_STATUS_LABELS[item.status]} · expires {formatQueueUntil(item.expiresAt, now)}
                       {item.lowConfidenceReason ? ` · ${item.lowConfidenceReason}` : ""}
                       {item.failureReason ? ` · ${item.failureReason}` : ""}
                     </p>

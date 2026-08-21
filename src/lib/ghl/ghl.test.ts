@@ -6,13 +6,16 @@ import { INGEST_STALE_PENDING_MS, LOCATION_CLAIMED_MESSAGE, WEBHOOK_MAX_ATTEMPTS
 import { normalizeEventKind } from "@/lib/ghl/events";
 import { applyGhlFieldMaps, answersEqual, mergeAnswers } from "@/lib/ghl/field-map";
 import { isIngestionStale } from "@/lib/ghl/health";
+import { followUpMissingApprover } from "@/lib/ghl/dispatch-guard";
 import {
   contactIsSuppressed,
   inboundTouchSummary,
   isAutomationOutbound,
   mapAppointmentOutcome,
   mapMessageChannel,
+  messageIdFromPayload,
   outboundTouchSummary,
+  timezoneFromContact,
 } from "@/lib/ghl/message-meta";
 import { hashRawBody, parseWebhookPayload } from "@/lib/ghl/payload";
 import { redactForLog } from "@/lib/ghl/redact";
@@ -236,5 +239,36 @@ describe("tokens and suppression", () => {
   it("does not name the org that already claimed a location", () => {
     expect(LOCATION_CLAIMED_MESSAGE.toLowerCase()).not.toContain("org");
     expect(LOCATION_CLAIMED_MESSAGE).toContain("already linked");
+  });
+});
+
+describe("message identity and contact timezone", () => {
+  it("uses messageId, never the webhook payload id", () => {
+    expect(
+      messageIdFromPayload({
+        id: "webhook-event-id",
+        messageId: "msg-real",
+      })
+    ).toBe("msg-real");
+    expect(
+      messageIdFromPayload({
+        id: "webhook-event-id",
+        message: { id: "nested-msg" },
+      })
+    ).toBe("nested-msg");
+    expect(messageIdFromPayload({ id: "webhook-event-id" })).toBeNull();
+  });
+
+  it("accepts an IANA zone from a GHL contact and rejects garbage", () => {
+    expect(timezoneFromContact({ timezone: "America/Denver" })).toBe("America/Denver");
+    expect(timezoneFromContact({ timeZone: "Pacific/Honolulu" })).toBe("Pacific/Honolulu");
+    expect(timezoneFromContact({ timezone: "NotAZone" })).toBeNull();
+    expect(timezoneFromContact({})).toBeNull();
+  });
+
+  it("refuses to dispatch a follow-up without a named approver", () => {
+    expect(followUpMissingApprover({ followUpDraftId: "draft-1", actorMemberId: null })).toBe(true);
+    expect(followUpMissingApprover({ followUpDraftId: "draft-1", actorMemberId: "member-1" })).toBe(false);
+    expect(followUpMissingApprover({ actorMemberId: null })).toBe(false);
   });
 });

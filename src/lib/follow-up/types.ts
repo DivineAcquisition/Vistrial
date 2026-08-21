@@ -153,6 +153,7 @@ export type FollowUpReviewPayload = {
     offerName: string | null;
     timezone: string | null;
   };
+  canApprove: boolean;
   call: {
     id: string;
     outcome: Enums<"call_outcome"> | null;

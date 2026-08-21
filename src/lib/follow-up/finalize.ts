@@ -22,7 +22,15 @@ export async function finalizeFollowUpDispatch(
     .select("*")
     .eq("dispatch_id", args.dispatchId)
     .maybeSingle();
-  if (!draft) return;
+  if (!draft) {
+    if (args.result.status !== "queued") {
+      followUpWarn("follow_up.dispatch_unlinked", {
+        dispatchId: args.dispatchId,
+        result: args.result.status,
+      });
+    }
+    return;
+  }
 
   if (args.result.status === "queued") {
     followUpLog("follow_up.dispatch_queued", { draftId: draft.id, dispatchId: args.dispatchId });

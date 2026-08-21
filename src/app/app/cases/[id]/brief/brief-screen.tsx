@@ -12,10 +12,17 @@ import {
   OBJECTION_TYPE_LABELS,
 } from "@/lib/leads/labels";
 import { FACTOR_LABELS } from "@/lib/scoring/compute";
+import { formatQueueDuration } from "@/lib/queue/duration";
 
 function gap(value: string | number | null | undefined): string {
   if (value === null || value === undefined || value === "") return "Not established";
   return String(value);
+}
+
+function objectionSourceLabel(objection: BriefPayload["openObjections"][number]): string {
+  if (objection.callOccurredAt) return formatQueueDuration(objection.callOccurredAt);
+  if (objection.callType) return CALL_TYPE_LABELS[objection.callType];
+  return "source call";
 }
 
 export function BriefScreen({ brief }: { brief: BriefPayload }) {
@@ -24,7 +31,7 @@ export function BriefScreen({ brief }: { brief: BriefPayload }) {
   const quotes = brief.quotes;
 
   return (
-    <div className="brief-sheet grid h-[calc(100svh-9rem)] grid-rows-[auto_1fr] overflow-hidden max-md:h-auto max-md:overflow-visible">
+    <div className="brief-sheet grid h-[calc(100svh-9rem)] min-h-0 grid-rows-[auto_1fr] overflow-hidden">
       <div className="mb-3 flex flex-wrap items-center justify-between gap-2 print:hidden">
         <p className="text-xs text-dim">Ninety seconds. Gaps stay visible.</p>
         <div className="flex gap-2">
@@ -37,7 +44,7 @@ export function BriefScreen({ brief }: { brief: BriefPayload }) {
         </div>
       </div>
 
-      <div className="grid min-h-0 gap-3 overflow-hidden md:grid-cols-2 xl:grid-cols-4 max-md:overflow-visible">
+      <div className="grid min-h-0 gap-3 overflow-y-auto md:grid-cols-2 xl:grid-cols-4">
         <Panel className="px-4 py-3">
           <p className="text-[11px] font-semibold tracking-[0.14em] text-brand-300 uppercase">Who</p>
           <p className="mt-1 text-base font-semibold text-white">{brief.lead.name}</p>
@@ -97,7 +104,14 @@ export function BriefScreen({ brief }: { brief: BriefPayload }) {
                   {objection.verbatim}”
                   <span className="text-dim">
                     {" "}
-                    · {objection.callType ? CALL_TYPE_LABELS[objection.callType] : "call"}
+                    ·{" "}
+                    {objection.callId ? (
+                      <Link href={`/app/calls/${objection.callId}`} className="text-dim underline-offset-2 hover:underline">
+                        {objectionSourceLabel(objection)}
+                      </Link>
+                    ) : (
+                      objectionSourceLabel(objection)
+                    )}
                   </span>
                 </li>
               ))}

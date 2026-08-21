@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 
 import { isLeadId } from "@/lib/cases/filters";
 import { getAuthContext } from "@/lib/auth/session";
+import { canApproveFollowUp } from "@/lib/auth/permissions";
 import { MAX_VOICE_EXAMPLES } from "@/lib/follow-up/constants";
 import { runFollowUpJob } from "@/lib/follow-up/generate";
 import { loadFollowUpReview } from "@/lib/follow-up/load";
@@ -16,6 +17,7 @@ import { revalidateLeadSurfaces } from "@/lib/leads/revalidate";
 import { getSupabaseAdmin } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import type { Json } from "@/types/database";
+import type { AuthContext } from "@/lib/auth/types";
 
 export type FollowUpActionResult =
   | { ok: true }
@@ -23,6 +25,24 @@ export type FollowUpActionResult =
 
 function fail(error: string): FollowUpActionResult {
   return { ok: false, error };
+}
+
+function denyUnlessAssignee(
+  ctx: AuthContext,
+  lead: { assigned_setter_id: string | null; assigned_closer_id: string | null }
+): FollowUpActionResult | null {
+  if (
+    canApproveFollowUp({
+      role: ctx.role,
+      memberId: ctx.member.id,
+      assignedSetterId: lead.assigned_setter_id,
+      assignedCloserId: lead.assigned_closer_id,
+      isPlatformAdmin: ctx.isPlatformAdmin,
+    })
+  ) {
+    return null;
+  }
+  return fail("You can only approve drafts for leads assigned to you.");
 }
 
 function revalidateFollowUp(leadId: string, draftId?: string) {
@@ -171,6 +191,7 @@ export async function approveFollowUp(input: {
   confirmChannel: string;
   confirmRecipient: string;
   confirmSendAt: string;
+  confirmLowConfidence?: boolean;
 }): Promise<FollowUpActionResult> {
   const scoped = await requireDraft(input.draftId);
   if (!scoped.ok) return scoped;
@@ -182,6 +203,9 @@ export async function approveFollowUp(input: {
   if (scoped.draft.status !== "pending" && scoped.draft.status !== "failed") {
     return fail("This draft is not waiting for approval.");
   }
+  if (scoped.draft.low_confidence && input.confirmLowConfidence !== true) {
+    return fail("This draft failed the quality check. Confirm that you still want to send it.");
+  }
 
   const body = input.body.trim();
   if (!body) return fail("The message cannot be empty.");
@@ -192,11 +216,13 @@ export async function approveFollowUp(input: {
   const supabase = await createClient();
   const { data: lead } = await supabase
     .from("leads")
-    .select("email, phone, timezone")
+    .select("email, phone, timezone, assigned_setter_id, assigned_closer_id")
     .eq("id", scoped.draft.lead_id)
     .eq("org_id", scoped.ctx.org.id)
     .maybeSingle();
   if (!lead) return fail("That lead is not in this workspace.");
+  const denied = denyUnlessAssignee(scoped.ctx, lead);
+  if (denied) return denied;
   const recipient = channel === "email" ? lead.email : lead.phone;
   if (!recipient) {
     return fail(channel === "email" ? "This lead has no email." : "This lead has no phone number.");
@@ -291,7 +317,7 @@ export async function retryFollowUpSend(draftId: string): Promise<FollowUpAction
   const [{ data: lead }, { data: settings }] = await Promise.all([
     supabase
       .from("leads")
-      .select("timezone")
+      .select("timezone, assigned_setter_id, assigned_closer_id")
       .eq("id", scoped.draft.lead_id)
       .eq("org_id", scoped.ctx.org.id)
       .maybeSingle(),
@@ -301,9 +327,12 @@ export async function retryFollowUpSend(draftId: string): Promise<FollowUpAction
       .eq("org_id", scoped.ctx.org.id)
       .maybeSingle(),
   ]);
+  if (!lead) return fail("That lead is not in this workspace.");
+  const denied = denyUnlessAssignee(scoped.ctx, lead);
+  if (denied) return denied;
   const sendAt = computeSendAt({
     now: new Date(),
-    timeZone: lead?.timezone || scoped.ctx.org.timezone,
+    timeZone: lead.timezone || scoped.ctx.org.timezone,
     enabled: settings?.quiet_hours_enabled ?? true,
     startHm: (settings?.quiet_hours_start ?? "21:00").slice(0, 5),
     endHm: (settings?.quiet_hours_end ?? "08:00").slice(0, 5),
@@ -316,7 +345,7 @@ export async function retryFollowUpSend(draftId: string): Promise<FollowUpAction
     content: scoped.draft.edited_body,
     subject: scoped.draft.edited_subject ?? undefined,
     actorMemberId: scoped.draft.approved_by_member_id,
-    idempotencyKey: `follow-up:${scoped.draft.id}:retry:${Date.now()}`,
+    idempotencyKey: `follow-up:${scoped.draft.id}`,
     availableAt: sendAt,
     followUpDraftId: scoped.draft.id,
   });

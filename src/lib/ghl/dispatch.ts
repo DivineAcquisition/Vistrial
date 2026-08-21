@@ -4,6 +4,7 @@ import { finalizeFollowUpDispatch } from "@/lib/follow-up/finalize";
 import { DISPATCH_MAX_ATTEMPTS } from "@/lib/ghl/constants";
 import { fetchContact, getValidAccessToken, sendConversationMessage } from "@/lib/ghl/client";
 import { ghlError, ghlLog, ghlWarn } from "@/lib/ghl/log";
+import { followUpMissingApprover } from "@/lib/ghl/dispatch-guard";
 import { channelToGhlType, contactIsSuppressed, outboundTouchSummary } from "@/lib/ghl/message-meta";
 import { nextAttemptAt, shouldMarkDead } from "@/lib/ghl/retry";
 import type { GhlDb } from "@/lib/ghl/tokens";
@@ -31,10 +32,17 @@ export type DispatchResult =
   | { status: "halted"; reason: "connection_broken" | "connection_missing" };
 
 /**
- * Send through GHL and record the resulting touch. No UI calls this yet.
+ * Send through GHL and record the resulting touch.
  * Rate-limit approaching → queue, never drop. Failed send → no touch row.
+ * Follow-up drafts must carry a named approver. Cron only drains rows that
+ * an operator already approved.
  */
 export async function dispatchOutboundMessage(db: GhlDb, input: DispatchInput): Promise<DispatchResult> {
+  if (followUpMissingApprover(input)) {
+    ghlError("ghl.dispatch.failed", logFields(input, "failed", "missing_approver"));
+    return { status: "failed", dispatchId: null, reason: "missing_approver" };
+  }
+
   const token = await getValidAccessToken(db, input.orgId);
   if (!token.ok) {
     ghlError("ghl.dispatch.halted", {
@@ -118,10 +126,24 @@ export async function drainDispatchQueue(db: GhlDb, limit = 25): Promise<{ sent:
 }
 
 export async function sendQueuedDispatch(db: GhlDb, dispatchId: string): Promise<DispatchResult> {
-  const { data: row } = await db.from("ghl_dispatches").select("*").eq("id", dispatchId).maybeSingle();
-  if (!row) {
-    return { status: "failed", dispatchId, reason: "not_queued" };
+  const { data: claimed } = await db.rpc("claim_ghl_dispatch", { p_id: dispatchId });
+  if (!claimed) {
+    const { data: row } = await db.from("ghl_dispatches").select("*").eq("id", dispatchId).maybeSingle();
+    if (!row) return { status: "failed", dispatchId, reason: "not_queued" };
+    if (row.status === "sent") {
+      return { status: "sent", dispatchId: row.id, touchId: "", ghlMessageId: row.ghl_message_id };
+    }
+    if (row.status === "suppressed") {
+      return { status: "suppressed", dispatchId: row.id, reason: row.failure_reason ?? "already_suppressed" };
+    }
+    if (Date.parse(row.available_at) > Date.now()) {
+      return { status: "queued", dispatchId: row.id };
+    }
+    ghlLog("ghl.dispatch.claim_skipped", logFieldsFromRow(row as DatabaseRow, "queued", "lease_held"));
+    return { status: "queued", dispatchId: row.id };
   }
+  const row = claimed as DatabaseRow;
+
   if (row.status === "failed" && row.failure_reason === "touch_insert_failed" && row.ghl_message_id) {
     return recoverTouchAfterSend(db, row);
   }
@@ -129,6 +151,7 @@ export async function sendQueuedDispatch(db: GhlDb, dispatchId: string): Promise
     return { status: "failed", dispatchId, reason: "not_queued" };
   }
   if (Date.parse(row.available_at) > Date.now()) {
+    await db.from("ghl_dispatches").update({ claimed_at: null }).eq("id", row.id);
     return { status: "queued", dispatchId: row.id };
   }
 
@@ -136,7 +159,7 @@ export async function sendQueuedDispatch(db: GhlDb, dispatchId: string): Promise
   if (!token.ok) {
     await db
       .from("ghl_dispatches")
-      .update({ status: "failed", failure_reason: "connection_broken", body_text: null })
+      .update({ status: "failed", failure_reason: "connection_broken", body_text: null, claimed_at: null })
       .eq("id", row.id);
     ghlError("ghl.dispatch.halted", {
       orgId: row.org_id,
@@ -153,7 +176,10 @@ export async function sendQueuedDispatch(db: GhlDb, dispatchId: string): Promise
   if (allowed === false) {
     await db
       .from("ghl_dispatches")
-      .update({ available_at: nextAttemptAt(Math.max(row.attempt_count, 1)) })
+      .update({
+        available_at: nextAttemptAt(Math.max(row.attempt_count, 1)),
+        claimed_at: null,
+      })
       .eq("id", row.id);
     ghlLog("ghl.dispatch.queued", logFieldsFromRow(row, "queued", "rate_limited"));
     return { status: "queued", dispatchId: row.id };
@@ -291,9 +317,9 @@ export async function sendQueuedDispatch(db: GhlDb, dispatchId: string): Promise
       .update({
         status: "failed",
         ghl_message_id: ghlMessageId,
-        body_text: null,
         sent_at: new Date().toISOString(),
         failure_reason: "touch_insert_failed",
+        claimed_at: null,
       })
       .eq("id", row.id);
     ghlError("ghl.dispatch.touch_missing", logFieldsFromRow(row, "failed", "touch_insert_failed"));
@@ -360,6 +386,7 @@ async function recoverTouchAfterSend(
       actor_member_id: row.actor_member_id,
       summary: outboundTouchSummary(row.channel, type),
       ghl_message_id: ghlMessageId,
+      outbound_body: row.body_text,
     })
     .select("id")
     .maybeSingle();
@@ -409,6 +436,22 @@ async function insertDispatch(
       .eq("org_id", input.orgId)
       .eq("idempotency_key", input.idempotencyKey)
       .maybeSingle();
+    if (existing?.status === "failed") {
+      await db
+        .from("ghl_dispatches")
+        .update({
+          status: "queued",
+          body_text: input.content,
+          email_subject: input.subject ?? null,
+          failure_reason: null,
+          claimed_at: null,
+          available_at: input.availableAt ?? new Date().toISOString(),
+          actor_member_id: input.actorMemberId ?? null,
+        })
+        .eq("id", existing.id)
+        .eq("org_id", input.orgId);
+      return { id: existing.id, status: "queued" };
+    }
     return existing;
   }
   if (error) {
@@ -431,6 +474,7 @@ async function retryOrFail(
         attempt_count: attempts,
         available_at: nextAttemptAt(attempts),
         failure_reason: reason,
+        claimed_at: null,
       })
       .eq("id", row.id);
     ghlWarn("ghl.dispatch.retry", logFieldsFromRow(row, "queued", reason));
@@ -446,6 +490,7 @@ async function failDispatch(db: GhlDb, row: DatabaseRow, reason: string): Promis
       status: "failed",
       failure_reason: reason,
       body_text: null,
+      claimed_at: null,
       attempt_count: row.attempt_count + 1,
     })
     .eq("id", row.id);
@@ -475,6 +520,7 @@ type DatabaseRow = {
   email_subject: string | null;
   ghl_message_id: string | null;
   failure_reason: string | null;
+  claimed_at: string | null;
   status: "queued" | "sent" | "failed" | "suppressed";
 };
 

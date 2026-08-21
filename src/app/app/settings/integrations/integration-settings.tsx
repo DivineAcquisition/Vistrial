@@ -94,6 +94,14 @@ export type IntegrationSettingsProps = {
     providerCallId: string | null;
   }>;
   assignableCalls: Array<{ id: string; label: string }>;
+  followUpHealth: {
+    deadJobs: number;
+    stalePendingJobs: number;
+    enqueueFailed: number;
+    enqueueNoRoute: number;
+    qualityFailures: Array<{ type: string; count: number }>;
+    warning: boolean;
+  };
 };
 
 const initial: SettingsSaveResult = { status: "idle" };
@@ -178,6 +186,21 @@ export function IntegrationSettings(props: IntegrationSettingsProps) {
             {props.transcriptHealth.unmatchedOldestAgeMs !== null
               ? ` Oldest is ${Math.round(props.transcriptHealth.unmatchedOldestAgeMs / 60000)}m old.`
               : ""}
+          </p>
+        </Panel>
+      ) : null}
+
+      {props.followUpHealth.warning ? (
+        <Panel className="border-flag-warning/40 px-6 py-5">
+          <p className="text-sm font-semibold text-flag-warning">Follow-up drafting needs attention</p>
+          <p className="mt-2 text-sm leading-relaxed text-silver">
+            {props.followUpHealth.deadJobs} dead job
+            {props.followUpHealth.deadJobs === 1 ? "" : "s"}, {props.followUpHealth.enqueueFailed} enqueue
+            failure
+            {props.followUpHealth.enqueueFailed === 1 ? "" : "s"}, and{" "}
+            {props.followUpHealth.stalePendingJobs} job
+            {props.followUpHealth.stalePendingJobs === 1 ? "" : "s"} waiting more than 15 minutes.
+            Drafts will not appear until this is fixed.
           </p>
         </Panel>
       ) : null}
@@ -310,7 +333,42 @@ export function IntegrationSettings(props: IntegrationSettingsProps) {
             <dt className={labelClass}>Failed extractions</dt>
             <dd className="text-sm text-white">{props.transcriptHealth.deadExtractions}</dd>
           </div>
+          <div>
+            <dt className={labelClass}>Failed follow-up jobs</dt>
+            <dd className="text-sm text-white">{props.followUpHealth.deadJobs}</dd>
+          </div>
+          <div>
+            <dt className={labelClass}>Enqueue failures</dt>
+            <dd className="text-sm text-white">{props.followUpHealth.enqueueFailed}</dd>
+            <p className={helperClass}>
+              Last 7 days
+              {props.followUpHealth.enqueueNoRoute > 0
+                ? ` · ${props.followUpHealth.enqueueNoRoute} cancelled-call no-route`
+                : ""}
+            </p>
+          </div>
+          <div>
+            <dt className={labelClass}>Stale follow-up jobs</dt>
+            <dd className="text-sm text-white">{props.followUpHealth.stalePendingJobs}</dd>
+            <p className={helperClass}>Pending longer than 15 minutes</p>
+          </div>
         </dl>
+
+        {props.followUpHealth.qualityFailures.length > 0 ? (
+          <div className="mt-6">
+            <p className={labelClass}>Quality check failures (7 days)</p>
+            <DataTable
+              columns={[
+                { key: "type", label: "Type" },
+                { key: "count", label: "Count", align: "right" },
+              ]}
+              rows={props.followUpHealth.qualityFailures.map((row) => ({
+                type: row.type,
+                count: row.count,
+              }))}
+            />
+          </div>
+        ) : null}
 
         <div className="mt-6">
           <p className={labelClass}>Last 24 hours by type</p>

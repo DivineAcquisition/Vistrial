@@ -1,4 +1,5 @@
 import type { Enums } from "@/types/database";
+import { parseIanaTimeZone } from "@/lib/timezones";
 
 type TouchChannel = Enums<"touch_channel">;
 
@@ -73,7 +74,15 @@ export function outboundTouchSummary(channel: TouchChannel, kind: "system" | "hu
 }
 
 export function messageIdFromPayload(payload: Record<string, unknown>): string | null {
-  return pick(payload, ["messageId", "message_id", "id"]);
+  const nested = asRecord(payload.message);
+  return (
+    pick(payload, ["messageId", "message_id"]) ??
+    pick(nested, ["id", "messageId", "message_id"])
+  );
+}
+
+export function timezoneFromContact(contact: Record<string, unknown>): string | null {
+  return parseIanaTimeZone(pick(contact, ["timezone", "timeZone", "tz"]));
 }
 
 export function occurredAtFromPayload(payload: Record<string, unknown>): string {

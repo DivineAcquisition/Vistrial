@@ -169,7 +169,7 @@ export async function runExtractionJob(db: GhlDb, jobId: string): Promise<void> 
       extractionId,
     });
   } catch (cause) {
-    transcriptWarn("follow_up.enqueue_failed", {
+    transcriptError("follow_up.enqueue_failed", {
       callId: call.id,
       reason: cause instanceof Error ? cause.message.slice(0, 80) : "enqueue_failed",
     });

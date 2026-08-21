@@ -1,15 +1,12 @@
 "use client";
 
 import { useActionState, useState } from "react";
-import { useRouter } from "next/navigation";
 
 import {
   createAccountFromInvite,
-  markPendingInvite,
   type AcceptInviteState,
 } from "@/app/(auth)/accept-invite/[token]/actions";
-import { authCallbackUrl } from "@/lib/auth/paths";
-import { createClient } from "@/lib/supabase/client";
+import { sendMagicLink, signInPassword } from "@/app/(auth)/login/actions";
 import {
   btnPrimary,
   btnSecondary,
@@ -20,7 +17,8 @@ import {
   labelClass,
 } from "@/lib/ui";
 
-const initialState: AcceptInviteState = { error: null };
+const initialCreateState: AcceptInviteState = { error: null };
+const initialLoginState = { error: null as null, magicSent: false };
 
 export function AcceptInviteForm({
   token,
@@ -31,60 +29,22 @@ export function AcceptInviteForm({
   email: string;
   role: string;
 }) {
-  const router = useRouter();
   const [mode, setMode] = useState<"signin" | "create" | "magic">("signin");
   const [password, setPassword] = useState("");
-  const [pending, setPending] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [magicSent, setMagicSent] = useState(false);
   const [createState, createAction, createPending] = useActionState(
     createAccountFromInvite,
-    initialState
+    initialCreateState
   );
+  const [passwordState, passwordAction, passwordPending] = useActionState(
+    signInPassword,
+    initialLoginState
+  );
+  const [magicState, magicAction, magicPending] = useActionState(sendMagicLink, initialLoginState);
 
-  async function onSignIn(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    setError(null);
-    setPending(true);
-    const supabase = createClient();
+  const redirectTo = `/accept-invite/${token}`;
+  const signInError = mode === "magic" ? magicState.error : passwordState.error;
 
-    try {
-      await markPendingInvite(token);
-
-      if (mode === "magic") {
-        const { error: otpError } = await supabase.auth.signInWithOtp({
-          email,
-          options: {
-            emailRedirectTo: authCallbackUrl(`/accept-invite/${token}`),
-            shouldCreateUser: false,
-          },
-        });
-        if (otpError) {
-          setError(otpError.message);
-          return;
-        }
-        setMagicSent(true);
-        return;
-      }
-
-      const { error: signInError } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
-
-      if (signInError) {
-        setError(signInError.message);
-        return;
-      }
-
-      router.replace(`/accept-invite/${token}`);
-      router.refresh();
-    } finally {
-      setPending(false);
-    }
-  }
-
-  if (magicSent) {
+  if (mode === "magic" && magicState.magicSent) {
     return (
       <p className="text-sm leading-relaxed text-silver">
         Check {email} for a sign-in link. After you open it, you will join as {role}.
@@ -100,9 +60,7 @@ export function AcceptInviteForm({
         <p className={helperClass}>
           Public sign-up is closed. Creating an account here is allowed only because this invite is valid.
         </p>
-        {(createState.error || error) && (
-          <p className={errorClass}>{createState.error ?? error}</p>
-        )}
+        {createState.error ? <p className={errorClass}>{createState.error}</p> : null}
         <div>
           <label className={labelClass}>Email</label>
           <input className={inputClass} value={email} readOnly />
@@ -137,9 +95,14 @@ export function AcceptInviteForm({
     );
   }
 
+  const pending = mode === "magic" ? magicPending : passwordPending;
+  const action = mode === "magic" ? magicAction : passwordAction;
+
   return (
-    <form onSubmit={onSignIn} className="space-y-4">
-      {error ? <p className={errorClass}>{error}</p> : null}
+    <form action={action} className="space-y-4">
+      <input type="hidden" name="email" value={email} />
+      <input type="hidden" name="redirectTo" value={redirectTo} />
+      {signInError ? <p className={errorClass}>{LOGIN_ERROR_COPY[signInError]}</p> : null}
       <div>
         <label className={labelClass}>Email</label>
         <input className={inputClass} value={email} readOnly />
@@ -151,11 +114,10 @@ export function AcceptInviteForm({
           </label>
           <input
             id="password"
+            name="password"
             type="password"
             autoComplete="current-password"
             required
-            value={password}
-            onChange={(event) => setPassword(event.target.value)}
             className={inputClass}
           />
         </div>
@@ -168,10 +130,7 @@ export function AcceptInviteForm({
       <button
         type="button"
         className={`${btnSecondary} ${btnSizeMd} w-full`}
-        onClick={() => {
-          setMode((current) => (current === "magic" ? "signin" : "magic"));
-          setError(null);
-        }}
+        onClick={() => setMode((current) => (current === "magic" ? "signin" : "magic"))}
       >
         {mode === "magic" ? "Use a password instead" : "Send me a magic link instead"}
       </button>

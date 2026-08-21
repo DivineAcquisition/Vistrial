@@ -27,10 +27,15 @@ export function inviteUrl(token: string): string {
   return `${appUrl()}/accept-invite/${token}`;
 }
 
-export function authCallbackUrl(next?: string): string {
-  const url = new URL("/auth/callback", `${appUrl()}/`);
+export function authCallbackUrl(next?: string, origin = appUrl()): string {
+  const url = new URL("/auth/callback", `${origin.replace(/\/$/, "")}/`);
   if (next && next !== "/app") {
     url.searchParams.set("next", next);
   }
   return url.toString();
+}
+
+export function postAuthPath(next: string): string {
+  if (next.startsWith("/app") || isAcceptInvitePath(next)) return next;
+  return "/app/queue";
 }

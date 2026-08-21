@@ -2,6 +2,7 @@ import { AuthCard } from "@/components/auth/auth-card";
 import { LoginForm } from "@/app/(auth)/login/login-form";
 import { safeInternalPath } from "@/lib/auth/paths";
 import { getSessionUser, listActiveMemberships } from "@/lib/auth/session";
+import { isSupabaseConfigured } from "@/lib/supabase/env";
 import { redirect } from "next/navigation";
 
 export default async function LoginPage({
@@ -11,7 +12,15 @@ export default async function LoginPage({
 }) {
   const params = await searchParams;
   const redirectTo = safeInternalPath(params.redirect);
-  const user = await getSessionUser();
+
+  let user = null;
+  if (isSupabaseConfigured()) {
+    try {
+      user = await getSessionUser();
+    } catch {
+      user = null;
+    }
+  }
 
   if (user) {
     const memberships = await listActiveMemberships(user.id);

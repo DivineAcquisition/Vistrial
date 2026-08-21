@@ -25,3 +25,5 @@ Dashboard: https://supabase.com/dashboard/project/jizzmlvpnykazrsiotqq/auth/prov
    - Refresh tokens: enabled
 
 Invite email delivery is not wired yet. Members settings returns a link to share by hand.
+
+Production sign-in reads `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY` from the Vercel **Vistrial** project (`jizzmlvpnykazrsiotqq`). Those names must be static in application code so Next.js inlines them into the browser bundle. Do not point the app at the DivineACQ project.

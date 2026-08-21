@@ -3,6 +3,7 @@ import "server-only";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 
 import { requireSupabaseServiceEnv } from "@/lib/supabase/env-server";
+import { fetchForSupabaseKey } from "@/lib/supabase/fetch";
 import type { Database } from "@/types/database";
 
 /**
@@ -26,6 +27,7 @@ export function getSupabaseAdmin(): SupabaseClient<Database> {
   const { url, key } = requireSupabaseServiceEnv();
   admin = createClient<Database>(url, key, {
     auth: { autoRefreshToken: false, persistSession: false },
+    global: { fetch: fetchForSupabaseKey(key) },
   });
   return admin;
 }

@@ -2,20 +2,17 @@ import "server-only";
 
 import { supabaseUrl } from "@/lib/supabase/env";
 
-function firstEnv(...names: string[]): string {
-  for (const name of names) {
-    const value = process.env[name]?.trim();
-    if (value) return value;
-  }
-  return "";
-}
-
 /**
  * Service-role / secret key. Never expose to the browser.
  * Accepts SUPABASE_SERVICE_ROLE_KEY and the Marketplace alias SUPABASE_SECRET_KEY.
+ *
+ * Names are static so this cannot accidentally ride a dynamic `process.env[name]`
+ * helper that Next would strip from other bundles.
  */
 export function supabaseServiceRoleKey(): string {
-  return firstEnv("SUPABASE_SERVICE_ROLE_KEY", "SUPABASE_SECRET_KEY");
+  const serviceRole = process.env.SUPABASE_SERVICE_ROLE_KEY?.trim();
+  if (serviceRole) return serviceRole;
+  return process.env.SUPABASE_SECRET_KEY?.trim() ?? "";
 }
 
 export function requireSupabaseServiceEnv(): { url: string; key: string } {
@@ -27,4 +24,13 @@ export function requireSupabaseServiceEnv(): { url: string; key: string } {
     );
   }
   return { url, key };
+}
+
+export function supabaseServiceRoleKeyKind(
+  key = supabaseServiceRoleKey()
+): "service_role_jwt" | "secret" | "other" | null {
+  if (!key) return null;
+  if (key.startsWith("sb_secret_")) return "secret";
+  if (key.startsWith("eyJ")) return "service_role_jwt";
+  return "other";
 }

@@ -2,30 +2,36 @@
  * Public Supabase env (URL + anon/publishable key). Safe to import from
  * Client Components. Service-role lives in env-server.ts.
  *
- * Accepts both the classic names and the Vercel Marketplace names
- * (`SUPABASE_URL`, `SUPABASE_ANON_KEY`, publishable keys).
+ * Next.js only inlines `process.env.NEXT_PUBLIC_*` when the property name is
+ * a static identifier. A dynamic lookup from a name array is blank in the
+ * browser bundle, which made production sign-in throw "Supabase is not
+ * configured" before Auth ran.
+ *
+ * Prefer the classic JWT `anon` key when both are present — Kong always accepts
+ * it as `Authorization: Bearer`. Marketplace `sb_publishable_…` keys still work
+ * once `fetchForSupabaseKey` strips them from Bearer.
  */
 
-function firstEnv(...names: string[]): string {
-  for (const name of names) {
-    const value = process.env[name]?.trim();
-    if (value) return value;
+function firstPresent(...values: Array<string | undefined>): string {
+  for (const value of values) {
+    const trimmed = value?.trim();
+    if (trimmed) return trimmed;
   }
   return "";
 }
 
 /** Project URL — public or server-only Marketplace name. */
 export function supabaseUrl(): string {
-  return firstEnv("NEXT_PUBLIC_SUPABASE_URL", "SUPABASE_URL");
+  return firstPresent(process.env.NEXT_PUBLIC_SUPABASE_URL, process.env.SUPABASE_URL);
 }
 
 /** Anon / publishable key for session clients. */
 export function supabasePublishableKey(): string {
-  return firstEnv(
-    "NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY",
-    "NEXT_PUBLIC_SUPABASE_ANON_KEY",
-    "SUPABASE_PUBLISHABLE_KEY",
-    "SUPABASE_ANON_KEY"
+  return firstPresent(
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+    process.env.SUPABASE_ANON_KEY,
+    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY,
+    process.env.SUPABASE_PUBLISHABLE_KEY
   );
 }
 
@@ -42,4 +48,13 @@ export function requireSupabaseBrowserEnv(): { url: string; key: string } {
     );
   }
   return { url, key };
+}
+
+export function supabasePublishableKeyKind(
+  key = supabasePublishableKey()
+): "anon_jwt" | "publishable" | "other" | null {
+  if (!key) return null;
+  if (key.startsWith("sb_publishable_")) return "publishable";
+  if (key.startsWith("eyJ")) return "anon_jwt";
+  return "other";
 }

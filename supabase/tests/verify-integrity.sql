@@ -150,3 +150,20 @@ BEGIN
   END IF;
 END
 $$;
+
+DO $$
+BEGIN
+  IF has_function_privilege('authenticated', 'public.claim_follow_up_job()', 'execute') THEN
+    RAISE EXCEPTION 'authenticated must not execute claim_follow_up_job';
+  END IF;
+  IF has_function_privilege('authenticated', 'public.expire_stale_follow_up_drafts()', 'execute') THEN
+    RAISE EXCEPTION 'authenticated must not execute expire_stale_follow_up_drafts';
+  END IF;
+  IF NOT has_function_privilege('service_role', 'public.claim_follow_up_job()', 'execute') THEN
+    RAISE EXCEPTION 'service_role must execute claim_follow_up_job';
+  END IF;
+  IF NOT has_function_privilege('service_role', 'public.expire_stale_follow_up_drafts()', 'execute') THEN
+    RAISE EXCEPTION 'service_role must execute expire_stale_follow_up_drafts';
+  END IF;
+END
+$$;

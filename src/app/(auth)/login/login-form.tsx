@@ -1,36 +1,18 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useActionState, useState } from "react";
 
-import { authCallbackUrl } from "@/lib/auth/paths";
-import { createClient } from "@/lib/supabase/client";
+import {
+  sendMagicLink,
+  signInPassword,
+  type LoginActionState,
+} from "@/app/(auth)/login/actions";
+import { LOGIN_ERROR_COPY, type LoginError } from "@/lib/auth/errors";
 import { btnPrimary, btnSizeMd, errorClass, helperClass, inputClass, labelClass } from "@/lib/ui";
 
 type Mode = "password" | "magic";
-type LoginError = "credentials" | "unconfirmed" | "no_membership" | "generic" | null;
 
-function classifyAuthError(message: string, code?: string): Exclude<LoginError, "no_membership" | null> {
-  const haystack = `${code ?? ""} ${message}`.toLowerCase();
-  if (haystack.includes("email_not_confirmed") || haystack.includes("email not confirmed")) {
-    return "unconfirmed";
-  }
-  if (
-    haystack.includes("invalid_credentials") ||
-    haystack.includes("invalid login credentials") ||
-    haystack.includes("invalid email or password")
-  ) {
-    return "credentials";
-  }
-  return "generic";
-}
-
-const ERROR_COPY: Record<Exclude<LoginError, null>, string> = {
-  credentials: "That email or password is not right.",
-    unconfirmed: "Confirm your email before signing in. Check that address for the confirmation message.",
-  no_membership: "This account is not a member of any workspace. You need an invite.",
-  generic: "Sign-in failed. Try again, or use a magic link.",
-};
+const initialState: LoginActionState = { error: null };
 
 export function LoginForm({
   redirectTo,
@@ -39,79 +21,19 @@ export function LoginForm({
   redirectTo: string;
   callbackError?: boolean;
 }) {
-  const router = useRouter();
   const [mode, setMode] = useState<Mode>("password");
   const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [pending, setPending] = useState(false);
-  const [error, setError] = useState<LoginError>(callbackError ? "generic" : null);
-  const [magicSent, setMagicSent] = useState(false);
+  const [passwordState, passwordAction, passwordPending] = useActionState(
+    signInPassword,
+    callbackError ? { error: "generic" as LoginError } : initialState
+  );
+  const [magicState, magicAction, magicPending] = useActionState(sendMagicLink, initialState);
 
-  async function onSubmit(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    setError(null);
-    setPending(true);
+  const pending = mode === "password" ? passwordPending : magicPending;
+  const error = mode === "password" ? passwordState.error : magicState.error;
+  const action = mode === "password" ? passwordAction : magicAction;
 
-    const supabase = createClient();
-
-    try {
-      if (mode === "magic") {
-        const { error: otpError } = await supabase.auth.signInWithOtp({
-          email,
-          options: {
-            emailRedirectTo: authCallbackUrl(redirectTo),
-            shouldCreateUser: false,
-          },
-        });
-
-        if (otpError) {
-          setError(classifyAuthError(otpError.message, otpError.code));
-          return;
-        }
-
-        setMagicSent(true);
-        return;
-      }
-
-      const { data, error: signInError } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
-
-      if (signInError) {
-        setError(classifyAuthError(signInError.message, signInError.code));
-        return;
-      }
-
-      const userId = data.user?.id;
-      if (!userId) {
-        setError("generic");
-        return;
-      }
-
-      const [{ data: memberships }, { data: platformAdmin }] = await Promise.all([
-        supabase
-          .from("org_members")
-          .select("id")
-          .eq("user_id", userId)
-          .eq("active", true)
-          .limit(1),
-        supabase.from("platform_admins").select("user_id").eq("user_id", userId).maybeSingle(),
-      ]);
-
-      if (!memberships?.length && !platformAdmin) {
-        setError("no_membership");
-        return;
-      }
-
-      router.replace(redirectTo.startsWith("/app") ? redirectTo : "/app/queue");
-      router.refresh();
-    } finally {
-      setPending(false);
-    }
-  }
-
-  if (magicSent) {
+  if (mode === "magic" && magicState.magicSent) {
     return (
       <p className="text-sm leading-relaxed text-silver">
         Check {email || "that address"} for a sign-in link. It expires quickly; request another if it does not arrive.
@@ -120,8 +42,9 @@ export function LoginForm({
   }
 
   return (
-    <form onSubmit={onSubmit} className="space-y-4">
-      {error ? <p className={errorClass}>{ERROR_COPY[error]}</p> : null}
+    <form action={action} className="space-y-4">
+      <input type="hidden" name="redirectTo" value={redirectTo} />
+      {error ? <p className={errorClass}>{LOGIN_ERROR_COPY[error]}</p> : null}
 
       <div>
         <label htmlFor="email" className={labelClass}>
@@ -150,8 +73,6 @@ export function LoginForm({
             type="password"
             autoComplete="current-password"
             required
-            value={password}
-            onChange={(event) => setPassword(event.target.value)}
             className={inputClass}
           />
         </div>
@@ -166,11 +87,7 @@ export function LoginForm({
       <button
         type="button"
         className="w-full text-center text-sm text-brand-300 hover:text-white"
-        onClick={() => {
-          setMode((current) => (current === "password" ? "magic" : "password"));
-          setError(null);
-          setMagicSent(false);
-        }}
+        onClick={() => setMode((current) => (current === "password" ? "magic" : "password"))}
       >
         {mode === "password" ? "Send me a magic link instead" : "Sign in with a password instead"}
       </button>

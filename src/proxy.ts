@@ -3,6 +3,7 @@ import { NextResponse, type NextRequest } from "next/server";
 
 import { safeInternalPath } from "@/lib/auth/paths";
 import { isSupabaseConfigured, supabasePublishableKey, supabaseUrl } from "@/lib/supabase/env";
+import { fetchForSupabaseKey } from "@/lib/supabase/fetch";
 import type { Database } from "@/types/database";
 
 function pathWithSearch(request: NextRequest) {
@@ -32,10 +33,12 @@ export async function proxy(request: NextRequest) {
     return supabaseResponse;
   }
 
+  const publishableKey = supabasePublishableKey();
   const supabase = createServerClient<Database>(
     supabaseUrl(),
-    supabasePublishableKey(),
+    publishableKey,
     {
+      global: { fetch: fetchForSupabaseKey(publishableKey) },
       cookies: {
         getAll() {
           return request.cookies.getAll();

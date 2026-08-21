@@ -10,6 +10,12 @@ import {
   refreshCaseFile,
   resolveLeadObjection,
 } from "@/app/app/cases/actions";
+import { haltLeadSequence } from "@/app/app/follow-ups/actions";
+import {
+  FOLLOW_UP_BRANCH_LABELS,
+  FOLLOW_UP_CHANNEL_LABELS,
+  FOLLOW_UP_STATUS_LABELS,
+} from "@/lib/follow-up/labels";
 import {
   assignQueueLead,
   completeQueueNextAction,
@@ -23,6 +29,7 @@ import { Panel } from "@/components/ui/panel";
 import { SectionHeader } from "@/components/ui/section-header";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { formatAnswer, formatCallDuration, formatCents } from "@/lib/cases/format";
+import { formatDateTime } from "@/lib/format";
 import { cursorFromTimelineEntry } from "@/lib/cases/cursor";
 import type {
   CaseCall,
@@ -334,6 +341,68 @@ export function CaseFileScreen({ initial }: { initial: CaseFilePayload }) {
           ) : null}
         </Panel>
       </section>
+
+      {file.pendingFollowUps.length > 0 || file.activeSequences.length > 0 ? (
+        <section>
+          <SectionHeader
+            title="Follow-up drafts"
+            hint="Review and approve one at a time. Nothing sends without you."
+          />
+          <Panel className="px-6 py-5">
+            {file.activeSequences.length > 0 ? (
+              <div className="mb-4 space-y-3">
+                {file.activeSequences.map((sequenceRun) => (
+                  <div key={sequenceRun.id}>
+                    <p className="text-sm text-white">
+                      Active {FOLLOW_UP_BRANCH_LABELS[sequenceRun.branch]} sequence · next draft{" "}
+                      {sequenceRun.nextPosition} of {sequenceRun.maxSteps}
+                    </p>
+                    <p className={helperClass}>
+                      Bounded to {sequenceRun.maxSteps} messages, ends {formatDateTime(sequenceRun.maxUntil)}.
+                      Halted automatically on reply, booking, payment, or a closed status.
+                    </p>
+                    <button
+                      type="button"
+                      className={`${btnSecondary} ${btnSizeSm} mt-3`}
+                      disabled={busy}
+                      onClick={() =>
+                        void run(() =>
+                          haltLeadSequence({ sequenceRunId: sequenceRun.id, leadId: lead.id })
+                        )
+                      }
+                    >
+                      Halt this sequence
+                    </button>
+                  </div>
+                ))}
+              </div>
+            ) : null}
+            {file.pendingFollowUps.length > 0 ? (
+              <ul className="space-y-4">
+                {file.pendingFollowUps.map((item) => (
+                  <li key={item.id}>
+                    <p className="text-sm text-white">
+                      {FOLLOW_UP_BRANCH_LABELS[item.branch]} · {FOLLOW_UP_CHANNEL_LABELS[item.channel]}
+                      {item.lowConfidence ? " · low confidence" : ""}
+                      {item.stale ? " · stale" : ""}
+                    </p>
+                    <p className={helperClass}>
+                      {FOLLOW_UP_STATUS_LABELS[item.status]} · expires {formatDateTime(item.expiresAt)}
+                      {item.lowConfidenceReason ? ` · ${item.lowConfidenceReason}` : ""}
+                      {item.failureReason ? ` · ${item.failureReason}` : ""}
+                    </p>
+                    <div className="mt-3">
+                      <Link href={`/app/follow-ups/${item.id}`} className={`${btnPrimary} ${btnSizeSm}`}>
+                        Review draft
+                      </Link>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            ) : null}
+          </Panel>
+        </section>
+      ) : null}
 
       <section>
         <SectionHeader
@@ -701,6 +770,9 @@ function TimelineEntry({
           </KeyValue>
           <KeyValue label="When">{formatQueueDuration(entry.at, now)}</KeyValue>
           <KeyValue label="Note">{entry.note || "—"}</KeyValue>
+          {entry.direction === "outbound" && entry.outboundBody ? (
+            <KeyValue label="Sent">{entry.outboundBody}</KeyValue>
+          ) : null}
         </DefinitionList>
       ) : null}
       {entry.kind === "call" ? (

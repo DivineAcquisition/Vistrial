@@ -1,3 +1,4 @@
+import type { PendingFollowUpItem } from "@/lib/follow-up/types";
 import type { Enums } from "@/types/database";
 import type { ScoreConfidence } from "@/lib/scoring/compute";
 
@@ -97,6 +98,7 @@ export type QueuePayload = {
   unfilteredActionableCount: number;
   alarm: QueueRow[];
   queue: QueueRow[];
+  pendingDrafts: PendingFollowUpItem[];
   hasMore: boolean;
   members: QueueMemberOption[];
   sources: string[];

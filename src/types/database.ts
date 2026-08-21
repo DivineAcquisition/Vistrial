@@ -303,6 +303,531 @@ export type Database = {
         };
         Relationships: [];
       };
+      follow_up_settings: {
+        Row: {
+          created_at: string;
+          default_channel: Database["public"]["Enums"]["touch_channel"];
+          draft_stale_days: number;
+          max_sequence_duration_days: number;
+          max_sequence_length: number;
+          org_id: string;
+          quiet_hours_enabled: boolean;
+          quiet_hours_end: string;
+          quiet_hours_start: string;
+          sequences_halted: boolean;
+          sequences_halted_at: string | null;
+          sequences_halted_by: string | null;
+          updated_at: string;
+        };
+        Insert: {
+          created_at?: string;
+          default_channel?: Database["public"]["Enums"]["touch_channel"];
+          draft_stale_days?: number;
+          max_sequence_duration_days?: number;
+          max_sequence_length?: number;
+          org_id: string;
+          quiet_hours_enabled?: boolean;
+          quiet_hours_end?: string;
+          quiet_hours_start?: string;
+          sequences_halted?: boolean;
+          sequences_halted_at?: string | null;
+          sequences_halted_by?: string | null;
+          updated_at?: string;
+        };
+        Update: {
+          created_at?: string;
+          default_channel?: Database["public"]["Enums"]["touch_channel"];
+          draft_stale_days?: number;
+          max_sequence_duration_days?: number;
+          max_sequence_length?: number;
+          org_id?: string;
+          quiet_hours_enabled?: boolean;
+          quiet_hours_end?: string;
+          quiet_hours_start?: string;
+          sequences_halted?: boolean;
+          sequences_halted_at?: string | null;
+          sequences_halted_by?: string | null;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
+      org_voice_profiles: {
+        Row: {
+          banned_words: string[];
+          created_at: string;
+          email_max_chars: number;
+          emoji_usage: Database["public"]["Enums"]["voice_emoji"];
+          examples: Json;
+          formality: Database["public"]["Enums"]["voice_formality"];
+          greeting_text: string | null;
+          org_id: string;
+          signoff_text: string | null;
+          sms_max_chars: number;
+          updated_at: string;
+          use_contractions: boolean;
+          use_greeting: boolean;
+          use_signoff: boolean;
+        };
+        Insert: {
+          banned_words?: string[];
+          created_at?: string;
+          email_max_chars?: number;
+          emoji_usage?: Database["public"]["Enums"]["voice_emoji"];
+          examples?: Json;
+          formality?: Database["public"]["Enums"]["voice_formality"];
+          greeting_text?: string | null;
+          org_id: string;
+          signoff_text?: string | null;
+          sms_max_chars?: number;
+          updated_at?: string;
+          use_contractions?: boolean;
+          use_greeting?: boolean;
+          use_signoff?: boolean;
+        };
+        Update: {
+          banned_words?: string[];
+          created_at?: string;
+          email_max_chars?: number;
+          emoji_usage?: Database["public"]["Enums"]["voice_emoji"];
+          examples?: Json;
+          formality?: Database["public"]["Enums"]["voice_formality"];
+          greeting_text?: string | null;
+          org_id?: string;
+          signoff_text?: string | null;
+          sms_max_chars?: number;
+          updated_at?: string;
+          use_contractions?: boolean;
+          use_greeting?: boolean;
+          use_signoff?: boolean;
+        };
+        Relationships: [];
+      };
+      follow_up_routing_rules: {
+        Row: {
+          branch: Database["public"]["Enums"]["follow_up_branch"];
+          channel: Database["public"]["Enums"]["touch_channel"];
+          created_at: string;
+          enabled: boolean;
+          id: string;
+          match: Json;
+          org_id: string;
+          priority: number;
+          sequence_steps: Json;
+          updated_at: string;
+        };
+        Insert: {
+          branch: Database["public"]["Enums"]["follow_up_branch"];
+          channel?: Database["public"]["Enums"]["touch_channel"];
+          created_at?: string;
+          enabled?: boolean;
+          id?: string;
+          match: Json;
+          org_id: string;
+          priority: number;
+          sequence_steps?: Json;
+          updated_at?: string;
+        };
+        Update: {
+          branch?: Database["public"]["Enums"]["follow_up_branch"];
+          channel?: Database["public"]["Enums"]["touch_channel"];
+          created_at?: string;
+          enabled?: boolean;
+          id?: string;
+          match?: Json;
+          org_id?: string;
+          priority?: number;
+          sequence_steps?: Json;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
+      follow_up_sequence_runs: {
+        Row: {
+          branch: Database["public"]["Enums"]["follow_up_branch"];
+          call_id: string;
+          completed_at: string | null;
+          created_at: string;
+          halt_reason: Database["public"]["Enums"]["follow_up_halt_reason"] | null;
+          halted_at: string | null;
+          halted_by_member_id: string | null;
+          id: string;
+          last_sent_at: string | null;
+          last_sent_draft_id: string | null;
+          lead_id: string;
+          max_steps: number;
+          max_until: string;
+          next_position: number;
+          org_id: string;
+          started_at: string;
+          status: Database["public"]["Enums"]["follow_up_sequence_status"];
+        };
+        Insert: {
+          branch: Database["public"]["Enums"]["follow_up_branch"];
+          call_id: string;
+          completed_at?: string | null;
+          created_at?: string;
+          halt_reason?: Database["public"]["Enums"]["follow_up_halt_reason"] | null;
+          halted_at?: string | null;
+          halted_by_member_id?: string | null;
+          id?: string;
+          last_sent_at?: string | null;
+          last_sent_draft_id?: string | null;
+          lead_id: string;
+          max_steps: number;
+          max_until: string;
+          next_position?: number;
+          org_id: string;
+          started_at?: string;
+          status?: Database["public"]["Enums"]["follow_up_sequence_status"];
+        };
+        Update: {
+          branch?: Database["public"]["Enums"]["follow_up_branch"];
+          call_id?: string;
+          completed_at?: string | null;
+          created_at?: string;
+          halt_reason?: Database["public"]["Enums"]["follow_up_halt_reason"] | null;
+          halted_at?: string | null;
+          halted_by_member_id?: string | null;
+          id?: string;
+          last_sent_at?: string | null;
+          last_sent_draft_id?: string | null;
+          lead_id?: string;
+          max_steps?: number;
+          max_until?: string;
+          next_position?: number;
+          org_id?: string;
+          started_at?: string;
+          status?: Database["public"]["Enums"]["follow_up_sequence_status"];
+        };
+        Relationships: [];
+      };
+      follow_up_jobs: {
+        Row: {
+          attempt_count: number;
+          branch: Database["public"]["Enums"]["follow_up_branch"];
+          call_id: string;
+          channel: Database["public"]["Enums"]["touch_channel"];
+          created_at: string;
+          draft_id: string | null;
+          extraction_id: string | null;
+          id: string;
+          last_error: string | null;
+          lead_id: string;
+          next_attempt_at: string;
+          operator_instruction: string | null;
+          org_id: string;
+          processed_at: string | null;
+          requested_by_member_id: string | null;
+          sequence_position: number;
+          sequence_run_id: string | null;
+          status: Database["public"]["Enums"]["follow_up_job_status"];
+        };
+        Insert: {
+          attempt_count?: number;
+          branch: Database["public"]["Enums"]["follow_up_branch"];
+          call_id: string;
+          channel: Database["public"]["Enums"]["touch_channel"];
+          created_at?: string;
+          draft_id?: string | null;
+          extraction_id?: string | null;
+          id?: string;
+          last_error?: string | null;
+          lead_id: string;
+          next_attempt_at?: string;
+          operator_instruction?: string | null;
+          org_id: string;
+          processed_at?: string | null;
+          requested_by_member_id?: string | null;
+          sequence_position?: number;
+          sequence_run_id?: string | null;
+          status?: Database["public"]["Enums"]["follow_up_job_status"];
+        };
+        Update: {
+          attempt_count?: number;
+          branch?: Database["public"]["Enums"]["follow_up_branch"];
+          call_id?: string;
+          channel?: Database["public"]["Enums"]["touch_channel"];
+          created_at?: string;
+          draft_id?: string | null;
+          extraction_id?: string | null;
+          id?: string;
+          last_error?: string | null;
+          lead_id?: string;
+          next_attempt_at?: string;
+          operator_instruction?: string | null;
+          org_id?: string;
+          processed_at?: string | null;
+          requested_by_member_id?: string | null;
+          sequence_position?: number;
+          sequence_run_id?: string | null;
+          status?: Database["public"]["Enums"]["follow_up_job_status"];
+        };
+        Relationships: [];
+      };
+      follow_up_drafts: {
+        Row: {
+          approved_at: string | null;
+          approved_by_member_id: string | null;
+          branch: Database["public"]["Enums"]["follow_up_branch"];
+          call_end_to_sent_ms: number | null;
+          call_id: string;
+          channel: Database["public"]["Enums"]["touch_channel"];
+          created_at: string;
+          discarded_reason: string | null;
+          dispatch_id: string | null;
+          edit_distance: number | null;
+          edited_body: string;
+          edited_subject: string | null;
+          expires_at: string;
+          extraction_id: string | null;
+          failure_reason: string | null;
+          generated_body: string;
+          generated_subject: string | null;
+          generation_attempt: number;
+          id: string;
+          lead_id: string;
+          low_confidence: boolean;
+          low_confidence_reason: string | null;
+          model_version: string;
+          operator_instruction: string | null;
+          org_id: string;
+          quality_failures: Json;
+          quotes_used: Json;
+          rejected_at: string | null;
+          rejected_by_member_id: string | null;
+          rejected_reason: string | null;
+          sent_at: string | null;
+          sent_body: string | null;
+          sent_subject: string | null;
+          sequence_position: number;
+          sequence_run_id: string | null;
+          status: Database["public"]["Enums"]["follow_up_draft_status"];
+          touch_id: string | null;
+          updated_at: string;
+        };
+        Insert: {
+          approved_at?: string | null;
+          approved_by_member_id?: string | null;
+          branch: Database["public"]["Enums"]["follow_up_branch"];
+          call_end_to_sent_ms?: number | null;
+          call_id: string;
+          channel: Database["public"]["Enums"]["touch_channel"];
+          created_at?: string;
+          discarded_reason?: string | null;
+          dispatch_id?: string | null;
+          edit_distance?: number | null;
+          edited_body: string;
+          edited_subject?: string | null;
+          expires_at: string;
+          extraction_id?: string | null;
+          failure_reason?: string | null;
+          generated_body: string;
+          generated_subject?: string | null;
+          generation_attempt?: number;
+          id?: string;
+          lead_id: string;
+          low_confidence?: boolean;
+          low_confidence_reason?: string | null;
+          model_version: string;
+          operator_instruction?: string | null;
+          org_id: string;
+          quality_failures?: Json;
+          quotes_used?: Json;
+          rejected_at?: string | null;
+          rejected_by_member_id?: string | null;
+          rejected_reason?: string | null;
+          sent_at?: string | null;
+          sent_body?: string | null;
+          sent_subject?: string | null;
+          sequence_position?: number;
+          sequence_run_id?: string | null;
+          status?: Database["public"]["Enums"]["follow_up_draft_status"];
+          touch_id?: string | null;
+          updated_at?: string;
+        };
+        Update: {
+          approved_at?: string | null;
+          approved_by_member_id?: string | null;
+          branch?: Database["public"]["Enums"]["follow_up_branch"];
+          call_end_to_sent_ms?: number | null;
+          call_id?: string;
+          channel?: Database["public"]["Enums"]["touch_channel"];
+          created_at?: string;
+          discarded_reason?: string | null;
+          dispatch_id?: string | null;
+          edit_distance?: number | null;
+          edited_body?: string;
+          edited_subject?: string | null;
+          expires_at?: string;
+          extraction_id?: string | null;
+          failure_reason?: string | null;
+          generated_body?: string;
+          generated_subject?: string | null;
+          generation_attempt?: number;
+          id?: string;
+          lead_id?: string;
+          low_confidence?: boolean;
+          low_confidence_reason?: string | null;
+          model_version?: string;
+          operator_instruction?: string | null;
+          org_id?: string;
+          quality_failures?: Json;
+          quotes_used?: Json;
+          rejected_at?: string | null;
+          rejected_by_member_id?: string | null;
+          rejected_reason?: string | null;
+          sent_at?: string | null;
+          sent_body?: string | null;
+          sent_subject?: string | null;
+          sequence_position?: number;
+          sequence_run_id?: string | null;
+          status?: Database["public"]["Enums"]["follow_up_draft_status"];
+          touch_id?: string | null;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
+      follow_up_quality_check_failures: {
+        Row: {
+          attempt: number;
+          branch: Database["public"]["Enums"]["follow_up_branch"];
+          created_at: string;
+          detail: string | null;
+          draft_id: string | null;
+          failure_type: Database["public"]["Enums"]["follow_up_quality_failure"];
+          id: string;
+          job_id: string | null;
+          org_id: string;
+        };
+        Insert: {
+          attempt: number;
+          branch: Database["public"]["Enums"]["follow_up_branch"];
+          created_at?: string;
+          detail?: string | null;
+          draft_id?: string | null;
+          failure_type: Database["public"]["Enums"]["follow_up_quality_failure"];
+          id?: string;
+          job_id?: string | null;
+          org_id: string;
+        };
+        Update: {
+          attempt?: number;
+          branch?: Database["public"]["Enums"]["follow_up_branch"];
+          created_at?: string;
+          detail?: string | null;
+          draft_id?: string | null;
+          failure_type?: Database["public"]["Enums"]["follow_up_quality_failure"];
+          id?: string;
+          job_id?: string | null;
+          org_id?: string;
+        };
+        Relationships: [];
+      };
+      follow_up_events: {
+        Row: {
+          actor_member_id: string | null;
+          created_at: string;
+          draft_id: string | null;
+          id: string;
+          kind: Database["public"]["Enums"]["follow_up_event_kind"];
+          org_id: string;
+          payload: Json;
+          sequence_run_id: string | null;
+        };
+        Insert: {
+          actor_member_id?: string | null;
+          created_at?: string;
+          draft_id?: string | null;
+          id?: string;
+          kind: Database["public"]["Enums"]["follow_up_event_kind"];
+          org_id: string;
+          payload?: Json;
+          sequence_run_id?: string | null;
+        };
+        Update: {
+          actor_member_id?: string | null;
+          created_at?: string;
+          draft_id?: string | null;
+          id?: string;
+          kind?: Database["public"]["Enums"]["follow_up_event_kind"];
+          org_id?: string;
+          payload?: Json;
+          sequence_run_id?: string | null;
+        };
+        Relationships: [];
+      };
+      follow_up_reply_signals: {
+        Row: {
+          branch: Database["public"]["Enums"]["follow_up_branch"] | null;
+          draft_id: string | null;
+          id: string;
+          inbound_touch_id: string | null;
+          lead_id: string;
+          org_id: string;
+          replied_at: string;
+          sequence_position: number | null;
+          sequence_run_id: string | null;
+        };
+        Insert: {
+          branch?: Database["public"]["Enums"]["follow_up_branch"] | null;
+          draft_id?: string | null;
+          id?: string;
+          inbound_touch_id?: string | null;
+          lead_id: string;
+          org_id: string;
+          replied_at?: string;
+          sequence_position?: number | null;
+          sequence_run_id?: string | null;
+        };
+        Update: {
+          branch?: Database["public"]["Enums"]["follow_up_branch"] | null;
+          draft_id?: string | null;
+          id?: string;
+          inbound_touch_id?: string | null;
+          lead_id?: string;
+          org_id?: string;
+          replied_at?: string;
+          sequence_position?: number | null;
+          sequence_run_id?: string | null;
+        };
+        Relationships: [];
+      };
+      voice_profile_suggestions: {
+        Row: {
+          created_at: string;
+          evidence: Json;
+          id: string;
+          kind: Database["public"]["Enums"]["voice_suggestion_kind"];
+          org_id: string;
+          phrase: string | null;
+          resolved_at: string | null;
+          resolved_by_member_id: string | null;
+          status: Database["public"]["Enums"]["voice_suggestion_status"];
+        };
+        Insert: {
+          created_at?: string;
+          evidence?: Json;
+          id?: string;
+          kind: Database["public"]["Enums"]["voice_suggestion_kind"];
+          org_id: string;
+          phrase?: string | null;
+          resolved_at?: string | null;
+          resolved_by_member_id?: string | null;
+          status?: Database["public"]["Enums"]["voice_suggestion_status"];
+        };
+        Update: {
+          created_at?: string;
+          evidence?: Json;
+          id?: string;
+          kind?: Database["public"]["Enums"]["voice_suggestion_kind"];
+          org_id?: string;
+          phrase?: string | null;
+          resolved_at?: string | null;
+          resolved_by_member_id?: string | null;
+          status?: Database["public"]["Enums"]["voice_suggestion_status"];
+        };
+        Relationships: [];
+      };
       transcript_connections: {
         Row: {
           api_key_encrypted: string | null;
@@ -437,6 +962,7 @@ export type Database = {
           pipeline_stage: string | null;
           source: string | null;
           status: Database["public"]["Enums"]["lead_status"];
+          timezone: string | null;
           updated_at: string;
         };
         Insert: {
@@ -464,6 +990,7 @@ export type Database = {
           pipeline_stage?: string | null;
           source?: string | null;
           status?: Database["public"]["Enums"]["lead_status"];
+          timezone?: string | null;
           updated_at?: string;
         };
         Update: {
@@ -491,6 +1018,7 @@ export type Database = {
           pipeline_stage?: string | null;
           source?: string | null;
           status?: Database["public"]["Enums"]["lead_status"];
+          timezone?: string | null;
           updated_at?: string;
         };
         Relationships: [
@@ -1303,6 +1831,7 @@ export type Database = {
           occurred_at: string;
           org_id: string;
           outcome: Database["public"]["Enums"]["touch_outcome"] | null;
+          outbound_body: string | null;
           summary: string | null;
           type: Database["public"]["Enums"]["touch_type"];
         };
@@ -1317,6 +1846,7 @@ export type Database = {
           occurred_at?: string;
           org_id: string;
           outcome?: Database["public"]["Enums"]["touch_outcome"] | null;
+          outbound_body?: string | null;
           summary?: string | null;
           type: Database["public"]["Enums"]["touch_type"];
         };
@@ -1331,6 +1861,7 @@ export type Database = {
           occurred_at?: string;
           org_id?: string;
           outcome?: Database["public"]["Enums"]["touch_outcome"] | null;
+          outbound_body?: string | null;
           summary?: string | null;
           type?: Database["public"]["Enums"]["touch_type"];
         };
@@ -1615,6 +2146,35 @@ export type Database = {
         Args: Record<PropertyKey, never>;
         Returns: string | null;
       };
+      halt_follow_up_sequences_for_lead: {
+        Args: {
+          p_org_id: string;
+          p_lead_id: string;
+          p_reason: Database["public"]["Enums"]["follow_up_halt_reason"];
+          p_actor?: string | null;
+        };
+        Returns: number;
+      };
+      halt_org_follow_up_sequences: {
+        Args: { p_org_id: string; p_actor?: string | null };
+        Returns: number;
+      };
+      claim_follow_up_job: {
+        Args: Record<PropertyKey, never>;
+        Returns: string | null;
+      };
+      expire_stale_follow_up_drafts: {
+        Args: Record<PropertyKey, never>;
+        Returns: number;
+      };
+      pending_follow_up_items: {
+        Args: { p_org_id: string; p_lead_id?: string | null };
+        Returns: Json;
+      };
+      seed_default_follow_up_rules: {
+        Args: { p_org_id: string };
+        Returns: undefined;
+      };
     };
     Enums: {
       action_creator: "system" | "user";
@@ -1667,6 +2227,57 @@ export type Database = {
       extraction_signal_state: "absent" | "unclear" | "present";
       extraction_job_status: "pending" | "processed" | "dead";
       unmatched_transcript_status: "open" | "assigned" | "discarded";
+      follow_up_branch:
+        | "closed"
+        | "follow_up_scheduled"
+        | "objection_hold"
+        | "no_show"
+        | "not_interested"
+        | "ghost_risk";
+      follow_up_draft_status:
+        | "pending"
+        | "approved"
+        | "sent"
+        | "rejected"
+        | "discarded"
+        | "expired"
+        | "failed";
+      follow_up_quality_failure:
+        | "banned_phrase"
+        | "unverified_quote"
+        | "ungrounded_topic"
+        | "no_lead_specific"
+        | "length"
+        | "greeting"
+        | "signoff";
+      follow_up_event_kind:
+        | "generated"
+        | "edited"
+        | "approved"
+        | "rejected"
+        | "sent"
+        | "failed"
+        | "regenerated"
+        | "discarded"
+        | "quality_failed";
+      follow_up_sequence_status: "active" | "halted" | "completed";
+      follow_up_halt_reason:
+        | "inbound_reply"
+        | "appointment_booked"
+        | "payment"
+        | "status_closed"
+        | "status_not_interested"
+        | "operator"
+        | "org_stop"
+        | "max_length"
+        | "max_duration"
+        | "new_call"
+        | "suppressed";
+      voice_formality: "casual" | "professional";
+      voice_emoji: "never" | "sparing" | "natural";
+      voice_suggestion_kind: "shorter" | "less_formal" | "drop_phrase";
+      voice_suggestion_status: "pending" | "accepted" | "dismissed";
+      follow_up_job_status: "pending" | "processed" | "dead";
     };
     CompositeTypes: {
       [_ in never]: never;

@@ -1,3 +1,4 @@
+import { parseActiveSequenceItems, parsePendingFollowUpItems } from "@/lib/follow-up/items";
 import type { Enums } from "@/types/database";
 
 import { LEAD_STATUSES, type LeadStatus } from "@/lib/leads/labels";
@@ -299,6 +300,7 @@ function parseTimelineEntry(value: unknown): CaseTimelineEntry | null {
       outcome: (asString(row.outcome) as Enums<"touch_outcome"> | null) ?? null,
       actorName: asString(row.actorName),
       note: asString(row.note),
+      outboundBody: direction === "outbound" ? asString(row.outboundBody) : null,
     };
   }
 
@@ -400,5 +402,7 @@ export function parseCaseFilePayload(value: unknown): CaseFilePayload | null {
       ? row.members.map(parseMember).filter((item): item is QueueMemberOption => item !== null)
       : [],
     timeline: parseCaseTimelinePage(row.timeline),
+    pendingFollowUps: parsePendingFollowUpItems(row.pendingFollowUps),
+    activeSequences: parseActiveSequenceItems(row.activeSequences),
   };
 }

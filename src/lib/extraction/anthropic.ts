@@ -1,5 +1,6 @@
 import "server-only";
 
+import { DEFAULT_ANTHROPIC_DRAFT_MODEL } from "@/lib/follow-up/constants";
 import { DEFAULT_ANTHROPIC_MODEL } from "@/lib/transcripts/constants";
 
 export type AnthropicMessageResult = {
@@ -13,6 +14,10 @@ export function anthropicModel(): string {
   return process.env.ANTHROPIC_MODEL?.trim() || DEFAULT_ANTHROPIC_MODEL;
 }
 
+export function anthropicDraftModel(): string {
+  return process.env.ANTHROPIC_DRAFT_MODEL?.trim() || DEFAULT_ANTHROPIC_DRAFT_MODEL;
+}
+
 export function anthropicApiKey(): string | null {
   const key = process.env.ANTHROPIC_API_KEY?.trim();
   return key ? key : null;
@@ -22,13 +27,15 @@ export async function createAnthropicMessage(args: {
   system: string;
   user: string;
   maxTokens?: number;
+  model?: string;
+  timeoutMs?: number;
 }): Promise<AnthropicMessageResult> {
   const key = anthropicApiKey();
   if (!key) throw new Error("missing_api_key");
 
-  const model = anthropicModel();
+  const model = args.model?.trim() || anthropicModel();
   const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), 60_000);
+  const timer = setTimeout(() => controller.abort(), args.timeoutMs ?? 60_000);
 
   let response: Response;
   try {

@@ -32,6 +32,13 @@ import {
   type TouchDirection,
   type TouchOutcome,
 } from "@/lib/queue/types";
+import { formatDateTime } from "@/lib/format";
+import { MIN_VOICE_EXAMPLES } from "@/lib/follow-up/constants";
+import {
+  FOLLOW_UP_BRANCH_LABELS,
+  FOLLOW_UP_CHANNEL_LABELS,
+  FOLLOW_UP_STATUS_LABELS,
+} from "@/lib/follow-up/labels";
 import { createClient } from "@/lib/supabase/client";
 import { btnPrimary, btnSecondary, btnSizeSm, errorClass, sectionLabel } from "@/lib/ui";
 
@@ -71,10 +78,12 @@ export function QueueScreen({
   initial,
   filters,
   canOpenIntegrations,
+  voiceExampleCount,
 }: {
   initial: QueuePayload;
   filters: QueueFilterState;
   canOpenIntegrations: boolean;
+  voiceExampleCount: number;
 }) {
   const org = useOrg();
   const [alarm, setAlarm] = useState(initial.alarm);
@@ -93,6 +102,7 @@ export function QueueScreen({
   const [actionError, setActionError] = useState<string | null>(null);
   const [busyLeadId, setBusyLeadId] = useState<string | null>(null);
   const [loadingMore, setLoadingMore] = useState(false);
+  const [pendingDrafts, setPendingDrafts] = useState(initial.pendingDrafts);
 
   const seenIds = useRef(new Set([...initial.alarm, ...initial.queue].map((row) => row.id)));
   const pendingLive = useRef<QueuePayload | null>(null);
@@ -111,6 +121,7 @@ export function QueueScreen({
     ...meta,
     alarm,
     queue,
+    pendingDrafts,
     hasMore,
     members,
     sources,
@@ -157,6 +168,7 @@ export function QueueScreen({
     setHasMore(payload.hasMore);
     setMembers(payload.members);
     setSources(payload.sources);
+    setPendingDrafts(payload.pendingDrafts);
     setMeta({
       crmStatus: payload.crmStatus,
       orgLeadCount: payload.orgLeadCount,
@@ -208,6 +220,11 @@ export function QueueScreen({
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "touches", filter: `org_id=eq.${org.org.id}` },
+        pull
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "follow_up_drafts", filter: `org_id=eq.${org.org.id}` },
         pull
       )
       .subscribe();
@@ -443,6 +460,21 @@ export function QueueScreen({
         </div>
       ) : null}
 
+      {canOpenIntegrations && voiceExampleCount < MIN_VOICE_EXAMPLES ? (
+        <div className="mb-8">
+          <EmptyState
+            kind="unconfigured"
+            title="Add real messages this business has sent"
+            detail="Follow-up drafts copy those examples more than any slider. Paste two to five on the Follow-up settings tab before you start approving."
+            action={
+              <Link href="/app/settings/follow-up" className={`${btnPrimary} ${btnSizeSm}`}>
+                Open follow-up settings
+              </Link>
+            }
+          />
+        </div>
+      ) : null}
+
       {emptyKind === "not_connected" ? (
         <EmptyState
           kind="unconfigured"
@@ -471,6 +503,37 @@ export function QueueScreen({
 
       {showWorkingSurface ? (
         <>
+          {pendingDrafts.length > 0 ? (
+            <section className="mb-8" aria-label="Follow-up drafts">
+              <p className={sectionLabel}>Follow-up drafts</p>
+              <p className="mt-2 text-sm text-dim">
+                Approve one at a time. Each message is grounded in a specific call and does not send until you read it.
+              </p>
+              <ul className="mt-4 space-y-3">
+                {pendingDrafts.map((item) => (
+                  <li key={item.id} className="panel rounded-2xl px-4 py-4">
+                    <p className="text-sm text-white">
+                      {item.leadName} · {FOLLOW_UP_BRANCH_LABELS[item.branch]} ·{" "}
+                      {FOLLOW_UP_CHANNEL_LABELS[item.channel]}
+                      {item.lowConfidence ? " · low confidence" : ""}
+                      {item.stale ? " · stale" : ""}
+                    </p>
+                    <p className="mt-1 text-xs text-dim">
+                      {FOLLOW_UP_STATUS_LABELS[item.status]} · expires {formatDateTime(item.expiresAt)}
+                      {item.lowConfidenceReason ? ` · ${item.lowConfidenceReason}` : ""}
+                      {item.failureReason ? ` · ${item.failureReason}` : ""}
+                    </p>
+                    <div className="mt-3">
+                      <Link href={`/app/follow-ups/${item.id}`} className={`${btnPrimary} ${btnSizeSm}`}>
+                        Review
+                      </Link>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          ) : null}
+
           <section className="mb-8" aria-label="Speed-to-lead alarm">
             <p className={sectionLabel}>Speed-to-lead</p>
             {alarmVisible.length === 0 ? (

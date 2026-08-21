@@ -182,6 +182,8 @@ describe("redaction", () => {
       access_token: "tok_live",
       refresh_token: "ref_live",
       body: "Hey, call me at 555",
+      outbound_body: "sent copy",
+      generated_body: "draft copy",
       email: "maya@example.com",
       firstName: "Maya",
       eventType: "InboundMessage",
@@ -189,6 +191,8 @@ describe("redaction", () => {
     expect(redacted.access_token).toBe("[redacted]");
     expect(redacted.refresh_token).toBe("[redacted]");
     expect(redacted.body).toBe("[redacted]");
+    expect(redacted.outbound_body).toBe("[redacted]");
+    expect(redacted.generated_body).toBe("[redacted]");
     expect(redacted.email).toBe("[redacted]");
     expect(redacted.firstName).toBe("[redacted]");
     expect(redacted.eventType).toBe("InboundMessage");

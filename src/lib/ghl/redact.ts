@@ -1,5 +1,5 @@
 const SENSITIVE_KEY =
-  /^(access_token|refresh_token|token|client_secret|authorization|password|body|message|html|text|email|phone|firstName|lastName|first_name|last_name|from|to|attachments|raw|rawBody|content|transcript|raw_transcript|quotes|verbatim|summary|stated_objection|budget_signal|timeline_signal|decision_process|next_step_agreed|opening_text)$/i;
+  /^(access_token|refresh_token|token|client_secret|authorization|password|body|message|html|text|email|phone|firstName|lastName|first_name|last_name|from|to|attachments|raw|rawBody|content|transcript|raw_transcript|quotes|verbatim|summary|stated_objection|budget_signal|timeline_signal|decision_process|next_step_agreed|opening_text|generated_body|edited_body|sent_body|outbound_body|draft)$/i;
 
 const SENSITIVE_FRAGMENT =
   /(access_token|refresh_token|client_secret|authorization|bearer )/i;

@@ -160,6 +160,21 @@ export async function runExtractionJob(db: GhlDb, jobId: string): Promise<void> 
     })
     .eq("id", job.id);
 
+  try {
+    const { enqueueFollowUpAfterExtraction } = await import("@/lib/follow-up/generate");
+    await enqueueFollowUpAfterExtraction(db, {
+      orgId: call.org_id,
+      leadId: call.lead_id,
+      callId: call.id,
+      extractionId,
+    });
+  } catch (cause) {
+    transcriptWarn("follow_up.enqueue_failed", {
+      callId: call.id,
+      reason: cause instanceof Error ? cause.message.slice(0, 80) : "enqueue_failed",
+    });
+  }
+
   transcriptLog("extraction.processed", {
     jobId: job.id,
     callId: call.id,

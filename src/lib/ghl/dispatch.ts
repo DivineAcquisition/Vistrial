@@ -1,5 +1,6 @@
 import "server-only";
 
+import { finalizeFollowUpDispatch } from "@/lib/follow-up/finalize";
 import { DISPATCH_MAX_ATTEMPTS } from "@/lib/ghl/constants";
 import { fetchContact, getValidAccessToken, sendConversationMessage } from "@/lib/ghl/client";
 import { ghlError, ghlLog, ghlWarn } from "@/lib/ghl/log";
@@ -18,6 +19,8 @@ export type DispatchInput = {
   subject?: string;
   actorMemberId?: string | null;
   idempotencyKey?: string;
+  availableAt?: string;
+  followUpDraftId?: string;
 };
 
 export type DispatchResult =
@@ -55,6 +58,22 @@ export async function dispatchOutboundMessage(db: GhlDb, input: DispatchInput): 
   const queued = await insertDispatch(db, input, "queued");
   if (!queued) {
     return { status: "failed", dispatchId: null, reason: "dispatch_insert_failed" };
+  }
+  if (input.followUpDraftId) {
+    const { error: linkError } = await db
+      .from("follow_up_drafts")
+      .update({
+        dispatch_id: queued.id,
+        status: "approved",
+        approved_at: new Date().toISOString(),
+        approved_by_member_id: input.actorMemberId ?? null,
+      })
+      .eq("id", input.followUpDraftId)
+      .eq("org_id", input.orgId);
+    if (linkError) {
+      ghlError("ghl.dispatch.draft_link_failed", logFields(input, "failed", "draft_link_failed"));
+      return { status: "failed", dispatchId: queued.id, reason: "draft_link_failed" };
+    }
   }
   if (queued.status && queued.status !== "queued") {
     ghlLog("ghl.dispatch.duplicate", {
@@ -109,6 +128,9 @@ export async function sendQueuedDispatch(db: GhlDb, dispatchId: string): Promise
   if (row.status !== "queued") {
     return { status: "failed", dispatchId, reason: "not_queued" };
   }
+  if (Date.parse(row.available_at) > Date.now()) {
+    return { status: "queued", dispatchId: row.id };
+  }
 
   const token = await getValidAccessToken(db, row.org_id);
   if (!token.ok) {
@@ -124,7 +146,7 @@ export async function sendQueuedDispatch(db: GhlDb, dispatchId: string): Promise
       result: "halted",
       reason: token.reason,
     });
-    return { status: "halted", reason: "connection_broken" };
+    return finishDispatch(db, row, { status: "halted", reason: "connection_broken" });
   }
 
   const { data: allowed } = await db.rpc("try_consume_ghl_rate", { p_org_id: row.org_id });
@@ -158,7 +180,7 @@ export async function sendQueuedDispatch(db: GhlDb, dispatchId: string): Promise
       .update({ status: "suppressed", failure_reason: suppressed, body_text: null, sent_at: new Date().toISOString() })
       .eq("id", row.id);
     ghlLog("ghl.dispatch.suppressed", logFieldsFromRow(row, "suppressed", suppressed));
-    return { status: "suppressed", dispatchId: row.id, reason: suppressed };
+    return finishDispatch(db, row, { status: "suppressed", dispatchId: row.id, reason: suppressed });
   }
 
   const ghlType = channelToGhlType(row.channel);
@@ -190,6 +212,18 @@ export async function sendQueuedDispatch(db: GhlDb, dispatchId: string): Promise
       .eq("ghl_message_id", ghlMessageId)
       .maybeSingle();
     if (existingTouch) {
+      if (row.body_text) {
+        await db
+          .from("touches")
+          .update({
+            outbound_body: row.body_text,
+            actor_member_id: row.actor_member_id,
+            type: row.actor_member_id ? "human" : "system",
+          })
+          .eq("id", existingTouch.id)
+          .eq("org_id", row.org_id)
+          .eq("direction", "outbound");
+      }
       await db
         .from("ghl_dispatches")
         .update({
@@ -201,7 +235,12 @@ export async function sendQueuedDispatch(db: GhlDb, dispatchId: string): Promise
         })
         .eq("id", row.id);
       ghlLog("ghl.dispatch.sent", logFieldsFromRow(row, "sent", "echo_exists"));
-      return { status: "sent", dispatchId: row.id, touchId: existingTouch.id, ghlMessageId };
+      return finishDispatch(db, row, {
+        status: "sent",
+        dispatchId: row.id,
+        touchId: existingTouch.id,
+        ghlMessageId,
+      });
     }
   }
 
@@ -217,6 +256,7 @@ export async function sendQueuedDispatch(db: GhlDb, dispatchId: string): Promise
       actor_member_id: row.actor_member_id,
       summary: outboundTouchSummary(row.channel, type),
       ghl_message_id: ghlMessageId,
+      outbound_body: row.body_text,
     })
     .select("id")
     .maybeSingle();
@@ -237,7 +277,12 @@ export async function sendQueuedDispatch(db: GhlDb, dispatchId: string): Promise
         sent_at: new Date().toISOString(),
       })
       .eq("id", row.id);
-    return { status: "sent", dispatchId: row.id, touchId: raced?.id ?? "", ghlMessageId };
+    return finishDispatch(db, row, {
+      status: "sent",
+      dispatchId: row.id,
+      touchId: raced?.id ?? "",
+      ghlMessageId,
+    });
   }
 
   if (error || !touch) {
@@ -252,7 +297,7 @@ export async function sendQueuedDispatch(db: GhlDb, dispatchId: string): Promise
       })
       .eq("id", row.id);
     ghlError("ghl.dispatch.touch_missing", logFieldsFromRow(row, "failed", "touch_insert_failed"));
-    return { status: "failed", dispatchId: row.id, reason: "touch_insert_failed" };
+    return finishDispatch(db, row, { status: "failed", dispatchId: row.id, reason: "touch_insert_failed" });
   }
 
   await db
@@ -267,7 +312,12 @@ export async function sendQueuedDispatch(db: GhlDb, dispatchId: string): Promise
     .eq("id", row.id);
 
   ghlLog("ghl.dispatch.sent", logFieldsFromRow(row, "sent"));
-  return { status: "sent", dispatchId: row.id, touchId: touch.id, ghlMessageId };
+  return finishDispatch(db, row, {
+    status: "sent",
+    dispatchId: row.id,
+    touchId: touch.id,
+    ghlMessageId,
+  });
 }
 
 async function recoverTouchAfterSend(
@@ -290,7 +340,12 @@ async function recoverTouchAfterSend(
       .from("ghl_dispatches")
       .update({ status: "sent", failure_reason: null, body_text: null })
       .eq("id", row.id);
-    return { status: "sent", dispatchId: row.id, touchId: existingTouch.id, ghlMessageId };
+    return finishDispatch(db, row, {
+      status: "sent",
+      dispatchId: row.id,
+      touchId: existingTouch.id,
+      ghlMessageId,
+    });
   }
 
   const type = row.actor_member_id ? "human" : "system";
@@ -310,14 +365,19 @@ async function recoverTouchAfterSend(
     .maybeSingle();
 
   if (error || !touch) {
-    return { status: "failed", dispatchId: row.id, reason: "touch_insert_failed" };
+    return finishDispatch(db, row, { status: "failed", dispatchId: row.id, reason: "touch_insert_failed" });
   }
 
   await db
     .from("ghl_dispatches")
     .update({ status: "sent", failure_reason: null, body_text: null })
     .eq("id", row.id);
-  return { status: "sent", dispatchId: row.id, touchId: touch.id, ghlMessageId };
+  return finishDispatch(db, row, {
+    status: "sent",
+    dispatchId: row.id,
+    touchId: touch.id,
+    ghlMessageId,
+  });
 }
 
 async function insertDispatch(
@@ -338,6 +398,7 @@ async function insertDispatch(
       status,
       failure_reason: reason ?? null,
       idempotency_key: input.idempotencyKey ?? null,
+      available_at: input.availableAt ?? undefined,
     })
     .select("id, status")
     .maybeSingle();
@@ -389,7 +450,17 @@ async function failDispatch(db: GhlDb, row: DatabaseRow, reason: string): Promis
     })
     .eq("id", row.id);
   ghlError("ghl.dispatch.failed", logFieldsFromRow(row, "failed", reason));
-  return { status: "failed", dispatchId: row.id, reason };
+  return finishDispatch(db, row, { status: "failed", dispatchId: row.id, reason });
+}
+
+async function finishDispatch(db: GhlDb, row: DatabaseRow, result: DispatchResult): Promise<DispatchResult> {
+  await finalizeFollowUpDispatch(db, {
+    dispatchId: row.id,
+    result,
+    body: row.body_text,
+    subject: row.email_subject,
+  });
+  return result;
 }
 
 type DatabaseRow = {
@@ -399,6 +470,7 @@ type DatabaseRow = {
   channel: TouchChannel;
   actor_member_id: string | null;
   attempt_count: number;
+  available_at: string;
   body_text: string | null;
   email_subject: string | null;
   ghl_message_id: string | null;

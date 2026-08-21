@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useActionState } from "react";
 
 import { updateOrganization } from "@/app/app/settings/organization/actions";
@@ -9,6 +10,7 @@ import { ORG_TIMEZONE_LABELS, ORG_TIMEZONES, isOrgTimezone } from "@/lib/timezon
 import {
   btnPrimary,
   btnSizeMd,
+  btnSizeSm,
   errorClass,
   helperClass,
   inputClass,
@@ -87,6 +89,23 @@ export function OrganizationForm({
           {pending ? "Saving…" : "Save"}
         </button>
       </form>
+    </Panel>
+  );
+}
+
+export function FollowUpOnboardingNote() {
+  return (
+    <Panel className="max-w-xl px-6 py-6">
+      <p className={labelClass}>Voice examples</p>
+      <p className="text-sm text-silver">
+        Follow-up drafts copy messages this business has actually sent. Paste two to five real
+        examples on the Follow-up tab as part of setup — they matter more than formality sliders.
+      </p>
+      <div className="mt-4">
+        <Link href="/app/settings/follow-up" className={`${btnPrimary} ${btnSizeSm}`}>
+          Add voice examples
+        </Link>
+      </div>
     </Panel>
   );
 }

@@ -39,7 +39,11 @@ WHERE n.nspname = 'public'
     'ghl_connections','ghl_oauth_sessions','ghl_field_maps','ghl_dispatches',
     'ghl_rate_windows','ghl_contact_locks','ingestion_alerts','platform_admins',
     'lead_status_changes','transcript_connections','unmatched_transcripts',
-    'extraction_jobs','extraction_corrections','extraction_usage','brief_openings'
+    'extraction_jobs','extraction_corrections','extraction_usage','brief_openings',
+    'follow_up_settings','org_voice_profiles','follow_up_routing_rules',
+    'follow_up_sequence_runs','follow_up_jobs','follow_up_drafts',
+    'follow_up_quality_check_failures','follow_up_events','follow_up_reply_signals',
+    'voice_profile_suggestions'
   )
 ORDER BY 1;
 "
@@ -74,4 +78,7 @@ run "${ROOT}/supabase/tests/verify-case-files.sql"
 echo "Transcript checks..."
 run "${ROOT}/supabase/tests/verify-transcripts.sql"
 
-echo "OK: schema, seed, triggers, RLS, invite, scoring, GHL, platform-admin, queue, case-file, and transcript checks passed."
+echo "Follow-up checks..."
+run "${ROOT}/supabase/tests/verify-follow-up.sql"
+
+echo "OK: schema, seed, triggers, RLS, invite, scoring, GHL, platform-admin, queue, case-file, transcript, and follow-up checks passed."

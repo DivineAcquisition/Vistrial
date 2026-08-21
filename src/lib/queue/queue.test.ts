@@ -67,6 +67,7 @@ describe("queue empty states", () => {
     hasMore: false,
     members: [],
     sources: [] as string[],
+    pendingDrafts: [] as [],
   };
 
   it("treats a missing CRM with no leads as not connected, not as no-leads-yet", () => {
@@ -92,6 +93,33 @@ describe("queue empty states", () => {
         unfilteredActionableCount: 0,
       })
     ).toBe("nothing_to_work");
+    expect(
+      queueEmptyKind({
+        ...base,
+        crmStatus: "active",
+        orgLeadCount: 4,
+        unfilteredActionableCount: 0,
+        pendingDrafts: [
+          {
+            id: "d1",
+            leadId: "l1",
+            leadName: "Maya",
+            callId: "c1",
+            branch: "ghost_risk",
+            channel: "sms",
+            status: "pending",
+            lowConfidence: false,
+            lowConfidenceReason: null,
+            expiresAt: "2026-08-25T12:00:00.000Z",
+            createdAt: "2026-08-20T12:00:00.000Z",
+            sequencePosition: 1,
+            sequenceRunId: null,
+            stale: false,
+            failureReason: null,
+          },
+        ],
+      })
+    ).toBeNull();
   });
 });
 

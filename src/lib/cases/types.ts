@@ -1,3 +1,4 @@
+import type { ActiveSequenceItem, PendingFollowUpItem } from "@/lib/follow-up/types";
 import type { Enums } from "@/types/database";
 import type { ScoreConfidence } from "@/lib/scoring/compute";
 import type { QueueCrmStatus, QueueMemberOption } from "@/lib/queue/types";
@@ -161,6 +162,7 @@ export type CaseTimelineTouch = {
   outcome: Enums<"touch_outcome"> | null;
   actorName: string | null;
   note: string | null;
+  outboundBody: string | null;
 };
 
 export type CaseTimelineCall = {
@@ -205,6 +207,8 @@ export type CaseFilePayload = {
   revenue: CaseRevenueRow[] | null;
   members: QueueMemberOption[];
   timeline: CaseTimelinePage;
+  pendingFollowUps: PendingFollowUpItem[];
+  activeSequences: ActiveSequenceItem[];
 };
 
 export type CaseActionResult =

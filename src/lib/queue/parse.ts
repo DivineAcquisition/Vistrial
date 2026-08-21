@@ -1,3 +1,4 @@
+import { parsePendingFollowUpItems } from "@/lib/follow-up/items";
 import type { Enums } from "@/types/database";
 
 import { scoreConfidenceFromKnownCount } from "@/lib/scoring/compute";
@@ -121,6 +122,7 @@ export function parseQueuePayload(value: unknown): QueuePayload {
     unfilteredActionableCount: asNumber(row.unfilteredActionableCount) ?? 0,
     alarm,
     queue,
+    pendingDrafts: parsePendingFollowUpItems(row.pendingDrafts),
     hasMore: asBoolean(row.hasMore),
     members,
     sources,
@@ -133,6 +135,8 @@ export function queueEmptyKind(payload: QueuePayload): import("@/lib/queue/types
     if (payload.crmStatus === "missing" || payload.crmStatus === "inactive") return "not_connected";
     return "no_leads";
   }
-  if (payload.unfilteredActionableCount === 0 && payload.alarm.length === 0) return "nothing_to_work";
+  if (payload.unfilteredActionableCount === 0 && payload.alarm.length === 0 && payload.pendingDrafts.length === 0) {
+    return "nothing_to_work";
+  }
   return null;
 }

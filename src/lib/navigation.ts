@@ -41,6 +41,7 @@ export const SETTINGS_TABS: Array<{
   { href: "/app/settings/organization", label: "Organization", managerOnly: true },
   { href: "/app/settings/members", label: "Members", managerOnly: true },
   { href: "/app/settings/scoring", label: "Scoring", managerOnly: true },
+  { href: "/app/settings/follow-up", label: "Follow-up", managerOnly: true },
   { href: "/app/settings/integrations", label: "Integrations", managerOnly: true },
   { href: "/app/settings/profile", label: "Profile", managerOnly: false },
 ];

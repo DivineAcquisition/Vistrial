@@ -32,7 +32,7 @@ never white on the brand fill.
 | `src/app/globals.css` | Palette, semantic tokens, `.panel`, motion |
 | `src/lib/ui.ts` | Button / input / eyebrow class recipes |
 | `src/components/ui` | Panels, KPI cards, tones, backdrop, shadcn |
-| `src/components/brand/logo.tsx` | DA trident + wordmark |
+| `src/components/brand/logo.tsx` | Vistrial crest + wordmark |
 
 ## Build order
 1. Foundation

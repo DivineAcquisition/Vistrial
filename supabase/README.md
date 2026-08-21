@@ -24,6 +24,11 @@ Local verification (no hosted project required):
 bash supabase/tests/verify.sh
 ```
 
+The GitHub Preview check compares `supabase/migrations/` to
+`supabase_migrations.schema_migrations` on this project. Those version names
+must stay in lockstep; do not apply ad-hoc dashboard migrations that are missing
+from the repo.
+
 Auth dashboard settings (email + password, magic link, invite-only sign-up,
 Site URL, `/auth/callback` redirects, 1-hour JWT) are documented in
 [`AUTH.md`](./AUTH.md).

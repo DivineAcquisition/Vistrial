@@ -10,7 +10,9 @@ schemas = ["public"]
 
 [db]
 port = 54322
-major_version = 16
+# Must match the hosted Vistrial project (Postgres 17). 16 is rejected by the
+# GitHub integration ("Invalid db.major_version") and fails the Preview check.
+major_version = 17
 
 [db.seed]
 enabled = true

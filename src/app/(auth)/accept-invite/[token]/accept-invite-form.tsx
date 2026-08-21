@@ -7,6 +7,7 @@ import {
   type AcceptInviteState,
 } from "@/app/(auth)/accept-invite/[token]/actions";
 import { sendMagicLink, signInPassword } from "@/app/(auth)/login/actions";
+import { LOGIN_ERROR_COPY } from "@/lib/auth/errors";
 import {
   btnPrimary,
   btnSecondary,

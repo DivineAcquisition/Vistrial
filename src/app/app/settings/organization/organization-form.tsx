@@ -26,54 +26,70 @@ export function OrganizationForm({
   ghlLocationId,
   salesCycleDays,
   baselineLookbackDays,
+  variant = "full",
 }: {
   name: string;
   timezone: string;
   ghlLocationId: string | null;
   salesCycleDays: number;
   baselineLookbackDays: number;
+  variant?: "full" | "setup";
 }) {
   const [state, action, pending] = useActionState(updateOrganization, initial);
   const timezoneOptions = isOrgTimezone(timezone)
     ? ORG_TIMEZONES
     : ([timezone, ...ORG_TIMEZONES] as const);
+  const setup = variant === "setup";
+
+  const timezoneField = (
+    <div>
+      <label htmlFor="org-timezone" className={labelClass}>
+        Timezone
+      </label>
+      <select
+        id="org-timezone"
+        name="timezone"
+        required
+        defaultValue={timezone}
+        className={selectClass}
+      >
+        {timezoneOptions.map((zone) => (
+          <option key={zone} value={zone}>
+            {isOrgTimezone(zone) ? ORG_TIMEZONE_LABELS[zone] : zone}
+          </option>
+        ))}
+      </select>
+    </div>
+  );
+
+  const nameField = (
+    <div>
+      <label htmlFor="org-name" className={labelClass}>
+        Name
+      </label>
+      <input
+        id="org-name"
+        name="name"
+        required
+        maxLength={120}
+        defaultValue={name}
+        className={inputClass}
+      />
+    </div>
+  );
 
   return (
     <Panel className="max-w-xl px-6 py-6">
       <form action={action} className="space-y-4">
-        <div>
-          <label htmlFor="org-name" className={labelClass}>
-            Name
-          </label>
-          <input
-            id="org-name"
-            name="name"
-            required
-            maxLength={120}
-            defaultValue={name}
-            className={inputClass}
-          />
-        </div>
-
-        <div>
-          <label htmlFor="org-timezone" className={labelClass}>
-            Timezone
-          </label>
-          <select
-            id="org-timezone"
-            name="timezone"
-            required
-            defaultValue={timezone}
-            className={selectClass}
-          >
-            {timezoneOptions.map((zone) => (
-              <option key={zone} value={zone}>
-                {isOrgTimezone(zone) ? ORG_TIMEZONE_LABELS[zone] : zone}
-              </option>
-            ))}
-          </select>
-        </div>
-
+        {setup ? timezoneField : nameField}
+        {setup ? nameField : timezoneField}
+        {setup ? (
+          <>
+            <input type="hidden" name="sales_cycle_days" value={salesCycleDays} />
+            <input type="hidden" name="baseline_lookback_days" value={baselineLookbackDays} />
+          </>
+        ) : (
+          <>
         <div>
           <label htmlFor="org-sales-cycle" className={labelClass}>
             Sales cycle (days)
@@ -125,6 +141,8 @@ export function OrganizationForm({
             not editable on this page.
           </p>
         </div>
+          </>
+        )}
 
         {state.status === "error" ? <p className={errorClass}>{state.error}</p> : null}
         {state.status === "saved" ? <p className={helperClass}>Saved.</p> : null}

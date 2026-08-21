@@ -433,7 +433,7 @@ BEGIN
     RAISE EXCEPTION 'org B owner was allowed to load reporting for org R';
   END IF;
 
-  -- Activation is not set by enqueue; skip sets it.
+  -- Activation is not set by enqueue. Skip resolves backfill only (Prompt 12).
   INSERT INTO public.organizations (id, name, slug)
   VALUES (v_skip_org, 'Skip Co', 'skip-co');
   INSERT INTO public.org_members (id, org_id, user_id, role, display_name, email)
@@ -461,8 +461,8 @@ BEGIN
   SET ROLE authenticated;
   PERFORM public.skip_baseline_backfill(v_skip_org, '111e1111-1111-4111-8111-1111111111b2');
   RESET ROLE;
-  IF (SELECT activated_at FROM public.organizations WHERE id = v_skip_org) IS NULL THEN
-    RAISE EXCEPTION 'skip must set activated_at';
+  IF (SELECT activated_at FROM public.organizations WHERE id = v_skip_org) IS NOT NULL THEN
+    RAISE EXCEPTION 'skip must not set activated_at; activation is a separate gate';
   END IF;
   IF (SELECT grade FROM public.baseline_runs WHERE org_id = v_skip_org ORDER BY created_at DESC LIMIT 1)
      IS DISTINCT FROM 'unusable' THEN

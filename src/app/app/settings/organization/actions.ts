@@ -60,5 +60,6 @@ export async function updateOrganization(
 
   revalidatePath("/", "layout");
   revalidatePath("/app/settings/organization");
+  revalidatePath("/app/setup");
   return { status: "saved" };
 }

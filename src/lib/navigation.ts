@@ -20,6 +20,12 @@ export const PRIMARY_NAV: NavItem[] = [
     match: "/app/reporting",
     roles: ["owner", "admin"],
   },
+  {
+    href: "/app/setup",
+    label: "Setup",
+    match: "/app/setup",
+    roles: ["owner", "admin"],
+  },
   { href: "/app/settings", label: "Settings", match: "/app/settings" },
 ];
 

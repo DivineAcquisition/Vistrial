@@ -5,8 +5,10 @@ import { redeemInvite } from "@/lib/auth/invites";
 import {
   inviteTokenFromPath,
   isAcceptInvitePath,
+  isOpsPath,
   safeInternalPath,
 } from "@/lib/auth/paths";
+import { isPlatformAdminUser } from "@/lib/auth/staff";
 import { listActiveMemberships } from "@/lib/auth/session";
 import { DEFAULT_APP_PATH } from "@/lib/navigation";
 import { createClient } from "@/lib/supabase/server";
@@ -65,8 +67,12 @@ export async function GET(request: NextRequest) {
   }
 
   const memberships = await listActiveMemberships(user.id);
+  const platformAdmin = await isPlatformAdminUser(user.id);
+  if (isOpsPath(next) && platformAdmin) {
+    return redirectTo(request, next);
+  }
   if (memberships.length === 0) {
-    return redirectTo(request, "/no-access");
+    return redirectTo(request, platformAdmin ? "/ops" : "/no-access");
   }
 
   return redirectTo(request, next.startsWith("/app") ? next : DEFAULT_APP_PATH);

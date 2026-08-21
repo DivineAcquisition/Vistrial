@@ -964,6 +964,8 @@ export type Database = {
           status: Database["public"]["Enums"]["lead_status"];
           timezone: string | null;
           updated_at: string;
+          is_test: boolean;
+          golive_run_id: string | null;
         };
         Insert: {
           ad_id?: string | null;
@@ -992,6 +994,8 @@ export type Database = {
           status?: Database["public"]["Enums"]["lead_status"];
           timezone?: string | null;
           updated_at?: string;
+          is_test?: boolean;
+          golive_run_id?: string | null;
         };
         Update: {
           ad_id?: string | null;
@@ -1020,6 +1024,8 @@ export type Database = {
           status?: Database["public"]["Enums"]["lead_status"];
           timezone?: string | null;
           updated_at?: string;
+          is_test?: boolean;
+          golive_run_id?: string | null;
         };
         Relationships: [
           {
@@ -2273,6 +2279,149 @@ export type Database = {
         };
         Relationships: [];
       };
+      org_onboarding: {
+        Row: {
+          org_id: string;
+          last_visited_step: Database["public"]["Enums"]["onboarding_step"];
+          transcript_choice: Database["public"]["Enums"]["transcript_choice"] | null;
+          baseline_fallback: Database["public"]["Enums"]["baseline_fallback"] | null;
+          field_maps_saved_at: string | null;
+          voice_acknowledged_empty: boolean;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          org_id: string;
+          last_visited_step?: Database["public"]["Enums"]["onboarding_step"];
+          transcript_choice?: Database["public"]["Enums"]["transcript_choice"] | null;
+          baseline_fallback?: Database["public"]["Enums"]["baseline_fallback"] | null;
+          field_maps_saved_at?: string | null;
+          voice_acknowledged_empty?: boolean;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          last_visited_step?: Database["public"]["Enums"]["onboarding_step"];
+          transcript_choice?: Database["public"]["Enums"]["transcript_choice"] | null;
+          baseline_fallback?: Database["public"]["Enums"]["baseline_fallback"] | null;
+          field_maps_saved_at?: string | null;
+          voice_acknowledged_empty?: boolean;
+        };
+        Relationships: [];
+      };
+      activation_events: {
+        Row: {
+          id: string;
+          org_id: string;
+          actor_user_id: string;
+          actor_member_id: string | null;
+          activated_at: string;
+          warnings_acknowledged: string[];
+          override: boolean;
+          override_reason: string | null;
+          unmet_hard: Json;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          org_id: string;
+          actor_user_id: string;
+          actor_member_id?: string | null;
+          activated_at: string;
+          warnings_acknowledged?: string[];
+          override?: boolean;
+          override_reason?: string | null;
+          unmet_hard?: Json;
+          created_at?: string;
+        };
+        Update: {
+          warnings_acknowledged?: string[];
+          override?: boolean;
+          override_reason?: string | null;
+          unmet_hard?: Json;
+        };
+        Relationships: [];
+      };
+      activation_timestamp_changes: {
+        Row: {
+          id: string;
+          org_id: string;
+          actor_user_id: string;
+          actor_member_id: string | null;
+          previous_at: string | null;
+          next_at: string;
+          reason: string;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          org_id: string;
+          actor_user_id: string;
+          actor_member_id?: string | null;
+          previous_at?: string | null;
+          next_at: string;
+          reason: string;
+          created_at?: string;
+        };
+        Update: {
+          reason?: string;
+        };
+        Relationships: [];
+      };
+      golive_runs: {
+        Row: {
+          id: string;
+          org_id: string;
+          actor_user_id: string | null;
+          actor_member_id: string | null;
+          status: Database["public"]["Enums"]["golive_run_status"];
+          steps: Json;
+          lead_id: string | null;
+          created_at: string;
+          finished_at: string | null;
+        };
+        Insert: {
+          id?: string;
+          org_id: string;
+          actor_user_id?: string | null;
+          actor_member_id?: string | null;
+          status?: Database["public"]["Enums"]["golive_run_status"];
+          steps?: Json;
+          lead_id?: string | null;
+          created_at?: string;
+          finished_at?: string | null;
+        };
+        Update: {
+          status?: Database["public"]["Enums"]["golive_run_status"];
+          steps?: Json;
+          lead_id?: string | null;
+          finished_at?: string | null;
+        };
+        Relationships: [];
+      };
+      staff_access_log: {
+        Row: {
+          id: string;
+          staff_user_id: string;
+          org_id: string | null;
+          action: string;
+          detail: Json;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          staff_user_id: string;
+          org_id?: string | null;
+          action: string;
+          detail?: Json;
+          created_at?: string;
+        };
+        Update: {
+          action?: string;
+          detail?: Json;
+        };
+        Relationships: [];
+      };
     };
     Views: {
       queue_rows: {
@@ -2524,7 +2673,54 @@ export type Database = {
       };
       skip_baseline_backfill: {
         Args: { p_org_id: string; p_member_id: string };
+        Returns: undefined;
+      };
+      onboarding_manager_allowed: {
+        Args: { p_org_id: string };
+        Returns: boolean;
+      };
+      evaluate_activation_gate: { Args: { p_org_id: string }; Returns: Json };
+      load_org_setup_state: { Args: { p_org_id: string }; Returns: Json };
+      activate_org: {
+        Args: {
+          p_org_id: string;
+          p_member_id: string;
+          p_ack_warnings?: string[];
+          p_override?: boolean;
+          p_override_phrase?: string | null;
+          p_override_reason?: string | null;
+        };
+        Returns: Json;
+      };
+      change_activation_timestamp: {
+        Args: {
+          p_org_id: string;
+          p_member_id: string;
+          p_confirm_slug: string;
+          p_next_at: string;
+          p_reason: string;
+        };
+        Returns: Json;
+      };
+      first_week_health: { Args: { p_org_id: string }; Returns: Json };
+      staff_console_allowed: { Args: Record<PropertyKey, never>; Returns: boolean };
+      log_staff_access: {
+        Args: { p_action: string; p_org_id?: string | null; p_detail?: Json };
         Returns: string;
+      };
+      staff_org_overview: { Args: Record<PropertyKey, never>; Returns: Json };
+      create_client_org: {
+        Args: {
+          p_name: string;
+          p_timezone: string;
+          p_slug?: string | null;
+          p_owner_email?: string | null;
+        };
+        Returns: Json;
+      };
+      golive_inspect_lead: {
+        Args: { p_org_id: string; p_lead_id: string };
+        Returns: Json;
       };
       claim_baseline_run: {
         Args: Record<PropertyKey, never>;
@@ -2697,6 +2893,19 @@ export type Database = {
       reporting_cohort_side: "live" | "baseline";
       reporting_cohort_status: "maturing" | "mature";
       reporting_range_key: "since_activation" | "last_30d" | "last_90d" | "custom";
+      onboarding_step:
+        | "organization"
+        | "crm"
+        | "backfill"
+        | "field_mapping"
+        | "scoring"
+        | "team"
+        | "transcripts"
+        | "voice"
+        | "review";
+      transcript_choice: "connected" | "manual";
+      baseline_fallback: "self_reported" | "declined";
+      golive_run_status: "running" | "passed" | "failed";
     };
     CompositeTypes: {
       [_ in never]: never;

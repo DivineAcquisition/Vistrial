@@ -102,6 +102,14 @@ export type IntegrationSettingsProps = {
     qualityFailures: Array<{ type: string; count: number }>;
     warning: boolean;
   };
+  oauthStartHref?: string;
+  show?: {
+    alerts?: boolean;
+    connection?: boolean;
+    health?: boolean;
+    maps?: boolean;
+    recorders?: boolean;
+  };
 };
 
 const initial: SettingsSaveResult = { status: "idle" };
@@ -129,12 +137,21 @@ export function IntegrationSettings(props: IntegrationSettingsProps) {
   const [transcriptStatus, setTranscriptStatus] = useState<string | null>(null);
   const [pasteText, setPasteText] = useState("");
   const [assignCallId, setAssignCallId] = useState<Record<string, string>>({});
+  const show = {
+    alerts: true,
+    connection: true,
+    health: true,
+    maps: true,
+    recorders: true,
+    ...props.show,
+  };
+  const oauthStartHref = props.oauthStartHref ?? "/api/ghl/oauth/start";
 
   const counts = Object.entries(props.health.receivedLast24h).sort(([a], [b]) => a.localeCompare(b));
 
   return (
     <div className="space-y-8">
-      {props.connection.status === "broken" ? (
+      {show.alerts && props.connection.status === "broken" ? (
         <Panel className="border-flag-critical/40 px-6 py-5">
           <p className="text-sm font-semibold text-flag-critical">The CRM connection is broken</p>
           <p className="mt-2 text-sm leading-relaxed text-silver">
@@ -145,7 +162,7 @@ export function IntegrationSettings(props: IntegrationSettingsProps) {
         </Panel>
       ) : null}
 
-      {props.connection.lastSetupError ? (
+      {show.connection && props.connection.lastSetupError ? (
         <Panel className="border-flag-warning/40 px-6 py-5">
           <p className="text-sm font-semibold text-flag-warning">Webhook registration did not finish</p>
           <p className="mt-2 text-sm leading-relaxed text-silver">
@@ -156,7 +173,7 @@ export function IntegrationSettings(props: IntegrationSettingsProps) {
         </Panel>
       ) : null}
 
-      {props.connection.status === "active" && props.maps.length === 0 ? (
+      {show.maps && props.connection.status === "active" && props.maps.length === 0 ? (
         <Panel className="border-flag-warning/40 px-6 py-5">
           <p className="text-sm font-semibold text-flag-warning">No application field maps</p>
           <p className="mt-2 text-sm leading-relaxed text-silver">
@@ -166,7 +183,7 @@ export function IntegrationSettings(props: IntegrationSettingsProps) {
         </Panel>
       ) : null}
 
-      {props.health.stale ? (
+      {show.health && props.health.stale ? (
         <Panel className="border-flag-warning/40 px-6 py-5">
           <p className="text-sm font-semibold text-flag-warning">Ingestion looks stalled</p>
           <p className="mt-2 text-sm leading-relaxed text-silver">
@@ -176,7 +193,7 @@ export function IntegrationSettings(props: IntegrationSettingsProps) {
         </Panel>
       ) : null}
 
-      {props.transcriptHealth.unmatchedCount > 0 ? (
+      {show.recorders && props.transcriptHealth.unmatchedCount > 0 ? (
         <Panel className="border-flag-warning/40 px-6 py-5">
           <p className="text-sm font-semibold text-flag-warning">Unmatched transcripts need an operator</p>
           <p className="mt-2 text-sm leading-relaxed text-silver">
@@ -190,7 +207,7 @@ export function IntegrationSettings(props: IntegrationSettingsProps) {
         </Panel>
       ) : null}
 
-      {props.followUpHealth.warning ? (
+      {show.alerts && props.followUpHealth.warning ? (
         <Panel className="border-flag-warning/40 px-6 py-5">
           <p className="text-sm font-semibold text-flag-warning">Follow-up drafting needs attention</p>
           <p className="mt-2 text-sm leading-relaxed text-silver">
@@ -205,10 +222,10 @@ export function IntegrationSettings(props: IntegrationSettingsProps) {
         </Panel>
       ) : null}
 
-      {props.flashError ? <p className={errorClass}>{props.flashError}</p> : null}
-      {props.flash ? <p className="text-sm text-flag-good">{props.flash}</p> : null}
+      {show.connection && props.flashError ? <p className={errorClass}>{props.flashError}</p> : null}
+      {show.connection && props.flash ? <p className="text-sm text-flag-good">{props.flash}</p> : null}
 
-      {props.selectLocation ? (
+      {show.connection && props.selectLocation ? (
         <Panel className="px-6 py-6">
           <h2 className="text-sm font-semibold text-white">Choose a GoHighLevel location</h2>
           <p className={helperClass}>
@@ -238,6 +255,7 @@ export function IntegrationSettings(props: IntegrationSettingsProps) {
         </Panel>
       ) : null}
 
+      {show.connection ? (
       <Panel className="px-6 py-6">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
@@ -267,7 +285,7 @@ export function IntegrationSettings(props: IntegrationSettingsProps) {
 
         <div className="mt-6 flex flex-wrap gap-3">
           {props.oauthConfigured ? (
-            <a href="/api/ghl/oauth/start" className={`${btnPrimary} ${btnSizeMd}`}>
+            <a href={oauthStartHref} className={`${btnPrimary} ${btnSizeMd}`}>
               {props.connection.status === "active" || props.connection.status === "broken"
                 ? "Reconnect"
                 : "Connect GoHighLevel"}
@@ -288,7 +306,10 @@ export function IntegrationSettings(props: IntegrationSettingsProps) {
         </div>
         {disconnectState.status === "error" ? <p className={errorClass}>{disconnectState.error}</p> : null}
       </Panel>
+      ) : null}
 
+      {show.health ? (
+        <>
       <Panel className="px-6 py-6">
         <h2 className="text-sm font-semibold text-white">Ingestion health</h2>
         <p className={helperClass}>
@@ -425,7 +446,10 @@ export function IntegrationSettings(props: IntegrationSettingsProps) {
           />
         </div>
       </Panel>
+        </>
+      ) : null}
 
+      {show.maps ? (
       <Panel className="px-6 py-6">
         <h2 className="text-sm font-semibold text-white">Application field mapping</h2>
         <p className={helperClass}>
@@ -552,7 +576,10 @@ export function IntegrationSettings(props: IntegrationSettingsProps) {
           ) : null}
         </div>
       </Panel>
+      ) : null}
 
+      {show.recorders ? (
+        <>
       <Panel className="px-6 py-6">
         <h2 className="text-sm font-semibold text-white">Call recorders</h2>
         <p className={helperClass}>
@@ -728,6 +755,8 @@ export function IntegrationSettings(props: IntegrationSettingsProps) {
           </button>
         </form>
       </Panel>
+        </>
+      ) : null}
     </div>
   );
 }

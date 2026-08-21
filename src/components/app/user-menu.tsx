@@ -35,6 +35,11 @@ export function UserMenu() {
           <span className="block truncate text-xs text-muted-foreground">{user.email}</span>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
+        {isPlatformAdmin ? (
+          <DropdownMenuItem asChild>
+            <Link href="/ops">Staff console</Link>
+          </DropdownMenuItem>
+        ) : null}
         <DropdownMenuItem asChild>
           <Link href="/app/settings/profile">Profile</Link>
         </DropdownMenuItem>

@@ -20,7 +20,9 @@ export default async function ScoringSettingsPage() {
       .from("leads")
       .select("id, first_name, last_name, email, current_score, application_answers")
       .eq("org_id", ctx.org.id)
-      .order("created_at", { ascending: false }),
+      .eq("is_test", false)
+      .order("created_at", { ascending: false })
+      .limit(50),
     supabase
       .from("ghost_detector_runs")
       .select("evaluated_count, changed_count, ran_at")

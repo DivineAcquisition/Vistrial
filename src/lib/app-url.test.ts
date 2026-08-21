@@ -48,6 +48,7 @@ describe("auth callback URL", () => {
   it("returns invite paths after sign-in so redemption can finish", () => {
     expect(postAuthPath("/accept-invite/abc")).toBe("/accept-invite/abc");
     expect(postAuthPath("/login")).toBe("/app/queue");
+    expect(postAuthPath("/ops")).toBe("/ops");
   });
 });
 

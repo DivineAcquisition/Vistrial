@@ -3,6 +3,7 @@
 import { useActionState } from "react";
 
 import {
+  declineBaselineFallback,
   rerunBaselineBackfill,
   saveSelfReportedBaseline,
   skipBaselineBackfill,
@@ -10,6 +11,7 @@ import {
 } from "@/app/app/reporting/actions";
 import { Panel } from "@/components/ui/panel";
 import { StatusBadge } from "@/components/ui/status-badge";
+import { backfillGradePlain } from "@/lib/onboarding/copy";
 import {
   btnPrimary,
   btnSecondary,
@@ -64,12 +66,12 @@ export function BaselineSettings(props: BaselineSettingsProps) {
   const [skipState, skipAction, skipping] = useActionState(skipBaselineBackfill, idle);
   const [rerunState, rerunAction, rerunning] = useActionState(rerunBaselineBackfill, idle);
   const [selfState, selfAction, savingSelf] = useActionState(saveSelfReportedBaseline, idle);
+  const [declineState, declineAction, declining] = useActionState(declineBaselineFallback, idle);
   const canSkip =
-    !props.activatedAt &&
-    (props.backfill.status === "queued" ||
-      props.backfill.status === "running" ||
-      props.backfill.status === "failed" ||
-      props.backfill.status === null);
+    props.backfill.status === "queued" ||
+    props.backfill.status === "running" ||
+    props.backfill.status === "failed" ||
+    props.backfill.status === null;
   const unusable = props.backfill.grade === "unusable" || props.backfill.status === "skipped";
 
   return (
@@ -79,8 +81,8 @@ export function BaselineSettings(props: BaselineSettingsProps) {
           <h2 className="text-sm font-semibold text-white">CRM history backfill</h2>
           <p className={helperClass}>
             Runs automatically after the CRM is connected. Historical rows land in baseline tables,
-            never in live leads. Message bodies are not pulled. The workspace is marked live only
-            when this finishes or an admin skips it.
+            never in live leads. Message bodies are not pulled. Activation is a separate gate — it
+            waits until this pull finishes or is skipped and a fallback is chosen.
           </p>
         </div>
         <StatusBadge
@@ -99,9 +101,17 @@ export function BaselineSettings(props: BaselineSettingsProps) {
         </div>
         <div>
           <dt className={labelClass}>Activation</dt>
-          <dd className="text-sm text-white">{props.activatedAt ?? "Not set until backfill completes or is skipped"}</dd>
+          <dd className="text-sm text-white">
+            {props.activatedAt
+              ? props.activatedAt
+              : "Set on the Review step after this pull resolves. Skipping here does not go live."}
+          </dd>
         </div>
       </dl>
+
+      {props.backfill.grade ? (
+        <p className="mt-4 text-sm text-silver">{backfillGradePlain(props.backfill.grade)}</p>
+      ) : null}
 
       {props.backfill.gradeReasons.length > 0 ? (
         <ul className="mt-4 list-disc space-y-1 pl-5 text-sm text-silver">
@@ -151,7 +161,7 @@ export function BaselineSettings(props: BaselineSettingsProps) {
         {canSkip ? (
           <form action={skipAction}>
             <button type="submit" className={`${btnSecondary} ${btnSizeMd}`} disabled={skipping}>
-              {skipping ? "Skipping…" : "Skip backfill and activate"}
+              {skipping ? "Skipping…" : "Skip backfill"}
             </button>
           </form>
         ) : null}
@@ -210,6 +220,20 @@ export function BaselineSettings(props: BaselineSettingsProps) {
           </button>
           {selfState.status === "error" ? <p className={errorClass}>{selfState.error}</p> : null}
           {selfState.status === "saved" ? <p className={helperClass}>Saved as self-reported.</p> : null}
+        </form>
+      ) : null}
+
+      {unusable ? (
+        <form action={declineAction} className="mt-6 space-y-2">
+          <button type="submit" className={`${btnSecondary} ${btnSizeMd}`} disabled={declining}>
+            {declining ? "Recording…" : "Decline the fallback"}
+          </button>
+          <p className={helperClass}>
+            Records that you will go live without a before-figure. The comparison stays empty
+            until CRM history exists.
+          </p>
+          {declineState.status === "error" ? <p className={errorClass}>{declineState.error}</p> : null}
+          {declineState.status === "saved" ? <p className={helperClass}>Fallback declined.</p> : null}
         </form>
       ) : null}
     </Panel>

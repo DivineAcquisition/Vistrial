@@ -103,6 +103,7 @@ export async function inviteMember(
 
   // Email delivery lands in a later prompt. Return the link for manual sharing.
   revalidatePath("/app/settings/members");
+  revalidatePath("/app/setup");
   return { ok: true, url: buildInviteLink(token) };
 }
 

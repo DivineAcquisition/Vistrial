@@ -132,6 +132,7 @@ export async function updateVoiceProfile(
     .eq("org_id", ctx.org.id);
   if (error) return { status: "error", error: "Could not save the voice profile." };
   revalidatePath("/app/settings/follow-up");
+  revalidatePath("/app/setup");
   return { status: "saved" };
 }
 
@@ -160,6 +161,7 @@ export async function addVoiceExample(input: {
     .eq("org_id", ctx.org.id);
   if (error) return { status: "error", error: "Could not add that example." };
   revalidatePath("/app/settings/follow-up");
+  revalidatePath("/app/setup");
   return { status: "saved" };
 }
 
@@ -177,6 +179,7 @@ export async function removeVoiceExample(index: number): Promise<SettingsSaveRes
     .eq("org_id", ctx.org.id);
   if (error) return { status: "error", error: "Could not remove that example." };
   revalidatePath("/app/settings/follow-up");
+  revalidatePath("/app/setup");
   return { status: "saved" };
 }
 

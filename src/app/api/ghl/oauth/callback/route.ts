@@ -1,7 +1,7 @@
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 
-import { GHL_OAUTH_COOKIE } from "@/lib/ghl/constants";
+import { GHL_OAUTH_COOKIE, GHL_OAUTH_RETURN_COOKIE } from "@/lib/ghl/constants";
 import { appUrl } from "@/lib/ghl/env";
 import { exchangeAuthorizationCode } from "@/lib/ghl/client";
 import { linkLocationToOrg, stashAgencySession } from "@/lib/ghl/connect";
@@ -10,8 +10,13 @@ import { getSupabaseAdmin } from "@/lib/supabase/admin";
 
 export const dynamic = "force-dynamic";
 
-function redirectToIntegrations(query: Record<string, string>) {
-  const url = new URL("/app/settings/integrations", appUrl());
+function redirectAfterOauth(query: Record<string, string>, returnPath: string | null) {
+  const allowed =
+    returnPath &&
+    (returnPath.startsWith("/app/setup") || returnPath.startsWith("/app/settings/integrations")) &&
+    !returnPath.startsWith("//") &&
+    !returnPath.includes("://");
+  const url = new URL(allowed ? returnPath : "/app/settings/integrations", appUrl());
   for (const [key, value] of Object.entries(query)) {
     url.searchParams.set(key, value);
   }
@@ -20,24 +25,27 @@ function redirectToIntegrations(query: Record<string, string>) {
 
 export async function GET(request: Request) {
   const incoming = new URL(request.url);
+  const cookieStore = await cookies();
+  const returnPath = cookieStore.get(GHL_OAUTH_RETURN_COOKIE)?.value ?? null;
+  cookieStore.delete(GHL_OAUTH_RETURN_COOKIE);
+
   const errorParam = incoming.searchParams.get("error");
   if (errorParam) {
-    return redirectToIntegrations({ ghl_error: "oauth_denied" });
+    return redirectAfterOauth({ ghl_error: "oauth_denied" }, returnPath);
   }
 
   const code = incoming.searchParams.get("code");
   const stateParam = incoming.searchParams.get("state");
-  const cookieStore = await cookies();
   const cookieState = cookieStore.get(GHL_OAUTH_COOKIE)?.value ?? null;
   cookieStore.delete(GHL_OAUTH_COOKIE);
 
   if (!code || !stateParam || !cookieState || stateParam !== cookieState) {
-    return redirectToIntegrations({ ghl_error: "oauth_invalid" });
+    return redirectAfterOauth({ ghl_error: "oauth_invalid" }, returnPath);
   }
 
   const state = parseOAuthState(stateParam);
   if (!state) {
-    return redirectToIntegrations({ ghl_error: "oauth_expired" });
+    return redirectAfterOauth({ ghl_error: "oauth_expired" }, returnPath);
   }
 
   try {
@@ -51,11 +59,11 @@ export async function GET(request: Request) {
         memberId: state.memberId,
         tokens,
       });
-      return redirectToIntegrations({ select_location: "1" });
+      return redirectAfterOauth({ select_location: "1" }, returnPath);
     }
 
     if (!locationId) {
-      return redirectToIntegrations({ ghl_error: "oauth_no_location" });
+      return redirectAfterOauth({ ghl_error: "oauth_no_location" }, returnPath);
     }
 
     const linked = await linkLocationToOrg(admin, {
@@ -65,12 +73,15 @@ export async function GET(request: Request) {
       memberId: state.memberId,
     });
     if (!linked.ok) {
-      return redirectToIntegrations({
-        ghl_error: linked.error === "location_claimed" ? "location_claimed" : "oauth_failed",
-      });
+      return redirectAfterOauth(
+        {
+          ghl_error: linked.error === "location_claimed" ? "location_claimed" : "oauth_failed",
+        },
+        returnPath
+      );
     }
-    return redirectToIntegrations({ connected: "1" });
+    return redirectAfterOauth({ connected: "1" }, returnPath);
   } catch {
-    return redirectToIntegrations({ ghl_error: "oauth_failed" });
+    return redirectAfterOauth({ ghl_error: "oauth_failed" }, returnPath);
   }
 }

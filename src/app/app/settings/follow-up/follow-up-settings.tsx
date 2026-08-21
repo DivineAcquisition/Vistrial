@@ -45,12 +45,26 @@ export function FollowUpSettingsScreen({
   voice,
   rules: initialRules,
   suggestions,
+  show: showProp,
 }: {
   settings: FollowUpSettings;
   voice: VoiceProfile;
   rules: RoutingRule[];
   suggestions: VoiceSuggestionRow[];
+  show?: {
+    halt?: boolean;
+    examples?: boolean;
+    profile?: boolean;
+    policy?: boolean;
+  };
 }) {
+  const show = {
+    halt: true,
+    examples: true,
+    profile: true,
+    policy: true,
+    ...showProp,
+  };
   const [policyState, savePolicy, policyPending] = useActionState(updateFollowUpPolicy, idle);
   const [voiceState, saveVoice, voicePending] = useActionState(updateVoiceProfile, idle);
   const [haltStatus, setHaltStatus] = useState<SettingsSaveResult>(idle);
@@ -63,6 +77,7 @@ export function FollowUpSettingsScreen({
 
   return (
     <div className="space-y-10">
+      {show.halt ? (
       <section>
         <SectionHeader
           title="Sequence stop"
@@ -87,7 +102,9 @@ export function FollowUpSettingsScreen({
           </button>
         </Panel>
       </section>
+      ) : null}
 
+      {show.examples ? (
       <section>
         <SectionHeader
           title="Real messages you have sent"
@@ -168,7 +185,9 @@ export function FollowUpSettingsScreen({
           </div>
         </Panel>
       </section>
+      ) : null}
 
+      {show.profile ? (
       <section>
         <SectionHeader title="Voice profile" hint="Used on every generation. Changes never happen from edit data unless you confirm a suggestion below." />
         <Panel className="max-w-xl px-6 py-6">
@@ -253,7 +272,10 @@ export function FollowUpSettingsScreen({
           </form>
         </Panel>
       </section>
+      ) : null}
 
+      {show.policy ? (
+        <>
       <section>
         <SectionHeader title="Policy" hint="Quiet hours default on. Sequence caps cannot be removed." />
         <Panel className="max-w-xl px-6 py-6">
@@ -464,6 +486,8 @@ export function FollowUpSettingsScreen({
           )}
         </Panel>
       </section>
+        </>
+      ) : null}
     </div>
   );
 }

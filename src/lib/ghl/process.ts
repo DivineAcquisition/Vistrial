@@ -218,6 +218,7 @@ async function findOrCreateLead(
     return { lead: existing, created: false };
   }
 
+  const isTest = contactId.startsWith("vistrial-golive-");
   const { data, error } = await db
     .from("leads")
     .insert({
@@ -227,10 +228,11 @@ async function findOrCreateLead(
       last_name: fields.last_name,
       email: fields.email,
       phone: fields.phone,
-      source: fields.source,
+      source: isTest ? "vistrial_golive" : fields.source,
       campaign: fields.campaign,
       application_answers: answers as Json,
       status: "new",
+      is_test: isTest,
       ...(fields.timezone ? { timezone: fields.timezone } : {}),
       ...(fields.opted_in_at ? { opted_in_at: fields.opted_in_at } : {}),
     })

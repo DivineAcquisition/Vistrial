@@ -30,8 +30,21 @@ export async function ingestGhlWebhook(
   }
 
   const parsed = parseWebhookPayload(args.rawBody);
-  const orgId = parsed.locationId ? await orgIdForLocation(db, parsed.locationId) : null;
+  return persistGhlWebhookEvent(db, {
+    parsed,
+    orgId: parsed.locationId ? await orgIdForLocation(db, parsed.locationId) : null,
+  });
+}
 
+/** Persist after signature verification. Go-live uses this path; it cannot mint GHL signatures. */
+export async function persistGhlWebhookEvent(
+  db: GhlDb,
+  args: {
+    parsed: ReturnType<typeof parseWebhookPayload>;
+    orgId: string | null;
+  }
+): Promise<IngestResult> {
+  const { parsed, orgId } = args;
   const { data, error } = await db
     .from("webhook_events")
     .insert({

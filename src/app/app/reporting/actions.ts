@@ -7,6 +7,7 @@ import { getAuthContext } from "@/lib/auth/session";
 import { createClient } from "@/lib/supabase/server";
 import { getSupabaseAdmin } from "@/lib/supabase/admin";
 import { runBaselineBackfill } from "@/lib/ghl/backfill";
+import { revalidateOnboardingPaths } from "@/lib/onboarding/revalidate";
 
 export type ReportingActionResult =
   | { status: "idle" }
@@ -32,7 +33,7 @@ export async function skipBaselineBackfill(
     p_member_id: ctx.member.id,
   });
   if (error) return { status: "error", error: error.message };
-  revalidatePath("/app/settings/integrations");
+  revalidateOnboardingPaths();
   revalidatePath("/app/reporting");
   return { status: "saved" };
 }
@@ -53,7 +54,7 @@ export async function rerunBaselineBackfill(
   });
   if (error) return { status: "error", error: error.message };
   await runBaselineBackfill(getSupabaseAdmin());
-  revalidatePath("/app/settings/integrations");
+  revalidateOnboardingPaths();
   return { status: "saved" };
 }
 
@@ -81,7 +82,29 @@ export async function saveSelfReportedBaseline(
     p_note: note,
   });
   if (error) return { status: "error", error: error.message };
-  revalidatePath("/app/settings/integrations");
+  await supabase
+    .from("org_onboarding")
+    .update({ baseline_fallback: "self_reported" })
+    .eq("org_id", ctx.org.id);
+  revalidateOnboardingPaths();
   revalidatePath("/app/reporting");
+  return { status: "saved" };
+}
+
+export async function declineBaselineFallback(
+  _prev: ReportingActionResult,
+  _formData: FormData
+): Promise<ReportingActionResult> {
+  void _prev;
+  void _formData;
+  const ctx = await getAuthContext();
+  if (!canManageOrgSettings(ctx.role, ctx.isPlatformAdmin)) return initialDenied;
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("org_onboarding")
+    .update({ baseline_fallback: "declined" })
+    .eq("org_id", ctx.org.id);
+  if (error) return { status: "error", error: error.message };
+  revalidateOnboardingPaths();
   return { status: "saved" };
 }

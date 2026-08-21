@@ -35,7 +35,11 @@ export function authCallbackUrl(next?: string, origin = appUrl()): string {
   return url.toString();
 }
 
+export function isOpsPath(path: string): boolean {
+  return path === "/ops" || path.startsWith("/ops/");
+}
+
 export function postAuthPath(next: string): string {
-  if (next.startsWith("/app") || isAcceptInvitePath(next)) return next;
+  if (next.startsWith("/app") || isOpsPath(next) || isAcceptInvitePath(next)) return next;
   return "/app/queue";
 }

@@ -9,6 +9,7 @@ import {
   authCallbackUrl,
   inviteTokenFromPath,
   isAcceptInvitePath,
+  isOpsPath,
   postAuthPath,
   safeInternalPath,
 } from "@/lib/auth/paths";
@@ -78,6 +79,10 @@ export async function signInPassword(
 
   if (!memberships?.length && !platformAdmin) {
     return { error: "no_membership" };
+  }
+
+  if (!memberships?.length && platformAdmin) {
+    redirect(isOpsPath(next) ? next : "/ops");
   }
 
   redirect(postAuthPath(next));

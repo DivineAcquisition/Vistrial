@@ -74,6 +74,7 @@ export async function updateScoringConfig(
   }
 
   revalidatePath("/app/settings/scoring");
+  revalidatePath("/app/setup");
   return { status: "saved" };
 }
 
@@ -139,6 +140,7 @@ export async function replaceScoreMaps(maps: MappingPayload[]): Promise<MappingS
   }
 
   revalidatePath("/app/settings/scoring");
+  revalidatePath("/app/setup");
   return { status: "saved" };
 }
 

@@ -15,6 +15,7 @@ import { RECORDER_SOURCES } from "@/lib/transcripts/constants";
 import { attachTranscriptToCall } from "@/lib/transcripts/process";
 import { getSupabaseAdmin } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
+import { revalidateOnboardingPaths } from "@/lib/onboarding/revalidate";
 import type { Enums } from "@/types/database";
 
 function forbidden(): SettingsSaveResult {
@@ -36,7 +37,7 @@ export async function disconnectCrm(
   const ctx = await requireManager();
   if (!ctx) return forbidden();
   await disconnectGhl(getSupabaseAdmin(), ctx.org.id);
-  revalidatePath("/app/settings/integrations");
+  revalidateOnboardingPaths();
   return { status: "saved" };
 }
 
@@ -54,7 +55,7 @@ export async function selectGhlLocation(
     locationId,
   });
   if (!result.ok) return { status: "error", error: result.error };
-  revalidatePath("/app/settings/integrations");
+  revalidateOnboardingPaths();
   return { status: "saved" };
 }
 
@@ -102,8 +103,17 @@ export async function saveGhlFieldMaps(maps: FieldMapPayload[]): Promise<Setting
     if (error) return { status: "error", error: "Could not save field mapping." };
   }
 
-  revalidatePath("/app/settings/integrations");
-  revalidatePath("/app/settings/scoring");
+  const stamped = await supabase
+    .from("org_onboarding")
+    .update({ field_maps_saved_at: new Date().toISOString() })
+    .eq("org_id", ctx.org.id)
+    .select("org_id")
+    .maybeSingle();
+  if (!stamped.data) {
+    return { status: "error", error: "Could not record that field mapping was saved." };
+  }
+
+  revalidateOnboardingPaths();
   return { status: "saved" };
 }
 
@@ -151,7 +161,12 @@ export async function saveTranscriptConnection(input: {
     if (error) return { status: "error", error: "Could not save that recorder connection." };
   }
 
-  revalidatePath("/app/settings/integrations");
+  await admin
+    .from("org_onboarding")
+    .update({ transcript_choice: "connected" })
+    .eq("org_id", ctx.org.id);
+
+  revalidateOnboardingPaths();
   return { status: "saved" };
 }
 

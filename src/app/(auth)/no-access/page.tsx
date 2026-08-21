@@ -2,6 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 
 import { AuthCard } from "@/components/auth/auth-card";
+import { isPlatformAdminUser } from "@/lib/auth/staff";
 import { getSessionUser, listActiveMemberships } from "@/lib/auth/session";
 import { btnSecondary, btnSizeMd } from "@/lib/ui";
 
@@ -14,6 +15,9 @@ export default async function NoAccessPage() {
   const memberships = await listActiveMemberships(user.id);
   if (memberships.length > 0) {
     redirect("/app/queue");
+  }
+  if (await isPlatformAdminUser(user.id)) {
+    redirect("/ops");
   }
 
   return (

@@ -197,6 +197,10 @@ export async function getValidAccessToken(
     return { ok: false, reason: "broken" };
   }
   if (!tokensNeedRefresh(tokens.expiresAt)) {
+    await db
+      .from("ghl_connections")
+      .update({ last_verified_at: new Date().toISOString() })
+      .eq("org_id", orgId);
     return { ok: true, token: tokens.accessToken };
   }
 

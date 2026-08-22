@@ -40,3 +40,8 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# supabase cli local state
+supabase/.branches
+supabase/.temp
+supabase/config.toml.bak

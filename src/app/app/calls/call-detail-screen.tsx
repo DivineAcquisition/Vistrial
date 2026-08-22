@@ -11,6 +11,7 @@ import {
   retryDeadExtraction,
 } from "@/app/app/calls/actions";
 import { DefinitionList, KeyValue } from "@/components/ui/definition-list";
+import { Select } from "@/components/ui/select";
 import { Panel } from "@/components/ui/panel";
 import { SectionHeader } from "@/components/ui/section-header";
 import { StatusBadge } from "@/components/ui/status-badge";
@@ -34,7 +35,6 @@ import {
   helperClass,
   inputClass,
   labelClass,
-  selectClass,
 } from "@/lib/ui";
 
 export function CallDetailScreen({ initial }: { initial: CallDetailPayload }) {
@@ -376,15 +376,15 @@ function SignalField({
           {stateField ? (
             <label className="block">
               <span className={labelClass}>State</span>
-              <select
-                className={selectClass}
+              <Select
+                
                 value={stateValue}
                 onChange={(event) => setStateValue(event.target.value as typeof stateValue)}
               >
                 <option value="absent">{SIGNAL_STATE_LABELS.absent}</option>
                 <option value="unclear">{SIGNAL_STATE_LABELS.unclear}</option>
                 <option value="present">{SIGNAL_STATE_LABELS.present}</option>
-              </select>
+              </Select>
             </label>
           ) : null}
           <textarea className={inputClass} rows={3} value={value} onChange={(event) => setValue(event.target.value)} />

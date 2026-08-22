@@ -9,7 +9,8 @@ import {
   type QueueTrackFilter,
 } from "@/lib/queue/types";
 import { queueFiltersHref } from "@/lib/queue/filters";
-import { filterLabel, inputClass, selectClass } from "@/lib/ui";
+import { Select } from "@/components/ui/select";
+import { filterLabel, inputClass } from "@/lib/ui";
 
 const ASSIGNED_OPTIONS: Array<{ value: QueueAssignedFilter; label: string }> = [
   { value: "all", label: "Everyone" },
@@ -56,8 +57,8 @@ export function QueueFilters({
     >
       <label className="block">
         <span className={filterLabel}>Assigned</span>
-        <select
-          className={selectClass}
+        <Select
+          
           value={filters.assigned}
           onChange={(event) => apply({ assigned: event.target.value as QueueAssignedFilter })}
         >
@@ -66,12 +67,12 @@ export function QueueFilters({
               {option.label}
             </option>
           ))}
-        </select>
+        </Select>
       </label>
       <label className="block">
         <span className={filterLabel}>Track</span>
-        <select
-          className={selectClass}
+        <Select
+          
           value={filters.track ?? ""}
           onChange={(event) =>
             apply({ track: (event.target.value || null) as QueueTrackFilter | null })
@@ -82,12 +83,12 @@ export function QueueFilters({
               {option.label}
             </option>
           ))}
-        </select>
+        </Select>
       </label>
       <label className="block">
         <span className={filterLabel}>Status</span>
-        <select
-          className={selectClass}
+        <Select
+          
           value={filters.status ?? ""}
           onChange={(event) =>
             apply({
@@ -103,12 +104,12 @@ export function QueueFilters({
               {STATUS_LABELS[status]}
             </option>
           ))}
-        </select>
+        </Select>
       </label>
       <label className="block">
         <span className={filterLabel}>Source</span>
-        <select
-          className={selectClass}
+        <Select
+          
           value={filters.source ?? ""}
           onChange={(event) => apply({ source: event.target.value || null })}
         >
@@ -118,7 +119,7 @@ export function QueueFilters({
               {source}
             </option>
           ))}
-        </select>
+        </Select>
       </label>
       <label className="block">
         <span className={filterLabel}>Score min</span>

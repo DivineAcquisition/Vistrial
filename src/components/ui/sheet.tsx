@@ -73,7 +73,9 @@ function SheetContent({
             <Button
               variant="ghost"
               className="absolute top-3 right-3"
-              size="icon-sm"
+              size="sm"
+              iconOnly
+              aria-label="Close"
             >
               <XIcon
               />

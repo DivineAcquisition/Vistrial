@@ -2,11 +2,13 @@
 
 import { useMemo, useState, type ReactNode } from "react";
 
+import { Checkbox } from "@/components/ui/checkbox";
 import { StatusBadge } from "@/components/ui/status-badge";
+import { Select } from "@/components/ui/select";
 import type { Tone } from "@/components/ui/tone";
 import type { Choice } from "@/lib/profile/vocabulary";
 import type { DefaultSource, ProfileDefault, ProfileDefaults } from "@/lib/profile/types";
-import { btnSecondary, btnSizeSm, helperClass, inputClass, labelClass, selectClass } from "@/lib/ui";
+import { btnSecondary, btnSizeSm, helperClass, inputClass, labelClass } from "@/lib/ui";
 
 const SOURCE_LABEL: Record<DefaultSource, string> = {
   saved: "Your answer",
@@ -123,14 +125,14 @@ export function ChoiceField<T extends string>(props: {
   const hint = props.choices.find((choice) => choice.value === current)?.hint;
   return (
     <FieldShell field={props.field} defaults={props.defaults} label={props.label} htmlFor={props.name}>
-      <select id={props.name} name={props.name} className={selectClass} defaultValue={current}>
+      <Select id={props.name} name={props.name}  defaultValue={current}>
         {props.allowEmpty ? <option value="">Not answered</option> : null}
         {props.choices.map((choice) => (
           <option key={choice.value} value={choice.value}>
             {choice.label}
           </option>
         ))}
-      </select>
+      </Select>
       {hint ? <p className={helperClass}>{hint}</p> : null}
     </FieldShell>
   );
@@ -156,12 +158,10 @@ export function MultiChoiceField<T extends string>(props: {
         {props.choices.map((choice) => (
           <div key={choice.value} className="flex items-center gap-3">
             <label className="flex flex-1 items-center gap-2 text-sm text-white">
-              <input
-                type="checkbox"
+              <Checkbox
                 name={props.name}
                 value={choice.value}
                 defaultChecked={selected.has(choice.value)}
-                className="h-4 w-4 rounded border-white/20 bg-white/[0.04]"
               />
               <span>
                 {choice.label}
@@ -268,8 +268,8 @@ export function RepeatableRows(props: {
               <div key={column.key} className="min-w-[9rem] flex-1">
                 <span className={labelClass}>{column.label}</span>
                 {column.kind === "select" ? (
-                  <select
-                    className={selectClass}
+                  <Select
+                    
                     value={row[column.key] ?? ""}
                     onChange={(event) => update(index, column.key, event.target.value)}
                   >
@@ -279,7 +279,7 @@ export function RepeatableRows(props: {
                         {choice.label}
                       </option>
                     ))}
-                  </select>
+                  </Select>
                 ) : (
                   <input
                     className={inputClass}

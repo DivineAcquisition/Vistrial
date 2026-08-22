@@ -5,18 +5,13 @@ import { useActionState } from "react";
 
 import { updateOrganization } from "@/app/app/settings/organization/actions";
 import type { SettingsSaveResult } from "@/app/app/settings/types";
-import { Panel } from "@/components/ui/panel";
+import { Button, SubmitButton } from "@/components/ui/button";
+import { Card, CardFooter } from "@/components/ui/card";
+import { Field } from "@/components/ui/field";
+import { Input } from "@/components/ui/input";
+import { Select } from "@/components/ui/select";
 import { ORG_TIMEZONE_LABELS, ORG_TIMEZONES, isOrgTimezone } from "@/lib/timezones";
-import {
-  btnPrimary,
-  btnSizeMd,
-  btnSizeSm,
-  errorClass,
-  helperClass,
-  inputClass,
-  labelClass,
-  selectClass,
-} from "@/lib/ui";
+import { cardStack, cardTitle, errorClass, helperClass, labelClass, readonlyFieldClass } from "@/lib/ui";
 
 const initial: SettingsSaveResult = { status: "idle" };
 
@@ -37,119 +32,90 @@ export function OrganizationForm({
   const timezoneOptions = isOrgTimezone(timezone)
     ? ORG_TIMEZONES
     : ([timezone, ...ORG_TIMEZONES] as const);
+  const error = state.status === "error" ? state.error : null;
 
   return (
-    <Panel className="max-w-xl px-6 py-6">
-      <form action={action} className="space-y-4">
-        <div>
-          <label htmlFor="org-name" className={labelClass}>
-            Name
-          </label>
-          <input
-            id="org-name"
-            name="name"
-            required
-            maxLength={120}
-            defaultValue={name}
-            className={inputClass}
-          />
-        </div>
+    <Card className="max-w-xl">
+      <form action={action} className={cardStack}>
+        <Field label="Name" name="name" error={error}>
+          <Input name="name" id="name" required maxLength={120} defaultValue={name} />
+        </Field>
 
-        <div>
-          <label htmlFor="org-timezone" className={labelClass}>
-            Timezone
-          </label>
-          <select
-            id="org-timezone"
-            name="timezone"
-            required
-            defaultValue={timezone}
-            className={selectClass}
-          >
+        <Field label="Timezone" name="timezone">
+          <Select name="timezone" id="timezone" required defaultValue={timezone}>
             {timezoneOptions.map((zone) => (
               <option key={zone} value={zone}>
                 {isOrgTimezone(zone) ? ORG_TIMEZONE_LABELS[zone] : zone}
               </option>
             ))}
-          </select>
-        </div>
+          </Select>
+        </Field>
 
-        <div>
-          <label htmlFor="org-sales-cycle" className={labelClass}>
-            Sales cycle (days)
-          </label>
-          <input
-            id="org-sales-cycle"
+        <Field
+          label="Sales cycle (days)"
+          name="sales_cycle_days"
+          help="A lead cohort enters the headline outcome metric only after this many days. Default 60. Maturing cohorts are shown separately and never blended into that number."
+        >
+          <Input
             name="sales_cycle_days"
+            id="sales_cycle_days"
             type="number"
             min={14}
             max={365}
             required
             defaultValue={salesCycleDays}
-            className={inputClass}
           />
-          <p className={helperClass}>
-            A lead cohort enters the headline outcome metric only after this many days. Default 60.
-            Maturing cohorts are shown separately and never blended into that number.
-          </p>
-        </div>
+        </Field>
 
-        <div>
-          <label htmlFor="org-lookback" className={labelClass}>
-            Baseline lookback (days)
-          </label>
-          <input
-            id="org-lookback"
+        <Field
+          label="Baseline lookback (days)"
+          name="baseline_lookback_days"
+          help="How far the automatic CRM history pull reaches. Default 365. Changing this does not re-run the backfill by itself."
+        >
+          <Input
             name="baseline_lookback_days"
+            id="baseline_lookback_days"
             type="number"
             min={30}
             max={730}
             required
             defaultValue={baselineLookbackDays}
-            className={inputClass}
           />
-          <p className={helperClass}>
-            How far the automatic CRM history pull reaches. Default 365. Changing this does not
-            re-run the backfill by itself.
-          </p>
-        </div>
+        </Field>
 
         <div>
           <p className={labelClass}>CRM location id</p>
-          <p className="rounded-xl border border-white/10 bg-white/[0.03] px-3.5 py-2.5 text-sm text-silver">
-            {ghlLocationId || "Not connected"}
-          </p>
+          <p className={readonlyFieldClass}>{ghlLocationId || "Not connected"}</p>
           <p className={helperClass}>
-            Shown here so owners can confirm which GoHighLevel location this
-            workspace maps to. It is set when the CRM is connected, and it is
-            not editable on this page.
+            Shown here so owners can confirm which GoHighLevel location this workspace maps to. It is
+            set when the CRM is connected, and it is not editable on this page.
           </p>
         </div>
 
-        {state.status === "error" ? <p className={errorClass}>{state.error}</p> : null}
+        {error ? <p className={errorClass}>{error}</p> : null}
         {state.status === "saved" ? <p className={helperClass}>Saved.</p> : null}
 
-        <button type="submit" disabled={pending} className={`${btnPrimary} ${btnSizeMd}`}>
-          {pending ? "Saving…" : "Save"}
-        </button>
+        <CardFooter>
+          <SubmitButton pending={pending}>Save</SubmitButton>
+        </CardFooter>
       </form>
-    </Panel>
+    </Card>
   );
 }
 
 export function FollowUpOnboardingNote() {
   return (
-    <Panel className="max-w-xl px-6 py-6">
-      <p className={labelClass}>Voice examples</p>
-      <p className="text-sm text-silver">
+    <Card className="max-w-xl">
+      <h2 className={cardTitle}>Voice examples</h2>
+      <p className="mt-1.5 text-sm leading-relaxed text-silver">
         Follow-up drafts copy messages this business has actually sent. Paste two to five real
         examples on the Follow-up tab as part of setup — they matter more than formality sliders.
       </p>
-      <div className="mt-4">
-        <Link href="/app/settings/follow-up" className={`${btnPrimary} ${btnSizeSm}`}>
-          Add voice examples
-        </Link>
+      <div className="mt-5">
+        <Button asChild variant="secondary" size="sm">
+          <Link href="/app/settings/follow-up">Add voice examples</Link>
+        </Button>
       </div>
-    </Panel>
+    </Card>
   );
 }

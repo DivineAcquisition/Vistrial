@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 
 import { switchOrg } from "@/lib/auth/actions";
 import { useOrg } from "@/components/app/org-provider";
-import { selectClass } from "@/lib/ui";
+import { Select } from "@/components/ui/select";
 
 export function OrgSwitcher() {
   const { org, memberships } = useOrg();
@@ -21,10 +21,10 @@ export function OrgSwitcher() {
   }
 
   return (
-    <label className="block px-2">
-      <span className="sr-only">Switch organization</span>
-      <select
-        className={selectClass}
+    <div className="px-2">
+      <Select
+        aria-label="Switch organization"
+        className="h-9 min-h-9 py-1.5 text-[13px]"
         value={org.id}
         disabled={pending}
         onChange={(event) => {
@@ -40,7 +40,7 @@ export function OrgSwitcher() {
             {membership.org.name}
           </option>
         ))}
-      </select>
-    </label>
+      </Select>
+    </div>
   );
 }

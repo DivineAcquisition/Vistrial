@@ -11,6 +11,7 @@ import {
 } from "@/app/app/settings/scoring/actions";
 import type { SettingsSaveResult } from "@/app/app/settings/types";
 import { Panel } from "@/components/ui/panel";
+import { Select } from "@/components/ui/select";
 import { overrideLeadScore } from "@/lib/scoring/override";
 import { computeReadinessScore, FACTOR_LABELS, SCORE_FACTORS, type ScoreWeights } from "@/lib/scoring/compute";
 import { extractFactors, type ScoreFieldMap } from "@/lib/scoring/extract";
@@ -23,7 +24,6 @@ import {
   helperClass,
   inputClass,
   labelClass,
-  selectClass,
 } from "@/lib/ui";
 
 export type ScoringLeadOption = {
@@ -238,9 +238,9 @@ export function ScoringSettings({ config, maps: initialMaps, leads, lastGhostRun
               <label className={labelClass} htmlFor="preview-lead">
                 Lead
               </label>
-              <select
+              <Select
                 id="preview-lead"
-                className={selectClass}
+                
                 value={previewLeadId}
                 onChange={(event) => setPreviewLeadId(event.target.value)}
               >
@@ -249,7 +249,7 @@ export function ScoringSettings({ config, maps: initialMaps, leads, lastGhostRun
                     {lead.name}
                   </option>
                 ))}
-              </select>
+              </Select>
             </div>
             {previewLead && pendingScore ? (
               <dl className="mt-4 grid gap-3 sm:grid-cols-3">
@@ -317,9 +317,9 @@ export function ScoringSettings({ config, maps: initialMaps, leads, lastGhostRun
                   <label className={labelClass} htmlFor={`factor-${map.id}`}>
                     Factor
                   </label>
-                  <select
+                  <Select
                     id={`factor-${map.id}`}
-                    className={selectClass}
+                    
                     value={map.factor}
                     onChange={(event) => {
                       const factor = event.target.value as ScoreFieldMap["factor"];
@@ -335,7 +335,7 @@ export function ScoringSettings({ config, maps: initialMaps, leads, lastGhostRun
                         {FACTOR_LABELS[factor]}
                       </option>
                     ))}
-                  </select>
+                  </Select>
                 </div>
                 <button
                   type="button"
@@ -349,8 +349,8 @@ export function ScoringSettings({ config, maps: initialMaps, leads, lastGhostRun
               <div className="mt-4 space-y-2">
                 {map.rules.map((rule, ruleIndex) => (
                   <div key={rule.id} className="grid gap-2 sm:grid-cols-[120px_1fr_1fr_88px_auto] sm:items-end">
-                    <select
-                      className={selectClass}
+                    <Select
+                      
                       value={rule.kind}
                       onChange={(event) => {
                         const kind = event.target.value as "choice" | "range";
@@ -378,7 +378,7 @@ export function ScoringSettings({ config, maps: initialMaps, leads, lastGhostRun
                     >
                       <option value="choice">Choice</option>
                       <option value="range">Range</option>
-                    </select>
+                    </Select>
                     {rule.kind === "choice" ? (
                       <input
                         className={inputClass}
@@ -602,13 +602,13 @@ export function ScoringSettings({ config, maps: initialMaps, leads, lastGhostRun
               <label className={labelClass} htmlFor="override-lead">
                 Lead
               </label>
-              <select id="override-lead" name="lead_id" required className={selectClass} defaultValue={leads[0]?.id}>
+              <Select id="override-lead" name="lead_id" required  defaultValue={leads[0]?.id}>
                 {leads.map((lead) => (
                   <option key={lead.id} value={lead.id}>
                     {lead.name}
                   </option>
                 ))}
-              </select>
+              </Select>
             </div>
             <div className="grid gap-3 sm:grid-cols-2">
               {SCORE_FACTORS.map((factor) => (

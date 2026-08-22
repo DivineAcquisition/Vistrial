@@ -8,6 +8,7 @@ import {
   moveActivationTimestamp,
 } from "@/app/app/settings/business-profile/actions";
 import type { SettingsSaveResult } from "@/app/app/settings/types";
+import { Checkbox } from "@/components/ui/checkbox";
 import { DefinitionList, KeyValue } from "@/components/ui/definition-list";
 import { Panel } from "@/components/ui/panel";
 import { StatusBadge } from "@/components/ui/status-badge";
@@ -207,12 +208,7 @@ export function ActivationGate({
             </p>
             {activation.warnings.map((warning) => (
               <label key={warning.key} className="flex items-start gap-3 text-sm text-white">
-                <input
-                  type="checkbox"
-                  name="acknowledge"
-                  value={warning.key}
-                  className="mt-1 h-4 w-4 rounded border-white/20 bg-white/[0.04]"
-                />
+                <Checkbox name="acknowledge" value={warning.key} className="mt-0.5" />
                 <span>
                   {warning.label}
                   <span className="block text-dim">{warning.detail}</span>

@@ -13,6 +13,7 @@ import {
   retryFollowUpSend,
   saveFollowUpEdit,
 } from "@/app/app/follow-ups/actions";
+import { Checkbox } from "@/components/ui/checkbox";
 import { DefinitionList, KeyValue } from "@/components/ui/definition-list";
 import { Panel } from "@/components/ui/panel";
 import { SectionHeader } from "@/components/ui/section-header";
@@ -304,9 +305,8 @@ export function FollowUpReviewScreen({ initial }: { initial: FollowUpReviewPaylo
               </DefinitionList>
               {draft.lowConfidence ? (
                 <label className="flex items-start gap-2 text-sm text-silver">
-                  <input
-                    type="checkbox"
-                    className="mt-1"
+                  <Checkbox
+                    className="mt-0.5"
                     checked={confirmLowConfidence}
                     disabled={busy}
                     onChange={(event) => setConfirmLowConfidence(event.target.checked)}

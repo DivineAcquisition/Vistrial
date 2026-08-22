@@ -1,67 +1,140 @@
-import * as React from "react"
-import { cva, type VariantProps } from "class-variance-authority"
-import { Slot } from "radix-ui"
+import * as React from "react";
+import { Slot } from "radix-ui";
+import { Loader2 } from "lucide-react";
 
-import { cn } from "@/lib/utils"
+import { cn } from "@/lib/utils";
+import {
+  btnDestructive,
+  btnGhost,
+  btnGradient,
+  btnIconLg,
+  btnIconMd,
+  btnIconSm,
+  btnLink,
+  btnOutline,
+  btnPrimary,
+  btnSecondary,
+  btnSizeLg,
+  btnSizeMd,
+  btnSizeSm,
+} from "@/lib/ui";
 
-const buttonVariants = cva(
-  "group/button inline-flex shrink-0 items-center justify-center rounded-lg border border-transparent bg-clip-padding text-sm font-medium whitespace-nowrap transition-all outline-none select-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 active:not-aria-[haspopup]:translate-y-px disabled:pointer-events-none disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-3 aria-invalid:ring-destructive/20 dark:aria-invalid:border-destructive/50 dark:aria-invalid:ring-destructive/40 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
-  {
-    variants: {
-      variant: {
-        default: "bg-primary text-primary-foreground hover:bg-primary/80",
-        outline:
-          "border-border bg-background hover:bg-muted hover:text-foreground aria-expanded:bg-muted aria-expanded:text-foreground dark:border-input dark:bg-input/30 dark:hover:bg-input/50",
-        secondary:
-          "bg-secondary text-secondary-foreground hover:bg-[color-mix(in_oklch,var(--secondary),var(--foreground)_5%)] aria-expanded:bg-secondary aria-expanded:text-secondary-foreground",
-        ghost:
-          "hover:bg-muted hover:text-foreground aria-expanded:bg-muted aria-expanded:text-foreground dark:hover:bg-muted/50",
-        destructive:
-          "bg-destructive/10 text-destructive hover:bg-destructive/20 focus-visible:border-destructive/40 focus-visible:ring-destructive/20 dark:bg-destructive/20 dark:hover:bg-destructive/30 dark:focus-visible:ring-destructive/40",
-        link: "text-primary underline-offset-4 hover:underline",
-      },
-      size: {
-        default:
-          "h-8 gap-1.5 px-2.5 has-data-[icon=inline-end]:pr-2 has-data-[icon=inline-start]:pl-2",
-        xs: "h-6 gap-1 rounded-[min(var(--radius-md),10px)] px-2 text-xs in-data-[slot=button-group]:rounded-lg has-data-[icon=inline-end]:pr-1.5 has-data-[icon=inline-start]:pl-1.5 [&_svg:not([class*='size-'])]:size-3",
-        sm: "h-7 gap-1 rounded-[min(var(--radius-md),12px)] px-2.5 text-[0.8rem] in-data-[slot=button-group]:rounded-lg has-data-[icon=inline-end]:pr-1.5 has-data-[icon=inline-start]:pl-1.5 [&_svg:not([class*='size-'])]:size-3.5",
-        lg: "h-9 gap-1.5 px-2.5 has-data-[icon=inline-end]:pr-2 has-data-[icon=inline-start]:pl-2",
-        icon: "size-8",
-        "icon-xs":
-          "size-6 rounded-[min(var(--radius-md),10px)] in-data-[slot=button-group]:rounded-lg [&_svg:not([class*='size-'])]:size-3",
-        "icon-sm":
-          "size-7 rounded-[min(var(--radius-md),12px)] in-data-[slot=button-group]:rounded-lg",
-        "icon-lg": "size-9",
-      },
-    },
-    defaultVariants: {
-      variant: "default",
-      size: "default",
-    },
-  }
-)
+export type ButtonVariant =
+  | "primary"
+  | "gradient"
+  | "secondary"
+  | "outline"
+  | "ghost"
+  | "destructive"
+  | "link";
 
-function Button({
+export type ButtonSize = "sm" | "md" | "lg";
+
+const VARIANTS: Record<ButtonVariant, string> = {
+  primary: btnPrimary,
+  gradient: btnGradient,
+  secondary: btnSecondary,
+  outline: btnOutline,
+  ghost: btnGhost,
+  destructive: btnDestructive,
+  link: btnLink,
+};
+
+const SIZES: Record<ButtonSize, string> = {
+  sm: btnSizeSm,
+  md: btnSizeMd,
+  lg: btnSizeLg,
+};
+
+const ICON_SIZES: Record<ButtonSize, string> = {
+  sm: btnIconSm,
+  md: btnIconMd,
+  lg: btnIconLg,
+};
+
+type BaseProps = {
+  variant?: ButtonVariant;
+  size?: ButtonSize;
+  /** Square, for a control whose whole label is its icon. */
+  iconOnly?: boolean;
+  /** Swaps the label for a spinner and blocks a second submit. */
+  loading?: boolean;
+  /** Read out while loading, so the change is not silent to a screen reader. */
+  loadingLabel?: string;
+  asChild?: boolean;
+};
+
+export type ButtonProps = React.ComponentProps<"button"> & BaseProps;
+
+export function buttonClasses({
+  variant = "secondary",
+  size = "md",
+  iconOnly = false,
   className,
-  variant = "default",
-  size = "default",
+}: BaseProps & { className?: string }): string {
+  if (variant === "link") return cn(btnLink, className);
+  return cn(VARIANTS[variant], iconOnly ? ICON_SIZES[size] : SIZES[size], className);
+}
+
+/**
+ * The one button.
+ *
+ * `iconOnly` deliberately has no visible label, so it requires `aria-label`.
+ * Wrap it in a `Tooltip` as well wherever the icon is not universally read.
+ */
+export function Button({
+  className,
+  variant = "secondary",
+  size = "md",
+  iconOnly = false,
+  loading = false,
+  loadingLabel = "Working",
   asChild = false,
+  disabled,
+  children,
+  type,
   ...props
-}: React.ComponentProps<"button"> &
-  VariantProps<typeof buttonVariants> & {
-    asChild?: boolean
-  }) {
-  const Comp = asChild ? Slot.Root : "button"
+}: ButtonProps) {
+  const Comp = asChild ? Slot.Root : "button";
 
   return (
     <Comp
       data-slot="button"
       data-variant={variant}
       data-size={size}
-      className={cn(buttonVariants({ variant, size, className }))}
+      data-loading={loading ? "true" : undefined}
+      className={buttonClasses({ variant, size, iconOnly, className })}
+      disabled={asChild ? undefined : disabled || loading}
+      aria-busy={loading || undefined}
+      type={asChild ? undefined : (type ?? "button")}
       {...props}
-    />
-  )
+    >
+      {loading ? (
+        <>
+          <Loader2 className="size-4 animate-spin" aria-hidden />
+          {iconOnly ? <span className="sr-only">{loadingLabel}</span> : <span>{loadingLabel}…</span>}
+        </>
+      ) : (
+        children
+      )}
+    </Comp>
+  );
 }
 
-export { Button, buttonVariants }
+/**
+ * A button that submits the form it sits in and shows the pending state from
+ * `useActionState`. Saves every form repeating the same three props.
+ */
+export function SubmitButton({
+  pending = false,
+  children,
+  variant = "primary",
+  loadingLabel = "Saving",
+  ...props
+}: Omit<ButtonProps, "type"> & { pending?: boolean }) {
+  return (
+    <Button type="submit" variant={variant} loading={pending} loadingLabel={loadingLabel} {...props}>
+      {children}
+    </Button>
+  );
+}

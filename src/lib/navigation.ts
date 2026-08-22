@@ -2,25 +2,53 @@ import type { OrgRole } from "@/types/database";
 
 import { canManageOrgSettings } from "@/lib/auth/permissions";
 
+/**
+ * Navigation groups. The items and their labels are unchanged; the grouping
+ * only gives the sidebar a heading above each band so a new setter can tell
+ * the working screens from the reporting and configuration ones.
+ *
+ * Icons are named rather than imported so this stays a data module that server
+ * code can read without pulling an icon library in with it.
+ */
+export type NavGroupId = "work" | "measure" | "configure";
+
+export const NAV_GROUPS: Array<{ id: NavGroupId; label: string }> = [
+  { id: "work", label: "Work" },
+  { id: "measure", label: "Measure" },
+  { id: "configure", label: "Configure" },
+];
+
+export type NavIcon = "queue" | "cases" | "calls" | "reporting" | "settings";
+
 export type NavItem = {
   href: string;
   label: string;
   /** Prefix used for active-state, including nested routes. */
   match: string;
+  group: NavGroupId;
+  icon: NavIcon;
   roles?: OrgRole[];
 };
 
 export const PRIMARY_NAV: NavItem[] = [
-  { href: "/app/queue", label: "Queue", match: "/app/queue" },
-  { href: "/app/cases", label: "Case Files", match: "/app/cases" },
-  { href: "/app/calls", label: "Calls", match: "/app/calls" },
+  { href: "/app/queue", label: "Queue", match: "/app/queue", group: "work", icon: "queue" },
+  { href: "/app/cases", label: "Case Files", match: "/app/cases", group: "work", icon: "cases" },
+  { href: "/app/calls", label: "Calls", match: "/app/calls", group: "work", icon: "calls" },
   {
     href: "/app/reporting",
     label: "Reporting",
     match: "/app/reporting",
+    group: "measure",
+    icon: "reporting",
     roles: ["owner", "admin"],
   },
-  { href: "/app/settings", label: "Settings", match: "/app/settings" },
+  {
+    href: "/app/settings",
+    label: "Settings",
+    match: "/app/settings",
+    group: "configure",
+    icon: "settings",
+  },
 ];
 
 export function navVisibleTo(item: NavItem, role: OrgRole, isPlatformAdmin = false): boolean {

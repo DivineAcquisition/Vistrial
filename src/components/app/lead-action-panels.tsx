@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 
+import { Select } from "@/components/ui/select";
 import { canAssignLeads } from "@/lib/auth/permissions";
 import {
   TOUCH_CHANNEL_LABELS,
@@ -23,7 +24,6 @@ import {
   helperClass,
   inputClass,
   labelClass,
-  selectClass,
 } from "@/lib/ui";
 import type { OrgRole } from "@/types/database";
 
@@ -97,8 +97,8 @@ export function OutcomePanel({
       <div className="mt-4 grid gap-4 sm:grid-cols-3">
         <label className="block">
           <span className={labelClass}>Channel</span>
-          <select
-            className={selectClass}
+          <Select
+            
             value={channel}
             onChange={(event) => setChannel(event.target.value as TouchChannel)}
           >
@@ -107,12 +107,12 @@ export function OutcomePanel({
                 {TOUCH_CHANNEL_LABELS[value]}
               </option>
             ))}
-          </select>
+          </Select>
         </label>
         <label className="block">
           <span className={labelClass}>Direction</span>
-          <select
-            className={selectClass}
+          <Select
+            
             value={direction}
             onChange={(event) => setDirection(event.target.value as TouchDirection)}
           >
@@ -121,13 +121,13 @@ export function OutcomePanel({
                 {value === "outbound" ? "Outbound" : "Inbound"}
               </option>
             ))}
-          </select>
+          </Select>
         </label>
         {canPickActor ? (
           <label className="block">
             <span className={labelClass}>Actor</span>
-            <select
-              className={selectClass}
+            <Select
+              
               value={actorMemberId}
               onChange={(event) => setActorMemberId(event.target.value)}
             >
@@ -136,7 +136,7 @@ export function OutcomePanel({
                   {member.displayName}
                 </option>
               ))}
-            </select>
+            </Select>
           </label>
         ) : (
           <p className="self-end text-sm text-dim">Logged as you</p>
@@ -305,7 +305,7 @@ function AssignmentSelect({
   return (
     <label className="block">
       <span className={labelClass}>{label}</span>
-      <select className={selectClass} value={value} onChange={(event) => onChange(event.target.value)}>
+      <Select  value={value} onChange={(event) => onChange(event.target.value)}>
         {canOthers || !currentId ? <option value="">Unassigned</option> : null}
         {!canOthers && keepCurrent ? (
           <option value={currentId ?? ""}>{currentName || "Currently assigned"}</option>
@@ -319,7 +319,7 @@ function AssignmentSelect({
           : self ? (
               <option value={self.id}>{self.displayName}</option>
             ) : null}
-      </select>
+      </Select>
     </label>
   );
 }

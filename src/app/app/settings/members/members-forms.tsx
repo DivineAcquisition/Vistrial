@@ -10,7 +10,8 @@ import {
   type MemberActionResult,
 } from "@/app/app/settings/members/actions";
 import type { OrgRole } from "@/types/database";
-import { btnPrimary, btnSecondary, btnSizeSm, errorClass, helperClass, inputClass, labelClass, selectClass } from "@/lib/ui";
+import { Select } from "@/components/ui/select";
+import { btnPrimary, btnSecondary, btnSizeSm, errorClass, helperClass, inputClass, labelClass } from "@/lib/ui";
 
 const initialInvite: MemberActionResult = { ok: true };
 
@@ -38,11 +39,11 @@ export function InviteForm() {
           <label htmlFor="invite-role" className={labelClass}>
             Role
           </label>
-          <select id="invite-role" name="role" className={selectClass} defaultValue="setter">
+          <Select id="invite-role" name="role"  defaultValue="setter">
             <option value="setter">Setter</option>
             <option value="closer">Closer</option>
             <option value="admin">Admin</option>
-          </select>
+          </Select>
         </div>
         <button type="submit" disabled={pending} className={`${btnPrimary} ${btnSizeSm}`}>
           {pending ? "Creating…" : "Create invite"}
@@ -78,8 +79,8 @@ export function MemberRoleSelect({
 
   return (
     <div>
-      <select
-        className={selectClass}
+      <Select
+        
         defaultValue={role}
         disabled={disabled || pending}
         onChange={(event) => {
@@ -94,7 +95,7 @@ export function MemberRoleSelect({
         <option value="admin">Admin</option>
         <option value="closer">Closer</option>
         <option value="setter">Setter</option>
-      </select>
+      </Select>
       {error ? <p className={errorClass}>{error}</p> : null}
     </div>
   );

@@ -25,6 +25,7 @@ import {
 import { AssignPanel, FollowOnPanel, OutcomePanel } from "@/components/app/lead-action-panels";
 import { useOrg } from "@/components/app/org-provider";
 import { DefinitionList, KeyValue } from "@/components/ui/definition-list";
+import { Select } from "@/components/ui/select";
 import { Panel } from "@/components/ui/panel";
 import { SectionHeader } from "@/components/ui/section-header";
 import { StatusBadge } from "@/components/ui/status-badge";
@@ -68,7 +69,6 @@ import {
   helperClass,
   inputClass,
   labelClass,
-  selectClass,
 } from "@/lib/ui";
 
 type PanelKind = "outcome" | "assign" | "override" | "status" | "createAction" | null;
@@ -702,8 +702,8 @@ function NextActionBlock({
       <div className="mt-3 flex flex-wrap items-end gap-2">
         <label>
           <span className={labelClass}>Owner</span>
-          <select
-            className={selectClass}
+          <Select
+            
             value={ownerId}
             onChange={(event) => setOwnerId(event.target.value)}
           >
@@ -713,7 +713,7 @@ function NextActionBlock({
                 {member.displayName}
               </option>
             ))}
-          </select>
+          </Select>
         </label>
         <button
           type="button"
@@ -974,8 +974,8 @@ function StatusPanel({
       </p>
       <label className="mt-4 block">
         <span className={labelClass}>Status</span>
-        <select
-          className={selectClass}
+        <Select
+          
           value={status}
           onChange={(event) => setStatus(event.target.value as Exclude<LeadStatus, "closed_won">)}
         >
@@ -984,7 +984,7 @@ function StatusPanel({
               {LEAD_STATUS_LABELS[value]}
             </option>
           ))}
-        </select>
+        </Select>
       </label>
       <label className="mt-4 block">
         <span className={labelClass}>Why</span>

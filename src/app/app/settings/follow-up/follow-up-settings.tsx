@@ -13,7 +13,9 @@ import {
   updateVoiceProfile,
 } from "@/app/app/settings/follow-up/actions";
 import type { SettingsSaveResult } from "@/app/app/settings/types";
+import { Checkbox, CheckboxField } from "@/components/ui/checkbox";
 import { Panel } from "@/components/ui/panel";
+import { Select } from "@/components/ui/select";
 import { SectionHeader } from "@/components/ui/section-header";
 import { MIN_VOICE_EXAMPLES } from "@/lib/follow-up/constants";
 import { FOLLOW_UP_BRANCH_LABELS, FOLLOW_UP_CHANNEL_LABELS } from "@/lib/follow-up/labels";
@@ -27,7 +29,6 @@ import {
   helperClass,
   inputClass,
   labelClass,
-  selectClass,
 } from "@/lib/ui";
 
 const idle: SettingsSaveResult = { status: "idle" };
@@ -140,15 +141,15 @@ export function FollowUpSettingsScreen({
                 <label htmlFor="example-channel" className={labelClass}>
                   Channel
                 </label>
-                <select
+                <Select
                   id="example-channel"
-                  className={selectClass}
+                  
                   value={exampleChannel}
                   onChange={(event) => setExampleChannel(event.target.value as "sms" | "email")}
                 >
                   <option value="sms">SMS</option>
                   <option value="email">Email</option>
-                </select>
+                </Select>
               </div>
               <button
                 type="button"
@@ -177,23 +178,26 @@ export function FollowUpSettingsScreen({
               <label htmlFor="formality" className={labelClass}>
                 Formality
               </label>
-              <select id="formality" name="formality" className={selectClass} defaultValue={voice.formality}>
+              <Select id="formality" name="formality" defaultValue={voice.formality}>
                 <option value="casual">Casual</option>
                 <option value="professional">Professional</option>
-              </select>
+              </Select>
             </div>
-            <label className="flex items-center gap-2 text-sm text-silver">
-              <input type="checkbox" name="use_contractions" defaultChecked={voice.useContractions} />
-              Use contractions
-            </label>
-            <label className="flex items-center gap-2 text-sm text-silver">
-              <input type="checkbox" name="use_greeting" defaultChecked={voice.useGreeting} />
-              Use a greeting
-            </label>
-            <label className="flex items-center gap-2 text-sm text-silver">
-              <input type="checkbox" name="use_signoff" defaultChecked={voice.useSignoff} />
-              Use a sign-off
-            </label>
+            <CheckboxField
+              name="use_contractions"
+              defaultChecked={voice.useContractions}
+              label="Use contractions"
+            />
+            <CheckboxField
+              name="use_greeting"
+              defaultChecked={voice.useGreeting}
+              label="Use a greeting"
+            />
+            <CheckboxField
+              name="use_signoff"
+              defaultChecked={voice.useSignoff}
+              label="Use a sign-off"
+            />
             <div>
               <label htmlFor="greeting_text" className={labelClass}>
                 Greeting text
@@ -228,11 +232,11 @@ export function FollowUpSettingsScreen({
               <label htmlFor="emoji_usage" className={labelClass}>
                 Emoji
               </label>
-              <select id="emoji_usage" name="emoji_usage" className={selectClass} defaultValue={voice.emojiUsage}>
+              <Select id="emoji_usage" name="emoji_usage"  defaultValue={voice.emojiUsage}>
                 <option value="never">Never</option>
                 <option value="sparing">Sparing</option>
                 <option value="natural">Natural</option>
-              </select>
+              </Select>
             </div>
             <div>
               <label htmlFor="banned_words" className={labelClass}>
@@ -258,10 +262,11 @@ export function FollowUpSettingsScreen({
         <SectionHeader title="Policy" hint="Quiet hours default on. Sequence caps cannot be removed." />
         <Panel className="max-w-xl px-6 py-6">
           <form action={savePolicy} className="space-y-4">
-            <label className="flex items-center gap-2 text-sm text-silver">
-              <input type="checkbox" name="quiet_hours_enabled" defaultChecked={settings.quietHoursEnabled} />
-              Respect quiet hours
-            </label>
+            <CheckboxField
+              name="quiet_hours_enabled"
+              defaultChecked={settings.quietHoursEnabled}
+              label="Respect quiet hours"
+            />
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <label htmlFor="quiet_hours_start" className={labelClass}>
@@ -340,8 +345,7 @@ export function FollowUpSettingsScreen({
           {rules.map((rule, index) => (
             <div key={`${rule.priority}-${index}`} className="border-t border-white/[0.05] pt-4 first:border-t-0 first:pt-0">
               <label className="flex items-center gap-2 text-sm text-white">
-                <input
-                  type="checkbox"
+                <Checkbox
                   checked={rule.enabled}
                   onChange={(event) => {
                     const next = [...rules];
@@ -354,8 +358,8 @@ export function FollowUpSettingsScreen({
               <div className="mt-3 grid gap-3 sm:grid-cols-2">
                 <div>
                   <p className={labelClass}>Channel</p>
-                  <select
-                    className={selectClass}
+                  <Select
+                    
                     value={rule.channel}
                     onChange={(event) => {
                       const next = [...rules];
@@ -365,7 +369,7 @@ export function FollowUpSettingsScreen({
                   >
                     <option value="sms">SMS</option>
                     <option value="email">Email</option>
-                  </select>
+                  </Select>
                 </div>
                 <div>
                   <p className={labelClass}>Sequence delays (hours)</p>

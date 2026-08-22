@@ -16,6 +16,7 @@ import {
 } from "@/app/app/settings/integrations/actions";
 import type { SettingsSaveResult } from "@/app/app/settings/types";
 import { DataTable } from "@/components/ui/data-table";
+import { Select } from "@/components/ui/select";
 import { Panel } from "@/components/ui/panel";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { formatRelative } from "@/lib/format";
@@ -30,7 +31,6 @@ import {
   helperClass,
   inputClass,
   labelClass,
-  selectClass,
 } from "@/lib/ui";
 import type { Tone } from "@/components/ui/tone";
 
@@ -219,7 +219,7 @@ export function IntegrationSettings(props: IntegrationSettingsProps) {
               <label className={labelClass} htmlFor="location_id">
                 Location
               </label>
-              <select id="location_id" name="location_id" required className={selectClass} defaultValue="">
+              <Select id="location_id" name="location_id" required  defaultValue="">
                 <option value="" disabled>
                   Select a location
                 </option>
@@ -228,7 +228,7 @@ export function IntegrationSettings(props: IntegrationSettingsProps) {
                     {location.name}
                   </option>
                 ))}
-              </select>
+              </Select>
             </div>
             <button type="submit" className={`${btnPrimary} ${btnSizeMd}`} disabled={locating}>
               {locating ? "Linking…" : "Link location"}
@@ -438,8 +438,8 @@ export function IntegrationSettings(props: IntegrationSettingsProps) {
               {props.customFields.length > 0 ? (
                 <div>
                   <label className={labelClass}>GHL field</label>
-                  <select
-                    className={selectClass}
+                  <Select
+                    
                     value={map.ghlFieldId}
                     onChange={(event) => {
                       const option = props.customFields.find((field) => field.id === event.target.value);
@@ -462,7 +462,7 @@ export function IntegrationSettings(props: IntegrationSettingsProps) {
                         {field.name}
                       </option>
                     ))}
-                  </select>
+                  </Select>
                 </div>
               ) : (
                 <div>
@@ -650,8 +650,8 @@ export function IntegrationSettings(props: IntegrationSettingsProps) {
               who: row.participantEmails.join(", ") || "—",
               action: (
                 <div className="flex flex-wrap items-center gap-2">
-                  <select
-                    className={selectClass}
+                  <Select
+                    
                     value={assignCallId[row.id] ?? ""}
                     onChange={(event) =>
                       setAssignCallId((current) => ({ ...current, [row.id]: event.target.value }))
@@ -663,7 +663,7 @@ export function IntegrationSettings(props: IntegrationSettingsProps) {
                         {call.label}
                       </option>
                     ))}
-                  </select>
+                  </Select>
                   <button
                     type="button"
                     className={`${btnPrimary} ${btnSizeSm}`}

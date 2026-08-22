@@ -14,7 +14,8 @@ import {
 } from "@/lib/cases/types";
 import { LEAD_STATUS_LABELS, LEAD_STATUSES } from "@/lib/leads/labels";
 import type { QueueMemberOption } from "@/lib/queue/types";
-import { btnSecondary, btnSizeSm, filterLabel, inputClass, selectClass } from "@/lib/ui";
+import { Select } from "@/components/ui/select";
+import { btnSecondary, btnSizeSm, filterLabel, inputClass } from "@/lib/ui";
 
 const SORT_LABELS: Record<CaseSort, string> = {
   last_touch: "Last touch",
@@ -63,8 +64,8 @@ export function CasesFilters({
       </div>
       <label className="block">
         <span className={filterLabel}>Status</span>
-        <select
-          className={selectClass}
+        <Select
+          
           value={filters.status ?? ""}
           onChange={(event) =>
             apply({ status: event.target.value ? (event.target.value as CaseListFilters["status"]) : null })
@@ -76,12 +77,12 @@ export function CasesFilters({
               {LEAD_STATUS_LABELS[status]}
             </option>
           ))}
-        </select>
+        </Select>
       </label>
       <label className="block">
         <span className={filterLabel}>Track</span>
-        <select
-          className={selectClass}
+        <Select
+          
           value={filters.track ?? ""}
           onChange={(event) =>
             apply({ track: (event.target.value || null) as CaseTrackFilter | null })
@@ -93,12 +94,12 @@ export function CasesFilters({
               {track === "ready" ? "Ready" : "Nurture"}
             </option>
           ))}
-        </select>
+        </Select>
       </label>
       <label className="block">
         <span className={filterLabel}>Source</span>
-        <select
-          className={selectClass}
+        <Select
+          
           value={filters.source ?? ""}
           onChange={(event) => apply({ source: event.target.value || null })}
         >
@@ -108,7 +109,7 @@ export function CasesFilters({
               {source}
             </option>
           ))}
-        </select>
+        </Select>
       </label>
       <label className="block">
         <span className={filterLabel}>Score min</span>
@@ -144,8 +145,8 @@ export function CasesFilters({
       </label>
       <label className="block">
         <span className={filterLabel}>Setter</span>
-        <select
-          className={selectClass}
+        <Select
+          
           value={filters.setterId ?? ""}
           onChange={(event) => apply({ setterId: event.target.value || null })}
         >
@@ -155,12 +156,12 @@ export function CasesFilters({
               {member.displayName}
             </option>
           ))}
-        </select>
+        </Select>
       </label>
       <label className="block">
         <span className={filterLabel}>Closer</span>
-        <select
-          className={selectClass}
+        <Select
+          
           value={filters.closerId ?? ""}
           onChange={(event) => apply({ closerId: event.target.value || null })}
         >
@@ -170,7 +171,7 @@ export function CasesFilters({
               {member.displayName}
             </option>
           ))}
-        </select>
+        </Select>
       </label>
       <label className="block">
         <span className={filterLabel}>Opted in from</span>
@@ -192,8 +193,8 @@ export function CasesFilters({
       </label>
       <label className="block">
         <span className={filterLabel}>Sort</span>
-        <select
-          className={selectClass}
+        <Select
+          
           value={filters.sort}
           onChange={(event) => apply({ sort: event.target.value as CaseSort, dir: "desc" })}
         >
@@ -202,18 +203,18 @@ export function CasesFilters({
               {SORT_LABELS[sort]}
             </option>
           ))}
-        </select>
+        </Select>
       </label>
       <label className="block">
         <span className={filterLabel}>Direction</span>
-        <select
-          className={selectClass}
+        <Select
+          
           value={filters.dir}
           onChange={(event) => apply({ dir: event.target.value as CaseSortDir })}
         >
           <option value="desc">Newest / highest first</option>
           <option value="asc">Oldest / lowest first</option>
-        </select>
+        </Select>
       </label>
     </form>
   );

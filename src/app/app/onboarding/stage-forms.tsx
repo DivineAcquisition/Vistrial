@@ -13,6 +13,7 @@ import {
   TextField,
 } from "@/app/app/onboarding/fields";
 import { saveOnboardingStage, type OnboardingResult } from "@/app/app/onboarding/actions";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Panel } from "@/components/ui/panel";
 import { STAGE_META, type ProfileStage } from "@/lib/profile/stages";
 import type { ProfileDefaults } from "@/lib/profile/types";
@@ -420,11 +421,10 @@ function StageBody({ stage, defaults }: { stage: ProfileStage; defaults: Profile
           </p>
           <div>
             <label className="flex items-start gap-3 text-sm text-white">
-              <input
-                type="checkbox"
+              <Checkbox
                 name="aggregate_opt_out"
                 defaultChecked={defaults.aggregate_opt_out?.value === true}
-                className="mt-0.5 h-4 w-4 rounded border-white/20 bg-white/[0.04]"
+                className="mt-0.5"
               />
               <span>
                 Keep my data out of the anonymized patterns.

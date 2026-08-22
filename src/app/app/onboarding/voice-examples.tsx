@@ -8,6 +8,7 @@ import {
 } from "@/app/app/onboarding/actions";
 import type { SettingsSaveResult } from "@/app/app/settings/types";
 import { Panel } from "@/components/ui/panel";
+import { Select } from "@/components/ui/select";
 import { StatusBadge } from "@/components/ui/status-badge";
 import {
   btnPrimary,
@@ -18,7 +19,6 @@ import {
   helperClass,
   inputClass,
   labelClass,
-  selectClass,
 } from "@/lib/ui";
 
 const idle: SettingsSaveResult = { status: "idle" };
@@ -95,10 +95,10 @@ export function VoiceExamples({
             <label className={labelClass} htmlFor="voice_example_channel">
               Sent as
             </label>
-            <select id="voice_example_channel" name="channel" className={selectClass} defaultValue="sms">
+            <Select id="voice_example_channel" name="channel"  defaultValue="sms">
               <option value="sms">Text message</option>
               <option value="email">Email</option>
-            </select>
+            </Select>
           </div>
           <button type="submit" className={`${btnPrimary} ${btnSizeMd}`} disabled={adding}>
             {adding ? "Adding…" : "Add this message"}

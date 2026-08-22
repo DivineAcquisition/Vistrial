@@ -29,15 +29,13 @@ The GitHub Preview check compares `supabase/migrations/` to
 must stay in lockstep; do not apply ad-hoc dashboard migrations that are missing
 from the repo.
 
-> **The hosted project has drifted.** It carries a migration `20260822010000_onboarding`
-> that exists nowhere in this repo, and with it the tables `org_onboarding`,
-> `golive_runs`, `activation_events`, `activation_timestamp_changes` and
-> `staff_access_log`. Nothing in the application reads any of them. They are a
-> different, uncommitted implementation of this prompt and they have to be
-> reconciled by hand before the next `db push`: either commit the migration that
-> created them or drop them. They do not collide with the tables in
-> `20260822120000_business_profile.sql`, so the two can coexist, but leaving both
-> in place means two parallel activation records with only one of them wired up.
+`20260822010000_onboarding` is in the repo because it already ran on this
+project. `20260823090000_reconcile_hosted_onboarding` drops the five tables
+that migration created (`org_onboarding`, `golive_runs`, `activation_events`,
+`activation_timestamp_changes`, `staff_access_log`) and the unused setup/DA
+functions. Activation is `activation_records` / `activate_org(uuid, uuid,
+activation_warning[])` from `20260822120000_business_profile`. The guard on
+`organizations.activated_at` stays; so does `leads.is_test`.
 
 Auth dashboard settings (email + password, magic link, invite-only sign-up,
 Site URL, `/auth/callback` redirects, 1-hour JWT) are documented in

@@ -2180,6 +2180,10 @@ BEGIN
 END;
 $$;
 
+-- Hosted already has skip_baseline_backfill(uuid, uuid) returning void from
+-- 20260822010000. CREATE OR REPLACE cannot change a return type.
+DROP FUNCTION IF EXISTS public.skip_baseline_backfill(uuid, uuid);
+
 CREATE OR REPLACE FUNCTION public.skip_baseline_backfill(
   p_org_id uuid,
   p_member_id uuid
@@ -2485,6 +2489,9 @@ BEGIN
     RAISE EXCEPTION 'unacknowledged warnings: %', v_unacked;
   END IF;
 
+  -- 20260822010000 installed organizations_guard_activated_at. Direct updates
+  -- are refused unless this session flag is set.
+  PERFORM set_config('vistrial.allow_activation_change', '1', true);
   UPDATE public.organizations SET activated_at = now() WHERE id = p_org_id
   RETURNING activated_at INTO v_at;
 
@@ -2539,6 +2546,7 @@ BEGIN
   INSERT INTO public.activation_changes (org_id, previous_at, new_at, reason, changed_by_member_id)
   VALUES (p_org_id, v_prev, p_new_at, trim(p_reason), p_member_id);
 
+  PERFORM set_config('vistrial.allow_activation_change', '1', true);
   UPDATE public.organizations SET activated_at = p_new_at WHERE id = p_org_id;
   UPDATE public.activation_records SET activated_at = p_new_at WHERE org_id = p_org_id;
 

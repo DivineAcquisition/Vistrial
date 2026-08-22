@@ -96,4 +96,7 @@ run "${ROOT}/supabase/tests/verify-reporting.sql"
 echo "Business profile checks..."
 run "${ROOT}/supabase/tests/verify-business-profile.sql"
 
-echo "OK: schema, seed, triggers, RLS, invite, scoring, GHL, platform-admin, queue, case-file, transcript, follow-up, integrity, reporting, and business-profile checks passed."
+echo "Onboarding reconcile checks..."
+run "${ROOT}/supabase/tests/verify-onboarding-reconcile.sql"
+
+echo "OK: schema, seed, triggers, RLS, invite, scoring, GHL, platform-admin, queue, case-file, transcript, follow-up, integrity, reporting, business-profile, and onboarding-reconcile checks passed."

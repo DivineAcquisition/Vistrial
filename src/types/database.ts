@@ -952,6 +952,7 @@ export type Database = {
           ghl_contact_id: string | null;
           ghl_opportunity_id: string | null;
           id: string;
+          is_test: boolean;
           last_name: string | null;
           last_touch_at: string | null;
           lead_type: Database["public"]["Enums"]["lead_type"] | null;
@@ -980,6 +981,7 @@ export type Database = {
           ghl_contact_id?: string | null;
           ghl_opportunity_id?: string | null;
           id?: string;
+          is_test?: boolean;
           last_name?: string | null;
           last_touch_at?: string | null;
           lead_type?: Database["public"]["Enums"]["lead_type"] | null;
@@ -1008,6 +1010,7 @@ export type Database = {
           ghl_contact_id?: string | null;
           ghl_opportunity_id?: string | null;
           id?: string;
+          is_test?: boolean;
           last_name?: string | null;
           last_touch_at?: string | null;
           lead_type?: Database["public"]["Enums"]["lead_type"] | null;

@@ -10,6 +10,7 @@ import {
   type MappingPayload,
 } from "@/app/app/settings/scoring/actions";
 import type { SettingsSaveResult } from "@/app/app/settings/types";
+import { SubmitButton } from "@/components/ui/button";
 import { Panel } from "@/components/ui/panel";
 import { Select } from "@/components/ui/select";
 import { overrideLeadScore } from "@/lib/scoring/override";
@@ -212,13 +213,9 @@ export function ScoringSettings({ config, maps: initialMaps, leads, lastGhostRun
           ) : null}
 
           <div className="sm:col-span-2">
-            <button
-              type="submit"
-              disabled={configPending || weightTotal !== 100}
-              className={`${btnPrimary} ${btnSizeMd}`}
-            >
-              {configPending ? "Saving…" : "Save weights and thresholds"}
-            </button>
+            <SubmitButton variant="primary" pending={configPending} loadingLabel="Saving" disabled={configPending || weightTotal !== 100}>
+            Save weights and thresholds
+          </SubmitButton>
           </div>
         </form>
       </Panel>

@@ -7,13 +7,12 @@ import {
   removeOnboardingVoiceExample,
 } from "@/app/app/onboarding/actions";
 import type { SettingsSaveResult } from "@/app/app/settings/types";
+import { SubmitButton } from "@/components/ui/button";
 import { Panel } from "@/components/ui/panel";
 import { Select } from "@/components/ui/select";
 import { StatusBadge } from "@/components/ui/status-badge";
 import {
-  btnPrimary,
   btnSecondary,
-  btnSizeMd,
   btnSizeSm,
   errorClass,
   helperClass,
@@ -100,9 +99,9 @@ export function VoiceExamples({
               <option value="email">Email</option>
             </Select>
           </div>
-          <button type="submit" className={`${btnPrimary} ${btnSizeMd}`} disabled={adding}>
-            {adding ? "Adding…" : "Add this message"}
-          </button>
+          <SubmitButton variant="primary" pending={adding} loadingLabel="Adding">
+            Add this message
+          </SubmitButton>
           {addState.status === "error" ? <p className={errorClass}>{addState.error}</p> : null}
         </form>
       ) : (

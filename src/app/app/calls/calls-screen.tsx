@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useState } from "react";
 
 import { refreshCallList } from "@/app/app/calls/actions";
+import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { StatusBadge } from "@/components/ui/status-badge";
 import {
@@ -113,14 +114,15 @@ export function CallsScreen({
         </Table>
       </div>
       {hasMore ? (
-        <button
-          type="button"
-          className={`${btnSecondary} ${btnSizeSm}`}
-          disabled={loadingMore}
-          onClick={() => void loadMore()}
-        >
-          {loadingMore ? "Loading…" : "Load more"}
-        </button>
+        <Button
+            variant="secondary"
+            size="sm"
+            loading={loadingMore}
+            loadingLabel="Loading"
+            onClick={() => void loadMore()}
+          >
+            Load more
+          </Button>
       ) : null}
     </div>
   );

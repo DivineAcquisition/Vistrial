@@ -8,12 +8,10 @@ import {
   skipBaselineBackfill,
   type ReportingActionResult,
 } from "@/app/app/reporting/actions";
+import { SubmitButton } from "@/components/ui/button";
 import { Panel } from "@/components/ui/panel";
 import { StatusBadge } from "@/components/ui/status-badge";
 import {
-  btnPrimary,
-  btnSecondary,
-  btnSizeMd,
   errorClass,
   helperClass,
   inputClass,
@@ -150,15 +148,15 @@ export function BaselineSettings(props: BaselineSettingsProps) {
       <div className="mt-6 flex flex-wrap gap-3">
         {canSkip ? (
           <form action={skipAction}>
-            <button type="submit" className={`${btnSecondary} ${btnSizeMd}`} disabled={skipping}>
-              {skipping ? "Skipping…" : "Skip the backfill"}
-            </button>
+            <SubmitButton variant="secondary" pending={skipping} loadingLabel="Skipping">
+            Skip the backfill
+          </SubmitButton>
           </form>
         ) : null}
         <form action={rerunAction}>
-          <button type="submit" className={`${btnSecondary} ${btnSizeMd}`} disabled={rerunning}>
-            {rerunning ? "Re-running…" : "Re-run backfill"}
-          </button>
+          <SubmitButton variant="secondary" pending={rerunning} loadingLabel="Re-running">
+            Re-run backfill
+          </SubmitButton>
         </form>
       </div>
       {skipState.status === "error" ? <p className={errorClass}>{skipState.error}</p> : null}
@@ -206,9 +204,9 @@ export function BaselineSettings(props: BaselineSettingsProps) {
             </label>
             <input id="note" name="note" className={inputClass} />
           </div>
-          <button type="submit" className={`${btnPrimary} ${btnSizeMd}`} disabled={savingSelf}>
-            {savingSelf ? "Saving…" : "Save self-reported baseline"}
-          </button>
+          <SubmitButton variant="primary" pending={savingSelf} loadingLabel="Saving">
+            Save self-reported baseline
+          </SubmitButton>
           {selfState.status === "error" ? <p className={errorClass}>{selfState.error}</p> : null}
           {selfState.status === "saved" ? <p className={helperClass}>Saved as self-reported.</p> : null}
         </form>

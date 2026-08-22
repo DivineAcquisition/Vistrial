@@ -15,6 +15,7 @@ import {
   type FieldMapPayload,
 } from "@/app/app/settings/integrations/actions";
 import type { SettingsSaveResult } from "@/app/app/settings/types";
+import { SubmitButton } from "@/components/ui/button";
 import { DataTable } from "@/components/ui/data-table";
 import { Select } from "@/components/ui/select";
 import { Panel } from "@/components/ui/panel";
@@ -213,9 +214,9 @@ export function IntegrationSettings(props: IntegrationSettingsProps) {
                 ))}
               </Select>
             </div>
-            <button type="submit" className={`${btnPrimary} ${btnSizeMd}`} disabled={locating}>
-              {locating ? "Linking…" : "Link location"}
-            </button>
+            <SubmitButton variant="primary" pending={locating} loadingLabel="Linking">
+            Link location
+          </SubmitButton>
             {locationState.status === "error" ? <p className={errorClass}>{locationState.error}</p> : null}
           </form>
         </Panel>
@@ -263,9 +264,9 @@ export function IntegrationSettings(props: IntegrationSettingsProps) {
           )}
           {props.connection.status === "active" || props.connection.status === "broken" ? (
             <form action={disconnectAction}>
-              <button type="submit" className={`${btnSecondary} ${btnSizeMd}`} disabled={disconnecting}>
-                {disconnecting ? "Disconnecting…" : "Disconnect"}
-              </button>
+              <SubmitButton variant="secondary" pending={disconnecting} loadingLabel="Disconnecting">
+            Disconnect
+          </SubmitButton>
             </form>
           ) : null}
         </div>

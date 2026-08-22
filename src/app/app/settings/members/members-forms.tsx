@@ -10,8 +10,16 @@ import {
   type MemberActionResult,
 } from "@/app/app/settings/members/actions";
 import type { OrgRole } from "@/types/database";
+import { SubmitButton } from "@/components/ui/button";
 import { Select } from "@/components/ui/select";
-import { btnPrimary, btnSecondary, btnSizeSm, errorClass, helperClass, inputClass, labelClass } from "@/lib/ui";
+import {
+  btnSecondary,
+  btnSizeSm,
+  errorClass,
+  helperClass,
+  inputClass,
+  labelClass,
+} from "@/lib/ui";
 
 const initialInvite: MemberActionResult = { ok: true };
 
@@ -45,9 +53,9 @@ export function InviteForm() {
             <option value="admin">Admin</option>
           </Select>
         </div>
-        <button type="submit" disabled={pending} className={`${btnPrimary} ${btnSizeSm}`}>
-          {pending ? "Creating…" : "Create invite"}
-        </button>
+        <SubmitButton variant="primary" size="sm" pending={pending} loadingLabel="Creating">
+            Create invite
+          </SubmitButton>
       </div>
       <p className={helperClass}>
         Email delivery lands in a later prompt. Copy the link and share it by hand for now.

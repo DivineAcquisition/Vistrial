@@ -17,7 +17,18 @@ export async function loadPrecallBrief(leadId: string): Promise<BriefPayload | n
   if (error) throw new Error(error.message || "Could not load that brief.");
   if (data == null) return null;
 
-  const parsed = parseBriefPayload(data, new Date().toISOString());
+  const { data: profile } = await supabase
+    .from("business_profiles")
+    .select("setter_establishes, setter_establishes_other")
+    .eq("org_id", ctx.org.id)
+    .maybeSingle();
+
+  const parsed = parseBriefPayload(
+    data,
+    new Date().toISOString(),
+    profile?.setter_establishes ?? [],
+    profile?.setter_establishes_other ?? null
+  );
   const payload: BriefPayload = {
     ...parsed,
     suggestedOpening:

@@ -39,6 +39,7 @@ export const SETTINGS_TABS: Array<{
   managerOnly: boolean;
 }> = [
   { href: "/app/settings/organization", label: "Organization", managerOnly: true },
+  { href: "/app/settings/business-profile", label: "Business profile", managerOnly: true },
   { href: "/app/settings/members", label: "Members", managerOnly: true },
   { href: "/app/settings/scoring", label: "Scoring", managerOnly: true },
   { href: "/app/settings/follow-up", label: "Follow-up", managerOnly: true },

@@ -27,6 +27,8 @@ import {
 import { asJsonRecord } from "@/lib/ghl/payload";
 import { nextAttemptAt, shouldMarkDead } from "@/lib/ghl/retry";
 import { scoreInboundReplyAfterSilence, scoreLeadFromAnswerChange, scoreNoShow } from "@/lib/scoring/event-apply";
+import { flagDisqualifiedLead } from "@/lib/profile/intake-flags";
+import { leadStatusForPipelineStage } from "@/lib/profile/stage-mapping";
 import { scoreLeadOnIntake } from "@/lib/scoring/intake";
 import { assertScorePersisted, loadScoreConfig } from "@/lib/scoring/store";
 import { calendarDaysBetween } from "@/lib/scoring/timezone";
@@ -311,6 +313,10 @@ async function handleContact(
       })
     );
   }
+
+  if (created || answersChanged) {
+    await flagDisqualifiedLead(db, { orgId, leadId: lead.id, answers: nextAnswers as Json });
+  }
 }
 
 async function requireLead(db: GhlDb, orgId: string, payload: Record<string, unknown>): Promise<LeadRow> {
@@ -494,6 +500,13 @@ async function handleOpportunity(db: GhlDb, orgId: string, payload: Record<strin
     })
     .eq("id", lead.id)
     .eq("org_id", orgId);
+
+  // The client told us what their stages mean, so a stage move in the CRM
+  // moves the lead here too. closed_won is excluded: that follows a payment.
+  const mapped = stage ? await leadStatusForPipelineStage(db, orgId, stage) : null;
+  if (mapped && mapped !== lead.status) {
+    await db.from("leads").update({ status: mapped }).eq("id", lead.id).eq("org_id", orgId);
+  }
 }
 
 async function touchExists(db: GhlDb, orgId: string, messageId: string): Promise<boolean> {

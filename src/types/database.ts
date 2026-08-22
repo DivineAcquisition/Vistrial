@@ -2273,6 +2273,374 @@ export type Database = {
         };
         Relationships: [];
       };
+      business_profiles: {
+        Row: {
+          org_id: string;
+          version: number;
+          offer_name: string | null;
+          offer_type: Database["public"]["Enums"]["profile_offer_type"] | null;
+          offer_type_other: string | null;
+          price_point_cents: number | null;
+          payment_structure:
+            | Database["public"]["Enums"]["profile_payment_structure"]
+            | null;
+          payment_structure_other: string | null;
+          sales_cycle_days: number | null;
+          touches_to_close: number | null;
+          close_motion: Database["public"]["Enums"]["profile_close_motion"] | null;
+          team_structure: Database["public"]["Enums"]["profile_team_structure"] | null;
+          monthly_lead_volume: number | null;
+          monthly_lead_target: number | null;
+          stated_close_rate_pct: number | null;
+          lead_channels: Database["public"]["Enums"]["profile_lead_channel"][];
+          lead_channels_other: string | null;
+          channel_spend_cents: Json;
+          application_fields: Json;
+          qualification_signals: Database["public"]["Enums"]["profile_qualification_signal"][];
+          qualification_signals_other: string | null;
+          disqualifiers: Database["public"]["Enums"]["profile_disqualifier"][];
+          disqualifiers_other: string | null;
+          price_bands: Json;
+          timeline_bands: Json;
+          speed_to_lead_intent_minutes: number | null;
+          setter_establishes: Database["public"]["Enums"]["profile_setter_fact"][];
+          setter_establishes_other: string | null;
+          pipeline_stage_meanings: Json;
+          after_no_show: Database["public"]["Enums"]["profile_existing_followup"] | null;
+          after_call: Database["public"]["Enums"]["profile_existing_followup"] | null;
+          after_silence: Database["public"]["Enums"]["profile_existing_followup"] | null;
+          top_objections: Json;
+          never_say: string[];
+          voice_formality: Database["public"]["Enums"]["voice_formality"] | null;
+          channel_preference: string | null;
+          goal_metric: Database["public"]["Enums"]["profile_goal_metric"] | null;
+          goal_value: number | null;
+          aggregate_opt_out: boolean;
+          aggregate_opt_out_at: string | null;
+          completeness_score: number;
+          last_reviewed_at: string | null;
+          last_reviewed_by_member_id: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          org_id: string;
+        };
+        Update: {
+          completeness_score?: number;
+          last_reviewed_at?: string | null;
+          last_reviewed_by_member_id?: string | null;
+        };
+        Relationships: [];
+      };
+      business_profile_versions: {
+        Row: {
+          id: string;
+          org_id: string;
+          version: number;
+          snapshot: Json;
+          changed_fields: string[];
+          actor_member_id: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          org_id: string;
+          version: number;
+          snapshot: Json;
+          changed_fields?: string[];
+          actor_member_id?: string | null;
+          created_at?: string;
+        };
+        Update: never;
+        Relationships: [];
+      };
+      business_profile_stages: {
+        Row: {
+          org_id: string;
+          stage: Database["public"]["Enums"]["profile_stage"];
+          completed_at: string | null;
+          completed_by_member_id: string | null;
+          updated_at: string;
+        };
+        Insert: {
+          org_id: string;
+          stage: Database["public"]["Enums"]["profile_stage"];
+          completed_at?: string | null;
+          completed_by_member_id?: string | null;
+        };
+        Update: {
+          completed_at?: string | null;
+          completed_by_member_id?: string | null;
+        };
+        Relationships: [];
+      };
+      profile_field_registry: {
+        Row: {
+          field: string;
+          stage: Database["public"]["Enums"]["profile_stage"];
+          label: string;
+          consumer: string;
+          required: boolean;
+          sort: number;
+        };
+        Insert: {
+          field: string;
+          stage: Database["public"]["Enums"]["profile_stage"];
+          label: string;
+          consumer: string;
+          required?: boolean;
+          sort: number;
+        };
+        Update: {
+          label?: string;
+          consumer?: string;
+          required?: boolean;
+          sort?: number;
+        };
+        Relationships: [];
+      };
+      profile_review_prompts: {
+        Row: {
+          id: string;
+          org_id: string;
+          reason: Database["public"]["Enums"]["profile_review_reason"];
+          detail: string;
+          detected_at: string;
+          resolved_at: string | null;
+          resolved_by_member_id: string | null;
+        };
+        Insert: {
+          id?: string;
+          org_id: string;
+          reason: Database["public"]["Enums"]["profile_review_reason"];
+          detail: string;
+          detected_at?: string;
+          resolved_at?: string | null;
+          resolved_by_member_id?: string | null;
+        };
+        Update: {
+          resolved_at?: string | null;
+          resolved_by_member_id?: string | null;
+        };
+        Relationships: [];
+      };
+      profile_contradictions: {
+        Row: {
+          id: string;
+          org_id: string;
+          kind: Database["public"]["Enums"]["profile_contradiction_kind"];
+          stated: string;
+          observed: string;
+          sample_n: number;
+          detected_at: string;
+          dismissed_at: string | null;
+          dismissed_by_member_id: string | null;
+        };
+        Insert: {
+          id?: string;
+          org_id: string;
+          kind: Database["public"]["Enums"]["profile_contradiction_kind"];
+          stated: string;
+          observed: string;
+          sample_n?: number;
+          detected_at?: string;
+          dismissed_at?: string | null;
+          dismissed_by_member_id?: string | null;
+        };
+        Update: {
+          dismissed_at?: string | null;
+          dismissed_by_member_id?: string | null;
+        };
+        Relationships: [];
+      };
+      objection_vocabulary: {
+        Row: {
+          id: string;
+          org_id: string;
+          type: Database["public"]["Enums"]["objection_type"];
+          phrasing: string;
+          response: string | null;
+          rank: number;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          org_id: string;
+          type: Database["public"]["Enums"]["objection_type"];
+          phrasing: string;
+          response?: string | null;
+          rank?: number;
+        };
+        Update: {
+          phrasing?: string;
+          response?: string | null;
+          rank?: number;
+        };
+        Relationships: [];
+      };
+      org_benchmark_metrics: {
+        Row: {
+          org_id: string;
+          metric: Database["public"]["Enums"]["benchmark_metric"];
+          value: number;
+          sample_n: number;
+          source: string;
+          computed_at: string;
+        };
+        Insert: {
+          org_id: string;
+          metric: Database["public"]["Enums"]["benchmark_metric"];
+          value: number;
+          sample_n: number;
+          source: string;
+          computed_at?: string;
+        };
+        Update: {
+          value?: number;
+          sample_n?: number;
+          source?: string;
+          computed_at?: string;
+        };
+        Relationships: [];
+      };
+      benchmark_cohorts: {
+        Row: {
+          cohort_key: string;
+          metric: Database["public"]["Enums"]["benchmark_metric"];
+          offer_type: Database["public"]["Enums"]["profile_offer_type"];
+          price_band: string;
+          volume_band: string;
+          org_count: number;
+          median_value: number;
+          computed_at: string;
+        };
+        Insert: {
+          cohort_key: string;
+          metric: Database["public"]["Enums"]["benchmark_metric"];
+          offer_type: Database["public"]["Enums"]["profile_offer_type"];
+          price_band: string;
+          volume_band: string;
+          org_count: number;
+          median_value: number;
+          computed_at?: string;
+        };
+        Update: {
+          org_count?: number;
+          median_value?: number;
+          computed_at?: string;
+        };
+        Relationships: [];
+      };
+      configuration_priors: {
+        Row: {
+          cohort_key: string;
+          prior_key: string;
+          value: Json;
+          org_count: number;
+          computed_at: string;
+        };
+        Insert: {
+          cohort_key: string;
+          prior_key: string;
+          value: Json;
+          org_count: number;
+          computed_at?: string;
+        };
+        Update: {
+          value?: Json;
+          org_count?: number;
+          computed_at?: string;
+        };
+        Relationships: [];
+      };
+      leak_reports: {
+        Row: {
+          id: string;
+          org_id: string;
+          basis: Database["public"]["Enums"]["leak_report_basis"];
+          baseline_run_id: string | null;
+          profile_version: number;
+          payload: Json;
+          generated_at: string;
+          generated_by_member_id: string | null;
+        };
+        Insert: {
+          id?: string;
+          org_id: string;
+          basis: Database["public"]["Enums"]["leak_report_basis"];
+          baseline_run_id?: string | null;
+          profile_version: number;
+          payload: Json;
+          generated_at?: string;
+          generated_by_member_id?: string | null;
+        };
+        Update: never;
+        Relationships: [];
+      };
+      activation_records: {
+        Row: {
+          org_id: string;
+          activated_at: string;
+          activated_by_member_id: string;
+          warnings_acknowledged: Database["public"]["Enums"]["activation_warning"][];
+          requirements: Json;
+          created_at: string;
+        };
+        Insert: {
+          org_id: string;
+          activated_at: string;
+          activated_by_member_id: string;
+          warnings_acknowledged?: Database["public"]["Enums"]["activation_warning"][];
+          requirements: Json;
+        };
+        Update: {
+          activated_at?: string;
+        };
+        Relationships: [];
+      };
+      activation_changes: {
+        Row: {
+          id: string;
+          org_id: string;
+          previous_at: string;
+          new_at: string;
+          reason: string;
+          changed_by_member_id: string;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          org_id: string;
+          previous_at: string;
+          new_at: string;
+          reason: string;
+          changed_by_member_id: string;
+        };
+        Update: never;
+        Relationships: [];
+      };
+      baseline_fallback_declines: {
+        Row: {
+          org_id: string;
+          declined_at: string;
+          declined_by_member_id: string;
+          note: string | null;
+        };
+        Insert: {
+          org_id: string;
+          declined_at?: string;
+          declined_by_member_id: string;
+          note?: string | null;
+        };
+        Update: {
+          declined_at?: string;
+          declined_by_member_id?: string;
+          note?: string | null;
+        };
+        Relationships: [];
+      };
     };
     Views: {
       queue_rows: {
@@ -2569,6 +2937,124 @@ export type Database = {
         Args: { p_org_id: string; p_job_run_id?: string | null };
         Returns: number;
       };
+      business_profile_completeness: {
+        Args: { p_org_id: string };
+        Returns: Json;
+      };
+      business_profile_refresh_completeness: {
+        Args: { p_org_id: string };
+        Returns: number;
+      };
+      business_profile_defaults: {
+        Args: { p_org_id: string };
+        Returns: Json;
+      };
+      business_profile_state: {
+        Args: { p_org_id: string };
+        Returns: Json;
+      };
+      save_business_profile: {
+        Args: {
+          p_org_id: string;
+          p_member_id: string | null;
+          p_patch: Json;
+          p_stage?: Database["public"]["Enums"]["profile_stage"] | null;
+        };
+        Returns: Json;
+      };
+      complete_business_profile_stage: {
+        Args: {
+          p_org_id: string;
+          p_member_id: string | null;
+          p_stage: Database["public"]["Enums"]["profile_stage"];
+        };
+        Returns: undefined;
+      };
+      apply_business_profile_configuration: {
+        Args: {
+          p_org_id: string;
+          p_member_id: string | null;
+          p_stage: Database["public"]["Enums"]["profile_stage"];
+        };
+        Returns: Json;
+      };
+      onboarding_payoff: {
+        Args: { p_org_id: string; p_stage: Database["public"]["Enums"]["profile_stage"] };
+        Returns: Json;
+      };
+      benchmark_refresh_org_metrics: {
+        Args: { p_org_id: string };
+        Returns: number;
+      };
+      benchmark_refresh_cohorts: {
+        Args: Record<PropertyKey, never>;
+        Returns: number;
+      };
+      benchmark_for_org: {
+        Args: { p_org_id: string };
+        Returns: Json;
+      };
+      configuration_priors_for_org: {
+        Args: { p_org_id: string };
+        Returns: Json;
+      };
+      profile_pattern_feedback: {
+        Args: { p_org_id: string };
+        Returns: Json;
+      };
+      leak_report_compute: {
+        Args: { p_org_id: string };
+        Returns: Json;
+      };
+      leak_report_generate: {
+        Args: { p_org_id: string; p_member_id: string | null };
+        Returns: string;
+      };
+      leak_report_latest: {
+        Args: { p_org_id: string };
+        Returns: Json;
+      };
+      activation_readiness: {
+        Args: { p_org_id: string };
+        Returns: Json;
+      };
+      activate_org: {
+        Args: {
+          p_org_id: string;
+          p_member_id: string;
+          p_acknowledged?: Database["public"]["Enums"]["activation_warning"][];
+        };
+        Returns: string;
+      };
+      change_activation_timestamp: {
+        Args: {
+          p_org_id: string;
+          p_member_id: string;
+          p_new_at: string;
+          p_reason: string;
+        };
+        Returns: string;
+      };
+      decline_baseline_fallback: {
+        Args: { p_org_id: string; p_member_id: string; p_note?: string | null };
+        Returns: undefined;
+      };
+      profile_detect_signals: {
+        Args: { p_org_id: string };
+        Returns: number;
+      };
+      resolve_profile_review_prompt: {
+        Args: { p_org_id: string; p_id: string; p_member_id: string };
+        Returns: undefined;
+      };
+      dismiss_profile_contradiction: {
+        Args: { p_org_id: string; p_id: string; p_member_id: string };
+        Returns: undefined;
+      };
+      adoption_watch: {
+        Args: { p_org_id: string };
+        Returns: Json;
+      };
       reporting_mature_cohorts: {
         Args: { p_org_id: string };
         Returns: number;
@@ -2697,6 +3183,103 @@ export type Database = {
       reporting_cohort_side: "live" | "baseline";
       reporting_cohort_status: "maturing" | "mature";
       reporting_range_key: "since_activation" | "last_30d" | "last_90d" | "custom";
+      profile_stage:
+        | "connect"
+        | "business"
+        | "funnel"
+        | "qualification"
+        | "process"
+        | "objections"
+        | "voice"
+        | "goals";
+      profile_offer_type:
+        | "coaching"
+        | "consulting"
+        | "agency_service"
+        | "course"
+        | "software"
+        | "done_for_you"
+        | "other";
+      profile_payment_structure: "pif" | "plan" | "pif_or_plan" | "bnpl" | "other";
+      profile_close_motion: "one_call" | "two_call" | "multi_call";
+      profile_team_structure:
+        | "owner_sold"
+        | "closers_only"
+        | "setter_closer"
+        | "setters_only";
+      profile_lead_channel:
+        | "meta_ads"
+        | "google_ads"
+        | "youtube_ads"
+        | "tiktok_ads"
+        | "organic_social"
+        | "email_list"
+        | "referral"
+        | "affiliate"
+        | "webinar"
+        | "cold_outbound"
+        | "podcast"
+        | "seo"
+        | "events"
+        | "other";
+      profile_qualification_signal:
+        | "has_budget"
+        | "urgent_timeline"
+        | "sole_decision_maker"
+        | "clear_pain"
+        | "existing_revenue"
+        | "tried_alternatives"
+        | "right_industry"
+        | "has_team"
+        | "other";
+      profile_disqualifier:
+        | "no_budget"
+        | "wrong_industry"
+        | "needs_partner_approval"
+        | "pre_revenue"
+        | "seeking_employment"
+        | "out_of_geography"
+        | "competitor"
+        | "other";
+      profile_setter_fact:
+        | "budget_confirmed"
+        | "timeline_confirmed"
+        | "decision_maker_confirmed"
+        | "pain_articulated"
+        | "current_solution"
+        | "goal_stated"
+        | "call_purpose_set"
+        | "other";
+      profile_existing_followup: "crm_sequence" | "manual_only" | "nothing";
+      profile_goal_metric:
+        | "clients_per_month"
+        | "revenue_per_month"
+        | "close_rate"
+        | "speed_to_lead";
+      profile_review_reason: "quarterly" | "price_change" | "volume_change" | "new_source";
+      profile_contradiction_kind:
+        | "close_motion"
+        | "sales_cycle"
+        | "top_objection"
+        | "speed_to_lead"
+        | "price_point";
+      benchmark_metric:
+        | "speed_to_lead_minutes"
+        | "show_rate"
+        | "close_rate"
+        | "touches_to_close";
+      leak_report_basis: "backfill" | "backfill_partial" | "profile_only";
+      activation_requirement:
+        | "crm_connected"
+        | "backfill_resolved"
+        | "field_mapping_valid"
+        | "scoring_valid"
+        | "active_member";
+      activation_warning:
+        | "no_voice_examples"
+        | "no_transcript_source"
+        | "profile_incomplete"
+        | "backfill_partial";
     };
     CompositeTypes: {
       [_ in never]: never;

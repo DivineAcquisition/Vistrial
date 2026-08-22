@@ -23,11 +23,16 @@ function wrap(text: string, width: number): string[] {
   return lines;
 }
 
-export async function reportingPdf(args: {
-  orgName: string;
-  orgSlug: string;
-  range: ReportingRange;
-  generatedAt: string;
+/**
+ * The shared document renderer. Every page carries the same stamp, so a page
+ * that gets forwarded on its own still says whose figures it holds and when
+ * they were cut.
+ */
+export async function documentPdf(args: {
+  title: string;
+  subtitle: string;
+  stampParts: string[];
+  summaryTitle: string;
   summary: string;
   sections: Array<{ title: string; lines: string[] }>;
 }): Promise<Uint8Array> {
@@ -37,12 +42,7 @@ export async function reportingPdf(args: {
   let page = doc.addPage([612, 792]);
   let y = 760;
 
-  const stamp = [
-    args.orgName,
-    `Range ${args.range.fromDate} to ${args.range.toDate} (${args.range.key})`,
-    `Generated ${args.generatedAt}`,
-    `Workspace ${args.orgSlug}`,
-  ].join("  ·  ");
+  const stamp = args.stampParts.filter(Boolean).join("  ·  ");
 
   const ensure = (need: number) => {
     if (y - need < 48) {
@@ -52,9 +52,9 @@ export async function reportingPdf(args: {
     }
   };
 
-  page.drawText("Client report", { x: 48, y, size: 18, font: bold, color: ink });
+  page.drawText(args.title, { x: 48, y, size: 18, font: bold, color: ink });
   y -= 18;
-  page.drawText(args.orgName, { x: 48, y, size: 12, font, color: ink });
+  page.drawText(args.subtitle, { x: 48, y, size: 12, font, color: ink });
   y -= 14;
   for (const lineText of wrap(stamp, 90)) {
     page.drawText(lineText, { x: 48, y, size: 9, font, color: dim });
@@ -64,7 +64,7 @@ export async function reportingPdf(args: {
   page.drawLine({ start: { x: 48, y }, end: { x: 564, y }, thickness: 1, color: line });
   y -= 20;
 
-  page.drawText("Summary", { x: 48, y, size: 12, font: bold, color: ink });
+  page.drawText(args.summaryTitle, { x: 48, y, size: 12, font: bold, color: ink });
   y -= 16;
   for (const summaryLine of wrap(args.summary, 92)) {
     ensure(14);
@@ -92,4 +92,27 @@ export async function reportingPdf(args: {
     p.drawText(stamp, { x: 48, y: 28, size: 8, font, color: dim });
   }
   return doc.save();
+}
+
+export async function reportingPdf(args: {
+  orgName: string;
+  orgSlug: string;
+  range: ReportingRange;
+  generatedAt: string;
+  summary: string;
+  sections: Array<{ title: string; lines: string[] }>;
+}): Promise<Uint8Array> {
+  return documentPdf({
+    title: "Client report",
+    subtitle: args.orgName,
+    stampParts: [
+      args.orgName,
+      `Range ${args.range.fromDate} to ${args.range.toDate} (${args.range.key})`,
+      `Generated ${args.generatedAt}`,
+      `Workspace ${args.orgSlug}`,
+    ],
+    summaryTitle: "Summary",
+    summary: args.summary,
+    sections: args.sections,
+  });
 }

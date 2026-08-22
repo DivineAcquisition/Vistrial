@@ -96,7 +96,9 @@ export async function runBaselineBackfill(db: GhlDb): Promise<{
     });
     if (next.done) {
       await db.rpc("reporting_grade_baseline", { p_run_id: runId });
-      await db.rpc("complete_baseline_run", { p_run_id: runId, p_activate: true });
+      // Finishing the backfill resolves it. Going live is a separate,
+      // deliberate act with a named actor behind the activation gate.
+      await db.rpc("complete_baseline_run", { p_run_id: runId, p_activate: false });
       ghlLog("baseline.completed", { orgId: run.org_id, runId });
       return { claimed: 1, advanced: 1, completed: 1, failed: 0 };
     }

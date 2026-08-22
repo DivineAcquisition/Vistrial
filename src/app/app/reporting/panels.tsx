@@ -17,6 +17,7 @@ import {
   formatPct,
   formatSample,
 } from "@/lib/reporting/format";
+import { goalLine, loadStatedGoal } from "@/lib/profile/goal";
 import { helperClass } from "@/lib/ui";
 import { FOLLOW_UP_BRANCH_LABELS, HALT_REASON_LABELS } from "@/lib/follow-up/labels";
 import { OBJECTION_TYPE_LABELS } from "@/lib/leads/labels";
@@ -125,7 +126,10 @@ export function ReportingPanels({
 }
 
 async function OutcomePanel({ orgId, range }: { orgId: string; range: ReportingRange }) {
-  const payload = await loadReportingPanel(orgId, "outcome", range);
+  const [payload, goal] = await Promise.all([
+    loadReportingPanel(orgId, "outcome", range),
+    loadStatedGoal(orgId),
+  ]);
   const headline = rateOf(payload.headline);
   const maturing = rateOf(payload.maturing);
   const baseline = payload.baseline ? rateOf(payload.baseline) : null;
@@ -172,6 +176,15 @@ async function OutcomePanel({ orgId, range }: { orgId: string; range: ReportingR
           Self-reported prior figures: {String(selfReported.leads_per_month)} leads/month,{" "}
           {String(selfReported.clients_closed_per_month)} clients closed/month. The client&apos;s claim, not a
           Vistrial measurement, and not blended into the rates above.
+        </p>
+      ) : null}
+      {goal ? (
+        <p className="mt-2 text-sm text-silver">
+          {goalLine(goal, {
+            perHundred: headline.perHundred,
+            leadsInWindow: headline.n,
+            tooSmall: headline.tooSmall,
+          })}
         </p>
       ) : null}
       <p className="mt-4 text-sm text-silver">{str(payload.attribution)}</p>
@@ -647,6 +660,12 @@ export function ReportingLinks({ range, client }: { range: ReportingRange; clien
       </Link>
       <Link href={`/app/reporting/client${query ? `?${query}` : ""}`} className="text-brand-300 hover:text-white">
         Client view
+      </Link>
+      <Link href="/app/reporting/adoption" className="text-brand-300 hover:text-white">
+        Adoption
+      </Link>
+      <Link href="/app/onboarding/report" className="text-brand-300 hover:text-white">
+        Leak Report
       </Link>
       <Link
         href={`/app/reporting/export/csv?${query}`}

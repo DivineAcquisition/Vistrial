@@ -2,6 +2,7 @@ import { createHash } from "node:crypto";
 
 import { formatAnswer } from "@/lib/cases/format";
 import type { BriefPayload } from "@/lib/brief/types";
+import { buildSetterFacts } from "@/lib/profile/setter-facts";
 import type { ExtractionSignalState } from "@/lib/transcripts/types";
 import type { Enums, Json } from "@/types/database";
 
@@ -42,7 +43,12 @@ export function briefCacheKey(raw: Record<string, unknown>): string {
   return createHash("sha256").update(material).digest("hex").slice(0, 24);
 }
 
-export function parseBriefPayload(raw: unknown, now: string): Omit<BriefPayload, "suggestedOpening" | "cacheKey"> & {
+export function parseBriefPayload(
+  raw: unknown,
+  now: string,
+  setterEstablishes: Enums<"profile_setter_fact">[] = [],
+  setterEstablishesOther: string | null = null
+): Omit<BriefPayload, "suggestedOpening" | "cacheKey"> & {
   cacheKey: string;
   cachedOpening: string | null;
   cachedOpeningKey: string | null;
@@ -58,12 +64,16 @@ export function parseBriefPayload(raw: unknown, now: string): Omit<BriefPayload,
   const optedInAt = asString(lead.optedInAt) ?? now;
   const daysInPipeline = Math.max(0, Math.floor((Date.parse(now) - Date.parse(optedInAt)) / 86400000));
 
-  const setterFacts: Array<{ label: string; value: string }> = [];
-  for (const key of SETTER_FACT_KEYS) {
-    if (Object.prototype.hasOwnProperty.call(answers, key)) {
-      setterFacts.push({ label: key, value: formatAnswer(answers[key]) });
-    }
-  }
+  // The client's own list of what a setter establishes leads, so a closer can
+  // see at a glance which of them the setter actually got. Where no list has
+  // been given, fall back to whatever the application happened to carry.
+  const setterFacts: Array<{ label: string; value: string }> =
+    setterEstablishes.length > 0
+      ? buildSetterFacts(setterEstablishes, answers, formatAnswer, setterEstablishesOther)
+      : SETTER_FACT_KEYS.filter((key) =>
+          Object.prototype.hasOwnProperty.call(answers, key)
+        ).map((key) => ({ label: key, value: formatAnswer(answers[key]) }));
+
   if (asString(triage.summary)) {
     setterFacts.push({ label: "Triage call", value: asString(triage.summary)! });
   }

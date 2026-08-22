@@ -79,8 +79,8 @@ export function BaselineSettings(props: BaselineSettingsProps) {
           <h2 className="text-sm font-semibold text-white">CRM history backfill</h2>
           <p className={helperClass}>
             Runs automatically after the CRM is connected. Historical rows land in baseline tables,
-            never in live leads. Message bodies are not pulled. The workspace is marked live only
-            when this finishes or an admin skips it.
+            never in live leads. Message bodies are not pulled. Finishing or skipping this resolves
+            the baseline; going live is a separate step on the business profile page.
           </p>
         </div>
         <StatusBadge
@@ -151,7 +151,7 @@ export function BaselineSettings(props: BaselineSettingsProps) {
         {canSkip ? (
           <form action={skipAction}>
             <button type="submit" className={`${btnSecondary} ${btnSizeMd}`} disabled={skipping}>
-              {skipping ? "Skipping…" : "Skip backfill and activate"}
+              {skipping ? "Skipping…" : "Skip the backfill"}
             </button>
           </form>
         ) : null}
@@ -169,7 +169,8 @@ export function BaselineSettings(props: BaselineSettingsProps) {
           <p className="text-sm font-semibold text-white">Self-reported prior figures</p>
           <p className={helperClass}>
             Used only when CRM history is unusable. Labeled self-reported on every screen and every
-            export. Never blended with backfilled or live numbers.
+            export. Never blended with backfilled or live numbers. Capturing these, or recording that
+            the client declined to give them, is what resolves the baseline for activation.
           </p>
           <div>
             <label className={labelClass} htmlFor="leads_per_month">

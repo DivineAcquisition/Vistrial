@@ -27,22 +27,24 @@ export default async function ReportingPage({
     return (
       <PageFrame
         title="Reporting"
-        description="The outcome metric waits until baseline history is pulled or skipped."
+        description="The outcome metric waits until this workspace goes live."
       >
         <Panel className="px-6 py-6">
           <p className="text-sm font-medium text-white">
             {crm === "active"
-              ? "The CRM is connected. History is being pulled before this workspace is marked live."
+              ? "The CRM is connected. Nothing is measured until the workspace goes live."
               : "Reporting has nothing to measure yet."}
           </p>
           <p className={helperClass}>
             {backfill
               ? `Baseline backfill status: ${String(backfill.status)}. ${String((backfill.progress as { phase?: string } | undefined)?.phase ?? "")}`
               : "Connect the CRM to start the automatic baseline backfill."}
+            {" "}
+            Activation is a deliberate step with its own gate.
           </p>
           <div className="mt-4">
-            <Link href="/app/settings/integrations" className={`${btnSecondary} ${btnSizeSm}`}>
-              Open integrations
+            <Link href="/app/settings/business-profile" className={`${btnSecondary} ${btnSizeSm}`}>
+              Open the activation gate
             </Link>
           </div>
         </Panel>

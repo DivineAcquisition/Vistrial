@@ -1,90 +1,113 @@
-"use client"
+"use client";
 
-import * as React from "react"
-import { cva, type VariantProps } from "class-variance-authority"
-import { Tabs as TabsPrimitive } from "radix-ui"
+import Link from "next/link";
+import type { ReactNode } from "react";
 
-import { cn } from "@/lib/utils"
+import { cn } from "@/lib/utils";
 
-function Tabs({
+/**
+ * Tabs that are routes.
+ *
+ * Settings and reporting switch pages rather than panels, so these are links,
+ * not a JavaScript tab widget: they deep-link, open in a new tab, and work
+ * before hydration.
+ */
+export type NavTabItem = {
+  href: string;
+  label: string;
+  /** Rendered after the label, for a count or a status dot. */
+  badge?: ReactNode;
+};
+
+export function NavTabs({
+  items,
+  activeHref,
+  label,
   className,
-  orientation = "horizontal",
-  ...props
-}: React.ComponentProps<typeof TabsPrimitive.Root>) {
+}: {
+  items: NavTabItem[];
+  activeHref: string;
+  label: string;
+  className?: string;
+}) {
   return (
-    <TabsPrimitive.Root
-      data-slot="tabs"
-      data-orientation={orientation}
+    <nav
+      aria-label={label}
+      className={cn("flex flex-wrap gap-1 border-b border-white/[0.07] pb-px", className)}
+    >
+      {items.map((item) => {
+        const active = activeHref === item.href;
+        return (
+          <Link
+            key={item.href}
+            href={item.href}
+            aria-current={active ? "page" : undefined}
+            className={cn(
+              "-mb-px inline-flex items-center gap-2 border-b-2 px-3 py-2.5 text-sm transition-colors",
+              active
+                ? "border-brand-500 text-white"
+                : "border-transparent text-silver hover:border-white/20 hover:text-white"
+            )}
+          >
+            {item.label}
+            {item.badge}
+          </Link>
+        );
+      })}
+    </nav>
+  );
+}
+
+/**
+ * A small set of mutually exclusive choices shown side by side. For switching a
+ * view, not for navigating: use `NavTabs` when each option is its own page.
+ */
+export function SegmentedControl<T extends string>({
+  options,
+  value,
+  onChange,
+  label,
+  name,
+  className,
+}: {
+  options: Array<{ value: T; label: string }>;
+  value: T;
+  onChange: (value: T) => void;
+  label: string;
+  /** Set to also submit the choice with a surrounding form. */
+  name?: string;
+  className?: string;
+}) {
+  return (
+    <div
+      role="radiogroup"
+      aria-label={label}
       className={cn(
-        "group/tabs flex gap-2 data-horizontal:flex-col",
+        "inline-flex items-center gap-0.5 rounded-full border border-white/[0.1] bg-white/[0.03] p-0.5",
         className
       )}
-      {...props}
-    />
-  )
+    >
+      {name ? <input type="hidden" name={name} value={value} /> : null}
+      {options.map((option) => {
+        const active = option.value === value;
+        return (
+          <button
+            key={option.value}
+            type="button"
+            role="radio"
+            aria-checked={active}
+            onClick={() => onChange(option.value)}
+            className={cn(
+              "rounded-full px-3.5 py-1.5 text-[13px] font-medium transition-colors",
+              active
+                ? "bg-brand-500 text-ink-950"
+                : "text-silver hover:bg-white/[0.05] hover:text-white"
+            )}
+          >
+            {option.label}
+          </button>
+        );
+      })}
+    </div>
+  );
 }
-
-const tabsListVariants = cva(
-  "group/tabs-list inline-flex w-fit items-center justify-center rounded-lg p-[3px] text-muted-foreground group-data-horizontal/tabs:h-8 group-data-vertical/tabs:h-fit group-data-vertical/tabs:flex-col data-[variant=line]:rounded-none",
-  {
-    variants: {
-      variant: {
-        default: "bg-muted",
-        line: "gap-1 bg-transparent",
-      },
-    },
-    defaultVariants: {
-      variant: "default",
-    },
-  }
-)
-
-function TabsList({
-  className,
-  variant = "default",
-  ...props
-}: React.ComponentProps<typeof TabsPrimitive.List> &
-  VariantProps<typeof tabsListVariants>) {
-  return (
-    <TabsPrimitive.List
-      data-slot="tabs-list"
-      data-variant={variant}
-      className={cn(tabsListVariants({ variant }), className)}
-      {...props}
-    />
-  )
-}
-
-function TabsTrigger({
-  className,
-  ...props
-}: React.ComponentProps<typeof TabsPrimitive.Trigger>) {
-  return (
-    <TabsPrimitive.Trigger
-      data-slot="tabs-trigger"
-      className={cn(
-        "relative inline-flex h-[calc(100%-1px)] flex-1 items-center justify-center gap-1.5 rounded-md border border-transparent px-1.5 py-0.5 text-sm font-medium whitespace-nowrap text-foreground/60 transition-all group-data-vertical/tabs:w-full group-data-vertical/tabs:justify-start hover:text-foreground focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-1 focus-visible:outline-ring disabled:pointer-events-none disabled:opacity-50 has-data-[icon=inline-end]:pr-1 has-data-[icon=inline-start]:pl-1 dark:text-muted-foreground dark:hover:text-foreground group-data-[variant=default]/tabs-list:data-active:shadow-sm group-data-[variant=line]/tabs-list:data-active:shadow-none [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
-        "group-data-[variant=line]/tabs-list:bg-transparent group-data-[variant=line]/tabs-list:data-active:bg-transparent dark:group-data-[variant=line]/tabs-list:data-active:border-transparent dark:group-data-[variant=line]/tabs-list:data-active:bg-transparent",
-        "data-active:bg-background data-active:text-foreground dark:data-active:border-input dark:data-active:bg-input/30 dark:data-active:text-foreground",
-        "after:absolute after:bg-foreground after:opacity-0 after:transition-opacity group-data-horizontal/tabs:after:inset-x-0 group-data-horizontal/tabs:after:bottom-[-5px] group-data-horizontal/tabs:after:h-0.5 group-data-vertical/tabs:after:inset-y-0 group-data-vertical/tabs:after:-right-1 group-data-vertical/tabs:after:w-0.5 group-data-[variant=line]/tabs-list:data-active:after:opacity-100",
-        className
-      )}
-      {...props}
-    />
-  )
-}
-
-function TabsContent({
-  className,
-  ...props
-}: React.ComponentProps<typeof TabsPrimitive.Content>) {
-  return (
-    <TabsPrimitive.Content
-      data-slot="tabs-content"
-      className={cn("flex-1 text-sm outline-none", className)}
-      {...props}
-    />
-  )
-}
-
-export { Tabs, TabsList, TabsTrigger, TabsContent, tabsListVariants }

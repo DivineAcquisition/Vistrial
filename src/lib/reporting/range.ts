@@ -95,3 +95,9 @@ export function reportingRangeQuery(range: ReportingRange): string {
   }
   return params.toString();
 }
+
+/** A reporting view's href with the current range carried across. */
+export function reportingViewHref(path: string, range: ReportingRange): string {
+  const query = reportingRangeQuery(range);
+  return query ? `${path}?${query}` : path;
+}

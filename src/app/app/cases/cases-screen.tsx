@@ -146,11 +146,11 @@ export function CasesScreen({
               <div className="panel overflow-hidden rounded-2xl">
                 <Table>
                   <TableHeader>
-                    <TableRow className="border-border bg-secondary hover:bg-secondary">
+                    <TableRow className="hover:bg-transparent">
                       {COLUMNS.map((label) => (
                         <TableHead
                           key={label}
-                          className="h-11 px-4 text-[10px] font-semibold tracking-[0.14em] text-secondary-foreground uppercase"
+                         
                         >
                           {label}
                         </TableHead>

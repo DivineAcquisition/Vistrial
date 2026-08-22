@@ -1,32 +1,40 @@
-"use client"
+"use client";
 
-import * as React from "react"
+import * as React from "react";
 
-import { cn } from "@/lib/utils"
+import { cn } from "@/lib/utils";
+
+/**
+ * Table primitives.
+ *
+ * The defaults carry the whole look: a sunken header band, a hairline under
+ * each row, and no vertical rules. Four screens were repeating the same header
+ * classes by hand; now they inherit them and a table cannot drift on its own.
+ *
+ * Cells are readable rather than boxed. Borders between every cell make a dense
+ * operational list harder to scan, not easier.
+ */
 
 function Table({ className, ...props }: React.ComponentProps<"table">) {
   return (
-    <div
-      data-slot="table-container"
-      className="relative w-full overflow-x-auto"
-    >
+    <div data-slot="table-container" className="relative w-full overflow-x-auto">
       <table
         data-slot="table"
-        className={cn("w-full caption-bottom text-sm", className)}
+        className={cn("w-full caption-bottom border-collapse text-sm", className)}
         {...props}
       />
     </div>
-  )
+  );
 }
 
 function TableHeader({ className, ...props }: React.ComponentProps<"thead">) {
   return (
     <thead
       data-slot="table-header"
-      className={cn("[&_tr]:border-b", className)}
+      className={cn("surface-sunken border-x-0 border-t-0", className)}
       {...props}
     />
-  )
+  );
 }
 
 function TableBody({ className, ...props }: React.ComponentProps<"tbody">) {
@@ -36,7 +44,7 @@ function TableBody({ className, ...props }: React.ComponentProps<"tbody">) {
       className={cn("[&_tr:last-child]:border-0", className)}
       {...props}
     />
-  )
+  );
 }
 
 function TableFooter({ className, ...props }: React.ComponentProps<"tfoot">) {
@@ -44,12 +52,12 @@ function TableFooter({ className, ...props }: React.ComponentProps<"tfoot">) {
     <tfoot
       data-slot="table-footer"
       className={cn(
-        "border-t bg-muted/50 font-medium [&>tr]:last:border-b-0",
+        "border-t border-white/[0.07] bg-white/[0.02] font-medium [&>tr]:last:border-b-0",
         className
       )}
       {...props}
     />
-  )
+  );
 }
 
 function TableRow({ className, ...props }: React.ComponentProps<"tr">) {
@@ -57,51 +65,57 @@ function TableRow({ className, ...props }: React.ComponentProps<"tr">) {
     <tr
       data-slot="table-row"
       className={cn(
-        "border-b transition-colors hover:bg-muted/50 has-aria-expanded:bg-muted/50 data-[state=selected]:bg-muted",
+        "border-b border-white/[0.06] transition-colors hover:bg-white/[0.025] data-[state=selected]:bg-brand-950/60",
         className
       )}
       {...props}
     />
-  )
+  );
 }
 
-function TableHead({ className, ...props }: React.ComponentProps<"th">) {
+function TableHead({
+  className,
+  align = "left",
+  ...props
+}: React.ComponentProps<"th"> & { align?: "left" | "right" | "center" }) {
   return (
     <th
       data-slot="table-head"
       className={cn(
-        "h-10 px-2 text-left align-middle font-medium whitespace-nowrap text-foreground [&:has([role=checkbox])]:pr-0",
+        "h-11 px-4 align-middle text-[10px] font-semibold tracking-[0.14em] whitespace-nowrap text-silver uppercase",
+        align === "right" && "text-right",
+        align === "center" && "text-center",
+        align === "left" && "text-left",
         className
       )}
       {...props}
     />
-  )
+  );
 }
 
-function TableCell({ className, ...props }: React.ComponentProps<"td">) {
+function TableCell({
+  className,
+  align = "left",
+  ...props
+}: React.ComponentProps<"td"> & { align?: "left" | "right" | "center" }) {
   return (
     <td
       data-slot="table-cell"
       className={cn(
-        "p-2 align-middle whitespace-nowrap [&:has([role=checkbox])]:pr-0",
+        "px-4 py-3.5 align-middle",
+        align === "right" && "text-right tabular-nums",
+        align === "center" && "text-center",
         className
       )}
       {...props}
     />
-  )
+  );
 }
 
-function TableCaption({
-  className,
-  ...props
-}: React.ComponentProps<"caption">) {
+function TableCaption({ className, ...props }: React.ComponentProps<"caption">) {
   return (
-    <caption
-      data-slot="table-caption"
-      className={cn("mt-4 text-sm text-muted-foreground", className)}
-      {...props}
-    />
-  )
+    <caption data-slot="table-caption" className={cn("mt-4 text-sm text-dim", className)} {...props} />
+  );
 }
 
 export {
@@ -113,4 +127,4 @@ export {
   TableRow,
   TableCell,
   TableCaption,
-}
+};

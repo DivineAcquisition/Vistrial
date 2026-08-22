@@ -4,9 +4,9 @@ import { PageFrame } from "@/components/app/page-frame";
 import { Panel } from "@/components/ui/panel";
 import { requireReportingAccess } from "@/lib/reporting/access";
 import { loadReportingState } from "@/lib/reporting/load";
-import { parseReportingRange } from "@/lib/reporting/range";
+import { parseReportingRange, reportingViewHref } from "@/lib/reporting/range";
 import { ReportingRangeForm } from "@/app/app/reporting/range-form";
-import { ReportingLinks, ReportingPanels } from "@/app/app/reporting/panels";
+import { ReportingExports, ReportingPanels, ReportingTabs } from "@/app/app/reporting/panels";
 import { btnSecondary, btnSizeSm, helperClass } from "@/lib/ui";
 import { formatComputedAt } from "@/lib/reporting/format";
 
@@ -56,7 +56,8 @@ export default async function ReportingPage({
     <PageFrame
       title="Reporting"
       description="Clients closed per hundred leads, and the operational numbers that explain it."
-      actions={<ReportingLinks range={range} />}
+      actions={<ReportingExports range={range} />}
+      toolbar={<ReportingTabs range={range} activeHref={reportingViewHref("/app/reporting", range)} />}
     >
       {meta.job_stale === true ? (
         <Panel className="mb-6 border-flag-warning/40 px-6 py-4">

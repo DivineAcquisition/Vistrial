@@ -1,7 +1,10 @@
 import { Suspense } from "react";
 import Link from "next/link";
+import { Download } from "lucide-react";
 
+import { Button } from "@/components/ui/button";
 import { KpiCard, KpiGrid } from "@/components/ui/kpi-card";
+import { NavTabs } from "@/components/ui/tabs";
 import { Panel } from "@/components/ui/panel";
 import { SectionHeader } from "@/components/ui/section-header";
 import { DataTable } from "@/components/ui/data-table";
@@ -652,34 +655,56 @@ async function IngestionPanel({ orgId, range }: { orgId: string; range: Reportin
   );
 }
 
-export function ReportingLinks({ range, client }: { range: ReportingRange; client?: boolean }) {
+/**
+ * The reporting views. These are separate pages, so they are tabs rather than
+ * a set of links crowded into the header's action slot.
+ */
+export function ReportingTabs({
+  range,
+  activeHref,
+}: {
+  range: ReportingRange;
+  activeHref: string;
+}) {
   const query = reportingRangeQuery(range);
   return (
-    <div className="flex flex-wrap gap-3 text-sm">
-      <Link href={`/app/reporting${query ? `?${query}` : ""}`} className="text-brand-300 hover:text-white">
-        Operator view
-      </Link>
-      <Link href={`/app/reporting/client${query ? `?${query}` : ""}`} className="text-brand-300 hover:text-white">
-        Client view
-      </Link>
-      <Link href="/app/reporting/adoption" className="text-brand-300 hover:text-white">
-        Adoption
-      </Link>
-      <Link href="/app/onboarding/report" className="text-brand-300 hover:text-white">
-        Leak Report
-      </Link>
-      <Link
-        href={`/app/reporting/export/csv?${query}`}
-        className="text-brand-300 hover:text-white"
-      >
-        Export CSV
-      </Link>
+    <NavTabs
+      label="Reporting views"
+      activeHref={activeHref}
+      items={[
+        // The two range-aware views carry the selected range across with them.
+        { href: `/app/reporting${query ? `?${query}` : ""}`, label: "Operator view" },
+        { href: `/app/reporting/client${query ? `?${query}` : ""}`, label: "Client view" },
+        { href: "/app/reporting/adoption", label: "Adoption" },
+        { href: "/app/onboarding/report", label: "Leak Report" },
+      ]}
+    />
+  );
+}
+
+/** Taking the figures out of the product. */
+export function ReportingExports({
+  range,
+  client,
+}: {
+  range: ReportingRange;
+  client?: boolean;
+}) {
+  const query = reportingRangeQuery(range);
+  return (
+    <>
       {client ? null : (
-        <Link href={`/app/reporting/client?${query}`} className="text-brand-300 hover:text-white">
-          Review summary and export PDF
-        </Link>
+        <Button asChild variant="secondary" size="sm">
+          <Link href={`/app/reporting/client?${query}`}>Review summary</Link>
+        </Button>
       )}
-    </div>
+      <Button asChild variant="secondary" size="sm">
+        <Link href={`/app/reporting/export/csv?${query}`}>
+          <Download className="size-4" aria-hidden />
+          Export CSV
+        </Link>
+      </Button>
+    </>
   );
 }
 

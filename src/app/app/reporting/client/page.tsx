@@ -1,9 +1,13 @@
 import { PageFrame } from "@/components/app/page-frame";
 import { requireReportingAccess } from "@/lib/reporting/access";
 import { loadReportingPanel, loadReportingState } from "@/lib/reporting/load";
-import { parseReportingRange, reportingRangeQuery } from "@/lib/reporting/range";
+import {
+  parseReportingRange,
+  reportingRangeQuery,
+  reportingViewHref,
+} from "@/lib/reporting/range";
 import { ReportingRangeForm } from "@/app/app/reporting/range-form";
-import { ReportingLinks, ReportingPanels } from "@/app/app/reporting/panels";
+import { ReportingExports, ReportingPanels, ReportingTabs } from "@/app/app/reporting/panels";
 import { buildClientSummary } from "@/lib/reporting/summary";
 import { ClientSummaryForm } from "@/app/app/reporting/client-summary-form";
 import { Panel } from "@/components/ui/panel";
@@ -49,7 +53,8 @@ export default async function ReportingClientPage({
     <PageFrame
       title="Client report"
       description="The view for a renewal conversation. Per-operator detail is omitted on purpose."
-      actions={<ReportingLinks range={range} client />}
+      actions={<ReportingExports range={range} client />}
+      toolbar={<ReportingTabs range={range} activeHref={reportingViewHref("/app/reporting/client", range)} />}
     >
       <ReportingRangeForm range={range} action="/app/reporting/client" />
       <Panel className="mb-8 px-6 py-6">

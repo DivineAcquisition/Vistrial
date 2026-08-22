@@ -14,6 +14,7 @@ import {
   saveFollowUpEdit,
 } from "@/app/app/follow-ups/actions";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Textarea } from "@/components/ui/textarea";
 import { DefinitionList, KeyValue } from "@/components/ui/definition-list";
 import { Panel } from "@/components/ui/panel";
 import { SectionHeader } from "@/components/ui/section-header";
@@ -151,9 +152,9 @@ export function FollowUpReviewScreen({ initial }: { initial: FollowUpReviewPaylo
             <label htmlFor="follow-up-body" className={labelClass}>
               Message
             </label>
-            <textarea
+            <Textarea
               id="follow-up-body"
-              className={`${inputClass} min-h-48`}
+              className="min-h-48"
               value={body}
               disabled={!editable || busy}
               onChange={(event) => setBody(event.target.value)}
@@ -233,8 +234,8 @@ export function FollowUpReviewScreen({ initial }: { initial: FollowUpReviewPaylo
         <section className="grid gap-8 lg:grid-cols-2">
           <Panel className="p-6">
             <p className={labelClass}>Regenerate</p>
-            <textarea
-              className={`${inputClass} min-h-24`}
+            <Textarea
+              className="min-h-24"
               placeholder="Optional instruction, e.g. shorter, drop the question"
               value={instruction}
               disabled={busy}
@@ -251,8 +252,8 @@ export function FollowUpReviewScreen({ initial }: { initial: FollowUpReviewPaylo
           </Panel>
           <Panel className="p-6">
             <p className={labelClass}>Reject</p>
-            <textarea
-              className={`${inputClass} min-h-24`}
+            <Textarea
+              className="min-h-24"
               placeholder="Why this draft is wrong"
               value={rejectReason}
               disabled={busy}

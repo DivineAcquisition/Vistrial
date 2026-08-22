@@ -16,6 +16,7 @@ import {
 } from "@/app/app/settings/integrations/actions";
 import type { SettingsSaveResult } from "@/app/app/settings/types";
 import { SubmitButton } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
 import { DataTable } from "@/components/ui/data-table";
 import { Select } from "@/components/ui/select";
 import { Panel } from "@/components/ui/panel";
@@ -701,8 +702,8 @@ export function IntegrationSettings(props: IntegrationSettingsProps) {
             });
           }}
         >
-          <textarea
-            className={inputClass}
+          <Textarea
+            
             rows={6}
             value={pasteText}
             onChange={(event) => setPasteText(event.target.value)}

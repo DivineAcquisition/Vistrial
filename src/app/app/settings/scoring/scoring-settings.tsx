@@ -11,6 +11,7 @@ import {
 } from "@/app/app/settings/scoring/actions";
 import type { SettingsSaveResult } from "@/app/app/settings/types";
 import { SubmitButton } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
 import { Panel } from "@/components/ui/panel";
 import { Select } from "@/components/ui/select";
 import { overrideLeadScore } from "@/lib/scoring/override";
@@ -630,12 +631,12 @@ export function ScoringSettings({ config, maps: initialMaps, leads, lastGhostRun
               <label className={labelClass} htmlFor="override-reasoning">
                 Reasoning
               </label>
-              <textarea
+              <Textarea
                 id="override-reasoning"
                 name="reasoning"
                 required
                 rows={3}
-                className={inputClass}
+                
               />
             </div>
             {overrideStatus ? <p className={helperClass}>{overrideStatus}</p> : null}

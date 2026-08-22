@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useRef } from "react";
 
 import {
   rerunBaselineBackfill,
@@ -8,7 +8,8 @@ import {
   skipBaselineBackfill,
   type ReportingActionResult,
 } from "@/app/app/reporting/actions";
-import { SubmitButton } from "@/components/ui/button";
+import { Button, SubmitButton } from "@/components/ui/button";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Panel } from "@/components/ui/panel";
 import { StatusBadge } from "@/components/ui/status-badge";
 import {
@@ -61,6 +62,7 @@ function gradeTone(grade: string | null): Tone {
 }
 
 export function BaselineSettings(props: BaselineSettingsProps) {
+  const rerunFormRef = useRef<HTMLFormElement>(null);
   const [skipState, skipAction, skipping] = useActionState(skipBaselineBackfill, idle);
   const [rerunState, rerunAction, rerunning] = useActionState(rerunBaselineBackfill, idle);
   const [selfState, selfAction, savingSelf] = useActionState(saveSelfReportedBaseline, idle);
@@ -155,10 +157,18 @@ export function BaselineSettings(props: BaselineSettingsProps) {
           </SubmitButton>
           </form>
         ) : null}
-        <form action={rerunAction}>
-          <SubmitButton variant="secondary" pending={rerunning} loadingLabel="Re-running">
-            Re-run backfill
-          </SubmitButton>
+        <form action={rerunAction} ref={rerunFormRef}>
+          <ConfirmDialog
+            trigger={
+              <Button variant="secondary" loading={rerunning} loadingLabel="Re-running">
+                Re-run backfill
+              </Button>
+            }
+            title="Re-run the CRM history backfill?"
+            description="Every baseline row for this workspace is deleted first and pulled again. Until it finishes, the before-and-after comparison on reporting has nothing to read."
+            confirmLabel="Delete and re-pull"
+            onConfirm={() => rerunFormRef.current?.requestSubmit()}
+          />
         </form>
       </div>
       {skipState.status === "error" ? <p className={errorClass}>{skipState.error}</p> : null}

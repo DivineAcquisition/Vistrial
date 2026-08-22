@@ -8,6 +8,7 @@ import {
 } from "@/app/app/onboarding/actions";
 import type { SettingsSaveResult } from "@/app/app/settings/types";
 import { SubmitButton } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
 import { Panel } from "@/components/ui/panel";
 import { Select } from "@/components/ui/select";
 import { StatusBadge } from "@/components/ui/status-badge";
@@ -17,7 +18,6 @@ import {
   cardTitle,
   errorClass,
   helperClass,
-  inputClass,
   labelClass,
 } from "@/lib/ui";
 
@@ -78,12 +78,12 @@ export function VoiceExamples({
             <label className={labelClass} htmlFor="voice_example_body">
               Paste one message
             </label>
-            <textarea
+            <Textarea
               id="voice_example_body"
               name="body"
               rows={5}
               required
-              className={inputClass}
+              
               placeholder="Paste it exactly as it went out."
             />
             <p className={helperClass}>

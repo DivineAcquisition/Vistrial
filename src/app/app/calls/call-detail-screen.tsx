@@ -11,6 +11,7 @@ import {
   retryDeadExtraction,
 } from "@/app/app/calls/actions";
 import { DefinitionList, KeyValue } from "@/components/ui/definition-list";
+import { Textarea } from "@/components/ui/textarea";
 import { Select } from "@/components/ui/select";
 import { Panel } from "@/components/ui/panel";
 import { Button } from "@/components/ui/button";
@@ -392,7 +393,7 @@ function SignalField({
               </Select>
             </label>
           ) : null}
-          <textarea className={inputClass} rows={3} value={value} onChange={(event) => setValue(event.target.value)} />
+          <Textarea  rows={3} value={value} onChange={(event) => setValue(event.target.value)} />
           <div className="flex gap-2">
             <button type="submit" className={`${btnPrimary} ${btnSizeSm}`} disabled={busy}>
               Save correction
@@ -461,8 +462,8 @@ function QuotesField({
         >
           {rows.map((row, index) => (
             <div key={index} className="grid gap-2 sm:grid-cols-[1fr_8rem]">
-              <textarea
-                className={inputClass}
+              <Textarea
+                
                 rows={2}
                 value={row.text}
                 onChange={(event) =>
@@ -527,8 +528,8 @@ function PasteTranscript({
           onSubmit(text);
         }}
       >
-        <textarea
-          className={inputClass}
+        <Textarea
+          
           rows={8}
           value={text}
           onChange={(event) => setText(event.target.value)}

@@ -8,7 +8,8 @@ import {
   type LoginActionState,
 } from "@/app/(auth)/login/actions";
 import { LOGIN_ERROR_COPY, type LoginError } from "@/lib/auth/errors";
-import { Button, SubmitButton } from "@/components/ui/button";
+import { SubmitButton } from "@/components/ui/button";
+import { SegmentedControl } from "@/components/ui/tabs";
 import { errorClass, helperClass, inputClass, labelClass } from "@/lib/ui";
 
 type Mode = "password" | "magic";
@@ -85,13 +86,17 @@ export function LoginForm({
         {mode === "password" ? "Sign in" : "Send magic link"}
       </SubmitButton>
 
-      <Button
-        variant="link"
-        className="w-full justify-center"
-        onClick={() => setMode((current) => (current === "password" ? "magic" : "password"))}
-      >
-        {mode === "password" ? "Send me a magic link instead" : "Sign in with a password instead"}
-      </Button>
+      <div className="flex justify-center">
+        <SegmentedControl
+          label="How you want to sign in"
+          value={mode}
+          onChange={setMode}
+          options={[
+            { value: "password", label: "Password" },
+            { value: "magic", label: "Magic link" },
+          ]}
+        />
+      </div>
     </form>
   );
 }

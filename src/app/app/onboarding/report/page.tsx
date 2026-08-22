@@ -6,12 +6,14 @@ import { PageFrame } from "@/components/app/page-frame";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { DefinitionList, KeyValue } from "@/components/ui/definition-list";
+import { BarChart } from "@/components/ui/chart";
 import { Panel } from "@/components/ui/panel";
 import { StatusBadge } from "@/components/ui/status-badge";
 import {
   formatMoney,
   leakFindingLines,
   parseLeakReport,
+  type LeakFinding,
   type LeakReport,
 } from "@/lib/profile/leak";
 import { loadLatestLeakReport, requireProfileAccess } from "@/lib/profile/load";
@@ -34,6 +36,17 @@ const BASIS_LABEL = {
   backfill_partial: "Measured, with gaps named",
   profile_only: "Your stated figures",
 } as const;
+
+/** Only the sources with a rate worth drawing; the rest stay in the trace list. */
+function sourceChartPoints(finding: LeakFinding) {
+  return asArray(finding.extra.rows).flatMap((item) => {
+    const row = asRecord(item);
+    const rate = asRecord(row.rate);
+    const pct = num(rate.pct);
+    const source = str(row.source);
+    return pct === null || !source ? [] : [{ label: source, value: pct }];
+  });
+}
 
 function MovementPanel({ report }: { report: LeakReport }) {
   if (report.movement.length === 0) return null;
@@ -136,19 +149,37 @@ export default async function LeakReportPage() {
           ) : null}
         </Panel>
 
-        {report.findings.map((finding) => (
-          <Panel key={finding.key} className="p-6">
-            <div className="flex flex-wrap items-start justify-between gap-4">
-              <h3 className={cardTitle}>{finding.title}</h3>
-              {finding.shown ? null : <StatusBadge label="Not measurable" tone="neutral" />}
-            </div>
-            <ul className="mt-3 space-y-1.5 text-sm text-silver">
-              {leakFindingLines(finding, report.minSample).map((line, index) => (
-                <li key={index}>{line}</li>
-              ))}
-            </ul>
-          </Panel>
-        ))}
+        {report.findings.map((finding) => {
+          // Close rate by source is a comparison across a handful of named
+          // things, which reads far faster as bars than as a list of rates.
+          const sourceBars =
+            finding.key === "close_rate_by_source" && finding.shown
+              ? sourceChartPoints(finding)
+              : null;
+
+          return (
+            <Panel key={finding.key} className="p-6">
+              <div className="flex flex-wrap items-start justify-between gap-4">
+                <h3 className={cardTitle}>{finding.title}</h3>
+                {finding.shown ? null : <StatusBadge label="Not measurable" tone="neutral" />}
+              </div>
+              {sourceBars && sourceBars.length > 0 ? (
+                <div className="mt-4">
+                  <BarChart
+                    label="Close rate by source"
+                    points={sourceBars}
+                    format={(value) => `${value}%`}
+                  />
+                </div>
+              ) : null}
+              <ul className="mt-4 space-y-1.5 text-sm text-silver">
+                {leakFindingLines(finding, report.minSample).map((line, index) => (
+                  <li key={index}>{line}</li>
+                ))}
+              </ul>
+            </Panel>
+          );
+        })}
 
         <BenchmarkPanel benchmark={parseBenchmark(report.benchmark)} />
         <MovementPanel report={report} />

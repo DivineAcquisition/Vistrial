@@ -10,6 +10,7 @@ import { PageFrame } from "@/components/app/page-frame";
 import { DataTable } from "@/components/ui/data-table";
 import { DefinitionList, KeyValue } from "@/components/ui/definition-list";
 import { Panel } from "@/components/ui/panel";
+import { Progress } from "@/components/ui/progress";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { loadBusinessProfileState, requireProfileAccess } from "@/lib/profile/load";
 import { STAGE_META, PROFILE_STAGES } from "@/lib/profile/stages";
@@ -73,6 +74,15 @@ export default async function BusinessProfileSettingsPage() {
               tone={completeness.score >= completeness.usableMin ? "good" : "warning"}
             />
           </div>
+
+          <Progress
+            className="mt-5"
+            label="Fields a running feature reads"
+            value={completeness.answered}
+            max={completeness.total}
+            valueLabel={`${completeness.answered} of ${completeness.total}`}
+            tone={completeness.score >= completeness.usableMin ? "good" : "warning"}
+          />
 
           {completeness.gaps.length > 0 ? (
             <div className="mt-5">

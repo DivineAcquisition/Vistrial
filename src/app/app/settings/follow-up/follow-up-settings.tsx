@@ -14,8 +14,10 @@ import {
 } from "@/app/app/settings/follow-up/actions";
 import type { SettingsSaveResult } from "@/app/app/settings/types";
 import { Checkbox, CheckboxField } from "@/components/ui/checkbox";
+import { Textarea } from "@/components/ui/textarea";
 import { Panel } from "@/components/ui/panel";
 import { Select } from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
 import { SectionHeader } from "@/components/ui/section-header";
 import { MIN_VOICE_EXAMPLES } from "@/lib/follow-up/constants";
 import { FOLLOW_UP_BRANCH_LABELS, FOLLOW_UP_CHANNEL_LABELS } from "@/lib/follow-up/labels";
@@ -70,22 +72,23 @@ export function FollowUpSettingsScreen({
           hint="This switch exists before any sequence can run. It stops later drafts from being scheduled. It does not send anything."
         />
         <Panel className="p-6">
-          <p className="text-sm text-silver">
-            Sequences are {settings.sequencesHalted ? "stopped for the whole workspace." : "allowed."}
-          </p>
-          {haltStatus.status === "error" ? <p className={errorClass}>{haltStatus.error}</p> : null}
-          <button
-            type="button"
-            className={`${btnPrimary} ${btnSizeSm} mt-4`}
+          <Switch
+            checked={settings.sequencesHalted}
             disabled={pending}
-            onClick={() =>
-              startTransition(async () => {
-                setHaltStatus(await setOrgSequenceHalt(!settings.sequencesHalted));
-              })
+            label="Stop all sequences for this workspace"
+            description={
+              settings.sequencesHalted
+                ? "Stopped. No further sequence step will be scheduled. Drafts already approved still send."
+                : "Allowed. Sequence steps are scheduled as calls are extracted."
             }
-          >
-            {settings.sequencesHalted ? "Resume sequences" : "Stop all sequences"}
-          </button>
+            onChange={(event) => {
+              const next = event.target.checked;
+              startTransition(async () => {
+                setHaltStatus(await setOrgSequenceHalt(next));
+              });
+            }}
+          />
+          {haltStatus.status === "error" ? <p className={errorClass}>{haltStatus.error}</p> : null}
         </Panel>
       </section>
 
@@ -130,9 +133,9 @@ export function FollowUpSettingsScreen({
             <label htmlFor="example-body" className={labelClass}>
               Paste a sent message
             </label>
-            <textarea
+            <Textarea
               id="example-body"
-              className={`${inputClass} min-h-24`}
+              className="min-h-24"
               value={exampleBody}
               onChange={(event) => setExampleBody(event.target.value)}
             />
@@ -242,10 +245,10 @@ export function FollowUpSettingsScreen({
               <label htmlFor="banned_words" className={labelClass}>
                 Words this business does not use
               </label>
-              <textarea
+              <Textarea
                 id="banned_words"
                 name="banned_words"
-                className={`${inputClass} min-h-20`}
+                className="min-h-20"
                 defaultValue={voice.bannedWords.join("\n")}
               />
             </div>

@@ -25,6 +25,7 @@ import {
 import { AssignPanel, FollowOnPanel, OutcomePanel } from "@/components/app/lead-action-panels";
 import { useOrg } from "@/components/app/org-provider";
 import { DefinitionList, KeyValue } from "@/components/ui/definition-list";
+import { Textarea } from "@/components/ui/textarea";
 import { Select } from "@/components/ui/select";
 import { Panel } from "@/components/ui/panel";
 import { SectionHeader } from "@/components/ui/section-header";
@@ -925,7 +926,7 @@ function OverridePanel({
       </div>
       <label className="mt-4 block">
         <span className={labelClass}>Reasoning</span>
-        <textarea name="reasoning" required rows={3} className={inputClass} />
+        <Textarea name="reasoning" required rows={3}  />
       </label>
       <div className="mt-4 flex flex-wrap gap-2">
         <button type="submit" className={`${btnPrimary} ${btnSizeSm}`} disabled={busy || pending}>

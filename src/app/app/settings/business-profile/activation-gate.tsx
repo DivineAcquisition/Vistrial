@@ -9,6 +9,7 @@ import {
 } from "@/app/app/settings/business-profile/actions";
 import type { SettingsSaveResult } from "@/app/app/settings/types";
 import { Button, SubmitButton } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { DefinitionList, KeyValue } from "@/components/ui/definition-list";
 import { Panel } from "@/components/ui/panel";
@@ -117,7 +118,7 @@ export function ActivationGate({
                 <label className={labelClass} htmlFor="reason">
                   Why, in writing
                 </label>
-                <textarea id="reason" name="reason" rows={3} required minLength={20} className={inputClass} />
+                <Textarea id="reason" name="reason" rows={3} required minLength={20}  />
                 <p className={helperClass}>
                   At least twenty characters. This is kept against the workspace permanently.
                 </p>

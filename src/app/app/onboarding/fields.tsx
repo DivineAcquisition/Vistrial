@@ -3,6 +3,8 @@
 import { useMemo, useState, type ReactNode } from "react";
 
 import { Checkbox } from "@/components/ui/checkbox";
+import { Textarea } from "@/components/ui/textarea";
+import { InputGroup } from "@/components/ui/input";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { Select } from "@/components/ui/select";
 import type { Tone } from "@/components/ui/tone";
@@ -94,20 +96,20 @@ export function NumberField(props: {
   const shown = raw === null ? "" : props.money ? String(raw / 100) : String(raw);
   return (
     <FieldShell field={props.field} defaults={props.defaults} label={props.label} htmlFor={props.name}>
-      <div className="flex items-center gap-2">
-        <input
-          id={props.name}
-          name={props.name}
-          type="number"
-          inputMode="decimal"
-          min={props.min}
-          max={props.max}
-          step={props.step ?? (props.money ? "0.01" : "1")}
-          className={inputClass}
-          defaultValue={shown}
-        />
-        {props.suffix ? <span className="text-sm text-dim">{props.suffix}</span> : null}
-      </div>
+      {/* The unit sits inside the field rather than floating beside it, so a
+          currency and a percentage are read as part of the value. */}
+      <InputGroup
+        id={props.name}
+        name={props.name}
+        type="number"
+        inputMode="decimal"
+        min={props.min}
+        max={props.max}
+        step={props.step ?? (props.money ? "0.01" : "1")}
+        defaultValue={shown}
+        prefix={props.money ? "$" : undefined}
+        suffix={props.suffix}
+      />
     </FieldShell>
   );
 }
@@ -188,11 +190,11 @@ export function LinesField(props: {
   const value = Array.isArray(meta.value) ? (meta.value as string[]).join("\n") : "";
   return (
     <FieldShell field={props.field} defaults={props.defaults} label={props.label} htmlFor={props.name}>
-      <textarea
+      <Textarea
         id={props.name}
         name={props.name}
         rows={props.rows ?? 4}
-        className={inputClass}
+        
         placeholder={props.placeholder}
         defaultValue={value}
       />

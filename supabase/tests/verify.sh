@@ -45,7 +45,11 @@ WHERE n.nspname = 'public'
     'follow_up_quality_check_failures','follow_up_events','follow_up_reply_signals',
     'voice_profile_suggestions','baseline_runs','baseline_leads','baseline_touches',
     'baseline_calls','baseline_revenue','self_reported_baselines','reporting_job_runs',
-    'reporting_snapshots','reporting_cohorts'
+    'reporting_snapshots','reporting_cohorts','business_profiles','business_profile_versions',
+    'business_profile_stages','profile_field_registry','profile_review_prompts',
+    'profile_contradictions','objection_vocabulary','org_benchmark_metrics','benchmark_cohorts',
+    'configuration_priors','leak_reports','activation_records','activation_changes',
+    'baseline_fallback_declines'
   )
 ORDER BY 1;
 "
@@ -89,4 +93,7 @@ run "${ROOT}/supabase/tests/verify-integrity.sql"
 echo "Reporting checks..."
 run "${ROOT}/supabase/tests/verify-reporting.sql"
 
-echo "OK: schema, seed, triggers, RLS, invite, scoring, GHL, platform-admin, queue, case-file, transcript, follow-up, integrity, and reporting checks passed."
+echo "Business profile checks..."
+run "${ROOT}/supabase/tests/verify-business-profile.sql"
+
+echo "OK: schema, seed, triggers, RLS, invite, scoring, GHL, platform-admin, queue, case-file, transcript, follow-up, integrity, reporting, and business-profile checks passed."

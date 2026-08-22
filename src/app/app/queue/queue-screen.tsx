@@ -42,30 +42,37 @@ import {
 import { createClient } from "@/lib/supabase/client";
 import { btnPrimary, btnSecondary, btnSizeSm, errorClass, sectionLabel } from "@/lib/ui";
 
-const ALARM_COLUMNS = [
-  "Lead",
-  "Breach",
-  "Score",
-  "Confidence",
-  "Source",
-  "Opted in",
-  "Last touch",
-  "Setter",
-  "Closer",
-  "Actions",
+/**
+ * Ten columns is right at a desk and wrong on a phone. The context columns fold
+ * away below `md` and reappear as a line under the lead's name, so the queue
+ * stays readable instead of turning into a sideways scroll.
+ */
+type QueueColumn = { label: string; hideOnMobile?: boolean };
+
+const ALARM_COLUMNS: QueueColumn[] = [
+  { label: "Lead" },
+  { label: "Breach" },
+  { label: "Score" },
+  { label: "Confidence", hideOnMobile: true },
+  { label: "Source", hideOnMobile: true },
+  { label: "Opted in", hideOnMobile: true },
+  { label: "Last touch", hideOnMobile: true },
+  { label: "Setter", hideOnMobile: true },
+  { label: "Closer", hideOnMobile: true },
+  { label: "Actions" },
 ];
 
-const QUEUE_COLUMNS = [
-  "Lead",
-  "Score",
-  "Confidence",
-  "Source",
-  "Opted in",
-  "Last touch",
-  "Setter",
-  "Closer",
-  "Next action",
-  "Actions",
+const QUEUE_COLUMNS: QueueColumn[] = [
+  { label: "Lead" },
+  { label: "Score" },
+  { label: "Confidence", hideOnMobile: true },
+  { label: "Source", hideOnMobile: true },
+  { label: "Opted in", hideOnMobile: true },
+  { label: "Last touch", hideOnMobile: true },
+  { label: "Setter", hideOnMobile: true },
+  { label: "Closer", hideOnMobile: true },
+  { label: "Next action" },
+  { label: "Actions" },
 ];
 
 type Snapshot = {
@@ -545,12 +552,12 @@ export function QueueScreen({
                 <Table>
                   <TableHeader>
                     <TableRow className="hover:bg-transparent">
-                      {ALARM_COLUMNS.map((label) => (
+                      {ALARM_COLUMNS.map((column) => (
                         <TableHead
-                          key={label}
-                         
+                          key={column.label}
+                          className={column.hideOnMobile ? "hidden md:table-cell" : undefined}
                         >
-                          {label}
+                          {column.label}
                         </TableHead>
                       ))}
                     </TableRow>
@@ -599,12 +606,12 @@ export function QueueScreen({
                 <Table>
                   <TableHeader>
                     <TableRow className="hover:bg-transparent">
-                      {QUEUE_COLUMNS.map((label) => (
+                      {QUEUE_COLUMNS.map((column) => (
                         <TableHead
-                          key={label}
-                         
+                          key={column.label}
+                          className={column.hideOnMobile ? "hidden md:table-cell" : undefined}
                         >
-                          {label}
+                          {column.label}
                         </TableHead>
                       ))}
                     </TableRow>

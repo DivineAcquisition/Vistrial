@@ -97,11 +97,12 @@ export function CallsScreen({
         <Table>
           <TableHeader>
             <TableRow className="hover:bg-transparent">
-              {["Lead", "Type", "When", "Outcome", "Extraction", ""].map((label) => (
+              {CALL_COLUMNS.map((column) => (
                 <TableHead
-                  key={label}
+                  key={column.label}
+                  className={column.hideOnMobile ? "hidden md:table-cell" : undefined}
                 >
-                  {label}
+                  {column.label}
                 </TableHead>
               ))}
             </TableRow>
@@ -128,11 +129,26 @@ export function CallsScreen({
   );
 }
 
+/** Type and extraction state fold away on a phone; the row still says who and when. */
+const CALL_COLUMNS: Array<{ label: string; hideOnMobile?: boolean }> = [
+  { label: "Lead" },
+  { label: "Type", hideOnMobile: true },
+  { label: "When" },
+  { label: "Outcome" },
+  { label: "Extraction", hideOnMobile: true },
+  { label: "" },
+];
+
 function CallRow({ row, now }: { row: CallListRow; now: string }) {
   return (
     <TableRow className="border-border/60">
-      <TableCell className="px-4 py-3.5 font-medium text-white">{row.leadName}</TableCell>
-      <TableCell className="px-4 py-3.5 text-silver">{CALL_TYPE_LABELS[row.type]}</TableCell>
+            <TableCell className="px-4 py-3.5 font-medium text-white">
+        {row.leadName}
+        <span className="mt-1 block text-xs font-normal text-dim md:hidden">
+          {CALL_TYPE_LABELS[row.type]}
+        </span>
+      </TableCell>
+      <TableCell className="hidden px-4 py-3.5 text-silver md:table-cell">{CALL_TYPE_LABELS[row.type]}</TableCell>
       <TableCell className="px-4 py-3.5 text-silver tabular-nums">
         {formatQueueDuration(row.occurredAt ?? row.scheduledAt, now)}
         <span className="mt-1 block text-xs text-dim">{formatCallDuration(row.durationSeconds)}</span>
@@ -140,7 +156,7 @@ function CallRow({ row, now }: { row: CallListRow; now: string }) {
       <TableCell className="px-4 py-3.5 text-silver">
         {row.outcome ? CALL_OUTCOME_LABELS[row.outcome] : "—"}
       </TableCell>
-      <TableCell className="px-4 py-3.5">
+      <TableCell className="hidden px-4 py-3.5 md:table-cell">
         <StatusBadge
           label={EXTRACTION_STATUS_LABELS[row.extractionStatus]}
           tone={row.extractionStatus === "failed" ? "critical" : row.extractionStatus === "ready" ? "good" : "neutral"}

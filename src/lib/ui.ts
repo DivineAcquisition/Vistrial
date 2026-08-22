@@ -26,7 +26,7 @@ export const focusRing =
  * ------------------------------------------------------------------------- */
 
 export const btnBase =
-  "inline-flex shrink-0 items-center justify-center gap-2 rounded-full text-sm font-semibold whitespace-nowrap transition-colors duration-150 select-none disabled:pointer-events-none disabled:opacity-45 [&_svg]:pointer-events-none [&_svg]:shrink-0";
+  "inline-flex shrink-0 items-center justify-center gap-2 rounded-full text-sm font-semibold whitespace-nowrap transition-colors duration-150 select-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-500/80 disabled:pointer-events-none disabled:opacity-45 [&_svg]:pointer-events-none [&_svg]:shrink-0";
 
 /** The filled action. One per screen, give or take. */
 export const btnPrimary = `${btnBase} bg-brand-500 text-ink-950 hover:bg-brand-400 active:bg-brand-600 active:text-white`;
@@ -141,3 +141,6 @@ export type SurfacePad = keyof typeof surfacePad;
 export const pageStack = "space-y-6";
 /** Vertical rhythm between rows inside one card. */
 export const cardStack = "space-y-4";
+
+/** A confirmation that something saved. Reads as success, not as a footnote. */
+export const successClass = "mt-1.5 text-xs font-medium text-flag-good";

@@ -8,7 +8,14 @@ import { SubmitButton } from "@/components/ui/button";
 import { Card, CardFooter } from "@/components/ui/card";
 import { Field } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
-import { cardStack, errorClass, helperClass, labelClass, readonlyFieldClass } from "@/lib/ui";
+import {
+  cardStack,
+  errorClass,
+  helperClass,
+  labelClass,
+  readonlyFieldClass,
+  successClass,
+} from "@/lib/ui";
 
 const initial: SettingsSaveResult = { status: "idle" };
 
@@ -55,7 +62,7 @@ export function ProfileForm({
         </div>
 
         {error ? <p className={errorClass}>{error}</p> : null}
-        {state.status === "saved" ? <p className={helperClass}>Saved.</p> : null}
+        {state.status === "saved" ? <p className={successClass}>Saved.</p> : null}
 
         <CardFooter>
           <SubmitButton pending={pending}>Save</SubmitButton>

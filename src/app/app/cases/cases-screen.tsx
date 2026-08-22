@@ -27,7 +27,18 @@ import { LEAD_STATUS_LABELS, LEAD_TRACK_LABELS, leadStatusTone } from "@/lib/lea
 import { formatQueueDuration } from "@/lib/queue/duration";
 import { btnPrimary, btnSecondary, btnSizeSm } from "@/lib/ui";
 
-const COLUMNS = ["Lead", "Score", "Status", "Source", "Assigned", "Last touch"];
+/**
+ * On a narrow screen the last three columns fold away rather than pushing the
+ * table into a sideways scroll. Name, score and status are what a phone is for.
+ */
+const COLUMNS: Array<{ label: string; hideOnMobile?: boolean }> = [
+  { label: "Lead" },
+  { label: "Score" },
+  { label: "Status" },
+  { label: "Source", hideOnMobile: true },
+  { label: "Assigned", hideOnMobile: true },
+  { label: "Last touch", hideOnMobile: true },
+];
 
 export function CasesScreen({
   initial,
@@ -147,12 +158,12 @@ export function CasesScreen({
                 <Table>
                   <TableHeader>
                     <TableRow className="hover:bg-transparent">
-                      {COLUMNS.map((label) => (
+                      {COLUMNS.map((column) => (
                         <TableHead
-                          key={label}
-                         
+                          key={column.label}
+                          className={column.hideOnMobile ? "hidden md:table-cell" : undefined}
                         >
-                          {label}
+                          {column.label}
                         </TableHead>
                       ))}
                     </TableRow>
@@ -195,6 +206,11 @@ function CaseRow({ row, now }: { row: CaseListRow; now: string }) {
           {row.name}
         </Link>
         {row.email ? <span className="mt-1 block text-xs text-dim">{row.email}</span> : null}
+        <span className="mt-1 block text-xs text-dim md:hidden">
+          {[row.source || null, assigned === "—" ? null : assigned]
+            .filter(Boolean)
+            .join(" · ") || "No source recorded"}
+        </span>
       </TableCell>
       <TableCell className="px-4 py-3.5 whitespace-normal">
         {row.score === null ? (
@@ -216,9 +232,9 @@ function CaseRow({ row, now }: { row: CaseListRow; now: string }) {
       <TableCell className="px-4 py-3.5 whitespace-normal">
         <StatusBadge label={LEAD_STATUS_LABELS[row.status]} tone={leadStatusTone(row.status)} />
       </TableCell>
-      <TableCell className="px-4 py-3.5 text-silver">{row.source || "—"}</TableCell>
-      <TableCell className="px-4 py-3.5 text-silver whitespace-normal">{assigned}</TableCell>
-      <TableCell className="px-4 py-3.5 text-silver tabular-nums">
+      <TableCell className="hidden px-4 py-3.5 text-silver md:table-cell">{row.source || "—"}</TableCell>
+      <TableCell className="hidden px-4 py-3.5 text-silver whitespace-normal md:table-cell">{assigned}</TableCell>
+      <TableCell className="hidden px-4 py-3.5 text-silver tabular-nums md:table-cell">
         {formatQueueDuration(row.lastTouchAt, now)}
       </TableCell>
     </TableRow>

@@ -11,7 +11,15 @@ import { Field } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { ORG_TIMEZONE_LABELS, ORG_TIMEZONES, isOrgTimezone } from "@/lib/timezones";
-import { cardStack, cardTitle, errorClass, helperClass, labelClass, readonlyFieldClass } from "@/lib/ui";
+import {
+  cardStack,
+  cardTitle,
+  errorClass,
+  helperClass,
+  labelClass,
+  readonlyFieldClass,
+  successClass,
+} from "@/lib/ui";
 
 const initial: SettingsSaveResult = { status: "idle" };
 
@@ -93,7 +101,7 @@ export function OrganizationForm({
         </div>
 
         {error ? <p className={errorClass}>{error}</p> : null}
-        {state.status === "saved" ? <p className={helperClass}>Saved.</p> : null}
+        {state.status === "saved" ? <p className={successClass}>Saved.</p> : null}
 
         <CardFooter>
           <SubmitButton pending={pending}>Save</SubmitButton>

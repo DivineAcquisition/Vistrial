@@ -16,6 +16,7 @@ import {
   helperClass,
   inputClass,
   labelClass,
+  successClass,
 } from "@/lib/ui";
 import type { Tone } from "@/components/ui/tone";
 
@@ -208,7 +209,7 @@ export function BaselineSettings(props: BaselineSettingsProps) {
             Save self-reported baseline
           </SubmitButton>
           {selfState.status === "error" ? <p className={errorClass}>{selfState.error}</p> : null}
-          {selfState.status === "saved" ? <p className={helperClass}>Saved as self-reported.</p> : null}
+          {selfState.status === "saved" ? <p className={successClass}>Saved as self-reported.</p> : null}
         </form>
       ) : null}
     </Panel>

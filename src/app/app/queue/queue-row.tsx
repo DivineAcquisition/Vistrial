@@ -95,6 +95,15 @@ export function QueueLeadRow({
       >
         <TableCell className="px-4 py-3.5 font-medium whitespace-normal text-white">
           <span className="block">{row.name}</span>
+          <span className="mt-1 block text-xs font-normal text-dim md:hidden">
+            {[
+              row.source || null,
+              `in ${formatQueueDuration(row.optedInAt, now)}`,
+              row.assignedSetterName,
+            ]
+              .filter(Boolean)
+              .join(" · ")}
+          </span>
           {exiting ? <span className="mt-1 block text-xs text-dim">Leaving the alarm — touched</span> : null}
         </TableCell>
         {variant === "alarm" ? (
@@ -125,7 +134,7 @@ export function QueueLeadRow({
             </button>
           )}
         </TableCell>
-        <TableCell className="px-4 py-3.5 text-silver whitespace-normal">
+        <TableCell className="hidden px-4 py-3.5 text-silver whitespace-normal md:table-cell">
           {row.score === null ? (
             <span className="text-dim">—</span>
           ) : (
@@ -135,17 +144,17 @@ export function QueueLeadRow({
             </span>
           )}
         </TableCell>
-        <TableCell className="px-4 py-3.5 text-silver">{row.source || "—"}</TableCell>
-        <TableCell className="px-4 py-3.5 text-silver tabular-nums">
+        <TableCell className="hidden px-4 py-3.5 text-silver md:table-cell">{row.source || "—"}</TableCell>
+        <TableCell className="hidden px-4 py-3.5 text-silver tabular-nums md:table-cell">
           {formatQueueDuration(row.optedInAt, now)}
         </TableCell>
-        <TableCell className="px-4 py-3.5 text-silver tabular-nums">
+        <TableCell className="hidden px-4 py-3.5 text-silver tabular-nums md:table-cell">
           {formatQueueDuration(row.lastTouchAt, now)}
         </TableCell>
-        <TableCell className="px-4 py-3.5 text-silver whitespace-normal">
+        <TableCell className="hidden px-4 py-3.5 text-silver whitespace-normal md:table-cell">
           {row.assignedSetterName || "—"}
         </TableCell>
-        <TableCell className="px-4 py-3.5 text-silver whitespace-normal">
+        <TableCell className="hidden px-4 py-3.5 text-silver whitespace-normal md:table-cell">
           {row.assignedCloserName || "—"}
         </TableCell>
         {variant === "queue" ? (

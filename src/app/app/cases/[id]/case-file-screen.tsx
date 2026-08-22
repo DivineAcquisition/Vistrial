@@ -121,7 +121,7 @@ export function CaseFileScreen({ initial }: { initial: CaseFilePayload }) {
     <div className="space-y-8">
       {error ? <p className={errorClass}>{error}</p> : null}
 
-      <Panel className="px-6 py-6">
+      <Panel className="p-6">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div className="min-w-0">
             <h2 className="text-lg font-semibold text-white">{lead.name}</h2>
@@ -255,7 +255,7 @@ export function CaseFileScreen({ initial }: { initial: CaseFilePayload }) {
 
       <section>
         <SectionHeader title="Readiness" hint="Four factors, not just the total. The call changes with which one is weak." />
-        <Panel className="px-6 py-5">
+        <Panel className="p-6">
           {file.score ? (
             <DefinitionList>
               <KeyValue label="Score">
@@ -280,7 +280,7 @@ export function CaseFileScreen({ initial }: { initial: CaseFilePayload }) {
       </section>
 
       <section>
-        <Panel className="px-6 py-5">
+        <Panel className="p-6">
           <details>
             <summary className="cursor-pointer text-sm font-medium text-white">
               Score history ({file.scoreHistory.length})
@@ -303,7 +303,7 @@ export function CaseFileScreen({ initial }: { initial: CaseFilePayload }) {
 
       <section>
         <SectionHeader title="Open objections" hint="Do not re-litigate these. They are already on the table." />
-        <Panel className="px-6 py-5">
+        <Panel className="p-6">
           {openObjections.length === 0 ? (
             <p className="text-sm text-dim">No open objections.</p>
           ) : (
@@ -347,7 +347,7 @@ export function CaseFileScreen({ initial }: { initial: CaseFilePayload }) {
             title="Follow-up drafts"
             hint="Review and approve one at a time. Nothing sends without you."
           />
-          <Panel className="px-6 py-5">
+          <Panel className="p-6">
             {file.activeSequences.length > 0 ? (
               <div className="mb-4 space-y-3">
                 {file.activeSequences.map((sequenceRun) => (
@@ -431,7 +431,7 @@ export function CaseFileScreen({ initial }: { initial: CaseFilePayload }) {
             />
           </div>
         ) : null}
-        <Panel className="px-6 py-5">
+        <Panel className="p-6">
           {openActions.length === 0 ? (
             <p className="text-sm text-dim">No open actions.</p>
           ) : (
@@ -477,7 +477,7 @@ export function CaseFileScreen({ initial }: { initial: CaseFilePayload }) {
 
       <section>
         <SectionHeader title="Timeline" hint="Touches and calls in one stream. Notes are yours — not the conversation." />
-        <Panel className="px-6 py-5">
+        <Panel className="p-6">
           {file.timeline.entries.length === 0 ? (
             <p className="text-sm text-dim">No touches or calls yet.</p>
           ) : (
@@ -538,7 +538,7 @@ export function CaseFileScreen({ initial }: { initial: CaseFilePayload }) {
         />
         <div className="space-y-3">
           {file.calls.length === 0 ? (
-            <Panel className="px-6 py-5">
+            <Panel className="p-6">
               <p className="text-sm text-dim">No calls yet.</p>
             </Panel>
           ) : (
@@ -548,7 +548,7 @@ export function CaseFileScreen({ initial }: { initial: CaseFilePayload }) {
       </section>
 
       <section>
-        <Panel className="px-6 py-5">
+        <Panel className="p-6">
           <details>
             <summary className="cursor-pointer text-sm font-medium text-white">Application answers</summary>
             <p className={helperClass}>Raw intake. Mapped answers show which scoring factor they feed.</p>
@@ -563,7 +563,7 @@ export function CaseFileScreen({ initial }: { initial: CaseFilePayload }) {
       {file.revenue !== null ? (
         <section>
           <SectionHeader title="Revenue" hint="Owner and admin only. A payment here is what sets closed won." />
-          <Panel className="px-6 py-5">
+          <Panel className="p-6">
             {file.revenue.length === 0 ? (
               <p className="text-sm text-dim">No payments recorded.</p>
             ) : (
@@ -629,7 +629,7 @@ function ObjectionBlock({
     : "Unlinked call";
 
   return (
-    <div className="rounded-xl border border-white/10 bg-white/[0.03] px-4 py-4">
+    <div className="rounded-xl border border-white/10 bg-white/[0.03] p-4">
       <div className="flex flex-wrap items-center gap-2">
         <StatusBadge
           label={OBJECTION_TYPE_LABELS[item.type]}
@@ -687,7 +687,7 @@ function NextActionBlock({
   const [ownerId, setOwnerId] = useState(item.ownerMemberId ?? "");
 
   return (
-    <div className="rounded-xl border border-white/10 bg-white/[0.03] px-4 py-4">
+    <div className="rounded-xl border border-white/10 bg-white/[0.03] p-4">
       <p className="text-sm text-white">{item.actionText}</p>
       <p className="mt-1 text-xs">
         {item.overdue ? (
@@ -812,7 +812,7 @@ function TimelineEntry({
 
 function CallBlock({ call, now, leadId }: { call: CaseCall; now: string; leadId: string }) {
   return (
-    <Panel className="px-6 py-5" as="article">
+    <Panel className="p-6" as="article">
       <DefinitionList>
         <KeyValue label="Type">{CALL_TYPE_LABELS[call.type]}</KeyValue>
         <KeyValue label="Scheduled">
@@ -895,7 +895,7 @@ function OverridePanel({
   const [pending, setPending] = useState(false);
   return (
     <form
-      className="rounded-xl border border-white/10 bg-white/[0.03] px-4 py-4"
+      className="rounded-xl border border-white/10 bg-white/[0.03] p-4"
       onSubmit={(event) => {
         event.preventDefault();
         const formData = new FormData(event.currentTarget);
@@ -961,7 +961,7 @@ function StatusPanel({
 
   return (
     <form
-      className="rounded-xl border border-white/10 bg-white/[0.03] px-4 py-4"
+      className="rounded-xl border border-white/10 bg-white/[0.03] p-4"
       onSubmit={(event) => {
         event.preventDefault();
         setPending(true);

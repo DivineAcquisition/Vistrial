@@ -15,7 +15,7 @@ export default function AppError({
       title="This section failed to load"
       description="The request did not complete. Try again — the failure is not permanent."
     >
-      <Panel className="px-6 py-8">
+      <Panel className="p-8">
         <p className="text-sm leading-relaxed text-silver">
           Something on this page broke while loading. Your workspace and the rest
           of the app are still there. Retry the request, or open another section

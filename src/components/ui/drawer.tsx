@@ -50,7 +50,7 @@ export function Drawer({
           width === "lg" ? "sm:max-w-2xl" : "sm:max-w-lg"
         )}
       >
-        <SheetHeader className="border-b border-white/[0.07] px-6 py-5">
+        <SheetHeader className="border-b border-white/[0.07] p-6">
           <SheetTitle className="text-base font-semibold text-white">{title}</SheetTitle>
           {description ? (
             <SheetDescription className="text-sm leading-relaxed text-silver">
@@ -58,9 +58,9 @@ export function Drawer({
             </SheetDescription>
           ) : null}
         </SheetHeader>
-        <div className="min-h-0 flex-1 overflow-y-auto px-6 py-5">{children}</div>
+        <div className="min-h-0 flex-1 overflow-y-auto p-6">{children}</div>
         {footer ? (
-          <div className="flex flex-wrap items-center justify-end gap-2 border-t border-white/[0.07] px-6 py-4">
+          <div className="flex flex-wrap items-center justify-end gap-2 border-t border-white/[0.07] p-6">
             {footer}
           </div>
         ) : null}

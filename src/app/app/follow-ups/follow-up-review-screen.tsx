@@ -84,7 +84,7 @@ export function FollowUpReviewScreen({ initial }: { initial: FollowUpReviewPaylo
     <div className="space-y-8">
       {error ? <p className={errorClass}>{error}</p> : null}
 
-      <Panel className="px-6 py-6">
+      <Panel className="p-6">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
             <h2 className="text-lg font-semibold text-white">{file.lead.name}</h2>
@@ -106,7 +106,7 @@ export function FollowUpReviewScreen({ initial }: { initial: FollowUpReviewPaylo
       </Panel>
 
       {!file.canApprove && (draft.status === "pending" || draft.status === "failed") && !stale ? (
-        <Panel className="px-6 py-5">
+        <Panel className="p-6">
           <p className="text-sm text-flag-critical">
             You can only approve drafts for leads assigned to you.
           </p>
@@ -114,7 +114,7 @@ export function FollowUpReviewScreen({ initial }: { initial: FollowUpReviewPaylo
       ) : null}
 
       {draft.lowConfidence ? (
-        <Panel className="px-6 py-5">
+        <Panel className="p-6">
           <p className="text-sm text-flag-critical">
             Low confidence: {draft.lowConfidenceReason || "the quality check failed twice."} Edit
             or regenerate before sending.
@@ -123,7 +123,7 @@ export function FollowUpReviewScreen({ initial }: { initial: FollowUpReviewPaylo
       ) : null}
 
       {stale && draft.status !== "sent" ? (
-        <Panel className="px-6 py-5">
+        <Panel className="p-6">
           <p className="text-sm text-flag-critical">
             This draft is stale. It cannot be sent without regeneration.
           </p>
@@ -133,7 +133,7 @@ export function FollowUpReviewScreen({ initial }: { initial: FollowUpReviewPaylo
       <div className="grid gap-8 lg:grid-cols-2">
         <section>
           <SectionHeader title="Draft" hint="Free editing. Nothing sends until you approve this one." />
-          <Panel className="px-6 py-5">
+          <Panel className="p-6">
             {draft.channel === "email" ? (
               <div className="mb-4">
                 <label htmlFor="follow-up-subject" className={labelClass}>
@@ -194,7 +194,7 @@ export function FollowUpReviewScreen({ initial }: { initial: FollowUpReviewPaylo
 
         <section>
           <SectionHeader title="Grounding" hint="Verify the draft against what was said before you approve." />
-          <Panel className="px-6 py-5 space-y-4">
+          <Panel className="p-6 space-y-4">
             <div>
               <p className={labelClass}>Call summary</p>
               <p className="text-sm text-silver">{file.extraction.summary || "Thin extraction — no summary."}</p>
@@ -231,7 +231,7 @@ export function FollowUpReviewScreen({ initial }: { initial: FollowUpReviewPaylo
 
       {editable ? (
         <section className="grid gap-8 lg:grid-cols-2">
-          <Panel className="px-6 py-5">
+          <Panel className="p-6">
             <p className={labelClass}>Regenerate</p>
             <textarea
               className={`${inputClass} min-h-24`}
@@ -249,7 +249,7 @@ export function FollowUpReviewScreen({ initial }: { initial: FollowUpReviewPaylo
               Regenerate
             </button>
           </Panel>
-          <Panel className="px-6 py-5">
+          <Panel className="p-6">
             <p className={labelClass}>Reject</p>
             <textarea
               className={`${inputClass} min-h-24`}
@@ -271,7 +271,7 @@ export function FollowUpReviewScreen({ initial }: { initial: FollowUpReviewPaylo
       ) : null}
 
       {canApprove || canRetry ? (
-        <Panel className="px-6 py-5">
+        <Panel className="p-6">
           {!confirming ? (
             <div className="flex flex-wrap gap-2">
               {canApprove ? (
@@ -354,7 +354,7 @@ export function FollowUpReviewScreen({ initial }: { initial: FollowUpReviewPaylo
       ) : null}
 
       {file.draft.sequenceRunId ? (
-        <Panel className="px-6 py-5">
+        <Panel className="p-6">
           <p className={helperClass}>
             This draft is part of a sequence. Later messages are drafted on a schedule and still
             require their own approval. Sending is never scheduled.

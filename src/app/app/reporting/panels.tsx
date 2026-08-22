@@ -69,7 +69,7 @@ function Computed({ payload }: { payload: Record<string, unknown> }) {
 
 function PanelFallback({ title }: { title: string }) {
   return (
-    <Panel className="px-6 py-6">
+    <Panel className="p-6">
       <SectionHeader title={title} hint="Loading this panel." />
       <p className="text-sm text-dim">Computing from the database…</p>
     </Panel>
@@ -141,7 +141,7 @@ async function OutcomePanel({ orgId, range }: { orgId: string; range: ReportingR
   const selfReported = payload.self_reported ? asRecord(payload.self_reported) : null;
 
   return (
-    <Panel className="px-6 py-6">
+    <Panel className="p-6">
       <SectionHeader
         title="Clients closed per hundred leads"
         hint="Counted by opt-in date. Closed only from recorded revenue. Maturing cohorts are excluded."
@@ -203,7 +203,7 @@ async function CoveragePanel({ orgId, range }: { orgId: string; range: Reporting
   const ever = rateOf(payload.ever_touched);
   const within = rateOf(payload.within_window);
   return (
-    <Panel className="px-6 py-6">
+    <Panel className="p-6">
       <SectionHeader
         title="Coverage"
         hint="The operational claim: a human actually reached the lead, and did it inside the window."
@@ -233,7 +233,7 @@ async function ThroughputPanel({ orgId, range }: { orgId: string; range: Reporti
   const funnel = Array.isArray(payload.close_rate_by_stage) ? payload.close_rate_by_stage : [];
   const show = rateOf(payload.show_rate);
   return (
-    <Panel className="px-6 py-6">
+    <Panel className="p-6">
       <SectionHeader title="Throughput" hint="Leads in this range, and what happened to their calls." />
       <KpiGrid columns={4}>
         <KpiCard label="Calls booked" value={formatCount(num(payload.calls_booked) ?? 0)} />
@@ -283,7 +283,7 @@ async function TeamPanel({ orgId, range }: { orgId: string; range: ReportingRang
   const payload = await loadReportingPanel(orgId, "team", range);
   const operators = Array.isArray(payload.operators) ? payload.operators : [];
   return (
-    <Panel className="px-6 py-6">
+    <Panel className="p-6">
       <SectionHeader
         title="Team workload"
         hint="Coverage and activity, not a ranking. Close rate is omitted on purpose."
@@ -327,7 +327,7 @@ async function FollowUpPanel({ orgId, range }: { orgId: string; range: Reporting
     : [];
   const halt = Array.isArray(payload.halt_reasons) ? payload.halt_reasons : [];
   return (
-    <Panel className="px-6 py-6">
+    <Panel className="p-6">
       <SectionHeader title="Follow-up" hint="Draft volume, how much operators change, replies, and why sequences stop." />
       <KpiGrid columns={4}>
         <KpiCard label="Generated" value={formatCount(num(payload.generated) ?? 0)} />
@@ -400,7 +400,7 @@ async function ObjectionsPanel({ orgId, range }: { orgId: string; range: Reporti
   const payload = await loadReportingPanel(orgId, "objections", range);
   if (bool(payload.too_small)) {
     return (
-      <Panel className="px-6 py-6">
+      <Panel className="p-6">
         <SectionHeader title="Objections" />
         <EmptyState
           title="Not enough objections to treat as a finding"
@@ -412,7 +412,7 @@ async function ObjectionsPanel({ orgId, range }: { orgId: string; range: Reporti
   }
   const rows = Array.isArray(payload.rows) ? payload.rows : [];
   return (
-    <Panel className="px-6 py-6">
+    <Panel className="p-6">
       <SectionHeader title="Objections" hint="Exact language matters more than the category label." />
       <div className="space-y-6">
         {rows.map((row) => {
@@ -459,7 +459,7 @@ async function SourcesPanel({ orgId, range }: { orgId: string; range: ReportingR
   const rows = Array.isArray(payload.rows) ? payload.rows : [];
   const flag = payload.high_readiness_low_close ? asRecord(payload.high_readiness_low_close) : null;
   return (
-    <Panel className="px-6 py-6">
+    <Panel className="p-6">
       <SectionHeader
         title="Source quality"
         hint="Volume, readiness, show rate, and clients per hundred leads. High readiness with low closes is a fit problem."
@@ -504,7 +504,7 @@ async function TerminalPanel({ orgId, range }: { orgId: string; range: Reporting
   const payload = await loadReportingPanel(orgId, "terminal", range);
   if (bool(payload.too_small)) {
     return (
-      <Panel className="px-6 py-6">
+      <Panel className="p-6">
         <SectionHeader title="Where deals die" />
         <EmptyState title="Not enough terminal outcomes" detail={str(payload.suppressed_plain) ?? undefined} />
         <Computed payload={payload} />
@@ -513,7 +513,7 @@ async function TerminalPanel({ orgId, range }: { orgId: string; range: Reporting
   }
   const rows = Array.isArray(payload.rows) ? payload.rows : [];
   return (
-    <Panel className="px-6 py-6">
+    <Panel className="p-6">
       <SectionHeader title="Where deals die" hint="Terminal outcomes by cause, not a single lost bucket." />
       <DataTable
         columns={[
@@ -538,7 +538,7 @@ async function SpeedPanel({ orgId, range }: { orgId: string; range: ReportingRan
   const payload = await loadReportingPanel(orgId, "speed", range);
   if (bool(payload.too_small)) {
     return (
-      <Panel className="px-6 py-6">
+      <Panel className="p-6">
         <SectionHeader title="Speed-to-lead impact" />
         <EmptyState title="Not enough mature leads" detail={str(payload.suppressed_plain) ?? undefined} />
         <Computed payload={payload} />
@@ -547,7 +547,7 @@ async function SpeedPanel({ orgId, range }: { orgId: string; range: ReportingRan
   }
   const rows = Array.isArray(payload.rows) ? payload.rows : [];
   return (
-    <Panel className="px-6 py-6">
+    <Panel className="p-6">
       <SectionHeader
         title="Speed-to-lead impact"
         hint={str(payload.correlation_caveat) ?? "This workspace's own data, not an industry statistic."}
@@ -579,7 +579,7 @@ async function ReadinessPanel({ orgId, range }: { orgId: string; range: Reportin
   const payload = await loadReportingPanel(orgId, "readiness", range);
   const rows = Array.isArray(payload.distribution) ? payload.distribution : [];
   return (
-    <Panel className="px-6 py-6">
+    <Panel className="p-6">
       <SectionHeader title="Readiness" hint="Latest score distribution and how many leads were scored more than once." />
       <KpiCard
         className="mb-4 max-w-xs"
@@ -606,7 +606,7 @@ async function ContributionPanel({ orgId, range }: { orgId: string; range: Repor
   const payload = await loadReportingPanel(orgId, "contribution", range);
   const items = Array.isArray(payload.items) ? payload.items : [];
   return (
-    <Panel className="px-6 py-6">
+    <Panel className="p-6">
       <SectionHeader title="What this product actually did" hint={str(payload.attribution) ?? undefined} />
       <ul className="space-y-2 text-sm text-silver">
         {items.map((item) => {
@@ -630,7 +630,7 @@ async function IngestionPanel({ orgId, range }: { orgId: string; range: Reportin
   const payload = await loadReportingPanel(orgId, "ingestion", range);
   const types = Array.isArray(payload.by_type) ? payload.by_type : [];
   return (
-    <Panel className="px-6 py-6">
+    <Panel className="p-6">
       <SectionHeader title="Ingestion health" hint={str(payload.note) ?? undefined} />
       <KpiGrid columns={3}>
         <KpiCard label="Received" value={formatCount(num(payload.received) ?? 0)} />

@@ -3,6 +3,8 @@ import Link from "next/link";
 import { BenchmarkPanel } from "@/app/app/onboarding/payoffs";
 import { RegenerateLeakReport } from "@/app/app/onboarding/report/regenerate";
 import { PageFrame } from "@/components/app/page-frame";
+import { Button } from "@/components/ui/button";
+import { EmptyState } from "@/components/ui/empty-state";
 import { DefinitionList, KeyValue } from "@/components/ui/definition-list";
 import { Panel } from "@/components/ui/panel";
 import { StatusBadge } from "@/components/ui/status-badge";
@@ -31,7 +33,7 @@ const BASIS_LABEL = {
 function MovementPanel({ report }: { report: LeakReport }) {
   if (report.movement.length === 0) return null;
   return (
-    <Panel className="px-6 py-6">
+    <Panel className="p-6">
       <h3 className="text-sm font-semibold text-white">Movement since the first report</h3>
       <p className={helperClass}>
         Measured against the same baseline, cut on{" "}
@@ -60,19 +62,16 @@ export default async function LeakReportPage() {
         title="Leak Report"
         description="Where your leads are going, from your own history."
       >
-        <Panel className="px-6 py-6">
-          <p className="text-sm font-medium text-white">No report has been generated yet.</p>
-          <p className={helperClass}>
-            It is built from your CRM history plus the answers on your business profile. Finish the
-            profile and generate it here.
-          </p>
-          <div className="mt-5 flex flex-wrap gap-3">
-            <RegenerateLeakReport label="Generate the report" />
-            <Link href="/app/onboarding" className={`${btnSecondary} ${btnSizeMd}`}>
-              Back to onboarding
-            </Link>
-          </div>
-        </Panel>
+        <EmptyState
+          title="No report has been generated yet."
+          detail="It is built from your CRM history plus the answers on your business profile. Finish the profile and generate it here."
+          action={<RegenerateLeakReport label="Generate the report" />}
+          secondaryAction={
+            <Button asChild variant="secondary">
+              <Link href="/app/onboarding">Back to onboarding</Link>
+            </Button>
+          }
+        />
       </PageFrame>
     );
   }
@@ -96,7 +95,7 @@ export default async function LeakReportPage() {
       }
     >
       <div className="space-y-6">
-        <Panel className="px-6 py-6">
+        <Panel className="p-6">
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div>
               <h2 className="text-sm font-semibold text-white">{report.orgName}</h2>
@@ -133,7 +132,7 @@ export default async function LeakReportPage() {
         </Panel>
 
         {report.findings.map((finding) => (
-          <Panel key={finding.key} className="px-6 py-6">
+          <Panel key={finding.key} className="p-6">
             <div className="flex flex-wrap items-start justify-between gap-4">
               <h3 className="text-sm font-semibold text-white">{finding.title}</h3>
               {finding.shown ? null : <StatusBadge label="Not measurable" tone="neutral" />}
@@ -150,7 +149,7 @@ export default async function LeakReportPage() {
         <MovementPanel report={report} />
 
         {history.length > 1 ? (
-          <Panel className="px-6 py-6">
+          <Panel className="p-6">
             <h3 className="text-sm font-semibold text-white">Earlier generations</h3>
             <DefinitionList>
               {history.slice(1).map((item) => {

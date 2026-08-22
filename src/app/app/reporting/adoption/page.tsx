@@ -1,14 +1,17 @@
 import Link from "next/link";
 
 import { PageFrame } from "@/components/app/page-frame";
+import { Button } from "@/components/ui/button";
 import { DataTable } from "@/components/ui/data-table";
-import { KpiCard, KpiGrid } from "@/components/ui/kpi-card";
+import { EmptyState } from "@/components/ui/empty-state";
+import { KpiCard, KpiGrid, Trend } from "@/components/ui/kpi-card";
+import { Notice } from "@/components/ui/states";
 import { Panel } from "@/components/ui/panel";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { formatMinutes } from "@/lib/profile/leak";
 import { loadAdoptionWatch, requireProfileAccess } from "@/lib/profile/load";
 import { asArray, asRecord, bool, num, str } from "@/lib/profile/parse";
-import { btnSecondary, btnSizeSm, helperClass } from "@/lib/ui";
+import { helperClass } from "@/lib/ui";
 
 type Rate = { k: number; n: number; pct: number | null; tooSmall: boolean; sample: string };
 
@@ -29,11 +32,17 @@ function rateText(value: Rate): string {
   return `${value.pct}%`;
 }
 
-function trend(now: Rate, before: Rate): string | undefined {
+function trendOf(now: Rate, before: Rate, higherIsBetter: boolean) {
   if (now.pct === null || before.pct === null) return undefined;
   const delta = Math.round((now.pct - before.pct) * 10) / 10;
-  if (delta === 0) return "level on last week";
-  return `${delta > 0 ? "up" : "down"} ${Math.abs(delta)} on last week`;
+  return (
+    <Trend
+      direction={delta === 0 ? "flat" : delta > 0 ? "up" : "down"}
+      value={delta === 0 ? "level" : `${Math.abs(delta)} pts`}
+      comparison="on last week"
+      isGood={delta === 0 ? undefined : delta > 0 === higherIsBetter}
+    />
+  );
 }
 
 export default async function AdoptionWatchPage() {
@@ -46,17 +55,16 @@ export default async function AdoptionWatchPage() {
         title="Adoption"
         description="Whether the team is actually using the system."
       >
-        <Panel className="px-6 py-6">
-          <p className="text-sm font-medium text-white">This workspace is not live yet.</p>
-          <p className={helperClass}>
-            There is nothing to watch until activation sets the line between baseline and measured.
-          </p>
-          <div className="mt-4">
-            <Link href="/app/settings/business-profile" className={`${btnSecondary} ${btnSizeSm}`}>
-              Open the activation gate
-            </Link>
-          </div>
-        </Panel>
+        <EmptyState
+          kind="unconfigured"
+          title="This workspace is not live yet."
+          detail="There is nothing to watch until activation sets the line between baseline and measured."
+          action={
+            <Button asChild variant="secondary" size="sm">
+              <Link href="/app/settings/business-profile">Open the activation gate</Link>
+            </Button>
+          }
+        />
       </PageFrame>
     );
   }
@@ -83,14 +91,13 @@ export default async function AdoptionWatchPage() {
     >
       <div className="space-y-6">
         {alarms.length > 0 ? (
-          <Panel className="border-flag-warning/40 px-6 py-6">
-            <h2 className="text-sm font-semibold text-white">Said plainly</h2>
-            <ul className="mt-3 space-y-3 text-sm text-flag-warning">
+          <Notice tone="warning" title="Said plainly">
+            <ul className="space-y-2">
               {alarms.map((item, index) => (
                 <li key={str(asRecord(item).key) ?? index}>{str(asRecord(item).plain)}</li>
               ))}
             </ul>
-          </Panel>
+          </Notice>
         ) : null}
 
         <div>
@@ -104,12 +111,12 @@ export default async function AdoptionWatchPage() {
             <KpiCard
               label="Leads getting a human touch"
               value={rateText(touchNow)}
-              sub={trend(touchNow, touchBefore)}
+              trend={trendOf(touchNow, touchBefore, true)}
             />
             <KpiCard
               label="Calls with an outcome logged"
               value={rateText(logNow)}
-              sub={trend(logNow, logBefore)}
+              trend={trendOf(logNow, logBefore, true)}
               tone={logNow.pct !== null && logNow.pct < 50 ? "warning" : "neutral"}
             />
           </KpiGrid>
@@ -132,7 +139,7 @@ export default async function AdoptionWatchPage() {
           </KpiGrid>
         </div>
 
-        <Panel className="px-6 py-6">
+        <Panel className="p-6">
           <h2 className="text-sm font-semibold text-white">Who has used the system this week</h2>
           <p className={helperClass}>
             Outcome logging is the leading indicator. If leads are arriving and nobody is recording

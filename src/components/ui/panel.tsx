@@ -35,7 +35,7 @@ export function PanelLink({
     <Link
       href={href}
       className={cn(
-        "panel panel-hover block rounded-2xl px-5 py-4 focus-visible:outline-none",
+        "panel panel-hover block rounded-2xl p-5 focus-visible:outline-none",
         className
       )}
     >

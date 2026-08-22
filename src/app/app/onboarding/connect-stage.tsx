@@ -7,7 +7,8 @@ import { saveOnboardingStage, type OnboardingResult } from "@/app/app/onboarding
 import { Panel } from "@/components/ui/panel";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { STAGE_META } from "@/lib/profile/stages";
-import { btnPrimary, btnSecondary, btnSizeMd, errorClass, helperClass } from "@/lib/ui";
+import { buttonClasses, SubmitButton } from "@/components/ui/button";
+import { errorClass, helperClass } from "@/lib/ui";
 
 const idle: OnboardingResult = { status: "idle" };
 
@@ -31,7 +32,7 @@ export function ConnectStage({
   const meta = STAGE_META.connect;
 
   return (
-    <Panel className="px-6 py-6">
+    <Panel className="p-6">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
           <h2 className="text-sm font-semibold text-white">{meta.title}</h2>
@@ -56,7 +57,7 @@ export function ConnectStage({
           <Link
             href="/api/ghl/oauth/start"
             prefetch={false}
-            className={`${connected ? btnSecondary : btnPrimary} ${btnSizeMd}`}
+            className={buttonClasses({ variant: connected ? "secondary" : "gradient" })}
           >
             {connected ? "Reconnect GoHighLevel" : "Connect GoHighLevel"}
           </Link>
@@ -69,9 +70,7 @@ export function ConnectStage({
         {connected ? (
           <form action={action}>
             <input type="hidden" name="stage" value="connect" />
-            <button type="submit" className={`${btnPrimary} ${btnSizeMd}`} disabled={pending}>
-              {pending ? "Saving…" : "Save and see what we found"}
-            </button>
+            <SubmitButton pending={pending}>Save and see what we found</SubmitButton>
           </form>
         ) : null}
       </div>

@@ -13,6 +13,8 @@ import {
 import { DefinitionList, KeyValue } from "@/components/ui/definition-list";
 import { Select } from "@/components/ui/select";
 import { Panel } from "@/components/ui/panel";
+import { Button } from "@/components/ui/button";
+import { Notice } from "@/components/ui/states";
 import { SectionHeader } from "@/components/ui/section-header";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { formatCallDuration } from "@/lib/cases/format";
@@ -72,7 +74,7 @@ export function CallDetailScreen({ initial }: { initial: CallDetailPayload }) {
     <div className="space-y-8">
       {error ? <p className={errorClass}>{error}</p> : null}
 
-      <Panel className="px-6 py-6">
+      <Panel className="p-6">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
             <h2 className="text-lg font-semibold text-white">{CALL_TYPE_LABELS[call.type]} call</h2>
@@ -112,21 +114,24 @@ export function CallDetailScreen({ initial }: { initial: CallDetailPayload }) {
       </Panel>
 
       {jobStatus === "failed" ? (
-        <Panel className="border-flag-critical/40 px-6 py-5">
-          <p className="text-sm font-semibold text-flag-critical">Extraction failed</p>
-          <p className="mt-2 text-sm text-silver">
-            This is not an empty call. Extraction stopped
-            {detail.job?.lastError ? ` (${detail.job.lastError})` : ""}. Retry after the cause is fixed.
-          </p>
-          <button
-            type="button"
-            className={`${btnPrimary} ${btnSizeSm} mt-4`}
-            disabled={busy}
-            onClick={() => run(() => retryDeadExtraction(call.id))}
-          >
-            Retry extraction
-          </button>
-        </Panel>
+        <Notice
+          tone="critical"
+          title="Extraction failed"
+          action={
+            <Button
+              variant="destructive"
+              size="sm"
+              loading={busy}
+              loadingLabel="Retrying"
+              onClick={() => run(() => retryDeadExtraction(call.id))}
+            >
+              Retry extraction
+            </Button>
+          }
+        >
+          This is not an empty call. Extraction stopped
+          {detail.job?.lastError ? ` (${detail.job.lastError})` : ""}. Retry after the cause is fixed.
+        </Notice>
       ) : null}
 
       <section>
@@ -147,7 +152,7 @@ export function CallDetailScreen({ initial }: { initial: CallDetailPayload }) {
           }
         />
         {detail.extraction ? (
-          <Panel className="px-6 py-5">
+          <Panel className="p-6">
             <SignalField
               key={`summary-${detail.extraction.summary ?? ""}`}
               label="Summary"
@@ -223,11 +228,11 @@ export function CallDetailScreen({ initial }: { initial: CallDetailPayload }) {
             </p>
           </Panel>
         ) : jobStatus === "pending" ? (
-          <Panel className="px-6 py-5">
+          <Panel className="p-6">
             <p className="text-sm text-silver">Extraction is queued. This page does not run it on view.</p>
           </Panel>
         ) : jobStatus === "failed" ? null : (
-          <Panel className="px-6 py-5">
+          <Panel className="p-6">
             <p className="text-sm text-dim">No extraction yet.</p>
           </Panel>
         )}
@@ -235,7 +240,7 @@ export function CallDetailScreen({ initial }: { initial: CallDetailPayload }) {
 
       <section>
         <SectionHeader title="Objections" hint="Verbatim, with whether they are still open." />
-        <Panel className="px-6 py-5">
+        <Panel className="p-6">
           {detail.objections.length === 0 ? (
             <p className="text-sm text-dim">Not established</p>
           ) : (
@@ -255,7 +260,7 @@ export function CallDetailScreen({ initial }: { initial: CallDetailPayload }) {
 
       <section>
         <SectionHeader title="Score change" hint="What this call did to readiness. Call evidence wins; nothing is averaged." />
-        <Panel className="px-6 py-5">
+        <Panel className="p-6">
           {detail.scoreChange ? (
             <DefinitionList>
               <KeyValue label="Before">
@@ -273,7 +278,7 @@ export function CallDetailScreen({ initial }: { initial: CallDetailPayload }) {
       {detail.corrections.length > 0 ? (
         <section>
           <SectionHeader title="Corrections" hint="Who changed an extracted field, and when." />
-          <Panel className="px-6 py-5">
+          <Panel className="p-6">
             <DefinitionList>
               {detail.corrections.map((row) => (
                 <KeyValue key={row.id} label={row.fieldName}>
@@ -288,7 +293,7 @@ export function CallDetailScreen({ initial }: { initial: CallDetailPayload }) {
       <section>
         <SectionHeader title="Transcript" hint="Collapsed on purpose. Read the structure first." />
         {call.rawTranscript ? (
-          <Panel className="px-6 py-5">
+          <Panel className="p-6">
             <details>
               <summary className="cursor-pointer text-sm font-medium text-white">Show raw transcript</summary>
               <pre className="mt-3 whitespace-pre-wrap text-sm leading-relaxed text-silver">{call.rawTranscript}</pre>
@@ -305,7 +310,7 @@ export function CallDetailScreen({ initial }: { initial: CallDetailPayload }) {
             </details>
           </Panel>
         ) : (
-          <Panel className="px-6 py-5">
+          <Panel className="p-6">
             <PasteTranscript
               busy={busy}
               onSubmit={(transcript) => run(() => pasteCallTranscript({ callId: call.id, transcript }))}

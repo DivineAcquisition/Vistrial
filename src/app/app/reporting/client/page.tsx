@@ -57,7 +57,7 @@ export default async function ReportingClientPage({
       toolbar={<ReportingTabs range={range} activeHref={reportingViewHref("/app/reporting/client", range)} />}
     >
       <ReportingRangeForm range={range} action="/app/reporting/client" />
-      <Panel className="mb-8 px-6 py-6">
+      <Panel className="mb-8 p-6">
         <ClientSummaryForm summary={summary} query={query} />
       </Panel>
       <ReportingPanels orgId={ctx.org.id} range={range} includeTeam={false} />

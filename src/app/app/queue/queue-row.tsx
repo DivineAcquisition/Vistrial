@@ -230,7 +230,7 @@ export function QueueLeadRow({
       ) : null}
       {panel === "outcome" ? (
         <TableRow className="border-border/60 hover:bg-transparent">
-          <TableCell colSpan={colSpan} className="px-4 py-4 whitespace-normal">
+          <TableCell colSpan={colSpan} className="p-4 whitespace-normal">
             <OutcomePanel
               row={row}
               members={members}
@@ -250,7 +250,7 @@ export function QueueLeadRow({
       ) : null}
       {panel === "assign" ? (
         <TableRow className="border-border/60 hover:bg-transparent">
-          <TableCell colSpan={colSpan} className="px-4 py-4 whitespace-normal">
+          <TableCell colSpan={colSpan} className="p-4 whitespace-normal">
             <AssignPanel
               row={row}
               members={members}
@@ -270,7 +270,7 @@ export function QueueLeadRow({
       ) : null}
       {panel === "followOn" ? (
         <TableRow className="border-border/60 hover:bg-transparent">
-          <TableCell colSpan={colSpan} className="px-4 py-4 whitespace-normal">
+          <TableCell colSpan={colSpan} className="p-4 whitespace-normal">
             <FollowOnPanel
               busy={busy}
               error={error}

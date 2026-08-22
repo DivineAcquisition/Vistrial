@@ -18,6 +18,7 @@ import type { SettingsSaveResult } from "@/app/app/settings/types";
 import { DataTable } from "@/components/ui/data-table";
 import { Select } from "@/components/ui/select";
 import { Panel } from "@/components/ui/panel";
+import { Notice } from "@/components/ui/states";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { formatRelative } from "@/lib/format";
 import { RECORDER_SOURCES } from "@/lib/transcripts/constants";
@@ -135,81 +136,63 @@ export function IntegrationSettings(props: IntegrationSettingsProps) {
   return (
     <div className="space-y-8">
       {props.connection.status === "broken" ? (
-        <Panel className="border-flag-critical/40 px-6 py-5">
-          <p className="text-sm font-semibold text-flag-critical">The CRM connection is broken</p>
-          <p className="mt-2 text-sm leading-relaxed text-silver">
-            Token refresh failed. Outbound dispatch is halted until an owner or admin reconnects.
+        <Notice tone="critical" title="The CRM connection is broken">
+          Token refresh failed. Outbound dispatch is halted until an owner or admin reconnects.
             Inbound events still store if the location is linked. This is an emergency for this
             product — reconnect now.
-          </p>
-        </Panel>
+        </Notice>
       ) : null}
 
       {props.connection.lastSetupError ? (
-        <Panel className="border-flag-warning/40 px-6 py-5">
-          <p className="text-sm font-semibold text-flag-warning">Webhook registration did not finish</p>
-          <p className="mt-2 text-sm leading-relaxed text-silver">
-            The location is linked, but HighLevel did not accept the webhook subscription. Inbound
+        <Notice tone="warning" title="Webhook registration did not finish">
+          The location is linked, but HighLevel did not accept the webhook subscription. Inbound
             events will not arrive until this is fixed. Reconnect, or check the marketplace app
             webhook URL. Recorded cause: {props.connection.lastSetupError}.
-          </p>
-        </Panel>
+        </Notice>
       ) : null}
 
       {props.connection.status === "active" && props.maps.length === 0 ? (
-        <Panel className="border-flag-warning/40 px-6 py-5">
-          <p className="text-sm font-semibold text-flag-warning">No application field maps</p>
-          <p className="mt-2 text-sm leading-relaxed text-silver">
-            Contacts can ingest, but intake scores will stay empty until GHL custom fields are
+        <Notice tone="warning" title="No application field maps">
+          Contacts can ingest, but intake scores will stay empty until GHL custom fields are
             mapped onto answer keys. A blank score is not a successful scoring setup.
-          </p>
-        </Panel>
+        </Notice>
       ) : null}
 
       {props.health.stale ? (
-        <Panel className="border-flag-warning/40 px-6 py-5">
-          <p className="text-sm font-semibold text-flag-warning">Ingestion looks stalled</p>
-          <p className="mt-2 text-sm leading-relaxed text-silver">
-            {props.health.staleReason ??
+        <Notice tone="warning" title="Ingestion looks stalled">
+          {props.health.staleReason ??
               "No event has been processed recently. Leads will not appear until this is fixed."}
-          </p>
-        </Panel>
+        </Notice>
       ) : null}
 
       {props.transcriptHealth.unmatchedCount > 0 ? (
-        <Panel className="border-flag-warning/40 px-6 py-5">
-          <p className="text-sm font-semibold text-flag-warning">Unmatched transcripts need an operator</p>
-          <p className="mt-2 text-sm leading-relaxed text-silver">
-            {props.transcriptHealth.unmatchedCount} recording
+        <Notice tone="warning" title="Unmatched transcripts need an operator">
+          {props.transcriptHealth.unmatchedCount} recording
             {props.transcriptHealth.unmatchedCount === 1 ? "" : "s"} could not be attached to a call.
             Assign them below. Vistrial will not guess.
             {props.transcriptHealth.unmatchedOldestAgeMs !== null
               ? ` Oldest is ${Math.round(props.transcriptHealth.unmatchedOldestAgeMs / 60000)}m old.`
               : ""}
-          </p>
-        </Panel>
+        </Notice>
       ) : null}
 
       {props.followUpHealth.warning ? (
-        <Panel className="border-flag-warning/40 px-6 py-5">
-          <p className="text-sm font-semibold text-flag-warning">Follow-up drafting needs attention</p>
-          <p className="mt-2 text-sm leading-relaxed text-silver">
-            {props.followUpHealth.deadJobs} dead job
+        <Notice tone="warning" title="Follow-up drafting needs attention">
+          {props.followUpHealth.deadJobs} dead job
             {props.followUpHealth.deadJobs === 1 ? "" : "s"}, {props.followUpHealth.enqueueFailed} enqueue
             failure
             {props.followUpHealth.enqueueFailed === 1 ? "" : "s"}, and{" "}
             {props.followUpHealth.stalePendingJobs} job
             {props.followUpHealth.stalePendingJobs === 1 ? "" : "s"} waiting more than 15 minutes.
             Drafts will not appear until this is fixed.
-          </p>
-        </Panel>
+        </Notice>
       ) : null}
 
       {props.flashError ? <p className={errorClass}>{props.flashError}</p> : null}
       {props.flash ? <p className="text-sm text-flag-good">{props.flash}</p> : null}
 
       {props.selectLocation ? (
-        <Panel className="px-6 py-6">
+        <Panel className="p-6">
           <h2 className="text-sm font-semibold text-white">Choose a GoHighLevel location</h2>
           <p className={helperClass}>
             Agency access was granted. Link exactly one location to this workspace.
@@ -238,7 +221,7 @@ export function IntegrationSettings(props: IntegrationSettingsProps) {
         </Panel>
       ) : null}
 
-      <Panel className="px-6 py-6">
+      <Panel className="p-6">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
             <h2 className="text-sm font-semibold text-white">GoHighLevel</h2>
@@ -289,7 +272,7 @@ export function IntegrationSettings(props: IntegrationSettingsProps) {
         {disconnectState.status === "error" ? <p className={errorClass}>{disconnectState.error}</p> : null}
       </Panel>
 
-      <Panel className="px-6 py-6">
+      <Panel className="p-6">
         <h2 className="text-sm font-semibold text-white">Ingestion health</h2>
         <p className={helperClass}>
           Events received in the last 24 hours, the unprocessed backlog, and permanently failed
@@ -386,7 +369,7 @@ export function IntegrationSettings(props: IntegrationSettingsProps) {
         </div>
       </Panel>
 
-      <Panel className="px-6 py-6">
+      <Panel className="p-6">
         <h2 className="text-sm font-semibold text-white">Permanently failed events</h2>
         <p className={helperClass}>
           These stopped retrying. Fix the cause, then retry. Payloads stay stored; message bodies
@@ -426,7 +409,7 @@ export function IntegrationSettings(props: IntegrationSettingsProps) {
         </div>
       </Panel>
 
-      <Panel className="px-6 py-6">
+      <Panel className="p-6">
         <h2 className="text-sm font-semibold text-white">Application field mapping</h2>
         <p className={helperClass}>
           Map this location&apos;s GHL custom fields onto the application answer keys the scoring
@@ -553,7 +536,7 @@ export function IntegrationSettings(props: IntegrationSettingsProps) {
         </div>
       </Panel>
 
-      <Panel className="px-6 py-6">
+      <Panel className="p-6">
         <h2 className="text-sm font-semibold text-white">Call recorders</h2>
         <p className={helperClass}>
           Webhooks for Fathom, Fireflies, Zoom, and GHL. Optional API key for scheduled pull.
@@ -630,7 +613,7 @@ export function IntegrationSettings(props: IntegrationSettingsProps) {
         </div>
       </Panel>
 
-      <Panel className="px-6 py-6">
+      <Panel className="p-6">
         <h2 className="text-sm font-semibold text-white">Unmatched transcripts</h2>
         <p className={helperClass}>
           These did not uniquely match a call. Assign them. Never auto-attach.
@@ -700,7 +683,7 @@ export function IntegrationSettings(props: IntegrationSettingsProps) {
         </div>
       </Panel>
 
-      <Panel className="px-6 py-6">
+      <Panel className="p-6">
         <h2 className="text-sm font-semibold text-white">Manual paste</h2>
         <p className={helperClass}>
           Permanent fallback. Lands in the unmatched queue so an operator attaches it to a call.

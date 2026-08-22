@@ -511,7 +511,7 @@ export function QueueScreen({
               </p>
               <ul className="mt-4 space-y-3">
                 {pendingDrafts.map((item) => (
-                  <li key={item.id} className="panel rounded-2xl px-4 py-4">
+                  <li key={item.id} className="panel rounded-2xl p-4">
                     <p className="text-sm text-white">
                       {item.leadName} · {FOLLOW_UP_BRANCH_LABELS[item.branch]} ·{" "}
                       {FOLLOW_UP_CHANNEL_LABELS[item.channel]}

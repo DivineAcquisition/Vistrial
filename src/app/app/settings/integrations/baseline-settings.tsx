@@ -73,7 +73,7 @@ export function BaselineSettings(props: BaselineSettingsProps) {
   const unusable = props.backfill.grade === "unusable" || props.backfill.status === "skipped";
 
   return (
-    <Panel className="px-6 py-6">
+    <Panel className="p-6">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
           <h2 className="text-sm font-semibold text-white">CRM history backfill</h2>

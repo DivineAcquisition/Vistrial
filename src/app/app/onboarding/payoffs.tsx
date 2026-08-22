@@ -26,7 +26,7 @@ function Empty({ children }: { children: React.ReactNode }) {
 export function BenchmarkPanel({ benchmark }: { benchmark: Benchmark }) {
   if (!benchmark.shown) {
     return (
-      <Panel className="px-6 py-6">
+      <Panel className="p-6">
         <h3 className="text-sm font-semibold text-white">Against comparable businesses</h3>
         <Empty>{benchmark.plain ?? "No benchmark is shown yet."}</Empty>
       </Panel>
@@ -51,7 +51,7 @@ export function BenchmarkPanel({ benchmark }: { benchmark: Benchmark }) {
   });
 
   return (
-    <Panel className="px-6 py-6">
+    <Panel className="p-6">
       <h3 className="text-sm font-semibold text-white">Against comparable businesses</h3>
       <div className="mt-4">
         <DataTable
@@ -78,7 +78,7 @@ function ConnectPayoff({ payoff }: { payoff: Record<string, unknown> }) {
 
   if (str(connection.status) !== "active") {
     return (
-      <Panel className="px-6 py-6">
+      <Panel className="p-6">
         <h3 className="text-sm font-semibold text-white">Nothing to show yet</h3>
         <Empty>Connect the CRM and this fills in with what we found in your history.</Empty>
       </Panel>
@@ -86,7 +86,7 @@ function ConnectPayoff({ payoff }: { payoff: Record<string, unknown> }) {
   }
 
   return (
-    <Panel className="px-6 py-6">
+    <Panel className="p-6">
       <h3 className="text-sm font-semibold text-white">What we found</h3>
       <div className="mt-4">
         <KpiGrid columns={3}>
@@ -131,7 +131,7 @@ function BusinessPayoff({ payoff }: { payoff: Record<string, unknown> }) {
   return (
     <>
       <BenchmarkPanel benchmark={parseBenchmark(payoff.benchmark)} />
-      <Panel className="px-6 py-6">
+      <Panel className="p-6">
         <h3 className="text-sm font-semibold text-white">What your month has to carry</h3>
         <div className="mt-4">
         <KpiGrid columns={3}>
@@ -148,7 +148,7 @@ function BusinessPayoff({ payoff }: { payoff: Record<string, unknown> }) {
         ) : null}
       </Panel>
       {feedback.length > 0 ? (
-        <Panel className="px-6 py-6">
+        <Panel className="p-6">
           <h3 className="text-sm font-semibold text-white">Worth a look</h3>
           <ul className="mt-3 space-y-3">
             {feedback.map((item, index) => {
@@ -176,7 +176,7 @@ function FunnelPayoff({ payoff }: { payoff: Record<string, unknown> }) {
 
   return (
     <>
-      <Panel className="px-6 py-6">
+      <Panel className="p-6">
         <h3 className="text-sm font-semibold text-white">Your real speed to lead</h3>
         {bool(payoff.speed_too_small) || median === null ? (
           <Empty>
@@ -201,7 +201,7 @@ function FunnelPayoff({ payoff }: { payoff: Record<string, unknown> }) {
         </p>
       </Panel>
 
-      <Panel className="px-6 py-6">
+      <Panel className="p-6">
         <h3 className="text-sm font-semibold text-white">Where your leads actually come from</h3>
         <div className="mt-4">
           <DataTable
@@ -243,7 +243,7 @@ function QualificationPayoff({ payoff }: { payoff: Record<string, unknown> }) {
   const top = asArray(payoff.top_leads);
   return (
     <>
-      <Panel className="px-6 py-6">
+      <Panel className="p-6">
         <h3 className="text-sm font-semibold text-white">How your real leads score under this</h3>
         <div className="mt-4">
         <KpiGrid columns={3}>
@@ -259,7 +259,7 @@ function QualificationPayoff({ payoff }: { payoff: Record<string, unknown> }) {
           <KeyValue label="Pain severity">{num(weights.pain_severity) ?? 0}</KeyValue>
         </DefinitionList>
       </Panel>
-      <Panel className="px-6 py-6">
+      <Panel className="p-6">
         <h3 className="text-sm font-semibold text-white">Your highest scoring leads right now</h3>
         <div className="mt-4">
           <DataTable
@@ -290,7 +290,7 @@ function ProcessPayoff({ payoff }: { payoff: Record<string, unknown> }) {
   const branches = asArray(payoff.branches);
   return (
     <>
-      <Panel className="px-6 py-6">
+      <Panel className="p-6">
         <h3 className="text-sm font-semibold text-white">The gap you just set the alarm against</h3>
         <div className="mt-4">
         <KpiGrid columns={3}>
@@ -307,7 +307,7 @@ function ProcessPayoff({ payoff }: { payoff: Record<string, unknown> }) {
           </KpiGrid>
         </div>
       </Panel>
-      <Panel className="px-6 py-6">
+      <Panel className="p-6">
         <h3 className="text-sm font-semibold text-white">What Vistrial will and will not send</h3>
         <div className="mt-4">
           <DataTable
@@ -341,7 +341,7 @@ function ProcessPayoff({ payoff }: { payoff: Record<string, unknown> }) {
 function ObjectionsPayoff({ payoff }: { payoff: Record<string, unknown> }) {
   const vocabulary = asArray(payoff.vocabulary);
   return (
-    <Panel className="px-6 py-6">
+    <Panel className="p-6">
       <h3 className="text-sm font-semibold text-white">Your objection taxonomy, seeded</h3>
       <div className="mt-4">
         <DataTable
@@ -372,7 +372,7 @@ function ObjectionsPayoff({ payoff }: { payoff: Record<string, unknown> }) {
 async function VoicePayoff({ orgId, payoff }: { orgId: string; payoff: Record<string, unknown> }) {
   const preview = await previewVoiceDraft(orgId);
   return (
-    <Panel className="px-6 py-6">
+    <Panel className="p-6">
       <h3 className="text-sm font-semibold text-white">A real draft, in your voice</h3>
       {preview.kind === "draft" ? (
         <>
@@ -406,7 +406,7 @@ function GoalsPayoff({ payoff }: { payoff: Record<string, unknown> }) {
   const completeness = asRecord(payoff.completeness);
   const latest = asRecord(payoff.latest_leak_report);
   return (
-    <Panel className="px-6 py-6">
+    <Panel className="p-6">
       <h3 className="text-sm font-semibold text-white">Your Leak Report is ready</h3>
       <p className={helperClass}>
         Real numbers from your own history, framed against what you just told us you intend. It is

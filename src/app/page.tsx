@@ -23,7 +23,7 @@ export default function Home() {
           Case files for high-ticket sales teams. Know the lead before you dial.
         </p>
 
-        <Panel className="animate-rise delay-4 mt-10 w-full rounded-3xl px-6 py-8 sm:px-8">
+        <Panel className="animate-rise delay-4 mt-10 w-full rounded-3xl p-8 sm:px-8">
           <p className="text-[11px] font-semibold tracking-[0.15em] text-brand-300 uppercase">
             Readiness score
           </p>

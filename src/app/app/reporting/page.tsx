@@ -1,13 +1,14 @@
 import Link from "next/link";
 
 import { PageFrame } from "@/components/app/page-frame";
-import { Panel } from "@/components/ui/panel";
+import { Button } from "@/components/ui/button";
+import { EmptyState } from "@/components/ui/empty-state";
+import { Notice } from "@/components/ui/states";
 import { requireReportingAccess } from "@/lib/reporting/access";
 import { loadReportingState } from "@/lib/reporting/load";
 import { parseReportingRange, reportingViewHref } from "@/lib/reporting/range";
 import { ReportingRangeForm } from "@/app/app/reporting/range-form";
 import { ReportingExports, ReportingPanels, ReportingTabs } from "@/app/app/reporting/panels";
-import { btnSecondary, btnSizeSm, helperClass } from "@/lib/ui";
 import { formatComputedAt } from "@/lib/reporting/format";
 
 export default async function ReportingPage({
@@ -29,25 +30,26 @@ export default async function ReportingPage({
         title="Reporting"
         description="The outcome metric waits until this workspace goes live."
       >
-        <Panel className="px-6 py-6">
-          <p className="text-sm font-medium text-white">
-            {crm === "active"
+        <EmptyState
+          kind="unconfigured"
+          title={
+            crm === "active"
               ? "The CRM is connected. Nothing is measured until the workspace goes live."
-              : "Reporting has nothing to measure yet."}
-          </p>
-          <p className={helperClass}>
-            {backfill
-              ? `Baseline backfill status: ${String(backfill.status)}. ${String((backfill.progress as { phase?: string } | undefined)?.phase ?? "")}`
-              : "Connect the CRM to start the automatic baseline backfill."}
-            {" "}
-            Activation is a deliberate step with its own gate.
-          </p>
-          <div className="mt-4">
-            <Link href="/app/settings/business-profile" className={`${btnSecondary} ${btnSizeSm}`}>
-              Open the activation gate
-            </Link>
-          </div>
-        </Panel>
+              : "Reporting has nothing to measure yet."
+          }
+          detail={`${
+            backfill
+              ? `Baseline backfill status: ${String(backfill.status)}. ${String(
+                  (backfill.progress as { phase?: string } | undefined)?.phase ?? ""
+                )}`
+              : "Connect the CRM to start the automatic baseline backfill."
+          } Activation is a deliberate step with its own gate.`}
+          action={
+            <Button asChild variant="secondary" size="sm">
+              <Link href="/app/settings/business-profile">Open the activation gate</Link>
+            </Button>
+          }
+        />
       </PageFrame>
     );
   }
@@ -60,15 +62,13 @@ export default async function ReportingPage({
       toolbar={<ReportingTabs range={range} activeHref={reportingViewHref("/app/reporting", range)} />}
     >
       {meta.job_stale === true ? (
-        <Panel className="mb-6 border-flag-warning/40 px-6 py-4">
-          <p className="text-sm text-flag-warning">
-            The scheduled aggregation job looks stale
-            {typeof meta.last_job_finished_at === "string"
-              ? ` (last finished ${formatComputedAt(meta.last_job_finished_at)})`
-              : ""}
-            . Figures below are still computed from the database; they may not be the hourly cache.
-          </p>
-        </Panel>
+        <Notice tone="warning" className="mb-6">
+          The scheduled aggregation job looks stale
+          {typeof meta.last_job_finished_at === "string"
+            ? ` (last finished ${formatComputedAt(meta.last_job_finished_at)})`
+            : ""}
+          . Figures below are still computed from the database; they may not be the hourly cache.
+        </Notice>
       ) : null}
       <ReportingRangeForm range={range} action="/app/reporting" />
       <ReportingPanels orgId={ctx.org.id} range={range} includeTeam />

@@ -31,7 +31,7 @@ export function AuthCard({
         <Logo className="animate-rise h-7 w-auto" />
 
         <div
-          className={`panel animate-rise delay-1 mt-8 w-full rounded-3xl px-6 py-8 sm:px-8 ${
+          className={`panel animate-rise delay-1 mt-8 w-full rounded-3xl p-8 sm:px-8 ${
             width === "wide" ? "max-w-xl" : "max-w-[400px]"
           }`}
         >

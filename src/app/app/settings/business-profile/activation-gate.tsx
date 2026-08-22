@@ -8,6 +8,7 @@ import {
   moveActivationTimestamp,
 } from "@/app/app/settings/business-profile/actions";
 import type { SettingsSaveResult } from "@/app/app/settings/types";
+import { Button, SubmitButton } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { DefinitionList, KeyValue } from "@/components/ui/definition-list";
 import { Panel } from "@/components/ui/panel";
@@ -15,9 +16,6 @@ import { StatusBadge } from "@/components/ui/status-badge";
 import { ACTIVATION_WARNING_LABELS } from "@/lib/profile/vocabulary";
 import type { ActivationChange, ActivationReadiness } from "@/lib/profile/types";
 import {
-  btnPrimary,
-  btnSecondary,
-  btnSizeMd,
   errorClass,
   helperClass,
   inputClass,
@@ -44,7 +42,7 @@ export function ActivationGate({
 
   if (activation.activatedAt) {
     return (
-      <Panel className="px-6 py-6">
+      <Panel className="p-6">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
             <h2 className="text-sm font-semibold text-white">Activated</h2>
@@ -124,27 +122,19 @@ export function ActivationGate({
                 </p>
               </div>
               <div className="flex flex-wrap gap-3">
-                <button type="submit" className={`${btnPrimary} ${btnSizeMd}`} disabled={moving}>
-                  {moving ? "Moving…" : "Move the activation timestamp"}
-                </button>
-                <button
-                  type="button"
-                  className={`${btnSecondary} ${btnSizeMd}`}
-                  onClick={() => setShowMove(false)}
-                >
+                <SubmitButton variant="destructive" pending={moving} loadingLabel="Moving">
+                  Move the activation timestamp
+                </SubmitButton>
+                <Button variant="ghost" onClick={() => setShowMove(false)}>
                   Cancel
-                </button>
+                </Button>
               </div>
               {moveState.status === "error" ? <p className={errorClass}>{moveState.error}</p> : null}
             </form>
           ) : (
-            <button
-              type="button"
-              className={`${btnSecondary} ${btnSizeMd}`}
-              onClick={() => setShowMove(true)}
-            >
+            <Button variant="secondary" onClick={() => setShowMove(true)}>
               Move the activation timestamp
-            </button>
+            </Button>
           )}
         </div>
       </Panel>
@@ -152,7 +142,7 @@ export function ActivationGate({
   }
 
   return (
-    <Panel className="px-6 py-6">
+    <Panel className="p-6">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
           <h2 className="text-sm font-semibold text-white">Going live</h2>
@@ -189,9 +179,9 @@ export function ActivationGate({
             integrations page, or record that they will not give them.
           </p>
           <input name="note" className={inputClass} placeholder="Optional note" />
-          <button type="submit" className={`${btnSecondary} ${btnSizeMd}`} disabled={declining}>
-            {declining ? "Recording…" : "They declined to state prior figures"}
-          </button>
+          <SubmitButton variant="secondary" pending={declining} loadingLabel="Recording">
+            They declined to state prior figures
+          </SubmitButton>
           <p className={helperClass}>
             Declining is fine. It means no before-and-after comparison will ever be shown, which is
             better than inventing one.
@@ -223,13 +213,14 @@ export function ActivationGate({
           <p className={helperClass}>No warnings on this workspace.</p>
         )}
 
-        <button
-          type="submit"
-          className={`${btnPrimary} ${btnSizeMd}`}
-          disabled={pending || activation.blocked}
+        <SubmitButton
+          variant="gradient"
+          pending={pending}
+          loadingLabel="Going live"
+          disabled={activation.blocked}
         >
-          {pending ? "Going live…" : "Go live"}
-        </button>
+          Go live
+        </SubmitButton>
         {activation.blocked ? (
           <p className={helperClass}>
             Everything above marked blocking has to be done first. There is no override.

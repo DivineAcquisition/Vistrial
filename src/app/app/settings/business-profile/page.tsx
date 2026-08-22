@@ -49,7 +49,7 @@ export default async function BusinessProfileSettingsPage() {
         <ReviewPrompts prompts={state.reviewPrompts} />
         <Contradictions contradictions={state.contradictions} />
 
-        <Panel className="px-6 py-6">
+        <Panel className="p-6">
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div>
               <h2 className="text-sm font-semibold text-white">What is answered</h2>
@@ -94,7 +94,7 @@ export default async function BusinessProfileSettingsPage() {
           )}
         </Panel>
 
-        <Panel className="px-6 py-6">
+        <Panel className="p-6">
           <h2 className="text-sm font-semibold text-white">Onboarding</h2>
           <div className="mt-4">
             <DataTable
@@ -123,7 +123,7 @@ export default async function BusinessProfileSettingsPage() {
         <BenchmarkPanel benchmark={state.benchmark} />
 
         {state.patternFeedback.length > 0 ? (
-          <Panel className="px-6 py-6">
+          <Panel className="p-6">
             <h2 className="text-sm font-semibold text-white">Drawn from comparable businesses</h2>
             <ul className="mt-3 space-y-3">
               {state.patternFeedback.map((item) => (
@@ -137,7 +137,7 @@ export default async function BusinessProfileSettingsPage() {
           </Panel>
         ) : null}
 
-        <Panel className="px-6 py-6">
+        <Panel className="p-6">
           <h2 className="text-sm font-semibold text-white">Contribution to anonymized patterns</h2>
           <DefinitionList>
             <KeyValue label="Contributing">
@@ -156,7 +156,7 @@ export default async function BusinessProfileSettingsPage() {
           </div>
         </Panel>
 
-        <Panel className="px-6 py-6">
+        <Panel className="p-6">
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div>
               <h2 className="text-sm font-semibold text-white">History</h2>
@@ -191,7 +191,7 @@ export default async function BusinessProfileSettingsPage() {
           </div>
         </Panel>
 
-        <Panel className="px-6 py-6">
+        <Panel className="p-6">
           <h2 className="text-sm font-semibold text-white">The Leak Report</h2>
           <p className={helperClass}>
             {state.latestLeakReport

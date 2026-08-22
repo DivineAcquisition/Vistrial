@@ -69,7 +69,7 @@ export function FollowUpSettingsScreen({
           title="Sequence stop"
           hint="This switch exists before any sequence can run. It stops later drafts from being scheduled. It does not send anything."
         />
-        <Panel className="px-6 py-5">
+        <Panel className="p-6">
           <p className="text-sm text-silver">
             Sequences are {settings.sequencesHalted ? "stopped for the whole workspace." : "allowed."}
           </p>
@@ -94,7 +94,7 @@ export function FollowUpSettingsScreen({
           title="Real messages you have sent"
           hint="Two to five examples. These matter more than every slider below them. Paste what this business actually sent to prospects."
         />
-        <Panel className="px-6 py-5 space-y-4">
+        <Panel className="p-6 space-y-4">
           {voice.examples.length < MIN_VOICE_EXAMPLES ? (
             <p className="text-sm text-flag-warning">
               Add at least two real messages so drafts sound like this client, not like a model.
@@ -172,7 +172,7 @@ export function FollowUpSettingsScreen({
 
       <section>
         <SectionHeader title="Voice profile" hint="Used on every generation. Changes never happen from edit data unless you confirm a suggestion below." />
-        <Panel className="max-w-xl px-6 py-6">
+        <Panel className="max-w-xl p-6">
           <form action={saveVoice} className="space-y-4">
             <div>
               <label htmlFor="formality" className={labelClass}>
@@ -260,7 +260,7 @@ export function FollowUpSettingsScreen({
 
       <section>
         <SectionHeader title="Policy" hint="Quiet hours default on. Sequence caps cannot be removed." />
-        <Panel className="max-w-xl px-6 py-6">
+        <Panel className="max-w-xl p-6">
           <form action={savePolicy} className="space-y-4">
             <CheckboxField
               name="quiet_hours_enabled"
@@ -341,7 +341,7 @@ export function FollowUpSettingsScreen({
           title="Routing"
           hint="Rules are evaluated in priority order from next step and call outcome together. Nothing here is hardcoded in app logic."
         />
-        <Panel className="px-6 py-5 space-y-4">
+        <Panel className="p-6 space-y-4">
           {rules.map((rule, index) => (
             <div key={`${rule.priority}-${index}`} className="border-t border-white/[0.05] pt-4 first:border-t-0 first:pt-0">
               <label className="flex items-center gap-2 text-sm text-white">
@@ -418,7 +418,7 @@ export function FollowUpSettingsScreen({
           title="Edit patterns"
           hint="Suggestions only. The voice profile does not change until you confirm."
         />
-        <Panel className="px-6 py-5 space-y-4">
+        <Panel className="p-6 space-y-4">
           <button
             type="button"
             className={`${btnSecondary} ${btnSizeSm}`}

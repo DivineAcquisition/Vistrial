@@ -11,7 +11,7 @@ export default function ErrorPage({
 }) {
   return (
     <div className="mx-auto max-w-lg px-6 py-16">
-      <Panel className="px-6 py-8">
+      <Panel className="p-8">
         <p className="text-sm font-semibold text-white">This page failed to load</p>
         <p className="mt-3 text-sm leading-relaxed text-silver">
           The request did not complete. Try again — the failure is not permanent, and

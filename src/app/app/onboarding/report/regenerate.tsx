@@ -3,7 +3,8 @@
 import { useActionState } from "react";
 
 import { generateLeakReport, type OnboardingResult } from "@/app/app/onboarding/actions";
-import { btnPrimary, btnSizeMd, errorClass } from "@/lib/ui";
+import { SubmitButton } from "@/components/ui/button";
+import { errorClass } from "@/lib/ui";
 
 const idle: OnboardingResult = { status: "idle" };
 
@@ -12,9 +13,9 @@ export function RegenerateLeakReport({ label }: { label: string }) {
 
   return (
     <form action={action}>
-      <button type="submit" className={`${btnPrimary} ${btnSizeMd}`} disabled={pending}>
-        {pending ? "Working…" : label}
-      </button>
+      <SubmitButton variant="gradient" pending={pending} loadingLabel="Working">
+        {label}
+      </SubmitButton>
       {state.status === "error" ? <p className={errorClass}>{state.error}</p> : null}
     </form>
   );

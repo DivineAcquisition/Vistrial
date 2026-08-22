@@ -77,7 +77,7 @@ export function KpiCard({
   return (
     <div
       className={cn(
-        "panel panel-hover rounded-2xl border-t-2 border-t-brand-500 px-5 py-4",
+        "panel panel-hover rounded-2xl border-t-2 border-t-brand-500 p-5",
         className
       )}
     >

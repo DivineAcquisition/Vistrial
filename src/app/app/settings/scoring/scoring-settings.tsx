@@ -94,7 +94,7 @@ export function ScoringSettings({ config, maps: initialMaps, leads, lastGhostRun
 
   return (
     <div className="space-y-8">
-      <Panel className="px-6 py-5">
+      <Panel className="p-6">
         <p className="text-sm leading-relaxed text-silver">
           These mappings and weights are generic starting points. Tune them to
           this workspace&apos;s application and offer — a $3K coach and a $15K
@@ -102,7 +102,7 @@ export function ScoringSettings({ config, maps: initialMaps, leads, lastGhostRun
         </p>
       </Panel>
 
-      <Panel className="px-6 py-6">
+      <Panel className="p-6">
         <h2 className="text-sm font-semibold text-white">Weights and thresholds</h2>
         <p className={helperClass}>
           Weights do not auto-balance. The four numbers must add to 100 before
@@ -223,7 +223,7 @@ export function ScoringSettings({ config, maps: initialMaps, leads, lastGhostRun
         </form>
       </Panel>
 
-      <Panel className="px-6 py-6">
+      <Panel className="p-6">
         <h2 className="text-sm font-semibold text-white">Preview</h2>
         <p className={helperClass}>
           Pick a real lead and see what the pending weights and mappings would
@@ -284,7 +284,7 @@ export function ScoringSettings({ config, maps: initialMaps, leads, lastGhostRun
         )}
       </Panel>
 
-      <Panel className="px-6 py-6">
+      <Panel className="p-6">
         <h2 className="text-sm font-semibold text-white">Application field mapping</h2>
         <p className={helperClass}>
           Each application field maps to one factor. An answer that matches no
@@ -575,7 +575,7 @@ export function ScoringSettings({ config, maps: initialMaps, leads, lastGhostRun
         {mapStatus.status === "saved" ? <p className={helperClass}>Mappings saved.</p> : null}
       </Panel>
 
-      <Panel className="px-6 py-6">
+      <Panel className="p-6">
         <h2 className="text-sm font-semibold text-white">Manual override</h2>
         <p className={helperClass}>
           Set factor values, not the total — the same function computes the
@@ -648,7 +648,7 @@ export function ScoringSettings({ config, maps: initialMaps, leads, lastGhostRun
         )}
       </Panel>
 
-      <Panel className="px-6 py-6">
+      <Panel className="p-6">
         <h2 className="text-sm font-semibold text-white">Bulk re-score</h2>
         <p className={helperClass}>
           Writes a new manual score row for every lead that can be scored under
@@ -676,7 +676,7 @@ export function ScoringSettings({ config, maps: initialMaps, leads, lastGhostRun
         {bulkStatus ? <p className={helperClass}>{bulkStatus}</p> : null}
       </Panel>
 
-      <Panel className="px-6 py-6">
+      <Panel className="p-6">
         <h2 className="text-sm font-semibold text-white">Ghost detector</h2>
         <p className={helperClass}>
           Runs on a schedule, not when someone opens a page. Thresholds use this

@@ -455,7 +455,7 @@ export function StageForm({
   const meta = STAGE_META[stage];
 
   return (
-    <Panel className="px-6 py-6">
+    <Panel className="p-6">
       <h2 className="text-sm font-semibold text-white">{meta.title}</h2>
       <p className={helperClass}>{meta.why}</p>
       <form action={action} className="mt-6 space-y-5">

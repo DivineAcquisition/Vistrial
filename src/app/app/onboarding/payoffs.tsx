@@ -227,8 +227,10 @@ function FunnelPayoff({ payoff }: { payoff: Record<string, unknown> }) {
         </div>
         {undeclared.length > 0 ? (
           <p className={helperClass}>
-            {undeclared.length} source{undeclared.length === 1 ? "" : "s"} are producing leads that you
-            did not list. Reporting can count them but cannot label them.
+            {undeclared.length === 1
+              ? "One source is producing leads that you did not list."
+              : `${undeclared.length} sources are producing leads that you did not list.`}{" "}
+            Reporting can count them but cannot label them.
           </p>
         ) : null}
       </Panel>

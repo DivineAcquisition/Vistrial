@@ -581,9 +581,14 @@ DECLARE
   v_changed text[];
   v_actor uuid;
 BEGIN
+  -- Bookkeeping columns move on every save. Listing them would bury the one
+  -- field that actually changed in noise nobody can read past.
   SELECT array_agg(o.key ORDER BY o.key) INTO v_changed
   FROM jsonb_each(to_jsonb(OLD)) AS o(key, value)
-  WHERE o.key NOT IN ('version', 'updated_at', 'completeness_score', 'created_at')
+  WHERE o.key NOT IN (
+      'version', 'updated_at', 'completeness_score', 'created_at',
+      'last_reviewed_at', 'last_reviewed_by_member_id'
+    )
     AND o.value IS DISTINCT FROM (to_jsonb(NEW) -> o.key);
 
   IF v_changed IS NULL THEN

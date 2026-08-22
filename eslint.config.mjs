@@ -12,6 +12,8 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Bundles the Supabase CLI writes when the local stack starts.
+    "supabase/.temp/**",
   ]),
 ]);
 

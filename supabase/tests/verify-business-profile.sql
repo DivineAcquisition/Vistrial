@@ -1137,3 +1137,150 @@ BEGIN
   END IF;
 END
 $$;
+
+-- ---------------------------------------------------------------------------
+-- A client who accepts every default still ends up with a working
+-- configuration. Their CRM is connected, because it has to be before a
+-- workspace can go live, so the figures only they could know are derived from
+-- their own history rather than invented.
+-- ---------------------------------------------------------------------------
+
+INSERT INTO auth.users (id, email)
+VALUES ('2222e222-2222-4222-8222-00000000a004', 'defaults-owner@vistrial.local')
+ON CONFLICT (id) DO NOTHING;
+
+INSERT INTO public.organizations (id, name, slug)
+VALUES ('2222e222-2222-4222-8222-000000000003', 'Defaults Co', 'defaults-co');
+
+INSERT INTO public.org_members (id, org_id, user_id, role, display_name, email)
+VALUES (
+  '2222e222-2222-4222-8222-0000000000d1', '2222e222-2222-4222-8222-000000000003',
+  '2222e222-2222-4222-8222-00000000a004', 'owner', 'Defaults Owner', 'defaults-owner@vistrial.local'
+);
+
+DO $$
+DECLARE
+  v_org uuid := '2222e222-2222-4222-8222-000000000003';
+  v_run uuid := '2222e222-2222-4222-8222-00000000c003';
+  v_lead uuid;
+  v_created timestamptz;
+  i integer;
+BEGIN
+  INSERT INTO public.baseline_runs (
+    id, org_id, status, grade, lookback_days, window_start, window_end,
+    contacts_seen, contacts_with_created_date, contacts_with_activity,
+    opportunities_seen, opportunities_with_value, finished_at
+  ) VALUES (
+    v_run, v_org, 'completed', 'usable', 365,
+    now() - interval '365 days', now(), 60, 60, 45, 9, 9, now()
+  );
+
+  FOR i IN 1..60 LOOP
+    v_lead := ('2222e222-2222-4222-8222-' || lpad((700000 + i)::text, 12, '0'))::uuid;
+    v_created := now() - interval '300 days' + (i || ' days')::interval;
+    INSERT INTO public.baseline_leads (
+      id, org_id, run_id, ghl_contact_id, created_at_crm, source, first_human_touch_at
+    ) VALUES (
+      v_lead, v_org, v_run, 'defaults_ct_' || i, v_created,
+      CASE WHEN i % 2 = 0 THEN 'facebook ads' ELSE 'referral' END,
+      CASE WHEN i <= 45 THEN v_created + interval '40 minutes' ELSE NULL END
+    );
+    IF i <= 9 THEN
+      INSERT INTO public.baseline_revenue (org_id, run_id, baseline_lead_id, amount_cents, occurred_at, source)
+      VALUES (v_org, v_run, v_lead, 450000, v_created + interval '40 days', 'opportunity');
+    END IF;
+  END LOOP;
+
+  -- One live lead, so the offer name is something we read rather than ask for.
+  INSERT INTO public.leads (org_id, ghl_contact_id, first_name, email, offer_name, status, opted_in_at)
+  VALUES (v_org, 'defaults_live_1', 'Rae', 'rae@defaults.test', 'Momentum Programme', 'new', now() - interval '2 days');
+END
+$$;
+
+DO $$
+DECLARE
+  v_org uuid := '2222e222-2222-4222-8222-000000000003';
+  v_owner uuid := '2222e222-2222-4222-8222-0000000000d1';
+  v_defaults jsonb;
+  v_patch jsonb;
+  v_stage public.profile_stage;
+  v_field text;
+  sc public.score_configs%ROWTYPE;
+  v_completeness jsonb;
+BEGIN
+  FOREACH v_stage IN ARRAY enum_range(NULL::public.profile_stage) LOOP
+    -- Defaults are recomputed each time, exactly as the form reloads them.
+    v_defaults := public.business_profile_defaults(v_org);
+    v_patch := '{}'::jsonb;
+
+    FOR v_field IN
+      SELECT reg.field FROM public.profile_field_registry reg WHERE reg.stage = v_stage
+    LOOP
+      IF v_defaults ? v_field AND (v_defaults #> ARRAY[v_field, 'value']) <> 'null'::jsonb THEN
+        v_patch := v_patch || jsonb_build_object(v_field, v_defaults #> ARRAY[v_field, 'value']);
+      END IF;
+    END LOOP;
+
+    PERFORM public.save_business_profile(v_org, v_owner, v_patch, v_stage);
+    PERFORM public.apply_business_profile_configuration(v_org, v_owner, v_stage);
+  END LOOP;
+
+  -- The four weights still total 100 and answer rules exist for them to read.
+  SELECT * INTO sc FROM public.score_configs WHERE org_id = v_org;
+  IF sc.timeline_weight + sc.investment_capacity_weight
+     + sc.decision_authority_weight + sc.pain_severity_weight <> 100 THEN
+    RAISE EXCEPTION 'accepting the defaults left the weights not totalling 100';
+  END IF;
+  IF sc.speed_to_lead_minutes NOT BETWEEN 1 AND 1440 THEN
+    RAISE EXCEPTION 'accepting the defaults left an unusable speed-to-lead window';
+  END IF;
+  IF sc.ghost_days_soft >= sc.ghost_days_hard THEN
+    RAISE EXCEPTION 'accepting the defaults left ghost thresholds the wrong way round';
+  END IF;
+  IF NOT EXISTS (
+    SELECT 1 FROM public.score_field_rules rules
+    JOIN public.score_field_maps maps ON maps.id = rules.field_map_id
+    WHERE maps.org_id = v_org
+  ) THEN
+    RAISE EXCEPTION 'accepting the defaults left scoring with no answer rules';
+  END IF;
+
+  -- Follow-up is configured rather than left half-built.
+  IF NOT EXISTS (SELECT 1 FROM public.follow_up_routing_rules WHERE org_id = v_org AND enabled) THEN
+    RAISE EXCEPTION 'accepting the defaults left no follow-up branch running';
+  END IF;
+  IF (SELECT max_sequence_length FROM public.follow_up_settings WHERE org_id = v_org) NOT BETWEEN 1 AND 8 THEN
+    RAISE EXCEPTION 'accepting the defaults left an unusable sequence length';
+  END IF;
+
+  -- Scoring is the one hard requirement the profile alone can satisfy, and it
+  -- has to pass on defaults or the client is stuck before they start.
+  IF EXISTS (
+    SELECT 1 FROM jsonb_array_elements(public.activation_readiness(v_org) -> 'hard') h
+    WHERE h ->> 'key' = 'scoring_valid' AND (h ->> 'ok')::boolean = false
+  ) THEN
+    RAISE EXCEPTION 'accepting the defaults did not satisfy the scoring requirement';
+  END IF;
+
+  -- Completeness clears the usable threshold, so the client is not warned
+  -- about a profile they filled in by taking every answer we suggested.
+  v_completeness := public.business_profile_completeness(v_org);
+  IF (v_completeness ->> 'score')::integer < public.profile_completeness_min() THEN
+    RAISE EXCEPTION
+      'accepting every default only reached completeness %, under the usable threshold. Gaps: %',
+      v_completeness ->> 'score', v_completeness -> 'gaps';
+  END IF;
+  -- With a connected CRM there should be nothing left over at all: every field
+  -- is either read from their history or carries a cross-client starting point.
+  IF jsonb_array_length(v_completeness -> 'gaps') > 0 THEN
+    RAISE EXCEPTION 'a field was left with no default at all: %', v_completeness -> 'gaps';
+  END IF;
+
+  -- And the report they are promised at the end actually generates.
+  PERFORM public.leak_report_generate(v_org, v_owner);
+  IF NOT EXISTS (SELECT 1 FROM public.leak_reports WHERE org_id = v_org) THEN
+    RAISE EXCEPTION 'accepting the defaults produced no Leak Report';
+  END IF;
+END
+$$;
+

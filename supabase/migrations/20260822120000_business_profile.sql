@@ -879,10 +879,15 @@ BEGIN
         WHERE l.org_id = p_org_id AND l.offer_name IS NOT NULL
         GROUP BY l.offer_name ORDER BY count(*) DESC LIMIT 1)),
       'source', CASE WHEN p.offer_name IS NOT NULL THEN 'saved' ELSE 'derived' END,
-      'basis', 'The offer name most of your CRM leads already carry'
+      'basis', CASE WHEN EXISTS (
+          SELECT 1 FROM public.leads l WHERE l.org_id = p_org_id AND l.offer_name IS NOT NULL
+        )
+        THEN 'The offer name most of your CRM leads already carry'
+        ELSE 'Nothing in your CRM carries an offer name yet, so this one is yours to write' END
     ),
     'offer_type', jsonb_build_object(
-      'value', p.offer_type, 'source', CASE WHEN p.offer_type IS NULL THEN 'fallback' ELSE 'saved' END,
+      'value', COALESCE(p.offer_type::text, 'coaching'),
+      'source', CASE WHEN p.offer_type IS NULL THEN 'fallback' ELSE 'saved' END,
       'basis', 'Coaching is the most common shape on this platform'
     ),
     'price_point_cents', jsonb_build_object(
@@ -959,31 +964,49 @@ BEGIN
 
   v_out := v_out || jsonb_build_object(
     'lead_channels', jsonb_build_object(
-      'value', to_jsonb(p.lead_channels),
+      'value', CASE
+        WHEN array_length(p.lead_channels, 1) IS NOT NULL THEN to_jsonb(p.lead_channels)
+        ELSE '["meta_ads", "referral"]'::jsonb END,
       'crm_sources', COALESCE(to_jsonb(v_sources), '[]'::jsonb),
       'source', CASE WHEN array_length(p.lead_channels, 1) IS NOT NULL THEN 'saved'
                      WHEN v_sources IS NOT NULL THEN 'derived' ELSE 'fallback' END,
       'basis', CASE WHEN v_sources IS NOT NULL
-        THEN 'The source values already on your CRM contacts'
-        ELSE 'No sources recorded on your CRM contacts yet' END
+        THEN 'Your CRM sources are listed beside this. Tick the ones that match'
+        ELSE 'Paid social and referrals are where most businesses here start' END
     ),
     'channel_spend_cents', jsonb_build_object(
       'value', p.channel_spend_cents, 'source', 'fallback',
       'basis', 'Optional. Only fill it in for channels where you will share the number'
     ),
     'application_fields', jsonb_build_object(
-      'value', CASE WHEN jsonb_array_length(p.application_fields) > 0 THEN p.application_fields ELSE v_fields END,
+      'value', CASE
+        WHEN jsonb_array_length(p.application_fields) > 0 THEN p.application_fields
+        WHEN jsonb_array_length(v_fields) > 0 THEN v_fields
+        ELSE COALESCE((
+          SELECT jsonb_agg(jsonb_build_object('answer_key', m.field_name, 'factor', m.factor)
+                 ORDER BY m.field_name)
+          FROM public.score_field_maps m
+          WHERE m.org_id = p_org_id
+            AND m.field_name NOT LIKE '%\_signal'
+            AND m.field_name <> 'decision_process'
+        ), '[]'::jsonb) END,
       'source', CASE WHEN jsonb_array_length(p.application_fields) > 0 THEN 'saved'
                      WHEN jsonb_array_length(v_fields) > 0 THEN 'derived' ELSE 'fallback' END,
-      'basis', 'The custom fields your CRM already sends with every contact'
+      'basis', CASE WHEN jsonb_array_length(v_fields) > 0
+        THEN 'The custom fields your CRM already sends with every contact'
+        ELSE 'The four questions this workspace already scores on. Rename them to match your form' END
     ),
     'qualification_signals', jsonb_build_object(
-      'value', to_jsonb(p.qualification_signals),
+      'value', CASE
+        WHEN array_length(p.qualification_signals, 1) IS NOT NULL THEN to_jsonb(p.qualification_signals)
+        ELSE '["has_budget", "urgent_timeline", "sole_decision_maker", "clear_pain"]'::jsonb END,
       'source', CASE WHEN array_length(p.qualification_signals, 1) IS NOT NULL THEN 'saved' ELSE 'fallback' END,
       'basis', 'Budget, timeline, authority and pain are what the four factors already measure'
     ),
     'disqualifiers', jsonb_build_object(
-      'value', to_jsonb(p.disqualifiers),
+      'value', CASE
+        WHEN array_length(p.disqualifiers, 1) IS NOT NULL THEN to_jsonb(p.disqualifiers)
+        ELSE '["no_budget", "pre_revenue"]'::jsonb END,
       'source', CASE WHEN array_length(p.disqualifiers, 1) IS NOT NULL THEN 'saved' ELSE 'fallback' END,
       'basis', 'No budget and pre-revenue are the two most businesses name first'
     ),
@@ -1017,7 +1040,9 @@ BEGIN
       'basis', COALESCE(v_priors #>> '{speed_to_lead_minutes,basis}', 'Fifteen minutes is the window this workspace is already set to')
     ),
     'setter_establishes', jsonb_build_object(
-      'value', to_jsonb(p.setter_establishes),
+      'value', CASE
+        WHEN array_length(p.setter_establishes, 1) IS NOT NULL THEN to_jsonb(p.setter_establishes)
+        ELSE '["budget_confirmed", "timeline_confirmed", "decision_maker_confirmed"]'::jsonb END,
       'source', CASE WHEN array_length(p.setter_establishes, 1) IS NOT NULL THEN 'saved' ELSE 'fallback' END,
       'basis', 'Budget, timeline and decision maker are what a closer reads first on the brief'
     ),
@@ -1047,11 +1072,18 @@ BEGIN
       'basis', 'Silence is the gap almost nobody covers'
     ),
     'top_objections', jsonb_build_object(
-      'value', CASE WHEN jsonb_array_length(p.top_objections) > 0 THEN p.top_objections ELSE
-        (SELECT COALESCE(jsonb_agg(jsonb_build_object('type', v.type, 'phrasing', v.phrasing, 'response', v.response) ORDER BY v.rank), '[]'::jsonb)
-         FROM public.objection_vocabulary v WHERE v.org_id = p_org_id) END,
+      'value', CASE
+        WHEN jsonb_array_length(p.top_objections) > 0 THEN p.top_objections
+        WHEN EXISTS (SELECT 1 FROM public.objection_vocabulary v WHERE v.org_id = p_org_id) THEN
+          (SELECT jsonb_agg(jsonb_build_object('type', v.type, 'phrasing', v.phrasing, 'response', v.response) ORDER BY v.rank)
+           FROM public.objection_vocabulary v WHERE v.org_id = p_org_id)
+        ELSE jsonb_build_array(
+          jsonb_build_object('type', 'price', 'phrasing', 'It is a lot of money right now', 'response', NULL),
+          jsonb_build_object('type', 'timing', 'phrasing', 'Now is not the right time', 'response', NULL),
+          jsonb_build_object('type', 'spouse_partner', 'phrasing', 'I need to talk to my partner', 'response', NULL)
+        ) END,
       'source', CASE WHEN jsonb_array_length(p.top_objections) > 0 THEN 'saved' ELSE 'fallback' END,
-      'basis', 'Price, timing and partner approval are the three most offers hear'
+      'basis', 'Price, timing and partner approval are the three most offers hear. Rewrite them in the words your prospects actually use'
     ),
     'never_say', jsonb_build_object(
       'value', to_jsonb(p.never_say),
@@ -1083,7 +1115,9 @@ BEGIN
       ),
       'source', CASE WHEN p.goal_value IS NOT NULL THEN 'saved'
                      WHEN v_volume IS NOT NULL AND v_close IS NOT NULL THEN 'derived' ELSE 'fallback' END,
-      'basis', 'What your own history already produces per month, as a floor to beat'
+      'basis', CASE WHEN v_volume IS NOT NULL AND v_close IS NOT NULL
+        THEN 'What your own history already produces per month, as a floor to beat'
+        ELSE 'Only you can set this one. There is no history to read a floor from yet' END
     ),
     'aggregate_opt_out', jsonb_build_object(
       'value', p.aggregate_opt_out, 'source', 'saved',

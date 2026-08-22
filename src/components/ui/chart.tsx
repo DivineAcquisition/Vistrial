@@ -50,7 +50,7 @@ export function BarChart({
           <span className="truncate text-xs text-silver" title={point.label}>
             {point.label}
           </span>
-          <span className="h-2 overflow-hidden rounded-full bg-white/[0.06]">
+          <span className="h-2.5 overflow-hidden rounded-full bg-white/[0.06]">
             <span
               className={cn("block h-full rounded-full", fill)}
               style={{ width: `${max === 0 ? 0 : Math.round((point.value / max) * 100)}%` }}

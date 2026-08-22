@@ -46,6 +46,19 @@ export function LoginForm({
   return (
     <form action={action} className="space-y-4">
       <input type="hidden" name="redirectTo" value={redirectTo} />
+
+      <div className="flex justify-center">
+        <SegmentedControl
+          label="How you want to sign in"
+          value={mode}
+          onChange={setMode}
+          options={[
+            { value: "password", label: "Password" },
+            { value: "magic", label: "Magic link" },
+          ]}
+        />
+      </div>
+
       {error ? <p className={errorClass}>{LOGIN_ERROR_COPY[error]}</p> : null}
 
       <div>
@@ -85,18 +98,6 @@ export function LoginForm({
       <SubmitButton pending={pending} loadingLabel="Working" className="w-full">
         {mode === "password" ? "Sign in" : "Send magic link"}
       </SubmitButton>
-
-      <div className="flex justify-center">
-        <SegmentedControl
-          label="How you want to sign in"
-          value={mode}
-          onChange={setMode}
-          options={[
-            { value: "password", label: "Password" },
-            { value: "magic", label: "Magic link" },
-          ]}
-        />
-      </div>
     </form>
   );
 }

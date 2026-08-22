@@ -31,10 +31,8 @@ enable_refresh_token_rotation = true
 enable_signup = false
 
 [auth.email]
-# This is what the CLI reads to set GOTRUE_EXTERNAL_EMAIL_ENABLED, so it turns
-# the email provider on rather than opening public sign-up. Sign-up stays shut
-# through [auth] enable_signup above, which sets GOTRUE_DISABLE_SIGNUP. With
-# this false the local stack refuses every password sign-in with "Email logins
-# are disabled", which is not what the hosted project does.
-enable_signup = true
+# Mirrors "Enable the Email provider" in the dashboard. Without it the local
+# stack rejects every password sign-in with "Email logins are disabled".
+enabled = true
+enable_signup = false
 enable_confirmations = true

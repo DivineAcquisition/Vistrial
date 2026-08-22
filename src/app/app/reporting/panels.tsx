@@ -17,7 +17,8 @@ import {
   formatPct,
   formatSample,
 } from "@/lib/reporting/format";
-import { goalLine, loadStatedGoal } from "@/lib/profile/goal";
+import { goalLine } from "@/lib/profile/goal";
+import { loadStatedGoal } from "@/lib/profile/load";
 import { helperClass } from "@/lib/ui";
 import { FOLLOW_UP_BRANCH_LABELS, HALT_REASON_LABELS } from "@/lib/follow-up/labels";
 import { OBJECTION_TYPE_LABELS } from "@/lib/leads/labels";

@@ -1,26 +1,9 @@
-import "server-only";
-
 import type { Enums } from "@/types/database";
-import { num, str } from "@/lib/profile/parse";
-import { createClient } from "@/lib/supabase/server";
 
 export type StatedGoal = {
   metric: Enums<"profile_goal_metric">;
   value: number;
 };
-
-export async function loadStatedGoal(orgId: string): Promise<StatedGoal | null> {
-  const supabase = await createClient();
-  const { data } = await supabase
-    .from("business_profiles")
-    .select("goal_metric, goal_value")
-    .eq("org_id", orgId)
-    .maybeSingle();
-  const metric = str(data?.goal_metric) as Enums<"profile_goal_metric"> | null;
-  const value = num(data?.goal_value);
-  if (!metric || value === null) return null;
-  return { metric, value };
-}
 
 /**
  * The reporting headline is framed against the number the owner said would

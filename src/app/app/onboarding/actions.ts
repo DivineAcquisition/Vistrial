@@ -6,6 +6,7 @@ import { revalidatePath } from "next/cache";
 import { addVoiceExample, removeVoiceExample } from "@/app/app/settings/follow-up/actions";
 import type { SettingsSaveResult } from "@/app/app/settings/types";
 import { assertProfileAccess } from "@/lib/profile/load";
+import { rescoreOrgLeads } from "@/lib/profile/rescore";
 import { isProfileStage, type ProfileStage } from "@/lib/profile/stages";
 import {
   DISQUALIFIERS,
@@ -21,8 +22,6 @@ export type OnboardingResult =
   | { status: "idle" }
   | { status: "saved"; applied: string[] }
   | { status: "error"; error: string };
-
-const idle: OnboardingResult = { status: "idle" };
 
 function text(form: FormData, name: string): string | null {
   const value = String(form.get(name) ?? "").trim();
@@ -117,12 +116,14 @@ function buildPatch(stage: ProfileStage, form: FormData): Record<string, Json> |
         const value = cents(form, `spend_${channel}`);
         if (value !== null && value > 0) spend[channel] = value;
       }
-      const fields = rows(form, "application_fields")
-        .map((row) => ({
-          answer_key: String(row.answer_key ?? "").trim(),
-          factor: String(row.factor ?? "").trim() || null,
-        }))
-        .filter((row) => row.answer_key.length > 0);
+      const fieldRows = rows(form, "application_fields").map((row) => ({
+        answer_key: String(row.answer_key ?? "").trim(),
+        factor: String(row.factor ?? "").trim() || null,
+      }));
+      if (fieldRows.some((row) => !row.answer_key && row.factor)) {
+        return "One application question has a factor but no answer key. Fill it in or remove the row.";
+      }
+      const fields = fieldRows.filter((row) => row.answer_key.length > 0);
       return {
         lead_channels: channels,
         lead_channels_other: text(form, "lead_channels_other"),
@@ -132,13 +133,23 @@ function buildPatch(stage: ProfileStage, form: FormData): Record<string, Json> |
     }
 
     case "qualification": {
-      const bands = (name: string) =>
-        rows(form, name)
-          .map((row) => ({
-            answer: String(row.answer ?? "").trim(),
-            score: Math.max(0, Math.min(100, Math.round(Number(row.score ?? 0)))),
-          }))
-          .filter((row) => row.answer.length > 0);
+      let bandError: string | null = null;
+      const bands = (name: string, label: string) => {
+        const parsed = rows(form, name).map((row) => ({
+          answer: String(row.answer ?? "").trim(),
+          score: Math.max(0, Math.min(100, Math.round(Number(row.score ?? 0)))),
+          scoreRaw: String(row.score ?? "").trim(),
+        }));
+        if (parsed.some((row) => !row.answer && row.scoreRaw)) {
+          bandError = `One ${label} band has a score but no answer. Fill it in or remove the row.`;
+        }
+        return parsed
+          .filter((row) => row.answer.length > 0)
+          .map((row) => ({ answer: row.answer, score: row.score }));
+      };
+      const priceBands = bands("price_bands", "investment");
+      const timelineBands = bands("timeline_bands", "timeline");
+      if (bandError) return bandError;
       return {
         qualification_signals: choices(
           form,
@@ -148,8 +159,8 @@ function buildPatch(stage: ProfileStage, form: FormData): Record<string, Json> |
         qualification_signals_other: text(form, "qualification_signals_other"),
         disqualifiers: choices(form, "disqualifiers", DISQUALIFIERS.map((item) => item.value)),
         disqualifiers_other: text(form, "disqualifiers_other"),
-        price_bands: bands("price_bands"),
-        timeline_bands: bands("timeline_bands"),
+        price_bands: priceBands,
+        timeline_bands: timelineBands,
       };
     }
 
@@ -158,12 +169,14 @@ function buildPatch(stage: ProfileStage, form: FormData): Record<string, Json> |
       if (minutes !== null && (minutes < 1 || minutes > 1440)) {
         return "The response window has to be between 1 minute and 24 hours.";
       }
-      const stages = rows(form, "pipeline_stage_meanings")
-        .map((row) => ({
-          crm_stage: String(row.crm_stage ?? "").trim(),
-          means: String(row.means ?? "").trim() || null,
-        }))
-        .filter((row) => row.crm_stage.length > 0);
+      const stageRows = rows(form, "pipeline_stage_meanings").map((row) => ({
+        crm_stage: String(row.crm_stage ?? "").trim(),
+        means: String(row.means ?? "").trim() || null,
+      }));
+      if (stageRows.some((row) => !row.crm_stage && row.means)) {
+        return "One pipeline stage has a meaning but no stage name. Fill it in or remove the row.";
+      }
+      const stages = stageRows.filter((row) => row.crm_stage.length > 0);
       return {
         speed_to_lead_intent_minutes: minutes,
         setter_establishes: choices(form, "setter_establishes", SETTER_FACTS.map((item) => item.value)),
@@ -177,13 +190,25 @@ function buildPatch(stage: ProfileStage, form: FormData): Record<string, Json> |
 
     case "objections": {
       const allowed: string[] = OBJECTION_TYPES.map((item) => item.value);
-      const objections = rows(form, "top_objections")
-        .map((row) => ({
-          type: String(row.type ?? "").trim(),
-          phrasing: String(row.phrasing ?? "").trim(),
-          response: String(row.response ?? "").trim() || null,
-        }))
-        .filter((row) => allowed.includes(row.type) && row.phrasing.length > 0);
+      const objectionRows = rows(form, "top_objections").map((row) => ({
+        type: String(row.type ?? "").trim(),
+        phrasing: String(row.phrasing ?? "").trim(),
+        response: String(row.response ?? "").trim() || null,
+      }));
+      const orphan = objectionRows.find((row) => row.phrasing && !allowed.includes(row.type));
+      if (orphan) {
+        return `"${orphan.phrasing}" has no objection type against it. Pick one or remove the row.`;
+      }
+      const objections = objectionRows.filter(
+        (row) => allowed.includes(row.type) && row.phrasing.length > 0
+      );
+      const seen = new Set<string>();
+      for (const row of objections) {
+        if (seen.has(row.type)) {
+          return "Two objections share the same type. Only the first of each type is kept, so merge them.";
+        }
+        seen.add(row.type);
+      }
       return { top_objections: objections };
     }
 
@@ -243,6 +268,19 @@ export async function saveOnboardingStage(
     };
   }
 
+  // Mapping a field or moving a weight only means something once the leads
+  // already in the workspace are scored under it. The payoff for these two
+  // stages is exactly that, so it cannot be left for someone to find later.
+  if (stage === "funnel" || stage === "qualification") {
+    await rescoreOrgLeads(supabase, {
+      orgId: access.ctx.org.id,
+      memberId: access.ctx.member.id,
+      reason: `Re-scored when ${access.ctx.member.displayName} saved the ${stage} stage of onboarding.`,
+    });
+    revalidatePath("/app/queue");
+    revalidatePath("/app/cases");
+  }
+
   revalidatePath("/app/onboarding", "layout");
   revalidatePath("/app/settings/business-profile");
   redirect(`/app/onboarding/${stage}?done=1`);
@@ -286,5 +324,3 @@ export async function generateLeakReport(): Promise<OnboardingResult> {
   revalidatePath("/app/settings/business-profile");
   return { status: "saved", applied: [] };
 }
-
-export { idle as onboardingIdle };

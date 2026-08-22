@@ -210,6 +210,18 @@ export type RowColumn = {
 };
 
 /**
+ * A select with no empty option shows its first choice, so a row the client
+ * never touched has to start holding that value. Left blank, the row looks
+ * answered on screen and arrives at the server empty.
+ */
+function blankFor(column: RowColumn): string {
+  if (column.kind === "select" && !column.allowEmpty) {
+    return column.choices?.[0]?.value ?? "";
+  }
+  return "";
+}
+
+/**
  * One repeatable-row editor, reused for application fields, scoring bands,
  * pipeline stages and objections. Rows serialise into a hidden input so the
  * server action reads them out of ordinary form data.
@@ -230,7 +242,8 @@ export function RepeatableRows(props: {
         const next: Record<string, string> = {};
         for (const column of props.columns) {
           const raw = row[column.key];
-          next[column.key] = raw === null || raw === undefined ? "" : String(raw);
+          next[column.key] =
+            raw === null || raw === undefined || raw === "" ? blankFor(column) : String(raw);
         }
         return next;
       })
@@ -295,7 +308,7 @@ export function RepeatableRows(props: {
           onClick={() =>
             setRows((current) => [
               ...current,
-              Object.fromEntries(props.columns.map((column) => [column.key, ""])),
+              Object.fromEntries(props.columns.map((column) => [column.key, blankFor(column)])),
             ])
           }
         >

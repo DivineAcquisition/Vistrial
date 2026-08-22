@@ -12,6 +12,8 @@ import {
   parseCompleteness,
 } from "@/lib/profile/parse";
 import type { ProfileStage } from "@/lib/profile/stages";
+import type { StatedGoal } from "@/lib/profile/goal";
+import { num, str } from "@/lib/profile/parse";
 import type { BusinessProfileState, Completeness, ProfileDefaults } from "@/lib/profile/types";
 import { createClient } from "@/lib/supabase/server";
 
@@ -89,4 +91,17 @@ export async function loadLatestLeakReport(orgId: string): Promise<Record<string
   return data && typeof data === "object" && !Array.isArray(data)
     ? (data as Record<string, unknown>)
     : null;
+}
+
+export async function loadStatedGoal(orgId: string): Promise<StatedGoal | null> {
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("business_profiles")
+    .select("goal_metric, goal_value")
+    .eq("org_id", orgId)
+    .maybeSingle();
+  const metric = str(data?.goal_metric) as StatedGoal["metric"] | null;
+  const value = num(data?.goal_value);
+  if (!metric || value === null) return null;
+  return { metric, value };
 }

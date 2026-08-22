@@ -151,7 +151,7 @@ function StageBody({ stage, defaults }: { stage: ProfileStage; defaults: Profile
               defaults={defaults}
               min={0}
               max={100}
-              step="0.1"
+              step="0.01"
               suffix="%"
             />
           </div>

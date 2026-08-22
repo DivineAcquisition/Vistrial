@@ -11,7 +11,10 @@ import { StatusBadge } from "@/components/ui/status-badge";
 import { formatMinutes } from "@/lib/profile/leak";
 import { loadAdoptionWatch, requireProfileAccess } from "@/lib/profile/load";
 import { asArray, asRecord, bool, num, str } from "@/lib/profile/parse";
-import { helperClass } from "@/lib/ui";
+import {
+  cardTitle,
+  helperClass,
+} from "@/lib/ui";
 
 type Rate = { k: number; n: number; pct: number | null; tooSmall: boolean; sample: string };
 
@@ -140,7 +143,7 @@ export default async function AdoptionWatchPage() {
         </div>
 
         <Panel className="p-6">
-          <h2 className="text-sm font-semibold text-white">Who has used the system this week</h2>
+          <h2 className={cardTitle}>Who has used the system this week</h2>
           <p className={helperClass}>
             Outcome logging is the leading indicator. If leads are arriving and nobody is recording
             what happened, every number here understates what your team actually did.

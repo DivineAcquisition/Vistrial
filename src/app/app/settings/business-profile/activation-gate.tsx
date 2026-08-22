@@ -16,6 +16,7 @@ import { StatusBadge } from "@/components/ui/status-badge";
 import { ACTIVATION_WARNING_LABELS } from "@/lib/profile/vocabulary";
 import type { ActivationChange, ActivationReadiness } from "@/lib/profile/types";
 import {
+  cardTitle,
   errorClass,
   helperClass,
   inputClass,
@@ -45,7 +46,7 @@ export function ActivationGate({
       <Panel className="p-6">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
-            <h2 className="text-sm font-semibold text-white">Activated</h2>
+            <h2 className={cardTitle}>Activated</h2>
             <p className={helperClass}>
               This is the line between baseline and measured. Every outcome number this workspace is
               ever shown is anchored to it.
@@ -80,7 +81,7 @@ export function ActivationGate({
 
         {changes.length > 0 ? (
           <div className="mt-6 border-t border-white/10 pt-5">
-            <p className="text-sm font-semibold text-white">This timestamp has been moved</p>
+            <p className={cardTitle}>This timestamp has been moved</p>
             <ul className="mt-3 space-y-3 text-sm text-silver">
               {changes.map((change) => (
                 <li key={change.createdAt}>
@@ -145,7 +146,7 @@ export function ActivationGate({
     <Panel className="p-6">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <h2 className="text-sm font-semibold text-white">Going live</h2>
+          <h2 className={cardTitle}>Going live</h2>
           <p className={helperClass}>
             Activation sets the line between what happened before Vistrial and what happens after.
             It is captured once.
@@ -193,7 +194,7 @@ export function ActivationGate({
       <form action={action} className="mt-6 space-y-4 border-t border-white/10 pt-6">
         {activation.warnings.length > 0 ? (
           <>
-            <p className="text-sm font-semibold text-white">
+            <p className={cardTitle}>
               You can go live with these, but you have to say you have read them
             </p>
             {activation.warnings.map((warning) => (

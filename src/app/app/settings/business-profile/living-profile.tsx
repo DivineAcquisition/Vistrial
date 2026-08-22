@@ -11,7 +11,13 @@ import { Panel } from "@/components/ui/panel";
 import { StatusBadge } from "@/components/ui/status-badge";
 import type { Contradiction, ReviewPrompt } from "@/lib/profile/types";
 import { CONTRADICTION_LABELS, REVIEW_REASON_LABELS } from "@/lib/profile/vocabulary";
-import { btnSecondary, btnSizeSm, errorClass, helperClass } from "@/lib/ui";
+import {
+  btnSecondary,
+  btnSizeSm,
+  cardTitle,
+  errorClass,
+  helperClass,
+} from "@/lib/ui";
 
 const idle: SettingsSaveResult = { status: "idle" };
 
@@ -21,7 +27,7 @@ export function ReviewPrompts({ prompts }: { prompts: ReviewPrompt[] }) {
 
   return (
     <Panel className="p-6">
-      <h2 className="text-sm font-semibold text-white">Worth a look</h2>
+      <h2 className={cardTitle}>Worth a look</h2>
       <p className={helperClass}>
         Everything downstream reads this profile, so an answer that has gone stale becomes a wrong
         one. Nothing here is urgent and nothing chases you.
@@ -55,7 +61,7 @@ export function Contradictions({ contradictions }: { contradictions: Contradicti
     <Panel className="p-6">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <h2 className="text-sm font-semibold text-white">What you said, and what the data says</h2>
+          <h2 className={cardTitle}>What you said, and what the data says</h2>
           <p className={helperClass}>
             Only visible because both versions live in one place. Neither one is automatically right.
           </p>

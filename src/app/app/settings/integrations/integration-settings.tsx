@@ -29,6 +29,7 @@ import {
   btnSecondary,
   btnSizeMd,
   btnSizeSm,
+  cardTitle,
   errorClass,
   helperClass,
   inputClass,
@@ -194,7 +195,7 @@ export function IntegrationSettings(props: IntegrationSettingsProps) {
 
       {props.selectLocation ? (
         <Panel className="p-6">
-          <h2 className="text-sm font-semibold text-white">Choose a GoHighLevel location</h2>
+          <h2 className={cardTitle}>Choose a GoHighLevel location</h2>
           <p className={helperClass}>
             Agency access was granted. Link exactly one location to this workspace.
           </p>
@@ -225,7 +226,7 @@ export function IntegrationSettings(props: IntegrationSettingsProps) {
       <Panel className="p-6">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
-            <h2 className="text-sm font-semibold text-white">GoHighLevel</h2>
+            <h2 className={cardTitle}>GoHighLevel</h2>
             <p className={helperClass}>
               Dispatch goes out through GHL. Conversations stay in GHL — this workspace never
               renders threads or message bodies.
@@ -274,7 +275,7 @@ export function IntegrationSettings(props: IntegrationSettingsProps) {
       </Panel>
 
       <Panel className="p-6">
-        <h2 className="text-sm font-semibold text-white">Ingestion health</h2>
+        <h2 className={cardTitle}>Ingestion health</h2>
         <p className={helperClass}>
           Events received in the last 24 hours, the unprocessed backlog, and permanently failed
           payloads. A stalled pipeline is worse than an empty one.
@@ -371,7 +372,7 @@ export function IntegrationSettings(props: IntegrationSettingsProps) {
       </Panel>
 
       <Panel className="p-6">
-        <h2 className="text-sm font-semibold text-white">Permanently failed events</h2>
+        <h2 className={cardTitle}>Permanently failed events</h2>
         <p className={helperClass}>
           These stopped retrying. Fix the cause, then retry. Payloads stay stored; message bodies
           are never shown here.
@@ -411,7 +412,7 @@ export function IntegrationSettings(props: IntegrationSettingsProps) {
       </Panel>
 
       <Panel className="p-6">
-        <h2 className="text-sm font-semibold text-white">Application field mapping</h2>
+        <h2 className={cardTitle}>Application field mapping</h2>
         <p className={helperClass}>
           Map this location&apos;s GHL custom fields onto the application answer keys the scoring
           engine already reads. This is data, not code — every client&apos;s GHL is different.
@@ -538,7 +539,7 @@ export function IntegrationSettings(props: IntegrationSettingsProps) {
       </Panel>
 
       <Panel className="p-6">
-        <h2 className="text-sm font-semibold text-white">Call recorders</h2>
+        <h2 className={cardTitle}>Call recorders</h2>
         <p className={helperClass}>
           Webhooks for Fathom, Fireflies, Zoom, and GHL. Optional API key for scheduled pull.
           Manual paste stays available as the fallback. Audio is never stored.
@@ -615,7 +616,7 @@ export function IntegrationSettings(props: IntegrationSettingsProps) {
       </Panel>
 
       <Panel className="p-6">
-        <h2 className="text-sm font-semibold text-white">Unmatched transcripts</h2>
+        <h2 className={cardTitle}>Unmatched transcripts</h2>
         <p className={helperClass}>
           These did not uniquely match a call. Assign them. Never auto-attach.
         </p>
@@ -685,7 +686,7 @@ export function IntegrationSettings(props: IntegrationSettingsProps) {
       </Panel>
 
       <Panel className="p-6">
-        <h2 className="text-sm font-semibold text-white">Manual paste</h2>
+        <h2 className={cardTitle}>Manual paste</h2>
         <p className={helperClass}>
           Permanent fallback. Lands in the unmatched queue so an operator attaches it to a call.
         </p>

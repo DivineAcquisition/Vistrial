@@ -34,7 +34,13 @@ import {
   TEAM_STRUCTURES,
   VOICE_FORMALITIES,
 } from "@/lib/profile/vocabulary";
-import { btnPrimary, btnSizeMd, errorClass, helperClass } from "@/lib/ui";
+import {
+  btnPrimary,
+  btnSizeMd,
+  cardTitle,
+  errorClass,
+  helperClass,
+} from "@/lib/ui";
 
 const idle: OnboardingResult = { status: "idle" };
 
@@ -456,7 +462,7 @@ export function StageForm({
 
   return (
     <Panel className="p-6">
-      <h2 className="text-sm font-semibold text-white">{meta.title}</h2>
+      <h2 className={cardTitle}>{meta.title}</h2>
       <p className={helperClass}>{meta.why}</p>
       <form action={action} className="mt-6 space-y-5">
         <input type="hidden" name="stage" value={stage} />

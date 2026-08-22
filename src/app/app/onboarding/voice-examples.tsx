@@ -14,6 +14,7 @@ import { StatusBadge } from "@/components/ui/status-badge";
 import {
   btnSecondary,
   btnSizeSm,
+  cardTitle,
   errorClass,
   helperClass,
   inputClass,
@@ -39,7 +40,7 @@ export function VoiceExamples({
     <Panel className="p-6">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <h2 className="text-sm font-semibold text-white">Real messages you have sent</h2>
+          <h2 className={cardTitle}>Real messages you have sent</h2>
           <p className={helperClass}>
             Two to five messages you have actually sent a prospect. This is the single highest-value
             thing in the whole of onboarding: two real messages beat any description of your tone.

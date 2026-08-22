@@ -12,6 +12,7 @@ import { SubmitButton } from "@/components/ui/button";
 import { Panel } from "@/components/ui/panel";
 import { StatusBadge } from "@/components/ui/status-badge";
 import {
+  cardTitle,
   errorClass,
   helperClass,
   inputClass,
@@ -75,7 +76,7 @@ export function BaselineSettings(props: BaselineSettingsProps) {
     <Panel className="p-6">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <h2 className="text-sm font-semibold text-white">CRM history backfill</h2>
+          <h2 className={cardTitle}>CRM history backfill</h2>
           <p className={helperClass}>
             Runs automatically after the CRM is connected. Historical rows land in baseline tables,
             never in live leads. Message bodies are not pulled. Finishing or skipping this resolves
@@ -165,7 +166,7 @@ export function BaselineSettings(props: BaselineSettingsProps) {
 
       {unusable ? (
         <form action={selfAction} className="mt-8 space-y-4 border-t border-white/10 pt-6">
-          <p className="text-sm font-semibold text-white">Self-reported prior figures</p>
+          <p className={cardTitle}>Self-reported prior figures</p>
           <p className={helperClass}>
             Used only when CRM history is unusable. Labeled self-reported on every screen and every
             export. Never blended with backfilled or live numbers. Capturing these, or recording that

@@ -20,7 +20,10 @@ import { requireMembersManager } from "@/lib/auth/gates";
 import { inviteUrl } from "@/lib/auth/paths";
 import { formatDayLong } from "@/lib/format";
 import { createClient } from "@/lib/supabase/server";
-import { helperClass } from "@/lib/ui";
+import {
+  cardTitle,
+  helperClass,
+} from "@/lib/ui";
 
 export default async function MembersSettingsPage() {
   const ctx = await requireMembersManager();
@@ -53,7 +56,7 @@ export default async function MembersSettingsPage() {
       description="Invite setters and closers. Deactivate instead of deleting — touches and calls keep attribution."
     >
       <Panel className="mb-8 p-6">
-        <h2 className="text-sm font-semibold text-white">Invite</h2>
+        <h2 className={cardTitle}>Invite</h2>
         <div className="mt-4">
           <InviteForm />
         </div>

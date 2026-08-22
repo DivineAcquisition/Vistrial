@@ -8,10 +8,8 @@ import {
 } from "@/app/(auth)/accept-invite/[token]/actions";
 import { sendMagicLink, signInPassword } from "@/app/(auth)/login/actions";
 import { LOGIN_ERROR_COPY } from "@/lib/auth/errors";
+import { Button, SubmitButton } from "@/components/ui/button";
 import {
-  btnPrimary,
-  btnSecondary,
-  btnSizeMd,
   errorClass,
   helperClass,
   inputClass,
@@ -82,9 +80,9 @@ export function AcceptInviteForm({
             className={inputClass}
           />
         </div>
-        <button type="submit" disabled={createPending} className={`${btnPrimary} ${btnSizeMd} w-full`}>
-          {createPending ? "Creating…" : "Create account and join"}
-        </button>
+        <SubmitButton pending={createPending} loadingLabel="Creating" className="w-full">
+          Create account and join
+        </SubmitButton>
         <button
           type="button"
           className="w-full text-center text-sm text-brand-300 hover:text-white"
@@ -125,16 +123,16 @@ export function AcceptInviteForm({
       ) : (
         <p className={helperClass}>We will email a one-time link to {email}.</p>
       )}
-      <button type="submit" disabled={pending} className={`${btnPrimary} ${btnSizeMd} w-full`}>
-        {pending ? "Working…" : mode === "magic" ? "Send magic link" : "Sign in and join"}
-      </button>
-      <button
-        type="button"
-        className={`${btnSecondary} ${btnSizeMd} w-full`}
+      <SubmitButton pending={pending} loadingLabel="Working" className="w-full">
+        {mode === "magic" ? "Send magic link" : "Sign in and join"}
+      </SubmitButton>
+      <Button
+        variant="secondary"
+        className="w-full"
         onClick={() => setMode((current) => (current === "magic" ? "signin" : "magic"))}
       >
         {mode === "magic" ? "Use a password instead" : "Send me a magic link instead"}
-      </button>
+      </Button>
       <button
         type="button"
         className="w-full text-center text-sm text-brand-300 hover:text-white"

@@ -21,6 +21,7 @@ import {
   btnSecondary,
   btnSizeMd,
   btnSizeSm,
+  cardTitle,
   errorClass,
   helperClass,
   inputClass,
@@ -104,7 +105,7 @@ export function ScoringSettings({ config, maps: initialMaps, leads, lastGhostRun
       </Panel>
 
       <Panel className="p-6">
-        <h2 className="text-sm font-semibold text-white">Weights and thresholds</h2>
+        <h2 className={cardTitle}>Weights and thresholds</h2>
         <p className={helperClass}>
           Weights do not auto-balance. The four numbers must add to 100 before
           save. Changing them does not rewrite old score rows.
@@ -221,7 +222,7 @@ export function ScoringSettings({ config, maps: initialMaps, leads, lastGhostRun
       </Panel>
 
       <Panel className="p-6">
-        <h2 className="text-sm font-semibold text-white">Preview</h2>
+        <h2 className={cardTitle}>Preview</h2>
         <p className={helperClass}>
           Pick a real lead and see what the pending weights and mappings would
           score versus the cached score they have today. This is the call-list
@@ -282,7 +283,7 @@ export function ScoringSettings({ config, maps: initialMaps, leads, lastGhostRun
       </Panel>
 
       <Panel className="p-6">
-        <h2 className="text-sm font-semibold text-white">Application field mapping</h2>
+        <h2 className={cardTitle}>Application field mapping</h2>
         <p className={helperClass}>
           Each application field maps to one factor. An answer that matches no
           rule leaves that factor unknown — it is never filled in with a
@@ -573,7 +574,7 @@ export function ScoringSettings({ config, maps: initialMaps, leads, lastGhostRun
       </Panel>
 
       <Panel className="p-6">
-        <h2 className="text-sm font-semibold text-white">Manual override</h2>
+        <h2 className={cardTitle}>Manual override</h2>
         <p className={helperClass}>
           Set factor values, not the total — the same function computes the
           score. Reasoning is required. A later call extraction will re-score
@@ -646,7 +647,7 @@ export function ScoringSettings({ config, maps: initialMaps, leads, lastGhostRun
       </Panel>
 
       <Panel className="p-6">
-        <h2 className="text-sm font-semibold text-white">Bulk re-score</h2>
+        <h2 className={cardTitle}>Bulk re-score</h2>
         <p className={helperClass}>
           Writes a new manual score row for every lead that can be scored under
           the saved settings. History is not rewritten. This never runs on save.
@@ -674,7 +675,7 @@ export function ScoringSettings({ config, maps: initialMaps, leads, lastGhostRun
       </Panel>
 
       <Panel className="p-6">
-        <h2 className="text-sm font-semibold text-white">Ghost detector</h2>
+        <h2 className={cardTitle}>Ghost detector</h2>
         <p className={helperClass}>
           Runs on a schedule, not when someone opens a page. Thresholds use this
           workspace&apos;s timezone. You can also run it here to inspect the

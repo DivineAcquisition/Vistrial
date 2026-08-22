@@ -13,7 +13,14 @@ import { Panel } from "@/components/ui/panel";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { loadBusinessProfileState, requireProfileAccess } from "@/lib/profile/load";
 import { STAGE_META, PROFILE_STAGES } from "@/lib/profile/stages";
-import { btnPrimary, btnSecondary, btnSizeMd, btnSizeSm, helperClass } from "@/lib/ui";
+import {
+  btnPrimary,
+  btnSecondary,
+  btnSizeMd,
+  btnSizeSm,
+  cardTitle,
+  helperClass,
+} from "@/lib/ui";
 
 export default async function BusinessProfileSettingsPage() {
   const ctx = await requireProfileAccess();
@@ -52,7 +59,7 @@ export default async function BusinessProfileSettingsPage() {
         <Panel className="p-6">
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div>
-              <h2 className="text-sm font-semibold text-white">What is answered</h2>
+              <h2 className={cardTitle}>What is answered</h2>
               <p className={helperClass}>
                 {completeness.answered} of {completeness.total} fields that a running feature reads.
                 Below {completeness.usableMin} the features named beside each gap run on defaults
@@ -95,7 +102,7 @@ export default async function BusinessProfileSettingsPage() {
         </Panel>
 
         <Panel className="p-6">
-          <h2 className="text-sm font-semibold text-white">Onboarding</h2>
+          <h2 className={cardTitle}>Onboarding</h2>
           <div className="mt-4">
             <DataTable
               columns={[
@@ -124,7 +131,7 @@ export default async function BusinessProfileSettingsPage() {
 
         {state.patternFeedback.length > 0 ? (
           <Panel className="p-6">
-            <h2 className="text-sm font-semibold text-white">Drawn from comparable businesses</h2>
+            <h2 className={cardTitle}>Drawn from comparable businesses</h2>
             <ul className="mt-3 space-y-3">
               {state.patternFeedback.map((item) => (
                 <li key={item.key}>
@@ -138,7 +145,7 @@ export default async function BusinessProfileSettingsPage() {
         ) : null}
 
         <Panel className="p-6">
-          <h2 className="text-sm font-semibold text-white">Contribution to anonymized patterns</h2>
+          <h2 className={cardTitle}>Contribution to anonymized patterns</h2>
           <DefinitionList>
             <KeyValue label="Contributing">
               {profile.aggregateOptOut ? "No, you opted out" : "Yes"}
@@ -159,7 +166,7 @@ export default async function BusinessProfileSettingsPage() {
         <Panel className="p-6">
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div>
-              <h2 className="text-sm font-semibold text-white">History</h2>
+              <h2 className={cardTitle}>History</h2>
               <p className={helperClass}>
                 Every change is kept with who made it, so a figure cut under an older profile stays
                 interpretable. Version {profile.version} is current.
@@ -192,7 +199,7 @@ export default async function BusinessProfileSettingsPage() {
         </Panel>
 
         <Panel className="p-6">
-          <h2 className="text-sm font-semibold text-white">The Leak Report</h2>
+          <h2 className={cardTitle}>The Leak Report</h2>
           <p className={helperClass}>
             {state.latestLeakReport
               ? `Last generated ${new Date(state.latestLeakReport.generatedAt).toLocaleString()}.`

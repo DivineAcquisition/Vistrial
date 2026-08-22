@@ -17,7 +17,13 @@ import {
   labelFor,
   OBJECTION_TYPES,
 } from "@/lib/profile/vocabulary";
-import { btnPrimary, btnSecondary, btnSizeMd, helperClass } from "@/lib/ui";
+import {
+  btnPrimary,
+  btnSecondary,
+  btnSizeMd,
+  cardTitle,
+  helperClass,
+} from "@/lib/ui";
 
 function Empty({ children }: { children: React.ReactNode }) {
   return <p className={helperClass}>{children}</p>;
@@ -27,7 +33,7 @@ export function BenchmarkPanel({ benchmark }: { benchmark: Benchmark }) {
   if (!benchmark.shown) {
     return (
       <Panel className="p-6">
-        <h3 className="text-sm font-semibold text-white">Against comparable businesses</h3>
+        <h3 className={cardTitle}>Against comparable businesses</h3>
         <Empty>{benchmark.plain ?? "No benchmark is shown yet."}</Empty>
       </Panel>
     );
@@ -52,7 +58,7 @@ export function BenchmarkPanel({ benchmark }: { benchmark: Benchmark }) {
 
   return (
     <Panel className="p-6">
-      <h3 className="text-sm font-semibold text-white">Against comparable businesses</h3>
+      <h3 className={cardTitle}>Against comparable businesses</h3>
       <div className="mt-4">
         <DataTable
           columns={[
@@ -79,7 +85,7 @@ function ConnectPayoff({ payoff }: { payoff: Record<string, unknown> }) {
   if (str(connection.status) !== "active") {
     return (
       <Panel className="p-6">
-        <h3 className="text-sm font-semibold text-white">Nothing to show yet</h3>
+        <h3 className={cardTitle}>Nothing to show yet</h3>
         <Empty>Connect the CRM and this fills in with what we found in your history.</Empty>
       </Panel>
     );
@@ -87,7 +93,7 @@ function ConnectPayoff({ payoff }: { payoff: Record<string, unknown> }) {
 
   return (
     <Panel className="p-6">
-      <h3 className="text-sm font-semibold text-white">What we found</h3>
+      <h3 className={cardTitle}>What we found</h3>
       <div className="mt-4">
         <KpiGrid columns={3}>
           <KpiCard label="Contacts in history" value={found.toLocaleString()} />
@@ -132,7 +138,7 @@ function BusinessPayoff({ payoff }: { payoff: Record<string, unknown> }) {
     <>
       <BenchmarkPanel benchmark={parseBenchmark(payoff.benchmark)} />
       <Panel className="p-6">
-        <h3 className="text-sm font-semibold text-white">What your month has to carry</h3>
+        <h3 className={cardTitle}>What your month has to carry</h3>
         <div className="mt-4">
         <KpiGrid columns={3}>
             <KpiCard label="Leads a month" value={(num(capacity.volume) ?? 0).toLocaleString()} />
@@ -149,7 +155,7 @@ function BusinessPayoff({ payoff }: { payoff: Record<string, unknown> }) {
       </Panel>
       {feedback.length > 0 ? (
         <Panel className="p-6">
-          <h3 className="text-sm font-semibold text-white">Worth a look</h3>
+          <h3 className={cardTitle}>Worth a look</h3>
           <ul className="mt-3 space-y-3">
             {feedback.map((item, index) => {
               const row = asRecord(item);
@@ -177,7 +183,7 @@ function FunnelPayoff({ payoff }: { payoff: Record<string, unknown> }) {
   return (
     <>
       <Panel className="p-6">
-        <h3 className="text-sm font-semibold text-white">Your real speed to lead</h3>
+        <h3 className={cardTitle}>Your real speed to lead</h3>
         {bool(payoff.speed_too_small) || median === null ? (
           <Empty>
             Only {num(payoff.speed_sample_n) ?? 0} contacts in your history were ever touched, which is
@@ -202,7 +208,7 @@ function FunnelPayoff({ payoff }: { payoff: Record<string, unknown> }) {
       </Panel>
 
       <Panel className="p-6">
-        <h3 className="text-sm font-semibold text-white">Where your leads actually come from</h3>
+        <h3 className={cardTitle}>Where your leads actually come from</h3>
         <div className="mt-4">
           <DataTable
             columns={[
@@ -244,7 +250,7 @@ function QualificationPayoff({ payoff }: { payoff: Record<string, unknown> }) {
   return (
     <>
       <Panel className="p-6">
-        <h3 className="text-sm font-semibold text-white">How your real leads score under this</h3>
+        <h3 className={cardTitle}>How your real leads score under this</h3>
         <div className="mt-4">
         <KpiGrid columns={3}>
             <KpiCard label="Leads scored" value={String(num(payoff.scored_leads) ?? 0)} sub={`of ${num(payoff.total_leads) ?? 0}`} />
@@ -260,7 +266,7 @@ function QualificationPayoff({ payoff }: { payoff: Record<string, unknown> }) {
         </DefinitionList>
       </Panel>
       <Panel className="p-6">
-        <h3 className="text-sm font-semibold text-white">Your highest scoring leads right now</h3>
+        <h3 className={cardTitle}>Your highest scoring leads right now</h3>
         <div className="mt-4">
           <DataTable
             columns={[
@@ -291,7 +297,7 @@ function ProcessPayoff({ payoff }: { payoff: Record<string, unknown> }) {
   return (
     <>
       <Panel className="p-6">
-        <h3 className="text-sm font-semibold text-white">The gap you just set the alarm against</h3>
+        <h3 className={cardTitle}>The gap you just set the alarm against</h3>
         <div className="mt-4">
         <KpiGrid columns={3}>
             <KpiCard label="Alarm fires at" value={formatMinutes(window)} />
@@ -308,7 +314,7 @@ function ProcessPayoff({ payoff }: { payoff: Record<string, unknown> }) {
         </div>
       </Panel>
       <Panel className="p-6">
-        <h3 className="text-sm font-semibold text-white">What Vistrial will and will not send</h3>
+        <h3 className={cardTitle}>What Vistrial will and will not send</h3>
         <div className="mt-4">
           <DataTable
             columns={[
@@ -342,7 +348,7 @@ function ObjectionsPayoff({ payoff }: { payoff: Record<string, unknown> }) {
   const vocabulary = asArray(payoff.vocabulary);
   return (
     <Panel className="p-6">
-      <h3 className="text-sm font-semibold text-white">Your objection taxonomy, seeded</h3>
+      <h3 className={cardTitle}>Your objection taxonomy, seeded</h3>
       <div className="mt-4">
         <DataTable
           columns={[
@@ -373,7 +379,7 @@ async function VoicePayoff({ orgId, payoff }: { orgId: string; payoff: Record<st
   const preview = await previewVoiceDraft(orgId);
   return (
     <Panel className="p-6">
-      <h3 className="text-sm font-semibold text-white">A real draft, in your voice</h3>
+      <h3 className={cardTitle}>A real draft, in your voice</h3>
       {preview.kind === "draft" ? (
         <>
           <p className={helperClass}>
@@ -407,7 +413,7 @@ function GoalsPayoff({ payoff }: { payoff: Record<string, unknown> }) {
   const latest = asRecord(payoff.latest_leak_report);
   return (
     <Panel className="p-6">
-      <h3 className="text-sm font-semibold text-white">Your Leak Report is ready</h3>
+      <h3 className={cardTitle}>Your Leak Report is ready</h3>
       <p className={helperClass}>
         Real numbers from your own history, framed against what you just told us you intend. It is
         yours to forward.

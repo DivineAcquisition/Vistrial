@@ -8,7 +8,11 @@ import { Panel } from "@/components/ui/panel";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { STAGE_META } from "@/lib/profile/stages";
 import { buttonClasses, SubmitButton } from "@/components/ui/button";
-import { errorClass, helperClass } from "@/lib/ui";
+import {
+  cardTitle,
+  errorClass,
+  helperClass,
+} from "@/lib/ui";
 
 const idle: OnboardingResult = { status: "idle" };
 
@@ -35,7 +39,7 @@ export function ConnectStage({
     <Panel className="p-6">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <h2 className="text-sm font-semibold text-white">{meta.title}</h2>
+          <h2 className={cardTitle}>{meta.title}</h2>
           <p className={helperClass}>{meta.why}</p>
         </div>
         <StatusBadge

@@ -8,7 +8,8 @@ import {
   type LoginActionState,
 } from "@/app/(auth)/login/actions";
 import { LOGIN_ERROR_COPY, type LoginError } from "@/lib/auth/errors";
-import { btnPrimary, btnSizeMd, errorClass, helperClass, inputClass, labelClass } from "@/lib/ui";
+import { Button, SubmitButton } from "@/components/ui/button";
+import { errorClass, helperClass, inputClass, labelClass } from "@/lib/ui";
 
 type Mode = "password" | "magic";
 
@@ -80,17 +81,17 @@ export function LoginForm({
         <p className={helperClass}>We will email a one-time sign-in link. No password needed.</p>
       )}
 
-      <button type="submit" disabled={pending} className={`${btnPrimary} ${btnSizeMd} w-full`}>
-        {pending ? "Working…" : mode === "password" ? "Sign in" : "Send magic link"}
-      </button>
+      <SubmitButton pending={pending} loadingLabel="Working" className="w-full">
+        {mode === "password" ? "Sign in" : "Send magic link"}
+      </SubmitButton>
 
-      <button
-        type="button"
-        className="w-full text-center text-sm text-brand-300 hover:text-white"
+      <Button
+        variant="link"
+        className="w-full justify-center"
         onClick={() => setMode((current) => (current === "password" ? "magic" : "password"))}
       >
         {mode === "password" ? "Send me a magic link instead" : "Sign in with a password instead"}
-      </button>
+      </Button>
     </form>
   );
 }

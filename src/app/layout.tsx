@@ -4,7 +4,7 @@ import { Inter, JetBrains_Mono } from "next/font/google";
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { APP_NAME, PRODUCTION_SITE_ORIGIN } from "@/lib/constants";
-import { SITE_DESCRIPTION } from "@/lib/marketing/copy";
+import { SITE_DESCRIPTION, SOCIAL_IMAGE } from "@/lib/marketing/copy";
 
 import "./globals.css";
 
@@ -32,9 +32,11 @@ export const metadata: Metadata = {
     siteName: APP_NAME,
     locale: "en_US",
     type: "website",
+    images: [SOCIAL_IMAGE],
   },
   twitter: {
     card: "summary_large_image",
+    images: [SOCIAL_IMAGE.url],
   },
 };
 

@@ -179,6 +179,13 @@ export const FOOTER = {
   productLine: "Vistrial, a Divine Acquisition product.",
 } as const;
 
+export const SOCIAL_IMAGE = {
+  url: "/opengraph-image",
+  width: 1200,
+  height: 630,
+  alt: HERO.headline,
+} as const;
+
 export const NAV = {
   book: "Book the audit",
   skipToContent: "Skip to content",

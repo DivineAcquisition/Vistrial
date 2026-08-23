@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 import { MarketingShell } from "@/components/marketing/chrome";
 import { LandingPage } from "@/components/marketing/landing";
 import { APP_NAME } from "@/lib/constants";
-import { HERO, SITE_DESCRIPTION } from "@/lib/marketing/copy";
+import { HERO, SITE_DESCRIPTION, SOCIAL_IMAGE } from "@/lib/marketing/copy";
 import { siteOrigin } from "@/lib/marketing/hosts";
 
 export const metadata: Metadata = {
@@ -21,11 +21,13 @@ export const metadata: Metadata = {
     siteName: APP_NAME,
     type: "website",
     locale: "en_US",
+    images: [SOCIAL_IMAGE],
   },
   twitter: {
     card: "summary_large_image",
     title: HERO.headline,
     description: SITE_DESCRIPTION,
+    images: [SOCIAL_IMAGE.url],
   },
 };
 

@@ -2,6 +2,7 @@ import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
 import { safeInternalPath } from "@/lib/auth/paths";
+import { isOperatorAppHost } from "@/lib/marketing/hosts";
 import { isSupabaseConfigured, supabasePublishableKey, supabaseUrl } from "@/lib/supabase/env";
 import { fetchForSupabaseKey } from "@/lib/supabase/fetch";
 import type { Database } from "@/types/database";
@@ -27,6 +28,18 @@ function nextWithPath(request: NextRequest) {
  * throws if that segment config is present.
  */
 export async function proxy(request: NextRequest) {
+  const path = request.nextUrl.pathname;
+  if (path === "/" && isOperatorAppHost(request.headers.get("host"))) {
+    const login = request.nextUrl.clone();
+    login.pathname = "/login";
+    login.search = "";
+    return NextResponse.redirect(login);
+  }
+
+  if (!path.startsWith("/app")) {
+    return nextWithPath(request);
+  }
+
   let supabaseResponse = nextWithPath(request);
 
   if (!isSupabaseConfigured()) {
@@ -60,7 +73,6 @@ export async function proxy(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
 
-  const path = request.nextUrl.pathname;
   if (path.startsWith("/app") && !user) {
     const login = request.nextUrl.clone();
     login.pathname = "/login";
@@ -76,8 +88,5 @@ export async function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: [
-    "/app",
-    "/app/:path*",
-  ],
+  matcher: ["/", "/app", "/app/:path*"],
 };

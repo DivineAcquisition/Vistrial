@@ -3,7 +3,8 @@ import { Inter, JetBrains_Mono } from "next/font/google";
 
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { APP_NAME, PRODUCTION_APP_ORIGIN } from "@/lib/constants";
+import { APP_NAME, PRODUCTION_SITE_ORIGIN } from "@/lib/constants";
+import { SITE_DESCRIPTION } from "@/lib/marketing/copy";
 
 import "./globals.css";
 
@@ -21,10 +22,20 @@ const jetbrainsMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL(PRODUCTION_APP_ORIGIN),
-  title: APP_NAME,
-  description:
-    "Case files for high-ticket sales teams. Know the lead before you dial.",
+  metadataBase: new URL(PRODUCTION_SITE_ORIGIN),
+  title: {
+    default: APP_NAME,
+    template: `%s · ${APP_NAME}`,
+  },
+  description: SITE_DESCRIPTION,
+  openGraph: {
+    siteName: APP_NAME,
+    locale: "en_US",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+  },
 };
 
 export default function RootLayout({

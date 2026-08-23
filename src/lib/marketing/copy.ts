@@ -1,0 +1,185 @@
+/**
+ * Landing copy. Written deliberately in the page brief — do not punch up,
+ * do not add exclamation marks, do not invent proof.
+ */
+
+export const SITE_DESCRIPTION =
+  "Vistrial gives every lead a case file: readiness score, full contact history, what was said on the last call, and follow-up written from it. Sits on top of GoHighLevel. Nothing to migrate.";
+
+export const HERO = {
+  headline: "Your team is calling leads they know nothing about.",
+  /** The phrase that carries the gradient. Visual only — the headline is unchanged. */
+  headlineAccent: "they know nothing about.",
+  subhead: SITE_DESCRIPTION,
+  primaryCta: "Get your free Lead Leak Audit",
+  secondaryCta: "See how it works",
+  underCta: "30 minutes. We pull your own numbers. No pitch deck.",
+} as const;
+
+export const PROBLEM = {
+  headline: "The leads are fine. The follow-up is where the money goes.",
+  points: [
+    {
+      lead: "Nobody knows who called last, or when.",
+      rest: "So leads get contacted twice, or never.",
+    },
+    {
+      lead: "Closers walk into calls blind.",
+      rest: "A name, a calendar invite, and three form answers.",
+    },
+    {
+      lead: "Objections get re-litigated.",
+      rest: "What the prospect already said on call one dies in a recording nobody reopens.",
+    },
+  ],
+  closing: "Every one of those is a lead you already paid for.",
+} as const;
+
+export const CASE_FILE = {
+  headline: "One file per lead. Everything known, in one place.",
+  parts: [
+    {
+      id: "readiness",
+      title: "Readiness score",
+      body: "how close they are to buying, scored on timeline, budget, authority, and pain. Weighted for your offer, not a generic template.",
+    },
+    {
+      id: "touches",
+      title: "Touch history",
+      body: "every message, call, and reply, with who and when. Speed-to-lead measured, not assumed.",
+    },
+    {
+      id: "transcripts",
+      title: "Call transcripts, structured",
+      body: "what they said about budget, timeline, and who else decides, pulled out and put where your closer will see it.",
+    },
+    {
+      id: "objections",
+      title: "Open objections",
+      body: "verbatim, carried across calls, so nobody handles the same one twice.",
+    },
+    {
+      id: "brief",
+      title: "The pre-call brief",
+      body: "one screen your closer reads in the two minutes before they dial.",
+    },
+    {
+      id: "follow-up",
+      title: "Follow-up drafts",
+      body: "written from what was actually said, in your voice. Your team approves before anything sends.",
+    },
+  ],
+} as const;
+
+export const MOMENTS = {
+  headline: "Three moments where it changes the outcome.",
+  items: [
+    {
+      title: "Before the first touch",
+      body: "Leads sort by readiness, not arrival time. Anyone waiting past your response window shows up in an alarm that cannot be dismissed until someone actually works them.",
+    },
+    {
+      title: "Before the call",
+      body: "Your closer opens one screen: who this is, where they came from, what the setter established, what they have already objected to, and what they said in their own words.",
+    },
+    {
+      title: "After the call",
+      body: "The transcript becomes structure. The lead re-scores on what was actually said. Follow-up drafts itself from the real conversation, and a human approves it before it goes.",
+    },
+  ],
+} as const;
+
+export const OUTCOME = {
+  headline: "The number we track is clients closed per hundred leads.",
+  body: "Not opens. Not replies. Not activity. Vistrial measures how many leads turned into clients before it was installed and how many after, from your own history. You see the same number we do.",
+  lines: [
+    "Coverage: what percentage of your leads ever got a human touch",
+    "Speed: how fast, actually, versus how fast you think",
+    "Where deals die: never touched, no-show, ghosted after one call, objection unresolved",
+  ],
+  honesty:
+    "We do not make the calls. Your team does. Vistrial makes sure every lead gets worked, and that whoever works it knows what they are walking into.",
+} as const;
+
+export const GHL = {
+  headline: "It runs on the CRM you already have.",
+  body: "GoHighLevel stays your system of record. Your conversations, your calendar, your pipeline, your automations: unchanged. Vistrial reads from it, adds the layer it does not have, and sends through it. One click to connect. Nothing to migrate, nothing to rebuild, nothing to retrain your team on from scratch.",
+  listingLive: "Open the HighLevel Marketplace listing",
+} as const;
+
+export const AUDIT = {
+  headline: "Find out what you are leaking.",
+  body: "Thirty minutes. We connect to your GoHighLevel, pull the last twelve months, and show you: how many leads never got a human touch, your real median response time, how many went quiet after one call, and what that is worth at your close rate and price point.",
+  keep: "You keep the report either way.",
+  cta: "Book the audit",
+  underCta: "No deck, no slides, just your numbers.",
+} as const;
+
+export const FAQ = {
+  headline: "FAQ",
+  items: [
+    {
+      question: "Do I have to leave GoHighLevel?",
+      answer: "No. It stays your CRM and your inbox. Vistrial adds a layer on top.",
+    },
+    {
+      question: "Does it message my prospects automatically?",
+      answer:
+        "It drafts. A person on your team approves every message before it sends. There is no autopilot, deliberately.",
+    },
+    {
+      question: "What if we do not record calls?",
+      answer:
+        "Everything else works. Transcripts add the pre-call brief and the follow-up drafting, so you get more from it if you record, but it is not required.",
+    },
+    {
+      question: "How long until it is running?",
+      answer: "Connection is immediate. Configuration and training your team, days not weeks.",
+    },
+    {
+      question: "What if my CRM history is a mess?",
+      answer:
+        "Common. The audit tells you honestly whether there is enough history to compare against, rather than inventing a baseline.",
+    },
+    {
+      question: "Who is this not for?",
+      answer:
+        "Businesses under roughly $8K a month, anyone selling something that closes without a conversation, and anyone whose lead volume is small enough to work by memory.",
+    },
+  ],
+} as const;
+
+export const BOOK = {
+  eyebrow: "Lead Leak Audit",
+  title: "A few questions, then you pick a time.",
+  description:
+    "Thirty minutes. We pull your own numbers from GoHighLevel. No pitch deck.",
+  submit: "Continue to the calendar",
+  pending: "Submitting",
+} as const;
+
+export const CALENDAR = {
+  eyebrow: "Lead Leak Audit",
+  title: "Pick a time.",
+  description:
+    "The slot is 30 minutes. We will be looking at your numbers, not a slide deck.",
+  missing:
+    "The calendar is not connected on this deployment yet. Your answers were recorded. Email us and we will send a time.",
+} as const;
+
+export const CONTACT_PAGE = {
+  title: "Contact",
+  description: "A question about Vistrial or the Lead Leak Audit. We read every one.",
+  submit: "Send",
+  pending: "Sending",
+  sent: "Received. We will reply to the address you gave.",
+} as const;
+
+export const FOOTER = {
+  productLine: "Vistrial, a Divine Acquisition product.",
+} as const;
+
+export const NAV = {
+  book: "Book the audit",
+  skipToContent: "Skip to content",
+} as const;

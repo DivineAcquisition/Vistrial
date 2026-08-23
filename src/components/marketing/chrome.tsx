@@ -94,6 +94,12 @@ export function SiteFooter() {
               Terms
             </Link>
             <Link
+              href="/disclaimer"
+              className="text-xs font-medium text-silver transition-colors hover:text-brand-300"
+            >
+              Disclaimer
+            </Link>
+            <Link
               href="/contact"
               className="text-xs font-medium text-silver transition-colors hover:text-brand-300"
             >

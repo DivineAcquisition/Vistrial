@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   COMPANY_ADDRESS,
   CONTACT_EMAIL,
+  DISCLAIMER_LAST_UPDATED,
   LEGAL_EMAIL,
   LEGAL_ENTITY,
   PRIVACY_EFFECTIVE,
@@ -24,5 +25,9 @@ describe("public legal identity", () => {
   it("dates the terms of service when they were published", () => {
     expect(TERMS_LAST_UPDATED).toBe("8/23/2026");
     expect(TERMS_EFFECTIVE).toBe("8/23/2026");
+  });
+
+  it("dates the disclaimer from the published document", () => {
+    expect(DISCLAIMER_LAST_UPDATED).toBe("8/22/2026");
   });
 });

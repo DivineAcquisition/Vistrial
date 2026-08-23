@@ -1,8 +1,9 @@
 import "server-only";
 
-import { WEBHOOK_MAX_ATTEMPTS } from "@/lib/ghl/constants";
+import { WEBHOOK_MAX_ATTEMPTS, INGEST_ALERT_COOLDOWN_MS } from "@/lib/ghl/constants";
 import { disconnectGhl } from "@/lib/ghl/connect";
 import { fetchUser } from "@/lib/ghl/client";
+import { emailFromGhlUser } from "@/lib/ghl/actor";
 import { normalizeEventKind } from "@/lib/ghl/events";
 import {
   answersEqual,
@@ -29,6 +30,7 @@ import { asJsonRecord } from "@/lib/ghl/payload";
 import { nextAttemptAt, shouldMarkDead } from "@/lib/ghl/retry";
 import { scoreInboundReplyAfterSilence, scoreLeadFromAnswerChange, scoreNoShow } from "@/lib/scoring/event-apply";
 import { flagDisqualifiedLead } from "@/lib/profile/intake-flags";
+import { assigneesFromTeamStructure } from "@/lib/profile/assignment";
 import { leadStatusForPipelineStage } from "@/lib/profile/stage-mapping";
 import { scoreLeadOnIntake } from "@/lib/scoring/intake";
 import { assertScorePersisted, loadScoreConfig } from "@/lib/scoring/store";
@@ -221,6 +223,18 @@ async function findOrCreateLead(
     return { lead: existing, created: false };
   }
 
+  const { data: profile } = await db
+    .from("business_profiles")
+    .select("team_structure")
+    .eq("org_id", orgId)
+    .maybeSingle();
+  const { data: members } = await db
+    .from("org_members")
+    .select("id, role")
+    .eq("org_id", orgId)
+    .eq("active", true);
+  const assigned = assigneesFromTeamStructure(profile?.team_structure ?? null, members ?? []);
+
   const { data, error } = await db
     .from("leads")
     .insert({
@@ -234,6 +248,8 @@ async function findOrCreateLead(
       campaign: fields.campaign,
       application_answers: answers as Json,
       status: "new",
+      assigned_setter_id: assigned.setterId,
+      assigned_closer_id: assigned.closerId,
       ...(fields.timezone ? { timezone: fields.timezone } : {}),
       ...(fields.opted_in_at ? { opted_in_at: fields.opted_in_at } : {}),
     })
@@ -418,6 +434,9 @@ async function handleOutbound(db: GhlDb, orgId: string, _event: WebhookRow, payl
   let actorId: string | null = null;
   if (!automated && userId) {
     actorId = await resolveActor(db, orgId, userId);
+    if (!actorId) {
+      await recordUnmappedGhlUser(db, orgId, userId);
+    }
   }
   const type = actorId ? "human" : "system";
 
@@ -555,7 +574,7 @@ async function resolveActor(db: GhlDb, orgId: string, ghlUserId: string): Promis
   if (byId) return byId.id;
 
   const user = await fetchUser(db, orgId, ghlUserId);
-  const email = typeof user.json?.email === "string" ? user.json.email.trim().toLowerCase() : null;
+  const email = emailFromGhlUser(user.json);
   if (!email) return null;
   const { data: byEmail } = await db
     .from("org_members")
@@ -564,8 +583,38 @@ async function resolveActor(db: GhlDb, orgId: string, ghlUserId: string): Promis
     .eq("email", email)
     .maybeSingle();
   if (!byEmail) return null;
-  await db.from("org_members").update({ ghl_user_id: ghlUserId }).eq("id", byEmail.id).eq("org_id", orgId);
+  const { error } = await db
+    .from("org_members")
+    .update({ ghl_user_id: ghlUserId })
+    .eq("id", byEmail.id)
+    .eq("org_id", orgId);
+  if (error) {
+    ghlError("ghl.actor.map_failed", { orgId, code: error.code });
+  }
   return byEmail.id;
+}
+
+async function recordUnmappedGhlUser(db: GhlDb, orgId: string, ghlUserId: string) {
+  const kind = "unmapped_ghl_user";
+  const detail = `CRM user ${ghlUserId} sent outbound mail and is not mapped to a workspace member. First-human-touch will not stamp until their email matches.`;
+  const { data: existing } = await db
+    .from("ingestion_alerts")
+    .select("id, last_sent_at")
+    .eq("org_id", orgId)
+    .eq("kind", kind)
+    .maybeSingle();
+  if (existing && Date.now() - Date.parse(existing.last_sent_at) < INGEST_ALERT_COOLDOWN_MS) {
+    return;
+  }
+  ghlError("ghl.actor.unmapped", { orgId, ghlUserId });
+  if (existing) {
+    await db
+      .from("ingestion_alerts")
+      .update({ detail, last_sent_at: new Date().toISOString() })
+      .eq("id", existing.id);
+    return;
+  }
+  await db.from("ingestion_alerts").insert({ org_id: orgId, kind, detail });
 }
 
 async function markEventUnsupported(db: GhlDb, event: WebhookRow) {

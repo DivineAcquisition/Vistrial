@@ -15,6 +15,19 @@ export function draftStatusBlocksSend(status: string | null | undefined): boolea
 }
 
 /**
+ * Drain must not send a follow-up that is not currently approved.
+ * A queued row with a follow-up idempotency key and no linked approved
+ * draft is the draft_link_failed leftover — refuse it.
+ */
+export function queuedFollowUpMaySend(args: {
+  idempotencyKey: string | null | undefined;
+  linkedDraftStatus: string | null | undefined;
+}): boolean {
+  if (!args.idempotencyKey?.startsWith("follow-up:")) return true;
+  return args.linkedDraftStatus === "approved";
+}
+
+/**
  * After an inbound reply (or org stop) discards drafts, a dispatch that was
  * already queued must not still send. A discard that happened before this
  * dispatch was created belongs to an earlier sequence and does not block.

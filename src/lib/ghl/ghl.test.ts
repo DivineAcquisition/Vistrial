@@ -1,6 +1,7 @@
 import { generateKeyPairSync, sign } from "node:crypto";
 import { describe, expect, it } from "vitest";
 
+import { emailFromGhlUser } from "@/lib/ghl/actor";
 import { decryptSecret, encryptSecret } from "@/lib/ghl/crypto";
 import { INGEST_STALE_PENDING_MS, LOCATION_CLAIMED_MESSAGE, WEBHOOK_MAX_ATTEMPTS } from "@/lib/ghl/constants";
 import { normalizeEventKind } from "@/lib/ghl/events";
@@ -11,6 +12,7 @@ import {
   discardedDraftBlocksDispatch,
   draftStatusBlocksSend,
   followUpMissingApprover,
+  queuedFollowUpMaySend,
   skipOutboundWebhookTouch,
 } from "@/lib/ghl/dispatch-guard";
 import {
@@ -288,6 +290,16 @@ describe("message identity and contact timezone", () => {
     expect(draftStatusBlocksSend("rejected")).toBe(true);
     expect(draftStatusBlocksSend("approved")).toBe(false);
     expect(
+      queuedFollowUpMaySend({ idempotencyKey: "follow-up:draft-1", linkedDraftStatus: "approved" })
+    ).toBe(true);
+    expect(
+      queuedFollowUpMaySend({ idempotencyKey: "follow-up:draft-1", linkedDraftStatus: "pending" })
+    ).toBe(false);
+    expect(
+      queuedFollowUpMaySend({ idempotencyKey: "follow-up:draft-1", linkedDraftStatus: null })
+    ).toBe(false);
+    expect(queuedFollowUpMaySend({ idempotencyKey: "crm-native", linkedDraftStatus: null })).toBe(true);
+    expect(
       discardedDraftBlocksDispatch({
         dispatchCreatedAt: "2026-08-23T12:00:00.000Z",
         discardedUpdatedAt: "2026-08-23T12:01:00.000Z",
@@ -326,5 +338,14 @@ describe("message identity and contact timezone", () => {
         recentSentDispatch: false,
       })
     ).toBe(true);
+  });
+});
+
+describe("GHL user email", () => {
+  it("reads nested and camel-case email fields", () => {
+    expect(emailFromGhlUser({ email: "A@Co.test" })).toBe("a@co.test");
+    expect(emailFromGhlUser({ user: { email: "b@co.test" } })).toBe("b@co.test");
+    expect(emailFromGhlUser({ emailAddress: "c@co.test" })).toBe("c@co.test");
+    expect(emailFromGhlUser({ name: "Pat" })).toBeNull();
   });
 });

@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 
+import { assigneesFromTeamStructure } from "@/lib/profile/assignment";
 import { goalLine } from "@/lib/profile/goal";
 import { matchDisqualifiers } from "@/lib/profile/intake-flags";
 import {
@@ -9,6 +10,7 @@ import {
   leakFindingLines,
   parseLeakReport,
 } from "@/lib/profile/leak";
+import { coalesceOfferName } from "@/lib/profile/offer";
 import { parseBenchmark, parseDefaults, parseCompleteness } from "@/lib/profile/parse";
 import { buildSetterFacts } from "@/lib/profile/setter-facts";
 import { statusForStage } from "@/lib/profile/stage-mapping";
@@ -305,5 +307,35 @@ describe("profile defaults and completeness", () => {
     });
     expect(completeness.score).toBe(40);
     expect(completeness.gaps[0].consumer).toBe("Leak Report value estimates");
+  });
+});
+
+describe("team structure assignment defaults", () => {
+  const members = [
+    { id: "owner-1", role: "owner" as const },
+    { id: "setter-1", role: "setter" as const },
+    { id: "closer-1", role: "closer" as const },
+  ];
+
+  it("hands setter-closer leads to both seats", () => {
+    expect(assigneesFromTeamStructure("setter_closer", members)).toEqual({
+      setterId: "setter-1",
+      closerId: "closer-1",
+    });
+  });
+
+  it("lets the owner close when they said they sell", () => {
+    expect(assigneesFromTeamStructure("owner_sold", members)).toEqual({
+      setterId: null,
+      closerId: "owner-1",
+    });
+  });
+});
+
+describe("offer name fallback", () => {
+  it("uses the lead offer when present and the profile offer otherwise", () => {
+    expect(coalesceOfferName("  Scale  ", "Default")).toBe("Scale");
+    expect(coalesceOfferName(null, "Default")).toBe("Default");
+    expect(coalesceOfferName("  ", null)).toBeNull();
   });
 });

@@ -9,6 +9,7 @@ import {
   discardedDraftBlocksDispatch,
   draftStatusBlocksSend,
   followUpMissingApprover,
+  queuedFollowUpMaySend,
 } from "@/lib/ghl/dispatch-guard";
 import { channelToGhlType, contactIsSuppressed, outboundTouchSummary } from "@/lib/ghl/message-meta";
 import { nextAttemptAt, shouldMarkDead } from "@/lib/ghl/retry";
@@ -85,6 +86,16 @@ export async function dispatchOutboundMessage(db: GhlDb, input: DispatchInput): 
       .eq("org_id", input.orgId);
     if (linkError) {
       ghlError("ghl.dispatch.draft_link_failed", logFields(input, "failed", "draft_link_failed"));
+      await db
+        .from("ghl_dispatches")
+        .update({
+          status: "failed",
+          failure_reason: "draft_link_failed",
+          body_text: null,
+          claimed_at: null,
+        })
+        .eq("id", queued.id)
+        .eq("org_id", input.orgId);
       return { status: "failed", dispatchId: queued.id, reason: "draft_link_failed" };
     }
   }
@@ -167,17 +178,21 @@ export async function sendQueuedDispatch(db: GhlDb, dispatchId: string): Promise
   if (!token.ok) {
     await db
       .from("ghl_dispatches")
-      .update({ status: "failed", failure_reason: "connection_broken", body_text: null, claimed_at: null })
+      .update({
+        claimed_at: null,
+        failure_reason: "connection_broken",
+        available_at: nextAttemptAt(Math.max(row.attempt_count, 1)),
+      })
       .eq("id", row.id);
     ghlError("ghl.dispatch.halted", {
       orgId: row.org_id,
       leadId: row.lead_id,
       channel: row.channel,
       actorMemberId: row.actor_member_id,
-      result: "halted",
+      result: "queued",
       reason: token.reason,
     });
-    return finishDispatch(db, row, { status: "halted", reason: "connection_broken" });
+    return { status: "queued", dispatchId: row.id };
   }
 
   const { data: allowed } = await db.rpc("try_consume_ghl_rate", { p_org_id: row.org_id });
@@ -533,6 +548,7 @@ type DatabaseRow = {
   ghl_message_id: string | null;
   failure_reason: string | null;
   claimed_at: string | null;
+  idempotency_key: string | null;
   status: "queued" | "sent" | "failed" | "suppressed";
 };
 
@@ -551,6 +567,14 @@ async function haltReasonForDispatch(db: GhlDb, row: DatabaseRow): Promise<strin
     .eq("org_id", row.org_id)
     .maybeSingle();
   if (draftStatusBlocksSend(linked?.status)) return "sequence_halted";
+  if (
+    !queuedFollowUpMaySend({
+      idempotencyKey: row.idempotency_key,
+      linkedDraftStatus: linked?.status,
+    })
+  ) {
+    return linked?.status ? "draft_not_approved" : "unlinked_follow_up";
+  }
 
   const createdAt = row.created_at ?? row.available_at;
   const { data: discarded } = await db

@@ -9,8 +9,9 @@
  * them, so a screen written against the raw recipe and a screen written against
  * the component cannot drift apart.
  *
- * Sizing rule: every interactive control is 32, 40 or 44px tall. A button, an
- * input and a select on the same row line up with nobody nudging padding.
+ * Sizing rule: buttons stay 32, 40 or 44px. Form fields match the DA landing
+ * qualify form at 3.15rem. Filter bars use the compact recipe at 40px so a
+ * toolbar does not jump to landing-form height.
  */
 
 /* ---------------------------------------------------------------------------
@@ -86,35 +87,35 @@ export const metricValue = "text-2xl font-semibold tabular-nums";
 
 /* ---------------------------------------------------------------------------
  * Form controls
+ *
+ * The look lives in `.field-input` (globals.css), taken from the DA acq
+ * landing. These strings are how a screen opts into it. Putting a utility on
+ * the element still wins, because the CSS sits in the components layer.
  * ------------------------------------------------------------------------- */
 
-const controlSurface =
-  "w-full rounded-xl border border-white/10 bg-white/[0.03] text-sm text-white placeholder-dim transition-colors";
-const controlFocus =
-  "hover:border-white/20 focus:border-brand-500/60 focus:bg-white/[0.05] focus:outline-none focus:ring-2 focus:ring-brand-500/20";
-const controlInvalid =
-  "aria-[invalid=true]:border-flag-critical/60 aria-[invalid=true]:focus:ring-flag-critical/20";
-const controlDisabled =
-  "disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:border-white/10";
+/** Form fields and labelled settings. Sentence case, not a caption. */
+export const labelClass = "mb-2 block text-[14px] font-semibold tracking-tight text-white";
 
-export const inputClass = `${controlSurface} ${controlFocus} ${controlInvalid} ${controlDisabled} min-h-10 px-3.5 py-2`;
+export const inputClass = "field-input";
 
-export const textareaClass = `${controlSurface} ${controlFocus} ${controlInvalid} ${controlDisabled} min-h-24 resize-y px-3.5 py-2.5 leading-relaxed`;
+/** Same chrome at 40px, for filter bars and table toolbars. */
+export const inputCompactClass = "field-input field-input--compact";
 
-export const selectClass = `${inputClass} cursor-pointer appearance-none bg-ink-900 pr-9 disabled:cursor-not-allowed`;
+export const textareaClass = "field-input";
+
+export const selectClass = "field-input";
+
+export const selectCompactClass = "field-input field-input--compact";
 
 /** A read-only value styled as a field, so a locked row still lines up. */
 export const readonlyFieldClass =
-  "min-h-10 w-full rounded-xl border border-white/[0.07] bg-white/[0.015] px-3.5 py-2 text-sm text-silver";
+  "field-input pointer-events-none min-h-12 text-silver opacity-80";
 
 export const checkboxClass =
   "size-4 shrink-0 cursor-pointer appearance-none rounded-[5px] border border-white/25 bg-white/[0.04] transition-colors checked:border-brand-500 checked:bg-brand-500 checked:bg-[url('data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 16 16%22 fill=%22none%22 stroke=%22%2307070b%22 stroke-width=%222.4%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22><path d=%22M3.5 8.5l3 3 6-6%22/></svg>')] bg-center bg-no-repeat hover:border-white/40 checked:hover:border-brand-400 disabled:cursor-not-allowed disabled:opacity-50";
 
 export const radioClass =
   "size-4 shrink-0 cursor-pointer appearance-none rounded-full border border-white/25 bg-white/[0.04] transition-colors checked:border-[5px] checked:border-brand-500 hover:border-white/40 disabled:cursor-not-allowed disabled:opacity-50";
-
-export const labelClass =
-  "mb-1.5 block text-[11px] font-semibold uppercase tracking-[0.12em] text-dim";
 
 export const helperClass = "mt-1.5 text-xs leading-relaxed text-dim";
 

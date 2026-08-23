@@ -15,7 +15,7 @@ import {
 import { LEAD_STATUS_LABELS, LEAD_STATUSES } from "@/lib/leads/labels";
 import type { QueueMemberOption } from "@/lib/queue/types";
 import { Select } from "@/components/ui/select";
-import { btnSecondary, btnSizeSm, filterLabel, inputClass } from "@/lib/ui";
+import { btnSecondary, btnSizeSm, filterLabel, inputCompactClass } from "@/lib/ui";
 
 const SORT_LABELS: Record<CaseSort, string> = {
   last_touch: "Last touch",
@@ -51,7 +51,7 @@ export function CasesFilters({
       <label className="block sm:col-span-2">
         <span className={filterLabel}>Search</span>
         <input
-          className={inputClass}
+          className={inputCompactClass}
           value={q}
           onChange={(event) => setQ(event.target.value)}
           placeholder="Name, email, or phone"
@@ -65,6 +65,7 @@ export function CasesFilters({
       <label className="block">
         <span className={filterLabel}>Status</span>
         <Select
+          density="compact"
           
           value={filters.status ?? ""}
           onChange={(event) =>
@@ -82,6 +83,7 @@ export function CasesFilters({
       <label className="block">
         <span className={filterLabel}>Track</span>
         <Select
+          density="compact"
           
           value={filters.track ?? ""}
           onChange={(event) =>
@@ -99,6 +101,7 @@ export function CasesFilters({
       <label className="block">
         <span className={filterLabel}>Source</span>
         <Select
+          density="compact"
           
           value={filters.source ?? ""}
           onChange={(event) => apply({ source: event.target.value || null })}
@@ -119,7 +122,7 @@ export function CasesFilters({
           max={100}
           inputMode="numeric"
           placeholder="Any"
-          className={inputClass}
+          className={inputCompactClass}
           value={filters.scoreMin ?? ""}
           onChange={(event) => {
             const value = event.target.value.trim();
@@ -135,7 +138,7 @@ export function CasesFilters({
           max={100}
           inputMode="numeric"
           placeholder="Any"
-          className={inputClass}
+          className={inputCompactClass}
           value={filters.scoreMax ?? ""}
           onChange={(event) => {
             const value = event.target.value.trim();
@@ -146,6 +149,7 @@ export function CasesFilters({
       <label className="block">
         <span className={filterLabel}>Setter</span>
         <Select
+          density="compact"
           
           value={filters.setterId ?? ""}
           onChange={(event) => apply({ setterId: event.target.value || null })}
@@ -161,6 +165,7 @@ export function CasesFilters({
       <label className="block">
         <span className={filterLabel}>Closer</span>
         <Select
+          density="compact"
           
           value={filters.closerId ?? ""}
           onChange={(event) => apply({ closerId: event.target.value || null })}
@@ -177,7 +182,7 @@ export function CasesFilters({
         <span className={filterLabel}>Opted in from</span>
         <input
           type="date"
-          className={inputClass}
+          className={inputCompactClass}
           value={filters.optedFrom ?? ""}
           onChange={(event) => apply({ optedFrom: event.target.value || null })}
         />
@@ -186,7 +191,7 @@ export function CasesFilters({
         <span className={filterLabel}>Opted in to</span>
         <input
           type="date"
-          className={inputClass}
+          className={inputCompactClass}
           value={filters.optedTo ?? ""}
           onChange={(event) => apply({ optedTo: event.target.value || null })}
         />
@@ -194,6 +199,7 @@ export function CasesFilters({
       <label className="block">
         <span className={filterLabel}>Sort</span>
         <Select
+          density="compact"
           
           value={filters.sort}
           onChange={(event) => apply({ sort: event.target.value as CaseSort, dir: "desc" })}
@@ -208,6 +214,7 @@ export function CasesFilters({
       <label className="block">
         <span className={filterLabel}>Direction</span>
         <Select
+          density="compact"
           
           value={filters.dir}
           onChange={(event) => apply({ dir: event.target.value as CaseSortDir })}

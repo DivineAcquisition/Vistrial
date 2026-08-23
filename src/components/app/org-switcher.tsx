@@ -24,7 +24,7 @@ export function OrgSwitcher() {
     <div className="px-2">
       <Select
         aria-label="Switch organization"
-        className="h-9 min-h-9 py-1.5 text-[13px]"
+        density="compact"
         value={org.id}
         disabled={pending}
         onChange={(event) => {

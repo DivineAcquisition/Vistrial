@@ -46,7 +46,7 @@ export function FieldShell({
   const meta = entry(defaults, field);
   return (
     <div>
-      <div className="mb-1.5 flex flex-wrap items-center gap-2">
+      <div className="mb-2 flex flex-wrap items-center gap-2">
         <label className={`${labelClass} mb-0`} htmlFor={htmlFor}>
           {label}
         </label>

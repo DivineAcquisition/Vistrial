@@ -30,7 +30,7 @@ function fail(error: string): FollowUpActionResult {
 function denyUnlessAssignee(
   ctx: AuthContext,
   lead: { assigned_setter_id: string | null; assigned_closer_id: string | null }
-): FollowUpActionResult | null {
+): { ok: false; error: string } | null {
   if (
     canApproveFollowUp({
       role: ctx.role,
@@ -42,7 +42,7 @@ function denyUnlessAssignee(
   ) {
     return null;
   }
-  return fail("You can only approve drafts for leads assigned to you.");
+  return { ok: false, error: "You can only work drafts for leads assigned to you." };
 }
 
 function revalidateFollowUp(leadId: string, draftId?: string) {
@@ -65,6 +65,22 @@ async function requireDraft(draftId: string) {
   return { ok: true as const, ctx, draft: data };
 }
 
+async function requireAssignedDraft(draftId: string) {
+  const scoped = await requireDraft(draftId);
+  if (!scoped.ok) return scoped;
+  const supabase = await createClient();
+  const { data: lead } = await supabase
+    .from("leads")
+    .select("assigned_setter_id, assigned_closer_id")
+    .eq("id", scoped.draft.lead_id)
+    .eq("org_id", scoped.ctx.org.id)
+    .maybeSingle();
+  if (!lead) return { ok: false as const, error: "That lead is not in this workspace." };
+  const denied = denyUnlessAssignee(scoped.ctx, lead);
+  if (denied) return { ok: false as const, error: denied.error };
+  return scoped;
+}
+
 export async function refreshFollowUpReview(draftId: string): Promise<FollowUpReviewPayload | null> {
   if (!isLeadId(draftId)) return null;
   return loadFollowUpReview(draftId);
@@ -75,7 +91,7 @@ export async function saveFollowUpEdit(input: {
   body: string;
   subject: string;
 }): Promise<FollowUpActionResult> {
-  const scoped = await requireDraft(input.draftId);
+  const scoped = await requireAssignedDraft(input.draftId);
   if (!scoped.ok) return scoped;
   if (scoped.draft.status !== "pending" && scoped.draft.status !== "failed" && scoped.draft.status !== "expired") {
     return fail("This draft can no longer be edited.");
@@ -114,7 +130,7 @@ export async function regenerateFollowUp(input: {
   draftId: string;
   instruction: string;
 }): Promise<FollowUpActionResult> {
-  const scoped = await requireDraft(input.draftId);
+  const scoped = await requireAssignedDraft(input.draftId);
   if (!scoped.ok) return scoped;
   if (!["pending", "failed", "expired", "rejected"].includes(scoped.draft.status)) {
     return fail("This draft cannot be regenerated.");
@@ -152,7 +168,7 @@ export async function rejectFollowUp(input: {
   draftId: string;
   reason: string;
 }): Promise<FollowUpActionResult> {
-  const scoped = await requireDraft(input.draftId);
+  const scoped = await requireAssignedDraft(input.draftId);
   if (!scoped.ok) return scoped;
   const reason = input.reason.trim();
   if (!reason) return fail("Say why you are rejecting it. That is the feedback signal.");

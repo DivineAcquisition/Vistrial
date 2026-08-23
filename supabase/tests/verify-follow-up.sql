@@ -211,6 +211,19 @@ EXCEPTION
 END
 $$;
 
+-- A queued send must not survive an inbound halt.
+INSERT INTO public.ghl_dispatches (
+  id, org_id, lead_id, channel, body_text, status, available_at
+) VALUES (
+  'cccccccc-cccc-4ccc-8ccc-ccccccccccc7',
+  '22222222-2222-4222-8222-222222222222',
+  '44444444-4444-4444-8444-444444444441',
+  'sms',
+  'queued body that must not send after a reply',
+  'queued',
+  now()
+);
+
 -- Inbound reply halts the sequence immediately and discards pending drafts.
 INSERT INTO public.touches (
   org_id, lead_id, type, channel, direction, summary
@@ -229,6 +242,8 @@ DECLARE
   v_reason public.follow_up_halt_reason;
   v_draft public.follow_up_draft_status;
   v_replies integer;
+  v_dispatch public.ghl_dispatch_status;
+  v_fail text;
 BEGIN
   SELECT status, halt_reason INTO v_status, v_reason
   FROM public.follow_up_sequence_runs
@@ -249,6 +264,13 @@ BEGIN
   WHERE lead_id = '44444444-4444-4444-8444-444444444441';
   IF v_replies < 1 THEN
     RAISE EXCEPTION 'reply signal was not recorded';
+  END IF;
+
+  SELECT status, failure_reason INTO v_dispatch, v_fail
+  FROM public.ghl_dispatches
+  WHERE id = 'cccccccc-cccc-4ccc-8ccc-ccccccccccc7';
+  IF v_dispatch <> 'failed' OR v_fail IS DISTINCT FROM 'sequence_halted:inbound_reply' THEN
+    RAISE EXCEPTION 'inbound halt left a queued dispatch sendable: % %', v_dispatch, v_fail;
   END IF;
 END
 $$;
@@ -328,7 +350,19 @@ BEGIN
 END
 $$;
 
--- Org-wide stop.
+-- Org-wide stop also fails queued dispatches.
+INSERT INTO public.ghl_dispatches (
+  id, org_id, lead_id, channel, body_text, status, available_at
+) VALUES (
+  'cccccccc-cccc-4ccc-8ccc-ccccccccccc8',
+  '22222222-2222-4222-8222-222222222222',
+  '44444444-4444-4444-8444-444444444441',
+  'sms',
+  'queued body that must not send after org stop',
+  'queued',
+  now()
+);
+
 SELECT public.halt_org_follow_up_sequences(
   '22222222-2222-4222-8222-222222222222',
   '33333333-3333-4333-8333-333333333333'
@@ -337,12 +371,21 @@ SELECT public.halt_org_follow_up_sequences(
 DO $$
 DECLARE
   v_halted boolean;
+  v_dispatch public.ghl_dispatch_status;
+  v_fail text;
 BEGIN
   SELECT sequences_halted INTO v_halted
   FROM public.follow_up_settings
   WHERE org_id = '22222222-2222-4222-8222-222222222222';
   IF v_halted IS DISTINCT FROM true THEN
     RAISE EXCEPTION 'org-wide stop did not flip settings';
+  END IF;
+
+  SELECT status, failure_reason INTO v_dispatch, v_fail
+  FROM public.ghl_dispatches
+  WHERE id = 'cccccccc-cccc-4ccc-8ccc-ccccccccccc8';
+  IF v_dispatch <> 'failed' OR v_fail IS DISTINCT FROM 'sequence_halted:org_stop' THEN
+    RAISE EXCEPTION 'org-wide stop left a queued dispatch sendable: % %', v_dispatch, v_fail;
   END IF;
 END
 $$;

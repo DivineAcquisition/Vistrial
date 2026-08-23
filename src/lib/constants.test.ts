@@ -7,6 +7,8 @@ import {
   LEGAL_ENTITY,
   PRIVACY_EFFECTIVE,
   PRIVACY_LAST_UPDATED,
+  TERMS_EFFECTIVE,
+  TERMS_LAST_UPDATED,
 } from "@/lib/constants";
 
 describe("public legal identity", () => {
@@ -17,5 +19,10 @@ describe("public legal identity", () => {
     expect(LEGAL_EMAIL).toBe("legal@divineacquisition.io");
     expect(PRIVACY_LAST_UPDATED).toBe("8/22/2026");
     expect(PRIVACY_EFFECTIVE).toBe("8/22/2026");
+  });
+
+  it("dates the terms of service when they were published", () => {
+    expect(TERMS_LAST_UPDATED).toBe("8/23/2026");
+    expect(TERMS_EFFECTIVE).toBe("8/23/2026");
   });
 });

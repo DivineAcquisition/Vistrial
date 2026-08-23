@@ -20,3 +20,7 @@ export const LEGAL_EMAIL = "legal@divineacquisition.io";
 
 export const PRIVACY_LAST_UPDATED = "8/22/2026";
 export const PRIVACY_EFFECTIVE = "8/22/2026";
+
+/** Filled from the draft's [DATE] placeholders when this page was published. */
+export const TERMS_LAST_UPDATED = "8/23/2026";
+export const TERMS_EFFECTIVE = "8/23/2026";

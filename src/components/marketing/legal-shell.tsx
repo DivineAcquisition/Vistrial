@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import type { ReactNode } from "react";
 
 import { MarketingShell } from "@/components/marketing/chrome";
@@ -67,14 +68,22 @@ export function LegalList({ children }: { children: ReactNode }) {
   return <ul className="list-disc space-y-2 pl-5">{children}</ul>;
 }
 
+const legalLinkClass =
+  "text-brand-300 underline-offset-4 hover:text-white hover:underline";
+
 export function LegalMail({ email }: { email: string }) {
   return (
-    <a
-      className="text-brand-300 underline-offset-4 hover:text-white hover:underline"
-      href={`mailto:${email}`}
-    >
+    <a className={legalLinkClass} href={`mailto:${email}`}>
       {email}
     </a>
+  );
+}
+
+export function LegalHref({ href, children }: { href: string; children: ReactNode }) {
+  return (
+    <Link href={href} className={legalLinkClass}>
+      {children}
+    </Link>
   );
 }
 

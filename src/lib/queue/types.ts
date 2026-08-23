@@ -60,6 +60,7 @@ export type QueueRow = {
   name: string;
   email: string | null;
   source: string | null;
+  offerName: string | null;
   status: Enums<"lead_status">;
   leadType: Enums<"lead_type"> | null;
   score: number | null;

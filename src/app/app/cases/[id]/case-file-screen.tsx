@@ -193,6 +193,7 @@ export function CaseFileScreen({ initial }: { initial: CaseFilePayload }) {
           <KeyValue label="Setter">{lead.assignedSetterName || "Unassigned"}</KeyValue>
           <KeyValue label="Closer">{lead.assignedCloserName || "Unassigned"}</KeyValue>
           <KeyValue label="Source">{lead.source || "—"}</KeyValue>
+          <KeyValue label="Offer">{lead.offerName || "—"}</KeyValue>
           <KeyValue label="Opted in">{formatQueueDuration(lead.optedInAt, now)}</KeyValue>
           <KeyValue label="Last touch">{formatQueueDuration(lead.lastTouchAt, now)}</KeyValue>
         </DefinitionList>

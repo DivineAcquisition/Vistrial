@@ -358,6 +358,7 @@ function parseLead(value: unknown): CaseFileLead | null {
     firstName: asString(row.firstName),
     lastName: asString(row.lastName),
     campaign: asString(row.campaign),
+    offerName: asString(row.offerName),
     firstHumanTouchAt: asString(row.firstHumanTouchAt),
     ghlContactId: asString(row.ghlContactId),
     crmUrl: asString(row.crmUrl),

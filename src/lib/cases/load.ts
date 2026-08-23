@@ -14,6 +14,7 @@ import {
   type CaseTimelinePage,
 } from "@/lib/cases/types";
 import { createClient } from "@/lib/supabase/server";
+import { coalesceOfferName } from "@/lib/profile/offer";
 import type { Database, Json } from "@/types/database";
 
 export async function loadOrgCaseList(
@@ -77,7 +78,22 @@ export async function fetchOrgCaseFile(
     throw new Error(error.message || "Could not load that case file.");
   }
   if (data == null) return null;
-  return parseCaseFilePayload(data);
+  const parsed = parseCaseFilePayload(data);
+  if (!parsed) return null;
+  if (parsed.lead.offerName) return parsed;
+
+  const { data: profile } = await supabase
+    .from("business_profiles")
+    .select("offer_name")
+    .eq("org_id", orgId)
+    .maybeSingle();
+  return {
+    ...parsed,
+    lead: {
+      ...parsed.lead,
+      offerName: coalesceOfferName(parsed.lead.offerName, profile?.offer_name),
+    },
+  };
 }
 
 export async function fetchOrgCaseTimeline(

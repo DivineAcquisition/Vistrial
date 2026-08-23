@@ -98,6 +98,7 @@ export function QueueLeadRow({
           <span className="mt-1 block text-xs font-normal text-dim md:hidden">
             {[
               row.source || null,
+              row.offerName || null,
               `in ${formatQueueDuration(row.optedInAt, now)}`,
               row.assignedSetterName,
             ]
@@ -144,7 +145,10 @@ export function QueueLeadRow({
             </span>
           )}
         </TableCell>
-        <TableCell className="hidden px-4 py-3.5 text-silver md:table-cell">{row.source || "—"}</TableCell>
+        <TableCell className="hidden px-4 py-3.5 text-silver md:table-cell">
+          {row.source || "—"}
+          {row.offerName ? <span className="mt-1 block text-[11px] text-dim">{row.offerName}</span> : null}
+        </TableCell>
         <TableCell className="hidden px-4 py-3.5 text-silver tabular-nums md:table-cell">
           {formatQueueDuration(row.optedInAt, now)}
         </TableCell>

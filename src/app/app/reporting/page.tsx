@@ -23,6 +23,13 @@ export default async function ReportingPage({
   const range = parseReportingRange(params, activatedAt);
   const backfill = meta.backfill && typeof meta.backfill === "object" ? (meta.backfill as Record<string, unknown>) : null;
   const crm = typeof meta.crm_connected === "string" ? meta.crm_connected : "missing";
+  const capacity =
+    meta.capacity && typeof meta.capacity === "object" && !Array.isArray(meta.capacity)
+      ? (meta.capacity as Record<string, unknown>)
+      : null;
+  const teamCoverageWarning =
+    typeof capacity?.team_coverage_warning === "string" ? capacity.team_coverage_warning : null;
+  const capacityWarning = typeof capacity?.capacity_warning === "string" ? capacity.capacity_warning : null;
 
   if (!activatedAt) {
     return (
@@ -68,6 +75,16 @@ export default async function ReportingPage({
             ? ` (last finished ${formatComputedAt(meta.last_job_finished_at)})`
             : ""}
           . Figures below are still computed from the database; they may not be the hourly cache.
+        </Notice>
+      ) : null}
+      {teamCoverageWarning ? (
+        <Notice tone="warning" className="mb-6" title="Team coverage">
+          {teamCoverageWarning}
+        </Notice>
+      ) : null}
+      {capacityWarning ? (
+        <Notice tone="warning" className="mb-6" title="Lead volume">
+          {capacityWarning}
         </Notice>
       ) : null}
       <ReportingRangeForm range={range} action="/app/reporting" />

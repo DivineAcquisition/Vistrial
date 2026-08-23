@@ -69,7 +69,7 @@ export function FollowUpSettingsScreen({
       <section>
         <SectionHeader
           title="Sequence stop"
-          hint="This switch exists before any sequence can run. It stops later drafts from being scheduled. It does not send anything."
+          hint="This switch exists before any sequence can run. It stops later drafts from being scheduled and cancels drafts already waiting to send. It does not send anything."
         />
         <Panel className="p-6">
           <Switch
@@ -78,7 +78,7 @@ export function FollowUpSettingsScreen({
             label="Stop all sequences for this workspace"
             description={
               settings.sequencesHalted
-                ? "Stopped. No further sequence step will be scheduled. Drafts already approved still send."
+                ? "Stopped. No further sequence step will be scheduled. Queued and approved drafts for this workspace are cancelled and will not send."
                 : "Allowed. Sequence steps are scheduled as calls are extracted."
             }
             onChange={(event) => {

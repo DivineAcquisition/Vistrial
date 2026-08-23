@@ -65,6 +65,7 @@ export function parseQueueRow(value: unknown): QueueRow | null {
     name,
     email: asString(row.email),
     source: asString(row.source),
+    offerName: asString(row.offerName),
     status,
     leadType: (asString(row.leadType) as Enums<"lead_type"> | null) ?? null,
     score,

@@ -65,6 +65,7 @@ export type CaseFileLead = CaseListRow & {
   firstName: string | null;
   lastName: string | null;
   campaign: string | null;
+  offerName: string | null;
   firstHumanTouchAt: string | null;
   ghlContactId: string | null;
   crmUrl: string | null;

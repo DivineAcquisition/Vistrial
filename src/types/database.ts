@@ -2676,6 +2676,7 @@ export type Database = {
           breach_seconds: number | null;
           urgency_rank: number | null;
           sort_score: number | null;
+          offer_name: string | null;
         };
         Relationships: [];
       };
@@ -2923,6 +2924,10 @@ export type Database = {
         Returns: undefined;
       };
       reporting_org_state: {
+        Args: { p_org_id: string };
+        Returns: Json;
+      };
+      reporting_capacity_warnings: {
         Args: { p_org_id: string };
         Returns: Json;
       };

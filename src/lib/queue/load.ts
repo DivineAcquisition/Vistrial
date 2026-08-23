@@ -63,6 +63,7 @@ export async function fetchQueueRow(
     name: data.name,
     email: data.email,
     source: data.source,
+    offerName: data.offer_name,
     status: data.status,
     leadType: data.lead_type,
     score: data.score,

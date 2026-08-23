@@ -29,6 +29,10 @@ The GitHub Preview check compares `supabase/migrations/` to
 must stay in lockstep; do not apply ad-hoc dashboard migrations that are missing
 from the repo.
 
+`20260823013315_halt_queued_dispatches` is in the repo because it already ran
+on this project. It replaces the halt functions so queued GHL dispatches fail
+when a sequence stops, instead of still sending.
+
 `20260822010000_onboarding` is in the repo because it already ran on this
 project. `20260823090000_reconcile_hosted_onboarding` drops the five tables
 that migration created (`org_onboarding`, `golive_runs`, `activation_events`,

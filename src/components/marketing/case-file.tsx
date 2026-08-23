@@ -14,49 +14,74 @@ function SampleMark() {
 export function HeroCaseFile() {
   const demo = DEMO_CASE;
   return (
-    <div className="bg-ink-900 p-4">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div className="min-w-0">
-          <SampleMark />
-          <p className="mt-1.5 text-base font-semibold text-white">{demo.name}</p>
-          <p className="mt-1 text-sm text-silver">
-            {demo.email} · {demo.phone}
-          </p>
-          <div className="mt-3 flex flex-wrap gap-2">
-            <StatusBadge label={demo.status} tone="brand" />
-            <StatusBadge label={demo.track} tone="good" />
+    <div className="bg-ink-900">
+      <div className="flex gap-5 border-b border-white/[0.06] px-4 pt-3">
+        <span className="border-b-2 border-brand-500 pb-2.5 text-xs font-medium text-white">File</span>
+        <span className="pb-2.5 text-xs text-dim">Timeline</span>
+        <span className="pb-2.5 text-xs text-dim">Brief</span>
+      </div>
+
+      <div className="p-4">
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div className="min-w-0">
+            <SampleMark />
+            <p className="mt-1.5 text-base font-semibold text-white">{demo.name}</p>
+            <p className="mt-1 text-sm text-silver">
+              {demo.email} · {demo.phone}
+            </p>
+            <div className="mt-3 flex flex-wrap gap-2">
+              <StatusBadge label={demo.status} tone="brand" />
+              <StatusBadge label={demo.track} tone="good" />
+            </div>
+          </div>
+          <div className="text-right">
+            <p className={sectionLabel}>Readiness score</p>
+            <p className="mt-1 tabular text-3xl font-semibold text-brand-500">{demo.score.total}</p>
+            <p className="mt-1 text-xs text-dim">/ 100</p>
           </div>
         </div>
-        <div className="text-right">
-          <p className={sectionLabel}>Readiness score</p>
-          <p className="mt-1 tabular text-3xl font-semibold text-brand-500">{demo.score.total}</p>
-          <p className="mt-1 text-xs text-dim">/ 100</p>
+
+        <div className="mt-6 grid gap-3 sm:grid-cols-2">
+          {demo.score.factors.map((factor) => (
+            <Progress
+              key={factor.key}
+              label={factor.label}
+              value={factor.value}
+              valueLabel={String(factor.value)}
+              tone={factor.value >= 75 ? "good" : factor.value >= 60 ? "brand" : "warning"}
+            />
+          ))}
+        </div>
+
+        <div className="mt-6 rounded-xl border border-flag-warning/25 bg-flag-warning/[0.08] p-4">
+          <div className="flex flex-wrap items-center gap-2">
+            <StatusBadge label={demo.objection.type} tone="warning" />
+            <span className="text-xs text-dim">{demo.objection.source}</span>
+          </div>
+          <p className="mt-2 text-sm text-white">“{demo.objection.verbatim}”</p>
+        </div>
+
+        <ol className="mt-5 space-y-3 border-t border-white/[0.06] pt-4">
+          {demo.touches.slice(0, 3).map((touch) => (
+            <li key={`${touch.when}-${touch.channel}`} className="flex items-start justify-between gap-3">
+              <p className="text-sm text-white">
+                {touch.channel}
+                <span className="ml-2 text-dim">
+                  {touch.who} · {touch.when}
+                </span>
+              </p>
+            </li>
+          ))}
+        </ol>
+
+        <div className="mt-4 rounded-lg border border-white/[0.08] bg-white/[0.03] px-3 py-2.5">
+          <div className="flex flex-wrap items-center gap-2">
+            <StatusBadge label={demo.followUp.channel} tone="brand" />
+            <StatusBadge label={demo.followUp.status} tone="warning" />
+          </div>
+          <p className="mt-2 line-clamp-2 text-xs leading-relaxed text-silver">{demo.followUp.body}</p>
         </div>
       </div>
-
-      <div className="mt-6 grid gap-3 sm:grid-cols-2">
-        {demo.score.factors.map((factor) => (
-          <Progress
-            key={factor.key}
-            label={factor.label}
-            value={factor.value}
-            valueLabel={String(factor.value)}
-            tone={factor.value >= 75 ? "good" : factor.value >= 60 ? "brand" : "warning"}
-          />
-        ))}
-      </div>
-
-      <div className="mt-6 rounded-xl border border-flag-warning/25 bg-flag-warning/[0.08] p-4">
-        <div className="flex flex-wrap items-center gap-2">
-          <StatusBadge label={demo.objection.type} tone="warning" />
-          <span className="text-xs text-dim">{demo.objection.source}</span>
-        </div>
-        <p className="mt-2 text-sm text-white">“{demo.objection.verbatim}”</p>
-      </div>
-
-      <p className="mt-5 text-xs text-dim">
-        Last touch {demo.lastTouch} · {demo.lastTouchChannel} from {demo.lastTouchWho}
-      </p>
     </div>
   );
 }

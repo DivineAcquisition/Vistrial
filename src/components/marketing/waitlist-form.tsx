@@ -70,7 +70,8 @@ export function WaitlistForm({
       data-marketing-form="waitlist"
       className={cn("relative", className)}
     >
-      <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+      <div className="rounded-xl border border-white/[0.1] bg-ink-950/60 p-2 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]">
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
         <div className={cn(marketingFieldCompact, "sm:w-36")}>
           <label htmlFor={`waitlist-name-${position}`} className="sr-only">
             {WAITLIST.nameLabel}
@@ -102,6 +103,7 @@ export function WaitlistForm({
         <button type="submit" disabled={pending} className={cn(marketingBtnPrimary, "w-full sm:w-auto")}>
           {pending ? `${WAITLIST.pending}…` : WAITLIST.submit}
         </button>
+        </div>
       </div>
       <div aria-hidden className="absolute -left-[9999px] h-0 w-0 overflow-hidden">
         <label>

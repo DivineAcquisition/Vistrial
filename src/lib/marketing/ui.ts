@@ -3,34 +3,40 @@ import { cn } from "@/lib/utils";
 /**
  * Headline and form recipes for the public site. Mapped onto Vistrial tokens.
  * No new colours or faces — Inter, brand-500, ink-950.
+ *
+ * Scale is meant to sit with dense dark-SaaS marketing pages: large type,
+ * rectangle buttons with round corners, not compact newsletter chrome.
  */
 
 export const marketingHeroTitle =
-  "text-[1.75rem] font-semibold leading-[1.12] tracking-tight text-white sm:text-[2.25rem] md:text-[2.5rem] md:leading-[1.1]";
+  "text-[2.25rem] font-semibold leading-[1.08] tracking-tight text-white sm:text-5xl md:text-[3.25rem] md:leading-[1.05]";
 
 export const marketingSectionTitle =
-  "max-w-2xl text-xl font-semibold tracking-tight text-white sm:text-2xl";
+  "max-w-3xl text-2xl font-semibold tracking-tight text-white sm:text-[2rem] sm:leading-tight";
 
-export const marketingSubhead = "text-sm leading-relaxed text-silver sm:text-[15px]";
+export const marketingSubhead = "text-[15px] leading-relaxed text-silver sm:text-lg";
 
-export const marketingLead = "max-w-2xl text-sm leading-relaxed text-silver sm:text-[15px]";
+export const marketingLead = "max-w-2xl text-[15px] leading-relaxed text-silver sm:text-base";
 
-export const marketingBody = "text-[13px] leading-relaxed text-silver sm:text-sm";
+export const marketingBody = "text-sm leading-relaxed text-silver sm:text-[15px]";
 
-export const marketingCardTitle = "text-sm font-semibold tracking-tight text-white";
+export const marketingCardTitle = "text-[15px] font-semibold tracking-tight text-white sm:text-base";
 
 export const marketingNavLink =
-  "rounded-md px-2.5 py-1.5 text-[13px] font-medium text-silver transition-colors hover:text-white focus-visible:text-white";
+  "rounded-md px-2.5 py-1.5 text-sm font-medium text-silver transition-colors hover:text-white focus-visible:text-white";
 
 /** Marketing CTAs: rectangle with round corners. Do not use the app pill recipes here. */
 export const marketingBtnBase =
-  "inline-flex shrink-0 items-center justify-center gap-1.5 rounded-lg text-[13px] font-medium whitespace-nowrap transition-colors duration-150 select-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-500/80 disabled:pointer-events-none disabled:opacity-45 [&_svg]:pointer-events-none [&_svg]:size-3.5 [&_svg]:shrink-0";
+  "inline-flex shrink-0 items-center justify-center gap-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors duration-150 select-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-500/80 disabled:pointer-events-none disabled:opacity-45 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0";
 
-export const marketingBtnPrimary = `${marketingBtnBase} h-9 px-3.5 bg-brand-500 text-ink-950 hover:bg-brand-400`;
+export const marketingBtnPrimary = `${marketingBtnBase} h-10 px-5 bg-brand-500 text-ink-950 hover:bg-brand-400`;
 
-export const marketingBtnSecondary = `${marketingBtnBase} h-9 px-3.5 border border-white/[0.12] bg-transparent text-white hover:border-white/25 hover:bg-white/[0.04]`;
+export const marketingBtnSecondary = `${marketingBtnBase} h-10 px-5 border border-white/[0.12] bg-transparent text-white hover:border-white/25 hover:bg-white/[0.04]`;
 
-export const marketingBtnPrimarySm = `${marketingBtnBase} h-8 px-3 bg-brand-500 text-ink-950 hover:bg-brand-400`;
+export const marketingBtnPrimarySm = `${marketingBtnBase} h-9 px-3.5 bg-brand-500 text-ink-950 hover:bg-brand-400`;
+
+export const marketingTextLink =
+  "inline-flex items-center gap-1.5 text-sm font-medium text-silver transition-colors hover:text-white";
 
 /** DA QualifyGate labels: sentence case, white, tight tracking — not the app's uppercase dim labels. */
 export const marketingFormLabel = "block text-[13px] font-semibold tracking-tight text-white";
@@ -43,8 +49,8 @@ export const marketingField = cn(
 );
 
 export const marketingFieldControl = cn(
-  "block w-full min-h-11 border-0 bg-transparent px-3 py-2",
-  "text-[13px] font-medium tracking-tight text-white",
+  "block w-full min-h-11 border-0 bg-transparent px-3.5 py-2.5",
+  "text-sm font-medium tracking-tight text-white",
   "placeholder:font-medium placeholder:text-silver/70",
   "focus:outline-none"
 );
@@ -52,21 +58,21 @@ export const marketingFieldControl = cn(
 export const marketingFieldSelect = `${marketingFieldControl} cursor-pointer appearance-none pr-10`;
 
 export const marketingFieldCompact = cn(
-  "relative rounded-lg border border-white/[0.1]",
-  "bg-white/[0.03] transition-colors",
-  "focus-within:border-brand-500/55 focus-within:shadow-[0_0_0_3px_rgba(154,136,252,0.12)]"
+  "relative rounded-md border border-transparent",
+  "bg-white/[0.04] transition-colors",
+  "focus-within:bg-white/[0.06] focus-within:ring-2 focus-within:ring-brand-500/40"
 );
 
 export const marketingFieldCompactControl = cn(
-  "block w-full min-h-9 border-0 bg-transparent px-3 py-2",
-  "text-[13px] font-medium tracking-tight text-white",
+  "block w-full min-h-10 border-0 bg-transparent px-3 py-2",
+  "text-sm font-medium tracking-tight text-white",
   "placeholder:font-medium placeholder:text-silver/55",
   "focus:outline-none"
 );
 
-export const marketingPageGutter = "px-5 sm:px-6";
+export const marketingPageGutter = "px-5 sm:px-6 lg:px-8";
 
-export const marketingSectionY = "py-12 sm:py-16";
+export const marketingSectionY = "py-16 sm:py-24";
 
 export const marketingShell = "mx-auto max-w-6xl";
 

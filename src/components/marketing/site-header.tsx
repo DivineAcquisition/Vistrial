@@ -62,7 +62,7 @@ export function SiteHeader({
         className={cn(
           marketingShell,
           marketingPageGutter,
-          "flex h-14 items-center justify-between gap-4"
+          "flex h-16 items-center justify-between gap-4"
         )}
       >
         <div className="flex min-w-0 items-center gap-8">
@@ -81,15 +81,8 @@ export function SiteHeader({
         </div>
 
         <div className="flex items-center gap-2">
-          {onPage ? (
-            <a href="#case-file" className={cn(marketingBtnSecondary, "hidden lg:inline-flex")}>
-              {HERO.secondaryCta}
-            </a>
-          ) : null}
           {action === "waitlist" ? (
-            <CtaLink position="nav" size="sm">
-              {NAV.waitlist}
-            </CtaLink>
+            <CtaLink position="nav">{NAV.waitlist}</CtaLink>
           ) : null}
 
           {onPage ? (

@@ -1,8 +1,7 @@
-import { ChevronDown } from "lucide-react";
+import { ChevronDown, type LucideIcon } from "lucide-react";
 import type { ReactNode } from "react";
 
 import { Panel } from "@/components/ui/panel";
-import { sectionLabel } from "@/lib/ui";
 import {
   marketingBody,
   marketingCardTitle,
@@ -13,15 +12,30 @@ import {
   marketingSectionY,
   marketingShell,
 } from "@/lib/marketing/ui";
+import { sectionLabel } from "@/lib/ui";
 import { cn } from "@/lib/utils";
 
 export function Eyebrow({ children }: { children: ReactNode }) {
   return <p className={sectionLabel}>{children}</p>;
 }
 
+export function StatusPill({ children }: { children: ReactNode }) {
+  return (
+    <p className="inline-flex items-center gap-2 rounded-full border border-white/[0.1] bg-white/[0.04] px-3 py-1 text-[11px] font-semibold tracking-[0.16em] text-brand-300 uppercase">
+      <span className="relative flex size-1.5">
+        <span className="absolute inline-flex size-full animate-ping rounded-full bg-brand-400 opacity-70" />
+        <span className="relative inline-flex size-1.5 rounded-full bg-brand-400" />
+      </span>
+      {children}
+    </p>
+  );
+}
+
 export function CtaGroup({ children }: { children: ReactNode }) {
   return (
-    <div className="mt-5 flex flex-col items-stretch gap-2 sm:flex-row sm:items-center">{children}</div>
+    <div className="mt-8 flex flex-col items-stretch gap-3 sm:flex-row sm:items-center">
+      {children}
+    </div>
   );
 }
 
@@ -32,6 +46,7 @@ export function MarketingSection({
   lead,
   children,
   narrow = false,
+  align = "left",
   className,
 }: {
   id?: string;
@@ -40,18 +55,27 @@ export function MarketingSection({
   lead?: ReactNode;
   children: ReactNode;
   narrow?: boolean;
+  align?: "left" | "center";
   className?: string;
 }) {
+  const centered = align === "center";
   return (
     <section
       id={id}
-      className={cn("scroll-mt-20 border-t border-white/[0.07]", marketingPageGutter, marketingSectionY, className)}
+      className={cn(
+        "scroll-mt-24 border-t border-white/[0.07]",
+        marketingPageGutter,
+        marketingSectionY,
+        className
+      )}
     >
-      <div className={cn(marketingShell, narrow && marketingMeasureWide)}>
-        {eyebrow ? <p className={cn(sectionLabel, "mb-2")}>{eyebrow}</p> : null}
-        <h2 className={marketingSectionTitle}>{headline}</h2>
-        {lead ? <div className={cn(marketingLead, "mt-3")}>{lead}</div> : null}
-        <div className={lead ? "mt-6" : "mt-5"}>{children}</div>
+      <div className={cn(marketingShell, narrow && marketingMeasureWide, centered && "text-center")}>
+        {eyebrow ? <p className={cn(sectionLabel, "mb-3")}>{eyebrow}</p> : null}
+        <h2 className={cn(marketingSectionTitle, centered && "mx-auto")}>{headline}</h2>
+        {lead ? (
+          <div className={cn(marketingLead, "mt-4", centered && "mx-auto")}>{lead}</div>
+        ) : null}
+        <div className={cn(lead ? "mt-10" : "mt-8", centered && "text-left")}>{children}</div>
       </div>
     </section>
   );
@@ -67,9 +91,33 @@ export function FeatureCard({
   children: ReactNode;
 }) {
   return (
-    <Panel className="flex h-full flex-col p-4">
-      {step ? <p className={cn(sectionLabel, "mb-3")}>{step}</p> : null}
+    <Panel className="flex h-full flex-col p-6 sm:p-7">
+      {step ? (
+        <p className="mb-5 text-4xl font-semibold leading-none tracking-tight text-white/15 tabular-nums">
+          {step}
+        </p>
+      ) : null}
       <h3 className={marketingCardTitle}>{title}</h3>
+      <div className={cn(marketingBody, "mt-3")}>{children}</div>
+    </Panel>
+  );
+}
+
+export function IconCard({
+  icon: Icon,
+  title,
+  children,
+}: {
+  icon: LucideIcon;
+  title: string;
+  children: ReactNode;
+}) {
+  return (
+    <Panel className="flex h-full flex-col p-6">
+      <div className="flex size-10 items-center justify-center rounded-xl border border-brand-500/20 bg-brand-500/[0.1] text-brand-300">
+        <Icon className="size-5" aria-hidden />
+      </div>
+      <h3 className={cn(marketingCardTitle, "mt-5")}>{title}</h3>
       <div className={cn(marketingBody, "mt-2")}>{children}</div>
     </Panel>
   );
@@ -85,19 +133,30 @@ export function ProductFrame({
   children: ReactNode;
 }) {
   return (
-    <figure className="overflow-hidden rounded-xl border border-white/[0.08] bg-ink-850/80 p-1 shadow-[inset_0_1px_0_rgba(255,255,255,0.05)]">
-      <div className="flex items-center gap-2.5 px-2.5 py-1.5">
-        <span className="flex gap-1" aria-hidden>
-          <span className="size-1.5 rounded-full bg-white/25" />
-          <span className="size-1.5 rounded-full bg-white/15" />
-          <span className="size-1.5 rounded-full bg-white/15" />
-        </span>
-        <figcaption className="min-w-0 truncate text-[11px] font-medium tracking-wide text-dim">
-          {title}
-          {caption ? <span className="text-silver"> · {caption}</span> : null}
-        </figcaption>
+    <figure className="relative">
+      <div
+        aria-hidden
+        className="pointer-events-none absolute -inset-8 -z-10"
+        style={{
+          background:
+            "radial-gradient(ellipse at center, rgba(154,136,252,0.22) 0%, transparent 70%)",
+          filter: "blur(28px)",
+        }}
+      />
+      <div className="overflow-hidden rounded-2xl border border-white/[0.1] bg-ink-850/90 shadow-[inset_0_1px_0_rgba(255,255,255,0.06),0_24px_80px_-32px_rgba(0,0,0,0.85)]">
+        <div className="flex items-center gap-3 border-b border-white/[0.06] px-3 py-2.5">
+          <span className="flex gap-1.5" aria-hidden>
+            <span className="size-2 rounded-full bg-white/25" />
+            <span className="size-2 rounded-full bg-white/15" />
+            <span className="size-2 rounded-full bg-white/15" />
+          </span>
+          <figcaption className="min-w-0 truncate text-[12px] font-medium tracking-wide text-dim">
+            {title}
+            {caption ? <span className="text-silver"> · {caption}</span> : null}
+          </figcaption>
+        </div>
+        <div className="overflow-hidden">{children}</div>
       </div>
-      <div className="overflow-hidden rounded-lg">{children}</div>
     </figure>
   );
 }
@@ -110,7 +169,7 @@ export function FaqAccordion({
   return (
     <div className="divide-y divide-white/[0.07] border-y border-white/[0.07]">
       {items.map((item) => (
-        <details key={item.question} className="group py-3.5">
+        <details key={item.question} className="group py-5">
           <summary
             className={cn(
               "flex cursor-pointer list-none items-center justify-between gap-4 rounded-sm text-left",
@@ -120,11 +179,11 @@ export function FaqAccordion({
           >
             {item.question}
             <ChevronDown
-              className="size-3.5 shrink-0 text-brand-300 transition-transform duration-200 group-open:rotate-180"
+              className="size-4 shrink-0 text-brand-300 transition-transform duration-200 group-open:rotate-180"
               aria-hidden
             />
           </summary>
-          <p className={cn(marketingBody, "mt-2 max-w-2xl pr-8")}>{item.answer}</p>
+          <p className={cn(marketingBody, "mt-3 max-w-2xl pr-8")}>{item.answer}</p>
         </details>
       ))}
     </div>
@@ -139,9 +198,19 @@ export function FinalCta({
   children: ReactNode;
 }) {
   return (
-    <Panel className="p-5 sm:p-6">
-      <h2 className={marketingSectionTitle}>{headline}</h2>
-      <div className="mt-4">{children}</div>
-    </Panel>
+    <div className="relative overflow-hidden rounded-2xl border border-white/[0.1] bg-ink-900 px-6 py-12 text-center sm:px-12 sm:py-16">
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-0"
+        style={{
+          background:
+            "radial-gradient(ellipse at top, rgba(154,136,252,0.18) 0%, transparent 55%)",
+        }}
+      />
+      <div className="relative">
+        <h2 className={cn(marketingSectionTitle, "mx-auto")}>{headline}</h2>
+        <div className="mt-5">{children}</div>
+      </div>
+    </div>
   );
 }

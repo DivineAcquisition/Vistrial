@@ -35,10 +35,15 @@ export function marketingEventsWebhookUrl(): string {
   return process.env.MARKETING_EVENTS_WEBHOOK_URL?.trim() ?? "";
 }
 
-export type CtaPosition = "nav" | "hero" | "audit";
+export type CtaPosition = "nav" | "hero" | "audit" | "waitlist";
 
 export function bookingHref(position: CtaPosition): string {
   return `${AUDIT_BOOKING_PATH}?from=${position}`;
+}
+
+export function waitlistHref(position: CtaPosition): string {
+  void position;
+  return "/#waitlist";
 }
 
 export function calendarHref(from?: string | null): string {

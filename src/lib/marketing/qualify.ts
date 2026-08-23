@@ -80,7 +80,7 @@ export class QualificationError extends Error {
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const PHONE_DIGITS_RE = /\d/g;
-const CTA_POSITIONS: CtaPosition[] = ["nav", "hero", "audit"];
+const CTA_POSITIONS: CtaPosition[] = ["nav", "hero", "audit", "waitlist"];
 
 export function splitName(fullName: string): { firstName: string; lastName: string } {
   const parts = fullName.trim().split(/\s+/).filter(Boolean);
@@ -271,5 +271,48 @@ export function parseContact(input: ContactInput): ContactPayload {
     email,
     message,
     source: "Vistrial contact",
+  };
+}
+
+export type WaitlistInput = {
+  name: string;
+  email: string;
+  website?: string;
+  tracking?: Partial<Record<TrackingParamKey, string>>;
+};
+
+export type WaitlistPayload = {
+  fullName: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  source: "Vistrial waitlist";
+  entryPoint: "Waitlist";
+  tags: string[];
+  ctaPosition: CtaPosition | null;
+  tracking: Partial<Record<TrackingParamKey, string>>;
+};
+
+export function parseWaitlist(input: WaitlistInput): WaitlistPayload {
+  const fullName = input.name.trim();
+  if (fullName.length < 2) {
+    throw new QualificationError("Enter your name.", "fullName");
+  }
+  const email = input.email.trim().toLowerCase();
+  if (!EMAIL_RE.test(email)) {
+    throw new QualificationError("Enter a valid email.", "email");
+  }
+  const { firstName, lastName } = splitName(fullName);
+  const tracking = cleanTracking(input.tracking);
+  return {
+    fullName,
+    firstName,
+    lastName,
+    email,
+    source: "Vistrial waitlist",
+    entryPoint: "Waitlist",
+    tags: ["vistrial-waitlist"],
+    ctaPosition: ctaPositionFromTracking(tracking),
+    tracking,
   };
 }

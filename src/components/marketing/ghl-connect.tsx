@@ -1,4 +1,4 @@
-import { buttonClasses } from "@/components/ui/button";
+import { marketingBtnPrimary } from "@/lib/marketing/ui";
 import { Panel } from "@/components/ui/panel";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { GHL } from "@/lib/marketing/copy";
@@ -14,7 +14,7 @@ export function GhlConnectVisual() {
 
   const visual = (
     <div className="grid gap-4 lg:grid-cols-2">
-      <Panel className="panel-hover p-6">
+      <Panel className="p-4">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
             <h3 className="text-sm font-semibold text-white">Connect GoHighLevel</h3>
@@ -30,11 +30,11 @@ export function GhlConnectVisual() {
           <li>Message bodies are never pulled. Only metadata: who, when, which channel.</li>
         </ul>
         <div className="mt-6">
-          <span className={buttonClasses({ variant: "gradient" })} aria-hidden>Connect GoHighLevel</span>
+          <span className={marketingBtnPrimary} aria-hidden>Connect GoHighLevel</span>
         </div>
       </Panel>
 
-      <Panel className="panel-hover p-6">
+      <Panel className="p-4">
         <p className="text-[11px] font-semibold tracking-[0.14em] text-brand-300 uppercase">
           Choose a location
         </p>
@@ -42,11 +42,11 @@ export function GhlConnectVisual() {
           HighLevel opens the location picker. One click. The workspace is live on that location.
         </p>
         <ul className="mt-5 space-y-2">
-          <li className="rounded-xl border border-brand-500/30 bg-brand-500/[0.08] px-4 py-3">
+          <li className="rounded-lg border border-brand-500/30 bg-brand-500/[0.08] px-4 py-3">
             <p className="text-sm font-medium text-white">Your agency · Main location</p>
             <p className="mt-1 text-xs text-dim">Illustration — not a client account.</p>
           </li>
-          <li className="rounded-xl border border-white/[0.07] bg-white/[0.02] px-4 py-3">
+          <li className="rounded-lg border border-white/[0.07] bg-white/[0.02] px-4 py-3">
             <p className="text-sm text-silver">A second location, if you have one</p>
           </li>
         </ul>

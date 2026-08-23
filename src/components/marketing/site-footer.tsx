@@ -34,8 +34,8 @@ function FooterList({
 
 export function SiteFooter() {
   return (
-    <footer className="hairline-glow relative border-t border-white/[0.06]">
-      <div className={cn(marketingShell, marketingPageGutter, "py-12 sm:py-16")}>
+    <footer className="relative border-t border-white/[0.06]">
+      <div className={cn(marketingShell, marketingPageGutter, "py-10 sm:py-12")}>
         <div className="grid gap-10 sm:grid-cols-2 lg:grid-cols-4">
           <div className="sm:col-span-2 lg:col-span-1">
             <Link href="/" aria-label={`${APP_NAME} home`} className="inline-block">
@@ -47,7 +47,7 @@ export function SiteFooter() {
             heading={FOOTER.product}
             links={[
               { href: "/", label: "Home" },
-              { href: "/book", label: "Lead Leak Audit" },
+              { href: "/#waitlist", label: "Waitlist" },
             ]}
           />
           <FooterList
@@ -63,7 +63,7 @@ export function SiteFooter() {
             ]}
           />
         </div>
-        <div className="mt-12 flex flex-col gap-3 border-t border-white/[0.05] pt-6 sm:flex-row sm:items-center sm:justify-between">
+        <div className="mt-8 flex flex-col gap-3 border-t border-white/[0.05] pt-6 sm:flex-row sm:items-center sm:justify-between">
           <p className="text-xs text-dim">
             © {APP_OWNER}. All rights reserved.
           </p>

@@ -13,9 +13,9 @@ export const HERO = {
   /** Taken from SITE_DESCRIPTION — not a new claim. */
   eyebrow: "Sits on top of GoHighLevel",
   subhead: SITE_DESCRIPTION,
-  primaryCta: "Get your free Lead Leak Audit",
+  primaryCta: "Join the waitlist",
   secondaryCta: "See how it works",
-  underCta: "30 minutes. We pull your own numbers. No pitch deck.",
+  underCta: "Private software. Access is waitlist only.",
 } as const;
 
 export const PROBLEM = {
@@ -117,6 +117,18 @@ export const AUDIT = {
   underCta: "No deck, no slides, just your numbers.",
 } as const;
 
+export const WAITLIST = {
+  headline: "This is private software.",
+  body: "Vistrial is not generally available. Join the waitlist. We email when a seat opens.",
+  cta: "Join the waitlist",
+  underCta: "A name and an email. Nothing else.",
+  submit: "Join the waitlist",
+  pending: "Joining",
+  sent: "You are on the list. We will email the address you gave when a seat opens.",
+  nameLabel: "Name",
+  emailLabel: "Work email",
+} as const;
+
 export const FAQ = {
   headline: "FAQ",
   items: [
@@ -141,7 +153,7 @@ export const FAQ = {
     {
       question: "What if my CRM history is a mess?",
       answer:
-        "Common. The audit tells you honestly whether there is enough history to compare against, rather than inventing a baseline.",
+        "Common. Once you are in, we look at whether there is enough history to compare against, rather than inventing a baseline.",
     },
     {
       question: "Who is this not for?",
@@ -171,7 +183,7 @@ export const CALENDAR = {
 
 export const CONTACT_PAGE = {
   title: "Contact",
-  description: "A question about Vistrial or the Lead Leak Audit. We read every one.",
+  description: "A question about Vistrial. We read every one.",
   submit: "Send",
   pending: "Sending",
   sent: "Received. We will reply to the address you gave.",
@@ -192,6 +204,7 @@ export const SOCIAL_IMAGE = {
 } as const;
 
 export const NAV = {
+  waitlist: "Join waitlist",
   book: "Book the audit",
   skipToContent: "Skip to content",
   openMenu: "Open menu",

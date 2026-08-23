@@ -15,10 +15,15 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 import { APP_NAME } from "@/lib/constants";
-import { bookingHref } from "@/lib/marketing/config";
-import { AUDIT, HERO, NAV } from "@/lib/marketing/copy";
-import { marketingNavLink, marketingPageGutter, marketingShell } from "@/lib/marketing/ui";
-import { btnGhost, btnGradient, btnSizeLg, btnSizeMd } from "@/lib/ui";
+import { waitlistHref } from "@/lib/marketing/config";
+import { HERO, NAV } from "@/lib/marketing/copy";
+import {
+  marketingBtnPrimary,
+  marketingBtnSecondary,
+  marketingNavLink,
+  marketingPageGutter,
+  marketingShell,
+} from "@/lib/marketing/ui";
 import { cn } from "@/lib/utils";
 
 function NavLinks({
@@ -45,11 +50,11 @@ function NavLinks({
 }
 
 export function SiteHeader({
-  action = "book",
+  action = "waitlist",
 }: {
-  action?: "book" | "none";
+  action?: "waitlist" | "none";
 }) {
-  const onPage = action === "book";
+  const onPage = action === "waitlist";
 
   return (
     <header className="sticky top-0 z-50 border-b border-white/[0.06] bg-ink-950/75 backdrop-blur-xl">
@@ -57,7 +62,7 @@ export function SiteHeader({
         className={cn(
           marketingShell,
           marketingPageGutter,
-          "flex h-16 items-center justify-between gap-4 sm:h-[72px]"
+          "flex h-14 items-center justify-between gap-4"
         )}
       >
         <div className="flex min-w-0 items-center gap-8">
@@ -66,7 +71,7 @@ export function SiteHeader({
             aria-label={`${APP_NAME} home`}
             className="shrink-0 rounded-sm transition-opacity hover:opacity-80"
           >
-            <Logo className="h-[22px] w-auto sm:h-[28px]" />
+            <Logo className="h-5 w-auto sm:h-[22px]" />
           </Link>
           {onPage ? (
             <nav aria-label="Page" className="hidden md:block">
@@ -77,14 +82,13 @@ export function SiteHeader({
 
         <div className="flex items-center gap-2">
           {onPage ? (
-            <a href="#case-file" className={cn(btnGhost, btnSizeMd, "hidden lg:inline-flex")}>
+            <a href="#case-file" className={cn(marketingBtnSecondary, "hidden lg:inline-flex")}>
               {HERO.secondaryCta}
             </a>
           ) : null}
-          {action === "book" ? (
+          {action === "waitlist" ? (
             <CtaLink position="nav" size="sm">
-              <span className="sm:hidden">{AUDIT.cta}</span>
-              <span className="hidden sm:inline">{HERO.primaryCta}</span>
+              {NAV.waitlist}
             </CtaLink>
           ) : null}
 
@@ -119,17 +123,17 @@ export function SiteHeader({
                 </nav>
                 <div className="mt-6 flex flex-col gap-3 px-4">
                   <SheetClose asChild>
-                    <a href="#case-file" className={cn(btnGhost, btnSizeMd, "justify-center")}>
+                    <a href="#case-file" className={cn(marketingBtnSecondary, "justify-center")}>
                       {HERO.secondaryCta}
                     </a>
                   </SheetClose>
                   <SheetClose asChild>
                     <a
-                      href={bookingHref("nav")}
+                      href={waitlistHref("nav")}
                       data-cta-position="nav"
-                      className={cn(btnGradient, btnSizeLg, "w-full")}
+                      className={cn(marketingBtnPrimary, "w-full")}
                     >
-                      {HERO.primaryCta}
+                      {NAV.waitlist}
                     </a>
                   </SheetClose>
                 </div>

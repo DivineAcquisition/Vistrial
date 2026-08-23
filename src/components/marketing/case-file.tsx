@@ -14,11 +14,11 @@ function SampleMark() {
 export function HeroCaseFile() {
   const demo = DEMO_CASE;
   return (
-    <div className="bg-ink-900 p-5 sm:p-6">
+    <div className="bg-ink-900 p-4">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0">
           <SampleMark />
-          <p className="mt-2 text-lg font-semibold text-white">{demo.name}</p>
+          <p className="mt-1.5 text-base font-semibold text-white">{demo.name}</p>
           <p className="mt-1 text-sm text-silver">
             {demo.email} · {demo.phone}
           </p>
@@ -29,7 +29,7 @@ export function HeroCaseFile() {
         </div>
         <div className="text-right">
           <p className={sectionLabel}>Readiness score</p>
-          <p className="mt-1 tabular text-5xl font-semibold text-brand-500">{demo.score.total}</p>
+          <p className="mt-1 tabular text-3xl font-semibold text-brand-500">{demo.score.total}</p>
           <p className="mt-1 text-xs text-dim">/ 100</p>
         </div>
       </div>
@@ -77,7 +77,7 @@ export function AnnotatedCaseFile() {
             </p>
           </div>
           <div className="text-right">
-            <p className="tabular text-4xl font-semibold text-brand-500">{demo.score.total}</p>
+            <p className="tabular text-2xl font-semibold text-brand-500">{demo.score.total}</p>
             <p className="mt-1 text-xs text-dim">{demo.score.confidence}</p>
           </div>
         </div>
@@ -164,7 +164,7 @@ function CasePart({
   children: React.ReactNode;
 }) {
   return (
-    <article className="panel panel-hover rounded-2xl p-5 sm:p-6">
+    <article className="panel rounded-xl p-4">
       <h3 className="text-base font-semibold text-white">{title}</h3>
       <p className="mt-2 max-w-2xl text-sm leading-relaxed text-silver">{body}</p>
       <div className="mt-5">{children}</div>

@@ -5,6 +5,7 @@ import {
   isHoneypot,
   parseContact,
   parseQualification,
+  parseWaitlist,
   QualificationError,
 } from "@/lib/marketing/qualify";
 
@@ -52,5 +53,25 @@ describe("parseContact", () => {
       message: "Can we do the audit next week?",
     });
     expect(payload.source).toBe("Vistrial contact");
+  });
+});
+
+describe("parseWaitlist", () => {
+  it("accepts a name and email and records the CTA position", () => {
+    const payload = parseWaitlist({
+      name: "Alex Morgan",
+      email: "alex@northline.example",
+      tracking: { from: "hero" },
+    });
+    expect(payload.firstName).toBe("Alex");
+    expect(payload.email).toBe("alex@northline.example");
+    expect(payload.source).toBe("Vistrial waitlist");
+    expect(payload.ctaPosition).toBe("hero");
+  });
+
+  it("rejects a missing name", () => {
+    expect(() => parseWaitlist({ name: "A", email: "alex@northline.example" })).toThrow(
+      QualificationError
+    );
   });
 });

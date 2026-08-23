@@ -2,7 +2,7 @@ import { ChevronDown } from "lucide-react";
 import type { ReactNode } from "react";
 
 import { Panel } from "@/components/ui/panel";
-import { eyebrow as eyebrowClass, sectionLabel } from "@/lib/ui";
+import { sectionLabel } from "@/lib/ui";
 import {
   marketingBody,
   marketingCardTitle,
@@ -16,12 +16,12 @@ import {
 import { cn } from "@/lib/utils";
 
 export function Eyebrow({ children }: { children: ReactNode }) {
-  return <p className={eyebrowClass}>{children}</p>;
+  return <p className={sectionLabel}>{children}</p>;
 }
 
 export function CtaGroup({ children }: { children: ReactNode }) {
   return (
-    <div className="mt-8 flex flex-col items-stretch gap-3 sm:flex-row sm:items-center">{children}</div>
+    <div className="mt-5 flex flex-col items-stretch gap-2 sm:flex-row sm:items-center">{children}</div>
   );
 }
 
@@ -45,13 +45,13 @@ export function MarketingSection({
   return (
     <section
       id={id}
-      className={cn("scroll-mt-24 border-t border-white/[0.07]", marketingPageGutter, marketingSectionY, className)}
+      className={cn("scroll-mt-20 border-t border-white/[0.07]", marketingPageGutter, marketingSectionY, className)}
     >
       <div className={cn(marketingShell, narrow && marketingMeasureWide)}>
-        {eyebrow ? <p className={cn(sectionLabel, "mb-3")}>{eyebrow}</p> : null}
+        {eyebrow ? <p className={cn(sectionLabel, "mb-2")}>{eyebrow}</p> : null}
         <h2 className={marketingSectionTitle}>{headline}</h2>
-        {lead ? <div className={cn(marketingLead, "mt-5")}>{lead}</div> : null}
-        <div className={lead ? "mt-10" : "mt-8"}>{children}</div>
+        {lead ? <div className={cn(marketingLead, "mt-3")}>{lead}</div> : null}
+        <div className={lead ? "mt-6" : "mt-5"}>{children}</div>
       </div>
     </section>
   );
@@ -67,10 +67,10 @@ export function FeatureCard({
   children: ReactNode;
 }) {
   return (
-    <Panel className="panel-hover flex h-full flex-col p-6">
-      {step ? <p className={cn(sectionLabel, "mb-4")}>{step}</p> : null}
+    <Panel className="flex h-full flex-col p-4">
+      {step ? <p className={cn(sectionLabel, "mb-3")}>{step}</p> : null}
       <h3 className={marketingCardTitle}>{title}</h3>
-      <div className={cn(marketingBody, "mt-3")}>{children}</div>
+      <div className={cn(marketingBody, "mt-2")}>{children}</div>
     </Panel>
   );
 }
@@ -85,8 +85,8 @@ export function ProductFrame({
   children: ReactNode;
 }) {
   return (
-    <figure className="overflow-hidden rounded-[1.75rem] border border-white/[0.08] bg-ink-850/80 p-1.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.05)]">
-      <div className="flex items-center gap-3 px-3 py-2">
+    <figure className="overflow-hidden rounded-xl border border-white/[0.08] bg-ink-850/80 p-1 shadow-[inset_0_1px_0_rgba(255,255,255,0.05)]">
+      <div className="flex items-center gap-2.5 px-2.5 py-1.5">
         <span className="flex gap-1" aria-hidden>
           <span className="size-1.5 rounded-full bg-white/25" />
           <span className="size-1.5 rounded-full bg-white/15" />
@@ -97,7 +97,7 @@ export function ProductFrame({
           {caption ? <span className="text-silver"> · {caption}</span> : null}
         </figcaption>
       </div>
-      <div className="overflow-hidden rounded-[1.35rem]">{children}</div>
+      <div className="overflow-hidden rounded-lg">{children}</div>
     </figure>
   );
 }
@@ -110,7 +110,7 @@ export function FaqAccordion({
   return (
     <div className="divide-y divide-white/[0.07] border-y border-white/[0.07]">
       {items.map((item) => (
-        <details key={item.question} className="group py-5">
+        <details key={item.question} className="group py-3.5">
           <summary
             className={cn(
               "flex cursor-pointer list-none items-center justify-between gap-4 rounded-sm text-left",
@@ -120,11 +120,11 @@ export function FaqAccordion({
           >
             {item.question}
             <ChevronDown
-              className="size-4 shrink-0 text-brand-300 transition-transform duration-200 group-open:rotate-180"
+              className="size-3.5 shrink-0 text-brand-300 transition-transform duration-200 group-open:rotate-180"
               aria-hidden
             />
           </summary>
-          <p className={cn(marketingBody, "mt-3 max-w-2xl pr-8")}>{item.answer}</p>
+          <p className={cn(marketingBody, "mt-2 max-w-2xl pr-8")}>{item.answer}</p>
         </details>
       ))}
     </div>
@@ -139,9 +139,9 @@ export function FinalCta({
   children: ReactNode;
 }) {
   return (
-    <Panel className="p-6 sm:p-8 md:p-10">
+    <Panel className="p-5 sm:p-6">
       <h2 className={marketingSectionTitle}>{headline}</h2>
-      <div className="mt-6">{children}</div>
+      <div className="mt-4">{children}</div>
     </Panel>
   );
 }

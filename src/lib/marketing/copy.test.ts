@@ -1,7 +1,6 @@
 import { describe, expect, it } from "vitest";
 
 import {
-  AUDIT,
   CASE_FILE,
   FAQ,
   GHL,
@@ -10,6 +9,7 @@ import {
   OUTCOME,
   PROBLEM,
   SITE_DESCRIPTION,
+  WAITLIST,
 } from "@/lib/marketing/copy";
 
 describe("landing copy", () => {
@@ -20,7 +20,7 @@ describe("landing copy", () => {
     expect(MOMENTS.headline).toBe("Three moments where it changes the outcome.");
     expect(OUTCOME.headline).toBe("The number we track is clients closed per hundred leads.");
     expect(GHL.headline).toBe("It runs on the CRM you already have.");
-    expect(AUDIT.headline).toBe("Find out what you are leaking.");
+    expect(WAITLIST.headline).toBe("This is private software.");
   });
 
   it("does not use the phrase AI-powered", () => {
@@ -32,7 +32,7 @@ describe("landing copy", () => {
       MOMENTS,
       OUTCOME,
       GHL,
-      AUDIT,
+      WAITLIST,
       FAQ,
     });
     expect(blob).not.toMatch(/AI-powered/i);

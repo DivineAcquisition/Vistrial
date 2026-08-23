@@ -6,7 +6,7 @@ import { SCROLL_DEPTHS, type ScrollDepth } from "@/lib/marketing/analytics";
 import type { CtaPosition } from "@/lib/marketing/config";
 import { trackMarketingEvent } from "@/components/marketing/track";
 
-const CTA_POSITIONS: CtaPosition[] = ["nav", "hero", "audit"];
+const CTA_POSITIONS: CtaPosition[] = ["nav", "hero", "audit", "waitlist"];
 
 function positionFrom(value: string | null): CtaPosition | null {
   if (value && (CTA_POSITIONS as string[]).includes(value)) return value as CtaPosition;

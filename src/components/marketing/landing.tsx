@@ -1,10 +1,6 @@
-import { ArrowRight } from "lucide-react";
-
 import { AnnotatedCaseFile, HeroCaseFile } from "@/components/marketing/case-file";
-import { CtaLink } from "@/components/marketing/cta-link";
 import { GhlConnectVisual } from "@/components/marketing/ghl-connect";
 import {
-  CtaGroup,
   Eyebrow,
   FaqAccordion,
   FeatureCard,
@@ -12,9 +8,8 @@ import {
   MarketingSection,
   ProductFrame,
 } from "@/components/marketing/primitives";
-import { Button } from "@/components/ui/button";
+import { WaitlistForm } from "@/components/marketing/waitlist-form";
 import {
-  AUDIT,
   CASE_FILE,
   FAQ,
   GHL,
@@ -22,9 +17,11 @@ import {
   MOMENTS,
   OUTCOME,
   PROBLEM,
+  WAITLIST,
 } from "@/lib/marketing/copy";
 import { DEMO_CASE } from "@/lib/marketing/demo-case";
 import {
+  marketingBtnSecondary,
   marketingHeroTitle,
   marketingLead,
   marketingPageGutter,
@@ -46,27 +43,24 @@ export function LandingPage() {
 
   return (
     <>
-      <section className={cn(marketingPageGutter, "pb-16 pt-14 sm:pb-20 sm:pt-20 md:pt-24")}>
-        <div className={cn(marketingShell, "grid items-center gap-10 lg:grid-cols-2 lg:gap-16")}>
-          <div className="animate-rise">
+      <section className={cn(marketingPageGutter, "pb-12 pt-10 sm:pb-16 sm:pt-14")}>
+        <div className={cn(marketingShell, "grid items-center gap-8 lg:grid-cols-2 lg:gap-12")}>
+          <div>
             <Eyebrow>{HERO.eyebrow}</Eyebrow>
-            <h1 className={cn(marketingHeroTitle, "mt-5")}>
+            <h1 className={cn(marketingHeroTitle, "mt-4")}>
               {headlineBefore}
-              <span className="text-gradient">{HERO.headlineAccent}</span>
+              <span className="text-brand-300">{HERO.headlineAccent}</span>
             </h1>
-            <p className={cn(marketingSubhead, "mt-6 max-w-xl")}>{HERO.subhead}</p>
-            <CtaGroup>
-              <CtaLink position="hero">
-                {HERO.primaryCta}
-                <ArrowRight className="size-4" aria-hidden />
-              </CtaLink>
-              <Button variant="secondary" size="lg" asChild>
-                <a href="#case-file">{HERO.secondaryCta}</a>
-              </Button>
-            </CtaGroup>
-            <p className={cn(captionText, "mt-4")}>{HERO.underCta}</p>
+            <p className={cn(marketingSubhead, "mt-4 max-w-md")}>{HERO.subhead}</p>
+            <div className="mt-5 max-w-xl">
+              <WaitlistForm position="hero" />
+            </div>
+            <p className={cn(captionText, "mt-3")}>{HERO.underCta}</p>
+            <a href="#case-file" className={cn(marketingBtnSecondary, "mt-4")}>
+              {HERO.secondaryCta}
+            </a>
           </div>
-          <div className="animate-rise delay-2">
+          <div>
             <ProductFrame title="Case file" caption={DEMO_CASE.sampleLabel}>
               <HeroCaseFile />
             </ProductFrame>
@@ -75,16 +69,16 @@ export function LandingPage() {
       </section>
 
       <MarketingSection headline={PROBLEM.headline} narrow>
-        <ul className="space-y-6">
+        <ul className="space-y-4">
           {PROBLEM.points.map((point) => (
             <li key={point.lead}>
-              <p className="text-base leading-relaxed text-white sm:text-[17px]">
+              <p className="text-sm leading-relaxed text-white sm:text-[15px]">
                 <span className="font-semibold">{point.lead}</span> {point.rest}
               </p>
             </li>
           ))}
         </ul>
-        <p className="mt-8 text-base font-medium text-white">{PROBLEM.closing}</p>
+        <p className="mt-6 text-sm font-medium text-white">{PROBLEM.closing}</p>
       </MarketingSection>
 
       <MarketingSection id="case-file" headline={CASE_FILE.headline}>
@@ -92,7 +86,7 @@ export function LandingPage() {
       </MarketingSection>
 
       <MarketingSection id="moments" headline={MOMENTS.headline}>
-        <div className="grid gap-4 md:grid-cols-3">
+        <div className="grid gap-3 md:grid-cols-3">
           {MOMENTS.items.map((item, index) => (
             <FeatureCard
               key={item.title}
@@ -106,7 +100,7 @@ export function LandingPage() {
       </MarketingSection>
 
       <MarketingSection headline={OUTCOME.headline} narrow lead={<p>{OUTCOME.body}</p>}>
-        <ul className="grid gap-4 sm:grid-cols-1">
+        <ul className="grid gap-3">
           {OUTCOME.lines.map((line) => {
             const { lead, rest } = splitMetric(line);
             return (
@@ -116,7 +110,7 @@ export function LandingPage() {
             );
           })}
         </ul>
-        <p className={cn(marketingLead, "mt-10")}>{OUTCOME.honesty}</p>
+        <p className={cn(marketingLead, "mt-8")}>{OUTCOME.honesty}</p>
       </MarketingSection>
 
       <MarketingSection headline={GHL.headline} lead={<p>{GHL.body}</p>}>
@@ -124,20 +118,16 @@ export function LandingPage() {
       </MarketingSection>
 
       <section
-        id="audit"
-        className={cn("scroll-mt-24 border-t border-white/[0.07]", marketingPageGutter, marketingSectionY)}
+        id="waitlist"
+        className={cn("scroll-mt-20 border-t border-white/[0.07]", marketingPageGutter, marketingSectionY)}
       >
-        <div className={cn(marketingShell, "max-w-3xl")}>
-          <FinalCta headline={AUDIT.headline}>
-            <p className={marketingLead}>{AUDIT.body}</p>
-            <p className="mt-4 text-base font-medium text-white">{AUDIT.keep}</p>
-            <CtaGroup>
-              <CtaLink position="audit">
-                {AUDIT.cta}
-                <ArrowRight className="size-4" aria-hidden />
-              </CtaLink>
-            </CtaGroup>
-            <p className={cn(captionText, "mt-4")}>{AUDIT.underCta}</p>
+        <div className={cn(marketingShell, "max-w-2xl")}>
+          <FinalCta headline={WAITLIST.headline}>
+            <p className={marketingLead}>{WAITLIST.body}</p>
+            <div className="mt-5">
+              <WaitlistForm position="waitlist" />
+            </div>
+            <p className={cn(captionText, "mt-3")}>{WAITLIST.underCta}</p>
           </FinalCta>
         </div>
       </section>

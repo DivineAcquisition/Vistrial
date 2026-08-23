@@ -13,10 +13,12 @@ import {
   isHoneypot,
   parseContact,
   parseQualification,
+  parseWaitlist,
   QualificationError,
   type ContactInput,
   type QualificationInput,
   type QualificationPayload,
+  type WaitlistInput,
 } from "@/lib/marketing/qualify";
 
 export type QualifyResult =
@@ -24,6 +26,8 @@ export type QualifyResult =
   | { ok: false; error: string; field?: string };
 
 export type ContactResult = { ok: true } | { ok: false; error: string; field?: string };
+
+export type WaitlistResult = { ok: true } | { ok: false; error: string; field?: string };
 
 function calendarRedirect(tracking: QualificationInput["tracking"]): string {
   return calendarHref(tracking?.from);
@@ -103,6 +107,33 @@ export async function submitContact(input: ContactInput): Promise<ContactResult>
       return { ok: false, error: error.message, field: error.field };
     }
     return { ok: false, error: "We could not send that just now. Try again in a moment." };
+  }
+}
+
+export async function submitWaitlist(input: WaitlistInput): Promise<WaitlistResult> {
+  if (isHoneypot(input)) return { ok: true };
+
+  try {
+    const payload = parseWaitlist(input);
+    await postWebhook({
+      fullName: payload.fullName,
+      firstName: payload.firstName,
+      lastName: payload.lastName,
+      email: payload.email,
+      source: payload.source,
+      entryPoint: payload.entryPoint,
+      entry_point: payload.entryPoint,
+      ctaPosition: payload.ctaPosition,
+      cta_position: payload.ctaPosition,
+      tags: payload.tags,
+      ...payload.tracking,
+    });
+    return { ok: true };
+  } catch (error) {
+    if (error instanceof QualificationError) {
+      return { ok: false, error: error.message, field: error.field };
+    }
+    return { ok: false, error: "We could not join that just now. Try again in a moment." };
   }
 }
 

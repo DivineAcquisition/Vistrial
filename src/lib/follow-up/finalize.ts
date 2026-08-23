@@ -1,12 +1,41 @@
 import "server-only";
 
 import { enqueueSequenceStep } from "@/lib/follow-up/generate";
-import { followUpLog, followUpWarn } from "@/lib/follow-up/log";
+import { followUpError, followUpLog, followUpWarn } from "@/lib/follow-up/log";
 import { boundedSequenceSteps, parseRoutingRule } from "@/lib/follow-up/routing";
 import type { FollowUpBranch, FollowUpChannel } from "@/lib/follow-up/types";
 import type { DispatchResult } from "@/lib/ghl/dispatch";
 import type { GhlDb } from "@/lib/ghl/tokens";
-import type { Json } from "@/types/database";
+import type { Enums, Json } from "@/types/database";
+
+async function recordFinalizeEvent(
+  db: GhlDb,
+  args: {
+    orgId: string;
+    draftId: string;
+    sequenceRunId: string | null;
+    kind: Enums<"follow_up_event_kind">;
+    actorMemberId: string | null;
+    payload: Record<string, unknown>;
+  }
+) {
+  const { error } = await db.from("follow_up_events").insert({
+    org_id: args.orgId,
+    draft_id: args.draftId,
+    sequence_run_id: args.sequenceRunId,
+    kind: args.kind,
+    actor_member_id: args.actorMemberId,
+    payload: args.payload as Json,
+  });
+  if (error) {
+    followUpError("follow_up.event_failed", {
+      draftId: args.draftId,
+      kind: args.kind,
+      error: error.message,
+    });
+    throw new Error(`follow_up_event_failed:${args.kind}`);
+  }
+}
 
 export async function finalizeFollowUpDispatch(
   db: GhlDb,
@@ -55,13 +84,13 @@ export async function finalizeFollowUpDispatch(
         failure_reason: args.result.reason,
       })
       .eq("id", draft.id);
-    await db.from("follow_up_events").insert({
-      org_id: draft.org_id,
-      draft_id: draft.id,
-      sequence_run_id: draft.sequence_run_id,
+    await recordFinalizeEvent(db, {
+      orgId: draft.org_id,
+      draftId: draft.id,
+      sequenceRunId: draft.sequence_run_id,
       kind: "discarded",
-      actor_member_id: draft.approved_by_member_id,
-      payload: { reason: args.result.reason } as Json,
+      actorMemberId: draft.approved_by_member_id,
+      payload: { reason: args.result.reason },
     });
     await db.rpc("halt_follow_up_sequences_for_lead", {
       p_org_id: draft.org_id,
@@ -82,13 +111,13 @@ export async function finalizeFollowUpDispatch(
         failure_reason: reason,
       })
       .eq("id", draft.id);
-    await db.from("follow_up_events").insert({
-      org_id: draft.org_id,
-      draft_id: draft.id,
-      sequence_run_id: draft.sequence_run_id,
+    await recordFinalizeEvent(db, {
+      orgId: draft.org_id,
+      draftId: draft.id,
+      sequenceRunId: draft.sequence_run_id,
       kind: "failed",
-      actor_member_id: draft.approved_by_member_id,
-      payload: { reason } as Json,
+      actorMemberId: draft.approved_by_member_id,
+      payload: { reason },
     });
     followUpWarn("follow_up.send_failed", { draftId: draft.id, reason });
     return;
@@ -124,17 +153,17 @@ export async function finalizeFollowUpDispatch(
       .eq("direction", "outbound");
   }
 
-  await db.from("follow_up_events").insert({
-    org_id: draft.org_id,
-    draft_id: draft.id,
-    sequence_run_id: draft.sequence_run_id,
+  await recordFinalizeEvent(db, {
+    orgId: draft.org_id,
+    draftId: draft.id,
+    sequenceRunId: draft.sequence_run_id,
     kind: "sent",
-    actor_member_id: draft.approved_by_member_id,
+    actorMemberId: draft.approved_by_member_id,
     payload: {
       touchId: args.result.touchId,
       editDistance: draft.edit_distance,
       callEndToSentMs,
-    } as Json,
+    },
   });
 
   if (draft.sequence_run_id) {

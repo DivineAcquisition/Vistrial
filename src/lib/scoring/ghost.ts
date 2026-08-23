@@ -2,7 +2,7 @@ import type { Enums } from "@/types/database";
 
 import { calendarDaysBetween } from "@/lib/scoring/timezone";
 import { scoreLeadFromEvent } from "@/lib/scoring/event-apply";
-import { loadScoreConfig, type ScoringClient } from "@/lib/scoring/store";
+import { assertScorePersisted, loadScoreConfig, type ScoringClient } from "@/lib/scoring/store";
 
 export const GHOST_REENGAGEMENT_KIND = "ghost_reengagement";
 export const GHOST_REENGAGEMENT_TEXT =
@@ -67,7 +67,9 @@ export async function runGhostDetectorForOrg(
   const { data: leads, error: leadError } = await client
     .from("leads")
     .select("id, status, last_touch_at, opted_in_at, ghost_approaching_at")
-    .eq("org_id", orgId);
+    .eq("org_id", orgId)
+    .eq("is_test", false)
+    .not("status", "in", "(closed_won,closed_lost)");
 
   if (leadError) {
     throw new Error("Could not load leads for ghost detector.");
@@ -99,14 +101,15 @@ export async function runGhostDetectorForOrg(
         .update({ ghost_approaching_at: null })
         .eq("id", lead.id)
         .eq("org_id", orgId);
-      if (error) continue;
-      await client
+      if (error) throw new Error(`ghost_clear_failed:${error.message}`);
+      const { error: actionError } = await client
         .from("next_actions")
         .update({ completed_at: now.toISOString() })
         .eq("org_id", orgId)
         .eq("lead_id", lead.id)
         .eq("kind", GHOST_REENGAGEMENT_KIND)
         .is("completed_at", null);
+      if (actionError) throw new Error(`ghost_clear_action_failed:${actionError.message}`);
       changed += 1;
       continue;
     }
@@ -117,7 +120,7 @@ export async function runGhostDetectorForOrg(
         .update({ ghost_approaching_at: now.toISOString() })
         .eq("id", lead.id)
         .eq("org_id", orgId);
-      if (flagError) continue;
+      if (flagError) throw new Error(`ghost_flag_failed:${flagError.message}`);
 
       const { error: actionError } = await client.from("next_actions").insert({
         org_id: orgId,
@@ -128,7 +131,7 @@ export async function runGhostDetectorForOrg(
         due_at: new Date(now.getTime() + 24 * 60 * 60 * 1000).toISOString(),
       });
       if (actionError && actionError.code !== "23505") {
-        // Unique index already held — still a successful flag.
+        throw new Error(`ghost_flag_action_failed:${actionError.message}`);
       }
       changed += 1;
       continue;
@@ -139,14 +142,16 @@ export async function runGhostDetectorForOrg(
       .update({ status: "ghost", ghost_approaching_at: null })
       .eq("id", lead.id)
       .eq("org_id", orgId);
-    if (ghostError) continue;
+    if (ghostError) throw new Error(`ghost_status_failed:${ghostError.message}`);
 
-    await scoreLeadFromEvent(client, {
-      orgId,
-      leadId: lead.id,
-      event: "ghost",
-      idempotencyKey: `event:ghost:${lead.id}:${todayKey}`,
-    });
+    assertScorePersisted(
+      await scoreLeadFromEvent(client, {
+        orgId,
+        leadId: lead.id,
+        event: "ghost",
+        idempotencyKey: `event:ghost:${lead.id}:${todayKey}`,
+      })
+    );
     changed += 1;
   }
 
@@ -157,12 +162,7 @@ export async function runGhostDetectorForOrg(
     ran_at: now.toISOString(),
   });
   if (logError) {
-    console.error("[vistrial] ghost detector failed to log run", {
-      orgId,
-      evaluated,
-      changed,
-      message: logError.message,
-    });
+    throw new Error(`ghost_run_log_failed:${logError.message}`);
   }
 
   console.info("[vistrial] ghost detector", { orgId, evaluated, changed });

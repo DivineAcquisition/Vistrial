@@ -12,6 +12,7 @@ import type {
   VoiceProfile,
 } from "@/lib/follow-up/types";
 import { parseVoiceProfile } from "@/lib/follow-up/voice";
+import { coalesceOfferName } from "@/lib/profile/offer";
 import { createClient } from "@/lib/supabase/server";
 import type { Json } from "@/types/database";
 
@@ -100,7 +101,7 @@ export async function loadFollowUpReview(draftId: string): Promise<FollowUpRevie
     .maybeSingle();
   if (!draft) return null;
 
-  const [{ data: lead }, { data: call }, { data: extraction }, settings] = await Promise.all([
+  const [{ data: lead }, { data: call }, { data: extraction }, { data: profile }, settings] = await Promise.all([
     supabase
       .from("leads")
       .select("id, first_name, last_name, email, phone, source, offer_name, timezone, assigned_setter_id, assigned_closer_id")
@@ -118,6 +119,7 @@ export async function loadFollowUpReview(draftId: string): Promise<FollowUpRevie
       .select("summary, stated_objection, quotes, next_step_agreed, next_step_state, budget_signal_state")
       .eq("call_id", draft.call_id)
       .maybeSingle(),
+    supabase.from("business_profiles").select("offer_name").eq("org_id", ctx.org.id).maybeSingle(),
     loadFollowUpSettings(ctx.org.id),
   ]);
   if (!lead || !call) return null;
@@ -170,7 +172,7 @@ export async function loadFollowUpReview(draftId: string): Promise<FollowUpRevie
       email: lead.email,
       phone: lead.phone,
       source: lead.source,
-      offerName: lead.offer_name,
+      offerName: coalesceOfferName(lead.offer_name, profile?.offer_name),
       timezone: lead.timezone,
     },
     call: {

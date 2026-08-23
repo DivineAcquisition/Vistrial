@@ -353,6 +353,20 @@ describe("channel-native prompts", () => {
     expect(without).toContain("No client examples are on file");
     expect(withExamples).not.toContain("No client examples are on file");
   });
+
+  it("feeds workspace objection wording on an objection-hold draft", () => {
+    const text = draftUserPrompt({
+      ...shared,
+      branch: "objection_hold",
+      channel: "sms",
+      objectionVocabulary: [
+        { type: "price", phrasing: "It's a lot of money right now", response: "We have a 3-month plan." },
+      ],
+    });
+    expect(text).toContain("It's a lot of money right now");
+    expect(text).toContain("We have a 3-month plan.");
+    expect(draftUserPrompt({ ...shared, channel: "sms" })).not.toContain("It's a lot of money right now");
+  });
 });
 
 describe("draft parse and model tier", () => {

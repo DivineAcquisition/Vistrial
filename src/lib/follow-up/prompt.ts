@@ -90,6 +90,7 @@ export function draftUserPrompt(input: {
   priorOpenObjections: string[];
   readiness: { total: number | null; reasoning: string | null };
   priorTouches: Array<{ at: string; channel: string; direction: string; type: string }>;
+  objectionVocabulary?: Array<{ type: string; phrasing: string; response: string | null }>;
 }): string {
   const examples = input.voice.examples
     .map((item, index) => `${index + 1}. [${item.channel}] ${item.body}`)
@@ -132,6 +133,17 @@ export function draftUserPrompt(input: {
     quotes ? `Verbatim quotes you may use (only these):\n${quotes}` : "No verified quotes.",
     input.priorOpenObjections.length
       ? `Open objections from prior calls:\n${input.priorOpenObjections.map((item) => `- ${item}`).join("\n")}`
+      : null,
+    input.objectionVocabulary?.length
+      ? `This workspace's usual objection wording (classify only; do not invent an objection from this list):\n${input.objectionVocabulary
+          .map((item) => `- ${item.type}: "${item.phrasing}"`)
+          .join("\n")}`
+      : null,
+    input.branch === "objection_hold" && input.objectionVocabulary?.some((item) => item.response?.trim())
+      ? `Known responses this closer uses for those objections:\n${input.objectionVocabulary
+          .filter((item) => item.response?.trim())
+          .map((item) => `- ${item.type}: ${item.response}`)
+          .join("\n")}`
       : null,
     `Readiness total: ${input.readiness.total ?? "unknown"}.`,
     touches ? `Prior touch history (no message bodies):\n${touches}` : "No prior touches recorded.",

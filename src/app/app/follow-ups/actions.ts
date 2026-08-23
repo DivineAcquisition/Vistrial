@@ -279,15 +279,6 @@ export async function approveFollowUp(input: {
     .eq("id", scoped.draft.id)
     .eq("org_id", scoped.ctx.org.id);
 
-  await admin.from("follow_up_events").insert({
-    org_id: scoped.ctx.org.id,
-    draft_id: scoped.draft.id,
-    sequence_run_id: scoped.draft.sequence_run_id,
-    kind: "approved",
-    actor_member_id: scoped.ctx.member.id,
-    payload: { channel, recipient, sendAt, editDistance: distance } as Json,
-  });
-
   const result = await dispatchOutboundMessage(admin, {
     orgId: scoped.ctx.org.id,
     leadId: scoped.draft.lead_id,
@@ -314,6 +305,19 @@ export async function approveFollowUp(input: {
   if (result.status === "failed") {
     revalidateFollowUp(scoped.draft.lead_id, scoped.draft.id);
     return fail(`Send failed (${result.reason}). No touch was recorded.`);
+  }
+
+  const { error: approvedError } = await admin.from("follow_up_events").insert({
+    org_id: scoped.ctx.org.id,
+    draft_id: scoped.draft.id,
+    sequence_run_id: scoped.draft.sequence_run_id,
+    kind: "approved",
+    actor_member_id: scoped.ctx.member.id,
+    payload: { channel, recipient, sendAt, editDistance: distance } as Json,
+  });
+  if (approvedError) {
+    revalidateFollowUp(scoped.draft.lead_id, scoped.draft.id);
+    return fail("The send went through, but the approval event did not record. Check the draft.");
   }
 
   revalidateFollowUp(scoped.draft.lead_id, scoped.draft.id);

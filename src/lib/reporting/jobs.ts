@@ -15,20 +15,25 @@ export async function runReportingJobs(db: GhlDb): Promise<{
       .not("activated_at", "is", null);
     if (error) throw error;
     let processed = 0;
+    let failed = 0;
     const log: Json[] = [];
     for (const org of orgs ?? []) {
-      const { error: snapError } = await db.rpc("reporting_refresh_org_snapshot", {
-        p_org_id: org.id,
-        p_job_run_id: runId,
-      });
-      if (snapError) {
-        log.push({ orgId: org.id, error: snapError.message });
-        throw snapError;
+      try {
+        const { error: snapError } = await db.rpc("reporting_refresh_org_snapshot", {
+          p_org_id: org.id,
+          p_job_run_id: runId,
+        });
+        if (snapError) throw snapError;
+        processed += 1;
+        log.push({ orgId: org.id, ok: true });
+      } catch (caught) {
+        failed += 1;
+        const message = caught instanceof Error ? caught.message : "snapshot_failed";
+        log.push({ orgId: org.id, error: message });
+        ghlError("reporting.job.org_failed", { kind: "aggregate", orgId: org.id, error: message });
       }
-      processed += 1;
-      log.push({ orgId: org.id, ok: true });
     }
-    return { processed, log };
+    return { processed, failed, log };
   });
 
   const cohorts = await runNamedJob(db, "cohort_mature", async () => {
@@ -38,24 +43,31 @@ export async function runReportingJobs(db: GhlDb): Promise<{
       .not("activated_at", "is", null);
     if (error) throw error;
     let processed = 0;
+    let failed = 0;
     const log: Json[] = [];
     for (const org of orgs ?? []) {
-      const { data, error: matureError } = await db.rpc("reporting_mature_cohorts", {
-        p_org_id: org.id,
-      });
-      if (matureError) {
-        log.push({ orgId: org.id, error: matureError.message });
-        throw matureError;
+      try {
+        const { data, error: matureError } = await db.rpc("reporting_mature_cohorts", {
+          p_org_id: org.id,
+        });
+        if (matureError) throw matureError;
+        processed += 1;
+        log.push({ orgId: org.id, cohorts: data });
+      } catch (caught) {
+        failed += 1;
+        const message = caught instanceof Error ? caught.message : "mature_failed";
+        log.push({ orgId: org.id, error: message });
+        ghlError("reporting.job.org_failed", { kind: "cohort_mature", orgId: org.id, error: message });
       }
-      processed += 1;
-      log.push({ orgId: org.id, cohorts: data });
     }
-    return { processed, log };
+    return { processed, failed, log };
   });
 
   ghlLog("reporting.jobs.ran", {
     aggregate: aggregate.processed,
+    aggregateFailed: aggregate.failed,
     cohorts: cohorts.processed,
+    cohortsFailed: cohorts.failed,
   });
   return { aggregate, cohorts };
 }
@@ -63,7 +75,7 @@ export async function runReportingJobs(db: GhlDb): Promise<{
 async function runNamedJob(
   db: GhlDb,
   kind: "aggregate" | "cohort_mature",
-  work: (runId: string) => Promise<{ processed: number; log: Json[] }>
+  work: (runId: string) => Promise<{ processed: number; failed: number; log: Json[] }>
 ): Promise<{ processed: number; failed: number; runId: string | null }> {
   const { data: inserted, error } = await db
     .from("reporting_job_runs")
@@ -79,13 +91,21 @@ async function runNamedJob(
     await db
       .from("reporting_job_runs")
       .update({
-        status: "completed",
+        status: result.failed > 0 ? "failed" : "completed",
         finished_at: new Date().toISOString(),
         processed_count: result.processed,
         log: result.log as Json,
+        error_text: result.failed > 0 ? `${result.failed} org(s) failed` : null,
       })
       .eq("id", inserted.id);
-    return { processed: result.processed, failed: 0, runId: inserted.id };
+    if (result.failed > 0) {
+      ghlError("reporting.job.partial_failed", {
+        kind,
+        processed: result.processed,
+        failed: result.failed,
+      });
+    }
+    return { processed: result.processed, failed: result.failed, runId: inserted.id };
   } catch (caught) {
     const message = caught instanceof Error ? caught.message : "job_failed";
     await db

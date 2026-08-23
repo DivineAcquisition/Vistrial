@@ -17,6 +17,7 @@ import type {
 import { parseVoiceProfile } from "@/lib/follow-up/voice";
 import { nextAttemptAt, shouldMarkDead } from "@/lib/ghl/retry";
 import type { GhlDb } from "@/lib/ghl/tokens";
+import { coalesceOfferName } from "@/lib/profile/offer";
 import type { Enums, Json } from "@/types/database";
 
 function assertFrontierDraftModel(model: string) {
@@ -119,7 +120,7 @@ async function recordEvent(
     payload?: Record<string, unknown>;
   }
 ) {
-  await db.from("follow_up_events").insert({
+  const { error } = await db.from("follow_up_events").insert({
     org_id: args.orgId,
     draft_id: args.draftId,
     sequence_run_id: args.sequenceRunId,
@@ -127,6 +128,14 @@ async function recordEvent(
     actor_member_id: args.actorMemberId ?? null,
     payload: (args.payload ?? {}) as Json,
   });
+  if (error) {
+    followUpError("follow_up.event_failed", {
+      draftId: args.draftId,
+      kind: args.kind,
+      error: error.message,
+    });
+    throw new Error(`follow_up_event_failed:${args.kind}`);
+  }
 }
 
 async function recordEnqueueFailed(
@@ -448,6 +457,16 @@ async function generateDraft(
     .select("draft_stale_days")
     .eq("org_id", job.org_id)
     .maybeSingle();
+  const { data: profile } = await db
+    .from("business_profiles")
+    .select("offer_name")
+    .eq("org_id", job.org_id)
+    .maybeSingle();
+  const { data: vocabulary } = await db
+    .from("objection_vocabulary")
+    .select("type, phrasing, response")
+    .eq("org_id", job.org_id)
+    .order("rank", { ascending: true });
   if (!call?.raw_transcript || !lead || !extraction) throw new Error("missing_extraction");
 
   const voice = await loadVoice(db, job.org_id);
@@ -498,8 +517,13 @@ async function generateDraft(
     lead: {
       firstName: lead.first_name,
       source: lead.source,
-      offerName: lead.offer_name,
+      offerName: coalesceOfferName(lead.offer_name, profile?.offer_name),
     },
+    objectionVocabulary: (vocabulary ?? []).map((item) => ({
+      type: item.type,
+      phrasing: item.phrasing,
+      response: item.response,
+    })),
     extraction: {
       summary: extraction.summary,
       statedObjection: extraction.stated_objection,

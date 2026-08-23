@@ -65,9 +65,29 @@ export async function runExtractionJob(db: GhlDb, jobId: string): Promise<void> 
   }
 
   const window = clipTranscriptWindow(call.raw_transcript, TRANSCRIPT_HEAD_CHARS, TRANSCRIPT_TAIL_CHARS);
+  const { data: profile } = await db
+    .from("business_profiles")
+    .select(
+      "offer_type, offer_type_other, qualification_signals, qualification_signals_other, lead_channels, lead_channels_other"
+    )
+    .eq("org_id", job.org_id)
+    .maybeSingle();
+  const { data: vocabulary } = await db
+    .from("objection_vocabulary")
+    .select("type, phrasing")
+    .eq("org_id", job.org_id)
+    .order("rank", { ascending: true });
   const message = await createAnthropicMessage({
     system: EXTRACTION_SYSTEM_PROMPT,
-    user: extractionUserPrompt(window.text, window.truncated),
+    user: extractionUserPrompt(window.text, window.truncated, {
+      offerType: profile?.offer_type,
+      offerTypeOther: profile?.offer_type_other,
+      qualificationSignals: profile?.qualification_signals,
+      qualificationSignalsOther: profile?.qualification_signals_other,
+      leadChannels: profile?.lead_channels,
+      leadChannelsOther: profile?.lead_channels_other,
+      topObjections: (vocabulary ?? []).map((item) => ({ type: item.type, phrasing: item.phrasing })),
+    }),
   });
 
   const parsed = parseExtraction(extractJsonObject(message.text), call.raw_transcript);
@@ -169,10 +189,15 @@ export async function runExtractionJob(db: GhlDb, jobId: string): Promise<void> 
       extractionId,
     });
   } catch (cause) {
+    const reason = cause instanceof Error ? cause.message.slice(0, 80) : "enqueue_failed";
     transcriptError("follow_up.enqueue_failed", {
       callId: call.id,
-      reason: cause instanceof Error ? cause.message.slice(0, 80) : "enqueue_failed",
+      reason,
     });
+    await db
+      .from("extraction_jobs")
+      .update({ last_error: `follow_up_enqueue:${reason}` })
+      .eq("id", job.id);
   }
 
   transcriptLog("extraction.processed", {

@@ -588,8 +588,10 @@ DECLARE
   v_test uuid := 'f0000000-0000-4000-8000-000000000001';
   v_old uuid := 'f0000000-0000-4000-8000-000000000002';
   v_call uuid := 'f0000000-0000-4000-8000-0000000000c1';
+  v_call_test uuid := 'f0000000-0000-4000-8000-0000000000c2';
   v_draft_test uuid := 'f0000000-0000-4000-8000-0000000000d1';
   v_draft_old uuid := 'f0000000-0000-4000-8000-0000000000d2';
+  v_touch_old uuid := 'f0000000-0000-4000-8000-0000000000a1';
   v_json jsonb;
   v_team jsonb;
   v_n bigint;
@@ -618,11 +620,13 @@ BEGIN
 
   INSERT INTO public.calls (id, org_id, lead_id, type, outcome, occurred_at, raw_transcript)
   VALUES (v_call, v_org, v_old, 'discovery', 'held', now() - interval '1 day', 'Old call.');
+  INSERT INTO public.calls (id, org_id, lead_id, type, outcome, occurred_at, raw_transcript)
+  VALUES (v_call_test, v_org, v_test, 'discovery', 'held', now() - interval '1 day', 'Test call.');
 
   INSERT INTO public.touches (
     id, org_id, lead_id, type, channel, direction, actor_member_id, summary, occurred_at
   ) VALUES (
-    'f0000000-0000-4000-8000-0000000000t1',
+    v_touch_old,
     v_org, v_old, 'human', 'sms', 'outbound', v_owner, 'Outbound sms sent',
     now() - interval '1 hour'
   );
@@ -635,7 +639,7 @@ BEGIN
     v_draft_old, v_org, v_old, v_call, 1, 'ghost_risk', 'sms',
     'sent', 'Ping', 'Ping', 'Ping', 'claude-opus-4-6', now() + interval '5 days',
     now() - interval '1 hour', v_owner, now() - interval '1 hour',
-    'f0000000-0000-4000-8000-0000000000t1'
+    v_touch_old
   );
 
   INSERT INTO public.follow_up_events (
@@ -648,7 +652,7 @@ BEGIN
     id, org_id, lead_id, call_id, sequence_position, branch, channel,
     status, generated_body, edited_body, model_version, expires_at
   ) VALUES (
-    v_draft_test, v_org, v_test, v_call, 1, 'ghost_risk', 'sms',
+    v_draft_test, v_org, v_test, v_call_test, 1, 'ghost_risk', 'sms',
     'pending', 'Test ping', 'Test ping', 'claude-opus-4-6', now() + interval '5 days'
   );
   INSERT INTO public.follow_up_events (

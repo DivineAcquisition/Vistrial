@@ -203,6 +203,21 @@ BEGIN
     RAISE EXCEPTION 'sequence length should be paced from eight touches to close';
   END IF;
 
+  PERFORM public.save_business_profile(
+    v_org, v_owner, jsonb_build_object('payment_structure', 'pif'), 'business'
+  );
+  PERFORM public.apply_business_profile_configuration(v_org, v_owner, 'business');
+  IF (SELECT max_sequence_length FROM public.follow_up_settings WHERE org_id = v_org) <> 3 THEN
+    RAISE EXCEPTION 'paid-in-full should shorten sequence length from 4 to 3';
+  END IF;
+  PERFORM public.save_business_profile(
+    v_org, v_owner, jsonb_build_object('payment_structure', 'pif_or_plan'), 'business'
+  );
+  PERFORM public.apply_business_profile_configuration(v_org, v_owner, 'business');
+  IF (SELECT max_sequence_length FROM public.follow_up_settings WHERE org_id = v_org) <> 4 THEN
+    RAISE EXCEPTION 'restoring pif_or_plan should return to cycle pacing of 4';
+  END IF;
+
   -- Qualification signals become scoring weights that still total 100.
   PERFORM public.save_business_profile(
     v_org, v_owner,

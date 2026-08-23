@@ -14,7 +14,7 @@ export function GhlConnectVisual() {
 
   const visual = (
     <div className="grid gap-4 lg:grid-cols-2">
-      <Panel className="p-6">
+      <Panel className="panel-hover p-6">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
             <h3 className="text-sm font-semibold text-white">Connect GoHighLevel</h3>
@@ -34,7 +34,7 @@ export function GhlConnectVisual() {
         </div>
       </Panel>
 
-      <Panel className="p-6">
+      <Panel className="panel-hover p-6">
         <p className="text-[11px] font-semibold tracking-[0.14em] text-brand-300 uppercase">
           Choose a location
         </p>

@@ -1,9 +1,18 @@
 import { ArrowRight } from "lucide-react";
 
 import { AnnotatedCaseFile, HeroCaseFile } from "@/components/marketing/case-file";
-import { CtaLink } from "@/components/marketing/chrome";
+import { CtaLink } from "@/components/marketing/cta-link";
 import { GhlConnectVisual } from "@/components/marketing/ghl-connect";
-import { Panel } from "@/components/ui/panel";
+import {
+  CtaGroup,
+  Eyebrow,
+  FaqAccordion,
+  FeatureCard,
+  FinalCta,
+  MarketingSection,
+  ProductFrame,
+} from "@/components/marketing/primitives";
+import { Button } from "@/components/ui/button";
 import {
   AUDIT,
   CASE_FILE,
@@ -14,37 +23,22 @@ import {
   OUTCOME,
   PROBLEM,
 } from "@/lib/marketing/copy";
-import { marketingHeroTitle, marketingSectionTitle, marketingSubhead } from "@/lib/marketing/ui";
-import { btnSecondary, btnSizeLg, captionText } from "@/lib/ui";
+import { DEMO_CASE } from "@/lib/marketing/demo-case";
+import {
+  marketingHeroTitle,
+  marketingLead,
+  marketingPageGutter,
+  marketingSectionY,
+  marketingShell,
+  marketingSubhead,
+} from "@/lib/marketing/ui";
+import { captionText } from "@/lib/ui";
 import { cn } from "@/lib/utils";
 
-function Section({
-  id,
-  headline,
-  children,
-  narrow = false,
-  className,
-}: {
-  id?: string;
-  headline: string;
-  children: React.ReactNode;
-  narrow?: boolean;
-  className?: string;
-}) {
-  return (
-    <section
-      id={id}
-      className={cn(
-        "scroll-mt-24 border-t border-white/[0.07] px-5 py-16 sm:px-6 sm:py-20 md:py-24",
-        className
-      )}
-    >
-      <div className={cn("mx-auto", narrow ? "max-w-3xl" : "max-w-6xl")}>
-        <h2 className={marketingSectionTitle}>{headline}</h2>
-        <div className="mt-8">{children}</div>
-      </div>
-    </section>
-  );
+function splitMetric(line: string): { lead: string; rest: string } {
+  const index = line.indexOf(":");
+  if (index === -1) return { lead: line, rest: "" };
+  return { lead: line.slice(0, index), rest: line.slice(index + 1).trim() };
 }
 
 export function LandingPage() {
@@ -52,30 +46,35 @@ export function LandingPage() {
 
   return (
     <>
-      <section className="px-5 pb-16 pt-14 sm:px-6 sm:pb-20 sm:pt-20 md:pt-24">
-        <div className="mx-auto grid max-w-6xl items-center gap-10 lg:grid-cols-2 lg:gap-14">
-          <div>
-            <h1 className={marketingHeroTitle}>
+      <section className={cn(marketingPageGutter, "pb-16 pt-14 sm:pb-20 sm:pt-20 md:pt-24")}>
+        <div className={cn(marketingShell, "grid items-center gap-10 lg:grid-cols-2 lg:gap-16")}>
+          <div className="animate-rise">
+            <Eyebrow>{HERO.eyebrow}</Eyebrow>
+            <h1 className={cn(marketingHeroTitle, "mt-5")}>
               {headlineBefore}
               <span className="text-gradient">{HERO.headlineAccent}</span>
             </h1>
             <p className={cn(marketingSubhead, "mt-6 max-w-xl")}>{HERO.subhead}</p>
-            <div className="mt-8 flex flex-col items-stretch gap-3 sm:flex-row sm:items-center">
+            <CtaGroup>
               <CtaLink position="hero">
                 {HERO.primaryCta}
                 <ArrowRight className="size-4" aria-hidden />
               </CtaLink>
-              <a href="#case-file" className={`${btnSecondary} ${btnSizeLg}`}>
-                {HERO.secondaryCta}
-              </a>
-            </div>
+              <Button variant="secondary" size="lg" asChild>
+                <a href="#case-file">{HERO.secondaryCta}</a>
+              </Button>
+            </CtaGroup>
             <p className={cn(captionText, "mt-4")}>{HERO.underCta}</p>
           </div>
-          <HeroCaseFile />
+          <div className="animate-rise delay-2">
+            <ProductFrame title="Case file" caption={DEMO_CASE.sampleLabel}>
+              <HeroCaseFile />
+            </ProductFrame>
+          </div>
         </div>
       </section>
 
-      <Section headline={PROBLEM.headline} narrow>
+      <MarketingSection headline={PROBLEM.headline} narrow>
         <ul className="space-y-6">
           {PROBLEM.points.map((point) => (
             <li key={point.lead}>
@@ -86,66 +85,66 @@ export function LandingPage() {
           ))}
         </ul>
         <p className="mt-8 text-base font-medium text-white">{PROBLEM.closing}</p>
-      </Section>
+      </MarketingSection>
 
-      <Section id="case-file" headline={CASE_FILE.headline}>
+      <MarketingSection id="case-file" headline={CASE_FILE.headline}>
         <AnnotatedCaseFile />
-      </Section>
+      </MarketingSection>
 
-      <Section headline={MOMENTS.headline}>
+      <MarketingSection id="moments" headline={MOMENTS.headline}>
         <div className="grid gap-4 md:grid-cols-3">
-          {MOMENTS.items.map((item) => (
-            <Panel key={item.title} className="p-6">
-              <h3 className="text-base font-semibold text-white">{item.title}</h3>
-              <p className="mt-3 text-sm leading-relaxed text-silver">{item.body}</p>
-            </Panel>
+          {MOMENTS.items.map((item, index) => (
+            <FeatureCard
+              key={item.title}
+              step={String(index + 1).padStart(2, "0")}
+              title={item.title}
+            >
+              {item.body}
+            </FeatureCard>
           ))}
         </div>
-      </Section>
+      </MarketingSection>
 
-      <Section headline={OUTCOME.headline} narrow>
-        <p className="text-base leading-relaxed text-silver sm:text-[17px]">{OUTCOME.body}</p>
-        <ul className="mt-8 space-y-3">
-          {OUTCOME.lines.map((line) => (
-            <li key={line} className="text-sm leading-relaxed text-white sm:text-base">
-              {line}
-            </li>
-          ))}
+      <MarketingSection headline={OUTCOME.headline} narrow lead={<p>{OUTCOME.body}</p>}>
+        <ul className="grid gap-4 sm:grid-cols-1">
+          {OUTCOME.lines.map((line) => {
+            const { lead, rest } = splitMetric(line);
+            return (
+              <li key={line}>
+                <FeatureCard title={lead}>{rest}</FeatureCard>
+              </li>
+            );
+          })}
         </ul>
-        <p className="mt-8 text-base leading-relaxed text-silver sm:text-[17px]">{OUTCOME.honesty}</p>
-      </Section>
+        <p className={cn(marketingLead, "mt-10")}>{OUTCOME.honesty}</p>
+      </MarketingSection>
 
-      <Section headline={GHL.headline}>
-        <p className="max-w-3xl text-base leading-relaxed text-silver sm:text-[17px]">{GHL.body}</p>
-        <div className="mt-8">
-          <GhlConnectVisual />
+      <MarketingSection headline={GHL.headline} lead={<p>{GHL.body}</p>}>
+        <GhlConnectVisual />
+      </MarketingSection>
+
+      <section
+        id="audit"
+        className={cn("scroll-mt-24 border-t border-white/[0.07]", marketingPageGutter, marketingSectionY)}
+      >
+        <div className={cn(marketingShell, "max-w-3xl")}>
+          <FinalCta headline={AUDIT.headline}>
+            <p className={marketingLead}>{AUDIT.body}</p>
+            <p className="mt-4 text-base font-medium text-white">{AUDIT.keep}</p>
+            <CtaGroup>
+              <CtaLink position="audit">
+                {AUDIT.cta}
+                <ArrowRight className="size-4" aria-hidden />
+              </CtaLink>
+            </CtaGroup>
+            <p className={cn(captionText, "mt-4")}>{AUDIT.underCta}</p>
+          </FinalCta>
         </div>
-      </Section>
+      </section>
 
-      <Section headline={AUDIT.headline} narrow>
-        <p className="text-base leading-relaxed text-silver sm:text-[17px]">{AUDIT.body}</p>
-        <p className="mt-4 text-base font-medium text-white">{AUDIT.keep}</p>
-        <div className="mt-8">
-          <CtaLink position="audit">
-            {AUDIT.cta}
-            <ArrowRight className="size-4" aria-hidden />
-          </CtaLink>
-          <p className={cn(captionText, "mt-4")}>{AUDIT.underCta}</p>
-        </div>
-      </Section>
-
-      <Section headline={FAQ.headline} narrow>
-        <dl className="space-y-8">
-          {FAQ.items.map((item) => (
-            <div key={item.question}>
-              <dt>
-                <h3 className="text-base font-semibold text-white">{item.question}</h3>
-              </dt>
-              <dd className="mt-2 text-sm leading-relaxed text-silver sm:text-[15px]">{item.answer}</dd>
-            </div>
-          ))}
-        </dl>
-      </Section>
+      <MarketingSection id="faq" headline={FAQ.headline} narrow>
+        <FaqAccordion items={FAQ.items} />
+      </MarketingSection>
     </>
   );
 }

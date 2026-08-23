@@ -10,6 +10,8 @@ export const HERO = {
   headline: "Your team is calling leads they know nothing about.",
   /** The phrase that carries the gradient. Visual only — the headline is unchanged. */
   headlineAccent: "they know nothing about.",
+  /** Taken from SITE_DESCRIPTION — not a new claim. */
+  eyebrow: "Sits on top of GoHighLevel",
   subhead: SITE_DESCRIPTION,
   primaryCta: "Get your free Lead Leak Audit",
   secondaryCta: "See how it works",
@@ -177,6 +179,9 @@ export const CONTACT_PAGE = {
 
 export const FOOTER = {
   productLine: "Vistrial, a Divine Acquisition product.",
+  product: "Product",
+  company: "Company",
+  legal: "Legal",
 } as const;
 
 export const SOCIAL_IMAGE = {
@@ -189,4 +194,11 @@ export const SOCIAL_IMAGE = {
 export const NAV = {
   book: "Book the audit",
   skipToContent: "Skip to content",
+  openMenu: "Open menu",
+  closeMenu: "Close menu",
+  sections: [
+    { href: "#case-file", label: "Case file" },
+    { href: "#moments", label: "How it works" },
+    { href: "#faq", label: "FAQ" },
+  ],
 } as const;

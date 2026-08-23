@@ -39,6 +39,10 @@ describe("landing copy", () => {
     expect(blob).not.toMatch(/ai powered/i);
   });
 
+  it("uses existing product language for the hero eyebrow", () => {
+    expect(SITE_DESCRIPTION).toContain(HERO.eyebrow);
+  });
+
   it("keeps the honesty line unsoftened", () => {
     expect(OUTCOME.honesty).toBe(
       "We do not make the calls. Your team does. Vistrial makes sure every lead gets worked, and that whoever works it knows what they are walking into."

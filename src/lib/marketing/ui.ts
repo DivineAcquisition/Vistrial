@@ -8,9 +8,19 @@ import { cn } from "@/lib/utils";
 export const marketingHeroTitle =
   "text-[2.1rem] font-semibold leading-[1.08] text-white sm:text-5xl md:text-[3.25rem] md:leading-[1.05]";
 
-export const marketingSectionTitle = "text-2xl font-semibold text-white sm:text-3xl";
+export const marketingSectionTitle =
+  "max-w-3xl text-2xl font-semibold tracking-tight text-white sm:text-3xl";
 
 export const marketingSubhead = "text-base leading-relaxed text-silver sm:text-lg";
+
+export const marketingLead = "max-w-3xl text-base leading-relaxed text-silver sm:text-[17px]";
+
+export const marketingBody = "text-sm leading-relaxed text-silver sm:text-[15px]";
+
+export const marketingCardTitle = "text-base font-semibold tracking-tight text-white";
+
+export const marketingNavLink =
+  "rounded-full px-3 py-2 text-sm font-medium text-silver transition-colors hover:text-white focus-visible:text-white";
 
 /** DA QualifyGate labels: sentence case, white, tight tracking — not the app's uppercase dim labels. */
 export const marketingFormLabel = "block text-[14px] font-semibold tracking-tight text-white";
@@ -36,3 +46,11 @@ export const marketingFieldControl = cn(
 export const marketingFieldSelect = `${marketingFieldControl} cursor-pointer appearance-none pr-10`;
 
 export const marketingPageGutter = "px-5 sm:px-6";
+
+export const marketingSectionY = "py-16 sm:py-20 md:py-24";
+
+export const marketingShell = "mx-auto max-w-6xl";
+
+export const marketingMeasure = "max-w-xl";
+
+export const marketingMeasureWide = "max-w-3xl";

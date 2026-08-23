@@ -1,4 +1,3 @@
-import { Panel } from "@/components/ui/panel";
 import { Progress } from "@/components/ui/progress";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { CASE_FILE } from "@/lib/marketing/copy";
@@ -15,7 +14,7 @@ function SampleMark() {
 export function HeroCaseFile() {
   const demo = DEMO_CASE;
   return (
-    <Panel className="rounded-3xl p-5 sm:p-6">
+    <div className="bg-ink-900 p-5 sm:p-6">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0">
           <SampleMark />
@@ -58,7 +57,7 @@ export function HeroCaseFile() {
       <p className="mt-5 text-xs text-dim">
         Last touch {demo.lastTouch} · {demo.lastTouchChannel} from {demo.lastTouchWho}
       </p>
-    </Panel>
+    </div>
   );
 }
 
@@ -165,7 +164,7 @@ function CasePart({
   children: React.ReactNode;
 }) {
   return (
-    <article className="panel rounded-2xl p-5 sm:p-6">
+    <article className="panel panel-hover rounded-2xl p-5 sm:p-6">
       <h3 className="text-base font-semibold text-white">{title}</h3>
       <p className="mt-2 max-w-2xl text-sm leading-relaxed text-silver">{body}</p>
       <div className="mt-5">{children}</div>

@@ -578,3 +578,113 @@ BEGIN
   END IF;
 END;
 $$;
+
+-- Test leads stay out of remaining panels. Follow-up counts by event time, not opt-in.
+DO $$
+DECLARE
+  v_org uuid := '111e1111-1111-4111-8111-1111111111a1';
+  v_owner uuid := '111e1111-1111-4111-8111-1111111111a3';
+  v_activated timestamptz;
+  v_test uuid := 'f0000000-0000-4000-8000-000000000001';
+  v_old uuid := 'f0000000-0000-4000-8000-000000000002';
+  v_call uuid := 'f0000000-0000-4000-8000-0000000000c1';
+  v_draft_test uuid := 'f0000000-0000-4000-8000-0000000000d1';
+  v_draft_old uuid := 'f0000000-0000-4000-8000-0000000000d2';
+  v_json jsonb;
+  v_team jsonb;
+  v_n bigint;
+BEGIN
+  SELECT activated_at INTO v_activated FROM public.organizations WHERE id = v_org;
+
+  INSERT INTO public.leads (
+    id, org_id, first_name, email, source, status, opted_in_at, ghl_contact_id, is_test
+  ) VALUES (
+    v_test, v_org, 'TestLead', 'test-lead@example.test', 'facebook', 'working',
+    v_activated + interval '2 days', 'ghl_rep_test', true
+  );
+  INSERT INTO public.touches (
+    org_id, lead_id, type, channel, direction, actor_member_id, summary, occurred_at
+  ) VALUES (
+    v_org, v_test, 'human', 'sms', 'outbound', v_owner, 'Outbound sms sent',
+    v_activated + interval '2 days 10 minutes'
+  );
+
+  INSERT INTO public.leads (
+    id, org_id, first_name, email, source, status, opted_in_at, ghl_contact_id
+  ) VALUES (
+    v_old, v_org, 'OldOptIn', 'old-optin@example.test', 'facebook', 'working',
+    v_activated - interval '400 days', 'ghl_rep_old'
+  );
+
+  INSERT INTO public.calls (id, org_id, lead_id, type, outcome, occurred_at, raw_transcript)
+  VALUES (v_call, v_org, v_old, 'discovery', 'held', now() - interval '1 day', 'Old call.');
+
+  INSERT INTO public.touches (
+    id, org_id, lead_id, type, channel, direction, actor_member_id, summary, occurred_at
+  ) VALUES (
+    'f0000000-0000-4000-8000-0000000000t1',
+    v_org, v_old, 'human', 'sms', 'outbound', v_owner, 'Outbound sms sent',
+    now() - interval '1 hour'
+  );
+
+  INSERT INTO public.follow_up_drafts (
+    id, org_id, lead_id, call_id, sequence_position, branch, channel,
+    status, generated_body, edited_body, sent_body, model_version, expires_at,
+    approved_at, approved_by_member_id, sent_at, touch_id
+  ) VALUES (
+    v_draft_old, v_org, v_old, v_call, 1, 'ghost_risk', 'sms',
+    'sent', 'Ping', 'Ping', 'Ping', 'claude-opus-4-6', now() + interval '5 days',
+    now() - interval '1 hour', v_owner, now() - interval '1 hour',
+    'f0000000-0000-4000-8000-0000000000t1'
+  );
+
+  INSERT INTO public.follow_up_events (
+    org_id, draft_id, kind, actor_member_id, created_at
+  ) VALUES (
+    v_org, v_draft_old, 'sent', v_owner, now() - interval '1 hour'
+  );
+
+  INSERT INTO public.follow_up_drafts (
+    id, org_id, lead_id, call_id, sequence_position, branch, channel,
+    status, generated_body, edited_body, model_version, expires_at
+  ) VALUES (
+    v_draft_test, v_org, v_test, v_call, 1, 'ghost_risk', 'sms',
+    'pending', 'Test ping', 'Test ping', 'claude-opus-4-6', now() + interval '5 days'
+  );
+  INSERT INTO public.follow_up_events (
+    org_id, draft_id, kind, created_at
+  ) VALUES (
+    v_org, v_draft_test, 'generated', now() - interval '1 hour'
+  );
+
+  PERFORM set_config('request.jwt.claim.sub', '111e1111-1111-4111-8111-1111111111a2', false);
+  SET ROLE authenticated;
+
+  v_json := public.reporting_compute_team(v_org, v_activated, now());
+  SELECT (elem ->> 'leads_worked')::bigint INTO v_n
+  FROM jsonb_array_elements(v_json -> 'operators') elem
+  WHERE (elem ->> 'id') = v_owner::text;
+  -- 30 human-touched mature leads from the fixture; the test lead must not add a 31st.
+  IF v_n IS DISTINCT FROM 30 THEN
+    RAISE EXCEPTION 'team panel counted a test lead: leads_worked=%', v_n;
+  END IF;
+
+  v_json := public.reporting_compute_follow_up(v_org, v_activated, now());
+  IF (v_json ->> 'sent')::bigint < 1 THEN
+    RAISE EXCEPTION 'follow-up sent events in the window were missed because the lead opted in earlier';
+  END IF;
+  IF (v_json ->> 'generated')::bigint > 0 THEN
+    RAISE EXCEPTION 'follow-up generated count included a test lead: %', v_json ->> 'generated';
+  END IF;
+
+  v_json := public.reporting_compute_sources(v_org, v_activated, now());
+  SELECT COALESCE(sum((elem ->> 'n')::bigint), 0) INTO v_n
+  FROM jsonb_array_elements(v_json -> 'rows') elem;
+  -- 40 mature + 10 maturing live leads. The test lead must not be an 51st.
+  IF v_n IS DISTINCT FROM 50 THEN
+    RAISE EXCEPTION 'source panel counted a test lead: n=%', v_n;
+  END IF;
+
+  RESET ROLE;
+END;
+$$;

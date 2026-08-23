@@ -2,12 +2,7 @@ import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
 import { safeInternalPath } from "@/lib/auth/paths";
-import { PRODUCTION_SITE_ORIGIN } from "@/lib/constants";
-import {
-  hostnameFromHostHeader,
-  isOperatorAppHost,
-  shouldRedirectToSiteHost,
-} from "@/lib/marketing/hosts";
+import { hostnameFromHostHeader, isOperatorAppHost } from "@/lib/marketing/hosts";
 import { isSupabaseConfigured, supabasePublishableKey, supabaseUrl } from "@/lib/supabase/env";
 import { fetchForSupabaseKey } from "@/lib/supabase/fetch";
 import type { Database } from "@/types/database";
@@ -20,11 +15,6 @@ function nextWithPath(request: NextRequest) {
   const requestHeaders = new Headers(request.headers);
   requestHeaders.set("x-vistrial-pathname", pathWithSearch(request));
   return NextResponse.next({ request: { headers: requestHeaders } });
-}
-
-function redirectToSiteHost(request: NextRequest) {
-  const to = new URL(pathWithSearch(request), PRODUCTION_SITE_ORIGIN);
-  return NextResponse.redirect(to, 308);
 }
 
 /**
@@ -40,16 +30,6 @@ function redirectToSiteHost(request: NextRequest) {
 export async function proxy(request: NextRequest) {
   const path = request.nextUrl.pathname;
   const hostname = hostnameFromHostHeader(request.headers.get("host"));
-
-  if (
-    shouldRedirectToSiteHost({
-      hostname,
-      pathname: path,
-      vercelEnv: process.env.VERCEL_ENV,
-    })
-  ) {
-    return redirectToSiteHost(request);
-  }
 
   if (path === "/" && isOperatorAppHost(hostname)) {
     const login = request.nextUrl.clone();
@@ -110,7 +90,5 @@ export async function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: [
-    "/((?!api|_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico)$).*)",
-  ],
+  matcher: ["/", "/app", "/app/:path*"],
 };

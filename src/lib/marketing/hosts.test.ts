@@ -5,7 +5,6 @@ import {
   hostnameFromHostHeader,
   isOperatorAppHost,
   resolveSiteOrigin,
-  shouldRedirectToSiteHost,
 } from "@/lib/marketing/hosts";
 
 describe("isOperatorAppHost", () => {
@@ -43,37 +42,6 @@ describe("resolveSiteOrigin", () => {
     expect(
       resolveSiteOrigin({ explicit: "https://www.vistrial.io/", nodeEnv: "development" })
     ).toBe(PRODUCTION_SITE_ORIGIN);
-  });
-});
-
-describe("shouldRedirectToSiteHost", () => {
-  it("sends www and other public hosts to vistrial.io", () => {
-    expect(
-      shouldRedirectToSiteHost({ hostname: "www.vistrial.io", pathname: "/" })
-    ).toBe(true);
-    expect(
-      shouldRedirectToSiteHost({ hostname: "vistrial.vercel.app", pathname: "/privacy" })
-    ).toBe(true);
-  });
-
-  it("leaves the apex site, the app, local, API, and previews alone", () => {
-    expect(shouldRedirectToSiteHost({ hostname: "vistrial.io", pathname: "/" })).toBe(false);
-    expect(
-      shouldRedirectToSiteHost({ hostname: "app.vistrial.io", pathname: "/login" })
-    ).toBe(false);
-    expect(
-      shouldRedirectToSiteHost({ hostname: "localhost:3000", pathname: "/" })
-    ).toBe(false);
-    expect(
-      shouldRedirectToSiteHost({ hostname: "www.vistrial.io", pathname: "/api/cron/ghl-ingest" })
-    ).toBe(false);
-    expect(
-      shouldRedirectToSiteHost({
-        hostname: "vistrial-git-preview.vercel.app",
-        pathname: "/",
-        vercelEnv: "preview",
-      })
-    ).toBe(false);
   });
 });
 

@@ -10,6 +10,7 @@ import {
   mergeAnswers,
   type GhlFieldMap,
 } from "@/lib/ghl/field-map";
+import { skipOutboundWebhookTouch } from "@/lib/ghl/dispatch-guard";
 import { ghlError, ghlLog } from "@/lib/ghl/log";
 import {
   appointmentFromPayload,
@@ -375,15 +376,40 @@ async function handleInbound(db: GhlDb, orgId: string, event: WebhookRow, payloa
 async function handleOutbound(db: GhlDb, orgId: string, _event: WebhookRow, payload: Record<string, unknown>) {
   const lead = await requireLead(db, orgId, payload);
   const messageId = messageIdFromPayload(payload);
+  let touchAlreadyExists = false;
+  let dispatchOwnsMessage = false;
   if (messageId) {
-    if (await touchExists(db, orgId, messageId)) return;
+    touchAlreadyExists = await touchExists(db, orgId, messageId);
     const { data: dispatch } = await db
       .from("ghl_dispatches")
       .select("id")
       .eq("org_id", orgId)
       .eq("ghl_message_id", messageId)
       .maybeSingle();
-    if (dispatch) return;
+    dispatchOwnsMessage = Boolean(dispatch);
+  }
+  let recentSentDispatch = false;
+  if (!messageId) {
+    const { data: recent } = await db
+      .from("ghl_dispatches")
+      .select("id")
+      .eq("org_id", orgId)
+      .eq("lead_id", lead.id)
+      .eq("status", "sent")
+      .gte("sent_at", new Date(Date.now() - 15 * 60_000).toISOString())
+      .limit(1)
+      .maybeSingle();
+    recentSentDispatch = Boolean(recent);
+  }
+  if (
+    skipOutboundWebhookTouch({
+      messageId,
+      touchAlreadyExists,
+      dispatchOwnsMessage,
+      recentSentDispatch,
+    })
+  ) {
+    return;
   }
 
   const channel = mapMessageChannel(pick(payload, ["messageType", "message_type", "type"]));

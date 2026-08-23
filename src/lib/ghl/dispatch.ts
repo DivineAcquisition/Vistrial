@@ -4,7 +4,12 @@ import { finalizeFollowUpDispatch } from "@/lib/follow-up/finalize";
 import { DISPATCH_MAX_ATTEMPTS } from "@/lib/ghl/constants";
 import { fetchContact, getValidAccessToken, sendConversationMessage } from "@/lib/ghl/client";
 import { ghlError, ghlLog, ghlWarn } from "@/lib/ghl/log";
-import { followUpMissingApprover } from "@/lib/ghl/dispatch-guard";
+import {
+  contactLookupReady,
+  discardedDraftBlocksDispatch,
+  draftStatusBlocksSend,
+  followUpMissingApprover,
+} from "@/lib/ghl/dispatch-guard";
 import { channelToGhlType, contactIsSuppressed, outboundTouchSummary } from "@/lib/ghl/message-meta";
 import { nextAttemptAt, shouldMarkDead } from "@/lib/ghl/retry";
 import type { GhlDb } from "@/lib/ghl/tokens";
@@ -155,6 +160,9 @@ export async function sendQueuedDispatch(db: GhlDb, dispatchId: string): Promise
     return { status: "queued", dispatchId: row.id };
   }
 
+  const haltReason = await haltReasonForDispatch(db, row);
+  if (haltReason) return failDispatch(db, row, haltReason);
+
   const token = await getValidAccessToken(db, row.org_id);
   if (!token.ok) {
     await db
@@ -196,6 +204,9 @@ export async function sendQueuedDispatch(db: GhlDb, dispatchId: string): Promise
   }
 
   const contactResult = await fetchContact(db, row.org_id, lead.ghl_contact_id);
+  if (!contactLookupReady(contactResult)) {
+    return retryOrFail(db, row, `contact_lookup_failed:${contactResult.status}`);
+  }
   const contact = contactResult.json?.contact ?? {};
   const channel = row.channel === "sms" || row.channel === "email" || row.channel === "dm" ? row.channel : null;
   if (!channel) return failDispatch(db, row, "unsupported_channel");
@@ -516,6 +527,7 @@ type DatabaseRow = {
   actor_member_id: string | null;
   attempt_count: number;
   available_at: string;
+  created_at?: string;
   body_text: string | null;
   email_subject: string | null;
   ghl_message_id: string | null;
@@ -523,6 +535,44 @@ type DatabaseRow = {
   claimed_at: string | null;
   status: "queued" | "sent" | "failed" | "suppressed";
 };
+
+async function haltReasonForDispatch(db: GhlDb, row: DatabaseRow): Promise<string | null> {
+  const { data: settings } = await db
+    .from("follow_up_settings")
+    .select("sequences_halted")
+    .eq("org_id", row.org_id)
+    .maybeSingle();
+  if (settings?.sequences_halted) return "sequences_halted";
+
+  const { data: linked } = await db
+    .from("follow_up_drafts")
+    .select("status")
+    .eq("dispatch_id", row.id)
+    .eq("org_id", row.org_id)
+    .maybeSingle();
+  if (draftStatusBlocksSend(linked?.status)) return "sequence_halted";
+
+  const createdAt = row.created_at ?? row.available_at;
+  const { data: discarded } = await db
+    .from("follow_up_drafts")
+    .select("updated_at")
+    .eq("org_id", row.org_id)
+    .eq("lead_id", row.lead_id)
+    .eq("status", "discarded")
+    .in("discarded_reason", ["inbound_reply", "suppressed", "org_stop"])
+    .order("updated_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (
+    discardedDraftBlocksDispatch({
+      dispatchCreatedAt: createdAt,
+      discardedUpdatedAt: discarded?.updated_at ?? null,
+    })
+  ) {
+    return "sequence_halted";
+  }
+  return null;
+}
 
 function logFields(input: DispatchInput, result: string, reason?: string) {
   return {

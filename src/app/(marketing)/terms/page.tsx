@@ -1,4 +1,4 @@
-import { LegalShell, legalMetadata } from "@/components/marketing/legal-shell";
+import { LegalMail, LegalShell, legalMetadata } from "@/components/marketing/legal-shell";
 import { APP_NAME, APP_OWNER, CONTACT_EMAIL } from "@/lib/constants";
 
 export const metadata = legalMetadata(
@@ -23,11 +23,7 @@ export default function TermsPage() {
         responsibilities. Nothing on this site is a warranty of a specific close rate.
       </p>
       <p>
-        Questions:{" "}
-        <a className="text-brand-300 underline-offset-4 hover:text-white hover:underline" href={`mailto:${CONTACT_EMAIL}`}>
-          {CONTACT_EMAIL}
-        </a>
-        .
+        Questions: <LegalMail email={CONTACT_EMAIL} />.
       </p>
     </LegalShell>
   );

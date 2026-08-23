@@ -10,7 +10,7 @@ import {
 } from "@/lib/queue/types";
 import { queueFiltersHref } from "@/lib/queue/filters";
 import { Select } from "@/components/ui/select";
-import { filterLabel, inputClass } from "@/lib/ui";
+import { filterLabel, inputCompactClass } from "@/lib/ui";
 
 const ASSIGNED_OPTIONS: Array<{ value: QueueAssignedFilter; label: string }> = [
   { value: "all", label: "Everyone" },
@@ -58,7 +58,7 @@ export function QueueFilters({
       <label className="block">
         <span className={filterLabel}>Assigned</span>
         <Select
-          
+          density="compact"
           value={filters.assigned}
           onChange={(event) => apply({ assigned: event.target.value as QueueAssignedFilter })}
         >
@@ -72,7 +72,7 @@ export function QueueFilters({
       <label className="block">
         <span className={filterLabel}>Track</span>
         <Select
-          
+          density="compact"
           value={filters.track ?? ""}
           onChange={(event) =>
             apply({ track: (event.target.value || null) as QueueTrackFilter | null })
@@ -88,7 +88,7 @@ export function QueueFilters({
       <label className="block">
         <span className={filterLabel}>Status</span>
         <Select
-          
+          density="compact"
           value={filters.status ?? ""}
           onChange={(event) =>
             apply({
@@ -109,7 +109,7 @@ export function QueueFilters({
       <label className="block">
         <span className={filterLabel}>Source</span>
         <Select
-          
+          density="compact"
           value={filters.source ?? ""}
           onChange={(event) => apply({ source: event.target.value || null })}
         >
@@ -129,7 +129,7 @@ export function QueueFilters({
           max={100}
           inputMode="numeric"
           placeholder="Any"
-          className={inputClass}
+          className={inputCompactClass}
           value={filters.scoreMin ?? ""}
           onChange={(event) => {
             const value = event.target.value.trim();
@@ -145,7 +145,7 @@ export function QueueFilters({
           max={100}
           inputMode="numeric"
           placeholder="Any"
-          className={inputClass}
+          className={inputCompactClass}
           value={filters.scoreMax ?? ""}
           onChange={(event) => {
             const value = event.target.value.trim();

@@ -88,7 +88,7 @@ export function MemberRoleSelect({
   return (
     <div>
       <Select
-        
+        density="compact"
         defaultValue={role}
         disabled={disabled || pending}
         onChange={(event) => {

@@ -37,6 +37,15 @@ export async function finalizeFollowUpDispatch(
     return;
   }
 
+  if (draft.status === "discarded" || draft.status === "rejected") {
+    followUpWarn("follow_up.dispatch_after_halt", {
+      draftId: draft.id,
+      draftStatus: draft.status,
+      result: args.result.status,
+    });
+    return;
+  }
+
   if (args.result.status === "suppressed") {
     await db
       .from("follow_up_drafts")

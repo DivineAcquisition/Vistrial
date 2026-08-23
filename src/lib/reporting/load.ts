@@ -22,7 +22,7 @@ export async function loadReportingPanel(
     throw new Error(error.message);
   }
   if (!data || typeof data !== "object" || Array.isArray(data)) {
-    return {};
+    throw new Error("Reporting panel returned no payload.");
   }
   return data as Record<string, unknown>;
 }

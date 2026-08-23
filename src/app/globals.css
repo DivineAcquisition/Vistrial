@@ -365,6 +365,199 @@
     -webkit-text-fill-color: transparent;
     color: transparent;
   }
+
+  /*
+   * Form fields. Copied from the DA acquisition landing qualify form: a lit
+   * shell, transparent control, sentence-case headline sitting above it.
+   * Compact is the same chrome at the old 40px height, for filter bars.
+   */
+  .field-input {
+    display: block;
+    width: 100%;
+    min-height: 3.15rem;
+    padding: 0.8rem 1rem;
+    border-radius: 0.9rem;
+    border: 1px solid rgba(255, 255, 255, 0.09);
+    background:
+      linear-gradient(180deg, rgba(255, 255, 255, 0.055) 0%, rgba(255, 255, 255, 0.02) 100%),
+      #100f18;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
+    color: #fff;
+    font-size: 15px;
+    font-weight: 500;
+    letter-spacing: -0.022em;
+    line-height: 1.25;
+    color-scheme: dark;
+    transition:
+      border-color 0.18s ease,
+      box-shadow 0.18s ease,
+      background-color 0.18s ease;
+  }
+
+  .field-input::placeholder {
+    color: rgba(163, 163, 163, 0.72);
+    font-weight: 500;
+  }
+
+  .field-input:hover:not(:disabled):not([data-disabled]) {
+    border-color: rgba(255, 255, 255, 0.16);
+  }
+
+  .field-input:focus,
+  .field-input:focus-visible,
+  .field-input[data-state="open"] {
+    outline: none;
+    border-color: rgba(154, 136, 252, 0.55);
+    background:
+      linear-gradient(180deg, rgba(154, 136, 252, 0.1) 0%, rgba(255, 255, 255, 0.025) 100%),
+      #100f18;
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.08),
+      0 0 0 4px rgba(154, 136, 252, 0.14);
+  }
+
+  .field-input[aria-invalid="true"] {
+    border-color: rgba(248, 113, 113, 0.6);
+  }
+
+  .field-input[aria-invalid="true"]:focus,
+  .field-input[aria-invalid="true"]:focus-visible,
+  .field-input[aria-invalid="true"][data-state="open"] {
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.08),
+      0 0 0 4px rgba(248, 113, 113, 0.14);
+  }
+
+  .field-input:disabled,
+  .field-input[data-disabled] {
+    cursor: not-allowed;
+    opacity: 0.5;
+  }
+
+  .field-input--compact {
+    min-height: 2.5rem;
+    padding: 0.45rem 0.8rem;
+    font-size: 13px;
+    border-radius: 0.75rem;
+  }
+
+  textarea.field-input {
+    min-height: 6.5rem;
+    resize: vertical;
+    line-height: 1.5;
+  }
+
+  button.field-input {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.65rem;
+    text-align: left;
+    cursor: pointer;
+  }
+
+  .field-input-group {
+    display: flex;
+    align-items: stretch;
+    padding: 0;
+  }
+
+  .field-input-group .field-control {
+    display: block;
+    width: 100%;
+    min-width: 0;
+    min-height: 3.15rem;
+    flex: 1;
+    padding: 0.8rem 1rem;
+    border: 0;
+    background: transparent;
+    color: #fff;
+    font-size: 15px;
+    font-weight: 500;
+    letter-spacing: -0.022em;
+    outline: none;
+  }
+
+  .field-input-group.field-input--compact .field-control {
+    min-height: 2.5rem;
+    padding: 0.45rem 0.8rem;
+    font-size: 13px;
+  }
+
+  .field-input-group .field-control::placeholder {
+    color: rgba(163, 163, 163, 0.72);
+    font-weight: 500;
+  }
+
+  .field-affix {
+    display: flex;
+    align-items: center;
+    padding: 0 0.9rem;
+    color: var(--color-dim);
+    font-size: 15px;
+    font-weight: 500;
+    letter-spacing: -0.022em;
+  }
+
+  .field-affix:first-child {
+    border-right: 1px solid rgba(255, 255, 255, 0.07);
+  }
+
+  .field-affix:last-child {
+    border-left: 1px solid rgba(255, 255, 255, 0.07);
+  }
+
+  .field-select-chevron {
+    flex-shrink: 0;
+    width: 0.85rem;
+    height: 0.85rem;
+    color: rgba(195, 182, 254, 0.8);
+  }
+
+  .field-select-content {
+    overflow: hidden;
+    border-radius: 0.9rem;
+    background:
+      linear-gradient(180deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0.015) 100%),
+      #0b0a11;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.07),
+      0 24px 56px -20px rgba(0, 0, 0, 0.86);
+  }
+
+  .field-select-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    border-radius: 0.55rem;
+    padding: 0.65rem 0.75rem;
+    font-size: 14px;
+    font-weight: 500;
+    letter-spacing: -0.022em;
+    color: #fff;
+    cursor: pointer;
+    outline: none;
+  }
+
+  .field-select-item[data-highlighted] {
+    background: rgba(154, 136, 252, 0.14);
+  }
+
+  .field-select-item[data-state="checked"] {
+    color: #fff;
+  }
+
+  .field-select-item[data-disabled] {
+    cursor: not-allowed;
+    opacity: 0.4;
+  }
+
+  .field-select-item-indicator {
+    flex-shrink: 0;
+    color: rgba(195, 182, 254, 0.95);
+  }
 }
 
 /* ---------- Motion ---------- */

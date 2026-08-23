@@ -71,7 +71,7 @@ export function Field({
 
   return (
     <div className={cn("min-w-0", className)}>
-      <div className="mb-1.5 flex flex-wrap items-center justify-between gap-2">
+      <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
         <label className={cn(labelClass, "mb-0")} htmlFor={id}>
           {label}
           {required ? (

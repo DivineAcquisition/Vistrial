@@ -6,7 +6,13 @@ import { INGEST_STALE_PENDING_MS, LOCATION_CLAIMED_MESSAGE, WEBHOOK_MAX_ATTEMPTS
 import { normalizeEventKind } from "@/lib/ghl/events";
 import { applyGhlFieldMaps, answersEqual, mergeAnswers } from "@/lib/ghl/field-map";
 import { isIngestionStale } from "@/lib/ghl/health";
-import { followUpMissingApprover } from "@/lib/ghl/dispatch-guard";
+import {
+  contactLookupReady,
+  discardedDraftBlocksDispatch,
+  draftStatusBlocksSend,
+  followUpMissingApprover,
+  skipOutboundWebhookTouch,
+} from "@/lib/ghl/dispatch-guard";
 import {
   contactIsSuppressed,
   inboundTouchSummary,
@@ -270,5 +276,55 @@ describe("message identity and contact timezone", () => {
     expect(followUpMissingApprover({ followUpDraftId: "draft-1", actorMemberId: null })).toBe(true);
     expect(followUpMissingApprover({ followUpDraftId: "draft-1", actorMemberId: "member-1" })).toBe(false);
     expect(followUpMissingApprover({ actorMemberId: null })).toBe(false);
+  });
+
+  it("does not treat a failed contact lookup as unsuppressed", () => {
+    expect(contactLookupReady({ ok: false })).toBe(false);
+    expect(contactLookupReady({ ok: true })).toBe(true);
+  });
+
+  it("blocks send when the linked draft was discarded after a reply", () => {
+    expect(draftStatusBlocksSend("discarded")).toBe(true);
+    expect(draftStatusBlocksSend("rejected")).toBe(true);
+    expect(draftStatusBlocksSend("approved")).toBe(false);
+    expect(
+      discardedDraftBlocksDispatch({
+        dispatchCreatedAt: "2026-08-23T12:00:00.000Z",
+        discardedUpdatedAt: "2026-08-23T12:01:00.000Z",
+      })
+    ).toBe(true);
+    expect(
+      discardedDraftBlocksDispatch({
+        dispatchCreatedAt: "2026-08-23T12:02:00.000Z",
+        discardedUpdatedAt: "2026-08-23T12:01:00.000Z",
+      })
+    ).toBe(false);
+  });
+
+  it("skips an outbound echo with no message id when a dispatch just sent", () => {
+    expect(
+      skipOutboundWebhookTouch({
+        messageId: null,
+        touchAlreadyExists: false,
+        dispatchOwnsMessage: false,
+        recentSentDispatch: true,
+      })
+    ).toBe(true);
+    expect(
+      skipOutboundWebhookTouch({
+        messageId: null,
+        touchAlreadyExists: false,
+        dispatchOwnsMessage: false,
+        recentSentDispatch: false,
+      })
+    ).toBe(false);
+    expect(
+      skipOutboundWebhookTouch({
+        messageId: "msg-1",
+        touchAlreadyExists: false,
+        dispatchOwnsMessage: true,
+        recentSentDispatch: false,
+      })
+    ).toBe(true);
   });
 });

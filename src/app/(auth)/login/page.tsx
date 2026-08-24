@@ -33,8 +33,9 @@ export default async function LoginPage({
 
   return (
     <AuthCard
-      title="Welcome Back,"
+      title="Welcome back"
       subtitle={`Sign in to continue to ${APP_NAME}`}
+      eyebrowLabel="Private access"
     >
       <LoginForm redirectTo={redirectTo} callbackError={params.error === "callback"} />
     </AuthCard>

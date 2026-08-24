@@ -43,7 +43,7 @@ export function AcceptInviteForm({
 
   if (mode === "magic" && magicState.magicSent) {
     return (
-      <p className="text-sm leading-relaxed text-white/55">
+      <p className="auth-notice">
         Check {email} for a sign-in link. After you open it, you will join as {role}.
       </p>
     );
@@ -51,14 +51,14 @@ export function AcceptInviteForm({
 
   if (mode === "create") {
     return (
-      <form action={createAction} className="space-y-3">
+      <form action={createAction} className="space-y-4">
         <input type="hidden" name="token" value={token} />
         <input type="hidden" name="email" value={email} />
         <p className={helperClass}>
           Public sign-up is closed. Creating an account here is allowed only because this invite is valid.
         </p>
         {createState.error ? <p className={errorClass}>{createState.error}</p> : null}
-        <AuthField icon={Mail} value={email} readOnly aria-label="Email" />
+        <AuthField icon={Mail} id="invite-email" value={email} readOnly label="Email" aria-label="Email" />
         <AuthField
           icon={Lock}
           id="new-password"
@@ -69,6 +69,7 @@ export function AcceptInviteForm({
           minLength={8}
           value={password}
           placeholder="Create a password"
+          label="Password"
           aria-label="Password"
           onChange={(event) => setPassword(event.target.value)}
           action={
@@ -84,8 +85,9 @@ export function AcceptInviteForm({
         />
         <SubmitButton
           pending={createPending}
+          variant="gradient"
           loadingLabel="Creating"
-          className="mt-2 w-full rounded-none font-medium"
+          className="auth-submit mt-2 w-full"
         >
           Continue
         </SubmitButton>
@@ -107,11 +109,11 @@ export function AcceptInviteForm({
   const action = mode === "magic" ? magicAction : passwordAction;
 
   return (
-    <form action={action} className="space-y-3">
+    <form action={action} className="space-y-4">
       <input type="hidden" name="email" value={email} />
       <input type="hidden" name="redirectTo" value={redirectTo} />
       {signInError ? <p className={errorClass}>{LOGIN_ERROR_COPY[signInError]}</p> : null}
-      <AuthField icon={Mail} value={email} readOnly aria-label="Email" />
+      <AuthField icon={Mail} id="invite-signin-email" value={email} readOnly label="Email" aria-label="Email" />
       {mode === "signin" ? (
         <AuthField
           icon={Lock}
@@ -121,6 +123,7 @@ export function AcceptInviteForm({
           autoComplete="current-password"
           required
           placeholder="Enter your password"
+          label="Password"
           aria-label="Password"
           action={
             <button
@@ -136,17 +139,18 @@ export function AcceptInviteForm({
       ) : null}
       <SubmitButton
         pending={pending}
+        variant="gradient"
         loadingLabel="Working"
-        className="mt-2 w-full rounded-none font-medium"
+        className="auth-submit mt-2 w-full"
       >
         Continue
       </SubmitButton>
       <AuthOrDivider />
       <Button
         type="button"
-        variant="secondary"
+        variant="outline"
         size="lg"
-        className="w-full rounded-none font-medium"
+        className="auth-alt w-full"
         onClick={() => {
           setMode((current) => (current === "magic" ? "signin" : "magic"));
           setShowPassword(false);

@@ -39,7 +39,7 @@ export function LoginForm({
 
   if (mode === "magic" && magicState.magicSent) {
     return (
-      <p className="text-sm leading-relaxed text-white/55">
+      <p className="auth-notice">
         Check {email || "that address"} for a sign-in link. It expires quickly; request
         another if it does not arrive.
       </p>
@@ -47,7 +47,7 @@ export function LoginForm({
   }
 
   return (
-    <form action={action} className="space-y-3">
+    <form action={action} className="space-y-4">
       <input type="hidden" name="redirectTo" value={redirectTo} />
 
       {error ? <p className={errorClass}>{LOGIN_ERROR_COPY[error]}</p> : null}
@@ -61,7 +61,8 @@ export function LoginForm({
         required
         value={email}
         onChange={(event) => setEmail(event.target.value)}
-        placeholder="your.email@example.com"
+        placeholder="name@company.com"
+        label="Email"
         aria-label="Email"
       />
 
@@ -74,6 +75,7 @@ export function LoginForm({
           autoComplete="current-password"
           required
           placeholder="Enter your password"
+          label="Password"
           aria-label="Password"
           action={
             <button
@@ -90,10 +92,10 @@ export function LoginForm({
 
       <SubmitButton
         pending={pending}
-        variant="primary"
+        variant="gradient"
         size="lg"
         loadingLabel="Working"
-        className="mt-2 w-full rounded-none font-medium"
+        className="auth-submit mt-2 w-full"
       >
         Continue
       </SubmitButton>
@@ -102,9 +104,9 @@ export function LoginForm({
 
       <Button
         type="button"
-        variant="secondary"
+        variant="outline"
         size="lg"
-        className="w-full rounded-none font-medium"
+        className="auth-alt w-full"
         onClick={() => {
           setMode((current) => (current === "password" ? "magic" : "password"));
           setShowPassword(false);

@@ -1,23 +1,18 @@
 import Logo from "@/components/brand/logo";
 import { APP_NAME } from "@/lib/constants";
 
-function CornerMark({
-  side,
-}: {
-  side: "start" | "end";
-}) {
-  const position = side === "start" ? "-left-3.5 -top-3.5" : "-right-3.5 -bottom-3.5";
+function StageTick({ corner }: { corner: "tl" | "tr" | "bl" | "br" }) {
   return (
-    <span aria-hidden className={`pointer-events-none absolute ${position} size-7`}>
-      <span className="absolute top-[13px] left-0 h-px w-7 bg-white/32" />
-      <span className="absolute top-0 left-[13px] h-7 w-px bg-white/32" />
+    <span aria-hidden className={`auth-tick auth-tick--${corner}`}>
+      <i />
+      <i />
     </span>
   );
 }
 
 /**
- * The frame every unauthenticated surface sits in. The uploaded crest
- * (`Comp (0-00-00-00).png`) sits at the top of the plate.
+ * Full-viewport auth stage: a lit gallery for the official crest, and a quiet
+ * desk for the form. Shared by login, invite, and no-access.
  */
 export function AuthCard({
   title,
@@ -28,51 +23,53 @@ export function AuthCard({
 }: {
   title: string;
   subtitle?: string;
-  /** Small line above the title. Used on invite and no-access, not on login. */
+  /** Small line above the title. Used on invite and no-access, not required on login. */
   eyebrowLabel?: string;
   width?: "narrow" | "wide";
   children?: React.ReactNode;
 }) {
   return (
-    <div className="relative min-h-screen bg-[#111113] text-white antialiased">
-      <div
-        aria-hidden
-        className="pointer-events-none absolute inset-0 bg-[radial-gradient(70%_42%_at_50%_0%,rgba(154,136,252,0.1),transparent_55%)]"
-      />
+    <div className="auth-stage">
+      <div className="auth-stage-atmosphere" aria-hidden />
+      <div className="auth-stage-grain" aria-hidden />
+      <div className="auth-stage-vignette" aria-hidden />
 
-      <main className="relative z-10 flex min-h-screen flex-col items-center justify-center px-5 py-16 sm:px-6">
-        <div className={`relative w-full ${width === "wide" ? "max-w-xl" : "max-w-[400px]"}`}>
-          <CornerMark side="start" />
-          <CornerMark side="end" />
+      <StageTick corner="tl" />
+      <StageTick corner="tr" />
+      <StageTick corner="bl" />
+      <StageTick corner="br" />
 
-          <div className="auth-panel overflow-hidden">
-            <div className="flex justify-center px-8 pt-8 pb-1">
-              <Logo markOnly className="block h-48 w-auto" />
+      <main className="auth-stage-frame">
+        <section className="auth-gallery" aria-label={`${APP_NAME} mark`}>
+          <div className="auth-gallery-figure">
+            <div className="auth-gallery-glow" aria-hidden />
+            <div className="auth-gallery-rings" aria-hidden>
+              <span className="auth-ring auth-ring-a" />
+              <span className="auth-ring auth-ring-b" />
+              <span className="auth-ring auth-ring-c" />
             </div>
-
-            <div className="px-7 pt-5 pb-7 sm:px-8 sm:pt-6 sm:pb-8">
-              <div className="text-center">
-                {eyebrowLabel ? (
-                  <p className="mb-2 text-[11px] font-medium tracking-[0.16em] text-white/45 uppercase">
-                    {eyebrowLabel}
-                  </p>
-                ) : null}
-                <h1 className="text-[1.85rem] leading-[1.15] font-semibold tracking-tight text-white">
-                  {title}
-                </h1>
-                {subtitle ? (
-                  <p className="mt-2 text-[13.5px] leading-relaxed text-white/42">{subtitle}</p>
-                ) : null}
-              </div>
-
-              {children ? <div className="mt-7">{children}</div> : null}
-
-              <p className="mt-8 text-center text-[13px] text-white/38">
-                {APP_NAME} is invite only
-              </p>
-            </div>
+            <Logo markOnly title="" className="auth-gallery-crest" />
           </div>
-        </div>
+
+          <p className="auth-gallery-name">{APP_NAME}</p>
+          <p className="auth-gallery-line">Case files for high-ticket sales teams.</p>
+          <span className="auth-gallery-rule" aria-hidden />
+          <p className="auth-gallery-invite">Invite only</p>
+        </section>
+
+        <div className="auth-split" aria-hidden />
+
+        <section className="auth-desk">
+          <div className={`auth-desk-inner ${width === "wide" ? "auth-desk-inner--wide" : ""}`}>
+            {eyebrowLabel ? <p className="auth-eyebrow">{eyebrowLabel}</p> : null}
+            <h1 className="auth-title">{title}</h1>
+            {subtitle ? <p className="auth-subtitle">{subtitle}</p> : null}
+            {children ? <div className="auth-desk-body">{children}</div> : null}
+            <p className="auth-desk-foot">
+              {APP_NAME} is invite only
+            </p>
+          </div>
+        </section>
       </main>
     </div>
   );

@@ -34,7 +34,6 @@ export default async function LoginPage({
     <AuthCard
       title="Sign in"
       subtitle="Invite only. Use the email you were invited with."
-      eyebrowLabel="Vistrial"
     >
       <LoginForm redirectTo={redirectTo} callbackError={params.error === "callback"} />
     </AuthCard>

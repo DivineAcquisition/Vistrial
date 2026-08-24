@@ -8,7 +8,9 @@ type LogoProps = {
 };
 
 /**
- * Official Vistrial lockup. This is the uploaded PNG, not a redraw.
+ * Official Vistrial lockup. The crest is the provided mark, drawn as a
+ * silver-metal SVG so it stays sharp at any size. The horizontal lockup
+ * remains the uploaded PNG.
  */
 export default function Logo({
   className,
@@ -20,9 +22,12 @@ export default function Logo({
     // that could resample the artwork).
     // eslint-disable-next-line @next/next/no-img-element
     <img
-      src={markOnly ? "/brand/vistrial-mark.png" : "/brand/vistrial-lockup.png"}
+      src={markOnly ? "/brand/vistrial-crest.svg" : "/brand/vistrial-lockup.png"}
       alt={title}
+      width={markOnly ? 620 : 460}
+      height={markOnly ? 833 : 132}
       className={className}
+      aria-hidden={title ? undefined : true}
     />
   );
 }

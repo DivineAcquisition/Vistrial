@@ -37,27 +37,29 @@ export function LoginForm({
 
   if (mode === "magic" && magicState.magicSent) {
     return (
-      <p className="text-sm leading-relaxed text-silver">
-        Check {email || "that address"} for a sign-in link. It expires quickly; request another if it does not arrive.
-      </p>
+      <div className="rounded-2xl border border-brand-500/20 bg-brand-500/[0.07] px-4 py-5 text-center">
+        <p className="text-sm leading-relaxed text-silver">
+          Check {email || "that address"} for a sign-in link. It expires quickly;
+          request another if it does not arrive.
+        </p>
+      </div>
     );
   }
 
   return (
-    <form action={action} className="space-y-4">
+    <form action={action} className="space-y-5">
       <input type="hidden" name="redirectTo" value={redirectTo} />
 
-      <div className="flex justify-center">
-        <SegmentedControl
-          label="How you want to sign in"
-          value={mode}
-          onChange={setMode}
-          options={[
-            { value: "password", label: "Password" },
-            { value: "magic", label: "Magic link" },
-          ]}
-        />
-      </div>
+      <SegmentedControl
+        label="How you want to sign in"
+        value={mode}
+        onChange={setMode}
+        className="w-full [&>button]:flex-1"
+        options={[
+          { value: "password", label: "Password" },
+          { value: "magic", label: "Magic link" },
+        ]}
+      />
 
       {error ? <p className={errorClass}>{LOGIN_ERROR_COPY[error]}</p> : null}
 
@@ -95,7 +97,13 @@ export function LoginForm({
         <p className={helperClass}>We will email a one-time sign-in link. No password needed.</p>
       )}
 
-      <SubmitButton pending={pending} loadingLabel="Working" className="w-full">
+      <SubmitButton
+        pending={pending}
+        variant="gradient"
+        size="lg"
+        loadingLabel="Working"
+        className="w-full"
+      >
         {mode === "password" ? "Sign in" : "Send magic link"}
       </SubmitButton>
     </form>

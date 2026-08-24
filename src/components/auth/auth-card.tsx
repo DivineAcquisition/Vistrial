@@ -5,9 +5,9 @@ import { eyebrow } from "@/lib/ui";
 
 /**
  * The single card every unauthenticated surface sits in — sign in, password
- * reset, invitation, onboarding, two-factor. The official crest leads, then a
- * lit panel, so the first screen of the product feels like the brand rather
- * than a generic login box.
+ * reset, invitation, onboarding, two-factor. The official metallic crest leads,
+ * then a lit panel, so the first screen of the product feels like the brand
+ * rather than a generic login box.
  */
 export function AuthCard({
   title,
@@ -29,17 +29,17 @@ export function AuthCard({
 
       <main className="relative z-10 flex min-h-screen flex-col items-center justify-center px-5 py-16 sm:px-6">
         <div className="animate-rise flex flex-col items-center">
-          <div className="relative flex h-28 w-24 items-center justify-center">
+          <div className="relative flex h-36 w-28 items-center justify-center">
             <div
               aria-hidden
-              className="absolute left-1/2 top-[46%] h-32 w-32 -translate-x-1/2 -translate-y-1/2 rounded-full bg-brand-500/30 blur-3xl"
+              className="absolute left-1/2 top-[48%] h-40 w-40 -translate-x-1/2 -translate-y-1/2 rounded-full bg-brand-500/25 blur-3xl"
             />
             <Logo
               markOnly
-              className="relative h-[5.75rem] w-auto drop-shadow-[0_8px_28px_rgba(154,136,252,0.38)]"
+              className="relative h-32 w-auto drop-shadow-[0_12px_28px_rgba(255,255,255,0.12)]"
             />
           </div>
-          <p className="mt-5 text-[12px] font-semibold tracking-[0.38em] text-white">
+          <p className="mt-6 text-[12px] font-semibold tracking-[0.38em] text-white">
             VISTRIAL
           </p>
         </div>
@@ -52,7 +52,7 @@ export function AuthCard({
           <Logo
             markOnly
             title=""
-            className="pointer-events-none absolute -right-8 -top-10 h-48 w-auto select-none opacity-[0.055]"
+            className="pointer-events-none absolute -right-6 -top-8 h-52 w-auto select-none opacity-[0.07]"
           />
 
           <div className="relative text-center">

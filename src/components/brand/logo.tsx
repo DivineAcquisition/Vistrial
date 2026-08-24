@@ -8,9 +8,8 @@ type LogoProps = {
 };
 
 /**
- * Official Vistrial lockup. The crest is the provided mark, drawn as a
- * silver-metal SVG so it stays sharp at any size. The horizontal lockup
- * remains the uploaded PNG.
+ * Official Vistrial artwork. The crest is the provided metallic PNG.
+ * Native img so the file is shown as-is — no next/image resampling.
  */
 export default function Logo({
   className,
@@ -18,14 +17,12 @@ export default function Logo({
   title = "Vistrial",
 }: LogoProps) {
   return (
-    // Native img so we display the file as-is (no next/image optimization
-    // that could resample the artwork).
     // eslint-disable-next-line @next/next/no-img-element
     <img
-      src={markOnly ? "/brand/vistrial-crest.svg" : "/brand/vistrial-lockup.png"}
+      src={markOnly ? "/brand/vistrial-crest.png" : "/brand/vistrial-lockup.png"}
       alt={title}
-      width={markOnly ? 620 : 460}
-      height={markOnly ? 833 : 132}
+      width={markOnly ? 999 : 460}
+      height={markOnly ? 1350 : 132}
       className={className}
       aria-hidden={title ? undefined : true}
     />

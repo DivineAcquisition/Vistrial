@@ -29,7 +29,7 @@ function SidebarBody({
   return (
     <>
       <div className={cn("flex items-center py-5", collapsed ? "justify-center px-2" : "px-4")}>
-        <Logo className={cn("w-auto", collapsed ? "h-6" : "h-6")} />
+        <Logo markOnly className={cn("w-auto", collapsed ? "h-9" : "h-10")} />
       </div>
       {collapsed ? null : (
         <div className="px-2 pb-4">
@@ -103,7 +103,7 @@ export function AppShell({ children }: { children: ReactNode }) {
             </TooltipContent>
           </Tooltip>
 
-          <Logo className="h-5 w-auto md:hidden" />
+          <Logo markOnly className="h-8 w-auto md:hidden" />
         </header>
 
         <main className="min-w-0 flex-1 px-5 py-8 sm:px-8">

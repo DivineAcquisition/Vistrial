@@ -16,8 +16,8 @@ function CornerMark({
 }
 
 /**
- * The frame every unauthenticated surface sits in. The uploaded crest file
- * sits at the top of the plate as the file itself — black square, silver mark.
+ * The frame every unauthenticated surface sits in. The uploaded crest
+ * (`Comp (0-00-00-00).png`) sits at the top of the plate.
  */
 export function AuthCard({
   title,
@@ -46,11 +46,11 @@ export function AuthCard({
           <CornerMark side="end" />
 
           <div className="auth-panel overflow-hidden">
-            <div className="bg-black">
-              <Logo markOnly className="block h-auto w-full" />
+            <div className="flex justify-center px-8 pt-8 pb-1">
+              <Logo markOnly className="block h-48 w-auto" />
             </div>
 
-            <div className="px-7 pt-6 pb-7 sm:px-8 sm:pt-7 sm:pb-8">
+            <div className="px-7 pt-5 pb-7 sm:px-8 sm:pt-6 sm:pb-8">
               <div className="text-center">
                 {eyebrowLabel ? (
                   <p className="mb-2 text-[11px] font-medium tracking-[0.16em] text-white/45 uppercase">

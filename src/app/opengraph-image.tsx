@@ -12,7 +12,7 @@ export const contentType = "image/png";
 export default async function Image() {
   let markSrc: string | null = null;
   try {
-    const mark = await readFile(join(process.cwd(), "public/brand/vistrial-mark.png"));
+    const mark = await readFile(join(process.cwd(), "public/brand/vistrial-crest.png"));
     markSrc = `data:image/png;base64,${mark.toString("base64")}`;
   } catch {
     markSrc = null;

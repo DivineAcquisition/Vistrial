@@ -8,8 +8,9 @@ type LogoProps = {
 };
 
 /**
- * Official Vistrial artwork. The crest is the uploaded metallic PNG, shown
- * as-is through a native img — no next/image resampling, no traced SVG.
+ * Official Vistrial artwork. The crest is the uploaded Comp PNG
+ * (`public/brand/Comp (0-00-00-00).png`, also served as `/brand/vistrial-crest.png`)
+ * shown as-is through a native img — no next/image resampling, no traced SVG.
  */
 export default function Logo({
   className,
@@ -21,8 +22,8 @@ export default function Logo({
     <img
       src={markOnly ? "/brand/vistrial-crest.png" : "/brand/vistrial-lockup.png"}
       alt={title}
-      width={markOnly ? 1667 : 460}
-      height={markOnly ? 1667 : 132}
+      width={markOnly ? 1080 : 460}
+      height={markOnly ? 1080 : 132}
       className={className}
       aria-hidden={title ? undefined : true}
     />

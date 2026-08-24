@@ -93,7 +93,7 @@ export function LoginForm({
         variant="primary"
         size="lg"
         loadingLabel="Working"
-        className="mt-2 w-full rounded-lg font-medium"
+        className="mt-2 w-full rounded-none font-medium"
       >
         Continue
       </SubmitButton>
@@ -104,7 +104,7 @@ export function LoginForm({
         type="button"
         variant="secondary"
         size="lg"
-        className="w-full rounded-lg font-medium"
+        className="w-full rounded-none font-medium"
         onClick={() => {
           setMode((current) => (current === "password" ? "magic" : "password"));
           setShowPassword(false);

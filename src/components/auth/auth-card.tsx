@@ -45,10 +45,10 @@ export function AuthCard({
           <CornerMark side="start" />
           <CornerMark side="end" />
 
-          <div className="auth-panel rounded-[14px] px-7 pt-8 pb-7 sm:px-8 sm:pt-9 sm:pb-8">
-            <Logo markOnly className="h-9 w-auto" />
+          <div className="auth-panel px-7 pt-8 pb-7 sm:px-8 sm:pt-9 sm:pb-8">
+            <Logo markOnly className="mx-auto h-20 w-auto" />
 
-            <div className="mt-6">
+            <div className="mt-7 text-center">
               {eyebrowLabel ? (
                 <p className="mb-2 text-[11px] font-medium tracking-[0.16em] text-white/45 uppercase">
                   {eyebrowLabel}

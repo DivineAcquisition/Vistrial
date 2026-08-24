@@ -85,7 +85,7 @@ export function AcceptInviteForm({
         <SubmitButton
           pending={createPending}
           loadingLabel="Creating"
-          className="mt-2 w-full rounded-lg font-medium"
+          className="mt-2 w-full rounded-none font-medium"
         >
           Continue
         </SubmitButton>
@@ -137,7 +137,7 @@ export function AcceptInviteForm({
       <SubmitButton
         pending={pending}
         loadingLabel="Working"
-        className="mt-2 w-full rounded-lg font-medium"
+        className="mt-2 w-full rounded-none font-medium"
       >
         Continue
       </SubmitButton>
@@ -146,7 +146,7 @@ export function AcceptInviteForm({
         type="button"
         variant="secondary"
         size="lg"
-        className="w-full rounded-lg font-medium"
+        className="w-full rounded-none font-medium"
         onClick={() => {
           setMode((current) => (current === "magic" ? "signin" : "magic"));
           setShowPassword(false);

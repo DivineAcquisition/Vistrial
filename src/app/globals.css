@@ -313,7 +313,7 @@
     height: 2.75rem;
     min-height: 2.75rem;
     padding: 0 0.95rem 0 2.65rem;
-    border-radius: 0.5rem;
+    border-radius: 0;
     border: 1px solid rgba(255, 255, 255, 0.12);
     background: rgba(8, 8, 10, 0.55);
     box-shadow: none;
@@ -373,7 +373,7 @@
     transform: translateY(-50%);
     align-items: center;
     justify-content: center;
-    border-radius: 0.4rem;
+    border-radius: 0;
     color: rgba(163, 163, 163, 0.85);
   }
 
@@ -783,3 +783,15 @@
     scroll-behavior: auto !important;
   }
 }
+
+/*
+ * Auth chrome stays square. Unlayered so it beats rounded-full on the shared
+ * button recipe — the crest is all acute angles.
+ */
+.auth-panel,
+.auth-panel :is(button, a, input),
+.auth-input,
+.auth-field-action {
+  border-radius: 0;
+}
+

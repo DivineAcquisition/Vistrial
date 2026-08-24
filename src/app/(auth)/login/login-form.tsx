@@ -8,16 +8,14 @@ import {
   signInPassword,
   type LoginActionState,
 } from "@/app/(auth)/login/actions";
+import { AuthField, AuthOrDivider } from "@/components/auth/auth-fields";
 import { LOGIN_ERROR_COPY, type LoginError } from "@/lib/auth/errors";
-import { SubmitButton } from "@/components/ui/button";
-import { errorClass, helperClass, inputClass } from "@/lib/ui";
-import { cn } from "@/lib/utils";
+import { Button, SubmitButton } from "@/components/ui/button";
+import { errorClass } from "@/lib/ui";
 
 type Mode = "password" | "magic";
 
 const initialState: LoginActionState = { error: null };
-
-const authInputClass = cn(inputClass, "min-h-11 rounded-lg py-2.5 pl-11 text-[14px] font-normal");
 
 export function LoginForm({
   redirectTo,
@@ -49,71 +47,71 @@ export function LoginForm({
   }
 
   return (
-    <form action={action} className="space-y-3.5">
+    <form action={action} className="space-y-3">
       <input type="hidden" name="redirectTo" value={redirectTo} />
 
       {error ? <p className={errorClass}>{LOGIN_ERROR_COPY[error]}</p> : null}
 
-      <div className="auth-field">
-        <Mail className="auth-field-icon" aria-hidden />
-        <input
-          id="email"
-          name="email"
-          type="email"
-          autoComplete="email"
-          required
-          value={email}
-          onChange={(event) => setEmail(event.target.value)}
-          placeholder="your.email@example.com"
-          className={authInputClass}
-        />
-      </div>
+      <AuthField
+        icon={Mail}
+        id="email"
+        name="email"
+        type="email"
+        autoComplete="email"
+        required
+        value={email}
+        onChange={(event) => setEmail(event.target.value)}
+        placeholder="your.email@example.com"
+        aria-label="Email"
+      />
 
       {mode === "password" ? (
-        <div className="auth-field">
-          <Lock className="auth-field-icon" aria-hidden />
-          <input
-            id="password"
-            name="password"
-            type={showPassword ? "text" : "password"}
-            autoComplete="current-password"
-            required
-            placeholder="Enter your password"
-            className={cn(authInputClass, "pr-11")}
-          />
-          <button
-            type="button"
-            className="auth-field-action"
-            aria-label={showPassword ? "Hide password" : "Show password"}
-            onClick={() => setShowPassword((current) => !current)}
-          >
-            {showPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
-          </button>
-        </div>
-      ) : (
-        <p className={helperClass}>We will email a one-time sign-in link. No password needed.</p>
-      )}
+        <AuthField
+          icon={Lock}
+          id="password"
+          name="password"
+          type={showPassword ? "text" : "password"}
+          autoComplete="current-password"
+          required
+          placeholder="Enter your password"
+          aria-label="Password"
+          action={
+            <button
+              type="button"
+              className="auth-field-action"
+              aria-label={showPassword ? "Hide password" : "Show password"}
+              onClick={() => setShowPassword((current) => !current)}
+            >
+              {showPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+            </button>
+          }
+        />
+      ) : null}
 
       <SubmitButton
         pending={pending}
         variant="primary"
         size="lg"
         loadingLabel="Working"
-        className="mt-2 w-full rounded-lg"
+        className="mt-2 w-full rounded-lg font-medium"
       >
         Continue
       </SubmitButton>
 
-      <button
+      <AuthOrDivider />
+
+      <Button
         type="button"
-        className="w-full pt-1 text-center text-[13px] text-white/40 underline-offset-4 hover:text-white/70 hover:underline"
+        variant="secondary"
+        size="lg"
+        className="w-full rounded-lg font-medium"
         onClick={() => {
           setMode((current) => (current === "password" ? "magic" : "password"));
           setShowPassword(false);
         }}
       >
-        {mode === "password" ? "Use a magic link instead" : "Use a password instead"}
-      </button>
+        {mode === "password" ? "Continue with a magic link" : "Continue with a password"}
+      </Button>
     </form>
   );
 }

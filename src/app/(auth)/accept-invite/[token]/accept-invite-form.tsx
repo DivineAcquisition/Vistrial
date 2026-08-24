@@ -1,5 +1,6 @@
 "use client";
 
+import { Eye, EyeOff, Lock, Mail } from "lucide-react";
 import { useActionState, useState } from "react";
 
 import {
@@ -7,14 +8,10 @@ import {
   type AcceptInviteState,
 } from "@/app/(auth)/accept-invite/[token]/actions";
 import { sendMagicLink, signInPassword } from "@/app/(auth)/login/actions";
+import { AuthField, AuthOrDivider } from "@/components/auth/auth-fields";
 import { LOGIN_ERROR_COPY } from "@/lib/auth/errors";
 import { Button, SubmitButton } from "@/components/ui/button";
-import {
-  errorClass,
-  helperClass,
-  inputClass,
-  labelClass,
-} from "@/lib/ui";
+import { errorClass, helperClass } from "@/lib/ui";
 
 const initialCreateState: AcceptInviteState = { error: null };
 const initialLoginState = { error: null as null, magicSent: false };
@@ -30,6 +27,7 @@ export function AcceptInviteForm({
 }) {
   const [mode, setMode] = useState<"signin" | "create" | "magic">("signin");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [createState, createAction, createPending] = useActionState(
     createAccountFromInvite,
     initialCreateState
@@ -45,7 +43,7 @@ export function AcceptInviteForm({
 
   if (mode === "magic" && magicState.magicSent) {
     return (
-      <p className="text-sm leading-relaxed text-silver">
+      <p className="text-sm leading-relaxed text-white/55">
         Check {email} for a sign-in link. After you open it, you will join as {role}.
       </p>
     );
@@ -53,40 +51,51 @@ export function AcceptInviteForm({
 
   if (mode === "create") {
     return (
-      <form action={createAction} className="space-y-4">
+      <form action={createAction} className="space-y-3">
         <input type="hidden" name="token" value={token} />
         <input type="hidden" name="email" value={email} />
         <p className={helperClass}>
           Public sign-up is closed. Creating an account here is allowed only because this invite is valid.
         </p>
         {createState.error ? <p className={errorClass}>{createState.error}</p> : null}
-        <div>
-          <label className={labelClass}>Email</label>
-          <input className={inputClass} value={email} readOnly />
-        </div>
-        <div>
-          <label htmlFor="new-password" className={labelClass}>
-            Password
-          </label>
-          <input
-            id="new-password"
-            name="password"
-            type="password"
-            autoComplete="new-password"
-            required
-            minLength={8}
-            value={password}
-            onChange={(event) => setPassword(event.target.value)}
-            className={inputClass}
-          />
-        </div>
-        <SubmitButton pending={createPending} loadingLabel="Creating" className="w-full">
-          Create account and join
+        <AuthField icon={Mail} value={email} readOnly aria-label="Email" />
+        <AuthField
+          icon={Lock}
+          id="new-password"
+          name="password"
+          type={showPassword ? "text" : "password"}
+          autoComplete="new-password"
+          required
+          minLength={8}
+          value={password}
+          placeholder="Create a password"
+          aria-label="Password"
+          onChange={(event) => setPassword(event.target.value)}
+          action={
+            <button
+              type="button"
+              className="auth-field-action"
+              aria-label={showPassword ? "Hide password" : "Show password"}
+              onClick={() => setShowPassword((current) => !current)}
+            >
+              {showPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+            </button>
+          }
+        />
+        <SubmitButton
+          pending={createPending}
+          loadingLabel="Creating"
+          className="mt-2 w-full rounded-lg font-medium"
+        >
+          Continue
         </SubmitButton>
         <button
           type="button"
-          className="w-full text-center text-sm text-brand-300 hover:text-white"
-          onClick={() => setMode("signin")}
+          className="w-full pt-1 text-center text-[13px] text-white/40 underline-offset-4 hover:text-white/70 hover:underline"
+          onClick={() => {
+            setMode("signin");
+            setShowPassword(false);
+          }}
         >
           I already have an account
         </button>
@@ -98,45 +107,60 @@ export function AcceptInviteForm({
   const action = mode === "magic" ? magicAction : passwordAction;
 
   return (
-    <form action={action} className="space-y-4">
+    <form action={action} className="space-y-3">
       <input type="hidden" name="email" value={email} />
       <input type="hidden" name="redirectTo" value={redirectTo} />
       {signInError ? <p className={errorClass}>{LOGIN_ERROR_COPY[signInError]}</p> : null}
-      <div>
-        <label className={labelClass}>Email</label>
-        <input className={inputClass} value={email} readOnly />
-      </div>
+      <AuthField icon={Mail} value={email} readOnly aria-label="Email" />
       {mode === "signin" ? (
-        <div>
-          <label htmlFor="password" className={labelClass}>
-            Password
-          </label>
-          <input
-            id="password"
-            name="password"
-            type="password"
-            autoComplete="current-password"
-            required
-            className={inputClass}
-          />
-        </div>
-      ) : (
-        <p className={helperClass}>We will email a one-time link to {email}.</p>
-      )}
-      <SubmitButton pending={pending} loadingLabel="Working" className="w-full">
-        {mode === "magic" ? "Send magic link" : "Sign in and join"}
-      </SubmitButton>
-      <Button
-        variant="secondary"
-        className="w-full"
-        onClick={() => setMode((current) => (current === "magic" ? "signin" : "magic"))}
+        <AuthField
+          icon={Lock}
+          id="password"
+          name="password"
+          type={showPassword ? "text" : "password"}
+          autoComplete="current-password"
+          required
+          placeholder="Enter your password"
+          aria-label="Password"
+          action={
+            <button
+              type="button"
+              className="auth-field-action"
+              aria-label={showPassword ? "Hide password" : "Show password"}
+              onClick={() => setShowPassword((current) => !current)}
+            >
+              {showPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+            </button>
+          }
+        />
+      ) : null}
+      <SubmitButton
+        pending={pending}
+        loadingLabel="Working"
+        className="mt-2 w-full rounded-lg font-medium"
       >
-        {mode === "magic" ? "Use a password instead" : "Send me a magic link instead"}
+        Continue
+      </SubmitButton>
+      <AuthOrDivider />
+      <Button
+        type="button"
+        variant="secondary"
+        size="lg"
+        className="w-full rounded-lg font-medium"
+        onClick={() => {
+          setMode((current) => (current === "magic" ? "signin" : "magic"));
+          setShowPassword(false);
+        }}
+      >
+        {mode === "magic" ? "Continue with a password" : "Continue with a magic link"}
       </Button>
       <button
         type="button"
-        className="w-full text-center text-sm text-brand-300 hover:text-white"
-        onClick={() => setMode("create")}
+        className="w-full pt-1 text-center text-[13px] text-white/40 underline-offset-4 hover:text-white/70 hover:underline"
+        onClick={() => {
+          setMode("create");
+          setShowPassword(false);
+        }}
       >
         Create an account
       </button>

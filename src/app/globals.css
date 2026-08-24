@@ -307,6 +307,51 @@
     position: relative;
   }
 
+  .auth-input {
+    display: block;
+    width: 100%;
+    height: 2.75rem;
+    min-height: 2.75rem;
+    padding: 0 0.95rem 0 2.65rem;
+    border-radius: 0.5rem;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    background: rgba(8, 8, 10, 0.55);
+    box-shadow: none;
+    color: #fff;
+    font-size: 14px;
+    font-weight: 400;
+    letter-spacing: 0;
+    line-height: 1.25;
+    color-scheme: dark;
+    transition: border-color 0.15s ease, background-color 0.15s ease;
+  }
+
+  .auth-input--with-action {
+    padding-right: 2.65rem;
+  }
+
+  .auth-input::placeholder {
+    color: rgba(163, 163, 163, 0.55);
+    font-weight: 400;
+  }
+
+  .auth-input:hover:not(:disabled) {
+    border-color: rgba(255, 255, 255, 0.2);
+  }
+
+  .auth-input:focus,
+  .auth-input:focus-visible {
+    outline: none;
+    border-color: rgba(154, 136, 252, 0.55);
+    background: rgba(8, 8, 10, 0.7);
+    box-shadow: 0 0 0 3px rgba(154, 136, 252, 0.12);
+  }
+
+  .auth-input:disabled,
+  .auth-input[readonly] {
+    color: rgba(255, 255, 255, 0.72);
+  }
+
   .auth-field-icon {
     pointer-events: none;
     position: absolute;
@@ -315,13 +360,13 @@
     width: 1rem;
     height: 1rem;
     transform: translateY(-50%);
-    color: rgba(163, 163, 163, 0.85);
+    color: rgba(163, 163, 163, 0.8);
   }
 
   .auth-field-action {
     position: absolute;
     top: 50%;
-    right: 0.35rem;
+    right: 0.3rem;
     display: flex;
     height: 2rem;
     width: 2rem;
@@ -329,11 +374,30 @@
     align-items: center;
     justify-content: center;
     border-radius: 0.4rem;
-    color: rgba(163, 163, 163, 0.9);
+    color: rgba(163, 163, 163, 0.85);
   }
 
   .auth-field-action:hover {
     color: #fff;
+  }
+
+  .auth-or {
+    display: flex;
+    align-items: center;
+    gap: 0.85rem;
+    padding: 0.15rem 0;
+    color: rgba(163, 163, 163, 0.65);
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.12em;
+  }
+
+  .auth-or::before,
+  .auth-or::after {
+    content: "";
+    flex: 1;
+    height: 1px;
+    background: rgba(255, 255, 255, 0.08);
   }
 
   .surface-raised {

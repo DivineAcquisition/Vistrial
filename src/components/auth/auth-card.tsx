@@ -6,19 +6,18 @@ function CornerMark({
 }: {
   side: "start" | "end";
 }) {
-  const position = side === "start" ? "-left-3 -top-3" : "-right-3 -bottom-3";
+  const position = side === "start" ? "-left-3.5 -top-3.5" : "-right-3.5 -bottom-3.5";
   return (
-    <span aria-hidden className={`pointer-events-none absolute ${position} size-6`}>
-      <span className="absolute top-3 left-0 h-px w-6 bg-white/35" />
-      <span className="absolute top-0 left-3 h-6 w-px bg-white/35" />
+    <span aria-hidden className={`pointer-events-none absolute ${position} size-7`}>
+      <span className="absolute top-[13px] left-0 h-px w-7 bg-white/32" />
+      <span className="absolute top-0 left-[13px] h-7 w-px bg-white/32" />
     </span>
   );
 }
 
 /**
- * The frame every unauthenticated surface sits in. One dark plate, the official
- * crest, then the form — built to read like a product login, not a marketing
- * hero.
+ * The frame every unauthenticated surface sits in. One dark plate, corner
+ * marks, the official crest, then the form.
  */
 export function AuthCard({
   title,
@@ -38,7 +37,7 @@ export function AuthCard({
     <div className="relative min-h-screen bg-[#111113] text-white antialiased">
       <div
         aria-hidden
-        className="pointer-events-none absolute inset-0 bg-[radial-gradient(80%_50%_at_50%_0%,rgba(154,136,252,0.12),transparent_58%)]"
+        className="pointer-events-none absolute inset-0 bg-[radial-gradient(70%_42%_at_50%_0%,rgba(154,136,252,0.1),transparent_55%)]"
       />
 
       <main className="relative z-10 flex min-h-screen flex-col items-center justify-center px-5 py-16 sm:px-6">
@@ -46,8 +45,8 @@ export function AuthCard({
           <CornerMark side="start" />
           <CornerMark side="end" />
 
-          <div className="auth-panel rounded-xl px-7 py-8 sm:px-8 sm:py-9">
-            <Logo markOnly className="h-10 w-auto" />
+          <div className="auth-panel rounded-[14px] px-7 pt-8 pb-7 sm:px-8 sm:pt-9 sm:pb-8">
+            <Logo markOnly className="h-9 w-auto" />
 
             <div className="mt-6">
               {eyebrowLabel ? (
@@ -55,21 +54,21 @@ export function AuthCard({
                   {eyebrowLabel}
                 </p>
               ) : null}
-              <h1 className="text-[1.65rem] leading-tight font-semibold tracking-tight text-white sm:text-[1.75rem]">
+              <h1 className="text-[1.85rem] leading-[1.15] font-semibold tracking-tight text-white">
                 {title}
               </h1>
               {subtitle ? (
-                <p className="mt-2 text-sm leading-relaxed text-white/45">{subtitle}</p>
+                <p className="mt-2 text-[13.5px] leading-relaxed text-white/42">{subtitle}</p>
               ) : null}
             </div>
 
             {children ? <div className="mt-7">{children}</div> : null}
+
+            <p className="mt-8 text-center text-[13px] text-white/38">
+              {APP_NAME} is invite only
+            </p>
           </div>
         </div>
-
-        <p className="mt-8 text-[11px] text-white/35">
-          {APP_NAME} is invite only
-        </p>
       </main>
     </div>
   );

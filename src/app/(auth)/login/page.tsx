@@ -2,6 +2,7 @@ import { AuthCard } from "@/components/auth/auth-card";
 import { LoginForm } from "@/app/(auth)/login/login-form";
 import { safeInternalPath } from "@/lib/auth/paths";
 import { getSessionUser, listActiveMemberships } from "@/lib/auth/session";
+import { APP_NAME } from "@/lib/constants";
 import { isSupabaseConfigured } from "@/lib/supabase/env";
 import { redirect } from "next/navigation";
 
@@ -32,8 +33,8 @@ export default async function LoginPage({
 
   return (
     <AuthCard
-      title="Sign in"
-      subtitle="Invite only. Use the email you were invited with."
+      title="Welcome back,"
+      subtitle={`Sign in to continue to ${APP_NAME}`}
     >
       <LoginForm redirectTo={redirectTo} callbackError={params.error === "callback"} />
     </AuthCard>

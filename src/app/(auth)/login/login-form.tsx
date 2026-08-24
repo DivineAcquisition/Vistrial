@@ -1,5 +1,6 @@
 "use client";
 
+import { Eye, EyeOff, Lock, Mail } from "lucide-react";
 import { useActionState, useState } from "react";
 
 import {
@@ -9,12 +10,14 @@ import {
 } from "@/app/(auth)/login/actions";
 import { LOGIN_ERROR_COPY, type LoginError } from "@/lib/auth/errors";
 import { SubmitButton } from "@/components/ui/button";
-import { SegmentedControl } from "@/components/ui/tabs";
-import { errorClass, helperClass, inputClass, labelClass } from "@/lib/ui";
+import { errorClass, helperClass, inputClass } from "@/lib/ui";
+import { cn } from "@/lib/utils";
 
 type Mode = "password" | "magic";
 
 const initialState: LoginActionState = { error: null };
+
+const authInputClass = cn(inputClass, "min-h-11 rounded-lg py-2.5 pl-11 text-[14px] font-normal");
 
 export function LoginForm({
   redirectTo,
@@ -25,6 +28,7 @@ export function LoginForm({
 }) {
   const [mode, setMode] = useState<Mode>("password");
   const [email, setEmail] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [passwordState, passwordAction, passwordPending] = useActionState(
     signInPassword,
     callbackError ? { error: "generic" as LoginError } : initialState
@@ -37,36 +41,21 @@ export function LoginForm({
 
   if (mode === "magic" && magicState.magicSent) {
     return (
-      <div className="rounded-2xl border border-brand-500/20 bg-brand-500/[0.07] px-4 py-5 text-center">
-        <p className="text-sm leading-relaxed text-silver">
-          Check {email || "that address"} for a sign-in link. It expires quickly;
-          request another if it does not arrive.
-        </p>
-      </div>
+      <p className="text-sm leading-relaxed text-white/55">
+        Check {email || "that address"} for a sign-in link. It expires quickly; request
+        another if it does not arrive.
+      </p>
     );
   }
 
   return (
-    <form action={action} className="space-y-5">
+    <form action={action} className="space-y-3.5">
       <input type="hidden" name="redirectTo" value={redirectTo} />
-
-      <SegmentedControl
-        label="How you want to sign in"
-        value={mode}
-        onChange={setMode}
-        className="w-full [&>button]:flex-1"
-        options={[
-          { value: "password", label: "Password" },
-          { value: "magic", label: "Magic link" },
-        ]}
-      />
 
       {error ? <p className={errorClass}>{LOGIN_ERROR_COPY[error]}</p> : null}
 
-      <div>
-        <label htmlFor="email" className={labelClass}>
-          Email
-        </label>
+      <div className="auth-field">
+        <Mail className="auth-field-icon" aria-hidden />
         <input
           id="email"
           name="email"
@@ -75,23 +64,31 @@ export function LoginForm({
           required
           value={email}
           onChange={(event) => setEmail(event.target.value)}
-          className={inputClass}
+          placeholder="your.email@example.com"
+          className={authInputClass}
         />
       </div>
 
       {mode === "password" ? (
-        <div>
-          <label htmlFor="password" className={labelClass}>
-            Password
-          </label>
+        <div className="auth-field">
+          <Lock className="auth-field-icon" aria-hidden />
           <input
             id="password"
             name="password"
-            type="password"
+            type={showPassword ? "text" : "password"}
             autoComplete="current-password"
             required
-            className={inputClass}
+            placeholder="Enter your password"
+            className={cn(authInputClass, "pr-11")}
           />
+          <button
+            type="button"
+            className="auth-field-action"
+            aria-label={showPassword ? "Hide password" : "Show password"}
+            onClick={() => setShowPassword((current) => !current)}
+          >
+            {showPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+          </button>
         </div>
       ) : (
         <p className={helperClass}>We will email a one-time sign-in link. No password needed.</p>
@@ -99,13 +96,24 @@ export function LoginForm({
 
       <SubmitButton
         pending={pending}
-        variant="gradient"
+        variant="primary"
         size="lg"
         loadingLabel="Working"
-        className="w-full"
+        className="mt-2 w-full rounded-lg"
       >
-        {mode === "password" ? "Sign in" : "Send magic link"}
+        Continue
       </SubmitButton>
+
+      <button
+        type="button"
+        className="w-full pt-1 text-center text-[13px] text-white/40 underline-offset-4 hover:text-white/70 hover:underline"
+        onClick={() => {
+          setMode((current) => (current === "password" ? "magic" : "password"));
+          setShowPassword(false);
+        }}
+      >
+        {mode === "password" ? "Use a magic link instead" : "Use a password instead"}
+      </button>
     </form>
   );
 }

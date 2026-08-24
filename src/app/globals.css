@@ -286,42 +286,54 @@
   }
 
   /*
-   * Sign-in and invite only. Richer than a page panel: brand-tinted glass,
-   * a lit rim, and a soft halo so the official crest has a surface to sit on.
+   * Sign-in card. Dark plate, thin rim, a wash from the top-left — closer to a
+   * product login than a marketing panel. Corner marks are drawn in the
+   * component so they can sit outside the border.
    */
   .auth-panel {
     position: relative;
+    isolation: isolate;
+    overflow: hidden;
     background:
-      linear-gradient(
-        180deg,
-        rgba(255, 255, 255, 0.06) 0%,
-        rgba(154, 136, 252, 0.05) 38%,
-        rgba(255, 255, 255, 0.016) 100%
-      ),
-      #0d0c15;
-    border: 1px solid rgba(154, 136, 252, 0.22);
+      radial-gradient(120% 80% at 0% 0%, rgba(255, 255, 255, 0.07) 0%, transparent 52%),
+      #141416;
+    border: 1px solid rgba(255, 255, 255, 0.1);
     box-shadow:
-      inset 0 1px 0 rgba(255, 255, 255, 0.1),
-      0 0 0 1px rgba(154, 136, 252, 0.06),
-      0 28px 80px -28px rgba(0, 0, 0, 0.9),
-      0 0 90px -24px rgba(154, 136, 252, 0.32);
+      inset 0 1px 0 rgba(255, 255, 255, 0.06),
+      0 24px 64px -32px rgba(0, 0, 0, 0.7);
   }
 
-  .auth-panel::before {
-    content: "";
+  .auth-field {
+    position: relative;
+  }
+
+  .auth-field-icon {
     pointer-events: none;
     position: absolute;
-    inset-inline: 12%;
-    top: 0;
-    height: 1px;
-    background: linear-gradient(
-      90deg,
-      transparent,
-      rgba(255, 255, 255, 0.45),
-      rgba(154, 136, 252, 0.7),
-      rgba(255, 255, 255, 0.45),
-      transparent
-    );
+    top: 50%;
+    left: 0.9rem;
+    width: 1rem;
+    height: 1rem;
+    transform: translateY(-50%);
+    color: rgba(163, 163, 163, 0.85);
+  }
+
+  .auth-field-action {
+    position: absolute;
+    top: 50%;
+    right: 0.35rem;
+    display: flex;
+    height: 2rem;
+    width: 2rem;
+    transform: translateY(-50%);
+    align-items: center;
+    justify-content: center;
+    border-radius: 0.4rem;
+    color: rgba(163, 163, 163, 0.9);
+  }
+
+  .auth-field-action:hover {
+    color: #fff;
   }
 
   .surface-raised {

@@ -1,13 +1,24 @@
 import Logo from "@/components/brand/logo";
-import { Backdrop } from "@/components/ui/backdrop";
-import { APP_NAME, APP_OWNER } from "@/lib/constants";
-import { eyebrow } from "@/lib/ui";
+import { APP_NAME } from "@/lib/constants";
+
+function CornerMark({
+  side,
+}: {
+  side: "start" | "end";
+}) {
+  const position = side === "start" ? "-left-3 -top-3" : "-right-3 -bottom-3";
+  return (
+    <span aria-hidden className={`pointer-events-none absolute ${position} size-6`}>
+      <span className="absolute top-3 left-0 h-px w-6 bg-white/35" />
+      <span className="absolute top-0 left-3 h-6 w-px bg-white/35" />
+    </span>
+  );
+}
 
 /**
- * The single card every unauthenticated surface sits in — sign in, password
- * reset, invitation, onboarding, two-factor. The official metallic crest leads,
- * then a lit panel, so the first screen of the product feels like the brand
- * rather than a generic login box.
+ * The frame every unauthenticated surface sits in. One dark plate, the official
+ * crest, then the form — built to read like a product login, not a marketing
+ * hero.
  */
 export function AuthCard({
   title,
@@ -18,64 +29,46 @@ export function AuthCard({
 }: {
   title: string;
   subtitle?: string;
-  /** Small pill above the title. Omitted when unset so the crest can lead. */
+  /** Small line above the title. Used on invite and no-access, not on login. */
   eyebrowLabel?: string;
   width?: "narrow" | "wide";
   children?: React.ReactNode;
 }) {
   return (
-    <div className="relative min-h-screen bg-ink-950 text-white antialiased">
-      <Backdrop />
+    <div className="relative min-h-screen bg-[#111113] text-white antialiased">
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-0 bg-[radial-gradient(80%_50%_at_50%_0%,rgba(154,136,252,0.12),transparent_58%)]"
+      />
 
       <main className="relative z-10 flex min-h-screen flex-col items-center justify-center px-5 py-16 sm:px-6">
-        <div className="animate-rise flex flex-col items-center">
-          <div className="relative flex h-36 w-28 items-center justify-center">
-            <div
-              aria-hidden
-              className="absolute left-1/2 top-[48%] h-40 w-40 -translate-x-1/2 -translate-y-1/2 rounded-full bg-brand-500/25 blur-3xl"
-            />
-            <Logo
-              markOnly
-              className="relative h-32 w-auto drop-shadow-[0_12px_28px_rgba(255,255,255,0.12)]"
-            />
+        <div className={`relative w-full ${width === "wide" ? "max-w-xl" : "max-w-[400px]"}`}>
+          <CornerMark side="start" />
+          <CornerMark side="end" />
+
+          <div className="auth-panel rounded-xl px-7 py-8 sm:px-8 sm:py-9">
+            <Logo markOnly className="h-10 w-auto" />
+
+            <div className="mt-6">
+              {eyebrowLabel ? (
+                <p className="mb-2 text-[11px] font-medium tracking-[0.16em] text-white/45 uppercase">
+                  {eyebrowLabel}
+                </p>
+              ) : null}
+              <h1 className="text-[1.65rem] leading-tight font-semibold tracking-tight text-white sm:text-[1.75rem]">
+                {title}
+              </h1>
+              {subtitle ? (
+                <p className="mt-2 text-sm leading-relaxed text-white/45">{subtitle}</p>
+              ) : null}
+            </div>
+
+            {children ? <div className="mt-7">{children}</div> : null}
           </div>
-          <p className="mt-6 text-[12px] font-semibold tracking-[0.38em] text-white">
-            VISTRIAL
-          </p>
         </div>
 
-        <div
-          className={`auth-panel animate-rise delay-1 relative mt-10 w-full overflow-hidden rounded-[1.75rem] px-7 py-8 sm:px-9 sm:py-9 ${
-            width === "wide" ? "max-w-xl" : "max-w-[420px]"
-          }`}
-        >
-          <Logo
-            markOnly
-            title=""
-            className="pointer-events-none absolute -right-6 -top-8 h-52 w-auto select-none opacity-[0.07]"
-          />
-
-          <div className="relative text-center">
-            {eyebrowLabel ? <p className={eyebrow}>{eyebrowLabel}</p> : null}
-            <h1
-              className={`text-2xl font-semibold tracking-tight text-white sm:text-[1.7rem] ${
-                eyebrowLabel ? "mt-4" : ""
-              }`}
-            >
-              {title}
-            </h1>
-            {subtitle ? (
-              <p className="mx-auto mt-2.5 max-w-[36ch] text-sm leading-relaxed text-silver">
-                {subtitle}
-              </p>
-            ) : null}
-          </div>
-
-          {children ? <div className="relative mt-7">{children}</div> : null}
-        </div>
-
-        <p className="animate-fade delay-2 mt-8 text-[11px] tracking-wide text-dim">
-          {APP_NAME} · {APP_OWNER}
+        <p className="mt-8 text-[11px] text-white/35">
+          {APP_NAME} is invite only
         </p>
       </main>
     </div>

@@ -16,8 +16,8 @@ function CornerMark({
 }
 
 /**
- * The frame every unauthenticated surface sits in. One dark plate, corner
- * marks, the official crest, then the form.
+ * The frame every unauthenticated surface sits in. The uploaded crest file
+ * sits at the top of the plate as the file itself — black square, silver mark.
  */
 export function AuthCard({
   title,
@@ -45,28 +45,32 @@ export function AuthCard({
           <CornerMark side="start" />
           <CornerMark side="end" />
 
-          <div className="auth-panel px-7 pt-8 pb-7 sm:px-8 sm:pt-9 sm:pb-8">
-            <Logo markOnly className="mx-auto h-28 w-auto sm:h-32" />
-
-            <div className="mt-7 text-center">
-              {eyebrowLabel ? (
-                <p className="mb-2 text-[11px] font-medium tracking-[0.16em] text-white/45 uppercase">
-                  {eyebrowLabel}
-                </p>
-              ) : null}
-              <h1 className="text-[1.85rem] leading-[1.15] font-semibold tracking-tight text-white">
-                {title}
-              </h1>
-              {subtitle ? (
-                <p className="mt-2 text-[13.5px] leading-relaxed text-white/42">{subtitle}</p>
-              ) : null}
+          <div className="auth-panel overflow-hidden">
+            <div className="bg-black">
+              <Logo markOnly className="block h-auto w-full" />
             </div>
 
-            {children ? <div className="mt-7">{children}</div> : null}
+            <div className="px-7 pt-6 pb-7 sm:px-8 sm:pt-7 sm:pb-8">
+              <div className="text-center">
+                {eyebrowLabel ? (
+                  <p className="mb-2 text-[11px] font-medium tracking-[0.16em] text-white/45 uppercase">
+                    {eyebrowLabel}
+                  </p>
+                ) : null}
+                <h1 className="text-[1.85rem] leading-[1.15] font-semibold tracking-tight text-white">
+                  {title}
+                </h1>
+                {subtitle ? (
+                  <p className="mt-2 text-[13.5px] leading-relaxed text-white/42">{subtitle}</p>
+                ) : null}
+              </div>
 
-            <p className="mt-8 text-center text-[13px] text-white/38">
-              {APP_NAME} is invite only
-            </p>
+              {children ? <div className="mt-7">{children}</div> : null}
+
+              <p className="mt-8 text-center text-[13px] text-white/38">
+                {APP_NAME} is invite only
+              </p>
+            </div>
           </div>
         </div>
       </main>

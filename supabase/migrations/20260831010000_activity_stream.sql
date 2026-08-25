@@ -1203,7 +1203,7 @@ BEGIN
   FROM public.operator_runs r
   LEFT JOIN public.org_members m ON m.id = r.member_id
   LEFT JOIN LATERAL (
-    SELECT lead_id FROM public.operator_run_leads x
+    SELECT x.lead_id FROM public.operator_run_leads x
     WHERE x.run_id = r.id AND x.org_id = r.org_id
     ORDER BY x.lead_id LIMIT 1
   ) ol ON true
@@ -1241,7 +1241,7 @@ BEGIN
   JOIN public.operator_runs r ON r.id = s.run_id AND r.org_id = s.org_id
   LEFT JOIN public.org_members m ON m.id = r.member_id
   LEFT JOIN LATERAL (
-    SELECT lead_id FROM public.operator_run_leads x
+    SELECT x.lead_id FROM public.operator_run_leads x
     WHERE x.run_id = s.run_id AND x.org_id = s.org_id
     ORDER BY x.lead_id LIMIT 1
   ) ol ON true
@@ -1288,7 +1288,7 @@ BEGIN
   LEFT JOIN public.org_members m ON m.id = r.member_id
   LEFT JOIN public.org_members decider ON decider.id = c.decided_by
   LEFT JOIN LATERAL (
-    SELECT lead_id FROM public.operator_run_leads x
+    SELECT x.lead_id FROM public.operator_run_leads x
     WHERE x.run_id = c.run_id AND x.org_id = c.org_id
     ORDER BY x.lead_id LIMIT 1
   ) ol ON true

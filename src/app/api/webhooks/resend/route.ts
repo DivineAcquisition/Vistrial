@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { Resend } from "resend";
 
 import { resendConfigured, resendWebhookSecret } from "@/lib/notifications/env";
+import { rateLimitWebhook } from "@/lib/ops/rate-limit";
 import { getSupabaseAdmin } from "@/lib/supabase/admin";
 
 export const dynamic = "force-dynamic";
@@ -16,6 +17,16 @@ export async function POST(request: Request) {
   const cfg = resendConfigured();
   if (!secret || !cfg) {
     return NextResponse.json({ error: "Resend webhooks are not configured." }, { status: 503 });
+  }
+
+  try {
+    const db = getSupabaseAdmin();
+    const limited = await rateLimitWebhook(db, request, "resend");
+    if (!limited.allowed) {
+      return NextResponse.json({ error: "Too many requests" }, { status: 429 });
+    }
+  } catch {
+    /* configuration gap must not drop a verified event later */
   }
 
   const payload = await request.text();

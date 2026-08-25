@@ -4,6 +4,7 @@ import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 
 import { requireSupabaseServiceEnv } from "@/lib/supabase/env-server";
 import { fetchForSupabaseKey } from "@/lib/supabase/fetch";
+import { assertStagingCannotReachProductionDb } from "@/lib/ops/env";
 import type { Database } from "@/types/database";
 
 /**
@@ -24,6 +25,7 @@ let admin: SupabaseClient<Database> | null = null;
 
 export function getSupabaseAdmin(): SupabaseClient<Database> {
   if (admin) return admin;
+  assertStagingCannotReachProductionDb();
   const { url, key } = requireSupabaseServiceEnv();
   admin = createClient<Database>(url, key, {
     auth: { autoRefreshToken: false, persistSession: false },

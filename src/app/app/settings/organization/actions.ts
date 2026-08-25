@@ -30,6 +30,7 @@ export async function updateOrganization(
     .getAll("working_days")
     .map((value) => Number(value))
     .filter((day) => day >= 1 && day <= 7);
+  const transcriptRetentionDays = Number(formData.get("transcript_retention_days"));
 
   if (!name) {
     return { status: "error", error: "Organization name is required." };
@@ -52,6 +53,13 @@ export async function updateOrganization(
   if (workingDays.length === 0) {
     return { status: "error", error: "Choose at least one working day." };
   }
+  if (
+    !Number.isInteger(transcriptRetentionDays) ||
+    transcriptRetentionDays < 30 ||
+    transcriptRetentionDays > 1095
+  ) {
+    return { status: "error", error: "Transcript retention must be between 30 and 1095 days." };
+  }
 
   const supabase = await createClient();
   const { data, error } = await supabase
@@ -64,6 +72,7 @@ export async function updateOrganization(
       working_hours_start: workingHoursStart,
       working_hours_end: workingHoursEnd,
       working_days: workingDays,
+      transcript_retention_days: transcriptRetentionDays,
     })
     .eq("id", ctx.org.id)
     .select("id")

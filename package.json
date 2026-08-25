@@ -9,7 +9,11 @@
     "lint": "eslint",
     "typecheck": "next typegen && tsc --noEmit",
     "test": "vitest run",
-    "db:verify": "bash supabase/tests/verify.sh"
+    "db:verify": "bash supabase/tests/verify.sh",
+    "ops:restore-drill": "bash scripts/restore-drill.sh",
+    "ops:migration-rollback": "bash scripts/test-migration-rollback.sh",
+    "assert:no-secrets": "node scripts/assert-no-secrets-in-client.mjs",
+    "audit:deps": "npm audit --audit-level=high"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.4",

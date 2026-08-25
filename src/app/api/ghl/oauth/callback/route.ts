@@ -6,6 +6,8 @@ import { appUrl } from "@/lib/ghl/env";
 import { exchangeAuthorizationCode } from "@/lib/ghl/client";
 import { linkLocationToOrg, stashAgencySession } from "@/lib/ghl/connect";
 import { parseOAuthState } from "@/lib/ghl/oauth-state";
+import { recordHttpSample } from "@/lib/ops/alerts";
+import { rateLimitWebhook } from "@/lib/ops/rate-limit";
 import { getSupabaseAdmin } from "@/lib/supabase/admin";
 
 export const dynamic = "force-dynamic";
@@ -20,6 +22,16 @@ function redirectToIntegrations(query: Record<string, string>) {
 
 export async function GET(request: Request) {
   const incoming = new URL(request.url);
+  try {
+    const db = getSupabaseAdmin();
+    const limited = await rateLimitWebhook(db, request, "oauth");
+    if (!limited.allowed) {
+      await recordHttpSample(db, "/api/ghl/oauth/callback", true);
+      return new NextResponse("Too many requests", { status: 429 });
+    }
+  } catch {
+    /* misconfigured staging denylist must not skip the OAuth error mapping below */
+  }
   const errorParam = incoming.searchParams.get("error");
   if (errorParam) {
     return redirectToIntegrations({ ghl_error: "oauth_denied" });
@@ -70,7 +82,10 @@ export async function GET(request: Request) {
       });
     }
     return redirectToIntegrations({ connected: "1" });
-  } catch {
+  } catch (error) {
+    if (error instanceof Error && error.message === "staging_crm_location_not_allowlisted") {
+      return redirectToIntegrations({ ghl_error: "staging_blocked" });
+    }
     return redirectToIntegrations({ ghl_error: "oauth_failed" });
   }
 }

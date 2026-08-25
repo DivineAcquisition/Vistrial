@@ -35,6 +35,7 @@ export function OrganizationForm({
   workingHoursStart,
   workingHoursEnd,
   workingDays,
+  transcriptRetentionDays,
 }: {
   name: string;
   timezone: string;
@@ -44,6 +45,7 @@ export function OrganizationForm({
   workingHoursStart: string;
   workingHoursEnd: string;
   workingDays: number[];
+  transcriptRetentionDays: number;
 }) {
   const [state, action, pending] = useActionState(updateOrganization, initial);
   const timezoneOptions = isOrgTimezone(timezone)
@@ -138,6 +140,21 @@ export function OrganizationForm({
             ))}
           </div>
         </fieldset>
+
+        <Field
+          label="Transcript retention (days)"
+          name="transcript_retention_days"
+          help="Raw transcript text is cleared after this many days. Extractions and objections stay. Default 365. Range 30–1095."
+        >
+          <Input
+            name="transcript_retention_days"
+            id="transcript_retention_days"
+            type="number"
+            min={30}
+            max={1095}
+            defaultValue={transcriptRetentionDays}
+          />
+        </Field>
 
         <div>
           <p className={labelClass}>CRM location id</p>

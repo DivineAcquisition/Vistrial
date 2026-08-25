@@ -27,6 +27,14 @@
     {
       "path": "/api/cron/notifications",
       "schedule": "* * * * *"
+    },
+    {
+      "path": "/api/cron/ops-health",
+      "schedule": "* * * * *"
+    },
+    {
+      "path": "/api/cron/retention",
+      "schedule": "15 3 * * *"
     }
   ]
 }

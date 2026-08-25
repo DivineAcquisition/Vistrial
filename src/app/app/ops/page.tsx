@@ -1,4 +1,5 @@
 import { PageFrame } from "@/components/app/page-frame";
+import { OpsControls } from "@/app/app/ops/ops-controls";
 import { DataTable } from "@/components/ui/data-table";
 import { KpiCard, KpiGrid } from "@/components/ui/kpi-card";
 import { Notice } from "@/components/ui/states";
@@ -6,25 +7,281 @@ import { Panel } from "@/components/ui/panel";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { requirePlatformAdmin } from "@/lib/auth/gates";
 import { EVENT_LABELS } from "@/lib/notifications/labels";
-import { loadOpsNotificationState } from "@/lib/notifications/ops";
+import { loadOpsSystemState } from "@/lib/ops/load";
 import { getSupabaseAdmin } from "@/lib/supabase/admin";
 import { cardTitle, helperClass } from "@/lib/ui";
 
+function usd(value: number) {
+  return `$${value.toFixed(2)}`;
+}
+
+function ago(iso: string | null | undefined) {
+  if (!iso) return "never";
+  const ms = Date.now() - new Date(iso).getTime();
+  const hours = Math.round(ms / 36e5);
+  if (hours < 1) return "less than an hour ago";
+  if (hours < 48) return `${hours}h ago`;
+  return `${Math.round(hours / 24)}d ago`;
+}
+
 export default async function OpsPage() {
   await requirePlatformAdmin();
-  const { volumes, engagement, deadRows } = await loadOpsNotificationState(getSupabaseAdmin());
+  const state = await loadOpsSystemState(getSupabaseAdmin());
+  const { volumes, engagement, deadRows } = state.notifications;
   const fatigued = volumes.filter((row) => row.fatigue).length;
   const failing = volumes.filter((row) => row.failingPush).length;
   const unresolved = volumes.filter((row) => row.unresolvedBreaches > 0).length;
+  const openAlerts = state.alerts.length;
+  const overdueJobs = state.jobs.filter((job) => job.overdue).length;
 
   return (
     <PageFrame
       title="Operator"
-      description="Notification volume, engagement, and delivery failures across clients. Clients never see this screen."
+      description="Is anything wrong right now. Clients never see this screen."
     >
+      {state.anythingWrong ? (
+        <Notice tone="critical" className="mb-6">
+          Something is wrong. Read the open alerts and overdue jobs before anything else.
+        </Notice>
+      ) : (
+        <Notice tone="success" className="mb-6">
+          No overdue jobs, no open alerts, ingestion is moving.
+        </Notice>
+      )}
+
+      <KpiGrid>
+        <KpiCard label="Environment" value={state.env} />
+        <KpiCard
+          label="Error rate (24h)"
+          value={state.sampleTotal ? `${Math.round(state.errorRate * 1000) / 10}%` : "—"}
+          tone={state.errorRate > 0.05 ? "critical" : "neutral"}
+        />
+        <KpiCard
+          label="DB"
+          value={state.latestHealth ? (state.latestHealth.db_ok ? "up" : "down") : "—"}
+          tone={state.latestHealth && !state.latestHealth.db_ok ? "critical" : "neutral"}
+        />
+        <KpiCard
+          label="DB connections"
+          value={
+            state.runtime.connectionsActive == null
+              ? "—"
+              : `${state.runtime.connectionsActive}/${state.runtime.connectionsTotal ?? "—"}`
+          }
+          tone={(state.runtime.slowQueries ?? 0) > 0 ? "warning" : "neutral"}
+        />
+        <KpiCard
+          label="Extraction fail (24h)"
+          value={state.extractionN ? `${Math.round(state.extractionFailRate * 100)}%` : "—"}
+          tone={state.extractionFailRate > 0.2 ? "critical" : "neutral"}
+        />
+        <KpiCard
+          label="Notify fail (24h)"
+          value={state.notificationN ? `${Math.round(state.notificationFailRate * 100)}%` : "—"}
+          tone={state.notificationFailRate > 0.05 ? "warning" : "neutral"}
+        />
+        <KpiCard
+          label="Open alerts"
+          value={openAlerts}
+          tone={openAlerts ? "critical" : "neutral"}
+        />
+        <KpiCard
+          label="Ingest backlog"
+          value={state.ingest.unprocessed}
+          tone={state.ingest.unprocessed ? "warning" : "neutral"}
+        />
+        <KpiCard
+          label="Overdue jobs"
+          value={overdueJobs}
+          tone={overdueJobs ? "critical" : "neutral"}
+        />
+        <KpiCard
+          label="Last verified restore"
+          value={
+            state.hoursSinceRestore === null
+              ? "never"
+              : state.hoursSinceRestore < 24
+                ? `${Math.round(state.hoursSinceRestore)}h`
+                : `${Math.round(state.hoursSinceRestore / 24)}d`
+          }
+          tone={!state.restore || (state.hoursSinceRestore ?? 999) > 24 * 40 ? "warning" : "neutral"}
+        />
+        <KpiCard label="Model spend (30d, est.)" value={usd(state.spend.totalUsd)} />
+        <KpiCard
+          label="Fatigue flags"
+          value={fatigued}
+          tone={fatigued ? "warning" : "neutral"}
+        />
+      </KpiGrid>
+
+      <Panel className="mt-8 p-6">
+        <h2 className={cardTitle}>Open alerts</h2>
+        <p className={helperClass}>
+          Every row names what to check first. These route to DA, never to a client.
+        </p>
+        <div className="mt-4">
+          <DataTable
+            caption="Open operational alerts"
+            columns={[
+              { key: "sev", label: "Severity" },
+              { key: "title", label: "Alert" },
+              { key: "check", label: "Check first" },
+              { key: "when", label: "Fired" },
+            ]}
+            rows={state.alerts.map((row) => ({
+              sev: <StatusBadge label={row.severity} tone={row.severity === "critical" ? "critical" : "warning"} />,
+              title: row.title,
+              check: row.check_first,
+              when: new Date(row.fired_at).toLocaleString(),
+            }))}
+            empty="No open alerts."
+          />
+        </div>
+      </Panel>
+
+      <Panel className="mt-8 p-6">
+        <h2 className={cardTitle}>Scheduled jobs</h2>
+        <p className={helperClass}>
+          A job that did not run is worse than a job that failed. Last success is what this table
+          watches.
+        </p>
+        <div className="mt-4">
+          <DataTable
+            caption="Job heartbeats"
+            columns={[
+              { key: "job", label: "Job" },
+              { key: "cron", label: "Schedule" },
+              { key: "success", label: "Last success" },
+              { key: "flag", label: "" },
+            ]}
+            rows={state.jobs.map((row) => ({
+              job: row.job_name,
+              cron: row.cronExpr,
+              success: ago(row.last_success_at),
+              flag: row.overdue ? <StatusBadge label="did not run" tone="critical" /> : "",
+            }))}
+            empty="Job catalog is empty."
+          />
+        </div>
+      </Panel>
+
+      <Panel className="mt-8 p-6">
+        <h2 className={cardTitle}>Ingestion by workspace</h2>
+        <div className="mt-4">
+          <DataTable
+            caption="Ingestion backlog by workspace"
+            columns={[
+              { key: "org", label: "Workspace" },
+              { key: "backlog", label: "Unprocessed", align: "right" },
+              { key: "state", label: "State" },
+            ]}
+            rows={state.orgHealth.map((row) => ({
+              org: row.name,
+              backlog: String(row.unprocessed),
+              state: row.inactive ? (
+                <StatusBadge label="inactive" tone="neutral" />
+              ) : row.stale ? (
+                <StatusBadge label="stale" tone="critical" />
+              ) : (
+                <StatusBadge label="ok" tone="good" />
+              ),
+            }))}
+            empty="No workspaces."
+          />
+        </div>
+      </Panel>
+
+      <Panel className="mt-8 p-6">
+        <h2 className={cardTitle}>Model spend</h2>
+        <p className={helperClass}>
+          Estimated from extraction token logs at published Anthropic list prices. Drafting tokens
+          are not stored yet, so this is extraction-attributable spend only.
+        </p>
+        <div className="mt-4">
+          <DataTable
+            caption="Estimated model spend by workspace"
+            columns={[
+              { key: "org", label: "Workspace" },
+              { key: "tokens", label: "Tokens", align: "right" },
+              { key: "usd", label: "Est. USD", align: "right" },
+            ]}
+            rows={state.spend.byOrg.map((row) => ({
+              org: row.orgName,
+              tokens: String(row.inputTokens + row.outputTokens),
+              usd: usd(row.estimatedUsd),
+            }))}
+            empty="No extraction usage in the last 30 days."
+          />
+        </div>
+        <div className="mt-4">
+          <DataTable
+            caption="Estimated model spend by day"
+            columns={[
+              { key: "day", label: "Day" },
+              { key: "usd", label: "Est. USD", align: "right" },
+            ]}
+            rows={state.spend.trend.map((row) => ({
+              day: row.day,
+              usd: usd(row.usd),
+            }))}
+            empty="No daily trend yet."
+          />
+        </div>
+      </Panel>
+
+      <Panel className="mt-8 p-6">
+        <h2 className={cardTitle}>Backups and retention</h2>
+        <p className={helperClass}>
+          Last verified restore:{" "}
+          {state.restore
+            ? `${new Date(state.restore.finished_at).toLocaleString()} (${state.restore.duration_ms}ms, ${state.restore.verified ? "verified" : "unverified"})`
+            : "no drill recorded"}
+          . Last retention run:{" "}
+          {state.lastRetention
+            ? `${new Date(state.lastRetention.started_at).toLocaleString()} ${state.lastRetention.dry_run ? "(dry-run)" : ""} purged ${JSON.stringify(state.lastRetention.deleted)}`
+            : "never"}
+          . Slow queries in last sample: {state.runtime.slowQueries ?? "—"}.
+        </p>
+      </Panel>
+
+      <Panel className="mt-8 p-6">
+        <h2 className={cardTitle}>Current incidents</h2>
+        <div className="mt-4">
+          <DataTable
+            caption="Open incidents"
+            columns={[
+              { key: "kind", label: "Kind" },
+              { key: "title", label: "Title" },
+              { key: "status", label: "Status" },
+              { key: "client", label: "Client told" },
+            ]}
+            rows={state.incidents.map((row) => ({
+              kind: row.kind,
+              title: row.title,
+              status: row.status,
+              client: row.client_notified_at ? "yes" : "no",
+            }))}
+            empty="No open incidents."
+          />
+        </div>
+      </Panel>
+
+      <Panel className="mt-8 p-6">
+        <h2 className={cardTitle}>Lifecycle</h2>
+        <p className={helperClass}>
+          Export, halt, offboard, and delete. Deletion requires typing the workspace name and leaves
+          a surviving record.
+        </p>
+        <div className="mt-4">
+          <OpsControls
+            orgs={state.orgs.map((org) => ({ id: org.id, name: org.name, slug: org.slug }))}
+          />
+        </div>
+      </Panel>
+
+      <div className="mt-8">
       <KpiGrid>
         <KpiCard label="Workspaces" value={volumes.length} />
-        <KpiCard label="Fatigue flags" value={fatigued} tone={fatigued ? "warning" : "neutral"} />
         <KpiCard label="Silent push failures" value={failing} tone={failing ? "critical" : "neutral"} />
         <KpiCard
           label="Unresolved breaches"
@@ -32,6 +289,7 @@ export default async function OpsPage() {
           tone={unresolved ? "warning" : "neutral"}
         />
       </KpiGrid>
+      </div>
 
       <Panel className="mt-8 p-6">
         <h2 className={cardTitle}>Volume per client</h2>

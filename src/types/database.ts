@@ -112,6 +112,7 @@ export type Database = {
           type: Database["public"]["Enums"]["call_type"];
           updated_at: string;
           ghl_appointment_id: string | null;
+          transcript_purged_at: string | null;
         };
         Insert: {
           created_at?: string;
@@ -133,6 +134,7 @@ export type Database = {
           type: Database["public"]["Enums"]["call_type"];
           updated_at?: string;
           ghl_appointment_id?: string | null;
+          transcript_purged_at?: string | null;
         };
         Update: {
           created_at?: string;
@@ -154,6 +156,7 @@ export type Database = {
           type?: Database["public"]["Enums"]["call_type"];
           updated_at?: string;
           ghl_appointment_id?: string | null;
+          transcript_purged_at?: string | null;
         };
         Relationships: [
           {
@@ -889,6 +892,7 @@ export type Database = {
           status: Database["public"]["Enums"]["unmatched_transcript_status"];
           title: string | null;
           webhook_event_id: string | null;
+          transcript_purged_at: string | null;
         };
         Insert: {
           assigned_at?: string | null;
@@ -911,6 +915,7 @@ export type Database = {
           status?: Database["public"]["Enums"]["unmatched_transcript_status"];
           title?: string | null;
           webhook_event_id?: string | null;
+          transcript_purged_at?: string | null;
         };
         Update: {
           assigned_at?: string | null;
@@ -933,6 +938,7 @@ export type Database = {
           status?: Database["public"]["Enums"]["unmatched_transcript_status"];
           title?: string | null;
           webhook_event_id?: string | null;
+          transcript_purged_at?: string | null;
         };
         Relationships: [];
       };
@@ -1598,6 +1604,11 @@ export type Database = {
           working_hours_end: string;
           working_days: number[];
           sms_emergencies_enabled: boolean;
+          transcript_retention_days: number;
+          inactive_at: string | null;
+          offboarded_at: string | null;
+          delete_after: string | null;
+          offboard_reason: string | null;
         };
         Insert: {
           activated_at?: string | null;
@@ -1614,6 +1625,11 @@ export type Database = {
           working_hours_end?: string;
           working_days?: number[];
           sms_emergencies_enabled?: boolean;
+          transcript_retention_days?: number;
+          inactive_at?: string | null;
+          offboarded_at?: string | null;
+          delete_after?: string | null;
+          offboard_reason?: string | null;
         };
         Update: {
           activated_at?: string | null;
@@ -1630,6 +1646,11 @@ export type Database = {
           working_hours_end?: string;
           working_days?: number[];
           sms_emergencies_enabled?: boolean;
+          transcript_retention_days?: number;
+          inactive_at?: string | null;
+          offboarded_at?: string | null;
+          delete_after?: string | null;
+          offboard_reason?: string | null;
         };
         Relationships: [];
       };
@@ -2218,6 +2239,7 @@ export type Database = {
           contact_key: string | null;
           status: Database["public"]["Enums"]["webhook_event_status"];
           next_attempt_at: string;
+          payload_purged_at: string | null;
         };
         Insert: {
           attempt_count?: number;
@@ -2234,6 +2256,7 @@ export type Database = {
           contact_key?: string | null;
           status?: Database["public"]["Enums"]["webhook_event_status"];
           next_attempt_at?: string;
+          payload_purged_at?: string | null;
         };
         Update: {
           attempt_count?: number;
@@ -2250,6 +2273,7 @@ export type Database = {
           contact_key?: string | null;
           status?: Database["public"]["Enums"]["webhook_event_status"];
           next_attempt_at?: string;
+          payload_purged_at?: string | null;
         };
         Relationships: [
           {
@@ -2956,6 +2980,302 @@ export type Database = {
         };
         Relationships: [];
       };
+      rate_limit_buckets: {
+        Row: {
+          bucket_key: string;
+          window_started_at: string;
+          hit_count: number;
+        };
+        Insert: {
+          bucket_key: string;
+          window_started_at: string;
+          hit_count?: number;
+        };
+        Update: {
+          hit_count?: number;
+        };
+        Relationships: [];
+      };
+      ops_job_catalog: {
+        Row: {
+          job_name: string;
+          cron_expr: string;
+          interval_seconds: number;
+          grace_seconds: number;
+          check_first: string;
+        };
+        Insert: {
+          job_name: string;
+          cron_expr: string;
+          interval_seconds: number;
+          grace_seconds: number;
+          check_first: string;
+        };
+        Update: {
+          cron_expr?: string;
+          interval_seconds?: number;
+          grace_seconds?: number;
+          check_first?: string;
+        };
+        Relationships: [];
+      };
+      ops_job_runs: {
+        Row: {
+          job_name: string;
+          last_started_at: string | null;
+          last_success_at: string | null;
+          last_failure_at: string | null;
+          last_error: string | null;
+          last_duration_ms: number | null;
+          last_result: Json | null;
+          updated_at: string;
+        };
+        Insert: {
+          job_name: string;
+          last_started_at?: string | null;
+          last_success_at?: string | null;
+          last_failure_at?: string | null;
+          last_error?: string | null;
+          last_duration_ms?: number | null;
+          last_result?: Json | null;
+          updated_at?: string;
+        };
+        Update: {
+          last_started_at?: string | null;
+          last_success_at?: string | null;
+          last_failure_at?: string | null;
+          last_error?: string | null;
+          last_duration_ms?: number | null;
+          last_result?: Json | null;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
+      ops_alerts: {
+        Row: {
+          id: string;
+          fingerprint: string;
+          kind: string;
+          severity: string;
+          org_id: string | null;
+          title: string;
+          check_first: string;
+          detail: Json;
+          fired_at: string;
+          last_seen_at: string;
+          resolved_at: string | null;
+          notify_count: number;
+        };
+        Insert: {
+          id?: string;
+          fingerprint: string;
+          kind: string;
+          severity?: string;
+          org_id?: string | null;
+          title: string;
+          check_first: string;
+          detail?: Json;
+          fired_at?: string;
+          last_seen_at?: string;
+          resolved_at?: string | null;
+          notify_count?: number;
+        };
+        Update: {
+          kind?: string;
+          severity?: string;
+          title?: string;
+          check_first?: string;
+          detail?: Json;
+          last_seen_at?: string;
+          resolved_at?: string | null;
+          notify_count?: number;
+        };
+        Relationships: [];
+      };
+      ops_http_errors: {
+        Row: {
+          route: string;
+          window_started_at: string;
+          error_count: number;
+          sample_count: number;
+        };
+        Insert: {
+          route: string;
+          window_started_at: string;
+          error_count?: number;
+          sample_count?: number;
+        };
+        Update: {
+          error_count?: number;
+          sample_count?: number;
+        };
+        Relationships: [];
+      };
+      ops_health_samples: {
+        Row: {
+          sampled_at: string;
+          app_ok: boolean;
+          db_ok: boolean;
+          detail: Json;
+        };
+        Insert: {
+          sampled_at?: string;
+          app_ok: boolean;
+          db_ok: boolean;
+          detail?: Json;
+        };
+        Update: {
+          app_ok?: boolean;
+          db_ok?: boolean;
+          detail?: Json;
+        };
+        Relationships: [];
+      };
+      ops_incidents: {
+        Row: {
+          id: string;
+          kind: string;
+          status: string;
+          org_id: string | null;
+          title: string;
+          timeline: Json;
+          cause: string | null;
+          impact: string | null;
+          prevention: string | null;
+          client_notified_at: string | null;
+          client_notified_by: string | null;
+          detected_at: string;
+          resolved_at: string | null;
+          created_by_user_id: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          kind: string;
+          status?: string;
+          org_id?: string | null;
+          title: string;
+          timeline?: Json;
+          cause?: string | null;
+          impact?: string | null;
+          prevention?: string | null;
+          client_notified_at?: string | null;
+          client_notified_by?: string | null;
+          detected_at?: string;
+          resolved_at?: string | null;
+          created_by_user_id?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          status?: string;
+          timeline?: Json;
+          cause?: string | null;
+          impact?: string | null;
+          prevention?: string | null;
+          client_notified_at?: string | null;
+          client_notified_by?: string | null;
+          resolved_at?: string | null;
+        };
+        Relationships: [];
+      };
+      ops_restore_drills: {
+        Row: {
+          id: string;
+          started_at: string;
+          finished_at: string;
+          duration_ms: number;
+          source_label: string;
+          verified: boolean;
+          integrity: Json;
+          rpo_minutes: number | null;
+          notes: string | null;
+          recorded_at: string;
+        };
+        Insert: {
+          id?: string;
+          started_at: string;
+          finished_at: string;
+          duration_ms: number;
+          source_label: string;
+          verified: boolean;
+          integrity?: Json;
+          rpo_minutes?: number | null;
+          notes?: string | null;
+          recorded_at?: string;
+        };
+        Update: {
+          verified?: boolean;
+          notes?: string | null;
+        };
+        Relationships: [];
+      };
+      retention_runs: {
+        Row: {
+          id: string;
+          dry_run: boolean;
+          started_at: string;
+          finished_at: string | null;
+          deleted: Json;
+          error_text: string | null;
+        };
+        Insert: {
+          id?: string;
+          dry_run: boolean;
+          started_at?: string;
+          finished_at?: string | null;
+          deleted?: Json;
+          error_text?: string | null;
+        };
+        Update: {
+          finished_at?: string | null;
+          deleted?: Json;
+          error_text?: string | null;
+        };
+        Relationships: [];
+      };
+      org_deletion_records: {
+        Row: {
+          id: string;
+          org_id: string;
+          org_name: string;
+          org_slug: string;
+          confirmation_name: string;
+          reason: string;
+          actor_user_id: string | null;
+          actor_email: string | null;
+          counts_before: Json;
+          aggregates_recomputed: boolean;
+          leftover: Json;
+          requested_at: string;
+          completed_at: string | null;
+          status: string;
+        };
+        Insert: {
+          id?: string;
+          org_id: string;
+          org_name: string;
+          org_slug: string;
+          confirmation_name: string;
+          reason: string;
+          actor_user_id?: string | null;
+          actor_email?: string | null;
+          counts_before?: Json;
+          aggregates_recomputed?: boolean;
+          leftover?: Json;
+          requested_at?: string;
+          completed_at?: string | null;
+          status?: string;
+        };
+        Update: {
+          aggregates_recomputed?: boolean;
+          leftover?: Json;
+          completed_at?: string | null;
+          status?: string;
+        };
+        Relationships: [];
+      };
     };
     Views: {
       queue_rows: {
@@ -3390,6 +3710,70 @@ export type Database = {
           org_id: string;
           quote_text: string;
         }[];
+      };
+      consume_rate_limit: {
+        Args: { p_key: string; p_limit: number; p_window_seconds: number };
+        Returns: Json;
+      };
+      record_ops_job_run: {
+        Args: {
+          p_job_name: string;
+          p_ok: boolean;
+          p_error?: string | null;
+          p_duration_ms?: number | null;
+          p_result?: Json | null;
+        };
+        Returns: undefined;
+      };
+      upsert_ops_alert: {
+        Args: {
+          p_fingerprint: string;
+          p_kind: string;
+          p_severity: string;
+          p_org_id: string | null;
+          p_title: string;
+          p_check_first: string;
+          p_detail: Json;
+        };
+        Returns: string;
+      };
+      resolve_ops_alert: {
+        Args: { p_fingerprint: string };
+        Returns: undefined;
+      };
+      record_ops_http_sample: {
+        Args: { p_route: string; p_is_error: boolean };
+        Returns: undefined;
+      };
+      sample_db_runtime: {
+        Args: Record<PropertyKey, never>;
+        Returns: Json;
+      };
+      run_data_retention: {
+        Args: { p_dry_run?: boolean };
+        Returns: Json;
+      };
+      org_scoped_row_counts: {
+        Args: { p_org_id: string };
+        Returns: Json;
+      };
+      delete_org_data: {
+        Args: {
+          p_org_id: string;
+          p_confirmation_name: string;
+          p_reason: string;
+          p_actor_user_id?: string | null;
+          p_actor_email?: string | null;
+        };
+        Returns: Json;
+      };
+      mark_org_offboarded: {
+        Args: { p_org_id: string; p_reason: string; p_grace_days?: number };
+        Returns: Json;
+      };
+      evaluate_ops_alerts: {
+        Args: Record<PropertyKey, never>;
+        Returns: Json;
       };
     };
     Enums: {

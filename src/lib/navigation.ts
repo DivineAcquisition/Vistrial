@@ -82,6 +82,7 @@ export const SETTINGS_TABS: Array<{
   { href: "/app/settings/scoring", label: "Scoring", managerOnly: true },
   { href: "/app/settings/follow-up", label: "Follow-up", managerOnly: true },
   { href: "/app/settings/integrations", label: "Integrations", managerOnly: true },
+  { href: "/app/settings/data", label: "Data", managerOnly: true },
   { href: "/app/settings/notifications", label: "Notifications", managerOnly: false },
   { href: "/app/settings/profile", label: "Profile", managerOnly: false },
 ];

@@ -13,7 +13,9 @@ import {
   safeInternalPath,
 } from "@/lib/auth/paths";
 import { appUrl, originFromForwardedHost } from "@/lib/app-url";
+import { rateLimitAuth, requestIp } from "@/lib/ops/rate-limit";
 import { isSupabaseConfigured } from "@/lib/supabase/env";
+import { getSupabaseAdmin } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 
 export type LoginActionState = { error: LoginError | null; magicSent?: boolean };
@@ -36,6 +38,17 @@ async function rememberPendingInvite(next: string) {
   cookieStore.set(PENDING_INVITE_COOKIE, token, pendingInviteCookieOptions);
 }
 
+async function enforceAuthRateLimit(email: string): Promise<LoginError | null> {
+  try {
+    const headerStore = await headers();
+    const limited = await rateLimitAuth(getSupabaseAdmin(), email, requestIp(headerStore));
+    if (!limited.allowed) return "locked";
+  } catch {
+    return null;
+  }
+  return null;
+}
+
 export async function signInPassword(
   _prev: LoginActionState,
   formData: FormData
@@ -51,6 +64,9 @@ export async function signInPassword(
   if (!email || !password) {
     return { error: "generic" };
   }
+
+  const locked = await enforceAuthRateLimit(email);
+  if (locked) return { error: locked };
 
   await rememberPendingInvite(next);
 
@@ -97,6 +113,9 @@ export async function sendMagicLink(
   if (!email) {
     return { error: "generic" };
   }
+
+  const locked = await enforceAuthRateLimit(email);
+  if (locked) return { error: locked };
 
   await rememberPendingInvite(next);
 

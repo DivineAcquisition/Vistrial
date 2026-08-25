@@ -1,4 +1,4 @@
-export type LoginError = "credentials" | "unconfirmed" | "no_membership" | "generic";
+export type LoginError = "credentials" | "unconfirmed" | "no_membership" | "generic" | "locked";
 
 export function classifyAuthError(message: string, code?: string): Exclude<LoginError, "no_membership"> {
   const haystack = `${code ?? ""} ${message}`.toLowerCase();
@@ -20,4 +20,5 @@ export const LOGIN_ERROR_COPY: Record<LoginError, string> = {
   unconfirmed: "Confirm your email before signing in. Check that address for the confirmation message.",
   no_membership: "This account is not a member of any workspace. You need an invite.",
   generic: "Sign-in failed. Try again, or use a magic link.",
+  locked: "Too many sign-in attempts. Wait 15 minutes and try again.",
 };

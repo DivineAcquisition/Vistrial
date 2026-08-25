@@ -12,6 +12,7 @@ import {
 } from "@/lib/ghl/client";
 import { encryptSecret, decryptSecret } from "@/lib/ghl/crypto";
 import { ghlLog, ghlError } from "@/lib/ghl/log";
+import { assertStagingCrmAllowed } from "@/lib/ops/crm-guard";
 import {
   decryptConnectionTokens,
   loadConnection,
@@ -31,6 +32,7 @@ export async function linkLocationToOrg(
     memberId?: string | null;
   }
 ): Promise<{ ok: true; locationName: string | null } | { ok: false; error: "location_claimed" | "org_missing" }> {
+  assertStagingCrmAllowed(args.locationId);
   const linked = await db.rpc("link_ghl_location", {
     p_org_id: args.orgId,
     p_location_id: args.locationId,

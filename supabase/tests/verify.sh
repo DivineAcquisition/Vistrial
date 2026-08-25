@@ -49,9 +49,12 @@ WHERE n.nspname = 'public'
     'business_profile_stages','profile_field_registry','profile_review_prompts',
     'profile_contradictions','objection_vocabulary','org_benchmark_metrics','benchmark_cohorts',
     'configuration_priors','leak_reports','activation_records','activation_changes',
-    'baseline_fallback_declines','notifications','notification_preferences',
+    'baseline_fallback_declines',    'notifications','notification_preferences',
     'notification_mutes','notification_escalations','notification_presence',
-    'notification_push_subscriptions','notification_team_channels','notification_digest_log'
+    'notification_push_subscriptions','notification_team_channels','notification_digest_log',
+    'rate_limit_buckets','ops_job_catalog','ops_job_runs','ops_alerts','ops_http_errors',
+    'ops_health_samples','ops_incidents','ops_restore_drills','retention_runs',
+    'org_deletion_records'
   )
 ORDER BY 1;
 "
@@ -104,4 +107,10 @@ run "${ROOT}/supabase/tests/verify-onboarding-reconcile.sql"
 echo "Notification checks..."
 run "${ROOT}/supabase/tests/verify-notifications.sql"
 
-echo "OK: schema, seed, triggers, RLS, invite, scoring, GHL, platform-admin, queue, case-file, transcript, follow-up, integrity, reporting, business-profile, onboarding-reconcile, and notification checks passed."
+echo "Hardening checks..."
+run "${ROOT}/supabase/tests/verify-hardening.sql"
+
+echo "Migration rollback (this prompt's migrations)..."
+bash "${ROOT}/scripts/test-migration-rollback.sh"
+
+echo "OK: schema, seed, triggers, RLS, invite, scoring, GHL, platform-admin, queue, case-file, transcript, follow-up, integrity, reporting, business-profile, onboarding-reconcile, notification, and hardening checks passed."

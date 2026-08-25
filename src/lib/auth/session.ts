@@ -6,55 +6,16 @@ import { redirect } from "next/navigation";
 import type { User } from "@supabase/supabase-js";
 
 import { ORG_COOKIE_NAME, orgCookieOptions } from "@/lib/auth/cookies";
+import { membershipsFromRows, type MemberRow } from "@/lib/auth/memberships";
 import { safeInternalPath } from "@/lib/auth/paths";
 import { DEFAULT_APP_PATH } from "@/lib/navigation";
+import { getSupabaseAdmin } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import type { AuthContext, ClientOrgState, Membership, OrgSummary } from "@/lib/auth/types";
-import type { OrgRole } from "@/types/database";
 
 export type { AuthContext, ClientOrgState, Membership, OrgSummary } from "@/lib/auth/types";
 
-type OrgRow = {
-  id: string;
-  name: string;
-  slug: string;
-  timezone: string;
-  ghl_location_id: string | null;
-};
-
-type MemberRow = {
-  id: string;
-  org_id: string;
-  role: OrgRole;
-  display_name: string;
-  email: string;
-  organizations: OrgRow | OrgRow[] | null;
-};
-
-function unwrapOrg(value: OrgRow | OrgRow[] | null): OrgSummary | null {
-  const row = !value ? null : Array.isArray(value) ? (value[0] ?? null) : value;
-  if (!row) return null;
-  return {
-    id: row.id,
-    name: row.name,
-    slug: row.slug,
-    timezone: row.timezone,
-    ghlLocationId: row.ghl_location_id,
-  };
-}
-
-function toMembership(row: MemberRow): Membership | null {
-  const org = unwrapOrg(row.organizations);
-  if (!org) return null;
-  return {
-    id: row.id,
-    orgId: row.org_id,
-    role: row.role,
-    displayName: row.display_name,
-    email: row.email,
-    org,
-  };
-}
+const MEMBER_COLUMNS = "id, org_id, role, display_name, email" as const;
 
 export const getSessionUser = cache(async (): Promise<User | null> => {
   const supabase = await createClient();
@@ -64,23 +25,71 @@ export const getSessionUser = cache(async (): Promise<User | null> => {
   return user;
 });
 
+async function orgsByIds(
+  db: Awaited<ReturnType<typeof createClient>>,
+  orgIds: string[]
+): Promise<Map<string, OrgSummary>> {
+  if (orgIds.length === 0) return new Map();
+  const { data, error } = await db
+    .from("organizations")
+    .select("id, name, slug, timezone, ghl_location_id")
+    .in("id", orgIds);
+  if (error || !data) return new Map();
+  return new Map(
+    data.map((org) => [
+      org.id,
+      {
+        id: org.id,
+        name: org.name,
+        slug: org.slug,
+        timezone: org.timezone,
+        ghlLocationId: org.ghl_location_id,
+      },
+    ])
+  );
+}
+
+async function membershipsViaAdmin(userId: string): Promise<Membership[]> {
+  const admin = getSupabaseAdmin();
+  const { data, error } = await admin
+    .from("org_members")
+    .select(MEMBER_COLUMNS)
+    .eq("user_id", userId)
+    .eq("active", true)
+    .order("created_at", { ascending: true });
+
+  if (error || !data?.length) return [];
+  const orgs = await orgsByIds(admin, [...new Set(data.map((row) => row.org_id))]);
+  return membershipsFromRows(data as MemberRow[], orgs);
+}
+
 export const listActiveMemberships = cache(
   async (userId: string): Promise<Membership[]> => {
     const supabase = await createClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user || user.id !== userId) return [];
+
     const { data, error } = await supabase
       .from("org_members")
-      .select(
-        "id, org_id, role, display_name, email, organizations ( id, name, slug, timezone, ghl_location_id )"
-      )
+      .select(MEMBER_COLUMNS)
       .eq("user_id", userId)
       .eq("active", true)
       .order("created_at", { ascending: true });
 
-    if (error || !data) return [];
+    if (!error && data && data.length > 0) {
+      const orgs = await orgsByIds(
+        supabase,
+        [...new Set(data.map((row) => row.org_id))]
+      );
+      const scoped = membershipsFromRows(data as MemberRow[], orgs);
+      if (scoped.length > 0) return scoped;
+    }
 
-    return (data as MemberRow[])
-      .map(toMembership)
-      .filter((row): row is Membership => row !== null);
+    // User id is from getUser(). If RLS hid the member or org row, do not
+    // send a signed-in member to /no-access.
+    return membershipsViaAdmin(userId);
   }
 );
 
@@ -135,7 +144,15 @@ export const getAuthContext = cache(async (): Promise<AuthContext> => {
     .select("user_id")
     .eq("user_id", user.id)
     .maybeSingle();
-  const isPlatformAdmin = Boolean(platformAdminRow);
+  let isPlatformAdmin = Boolean(platformAdminRow);
+  if (!isPlatformAdmin) {
+    const { data: adminRow } = await getSupabaseAdmin()
+      .from("platform_admins")
+      .select("user_id")
+      .eq("user_id", user.id)
+      .maybeSingle();
+    isPlatformAdmin = Boolean(adminRow);
+  }
 
   const memberships = await listActiveMemberships(user.id);
   if (memberships.length === 0) {

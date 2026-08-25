@@ -12,6 +12,7 @@ import {
   postAuthPath,
   safeInternalPath,
 } from "@/lib/auth/paths";
+import { listActiveMemberships } from "@/lib/auth/session";
 import { appUrl, originFromForwardedHost } from "@/lib/app-url";
 import { rateLimitAuth, requestIp } from "@/lib/ops/rate-limit";
 import { isSupabaseConfigured } from "@/lib/supabase/env";
@@ -82,18 +83,19 @@ export async function signInPassword(
     return { error: "generic" };
   }
 
-  const [{ data: memberships, error: memberError }, { data: platformAdmin, error: adminError }] =
-    await Promise.all([
-      supabase.from("org_members").select("id").eq("user_id", userId).eq("active", true).limit(1),
-      supabase.from("platform_admins").select("user_id").eq("user_id", userId).maybeSingle(),
-    ]);
-
-  if (memberError || adminError) {
-    return { error: "generic" };
-  }
-
-  if (!memberships?.length && !platformAdmin) {
-    return { error: "no_membership" };
+  const memberships = await listActiveMemberships(userId);
+  if (memberships.length === 0) {
+    const { data: platformAdmin, error: adminError } = await supabase
+      .from("platform_admins")
+      .select("user_id")
+      .eq("user_id", userId)
+      .maybeSingle();
+    if (adminError) {
+      return { error: "generic" };
+    }
+    if (!platformAdmin) {
+      return { error: "no_membership" };
+    }
   }
 
   redirect(postAuthPath(next));

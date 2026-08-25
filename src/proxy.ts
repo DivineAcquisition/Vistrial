@@ -1,7 +1,7 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
-import { safeInternalPath } from "@/lib/auth/paths";
+import { pathRefreshesAuthSession, safeInternalPath } from "@/lib/auth/paths";
 import { hostnameFromHostHeader, isOperatorAppHost } from "@/lib/marketing/hosts";
 import { isSupabaseConfigured, supabasePublishableKey, supabaseUrl } from "@/lib/supabase/env";
 import { fetchForSupabaseKey } from "@/lib/supabase/fetch";
@@ -38,7 +38,7 @@ export async function proxy(request: NextRequest) {
     return NextResponse.redirect(login);
   }
 
-  if (!path.startsWith("/app")) {
+  if (!pathRefreshesAuthSession(path)) {
     return nextWithPath(request);
   }
 
@@ -90,5 +90,13 @@ export async function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/", "/app", "/app/:path*"],
+  matcher: [
+    "/",
+    "/login",
+    "/no-access",
+    "/auth/:path*",
+    "/accept-invite/:path*",
+    "/app",
+    "/app/:path*",
+  ],
 };

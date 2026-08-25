@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { classifyAuthError } from "@/lib/auth/errors";
-import { authCallbackUrl, postAuthPath } from "@/lib/auth/paths";
+import { authCallbackUrl, pathRefreshesAuthSession, postAuthPath } from "@/lib/auth/paths";
 import { PRODUCTION_APP_ORIGIN } from "@/lib/constants";
 import { isAllowedAppOrigin, originFromForwardedHost, resolveAppUrl } from "@/lib/app-url";
 
@@ -48,6 +48,16 @@ describe("auth callback URL", () => {
   it("returns invite paths after sign-in so redemption can finish", () => {
     expect(postAuthPath("/accept-invite/abc")).toBe("/accept-invite/abc");
     expect(postAuthPath("/login")).toBe("/app/queue");
+  });
+});
+
+describe("pathRefreshesAuthSession", () => {
+  it("refreshes on login and no-access so membership reads see the user JWT", () => {
+    expect(pathRefreshesAuthSession("/login")).toBe(true);
+    expect(pathRefreshesAuthSession("/no-access")).toBe(true);
+    expect(pathRefreshesAuthSession("/auth/callback")).toBe(true);
+    expect(pathRefreshesAuthSession("/app/queue")).toBe(true);
+    expect(pathRefreshesAuthSession("/")).toBe(false);
   });
 });
 

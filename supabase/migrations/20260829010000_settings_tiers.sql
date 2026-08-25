@@ -103,6 +103,26 @@ $$;
 COMMENT ON FUNCTION public.org_advanced_writable(uuid) IS
   'True when the current user may change Advanced settings for this org. Platform admins always can. Clients can when the org is not managed.';
 
+CREATE OR REPLACE FUNCTION public.request_jwt_role()
+RETURNS text
+LANGUAGE sql
+STABLE
+AS $$
+  SELECT COALESCE(
+    NULLIF(current_setting('request.jwt.claim.role', true), ''),
+    CASE
+      WHEN NULLIF(current_setting('request.jwt.claim.sub', true), '') IS NULL THEN 'service_role'
+      ELSE 'authenticated'
+    END
+  );
+$$;
+
+COMMENT ON FUNCTION public.request_jwt_role() IS
+  'JWT role for Advanced guards. Empty JWT (seed, jobs, SQL console) is treated as service_role.';
+
+REVOKE ALL ON FUNCTION public.request_jwt_role() FROM PUBLIC, anon;
+GRANT EXECUTE ON FUNCTION public.request_jwt_role() TO authenticated, service_role;
+
 CREATE OR REPLACE FUNCTION public.assert_advanced_writable(p_org_id uuid)
 RETURNS void
 LANGUAGE plpgsql
@@ -111,7 +131,7 @@ SECURITY DEFINER
 SET search_path = public
 AS $$
 BEGIN
-  IF auth.role() = 'service_role' THEN
+  IF public.request_jwt_role() = 'service_role' THEN
     RETURN;
   END IF;
   IF public.is_platform_admin() THEN
@@ -157,7 +177,7 @@ BEGIN
   IF NOT (
     public.is_platform_admin()
     OR public.user_has_org_role(p_org_id, 'owner', 'admin')
-    OR auth.role() = 'service_role'
+    OR public.request_jwt_role() = 'service_role'
   ) THEN
     RAISE EXCEPTION 'not authorized to write the activity log' USING ERRCODE = '42501';
   END IF;
@@ -609,7 +629,7 @@ BEGIN
      OR NEW.managed_taken_over_by IS DISTINCT FROM OLD.managed_taken_over_by THEN
     IF current_setting('vistrial.allow_managed_change', true) IS DISTINCT FROM '1'
        AND NOT public.is_platform_admin()
-       AND auth.role() IS DISTINCT FROM 'service_role' THEN
+       AND public.request_jwt_role() IS DISTINCT FROM 'service_role' THEN
       RAISE EXCEPTION 'managed mode can only change through take_over_org_management or set_org_managed'
         USING ERRCODE = '42501';
     END IF;

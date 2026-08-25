@@ -33,5 +33,23 @@ AS $$
   SELECT NULLIF(current_setting('request.jwt.claim.sub', true), '')::uuid;
 $$;
 
+-- Mirrors hosted auth.role(): JWT role claim when present. Local seed and
+-- constraint checks run as postgres with no JWT, which must look like service_role
+-- so Advanced guards do not block fixture writes.
+CREATE OR REPLACE FUNCTION auth.role()
+RETURNS text
+LANGUAGE sql
+STABLE
+AS $$
+  SELECT COALESCE(
+    NULLIF(current_setting('request.jwt.claim.role', true), ''),
+    CASE
+      WHEN NULLIF(current_setting('request.jwt.claim.sub', true), '') IS NULL THEN 'service_role'
+      ELSE 'authenticated'
+    END
+  );
+$$;
+
 GRANT USAGE ON SCHEMA auth TO anon, authenticated, service_role;
 GRANT EXECUTE ON FUNCTION auth.uid() TO anon, authenticated, service_role;
+GRANT EXECUTE ON FUNCTION auth.role() TO anon, authenticated, service_role;

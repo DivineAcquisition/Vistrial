@@ -10,7 +10,7 @@ VALUES
 ON CONFLICT (id) DO NOTHING;
 
 INSERT INTO public.organizations (
-  id, name, slug, timezone, activated_at, sales_cycle_days, call_coaching_embargo_hours
+  id, name, slug, timezone, activated_at, sales_cycle_days, call_coaching_embargo_hours, managed
 ) VALUES (
   '171e1711-1711-4171-8171-1711111111a1',
   'Coaching Co',
@@ -18,7 +18,8 @@ INSERT INTO public.organizations (
   'America/New_York',
   now() - interval '90 days',
   14,
-  48
+  48,
+  false
 );
 
 INSERT INTO public.score_configs (org_id)

@@ -8,7 +8,7 @@ ON CONFLICT (id) DO NOTHING;
 
 -- Well-calibrated org: holdout on, monotonic curve.
 INSERT INTO public.organizations (
-  id, name, slug, timezone, activated_at, sales_cycle_days, holdout_percent
+  id, name, slug, timezone, activated_at, sales_cycle_days, holdout_percent, managed
 ) VALUES (
   '161e1611-1611-4161-8161-1611111111a1',
   'Calibrated Co',
@@ -16,7 +16,8 @@ INSERT INTO public.organizations (
   'America/New_York',
   now() - interval '90 days',
   14,
-  5
+  5,
+  false
 );
 
 INSERT INTO public.score_configs (org_id)
@@ -35,7 +36,7 @@ VALUES (
 
 -- Reversed org: high scores close less.
 INSERT INTO public.organizations (
-  id, name, slug, timezone, activated_at, sales_cycle_days, holdout_percent
+  id, name, slug, timezone, activated_at, sales_cycle_days, holdout_percent, managed
 ) VALUES (
   '161e1611-1611-4161-8161-1611111111b1',
   'Reversed Co',
@@ -43,7 +44,8 @@ INSERT INTO public.organizations (
   'America/New_York',
   now() - interval '90 days',
   14,
-  5
+  5,
+  false
 );
 
 INSERT INTO public.score_configs (org_id)

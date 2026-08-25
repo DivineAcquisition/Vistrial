@@ -21,6 +21,7 @@ DROP FUNCTION IF EXISTS public.touch_member_last_seen();
 DROP FUNCTION IF EXISTS public.log_settings_activity(uuid, text, text, jsonb, jsonb, text, text, uuid, uuid);
 DROP FUNCTION IF EXISTS public.assert_advanced_writable(uuid);
 DROP FUNCTION IF EXISTS public.org_advanced_writable(uuid);
+DROP FUNCTION IF EXISTS public.request_jwt_role();
 
 DROP TABLE IF EXISTS public.settings_activity;
 

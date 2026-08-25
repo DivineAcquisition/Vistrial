@@ -1907,6 +1907,7 @@ export type Database = {
           sms_emergencies_enabled: boolean;
           transcript_retention_days: number;
           call_coaching_embargo_hours: number;
+          operator_agent_batch_cap: number;
           inactive_at: string | null;
           offboarded_at: string | null;
           delete_after: string | null;
@@ -1930,6 +1931,7 @@ export type Database = {
           sms_emergencies_enabled?: boolean;
           transcript_retention_days?: number;
           call_coaching_embargo_hours?: number;
+          operator_agent_batch_cap?: number;
           inactive_at?: string | null;
           offboarded_at?: string | null;
           delete_after?: string | null;
@@ -1953,6 +1955,7 @@ export type Database = {
           sms_emergencies_enabled?: boolean;
           transcript_retention_days?: number;
           call_coaching_embargo_hours?: number;
+          operator_agent_batch_cap?: number;
           inactive_at?: string | null;
           offboarded_at?: string | null;
           delete_after?: string | null;
@@ -3726,6 +3729,207 @@ export type Database = {
         Update: never;
         Relationships: [];
       };
+      operator_runs: {
+        Row: {
+          id: string;
+          org_id: string;
+          member_id: string;
+          user_id: string;
+          request_text: string;
+          follow_up_text: string | null;
+          follow_up_used: boolean;
+          status: string;
+          final_response: string | null;
+          model: string | null;
+          input_tokens: number;
+          output_tokens: number;
+          step_count: number;
+          stop_reason: string | null;
+          messages: Json;
+          created_at: string;
+          finished_at: string | null;
+        };
+        Insert: {
+          id?: string;
+          org_id: string;
+          member_id: string;
+          user_id: string;
+          request_text: string;
+          follow_up_text?: string | null;
+          follow_up_used?: boolean;
+          status?: string;
+          final_response?: string | null;
+          model?: string | null;
+          input_tokens?: number;
+          output_tokens?: number;
+          step_count?: number;
+          stop_reason?: string | null;
+          messages?: Json;
+          created_at?: string;
+          finished_at?: string | null;
+        };
+        Update: {
+          id?: string;
+          org_id?: string;
+          member_id?: string;
+          user_id?: string;
+          request_text?: string;
+          follow_up_text?: string | null;
+          follow_up_used?: boolean;
+          status?: string;
+          final_response?: string | null;
+          model?: string | null;
+          input_tokens?: number;
+          output_tokens?: number;
+          step_count?: number;
+          stop_reason?: string | null;
+          messages?: Json;
+          created_at?: string;
+          finished_at?: string | null;
+        };
+        Relationships: [];
+      };
+      operator_run_steps: {
+        Row: {
+          id: string;
+          org_id: string;
+          run_id: string;
+          seq: number;
+          tool_name: string;
+          label: string;
+          arguments: Json;
+          result: Json | null;
+          result_summary: string | null;
+          state: string;
+          error_kind: string | null;
+          error_text: string | null;
+          ui: Json | null;
+          started_at: string;
+          finished_at: string | null;
+          duration_ms: number | null;
+        };
+        Insert: {
+          id?: string;
+          org_id: string;
+          run_id: string;
+          seq: number;
+          tool_name: string;
+          label: string;
+          arguments?: Json;
+          result?: Json | null;
+          result_summary?: string | null;
+          state: string;
+          error_kind?: string | null;
+          error_text?: string | null;
+          ui?: Json | null;
+          started_at?: string;
+          finished_at?: string | null;
+          duration_ms?: number | null;
+        };
+        Update: {
+          id?: string;
+          org_id?: string;
+          run_id?: string;
+          seq?: number;
+          tool_name?: string;
+          label?: string;
+          arguments?: Json;
+          result?: Json | null;
+          result_summary?: string | null;
+          state?: string;
+          error_kind?: string | null;
+          error_text?: string | null;
+          ui?: Json | null;
+          started_at?: string;
+          finished_at?: string | null;
+          duration_ms?: number | null;
+        };
+        Relationships: [];
+      };
+      operator_run_confirmations: {
+        Row: {
+          id: string;
+          org_id: string;
+          run_id: string;
+          step_id: string | null;
+          tool_name: string;
+          write_kind: string;
+          reversible: boolean;
+          irreversible_reason: string | null;
+          record_count: number;
+          records: Json;
+          execute_payload: Json;
+          decision: string;
+          decided_by: string | null;
+          decided_at: string | null;
+          execute_result: Json | null;
+          undo_until: string | null;
+          undone_at: string | null;
+          undo_result: Json | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          org_id: string;
+          run_id: string;
+          step_id?: string | null;
+          tool_name: string;
+          write_kind: string;
+          reversible: boolean;
+          irreversible_reason?: string | null;
+          record_count: number;
+          records: Json;
+          execute_payload?: Json;
+          decision?: string;
+          decided_by?: string | null;
+          decided_at?: string | null;
+          execute_result?: Json | null;
+          undo_until?: string | null;
+          undone_at?: string | null;
+          undo_result?: Json | null;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          org_id?: string;
+          run_id?: string;
+          step_id?: string | null;
+          tool_name?: string;
+          write_kind?: string;
+          reversible?: boolean;
+          irreversible_reason?: string | null;
+          record_count?: number;
+          records?: Json;
+          execute_payload?: Json;
+          decision?: string;
+          decided_by?: string | null;
+          decided_at?: string | null;
+          execute_result?: Json | null;
+          undo_until?: string | null;
+          undone_at?: string | null;
+          undo_result?: Json | null;
+          created_at?: string;
+        };
+        Relationships: [];
+      };
+      operator_run_leads: {
+        Row: {
+          org_id: string;
+          run_id: string;
+          lead_id: string;
+        };
+        Insert: {
+          org_id: string;
+          run_id: string;
+          lead_id: string;
+        };
+        Update: {
+          org_id?: string;
+          run_id?: string;
+          lead_id?: string;
+        };
+        Relationships: [];
+      };
     };
     Views: {
       queue_rows: {
@@ -4167,6 +4371,15 @@ export type Database = {
       };
       consume_rate_limit: {
         Args: { p_key: string; p_limit: number; p_window_seconds: number };
+        Returns: Json;
+      };
+      consume_operator_agent_rate_limit: {
+        Args: {
+          p_org_id: string;
+          p_scope: string;
+          p_limit: number;
+          p_window_seconds: number;
+        };
         Returns: Json;
       };
       record_ops_job_run: {

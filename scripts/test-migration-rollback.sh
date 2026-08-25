@@ -167,3 +167,41 @@ if [[ "$(echo "$tbl_cq" | tr -d ' ')" != "1" ]]; then
 fi
 
 echo "OK: call quality migration rollback and re-apply succeeded."
+
+echo "Rollback operator agent (tables and batch cap gone)..."
+run "${ROOT}/supabase/rollbacks/20260828010000_operator_agent.sql"
+col_cap="$("${PSQL[@]}" -d "${DB_NAME}" -tAc "SELECT count(*) FROM information_schema.columns WHERE table_schema='public' AND table_name='organizations' AND column_name='operator_agent_batch_cap'")"
+if [[ "$(echo "$col_cap" | tr -d ' ')" != "0" ]]; then
+  echo "operator agent rollback left operator_agent_batch_cap in place" >&2
+  exit 1
+fi
+tbl_oa="$("${PSQL[@]}" -d "${DB_NAME}" -tAc "SELECT count(*) FROM information_schema.tables WHERE table_schema='public' AND table_name='operator_runs'")"
+if [[ "$(echo "$tbl_oa" | tr -d ' ')" != "0" ]]; then
+  echo "operator agent rollback left operator_runs in place" >&2
+  exit 1
+fi
+fn_oa="$("${PSQL[@]}" -d "${DB_NAME}" -tAc "SELECT count(*) FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace WHERE n.nspname='public' AND p.proname='consume_operator_agent_rate_limit'")"
+if [[ "$(echo "$fn_oa" | tr -d ' ')" != "0" ]]; then
+  echo "operator agent rollback left consume_operator_agent_rate_limit in place" >&2
+  exit 1
+fi
+
+echo "Re-apply operator agent..."
+run "${ROOT}/supabase/migrations/20260828010000_operator_agent.sql"
+col_cap="$("${PSQL[@]}" -d "${DB_NAME}" -tAc "SELECT count(*) FROM information_schema.columns WHERE table_schema='public' AND table_name='organizations' AND column_name='operator_agent_batch_cap'")"
+if [[ "$(echo "$col_cap" | tr -d ' ')" != "1" ]]; then
+  echo "re-apply did not restore operator_agent_batch_cap" >&2
+  exit 1
+fi
+tbl_oa="$("${PSQL[@]}" -d "${DB_NAME}" -tAc "SELECT count(*) FROM information_schema.tables WHERE table_schema='public' AND table_name='operator_runs'")"
+if [[ "$(echo "$tbl_oa" | tr -d ' ')" != "1" ]]; then
+  echo "re-apply did not restore operator_runs" >&2
+  exit 1
+fi
+fn_oa="$("${PSQL[@]}" -d "${DB_NAME}" -tAc "SELECT count(*) FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace WHERE n.nspname='public' AND p.proname='consume_operator_agent_rate_limit'")"
+if [[ "$(echo "$fn_oa" | tr -d ' ')" != "1" ]]; then
+  echo "re-apply did not restore consume_operator_agent_rate_limit" >&2
+  exit 1
+fi
+
+echo "OK: operator agent migration rollback and re-apply succeeded."

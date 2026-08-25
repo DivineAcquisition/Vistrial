@@ -258,23 +258,25 @@ export default async function OpsPage() {
       <Panel className="mt-8 p-6">
         <h2 className={cardTitle}>Model spend</h2>
         <p className={helperClass}>
-          Estimated from extraction token logs at published Anthropic list prices. Drafting tokens
-          are not stored yet, so this is extraction-attributable spend only.
+          Estimated from extraction token logs and operator-agent runs at published Anthropic list
+          prices. Drafting tokens are not stored yet.
         </p>
         <div className="mt-4">
           <DataTable
             caption="Estimated model spend by workspace"
             columns={[
               { key: "org", label: "Workspace" },
-              { key: "tokens", label: "Tokens", align: "right" },
+              { key: "extraction", label: "Extraction", align: "right" },
+              { key: "agent", label: "Operator agent", align: "right" },
               { key: "usd", label: "Est. USD", align: "right" },
             ]}
             rows={state.spend.byOrg.map((row) => ({
               org: row.orgName,
-              tokens: String(row.inputTokens + row.outputTokens),
+              extraction: usd(row.extractionUsd),
+              agent: usd(row.agentUsd),
               usd: usd(row.estimatedUsd),
             }))}
-            empty="No extraction usage in the last 30 days."
+            empty="No model usage in the last 30 days."
           />
         </div>
         <div className="mt-4">

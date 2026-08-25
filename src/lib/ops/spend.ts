@@ -24,6 +24,8 @@ export type OrgSpendRow = {
   inputTokens: number;
   outputTokens: number;
   estimatedUsd: number;
+  extractionUsd: number;
+  agentUsd: number;
 };
 
 export async function loadModelSpend(db: GhlDb, days = 30): Promise<{
@@ -32,10 +34,14 @@ export async function loadModelSpend(db: GhlDb, days = 30): Promise<{
   trend: Array<{ day: string; usd: number }>;
 }> {
   const since = new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString();
-  const [{ data: usage }, { data: orgs }] = await Promise.all([
+  const [{ data: usage }, { data: agentRuns }, { data: orgs }] = await Promise.all([
     db
       .from("extraction_usage")
       .select("org_id, model_version, input_tokens, output_tokens, created_at")
+      .gte("created_at", since),
+    db
+      .from("operator_runs")
+      .select("org_id, model, input_tokens, output_tokens, created_at")
       .gte("created_at", since),
     db.from("organizations").select("id, name"),
   ]);
@@ -45,26 +51,58 @@ export async function loadModelSpend(db: GhlDb, days = 30): Promise<{
   const byDay = new Map<string, number>();
   let totalUsd = 0;
 
-  for (const row of usage ?? []) {
+  function add(args: {
+    orgId: string;
+    model: string;
+    inputTokens: number;
+    outputTokens: number;
+    createdAt: string;
+    source: "extraction" | "agent";
+  }) {
     const usd = estimatedSpendUsd({
-      model: row.model_version,
-      inputTokens: row.input_tokens,
-      outputTokens: row.output_tokens,
+      model: args.model,
+      inputTokens: args.inputTokens,
+      outputTokens: args.outputTokens,
     });
     totalUsd += usd;
-    const current = byOrg.get(row.org_id) ?? {
-      orgId: row.org_id,
-      orgName: names.get(row.org_id) ?? row.org_id,
+    const current = byOrg.get(args.orgId) ?? {
+      orgId: args.orgId,
+      orgName: names.get(args.orgId) ?? args.orgId,
       inputTokens: 0,
       outputTokens: 0,
       estimatedUsd: 0,
+      extractionUsd: 0,
+      agentUsd: 0,
     };
-    current.inputTokens += row.input_tokens;
-    current.outputTokens += row.output_tokens;
+    current.inputTokens += args.inputTokens;
+    current.outputTokens += args.outputTokens;
     current.estimatedUsd += usd;
-    byOrg.set(row.org_id, current);
-    const day = row.created_at.slice(0, 10);
+    if (args.source === "extraction") current.extractionUsd += usd;
+    else current.agentUsd += usd;
+    byOrg.set(args.orgId, current);
+    const day = args.createdAt.slice(0, 10);
     byDay.set(day, (byDay.get(day) ?? 0) + usd);
+  }
+
+  for (const row of usage ?? []) {
+    add({
+      orgId: row.org_id,
+      model: row.model_version,
+      inputTokens: row.input_tokens,
+      outputTokens: row.output_tokens,
+      createdAt: row.created_at,
+      source: "extraction",
+    });
+  }
+  for (const row of agentRuns ?? []) {
+    add({
+      orgId: row.org_id,
+      model: row.model ?? "claude-sonnet-4-6",
+      inputTokens: row.input_tokens,
+      outputTokens: row.output_tokens,
+      createdAt: row.created_at,
+      source: "agent",
+    });
   }
 
   const trend = [...byDay.entries()]

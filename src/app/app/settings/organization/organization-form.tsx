@@ -37,6 +37,7 @@ export function OrganizationForm({
   workingDays,
   transcriptRetentionDays,
   callCoachingEmbargoHours,
+  operatorAgentBatchCap,
 }: {
   name: string;
   timezone: string;
@@ -48,6 +49,7 @@ export function OrganizationForm({
   workingDays: number[];
   transcriptRetentionDays: number;
   callCoachingEmbargoHours: number;
+  operatorAgentBatchCap: number;
 }) {
   const [state, action, pending] = useActionState(updateOrganization, initial);
   const timezoneOptions = isOrgTimezone(timezone)
@@ -171,6 +173,22 @@ export function OrganizationForm({
             max={168}
             required
             defaultValue={callCoachingEmbargoHours}
+          />
+        </Field>
+
+        <Field
+          label="Operator-agent batch cap"
+          name="operator_agent_batch_cap"
+          help="A confirmed agent write may touch this many records. Above it, the agent must narrow or split. Nothing is truncated. Default 10. Range 1–40."
+        >
+          <Input
+            name="operator_agent_batch_cap"
+            id="operator_agent_batch_cap"
+            type="number"
+            min={1}
+            max={40}
+            required
+            defaultValue={operatorAgentBatchCap}
           />
         </Field>
 

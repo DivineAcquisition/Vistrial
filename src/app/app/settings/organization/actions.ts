@@ -32,6 +32,7 @@ export async function updateOrganization(
     .filter((day) => day >= 1 && day <= 7);
   const transcriptRetentionDays = Number(formData.get("transcript_retention_days"));
   const embargoHours = Number(formData.get("call_coaching_embargo_hours"));
+  const batchCap = Number(formData.get("operator_agent_batch_cap"));
 
   if (!name) {
     return { status: "error", error: "Organization name is required." };
@@ -64,6 +65,9 @@ export async function updateOrganization(
   if (!Number.isInteger(embargoHours) || embargoHours < 0 || embargoHours > 168) {
     return { status: "error", error: "Coaching delay must be between 0 and 168 hours." };
   }
+  if (!Number.isInteger(batchCap) || batchCap < 1 || batchCap > 40) {
+    return { status: "error", error: "Agent batch cap must be between 1 and 40 records." };
+  }
 
   const supabase = await createClient();
   const { data, error } = await supabase
@@ -78,6 +82,7 @@ export async function updateOrganization(
       working_days: workingDays,
       transcript_retention_days: transcriptRetentionDays,
       call_coaching_embargo_hours: embargoHours,
+      operator_agent_batch_cap: batchCap,
     })
     .eq("id", ctx.org.id)
     .select("id")

@@ -648,6 +648,31 @@ $$;
 REVOKE ALL ON FUNCTION public.run_data_retention(boolean) FROM PUBLIC, anon, authenticated;
 GRANT EXECUTE ON FUNCTION public.run_data_retention(boolean) TO service_role;
 
+-- Org wipe is the one legal path that deletes append-only case-file history.
+CREATE OR REPLACE FUNCTION public.forbid_readiness_score_mutation()
+RETURNS trigger
+LANGUAGE plpgsql
+AS $$
+BEGIN
+  IF current_setting('vistrial.allow_org_wipe', true) = '1' THEN
+    RETURN OLD;
+  END IF;
+  RAISE EXCEPTION 'readiness_scores is append-only';
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION public.forbid_case_file_delete()
+RETURNS trigger
+LANGUAGE plpgsql
+AS $$
+BEGIN
+  IF current_setting('vistrial.allow_org_wipe', true) = '1' THEN
+    RETURN OLD;
+  END IF;
+  RAISE EXCEPTION 'case file history is not deleted';
+END;
+$$;
+
 -- ---------------------------------------------------------------------------
 -- Org row counts, export helper bits, deletion
 -- ---------------------------------------------------------------------------
@@ -779,7 +804,9 @@ BEGIN
   FROM public.webhook_events
   WHERE org_id = p_org_id;
   DELETE FROM public.webhook_events WHERE org_id = p_org_id;
-  DELETE FROM public.staff_access_log WHERE org_id = p_org_id;
+  IF to_regclass('public.staff_access_log') IS NOT NULL THEN
+    DELETE FROM public.staff_access_log WHERE org_id = p_org_id;
+  END IF;
   DELETE FROM public.ops_alerts WHERE org_id = p_org_id;
   -- Incidents stay with org_id nulled: they are the surviving DA audit, like
   -- org_deletion_records. That is intentional.
@@ -787,6 +814,7 @@ BEGIN
   -- Halt anything still queued, then wipe the tenant.
   PERFORM public.halt_org_follow_up_sequences(p_org_id, NULL);
 
+  PERFORM set_config('vistrial.allow_org_wipe', '1', true);
   DELETE FROM public.organizations WHERE id = p_org_id;
 
   -- Members cascade with the org. Auth users that only existed for this

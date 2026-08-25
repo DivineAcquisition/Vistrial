@@ -46,5 +46,8 @@
     "tailwindcss": "^4",
     "typescript": "^5",
     "vitest": "^4.1.11"
+  },
+  "overrides": {
+    "nanoid": "3.3.18"
   }
 }

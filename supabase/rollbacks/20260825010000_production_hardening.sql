@@ -68,3 +68,21 @@ AS $$
       IN regexp_replace(lower(COALESCE(c.raw_transcript, '')), '\s+', '', 'g')
     ) = 0;
 $$;
+
+CREATE OR REPLACE FUNCTION public.forbid_readiness_score_mutation()
+RETURNS trigger
+LANGUAGE plpgsql
+AS $$
+BEGIN
+  RAISE EXCEPTION 'readiness_scores is append-only';
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION public.forbid_case_file_delete()
+RETURNS trigger
+LANGUAGE plpgsql
+AS $$
+BEGIN
+  RAISE EXCEPTION 'case file history is not deleted';
+END;
+$$;

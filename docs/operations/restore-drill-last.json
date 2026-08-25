@@ -1,0 +1,25 @@
+{
+  "performedAt": "2026-08-25T01:10:24.502313+00:00",
+  "durationMs": 428,
+  "sourceDb": "vistrial_restore_source",
+  "targetDb": "vistrial_restore_target",
+  "verified": true,
+  "counts": {
+    "calls": 1,
+    "leads": 5,
+    "touches": 5,
+    "objections": 1,
+    "revenue_log": 1,
+    "organizations": 1,
+    "baseline_calls": 1,
+    "baseline_leads": 1,
+    "baseline_revenue": 1,
+    "baseline_touches": 1,
+    "call_extractions": 1,
+    "readiness_scores": 1
+  },
+  "relationshipsIntact": true,
+  "rpoMinutesDocumented": 1440,
+  "rpoMinutesWithPitr": 5,
+  "notes": "Local pg_dump/pg_restore drill. Hosted production uses Supabase PITR (30 days) in addition to this procedure."
+}

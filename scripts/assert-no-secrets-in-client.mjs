@@ -12,7 +12,7 @@ const ROOT = join(process.cwd(), ".next", "static");
 const FORBIDDEN = [
   /SUPABASE_SERVICE_ROLE_KEY/,
   /SUPABASE_SECRET_KEY/,
-  /sb_secret_/,
+  /sb_secret_[A-Za-z0-9]{12,}/,
   /ANTHROPIC_API_KEY/,
   /GHL_CLIENT_SECRET/,
   /GHL_TOKEN_ENCRYPTION_KEY/,
@@ -22,7 +22,7 @@ const FORBIDDEN = [
   /CRON_SECRET/,
   /RESEND_API_KEY/,
   /RESEND_WEBHOOK_SECRET/,
-  /sk-ant-/,
+  /sk-ant-[A-Za-z0-9_-]{8,}/,
 ];
 
 function walk(dir, files = []) {
@@ -38,7 +38,7 @@ function walk(dir, files = []) {
 
 if (!statSync(ROOT, { throwIfNoEntry: false })) {
   console.error("assert-no-secrets-in-client: .next/static is missing. Run next build first.");
-  process.exit  (1);
+  process.exit(1);
 }
 
 const files = walk(ROOT);

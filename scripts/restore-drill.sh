@@ -20,6 +20,7 @@ for f in "${ROOT}/supabase/migrations/"*.sql; do
   "${PSQL[@]}" -d "${SRC_DB}" -f "$f" >/dev/null
 done
 "${PSQL[@]}" -d "${SRC_DB}" -f "${ROOT}/supabase/seed.sql" >/dev/null
+"${PSQL[@]}" -d "${SRC_DB}" -f "${ROOT}/supabase/tests/restore-drill-fixture.sql" >/dev/null
 
 count_sql="
 SELECT jsonb_build_object(
@@ -46,10 +47,17 @@ sudo -u postgres pg_dump -Fc --schema=public --schema=auth "${SRC_DB}" > "${DUMP
 echo "Restoring into clean ${DST_DB}..."
 sudo -u postgres dropdb --if-exists "${DST_DB}"
 sudo -u postgres createdb "${DST_DB}"
+# pg_dump --schema=public does not emit CREATE EXTENSION. Install what indexes need.
+sudo -u postgres psql -d "${DST_DB}" -v ON_ERROR_STOP=1 -c "CREATE EXTENSION IF NOT EXISTS pg_trgm; CREATE EXTENSION IF NOT EXISTS pgcrypto;"
+TOC="$(mktemp)"
+chmod a+r "${TOC}"
+sudo -u postgres pg_restore -l "${DUMP}" | grep -vE 'SCHEMA - public|EXTENSION - pg_trgm|EXTENSION - pgcrypto|COMMENT - EXTENSION pg_trgm|COMMENT - EXTENSION pgcrypto' > "${TOC}"
+chmod a+r "${TOC}"
 
 start_ns="$(date +%s%N)"
-sudo -u postgres pg_restore --dbname="${DST_DB}" --no-owner --exit-on-error "${DUMP}"
+sudo -u postgres pg_restore --dbname="${DST_DB}" --no-owner --exit-on-error -L "${TOC}" "${DUMP}"
 end_ns="$(date +%s%N)"
+rm -f "${TOC}"
 duration_ms="$(( (end_ns - start_ns) / 1000000 ))"
 
 dst_counts="$("${PSQL[@]}" -d "${DST_DB}" -tAc "$count_sql")"
@@ -70,6 +78,21 @@ if [[ "${src_counts}" != "${dst_counts}" ]]; then
   echo "target: ${dst_counts}" >&2
   exit 1
 fi
+
+python3 - <<PY
+import json, sys
+counts = json.loads('''${dst_counts}''')
+required = [
+  "organizations", "leads", "touches", "calls", "call_extractions",
+  "objections", "readiness_scores", "revenue_log",
+  "baseline_leads", "baseline_touches", "baseline_calls", "baseline_revenue",
+]
+missing = [name for name in required if not counts.get(name)]
+if missing:
+    print("Restore did not round-trip rows for:", ", ".join(missing), file=sys.stderr)
+    print(counts, file=sys.stderr)
+    sys.exit(1)
+PY
 
 if [[ "$(echo "${fk_broken}" | tr -d ' ')" != "0" ]]; then
   echo "Restore left unvalidated foreign keys." >&2

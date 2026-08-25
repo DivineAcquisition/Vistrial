@@ -20,7 +20,7 @@ Keys are SHA-256. Raw emails are not stored in `rate_limit_buckets`.
 
 ## Secrets in the client bundle
 
-`node scripts/assert-no-secrets-in-client.mjs` greps `.next/static` after `next build`. CI fails if `SUPABASE_SERVICE_ROLE_KEY`, `ANTHROPIC_API_KEY`, `sk-ant-`, Twilio, VAPID private, Cron, Resend, or GHL secrets appear.
+`node scripts/assert-no-secrets-in-client.mjs` greps `.next/static` after `next build`. CI fails if `SUPABASE_SERVICE_ROLE_KEY`, `ANTHROPIC_API_KEY`, `sk-ant-` plus a token, Twilio, VAPID private, Cron, Resend, or GHL secrets appear. The supabase-js client is allowed to *name* the `sb_secret_` prefix so it can refuse a secret key in the browser; a real key value still fails the scan.
 
 ## Encryption
 

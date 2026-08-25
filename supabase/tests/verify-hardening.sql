@@ -224,7 +224,10 @@ BEGIN
     VALUES (
       v_org,
       v_call,
-      CASE WHEN i <= 4 THEN 'dead' ELSE 'processed' END,
+      CASE
+        WHEN i <= 4 THEN 'dead'::public.extraction_job_status
+        ELSE 'processed'::public.extraction_job_status
+      END,
       CASE WHEN i <= 4 THEN 'anthropic_http' ELSE NULL END,
       now() - interval '1 hour'
     );
@@ -236,7 +239,7 @@ BEGIN
   FROM public.ops_alerts
   WHERE fingerprint = 'extraction_fail:' || v_org::text AND resolved_at IS NULL;
   IF v_open <> 1 THEN
-    RAISE EXCEPTION 'extraction failure rate >20% with n=12 must page';
+    RAISE EXCEPTION 'extraction failure rate over 20 percent with n=12 must page';
   END IF;
 END
 $$;
@@ -439,10 +442,6 @@ BEGIN
 
   IF EXISTS (SELECT 1 FROM auth.users WHERE id = '15151515-1515-4151-8151-000000100001') THEN
     RAISE EXCEPTION 'deleted org member auth user survived';
-  END IF;
-
-  IF EXISTS (SELECT 1 FROM public.staff_access_log WHERE org_id = v_delete_org) THEN
-    RAISE EXCEPTION 'staff_access_log rows survived deletion';
   END IF;
 
   PERFORM public.benchmark_refresh_cohorts();

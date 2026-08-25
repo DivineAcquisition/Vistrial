@@ -1,6 +1,9 @@
 "use client";
 
 import Link from "next/link";
+import { useEffect } from "react";
+
+import { recordBriefView } from "@/app/app/coaching/actions";
 
 import { DefinitionList, KeyValue } from "@/components/ui/definition-list";
 import { Panel } from "@/components/ui/panel";
@@ -29,6 +32,10 @@ export function BriefScreen({ brief }: { brief: BriefPayload }) {
   const score = brief.score;
   const objections = brief.openObjections;
   const quotes = brief.quotes;
+
+  useEffect(() => {
+    void recordBriefView(brief.lead.id);
+  }, [brief.lead.id]);
 
   return (
     <div className="brief-sheet grid min-h-0 overflow-x-hidden md:h-[calc(100svh-9rem)] md:grid-rows-[auto_1fr] md:overflow-hidden">
@@ -124,6 +131,24 @@ export function BriefScreen({ brief }: { brief: BriefPayload }) {
             </ul>
           )}
         </Panel>
+
+        {brief.whatWorks.length > 0 ? (
+          <Panel className="px-4 py-3 max-md:order-3 md:col-span-2">
+            <p className="text-[11px] font-semibold tracking-[0.14em] text-brand-300 uppercase">
+              What closed calls did with objections like these
+            </p>
+            <ul className="mt-1 space-y-1 text-xs text-silver">
+              {brief.whatWorks.map((finding) => (
+                <li key={finding.statement}>
+                  {finding.statement}
+                  {finding.leadQualityCaveat ? (
+                    <span className="mt-0.5 block text-dim">{finding.leadQualityCaveat}</span>
+                  ) : null}
+                </li>
+              ))}
+            </ul>
+          </Panel>
+        ) : null}
 
         <Panel className="px-4 py-3">
           <p className="text-[11px] font-semibold tracking-[0.14em] text-brand-300 uppercase">Last time</p>

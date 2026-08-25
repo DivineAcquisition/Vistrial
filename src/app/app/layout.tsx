@@ -10,7 +10,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   const supabase = await createClient();
   const { data: training } = await supabase
     .from("org_members")
-    .select("logged_outcome_from_mobile_at")
+    .select("logged_outcome_from_mobile_at, call_coaching_acknowledged_at")
     .eq("id", ctx.member.id)
     .maybeSingle();
 
@@ -20,6 +20,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         needsMobileOutcomeTraining={
           ctx.role === "setter" && !training?.logged_outcome_from_mobile_at
         }
+        needsCoachingAck={!training?.call_coaching_acknowledged_at}
       >
         {children}
       </AppShell>

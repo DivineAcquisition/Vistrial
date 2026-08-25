@@ -164,6 +164,22 @@ export function parseBriefPayload(
     cachedOpening: asString(cached.text),
     cachedOpeningKey: asString(cached.cacheKey),
     cacheKey: briefCacheKey(row),
+    whatWorks: Array.isArray(row.whatWorks)
+      ? row.whatWorks
+          .map((item) => {
+            const finding = asRecord(item);
+            const statement = asString(finding.statement);
+            if (!statement) return null;
+            return {
+              statement,
+              sampleClosed: asNumber(finding.sampleClosed) ?? 0,
+              sampleLost: asNumber(finding.sampleLost) ?? 0,
+              leadQualityCaveat: asString(finding.leadQualityCaveat),
+            };
+          })
+          .filter((item): item is NonNullable<typeof item> => item !== null)
+          .slice(0, 3)
+      : [],
   };
 }
 

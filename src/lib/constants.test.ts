@@ -18,8 +18,8 @@ describe("public legal identity", () => {
     expect(COMPANY_ADDRESS).toBe("7404 Executive Place, Lanham, MD 20706");
     expect(CONTACT_EMAIL).toBe("contact@vistrial.io");
     expect(LEGAL_EMAIL).toBe("legal@divineacquisition.io");
-    expect(PRIVACY_LAST_UPDATED).toBe("8/22/2026");
-    expect(PRIVACY_EFFECTIVE).toBe("8/22/2026");
+    expect(PRIVACY_LAST_UPDATED).toBe("8/25/2026");
+    expect(PRIVACY_EFFECTIVE).toBe("8/25/2026");
   });
 
   it("dates the terms of service when they were published", () => {

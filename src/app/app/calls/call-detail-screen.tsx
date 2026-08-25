@@ -40,7 +40,16 @@ import {
   labelClass,
 } from "@/lib/ui";
 
-export function CallDetailScreen({ initial }: { initial: CallDetailPayload }) {
+export function CallDetailScreen({
+  initial,
+  quality,
+}: {
+  initial: CallDetailPayload;
+  quality?: {
+    measure: Record<string, unknown> | null;
+    handlings: Array<Record<string, unknown>>;
+  };
+}) {
   const [detail, setDetail] = useState(initial);
   const [now] = useState(() => new Date().toISOString());
   const [error, setError] = useState<string | null>(null);
@@ -113,6 +122,76 @@ export function CallDetailScreen({ initial }: { initial: CallDetailPayload }) {
           </KeyValue>
         </DefinitionList>
       </Panel>
+
+      {quality?.measure ? (
+        <Panel className="p-6">
+          <SectionHeader
+            title="What happened on this recording"
+            hint="Facts about the call, not a grade of the person. One call is never a verdict."
+          />
+          <DefinitionList>
+            <KeyValue label="Talk ratio">
+              {quality.measure.speakers_attributed === true && typeof quality.measure.talk_ratio_rep === "number"
+                ? `${Math.round(Number(quality.measure.talk_ratio_rep) * 100)}% rep / ${Math.round(Number(quality.measure.talk_ratio_prospect) * 100)}% prospect. Context, not a target.`
+                : "Unknown — speakers were not labeled on the transcript."}
+            </KeyValue>
+            <KeyValue label="Questions">
+              {String(quality.measure.open_question_count ?? 0)} open / {String(quality.measure.closed_question_count ?? 0)}{" "}
+              closed ({String(quality.measure.question_count ?? 0)} total)
+            </KeyValue>
+            <KeyValue label="Longest rep monologue">
+              {quality.measure.longest_rep_monologue_words == null
+                ? "Unknown"
+                : `${String(quality.measure.longest_rep_monologue_words)} words`}
+            </KeyValue>
+            <KeyValue label="Duration vs typical">
+              {quality.measure.typical_duration_seconds == null
+                ? `${formatCallDuration(
+                    typeof quality.measure.duration_seconds === "number"
+                      ? Number(quality.measure.duration_seconds)
+                      : null
+                  )} (no org typical yet for this call type)`
+                : `${formatCallDuration(
+                    typeof quality.measure.duration_seconds === "number"
+                      ? Number(quality.measure.duration_seconds)
+                      : null
+                  )} vs ${formatCallDuration(Number(quality.measure.typical_duration_seconds))} typical. Context, not a target.`}
+            </KeyValue>
+            <KeyValue label="Next step stated">
+              {quality.measure.next_step_stated === true ? "Yes" : "No"}
+            </KeyValue>
+            <KeyValue label="Next step agreed">
+              {quality.measure.next_step_agreed === true ? "Yes" : "No"}
+            </KeyValue>
+            <KeyValue label="Next step">{String(quality.measure.commitment_clarity ?? "none")}</KeyValue>
+            <KeyValue label="Discovery">
+              {[
+                quality.measure.discovery_authority === true ? "authority explored" : "authority not explored",
+                quality.measure.discovery_pain === true ? "pain explored" : "pain not explored",
+                quality.measure.discovery_timeline === true ? "timeline explored" : "timeline not explored",
+                quality.measure.discovery_budget === true ? "investment explored" : "investment not explored",
+              ].join(" · ")}
+            </KeyValue>
+            <KeyValue label="Brief opened before call">
+              {quality.measure.brief_opened_before_call === true ? "Yes" : "No"}
+            </KeyValue>
+            <KeyValue label="Open objections addressed">
+              {String(quality.measure.open_objections_addressed_n ?? 0)} of{" "}
+              {String(quality.measure.open_objections_prior_n ?? 0)}
+            </KeyValue>
+          </DefinitionList>
+          {quality.handlings.length > 0 ? (
+            <ul className="mt-3 space-y-1 text-sm text-silver">
+              {quality.handlings.map((item, index) => (
+                <li key={`${String(item.objection_type)}-${index}`}>
+                  {String(item.objection_type)}: {String(item.handling)}
+                  {typeof item.verbatim === "string" ? ` — “${item.verbatim}”` : ""}
+                </li>
+              ))}
+            </ul>
+          ) : null}
+        </Panel>
+      ) : null}
 
       {jobStatus === "failed" ? (
         <Notice

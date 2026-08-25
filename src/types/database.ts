@@ -198,6 +198,288 @@ export type Database = {
         };
         Relationships: [];
       };
+      brief_views: {
+        Row: {
+          id: string;
+          org_id: string;
+          lead_id: string;
+          member_id: string;
+          viewed_at: string;
+        };
+        Insert: {
+          id?: string;
+          org_id: string;
+          lead_id: string;
+          member_id: string;
+          viewed_at?: string;
+        };
+        Update: {
+          id?: string;
+          org_id?: string;
+          lead_id?: string;
+          member_id?: string;
+          viewed_at?: string;
+        };
+        Relationships: [];
+      };
+      call_quality_measures: {
+        Row: {
+          id: string;
+          org_id: string;
+          call_id: string;
+          lead_id: string;
+          member_id: string;
+          occurred_at: string;
+          call_type: Database["public"]["Enums"]["call_type"];
+          duration_seconds: number | null;
+          transcript_sha256: string;
+          speakers_attributed: boolean;
+          talk_ratio_rep: number | null;
+          talk_ratio_prospect: number | null;
+          word_count_rep: number;
+          word_count_prospect: number;
+          word_count_unknown: number;
+          question_count: number;
+          open_question_count: number;
+          closed_question_count: number;
+          longest_rep_monologue_words: number | null;
+          typical_duration_seconds: number | null;
+          duration_vs_typical_seconds: number | null;
+          next_step_stated: boolean;
+          next_step_agreed: boolean;
+          commitment_clarity: string;
+          discovery_pain: boolean;
+          discovery_timeline: boolean;
+          discovery_budget: boolean;
+          discovery_authority: boolean;
+          open_objections_prior_n: number;
+          open_objections_addressed_n: number;
+          brief_opened_before_call: boolean;
+          analyzer_version: string;
+          analyzed_at: string;
+        };
+        Insert: {
+          id?: string;
+          org_id: string;
+          call_id: string;
+          lead_id: string;
+          member_id: string;
+          occurred_at: string;
+          call_type: Database["public"]["Enums"]["call_type"];
+          duration_seconds?: number | null;
+          transcript_sha256: string;
+          speakers_attributed: boolean;
+          talk_ratio_rep?: number | null;
+          talk_ratio_prospect?: number | null;
+          word_count_rep?: number;
+          word_count_prospect?: number;
+          word_count_unknown?: number;
+          question_count?: number;
+          open_question_count?: number;
+          closed_question_count?: number;
+          longest_rep_monologue_words?: number | null;
+          typical_duration_seconds?: number | null;
+          duration_vs_typical_seconds?: number | null;
+          next_step_stated: boolean;
+          next_step_agreed: boolean;
+          commitment_clarity: string;
+          discovery_pain: boolean;
+          discovery_timeline: boolean;
+          discovery_budget: boolean;
+          discovery_authority: boolean;
+          open_objections_prior_n?: number;
+          open_objections_addressed_n?: number;
+          brief_opened_before_call: boolean;
+          analyzer_version: string;
+          analyzed_at?: string;
+        };
+        Update: {
+          id?: string;
+          org_id?: string;
+          call_id?: string;
+          lead_id?: string;
+          member_id?: string;
+          occurred_at?: string;
+          call_type?: Database["public"]["Enums"]["call_type"];
+          duration_seconds?: number | null;
+          transcript_sha256?: string;
+          speakers_attributed?: boolean;
+          talk_ratio_rep?: number | null;
+          talk_ratio_prospect?: number | null;
+          word_count_rep?: number;
+          word_count_prospect?: number;
+          word_count_unknown?: number;
+          question_count?: number;
+          open_question_count?: number;
+          closed_question_count?: number;
+          longest_rep_monologue_words?: number | null;
+          typical_duration_seconds?: number | null;
+          duration_vs_typical_seconds?: number | null;
+          next_step_stated?: boolean;
+          next_step_agreed?: boolean;
+          commitment_clarity?: string;
+          discovery_pain?: boolean;
+          discovery_timeline?: boolean;
+          discovery_budget?: boolean;
+          discovery_authority?: boolean;
+          open_objections_prior_n?: number;
+          open_objections_addressed_n?: number;
+          brief_opened_before_call?: boolean;
+          analyzer_version?: string;
+          analyzed_at?: string;
+        };
+        Relationships: [];
+      };
+      call_objection_handlings: {
+        Row: {
+          id: string;
+          org_id: string;
+          call_id: string;
+          measure_id: string;
+          objection_id: string | null;
+          objection_type: string;
+          verbatim: string;
+          handling: string;
+          evidence_span: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          org_id: string;
+          call_id: string;
+          measure_id: string;
+          objection_id?: string | null;
+          objection_type: string;
+          verbatim: string;
+          handling: string;
+          evidence_span?: string | null;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          org_id?: string;
+          call_id?: string;
+          measure_id?: string;
+          objection_id?: string | null;
+          objection_type?: string;
+          verbatim?: string;
+          handling?: string;
+          evidence_span?: string | null;
+          created_at?: string;
+        };
+        Relationships: [];
+      };
+      call_coaching_findings: {
+        Row: {
+          id: string;
+          org_id: string;
+          finding_key: string;
+          finding_kind: string;
+          sample_closed: number;
+          sample_lost: number;
+          bands_used: string[];
+          statement: string;
+          lead_quality_caveat: string | null;
+          evidence: Json;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          org_id: string;
+          finding_key: string;
+          finding_kind: string;
+          sample_closed: number;
+          sample_lost: number;
+          bands_used?: string[];
+          statement: string;
+          lead_quality_caveat?: string | null;
+          evidence?: Json;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          org_id?: string;
+          finding_key?: string;
+          finding_kind?: string;
+          sample_closed?: number;
+          sample_lost?: number;
+          bands_used?: string[];
+          statement?: string;
+          lead_quality_caveat?: string | null;
+          evidence?: Json;
+          created_at?: string;
+        };
+        Relationships: [];
+      };
+      call_coaching_gaming_signals: {
+        Row: {
+          id: string;
+          org_id: string;
+          member_id: string;
+          measure_key: string;
+          window_start: string;
+          window_end: string;
+          prior_value: number | null;
+          current_value: number | null;
+          relative_shift: number | null;
+          outcome_shift_pp: number | null;
+          statement: string;
+          detected_at: string;
+        };
+        Insert: {
+          id?: string;
+          org_id: string;
+          member_id: string;
+          measure_key: string;
+          window_start: string;
+          window_end: string;
+          prior_value?: number | null;
+          current_value?: number | null;
+          relative_shift?: number | null;
+          outcome_shift_pp?: number | null;
+          statement: string;
+          detected_at?: string;
+        };
+        Update: {
+          id?: string;
+          org_id?: string;
+          member_id?: string;
+          measure_key?: string;
+          window_start?: string;
+          window_end?: string;
+          prior_value?: number | null;
+          current_value?: number | null;
+          relative_shift?: number | null;
+          outcome_shift_pp?: number | null;
+          statement?: string;
+          detected_at?: string;
+        };
+        Relationships: [];
+      };
+      call_coaching_benchmarks: {
+        Row: {
+          finding_key: string;
+          org_count: number;
+          sample_n: number;
+          statement: string;
+          computed_at: string;
+        };
+        Insert: {
+          finding_key: string;
+          org_count: number;
+          sample_n: number;
+          statement: string;
+          computed_at?: string;
+        };
+        Update: {
+          finding_key?: string;
+          org_count?: number;
+          sample_n?: number;
+          statement?: string;
+          computed_at?: string;
+        };
+        Relationships: [];
+      };
       extraction_corrections: {
         Row: {
           actor_member_id: string;
@@ -1488,6 +1770,7 @@ export type Database = {
           first_mobile_session_at: string | null;
           logged_outcome_from_mobile_at: string | null;
           mobile_walkthrough_completed_at: string | null;
+          call_coaching_acknowledged_at: string | null;
         };
         Insert: {
           active?: boolean;
@@ -1507,6 +1790,7 @@ export type Database = {
           first_mobile_session_at?: string | null;
           logged_outcome_from_mobile_at?: string | null;
           mobile_walkthrough_completed_at?: string | null;
+          call_coaching_acknowledged_at?: string | null;
         };
         Update: {
           active?: boolean;
@@ -1526,6 +1810,7 @@ export type Database = {
           first_mobile_session_at?: string | null;
           logged_outcome_from_mobile_at?: string | null;
           mobile_walkthrough_completed_at?: string | null;
+          call_coaching_acknowledged_at?: string | null;
         };
         Relationships: [
           {
@@ -1621,6 +1906,7 @@ export type Database = {
           working_days: number[];
           sms_emergencies_enabled: boolean;
           transcript_retention_days: number;
+          call_coaching_embargo_hours: number;
           inactive_at: string | null;
           offboarded_at: string | null;
           delete_after: string | null;
@@ -1643,6 +1929,7 @@ export type Database = {
           working_days?: number[];
           sms_emergencies_enabled?: boolean;
           transcript_retention_days?: number;
+          call_coaching_embargo_hours?: number;
           inactive_at?: string | null;
           offboarded_at?: string | null;
           delete_after?: string | null;
@@ -1665,6 +1952,7 @@ export type Database = {
           working_days?: number[];
           sms_emergencies_enabled?: boolean;
           transcript_retention_days?: number;
+          call_coaching_embargo_hours?: number;
           inactive_at?: string | null;
           offboarded_at?: string | null;
           delete_after?: string | null;
@@ -3944,6 +4232,43 @@ export type Database = {
       load_calibration_report: {
         Args: { p_org_id: string };
         Returns: Json;
+      };
+      acknowledge_call_coaching: {
+        Args: { p_org_id: string };
+        Returns: string;
+      };
+      record_brief_view: {
+        Args: { p_org_id: string; p_lead_id: string };
+        Returns: string;
+      };
+      load_call_quality_rep_snapshot: {
+        Args: {
+          p_org_id: string;
+          p_member_id?: string | null;
+          p_query?: string | null;
+          p_include_team?: boolean;
+        };
+        Returns: Json;
+      };
+      load_call_quality_manager_snapshot: {
+        Args: { p_org_id: string };
+        Returns: Json;
+      };
+      list_call_quality_pending: {
+        Args: { p_limit?: number };
+        Returns: { call_id: string }[];
+      };
+      load_call_quality_language_corpus: {
+        Args: { p_org_id: string };
+        Returns: Json;
+      };
+      refresh_call_quality_org: {
+        Args: { p_org_id: string };
+        Returns: Json;
+      };
+      refresh_call_quality_benchmarks: {
+        Args: Record<PropertyKey, never>;
+        Returns: number;
       };
       preview_score_config_change: {
         Args: {

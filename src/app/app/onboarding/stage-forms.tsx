@@ -320,6 +320,17 @@ function StageBody({ stage, defaults }: { stage: ProfileStage; defaults: Profile
           <p className={helperClass}>
             Anything your CRM already sends is switched off here, so nobody gets the same nudge twice.
           </p>
+          <Panel className="p-4">
+            <p className="text-sm font-semibold text-white">What happens to your team&apos;s calls</p>
+            <p className={`${helperClass} mt-2`}>
+              Every rep is told, in these words, the first time they sign in: their calls are
+              transcribed, Vistrial reads those transcripts for patterns — what was asked, which
+              objections were handled, whether a next step was set — and uses that to coach. They
+              can see everything computed about them. You see the same numbers after a short delay,
+              not a secret score. Nothing is analyzed about a person until they have confirmed they
+              were told.
+            </p>
+          </Panel>
           <RepeatableRows
             field="pipeline_stage_meanings"
             name="pipeline_stage_meanings"

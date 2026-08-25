@@ -4,6 +4,7 @@ import { PageFrame } from "@/components/app/page-frame";
 import { CallDetailScreen } from "@/app/app/calls/call-detail-screen";
 import { isLeadId } from "@/lib/cases/filters";
 import { loadOrgCallDetail } from "@/lib/calls/load";
+import { loadCallQualityForCall } from "@/lib/coaching/load";
 import { throwIfForcedRouteError } from "@/lib/route-error";
 
 export default async function CallDetailPage({
@@ -20,6 +21,7 @@ export default async function CallDetailPage({
   if (!isLeadId(id)) notFound();
   const payload = await loadOrgCallDetail(id);
   if (!payload) notFound();
+  const quality = await loadCallQualityForCall(id);
 
   return (
     <PageFrame
@@ -30,7 +32,7 @@ export default async function CallDetailPage({
         { href: `/app/calls/${payload.call.id}`, label: payload.lead.name },
       ]}
     >
-      <CallDetailScreen initial={payload} />
+      <CallDetailScreen initial={payload} quality={quality} />
     </PageFrame>
   );
 }

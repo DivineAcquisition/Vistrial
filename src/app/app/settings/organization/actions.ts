@@ -31,6 +31,7 @@ export async function updateOrganization(
     .map((value) => Number(value))
     .filter((day) => day >= 1 && day <= 7);
   const transcriptRetentionDays = Number(formData.get("transcript_retention_days"));
+  const embargoHours = Number(formData.get("call_coaching_embargo_hours"));
 
   if (!name) {
     return { status: "error", error: "Organization name is required." };
@@ -60,6 +61,9 @@ export async function updateOrganization(
   ) {
     return { status: "error", error: "Transcript retention must be between 30 and 1095 days." };
   }
+  if (!Number.isInteger(embargoHours) || embargoHours < 0 || embargoHours > 168) {
+    return { status: "error", error: "Coaching delay must be between 0 and 168 hours." };
+  }
 
   const supabase = await createClient();
   const { data, error } = await supabase
@@ -73,6 +77,7 @@ export async function updateOrganization(
       working_hours_end: workingHoursEnd,
       working_days: workingDays,
       transcript_retention_days: transcriptRetentionDays,
+      call_coaching_embargo_hours: embargoHours,
     })
     .eq("id", ctx.org.id)
     .select("id")

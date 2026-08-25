@@ -170,5 +170,6 @@ describe("pre-call brief objections", () => {
       callType: "discovery",
       callOccurredAt: "2026-08-20T12:00:00.000Z",
     });
+    expect(parsed.whatWorks).toEqual([]);
   });
 });

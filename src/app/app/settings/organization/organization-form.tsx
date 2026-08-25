@@ -36,6 +36,7 @@ export function OrganizationForm({
   workingHoursEnd,
   workingDays,
   transcriptRetentionDays,
+  callCoachingEmbargoHours,
 }: {
   name: string;
   timezone: string;
@@ -46,6 +47,7 @@ export function OrganizationForm({
   workingHoursEnd: string;
   workingDays: number[];
   transcriptRetentionDays: number;
+  callCoachingEmbargoHours: number;
 }) {
   const [state, action, pending] = useActionState(updateOrganization, initial);
   const timezoneOptions = isOrgTimezone(timezone)
@@ -153,6 +155,22 @@ export function OrganizationForm({
             min={30}
             max={1095}
             defaultValue={transcriptRetentionDays}
+          />
+        </Field>
+
+        <Field
+          label="Coaching delay (hours)"
+          name="call_coaching_embargo_hours"
+          help="A rep sees their own call analysis immediately. Owner and admin see it after this many hours. Default 48. Range 0–168. 0 means they see it immediately — the cost is that the rep does not get a private window first."
+        >
+          <Input
+            name="call_coaching_embargo_hours"
+            id="call_coaching_embargo_hours"
+            type="number"
+            min={0}
+            max={168}
+            required
+            defaultValue={callCoachingEmbargoHours}
           />
         </Field>
 

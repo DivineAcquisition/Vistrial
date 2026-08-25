@@ -50,7 +50,7 @@ export const STAGE_META: Record<ProfileStage, StageMeta> = {
   process: {
     stage: "process",
     title: "How you work a lead",
-    why: "This sets the alarm window and stops Vistrial sending what your CRM already sends.",
+    why: "This sets the alarm window, stops Vistrial sending what your CRM already sends, and is where you are told that calls are transcribed and analyzed for coaching.",
     payoff: "The gap between what you intend and what happens",
   },
   objections: {

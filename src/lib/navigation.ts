@@ -37,6 +37,13 @@ export const PRIMARY_NAV: NavItem[] = [
   { href: "/app/cases", label: "Case Files", match: "/app/cases", group: "work", icon: "cases" },
   { href: "/app/calls", label: "Calls", match: "/app/calls", group: "work", icon: "calls" },
   {
+    href: "/app/coaching",
+    label: "Coaching",
+    match: "/app/coaching",
+    group: "work",
+    icon: "reporting",
+  },
+  {
     href: "/app/reporting",
     label: "Reporting",
     match: "/app/reporting",

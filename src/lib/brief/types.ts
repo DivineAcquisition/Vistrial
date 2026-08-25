@@ -55,4 +55,10 @@ export type BriefPayload = {
   };
   suggestedOpening: string | null;
   cacheKey: string;
+  whatWorks: Array<{
+    statement: string;
+    sampleClosed: number;
+    sampleLost: number;
+    leadQualityCaveat: string | null;
+  }>;
 };

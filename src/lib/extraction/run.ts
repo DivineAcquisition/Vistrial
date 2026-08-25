@@ -175,6 +175,16 @@ export async function runExtractionJob(db: GhlDb, jobId: string): Promise<void> 
     });
   }
 
+  try {
+    const { analyzeAndStoreCall } = await import("@/lib/coaching/persist");
+    await analyzeAndStoreCall(db, call.id);
+  } catch (cause) {
+    transcriptError("call_quality.analyze_failed", {
+      callId: call.id,
+      reason: cause instanceof Error ? cause.message.slice(0, 80) : "analyze_failed",
+    });
+  }
+
   transcriptLog("extraction.processed", {
     jobId: job.id,
     callId: call.id,

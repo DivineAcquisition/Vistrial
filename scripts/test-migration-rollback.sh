@@ -129,3 +129,41 @@ if [[ "$(echo "$tbl_cal" | tr -d ' ')" != "1" ]]; then
 fi
 
 echo "OK: calibration migration rollback and re-apply succeeded."
+
+echo "Rollback call quality (tables and embargo column gone)..."
+run "${ROOT}/supabase/rollbacks/20260827010000_call_quality.sql"
+col_embargo="$("${PSQL[@]}" -d "${DB_NAME}" -tAc "SELECT count(*) FROM information_schema.columns WHERE table_schema='public' AND table_name='organizations' AND column_name='call_coaching_embargo_hours'")"
+if [[ "$(echo "$col_embargo" | tr -d ' ')" != "0" ]]; then
+  echo "call quality rollback left call_coaching_embargo_hours in place" >&2
+  exit 1
+fi
+fn_cq="$("${PSQL[@]}" -d "${DB_NAME}" -tAc "SELECT count(*) FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace WHERE n.nspname='public' AND p.proname='load_call_quality_rep_snapshot'")"
+if [[ "$(echo "$fn_cq" | tr -d ' ')" != "0" ]]; then
+  echo "call quality rollback left load_call_quality_rep_snapshot in place" >&2
+  exit 1
+fi
+tbl_cq="$("${PSQL[@]}" -d "${DB_NAME}" -tAc "SELECT count(*) FROM information_schema.tables WHERE table_schema='public' AND table_name='call_quality_measures'")"
+if [[ "$(echo "$tbl_cq" | tr -d ' ')" != "0" ]]; then
+  echo "call quality rollback left call_quality_measures in place" >&2
+  exit 1
+fi
+
+echo "Re-apply call quality..."
+run "${ROOT}/supabase/migrations/20260827010000_call_quality.sql"
+col_embargo="$("${PSQL[@]}" -d "${DB_NAME}" -tAc "SELECT count(*) FROM information_schema.columns WHERE table_schema='public' AND table_name='organizations' AND column_name='call_coaching_embargo_hours'")"
+if [[ "$(echo "$col_embargo" | tr -d ' ')" != "1" ]]; then
+  echo "re-apply did not restore call_coaching_embargo_hours" >&2
+  exit 1
+fi
+fn_cq="$("${PSQL[@]}" -d "${DB_NAME}" -tAc "SELECT count(*) FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace WHERE n.nspname='public' AND p.proname='load_call_quality_rep_snapshot'")"
+if [[ "$(echo "$fn_cq" | tr -d ' ')" != "1" ]]; then
+  echo "re-apply did not restore load_call_quality_rep_snapshot" >&2
+  exit 1
+fi
+tbl_cq="$("${PSQL[@]}" -d "${DB_NAME}" -tAc "SELECT count(*) FROM information_schema.tables WHERE table_schema='public' AND table_name='call_quality_measures'")"
+if [[ "$(echo "$tbl_cq" | tr -d ' ')" != "1" ]]; then
+  echo "re-apply did not restore call_quality_measures" >&2
+  exit 1
+fi
+
+echo "OK: call quality migration rollback and re-apply succeeded."

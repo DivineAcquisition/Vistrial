@@ -8,7 +8,7 @@ export default async function OrganizationSettingsPage() {
   const supabase = await createClient();
   const { data } = await supabase
     .from("organizations")
-    .select("sales_cycle_days, baseline_lookback_days, working_hours_start, working_hours_end, working_days, transcript_retention_days")
+    .select("sales_cycle_days, baseline_lookback_days, working_hours_start, working_hours_end, working_days, transcript_retention_days, call_coaching_embargo_hours")
     .eq("id", org.id)
     .maybeSingle();
 
@@ -28,6 +28,7 @@ export default async function OrganizationSettingsPage() {
           workingHoursEnd={data?.working_hours_end?.slice(0, 5) ?? "18:00"}
           workingDays={data?.working_days ?? [1, 2, 3, 4, 5]}
           transcriptRetentionDays={data?.transcript_retention_days ?? 365}
+          callCoachingEmbargoHours={data?.call_coaching_embargo_hours ?? 48}
         />
         <FollowUpOnboardingNote />
       </div>

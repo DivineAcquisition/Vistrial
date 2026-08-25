@@ -127,8 +127,12 @@ export function PrivacyPolicyBody() {
         <p>
           <strong>What we do with transcripts.</strong> Transcripts are used to extract structured
           information for the account they belong to: readiness signals, objections, and quotes
-          used in follow-up drafts your team reviews. Transcripts are sent to our AI provider
-          solely to perform that extraction.
+          used in follow-up drafts your team reviews. They are also used to describe what happened
+          on a call for coaching — talk ratio when speakers are labeled, questions asked, which
+          readiness topics were explored, how objections were handled, and whether a next step was
+          set. That coaching analysis is visible to the person who ran the call, and to their
+          owner or admin after a short delay. It is not a personality assessment and it is not a
+          ranking. Transcripts are sent to our AI provider solely to perform extraction.
         </p>
         <p>
           <strong>What we do not do.</strong> We do not use transcript content to train AI models.

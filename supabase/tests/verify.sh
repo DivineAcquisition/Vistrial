@@ -50,6 +50,8 @@ WHERE n.nspname = 'public'
     'profile_contradictions','objection_vocabulary','org_benchmark_metrics','benchmark_cohorts',
     'configuration_priors','leak_reports','activation_records','activation_changes',
     'score_config_versions','calibration_suggestions','extraction_audits','calibration_benchmarks',
+    'call_quality_measures','call_objection_handlings','brief_views','call_coaching_findings',
+    'call_coaching_gaming_signals','call_coaching_benchmarks',
     'baseline_fallback_declines',    'notifications','notification_preferences',
     'notification_mutes','notification_escalations','notification_presence',
     'notification_push_subscriptions','notification_team_channels','notification_digest_log',
@@ -117,7 +119,10 @@ run "${ROOT}/supabase/tests/verify-mobile.sql"
 echo "Calibration checks..."
 run "${ROOT}/supabase/tests/verify-calibration.sql"
 
+echo "Call quality checks..."
+run "${ROOT}/supabase/tests/verify-call-quality.sql"
+
 echo "Migration rollback (this prompt's migrations)..."
 bash "${ROOT}/scripts/test-migration-rollback.sh"
 
-echo "OK: schema, seed, triggers, RLS, invite, scoring, GHL, platform-admin, queue, case-file, transcript, follow-up, integrity, reporting, business-profile, onboarding-reconcile, notification, hardening, mobile, and calibration checks passed."
+echo "OK: schema, seed, triggers, RLS, invite, scoring, GHL, platform-admin, queue, case-file, transcript, follow-up, integrity, reporting, business-profile, onboarding-reconcile, notification, hardening, mobile, calibration, and call-quality checks passed."

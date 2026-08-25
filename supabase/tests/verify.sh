@@ -49,7 +49,9 @@ WHERE n.nspname = 'public'
     'business_profile_stages','profile_field_registry','profile_review_prompts',
     'profile_contradictions','objection_vocabulary','org_benchmark_metrics','benchmark_cohorts',
     'configuration_priors','leak_reports','activation_records','activation_changes',
-    'baseline_fallback_declines'
+    'baseline_fallback_declines','notifications','notification_preferences',
+    'notification_mutes','notification_escalations','notification_presence',
+    'notification_push_subscriptions','notification_team_channels','notification_digest_log'
   )
 ORDER BY 1;
 "
@@ -99,4 +101,7 @@ run "${ROOT}/supabase/tests/verify-business-profile.sql"
 echo "Onboarding reconcile checks..."
 run "${ROOT}/supabase/tests/verify-onboarding-reconcile.sql"
 
-echo "OK: schema, seed, triggers, RLS, invite, scoring, GHL, platform-admin, queue, case-file, transcript, follow-up, integrity, reporting, business-profile, and onboarding-reconcile checks passed."
+echo "Notification checks..."
+run "${ROOT}/supabase/tests/verify-notifications.sql"
+
+echo "OK: schema, seed, triggers, RLS, invite, scoring, GHL, platform-admin, queue, case-file, transcript, follow-up, integrity, reporting, business-profile, onboarding-reconcile, and notification checks passed."

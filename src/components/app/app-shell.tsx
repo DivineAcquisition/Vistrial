@@ -1,10 +1,12 @@
 "use client";
 
-import { useState, type ReactNode } from "react";
+import { useState, type ReactNode, Suspense } from "react";
 import { Menu, PanelLeftClose, PanelLeftOpen } from "lucide-react";
 
 import Logo from "@/components/brand/logo";
 import { AppNavLinks } from "@/components/app/app-nav-links";
+import { NotificationInbox } from "@/components/app/notification-inbox";
+import { NotificationRuntime } from "@/components/app/notification-runtime";
 import { OrgSwitcher } from "@/components/app/org-switcher";
 import { UserMenu } from "@/components/app/user-menu";
 import { Button } from "@/components/ui/button";
@@ -104,7 +106,14 @@ export function AppShell({ children }: { children: ReactNode }) {
           </Tooltip>
 
           <Logo markOnly className="h-8 w-auto md:hidden" />
+          <div className="ml-auto flex items-center">
+            <NotificationInbox />
+          </div>
         </header>
+
+        <Suspense fallback={null}>
+          <NotificationRuntime />
+        </Suspense>
 
         <main className="min-w-0 flex-1 px-5 py-8 sm:px-8">
           <div className="mx-auto w-full max-w-[1400px]">{children}</div>

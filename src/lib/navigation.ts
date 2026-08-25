@@ -28,6 +28,7 @@ export type NavItem = {
   group: NavGroupId;
   icon: NavIcon;
   roles?: OrgRole[];
+  platformAdminOnly?: boolean;
 };
 
 export const PRIMARY_NAV: NavItem[] = [
@@ -43,6 +44,14 @@ export const PRIMARY_NAV: NavItem[] = [
     roles: ["owner", "admin"],
   },
   {
+    href: "/app/ops",
+    label: "Operator",
+    match: "/app/ops",
+    group: "measure",
+    icon: "reporting",
+    platformAdminOnly: true,
+  },
+  {
     href: "/app/settings",
     label: "Settings",
     match: "/app/settings",
@@ -52,6 +61,7 @@ export const PRIMARY_NAV: NavItem[] = [
 ];
 
 export function navVisibleTo(item: NavItem, role: OrgRole, isPlatformAdmin = false): boolean {
+  if (item.platformAdminOnly) return isPlatformAdmin;
   if (isPlatformAdmin) return true;
   if (!item.roles) return true;
   return item.roles.includes(role);
@@ -72,6 +82,7 @@ export const SETTINGS_TABS: Array<{
   { href: "/app/settings/scoring", label: "Scoring", managerOnly: true },
   { href: "/app/settings/follow-up", label: "Follow-up", managerOnly: true },
   { href: "/app/settings/integrations", label: "Integrations", managerOnly: true },
+  { href: "/app/settings/notifications", label: "Notifications", managerOnly: false },
   { href: "/app/settings/profile", label: "Profile", managerOnly: false },
 ];
 

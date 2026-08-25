@@ -7,9 +7,12 @@ import { updateOrganization } from "@/app/app/settings/organization/actions";
 import type { SettingsSaveResult } from "@/app/app/settings/types";
 import { Button, SubmitButton } from "@/components/ui/button";
 import { Card, CardFooter } from "@/components/ui/card";
+import { CheckboxField } from "@/components/ui/checkbox";
 import { Field } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
+import { WEEKDAY_LABELS } from "@/lib/notifications/labels";
+import { DEFAULT_WORKING_DAYS } from "@/lib/notifications/constants";
 import { ORG_TIMEZONE_LABELS, ORG_TIMEZONES, isOrgTimezone } from "@/lib/timezones";
 import {
   cardStack,
@@ -29,12 +32,18 @@ export function OrganizationForm({
   ghlLocationId,
   salesCycleDays,
   baselineLookbackDays,
+  workingHoursStart,
+  workingHoursEnd,
+  workingDays,
 }: {
   name: string;
   timezone: string;
   ghlLocationId: string | null;
   salesCycleDays: number;
   baselineLookbackDays: number;
+  workingHoursStart: string;
+  workingHoursEnd: string;
+  workingDays: number[];
 }) {
   const [state, action, pending] = useActionState(updateOrganization, initial);
   const timezoneOptions = isOrgTimezone(timezone)
@@ -90,6 +99,45 @@ export function OrganizationForm({
             defaultValue={baselineLookbackDays}
           />
         </Field>
+
+        <Field
+          label="Working hours start"
+          name="working_hours_start"
+          help="Notifications wait until this time in each person's timezone, except stalled ingestion and a broken CRM."
+        >
+          <Input
+            name="working_hours_start"
+            id="working_hours_start"
+            type="time"
+            required
+            defaultValue={workingHoursStart}
+          />
+        </Field>
+
+        <Field label="Working hours end" name="working_hours_end">
+          <Input
+            name="working_hours_end"
+            id="working_hours_end"
+            type="time"
+            required
+            defaultValue={workingHoursEnd}
+          />
+        </Field>
+
+        <fieldset>
+          <legend className={labelClass}>Working days</legend>
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+            {(DEFAULT_WORKING_DAYS as readonly number[]).concat([6, 7]).map((day) => (
+              <CheckboxField
+                key={day}
+                name="working_days"
+                value={String(day)}
+                defaultChecked={workingDays.includes(day)}
+                label={WEEKDAY_LABELS[day]}
+              />
+            ))}
+          </div>
+        </fieldset>
 
         <div>
           <p className={labelClass}>CRM location id</p>

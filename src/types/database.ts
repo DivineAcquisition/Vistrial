@@ -1081,6 +1081,291 @@ export type Database = {
           },
         ];
       };
+      notifications: {
+        Row: {
+          actor_user_id: string | null;
+          attempt_count: number;
+          batch_key: string | null;
+          body: string;
+          channel: Database["public"]["Enums"]["notification_channel"];
+          claimed_at: string | null;
+          created_at: string;
+          dedupe_key: string;
+          delivered_at: string | null;
+          error_text: string | null;
+          escalation_step: number;
+          event_type: Database["public"]["Enums"]["notification_event_type"];
+          href: string;
+          id: string;
+          is_emergency: boolean;
+          is_test: boolean;
+          next_attempt_at: string | null;
+          opened_at: string | null;
+          acted_at: string | null;
+          org_id: string | null;
+          provider_id: string | null;
+          queued_at: string;
+          recipient_member_id: string | null;
+          recipient_user_id: string | null;
+          send_after: string;
+          sent_at: string | null;
+          status: Database["public"]["Enums"]["notification_status"];
+          subject_ids: string[];
+          subject_kind: string | null;
+          title: string;
+          updated_at: string;
+        };
+        Insert: {
+          actor_user_id?: string | null;
+          attempt_count?: number;
+          batch_key?: string | null;
+          body: string;
+          channel: Database["public"]["Enums"]["notification_channel"];
+          claimed_at?: string | null;
+          created_at?: string;
+          dedupe_key: string;
+          delivered_at?: string | null;
+          error_text?: string | null;
+          escalation_step?: number;
+          event_type: Database["public"]["Enums"]["notification_event_type"];
+          href: string;
+          id?: string;
+          is_emergency?: boolean;
+          is_test?: boolean;
+          next_attempt_at?: string | null;
+          opened_at?: string | null;
+          acted_at?: string | null;
+          org_id?: string | null;
+          provider_id?: string | null;
+          queued_at?: string;
+          recipient_member_id?: string | null;
+          recipient_user_id?: string | null;
+          send_after?: string;
+          sent_at?: string | null;
+          status?: Database["public"]["Enums"]["notification_status"];
+          subject_ids?: string[];
+          subject_kind?: string | null;
+          title: string;
+          updated_at?: string;
+        };
+        Update: {
+          actor_user_id?: string | null;
+          attempt_count?: number;
+          batch_key?: string | null;
+          body?: string;
+          channel?: Database["public"]["Enums"]["notification_channel"];
+          claimed_at?: string | null;
+          created_at?: string;
+          dedupe_key?: string;
+          delivered_at?: string | null;
+          error_text?: string | null;
+          escalation_step?: number;
+          event_type?: Database["public"]["Enums"]["notification_event_type"];
+          href?: string;
+          id?: string;
+          is_emergency?: boolean;
+          is_test?: boolean;
+          next_attempt_at?: string | null;
+          opened_at?: string | null;
+          acted_at?: string | null;
+          org_id?: string | null;
+          provider_id?: string | null;
+          queued_at?: string;
+          recipient_member_id?: string | null;
+          recipient_user_id?: string | null;
+          send_after?: string;
+          sent_at?: string | null;
+          status?: Database["public"]["Enums"]["notification_status"];
+          subject_ids?: string[];
+          subject_kind?: string | null;
+          title?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
+      notification_preferences: {
+        Row: {
+          channel: Database["public"]["Enums"]["notification_channel"];
+          created_at: string;
+          enabled: boolean;
+          event_type: Database["public"]["Enums"]["notification_event_type"];
+          id: string;
+          member_id: string;
+          org_id: string;
+          updated_at: string;
+        };
+        Insert: {
+          channel: Database["public"]["Enums"]["notification_channel"];
+          created_at?: string;
+          enabled: boolean;
+          event_type: Database["public"]["Enums"]["notification_event_type"];
+          id?: string;
+          member_id: string;
+          org_id: string;
+          updated_at?: string;
+        };
+        Update: {
+          channel?: Database["public"]["Enums"]["notification_channel"];
+          created_at?: string;
+          enabled?: boolean;
+          event_type?: Database["public"]["Enums"]["notification_event_type"];
+          id?: string;
+          member_id?: string;
+          org_id?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
+      notification_mutes: {
+        Row: {
+          created_at: string;
+          id: string;
+          member_id: string;
+          muted_until: string;
+          org_id: string;
+        };
+        Insert: {
+          created_at?: string;
+          id?: string;
+          member_id: string;
+          muted_until: string;
+          org_id: string;
+        };
+        Update: {
+          created_at?: string;
+          id?: string;
+          member_id?: string;
+          muted_until?: string;
+          org_id?: string;
+        };
+        Relationships: [];
+      };
+      notification_escalations: {
+        Row: {
+          event_type: Database["public"]["Enums"]["notification_event_type"];
+          fired_at: string;
+          id: string;
+          org_id: string;
+          step: number;
+          subject_id: string;
+        };
+        Insert: {
+          event_type: Database["public"]["Enums"]["notification_event_type"];
+          fired_at?: string;
+          id?: string;
+          org_id: string;
+          step: number;
+          subject_id: string;
+        };
+        Update: {
+          event_type?: Database["public"]["Enums"]["notification_event_type"];
+          fired_at?: string;
+          id?: string;
+          org_id?: string;
+          step?: number;
+          subject_id?: string;
+        };
+        Relationships: [];
+      };
+      notification_presence: {
+        Row: {
+          org_id: string;
+          path: string;
+          seen_at: string;
+          user_id: string;
+        };
+        Insert: {
+          org_id: string;
+          path: string;
+          seen_at?: string;
+          user_id: string;
+        };
+        Update: {
+          org_id?: string;
+          path?: string;
+          seen_at?: string;
+          user_id?: string;
+        };
+        Relationships: [];
+      };
+      notification_push_subscriptions: {
+        Row: {
+          auth: string;
+          created_at: string;
+          endpoint: string;
+          id: string;
+          last_seen_at: string;
+          p256dh: string;
+          user_agent: string | null;
+          user_id: string;
+        };
+        Insert: {
+          auth: string;
+          created_at?: string;
+          endpoint: string;
+          id?: string;
+          last_seen_at?: string;
+          p256dh: string;
+          user_agent?: string | null;
+          user_id: string;
+        };
+        Update: {
+          auth?: string;
+          created_at?: string;
+          endpoint?: string;
+          id?: string;
+          last_seen_at?: string;
+          p256dh?: string;
+          user_agent?: string | null;
+          user_id?: string;
+        };
+        Relationships: [];
+      };
+      notification_team_channels: {
+        Row: {
+          org_id: string;
+          slack_webhook_encrypted: string | null;
+          teams_webhook_encrypted: string | null;
+          updated_at: string;
+        };
+        Insert: {
+          org_id: string;
+          slack_webhook_encrypted?: string | null;
+          teams_webhook_encrypted?: string | null;
+          updated_at?: string;
+        };
+        Update: {
+          org_id?: string;
+          slack_webhook_encrypted?: string | null;
+          teams_webhook_encrypted?: string | null;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
+      notification_digest_log: {
+        Row: {
+          id: string;
+          kind: string;
+          org_id: string;
+          sent_on: string;
+          user_id: string;
+        };
+        Insert: {
+          id?: string;
+          kind: string;
+          org_id: string;
+          sent_on: string;
+          user_id: string;
+        };
+        Update: {
+          id?: string;
+          kind?: string;
+          org_id?: string;
+          sent_on?: string;
+          user_id?: string;
+        };
+        Relationships: [];
+      };
       lead_status_changes: {
         Row: {
           actor_member_id: string | null;
@@ -1183,6 +1468,11 @@ export type Database = {
           role: Database["public"]["Enums"]["org_role"];
           user_id: string;
           ghl_user_id: string | null;
+          phone: string | null;
+          timezone: string | null;
+          working_hours_start: string | null;
+          working_hours_end: string | null;
+          working_days: number[] | null;
         };
         Insert: {
           active?: boolean;
@@ -1194,6 +1484,11 @@ export type Database = {
           role: Database["public"]["Enums"]["org_role"];
           user_id: string;
           ghl_user_id?: string | null;
+          phone?: string | null;
+          timezone?: string | null;
+          working_hours_start?: string | null;
+          working_hours_end?: string | null;
+          working_days?: number[] | null;
         };
         Update: {
           active?: boolean;
@@ -1205,6 +1500,11 @@ export type Database = {
           role?: Database["public"]["Enums"]["org_role"];
           user_id?: string;
           ghl_user_id?: string | null;
+          phone?: string | null;
+          timezone?: string | null;
+          working_hours_start?: string | null;
+          working_hours_end?: string | null;
+          working_days?: number[] | null;
         };
         Relationships: [
           {
@@ -1294,6 +1594,10 @@ export type Database = {
           updated_at: string;
           sales_cycle_days: number;
           baseline_lookback_days: number;
+          working_hours_start: string;
+          working_hours_end: string;
+          working_days: number[];
+          sms_emergencies_enabled: boolean;
         };
         Insert: {
           activated_at?: string | null;
@@ -1306,6 +1610,10 @@ export type Database = {
           updated_at?: string;
           sales_cycle_days?: number;
           baseline_lookback_days?: number;
+          working_hours_start?: string;
+          working_hours_end?: string;
+          working_days?: number[];
+          sms_emergencies_enabled?: boolean;
         };
         Update: {
           activated_at?: string | null;
@@ -1318,6 +1626,10 @@ export type Database = {
           updated_at?: string;
           sales_cycle_days?: number;
           baseline_lookback_days?: number;
+          working_hours_start?: string;
+          working_hours_end?: string;
+          working_days?: number[];
+          sms_emergencies_enabled?: boolean;
         };
         Relationships: [];
       };
@@ -2727,6 +3039,10 @@ export type Database = {
         Args: Record<PropertyKey, never>;
         Returns: string | null;
       };
+      claim_notification: {
+        Args: Record<PropertyKey, never>;
+        Returns: string | null;
+      };
       release_ghl_contact_key: {
         Args: { p_key: string };
         Returns: undefined;
@@ -3283,6 +3599,31 @@ export type Database = {
         | "no_transcript_source"
         | "profile_incomplete"
         | "backfill_partial";
+      notification_event_type:
+        | "speed_to_lead"
+        | "unassigned_ready"
+        | "approaching_ghost"
+        | "pending_draft"
+        | "call_starting_soon"
+        | "unmatched_transcript"
+        | "ingestion_stalled"
+        | "crm_broken"
+        | "job_failure"
+        | "adoption_warning"
+        | "daily_brief"
+        | "hourly_summary"
+        | "test_send";
+      notification_channel: "push" | "email" | "sms" | "team" | "da_console";
+      notification_status:
+        | "queued"
+        | "sent"
+        | "delivered"
+        | "opened"
+        | "acted"
+        | "cancelled"
+        | "failed"
+        | "dead"
+        | "skipped";
     };
     CompositeTypes: {
       [_ in never]: never;

@@ -24,6 +24,12 @@ export async function updateOrganization(
   const timezone = String(formData.get("timezone") ?? "");
   const salesCycleDays = Number(formData.get("sales_cycle_days"));
   const baselineLookbackDays = Number(formData.get("baseline_lookback_days"));
+  const workingHoursStart = String(formData.get("working_hours_start") ?? "").trim();
+  const workingHoursEnd = String(formData.get("working_hours_end") ?? "").trim();
+  const workingDays = formData
+    .getAll("working_days")
+    .map((value) => Number(value))
+    .filter((day) => day >= 1 && day <= 7);
 
   if (!name) {
     return { status: "error", error: "Organization name is required." };
@@ -40,6 +46,12 @@ export async function updateOrganization(
   if (!Number.isInteger(baselineLookbackDays) || baselineLookbackDays < 30 || baselineLookbackDays > 730) {
     return { status: "error", error: "Baseline lookback must be between 30 and 730 days." };
   }
+  if (!/^\d{2}:\d{2}$/.test(workingHoursStart) || !/^\d{2}:\d{2}$/.test(workingHoursEnd)) {
+    return { status: "error", error: "Working hours must be a start and end time." };
+  }
+  if (workingDays.length === 0) {
+    return { status: "error", error: "Choose at least one working day." };
+  }
 
   const supabase = await createClient();
   const { data, error } = await supabase
@@ -49,6 +61,9 @@ export async function updateOrganization(
       timezone,
       sales_cycle_days: salesCycleDays,
       baseline_lookback_days: baselineLookbackDays,
+      working_hours_start: workingHoursStart,
+      working_hours_end: workingHoursEnd,
+      working_days: workingDays,
     })
     .eq("id", ctx.org.id)
     .select("id")

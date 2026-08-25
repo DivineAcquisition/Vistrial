@@ -297,6 +297,7 @@
 
   .auth-stage-frame {
     display: flex;
+    flex-direction: column;
     min-height: 100svh;
     align-items: center;
     justify-content: center;
@@ -304,19 +305,20 @@
   }
 
   .auth-desk-inner {
-    width: 100%;
-    max-width: 24rem;
+    width: min(24rem, 100%);
+    margin-inline: auto;
+    text-align: center;
   }
 
   .auth-desk-inner--wide {
-    max-width: 28rem;
+    width: min(28rem, 100%);
   }
 
   .auth-mark {
     display: block;
     height: 4.5rem;
     width: auto;
-    margin: 0 0 1.75rem;
+    margin: 0 auto 1.75rem;
     object-fit: contain;
   }
 
@@ -325,6 +327,7 @@
     font-size: 10px;
     font-weight: 500;
     letter-spacing: 0.28em;
+    text-indent: 0.28em;
     text-transform: uppercase;
     color: var(--color-brand-300);
   }
@@ -339,6 +342,7 @@
 
   .auth-subtitle {
     margin-top: 0.7rem;
+    margin-inline: auto;
     max-width: 22rem;
     font-size: 14px;
     line-height: 1.55;
@@ -347,6 +351,7 @@
 
   .auth-desk-body {
     margin-top: 2rem;
+    text-align: left;
   }
 
   .auth-desk-foot {

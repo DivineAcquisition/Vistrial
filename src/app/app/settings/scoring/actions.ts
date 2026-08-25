@@ -69,18 +69,11 @@ export async function updateScoringConfig(
     p_ghost_soft: ghostSoft as number,
     p_ghost_hard: ghostHard as number,
     p_source: "settings",
+    p_holdout_percent: holdoutRaw as number,
   });
 
   if (error) {
     return { status: "error", error: "Could not save scoring settings." };
-  }
-
-  const { error: holdoutError } = await supabase.rpc("update_org_holdout_percent", {
-    p_org_id: ctx.org.id,
-    p_percent: holdoutRaw as number,
-  });
-  if (holdoutError) {
-    return { status: "error", error: "Could not save the holdout setting." };
   }
 
   revalidatePath("/app/settings/scoring");

@@ -53,6 +53,12 @@ export async function runCalibrationJobs(db: GhlDb): Promise<{
     benchmarks: bench ?? 0,
   });
 
+  if (suggestions.failed > 0 || audits.failed > 0) {
+    throw new Error(
+      `calibration job incomplete: ${suggestions.failed} suggestion refresh failures, ${audits.failed} audit failures`
+    );
+  }
+
   return {
     suggestions,
     audits,

@@ -2,8 +2,9 @@
 -- Product choices (stated, not guessed):
 --   * Holdout default 5%, range 0–20 inclusive. 0 disables it. Applied at
 --     INSERT time by a BEFORE trigger so every intake path is covered, before
---     scoring and queue ranking. Selection is random() unless the insert sets
---     is_holdout explicitly (tests).
+--     scoring and queue ranking. Selection is random(). Authenticated and
+--     service-role inserts cannot choose holdout membership. Tests running as
+--     postgres (or with vistrial.allow_holdout_override=1) may set it.
 --   * Holdout leads are ranked as ready_track so they are worked. The queue
 --     view does not expose is_holdout; there is no badge, filter, or copy.
 --   * Close = a revenue_log row (same as Prompt 11). Lost = closed_lost with
@@ -54,7 +55,17 @@ LANGUAGE plpgsql
 AS $$
 DECLARE
   v_pct numeric;
+  v_allow boolean;
 BEGIN
+  -- Table-level INSERT grants ignore column REVOKEs. Callers other than the
+  -- test superuser must not choose holdout membership.
+  v_allow := current_setting('vistrial.allow_holdout_override', true) = '1'
+    OR current_user IN ('postgres', 'supabase_admin');
+  IF NOT v_allow THEN
+    NEW.is_holdout := NULL;
+    NEW.holdout_assigned_at := NULL;
+  END IF;
+
   IF NEW.is_holdout IS NOT NULL THEN
     IF NEW.is_holdout AND NEW.holdout_assigned_at IS NULL THEN
       NEW.holdout_assigned_at := clock_timestamp();
@@ -177,6 +188,35 @@ BEGIN
 END;
 $$;
 
+-- Table-level INSERT on leads still exists from the spine migration.
+-- Column REVOKEs do not override that, so replace it with a column list
+-- that never includes holdout or the trigger-maintained cache columns.
+REVOKE INSERT ON public.leads FROM authenticated;
+GRANT INSERT (
+  id,
+  org_id,
+  ghl_contact_id,
+  ghl_opportunity_id,
+  first_name,
+  last_name,
+  email,
+  phone,
+  source,
+  campaign,
+  ad_id,
+  offer_name,
+  application_answers,
+  status,
+  pipeline_stage,
+  assigned_setter_id,
+  assigned_closer_id,
+  opted_in_at,
+  ghost_approaching_at,
+  created_at,
+  updated_at,
+  timezone,
+  is_test
+) ON public.leads TO authenticated;
 REVOKE INSERT (is_holdout, holdout_assigned_at) ON public.leads FROM authenticated;
 REVOKE UPDATE (is_holdout, holdout_assigned_at) ON public.leads FROM authenticated;
 
@@ -496,7 +536,7 @@ AS $$
   SELECT
     l.id,
     l.is_holdout,
-    l.current_score,
+    COALESCE(s.total, l.current_score) AS score,
     s.timeline_raw,
     s.investment_capacity_raw,
     s.decision_authority_raw,
@@ -513,10 +553,14 @@ AS $$
       rs.timeline_raw,
       rs.investment_capacity_raw,
       rs.decision_authority_raw,
-      rs.pain_severity_raw
+      rs.pain_severity_raw,
+      rs.total
     FROM public.readiness_scores rs
     WHERE rs.lead_id = l.id AND rs.org_id = l.org_id
-    ORDER BY rs.created_at DESC, rs.id DESC
+    ORDER BY
+      CASE WHEN rs.triggered_by = 'intake' THEN 0 ELSE 1 END,
+      rs.created_at ASC,
+      rs.id ASC
     LIMIT 1
   ) s ON true
   WHERE l.org_id = p_org_id
@@ -599,15 +643,18 @@ BEGIN
       public.reporting_rate(x.closed_n, x.n, v_min, false) AS close_rate
     FROM (
       SELECT
-        public.calibration_score_band(r.score) AS band_key,
-        count(*)::bigint AS n,
-        count(*) FILTER (WHERE r.closed)::bigint AS closed_n
-      FROM public.calibration_mature_resolved(p_org_id) r
-      WHERE r.score IS NOT NULL
+        b.band_key,
+        count(r.lead_id)::bigint AS n,
+        count(r.lead_id) FILTER (WHERE r.closed)::bigint AS closed_n
+      FROM (
+        SELECT unnest(ARRAY['0-19', '20-39', '40-59', '60-79', '80-100']) AS band_key
+      ) b
+      LEFT JOIN public.calibration_mature_resolved(p_org_id) r
+        ON r.score IS NOT NULL
+        AND public.calibration_score_band(r.score) = b.band_key
         AND (NOT p_holdout_only OR r.is_holdout)
-      GROUP BY 1
+      GROUP BY b.band_key
     ) x
-    WHERE x.band_key IS NOT NULL
   ) b;
 
   v_shown := '[]'::jsonb;
@@ -696,20 +743,24 @@ BEGIN
         'n', s.n,
         'n_closed', s.n_closed,
         'n_lost', s.n_lost,
-        'too_small', s.n < v_min,
-        'avg_closed', CASE WHEN s.n_closed = 0 THEN NULL ELSE trunc((s.sum_closed / s.n_closed) * 10) / 10 END,
-        'avg_lost', CASE WHEN s.n_lost = 0 THEN NULL ELSE trunc((s.sum_lost / s.n_lost) * 10) / 10 END,
+        'too_small', s.n_closed < v_min OR s.n_lost < v_min,
+        'avg_closed', CASE WHEN s.n_closed < v_min THEN NULL ELSE trunc((s.sum_closed / s.n_closed) * 10) / 10 END,
+        'avg_lost', CASE WHEN s.n_lost < v_min THEN NULL ELSE trunc((s.sum_lost / s.n_lost) * 10) / 10 END,
         'delta', CASE
-          WHEN s.n_closed = 0 OR s.n_lost = 0 THEN NULL
+          WHEN s.n_closed < v_min OR s.n_lost < v_min THEN NULL
           ELSE trunc(((s.sum_closed / s.n_closed) - (s.sum_lost / s.n_lost)) * 10) / 10
         END,
         'high', public.reporting_rate(s.high_closed, s.high_n, v_min, false),
         'low', public.reporting_rate(s.low_closed, s.low_n, v_min, false),
         'plain', CASE
-          WHEN s.n < v_min THEN
-            'Not enough resolved leads with a known ' || replace(v_factor, '_', ' ') || ' reading.'
-          WHEN s.n_closed = 0 OR s.n_lost = 0 THEN
-            'Need both closed and lost leads with a known ' || replace(v_factor, '_', ' ') || ' reading.'
+          WHEN s.n_closed < v_min OR s.n_lost < v_min THEN
+            'Need at least '
+            || v_min::text
+            || ' closed and '
+            || v_min::text
+            || ' lost leads with a known '
+            || replace(v_factor, '_', ' ')
+            || ' reading. A gap from one side of six is noise.'
           WHEN ((s.sum_closed / s.n_closed) - (s.sum_lost / s.n_lost)) >= 8 THEN
             replace(v_factor, '_', ' ')
             || ' is higher on closed leads than on lost leads. That is association, not proof it causes closes. Weight spent here is earning its place.'
@@ -765,12 +816,12 @@ DECLARE
   v_prev_key text;
   v_prev_pct numeric;
   v_jump numeric;
+  v_shown integer;
 BEGIN
   SELECT ready_threshold INTO v_current FROM public.score_configs WHERE org_id = p_org_id;
+  -- Never place a threshold against the all-leads curve. That curve is biased.
   v_curve := public.calibration_band_curve(p_org_id, true);
-  IF COALESCE((v_curve ->> 'shown_count')::integer, 0) < 2 THEN
-    v_curve := public.calibration_band_curve(p_org_id, false);
-  END IF;
+  v_shown := COALESCE((v_curve ->> 'shown_count')::integer, 0);
 
   FOR rec IN
     SELECT
@@ -785,7 +836,7 @@ BEGIN
     END IF;
     IF v_prev_key IS NOT NULL THEN
       v_jump := rec.pct - v_prev_pct;
-      IF v_best IS NULL OR v_jump > (v_best ->> 'jump')::numeric THEN
+      IF v_jump > 0 AND (v_best IS NULL OR v_jump > (v_best ->> 'jump')::numeric) THEN
         v_best := jsonb_build_object(
           'from_key', v_prev_key,
           'to_key', rec.band_key,
@@ -801,11 +852,14 @@ BEGIN
   RETURN jsonb_build_object(
     'current', v_current,
     'steepest', v_best,
+    'source', 'holdout',
     'consequence', CASE
+      WHEN v_shown < 2 THEN
+        'Not enough holdout bands above the sample floor to place a ready line against the close-rate curve. The all-leads curve is not used for this.'
       WHEN v_best IS NULL THEN
-        'Not enough band sample to place a ready line against the close-rate curve.'
+        'The holdout curve does not step up. There is no steepest improvement to place a ready line against.'
       WHEN (v_best ->> 'suggested_threshold')::integer = v_current THEN
-        'The ready line already sits at the steepest step-up on the curve.'
+        'The ready line already sits at the steepest step-up on the holdout curve.'
       WHEN (v_best ->> 'suggested_threshold')::integer < v_current THEN
         'Moving the ready line down to '
         || (v_best ->> 'suggested_threshold')
@@ -858,6 +912,7 @@ BEGIN
       COALESCE(NULLIF(btrim(concat_ws(' ', l.first_name, l.last_name)), ''), NULLIF(btrim(l.email), ''), 'Unnamed lead') AS name,
       l.current_score,
       l.lead_type,
+      l.is_holdout,
       s.timeline_raw,
       s.investment_capacity_raw,
       s.decision_authority_raw,
@@ -874,15 +929,17 @@ BEGIN
       AND NOT l.is_test
       AND l.status NOT IN ('closed_won', 'closed_lost', 'ghost')
     ORDER BY l.opted_in_at DESC
-    LIMIT 500
   LOOP
     v_open := v_open + 1;
     v_new := public.calibration_recompute_total(
       rec.timeline_raw, rec.investment_capacity_raw, rec.decision_authority_raw, rec.pain_severity_raw,
       p_timeline, p_investment, p_authority, p_pain
     );
-    v_old_ready := rec.lead_type = 'ready_track' OR (rec.current_score IS NOT NULL AND rec.current_score >= v_cur.ready_threshold);
-    v_new_ready := v_new IS NOT NULL AND v_new >= p_threshold;
+    v_old_ready := COALESCE(rec.is_holdout, false)
+      OR rec.lead_type = 'ready_track'
+      OR (rec.current_score IS NOT NULL AND rec.current_score >= v_cur.ready_threshold);
+    v_new_ready := COALESCE(rec.is_holdout, false)
+      OR (v_new IS NOT NULL AND v_new >= p_threshold);
     IF v_old_ready IS DISTINCT FROM v_new_ready THEN
       v_cross := v_cross || jsonb_build_array(jsonb_build_object(
         'lead_id', rec.id,
@@ -944,7 +1001,7 @@ BEGIN
   ) ORDER BY f.field_name), '[]'::jsonb)
   INTO v_fields
   FROM (
-    SELECT field_name, count(*)::bigint AS corrections
+    SELECT field_name, count(DISTINCT extraction_id)::bigint AS corrections
     FROM public.extraction_corrections
     WHERE org_id = p_org_id
     GROUP BY field_name
@@ -976,7 +1033,7 @@ BEGIN
     ]) AS field_name
   ) x
   LEFT JOIN (
-    SELECT field_name, count(*)::bigint AS corrections
+    SELECT field_name, count(DISTINCT extraction_id)::bigint AS corrections
     FROM public.extraction_corrections
     WHERE org_id = p_org_id
     GROUP BY field_name
@@ -994,8 +1051,8 @@ BEGIN
     SELECT
       COALESCE(e.model_version, 'unknown') AS model_version,
       x.field_name,
-      count(e.id)::bigint AS extractions,
-      count(c.id)::bigint AS corrections
+      count(DISTINCT e.id)::bigint AS extractions,
+      count(DISTINCT c.extraction_id)::bigint AS corrections
     FROM public.call_extractions e
     CROSS JOIN (
       SELECT unnest(ARRAY[
@@ -1089,6 +1146,8 @@ DECLARE
   v_under jsonb;
   v_outcome jsonb;
   v_worst record;
+  v_peer_n integer := 0;
+  v_second numeric;
 BEGIN
   SELECT COALESCE(jsonb_agg(jsonb_build_object(
     'branch', e.branch,
@@ -1204,7 +1263,33 @@ BEGIN
     LIMIT 1
   ) w;
 
-  IF v_worst.branch IS NOT NULL THEN
+  SELECT count(*)::integer INTO v_peer_n
+  FROM (
+    SELECT branch
+    FROM public.follow_up_drafts
+    WHERE org_id = p_org_id AND edit_distance IS NOT NULL
+    GROUP BY branch
+    HAVING count(*) >= v_min
+  ) q;
+
+  SELECT percentile_cont(0.5) WITHIN GROUP (ORDER BY d.edit_distance)
+  INTO v_second
+  FROM public.follow_up_drafts d
+  WHERE d.org_id = p_org_id
+    AND d.edit_distance IS NOT NULL
+    AND d.branch::text IS DISTINCT FROM v_worst.branch
+    AND d.branch IN (
+      SELECT branch
+      FROM public.follow_up_drafts
+      WHERE org_id = p_org_id AND edit_distance IS NOT NULL
+      GROUP BY branch
+      HAVING count(*) >= v_min
+    );
+
+  IF v_worst.branch IS NOT NULL
+     AND v_peer_n >= 2
+     AND v_second IS NOT NULL
+     AND v_worst.median_edit_distance > v_second THEN
     v_under := jsonb_build_object(
       'branch', v_worst.branch,
       'n', v_worst.n,
@@ -1221,11 +1306,12 @@ BEGIN
   ELSE
     v_under := jsonb_build_object(
       'branch', null,
-      'plain', 'No follow-up branch has enough edited drafts to name an underperformer.'
+      'plain', 'No follow-up branch has enough edited drafts, compared with another branch, to name an underperformer.'
     );
   END IF;
 
-  -- Outcome correlation: sent follow-up vs none, same score band, mature resolved.
+  -- Outcome association: sent follow-up vs none, only inside score bands
+  -- that have enough of both groups. Unmatched volumes are not "comparable."
   SELECT jsonb_build_object(
     'treated', public.reporting_rate(t.closed, t.n, v_min, false),
     'control', public.reporting_rate(c.closed, c.n, v_min, false),
@@ -1247,20 +1333,58 @@ BEGIN
       count(*)::bigint AS n,
       count(*) FILTER (WHERE r.closed)::bigint AS closed
     FROM public.calibration_mature_resolved(p_org_id) r
-    WHERE EXISTS (
-      SELECT 1 FROM public.follow_up_drafts d
-      WHERE d.lead_id = r.lead_id AND d.org_id = p_org_id AND d.status = 'sent'
-    )
+    WHERE r.score IS NOT NULL
+      AND public.calibration_score_band(r.score) IN (
+        SELECT public.calibration_score_band(x.score)
+        FROM public.calibration_mature_resolved(p_org_id) x
+        WHERE x.score IS NOT NULL
+        GROUP BY public.calibration_score_band(x.score)
+        HAVING count(*) FILTER (
+          WHERE EXISTS (
+            SELECT 1 FROM public.follow_up_drafts d
+            WHERE d.lead_id = x.lead_id AND d.org_id = p_org_id AND d.status = 'sent'
+          )
+        ) >= v_min
+        AND count(*) FILTER (
+          WHERE NOT EXISTS (
+            SELECT 1 FROM public.follow_up_drafts d
+            WHERE d.lead_id = x.lead_id AND d.org_id = p_org_id AND d.status = 'sent'
+          )
+        ) >= v_min
+      )
+      AND EXISTS (
+        SELECT 1 FROM public.follow_up_drafts d
+        WHERE d.lead_id = r.lead_id AND d.org_id = p_org_id AND d.status = 'sent'
+      )
   ) t
   CROSS JOIN (
     SELECT
       count(*)::bigint AS n,
       count(*) FILTER (WHERE r.closed)::bigint AS closed
     FROM public.calibration_mature_resolved(p_org_id) r
-    WHERE NOT EXISTS (
-      SELECT 1 FROM public.follow_up_drafts d
-      WHERE d.lead_id = r.lead_id AND d.org_id = p_org_id AND d.status = 'sent'
-    )
+    WHERE r.score IS NOT NULL
+      AND public.calibration_score_band(r.score) IN (
+        SELECT public.calibration_score_band(x.score)
+        FROM public.calibration_mature_resolved(p_org_id) x
+        WHERE x.score IS NOT NULL
+        GROUP BY public.calibration_score_band(x.score)
+        HAVING count(*) FILTER (
+          WHERE EXISTS (
+            SELECT 1 FROM public.follow_up_drafts d
+            WHERE d.lead_id = x.lead_id AND d.org_id = p_org_id AND d.status = 'sent'
+          )
+        ) >= v_min
+        AND count(*) FILTER (
+          WHERE NOT EXISTS (
+            SELECT 1 FROM public.follow_up_drafts d
+            WHERE d.lead_id = x.lead_id AND d.org_id = p_org_id AND d.status = 'sent'
+          )
+        ) >= v_min
+      )
+      AND NOT EXISTS (
+        SELECT 1 FROM public.follow_up_drafts d
+        WHERE d.lead_id = r.lead_id AND d.org_id = p_org_id AND d.status = 'sent'
+      )
   ) c;
 
   RETURN jsonb_build_object(
@@ -1286,51 +1410,57 @@ DECLARE
   v_min integer := public.reporting_diag_min();
   v_changed_at timestamptz;
   v_before_n integer;
-  v_before_k integer;
   v_after_n integer;
-  v_after_k integer;
-  v_shift boolean := false;
+  v_reason text;
+  rec record;
+  v_bn integer;
+  v_bk integer;
+  v_an integer;
+  v_ak integer;
+  v_delta numeric;
+  v_best numeric := 0;
 BEGIN
-  SELECT max(created_at) INTO v_changed_at
-  FROM public.business_profile_versions
-  WHERE org_id = p_org_id;
+  FOR rec IN
+    SELECT created_at
+    FROM public.business_profile_versions
+    WHERE org_id = p_org_id
+    ORDER BY created_at
+  LOOP
+    SELECT
+      count(*)::integer,
+      count(*) FILTER (WHERE closed)::integer
+    INTO v_bn, v_bk
+    FROM public.calibration_mature_resolved(p_org_id) r
+    WHERE r.opted_in_at < rec.created_at;
 
-  IF v_changed_at IS NULL THEN
-    RETURN jsonb_build_object('shifted', false, 'reason', null);
-  END IF;
+    SELECT
+      count(*)::integer,
+      count(*) FILTER (WHERE closed)::integer
+    INTO v_an, v_ak
+    FROM public.calibration_mature_resolved(p_org_id) r
+    WHERE r.opted_in_at >= rec.created_at;
 
-  SELECT
-    count(*)::integer,
-    count(*) FILTER (WHERE closed)::integer
-  INTO v_before_n, v_before_k
-  FROM public.calibration_mature_resolved(p_org_id) r
-  WHERE r.opted_in_at < v_changed_at;
-
-  SELECT
-    count(*)::integer,
-    count(*) FILTER (WHERE closed)::integer
-  INTO v_after_n, v_after_k
-  FROM public.calibration_mature_resolved(p_org_id) r
-  WHERE r.opted_in_at >= v_changed_at;
-
-  IF v_before_n >= v_min AND v_after_n >= v_min THEN
-    v_shift := abs(
-      (v_after_k::numeric / v_after_n) - (v_before_k::numeric / v_before_n)
-    ) >= 0.10;
-  END IF;
+    IF v_bn >= v_min AND v_an >= v_min THEN
+      v_delta := abs((v_ak::numeric / v_an) - (v_bk::numeric / v_bn));
+      IF v_delta >= 0.10 AND v_delta >= v_best THEN
+        v_best := v_delta;
+        v_changed_at := rec.created_at;
+        v_before_n := v_bn;
+        v_after_n := v_an;
+        v_reason :=
+          'A business profile change on '
+          || rec.created_at::date::text
+          || ' sits next to a shift in close rate. That is a business change, not evidence the scoring weights are wrong.';
+      END IF;
+    END IF;
+  END LOOP;
 
   RETURN jsonb_build_object(
-    'shifted', v_shift,
+    'shifted', v_reason IS NOT NULL,
     'profile_changed_at', v_changed_at,
     'before_n', v_before_n,
     'after_n', v_after_n,
-    'reason', CASE
-      WHEN v_shift THEN
-        'A business profile change on '
-        || v_changed_at::date::text
-        || ' sits next to a shift in close rate. That is a business change, not evidence the scoring weights are wrong.'
-      ELSE NULL
-    END
+    'reason', v_reason
   );
 END;
 $$;
@@ -1416,7 +1546,6 @@ DECLARE
   v_hist jsonb;
   v_id uuid;
   v_well boolean;
-  v_under jsonb;
   v_sentence text;
 BEGIN
   -- This function inserts suggestion rows. It does not write live scoring configuration.
@@ -1470,18 +1599,6 @@ BEGIN
   v_well := COALESCE((v_curve ->> 'monotonic')::boolean, false)
     AND COALESCE((v_curve ->> 'shown_count')::integer, 0) >= 2;
 
-  v_under := public.calibration_draft_report(p_org_id) -> 'underperforming_branch';
-  IF v_under ? 'recommendation' THEN
-    INSERT INTO public.calibration_suggestions (
-      org_id, kind, status, sample_n, evidence_sentence, payload
-    ) VALUES (
-      p_org_id, 'draft_branch', 'pending',
-      COALESCE((v_under ->> 'n')::integer, 0),
-      v_under ->> 'recommendation',
-      v_under
-    );
-  END IF;
-
   IF v_well THEN
     RETURN jsonb_build_object(
       'status', 'working',
@@ -1498,9 +1615,10 @@ BEGIN
     END
   INTO v_weak, v_weak_d, v_weak_w
   FROM jsonb_to_recordset(v_factors -> 'rows') AS f(
-    factor text, n integer, too_small boolean, delta numeric
+    factor text, n integer, n_closed numeric, n_lost numeric, too_small boolean, delta numeric
   )
   WHERE NOT f.too_small AND f.delta IS NOT NULL
+    AND f.n_closed >= v_min AND f.n_lost >= v_min
   ORDER BY f.delta ASC
   LIMIT 1;
 
@@ -1512,9 +1630,10 @@ BEGIN
     END
   INTO v_strong, v_strong_d, v_strong_w
   FROM jsonb_to_recordset(v_factors -> 'rows') AS f(
-    factor text, n integer, too_small boolean, delta numeric
+    factor text, n integer, n_closed numeric, n_lost numeric, too_small boolean, delta numeric
   )
   WHERE NOT f.too_small AND f.delta IS NOT NULL
+    AND f.n_closed >= v_min AND f.n_lost >= v_min
   ORDER BY f.delta DESC
   LIMIT 1;
 
@@ -1597,7 +1716,8 @@ CREATE OR REPLACE FUNCTION public.save_org_score_config(
   p_ghost_soft integer,
   p_ghost_hard integer,
   p_source public.score_config_source DEFAULT 'settings',
-  p_suggestion_id uuid DEFAULT NULL
+  p_suggestion_id uuid DEFAULT NULL,
+  p_holdout_percent numeric DEFAULT NULL
 )
 RETURNS uuid
 LANGUAGE plpgsql
@@ -1606,6 +1726,8 @@ SET search_path = public
 AS $$
 DECLARE
   v_id uuid;
+  v_source public.score_config_source;
+  v_suggestion uuid;
 BEGIN
   IF NOT public.user_has_org_role(p_org_id, 'owner', 'admin') THEN
     RAISE EXCEPTION 'not authorized to change scoring settings';
@@ -1613,10 +1735,36 @@ BEGIN
   IF p_timeline + p_investment + p_authority + p_pain <> 100 THEN
     RAISE EXCEPTION 'weights must add to 100';
   END IF;
+  IF p_timeline < 0 OR p_investment < 0 OR p_authority < 0 OR p_pain < 0
+     OR p_timeline > 100 OR p_investment > 100 OR p_authority > 100 OR p_pain > 100 THEN
+    RAISE EXCEPTION 'weights must be between 0 and 100';
+  END IF;
+  IF p_threshold < 0 OR p_threshold > 100 THEN
+    RAISE EXCEPTION 'ready threshold must be between 0 and 100';
+  END IF;
+  IF p_speed < 1 OR p_speed > 24 * 60 THEN
+    RAISE EXCEPTION 'speed-to-lead minutes must be between 1 and 1440';
+  END IF;
+  IF p_ghost_soft < 1 OR p_ghost_hard < 1 OR p_ghost_soft >= p_ghost_hard THEN
+    RAISE EXCEPTION 'the approaching-ghost window must be shorter than the ghost window';
+  END IF;
+  IF p_holdout_percent IS NOT NULL AND (p_holdout_percent < 0 OR p_holdout_percent > 20) THEN
+    RAISE EXCEPTION 'holdout percent must be between 0 and 20';
+  END IF;
+
+  -- Callers cannot forge calibration_apply provenance. Only apply_calibration_suggestion
+  -- sets vistrial.allow_calibration_apply for this transaction.
+  IF current_setting('vistrial.allow_calibration_apply', true) = '1' THEN
+    v_source := 'calibration_apply';
+    v_suggestion := p_suggestion_id;
+  ELSE
+    v_source := 'settings';
+    v_suggestion := NULL;
+  END IF;
 
   PERFORM set_config('vistrial.actor_member_id', COALESCE(public.user_member_id(p_org_id)::text, ''), true);
-  PERFORM set_config('vistrial.score_config_source', p_source::text, true);
-  PERFORM set_config('vistrial.score_suggestion_id', COALESCE(p_suggestion_id::text, ''), true);
+  PERFORM set_config('vistrial.score_config_source', v_source::text, true);
+  PERFORM set_config('vistrial.score_suggestion_id', COALESCE(v_suggestion::text, ''), true);
 
   UPDATE public.score_configs
   SET
@@ -1635,6 +1783,13 @@ BEGIN
   IF v_id IS NULL THEN
     RAISE EXCEPTION 'scoring config missing';
   END IF;
+
+  IF p_holdout_percent IS NOT NULL THEN
+    UPDATE public.organizations
+    SET holdout_percent = p_holdout_percent, updated_at = now()
+    WHERE id = p_org_id;
+  END IF;
+
   RETURN v_id;
 END;
 $$;
@@ -1676,6 +1831,8 @@ BEGIN
 
   v_prop := COALESCE(v_row.payload -> 'proposed', '{}'::jsonb);
 
+  PERFORM set_config('vistrial.allow_calibration_apply', '1', true);
+
   PERFORM public.save_org_score_config(
     p_org_id,
     COALESCE((v_prop ->> 'timeline')::integer, v_cfg.timeline_weight),
@@ -1689,6 +1846,8 @@ BEGIN
     'calibration_apply',
     p_suggestion_id
   );
+
+  PERFORM set_config('vistrial.allow_calibration_apply', '', true);
 
   UPDATE public.calibration_suggestions
   SET
@@ -1788,14 +1947,16 @@ BEGIN
         WHEN 'decision_process' THEN rec.decision_process
         ELSE rec.next_step_agreed
       END;
+      -- Empty is not a pass. Only non-empty extractions are checked against
+      -- the transcript, so the rate is "of extracted text, how often it appears."
+      IF v_value IS NULL OR length(trim(v_value)) = 0 THEN
+        CONTINUE;
+      END IF;
       INSERT INTO public.extraction_audits (
         org_id, extraction_id, call_id, field_name, extracted_value, grounded, model_version
       ) VALUES (
         p_org_id, rec.id, rec.call_id, v_field, v_value,
-        CASE
-          WHEN v_value IS NULL OR length(trim(v_value)) = 0 THEN true
-          ELSE position(lower(left(trim(v_value), 40)) IN v_transcript) > 0
-        END,
+        position(lower(left(trim(v_value), 40)) IN v_transcript) > 0,
         rec.model_version
       );
     END LOOP;
@@ -1822,6 +1983,7 @@ DECLARE
   v_median numeric;
   v_contrast text;
 BEGIN
+  PERFORM public.reporting_require_access(p_org_id);
   SELECT
     public.profile_cohort_key(p.offer_type, p.price_point_cents, p.monthly_lead_volume),
     p.aggregate_opt_out
@@ -2135,18 +2297,14 @@ BEGIN
       (
         o.holdout_percent > 0
         AND COALESCE((hs.h ->> 'mature_resolved_n')::integer, 0) >= public.reporting_diag_min()
-        AND (
-          NOT COALESCE((cs.c ->> 'monotonic')::boolean, false)
-          OR COALESCE((cs.c ->> 'shown_count')::integer, 0) < 2
-        )
+        AND COALESCE((cs.c ->> 'shown_count')::integer, 0) >= 2
+        AND NOT COALESCE((cs.c ->> 'monotonic')::boolean, false)
       ) AS stopped_predicting,
       CASE
         WHEN o.holdout_percent <= 0 THEN 2
         WHEN COALESCE((hs.h ->> 'mature_resolved_n')::integer, 0) >= public.reporting_diag_min()
-          AND (
-            NOT COALESCE((cs.c ->> 'monotonic')::boolean, false)
-            OR COALESCE((cs.c ->> 'shown_count')::integer, 0) < 2
-          ) THEN 0
+          AND COALESCE((cs.c ->> 'shown_count')::integer, 0) >= 2
+          AND NOT COALESCE((cs.c ->> 'monotonic')::boolean, false) THEN 0
         WHEN COALESCE((hs.h ->> 'too_small')::boolean, true) THEN 3
         ELSE 4
       END AS priority
@@ -2204,7 +2362,7 @@ REVOKE ALL ON FUNCTION public.snapshot_score_config() FROM PUBLIC, anon, authent
 REVOKE ALL ON FUNCTION public.assign_lead_holdout() FROM PUBLIC, anon, authenticated;
 REVOKE ALL ON FUNCTION public.load_calibration_report(uuid) FROM PUBLIC, anon;
 REVOKE ALL ON FUNCTION public.preview_score_config_change(uuid, integer, integer, integer, integer, integer) FROM PUBLIC, anon;
-REVOKE ALL ON FUNCTION public.save_org_score_config(uuid, integer, integer, integer, integer, integer, integer, integer, integer, public.score_config_source, uuid) FROM PUBLIC, anon;
+REVOKE ALL ON FUNCTION public.save_org_score_config(uuid, integer, integer, integer, integer, integer, integer, integer, integer, public.score_config_source, uuid, numeric) FROM PUBLIC, anon;
 REVOKE ALL ON FUNCTION public.apply_calibration_suggestion(uuid, uuid) FROM PUBLIC, anon;
 REVOKE ALL ON FUNCTION public.dismiss_calibration_suggestion(uuid, uuid) FROM PUBLIC, anon;
 REVOKE ALL ON FUNCTION public.update_org_holdout_percent(uuid, numeric) FROM PUBLIC, anon;
@@ -2216,7 +2374,7 @@ REVOKE ALL ON FUNCTION public.calibration_recompute_total(integer, integer, inte
 
 GRANT EXECUTE ON FUNCTION public.load_calibration_report(uuid) TO authenticated, service_role;
 GRANT EXECUTE ON FUNCTION public.preview_score_config_change(uuid, integer, integer, integer, integer, integer) TO authenticated, service_role;
-GRANT EXECUTE ON FUNCTION public.save_org_score_config(uuid, integer, integer, integer, integer, integer, integer, integer, integer, public.score_config_source, uuid) TO authenticated, service_role;
+GRANT EXECUTE ON FUNCTION public.save_org_score_config(uuid, integer, integer, integer, integer, integer, integer, integer, integer, public.score_config_source, uuid, numeric) TO authenticated, service_role;
 GRANT EXECUTE ON FUNCTION public.apply_calibration_suggestion(uuid, uuid) TO authenticated, service_role;
 GRANT EXECUTE ON FUNCTION public.dismiss_calibration_suggestion(uuid, uuid) TO authenticated, service_role;
 GRANT EXECUTE ON FUNCTION public.update_org_holdout_percent(uuid, numeric) TO authenticated, service_role;

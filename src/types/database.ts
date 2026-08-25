@@ -3312,6 +3312,132 @@ export type Database = {
         };
         Relationships: [];
       };
+      score_config_versions: {
+        Row: {
+          id: string;
+          org_id: string;
+          timeline_weight: number;
+          investment_capacity_weight: number;
+          decision_authority_weight: number;
+          pain_severity_weight: number;
+          ready_threshold: number;
+          speed_to_lead_minutes: number;
+          ghost_days_soft: number;
+          ghost_days_hard: number;
+          source: Database["public"]["Enums"]["score_config_source"];
+          suggestion_id: string | null;
+          changed_by_member_id: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          org_id: string;
+          timeline_weight: number;
+          investment_capacity_weight: number;
+          decision_authority_weight: number;
+          pain_severity_weight: number;
+          ready_threshold: number;
+          speed_to_lead_minutes: number;
+          ghost_days_soft: number;
+          ghost_days_hard: number;
+          source?: Database["public"]["Enums"]["score_config_source"];
+          suggestion_id?: string | null;
+          changed_by_member_id?: string | null;
+          created_at?: string;
+        };
+        Update: never;
+        Relationships: [];
+      };
+      calibration_suggestions: {
+        Row: {
+          id: string;
+          org_id: string;
+          kind: Database["public"]["Enums"]["calibration_suggestion_kind"];
+          status: Database["public"]["Enums"]["calibration_suggestion_status"];
+          sample_n: number;
+          evidence_sentence: string;
+          withheld_reason: string | null;
+          payload: Json;
+          created_at: string;
+          applied_at: string | null;
+          applied_by_member_id: string | null;
+          dismissed_at: string | null;
+          dismissed_by_member_id: string | null;
+        };
+        Insert: {
+          id?: string;
+          org_id: string;
+          kind: Database["public"]["Enums"]["calibration_suggestion_kind"];
+          status?: Database["public"]["Enums"]["calibration_suggestion_status"];
+          sample_n: number;
+          evidence_sentence: string;
+          withheld_reason?: string | null;
+          payload?: Json;
+          created_at?: string;
+          applied_at?: string | null;
+          applied_by_member_id?: string | null;
+          dismissed_at?: string | null;
+          dismissed_by_member_id?: string | null;
+        };
+        Update: {
+          status?: Database["public"]["Enums"]["calibration_suggestion_status"];
+          applied_at?: string | null;
+          applied_by_member_id?: string | null;
+          dismissed_at?: string | null;
+          dismissed_by_member_id?: string | null;
+        };
+        Relationships: [];
+      };
+      extraction_audits: {
+        Row: {
+          id: string;
+          org_id: string;
+          extraction_id: string;
+          call_id: string;
+          field_name: string;
+          extracted_value: string | null;
+          grounded: boolean;
+          model_version: string | null;
+          sampled_at: string;
+        };
+        Insert: {
+          id?: string;
+          org_id: string;
+          extraction_id: string;
+          call_id: string;
+          field_name: string;
+          extracted_value?: string | null;
+          grounded: boolean;
+          model_version?: string | null;
+          sampled_at?: string;
+        };
+        Update: never;
+        Relationships: [];
+      };
+      calibration_benchmarks: {
+        Row: {
+          cohort_key: string;
+          metric: string;
+          offer_type: Database["public"]["Enums"]["profile_offer_type"] | null;
+          price_band: string | null;
+          org_count: number;
+          median_value: number;
+          sample_n: number;
+          computed_at: string;
+        };
+        Insert: {
+          cohort_key: string;
+          metric: string;
+          offer_type?: Database["public"]["Enums"]["profile_offer_type"] | null;
+          price_band?: string | null;
+          org_count: number;
+          median_value: number;
+          sample_n: number;
+          computed_at?: string;
+        };
+        Update: never;
+        Relationships: [];
+      };
     };
     Views: {
       queue_rows: {
@@ -3843,6 +3969,7 @@ export type Database = {
           p_ghost_hard: number;
           p_source?: Database["public"]["Enums"]["score_config_source"];
           p_suggestion_id?: string | null;
+          p_holdout_percent?: number | null;
         };
         Returns: string;
       };
@@ -3860,6 +3987,10 @@ export type Database = {
       };
       load_ops_calibration: {
         Args: Record<PropertyKey, never>;
+        Returns: Json;
+      };
+      calibration_cross_client_context: {
+        Args: { p_org_id: string };
         Returns: Json;
       };
       refresh_calibration_suggestions: {

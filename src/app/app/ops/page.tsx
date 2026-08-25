@@ -49,6 +49,14 @@ export default async function OpsPage() {
       title="Operator"
       description="Is anything wrong right now. Clients never see this screen."
     >
+      {stopped.length > 0 ? (
+        <Notice tone="critical" className="mb-6">
+          {stopped.length === 1
+            ? "One client’s score has stopped predicting who closes. That product is quietly failing while the queue still looks orderly."
+            : `${stopped.length} clients have scores that have stopped predicting who closes. That product is quietly failing while the queue still looks orderly.`}
+        </Notice>
+      ) : null}
+
       {state.anythingWrong ? (
         <Notice tone="critical" className="mb-6">
           Something is wrong. Read the open alerts and overdue jobs before anything else.
@@ -58,14 +66,6 @@ export default async function OpsPage() {
           No overdue jobs, no open alerts, ingestion is moving.
         </Notice>
       )}
-
-      {stopped.length > 0 ? (
-        <Notice tone="critical" className="mb-6">
-          {stopped.length === 1
-            ? "One client’s score has stopped predicting who closes. That product is quietly failing while the queue still looks orderly."
-            : `${stopped.length} clients have scores that have stopped predicting who closes. That product is quietly failing while the queue still looks orderly.`}
-        </Notice>
-      ) : null}
 
       <Panel className="mb-8 p-6">
         <h2 className={cardTitle}>Calibration health</h2>

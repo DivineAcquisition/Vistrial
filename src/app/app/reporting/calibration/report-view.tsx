@@ -73,10 +73,7 @@ function CurveTable({
   curve: Record<string, unknown>;
   biased: boolean;
 }) {
-  const rows = arr(curve.rows).filter((row) => {
-    const rate = rateOf(asRecord(row).close_rate);
-    return !rate.tooSmall;
-  });
+  const rows = arr(curve.rows);
   const breaks = arr(curve.breaks);
   return (
     <Panel className="p-6">
@@ -184,9 +181,6 @@ export function CalibrationReportView({
   const withheld = suggestions
     .map((row) => asRecord(row))
     .find((row) => str(row.status) === "withheld" && str(row.kind) === "weights");
-  const draftSug = suggestions
-    .map((row) => asRecord(row))
-    .find((row) => str(row.status) === "pending" && str(row.kind) === "draft_branch");
   const steepest = threshold.steepest ? asRecord(threshold.steepest) : {};
   const correctionFields = arr(extraction.correction_by_field);
   const auditFields = arr(extraction.sample_audit_by_field);
@@ -304,13 +298,6 @@ export function CalibrationReportView({
           <p className="text-sm text-silver">{str(withheld.evidence_sentence)}</p>
         ) : (
           <p className="text-sm text-silver">No weight change is on the table.</p>
-        )}
-        {draftSug ? (
-          <p className={`mt-4 text-sm text-silver`}>{str(draftSug.evidence_sentence)}</p>
-        ) : str(under.recommendation) ? (
-          <p className={`mt-4 text-sm text-silver`}>{str(under.recommendation)}</p>
-        ) : (
-          <p className={`mt-4 ${helperClass}`}>{str(under.plain)}</p>
         )}
       </Panel>
 
@@ -502,6 +489,11 @@ export function CalibrationReportView({
           />
         </div>
         <p className={`mt-4 text-sm text-silver`}>{str(outcome.plain)}</p>
+        {str(under.recommendation) ? (
+          <p className={`mt-3 text-sm text-silver`}>{str(under.recommendation)}</p>
+        ) : str(under.plain) ? (
+          <p className={`mt-3 ${helperClass}`}>{str(under.plain)}</p>
+        ) : null}
       </Panel>
 
       <Panel className="p-6">

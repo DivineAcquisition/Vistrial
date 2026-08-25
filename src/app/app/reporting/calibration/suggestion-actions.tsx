@@ -33,7 +33,7 @@ export function SuggestionActions({
           </Button>
         }
         title="Apply the suggested weights?"
-        description="This updates live scoring for new reads. Existing score history is not rewritten. Who gets called first can change today."
+        description="This updates live scoring for new reads. Existing score history is not rewritten. Queue rank for a lead stays until that lead is scored again."
         confirmLabel="Apply weights"
         confirmVariant="primary"
         onConfirm={() =>

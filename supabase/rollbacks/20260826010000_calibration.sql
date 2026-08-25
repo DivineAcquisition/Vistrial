@@ -12,6 +12,7 @@ DROP FUNCTION IF EXISTS public.update_org_holdout_percent(uuid, numeric);
 DROP FUNCTION IF EXISTS public.dismiss_calibration_suggestion(uuid, uuid);
 DROP FUNCTION IF EXISTS public.apply_calibration_suggestion(uuid, uuid);
 DROP FUNCTION IF EXISTS public.save_org_score_config(uuid, integer, integer, integer, integer, integer, integer, integer, integer, public.score_config_source, uuid);
+DROP FUNCTION IF EXISTS public.save_org_score_config(uuid, integer, integer, integer, integer, integer, integer, integer, integer, public.score_config_source, uuid, numeric);
 DROP FUNCTION IF EXISTS public.refresh_calibration_suggestions(uuid);
 DROP FUNCTION IF EXISTS public.calibration_historical_effect(uuid, integer, integer, integer, integer, integer);
 DROP FUNCTION IF EXISTS public.calibration_profile_shift(uuid);

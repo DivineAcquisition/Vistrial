@@ -244,11 +244,33 @@ BEGIN
     RAISE EXCEPTION '0-19 close rate expected 20.0, got %', v_pct;
   END IF;
 
+  -- A later rescore must not move the lead into another calibration band.
+  INSERT INTO public.readiness_scores (
+    org_id, lead_id, timeline_raw, investment_capacity_raw, decision_authority_raw, pain_severity_raw,
+    total, reasoning, triggered_by, created_at
+  ) VALUES (
+    v_well, '161e1611-1611-4161-8161-161111110001',
+    90, 90, 90, 90, 90, 'later rescore', 'manual', now() + interval '1 hour'
+  );
+  SELECT count(*), count(*) FILTER (WHERE closed)
+  INTO v_n, v_k
+  FROM public.calibration_mature_resolved(v_well) r
+  WHERE r.is_holdout AND public.calibration_score_band(r.score) = '0-19';
+  IF v_n <> 25 OR v_k <> 5 THEN
+    RAISE EXCEPTION 'calibration must use the intake score, got %/% after rescore', v_k, v_n;
+  END IF;
+
   SELECT elem INTO v_band
   FROM jsonb_array_elements(v_json -> 'rows') elem
   WHERE elem ->> 'band_key' = '20-39';
-  IF v_band IS NOT NULL AND NOT COALESCE((v_band -> 'close_rate' ->> 'too_small')::boolean, true) THEN
-    RAISE EXCEPTION 'empty/small bands must be suppressed';
+  IF v_band IS NULL THEN
+    RAISE EXCEPTION 'every band must appear, including empty ones';
+  END IF;
+  IF NOT COALESCE((v_band -> 'close_rate' ->> 'too_small')::boolean, false) THEN
+    RAISE EXCEPTION 'empty/small bands must suppress the rate';
+  END IF;
+  IF (v_band -> 'close_rate' ->> 'n')::bigint <> 0 THEN
+    RAISE EXCEPTION 'empty 20-39 should have n=0, got %', v_band;
   END IF;
 
   IF COALESCE((v_json ->> 'monotonic')::boolean, false) IS NOT TRUE THEN
@@ -422,5 +444,68 @@ BEGIN
   IF v_status IS DISTINCT FROM 'true' THEN
     RAISE EXCEPTION 'holdout-off org must be identifiable';
   END IF;
+
+  -- Authenticated callers cannot choose holdout membership.
+  PERFORM set_config('request.jwt.claim.sub', '161e1611-1611-4161-8161-1611111111a2', true);
+  SET ROLE authenticated;
+  BEGIN
+    INSERT INTO public.leads (id, org_id, first_name, status, opted_in_at, is_holdout)
+    VALUES ('161e1611-1611-4161-8161-1611111111e1', v_well, 'ForgeHoldout', 'new', now(), false);
+    RAISE EXCEPTION 'authenticated insert must not set is_holdout';
+  EXCEPTION
+    WHEN insufficient_privilege THEN NULL;
+    WHEN OTHERS THEN
+      IF SQLERRM LIKE '%authenticated insert must not%' THEN
+        RAISE;
+      END IF;
+      IF SQLSTATE <> '42501' AND SQLERRM NOT ILIKE '%permission%' AND SQLERRM NOT ILIKE '%privilege%' THEN
+        RAISE;
+      END IF;
+  END;
+  INSERT INTO public.leads (id, org_id, first_name, status, opted_in_at)
+  VALUES ('161e1611-1611-4161-8161-1611111111e2', v_well, 'RandomHoldout', 'new', now());
+  BEGIN
+    PERFORM public.calibration_cross_client_context(v_off);
+    RAISE EXCEPTION 'cross-client context must require org access';
+  EXCEPTION
+    WHEN insufficient_privilege THEN NULL;
+    WHEN OTHERS THEN
+      IF SQLERRM LIKE '%cross-client context must require%' THEN
+        RAISE;
+      END IF;
+      IF SQLSTATE <> '42501' AND SQLERRM NOT ILIKE '%owner/admin%' AND SQLERRM NOT ILIKE '%reporting%' THEN
+        RAISE;
+      END IF;
+  END;
+  RESET ROLE;
+  SELECT is_holdout INTO v_holdout FROM public.leads WHERE id = '161e1611-1611-4161-8161-1611111111e2';
+  IF v_holdout IS NULL THEN
+    RAISE EXCEPTION 'omitted is_holdout must still be assigned';
+  END IF;
+
+  -- Callers cannot forge calibration_apply provenance.
+  PERFORM set_config('vistrial.allow_calibration_apply', '', true);
+  PERFORM set_config('request.jwt.claim.sub', '161e1611-1611-4161-8161-1611111111a2', true);
+  SELECT public.save_org_score_config(
+    v_well,
+    timeline_weight,
+    investment_capacity_weight,
+    decision_authority_weight,
+    pain_severity_weight,
+    ready_threshold,
+    speed_to_lead_minutes,
+    ghost_days_soft,
+    ghost_days_hard,
+    'calibration_apply',
+    NULL
+  )
+  INTO v_sug
+  FROM public.score_configs
+  WHERE org_id = v_well;
+  IF (SELECT source FROM public.score_config_versions WHERE org_id = v_well ORDER BY created_at DESC LIMIT 1)
+     = 'calibration_apply' THEN
+    RAISE EXCEPTION 'caller cannot forge calibration_apply provenance';
+  END IF;
+  PERFORM set_config('request.jwt.claim.sub', '', true);
 END
 $$;

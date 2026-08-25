@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 
 import { AuthCard } from "@/components/auth/auth-card";
 import { AcceptInviteForm } from "@/app/(auth)/accept-invite/[token]/accept-invite-form";
+import { InstallSteps } from "@/components/app/install-steps";
 import { PENDING_INVITE_COOKIE, pendingInviteCookieOptions } from "@/lib/auth/cookies";
 import { emailsMatch } from "@/lib/auth/permissions";
 import { lookupInviteByToken } from "@/lib/auth/invites";
@@ -119,6 +120,12 @@ export default async function AcceptInvitePage({
       eyebrowLabel="Invitation"
     >
       <AcceptInviteForm token={token} email={invite.email} role={invite.role} />
+      <div className="mt-8 border-t border-white/10 pt-6">
+        <p className="text-sm font-medium text-white">Install on your phone after you join</p>
+        <div className="mt-3">
+          <InstallSteps />
+        </div>
+      </div>
     </AuthCard>
   );
 }

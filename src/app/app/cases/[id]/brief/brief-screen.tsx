@@ -31,12 +31,18 @@ export function BriefScreen({ brief }: { brief: BriefPayload }) {
   const quotes = brief.quotes;
 
   return (
-    <div className="brief-sheet grid h-[calc(100svh-9rem)] min-h-0 grid-rows-[auto_1fr] overflow-hidden">
+    <div className="brief-sheet grid min-h-0 overflow-x-hidden md:h-[calc(100svh-9rem)] md:grid-rows-[auto_1fr] md:overflow-hidden">
       <div className="mb-3 flex flex-wrap items-center justify-between gap-2 print:hidden">
         <p className="text-xs text-dim">Ninety seconds. Gaps stay visible.</p>
         <div className="flex gap-2">
           <Link href={`/app/cases/${brief.lead.id}`} className={`${btnSecondary} ${btnSizeSm}`}>
             Case file
+          </Link>
+          <Link
+            href={`/app/log?leadId=${brief.lead.id}&from=brief`}
+            className={`${btnSecondary} ${btnSizeSm}`}
+          >
+            Log outcome
           </Link>
           <button type="button" className={`${btnSecondary} ${btnSizeSm}`} onClick={() => window.print()}>
             Print
@@ -44,10 +50,10 @@ export function BriefScreen({ brief }: { brief: BriefPayload }) {
         </div>
       </div>
 
-      <div className="grid min-h-0 gap-3 overflow-y-auto md:grid-cols-2 xl:grid-cols-4">
-        <Panel className="px-4 py-3">
+      <div className="grid min-h-0 gap-3 overflow-x-hidden overflow-y-auto md:grid-cols-2 xl:grid-cols-4">
+        <Panel className="px-4 py-3 max-md:order-1">
           <p className="text-[11px] font-semibold tracking-[0.14em] text-brand-300 uppercase">Who</p>
-          <p className="mt-1 text-base font-semibold text-white">{brief.lead.name}</p>
+          <p className="mt-1 text-base font-semibold break-words text-white">{brief.lead.name}</p>
           <p className="mt-1 text-xs text-silver">
             {gap(brief.lead.source)}
             {brief.lead.campaign ? ` · ${brief.lead.campaign}` : ""}
@@ -55,7 +61,7 @@ export function BriefScreen({ brief }: { brief: BriefPayload }) {
           <p className="mt-1 text-xs text-dim">{gap(brief.lead.offerName)}</p>
         </Panel>
 
-        <Panel className="px-4 py-3">
+        <Panel className="px-4 py-3 max-md:order-2">
           <p className="text-[11px] font-semibold tracking-[0.14em] text-brand-300 uppercase">Readiness</p>
           {score ? (
             <>
@@ -74,7 +80,7 @@ export function BriefScreen({ brief }: { brief: BriefPayload }) {
           )}
         </Panel>
 
-        <Panel className="px-4 py-3 xl:col-span-2">
+        <Panel className="px-4 py-3 max-md:order-4 xl:col-span-2">
           <p className="text-[11px] font-semibold tracking-[0.14em] text-brand-300 uppercase">
             What the setter established
           </p>
@@ -92,14 +98,14 @@ export function BriefScreen({ brief }: { brief: BriefPayload }) {
           )}
         </Panel>
 
-        <Panel className="px-4 py-3 md:col-span-2">
+        <Panel className="px-4 py-3 max-md:order-3 md:col-span-2">
           <p className="text-[11px] font-semibold tracking-[0.14em] text-brand-300 uppercase">Open objections</p>
           {objections.length === 0 ? (
             <p className="mt-1 text-sm text-dim">Not established</p>
           ) : (
             <ul className="mt-1 space-y-1 text-xs text-silver">
               {objections.map((objection) => (
-                <li key={objection.id}>
+                <li key={objection.id} className="break-words">
                   <span className="text-white">{OBJECTION_TYPE_LABELS[objection.type]}.</span> “
                   {objection.verbatim}”
                   <span className="text-dim">

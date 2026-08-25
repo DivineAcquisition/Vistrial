@@ -156,7 +156,7 @@ export async function collectDailyBriefItems(
     if (overnight) {
       items.push({
         text: `${overnight} breached overnight`,
-        href: notificationHref("/app/queue"),
+        href: notificationHref("/app/queue?breached=1"),
       });
     }
     const { data: watch } = await db.rpc("adoption_watch", { p_org_id: orgId });
@@ -186,7 +186,7 @@ export async function collectDailyBriefItems(
     if (waiting) {
       items.push({
         text: `${waiting} still waiting on speed-to-lead`,
-        href: notificationHref("/app/queue"),
+        href: notificationHref("/app/queue?breached=1"),
       });
     }
   }

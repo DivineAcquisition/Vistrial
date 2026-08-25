@@ -1479,6 +1479,9 @@ export type Database = {
           working_hours_start: string | null;
           working_hours_end: string | null;
           working_days: number[] | null;
+          first_mobile_session_at: string | null;
+          logged_outcome_from_mobile_at: string | null;
+          mobile_walkthrough_completed_at: string | null;
         };
         Insert: {
           active?: boolean;
@@ -1495,6 +1498,9 @@ export type Database = {
           working_hours_start?: string | null;
           working_hours_end?: string | null;
           working_days?: number[] | null;
+          first_mobile_session_at?: string | null;
+          logged_outcome_from_mobile_at?: string | null;
+          mobile_walkthrough_completed_at?: string | null;
         };
         Update: {
           active?: boolean;
@@ -1511,6 +1517,9 @@ export type Database = {
           working_hours_start?: string | null;
           working_hours_end?: string | null;
           working_days?: number[] | null;
+          first_mobile_session_at?: string | null;
+          logged_outcome_from_mobile_at?: string | null;
+          mobile_walkthrough_completed_at?: string | null;
         };
         Relationships: [
           {
@@ -2182,6 +2191,12 @@ export type Database = {
           outbound_body: string | null;
           summary: string | null;
           type: Database["public"]["Enums"]["touch_type"];
+          client_surface: Database["public"]["Enums"]["client_surface"] | null;
+          queued_offline: boolean;
+          client_logged_at: string | null;
+          client_event_id: string | null;
+          expected_lead_status: Database["public"]["Enums"]["lead_status"] | null;
+          sync_discrepancy: Json | null;
         };
         Insert: {
           actor_member_id?: string | null;
@@ -2197,6 +2212,12 @@ export type Database = {
           outbound_body?: string | null;
           summary?: string | null;
           type: Database["public"]["Enums"]["touch_type"];
+          client_surface?: Database["public"]["Enums"]["client_surface"] | null;
+          queued_offline?: boolean;
+          client_logged_at?: string | null;
+          client_event_id?: string | null;
+          expected_lead_status?: Database["public"]["Enums"]["lead_status"] | null;
+          sync_discrepancy?: Json | null;
         };
         Update: {
           actor_member_id?: string | null;
@@ -2212,6 +2233,12 @@ export type Database = {
           outbound_body?: string | null;
           summary?: string | null;
           type?: Database["public"]["Enums"]["touch_type"];
+          client_surface?: Database["public"]["Enums"]["client_surface"] | null;
+          queued_offline?: boolean;
+          client_logged_at?: string | null;
+          client_event_id?: string | null;
+          expected_lead_status?: Database["public"]["Enums"]["lead_status"] | null;
+          sync_discrepancy?: Json | null;
         };
         Relationships: [
           {
@@ -3694,6 +3721,10 @@ export type Database = {
         Args: { p_org_id: string };
         Returns: Json;
       };
+      mark_mobile_training: {
+        Args: { p_org_id: string; p_kind: string };
+        Returns: undefined;
+      };
       reporting_mature_cohorts: {
         Args: { p_org_id: string };
         Returns: number;
@@ -3799,6 +3830,7 @@ export type Database = {
         | "fit"
         | "competitor"
         | "other";
+      client_surface: "mobile" | "desktop";
       org_role: "owner" | "admin" | "closer" | "setter";
       payment_type: "pif" | "plan" | "bnpl";
       score_factor:

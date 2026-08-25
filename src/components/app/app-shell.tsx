@@ -5,9 +5,16 @@ import { Menu, PanelLeftClose, PanelLeftOpen } from "lucide-react";
 
 import Logo from "@/components/brand/logo";
 import { AppNavLinks } from "@/components/app/app-nav-links";
+import { BriefPrefetcher } from "@/components/app/brief-prefetcher";
+import { ConnectionStatus } from "@/components/app/connection-status";
+import { LastLeadTracker } from "@/components/app/last-lead-tracker";
+import { MobileDock } from "@/components/app/mobile-dock";
 import { NotificationInbox } from "@/components/app/notification-inbox";
 import { NotificationRuntime } from "@/components/app/notification-runtime";
+import { OutcomeSyncRuntime } from "@/components/app/outcome-sync-runtime";
 import { OrgSwitcher } from "@/components/app/org-switcher";
+import { MobileWalkthroughNotice } from "@/components/app/mobile-walkthrough";
+import { PushPrompt } from "@/components/app/push-prompt";
 import { UserMenu } from "@/components/app/user-menu";
 import { Button } from "@/components/ui/button";
 import {
@@ -48,7 +55,13 @@ function SidebarBody({
   );
 }
 
-export function AppShell({ children }: { children: ReactNode }) {
+export function AppShell({
+  children,
+  needsMobileOutcomeTraining = false,
+}: {
+  children: ReactNode;
+  needsMobileOutcomeTraining?: boolean;
+}) {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [collapsed, toggleCollapsed] = useSidebarCollapsed();
 
@@ -114,10 +127,19 @@ export function AppShell({ children }: { children: ReactNode }) {
         <Suspense fallback={null}>
           <NotificationRuntime />
         </Suspense>
+        <OutcomeSyncRuntime />
+        <LastLeadTracker />
+        <BriefPrefetcher />
 
-        <main className="min-w-0 flex-1 px-5 py-8 sm:px-8">
-          <div className="mx-auto w-full max-w-[1400px]">{children}</div>
+        <main className="min-w-0 flex-1 overflow-x-hidden px-5 py-8 pb-[calc(5.5rem+env(safe-area-inset-bottom))] sm:px-8 md:pb-8">
+          <div className="mx-auto w-full max-w-[1400px] overflow-x-hidden">
+            <ConnectionStatus />
+            <MobileWalkthroughNotice needed={needsMobileOutcomeTraining} />
+            <PushPrompt />
+            {children}
+          </div>
         </main>
+        <MobileDock />
       </div>
     </div>
   );

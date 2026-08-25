@@ -89,6 +89,7 @@ export type QueueFilters = {
   source: string | null;
   scoreMin: number | null;
   scoreMax: number | null;
+  breached: boolean;
 };
 
 export type QueuePayload = {
@@ -107,8 +108,29 @@ export type QueuePayload = {
 export type QueueEmptyKind = "not_connected" | "broken" | "no_leads" | "nothing_to_work";
 
 export type QueueActionResult =
-  | { ok: true; row: QueueRow | null }
+  | {
+      ok: true;
+      row: QueueRow | null;
+      duplicate?: boolean;
+      discrepancy?: string | null;
+    }
   | { ok: false; error: string };
+
+export type LogOutcomeInput = {
+  leadId: string;
+  channel: string;
+  direction: string;
+  outcome: string;
+  note?: string;
+  actorMemberId?: string;
+  clientEventId?: string;
+  clientLoggedAt?: string;
+  queuedOffline?: boolean;
+  clientSurface?: "mobile" | "desktop";
+  expectedLeadStatus?: string | null;
+  expectedLastTouchAt?: string | null;
+  expectedFirstHumanTouchAt?: string | null;
+};
 
 export const TOUCH_OUTCOME_LABELS: Record<TouchOutcome, string> = {
   connected: "Connected",

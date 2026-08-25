@@ -32,7 +32,7 @@ export default async function MembersSettingsPage() {
   const [{ data: members }, { data: invites }, { data: platformAdmins }] = await Promise.all([
     supabase
       .from("org_members")
-      .select("id, display_name, email, role, active, user_id")
+      .select("id, display_name, email, role, active, user_id, logged_outcome_from_mobile_at")
       .eq("org_id", ctx.org.id)
       .order("created_at", { ascending: true }),
     supabase
@@ -68,9 +68,10 @@ export default async function MembersSettingsPage() {
           <TableHeader>
             <TableRow>
               <TableHead>Name</TableHead>
-              <TableHead>Email</TableHead>
+              <TableHead className="hidden md:table-cell">Email</TableHead>
               <TableHead>Role</TableHead>
-              <TableHead>Status</TableHead>
+              <TableHead className="hidden md:table-cell">Status</TableHead>
+              <TableHead>Phone</TableHead>
               <TableHead></TableHead>
             </TableRow>
           </TableHeader>
@@ -82,7 +83,9 @@ export default async function MembersSettingsPage() {
               return (
                 <TableRow key={member.id}>
                   <TableCell className="text-white">{member.display_name}</TableCell>
-                  <TableCell className="text-silver">{member.email}</TableCell>
+                  <TableCell className="hidden break-all text-silver md:table-cell">
+                    {member.email}
+                  </TableCell>
                   <TableCell>
                     <MemberRoleSelect
                       memberId={member.id}
@@ -94,11 +97,30 @@ export default async function MembersSettingsPage() {
                       <p className={`${helperClass} mt-1`}>Super admin</p>
                     ) : null}
                   </TableCell>
-                  <TableCell>
+                  <TableCell className="hidden md:table-cell">
                     <StatusBadge
                       label={member.active ? "active" : "inactive"}
                       tone={member.active ? "good" : "neutral"}
                     />
+                  </TableCell>
+                  <TableCell>
+                    {member.role === "setter" ? (
+                      <StatusBadge
+                        label={
+                          member.logged_outcome_from_mobile_at
+                            ? "logged from phone"
+                            : "not trained"
+                        }
+                        tone={member.logged_outcome_from_mobile_at ? "good" : "warning"}
+                      />
+                    ) : (
+                      <StatusBadge
+                        label={
+                          member.logged_outcome_from_mobile_at ? "logged from phone" : "desk"
+                        }
+                        tone="neutral"
+                      />
+                    )}
                   </TableCell>
                   <TableCell>
                     <MemberActiveToggle
@@ -131,7 +153,7 @@ export default async function MembersSettingsPage() {
               <TableRow>
                 <TableHead>Email</TableHead>
                 <TableHead>Role</TableHead>
-                <TableHead>Expires</TableHead>
+                <TableHead className="hidden md:table-cell">Expires</TableHead>
                 <TableHead>Link</TableHead>
                 <TableHead></TableHead>
               </TableRow>
@@ -139,10 +161,12 @@ export default async function MembersSettingsPage() {
             <TableBody>
               {(invites ?? []).map((invite) => (
                 <TableRow key={invite.id}>
-                  <TableCell className="text-white">{invite.email}</TableCell>
+                  <TableCell className="break-all text-white">{invite.email}</TableCell>
                   <TableCell className="capitalize text-silver">{invite.role}</TableCell>
-                  <TableCell className="text-silver">{formatDayLong(invite.expires_at)}</TableCell>
-                  <TableCell className="max-w-[220px] truncate text-xs text-dim">
+                  <TableCell className="hidden text-silver md:table-cell">
+                    {formatDayLong(invite.expires_at)}
+                  </TableCell>
+                  <TableCell className="max-w-[14rem] break-all text-xs text-dim">
                     {inviteUrl(invite.token)}
                   </TableCell>
                   <TableCell>

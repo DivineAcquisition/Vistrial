@@ -41,6 +41,8 @@ import type {
   CaseTimelineEntry,
 } from "@/lib/cases/types";
 import { canOverrideLead } from "@/lib/auth/permissions";
+import { detectClientSurface } from "@/lib/mobile/surface";
+import { newClientEventId } from "@/lib/mobile/outcome-queue";
 import {
   CALL_OUTCOME_LABELS,
   CALL_TYPE_LABELS,
@@ -209,7 +211,14 @@ export function CaseFileScreen({ initial }: { initial: CaseFilePayload }) {
           error={error}
           onCancel={() => setPanel(null)}
           onSubmit={async (input) => {
-            await run(() => logQueueOutcome(input));
+            await run(() =>
+              logQueueOutcome({
+                ...input,
+                clientEventId: newClientEventId(),
+                clientLoggedAt: new Date().toISOString(),
+                clientSurface: detectClientSurface(),
+              })
+            );
           }}
         />
       ) : null}

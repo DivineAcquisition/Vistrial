@@ -10,6 +10,7 @@ import {
   type MemberActionResult,
 } from "@/app/app/settings/members/actions";
 import type { OrgRole } from "@/types/database";
+import { InstallSteps } from "@/components/app/install-steps";
 import { SubmitButton } from "@/components/ui/button";
 import { Select } from "@/components/ui/select";
 import {
@@ -62,9 +63,13 @@ export function InviteForm() {
       </p>
       {!state.ok ? <p className={errorClass}>{state.error}</p> : null}
       {url ? (
-        <p className="break-all rounded-xl border border-white/10 bg-white/[0.03] px-3 py-2 text-xs text-silver">
-          {url}
-        </p>
+        <div className="space-y-3 rounded-xl border border-white/10 bg-white/[0.03] px-3 py-3">
+          <p className="break-all text-xs text-silver">{url}</p>
+          <p className={helperClass}>
+            Share this link, and the install steps, so they can log outcomes from a phone.
+          </p>
+          <InstallSteps why={false} />
+        </div>
       ) : null}
     </form>
   );

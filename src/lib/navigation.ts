@@ -18,7 +18,7 @@ export const NAV_GROUPS: Array<{ id: NavGroupId; label: string }> = [
   { id: "configure", label: "Configure" },
 ];
 
-export type NavIcon = "queue" | "cases" | "calls" | "reporting" | "settings";
+export type NavIcon = "queue" | "log" | "cases" | "calls" | "reporting" | "settings";
 
 export type NavItem = {
   href: string;
@@ -33,6 +33,7 @@ export type NavItem = {
 
 export const PRIMARY_NAV: NavItem[] = [
   { href: "/app/queue", label: "Queue", match: "/app/queue", group: "work", icon: "queue" },
+  { href: "/app/log", label: "Log", match: "/app/log", group: "work", icon: "log" },
   { href: "/app/cases", label: "Case Files", match: "/app/cases", group: "work", icon: "cases" },
   { href: "/app/calls", label: "Calls", match: "/app/calls", group: "work", icon: "calls" },
   {

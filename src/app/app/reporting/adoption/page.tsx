@@ -145,33 +145,42 @@ export default async function AdoptionWatchPage() {
         <Panel className="p-6">
           <h2 className={cardTitle}>Who has used the system this week</h2>
           <p className={helperClass}>
-            Outcome logging is the leading indicator. If leads are arriving and nobody is recording
-            what happened, every number here understates what your team actually did.
+            Outcome logging is the leading indicator. Mobile versus desktop per person is how you
+            see a team logging from memory at a desk instead of from the phone after the call.
           </p>
           <div className="mt-4">
             <DataTable
               columns={[
                 { key: "name", label: "Member" },
-                { key: "role", label: "Role" },
-                { key: "touches", label: "Touches", align: "right" },
-                { key: "outcomes", label: "Outcomes", align: "right" },
-                { key: "approvals", label: "Approvals", align: "right" },
+                { key: "role", label: "Role", hideOnMobile: true },
+                { key: "mobile", label: "Mobile", align: "right" },
+                { key: "desktop", label: "Desktop", align: "right" },
+                { key: "outcomes", label: "Outcomes", align: "right", hideOnMobile: true },
                 { key: "state", label: "" },
               ]}
               rows={members.map((item) => {
                 const row = asRecord(item);
                 const touches = num(row.touches) ?? 0;
+                const mobile = num(row.mobile_touches) ?? 0;
+                const desktop = num(row.desktop_touches) ?? 0;
                 const outcomes = num(row.outcomes) ?? 0;
                 const approvals = num(row.approvals) ?? 0;
                 const idle = touches === 0 && outcomes === 0 && approvals === 0;
+                const loggedMobile = bool(row.logged_outcome_from_mobile);
+                const role = str(row.role) ?? "—";
+                const deskOnly = touches > 0 && mobile === 0;
                 return {
                   name: str(row.name) ?? "—",
-                  role: str(row.role) ?? "—",
-                  touches: String(touches),
+                  role,
+                  mobile: String(mobile),
+                  desktop: String(desktop),
                   outcomes: String(outcomes),
-                  approvals: String(approvals),
                   state: idle ? (
                     <StatusBadge label="Nothing this week" tone="warning" />
+                  ) : role === "setter" && !loggedMobile ? (
+                    <StatusBadge label="Not trained on phone" tone="warning" />
+                  ) : deskOnly ? (
+                    <StatusBadge label="Desk only" tone="warning" />
                   ) : (
                     <StatusBadge label="Working" tone="good" />
                   ),

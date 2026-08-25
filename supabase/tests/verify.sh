@@ -110,7 +110,10 @@ run "${ROOT}/supabase/tests/verify-notifications.sql"
 echo "Hardening checks..."
 run "${ROOT}/supabase/tests/verify-hardening.sql"
 
+echo "Mobile in-the-moment checks..."
+run "${ROOT}/supabase/tests/verify-mobile.sql"
+
 echo "Migration rollback (this prompt's migrations)..."
 bash "${ROOT}/scripts/test-migration-rollback.sh"
 
-echo "OK: schema, seed, triggers, RLS, invite, scoring, GHL, platform-admin, queue, case-file, transcript, follow-up, integrity, reporting, business-profile, onboarding-reconcile, notification, and hardening checks passed."
+echo "OK: schema, seed, triggers, RLS, invite, scoring, GHL, platform-admin, queue, case-file, transcript, follow-up, integrity, reporting, business-profile, onboarding-reconcile, notification, hardening, and mobile checks passed."

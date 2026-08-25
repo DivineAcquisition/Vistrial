@@ -71,6 +71,10 @@ export function parseQueueFilters(
     source: firstParam(params.source),
     scoreMin,
     scoreMax,
+    breached:
+      firstParam(params.breached) === "1" ||
+      firstParam(params.breached) === "true" ||
+      firstParam(params.focus) === "breached",
   };
 }
 
@@ -82,6 +86,7 @@ export function queueFiltersToSearchParams(filters: QueueFilters): URLSearchPara
   if (filters.source) params.set("source", filters.source);
   if (filters.scoreMin !== null) params.set("scoreMin", String(filters.scoreMin));
   if (filters.scoreMax !== null) params.set("scoreMax", String(filters.scoreMax));
+  if (filters.breached) params.set("breached", "1");
   return params;
 }
 

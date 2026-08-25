@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   BarChart3,
+  ClipboardList,
   FolderOpen,
   ListChecks,
   Phone,
@@ -24,6 +25,7 @@ import { cn } from "@/lib/utils";
 
 const ICONS: Record<NavIcon, LucideIcon> = {
   queue: ListChecks,
+  log: ClipboardList,
   cases: FolderOpen,
   calls: Phone,
   reporting: BarChart3,

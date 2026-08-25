@@ -14,6 +14,7 @@ import {
 import { useOrg } from "@/components/app/org-provider";
 import { QueueFilters } from "@/app/app/queue/queue-filters";
 import { QueueLeadRow } from "@/app/app/queue/queue-row";
+import { QueueMobileList } from "@/app/app/queue/queue-mobile-list";
 import {
   assignQueueLead,
   completeQueueNextAction,
@@ -23,14 +24,14 @@ import {
 } from "@/app/app/queue/actions";
 import { cursorFromRow } from "@/lib/queue/cursor";
 import { queueEmptyKind } from "@/lib/queue/parse";
+import { detectClientSurface } from "@/lib/mobile/surface";
+import { newClientEventId } from "@/lib/mobile/outcome-queue";
 import {
   QUEUE_PAGE_SIZE,
+  type LogOutcomeInput,
   type QueueFilters as QueueFilterState,
   type QueuePayload,
   type QueueRow,
-  type TouchChannel,
-  type TouchDirection,
-  type TouchOutcome,
 } from "@/lib/queue/types";
 import { MIN_VOICE_EXAMPLES } from "@/lib/follow-up/constants";
 import { formatQueueUntil } from "@/lib/queue/duration";
@@ -40,7 +41,7 @@ import {
   FOLLOW_UP_STATUS_LABELS,
 } from "@/lib/follow-up/labels";
 import { createClient } from "@/lib/supabase/client";
-import { btnPrimary, btnSecondary, btnSizeSm, errorClass, sectionLabel } from "@/lib/ui";
+import { btnPrimary, btnSecondary, btnSizeLg, btnSizeSm, errorClass, sectionLabel } from "@/lib/ui";
 
 /**
  * Ten columns is right at a desk and wrong on a phone. The context columns fold
@@ -110,6 +111,8 @@ export function QueueScreen({
   const [busyLeadId, setBusyLeadId] = useState<string | null>(null);
   const [loadingMore, setLoadingMore] = useState(false);
   const [pendingDrafts, setPendingDrafts] = useState(initial.pendingDrafts);
+  const [filtersOpen, setFiltersOpen] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
 
   const seenIds = useRef(new Set([...initial.alarm, ...initial.queue].map((row) => row.id)));
   const pendingLive = useRef<QueuePayload | null>(null);
@@ -285,44 +288,26 @@ export function QueueScreen({
     setBusyLeadId(null);
   }
 
-  async function handleLogOutcome(input: {
-    leadId: string;
-    channel: TouchChannel;
-    direction: TouchDirection;
-    outcome: TouchOutcome;
-    note: string;
-    actorMemberId: string;
-  }) {
+  async function handleLogOutcome(input: LogOutcomeInput) {
     begin(input.leadId);
-    if (input.direction === "outbound") {
-      const current = alarm.find((row) => row.id === input.leadId);
-      if (current) {
-        setExitingAlarm((rows) => [...rows, current]);
-        setAlarm((rows) => rows.filter((row) => row.id !== input.leadId));
-        window.setTimeout(() => {
-          setExitingAlarm((rows) => rows.filter((row) => row.id !== input.leadId));
-        }, 800);
-      }
-      const touchedAt = new Date().toISOString();
-      setQueue((rows) =>
-        rows.map((row) =>
-          row.id === input.leadId
-            ? {
-                ...row,
-                lastTouchAt: touchedAt,
-                firstHumanTouchAt: row.firstHumanTouchAt ?? touchedAt,
-              }
-            : row
-        )
-      );
-    }
+    const current = [...alarm, ...queue].find((row) => row.id === input.leadId);
+    const payload: LogOutcomeInput = {
+      ...input,
+      clientEventId: input.clientEventId || newClientEventId(),
+      clientLoggedAt: input.clientLoggedAt || new Date().toISOString(),
+      clientSurface: input.clientSurface || detectClientSurface(),
+      expectedLeadStatus: input.expectedLeadStatus ?? current?.status ?? null,
+      expectedLastTouchAt: input.expectedLastTouchAt ?? current?.lastTouchAt ?? null,
+      expectedFirstHumanTouchAt: input.expectedFirstHumanTouchAt ?? current?.firstHumanTouchAt ?? null,
+    };
 
-    const result = await logQueueOutcome(input);
+    const result = await logQueueOutcome(payload);
     if (!result.ok) {
       revert(result.error);
       return false;
     }
     finishBusy();
+    if (result.discrepancy) setActionError(result.discrepancy);
     reconcile(
       await refreshQueue(filters, {
         limit: Math.max(QUEUE_PAGE_SIZE, loadedCount.current),
@@ -408,6 +393,19 @@ export function QueueScreen({
     return true;
   }
 
+  async function pullRefresh() {
+    setRefreshing(true);
+    try {
+      reconcile(
+        await refreshQueue(filters, {
+          limit: Math.max(QUEUE_PAGE_SIZE, loadedCount.current),
+        })
+      );
+    } finally {
+      setRefreshing(false);
+    }
+  }
+
   async function loadMore() {
     const last = queue[queue.length - 1];
     if (!last || !hasMore) return;
@@ -442,7 +440,19 @@ export function QueueScreen({
   const showWorkingSurface = emptyKind === null || emptyKind === "nothing_to_work";
 
   return (
-    <div>
+    <div
+      onTouchStart={(event) => {
+        if (window.scrollY > 8) return;
+        (event.currentTarget as HTMLElement).dataset.pullY = String(
+          event.changedTouches[0]?.clientY ?? 0
+        );
+      }}
+      onTouchEnd={(event) => {
+        const start = Number((event.currentTarget as HTMLElement).dataset.pullY ?? 0);
+        const y = event.changedTouches[0]?.clientY ?? 0;
+        if (start && y - start > 72) void pullRefresh();
+      }}
+    >
       {actionError ? <p className={`${errorClass} mb-4`}>{actionError}</p> : null}
 
       {connectionBanner === "broken" ? (
@@ -543,12 +553,36 @@ export function QueueScreen({
 
           <section className="mb-8" aria-label="Speed-to-lead alarm">
             <p className={sectionLabel}>Speed-to-lead</p>
+            {filters.breached ? (
+              <p className="mt-2 text-sm text-silver">
+                Showing breached leads. This band cannot be dismissed.
+              </p>
+            ) : null}
             {alarmVisible.length === 0 ? (
               <p className="mt-3 text-sm text-dim">
                 Nothing unworked past the speed-to-lead window.
               </p>
             ) : (
-              <div className="panel mt-4 overflow-hidden rounded-2xl">
+              <>
+                <div className="mt-4 md:hidden">
+                  <QueueMobileList
+                    rows={alarmVisible}
+                    now={now}
+                    variant="alarm"
+                    members={members}
+                    role={org.role}
+                    memberId={org.memberId}
+                    isPlatformAdmin={org.isPlatformAdmin}
+                    arrivingIds={arrivingIds}
+                    exitingIds={new Set(exitingAlarm.map((row) => row.id))}
+                    busyLeadId={busyLeadId}
+                    error={actionError}
+                    onAssign={handleAssign}
+                    onComplete={handleComplete}
+                    onFollowOn={handleFollowOn}
+                  />
+                </div>
+                <div className="panel mt-4 hidden overflow-hidden rounded-2xl md:block">
                 <Table>
                   <TableHeader>
                     <TableRow className="hover:bg-transparent">
@@ -587,11 +621,31 @@ export function QueueScreen({
                     ))}
                   </TableBody>
                 </Table>
-              </div>
+                </div>
+              </>
             )}
           </section>
 
-          <QueueFilters filters={filters} sources={sources} />
+          <div className="mb-6 flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              className={`${btnSecondary} ${btnSizeLg} md:hidden`}
+              onClick={() => setFiltersOpen((open) => !open)}
+            >
+              Filters
+            </button>
+            <button
+              type="button"
+              className={`${btnSecondary} ${btnSizeLg} md:hidden`}
+              disabled={refreshing}
+              onClick={() => void pullRefresh()}
+            >
+              {refreshing ? "Refreshing…" : "Refresh"}
+            </button>
+          </div>
+          <div className={filtersOpen ? "md:block" : "hidden md:block"}>
+            <QueueFilters filters={filters} sources={sources} />
+          </div>
 
           {emptyKind === "nothing_to_work" ? (
             <EmptyState
@@ -599,10 +653,33 @@ export function QueueScreen({
               title="Nothing to work"
               detail="Every lead that needed a touch is handled. This is the state the day is supposed to reach."
             />
-          ) : (
+          ) : filters.breached ? null : (
             <section aria-label="Working queue">
               <p className={sectionLabel}>Queue</p>
-              <div className="panel mt-4 overflow-hidden rounded-2xl">
+              <div className="mt-4 md:hidden">
+                {queue.length === 0 ? (
+                  <p className="px-4 py-8 text-center text-sm text-dim">
+                    No leads match these filters. The alarm band above still shows every breach.
+                  </p>
+                ) : (
+                  <QueueMobileList
+                    rows={queue}
+                    now={now}
+                    variant="queue"
+                    members={members}
+                    role={org.role}
+                    memberId={org.memberId}
+                    isPlatformAdmin={org.isPlatformAdmin}
+                    arrivingIds={arrivingIds}
+                    busyLeadId={busyLeadId}
+                    error={actionError}
+                    onAssign={handleAssign}
+                    onComplete={handleComplete}
+                    onFollowOn={handleFollowOn}
+                  />
+                )}
+              </div>
+              <div className="panel mt-4 hidden overflow-hidden rounded-2xl md:block">
                 <Table>
                   <TableHeader>
                     <TableRow className="hover:bg-transparent">

@@ -166,7 +166,7 @@ async function observeSpeedToLead(
     const minutes = Math.round(age / 60000);
     const assigned = memberById(members, lead.assigned_setter_id);
     const copy = speedToLeadCopy([lead.first_name ?? "a lead"], minutes, Boolean(assigned));
-    const href = notificationHref("/app/queue");
+    const href = notificationHref("/app/queue?breached=1");
 
     const fire = async (step: number, targets: MemberNotifyTarget[], team: boolean) => {
       if (await alreadyStepped(db, orgId, "speed_to_lead", lead.id, step)) return;

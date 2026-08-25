@@ -5,31 +5,15 @@ import { getAuthContext } from "@/lib/auth/session";
 import { revalidateLeadSurfaces } from "@/lib/leads/revalidate";
 import type { QueueCursor } from "@/lib/queue/cursor";
 import { fetchOrgQueue, fetchQueueRow } from "@/lib/queue/load";
+import { writeQueueOutcome } from "@/lib/queue/log-outcome";
 import {
   QUEUE_PAGE_SIZE,
-  TOUCH_CHANNELS,
-  TOUCH_DIRECTIONS,
-  TOUCH_OUTCOMES,
+  type LogOutcomeInput,
   type QueueActionResult,
   type QueueFilters,
   type QueuePayload,
-  type TouchChannel,
-  type TouchDirection,
-  type TouchOutcome,
 } from "@/lib/queue/types";
 import { createClient } from "@/lib/supabase/server";
-
-function isChannel(value: string): value is TouchChannel {
-  return (TOUCH_CHANNELS as readonly string[]).includes(value);
-}
-
-function isDirection(value: string): value is TouchDirection {
-  return (TOUCH_DIRECTIONS as readonly string[]).includes(value);
-}
-
-function isOutcome(value: string): value is TouchOutcome {
-  return (TOUCH_OUTCOMES as readonly string[]).includes(value);
-}
 
 function actionError(error: string): QueueActionResult {
   return { ok: false, error };
@@ -58,71 +42,8 @@ export async function refreshQueue(
   );
 }
 
-export async function logQueueOutcome(input: {
-  leadId: string;
-  channel: string;
-  direction: string;
-  outcome: string;
-  note?: string;
-  actorMemberId?: string;
-}): Promise<QueueActionResult> {
-  const ctx = await getAuthContext();
-  if (!isChannel(input.channel)) return actionError("Pick a channel.");
-  if (!isDirection(input.direction)) return actionError("Pick inbound or outbound.");
-  if (!isOutcome(input.outcome)) return actionError("Pick an outcome.");
-
-  const note = input.note?.trim() ?? "";
-  if (note.length > 280) return actionError("Keep the note under 280 characters.");
-
-  const actorMemberId = input.actorMemberId?.trim() || ctx.member.id;
-  if (actorMemberId !== ctx.member.id && !canAssignLeadTo({
-    role: ctx.role,
-    actorMemberId: ctx.member.id,
-    targetMemberId: actorMemberId,
-    isPlatformAdmin: ctx.isPlatformAdmin,
-  })) {
-    return actionError("Only an owner or admin can log an outcome as someone else.");
-  }
-
-  const supabase = await createClient();
-  const { data: actor, error: actorError } = await supabase
-    .from("org_members")
-    .select("id, active")
-    .eq("org_id", ctx.org.id)
-    .eq("id", actorMemberId)
-    .maybeSingle();
-
-  if (actorError || !actor || !actor.active) {
-    return actionError("That teammate is not an active member of this workspace.");
-  }
-
-  const { data: lead, error: leadError } = await supabase
-    .from("leads")
-    .select("id")
-    .eq("org_id", ctx.org.id)
-    .eq("id", input.leadId)
-    .maybeSingle();
-
-  if (leadError || !lead) return actionError("That lead is not in this workspace.");
-
-  const { error } = await supabase.from("touches").insert({
-    org_id: ctx.org.id,
-    lead_id: input.leadId,
-    type: "human",
-    channel: input.channel,
-    direction: input.direction,
-    outcome: input.outcome,
-    actor_member_id: actorMemberId,
-    summary: note || null,
-  });
-
-  if (error) {
-    return actionError(explainWriteError(error.message, "Could not log that outcome."));
-  }
-
-  revalidateLeadSurfaces(input.leadId);
-  const row = await fetchQueueRow(supabase, ctx.org.id, input.leadId);
-  return { ok: true, row };
+export async function logQueueOutcome(input: LogOutcomeInput): Promise<QueueActionResult> {
+  return writeQueueOutcome(input);
 }
 
 export async function assignQueueLead(input: {

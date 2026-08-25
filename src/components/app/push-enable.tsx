@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import { Switch } from "@/components/ui/switch";
 import { helperClass, successClass, errorClass } from "@/lib/ui";
@@ -15,9 +15,22 @@ function urlBase64ToUint8Array(base64: string): Uint8Array {
 }
 
 export function PushEnable() {
-  const [status, setStatus] = useState<"idle" | "on" | "error">("idle");
+  const [status, setStatus] = useState<"idle" | "on" | "denied" | "error">("idle");
   const [error, setError] = useState<string | null>(null);
   const key = vapidPublicKey();
+
+  useEffect(() => {
+    if (typeof Notification === "undefined") return;
+    if (Notification.permission === "denied") {
+      setStatus("denied");
+      return;
+    }
+    if (Notification.permission !== "granted") return;
+    void navigator.serviceWorker.getRegistration("/").then(async (registration) => {
+      const sub = await registration?.pushManager.getSubscription();
+      if (sub) setStatus("on");
+    });
+  }, []);
 
   async function enable(next: boolean) {
     setError(null);
@@ -45,7 +58,17 @@ export function PushEnable() {
       setStatus("error");
       return;
     }
+    if (typeof Notification !== "undefined" && Notification.permission === "denied") {
+      setStatus("denied");
+      setError("The browser blocked alerts. Enable them in the site settings for this origin, then come back here.");
+      return;
+    }
     const permission = await Notification.requestPermission();
+    if (permission === "denied") {
+      setStatus("denied");
+      setError("The browser blocked alerts. The app still works. Enable them later in the site settings, then return here.");
+      return;
+    }
     if (permission !== "granted") {
       setError("Permission was not granted.");
       setStatus("error");
@@ -76,11 +99,18 @@ export function PushEnable() {
         label="Enable push on this device"
         description="Time-sensitive alerts assigned to you. The inbox still records them if this is off."
         checked={status === "on"}
+        disabled={status === "denied"}
         onChange={(event) => {
           void enable(event.target.checked);
         }}
       />
       {status === "on" ? <p className={successClass}>This device will receive push.</p> : null}
+      {status === "denied" ? (
+        <p className={helperClass}>
+          Alerts are blocked for this origin. The rest of the app still works. Enable notifications
+          in the browser site settings, then return to this screen.
+        </p>
+      ) : null}
       {error ? <p className={errorClass}>{error}</p> : null}
       {!key ? <p className={helperClass}>VAPID keys are missing, so push cannot be enabled yet.</p> : null}
     </div>

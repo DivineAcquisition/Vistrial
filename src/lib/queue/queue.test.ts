@@ -45,7 +45,13 @@ describe("queue filters", () => {
       source: "facebook",
       scoreMin: 40,
       scoreMax: 90,
+      breached: false,
     });
+  });
+
+  it("reads the breach filter from the URL", () => {
+    expect(parseQueueFilters({ breached: "1" }, { role: "setter" }).breached).toBe(true);
+    expect(parseQueueFilters({ focus: "breached" }, { role: "owner" }).breached).toBe(true);
   });
 });
 

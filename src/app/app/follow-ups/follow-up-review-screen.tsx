@@ -304,6 +304,16 @@ export function FollowUpReviewScreen({ initial }: { initial: FollowUpReviewPaylo
                 <KeyValue label="Recipient">{recipient}</KeyValue>
                 <KeyValue label="Send time">{formatDateTime(file.proposedSendAt)}</KeyValue>
               </DefinitionList>
+              {draft.channel === "email" && subject ? (
+                <div>
+                  <p className={labelClass}>Subject</p>
+                  <p className="whitespace-pre-wrap break-words text-sm text-white">{subject}</p>
+                </div>
+              ) : null}
+              <div>
+                <p className={labelClass}>Full message</p>
+                <p className="whitespace-pre-wrap break-words text-sm text-white">{body}</p>
+              </div>
               {draft.lowConfidence ? (
                 <label className="flex items-start gap-2 text-sm text-silver">
                   <Checkbox

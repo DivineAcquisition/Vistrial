@@ -63,3 +63,31 @@ if [[ "$(echo "$fn_exists" | tr -d ' ')" != "1" ]]; then
 fi
 
 echo "OK: hardening migration rollback and re-apply succeeded."
+
+echo "Rollback mobile in-the-moment (columns gone)..."
+run "${ROOT}/supabase/rollbacks/20260825120000_mobile_in_the_moment.sql"
+col_mobile="$("${PSQL[@]}" -d "${DB_NAME}" -tAc "SELECT count(*) FROM information_schema.columns WHERE table_schema='public' AND table_name='touches' AND column_name='client_event_id'")"
+if [[ "$(echo "$col_mobile" | tr -d ' ')" != "0" ]]; then
+  echo "mobile rollback left client_event_id in place" >&2
+  exit 1
+fi
+fn_mobile="$("${PSQL[@]}" -d "${DB_NAME}" -tAc "SELECT count(*) FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace WHERE n.nspname='public' AND p.proname='mark_mobile_training'")"
+if [[ "$(echo "$fn_mobile" | tr -d ' ')" != "0" ]]; then
+  echo "mobile rollback left mark_mobile_training in place" >&2
+  exit 1
+fi
+
+echo "Re-apply mobile in-the-moment..."
+run "${ROOT}/supabase/migrations/20260825120000_mobile_in_the_moment.sql"
+col_mobile="$("${PSQL[@]}" -d "${DB_NAME}" -tAc "SELECT count(*) FROM information_schema.columns WHERE table_schema='public' AND table_name='touches' AND column_name='client_event_id'")"
+if [[ "$(echo "$col_mobile" | tr -d ' ')" != "1" ]]; then
+  echo "re-apply did not restore client_event_id" >&2
+  exit 1
+fi
+fn_mobile="$("${PSQL[@]}" -d "${DB_NAME}" -tAc "SELECT count(*) FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace WHERE n.nspname='public' AND p.proname='mark_mobile_training'")"
+if [[ "$(echo "$fn_mobile" | tr -d ' ')" != "1" ]]; then
+  echo "re-apply did not restore mark_mobile_training" >&2
+  exit 1
+fi
+
+echo "OK: mobile migration rollback and re-apply succeeded."

@@ -12,7 +12,7 @@ import type { SettingsSaveResult } from "@/app/app/settings/types";
 import { PushEnable } from "@/components/app/push-enable";
 import { SubmitButton } from "@/components/ui/button";
 import { Card, CardFooter } from "@/components/ui/card";
-import { Checkbox, CheckboxField } from "@/components/ui/checkbox";
+import { CheckboxField } from "@/components/ui/checkbox";
 import { Field } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Notice } from "@/components/ui/states";
@@ -71,46 +71,36 @@ export function NotificationSettingsForm({
         />
         <Card className="max-w-3xl">
           <form action={savePrefs} className={cardStack}>
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-sm">
-                <thead>
-                  <tr className="text-dim">
-                    <th className="py-2 pr-4 font-medium">Event</th>
-                    {USER_PREF_CHANNELS.map((channel) => (
-                      <th key={channel} className="py-2 pr-4 font-medium">
-                        {CHANNEL_LABELS[channel]}
-                      </th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {USER_PREF_EVENTS.map((eventType) => (
-                    <tr key={eventType} className="border-t border-white/[0.06]">
-                      <td className="py-2.5 pr-4 text-white">{EVENT_LABELS[eventType]}</td>
-                      {USER_PREF_CHANNELS.map((channel) => {
-                        const locked = preferenceLocked({ role, eventType, channel });
-                        const key = `${eventType}:${channel}`;
-                        const checked = prefMap.has(key)
-                          ? Boolean(prefMap.get(key))
-                          : defaultChannelEnabled(role, eventType, channel);
-                        return (
-                          <td key={channel} className="py-2.5 pr-4">
-                            <Checkbox
-                              name={`pref:${eventType}:${channel}`}
-                              defaultChecked={checked}
-                              disabled={locked}
-                              aria-label={`${EVENT_LABELS[eventType]} ${CHANNEL_LABELS[channel]}`}
-                            />
-                            {locked ? (
-                              <span className="sr-only">Required for admin escalation</span>
-                            ) : null}
-                          </td>
-                        );
-                      })}
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+            <div className="space-y-5">
+              {USER_PREF_EVENTS.map((eventType) => (
+                <div
+                  key={eventType}
+                  className="border-t border-white/[0.06] pt-4 first:border-t-0 first:pt-0"
+                >
+                  <p className="text-sm text-white">{EVENT_LABELS[eventType]}</p>
+                  <div className="mt-2 grid gap-2">
+                    {USER_PREF_CHANNELS.map((channel) => {
+                      const locked = preferenceLocked({ role, eventType, channel });
+                      const key = `${eventType}:${channel}`;
+                      const checked = prefMap.has(key)
+                        ? Boolean(prefMap.get(key))
+                        : defaultChannelEnabled(role, eventType, channel);
+                      return (
+                        <CheckboxField
+                          key={channel}
+                          name={`pref:${eventType}:${channel}`}
+                          defaultChecked={checked}
+                          disabled={locked}
+                          label={CHANNEL_LABELS[channel]}
+                          description={
+                            locked ? "Required for admin escalation" : undefined
+                          }
+                        />
+                      );
+                    })}
+                  </div>
+                </div>
+              ))}
             </div>
             {prefState.status === "error" ? <p className={errorClass}>{prefState.error}</p> : null}
             {prefState.status === "saved" ? <p className={successClass}>Saved.</p> : null}

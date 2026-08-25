@@ -183,10 +183,9 @@ BEGIN
     INSERT INTO public.leads (id, org_id, first_name, status, opted_in_at, is_holdout, holdout_assigned_at)
     VALUES (
       v_lead, v_well, 'Well' || i,
-      CASE WHEN i <= 25 THEN
-        CASE WHEN i <= 5 THEN 'closed_won' ELSE 'closed_lost' END
-      ELSE
-        CASE WHEN i <= 45 THEN 'closed_won' ELSE 'closed_lost' END
+      CASE WHEN (i <= 5) OR (i BETWEEN 26 AND 45)
+        THEN 'working'::public.lead_status
+        ELSE 'closed_lost'::public.lead_status
       END,
       v_opted, true, v_opted
     );
@@ -279,10 +278,9 @@ BEGIN
     INSERT INTO public.leads (id, org_id, first_name, status, opted_in_at, is_holdout, holdout_assigned_at)
     VALUES (
       v_lead, v_rev, 'Rev' || i,
-      CASE WHEN i <= 25 THEN
-        CASE WHEN i <= 20 THEN 'closed_won' ELSE 'closed_lost' END
-      ELSE
-        CASE WHEN i <= 30 THEN 'closed_won' ELSE 'closed_lost' END
+      CASE WHEN (i <= 20) OR (i BETWEEN 26 AND 30)
+        THEN 'working'::public.lead_status
+        ELSE 'closed_lost'::public.lead_status
       END,
       v_opted, true, v_opted
     );
@@ -361,7 +359,7 @@ BEGIN
   INSERT INTO public.leads (id, org_id, first_name, status, opted_in_at, is_holdout, holdout_assigned_at)
   VALUES ('161e1611-1611-4161-8161-1611111111d0', v_well, 'Audit', 'working', now(), true, now());
   INSERT INTO public.calls (id, org_id, lead_id, type, raw_transcript, transcript_source)
-  VALUES (v_call, v_well, '161e1611-1611-4161-8161-1611111111d0', 'discovery', 'They said budget 10k and next Tuesday.', 'upload');
+  VALUES (v_call, v_well, '161e1611-1611-4161-8161-1611111111d0', 'discovery', 'They said budget 10k and next Tuesday.', 'manual');
   INSERT INTO public.call_extractions (
     org_id, call_id, summary, budget_signal, stated_objection, model_version
   ) VALUES (

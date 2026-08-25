@@ -92,6 +92,11 @@ describe("honesty", () => {
     expect(causationCopy(CALIBRATION_HONESTY)).toBe(false);
     expect(causationCopy(HOLDOUT_PLAIN)).toBe(false);
     expect(causationCopy(HOLDOUT_DISABLED_PLAIN)).toBe(false);
+    expect(
+      causationCopy(
+        "A higher score among leads that closed is association, not proof the score caused the close."
+      )
+    ).toBe(false);
   });
 });
 

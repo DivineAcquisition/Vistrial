@@ -90,6 +90,13 @@ export function recomputeTotal(factors: FactorValues, weights: ScoreWeights): nu
 }
 
 export function causationCopy(text: string): boolean {
+  if (
+    /\bnot proof\b/i.test(text) ||
+    /\bassociation, not\b/i.test(text) ||
+    /\bnot a (reason|promise|forecast|recommendation)\b/i.test(text)
+  ) {
+    return false;
+  }
   return (
     /vistrial (closed|caused|produced)/i.test(text) ||
     /score (caused|produced|made them close)/i.test(text) ||

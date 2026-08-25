@@ -286,235 +286,21 @@
   }
 
   /*
-   * Auth stage. Full-viewport split: a lit gallery for the crest, a quiet desk
-   * for the form. Sharp geometry throughout — the mark is all acute angles.
+   * Auth stage. Centered form on a flat page. Small official crest, no gallery.
    */
   .auth-stage {
-    position: relative;
-    isolation: isolate;
     min-height: 100svh;
-    overflow: hidden;
-    background: #050506;
+    background: #07070b;
     color: #fff;
     -webkit-font-smoothing: antialiased;
   }
 
-  .auth-stage-atmosphere {
-    position: absolute;
-    inset: 0;
-    background:
-      radial-gradient(ellipse 42% 48% at 22% 48%, rgba(154, 136, 252, 0.2) 0%, transparent 62%),
-      radial-gradient(ellipse 28% 32% at 24% 44%, rgba(255, 255, 255, 0.09) 0%, transparent 58%),
-      radial-gradient(ellipse 55% 40% at 88% 0%, rgba(154, 136, 252, 0.08) 0%, transparent 55%),
-      radial-gradient(ellipse 80% 50% at 70% 110%, rgba(0, 0, 0, 0.55) 0%, transparent 60%),
-      linear-gradient(180deg, #09090c 0%, #050506 40%, #07070b 100%);
-  }
-
-  .auth-stage-grain {
-    position: absolute;
-    inset: 0;
-    opacity: 0.22;
-    mix-blend-mode: overlay;
-    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='180' height='180'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
-    background-size: 180px 180px;
-  }
-
-  .auth-stage-vignette {
-    position: absolute;
-    inset: 0;
-    box-shadow:
-      inset 0 0 140px 48px rgba(0, 0, 0, 0.55),
-      inset 0 1px 0 rgba(255, 255, 255, 0.06);
-  }
-
-  .auth-tick {
-    position: absolute;
-    z-index: 20;
-    width: 1.35rem;
-    height: 1.35rem;
-    pointer-events: none;
-  }
-
-  .auth-tick i {
-    position: absolute;
-    background: rgba(255, 255, 255, 0.38);
-  }
-
-  .auth-tick i:first-child {
-    top: 0;
-    left: 0;
-    height: 1px;
-    width: 100%;
-  }
-
-  .auth-tick i:last-child {
-    top: 0;
-    left: 0;
-    width: 1px;
-    height: 100%;
-  }
-
-  .auth-tick--tl {
-    top: 1.35rem;
-    left: 1.35rem;
-  }
-
-  .auth-tick--tr {
-    top: 1.35rem;
-    right: 1.35rem;
-  }
-
-  .auth-tick--tr i:last-child {
-    left: auto;
-    right: 0;
-  }
-
-  .auth-tick--bl {
-    bottom: 1.35rem;
-    left: 1.35rem;
-  }
-
-  .auth-tick--bl i:first-child {
-    top: auto;
-    bottom: 0;
-  }
-
-  .auth-tick--br {
-    right: 1.35rem;
-    bottom: 1.35rem;
-  }
-
-  .auth-tick--br i:first-child {
-    top: auto;
-    bottom: 0;
-  }
-
-  .auth-tick--br i:last-child {
-    left: auto;
-    right: 0;
-  }
-
   .auth-stage-frame {
-    position: relative;
-    z-index: 10;
     display: flex;
     min-height: 100svh;
-    flex-direction: column;
-  }
-
-  .auth-gallery {
-    position: relative;
-    display: flex;
-    flex-direction: column;
     align-items: center;
     justify-content: center;
-    padding: 3.25rem 1.5rem 1.25rem;
-    text-align: center;
-  }
-
-  .auth-gallery-figure {
-    position: relative;
-    display: grid;
-    width: min(16.5rem, 68vw);
-    aspect-ratio: 1;
-    place-items: center;
-  }
-
-  .auth-gallery-glow {
-    position: absolute;
-    inset: 18%;
-    background: radial-gradient(circle, rgba(255, 255, 255, 0.14) 0%, rgba(154, 136, 252, 0.12) 38%, transparent 70%);
-    filter: blur(18px);
-  }
-
-  .auth-gallery-rings {
-    position: absolute;
-    inset: 0;
-    display: grid;
-    place-items: center;
-  }
-
-  .auth-ring {
-    position: absolute;
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    transform: rotate(45deg);
-    box-shadow: inset 0 0 24px rgba(154, 136, 252, 0.04);
-  }
-
-  .auth-ring-a {
-    width: 56%;
-    height: 56%;
-    border-color: rgba(255, 255, 255, 0.14);
-  }
-
-  .auth-ring-b {
-    width: 76%;
-    height: 76%;
-    border-color: rgba(154, 136, 252, 0.18);
-  }
-
-  .auth-ring-c {
-    width: 96%;
-    height: 96%;
-    border-color: rgba(255, 255, 255, 0.06);
-  }
-
-  .auth-gallery-crest {
-    position: relative;
-    z-index: 1;
-    display: block;
-    height: 74%;
-    width: auto;
-    object-fit: contain;
-    filter: drop-shadow(0 18px 40px rgba(0, 0, 0, 0.45));
-  }
-
-  .auth-gallery-name {
-    margin-top: 0.35rem;
-    font-size: 11px;
-    font-weight: 500;
-    letter-spacing: 0.46em;
-    text-indent: 0.46em;
-    text-transform: uppercase;
-    color: rgba(255, 255, 255, 0.78);
-  }
-
-  .auth-gallery-line {
-    margin-top: 0.7rem;
-    max-width: 16.5rem;
-    font-size: 13.5px;
-    line-height: 1.55;
-    color: rgba(255, 255, 255, 0.42);
-  }
-
-  .auth-gallery-rule {
-    display: block;
-    width: 2.25rem;
-    height: 1px;
-    margin: 1.15rem auto 0;
-    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.35), transparent);
-  }
-
-  .auth-gallery-invite {
-    margin-top: 0.7rem;
-    font-size: 10px;
-    font-weight: 500;
-    letter-spacing: 0.28em;
-    text-transform: uppercase;
-    color: var(--color-brand-300);
-  }
-
-  .auth-split {
-    display: none;
-  }
-
-  .auth-desk {
-    position: relative;
-    display: flex;
-    flex: 1;
-    align-items: flex-start;
-    justify-content: center;
-    padding: 1.5rem 1.35rem 3.5rem;
+    padding: 2.5rem 1.35rem 3rem;
   }
 
   .auth-desk-inner {
@@ -524,6 +310,14 @@
 
   .auth-desk-inner--wide {
     max-width: 28rem;
+  }
+
+  .auth-mark {
+    display: block;
+    height: 4.5rem;
+    width: auto;
+    margin: 0 0 1.75rem;
+    object-fit: contain;
   }
 
   .auth-eyebrow {
@@ -581,47 +375,6 @@
     font-size: 14px;
     line-height: 1.6;
     color: rgba(255, 255, 255, 0.58);
-  }
-
-  @media (min-width: 1024px) {
-    .auth-stage-frame {
-      display: grid;
-      grid-template-columns: minmax(0, 1.05fr) 1px minmax(0, 0.95fr);
-    }
-
-    .auth-gallery {
-      min-height: 100svh;
-      padding: 4rem 3rem;
-    }
-
-    .auth-gallery-figure {
-      width: min(28rem, 72%);
-    }
-
-    .auth-split {
-      display: block;
-      width: 1px;
-      align-self: stretch;
-      background: linear-gradient(
-        180deg,
-        transparent 8%,
-        rgba(255, 255, 255, 0.08) 28%,
-        rgba(154, 136, 252, 0.38) 50%,
-        rgba(255, 255, 255, 0.08) 72%,
-        transparent 92%
-      );
-    }
-
-    .auth-desk {
-      align-items: center;
-      justify-content: center;
-      padding: 4rem 4.5rem 4rem 3.25rem;
-      background: linear-gradient(90deg, rgba(255, 255, 255, 0.015), transparent 28%);
-    }
-
-    .auth-desk-foot {
-      display: none;
-    }
   }
 
   .auth-field {
@@ -1172,12 +925,10 @@
  */
 .auth-stage,
 .auth-stage :is(button, a, input),
-.auth-desk,
 .auth-input,
 .auth-field-action,
 .auth-submit,
-.auth-alt,
-.auth-ring {
+.auth-alt {
   border-radius: 0;
 }
 

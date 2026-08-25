@@ -4,9 +4,9 @@ DO $$
 DECLARE
   v_org uuid := '22222222-2222-4222-8222-222222222222';
   v_member uuid := '33333333-3333-4333-8333-333333333333';
-  v_lead uuid := 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbb01';
-  v_lead2 uuid := 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbb02';
-  v_event uuid := 'cccccccc-cccc-4ccc-8ccc-cccccccccc01';
+  v_lead uuid := '15a15a15-15a1-415a-815a-15a15a15a101';
+  v_lead2 uuid := '15a15a15-15a1-415a-815a-15a15a15a102';
+  v_event uuid := '15e15e15-15e1-415e-815e-15e15e15e101';
   v_count integer;
   v_trained timestamptz;
   v_watch jsonb;

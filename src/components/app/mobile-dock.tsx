@@ -19,9 +19,9 @@ export function MobileDock() {
   const briefHref = lastOpenedLeadHref(org.id) ?? "/app/calls";
 
   const items = [
-    { href: "/app/queue", label: "Queue", match: "/app/queue", icon: ListChecks },
+    { href: "/app/queue", label: "Queue", match: "/app/queue", icon: ListChecks, primary: false },
     { href: "/app/log", label: "Log", match: "/app/log", icon: ClipboardList, primary: true },
-    { href: briefHref, label: "Brief", match: "/app/cases", icon: Phone },
+    { href: briefHref, label: "Brief", match: "/app/cases", icon: Phone, primary: false },
   ] as const;
 
   return (

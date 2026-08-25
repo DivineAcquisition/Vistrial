@@ -5,6 +5,7 @@ import { useState } from "react";
 
 import {
   correctExtractionField,
+  markExtractionFlagsWrong,
   pasteCallTranscript,
   reextractCall,
   refreshCallDetail,
@@ -116,8 +117,20 @@ export function CallDetailScreen({
           </KeyValue>
           <KeyValue label="Extraction">
             <StatusBadge
-              label={EXTRACTION_STATUS_LABELS[jobStatus]}
-              tone={jobStatus === "failed" ? "critical" : jobStatus === "ready" ? "good" : "neutral"}
+              label={
+                detail.extraction?.verificationStatus === "needs_review"
+                  ? "needs review"
+                  : EXTRACTION_STATUS_LABELS[jobStatus]
+              }
+              tone={
+                detail.extraction?.verificationStatus === "needs_review"
+                  ? "warning"
+                  : jobStatus === "failed"
+                    ? "critical"
+                    : jobStatus === "ready"
+                      ? "good"
+                      : "neutral"
+              }
             />
           </KeyValue>
         </DefinitionList>
@@ -233,6 +246,28 @@ export function CallDetailScreen({
         />
         {detail.extraction ? (
           <Panel className="p-6">
+            {detail.extraction.verificationStatus === "needs_review" ? (
+              <Notice
+                tone="warning"
+                className="mb-4"
+                action={
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    loading={busy}
+                    onClick={() => run(() => markExtractionFlagsWrong(call.id))}
+                  >
+                    These flags were wrong
+                  </Button>
+                }
+              >
+                This extraction needs review
+                {detail.extraction.verificationFaults.length
+                  ? `: ${detail.extraction.verificationFaults.map((item) => item.what).join(" ")}`
+                  : "."}{" "}
+                It is not a normal extraction until someone checks it.
+              </Notice>
+            ) : null}
             <SignalField
               key={`summary-${detail.extraction.summary ?? ""}`}
               label="Summary"

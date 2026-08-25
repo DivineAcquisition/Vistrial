@@ -142,6 +142,8 @@ export type FollowUpReviewPayload = {
     approvedAt: string | null;
     failureReason: string | null;
     quotesUsed: string[];
+    verificationStatus: "unchecked" | "passed" | "needs_review";
+    verificationFaults: Array<{ code: string; where: string; what: string }>;
   };
   lead: {
     id: string;

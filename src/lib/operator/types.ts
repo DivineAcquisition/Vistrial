@@ -102,6 +102,8 @@ export type OperatorConfirmationView = {
   undoneAt: string | null;
   undoResult: OperatorBatchReport | null;
   createdAt: string;
+  verificationGate: "confirm" | "question";
+  verificationFaults: Array<{ code: string; where: string; what: string }>;
 };
 
 export type OperatorRunView = {

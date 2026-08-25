@@ -18,6 +18,11 @@ import { parseVoiceProfile } from "@/lib/follow-up/voice";
 import { nextAttemptAt, shouldMarkDead } from "@/lib/ghl/retry";
 import type { GhlDb } from "@/lib/ghl/tokens";
 import type { Enums, Json } from "@/types/database";
+import { DRAFT_VERIFIER_SYSTEM, checkDraftDeterministic, draftVerifierUser } from "@/lib/verification/draft-det";
+import { runBoundedVerification } from "@/lib/verification/engine";
+import { formatFaultsForRetry } from "@/lib/verification/faults";
+import { runModelVerifier, skippedVerifier } from "@/lib/verification/model";
+import { persistBoundedVerification, taskVerificationEnabled } from "@/lib/verification/record";
 
 function assertFrontierDraftModel(model: string) {
   if (/haiku/i.test(model)) throw new Error("draft_model_too_cheap");
@@ -449,6 +454,7 @@ async function generateDraft(
     .eq("org_id", job.org_id)
     .maybeSingle();
   if (!call?.raw_transcript || !lead || !extraction) throw new Error("missing_extraction");
+  const transcript = call.raw_transcript;
 
   const voice = await loadVoice(db, job.org_id);
   const quotes = asQuotes(extraction.quotes);
@@ -486,6 +492,7 @@ async function generateDraft(
 
   const model = anthropicDraftModel();
   assertFrontierDraftModel(model);
+  const draftModelEnabled = await taskVerificationEnabled("draft");
 
   const promptInput = {
     branch: job.branch,
@@ -524,44 +531,98 @@ async function generateDraft(
     })),
   };
 
-  let attempt = 1;
-  let lowConfidence = false;
-  let lowConfidenceReason: string | null = null;
-  let failures: QualityFailure[] = [];
-  let parsed = { body: "", subject: null as string | null, quotesUsed: [] as string[] };
-  let usedModel = model;
+  type DraftAttempt = {
+    parsed: { body: string; subject: string | null; quotesUsed: string[] };
+    usedModel: string;
+  };
+  let lastQualityFailures: QualityFailure[] = [];
+  const bounded = await runBoundedVerification<DraftAttempt>({
+    generate: async (_attempt, previousFaults) => {
+      if (previousFaults.length) {
+        promptInput.previousFailure = formatFaultsForRetry(previousFaults);
+      }
+      const message = await createAnthropicMessage({
+        system: DRAFT_SYSTEM_PROMPT,
+        user: draftUserPrompt({ ...promptInput, previousFailure: promptInput.previousFailure }),
+        model,
+        maxTokens: channel === "sms" ? 800 : 1600,
+        timeoutMs: 90_000,
+      });
+      return {
+        parsed: parseDraftModelOutput(message.text, channel),
+        usedModel: message.model,
+      };
+    },
+    deterministic: (output) => {
+      const qualityInput = {
+        body: output.parsed.body,
+        subject: output.parsed.subject,
+        channel,
+        transcript,
+        quotes: quotes.map((item) => item.text),
+        statedObjection: extraction.stated_objection,
+        nextStep: extraction.next_step_agreed,
+        nextStepState: extraction.next_step_state,
+        budgetState: extraction.budget_signal_state,
+        timelineState: extraction.timeline_signal_state,
+        decisionState: extraction.decision_process_state,
+        voice,
+      };
+      const checked = checkDraftQuality(qualityInput);
+      if (!checked.ok) lastQualityFailures = checked.failures;
+      else lastQualityFailures = [];
+      return checkDraftDeterministic(qualityInput);
+    },
+    modelVerify: async (output) => {
+      if (!draftModelEnabled) return skippedVerifier("disabled");
+      return runModelVerifier({
+        system: DRAFT_VERIFIER_SYSTEM,
+        user: draftVerifierUser({
+          extractionJson: JSON.stringify({
+            summary: extraction.summary,
+            stated_objection: extraction.stated_objection,
+            stated_objection_state: extraction.stated_objection_state,
+            budget_signal: extraction.budget_signal,
+            budget_signal_state: extraction.budget_signal_state,
+            timeline_signal: extraction.timeline_signal,
+            timeline_signal_state: extraction.timeline_signal_state,
+            decision_process: extraction.decision_process,
+            decision_process_state: extraction.decision_process_state,
+            next_step_agreed: extraction.next_step_agreed,
+            next_step_state: extraction.next_step_state,
+            quotes,
+          }),
+          voiceJson: JSON.stringify({
+            formality: voice.formality,
+            useContractions: voice.useContractions,
+            useGreeting: voice.useGreeting,
+            useSignoff: voice.useSignoff,
+            greetingText: voice.greetingText,
+            signoffText: voice.signoffText,
+            emojiUsage: voice.emojiUsage,
+            bannedWords: voice.bannedWords,
+          }),
+          examplesJson: JSON.stringify(voice.examples),
+          draftBody: output.parsed.body,
+          draftSubject: output.parsed.subject,
+          channel,
+        }),
+        includeEmbarrassment: true,
+      });
+    },
+  });
 
-  while (attempt <= 2) {
-    const message = await createAnthropicMessage({
-      system: DRAFT_SYSTEM_PROMPT,
-      user: draftUserPrompt({ ...promptInput, previousFailure: promptInput.previousFailure }),
-      model,
-      maxTokens: channel === "sms" ? 800 : 1600,
-      timeoutMs: 90_000,
-    });
-    usedModel = message.model;
-    parsed = parseDraftModelOutput(message.text, channel);
-    const checked = checkDraftQuality({
-      body: parsed.body,
-      subject: parsed.subject,
-      channel,
-      transcript: call.raw_transcript,
-      quotes: quotes.map((item) => item.text),
-      statedObjection: extraction.stated_objection,
-      nextStep: extraction.next_step_agreed,
-      nextStepState: extraction.next_step_state,
-      budgetState: extraction.budget_signal_state,
-      timelineState: extraction.timeline_signal_state,
-      decisionState: extraction.decision_process_state,
-      voice,
-    });
-    if (checked.ok) {
-      failures = [];
-      lowConfidence = false;
-      lowConfidenceReason = null;
-      break;
-    }
-    failures = checked.failures;
+  const parsed = bounded.output.parsed;
+  const usedModel = bounded.output.usedModel;
+  const attempt = bounded.attempt;
+  const flagged = bounded.finalState !== "passed";
+  const lowConfidence = flagged;
+  const failures = lastQualityFailures;
+  const lowConfidenceReason = flagged
+    ? bounded.faults.map((item) => `${item.code}: ${item.what}`).join("; ")
+    : null;
+
+  if (failures.length) {
     await logFailures(db, {
       orgId: job.org_id,
       branch: job.branch,
@@ -577,14 +638,6 @@ async function generateDraft(
       kind: "quality_failed",
       payload: { attempt, types: failures.map((item) => item.type) },
     });
-    if (attempt === 1) {
-      promptInput.previousFailure = failures.map((item) => `${item.type}: ${item.detail}`).join("; ");
-      attempt += 1;
-      continue;
-    }
-    lowConfidence = true;
-    lowConfidenceReason = failures.map((item) => `${item.type}: ${item.detail}`).join("; ");
-    break;
   }
 
   const staleDays = settings?.draft_stale_days ?? 5;
@@ -622,6 +675,9 @@ async function generateDraft(
     sent_at: null,
     sent_body: null,
     failure_reason: null,
+    verification_status: flagged ? "needs_review" : "passed",
+    verification_faults: bounded.faults as unknown as Json,
+    verification_attempt: attempt,
   };
 
   let draftId = job.draft_id;
@@ -641,6 +697,14 @@ async function generateDraft(
     kind: job.operator_instruction ? "regenerated" : "generated",
     actorMemberId: job.requested_by_member_id,
     payload: { model: usedModel, attempt, lowConfidence, branch: job.branch, channel },
+  });
+
+  await persistBoundedVerification({
+    orgId: job.org_id,
+    task: "draft",
+    subjectType: "follow_up_draft",
+    subjectId: draftId,
+    result: bounded,
   });
 
   return { draftId, model: usedModel, lowConfidence, attempt };

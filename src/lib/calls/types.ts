@@ -41,6 +41,9 @@ export type CallExtractionView = {
   quotes: Array<{ text: string; topic: string }>;
   modelVersion: string | null;
   extractedAt: string;
+  verificationStatus: "unchecked" | "passed" | "needs_review";
+  verificationFaults: Array<{ code: string; where: string; what: string }>;
+  verificationAttempt: number;
 };
 
 export type CallDetailPayload = {

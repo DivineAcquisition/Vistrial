@@ -36,6 +36,9 @@ export type Database = {
           summary: string | null;
           timeline_signal: string | null;
           timeline_signal_state: Database["public"]["Enums"]["extraction_signal_state"];
+          verification_status: string;
+          verification_faults: Json;
+          verification_attempt: number;
         };
         Insert: {
           budget_signal?: string | null;
@@ -58,6 +61,9 @@ export type Database = {
           summary?: string | null;
           timeline_signal?: string | null;
           timeline_signal_state?: Database["public"]["Enums"]["extraction_signal_state"];
+          verification_status?: string;
+          verification_faults?: Json;
+          verification_attempt?: number;
         };
         Update: {
           budget_signal?: string | null;
@@ -80,6 +86,9 @@ export type Database = {
           summary?: string | null;
           timeline_signal?: string | null;
           timeline_signal_state?: Database["public"]["Enums"]["extraction_signal_state"];
+          verification_status?: string;
+          verification_faults?: Json;
+          verification_attempt?: number;
         };
         Relationships: [
           {
@@ -889,6 +898,9 @@ export type Database = {
           status: Database["public"]["Enums"]["follow_up_draft_status"];
           touch_id: string | null;
           updated_at: string;
+          verification_status: string;
+          verification_faults: Json;
+          verification_attempt: number;
         };
         Insert: {
           approved_at?: string | null;
@@ -929,6 +941,9 @@ export type Database = {
           status?: Database["public"]["Enums"]["follow_up_draft_status"];
           touch_id?: string | null;
           updated_at?: string;
+          verification_status?: string;
+          verification_faults?: Json;
+          verification_attempt?: number;
         };
         Update: {
           approved_at?: string | null;
@@ -969,6 +984,9 @@ export type Database = {
           status?: Database["public"]["Enums"]["follow_up_draft_status"];
           touch_id?: string | null;
           updated_at?: string;
+          verification_status?: string;
+          verification_faults?: Json;
+          verification_attempt?: number;
         };
         Relationships: [];
       };
@@ -3867,6 +3885,8 @@ export type Database = {
           undone_at: string | null;
           undo_result: Json | null;
           created_at: string;
+          verification_gate: string;
+          verification_faults: Json;
         };
         Insert: {
           id?: string;
@@ -3888,6 +3908,8 @@ export type Database = {
           undone_at?: string | null;
           undo_result?: Json | null;
           created_at?: string;
+          verification_gate?: string;
+          verification_faults?: Json;
         };
         Update: {
           id?: string;
@@ -3909,6 +3931,8 @@ export type Database = {
           undone_at?: string | null;
           undo_result?: Json | null;
           created_at?: string;
+          verification_gate?: string;
+          verification_faults?: Json;
         };
         Relationships: [];
       };
@@ -3927,6 +3951,216 @@ export type Database = {
           org_id?: string;
           run_id?: string;
           lead_id?: string;
+        };
+        Relationships: [];
+      };
+      verification_runs: {
+        Row: {
+          id: string;
+          org_id: string;
+          task: string;
+          subject_type: string;
+          subject_id: string | null;
+          attempt: number;
+          retry_happened: boolean;
+          stage_caught: string | null;
+          final_state: string;
+          faults: Json;
+          model_invoked: boolean;
+          model: string | null;
+          input_tokens: number | null;
+          output_tokens: number | null;
+          skipped_reason: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          org_id: string;
+          task: string;
+          subject_type: string;
+          subject_id?: string | null;
+          attempt?: number;
+          retry_happened?: boolean;
+          stage_caught?: string | null;
+          final_state: string;
+          faults?: Json;
+          model_invoked?: boolean;
+          model?: string | null;
+          input_tokens?: number | null;
+          output_tokens?: number | null;
+          skipped_reason?: string | null;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          org_id?: string;
+          task?: string;
+          subject_type?: string;
+          subject_id?: string | null;
+          attempt?: number;
+          retry_happened?: boolean;
+          stage_caught?: string | null;
+          final_state?: string;
+          faults?: Json;
+          model_invoked?: boolean;
+          model?: string | null;
+          input_tokens?: number | null;
+          output_tokens?: number | null;
+          skipped_reason?: string | null;
+          created_at?: string;
+        };
+        Relationships: [];
+      };
+      verification_usage: {
+        Row: {
+          id: string;
+          org_id: string;
+          run_id: string | null;
+          task: string;
+          model: string;
+          input_tokens: number;
+          output_tokens: number;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          org_id: string;
+          run_id?: string | null;
+          task: string;
+          model: string;
+          input_tokens?: number;
+          output_tokens?: number;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          org_id?: string;
+          run_id?: string | null;
+          task?: string;
+          model?: string;
+          input_tokens?: number;
+          output_tokens?: number;
+          created_at?: string;
+        };
+        Relationships: [];
+      };
+      verification_task_settings: {
+        Row: {
+          task: string;
+          enabled: boolean;
+          disabled_reason: string | null;
+          disabled_by: string | null;
+          disabled_at: string | null;
+          updated_at: string;
+        };
+        Insert: {
+          task: string;
+          enabled?: boolean;
+          disabled_reason?: string | null;
+          disabled_by?: string | null;
+          disabled_at?: string | null;
+          updated_at?: string;
+        };
+        Update: {
+          task?: string;
+          enabled?: boolean;
+          disabled_reason?: string | null;
+          disabled_by?: string | null;
+          disabled_at?: string | null;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
+      verification_sample_audits: {
+        Row: {
+          id: string;
+          run_id: string;
+          org_id: string;
+          task: string;
+          reviewed: boolean;
+          missed_fault_count: number | null;
+          reviewer_id: string | null;
+          notes: string | null;
+          created_at: string;
+          reviewed_at: string | null;
+        };
+        Insert: {
+          id?: string;
+          run_id: string;
+          org_id: string;
+          task: string;
+          reviewed?: boolean;
+          missed_fault_count?: number | null;
+          reviewer_id?: string | null;
+          notes?: string | null;
+          created_at?: string;
+          reviewed_at?: string | null;
+        };
+        Update: {
+          id?: string;
+          run_id?: string;
+          org_id?: string;
+          task?: string;
+          reviewed?: boolean;
+          missed_fault_count?: number | null;
+          reviewer_id?: string | null;
+          notes?: string | null;
+          created_at?: string;
+          reviewed_at?: string | null;
+        };
+        Relationships: [];
+      };
+      verification_injected_runs: {
+        Row: {
+          id: string;
+          task: string;
+          fault_type: string;
+          caught: boolean;
+          details: Json;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          task: string;
+          fault_type: string;
+          caught: boolean;
+          details?: Json;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          task?: string;
+          fault_type?: string;
+          caught?: boolean;
+          details?: Json;
+          created_at?: string;
+        };
+        Relationships: [];
+      };
+      verification_false_positives: {
+        Row: {
+          id: string;
+          org_id: string;
+          task: string;
+          subject_id: string | null;
+          run_id: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          org_id: string;
+          task: string;
+          subject_id?: string | null;
+          run_id?: string | null;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          org_id?: string;
+          task?: string;
+          subject_id?: string | null;
+          run_id?: string | null;
+          created_at?: string;
         };
         Relationships: [];
       };
@@ -4542,6 +4776,31 @@ export type Database = {
       refresh_calibration_benchmarks: {
         Args: Record<PropertyKey, never>;
         Returns: number;
+      };
+      reporting_recompute_outcome: {
+        Args: { p_org_id: string; p_from: string; p_to: string };
+        Returns: Json;
+      };
+      reporting_integrity_snapshot: {
+        Args: { p_org_id: string };
+        Returns: Json;
+      };
+      set_verification_task_enabled: {
+        Args: { p_task: string; p_enabled: boolean; p_reason?: string | null };
+        Returns: undefined;
+      };
+      record_verification_false_positive: {
+        Args: {
+          p_org_id: string;
+          p_task: string;
+          p_subject_id?: string | null;
+          p_run_id?: string | null;
+        };
+        Returns: undefined;
+      };
+      submit_verification_sample_audit: {
+        Args: { p_id: string; p_missed_fault_count: number; p_notes?: string | null };
+        Returns: undefined;
       };
     };
     Enums: {

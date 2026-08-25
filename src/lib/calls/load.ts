@@ -30,5 +30,28 @@ export async function loadOrgCallDetail(callId: string): Promise<CallDetailPaylo
   });
   if (error) throw new Error(error.message || "Could not load that call.");
   if (data == null) return null;
-  return parseCallDetailPayload(data);
+  const parsed = parseCallDetailPayload(data);
+  if (!parsed?.extraction) return parsed;
+  const { data: verification } = await supabase
+    .from("call_extractions")
+    .select("verification_status, verification_faults, verification_attempt")
+    .eq("id", parsed.extraction.id)
+    .eq("org_id", ctx.org.id)
+    .maybeSingle();
+  if (!verification) return parsed;
+  parsed.extraction.verificationStatus =
+    verification.verification_status === "passed" || verification.verification_status === "needs_review"
+      ? verification.verification_status
+      : "unchecked";
+  parsed.extraction.verificationFaults = Array.isArray(verification.verification_faults)
+    ? (verification.verification_faults as Array<{ code?: unknown; where?: unknown; what?: unknown }>)
+        .map((item) => ({
+          code: typeof item.code === "string" ? item.code : "",
+          where: typeof item.where === "string" ? item.where : "output",
+          what: typeof item.what === "string" ? item.what : "",
+        }))
+        .filter((item) => item.code && item.what)
+    : [];
+  parsed.extraction.verificationAttempt = verification.verification_attempt ?? 0;
+  return parsed;
 }

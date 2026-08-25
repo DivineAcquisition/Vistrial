@@ -179,6 +179,20 @@ function parseExtraction(value: unknown): CallExtractionView | null {
     quotes: parseQuotes(row.quotes),
     modelVersion: asString(row.modelVersion),
     extractedAt,
+    verificationStatus:
+      row.verificationStatus === "passed" || row.verificationStatus === "needs_review"
+        ? row.verificationStatus
+        : "unchecked",
+    verificationFaults: Array.isArray(row.verificationFaults)
+      ? (row.verificationFaults as Array<{ code?: unknown; where?: unknown; what?: unknown }>)
+          .map((item) => ({
+            code: typeof item.code === "string" ? item.code : "",
+            where: typeof item.where === "string" ? item.where : "output",
+            what: typeof item.what === "string" ? item.what : "",
+          }))
+          .filter((item) => item.code && item.what)
+      : [],
+    verificationAttempt: asNumber(row.verificationAttempt) ?? 0,
   };
 }
 

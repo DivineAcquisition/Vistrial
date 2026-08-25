@@ -126,7 +126,10 @@ run "${ROOT}/supabase/tests/verify-call-quality.sql"
 echo "Operator agent checks..."
 run "${ROOT}/supabase/tests/verify-operator-agent.sql"
 
+echo "Self-verification checks..."
+run "${ROOT}/supabase/tests/verify-self-verification.sql"
+
 echo "Migration rollback (this prompt's migrations)..."
 bash "${ROOT}/scripts/test-migration-rollback.sh"
 
-echo "OK: schema, seed, triggers, RLS, invite, scoring, GHL, platform-admin, queue, case-file, transcript, follow-up, integrity, reporting, business-profile, onboarding-reconcile, notification, hardening, mobile, calibration, call-quality, and operator-agent checks passed."
+echo "OK: schema, seed, triggers, RLS, invite, scoring, GHL, platform-admin, queue, case-file, transcript, follow-up, integrity, reporting, business-profile, onboarding-reconcile, notification, hardening, mobile, calibration, call-quality, operator-agent, and self-verification checks passed."

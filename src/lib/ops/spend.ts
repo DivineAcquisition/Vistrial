@@ -26,6 +26,7 @@ export type OrgSpendRow = {
   estimatedUsd: number;
   extractionUsd: number;
   agentUsd: number;
+  verificationUsd: number;
 };
 
 export async function loadModelSpend(db: GhlDb, days = 30): Promise<{
@@ -34,13 +35,17 @@ export async function loadModelSpend(db: GhlDb, days = 30): Promise<{
   trend: Array<{ day: string; usd: number }>;
 }> {
   const since = new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString();
-  const [{ data: usage }, { data: agentRuns }, { data: orgs }] = await Promise.all([
+  const [{ data: usage }, { data: agentRuns }, { data: verificationUsage }, { data: orgs }] = await Promise.all([
     db
       .from("extraction_usage")
       .select("org_id, model_version, input_tokens, output_tokens, created_at")
       .gte("created_at", since),
     db
       .from("operator_runs")
+      .select("org_id, model, input_tokens, output_tokens, created_at")
+      .gte("created_at", since),
+    db
+      .from("verification_usage")
       .select("org_id, model, input_tokens, output_tokens, created_at")
       .gte("created_at", since),
     db.from("organizations").select("id, name"),
@@ -57,7 +62,7 @@ export async function loadModelSpend(db: GhlDb, days = 30): Promise<{
     inputTokens: number;
     outputTokens: number;
     createdAt: string;
-    source: "extraction" | "agent";
+    source: "extraction" | "agent" | "verification";
   }) {
     const usd = estimatedSpendUsd({
       model: args.model,
@@ -73,12 +78,14 @@ export async function loadModelSpend(db: GhlDb, days = 30): Promise<{
       estimatedUsd: 0,
       extractionUsd: 0,
       agentUsd: 0,
+      verificationUsd: 0,
     };
     current.inputTokens += args.inputTokens;
     current.outputTokens += args.outputTokens;
     current.estimatedUsd += usd;
     if (args.source === "extraction") current.extractionUsd += usd;
-    else current.agentUsd += usd;
+    else if (args.source === "agent") current.agentUsd += usd;
+    else current.verificationUsd += usd;
     byOrg.set(args.orgId, current);
     const day = args.createdAt.slice(0, 10);
     byDay.set(day, (byDay.get(day) ?? 0) + usd);
@@ -102,6 +109,16 @@ export async function loadModelSpend(db: GhlDb, days = 30): Promise<{
       outputTokens: row.output_tokens,
       createdAt: row.created_at,
       source: "agent",
+    });
+  }
+  for (const row of verificationUsage ?? []) {
+    add({
+      orgId: row.org_id,
+      model: row.model,
+      inputTokens: row.input_tokens,
+      outputTokens: row.output_tokens,
+      createdAt: row.created_at,
+      source: "verification",
     });
   }
 

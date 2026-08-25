@@ -58,6 +58,15 @@ export function ChangePreview({
         <p className={`mt-2 ${helperClass}`}>This write can be undone for a short window after it runs.</p>
       )}
 
+      {pending && confirmation.verificationGate === "question" ? (
+        <Notice tone="warning" className="mt-3">
+          {confirmation.verificationFaults.length
+            ? confirmation.verificationFaults.map((item) => item.what).join(" ")
+            : "This change may not match the request."}{" "}
+          Confirming still runs the write. Cancel if the scope is wrong.
+        </Notice>
+      ) : null}
+
       <div className="mt-3 max-h-80 overflow-y-auto rounded-lg border border-white/[0.06]">
         {pending ? (
           <label className="flex items-center gap-2 border-b border-white/[0.06] px-3 py-2 text-xs text-dim">
@@ -133,7 +142,7 @@ export function ChangePreview({
             disabled={busy || selected.size === 0}
             onClick={() => onConfirm([...selected])}
           >
-            Confirm {selected.size}
+            {confirmation.verificationGate === "question" ? "Yes, proceed" : `Confirm ${selected.size}`}
           </Button>
           <Button variant="ghost" size="sm" disabled={busy} onClick={onCancel}>
             Cancel

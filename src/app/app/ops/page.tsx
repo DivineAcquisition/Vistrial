@@ -1,5 +1,6 @@
 import { PageFrame } from "@/components/app/page-frame";
 import { OpsControls } from "@/app/app/ops/ops-controls";
+import { VerificationControls } from "@/app/app/ops/verification-controls";
 import { DataTable } from "@/components/ui/data-table";
 import { KpiCard, KpiGrid } from "@/components/ui/kpi-card";
 import { Notice } from "@/components/ui/states";
@@ -258,8 +259,9 @@ export default async function OpsPage() {
       <Panel className="mt-8 p-6">
         <h2 className={cardTitle}>Model spend</h2>
         <p className={helperClass}>
-          Estimated from extraction token logs and operator-agent runs at published Anthropic list
-          prices. Drafting tokens are not stored yet.
+          Estimated from extraction token logs, operator-agent runs, and verification token logs at
+          published Anthropic list prices. Drafting tokens are not stored yet. Verification cost is
+          not folded into generation.
         </p>
         <div className="mt-4">
           <DataTable
@@ -268,12 +270,14 @@ export default async function OpsPage() {
               { key: "org", label: "Workspace" },
               { key: "extraction", label: "Extraction", align: "right" },
               { key: "agent", label: "Operator agent", align: "right" },
+              { key: "verification", label: "Verification", align: "right" },
               { key: "usd", label: "Est. USD", align: "right" },
             ]}
             rows={state.spend.byOrg.map((row) => ({
               org: row.orgName,
               extraction: usd(row.extractionUsd),
               agent: usd(row.agentUsd),
+              verification: usd(row.verificationUsd),
               usd: usd(row.estimatedUsd),
             }))}
             empty="No model usage in the last 30 days."
@@ -291,6 +295,110 @@ export default async function OpsPage() {
               usd: usd(row.usd),
             }))}
             empty="No daily trend yet."
+          />
+        </div>
+      </Panel>
+
+      <Panel className="mt-8 p-6">
+        <h2 className={cardTitle}>Verification</h2>
+        <p className={helperClass}>
+          Four measures of the verifier itself. A layer nobody has audited manufactures false
+          confidence. Turn a task off when accuracy is poor rather than keeping it.
+        </p>
+        {state.verification.injected.catchRate !== null &&
+        state.verification.injected.catchRate < state.verification.injectedCatchAlertThreshold ? (
+          <Notice tone="critical" className="mt-4">
+            Injected-fault catch rate is below {Math.round(state.verification.injectedCatchAlertThreshold * 100)}%.
+            Turn the failing task off.
+          </Notice>
+        ) : null}
+        <div className="mt-4">
+          <KpiGrid>
+            <KpiCard
+              label="Sample missed faults (7d avg)"
+              value={
+                state.verification.sampleAudits.missedFaultAverage == null
+                  ? "—"
+                  : String(Math.round(state.verification.sampleAudits.missedFaultAverage * 10) / 10)
+              }
+              tone={
+                (state.verification.sampleAudits.missedFaultAverage ?? 0) > 0 ? "warning" : "neutral"
+              }
+            />
+            <KpiCard
+              label="Injected catch rate"
+              value={
+                state.verification.injected.catchRate == null
+                  ? "—"
+                  : `${Math.round(state.verification.injected.catchRate * 100)}%`
+              }
+              tone={
+                state.verification.injected.catchRate != null &&
+                state.verification.injected.catchRate < state.verification.injectedCatchAlertThreshold
+                  ? "critical"
+                  : "neutral"
+              }
+            />
+            <KpiCard
+              label="False positives (7d)"
+              value={state.verification.falsePositives.count7d}
+              tone={state.verification.falsePositives.count7d ? "warning" : "neutral"}
+            />
+          </KpiGrid>
+        </div>
+        <div className="mt-4">
+          <DataTable
+            caption="Verification pass rate by task"
+            columns={[
+              { key: "task", label: "Task" },
+              { key: "enabled", label: "Enabled" },
+              { key: "n", label: "Model n (7d)", align: "right" },
+              { key: "pass", label: "Pass rate", align: "right" },
+            ]}
+            rows={state.verification.tasks.map((row) => ({
+              task: row.task,
+              enabled: row.enabled ? (
+                <StatusBadge label="on" tone="good" />
+              ) : (
+                <StatusBadge label="off" tone="critical" />
+              ),
+              n: String(row.modelN),
+              pass:
+                row.passRate == null
+                  ? "—"
+                  : `${Math.round(row.passRate * 1000) / 10}%${
+                      row.passRate >= state.verification.passRateAlertThreshold && row.modelN >= 20
+                        ? " (near 100%)"
+                        : ""
+                    }`,
+            }))}
+            empty="No verification tasks."
+          />
+        </div>
+        <div className="mt-4">
+          <DataTable
+            caption="Latest injected-fault suite"
+            columns={[
+              { key: "type", label: "Fault" },
+              { key: "caught", label: "Caught" },
+              { key: "when", label: "When" },
+            ]}
+            rows={state.verification.injected.lastResults.map((row) => ({
+              type: row.faultType,
+              caught: row.caught ? (
+                <StatusBadge label="caught" tone="good" />
+              ) : (
+                <StatusBadge label="missed" tone="critical" />
+              ),
+              when: new Date(row.createdAt).toLocaleString(),
+            }))}
+            empty="Injected suite has not run yet."
+          />
+        </div>
+        <div className="mt-6">
+          <VerificationControls
+            tasks={state.verification.tasks}
+            pendingAudits={state.verification.sampleAudits.pending}
           />
         </div>
       </Panel>

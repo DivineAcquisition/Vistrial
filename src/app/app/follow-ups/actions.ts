@@ -269,6 +269,18 @@ export async function approveFollowUp(input: {
 
   const distance = editDistanceFor(scoped.draft.generated_body, body);
   const admin = getSupabaseAdmin();
+  if (
+    scoped.draft.verification_status === "needs_review" &&
+    body === scoped.draft.generated_body &&
+    (channel !== "email" || (subject ?? "") === (scoped.draft.generated_subject ?? ""))
+  ) {
+    await admin.rpc("record_verification_false_positive", {
+      p_org_id: scoped.ctx.org.id,
+      p_task: "draft",
+      p_subject_id: scoped.draft.id,
+      p_run_id: null,
+    });
+  }
   await admin
     .from("follow_up_drafts")
     .update({

@@ -9,6 +9,7 @@ import { Panel } from "@/components/ui/panel";
 import { SectionHeader } from "@/components/ui/section-header";
 import { DataTable } from "@/components/ui/data-table";
 import { EmptyState } from "@/components/ui/empty-state";
+import { Notice } from "@/components/ui/states";
 import { loadReportingPanel } from "@/lib/reporting/load";
 import type { ReportingRange } from "@/lib/reporting/range";
 import { reportingRangeQuery } from "@/lib/reporting/range";
@@ -64,6 +65,23 @@ function Computed({ payload }: { payload: Record<string, unknown> }) {
       Last computed {formatComputedAt(str(payload.last_computed_at))} ·{" "}
       {str(payload.source) === "cache" ? "hourly cache" : "computed for this range"}
     </p>
+  );
+}
+
+function ReportBlocked({ title, payload }: { title: string; payload: Record<string, unknown> }) {
+  const faults = Array.isArray(payload.faults)
+    ? (payload.faults as Array<{ what?: unknown }>)
+        .map((item) => (typeof item.what === "string" ? item.what : null))
+        .filter((item): item is string => Boolean(item))
+    : [];
+  return (
+    <Panel className="p-6">
+      <SectionHeader title={title} hint="Not displayed." />
+      <Notice tone="critical">
+        This report is not shown. {faults.length ? faults.join(" ") : "The numbers failed a consistency check."} DA
+        has been alerted.
+      </Notice>
+    </Panel>
   );
 }
 
@@ -134,6 +152,9 @@ async function OutcomePanel({ orgId, range }: { orgId: string; range: ReportingR
     loadReportingPanel(orgId, "outcome", range),
     loadStatedGoal(orgId),
   ]);
+  if (payload.blocked === true) {
+    return <ReportBlocked title="Clients closed per hundred leads" payload={payload} />;
+  }
   const headline = rateOf(payload.headline);
   const maturing = rateOf(payload.maturing);
   const baseline = payload.baseline ? rateOf(payload.baseline) : null;
@@ -200,6 +221,7 @@ async function OutcomePanel({ orgId, range }: { orgId: string; range: ReportingR
 
 async function CoveragePanel({ orgId, range }: { orgId: string; range: ReportingRange }) {
   const payload = await loadReportingPanel(orgId, "coverage", range);
+  if (payload.blocked === true) return <ReportBlocked title="Coverage" payload={payload} />;
   const ever = rateOf(payload.ever_touched);
   const within = rateOf(payload.within_window);
   return (
@@ -229,6 +251,7 @@ async function CoveragePanel({ orgId, range }: { orgId: string; range: Reporting
 
 async function ThroughputPanel({ orgId, range }: { orgId: string; range: ReportingRange }) {
   const payload = await loadReportingPanel(orgId, "throughput", range);
+  if (payload.blocked === true) return <ReportBlocked title="Throughput" payload={payload} />;
   const sources = Array.isArray(payload.leads_in_by_source) ? payload.leads_in_by_source : [];
   const funnel = Array.isArray(payload.close_rate_by_stage) ? payload.close_rate_by_stage : [];
   const show = rateOf(payload.show_rate);
@@ -281,6 +304,7 @@ async function ThroughputPanel({ orgId, range }: { orgId: string; range: Reporti
 
 async function TeamPanel({ orgId, range }: { orgId: string; range: ReportingRange }) {
   const payload = await loadReportingPanel(orgId, "team", range);
+  if (payload.blocked === true) return <ReportBlocked title="Team" payload={payload} />;
   const operators = Array.isArray(payload.operators) ? payload.operators : [];
   return (
     <Panel className="p-6">
@@ -319,6 +343,7 @@ async function TeamPanel({ orgId, range }: { orgId: string; range: ReportingRang
 
 async function FollowUpPanel({ orgId, range }: { orgId: string; range: ReportingRange }) {
   const payload = await loadReportingPanel(orgId, "follow_up", range);
+  if (payload.blocked === true) return <ReportBlocked title="Follow-up" payload={payload} />;
   const edit = Array.isArray(payload.median_edit_distance_by_branch)
     ? payload.median_edit_distance_by_branch
     : [];
@@ -398,6 +423,7 @@ async function FollowUpPanel({ orgId, range }: { orgId: string; range: Reporting
 
 async function ObjectionsPanel({ orgId, range }: { orgId: string; range: ReportingRange }) {
   const payload = await loadReportingPanel(orgId, "objections", range);
+  if (payload.blocked === true) return <ReportBlocked title="Objections" payload={payload} />;
   if (bool(payload.too_small)) {
     return (
       <Panel className="p-6">
@@ -456,6 +482,7 @@ async function ObjectionsPanel({ orgId, range }: { orgId: string; range: Reporti
 
 async function SourcesPanel({ orgId, range }: { orgId: string; range: ReportingRange }) {
   const payload = await loadReportingPanel(orgId, "sources", range);
+  if (payload.blocked === true) return <ReportBlocked title="Source quality" payload={payload} />;
   const rows = Array.isArray(payload.rows) ? payload.rows : [];
   const flag = payload.high_readiness_low_close ? asRecord(payload.high_readiness_low_close) : null;
   return (
@@ -502,6 +529,7 @@ async function SourcesPanel({ orgId, range }: { orgId: string; range: ReportingR
 
 async function TerminalPanel({ orgId, range }: { orgId: string; range: ReportingRange }) {
   const payload = await loadReportingPanel(orgId, "terminal", range);
+  if (payload.blocked === true) return <ReportBlocked title="Where deals die" payload={payload} />;
   if (bool(payload.too_small)) {
     return (
       <Panel className="p-6">
@@ -536,6 +564,7 @@ async function TerminalPanel({ orgId, range }: { orgId: string; range: Reporting
 
 async function SpeedPanel({ orgId, range }: { orgId: string; range: ReportingRange }) {
   const payload = await loadReportingPanel(orgId, "speed", range);
+  if (payload.blocked === true) return <ReportBlocked title="Speed-to-lead" payload={payload} />;
   if (bool(payload.too_small)) {
     return (
       <Panel className="p-6">
@@ -577,6 +606,7 @@ async function SpeedPanel({ orgId, range }: { orgId: string; range: ReportingRan
 
 async function ReadinessPanel({ orgId, range }: { orgId: string; range: ReportingRange }) {
   const payload = await loadReportingPanel(orgId, "readiness", range);
+  if (payload.blocked === true) return <ReportBlocked title="Readiness" payload={payload} />;
   const rows = Array.isArray(payload.distribution) ? payload.distribution : [];
   return (
     <Panel className="p-6">
@@ -604,6 +634,7 @@ async function ReadinessPanel({ orgId, range }: { orgId: string; range: Reportin
 
 async function ContributionPanel({ orgId, range }: { orgId: string; range: ReportingRange }) {
   const payload = await loadReportingPanel(orgId, "contribution", range);
+  if (payload.blocked === true) return <ReportBlocked title="What Vistrial actually did" payload={payload} />;
   const items = Array.isArray(payload.items) ? payload.items : [];
   return (
     <Panel className="p-6">
@@ -628,6 +659,7 @@ async function ContributionPanel({ orgId, range }: { orgId: string; range: Repor
 
 async function IngestionPanel({ orgId, range }: { orgId: string; range: ReportingRange }) {
   const payload = await loadReportingPanel(orgId, "ingestion", range);
+  if (payload.blocked === true) return <ReportBlocked title="Ingestion" payload={payload} />;
   const types = Array.isArray(payload.by_type) ? payload.by_type : [];
   return (
     <Panel className="p-6">

@@ -4,6 +4,7 @@ import { loadOpsNotificationState } from "@/lib/notifications/ops";
 import { vistrialEnv } from "@/lib/ops/env";
 import { loadModelSpend } from "@/lib/ops/spend";
 import { isJobOverdue } from "@/lib/ops/job-overdue";
+import { loadVerificationOpsState } from "@/lib/verification/ops-state";
 import type { Json } from "@/types/database";
 
 function numberField(value: Json | undefined, key: string): number | null {
@@ -49,6 +50,7 @@ export async function loadOpsSystemState(db: GhlDb) {
     notifyTotal,
     notifyDead,
     calibration,
+    verification,
   ] = await Promise.all([
     db.from("ops_job_runs").select("*"),
     db.from("ops_job_catalog").select("*"),
@@ -87,6 +89,7 @@ export async function loadOpsSystemState(db: GhlDb) {
       .eq("status", "dead")
       .gte("queued_at", since24h),
     db.rpc("load_ops_calibration"),
+    loadVerificationOpsState(db),
   ]);
 
   const catalogByName = new Map((catalog.data ?? []).map((row) => [row.job_name, row]));
@@ -173,5 +176,6 @@ export async function loadOpsSystemState(db: GhlDb) {
     spend,
     orgs: orgs.data ?? [],
     calibration: (calibration.data ?? {}) as Record<string, unknown>,
+    verification,
   };
 }

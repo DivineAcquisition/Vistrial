@@ -17,6 +17,8 @@ import type {
 } from "@/lib/operator/types";
 import { createClient } from "@/lib/supabase/server";
 import type { Database, Json } from "@/types/database";
+import { verifyAgentPlan } from "@/lib/verification/agent-verify";
+import { asFaults } from "@/lib/verification/faults";
 
 type Db = Awaited<ReturnType<typeof createClient>>;
 
@@ -100,7 +102,10 @@ function mapConfirmation(row: {
   undone_at: string | null;
   undo_result: Json | null;
   created_at: string;
+  verification_gate?: string | null;
+  verification_faults?: Json | null;
 }): OperatorConfirmationView {
+  const gate = row.verification_gate === "question" ? "question" : "confirm";
   return {
     id: row.id,
     runId: row.run_id,
@@ -119,6 +124,8 @@ function mapConfirmation(row: {
     undoneAt: row.undone_at,
     undoResult: parseReport(row.undo_result),
     createdAt: row.created_at,
+    verificationGate: gate,
+    verificationFaults: asFaults(row.verification_faults),
   };
 }
 
@@ -253,6 +260,34 @@ export async function insertConfirmation(input: {
   executePayload: unknown;
 }): Promise<OperatorConfirmationView> {
   const db = await createClient();
+  const [{ data: run }, cap] = await Promise.all([
+    db.from("operator_runs").select("request_text").eq("id", input.runId).eq("org_id", input.orgId).maybeSingle(),
+    loadOrgBatchCap(db, input.orgId),
+  ]);
+  let gate: "confirm" | "question" = "confirm";
+  let faults: ReturnType<typeof asFaults> = [];
+  try {
+    const verified = await verifyAgentPlan({
+      orgId: input.orgId,
+      runId: input.runId,
+      requestText: run?.request_text ?? "",
+      writeKind: input.writeKind,
+      records: input.records,
+      cap,
+      permissionDeniedIds: [],
+    });
+    gate = verified.gate;
+    faults = verified.faults;
+  } catch {
+    gate = "question";
+    faults = [
+      {
+        code: "verifier_error",
+        where: "plan",
+        what: "Verification could not finish. Confirm only if this change matches the request.",
+      },
+    ];
+  }
   const { data, error } = await db
     .from("operator_run_confirmations")
     .insert({
@@ -267,6 +302,8 @@ export async function insertConfirmation(input: {
       records: input.records as unknown as Json,
       execute_payload: (input.executePayload ?? {}) as Json,
       decision: "pending",
+      verification_gate: gate,
+      verification_faults: faults as unknown as Json,
     })
     .select("*")
     .maybeSingle();

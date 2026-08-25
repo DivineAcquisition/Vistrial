@@ -141,3 +141,43 @@ export async function runRetentionNow(dryRun: boolean): Promise<OpsActionResult>
     message: dryRun ? `Dry-run: ${JSON.stringify(data)}` : `Purged: ${JSON.stringify(data)}`,
   };
 }
+
+export async function setVerificationTaskEnabled(formData: FormData): Promise<OpsActionResult> {
+  await requirePlatformAdmin();
+  const task = String(formData.get("task") ?? "").trim();
+  const enabled = String(formData.get("enabled") ?? "") === "true";
+  const reason = String(formData.get("reason") ?? "").trim();
+  if (!task) return { status: "error", error: "Task is required." };
+  if (!enabled && !reason) {
+    return { status: "error", error: "Say why this task is being turned off." };
+  }
+  const { error } = await getSupabaseAdmin().rpc("set_verification_task_enabled", {
+    p_task: task,
+    p_enabled: enabled,
+    p_reason: enabled ? null : reason,
+  });
+  if (error) return { status: "error", error: "Could not update that verification task." };
+  revalidatePath("/app/ops");
+  return {
+    status: "ok",
+    message: enabled ? `${task} verification is on.` : `${task} verification is off.`,
+  };
+}
+
+export async function submitVerificationSampleAudit(formData: FormData): Promise<OpsActionResult> {
+  await requirePlatformAdmin();
+  const id = String(formData.get("id") ?? "").trim();
+  const missed = Number(formData.get("missedFaultCount"));
+  const notes = String(formData.get("notes") ?? "").trim();
+  if (!id || !Number.isInteger(missed) || missed < 0) {
+    return { status: "error", error: "Audit id and a non-negative missed-fault count are required." };
+  }
+  const { error } = await getSupabaseAdmin().rpc("submit_verification_sample_audit", {
+    p_id: id,
+    p_missed_fault_count: missed,
+    p_notes: notes || null,
+  });
+  if (error) return { status: "error", error: "Could not record that sample audit." };
+  revalidatePath("/app/ops");
+  return { status: "ok", message: "Sample audit recorded." };
+}

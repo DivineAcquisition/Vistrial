@@ -162,6 +162,19 @@ export async function loadFollowUpReview(draftId: string): Promise<FollowUpRevie
       approvedAt: draft.approved_at,
       failureReason: draft.failure_reason,
       quotesUsed,
+      verificationStatus:
+        draft.verification_status === "passed" || draft.verification_status === "needs_review"
+          ? draft.verification_status
+          : "unchecked",
+      verificationFaults: Array.isArray(draft.verification_faults)
+        ? (draft.verification_faults as Array<{ code?: unknown; where?: unknown; what?: unknown }>)
+            .map((item) => ({
+              code: typeof item.code === "string" ? item.code : "",
+              where: typeof item.where === "string" ? item.where : "output",
+              what: typeof item.what === "string" ? item.what : "",
+            }))
+            .filter((item) => item.code && item.what)
+        : [],
     },
     lead: {
       id: lead.id,

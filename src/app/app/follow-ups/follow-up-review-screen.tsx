@@ -120,6 +120,13 @@ export function FollowUpReviewScreen({ initial }: { initial: FollowUpReviewPaylo
             Low confidence: {draft.lowConfidenceReason || "the quality check failed twice."} Edit
             or regenerate before sending.
           </p>
+          {draft.verificationFaults.length ? (
+            <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-flag-critical">
+              {draft.verificationFaults.map((item) => (
+                <li key={`${item.code}:${item.where}:${item.what}`}>{item.what}</li>
+              ))}
+            </ul>
+          ) : null}
         </Panel>
       ) : null}
 

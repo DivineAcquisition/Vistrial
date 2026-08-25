@@ -288,6 +288,31 @@ export async function correctExtractionField(input: {
   return { ok: true };
 }
 
+export async function markExtractionFlagsWrong(callId: string): Promise<CallActionResult> {
+  if (!isUuid(callId)) return { ok: false, error: "That call is not in this workspace." };
+  const ctx = await getAuthContext();
+  const supabase = await createClient();
+  const { data: extraction } = await supabase
+    .from("call_extractions")
+    .select("id, verification_status")
+    .eq("call_id", callId)
+    .eq("org_id", ctx.org.id)
+    .maybeSingle();
+  if (!extraction) return { ok: false, error: "This call has no extraction." };
+  if (extraction.verification_status !== "needs_review") {
+    return { ok: false, error: "This extraction is not flagged." };
+  }
+  const { error } = await supabase.rpc("record_verification_false_positive", {
+    p_org_id: ctx.org.id,
+    p_task: "extraction",
+    p_subject_id: extraction.id,
+    p_run_id: null,
+  });
+  if (error) return { ok: false, error: "Could not record that the flags were wrong." };
+  revalidatePath(`/app/calls/${callId}`);
+  return { ok: true };
+}
+
 function previousValue(
   extraction: Record<string, unknown>,
   fieldName: ExtractionCorrectableField

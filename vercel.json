@@ -43,6 +43,10 @@
     {
       "path": "/api/cron/call-quality",
       "schedule": "20 * * * *"
+    },
+    {
+      "path": "/api/cron/verification-audit",
+      "schedule": "40 5 * * *"
     }
   ]
 }

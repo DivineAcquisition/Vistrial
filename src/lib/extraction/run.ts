@@ -15,6 +15,14 @@ import { sanitizeError } from "@/lib/transcripts/process";
 import { clipTranscriptWindow } from "@/lib/transcripts/quotes";
 import type { GhlDb } from "@/lib/ghl/tokens";
 import type { Json } from "@/types/database";
+import type { ParsedExtraction } from "@/lib/transcripts/types";
+import { EXTRACTION_VERIFIER_SYSTEM, checkExtractionDeterministic, extractionVerifierUser } from "@/lib/verification/extraction-det";
+import { runBoundedVerification } from "@/lib/verification/engine";
+import { formatFaultsForRetry } from "@/lib/verification/faults";
+import { runModelVerifier, skippedVerifier } from "@/lib/verification/model";
+import { persistBoundedVerification, taskVerificationEnabled } from "@/lib/verification/record";
+import { extractionJsonForVerifier, rawQuotesFromModelJson } from "@/lib/verification/serialize";
+import type { AnthropicMessageResult } from "@/lib/extraction/anthropic";
 
 export async function processExtractionQueue(db: GhlDb, max = 10): Promise<{
   jobs: number;
@@ -63,15 +71,55 @@ export async function runExtractionJob(db: GhlDb, jobId: string): Promise<void> 
   if (!call?.raw_transcript) {
     throw new Error("empty_transcript");
   }
+  const transcript = call.raw_transcript;
 
-  const window = clipTranscriptWindow(call.raw_transcript, TRANSCRIPT_HEAD_CHARS, TRANSCRIPT_TAIL_CHARS);
-  const message = await createAnthropicMessage({
-    system: EXTRACTION_SYSTEM_PROMPT,
-    user: extractionUserPrompt(window.text, window.truncated),
+  const window = clipTranscriptWindow(transcript, TRANSCRIPT_HEAD_CHARS, TRANSCRIPT_TAIL_CHARS);
+  const modelEnabled = await taskVerificationEnabled("extraction");
+  type ExtractionAttempt = {
+    parsed: ParsedExtraction;
+    message: AnthropicMessageResult;
+    rawQuotes: Array<{ text: string; topic: string }>;
+  };
+  let generationInput = 0;
+  let generationOutput = 0;
+  const bounded = await runBoundedVerification<ExtractionAttempt>({
+    generate: async (_attempt, previousFaults) => {
+      const constraints = previousFaults.length
+        ? `\n\nA previous extraction had these faults. Fix them. Do not explain how you extract.\n${formatFaultsForRetry(previousFaults)}`
+        : "";
+      const message = await createAnthropicMessage({
+        system: EXTRACTION_SYSTEM_PROMPT,
+        user: `${extractionUserPrompt(window.text, window.truncated)}${constraints}`,
+      });
+      generationInput += message.inputTokens;
+      generationOutput += message.outputTokens;
+      const json = extractJsonObject(message.text);
+      return {
+        parsed: parseExtraction(json, transcript),
+        message,
+        rawQuotes: rawQuotesFromModelJson(json),
+      };
+    },
+    deterministic: (output) =>
+      checkExtractionDeterministic({
+        extraction: output.parsed,
+        transcript,
+        rawQuotes: output.rawQuotes,
+      }),
+    modelVerify: async (output) => {
+      if (!modelEnabled) return skippedVerifier("disabled");
+      return runModelVerifier({
+        system: EXTRACTION_VERIFIER_SYSTEM,
+        user: extractionVerifierUser(transcript, extractionJsonForVerifier(output.parsed)),
+        includeEmbarrassment: false,
+      });
+    },
   });
 
-  const parsed = parseExtraction(extractJsonObject(message.text), call.raw_transcript);
+  const parsed = bounded.output.parsed;
+  const message = bounded.output.message;
   const extractedAt = new Date().toISOString();
+  const verificationStatus = bounded.finalState === "passed" ? "passed" : "needs_review";
 
   const { data: existing } = await db
     .from("call_extractions")
@@ -96,8 +144,11 @@ export async function runExtractionJob(db: GhlDb, jobId: string): Promise<void> 
     quotes: parsed.quotes as unknown as Json,
     model_version: message.model,
     extracted_at: extractedAt,
-    input_tokens: message.inputTokens,
-    output_tokens: message.outputTokens,
+    input_tokens: generationInput,
+    output_tokens: generationOutput,
+    verification_status: verificationStatus,
+    verification_faults: bounded.faults as unknown as Json,
+    verification_attempt: bounded.attempt,
   };
 
   let extractionId = existing?.id ?? null;
@@ -130,9 +181,19 @@ export async function runExtractionJob(db: GhlDb, jobId: string): Promise<void> 
     call_id: call.id,
     extraction_id: extractionId,
     model_version: message.model,
-    input_tokens: message.inputTokens,
-    output_tokens: message.outputTokens,
+    input_tokens: generationInput,
+    output_tokens: generationOutput,
   });
+
+  if (extractionId) {
+    await persistBoundedVerification({
+      orgId: call.org_id,
+      task: "extraction",
+      subjectType: "call_extraction",
+      subjectId: extractionId,
+      result: bounded,
+    });
+  }
 
   const score = await scoreLeadFromCall(db, {
     orgId: call.org_id,

@@ -152,7 +152,46 @@ export async function runOperatorLoop(input: {
       );
 
       if (toolUses.length === 0) {
-        await finish("completed", text || "Done.", message.stopReason);
+        const rawText = text || "Done.";
+        const db = await createClient();
+        const { data: stepRows } = await db
+          .from("operator_run_steps")
+          .select("seq, tool_name, result_summary, result")
+          .eq("run_id", input.runId)
+          .eq("org_id", input.orgId)
+          .order("seq", { ascending: true });
+        const { correctAgentResponse } = await import("@/lib/verification/agent-response");
+        const { persistBoundedVerification } = await import("@/lib/verification/record");
+        const checked = correctAgentResponse({
+          response: rawText,
+          steps: (stepRows ?? []).map((row) => ({
+            seq: row.seq,
+            toolName: row.tool_name,
+            summary: row.result_summary,
+            result: row.result,
+          })),
+        });
+        const display = checked.ok ? rawText : checked.corrected;
+        await persistBoundedVerification({
+          orgId: input.orgId,
+          task: "agent_response",
+          subjectType: "operator_run",
+          subjectId: input.runId,
+          result: {
+            output: display,
+            attempt: 1,
+            retryHappened: false,
+            finalState: checked.ok ? "passed" : "corrected",
+            stageCaught: checked.ok ? "none" : "deterministic",
+            faults: checked.faults,
+            modelInvoked: false,
+            verificationModel: null,
+            inputTokens: 0,
+            outputTokens: 0,
+            skippedReason: null,
+          },
+        });
+        await finish("completed", display, message.stopReason);
         return;
       }
 

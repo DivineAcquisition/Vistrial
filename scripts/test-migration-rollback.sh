@@ -205,3 +205,44 @@ if [[ "$(echo "$fn_oa" | tr -d ' ')" != "1" ]]; then
 fi
 
 echo "OK: operator agent migration rollback and re-apply succeeded."
+
+echo "Re-apply self-verification after operator-agent table recreate..."
+run "${ROOT}/supabase/migrations/20260830010000_self_verification.sql"
+
+echo "Rollback self-verification (tables and columns gone)..."
+run "${ROOT}/supabase/rollbacks/20260830010000_self_verification.sql"
+col_sv="$("${PSQL[@]}" -d "${DB_NAME}" -tAc "SELECT count(*) FROM information_schema.columns WHERE table_schema='public' AND table_name='call_extractions' AND column_name='verification_status'")"
+if [[ "$(echo "$col_sv" | tr -d ' ')" != "0" ]]; then
+  echo "self-verification rollback left verification_status in place" >&2
+  exit 1
+fi
+tbl_sv="$("${PSQL[@]}" -d "${DB_NAME}" -tAc "SELECT count(*) FROM information_schema.tables WHERE table_schema='public' AND table_name='verification_runs'")"
+if [[ "$(echo "$tbl_sv" | tr -d ' ')" != "0" ]]; then
+  echo "self-verification rollback left verification_runs in place" >&2
+  exit 1
+fi
+fn_sv="$("${PSQL[@]}" -d "${DB_NAME}" -tAc "SELECT count(*) FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace WHERE n.nspname='public' AND p.proname='reporting_recompute_outcome'")"
+if [[ "$(echo "$fn_sv" | tr -d ' ')" != "0" ]]; then
+  echo "self-verification rollback left reporting_recompute_outcome in place" >&2
+  exit 1
+fi
+
+echo "Re-apply self-verification..."
+run "${ROOT}/supabase/migrations/20260830010000_self_verification.sql"
+col_sv="$("${PSQL[@]}" -d "${DB_NAME}" -tAc "SELECT count(*) FROM information_schema.columns WHERE table_schema='public' AND table_name='call_extractions' AND column_name='verification_status'")"
+if [[ "$(echo "$col_sv" | tr -d ' ')" != "1" ]]; then
+  echo "re-apply did not restore verification_status" >&2
+  exit 1
+fi
+tbl_sv="$("${PSQL[@]}" -d "${DB_NAME}" -tAc "SELECT count(*) FROM information_schema.tables WHERE table_schema='public' AND table_name='verification_runs'")"
+if [[ "$(echo "$tbl_sv" | tr -d ' ')" != "1" ]]; then
+  echo "re-apply did not restore verification_runs" >&2
+  exit 1
+fi
+fn_sv="$("${PSQL[@]}" -d "${DB_NAME}" -tAc "SELECT count(*) FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace WHERE n.nspname='public' AND p.proname='reporting_recompute_outcome'")"
+if [[ "$(echo "$fn_sv" | tr -d ' ')" != "1" ]]; then
+  echo "re-apply did not restore reporting_recompute_outcome" >&2
+  exit 1
+fi
+
+echo "OK: self-verification migration rollback and re-apply succeeded."

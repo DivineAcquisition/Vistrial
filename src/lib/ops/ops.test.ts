@@ -85,7 +85,7 @@ describe("missed jobs", () => {
     const now = new Date("2026-08-25T12:00:00Z");
     expect(
       isJobOverdue({
-        lastSuccessAt: "2026-08-25T11:56:00Z",
+        lastSuccessAt: "2026-08-25T11:58:00Z",
         intervalSeconds: 60,
         graceSeconds: 120,
         now,

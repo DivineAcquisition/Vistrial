@@ -29,6 +29,15 @@ The GitHub Preview check compares `supabase/migrations/` to
 must stay in lockstep; do not apply ad-hoc dashboard migrations that are missing
 from the repo.
 
+MCP `apply_migration` records the apply-time timestamp, which can differ from
+the filename in this directory. When that happens, add a file named after the
+hosted version so Preview stays green: keep the real SQL on the original
+filename for local replay, and use `SELECT 1` for the hosted-timestamp file if
+the objects already ship in another migration. Do not re-apply DDL that already
+ran. Mark the original filename's version as applied on hosted
+(`schema_migrations`) so a preview branch does not try to create objects that
+already exist.
+
 `20260823013315_halt_queued_dispatches` is in the repo because it already ran
 on this project. It replaces the halt functions so queued GHL dispatches fail
 when a sequence stops, instead of still sending.

@@ -116,6 +116,7 @@ export async function saveFollowUpEdit(input: {
 
   await admin.from("follow_up_events").insert({
     org_id: scoped.ctx.org.id,
+    lead_id: scoped.draft.lead_id,
     draft_id: scoped.draft.id,
     sequence_run_id: scoped.draft.sequence_run_id,
     kind: "edited",
@@ -190,6 +191,7 @@ export async function rejectFollowUp(input: {
   if (error) return fail("Could not reject that draft.");
   await admin.from("follow_up_events").insert({
     org_id: scoped.ctx.org.id,
+    lead_id: scoped.draft.lead_id,
     draft_id: scoped.draft.id,
     sequence_run_id: scoped.draft.sequence_run_id,
     kind: "rejected",
@@ -293,11 +295,12 @@ export async function approveFollowUp(input: {
 
   await admin.from("follow_up_events").insert({
     org_id: scoped.ctx.org.id,
+    lead_id: scoped.draft.lead_id,
     draft_id: scoped.draft.id,
     sequence_run_id: scoped.draft.sequence_run_id,
     kind: "approved",
     actor_member_id: scoped.ctx.member.id,
-    payload: { channel, recipient, sendAt, editDistance: distance } as Json,
+    payload: { channel, sendAt, editDistance: distance } as Json,
   });
 
   const result = await dispatchOutboundMessage(admin, {

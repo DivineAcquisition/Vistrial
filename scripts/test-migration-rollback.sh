@@ -246,3 +246,41 @@ if [[ "$(echo "$fn_sv" | tr -d ' ')" != "1" ]]; then
 fi
 
 echo "OK: self-verification migration rollback and re-apply succeeded."
+
+echo "Rollback activity stream (derived RPCs and history tables gone)..."
+run "${ROOT}/supabase/rollbacks/20260831010000_activity_stream.sql"
+fn_act="$("${PSQL[@]}" -d "${DB_NAME}" -tAc "SELECT count(*) FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace WHERE n.nspname='public' AND p.proname='load_org_activity'")"
+if [[ "$(echo "$fn_act" | tr -d ' ')" != "0" ]]; then
+  echo "activity rollback left load_org_activity in place" >&2
+  exit 1
+fi
+tbl_act="$("${PSQL[@]}" -d "${DB_NAME}" -tAc "SELECT count(*) FROM information_schema.tables WHERE table_schema='public' AND table_name='lead_assignment_changes'")"
+if [[ "$(echo "$tbl_act" | tr -d ' ')" != "0" ]]; then
+  echo "activity rollback left lead_assignment_changes in place" >&2
+  exit 1
+fi
+col_act="$("${PSQL[@]}" -d "${DB_NAME}" -tAc "SELECT count(*) FROM information_schema.columns WHERE table_schema='public' AND table_name='follow_up_events' AND column_name='lead_id'")"
+if [[ "$(echo "$col_act" | tr -d ' ')" != "0" ]]; then
+  echo "activity rollback left follow_up_events.lead_id in place" >&2
+  exit 1
+fi
+
+echo "Re-apply activity stream..."
+run "${ROOT}/supabase/migrations/20260831010000_activity_stream.sql"
+fn_act="$("${PSQL[@]}" -d "${DB_NAME}" -tAc "SELECT count(*) FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace WHERE n.nspname='public' AND p.proname='load_org_activity'")"
+if [[ "$(echo "$fn_act" | tr -d ' ')" != "1" ]]; then
+  echo "re-apply did not restore load_org_activity" >&2
+  exit 1
+fi
+tbl_act="$("${PSQL[@]}" -d "${DB_NAME}" -tAc "SELECT count(*) FROM information_schema.tables WHERE table_schema='public' AND table_name='lead_assignment_changes'")"
+if [[ "$(echo "$tbl_act" | tr -d ' ')" != "1" ]]; then
+  echo "re-apply did not restore lead_assignment_changes" >&2
+  exit 1
+fi
+col_act="$("${PSQL[@]}" -d "${DB_NAME}" -tAc "SELECT count(*) FROM information_schema.columns WHERE table_schema='public' AND table_name='follow_up_events' AND column_name='lead_id'")"
+if [[ "$(echo "$col_act" | tr -d ' ')" != "1" ]]; then
+  echo "re-apply did not restore follow_up_events.lead_id" >&2
+  exit 1
+fi
+
+echo "OK: activity stream migration rollback and re-apply succeeded."

@@ -57,6 +57,7 @@ export async function finalizeFollowUpDispatch(
       .eq("id", draft.id);
     await db.from("follow_up_events").insert({
       org_id: draft.org_id,
+      lead_id: draft.lead_id,
       draft_id: draft.id,
       sequence_run_id: draft.sequence_run_id,
       kind: "discarded",
@@ -84,6 +85,7 @@ export async function finalizeFollowUpDispatch(
       .eq("id", draft.id);
     await db.from("follow_up_events").insert({
       org_id: draft.org_id,
+      lead_id: draft.lead_id,
       draft_id: draft.id,
       sequence_run_id: draft.sequence_run_id,
       kind: "failed",
@@ -126,6 +128,7 @@ export async function finalizeFollowUpDispatch(
 
   await db.from("follow_up_events").insert({
     org_id: draft.org_id,
+    lead_id: draft.lead_id,
     draft_id: draft.id,
     sequence_run_id: draft.sequence_run_id,
     kind: "sent",

@@ -1,10 +1,14 @@
 "use server";
 
+import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 
 import { addVoiceExample, removeVoiceExample } from "@/app/app/settings/follow-up/actions";
 import type { SettingsSaveResult } from "@/app/app/settings/types";
+import { ONBOARDING_DEFER_COOKIE, onboardingDeferCookieOptions } from "@/lib/auth/cookies";
+import { getAuthContext } from "@/lib/auth/session";
+import { DEFAULT_APP_PATH } from "@/lib/navigation";
 import { assertProfileAccess } from "@/lib/profile/load";
 import { rescoreOrgLeads } from "@/lib/profile/rescore";
 import { buildStagePatch } from "@/lib/profile/stage-patch";
@@ -111,4 +115,11 @@ export async function generateLeakReport(): Promise<OnboardingResult> {
   revalidatePath("/app/onboarding/report");
   revalidatePath("/app/settings/business-profile");
   return { status: "saved", applied: [] };
+}
+
+export async function deferOnboarding(): Promise<void> {
+  const ctx = await getAuthContext();
+  const cookieStore = await cookies();
+  cookieStore.set(ONBOARDING_DEFER_COOKIE, ctx.org.id, onboardingDeferCookieOptions);
+  redirect(DEFAULT_APP_PATH);
 }

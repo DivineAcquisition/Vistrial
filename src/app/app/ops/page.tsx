@@ -1,5 +1,6 @@
 import { PageFrame } from "@/components/app/page-frame";
 import { OpsControls } from "@/app/app/ops/ops-controls";
+import { OpsActivity } from "@/app/app/ops/ops-activity";
 import { VerificationControls } from "@/app/app/ops/verification-controls";
 import { DataTable } from "@/components/ui/data-table";
 import { KpiCard, KpiGrid } from "@/components/ui/kpi-card";
@@ -7,6 +8,8 @@ import { Notice } from "@/components/ui/states";
 import { Panel } from "@/components/ui/panel";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { requirePlatformAdmin } from "@/lib/auth/gates";
+import { parseActivityFilters, activityFiltersHref } from "@/lib/activity/filters";
+import { loadOpsActivity } from "@/lib/activity/load";
 import { EVENT_LABELS } from "@/lib/notifications/labels";
 import { loadOpsSystemState } from "@/lib/ops/load";
 import { getSupabaseAdmin } from "@/lib/supabase/admin";
@@ -25,9 +28,18 @@ function ago(iso: string | null | undefined) {
   return `${Math.round(hours / 24)}d ago`;
 }
 
-export default async function OpsPage() {
+export default async function OpsPage({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
   await requirePlatformAdmin();
-  const state = await loadOpsSystemState(getSupabaseAdmin());
+  const params = await searchParams;
+  const activityFilters = parseActivityFilters(params);
+  const [state, activity] = await Promise.all([
+    loadOpsSystemState(getSupabaseAdmin()),
+    loadOpsActivity(activityFilters),
+  ]);
   const { volumes, engagement, deadRows } = state.notifications;
   const fatigued = volumes.filter((row) => row.fatigue).length;
   const failing = volumes.filter((row) => row.failingPush).length;
@@ -67,6 +79,16 @@ export default async function OpsPage() {
           No overdue jobs, no open alerts, ingestion is moving.
         </Notice>
       )}
+
+      <OpsActivity
+        key={activityFiltersHref(activityFilters, "/app/ops")}
+        initial={activity}
+        filters={activityFilters}
+        clients={(state.orgs ?? []).map((org) => ({
+          id: org.id,
+          name: org.name,
+        }))}
+      />
 
       <Panel className="mb-8 p-6">
         <h2 className={cardTitle}>Calibration health</h2>

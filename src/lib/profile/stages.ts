@@ -87,9 +87,15 @@ export function previousStage(stage: ProfileStage): ProfileStage | null {
   return index > 0 ? PROFILE_STAGES[index - 1] : null;
 }
 
+export function isOnboardingIncomplete(
+  completed: Array<{ stage: ProfileStage; completedAt: string | null }>
+): boolean {
+  return firstIncompleteStage(completed) !== null;
+}
+
 export function firstIncompleteStage(
   completed: Array<{ stage: ProfileStage; completedAt: string | null }>
-): ProfileStage {
+): ProfileStage | null {
   const done = new Set(completed.filter((row) => row.completedAt).map((row) => row.stage));
-  return PROFILE_STAGES.find((stage) => !done.has(stage)) ?? PROFILE_STAGES[PROFILE_STAGES.length - 1];
+  return PROFILE_STAGES.find((stage) => !done.has(stage)) ?? null;
 }

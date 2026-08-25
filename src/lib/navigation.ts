@@ -18,7 +18,7 @@ export const NAV_GROUPS: Array<{ id: NavGroupId; label: string }> = [
   { id: "configure", label: "Configure" },
 ];
 
-export type NavIcon = "queue" | "log" | "cases" | "calls" | "reporting" | "settings";
+export type NavIcon = "queue" | "log" | "cases" | "calls" | "reporting" | "settings" | "activity";
 
 export type NavItem = {
   href: string;
@@ -60,6 +60,14 @@ export const PRIMARY_NAV: NavItem[] = [
     platformAdminOnly: true,
   },
   {
+    href: "/app/activity",
+    label: "Activity",
+    match: "/app/activity",
+    group: "measure",
+    icon: "activity",
+    roles: ["owner", "admin"],
+  },
+  {
     href: "/app/settings",
     label: "Settings",
     match: "/app/settings",
@@ -84,16 +92,57 @@ export const SETTINGS_TABS: Array<{
   label: string;
   managerOnly: boolean;
 }> = [
-  { href: "/app/settings/organization", label: "Organization", managerOnly: true },
-  { href: "/app/settings/business-profile", label: "Business profile", managerOnly: true },
-  { href: "/app/settings/members", label: "Members", managerOnly: true },
-  { href: "/app/settings/scoring", label: "Scoring", managerOnly: true },
-  { href: "/app/settings/follow-up", label: "Follow-up", managerOnly: true },
-  { href: "/app/settings/integrations", label: "Integrations", managerOnly: true },
-  { href: "/app/settings/data", label: "Data", managerOnly: true },
+  { href: "/app/settings/profile", label: "You", managerOnly: false },
   { href: "/app/settings/notifications", label: "Notifications", managerOnly: false },
-  { href: "/app/settings/profile", label: "Profile", managerOnly: false },
+  { href: "/app/settings/organization", label: "Workspace", managerOnly: true },
+  { href: "/app/settings/members", label: "People", managerOnly: true },
+  { href: "/app/settings/business-profile", label: "Business", managerOnly: true },
+  { href: "/app/settings/advanced", label: "Advanced", managerOnly: true },
 ];
+
+export const ADVANCED_SETTINGS_PAGES: Array<{
+  href: string;
+  label: string;
+  description: string;
+}> = [
+  {
+    href: "/app/settings/scoring",
+    label: "Scoring",
+    description: "Ready threshold, speed-to-lead window, and how application answers become a score.",
+  },
+  {
+    href: "/app/settings/follow-up",
+    label: "Follow-up",
+    description: "Voice examples, quiet hours, and which situations Vistrial drafts for.",
+  },
+  {
+    href: "/app/settings/integrations",
+    label: "Integrations",
+    description: "GoHighLevel connection, field maps, and whether inbound is actually landing.",
+  },
+  {
+    href: "/app/settings/data",
+    label: "Data",
+    description: "Export this workspace. Deletion is a DA operator action.",
+  },
+];
+
+export const ADVANCED_SETTINGS_PREFIXES = ADVANCED_SETTINGS_PAGES.map((page) => page.href);
+
+export function settingsTabActiveHref(pathname: string): string {
+  if (
+    pathname === "/app/settings/advanced" ||
+    ADVANCED_SETTINGS_PREFIXES.some(
+      (prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`)
+    )
+  ) {
+    return "/app/settings/advanced";
+  }
+  const match = SETTINGS_TABS.find(
+    (tab) => pathname === tab.href || pathname.startsWith(`${tab.href}/`)
+  );
+  return match?.href ?? pathname;
+}
 
 export function firstSettingsPath(role: OrgRole, isPlatformAdmin = false): string {
   return canManageOrgSettings(role, isPlatformAdmin)

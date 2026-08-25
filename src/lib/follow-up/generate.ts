@@ -117,6 +117,7 @@ async function recordEvent(
   db: GhlDb,
   args: {
     orgId: string;
+    leadId?: string | null;
     draftId: string | null;
     sequenceRunId: string | null;
     kind: Enums<"follow_up_event_kind">;
@@ -126,6 +127,7 @@ async function recordEvent(
 ) {
   await db.from("follow_up_events").insert({
     org_id: args.orgId,
+    lead_id: args.leadId ?? null,
     draft_id: args.draftId,
     sequence_run_id: args.sequenceRunId,
     kind: args.kind,
@@ -136,11 +138,12 @@ async function recordEvent(
 
 async function recordEnqueueFailed(
   db: GhlDb,
-  args: { orgId: string; callId: string },
+  args: { orgId: string; callId: string; leadId?: string },
   reason: string
 ) {
   const { error } = await db.from("follow_up_events").insert({
     org_id: args.orgId,
+    lead_id: args.leadId ?? null,
     draft_id: null,
     sequence_run_id: null,
     kind: "enqueue_failed",
@@ -633,6 +636,7 @@ async function generateDraft(
     });
     await recordEvent(db, {
       orgId: job.org_id,
+      leadId: job.lead_id,
       draftId: job.draft_id,
       sequenceRunId: job.sequence_run_id,
       kind: "quality_failed",
@@ -692,6 +696,7 @@ async function generateDraft(
 
   await recordEvent(db, {
     orgId: job.org_id,
+    leadId: job.lead_id,
     draftId,
     sequenceRunId: job.sequence_run_id,
     kind: job.operator_instruction ? "regenerated" : "generated",

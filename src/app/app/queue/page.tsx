@@ -2,6 +2,7 @@ import { PageFrame } from "@/components/app/page-frame";
 import { QueueScreen } from "@/app/app/queue/queue-screen";
 import { canManageOrgSettings } from "@/lib/auth/permissions";
 import { getAuthContext } from "@/lib/auth/session";
+import { loadRecentActivity } from "@/lib/activity/load";
 import { loadVoiceProfile } from "@/lib/follow-up/load";
 import { parseQueueFilters, queueFiltersHref } from "@/lib/queue/filters";
 import { loadOrgQueue } from "@/lib/queue/load";
@@ -20,7 +21,11 @@ export default async function QueuePage({
     role: ctx.role,
     isPlatformAdmin: ctx.isPlatformAdmin,
   });
-  const [payload, voice] = await Promise.all([loadOrgQueue(filters), loadVoiceProfile(ctx.org.id)]);
+  const [payload, voice, recentActivity] = await Promise.all([
+    loadOrgQueue(filters),
+    loadVoiceProfile(ctx.org.id),
+    canManageOrgSettings(ctx.role, ctx.isPlatformAdmin) ? loadRecentActivity() : Promise.resolve(null),
+  ]);
 
   return (
     <PageFrame
@@ -33,6 +38,8 @@ export default async function QueuePage({
         filters={filters}
         canOpenIntegrations={canManageOrgSettings(ctx.role, ctx.isPlatformAdmin)}
         voiceExampleCount={voice.examples.length}
+        recentActivity={recentActivity?.events ?? []}
+        canViewActivity={canManageOrgSettings(ctx.role, ctx.isPlatformAdmin)}
       />
     </PageFrame>
   );

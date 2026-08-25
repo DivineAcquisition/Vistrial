@@ -8,7 +8,7 @@ import {
   isLeadId,
   parseCaseListFilters,
 } from "@/lib/cases/filters";
-import { caseListEmptyKind } from "@/lib/cases/parse";
+import { caseListEmptyKind, parseCaseTimelinePage } from "@/lib/cases/parse";
 import type { CaseListPayload, CaseListRow } from "@/lib/cases/types";
 
 const emptyPayload = (over: Partial<CaseListPayload> = {}): CaseListPayload => ({
@@ -143,6 +143,43 @@ describe("case file ids", () => {
   it("accepts uuids and rejects other strings", () => {
     expect(isLeadId("bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbb02")).toBe(true);
     expect(isLeadId("not-a-lead")).toBe(false);
+  });
+});
+
+describe("case timeline activity merge", () => {
+  it("keeps derived activity in the same sequence as touches and calls", () => {
+    const page = parseCaseTimelinePage({
+      entries: [
+        {
+          kind: "activity",
+          id: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa1",
+          at: "2026-08-25T12:00:00.000Z",
+          category: "system",
+          activityKind: "lead_scored",
+          headline: "Scored 82",
+          actorName: "Vistrial scoring",
+          result: "succeeded",
+          detail: { total: 82, reasoning: "Strong timeline." },
+        },
+        {
+          kind: "touch",
+          id: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa2",
+          at: "2026-08-25T11:00:00.000Z",
+          touchType: "human",
+          channel: "sms",
+          direction: "outbound",
+          outcome: "connected",
+          outboundBody: "See you Thursday.",
+        },
+      ],
+      hasMore: false,
+    });
+    expect(page.entries[0]).toMatchObject({
+      kind: "activity",
+      headline: "Scored 82",
+      activityKind: "lead_scored",
+    });
+    expect(page.entries[1]).toMatchObject({ kind: "touch", direction: "outbound" });
   });
 });
 

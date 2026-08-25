@@ -478,9 +478,14 @@ export async function StagePayoff({
             Next: {STAGE_META[after].title.toLowerCase()}
           </Link>
         ) : (
-          <Link href="/app/settings/business-profile" className={`${btnPrimary} ${btnSizeMd}`}>
-            Review the whole profile
-          </Link>
+          <>
+            <Link href="/app/onboarding/report" className={`${btnPrimary} ${btnSizeMd}`}>
+              Open the Leak Report
+            </Link>
+            <Link href="/app/settings/business-profile" className={`${btnSecondary} ${btnSizeMd}`}>
+              Turn Vistrial on
+            </Link>
+          </>
         )}
         <Link href={`/app/onboarding/${stage}`} className={`${btnSecondary} ${btnSizeMd}`}>
           Change my answers

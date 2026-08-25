@@ -6,5 +6,6 @@ import { firstIncompleteStage } from "@/lib/profile/stages";
 export default async function OnboardingIndexPage() {
   const ctx = await requireProfileAccess();
   const state = await loadBusinessProfileState(ctx.org.id);
-  redirect(`/app/onboarding/${firstIncompleteStage(state.stages)}`);
+  const incomplete = firstIncompleteStage(state.stages);
+  redirect(incomplete ? `/app/onboarding/${incomplete}` : "/app/onboarding/report");
 }

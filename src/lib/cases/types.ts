@@ -189,7 +189,27 @@ export type CaseTimelineStatus = {
   supersedesManual: boolean;
 };
 
-export type CaseTimelineEntry = CaseTimelineTouch | CaseTimelineCall | CaseTimelineStatus;
+export type CaseTimelineActivity = {
+  kind: "activity";
+  id: string;
+  at: string;
+  category: string;
+  activityKind: string;
+  headline: string;
+  actorName: string | null;
+  result: string;
+  resultReason: string | null;
+  retryable: boolean;
+  retryKind: string | null;
+  retryId: string | null;
+  detail: Record<string, unknown>;
+};
+
+export type CaseTimelineEntry =
+  | CaseTimelineTouch
+  | CaseTimelineCall
+  | CaseTimelineStatus
+  | CaseTimelineActivity;
 
 export type CaseTimelinePage = {
   entries: CaseTimelineEntry[];

@@ -38,6 +38,7 @@ export function OrganizationForm({
   transcriptRetentionDays,
   callCoachingEmbargoHours,
   operatorAgentBatchCap,
+  showOperatorAgentBatchCap = false,
 }: {
   name: string;
   timezone: string;
@@ -50,6 +51,7 @@ export function OrganizationForm({
   transcriptRetentionDays: number;
   callCoachingEmbargoHours: number;
   operatorAgentBatchCap: number;
+  showOperatorAgentBatchCap?: boolean;
 }) {
   const [state, action, pending] = useActionState(updateOrganization, initial);
   const timezoneOptions = isOrgTimezone(timezone)
@@ -176,21 +178,25 @@ export function OrganizationForm({
           />
         </Field>
 
-        <Field
-          label="Operator-agent batch cap"
-          name="operator_agent_batch_cap"
-          help="A confirmed agent write may touch this many records. Above it, the agent must narrow or split. Nothing is truncated. Default 10. Range 1–40."
-        >
-          <Input
+        {showOperatorAgentBatchCap ? (
+          <Field
+            label="Operator-agent batch cap"
             name="operator_agent_batch_cap"
-            id="operator_agent_batch_cap"
-            type="number"
-            min={1}
-            max={40}
-            required
-            defaultValue={operatorAgentBatchCap}
-          />
-        </Field>
+            help="A confirmed agent write may touch this many records. Above it, the agent must narrow or split. Nothing is truncated. Default 10. Range 1–40."
+          >
+            <Input
+              name="operator_agent_batch_cap"
+              id="operator_agent_batch_cap"
+              type="number"
+              min={1}
+              max={40}
+              required
+              defaultValue={operatorAgentBatchCap}
+            />
+          </Field>
+        ) : (
+          <input type="hidden" name="operator_agent_batch_cap" value={operatorAgentBatchCap} />
+        )}
 
         <div>
           <p className={labelClass}>CRM location id</p>
@@ -218,7 +224,7 @@ export function FollowUpOnboardingNote() {
       <h2 className={cardTitle}>Voice examples</h2>
       <p className="mt-1.5 text-sm leading-relaxed text-silver">
         Follow-up drafts copy messages this business has actually sent. Paste two to five real
-        examples on the Follow-up tab as part of setup — they matter more than formality sliders.
+        examples under Advanced → Follow-up — they matter more than formality sliders.
       </p>
       <div className="mt-5">
         <Button asChild variant="secondary" size="sm">

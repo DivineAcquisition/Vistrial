@@ -4,7 +4,7 @@ import { requireOrgSettingsManager } from "@/lib/auth/gates";
 import { createClient } from "@/lib/supabase/server";
 
 export default async function OrganizationSettingsPage() {
-  const { org } = await requireOrgSettingsManager();
+  const { org, isPlatformAdmin } = await requireOrgSettingsManager();
   const supabase = await createClient();
   const { data } = await supabase
     .from("organizations")
@@ -30,6 +30,7 @@ export default async function OrganizationSettingsPage() {
           transcriptRetentionDays={data?.transcript_retention_days ?? 365}
           callCoachingEmbargoHours={data?.call_coaching_embargo_hours ?? 48}
           operatorAgentBatchCap={data?.operator_agent_batch_cap ?? 10}
+          showOperatorAgentBatchCap={isPlatformAdmin}
         />
         <FollowUpOnboardingNote />
       </div>

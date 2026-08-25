@@ -125,6 +125,7 @@ export async function resolveLeadObjection(input: {
   if (!note) return actionError("Add a note so the next closer knows what resolved it.");
   if (note.length > 280) return actionError("Keep the note under 280 characters.");
 
+  const ctx = await getAuthContext();
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("objections")
@@ -132,6 +133,7 @@ export async function resolveLeadObjection(input: {
       resolved: true,
       resolved_at: new Date().toISOString(),
       resolved_note: note,
+      resolved_by_member_id: ctx.member.id,
     })
     .eq("org_id", scoped.orgId)
     .eq("lead_id", scoped.leadId)

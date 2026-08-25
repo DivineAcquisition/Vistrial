@@ -338,6 +338,32 @@ function parseTimelineEntry(value: unknown): CaseTimelineEntry | null {
     };
   }
 
+  if (kind === "activity") {
+    const headline = asString(row.headline);
+    const activityKind = asString(row.activityKind);
+    const result = asString(row.result);
+    if (!headline || !activityKind || !result) return null;
+    const detail =
+      row.detail && typeof row.detail === "object" && !Array.isArray(row.detail)
+        ? (row.detail as Record<string, unknown>)
+        : {};
+    return {
+      kind: "activity",
+      id,
+      at,
+      category: asString(row.category) ?? "system",
+      activityKind,
+      headline,
+      actorName: asString(row.actorName),
+      result,
+      resultReason: asString(row.resultReason),
+      retryable: asBoolean(row.retryable),
+      retryKind: asString(row.retryKind),
+      retryId: asString(row.retryId),
+      detail,
+    };
+  }
+
   return null;
 }
 

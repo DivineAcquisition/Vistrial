@@ -23,9 +23,9 @@ describe("onboarding stages", () => {
     expect(firstIncompleteStage(progress)).toBe("funnel");
   });
 
-  it("treats a fully answered profile as sitting on the last stage", () => {
+  it("treats a fully answered profile as finished", () => {
     const progress = PROFILE_STAGES.map((stage) => ({ stage, completedAt: "2026-08-01T00:00:00Z" }));
-    expect(firstIncompleteStage(progress)).toBe("goals");
+    expect(firstIncompleteStage(progress)).toBeNull();
   });
 
   it("runs out of stages at the end rather than wrapping", () => {

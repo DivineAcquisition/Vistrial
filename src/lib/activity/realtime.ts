@@ -1,0 +1,19 @@
+/** Same postgres_changes mechanism as Queue. Never a second realtime path. */
+export const ACTIVITY_REALTIME_TABLES = [
+  "leads",
+  "touches",
+  "next_actions",
+  "follow_up_drafts",
+  "ghl_dispatches",
+  "readiness_scores",
+  "lead_status_changes",
+  "lead_assignment_changes",
+  "lead_type_changes",
+  "extraction_jobs",
+  "operator_runs",
+  "follow_up_sequence_runs",
+  "follow_up_jobs",
+  "revenue_log",
+  "settings_activity",
+  "ghost_detector_runs",
+] as const;

@@ -11,6 +11,9 @@ import {
   resolveLeadObjection,
 } from "@/app/app/cases/actions";
 import { haltLeadSequence } from "@/app/app/follow-ups/actions";
+import { ActivityEventLine } from "@/app/app/activity/activity-event";
+import type { ActivityEvent } from "@/lib/activity/types";
+import { ACTIVITY_CATEGORIES } from "@/lib/activity/types";
 import {
   FOLLOW_UP_BRANCH_LABELS,
   FOLLOW_UP_CHANNEL_LABELS,
@@ -486,23 +489,23 @@ export function CaseFileScreen({ initial }: { initial: CaseFilePayload }) {
       </section>
 
       <section>
-        <SectionHeader title="Timeline" hint="Touches and calls in one stream. Notes are yours — not the conversation." />
+        <SectionHeader title="Timeline" hint="Everything that happened to this person, in sequence. Notes are yours — not the conversation." />
         <Panel className="p-6">
           {file.timeline.entries.length === 0 ? (
-            <p className="text-sm text-dim">No touches or calls yet.</p>
+            <p className="text-sm text-dim">No activity on this lead yet.</p>
           ) : (
             <ol className="space-y-3">
               {file.timeline.entries.map((entry, index) => (
                 <li key={`${entry.kind}-${entry.id}`}>
-                  {index < 3 ? (
-                    <TimelineEntry entry={entry} now={now} expanded />
+                  {index < 3 || (entry.kind === "activity" && entry.result === "failed") ? (
+                    <TimelineEntry entry={entry} now={now} expanded lead={lead} />
                   ) : (
                     <details>
                       <summary className="cursor-pointer text-sm text-silver">
                         {timelineSummary(entry, now)}
                       </summary>
                       <div className="mt-2">
-                        <TimelineEntry entry={entry} now={now} expanded />
+                        <TimelineEntry entry={entry} now={now} expanded lead={lead} />
                       </div>
                     </details>
                   )}
@@ -754,6 +757,9 @@ function timelineSummary(entry: CaseTimelineEntry, now: string): string {
   if (entry.kind === "call") {
     return `${CALL_TYPE_LABELS[entry.callType]} call · ${when}`;
   }
+  if (entry.kind === "activity") {
+    return `${entry.headline} · ${when}`;
+  }
   return `Status ${LEAD_STATUS_LABELS[entry.fromStatus]} → ${LEAD_STATUS_LABELS[entry.toStatus]} · ${when}`;
 }
 
@@ -761,11 +767,47 @@ function TimelineEntry({
   entry,
   now,
   expanded,
+  lead,
 }: {
   entry: CaseTimelineEntry;
   now: string;
   expanded: boolean;
+  lead: { id: string; orgId: string; name: string };
 }) {
+  if (entry.kind === "activity") {
+    const category = (ACTIVITY_CATEGORIES as readonly string[]).includes(entry.category)
+      ? (entry.category as ActivityEvent["category"])
+      : "system";
+    const result =
+      entry.result === "failed" || entry.result === "running" || entry.result === "succeeded"
+        ? entry.result
+        : "succeeded";
+    const event: ActivityEvent = {
+      id: entry.id,
+      orgId: lead.orgId,
+      orgName: null,
+      occurredAt: entry.at,
+      category,
+      kind: entry.activityKind,
+      headline: entry.headline,
+      actorLabel: entry.actorName || "Workspace",
+      actorKind: "scoring",
+      actorUserId: null,
+      integration: null,
+      leadId: lead.id,
+      leadName: lead.name,
+      href: `/app/cases/${lead.id}`,
+      result,
+      resultReason: entry.resultReason,
+      retryable: entry.retryable && entry.retryKind === "dispatch" && Boolean(entry.retryId),
+      retryKind: entry.retryKind === "dispatch" ? "dispatch" : null,
+      retryId: entry.retryId,
+      isSyncNoise: false,
+      detail: entry.detail,
+    };
+    return <ActivityEventLine event={event} now={now} defaultOpen={expanded || result === "failed"} />;
+  }
+
   return (
     <div className={expanded ? "rounded-xl border border-white/10 bg-white/[0.03] px-4 py-3" : ""}>
       {entry.kind === "touch" ? (

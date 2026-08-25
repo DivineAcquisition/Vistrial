@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
+  Activity,
   BarChart3,
   ClipboardList,
   FolderOpen,
@@ -30,6 +31,7 @@ const ICONS: Record<NavIcon, LucideIcon> = {
   calls: Phone,
   reporting: BarChart3,
   settings: Settings2,
+  activity: Activity,
 };
 
 export function AppNavLinks({

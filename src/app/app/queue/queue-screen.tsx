@@ -3,6 +3,8 @@
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
+import { refreshRecentActivity } from "@/app/app/activity/actions";
+import { ActivityWhen } from "@/app/app/activity/activity-event";
 import { EmptyState } from "@/components/ui/empty-state";
 import {
   Table,
@@ -42,6 +44,10 @@ import {
 } from "@/lib/follow-up/labels";
 import { createClient } from "@/lib/supabase/client";
 import { btnPrimary, btnSecondary, btnSizeLg, btnSizeSm, errorClass, sectionLabel } from "@/lib/ui";
+import type { ActivityEvent } from "@/lib/activity/types";
+import { Panel } from "@/components/ui/panel";
+import { StatusBadge } from "@/components/ui/status-badge";
+import { SectionHeader } from "@/components/ui/section-header";
 
 /**
  * Ten columns is right at a desk and wrong on a phone. The context columns fold
@@ -87,11 +93,15 @@ export function QueueScreen({
   filters,
   canOpenIntegrations,
   voiceExampleCount,
+  recentActivity = [],
+  canViewActivity = false,
 }: {
   initial: QueuePayload;
   filters: QueueFilterState;
   canOpenIntegrations: boolean;
   voiceExampleCount: number;
+  recentActivity?: ActivityEvent[];
+  canViewActivity?: boolean;
 }) {
   const org = useOrg();
   const [alarm, setAlarm] = useState(initial.alarm);
@@ -113,6 +123,7 @@ export function QueueScreen({
   const [pendingDrafts, setPendingDrafts] = useState(initial.pendingDrafts);
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  const [activity, setActivity] = useState(recentActivity);
 
   const seenIds = useRef(new Set([...initial.alarm, ...initial.queue].map((row) => row.id)));
   const pendingLive = useRef<QueuePayload | null>(null);
@@ -212,6 +223,9 @@ export function QueueScreen({
         void refreshQueue(filters, { limit: Math.max(QUEUE_PAGE_SIZE, loadedCount.current) }).then(
           (payload) => applyLive(payload, alarmRef.current)
         );
+        if (canViewActivity) {
+          void refreshRecentActivity().then((page) => setActivity(page.events));
+        }
       }, 400);
     };
 
@@ -243,7 +257,7 @@ export function QueueScreen({
       if (debounce) window.clearTimeout(debounce);
       void supabase.removeChannel(channel);
     };
-  }, [applyLive, filters, org.org.id]);
+  }, [applyLive, canViewActivity, filters, org.org.id]);
 
   function flushPendingLive() {
     if (interactingRef.current || busyRef.current || !pendingLive.current) return;
@@ -454,6 +468,48 @@ export function QueueScreen({
       }}
     >
       {actionError ? <p className={`${errorClass} mb-4`}>{actionError}</p> : null}
+
+      {canViewActivity && activity.length > 0 ? (
+        <section className="mb-8">
+          <SectionHeader
+            title="Recent activity"
+            hint="The system is working. Open Activity for the full stream."
+          />
+          <Panel className="p-4">
+            <ol className="space-y-2">
+              {activity.map((event) => (
+                <li
+                  key={event.id}
+                  className={
+                    event.result === "failed"
+                      ? "rounded-lg border border-flag-critical/35 px-3 py-2"
+                      : "px-1 py-1"
+                  }
+                >
+                  <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+                    {event.result === "failed" ? (
+                      <StatusBadge label="failed" tone="critical" />
+                    ) : null}
+                    <Link href={event.href} className="min-w-0 flex-1 text-sm text-white hover:underline">
+                      {event.headline}
+                    </Link>
+                    <ActivityWhen at={event.occurredAt} now={now} />
+                  </div>
+                  <p className="text-xs text-dim">
+                    {event.actorLabel}
+                    {event.leadName ? ` · ${event.leadName}` : null}
+                  </p>
+                </li>
+              ))}
+            </ol>
+            <div className="mt-3">
+              <Link href="/app/activity" className={`${btnSecondary} ${btnSizeSm}`}>
+                Open activity
+              </Link>
+            </div>
+          </Panel>
+        </section>
+      ) : null}
 
       {connectionBanner === "broken" ? (
         <div className="mb-8">

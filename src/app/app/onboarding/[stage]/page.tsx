@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 
 import { ConnectStage } from "@/app/app/onboarding/connect-stage";
+import { FinishLaterButton } from "@/app/app/onboarding/finish-later";
 import { StagePayoff } from "@/app/app/onboarding/payoffs";
 import { StageForm } from "@/app/app/onboarding/stage-forms";
 import { StageRail } from "@/app/app/onboarding/stage-rail";
@@ -15,7 +16,7 @@ import {
   loadProfileDefaults,
   requireProfileAccess,
 } from "@/lib/profile/load";
-import { STAGE_META, isProfileStage } from "@/lib/profile/stages";
+import { PROFILE_STAGES, STAGE_META, isProfileStage } from "@/lib/profile/stages";
 import { createClient } from "@/lib/supabase/server";
 
 const CONNECT_ERRORS: Record<string, string> = {
@@ -48,6 +49,8 @@ export default async function OnboardingStagePage({
   ]);
 
   const meta = STAGE_META[stage];
+  const stageIndex = PROFILE_STAGES.indexOf(stage) + 1;
+  const stageCount = PROFILE_STAGES.length;
 
   let body: React.ReactNode;
 
@@ -100,8 +103,9 @@ export default async function OnboardingStagePage({
       description={
         showPayoff
           ? meta.payoff
-          : "Everything is pre-filled. Correcting is the job; you should not have to compose anything."
+          : `Stage ${stageIndex} of ${stageCount}. ${meta.why}`
       }
+      secondaryActions={showPayoff ? undefined : <FinishLaterButton />}
     >
       <StageRail current={stage} stages={state.stages} />
       {body}

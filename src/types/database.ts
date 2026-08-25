@@ -1033,6 +1033,7 @@ export type Database = {
           draft_id: string | null;
           id: string;
           kind: Database["public"]["Enums"]["follow_up_event_kind"];
+          lead_id: string | null;
           org_id: string;
           payload: Json;
           sequence_run_id: string | null;
@@ -1043,6 +1044,7 @@ export type Database = {
           draft_id?: string | null;
           id?: string;
           kind: Database["public"]["Enums"]["follow_up_event_kind"];
+          lead_id?: string | null;
           org_id: string;
           payload?: Json;
           sequence_run_id?: string | null;
@@ -1053,6 +1055,7 @@ export type Database = {
           draft_id?: string | null;
           id?: string;
           kind?: Database["public"]["Enums"]["follow_up_event_kind"];
+          lead_id?: string | null;
           org_id?: string;
           payload?: Json;
           sequence_run_id?: string | null;
@@ -1722,6 +1725,108 @@ export type Database = {
           },
         ];
       };
+      lead_assignment_changes: {
+        Row: {
+          actor_member_id: string | null;
+          created_at: string;
+          field: string;
+          from_member_id: string | null;
+          id: string;
+          lead_id: string;
+          org_id: string;
+          to_member_id: string | null;
+        };
+        Insert: {
+          actor_member_id?: string | null;
+          created_at?: string;
+          field: string;
+          from_member_id?: string | null;
+          id?: string;
+          lead_id: string;
+          org_id: string;
+          to_member_id?: string | null;
+        };
+        Update: {
+          actor_member_id?: string | null;
+          created_at?: string;
+          field?: string;
+          from_member_id?: string | null;
+          id?: string;
+          lead_id?: string;
+          org_id?: string;
+          to_member_id?: string | null;
+        };
+        Relationships: [];
+      };
+      lead_type_changes: {
+        Row: {
+          created_at: string;
+          from_type: Database["public"]["Enums"]["lead_type"] | null;
+          id: string;
+          lead_id: string;
+          org_id: string;
+          to_type: Database["public"]["Enums"]["lead_type"] | null;
+        };
+        Insert: {
+          created_at?: string;
+          from_type?: Database["public"]["Enums"]["lead_type"] | null;
+          id?: string;
+          lead_id: string;
+          org_id: string;
+          to_type?: Database["public"]["Enums"]["lead_type"] | null;
+        };
+        Update: {
+          created_at?: string;
+          from_type?: Database["public"]["Enums"]["lead_type"] | null;
+          id?: string;
+          lead_id?: string;
+          org_id?: string;
+          to_type?: Database["public"]["Enums"]["lead_type"] | null;
+        };
+        Relationships: [];
+      };
+      settings_activity: {
+        Row: {
+          action: string;
+          actor_kind: string;
+          actor_label: string;
+          actor_member_id: string | null;
+          actor_user_id: string | null;
+          created_at: string;
+          from_value: Json | null;
+          id: string;
+          org_id: string;
+          section: string;
+          to_value: Json | null;
+        };
+        Insert: {
+          action: string;
+          actor_kind: string;
+          actor_label: string;
+          actor_member_id?: string | null;
+          actor_user_id?: string | null;
+          created_at?: string;
+          from_value?: Json | null;
+          id?: string;
+          org_id: string;
+          section: string;
+          to_value?: Json | null;
+        };
+        Update: {
+          action?: string;
+          actor_kind?: string;
+          actor_label?: string;
+          actor_member_id?: string | null;
+          actor_user_id?: string | null;
+          created_at?: string;
+          from_value?: Json | null;
+          id?: string;
+          org_id?: string;
+          section?: string;
+          to_value?: Json | null;
+        };
+        Relationships: [];
+      };
       objections: {
         Row: {
           call_id: string | null;
@@ -1731,6 +1836,7 @@ export type Database = {
           org_id: string;
           resolved: boolean;
           resolved_at: string | null;
+          resolved_by_member_id: string | null;
           resolved_note: string | null;
           type: Database["public"]["Enums"]["objection_type"];
           verbatim: string;
@@ -1743,6 +1849,7 @@ export type Database = {
           org_id: string;
           resolved?: boolean;
           resolved_at?: string | null;
+          resolved_by_member_id?: string | null;
           resolved_note?: string | null;
           type: Database["public"]["Enums"]["objection_type"];
           verbatim: string;
@@ -1755,6 +1862,7 @@ export type Database = {
           org_id?: string;
           resolved?: boolean;
           resolved_at?: string | null;
+          resolved_by_member_id?: string | null;
           resolved_note?: string | null;
           type?: Database["public"]["Enums"]["objection_type"];
           verbatim?: string;
@@ -4348,6 +4456,38 @@ export type Database = {
           p_lead_id: string;
           p_cursor?: Json | null;
           p_limit?: number | null;
+        };
+        Returns: Json;
+      };
+      load_org_activity: {
+        Args: {
+          p_org_id: string;
+          p_lead_id?: string | null;
+          p_actor_user_id?: string | null;
+          p_category?: string | null;
+          p_integration?: string | null;
+          p_failures_only?: boolean | null;
+          p_include_sync_noise?: boolean | null;
+          p_include_routine?: boolean | null;
+          p_q?: string | null;
+          p_from?: string | null;
+          p_to?: string | null;
+          p_limit?: number | null;
+          p_cursor?: Json | null;
+        };
+        Returns: Json;
+      };
+      load_ops_activity: {
+        Args: {
+          p_org_id?: string | null;
+          p_failures_only?: boolean | null;
+          p_include_sync_noise?: boolean | null;
+          p_include_routine?: boolean | null;
+          p_q?: string | null;
+          p_from?: string | null;
+          p_to?: string | null;
+          p_limit?: number | null;
+          p_cursor?: Json | null;
         };
         Returns: Json;
       };

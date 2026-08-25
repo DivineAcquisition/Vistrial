@@ -469,13 +469,16 @@ export function QueueScreen({
     >
       {actionError ? <p className={`${errorClass} mb-4`}>{actionError}</p> : null}
 
-      {canViewActivity && activity.length > 0 ? (
+      {canViewActivity ? (
         <section className="mb-8">
           <SectionHeader
             title="Recent activity"
             hint="The system is working. Open Activity for the full stream."
           />
           <Panel className="p-4">
+            {activity.length === 0 ? (
+              <p className="text-sm text-dim">Nothing yet. When Vistrial works, it shows here.</p>
+            ) : (
             <ol className="space-y-2">
               {activity.map((event) => (
                 <li
@@ -502,6 +505,7 @@ export function QueueScreen({
                 </li>
               ))}
             </ol>
+            )}
             <div className="mt-3">
               <Link href="/app/activity" className={`${btnSecondary} ${btnSizeSm}`}>
                 Open activity
@@ -538,7 +542,7 @@ export function QueueScreen({
           <EmptyState
             kind="unconfigured"
             title="Add real messages this business has sent"
-            detail="Follow-up drafts copy those examples more than any slider. Paste two to five on the Follow-up settings tab before you start approving."
+            detail="Follow-up drafts copy those examples more than any slider. Paste two to five under Advanced → Follow-up before you start approving."
             action={
               <Link href="/app/settings/follow-up" className={`${btnPrimary} ${btnSizeSm}`}>
                 Open follow-up settings

@@ -19,6 +19,7 @@ import {
 import { loadLatestLeakReport, requireProfileAccess } from "@/lib/profile/load";
 import { asArray, asRecord, num, parseBenchmark, str } from "@/lib/profile/parse";
 import {
+  btnPrimary,
   btnSecondary,
   btnSizeMd,
   cardTitle,
@@ -102,6 +103,11 @@ export default async function LeakReportPage() {
       title="Leak Report"
       description="Where your leads are going, from your own history."
       actions={
+        <Link href="/app/settings/business-profile" className={`${btnPrimary} ${btnSizeMd}`}>
+          Turn Vistrial on
+        </Link>
+      }
+      secondaryActions={
         <div className="flex flex-wrap items-center gap-3">
           <RegenerateLeakReport label="Regenerate" />
           <form action="/app/onboarding/report/pdf" method="post">

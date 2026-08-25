@@ -45,7 +45,7 @@ INSERT INTO public.webhook_events (
   'ContactUpdate',
   '{"token":"sk-live-should-never-appear"}'::jsonb,
   'processed',
-  now() - interval '4 minutes',
+  now(),
   'ghl_loc_dev_northstar:ghl_ct_maya',
   NULL
 ),

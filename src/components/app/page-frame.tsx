@@ -11,6 +11,7 @@ import type { Tone } from "@/components/ui/tone";
 export function PageFrame({
   title,
   description,
+  eyebrow,
   actions,
   secondaryActions,
   breadcrumbs,
@@ -21,6 +22,7 @@ export function PageFrame({
 }: {
   title: string;
   description?: string;
+  eyebrow?: string;
   actions?: ReactNode;
   secondaryActions?: ReactNode;
   breadcrumbs?: Crumb[];
@@ -34,6 +36,7 @@ export function PageFrame({
       <PageHeader
         title={title}
         description={description}
+        eyebrow={eyebrow}
         breadcrumbs={breadcrumbs}
         status={status}
         statusTone={statusTone}

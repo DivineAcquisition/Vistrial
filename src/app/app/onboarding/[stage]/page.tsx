@@ -99,12 +99,9 @@ export default async function OnboardingStagePage({
 
   return (
     <PageFrame
-      title={meta.title}
-      description={
-        showPayoff
-          ? meta.payoff
-          : `Stage ${stageIndex} of ${stageCount}. ${meta.why}`
-      }
+      eyebrow={showPayoff ? undefined : `Stage ${stageIndex} of ${stageCount}`}
+      title={showPayoff ? meta.payoff : meta.title}
+      description={showPayoff ? undefined : meta.why}
       secondaryActions={showPayoff ? undefined : <FinishLaterButton />}
     >
       <StageRail current={stage} stages={state.stages} />

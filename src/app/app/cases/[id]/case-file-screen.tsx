@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import {
   changeLeadStatus,
@@ -14,6 +14,8 @@ import { haltLeadSequence } from "@/app/app/follow-ups/actions";
 import { ActivityEventLine } from "@/app/app/activity/activity-event";
 import type { ActivityEvent } from "@/lib/activity/types";
 import { ACTIVITY_CATEGORIES } from "@/lib/activity/types";
+import { ACTIVITY_REALTIME_TABLES } from "@/lib/activity/realtime";
+import { createClient } from "@/lib/supabase/client";
 import {
   FOLLOW_UP_BRANCH_LABELS,
   FOLLOW_UP_CHANNEL_LABELS,
@@ -88,6 +90,10 @@ export function CaseFileScreen({ initial }: { initial: CaseFilePayload }) {
   const [busy, setBusy] = useState(false);
   const [loadingOlder, setLoadingOlder] = useState(false);
   const lead = file.lead;
+  const panelRef = useRef(panel);
+  const busyRef = useRef(busy);
+  panelRef.current = panel;
+  busyRef.current = busy;
   const canOverride = canOverrideLead({
     role: org.role,
     memberId: org.memberId,
@@ -100,6 +106,35 @@ export function CaseFileScreen({ initial }: { initial: CaseFilePayload }) {
     const next = await refreshCaseFile(lead.id);
     if (next) setFile(next);
   }
+
+  useEffect(() => {
+    const supabase = createClient();
+    let debounce: number | null = null;
+    const pull = () => {
+      if (panelRef.current || busyRef.current) return;
+      if (debounce) window.clearTimeout(debounce);
+      debounce = window.setTimeout(() => {
+        void refreshCaseFile(lead.id).then((next) => {
+          if (next) setFile(next);
+        });
+      }, 400);
+    };
+
+    let channel = supabase.channel(`case-activity:${lead.id}`);
+    for (const table of ACTIVITY_REALTIME_TABLES) {
+      channel = channel.on(
+        "postgres_changes",
+        { event: "*", schema: "public", table, filter: `org_id=eq.${org.org.id}` },
+        pull
+      );
+    }
+    channel.subscribe();
+
+    return () => {
+      if (debounce) window.clearTimeout(debounce);
+      void supabase.removeChannel(channel);
+    };
+  }, [lead.id, org.org.id]);
 
   async function run(action: () => Promise<{ ok: true } | { ok: false; error: string }>) {
     setBusy(true);

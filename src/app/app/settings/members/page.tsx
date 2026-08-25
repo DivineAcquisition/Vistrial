@@ -52,7 +52,7 @@ export default async function MembersSettingsPage() {
 
   return (
     <PageFrame
-      title="Members"
+      title="People"
       description="Invite setters and closers. Deactivate instead of deleting — touches and calls keep attribution."
     >
       <Panel className="mb-8 p-6">

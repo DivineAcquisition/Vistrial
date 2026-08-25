@@ -14,6 +14,7 @@ import { Progress } from "@/components/ui/progress";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { loadBusinessProfileState, requireProfileAccess } from "@/lib/profile/load";
 import { STAGE_META, PROFILE_STAGES } from "@/lib/profile/stages";
+import { advancedSettingsBreadcrumbs } from "@/lib/navigation";
 import {
   btnPrimary,
   btnSecondary,
@@ -40,6 +41,7 @@ export default async function BusinessProfileSettingsPage() {
     <PageFrame
       title="Business profile"
       description="How this company sells, in structured form. Scoring, follow-up, reporting and the benchmarks all read it."
+      breadcrumbs={advancedSettingsBreadcrumbs("Business", "/app/settings/business-profile")}
       actions={
         <Link href="/app/onboarding" className={`${btnPrimary} ${btnSizeMd}`}>
           {doneStages.size === PROFILE_STAGES.length ? "Review the answers" : "Continue onboarding"}

@@ -16,17 +16,24 @@ import { useOrg } from "@/components/app/org-provider";
 import { initials } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
-export function UserMenu({ collapsed = false }: { collapsed?: boolean }) {
+export function UserMenu({
+  collapsed = false,
+  placement = "sidebar",
+}: {
+  collapsed?: boolean;
+  placement?: "sidebar" | "header";
+}) {
   const { user, role, isPlatformAdmin, org } = useOrg();
   const name = user.displayName || user.email;
   const roleLabel = isPlatformAdmin ? "Super admin" : role;
+  const header = placement === "header";
 
   const trigger = (
     <DropdownMenuTrigger
       aria-label={collapsed ? `Account: ${name}` : undefined}
       className={cn(
-        "flex w-full items-center rounded-xl text-left transition-colors hover:bg-white/[0.05]",
-        collapsed ? "justify-center p-2" : "gap-2.5 px-2 py-2"
+        "flex items-center rounded-xl text-left transition-colors hover:bg-white/[0.05]",
+        header ? "gap-2.5 px-2 py-1.5" : collapsed ? "w-full justify-center p-2" : "w-full gap-2.5 px-2 py-2"
       )}
     >
       <Avatar size="sm">
@@ -51,7 +58,11 @@ export function UserMenu({ collapsed = false }: { collapsed?: boolean }) {
       ) : (
         trigger
       )}
-      <DropdownMenuContent align="start" side="top" className="w-56">
+      <DropdownMenuContent
+        align={header ? "end" : "start"}
+        side={header ? "bottom" : "top"}
+        className="w-56"
+      >
         <DropdownMenuLabel className="font-normal">
           <span className="block truncate text-sm text-white">{name}</span>
           <span className="block truncate text-xs text-dim">{user.email}</span>

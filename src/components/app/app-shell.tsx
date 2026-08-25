@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, type ReactNode, Suspense } from "react";
+import { usePathname } from "next/navigation";
 import { Menu, PanelLeftClose, PanelLeftOpen } from "lucide-react";
 
 import Logo from "@/components/brand/logo";
@@ -68,9 +69,12 @@ export function AppShell({
 }) {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [collapsed, toggleCollapsed] = useSidebarCollapsed();
+  const pathname = usePathname();
+  const wizard = pathname.startsWith("/app/onboarding");
 
   return (
     <div className="flex min-h-screen bg-ink-950 text-white">
+      {wizard ? null : (
       <aside
         className={cn(
           "sticky top-0 hidden h-svh shrink-0 flex-col border-r border-white/[0.07] bg-ink-900 transition-[width] duration-200 ease-out print:hidden md:flex",
@@ -79,9 +83,11 @@ export function AppShell({
       >
         <SidebarBody collapsed={collapsed} />
       </aside>
+      )}
 
       <div className="flex min-w-0 flex-1 flex-col">
         <header className="sticky top-0 z-30 flex h-14 items-center gap-3 border-b border-white/[0.07] bg-ink-950/85 px-4 backdrop-blur-md print:hidden sm:px-6">
+          {wizard ? null : (
           <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
             <SheetTrigger
               className="rounded-xl p-2 text-silver transition-colors hover:bg-white/[0.05] hover:text-white md:hidden"
@@ -98,7 +104,9 @@ export function AppShell({
               </div>
             </SheetContent>
           </Sheet>
+          )}
 
+          {wizard ? null : (
           <Tooltip>
             <TooltipTrigger asChild>
               <Button
@@ -121,31 +129,54 @@ export function AppShell({
               {collapsed ? "Expand sidebar" : "Collapse sidebar"}
             </TooltipContent>
           </Tooltip>
+          )}
 
-          <Logo markOnly className="h-8 w-auto md:hidden" />
+          <Logo markOnly className={cn("h-8 w-auto", wizard ? "" : "md:hidden")} />
+          {wizard ? (
+            <p className="text-sm font-medium tracking-wide text-silver">Setup</p>
+          ) : null}
           <div className="ml-auto flex items-center gap-1">
-            <NotificationInbox />
-            <OperatorCommandBar />
+            {wizard ? (
+              <UserMenu placement="header" />
+            ) : (
+              <>
+                <NotificationInbox />
+                <OperatorCommandBar />
+              </>
+            )}
           </div>
         </header>
 
-        <Suspense fallback={null}>
-          <NotificationRuntime />
-        </Suspense>
-        <OutcomeSyncRuntime />
-        <LastLeadTracker />
-        <BriefPrefetcher />
+        {wizard ? null : (
+          <>
+            <Suspense fallback={null}>
+              <NotificationRuntime />
+            </Suspense>
+            <OutcomeSyncRuntime />
+            <LastLeadTracker />
+            <BriefPrefetcher />
+          </>
+        )}
 
-        <main className="min-w-0 flex-1 overflow-x-hidden px-5 py-8 pb-[calc(5.5rem+env(safe-area-inset-bottom))] sm:px-8 md:pb-8">
-          <div className="mx-auto w-full max-w-[1400px] overflow-x-hidden">
-            <ConnectionStatus />
-            <CoachingDisclosureNotice needed={needsCoachingAck} />
-            <MobileWalkthroughNotice needed={needsMobileOutcomeTraining} />
-            <PushPrompt />
+        <main
+          className={cn(
+            "min-w-0 flex-1 overflow-x-hidden px-5 py-8 sm:px-8",
+            wizard ? "pb-8" : "pb-[calc(5.5rem+env(safe-area-inset-bottom))] md:pb-8"
+          )}
+        >
+          <div className={cn("mx-auto w-full overflow-x-hidden", wizard ? "max-w-3xl" : "max-w-[1400px]")}>
+            {wizard ? null : (
+              <>
+                <ConnectionStatus />
+                <CoachingDisclosureNotice needed={needsCoachingAck} />
+                <MobileWalkthroughNotice needed={needsMobileOutcomeTraining} />
+                <PushPrompt />
+              </>
+            )}
             {children}
           </div>
         </main>
-        <MobileDock />
+        {wizard ? null : <MobileDock />}
       </div>
     </div>
   );

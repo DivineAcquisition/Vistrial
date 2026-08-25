@@ -2,6 +2,7 @@ import { PageFrame } from "@/components/app/page-frame";
 import { FollowUpSettingsScreen } from "@/app/app/settings/follow-up/follow-up-settings";
 import { requireOrgSettingsManager } from "@/lib/auth/gates";
 import { loadFollowUpSettings, loadRoutingRules, loadVoiceProfile } from "@/lib/follow-up/load";
+import { advancedSettingsBreadcrumbs } from "@/lib/navigation";
 import { createClient } from "@/lib/supabase/server";
 
 export default async function FollowUpSettingsPage() {
@@ -22,6 +23,7 @@ export default async function FollowUpSettingsPage() {
     <PageFrame
       title="Follow-up"
       description="Voice, routing, quiet hours, and the org-wide sequence stop. Vistrial drafts; a person still has to approve."
+      breadcrumbs={advancedSettingsBreadcrumbs("Follow-up", "/app/settings/follow-up")}
     >
       <FollowUpSettingsScreen
         settings={settings}

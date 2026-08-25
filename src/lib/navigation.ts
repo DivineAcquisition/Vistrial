@@ -96,7 +96,6 @@ export const SETTINGS_TABS: Array<{
   { href: "/app/settings/notifications", label: "Notifications", managerOnly: false },
   { href: "/app/settings/organization", label: "Workspace", managerOnly: true },
   { href: "/app/settings/members", label: "People", managerOnly: true },
-  { href: "/app/settings/business-profile", label: "Business", managerOnly: true },
   { href: "/app/settings/advanced", label: "Advanced", managerOnly: true },
 ];
 
@@ -105,6 +104,11 @@ export const ADVANCED_SETTINGS_PAGES: Array<{
   label: string;
   description: string;
 }> = [
+  {
+    href: "/app/settings/business-profile",
+    label: "Business",
+    description: "The living profile and the activation gate. Onboarding is how this gets filled.",
+  },
   {
     href: "/app/settings/scoring",
     label: "Scoring",
@@ -126,6 +130,13 @@ export const ADVANCED_SETTINGS_PAGES: Array<{
     description: "Export this workspace. Deletion is a DA operator action.",
   },
 ];
+
+export function advancedSettingsBreadcrumbs(label: string, href: string) {
+  return [
+    { label: "Advanced", href: "/app/settings/advanced" },
+    { label, href },
+  ];
+}
 
 export const ADVANCED_SETTINGS_PREFIXES = ADVANCED_SETTINGS_PAGES.map((page) => page.href);
 

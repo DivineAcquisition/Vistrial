@@ -133,10 +133,14 @@ export function ActivityScreen({
 
   return (
     <div>
-      {channelState !== "live" ? (
+      {channelState === "stalled" ? (
         <Notice tone="critical" className="mb-6" title="The live feed is not connected">
           This is not a quiet system. The stream is stalled, so new work will not appear until the
           connection returns.
+        </Notice>
+      ) : channelState === "connecting" ? (
+        <Notice tone="warning" className="mb-6" title="Connecting to the live feed">
+          The stream is not live yet. This is not a quiet system.
         </Notice>
       ) : null}
 

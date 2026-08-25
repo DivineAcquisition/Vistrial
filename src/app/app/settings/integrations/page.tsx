@@ -11,6 +11,7 @@ import { loadOrgIngestionHealth } from "@/lib/ghl/health";
 import { loadOpenUnmatched, loadTranscriptHealth } from "@/lib/transcripts/health";
 import { getSupabaseAdmin } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
+import { advancedSettingsBreadcrumbs } from "@/lib/navigation";
 
 const FLASH_ERRORS: Record<string, string> = {
   location_claimed: LOCATION_CLAIMED_MESSAGE,
@@ -104,6 +105,7 @@ export default async function IntegrationsSettingsPage({
     <PageFrame
       title="Integrations"
       description="The CRM connection for this workspace."
+      breadcrumbs={advancedSettingsBreadcrumbs("Integrations", "/app/settings/integrations")}
     >
       <div className="space-y-8">
       <IntegrationSettings

@@ -1,6 +1,7 @@
 import { PageFrame } from "@/components/app/page-frame";
 import { ScoringSettings } from "@/app/app/settings/scoring/scoring-settings";
 import { requireOrgSettingsManager } from "@/lib/auth/gates";
+import { advancedSettingsBreadcrumbs } from "@/lib/navigation";
 import { answersFromJson, loadScoreConfig, loadScoreMaps } from "@/lib/scoring/store";
 import { createClient } from "@/lib/supabase/server";
 
@@ -35,6 +36,7 @@ export default async function ScoringSettingsPage() {
     <PageFrame
       title="Scoring"
       description="Readiness weights, application mappings, and ghost thresholds for this workspace."
+      breadcrumbs={advancedSettingsBreadcrumbs("Scoring", "/app/settings/scoring")}
     >
       <ScoringSettings
         config={{

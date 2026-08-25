@@ -1480,6 +1480,8 @@ BEGIN
           'ghost_reached',
           'connection_broken'
         )
+        -- Sync noise is a separate toggle from routine system work.
+        OR (COALESCE(p_include_sync_noise, false) AND s.is_sync_noise)
       )
       AND (v_q IS NULL OR s.lead_name ILIKE '%' || v_q || '%')
       AND (v_cursor_id IS NULL OR (s.occurred_at, s.id) < (v_cursor_at, v_cursor_id))
@@ -1592,6 +1594,7 @@ BEGIN
           'ghost_reached',
           'connection_broken'
         )
+        OR (COALESCE(p_include_sync_noise, false) AND s.is_sync_noise)
       )
       AND (
         v_q IS NULL

@@ -121,9 +121,13 @@ export function OpsActivity({
         Failures across every client sit first. This is where a support conversation starts.
       </p>
 
-      {channelState !== "live" ? (
+      {channelState === "stalled" ? (
         <Notice tone="critical" className="mt-4" title="The live feed is not connected">
           This is not a quiet system. The stream is stalled.
+        </Notice>
+      ) : channelState === "connecting" ? (
+        <Notice tone="warning" className="mt-4" title="Connecting to the live feed">
+          The stream is not live yet. This is not a quiet system.
         </Notice>
       ) : null}
 

@@ -2,6 +2,7 @@ import { PageFrame } from "@/components/app/page-frame";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { requireOrgSettingsManager } from "@/lib/auth/gates";
+import { advancedSettingsBreadcrumbs } from "@/lib/navigation";
 import { cardStack, cardTitle, helperClass } from "@/lib/ui";
 
 export default async function DataSettingsPage() {
@@ -11,6 +12,7 @@ export default async function DataSettingsPage() {
     <PageFrame
       title="Data"
       description="This workspace's data. Export it without waiting on engineering. Deletion is a DA operator action."
+      breadcrumbs={advancedSettingsBreadcrumbs("Data", "/app/settings/data")}
     >
       <Card className="max-w-xl">
         <div className={cardStack}>

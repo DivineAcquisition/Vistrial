@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useActionState } from "react";
 
 import {
@@ -37,7 +36,6 @@ import {
 import {
   btnPrimary,
   btnSizeMd,
-  cardTitle,
   errorClass,
   helperClass,
 } from "@/lib/ui";
@@ -473,19 +471,14 @@ export function StageForm({
 
   return (
     <Panel className="p-6">
-      <h2 className={cardTitle}>{meta.title}</h2>
-      <p className={helperClass}>{meta.why}</p>
-      <form action={action} className="mt-6 space-y-5">
+      <form action={action} className="space-y-5">
         <input type="hidden" name="stage" value={stage} />
         <StageBody stage={stage} defaults={defaults} />
         {state.status === "error" ? <p className={errorClass}>{state.error}</p> : null}
         <div className="flex flex-wrap items-center gap-3 border-t border-white/10 pt-5">
           <button type="submit" className={`${btnPrimary} ${btnSizeMd}`} disabled={pending}>
-            {pending ? "Saving…" : `Save and see ${meta.payoff.toLowerCase()}`}
+            {pending ? "Saving…" : `Continue — ${meta.payoff.toLowerCase()}`}
           </button>
-          <Link href="/app/settings/business-profile" className="text-sm text-brand-300 hover:text-white">
-            Save later
-          </Link>
         </div>
       </form>
     </Panel>

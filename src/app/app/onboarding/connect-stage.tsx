@@ -6,10 +6,8 @@ import { useActionState } from "react";
 import { saveOnboardingStage, type OnboardingResult } from "@/app/app/onboarding/actions";
 import { Panel } from "@/components/ui/panel";
 import { StatusBadge } from "@/components/ui/status-badge";
-import { STAGE_META } from "@/lib/profile/stages";
 import { buttonClasses, SubmitButton } from "@/components/ui/button";
 import {
-  cardTitle,
   errorClass,
   helperClass,
 } from "@/lib/ui";
@@ -33,15 +31,10 @@ export function ConnectStage({
 }) {
   const [state, action, pending] = useActionState(saveOnboardingStage, idle);
   const connected = status === "active";
-  const meta = STAGE_META.connect;
 
   return (
     <Panel className="p-6">
       <div className="flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <h2 className={cardTitle}>{meta.title}</h2>
-          <p className={helperClass}>{meta.why}</p>
-        </div>
         <StatusBadge
           label={connected ? (locationName ?? "Connected") : status === "broken" ? "Needs reconnecting" : "Not connected"}
           tone={connected ? "good" : status === "broken" ? "critical" : "neutral"}
@@ -74,7 +67,7 @@ export function ConnectStage({
         {connected ? (
           <form action={action}>
             <input type="hidden" name="stage" value="connect" />
-            <SubmitButton pending={pending}>Save and see what we found</SubmitButton>
+            <SubmitButton pending={pending}>Continue — see what we found</SubmitButton>
           </form>
         ) : null}
       </div>

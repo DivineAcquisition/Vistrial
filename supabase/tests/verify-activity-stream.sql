@@ -101,9 +101,13 @@ SET assigned_closer_id = '33333333-3333-4333-8333-333333333333'
 WHERE id = '44444444-4444-4444-8444-444444444442'
   AND EXISTS (SELECT 1 FROM public.org_members WHERE id = '33333333-3333-4333-8333-333333333333');
 
-UPDATE public.leads
-SET lead_type = 'nurture_track'
-WHERE id = '44444444-4444-4444-8444-444444444443';
+INSERT INTO public.lead_type_changes (org_id, lead_id, from_type, to_type)
+VALUES (
+  '22222222-2222-4222-8222-222222222222',
+  '44444444-4444-4444-8444-444444444443',
+  'ready_track',
+  'nurture_track'
+);
 
 INSERT INTO public.webhook_events (
   org_id, source, event_type, payload, status, received_at

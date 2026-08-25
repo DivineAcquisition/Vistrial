@@ -251,6 +251,14 @@ describe("cost, pass rate, and send path", () => {
     expect(generate).toMatch(/status:\s*"pending"/);
     expect(generate).toMatch(/approved_at: null/);
   });
+
+  it("DA verification toggles run as the signed-in admin so auth.uid() is present", () => {
+    const text = readFileSync(path.join(process.cwd(), "src/app/app/ops/actions.ts"), "utf8");
+    expect(text).not.toMatch(/getSupabaseAdmin\(\)\.rpc\("set_verification_task_enabled"/);
+    expect(text).not.toMatch(/getSupabaseAdmin\(\)\.rpc\("submit_verification_sample_audit"/);
+    expect(text).toMatch(/createClient\(\)[\s\S]*set_verification_task_enabled/);
+    expect(text).toMatch(/createClient\(\)[\s\S]*submit_verification_sample_audit/);
+  });
 });
 
 describe("reporting arithmetic is code", () => {

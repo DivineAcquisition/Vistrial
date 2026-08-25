@@ -6,6 +6,7 @@ import { requirePlatformAdmin } from "@/lib/auth/gates";
 import { getAuthContext } from "@/lib/auth/session";
 import { deleteOrganizationData, offboardOrganization } from "@/lib/ops/lifecycle";
 import { getSupabaseAdmin } from "@/lib/supabase/admin";
+import { createClient } from "@/lib/supabase/server";
 
 export type OpsActionResult = { status: "idle" } | { status: "ok"; message: string } | { status: "error"; error: string };
 
@@ -151,7 +152,8 @@ export async function setVerificationTaskEnabled(formData: FormData): Promise<Op
   if (!enabled && !reason) {
     return { status: "error", error: "Say why this task is being turned off." };
   }
-  const { error } = await getSupabaseAdmin().rpc("set_verification_task_enabled", {
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("set_verification_task_enabled", {
     p_task: task,
     p_enabled: enabled,
     p_reason: enabled ? null : reason,
@@ -172,7 +174,8 @@ export async function submitVerificationSampleAudit(formData: FormData): Promise
   if (!id || !Number.isInteger(missed) || missed < 0) {
     return { status: "error", error: "Audit id and a non-negative missed-fault count are required." };
   }
-  const { error } = await getSupabaseAdmin().rpc("submit_verification_sample_audit", {
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("submit_verification_sample_audit", {
     p_id: id,
     p_missed_fault_count: missed,
     p_notes: notes || null,

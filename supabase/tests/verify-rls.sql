@@ -7,11 +7,12 @@ VALUES (
 )
 ON CONFLICT (id) DO NOTHING;
 
-INSERT INTO public.organizations (id, name, slug)
+INSERT INTO public.organizations (id, name, slug, holdout_percent)
 VALUES (
   '66666666-6666-4666-8666-666666666666',
   'Org B',
-  'org-b'
+  'org-b',
+  0
 )
 ON CONFLICT (id) DO NOTHING;
 

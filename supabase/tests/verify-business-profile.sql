@@ -46,8 +46,8 @@ INSERT INTO auth.users (id, email) VALUES
   ('2222e222-2222-4222-8222-00000000a003', 'gate-owner@vistrial.local')
 ON CONFLICT (id) DO NOTHING;
 
-INSERT INTO public.organizations (id, name, slug, timezone, sales_cycle_days, baseline_lookback_days)
-VALUES ('2222e222-2222-4222-8222-000000000001', 'Profile Co', 'profile-co', 'America/New_York', 60, 365);
+INSERT INTO public.organizations (id, name, slug, timezone, sales_cycle_days, baseline_lookback_days, holdout_percent)
+VALUES ('2222e222-2222-4222-8222-000000000001', 'Profile Co', 'profile-co', 'America/New_York', 60, 365, 0);
 
 INSERT INTO public.org_members (id, org_id, user_id, role, display_name, email) VALUES
   ('2222e222-2222-4222-8222-0000000000b1', '2222e222-2222-4222-8222-000000000001',
@@ -575,8 +575,8 @@ BEGIN
     v_org := ('2222e222-2222-4222-8222-' || lpad((200000 + i)::text, 12, '0'))::uuid;
     v_user := ('2222e222-2222-4222-8222-' || lpad((300000 + i)::text, 12, '0'))::uuid;
     INSERT INTO auth.users (id, email) VALUES (v_user, 'cohort' || i || '@vistrial.local');
-    INSERT INTO public.organizations (id, name, slug, activated_at)
-    VALUES (v_org, 'Cohort ' || i, 'cohort-' || i, now() - interval '120 days');
+    INSERT INTO public.organizations (id, name, slug, activated_at, holdout_percent)
+    VALUES (v_org, 'Cohort ' || i, 'cohort-' || i, now() - interval '120 days', 0);
     INSERT INTO public.org_members (org_id, user_id, role, display_name, email)
     VALUES (v_org, v_user, 'owner', 'Cohort Owner ' || i, 'cohort' || i || '@vistrial.local');
     PERFORM public.save_business_profile(v_org, NULL, jsonb_build_object(
@@ -615,8 +615,8 @@ DECLARE
 BEGIN
   -- The fifth business takes the cohort to the minimum.
   INSERT INTO auth.users (id, email) VALUES (v_user, 'cohort5@vistrial.local');
-  INSERT INTO public.organizations (id, name, slug, activated_at)
-  VALUES (v_org, 'Cohort 5', 'cohort-5', now() - interval '120 days');
+  INSERT INTO public.organizations (id, name, slug, activated_at, holdout_percent)
+  VALUES (v_org, 'Cohort 5', 'cohort-5', now() - interval '120 days', 0);
   INSERT INTO public.org_members (org_id, user_id, role, display_name, email)
   VALUES (v_org, v_user, 'owner', 'Cohort Owner 5', 'cohort5@vistrial.local');
   PERFORM public.save_business_profile(v_org, NULL, jsonb_build_object(
@@ -647,8 +647,8 @@ BEGIN
   -- A sixth business opts out. Its extreme figure must not move the median,
   -- and it must still receive the benchmark.
   INSERT INTO auth.users (id, email) VALUES (v_out_user, 'optout@vistrial.local');
-  INSERT INTO public.organizations (id, name, slug, activated_at)
-  VALUES (v_out_org, 'Opted Out Co', 'opted-out-co', now() - interval '120 days');
+  INSERT INTO public.organizations (id, name, slug, activated_at, holdout_percent)
+  VALUES (v_out_org, 'Opted Out Co', 'opted-out-co', now() - interval '120 days', 0);
   INSERT INTO public.org_members (org_id, user_id, role, display_name, email)
   VALUES (v_out_org, v_out_user, 'owner', 'Opt Out Owner', 'optout@vistrial.local');
   PERFORM public.save_business_profile(v_out_org, NULL, jsonb_build_object(
@@ -695,8 +695,8 @@ $$;
 -- The activation gate. Each hard requirement is broken on its own.
 -- ---------------------------------------------------------------------------
 
-INSERT INTO public.organizations (id, name, slug)
-VALUES ('2222e222-2222-4222-8222-000000000002', 'Gate Co', 'gate-co');
+INSERT INTO public.organizations (id, name, slug, holdout_percent)
+VALUES ('2222e222-2222-4222-8222-000000000002', 'Gate Co', 'gate-co', 0);
 
 INSERT INTO public.org_members (id, org_id, user_id, role, display_name, email)
 VALUES (
@@ -1149,8 +1149,8 @@ INSERT INTO auth.users (id, email)
 VALUES ('2222e222-2222-4222-8222-00000000a004', 'defaults-owner@vistrial.local')
 ON CONFLICT (id) DO NOTHING;
 
-INSERT INTO public.organizations (id, name, slug)
-VALUES ('2222e222-2222-4222-8222-000000000003', 'Defaults Co', 'defaults-co');
+INSERT INTO public.organizations (id, name, slug, holdout_percent)
+VALUES ('2222e222-2222-4222-8222-000000000003', 'Defaults Co', 'defaults-co', 0);
 
 INSERT INTO public.org_members (id, org_id, user_id, role, display_name, email)
 VALUES (

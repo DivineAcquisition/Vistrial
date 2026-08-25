@@ -14,6 +14,8 @@ import { SubmitButton } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Panel } from "@/components/ui/panel";
 import { Select } from "@/components/ui/select";
+import { CheckboxField } from "@/components/ui/checkbox";
+import { HOLDOUT_DEFAULT_PERCENT, HOLDOUT_MAX_PERCENT, HOLDOUT_PLAIN, HOLDOUT_DISABLED_PLAIN } from "@/lib/calibration/constants";
 import { overrideLeadScore } from "@/lib/scoring/override";
 import { computeReadinessScore, FACTOR_LABELS, SCORE_FACTORS, type ScoreWeights } from "@/lib/scoring/compute";
 import { extractFactors, type ScoreFieldMap } from "@/lib/scoring/extract";
@@ -42,6 +44,7 @@ export type ScoringSettingsProps = {
     speedToLeadMinutes: number;
     ghostDaysSoft: number;
     ghostDaysHard: number;
+    holdoutPercent: number;
   };
   maps: ScoreFieldMap[];
   leads: ScoringLeadOption[];
@@ -66,6 +69,10 @@ export function ScoringSettings({ config, maps: initialMaps, leads, lastGhostRun
   const [speedToLead, setSpeedToLead] = useState(config.speedToLeadMinutes);
   const [ghostSoft, setGhostSoft] = useState(config.ghostDaysSoft);
   const [ghostHard, setGhostHard] = useState(config.ghostDaysHard);
+  const [holdoutEnabled, setHoldoutEnabled] = useState(config.holdoutPercent > 0);
+  const [holdoutPercent, setHoldoutPercent] = useState(
+    config.holdoutPercent > 0 ? config.holdoutPercent : HOLDOUT_DEFAULT_PERCENT
+  );
   const [maps, setMaps] = useState<ScoreFieldMap[]>(initialMaps);
   const [mapStatus, setMapStatus] = useState<SettingsSaveResult>(initialSave);
   const [previewLeadId, setPreviewLeadId] = useState(leads[0]?.id ?? "");
@@ -205,6 +212,42 @@ export function ScoringSettings({ config, maps: initialMaps, leads, lastGhostRun
               onChange={(event) => setGhostHard(Number(event.target.value))}
               className={inputClass}
             />
+          </div>
+
+          <div className="sm:col-span-2">
+            <CheckboxField
+              id="holdout_enabled"
+              name="holdout_enabled"
+              checked={holdoutEnabled}
+              onChange={(event) => setHoldoutEnabled(event.currentTarget.checked)}
+              label="Work a random sample regardless of score"
+              description={holdoutEnabled ? HOLDOUT_PLAIN : HOLDOUT_DISABLED_PLAIN}
+            />
+            {holdoutEnabled ? (
+              <div className="mt-3 max-w-xs">
+                <label className={labelClass} htmlFor="holdout_percent">
+                  Holdout percent
+                </label>
+                <input
+                  id="holdout_percent"
+                  name="holdout_percent"
+                  type="number"
+                  min={1}
+                  max={HOLDOUT_MAX_PERCENT}
+                  step={1}
+                  required
+                  value={holdoutPercent}
+                  onChange={(event) => setHoldoutPercent(Number(event.target.value))}
+                  className={inputClass}
+                />
+                <p className={helperClass}>
+                  Default {HOLDOUT_DEFAULT_PERCENT}%. Cap {HOLDOUT_MAX_PERCENT}%. These leads are not marked on the
+                  queue.
+                </p>
+              </div>
+            ) : (
+              <input type="hidden" name="holdout_percent" value="0" />
+            )}
           </div>
 
           {configState.status === "error" ? (

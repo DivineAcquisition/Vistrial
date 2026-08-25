@@ -675,6 +675,7 @@ export function ReportingTabs({
         // The two range-aware views carry the selected range across with them.
         { href: `/app/reporting${query ? `?${query}` : ""}`, label: "Operator view" },
         { href: `/app/reporting/client${query ? `?${query}` : ""}`, label: "Client view" },
+        { href: "/app/reporting/calibration", label: "Sales process" },
         { href: "/app/reporting/adoption", label: "Adoption" },
         { href: "/app/onboarding/report", label: "Leak Report" },
       ]}

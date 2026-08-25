@@ -49,6 +49,7 @@ WHERE n.nspname = 'public'
     'business_profile_stages','profile_field_registry','profile_review_prompts',
     'profile_contradictions','objection_vocabulary','org_benchmark_metrics','benchmark_cohorts',
     'configuration_priors','leak_reports','activation_records','activation_changes',
+    'score_config_versions','calibration_suggestions','extraction_audits','calibration_benchmarks',
     'baseline_fallback_declines',    'notifications','notification_preferences',
     'notification_mutes','notification_escalations','notification_presence',
     'notification_push_subscriptions','notification_team_channels','notification_digest_log',
@@ -113,7 +114,10 @@ run "${ROOT}/supabase/tests/verify-hardening.sql"
 echo "Mobile in-the-moment checks..."
 run "${ROOT}/supabase/tests/verify-mobile.sql"
 
+echo "Calibration checks..."
+run "${ROOT}/supabase/tests/verify-calibration.sql"
+
 echo "Migration rollback (this prompt's migrations)..."
 bash "${ROOT}/scripts/test-migration-rollback.sh"
 
-echo "OK: schema, seed, triggers, RLS, invite, scoring, GHL, platform-admin, queue, case-file, transcript, follow-up, integrity, reporting, business-profile, onboarding-reconcile, notification, hardening, and mobile checks passed."
+echo "OK: schema, seed, triggers, RLS, invite, scoring, GHL, platform-admin, queue, case-file, transcript, follow-up, integrity, reporting, business-profile, onboarding-reconcile, notification, hardening, mobile, and calibration checks passed."

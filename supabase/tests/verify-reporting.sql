@@ -11,7 +11,7 @@ VALUES
 ON CONFLICT (id) DO NOTHING;
 
 INSERT INTO public.organizations (
-  id, name, slug, timezone, activated_at, sales_cycle_days, baseline_lookback_days
+  id, name, slug, timezone, activated_at, sales_cycle_days, baseline_lookback_days, holdout_percent
 ) VALUES (
   '111e1111-1111-4111-8111-1111111111a1',
   'Reporting Co',
@@ -19,7 +19,8 @@ INSERT INTO public.organizations (
   'America/New_York',
   now() - interval '90 days',
   60,
-  365
+  365,
+  0
 )
 ON CONFLICT (id) DO NOTHING;
 
@@ -294,12 +295,13 @@ BEGIN
   END IF;
 
   -- Unusable baseline: no comparison.
-  INSERT INTO public.organizations (id, name, slug, activated_at)
+  INSERT INTO public.organizations (id, name, slug, activated_at, holdout_percent)
   VALUES (
     '111e1111-1111-4111-8111-1111111111c1',
     'Sparse CRM',
     'sparse-crm',
-    now() - interval '90 days'
+    now() - interval '90 days',
+    0
   );
   INSERT INTO public.org_members (id, org_id, user_id, role, display_name, email)
   VALUES (
@@ -435,8 +437,8 @@ BEGIN
 
   -- Neither enqueue nor skip activates. Prompt 12 moved activation behind the
   -- gate in activate_org, so skipping only resolves the backfill.
-  INSERT INTO public.organizations (id, name, slug)
-  VALUES (v_skip_org, 'Skip Co', 'skip-co');
+  INSERT INTO public.organizations (id, name, slug, holdout_percent)
+  VALUES (v_skip_org, 'Skip Co', 'skip-co', 0);
   INSERT INTO public.org_members (id, org_id, user_id, role, display_name, email)
   VALUES (
     '111e1111-1111-4111-8111-1111111111b2',
@@ -538,16 +540,17 @@ DECLARE
   v_json jsonb;
   v_plan text;
 BEGIN
-  INSERT INTO public.organizations (id, name, slug, activated_at, sales_cycle_days)
-  VALUES (v_vol, 'Volume Co', 'volume-co', now() - interval '400 days', 60);
+  INSERT INTO public.organizations (id, name, slug, activated_at, sales_cycle_days, holdout_percent)
+  VALUES (v_vol, 'Volume Co', 'volume-co', now() - interval '400 days', 60, 0);
 
   ALTER TABLE public.leads DISABLE TRIGGER ALL;
-  INSERT INTO public.leads (org_id, opted_in_at, status, source)
+  INSERT INTO public.leads (org_id, opted_in_at, status, source, is_holdout)
   SELECT
     v_vol,
     (now() - interval '400 days') + (g || ' minutes')::interval,
     'working',
-    'volume'
+    'volume',
+    false
   FROM generate_series(1, 100000) AS g;
   ALTER TABLE public.leads ENABLE TRIGGER ALL;
   ANALYZE public.leads;

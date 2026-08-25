@@ -48,6 +48,7 @@ export async function loadOpsSystemState(db: GhlDb) {
     extractDead,
     notifyTotal,
     notifyDead,
+    calibration,
   ] = await Promise.all([
     db.from("ops_job_runs").select("*"),
     db.from("ops_job_catalog").select("*"),
@@ -67,7 +68,7 @@ export async function loadOpsSystemState(db: GhlDb) {
     loadGlobalIngestionHealth(db),
     loadOpsNotificationState(db),
     loadModelSpend(db, 30),
-    db.from("organizations").select("id, name, slug, inactive_at, offboarded_at, delete_after, ghl_location_id"),
+    db.from("organizations").select("id, name, slug, inactive_at, offboarded_at, delete_after, ghl_location_id, holdout_percent"),
     db.from("extraction_jobs").select("id", { count: "exact", head: true }).gte("created_at", since24h),
     db
       .from("extraction_jobs")
@@ -85,6 +86,7 @@ export async function loadOpsSystemState(db: GhlDb) {
       .eq("is_test", false)
       .eq("status", "dead")
       .gte("queued_at", since24h),
+    db.rpc("load_ops_calibration"),
   ]);
 
   const catalogByName = new Map((catalog.data ?? []).map((row) => [row.job_name, row]));
@@ -170,5 +172,6 @@ export async function loadOpsSystemState(db: GhlDb) {
     notifications,
     spend,
     orgs: orgs.data ?? [],
+    calibration: (calibration.data ?? {}) as Record<string, unknown>,
   };
 }

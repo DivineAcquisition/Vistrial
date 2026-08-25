@@ -25,13 +25,14 @@ EXCEPTION
 END
 $$;
 
-INSERT INTO public.organizations (id, name, slug, ghl_location_id, timezone)
+INSERT INTO public.organizations (id, name, slug, ghl_location_id, timezone, holdout_percent)
 VALUES (
   '22222222-2222-4222-8222-222222222222',
   'Northstar Coaching',
   'northstar',
   'ghl_loc_dev_northstar',
-  'America/New_York'
+  'America/New_York',
+  0
 )
 ON CONFLICT (id) DO NOTHING;
 

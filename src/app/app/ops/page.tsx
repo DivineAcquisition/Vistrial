@@ -33,6 +33,16 @@ export default async function OpsPage() {
   const unresolved = volumes.filter((row) => row.unresolvedBreaches > 0).length;
   const openAlerts = state.alerts.length;
   const overdueJobs = state.jobs.filter((job) => job.overdue).length;
+  const calibration = state.calibration ?? {};
+  const calClients = Array.isArray(calibration.clients) ? calibration.clients : [];
+  const stopped = calClients.filter((row) => {
+    const rec = row && typeof row === "object" && !Array.isArray(row) ? (row as Record<string, unknown>) : {};
+    return rec.stopped_predicting === true;
+  });
+  const holdoutOff = calClients.filter((row) => {
+    const rec = row && typeof row === "object" && !Array.isArray(row) ? (row as Record<string, unknown>) : {};
+    return rec.holdout_disabled === true;
+  });
 
   return (
     <PageFrame
@@ -48,6 +58,60 @@ export default async function OpsPage() {
           No overdue jobs, no open alerts, ingestion is moving.
         </Notice>
       )}
+
+      {stopped.length > 0 ? (
+        <Notice tone="critical" className="mb-6">
+          {stopped.length === 1
+            ? "One client’s score has stopped predicting who closes. That product is quietly failing while the queue still looks orderly."
+            : `${stopped.length} clients have scores that have stopped predicting who closes. That product is quietly failing while the queue still looks orderly.`}
+        </Notice>
+      ) : null}
+
+      <Panel className="mb-8 p-6">
+        <h2 className={cardTitle}>Calibration health</h2>
+        <p className={helperClass}>
+          A client whose score has stopped predicting sits at the top. Holdout off means the
+          numbers cannot be trusted as validation.
+        </p>
+        <div className="mt-4">
+          <DataTable
+            caption="Calibration health by workspace"
+            columns={[
+              { key: "org", label: "Workspace" },
+              { key: "flag", label: "Status" },
+              { key: "holdout", label: "Holdout" },
+              { key: "n", label: "Holdout resolved", align: "right" },
+            ]}
+            rows={calClients.map((row) => {
+              const rec = row && typeof row === "object" && !Array.isArray(row) ? (row as Record<string, unknown>) : {};
+              const name = typeof rec.name === "string" ? rec.name : "Workspace";
+              const stoppedPredicting = rec.stopped_predicting === true;
+              const disabled = rec.holdout_disabled === true;
+              const tooSmall = rec.holdout_too_small === true;
+              return {
+                org: name,
+                flag: stoppedPredicting ? (
+                  <StatusBadge label="score not predicting" tone="critical" />
+                ) : disabled ? (
+                  <StatusBadge label="holdout off" tone="warning" />
+                ) : tooSmall ? (
+                  <StatusBadge label="holdout too small" tone="warning" />
+                ) : (
+                  <StatusBadge label="predicting" tone="good" />
+                ),
+                holdout: disabled ? "off" : `${String(rec.holdout_percent ?? "")}%`,
+                n: String(rec.holdout_n ?? 0),
+              };
+            })}
+            empty="No workspaces."
+          />
+        </div>
+        {holdoutOff.length > 0 ? (
+          <p className={`mt-3 ${helperClass}`}>
+            Holdout disabled: {holdoutOff.map((row) => (row as { name?: string }).name).join(", ")}.
+          </p>
+        ) : null}
+      </Panel>
 
       <KpiGrid>
         <KpiCard label="Environment" value={state.env} />

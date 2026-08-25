@@ -955,9 +955,11 @@ export type Database = {
           first_human_touch_at: string | null;
           first_name: string | null;
           ghost_approaching_at: string | null;
+          holdout_assigned_at: string | null;
           ghl_contact_id: string | null;
           ghl_opportunity_id: string | null;
           id: string;
+          is_holdout: boolean;
           is_test: boolean;
           last_name: string | null;
           last_touch_at: string | null;
@@ -987,6 +989,8 @@ export type Database = {
           ghl_contact_id?: string | null;
           ghl_opportunity_id?: string | null;
           id?: string;
+          is_holdout?: boolean;
+          holdout_assigned_at?: string | null;
           is_test?: boolean;
           last_name?: string | null;
           last_touch_at?: string | null;
@@ -1016,6 +1020,8 @@ export type Database = {
           ghl_contact_id?: string | null;
           ghl_opportunity_id?: string | null;
           id?: string;
+          is_holdout?: boolean;
+          holdout_assigned_at?: string | null;
           is_test?: boolean;
           last_name?: string | null;
           last_touch_at?: string | null;
@@ -1602,6 +1608,7 @@ export type Database = {
           activated_at: string | null;
           created_at: string;
           ghl_location_id: string | null;
+          holdout_percent: number;
           id: string;
           name: string;
           slug: string;
@@ -1623,6 +1630,7 @@ export type Database = {
           activated_at?: string | null;
           created_at?: string;
           ghl_location_id?: string | null;
+          holdout_percent?: number;
           id?: string;
           name: string;
           slug: string;
@@ -1644,6 +1652,7 @@ export type Database = {
           activated_at?: string | null;
           created_at?: string;
           ghl_location_id?: string | null;
+          holdout_percent?: number;
           id?: string;
           name?: string;
           slug?: string;
@@ -3806,6 +3815,65 @@ export type Database = {
         Args: Record<PropertyKey, never>;
         Returns: Json;
       };
+      load_calibration_report: {
+        Args: { p_org_id: string };
+        Returns: Json;
+      };
+      preview_score_config_change: {
+        Args: {
+          p_org_id: string;
+          p_timeline: number;
+          p_investment: number;
+          p_authority: number;
+          p_pain: number;
+          p_threshold: number;
+        };
+        Returns: Json;
+      };
+      save_org_score_config: {
+        Args: {
+          p_org_id: string;
+          p_timeline: number;
+          p_investment: number;
+          p_authority: number;
+          p_pain: number;
+          p_threshold: number;
+          p_speed: number;
+          p_ghost_soft: number;
+          p_ghost_hard: number;
+          p_source?: Database["public"]["Enums"]["score_config_source"];
+          p_suggestion_id?: string | null;
+        };
+        Returns: string;
+      };
+      apply_calibration_suggestion: {
+        Args: { p_org_id: string; p_suggestion_id: string };
+        Returns: Json;
+      };
+      dismiss_calibration_suggestion: {
+        Args: { p_org_id: string; p_suggestion_id: string };
+        Returns: undefined;
+      };
+      update_org_holdout_percent: {
+        Args: { p_org_id: string; p_percent: number };
+        Returns: undefined;
+      };
+      load_ops_calibration: {
+        Args: Record<PropertyKey, never>;
+        Returns: Json;
+      };
+      refresh_calibration_suggestions: {
+        Args: { p_org_id: string };
+        Returns: Json;
+      };
+      run_extraction_sample_audit: {
+        Args: { p_org_id: string; p_limit?: number };
+        Returns: number;
+      };
+      refresh_calibration_benchmarks: {
+        Args: Record<PropertyKey, never>;
+        Returns: number;
+      };
     };
     Enums: {
       action_creator: "system" | "user";
@@ -3831,6 +3899,14 @@ export type Database = {
         | "competitor"
         | "other";
       client_surface: "mobile" | "desktop";
+      score_config_source: "settings" | "calibration_apply" | "system";
+      calibration_suggestion_kind: "weights" | "threshold" | "draft_branch";
+      calibration_suggestion_status:
+        | "pending"
+        | "applied"
+        | "dismissed"
+        | "withheld"
+        | "superseded";
       org_role: "owner" | "admin" | "closer" | "setter";
       payment_type: "pif" | "plan" | "bnpl";
       score_factor:

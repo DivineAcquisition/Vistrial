@@ -9,6 +9,7 @@ import { runGhostDetectorForOrg } from "@/lib/scoring/ghost";
 import { isScoreFactor } from "@/lib/scoring/extract";
 import { loadScoreConfig, loadScoreMaps, scoreFromAnswers, answersFromJson } from "@/lib/scoring/store";
 import { insertScoreRow } from "@/lib/scoring/store";
+import { HOLDOUT_MAX_PERCENT } from "@/lib/calibration/constants";
 import { createClient } from "@/lib/supabase/server";
 import { getSupabaseAdmin } from "@/lib/supabase/admin";
 import type { Json } from "@/types/database";
@@ -38,8 +39,12 @@ export async function updateScoringConfig(
   const speed = parseIntField(formData.get("speed_to_lead_minutes"), "Speed-to-lead minutes", 1, 24 * 60);
   const ghostSoft = parseIntField(formData.get("ghost_days_soft"), "Approaching-ghost days", 1, 365);
   const ghostHard = parseIntField(formData.get("ghost_days_hard"), "Ghost days", 1, 365);
+  const holdoutEnabled = formData.get("holdout_enabled") === "on";
+  const holdoutRaw = holdoutEnabled
+    ? parseIntField(formData.get("holdout_percent"), "Holdout percent", 1, HOLDOUT_MAX_PERCENT)
+    : 0;
 
-  for (const value of [timeline, investment, authority, pain, ready, speed, ghostSoft, ghostHard]) {
+  for (const value of [timeline, investment, authority, pain, ready, speed, ghostSoft, ghostHard, holdoutRaw]) {
     if (typeof value === "string") return { status: "error", error: value };
   }
 
@@ -53,27 +58,33 @@ export async function updateScoringConfig(
   }
 
   const supabase = await createClient();
-  const { data, error } = await supabase
-    .from("score_configs")
-    .update({
-      timeline_weight: timeline as number,
-      investment_capacity_weight: investment as number,
-      decision_authority_weight: authority as number,
-      pain_severity_weight: pain as number,
-      ready_threshold: ready as number,
-      speed_to_lead_minutes: speed as number,
-      ghost_days_soft: ghostSoft as number,
-      ghost_days_hard: ghostHard as number,
-    })
-    .eq("org_id", ctx.org.id)
-    .select("id")
-    .maybeSingle();
+  const { error } = await supabase.rpc("save_org_score_config", {
+    p_org_id: ctx.org.id,
+    p_timeline: timeline as number,
+    p_investment: investment as number,
+    p_authority: authority as number,
+    p_pain: pain as number,
+    p_threshold: ready as number,
+    p_speed: speed as number,
+    p_ghost_soft: ghostSoft as number,
+    p_ghost_hard: ghostHard as number,
+    p_source: "settings",
+  });
 
-  if (error || !data) {
+  if (error) {
     return { status: "error", error: "Could not save scoring settings." };
   }
 
+  const { error: holdoutError } = await supabase.rpc("update_org_holdout_percent", {
+    p_org_id: ctx.org.id,
+    p_percent: holdoutRaw as number,
+  });
+  if (holdoutError) {
+    return { status: "error", error: "Could not save the holdout setting." };
+  }
+
   revalidatePath("/app/settings/scoring");
+  revalidatePath("/app/reporting/calibration");
   return { status: "saved" };
 }
 

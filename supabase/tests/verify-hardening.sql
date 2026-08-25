@@ -345,8 +345,8 @@ BEGIN
     v_call := ('17171717-1717-4171-8171-' || lpad((100000 + i)::text, 12, '0'))::uuid;
 
     INSERT INTO auth.users (id, email) VALUES (v_user, 'wipe' || i || '@vistrial.local');
-    INSERT INTO public.organizations (id, name, slug, activated_at)
-    VALUES (v_org, 'Wipe Cohort ' || i, 'wipe-cohort-' || i, now() - interval '90 days');
+    INSERT INTO public.organizations (id, name, slug, activated_at, holdout_percent)
+    VALUES (v_org, 'Wipe Cohort ' || i, 'wipe-cohort-' || i, now() - interval '90 days', 0);
     INSERT INTO public.org_members (org_id, user_id, role, display_name, email)
     VALUES (v_org, v_user, 'owner', 'Wipe Owner ' || i, 'wipe' || i || '@vistrial.local');
     PERFORM public.save_business_profile(v_org, NULL, jsonb_build_object(

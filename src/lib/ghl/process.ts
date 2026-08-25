@@ -236,6 +236,7 @@ async function findOrCreateLead(
       status: "new",
       ...(fields.timezone ? { timezone: fields.timezone } : {}),
       ...(fields.opted_in_at ? { opted_in_at: fields.opted_in_at } : {}),
+      // is_holdout is assigned by a BEFORE INSERT trigger, before scoring.
     })
     .select("*")
     .maybeSingle();

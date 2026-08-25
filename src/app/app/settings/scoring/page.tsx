@@ -13,7 +13,7 @@ export default async function ScoringSettingsPage() {
   const ctx = await requireOrgSettingsManager();
   const supabase = await createClient();
 
-  const [config, maps, leads, ghostRun] = await Promise.all([
+  const [config, maps, leads, ghostRun, orgRow] = await Promise.all([
     loadScoreConfig(supabase, ctx.org.id),
     loadScoreMaps(supabase, ctx.org.id),
     supabase
@@ -28,6 +28,7 @@ export default async function ScoringSettingsPage() {
       .order("ran_at", { ascending: false })
       .limit(1)
       .maybeSingle(),
+    supabase.from("organizations").select("holdout_percent").eq("id", ctx.org.id).maybeSingle(),
   ]);
 
   return (
@@ -45,6 +46,7 @@ export default async function ScoringSettingsPage() {
           speedToLeadMinutes: config.speedToLeadMinutes,
           ghostDaysSoft: config.ghostDaysSoft,
           ghostDaysHard: config.ghostDaysHard,
+          holdoutPercent: Number(orgRow.data?.holdout_percent ?? 5),
         }}
         maps={maps}
         leads={(leads.data ?? []).map((lead) => ({

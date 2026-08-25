@@ -91,11 +91,12 @@ BEGIN
     RAISE EXCEPTION 'platform admin membership was demoted';
   END IF;
 
-  INSERT INTO public.organizations (id, name, slug)
+  INSERT INTO public.organizations (id, name, slug, holdout_percent)
   VALUES (
     'aaaaaaa1-aaaa-4aaa-8aaa-aaaaaaaaaaa1',
     'Org C',
-    'org-c'
+    'org-c',
+    0
   )
   ON CONFLICT (id) DO NOTHING;
 

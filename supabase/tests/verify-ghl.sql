@@ -1,23 +1,25 @@
 -- GHL ingestion constraints and token-column isolation.
 
-INSERT INTO public.organizations (id, name, slug, ghl_location_id)
+INSERT INTO public.organizations (id, name, slug, ghl_location_id, holdout_percent)
 VALUES (
   'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa1',
   'Org Claim A',
   'org-claim-a',
-  'ghl_loc_claimed'
+  'ghl_loc_claimed',
+  0
 )
 ON CONFLICT (id) DO NOTHING;
 
 DO $$
 BEGIN
   BEGIN
-    INSERT INTO public.organizations (id, name, slug, ghl_location_id)
+    INSERT INTO public.organizations (id, name, slug, ghl_location_id, holdout_percent)
     VALUES (
       'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa2',
       'Org Claim B',
       'org-claim-b',
-      'ghl_loc_claimed'
+      'ghl_loc_claimed',
+      0
     );
     RAISE EXCEPTION 'duplicate ghl_location_id was allowed';
   EXCEPTION

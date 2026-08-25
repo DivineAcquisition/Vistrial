@@ -28,8 +28,8 @@ BEGIN
     RAISE EXCEPTION 'default 30 days timeline mapping missing';
   END IF;
 
-  INSERT INTO public.organizations (id, name, slug)
-  VALUES (v_org_b, 'Second Org', 'second-org');
+  INSERT INTO public.organizations (id, name, slug, holdout_percent)
+  VALUES (v_org_b, 'Second Org', 'second-org', 0);
 
   IF NOT EXISTS (
     SELECT 1 FROM public.score_configs WHERE org_id = v_org_b

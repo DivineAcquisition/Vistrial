@@ -91,3 +91,41 @@ if [[ "$(echo "$fn_mobile" | tr -d ' ')" != "1" ]]; then
 fi
 
 echo "OK: mobile migration rollback and re-apply succeeded."
+
+echo "Rollback calibration (tables and holdout column gone)..."
+run "${ROOT}/supabase/rollbacks/20260826010000_calibration.sql"
+col_holdout="$("${PSQL[@]}" -d "${DB_NAME}" -tAc "SELECT count(*) FROM information_schema.columns WHERE table_schema='public' AND table_name='organizations' AND column_name='holdout_percent'")"
+if [[ "$(echo "$col_holdout" | tr -d ' ')" != "0" ]]; then
+  echo "calibration rollback left holdout_percent in place" >&2
+  exit 1
+fi
+fn_cal="$("${PSQL[@]}" -d "${DB_NAME}" -tAc "SELECT count(*) FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace WHERE n.nspname='public' AND p.proname='load_calibration_report'")"
+if [[ "$(echo "$fn_cal" | tr -d ' ')" != "0" ]]; then
+  echo "calibration rollback left load_calibration_report in place" >&2
+  exit 1
+fi
+tbl_cal="$("${PSQL[@]}" -d "${DB_NAME}" -tAc "SELECT count(*) FROM information_schema.tables WHERE table_schema='public' AND table_name='calibration_suggestions'")"
+if [[ "$(echo "$tbl_cal" | tr -d ' ')" != "0" ]]; then
+  echo "calibration rollback left calibration_suggestions in place" >&2
+  exit 1
+fi
+
+echo "Re-apply calibration..."
+run "${ROOT}/supabase/migrations/20260826010000_calibration.sql"
+col_holdout="$("${PSQL[@]}" -d "${DB_NAME}" -tAc "SELECT count(*) FROM information_schema.columns WHERE table_schema='public' AND table_name='organizations' AND column_name='holdout_percent'")"
+if [[ "$(echo "$col_holdout" | tr -d ' ')" != "1" ]]; then
+  echo "re-apply did not restore holdout_percent" >&2
+  exit 1
+fi
+fn_cal="$("${PSQL[@]}" -d "${DB_NAME}" -tAc "SELECT count(*) FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace WHERE n.nspname='public' AND p.proname='load_calibration_report'")"
+if [[ "$(echo "$fn_cal" | tr -d ' ')" != "1" ]]; then
+  echo "re-apply did not restore load_calibration_report" >&2
+  exit 1
+fi
+tbl_cal="$("${PSQL[@]}" -d "${DB_NAME}" -tAc "SELECT count(*) FROM information_schema.tables WHERE table_schema='public' AND table_name='calibration_suggestions'")"
+if [[ "$(echo "$tbl_cal" | tr -d ' ')" != "1" ]]; then
+  echo "re-apply did not restore calibration_suggestions" >&2
+  exit 1
+fi
+
+echo "OK: calibration migration rollback and re-apply succeeded."

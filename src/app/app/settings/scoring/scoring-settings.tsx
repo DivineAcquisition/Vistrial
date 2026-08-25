@@ -4,18 +4,22 @@ import { useActionState, useMemo, useState, useTransition } from "react";
 
 import {
   bulkRescoreLeads,
+  previewScoringChange,
   replaceScoreMaps,
   runGhostDetectorNow,
   updateScoringConfig,
   type MappingPayload,
 } from "@/app/app/settings/scoring/actions";
+import { ScoringImpactPreview } from "@/app/app/settings/scoring/scoring-impact-preview";
 import type { SettingsSaveResult } from "@/app/app/settings/types";
+import { SuggestionActions } from "@/app/app/reporting/calibration/suggestion-actions";
 import { SubmitButton } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Panel } from "@/components/ui/panel";
 import { Select } from "@/components/ui/select";
 import { CheckboxField } from "@/components/ui/checkbox";
 import { HOLDOUT_DEFAULT_PERCENT, HOLDOUT_MAX_PERCENT, HOLDOUT_PLAIN, HOLDOUT_DISABLED_PLAIN } from "@/lib/calibration/constants";
+import { scoringPreviewFingerprint, type ScoringPreviewResult } from "@/lib/settings/preview";
 import { overrideLeadScore } from "@/lib/scoring/override";
 import { computeReadinessScore, FACTOR_LABELS, SCORE_FACTORS, type ScoreWeights } from "@/lib/scoring/compute";
 import { extractFactors, type ScoreFieldMap } from "@/lib/scoring/extract";
@@ -49,6 +53,7 @@ export type ScoringSettingsProps = {
   maps: ScoreFieldMap[];
   leads: ScoringLeadOption[];
   lastGhostRun: { evaluated: number; changed: number; ranAt: string } | null;
+  suggestions?: Array<{ id: string; evidence: string; previewPlain: string | null }>;
 };
 
 const initialSave: SettingsSaveResult = { status: "idle" };
@@ -57,7 +62,7 @@ function newId() {
   return crypto.randomUUID();
 }
 
-export function ScoringSettings({ config, maps: initialMaps, leads, lastGhostRun }: ScoringSettingsProps) {
+export function ScoringSettings({ config, maps: initialMaps, leads, lastGhostRun, suggestions = [] }: ScoringSettingsProps) {
   const [configState, saveConfig, configPending] = useActionState(updateScoringConfig, initialSave);
   const [weights, setWeights] = useState<ScoreWeights>({
     timeline: config.timeline,
@@ -80,6 +85,8 @@ export function ScoringSettings({ config, maps: initialMaps, leads, lastGhostRun
   const [bulkStatus, setBulkStatus] = useState<string | null>(null);
   const [ghostStatus, setGhostStatus] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
+  const [impact, setImpact] = useState<ScoringPreviewResult | null>(null);
+  const [impactError, setImpactError] = useState<string | null>(null);
 
   const weightTotal =
     weights.timeline +
@@ -93,6 +100,16 @@ export function ScoringSettings({ config, maps: initialMaps, leads, lastGhostRun
     const extracted = extractFactors(previewLead.answers, maps);
     return computeReadinessScore(extracted.factors, weights);
   }, [previewLead, maps, weights]);
+
+  const proposedConfig = {
+    ...weights,
+    readyThreshold,
+    speedToLeadMinutes: speedToLead,
+    ghostDaysSoft: ghostSoft,
+    ghostDaysHard: ghostHard,
+  };
+  const fingerprint = scoringPreviewFingerprint(proposedConfig);
+  const previewMatches = impact?.fingerprint === fingerprint;
 
   function updateWeight(factor: keyof ScoreWeights, value: string) {
     const parsed = Number(value);
@@ -182,6 +199,9 @@ export function ScoringSettings({ config, maps: initialMaps, leads, lastGhostRun
               onChange={(event) => setSpeedToLead(Number(event.target.value))}
               className={inputClass}
             />
+            <p className={helperClass}>
+              How long a new ready lead can wait before the speed-to-lead clock is missed.
+            </p>
           </div>
           <div>
             <label className={labelClass} htmlFor="ghost_days_soft">
@@ -197,6 +217,7 @@ export function ScoringSettings({ config, maps: initialMaps, leads, lastGhostRun
               onChange={(event) => setGhostSoft(Number(event.target.value))}
               className={inputClass}
             />
+            <p className={helperClass}>Silence this long flags the lead as going quiet.</p>
           </div>
           <div>
             <label className={labelClass} htmlFor="ghost_days_hard">
@@ -212,6 +233,7 @@ export function ScoringSettings({ config, maps: initialMaps, leads, lastGhostRun
               onChange={(event) => setGhostHard(Number(event.target.value))}
               className={inputClass}
             />
+            <p className={helperClass}>Silence this long marks the lead a ghost.</p>
           </div>
 
           <div className="sm:col-span-2">
@@ -250,6 +272,35 @@ export function ScoringSettings({ config, maps: initialMaps, leads, lastGhostRun
             )}
           </div>
 
+          <div className="sm:col-span-2 space-y-3">
+            <p className={helperClass}>
+              Ready threshold, weights, speed-to-lead, and ghost windows all move the queue. Preview
+              against current leads before saving. Saving does not rewrite existing score rows.
+            </p>
+            <button
+              type="button"
+              className={`${btnSecondary} ${btnSizeSm}`}
+              disabled={pending || weightTotal !== 100}
+              onClick={() =>
+                startTransition(async () => {
+                  const result = await previewScoringChange(proposedConfig);
+                  if ("error" in result) {
+                    setImpactError(result.error);
+                    setImpact(null);
+                  } else {
+                    setImpactError(null);
+                    setImpact(result);
+                  }
+                })
+              }
+            >
+              Preview against current leads
+            </button>
+            {impactError ? <p className={errorClass}>{impactError}</p> : null}
+            <ScoringImpactPreview preview={impact} />
+            <input type="hidden" name="preview_fingerprint" value={previewMatches ? fingerprint : ""} />
+          </div>
+
           {configState.status === "error" ? (
             <p className={`${errorClass} sm:col-span-2`}>{configState.error}</p>
           ) : null}
@@ -258,15 +309,39 @@ export function ScoringSettings({ config, maps: initialMaps, leads, lastGhostRun
           ) : null}
 
           <div className="sm:col-span-2">
-            <SubmitButton variant="primary" pending={configPending} loadingLabel="Saving" disabled={configPending || weightTotal !== 100}>
+            <SubmitButton variant="primary" pending={configPending} loadingLabel="Saving" disabled={configPending || weightTotal !== 100 || !previewMatches}>
             Save weights and thresholds
           </SubmitButton>
+            {!previewMatches ? (
+              <p className={`${helperClass} mt-2`}>Preview the impact on current leads before saving.</p>
+            ) : null}
           </div>
         </form>
       </Panel>
 
+      {suggestions.length > 0 ? (
+        <Panel className="p-6">
+          <h2 className={cardTitle}>Calibration suggestions</h2>
+          <p className={helperClass}>
+            Applied only by a human. Applying one updates live scoring for new reads. Existing score
+            history is not rewritten.
+          </p>
+          <ul className="mt-4 space-y-4">
+            {suggestions.map((item) => (
+              <li key={item.id}>
+                <SuggestionActions
+                  suggestionId={item.id}
+                  evidence={item.evidence}
+                  previewPlain={item.previewPlain}
+                />
+              </li>
+            ))}
+          </ul>
+        </Panel>
+      ) : null}
+
       <Panel className="p-6">
-        <h2 className={cardTitle}>Preview</h2>
+        <h2 className={cardTitle}>Preview one lead</h2>
         <p className={helperClass}>
           Pick a real lead and see what the pending weights and mappings would
           score versus the cached score they have today. This is the call-list

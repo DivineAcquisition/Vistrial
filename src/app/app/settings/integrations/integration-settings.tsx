@@ -425,7 +425,6 @@ export function IntegrationSettings(props: IntegrationSettingsProps) {
                 <div>
                   <label className={labelClass}>GHL field</label>
                   <Select
-                    
                     value={map.ghlFieldId}
                     onChange={(event) => {
                       const option = props.customFields.find((field) => field.id === event.target.value);
@@ -451,20 +450,10 @@ export function IntegrationSettings(props: IntegrationSettingsProps) {
                   </Select>
                 </div>
               ) : (
-                <div>
-                  <label className={labelClass}>GHL field id</label>
-                  <input
-                    className={inputClass}
-                    value={map.ghlFieldId}
-                    onChange={(event) =>
-                      setMaps((current) =>
-                        current.map((row, rowIndex) =>
-                          rowIndex === index ? { ...row, ghlFieldId: event.target.value } : row
-                        )
-                      )
-                    }
-                  />
-                </div>
+                <p className={helperClass}>
+                  Live fields were not returned. Test the connection, then map from the list GoHighLevel
+                  provides. Typing a field name is not available.
+                </p>
               )}
               <div>
                 <label className={labelClass}>GHL field key</label>

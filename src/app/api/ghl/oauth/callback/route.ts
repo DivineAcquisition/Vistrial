@@ -12,8 +12,8 @@ import { getSupabaseAdmin } from "@/lib/supabase/admin";
 
 export const dynamic = "force-dynamic";
 
-function redirectToIntegrations(query: Record<string, string>) {
-  const url = new URL("/app/settings/integrations", appUrl());
+function redirectToWorkspace(query: Record<string, string>) {
+  const url = new URL("/app/settings/workspace", appUrl());
   for (const [key, value] of Object.entries(query)) {
     url.searchParams.set(key, value);
   }
@@ -34,7 +34,7 @@ export async function GET(request: Request) {
   }
   const errorParam = incoming.searchParams.get("error");
   if (errorParam) {
-    return redirectToIntegrations({ ghl_error: "oauth_denied" });
+    return redirectToWorkspace({ ghl_error: "oauth_denied" });
   }
 
   const code = incoming.searchParams.get("code");
@@ -44,12 +44,12 @@ export async function GET(request: Request) {
   cookieStore.delete(GHL_OAUTH_COOKIE);
 
   if (!code || !stateParam || !cookieState || stateParam !== cookieState) {
-    return redirectToIntegrations({ ghl_error: "oauth_invalid" });
+    return redirectToWorkspace({ ghl_error: "oauth_invalid" });
   }
 
   const state = parseOAuthState(stateParam);
   if (!state) {
-    return redirectToIntegrations({ ghl_error: "oauth_expired" });
+    return redirectToWorkspace({ ghl_error: "oauth_expired" });
   }
 
   try {
@@ -63,11 +63,11 @@ export async function GET(request: Request) {
         memberId: state.memberId,
         tokens,
       });
-      return redirectToIntegrations({ select_location: "1" });
+      return redirectToWorkspace({ select_location: "1" });
     }
 
     if (!locationId) {
-      return redirectToIntegrations({ ghl_error: "oauth_no_location" });
+      return redirectToWorkspace({ ghl_error: "oauth_no_location" });
     }
 
     const linked = await linkLocationToOrg(admin, {
@@ -77,15 +77,15 @@ export async function GET(request: Request) {
       memberId: state.memberId,
     });
     if (!linked.ok) {
-      return redirectToIntegrations({
+      return redirectToWorkspace({
         ghl_error: linked.error === "location_claimed" ? "location_claimed" : "oauth_failed",
       });
     }
-    return redirectToIntegrations({ connected: "1" });
+    return redirectToWorkspace({ connected: "1" });
   } catch (error) {
     if (error instanceof Error && error.message === "staging_crm_location_not_allowlisted") {
-      return redirectToIntegrations({ ghl_error: "staging_blocked" });
+      return redirectToWorkspace({ ghl_error: "staging_blocked" });
     }
-    return redirectToIntegrations({ ghl_error: "oauth_failed" });
+    return redirectToWorkspace({ ghl_error: "oauth_failed" });
   }
 }

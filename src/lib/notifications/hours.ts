@@ -140,3 +140,56 @@ export function minutesIntoWorkingDay(at: Date, hours: WorkingHours): number | n
   const start = parseHm(hours.startHm);
   return minutesOfDay(parts.hour, parts.minute) - minutesOfDay(start.hour, start.minute);
 }
+
+function overlapMinutes(
+  rangeStart: number,
+  rangeEnd: number,
+  windowStart: number,
+  windowEnd: number
+): number {
+  const start = Math.max(rangeStart, windowStart);
+  const end = Math.min(rangeEnd, windowEnd);
+  return Math.max(0, end - start);
+}
+
+/**
+ * Minutes that fell inside org business hours between `from` and `to`.
+ * Nights and off days do not count toward response time.
+ */
+export function elapsedWorkingMinutes(from: Date, to: Date, hours: WorkingHours): number {
+  if (to.getTime() <= from.getTime()) return 0;
+  const startHm = parseHm(hours.startHm);
+  const endHm = parseHm(hours.endHm);
+  const windowStart = minutesOfDay(startHm.hour, startHm.minute);
+  const windowEnd = minutesOfDay(endHm.hour, endHm.minute);
+  const wraps = windowStart > windowEnd;
+  const startParts = zonedParts(from, hours.timeZone);
+  const localNoon = zonedDate(hours.timeZone, startParts.year, startParts.month, startParts.day, 12, 0);
+  let total = 0;
+  for (let add = 0; add < 40; add += 1) {
+    const shifted = new Date(localNoon.getTime() + add * 24 * 60 * 60 * 1000);
+    const day = zonedParts(shifted, hours.timeZone);
+    const dayStart = zonedDate(hours.timeZone, day.year, day.month, day.day, 0, 0);
+    const nextStart = new Date(dayStart.getTime() + 24 * 60 * 60 * 1000);
+    if (nextStart.getTime() <= from.getTime()) continue;
+    if (dayStart.getTime() >= to.getTime()) break;
+    if (!hours.days.includes(day.weekday)) continue;
+
+    const clipFrom = Math.max(from.getTime(), dayStart.getTime());
+    const clipTo = Math.min(to.getTime(), nextStart.getTime());
+    const fromMin = Math.floor((clipFrom - dayStart.getTime()) / 60000);
+    const toMin = Math.ceil((clipTo - dayStart.getTime()) / 60000);
+
+    if (windowStart === windowEnd) {
+      total += Math.max(0, toMin - fromMin);
+      continue;
+    }
+    if (!wraps) {
+      total += overlapMinutes(fromMin, toMin, windowStart, windowEnd);
+      continue;
+    }
+    total += overlapMinutes(fromMin, toMin, windowStart, 24 * 60);
+    total += overlapMinutes(fromMin, toMin, 0, windowEnd);
+  }
+  return total;
+}

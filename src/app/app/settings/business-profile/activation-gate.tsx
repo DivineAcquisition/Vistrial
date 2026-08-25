@@ -31,11 +31,13 @@ export function ActivationGate({
   changes,
   activatedByName,
   backfillNeedsFallback,
+  orgName,
 }: {
   activation: ActivationReadiness;
   changes: ActivationChange[];
   activatedByName: string | null;
   backfillNeedsFallback: boolean;
+  orgName: string;
 }) {
   const [state, action, pending] = useActionState(activateWorkspace, idle);
   const [moveState, moveAction, moving] = useActionState(moveActivationTimestamp, idle);
@@ -102,6 +104,19 @@ export function ActivationGate({
                 Moving this shifts every historical figure this workspace has been shown. Deals will
                 move between the before and after side of the line, and the comparison will change.
               </p>
+              <div>
+                <label className={labelClass} htmlFor="confirmation_name">
+                  Type the workspace name to confirm
+                </label>
+                <input
+                  id="confirmation_name"
+                  name="confirmation_name"
+                  required
+                  className={inputClass}
+                  placeholder={orgName}
+                />
+                <p className={helperClass}>Must match “{orgName}” exactly.</p>
+              </div>
               <div>
                 <label className={labelClass} htmlFor="new_at">
                   Move it to

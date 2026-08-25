@@ -88,27 +88,38 @@ export function MemberRoleSelect({
 }) {
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
+  const [nextRole, setNextRole] = useState<OrgRole>(role);
   const showOwner = canGrantOwner || role === "owner";
+  const dirty = nextRole !== role;
 
   return (
-    <div>
+    <div className="space-y-2">
       <Select
         density="compact"
-        defaultValue={role}
+        value={nextRole}
         disabled={disabled || pending}
-        onChange={(event) => {
-          const next = event.target.value as OrgRole;
-          startTransition(async () => {
-            const result = await updateMemberRole(memberId, next);
-            setError(result.ok ? null : result.error);
-          });
-        }}
+        onChange={(event) => setNextRole(event.target.value as OrgRole)}
       >
         {showOwner ? <option value="owner">Owner</option> : null}
         <option value="admin">Admin</option>
         <option value="closer">Closer</option>
         <option value="setter">Setter</option>
       </Select>
+      {dirty ? (
+        <button
+          type="button"
+          disabled={pending || disabled}
+          className={`${btnSecondary} ${btnSizeSm}`}
+          onClick={() => {
+            startTransition(async () => {
+              const result = await updateMemberRole(memberId, nextRole);
+              setError(result.ok ? null : result.error);
+            });
+          }}
+        >
+          Save role
+        </button>
+      ) : null}
       {error ? <p className={errorClass}>{error}</p> : null}
     </div>
   );

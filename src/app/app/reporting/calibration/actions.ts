@@ -5,6 +5,9 @@ import { revalidatePath } from "next/cache";
 import type { SettingsSaveResult } from "@/app/app/settings/types";
 import { canManageOrgSettings } from "@/lib/auth/permissions";
 import { getAuthContext } from "@/lib/auth/session";
+import { logSettingsActivity } from "@/lib/settings/activity";
+import { advancedRpcDenied } from "@/lib/settings/org";
+import { revalidateSettings } from "@/lib/settings/revalidate";
 import { createClient } from "@/lib/supabase/server";
 
 function deny(): SettingsSaveResult {
@@ -19,9 +22,18 @@ export async function applyCalibrationSuggestion(suggestionId: string): Promise<
     p_org_id: ctx.org.id,
     p_suggestion_id: suggestionId,
   });
-  if (error) return { status: "error", error: error.message };
+  if (error) {
+    return { status: "error", error: advancedRpcDenied(error.message) ?? error.message };
+  }
+  await logSettingsActivity({
+    ctx,
+    section: "scoring",
+    action: "Applied a calibration suggestion",
+    to: { suggestionId },
+  });
   revalidatePath("/app/reporting/calibration");
   revalidatePath("/app/settings/scoring");
+  revalidateSettings();
   return { status: "saved" };
 }
 
@@ -33,7 +45,16 @@ export async function dismissCalibrationSuggestion(suggestionId: string): Promis
     p_org_id: ctx.org.id,
     p_suggestion_id: suggestionId,
   });
-  if (error) return { status: "error", error: error.message };
+  if (error) {
+    return { status: "error", error: advancedRpcDenied(error.message) ?? error.message };
+  }
+  await logSettingsActivity({
+    ctx,
+    section: "scoring",
+    action: "Dismissed a calibration suggestion",
+    to: { suggestionId },
+  });
   revalidatePath("/app/reporting/calibration");
+  revalidateSettings();
   return { status: "saved" };
 }

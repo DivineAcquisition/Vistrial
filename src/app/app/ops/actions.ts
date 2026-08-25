@@ -5,7 +5,9 @@ import { revalidatePath } from "next/cache";
 import { requirePlatformAdmin } from "@/lib/auth/gates";
 import { getAuthContext } from "@/lib/auth/session";
 import { deleteOrganizationData, offboardOrganization } from "@/lib/ops/lifecycle";
+import { logSettingsActivity } from "@/lib/settings/activity";
 import { getSupabaseAdmin } from "@/lib/supabase/admin";
+import { createClient } from "@/lib/supabase/server";
 
 export type OpsActionResult = { status: "idle" } | { status: "ok"; message: string } | { status: "error"; error: string };
 
@@ -19,6 +21,13 @@ export async function haltOrgDispatch(orgId: string): Promise<OpsActionResult> {
     p_actor: ctx.member.orgId === orgId ? ctx.member.id : null,
   });
   if (error) return { status: "error", error: "Could not halt dispatch." };
+  await logSettingsActivity({
+    ctx,
+    orgId,
+    section: "follow_up",
+    action: "Stopped all sequences and dispatch",
+    to: { halted: true },
+  });
   revalidatePath("/app/ops");
   return { status: "ok", message: "Dispatch halted for that workspace." };
 }
@@ -139,5 +148,20 @@ export async function runRetentionNow(dryRun: boolean): Promise<OpsActionResult>
   return {
     status: "ok",
     message: dryRun ? `Dry-run: ${JSON.stringify(data)}` : `Purged: ${JSON.stringify(data)}`,
+  };
+}
+
+export async function setOrgManaged(orgId: string, managed: boolean): Promise<OpsActionResult> {
+  await requirePlatformAdmin();
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("set_org_managed", { p_org_id: orgId, p_managed: managed });
+  if (error) return { status: "error", error: "Could not update managed mode." };
+  revalidatePath("/app/ops");
+  revalidatePath("/app/settings", "layout");
+  return {
+    status: "ok",
+    message: managed
+      ? "Workspace is managed by DA. Advanced is read-only for the client."
+      : "Managed mode released. The client can change Advanced settings.",
   };
 }

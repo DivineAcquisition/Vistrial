@@ -12,7 +12,7 @@ import {
   UNMATCHED_ESCALATE_COUNT,
 } from "@/lib/notifications/constants";
 import { collectDailyBriefItems } from "@/lib/notifications/brief";
-import { isWithinWorkingHours, localDateKey, minutesIntoWorkingDay, nextWorkingStart } from "@/lib/notifications/hours";
+import { elapsedWorkingMinutes, isWithinWorkingHours, localDateKey, minutesIntoWorkingDay, nextWorkingStart } from "@/lib/notifications/hours";
 import { loadOrgNotifyContext, memberById } from "@/lib/notifications/members";
 import {
   adoptionCopy,
@@ -130,7 +130,7 @@ export async function observeOrg(db: GhlDb, orgId: string, now = new Date()): Pr
   const staleDays = followUp?.draft_stale_days ?? 5;
   const sms = ctx.org.smsEmergenciesEnabled;
 
-  await observeSpeedToLead(db, ctx.members, ctx.setters, ctx.managers, orgId, windowMinutes, now);
+  await observeSpeedToLead(db, ctx.members, ctx.setters, ctx.managers, orgId, windowMinutes, now, ctx.org.hours);
   await observeUnassignedReady(db, ctx.setters, orgId, now);
   await observeGhosts(db, ctx.members, orgId, now);
   await observeDrafts(db, ctx.members, ctx.managers, orgId, staleDays, now);
@@ -149,9 +149,9 @@ async function observeSpeedToLead(
   managers: MemberNotifyTarget[],
   orgId: string,
   windowMinutes: number,
-  now: Date
+  now: Date,
+  orgHours: MemberNotifyTarget["hours"]
 ) {
-  const windowMs = windowMinutes * 60_000;
   const { data: leads } = await db
     .from("leads")
     .select("id, first_name, first_human_touch_at, opted_in_at, assigned_setter_id, status, is_test")
@@ -161,9 +161,8 @@ async function observeSpeedToLead(
     .in("status", [...OPEN_LEAD_STATUSES]);
 
   for (const lead of leads ?? []) {
-    const age = now.getTime() - Date.parse(lead.opted_in_at);
-    if (age < windowMs) continue;
-    const minutes = Math.round(age / 60000);
+    const minutes = elapsedWorkingMinutes(new Date(lead.opted_in_at), now, orgHours);
+    if (minutes < windowMinutes) continue;
     const assigned = memberById(members, lead.assigned_setter_id);
     const copy = speedToLeadCopy([lead.first_name ?? "a lead"], minutes, Boolean(assigned));
     const href = notificationHref("/app/queue?breached=1");
@@ -218,8 +217,8 @@ async function observeSpeedToLead(
 
     const step1 = assigned ? [assigned] : setters;
     await fire(1, step1, false);
-    if (age >= windowMs * 2) await fire(2, setters, true);
-    if (age >= windowMs * 4) await fire(3, managers, false);
+    if (minutes >= windowMinutes * 2) await fire(2, setters, true);
+    if (minutes >= windowMinutes * 4) await fire(3, managers, false);
   }
 }
 

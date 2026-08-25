@@ -52,6 +52,7 @@ export default async function BusinessProfileSettingsPage() {
           changes={state.activationChanges}
           activatedByName={state.activatedByName}
           backfillNeedsFallback={backfillNeedsFallback}
+          orgName={ctx.org.name}
         />
 
         <ReviewPrompts prompts={state.reviewPrompts} />

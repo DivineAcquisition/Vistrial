@@ -46,6 +46,12 @@ export async function loadOrgNotifyContext(db: GhlDb, orgId: string) {
       name: org.name,
       timezone: org.timezone,
       smsEmergenciesEnabled: org.sms_emergencies_enabled,
+      hours: resolveWorkingHours({
+        orgTimeZone: org.timezone,
+        orgStart: org.working_hours_start?.slice(0, 5),
+        orgEnd: org.working_hours_end?.slice(0, 5),
+        orgDays: org.working_days,
+      }),
     },
     members: targets,
     setters: targets.filter((member) => member.role === "setter"),

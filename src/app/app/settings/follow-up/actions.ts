@@ -9,12 +9,63 @@ import { MAX_VOICE_EXAMPLES } from "@/lib/follow-up/constants";
 import { parseRoutingRule } from "@/lib/follow-up/routing";
 import { suggestionsFromEdits } from "@/lib/follow-up/suggestions";
 import { examplesToJson, parseVoiceExamples } from "@/lib/follow-up/voice";
+import { logSettingsActivity } from "@/lib/settings/activity";
+import { canWriteAdvancedSettings } from "@/lib/settings/managed";
+import { loadOrgManaged } from "@/lib/settings/org";
+import { revalidateSettings } from "@/lib/settings/revalidate";
+import { voiceSampleToJson } from "@/lib/settings/sample";
 import { getSupabaseAdmin } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import type { Json } from "@/types/database";
 
 function deny(): SettingsSaveResult {
   return { status: "error", error: "You do not have permission to change follow-up settings." };
+}
+
+async function requireAdvancedFollowUp() {
+  const ctx = await getAuthContext();
+  if (!canManageOrgSettings(ctx.role, ctx.isPlatformAdmin)) return { ok: false as const, error: deny(), ctx };
+  const managed = await loadOrgManaged(ctx.org.id);
+  if (!canWriteAdvancedSettings(ctx, managed.managed)) {
+    return {
+      ok: false as const,
+      error: {
+        status: "error" as const,
+        error: "These settings are managed by your install team. Take over management, or ask them to make the change.",
+      },
+      ctx,
+    };
+  }
+  return { ok: true as const, ctx };
+}
+
+async function refreshVoiceSample(orgId: string) {
+  const admin = getSupabaseAdmin();
+  const { data } = await admin
+    .from("follow_up_drafts")
+    .select("generated_body, lead_id, created_at")
+    .eq("org_id", orgId)
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (!data?.generated_body) return;
+  const { data: lead } = await admin
+    .from("leads")
+    .select("first_name, last_name, email")
+    .eq("id", data.lead_id)
+    .maybeSingle();
+  const leadName =
+    [lead?.first_name, lead?.last_name].filter(Boolean).join(" ").trim() || lead?.email || "Unnamed lead";
+  await admin
+    .from("org_voice_profiles")
+    .update({
+      sample_preview: voiceSampleToJson({
+        leadName,
+        body: data.generated_body,
+        generatedAt: new Date().toISOString(),
+      }),
+    })
+    .eq("org_id", orgId);
 }
 
 function parseIntField(value: FormDataEntryValue | null, label: string, min: number, max: number): number | string {
@@ -29,8 +80,8 @@ export async function updateFollowUpPolicy(
   _prev: SettingsSaveResult,
   formData: FormData
 ): Promise<SettingsSaveResult> {
-  const ctx = await getAuthContext();
-  if (!canManageOrgSettings(ctx.role, ctx.isPlatformAdmin)) return deny();
+  const gate = await requireAdvancedFollowUp();
+  if (!gate.ok) return gate.error;
 
   const maxLength = parseIntField(formData.get("max_sequence_length"), "Maximum sequence length", 1, 8);
   const maxDays = parseIntField(formData.get("max_sequence_duration_days"), "Maximum sequence duration", 1, 90);
@@ -57,9 +108,16 @@ export async function updateFollowUpPolicy(
       quiet_hours_start: quietStart,
       quiet_hours_end: quietEnd,
     })
-    .eq("org_id", ctx.org.id);
+    .eq("org_id", gate.ctx.org.id);
   if (error) return { status: "error", error: "Could not save follow-up policy." };
+  await logSettingsActivity({
+    ctx: gate.ctx,
+    section: "follow_up",
+    action: "Updated follow-up policy",
+    to: { maxLength, maxDays, staleDays, quietEnabled, quietStart, quietEnd },
+  });
   revalidatePath("/app/settings/follow-up");
+  revalidateSettings();
   return { status: "saved" };
 }
 
@@ -84,17 +142,31 @@ export async function setOrgSequenceHalt(halted: boolean): Promise<SettingsSaveR
       .eq("org_id", ctx.org.id);
     if (error) return { status: "error", error: "Could not resume sequences." };
   }
+  await logSettingsActivity({
+    ctx,
+    section: "follow_up",
+    action: halted ? "Stopped all sequences and dispatch" : "Resumed sequences and dispatch",
+    to: { halted },
+  });
   revalidatePath("/app/settings/follow-up");
   revalidatePath("/app/queue");
+  revalidateSettings();
   return { status: "saved" };
+}
+
+export async function setOrgSequenceHaltForm(
+  _prev: SettingsSaveResult,
+  formData: FormData
+): Promise<SettingsSaveResult> {
+  return setOrgSequenceHalt(String(formData.get("halted") ?? "") === "true");
 }
 
 export async function updateVoiceProfile(
   _prev: SettingsSaveResult,
   formData: FormData
 ): Promise<SettingsSaveResult> {
-  const ctx = await getAuthContext();
-  if (!canManageOrgSettings(ctx.role, ctx.isPlatformAdmin)) return deny();
+  const gate = await requireAdvancedFollowUp();
+  if (!gate.ok) return gate.error;
 
   const formality = String(formData.get("formality") ?? "casual");
   if (formality !== "casual" && formality !== "professional") {
@@ -129,15 +201,23 @@ export async function updateVoiceProfile(
       emoji_usage: emoji,
       banned_words: banned,
     })
-    .eq("org_id", ctx.org.id);
+    .eq("org_id", gate.ctx.org.id);
   if (error) return { status: "error", error: "Could not save the voice profile." };
+  await refreshVoiceSample(gate.ctx.org.id);
+  await logSettingsActivity({
+    ctx: gate.ctx,
+    section: "follow_up",
+    action: "Updated voice profile mechanics",
+  });
   revalidatePath("/app/settings/follow-up");
+  revalidateSettings();
   return { status: "saved" };
 }
 
 export async function addVoiceExample(input: {
   body: string;
   channel: "sms" | "email";
+  sourceDraftId?: string | null;
 }): Promise<SettingsSaveResult> {
   const ctx = await getAuthContext();
   if (!canManageOrgSettings(ctx.role, ctx.isPlatformAdmin)) return deny();
@@ -152,14 +232,17 @@ export async function addVoiceExample(input: {
   }
   const next = examplesToJson([
     ...examples,
-    { body, channel: input.channel, addedAt: new Date().toISOString(), sourceDraftId: null },
+    { body, channel: input.channel, addedAt: new Date().toISOString(), sourceDraftId: input.sourceDraftId ?? null },
   ]);
   const { error } = await supabase
     .from("org_voice_profiles")
     .update({ examples: next as Json })
     .eq("org_id", ctx.org.id);
   if (error) return { status: "error", error: "Could not add that example." };
+  await refreshVoiceSample(ctx.org.id);
+  await logSettingsActivity({ ctx, section: "follow_up", action: "Added a voice example" });
   revalidatePath("/app/settings/follow-up");
+  revalidateSettings();
   return { status: "saved" };
 }
 
@@ -176,13 +259,38 @@ export async function removeVoiceExample(index: number): Promise<SettingsSaveRes
     .update({ examples: next as Json })
     .eq("org_id", ctx.org.id);
   if (error) return { status: "error", error: "Could not remove that example." };
+  await refreshVoiceSample(ctx.org.id);
+  await logSettingsActivity({ ctx, section: "follow_up", action: "Removed a voice example" });
   revalidatePath("/app/settings/follow-up");
+  revalidateSettings();
   return { status: "saved" };
 }
 
-export async function saveRoutingRules(raw: string): Promise<SettingsSaveResult> {
+export async function promoteSentDraft(draftId: string): Promise<SettingsSaveResult> {
   const ctx = await getAuthContext();
   if (!canManageOrgSettings(ctx.role, ctx.isPlatformAdmin)) return deny();
+  const supabase = await createClient();
+  const { data: draft } = await supabase
+    .from("follow_up_drafts")
+    .select("id, sent_body, channel")
+    .eq("id", draftId)
+    .eq("org_id", ctx.org.id)
+    .eq("status", "sent")
+    .maybeSingle();
+  if (!draft?.sent_body) return { status: "error", error: "That sent message is not available." };
+  const channel = draft.channel === "email" ? "email" : "sms";
+  const result = await addVoiceExample({
+    body: draft.sent_body,
+    channel,
+    sourceDraftId: draft.id,
+  });
+  return result;
+}
+
+export async function saveRoutingRules(raw: string): Promise<SettingsSaveResult> {
+  const gate = await requireAdvancedFollowUp();
+  if (!gate.ok) return gate.error;
+  const ctx = gate.ctx;
   let parsed: unknown;
   try {
     parsed = JSON.parse(raw);
@@ -210,13 +318,16 @@ export async function saveRoutingRules(raw: string): Promise<SettingsSaveResult>
     }))
   );
   if (error) return { status: "error", error: "Could not save routing rules." };
+  await logSettingsActivity({ ctx, section: "follow_up", action: "Updated follow-up routing" });
   revalidatePath("/app/settings/follow-up");
+  revalidateSettings();
   return { status: "saved" };
 }
 
 export async function refreshVoiceSuggestions(): Promise<SettingsSaveResult> {
-  const ctx = await getAuthContext();
-  if (!canManageOrgSettings(ctx.role, ctx.isPlatformAdmin)) return deny();
+  const gate = await requireAdvancedFollowUp();
+  if (!gate.ok) return gate.error;
+  const ctx = gate.ctx;
   const admin = getSupabaseAdmin();
   const { data } = await admin
     .from("follow_up_drafts")
@@ -250,8 +361,9 @@ export async function resolveVoiceSuggestion(input: {
   id: string;
   accept: boolean;
 }): Promise<SettingsSaveResult> {
-  const ctx = await getAuthContext();
-  if (!canManageOrgSettings(ctx.role, ctx.isPlatformAdmin)) return deny();
+  const gate = await requireAdvancedFollowUp();
+  if (!gate.ok) return gate.error;
+  const ctx = gate.ctx;
   const supabase = await createClient();
   const { data: suggestion } = await supabase
     .from("voice_profile_suggestions")
@@ -299,5 +411,6 @@ export async function resolveVoiceSuggestion(input: {
     .eq("org_id", ctx.org.id);
   if (error) return { status: "error", error: "Could not update that suggestion." };
   revalidatePath("/app/settings/follow-up");
+  revalidateSettings();
   return { status: "saved" };
 }

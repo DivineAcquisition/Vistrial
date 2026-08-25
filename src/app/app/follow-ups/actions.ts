@@ -8,7 +8,7 @@ import { canApproveFollowUp } from "@/lib/auth/permissions";
 import { MAX_VOICE_EXAMPLES } from "@/lib/follow-up/constants";
 import { runFollowUpJob } from "@/lib/follow-up/generate";
 import { loadFollowUpReview } from "@/lib/follow-up/load";
-import { computeSendAt } from "@/lib/follow-up/quiet-hours";
+import { followUpSendAtIso } from "@/lib/settings/send-at";
 import { editDistanceFor } from "@/lib/follow-up/suggestions";
 import type { FollowUpReviewPayload } from "@/lib/follow-up/types";
 import { examplesToJson, parseVoiceExamples } from "@/lib/follow-up/voice";
@@ -247,21 +247,32 @@ export async function approveFollowUp(input: {
     return fail("Recipient confirmation does not match the lead.");
   }
 
-  const { data: settings } = await supabase
-    .from("follow_up_settings")
-    .select("quiet_hours_enabled, quiet_hours_start, quiet_hours_end")
-    .eq("org_id", scoped.ctx.org.id)
-    .maybeSingle();
-  const timeZone = lead.timezone || scoped.ctx.org.timezone;
-  const sendAt = computeSendAt({
+  const [{ data: settings }, { data: orgHours }] = await Promise.all([
+    supabase
+      .from("follow_up_settings")
+      .select("quiet_hours_enabled, quiet_hours_start, quiet_hours_end")
+      .eq("org_id", scoped.ctx.org.id)
+      .maybeSingle(),
+    supabase
+      .from("organizations")
+      .select("timezone, working_hours_start, working_hours_end, working_days")
+      .eq("id", scoped.ctx.org.id)
+      .maybeSingle(),
+  ]);
+  const timeZone = lead.timezone || orgHours?.timezone || scoped.ctx.org.timezone;
+  const sendAt = followUpSendAtIso({
     now: new Date(),
-    timeZone,
-    enabled: settings?.quiet_hours_enabled ?? true,
-    startHm: (settings?.quiet_hours_start ?? "21:00").slice(0, 5),
-    endHm: (settings?.quiet_hours_end ?? "08:00").slice(0, 5),
-  }).toISOString();
+    leadTimeZone: timeZone,
+    quietEnabled: settings?.quiet_hours_enabled ?? true,
+    quietStart: settings?.quiet_hours_start,
+    quietEnd: settings?.quiet_hours_end,
+    orgTimezone: orgHours?.timezone || scoped.ctx.org.timezone,
+    workingHoursStart: orgHours?.working_hours_start,
+    workingHoursEnd: orgHours?.working_hours_end,
+    workingDays: orgHours?.working_days,
+  });
   if (input.confirmSendAt && Math.abs(Date.parse(input.confirmSendAt) - Date.parse(sendAt)) > 120_000) {
-    return fail("Send time changed (quiet hours). Confirm again.");
+    return fail("Send time changed (quiet hours or business hours). Confirm again.");
   }
 
   const subject = channel === "email" ? input.subject.trim() : null;
@@ -330,7 +341,7 @@ export async function retryFollowUpSend(draftId: string): Promise<FollowUpAction
   }
   const channel = scoped.draft.channel === "email" ? "email" : "sms";
   const supabase = await createClient();
-  const [{ data: lead }, { data: settings }] = await Promise.all([
+  const [{ data: lead }, { data: settings }, { data: orgHours }] = await Promise.all([
     supabase
       .from("leads")
       .select("timezone, assigned_setter_id, assigned_closer_id")
@@ -342,17 +353,26 @@ export async function retryFollowUpSend(draftId: string): Promise<FollowUpAction
       .select("quiet_hours_enabled, quiet_hours_start, quiet_hours_end")
       .eq("org_id", scoped.ctx.org.id)
       .maybeSingle(),
+    supabase
+      .from("organizations")
+      .select("timezone, working_hours_start, working_hours_end, working_days")
+      .eq("id", scoped.ctx.org.id)
+      .maybeSingle(),
   ]);
   if (!lead) return fail("That lead is not in this workspace.");
   const denied = denyUnlessAssignee(scoped.ctx, lead);
   if (denied) return denied;
-  const sendAt = computeSendAt({
+  const sendAt = followUpSendAtIso({
     now: new Date(),
-    timeZone: lead.timezone || scoped.ctx.org.timezone,
-    enabled: settings?.quiet_hours_enabled ?? true,
-    startHm: (settings?.quiet_hours_start ?? "21:00").slice(0, 5),
-    endHm: (settings?.quiet_hours_end ?? "08:00").slice(0, 5),
-  }).toISOString();
+    leadTimeZone: lead.timezone || orgHours?.timezone || scoped.ctx.org.timezone,
+    quietEnabled: settings?.quiet_hours_enabled ?? true,
+    quietStart: settings?.quiet_hours_start,
+    quietEnd: settings?.quiet_hours_end,
+    orgTimezone: orgHours?.timezone || scoped.ctx.org.timezone,
+    workingHoursStart: orgHours?.working_hours_start,
+    workingHoursEnd: orgHours?.working_hours_end,
+    workingDays: orgHours?.working_days,
+  });
   const admin = getSupabaseAdmin();
   const result = await dispatchOutboundMessage(admin, {
     orgId: scoped.ctx.org.id,

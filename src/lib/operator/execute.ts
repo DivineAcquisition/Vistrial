@@ -17,6 +17,7 @@ import { OPERATOR_UNDO_WINDOW_MS } from "@/lib/operator/constants";
 import { classifyToolError } from "@/lib/operator/errors";
 import type { OperatorBatchReport, OperatorWriteKind } from "@/lib/operator/types";
 import { overrideLeadScore } from "@/lib/scoring/override";
+import { logSettingsActivity } from "@/lib/settings/activity";
 import { createClient } from "@/lib/supabase/server";
 import type { Json } from "@/types/database";
 
@@ -354,6 +355,18 @@ export async function confirmOperatorConfirmation(input: {
     .select("id", { count: "exact", head: true })
     .eq("run_id", input.runId)
     .eq("decision", "pending");
+
+  await logSettingsActivity({
+    ctx: input.ctx,
+    section: "agent",
+    action: `Operator confirmed ${row.write_kind}`,
+    to: {
+      confirmationId: row.id,
+      writeKind: row.write_kind,
+      decision,
+      succeeded: report.succeeded.length,
+    },
+  });
 
   return {
     ok: true,

@@ -8,7 +8,6 @@ import {
   removeVoiceExample,
   resolveVoiceSuggestion,
   saveRoutingRules,
-  setOrgSequenceHalt,
   updateFollowUpPolicy,
   updateVoiceProfile,
 } from "@/app/app/settings/follow-up/actions";
@@ -17,7 +16,6 @@ import { Checkbox, CheckboxField } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
 import { Panel } from "@/components/ui/panel";
 import { Select } from "@/components/ui/select";
-import { Switch } from "@/components/ui/switch";
 import { SectionHeader } from "@/components/ui/section-header";
 import { MIN_VOICE_EXAMPLES } from "@/lib/follow-up/constants";
 import { FOLLOW_UP_BRANCH_LABELS, FOLLOW_UP_CHANNEL_LABELS } from "@/lib/follow-up/labels";
@@ -48,15 +46,16 @@ export function FollowUpSettingsScreen({
   voice,
   rules: initialRules,
   suggestions,
+  surface,
 }: {
   settings: FollowUpSettings;
   voice: VoiceProfile;
   rules: RoutingRule[];
   suggestions: VoiceSuggestionRow[];
+  surface: "workspace" | "advanced";
 }) {
   const [policyState, savePolicy, policyPending] = useActionState(updateFollowUpPolicy, idle);
   const [voiceState, saveVoice, voicePending] = useActionState(updateVoiceProfile, idle);
-  const [haltStatus, setHaltStatus] = useState<SettingsSaveResult>(idle);
   const [exampleStatus, setExampleStatus] = useState<SettingsSaveResult>(idle);
   const [exampleBody, setExampleBody] = useState("");
   const [exampleChannel, setExampleChannel] = useState<"sms" | "email">("sms");
@@ -66,32 +65,7 @@ export function FollowUpSettingsScreen({
 
   return (
     <div className="space-y-10">
-      <section>
-        <SectionHeader
-          title="Sequence stop"
-          hint="This switch exists before any sequence can run. It stops later drafts from being scheduled. It does not send anything."
-        />
-        <Panel className="p-6">
-          <Switch
-            checked={settings.sequencesHalted}
-            disabled={pending}
-            label="Stop all sequences for this workspace"
-            description={
-              settings.sequencesHalted
-                ? "Stopped. No further sequence step will be scheduled. Drafts already approved still send."
-                : "Allowed. Sequence steps are scheduled as calls are extracted."
-            }
-            onChange={(event) => {
-              const next = event.target.checked;
-              startTransition(async () => {
-                setHaltStatus(await setOrgSequenceHalt(next));
-              });
-            }}
-          />
-          {haltStatus.status === "error" ? <p className={errorClass}>{haltStatus.error}</p> : null}
-        </Panel>
-      </section>
-
+      {surface === "advanced" ? null : (
       <section>
         <SectionHeader
           title="Real messages you have sent"
@@ -172,7 +146,10 @@ export function FollowUpSettingsScreen({
           </div>
         </Panel>
       </section>
+      )}
 
+      {surface === "advanced" ? (
+      <>
       <section>
         <SectionHeader title="Voice profile" hint="Used on every generation. Changes never happen from edit data unless you confirm a suggestion below." />
         <Panel className="max-w-xl p-6">
@@ -471,6 +448,8 @@ export function FollowUpSettingsScreen({
           )}
         </Panel>
       </section>
+      </>
+      ) : null}
     </div>
   );
 }

@@ -9,6 +9,7 @@ import {
   recordIncident,
   recordRestoreDrill,
   runRetentionNow,
+  setOrgManaged,
   type OpsActionResult,
 } from "@/app/app/ops/actions";
 import { Button } from "@/components/ui/button";
@@ -19,7 +20,7 @@ import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { errorClass, helperClass, successClass } from "@/lib/ui";
 
-type OrgOption = { id: string; name: string; slug: string };
+type OrgOption = { id: string; name: string; slug: string; managed: boolean };
 
 function ResultLine({ result }: { result: OpsActionResult }) {
   if (result.status === "error") return <p className={errorClass}>{result.error}</p>;
@@ -39,6 +40,7 @@ export function OpsControls({ orgs }: { orgs: OrgOption[] }) {
           {orgs.map((org) => (
             <option key={org.id} value={org.id}>
               {org.name}
+              {org.managed ? " (managed)" : ""}
             </option>
           ))}
         </Select>
@@ -78,7 +80,38 @@ export function OpsControls({ orgs }: { orgs: OrgOption[] }) {
       </div>
       <p className={helperClass}>
         Halt dispatch is the Prompt 10 org-wide stop. Use it first on a dispatch-in-error. Export is
-        JSON, one workspace, no engineering ticket.
+        JSON, one workspace, no engineering ticket. Managed mode is attributed to you in that
+        client&apos;s activity log.
+      </p>
+
+      <div className="flex flex-wrap gap-2">
+        <Button
+          type="button"
+          variant="secondary"
+          size="sm"
+          onClick={async () => {
+            if (!orgId) return;
+            setResult(await setOrgManaged(orgId, true));
+          }}
+        >
+          Mark as managed
+        </Button>
+        <Button
+          type="button"
+          variant="secondary"
+          size="sm"
+          onClick={async () => {
+            if (!orgId) return;
+            setResult(await setOrgManaged(orgId, false));
+          }}
+        >
+          Release managed mode
+        </Button>
+      </div>
+      <p className={helperClass}>
+        {selected?.managed
+          ? "This workspace is managed. Advanced is read-only for the client until they take over or you release it."
+          : "This workspace is not managed. The client can change Advanced settings."}
       </p>
 
       <form

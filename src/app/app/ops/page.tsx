@@ -340,7 +340,12 @@ export default async function OpsPage() {
         </p>
         <div className="mt-4">
           <OpsControls
-            orgs={state.orgs.map((org) => ({ id: org.id, name: org.name, slug: org.slug }))}
+            orgs={state.orgs.map((org) => ({
+              id: org.id,
+              name: org.name,
+              slug: org.slug,
+              managed: Boolean(org.managed),
+            }))}
           />
         </div>
       </Panel>

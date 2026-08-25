@@ -1,16 +1,17 @@
+import { notFound } from "next/navigation";
 import { NextResponse } from "next/server";
 
-import { canManageOrgSettings } from "@/lib/auth/permissions";
 import { getAuthContext } from "@/lib/auth/session";
 import { buildOrgExport, exportFilename, exportJson } from "@/lib/ops/export";
+import { isOwner } from "@/lib/settings/managed";
 import { getSupabaseAdmin } from "@/lib/supabase/admin";
 
 export const dynamic = "force-dynamic";
 
 export async function GET() {
   const ctx = await getAuthContext();
-  if (!canManageOrgSettings(ctx.role, ctx.isPlatformAdmin)) {
-    return new NextResponse("Forbidden", { status: 403 });
+  if (!isOwner(ctx)) {
+    notFound();
   }
   try {
     const bundle = await buildOrgExport(getSupabaseAdmin(), ctx.org.id);

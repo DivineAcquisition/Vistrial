@@ -5,6 +5,8 @@ import { revalidatePath } from "next/cache";
 import type { SettingsSaveResult } from "@/app/app/settings/types";
 import { assertProfileAccess } from "@/lib/profile/load";
 import { ACTIVATION_WARNING_LABELS } from "@/lib/profile/vocabulary";
+import { logSettingsActivity } from "@/lib/settings/activity";
+import { revalidateSettings } from "@/lib/settings/revalidate";
 import { createClient } from "@/lib/supabase/server";
 import type { Enums } from "@/types/database";
 
@@ -57,6 +59,11 @@ export async function moveActivationTimestamp(
   const access = await assertProfileAccess();
   if (!access.ok) return { status: "error", error: access.error };
 
+  const confirmation = String(form.get("confirmation_name") ?? "").trim();
+  if (confirmation !== access.ctx.org.name) {
+    return { status: "error", error: "Type the workspace name exactly to move the activation timestamp." };
+  }
+
   const raw = String(form.get("new_at") ?? "").trim();
   const reason = String(form.get("reason") ?? "").trim();
   if (!raw) return { status: "error", error: "Pick the date and time to move it to." };
@@ -82,7 +89,15 @@ export async function moveActivationTimestamp(
     return { status: "error", error: rpcMessage(error.message, "The timestamp was not moved.") };
   }
 
+  await logSettingsActivity({
+    ctx: access.ctx,
+    section: "activation",
+    action: "Moved the activation timestamp",
+    to: { newAt: parsed.toISOString(), reason },
+  });
+
   revalidateProfileSurfaces();
+  revalidateSettings();
   return { status: "saved" };
 }
 

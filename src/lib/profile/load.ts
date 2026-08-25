@@ -5,7 +5,7 @@ import { redirect } from "next/navigation";
 import { canManageOrgSettings } from "@/lib/auth/permissions";
 import { getAuthContext } from "@/lib/auth/session";
 import type { AuthContext } from "@/lib/auth/types";
-import { firstSettingsPath } from "@/lib/navigation";
+import { notFound } from "next/navigation";
 import {
   parseBusinessProfileState,
   parseDefaults,
@@ -24,7 +24,7 @@ import { createClient } from "@/lib/supabase/server";
 export async function requireProfileAccess(): Promise<AuthContext> {
   const ctx = await getAuthContext();
   if (!canManageOrgSettings(ctx.role, ctx.isPlatformAdmin)) {
-    redirect(firstSettingsPath(ctx.role, ctx.isPlatformAdmin));
+    notFound();
   }
   return ctx;
 }

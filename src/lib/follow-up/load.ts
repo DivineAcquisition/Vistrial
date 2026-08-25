@@ -2,7 +2,7 @@ import "server-only";
 
 import { canApproveFollowUp } from "@/lib/auth/permissions";
 import { getAuthContext } from "@/lib/auth/session";
-import { computeSendAt } from "@/lib/follow-up/quiet-hours";
+import { followUpSendAtIso } from "@/lib/settings/send-at";
 import { parseRoutingRule } from "@/lib/follow-up/routing";
 import type {
   FollowUpChannel,
@@ -100,7 +100,7 @@ export async function loadFollowUpReview(draftId: string): Promise<FollowUpRevie
     .maybeSingle();
   if (!draft) return null;
 
-  const [{ data: lead }, { data: call }, { data: extraction }, settings] = await Promise.all([
+  const [{ data: lead }, { data: call }, { data: extraction }, settings, { data: orgHours }] = await Promise.all([
     supabase
       .from("leads")
       .select("id, first_name, last_name, email, phone, source, offer_name, timezone, assigned_setter_id, assigned_closer_id")
@@ -119,17 +119,26 @@ export async function loadFollowUpReview(draftId: string): Promise<FollowUpRevie
       .eq("call_id", draft.call_id)
       .maybeSingle(),
     loadFollowUpSettings(ctx.org.id),
+    supabase
+      .from("organizations")
+      .select("timezone, working_hours_start, working_hours_end, working_days")
+      .eq("id", ctx.org.id)
+      .maybeSingle(),
   ]);
   if (!lead || !call) return null;
 
-  const timeZone = lead.timezone || ctx.org.timezone;
-  const proposedSendAt = computeSendAt({
+  const timeZone = lead.timezone || orgHours?.timezone || ctx.org.timezone;
+  const proposedSendAt = followUpSendAtIso({
     now: new Date(),
-    timeZone,
-    enabled: settings.quietHoursEnabled,
-    startHm: settings.quietHoursStart,
-    endHm: settings.quietHoursEnd,
-  }).toISOString();
+    leadTimeZone: timeZone,
+    quietEnabled: settings.quietHoursEnabled,
+    quietStart: settings.quietHoursStart,
+    quietEnd: settings.quietHoursEnd,
+    orgTimezone: orgHours?.timezone || ctx.org.timezone,
+    workingHoursStart: orgHours?.working_hours_start,
+    workingHoursEnd: orgHours?.working_hours_end,
+    workingDays: orgHours?.working_days,
+  });
 
   const quotesUsed = Array.isArray(draft.quotes_used)
     ? draft.quotes_used.filter((item): item is string => typeof item === "string")

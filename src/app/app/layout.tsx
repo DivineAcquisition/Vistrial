@@ -8,6 +8,7 @@ export const dynamic = "force-dynamic";
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const ctx = await getAuthContext();
   const supabase = await createClient();
+  void supabase.rpc("touch_member_last_seen");
   const { data: training } = await supabase
     .from("org_members")
     .select("logged_outcome_from_mobile_at, call_coaching_acknowledged_at")

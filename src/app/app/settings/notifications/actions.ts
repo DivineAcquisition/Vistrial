@@ -11,6 +11,10 @@ import { deliverOne } from "@/lib/notifications/deliver";
 import { enqueueNotification } from "@/lib/notifications/enqueue";
 import { testSendCopy, notificationHref } from "@/lib/notifications/messages";
 import { muteUntilValid, preferenceLocked } from "@/lib/notifications/policy";
+import { logSettingsActivity } from "@/lib/settings/activity";
+import { canWriteAdvancedSettings } from "@/lib/settings/managed";
+import { loadOrgManaged } from "@/lib/settings/org";
+import { revalidateSettings } from "@/lib/settings/revalidate";
 import { getSupabaseAdmin } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import type { NotificationChannel, NotificationEventType } from "@/lib/notifications/types";
@@ -85,6 +89,13 @@ export async function saveOrgNotificationSettings(
   if (!canManageOrgSettings(ctx.role, ctx.isPlatformAdmin)) {
     return { status: "error", error: "You do not have permission to change these settings." };
   }
+  const managed = await loadOrgManaged(ctx.org.id);
+  if (!canWriteAdvancedSettings(ctx, managed.managed)) {
+    return {
+      status: "error",
+      error: "These settings are managed by your install team. Take over management, or ask them to make the change.",
+    };
+  }
   const supabase = await createClient();
   const sms = formData.get("sms_emergencies_enabled") === "on";
   const { error } = await supabase
@@ -117,7 +128,15 @@ export async function saveOrgNotificationSettings(
   const { error: teamError } = await supabase.from("notification_team_channels").upsert(patch);
   if (teamError) return { status: "error", error: "Could not save team channels." };
 
+  await logSettingsActivity({
+    ctx,
+    section: "notifications",
+    action: "Updated workspace alert channels",
+    to: { sms },
+  });
+
   revalidatePath("/app/settings/notifications");
+  revalidateSettings();
   return { status: "saved" };
 }
 

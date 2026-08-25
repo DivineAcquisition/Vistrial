@@ -68,7 +68,7 @@ export async function loadOpsSystemState(db: GhlDb) {
     loadGlobalIngestionHealth(db),
     loadOpsNotificationState(db),
     loadModelSpend(db, 30),
-    db.from("organizations").select("id, name, slug, inactive_at, offboarded_at, delete_after, ghl_location_id, holdout_percent"),
+    db.from("organizations").select("id, name, slug, inactive_at, offboarded_at, delete_after, ghl_location_id, holdout_percent, managed"),
     db.from("extraction_jobs").select("id", { count: "exact", head: true }).gte("created_at", since24h),
     db
       .from("extraction_jobs")

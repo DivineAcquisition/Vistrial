@@ -10,6 +10,8 @@ import {
 } from "@/lib/auth/invites";
 import { canManageMembers, isInvitableRole } from "@/lib/auth/permissions";
 import { getAuthContext } from "@/lib/auth/session";
+import { logSettingsActivity } from "@/lib/settings/activity";
+import { revalidateSettings } from "@/lib/settings/revalidate";
 import { createClient } from "@/lib/supabase/server";
 import type { OrgRole } from "@/types/database";
 
@@ -102,7 +104,14 @@ export async function inviteMember(
   }
 
   // Email delivery lands in a later prompt. Return the link for manual sharing.
+  await logSettingsActivity({
+    ctx: gate.ctx,
+    section: "members",
+    action: `Invited ${email} as ${role}`,
+    to: { email, role },
+  });
   revalidatePath("/app/settings/members");
+  revalidateSettings();
   return { ok: true, url: buildInviteLink(token) };
 }
 
@@ -122,7 +131,14 @@ export async function revokeInvite(inviteId: string): Promise<MemberActionResult
     return { ok: false, error: "Could not revoke the invite." };
   }
 
+  await logSettingsActivity({
+    ctx: gate.ctx,
+    section: "members",
+    action: "Revoked an invite",
+    to: { inviteId },
+  });
   revalidatePath("/app/settings/members");
+  revalidateSettings();
   return { ok: true };
 }
 
@@ -166,8 +182,17 @@ export async function updateMemberRole(
     return { ok: false, error: "Could not update the role." };
   }
 
+  await logSettingsActivity({
+    ctx: gate.ctx,
+    section: "members",
+    action: `Changed ${member.display_name}'s role`,
+    from: { role: member.role },
+    to: { role },
+  });
+
   revalidatePath("/app/settings/members");
   revalidatePath("/app");
+  revalidateSettings();
   return { ok: true };
 }
 
@@ -207,7 +232,16 @@ export async function setMemberActive(
     return { ok: false, error: "Could not update membership status." };
   }
 
+  await logSettingsActivity({
+    ctx: gate.ctx,
+    section: "members",
+    action: active ? `Reactivated ${member.display_name}` : `Deactivated ${member.display_name}`,
+    from: { active: member.active },
+    to: { active },
+  });
+
   revalidatePath("/app/settings/members");
   revalidatePath("/app");
+  revalidateSettings();
   return { ok: true };
 }

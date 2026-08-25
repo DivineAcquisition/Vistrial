@@ -205,3 +205,31 @@ if [[ "$(echo "$fn_oa" | tr -d ' ')" != "1" ]]; then
 fi
 
 echo "OK: operator agent migration rollback and re-apply succeeded."
+
+echo "Rollback settings tiers..."
+run "${ROOT}/supabase/rollbacks/20260829010000_settings_tiers.sql"
+col_managed="$("${PSQL[@]}" -d "${DB_NAME}" -tAc "SELECT count(*) FROM information_schema.columns WHERE table_schema='public' AND table_name='organizations' AND column_name='managed'")"
+if [[ "$(echo "$col_managed" | tr -d ' ')" != "0" ]]; then
+  echo "settings rollback left organizations.managed in place" >&2
+  exit 1
+fi
+tbl_act="$("${PSQL[@]}" -d "${DB_NAME}" -tAc "SELECT count(*) FROM information_schema.tables WHERE table_schema='public' AND table_name='settings_activity'")"
+if [[ "$(echo "$tbl_act" | tr -d ' ')" != "0" ]]; then
+  echo "settings rollback left settings_activity in place" >&2
+  exit 1
+fi
+
+echo "Re-apply settings tiers..."
+run "${ROOT}/supabase/migrations/20260829010000_settings_tiers.sql"
+col_managed="$("${PSQL[@]}" -d "${DB_NAME}" -tAc "SELECT count(*) FROM information_schema.columns WHERE table_schema='public' AND table_name='organizations' AND column_name='managed'")"
+if [[ "$(echo "$col_managed" | tr -d ' ')" != "1" ]]; then
+  echo "re-apply did not restore organizations.managed" >&2
+  exit 1
+fi
+tbl_act="$("${PSQL[@]}" -d "${DB_NAME}" -tAc "SELECT count(*) FROM information_schema.tables WHERE table_schema='public' AND table_name='settings_activity'")"
+if [[ "$(echo "$tbl_act" | tr -d ' ')" != "1" ]]; then
+  echo "re-apply did not restore settings_activity" >&2
+  exit 1
+fi
+
+echo "OK: settings-tiers migration rollback and re-apply succeeded."

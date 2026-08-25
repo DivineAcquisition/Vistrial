@@ -652,6 +652,7 @@ export type Database = {
           use_contractions: boolean;
           use_greeting: boolean;
           use_signoff: boolean;
+          sample_preview: Json;
         };
         Insert: {
           banned_words?: string[];
@@ -668,6 +669,7 @@ export type Database = {
           use_contractions?: boolean;
           use_greeting?: boolean;
           use_signoff?: boolean;
+          sample_preview?: Json;
         };
         Update: {
           banned_words?: string[];
@@ -684,6 +686,39 @@ export type Database = {
           use_contractions?: boolean;
           use_greeting?: boolean;
           use_signoff?: boolean;
+          sample_preview?: Json;
+        };
+        Relationships: [];
+      };
+      settings_activity: {
+        Row: {
+          id: string;
+          org_id: string;
+          created_at: string;
+          actor_member_id: string | null;
+          actor_user_id: string | null;
+          actor_label: string;
+          actor_kind: "member" | "da_operator" | "system";
+          section: string;
+          action: string;
+          from_value: Json | null;
+          to_value: Json | null;
+        };
+        Insert: {
+          id?: string;
+          org_id: string;
+          created_at?: string;
+          actor_member_id?: string | null;
+          actor_user_id?: string | null;
+          actor_label: string;
+          actor_kind: "member" | "da_operator" | "system";
+          section: string;
+          action: string;
+          from_value?: Json | null;
+          to_value?: Json | null;
+        };
+        Update: {
+          action?: string;
         };
         Relationships: [];
       };
@@ -1771,6 +1806,7 @@ export type Database = {
           logged_outcome_from_mobile_at: string | null;
           mobile_walkthrough_completed_at: string | null;
           call_coaching_acknowledged_at: string | null;
+          last_seen_at: string | null;
         };
         Insert: {
           active?: boolean;
@@ -1791,6 +1827,7 @@ export type Database = {
           logged_outcome_from_mobile_at?: string | null;
           mobile_walkthrough_completed_at?: string | null;
           call_coaching_acknowledged_at?: string | null;
+          last_seen_at?: string | null;
         };
         Update: {
           active?: boolean;
@@ -1811,6 +1848,7 @@ export type Database = {
           logged_outcome_from_mobile_at?: string | null;
           mobile_walkthrough_completed_at?: string | null;
           call_coaching_acknowledged_at?: string | null;
+          last_seen_at?: string | null;
         };
         Relationships: [
           {
@@ -1912,6 +1950,9 @@ export type Database = {
           offboarded_at: string | null;
           delete_after: string | null;
           offboard_reason: string | null;
+          managed: boolean;
+          managed_taken_over_at: string | null;
+          managed_taken_over_by: string | null;
         };
         Insert: {
           activated_at?: string | null;
@@ -1936,6 +1977,9 @@ export type Database = {
           offboarded_at?: string | null;
           delete_after?: string | null;
           offboard_reason?: string | null;
+          managed?: boolean;
+          managed_taken_over_at?: string | null;
+          managed_taken_over_by?: string | null;
         };
         Update: {
           activated_at?: string | null;
@@ -1960,6 +2004,9 @@ export type Database = {
           offboarded_at?: string | null;
           delete_after?: string | null;
           offboard_reason?: string | null;
+          managed?: boolean;
+          managed_taken_over_at?: string | null;
+          managed_taken_over_by?: string | null;
         };
         Relationships: [];
       };
@@ -4510,6 +4557,40 @@ export type Database = {
           p_holdout_percent?: number | null;
         };
         Returns: string;
+      };
+      log_settings_activity: {
+        Args: {
+          p_org_id: string;
+          p_section: string;
+          p_action: string;
+          p_from?: Json | null;
+          p_to?: Json | null;
+          p_actor_label?: string | null;
+          p_actor_kind?: string | null;
+          p_actor_member_id?: string | null;
+          p_actor_user_id?: string | null;
+        };
+        Returns: string;
+      };
+      take_over_org_management: {
+        Args: { p_org_id: string };
+        Returns: undefined;
+      };
+      set_org_managed: {
+        Args: { p_org_id: string; p_managed: boolean };
+        Returns: undefined;
+      };
+      org_advanced_writable: {
+        Args: { p_org_id: string };
+        Returns: boolean;
+      };
+      owner_delete_org: {
+        Args: { p_org_id: string; p_confirmation_name: string };
+        Returns: Json;
+      };
+      touch_member_last_seen: {
+        Args: Record<PropertyKey, never>;
+        Returns: undefined;
       };
       apply_calibration_suggestion: {
         Args: { p_org_id: string; p_suggestion_id: string };

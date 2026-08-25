@@ -10,6 +10,12 @@ import { isScoreFactor } from "@/lib/scoring/extract";
 import { loadScoreConfig, loadScoreMaps, scoreFromAnswers, answersFromJson } from "@/lib/scoring/store";
 import { insertScoreRow } from "@/lib/scoring/store";
 import { HOLDOUT_MAX_PERCENT } from "@/lib/calibration/constants";
+import { logSettingsActivity } from "@/lib/settings/activity";
+import { canWriteAdvancedSettings } from "@/lib/settings/managed";
+import { advancedRpcDenied, loadOrgManaged } from "@/lib/settings/org";
+import { previewScoringImpact, scoringPreviewFingerprint, type ScoringPreviewConfig, type ScoringPreviewResult } from "@/lib/settings/preview";
+import { loadScoringPreviewLeads } from "@/lib/settings/preview-load";
+import { revalidateSettings } from "@/lib/settings/revalidate";
 import { createClient } from "@/lib/supabase/server";
 import { getSupabaseAdmin } from "@/lib/supabase/admin";
 import type { Json } from "@/types/database";
@@ -22,15 +28,96 @@ function parseIntField(value: FormDataEntryValue | null, label: string, min: num
   return parsed;
 }
 
-export async function updateScoringConfig(
-  _prev: SettingsSaveResult,
-  formData: FormData
-): Promise<SettingsSaveResult> {
+export async function previewScoringChange(
+  proposed: ScoringPreviewConfig
+): Promise<ScoringPreviewResult | { error: string }> {
+  const ctx = await getAuthContext();
+  if (!canManageOrgSettings(ctx.role, ctx.isPlatformAdmin)) {
+    return { error: "You do not have permission to preview scoring settings." };
+  }
+  const supabase = await createClient();
+  const current = await loadScoreConfig(supabase, ctx.org.id);
+  const leads = await loadScoringPreviewLeads(ctx.org.id);
+  return previewScoringImpact({
+    leads,
+    current: {
+      ...current.weights,
+      readyThreshold: current.readyThreshold,
+      speedToLeadMinutes: current.speedToLeadMinutes,
+      ghostDaysSoft: current.ghostDaysSoft,
+      ghostDaysHard: current.ghostDaysHard,
+    },
+    proposed,
+    timeZone: ctx.org.timezone,
+  });
+}
+
+async function saveScoreConfigFromValues(args: {
+  formData: FormData;
+  proposed: ScoringPreviewConfig;
+  holdoutPercent: number;
+}): Promise<SettingsSaveResult> {
   const ctx = await getAuthContext();
   if (!canManageOrgSettings(ctx.role, ctx.isPlatformAdmin)) {
     return { status: "error", error: "You do not have permission to change scoring settings." };
   }
+  const managed = await loadOrgManaged(ctx.org.id);
+  if (!canWriteAdvancedSettings(ctx, managed.managed)) {
+    return { status: "error", error: "These settings are managed by your install team. Take over management, or ask them to make the change." };
+  }
 
+  const fingerprint = String(args.formData.get("preview_fingerprint") ?? "");
+  if (fingerprint !== scoringPreviewFingerprint(args.proposed)) {
+    return {
+      status: "error",
+      error: "Preview the impact of these changes against current leads before saving.",
+    };
+  }
+
+  const supabase = await createClient();
+  const current = await loadScoreConfig(supabase, ctx.org.id);
+  const { error } = await supabase.rpc("save_org_score_config", {
+    p_org_id: ctx.org.id,
+    p_timeline: args.proposed.timeline,
+    p_investment: args.proposed.investment_capacity,
+    p_authority: args.proposed.decision_authority,
+    p_pain: args.proposed.pain_severity,
+    p_threshold: args.proposed.readyThreshold,
+    p_speed: args.proposed.speedToLeadMinutes,
+    p_ghost_soft: args.proposed.ghostDaysSoft,
+    p_ghost_hard: args.proposed.ghostDaysHard,
+    p_source: "settings",
+    p_holdout_percent: args.holdoutPercent,
+  });
+
+  if (error) {
+    return { status: "error", error: advancedRpcDenied(error.message) ?? "Could not save scoring settings." };
+  }
+
+  await logSettingsActivity({
+    ctx,
+    section: "scoring",
+    action: "Updated scoring configuration",
+    from: {
+      ...current.weights,
+      readyThreshold: current.readyThreshold,
+      speedToLeadMinutes: current.speedToLeadMinutes,
+      ghostDaysSoft: current.ghostDaysSoft,
+      ghostDaysHard: current.ghostDaysHard,
+    },
+    to: args.proposed,
+  });
+
+  revalidatePath("/app/settings/scoring");
+  revalidatePath("/app/reporting/calibration");
+  revalidateSettings();
+  return { status: "saved" };
+}
+
+export async function updateScoringConfig(
+  _prev: SettingsSaveResult,
+  formData: FormData
+): Promise<SettingsSaveResult> {
   const timeline = parseIntField(formData.get("timeline_weight"), "Timeline weight", 0, 100);
   const investment = parseIntField(formData.get("investment_capacity_weight"), "Investment capacity weight", 0, 100);
   const authority = parseIntField(formData.get("decision_authority_weight"), "Decision authority weight", 0, 100);
@@ -57,28 +144,50 @@ export async function updateScoringConfig(
     return { status: "error", error: "The approaching-ghost window must be shorter than the ghost window." };
   }
 
-  const supabase = await createClient();
-  const { error } = await supabase.rpc("save_org_score_config", {
-    p_org_id: ctx.org.id,
-    p_timeline: timeline as number,
-    p_investment: investment as number,
-    p_authority: authority as number,
-    p_pain: pain as number,
-    p_threshold: ready as number,
-    p_speed: speed as number,
-    p_ghost_soft: ghostSoft as number,
-    p_ghost_hard: ghostHard as number,
-    p_source: "settings",
-    p_holdout_percent: holdoutRaw as number,
+  return saveScoreConfigFromValues({
+    formData,
+    proposed: {
+      timeline: timeline as number,
+      investment_capacity: investment as number,
+      decision_authority: authority as number,
+      pain_severity: pain as number,
+      readyThreshold: ready as number,
+      speedToLeadMinutes: speed as number,
+      ghostDaysSoft: ghostSoft as number,
+      ghostDaysHard: ghostHard as number,
+    },
+    holdoutPercent: holdoutRaw as number,
   });
+}
 
-  if (error) {
-    return { status: "error", error: "Could not save scoring settings." };
+export async function updateWorkspaceSensitivity(
+  _prev: SettingsSaveResult,
+  formData: FormData
+): Promise<SettingsSaveResult> {
+  const ctx = await getAuthContext();
+  if (!canManageOrgSettings(ctx.role, ctx.isPlatformAdmin)) {
+    return { status: "error", error: "You do not have permission to change scoring settings." };
   }
-
-  revalidatePath("/app/settings/scoring");
-  revalidatePath("/app/reporting/calibration");
-  return { status: "saved" };
+  const ready = parseIntField(formData.get("ready_threshold"), "Ready threshold", 0, 100);
+  if (typeof ready === "string") return { status: "error", error: ready };
+  const supabase = await createClient();
+  const current = await loadScoreConfig(supabase, ctx.org.id);
+  const { data: orgRow } = await supabase
+    .from("organizations")
+    .select("holdout_percent")
+    .eq("id", ctx.org.id)
+    .maybeSingle();
+  return saveScoreConfigFromValues({
+    formData,
+    proposed: {
+      ...current.weights,
+      readyThreshold: ready,
+      speedToLeadMinutes: current.speedToLeadMinutes,
+      ghostDaysSoft: current.ghostDaysSoft,
+      ghostDaysHard: current.ghostDaysHard,
+    },
+    holdoutPercent: Number(orgRow?.holdout_percent ?? 0),
+  });
 }
 
 export type MappingSaveResult = SettingsSaveResult;
@@ -99,6 +208,10 @@ export async function replaceScoreMaps(maps: MappingPayload[]): Promise<MappingS
   const ctx = await getAuthContext();
   if (!canManageOrgSettings(ctx.role, ctx.isPlatformAdmin)) {
     return { status: "error", error: "You do not have permission to change scoring mappings." };
+  }
+  const managed = await loadOrgManaged(ctx.org.id);
+  if (!canWriteAdvancedSettings(ctx, managed.managed)) {
+    return { status: "error", error: "These settings are managed by your install team. Take over management, or ask them to make the change." };
   }
 
   if (maps.length === 0) {
@@ -139,10 +252,18 @@ export async function replaceScoreMaps(maps: MappingPayload[]): Promise<MappingS
   });
 
   if (error) {
-    return { status: "error", error: "Could not save the factor mappings." };
+    return { status: "error", error: advancedRpcDenied(error.message) ?? "Could not save the factor mappings." };
   }
 
+  await logSettingsActivity({
+    ctx,
+    section: "scoring",
+    action: "Replaced scoring field mappings",
+    to: { fieldCount: maps.length },
+  });
+
   revalidatePath("/app/settings/scoring");
+  revalidateSettings();
   return { status: "saved" };
 }
 
@@ -150,6 +271,10 @@ export async function bulkRescoreLeads(): Promise<SettingsSaveResult & { count?:
   const ctx = await getAuthContext();
   if (!canManageOrgSettings(ctx.role, ctx.isPlatformAdmin)) {
     return { status: "error", error: "You do not have permission to re-score leads." };
+  }
+  const managed = await loadOrgManaged(ctx.org.id);
+  if (!canWriteAdvancedSettings(ctx, managed.managed)) {
+    return { status: "error", error: "These settings are managed by your install team. Take over management, or ask them to make the change." };
   }
 
   const supabase = await createClient();
@@ -189,7 +314,15 @@ export async function bulkRescoreLeads(): Promise<SettingsSaveResult & { count?:
     if (result.written) count += 1;
   }
 
+  await logSettingsActivity({
+    ctx,
+    section: "scoring",
+    action: "Bulk re-scored leads",
+    to: { count },
+  });
+
   revalidatePath("/app/settings/scoring");
+  revalidateSettings();
   return { status: "saved", count };
 }
 

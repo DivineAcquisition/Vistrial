@@ -54,6 +54,7 @@ WHERE n.nspname = 'public'
     'call_coaching_gaming_signals','call_coaching_benchmarks',
     'operator_runs','operator_run_steps','operator_run_confirmations','operator_run_leads',
     'baseline_fallback_declines',    'notifications','notification_preferences',
+    'settings_activity',
     'notification_mutes','notification_escalations','notification_presence',
     'notification_push_subscriptions','notification_team_channels','notification_digest_log',
     'rate_limit_buckets','ops_job_catalog','ops_job_runs','ops_alerts','ops_http_errors',
@@ -126,7 +127,10 @@ run "${ROOT}/supabase/tests/verify-call-quality.sql"
 echo "Operator agent checks..."
 run "${ROOT}/supabase/tests/verify-operator-agent.sql"
 
+echo "Settings-tier checks..."
+run "${ROOT}/supabase/tests/verify-settings-tiers.sql"
+
 echo "Migration rollback (this prompt's migrations)..."
 bash "${ROOT}/scripts/test-migration-rollback.sh"
 
-echo "OK: schema, seed, triggers, RLS, invite, scoring, GHL, platform-admin, queue, case-file, transcript, follow-up, integrity, reporting, business-profile, onboarding-reconcile, notification, hardening, mobile, calibration, call-quality, and operator-agent checks passed."
+echo "OK: schema, seed, triggers, RLS, invite, scoring, GHL, platform-admin, queue, case-file, transcript, follow-up, integrity, reporting, business-profile, onboarding-reconcile, notification, hardening, mobile, calibration, call-quality, operator-agent, and settings-tier checks passed."

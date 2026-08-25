@@ -1,7 +1,5 @@
 import type { OrgRole } from "@/types/database";
 
-import { canManageOrgSettings } from "@/lib/auth/permissions";
-
 /**
  * Navigation groups. The items and their labels are unchanged; the grouping
  * only gives the sidebar a heading above each band so a new setter can tell
@@ -84,21 +82,23 @@ export const SETTINGS_TABS: Array<{
   label: string;
   managerOnly: boolean;
 }> = [
-  { href: "/app/settings/organization", label: "Organization", managerOnly: true },
-  { href: "/app/settings/business-profile", label: "Business profile", managerOnly: true },
-  { href: "/app/settings/members", label: "Members", managerOnly: true },
-  { href: "/app/settings/scoring", label: "Scoring", managerOnly: true },
-  { href: "/app/settings/follow-up", label: "Follow-up", managerOnly: true },
-  { href: "/app/settings/integrations", label: "Integrations", managerOnly: true },
-  { href: "/app/settings/data", label: "Data", managerOnly: true },
-  { href: "/app/settings/notifications", label: "Notifications", managerOnly: false },
   { href: "/app/settings/profile", label: "Profile", managerOnly: false },
+  { href: "/app/settings/notifications", label: "Notifications", managerOnly: false },
+  { href: "/app/settings/app", label: "App", managerOnly: false },
+  { href: "/app/settings/workspace", label: "Workspace", managerOnly: true },
 ];
 
-export function firstSettingsPath(role: OrgRole, isPlatformAdmin = false): string {
-  return canManageOrgSettings(role, isPlatformAdmin)
-    ? "/app/settings/organization"
-    : "/app/settings/profile";
+export const ADVANCED_TABS: Array<{ href: string; label: string; ownerOnly?: boolean }> = [
+  { href: "/app/settings/advanced/scoring", label: "Scoring" },
+  { href: "/app/settings/advanced/integrations", label: "Integrations" },
+  { href: "/app/settings/advanced/follow-up", label: "Follow-up" },
+  { href: "/app/settings/advanced/data", label: "Data", ownerOnly: true },
+  { href: "/app/settings/advanced/activity", label: "Activity" },
+  { href: "/app/settings/advanced/activation", label: "Activation" },
+];
+
+export function firstSettingsPath(_role?: OrgRole, _isPlatformAdmin = false): string {
+  return "/app/settings/profile";
 }
 
 export const DEFAULT_APP_PATH = "/app/queue";

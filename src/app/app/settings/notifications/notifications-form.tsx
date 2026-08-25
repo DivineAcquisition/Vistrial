@@ -5,11 +5,9 @@ import { useActionState } from "react";
 import {
   saveNotificationMute,
   saveNotificationPreferences,
-  saveOrgNotificationSettings,
   sendTestNotification,
 } from "@/app/app/settings/notifications/actions";
 import type { SettingsSaveResult } from "@/app/app/settings/types";
-import { PushEnable } from "@/components/app/push-enable";
 import { SubmitButton } from "@/components/ui/button";
 import { Card, CardFooter } from "@/components/ui/card";
 import { CheckboxField } from "@/components/ui/checkbox";
@@ -17,7 +15,6 @@ import { Field } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Notice } from "@/components/ui/states";
 import { SectionHeader } from "@/components/ui/section-header";
-import { Switch } from "@/components/ui/switch";
 import { USER_PREF_CHANNELS, USER_PREF_EVENTS } from "@/lib/notifications/constants";
 import { defaultChannelEnabled } from "@/lib/notifications/defaults";
 import { CHANNEL_LABELS, EVENT_LABELS } from "@/lib/notifications/labels";
@@ -30,40 +27,21 @@ const idle: SettingsSaveResult = { status: "idle" };
 
 export function NotificationSettingsForm({
   role,
-  isManager,
   prefs,
   mutedUntil,
-  smsEmergenciesEnabled,
-  slackSaved,
-  teamsSaved,
 }: {
   role: OrgRole;
-  isManager: boolean;
   prefs: Array<{ event_type: NotificationEventType; channel: NotificationChannel; enabled: boolean }>;
   mutedUntil: string | null;
-  smsEmergenciesEnabled: boolean;
-  slackSaved: boolean;
-  teamsSaved: boolean;
 }) {
   const [prefState, savePrefs, prefPending] = useActionState(saveNotificationPreferences, idle);
   const [muteState, saveMute, mutePending] = useActionState(saveNotificationMute, idle);
-  const [orgState, saveOrg, orgPending] = useActionState(saveOrgNotificationSettings, idle);
   const [testState, sendTest, testPending] = useActionState(sendTestNotification, idle);
 
   const prefMap = new Map(prefs.map((row) => [`${row.event_type}:${row.channel}`, row.enabled]));
 
   return (
     <div className="space-y-10">
-      <section>
-        <SectionHeader
-          title="This device"
-          hint="Push is the default for anything with a clock on it. It never fires for something already on your screen."
-        />
-        <Card className="max-w-xl">
-          <PushEnable />
-        </Card>
-      </section>
-
       <section>
         <SectionHeader
           title="Channels per event"
@@ -92,9 +70,7 @@ export function NotificationSettingsForm({
                           defaultChecked={checked}
                           disabled={locked}
                           label={CHANNEL_LABELS[channel]}
-                          description={
-                            locked ? "Required for admin escalation" : undefined
-                          }
+                          description={locked ? "Required for admin escalation" : undefined}
                         />
                       );
                     })}
@@ -126,16 +102,10 @@ export function NotificationSettingsForm({
             ) : (
               <p className={helperClass}>Not muted.</p>
             )}
-            <Field
-              label="Mute until"
-              name="muted_until"
-              help="At most seven days from now."
-            >
+            <Field label="Mute until" name="muted_until" help="At most seven days from now.">
               <Input name="muted_until" id="muted_until" type="datetime-local" />
             </Field>
-            {mutedUntil ? (
-              <CheckboxField name="clear_mute" label="End mute now" />
-            ) : null}
+            {mutedUntil ? <CheckboxField name="clear_mute" label="End mute now" /> : null}
             {muteState.status === "error" ? <p className={errorClass}>{muteState.error}</p> : null}
             {muteState.status === "saved" ? <p className={successClass}>Saved.</p> : null}
             <CardFooter>
@@ -166,50 +136,12 @@ export function NotificationSettingsForm({
               ))}
             </div>
             {testState.status === "error" ? <p className={errorClass}>{testState.error}</p> : null}
-            {testState.status === "saved" ? <p className={successClass}>Sent. Check that device or inbox.</p> : null}
+            {testState.status === "saved" ? (
+              <p className={successClass}>Sent. Check that device or inbox.</p>
+            ) : null}
           </form>
         </Card>
       </section>
-
-      {isManager ? (
-        <section>
-          <SectionHeader
-            title="Workspace"
-            hint="SMS is off until you turn it on. Slack or Teams is the team channel for a breach seen by more than one person."
-          />
-          <Card className="max-w-xl">
-            <form action={saveOrg} className={cardStack}>
-              <Switch
-                name="sms_emergencies_enabled"
-                defaultChecked={smsEmergenciesEnabled}
-                label="SMS for stalled ingestion and a broken CRM"
-                description="Default off. Fires one hour after the push if the condition still holds, never at the same time."
-              />
-              <Field
-                label="Slack incoming webhook"
-                name="slack_webhook"
-                help={slackSaved ? "A webhook is saved. Paste a new URL to replace it." : "Optional."}
-              >
-                <Input name="slack_webhook" id="slack_webhook" type="url" placeholder="https://" />
-              </Field>
-              {slackSaved ? <CheckboxField name="clear_slack" label="Remove Slack webhook" /> : null}
-              <Field
-                label="Teams incoming webhook"
-                name="teams_webhook"
-                help={teamsSaved ? "A webhook is saved. Paste a new URL to replace it." : "Optional."}
-              >
-                <Input name="teams_webhook" id="teams_webhook" type="url" placeholder="https://" />
-              </Field>
-              {teamsSaved ? <CheckboxField name="clear_teams" label="Remove Teams webhook" /> : null}
-              {orgState.status === "error" ? <p className={errorClass}>{orgState.error}</p> : null}
-              {orgState.status === "saved" ? <p className={successClass}>Saved.</p> : null}
-              <CardFooter>
-                <SubmitButton pending={orgPending}>Save workspace alerts</SubmitButton>
-              </CardFooter>
-            </form>
-          </Card>
-        </section>
-      ) : null}
     </div>
   );
 }

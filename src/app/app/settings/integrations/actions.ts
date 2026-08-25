@@ -8,6 +8,11 @@ import { canManageOrgSettings } from "@/lib/auth/permissions";
 import { getAuthContext } from "@/lib/auth/session";
 import { isLeadId } from "@/lib/cases/filters";
 import { completeLocationSelection, disconnectGhl } from "@/lib/ghl/connect";
+import { fetchContact, fetchLocationName, getValidAccessToken } from "@/lib/ghl/client";
+import { logSettingsActivity } from "@/lib/settings/activity";
+import { canWriteAdvancedSettings } from "@/lib/settings/managed";
+import { loadOrgManaged } from "@/lib/settings/org";
+import { revalidateSettings } from "@/lib/settings/revalidate";
 import { encryptSecret } from "@/lib/ghl/crypto";
 import { retryDeadEvent, processGhlWebhookQueue } from "@/lib/ghl/process";
 import { processExtractionQueue } from "@/lib/extraction/run";
@@ -27,6 +32,23 @@ async function requireManager() {
   return ctx;
 }
 
+async function requireAdvancedManager() {
+  const ctx = await requireManager();
+  if (!ctx) return { ctx: null, error: forbidden() as SettingsSaveResult };
+  const managed = await loadOrgManaged(ctx.org.id);
+  if (!canWriteAdvancedSettings(ctx, managed.managed)) {
+    return {
+      ctx: null,
+      error: {
+        status: "error" as const,
+        error:
+          "These settings are managed by your install team. Take over management, or ask them to make the change.",
+      },
+    };
+  }
+  return { ctx, error: null };
+}
+
 export async function disconnectCrm(
   _prev: SettingsSaveResult,
   _formData: FormData
@@ -36,7 +58,9 @@ export async function disconnectCrm(
   const ctx = await requireManager();
   if (!ctx) return forbidden();
   await disconnectGhl(getSupabaseAdmin(), ctx.org.id);
+  await logSettingsActivity({ ctx, section: "integrations", action: "Disconnected GoHighLevel" });
   revalidatePath("/app/settings/integrations");
+  revalidateSettings();
   return { status: "saved" };
 }
 
@@ -54,13 +78,16 @@ export async function selectGhlLocation(
     locationId,
   });
   if (!result.ok) return { status: "error", error: result.error };
+  await logSettingsActivity({ ctx, section: "integrations", action: "Connected GoHighLevel location" });
   revalidatePath("/app/settings/integrations");
+  revalidateSettings();
   return { status: "saved" };
 }
 
 export async function retryWebhookEvent(eventId: string): Promise<SettingsSaveResult> {
-  const ctx = await requireManager();
-  if (!ctx) return forbidden();
+  const gate = await requireAdvancedManager();
+  if (!gate.ctx) return gate.error;
+  const ctx = gate.ctx;
   const ok = await retryDeadEvent(getSupabaseAdmin(), ctx.org.id, eventId);
   if (!ok) return { status: "error", error: "That event could not be queued for retry." };
   await processGhlWebhookQueue(getSupabaseAdmin(), 5);
@@ -75,8 +102,9 @@ export type FieldMapPayload = {
 };
 
 export async function saveGhlFieldMaps(maps: FieldMapPayload[]): Promise<SettingsSaveResult> {
-  const ctx = await requireManager();
-  if (!ctx) return forbidden();
+  const gate = await requireAdvancedManager();
+  if (!gate.ctx) return gate.error;
+  const ctx = gate.ctx;
 
   const cleaned = maps
     .map((map) => ({
@@ -102,8 +130,11 @@ export async function saveGhlFieldMaps(maps: FieldMapPayload[]): Promise<Setting
     if (error) return { status: "error", error: "Could not save field mapping." };
   }
 
+  await logSettingsActivity({ ctx, section: "integrations", action: "Updated GHL field mapping" });
+
   revalidatePath("/app/settings/integrations");
   revalidatePath("/app/settings/scoring");
+  revalidateSettings();
   return { status: "saved" };
 }
 
@@ -116,8 +147,9 @@ export async function saveTranscriptConnection(input: {
   webhookSecret: string;
   apiKey: string;
 }): Promise<SettingsSaveResult> {
-  const ctx = await requireManager();
-  if (!ctx) return forbidden();
+  const gate = await requireAdvancedManager();
+  if (!gate.ctx) return gate.error;
+  const ctx = gate.ctx;
   if (!(RECORDER_SOURCES as readonly string[]).includes(input.source)) {
     return { status: "error", error: "That recorder is not supported." };
   }
@@ -151,13 +183,15 @@ export async function saveTranscriptConnection(input: {
     if (error) return { status: "error", error: "Could not save that recorder connection." };
   }
 
+  await logSettingsActivity({ ctx, section: "integrations", action: "Updated a recorder connection" });
   revalidatePath("/app/settings/integrations");
   return { status: "saved" };
 }
 
 export async function rotateTranscriptWebhookToken(source: string): Promise<SettingsSaveResult> {
-  const ctx = await requireManager();
-  if (!ctx) return forbidden();
+  const gate = await requireAdvancedManager();
+  if (!gate.ctx) return gate.error;
+  const ctx = gate.ctx;
   if (!(RECORDER_SOURCES as readonly string[]).includes(source)) {
     return { status: "error", error: "That recorder is not supported." };
   }
@@ -282,5 +316,98 @@ export async function discardUnmatchedTranscript(unmatchedId: string): Promise<S
     .eq("id", data.id);
   revalidatePath("/app/settings/integrations");
   return { status: "saved" };
+}
+
+export async function testCrmConnection(): Promise<SettingsSaveResult & { message?: string }> {
+  const ctx = await requireManager();
+  if (!ctx) return forbidden();
+  const db = getSupabaseAdmin();
+  const token = await getValidAccessToken(db, ctx.org.id);
+  if (!token.ok) {
+    return {
+      status: "error",
+      error:
+        token.reason === "missing"
+          ? "GoHighLevel is not connected."
+          : "The stored token is not usable. Reconnect from Workspace.",
+    };
+  }
+  const { data: connection } = await db
+    .from("ghl_connections")
+    .select("location_id, location_name")
+    .eq("org_id", ctx.org.id)
+    .maybeSingle();
+  if (!connection?.location_id) {
+    return { status: "error", error: "No location is linked to this workspace." };
+  }
+  const name = await fetchLocationName(db, ctx.org.id, connection.location_id);
+  if (!name) {
+    return {
+      status: "error",
+      error: "GoHighLevel did not return the linked location. The connection is not healthy right now.",
+    };
+  }
+  return {
+    status: "saved",
+    message: `Live check passed. Linked location is ${name}.`,
+  };
+}
+
+export async function previewMappedContact(): Promise<
+  SettingsSaveResult & { fields?: Array<{ key: string; value: string }> }
+> {
+  const ctx = await requireManager();
+  if (!ctx) return forbidden();
+  const supabase = await createClient();
+  const { data: lead } = await supabase
+    .from("leads")
+    .select("ghl_contact_id, application_answers")
+    .eq("org_id", ctx.org.id)
+    .not("ghl_contact_id", "is", null)
+    .order("updated_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (!lead?.ghl_contact_id) {
+    return { status: "error", error: "No ingested contact is available to preview." };
+  }
+  const live = await fetchContact(getSupabaseAdmin(), ctx.org.id, lead.ghl_contact_id);
+  if (!live.ok || !live.json?.contact) {
+    return { status: "error", error: "GoHighLevel did not return that contact. Test the connection." };
+  }
+  const contact = live.json.contact;
+  const { data: maps } = await supabase
+    .from("ghl_field_maps")
+    .select("ghl_field_key, answer_key")
+    .eq("org_id", ctx.org.id);
+  const custom = Array.isArray(contact.customField)
+    ? Object.fromEntries(
+        (contact.customField as Array<{ id?: string; value?: unknown }>).map((field) => [
+          field.id ?? "",
+          field.value,
+        ])
+      )
+    : contact.customFields && typeof contact.customFields === "object"
+      ? (contact.customFields as Record<string, unknown>)
+      : {};
+  const fields = (maps ?? []).map((map) => {
+    const raw =
+      (map.ghl_field_key ? custom[map.ghl_field_key] : undefined) ??
+      (map.ghl_field_key ? contact[map.ghl_field_key] : undefined);
+    return {
+      key: map.answer_key,
+      value: raw === null || raw === undefined ? "" : String(raw),
+    };
+  });
+  if (fields.length === 0) {
+    fields.push({
+      key: "email",
+      value: typeof contact.email === "string" ? contact.email : "",
+    });
+    fields.push({
+      key: "phone",
+      value: typeof contact.phone === "string" ? contact.phone : "",
+    });
+  }
+  return { status: "saved", fields };
 }
 

@@ -2,17 +2,17 @@
 
 import { useState, type ReactNode } from "react";
 
-import { Button, type ButtonVariant } from "@/components/ui/button";
 import {
-  Dialog,
-  DialogClose,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
+  AlertDialog,
+  AlertDialogClose,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogPopup,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import { Button, type ButtonVariant } from "@/components/ui/button";
 
 /**
  * A second look before something consequential.
@@ -48,20 +48,24 @@ export function ConfirmDialog({
   const [working, setWorking] = useState(false);
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>{trigger}</DialogTrigger>
-      <DialogContent showCloseButton={false}>
-        <DialogHeader>
-          <DialogTitle>{title}</DialogTitle>
-          <DialogDescription>{description}</DialogDescription>
-        </DialogHeader>
-        {children}
-        <DialogFooter>
-          <DialogClose asChild>
-            <Button variant="ghost" disabled={working}>
-              {cancelLabel}
-            </Button>
-          </DialogClose>
+    <AlertDialog
+      open={open}
+      onOpenChange={(next) => {
+        if (working) return;
+        setOpen(next);
+      }}
+    >
+      <AlertDialogTrigger asChild>{trigger}</AlertDialogTrigger>
+      <AlertDialogPopup>
+        <AlertDialogHeader>
+          <AlertDialogTitle>{title}</AlertDialogTitle>
+          <AlertDialogDescription>{description}</AlertDialogDescription>
+        </AlertDialogHeader>
+        {children ? <div className="px-6">{children}</div> : null}
+        <AlertDialogFooter>
+          <AlertDialogClose render={<Button variant="ghost" disabled={working} />}>
+            {cancelLabel}
+          </AlertDialogClose>
           <Button
             variant={confirmVariant}
             loading={working}
@@ -78,8 +82,8 @@ export function ConfirmDialog({
           >
             {confirmLabel}
           </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+        </AlertDialogFooter>
+      </AlertDialogPopup>
+    </AlertDialog>
   );
 }

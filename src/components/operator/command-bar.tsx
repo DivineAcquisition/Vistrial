@@ -1,8 +1,15 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Command } from "lucide-react";
+import { Command as CommandIcon } from "lucide-react";
 
+import {
+  Command,
+  CommandEmpty,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
 import { OPERATOR_OPEN_RUN_EVENT } from "@/components/operator/open-run-button";
 import { RunContainer, runStatusLabel } from "@/components/operator/run-container";
 import { Button } from "@/components/ui/button";
@@ -257,6 +264,16 @@ export function OperatorCommandBar() {
     setBusy(false);
   };
 
+  const historyItems = useMemo(
+    () =>
+      history.map((row) => ({
+        value: row.id,
+        label: row.requestText,
+        status: row.status,
+      })),
+    [history]
+  );
+
   const requestText = run?.requestText ?? request;
   const followUpEnabled = run?.status === "completed" && !run.followUpUsed && !streaming;
 
@@ -276,7 +293,7 @@ export function OperatorCommandBar() {
         aria-keyshortcuts="Meta+K Control+K"
         onClick={() => setOpen(true)}
       >
-        <Command className="size-4" aria-hidden />
+        <CommandIcon className="size-4" aria-hidden />
       </Button>
       <Sheet open={open} onOpenChange={setOpen}>
         <SheetContent
@@ -327,28 +344,31 @@ export function OperatorCommandBar() {
             {error ? <p className="mt-3 text-sm text-flag-critical">{error}</p> : null}
 
             {showHistory ? (
-              <ul className="mt-4 space-y-2 overflow-y-auto">
-                {history.length === 0 ? (
-                  <li className={helperClass}>No runs yet.</li>
-                ) : (
-                  history.map((row) => (
-                    <li key={row.id}>
-                      <button
-                        type="button"
-                        className="w-full rounded-xl border border-white/[0.08] px-3 py-2 text-left text-sm text-silver hover:text-white"
+              <div className="mt-4 min-h-0 flex-1">
+                <Command items={historyItems}>
+                  <CommandInput placeholder="Search runs" />
+                  <CommandEmpty>
+                    {history.length === 0 ? "No runs yet." : "No matching runs."}
+                  </CommandEmpty>
+                  <CommandList className="max-h-80">
+                    {(item) => (
+                      <CommandItem
+                        key={item.value}
+                        value={item}
+                        className="mb-2 flex-col items-start rounded-xl border border-white/[0.08] px-3 py-2"
                         onClick={() => {
                           setShowHistory(false);
-                          setRunId(row.id);
-                          void hydrate(row.id);
+                          setRunId(item.value);
+                          void hydrate(item.value);
                         }}
                       >
-                        <span className="block text-white">{row.requestText}</span>
-                        <span className={helperClass}>{row.status}</span>
-                      </button>
-                    </li>
-                  ))
-                )}
-              </ul>
+                        <span className="text-white">{item.label}</span>
+                        <span className={helperClass}>{item.status}</span>
+                      </CommandItem>
+                    )}
+                  </CommandList>
+                </Command>
+              </div>
             ) : runId || streaming ? (
               <div className="mt-4 flex min-h-0 flex-1 flex-col">
                 <RunContainer

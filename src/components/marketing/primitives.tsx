@@ -1,5 +1,14 @@
-import { ChevronDown, type LucideIcon } from "lucide-react";
+import { type LucideIcon } from "lucide-react";
 import type { ReactNode } from "react";
+
+import { BorderBeam } from "@/components/ui/border-beam";
+import { ShineBorder } from "@/components/ui/shine-border";
+import {
+  Accordion,
+  AccordionItem,
+  AccordionPanel,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
 
 import { Panel } from "@/components/ui/panel";
 import {
@@ -143,7 +152,14 @@ export function ProductFrame({
           filter: "blur(28px)",
         }}
       />
-      <div className="overflow-hidden rounded-2xl border border-white/[0.1] bg-ink-850/90 shadow-[inset_0_1px_0_rgba(255,255,255,0.06),0_24px_80px_-32px_rgba(0,0,0,0.85)]">
+      <div className="relative overflow-hidden rounded-2xl border border-white/[0.1] bg-ink-850/90 shadow-[inset_0_1px_0_rgba(255,255,255,0.06),0_24px_80px_-32px_rgba(0,0,0,0.85)]">
+        <BorderBeam
+          size={80}
+          duration={8}
+          colorFrom="#9A88FC"
+          colorTo="#C3B6FE"
+          borderWidth={1}
+        />
         <div className="flex items-center gap-3 border-b border-white/[0.06] px-3 py-2.5">
           <span className="flex gap-1.5" aria-hidden>
             <span className="size-2 rounded-full bg-white/25" />
@@ -167,26 +183,21 @@ export function FaqAccordion({
   items: readonly { question: string; answer: string }[];
 }) {
   return (
-    <div className="divide-y divide-white/[0.07] border-y border-white/[0.07]">
-      {items.map((item) => (
-        <details key={item.question} className="group py-5">
-          <summary
-            className={cn(
-              "flex cursor-pointer list-none items-center justify-between gap-4 rounded-sm text-left",
-              marketingCardTitle,
-              "marker:content-none [&::-webkit-details-marker]:hidden"
-            )}
-          >
+    <Accordion
+      multiple
+      className="divide-y divide-white/[0.07] border-y border-white/[0.07]"
+    >
+      {items.map((item, index) => (
+        <AccordionItem key={item.question} value={`faq-${index}`}>
+          <AccordionTrigger className={cn(marketingCardTitle, "py-5")}>
             {item.question}
-            <ChevronDown
-              className="size-4 shrink-0 text-brand-300 transition-transform duration-200 group-open:rotate-180"
-              aria-hidden
-            />
-          </summary>
-          <p className={cn(marketingBody, "mt-3 max-w-2xl pr-8")}>{item.answer}</p>
-        </details>
+          </AccordionTrigger>
+          <AccordionPanel className={cn(marketingBody, "max-w-2xl pr-8")}>
+            {item.answer}
+          </AccordionPanel>
+        </AccordionItem>
       ))}
-    </div>
+    </Accordion>
   );
 }
 
@@ -199,6 +210,7 @@ export function FinalCta({
 }) {
   return (
     <div className="relative overflow-hidden rounded-2xl border border-white/[0.1] bg-ink-900 px-6 py-12 text-center sm:px-12 sm:py-16">
+      <ShineBorder shineColor={["#9A88FC", "#C3B6FE"]} duration={12} />
       <div
         aria-hidden
         className="pointer-events-none absolute inset-0"

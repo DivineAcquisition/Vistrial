@@ -3,6 +3,7 @@
 import { AlertDialog as AlertDialogPrimitive } from "@base-ui/react/alert-dialog";
 import type React from "react";
 import { cn } from "@/lib/utils";
+import { inferNativeButton, resolveAsChild } from "@/lib/as-child";
 
 export const AlertDialogCreateHandle: typeof AlertDialogPrimitive.createHandle =
   AlertDialogPrimitive.createHandle;
@@ -13,11 +14,23 @@ export const AlertDialog: typeof AlertDialogPrimitive.Root =
 export const AlertDialogPortal: typeof AlertDialogPrimitive.Portal =
   AlertDialogPrimitive.Portal;
 
-export function AlertDialogTrigger(
-  props: AlertDialogPrimitive.Trigger.Props,
-): React.ReactElement {
+export function AlertDialogTrigger({
+  asChild,
+  children,
+  render,
+  nativeButton,
+  ...props
+}: AlertDialogPrimitive.Trigger.Props & { asChild?: boolean }): React.ReactElement {
+  const slotted = resolveAsChild({ asChild, children, render });
   return (
-    <AlertDialogPrimitive.Trigger data-slot="alert-dialog-trigger" {...props} />
+    <AlertDialogPrimitive.Trigger
+      data-slot="alert-dialog-trigger"
+      nativeButton={inferNativeButton(asChild, children, nativeButton)}
+      {...props}
+      render={slotted.render}
+    >
+      {slotted.children}
+    </AlertDialogPrimitive.Trigger>
   );
 }
 
@@ -152,11 +165,23 @@ export function AlertDialogDescription({
   );
 }
 
-export function AlertDialogClose(
-  props: AlertDialogPrimitive.Close.Props,
-): React.ReactElement {
+export function AlertDialogClose({
+  asChild,
+  children,
+  render,
+  nativeButton,
+  ...props
+}: AlertDialogPrimitive.Close.Props & { asChild?: boolean }): React.ReactElement {
+  const slotted = resolveAsChild({ asChild, children, render });
   return (
-    <AlertDialogPrimitive.Close data-slot="alert-dialog-close" {...props} />
+    <AlertDialogPrimitive.Close
+      data-slot="alert-dialog-close"
+      nativeButton={inferNativeButton(asChild, children, nativeButton)}
+      {...props}
+      render={slotted.render}
+    >
+      {slotted.children}
+    </AlertDialogPrimitive.Close>
   );
 }
 

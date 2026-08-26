@@ -2,15 +2,12 @@
 
 import { useRef, useState, type FormEvent } from "react";
 
+import { ShimmerButton } from "@/components/ui/shimmer-button";
 import { trackMarketingEvent } from "@/components/marketing/track";
 import { submitWaitlist } from "@/lib/marketing/actions";
 import type { CtaPosition } from "@/lib/marketing/config";
 import { WAITLIST } from "@/lib/marketing/copy";
-import {
-  marketingBtnPrimary,
-  marketingFieldCompact,
-  marketingFieldCompactControl,
-} from "@/lib/marketing/ui";
+import { marketingFieldCompact, marketingFieldCompactControl } from "@/lib/marketing/ui";
 import { errorClass, successClass } from "@/lib/ui";
 import { cn } from "@/lib/utils";
 
@@ -100,9 +97,16 @@ export function WaitlistForm({
             className={marketingFieldCompactControl}
           />
         </div>
-        <button type="submit" disabled={pending} className={cn(marketingBtnPrimary, "w-full sm:w-auto")}>
+        <ShimmerButton
+          type="submit"
+          disabled={pending}
+          background="rgb(154, 136, 252)"
+          shimmerColor="#ffffff"
+          borderRadius="8px"
+          className="h-10 w-full px-5 py-0 text-sm font-medium text-ink-950 sm:w-auto disabled:opacity-45"
+        >
           {pending ? `${WAITLIST.pending}…` : WAITLIST.submit}
-        </button>
+        </ShimmerButton>
         </div>
       </div>
       <div aria-hidden className="absolute -left-[9999px] h-0 w-0 overflow-hidden">

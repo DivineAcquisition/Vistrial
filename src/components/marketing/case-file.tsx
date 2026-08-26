@@ -1,3 +1,5 @@
+import { AnimatedList } from "@/components/ui/animated-list";
+import { NumberTicker } from "@/components/ui/number-ticker";
 import { Progress } from "@/components/ui/progress";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { CASE_FILE } from "@/lib/marketing/copy";
@@ -36,7 +38,12 @@ export function HeroCaseFile() {
           </div>
           <div className="text-right">
             <p className={sectionLabel}>Readiness score</p>
-            <p className="mt-1 tabular text-3xl font-semibold text-brand-500">{demo.score.total}</p>
+            <p className="mt-1 tabular text-3xl font-semibold text-brand-500">
+              <NumberTicker
+                value={demo.score.total}
+                className="text-brand-500 dark:text-brand-500"
+              />
+            </p>
             <p className="mt-1 text-xs text-dim">/ 100</p>
           </div>
         </div>
@@ -61,18 +68,18 @@ export function HeroCaseFile() {
           <p className="mt-2 text-sm text-white">“{demo.objection.verbatim}”</p>
         </div>
 
-        <ol className="mt-5 space-y-3 border-t border-white/[0.06] pt-4">
+        <AnimatedList className="mt-5 items-stretch gap-3 border-t border-white/[0.06] pt-4" delay={800}>
           {demo.touches.slice(0, 3).map((touch) => (
-            <li key={`${touch.when}-${touch.channel}`} className="flex items-start justify-between gap-3">
+            <div key={`${touch.when}-${touch.channel}`} className="flex items-start justify-between gap-3">
               <p className="text-sm text-white">
                 {touch.channel}
                 <span className="ml-2 text-dim">
                   {touch.who} · {touch.when}
                 </span>
               </p>
-            </li>
+            </div>
           ))}
-        </ol>
+        </AnimatedList>
 
         <div className="mt-4 rounded-lg border border-white/[0.08] bg-white/[0.03] px-3 py-2.5">
           <div className="flex flex-wrap items-center gap-2">

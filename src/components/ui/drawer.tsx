@@ -10,6 +10,7 @@ import { ChevronRightIcon, XIcon } from "lucide-react";
 import type React from "react";
 import { createContext, useContext } from "react";
 import { cn } from "@/lib/utils";
+import { inferNativeButton, resolveAsChild } from "@/lib/as-child";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
@@ -53,16 +54,44 @@ export function Drawer({
 export const DrawerPortal: typeof DrawerPrimitive.Portal =
   DrawerPrimitive.Portal;
 
-export function DrawerTrigger(
-  props: DrawerPrimitive.Trigger.Props,
-): React.ReactElement {
-  return <DrawerPrimitive.Trigger data-slot="drawer-trigger" {...props} />;
+export function DrawerTrigger({
+  asChild,
+  children,
+  render,
+  nativeButton,
+  ...props
+}: DrawerPrimitive.Trigger.Props & { asChild?: boolean }): React.ReactElement {
+  const slotted = resolveAsChild({ asChild, children, render });
+  return (
+    <DrawerPrimitive.Trigger
+      data-slot="drawer-trigger"
+      nativeButton={inferNativeButton(asChild, children, nativeButton)}
+      {...props}
+      render={slotted.render}
+    >
+      {slotted.children}
+    </DrawerPrimitive.Trigger>
+  );
 }
 
-export function DrawerClose(
-  props: DrawerPrimitive.Close.Props,
-): React.ReactElement {
-  return <DrawerPrimitive.Close data-slot="drawer-close" {...props} />;
+export function DrawerClose({
+  asChild,
+  children,
+  render,
+  nativeButton,
+  ...props
+}: DrawerPrimitive.Close.Props & { asChild?: boolean }): React.ReactElement {
+  const slotted = resolveAsChild({ asChild, children, render });
+  return (
+    <DrawerPrimitive.Close
+      data-slot="drawer-close"
+      nativeButton={inferNativeButton(asChild, children, nativeButton)}
+      {...props}
+      render={slotted.render}
+    >
+      {slotted.children}
+    </DrawerPrimitive.Close>
+  );
 }
 
 export function DrawerSwipeArea({

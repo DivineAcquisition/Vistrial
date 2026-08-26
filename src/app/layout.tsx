@@ -1,7 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Inter, JetBrains_Mono, Geist_Mono } from "next/font/google";
 
-import { Toaster } from "@/components/ui/sonner";
+import { AnchoredToastProvider, ToastProvider } from "@/components/ui/toast";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { APP_NAME, PRODUCTION_SITE_ORIGIN } from "@/lib/constants";
 import { SITE_DESCRIPTION, SOCIAL_IMAGE } from "@/lib/marketing/copy";
@@ -92,8 +92,11 @@ export default function RootLayout({
       suppressHydrationWarning
     >
       <body className="min-h-screen bg-background font-sans text-foreground antialiased">
-        <TooltipProvider>{children}</TooltipProvider>
-        <Toaster richColors position="top-right" />
+        <ToastProvider position="top-right">
+          <AnchoredToastProvider>
+            <TooltipProvider>{children}</TooltipProvider>
+          </AnchoredToastProvider>
+        </ToastProvider>
       </body>
     </html>
   );

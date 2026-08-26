@@ -4,13 +4,14 @@ import Link from "next/link";
 
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+  Menu,
+  MenuGroup,
+  MenuGroupLabel,
+  MenuLinkItem,
+  MenuPopup,
+  MenuSeparator,
+  MenuTrigger,
+} from "@/components/ui/menu";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useOrg } from "@/components/app/org-provider";
 import { initials } from "@/lib/format";
@@ -29,7 +30,7 @@ export function UserMenu({
   const header = placement === "header";
 
   const trigger = (
-    <DropdownMenuTrigger
+    <MenuTrigger
       aria-label={collapsed ? `Account: ${name}` : undefined}
       className={cn(
         "flex items-center rounded-xl text-left transition-colors hover:bg-white/[0.05]",
@@ -45,11 +46,11 @@ export function UserMenu({
           <span className="block truncate text-[11px] text-dim capitalize">{roleLabel}</span>
         </span>
       )}
-    </DropdownMenuTrigger>
+    </MenuTrigger>
   );
 
   return (
-    <DropdownMenu>
+    <Menu>
       {collapsed ? (
         <Tooltip>
           <TooltipTrigger asChild>{trigger}</TooltipTrigger>
@@ -58,26 +59,24 @@ export function UserMenu({
       ) : (
         trigger
       )}
-      <DropdownMenuContent
+      <MenuPopup
         align={header ? "end" : "start"}
         side={header ? "bottom" : "top"}
         className="w-56"
       >
-        <DropdownMenuLabel className="font-normal">
-          <span className="block truncate text-sm text-white">{name}</span>
-          <span className="block truncate text-xs text-dim">{user.email}</span>
-          {collapsed ? (
-            <span className="mt-1 block truncate text-xs text-dim">{org.name}</span>
-          ) : null}
-        </DropdownMenuLabel>
-        <DropdownMenuSeparator />
-        <DropdownMenuItem asChild>
-          <Link href="/app/settings/profile">Profile</Link>
-        </DropdownMenuItem>
-        <DropdownMenuItem asChild>
-          <Link href="/auth/signout">Sign out</Link>
-        </DropdownMenuItem>
-      </DropdownMenuContent>
-    </DropdownMenu>
+        <MenuGroup>
+          <MenuGroupLabel className="font-normal">
+            <span className="block truncate text-sm text-white">{name}</span>
+            <span className="block truncate text-xs text-dim">{user.email}</span>
+            {collapsed ? (
+              <span className="mt-1 block truncate text-xs text-dim">{org.name}</span>
+            ) : null}
+          </MenuGroupLabel>
+        </MenuGroup>
+        <MenuSeparator />
+        <MenuLinkItem render={<Link href="/app/settings/profile" />}>Profile</MenuLinkItem>
+        <MenuLinkItem render={<Link href="/auth/signout" />}>Sign out</MenuLinkItem>
+      </MenuPopup>
+    </Menu>
   );
 }

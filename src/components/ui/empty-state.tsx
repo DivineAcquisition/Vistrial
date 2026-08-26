@@ -8,6 +8,14 @@ import {
   type LucideIcon,
 } from "lucide-react";
 
+import {
+  Empty,
+  EmptyContent,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyMedia,
+  EmptyTitle,
+} from "@/components/ui/empty";
 import { Panel } from "@/components/ui/panel";
 import { cn } from "@/lib/utils";
 
@@ -49,33 +57,40 @@ export function EmptyState({
   const meta = KIND[kind];
   const Icon = meta.icon;
 
-  const body = (
-    <div className="text-center">
-      <span
-        className={cn(
-          "mx-auto grid size-10 place-items-center rounded-xl border border-white/[0.08] bg-white/[0.03]",
-          meta.tint
-        )}
-      >
-        <Icon className="size-5" aria-hidden />
-      </span>
-      <p className="mt-4 text-[11px] font-semibold tracking-[0.14em] text-dim uppercase">
-        {meta.eyebrow}
-      </p>
-      <p className="mt-2 text-sm font-medium text-white">{title}</p>
-      {detail ? (
-        <p className="mx-auto mt-2 max-w-md text-sm leading-relaxed text-dim">{detail}</p>
-      ) : null}
+  const inner = (
+    <>
+      <EmptyHeader>
+        <EmptyMedia variant="icon">
+          <Icon className={cn("size-5", meta.tint)} aria-hidden />
+        </EmptyMedia>
+        <p className="text-[11px] font-semibold tracking-[0.14em] text-dim uppercase">
+          {meta.eyebrow}
+        </p>
+        <EmptyTitle className="text-sm font-medium text-white">{title}</EmptyTitle>
+        {detail ? (
+          <EmptyDescription className="max-w-md text-sm leading-relaxed text-dim">
+            {detail}
+          </EmptyDescription>
+        ) : null}
+      </EmptyHeader>
       {action || secondaryAction ? (
-        <div className="mt-5 flex flex-wrap items-center justify-center gap-2">
+        <EmptyContent className="flex-row flex-wrap justify-center">
           {action}
           {secondaryAction}
-        </div>
+        </EmptyContent>
       ) : null}
-    </div>
+    </>
   );
 
-  if (bare) return <div className={cn("px-6 py-10", className)}>{body}</div>;
+  if (bare) {
+    return (
+      <Empty className={cn("gap-4 px-6 py-10 md:py-10", className)}>{inner}</Empty>
+    );
+  }
 
-  return <Panel className={cn("px-6 py-12", className)}>{body}</Panel>;
+  return (
+    <Panel className={cn("px-6 py-12", className)}>
+      <Empty className="gap-4 px-0 py-0 md:py-0">{inner}</Empty>
+    </Panel>
+  );
 }

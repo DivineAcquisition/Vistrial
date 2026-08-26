@@ -4,6 +4,7 @@ import { Menu as MenuPrimitive } from "@base-ui/react/menu";
 import { ChevronRightIcon } from "lucide-react";
 import type * as React from "react";
 import { cn } from "@/lib/utils";
+import { inferNativeButton, resolveAsChild } from "@/lib/as-child";
 
 export const MenuCreateHandle: typeof MenuPrimitive.createHandle =
   MenuPrimitive.createHandle;
@@ -15,15 +16,21 @@ export const MenuPortal: typeof MenuPrimitive.Portal = MenuPrimitive.Portal;
 export function MenuTrigger({
   className,
   children,
+  asChild,
+  render,
+  nativeButton,
   ...props
-}: MenuPrimitive.Trigger.Props): React.ReactElement {
+}: MenuPrimitive.Trigger.Props & { asChild?: boolean }): React.ReactElement {
+  const slotted = resolveAsChild({ asChild, children, render });
   return (
     <MenuPrimitive.Trigger
       className={className}
       data-slot="menu-trigger"
+      nativeButton={inferNativeButton(asChild, children, nativeButton)}
       {...props}
+      render={slotted.render}
     >
-      {children}
+      {slotted.children}
     </MenuPrimitive.Trigger>
   );
 }

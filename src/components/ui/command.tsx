@@ -4,6 +4,7 @@ import { Dialog as CommandDialogPrimitive } from "@base-ui/react/dialog";
 import { SearchIcon } from "lucide-react";
 import type * as React from "react";
 import { cn } from "@/lib/utils";
+import { inferNativeButton, resolveAsChild } from "@/lib/as-child";
 import {
   Autocomplete,
   AutocompleteCollection,
@@ -25,12 +26,34 @@ export const CommandDialogPortal: typeof CommandDialogPrimitive.Portal =
 export const CommandCreateHandle: typeof CommandDialogPrimitive.createHandle =
   CommandDialogPrimitive.createHandle;
 
-export function CommandDialogTrigger(
-  props: CommandDialogPrimitive.Trigger.Props,
-): React.ReactElement {
+export function CommandDialogTrigger({
+  asChild,
+  children,
+  render,
+  nativeButton,
+  ...props
+}: CommandDialogPrimitive.Trigger.Props & { asChild?: boolean }): React.ReactElement {
+  const slotted = resolveAsChild({ asChild, children, render });
   return (
     <CommandDialogPrimitive.Trigger
       data-slot="command-dialog-trigger"
+      nativeButton={inferNativeButton(asChild, children, nativeButton)}
+      {...props}
+      render={slotted.render}
+    >
+      {slotted.children}
+    </CommandDialogPrimitive.Trigger>
+  );
+}
+
+export function CommandDialogTitle({
+  className,
+  ...props
+}: CommandDialogPrimitive.Title.Props): React.ReactElement {
+  return (
+    <CommandDialogPrimitive.Title
+      className={cn("sr-only", className)}
+      data-slot="command-dialog-title"
       {...props}
     />
   );

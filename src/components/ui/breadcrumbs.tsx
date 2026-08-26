@@ -1,6 +1,15 @@
-import Link from "next/link";
-import { ChevronRight } from "lucide-react";
+"use client";
 
+import Link from "next/link";
+
+import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbPage,
+  BreadcrumbSeparator,
+} from "@/components/ui/breadcrumb";
 import { cn } from "@/lib/utils";
 
 export type Crumb = { href: string; label: string };
@@ -15,31 +24,27 @@ export function Breadcrumbs({
   if (items.length === 0) return null;
 
   return (
-    <nav aria-label="Breadcrumb" className={cn("text-sm", className)}>
-      <ol className="flex flex-wrap items-center gap-1.5">
+    <Breadcrumb className={cn("text-sm", className)}>
+      <BreadcrumbList>
         {items.map((crumb, index) => {
           const last = index === items.length - 1;
           return (
-            <li key={`${crumb.href}-${crumb.label}`} className="flex items-center gap-1.5">
-              {index > 0 ? (
-                <ChevronRight className="size-3.5 shrink-0 text-dim" aria-hidden />
-              ) : null}
+            <BreadcrumbItem key={`${crumb.href}-${crumb.label}`}>
+              {index > 0 ? <BreadcrumbSeparator /> : null}
               {last ? (
-                <span className="text-silver" aria-current="page">
-                  {crumb.label}
-                </span>
+                <BreadcrumbPage className="text-silver">{crumb.label}</BreadcrumbPage>
               ) : (
-                <Link
-                  href={crumb.href}
-                  className="rounded-sm text-dim transition-colors hover:text-white"
+                <BreadcrumbLink
+                  render={<Link href={crumb.href} />}
+                  className="text-dim hover:text-white"
                 >
                   {crumb.label}
-                </Link>
+                </BreadcrumbLink>
               )}
-            </li>
+            </BreadcrumbItem>
           );
         })}
-      </ol>
-    </nav>
+      </BreadcrumbList>
+    </Breadcrumb>
   );
 }

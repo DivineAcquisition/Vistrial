@@ -1,130 +1,149 @@
-import * as React from "react";
-import { Slot } from "radix-ui";
-import { Loader2 } from "lucide-react";
+"use client";
 
+import { mergeProps } from "@base-ui/react/merge-props";
+import { useRender } from "@base-ui/react/use-render";
+import { cva, type VariantProps } from "class-variance-authority";
+import type * as React from "react";
 import { cn } from "@/lib/utils";
-import {
-  btnDestructive,
-  btnGhost,
-  btnGradient,
-  btnIconLg,
-  btnIconMd,
-  btnIconSm,
-  btnLink,
-  btnOutline,
-  btnPrimary,
-  btnSecondary,
-  btnSizeLg,
-  btnSizeMd,
-  btnSizeSm,
-} from "@/lib/ui";
+import { resolveAsChild } from "@/lib/as-child";
+import { Spinner } from "@/components/ui/spinner";
 
-export type ButtonVariant =
-  | "primary"
-  | "gradient"
-  | "secondary"
-  | "outline"
-  | "ghost"
-  | "destructive"
-  | "link";
+export const buttonVariants = cva(
+  "relative inline-flex shrink-0 cursor-pointer items-center justify-center gap-2 whitespace-nowrap rounded-lg border font-medium text-base outline-none transition-shadow before:pointer-events-none before:absolute before:inset-0 before:rounded-[calc(var(--radius-lg)-1px)] pointer-coarse:after:absolute pointer-coarse:after:size-full pointer-coarse:after:min-h-11 pointer-coarse:after:min-w-11 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 focus-visible:ring-offset-background disabled:pointer-events-none disabled:opacity-64 data-loading:select-none data-loading:text-transparent sm:text-sm [&_svg:not([class*='opacity-'])]:opacity-80 [&_svg:not([class*='size-'])]:size-4.5 sm:[&_svg:not([class*='size-'])]:size-4 [&_svg]:pointer-events-none [&_svg]:-mx-0.5 [&_svg]:shrink-0",
+  {
+    defaultVariants: {
+      size: "default",
+      variant: "default",
+    },
+    variants: {
+      size: {
+        default: "h-9 px-[calc(--spacing(3)-1px)] sm:h-8",
+        icon: "size-9 sm:size-8",
+        "icon-lg": "size-10 sm:size-9",
+        "icon-sm": "size-8 sm:size-7",
+        "icon-xl":
+          "size-11 sm:size-10 [&_svg:not([class*='size-'])]:size-5 sm:[&_svg:not([class*='size-'])]:size-4.5",
+        "icon-xs":
+          "size-7 rounded-md before:rounded-[calc(var(--radius-md)-1px)] sm:size-6 not-in-data-[slot=input-group]:[&_svg:not([class*='size-'])]:size-4 sm:not-in-data-[slot=input-group]:[&_svg:not([class*='size-'])]:size-3.5",
+        lg: "h-10 px-[calc(--spacing(3.5)-1px)] sm:h-9",
+        sm: "h-8 gap-1.5 px-[calc(--spacing(2.5)-1px)] sm:h-7",
+        xl: "h-11 px-[calc(--spacing(4)-1px)] text-lg sm:h-10 sm:text-base [&_svg:not([class*='size-'])]:size-5 sm:[&_svg:not([class*='size-'])]:size-4.5",
+        xs: "h-7 gap-1 rounded-md px-[calc(--spacing(2)-1px)] text-sm before:rounded-[calc(var(--radius-md)-1px)] sm:h-6 sm:text-xs [&_svg:not([class*='size-'])]:size-4 sm:[&_svg:not([class*='size-'])]:size-3.5",
+        md: "h-9 px-[calc(--spacing(3)-1px)] sm:h-8",
+      },
+      variant: {
+        default:
+          "not-disabled:inset-shadow-[0_1px_--theme(--color-white/16%)] border-primary bg-primary text-primary-foreground shadow-primary/24 shadow-xs hover:bg-primary/90 data-pressed:bg-primary/90 *:data-[slot=button-loading-indicator]:text-primary-foreground [:active,[data-pressed]]:inset-shadow-[0_1px_--theme(--color-black/8%)] [:disabled,:active,[data-pressed]]:shadow-none",
+        primary:
+          "not-disabled:inset-shadow-[0_1px_--theme(--color-white/16%)] border-primary bg-primary text-primary-foreground shadow-primary/24 shadow-xs hover:bg-primary/90 data-pressed:bg-primary/90 *:data-[slot=button-loading-indicator]:text-primary-foreground [:active,[data-pressed]]:inset-shadow-[0_1px_--theme(--color-black/8%)] [:disabled,:active,[data-pressed]]:shadow-none",
+        gradient:
+          "not-disabled:inset-shadow-[0_1px_--theme(--color-white/16%)] border-primary bg-primary text-primary-foreground shadow-primary/24 shadow-xs hover:bg-primary/90 data-pressed:bg-primary/90 *:data-[slot=button-loading-indicator]:text-primary-foreground [:active,[data-pressed]]:inset-shadow-[0_1px_--theme(--color-black/8%)] [:disabled,:active,[data-pressed]]:shadow-none",
+        destructive:
+          "not-disabled:inset-shadow-[0_1px_--theme(--color-white/16%)] border-destructive bg-destructive text-white shadow-destructive/24 shadow-xs hover:bg-destructive/90 data-pressed:bg-destructive/90 *:data-[slot=button-loading-indicator]:text-white [:active,[data-pressed]]:inset-shadow-[0_1px_--theme(--color-black/8%)] [:disabled,:active,[data-pressed]]:shadow-none",
+        "destructive-outline":
+          "border-input bg-popover not-dark:bg-clip-padding text-destructive-foreground shadow-xs/5 not-disabled:not-active:not-data-pressed:before:shadow-[0_1px_--theme(--color-black/4%)] hover:border-destructive/32 hover:bg-destructive/4 data-pressed:border-destructive/32 data-pressed:bg-destructive/4 *:data-[slot=button-loading-indicator]:text-foreground dark:bg-input/32 dark:not-disabled:before:shadow-[0_-1px_--theme(--color-white/2%)] dark:not-disabled:not-active:not-data-pressed:before:shadow-[0_-1px_--theme(--color-white/6%)] [:disabled,:active,[data-pressed]]:shadow-none",
+        ghost:
+          "border-transparent text-foreground hover:bg-accent data-pressed:bg-accent *:data-[slot=button-loading-indicator]:text-foreground",
+        link: "border-transparent text-foreground underline-offset-4 hover:underline data-pressed:underline *:data-[slot=button-loading-indicator]:text-foreground",
+        outline:
+          "border-input bg-popover not-dark:bg-clip-padding text-foreground shadow-xs/5 not-disabled:not-active:not-data-pressed:before:shadow-[0_1px_--theme(--color-black/4%)] hover:bg-accent/50 data-pressed:bg-accent/50 *:data-[slot=button-loading-indicator]:text-foreground dark:bg-input/32 dark:data-pressed:bg-input/64 dark:hover:bg-input/64 dark:not-disabled:before:shadow-[0_-1px_--theme(--color-white/2%)] dark:not-disabled:not-active:not-data-pressed:before:shadow-[0_-1px_--theme(--color-white/6%)] [:disabled,:active,[data-pressed]]:shadow-none",
+        secondary:
+          "border-transparent bg-secondary text-secondary-foreground hover:bg-secondary/90 data-pressed:bg-secondary/90 *:data-[slot=button-loading-indicator]:text-secondary-foreground [:active,[data-pressed]]:bg-secondary/80",
+      },
+    },
+  },
+);
 
-export type ButtonSize = "sm" | "md" | "lg";
+export type ButtonVariant = NonNullable<
+  VariantProps<typeof buttonVariants>["variant"]
+>;
+export type ButtonSize = NonNullable<VariantProps<typeof buttonVariants>["size"]>;
 
-const VARIANTS: Record<ButtonVariant, string> = {
-  primary: btnPrimary,
-  gradient: btnGradient,
-  secondary: btnSecondary,
-  outline: btnOutline,
-  ghost: btnGhost,
-  destructive: btnDestructive,
-  link: btnLink,
-};
-
-const SIZES: Record<ButtonSize, string> = {
-  sm: btnSizeSm,
-  md: btnSizeMd,
-  lg: btnSizeLg,
-};
-
-const ICON_SIZES: Record<ButtonSize, string> = {
-  sm: btnIconSm,
-  md: btnIconMd,
-  lg: btnIconLg,
-};
-
-type BaseProps = {
+export interface ButtonProps extends useRender.ComponentProps<"button"> {
   variant?: ButtonVariant;
   size?: ButtonSize;
-  /** Square, for a control whose whole label is its icon. */
-  iconOnly?: boolean;
-  /** Swaps the label for a spinner and blocks a second submit. */
   loading?: boolean;
-  /** Read out while loading, so the change is not silent to a screen reader. */
   loadingLabel?: string;
   asChild?: boolean;
-};
+  iconOnly?: boolean;
+}
 
-export type ButtonProps = React.ComponentProps<"button"> & BaseProps;
+function resolvedSize(
+  size: ButtonSize | undefined,
+  iconOnly: boolean | undefined,
+): ButtonSize | undefined {
+  if (!iconOnly) return size === "md" ? "default" : size;
+  if (size === "sm" || size === "icon-sm" || size === "xs") return "icon-sm";
+  if (size === "lg" || size === "xl" || size === "icon-lg") return "icon-lg";
+  return "icon";
+}
 
 export function buttonClasses({
   variant = "secondary",
-  size = "md",
+  size = "default",
   iconOnly = false,
   className,
-}: BaseProps & { className?: string }): string {
-  if (variant === "link") return cn(btnLink, className);
-  return cn(VARIANTS[variant], iconOnly ? ICON_SIZES[size] : SIZES[size], className);
-}
-
-/**
- * The one button.
- *
- * `iconOnly` deliberately has no visible label, so it requires `aria-label`.
- * Wrap it in a `Tooltip` as well wherever the icon is not universally read.
- */
-export function Button({
-  className,
-  variant = "secondary",
-  size = "md",
-  iconOnly = false,
-  loading = false,
-  loadingLabel = "Working",
-  asChild = false,
-  disabled,
-  children,
-  type,
-  ...props
-}: ButtonProps) {
-  const Comp = asChild ? Slot.Root : "button";
-
-  return (
-    <Comp
-      data-slot="button"
-      data-variant={variant}
-      data-size={size}
-      data-loading={loading ? "true" : undefined}
-      className={buttonClasses({ variant, size, iconOnly, className })}
-      disabled={asChild ? undefined : disabled || loading}
-      aria-busy={loading || undefined}
-      type={asChild ? undefined : (type ?? "button")}
-      {...props}
-    >
-      {loading ? (
-        <>
-          <Loader2 className="size-4 animate-spin" aria-hidden />
-          {iconOnly ? <span className="sr-only">{loadingLabel}</span> : <span>{loadingLabel}…</span>}
-        </>
-      ) : (
-        children
-      )}
-    </Comp>
+}: {
+  variant?: ButtonVariant;
+  size?: ButtonSize;
+  iconOnly?: boolean;
+  className?: string;
+}): string {
+  return cn(
+    buttonVariants({ variant, size: resolvedSize(size, iconOnly), className }),
   );
 }
 
-/**
- * A button that submits the form it sits in and shows the pending state from
- * `useActionState`. Saves every form repeating the same three props.
- */
+export function Button({
+  className,
+  variant = "secondary",
+  size = "default",
+  render,
+  children,
+  loading = false,
+  loadingLabel,
+  disabled: disabledProp,
+  asChild = false,
+  iconOnly = false,
+  ...props
+}: ButtonProps): React.ReactElement {
+  const isDisabled: boolean = Boolean(loading || disabledProp);
+  const slotted = resolveAsChild({ asChild, children, render });
+  const typeValue: React.ButtonHTMLAttributes<HTMLButtonElement>["type"] =
+    slotted.render ? undefined : "button";
+  const mappedSize = resolvedSize(size, iconOnly);
+
+  const defaultProps = {
+    children: (
+      <>
+        {slotted.children}
+        {loading && (
+          <Spinner
+            className="pointer-events-none absolute"
+            data-slot="button-loading-indicator"
+          />
+        )}
+      </>
+    ),
+    className: cn(buttonVariants({ className, size: mappedSize, variant })),
+    "aria-disabled": loading || undefined,
+    "aria-label":
+      loading && loadingLabel
+        ? loadingLabel
+        : (props as { "aria-label"?: string })["aria-label"],
+    "data-loading": loading ? "" : undefined,
+    "data-slot": "button",
+    disabled: isDisabled,
+    type: typeValue,
+  };
+
+  return useRender({
+    defaultTagName: "button",
+    props: mergeProps<"button">(defaultProps, props),
+    render: slotted.render,
+  });
+}
+
 export function SubmitButton({
   pending = false,
   children,
@@ -133,7 +152,13 @@ export function SubmitButton({
   ...props
 }: Omit<ButtonProps, "type"> & { pending?: boolean }) {
   return (
-    <Button type="submit" variant={variant} loading={pending} loadingLabel={loadingLabel} {...props}>
+    <Button
+      type="submit"
+      variant={variant}
+      loading={pending}
+      loadingLabel={loadingLabel}
+      {...props}
+    >
       {children}
     </Button>
   );

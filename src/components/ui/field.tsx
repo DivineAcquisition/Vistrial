@@ -1,18 +1,23 @@
-import type { ReactNode } from "react";
+"use client";
 
+import { Field as FieldPrimitive } from "@base-ui/react/field";
+import type React from "react";
+import type { ReactNode } from "react";
 import { errorClass, helperClass, labelClass } from "@/lib/ui";
 import { cn } from "@/lib/utils";
 
-/**
- * The wrapper every labelled control sits in.
- *
- * It exists to make the wiring impossible to forget: the label points at the
- * control, the help text and the error are announced with it, and an error
- * marks the control invalid so the styling and the screen reader agree.
- *
- * Controls are identified by their `name`, which forms already carry, so a
- * caller does not have to invent an id to get a working label.
- */
+export function FieldRoot({
+  className,
+  ...props
+}: FieldPrimitive.Root.Props): React.ReactElement {
+  return (
+    <FieldPrimitive.Root
+      className={cn("flex flex-col items-start gap-2", className)}
+      data-slot="field"
+      {...props}
+    />
+  );
+}
 
 export function fieldIds(name: string, id?: string) {
   const fieldId = id ?? name;
@@ -23,7 +28,6 @@ export function fieldIds(name: string, id?: string) {
   };
 }
 
-/** What a control needs to be wired to its label, help text and error. */
 export function fieldControlProps(args: {
   name: string;
   id?: string;
@@ -42,21 +46,19 @@ export function fieldControlProps(args: {
   };
 }
 
-export type FieldProps = {
+export type LabeledFieldProps = {
   label: ReactNode;
-  /** The control's `name`. Also becomes its id unless `htmlFor` is given. */
   name: string;
   htmlFor?: string;
   help?: ReactNode;
   error?: string | null;
   required?: boolean;
-  /** Sits on the label row, for a badge or a "why we ask" note. */
   labelAside?: ReactNode;
   className?: string;
   children: ReactNode;
 };
 
-export function Field({
+function LabeledField({
   label,
   name,
   htmlFor,
@@ -66,7 +68,7 @@ export function Field({
   labelAside,
   className,
   children,
-}: FieldProps) {
+}: LabeledFieldProps) {
   const { id, helpId, errorId } = fieldIds(name, htmlFor);
 
   return (
@@ -97,10 +99,6 @@ export function Field({
   );
 }
 
-/**
- * A control whose label sits beside it rather than above: checkboxes, radios
- * and switches. The whole block is the click target.
- */
 export function ChoiceRow({
   control,
   label,
@@ -125,7 +123,6 @@ export function ChoiceRow({
   );
 }
 
-/** A set of related choices, announced together. */
 export function FieldGroup({
   legend,
   help,
@@ -155,3 +152,76 @@ export function FieldGroup({
     </fieldset>
   );
 }
+
+export function Field(props: LabeledFieldProps): React.ReactElement;
+export function Field(props: FieldPrimitive.Root.Props): React.ReactElement;
+export function Field(
+  props: LabeledFieldProps | FieldPrimitive.Root.Props,
+): React.ReactElement {
+  if ("label" in props && "name" in props && props.label != null) {
+    return <LabeledField {...(props as LabeledFieldProps)} />;
+  }
+  return <FieldRoot {...(props as FieldPrimitive.Root.Props)} />;
+}
+
+export function FieldLabel({
+  className,
+  ...props
+}: FieldPrimitive.Label.Props): React.ReactElement {
+  return (
+    <FieldPrimitive.Label
+      className={cn(
+        "inline-flex items-center gap-2 font-medium text-base/4.5 text-foreground data-disabled:opacity-64 sm:text-sm/4",
+        className,
+      )}
+      data-slot="field-label"
+      {...props}
+    />
+  );
+}
+
+export function FieldItem({
+  className,
+  ...props
+}: FieldPrimitive.Item.Props): React.ReactElement {
+  return (
+    <FieldPrimitive.Item
+      className={cn("flex", className)}
+      data-slot="field-item"
+      {...props}
+    />
+  );
+}
+
+export function FieldDescription({
+  className,
+  ...props
+}: FieldPrimitive.Description.Props): React.ReactElement {
+  return (
+    <FieldPrimitive.Description
+      className={cn("text-muted-foreground text-xs", className)}
+      data-slot="field-description"
+      {...props}
+    />
+  );
+}
+
+export function FieldError({
+  className,
+  ...props
+}: FieldPrimitive.Error.Props): React.ReactElement {
+  return (
+    <FieldPrimitive.Error
+      className={cn("text-destructive-foreground text-xs", className)}
+      data-slot="field-error"
+      {...props}
+    />
+  );
+}
+
+export const FieldControl: typeof FieldPrimitive.Control =
+  FieldPrimitive.Control;
+export const FieldValidity: typeof FieldPrimitive.Validity =
+  FieldPrimitive.Validity;
+
+export { FieldPrimitive };

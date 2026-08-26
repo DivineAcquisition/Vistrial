@@ -1,130 +1,151 @@
 "use client";
 
-import * as React from "react";
-
+import { mergeProps } from "@base-ui/react/merge-props";
+import { useRender } from "@base-ui/react/use-render";
+import type React from "react";
 import { cn } from "@/lib/utils";
 
-/**
- * Table primitives.
- *
- * The defaults carry the whole look: a sunken header band, a hairline under
- * each row, and no vertical rules. Four screens were repeating the same header
- * classes by hand; now they inherit them and a table cannot drift on its own.
- *
- * Cells are readable rather than boxed. Borders between every cell make a dense
- * operational list harder to scan, not easier.
- */
+export type TableVariant = "default" | "card";
 
-function Table({ className, ...props }: React.ComponentProps<"table">) {
-  return (
-    <div data-slot="table-container" className="relative w-full overflow-x-hidden">
+export type TableProps = React.ComponentProps<"table"> & {
+  variant?: TableVariant;
+  render?: useRender.ComponentProps<"div">["render"];
+};
+
+export function Table({
+  className,
+  variant = "default",
+  render,
+  ...props
+}: TableProps): React.ReactElement {
+  const defaultProps = {
+    children: (
       <table
+        className={cn(
+          "w-full caption-bottom in-data-[variant=card]:border-separate in-data-[variant=card]:border-spacing-0 text-sm",
+          className,
+        )}
         data-slot="table"
-        className={cn("w-full caption-bottom border-collapse text-sm", className)}
         {...props}
       />
-    </div>
-  );
+    ),
+    className: "relative w-full overflow-x-auto",
+    "data-slot": "table-container",
+    "data-variant": variant,
+  };
+
+  return useRender({
+    defaultTagName: "div",
+    props: mergeProps<"div">(defaultProps, {}),
+    render,
+  });
 }
 
-function TableHeader({ className, ...props }: React.ComponentProps<"thead">) {
+export function TableHeader({
+  className,
+  ...props
+}: React.ComponentProps<"thead">): React.ReactElement {
   return (
     <thead
+      className={cn("[&_tr]:border-b", className)}
       data-slot="table-header"
-      className={cn("surface-sunken border-x-0 border-t-0", className)}
       {...props}
     />
   );
 }
 
-function TableBody({ className, ...props }: React.ComponentProps<"tbody">) {
+export function TableBody({
+  className,
+  ...props
+}: React.ComponentProps<"tbody">): React.ReactElement {
   return (
     <tbody
+      className={cn(
+        "relative in-data-[variant=card]:rounded-xl in-data-[variant=card]:shadow-xs/5 before:pointer-events-none before:absolute before:inset-px not-in-data-[variant=card]:before:hidden before:rounded-[calc(var(--radius-xl)-1px)] before:shadow-[0_1px_--theme(--color-black/4%)] dark:before:shadow-[0_-1px_--theme(--color-white/8%)] [&_tr:last-child]:border-0 in-data-[variant=card]:*:[tr]:border-0 in-data-[variant=card]:*:[tr]:*:[td]:border-b in-data-[variant=card]:*:[tr]:*:[td]:bg-card in-data-[variant=card]:*:[tr]:first:*:[td]:first:rounded-ss-xl in-data-[variant=card]:*:[tr]:*:[td]:first:border-s in-data-[variant=card]:*:[tr]:first:*:[td]:border-t in-data-[variant=card]:*:[tr]:last:*:[td]:last:rounded-ee-xl in-data-[variant=card]:*:[tr]:*:[td]:last:border-e in-data-[variant=card]:*:[tr]:first:*:[td]:last:rounded-se-xl in-data-[variant=card]:*:[tr]:last:*:[td]:first:rounded-es-xl in-data-[variant=card]:*:[tr]:hover:*:[td]:bg-[color-mix(in_srgb,var(--card),var(--color-black)_2%)] in-data-[variant=card]:*:[tr]:data-[state=selected]:*:[td]:bg-[color-mix(in_srgb,var(--card),var(--color-black)_4%)] dark:in-data-[variant=card]:*:[tr]:data-[state=selected]:*:[td]:bg-[color-mix(in_srgb,var(--card),var(--color-white)_4%)] dark:in-data-[variant=card]:*:[tr]:hover:*:[td]:bg-[color-mix(in_srgb,var(--card),var(--color-white)_2%)]",
+        className,
+      )}
       data-slot="table-body"
-      className={cn("[&_tr:last-child]:border-0", className)}
       {...props}
     />
   );
 }
 
-function TableFooter({ className, ...props }: React.ComponentProps<"tfoot">) {
+export function TableFooter({
+  className,
+  ...props
+}: React.ComponentProps<"tfoot">): React.ReactElement {
   return (
     <tfoot
-      data-slot="table-footer"
       className={cn(
-        "border-t border-white/[0.07] bg-white/[0.02] font-medium [&>tr]:last:border-b-0",
-        className
+        "border-t in-data-[variant=card]:border-none bg-transparent not-in-data-[variant=card]:bg-[color-mix(in_srgb,var(--card),var(--color-black)_2%)] font-medium dark:not-in-data-[variant=card]:bg-[color-mix(in_srgb,var(--card),var(--color-white)_2%)] [&>tr]:last:border-b-0",
+        className,
       )}
+      data-slot="table-footer"
       {...props}
     />
   );
 }
 
-function TableRow({ className, ...props }: React.ComponentProps<"tr">) {
+export function TableRow({
+  className,
+  ...props
+}: React.ComponentProps<"tr">): React.ReactElement {
   return (
     <tr
-      data-slot="table-row"
       className={cn(
-        "border-b border-white/[0.06] transition-colors hover:bg-white/[0.04] data-[state=selected]:bg-brand-950/60",
-        className
+        "relative border-b not-in-data-[variant=card]:hover:bg-[color-mix(in_srgb,var(--background),var(--color-black)_2%)] not-in-data-[variant=card]:data-[state=selected]:bg-[color-mix(in_srgb,var(--background),var(--color-black)_4%)] dark:not-in-data-[variant=card]:data-[state=selected]:bg-[color-mix(in_srgb,var(--background),var(--color-white)_4%)] dark:not-in-data-[variant=card]:hover:bg-[color-mix(in_srgb,var(--background),var(--color-white)_2%)]",
+        className,
       )}
+      data-slot="table-row"
       {...props}
     />
   );
 }
 
-function TableHead({
+export function TableHead({
   className,
-  align = "left",
   ...props
-}: React.ComponentProps<"th"> & { align?: "left" | "right" | "center" }) {
+}: React.ComponentProps<"th">): React.ReactElement {
   return (
     <th
-      data-slot="table-head"
       className={cn(
-        "h-11 px-4 align-middle text-[10px] font-semibold tracking-[0.14em] whitespace-nowrap text-silver uppercase",
-        align === "right" && "text-right",
-        align === "center" && "text-center",
-        align === "left" && "text-left",
-        className
+        "h-10 whitespace-nowrap px-2.5 text-left align-middle font-medium text-muted-foreground leading-none has-[[role=checkbox]]:w-px last:has-[[role=checkbox]]:ps-0 first:has-[[role=checkbox]]:pe-0",
+        className,
       )}
+      data-slot="table-head"
       {...props}
     />
   );
 }
 
-function TableCell({
+export function TableCell({
   className,
-  align = "left",
   ...props
-}: React.ComponentProps<"td"> & { align?: "left" | "right" | "center" }) {
+}: React.ComponentProps<"td">): React.ReactElement {
   return (
     <td
-      data-slot="table-cell"
       className={cn(
-        "px-4 py-3.5 align-middle break-words whitespace-normal",
-        align === "right" && "text-right tabular-nums",
-        align === "center" && "text-center",
-        className
+        "whitespace-nowrap bg-clip-padding p-2.5 in-data-[slot=table-footer]:py-3.5 align-middle leading-none in-data-[variant=card]:first:ps-[calc(--spacing(2.5)-1px)] in-data-[variant=card]:last:pe-[calc(--spacing(2.5)-1px)] has-[[role=checkbox]]:w-px last:has-[[role=checkbox]]:ps-0 first:has-[[role=checkbox]]:pe-0",
+        className,
       )}
+      data-slot="table-cell"
       {...props}
     />
   );
 }
 
-function TableCaption({ className, ...props }: React.ComponentProps<"caption">) {
+export function TableCaption({
+  className,
+  ...props
+}: React.ComponentProps<"caption">): React.ReactElement {
   return (
-    <caption data-slot="table-caption" className={cn("mt-4 text-sm text-dim", className)} {...props} />
+    <caption
+      className={cn(
+        "in-data-[variant=card]:my-4 mt-4 text-muted-foreground text-sm",
+        className,
+      )}
+      data-slot="table-caption"
+      {...props}
+    />
   );
 }
-
-export {
-  Table,
-  TableHeader,
-  TableBody,
-  TableFooter,
-  TableHead,
-  TableRow,
-  TableCell,
-  TableCaption,
-};

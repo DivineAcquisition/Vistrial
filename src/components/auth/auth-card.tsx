@@ -1,9 +1,10 @@
 import Logo from "@/components/brand/logo";
+import { Particles } from "@/components/ui/particles";
 import { APP_NAME } from "@/lib/constants";
 
 /**
  * Quiet auth shell shared by login, invite, and no-access.
- * Small official crest, no gallery backdrop.
+ * Brand wash and particles sit behind a square desk — the crest is all acute angles.
  */
 export function AuthCard({
   title,
@@ -21,6 +22,12 @@ export function AuthCard({
 }) {
   return (
     <div className="auth-stage">
+      <div className="auth-stage-atmosphere" aria-hidden>
+        <Particles className="absolute inset-0" quantity={56} color="#9A88FC" ease={70} size={0.45} />
+        <div className="auth-stage-glow" />
+        <div className="auth-stage-glow-aux" />
+        <div className="auth-stage-grid" />
+      </div>
       <main className="auth-stage-frame">
         <div className={`auth-desk-inner ${width === "wide" ? "auth-desk-inner--wide" : ""}`}>
           <Logo markOnly title="" className="auth-mark" />

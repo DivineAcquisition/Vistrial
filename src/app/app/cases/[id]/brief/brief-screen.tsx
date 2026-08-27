@@ -73,7 +73,7 @@ export function BriefScreen({ brief }: { brief: BriefPayload }) {
           <p className="text-[11px] font-semibold tracking-[0.14em] text-brand-300 uppercase">Readiness</p>
           {score ? (
             <>
-              <p className="mt-1 text-base font-semibold text-white">
+              <p className="mt-1 font-heading text-base tabular-nums text-white">
                 {score.total}
                 {brief.lead.leadType ? ` · ${LEAD_TRACK_LABELS[brief.lead.leadType]}` : ""}
               </p>

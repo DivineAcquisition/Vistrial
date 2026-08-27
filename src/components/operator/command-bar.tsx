@@ -299,7 +299,7 @@ export function OperatorCommandBar() {
       <Sheet open={open} onOpenChange={setOpen}>
         <SheetContent
           side="right"
-          className="w-full gap-0 bg-ink-900 p-0 text-white sm:max-w-xl"
+          className="w-full gap-0 bg-ink-900 p-0 text-white sm:max-w-2xl"
           showCloseButton
         >
           <SheetHeader className="border-b border-white/[0.07]">

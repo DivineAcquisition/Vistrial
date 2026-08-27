@@ -94,7 +94,7 @@ export function OpsControls({ orgs }: { orgs: OrgOption[] }) {
           name="reason"
           help="Disconnects CRM, revokes tokens, halts sequences, keeps data for 30 days."
         >
-          <Input name="reason" id="reason" required maxLength={240} />
+          <Input name="reason" id="reason" required maxLength={240} placeholder="Client ended the engagement" />
         </Field>
         <Button type="submit" variant="secondary" size="sm">
           Offboard workspace
@@ -123,10 +123,10 @@ export function OpsControls({ orgs }: { orgs: OrgOption[] }) {
             name="confirmationName"
             help={selected ? `Must match “${selected.name}” exactly.` : undefined}
           >
-            <Input name="confirmationName" id="confirmationName" required />
+            <Input name="confirmationName" id="confirmationName" required placeholder="Exact workspace name" />
           </Field>
           <Field label="Why" name="reason">
-            <Input name="reason" id="delete-reason" required maxLength={240} />
+            <Input name="reason" id="delete-reason" required maxLength={240} placeholder="Offboarding complete, data no longer needed" />
           </Field>
         </form>
       </ConfirmDialog>
@@ -136,13 +136,13 @@ export function OpsControls({ orgs }: { orgs: OrgOption[] }) {
         action={async (formData) => setResult(await recordRestoreDrill(formData))}
       >
         <Field label="Restore duration (ms)" name="durationMs" help="Paste the number from scripts/restore-drill.sh.">
-          <Input name="durationMs" id="durationMs" type="number" min={1} required />
+          <Input name="durationMs" id="durationMs" type="number" min={1} required placeholder="1840" />
         </Field>
         <Field label="Source label" name="sourceLabel">
-          <Input name="sourceLabel" id="sourceLabel" defaultValue="local-pg-restore" />
+          <Input name="sourceLabel" id="sourceLabel" defaultValue="local-pg-restore" placeholder="local-pg-restore" />
         </Field>
         <Field label="Notes" name="notes">
-          <Input name="notes" id="notes" />
+          <Input name="notes" id="notes" placeholder="Counts matched the backup snapshot" />
         </Field>
         <CheckboxField
           name="verified"
@@ -171,16 +171,16 @@ export function OpsControls({ orgs }: { orgs: OrgOption[] }) {
           </Select>
         </Field>
         <Field label="Title" name="title">
-          <Input name="title" id="title" required />
+          <Input name="title" id="title" required placeholder="Dispatch sent after halt" />
         </Field>
         <Field label="Cause" name="cause">
-          <Textarea name="cause" id="cause" required rows={2} />
+          <Textarea name="cause" id="cause" required rows={2} placeholder="What broke, in one or two sentences." />
         </Field>
         <Field label="Impact" name="impact">
-          <Textarea name="impact" id="impact" required rows={2} />
+          <Textarea name="impact" id="impact" required rows={2} placeholder="Who was affected, and for how long." />
         </Field>
         <Field label="What changed to prevent recurrence" name="prevention">
-          <Textarea name="prevention" id="prevention" required rows={2} />
+          <Textarea name="prevention" id="prevention" required rows={2} placeholder="What changed so this cannot happen again." />
         </Field>
         <CheckboxField name="clientNotified" label="Client was told" />
         <Button type="submit" variant="secondary" size="sm">

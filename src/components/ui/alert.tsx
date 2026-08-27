@@ -11,7 +11,7 @@ const alertVariants = cva(
     variants: {
       variant: {
         default:
-          "bg-transparent dark:bg-input/32 [&>svg]:text-muted-foreground",
+          "bg-ink-850/80 dark:bg-ink-850/80 [&>svg]:text-brand-300",
         error:
           "border-destructive/32 bg-destructive/4 [&>svg]:text-destructive",
         info: "border-info/32 bg-info/4 [&>svg]:text-info",

@@ -58,7 +58,7 @@ export function AcceptInviteForm({
           Public sign-up is closed. Creating an account here is allowed only because this invite is valid.
         </p>
         {createState.error ? <p className={errorClass}>{createState.error}</p> : null}
-        <AuthField icon={Mail} id="invite-email" value={email} readOnly label="Email" aria-label="Email" />
+        <AuthField icon={Mail} id="invite-email" value={email} readOnly label="Email" aria-label="Email" placeholder="name@company.com" />
         <AuthField
           icon={Lock}
           id="new-password"
@@ -113,7 +113,7 @@ export function AcceptInviteForm({
       <input type="hidden" name="email" value={email} />
       <input type="hidden" name="redirectTo" value={redirectTo} />
       {signInError ? <p className={errorClass}>{LOGIN_ERROR_COPY[signInError]}</p> : null}
-      <AuthField icon={Mail} id="invite-signin-email" value={email} readOnly label="Email" aria-label="Email" />
+      <AuthField icon={Mail} id="invite-signin-email" value={email} readOnly label="Email" aria-label="Email" placeholder="name@company.com" />
       {mode === "signin" ? (
         <AuthField
           icon={Lock}

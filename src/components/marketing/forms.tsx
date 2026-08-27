@@ -279,6 +279,7 @@ export function ContactForm() {
           type="text"
           autoComplete="name"
           required
+          placeholder="Jordan Blake"
         />
       </FormRow>
       <FormRow label="Email" htmlFor="contact-email">
@@ -288,10 +289,18 @@ export function ContactForm() {
           type="email"
           autoComplete="email"
           required
+          placeholder="you@company.com"
         />
       </FormRow>
       <FormRow label="Message" htmlFor="contact-message">
-        <Textarea id="contact-message" name="message" required rows={5} className="min-h-32" />
+        <Textarea
+          id="contact-message"
+          name="message"
+          required
+          rows={5}
+          className="min-h-32"
+          placeholder="What should we know before we talk?"
+        />
       </FormRow>
       <div aria-hidden className="absolute -left-[9999px] h-0 w-0 overflow-hidden">
         <label>

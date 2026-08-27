@@ -103,14 +103,21 @@ export function ActivationGate({
                 move between the before and after side of the line, and the comparison will change.
               </p>
               <Field label="Move it to" name="new_at">
-                <Input id="new_at" name="new_at" type="datetime-local" required />
+                <Input id="new_at" name="new_at" type="datetime-local" required placeholder="YYYY-MM-DD HH:MM" />
               </Field>
               <Field
                 label="Why, in writing"
                 name="reason"
                 help="At least twenty characters. This is kept against the workspace permanently."
               >
-                <Textarea id="reason" name="reason" rows={3} required minLength={20} />
+                <Textarea
+                  id="reason"
+                  name="reason"
+                  rows={3}
+                  required
+                  minLength={20}
+                  placeholder="Why this timestamp is moving, in writing."
+                />
               </Field>
               <div className="flex flex-wrap gap-3">
                 <SubmitButton variant="destructive" pending={moving} loadingLabel="Moving">

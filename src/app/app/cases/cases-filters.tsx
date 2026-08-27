@@ -183,6 +183,7 @@ export function CasesFilters({
           density="compact"
           value={filters.optedFrom ?? ""}
           onChange={(event) => apply({ optedFrom: event.target.value || null })}
+          placeholder="YYYY-MM-DD"
         />
       </label>
       <label className="block">
@@ -192,6 +193,7 @@ export function CasesFilters({
           density="compact"
           value={filters.optedTo ?? ""}
           onChange={(event) => apply({ optedTo: event.target.value || null })}
+          placeholder="YYYY-MM-DD"
         />
       </label>
       <label className="block">

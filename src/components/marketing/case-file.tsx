@@ -28,7 +28,7 @@ export function HeroCaseFile() {
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div className="min-w-0">
             <SampleMark />
-            <p className="mt-1.5 text-base font-semibold text-white">{demo.name}</p>
+            <p className="mt-1.5 font-heading text-base text-white">{demo.name}</p>
             <p className="mt-1 text-sm text-silver">
               {demo.email} · {demo.phone}
             </p>
@@ -103,14 +103,14 @@ export function AnnotatedCaseFile() {
         <div className="flex flex-wrap items-end justify-between gap-4">
           <div>
             <SampleMark />
-            <p className="mt-2 text-base font-semibold text-white">{demo.name}</p>
+            <p className="mt-2 font-heading text-base text-white">{demo.name}</p>
             <p className="mt-1 text-xs text-silver">
               {demo.source}
               {demo.campaign ? ` · ${demo.campaign}` : ""}
             </p>
           </div>
           <div className="text-right">
-            <p className="tabular text-2xl font-semibold text-brand-500">{demo.score.total}</p>
+            <p className="tabular font-heading text-2xl text-brand-500">{demo.score.total}</p>
             <p className="mt-1 text-xs text-dim">{demo.score.confidence}</p>
           </div>
         </div>
@@ -163,7 +163,7 @@ export function AnnotatedCaseFile() {
 
       <CasePart title={CASE_FILE.parts[4].title} body={CASE_FILE.parts[4].body}>
         <p className="text-[11px] font-semibold tracking-[0.14em] text-brand-300 uppercase">Who</p>
-        <p className="mt-1 text-sm font-semibold text-white">{demo.brief.who}</p>
+        <p className="mt-1 font-heading text-sm text-white">{demo.brief.who}</p>
         <p className="mt-4 text-[11px] font-semibold tracking-[0.14em] text-brand-300 uppercase">
           What the setter established
         </p>
@@ -198,7 +198,7 @@ function CasePart({
 }) {
   return (
     <Card className="rounded-xl p-4">
-      <h3 className="text-base font-semibold text-white">{title}</h3>
+      <h3 className="font-heading text-base text-white">{title}</h3>
       <p className="mt-2 max-w-2xl text-sm leading-relaxed text-silver">{body}</p>
       <div className="mt-5">{children}</div>
     </Card>

@@ -75,6 +75,7 @@ function StageBody({ stage, defaults }: { stage: ProfileStage; defaults: Profile
               name="offer_type_other"
               label="If something else, what"
               defaults={defaults}
+              placeholder="Group program"
             />
           </div>
           <div className="grid gap-5 sm:grid-cols-2">
@@ -179,6 +180,7 @@ function StageBody({ stage, defaults }: { stage: ProfileStage; defaults: Profile
             name="lead_channels_other"
             label="If somewhere else, where"
             defaults={defaults}
+            placeholder="Podcast guests"
           />
           <RepeatableRows
             field="application_fields"
@@ -219,6 +221,7 @@ function StageBody({ stage, defaults }: { stage: ProfileStage; defaults: Profile
             name="qualification_signals_other"
             label="If something else, what"
             defaults={defaults}
+            placeholder="They already budgeted"
           />
           <MultiChoiceField
             field="disqualifiers"
@@ -232,6 +235,7 @@ function StageBody({ stage, defaults }: { stage: ProfileStage; defaults: Profile
             name="disqualifiers_other"
             label="If something else, what"
             defaults={defaults}
+            placeholder="Under 18"
           />
           <RepeatableRows
             field="price_bands"
@@ -284,6 +288,7 @@ function StageBody({ stage, defaults }: { stage: ProfileStage; defaults: Profile
             name="setter_establishes_other"
             label="If something else, what"
             defaults={defaults}
+            placeholder="Spouse on the call"
           />
           <div className="grid gap-5 sm:grid-cols-3">
             <ChoiceField
@@ -315,7 +320,7 @@ function StageBody({ stage, defaults }: { stage: ProfileStage; defaults: Profile
             Anything your CRM already sends is switched off here, so nobody gets the same nudge twice.
           </p>
           <Panel className="p-4">
-            <p className="text-sm font-semibold text-white">What happens to your team&apos;s calls</p>
+            <p className="font-heading text-sm text-white">What happens to your team&apos;s calls</p>
             <p className={`${helperClass} mt-2`}>
               Every rep is told, in these words, the first time they sign in: their calls are
               transcribed, Vistrial reads those transcripts for patterns — what was asked, which

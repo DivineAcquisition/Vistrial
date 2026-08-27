@@ -29,7 +29,7 @@ export function CtaLink({
 }) {
   return (
     <Button
-      variant="primary"
+      variant="gradient"
       size={size}
       className={className}
       render={<Link href={waitlistHref(position)} data-cta-position={position} />}

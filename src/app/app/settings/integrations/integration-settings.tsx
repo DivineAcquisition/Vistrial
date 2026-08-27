@@ -213,7 +213,7 @@ export function IntegrationSettings(props: IntegrationSettingsProps) {
                 ))}
               </Select>
             </div>
-            <SubmitButton variant="primary" pending={locating} loadingLabel="Linking">
+            <SubmitButton variant="gradient" pending={locating} loadingLabel="Linking">
             Link location
           </SubmitButton>
             {locationState.status === "error" ? <p className={errorClass}>{locationState.error}</p> : null}
@@ -250,7 +250,7 @@ export function IntegrationSettings(props: IntegrationSettingsProps) {
 
         <div className="mt-6 flex flex-wrap gap-3">
           {props.oauthConfigured ? (
-            <Button variant="primary" size="lg" render={<a href="/api/ghl/oauth/start" />}>
+            <Button variant="gradient" size="lg" render={<a href="/api/ghl/oauth/start" />}>
               {props.connection.status === "active" || props.connection.status === "broken"
                 ? "Reconnect"
                 : "Connect GoHighLevel"}
@@ -462,6 +462,7 @@ export function IntegrationSettings(props: IntegrationSettingsProps) {
                           )
                         )
                       }
+                      placeholder="abc123"
                     />
                   </Field>
                 </div>
@@ -472,13 +473,14 @@ export function IntegrationSettings(props: IntegrationSettingsProps) {
                     id={`ghl-field-key-${map.id}`}
                     type="text"
                     value={map.ghlFieldKey}
-                    onChange={(event) =>
-                      setMaps((current) =>
-                        current.map((row, rowIndex) =>
-                          rowIndex === index ? { ...row, ghlFieldKey: event.target.value } : row
+                      onChange={(event) =>
+                        setMaps((current) =>
+                          current.map((row, rowIndex) =>
+                            rowIndex === index ? { ...row, ghlFieldKey: event.target.value } : row
+                          )
                         )
-                      )
-                    }
+                      }
+                      placeholder="contact.timeline"
                   />
                 </Field>
               </div>
@@ -496,6 +498,7 @@ export function IntegrationSettings(props: IntegrationSettingsProps) {
                           )
                         )
                       }
+                      placeholder="timeline"
                     />
                     <Button
                       type="button"
@@ -588,7 +591,7 @@ export function IntegrationSettings(props: IntegrationSettingsProps) {
                       id={`webhook_secret_${source}`}
                       name="webhook_secret"
                       type="password"
-                      placeholder={connection?.hasWebhookSecret ? "Unchanged" : ""}
+                      placeholder={connection?.hasWebhookSecret ? "Unchanged" : "Paste webhook secret"}
                     />
                   </Field>
                   <Field label="API key for pull" name={`api_key_${source}`}>
@@ -596,7 +599,7 @@ export function IntegrationSettings(props: IntegrationSettingsProps) {
                       id={`api_key_${source}`}
                       name="api_key"
                       type="password"
-                      placeholder={connection?.hasApiKey ? "Unchanged" : ""}
+                      placeholder={connection?.hasApiKey ? "Unchanged" : "Paste API key"}
                     />
                   </Field>
                 </div>
@@ -721,11 +724,11 @@ export function IntegrationSettings(props: IntegrationSettingsProps) {
           }}
         >
           <Textarea
-            
             rows={6}
             value={pasteText}
             onChange={(event) => setPasteText(event.target.value)}
             required
+            placeholder="Paste the full transcript. Leave speaker labels if you have them."
           />
           <Button type="submit" variant="primary" size="sm" disabled={pending || !pasteText.trim()}>
             Store unmatched

@@ -19,7 +19,7 @@ export function Panel({
   return (
     <Card
       render={Component === "div" ? undefined : <Component />}
-      className={className}
+      className={cn("panel-hover", className)}
     >
       {children}
     </Card>

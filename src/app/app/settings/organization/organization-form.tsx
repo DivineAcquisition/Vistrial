@@ -16,6 +16,7 @@ import { ORG_TIMEZONE_LABELS, ORG_TIMEZONES, isOrgTimezone } from "@/lib/timezon
 import {
   cardStack,
   errorClass,
+  formMeasure,
   helperClass,
   labelClass,
   readonlyFieldClass,
@@ -61,7 +62,7 @@ export function OrganizationForm({
   const policy = surface === "policy";
 
   return (
-    <Card className="max-w-xl">
+    <Card className={formMeasure}>
       <form action={action} className={cardStack}>
         <input type="hidden" name="surface" value={policy ? "policy" : "workspace"} />
 
@@ -80,6 +81,7 @@ export function OrganizationForm({
                 max={365}
                 required
                 defaultValue={salesCycleDays}
+                placeholder="60"
               />
             </Field>
 
@@ -96,6 +98,7 @@ export function OrganizationForm({
                 max={730}
                 required
                 defaultValue={baselineLookbackDays}
+                placeholder="365"
               />
             </Field>
 
@@ -111,6 +114,7 @@ export function OrganizationForm({
                 min={30}
                 max={1095}
                 defaultValue={transcriptRetentionDays}
+                placeholder="365"
               />
             </Field>
 
@@ -127,6 +131,7 @@ export function OrganizationForm({
                 max={168}
                 required
                 defaultValue={callCoachingEmbargoHours}
+                placeholder="48"
               />
             </Field>
 
@@ -144,6 +149,7 @@ export function OrganizationForm({
                   max={40}
                   required
                   defaultValue={operatorAgentBatchCap}
+                  placeholder="10"
                 />
               </Field>
             ) : (
@@ -153,7 +159,7 @@ export function OrganizationForm({
         ) : (
           <>
             <Field label="Name" name="name" error={error}>
-              <Input name="name" id="name" required maxLength={120} defaultValue={name} />
+              <Input name="name" id="name" required maxLength={120} defaultValue={name} placeholder="Studio name" />
             </Field>
 
             <Field label="Timezone" name="timezone">
@@ -177,6 +183,7 @@ export function OrganizationForm({
                 type="time"
                 required
                 defaultValue={workingHoursStart}
+                placeholder="09:00"
               />
             </Field>
 
@@ -187,6 +194,7 @@ export function OrganizationForm({
                 type="time"
                 required
                 defaultValue={workingHoursEnd}
+                placeholder="18:00"
               />
             </Field>
 

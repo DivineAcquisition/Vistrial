@@ -15,6 +15,7 @@ import { ORG_TIMEZONE_LABELS, ORG_TIMEZONES, isOrgTimezone } from "@/lib/timezon
 import {
   cardStack,
   errorClass,
+  formMeasure,
   helperClass,
   labelClass,
   readonlyFieldClass,
@@ -47,7 +48,7 @@ export function ProfileForm({
   const timezoneOptions = timezone && !isOrgTimezone(timezone) ? [timezone, ...ORG_TIMEZONES] : ORG_TIMEZONES;
 
   return (
-    <Card className="max-w-xl">
+    <Card className={formMeasure}>
       <form action={action} className={cardStack}>
         <Field label="Display name" name="display_name" error={error}>
           <Input
@@ -56,6 +57,7 @@ export function ProfileForm({
             required
             maxLength={80}
             defaultValue={displayName}
+            placeholder="Jordan Blake"
           />
         </Field>
 
@@ -64,7 +66,7 @@ export function ProfileForm({
           name="email"
           help="This is the address teammates see on members lists. It does not change how you sign in."
         >
-          <Input name="email" id="email" type="email" required defaultValue={email} />
+          <Input name="email" id="email" type="email" required defaultValue={email} placeholder="you@company.com" />
         </Field>
 
         <Field
@@ -72,7 +74,7 @@ export function ProfileForm({
           name="phone"
           help="Used only for emergency SMS if the workspace has turned that on. Leave blank to skip SMS."
         >
-          <Input name="phone" id="phone" type="tel" defaultValue={phone ?? ""} />
+          <Input name="phone" id="phone" type="tel" defaultValue={phone ?? ""} placeholder="(555) 201-8890" />
         </Field>
 
         <Field
@@ -96,6 +98,7 @@ export function ProfileForm({
             id="working_hours_start"
             type="time"
             defaultValue={workingHoursStart ?? ""}
+            placeholder="09:00"
           />
         </Field>
 
@@ -105,6 +108,7 @@ export function ProfileForm({
             id="working_hours_end"
             type="time"
             defaultValue={workingHoursEnd ?? ""}
+            placeholder="18:00"
           />
         </Field>
 

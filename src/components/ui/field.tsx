@@ -13,7 +13,7 @@ export function FieldRoot({
 }: FieldPrimitive.Root.Props): React.ReactElement {
   return (
     <FieldPrimitive.Root
-      className={cn("flex flex-col items-start gap-2", className)}
+      className={cn("flex w-full flex-col items-stretch gap-2", className)}
       data-slot="field"
       {...props}
     />

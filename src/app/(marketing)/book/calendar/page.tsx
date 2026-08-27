@@ -75,7 +75,7 @@ export default async function CalendarPage() {
               <BookingCalendar src={src} title={CALENDAR.title} />
             </div>
           ) : (
-            <Panel className="mx-auto max-w-xl p-8 text-center">
+            <Panel className="mx-auto max-w-2xl p-8 text-center">
               <p className="text-sm leading-relaxed text-silver">{CALENDAR.missing}</p>
               <p className="mt-4 text-sm text-white">
                 <a

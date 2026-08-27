@@ -54,6 +54,7 @@ export function VerificationControls({
           value={reason}
           onChange={(event) => setReason(event.target.value)}
           maxLength={240}
+          placeholder="Accuracy below the bar on this week's sample"
         />
       </Field>
       <div className="flex flex-wrap gap-2">
@@ -102,10 +103,10 @@ export function VerificationControls({
                 {row.task} · {row.orgId} · {new Date(row.createdAt).toLocaleString()}
               </p>
               <Field label="Missed faults" name="missedFaultCount">
-                <Input name="missedFaultCount" type="number" min={0} required defaultValue={0} />
+                <Input name="missedFaultCount" type="number" min={0} required defaultValue={0} placeholder="0" />
               </Field>
               <Field label="Notes" name="notes">
-                <Input name="notes" />
+                <Input name="notes" placeholder="What the verifier missed, if anything" />
               </Field>
               <Button type="submit" variant="secondary" size="sm">
                 Record sample audit

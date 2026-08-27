@@ -134,7 +134,7 @@ function PatternsBlock({
 
       {workOn.length > 0 && shown ? (
         <div className="mt-6">
-          <h3 className="text-sm font-semibold text-white">Things to work on</h3>
+          <h3 className="font-heading text-sm text-white">Things to work on</h3>
           <ul className="mt-2 space-y-3 text-sm text-silver">
             {workOn.slice(0, 2).map((item, index) => {
               const row = asRecord(item);
@@ -167,7 +167,7 @@ function PatternsBlock({
 
       {best.length > 0 ? (
         <div className="mt-6">
-          <h3 className="text-sm font-semibold text-white">Calls of yours that closed</h3>
+          <h3 className="font-heading text-sm text-white">Calls of yours that closed</h3>
           <p className={helperClass}>Most people never listen back to a call they won.</p>
           <ul className="mt-2 space-y-1 text-sm text-silver">
             {best.map((item) => {
@@ -189,7 +189,7 @@ function PatternsBlock({
 
       {shown && movement.length > 0 ? (
         <div className="mt-6">
-          <h3 className="text-sm font-semibold text-white">Movement</h3>
+          <h3 className="font-heading text-sm text-white">Movement</h3>
           <p className={helperClass}>Counts by week, not rates. A week with few calls is not a pattern.</p>
           <DataTable
             className="mt-2"

@@ -17,7 +17,7 @@ export function GhlConnectVisual() {
       <Panel className="p-4">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
-            <h3 className="text-sm font-semibold text-white">Connect GoHighLevel</h3>
+            <h3 className="font-heading text-sm text-white">Connect GoHighLevel</h3>
             <p className={helperClass}>
               Your conversations, your calendar, your pipeline stay where they are.
             </p>

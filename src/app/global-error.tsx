@@ -14,7 +14,7 @@ export default function GlobalError({
       <body className="min-h-screen bg-background font-body text-foreground antialiased">
         <div className="mx-auto max-w-lg px-6 py-16">
           <Logo className="h-7 w-auto" />
-          <p className="mt-8 text-sm font-semibold text-white">Vistrial failed to load</p>
+          <p className="mt-8 font-heading text-sm text-white">Vistrial failed to load</p>
           <p className="mt-3 text-sm leading-relaxed text-silver">
             The app hit a problem before this page could render. Retry the request.
             Details stay in the server log, not on this screen.

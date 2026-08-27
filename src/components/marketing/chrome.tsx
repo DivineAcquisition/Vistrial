@@ -10,19 +10,27 @@ function MarketingBackdrop() {
   return (
     <div aria-hidden className="pointer-events-none fixed inset-0 z-0 overflow-hidden">
       <div
-        className="absolute -top-[28%] left-1/2 h-[620px] w-[920px] -translate-x-1/2"
+        className="absolute -top-[28%] left-1/2 h-[680px] w-[980px] -translate-x-1/2"
         style={{
           background:
-            "radial-gradient(ellipse at center, rgba(154,136,252,0.32) 0%, transparent 68%)",
+            "radial-gradient(ellipse at center, rgba(154,136,252,0.38) 0%, transparent 68%)",
           filter: "blur(72px)",
         }}
       />
       <div
-        className="absolute top-[18%] right-[-12%] h-[420px] w-[420px]"
+        className="absolute top-[18%] right-[-12%] h-[460px] w-[460px]"
         style={{
           background:
-            "radial-gradient(ellipse at center, rgba(154,136,252,0.12) 0%, transparent 70%)",
+            "radial-gradient(ellipse at center, rgba(154,136,252,0.16) 0%, transparent 70%)",
           filter: "blur(64px)",
+        }}
+      />
+      <div
+        className="absolute bottom-[-8%] left-[-8%] h-[360px] w-[360px]"
+        style={{
+          background:
+            "radial-gradient(ellipse at center, rgba(102,80,216,0.14) 0%, transparent 70%)",
+          filter: "blur(70px)",
         }}
       />
       <div

@@ -24,7 +24,7 @@ export default async function BookPage({
   return (
     <MarketingShell headerAction="none">
       <section className="px-5 pb-10 pt-14 sm:px-6 sm:pt-20">
-        <div className="mx-auto max-w-xl text-center">
+        <div className="mx-auto max-w-2xl text-center">
           <p className={`${eyebrow} animate-rise`}>{BOOK.eyebrow}</p>
           <h1 className={`${marketingHeroTitle} animate-rise delay-1 mt-6 text-[2.1rem] sm:text-4xl md:text-[2.75rem]`}>
             {BOOK.title}
@@ -35,7 +35,7 @@ export default async function BookPage({
         </div>
       </section>
       <section className="px-5 pb-20 sm:px-6">
-        <Panel className="animate-rise delay-3 mx-auto max-w-xl rounded-3xl p-6 sm:p-8">
+        <Panel className="animate-rise delay-3 mx-auto max-w-2xl rounded-3xl border-white/[0.1] p-6 shadow-[0_24px_80px_-32px_rgba(0,0,0,0.85)] sm:p-8">
           <QualifyForm tracking={tracking} />
         </Panel>
       </section>

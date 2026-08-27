@@ -43,7 +43,7 @@ function BentoCard({
   return (
     <Card
       className={cn(
-        "group relative col-span-3 flex flex-col justify-between overflow-hidden",
+        "group relative col-span-3 flex flex-col justify-between overflow-hidden panel-hover",
         className,
       )}
     >
@@ -54,7 +54,7 @@ function BentoCard({
             aria-hidden="true"
             className="size-10 origin-left text-primary transition-all duration-300 ease-in-out group-hover:scale-75"
           />
-          <h3 className="font-heading text-xl font-semibold text-card-foreground">{name}</h3>
+          <h3 className="font-heading text-xl text-card-foreground">{name}</h3>
           <p className="max-w-lg text-muted-foreground">{description}</p>
         </div>
 

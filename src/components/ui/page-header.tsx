@@ -43,7 +43,7 @@ export function PageHeader({
   className?: string;
 }) {
   return (
-    <header className={cn("mb-8", className)}>
+    <header className={cn("relative mb-8", className)}>
       {breadcrumbs && breadcrumbs.length > 0 ? (
         <Breadcrumbs items={breadcrumbs} className="mb-3" />
       ) : null}
@@ -69,8 +69,13 @@ export function PageHeader({
       </div>
 
       {toolbar ? (
-        <div className="mt-6 border-t border-border pt-5">{toolbar}</div>
-      ) : null}
+        <div className="mt-6 border-t border-white/[0.07] pt-5">{toolbar}</div>
+      ) : (
+        <div
+          aria-hidden
+          className="mt-6 h-px bg-linear-to-r from-transparent via-brand-500/30 to-transparent"
+        />
+      )}
     </header>
   );
 }

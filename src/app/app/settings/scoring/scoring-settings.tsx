@@ -135,6 +135,7 @@ export function ScoringSettings({ config, maps: initialMaps, leads, lastGhostRun
                 required
                 value={weights[key]}
                 onChange={(event) => updateWeight(key, event.target.value)}
+                placeholder="25"
               />
             </Field>
           ))}
@@ -158,6 +159,7 @@ export function ScoringSettings({ config, maps: initialMaps, leads, lastGhostRun
               required
               value={readyThreshold}
               onChange={(event) => setReadyThreshold(Number(event.target.value))}
+              placeholder="70"
             />
           </Field>
           <Field label="Speed-to-lead minutes" name="speed_to_lead_minutes">
@@ -169,6 +171,7 @@ export function ScoringSettings({ config, maps: initialMaps, leads, lastGhostRun
               required
               value={speedToLead}
               onChange={(event) => setSpeedToLead(Number(event.target.value))}
+              placeholder="5"
             />
           </Field>
           <Field label="Approaching-ghost days" name="ghost_days_soft">
@@ -180,6 +183,7 @@ export function ScoringSettings({ config, maps: initialMaps, leads, lastGhostRun
               required
               value={ghostSoft}
               onChange={(event) => setGhostSoft(Number(event.target.value))}
+              placeholder="3"
             />
           </Field>
           <Field label="Ghost days" name="ghost_days_hard">
@@ -191,6 +195,7 @@ export function ScoringSettings({ config, maps: initialMaps, leads, lastGhostRun
               required
               value={ghostHard}
               onChange={(event) => setGhostHard(Number(event.target.value))}
+              placeholder="7"
             />
           </Field>
 
@@ -207,7 +212,7 @@ export function ScoringSettings({ config, maps: initialMaps, leads, lastGhostRun
               <Field
                 label="Holdout percent"
                 name="holdout_percent"
-                className="mt-3 max-w-xs"
+                className="mt-3 max-w-sm"
                 help={`Default ${HOLDOUT_DEFAULT_PERCENT}%. Cap ${HOLDOUT_MAX_PERCENT}%. These leads are not marked on the queue.`}
               >
                 <Input
@@ -220,6 +225,7 @@ export function ScoringSettings({ config, maps: initialMaps, leads, lastGhostRun
                   required
                   value={holdoutPercent}
                   onChange={(event) => setHoldoutPercent(Number(event.target.value))}
+                  placeholder="10"
                 />
               </Field>
             ) : (
@@ -253,7 +259,7 @@ export function ScoringSettings({ config, maps: initialMaps, leads, lastGhostRun
           <p className={`${helperClass} mt-3`}>No leads in this workspace yet.</p>
         ) : (
           <>
-            <div className="mt-4 max-w-md">
+            <div className="mt-4 max-w-2xl">
               <Field label="Lead" name="preview-lead">
                 <Select
                   id="preview-lead"
@@ -326,6 +332,7 @@ export function ScoringSettings({ config, maps: initialMaps, leads, lastGhostRun
                           )
                         );
                       }}
+                      placeholder="Timeline"
                     />
                   </Field>
                 </div>
@@ -614,7 +621,7 @@ export function ScoringSettings({ config, maps: initialMaps, leads, lastGhostRun
               });
             }}
           >
-            <div className="max-w-md">
+            <div className="max-w-2xl">
               <Field label="Lead" name="lead_id" htmlFor="override-lead">
                 <Select id="override-lead" name="lead_id" required defaultValue={leads[0]?.id}>
                   {leads.map((lead) => (
@@ -645,6 +652,7 @@ export function ScoringSettings({ config, maps: initialMaps, leads, lastGhostRun
                 name="reasoning"
                 required
                 rows={3}
+                placeholder="Why this override is right for this lead"
               />
             </Field>
             {overrideStatus ? <p className={helperClass}>{overrideStatus}</p> : null}

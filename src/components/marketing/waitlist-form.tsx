@@ -77,8 +77,9 @@ export function WaitlistForm({
           type="text"
           autoComplete="name"
           required
-          placeholder={WAITLIST.nameLabel}
-          className="sm:w-36"
+          className="min-w-0 flex-1 sm:min-w-52"
+          size="lg"
+          placeholder="Jordan Blake"
         />
         <label htmlFor={`waitlist-email-${position}`} className="sr-only">
           {WAITLIST.emailLabel}
@@ -89,10 +90,11 @@ export function WaitlistForm({
           type="email"
           autoComplete="email"
           required
-          placeholder={WAITLIST.emailLabel}
+          placeholder="you@company.com"
           className="min-w-0 flex-1"
+          size="lg"
         />
-        <Button type="submit" variant="primary" size="lg" loading={pending} loadingLabel={WAITLIST.pending}>
+        <Button type="submit" variant="gradient" size="lg" loading={pending} loadingLabel={WAITLIST.pending}>
           {WAITLIST.submit}
         </Button>
       </div>

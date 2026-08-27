@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 import { PageHeader } from "@/components/ui/page-header";
 import type { Crumb } from "@/components/ui/breadcrumbs";
 import type { Tone } from "@/components/ui/tone";
+import { pageStack } from "@/lib/ui";
 
 /**
  * The frame every page in the app renders through. Kept as a thin pass-through
@@ -44,7 +45,7 @@ export function PageFrame({
         secondaryActions={secondaryActions}
         toolbar={toolbar}
       />
-      {children}
+      <div className={pageStack}>{children}</div>
     </>
   );
 }

@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Inter, JetBrains_Mono, Geist_Mono } from "next/font/google";
+import { Cal_Sans, Geist, Geist_Mono } from "next/font/google";
 
 import { AnchoredToastProvider, ToastProvider } from "@/components/ui/toast";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -9,14 +9,21 @@ import { SITE_DESCRIPTION, SOCIAL_IMAGE } from "@/lib/marketing/copy";
 import "./globals.css";
 import { cn } from "@/lib/utils";
 
-const inter = Inter({
+/**
+ * Magic UI pairing on the coss font contract:
+ * Geist → `--font-sans` (body, buttons, fields)
+ * Cal Sans → `--font-heading` (titles)
+ * Geist Mono → `--font-mono` (code, tabular scores)
+ */
+const geistSans = Geist({
   subsets: ["latin"],
   variable: "--font-sans",
   display: "swap",
 });
 
-const interHeading = Inter({
+const calSans = Cal_Sans({
   subsets: ["latin"],
+  weight: "400",
   variable: "--font-heading",
   display: "swap",
 });
@@ -24,12 +31,6 @@ const interHeading = Inter({
 const geistMono = Geist_Mono({
   subsets: ["latin"],
   variable: "--font-mono",
-});
-
-const jetbrainsMono = JetBrains_Mono({
-  subsets: ["latin"],
-  weight: ["400", "500", "600"],
-  variable: "--font-jetbrains",
   display: "swap",
 });
 
@@ -82,13 +83,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={cn(
-        "dark",
-        inter.variable,
-        interHeading.variable,
-        geistMono.variable,
-        jetbrainsMono.variable,
-      )}
+      className={cn("dark", geistSans.variable, calSans.variable, geistMono.variable)}
       suppressHydrationWarning
     >
       <body className="min-h-screen bg-background font-sans text-foreground antialiased">

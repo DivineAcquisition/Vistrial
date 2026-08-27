@@ -71,16 +71,16 @@ export function LandingPage() {
 
   return (
     <>
-      <section className={cn(marketingPageGutter, "relative overflow-hidden pb-20 pt-16 sm:pb-28 sm:pt-24")}>
+      <section className={cn(marketingPageGutter, "relative overflow-hidden pb-24 pt-16 sm:pb-32 sm:pt-24")}>
         <Particles
-          className="absolute inset-0"
+          className="absolute inset-0 z-0"
           quantity={48}
           color="#9A88FC"
           ease={80}
           size={0.5}
         />
-        <div className={cn(marketingShell, "relative grid items-center gap-12 lg:grid-cols-2 lg:gap-16")}>
-          <BlurFade>
+        <div className={cn(marketingShell, "relative z-10 grid items-center gap-12 lg:grid-cols-2 lg:gap-16")}>
+          <div className="animate-rise">
             <StatusPill>Private · waitlist</StatusPill>
             <p className="mt-5 text-[13px] font-medium text-brand-300">{HERO.eyebrow}</p>
             <h1 className={cn(marketingHeroTitle, "mt-4")}>
@@ -98,16 +98,14 @@ export function LandingPage() {
               </a>
             </CtaGroup>
             <p className={cn(captionText, "mt-4")}>{HERO.underCta}</p>
-          </BlurFade>
-          <div className="relative">
+          </div>
+          <div className="relative animate-rise delay-1">
             <div className="pointer-events-none absolute -inset-x-8 -inset-y-16 -z-10 hidden opacity-50 lg:block">
               <Globe className="max-w-none" />
             </div>
-            <BlurFade delay={0.12}>
-              <ProductFrame title="Case file" caption={DEMO_CASE.sampleLabel}>
-                <HeroCaseFile />
-              </ProductFrame>
-            </BlurFade>
+            <ProductFrame title="Case file" caption={DEMO_CASE.sampleLabel}>
+              <HeroCaseFile />
+            </ProductFrame>
           </div>
         </div>
       </section>
@@ -140,11 +138,11 @@ export function LandingPage() {
               </ul>
               <p className="mt-8 text-[15px] font-medium text-white">{PROBLEM.closing}</p>
             </Panel>
-            <Panel className="border-brand-500/20 p-6 sm:p-8">
+            <Panel className="border-brand-500/25 p-6 sm:p-8">
               <p className="text-[11px] font-semibold tracking-[0.16em] text-brand-300 uppercase">
                 Case file
               </p>
-              <p className="mt-3 text-lg font-semibold tracking-tight text-white">{CASE_FILE.headline}</p>
+              <p className="mt-3 font-heading text-lg tracking-tight text-white">{CASE_FILE.headline}</p>
               <ul className="mt-6 space-y-3">
                 {CASE_FILE.parts.map((part) => (
                   <li key={part.id} className="flex items-start gap-3">
@@ -229,7 +227,7 @@ export function LandingPage() {
         <div className={marketingShell}>
           <FinalCta headline={WAITLIST.headline}>
             <p className={cn(marketingLead, "mx-auto")}>{WAITLIST.body}</p>
-            <div className="mx-auto mt-8 max-w-xl">
+            <div className="mx-auto mt-8 max-w-2xl">
               <WaitlistForm position="waitlist" />
             </div>
             <p className={cn(captionText, "mt-4")}>{WAITLIST.underCta}</p>

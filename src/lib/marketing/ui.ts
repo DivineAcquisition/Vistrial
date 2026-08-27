@@ -3,17 +3,17 @@ import { cn } from "@/lib/utils";
 
 /**
  * Headline and form recipes for the public site. Mapped onto Vistrial tokens.
- * No new colours or faces — Inter, brand-500, ink-950.
+ * Geist for UI copy, Cal Sans for titles, brand-500, ink-950.
  *
  * Scale is meant to sit with dense dark-SaaS marketing pages: large type,
  * rectangle buttons with round corners, not compact newsletter chrome.
  */
 
 export const marketingHeroTitle =
-  "text-[2.25rem] font-semibold leading-[1.08] tracking-tight text-white sm:text-5xl md:text-[3.25rem] md:leading-[1.05]";
+  "font-heading text-[2.25rem] leading-[1.08] tracking-tight text-white sm:text-5xl md:text-[3.25rem] md:leading-[1.05]";
 
 export const marketingSectionTitle =
-  "max-w-3xl text-2xl font-semibold tracking-tight text-white sm:text-[2rem] sm:leading-tight";
+  "font-heading max-w-3xl text-2xl tracking-tight text-white sm:text-[2rem] sm:leading-tight";
 
 export const marketingSubhead = "text-[15px] leading-relaxed text-silver sm:text-lg";
 
@@ -21,15 +21,15 @@ export const marketingLead = "max-w-2xl text-[15px] leading-relaxed text-silver 
 
 export const marketingBody = "text-sm leading-relaxed text-silver sm:text-[15px]";
 
-export const marketingCardTitle = "text-[15px] font-semibold tracking-tight text-white sm:text-base";
+export const marketingCardTitle = "font-heading text-[15px] tracking-tight text-white sm:text-base";
 
 export const marketingNavLink =
   "rounded-md px-2.5 py-1.5 text-sm font-medium text-silver transition-colors hover:text-white focus-visible:text-white";
 
 /** Marketing CTAs share the coss button recipes. */
-export const marketingBtnBase = buttonVariants({ variant: "primary", size: "lg" });
+export const marketingBtnBase = buttonVariants({ variant: "gradient", size: "lg" });
 
-export const marketingBtnPrimary = buttonVariants({ variant: "primary", size: "lg" });
+export const marketingBtnPrimary = buttonVariants({ variant: "gradient", size: "lg" });
 
 export const marketingBtnSecondary = buttonVariants({ variant: "outline", size: "lg" });
 
@@ -50,7 +50,7 @@ export const marketingField = cn(
 );
 
 export const marketingFieldControl = cn(
-  "block w-full min-h-11 border-0 bg-transparent px-3.5 py-2.5",
+  "block w-full min-h-11 border-0 bg-transparent px-4 py-2.5",
   "text-sm font-medium tracking-tight text-white",
   "placeholder:font-medium placeholder:text-silver/70",
   "focus:outline-none"
@@ -65,7 +65,7 @@ export const marketingFieldCompact = cn(
 );
 
 export const marketingFieldCompactControl = cn(
-  "block w-full min-h-10 border-0 bg-transparent px-3 py-2",
+  "block w-full min-h-10 border-0 bg-transparent px-3.5 py-2",
   "text-sm font-medium tracking-tight text-white",
   "placeholder:font-medium placeholder:text-silver/55",
   "focus:outline-none"
@@ -77,6 +77,6 @@ export const marketingSectionY = "py-16 sm:py-24";
 
 export const marketingShell = "mx-auto max-w-6xl";
 
-export const marketingMeasure = "max-w-xl";
+export const marketingMeasure = "max-w-2xl";
 
 export const marketingMeasureWide = "max-w-3xl";

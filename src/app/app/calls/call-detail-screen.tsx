@@ -599,6 +599,7 @@ function QuotesField({
                   )
                 }
                 placeholder="budget"
+              />
             </div>
           ))}
           <div className="flex flex-wrap gap-2">

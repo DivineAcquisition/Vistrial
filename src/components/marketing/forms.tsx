@@ -280,6 +280,7 @@ export function ContactForm() {
           autoComplete="name"
           required
           placeholder="Jordan Blake"
+        />
       </FormRow>
       <FormRow label="Email" htmlFor="contact-email">
         <Input
@@ -289,6 +290,7 @@ export function ContactForm() {
           autoComplete="email"
           required
           placeholder="you@company.com"
+        />
       </FormRow>
       <FormRow label="Message" htmlFor="contact-message">
         <Textarea

@@ -99,17 +99,17 @@ export const labelClass =
   "mb-2 inline-flex items-center gap-2 font-medium text-base/4.5 text-card-foreground sm:text-sm/4";
 
 const nativeFieldChrome =
-  "relative w-full min-w-0 rounded-lg border border-white/[0.09] bg-ink-850 text-base text-card-foreground shadow-[inset_0_1px_0_rgba(255,255,255,0.06)] outline-none ring-brand-500/20 transition-shadow not-dark:bg-clip-padding placeholder:text-muted-foreground/72 hover:not-disabled:border-white/[0.16] focus-visible:border-brand-500/55 focus-visible:ring-[3px] aria-invalid:border-destructive/36 focus-visible:aria-invalid:border-destructive/64 focus-visible:aria-invalid:ring-destructive/16 disabled:pointer-events-none disabled:opacity-64 dark:bg-ink-850 dark:aria-invalid:ring-destructive/24 sm:text-sm";
+  "relative w-full min-w-0 rounded-xl border border-white/[0.09] bg-ink-850 text-base text-card-foreground shadow-[inset_0_1px_0_rgba(255,255,255,0.06)] outline-none ring-brand-500/20 transition-shadow scheme-dark not-dark:bg-clip-padding placeholder:text-muted-foreground/72 hover:not-disabled:border-white/[0.16] focus-visible:border-brand-500/55 focus-visible:ring-[3px] aria-invalid:border-destructive/36 focus-visible:aria-invalid:border-destructive/64 focus-visible:aria-invalid:ring-destructive/16 disabled:pointer-events-none disabled:opacity-64 dark:bg-ink-850 dark:aria-invalid:ring-destructive/24 sm:text-sm [&::-webkit-calendar-picker-indicator]:cursor-pointer [&::-webkit-calendar-picker-indicator]:opacity-70 [&::-webkit-calendar-picker-indicator]:invert";
 
 export const inputClass = cn(
   nativeFieldChrome,
-  "h-9.5 px-[calc(--spacing(4)-1px)] leading-9.5 sm:h-8.5 sm:leading-8.5",
+  "h-10 px-[calc(--spacing(4)-1px)] leading-10 sm:h-9 sm:leading-9",
 );
 
 /** Same chrome at the compact coss size, for filter bars and table toolbars. */
 export const inputCompactClass = cn(
   nativeFieldChrome,
-  "h-8.5 px-[calc(--spacing(2.5)-1px)] leading-8.5 sm:h-7.5 sm:leading-7.5",
+  "h-8.5 rounded-lg px-[calc(--spacing(2.5)-1px)] leading-8.5 sm:h-7.5 sm:leading-7.5",
 );
 
 export const textareaClass = cn(

@@ -1,6 +1,6 @@
 import { PageFrame } from "@/components/app/page-frame";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
+import { Card, CardPanel } from "@/components/ui/card";
 import { requireOrgSettingsManager } from "@/lib/auth/gates";
 import { advancedSettingsBreadcrumbs } from "@/lib/navigation";
 import { cardStack, cardTitle, formMeasure, helperClass } from "@/lib/ui";
@@ -15,7 +15,7 @@ export default async function DataSettingsPage() {
       breadcrumbs={advancedSettingsBreadcrumbs("Data", "/app/settings/data")}
     >
       <Card className={formMeasure}>
-        <div className={cardStack}>
+        <CardPanel className={cardStack}>
           <h2 className={cardTitle}>Export</h2>
           <p className={helperClass}>
             Downloads leads, touches, calls, transcripts, extractions, objections, scores, revenue,
@@ -24,7 +24,7 @@ export default async function DataSettingsPage() {
           <Button asChild variant="secondary">
             <a href="/app/settings/data/export">Download JSON</a>
           </Button>
-        </div>
+        </CardPanel>
       </Card>
     </PageFrame>
   );

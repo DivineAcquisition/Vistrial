@@ -95,7 +95,7 @@ export function LoginForm({
         variant="gradient"
         size="lg"
         loadingLabel="Working"
-        className="auth-submit mt-2 w-full"
+        className="auth-submit mt-2 w-full rounded-xl before:rounded-[calc(var(--radius-xl)-1px)]"
       >
         Continue
       </SubmitButton>
@@ -106,7 +106,7 @@ export function LoginForm({
         type="button"
         variant="outline"
         size="lg"
-        className="auth-alt w-full"
+        className="auth-alt w-full rounded-xl before:rounded-[calc(var(--radius-xl)-1px)]"
         onClick={() => {
           setMode((current) => (current === "password" ? "magic" : "password"));
           setShowPassword(false);

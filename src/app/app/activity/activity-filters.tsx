@@ -46,6 +46,7 @@ export function ActivityFiltersForm({
       <label className="block">
         <span className={filterLabel}>Search lead</span>
         <Input
+          type="search"
           density="compact"
           defaultValue={filters.q ?? ""}
           placeholder="Lead name"

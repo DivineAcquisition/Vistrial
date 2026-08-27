@@ -1,10 +1,11 @@
 import Logo from "@/components/brand/logo";
 import { Particles } from "@/components/ui/particles";
+import { ShineBorder } from "@/components/ui/shine-border";
 import { APP_NAME } from "@/lib/constants";
 
 /**
  * Quiet auth shell shared by login, invite, and no-access.
- * Brand wash and particles sit behind a square desk — the crest is all acute angles.
+ * Brand wash and particles sit behind a rounded desk with a moving shine edge.
  */
 export function AuthCard({
   title,
@@ -29,7 +30,12 @@ export function AuthCard({
         <div className="auth-stage-grid" />
       </div>
       <main className="auth-stage-frame">
-        <div className={`auth-desk-inner ${width === "wide" ? "auth-desk-inner--wide" : ""}`}>
+        <div className={`auth-desk-inner animate-rise ${width === "wide" ? "auth-desk-inner--wide" : ""}`}>
+          <ShineBorder
+            borderWidth={1}
+            duration={14}
+            shineColor={["#9A88FC", "#C3B6FE", "#7C63FA"]}
+          />
           <Logo markOnly title="" className="auth-mark" />
           {eyebrowLabel ? <p className="auth-eyebrow">{eyebrowLabel}</p> : null}
           <h1 className="auth-title">{title}</h1>

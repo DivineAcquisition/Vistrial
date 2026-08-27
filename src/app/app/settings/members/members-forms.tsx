@@ -36,7 +36,7 @@ export function InviteForm() {
           />
         </Field>
         <Field label="Role" name="role" htmlFor="invite-role">
-          <Select id="invite-role" name="role" defaultValue="setter">
+          <Select id="invite-role" name="role" defaultValue="setter" className="min-w-0">
             <option value="setter">Setter</option>
             <option value="closer">Closer</option>
             <option value="admin">Admin</option>

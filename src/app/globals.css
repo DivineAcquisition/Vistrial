@@ -497,11 +497,14 @@
   }
 
   .auth-desk-inner {
+    position: relative;
+    overflow: hidden;
     width: min(32rem, 100%);
     margin-inline: auto;
     padding: 2.35rem 1.85rem 1.85rem;
     text-align: center;
     border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 1.25rem;
     background:
       linear-gradient(
         180deg,
@@ -591,6 +594,15 @@
 
   .auth-field {
     position: relative;
+    isolation: isolate;
+    overflow: hidden;
+    border-radius: 0.75rem;
+  }
+
+  .auth-field:focus-within {
+    box-shadow:
+      0 0 0 3px rgba(154, 136, 252, 0.18),
+      0 0 24px -8px rgba(154, 136, 252, 0.45);
   }
 
   .auth-input {
@@ -599,7 +611,7 @@
     height: 3.15rem;
     min-height: 3.15rem;
     padding: 0 1.25rem 0 3rem;
-    border-radius: 0;
+    border-radius: 0.75rem;
     border: 1px solid rgba(255, 255, 255, 0.14);
     background:
       linear-gradient(180deg, rgba(255, 255, 255, 0.045) 0%, transparent 42%),
@@ -639,10 +651,7 @@
     background:
       linear-gradient(180deg, rgba(154, 136, 252, 0.12) 0%, transparent 48%),
       rgba(8, 8, 12, 0.88);
-    box-shadow:
-      inset 0 1px 0 rgba(255, 255, 255, 0.07),
-      0 0 0 3px rgba(154, 136, 252, 0.18),
-      0 0 24px -8px rgba(154, 136, 252, 0.45);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.07);
   }
 
   .auth-input:disabled,
@@ -653,6 +662,7 @@
   .auth-field-icon {
     pointer-events: none;
     position: absolute;
+    z-index: 1;
     top: 50%;
     left: 1.05rem;
     width: 1rem;
@@ -668,6 +678,7 @@
 
   .auth-field-action {
     position: absolute;
+    z-index: 2;
     top: 50%;
     right: 0.3rem;
     display: flex;
@@ -676,7 +687,7 @@
     transform: translateY(-50%);
     align-items: center;
     justify-content: center;
-    border-radius: 0;
+    border-radius: 0.5rem;
     color: rgba(163, 163, 163, 0.85);
   }
 
@@ -720,6 +731,7 @@
   .auth-submit {
     height: 3.15rem;
     min-height: 3.15rem;
+    border-radius: 0.75rem;
     font-size: 14px;
     font-weight: 600;
     letter-spacing: 0.06em;
@@ -739,6 +751,7 @@
   .auth-alt {
     height: 3.15rem;
     min-height: 3.15rem;
+    border-radius: 0.75rem;
     border-color: rgba(255, 255, 255, 0.14);
     background: transparent;
     font-size: 13.5px;
@@ -1141,19 +1154,6 @@
   }
 }
 
-/*
- * Auth chrome stays square. Unlayered so it beats rounded-full on the shared
- * button recipe — the crest is all acute angles.
- */
-.auth-stage,
-.auth-stage :is(button, a, input),
-.auth-desk-inner,
-.auth-input,
-.auth-field-action,
-.auth-submit,
-.auth-alt {
-  border-radius: 0;
-}
 /*
  ---break---
  */

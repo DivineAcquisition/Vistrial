@@ -10,8 +10,9 @@ import {
 } from "@/app/app/settings/notifications/actions";
 import type { SettingsSaveResult } from "@/app/app/settings/types";
 import { PushEnable } from "@/components/app/push-enable";
+import { SettingsFormCard } from "@/components/settings/settings-form-card";
 import { SubmitButton } from "@/components/ui/button";
-import { Card, CardFooter } from "@/components/ui/card";
+import { Card, CardPanel } from "@/components/ui/card";
 import { CheckboxField } from "@/components/ui/checkbox";
 import { Field } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
@@ -22,7 +23,7 @@ import { USER_PREF_CHANNELS, USER_PREF_EVENTS } from "@/lib/notifications/consta
 import { defaultChannelEnabled } from "@/lib/notifications/defaults";
 import { CHANNEL_LABELS, EVENT_LABELS } from "@/lib/notifications/labels";
 import { preferenceLocked } from "@/lib/notifications/policy";
-import { cardStack, errorClass, formMeasure, helperClass, successClass } from "@/lib/ui";
+import { errorClass, formMeasure, helperClass, successClass } from "@/lib/ui";
 import type { NotificationChannel, NotificationEventType } from "@/lib/notifications/types";
 import type { OrgRole } from "@/types/database";
 
@@ -60,7 +61,9 @@ export function NotificationSettingsForm({
           hint="Push is the default for anything with a clock on it. It never fires for something already on your screen."
         />
         <Card className={formMeasure}>
-          <PushEnable />
+          <CardPanel>
+            <PushEnable />
+          </CardPanel>
         </Card>
       </section>
 
@@ -69,46 +72,45 @@ export function NotificationSettingsForm({
           title="Channels per event"
           hint="One event uses one channel. Turning a default off and another on moves it; it does not fire twice. You cannot turn off escalation that reaches an admin."
         />
-        <Card className="max-w-3xl">
-          <form action={savePrefs} className={cardStack}>
-            <div className="space-y-5">
-              {USER_PREF_EVENTS.map((eventType) => (
-                <div
-                  key={eventType}
-                  className="border-t border-white/[0.06] pt-4 first:border-t-0 first:pt-0"
-                >
-                  <p className="text-sm text-white">{EVENT_LABELS[eventType]}</p>
-                  <div className="mt-2 grid gap-2">
-                    {USER_PREF_CHANNELS.map((channel) => {
-                      const locked = preferenceLocked({ role, eventType, channel });
-                      const key = `${eventType}:${channel}`;
-                      const checked = prefMap.has(key)
-                        ? Boolean(prefMap.get(key))
-                        : defaultChannelEnabled(role, eventType, channel);
-                      return (
-                        <CheckboxField
-                          key={channel}
-                          name={`pref:${eventType}:${channel}`}
-                          defaultChecked={checked}
-                          disabled={locked}
-                          label={CHANNEL_LABELS[channel]}
-                          description={
-                            locked ? "Required for admin escalation" : undefined
-                          }
-                        />
-                      );
-                    })}
-                  </div>
+        <SettingsFormCard
+          className="max-w-3xl"
+          action={savePrefs}
+          footer={<SubmitButton pending={prefPending}>Save preferences</SubmitButton>}
+        >
+          <div className="space-y-5">
+            {USER_PREF_EVENTS.map((eventType) => (
+              <div
+                key={eventType}
+                className="border-t border-white/[0.06] pt-4 first:border-t-0 first:pt-0"
+              >
+                <p className="text-sm text-white">{EVENT_LABELS[eventType]}</p>
+                <div className="mt-2 grid gap-2">
+                  {USER_PREF_CHANNELS.map((channel) => {
+                    const locked = preferenceLocked({ role, eventType, channel });
+                    const key = `${eventType}:${channel}`;
+                    const checked = prefMap.has(key)
+                      ? Boolean(prefMap.get(key))
+                      : defaultChannelEnabled(role, eventType, channel);
+                    return (
+                      <CheckboxField
+                        key={channel}
+                        name={`pref:${eventType}:${channel}`}
+                        defaultChecked={checked}
+                        disabled={locked}
+                        label={CHANNEL_LABELS[channel]}
+                        description={
+                          locked ? "Required for admin escalation" : undefined
+                        }
+                      />
+                    );
+                  })}
                 </div>
-              ))}
-            </div>
-            {prefState.status === "error" ? <p className={errorClass}>{prefState.error}</p> : null}
-            {prefState.status === "saved" ? <p className={successClass}>Saved.</p> : null}
-            <CardFooter>
-              <SubmitButton pending={prefPending}>Save preferences</SubmitButton>
-            </CardFooter>
-          </form>
-        </Card>
+              </div>
+            ))}
+          </div>
+          {prefState.status === "error" ? <p className={errorClass}>{prefState.error}</p> : null}
+          {prefState.status === "saved" ? <p className={successClass}>Saved.</p> : null}
+        </SettingsFormCard>
       </section>
 
       <section>
@@ -116,33 +118,31 @@ export function NotificationSettingsForm({
           title="Temporary mute"
           hint="Mute always ends. There is no permanent silent mute. Emergencies and admin escalation still send."
         />
-        <Card className={formMeasure}>
-          <form action={saveMute} className={cardStack}>
-            {mutedUntil ? (
-              <Notice tone="warning">
-                Muted until {new Date(mutedUntil).toLocaleString()}. Visible so nobody is uncovered
-                without knowing.
-              </Notice>
-            ) : (
-              <p className={helperClass}>Not muted.</p>
-            )}
-            <Field
-              label="Mute until"
-              name="muted_until"
-              help="At most seven days from now."
-            >
-              <Input name="muted_until" id="muted_until" type="datetime-local" placeholder="YYYY-MM-DD HH:MM" />
-            </Field>
-            {mutedUntil ? (
-              <CheckboxField name="clear_mute" label="End mute now" />
-            ) : null}
-            {muteState.status === "error" ? <p className={errorClass}>{muteState.error}</p> : null}
-            {muteState.status === "saved" ? <p className={successClass}>Saved.</p> : null}
-            <CardFooter>
-              <SubmitButton pending={mutePending}>Save mute</SubmitButton>
-            </CardFooter>
-          </form>
-        </Card>
+        <SettingsFormCard
+          action={saveMute}
+          footer={<SubmitButton pending={mutePending}>Save mute</SubmitButton>}
+        >
+          {mutedUntil ? (
+            <Notice tone="warning">
+              Muted until {new Date(mutedUntil).toLocaleString()}. Visible so nobody is uncovered
+              without knowing.
+            </Notice>
+          ) : (
+            <p className={helperClass}>Not muted.</p>
+          )}
+          <Field
+            label="Mute until"
+            name="muted_until"
+            help="At most seven days from now."
+          >
+            <Input name="muted_until" id="muted_until" type="datetime-local" placeholder="YYYY-MM-DD HH:MM" />
+          </Field>
+          {mutedUntil ? (
+            <CheckboxField name="clear_mute" label="End mute now" />
+          ) : null}
+          {muteState.status === "error" ? <p className={errorClass}>{muteState.error}</p> : null}
+          {muteState.status === "saved" ? <p className={successClass}>Saved.</p> : null}
+        </SettingsFormCard>
       </section>
 
       <section>
@@ -150,25 +150,23 @@ export function NotificationSettingsForm({
           title="Test send"
           hint="Sends on the real channel. A failure here is a configuration problem, not a silent skip."
         />
-        <Card className={formMeasure}>
-          <form action={sendTest} className={cardStack}>
-            <div className="flex flex-wrap gap-2">
-              {(["push", "email", "sms", "team"] as const).map((channel) => (
-                <SubmitButton
-                  key={channel}
-                  pending={testPending}
-                  name="channel"
-                  value={channel}
-                  variant="secondary"
-                >
-                  Test {CHANNEL_LABELS[channel]}
-                </SubmitButton>
-              ))}
-            </div>
-            {testState.status === "error" ? <p className={errorClass}>{testState.error}</p> : null}
-            {testState.status === "saved" ? <p className={successClass}>Sent. Check that device or inbox.</p> : null}
-          </form>
-        </Card>
+        <SettingsFormCard action={sendTest}>
+          <div className="flex flex-wrap gap-2">
+            {(["push", "email", "sms", "team"] as const).map((channel) => (
+              <SubmitButton
+                key={channel}
+                pending={testPending}
+                name="channel"
+                value={channel}
+                variant="secondary"
+              >
+                Test {CHANNEL_LABELS[channel]}
+              </SubmitButton>
+            ))}
+          </div>
+          {testState.status === "error" ? <p className={errorClass}>{testState.error}</p> : null}
+          {testState.status === "saved" ? <p className={successClass}>Sent. Check that device or inbox.</p> : null}
+        </SettingsFormCard>
       </section>
 
       {isManager ? (
@@ -177,37 +175,35 @@ export function NotificationSettingsForm({
             title="Workspace"
             hint="SMS is off until you turn it on. Slack or Teams is the team channel for a breach seen by more than one person."
           />
-          <Card className={formMeasure}>
-            <form action={saveOrg} className={cardStack}>
-              <Switch
-                name="sms_emergencies_enabled"
-                defaultChecked={smsEmergenciesEnabled}
-                label="SMS for stalled ingestion and a broken CRM"
-                description="Default off. Fires one hour after the push if the condition still holds, never at the same time."
-              />
-              <Field
-                label="Slack incoming webhook"
-                name="slack_webhook"
-                help={slackSaved ? "A webhook is saved. Paste a new URL to replace it." : "Optional."}
-              >
-                <Input name="slack_webhook" id="slack_webhook" type="url" placeholder="https://hooks.slack.com/services/…" />
-              </Field>
-              {slackSaved ? <CheckboxField name="clear_slack" label="Remove Slack webhook" /> : null}
-              <Field
-                label="Teams incoming webhook"
-                name="teams_webhook"
-                help={teamsSaved ? "A webhook is saved. Paste a new URL to replace it." : "Optional."}
-              >
-                <Input name="teams_webhook" id="teams_webhook" type="url" placeholder="https://outlook.office.com/webhook/…" />
-              </Field>
-              {teamsSaved ? <CheckboxField name="clear_teams" label="Remove Teams webhook" /> : null}
-              {orgState.status === "error" ? <p className={errorClass}>{orgState.error}</p> : null}
-              {orgState.status === "saved" ? <p className={successClass}>Saved.</p> : null}
-              <CardFooter>
-                <SubmitButton pending={orgPending}>Save workspace alerts</SubmitButton>
-              </CardFooter>
-            </form>
-          </Card>
+          <SettingsFormCard
+            action={saveOrg}
+            footer={<SubmitButton pending={orgPending}>Save workspace alerts</SubmitButton>}
+          >
+            <Switch
+              name="sms_emergencies_enabled"
+              defaultChecked={smsEmergenciesEnabled}
+              label="SMS for stalled ingestion and a broken CRM"
+              description="Default off. Fires one hour after the push if the condition still holds, never at the same time."
+            />
+            <Field
+              label="Slack incoming webhook"
+              name="slack_webhook"
+              help={slackSaved ? "A webhook is saved. Paste a new URL to replace it." : "Optional."}
+            >
+              <Input name="slack_webhook" id="slack_webhook" type="url" placeholder="https://hooks.slack.com/services/…" />
+            </Field>
+            {slackSaved ? <CheckboxField name="clear_slack" label="Remove Slack webhook" /> : null}
+            <Field
+              label="Teams incoming webhook"
+              name="teams_webhook"
+              help={teamsSaved ? "A webhook is saved. Paste a new URL to replace it." : "Optional."}
+            >
+              <Input name="teams_webhook" id="teams_webhook" type="url" placeholder="https://outlook.office.com/webhook/…" />
+            </Field>
+            {teamsSaved ? <CheckboxField name="clear_teams" label="Remove Teams webhook" /> : null}
+            {orgState.status === "error" ? <p className={errorClass}>{orgState.error}</p> : null}
+            {orgState.status === "saved" ? <p className={successClass}>Saved.</p> : null}
+          </SettingsFormCard>
         </section>
       ) : null}
     </div>

@@ -248,18 +248,16 @@ export function FollowUpSettingsScreen({
                 <Input
                   id="quiet_hours_start"
                   name="quiet_hours_start"
-                  type="text"
+                  type="time"
                   defaultValue={settings.quietHoursStart}
-                  placeholder="21:00"
                 />
               </Field>
               <Field label="Quiet end" name="quiet_hours_end">
                 <Input
                   id="quiet_hours_end"
                   name="quiet_hours_end"
-                  type="text"
+                  type="time"
                   defaultValue={settings.quietHoursEnd}
-                  placeholder="08:00"
                 />
               </Field>
             </div>

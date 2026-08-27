@@ -51,6 +51,7 @@ export function VerificationControls({
         <Input
           name="verification-reason"
           id="verification-reason"
+          type="text"
           value={reason}
           onChange={(event) => setReason(event.target.value)}
           maxLength={240}
@@ -106,7 +107,7 @@ export function VerificationControls({
                 <Input name="missedFaultCount" type="number" min={0} required defaultValue={0} placeholder="0" />
               </Field>
               <Field label="Notes" name="notes">
-                <Input name="notes" placeholder="What the verifier missed, if anything" />
+                <Input name="notes" type="text" placeholder="What the verifier missed, if anything" />
               </Field>
               <Button type="submit" variant="secondary" size="sm">
                 Record sample audit

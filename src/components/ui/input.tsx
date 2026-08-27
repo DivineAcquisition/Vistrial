@@ -22,12 +22,14 @@ function densitySize(
   size: InputProps["size"],
 ): InputProps["size"] {
   if (density === "compact") return "sm";
-  if (density === "default" && (size === "default" || size === undefined)) return "lg";
-  return size;
+  if (size === "sm" || size === "lg" || typeof size === "number") return size;
+  return "lg";
 }
 
+const temporalTypes = new Set(["date", "time", "datetime-local", "month", "week"]);
+
 const inputShellClassName =
-  "relative inline-flex w-full rounded-lg border border-white/[0.09] bg-ink-850 not-dark:bg-clip-padding text-base shadow-[inset_0_1px_0_rgba(255,255,255,0.06)] ring-brand-500/20 transition-shadow before:pointer-events-none before:absolute before:inset-0 before:rounded-[calc(var(--radius-lg)-1px)] not-has-disabled:not-has-focus-visible:not-has-aria-invalid:before:shadow-[0_1px_--theme(--color-black/4%)] has-focus-visible:has-aria-invalid:border-destructive/64 has-focus-visible:has-aria-invalid:ring-destructive/16 has-aria-invalid:border-destructive/36 has-focus-visible:border-brand-500/55 has-autofill:bg-foreground/4 has-disabled:opacity-64 has-[:disabled,:focus-visible,[aria-invalid]]:shadow-none has-focus-visible:ring-[3px] hover:not-has-disabled:not-has-focus-visible:border-white/[0.16] sm:text-sm dark:bg-ink-850 dark:has-autofill:bg-foreground/8 dark:has-aria-invalid:ring-destructive/24 dark:not-has-disabled:not-has-focus-visible:not-has-aria-invalid:before:shadow-[0_-1px_--theme(--color-white/6%)]";
+  "relative inline-flex w-full rounded-xl border border-white/[0.09] bg-ink-850 not-dark:bg-clip-padding text-base shadow-[inset_0_1px_0_rgba(255,255,255,0.06)] ring-brand-500/20 transition-shadow scheme-dark before:pointer-events-none before:absolute before:inset-0 before:rounded-[calc(var(--radius-xl)-1px)] not-has-disabled:not-has-focus-visible:not-has-aria-invalid:before:shadow-[0_1px_--theme(--color-black/4%)] has-focus-visible:has-aria-invalid:border-destructive/64 has-focus-visible:has-aria-invalid:ring-destructive/16 has-aria-invalid:border-destructive/36 has-focus-visible:border-brand-500/55 has-autofill:bg-foreground/4 has-disabled:opacity-64 has-[:disabled,:focus-visible,[aria-invalid]]:shadow-none has-focus-visible:ring-[3px] hover:not-has-disabled:not-has-focus-visible:border-white/[0.16] sm:text-sm dark:bg-ink-850 dark:has-autofill:bg-foreground/8 dark:has-aria-invalid:ring-destructive/24 dark:not-has-disabled:not-has-focus-visible:not-has-aria-invalid:before:shadow-[0_-1px_--theme(--color-white/6%)]";
 
 export function Input({
   className,
@@ -44,16 +46,24 @@ export function Input({
     resolvedSize === "sm" &&
       "h-7.5 px-[calc(--spacing(2.5)-1px)] leading-7.5 sm:h-6.5 sm:leading-6.5",
     resolvedSize === "lg" &&
-      "h-9.5 px-[calc(--spacing(4)-1px)] leading-9.5 sm:h-8.5 sm:leading-8.5",
+      "h-10 px-[calc(--spacing(4)-1px)] leading-10 sm:h-9 sm:leading-9",
     props.type === "search" &&
       "[&::-webkit-search-cancel-button]:appearance-none [&::-webkit-search-decoration]:appearance-none [&::-webkit-search-results-button]:appearance-none [&::-webkit-search-results-decoration]:appearance-none",
     props.type === "file" &&
       "text-muted-foreground file:me-3 file:bg-transparent file:font-medium file:text-foreground file:text-sm",
+    temporalTypes.has(String(props.type)) &&
+      "[&::-webkit-calendar-picker-indicator]:cursor-pointer [&::-webkit-calendar-picker-indicator]:opacity-70 [&::-webkit-calendar-picker-indicator]:invert [&::-webkit-calendar-picker-indicator]:hover:opacity-100",
   );
 
   return (
     <span
-      className={cn(!unstyled && inputShellClassName, className) || undefined}
+      className={
+        cn(
+          !unstyled && inputShellClassName,
+          !unstyled && resolvedSize === "sm" && "rounded-lg before:rounded-[calc(var(--radius-lg)-1px)]",
+          className,
+        ) || undefined
+      }
       data-size={resolvedSize}
       data-slot="input-control"
     >
@@ -105,7 +115,12 @@ export function InputGroup({
 
   return (
     <span
-      className={cn(inputShellClassName, "items-center", className)}
+      className={cn(
+        inputShellClassName,
+        "items-center",
+        resolvedSize === "sm" && "rounded-lg before:rounded-[calc(var(--radius-lg)-1px)]",
+        className,
+      )}
       data-size={resolvedSize}
       data-slot="input-group"
       role="group"
@@ -122,7 +137,7 @@ export function InputGroup({
           resolvedSize === "sm" &&
             "h-7.5 px-[calc(--spacing(2.5)-1px)] leading-7.5 sm:h-6.5 sm:leading-6.5",
           resolvedSize === "lg" &&
-            "h-9.5 px-[calc(--spacing(4)-1px)] leading-9.5 sm:h-8.5 sm:leading-8.5",
+            "h-10 px-[calc(--spacing(4)-1px)] leading-10 sm:h-9 sm:leading-9",
           inputClassName,
         )}
         {...props}

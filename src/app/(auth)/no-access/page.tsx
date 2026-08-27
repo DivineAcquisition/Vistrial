@@ -25,7 +25,7 @@ export default async function NoAccessPage() {
       <p className="mb-6 text-sm leading-relaxed text-dim">
         If you expected access, use the email address the invite was sent to. Signing out lets you try a different account.
       </p>
-      <Button variant="secondary" size="lg" className="auth-alt w-full" render={<Link href="/auth/signout" />}>
+      <Button variant="secondary" size="lg" className="auth-alt w-full rounded-xl before:rounded-[calc(var(--radius-xl)-1px)]" render={<Link href="/auth/signout" />}>
         Sign out
       </Button>
     </AuthCard>

@@ -307,6 +307,7 @@ export function CoachingView({
         />
         <form method="get" action="/app/coaching" className="mb-4 flex flex-wrap gap-2">
           <Input
+            type="search"
             name="q"
             defaultValue={query}
             placeholder="Search by lead name"

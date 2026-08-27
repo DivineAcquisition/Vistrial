@@ -1,6 +1,9 @@
+"use client";
+
 import type { ComponentProps, ReactNode } from "react";
 import type { LucideIcon } from "lucide-react";
 
+import { BorderBeam } from "@/components/ui/border-beam";
 import { cn } from "@/lib/utils";
 
 export function AuthField({
@@ -24,6 +27,16 @@ export function AuthField({
         {...props}
       />
       {action}
+      <BorderBeam size={52} duration={8} borderWidth={1.5} />
+      <BorderBeam
+        size={52}
+        duration={8}
+        delay={4}
+        reverse
+        borderWidth={1.5}
+        colorFrom="#C3B6FE"
+        colorTo="#9A88FC"
+      />
     </div>
   );
 

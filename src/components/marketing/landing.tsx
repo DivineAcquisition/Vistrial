@@ -73,14 +73,14 @@ export function LandingPage() {
     <>
       <section className={cn(marketingPageGutter, "relative overflow-hidden pb-24 pt-16 sm:pb-32 sm:pt-24")}>
         <Particles
-          className="absolute inset-0"
+          className="absolute inset-0 z-0"
           quantity={48}
           color="#9A88FC"
           ease={80}
           size={0.5}
         />
-        <div className={cn(marketingShell, "relative grid items-center gap-12 lg:grid-cols-2 lg:gap-16")}>
-          <BlurFade>
+        <div className={cn(marketingShell, "relative z-10 grid items-center gap-12 lg:grid-cols-2 lg:gap-16")}>
+          <div className="animate-rise">
             <StatusPill>Private · waitlist</StatusPill>
             <p className="mt-5 text-[13px] font-medium text-brand-300">{HERO.eyebrow}</p>
             <h1 className={cn(marketingHeroTitle, "mt-4")}>
@@ -98,16 +98,14 @@ export function LandingPage() {
               </a>
             </CtaGroup>
             <p className={cn(captionText, "mt-4")}>{HERO.underCta}</p>
-          </BlurFade>
-          <div className="relative">
+          </div>
+          <div className="relative animate-rise delay-1">
             <div className="pointer-events-none absolute -inset-x-8 -inset-y-16 -z-10 hidden opacity-50 lg:block">
               <Globe className="max-w-none" />
             </div>
-            <BlurFade delay={0.12}>
-              <ProductFrame title="Case file" caption={DEMO_CASE.sampleLabel}>
-                <HeroCaseFile />
-              </ProductFrame>
-            </BlurFade>
+            <ProductFrame title="Case file" caption={DEMO_CASE.sampleLabel}>
+              <HeroCaseFile />
+            </ProductFrame>
           </div>
         </div>
       </section>

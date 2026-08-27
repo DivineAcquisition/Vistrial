@@ -5,6 +5,7 @@ import { useState } from "react";
 
 import { CasesFilters } from "@/app/app/cases/cases-filters";
 import { refreshCaseList } from "@/app/app/cases/actions";
+import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Card } from "@/components/ui/card";
 import { StatusBadge } from "@/components/ui/status-badge";
@@ -26,7 +27,6 @@ import {
 } from "@/lib/cases/types";
 import { LEAD_STATUS_LABELS, LEAD_TRACK_LABELS, leadStatusTone } from "@/lib/leads/labels";
 import { formatQueueDuration } from "@/lib/queue/duration";
-import { btnPrimary, btnSecondary, btnSizeSm } from "@/lib/ui";
 
 /**
  * On a narrow screen the last three columns fold away rather than pushing the
@@ -65,9 +65,9 @@ export function CasesScreen({
       : null;
 
   const integrations = canOpenIntegrations ? (
-    <Link href="/app/settings/integrations" className={`${btnSecondary} ${btnSizeSm}`}>
+    <Button variant="secondary" size="sm" render={<Link href="/app/settings/integrations" />}>
       Open integrations
-    </Link>
+    </Button>
   ) : null;
 
   const showList = emptyKind === null || emptyKind === "no_results";
@@ -148,9 +148,9 @@ export function CasesScreen({
               title="No case files match"
               detail="Leads exist in this workspace. Nothing matched that name, email, phone, or filter set. This is not an empty caseload."
               action={
-                <Link href="/app/cases" className={`${btnSecondary} ${btnSizeSm}`}>
+                <Button variant="secondary" size="sm" render={<Link href="/app/cases" />}>
                   Clear search
-                </Link>
+                </Button>
               }
             />
           ) : (
@@ -178,14 +178,15 @@ export function CasesScreen({
               </Card>
               {hasMore ? (
                 <div className="mt-4 flex justify-center">
-                  <button
+                  <Button
                     type="button"
-                    className={`${btnPrimary} ${btnSizeSm}`}
+                    variant="primary"
+                    size="sm"
                     disabled={loadingMore}
                     onClick={() => void loadMore()}
                   >
                     {loadingMore ? "Loading…" : "Load more"}
-                  </button>
+                  </Button>
                 </div>
               ) : null}
             </>

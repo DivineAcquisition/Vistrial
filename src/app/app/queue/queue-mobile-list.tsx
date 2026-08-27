@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useState } from "react";
 
 import { AssignPanel, FollowOnPanel } from "@/components/app/lead-action-panels";
+import { Button } from "@/components/ui/button";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { formatBreachDuration, formatQueueDuration } from "@/lib/queue/duration";
 import type {
@@ -13,7 +14,6 @@ import type {
   TouchDirection,
   TouchOutcome,
 } from "@/lib/queue/types";
-import { btnPrimary, btnSecondary, btnSizeLg, btnSizeSm } from "@/lib/ui";
 import type { OrgRole } from "@/types/database";
 
 function alreadyWorked(row: QueueRow): boolean {
@@ -192,66 +192,67 @@ function QueueMobileRow({
 
         <div className="mt-3 flex flex-wrap gap-2">
           {primary.kind === "crm" && primary.href ? (
-            <a
-              href={primary.href}
-              target="_blank"
-              rel="noopener noreferrer"
-              className={`${btnPrimary} ${btnSizeLg}`}
+            <Button
+              variant="primary"
+              size="xl"
+              render={<a href={primary.href} target="_blank" rel="noopener noreferrer" />}
             >
               Open in CRM
-            </a>
+            </Button>
           ) : (
-            <Link href={primary.href ?? "/app/log"} className={`${btnPrimary} ${btnSizeLg}`}>
+            <Button
+              variant="primary"
+              size="xl"
+              render={<Link href={primary.href ?? "/app/log"} />}
+            >
               Log outcome
-            </Link>
+            </Button>
           )}
-          <button
-            type="button"
-            className={`${btnSecondary} ${btnSizeLg}`}
-            onClick={() => setMore((open) => !open)}
-          >
+          <Button type="button" variant="secondary" size="xl" onClick={() => setMore((open) => !open)}>
             More
-          </button>
+          </Button>
         </div>
       </div>
 
       {more ? (
         <div className="mt-3 flex flex-wrap gap-2">
-          <Link href={`/app/cases/${row.id}/brief`} className={`${btnSecondary} ${btnSizeSm}`}>
+          <Button variant="secondary" size="sm" render={<Link href={`/app/cases/${row.id}/brief`} />}>
             Brief
-          </Link>
-          <Link href={`/app/cases/${row.id}`} className={`${btnSecondary} ${btnSizeSm}`}>
+          </Button>
+          <Button variant="secondary" size="sm" render={<Link href={`/app/cases/${row.id}`} />}>
             Case file
-          </Link>
+          </Button>
           {primary.kind === "crm" ? (
-            <Link
-              href={`/app/log?leadId=${row.id}&from=queue`}
-              className={`${btnSecondary} ${btnSizeSm}`}
+            <Button
+              variant="secondary"
+              size="sm"
+              render={<Link href={`/app/log?leadId=${row.id}&from=queue`} />}
             >
               Log outcome
-            </Link>
+            </Button>
           ) : row.crmUrl ? (
-            <a
-              href={row.crmUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className={`${btnSecondary} ${btnSizeSm}`}
+            <Button
+              variant="secondary"
+              size="sm"
+              render={<a href={row.crmUrl} target="_blank" rel="noopener noreferrer" />}
             >
               Open in CRM
-            </a>
+            </Button>
           ) : null}
-          <button
+          <Button
             type="button"
-            className={`${btnSecondary} ${btnSizeSm}`}
+            variant="secondary"
+            size="sm"
             disabled={busy}
             onClick={() => setAssigning((open) => !open)}
           >
             Assign
-          </button>
+          </Button>
           {row.nextAction ? (
-            <button
+            <Button
               type="button"
-              className={`${btnSecondary} ${btnSizeSm}`}
+              variant="secondary"
+              size="sm"
               disabled={busy}
               onClick={() => {
                 void onComplete({ leadId: row.id, nextActionId: row.nextAction!.id }).then((ok) => {
@@ -260,7 +261,7 @@ function QueueMobileRow({
               }}
             >
               Complete action
-            </button>
+            </Button>
           ) : null}
         </div>
       ) : null}

@@ -24,7 +24,6 @@ import {
   EXTRACTION_STATUS_LABELS,
 } from "@/lib/leads/labels";
 import { formatQueueDuration } from "@/lib/queue/duration";
-import { btnPrimary, btnSecondary, btnSizeSm } from "@/lib/ui";
 
 export function CallsScreen({
   initial,
@@ -39,9 +38,9 @@ export function CallsScreen({
   const [now] = useState(() => new Date().toISOString());
 
   const integrations = canOpenIntegrations ? (
-    <Link href="/app/settings/integrations" className={`${btnSecondary} ${btnSizeSm}`}>
+    <Button variant="secondary" size="sm" render={<Link href="/app/settings/integrations" />}>
       Open integrations
-    </Link>
+    </Button>
   ) : null;
 
   if (initial.orgCallCount === 0) {
@@ -117,14 +116,15 @@ export function CallsScreen({
       </Card>
       {hasMore ? (
         <Button
-            variant="secondary"
-            size="sm"
-            loading={loadingMore}
-            loadingLabel="Loading"
-            onClick={() => void loadMore()}
-          >
-            Load more
-          </Button>
+          type="button"
+          variant="secondary"
+          size="sm"
+          loading={loadingMore}
+          loadingLabel="Loading"
+          onClick={() => void loadMore()}
+        >
+          Load more
+        </Button>
       ) : null}
     </div>
   );
@@ -166,12 +166,12 @@ function CallRow({ row, now }: { row: CallListRow; now: string }) {
       </TableCell>
       <TableCell className="px-4 py-3.5">
         <div className="flex flex-wrap gap-2">
-          <Link href={`/app/calls/${row.id}`} className={`${btnSecondary} ${btnSizeSm}`}>
+          <Button variant="secondary" size="sm" render={<Link href={`/app/calls/${row.id}`} />}>
             Open
-          </Link>
-          <Link href={`/app/cases/${row.leadId}/brief`} className={`${btnPrimary} ${btnSizeSm}`}>
+          </Button>
+          <Button variant="primary" size="sm" render={<Link href={`/app/cases/${row.leadId}/brief`} />}>
             Brief
-          </Link>
+          </Button>
         </div>
       </TableCell>
     </TableRow>

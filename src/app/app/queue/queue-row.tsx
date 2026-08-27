@@ -3,6 +3,7 @@
 import { useState } from "react";
 
 import { AssignPanel, FollowOnPanel, OutcomePanel } from "@/components/app/lead-action-panels";
+import { Button } from "@/components/ui/button";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { TableCell, TableRow } from "@/components/ui/table";
 import { formatBreachDuration, formatQueueDuration, formatQueueUntil } from "@/lib/queue/duration";
@@ -15,7 +16,6 @@ import {
   type TouchOutcome,
 } from "@/lib/queue/types";
 import { cn } from "@/lib/utils";
-import { btnPrimary, btnSecondary, btnSizeSm } from "@/lib/ui";
 import type { OrgRole } from "@/types/database";
 
 type Panel = "outcome" | "assign" | "followOn" | null;
@@ -178,41 +178,43 @@ export function QueueLeadRow({
         <TableCell className="px-4 py-3.5">
           <div className="flex flex-wrap gap-2">
             {row.crmUrl ? (
-              <a
-                href={row.crmUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className={`${btnPrimary} ${btnSizeSm}`}
+              <Button
+                variant="primary"
+                size="sm"
+                render={<a href={row.crmUrl} target="_blank" rel="noopener noreferrer" />}
               >
                 Open in CRM
-              </a>
+              </Button>
             ) : null}
-            <a href={`/app/cases/${row.id}/brief`} className={`${btnSecondary} ${btnSizeSm}`}>
+            <Button variant="secondary" size="sm" render={<a href={`/app/cases/${row.id}/brief`} />}>
               Brief
-            </a>
-            <a href={`/app/cases/${row.id}`} className={`${btnSecondary} ${btnSizeSm}`}>
+            </Button>
+            <Button variant="secondary" size="sm" render={<a href={`/app/cases/${row.id}`} />}>
               Case file
-            </a>
-            <button
+            </Button>
+            <Button
               type="button"
-              className={`${btnSecondary} ${btnSizeSm}`}
+              variant="secondary"
+              size="sm"
               disabled={busy}
               onClick={() => openPanel(panel === "outcome" ? null : "outcome")}
             >
               Log outcome
-            </button>
-            <button
+            </Button>
+            <Button
               type="button"
-              className={`${btnSecondary} ${btnSizeSm}`}
+              variant="secondary"
+              size="sm"
               disabled={busy}
               onClick={() => openPanel(panel === "assign" ? null : "assign")}
             >
               Assign
-            </button>
+            </Button>
             {row.nextAction ? (
-              <button
+              <Button
                 type="button"
-                className={`${btnSecondary} ${btnSizeSm}`}
+                variant="secondary"
+                size="sm"
                 disabled={busy}
                 onClick={() => {
                   void (async () => {
@@ -225,7 +227,7 @@ export function QueueLeadRow({
                 }}
               >
                 Complete action
-              </button>
+              </Button>
             ) : null}
           </div>
         </TableCell>

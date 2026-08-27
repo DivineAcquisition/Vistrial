@@ -5,6 +5,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { refreshRecentActivity } from "@/app/app/activity/actions";
 import { ActivityWhen } from "@/app/app/activity/activity-event";
+import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 import {
   Table,
@@ -43,7 +44,7 @@ import {
   FOLLOW_UP_STATUS_LABELS,
 } from "@/lib/follow-up/labels";
 import { createClient } from "@/lib/supabase/client";
-import { btnPrimary, btnSecondary, btnSizeLg, btnSizeSm, errorClass, sectionLabel } from "@/lib/ui";
+import { errorClass, sectionLabel } from "@/lib/ui";
 import type { ActivityEvent } from "@/lib/activity/types";
 import { Panel } from "@/components/ui/panel";
 import { StatusBadge } from "@/components/ui/status-badge";
@@ -440,9 +441,9 @@ export function QueueScreen({
   }
 
   const integrations = canOpenIntegrations ? (
-    <Link href="/app/settings/integrations" className={`${btnSecondary} ${btnSizeSm}`}>
+    <Button variant="secondary" size="sm" render={<Link href="/app/settings/integrations" />}>
       Open integrations
-    </Link>
+    </Button>
   ) : null;
 
   const alarmVisible = useMemo(() => {
@@ -507,9 +508,9 @@ export function QueueScreen({
             </ol>
             )}
             <div className="mt-3">
-              <Link href="/app/activity" className={`${btnSecondary} ${btnSizeSm}`}>
+              <Button variant="secondary" size="sm" render={<Link href="/app/activity" />}>
                 Open activity
-              </Link>
+              </Button>
             </div>
           </Panel>
         </section>
@@ -544,9 +545,9 @@ export function QueueScreen({
             title="Add real messages this business has sent"
             detail="Follow-up drafts copy those examples more than any slider. Paste two to five under Advanced → Follow-up before you start approving."
             action={
-              <Link href="/app/settings/follow-up" className={`${btnPrimary} ${btnSizeSm}`}>
+              <Button variant="primary" size="sm" render={<Link href="/app/settings/follow-up" />}>
                 Open follow-up settings
-              </Link>
+              </Button>
             }
           />
         </div>
@@ -602,9 +603,13 @@ export function QueueScreen({
                       {item.failureReason ? ` · ${item.failureReason}` : ""}
                     </p>
                     <div className="mt-3">
-                      <Link href={`/app/follow-ups/${item.id}`} className={`${btnPrimary} ${btnSizeSm}`}>
+                      <Button
+                        variant="primary"
+                        size="sm"
+                        render={<Link href={`/app/follow-ups/${item.id}`} />}
+                      >
                         Review
-                      </Link>
+                      </Button>
                     </div>
                     </Panel>
                   </li>
@@ -689,21 +694,25 @@ export function QueueScreen({
           </section>
 
           <div className="mb-6 flex flex-wrap items-center gap-2">
-            <button
+            <Button
               type="button"
-              className={`${btnSecondary} ${btnSizeLg} md:hidden`}
+              variant="secondary"
+              size="xl"
+              className="md:hidden"
               onClick={() => setFiltersOpen((open) => !open)}
             >
               Filters
-            </button>
-            <button
+            </Button>
+            <Button
               type="button"
-              className={`${btnSecondary} ${btnSizeLg} md:hidden`}
+              variant="secondary"
+              size="xl"
+              className="md:hidden"
               disabled={refreshing}
               onClick={() => void pullRefresh()}
             >
               {refreshing ? "Refreshing…" : "Refresh"}
-            </button>
+            </Button>
           </div>
           <div className={filtersOpen ? "md:block" : "hidden md:block"}>
             <QueueFilters filters={filters} sources={sources} />
@@ -794,14 +803,15 @@ export function QueueScreen({
               </Panel>
               {hasMore ? (
                 <div className="mt-4 flex justify-center">
-                  <button
+                  <Button
                     type="button"
-                    className={`${btnPrimary} ${btnSizeSm}`}
+                    variant="primary"
+                    size="sm"
                     disabled={loadingMore}
                     onClick={() => void loadMore()}
                   >
                     {loadingMore ? "Loading…" : "Load more"}
-                  </button>
+                  </Button>
                 </div>
               ) : null}
             </section>

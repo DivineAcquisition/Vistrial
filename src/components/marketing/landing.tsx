@@ -19,8 +19,8 @@ import { AnimatedShinyText } from "@/components/ui/animated-shiny-text";
 import { Globe } from "@/components/ui/globe";
 import { Marquee } from "@/components/ui/marquee";
 import { Panel } from "@/components/ui/panel";
+import { MagicCard } from "@/components/ui/magic-card";
 import { Particles } from "@/components/ui/particles";
-import { TextAnimate } from "@/components/ui/text-animate";
 import {
   CASE_FILE,
   FAQ,
@@ -88,17 +88,7 @@ export function LandingPage() {
                 Private · waitlist
               </AnimatedShinyText>
             </StatusPill>
-            <p className="mt-5 text-[13px] font-medium text-brand-300">
-              <TextAnimate
-                animation="fadeIn"
-                as="span"
-                by="word"
-                className="inline text-[13px] font-medium text-brand-300"
-                once
-              >
-                {HERO.eyebrow}
-              </TextAnimate>
-            </p>
+            <p className="mt-5 text-[13px] font-medium text-brand-300">{HERO.eyebrow}</p>
             <h1 className={cn(marketingHeroTitle, "mt-4")}>
               {headlineBefore}
               <span className="text-gradient">{HERO.headlineAccent}</span>
@@ -142,33 +132,37 @@ export function LandingPage() {
       <BlurFade inView>
         <MarketingSection headline={PROBLEM.headline}>
           <div className="grid gap-5 lg:grid-cols-2">
-            <Panel className="p-6 sm:p-8">
-              <ul className="space-y-5">
-                {PROBLEM.points.map((point) => (
-                  <li key={point.lead}>
-                    <p className="text-[15px] leading-relaxed text-white sm:text-base">
-                      <span className="font-semibold">{point.lead}</span> {point.rest}
-                    </p>
-                  </li>
-                ))}
-              </ul>
-              <p className="mt-8 text-[15px] font-medium text-white">{PROBLEM.closing}</p>
+            <Panel className="overflow-hidden p-0">
+              <MagicCard className="h-full rounded-2xl p-6 sm:p-8">
+                <ul className="space-y-5">
+                  {PROBLEM.points.map((point) => (
+                    <li key={point.lead}>
+                      <p className="text-[15px] leading-relaxed text-white sm:text-base">
+                        <span className="font-semibold">{point.lead}</span> {point.rest}
+                      </p>
+                    </li>
+                  ))}
+                </ul>
+                <p className="mt-8 text-[15px] font-medium text-white">{PROBLEM.closing}</p>
+              </MagicCard>
             </Panel>
-            <Panel className="border-brand-500/25 p-6 sm:p-8">
-              <p className="text-[11px] font-semibold tracking-[0.16em] text-brand-300 uppercase">
-                Case file
-              </p>
-              <p className="mt-3 font-heading text-lg tracking-tight text-white">{CASE_FILE.headline}</p>
-              <ul className="mt-6 space-y-3">
-                {CASE_FILE.parts.map((part) => (
-                  <li key={part.id} className="flex items-start gap-3">
-                    <span className="mt-0.5 flex size-5 shrink-0 items-center justify-center rounded-md bg-brand-500/15 text-brand-300">
-                      <Check className="size-3.5" aria-hidden />
-                    </span>
-                    <span className="text-[15px] font-medium text-white">{part.title}</span>
-                  </li>
-                ))}
-              </ul>
+            <Panel className="overflow-hidden border-brand-500/25 p-0">
+              <MagicCard className="h-full rounded-2xl p-6 sm:p-8">
+                <p className="text-[11px] font-semibold tracking-[0.16em] text-brand-300 uppercase">
+                  Case file
+                </p>
+                <p className="mt-3 font-heading text-lg tracking-tight text-white">{CASE_FILE.headline}</p>
+                <ul className="mt-6 space-y-3">
+                  {CASE_FILE.parts.map((part) => (
+                    <li key={part.id} className="flex items-start gap-3">
+                      <span className="mt-0.5 flex size-5 shrink-0 items-center justify-center rounded-md bg-brand-500/15 text-brand-300">
+                        <Check className="size-3.5" aria-hidden />
+                      </span>
+                      <span className="text-[15px] font-medium text-white">{part.title}</span>
+                    </li>
+                  ))}
+                </ul>
+              </MagicCard>
             </Panel>
           </div>
         </MarketingSection>

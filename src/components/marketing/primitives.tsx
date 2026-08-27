@@ -10,6 +10,7 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 
+import { MagicCard } from "@/components/ui/magic-card";
 import { Panel } from "@/components/ui/panel";
 import {
   marketingBody,
@@ -100,14 +101,16 @@ export function FeatureCard({
   children: ReactNode;
 }) {
   return (
-    <Panel className="panel-hover flex h-full flex-col p-6 sm:p-7">
-      {step ? (
-        <p className="mb-5 text-4xl font-semibold leading-none tracking-tight text-brand-500/25 tabular-nums">
-          {step}
-        </p>
-      ) : null}
-      <h3 className={marketingCardTitle}>{title}</h3>
-      <div className={cn(marketingBody, "mt-3")}>{children}</div>
+    <Panel className="flex h-full flex-col overflow-hidden p-0">
+      <MagicCard className="flex h-full flex-col rounded-2xl p-6 sm:p-7">
+        {step ? (
+          <p className="mb-5 text-4xl font-semibold leading-none tracking-tight text-brand-500/25 tabular-nums">
+            {step}
+          </p>
+        ) : null}
+        <h3 className={marketingCardTitle}>{title}</h3>
+        <div className={cn(marketingBody, "mt-3")}>{children}</div>
+      </MagicCard>
     </Panel>
   );
 }
@@ -122,12 +125,14 @@ export function IconCard({
   children: ReactNode;
 }) {
   return (
-    <Panel className="panel-hover flex h-full flex-col p-6">
-      <div className="flex size-10 items-center justify-center rounded-xl border border-brand-500/20 bg-brand-500/[0.1] text-brand-300">
-        <Icon className="size-5" aria-hidden />
-      </div>
-      <h3 className={cn(marketingCardTitle, "mt-5")}>{title}</h3>
-      <div className={cn(marketingBody, "mt-2")}>{children}</div>
+    <Panel className="flex h-full flex-col overflow-hidden p-0">
+      <MagicCard className="flex h-full flex-col rounded-2xl p-6">
+        <div className="flex size-10 items-center justify-center rounded-xl border border-brand-500/20 bg-brand-500/[0.1] text-brand-300">
+          <Icon className="size-5" aria-hidden />
+        </div>
+        <h3 className={cn(marketingCardTitle, "mt-5")}>{title}</h3>
+        <div className={cn(marketingBody, "mt-2")}>{children}</div>
+      </MagicCard>
     </Panel>
   );
 }

@@ -2,91 +2,42 @@
 
 import {
   useCallback,
-  useEffect,
-  useRef,
   type PointerEvent as ReactPointerEvent,
   type ReactNode,
 } from "react";
-import {
-  motion,
-  useMotionTemplate,
-  useMotionValue,
-  useSpring,
-} from "motion/react";
+import { motion, useMotionTemplate, useMotionValue } from "motion/react";
 
 import { cn } from "@/lib/utils";
-
-type ResetReason = "enter" | "leave" | "global" | "init";
 
 type MagicCardProps = {
   children?: ReactNode;
   className?: string;
   gradientSize?: number;
-  gradientFrom?: string;
-  gradientTo?: string;
   gradientColor?: string;
   gradientOpacity?: number;
-  mode?: "gradient" | "orb";
-  glowFrom?: string;
-  glowTo?: string;
-  glowAngle?: number;
-  glowSize?: number;
-  glowBlur?: number;
-  glowOpacity?: number;
+  gradientFrom?: string;
+  gradientTo?: string;
 };
 
+/**
+ * Pointer-follow spotlight for landing cards.
+ * The coss Card (or Panel) underneath is the surface — this layer never
+ * paints an opaque fill, so titles and body copy stay visible.
+ */
 export function MagicCard({
   children,
   className,
-  gradientSize = 200,
+  gradientSize = 240,
   gradientColor = "rgba(154, 136, 252, 0.22)",
-  gradientOpacity = 0.8,
+  gradientOpacity = 0.85,
   gradientFrom = "#9A88FC",
   gradientTo = "#6650d8",
-  mode = "gradient",
-  glowFrom = "#9A88FC",
-  glowTo = "#6650d8",
-  glowAngle = 90,
-  glowSize = 420,
-  glowBlur = 60,
-  glowOpacity = 0.9,
 }: MagicCardProps) {
-  const mouseX = useMotionValue(-gradientSize);
-  const mouseY = useMotionValue(-gradientSize);
-  const orbX = useSpring(mouseX, { stiffness: 250, damping: 30, mass: 0.6 });
-  const orbY = useSpring(mouseY, { stiffness: 250, damping: 30, mass: 0.6 });
-  const orbVisible = useSpring(0, { stiffness: 300, damping: 35 });
+  const mouseX = useMotionValue(0);
+  const mouseY = useMotionValue(0);
+  const hover = useMotionValue(0);
 
-  const modeRef = useRef(mode);
-  const glowOpacityRef = useRef(glowOpacity);
-  const gradientSizeRef = useRef(gradientSize);
-
-  useEffect(() => {
-    modeRef.current = mode;
-  }, [mode]);
-
-  useEffect(() => {
-    glowOpacityRef.current = glowOpacity;
-  }, [glowOpacity]);
-
-  useEffect(() => {
-    gradientSizeRef.current = gradientSize;
-  }, [gradientSize]);
-
-  const reset = useCallback(
-    (reason: ResetReason = "leave") => {
-      if (modeRef.current === "orb") {
-        orbVisible.set(reason === "enter" ? glowOpacityRef.current : 0);
-        return;
-      }
-      const off = -gradientSizeRef.current;
-      mouseX.set(off);
-      mouseY.set(off);
-    },
-    [mouseX, mouseY, orbVisible],
-  );
-
-  const handlePointerMove = useCallback(
+  const onPointerMove = useCallback(
     (event: ReactPointerEvent<HTMLDivElement>) => {
       const rect = event.currentTarget.getBoundingClientRect();
       mouseX.set(event.clientX - rect.left);
@@ -95,89 +46,36 @@ export function MagicCard({
     [mouseX, mouseY],
   );
 
-  useEffect(() => {
-    reset("init");
-  }, [reset]);
-
-  useEffect(() => {
-    const handleGlobalPointerOut = (event: PointerEvent) => {
-      if (!event.relatedTarget) reset("global");
-    };
-    const handleBlur = () => reset("global");
-    const handleVisibility = () => {
-      if (document.visibilityState !== "visible") reset("global");
-    };
-
-    window.addEventListener("pointerout", handleGlobalPointerOut);
-    window.addEventListener("blur", handleBlur);
-    document.addEventListener("visibilitychange", handleVisibility);
-
-    return () => {
-      window.removeEventListener("pointerout", handleGlobalPointerOut);
-      window.removeEventListener("blur", handleBlur);
-      document.removeEventListener("visibilitychange", handleVisibility);
-    };
-  }, [reset]);
-
-  const borderBackground = useMotionTemplate`
-    linear-gradient(var(--color-background) 0 0) padding-box,
-    radial-gradient(${gradientSize}px circle at ${mouseX}px ${mouseY}px,
-      ${gradientFrom},
-      ${gradientTo},
-      var(--color-border) 100%
-    ) border-box
-  `;
-  const spotlightBackground = useMotionTemplate`
-    radial-gradient(${gradientSize}px circle at ${mouseX}px ${mouseY}px,
-      ${gradientColor},
-      transparent 100%
-    )
-  `;
+  const spotlight = useMotionTemplate`radial-gradient(${gradientSize}px circle at ${mouseX}px ${mouseY}px, ${gradientColor}, transparent 68%)`;
+  const rim = useMotionTemplate`radial-gradient(${gradientSize}px circle at ${mouseX}px ${mouseY}px, ${gradientFrom}, ${gradientTo}, transparent 72%)`;
 
   return (
-    <motion.div
-      className={cn(
-        "group relative isolate overflow-hidden rounded-[inherit] border border-transparent",
-        className,
-      )}
-      onPointerEnter={() => reset("enter")}
-      onPointerLeave={() => reset("leave")}
-      onPointerMove={handlePointerMove}
-      style={{ background: borderBackground }}
+    <div
+      className={cn("relative", className)}
+      onPointerEnter={() => hover.set(gradientOpacity)}
+      onPointerLeave={() => hover.set(0)}
+      onPointerMove={onPointerMove}
     >
-      <div className="absolute inset-px z-20 rounded-[inherit] bg-card" />
-
-      {mode === "gradient" ? (
-        <motion.div
-          className="pointer-events-none absolute inset-px z-30 rounded-[inherit] opacity-0 transition-opacity duration-300 group-hover:opacity-[var(--magic-opacity)]"
-          style={{
-            background: spotlightBackground,
-            ["--magic-opacity" as string]: String(gradientOpacity),
-          }}
-          suppressHydrationWarning
-        />
-      ) : (
-        <motion.div
-          aria-hidden="true"
-          className="pointer-events-none absolute z-30"
-          style={{
-            width: glowSize,
-            height: glowSize,
-            x: orbX,
-            y: orbY,
-            translateX: "-50%",
-            translateY: "-50%",
-            borderRadius: 9999,
-            filter: `blur(${glowBlur}px)`,
-            opacity: orbVisible,
-            background: `linear-gradient(${glowAngle}deg, ${glowFrom}, ${glowTo})`,
-            mixBlendMode: "screen",
-            willChange: "transform, opacity",
-          }}
-          suppressHydrationWarning
-        />
-      )}
-      <div className="relative z-40 flex h-full min-h-0 flex-col">{children}</div>
-    </motion.div>
+      {children}
+      <motion.div
+        aria-hidden
+        className="pointer-events-none absolute inset-0 z-[1] rounded-[inherit]"
+        style={{ background: spotlight, opacity: hover }}
+      />
+      <motion.div
+        aria-hidden
+        className="pointer-events-none absolute inset-0 z-[1] rounded-[inherit]"
+        style={{
+          opacity: hover,
+          padding: 1,
+          background: rim,
+          WebkitMask:
+            "linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0)",
+          WebkitMaskComposite: "xor",
+          mask: "linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0)",
+          maskComposite: "exclude",
+        }}
+      />
+    </div>
   );
 }

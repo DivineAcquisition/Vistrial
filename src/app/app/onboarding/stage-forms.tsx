@@ -12,6 +12,7 @@ import {
   TextField,
 } from "@/app/app/onboarding/fields";
 import { saveOnboardingStage, type OnboardingResult } from "@/app/app/onboarding/actions";
+import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Panel } from "@/components/ui/panel";
 import { STAGE_META, type ProfileStage } from "@/lib/profile/stages";
@@ -33,12 +34,7 @@ import {
   TEAM_STRUCTURES,
   VOICE_FORMALITIES,
 } from "@/lib/profile/vocabulary";
-import {
-  btnPrimary,
-  btnSizeMd,
-  errorClass,
-  helperClass,
-} from "@/lib/ui";
+import { errorClass, helperClass } from "@/lib/ui";
 
 const idle: OnboardingResult = { status: "idle" };
 
@@ -476,9 +472,9 @@ export function StageForm({
         <StageBody stage={stage} defaults={defaults} />
         {state.status === "error" ? <p className={errorClass}>{state.error}</p> : null}
         <div className="flex flex-wrap items-center gap-3 border-t border-white/10 pt-5">
-          <button type="submit" className={`${btnPrimary} ${btnSizeMd}`} disabled={pending}>
+          <Button type="submit" variant="primary" size="lg" disabled={pending}>
             {pending ? "Saving…" : `Continue — ${meta.payoff.toLowerCase()}`}
-          </button>
+          </Button>
         </div>
       </form>
     </Panel>

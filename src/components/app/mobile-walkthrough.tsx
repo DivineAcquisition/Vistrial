@@ -5,9 +5,10 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 import { markMobileTraining } from "@/app/app/log/actions";
+import { Button } from "@/components/ui/button";
 import { Notice } from "@/components/ui/states";
 import { detectClientSurface } from "@/lib/mobile/surface";
-import { btnPrimary, btnSizeLg, helperClass } from "@/lib/ui";
+import { helperClass } from "@/lib/ui";
 
 /**
  * A setter is not trained until they log an outcome from a phone. The first
@@ -36,9 +37,9 @@ export function MobileWalkthroughNotice({ needed }: { needed: boolean }) {
           Training is not complete until you log what happened after a contact, from here, without
           typing. That is the input every other number depends on.
         </p>
-        <Link href="/app/log" className={`${btnPrimary} ${btnSizeLg} mt-3 inline-flex`}>
+        <Button variant="primary" size="xl" className="mt-3 inline-flex" render={<Link href="/app/log" />}>
           Log an outcome
-        </Link>
+        </Button>
       </Notice>
     </div>
   );

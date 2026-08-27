@@ -3,9 +3,10 @@
 import { useState, useTransition } from "react";
 
 import { acknowledgeCallCoaching } from "@/app/app/coaching/actions";
+import { Button } from "@/components/ui/button";
 import { Notice } from "@/components/ui/states";
 import { COACHING_DISCLOSURE } from "@/lib/coaching/constants";
-import { btnPrimary, btnSizeLg, errorClass, helperClass } from "@/lib/ui";
+import { errorClass, helperClass } from "@/lib/ui";
 
 export function CoachingDisclosureNotice({ needed }: { needed: boolean }) {
   const [error, setError] = useState<string | null>(null);
@@ -18,9 +19,11 @@ export function CoachingDisclosureNotice({ needed }: { needed: boolean }) {
       <Notice tone="info" title="Your calls are transcribed">
         <p className={helperClass}>{COACHING_DISCLOSURE}</p>
         {error ? <p className={errorClass}>{error}</p> : null}
-        <button
+        <Button
           type="button"
-          className={`${btnPrimary} ${btnSizeLg} mt-3 inline-flex`}
+          variant="primary"
+          size="xl"
+          className="mt-3 inline-flex"
           disabled={pending}
           onClick={() => {
             start(async () => {
@@ -30,7 +33,7 @@ export function CoachingDisclosureNotice({ needed }: { needed: boolean }) {
           }}
         >
           I understand
-        </button>
+        </Button>
       </Notice>
     </div>
   );

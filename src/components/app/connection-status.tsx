@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 
+import { Button } from "@/components/ui/button";
 import { Notice } from "@/components/ui/states";
 import { flushQueuedOutcomes } from "@/lib/mobile/flush-outcomes";
 import {
@@ -11,7 +12,6 @@ import {
   type QueuedOutcome,
 } from "@/lib/mobile/outcome-queue";
 import { TOUCH_OUTCOME_LABELS } from "@/lib/queue/types";
-import { btnSecondary, btnSizeSm } from "@/lib/ui";
 
 export function ConnectionStatus() {
   const [online, setOnline] = useState(
@@ -78,18 +78,19 @@ export function ConnectionStatus() {
           title={waiting.length === 1 ? "1 outcome pending" : `${waiting.length} outcomes pending`}
           action={
             online ? (
-              <button
+              <Button
                 type="button"
-                className={`${btnSecondary} ${btnSizeSm}`}
+                variant="secondary"
+                size="sm"
                 disabled={retrying}
                 onClick={() => void retry()}
               >
                 {retrying ? "Retrying…" : "Retry"}
-              </button>
+              </Button>
             ) : (
-              <Link href="/app/log" className={`${btnSecondary} ${btnSizeSm}`}>
+              <Button variant="secondary" size="sm" render={<Link href="/app/log" />}>
                 Open log
-              </Link>
+              </Button>
             )
           }
         >
@@ -102,14 +103,15 @@ export function ConnectionStatus() {
           tone="critical"
           title={failed.length === 1 ? "1 outcome failed" : `${failed.length} outcomes failed`}
           action={
-            <button
+            <Button
               type="button"
-              className={`${btnSecondary} ${btnSizeSm}`}
+              variant="secondary"
+              size="sm"
               disabled={retrying}
               onClick={() => void retry()}
             >
               {retrying ? "Retrying…" : "Retry"}
-            </button>
+            </Button>
           }
         >
           {failed[0]?.lastError || "Still on this phone. Retry to send it."}

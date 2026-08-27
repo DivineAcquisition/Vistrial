@@ -1,8 +1,8 @@
 import Link from "next/link";
 
 import { PageFrame } from "@/components/app/page-frame";
+import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
-import { btnSecondary, btnSizeSm } from "@/lib/ui";
 
 export default function CallNotFound() {
   return (
@@ -18,9 +18,9 @@ export default function CallNotFound() {
         title="No call matches that address"
         detail="It is not in this workspace, or the link is wrong. The same screen is shown either way."
         action={
-          <Link href="/app/calls" className={`${btnSecondary} ${btnSizeSm}`}>
+          <Button variant="secondary" size="sm" render={<Link href="/app/calls" />}>
             Back to Calls
-          </Link>
+          </Button>
         }
       />
     </PageFrame>

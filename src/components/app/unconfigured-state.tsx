@@ -1,9 +1,9 @@
 import Link from "next/link";
 
+import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { canManageOrgSettings } from "@/lib/auth/permissions";
 import { getAuthContext } from "@/lib/auth/session";
-import { btnSecondary, btnSizeSm } from "@/lib/ui";
 
 export async function UnconfiguredState({
   title,
@@ -24,9 +24,9 @@ export async function UnconfiguredState({
       detail={detail}
       action={
         showLink ? (
-          <Link href="/app/settings/integrations" className={`${btnSecondary} ${btnSizeSm}`}>
+          <Button variant="secondary" size="sm" render={<Link href="/app/settings/integrations" />}>
             Open integrations
-          </Link>
+          </Button>
         ) : null
       }
     />

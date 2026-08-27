@@ -5,9 +5,9 @@ import { useEffect } from "react";
 
 import { recordBriefView } from "@/app/app/coaching/actions";
 
+import { Button } from "@/components/ui/button";
 import { DefinitionList, KeyValue } from "@/components/ui/definition-list";
 import { Panel } from "@/components/ui/panel";
-import { btnSecondary, btnSizeSm } from "@/lib/ui";
 import type { BriefPayload } from "@/lib/brief/types";
 import {
   CALL_TYPE_LABELS,
@@ -42,18 +42,19 @@ export function BriefScreen({ brief }: { brief: BriefPayload }) {
       <div className="mb-3 flex flex-wrap items-center justify-between gap-2 print:hidden">
         <p className="text-xs text-dim">Ninety seconds. Gaps stay visible.</p>
         <div className="flex gap-2">
-          <Link href={`/app/cases/${brief.lead.id}`} className={`${btnSecondary} ${btnSizeSm}`}>
+          <Button variant="secondary" size="sm" render={<Link href={`/app/cases/${brief.lead.id}`} />}>
             Case file
-          </Link>
-          <Link
-            href={`/app/log?leadId=${brief.lead.id}&from=brief`}
-            className={`${btnSecondary} ${btnSizeSm}`}
+          </Button>
+          <Button
+            variant="secondary"
+            size="sm"
+            render={<Link href={`/app/log?leadId=${brief.lead.id}&from=brief`} />}
           >
             Log outcome
-          </Link>
-          <button type="button" className={`${btnSecondary} ${btnSizeSm}`} onClick={() => window.print()}>
+          </Button>
+          <Button type="button" variant="secondary" size="sm" onClick={() => window.print()}>
             Print
-          </button>
+          </Button>
         </div>
       </div>
 

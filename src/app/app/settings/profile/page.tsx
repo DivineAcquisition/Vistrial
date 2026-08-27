@@ -3,10 +3,11 @@ import Link from "next/link";
 import { PageFrame } from "@/components/app/page-frame";
 import { InstallSteps } from "@/components/app/install-steps";
 import { ProfileForm } from "@/app/app/settings/profile/profile-form";
+import { Button } from "@/components/ui/button";
 import { Panel } from "@/components/ui/panel";
 import { getAuthContext } from "@/lib/auth/session";
 import { createClient } from "@/lib/supabase/server";
-import { btnSecondary, btnSizeSm, cardTitle } from "@/lib/ui";
+import { cardTitle } from "@/lib/ui";
 
 export default async function ProfileSettingsPage() {
   const ctx = await getAuthContext();
@@ -25,9 +26,9 @@ export default async function ProfileSettingsPage() {
       <Panel className="mb-8 space-y-4 p-6">
         <h2 className={cardTitle}>This phone</h2>
         <InstallSteps />
-        <Link href="/app/install" className={`${btnSecondary} ${btnSizeSm} inline-flex`}>
+        <Button variant="secondary" size="sm" className="inline-flex" render={<Link href="/app/install" />}>
           Open install instructions
-        </Link>
+        </Button>
       </Panel>
       <ProfileForm
         displayName={ctx.member.displayName}

@@ -4,11 +4,11 @@ import { useState } from "react";
 import Link from "next/link";
 
 import { retryFollowUpSend } from "@/app/app/follow-ups/actions";
+import { Button } from "@/components/ui/button";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import type { ActivityEvent, ActivityLine } from "@/lib/activity/types";
 import { formatDateTime, formatRelative } from "@/lib/format";
-import { btnSecondary, btnSizeSm } from "@/lib/ui";
 import type { Tone } from "@/components/ui/tone";
 
 function resultTone(result: ActivityEvent["result"]): Tone {
@@ -90,9 +90,10 @@ function RetryDispatchButton({
   const [error, setError] = useState<string | null>(null);
   return (
     <div className="mt-3">
-      <button
+      <Button
         type="button"
-        className={`${btnSecondary} ${btnSizeSm}`}
+        variant="secondary"
+        size="sm"
         disabled={busy}
         onClick={() => {
           setBusy(true);
@@ -106,7 +107,7 @@ function RetryDispatchButton({
         }}
       >
         {busy ? "Retrying…" : "Retry send"}
-      </button>
+      </Button>
       {error ? <p className="mt-1 text-xs text-flag-critical">{error}</p> : null}
     </div>
   );

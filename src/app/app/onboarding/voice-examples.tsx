@@ -7,19 +7,12 @@ import {
   removeOnboardingVoiceExample,
 } from "@/app/app/onboarding/actions";
 import type { SettingsSaveResult } from "@/app/app/settings/types";
-import { SubmitButton } from "@/components/ui/button";
+import { Button, SubmitButton } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Panel } from "@/components/ui/panel";
 import { Select } from "@/components/ui/select";
 import { StatusBadge } from "@/components/ui/status-badge";
-import {
-  btnSecondary,
-  btnSizeSm,
-  cardTitle,
-  errorClass,
-  helperClass,
-  labelClass,
-} from "@/lib/ui";
+import { cardTitle, errorClass, helperClass, labelClass } from "@/lib/ui";
 
 const idle: SettingsSaveResult = { status: "idle" };
 
@@ -60,9 +53,9 @@ export function VoiceExamples({
                 <p className="whitespace-pre-wrap text-sm text-silver">{example.body}</p>
                 <form action={removeAction}>
                   <input type="hidden" name="index" value={index} />
-                  <button type="submit" className={`${btnSecondary} ${btnSizeSm}`}>
+                  <Button type="submit" variant="secondary" size="sm">
                     Remove
-                  </button>
+                  </Button>
                 </form>
               </div>
               <p className={helperClass}>{example.channel === "email" ? "Email" : "Text message"}</p>

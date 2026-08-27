@@ -1,14 +1,14 @@
 "use client";
 
 import { deferOnboarding } from "@/app/app/onboarding/actions";
-import { btnSecondary, btnSizeSm } from "@/lib/ui";
+import { Button } from "@/components/ui/button";
 
 export function FinishLaterButton() {
   return (
     <form action={deferOnboarding}>
-      <button type="submit" className={`${btnSecondary} ${btnSizeSm}`}>
+      <Button type="submit" variant="secondary" size="sm">
         Finish later
-      </button>
+      </Button>
     </form>
   );
 }

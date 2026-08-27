@@ -7,6 +7,7 @@ import {
   ReviewPrompts,
 } from "@/app/app/settings/business-profile/living-profile";
 import { PageFrame } from "@/components/app/page-frame";
+import { Button } from "@/components/ui/button";
 import { DataTable } from "@/components/ui/data-table";
 import { DefinitionList, KeyValue } from "@/components/ui/definition-list";
 import { Panel } from "@/components/ui/panel";
@@ -15,14 +16,7 @@ import { StatusBadge } from "@/components/ui/status-badge";
 import { loadBusinessProfileState, requireProfileAccess } from "@/lib/profile/load";
 import { STAGE_META, PROFILE_STAGES } from "@/lib/profile/stages";
 import { advancedSettingsBreadcrumbs } from "@/lib/navigation";
-import {
-  btnPrimary,
-  btnSecondary,
-  btnSizeMd,
-  btnSizeSm,
-  cardTitle,
-  helperClass,
-} from "@/lib/ui";
+import { cardTitle, helperClass } from "@/lib/ui";
 
 export default async function BusinessProfileSettingsPage() {
   const ctx = await requireProfileAccess();
@@ -43,9 +37,9 @@ export default async function BusinessProfileSettingsPage() {
       description="How this company sells, in structured form. Scoring, follow-up, reporting and the benchmarks all read it."
       breadcrumbs={advancedSettingsBreadcrumbs("Business", "/app/settings/business-profile")}
       actions={
-        <Link href="/app/onboarding" className={`${btnPrimary} ${btnSizeMd}`}>
+        <Button variant="primary" size="lg" render={<Link href="/app/onboarding" />}>
           {doneStages.size === PROFILE_STAGES.length ? "Review the answers" : "Continue onboarding"}
-        </Link>
+        </Button>
       }
     >
       <div className="space-y-6">
@@ -98,12 +92,13 @@ export default async function BusinessProfileSettingsPage() {
                   label: gap.label,
                   consumer: gap.consumer,
                   action: (
-                    <Link
-                      href={`/app/onboarding/${gap.stage}`}
-                      className={`${btnSecondary} ${btnSizeSm}`}
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      render={<Link href={`/app/onboarding/${gap.stage}`} />}
                     >
                       Answer it
-                    </Link>
+                    </Button>
                   ),
                 }))}
               />
@@ -130,9 +125,9 @@ export default async function BusinessProfileSettingsPage() {
                   <StatusBadge label="Not yet" tone="neutral" />
                 ),
                 action: (
-                  <Link href={`/app/onboarding/${stage}`} className={`${btnSecondary} ${btnSizeSm}`}>
+                  <Button variant="secondary" size="sm" render={<Link href={`/app/onboarding/${stage}`} />}>
                     Open
-                  </Link>
+                  </Button>
                 ),
               }))}
             />
@@ -169,9 +164,9 @@ export default async function BusinessProfileSettingsPage() {
             </KeyValue>
           </DefinitionList>
           <div className="mt-4">
-            <Link href="/app/onboarding/goals" className={`${btnSecondary} ${btnSizeMd}`}>
+            <Button variant="secondary" size="lg" render={<Link href="/app/onboarding/goals" />}>
               Change this
-            </Link>
+            </Button>
           </div>
         </Panel>
 
@@ -218,9 +213,9 @@ export default async function BusinessProfileSettingsPage() {
               : "Not generated yet."}
           </p>
           <div className="mt-4">
-            <Link href="/app/onboarding/report" className={`${btnSecondary} ${btnSizeMd}`}>
+            <Button variant="secondary" size="lg" render={<Link href="/app/onboarding/report" />}>
               Open the Leak Report
-            </Link>
+            </Button>
           </div>
         </Panel>
       </div>

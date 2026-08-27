@@ -18,13 +18,7 @@ import {
 } from "@/lib/profile/leak";
 import { loadLatestLeakReport, requireProfileAccess } from "@/lib/profile/load";
 import { asArray, asRecord, num, parseBenchmark, str } from "@/lib/profile/parse";
-import {
-  btnPrimary,
-  btnSecondary,
-  btnSizeMd,
-  cardTitle,
-  helperClass,
-} from "@/lib/ui";
+import { cardTitle, helperClass } from "@/lib/ui";
 
 const BASIS_TONE = {
   backfill: "good",
@@ -86,8 +80,8 @@ export default async function LeakReportPage() {
           detail="It is built from your CRM history plus the answers on your business profile. Finish the profile and generate it here."
           action={<RegenerateLeakReport label="Generate the report" />}
           secondaryAction={
-            <Button asChild variant="secondary">
-              <Link href="/app/onboarding">Back to onboarding</Link>
+            <Button variant="secondary" render={<Link href="/app/onboarding" />}>
+              Back to onboarding
             </Button>
           }
         />
@@ -103,17 +97,17 @@ export default async function LeakReportPage() {
       title="Leak Report"
       description="Where your leads are going, from your own history."
       actions={
-        <Link href="/app/settings/business-profile" className={`${btnPrimary} ${btnSizeMd}`}>
+        <Button variant="primary" size="lg" render={<Link href="/app/settings/business-profile" />}>
           Turn Vistrial on
-        </Link>
+        </Button>
       }
       secondaryActions={
         <div className="flex flex-wrap items-center gap-3">
           <RegenerateLeakReport label="Regenerate" />
           <form action="/app/onboarding/report/pdf" method="post">
-            <button type="submit" className={`${btnSecondary} ${btnSizeMd}`}>
+            <Button type="submit" variant="secondary" size="lg">
               Download PDF
-            </button>
+            </Button>
           </form>
         </div>
       }

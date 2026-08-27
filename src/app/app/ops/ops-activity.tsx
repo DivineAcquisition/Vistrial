@@ -5,6 +5,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ActivityFiltersForm } from "@/app/app/activity/activity-filters";
 import { ActivityLineView } from "@/app/app/activity/activity-event";
 import { refreshOpsActivity } from "@/app/app/activity/actions";
+import { Button } from "@/components/ui/button";
 import { Notice } from "@/components/ui/states";
 import { Panel } from "@/components/ui/panel";
 import { batchActivityEvents } from "@/lib/activity/batch";
@@ -18,7 +19,7 @@ import {
   type ActivityPage,
 } from "@/lib/activity/types";
 import { createClient } from "@/lib/supabase/client";
-import { btnSecondary, btnSizeSm, cardTitle, helperClass } from "@/lib/ui";
+import { cardTitle, helperClass } from "@/lib/ui";
 
 type ChannelState = "connecting" | "live" | "stalled";
 
@@ -137,18 +138,18 @@ export function OpsActivity({
           className="mt-4"
           title="Feed paused"
           action={
-            <button type="button" className={`${btnSecondary} ${btnSizeSm}`} onClick={() => void unpause()}>
+            <Button type="button" variant="secondary" size="sm" onClick={() => void unpause()}>
               Resume
-            </button>
+            </Button>
           }
         >
           {pendingWhilePaused ? "New events are waiting. Resume to prepend them." : "Held still so you can read."}
         </Notice>
       ) : (
         <div className="mt-4">
-          <button type="button" className={`${btnSecondary} ${btnSizeSm}`} onClick={() => setPaused(true)}>
+          <Button type="button" variant="secondary" size="sm" onClick={() => setPaused(true)}>
             Pause
-          </button>
+          </Button>
         </div>
       )}
 
@@ -170,9 +171,10 @@ export function OpsActivity({
 
       {hasMore ? (
         <div className="mt-4">
-          <button
+          <Button
             type="button"
-            className={`${btnSecondary} ${btnSizeSm}`}
+            variant="secondary"
+            size="sm"
             disabled={loadingOlder}
             onClick={() => {
               const last = events[events.length - 1];
@@ -195,7 +197,7 @@ export function OpsActivity({
             }}
           >
             {loadingOlder ? "Loading…" : "Load older"}
-          </button>
+          </Button>
         </div>
       ) : null}
     </Panel>

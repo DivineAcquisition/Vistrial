@@ -1,10 +1,11 @@
 import { PageFrame } from "@/components/app/page-frame";
 import { OrganizationForm } from "@/app/app/settings/organization/organization-form";
+import { Button } from "@/components/ui/button";
 import { Panel } from "@/components/ui/panel";
 import { requireOrgSettingsManager } from "@/lib/auth/gates";
 import { ADVANCED_SETTINGS_PAGES } from "@/lib/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { btnSecondary, btnSizeSm, cardTitle, helperClass } from "@/lib/ui";
+import { cardTitle, helperClass } from "@/lib/ui";
 import Link from "next/link";
 
 export default async function AdvancedSettingsPage() {
@@ -52,9 +53,9 @@ export default async function AdvancedSettingsPage() {
               <h2 className={cardTitle}>{page.label}</h2>
               <p className={`mt-2 ${helperClass}`}>{page.description}</p>
               <div className="mt-5">
-                <Link href={page.href} className={`${btnSecondary} ${btnSizeSm}`}>
+                <Button variant="secondary" size="sm" render={<Link href={page.href} />}>
                   Open {page.label.toLowerCase()}
-                </Link>
+                </Button>
               </div>
             </Panel>
           ))}

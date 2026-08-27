@@ -1,11 +1,8 @@
 "use client";
 
+import { Button } from "@/components/ui/button";
 import { Panel } from "@/components/ui/panel";
-import {
-  btnPrimary,
-  btnSizeMd,
-  cardTitle,
-} from "@/lib/ui";
+import { cardTitle } from "@/lib/ui";
 
 export default function ErrorPage({
   retry,
@@ -21,9 +18,9 @@ export default function ErrorPage({
           The request did not complete. Try again — the failure is not permanent, and
           nothing is shown from the crash itself.
         </p>
-        <button type="button" onClick={() => retry()} className={`${btnPrimary} ${btnSizeMd} mt-6`}>
+        <Button type="button" variant="primary" size="lg" className="mt-6" onClick={() => retry()}>
           Try again
-        </button>
+        </Button>
       </Panel>
     </div>
   );

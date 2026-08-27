@@ -1,9 +1,9 @@
 import Link from "next/link";
 
 import { PageFrame } from "@/components/app/page-frame";
+import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { DEFAULT_APP_PATH } from "@/lib/navigation";
-import { btnSecondary, btnSizeSm } from "@/lib/ui";
 
 export default function AppNotFound() {
   return (
@@ -13,9 +13,9 @@ export default function AppNotFound() {
         title="That page is not in this workspace"
         detail="The address is wrong, or it does not belong to the organization you have open. Nothing else is shown either way."
         action={
-          <Link href={DEFAULT_APP_PATH} className={`${btnSecondary} ${btnSizeSm}`}>
+          <Button variant="secondary" size="sm" render={<Link href={DEFAULT_APP_PATH} />}>
             Back to the Queue
-          </Link>
+          </Button>
         }
       />
     </PageFrame>

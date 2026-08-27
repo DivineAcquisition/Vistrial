@@ -7,17 +7,12 @@ import {
   resolveReviewPrompt,
 } from "@/app/app/settings/business-profile/actions";
 import type { SettingsSaveResult } from "@/app/app/settings/types";
+import { Button } from "@/components/ui/button";
 import { Panel } from "@/components/ui/panel";
 import { StatusBadge } from "@/components/ui/status-badge";
 import type { Contradiction, ReviewPrompt } from "@/lib/profile/types";
 import { CONTRADICTION_LABELS, REVIEW_REASON_LABELS } from "@/lib/profile/vocabulary";
-import {
-  btnSecondary,
-  btnSizeSm,
-  cardTitle,
-  errorClass,
-  helperClass,
-} from "@/lib/ui";
+import { cardTitle, errorClass, helperClass } from "@/lib/ui";
 
 const idle: SettingsSaveResult = { status: "idle" };
 
@@ -41,9 +36,9 @@ export function ReviewPrompts({ prompts }: { prompts: ReviewPrompt[] }) {
             </div>
             <form action={action}>
               <input type="hidden" name="id" value={prompt.id} />
-              <button type="submit" className={`${btnSecondary} ${btnSizeSm}`}>
+              <Button type="submit" variant="secondary" size="sm">
                 Looked at it
-              </button>
+              </Button>
             </form>
           </li>
         ))}
@@ -79,9 +74,9 @@ export function Contradictions({ contradictions }: { contradictions: Contradicti
             </div>
             <form action={action}>
               <input type="hidden" name="id" value={item.id} />
-              <button type="submit" className={`${btnSecondary} ${btnSizeSm}`}>
+              <Button type="submit" variant="secondary" size="sm">
                 Dismiss
-              </button>
+              </Button>
             </form>
           </li>
         ))}

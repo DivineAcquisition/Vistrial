@@ -1,5 +1,6 @@
 import Link from "next/link";
 
+import { Button } from "@/components/ui/button";
 import { DataTable } from "@/components/ui/data-table";
 import { DefinitionList, KeyValue } from "@/components/ui/definition-list";
 import { KpiCard, KpiGrid } from "@/components/ui/kpi-card";
@@ -17,13 +18,7 @@ import {
   labelFor,
   OBJECTION_TYPES,
 } from "@/lib/profile/vocabulary";
-import {
-  btnPrimary,
-  btnSecondary,
-  btnSizeMd,
-  cardTitle,
-  helperClass,
-} from "@/lib/ui";
+import { cardTitle, helperClass } from "@/lib/ui";
 
 function Empty({ children }: { children: React.ReactNode }) {
   return <p className={helperClass}>{children}</p>;
@@ -432,9 +427,9 @@ function GoalsPayoff({ payoff }: { payoff: Record<string, unknown> }) {
         ) : null}
       </DefinitionList>
       <div className="mt-5">
-        <Link href="/app/onboarding/report" className={`${btnPrimary} ${btnSizeMd}`}>
+        <Button variant="primary" size="lg" render={<Link href="/app/onboarding/report" />}>
           Open the Leak Report
-        </Link>
+        </Button>
       </div>
     </Panel>
   );
@@ -474,22 +469,22 @@ export async function StagePayoff({
       {body}
       <div className="flex flex-wrap items-center gap-3">
         {after ? (
-          <Link href={`/app/onboarding/${after}`} className={`${btnPrimary} ${btnSizeMd}`}>
+          <Button variant="primary" size="lg" render={<Link href={`/app/onboarding/${after}`} />}>
             Next: {STAGE_META[after].title.toLowerCase()}
-          </Link>
+          </Button>
         ) : (
           <>
-            <Link href="/app/onboarding/report" className={`${btnPrimary} ${btnSizeMd}`}>
+            <Button variant="primary" size="lg" render={<Link href="/app/onboarding/report" />}>
               Open the Leak Report
-            </Link>
-            <Link href="/app/settings/business-profile" className={`${btnSecondary} ${btnSizeMd}`}>
+            </Button>
+            <Button variant="secondary" size="lg" render={<Link href="/app/settings/business-profile" />}>
               Turn Vistrial on
-            </Link>
+            </Button>
           </>
         )}
-        <Link href={`/app/onboarding/${stage}`} className={`${btnSecondary} ${btnSizeMd}`}>
+        <Button variant="secondary" size="lg" render={<Link href={`/app/onboarding/${stage}`} />}>
           Change my answers
-        </Link>
+        </Button>
       </div>
     </div>
   );

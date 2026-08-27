@@ -6,6 +6,7 @@ import { ActivityFiltersForm } from "@/app/app/activity/activity-filters";
 import { ActivityLineView } from "@/app/app/activity/activity-event";
 import { refreshOrgActivity } from "@/app/app/activity/actions";
 import { useOrg } from "@/components/app/org-provider";
+import { Button } from "@/components/ui/button";
 import { Notice } from "@/components/ui/states";
 import { batchActivityEvents } from "@/lib/activity/batch";
 import { ACTIVITY_REALTIME_TABLES } from "@/lib/activity/realtime";
@@ -19,7 +20,6 @@ import {
   type ActivityPage,
 } from "@/lib/activity/types";
 import { createClient } from "@/lib/supabase/client";
-import { btnSecondary, btnSizeSm } from "@/lib/ui";
 
 type ChannelState = "connecting" | "live" | "stalled";
 
@@ -150,9 +150,9 @@ export function ActivityScreen({
           className="mb-6"
           title="Feed paused"
           action={
-            <button type="button" className={`${btnSecondary} ${btnSizeSm}`} onClick={() => void unpause()}>
+            <Button type="button" variant="secondary" size="sm" onClick={() => void unpause()}>
               Resume
-            </button>
+            </Button>
           }
         >
           {pendingWhilePaused
@@ -162,13 +162,14 @@ export function ActivityScreen({
       ) : null}
 
       <div className="mb-6 flex flex-wrap items-center justify-end gap-2">
-        <button
+        <Button
           type="button"
-          className={`${btnSecondary} ${btnSizeSm}`}
+          variant="secondary"
+          size="sm"
           onClick={() => (paused ? void unpause() : setPaused(true))}
         >
           {paused ? "Resume" : "Pause"}
-        </button>
+        </Button>
       </div>
 
       <ActivityFiltersForm filters={filters} actors={actors} />
@@ -197,9 +198,10 @@ export function ActivityScreen({
 
       {hasMore ? (
         <div className="mt-4">
-          <button
+          <Button
             type="button"
-            className={`${btnSecondary} ${btnSizeSm}`}
+            variant="secondary"
+            size="sm"
             disabled={loadingOlder}
             onClick={() => {
               const last = events[events.length - 1];
@@ -223,7 +225,7 @@ export function ActivityScreen({
             }}
           >
             {loadingOlder ? "Loading…" : "Load older"}
-          </button>
+          </Button>
         </div>
       ) : null}
     </div>

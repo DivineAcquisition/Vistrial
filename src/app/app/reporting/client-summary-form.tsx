@@ -1,23 +1,22 @@
 "use client";
 
+import { Button } from "@/components/ui/button";
+import { Field } from "@/components/ui/field";
 import { Textarea } from "@/components/ui/textarea";
-import { labelClass, helperClass, btnPrimary, btnSizeMd } from "@/lib/ui";
 
 export function ClientSummaryForm({ summary, query }: { summary: string; query: string }) {
   return (
-    <form method="post" action={`/app/reporting/export/pdf?${query}`} className="space-y-3">
-      <label htmlFor="summary" className={labelClass}>
-        Plain-language summary
-      </label>
-      <Textarea id="summary" name="summary" defaultValue={summary} rows={10} />
-      <p className={helperClass}>
-        Review this before export. It is generated from the numbers on this page. If nothing improved, it
-        says so. Do not add language that credits Vistrial with a close or with revenue — the export will
-        refuse it.
-      </p>
-      <button type="submit" className={`${btnPrimary} ${btnSizeMd}`}>
+    <form method="post" action={`/app/reporting/export/pdf?${query}`} className="flex flex-col gap-3">
+      <Field
+        label="Plain-language summary"
+        name="summary"
+        help="Review this before export. It is generated from the numbers on this page. If nothing improved, it says so. Do not add language that credits Vistrial with a close or with revenue — the export will refuse it."
+      >
+        <Textarea id="summary" name="summary" defaultValue={summary} rows={10} />
+      </Field>
+      <Button type="submit" variant="primary" size="lg">
         Export PDF
-      </button>
+      </Button>
     </form>
   );
 }

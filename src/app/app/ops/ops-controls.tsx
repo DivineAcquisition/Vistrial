@@ -12,6 +12,7 @@ import {
   type OpsActionResult,
 } from "@/app/app/ops/actions";
 import { Button } from "@/components/ui/button";
+import { CheckboxField } from "@/components/ui/checkbox";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Field } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
@@ -143,10 +144,11 @@ export function OpsControls({ orgs }: { orgs: OrgOption[] }) {
         <Field label="Notes" name="notes">
           <Input name="notes" id="notes" />
         </Field>
-        <label className="flex items-center gap-2 text-sm">
-          <input type="checkbox" name="verified" defaultChecked />
-          Integrity verified across leads, touches, scores, transcripts, extractions, revenue, baseline
-        </label>
+        <CheckboxField
+          name="verified"
+          defaultChecked
+          label="Integrity verified across leads, touches, scores, transcripts, extractions, revenue, baseline"
+        />
         <Button type="submit" variant="secondary" size="sm">
           Record restore drill
         </Button>
@@ -180,10 +182,7 @@ export function OpsControls({ orgs }: { orgs: OrgOption[] }) {
         <Field label="What changed to prevent recurrence" name="prevention">
           <Textarea name="prevention" id="prevention" required rows={2} />
         </Field>
-        <label className="flex items-center gap-2 text-sm">
-          <input type="checkbox" name="clientNotified" />
-          Client was told
-        </label>
+        <CheckboxField name="clientNotified" label="Client was told" />
         <Button type="submit" variant="secondary" size="sm">
           Record incident
         </Button>

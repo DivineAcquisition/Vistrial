@@ -11,16 +11,11 @@ import {
 } from "@/app/app/settings/members/actions";
 import type { OrgRole } from "@/types/database";
 import { InstallSteps } from "@/components/app/install-steps";
-import { SubmitButton } from "@/components/ui/button";
+import { Button, SubmitButton } from "@/components/ui/button";
+import { Field } from "@/components/ui/field";
+import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
-import {
-  btnSecondary,
-  btnSizeSm,
-  errorClass,
-  helperClass,
-  inputClass,
-  labelClass,
-} from "@/lib/ui";
+import { errorClass, helperClass } from "@/lib/ui";
 
 const initialInvite: MemberActionResult = { ok: true };
 
@@ -31,29 +26,22 @@ export function InviteForm() {
   return (
     <form action={action} className="space-y-3">
       <div className="grid gap-3 sm:grid-cols-[1fr_160px_auto] sm:items-end">
-        <div>
-          <label htmlFor="invite-email" className={labelClass}>
-            Email
-          </label>
-          <input
+        <Field label="Email" name="email" htmlFor="invite-email">
+          <Input
             id="invite-email"
             name="email"
             type="email"
             required
-            className={inputClass}
             placeholder="setter@studio.example"
           />
-        </div>
-        <div>
-          <label htmlFor="invite-role" className={labelClass}>
-            Role
-          </label>
-          <Select id="invite-role" name="role"  defaultValue="setter">
+        </Field>
+        <Field label="Role" name="role" htmlFor="invite-role">
+          <Select id="invite-role" name="role" defaultValue="setter">
             <option value="setter">Setter</option>
             <option value="closer">Closer</option>
             <option value="admin">Admin</option>
           </Select>
-        </div>
+        </Field>
         <SubmitButton variant="primary" size="sm" pending={pending} loadingLabel="Creating">
             Create invite
           </SubmitButton>
@@ -129,10 +117,11 @@ export function MemberActiveToggle({
 
   return (
     <div>
-      <button
+      <Button
         type="button"
+        variant="secondary"
+        size="sm"
         disabled={pending || blocked}
-        className={`${btnSecondary} ${btnSizeSm}`}
         onClick={() => {
           startTransition(async () => {
             const result = await setMemberActive(memberId, !active);
@@ -141,7 +130,7 @@ export function MemberActiveToggle({
         }}
       >
         {active ? "Deactivate" : "Reactivate"}
-      </button>
+      </Button>
       {blocked ? (
         <p className={helperClass}>The last active owner cannot be deactivated.</p>
       ) : null}
@@ -156,10 +145,11 @@ export function RevokeInviteButton({ inviteId }: { inviteId: string }) {
 
   return (
     <div>
-      <button
+      <Button
         type="button"
+        variant="secondary"
+        size="sm"
         disabled={pending}
-        className={`${btnSecondary} ${btnSizeSm}`}
         onClick={() => {
           startTransition(async () => {
             const result = await revokeInvite(inviteId);
@@ -168,7 +158,7 @@ export function RevokeInviteButton({ inviteId }: { inviteId: string }) {
         }}
       >
         Revoke
-      </button>
+      </Button>
       {error ? <p className={errorClass}>{error}</p> : null}
     </div>
   );

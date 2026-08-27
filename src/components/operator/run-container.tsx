@@ -3,6 +3,7 @@
 import { StreamingText } from "@/components/operator/streaming-text";
 import { ToolCallRow } from "@/components/operator/tool-call-row";
 import { ChangePreview } from "@/components/operator/change-preview";
+import { Input } from "@/components/ui/input";
 import type { OperatorConfirmationView, OperatorRunView, OperatorStepView } from "@/lib/operator/types";
 import { helperClass } from "@/lib/ui";
 
@@ -80,9 +81,10 @@ export function RunContainer({
         >
           <label className="block">
             <span className={helperClass}>One follow-up on this run</span>
-            <input
+            <Input
               name="followUp"
-              className="mt-1 w-full rounded-xl border border-white/[0.1] bg-white/[0.03] px-3 py-2 text-sm text-white"
+              type="text"
+              className="mt-1"
               placeholder="Narrow or correct this result"
             />
           </label>

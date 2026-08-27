@@ -15,7 +15,9 @@ import {
   type FieldMapPayload,
 } from "@/app/app/settings/integrations/actions";
 import type { SettingsSaveResult } from "@/app/app/settings/types";
-import { SubmitButton } from "@/components/ui/button";
+import { Button, SubmitButton } from "@/components/ui/button";
+import { Field } from "@/components/ui/field";
+import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { DataTable } from "@/components/ui/data-table";
 import { Select } from "@/components/ui/select";
@@ -26,14 +28,9 @@ import { formatRelative } from "@/lib/format";
 import { RECORDER_SOURCES } from "@/lib/transcripts/constants";
 import { TRANSCRIPT_SOURCE_LABELS } from "@/lib/leads/labels";
 import {
-  btnPrimary,
-  btnSecondary,
-  btnSizeMd,
-  btnSizeSm,
   cardTitle,
   errorClass,
   helperClass,
-  inputClass,
   labelClass,
 } from "@/lib/ui";
 import type { Tone } from "@/components/ui/tone";
@@ -253,11 +250,11 @@ export function IntegrationSettings(props: IntegrationSettingsProps) {
 
         <div className="mt-6 flex flex-wrap gap-3">
           {props.oauthConfigured ? (
-            <a href="/api/ghl/oauth/start" className={`${btnPrimary} ${btnSizeMd}`}>
+            <Button variant="primary" size="lg" render={<a href="/api/ghl/oauth/start" />}>
               {props.connection.status === "active" || props.connection.status === "broken"
                 ? "Reconnect"
                 : "Connect GoHighLevel"}
-            </a>
+            </Button>
           ) : (
             <p className="text-sm text-silver">
               Marketplace credentials are not configured on this deployment, so connect stays
@@ -393,9 +390,10 @@ export function IntegrationSettings(props: IntegrationSettingsProps) {
               reason: event.errorText || "—",
               when: formatRelative(event.receivedAt, props.now),
               action: (
-                <button
+                <Button
                   type="button"
-                  className={`${btnSecondary} ${btnSizeSm}`}
+                  variant="secondary"
+                  size="sm"
                   disabled={pending}
                   onClick={() => {
                     startTransition(async () => {
@@ -405,7 +403,7 @@ export function IntegrationSettings(props: IntegrationSettingsProps) {
                   }}
                 >
                   Retry
-                </button>
+                </Button>
               ),
             }))}
           />
@@ -452,63 +450,71 @@ export function IntegrationSettings(props: IntegrationSettingsProps) {
                 </div>
               ) : (
                 <div>
-                  <label className={labelClass}>GHL field id</label>
-                  <input
-                    className={inputClass}
-                    value={map.ghlFieldId}
-                    onChange={(event) =>
-                      setMaps((current) =>
-                        current.map((row, rowIndex) =>
-                          rowIndex === index ? { ...row, ghlFieldId: event.target.value } : row
+                  <Field label="GHL field id" name={`ghl-field-id-${map.id}`}>
+                    <Input
+                      id={`ghl-field-id-${map.id}`}
+                      type="text"
+                      value={map.ghlFieldId}
+                      onChange={(event) =>
+                        setMaps((current) =>
+                          current.map((row, rowIndex) =>
+                            rowIndex === index ? { ...row, ghlFieldId: event.target.value } : row
+                          )
                         )
-                      )
-                    }
-                  />
+                      }
+                    />
+                  </Field>
                 </div>
               )}
               <div>
-                <label className={labelClass}>GHL field key</label>
-                <input
-                  className={inputClass}
-                  value={map.ghlFieldKey}
-                  onChange={(event) =>
-                    setMaps((current) =>
-                      current.map((row, rowIndex) =>
-                        rowIndex === index ? { ...row, ghlFieldKey: event.target.value } : row
-                      )
-                    )
-                  }
-                />
-              </div>
-              <div>
-                <label className={labelClass}>Answer key</label>
-                <div className="flex gap-2">
-                  <input
-                    className={inputClass}
-                    value={map.answerKey}
+                <Field label="GHL field key" name={`ghl-field-key-${map.id}`}>
+                  <Input
+                    id={`ghl-field-key-${map.id}`}
+                    type="text"
+                    value={map.ghlFieldKey}
                     onChange={(event) =>
                       setMaps((current) =>
                         current.map((row, rowIndex) =>
-                          rowIndex === index ? { ...row, answerKey: event.target.value } : row
+                          rowIndex === index ? { ...row, ghlFieldKey: event.target.value } : row
                         )
                       )
                     }
                   />
-                  <button
-                    type="button"
-                    className={`${btnSecondary} ${btnSizeSm}`}
-                    onClick={() => setMaps((current) => current.filter((_, rowIndex) => rowIndex !== index))}
-                  >
-                    Remove
-                  </button>
-                </div>
+                </Field>
+              </div>
+              <div>
+                <Field label="Answer key" name={`answer-key-${map.id}`}>
+                  <div className="flex gap-2">
+                    <Input
+                      id={`answer-key-${map.id}`}
+                      type="text"
+                      value={map.answerKey}
+                      onChange={(event) =>
+                        setMaps((current) =>
+                          current.map((row, rowIndex) =>
+                            rowIndex === index ? { ...row, answerKey: event.target.value } : row
+                          )
+                        )
+                      }
+                    />
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      size="sm"
+                      onClick={() => setMaps((current) => current.filter((_, rowIndex) => rowIndex !== index))}
+                    >
+                      Remove
+                    </Button>
+                  </div>
+                </Field>
               </div>
             </div>
           ))}
           <div className="flex flex-wrap gap-3">
-            <button
+            <Button
               type="button"
-              className={`${btnSecondary} ${btnSizeSm}`}
+              variant="secondary"
+              size="sm"
               onClick={() =>
                 setMaps((current) => [
                   ...current,
@@ -517,10 +523,11 @@ export function IntegrationSettings(props: IntegrationSettingsProps) {
               }
             >
               Add mapping
-            </button>
-            <button
+            </Button>
+            <Button
               type="button"
-              className={`${btnPrimary} ${btnSizeSm}`}
+              variant="primary"
+              size="sm"
               disabled={pending}
               onClick={() => {
                 startTransition(async () => {
@@ -530,7 +537,7 @@ export function IntegrationSettings(props: IntegrationSettingsProps) {
               }}
             >
               Save mapping
-            </button>
+            </Button>
           </div>
           {mapStatus.status === "error" ? <p className={errorClass}>{mapStatus.error}</p> : null}
           {mapStatus.status === "saved" ? (
@@ -576,26 +583,35 @@ export function IntegrationSettings(props: IntegrationSettingsProps) {
                   <p className="text-xs text-dim">Save a webhook secret to mint the URL.</p>
                 )}
                 <div className="grid gap-3 sm:grid-cols-2">
-                  <label className="block">
-                    <span className={labelClass}>Webhook secret</span>
-                    <input name="webhook_secret" className={inputClass} placeholder={connection?.hasWebhookSecret ? "Unchanged" : ""} />
-                  </label>
-                  <label className="block">
-                    <span className={labelClass}>API key for pull</span>
-                    <input name="api_key" className={inputClass} placeholder={connection?.hasApiKey ? "Unchanged" : ""} />
-                  </label>
+                  <Field label="Webhook secret" name={`webhook_secret_${source}`}>
+                    <Input
+                      id={`webhook_secret_${source}`}
+                      name="webhook_secret"
+                      type="password"
+                      placeholder={connection?.hasWebhookSecret ? "Unchanged" : ""}
+                    />
+                  </Field>
+                  <Field label="API key for pull" name={`api_key_${source}`}>
+                    <Input
+                      id={`api_key_${source}`}
+                      name="api_key"
+                      type="password"
+                      placeholder={connection?.hasApiKey ? "Unchanged" : ""}
+                    />
+                  </Field>
                 </div>
                 {connection?.lastPullError ? (
                   <p className={errorClass}>Last pull: {connection.lastPullError}</p>
                 ) : null}
                 <div className="flex flex-wrap gap-2">
-                  <button type="submit" className={`${btnPrimary} ${btnSizeSm}`} disabled={pending}>
+                  <Button type="submit" variant="primary" size="sm" disabled={pending}>
                     Save
-                  </button>
+                  </Button>
                   {connection ? (
-                    <button
+                    <Button
                       type="button"
-                      className={`${btnSecondary} ${btnSizeSm}`}
+                      variant="secondary"
+                      size="sm"
                       disabled={pending}
                       onClick={() => {
                         startTransition(async () => {
@@ -607,7 +623,7 @@ export function IntegrationSettings(props: IntegrationSettingsProps) {
                       }}
                     >
                       Rotate URL
-                    </button>
+                    </Button>
                   ) : null}
                 </div>
               </form>
@@ -650,9 +666,10 @@ export function IntegrationSettings(props: IntegrationSettingsProps) {
                       </option>
                     ))}
                   </Select>
-                  <button
+                  <Button
                     type="button"
-                    className={`${btnPrimary} ${btnSizeSm}`}
+                    variant="primary"
+                    size="sm"
                     disabled={pending || !assignCallId[row.id]}
                     onClick={() => {
                       startTransition(async () => {
@@ -665,10 +682,11 @@ export function IntegrationSettings(props: IntegrationSettingsProps) {
                     }}
                   >
                     Assign
-                  </button>
-                  <button
+                  </Button>
+                  <Button
                     type="button"
-                    className={`${btnSecondary} ${btnSizeSm}`}
+                    variant="secondary"
+                    size="sm"
                     disabled={pending}
                     onClick={() => {
                       startTransition(async () => {
@@ -678,7 +696,7 @@ export function IntegrationSettings(props: IntegrationSettingsProps) {
                     }}
                   >
                     Discard
-                  </button>
+                  </Button>
                 </div>
               ),
             }))}
@@ -709,9 +727,9 @@ export function IntegrationSettings(props: IntegrationSettingsProps) {
             onChange={(event) => setPasteText(event.target.value)}
             required
           />
-          <button type="submit" className={`${btnPrimary} ${btnSizeSm}`} disabled={pending || !pasteText.trim()}>
+          <Button type="submit" variant="primary" size="sm" disabled={pending || !pasteText.trim()}>
             Store unmatched
-          </button>
+          </Button>
         </form>
       </Panel>
     </div>

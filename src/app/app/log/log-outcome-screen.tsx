@@ -4,6 +4,8 @@ import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 
 import { markMobileTraining } from "@/app/app/log/actions";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Notice } from "@/components/ui/states";
 import { Panel } from "@/components/ui/panel";
 import { StatusBadge } from "@/components/ui/status-badge";
@@ -31,14 +33,8 @@ import {
   type TouchOutcome,
 } from "@/lib/queue/types";
 import {
-  btnGhost,
-  btnPrimary,
-  btnSecondary,
-  btnSizeLg,
-  btnSizeSm,
   errorClass,
   helperClass,
-  inputClass,
   labelClass,
 } from "@/lib/ui";
 
@@ -290,9 +286,10 @@ export function LogOutcomeScreen({
               </li>
             ))}
           </ul>
-          <button
+          <Button
             type="button"
-            className={`${btnSecondary} ${btnSizeLg}`}
+            variant="secondary"
+            size="xl"
             disabled={busy || !online}
             onClick={() => {
               setBusy(true);
@@ -302,7 +299,7 @@ export function LogOutcomeScreen({
             }}
           >
             Retry queued outcomes
-          </button>
+          </Button>
         </Panel>
       ) : null}
 
@@ -329,14 +326,15 @@ export function LogOutcomeScreen({
         {initial.candidates.length > 1 ? (
           <div className="mt-4 flex flex-wrap gap-2">
             {initial.candidates.slice(0, 8).map((row) => (
-              <button
+              <Button
                 key={row.id}
                 type="button"
-                className={`${row.id === selected?.id ? btnPrimary : btnSecondary} ${btnSizeSm}`}
+                variant={row.id === selected?.id ? "primary" : "secondary"}
+                size="sm"
                 onClick={() => setSelected(row)}
               >
                 {row.name}
-              </button>
+              </Button>
             ))}
           </div>
         ) : null}
@@ -346,14 +344,15 @@ export function LogOutcomeScreen({
         <p className={labelClass}>Channel</p>
         <div className="mt-2 flex flex-wrap gap-2">
           {TOUCH_CHANNELS.map((value) => (
-            <button
+            <Button
               key={value}
               type="button"
-              className={`${channel === value ? btnPrimary : btnSecondary} ${btnSizeLg}`}
+              variant={channel === value ? "primary" : "secondary"}
+              size="xl"
               onClick={() => setChannel(value)}
             >
               {TOUCH_CHANNEL_LABELS[value]}
-            </button>
+            </Button>
           ))}
         </div>
       </div>
@@ -362,14 +361,15 @@ export function LogOutcomeScreen({
         <p className={labelClass}>Direction</p>
         <div className="mt-2 flex flex-wrap gap-2">
           {TOUCH_DIRECTIONS.map((value) => (
-            <button
+            <Button
               key={value}
               type="button"
-              className={`${direction === value ? btnPrimary : btnSecondary} ${btnSizeLg}`}
+              variant={direction === value ? "primary" : "secondary"}
+              size="xl"
               onClick={() => setDirection(value)}
             >
               {value === "outbound" ? "Outbound" : "Inbound"}
-            </button>
+            </Button>
           ))}
         </div>
       </div>
@@ -377,22 +377,24 @@ export function LogOutcomeScreen({
       <div>
         <p className={labelClass}>Note (optional)</p>
         <div className="mt-2 flex gap-2">
-          <input
-            className={inputClass}
+          <Input
+            type="text"
+            className="flex-1"
             maxLength={280}
             value={note}
             onChange={(event) => setNote(event.target.value)}
             placeholder="Skip this. Never required."
           />
           {voiceSupported ? (
-            <button
+            <Button
               type="button"
-              className={`${btnSecondary} ${btnSizeLg}`}
+              variant="secondary"
+              size="xl"
               onClick={startVoice}
               aria-pressed={listening}
             >
               {listening ? "Listening…" : "Speak"}
-            </button>
+            </Button>
           ) : null}
         </div>
       </div>
@@ -401,24 +403,26 @@ export function LogOutcomeScreen({
         <p className={labelClass}>Outcome</p>
         <div className="mt-2 grid grid-cols-2 gap-2">
           {TOUCH_OUTCOMES.map((outcome) => (
-            <button
+            <Button
               key={outcome}
               type="button"
-              className={`${btnPrimary} ${btnSizeLg} min-h-11`}
+              variant="primary"
+              size="xl"
+              className="min-h-11"
               disabled={busy || !selected}
               onClick={() => void chooseOutcome(outcome)}
             >
               {TOUCH_OUTCOME_LABELS[outcome]}
-            </button>
+            </Button>
           ))}
         </div>
       </div>
 
       {busy ? <StatusBadge label="Pending" tone="warning" /> : null}
       {error ? <p className={errorClass}>{error}</p> : null}
-      <button type="button" className={`${btnGhost} ${btnSizeSm}`} onClick={() => router.replace("/app/queue")}>
+      <Button type="button" variant="ghost" size="sm" onClick={() => router.replace("/app/queue")}>
         Back to the queue
-      </button>
+      </Button>
     </div>
   );
 }

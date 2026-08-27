@@ -10,7 +10,9 @@ import {
   type MappingPayload,
 } from "@/app/app/settings/scoring/actions";
 import type { SettingsSaveResult } from "@/app/app/settings/types";
-import { SubmitButton } from "@/components/ui/button";
+import { Button, SubmitButton } from "@/components/ui/button";
+import { Field } from "@/components/ui/field";
+import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Panel } from "@/components/ui/panel";
 import { Select } from "@/components/ui/select";
@@ -20,14 +22,9 @@ import { overrideLeadScore } from "@/lib/scoring/override";
 import { computeReadinessScore, FACTOR_LABELS, SCORE_FACTORS, type ScoreWeights } from "@/lib/scoring/compute";
 import { extractFactors, type ScoreFieldMap } from "@/lib/scoring/extract";
 import {
-  btnPrimary,
-  btnSecondary,
-  btnSizeMd,
-  btnSizeSm,
   cardTitle,
   errorClass,
   helperClass,
-  inputClass,
   labelClass,
 } from "@/lib/ui";
 
@@ -127,11 +124,8 @@ export function ScoringSettings({ config, maps: initialMaps, leads, lastGhostRun
               ["pain_severity", "Pain severity"],
             ] as const
           ).map(([key, label]) => (
-            <div key={key}>
-              <label className={labelClass} htmlFor={`weight-${key}`}>
-                {label}
-              </label>
-              <input
+            <Field key={key} label={label} name={`${key}_weight`} htmlFor={`weight-${key}`}>
+              <Input
                 id={`weight-${key}`}
                 name={`${key}_weight`}
                 type="number"
@@ -141,9 +135,8 @@ export function ScoringSettings({ config, maps: initialMaps, leads, lastGhostRun
                 required
                 value={weights[key]}
                 onChange={(event) => updateWeight(key, event.target.value)}
-                className={inputClass}
               />
-            </div>
+            </Field>
           ))}
 
           <p className={`sm:col-span-2 text-sm ${weightTotal === 100 ? "text-silver" : "text-flag-critical"}`}>
@@ -151,11 +144,12 @@ export function ScoringSettings({ config, maps: initialMaps, leads, lastGhostRun
             {weightTotal === 100 ? "" : " — save stays blocked until this is 100."}
           </p>
 
-          <div>
-            <label className={labelClass} htmlFor="ready_threshold">
-              Ready threshold
-            </label>
-            <input
+          <Field
+            label="Ready threshold"
+            name="ready_threshold"
+            help="At or above this total, the lead is on the ready track."
+          >
+            <Input
               id="ready_threshold"
               name="ready_threshold"
               type="number"
@@ -164,15 +158,10 @@ export function ScoringSettings({ config, maps: initialMaps, leads, lastGhostRun
               required
               value={readyThreshold}
               onChange={(event) => setReadyThreshold(Number(event.target.value))}
-              className={inputClass}
             />
-            <p className={helperClass}>At or above this total, the lead is on the ready track.</p>
-          </div>
-          <div>
-            <label className={labelClass} htmlFor="speed_to_lead_minutes">
-              Speed-to-lead minutes
-            </label>
-            <input
+          </Field>
+          <Field label="Speed-to-lead minutes" name="speed_to_lead_minutes">
+            <Input
               id="speed_to_lead_minutes"
               name="speed_to_lead_minutes"
               type="number"
@@ -180,14 +169,10 @@ export function ScoringSettings({ config, maps: initialMaps, leads, lastGhostRun
               required
               value={speedToLead}
               onChange={(event) => setSpeedToLead(Number(event.target.value))}
-              className={inputClass}
             />
-          </div>
-          <div>
-            <label className={labelClass} htmlFor="ghost_days_soft">
-              Approaching-ghost days
-            </label>
-            <input
+          </Field>
+          <Field label="Approaching-ghost days" name="ghost_days_soft">
+            <Input
               id="ghost_days_soft"
               name="ghost_days_soft"
               type="number"
@@ -195,14 +180,10 @@ export function ScoringSettings({ config, maps: initialMaps, leads, lastGhostRun
               required
               value={ghostSoft}
               onChange={(event) => setGhostSoft(Number(event.target.value))}
-              className={inputClass}
             />
-          </div>
-          <div>
-            <label className={labelClass} htmlFor="ghost_days_hard">
-              Ghost days
-            </label>
-            <input
+          </Field>
+          <Field label="Ghost days" name="ghost_days_hard">
+            <Input
               id="ghost_days_hard"
               name="ghost_days_hard"
               type="number"
@@ -210,9 +191,8 @@ export function ScoringSettings({ config, maps: initialMaps, leads, lastGhostRun
               required
               value={ghostHard}
               onChange={(event) => setGhostHard(Number(event.target.value))}
-              className={inputClass}
             />
-          </div>
+          </Field>
 
           <div className="sm:col-span-2">
             <CheckboxField
@@ -224,11 +204,13 @@ export function ScoringSettings({ config, maps: initialMaps, leads, lastGhostRun
               description={holdoutEnabled ? HOLDOUT_PLAIN : HOLDOUT_DISABLED_PLAIN}
             />
             {holdoutEnabled ? (
-              <div className="mt-3 max-w-xs">
-                <label className={labelClass} htmlFor="holdout_percent">
-                  Holdout percent
-                </label>
-                <input
+              <Field
+                label="Holdout percent"
+                name="holdout_percent"
+                className="mt-3 max-w-xs"
+                help={`Default ${HOLDOUT_DEFAULT_PERCENT}%. Cap ${HOLDOUT_MAX_PERCENT}%. These leads are not marked on the queue.`}
+              >
+                <Input
                   id="holdout_percent"
                   name="holdout_percent"
                   type="number"
@@ -238,13 +220,8 @@ export function ScoringSettings({ config, maps: initialMaps, leads, lastGhostRun
                   required
                   value={holdoutPercent}
                   onChange={(event) => setHoldoutPercent(Number(event.target.value))}
-                  className={inputClass}
                 />
-                <p className={helperClass}>
-                  Default {HOLDOUT_DEFAULT_PERCENT}%. Cap {HOLDOUT_MAX_PERCENT}%. These leads are not marked on the
-                  queue.
-                </p>
-              </div>
+              </Field>
             ) : (
               <input type="hidden" name="holdout_percent" value="0" />
             )}
@@ -277,39 +254,37 @@ export function ScoringSettings({ config, maps: initialMaps, leads, lastGhostRun
         ) : (
           <>
             <div className="mt-4 max-w-md">
-              <label className={labelClass} htmlFor="preview-lead">
-                Lead
-              </label>
-              <Select
-                id="preview-lead"
-                
-                value={previewLeadId}
-                onChange={(event) => setPreviewLeadId(event.target.value)}
-              >
+              <Field label="Lead" name="preview-lead">
+                <Select
+                  id="preview-lead"
+                  value={previewLeadId}
+                  onChange={(event) => setPreviewLeadId(event.target.value)}
+                >
                 {leads.map((lead) => (
                   <option key={lead.id} value={lead.id}>
                     {lead.name}
                   </option>
                 ))}
-              </Select>
+                </Select>
+              </Field>
             </div>
             {previewLead && pendingScore ? (
               <dl className="mt-4 grid gap-3 sm:grid-cols-3">
                 <div>
                   <dt className={labelClass}>Current cached score</dt>
-                  <dd className="text-sm text-white">
+                  <dd className="text-sm text-card-foreground">
                     {previewLead.currentScore === null ? "Unscored" : previewLead.currentScore}
                   </dd>
                 </div>
                 <div>
                   <dt className={labelClass}>Pending score</dt>
-                  <dd className="text-sm text-white">
+                  <dd className="text-sm text-card-foreground">
                     {pendingScore.kind === "unscored" ? "Unscored" : pendingScore.total}
                   </dd>
                 </div>
                 <div>
                   <dt className={labelClass}>Ready track at {readyThreshold}?</dt>
-                  <dd className="text-sm text-white">
+                  <dd className="text-sm text-card-foreground">
                     {pendingScore.kind === "unscored"
                       ? "No — no score"
                       : pendingScore.total >= readyThreshold
@@ -338,54 +313,52 @@ export function ScoringSettings({ config, maps: initialMaps, leads, lastGhostRun
             <div key={map.id} className="rounded-2xl border border-white/10 p-4">
               <div className="grid gap-3 sm:grid-cols-[1fr_1fr_auto] sm:items-end">
                 <div>
-                  <label className={labelClass} htmlFor={`field-${map.id}`}>
-                    Application field
-                  </label>
-                  <input
-                    id={`field-${map.id}`}
-                    className={inputClass}
-                    value={map.fieldName}
-                    onChange={(event) => {
-                      const fieldName = event.target.value;
-                      setMaps((current) =>
-                        current.map((item, index) =>
-                          index === mapIndex ? { ...item, fieldName } : item
-                        )
-                      );
-                    }}
-                  />
+                  <Field label="Application field" name={`field-${map.id}`}>
+                    <Input
+                      id={`field-${map.id}`}
+                      type="text"
+                      value={map.fieldName}
+                      onChange={(event) => {
+                        const fieldName = event.target.value;
+                        setMaps((current) =>
+                          current.map((item, index) =>
+                            index === mapIndex ? { ...item, fieldName } : item
+                          )
+                        );
+                      }}
+                    />
+                  </Field>
                 </div>
                 <div>
-                  <label className={labelClass} htmlFor={`factor-${map.id}`}>
-                    Factor
-                  </label>
-                  <Select
-                    id={`factor-${map.id}`}
-                    
-                    value={map.factor}
-                    onChange={(event) => {
-                      const factor = event.target.value as ScoreFieldMap["factor"];
-                      setMaps((current) =>
-                        current.map((item, index) =>
-                          index === mapIndex ? { ...item, factor } : item
-                        )
-                      );
-                    }}
-                  >
+                  <Field label="Factor" name={`factor-${map.id}`}>
+                    <Select
+                      id={`factor-${map.id}`}
+                      value={map.factor}
+                      onChange={(event) => {
+                        const factor = event.target.value as ScoreFieldMap["factor"];
+                        setMaps((current) =>
+                          current.map((item, index) =>
+                            index === mapIndex ? { ...item, factor } : item
+                          )
+                        );
+                      }}
+                    >
                     {SCORE_FACTORS.map((factor) => (
                       <option key={factor} value={factor}>
                         {FACTOR_LABELS[factor]}
                       </option>
                     ))}
-                  </Select>
+                    </Select>
+                  </Field>
                 </div>
-                <button
+                <Button
                   type="button"
-                  className={`${btnSecondary} ${btnSizeSm}`}
+                  variant="secondary"
+                  size="sm"
                   onClick={() => setMaps((current) => current.filter((_, index) => index !== mapIndex))}
                 >
                   Remove field
-                </button>
+                </Button>
               </div>
 
               <div className="mt-4 space-y-2">
@@ -422,8 +395,8 @@ export function ScoringSettings({ config, maps: initialMaps, leads, lastGhostRun
                       <option value="range">Range</option>
                     </Select>
                     {rule.kind === "choice" ? (
-                      <input
-                        className={inputClass}
+                      <Input
+                        type="text"
                         placeholder="Answer"
                         value={rule.answerValue ?? ""}
                         onChange={(event) => {
@@ -444,8 +417,7 @@ export function ScoringSettings({ config, maps: initialMaps, leads, lastGhostRun
                       />
                     ) : (
                       <>
-                        <input
-                          className={inputClass}
+                        <Input
                           type="number"
                           placeholder="Min"
                           value={rule.rangeMin ?? ""}
@@ -465,8 +437,7 @@ export function ScoringSettings({ config, maps: initialMaps, leads, lastGhostRun
                             );
                           }}
                         />
-                        <input
-                          className={inputClass}
+                        <Input
                           type="number"
                           placeholder="Max"
                           value={rule.rangeMax ?? ""}
@@ -489,8 +460,7 @@ export function ScoringSettings({ config, maps: initialMaps, leads, lastGhostRun
                       </>
                     )}
                     {rule.kind === "choice" ? <span /> : null}
-                    <input
-                      className={inputClass}
+                    <Input
                       type="number"
                       min={0}
                       max={100}
@@ -512,9 +482,10 @@ export function ScoringSettings({ config, maps: initialMaps, leads, lastGhostRun
                         );
                       }}
                     />
-                    <button
+                    <Button
                       type="button"
-                      className={`${btnSecondary} ${btnSizeSm}`}
+                      variant="secondary"
+                      size="sm"
                       onClick={() =>
                         setMaps((current) =>
                           current.map((item, index) =>
@@ -526,12 +497,13 @@ export function ScoringSettings({ config, maps: initialMaps, leads, lastGhostRun
                       }
                     >
                       Remove
-                    </button>
+                    </Button>
                   </div>
                 ))}
-                <button
+                <Button
                   type="button"
-                  className={`${btnSecondary} ${btnSizeSm}`}
+                  variant="secondary"
+                  size="sm"
                   onClick={() =>
                     setMaps((current) =>
                       current.map((item, index) =>
@@ -556,15 +528,16 @@ export function ScoringSettings({ config, maps: initialMaps, leads, lastGhostRun
                   }
                 >
                   Add rule
-                </button>
+                </Button>
               </div>
             </div>
           ))}
         </div>
         <div className="mt-4 flex flex-wrap gap-2">
-          <button
+          <Button
             type="button"
-            className={`${btnSecondary} ${btnSizeSm}`}
+            variant="secondary"
+            size="sm"
             onClick={() =>
               setMaps((current) => [
                 ...current,
@@ -587,10 +560,11 @@ export function ScoringSettings({ config, maps: initialMaps, leads, lastGhostRun
             }
           >
             Add field
-          </button>
-          <button
+          </Button>
+          <Button
             type="button"
-            className={`${btnPrimary} ${btnSizeSm}`}
+            variant="primary"
+            size="sm"
             disabled={pending}
             onClick={() => {
               const payload: MappingPayload[] = maps.map((map) => ({
@@ -611,7 +585,7 @@ export function ScoringSettings({ config, maps: initialMaps, leads, lastGhostRun
             }}
           >
             Save mappings
-          </button>
+          </Button>
         </div>
         {mapStatus.status === "error" ? <p className={errorClass}>{mapStatus.error}</p> : null}
         {mapStatus.status === "saved" ? <p className={helperClass}>Mappings saved.</p> : null}
@@ -641,51 +615,42 @@ export function ScoringSettings({ config, maps: initialMaps, leads, lastGhostRun
             }}
           >
             <div className="max-w-md">
-              <label className={labelClass} htmlFor="override-lead">
-                Lead
-              </label>
-              <Select id="override-lead" name="lead_id" required  defaultValue={leads[0]?.id}>
-                {leads.map((lead) => (
-                  <option key={lead.id} value={lead.id}>
-                    {lead.name}
-                  </option>
-                ))}
-              </Select>
+              <Field label="Lead" name="lead_id" htmlFor="override-lead">
+                <Select id="override-lead" name="lead_id" required defaultValue={leads[0]?.id}>
+                  {leads.map((lead) => (
+                    <option key={lead.id} value={lead.id}>
+                      {lead.name}
+                    </option>
+                  ))}
+                </Select>
+              </Field>
             </div>
             <div className="grid gap-3 sm:grid-cols-2">
               {SCORE_FACTORS.map((factor) => (
-                <div key={factor}>
-                  <label className={labelClass} htmlFor={`override-${factor}`}>
-                    {FACTOR_LABELS[factor]}
-                  </label>
-                  <input
+                <Field key={factor} label={FACTOR_LABELS[factor]} name={factor} htmlFor={`override-${factor}`}>
+                  <Input
                     id={`override-${factor}`}
                     name={factor}
                     type="number"
                     min={0}
                     max={100}
-                    className={inputClass}
                     placeholder="Unknown"
                   />
-                </div>
+                </Field>
               ))}
             </div>
-            <div>
-              <label className={labelClass} htmlFor="override-reasoning">
-                Reasoning
-              </label>
+            <Field label="Reasoning" name="reasoning" htmlFor="override-reasoning">
               <Textarea
                 id="override-reasoning"
                 name="reasoning"
                 required
                 rows={3}
-                
               />
-            </div>
+            </Field>
             {overrideStatus ? <p className={helperClass}>{overrideStatus}</p> : null}
-            <button type="submit" disabled={pending} className={`${btnPrimary} ${btnSizeMd}`}>
+            <Button type="submit" variant="primary" size="lg" disabled={pending}>
               Save override
-            </button>
+            </Button>
           </form>
         )}
       </Panel>
@@ -696,9 +661,11 @@ export function ScoringSettings({ config, maps: initialMaps, leads, lastGhostRun
           Writes a new manual score row for every lead that can be scored under
           the saved settings. History is not rewritten. This never runs on save.
         </p>
-        <button
+        <Button
           type="button"
-          className={`${btnSecondary} ${btnSizeMd} mt-4`}
+          variant="secondary"
+          size="lg"
+          className="mt-4"
           disabled={pending}
           onClick={() => {
             startTransition(async () => {
@@ -714,7 +681,7 @@ export function ScoringSettings({ config, maps: initialMaps, leads, lastGhostRun
           }}
         >
           Re-score all leads now
-        </button>
+        </Button>
         {bulkStatus ? <p className={helperClass}>{bulkStatus}</p> : null}
       </Panel>
 
@@ -734,9 +701,11 @@ export function ScoringSettings({ config, maps: initialMaps, leads, lastGhostRun
         ) : (
           <p className={`${helperClass} mt-2`}>No run logged yet.</p>
         )}
-        <button
+        <Button
           type="button"
-          className={`${btnSecondary} ${btnSizeMd} mt-4`}
+          variant="secondary"
+          size="lg"
+          className="mt-4"
           disabled={pending}
           onClick={() => {
             startTransition(async () => {
@@ -752,7 +721,7 @@ export function ScoringSettings({ config, maps: initialMaps, leads, lastGhostRun
           }}
         >
           Run ghost detector now
-        </button>
+        </Button>
         {ghostStatus ? <p className={helperClass}>{ghostStatus}</p> : null}
       </Panel>
     </div>

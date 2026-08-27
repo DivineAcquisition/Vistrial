@@ -1,7 +1,9 @@
 "use client";
 
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
-import { filterLabel, inputCompactClass, btnSecondary, btnSizeSm } from "@/lib/ui";
+import { filterLabel } from "@/lib/ui";
 import { RANGE_PRESETS, type ReportingRangeKey } from "@/lib/reporting/constants";
 import type { ReportingRange } from "@/lib/reporting/range";
 
@@ -26,15 +28,15 @@ export function ReportingRangeForm({
       </label>
       <label className="block">
         <span className={filterLabel}>From</span>
-        <input type="date" name="from" defaultValue={range.fromDate} className={inputCompactClass} />
+        <Input type="date" name="from" defaultValue={range.fromDate} density="compact" />
       </label>
       <label className="block">
         <span className={filterLabel}>To</span>
-        <input type="date" name="to" defaultValue={range.toDate} className={inputCompactClass} />
+        <Input type="date" name="to" defaultValue={range.toDate} density="compact" />
       </label>
-      <button type="submit" className={`${btnSecondary} ${btnSizeSm}`}>
+      <Button type="submit" variant="secondary" size="sm">
         Apply
-      </button>
+      </Button>
     </form>
   );
 }

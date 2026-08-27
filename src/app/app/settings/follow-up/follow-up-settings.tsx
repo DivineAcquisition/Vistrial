@@ -13,7 +13,10 @@ import {
   updateVoiceProfile,
 } from "@/app/app/settings/follow-up/actions";
 import type { SettingsSaveResult } from "@/app/app/settings/types";
+import { Button } from "@/components/ui/button";
 import { Checkbox, CheckboxField } from "@/components/ui/checkbox";
+import { Field } from "@/components/ui/field";
+import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Panel } from "@/components/ui/panel";
 import { Select } from "@/components/ui/select";
@@ -22,16 +25,7 @@ import { SectionHeader } from "@/components/ui/section-header";
 import { MIN_VOICE_EXAMPLES } from "@/lib/follow-up/constants";
 import { FOLLOW_UP_BRANCH_LABELS, FOLLOW_UP_CHANNEL_LABELS } from "@/lib/follow-up/labels";
 import type { FollowUpSettings, RoutingRule, VoiceExample, VoiceProfile } from "@/lib/follow-up/types";
-import {
-  btnPrimary,
-  btnSecondary,
-  btnSizeMd,
-  btnSizeSm,
-  errorClass,
-  helperClass,
-  inputClass,
-  labelClass,
-} from "@/lib/ui";
+import { errorClass, helperClass, labelClass } from "@/lib/ui";
 
 const idle: SettingsSaveResult = { status: "idle" };
 
@@ -113,9 +107,11 @@ export function FollowUpSettingsScreen({
                     {FOLLOW_UP_CHANNEL_LABELS[item.channel]}
                   </p>
                   <p className="mt-1 whitespace-pre-wrap text-sm text-silver">{item.body}</p>
-                  <button
+                  <Button
                     type="button"
-                    className={`${btnSecondary} ${btnSizeSm} mt-2`}
+                    variant="secondary"
+                    size="sm"
+                    className="mt-2"
                     disabled={pending}
                     onClick={() =>
                       startTransition(async () => {
@@ -124,39 +120,35 @@ export function FollowUpSettingsScreen({
                     }
                   >
                     Remove
-                  </button>
+                  </Button>
                 </li>
               ))}
             </ol>
           )}
           <div>
-            <label htmlFor="example-body" className={labelClass}>
-              Paste a sent message
-            </label>
-            <Textarea
-              id="example-body"
-              className="min-h-24"
-              value={exampleBody}
-              onChange={(event) => setExampleBody(event.target.value)}
-            />
+            <Field label="Paste a sent message" name="example-body">
+              <Textarea
+                id="example-body"
+                className="min-h-24"
+                value={exampleBody}
+                onChange={(event) => setExampleBody(event.target.value)}
+              />
+            </Field>
             <div className="mt-3 flex flex-wrap items-end gap-3">
-              <div>
-                <label htmlFor="example-channel" className={labelClass}>
-                  Channel
-                </label>
+              <Field label="Channel" name="example-channel" className="w-auto">
                 <Select
                   id="example-channel"
-                  
                   value={exampleChannel}
                   onChange={(event) => setExampleChannel(event.target.value as "sms" | "email")}
                 >
                   <option value="sms">SMS</option>
                   <option value="email">Email</option>
                 </Select>
-              </div>
-              <button
+              </Field>
+              <Button
                 type="button"
-                className={`${btnPrimary} ${btnSizeSm}`}
+                variant="primary"
+                size="sm"
                 disabled={pending}
                 onClick={() =>
                   startTransition(async () => {
@@ -166,7 +158,7 @@ export function FollowUpSettingsScreen({
                 }
               >
                 Add example
-              </button>
+              </Button>
             </div>
             {exampleStatus.status === "error" ? <p className={errorClass}>{exampleStatus.error}</p> : null}
           </div>
@@ -177,15 +169,12 @@ export function FollowUpSettingsScreen({
         <SectionHeader title="Voice profile" hint="Used on every generation. Changes never happen from edit data unless you confirm a suggestion below." />
         <Panel className="max-w-xl p-6">
           <form action={saveVoice} className="space-y-4">
-            <div>
-              <label htmlFor="formality" className={labelClass}>
-                Formality
-              </label>
+            <Field label="Formality" name="formality">
               <Select id="formality" name="formality" defaultValue={voice.formality}>
                 <option value="casual">Casual</option>
                 <option value="professional">Professional</option>
               </Select>
-            </div>
+            </Field>
             <CheckboxField
               name="use_contractions"
               defaultChecked={voice.useContractions}
@@ -201,62 +190,43 @@ export function FollowUpSettingsScreen({
               defaultChecked={voice.useSignoff}
               label="Use a sign-off"
             />
-            <div>
-              <label htmlFor="greeting_text" className={labelClass}>
-                Greeting text
-              </label>
-              <input id="greeting_text" name="greeting_text" className={inputClass} defaultValue={voice.greetingText ?? ""} />
-            </div>
-            <div>
-              <label htmlFor="signoff_text" className={labelClass}>
-                Sign-off text
-              </label>
-              <input id="signoff_text" name="signoff_text" className={inputClass} defaultValue={voice.signoffText ?? ""} />
-            </div>
-            <div>
-              <label htmlFor="sms_max_chars" className={labelClass}>
-                SMS length target
-              </label>
-              <input id="sms_max_chars" name="sms_max_chars" type="number" className={inputClass} defaultValue={voice.smsMaxChars} />
-            </div>
-            <div>
-              <label htmlFor="email_max_chars" className={labelClass}>
-                Email length target
-              </label>
-              <input
+            <Field label="Greeting text" name="greeting_text">
+              <Input id="greeting_text" name="greeting_text" type="text" defaultValue={voice.greetingText ?? ""} />
+            </Field>
+            <Field label="Sign-off text" name="signoff_text">
+              <Input id="signoff_text" name="signoff_text" type="text" defaultValue={voice.signoffText ?? ""} />
+            </Field>
+            <Field label="SMS length target" name="sms_max_chars">
+              <Input id="sms_max_chars" name="sms_max_chars" type="number" defaultValue={voice.smsMaxChars} />
+            </Field>
+            <Field label="Email length target" name="email_max_chars">
+              <Input
                 id="email_max_chars"
                 name="email_max_chars"
                 type="number"
-                className={inputClass}
                 defaultValue={voice.emailMaxChars}
               />
-            </div>
-            <div>
-              <label htmlFor="emoji_usage" className={labelClass}>
-                Emoji
-              </label>
-              <Select id="emoji_usage" name="emoji_usage"  defaultValue={voice.emojiUsage}>
+            </Field>
+            <Field label="Emoji" name="emoji_usage">
+              <Select id="emoji_usage" name="emoji_usage" defaultValue={voice.emojiUsage}>
                 <option value="never">Never</option>
                 <option value="sparing">Sparing</option>
                 <option value="natural">Natural</option>
               </Select>
-            </div>
-            <div>
-              <label htmlFor="banned_words" className={labelClass}>
-                Words this business does not use
-              </label>
+            </Field>
+            <Field label="Words this business does not use" name="banned_words">
               <Textarea
                 id="banned_words"
                 name="banned_words"
                 className="min-h-20"
                 defaultValue={voice.bannedWords.join("\n")}
               />
-            </div>
+            </Field>
             {voiceState.status === "error" ? <p className={errorClass}>{voiceState.error}</p> : null}
             {voiceState.status === "saved" ? <p className="text-sm text-flag-good">Saved.</p> : null}
-            <button type="submit" className={`${btnPrimary} ${btnSizeMd}`} disabled={voicePending}>
+            <Button type="submit" variant="primary" size="lg" disabled={voicePending}>
               Save voice
-            </button>
+            </Button>
           </form>
         </Panel>
       </section>
@@ -271,70 +241,52 @@ export function FollowUpSettingsScreen({
               label="Respect quiet hours"
             />
             <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label htmlFor="quiet_hours_start" className={labelClass}>
-                  Quiet start
-                </label>
-                <input
+              <Field label="Quiet start" name="quiet_hours_start">
+                <Input
                   id="quiet_hours_start"
                   name="quiet_hours_start"
-                  className={inputClass}
+                  type="text"
                   defaultValue={settings.quietHoursStart}
                 />
-              </div>
-              <div>
-                <label htmlFor="quiet_hours_end" className={labelClass}>
-                  Quiet end
-                </label>
-                <input
+              </Field>
+              <Field label="Quiet end" name="quiet_hours_end">
+                <Input
                   id="quiet_hours_end"
                   name="quiet_hours_end"
-                  className={inputClass}
+                  type="text"
                   defaultValue={settings.quietHoursEnd}
                 />
-              </div>
+              </Field>
             </div>
-            <div>
-              <label htmlFor="max_sequence_length" className={labelClass}>
-                Maximum sequence length
-              </label>
-              <input
+            <Field label="Maximum sequence length" name="max_sequence_length">
+              <Input
                 id="max_sequence_length"
                 name="max_sequence_length"
                 type="number"
-                className={inputClass}
                 defaultValue={settings.maxSequenceLength}
               />
-            </div>
-            <div>
-              <label htmlFor="max_sequence_duration_days" className={labelClass}>
-                Maximum sequence duration (days)
-              </label>
-              <input
+            </Field>
+            <Field label="Maximum sequence duration (days)" name="max_sequence_duration_days">
+              <Input
                 id="max_sequence_duration_days"
                 name="max_sequence_duration_days"
                 type="number"
-                className={inputClass}
                 defaultValue={settings.maxSequenceDurationDays}
               />
-            </div>
-            <div>
-              <label htmlFor="draft_stale_days" className={labelClass}>
-                Drafts go stale after (days)
-              </label>
-              <input
+            </Field>
+            <Field label="Drafts go stale after (days)" name="draft_stale_days">
+              <Input
                 id="draft_stale_days"
                 name="draft_stale_days"
                 type="number"
-                className={inputClass}
                 defaultValue={settings.draftStaleDays}
               />
-            </div>
+            </Field>
             {policyState.status === "error" ? <p className={errorClass}>{policyState.error}</p> : null}
             {policyState.status === "saved" ? <p className="text-sm text-flag-good">Saved.</p> : null}
-            <button type="submit" className={`${btnPrimary} ${btnSizeMd}`} disabled={policyPending}>
+            <Button type="submit" variant="primary" size="lg" disabled={policyPending}>
               Save policy
-            </button>
+            </Button>
           </form>
         </Panel>
       </section>
@@ -375,23 +327,25 @@ export function FollowUpSettingsScreen({
                   </Select>
                 </div>
                 <div>
-                  <p className={labelClass}>Sequence delays (hours)</p>
-                  <input
-                    className={inputClass}
-                    value={rule.sequenceSteps.map((step) => step.delayHours).join(",")}
-                    onChange={(event) => {
-                      const delays = event.target.value
-                        .split(",")
-                        .map((part) => Number(part.trim()))
-                        .filter((value) => Number.isFinite(value) && value >= 0);
-                      const next = [...rules];
-                      next[index] = {
-                        ...rule,
-                        sequenceSteps: delays.map((delayHours) => ({ delayHours, channel: rule.channel })),
-                      };
-                      setRules(next);
-                    }}
-                  />
+                  <Field label="Sequence delays (hours)" name={`delays-${index}`}>
+                    <Input
+                      id={`delays-${index}`}
+                      type="text"
+                      value={rule.sequenceSteps.map((step) => step.delayHours).join(",")}
+                      onChange={(event) => {
+                        const delays = event.target.value
+                          .split(",")
+                          .map((part) => Number(part.trim()))
+                          .filter((value) => Number.isFinite(value) && value >= 0);
+                        const next = [...rules];
+                        next[index] = {
+                          ...rule,
+                          sequenceSteps: delays.map((delayHours) => ({ delayHours, channel: rule.channel })),
+                        };
+                        setRules(next);
+                      }}
+                    />
+                  </Field>
                 </div>
               </div>
               <p className={`${helperClass} font-mono`}>
@@ -401,9 +355,10 @@ export function FollowUpSettingsScreen({
           ))}
           {ruleStatus.status === "error" ? <p className={errorClass}>{ruleStatus.error}</p> : null}
           {ruleStatus.status === "saved" ? <p className="text-sm text-flag-good">Saved.</p> : null}
-          <button
+          <Button
             type="button"
-            className={`${btnPrimary} ${btnSizeSm}`}
+            variant="primary"
+            size="sm"
             disabled={pending}
             onClick={() =>
               startTransition(async () => {
@@ -412,7 +367,7 @@ export function FollowUpSettingsScreen({
             }
           >
             Save routing
-          </button>
+          </Button>
         </Panel>
       </section>
 
@@ -422,14 +377,15 @@ export function FollowUpSettingsScreen({
           hint="Suggestions only. The voice profile does not change until you confirm."
         />
         <Panel className="p-6 space-y-4">
-          <button
+          <Button
             type="button"
-            className={`${btnSecondary} ${btnSizeSm}`}
+            variant="secondary"
+            size="sm"
             disabled={pending}
             onClick={() => startTransition(async () => { await refreshVoiceSuggestions(); })}
           >
             Scan recent edits
-          </button>
+          </Button>
           {suggestions.filter((item) => item.status === "pending").length === 0 ? (
             <p className="text-sm text-dim">No pending suggestions. Consistent edits will show up here.</p>
           ) : (
@@ -440,9 +396,10 @@ export function FollowUpSettingsScreen({
                   <li key={item.id}>
                     <p className="text-sm text-white">{item.evidence}</p>
                     <div className="mt-2 flex flex-wrap gap-2">
-                      <button
+                      <Button
                         type="button"
-                        className={`${btnPrimary} ${btnSizeSm}`}
+                        variant="primary"
+                        size="sm"
                         disabled={pending}
                         onClick={() =>
                           startTransition(async () => {
@@ -451,10 +408,11 @@ export function FollowUpSettingsScreen({
                         }
                       >
                         Apply to voice profile
-                      </button>
-                      <button
+                      </Button>
+                      <Button
                         type="button"
-                        className={`${btnSecondary} ${btnSizeSm}`}
+                        variant="secondary"
+                        size="sm"
                         disabled={pending}
                         onClick={() =>
                           startTransition(async () => {
@@ -463,7 +421,7 @@ export function FollowUpSettingsScreen({
                         }
                       >
                         Dismiss
-                      </button>
+                      </Button>
                     </div>
                   </li>
                 ))}

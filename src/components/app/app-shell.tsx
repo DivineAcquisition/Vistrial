@@ -52,7 +52,7 @@ function SidebarBody({
       <div className={cn("flex-1 overflow-y-auto", collapsed ? "px-2" : "px-2")}>
         <AppNavLinks onNavigate={onNavigate} collapsed={collapsed} />
       </div>
-      <div className="border-t border-white/[0.07] p-2">
+      <div className="border-t border-border p-2">
         <UserMenu collapsed={collapsed} />
       </div>
     </>
@@ -74,11 +74,11 @@ export function AppShell({
   const wizard = pathname.startsWith("/app/onboarding");
 
   return (
-    <div className="flex min-h-screen bg-ink-950 text-white">
+    <div className="flex min-h-screen bg-background text-card-foreground">
       {wizard ? null : (
       <aside
         className={cn(
-          "sticky top-0 hidden h-svh shrink-0 flex-col border-r border-white/[0.07] bg-ink-900 transition-[width] duration-200 ease-out print:hidden md:flex",
+          "sticky top-0 hidden h-svh shrink-0 flex-col border-r border-sidebar-border bg-sidebar transition-[width] duration-200 ease-out print:hidden md:flex",
           collapsed ? "w-16" : "w-60"
         )}
       >
@@ -87,16 +87,23 @@ export function AppShell({
       )}
 
       <div className="flex min-w-0 flex-1 flex-col">
-        <header className="sticky top-0 z-30 flex h-14 items-center gap-3 border-b border-white/[0.07] bg-ink-950/85 px-4 backdrop-blur-md print:hidden sm:px-6">
+        <header className="sticky top-0 z-30 flex h-14 items-center gap-3 border-b border-border bg-background/85 px-4 backdrop-blur-md print:hidden sm:px-6">
           {wizard ? null : (
           <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
             <SheetTrigger
-              className="rounded-xl p-2 text-silver transition-colors hover:bg-white/[0.05] hover:text-white md:hidden"
-              aria-label="Open navigation"
+              render={
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  iconOnly
+                  className="md:hidden"
+                  aria-label="Open navigation"
+                />
+              }
             >
-              <Menu className="size-5" aria-hidden />
+              <Menu className="size-5" aria-hidden="true" />
             </SheetTrigger>
-            <SheetContent side="left" className="w-64 bg-ink-900 p-0 text-white" showCloseButton>
+            <SheetContent side="left" className="w-64 bg-sidebar p-0 text-card-foreground" showCloseButton>
               <SheetHeader className="sr-only">
                 <SheetTitle>Navigation</SheetTitle>
               </SheetHeader>
@@ -134,7 +141,7 @@ export function AppShell({
 
           <Logo markOnly className={cn("h-8 w-auto", wizard ? "" : "md:hidden")} />
           {wizard ? (
-            <p className="text-sm font-medium tracking-wide text-silver">Setup</p>
+            <p className="text-sm font-medium tracking-wide text-muted-foreground">Setup</p>
           ) : null}
           <div className="ml-auto flex items-center gap-1">
             {wizard ? (

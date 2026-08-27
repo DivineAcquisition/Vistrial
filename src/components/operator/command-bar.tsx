@@ -13,6 +13,7 @@ import {
 import { OPERATOR_OPEN_RUN_EVENT } from "@/components/operator/open-run-button";
 import { RunContainer, runStatusLabel } from "@/components/operator/run-container";
 import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
 import {
   Sheet,
   SheetContent,
@@ -28,7 +29,7 @@ import {
   undoOperatorWriteAction,
 } from "@/app/app/operator/actions";
 import type { OperatorConfirmationView, OperatorRunSummary, OperatorRunView, OperatorStepView } from "@/lib/operator/types";
-import { helperClass, textareaClass } from "@/lib/ui";
+import { helperClass } from "@/lib/ui";
 
 type LiveStep = OperatorStepView;
 
@@ -316,11 +317,10 @@ export function OperatorCommandBar() {
             >
               <label className="block">
                 <span className="sr-only">Request</span>
-                <textarea
+                <Textarea
                   value={request}
                   onChange={(event) => setRequest(event.target.value)}
                   rows={3}
-                  className={textareaClass}
                   placeholder="Which leads went quiet after one call this month?"
                   disabled={busy}
                 />

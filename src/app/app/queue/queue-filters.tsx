@@ -9,8 +9,9 @@ import {
   type QueueTrackFilter,
 } from "@/lib/queue/types";
 import { queueFiltersHref } from "@/lib/queue/filters";
+import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
-import { filterLabel, inputCompactClass } from "@/lib/ui";
+import { filterLabel } from "@/lib/ui";
 
 const ASSIGNED_OPTIONS: Array<{ value: QueueAssignedFilter; label: string }> = [
   { value: "all", label: "Everyone" },
@@ -123,13 +124,13 @@ export function QueueFilters({
       </label>
       <label className="block">
         <span className={filterLabel}>Score min</span>
-        <input
+        <Input
           type="number"
           min={0}
           max={100}
           inputMode="numeric"
           placeholder="Any"
-          className={inputCompactClass}
+          density="compact"
           value={filters.scoreMin ?? ""}
           onChange={(event) => {
             const value = event.target.value.trim();
@@ -139,13 +140,13 @@ export function QueueFilters({
       </label>
       <label className="block">
         <span className={filterLabel}>Score max</span>
-        <input
+        <Input
           type="number"
           min={0}
           max={100}
           inputMode="numeric"
           placeholder="Any"
-          className={inputCompactClass}
+          density="compact"
           value={filters.scoreMax ?? ""}
           onChange={(event) => {
             const value = event.target.value.trim();

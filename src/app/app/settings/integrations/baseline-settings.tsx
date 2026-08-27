@@ -10,13 +10,14 @@ import {
 } from "@/app/app/reporting/actions";
 import { Button, SubmitButton } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { Field } from "@/components/ui/field";
+import { Input } from "@/components/ui/input";
 import { Panel } from "@/components/ui/panel";
 import { StatusBadge } from "@/components/ui/status-badge";
 import {
   cardTitle,
   errorClass,
   helperClass,
-  inputClass,
   labelClass,
   successClass,
 } from "@/lib/ui";
@@ -182,40 +183,29 @@ export function BaselineSettings(props: BaselineSettingsProps) {
             export. Never blended with backfilled or live numbers. Capturing these, or recording that
             the client declined to give them, is what resolves the baseline for activation.
           </p>
-          <div>
-            <label className={labelClass} htmlFor="leads_per_month">
-              Leads per month
-            </label>
-            <input
+          <Field label="Leads per month" name="leads_per_month">
+            <Input
               id="leads_per_month"
               name="leads_per_month"
               type="number"
               min={1}
               required
               defaultValue={props.selfReported?.leadsPerMonth ?? ""}
-              className={inputClass}
             />
-          </div>
-          <div>
-            <label className={labelClass} htmlFor="clients_closed_per_month">
-              Clients closed per month
-            </label>
-            <input
+          </Field>
+          <Field label="Clients closed per month" name="clients_closed_per_month">
+            <Input
               id="clients_closed_per_month"
               name="clients_closed_per_month"
               type="number"
               min={0}
               required
               defaultValue={props.selfReported?.clientsClosedPerMonth ?? ""}
-              className={inputClass}
             />
-          </div>
-          <div>
-            <label className={labelClass} htmlFor="note">
-              Note
-            </label>
-            <input id="note" name="note" className={inputClass} />
-          </div>
+          </Field>
+          <Field label="Note" name="note">
+            <Input id="note" name="note" type="text" />
+          </Field>
           <SubmitButton variant="primary" pending={savingSelf} loadingLabel="Saving">
             Save self-reported baseline
           </SubmitButton>

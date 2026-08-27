@@ -56,7 +56,7 @@ export function PageHeader({
             {status ? <StatusBadge label={status} tone={statusTone} /> : null}
           </div>
           {description ? (
-            <p className="mt-2 max-w-2xl text-sm leading-relaxed text-silver">{description}</p>
+            <p className="mt-2 max-w-2xl text-sm leading-relaxed text-muted-foreground">{description}</p>
           ) : null}
         </div>
 
@@ -69,7 +69,7 @@ export function PageHeader({
       </div>
 
       {toolbar ? (
-        <div className="mt-6 border-t border-white/[0.07] pt-5">{toolbar}</div>
+        <div className="mt-6 border-t border-border pt-5">{toolbar}</div>
       ) : null}
     </header>
   );

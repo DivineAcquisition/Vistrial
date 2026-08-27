@@ -9,19 +9,19 @@ import {
 } from "@/app/app/settings/business-profile/actions";
 import type { SettingsSaveResult } from "@/app/app/settings/types";
 import { Button, SubmitButton } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { DefinitionList, KeyValue } from "@/components/ui/definition-list";
+import { Field } from "@/components/ui/field";
+import { Input } from "@/components/ui/input";
 import { Panel } from "@/components/ui/panel";
 import { StatusBadge } from "@/components/ui/status-badge";
+import { Textarea } from "@/components/ui/textarea";
 import { ACTIVATION_WARNING_LABELS } from "@/lib/profile/vocabulary";
 import type { ActivationChange, ActivationReadiness } from "@/lib/profile/types";
 import {
   cardTitle,
   errorClass,
   helperClass,
-  inputClass,
-  labelClass,
 } from "@/lib/ui";
 
 const idle: SettingsSaveResult = { status: "idle" };
@@ -102,27 +102,16 @@ export function ActivationGate({
                 Moving this shifts every historical figure this workspace has been shown. Deals will
                 move between the before and after side of the line, and the comparison will change.
               </p>
-              <div>
-                <label className={labelClass} htmlFor="new_at">
-                  Move it to
-                </label>
-                <input
-                  id="new_at"
-                  name="new_at"
-                  type="datetime-local"
-                  required
-                  className={inputClass}
-                />
-              </div>
-              <div>
-                <label className={labelClass} htmlFor="reason">
-                  Why, in writing
-                </label>
-                <Textarea id="reason" name="reason" rows={3} required minLength={20}  />
-                <p className={helperClass}>
-                  At least twenty characters. This is kept against the workspace permanently.
-                </p>
-              </div>
+              <Field label="Move it to" name="new_at">
+                <Input id="new_at" name="new_at" type="datetime-local" required />
+              </Field>
+              <Field
+                label="Why, in writing"
+                name="reason"
+                help="At least twenty characters. This is kept against the workspace permanently."
+              >
+                <Textarea id="reason" name="reason" rows={3} required minLength={20} />
+              </Field>
               <div className="flex flex-wrap gap-3">
                 <SubmitButton variant="destructive" pending={moving} loadingLabel="Moving">
                   Move the activation timestamp
@@ -180,7 +169,7 @@ export function ActivationGate({
             The CRM history is unusable. Either record the owner&apos;s own prior figures on the
             integrations page, or record that they will not give them.
           </p>
-          <input name="note" className={inputClass} placeholder="Optional note" />
+          <Input name="note" type="text" placeholder="Optional note" />
           <SubmitButton variant="secondary" pending={declining} loadingLabel="Recording">
             They declined to state prior figures
           </SubmitButton>

@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { canAssignLeads } from "@/lib/auth/permissions";
 import {
@@ -16,13 +18,8 @@ import {
   type TouchOutcome,
 } from "@/lib/queue/types";
 import {
-  btnGhost,
-  btnPrimary,
-  btnSecondary,
-  btnSizeSm,
   errorClass,
   helperClass,
-  inputClass,
   labelClass,
 } from "@/lib/ui";
 import type { OrgRole } from "@/types/database";
@@ -144,8 +141,8 @@ export function OutcomePanel({
       </div>
       <label className="mt-4 block">
         <span className={labelClass}>Note (optional)</span>
-        <input
-          className={inputClass}
+        <Input
+          type="text"
           maxLength={280}
           value={note}
           onChange={(event) => setNote(event.target.value)}
@@ -154,19 +151,20 @@ export function OutcomePanel({
       </label>
       <div className="mt-4 flex flex-wrap gap-2">
         {TOUCH_OUTCOMES.map((outcome) => (
-          <button
+          <Button
             key={outcome}
             type="button"
-            className={`${btnPrimary} ${btnSizeSm}`}
+            variant="primary"
+            size="sm"
             disabled={busy || pending}
             onClick={() => void chooseOutcome(outcome)}
           >
             {TOUCH_OUTCOME_LABELS[outcome]}
-          </button>
+          </Button>
         ))}
-        <button type="button" className={`${btnGhost} ${btnSizeSm}`} onClick={onCancel} disabled={pending}>
+        <Button type="button" variant="ghost" size="sm" onClick={onCancel} disabled={pending}>
           Cancel
-        </button>
+        </Button>
       </div>
       {error ? <p className={errorClass}>{error}</p> : null}
     </div>
@@ -246,34 +244,37 @@ export function AssignPanel({
       </div>
       {!canOthers ? (
         <div className="mt-3 flex flex-wrap gap-2">
-          <button
+          <Button
             type="button"
-            className={`${btnSecondary} ${btnSizeSm}`}
+            variant="secondary"
+            size="sm"
             onClick={() => setSetterId(memberId)}
           >
             Assign to me as setter
-          </button>
-          <button
+          </Button>
+          <Button
             type="button"
-            className={`${btnSecondary} ${btnSizeSm}`}
+            variant="secondary"
+            size="sm"
             onClick={() => setCloserId(memberId)}
           >
             Assign to me as closer
-          </button>
+          </Button>
         </div>
       ) : null}
       <div className="mt-4 flex flex-wrap gap-2">
-        <button
+        <Button
           type="button"
-          className={`${btnPrimary} ${btnSizeSm}`}
+          variant="primary"
+          size="sm"
           disabled={busy || pending}
           onClick={() => void save()}
         >
           Save assignment
-        </button>
-        <button type="button" className={`${btnGhost} ${btnSizeSm}`} onClick={onCancel}>
+        </Button>
+        <Button type="button" variant="ghost" size="sm" onClick={onCancel}>
           Cancel
-        </button>
+        </Button>
       </div>
       {error ? <p className={errorClass}>{error}</p> : null}
     </div>
@@ -345,8 +346,8 @@ export function FollowOnPanel({
       <p className={helperClass}>Optional. Skip if nothing is next.</p>
       <label className="mt-4 block">
         <span className={labelClass}>Next action</span>
-        <input
-          className={inputClass}
+        <Input
+          type="text"
           maxLength={240}
           value={actionText}
           onChange={(event) => setActionText(event.target.value)}
@@ -355,17 +356,17 @@ export function FollowOnPanel({
       </label>
       <label className="mt-4 block">
         <span className={labelClass}>Due (optional)</span>
-        <input
+        <Input
           type="datetime-local"
-          className={inputClass}
           value={dueAt}
           onChange={(event) => setDueAt(event.target.value)}
         />
       </label>
       <div className="mt-4 flex flex-wrap gap-2">
-        <button
+        <Button
           type="button"
-          className={`${btnPrimary} ${btnSizeSm}`}
+          variant="primary"
+          size="sm"
           disabled={busy || pending || !actionText.trim()}
           onClick={() => {
             setPending(true);
@@ -373,10 +374,10 @@ export function FollowOnPanel({
           }}
         >
           Save follow-on
-        </button>
-        <button type="button" className={`${btnGhost} ${btnSizeSm}`} onClick={onSkip}>
+        </Button>
+        <Button type="button" variant="ghost" size="sm" onClick={onSkip}>
           Skip
-        </button>
+        </Button>
       </div>
       {error ? <p className={errorClass}>{error}</p> : null}
     </div>

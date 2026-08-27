@@ -2,6 +2,9 @@
  * Shared class recipes, mapped onto coss primitives so a screen written against
  * these strings and a screen written against `<Button>` / `<Input>` look the same.
  *
+ * In-app screens should use the primitives. These strings remain for recipes
+ * such as readonly field chrome and any last native leftovers.
+ *
  * #9A88FC (brand-500) is the prime action colour. It is light enough that
  * near-black label text reads far better on it than white, which is why primary
  * buttons invert their type. brand-300 carries eyebrows, section labels, and links.
@@ -87,9 +90,8 @@ export const metricValue = "text-2xl font-semibold tabular-nums";
 /* ---------------------------------------------------------------------------
  * Form controls
  *
- * Single-element native inputs still exist on a few screens. These strings
- * copy the coss Input/Textarea chrome so they do not sit beside `<Input>`
- * looking like a different product.
+ * Native field chrome for readonly displays and rare single-element leftovers.
+ * Live forms should use `<Input>` / `<Textarea>` / `<Select>`.
  * ------------------------------------------------------------------------- */
 
 /** Form fields and labelled settings. Sentence case, not a caption. */

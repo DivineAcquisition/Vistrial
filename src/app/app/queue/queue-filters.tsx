@@ -9,8 +9,8 @@ import {
   type QueueTrackFilter,
 } from "@/lib/queue/types";
 import { queueFiltersHref } from "@/lib/queue/filters";
-import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
+import { ScoreRangeSlider } from "@/components/ui/slider-field";
 import { filterLabel } from "@/lib/ui";
 
 const ASSIGNED_OPTIONS: Array<{ value: QueueAssignedFilter; label: string }> = [
@@ -122,38 +122,14 @@ export function QueueFilters({
           ))}
         </Select>
       </label>
-      <label className="block">
-        <span className={filterLabel}>Score min</span>
-        <Input
-          type="number"
-          min={0}
-          max={100}
-          inputMode="numeric"
-          placeholder="Any"
-          density="compact"
-          value={filters.scoreMin ?? ""}
-          onChange={(event) => {
-            const value = event.target.value.trim();
-            apply({ scoreMin: value === "" ? null : Number(value) });
-          }}
+      <div className="lg:col-span-2">
+        <span className={filterLabel}>Score</span>
+        <ScoreRangeSlider
+          min={filters.scoreMin}
+          max={filters.scoreMax}
+          onCommit={(next) => apply(next)}
         />
-      </label>
-      <label className="block">
-        <span className={filterLabel}>Score max</span>
-        <Input
-          type="number"
-          min={0}
-          max={100}
-          inputMode="numeric"
-          placeholder="Any"
-          density="compact"
-          value={filters.scoreMax ?? ""}
-          onChange={(event) => {
-            const value = event.target.value.trim();
-            apply({ scoreMax: value === "" ? null : Number(value) });
-          }}
-        />
-      </label>
+      </div>
     </form>
   );
 }

@@ -8,6 +8,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Notice } from "@/components/ui/states";
 import { Panel } from "@/components/ui/panel";
+import { RemainingCount } from "@/components/ui/remaining-count";
+import { SegmentedRadioGroup } from "@/components/ui/segmented-radio";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { useOrg } from "@/components/app/org-provider";
 import { describeOutcomeDiscrepancy } from "@/lib/mobile/discrepancy";
@@ -342,35 +344,34 @@ export function LogOutcomeScreen({
 
       <div>
         <p className={labelClass}>Channel</p>
-        <div className="mt-2 flex flex-wrap gap-2">
-          {TOUCH_CHANNELS.map((value) => (
-            <Button
-              key={value}
-              type="button"
-              variant={channel === value ? "primary" : "secondary"}
-              size="xl"
-              onClick={() => setChannel(value)}
-            >
-              {TOUCH_CHANNEL_LABELS[value]}
-            </Button>
-          ))}
+        <div className="mt-2">
+          <SegmentedRadioGroup
+            aria-label="Channel"
+            className="w-full max-w-xl"
+            onValueChange={(next) => setChannel(next as TouchChannel)}
+            options={TOUCH_CHANNELS.map((value) => ({
+              value,
+              label: TOUCH_CHANNEL_LABELS[value],
+            }))}
+            size="lg"
+            value={channel}
+          />
         </div>
       </div>
 
       <div>
         <p className={labelClass}>Direction</p>
-        <div className="mt-2 flex flex-wrap gap-2">
-          {TOUCH_DIRECTIONS.map((value) => (
-            <Button
-              key={value}
-              type="button"
-              variant={direction === value ? "primary" : "secondary"}
-              size="xl"
-              onClick={() => setDirection(value)}
-            >
-              {value === "outbound" ? "Outbound" : "Inbound"}
-            </Button>
-          ))}
+        <div className="mt-2">
+          <SegmentedRadioGroup
+            aria-label="Direction"
+            onValueChange={(next) => setDirection(next as TouchDirection)}
+            options={TOUCH_DIRECTIONS.map((value) => ({
+              value,
+              label: value === "outbound" ? "Outbound" : "Inbound",
+            }))}
+            size="lg"
+            value={direction}
+          />
         </div>
       </div>
 
@@ -397,6 +398,7 @@ export function LogOutcomeScreen({
             </Button>
           ) : null}
         </div>
+        <RemainingCount max={280} value={note} />
       </div>
 
       <div>

@@ -5,6 +5,7 @@ import { useActionState } from "react";
 import { updateOrganization } from "@/app/app/settings/organization/actions";
 import type { SettingsSaveResult } from "@/app/app/settings/types";
 import { SettingsFormCard } from "@/components/settings/settings-form-card";
+import { useSettingsToast } from "@/components/settings/use-settings-toast";
 import { WeekdayToggleRow } from "@/components/settings/weekday-toggle-row";
 import { WorkingHoursFields } from "@/components/settings/working-hours-fields";
 import { SubmitButton } from "@/components/ui/button";
@@ -13,7 +14,7 @@ import { Fieldset, FieldsetLegend } from "@/components/ui/fieldset";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { ORG_TIMEZONE_LABELS, ORG_TIMEZONES, isOrgTimezone } from "@/lib/timezones";
-import { errorClass, successClass } from "@/lib/ui";
+import { errorClass } from "@/lib/ui";
 
 const initial: SettingsSaveResult = { status: "idle" };
 
@@ -47,6 +48,7 @@ export function OrganizationForm({
   surface?: "workspace" | "policy";
 }) {
   const [state, action, pending] = useActionState(updateOrganization, initial);
+  useSettingsToast(state, pending);
   const timezoneOptions = isOrgTimezone(timezone)
     ? ORG_TIMEZONES
     : ([timezone, ...ORG_TIMEZONES] as const);
@@ -203,7 +205,6 @@ export function OrganizationForm({
       )}
 
       {error ? <p className={errorClass}>{error}</p> : null}
-      {state.status === "saved" ? <p className={successClass}>Saved.</p> : null}
     </SettingsFormCard>
   );
 }

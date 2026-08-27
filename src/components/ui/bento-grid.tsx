@@ -3,6 +3,7 @@ import { ArrowRight } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { MagicCard } from "@/components/ui/magic-card";
 import { cn } from "@/lib/utils";
 
 interface BentoGridProps extends ComponentPropsWithoutRef<"div"> {
@@ -41,12 +42,13 @@ function BentoCard({
   cta,
 }: BentoCardProps) {
   return (
-    <Card
+    <MagicCard
       className={cn(
-        "group relative col-span-3 flex flex-col justify-between overflow-hidden panel-hover",
+        "group relative col-span-3 flex flex-col justify-between overflow-hidden rounded-xl panel-hover",
         className,
       )}
     >
+      <Card className="relative z-10 flex h-full flex-col justify-between overflow-hidden border-0 bg-transparent shadow-none">
       <div>{background}</div>
       <div className="p-4">
         <div className="pointer-events-none z-10 flex transform-gpu flex-col gap-1 transition-all duration-300 lg:group-hover:-translate-y-10">
@@ -83,6 +85,7 @@ function BentoCard({
         </Button>
       </div>
     </Card>
+    </MagicCard>
   );
 }
 

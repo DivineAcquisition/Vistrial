@@ -1,13 +1,14 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 
 import { recordBriefView } from "@/app/app/coaching/actions";
 
 import { Button } from "@/components/ui/button";
 import { DefinitionList, KeyValue } from "@/components/ui/definition-list";
 import { Panel } from "@/components/ui/panel";
+import { ScrollProgress } from "@/components/ui/scroll-progress";
 import type { BriefPayload } from "@/lib/brief/types";
 import {
   CALL_TYPE_LABELS,
@@ -32,13 +33,19 @@ export function BriefScreen({ brief }: { brief: BriefPayload }) {
   const score = brief.score;
   const objections = brief.openObjections;
   const quotes = brief.quotes;
+  const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     void recordBriefView(brief.lead.id);
   }, [brief.lead.id]);
 
   return (
-    <div className="brief-sheet grid min-h-0 overflow-x-hidden md:h-[calc(100svh-9rem)] md:grid-rows-[auto_1fr] md:overflow-hidden">
+    <div className="brief-sheet relative grid min-h-0 overflow-x-hidden md:h-[calc(100svh-9rem)] md:grid-rows-[auto_1fr] md:overflow-hidden">
+      <ScrollProgress
+        attached="container"
+        className="print:hidden"
+        container={scrollRef}
+      />
       <div className="mb-3 flex flex-wrap items-center justify-between gap-2 print:hidden">
         <p className="text-xs text-dim">Ninety seconds. Gaps stay visible.</p>
         <div className="flex gap-2">
@@ -58,7 +65,10 @@ export function BriefScreen({ brief }: { brief: BriefPayload }) {
         </div>
       </div>
 
-      <div className="grid min-h-0 gap-3 overflow-x-hidden overflow-y-auto md:grid-cols-2 xl:grid-cols-4">
+      <div
+        ref={scrollRef}
+        className="grid min-h-0 gap-3 overflow-x-hidden overflow-y-auto md:grid-cols-2 xl:grid-cols-4"
+      >
         <Panel className="px-4 py-3 max-md:order-1">
           <p className="text-[11px] font-semibold tracking-[0.14em] text-brand-300 uppercase">Who</p>
           <p className="mt-1 text-base font-semibold break-words text-white">{brief.lead.name}</p>

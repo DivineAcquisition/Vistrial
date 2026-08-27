@@ -5,6 +5,7 @@ import { useActionState } from "react";
 import { updateProfile } from "@/app/app/settings/profile/actions";
 import type { SettingsSaveResult } from "@/app/app/settings/types";
 import { SettingsFormCard } from "@/components/settings/settings-form-card";
+import { useSettingsToast } from "@/components/settings/use-settings-toast";
 import { WeekdayToggleRow } from "@/components/settings/weekday-toggle-row";
 import { WorkingHoursFields } from "@/components/settings/working-hours-fields";
 import { SubmitButton } from "@/components/ui/button";
@@ -13,7 +14,7 @@ import { Fieldset, FieldsetLegend } from "@/components/ui/fieldset";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { ORG_TIMEZONE_LABELS, ORG_TIMEZONES, isOrgTimezone } from "@/lib/timezones";
-import { errorClass, helperClass, successClass } from "@/lib/ui";
+import { errorClass, helperClass } from "@/lib/ui";
 
 const initial: SettingsSaveResult = { status: "idle" };
 
@@ -38,6 +39,7 @@ export function ProfileForm({
 }) {
   const [state, action, pending] = useActionState(updateProfile, initial);
   const error = state.status === "error" ? state.error : null;
+  useSettingsToast(state, pending);
   const timezoneOptions = timezone && !isOrgTimezone(timezone) ? [timezone, ...ORG_TIMEZONES] : ORG_TIMEZONES;
 
   return (
@@ -109,7 +111,6 @@ export function ProfileForm({
       </Field>
 
       {error ? <p className={errorClass}>{error}</p> : null}
-      {state.status === "saved" ? <p className={successClass}>Saved.</p> : null}
     </SettingsFormCard>
   );
 }

@@ -4,6 +4,15 @@ import { useState } from "react";
 
 import { AssignPanel, FollowOnPanel, OutcomePanel } from "@/components/app/lead-action-panels";
 import { Button } from "@/components/ui/button";
+import {
+  ContextMenu,
+  ContextMenuItem,
+  ContextMenuLinkItem,
+  ContextMenuPopup,
+  ContextMenuSeparator,
+  ContextMenuTrigger,
+} from "@/components/ui/context-menu";
+import { PreviewCard, PreviewCardPopup, PreviewCardTrigger } from "@/components/ui/preview-card";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { TableCell, TableRow } from "@/components/ui/table";
 import { formatBreachDuration, formatQueueDuration, formatQueueUntil } from "@/lib/queue/duration";
@@ -86,25 +95,49 @@ export function QueueLeadRow({
 
   return (
     <>
-      <TableRow
-        className={cn(
-          "border-border/60 align-top",
-          arriving ? "bg-brand-500/[0.10]" : "hover:bg-white/[0.02]",
-          exiting ? "opacity-40 transition-opacity duration-700" : "transition-opacity duration-300"
-        )}
+      <ContextMenu>
+      <ContextMenuTrigger
+        render={
+          <TableRow
+            className={cn(
+              "border-border/60 align-top",
+              arriving ? "bg-brand-500/[0.10]" : "hover:bg-white/[0.02]",
+              exiting ? "opacity-40 transition-opacity duration-700" : "transition-opacity duration-300",
+            )}
+          />
+        }
       >
         <TableCell className="px-4 py-3.5 font-medium whitespace-normal text-white">
-          <span className="block">{row.name}</span>
-          <span className="mt-1 block text-xs font-normal text-dim md:hidden">
-            {[
-              row.source || null,
-              `in ${formatQueueDuration(row.optedInAt, now)}`,
-              row.assignedSetterName,
-            ]
-              .filter(Boolean)
-              .join(" · ")}
-          </span>
-          {exiting ? <span className="mt-1 block text-xs text-dim">Leaving the alarm — touched</span> : null}
+          <PreviewCard>
+            <PreviewCardTrigger render={<span className="cursor-default text-left" />}>
+              <span className="block">{row.name}</span>
+              <span className="mt-1 block text-xs font-normal text-dim md:hidden">
+                {[
+                  row.source || null,
+                  `in ${formatQueueDuration(row.optedInAt, now)}`,
+                  row.assignedSetterName,
+                ]
+                  .filter(Boolean)
+                  .join(" · ")}
+              </span>
+              {exiting ? <span className="mt-1 block text-xs text-dim">Leaving the alarm — touched</span> : null}
+            </PreviewCardTrigger>
+            <PreviewCardPopup>
+              <div className="flex flex-col gap-2">
+                <p className="font-medium text-sm text-white">{row.name}</p>
+                <p className="text-xs text-muted-foreground">
+                  {row.score === null ? "Unscored" : `Score ${row.score}`}
+                  {trackLabel ? ` · ${trackLabel}` : ""}
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  {[row.source, row.assignedSetterName, row.assignedCloserName]
+                    .filter(Boolean)
+                    .join(" · ") || "No source or assignment yet"}
+                </p>
+                <p className="text-xs text-dim">In queue {formatQueueDuration(row.optedInAt, now)}</p>
+              </div>
+            </PreviewCardPopup>
+          </PreviewCard>
         </TableCell>
         {variant === "alarm" ? (
           <TableCell className="px-4 py-3.5 text-flag-critical tabular-nums">
@@ -231,7 +264,24 @@ export function QueueLeadRow({
             ) : null}
           </div>
         </TableCell>
-      </TableRow>
+      </ContextMenuTrigger>
+      <ContextMenuPopup>
+        <ContextMenuLinkItem href={`/app/cases/${row.id}/brief`}>Brief</ContextMenuLinkItem>
+        <ContextMenuLinkItem href={`/app/cases/${row.id}`}>Case file</ContextMenuLinkItem>
+        {row.crmUrl ? (
+          <ContextMenuLinkItem href={row.crmUrl} rel="noopener noreferrer" target="_blank">
+            Open in CRM
+          </ContextMenuLinkItem>
+        ) : null}
+        <ContextMenuSeparator />
+        <ContextMenuItem disabled={busy} onClick={() => openPanel("outcome")}>
+          Log outcome
+        </ContextMenuItem>
+        <ContextMenuItem disabled={busy} onClick={() => openPanel("assign")}>
+          Assign
+        </ContextMenuItem>
+      </ContextMenuPopup>
+      </ContextMenu>
       {reasoningOpen ? (
         <TableRow className="border-border/60 hover:bg-transparent">
           <TableCell colSpan={colSpan} className="px-4 py-3 whitespace-normal text-sm text-silver">

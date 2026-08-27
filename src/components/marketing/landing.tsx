@@ -15,10 +15,12 @@ import {
 import { WaitlistForm } from "@/components/marketing/waitlist-form";
 import { BentoCard, BentoGrid } from "@/components/ui/bento-grid";
 import { BlurFade } from "@/components/ui/blur-fade";
+import { AnimatedShinyText } from "@/components/ui/animated-shiny-text";
 import { Globe } from "@/components/ui/globe";
 import { Marquee } from "@/components/ui/marquee";
 import { Panel } from "@/components/ui/panel";
 import { Particles } from "@/components/ui/particles";
+import { TextAnimate } from "@/components/ui/text-animate";
 import {
   CASE_FILE,
   FAQ,
@@ -81,10 +83,24 @@ export function LandingPage() {
         />
         <div className={cn(marketingShell, "relative z-10 grid items-center gap-12 lg:grid-cols-2 lg:gap-16")}>
           <div className="animate-rise">
-            <StatusPill>Private · waitlist</StatusPill>
+            <StatusPill>
+              <AnimatedShinyText className="mx-0 max-w-none text-[11px] font-semibold tracking-[0.16em] text-brand-200 uppercase dark:text-brand-200">
+                Private · waitlist
+              </AnimatedShinyText>
+            </StatusPill>
             <p className="mt-5 text-[13px] font-medium text-brand-300">{HERO.eyebrow}</p>
             <h1 className={cn(marketingHeroTitle, "mt-4")}>
-              {headlineBefore}
+              <TextAnimate
+                animation="blurInUp"
+                as="span"
+                by="word"
+                className="inline"
+                duration={0.6}
+                once
+                startOnView={false}
+              >
+                {headlineBefore}
+              </TextAnimate>
               <span className="text-gradient">{HERO.headlineAccent}</span>
             </h1>
             <p className={cn(marketingSubhead, "mt-6 max-w-xl")}>{HERO.subhead}</p>

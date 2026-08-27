@@ -11,6 +11,7 @@ import {
 import type { SettingsSaveResult } from "@/app/app/settings/types";
 import { PushEnable } from "@/components/app/push-enable";
 import { SettingsFormCard } from "@/components/settings/settings-form-card";
+import { useSettingsToast } from "@/components/settings/use-settings-toast";
 import { SubmitButton } from "@/components/ui/button";
 import { Card, CardPanel } from "@/components/ui/card";
 import { CheckboxField } from "@/components/ui/checkbox";
@@ -23,7 +24,7 @@ import { USER_PREF_CHANNELS, USER_PREF_EVENTS } from "@/lib/notifications/consta
 import { defaultChannelEnabled } from "@/lib/notifications/defaults";
 import { CHANNEL_LABELS, EVENT_LABELS } from "@/lib/notifications/labels";
 import { preferenceLocked } from "@/lib/notifications/policy";
-import { errorClass, formMeasure, helperClass, successClass } from "@/lib/ui";
+import { errorClass, formMeasure, helperClass } from "@/lib/ui";
 import type { NotificationChannel, NotificationEventType } from "@/lib/notifications/types";
 import type { OrgRole } from "@/types/database";
 
@@ -50,6 +51,10 @@ export function NotificationSettingsForm({
   const [muteState, saveMute, mutePending] = useActionState(saveNotificationMute, idle);
   const [orgState, saveOrg, orgPending] = useActionState(saveOrgNotificationSettings, idle);
   const [testState, sendTest, testPending] = useActionState(sendTestNotification, idle);
+  useSettingsToast(prefState, prefPending);
+  useSettingsToast(muteState, mutePending);
+  useSettingsToast(orgState, orgPending);
+  useSettingsToast(testState, testPending, "Sent. Check that device or inbox.");
 
   const prefMap = new Map(prefs.map((row) => [`${row.event_type}:${row.channel}`, row.enabled]));
 
@@ -109,7 +114,6 @@ export function NotificationSettingsForm({
             ))}
           </div>
           {prefState.status === "error" ? <p className={errorClass}>{prefState.error}</p> : null}
-          {prefState.status === "saved" ? <p className={successClass}>Saved.</p> : null}
         </SettingsFormCard>
       </section>
 
@@ -141,7 +145,6 @@ export function NotificationSettingsForm({
             <CheckboxField name="clear_mute" label="End mute now" />
           ) : null}
           {muteState.status === "error" ? <p className={errorClass}>{muteState.error}</p> : null}
-          {muteState.status === "saved" ? <p className={successClass}>Saved.</p> : null}
         </SettingsFormCard>
       </section>
 
@@ -165,7 +168,6 @@ export function NotificationSettingsForm({
             ))}
           </div>
           {testState.status === "error" ? <p className={errorClass}>{testState.error}</p> : null}
-          {testState.status === "saved" ? <p className={successClass}>Sent. Check that device or inbox.</p> : null}
         </SettingsFormCard>
       </section>
 
@@ -202,7 +204,6 @@ export function NotificationSettingsForm({
             </Field>
             {teamsSaved ? <CheckboxField name="clear_teams" label="Remove Teams webhook" /> : null}
             {orgState.status === "error" ? <p className={errorClass}>{orgState.error}</p> : null}
-            {orgState.status === "saved" ? <p className={successClass}>Saved.</p> : null}
           </SettingsFormCard>
         </section>
       ) : null}

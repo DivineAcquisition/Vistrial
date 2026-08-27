@@ -15,8 +15,10 @@ import {
 import { LEAD_STATUS_LABELS, LEAD_STATUSES } from "@/lib/leads/labels";
 import type { QueueMemberOption } from "@/lib/queue/types";
 import { Button } from "@/components/ui/button";
+import { DateRangePicker } from "@/components/ui/date-picker";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
+import { ScoreRangeSlider } from "@/components/ui/slider-field";
 import { filterLabel } from "@/lib/ui";
 
 const SORT_LABELS: Record<CaseSort, string> = {
@@ -114,38 +116,14 @@ export function CasesFilters({
           ))}
         </Select>
       </label>
-      <label className="block">
-        <span className={filterLabel}>Score min</span>
-        <Input
-          type="number"
-          min={0}
-          max={100}
-          inputMode="numeric"
-          placeholder="Any"
-          density="compact"
-          value={filters.scoreMin ?? ""}
-          onChange={(event) => {
-            const value = event.target.value.trim();
-            apply({ scoreMin: value === "" ? null : Number(value) });
-          }}
+      <div>
+        <span className={filterLabel}>Score</span>
+        <ScoreRangeSlider
+          min={filters.scoreMin}
+          max={filters.scoreMax}
+          onCommit={(next) => apply(next)}
         />
-      </label>
-      <label className="block">
-        <span className={filterLabel}>Score max</span>
-        <Input
-          type="number"
-          min={0}
-          max={100}
-          inputMode="numeric"
-          placeholder="Any"
-          density="compact"
-          value={filters.scoreMax ?? ""}
-          onChange={(event) => {
-            const value = event.target.value.trim();
-            apply({ scoreMax: value === "" ? null : Number(value) });
-          }}
-        />
-      </label>
+      </div>
       <label className="block">
         <span className={filterLabel}>Setter</span>
         <Select
@@ -176,26 +154,15 @@ export function CasesFilters({
           ))}
         </Select>
       </label>
-      <label className="block">
-        <span className={filterLabel}>Opted in from</span>
-        <Input
-          type="date"
-          density="compact"
-          value={filters.optedFrom ?? ""}
-          onChange={(event) => apply({ optedFrom: event.target.value || null })}
-          placeholder="YYYY-MM-DD"
+      <div className="sm:col-span-2">
+        <span className={filterLabel}>Opted in</span>
+        <DateRangePicker
+          from={filters.optedFrom}
+          to={filters.optedTo}
+          onChange={(next) => apply({ optedFrom: next.from, optedTo: next.to })}
+          placeholder="Any opt-in dates"
         />
-      </label>
-      <label className="block">
-        <span className={filterLabel}>Opted in to</span>
-        <Input
-          type="date"
-          density="compact"
-          value={filters.optedTo ?? ""}
-          onChange={(event) => apply({ optedTo: event.target.value || null })}
-          placeholder="YYYY-MM-DD"
-        />
-      </label>
+      </div>
       <label className="block">
         <span className={filterLabel}>Sort</span>
         <Select

@@ -11,12 +11,15 @@ import {
 } from "@/app/app/settings/scoring/actions";
 import type { SettingsSaveResult } from "@/app/app/settings/types";
 import { Button, SubmitButton } from "@/components/ui/button";
+import { AnimatedCircularProgressBar } from "@/components/ui/animated-circular-progress-bar";
 import { Field } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Panel } from "@/components/ui/panel";
 import { Select } from "@/components/ui/select";
 import { CheckboxField } from "@/components/ui/checkbox";
+import { SliderField } from "@/components/ui/slider-field";
+import { useSettingsToast } from "@/components/settings/use-settings-toast";
 import { HOLDOUT_DEFAULT_PERCENT, HOLDOUT_MAX_PERCENT, HOLDOUT_PLAIN, HOLDOUT_DISABLED_PLAIN } from "@/lib/calibration/constants";
 import { overrideLeadScore } from "@/lib/scoring/override";
 import { computeReadinessScore, FACTOR_LABELS, SCORE_FACTORS, type ScoreWeights } from "@/lib/scoring/compute";
@@ -78,6 +81,12 @@ export function ScoringSettings({ config, maps: initialMaps, leads, lastGhostRun
   const [ghostStatus, setGhostStatus] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
 
+  useSettingsToast(
+    configState,
+    configPending,
+    "Saved. Existing score rows are unchanged.",
+  );
+
   const weightTotal =
     weights.timeline +
     weights.investment_capacity +
@@ -90,14 +99,6 @@ export function ScoringSettings({ config, maps: initialMaps, leads, lastGhostRun
     const extracted = extractFactors(previewLead.answers, maps);
     return computeReadinessScore(extracted.factors, weights);
   }, [previewLead, maps, weights]);
-
-  function updateWeight(factor: keyof ScoreWeights, value: string) {
-    const parsed = Number(value);
-    setWeights((current) => ({
-      ...current,
-      [factor]: Number.isInteger(parsed) ? parsed : current[factor],
-    }));
-  }
 
   return (
     <div className="space-y-8">
@@ -124,18 +125,17 @@ export function ScoringSettings({ config, maps: initialMaps, leads, lastGhostRun
               ["pain_severity", "Pain severity"],
             ] as const
           ).map(([key, label]) => (
-            <Field key={key} label={label} name={`${key}_weight`} htmlFor={`weight-${key}`}>
-              <Input
-                id={`weight-${key}`}
-                name={`${key}_weight`}
-                type="number"
-                min={0}
-                max={100}
-                step={1}
-                required
+            <Field key={key} label={label} name={`${key}_weight`} htmlFor={`weight-${key}`} className="sm:col-span-2">
+              <input type="hidden" name={`${key}_weight`} value={weights[key]} />
+              <SliderField
+                aria-label={label}
                 value={weights[key]}
-                onChange={(event) => updateWeight(key, event.target.value)}
-                placeholder="25"
+                onValueChange={(next) =>
+                  setWeights((current) => ({
+                    ...current,
+                    [key]: Math.round(next),
+                  }))
+                }
               />
             </Field>
           ))}
@@ -150,16 +150,11 @@ export function ScoringSettings({ config, maps: initialMaps, leads, lastGhostRun
             name="ready_threshold"
             help="At or above this total, the lead is on the ready track."
           >
-            <Input
-              id="ready_threshold"
-              name="ready_threshold"
-              type="number"
-              min={0}
-              max={100}
-              required
+            <input type="hidden" name="ready_threshold" value={readyThreshold} />
+            <SliderField
+              aria-label="Ready threshold"
               value={readyThreshold}
-              onChange={(event) => setReadyThreshold(Number(event.target.value))}
-              placeholder="70"
+              onValueChange={setReadyThreshold}
             />
           </Field>
           <Field label="Speed-to-lead minutes" name="speed_to_lead_minutes">
@@ -215,17 +210,13 @@ export function ScoringSettings({ config, maps: initialMaps, leads, lastGhostRun
                 className="mt-3 max-w-sm"
                 help={`Default ${HOLDOUT_DEFAULT_PERCENT}%. Cap ${HOLDOUT_MAX_PERCENT}%. These leads are not marked on the queue.`}
               >
-                <Input
-                  id="holdout_percent"
-                  name="holdout_percent"
-                  type="number"
-                  min={1}
+                <input type="hidden" name="holdout_percent" value={holdoutPercent} />
+                <SliderField
+                  aria-label="Holdout percent"
                   max={HOLDOUT_MAX_PERCENT}
-                  step={1}
-                  required
+                  min={1}
                   value={holdoutPercent}
-                  onChange={(event) => setHoldoutPercent(Number(event.target.value))}
-                  placeholder="10"
+                  onValueChange={setHoldoutPercent}
                 />
               </Field>
             ) : (
@@ -235,9 +226,6 @@ export function ScoringSettings({ config, maps: initialMaps, leads, lastGhostRun
 
           {configState.status === "error" ? (
             <p className={`${errorClass} sm:col-span-2`}>{configState.error}</p>
-          ) : null}
-          {configState.status === "saved" ? (
-            <p className={`${helperClass} sm:col-span-2`}>Saved. Existing score rows are unchanged.</p>
           ) : null}
 
           <div className="sm:col-span-2">
@@ -275,7 +263,18 @@ export function ScoringSettings({ config, maps: initialMaps, leads, lastGhostRun
               </Field>
             </div>
             {previewLead && pendingScore ? (
-              <dl className="mt-4 grid gap-3 sm:grid-cols-3">
+              <div className="mt-4 flex flex-wrap items-center gap-6">
+                {pendingScore.kind !== "unscored" ? (
+                  <AnimatedCircularProgressBar
+                    className="size-24 text-lg"
+                    gaugePrimaryColor="#9A88FC"
+                    gaugeSecondaryColor="rgba(255,255,255,0.12)"
+                    max={100}
+                    min={0}
+                    value={pendingScore.total}
+                  />
+                ) : null}
+                <dl className="grid flex-1 gap-3 sm:grid-cols-3">
                 <div>
                   <dt className={labelClass}>Current cached score</dt>
                   <dd className="text-sm text-card-foreground">
@@ -298,7 +297,8 @@ export function ScoringSettings({ config, maps: initialMaps, leads, lastGhostRun
                         : "No, nurture"}
                   </dd>
                 </div>
-              </dl>
+                </dl>
+              </div>
             ) : null}
             {pendingScore ? (
               <p className={`${helperClass} mt-3`}>{pendingScore.explanation}</p>

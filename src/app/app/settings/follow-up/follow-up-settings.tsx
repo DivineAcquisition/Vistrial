@@ -17,11 +17,14 @@ import { Button } from "@/components/ui/button";
 import { Checkbox, CheckboxField } from "@/components/ui/checkbox";
 import { Field } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
+import { SliderField } from "@/components/ui/slider-field";
 import { Textarea } from "@/components/ui/textarea";
 import { Panel } from "@/components/ui/panel";
 import { Select } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { SectionHeader } from "@/components/ui/section-header";
+import { useSettingsToast } from "@/components/settings/use-settings-toast";
+import { toastManager } from "@/components/ui/toast";
 import { MIN_VOICE_EXAMPLES } from "@/lib/follow-up/constants";
 import { FOLLOW_UP_BRANCH_LABELS, FOLLOW_UP_CHANNEL_LABELS } from "@/lib/follow-up/labels";
 import type { FollowUpSettings, RoutingRule, VoiceExample, VoiceProfile } from "@/lib/follow-up/types";
@@ -57,6 +60,9 @@ export function FollowUpSettingsScreen({
   const [rules, setRules] = useState(initialRules);
   const [ruleStatus, setRuleStatus] = useState<SettingsSaveResult>(idle);
   const [pending, startTransition] = useTransition();
+  const [smsMaxChars, setSmsMaxChars] = useState(voice.smsMaxChars);
+  useSettingsToast(voiceState, voicePending);
+  useSettingsToast(policyState, policyPending);
 
   return (
     <div className="space-y-10">
@@ -198,7 +204,14 @@ export function FollowUpSettingsScreen({
               <Input id="signoff_text" name="signoff_text" type="text" defaultValue={voice.signoffText ?? ""} placeholder="Talk soon," />
             </Field>
             <Field label="SMS length target" name="sms_max_chars">
-              <Input id="sms_max_chars" name="sms_max_chars" type="number" defaultValue={voice.smsMaxChars} placeholder="240" />
+              <input type="hidden" name="sms_max_chars" value={smsMaxChars} />
+              <SliderField
+                aria-label="SMS length target"
+                max={480}
+                min={80}
+                value={smsMaxChars}
+                onValueChange={setSmsMaxChars}
+              />
             </Field>
             <Field label="Email length target" name="email_max_chars">
               <Input
@@ -226,7 +239,6 @@ export function FollowUpSettingsScreen({
               />
             </Field>
             {voiceState.status === "error" ? <p className={errorClass}>{voiceState.error}</p> : null}
-            {voiceState.status === "saved" ? <p className="text-sm text-flag-good">Saved.</p> : null}
             <Button type="submit" variant="primary" size="lg" disabled={voicePending}>
               Save voice
             </Button>
@@ -289,7 +301,6 @@ export function FollowUpSettingsScreen({
               />
             </Field>
             {policyState.status === "error" ? <p className={errorClass}>{policyState.error}</p> : null}
-            {policyState.status === "saved" ? <p className="text-sm text-flag-good">Saved.</p> : null}
             <Button type="submit" variant="primary" size="lg" disabled={policyPending}>
               Save policy
             </Button>
@@ -361,7 +372,6 @@ export function FollowUpSettingsScreen({
             </div>
           ))}
           {ruleStatus.status === "error" ? <p className={errorClass}>{ruleStatus.error}</p> : null}
-          {ruleStatus.status === "saved" ? <p className="text-sm text-flag-good">Saved.</p> : null}
           <Button
             type="button"
             variant="primary"
@@ -369,7 +379,21 @@ export function FollowUpSettingsScreen({
             disabled={pending}
             onClick={() =>
               startTransition(async () => {
-                setRuleStatus(await saveRoutingRules(JSON.stringify(rules)));
+                const result = await saveRoutingRules(JSON.stringify(rules));
+                setRuleStatus(result);
+                if (result.status === "saved") {
+                  toastManager.add({
+                    title: "Saved",
+                    description: "Routing rules updated.",
+                    type: "success",
+                  });
+                } else if (result.status === "error") {
+                  toastManager.add({
+                    title: "Could not save",
+                    description: result.error,
+                    type: "error",
+                  });
+                }
               })
             }
           >

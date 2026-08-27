@@ -2,8 +2,11 @@
 
 import { useState } from "react";
 
+import { MemberCombobox } from "@/components/app/member-combobox";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { RemainingCount } from "@/components/ui/remaining-count";
+import { SegmentedRadioGroup } from "@/components/ui/segmented-radio";
 import { Select } from "@/components/ui/select";
 import { canAssignLeads } from "@/lib/auth/permissions";
 import {
@@ -92,49 +95,45 @@ export function OutcomePanel({
         One click on the result writes the touch. Channel and direction stay outbound call unless you change them.
       </p>
       <div className="mt-4 grid gap-4 sm:grid-cols-3">
-        <label className="block">
+        <div>
           <span className={labelClass}>Channel</span>
-          <Select
-            
-            value={channel}
-            onChange={(event) => setChannel(event.target.value as TouchChannel)}
-          >
-            {TOUCH_CHANNELS.map((value) => (
-              <option key={value} value={value}>
-                {TOUCH_CHANNEL_LABELS[value]}
-              </option>
-            ))}
-          </Select>
-        </label>
-        <label className="block">
+          <div className="mt-2">
+            <SegmentedRadioGroup
+              aria-label="Channel"
+              className="w-full"
+              onValueChange={(next) => setChannel(next as TouchChannel)}
+              options={TOUCH_CHANNELS.map((value) => ({
+                value,
+                label: TOUCH_CHANNEL_LABELS[value],
+              }))}
+              size="sm"
+              value={channel}
+            />
+          </div>
+        </div>
+        <div>
           <span className={labelClass}>Direction</span>
-          <Select
-            
-            value={direction}
-            onChange={(event) => setDirection(event.target.value as TouchDirection)}
-          >
-            {TOUCH_DIRECTIONS.map((value) => (
-              <option key={value} value={value}>
-                {value === "outbound" ? "Outbound" : "Inbound"}
-              </option>
-            ))}
-          </Select>
-        </label>
+          <div className="mt-2">
+            <SegmentedRadioGroup
+              aria-label="Direction"
+              onValueChange={(next) => setDirection(next as TouchDirection)}
+              options={TOUCH_DIRECTIONS.map((value) => ({
+                value,
+                label: value === "outbound" ? "Outbound" : "Inbound",
+              }))}
+              size="sm"
+              value={direction}
+            />
+          </div>
+        </div>
         {canPickActor ? (
-          <label className="block">
-            <span className={labelClass}>Actor</span>
-            <Select
-              
-              value={actorMemberId}
-              onChange={(event) => setActorMemberId(event.target.value)}
-            >
-              {members.map((member) => (
-                <option key={member.id} value={member.id}>
-                  {member.displayName}
-                </option>
-              ))}
-            </Select>
-          </label>
+          <MemberCombobox
+            label="Actor"
+            members={members}
+            allowEmpty={false}
+            value={actorMemberId}
+            onChange={setActorMemberId}
+          />
         ) : (
           <p className="self-end text-sm text-dim">Logged as you</p>
         )}
@@ -148,6 +147,7 @@ export function OutcomePanel({
           onChange={(event) => setNote(event.target.value)}
           placeholder="One short sentence if it helps"
         />
+        <RemainingCount max={280} value={note} />
       </label>
       <div className="mt-4 flex flex-wrap gap-2">
         {TOUCH_OUTCOMES.map((outcome) => (
@@ -221,26 +221,45 @@ export function AssignPanel({
         <p className={helperClass}>Setter and closer must be active members of this workspace.</p>
       )}
       <div className="mt-4 grid gap-4 sm:grid-cols-2">
-        <AssignmentSelect
-          label="Setter"
-          value={setterId}
-          currentId={row.assignedSetterId}
-          currentName={row.assignedSetterName}
-          memberId={memberId}
-          members={members}
-          canOthers={canOthers}
-          onChange={setSetterId}
-        />
-        <AssignmentSelect
-          label="Closer"
-          value={closerId}
-          currentId={row.assignedCloserId}
-          currentName={row.assignedCloserName}
-          memberId={memberId}
-          members={members}
-          canOthers={canOthers}
-          onChange={setCloserId}
-        />
+        {canOthers ? (
+          <>
+            <MemberCombobox
+              label="Setter"
+              members={members}
+              value={setterId}
+              onChange={setSetterId}
+            />
+            <MemberCombobox
+              label="Closer"
+              members={members}
+              value={closerId}
+              onChange={setCloserId}
+            />
+          </>
+        ) : (
+          <>
+            <AssignmentSelect
+              label="Setter"
+              value={setterId}
+              currentId={row.assignedSetterId}
+              currentName={row.assignedSetterName}
+              memberId={memberId}
+              members={members}
+              canOthers={canOthers}
+              onChange={setSetterId}
+            />
+            <AssignmentSelect
+              label="Closer"
+              value={closerId}
+              currentId={row.assignedCloserId}
+              currentName={row.assignedCloserName}
+              memberId={memberId}
+              members={members}
+              canOthers={canOthers}
+              onChange={setCloserId}
+            />
+          </>
+        )}
       </div>
       {!canOthers ? (
         <div className="mt-3 flex flex-wrap gap-2">

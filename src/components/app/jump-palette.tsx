@@ -19,6 +19,7 @@ import {
   CommandList,
   CommandShortcut,
 } from "@/components/ui/command";
+import { Kbd, KbdGroup } from "@/components/ui/kbd";
 import { NAV_GROUPS, PRIMARY_NAV, navVisibleTo } from "@/lib/navigation";
 
 type JumpItem = {
@@ -90,7 +91,10 @@ export function AppJumpPalette() {
           </CommandList>
           <CommandFooter>
             <span>Jump</span>
-            <CommandShortcut>⌘J</CommandShortcut>
+            <KbdGroup>
+              <Kbd>⌘</Kbd>
+              <Kbd>J</Kbd>
+            </KbdGroup>
           </CommandFooter>
         </Command>
       </CommandDialogPopup>

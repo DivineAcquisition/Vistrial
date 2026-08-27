@@ -13,6 +13,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
+import { DateRangePicker } from "@/components/ui/date-picker";
 import { filterLabel } from "@/lib/ui";
 
 const CATEGORY_LABELS: Record<ActivityCategory | "", string> = {
@@ -124,26 +125,15 @@ export function ActivityFiltersForm({
           </Select>
         </label>
       ) : null}
-      <label className="block">
-        <span className={filterLabel}>From</span>
-        <Input
-          density="compact"
-          type="date"
-          value={filters.from?.slice(0, 10) ?? ""}
-          onChange={(event) => apply({ from: event.target.value || null })}
-          placeholder="YYYY-MM-DD"
+      <div className="sm:col-span-2">
+        <span className={filterLabel}>Dates</span>
+        <DateRangePicker
+          from={filters.from?.slice(0, 10) ?? null}
+          to={filters.to?.slice(0, 10) ?? null}
+          onChange={(next) => apply({ from: next.from, to: next.to })}
+          placeholder="Any dates"
         />
-      </label>
-      <label className="block">
-        <span className={filterLabel}>To</span>
-        <Input
-          density="compact"
-          type="date"
-          value={filters.to?.slice(0, 10) ?? ""}
-          onChange={(event) => apply({ to: event.target.value || null })}
-          placeholder="YYYY-MM-DD"
-        />
-      </label>
+      </div>
       <div className="flex flex-col justify-end gap-3 sm:col-span-2 lg:col-span-4">
         <Switch
           checked={filters.failuresOnly}

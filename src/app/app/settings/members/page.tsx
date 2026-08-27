@@ -5,6 +5,7 @@ import {
   RevokeInviteButton,
 } from "@/app/app/settings/members/members-forms";
 import { PageFrame } from "@/components/app/page-frame";
+import { PersonAvatar } from "@/components/app/person-avatar";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Panel } from "@/components/ui/panel";
 import { StatusBadge } from "@/components/ui/status-badge";
@@ -82,7 +83,12 @@ export default async function MembersSettingsPage() {
               const platformLocked = platformAdminIds.has(member.user_id);
               return (
                 <TableRow key={member.id}>
-                  <TableCell className="text-white">{member.display_name}</TableCell>
+                  <TableCell className="text-white">
+                    <span className="inline-flex items-center gap-2">
+                      <PersonAvatar name={member.display_name} size="sm" />
+                      {member.display_name}
+                    </span>
+                  </TableCell>
                   <TableCell className="hidden break-all text-silver md:table-cell">
                     {member.email}
                   </TableCell>
@@ -161,7 +167,12 @@ export default async function MembersSettingsPage() {
             <TableBody>
               {(invites ?? []).map((invite) => (
                 <TableRow key={invite.id}>
-                  <TableCell className="break-all text-white">{invite.email}</TableCell>
+                <TableCell className="break-all text-white">
+                  <span className="inline-flex items-center gap-2">
+                    <PersonAvatar name={invite.email} size="sm" />
+                    {invite.email}
+                  </span>
+                </TableCell>
                   <TableCell className="capitalize text-silver">{invite.role}</TableCell>
                   <TableCell className="hidden text-silver md:table-cell">
                     {formatDayLong(invite.expires_at)}

@@ -313,6 +313,7 @@
   }
 
   html {
+    color-scheme: dark;
     scroll-behavior: smooth;
     -webkit-text-size-adjust: 100%;
     text-rendering: optimizeLegibility;
@@ -436,13 +437,57 @@
    * Auth stage. Centered form on a flat page. Small official crest, no gallery.
    */
   .auth-stage {
+    position: relative;
+    isolation: isolate;
+    overflow: hidden;
     min-height: 100svh;
     background: #07070b;
     color: #fff;
     -webkit-font-smoothing: antialiased;
   }
 
+  .auth-stage-atmosphere {
+    pointer-events: none;
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+  }
+
+  .auth-stage-glow {
+    position: absolute;
+    top: -18%;
+    left: 50%;
+    height: 34rem;
+    width: 46rem;
+    translate: -50% 0;
+    background: radial-gradient(ellipse at center, rgba(154, 136, 252, 0.34) 0%, transparent 68%);
+    filter: blur(72px);
+  }
+
+  .auth-stage-glow-aux {
+    position: absolute;
+    right: -12%;
+    bottom: 8%;
+    height: 22rem;
+    width: 22rem;
+    background: radial-gradient(ellipse at center, rgba(154, 136, 252, 0.14) 0%, transparent 70%);
+    filter: blur(56px);
+  }
+
+  .auth-stage-grid {
+    position: absolute;
+    inset: 0;
+    background-image:
+      linear-gradient(to right, rgba(255, 255, 255, 0.035) 1px, transparent 1px),
+      linear-gradient(to bottom, rgba(255, 255, 255, 0.035) 1px, transparent 1px);
+    background-size: 72px 72px;
+    mask-image: radial-gradient(ellipse 80% 60% at 50% 42%, black 18%, transparent 78%);
+    -webkit-mask-image: radial-gradient(ellipse 80% 60% at 50% 42%, black 18%, transparent 78%);
+  }
+
   .auth-stage-frame {
+    position: relative;
+    z-index: 1;
     display: flex;
     flex-direction: column;
     min-height: 100svh;
@@ -452,13 +497,27 @@
   }
 
   .auth-desk-inner {
-    width: min(24rem, 100%);
+    width: min(26rem, 100%);
     margin-inline: auto;
+    padding: 2.35rem 1.85rem 1.85rem;
     text-align: center;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    background:
+      linear-gradient(
+        180deg,
+        rgba(255, 255, 255, 0.05) 0%,
+        rgba(255, 255, 255, 0.012) 38%,
+        transparent 100%
+      ),
+      #0b0a11;
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.07),
+      0 28px 80px -32px rgba(0, 0, 0, 0.92),
+      0 0 90px -18px rgba(154, 136, 252, 0.42);
   }
 
   .auth-desk-inner--wide {
-    width: min(28rem, 100%);
+    width: min(30rem, 100%);
   }
 
   .auth-mark {
@@ -519,7 +578,7 @@
     font-weight: 500;
     letter-spacing: 0.2em;
     text-transform: uppercase;
-    color: rgba(255, 255, 255, 0.5);
+    color: rgba(195, 182, 254, 0.72);
   }
 
   .auth-notice {
@@ -536,16 +595,16 @@
   .auth-input {
     display: block;
     width: 100%;
-    height: 3rem;
-    min-height: 3rem;
+    height: 3.15rem;
+    min-height: 3.15rem;
     padding: 0 1rem 0 2.75rem;
     border-radius: 0;
-    border: 1px solid rgba(255, 255, 255, 0.12);
+    border: 1px solid rgba(255, 255, 255, 0.14);
     background:
-      linear-gradient(180deg, rgba(255, 255, 255, 0.035) 0%, transparent 42%),
-      rgba(6, 6, 8, 0.72);
+      linear-gradient(180deg, rgba(255, 255, 255, 0.045) 0%, transparent 42%),
+      rgba(6, 6, 8, 0.78);
     box-shadow:
-      inset 0 1px 0 rgba(255, 255, 255, 0.05),
+      inset 0 1px 0 rgba(255, 255, 255, 0.06),
       0 0 0 1px rgba(0, 0, 0, 0.35);
     color: #fff;
     font-size: 14.5px;
@@ -575,13 +634,14 @@
   .auth-input:focus,
   .auth-input:focus-visible {
     outline: none;
-    border-color: rgba(154, 136, 252, 0.62);
+    border-color: rgba(154, 136, 252, 0.72);
     background:
-      linear-gradient(180deg, rgba(154, 136, 252, 0.08) 0%, transparent 48%),
-      rgba(8, 8, 12, 0.82);
+      linear-gradient(180deg, rgba(154, 136, 252, 0.12) 0%, transparent 48%),
+      rgba(8, 8, 12, 0.88);
     box-shadow:
-      inset 0 1px 0 rgba(255, 255, 255, 0.06),
-      0 0 0 3px rgba(154, 136, 252, 0.14);
+      inset 0 1px 0 rgba(255, 255, 255, 0.07),
+      0 0 0 3px rgba(154, 136, 252, 0.18),
+      0 0 24px -8px rgba(154, 136, 252, 0.45);
   }
 
   .auth-input:disabled,
@@ -598,6 +658,11 @@
     height: 1rem;
     transform: translateY(-50%);
     color: rgba(163, 163, 163, 0.8);
+    transition: color 0.18s ease;
+  }
+
+  .auth-field:focus-within .auth-field-icon {
+    color: var(--color-brand-300);
   }
 
   .auth-field-action {
@@ -652,16 +717,16 @@
   }
 
   .auth-submit {
-    height: 3rem;
-    min-height: 3rem;
+    height: 3.15rem;
+    min-height: 3.15rem;
     font-size: 14px;
     font-weight: 600;
     letter-spacing: 0.06em;
     text-transform: uppercase;
     color: var(--color-ink-950);
     box-shadow:
-      inset 0 1px 0 rgba(255, 255, 255, 0.28),
-      0 12px 28px -16px rgba(154, 136, 252, 0.7);
+      inset 0 1px 0 rgba(255, 255, 255, 0.32),
+      0 14px 32px -14px rgba(154, 136, 252, 0.85);
   }
 
   .auth-submit:hover:not(:disabled) {
@@ -671,8 +736,8 @@
   }
 
   .auth-alt {
-    height: 3rem;
-    min-height: 3rem;
+    height: 3.15rem;
+    min-height: 3.15rem;
     border-color: rgba(255, 255, 255, 0.14);
     background: transparent;
     font-size: 13.5px;
@@ -1081,6 +1146,7 @@
  */
 .auth-stage,
 .auth-stage :is(button, a, input),
+.auth-desk-inner,
 .auth-input,
 .auth-field-action,
 .auth-submit,
@@ -1179,4 +1245,60 @@
   --sidebar-primary: var(--color-neutral-100);
   --sidebar-primary-foreground: var(--color-neutral-800);
   --sidebar-ring: var(--color-neutral-400);
+}
+
+/*
+ * Divine Acquisition wins. The coss CLI rewrites :root/.dark above this block;
+ * keep this last so brand-500 stays primary on a dark-only product. html always
+ * carries .dark, so both selectors must agree.
+ */
+:root,
+.dark {
+  --brand: #9a88fc;
+  --brand-rgb: 154, 136, 252;
+  --brand-deep: #6650d8;
+  --page: #07070b;
+  --hairline: rgba(255, 255, 255, 0.08);
+
+  --background: #07070b;
+  --foreground: #a3a3a3;
+  --card: #0b0a11;
+  --card-foreground: #ffffff;
+  --popover: #100f18;
+  --popover-foreground: #ffffff;
+  --primary: #9a88fc;
+  --primary-foreground: #07070b;
+  --secondary: #1e1940;
+  --secondary-foreground: #c3b6fe;
+  --muted: #100f18;
+  --muted-foreground: #858585;
+  --accent: #1e1940;
+  --accent-foreground: #c3b6fe;
+  --destructive: #f87171;
+  --destructive-foreground: #f87171;
+  --success: #52d6a4;
+  --success-foreground: #52d6a4;
+  --warning: #f0b45c;
+  --warning-foreground: #f0b45c;
+  --info: #ae9dfd;
+  --info-foreground: #c3b6fe;
+  --border: rgba(255, 255, 255, 0.08);
+  --input: rgba(255, 255, 255, 0.12);
+  --ring: #9a88fc;
+  --radius: 0.75rem;
+
+  --chart-1: #9a88fc;
+  --chart-2: #52d6a4;
+  --chart-3: #f0b45c;
+  --chart-4: #f87171;
+  --chart-5: #c3b6fe;
+
+  --sidebar: #0b0a11;
+  --sidebar-foreground: #a3a3a3;
+  --sidebar-primary: #9a88fc;
+  --sidebar-primary-foreground: #07070b;
+  --sidebar-accent: #1e1940;
+  --sidebar-accent-foreground: #c3b6fe;
+  --sidebar-border: rgba(255, 255, 255, 0.08);
+  --sidebar-ring: #9a88fc;
 }

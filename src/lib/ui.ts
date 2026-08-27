@@ -99,7 +99,7 @@ export const labelClass =
   "mb-2 inline-flex items-center gap-2 font-medium text-base/4.5 text-card-foreground sm:text-sm/4";
 
 const nativeFieldChrome =
-  "relative w-full min-w-0 rounded-lg border border-input bg-background text-base text-card-foreground shadow-xs/5 outline-none ring-ring/24 transition-shadow not-dark:bg-clip-padding placeholder:text-muted-foreground/72 focus-visible:border-ring focus-visible:ring-[3px] aria-invalid:border-destructive/36 focus-visible:aria-invalid:border-destructive/64 focus-visible:aria-invalid:ring-destructive/16 disabled:pointer-events-none disabled:opacity-64 dark:bg-input/32 dark:aria-invalid:ring-destructive/24 sm:text-sm";
+  "relative w-full min-w-0 rounded-lg border border-white/[0.09] bg-ink-850 text-base text-card-foreground shadow-[inset_0_1px_0_rgba(255,255,255,0.06)] outline-none ring-brand-500/20 transition-shadow not-dark:bg-clip-padding placeholder:text-muted-foreground/72 hover:not-disabled:border-white/[0.16] focus-visible:border-brand-500/55 focus-visible:ring-[3px] aria-invalid:border-destructive/36 focus-visible:aria-invalid:border-destructive/64 focus-visible:aria-invalid:ring-destructive/16 disabled:pointer-events-none disabled:opacity-64 dark:bg-ink-850 dark:aria-invalid:ring-destructive/24 sm:text-sm";
 
 export const inputClass = cn(
   nativeFieldChrome,
@@ -125,10 +125,10 @@ export const selectCompactClass = inputCompactClass;
 export const readonlyFieldClass = cn(inputClass, "pointer-events-none opacity-80");
 
 export const checkboxClass =
-  "relative inline-flex size-4.5 shrink-0 cursor-pointer appearance-none items-center justify-center rounded-[.25rem] border border-input bg-background shadow-xs/5 checked:border-primary checked:bg-primary sm:size-4 dark:not-checked:bg-input/32";
+  "relative inline-flex size-4.5 shrink-0 cursor-pointer appearance-none items-center justify-center rounded-[.25rem] border border-white/[0.14] bg-ink-850 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)] checked:border-primary checked:bg-primary sm:size-4 dark:not-checked:bg-ink-850";
 
 export const radioClass =
-  "relative inline-flex size-4.5 shrink-0 cursor-pointer appearance-none rounded-full border border-input bg-background shadow-xs/5 checked:border-[5px] checked:border-primary sm:size-4 dark:not-checked:bg-input/32";
+  "relative inline-flex size-4.5 shrink-0 cursor-pointer appearance-none rounded-full border border-white/[0.14] bg-ink-850 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)] checked:border-[5px] checked:border-primary sm:size-4 dark:not-checked:bg-ink-850";
 
 export const helperClass = "mt-1.5 text-xs leading-relaxed text-muted-foreground";
 

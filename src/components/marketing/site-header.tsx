@@ -56,7 +56,11 @@ export function SiteHeader({
   const onPage = action === "waitlist";
 
   return (
-    <header className="sticky top-0 z-50 border-b border-white/[0.06] bg-ink-950/75 backdrop-blur-xl">
+    <header className="relative sticky top-0 z-50 border-b border-white/[0.06] bg-ink-950/75 backdrop-blur-xl">
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-x-0 top-0 h-px bg-linear-to-r from-transparent via-brand-500/45 to-transparent"
+      />
       <div
         className={cn(
           marketingShell,
@@ -122,7 +126,7 @@ export function SiteHeader({
                     </DrawerClose>
                     <DrawerClose asChild>
                       <Button
-                        variant="primary"
+                        variant="gradient"
                         className="w-full"
                         render={<a href={waitlistHref("nav")} data-cta-position="nav" />}
                       >

@@ -35,7 +35,7 @@ export default async function BookPage({
         </div>
       </section>
       <section className="px-5 pb-20 sm:px-6">
-        <Panel className="animate-rise delay-3 mx-auto max-w-xl rounded-3xl p-6 sm:p-8">
+        <Panel className="animate-rise delay-3 mx-auto max-w-xl rounded-3xl border-white/[0.1] p-6 shadow-[0_24px_80px_-32px_rgba(0,0,0,0.85)] sm:p-8">
           <QualifyForm tracking={tracking} />
         </Panel>
       </section>

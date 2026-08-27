@@ -79,6 +79,7 @@ export function WaitlistForm({
           required
           placeholder={WAITLIST.nameLabel}
           className="sm:w-36"
+          size="lg"
         />
         <label htmlFor={`waitlist-email-${position}`} className="sr-only">
           {WAITLIST.emailLabel}
@@ -91,8 +92,9 @@ export function WaitlistForm({
           required
           placeholder={WAITLIST.emailLabel}
           className="min-w-0 flex-1"
+          size="lg"
         />
-        <Button type="submit" variant="primary" size="lg" loading={pending} loadingLabel={WAITLIST.pending}>
+        <Button type="submit" variant="gradient" size="lg" loading={pending} loadingLabel={WAITLIST.pending}>
           {WAITLIST.submit}
         </Button>
       </div>

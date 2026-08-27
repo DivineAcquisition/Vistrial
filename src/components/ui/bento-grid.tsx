@@ -43,7 +43,7 @@ function BentoCard({
   return (
     <Card
       className={cn(
-        "group relative col-span-3 flex flex-col justify-between overflow-hidden",
+        "group relative col-span-3 flex flex-col justify-between overflow-hidden panel-hover",
         className,
       )}
     >

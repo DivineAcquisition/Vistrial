@@ -74,11 +74,21 @@ export function AppShell({
   const wizard = pathname.startsWith("/app/onboarding");
 
   return (
-    <div className="flex min-h-screen bg-background text-card-foreground">
+    <div className="relative flex min-h-screen bg-ink-950 text-card-foreground">
+      <div aria-hidden className="pointer-events-none fixed inset-0 z-0 overflow-hidden">
+        <div
+          className="absolute -top-[22%] left-1/2 h-[520px] w-[820px] -translate-x-1/2"
+          style={{
+            background:
+              "radial-gradient(ellipse at center, rgba(154,136,252,0.16) 0%, transparent 70%)",
+            filter: "blur(64px)",
+          }}
+        />
+      </div>
       {wizard ? null : (
       <aside
         className={cn(
-          "sticky top-0 hidden h-svh shrink-0 flex-col border-r border-sidebar-border bg-sidebar transition-[width] duration-200 ease-out print:hidden md:flex",
+          "relative z-10 sticky top-0 hidden h-svh shrink-0 flex-col border-r border-white/[0.07] bg-ink-900/90 backdrop-blur-xl transition-[width] duration-200 ease-out print:hidden md:flex",
           collapsed ? "w-16" : "w-60"
         )}
       >
@@ -86,8 +96,8 @@ export function AppShell({
       </aside>
       )}
 
-      <div className="flex min-w-0 flex-1 flex-col">
-        <header className="sticky top-0 z-30 flex h-14 items-center gap-3 border-b border-border bg-background/85 px-4 backdrop-blur-md print:hidden sm:px-6">
+      <div className="relative z-10 flex min-w-0 flex-1 flex-col">
+        <header className="sticky top-0 z-30 flex h-14 items-center gap-3 border-b border-white/[0.07] bg-ink-950/80 px-4 backdrop-blur-xl print:hidden sm:px-6">
           {wizard ? null : (
           <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
             <SheetTrigger
@@ -103,7 +113,7 @@ export function AppShell({
             >
               <Menu className="size-5" aria-hidden="true" />
             </SheetTrigger>
-            <SheetContent side="left" className="w-64 bg-sidebar p-0 text-card-foreground" showCloseButton>
+            <SheetContent side="left" className="w-64 bg-ink-900 p-0 text-card-foreground" showCloseButton>
               <SheetHeader className="sr-only">
                 <SheetTitle>Navigation</SheetTitle>
               </SheetHeader>

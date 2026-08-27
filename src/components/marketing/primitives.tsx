@@ -100,9 +100,9 @@ export function FeatureCard({
   children: ReactNode;
 }) {
   return (
-    <Panel className="flex h-full flex-col p-6 sm:p-7">
+    <Panel className="panel-hover flex h-full flex-col p-6 sm:p-7">
       {step ? (
-        <p className="mb-5 text-4xl font-semibold leading-none tracking-tight text-white/15 tabular-nums">
+        <p className="mb-5 text-4xl font-semibold leading-none tracking-tight text-brand-500/25 tabular-nums">
           {step}
         </p>
       ) : null}
@@ -122,7 +122,7 @@ export function IconCard({
   children: ReactNode;
 }) {
   return (
-    <Panel className="flex h-full flex-col p-6">
+    <Panel className="panel-hover flex h-full flex-col p-6">
       <div className="flex size-10 items-center justify-center rounded-xl border border-brand-500/20 bg-brand-500/[0.1] text-brand-300">
         <Icon className="size-5" aria-hidden />
       </div>
@@ -152,7 +152,7 @@ export function ProductFrame({
           filter: "blur(28px)",
         }}
       />
-      <div className="relative overflow-hidden rounded-2xl border border-white/[0.1] bg-ink-850/90 shadow-[inset_0_1px_0_rgba(255,255,255,0.06),0_24px_80px_-32px_rgba(0,0,0,0.85)]">
+      <div className="relative overflow-hidden rounded-2xl border border-white/[0.1] bg-ink-850/90 shadow-[inset_0_1px_0_rgba(255,255,255,0.07),0_28px_90px_-32px_rgba(0,0,0,0.9)]">
         <BorderBeam
           size={80}
           duration={8}
@@ -216,7 +216,7 @@ export function FinalCta({
         className="pointer-events-none absolute inset-0"
         style={{
           background:
-            "radial-gradient(ellipse at top, rgba(154,136,252,0.18) 0%, transparent 55%)",
+            "radial-gradient(ellipse at top, rgba(154,136,252,0.22) 0%, transparent 55%)",
         }}
       />
       <div className="relative">

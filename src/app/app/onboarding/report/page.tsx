@@ -97,7 +97,7 @@ export default async function LeakReportPage() {
       title="Leak Report"
       description="Where your leads are going, from your own history."
       actions={
-        <Button variant="primary" size="lg" render={<Link href="/app/settings/business-profile" />}>
+        <Button variant="gradient" size="lg" render={<Link href="/app/settings/business-profile" />}>
           Turn Vistrial on
         </Button>
       }

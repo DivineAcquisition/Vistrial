@@ -27,9 +27,9 @@ export const marketingNavLink =
   "rounded-md px-2.5 py-1.5 text-sm font-medium text-silver transition-colors hover:text-white focus-visible:text-white";
 
 /** Marketing CTAs share the coss button recipes. */
-export const marketingBtnBase = buttonVariants({ variant: "primary", size: "lg" });
+export const marketingBtnBase = buttonVariants({ variant: "gradient", size: "lg" });
 
-export const marketingBtnPrimary = buttonVariants({ variant: "primary", size: "lg" });
+export const marketingBtnPrimary = buttonVariants({ variant: "gradient", size: "lg" });
 
 export const marketingBtnSecondary = buttonVariants({ variant: "outline", size: "lg" });
 

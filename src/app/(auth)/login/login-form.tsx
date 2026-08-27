@@ -47,7 +47,7 @@ export function LoginForm({
   }
 
   return (
-    <form action={action} className="space-y-4">
+    <form action={action} className="flex flex-col gap-4">
       <input type="hidden" name="redirectTo" value={redirectTo} />
 
       {error ? <p className={errorClass}>{LOGIN_ERROR_COPY[error]}</p> : null}

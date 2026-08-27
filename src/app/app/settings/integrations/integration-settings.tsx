@@ -213,7 +213,7 @@ export function IntegrationSettings(props: IntegrationSettingsProps) {
                 ))}
               </Select>
             </div>
-            <SubmitButton variant="primary" pending={locating} loadingLabel="Linking">
+            <SubmitButton variant="gradient" pending={locating} loadingLabel="Linking">
             Link location
           </SubmitButton>
             {locationState.status === "error" ? <p className={errorClass}>{locationState.error}</p> : null}
@@ -250,7 +250,7 @@ export function IntegrationSettings(props: IntegrationSettingsProps) {
 
         <div className="mt-6 flex flex-wrap gap-3">
           {props.oauthConfigured ? (
-            <Button variant="primary" size="lg" render={<a href="/api/ghl/oauth/start" />}>
+            <Button variant="gradient" size="lg" render={<a href="/api/ghl/oauth/start" />}>
               {props.connection.status === "active" || props.connection.status === "broken"
                 ? "Reconnect"
                 : "Connect GoHighLevel"}

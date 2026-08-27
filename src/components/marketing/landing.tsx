@@ -71,7 +71,7 @@ export function LandingPage() {
 
   return (
     <>
-      <section className={cn(marketingPageGutter, "relative overflow-hidden pb-20 pt-16 sm:pb-28 sm:pt-24")}>
+      <section className={cn(marketingPageGutter, "relative overflow-hidden pb-24 pt-16 sm:pb-32 sm:pt-24")}>
         <Particles
           className="absolute inset-0"
           quantity={48}
@@ -140,7 +140,7 @@ export function LandingPage() {
               </ul>
               <p className="mt-8 text-[15px] font-medium text-white">{PROBLEM.closing}</p>
             </Panel>
-            <Panel className="border-brand-500/20 p-6 sm:p-8">
+            <Panel className="border-brand-500/25 p-6 sm:p-8">
               <p className="text-[11px] font-semibold tracking-[0.16em] text-brand-300 uppercase">
                 Case file
               </p>

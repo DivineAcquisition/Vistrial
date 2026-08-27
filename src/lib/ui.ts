@@ -97,7 +97,7 @@ export const labelClass =
   "mb-2 inline-flex items-center gap-2 font-medium text-base/4.5 text-card-foreground sm:text-sm/4";
 
 const nativeFieldChrome =
-  "relative w-full min-w-0 rounded-lg border border-input bg-background text-base text-foreground shadow-xs/5 outline-none ring-ring/24 transition-shadow not-dark:bg-clip-padding placeholder:text-muted-foreground/72 focus-visible:border-ring focus-visible:ring-[3px] aria-invalid:border-destructive/36 focus-visible:aria-invalid:border-destructive/64 focus-visible:aria-invalid:ring-destructive/16 disabled:pointer-events-none disabled:opacity-64 dark:bg-input/32 dark:aria-invalid:ring-destructive/24 sm:text-sm";
+  "relative w-full min-w-0 rounded-lg border border-input bg-background text-base text-card-foreground shadow-xs/5 outline-none ring-ring/24 transition-shadow not-dark:bg-clip-padding placeholder:text-muted-foreground/72 focus-visible:border-ring focus-visible:ring-[3px] aria-invalid:border-destructive/36 focus-visible:aria-invalid:border-destructive/64 focus-visible:aria-invalid:ring-destructive/16 disabled:pointer-events-none disabled:opacity-64 dark:bg-input/32 dark:aria-invalid:ring-destructive/24 sm:text-sm";
 
 export const inputClass = cn(
   nativeFieldChrome,

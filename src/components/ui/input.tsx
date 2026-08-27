@@ -40,7 +40,7 @@ export function Input({
 }: InputProps): React.ReactElement {
   const resolvedSize = densitySize(density, size);
   const inputClassName = cn(
-    "h-8.5 w-full min-w-0 rounded-[inherit] px-[calc(--spacing(3)-1px)] text-foreground leading-8.5 outline-none [transition:background-color_5000000s_ease-in-out_0s] placeholder:text-muted-foreground/72 sm:h-7.5 sm:leading-7.5 autofill:[-webkit-text-fill-color:var(--foreground)]",
+    "h-8.5 w-full min-w-0 rounded-[inherit] px-[calc(--spacing(3)-1px)] text-card-foreground leading-8.5 outline-none [transition:background-color_5000000s_ease-in-out_0s] placeholder:text-muted-foreground/72 sm:h-7.5 sm:leading-7.5 autofill:[-webkit-text-fill-color:var(--card-foreground)]",
     resolvedSize === "sm" &&
       "h-7.5 px-[calc(--spacing(2.5)-1px)] leading-7.5 sm:h-6.5 sm:leading-6.5",
     resolvedSize === "lg" && "h-9.5 leading-9.5 sm:h-8.5 sm:leading-8.5",
@@ -117,7 +117,7 @@ export function InputGroup({
       <input
         data-slot="input"
         className={cn(
-          "h-8.5 w-full min-w-0 bg-transparent px-[calc(--spacing(3)-1px)] text-foreground leading-8.5 outline-none placeholder:text-muted-foreground/72 sm:h-7.5 sm:leading-7.5",
+          "h-8.5 w-full min-w-0 bg-transparent px-[calc(--spacing(3)-1px)] text-card-foreground leading-8.5 outline-none placeholder:text-muted-foreground/72 sm:h-7.5 sm:leading-7.5",
           resolvedSize === "sm" &&
             "h-7.5 px-[calc(--spacing(2.5)-1px)] leading-7.5 sm:h-6.5 sm:leading-6.5",
           resolvedSize === "lg" && "h-9.5 leading-9.5 sm:h-8.5 sm:leading-8.5",

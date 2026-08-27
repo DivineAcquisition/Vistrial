@@ -14,7 +14,6 @@ import {
 } from "@/components/marketing/primitives";
 import { WaitlistForm } from "@/components/marketing/waitlist-form";
 import { BentoCard, BentoGrid } from "@/components/ui/bento-grid";
-import { BlurFade } from "@/components/ui/blur-fade";
 import { AnimatedShinyText } from "@/components/ui/animated-shiny-text";
 import { Globe } from "@/components/ui/globe";
 import { Marquee } from "@/components/ui/marquee";
@@ -129,8 +128,7 @@ export function LandingPage() {
         </Marquee>
       </div>
 
-      <BlurFade inView>
-        <MarketingSection headline={PROBLEM.headline}>
+      <MarketingSection headline={PROBLEM.headline}>
           <div className="grid gap-5 lg:grid-cols-2">
             <Panel className="overflow-hidden p-0">
               <MagicCard className="h-full rounded-2xl p-6 sm:p-8">
@@ -165,11 +163,9 @@ export function LandingPage() {
               </MagicCard>
             </Panel>
           </div>
-        </MarketingSection>
-      </BlurFade>
+      </MarketingSection>
 
-      <BlurFade inView>
-        <MarketingSection id="case-file" headline={CASE_FILE.headline}>
+      <MarketingSection id="case-file" headline={CASE_FILE.headline}>
           <BentoGrid className="auto-rows-[16rem] grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
             {CASE_FILE.parts.map((part, index) => (
               <BentoCard
@@ -189,11 +185,9 @@ export function LandingPage() {
               />
             ))}
           </BentoGrid>
-        </MarketingSection>
-      </BlurFade>
+      </MarketingSection>
 
-      <BlurFade inView>
-        <MarketingSection id="moments" headline={MOMENTS.headline}>
+      <MarketingSection id="moments" headline={MOMENTS.headline}>
           <div className="grid gap-4 md:grid-cols-3">
             {MOMENTS.items.map((item, index) => (
               <FeatureCard
@@ -205,11 +199,9 @@ export function LandingPage() {
               </FeatureCard>
             ))}
           </div>
-        </MarketingSection>
-      </BlurFade>
+      </MarketingSection>
 
-      <BlurFade inView>
-        <MarketingSection headline={OUTCOME.headline} lead={<p>{OUTCOME.body}</p>}>
+      <MarketingSection headline={OUTCOME.headline} lead={<p>{OUTCOME.body}</p>}>
           <ul className="grid gap-4 sm:grid-cols-3">
             {OUTCOME.lines.map((line) => {
               const { lead, rest } = splitMetric(line);
@@ -221,14 +213,11 @@ export function LandingPage() {
             })}
           </ul>
           <p className={cn(marketingLead, "mt-10")}>{OUTCOME.honesty}</p>
-        </MarketingSection>
-      </BlurFade>
+      </MarketingSection>
 
-      <BlurFade inView>
-        <MarketingSection headline={GHL.headline} lead={<p>{GHL.body}</p>}>
+      <MarketingSection headline={GHL.headline} lead={<p>{GHL.body}</p>}>
           <GhlConnectVisual />
-        </MarketingSection>
-      </BlurFade>
+      </MarketingSection>
 
       <section
         id="waitlist"
@@ -245,11 +234,9 @@ export function LandingPage() {
         </div>
       </section>
 
-      <BlurFade inView>
-        <MarketingSection id="faq" headline={FAQ.headline} narrow align="center">
-          <FaqAccordion items={FAQ.items} />
-        </MarketingSection>
-      </BlurFade>
+      <MarketingSection id="faq" headline={FAQ.headline} narrow align="center">
+        <FaqAccordion items={FAQ.items} />
+      </MarketingSection>
     </>
   );
 }

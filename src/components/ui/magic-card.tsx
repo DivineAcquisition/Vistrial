@@ -15,8 +15,6 @@ type MagicCardProps = {
   gradientSize?: number;
   gradientColor?: string;
   gradientOpacity?: number;
-  gradientFrom?: string;
-  gradientTo?: string;
 };
 
 /**
@@ -30,8 +28,6 @@ export function MagicCard({
   gradientSize = 240,
   gradientColor = "rgba(154, 136, 252, 0.22)",
   gradientOpacity = 0.85,
-  gradientFrom = "#9A88FC",
-  gradientTo = "#6650d8",
 }: MagicCardProps) {
   const mouseX = useMotionValue(0);
   const mouseY = useMotionValue(0);
@@ -47,7 +43,6 @@ export function MagicCard({
   );
 
   const spotlight = useMotionTemplate`radial-gradient(${gradientSize}px circle at ${mouseX}px ${mouseY}px, ${gradientColor}, transparent 68%)`;
-  const rim = useMotionTemplate`radial-gradient(${gradientSize}px circle at ${mouseX}px ${mouseY}px, ${gradientFrom}, ${gradientTo}, transparent 72%)`;
 
   return (
     <div
@@ -61,20 +56,6 @@ export function MagicCard({
         aria-hidden
         className="pointer-events-none absolute inset-0 z-[1] rounded-[inherit]"
         style={{ background: spotlight, opacity: hover }}
-      />
-      <motion.div
-        aria-hidden
-        className="pointer-events-none absolute inset-0 z-[1] rounded-[inherit]"
-        style={{
-          opacity: hover,
-          padding: 1,
-          background: rim,
-          WebkitMask:
-            "linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0)",
-          WebkitMaskComposite: "xor",
-          mask: "linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0)",
-          maskComposite: "exclude",
-        }}
       />
     </div>
   );

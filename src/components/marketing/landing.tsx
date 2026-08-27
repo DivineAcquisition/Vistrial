@@ -88,19 +88,19 @@ export function LandingPage() {
                 Private · waitlist
               </AnimatedShinyText>
             </StatusPill>
-            <p className="mt-5 text-[13px] font-medium text-brand-300">{HERO.eyebrow}</p>
-            <h1 className={cn(marketingHeroTitle, "mt-4")}>
+            <p className="mt-5 text-[13px] font-medium text-brand-300">
               <TextAnimate
-                animation="blurInUp"
+                animation="fadeIn"
                 as="span"
                 by="word"
-                className="inline"
-                duration={0.6}
+                className="inline text-[13px] font-medium text-brand-300"
                 once
-                startOnView={false}
               >
-                {headlineBefore}
+                {HERO.eyebrow}
               </TextAnimate>
+            </p>
+            <h1 className={cn(marketingHeroTitle, "mt-4")}>
+              {headlineBefore}
               <span className="text-gradient">{HERO.headlineAccent}</span>
             </h1>
             <p className={cn(marketingSubhead, "mt-6 max-w-xl")}>{HERO.subhead}</p>

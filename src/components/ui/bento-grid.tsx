@@ -2,7 +2,6 @@ import { type ComponentPropsWithoutRef, type ElementType, type ReactNode } from 
 import { ArrowRight } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
 import { MagicCard } from "@/components/ui/magic-card";
 import { cn } from "@/lib/utils";
 
@@ -44,13 +43,12 @@ function BentoCard({
   return (
     <MagicCard
       className={cn(
-        "group relative col-span-3 flex flex-col justify-between overflow-hidden rounded-xl panel-hover",
+        "group relative col-span-3 flex h-full flex-col justify-between overflow-hidden rounded-2xl panel-hover",
         className,
       )}
     >
-      <Card className="relative z-10 flex h-full flex-col justify-between overflow-hidden border-0 bg-transparent shadow-none">
       <div>{background}</div>
-      <div className="p-4">
+      <div className="flex h-full flex-col justify-between p-4">
         <div className="pointer-events-none z-10 flex transform-gpu flex-col gap-1 transition-all duration-300 lg:group-hover:-translate-y-10">
           <Icon
             aria-hidden="true"
@@ -84,7 +82,6 @@ function BentoCard({
           <ArrowRight aria-hidden="true" />
         </Button>
       </div>
-    </Card>
     </MagicCard>
   );
 }

@@ -145,7 +145,7 @@ export function MagicCard({
       onPointerMove={handlePointerMove}
       style={{ background: borderBackground }}
     >
-      <div className="absolute inset-px z-20 rounded-[inherit] bg-background" />
+      <div className="absolute inset-px z-20 rounded-[inherit] bg-card" />
 
       {mode === "gradient" ? (
         <motion.div
@@ -177,7 +177,7 @@ export function MagicCard({
           suppressHydrationWarning
         />
       )}
-      <div className="relative z-40">{children}</div>
+      <div className="relative z-40 flex h-full min-h-0 flex-col">{children}</div>
     </motion.div>
   );
 }

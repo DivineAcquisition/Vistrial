@@ -16,6 +16,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select } from "@/components/ui/select";
 import { Panel } from "@/components/ui/panel";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Notice } from "@/components/ui/states";
 import { SectionHeader } from "@/components/ui/section-header";
 import { StatusBadge } from "@/components/ui/status-badge";
@@ -31,13 +32,8 @@ import {
 } from "@/lib/leads/labels";
 import { formatQueueDuration } from "@/lib/queue/duration";
 import {
-  btnGhost,
-  btnPrimary,
-  btnSecondary,
-  btnSizeSm,
   errorClass,
   helperClass,
-  inputClass,
   labelClass,
 } from "@/lib/ui";
 
@@ -92,12 +88,12 @@ export function CallDetailScreen({
             <p className="mt-1 text-sm text-silver">{detail.lead.name}</p>
           </div>
           <div className="flex flex-wrap gap-2">
-            <Link href={`/app/cases/${detail.lead.id}`} className={`${btnSecondary} ${btnSizeSm}`}>
+            <Button variant="secondary" size="sm" render={<Link href={`/app/cases/${detail.lead.id}`} />}>
               Case file
-            </Link>
-            <Link href={`/app/cases/${detail.lead.id}/brief`} className={`${btnPrimary} ${btnSizeSm}`}>
+            </Button>
+            <Button variant="primary" size="sm" render={<Link href={`/app/cases/${detail.lead.id}/brief`} />}>
               Pre-call brief
-            </Link>
+            </Button>
           </div>
         </div>
         <DefinitionList>
@@ -212,6 +208,7 @@ export function CallDetailScreen({
           title="Extraction failed"
           action={
             <Button
+              type="button"
               variant="destructive"
               size="sm"
               loading={busy}
@@ -233,14 +230,15 @@ export function CallDetailScreen({
           hint="Structure first. The transcript is the receipt."
           actions={
             call.rawTranscript && jobStatus !== "pending" ? (
-              <button
+              <Button
                 type="button"
-                className={`${btnSecondary} ${btnSizeSm}`}
+                variant="secondary"
+                size="sm"
                 disabled={busy}
                 onClick={() => run(() => reextractCall(call.id))}
               >
                 Re-extract
-              </button>
+              </Button>
             ) : null
           }
         />
@@ -252,6 +250,7 @@ export function CallDetailScreen({
                 className="mb-4"
                 action={
                   <Button
+                    type="button"
                     variant="secondary"
                     size="sm"
                     loading={busy}
@@ -478,9 +477,9 @@ function SignalField({
           {editing ? null : <p className="text-sm text-silver">{display}</p>}
         </div>
         {editing ? null : (
-          <button type="button" className={`${btnGhost} ${btnSizeSm}`} onClick={() => setEditing(true)}>
+          <Button type="button" variant="ghost" size="sm" onClick={() => setEditing(true)}>
             Correct
-          </button>
+          </Button>
         )}
       </div>
       {editing ? (
@@ -509,12 +508,12 @@ function SignalField({
           ) : null}
           <Textarea  rows={3} value={value} onChange={(event) => setValue(event.target.value)} />
           <div className="flex gap-2">
-            <button type="submit" className={`${btnPrimary} ${btnSizeSm}`} disabled={busy}>
+            <Button type="submit" variant="primary" size="sm" disabled={busy}>
               Save correction
-            </button>
-            <button type="button" className={`${btnGhost} ${btnSizeSm}`} onClick={() => setEditing(false)}>
+            </Button>
+            <Button type="button" variant="ghost" size="sm" onClick={() => setEditing(false)}>
               Cancel
-            </button>
+            </Button>
           </div>
         </form>
       ) : null}
@@ -553,16 +552,17 @@ function QuotesField({
           )}
         </div>
         {editing ? null : (
-          <button
+          <Button
             type="button"
-            className={`${btnGhost} ${btnSizeSm}`}
+            variant="ghost"
+            size="sm"
             onClick={() => {
               setRows(quotes.length > 0 ? quotes : [{ text: "", topic: "situation" }]);
               setEditing(true);
             }}
           >
             Correct
-          </button>
+          </Button>
         )}
       </div>
       {editing ? (
@@ -588,8 +588,8 @@ function QuotesField({
                   )
                 }
               />
-              <input
-                className={inputClass}
+              <Input
+                type="text"
                 value={row.topic}
                 onChange={(event) =>
                   setRows((current) =>
@@ -602,19 +602,20 @@ function QuotesField({
             </div>
           ))}
           <div className="flex flex-wrap gap-2">
-            <button
+            <Button
               type="button"
-              className={`${btnGhost} ${btnSizeSm}`}
+              variant="ghost"
+              size="sm"
               onClick={() => setRows((current) => [...current, { text: "", topic: "situation" }])}
             >
               Add quote
-            </button>
-            <button type="submit" className={`${btnPrimary} ${btnSizeSm}`} disabled={busy}>
+            </Button>
+            <Button type="submit" variant="primary" size="sm" disabled={busy}>
               Save correction
-            </button>
-            <button type="button" className={`${btnGhost} ${btnSizeSm}`} onClick={() => setEditing(false)}>
+            </Button>
+            <Button type="button" variant="ghost" size="sm" onClick={() => setEditing(false)}>
               Cancel
-            </button>
+            </Button>
           </div>
         </form>
       ) : null}
@@ -649,9 +650,9 @@ function PasteTranscript({
           onChange={(event) => setText(event.target.value)}
           required
         />
-        <button type="submit" className={`${btnPrimary} ${btnSizeSm}`} disabled={busy || !text.trim()}>
+        <Button type="submit" variant="primary" size="sm" disabled={busy || !text.trim()}>
           Save transcript
-        </button>
+        </Button>
       </form>
     </div>
   );

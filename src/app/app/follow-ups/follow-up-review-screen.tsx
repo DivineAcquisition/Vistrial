@@ -13,7 +13,9 @@ import {
   retryFollowUpSend,
   saveFollowUpEdit,
 } from "@/app/app/follow-ups/actions";
+import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { DefinitionList, KeyValue } from "@/components/ui/definition-list";
 import { Panel } from "@/components/ui/panel";
@@ -28,13 +30,8 @@ import type { FollowUpReviewPayload } from "@/lib/follow-up/types";
 import { formatDateTime } from "@/lib/format";
 import { formatQueueUntil } from "@/lib/queue/duration";
 import {
-  btnGhost,
-  btnPrimary,
-  btnSecondary,
-  btnSizeSm,
   errorClass,
   helperClass,
-  inputClass,
   labelClass,
 } from "@/lib/ui";
 
@@ -147,9 +144,9 @@ export function FollowUpReviewScreen({ initial }: { initial: FollowUpReviewPaylo
                 <label htmlFor="follow-up-subject" className={labelClass}>
                   Subject
                 </label>
-                <input
+                <Input
                   id="follow-up-subject"
-                  className={inputClass}
+                  type="text"
                   value={subject}
                   disabled={!editable || busy}
                   onChange={(event) => setSubject(event.target.value)}
@@ -171,30 +168,33 @@ export function FollowUpReviewScreen({ initial }: { initial: FollowUpReviewPaylo
             </p>
             {editable ? (
               <div className="mt-4 flex flex-wrap gap-2">
-                <button
+                <Button
                   type="button"
-                  className={`${btnSecondary} ${btnSizeSm}`}
+                  variant="secondary"
+                  size="sm"
                   disabled={busy}
                   onClick={() =>
                     run(() => saveFollowUpEdit({ draftId: draft.id, body, subject }))
                   }
                 >
                   Save edits
-                </button>
+                </Button>
               </div>
             ) : null}
             {draft.status === "sent" && draft.sentBody ? (
               <div className="mt-4">
                 <p className={labelClass}>Sent</p>
                 <p className="whitespace-pre-wrap text-sm text-silver">{draft.sentBody}</p>
-                <button
+                <Button
                   type="button"
-                  className={`${btnSecondary} ${btnSizeSm} mt-3`}
+                  variant="secondary"
+                  size="sm"
+                  className="mt-3"
                   disabled={busy}
                   onClick={() => run(() => promoteSentToVoiceExample(draft.id))}
                 >
                   Use as voice example
-                </button>
+                </Button>
               </div>
             ) : null}
           </Panel>
@@ -226,12 +226,12 @@ export function FollowUpReviewScreen({ initial }: { initial: FollowUpReviewPaylo
               )}
             </div>
             <div className="flex flex-wrap gap-2">
-              <Link href={`/app/calls/${draft.callId}`} className={`${btnSecondary} ${btnSizeSm}`}>
+              <Button variant="secondary" size="sm" render={<Link href={`/app/calls/${draft.callId}`} />}>
                 Full extraction and transcript
-              </Link>
-              <Link href={`/app/cases/${draft.leadId}`} className={`${btnGhost} ${btnSizeSm}`}>
+              </Button>
+              <Button variant="ghost" size="sm" render={<Link href={`/app/cases/${draft.leadId}`} />}>
                 Case file
-              </Link>
+              </Button>
             </div>
           </Panel>
         </section>
@@ -248,14 +248,16 @@ export function FollowUpReviewScreen({ initial }: { initial: FollowUpReviewPaylo
               disabled={busy}
               onChange={(event) => setInstruction(event.target.value)}
             />
-            <button
+            <Button
               type="button"
-              className={`${btnSecondary} ${btnSizeSm} mt-3`}
+              variant="secondary"
+              size="sm"
+              className="mt-3"
               disabled={busy}
               onClick={() => run(() => regenerateFollowUp({ draftId: draft.id, instruction }))}
             >
               Regenerate
-            </button>
+            </Button>
           </Panel>
           <Panel className="p-6">
             <p className={labelClass}>Reject</p>
@@ -266,14 +268,16 @@ export function FollowUpReviewScreen({ initial }: { initial: FollowUpReviewPaylo
               disabled={busy}
               onChange={(event) => setRejectReason(event.target.value)}
             />
-            <button
+            <Button
               type="button"
-              className={`${btnSecondary} ${btnSizeSm} mt-3`}
+              variant="secondary"
+              size="sm"
+              className="mt-3"
               disabled={busy}
               onClick={() => run(() => rejectFollowUp({ draftId: draft.id, reason: rejectReason }))}
             >
               Reject
-            </button>
+            </Button>
           </Panel>
         </section>
       ) : null}
@@ -283,24 +287,26 @@ export function FollowUpReviewScreen({ initial }: { initial: FollowUpReviewPaylo
           {!confirming ? (
             <div className="flex flex-wrap gap-2">
               {canApprove ? (
-                <button
+                <Button
                   type="button"
-                  className={`${btnPrimary} ${btnSizeSm}`}
+                  variant="primary"
+                  size="sm"
                   disabled={busy || !recipient}
                   onClick={() => setConfirming(true)}
                 >
                   Approve…
-                </button>
+                </Button>
               ) : null}
               {canRetry ? (
-                <button
+                <Button
                   type="button"
-                  className={`${btnPrimary} ${btnSizeSm}`}
+                  variant="primary"
+                  size="sm"
                   disabled={busy}
                   onClick={() => run(() => retryFollowUpSend(draft.id))}
                 >
                   Retry send
-                </button>
+                </Button>
               ) : null}
             </div>
           ) : (
@@ -336,9 +342,10 @@ export function FollowUpReviewScreen({ initial }: { initial: FollowUpReviewPaylo
                 </label>
               ) : null}
               <div className="flex flex-wrap gap-2">
-                <button
+                <Button
                   type="button"
-                  className={`${btnPrimary} ${btnSizeSm}`}
+                  variant="primary"
+                  size="sm"
                   disabled={busy || (draft.lowConfidence && !confirmLowConfidence)}
                   onClick={() =>
                     run(() =>
@@ -355,15 +362,16 @@ export function FollowUpReviewScreen({ initial }: { initial: FollowUpReviewPaylo
                   }
                 >
                   Confirm and send
-                </button>
-                <button
+                </Button>
+                <Button
                   type="button"
-                  className={`${btnGhost} ${btnSizeSm}`}
+                  variant="ghost"
+                  size="sm"
                   disabled={busy}
                   onClick={() => setConfirming(false)}
                 >
                   Cancel
-                </button>
+                </Button>
               </div>
             </div>
           )}
@@ -377,9 +385,11 @@ export function FollowUpReviewScreen({ initial }: { initial: FollowUpReviewPaylo
             This draft is part of a sequence. Later messages are drafted on a schedule and still
             require their own approval. Sending is never scheduled.
           </p>
-          <button
+          <Button
             type="button"
-            className={`${btnSecondary} ${btnSizeSm} mt-3`}
+            variant="secondary"
+            size="sm"
+            className="mt-3"
             disabled={busy}
             onClick={() =>
               run(() =>
@@ -391,7 +401,7 @@ export function FollowUpReviewScreen({ initial }: { initial: FollowUpReviewPaylo
             }
           >
             Halt this lead’s sequence
-          </button>
+          </Button>
         </Panel>
       ) : null}
     </div>

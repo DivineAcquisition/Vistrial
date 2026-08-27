@@ -30,6 +30,8 @@ import {
 import { AssignPanel, FollowOnPanel, OutcomePanel } from "@/components/app/lead-action-panels";
 import { useOrg } from "@/components/app/org-provider";
 import { DefinitionList, KeyValue } from "@/components/ui/definition-list";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select } from "@/components/ui/select";
 import { Panel } from "@/components/ui/panel";
@@ -69,13 +71,8 @@ import {
 import { FACTOR_LABELS, SCORE_FACTORS } from "@/lib/scoring/compute";
 import { overrideLeadScore } from "@/lib/scoring/override";
 import {
-  btnGhost,
-  btnPrimary,
-  btnSecondary,
-  btnSizeSm,
   errorClass,
   helperClass,
-  inputClass,
   labelClass,
 } from "@/lib/ui";
 
@@ -180,53 +177,56 @@ export function CaseFileScreen({ initial }: { initial: CaseFilePayload }) {
             </div>
           </div>
           <div className="flex flex-wrap gap-2">
-            <Link href={`/app/cases/${lead.id}/brief`} className={`${btnPrimary} ${btnSizeSm}`}>
+            <Button variant="primary" size="sm" render={<Link href={`/app/cases/${lead.id}/brief`} />}>
               Pre-call brief
-            </Link>
+            </Button>
             {lead.crmUrl ? (
-              <a
-                href={lead.crmUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className={`${btnPrimary} ${btnSizeSm}`}
+              <Button
+                variant="primary"
+                size="sm"
+                render={<a href={lead.crmUrl} target="_blank" rel="noopener noreferrer" />}
               >
                 Open in CRM
-              </a>
+              </Button>
             ) : null}
-            <button
+            <Button
               type="button"
-              className={`${btnSecondary} ${btnSizeSm}`}
+              variant="secondary"
+              size="sm"
               disabled={busy}
               onClick={() => setPanel(panel === "outcome" ? null : "outcome")}
             >
               Log outcome
-            </button>
-            <button
+            </Button>
+            <Button
               type="button"
-              className={`${btnSecondary} ${btnSizeSm}`}
+              variant="secondary"
+              size="sm"
               disabled={busy}
               onClick={() => setPanel(panel === "assign" ? null : "assign")}
             >
               Assign
-            </button>
+            </Button>
             {canOverride ? (
-              <button
+              <Button
                 type="button"
-                className={`${btnSecondary} ${btnSizeSm}`}
+                variant="secondary"
+                size="sm"
                 disabled={busy}
                 onClick={() => setPanel(panel === "override" ? null : "override")}
               >
                 Override score
-              </button>
+              </Button>
             ) : null}
-            <button
+            <Button
               type="button"
-              className={`${btnSecondary} ${btnSizeSm}`}
+              variant="secondary"
+              size="sm"
               disabled={busy}
               onClick={() => setPanel(panel === "status" ? null : "status")}
             >
               Change status
-            </button>
+            </Button>
           </div>
         </div>
         <DefinitionList>
@@ -408,9 +408,11 @@ export function CaseFileScreen({ initial }: { initial: CaseFilePayload }) {
                       Bounded to {sequenceRun.maxSteps} messages, ends {formatQueueUntil(sequenceRun.maxUntil, now)}.
                       Halted automatically on reply, booking, payment, or a closed status.
                     </p>
-                    <button
+                    <Button
                       type="button"
-                      className={`${btnSecondary} ${btnSizeSm} mt-3`}
+                      variant="secondary"
+                      size="sm"
+                      className="mt-3"
                       disabled={busy}
                       onClick={() =>
                         void run(() =>
@@ -419,7 +421,7 @@ export function CaseFileScreen({ initial }: { initial: CaseFilePayload }) {
                       }
                     >
                       Halt this sequence
-                    </button>
+                    </Button>
                   </div>
                 ))}
               </div>
@@ -439,9 +441,9 @@ export function CaseFileScreen({ initial }: { initial: CaseFilePayload }) {
                       {item.failureReason ? ` · ${item.failureReason}` : ""}
                     </p>
                     <div className="mt-3">
-                      <Link href={`/app/follow-ups/${item.id}`} className={`${btnPrimary} ${btnSizeSm}`}>
+                      <Button variant="primary" size="sm" render={<Link href={`/app/follow-ups/${item.id}`} />}>
                         Review draft
-                      </Link>
+                      </Button>
                     </div>
                   </li>
                 ))}
@@ -455,14 +457,15 @@ export function CaseFileScreen({ initial }: { initial: CaseFilePayload }) {
         <SectionHeader
           title="Next actions"
           actions={
-            <button
+            <Button
               type="button"
-              className={`${btnSecondary} ${btnSizeSm}`}
+              variant="secondary"
+              size="sm"
               disabled={busy}
               onClick={() => setPanel(panel === "createAction" ? null : "createAction")}
             >
               Create action
-            </button>
+            </Button>
           }
         />
         {panel === "createAction" ? (
@@ -550,9 +553,10 @@ export function CaseFileScreen({ initial }: { initial: CaseFilePayload }) {
           )}
           {file.timeline.hasMore ? (
             <div className="mt-4">
-              <button
+              <Button
                 type="button"
-                className={`${btnSecondary} ${btnSizeSm}`}
+                variant="secondary"
+                size="sm"
                 disabled={loadingOlder}
                 onClick={() => {
                   const last = file.timeline.entries[file.timeline.entries.length - 1];
@@ -573,7 +577,7 @@ export function CaseFileScreen({ initial }: { initial: CaseFilePayload }) {
                 }}
               >
                 {loadingOlder ? "Loading…" : "Load older"}
-              </button>
+              </Button>
             </div>
           ) : null}
         </Panel>
@@ -700,17 +704,18 @@ function ObjectionBlock({
         >
           <label className="min-w-[12rem] flex-1">
             <span className={labelClass}>Resolution note</span>
-            <input
-              className={inputClass}
+            <Input
+              type="text"
+              className="w-full"
               maxLength={280}
               value={note}
               onChange={(event) => setNote(event.target.value)}
               required
             />
           </label>
-          <button type="submit" className={`${btnSecondary} ${btnSizeSm}`} disabled={busy || !note.trim()}>
+          <Button type="submit" variant="secondary" size="sm" disabled={busy || !note.trim()}>
             Resolve
-          </button>
+          </Button>
         </form>
       ) : null}
     </div>
@@ -763,22 +768,24 @@ function NextActionBlock({
             ))}
           </Select>
         </label>
-        <button
+        <Button
           type="button"
-          className={`${btnSecondary} ${btnSizeSm}`}
+          variant="secondary"
+          size="sm"
           disabled={busy || ownerId === (item.ownerMemberId ?? "")}
           onClick={() => void onReassign(ownerId || null)}
         >
           Reassign
-        </button>
-        <button
+        </Button>
+        <Button
           type="button"
-          className={`${btnPrimary} ${btnSizeSm}`}
+          variant="primary"
+          size="sm"
           disabled={busy}
           onClick={() => void onComplete()}
         >
           Complete
-        </button>
+        </Button>
       </div>
     </div>
   );
@@ -924,12 +931,12 @@ function CallBlock({ call, now, leadId }: { call: CaseCall; now: string; leadId:
         </KeyValue>
       </DefinitionList>
       <div className="mt-4 flex flex-wrap gap-2">
-        <a href={`/app/calls/${call.id}`} className={`${btnSecondary} ${btnSizeSm}`}>
+        <Button variant="secondary" size="sm" render={<a href={`/app/calls/${call.id}`} />}>
           Open call
-        </a>
-        <a href={`/app/cases/${leadId}/brief`} className={`${btnPrimary} ${btnSizeSm}`}>
+        </Button>
+        <Button variant="primary" size="sm" render={<a href={`/app/cases/${leadId}/brief`} />}>
           Pre-call brief
-        </a>
+        </Button>
       </div>
     </Panel>
   );
@@ -999,12 +1006,11 @@ function OverridePanel({
         {SCORE_FACTORS.map((factor) => (
           <label key={factor} className="block">
             <span className={labelClass}>{FACTOR_LABELS[factor]}</span>
-            <input
+            <Input
               name={factor}
               type="number"
               min={0}
               max={100}
-              className={inputClass}
               placeholder="Unknown"
             />
           </label>
@@ -1015,12 +1021,12 @@ function OverridePanel({
         <Textarea name="reasoning" required rows={3}  />
       </label>
       <div className="mt-4 flex flex-wrap gap-2">
-        <button type="submit" className={`${btnPrimary} ${btnSizeSm}`} disabled={busy || pending}>
+        <Button type="submit" variant="primary" size="sm" disabled={busy || pending}>
           Save override
-        </button>
-        <button type="button" className={`${btnGhost} ${btnSizeSm}`} onClick={onCancel}>
+        </Button>
+        <Button type="button" variant="ghost" size="sm" onClick={onCancel}>
           Cancel
-        </button>
+        </Button>
       </div>
       {error ? <p className={errorClass}>{error}</p> : null}
     </form>
@@ -1075,8 +1081,8 @@ function StatusPanel({
       </label>
       <label className="mt-4 block">
         <span className={labelClass}>Why</span>
-        <input
-          className={inputClass}
+        <Input
+          type="text"
           maxLength={280}
           value={note}
           onChange={(event) => setNote(event.target.value)}
@@ -1084,12 +1090,12 @@ function StatusPanel({
         />
       </label>
       <div className="mt-4 flex flex-wrap gap-2">
-        <button type="submit" className={`${btnPrimary} ${btnSizeSm}`} disabled={busy || pending || !note.trim()}>
+        <Button type="submit" variant="primary" size="sm" disabled={busy || pending || !note.trim()}>
           Save status
-        </button>
-        <button type="button" className={`${btnGhost} ${btnSizeSm}`} onClick={onCancel}>
+        </Button>
+        <Button type="button" variant="ghost" size="sm" onClick={onCancel}>
           Cancel
-        </button>
+        </Button>
       </div>
       {error ? <p className={errorClass}>{error}</p> : null}
     </form>

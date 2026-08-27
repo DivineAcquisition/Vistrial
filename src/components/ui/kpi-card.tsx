@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import { ArrowDownRight, ArrowRight, ArrowUpRight } from "lucide-react";
 
+import { Card } from "@/components/ui/card";
 import { toneValueClass, type Tone } from "@/components/ui/tone";
 import { metricValue } from "@/lib/ui";
 import { cn } from "@/lib/utils";
@@ -47,7 +48,7 @@ export function Trend({
         <span className="sr-only">{spoken} </span>
         {value}
       </span>
-      {comparison ? <span className="text-dim">{comparison}</span> : null}
+      {comparison ? <span className="text-muted-foreground">{comparison}</span> : null}
     </span>
   );
 }
@@ -75,18 +76,18 @@ export function KpiCard({
   className?: string;
 }) {
   return (
-    <div
+    <Card
       className={cn(
-        "panel panel-hover rounded-2xl border-t-2 border-t-brand-500 p-5",
+        "panel-hover border-t-2 border-t-primary p-5",
         className
       )}
     >
-      <p className="text-[10px] font-semibold tracking-[0.15em] text-dim uppercase">{label}</p>
+      <p className="text-[10px] font-semibold tracking-[0.15em] text-muted-foreground uppercase">{label}</p>
       <p className={cn("mt-1.5", metricValue, toneValueClass(tone))}>{value}</p>
       {trend ? <div className="mt-1.5">{trend}</div> : null}
-      {sub ? <p className="mt-1 text-xs text-dim">{sub}</p> : null}
+      {sub ? <p className="mt-1 text-xs text-muted-foreground">{sub}</p> : null}
       {footer ? <div className="mt-3">{footer}</div> : null}
-    </div>
+    </Card>
   );
 }
 

@@ -1,4 +1,5 @@
 import { AnimatedList } from "@/components/ui/animated-list";
+import { Card } from "@/components/ui/card";
 import { NumberTicker } from "@/components/ui/number-ticker";
 import { Progress } from "@/components/ui/progress";
 import { StatusBadge } from "@/components/ui/status-badge";
@@ -196,11 +197,11 @@ function CasePart({
   children: React.ReactNode;
 }) {
   return (
-    <article className="panel rounded-xl p-4">
+    <Card className="rounded-xl p-4">
       <h3 className="text-base font-semibold text-white">{title}</h3>
       <p className="mt-2 max-w-2xl text-sm leading-relaxed text-silver">{body}</p>
       <div className="mt-5">{children}</div>
-    </article>
+    </Card>
   );
 }
 

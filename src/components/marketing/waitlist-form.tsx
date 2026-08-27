@@ -2,12 +2,12 @@
 
 import { useRef, useState, type FormEvent } from "react";
 
-import { ShimmerButton } from "@/components/ui/shimmer-button";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { trackMarketingEvent } from "@/components/marketing/track";
 import { submitWaitlist } from "@/lib/marketing/actions";
 import type { CtaPosition } from "@/lib/marketing/config";
 import { WAITLIST } from "@/lib/marketing/copy";
-import { marketingFieldCompact, marketingFieldCompactControl } from "@/lib/marketing/ui";
 import { errorClass, successClass } from "@/lib/ui";
 import { cn } from "@/lib/utils";
 
@@ -67,47 +67,34 @@ export function WaitlistForm({
       data-marketing-form="waitlist"
       className={cn("relative", className)}
     >
-      <div className="rounded-xl border border-white/[0.1] bg-ink-950/60 p-2 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]">
-        <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-        <div className={cn(marketingFieldCompact, "sm:w-36")}>
-          <label htmlFor={`waitlist-name-${position}`} className="sr-only">
-            {WAITLIST.nameLabel}
-          </label>
-          <input
-            id={`waitlist-name-${position}`}
-            name="name"
-            type="text"
-            autoComplete="name"
-            required
-            placeholder={WAITLIST.nameLabel}
-            className={marketingFieldCompactControl}
-          />
-        </div>
-        <div className={cn(marketingFieldCompact, "min-w-0 flex-1")}>
-          <label htmlFor={`waitlist-email-${position}`} className="sr-only">
-            {WAITLIST.emailLabel}
-          </label>
-          <input
-            id={`waitlist-email-${position}`}
-            name="email"
-            type="email"
-            autoComplete="email"
-            required
-            placeholder={WAITLIST.emailLabel}
-            className={marketingFieldCompactControl}
-          />
-        </div>
-        <ShimmerButton
-          type="submit"
-          disabled={pending}
-          background="rgb(154, 136, 252)"
-          shimmerColor="#ffffff"
-          borderRadius="8px"
-          className="h-10 w-full px-5 py-0 text-sm font-medium text-ink-950 sm:w-auto disabled:opacity-45"
-        >
-          {pending ? `${WAITLIST.pending}…` : WAITLIST.submit}
-        </ShimmerButton>
-        </div>
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+        <label htmlFor={`waitlist-name-${position}`} className="sr-only">
+          {WAITLIST.nameLabel}
+        </label>
+        <Input
+          id={`waitlist-name-${position}`}
+          name="name"
+          type="text"
+          autoComplete="name"
+          required
+          placeholder={WAITLIST.nameLabel}
+          className="sm:w-36"
+        />
+        <label htmlFor={`waitlist-email-${position}`} className="sr-only">
+          {WAITLIST.emailLabel}
+        </label>
+        <Input
+          id={`waitlist-email-${position}`}
+          name="email"
+          type="email"
+          autoComplete="email"
+          required
+          placeholder={WAITLIST.emailLabel}
+          className="min-w-0 flex-1"
+        />
+        <Button type="submit" variant="primary" size="lg" loading={pending} loadingLabel={WAITLIST.pending}>
+          {WAITLIST.submit}
+        </Button>
       </div>
       <div aria-hidden className="absolute -left-[9999px] h-0 w-0 overflow-hidden">
         <label>

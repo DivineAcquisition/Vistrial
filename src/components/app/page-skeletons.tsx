@@ -30,7 +30,7 @@ export function ListPageSkeleton({
   return (
     <PageFrame title={title} description={description}>
       <Loading label="Loading list" />
-      <div className="space-y-2">
+      <div className="flex flex-col gap-2">
         {Array.from({ length: rows }).map((_, index) => (
           <Skeleton key={index} className="h-16 w-full rounded-2xl" />
         ))}
@@ -51,7 +51,7 @@ export function TablePageSkeleton({
   return (
     <PageFrame title={title} description={description}>
       <Loading label="Loading table" />
-      <div className="panel overflow-hidden rounded-2xl">
+      <Panel className="overflow-hidden py-0">
         <div className="surface-sunken h-11 border-x-0 border-t-0" />
         {Array.from({ length: rows }).map((_, index) => (
           <div
@@ -63,7 +63,7 @@ export function TablePageSkeleton({
             <Skeleton className="ml-auto h-3.5 w-16" />
           </div>
         ))}
-      </div>
+      </Panel>
     </PageFrame>
   );
 }
@@ -77,11 +77,11 @@ export function ReportingPageSkeleton() {
       <Loading label="Loading reporting" />
       <div className="grid gap-4 sm:grid-cols-3">
         {Array.from({ length: 3 }).map((_, index) => (
-          <div key={index} className="panel rounded-2xl border-t-2 border-t-brand-500/40 px-5 py-4">
+          <Panel key={index} className="border-t-2 border-t-primary/40 px-5 py-4">
             <Skeleton className="h-2.5 w-24" />
             <Skeleton className="mt-3 h-7 w-20" />
             <Skeleton className="mt-3 h-2.5 w-28" />
-          </div>
+          </Panel>
         ))}
       </div>
       <Panel className="mt-6 p-6">
@@ -103,14 +103,14 @@ export function SettingsFormSkeleton({
     <PageFrame title={title} description="Loading this settings page.">
       <Loading label="Loading settings" />
       <Panel className="max-w-xl p-6">
-        <div className="space-y-4">
+        <div className="flex flex-col gap-4">
           {Array.from({ length: fields }).map((_, index) => (
             <div key={index}>
               <Skeleton className="mb-2 h-2.5 w-24" />
               <Skeleton className="h-10 w-full rounded-xl" />
             </div>
           ))}
-          <Skeleton className="mt-2 h-10 w-24 rounded-full" />
+          <Skeleton className="mt-2 h-10 w-24 rounded-lg" />
         </div>
       </Panel>
     </PageFrame>

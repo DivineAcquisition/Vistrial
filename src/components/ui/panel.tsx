@@ -1,10 +1,11 @@
 import Link from "next/link";
 
+import { Card } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 
 /**
- * The DA panel surface: a 1px gradient edge that catches light at the top. See
- * `.panel` in app/globals.css.
+ * The DA panel surface, now the coss Card so settings, lists, and marketing
+ * cards share one chrome.
  */
 export function Panel({
   children,
@@ -16,9 +17,12 @@ export function Panel({
   as?: "div" | "section" | "article" | "li";
 }) {
   return (
-    <Component className={cn("panel rounded-2xl", className)}>
+    <Card
+      render={Component === "div" ? undefined : <Component />}
+      className={className}
+    >
       {children}
-    </Component>
+    </Card>
   );
 }
 
@@ -32,14 +36,11 @@ export function PanelLink({
   className?: string;
 }) {
   return (
-    <Link
-      href={href}
-      className={cn(
-        "panel panel-hover block rounded-2xl p-5 focus-visible:outline-none",
-        className
-      )}
+    <Card
+      render={<Link href={href} />}
+      className={cn("panel-hover block p-5 focus-visible:outline-none", className)}
     >
       {children}
-    </Link>
+    </Card>
   );
 }

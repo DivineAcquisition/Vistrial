@@ -19,8 +19,6 @@ import { APP_NAME } from "@/lib/constants";
 import { waitlistHref } from "@/lib/marketing/config";
 import { HERO, NAV } from "@/lib/marketing/copy";
 import {
-  marketingBtnPrimary,
-  marketingBtnSecondary,
   marketingNavLink,
   marketingPageGutter,
   marketingShell,
@@ -96,7 +94,7 @@ export function SiteHeader({
                   className="md:hidden"
                   aria-label={NAV.openMenu}
                 >
-                  <Menu className="size-4" />
+                  <Menu className="size-4" aria-hidden="true" />
                 </Button>
               </DrawerTrigger>
               <DrawerPopup className="bg-ink-900 text-white" showCloseButton showBar>
@@ -118,18 +116,18 @@ export function SiteHeader({
                   </nav>
                   <div className="mt-6 flex flex-col gap-3">
                     <DrawerClose asChild>
-                      <a href="#case-file" className={cn(marketingBtnSecondary, "justify-center")}>
+                      <Button variant="outline" className="w-full" render={<a href="#case-file" />}>
                         {HERO.secondaryCta}
-                      </a>
+                      </Button>
                     </DrawerClose>
                     <DrawerClose asChild>
-                      <a
-                        href={waitlistHref("nav")}
-                        data-cta-position="nav"
-                        className={cn(marketingBtnPrimary, "w-full")}
+                      <Button
+                        variant="primary"
+                        className="w-full"
+                        render={<a href={waitlistHref("nav")} data-cta-position="nav" />}
                       >
                         {NAV.waitlist}
-                      </a>
+                      </Button>
                     </DrawerClose>
                   </div>
                 </DrawerPanel>

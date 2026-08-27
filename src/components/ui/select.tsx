@@ -10,7 +10,6 @@ import {
   ChevronUpIcon,
 } from "lucide-react";
 import * as React from "react";
-import { selectClass, selectCompactClass } from "@/lib/ui";
 import { cn } from "@/lib/utils";
 
 export const SelectRoot: typeof SelectPrimitive.Root = SelectPrimitive.Root;
@@ -325,26 +324,12 @@ function fireChange(
   } as React.ChangeEvent<HTMLSelectElement>);
 }
 
-function SelectChevron() {
-  return (
-    <svg className="field-select-chevron" viewBox="0 0 16 16" fill="none" aria-hidden>
-      <path
-        d="M4 6.2 8 10l4-3.8"
-        stroke="currentColor"
-        strokeWidth="1.6"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
-  );
-}
-
 /**
- * A labelled dropdown with the DA field shell and a coss/Base UI list.
+ * A labelled dropdown with the coss trigger and a Base UI list.
  *
  * The public API is still a native select: `name` posts with the form,
  * `onChange` receives `event.target.value`, and `<option>` children work.
- * `density="compact"` is the 40px filter-bar size.
+ * `density="compact"` is the filter-bar size.
  */
 export function Select({
   className,
@@ -408,8 +393,6 @@ export function Select({
       ? (emptyLabel ?? placeholder ?? "Select")
       : (placeholder ?? "Select");
 
-  const triggerClass = density === "compact" ? selectCompactClass : selectClass;
-
   return (
     <SelectRoot
       items={items}
@@ -430,28 +413,25 @@ export function Select({
           readOnly
         />
       ) : null}
-      <SelectPrimitive.Trigger
+      <SelectTrigger
         id={id}
+        size={density === "compact" ? "sm" : "lg"}
         aria-label={ariaLabel}
         aria-labelledby={ariaLabelledby}
         aria-invalid={ariaInvalid}
         aria-describedby={ariaDescribedby}
         onBlur={onBlur as React.FocusEventHandler<HTMLButtonElement> | undefined}
         onFocus={onFocus as React.FocusEventHandler<HTMLButtonElement> | undefined}
-        className={cn(triggerClass, "group", className)}
+        className={className}
       >
-        <SelectValue placeholder={valuePlaceholder} className="min-w-0 flex-1 truncate" />
-        <SelectPrimitive.Icon>
-          <SelectChevron />
-        </SelectPrimitive.Icon>
-      </SelectPrimitive.Trigger>
-      <SelectPopup alignItemWithTrigger={false} className="p-1.5">
+        <SelectValue placeholder={valuePlaceholder} />
+      </SelectTrigger>
+      <SelectPopup alignItemWithTrigger={false}>
         {resolved.map((option) => (
           <SelectItem
             key={`${option.value}:${option.label}`}
             value={toItemValue(option.value)}
             disabled={option.disabled}
-            className="field-select-item"
           >
             {option.label}
           </SelectItem>

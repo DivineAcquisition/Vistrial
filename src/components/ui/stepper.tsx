@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Check } from "lucide-react";
 
+import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 
 export type StepperStep = {
@@ -36,19 +37,13 @@ export function Stepper({
         {steps.map((step, index) => {
           const current = step.id === currentId;
           const done = step.done ?? false;
+          const variant = current ? "default" : done ? "secondary" : "outline";
 
           const content = (
             <>
               <span
-                aria-hidden
-                className={cn(
-                  "grid size-4 shrink-0 place-items-center rounded-full text-[10px] font-semibold",
-                  current
-                    ? "bg-brand-500 text-ink-950"
-                    : done
-                      ? "bg-brand-500/20 text-brand-300"
-                      : "border border-white/15 text-dim"
-                )}
+                aria-hidden="true"
+                className="grid size-4 shrink-0 place-items-center rounded-full bg-current/15 text-[10px] font-semibold"
               >
                 {done && !current ? <Check className="size-2.5" /> : index + 1}
               </span>
@@ -56,30 +51,23 @@ export function Stepper({
             </>
           );
 
-          const classes = cn(
-            "inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-[13px] transition-colors",
-            current
-              ? "border-brand-500/60 bg-brand-500/[0.12] text-white"
-              : done
-                ? "border-white/[0.12] bg-white/[0.03] text-silver hover:border-white/25 hover:text-white"
-                : "border-white/[0.08] text-dim hover:border-white/20 hover:text-white"
-          );
-
           return (
             <li key={step.id}>
-              {step.href ? (
-                <Link
-                  href={step.href}
-                  aria-current={current ? "step" : undefined}
-                  className={classes}
-                >
-                  {content}
-                </Link>
-              ) : (
-                <span aria-current={current ? "step" : undefined} className={classes}>
-                  {content}
-                </span>
-              )}
+              <Badge
+                variant={variant}
+                className="h-7 gap-2 rounded-full px-3"
+                render={
+                  step.href ? (
+                    <Link
+                      href={step.href}
+                      aria-current={current ? "step" : undefined}
+                    />
+                  ) : undefined
+                }
+                aria-current={!step.href && current ? "step" : undefined}
+              >
+                {content}
+              </Badge>
             </li>
           );
         })}

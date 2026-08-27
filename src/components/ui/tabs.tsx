@@ -8,7 +8,10 @@ import {
   type SegmentedControlSize,
   segmentedControlItemLayoutClassName,
   segmentedControlItemSizeClassNames,
+  segmentedControlItemVariants,
+  segmentedControlRootClassName,
 } from "@/lib/segmented-control";
+import { RadioGroup, RadioPrimitive } from "@/components/ui/radio-group";
 import { cn } from "@/lib/utils";
 
 type TabsVariant = "default" | "underline";
@@ -144,10 +147,12 @@ export function NavTabs({
   label: string;
   className?: string;
 }) {
+  const itemClassName = segmentedControlItemVariants({ state: "current" });
+
   return (
     <nav
       aria-label={label}
-      className={cn("flex flex-wrap gap-1 border-b border-white/[0.07] pb-px", className)}
+      className={cn(segmentedControlRootClassName, "flex-wrap", className)}
     >
       {items.map((item) => {
         const active = activeHref === item.href;
@@ -156,12 +161,7 @@ export function NavTabs({
             key={item.href}
             href={item.href}
             aria-current={active ? "page" : undefined}
-            className={cn(
-              "-mb-px inline-flex items-center gap-2 border-b-2 px-3 py-2.5 text-sm transition-colors",
-              active
-                ? "border-brand-500 text-white"
-                : "border-transparent text-silver hover:border-white/20 hover:text-white",
-            )}
+            className={itemClassName}
           >
             {item.label}
             {item.badge}
@@ -192,36 +192,30 @@ export function SegmentedControl<T extends string>({
   name?: string;
   className?: string;
 }) {
+  const itemClassName = segmentedControlItemVariants({
+    size: "default",
+    state: "checked",
+  });
+
   return (
-    <div
-      role="radiogroup"
+    <RadioGroup
+      value={value}
+      onValueChange={(next) => {
+        if (typeof next === "string") onChange(next as T);
+      }}
       aria-label={label}
-      className={cn(
-        "inline-flex items-center gap-0.5 rounded-full border border-white/[0.1] bg-white/[0.03] p-0.5",
-        className,
-      )}
+      className={cn(segmentedControlRootClassName, "flex-row", className)}
     >
       {name ? <input type="hidden" name={name} value={value} /> : null}
-      {options.map((option) => {
-        const active = option.value === value;
-        return (
-          <button
-            key={option.value}
-            type="button"
-            role="radio"
-            aria-checked={active}
-            onClick={() => onChange(option.value)}
-            className={cn(
-              "rounded-full px-3.5 py-1.5 text-[13px] font-medium transition-colors",
-              active
-                ? "bg-brand-500 text-ink-950"
-                : "text-silver hover:bg-white/[0.05] hover:text-white",
-            )}
-          >
-            {option.label}
-          </button>
-        );
-      })}
-    </div>
+      {options.map((option) => (
+        <RadioPrimitive.Root
+          key={option.value}
+          value={option.value}
+          className={itemClassName}
+        >
+          {option.label}
+        </RadioPrimitive.Root>
+      ))}
+    </RadioGroup>
   );
 }

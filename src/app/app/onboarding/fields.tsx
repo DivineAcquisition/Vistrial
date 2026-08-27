@@ -4,13 +4,14 @@ import { useMemo, useState, type ReactNode } from "react";
 
 import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
-import { InputGroup } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Input, InputGroup } from "@/components/ui/input";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { Select } from "@/components/ui/select";
 import type { Tone } from "@/components/ui/tone";
 import type { Choice } from "@/lib/profile/vocabulary";
 import type { DefaultSource, ProfileDefault, ProfileDefaults } from "@/lib/profile/types";
-import { btnSecondary, btnSizeSm, helperClass, inputClass, labelClass } from "@/lib/ui";
+import { helperClass, labelClass } from "@/lib/ui";
 
 const SOURCE_LABEL: Record<DefaultSource, string> = {
   saved: "Your answer",
@@ -68,10 +69,10 @@ export function TextField(props: {
   const meta = entry(props.defaults, props.field);
   return (
     <FieldShell field={props.field} defaults={props.defaults} label={props.label} htmlFor={props.name}>
-      <input
+      <Input
         id={props.name}
         name={props.name}
-        className={inputClass}
+        type="text"
         placeholder={props.placeholder}
         defaultValue={typeof meta.value === "string" ? meta.value : ""}
       />
@@ -127,7 +128,7 @@ export function ChoiceField<T extends string>(props: {
   const hint = props.choices.find((choice) => choice.value === current)?.hint;
   return (
     <FieldShell field={props.field} defaults={props.defaults} label={props.label} htmlFor={props.name}>
-      <Select id={props.name} name={props.name}  defaultValue={current}>
+      <Select id={props.name} name={props.name} defaultValue={current}>
         {props.allowEmpty ? <option value="">Not answered</option> : null}
         {props.choices.map((choice) => (
           <option key={choice.value} value={choice.value}>
@@ -263,7 +264,7 @@ export function RepeatableRows(props: {
     <FieldShell field={props.field} defaults={props.defaults} label={props.label}>
       <input type="hidden" name={props.name} value={JSON.stringify(rows)} readOnly />
       {rows.length === 0 ? <p className={helperClass}>{props.emptyLabel}</p> : null}
-      <div className="space-y-3">
+      <div className="flex flex-col gap-3">
         {rows.map((row, index) => (
           <div key={index} className="flex flex-wrap items-end gap-3">
             {props.columns.map((column) => (
@@ -271,7 +272,6 @@ export function RepeatableRows(props: {
                 <span className={labelClass}>{column.label}</span>
                 {column.kind === "select" ? (
                   <Select
-                    
                     value={row[column.key] ?? ""}
                     onChange={(event) => update(index, column.key, event.target.value)}
                   >
@@ -283,8 +283,7 @@ export function RepeatableRows(props: {
                     ))}
                   </Select>
                 ) : (
-                  <input
-                    className={inputClass}
+                  <Input
                     type={column.kind === "number" ? "number" : "text"}
                     placeholder={column.placeholder}
                     value={row[column.key] ?? ""}
@@ -293,20 +292,23 @@ export function RepeatableRows(props: {
                 )}
               </div>
             ))}
-            <button
+            <Button
               type="button"
-              className={`${btnSecondary} ${btnSizeSm}`}
+              variant="secondary"
+              size="sm"
               onClick={() => setRows((current) => current.filter((_, i) => i !== index))}
             >
               Remove
-            </button>
+            </Button>
           </div>
         ))}
       </div>
       {rows.length < max ? (
-        <button
+        <Button
           type="button"
-          className={`${btnSecondary} ${btnSizeSm} mt-3`}
+          variant="secondary"
+          size="sm"
+          className="mt-3"
           onClick={() =>
             setRows((current) => [
               ...current,
@@ -315,7 +317,7 @@ export function RepeatableRows(props: {
           }
         >
           {props.addLabel}
-        </button>
+        </Button>
       ) : null}
     </FieldShell>
   );
@@ -326,14 +328,14 @@ export function MoneyPerChannel(props: { channel: string; defaults: ProfileDefau
   const map = spend && typeof spend === "object" ? (spend as Record<string, number>) : {};
   const current = map[props.channel];
   return (
-    <input
+    <Input
       name={`spend_${props.channel}`}
       type="number"
       min={0}
       step="1"
       placeholder="spend / mo"
       defaultValue={current === undefined ? "" : String(current / 100)}
-      className={`${inputClass} w-28`}
+      className="w-28"
       aria-label={`Monthly spend on ${props.channel}`}
     />
   );

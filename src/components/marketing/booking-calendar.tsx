@@ -2,6 +2,7 @@
 
 import Script from "next/script";
 
+import { Card } from "@/components/ui/card";
 import { auditBookingEmbedScript } from "@/lib/marketing/config";
 
 export function BookingCalendar({
@@ -12,7 +13,7 @@ export function BookingCalendar({
   title: string;
 }) {
   return (
-    <div className="panel overflow-hidden rounded-3xl p-1.5 sm:p-2">
+    <Card className="overflow-hidden rounded-3xl p-1.5 sm:p-2">
       <div className="overflow-hidden rounded-[1.25rem] bg-ink-900">
         <iframe
           src={src}
@@ -24,6 +25,6 @@ export function BookingCalendar({
         />
       </div>
       <Script src={auditBookingEmbedScript()} strategy="afterInteractive" />
-    </div>
+    </Card>
   );
 }

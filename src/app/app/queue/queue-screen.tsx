@@ -588,7 +588,8 @@ export function QueueScreen({
               </p>
               <ul className="mt-4 space-y-3">
                 {pendingDrafts.map((item) => (
-                  <li key={item.id} className="panel rounded-2xl p-4">
+                  <li key={item.id}>
+                    <Panel className="p-4">
                     <p className="text-sm text-white">
                       {item.leadName} · {FOLLOW_UP_BRANCH_LABELS[item.branch]} ·{" "}
                       {FOLLOW_UP_CHANNEL_LABELS[item.channel]}
@@ -605,6 +606,7 @@ export function QueueScreen({
                         Review
                       </Link>
                     </div>
+                    </Panel>
                   </li>
                 ))}
               </ul>
@@ -642,7 +644,7 @@ export function QueueScreen({
                     onFollowOn={handleFollowOn}
                   />
                 </div>
-                <div className="panel mt-4 hidden overflow-hidden rounded-2xl md:block">
+                <Panel className="mt-4 hidden overflow-hidden py-0 md:block">
                 <Table>
                   <TableHeader>
                     <TableRow className="hover:bg-transparent">
@@ -681,7 +683,7 @@ export function QueueScreen({
                     ))}
                   </TableBody>
                 </Table>
-                </div>
+                </Panel>
               </>
             )}
           </section>
@@ -739,7 +741,7 @@ export function QueueScreen({
                   />
                 )}
               </div>
-              <div className="panel mt-4 hidden overflow-hidden rounded-2xl md:block">
+              <Panel className="mt-4 hidden overflow-hidden py-0 md:block">
                 <Table>
                   <TableHeader>
                     <TableRow className="hover:bg-transparent">
@@ -789,7 +791,7 @@ export function QueueScreen({
                     )}
                   </TableBody>
                 </Table>
-              </div>
+              </Panel>
               {hasMore ? (
                 <div className="mt-4 flex justify-center">
                   <button

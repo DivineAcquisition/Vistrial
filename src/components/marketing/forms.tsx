@@ -1,9 +1,12 @@
 "use client";
 
 import { useRef, useState, type FormEvent, type ReactNode } from "react";
-import { ChevronDown } from "lucide-react";
 
 import { SubmitButton } from "@/components/ui/button";
+import { Field, FieldLabel } from "@/components/ui/field";
+import { Input } from "@/components/ui/input";
+import { Select } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
 import { submitContact, submitQualification } from "@/lib/marketing/actions";
 import { BOOK, CONTACT_PAGE } from "@/lib/marketing/copy";
 import type { TrackingParamKey } from "@/lib/marketing/config";
@@ -13,42 +16,25 @@ import {
   OFFER_PRICE_OPTIONS,
   WHO_WORKS_LEADS_OPTIONS,
 } from "@/lib/marketing/qualify";
-import {
-  marketingField,
-  marketingFieldControl,
-  marketingFieldSelect,
-  marketingFormLabel,
-} from "@/lib/marketing/ui";
 import { errorClass } from "@/lib/ui";
 import { trackMarketingEvent } from "@/components/marketing/track";
 
-function Field({
+function FormRow({
   label,
   htmlFor,
   children,
-  className = "",
+  className,
 }: {
   label: string;
-  htmlFor?: string;
+  htmlFor: string;
   children: ReactNode;
   className?: string;
 }) {
   return (
-    <div className={className}>
-      <label htmlFor={htmlFor} className={marketingFormLabel}>
-        {label}
-      </label>
-      <div className={`${marketingField} mt-2`}>{children}</div>
-    </div>
-  );
-}
-
-function SelectChevron() {
-  return (
-    <ChevronDown
-      className="pointer-events-none absolute top-1/2 right-3.5 size-4 -translate-y-1/2 text-brand-300/80"
-      aria-hidden
-    />
+    <Field className={className}>
+      <FieldLabel htmlFor={htmlFor}>{label}</FieldLabel>
+      {children}
+    </Field>
   );
 }
 
@@ -111,33 +97,31 @@ export function QualifyForm({
       )}
 
       <div className="grid gap-4 sm:grid-cols-2">
-        <Field label="Full name" htmlFor="fullName">
-          <input
+        <FormRow label="Full name" htmlFor="fullName">
+          <Input
             id="fullName"
             name="fullName"
             type="text"
             autoComplete="name"
             required
             placeholder="Jordan Blake"
-            className={marketingFieldControl}
           />
-        </Field>
-        <Field label="Email" htmlFor="email">
-          <input
+        </FormRow>
+        <FormRow label="Email" htmlFor="email">
+          <Input
             id="email"
             name="email"
             type="email"
             autoComplete="email"
             required
             placeholder="you@company.com"
-            className={marketingFieldControl}
           />
-        </Field>
+        </FormRow>
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2">
-        <Field label="Phone" htmlFor="phone">
-          <input
+        <FormRow label="Phone" htmlFor="phone">
+          <Input
             id="phone"
             name="phone"
             type="tel"
@@ -145,29 +129,27 @@ export function QualifyForm({
             inputMode="tel"
             required
             placeholder="(555) 201-8890"
-            className={marketingFieldControl}
           />
-        </Field>
-        <Field label="Company name" htmlFor="companyName">
-          <input
+        </FormRow>
+        <FormRow label="Company name" htmlFor="companyName">
+          <Input
             id="companyName"
             name="companyName"
             type="text"
             autoComplete="organization"
             required
             placeholder="Your company"
-            className={marketingFieldControl}
           />
-        </Field>
+        </FormRow>
       </div>
 
-      <Field label="Roughly what does a typical month of revenue look like?" htmlFor="monthlyRevenue">
-        <select
+      <FormRow label="Roughly what does a typical month of revenue look like?" htmlFor="monthlyRevenue">
+        <Select
           id="monthlyRevenue"
           name="monthlyRevenue"
           required
           defaultValue=""
-          className={marketingFieldSelect}
+          placeholder="Select one"
         >
           <option value="" disabled>
             Select one
@@ -177,12 +159,11 @@ export function QualifyForm({
               {option}
             </option>
           ))}
-        </select>
-        <SelectChevron />
-      </Field>
+        </Select>
+      </FormRow>
 
-      <Field label="Do you already run GoHighLevel?" htmlFor="usesGhl">
-        <select id="usesGhl" name="usesGhl" required defaultValue="" className={marketingFieldSelect}>
+      <FormRow label="Do you already run GoHighLevel?" htmlFor="usesGhl">
+        <Select id="usesGhl" name="usesGhl" required defaultValue="" placeholder="Select one">
           <option value="" disabled>
             Select one
           </option>
@@ -191,17 +172,16 @@ export function QualifyForm({
               {option}
             </option>
           ))}
-        </select>
-        <SelectChevron />
-      </Field>
+        </Select>
+      </FormRow>
 
-      <Field label="Who works inbound leads today?" htmlFor="whoWorksLeads">
-        <select
+      <FormRow label="Who works inbound leads today?" htmlFor="whoWorksLeads">
+        <Select
           id="whoWorksLeads"
           name="whoWorksLeads"
           required
           defaultValue=""
-          className={marketingFieldSelect}
+          placeholder="Select one"
         >
           <option value="" disabled>
             Select one
@@ -211,18 +191,11 @@ export function QualifyForm({
               {option.label}
             </option>
           ))}
-        </select>
-        <SelectChevron />
-      </Field>
+        </Select>
+      </FormRow>
 
-      <Field label="What is the offer priced at?" htmlFor="offerPrice">
-        <select
-          id="offerPrice"
-          name="offerPrice"
-          required
-          defaultValue=""
-          className={marketingFieldSelect}
-        >
+      <FormRow label="What is the offer priced at?" htmlFor="offerPrice">
+        <Select id="offerPrice" name="offerPrice" required defaultValue="" placeholder="Select one">
           <option value="" disabled>
             Select one
           </option>
@@ -231,9 +204,8 @@ export function QualifyForm({
               {option}
             </option>
           ))}
-        </select>
-        <SelectChevron />
-      </Field>
+        </Select>
+      </FormRow>
 
       <div aria-hidden className="absolute -left-[9999px] h-0 w-0 overflow-hidden">
         <label>
@@ -289,7 +261,7 @@ export function ContactForm() {
   }
 
   if (sent) {
-    return <p className="text-sm leading-relaxed text-silver">{CONTACT_PAGE.sent}</p>;
+    return <p className="text-sm leading-relaxed text-muted-foreground">{CONTACT_PAGE.sent}</p>;
   }
 
   return (
@@ -300,35 +272,27 @@ export function ContactForm() {
       data-marketing-form="contact"
       className="relative grid gap-4"
     >
-      <Field label="Name" htmlFor="contact-name">
-        <input
+      <FormRow label="Name" htmlFor="contact-name">
+        <Input
           id="contact-name"
           name="fullName"
           type="text"
           autoComplete="name"
           required
-          className={marketingFieldControl}
         />
-      </Field>
-      <Field label="Email" htmlFor="contact-email">
-        <input
+      </FormRow>
+      <FormRow label="Email" htmlFor="contact-email">
+        <Input
           id="contact-email"
           name="email"
           type="email"
           autoComplete="email"
           required
-          className={marketingFieldControl}
         />
-      </Field>
-      <Field label="Message" htmlFor="contact-message">
-        <textarea
-          id="contact-message"
-          name="message"
-          required
-          rows={5}
-          className={`${marketingFieldControl} min-h-32 resize-y py-3`}
-        />
-      </Field>
+      </FormRow>
+      <FormRow label="Message" htmlFor="contact-message">
+        <Textarea id="contact-message" name="message" required rows={5} className="min-h-32" />
+      </FormRow>
       <div aria-hidden className="absolute -left-[9999px] h-0 w-0 overflow-hidden">
         <label>
           Website

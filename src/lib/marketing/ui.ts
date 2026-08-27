@@ -1,3 +1,4 @@
+import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
 /**
@@ -25,21 +26,21 @@ export const marketingCardTitle = "text-[15px] font-semibold tracking-tight text
 export const marketingNavLink =
   "rounded-md px-2.5 py-1.5 text-sm font-medium text-silver transition-colors hover:text-white focus-visible:text-white";
 
-/** Marketing CTAs: rectangle with round corners. Do not use the app pill recipes here. */
-export const marketingBtnBase =
-  "inline-flex shrink-0 items-center justify-center gap-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors duration-150 select-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-500/80 disabled:pointer-events-none disabled:opacity-45 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0";
+/** Marketing CTAs share the coss button recipes. */
+export const marketingBtnBase = buttonVariants({ variant: "primary", size: "lg" });
 
-export const marketingBtnPrimary = `${marketingBtnBase} h-10 px-5 bg-brand-500 text-ink-950 hover:bg-brand-400`;
+export const marketingBtnPrimary = buttonVariants({ variant: "primary", size: "lg" });
 
-export const marketingBtnSecondary = `${marketingBtnBase} h-10 px-5 border border-white/[0.12] bg-transparent text-white hover:border-white/25 hover:bg-white/[0.04]`;
+export const marketingBtnSecondary = buttonVariants({ variant: "outline", size: "lg" });
 
-export const marketingBtnPrimarySm = `${marketingBtnBase} h-9 px-3.5 bg-brand-500 text-ink-950 hover:bg-brand-400`;
+export const marketingBtnPrimarySm = buttonVariants({ variant: "primary", size: "sm" });
 
 export const marketingTextLink =
   "inline-flex items-center gap-1.5 text-sm font-medium text-silver transition-colors hover:text-white";
 
 /** DA QualifyGate labels: sentence case, white, tight tracking — not the app's uppercase dim labels. */
-export const marketingFormLabel = "block text-[13px] font-semibold tracking-tight text-white";
+export const marketingFormLabel =
+  "inline-flex items-center gap-2 font-medium text-base/4.5 text-card-foreground sm:text-sm/4";
 
 export const marketingField = cn(
   "relative rounded-lg border border-white/[0.09]",

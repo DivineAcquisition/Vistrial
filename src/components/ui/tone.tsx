@@ -1,5 +1,12 @@
+import type { ReactNode } from "react";
 import { formatPercent } from "@/lib/format";
 import { cn } from "@/lib/utils";
+import { Badge, type BadgeProps } from "@/components/ui/badge";
+import {
+  Meter as CossMeter,
+  MeterIndicator,
+  MeterTrack,
+} from "@/components/ui/meter";
 
 /**
  * Status vocabulary ported from the DA hiring site. The brand stays the action
@@ -8,28 +15,28 @@ import { cn } from "@/lib/utils";
  */
 export type Tone = "brand" | "neutral" | "good" | "warning" | "critical";
 
-const TONE_CLASSES: Record<Tone, string> = {
-  brand: "border-brand-500/30 bg-brand-500/[0.12] text-brand-200",
-  neutral: "border-white/10 bg-white/[0.04] text-silver",
-  good: "border-flag-good/30 bg-flag-good/[0.12] text-flag-good",
-  warning: "border-flag-warning/30 bg-flag-warning/[0.12] text-flag-warning",
-  critical: "border-flag-critical/30 bg-flag-critical/[0.12] text-flag-critical",
+const TONE_VARIANT: Record<Tone, NonNullable<BadgeProps["variant"]>> = {
+  brand: "default",
+  neutral: "outline",
+  good: "success",
+  warning: "warning",
+  critical: "error",
 };
 
 const DOT_CLASSES: Record<Tone, string> = {
-  brand: "bg-brand-500",
-  neutral: "bg-dim",
-  good: "bg-flag-good",
-  warning: "bg-flag-warning",
-  critical: "bg-flag-critical",
+  brand: "bg-primary",
+  neutral: "bg-muted-foreground",
+  good: "bg-success",
+  warning: "bg-warning",
+  critical: "bg-destructive",
 };
 
 const VALUE_CLASSES: Record<Tone, string> = {
-  brand: "text-brand-300",
-  neutral: "text-white",
-  good: "text-flag-good",
-  warning: "text-flag-warning",
-  critical: "text-flag-critical",
+  brand: "text-primary",
+  neutral: "text-card-foreground",
+  good: "text-success",
+  warning: "text-warning",
+  critical: "text-destructive",
 };
 
 export function toneValueClass(tone: Tone): string {
@@ -41,43 +48,41 @@ export function TonePill({
   tone = "neutral",
   className,
 }: {
-  children: React.ReactNode;
+  children: ReactNode;
   tone?: Tone;
   className?: string;
 }) {
   return (
-    <span
+    <Badge
+      variant={TONE_VARIANT[tone]}
       className={cn(
-        "inline-flex shrink-0 items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-[11px] font-semibold whitespace-nowrap",
-        TONE_CLASSES[tone],
-        className
+        tone === "good" && "text-success",
+        tone === "warning" && "text-warning",
+        tone === "critical" && "text-destructive",
+        className,
       )}
     >
       {children}
-    </span>
+    </Badge>
   );
 }
 
 export function Dot({ tone = "brand" }: { tone?: Tone }) {
   return (
     <span
-      aria-hidden
-      className={cn("h-1.5 w-1.5 shrink-0 rounded-full", DOT_CLASSES[tone])}
+      aria-hidden="true"
+      className={cn("size-1.5 shrink-0 rounded-full", DOT_CLASSES[tone])}
     />
   );
 }
 
 export function Meter({ value, tone = "brand" }: { value: number; tone?: Tone }) {
   return (
-    <div className="h-1.5 w-full overflow-hidden rounded-full bg-white/[0.08]">
-      <div
-        className={cn(
-          "h-full rounded-full transition-[width] duration-500",
-          DOT_CLASSES[tone]
-        )}
-        style={{ width: `${Math.min(100, Math.max(0, value * 100))}%` }}
-      />
-    </div>
+    <CossMeter value={Math.min(100, Math.max(0, value * 100))} className="gap-0">
+      <MeterTrack className="h-1.5 rounded-full">
+        <MeterIndicator className={DOT_CLASSES[tone]} />
+      </MeterTrack>
+    </CossMeter>
   );
 }
 

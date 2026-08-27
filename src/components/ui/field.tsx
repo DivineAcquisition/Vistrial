@@ -1,9 +1,10 @@
 "use client";
 
+import type { ReactNode } from "react";
 import { Field as FieldPrimitive } from "@base-ui/react/field";
 import type React from "react";
-import type { ReactNode } from "react";
-import { errorClass, helperClass, labelClass } from "@/lib/ui";
+import { Fieldset, FieldsetLegend } from "@/components/ui/fieldset";
+import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
 
 export function FieldRoot({
@@ -72,30 +73,24 @@ function LabeledField({
   const { id, helpId, errorId } = fieldIds(name, htmlFor);
 
   return (
-    <div className={cn("min-w-0", className)}>
-      <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
-        <label className={cn(labelClass, "mb-0")} htmlFor={id}>
+    <FieldRoot className={cn("w-full", className)} invalid={Boolean(error)}>
+      <div className="flex w-full flex-wrap items-center justify-between gap-2">
+        <FieldLabel htmlFor={id}>
           {label}
           {required ? (
-            <span className="ml-1 text-flag-critical" aria-hidden>
+            <span className="text-destructive" aria-hidden="true">
               *
             </span>
           ) : null}
-        </label>
+        </FieldLabel>
         {labelAside}
       </div>
       {children}
       {help ? (
-        <p id={helpId} className={helperClass}>
-          {help}
-        </p>
+        <FieldDescription id={helpId}>{help}</FieldDescription>
       ) : null}
-      {error ? (
-        <p id={errorId} className={errorClass} role="alert">
-          {error}
-        </p>
-      ) : null}
-    </div>
+      {error ? <FieldError id={errorId}>{error}</FieldError> : null}
+    </FieldRoot>
   );
 }
 
@@ -111,15 +106,15 @@ export function ChoiceRow({
   className?: string;
 }) {
   return (
-    <label className={cn("flex cursor-pointer items-start gap-3 text-sm text-white", className)}>
+    <Label className={cn("flex cursor-pointer items-start gap-3 text-sm", className)}>
       <span className="mt-0.5 flex">{control}</span>
       <span className="min-w-0">
         <span className="block">{label}</span>
         {description ? (
-          <span className="mt-0.5 block text-xs leading-relaxed text-dim">{description}</span>
+          <span className="mt-0.5 block text-xs leading-relaxed text-muted-foreground">{description}</span>
         ) : null}
       </span>
-    </label>
+    </Label>
   );
 }
 
@@ -140,16 +135,14 @@ export function FieldGroup({
 }) {
   const cols = { 1: "", 2: "sm:grid-cols-2", 3: "sm:grid-cols-3" }[columns];
   return (
-    <fieldset className={cn("min-w-0", className)}>
-      <legend className={labelClass}>{legend}</legend>
-      <div className={cn("grid gap-2.5", cols)}>{children}</div>
-      {help ? <p className={helperClass}>{help}</p> : null}
-      {error ? (
-        <p className={errorClass} role="alert">
-          {error}
-        </p>
-      ) : null}
-    </fieldset>
+    <FieldRoot className={cn("w-full", className)} invalid={Boolean(error)}>
+      <Fieldset className="flex min-w-0 flex-col gap-2">
+        <FieldsetLegend>{legend}</FieldsetLegend>
+        <div className={cn("grid gap-2.5", cols)}>{children}</div>
+        {help ? <FieldDescription>{help}</FieldDescription> : null}
+        {error ? <FieldError>{error}</FieldError> : null}
+      </Fieldset>
+    </FieldRoot>
   );
 }
 
@@ -171,7 +164,7 @@ export function FieldLabel({
   return (
     <FieldPrimitive.Label
       className={cn(
-        "inline-flex items-center gap-2 font-medium text-base/4.5 text-foreground data-disabled:opacity-64 sm:text-sm/4",
+        "inline-flex items-center gap-2 font-medium text-base/4.5 text-card-foreground data-disabled:opacity-64 sm:text-sm/4",
         className,
       )}
       data-slot="field-label"
@@ -212,7 +205,7 @@ export function FieldError({
 }: FieldPrimitive.Error.Props): React.ReactElement {
   return (
     <FieldPrimitive.Error
-      className={cn("text-destructive-foreground text-xs", className)}
+      className={cn("text-destructive text-xs", className)}
       data-slot="field-error"
       {...props}
     />

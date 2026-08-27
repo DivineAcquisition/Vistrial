@@ -35,25 +35,21 @@ function LabeledProgress({
   const percent = max === 0 ? 0 : Math.round((clamped / max) * 100);
 
   return (
-    <div className={className}>
-      <div className="mb-1.5 flex items-baseline justify-between gap-3">
-        <span className="text-xs text-silver">{label}</span>
-        <span className="text-xs tabular-nums text-dim">{valueLabel ?? `${percent}%`}</span>
+    <ProgressPrimitive.Root
+      value={percent}
+      className={cn("flex w-full flex-col gap-2", className)}
+      data-slot="progress"
+    >
+      <div className="flex items-baseline justify-between gap-3">
+        <ProgressLabel className="text-xs text-muted-foreground">{label}</ProgressLabel>
+        <span className="text-xs tabular-nums text-muted-foreground">
+          {valueLabel ?? `${percent}%`}
+        </span>
       </div>
-      <div
-        role="progressbar"
-        aria-valuenow={clamped}
-        aria-valuemin={0}
-        aria-valuemax={max}
-        aria-label={label}
-        className="h-2 w-full overflow-hidden rounded-full bg-white/[0.07]"
-      >
-        <div
-          className={cn("h-full rounded-full transition-[width] duration-500", FILL[tone])}
-          style={{ width: `${percent}%` }}
-        />
-      </div>
-    </div>
+      <ProgressTrack>
+        <ProgressIndicator className={FILL[tone]} />
+      </ProgressTrack>
+    </ProgressPrimitive.Root>
   );
 }
 

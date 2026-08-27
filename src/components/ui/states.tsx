@@ -1,6 +1,13 @@
 import type { ReactNode } from "react";
-import { AlertTriangle, CheckCircle2, Info, Loader2 } from "lucide-react";
+import { AlertTriangle, CheckCircle2, Info } from "lucide-react";
 
+import {
+  Alert,
+  AlertAction,
+  AlertDescription,
+  AlertTitle,
+} from "@/components/ui/alert";
+import { Spinner } from "@/components/ui/spinner";
 import { cn } from "@/lib/utils";
 
 /**
@@ -13,11 +20,14 @@ import { cn } from "@/lib/utils";
 
 export type NoticeTone = "info" | "success" | "warning" | "critical";
 
-const NOTICE: Record<NoticeTone, { border: string; text: string; icon: typeof Info }> = {
-  info: { border: "border-white/[0.1]", text: "text-silver", icon: Info },
-  success: { border: "border-flag-good/35", text: "text-flag-good", icon: CheckCircle2 },
-  warning: { border: "border-flag-warning/40", text: "text-flag-warning", icon: AlertTriangle },
-  critical: { border: "border-flag-critical/40", text: "text-flag-critical", icon: AlertTriangle },
+const NOTICE: Record<
+  NoticeTone,
+  { variant: "info" | "success" | "warning" | "error"; icon: typeof Info }
+> = {
+  info: { variant: "info", icon: Info },
+  success: { variant: "success", icon: CheckCircle2 },
+  warning: { variant: "warning", icon: AlertTriangle },
+  critical: { variant: "error", icon: AlertTriangle },
 };
 
 export function Notice({
@@ -37,21 +47,12 @@ export function Notice({
   const Icon = meta.icon;
 
   return (
-    <div
-      role={tone === "critical" ? "alert" : undefined}
-      className={cn(
-        "flex flex-wrap items-start gap-3 rounded-xl border bg-white/[0.02] px-4 py-3",
-        meta.border,
-        className
-      )}
-    >
-      <Icon className={cn("mt-0.5 size-4 shrink-0", meta.text)} aria-hidden />
-      <div className="min-w-0 flex-1 text-sm leading-relaxed">
-        {title ? <p className={cn("font-medium", meta.text)}>{title}</p> : null}
-        {children ? <div className={cn(title ? "mt-1 text-silver" : meta.text)}>{children}</div> : null}
-      </div>
-      {action ? <div className="shrink-0">{action}</div> : null}
-    </div>
+    <Alert variant={meta.variant} className={className}>
+      <Icon />
+      {title ? <AlertTitle>{title}</AlertTitle> : null}
+      {children ? <AlertDescription>{children}</AlertDescription> : null}
+      {action ? <AlertAction>{action}</AlertAction> : null}
+    </Alert>
   );
 }
 
@@ -74,8 +75,8 @@ export function LoadingOverlay({
       </div>
       {active ? (
         <div className="absolute inset-0 grid place-items-center">
-          <span className="surface-raised flex items-center gap-2 rounded-full px-3.5 py-1.5 text-xs text-white">
-            <Loader2 className="size-3.5 animate-spin" aria-hidden />
+          <span className="inline-flex items-center gap-2 rounded-lg border border-input bg-popover px-3.5 py-1.5 text-xs text-card-foreground shadow-xs/5">
+            <Spinner className="size-3.5" />
             {label}
           </span>
         </div>
@@ -87,8 +88,8 @@ export function LoadingOverlay({
 /** A spinner with a label, for a region with nothing to show yet. */
 export function LoadingRegion({ label = "Loading", className }: { label?: string; className?: string }) {
   return (
-    <div className={cn("flex items-center justify-center gap-2 px-6 py-12 text-sm text-dim", className)}>
-      <Loader2 className="size-4 animate-spin" aria-hidden />
+    <div className={cn("flex items-center justify-center gap-2 px-6 py-12 text-sm text-muted-foreground", className)}>
+      <Spinner className="size-4" />
       <span role="status">{label}</span>
     </div>
   );

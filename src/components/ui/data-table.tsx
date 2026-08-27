@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 
+import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   Table,
@@ -51,7 +52,7 @@ export function DataTable({
   className?: string;
 }) {
   return (
-    <div className={cn("panel overflow-hidden rounded-2xl", className)}>
+    <Card className={cn("overflow-hidden py-0", className)}>
       <Table>
         {caption ? <caption className="sr-only">{caption}</caption> : null}
         <TableHeader>
@@ -77,14 +78,14 @@ export function DataTable({
                     key={column.key}
                     className={cn(column.hideOnMobile && "hidden sm:table-cell")}
                   >
-                    <Skeleton className="h-4 w-24 bg-white/[0.07]" />
+                    <Skeleton className="h-4 w-24" />
                   </TableCell>
                 ))}
               </TableRow>
             ))
           ) : rows.length === 0 ? (
             <TableRow className="hover:bg-transparent">
-              <TableCell colSpan={columns.length} className="px-4 py-12 text-center text-sm text-dim">
+              <TableCell colSpan={columns.length} className="px-4 py-12 text-center text-sm text-muted-foreground">
                 {empty}
               </TableCell>
             </TableRow>
@@ -96,7 +97,7 @@ export function DataTable({
                     key={column.key}
                     align={column.align}
                     className={cn(
-                      columnIndex === 0 ? "font-medium text-white" : "text-silver",
+                      columnIndex === 0 ? "font-medium text-card-foreground" : "text-muted-foreground",
                       column.align !== "right" && columnIndex !== 0 && "tabular-nums",
                       column.hideOnMobile && "hidden sm:table-cell"
                     )}
@@ -109,7 +110,7 @@ export function DataTable({
           )}
         </TableBody>
       </Table>
-    </div>
+    </Card>
   );
 }
 
@@ -145,7 +146,7 @@ export function DataTableToolbar({
     >
       {selecting ? (
         <>
-          <p aria-live="polite" className="text-sm text-white">
+          <p aria-live="polite" className="text-sm text-card-foreground">
             {selectedCount} selected
           </p>
           <div className="ml-auto flex flex-wrap items-center gap-2">{bulkActions}</div>

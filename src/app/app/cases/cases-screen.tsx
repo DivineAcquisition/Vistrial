@@ -6,6 +6,7 @@ import { useState } from "react";
 import { CasesFilters } from "@/app/app/cases/cases-filters";
 import { refreshCaseList } from "@/app/app/cases/actions";
 import { EmptyState } from "@/components/ui/empty-state";
+import { Card } from "@/components/ui/card";
 import { StatusBadge } from "@/components/ui/status-badge";
 import {
   Table,
@@ -154,7 +155,7 @@ export function CasesScreen({
             />
           ) : (
             <>
-              <div className="panel overflow-hidden rounded-2xl">
+              <Card className="overflow-hidden py-0">
                 <Table>
                   <TableHeader>
                     <TableRow className="hover:bg-transparent">
@@ -174,7 +175,7 @@ export function CasesScreen({
                     ))}
                   </TableBody>
                 </Table>
-              </div>
+              </Card>
               {hasMore ? (
                 <div className="mt-4 flex justify-center">
                   <button

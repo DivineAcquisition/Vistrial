@@ -1,18 +1,14 @@
 /**
- * Shared class recipes, taken from the DA hiring site. #9A88FC (brand-500) is
- * the prime action colour; it is light enough that near-black label text reads
- * far better on it than white, which is why primary buttons invert their type.
- * brand-300 carries eyebrows, section labels, and links.
+ * Shared class recipes, mapped onto coss primitives so a screen written against
+ * these strings and a screen written against `<Button>` / `<Input>` look the same.
  *
- * These strings are the single source of truth for the look of a control. The
- * components in `components/ui` are built on top of them rather than beside
- * them, so a screen written against the raw recipe and a screen written against
- * the component cannot drift apart.
- *
- * Sizing rule: buttons stay 32, 40 or 44px. Form fields match the DA landing
- * qualify form at 3.15rem. Filter bars use the compact recipe at 40px so a
- * toolbar does not jump to landing-form height.
+ * #9A88FC (brand-500) is the prime action colour. It is light enough that
+ * near-black label text reads far better on it than white, which is why primary
+ * buttons invert their type. brand-300 carries eyebrows, section labels, and links.
  */
+
+import { buttonVariants } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
 /* ---------------------------------------------------------------------------
  * Focus
@@ -20,47 +16,50 @@
 
 /** Controls that draw their own ring rather than relying on the global outline. */
 export const focusRing =
-  "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-500/70";
+  "focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 focus-visible:ring-offset-background";
 
 /* ---------------------------------------------------------------------------
- * Buttons
+ * Buttons — coss `buttonVariants`, so leftover class-string call sites match
+ * `<Button>`. Size recipes use important utilities so they win over the default
+ * size baked into the variant string when concatenated.
  * ------------------------------------------------------------------------- */
 
-export const btnBase =
-  "inline-flex shrink-0 items-center justify-center gap-2 rounded-full text-sm font-semibold whitespace-nowrap transition-colors duration-150 select-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-500/80 disabled:pointer-events-none disabled:opacity-45 [&_svg]:pointer-events-none [&_svg]:shrink-0";
+export const btnBase = buttonVariants({ variant: "secondary" });
 
 /** The filled action. One per screen, give or take. */
-export const btnPrimary = `${btnBase} bg-brand-500 text-ink-950 hover:bg-brand-400 active:bg-brand-600 active:text-white`;
+export const btnPrimary = buttonVariants({ variant: "primary" });
 
 /**
  * Reserved for the action a screen exists for: connecting the CRM, going live,
  * generating the report. Nothing routine gets this, or it stops meaning
- * anything. The gradient runs brand-400 to brand-600 and adds no new colour.
+ * anything.
  */
-export const btnGradient = `${btnBase} action-gradient text-ink-950 shadow-[0_1px_0_rgba(255,255,255,0.18)_inset] active:brightness-95`;
+export const btnGradient = buttonVariants({ variant: "gradient" });
 
-export const btnSecondary = `${btnBase} border border-white/[0.12] bg-white/[0.03] text-white hover:border-white/25 hover:bg-white/[0.07] active:bg-white/[0.04]`;
+export const btnSecondary = buttonVariants({ variant: "secondary" });
 
 /** Quieter than secondary: an outline with no fill until you touch it. */
-export const btnOutline = `${btnBase} border border-white/[0.14] text-silver hover:border-white/30 hover:text-white active:bg-white/[0.04]`;
+export const btnOutline = buttonVariants({ variant: "outline" });
 
-export const btnGhost = `${btnBase} text-silver hover:bg-white/[0.05] hover:text-white active:bg-white/[0.03]`;
+export const btnGhost = buttonVariants({ variant: "ghost" });
 
 /** Consequential and irreversible. Never the default on a form. */
-export const btnDestructive = `${btnBase} border border-flag-critical/35 bg-flag-critical/[0.12] text-flag-critical hover:border-flag-critical/55 hover:bg-flag-critical/[0.18]`;
+export const btnDestructive = buttonVariants({ variant: "destructive" });
 
 /** Reads as text, behaves as a button. */
-export const btnLink =
-  "inline-flex items-center gap-1.5 rounded-sm text-sm font-medium text-brand-300 underline-offset-4 transition-colors hover:text-white hover:underline disabled:pointer-events-none disabled:opacity-45";
+export const btnLink = buttonVariants({ variant: "link" });
 
-export const btnSizeSm = "h-8 px-3.5 text-[13px]";
-export const btnSizeMd = "h-10 px-5";
-export const btnSizeLg = "h-11 px-6 text-[15px]";
+export const btnSizeSm =
+  "h-8! gap-1.5 px-[calc(--spacing(2.5)-1px)]! sm:h-7!";
+export const btnSizeMd =
+  "h-10! px-[calc(--spacing(3.5)-1px)]! sm:h-9!";
+export const btnSizeLg =
+  "h-11! px-[calc(--spacing(4)-1px)]! text-lg! sm:h-10! sm:text-base!";
 
 /** Square, for a control whose whole label is its icon. */
-export const btnIconSm = "size-8 p-0";
-export const btnIconMd = "size-10 p-0";
-export const btnIconLg = "size-11 p-0";
+export const btnIconSm = "size-8! p-0! sm:size-7!";
+export const btnIconMd = "size-9! p-0! sm:size-8!";
+export const btnIconLg = "size-10! p-0! sm:size-9!";
 
 /* ---------------------------------------------------------------------------
  * Type scale
@@ -74,50 +73,62 @@ export const sectionLabel =
 
 /** Small uppercase caption above a filter or a stat, as on the hiring rail. */
 export const filterLabel =
-  "mb-2.5 text-[10px] font-semibold uppercase tracking-[0.16em] text-dim";
+  "mb-2.5 text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground";
 
-export const pageTitle = "text-2xl font-semibold text-white sm:text-[28px]";
+export const pageTitle = "font-heading text-2xl font-semibold text-card-foreground sm:text-[28px]";
 /** A heading that owns a band of the page, above several cards. */
-export const sectionTitle = "text-base font-semibold text-white";
+export const sectionTitle = "font-heading text-base font-semibold text-card-foreground";
 /** The title of one card. The most common heading in the app. */
-export const cardTitle = "text-sm font-semibold text-white";
-export const bodyText = "text-sm leading-relaxed text-silver";
-export const captionText = "text-xs text-dim";
+export const cardTitle = "font-heading text-sm font-semibold text-card-foreground";
+export const bodyText = "text-sm leading-relaxed text-muted-foreground";
+export const captionText = "text-xs text-muted-foreground";
 export const metricValue = "text-2xl font-semibold tabular-nums";
 
 /* ---------------------------------------------------------------------------
  * Form controls
  *
- * The look lives in `.field-input` (globals.css), taken from the DA acq
- * landing. These strings are how a screen opts into it. Putting a utility on
- * the element still wins, because the CSS sits in the components layer.
+ * Single-element native inputs still exist on a few screens. These strings
+ * copy the coss Input/Textarea chrome so they do not sit beside `<Input>`
+ * looking like a different product.
  * ------------------------------------------------------------------------- */
 
 /** Form fields and labelled settings. Sentence case, not a caption. */
-export const labelClass = "mb-2 block text-[14px] font-semibold tracking-tight text-white";
+export const labelClass =
+  "mb-2 inline-flex items-center gap-2 font-medium text-base/4.5 text-card-foreground sm:text-sm/4";
 
-export const inputClass = "field-input";
+const nativeFieldChrome =
+  "relative w-full min-w-0 rounded-lg border border-input bg-background text-base text-foreground shadow-xs/5 outline-none ring-ring/24 transition-shadow not-dark:bg-clip-padding placeholder:text-muted-foreground/72 focus-visible:border-ring focus-visible:ring-[3px] aria-invalid:border-destructive/36 focus-visible:aria-invalid:border-destructive/64 focus-visible:aria-invalid:ring-destructive/16 disabled:pointer-events-none disabled:opacity-64 dark:bg-input/32 dark:aria-invalid:ring-destructive/24 sm:text-sm";
 
-/** Same chrome at 40px, for filter bars and table toolbars. */
-export const inputCompactClass = "field-input field-input--compact";
+export const inputClass = cn(
+  nativeFieldChrome,
+  "h-9.5 px-[calc(--spacing(3)-1px)] leading-9.5 sm:h-8.5 sm:leading-8.5",
+);
 
-export const textareaClass = "field-input";
+/** Same chrome at the compact coss size, for filter bars and table toolbars. */
+export const inputCompactClass = cn(
+  nativeFieldChrome,
+  "h-8.5 px-[calc(--spacing(2.5)-1px)] leading-8.5 sm:h-7.5 sm:leading-7.5",
+);
 
-export const selectClass = "field-input";
+export const textareaClass = cn(
+  nativeFieldChrome,
+  "field-sizing-content min-h-17.5 px-[calc(--spacing(3)-1px)] py-[calc(--spacing(1.5)-1px)] max-sm:min-h-20.5",
+);
 
-export const selectCompactClass = "field-input field-input--compact";
+export const selectClass = inputClass;
+
+export const selectCompactClass = inputCompactClass;
 
 /** A read-only value styled as a field, so a locked row still lines up. */
-export const readonlyFieldClass =
-  "field-input pointer-events-none min-h-12 text-silver opacity-80";
+export const readonlyFieldClass = cn(inputClass, "pointer-events-none opacity-80");
 
 export const checkboxClass =
-  "size-4 shrink-0 cursor-pointer appearance-none rounded-[5px] border border-white/25 bg-white/[0.04] transition-colors checked:border-brand-500 checked:bg-brand-500 checked:bg-[url('data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 16 16%22 fill=%22none%22 stroke=%22%2307070b%22 stroke-width=%222.4%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22><path d=%22M3.5 8.5l3 3 6-6%22/></svg>')] bg-center bg-no-repeat hover:border-white/40 checked:hover:border-brand-400 disabled:cursor-not-allowed disabled:opacity-50";
+  "relative inline-flex size-4.5 shrink-0 cursor-pointer appearance-none items-center justify-center rounded-[.25rem] border border-input bg-background shadow-xs/5 checked:border-primary checked:bg-primary sm:size-4 dark:not-checked:bg-input/32";
 
 export const radioClass =
-  "size-4 shrink-0 cursor-pointer appearance-none rounded-full border border-white/25 bg-white/[0.04] transition-colors checked:border-[5px] checked:border-brand-500 hover:border-white/40 disabled:cursor-not-allowed disabled:opacity-50";
+  "relative inline-flex size-4.5 shrink-0 cursor-pointer appearance-none rounded-full border border-input bg-background shadow-xs/5 checked:border-[5px] checked:border-primary sm:size-4 dark:not-checked:bg-input/32";
 
-export const helperClass = "mt-1.5 text-xs leading-relaxed text-dim";
+export const helperClass = "mt-1.5 text-xs leading-relaxed text-muted-foreground";
 
 export const errorClass = "mt-1.5 text-xs text-flag-critical";
 
@@ -139,9 +150,9 @@ export const surfacePad = {
 export type SurfacePad = keyof typeof surfacePad;
 
 /** Vertical rhythm between the major bands of a page. */
-export const pageStack = "space-y-6";
+export const pageStack = "flex flex-col gap-6";
 /** Vertical rhythm between rows inside one card. */
-export const cardStack = "space-y-4";
+export const cardStack = "flex flex-col gap-4";
 
 /** A confirmation that something saved. Reads as success, not as a footnote. */
 export const successClass = "mt-1.5 text-xs font-medium text-flag-good";

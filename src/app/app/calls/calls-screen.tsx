@@ -5,6 +5,7 @@ import { useState } from "react";
 
 import { refreshCallList } from "@/app/app/calls/actions";
 import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { StatusBadge } from "@/components/ui/status-badge";
 import {
@@ -93,7 +94,7 @@ export function CallsScreen({
 
   return (
     <div className="space-y-4">
-      <div className="panel overflow-hidden rounded-2xl">
+      <Card className="overflow-hidden py-0">
         <Table>
           <TableHeader>
             <TableRow className="hover:bg-transparent">
@@ -113,7 +114,7 @@ export function CallsScreen({
             ))}
           </TableBody>
         </Table>
-      </div>
+      </Card>
       {hasMore ? (
         <Button
             variant="secondary"

@@ -78,11 +78,11 @@ export const sectionLabel =
 export const filterLabel =
   "mb-2.5 text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground";
 
-export const pageTitle = "font-heading text-2xl font-semibold text-card-foreground sm:text-[28px]";
+export const pageTitle = "font-heading text-2xl text-card-foreground sm:text-[28px]";
 /** A heading that owns a band of the page, above several cards. */
-export const sectionTitle = "font-heading text-base font-semibold text-card-foreground";
+export const sectionTitle = "font-heading text-base text-card-foreground";
 /** The title of one card. The most common heading in the app. */
-export const cardTitle = "font-heading text-sm font-semibold text-card-foreground";
+export const cardTitle = "font-heading text-sm text-card-foreground";
 export const bodyText = "text-sm leading-relaxed text-muted-foreground";
 export const captionText = "text-xs text-muted-foreground";
 export const metricValue = "text-2xl font-semibold tabular-nums";
@@ -103,7 +103,7 @@ const nativeFieldChrome =
 
 export const inputClass = cn(
   nativeFieldChrome,
-  "h-9.5 px-[calc(--spacing(3)-1px)] leading-9.5 sm:h-8.5 sm:leading-8.5",
+  "h-9.5 px-[calc(--spacing(4)-1px)] leading-9.5 sm:h-8.5 sm:leading-8.5",
 );
 
 /** Same chrome at the compact coss size, for filter bars and table toolbars. */
@@ -114,7 +114,7 @@ export const inputCompactClass = cn(
 
 export const textareaClass = cn(
   nativeFieldChrome,
-  "field-sizing-content min-h-17.5 px-[calc(--spacing(3)-1px)] py-[calc(--spacing(1.5)-1px)] max-sm:min-h-20.5",
+  "field-sizing-content min-h-17.5 px-[calc(--spacing(4)-1px)] py-[calc(--spacing(2)-1px)] max-sm:min-h-20.5",
 );
 
 export const selectClass = inputClass;
@@ -155,6 +155,9 @@ export type SurfacePad = keyof typeof surfacePad;
 export const pageStack = "flex flex-col gap-6";
 /** Vertical rhythm between rows inside one card. */
 export const cardStack = "flex flex-col gap-4";
+
+/** Settings and marketing forms. Wide enough for longer placeholders. */
+export const formMeasure = "w-full max-w-2xl";
 
 /** A confirmation that something saved. Reads as success, not as a footnote. */
 export const successClass = "mt-1.5 text-xs font-medium text-flag-good";

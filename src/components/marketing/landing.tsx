@@ -142,7 +142,7 @@ export function LandingPage() {
               <p className="text-[11px] font-semibold tracking-[0.16em] text-brand-300 uppercase">
                 Case file
               </p>
-              <p className="mt-3 text-lg font-semibold tracking-tight text-white">{CASE_FILE.headline}</p>
+              <p className="mt-3 font-heading text-lg tracking-tight text-white">{CASE_FILE.headline}</p>
               <ul className="mt-6 space-y-3">
                 {CASE_FILE.parts.map((part) => (
                   <li key={part.id} className="flex items-start gap-3">
@@ -227,7 +227,7 @@ export function LandingPage() {
         <div className={marketingShell}>
           <FinalCta headline={WAITLIST.headline}>
             <p className={cn(marketingLead, "mx-auto")}>{WAITLIST.body}</p>
-            <div className="mx-auto mt-8 max-w-xl">
+            <div className="mx-auto mt-8 max-w-2xl">
               <WaitlistForm position="waitlist" />
             </div>
             <p className={cn(captionText, "mt-4")}>{WAITLIST.underCta}</p>

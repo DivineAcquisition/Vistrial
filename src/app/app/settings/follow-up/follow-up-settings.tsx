@@ -25,7 +25,7 @@ import { SectionHeader } from "@/components/ui/section-header";
 import { MIN_VOICE_EXAMPLES } from "@/lib/follow-up/constants";
 import { FOLLOW_UP_BRANCH_LABELS, FOLLOW_UP_CHANNEL_LABELS } from "@/lib/follow-up/labels";
 import type { FollowUpSettings, RoutingRule, VoiceExample, VoiceProfile } from "@/lib/follow-up/types";
-import { errorClass, helperClass, labelClass } from "@/lib/ui";
+import { errorClass, formMeasure, helperClass, labelClass } from "@/lib/ui";
 
 const idle: SettingsSaveResult = { status: "idle" };
 
@@ -131,6 +131,7 @@ export function FollowUpSettingsScreen({
                 id="example-body"
                 className="min-h-24"
                 value={exampleBody}
+                placeholder="Hey, it's Alex — circling back on Thursday."
                 onChange={(event) => setExampleBody(event.target.value)}
               />
             </Field>
@@ -167,7 +168,7 @@ export function FollowUpSettingsScreen({
 
       <section>
         <SectionHeader title="Voice profile" hint="Used on every generation. Changes never happen from edit data unless you confirm a suggestion below." />
-        <Panel className="max-w-xl p-6">
+        <Panel className={`${formMeasure} p-6`}>
           <form action={saveVoice} className="space-y-4">
             <Field label="Formality" name="formality">
               <Select id="formality" name="formality" defaultValue={voice.formality}>
@@ -191,13 +192,13 @@ export function FollowUpSettingsScreen({
               label="Use a sign-off"
             />
             <Field label="Greeting text" name="greeting_text">
-              <Input id="greeting_text" name="greeting_text" type="text" defaultValue={voice.greetingText ?? ""} />
+              <Input id="greeting_text" name="greeting_text" type="text" defaultValue={voice.greetingText ?? ""} placeholder="Hey {first_name}," />
             </Field>
             <Field label="Sign-off text" name="signoff_text">
-              <Input id="signoff_text" name="signoff_text" type="text" defaultValue={voice.signoffText ?? ""} />
+              <Input id="signoff_text" name="signoff_text" type="text" defaultValue={voice.signoffText ?? ""} placeholder="Talk soon," />
             </Field>
             <Field label="SMS length target" name="sms_max_chars">
-              <Input id="sms_max_chars" name="sms_max_chars" type="number" defaultValue={voice.smsMaxChars} />
+              <Input id="sms_max_chars" name="sms_max_chars" type="number" defaultValue={voice.smsMaxChars} placeholder="240" />
             </Field>
             <Field label="Email length target" name="email_max_chars">
               <Input
@@ -205,6 +206,7 @@ export function FollowUpSettingsScreen({
                 name="email_max_chars"
                 type="number"
                 defaultValue={voice.emailMaxChars}
+                placeholder="900"
               />
             </Field>
             <Field label="Emoji" name="emoji_usage">
@@ -220,6 +222,7 @@ export function FollowUpSettingsScreen({
                 name="banned_words"
                 className="min-h-20"
                 defaultValue={voice.bannedWords.join("\n")}
+                placeholder={"unlock\ngame-changer"}
               />
             </Field>
             {voiceState.status === "error" ? <p className={errorClass}>{voiceState.error}</p> : null}
@@ -233,7 +236,7 @@ export function FollowUpSettingsScreen({
 
       <section>
         <SectionHeader title="Policy" hint="Quiet hours default on. Sequence caps cannot be removed." />
-        <Panel className="max-w-xl p-6">
+        <Panel className={`${formMeasure} p-6`}>
           <form action={savePolicy} className="space-y-4">
             <CheckboxField
               name="quiet_hours_enabled"
@@ -247,6 +250,7 @@ export function FollowUpSettingsScreen({
                   name="quiet_hours_start"
                   type="text"
                   defaultValue={settings.quietHoursStart}
+                  placeholder="21:00"
                 />
               </Field>
               <Field label="Quiet end" name="quiet_hours_end">
@@ -255,6 +259,7 @@ export function FollowUpSettingsScreen({
                   name="quiet_hours_end"
                   type="text"
                   defaultValue={settings.quietHoursEnd}
+                  placeholder="08:00"
                 />
               </Field>
             </div>
@@ -264,6 +269,7 @@ export function FollowUpSettingsScreen({
                 name="max_sequence_length"
                 type="number"
                 defaultValue={settings.maxSequenceLength}
+                placeholder="4"
               />
             </Field>
             <Field label="Maximum sequence duration (days)" name="max_sequence_duration_days">
@@ -272,6 +278,7 @@ export function FollowUpSettingsScreen({
                 name="max_sequence_duration_days"
                 type="number"
                 defaultValue={settings.maxSequenceDurationDays}
+                placeholder="14"
               />
             </Field>
             <Field label="Drafts go stale after (days)" name="draft_stale_days">
@@ -280,6 +287,7 @@ export function FollowUpSettingsScreen({
                 name="draft_stale_days"
                 type="number"
                 defaultValue={settings.draftStaleDays}
+                placeholder="7"
               />
             </Field>
             {policyState.status === "error" ? <p className={errorClass}>{policyState.error}</p> : null}
@@ -332,6 +340,7 @@ export function FollowUpSettingsScreen({
                       id={`delays-${index}`}
                       type="text"
                       value={rule.sequenceSteps.map((step) => step.delayHours).join(",")}
+                      placeholder="24, 72, 168"
                       onChange={(event) => {
                         const delays = event.target.value
                           .split(",")

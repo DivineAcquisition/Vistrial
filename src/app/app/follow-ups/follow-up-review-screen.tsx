@@ -85,7 +85,7 @@ export function FollowUpReviewScreen({ initial }: { initial: FollowUpReviewPaylo
       <Panel className="p-6">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
-            <h2 className="text-lg font-semibold text-white">{file.lead.name}</h2>
+            <h2 className="font-heading text-lg text-white">{file.lead.name}</h2>
             <p className="mt-1 text-sm text-silver">
               {FOLLOW_UP_BRANCH_LABELS[draft.branch]} · {FOLLOW_UP_CHANNEL_LABELS[draft.channel]}
               {draft.sequencePosition > 1 ? ` · sequence ${draft.sequencePosition}` : ""}
@@ -150,6 +150,7 @@ export function FollowUpReviewScreen({ initial }: { initial: FollowUpReviewPaylo
                   value={subject}
                   disabled={!editable || busy}
                   onChange={(event) => setSubject(event.target.value)}
+                  placeholder="Following up from our call"
                 />
               </div>
             ) : null}
@@ -162,6 +163,7 @@ export function FollowUpReviewScreen({ initial }: { initial: FollowUpReviewPaylo
               value={body}
               disabled={!editable || busy}
               onChange={(event) => setBody(event.target.value)}
+              placeholder="Write the message as it should send."
             />
             <p className={helperClass}>
               Generated copy is kept so the edit diff can be measured after send.

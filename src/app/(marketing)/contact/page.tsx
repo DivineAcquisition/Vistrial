@@ -16,7 +16,7 @@ export default function ContactPage() {
   return (
     <MarketingShell headerAction="none">
       <section className="px-5 pb-10 pt-14 sm:px-6 sm:pt-20">
-        <div className="mx-auto max-w-xl">
+        <div className="mx-auto max-w-2xl">
           <h1 className={`${marketingHeroTitle} text-[2.1rem] sm:text-4xl`}>{CONTACT_PAGE.title}</h1>
           <p className={`${marketingSubhead} mt-4`}>
             {CONTACT_PAGE.description} Or email{" "}
@@ -31,7 +31,7 @@ export default function ContactPage() {
         </div>
       </section>
       <section className="px-5 pb-20 sm:px-6">
-        <Panel className="mx-auto max-w-xl rounded-3xl border-white/[0.1] p-6 shadow-[0_24px_80px_-32px_rgba(0,0,0,0.85)] sm:p-8">
+        <Panel className="mx-auto max-w-2xl rounded-3xl border-white/[0.1] p-6 shadow-[0_24px_80px_-32px_rgba(0,0,0,0.85)] sm:p-8">
           <ContactForm />
         </Panel>
       </section>

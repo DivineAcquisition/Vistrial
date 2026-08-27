@@ -58,7 +58,7 @@ export function LegalSection({
 }) {
   return (
     <section>
-      <h2 className="text-xl font-semibold tracking-tight text-white sm:text-[1.35rem]">{heading}</h2>
+      <h2 className="font-heading text-xl tracking-tight text-white sm:text-[1.35rem]">{heading}</h2>
       <div className="mt-4 space-y-4">{children}</div>
     </section>
   );

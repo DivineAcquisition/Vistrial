@@ -1,6 +1,7 @@
 import { PageFrame } from "@/components/app/page-frame";
 import { Panel } from "@/components/ui/panel";
 import { Skeleton } from "@/components/ui/skeleton";
+import { formMeasure } from "@/lib/ui";
 
 /**
  * Loading shapes that match what replaces them.
@@ -102,7 +103,7 @@ export function SettingsFormSkeleton({
   return (
     <PageFrame title={title} description="Loading this settings page.">
       <Loading label="Loading settings" />
-      <Panel className="max-w-xl p-6">
+      <Panel className={`${formMeasure} p-6`}>
         <div className="flex flex-col gap-4">
           {Array.from({ length: fields }).map((_, index) => (
             <div key={index}>

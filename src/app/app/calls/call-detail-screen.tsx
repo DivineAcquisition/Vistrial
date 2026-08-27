@@ -84,7 +84,7 @@ export function CallDetailScreen({
       <Panel className="p-6">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
-            <h2 className="text-lg font-semibold text-white">{CALL_TYPE_LABELS[call.type]} call</h2>
+            <h2 className="font-heading text-lg text-white">{CALL_TYPE_LABELS[call.type]} call</h2>
             <p className="mt-1 text-sm text-silver">{detail.lead.name}</p>
           </div>
           <div className="flex flex-wrap gap-2">
@@ -506,7 +506,7 @@ function SignalField({
               </Select>
             </label>
           ) : null}
-          <Textarea  rows={3} value={value} onChange={(event) => setValue(event.target.value)} />
+          <Textarea rows={3} value={value} onChange={(event) => setValue(event.target.value)} placeholder="What they actually said" />
           <div className="flex gap-2">
             <Button type="submit" variant="primary" size="sm" disabled={busy}>
               Save correction
@@ -577,7 +577,6 @@ function QuotesField({
           {rows.map((row, index) => (
             <div key={index} className="grid gap-2 sm:grid-cols-[1fr_8rem]">
               <Textarea
-                
                 rows={2}
                 value={row.text}
                 onChange={(event) =>
@@ -587,6 +586,7 @@ function QuotesField({
                     )
                   )
                 }
+                placeholder="Verbatim quote from the call"
               />
               <Input
                 type="text"
@@ -598,7 +598,7 @@ function QuotesField({
                     )
                   )
                 }
-              />
+                placeholder="budget"
             </div>
           ))}
           <div className="flex flex-wrap gap-2">
@@ -644,11 +644,11 @@ function PasteTranscript({
         }}
       >
         <Textarea
-          
           rows={8}
           value={text}
           onChange={(event) => setText(event.target.value)}
           required
+          placeholder="Paste the full transcript. Leave speaker labels if you have them."
         />
         <Button type="submit" variant="primary" size="sm" disabled={busy || !text.trim()}>
           Save transcript

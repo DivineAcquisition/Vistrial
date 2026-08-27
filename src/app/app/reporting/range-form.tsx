@@ -28,11 +28,11 @@ export function ReportingRangeForm({
       </label>
       <label className="block">
         <span className={filterLabel}>From</span>
-        <Input type="date" name="from" defaultValue={range.fromDate} density="compact" />
+        <Input type="date" name="from" defaultValue={range.fromDate} density="compact" placeholder="YYYY-MM-DD" />
       </label>
       <label className="block">
         <span className={filterLabel}>To</span>
-        <Input type="date" name="to" defaultValue={range.toDate} density="compact" />
+        <Input type="date" name="to" defaultValue={range.toDate} density="compact" placeholder="YYYY-MM-DD" />
       </label>
       <Button type="submit" variant="secondary" size="sm">
         Apply

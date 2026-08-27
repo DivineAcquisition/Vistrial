@@ -108,6 +108,7 @@ export function NumberField(props: {
         max={props.max}
         step={props.step ?? (props.money ? "0.01" : "1")}
         defaultValue={shown}
+        placeholder={props.money ? "0.00" : "0"}
         prefix={props.money ? "$" : undefined}
         suffix={props.suffix}
       />

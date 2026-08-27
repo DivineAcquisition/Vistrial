@@ -360,6 +360,7 @@ export function FollowOnPanel({
           type="datetime-local"
           value={dueAt}
           onChange={(event) => setDueAt(event.target.value)}
+          placeholder="YYYY-MM-DD HH:MM"
         />
       </label>
       <div className="mt-4 flex flex-wrap gap-2">

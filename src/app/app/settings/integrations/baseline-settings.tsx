@@ -191,6 +191,7 @@ export function BaselineSettings(props: BaselineSettingsProps) {
               min={1}
               required
               defaultValue={props.selfReported?.leadsPerMonth ?? ""}
+              placeholder="40"
             />
           </Field>
           <Field label="Clients closed per month" name="clients_closed_per_month">
@@ -201,10 +202,11 @@ export function BaselineSettings(props: BaselineSettingsProps) {
               min={0}
               required
               defaultValue={props.selfReported?.clientsClosedPerMonth ?? ""}
+              placeholder="6"
             />
           </Field>
           <Field label="Note" name="note">
-            <Input id="note" name="note" type="text" />
+            <Input id="note" name="note" type="text" placeholder="CRM history is missing closed-won dates" />
           </Field>
           <SubmitButton variant="primary" pending={savingSelf} loadingLabel="Saving">
             Save self-reported baseline

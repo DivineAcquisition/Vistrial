@@ -12,7 +12,13 @@ export function ClientSummaryForm({ summary, query }: { summary: string; query: 
         name="summary"
         help="Review this before export. It is generated from the numbers on this page. If nothing improved, it says so. Do not add language that credits Vistrial with a close or with revenue — the export will refuse it."
       >
-        <Textarea id="summary" name="summary" defaultValue={summary} rows={10} />
+        <Textarea
+          id="summary"
+          name="summary"
+          defaultValue={summary}
+          rows={10}
+          placeholder="In this period, inbound leads were worked in X days on average…"
+        />
       </Field>
       <Button type="submit" variant="primary" size="lg">
         Export PDF

@@ -130,6 +130,7 @@ export function ActivityFiltersForm({
           type="date"
           value={filters.from?.slice(0, 10) ?? ""}
           onChange={(event) => apply({ from: event.target.value || null })}
+          placeholder="YYYY-MM-DD"
         />
       </label>
       <label className="block">
@@ -139,6 +140,7 @@ export function ActivityFiltersForm({
           type="date"
           value={filters.to?.slice(0, 10) ?? ""}
           onChange={(event) => apply({ to: event.target.value || null })}
+          placeholder="YYYY-MM-DD"
         />
       </label>
       <div className="flex flex-col justify-end gap-3 sm:col-span-2 lg:col-span-4">

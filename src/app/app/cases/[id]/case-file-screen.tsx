@@ -162,7 +162,7 @@ export function CaseFileScreen({ initial }: { initial: CaseFilePayload }) {
       <Panel className="p-6">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div className="min-w-0">
-            <h2 className="text-lg font-semibold text-white">{lead.name}</h2>
+            <h2 className="font-heading text-lg text-white">{lead.name}</h2>
             <p className="mt-1 text-sm text-silver">
               {[lead.email, lead.phone].filter(Boolean).join(" · ") || "No contact details"}
             </p>
@@ -711,6 +711,7 @@ function ObjectionBlock({
               value={note}
               onChange={(event) => setNote(event.target.value)}
               required
+              placeholder="Handled on the next call"
             />
           </label>
           <Button type="submit" variant="secondary" size="sm" disabled={busy || !note.trim()}>
@@ -1018,7 +1019,7 @@ function OverridePanel({
       </div>
       <label className="mt-4 block">
         <span className={labelClass}>Reasoning</span>
-        <Textarea name="reasoning" required rows={3}  />
+        <Textarea name="reasoning" required rows={3} placeholder="Why this override is right for this lead" />
       </label>
       <div className="mt-4 flex flex-wrap gap-2">
         <Button type="submit" variant="primary" size="sm" disabled={busy || pending}>
@@ -1087,6 +1088,7 @@ function StatusPanel({
           value={note}
           onChange={(event) => setNote(event.target.value)}
           required
+          placeholder="Moved to nurture — no budget this quarter"
         />
       </label>
       <div className="mt-4 flex flex-wrap gap-2">

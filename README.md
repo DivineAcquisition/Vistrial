@@ -25,8 +25,8 @@ this Next app.
 ## Visual language
 
 The app is **permanently dark**. Tokens and surfaces come from the Divine
-Acquisition hiring site: brand `#9A88FC` on ink `#07070B`, Inter for type,
-JetBrains Mono for tabular scores. Filled actions invert to near-black type —
+Acquisition hiring site: brand `#9A88FC` on ink `#07070B`, Geist for UI type,
+Cal Sans for headings, Geist Mono for tabular scores. Filled actions invert to near-black type —
 never white on the brand fill.
 
 | Where | What |

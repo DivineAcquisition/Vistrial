@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { requireOrgSettingsManager } from "@/lib/auth/gates";
 import { advancedSettingsBreadcrumbs } from "@/lib/navigation";
-import { cardStack, cardTitle, helperClass } from "@/lib/ui";
+import { cardStack, cardTitle, formMeasure, helperClass } from "@/lib/ui";
 
 export default async function DataSettingsPage() {
   const { org } = await requireOrgSettingsManager();
@@ -14,7 +14,7 @@ export default async function DataSettingsPage() {
       description="This workspace's data. Export it without waiting on engineering. Deletion is a DA operator action."
       breadcrumbs={advancedSettingsBreadcrumbs("Data", "/app/settings/data")}
     >
-      <Card className="max-w-xl">
+      <Card className={formMeasure}>
         <div className={cardStack}>
           <h2 className={cardTitle}>Export</h2>
           <p className={helperClass}>

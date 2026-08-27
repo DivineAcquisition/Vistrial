@@ -22,7 +22,7 @@ import { USER_PREF_CHANNELS, USER_PREF_EVENTS } from "@/lib/notifications/consta
 import { defaultChannelEnabled } from "@/lib/notifications/defaults";
 import { CHANNEL_LABELS, EVENT_LABELS } from "@/lib/notifications/labels";
 import { preferenceLocked } from "@/lib/notifications/policy";
-import { cardStack, errorClass, helperClass, successClass } from "@/lib/ui";
+import { cardStack, errorClass, formMeasure, helperClass, successClass } from "@/lib/ui";
 import type { NotificationChannel, NotificationEventType } from "@/lib/notifications/types";
 import type { OrgRole } from "@/types/database";
 
@@ -59,7 +59,7 @@ export function NotificationSettingsForm({
           title="This device"
           hint="Push is the default for anything with a clock on it. It never fires for something already on your screen."
         />
-        <Card className="max-w-xl">
+        <Card className={formMeasure}>
           <PushEnable />
         </Card>
       </section>
@@ -116,7 +116,7 @@ export function NotificationSettingsForm({
           title="Temporary mute"
           hint="Mute always ends. There is no permanent silent mute. Emergencies and admin escalation still send."
         />
-        <Card className="max-w-xl">
+        <Card className={formMeasure}>
           <form action={saveMute} className={cardStack}>
             {mutedUntil ? (
               <Notice tone="warning">
@@ -131,7 +131,7 @@ export function NotificationSettingsForm({
               name="muted_until"
               help="At most seven days from now."
             >
-              <Input name="muted_until" id="muted_until" type="datetime-local" />
+              <Input name="muted_until" id="muted_until" type="datetime-local" placeholder="YYYY-MM-DD HH:MM" />
             </Field>
             {mutedUntil ? (
               <CheckboxField name="clear_mute" label="End mute now" />
@@ -150,7 +150,7 @@ export function NotificationSettingsForm({
           title="Test send"
           hint="Sends on the real channel. A failure here is a configuration problem, not a silent skip."
         />
-        <Card className="max-w-xl">
+        <Card className={formMeasure}>
           <form action={sendTest} className={cardStack}>
             <div className="flex flex-wrap gap-2">
               {(["push", "email", "sms", "team"] as const).map((channel) => (
@@ -177,7 +177,7 @@ export function NotificationSettingsForm({
             title="Workspace"
             hint="SMS is off until you turn it on. Slack or Teams is the team channel for a breach seen by more than one person."
           />
-          <Card className="max-w-xl">
+          <Card className={formMeasure}>
             <form action={saveOrg} className={cardStack}>
               <Switch
                 name="sms_emergencies_enabled"
@@ -190,7 +190,7 @@ export function NotificationSettingsForm({
                 name="slack_webhook"
                 help={slackSaved ? "A webhook is saved. Paste a new URL to replace it." : "Optional."}
               >
-                <Input name="slack_webhook" id="slack_webhook" type="url" placeholder="https://" />
+                <Input name="slack_webhook" id="slack_webhook" type="url" placeholder="https://hooks.slack.com/services/…" />
               </Field>
               {slackSaved ? <CheckboxField name="clear_slack" label="Remove Slack webhook" /> : null}
               <Field
@@ -198,7 +198,7 @@ export function NotificationSettingsForm({
                 name="teams_webhook"
                 help={teamsSaved ? "A webhook is saved. Paste a new URL to replace it." : "Optional."}
               >
-                <Input name="teams_webhook" id="teams_webhook" type="url" placeholder="https://" />
+                <Input name="teams_webhook" id="teams_webhook" type="url" placeholder="https://outlook.office.com/webhook/…" />
               </Field>
               {teamsSaved ? <CheckboxField name="clear_teams" label="Remove Teams webhook" /> : null}
               {orgState.status === "error" ? <p className={errorClass}>{orgState.error}</p> : null}

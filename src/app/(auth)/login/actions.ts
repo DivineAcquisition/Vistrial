@@ -98,7 +98,7 @@ export async function signInPassword(
     }
   }
 
-  redirect(postAuthPath(next));
+  redirect(postAuthPath(next, memberships[0]?.surfaceAccess));
 }
 
 export async function sendMagicLink(

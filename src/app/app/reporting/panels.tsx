@@ -147,7 +147,7 @@ export function ReportingPanels({
   );
 }
 
-async function OutcomePanel({ orgId, range }: { orgId: string; range: ReportingRange }) {
+export async function OutcomePanel({ orgId, range }: { orgId: string; range: ReportingRange }) {
   const [payload, goal] = await Promise.all([
     loadReportingPanel(orgId, "outcome", range),
     loadStatedGoal(orgId),
@@ -219,22 +219,39 @@ async function OutcomePanel({ orgId, range }: { orgId: string; range: ReportingR
   );
 }
 
-async function CoveragePanel({ orgId, range }: { orgId: string; range: ReportingRange }) {
+export async function CoveragePanel({ orgId, range }: { orgId: string; range: ReportingRange }) {
   const payload = await loadReportingPanel(orgId, "coverage", range);
   if (payload.blocked === true) return <ReportBlocked title="Coverage" payload={payload} />;
   const ever = rateOf(payload.ever_touched);
   const within = rateOf(payload.within_window);
+  const targetMinutes = num(payload.speed_to_lead_minutes);
   return (
     <Panel className="p-6">
       <SectionHeader
         title="Coverage"
-        hint="The operational claim: a human actually reached the lead, and did it inside the window."
+        hint={
+          targetMinutes != null
+            ? `The operational claim: a human actually reached the lead, and did it inside the ${targetMinutes}-minute target.`
+            : "The operational claim: a human actually reached the lead, and did it inside the window."
+        }
       />
       <KpiGrid columns={4}>
         <KpiCard label="Ever a human touch" value={formatPct(ever.pct, ever.tooSmall)} sub={ever.sample} />
-        <KpiCard label="Inside the window" value={formatPct(within.pct, within.tooSmall)} sub={within.sample} />
-        <KpiCard label="Median time to first touch" value={formatMinutes(num(payload.median_minutes))} />
-        <KpiCard label="Worst case" value={formatMinutes(num(payload.worst_case_minutes))} />
+        <KpiCard
+          label="Inside the window"
+          value={formatPct(within.pct, within.tooSmall)}
+          sub={targetMinutes != null ? `${within.sample} · ${targetMinutes} min target` : within.sample}
+        />
+        <KpiCard
+          label="Median time to first touch"
+          value={formatMinutes(num(payload.median_minutes))}
+          sub={targetMinutes != null ? `Target ${targetMinutes} min` : undefined}
+        />
+        <KpiCard
+          label="Worst case"
+          value={formatMinutes(num(payload.worst_case_minutes))}
+          sub={targetMinutes != null ? `Target ${targetMinutes} min` : undefined}
+        />
       </KpiGrid>
       <div className="mt-4 grid gap-4 sm:grid-cols-2">
         <KpiCard label="Currently in breach" value={formatCount(num(payload.currently_in_breach) ?? 0)} />
@@ -421,7 +438,15 @@ async function FollowUpPanel({ orgId, range }: { orgId: string; range: Reporting
   );
 }
 
-async function ObjectionsPanel({ orgId, range }: { orgId: string; range: ReportingRange }) {
+export async function ObjectionsPanel({
+  orgId,
+  range,
+  hideMemberBreakdown = false,
+}: {
+  orgId: string;
+  range: ReportingRange;
+  hideMemberBreakdown?: boolean;
+}) {
   const payload = await loadReportingPanel(orgId, "objections", range);
   if (payload.blocked === true) return <ReportBlocked title="Objections" payload={payload} />;
   if (bool(payload.too_small)) {
@@ -429,6 +454,7 @@ async function ObjectionsPanel({ orgId, range }: { orgId: string; range: Reporti
       <Panel className="p-6">
         <SectionHeader title="Objections" />
         <EmptyState
+          bare
           title="Not enough objections to treat as a finding"
           detail={str(payload.suppressed_plain) ?? undefined}
         />
@@ -460,7 +486,7 @@ async function ObjectionsPanel({ orgId, range }: { orgId: string; range: Reporti
                   <li key={String(quote)}>&ldquo;{String(quote)}&rdquo;</li>
                 ))}
               </ul>
-              {members.length > 0 ? (
+              {members.length > 0 && !hideMemberBreakdown ? (
                 <p className="mt-2 text-xs text-dim">
                   Across the team:{" "}
                   {members
@@ -480,7 +506,7 @@ async function ObjectionsPanel({ orgId, range }: { orgId: string; range: Reporti
   );
 }
 
-async function SourcesPanel({ orgId, range }: { orgId: string; range: ReportingRange }) {
+export async function SourcesPanel({ orgId, range }: { orgId: string; range: ReportingRange }) {
   const payload = await loadReportingPanel(orgId, "sources", range);
   if (payload.blocked === true) return <ReportBlocked title="Source quality" payload={payload} />;
   const rows = Array.isArray(payload.rows) ? payload.rows : [];
@@ -527,7 +553,7 @@ async function SourcesPanel({ orgId, range }: { orgId: string; range: ReportingR
   );
 }
 
-async function TerminalPanel({ orgId, range }: { orgId: string; range: ReportingRange }) {
+export async function TerminalPanel({ orgId, range }: { orgId: string; range: ReportingRange }) {
   const payload = await loadReportingPanel(orgId, "terminal", range);
   if (payload.blocked === true) return <ReportBlocked title="Where deals die" payload={payload} />;
   if (bool(payload.too_small)) {
@@ -562,7 +588,7 @@ async function TerminalPanel({ orgId, range }: { orgId: string; range: Reporting
   );
 }
 
-async function SpeedPanel({ orgId, range }: { orgId: string; range: ReportingRange }) {
+export async function SpeedPanel({ orgId, range }: { orgId: string; range: ReportingRange }) {
   const payload = await loadReportingPanel(orgId, "speed", range);
   if (payload.blocked === true) return <ReportBlocked title="Speed-to-lead" payload={payload} />;
   if (bool(payload.too_small)) {
@@ -706,7 +732,7 @@ export function ReportingTabs({
       items={[
         // The two range-aware views carry the selected range across with them.
         { href: `/app/reporting${query ? `?${query}` : ""}`, label: "Operator view" },
-        { href: `/app/reporting/client${query ? `?${query}` : ""}`, label: "Client view" },
+        { href: `/portal${query ? `?${query}` : ""}`, label: "Owner portal" },
         { href: "/app/reporting/calibration", label: "Sales process" },
         { href: "/app/reporting/coaching", label: "Coaching" },
         { href: "/app/reporting/adoption", label: "Adoption" },
@@ -729,7 +755,7 @@ export function ReportingExports({
     <>
       {client ? null : (
         <Button asChild variant="secondary" size="sm">
-          <Link href={`/app/reporting/client?${query}`}>Review summary</Link>
+          <Link href={`/portal?${query}`}>Review summary</Link>
         </Button>
       )}
       <Button asChild variant="secondary" size="sm">

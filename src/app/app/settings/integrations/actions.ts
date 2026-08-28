@@ -4,11 +4,13 @@ import { randomBytes } from "node:crypto";
 import { revalidatePath } from "next/cache";
 
 import type { SettingsSaveResult } from "@/app/app/settings/types";
-import { canManageOrgSettings } from "@/lib/auth/permissions";
+import { canManageOrgSettings, canWorkOperatorApp } from "@/lib/auth/permissions";
 import { getAuthContext } from "@/lib/auth/session";
 import { isLeadId } from "@/lib/cases/filters";
+import { fetchLocationName } from "@/lib/ghl/client";
 import { completeLocationSelection, disconnectGhl } from "@/lib/ghl/connect";
 import { encryptSecret } from "@/lib/ghl/crypto";
+import { loadConnection } from "@/lib/ghl/tokens";
 import { retryDeadEvent, processGhlWebhookQueue } from "@/lib/ghl/process";
 import { processExtractionQueue } from "@/lib/extraction/run";
 import { RECORDER_SOURCES } from "@/lib/transcripts/constants";
@@ -23,6 +25,7 @@ function forbidden(): SettingsSaveResult {
 
 async function requireManager() {
   const ctx = await getAuthContext();
+  if (!canWorkOperatorApp(ctx.role, ctx.member.surfaceAccess, ctx.isPlatformAdmin)) return null;
   if (!canManageOrgSettings(ctx.role, ctx.isPlatformAdmin)) return null;
   return ctx;
 }
@@ -37,6 +40,28 @@ export async function disconnectCrm(
   if (!ctx) return forbidden();
   await disconnectGhl(getSupabaseAdmin(), ctx.org.id);
   revalidatePath("/app/settings/integrations");
+  return { status: "saved" };
+}
+
+export async function testCrmConnection(
+  _prev: SettingsSaveResult,
+  _formData: FormData
+): Promise<SettingsSaveResult> {
+  void _prev;
+  void _formData;
+  const ctx = await requireManager();
+  if (!ctx) return forbidden();
+  const db = getSupabaseAdmin();
+  const ghl = await loadConnection(db, ctx.org.id);
+  if (!ghl?.location_id) return { status: "error", error: "GoHighLevel is not connected." };
+  const name = await fetchLocationName(db, ctx.org.id, ghl.location_id);
+  if (!name) return { status: "error", error: "Could not read the linked location." };
+  await db
+    .from("ghl_connections")
+    .update({ last_verified_at: new Date().toISOString(), last_refresh_error: null })
+    .eq("org_id", ctx.org.id);
+  revalidatePath("/app/settings/integrations");
+  revalidatePath("/portal");
   return { status: "saved" };
 }
 

@@ -2,6 +2,7 @@ import {
   InviteForm,
   MemberActiveToggle,
   MemberRoleSelect,
+  MemberSurfaceSelect,
   RevokeInviteButton,
 } from "@/app/app/settings/members/members-forms";
 import { PageFrame } from "@/components/app/page-frame";
@@ -33,12 +34,12 @@ export default async function MembersSettingsPage() {
   const [{ data: members }, { data: invites }, { data: platformAdmins }] = await Promise.all([
     supabase
       .from("org_members")
-      .select("id, display_name, email, role, active, user_id, logged_outcome_from_mobile_at")
+      .select("id, display_name, email, role, active, user_id, logged_outcome_from_mobile_at, surface_access")
       .eq("org_id", ctx.org.id)
       .order("created_at", { ascending: true }),
     supabase
       .from("org_invites")
-      .select("id, email, role, token, expires_at, accepted_at, created_at")
+      .select("id, email, role, token, expires_at, accepted_at, created_at, surface_access")
       .eq("org_id", ctx.org.id)
       .is("accepted_at", null)
       .order("created_at", { ascending: false }),
@@ -71,6 +72,7 @@ export default async function MembersSettingsPage() {
               <TableHead>Name</TableHead>
               <TableHead className="hidden md:table-cell">Email</TableHead>
               <TableHead>Role</TableHead>
+              <TableHead>App</TableHead>
               <TableHead className="hidden md:table-cell">Status</TableHead>
               <TableHead>Phone</TableHead>
               <TableHead></TableHead>
@@ -102,6 +104,14 @@ export default async function MembersSettingsPage() {
                     {platformLocked ? (
                       <p className={`${helperClass} mt-1`}>Super admin</p>
                     ) : null}
+                  </TableCell>
+                  <TableCell>
+                    <MemberSurfaceSelect
+                      memberId={member.id}
+                      surface={member.surface_access === "portal" ? "portal" : "operator"}
+                      role={member.role}
+                      disabled={platformLocked}
+                    />
                   </TableCell>
                   <TableCell className="hidden md:table-cell">
                     <StatusBadge
@@ -159,6 +169,7 @@ export default async function MembersSettingsPage() {
               <TableRow>
                 <TableHead>Email</TableHead>
                 <TableHead>Role</TableHead>
+                <TableHead>App</TableHead>
                 <TableHead className="hidden md:table-cell">Expires</TableHead>
                 <TableHead>Link</TableHead>
                 <TableHead></TableHead>
@@ -174,6 +185,9 @@ export default async function MembersSettingsPage() {
                   </span>
                 </TableCell>
                   <TableCell className="capitalize text-silver">{invite.role}</TableCell>
+                  <TableCell className="text-silver">
+                    {invite.surface_access === "portal" ? "Portal only" : "Operator"}
+                  </TableCell>
                   <TableCell className="hidden text-silver md:table-cell">
                     {formatDayLong(invite.expires_at)}
                   </TableCell>

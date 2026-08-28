@@ -5,6 +5,8 @@ import { redirect } from "next/navigation";
 
 import { ORG_COOKIE_NAME, PENDING_INVITE_COOKIE, orgCookieOptions, pendingInviteCookieOptions } from "@/lib/auth/cookies";
 import { lookupInviteByToken, redeemInvite } from "@/lib/auth/invites";
+import { listActiveMemberships } from "@/lib/auth/session";
+import { landingPath } from "@/lib/navigation";
 import { getSupabaseAdmin } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 
@@ -70,7 +72,9 @@ export async function createAccountFromInvite(
   const cookieStore = await cookies();
   cookieStore.set(ORG_COOKIE_NAME, result.orgId, orgCookieOptions);
   cookieStore.delete(PENDING_INVITE_COOKIE);
-  redirect("/app/queue");
+  const memberships = await listActiveMemberships(created.user.id);
+  const surface = memberships.find((m) => m.orgId === result.orgId)?.surfaceAccess;
+  redirect(landingPath(surface));
 }
 
 export async function markPendingInvite(token: string) {

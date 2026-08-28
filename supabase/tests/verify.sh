@@ -58,7 +58,9 @@ WHERE n.nspname = 'public'
     'notification_push_subscriptions','notification_team_channels','notification_digest_log',
     'rate_limit_buckets','ops_job_catalog','ops_job_runs','ops_alerts','ops_http_errors',
     'ops_health_samples','ops_incidents','ops_restore_drills','retention_runs',
-    'org_deletion_records','lead_assignment_changes','lead_type_changes','settings_activity'
+    'org_deletion_records','lead_assignment_changes','lead_type_changes','settings_activity',
+    'source_connections','ad_spend_days','processor_events','calendar_blocks','form_events',
+    'portal_schedules'
   )
 ORDER BY 1;
 "
@@ -132,7 +134,10 @@ run "${ROOT}/supabase/tests/verify-self-verification.sql"
 echo "Activity stream checks..."
 run "${ROOT}/supabase/tests/verify-activity-stream.sql"
 
+echo "Owner portal checks..."
+run "${ROOT}/supabase/tests/verify-portal.sql"
+
 echo "Migration rollback (this prompt's migrations)..."
 bash "${ROOT}/scripts/test-migration-rollback.sh"
 
-echo "OK: schema, seed, triggers, RLS, invite, scoring, GHL, platform-admin, queue, case-file, transcript, follow-up, integrity, reporting, business-profile, onboarding-reconcile, notification, hardening, mobile, calibration, call-quality, operator-agent, self-verification, and activity-stream checks passed."
+echo "OK: schema, seed, triggers, RLS, invite, scoring, GHL, platform-admin, queue, case-file, transcript, follow-up, integrity, reporting, business-profile, onboarding-reconcile, notification, hardening, mobile, calibration, call-quality, operator-agent, self-verification, activity-stream, and owner-portal checks passed."

@@ -1,4 +1,4 @@
-import type { OrgRole } from "@/types/database";
+import type { OrgRole, SurfaceAccess } from "@/types/database";
 
 import { canManageOrgSettings } from "@/lib/auth/permissions";
 
@@ -162,3 +162,7 @@ export function firstSettingsPath(role: OrgRole, isPlatformAdmin = false): strin
 }
 
 export const DEFAULT_APP_PATH = "/app/queue";
+
+export function landingPath(surfaceAccess: SurfaceAccess | undefined): string {
+  return surfaceAccess === "portal" ? "/portal" : DEFAULT_APP_PATH;
+}

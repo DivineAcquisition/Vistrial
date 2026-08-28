@@ -35,8 +35,12 @@ export function authCallbackUrl(next?: string, origin = appUrl()): string {
   return url.toString();
 }
 
-export function postAuthPath(next: string): string {
-  if (next.startsWith("/app") || isAcceptInvitePath(next)) return next;
+export function postAuthPath(next: string, surfaceAccess?: "operator" | "portal"): string {
+  if (isAcceptInvitePath(next)) return next;
+  if (surfaceAccess === "portal") {
+    return next.startsWith("/portal") ? next : "/portal";
+  }
+  if (next.startsWith("/portal") || next.startsWith("/app")) return next;
   return "/app/queue";
 }
 
@@ -44,6 +48,7 @@ export function postAuthPath(next: string): string {
 export function pathRefreshesAuthSession(path: string): boolean {
   return (
     path.startsWith("/app") ||
+    path.startsWith("/portal") ||
     path === "/login" ||
     path === "/no-access" ||
     path.startsWith("/auth/") ||

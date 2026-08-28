@@ -47,6 +47,14 @@
     {
       "path": "/api/cron/verification-audit",
       "schedule": "40 5 * * *"
+    },
+    {
+      "path": "/api/cron/portal-email",
+      "schedule": "0 * * * *"
+    },
+    {
+      "path": "/api/cron/source-sync",
+      "schedule": "15 * * * *"
     }
   ]
 }

@@ -1,5 +1,6 @@
 import { AuthCard } from "@/components/auth/auth-card";
 import { LoginForm } from "@/app/(auth)/login/login-form";
+import { landingPath } from "@/lib/navigation";
 import { safeInternalPath } from "@/lib/auth/paths";
 import { getSessionUser, listActiveMemberships } from "@/lib/auth/session";
 import { APP_NAME } from "@/lib/constants";
@@ -26,7 +27,13 @@ export default async function LoginPage({
   if (user) {
     const memberships = await listActiveMemberships(user.id);
     if (memberships.length > 0) {
-      redirect(redirectTo.startsWith("/app") ? redirectTo : "/app/queue");
+      redirect(
+        memberships[0]?.surfaceAccess === "portal" && !redirectTo.startsWith("/portal")
+          ? "/portal"
+          : redirectTo.startsWith("/app") || redirectTo.startsWith("/portal")
+            ? redirectTo
+            : landingPath(memberships[0]?.surfaceAccess)
+      );
     }
     redirect("/no-access");
   }

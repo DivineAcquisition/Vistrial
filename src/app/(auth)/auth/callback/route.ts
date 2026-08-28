@@ -8,7 +8,7 @@ import {
   safeInternalPath,
 } from "@/lib/auth/paths";
 import { listActiveMemberships } from "@/lib/auth/session";
-import { DEFAULT_APP_PATH } from "@/lib/navigation";
+import { landingPath } from "@/lib/navigation";
 import { createClient } from "@/lib/supabase/server";
 
 function redirectTo(request: NextRequest, path: string) {
@@ -45,13 +45,17 @@ export async function GET(request: NextRequest) {
   if (pendingToken) {
     const result = await redeemInvite(pendingToken, user.id, user.email ?? null);
 
-    const response = result.ok
-      ? redirectTo(request, DEFAULT_APP_PATH)
+    const dest = result.ok
+      ? landingPath(
+          (await listActiveMemberships(user.id)).find((m) => m.orgId === result.orgId)
+            ?.surfaceAccess
+        )
       : result.error === "email_mismatch"
-        ? redirectTo(request, `/accept-invite/${pendingToken}`)
+        ? `/accept-invite/${pendingToken}`
         : isAcceptInvitePath(next)
-          ? redirectTo(request, next)
-          : redirectTo(request, `/accept-invite/${pendingToken}`);
+          ? next
+          : `/accept-invite/${pendingToken}`;
+    const response = redirectTo(request, dest);
 
     response.cookies.delete(PENDING_INVITE_COOKIE);
     if (result.ok) {
@@ -69,5 +73,10 @@ export async function GET(request: NextRequest) {
     return redirectTo(request, "/no-access");
   }
 
-  return redirectTo(request, next.startsWith("/app") ? next : DEFAULT_APP_PATH);
+  return redirectTo(
+    request,
+    next.startsWith("/app") || next.startsWith("/portal")
+      ? next
+      : landingPath(memberships[0]?.surfaceAccess)
+  );
 }

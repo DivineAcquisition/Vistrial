@@ -4,9 +4,17 @@ import { Button } from "@/components/ui/button";
 import { Field } from "@/components/ui/field";
 import { Textarea } from "@/components/ui/textarea";
 
-export function ClientSummaryForm({ summary, query }: { summary: string; query: string }) {
+export function ClientSummaryForm({
+  summary,
+  query,
+  action,
+}: {
+  summary: string;
+  query: string;
+  action?: string;
+}) {
   return (
-    <form method="post" action={`/app/reporting/export/pdf?${query}`} className="flex flex-col gap-3">
+    <form method="post" action={action ?? `/app/reporting/export/pdf?${query}`} className="flex flex-col gap-3">
       <Field
         label="Plain-language summary"
         name="summary"

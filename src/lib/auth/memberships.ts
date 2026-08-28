@@ -1,5 +1,5 @@
 import type { Membership, OrgSummary } from "@/lib/auth/types";
-import type { OrgRole } from "@/types/database";
+import type { OrgRole, SurfaceAccess } from "@/types/database";
 
 export type OrgRow = {
   id: string;
@@ -15,6 +15,7 @@ export type MemberRow = {
   role: OrgRole;
   display_name: string;
   email: string;
+  surface_access?: SurfaceAccess | null;
   organizations?: OrgRow | OrgRow[] | null;
 };
 
@@ -42,6 +43,7 @@ export function membershipFromRow(
     role: row.role,
     displayName: row.display_name,
     email: row.email,
+    surfaceAccess: row.surface_access === "portal" ? "portal" : "operator",
     org,
   };
 }

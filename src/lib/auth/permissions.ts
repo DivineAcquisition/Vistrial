@@ -1,4 +1,4 @@
-import type { OrgRole } from "@/types/database";
+import type { OrgRole, SurfaceAccess } from "@/types/database";
 
 /**
  * UI-facing permission map. RLS is the actual enforcement — hide what a role
@@ -75,6 +75,20 @@ export function canApproveFollowUp(args: {
   isPlatformAdmin?: boolean;
 }): boolean {
   return canOverrideLead(args);
+}
+
+export function canWorkOperatorApp(
+  role: OrgRole,
+  surfaceAccess: SurfaceAccess = "operator",
+  isPlatformAdmin = false
+): boolean {
+  if (isPlatformAdmin) return true;
+  if (surfaceAccess === "portal") return false;
+  return hasPermission(role, "workQueue", false);
+}
+
+export function canViewPortal(role: OrgRole, isPlatformAdmin = false): boolean {
+  return hasPermission(role, "viewRevenue", isPlatformAdmin);
 }
 
 export const INVITABLE_ROLES = ["admin", "closer", "setter"] as const satisfies readonly OrgRole[];

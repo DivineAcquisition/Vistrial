@@ -7,11 +7,13 @@ import {
   revokeInvite,
   setMemberActive,
   updateMemberRole,
+  updateMemberSurfaceAccess,
   type MemberActionResult,
 } from "@/app/app/settings/members/actions";
-import type { OrgRole } from "@/types/database";
+import type { OrgRole, SurfaceAccess } from "@/types/database";
 import { InstallSteps } from "@/components/app/install-steps";
 import { Button, SubmitButton } from "@/components/ui/button";
+import { CheckboxField } from "@/components/ui/checkbox";
 import { Field } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
@@ -21,6 +23,7 @@ const initialInvite: MemberActionResult = { ok: true };
 
 export function InviteForm() {
   const [state, action, pending] = useActionState(inviteMember, initialInvite);
+  const [role, setRole] = useState("setter");
   const url = state.ok ? state.url : undefined;
 
   return (
@@ -36,7 +39,13 @@ export function InviteForm() {
           />
         </Field>
         <Field label="Role" name="role" htmlFor="invite-role">
-          <Select id="invite-role" name="role" defaultValue="setter" className="min-w-0">
+          <Select
+            id="invite-role"
+            name="role"
+            value={role}
+            onChange={(event) => setRole(event.target.value)}
+            className="min-w-0"
+          >
             <option value="setter">Setter</option>
             <option value="closer">Closer</option>
             <option value="admin">Admin</option>
@@ -46,6 +55,14 @@ export function InviteForm() {
             Create invite
           </SubmitButton>
       </div>
+      {role === "admin" ? (
+        <CheckboxField
+          name="portal_only"
+          value="1"
+          label="Portal only"
+          description="Owner portal without a seat in the working app. No queue, no case files. An owner who has to navigate the operator tool to find their numbers stops navigating."
+        />
+      ) : null}
       <p className={helperClass}>
         Email delivery lands in a later prompt. Copy the link and share it by hand for now.
       </p>
@@ -96,6 +113,48 @@ export function MemberRoleSelect({
         <option value="admin">Admin</option>
         <option value="closer">Closer</option>
         <option value="setter">Setter</option>
+      </Select>
+      {error ? <p className={errorClass}>{error}</p> : null}
+    </div>
+  );
+}
+
+export function MemberSurfaceSelect({
+  memberId,
+  surface,
+  role,
+  disabled,
+}: {
+  memberId: string;
+  surface: SurfaceAccess;
+  role: OrgRole;
+  disabled?: boolean;
+}) {
+  const [error, setError] = useState<string | null>(null);
+  const [pending, startTransition] = useTransition();
+  const portalAllowed = role === "owner" || role === "admin";
+
+  if (!portalAllowed) {
+    return <span className="text-sm text-silver">Operator</span>;
+  }
+
+  return (
+    <div>
+      <Select
+        density="compact"
+        defaultValue={surface}
+        disabled={disabled || pending}
+        aria-label="Surface access"
+        onChange={(event) => {
+          const next = event.target.value as SurfaceAccess;
+          startTransition(async () => {
+            const result = await updateMemberSurfaceAccess(memberId, next);
+            setError(result.ok ? null : result.error);
+          });
+        }}
+      >
+        <option value="operator">Operator</option>
+        <option value="portal">Portal only</option>
       </Select>
       {error ? <p className={errorClass}>{error}</p> : null}
     </div>

@@ -24,7 +24,7 @@ export function UserMenu({
   collapsed?: boolean;
   placement?: "sidebar" | "header";
 }) {
-  const { user, role, isPlatformAdmin, org } = useOrg();
+  const { user, role, isPlatformAdmin, org, surfaceAccess } = useOrg();
   const name = user.displayName || user.email;
   const roleLabel = isPlatformAdmin ? "Super admin" : role;
   const header = placement === "header";
@@ -74,7 +74,12 @@ export function UserMenu({
           </MenuGroupLabel>
         </MenuGroup>
         <MenuSeparator />
-        <MenuLinkItem render={<Link href="/app/settings/profile" />}>Profile</MenuLinkItem>
+        {role === "owner" || role === "admin" || isPlatformAdmin ? (
+          <MenuLinkItem render={<Link href="/portal" />}>Owner portal</MenuLinkItem>
+        ) : null}
+        {surfaceAccess === "portal" ? null : (
+          <MenuLinkItem render={<Link href="/app/settings/profile" />}>Profile</MenuLinkItem>
+        )}
         <MenuLinkItem render={<Link href="/auth/signout" />}>Sign out</MenuLinkItem>
       </MenuPopup>
     </Menu>

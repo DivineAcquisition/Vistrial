@@ -8,10 +8,10 @@ import {
   newInviteToken,
   normalizeInviteEmail,
 } from "@/lib/auth/invites";
-import { canManageMembers, isInvitableRole } from "@/lib/auth/permissions";
+import { canManageMembers, canWorkOperatorApp, isInvitableRole } from "@/lib/auth/permissions";
 import { getAuthContext } from "@/lib/auth/session";
 import { createClient } from "@/lib/supabase/server";
-import type { OrgRole } from "@/types/database";
+import type { OrgRole, SurfaceAccess } from "@/types/database";
 
 export type MemberActionResult =
   | { ok: true; url?: string }
@@ -19,6 +19,9 @@ export type MemberActionResult =
 
 async function requireManager() {
   const ctx = await getAuthContext();
+  if (!canWorkOperatorApp(ctx.role, ctx.member.surfaceAccess, ctx.isPlatformAdmin)) {
+    return { ok: false as const, error: "Portal-only members cannot manage the operator app.", ctx };
+  }
   if (!canManageMembers(ctx.role, ctx.isPlatformAdmin)) {
     return { ok: false as const, error: "You do not have permission to manage members.", ctx };
   }
@@ -42,7 +45,7 @@ async function loadMember(orgId: string, memberId: string) {
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("org_members")
-    .select("id, user_id, role, active, display_name, email")
+    .select("id, user_id, role, active, display_name, email, surface_access")
     .eq("org_id", orgId)
     .eq("id", memberId)
     .maybeSingle();
@@ -78,6 +81,7 @@ export async function inviteMember(
 
   const email = normalizeInviteEmail(String(formData.get("email") ?? ""));
   const role = String(formData.get("role") ?? "");
+  const portalOnly = String(formData.get("portal_only") ?? "") === "1";
 
   if (!email.includes("@")) {
     return { ok: false, error: "Enter a valid email." };
@@ -85,6 +89,7 @@ export async function inviteMember(
   if (!isInvitableRole(role)) {
     return { ok: false, error: "Invites can only be sent for admin, closer, or setter." };
   }
+  const surfaceAccess: SurfaceAccess = portalOnly && role === "admin" ? "portal" : "operator";
 
   const supabase = await createClient();
   const token = newInviteToken();
@@ -95,6 +100,7 @@ export async function inviteMember(
     token,
     invited_by: gate.ctx.member.id,
     expires_at: inviteExpiryDate().toISOString(),
+    surface_access: surfaceAccess,
   });
 
   if (error) {
@@ -103,6 +109,7 @@ export async function inviteMember(
 
   // Email delivery lands in a later prompt. Return the link for manual sharing.
   revalidatePath("/app/settings/members");
+  revalidatePath("/portal");
   return { ok: true, url: buildInviteLink(token) };
 }
 
@@ -123,6 +130,7 @@ export async function revokeInvite(inviteId: string): Promise<MemberActionResult
   }
 
   revalidatePath("/app/settings/members");
+  revalidatePath("/portal");
   return { ok: true };
 }
 
@@ -156,9 +164,29 @@ export async function updateMemberRole(
   });
   if (blocked) return { ok: false, error: blocked };
 
+  const staysOperatorManager =
+    (role === "owner" || role === "admin") && (member.surface_access ?? "operator") === "operator";
+  if (
+    member.active &&
+    (member.role === "owner" || member.role === "admin") &&
+    (member.surface_access ?? "operator") === "operator" &&
+    !staysOperatorManager
+  ) {
+    const managers = await operatorManagerCount(gate.ctx.org.id);
+    if (!Number.isFinite(managers) || managers <= 1) {
+      return {
+        ok: false,
+        error: "The last operator owner or admin cannot be demoted. Someone still has to reach People and Integrations.",
+      };
+    }
+  }
+
+  const nextSurface: SurfaceAccess =
+    role === "owner" || role === "admin" ? member.surface_access ?? "operator" : "operator";
+
   const { error } = await supabase
     .from("org_members")
-    .update({ role })
+    .update({ role, surface_access: nextSurface })
     .eq("id", memberId)
     .eq("org_id", gate.ctx.org.id);
 
@@ -168,6 +196,67 @@ export async function updateMemberRole(
 
   revalidatePath("/app/settings/members");
   revalidatePath("/app");
+  revalidatePath("/portal");
+  return { ok: true };
+}
+
+async function operatorManagerCount(orgId: string) {
+  const supabase = await createClient();
+  const { count, error } = await supabase
+    .from("org_members")
+    .select("id", { count: "exact", head: true })
+    .eq("org_id", orgId)
+    .eq("active", true)
+    .in("role", ["owner", "admin"])
+    .eq("surface_access", "operator");
+  if (error) return Number.NaN;
+  return count ?? 0;
+}
+
+export async function updateMemberSurfaceAccess(
+  memberId: string,
+  surface: SurfaceAccess
+): Promise<MemberActionResult> {
+  const gate = await requireManager();
+  if (!gate.ok) return { ok: false, error: gate.error };
+  if (surface !== "operator" && surface !== "portal") {
+    return { ok: false, error: "Surface must be operator or portal." };
+  }
+
+  const member = await loadMember(gate.ctx.org.id, memberId);
+  if (!member) return { ok: false, error: "Member not found." };
+  if (member.role !== "owner" && member.role !== "admin") {
+    return { ok: false, error: "Portal-only access is for owners and admins." };
+  }
+
+  if (
+    surface === "portal" &&
+    member.active &&
+    (member.surface_access ?? "operator") === "operator"
+  ) {
+    const managers = await operatorManagerCount(gate.ctx.org.id);
+    if (!Number.isFinite(managers) || managers <= 1) {
+      return {
+        ok: false,
+        error: "The last operator owner or admin cannot be portal-only. Someone still has to reach People and Integrations.",
+      };
+    }
+  }
+
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("org_members")
+    .update({ surface_access: surface })
+    .eq("id", memberId)
+    .eq("org_id", gate.ctx.org.id);
+
+  if (error) {
+    return { ok: false, error: "Could not update surface access." };
+  }
+
+  revalidatePath("/app/settings/members");
+  revalidatePath("/app");
+  revalidatePath("/portal");
   return { ok: true };
 }
 
@@ -197,6 +286,21 @@ export async function setMemberActive(
   });
   if (blocked) return { ok: false, error: blocked };
 
+  if (
+    !active &&
+    member.active &&
+    (member.role === "owner" || member.role === "admin") &&
+    (member.surface_access ?? "operator") === "operator"
+  ) {
+    const managers = await operatorManagerCount(gate.ctx.org.id);
+    if (!Number.isFinite(managers) || managers <= 1) {
+      return {
+        ok: false,
+        error: "The last operator owner or admin cannot be deactivated. Someone still has to reach People and Integrations.",
+      };
+    }
+  }
+
   const { error } = await supabase
     .from("org_members")
     .update({ active })
@@ -209,5 +313,6 @@ export async function setMemberActive(
 
   revalidatePath("/app/settings/members");
   revalidatePath("/app");
+  revalidatePath("/portal");
   return { ok: true };
 }

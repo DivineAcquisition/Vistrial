@@ -284,3 +284,51 @@ if [[ "$(echo "$col_act" | tr -d ' ')" != "1" ]]; then
 fi
 
 echo "OK: activity stream migration rollback and re-apply succeeded."
+
+echo "Rollback owner portal (tables, RPCs, and surface_access gone)..."
+run "${ROOT}/supabase/rollbacks/20260832010000_owner_portal.sql"
+fn_portal="$("${PSQL[@]}" -d "${DB_NAME}" -tAc "SELECT count(*) FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace WHERE n.nspname='public' AND p.proname='portal_adoption'")"
+if [[ "$(echo "$fn_portal" | tr -d ' ')" != "0" ]]; then
+  echo "owner portal rollback left portal_adoption in place" >&2
+  exit 1
+fi
+tbl_portal="$("${PSQL[@]}" -d "${DB_NAME}" -tAc "SELECT count(*) FROM information_schema.tables WHERE table_schema='public' AND table_name='source_connections'")"
+if [[ "$(echo "$tbl_portal" | tr -d ' ')" != "0" ]]; then
+  echo "owner portal rollback left source_connections in place" >&2
+  exit 1
+fi
+col_portal="$("${PSQL[@]}" -d "${DB_NAME}" -tAc "SELECT count(*) FROM information_schema.columns WHERE table_schema='public' AND table_name='leads' AND column_name='has_net_close'")"
+if [[ "$(echo "$col_portal" | tr -d ' ')" != "0" ]]; then
+  echo "owner portal rollback left leads.has_net_close in place" >&2
+  exit 1
+fi
+col_surface="$("${PSQL[@]}" -d "${DB_NAME}" -tAc "SELECT count(*) FROM information_schema.columns WHERE table_schema='public' AND table_name='org_members' AND column_name='surface_access'")"
+if [[ "$(echo "$col_surface" | tr -d ' ')" != "0" ]]; then
+  echo "owner portal rollback left org_members.surface_access in place" >&2
+  exit 1
+fi
+
+echo "Re-apply owner portal..."
+run "${ROOT}/supabase/migrations/20260832010000_owner_portal.sql"
+fn_portal="$("${PSQL[@]}" -d "${DB_NAME}" -tAc "SELECT count(*) FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace WHERE n.nspname='public' AND p.proname='portal_adoption'")"
+if [[ "$(echo "$fn_portal" | tr -d ' ')" != "1" ]]; then
+  echo "re-apply did not restore portal_adoption" >&2
+  exit 1
+fi
+tbl_portal="$("${PSQL[@]}" -d "${DB_NAME}" -tAc "SELECT count(*) FROM information_schema.tables WHERE table_schema='public' AND table_name='source_connections'")"
+if [[ "$(echo "$tbl_portal" | tr -d ' ')" != "1" ]]; then
+  echo "re-apply did not restore source_connections" >&2
+  exit 1
+fi
+col_portal="$("${PSQL[@]}" -d "${DB_NAME}" -tAc "SELECT count(*) FROM information_schema.columns WHERE table_schema='public' AND table_name='leads' AND column_name='has_net_close'")"
+if [[ "$(echo "$col_portal" | tr -d ' ')" != "1" ]]; then
+  echo "re-apply did not restore leads.has_net_close" >&2
+  exit 1
+fi
+col_surface="$("${PSQL[@]}" -d "${DB_NAME}" -tAc "SELECT count(*) FROM information_schema.columns WHERE table_schema='public' AND table_name='org_members' AND column_name='surface_access'")"
+if [[ "$(echo "$col_surface" | tr -d ' ')" != "1" ]]; then
+  echo "re-apply did not restore org_members.surface_access" >&2
+  exit 1
+fi
+
+echo "OK: owner portal migration rollback and re-apply succeeded."

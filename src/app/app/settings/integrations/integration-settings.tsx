@@ -12,6 +12,7 @@ import {
   pasteUnmatchedTranscript,
   assignUnmatchedTranscript,
   discardUnmatchedTranscript,
+  testCrmConnection,
   type FieldMapPayload,
 } from "@/app/app/settings/integrations/actions";
 import type { SettingsSaveResult } from "@/app/app/settings/types";
@@ -122,6 +123,7 @@ function statusLabel(status: IntegrationSettingsProps["connection"]["status"]): 
 
 export function IntegrationSettings(props: IntegrationSettingsProps) {
   const [disconnectState, disconnectAction, disconnecting] = useActionState(disconnectCrm, initial);
+  const [testState, testAction, testing] = useActionState(testCrmConnection, initial);
   const [locationState, locationAction, locating] = useActionState(selectGhlLocation, initial);
   const [maps, setMaps] = useState<IntegrationFieldMap[]>(props.maps);
   const [mapStatus, setMapStatus] = useState<SettingsSaveResult>(initial);
@@ -227,7 +229,8 @@ export function IntegrationSettings(props: IntegrationSettingsProps) {
             <h2 className={cardTitle}>GoHighLevel</h2>
             <p className={helperClass}>
               Dispatch goes out through GHL. Conversations stay in GHL — this workspace never
-              renders threads or message bodies.
+              renders threads or message bodies. Connect ad spend, the processor, calendar, and
+              forms from the cards below to unlock those owner-portal sections.
             </p>
           </div>
           <StatusBadge label={statusLabel(props.connection.status)} tone={statusTone(props.connection.status)} />
@@ -262,14 +265,23 @@ export function IntegrationSettings(props: IntegrationSettingsProps) {
             </p>
           )}
           {props.connection.status === "active" || props.connection.status === "broken" ? (
-            <form action={disconnectAction}>
-              <SubmitButton variant="secondary" pending={disconnecting} loadingLabel="Disconnecting">
+            <>
+              <form action={testAction}>
+                <SubmitButton variant="secondary" pending={testing} loadingLabel="Testing">
+                  Test
+                </SubmitButton>
+              </form>
+              <form action={disconnectAction}>
+                <SubmitButton variant="secondary" pending={disconnecting} loadingLabel="Disconnecting">
             Disconnect
           </SubmitButton>
-            </form>
+              </form>
+            </>
           ) : null}
         </div>
         {disconnectState.status === "error" ? <p className={errorClass}>{disconnectState.error}</p> : null}
+        {testState.status === "error" ? <p className={errorClass}>{testState.error}</p> : null}
+        {testState.status === "saved" ? <p className="mt-3 text-sm text-flag-good">Verified just now.</p> : null}
       </Panel>
 
       <Panel className="p-6">

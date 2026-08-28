@@ -15,7 +15,7 @@ import type { AuthContext, ClientOrgState, Membership, OrgSummary } from "@/lib/
 
 export type { AuthContext, ClientOrgState, Membership, OrgSummary } from "@/lib/auth/types";
 
-const MEMBER_COLUMNS = "id, org_id, role, display_name, email" as const;
+const MEMBER_COLUMNS = "id, org_id, role, display_name, email, surface_access" as const;
 
 export const getSessionUser = cache(async (): Promise<User | null> => {
   const supabase = await createClient();
@@ -192,6 +192,7 @@ export function toClientOrgState(ctx: AuthContext): ClientOrgState {
     role: ctx.role,
     isPlatformAdmin: ctx.isPlatformAdmin,
     memberId: ctx.member.id,
+    surfaceAccess: ctx.member.surfaceAccess,
     memberships: ctx.memberships.map((membership) => ({
       memberId: membership.id,
       role: membership.role,

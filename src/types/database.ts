@@ -1276,6 +1276,7 @@ export type Database = {
           status: Database["public"]["Enums"]["lead_status"];
           timezone: string | null;
           updated_at: string;
+          has_net_close: boolean;
         };
         Insert: {
           ad_id?: string | null;
@@ -1307,6 +1308,7 @@ export type Database = {
           status?: Database["public"]["Enums"]["lead_status"];
           timezone?: string | null;
           updated_at?: string;
+          has_net_close?: boolean;
         };
         Update: {
           ad_id?: string | null;
@@ -1338,6 +1340,7 @@ export type Database = {
           status?: Database["public"]["Enums"]["lead_status"];
           timezone?: string | null;
           updated_at?: string;
+          has_net_close?: boolean;
         };
         Relationships: [
           {
@@ -1897,6 +1900,7 @@ export type Database = {
           logged_outcome_from_mobile_at: string | null;
           mobile_walkthrough_completed_at: string | null;
           call_coaching_acknowledged_at: string | null;
+          surface_access: Database["public"]["Enums"]["surface_access"];
         };
         Insert: {
           active?: boolean;
@@ -1917,6 +1921,7 @@ export type Database = {
           logged_outcome_from_mobile_at?: string | null;
           mobile_walkthrough_completed_at?: string | null;
           call_coaching_acknowledged_at?: string | null;
+          surface_access?: Database["public"]["Enums"]["surface_access"];
         };
         Update: {
           active?: boolean;
@@ -1937,6 +1942,7 @@ export type Database = {
           logged_outcome_from_mobile_at?: string | null;
           mobile_walkthrough_completed_at?: string | null;
           call_coaching_acknowledged_at?: string | null;
+          surface_access?: Database["public"]["Enums"]["surface_access"];
         };
         Relationships: [
           {
@@ -1974,6 +1980,7 @@ export type Database = {
           org_id: string;
           role: Database["public"]["Enums"]["org_role"];
           token: string;
+          surface_access: Database["public"]["Enums"]["surface_access"];
         };
         Insert: {
           accepted_at?: string | null;
@@ -1985,6 +1992,7 @@ export type Database = {
           org_id: string;
           role: Database["public"]["Enums"]["org_role"];
           token: string;
+          surface_access?: Database["public"]["Enums"]["surface_access"];
         };
         Update: {
           accepted_at?: string | null;
@@ -1996,6 +2004,7 @@ export type Database = {
           org_id?: string;
           role?: Database["public"]["Enums"]["org_role"];
           token?: string;
+          surface_access?: Database["public"]["Enums"]["surface_access"];
         };
         Relationships: [
           {
@@ -2161,6 +2170,7 @@ export type Database = {
           payment_type: Database["public"]["Enums"]["payment_type"];
           processor: string | null;
           processor_ref: string | null;
+          kind: Database["public"]["Enums"]["revenue_kind"];
         };
         Insert: {
           amount_cents: number;
@@ -2174,6 +2184,7 @@ export type Database = {
           payment_type: Database["public"]["Enums"]["payment_type"];
           processor?: string | null;
           processor_ref?: string | null;
+          kind?: Database["public"]["Enums"]["revenue_kind"];
         };
         Update: {
           amount_cents?: number;
@@ -2187,6 +2198,7 @@ export type Database = {
           payment_type?: Database["public"]["Enums"]["payment_type"];
           processor?: string | null;
           processor_ref?: string | null;
+          kind?: Database["public"]["Enums"]["revenue_kind"];
         };
         Relationships: [
           {
@@ -4329,6 +4341,237 @@ export type Database = {
         };
         Relationships: [];
       };
+      source_connections: {
+        Row: {
+          account_label: string | null;
+          created_at: string;
+          id: string;
+          kind: Database["public"]["Enums"]["source_kind"];
+          last_error: string | null;
+          last_verified_at: string | null;
+          metadata: Json;
+          org_id: string;
+          provider: string;
+          public_token: string | null;
+          refresh_encrypted: string | null;
+          secret_encrypted: string | null;
+          status: Database["public"]["Enums"]["ghl_connection_status"];
+          token_expires_at: string | null;
+          updated_at: string;
+        };
+        Insert: {
+          account_label?: string | null;
+          created_at?: string;
+          id?: string;
+          kind: Database["public"]["Enums"]["source_kind"];
+          last_error?: string | null;
+          last_verified_at?: string | null;
+          metadata?: Json;
+          org_id: string;
+          provider: string;
+          public_token?: string | null;
+          refresh_encrypted?: string | null;
+          secret_encrypted?: string | null;
+          status?: Database["public"]["Enums"]["ghl_connection_status"];
+          token_expires_at?: string | null;
+          updated_at?: string;
+        };
+        Update: {
+          account_label?: string | null;
+          created_at?: string;
+          id?: string;
+          kind?: Database["public"]["Enums"]["source_kind"];
+          last_error?: string | null;
+          last_verified_at?: string | null;
+          metadata?: Json;
+          org_id?: string;
+          provider?: string;
+          public_token?: string | null;
+          refresh_encrypted?: string | null;
+          secret_encrypted?: string | null;
+          status?: Database["public"]["Enums"]["ghl_connection_status"];
+          token_expires_at?: string | null;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
+      ad_spend_days: {
+        Row: {
+          campaign_id: string | null;
+          campaign_name: string | null;
+          id: string;
+          modeled_conversions: number | null;
+          org_id: string;
+          platform: string;
+          platform_leads: number | null;
+          platform_purchases: number | null;
+          spend_cents: number;
+          spend_date: string;
+        };
+        Insert: {
+          campaign_id?: string | null;
+          campaign_name?: string | null;
+          id?: string;
+          modeled_conversions?: number | null;
+          org_id: string;
+          platform: string;
+          platform_leads?: number | null;
+          platform_purchases?: number | null;
+          spend_cents?: number;
+          spend_date: string;
+        };
+        Update: {
+          campaign_id?: string | null;
+          campaign_name?: string | null;
+          id?: string;
+          modeled_conversions?: number | null;
+          org_id?: string;
+          platform?: string;
+          platform_leads?: number | null;
+          platform_purchases?: number | null;
+          spend_cents?: number;
+          spend_date?: string;
+        };
+        Relationships: [];
+      };
+      processor_events: {
+        Row: {
+          amount_cents: number;
+          created_at: string;
+          currency: string;
+          id: string;
+          kind: Database["public"]["Enums"]["revenue_kind"];
+          lead_id: string | null;
+          occurred_at: string;
+          org_id: string;
+          processor: string;
+          processor_ref: string;
+        };
+        Insert: {
+          amount_cents: number;
+          created_at?: string;
+          currency?: string;
+          id?: string;
+          kind: Database["public"]["Enums"]["revenue_kind"];
+          lead_id?: string | null;
+          occurred_at: string;
+          org_id: string;
+          processor: string;
+          processor_ref: string;
+        };
+        Update: {
+          amount_cents?: number;
+          created_at?: string;
+          currency?: string;
+          id?: string;
+          kind?: Database["public"]["Enums"]["revenue_kind"];
+          lead_id?: string | null;
+          occurred_at?: string;
+          org_id?: string;
+          processor?: string;
+          processor_ref?: string;
+        };
+        Relationships: [];
+      };
+      calendar_blocks: {
+        Row: {
+          created_at: string;
+          ends_at: string;
+          external_id: string;
+          id: string;
+          kind: string;
+          lead_id: string | null;
+          member_id: string | null;
+          org_id: string;
+          source: string;
+          starts_at: string;
+        };
+        Insert: {
+          created_at?: string;
+          ends_at: string;
+          external_id: string;
+          id?: string;
+          kind: string;
+          lead_id?: string | null;
+          member_id?: string | null;
+          org_id: string;
+          source: string;
+          starts_at: string;
+        };
+        Update: {
+          created_at?: string;
+          ends_at?: string;
+          external_id?: string;
+          id?: string;
+          kind?: string;
+          lead_id?: string | null;
+          member_id?: string | null;
+          org_id?: string;
+          source?: string;
+          starts_at?: string;
+        };
+        Relationships: [];
+      };
+      form_events: {
+        Row: {
+          created_at: string;
+          event_kind: string;
+          id: string;
+          occurred_at: string;
+          org_id: string;
+          question_key: string;
+          session_id: string;
+        };
+        Insert: {
+          created_at?: string;
+          event_kind: string;
+          id?: string;
+          occurred_at?: string;
+          org_id: string;
+          question_key?: string;
+          session_id: string;
+        };
+        Update: {
+          created_at?: string;
+          event_kind?: string;
+          id?: string;
+          occurred_at?: string;
+          org_id?: string;
+          question_key?: string;
+          session_id?: string;
+        };
+        Relationships: [];
+      };
+      portal_schedules: {
+        Row: {
+          cadence: string;
+          enabled: boolean;
+          last_error: string | null;
+          last_sent_at: string | null;
+          next_send_at: string;
+          org_id: string;
+          updated_at: string;
+        };
+        Insert: {
+          cadence?: string;
+          enabled?: boolean;
+          last_error?: string | null;
+          last_sent_at?: string | null;
+          next_send_at?: string;
+          org_id: string;
+          updated_at?: string;
+        };
+        Update: {
+          cadence?: string;
+          enabled?: boolean;
+          last_error?: string | null;
+          last_sent_at?: string | null;
+          next_send_at?: string;
+          org_id?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
     };
     Functions: {
       redeem_org_invite: {
@@ -4722,6 +4965,34 @@ export type Database = {
         Args: { p_org_id: string };
         Returns: Json;
       };
+      portal_adoption: {
+        Args: { p_org_id: string; p_from: string; p_to: string };
+        Returns: Json;
+      };
+      portal_ads: {
+        Args: { p_org_id: string; p_from: string; p_to: string };
+        Returns: Json;
+      };
+      portal_processor: {
+        Args: { p_org_id: string; p_from: string; p_to: string };
+        Returns: Json;
+      };
+      portal_calendar: {
+        Args: { p_org_id: string; p_from: string; p_to: string };
+        Returns: Json;
+      };
+      portal_forms: {
+        Args: { p_org_id: string; p_from: string; p_to: string };
+        Returns: Json;
+      };
+      portal_recorder: {
+        Args: { p_org_id: string; p_from: string; p_to: string };
+        Returns: Json;
+      };
+      reporting_lead_is_closed: {
+        Args: { p_org_id: string; p_lead_id: string };
+        Returns: boolean;
+      };
       mark_mobile_training: {
         Args: { p_org_id: string; p_kind: string };
         Returns: undefined;
@@ -4976,6 +5247,15 @@ export type Database = {
         | "withheld"
         | "superseded";
       org_role: "owner" | "admin" | "closer" | "setter";
+      surface_access: "operator" | "portal";
+      revenue_kind: "sale" | "refund" | "chargeback" | "failed";
+      source_kind:
+        | "meta_ads"
+        | "google_ads"
+        | "stripe"
+        | "commas"
+        | "calendar"
+        | "form_platform";
       payment_type: "pif" | "plan" | "bnpl";
       score_factor:
         | "timeline"
@@ -5201,3 +5481,6 @@ export type Enums<T extends keyof Database["public"]["Enums"]> =
   Database["public"]["Enums"][T];
 
 export type OrgRole = Enums<"org_role">;
+export type SurfaceAccess = Enums<"surface_access">;
+export type SourceKind = Enums<"source_kind">;
+export type RevenueKind = Enums<"revenue_kind">;

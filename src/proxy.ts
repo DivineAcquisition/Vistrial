@@ -75,7 +75,7 @@ export async function proxy(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
 
-  if (path.startsWith("/app") && !user) {
+  if ((path.startsWith("/app") || path.startsWith("/portal")) && !user) {
     const login = request.nextUrl.clone();
     login.pathname = "/login";
     login.search = "";
@@ -98,5 +98,7 @@ export const config = {
     "/accept-invite/:path*",
     "/app",
     "/app/:path*",
+    "/portal",
+    "/portal/:path*",
   ],
 };

@@ -1,6 +1,6 @@
 import type { User } from "@supabase/supabase-js";
 
-import type { OrgRole } from "@/types/database";
+import type { OrgRole, SurfaceAccess } from "@/types/database";
 
 export type OrgSummary = {
   id: string;
@@ -16,6 +16,7 @@ export type Membership = {
   role: OrgRole;
   displayName: string;
   email: string;
+  surfaceAccess: SurfaceAccess;
   org: OrgSummary;
 };
 
@@ -39,6 +40,7 @@ export type ClientOrgState = {
   role: OrgRole;
   isPlatformAdmin: boolean;
   memberId: string;
+  surfaceAccess: SurfaceAccess;
   memberships: Array<{
     memberId: string;
     role: OrgRole;

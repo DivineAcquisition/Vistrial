@@ -149,11 +149,7 @@ BEGIN
 
   -- Hand count from the raw tables (the numbers the screen must match).
   SELECT count(*),
-         count(*) FILTER (
-           WHERE EXISTS (
-             SELECT 1 FROM public.revenue_log r WHERE r.lead_id = l.id AND r.org_id = l.org_id
-           )
-         )
+         count(*) FILTER (WHERE l.has_net_close)
   INTO v_n, v_k
   FROM public.leads l
   WHERE l.org_id = v_org

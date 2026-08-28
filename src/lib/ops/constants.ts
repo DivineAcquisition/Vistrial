@@ -52,6 +52,8 @@ export const OPS_JOB_NAMES = [
   "calibration",
   "call-quality",
   "verification-audit",
+  "portal-email",
+  "source-sync",
 ] as const;
 
 export type OpsJobName = (typeof OPS_JOB_NAMES)[number];

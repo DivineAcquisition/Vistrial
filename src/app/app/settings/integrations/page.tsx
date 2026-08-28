@@ -1,6 +1,7 @@
 import { PageFrame } from "@/components/app/page-frame";
 import { IntegrationSettings } from "@/app/app/settings/integrations/integration-settings";
 import { BaselineSettings } from "@/app/app/settings/integrations/baseline-settings";
+import { SourceHealthList } from "@/app/portal/panels";
 import { requireOrgSettingsManager } from "@/lib/auth/gates";
 import { LOCATION_CLAIMED_MESSAGE } from "@/lib/ghl/constants";
 import { fetchCustomFields } from "@/lib/ghl/client";
@@ -9,6 +10,7 @@ import { appUrl, ghlOAuthConfigured } from "@/lib/ghl/env";
 import { loadFollowUpHealth } from "@/lib/follow-up/health";
 import { loadOrgIngestionHealth } from "@/lib/ghl/health";
 import { loadOpenUnmatched, loadTranscriptHealth } from "@/lib/transcripts/health";
+import { loadSourceCards } from "@/lib/sources/connections";
 import { getSupabaseAdmin } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import { advancedSettingsBreadcrumbs } from "@/lib/navigation";
@@ -32,7 +34,7 @@ export default async function IntegrationsSettingsPage({
   const admin = getSupabaseAdmin();
   const supabase = await createClient();
 
-  const [connection, health, maps, transcriptHealth, unmatched, followUpHealth, orgRow, baselineRun, selfReported] =
+  const [connection, health, maps, transcriptHealth, unmatched, followUpHealth, orgRow, baselineRun, selfReported, sourceCards] =
     await Promise.all([
     supabase
       .from("ghl_connections")
@@ -67,6 +69,7 @@ export default async function IntegrationsSettingsPage({
       .select("leads_per_month, clients_closed_per_month, stated_at")
       .eq("org_id", ctx.org.id)
       .maybeSingle(),
+    loadSourceCards(admin, ctx.org.id),
   ]);
 
   const { data: assignable } = await supabase
@@ -104,7 +107,7 @@ export default async function IntegrationsSettingsPage({
   return (
     <PageFrame
       title="Integrations"
-      description="The CRM connection for this workspace."
+      description="The CRM connection for this workspace, and the optional owner-portal sources."
       breadcrumbs={advancedSettingsBreadcrumbs("Integrations", "/app/settings/integrations")}
     >
       <div className="space-y-8">
@@ -152,6 +155,11 @@ export default async function IntegrationsSettingsPage({
           label: `${nameByLead.get(row.lead_id) ?? "Lead"} · ${row.type}`,
         }))}
         followUpHealth={followUpHealth}
+      />
+      <SourceHealthList
+        sources={sourceCards}
+        now={new Date().toISOString()}
+        ghlConnected={connection.data?.status === "active"}
       />
       <BaselineSettings
         activatedAt={orgRow.data?.activated_at ?? null}

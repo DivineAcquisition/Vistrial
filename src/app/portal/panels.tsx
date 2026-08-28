@@ -7,7 +7,7 @@ import { SectionHeader } from "@/components/ui/section-header";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { formatCount, formatMinutes, formatPct, formatSample } from "@/lib/reporting/format";
 import { costPerUnit, formatCostUsd } from "@/lib/sources/costs";
-import type { SourceCardModel } from "@/lib/sources/connections";
+import type { SourceCardModel } from "@/lib/sources/catalog";
 import { helperClass } from "@/lib/ui";
 
 function asRecord(value: unknown): Record<string, unknown> {
@@ -45,13 +45,11 @@ function Unconnected({
   payload,
   source,
   now,
-  ghlConnected,
 }: {
   title: string;
   payload: Record<string, unknown>;
   source: SourceCardModel | null;
   now: string;
-  ghlConnected: boolean;
 }) {
   return (
     <Panel className="p-6">
@@ -64,7 +62,7 @@ function Unconnected({
       />
       {source ? (
         <div className="mt-6">
-          <SourceConnectionCard source={source} now={now} ghlConnected={ghlConnected} />
+          <SourceConnectionCard source={source} now={now} />
         </div>
       ) : null}
     </Panel>
@@ -137,12 +135,10 @@ export function AdsPanel({
   payload,
   sources,
   now,
-  ghlConnected,
 }: {
   payload: Record<string, unknown>;
   sources: SourceCardModel[];
   now: string;
-  ghlConnected: boolean;
 }) {
   if (payload.connected !== true) {
     return (
@@ -159,7 +155,7 @@ export function AdsPanel({
         />
         <div className="mt-6 space-y-6">
           {sources.map((source) => (
-            <SourceConnectionCard key={source.kind} source={source} now={now} ghlConnected={ghlConnected} />
+            <SourceConnectionCard key={source.kind} source={source} now={now} />
           ))}
         </div>
       </Panel>
@@ -222,7 +218,7 @@ export function AdsPanel({
       </p>
       <div className="mt-6 space-y-6">
         {sources.map((item) => (
-          <SourceConnectionCard key={item.kind} source={item} now={now} ghlConnected={ghlConnected} />
+          <SourceConnectionCard key={item.kind} source={item} now={now} />
         ))}
       </div>
     </Panel>
@@ -233,12 +229,10 @@ export function ProcessorPanel({
   payload,
   sources,
   now,
-  ghlConnected,
 }: {
   payload: Record<string, unknown>;
   sources: SourceCardModel[];
   now: string;
-  ghlConnected: boolean;
 }) {
   if (payload.connected !== true) {
     return (
@@ -252,7 +246,7 @@ export function ProcessorPanel({
         />
         <div className="mt-6 space-y-6">
           {sources.map((source) => (
-            <SourceConnectionCard key={source.kind} source={source} now={now} ghlConnected={ghlConnected} />
+            <SourceConnectionCard key={source.kind} source={source} now={now} />
           ))}
         </div>
       </Panel>
@@ -273,7 +267,7 @@ export function ProcessorPanel({
       </p>
       <div className="mt-6 space-y-6">
         {sources.map((source) => (
-          <SourceConnectionCard key={source.kind} source={source} now={now} ghlConnected={ghlConnected} />
+          <SourceConnectionCard key={source.kind} source={source} now={now} />
         ))}
       </div>
     </Panel>
@@ -284,12 +278,10 @@ export function CalendarPanel({
   payload,
   source,
   now,
-  ghlConnected,
 }: {
   payload: Record<string, unknown>;
   source: SourceCardModel | null;
   now: string;
-  ghlConnected: boolean;
 }) {
   if (payload.connected !== true) {
     return (
@@ -298,7 +290,6 @@ export function CalendarPanel({
         payload={payload}
         source={source}
         now={now}
-        ghlConnected={ghlConnected}
       />
     );
   }
@@ -323,7 +314,7 @@ export function CalendarPanel({
       </KpiGrid>
       {source ? (
         <div className="mt-6">
-          <SourceConnectionCard source={source} now={now} ghlConnected={ghlConnected} />
+          <SourceConnectionCard source={source} now={now} />
         </div>
       ) : null}
     </Panel>
@@ -339,12 +330,10 @@ export function FormsPanel({
   payload,
   source,
   now,
-  ghlConnected,
 }: {
   payload: Record<string, unknown>;
   source: SourceCardModel | null;
   now: string;
-  ghlConnected: boolean;
 }) {
   if (payload.connected !== true) {
     return (
@@ -353,7 +342,6 @@ export function FormsPanel({
         payload={payload}
         source={source}
         now={now}
-        ghlConnected={ghlConnected}
       />
     );
   }
@@ -398,7 +386,7 @@ export function FormsPanel({
       )}
       {source ? (
         <div className="mt-6">
-          <SourceConnectionCard source={source} now={now} ghlConnected={ghlConnected} />
+          <SourceConnectionCard source={source} now={now} />
         </div>
       ) : null}
     </Panel>
@@ -479,16 +467,14 @@ export function RecorderPanel({
 export function SourceHealthList({
   sources,
   now,
-  ghlConnected,
 }: {
   sources: SourceCardModel[];
   now: string;
-  ghlConnected: boolean;
 }) {
   return (
     <div className="space-y-6">
       {sources.map((source) => (
-        <SourceConnectionCard key={source.kind} source={source} now={now} ghlConnected={ghlConnected} />
+        <SourceConnectionCard key={source.kind} source={source} now={now} />
       ))}
     </div>
   );

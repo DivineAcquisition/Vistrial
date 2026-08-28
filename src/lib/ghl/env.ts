@@ -1,3 +1,5 @@
+import "server-only";
+
 import { appUrl } from "@/lib/app-url";
 import { GHL_API_BASE, GHL_OAUTH_AUTHORIZE_DEFAULT } from "@/lib/ghl/constants";
 

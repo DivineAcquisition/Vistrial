@@ -1,3 +1,5 @@
+import "server-only";
+
 import { randomBytes } from "node:crypto";
 
 import { encryptSecret } from "@/lib/ghl/crypto";
@@ -6,10 +8,11 @@ import type { GhlDb } from "@/lib/ghl/tokens";
 import {
   SOURCE_CATALOG,
   SOURCE_KINDS,
-  type SourceCatalogEntry,
+  type SourceCardModel,
   type SourceConnectMode,
 } from "@/lib/sources/catalog";
 import {
+  formWebhookUrl,
   googleAdsConfigured,
   googleCalendarConfigured,
   metaAdsConfigured,
@@ -17,20 +20,7 @@ import {
 } from "@/lib/sources/env";
 import type { Enums, Json } from "@/types/database";
 
-export type SourceConnectionPublic = {
-  kind: Enums<"source_kind">;
-  status: Enums<"ghl_connection_status"> | "missing";
-  provider: string;
-  accountLabel: string | null;
-  lastVerifiedAt: string | null;
-  lastError: string | null;
-  publicToken: string | null;
-  metadata: Record<string, unknown>;
-};
-
-export type SourceCardModel = SourceCatalogEntry & SourceConnectionPublic & {
-  connected: boolean;
-};
+export type { SourceCardModel, SourceConnectionPublic } from "@/lib/sources/catalog";
 
 export function newPublicToken(): string {
   return randomBytes(24).toString("hex");
@@ -96,6 +86,9 @@ export async function loadSourceCards(db: GhlDb, orgId: string): Promise<SourceC
       lastError: row?.last_error ?? null,
       publicToken: row?.public_token ?? null,
       metadata: (row?.metadata as Record<string, unknown> | null) ?? {},
+      webhookUrl:
+        kind === "form_platform" && row?.public_token ? formWebhookUrl(row.public_token) : null,
+      unavailableReason: unavailableReason(kind, ghlConnected),
       connected: row?.status === "active",
     };
   });

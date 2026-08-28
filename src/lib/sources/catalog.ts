@@ -1,4 +1,4 @@
-import type { SourceKind } from "@/types/database";
+import type { Enums, SourceKind } from "@/types/database";
 
 export type SourceConnectMode = "oauth" | "api_key" | "webhook" | "ghl_reuse" | "unavailable";
 
@@ -10,6 +10,24 @@ export type SourceCatalogEntry = {
   scopesLine: string;
   connectMode: SourceConnectMode;
 };
+
+export type SourceConnectionPublic = {
+  kind: Enums<"source_kind">;
+  status: Enums<"ghl_connection_status"> | "missing";
+  provider: string;
+  accountLabel: string | null;
+  lastVerifiedAt: string | null;
+  lastError: string | null;
+  publicToken: string | null;
+  metadata: Record<string, unknown>;
+  webhookUrl: string | null;
+  unavailableReason: string;
+};
+
+export type SourceCardModel = SourceCatalogEntry &
+  SourceConnectionPublic & {
+    connected: boolean;
+  };
 
 export const SOURCE_KINDS: SourceKind[] = [
   "meta_ads",

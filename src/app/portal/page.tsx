@@ -71,12 +71,10 @@ export default async function PortalPage({
 
   const previous = previousEqualRange(range, activatedAt);
   const admin = getSupabaseAdmin();
-  const [sources, schedule, ghl] = await Promise.all([
+  const [sources, schedule] = await Promise.all([
     loadSourceCards(admin, ctx.org.id),
     loadPortalSchedule(ctx.org.id),
-    admin.from("ghl_connections").select("status").eq("org_id", ctx.org.id).maybeSingle(),
   ]);
-  const ghlConnected = ghl.data?.status === "active";
   const byKind = Object.fromEntries(sources.map((source) => [source.kind, source]));
 
   const [outcome, coverage, sourcesPanel, terminal, speed, previousOutcome, previousCoverage, adoption, ads, processor, calendar, forms, recorder] =
@@ -146,25 +144,21 @@ export default async function PortalPage({
           payload={ads}
           sources={sources.filter((source) => source.kind === "meta_ads" || source.kind === "google_ads")}
           now={now}
-          ghlConnected={ghlConnected}
         />
         <ProcessorPanel
           payload={processor}
           sources={sources.filter((source) => source.kind === "stripe" || source.kind === "commas")}
           now={now}
-          ghlConnected={ghlConnected}
         />
         <CalendarPanel
           payload={calendar}
           source={byKind.calendar ?? null}
           now={now}
-          ghlConnected={ghlConnected}
         />
         <FormsPanel
           payload={forms}
           source={byKind.form_platform ?? null}
           now={now}
-          ghlConnected={ghlConnected}
         />
         <RecorderPanel payload={recorder} />
       </section>

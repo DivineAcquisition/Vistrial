@@ -1,3 +1,5 @@
+import "server-only";
+
 import { appUrl } from "@/lib/app-url";
 
 export function sourceOAuthRedirectUri(): string {

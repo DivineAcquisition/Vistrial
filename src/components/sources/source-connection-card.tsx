@@ -16,8 +16,7 @@ import { Input } from "@/components/ui/input";
 import { Panel } from "@/components/ui/panel";
 import { StatusBadge } from "@/components/ui/status-badge";
 import type { Tone } from "@/components/ui/tone";
-import { formWebhookUrl } from "@/lib/sources/env";
-import { unavailableReason, type SourceCardModel } from "@/lib/sources/connections";
+import type { SourceCardModel } from "@/lib/sources/catalog";
 import { formatRelative } from "@/lib/format";
 import { cardTitle, errorClass, helperClass } from "@/lib/ui";
 
@@ -39,11 +38,9 @@ function statusLabel(status: SourceCardModel["status"]): string {
 export function SourceConnectionCard({
   source,
   now,
-  ghlConnected,
 }: {
   source: SourceCardModel;
   now: string;
-  ghlConnected: boolean;
 }) {
   const [testState, testAction, testing] = useActionState(testConnectedSource, idle);
   const [disconnectState, disconnectAction, disconnecting] = useActionState(
@@ -87,13 +84,13 @@ export function SourceConnectionCard({
       </dl>
       {source.lastError ? <p className={`${errorClass} mt-3`}>{source.lastError}</p> : null}
 
-      {source.kind === "form_platform" && source.publicToken ? (
-        <p className={`${helperClass} mt-3 break-all`}>Webhook URL: {formWebhookUrl(source.publicToken)}</p>
+      {source.webhookUrl ? (
+        <p className={`${helperClass} mt-3 break-all`}>Webhook URL: {source.webhookUrl}</p>
       ) : null}
 
       <div className="mt-6 flex flex-wrap gap-3">
         {source.connectMode === "unavailable" ? (
-          <p className="text-sm text-silver">{unavailableReason(source.kind, ghlConnected)}</p>
+          <p className="text-sm text-silver">{source.unavailableReason}</p>
         ) : null}
 
         {source.connectMode === "oauth" && !connected ? (

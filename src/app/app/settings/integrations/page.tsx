@@ -159,7 +159,6 @@ export default async function IntegrationsSettingsPage({
       <SourceHealthList
         sources={sourceCards}
         now={new Date().toISOString()}
-        ghlConnected={connection.data?.status === "active"}
       />
       <BaselineSettings
         activatedAt={orgRow.data?.activated_at ?? null}

@@ -251,6 +251,9 @@ BEGIN
     RAISE EXCEPTION 'setter was allowed to call portal_ads';
   END IF;
 
+  RESET ROLE;
+  PERFORM set_config('request.jwt.claim.sub', '', false);
+
   -- Portal-only is owner/admin. A setter cannot hold it.
   BEGIN
     UPDATE public.org_members
@@ -265,6 +268,7 @@ END
 $$;
 
 RESET ROLE;
+SELECT set_config('request.jwt.claim.sub', '', false);
 
 -- Unusable baseline: no comparison is shown.
 INSERT INTO public.organizations (

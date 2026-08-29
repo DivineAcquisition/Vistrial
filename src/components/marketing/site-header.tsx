@@ -85,7 +85,9 @@ export function SiteHeader({
 
         <div className="flex items-center gap-2">
           {action === "waitlist" ? (
-            <CtaLink position="nav">{NAV.waitlist}</CtaLink>
+            <CtaLink position="nav" size="sm" className="rounded-full px-4">
+              {NAV.waitlist}
+            </CtaLink>
           ) : null}
 
           {onPage ? (
@@ -127,7 +129,7 @@ export function SiteHeader({
                     <DrawerClose asChild>
                       <Button
                         variant="gradient"
-                        className="w-full"
+                        className="w-full rounded-full"
                         render={<a href={waitlistHref("nav")} data-cta-position="nav" />}
                       >
                         {NAV.waitlist}

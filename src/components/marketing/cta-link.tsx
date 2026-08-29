@@ -1,9 +1,10 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
 
-import { Button } from "@/components/ui/button";
+import { Button, type ButtonSize } from "@/components/ui/button";
 import { waitlistHref, type CtaPosition } from "@/lib/marketing/config";
 import { NAV } from "@/lib/marketing/copy";
+import { cn } from "@/lib/utils";
 
 export function SkipToContent() {
   return (
@@ -25,13 +26,13 @@ export function CtaLink({
   position: CtaPosition;
   children: ReactNode;
   className?: string;
-  size?: "sm" | "lg";
+  size?: ButtonSize;
 }) {
   return (
     <Button
       variant="gradient"
       size={size}
-      className={className}
+      className={cn("rounded-full", className)}
       render={<Link href={waitlistHref(position)} data-cta-position={position} />}
     >
       {children}

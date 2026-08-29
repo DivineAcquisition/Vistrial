@@ -5,7 +5,6 @@ import { CtaLink } from "@/components/marketing/cta-link";
 import { GhlConnectVisual } from "@/components/marketing/ghl-connect";
 import {
   CtaGroup,
-  FaqAccordion,
   FeatureCard,
   FinalCta,
   MarketingSection,
@@ -22,7 +21,6 @@ import { MagicCard } from "@/components/ui/magic-card";
 import { Particles } from "@/components/ui/particles";
 import {
   CASE_FILE,
-  FAQ,
   GHL,
   HERO,
   MOMENTS,
@@ -73,6 +71,10 @@ export function LandingPage() {
   return (
     <>
       <section className={cn(marketingPageGutter, "relative overflow-hidden pb-24 pt-16 sm:pb-32 sm:pt-24")}>
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-0 z-0 bg-linear-to-b from-brand-500/18 via-brand-500/5 to-transparent"
+        />
         <Particles
           className="absolute inset-0 z-0"
           quantity={48}
@@ -94,9 +96,12 @@ export function LandingPage() {
             </h1>
             <p className={cn(marketingSubhead, "mt-6 max-w-xl")}>{HERO.subhead}</p>
             <CtaGroup>
-              <CtaLink position="hero">
+              <CtaLink position="hero" size="xl" className="rounded-full px-6">
                 {HERO.primaryCta}
-                <ArrowRight aria-hidden />
+                <ArrowRight
+                  aria-hidden="true"
+                  className="transition-transform in-[[data-slot=button]:hover]:translate-x-0.5"
+                />
               </CtaLink>
               <a href="#case-file" className={marketingTextLink}>
                 {HERO.secondaryCta}
@@ -230,13 +235,10 @@ export function LandingPage() {
               <WaitlistForm position="waitlist" />
             </div>
             <p className={cn(captionText, "mt-4")}>{WAITLIST.underCta}</p>
+            <p className={cn(captionText, "mx-auto mt-3 max-w-xl")}>{WAITLIST.notFor}</p>
           </FinalCta>
         </div>
       </section>
-
-      <MarketingSection id="faq" headline={FAQ.headline} narrow align="center">
-        <FaqAccordion items={FAQ.items} />
-      </MarketingSection>
     </>
   );
 }

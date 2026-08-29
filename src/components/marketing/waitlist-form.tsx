@@ -94,7 +94,7 @@ export function WaitlistForm({
           className="min-w-0 flex-1"
           size="lg"
         />
-        <Button type="submit" variant="gradient" size="lg" loading={pending} loadingLabel={WAITLIST.pending}>
+        <Button type="submit" variant="gradient" size="lg" className="rounded-full px-5" loading={pending} loadingLabel={WAITLIST.pending}>
           {WAITLIST.submit}
         </Button>
       </div>

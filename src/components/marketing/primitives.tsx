@@ -3,12 +3,6 @@ import type { ReactNode } from "react";
 
 import { BorderBeam } from "@/components/ui/border-beam";
 import { ShineBorder } from "@/components/ui/shine-border";
-import {
-  Accordion,
-  AccordionItem,
-  AccordionPanel,
-  AccordionTrigger,
-} from "@/components/ui/accordion";
 
 import { MagicCard } from "@/components/ui/magic-card";
 import { Panel } from "@/components/ui/panel";
@@ -179,30 +173,6 @@ export function ProductFrame({
         <div className="overflow-hidden">{children}</div>
       </div>
     </figure>
-  );
-}
-
-export function FaqAccordion({
-  items,
-}: {
-  items: readonly { question: string; answer: string }[];
-}) {
-  return (
-    <Accordion
-      multiple
-      className="divide-y divide-white/[0.07] border-y border-white/[0.07]"
-    >
-      {items.map((item, index) => (
-        <AccordionItem key={item.question} value={`faq-${index}`}>
-          <AccordionTrigger className={cn(marketingCardTitle, "py-5")}>
-            {item.question}
-          </AccordionTrigger>
-          <AccordionPanel className={cn(marketingBody, "max-w-2xl pr-8")}>
-            {item.answer}
-          </AccordionPanel>
-        </AccordionItem>
-      ))}
-    </Accordion>
   );
 }
 

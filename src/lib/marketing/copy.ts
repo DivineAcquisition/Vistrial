@@ -4,29 +4,29 @@
  */
 
 export const SITE_DESCRIPTION =
-  "Vistrial gives every lead a case file: how ready they are, full contact history, what was said on the last call, and follow-up written from it. Sits on top of LeadConnector. Nothing to migrate.";
+  "Sits on top of LeadConnector. Vistrial is a case-file layer: every lead gets a readiness score, full contact history, what was said on the last call, and follow-up written from it. Nothing to migrate.";
 
 export const HERO = {
-  headline: "Your team is calling leads they know nothing about.",
+  headline: "Give every closer the file before the call.",
   /** The phrase that carries the gradient. Visual only — the headline is unchanged. */
-  headlineAccent: "they know nothing about.",
+  headlineAccent: "before the call.",
   /** Taken from SITE_DESCRIPTION — not a new claim. */
   eyebrow: "Sits on top of LeadConnector",
   subhead: SITE_DESCRIPTION,
-  primaryCta: "Join the waitlist",
-  secondaryCta: "See how it works",
+  primaryCta: "Request access",
+  secondaryCta: "See the product",
   underCta: "Private software. Access is waitlist only.",
 } as const;
 
 export const PROBLEM = {
-  headline: "The leads are fine. The follow-up is where the money goes.",
+  headline: "Leads stall where context is missing.",
   points: [
     {
-      lead: "Nobody knows who called last, or when.",
+      lead: "Touches are not a system.",
       rest: "So leads get contacted twice, or never.",
     },
     {
-      lead: "Closers walk into calls blind.",
+      lead: "Call context never reaches the next screen.",
       rest: "A name, a calendar invite, and three form answers.",
     },
     {
@@ -74,7 +74,7 @@ export const CASE_FILE = {
 } as const;
 
 export const MOMENTS = {
-  headline: "Three moments where it changes the outcome.",
+  headline: "Where it sits in the workflow.",
   items: [
     {
       title: "Before the first touch",
@@ -118,49 +118,17 @@ export const AUDIT = {
 } as const;
 
 export const WAITLIST = {
-  headline: "This is private software.",
+  headline: "Request access.",
   body: "Vistrial is not generally available. Join the waitlist. We email when a seat opens.",
-  cta: "Join the waitlist",
+  cta: "Request access",
   underCta: "A name and an email. Nothing else.",
-  submit: "Join the waitlist",
+  submit: "Request access",
   pending: "Joining",
   sent: "You are on the list. We will email the address you gave when a seat opens.",
   nameLabel: "Name",
   emailLabel: "Work email",
-} as const;
-
-export const FAQ = {
-  headline: "FAQ",
-  items: [
-    {
-      question: "Do I have to leave LeadConnector?",
-      answer: "No. It stays your CRM and your inbox. Vistrial adds a layer on top.",
-    },
-    {
-      question: "Does it message my prospects automatically?",
-      answer:
-        "It drafts. A person on your team approves every message before it sends. There is no autopilot, deliberately.",
-    },
-    {
-      question: "What if we do not record calls?",
-      answer:
-        "Everything else works. Transcripts add the pre-call brief and the follow-up drafting, so you get more from it if you record, but it is not required.",
-    },
-    {
-      question: "How long until it is running?",
-      answer: "Connection is immediate. Configuration and training your team, days not weeks.",
-    },
-    {
-      question: "What if my CRM history is a mess?",
-      answer:
-        "Common. Once you are in, we look at whether there is enough history to compare against, rather than inventing a baseline.",
-    },
-    {
-      question: "Who is this not for?",
-      answer:
-        "Businesses under roughly $8K a month, anyone selling something that closes without a conversation, and anyone whose lead volume is small enough to work by memory.",
-    },
-  ],
+  notFor:
+    "Not for businesses under roughly $8K a month, anything that closes without a conversation, or lead volume small enough to work by memory.",
 } as const;
 
 export const BOOK = {
@@ -204,14 +172,13 @@ export const SOCIAL_IMAGE = {
 } as const;
 
 export const NAV = {
-  waitlist: "Join waitlist",
+  waitlist: "Request access",
   book: "Book the audit",
   skipToContent: "Skip to content",
   openMenu: "Open menu",
   closeMenu: "Close menu",
   sections: [
-    { href: "#case-file", label: "Case file" },
-    { href: "#moments", label: "How it works" },
-    { href: "#faq", label: "FAQ" },
+    { href: "#case-file", label: "Product" },
+    { href: "#moments", label: "Workflow" },
   ],
 } as const;

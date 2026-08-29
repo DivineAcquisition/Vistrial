@@ -6,7 +6,7 @@ import { cn } from "@/lib/utils";
  * Geist for UI copy, Cal Sans for titles, brand-500, ink-950.
  *
  * Scale is meant to sit with dense dark-SaaS marketing pages: large type,
- * rectangle buttons with round corners, not compact newsletter chrome.
+ * pill CTAs, not compact newsletter chrome.
  */
 
 export const marketingHeroTitle =

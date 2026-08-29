@@ -220,7 +220,7 @@ export function QualifyForm({
         </p>
       ) : null}
 
-      <SubmitButton pending={pending} variant="gradient" size="lg" loadingLabel={BOOK.pending} className="mt-1 w-full">
+      <SubmitButton pending={pending} variant="gradient" size="lg" loadingLabel={BOOK.pending} className="mt-1 w-full rounded-full">
         {BOOK.submit}
       </SubmitButton>
     </form>
@@ -313,7 +313,7 @@ export function ContactForm() {
           {error}
         </p>
       ) : null}
-      <SubmitButton pending={pending} variant="gradient" size="lg" loadingLabel={CONTACT_PAGE.pending} className="w-full">
+      <SubmitButton pending={pending} variant="gradient" size="lg" loadingLabel={CONTACT_PAGE.pending} className="w-full rounded-full">
         {CONTACT_PAGE.submit}
       </SubmitButton>
     </form>

@@ -3,7 +3,6 @@ import { describe, expect, it } from "vitest";
 import {
   CASE_FILE,
   CRM,
-  FAQ,
   HERO,
   MOMENTS,
   OUTCOME,
@@ -14,13 +13,13 @@ import {
 
 describe("landing copy", () => {
   it("keeps the specified headlines in argument order", () => {
-    expect(HERO.headline).toBe("Your team is calling leads they know nothing about.");
-    expect(PROBLEM.headline).toBe("The leads are fine. The follow-up is where the money goes.");
+    expect(HERO.headline).toBe("Give every closer the file before the call.");
+    expect(PROBLEM.headline).toBe("Leads stall where context is missing.");
     expect(CASE_FILE.headline).toBe("One file per lead. Everything known, in one place.");
-    expect(MOMENTS.headline).toBe("Three moments where it changes the outcome.");
+    expect(MOMENTS.headline).toBe("Where it sits in the workflow.");
     expect(OUTCOME.headline).toBe("The number we track is clients closed per hundred leads.");
     expect(CRM.headline).toBe("It runs on the CRM you already have.");
-    expect(WAITLIST.headline).toBe("This is private software.");
+    expect(WAITLIST.headline).toBe("Request access.");
   });
 
   it("does not use the phrase AI-powered", () => {
@@ -33,7 +32,6 @@ describe("landing copy", () => {
       OUTCOME,
       CRM,
       WAITLIST,
-      FAQ,
     });
     expect(blob).not.toMatch(/AI-powered/i);
     expect(blob).not.toMatch(/ai powered/i);
@@ -52,9 +50,12 @@ describe("landing copy", () => {
   });
 
   it("names who this is not for, specifically", () => {
-    const item = FAQ.items.find((row) => row.question === "Who is this not for?");
-    expect(item?.answer).toBe(
-      "Businesses under roughly $8K a month, anyone selling something that closes without a conversation, and anyone whose lead volume is small enough to work by memory."
+    expect(WAITLIST.notFor).toBe(
+      "Not for businesses under roughly $8K a month, anything that closes without a conversation, or lead volume small enough to work by memory."
     );
+  });
+
+  it("keeps the headline accent as a substring of the headline", () => {
+    expect(HERO.headline).toContain(HERO.headlineAccent);
   });
 });

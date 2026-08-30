@@ -26,7 +26,7 @@ export async function GET(request: Request) {
     const db = getSupabaseAdmin();
     const limited = await rateLimitWebhook(db, request, "oauth");
     if (!limited.allowed) {
-      await recordHttpSample(db, "/api/ghl/oauth/callback", true);
+      await recordHttpSample(db, "/api/leadconnector/oauth/callback", true);
       return new NextResponse("Too many requests", { status: 429 });
     }
   } catch {

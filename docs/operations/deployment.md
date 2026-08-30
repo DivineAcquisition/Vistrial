@@ -8,7 +8,7 @@
 
 ## Webhooks during a deploy
 
-`POST /api/ghl/webhooks` and transcript webhooks **insert first**, then process with `after()`. An in-flight request either completes the insert or returns 5xx and the provider retries. Queued `webhook_events` survive the swap. A deploy during business hours must not require draining the queue first.
+`POST /api/leadconnector/webhooks` (and the `/api/ghl/webhooks` alias) and transcript webhooks **insert first**, then process with `after()`. An in-flight request either completes the insert or returns 5xx and the provider retries. Queued `webhook_events` survive the swap. A deploy during business hours must not require draining the queue first.
 
 ## Verified in this repo
 

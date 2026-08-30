@@ -14,7 +14,7 @@ export async function POST(request: Request) {
   const db = getSupabaseAdmin();
   const limited = await rateLimitWebhook(db, request, "ghl");
   if (!limited.allowed) {
-    await recordHttpSample(db, "/api/ghl/webhooks", true);
+    await recordHttpSample(db, "/api/leadconnector/webhooks", true);
     return NextResponse.json({ error: "Too many requests" }, { status: 429 });
   }
 
@@ -29,7 +29,7 @@ export async function POST(request: Request) {
     });
 
     if (result.httpStatus === 401) {
-      await recordHttpSample(db, "/api/ghl/webhooks", true);
+      await recordHttpSample(db, "/api/leadconnector/webhooks", true);
       return NextResponse.json({ error: "Invalid signature" }, { status: 401 });
     }
 
@@ -37,10 +37,10 @@ export async function POST(request: Request) {
       await processGhlWebhookQueue(getSupabaseAdmin());
     });
 
-    await recordHttpSample(db, "/api/ghl/webhooks", false);
+    await recordHttpSample(db, "/api/leadconnector/webhooks", false);
     return NextResponse.json({ ok: true, duplicate: result.duplicate });
   } catch {
-    await recordHttpSample(db, "/api/ghl/webhooks", true);
+    await recordHttpSample(db, "/api/leadconnector/webhooks", true);
     return NextResponse.json({ error: "Ingest failed" }, { status: 500 });
   }
 }

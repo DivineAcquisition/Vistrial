@@ -37,6 +37,8 @@ describe("landing copy", () => {
     });
     expect(blob).not.toMatch(/AI-powered/i);
     expect(blob).not.toMatch(/ai powered/i);
+    expect(blob).not.toMatch(/HighLevel/i);
+    expect(blob).not.toMatch(/\bGHL\b/);
   });
 
   it("uses existing product language for the hero eyebrow", () => {

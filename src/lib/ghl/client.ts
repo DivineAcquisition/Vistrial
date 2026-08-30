@@ -74,7 +74,7 @@ export async function exchangeAuthorizationCode(code: string): Promise<GhlTokenS
   const tokens = asTokenSet(json);
   if (!response.ok || !tokens) {
     ghlError("ghl.oauth.exchange_failed", { status: response.status });
-    throw new Error("Could not complete the GoHighLevel connection.");
+    throw new Error("Could not complete the LeadConnector connection.");
   }
   ghlLog("ghl.oauth.exchanged", { userType: tokens.userType, hasLocation: Boolean(tokens.locationId) });
   return tokens;
@@ -123,7 +123,7 @@ export async function exchangeLocationToken(args: {
   const tokens = asTokenSet(json);
   if (!response.ok || !tokens) {
     ghlError("ghl.oauth.location_token_failed", { status: response.status });
-    throw new Error("Could not create a location token for that GoHighLevel account.");
+    throw new Error("Could not create a location token for that LeadConnector account.");
   }
   return { ...tokens, locationId: tokens.locationId ?? args.locationId, companyId: tokens.companyId ?? args.companyId };
 }

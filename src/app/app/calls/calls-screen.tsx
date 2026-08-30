@@ -49,7 +49,7 @@ export function CallsScreen({
         <EmptyState
           kind="unconfigured"
           title="Calls cannot load while the CRM connection is broken"
-          detail="Appointments will not sync until GoHighLevel is reconnected. This is not an empty call list."
+          detail="Appointments will not sync until LeadConnector is reconnected. This is not an empty call list."
           action={integrations}
         />
       );
@@ -67,7 +67,7 @@ export function CallsScreen({
     return (
       <EmptyState
         title="No calls yet"
-        detail="GoHighLevel is connected. Booked appointments will list here after they ingest."
+        detail="LeadConnector is connected. Booked appointments will list here after they ingest."
       />
     );
   }

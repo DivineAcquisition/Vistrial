@@ -147,7 +147,7 @@ export function IntegrationSettings(props: IntegrationSettingsProps) {
 
       {props.connection.lastSetupError ? (
         <Notice tone="warning" title="Webhook registration did not finish">
-          The location is linked, but HighLevel did not accept the webhook subscription. Inbound
+          The location is linked, but LeadConnector did not accept the webhook subscription. Inbound
             events will not arrive until this is fixed. Reconnect, or check the marketplace app
             webhook URL. Recorded cause: {props.connection.lastSetupError}.
         </Notice>
@@ -155,7 +155,7 @@ export function IntegrationSettings(props: IntegrationSettingsProps) {
 
       {props.connection.status === "active" && props.maps.length === 0 ? (
         <Notice tone="warning" title="No application field maps">
-          Contacts can ingest, but intake scores will stay empty until GHL custom fields are
+          Contacts can ingest, but intake scores will stay empty until LeadConnector custom fields are
             mapped onto answer keys. A blank score is not a successful scoring setup.
         </Notice>
       ) : null}
@@ -195,7 +195,7 @@ export function IntegrationSettings(props: IntegrationSettingsProps) {
 
       {props.selectLocation ? (
         <Panel className="p-6">
-          <h2 className={cardTitle}>Choose a GoHighLevel location</h2>
+          <h2 className={cardTitle}>Choose a LeadConnector location</h2>
           <p className={helperClass}>
             Agency access was granted. Link exactly one location to this workspace.
           </p>
@@ -226,11 +226,11 @@ export function IntegrationSettings(props: IntegrationSettingsProps) {
       <Panel className="p-6">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
-            <h2 className={cardTitle}>GoHighLevel</h2>
+            <h2 className={cardTitle}>LeadConnector</h2>
             <p className={helperClass}>
-              Dispatch goes out through GHL. Conversations stay in GHL — this workspace never
-              renders threads or message bodies. Connect ad spend, the processor, calendar, and
-              forms from the cards below to unlock those owner-portal sections.
+              Dispatch goes out through LeadConnector. Conversations stay in LeadConnector — this
+              workspace never renders threads or message bodies. Connect ad spend, the processor,
+              calendar, and forms from the cards below to unlock those owner-portal sections.
             </p>
           </div>
           <StatusBadge label={statusLabel(props.connection.status)} tone={statusTone(props.connection.status)} />
@@ -253,10 +253,10 @@ export function IntegrationSettings(props: IntegrationSettingsProps) {
 
         <div className="mt-6 flex flex-wrap gap-3">
           {props.oauthConfigured ? (
-            <Button variant="gradient" size="lg" render={<a href="/api/ghl/oauth/start" />}>
+            <Button variant="gradient" size="lg" render={<a href="/api/leadconnector/oauth/start" />}>
               {props.connection.status === "active" || props.connection.status === "broken"
                 ? "Reconnect"
-                : "Connect GoHighLevel"}
+                : "Connect LeadConnector"}
             </Button>
           ) : (
             <p className="text-sm text-silver">
@@ -425,15 +425,15 @@ export function IntegrationSettings(props: IntegrationSettingsProps) {
       <Panel className="p-6">
         <h2 className={cardTitle}>Application field mapping</h2>
         <p className={helperClass}>
-          Map this location&apos;s GHL custom fields onto the application answer keys the scoring
-          engine already reads. This is data, not code — every client&apos;s GHL is different.
+          Map this location&apos;s LeadConnector custom fields onto the application answer keys the scoring
+          engine already reads. This is data, not code — every client&apos;s LeadConnector is different.
         </p>
         <div className="mt-5 space-y-4">
           {maps.map((map, index) => (
             <div key={map.id} className="grid gap-3 sm:grid-cols-3">
               {props.customFields.length > 0 ? (
                 <div>
-                  <label className={labelClass}>GHL field</label>
+                  <label className={labelClass}>LeadConnector field</label>
                   <Select
                     
                     value={map.ghlFieldId}
@@ -462,7 +462,7 @@ export function IntegrationSettings(props: IntegrationSettingsProps) {
                 </div>
               ) : (
                 <div>
-                  <Field label="GHL field id" name={`ghl-field-id-${map.id}`}>
+                  <Field label="LeadConnector field id" name={`ghl-field-id-${map.id}`}>
                     <Input
                       id={`ghl-field-id-${map.id}`}
                       type="text"
@@ -480,7 +480,7 @@ export function IntegrationSettings(props: IntegrationSettingsProps) {
                 </div>
               )}
               <div>
-                <Field label="GHL field key" name={`ghl-field-key-${map.id}`}>
+                <Field label="LeadConnector field key" name={`ghl-field-key-${map.id}`}>
                   <Input
                     id={`ghl-field-key-${map.id}`}
                     type="text"
@@ -564,7 +564,7 @@ export function IntegrationSettings(props: IntegrationSettingsProps) {
       <Panel className="p-6">
         <h2 className={cardTitle}>Call recorders</h2>
         <p className={helperClass}>
-          Webhooks for Fathom, Fireflies, Zoom, and GHL. Optional API key for scheduled pull.
+          Webhooks for Fathom, Fireflies, Zoom, and LeadConnector. Optional API key for scheduled pull.
           Manual paste stays available as the fallback. Audio is never stored.
         </p>
         {transcriptStatus ? <p className="mt-3 text-sm text-silver">{transcriptStatus}</p> : null}

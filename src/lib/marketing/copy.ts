@@ -4,14 +4,14 @@
  */
 
 export const SITE_DESCRIPTION =
-  "Vistrial gives every lead a case file: readiness score, full contact history, what was said on the last call, and follow-up written from it. Sits on top of GoHighLevel. Nothing to migrate.";
+  "Vistrial gives every lead a case file: readiness score, full contact history, what was said on the last call, and follow-up written from it. Sits on top of LeadConnector. Nothing to migrate.";
 
 export const HERO = {
   headline: "Your team is calling leads they know nothing about.",
   /** The phrase that carries the gradient. Visual only — the headline is unchanged. */
   headlineAccent: "they know nothing about.",
   /** Taken from SITE_DESCRIPTION — not a new claim. */
-  eyebrow: "Sits on top of GoHighLevel",
+  eyebrow: "Sits on top of LeadConnector",
   subhead: SITE_DESCRIPTION,
   primaryCta: "Join the waitlist",
   secondaryCta: "See how it works",
@@ -105,13 +105,13 @@ export const OUTCOME = {
 
 export const GHL = {
   headline: "It runs on the CRM you already have.",
-  body: "GoHighLevel stays your system of record. Your conversations, your calendar, your pipeline, your automations: unchanged. Vistrial reads from it, adds the layer it does not have, and sends through it. One click to connect. Nothing to migrate, nothing to rebuild, nothing to retrain your team on from scratch.",
-  listingLive: "Open the HighLevel Marketplace listing",
+  body: "LeadConnector stays your system of record. Your conversations, your calendar, your pipeline, your automations: unchanged. Vistrial reads from it, adds the layer it does not have, and sends through it. One click to connect. Nothing to migrate, nothing to rebuild, nothing to retrain your team on from scratch.",
+  listingLive: "Open the LeadConnector Marketplace listing",
 } as const;
 
 export const AUDIT = {
   headline: "Find out what you are leaking.",
-  body: "Thirty minutes. We connect to your GoHighLevel, pull the last twelve months, and show you: how many leads never got a human touch, your real median response time, how many went quiet after one call, and what that is worth at your close rate and price point.",
+  body: "Thirty minutes. We connect to your LeadConnector, pull the last twelve months, and show you: how many leads never got a human touch, your real median response time, how many went quiet after one call, and what that is worth at your close rate and price point.",
   keep: "You keep the report either way.",
   cta: "Book the audit",
   underCta: "No deck, no slides, just your numbers.",
@@ -133,7 +133,7 @@ export const FAQ = {
   headline: "FAQ",
   items: [
     {
-      question: "Do I have to leave GoHighLevel?",
+      question: "Do I have to leave LeadConnector?",
       answer: "No. It stays your CRM and your inbox. Vistrial adds a layer on top.",
     },
     {
@@ -167,7 +167,7 @@ export const BOOK = {
   eyebrow: "Lead Leak Audit",
   title: "A few questions, then you pick a time.",
   description:
-    "Thirty minutes. We pull your own numbers from GoHighLevel. No pitch deck.",
+    "Thirty minutes. We pull your own numbers from LeadConnector. No pitch deck.",
   submit: "Continue to the calendar",
   pending: "Submitting",
 } as const;

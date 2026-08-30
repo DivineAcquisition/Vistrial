@@ -66,7 +66,7 @@ export async function linkLocationToOrg(
       return { ok: false, error: "location_claimed" };
     }
     ghlError("ghl.oauth.persist_failed", { orgId: args.orgId, code: error.code });
-    throw new Error("Could not store the GoHighLevel connection.");
+    throw new Error("Could not store the LeadConnector connection.");
   }
 
   await persistTokens(db, args.orgId, args.tokens);

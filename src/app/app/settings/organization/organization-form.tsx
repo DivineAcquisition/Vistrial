@@ -191,7 +191,7 @@ export function OrganizationForm({
           <Field
             label="CRM location"
             name="ghl_location"
-            help="Set when GoHighLevel is connected. Change the connection under Advanced → Integrations."
+            help="Set when LeadConnector is connected. Change the connection under Advanced → Integrations."
           >
             <Input
               id="ghl_location"

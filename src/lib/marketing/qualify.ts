@@ -150,7 +150,7 @@ export function parseQualification(input: QualificationInput): QualificationPayl
 
   const usesGhl = GHL_USE_OPTIONS.find((option) => option === input.usesGhl);
   if (!usesGhl) {
-    throw new QualificationError("Select whether you run GoHighLevel.", "usesGhl");
+    throw new QualificationError("Select whether you run LeadConnector.", "usesGhl");
   }
 
   const whoWorksLeads = whoWorksLeadsFromInput(input.whoWorksLeads);
@@ -225,7 +225,7 @@ export function ghlContactNote(payload: QualificationPayload): string {
     "Lead Leak Audit qualification",
     `Company: ${payload.companyName}`,
     `Monthly revenue: ${payload.monthlyRevenue}`,
-    `GoHighLevel: ${payload.usesGhl}`,
+    `LeadConnector: ${payload.usesGhl}`,
     `Who works leads: ${payload.whoWorksLeadsLabel}`,
     `Offer price: ${payload.offerPrice}`,
     payload.ctaPosition ? `CTA: ${payload.ctaPosition}` : null,

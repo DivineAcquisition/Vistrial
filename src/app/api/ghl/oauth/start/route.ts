@@ -13,7 +13,7 @@ export const dynamic = "force-dynamic";
 
 export async function GET() {
   if (!ghlOAuthConfigured()) {
-    return NextResponse.json({ error: "GoHighLevel credentials are not configured." }, { status: 503 });
+    return NextResponse.json({ error: "LeadConnector credentials are not configured." }, { status: 503 });
   }
 
   const user = await getSessionUser();

@@ -56,7 +56,7 @@ export function unavailableReason(kind: Enums<"source_kind">, ghlConnected: bool
     return "Stripe Connect credentials are not configured on this deployment, so connect stays unavailable.";
   }
   if (kind === "calendar") {
-    return "Neither Google Calendar read-only credentials nor a GoHighLevel connection are available, so connect stays unavailable.";
+    return "Neither Google Calendar read-only credentials nor a LeadConnector connection are available, so connect stays unavailable.";
   }
   return "This source is not configured on this deployment.";
 }

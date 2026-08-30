@@ -77,7 +77,7 @@ export const TRANSCRIPT_SOURCE_LABELS: Record<Enums<"transcript_source">, string
   fathom: "Fathom",
   fireflies: "Fireflies",
   zoom: "Zoom",
-  ghl: "GoHighLevel",
+  ghl: "LeadConnector",
   manual: "Manual paste",
 };
 

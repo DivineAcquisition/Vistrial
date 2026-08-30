@@ -17,11 +17,11 @@ import { advancedSettingsBreadcrumbs } from "@/lib/navigation";
 
 const FLASH_ERRORS: Record<string, string> = {
   location_claimed: LOCATION_CLAIMED_MESSAGE,
-  oauth_denied: "The GoHighLevel authorization was cancelled.",
+  oauth_denied: "The LeadConnector authorization was cancelled.",
   oauth_invalid: "The connection attempt was invalid. Start again from this page.",
   oauth_expired: "The connection attempt expired. Start again from this page.",
-  oauth_no_location: "GoHighLevel did not return a location to link.",
-  oauth_failed: "The GoHighLevel connection could not be completed.",
+  oauth_no_location: "LeadConnector did not return a location to link.",
+  oauth_failed: "The LeadConnector connection could not be completed.",
 };
 
 export default async function IntegrationsSettingsPage({
@@ -139,7 +139,7 @@ export default async function IntegrationsSettingsPage({
           answerKey: row.answer_key,
         }))}
         customFields={customFields}
-        flash={params.connected === "1" ? "GoHighLevel is connected." : null}
+        flash={params.connected === "1" ? "LeadConnector is connected." : null}
         flashError={params.ghl_error ? FLASH_ERRORS[params.ghl_error] ?? FLASH_ERRORS.oauth_failed : null}
         now={new Date().toISOString()}
         appUrl={appUrl()}

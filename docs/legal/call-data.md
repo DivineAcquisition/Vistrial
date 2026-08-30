@@ -2,7 +2,7 @@
 
 Prospects on those calls did not agree with Vistrial. They agreed, if at all, with the client. The client's disclosures have to be true. This is what is actually true.
 
-**Ingest.** When a recorder (Fathom, Fireflies, Zoom, HighLevel, or a pasted transcript) sends a transcript, Vistrial stores the text on the call record, matches it to a lead when it can, and otherwise holds it unmatched until an operator assigns or discards it. Audio is not stored.
+**Ingest.** When a recorder (Fathom, Fireflies, Zoom, LeadConnector, or a pasted transcript) sends a transcript, Vistrial stores the text on the call record, matches it to a lead when it can, and otherwise holds it unmatched until an operator assigns or discards it. Audio is not stored.
 
 **Extract.** A language-model job reads the transcript and writes a structured extraction: summary, objection, budget/timeline/authority signals, next step, and verbatim quotes that must appear in the transcript. Extractions and objections remain after the raw transcript is purged.
 

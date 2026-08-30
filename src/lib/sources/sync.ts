@@ -106,10 +106,10 @@ export async function testSourceConnection(
           .eq("org_id", orgId)
           .maybeSingle();
         if (ghl?.status !== "active" || !ghl.location_id) {
-          throw new Error("GoHighLevel is not connected.");
+          throw new Error("LeadConnector is not connected.");
         }
         const ping = await ghlRequest(db, orgId, `/calendars/?locationId=${encodeURIComponent(ghl.location_id)}`);
-        if (!ping.ok) throw new Error("Could not read calendars from GoHighLevel.");
+        if (!ping.ok) throw new Error("Could not read calendars from LeadConnector.");
       } else if (conn.secret) {
         const token = await googleAccessToken(db, orgId, "calendar", conn);
         const res = await fetch(
@@ -464,7 +464,7 @@ async function syncCalendar(db: GhlDb, orgId: string) {
       .select("location_id")
       .eq("org_id", orgId)
       .maybeSingle();
-    if (!ghl?.location_id) throw new Error("GoHighLevel location missing.");
+    if (!ghl?.location_id) throw new Error("LeadConnector location missing.");
     const calendars = await ghlRequest<{ calendars?: Array<{ id?: string }> }>(
       db,
       orgId,

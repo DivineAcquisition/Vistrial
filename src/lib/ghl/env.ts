@@ -17,8 +17,9 @@ export function ghlOAuthConfigured(): boolean {
   return Boolean(ghlClientId() && ghlClientSecret());
 }
 
+/** Marketplace OAuth redirect. Do not put a CRM brand acronym in this path. */
 export function ghlOAuthRedirectUri(): string {
-  return `${appUrl()}/api/ghl/oauth/callback`;
+  return `${appUrl()}/api/leadconnector/oauth/callback`;
 }
 
 export function ghlOAuthAuthorizeUrl(): string {
@@ -29,8 +30,9 @@ export function ghlApiBase(): string {
   return process.env.GHL_API_BASE?.trim() || GHL_API_BASE;
 }
 
+/** Marketplace default webhook URL. Do not put a CRM brand acronym in this path. */
 export function ghlWebhookUrl(): string {
-  return `${appUrl()}/api/ghl/webhooks`;
+  return `${appUrl()}/api/leadconnector/webhooks`;
 }
 
 export function ingestionAlertWebhookUrl(): string {

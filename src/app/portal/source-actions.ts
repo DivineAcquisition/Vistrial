@@ -139,7 +139,7 @@ export async function connectCalendarViaGhl(
   const db = getSupabaseAdmin();
   const ghl = await loadConnection(db, access.ctx.org.id);
   if (!ghl || ghl.status !== "active" || !ghl.location_id) {
-    return { status: "error", error: "Connect GoHighLevel first. Calendar metadata is read from that connection." };
+    return { status: "error", error: "Connect LeadConnector first. Calendar metadata is read from that connection." };
   }
   await upsertSourceConnection(db, {
     orgId: access.ctx.org.id,

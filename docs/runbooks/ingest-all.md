@@ -1,6 +1,6 @@
 # Runbook: ingestion stopped for all clients
 
-**Detection.** `ingest_backlog:global` or `job_missed:ghl-ingest`. First check: Vercel Cron, `CRON_SECRET`, `/api/cron/ghl-ingest`, then HighLevel status page.
+**Detection.** `ingest_backlog:global` or `job_missed:ghl-ingest`. First check: Vercel Cron, `CRON_SECRET`, `/api/cron/ghl-ingest`, then the LeadConnector status page.
 
 **Immediate action.** If Cron is down, invoke `/api/cron/ghl-ingest` with `Authorization: Bearer $CRON_SECRET` until Cron recovers. Queued `webhook_events` must not be deleted. If the app is returning 5xx, roll back the deployment (previous Vercel deployment). Webhook inserts happen before processing; providers retry 5xx.
 

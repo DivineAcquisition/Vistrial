@@ -52,15 +52,15 @@ export function ConnectStage({
       <div className="mt-6 flex flex-wrap items-center gap-3">
         {oauthConfigured ? (
           <Link
-            href="/api/ghl/oauth/start"
+            href="/api/leadconnector/oauth/start"
             prefetch={false}
             className={buttonClasses({ variant: connected ? "secondary" : "gradient" })}
           >
-            {connected ? "Reconnect GoHighLevel" : "Connect GoHighLevel"}
+            {connected ? "Reconnect LeadConnector" : "Connect LeadConnector"}
           </Link>
         ) : (
           <p className={helperClass}>
-            The GoHighLevel app is not configured on this deployment, so the connection cannot be
+            The LeadConnector app is not configured on this deployment, so the connection cannot be
             started from here yet.
           </p>
         )}

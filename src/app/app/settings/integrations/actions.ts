@@ -53,7 +53,7 @@ export async function testCrmConnection(
   if (!ctx) return forbidden();
   const db = getSupabaseAdmin();
   const ghl = await loadConnection(db, ctx.org.id);
-  if (!ghl?.location_id) return { status: "error", error: "GoHighLevel is not connected." };
+  if (!ghl?.location_id) return { status: "error", error: "LeadConnector is not connected." };
   const name = await fetchLocationName(db, ctx.org.id, ghl.location_id);
   if (!name) return { status: "error", error: "Could not read the linked location." };
   await db

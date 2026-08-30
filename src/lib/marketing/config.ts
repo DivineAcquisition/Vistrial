@@ -7,8 +7,8 @@ export const GHL_BOOKING_EMBED_SCRIPT_DEFAULT =
   "https://link.msgsndr.com/js/form_embed.js";
 
 /**
- * Inline GHL calendar widget. Set NEXT_PUBLIC_AUDIT_BOOKING_WIDGET_SRC to the
- * HighLevel “Share → Embed” iframe src for the Lead Leak Audit calendar.
+ * Inline LeadConnector calendar widget. Set NEXT_PUBLIC_AUDIT_BOOKING_WIDGET_SRC
+ * to the Share → Embed iframe src for the Lead Leak Audit calendar.
  * Without it the survey still submits; the calendar page says so plainly.
  */
 export function auditBookingWidgetSrc(): string {
@@ -22,7 +22,7 @@ export function auditBookingEmbedScript(): string {
   );
 }
 
-/** HighLevel Marketplace listing. Empty until the listing is live — do not invent one. */
+/** LeadConnector Marketplace listing. Empty until the listing is live — do not invent one. */
 export function ghlMarketplaceListingUrl(): string {
   return process.env.NEXT_PUBLIC_GHL_MARKETPLACE_URL?.trim() ?? "";
 }

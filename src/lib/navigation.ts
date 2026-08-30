@@ -122,7 +122,7 @@ export const ADVANCED_SETTINGS_PAGES: Array<{
   {
     href: "/app/settings/integrations",
     label: "Integrations",
-    description: "GoHighLevel connection, field maps, and whether inbound is actually landing.",
+    description: "LeadConnector connection, field maps, and whether inbound is actually landing.",
   },
   {
     href: "/app/settings/data",

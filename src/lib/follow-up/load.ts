@@ -42,7 +42,6 @@ export async function loadFollowUpSettings(orgId: string): Promise<FollowUpSetti
     quietHoursEnabled: data?.quiet_hours_enabled ?? true,
     quietHoursStart: (data?.quiet_hours_start ?? "21:00").slice(0, 5),
     quietHoursEnd: (data?.quiet_hours_end ?? "08:00").slice(0, 5),
-    defaultChannel: data?.default_channel === "email" ? "email" : "sms",
   };
 }
 

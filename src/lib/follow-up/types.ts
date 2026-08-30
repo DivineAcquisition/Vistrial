@@ -76,7 +76,6 @@ export type FollowUpSettings = {
   quietHoursEnabled: boolean;
   quietHoursStart: string;
   quietHoursEnd: string;
-  defaultChannel: FollowUpChannel;
 };
 
 export type QualityFailure = {

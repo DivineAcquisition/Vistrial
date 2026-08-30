@@ -11,8 +11,6 @@ import {
 } from "@/app/app/settings/integrations/actions";
 import type { SettingsSaveResult } from "@/app/app/settings/types";
 import { Button, SubmitButton } from "@/components/ui/button";
-import { Field } from "@/components/ui/field";
-import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { DataTable } from "@/components/ui/data-table";
 import { Select } from "@/components/ui/select";

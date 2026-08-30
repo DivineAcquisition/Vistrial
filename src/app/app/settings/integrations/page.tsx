@@ -28,7 +28,12 @@ const FLASH_ERRORS: Record<string, string> = {
 export default async function IntegrationsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ ghl_error?: string; connected?: string; select_location?: string }>;
+  searchParams: Promise<{
+    ghl_error?: string;
+    connected?: string;
+    select_location?: string;
+    unverified?: string;
+  }>;
 }) {
   const ctx = await requireOrgSettingsManager();
   const params = await searchParams;
@@ -81,9 +86,17 @@ export default async function IntegrationsPage({
         <IntegrationHub
           cards={cards}
           now={new Date().toISOString()}
-          flash={params.connected === "1" ? "LeadConnector is connected." : null}
+          flash={
+            params.connected === "1" && params.unverified !== "1"
+              ? "Connected and working. We just read your account back to check."
+              : null
+          }
           flashError={
-            params.ghl_error ? FLASH_ERRORS[params.ghl_error] ?? FLASH_ERRORS.oauth_failed : null
+            params.unverified === "1"
+              ? "Connected, but we could not read your account back yet. Press Reconnect if leads do not start arriving within the hour."
+              : params.ghl_error
+                ? FLASH_ERRORS[params.ghl_error] ?? FLASH_ERRORS.oauth_failed
+                : null
           }
         />
 

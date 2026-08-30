@@ -11,6 +11,7 @@ import {
 import { disconnectCrm } from "@/app/app/settings/integrations/actions";
 import type { SettingsSaveResult } from "@/app/app/settings/types";
 import { Button, SubmitButton } from "@/components/ui/button";
+import { CopyField } from "@/components/ui/copy-field";
 import { Field } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Panel } from "@/components/ui/panel";
@@ -71,7 +72,32 @@ function ConnectAction({ card }: { card: HubCard }) {
     );
   }
 
-  const isKey = card.connect.mode === "api_key";
+  // Forms need an address in their product, not a secret in ours. We make the
+  // secret; they copy the address once and we check it arrived.
+  if (card.connect.mode === "webhook") {
+    return (
+      <div className="w-full space-y-3">
+        {card.webhookUrl ? (
+          <>
+            <CopyField label="Paste this into your form tool" value={card.webhookUrl} />
+            <p className={helperClass}>
+              Add it wherever that tool sends new submissions, then send yourself a test entry.
+            </p>
+          </>
+        ) : null}
+        <form action={webhookAction}>
+          <SubmitButton
+            variant={connected ? "secondary" : "gradient"}
+            pending={webhookPending}
+            loadingLabel="Setting up"
+          >
+            {card.webhookUrl ? "Start over" : label}
+          </SubmitButton>
+        </form>
+        {error ? <p className={errorClass}>{error}</p> : null}
+      </div>
+    );
+  }
 
   if (!showSecret) {
     return (
@@ -80,43 +106,26 @@ function ConnectAction({ card }: { card: HubCard }) {
           {label}
         </Button>
         <p className={`${helperClass} mt-2`}>
-          {isKey ? "Needs a read-only API key." : "Posts to a webhook URL we generate."}
+          This one has no one-click sign-in. It needs a read-only key from your account.
         </p>
       </div>
     );
   }
 
   return (
-    <form action={isKey ? keyAction : webhookAction} className="w-full space-y-3">
-      {isKey ? (
-        <Field label="API key" name="api_key" htmlFor={`${card.id}-key`}>
-          <Input
-            id={`${card.id}-key`}
-            name="api_key"
-            type="password"
-            required
-            autoComplete="off"
-            placeholder="Read-only key"
-          />
-        </Field>
-      ) : (
-        <Field
-          label="Webhook secret"
-          name="webhook_secret"
-          htmlFor={`${card.id}-secret`}
-          help="Leave blank and we generate one."
-        >
-          <Input
-            id={`${card.id}-secret`}
-            name="webhook_secret"
-            type="password"
-            autoComplete="off"
-            placeholder="Optional"
-          />
-        </Field>
-      )}
+    <form action={keyAction} className="w-full space-y-3">
+      <Field label="Read-only key" name="api_key" htmlFor={`${card.id}-key`}>
+        <Input
+          id={`${card.id}-key`}
+          name="api_key"
+          type="password"
+          required
+          autoComplete="off"
+          placeholder="Paste it once"
+        />
+      </Field>
       <div className="flex flex-wrap gap-2">
-        <SubmitButton variant="gradient" pending={isKey ? keyPending : webhookPending} loadingLabel="Connecting">
+        <SubmitButton variant="gradient" pending={keyPending} loadingLabel="Connecting">
           {label}
         </SubmitButton>
         <Button type="button" variant="ghost" onClick={() => setShowSecret(false)}>

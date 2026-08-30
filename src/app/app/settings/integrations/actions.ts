@@ -10,11 +10,13 @@ import { isLeadId } from "@/lib/cases/filters";
 import { fetchLocationName } from "@/lib/ghl/client";
 import { completeLocationSelection, disconnectGhl } from "@/lib/ghl/connect";
 import { encryptSecret } from "@/lib/ghl/crypto";
+import { appUrl } from "@/lib/ghl/env";
 import { loadConnection } from "@/lib/ghl/tokens";
 import { retryDeadEvent, processGhlWebhookQueue } from "@/lib/ghl/process";
 import { processExtractionQueue } from "@/lib/extraction/run";
 import { RECORDER_SOURCES } from "@/lib/transcripts/constants";
 import { attachTranscriptToCall } from "@/lib/transcripts/process";
+import { SCORE_FACTORS, type ScoreFactor } from "@/lib/scoring/compute";
 import { getSupabaseAdmin } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import type { Enums } from "@/types/database";
@@ -104,6 +106,49 @@ export type FieldMapPayload = {
   answerKey: string;
 };
 
+/**
+ * Save a mapping the user confirmed rather than typed.
+ *
+ * The answer key is derived from the factor, not entered, so two things stay
+ * true: nobody invents a key by hand, and the key a scoring rule looks for is
+ * predictable. Existing hand-made rows are replaced wholesale, same as before.
+ */
+export async function saveProposedFieldMaps(
+  maps: Array<{ fieldId: string; fieldKey: string | null; factor: string }>
+): Promise<SettingsSaveResult> {
+  const ctx = await requireManager();
+  if (!ctx) return forbidden();
+
+  const valid = maps.filter((map) => SCORE_FACTORS.includes(map.factor as ScoreFactor) && map.fieldId);
+  if (valid.length !== maps.length) {
+    return { status: "error", error: "One of those rows is no longer valid. Reload and try again." };
+  }
+
+  const supabase = await createClient();
+  const { error: delError } = await supabase.from("ghl_field_maps").delete().eq("org_id", ctx.org.id);
+  if (delError) {
+    return { status: "error", error: "We could not update what gets read from each lead." };
+  }
+
+  if (valid.length > 0) {
+    const { error } = await supabase.from("ghl_field_maps").insert(
+      valid.map((map) => ({
+        org_id: ctx.org.id,
+        ghl_field_id: map.fieldId,
+        ghl_field_key: map.fieldKey,
+        answer_key: map.factor,
+      }))
+    );
+    if (error) {
+      return { status: "error", error: "We could not save that. Nothing was changed." };
+    }
+  }
+
+  revalidateIntegrations();
+  revalidatePath("/app/settings/scoring");
+  return { status: "saved" };
+}
+
 export async function saveGhlFieldMaps(maps: FieldMapPayload[]): Promise<SettingsSaveResult> {
   const ctx = await requireManager();
   if (!ctx) return forbidden();
@@ -182,6 +227,103 @@ export async function saveTranscriptConnection(input: {
   }
 
   revalidateIntegrations();
+  return { status: "saved" };
+}
+
+export type RecorderSetup =
+  | { status: "ready"; url: string; signingSecret: string }
+  | { status: "error"; error: string };
+
+/**
+ * Generate everything a recorder needs and hand it back for copying.
+ *
+ * The signing secret used to be pasted in by hand, which meant the user had to
+ * produce a secret from somewhere and get it identical on both sides. We make
+ * it, they copy it once. Regenerating replaces both halves together so a
+ * half-updated recorder cannot keep sending accepted payloads.
+ */
+export async function setUpRecorder(source: string): Promise<RecorderSetup> {
+  const ctx = await requireManager();
+  if (!ctx) return { status: "error", error: "Ask an owner or admin to set this up." };
+  if (!(RECORDER_SOURCES as readonly string[]).includes(source)) {
+    return { status: "error", error: "We do not support that recorder yet." };
+  }
+
+  const admin = getSupabaseAdmin();
+  const publicToken = randomToken();
+  const signingSecret = randomToken();
+
+  const { data: existing } = await admin
+    .from("transcript_connections")
+    .select("id")
+    .eq("org_id", ctx.org.id)
+    .eq("source", source as Enums<"transcript_source">)
+    .maybeSingle();
+
+  const patch = {
+    public_token: publicToken,
+    webhook_secret_encrypted: encryptSecret(signingSecret),
+    updated_at: new Date().toISOString(),
+  };
+
+  const { error } = existing
+    ? await admin.from("transcript_connections").update(patch).eq("id", existing.id)
+    : await admin.from("transcript_connections").insert({
+        org_id: ctx.org.id,
+        source: source as Enums<"transcript_source">,
+        ...patch,
+      });
+
+  if (error) {
+    return { status: "error", error: "We could not set that up. Try again in a moment." };
+  }
+
+  revalidateIntegrations();
+  return {
+    status: "ready",
+    url: `${appUrl()}/api/transcripts/webhooks/${source}/${publicToken}`,
+    signingSecret,
+  };
+}
+
+/**
+ * Did this recorder actually reach us? The only honest test is whether a
+ * correctly signed payload has arrived, so that is what we check.
+ */
+export async function testRecorder(source: string): Promise<SettingsSaveResult> {
+  const ctx = await requireManager();
+  if (!ctx) return forbidden();
+  if (!(RECORDER_SOURCES as readonly string[]).includes(source)) {
+    return { status: "error", error: "We do not support that recorder yet." };
+  }
+  const admin = getSupabaseAdmin();
+  const { data: connection } = await admin
+    .from("transcript_connections")
+    .select("id, webhook_secret_encrypted")
+    .eq("org_id", ctx.org.id)
+    .eq("source", source as Enums<"transcript_source">)
+    .maybeSingle();
+
+  if (!connection?.webhook_secret_encrypted) {
+    return {
+      status: "error",
+      error: "Nothing is set up yet. Press Set up recording above first.",
+    };
+  }
+
+  const { count } = await admin
+    .from("webhook_events")
+    .select("id", { count: "exact", head: true })
+    .eq("org_id", ctx.org.id)
+    .eq("source", "transcript");
+
+  if (!count) {
+    return {
+      status: "error",
+      error:
+        "Nothing has reached us yet. Paste the address into the recorder, then record a short test call and press this again.",
+    };
+  }
   return { status: "saved" };
 }
 

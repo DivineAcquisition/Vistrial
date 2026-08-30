@@ -28,6 +28,8 @@ export type HubCard = {
   accountLabel: string | null;
   lastVerifiedAt: string | null;
   connect: HubConnect;
+  /** An address the user pastes into the other product, once connected. */
+  webhookUrl: string | null;
   /** Only the CRM. Without it there is no product. */
   required: boolean;
   /** Source kind for the connect/disconnect actions. Null for the CRM. */
@@ -79,6 +81,7 @@ export function crmHubCard(input: CrmHubInput): HubCard {
     connect: input.oauthConfigured
       ? { mode: "redirect", href: "/api/leadconnector/oauth/start" }
       : { mode: "unavailable" },
+    webhookUrl: null,
     required: true,
     kind: null,
     note: input.oauthConfigured
@@ -118,6 +121,7 @@ export function sourceHubCard(source: SourceCardModel): HubCard {
     accountLabel: source.accountLabel,
     lastVerifiedAt: source.lastVerifiedAt,
     connect,
+    webhookUrl: source.webhookUrl,
     required: false,
     kind: source.kind,
     note: source.lastError ?? (source.connectMode === "unavailable" ? source.unavailableReason : null),

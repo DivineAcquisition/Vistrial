@@ -1,8 +1,12 @@
 import { PageFrame } from "@/components/app/page-frame";
 import { IntegrationSettings } from "@/app/app/settings/integrations/integration-settings";
 import { BaselineSettings } from "@/app/app/settings/integrations/baseline-settings";
+import { FieldMapping } from "@/components/integrations/field-mapping";
 import { requireOrgSettingsManager } from "@/lib/auth/gates";
 import { fetchCustomFields } from "@/lib/ghl/client";
+import { loadLiveFields } from "@/lib/ghl/live-fields";
+import { proposeFieldMaps, unmappedFactors, type ProposedMap } from "@/lib/ghl/propose-maps";
+import { SCORE_FACTORS, type ScoreFactor } from "@/lib/scoring/compute";
 import { appUrl } from "@/lib/ghl/env";
 import { loadFollowUpHealth } from "@/lib/follow-up/health";
 import { loadOrgIngestionHealth } from "@/lib/ghl/health";
@@ -68,25 +72,48 @@ export default async function IntegrationDiagnosticsPage() {
     ])
   );
 
-  let customFields: Array<{ id: string; name: string; key?: string }> = [];
+  const configured = (maps.data ?? []).map((row) => ({
+    fieldId: row.ghl_field_id ?? "",
+    fieldKey: row.ghl_field_key,
+    factor: row.answer_key,
+  }));
+
+  // Read the CRM's own questions and a few real answers, so the mapping can be
+  // proposed rather than typed. A CRM that will not answer leaves the section
+  // saying so instead of showing an empty form.
+  let proposed: ProposedMap[] = [];
   if (connection.data?.status === "active" && connection.data.location_id) {
     try {
-      customFields = await fetchCustomFields(admin, ctx.org.id, connection.data.location_id);
+      const definitions = await fetchCustomFields(admin, ctx.org.id, connection.data.location_id);
+      const live = await loadLiveFields(admin, ctx.org.id, connection.data.location_id, definitions);
+      proposed = proposeFieldMaps(live);
+      // Anything already saved wins over a fresh guess.
+      proposed = proposed.map((map) => {
+        const saved = configured.find((row) => row.fieldId === map.fieldId);
+        return saved && SCORE_FACTORS.includes(saved.factor as ScoreFactor)
+          ? { ...map, factor: saved.factor as ScoreFactor, confident: true }
+          : map;
+      });
     } catch {
-      customFields = [];
+      proposed = [];
     }
   }
 
   return (
     <PageFrame
       title="Diagnostics"
-      description="Field mapping, ingestion health, call recorders, and the history backfill."
+      description="What we read from each lead, whether anything is stuck, call recordings, and your history."
       breadcrumbs={[
         { label: "Integrations", href: "/app/settings/integrations" },
         { label: "Diagnostics", href: "/app/settings/integrations/advanced" },
       ]}
     >
       <div className="space-y-8">
+        <FieldMapping
+          proposed={proposed}
+          missing={unmappedFactors(proposed)}
+          alreadyConfigured={configured.length > 0}
+        />
         <IntegrationSettings
           connection={{
             status: connection.data?.status ?? health.connectionStatus,
@@ -103,13 +130,7 @@ export default async function IntegrationDiagnosticsPage() {
             stale: health.stale,
             staleReason: health.staleReason,
           }}
-          maps={(maps.data ?? []).map((row) => ({
-            id: row.id,
-            ghlFieldId: row.ghl_field_id ?? "",
-            ghlFieldKey: row.ghl_field_key ?? "",
-            answerKey: row.answer_key,
-          }))}
-          customFields={customFields}
+          hasFieldMaps={configured.length > 0}
           now={new Date().toISOString()}
           appUrl={appUrl()}
           transcriptHealth={{

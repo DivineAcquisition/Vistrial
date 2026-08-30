@@ -10,6 +10,7 @@ import {
 } from "@/app/app/settings/notifications/actions";
 import type { SettingsSaveResult } from "@/app/app/settings/types";
 import { PushEnable } from "@/components/app/push-enable";
+import { AdvancedDoor } from "@/components/settings/advanced-door";
 import { SettingsFormCard } from "@/components/settings/settings-form-card";
 import { useSettingsToast } from "@/components/settings/use-settings-toast";
 import { SubmitButton } from "@/components/ui/button";
@@ -72,10 +73,11 @@ export function NotificationSettingsForm({
         </Card>
       </section>
 
+      <AdvancedDoor closedLabel="Change what reaches you">
       <section>
         <SectionHeader
-          title="Channels per event"
-          hint="One event uses one channel. Turning a default off and another on moves it; it does not fire twice. You cannot turn off escalation that reaches an admin."
+          title="What reaches you"
+          hint="One event uses one channel. Turning a default off and another on moves it; it does not fire twice. You cannot turn off alerts that have to reach an admin."
         />
         <SettingsFormCard
           className="max-w-3xl"
@@ -116,6 +118,7 @@ export function NotificationSettingsForm({
           {prefState.status === "error" ? <p className={errorClass}>{prefState.error}</p> : null}
         </SettingsFormCard>
       </section>
+      </AdvancedDoor>
 
       <section>
         <SectionHeader
@@ -175,7 +178,7 @@ export function NotificationSettingsForm({
         <section>
           <SectionHeader
             title="Workspace"
-            hint="SMS is off until you turn it on. Slack or Teams is the team channel for a breach seen by more than one person."
+            hint="Text messages stay off until you turn them on. Slack or Teams is the channel when more than one person needs to see that someone waited too long."
           />
           <SettingsFormCard
             action={saveOrg}
@@ -184,25 +187,27 @@ export function NotificationSettingsForm({
             <Switch
               name="sms_emergencies_enabled"
               defaultChecked={smsEmergenciesEnabled}
-              label="SMS for stalled ingestion and a broken CRM"
-              description="Default off. Fires one hour after the push if the condition still holds, never at the same time."
+              label="Text me if new leads stop arriving or the CRM breaks"
+              description="Off until you turn it on. Fires one hour after the push if the condition still holds, never at the same time."
             />
-            <Field
-              label="Slack incoming webhook"
-              name="slack_webhook"
-              help={slackSaved ? "A webhook is saved. Paste a new URL to replace it." : "Optional."}
-            >
-              <Input name="slack_webhook" id="slack_webhook" type="url" placeholder="https://hooks.slack.com/services/…" />
-            </Field>
-            {slackSaved ? <CheckboxField name="clear_slack" label="Remove Slack webhook" /> : null}
-            <Field
-              label="Teams incoming webhook"
-              name="teams_webhook"
-              help={teamsSaved ? "A webhook is saved. Paste a new URL to replace it." : "Optional."}
-            >
-              <Input name="teams_webhook" id="teams_webhook" type="url" placeholder="https://outlook.office.com/webhook/…" />
-            </Field>
-            {teamsSaved ? <CheckboxField name="clear_teams" label="Remove Teams webhook" /> : null}
+            <AdvancedDoor closedLabel="Connect Slack or Teams">
+              <Field
+                label="Slack incoming webhook"
+                name="slack_webhook"
+                help={slackSaved ? "A webhook is saved. Paste a new URL to replace it." : "Optional. Paste the address Slack gives you."}
+              >
+                <Input name="slack_webhook" id="slack_webhook" type="url" placeholder="https://hooks.slack.com/services/…" />
+              </Field>
+              {slackSaved ? <CheckboxField name="clear_slack" label="Remove Slack webhook" /> : null}
+              <Field
+                label="Teams incoming webhook"
+                name="teams_webhook"
+                help={teamsSaved ? "A webhook is saved. Paste a new URL to replace it." : "Optional. Paste the address Teams gives you."}
+              >
+                <Input name="teams_webhook" id="teams_webhook" type="url" placeholder="https://outlook.office.com/webhook/…" />
+              </Field>
+              {teamsSaved ? <CheckboxField name="clear_teams" label="Remove Teams webhook" /> : null}
+            </AdvancedDoor>
             {orgState.status === "error" ? <p className={errorClass}>{orgState.error}</p> : null}
           </SettingsFormCard>
         </section>

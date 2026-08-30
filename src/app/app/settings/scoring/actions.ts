@@ -35,13 +35,13 @@ export async function updateScoringConfig(
   const investment = parseIntField(formData.get("investment_capacity_weight"), "Investment capacity weight", 0, 100);
   const authority = parseIntField(formData.get("decision_authority_weight"), "Decision authority weight", 0, 100);
   const pain = parseIntField(formData.get("pain_severity_weight"), "Pain severity weight", 0, 100);
-  const ready = parseIntField(formData.get("ready_threshold"), "Ready threshold", 0, 100);
-  const speed = parseIntField(formData.get("speed_to_lead_minutes"), "Speed-to-lead minutes", 1, 24 * 60);
-  const ghostSoft = parseIntField(formData.get("ghost_days_soft"), "Approaching-ghost days", 1, 365);
-  const ghostHard = parseIntField(formData.get("ghost_days_hard"), "Ghost days", 1, 365);
+  const ready = parseIntField(formData.get("ready_threshold"), "Ready now at this number", 0, 100);
+  const speed = parseIntField(formData.get("speed_to_lead_minutes"), "Minutes they can wait", 1, 24 * 60);
+  const ghostSoft = parseIntField(formData.get("ghost_days_soft"), "Days before we say they are going quiet", 1, 365);
+  const ghostHard = parseIntField(formData.get("ghost_days_hard"), "Days before we say they went quiet", 1, 365);
   const holdoutEnabled = formData.get("holdout_enabled") === "on";
   const holdoutRaw = holdoutEnabled
-    ? parseIntField(formData.get("holdout_percent"), "Holdout percent", 1, HOLDOUT_MAX_PERCENT)
+    ? parseIntField(formData.get("holdout_percent"), "Share we work anyway", 1, HOLDOUT_MAX_PERCENT)
     : 0;
 
   for (const value of [timeline, investment, authority, pain, ready, speed, ghostSoft, ghostHard, holdoutRaw]) {

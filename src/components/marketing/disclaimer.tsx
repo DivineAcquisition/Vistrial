@@ -177,7 +177,7 @@ export function DisclaimerBody() {
 
       <LegalSection heading="8. Third-party services">
         <p>
-          Vistrial connects to services we do not control, including GoHighLevel, call recording
+          Vistrial connects to services we do not control, including LeadConnector, call recording
           providers, and AI providers.
         </p>
         <LegalList>
@@ -195,8 +195,8 @@ export function DisclaimerBody() {
         </LegalList>
         <p>
           <strong>
-            GoHighLevel and LeadConnector are trademarks of their respective owners. Vistrial is an
-            independent product and is not endorsed by, affiliated with, or sponsored by HighLevel.
+            LeadConnector is a trademark of its respective owner. Vistrial is an independent product
+            and is not endorsed by, affiliated with, or sponsored by that owner.
           </strong>
         </p>
       </LegalSection>

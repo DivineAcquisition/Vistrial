@@ -3,18 +3,18 @@
 Case files for high-ticket sales teams. Every inbound lead gets a persistent
 record that setters and closers open before working it: readiness score, full
 touch history, call transcripts, extracted objections, and follow-up drafted
-from what was actually said. GoHighLevel stays the CRM. Vistrial is the
+from what was actually said. LeadConnector stays the CRM. Vistrial is the
 intelligence layer on top.
 
 ## Setup
 1. `npm install`
 2. `cp .env.local.example .env.local` and fill in the Supabase keys.
-   Anthropic and GHL can stay blank until their prompts.
+   Anthropic and LeadConnector credentials can stay blank until their prompts.
 3. `npm run dev` → http://localhost:3000
 
 ## Stack
 Next.js 16 (App Router) · TypeScript · Tailwind CSS v4 + shadcn/ui · Supabase
-(Postgres, RLS, multi-tenant) · Anthropic API · GoHighLevel. Deploy on Vercel.
+(Postgres, RLS, multi-tenant) · Anthropic API · LeadConnector. Deploy on Vercel.
 
 Domains: [`www.vistrial.io`](https://www.vistrial.io) currently serves the
 public site (apex `vistrial.io` is not on Vercel DNS yet — do not 308 www to

@@ -105,7 +105,7 @@ export function ActivityFiltersForm({
           }
         >
           <option value="">Any</option>
-          <option value="gohighlevel">GoHighLevel</option>
+          <option value="gohighlevel">LeadConnector</option>
         </Select>
       </label>
       {clients ? (
@@ -150,7 +150,7 @@ export function ActivityFiltersForm({
           checked={filters.includeRoutine}
           onChange={(event) => apply({ includeRoutine: event.target.checked })}
           label="Show routine system work"
-          description="Scoring, extraction, jobs, and transcripts. The default view keeps these off."
+          description="Scoring, reading recordings, overnight jobs, and transcripts. The default view keeps these off."
         />
       </div>
     </form>

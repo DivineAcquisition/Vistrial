@@ -1,13 +1,13 @@
 import { marketingBtnPrimary } from "@/lib/marketing/ui";
 import { Panel } from "@/components/ui/panel";
 import { StatusBadge } from "@/components/ui/status-badge";
-import { GHL } from "@/lib/marketing/copy";
+import { CRM } from "@/lib/marketing/copy";
 import { ghlMarketplaceListingUrl } from "@/lib/marketing/config";
 import { helperClass } from "@/lib/ui";
 
 /**
  * The connect surface operators actually see — not a stock collage, and not a
- * screenshot of someone else's HighLevel account.
+ * screenshot of someone else's CRM account.
  */
 export function GhlConnectVisual() {
   const listingUrl = ghlMarketplaceListingUrl();
@@ -17,7 +17,7 @@ export function GhlConnectVisual() {
       <Panel className="p-4">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
-            <h3 className="font-heading text-sm text-white">Connect GoHighLevel</h3>
+            <h3 className="font-heading text-sm text-white">Connect LeadConnector</h3>
             <p className={helperClass}>
               Your conversations, your calendar, your pipeline stay where they are.
             </p>
@@ -30,7 +30,7 @@ export function GhlConnectVisual() {
           <li>Message bodies are never pulled. Only metadata: who, when, which channel.</li>
         </ul>
         <div className="mt-6">
-          <span className={marketingBtnPrimary} aria-hidden>Connect GoHighLevel</span>
+          <span className={marketingBtnPrimary} aria-hidden>Connect LeadConnector</span>
         </div>
       </Panel>
 
@@ -39,7 +39,7 @@ export function GhlConnectVisual() {
           Choose a location
         </p>
         <p className="mt-2 text-sm text-silver">
-          HighLevel opens the location picker. One click. The workspace is live on that location.
+          LeadConnector opens the location picker. One click. The workspace is live on that location.
         </p>
         <ul className="mt-5 space-y-2">
           <li className="rounded-lg border border-brand-500/30 bg-brand-500/[0.08] px-4 py-3">
@@ -70,7 +70,7 @@ export function GhlConnectVisual() {
           rel="noopener noreferrer"
           className="font-medium text-brand-300 underline-offset-4 hover:text-white hover:underline"
         >
-          {GHL.listingLive}
+          {CRM.listingLive}
         </a>
       </figcaption>
     </figure>

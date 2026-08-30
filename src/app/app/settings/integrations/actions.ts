@@ -10,17 +10,24 @@ import { isLeadId } from "@/lib/cases/filters";
 import { fetchLocationName } from "@/lib/ghl/client";
 import { completeLocationSelection, disconnectGhl } from "@/lib/ghl/connect";
 import { encryptSecret } from "@/lib/ghl/crypto";
+import { appUrl } from "@/lib/ghl/env";
 import { loadConnection } from "@/lib/ghl/tokens";
 import { retryDeadEvent, processGhlWebhookQueue } from "@/lib/ghl/process";
 import { processExtractionQueue } from "@/lib/extraction/run";
 import { RECORDER_SOURCES } from "@/lib/transcripts/constants";
 import { attachTranscriptToCall } from "@/lib/transcripts/process";
+import { SCORE_FACTORS, type ScoreFactor } from "@/lib/scoring/compute";
 import { getSupabaseAdmin } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import type { Enums } from "@/types/database";
 
 function forbidden(): SettingsSaveResult {
   return { status: "error", error: "You do not have permission to change CRM settings." };
+}
+
+/** The hub and the diagnostics page beneath it both read this data. */
+function revalidateIntegrations() {
+  revalidatePath("/app/settings/integrations", "layout");
 }
 
 async function requireManager() {
@@ -39,7 +46,7 @@ export async function disconnectCrm(
   const ctx = await requireManager();
   if (!ctx) return forbidden();
   await disconnectGhl(getSupabaseAdmin(), ctx.org.id);
-  revalidatePath("/app/settings/integrations");
+  revalidateIntegrations();
   return { status: "saved" };
 }
 
@@ -53,14 +60,14 @@ export async function testCrmConnection(
   if (!ctx) return forbidden();
   const db = getSupabaseAdmin();
   const ghl = await loadConnection(db, ctx.org.id);
-  if (!ghl?.location_id) return { status: "error", error: "GoHighLevel is not connected." };
+  if (!ghl?.location_id) return { status: "error", error: "LeadConnector is not connected." };
   const name = await fetchLocationName(db, ctx.org.id, ghl.location_id);
   if (!name) return { status: "error", error: "Could not read the linked location." };
   await db
     .from("ghl_connections")
     .update({ last_verified_at: new Date().toISOString(), last_refresh_error: null })
     .eq("org_id", ctx.org.id);
-  revalidatePath("/app/settings/integrations");
+  revalidateIntegrations();
   revalidatePath("/portal");
   return { status: "saved" };
 }
@@ -79,7 +86,7 @@ export async function selectGhlLocation(
     locationId,
   });
   if (!result.ok) return { status: "error", error: result.error };
-  revalidatePath("/app/settings/integrations");
+  revalidateIntegrations();
   return { status: "saved" };
 }
 
@@ -89,7 +96,7 @@ export async function retryWebhookEvent(eventId: string): Promise<SettingsSaveRe
   const ok = await retryDeadEvent(getSupabaseAdmin(), ctx.org.id, eventId);
   if (!ok) return { status: "error", error: "That event could not be queued for retry." };
   await processGhlWebhookQueue(getSupabaseAdmin(), 5);
-  revalidatePath("/app/settings/integrations");
+  revalidateIntegrations();
   return { status: "saved" };
 }
 
@@ -98,6 +105,49 @@ export type FieldMapPayload = {
   ghlFieldKey: string;
   answerKey: string;
 };
+
+/**
+ * Save a mapping the user confirmed rather than typed.
+ *
+ * The answer key is derived from the factor, not entered, so two things stay
+ * true: nobody invents a key by hand, and the key a scoring rule looks for is
+ * predictable. Existing hand-made rows are replaced wholesale, same as before.
+ */
+export async function saveProposedFieldMaps(
+  maps: Array<{ fieldId: string; fieldKey: string | null; factor: string }>
+): Promise<SettingsSaveResult> {
+  const ctx = await requireManager();
+  if (!ctx) return forbidden();
+
+  const valid = maps.filter((map) => SCORE_FACTORS.includes(map.factor as ScoreFactor) && map.fieldId);
+  if (valid.length !== maps.length) {
+    return { status: "error", error: "One of those rows is no longer valid. Reload and try again." };
+  }
+
+  const supabase = await createClient();
+  const { error: delError } = await supabase.from("ghl_field_maps").delete().eq("org_id", ctx.org.id);
+  if (delError) {
+    return { status: "error", error: "We could not update what gets read from each lead." };
+  }
+
+  if (valid.length > 0) {
+    const { error } = await supabase.from("ghl_field_maps").insert(
+      valid.map((map) => ({
+        org_id: ctx.org.id,
+        ghl_field_id: map.fieldId,
+        ghl_field_key: map.fieldKey,
+        answer_key: map.factor,
+      }))
+    );
+    if (error) {
+      return { status: "error", error: "We could not save that. Nothing was changed." };
+    }
+  }
+
+  revalidateIntegrations();
+  revalidatePath("/app/settings/scoring");
+  return { status: "saved" };
+}
 
 export async function saveGhlFieldMaps(maps: FieldMapPayload[]): Promise<SettingsSaveResult> {
   const ctx = await requireManager();
@@ -127,7 +177,7 @@ export async function saveGhlFieldMaps(maps: FieldMapPayload[]): Promise<Setting
     if (error) return { status: "error", error: "Could not save field mapping." };
   }
 
-  revalidatePath("/app/settings/integrations");
+  revalidateIntegrations();
   revalidatePath("/app/settings/scoring");
   return { status: "saved" };
 }
@@ -176,7 +226,104 @@ export async function saveTranscriptConnection(input: {
     if (error) return { status: "error", error: "Could not save that recorder connection." };
   }
 
-  revalidatePath("/app/settings/integrations");
+  revalidateIntegrations();
+  return { status: "saved" };
+}
+
+export type RecorderSetup =
+  | { status: "ready"; url: string; signingSecret: string }
+  | { status: "error"; error: string };
+
+/**
+ * Generate everything a recorder needs and hand it back for copying.
+ *
+ * The signing secret used to be pasted in by hand, which meant the user had to
+ * produce a secret from somewhere and get it identical on both sides. We make
+ * it, they copy it once. Regenerating replaces both halves together so a
+ * half-updated recorder cannot keep sending accepted payloads.
+ */
+export async function setUpRecorder(source: string): Promise<RecorderSetup> {
+  const ctx = await requireManager();
+  if (!ctx) return { status: "error", error: "Ask an owner or admin to set this up." };
+  if (!(RECORDER_SOURCES as readonly string[]).includes(source)) {
+    return { status: "error", error: "We do not support that recorder yet." };
+  }
+
+  const admin = getSupabaseAdmin();
+  const publicToken = randomToken();
+  const signingSecret = randomToken();
+
+  const { data: existing } = await admin
+    .from("transcript_connections")
+    .select("id")
+    .eq("org_id", ctx.org.id)
+    .eq("source", source as Enums<"transcript_source">)
+    .maybeSingle();
+
+  const patch = {
+    public_token: publicToken,
+    webhook_secret_encrypted: encryptSecret(signingSecret),
+    updated_at: new Date().toISOString(),
+  };
+
+  const { error } = existing
+    ? await admin.from("transcript_connections").update(patch).eq("id", existing.id)
+    : await admin.from("transcript_connections").insert({
+        org_id: ctx.org.id,
+        source: source as Enums<"transcript_source">,
+        ...patch,
+      });
+
+  if (error) {
+    return { status: "error", error: "We could not set that up. Try again in a moment." };
+  }
+
+  revalidateIntegrations();
+  return {
+    status: "ready",
+    url: `${appUrl()}/api/transcripts/webhooks/${source}/${publicToken}`,
+    signingSecret,
+  };
+}
+
+/**
+ * Did this recorder actually reach us? The only honest test is whether a
+ * correctly signed payload has arrived, so that is what we check.
+ */
+export async function testRecorder(source: string): Promise<SettingsSaveResult> {
+  const ctx = await requireManager();
+  if (!ctx) return forbidden();
+  if (!(RECORDER_SOURCES as readonly string[]).includes(source)) {
+    return { status: "error", error: "We do not support that recorder yet." };
+  }
+  const admin = getSupabaseAdmin();
+  const { data: connection } = await admin
+    .from("transcript_connections")
+    .select("id, webhook_secret_encrypted")
+    .eq("org_id", ctx.org.id)
+    .eq("source", source as Enums<"transcript_source">)
+    .maybeSingle();
+
+  if (!connection?.webhook_secret_encrypted) {
+    return {
+      status: "error",
+      error: "Nothing is set up yet. Press Set up recording above first.",
+    };
+  }
+
+  const { count } = await admin
+    .from("webhook_events")
+    .select("id", { count: "exact", head: true })
+    .eq("org_id", ctx.org.id)
+    .eq("source", "transcript");
+
+  if (!count) {
+    return {
+      status: "error",
+      error:
+        "Nothing has reached us yet. Paste the address into the recorder, then record a short test call and press this again.",
+    };
+  }
   return { status: "saved" };
 }
 
@@ -193,7 +340,7 @@ export async function rotateTranscriptWebhookToken(source: string): Promise<Sett
     .eq("org_id", ctx.org.id)
     .eq("source", source as Enums<"transcript_source">);
   if (error) return { status: "error", error: "Could not rotate that webhook URL." };
-  revalidatePath("/app/settings/integrations");
+  revalidateIntegrations();
   return { status: "saved" };
 }
 
@@ -210,7 +357,7 @@ export async function pasteUnmatchedTranscript(transcript: string): Promise<Sett
     status: "open",
   });
   if (error) return { status: "error", error: "The transcript could not be stored." };
-  revalidatePath("/app/settings/integrations");
+  revalidateIntegrations();
   return { status: "saved" };
 }
 
@@ -276,7 +423,7 @@ export async function assignUnmatchedTranscript(input: {
     .eq("org_id", ctx.org.id);
 
   await processExtractionQueue(admin, 1);
-  revalidatePath("/app/settings/integrations");
+  revalidateIntegrations();
   revalidatePath(`/app/calls/${call.id}`);
   revalidatePath(`/app/cases/${call.lead_id}`);
   revalidatePath(`/app/cases/${call.lead_id}/brief`);
@@ -305,7 +452,7 @@ export async function discardUnmatchedTranscript(unmatchedId: string): Promise<S
       raw_transcript: "",
     })
     .eq("id", data.id);
-  revalidatePath("/app/settings/integrations");
+  revalidateIntegrations();
   return { status: "saved" };
 }
 

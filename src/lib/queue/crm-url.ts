@@ -1,5 +1,5 @@
 /**
- * Deep link to a contact's conversation in GoHighLevel.
+ * Deep link to a contact's conversation in the connected CRM.
  * Built from the org location id and the lead contact id — never guessed.
  */
 export function ghlConversationUrl(

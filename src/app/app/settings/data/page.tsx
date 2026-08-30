@@ -18,8 +18,8 @@ export default async function DataSettingsPage() {
         <CardPanel className={cardStack}>
           <h2 className={cardTitle}>Export</h2>
           <p className={helperClass}>
-            Downloads leads, touches, calls, transcripts, extractions, objections, scores, revenue,
-            the business profile, reporting snapshots, and baseline tables for {org.name} as JSON.
+            Downloads people, contacts, calls, recordings we read, objections, scores, revenue,
+            the business profile, reporting snapshots, and history tables for {org.name} as JSON.
           </p>
           <Button asChild variant="secondary">
             <a href="/app/settings/data/export">Download JSON</a>

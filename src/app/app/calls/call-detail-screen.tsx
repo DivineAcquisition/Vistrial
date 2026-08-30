@@ -215,19 +215,19 @@ export function CallDetailScreen({
               loadingLabel="Retrying"
               onClick={() => run(() => retryDeadExtraction(call.id))}
             >
-              Retry extraction
+              Read it again
             </Button>
           }
         >
-          This is not an empty call. Extraction stopped
-          {detail.job?.lastError ? ` (${detail.job.lastError})` : ""}. Retry after the cause is fixed.
+          This is not an empty call. Reading the recording stopped
+          {detail.job?.lastError ? ` (${detail.job.lastError})` : ""}. Try again after the cause is fixed.
         </Notice>
       ) : null}
 
       <section>
         <SectionHeader
-          title="Extraction"
-          hint="Structure first. The transcript is the receipt."
+          title="What was said"
+          hint="The facts first. The transcript is the receipt."
           actions={
             call.rawTranscript && jobStatus !== "pending" ? (
               <Button
@@ -237,7 +237,7 @@ export function CallDetailScreen({
                 disabled={busy}
                 onClick={() => run(() => reextractCall(call.id))}
               >
-                Re-extract
+                Read again
               </Button>
             ) : null
           }
@@ -260,11 +260,11 @@ export function CallDetailScreen({
                   </Button>
                 }
               >
-                This extraction needs review
+                This reading needs a look
                 {detail.extraction.verificationFaults.length
                   ? `: ${detail.extraction.verificationFaults.map((item) => item.what).join(" ")}`
                   : "."}{" "}
-                It is not a normal extraction until someone checks it.
+                It is not finished until someone checks it.
               </Notice>
             ) : null}
             <SignalField
@@ -337,8 +337,7 @@ export function CallDetailScreen({
               onSave={(value) => run(() => correctExtractionField({ callId: call.id, fieldName: "quotes", value }))}
             />
             <p className={helperClass}>
-              Model {detail.extraction.modelVersion || "unknown"} · extracted{" "}
-              {formatQueueDuration(detail.extraction.extractedAt, now)}
+              Read {formatQueueDuration(detail.extraction.extractedAt, now)}
             </p>
           </Panel>
         ) : jobStatus === "pending" ? (
@@ -347,7 +346,7 @@ export function CallDetailScreen({
           </Panel>
         ) : jobStatus === "failed" ? null : (
           <Panel className="p-6">
-            <p className="text-sm text-dim">No extraction yet.</p>
+            <p className="text-sm text-dim">Nothing has been read from this recording yet.</p>
           </Panel>
         )}
       </section>
@@ -417,7 +416,7 @@ export function CallDetailScreen({
               <div className="mt-3">
                 <PasteTranscript
                   busy={busy}
-                  description="This replaces the stored transcript and queues a new extraction. Audio is never stored."
+                  description="This replaces the stored transcript and reads it again. Audio is never stored."
                   onSubmit={(transcript) => run(() => pasteCallTranscript({ callId: call.id, transcript }))}
                 />
               </div>

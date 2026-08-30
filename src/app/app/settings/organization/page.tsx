@@ -15,7 +15,7 @@ export default async function OrganizationSettingsPage() {
   return (
     <PageFrame
       title="Workspace"
-      description="Name, timezone, and working hours. Scoring, follow-up, and the CRM live under Advanced."
+      description="Name, timezone, and working hours. Connect apps on Integrations."
     >
       <OrganizationForm
         name={org.name}

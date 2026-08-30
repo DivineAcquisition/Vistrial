@@ -22,7 +22,7 @@ export default async function FollowUpSettingsPage() {
   return (
     <PageFrame
       title="Follow-up"
-      description="Voice, routing, quiet hours, and the org-wide sequence stop. Vistrial drafts; a person still has to approve."
+      description="Stop sequences, paste real messages, and set quiet hours. How drafts are written sits behind a door."
       breadcrumbs={advancedSettingsBreadcrumbs("Follow-up", "/app/settings/follow-up")}
     >
       <FollowUpSettingsScreen

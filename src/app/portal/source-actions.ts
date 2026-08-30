@@ -65,7 +65,7 @@ export async function testConnectedSource(
   if (!kind) return { status: "error", error: "Unknown source." };
   const result = await testSourceConnection(getSupabaseAdmin(), access.ctx.org.id, kind);
   revalidatePath("/portal");
-  revalidatePath("/app/settings/integrations");
+  revalidatePath("/app/settings/integrations", "layout");
   return result.ok ? { status: "saved" } : { status: "error", error: result.error };
 }
 
@@ -80,7 +80,7 @@ export async function disconnectConnectedSource(
   if (!kind) return { status: "error", error: "Unknown source." };
   await disconnectSource(getSupabaseAdmin(), access.ctx.org.id, kind);
   revalidatePath("/portal");
-  revalidatePath("/app/settings/integrations");
+  revalidatePath("/app/settings/integrations", "layout");
   return { status: "saved" };
 }
 
@@ -103,7 +103,7 @@ export async function connectCommasKey(
   });
   const tested = await testSourceConnection(getSupabaseAdmin(), access.ctx.org.id, "commas");
   revalidatePath("/portal");
-  revalidatePath("/app/settings/integrations");
+  revalidatePath("/app/settings/integrations", "layout");
   return tested.ok ? { status: "saved" } : { status: "error", error: tested.error };
 }
 
@@ -124,7 +124,7 @@ export async function connectFormPlatform(
     verified: true,
   });
   revalidatePath("/portal");
-  revalidatePath("/app/settings/integrations");
+  revalidatePath("/app/settings/integrations", "layout");
   return { status: "saved" };
 }
 
@@ -139,7 +139,7 @@ export async function connectCalendarViaGhl(
   const db = getSupabaseAdmin();
   const ghl = await loadConnection(db, access.ctx.org.id);
   if (!ghl || ghl.status !== "active" || !ghl.location_id) {
-    return { status: "error", error: "Connect GoHighLevel first. Calendar metadata is read from that connection." };
+    return { status: "error", error: "Connect LeadConnector first. Calendar metadata is read from that connection." };
   }
   await upsertSourceConnection(db, {
     orgId: access.ctx.org.id,
@@ -150,6 +150,6 @@ export async function connectCalendarViaGhl(
     verified: true,
   });
   revalidatePath("/portal");
-  revalidatePath("/app/settings/integrations");
+  revalidatePath("/app/settings/integrations", "layout");
   return { status: "saved" };
 }

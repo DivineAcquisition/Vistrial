@@ -3,29 +3,21 @@
 import { useActionState, useState, useTransition } from "react";
 
 import {
-  disconnectCrm,
   retryWebhookEvent,
-  saveGhlFieldMaps,
-  selectGhlLocation,
-  saveTranscriptConnection,
-  rotateTranscriptWebhookToken,
   pasteUnmatchedTranscript,
   assignUnmatchedTranscript,
   discardUnmatchedTranscript,
   testCrmConnection,
-  type FieldMapPayload,
 } from "@/app/app/settings/integrations/actions";
 import type { SettingsSaveResult } from "@/app/app/settings/types";
 import { Button, SubmitButton } from "@/components/ui/button";
-import { Field } from "@/components/ui/field";
-import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { DataTable } from "@/components/ui/data-table";
 import { Select } from "@/components/ui/select";
 import { Panel } from "@/components/ui/panel";
 import { Notice } from "@/components/ui/states";
-import { StatusBadge } from "@/components/ui/status-badge";
 import { formatRelative } from "@/lib/format";
+import { RecorderSetup } from "@/components/integrations/recorder-setup";
 import { RECORDER_SOURCES } from "@/lib/transcripts/constants";
 import { TRANSCRIPT_SOURCE_LABELS } from "@/lib/leads/labels";
 import {
@@ -34,11 +26,7 @@ import {
   helperClass,
   labelClass,
 } from "@/lib/ui";
-import type { Tone } from "@/components/ui/tone";
 
-export type IntegrationFieldMap = FieldMapPayload & { id: string };
-export type CustomFieldOption = { id: string; name: string; key?: string };
-export type LocationOption = { id: string; name: string };
 export type DeadEvent = {
   id: string;
   eventType: string;
@@ -47,13 +35,8 @@ export type DeadEvent = {
 };
 
 export type IntegrationSettingsProps = {
-  oauthConfigured: boolean;
-  selectLocation: boolean;
-  locations: LocationOption[];
   connection: {
     status: "active" | "broken" | "inactive" | "missing";
-    locationName: string | null;
-    lastVerifiedAt: string | null;
     lastSetupError: string | null;
   };
   health: {
@@ -67,10 +50,7 @@ export type IntegrationSettingsProps = {
     stale: boolean;
     staleReason: string | null;
   };
-  maps: IntegrationFieldMap[];
-  customFields: CustomFieldOption[];
-  flash: string | null;
-  flashError: string | null;
+  hasFieldMaps: boolean;
   now: string;
   appUrl: string;
   transcriptHealth: {
@@ -108,25 +88,8 @@ export type IntegrationSettingsProps = {
 
 const initial: SettingsSaveResult = { status: "idle" };
 
-function statusTone(status: IntegrationSettingsProps["connection"]["status"]): Tone {
-  if (status === "active") return "good";
-  if (status === "broken") return "critical";
-  return "neutral";
-}
-
-function statusLabel(status: IntegrationSettingsProps["connection"]["status"]): string {
-  if (status === "active") return "Connected";
-  if (status === "broken") return "Broken";
-  if (status === "inactive") return "Disconnected";
-  return "Not connected";
-}
-
 export function IntegrationSettings(props: IntegrationSettingsProps) {
-  const [disconnectState, disconnectAction, disconnecting] = useActionState(disconnectCrm, initial);
   const [testState, testAction, testing] = useActionState(testCrmConnection, initial);
-  const [locationState, locationAction, locating] = useActionState(selectGhlLocation, initial);
-  const [maps, setMaps] = useState<IntegrationFieldMap[]>(props.maps);
-  const [mapStatus, setMapStatus] = useState<SettingsSaveResult>(initial);
   const [retryStatus, setRetryStatus] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
   const [transcriptStatus, setTranscriptStatus] = useState<string | null>(null);
@@ -147,16 +110,16 @@ export function IntegrationSettings(props: IntegrationSettingsProps) {
 
       {props.connection.lastSetupError ? (
         <Notice tone="warning" title="Webhook registration did not finish">
-          The location is linked, but HighLevel did not accept the webhook subscription. Inbound
+          The location is linked, but LeadConnector did not accept the webhook subscription. Inbound
             events will not arrive until this is fixed. Reconnect, or check the marketplace app
             webhook URL. Recorded cause: {props.connection.lastSetupError}.
         </Notice>
       ) : null}
 
-      {props.connection.status === "active" && props.maps.length === 0 ? (
-        <Notice tone="warning" title="No application field maps">
-          Contacts can ingest, but intake scores will stay empty until GHL custom fields are
-            mapped onto answer keys. A blank score is not a successful scoring setup.
+      {props.connection.status === "active" && !props.hasFieldMaps ? (
+        <Notice tone="warning" title="We are not reading anything from your leads yet">
+          Leads arrive, but nothing tells us how ready they are. Confirm the questions above and
+            save, and scoring starts on the next lead.
         </Notice>
       ) : null}
 
@@ -190,97 +153,17 @@ export function IntegrationSettings(props: IntegrationSettingsProps) {
         </Notice>
       ) : null}
 
-      {props.flashError ? <p className={errorClass}>{props.flashError}</p> : null}
-      {props.flash ? <p className="text-sm text-flag-good">{props.flash}</p> : null}
-
-      {props.selectLocation ? (
-        <Panel className="p-6">
-          <h2 className={cardTitle}>Choose a GoHighLevel location</h2>
-          <p className={helperClass}>
-            Agency access was granted. Link exactly one location to this workspace.
-          </p>
-          <form action={locationAction} className="mt-4 space-y-4">
-            <div>
-              <label className={labelClass} htmlFor="location_id">
-                Location
-              </label>
-              <Select id="location_id" name="location_id" required  defaultValue="">
-                <option value="" disabled>
-                  Select a location
-                </option>
-                {props.locations.map((location) => (
-                  <option key={location.id} value={location.id}>
-                    {location.name}
-                  </option>
-                ))}
-              </Select>
-            </div>
-            <SubmitButton variant="gradient" pending={locating} loadingLabel="Linking">
-            Link location
-          </SubmitButton>
-            {locationState.status === "error" ? <p className={errorClass}>{locationState.error}</p> : null}
-          </form>
-        </Panel>
-      ) : null}
-
       <Panel className="p-6">
-        <div className="flex flex-wrap items-start justify-between gap-4">
-          <div>
-            <h2 className={cardTitle}>GoHighLevel</h2>
-            <p className={helperClass}>
-              Dispatch goes out through GHL. Conversations stay in GHL — this workspace never
-              renders threads or message bodies. Connect ad spend, the processor, calendar, and
-              forms from the cards below to unlock those owner-portal sections.
-            </p>
-          </div>
-          <StatusBadge label={statusLabel(props.connection.status)} tone={statusTone(props.connection.status)} />
-        </div>
-
-        <dl className="mt-5 grid gap-4 sm:grid-cols-2">
-          <div>
-            <dt className={labelClass}>Linked location</dt>
-            <dd className="text-sm text-white">{props.connection.locationName || "—"}</dd>
-          </div>
-          <div>
-            <dt className={labelClass}>Last verified</dt>
-            <dd className="text-sm text-white">
-              {props.connection.lastVerifiedAt
-                ? formatRelative(props.connection.lastVerifiedAt, props.now)
-                : "—"}
-            </dd>
-          </div>
-        </dl>
-
-        <div className="mt-6 flex flex-wrap gap-3">
-          {props.oauthConfigured ? (
-            <Button variant="gradient" size="lg" render={<a href="/api/ghl/oauth/start" />}>
-              {props.connection.status === "active" || props.connection.status === "broken"
-                ? "Reconnect"
-                : "Connect GoHighLevel"}
-            </Button>
-          ) : (
-            <p className="text-sm text-silver">
-              Marketplace credentials are not configured on this deployment, so connect stays
-              unavailable.
-            </p>
-          )}
-          {props.connection.status === "active" || props.connection.status === "broken" ? (
-            <>
-              <form action={testAction}>
-                <SubmitButton variant="secondary" pending={testing} loadingLabel="Testing">
-                  Test
-                </SubmitButton>
-              </form>
-              <form action={disconnectAction}>
-                <SubmitButton variant="secondary" pending={disconnecting} loadingLabel="Disconnecting">
-            Disconnect
+        <h2 className={cardTitle}>Connection check</h2>
+        <p className={helperClass}>
+          Ask the CRM for a live answer now. Connecting and disconnecting live on the hub.
+        </p>
+        <form action={testAction} className="mt-5">
+          <SubmitButton variant="secondary" pending={testing} loadingLabel="Testing">
+            Test connection
           </SubmitButton>
-              </form>
-            </>
-          ) : null}
-        </div>
-        {disconnectState.status === "error" ? <p className={errorClass}>{disconnectState.error}</p> : null}
-        {testState.status === "error" ? <p className={errorClass}>{testState.error}</p> : null}
+        </form>
+        {testState.status === "error" ? <p className={`${errorClass} mt-3`}>{testState.error}</p> : null}
         {testState.status === "saved" ? <p className="mt-3 text-sm text-flag-good">Verified just now.</p> : null}
       </Panel>
 
@@ -325,7 +208,7 @@ export function IntegrationSettings(props: IntegrationSettingsProps) {
             <dd className="text-sm text-white">{props.health.deadCount}</dd>
           </div>
           <div>
-            <dt className={labelClass}>Failed extractions</dt>
+            <dt className={labelClass}>Recordings we could not read</dt>
             <dd className="text-sm text-white">{props.transcriptHealth.deadExtractions}</dd>
           </div>
           <div>
@@ -422,226 +305,24 @@ export function IntegrationSettings(props: IntegrationSettingsProps) {
         </div>
       </Panel>
 
-      <Panel className="p-6">
-        <h2 className={cardTitle}>Application field mapping</h2>
-        <p className={helperClass}>
-          Map this location&apos;s GHL custom fields onto the application answer keys the scoring
-          engine already reads. This is data, not code — every client&apos;s GHL is different.
-        </p>
-        <div className="mt-5 space-y-4">
-          {maps.map((map, index) => (
-            <div key={map.id} className="grid gap-3 sm:grid-cols-3">
-              {props.customFields.length > 0 ? (
-                <div>
-                  <label className={labelClass}>GHL field</label>
-                  <Select
-                    
-                    value={map.ghlFieldId}
-                    onChange={(event) => {
-                      const option = props.customFields.find((field) => field.id === event.target.value);
-                      setMaps((current) =>
-                        current.map((row, rowIndex) =>
-                          rowIndex === index
-                            ? {
-                                ...row,
-                                ghlFieldId: event.target.value,
-                                ghlFieldKey: option?.key ?? row.ghlFieldKey,
-                              }
-                            : row
-                        )
-                      );
-                    }}
-                  >
-                    <option value="">Choose a field</option>
-                    {props.customFields.map((field) => (
-                      <option key={field.id} value={field.id}>
-                        {field.name}
-                      </option>
-                    ))}
-                  </Select>
-                </div>
-              ) : (
-                <div>
-                  <Field label="GHL field id" name={`ghl-field-id-${map.id}`}>
-                    <Input
-                      id={`ghl-field-id-${map.id}`}
-                      type="text"
-                      value={map.ghlFieldId}
-                      onChange={(event) =>
-                        setMaps((current) =>
-                          current.map((row, rowIndex) =>
-                            rowIndex === index ? { ...row, ghlFieldId: event.target.value } : row
-                          )
-                        )
-                      }
-                      placeholder="abc123"
-                    />
-                  </Field>
-                </div>
-              )}
-              <div>
-                <Field label="GHL field key" name={`ghl-field-key-${map.id}`}>
-                  <Input
-                    id={`ghl-field-key-${map.id}`}
-                    type="text"
-                    value={map.ghlFieldKey}
-                      onChange={(event) =>
-                        setMaps((current) =>
-                          current.map((row, rowIndex) =>
-                            rowIndex === index ? { ...row, ghlFieldKey: event.target.value } : row
-                          )
-                        )
-                      }
-                      placeholder="contact.timeline"
-                  />
-                </Field>
-              </div>
-              <div>
-                <Field label="Answer key" name={`answer-key-${map.id}`}>
-                  <div className="flex gap-2">
-                    <Input
-                      id={`answer-key-${map.id}`}
-                      type="text"
-                      value={map.answerKey}
-                      onChange={(event) =>
-                        setMaps((current) =>
-                          current.map((row, rowIndex) =>
-                            rowIndex === index ? { ...row, answerKey: event.target.value } : row
-                          )
-                        )
-                      }
-                      placeholder="timeline"
-                    />
-                    <Button
-                      type="button"
-                      variant="secondary"
-                      size="sm"
-                      onClick={() => setMaps((current) => current.filter((_, rowIndex) => rowIndex !== index))}
-                    >
-                      Remove
-                    </Button>
-                  </div>
-                </Field>
-              </div>
-            </div>
-          ))}
-          <div className="flex flex-wrap gap-3">
-            <Button
-              type="button"
-              variant="secondary"
-              size="sm"
-              onClick={() =>
-                setMaps((current) => [
-                  ...current,
-                  { id: crypto.randomUUID(), ghlFieldId: "", ghlFieldKey: "", answerKey: "" },
-                ])
-              }
-            >
-              Add mapping
-            </Button>
-            <Button
-              type="button"
-              variant="primary"
-              size="sm"
-              disabled={pending}
-              onClick={() => {
-                startTransition(async () => {
-                  const result = await saveGhlFieldMaps(maps);
-                  setMapStatus(result);
-                });
-              }}
-            >
-              Save mapping
-            </Button>
-          </div>
-          {mapStatus.status === "error" ? <p className={errorClass}>{mapStatus.error}</p> : null}
-          {mapStatus.status === "saved" ? (
-            <p className="text-sm text-flag-good">Field mapping saved.</p>
-          ) : null}
-        </div>
-      </Panel>
 
       <Panel className="p-6">
         <h2 className={cardTitle}>Call recorders</h2>
         <p className={helperClass}>
-          Webhooks for Fathom, Fireflies, Zoom, and GHL. Optional API key for scheduled pull.
-          Manual paste stays available as the fallback. Audio is never stored.
+          Set one up and we give you an address to paste into that product. Nothing is typed here.
+          Audio is never stored, only the words.
         </p>
         {transcriptStatus ? <p className="mt-3 text-sm text-silver">{transcriptStatus}</p> : null}
         <div className="mt-5 space-y-6">
           {RECORDER_SOURCES.map((source) => {
             const connection = props.transcriptHealth.connections.find((row) => row.source === source);
-            const webhookUrl = connection
-              ? `${props.appUrl}/api/transcripts/webhooks/${source}/${connection.publicToken}`
-              : null;
             return (
-              <form
+              <RecorderSetup
                 key={source}
-                className="space-y-3 border-t border-white/[0.06] pt-4 first:border-t-0 first:pt-0"
-                onSubmit={(event) => {
-                  event.preventDefault();
-                  const form = new FormData(event.currentTarget);
-                  startTransition(async () => {
-                    const result = await saveTranscriptConnection({
-                      source,
-                      webhookSecret: String(form.get("webhook_secret") ?? ""),
-                      apiKey: String(form.get("api_key") ?? ""),
-                    });
-                    setTranscriptStatus(result.status === "error" ? result.error : `${TRANSCRIPT_SOURCE_LABELS[source]} saved.`);
-                  });
-                }}
-              >
-                <p className="text-sm font-medium text-white">{TRANSCRIPT_SOURCE_LABELS[source]}</p>
-                {webhookUrl ? (
-                  <p className="text-xs break-all text-dim">Webhook URL: {webhookUrl}</p>
-                ) : (
-                  <p className="text-xs text-dim">Save a webhook secret to mint the URL.</p>
-                )}
-                <div className="grid gap-3 sm:grid-cols-2">
-                  <Field label="Webhook secret" name={`webhook_secret_${source}`}>
-                    <Input
-                      id={`webhook_secret_${source}`}
-                      name="webhook_secret"
-                      type="password"
-                      placeholder={connection?.hasWebhookSecret ? "Unchanged" : "Paste webhook secret"}
-                    />
-                  </Field>
-                  <Field label="API key for pull" name={`api_key_${source}`}>
-                    <Input
-                      id={`api_key_${source}`}
-                      name="api_key"
-                      type="password"
-                      placeholder={connection?.hasApiKey ? "Unchanged" : "Paste API key"}
-                    />
-                  </Field>
-                </div>
-                {connection?.lastPullError ? (
-                  <p className={errorClass}>Last pull: {connection.lastPullError}</p>
-                ) : null}
-                <div className="flex flex-wrap gap-2">
-                  <Button type="submit" variant="primary" size="sm" disabled={pending}>
-                    Save
-                  </Button>
-                  {connection ? (
-                    <Button
-                      type="button"
-                      variant="secondary"
-                      size="sm"
-                      disabled={pending}
-                      onClick={() => {
-                        startTransition(async () => {
-                          const result = await rotateTranscriptWebhookToken(source);
-                          setTranscriptStatus(
-                            result.status === "error" ? result.error : `${TRANSCRIPT_SOURCE_LABELS[source]} webhook URL rotated.`
-                          );
-                        });
-                      }}
-                    >
-                      Rotate URL
-                    </Button>
-                  ) : null}
-                </div>
-              </form>
+                source={source}
+                label={TRANSCRIPT_SOURCE_LABELS[source]}
+                alreadySetUp={Boolean(connection?.hasWebhookSecret)}
+              />
             );
           })}
         </div>

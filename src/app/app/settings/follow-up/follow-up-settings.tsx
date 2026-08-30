@@ -23,10 +23,11 @@ import { Panel } from "@/components/ui/panel";
 import { Select } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { SectionHeader } from "@/components/ui/section-header";
+import { AdvancedDoor } from "@/components/settings/advanced-door";
 import { useSettingsToast } from "@/components/settings/use-settings-toast";
 import { toastManager } from "@/components/ui/toast";
 import { MIN_VOICE_EXAMPLES } from "@/lib/follow-up/constants";
-import { FOLLOW_UP_BRANCH_LABELS, FOLLOW_UP_CHANNEL_LABELS } from "@/lib/follow-up/labels";
+import { FOLLOW_UP_BRANCH_LABELS, FOLLOW_UP_CHANNEL_LABELS, routingRuleSentence } from "@/lib/follow-up/labels";
 import type { FollowUpSettings, RoutingRule, VoiceExample, VoiceProfile } from "@/lib/follow-up/types";
 import { errorClass, formMeasure, helperClass, labelClass } from "@/lib/ui";
 
@@ -79,7 +80,7 @@ export function FollowUpSettingsScreen({
             description={
               settings.sequencesHalted
                 ? "Stopped. No further sequence step will be scheduled. Drafts already approved still send."
-                : "Allowed. Sequence steps are scheduled as calls are extracted."
+                : "Allowed. Sequence steps are scheduled as calls are read."
             }
             onChange={(event) => {
               const next = event.target.checked;
@@ -172,8 +173,9 @@ export function FollowUpSettingsScreen({
         </Panel>
       </section>
 
+      <AdvancedDoor closedLabel="Show how drafts sound">
       <section>
-        <SectionHeader title="Voice profile" hint="Used on every generation. Changes never happen from edit data unless you confirm a suggestion below." />
+        <SectionHeader title="How drafts sound" hint="Used on every generation. Changes never happen from edit data unless you confirm a suggestion below." />
         <Panel className={`${formMeasure} p-6`}>
           <form action={saveVoice} className="space-y-4">
             <Field label="Formality" name="formality">
@@ -245,9 +247,10 @@ export function FollowUpSettingsScreen({
           </form>
         </Panel>
       </section>
+      </AdvancedDoor>
 
       <section>
-        <SectionHeader title="Policy" hint="Quiet hours default on. Sequence caps cannot be removed." />
+        <SectionHeader title="Quiet hours" hint="Quiet hours default on. How long a sequence can run cannot be turned off." />
         <Panel className={`${formMeasure} p-6`}>
           <form action={savePolicy} className="space-y-4">
             <CheckboxField
@@ -302,16 +305,18 @@ export function FollowUpSettingsScreen({
             </Field>
             {policyState.status === "error" ? <p className={errorClass}>{policyState.error}</p> : null}
             <Button type="submit" variant="primary" size="lg" disabled={policyPending}>
-              Save policy
+              Save quiet hours and limits
             </Button>
           </form>
         </Panel>
       </section>
 
+      <AdvancedDoor closedLabel="Show how drafts are written">
+      <div className="space-y-10">
       <section>
         <SectionHeader
-          title="Routing"
-          hint="Rules are evaluated in priority order from next step and call outcome together. Nothing here is hardcoded in app logic."
+          title="When we write, and on which channel"
+          hint="Rules run in order. Turn one off if this business does not use that situation."
         />
         <Panel className="p-6 space-y-4">
           {rules.map((rule, index) => (
@@ -366,9 +371,7 @@ export function FollowUpSettingsScreen({
                   </Field>
                 </div>
               </div>
-              <p className={`${helperClass} font-mono`}>
-                {JSON.stringify(rule.match)}
-              </p>
+              <p className={helperClass}>{routingRuleSentence(rule)}</p>
             </div>
           ))}
           {ruleStatus.status === "error" ? <p className={errorClass}>{ruleStatus.error}</p> : null}
@@ -460,6 +463,8 @@ export function FollowUpSettingsScreen({
           )}
         </Panel>
       </section>
+      </div>
+      </AdvancedDoor>
     </div>
   );
 }

@@ -2,8 +2,8 @@ import { describe, expect, it } from "vitest";
 
 import {
   CASE_FILE,
+  CRM,
   FAQ,
-  GHL,
   HERO,
   MOMENTS,
   OUTCOME,
@@ -19,7 +19,7 @@ describe("landing copy", () => {
     expect(CASE_FILE.headline).toBe("One file per lead. Everything known, in one place.");
     expect(MOMENTS.headline).toBe("Three moments where it changes the outcome.");
     expect(OUTCOME.headline).toBe("The number we track is clients closed per hundred leads.");
-    expect(GHL.headline).toBe("It runs on the CRM you already have.");
+    expect(CRM.headline).toBe("It runs on the CRM you already have.");
     expect(WAITLIST.headline).toBe("This is private software.");
   });
 
@@ -31,12 +31,14 @@ describe("landing copy", () => {
       CASE_FILE,
       MOMENTS,
       OUTCOME,
-      GHL,
+      CRM,
       WAITLIST,
       FAQ,
     });
     expect(blob).not.toMatch(/AI-powered/i);
     expect(blob).not.toMatch(/ai powered/i);
+    expect(blob).not.toMatch(/HighLevel/i);
+    expect(blob).not.toMatch(/\bGHL\b/);
   });
 
   it("uses existing product language for the hero eyebrow", () => {

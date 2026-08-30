@@ -85,7 +85,7 @@ export function CasesFilters({
         </Select>
       </label>
       <label className="block">
-        <span className={filterLabel}>Track</span>
+        <span className={filterLabel}>How ready</span>
         <Select
           density="compact"
           value={filters.track ?? ""}
@@ -93,10 +93,10 @@ export function CasesFilters({
             apply({ track: (event.target.value || null) as CaseTrackFilter | null })
           }
         >
-          <option value="">Any track</option>
+          <option value="">Anyone</option>
           {CASE_TRACKS.map((track) => (
             <option key={track} value={track}>
-              {track === "ready" ? "Ready" : "Nurture"}
+              {track === "ready" ? "Ready now" : "Nurture"}
             </option>
           ))}
         </Select>
@@ -117,7 +117,7 @@ export function CasesFilters({
         </Select>
       </label>
       <div>
-        <span className={filterLabel}>Score</span>
+        <span className={filterLabel}>How ready, out of 100</span>
         <ScoreRangeSlider
           min={filters.scoreMin}
           max={filters.scoreMax}

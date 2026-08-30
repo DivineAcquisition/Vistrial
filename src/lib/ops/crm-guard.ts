@@ -1,7 +1,7 @@
 import { vistrialEnv, type VistrialEnv } from "@/lib/ops/env";
 
 /**
- * HighLevel does not document a location-id prefix that distinguishes sandbox
+ * The CRM does not document a location-id prefix that distinguishes sandbox
  * from production. Staging therefore uses an explicit allowlist. An empty
  * allowlist in staging blocks every location — fail closed.
  */

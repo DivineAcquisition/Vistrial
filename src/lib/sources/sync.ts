@@ -64,6 +64,23 @@ async function leadIdForGhlContact(db: GhlDb, orgId: string, contactId: string |
   return data?.id ?? null;
 }
 
+/** Connecting stopped partway through, so there is nothing to test against. */
+const NOT_FINISHED = "That connection did not finish. Press Connect and complete their screen.";
+
+/**
+ * A provider said no. Which of their numbers it was does not help anyone here,
+ * so say what it means and what to do about it instead.
+ */
+function reconnectMessage(provider: string, status: number): string {
+  if (status === 401 || status === 403) {
+    return `${provider} no longer accepts this connection. Press Reconnect and approve it again.`;
+  }
+  if (status === 429) {
+    return `${provider} is asking us to slow down. Try again in a few minutes.`;
+  }
+  return `${provider} could not be reached just now. Try again in a few minutes.`;
+}
+
 export async function testSourceConnection(
   db: GhlDb,
   orgId: string,
@@ -71,33 +88,37 @@ export async function testSourceConnection(
 ): Promise<{ ok: true } | { ok: false; error: string }> {
   const conn = await loadSourceSecret(db, orgId, kind);
   if (!conn || conn.status === "inactive") {
-    return { ok: false, error: "This source is not connected." };
+    return { ok: false, error: "This is not connected yet. Press Connect and finish on their screen." };
   }
   try {
     if (kind === "meta_ads") {
-      if (!conn.secret) return { ok: false, error: "No access token stored." };
+      if (!conn.secret) return { ok: false, error: NOT_FINISHED };
       const res = await fetch(`https://graph.facebook.com/v21.0/me?access_token=${encodeURIComponent(conn.secret)}`);
-      if (!res.ok) throw new Error(`Meta returned ${res.status}.`);
+      if (!res.ok) throw new Error(reconnectMessage("Meta", res.status));
     } else if (kind === "google_ads") {
-      if (!conn.secret) return { ok: false, error: "No access token stored." };
+      if (!conn.secret) return { ok: false, error: NOT_FINISHED };
       const token = await googleAccessToken(db, orgId, "google_ads", conn);
       const customerId = await listGoogleAdsCustomerId(token);
       if (!customerId && !asString(conn.metadata.customer_id)) {
-        throw new Error("Read-only access works, but no Google Ads customer id was listed.");
+        throw new Error(
+          "We can read Google Ads, but this login has no ad account on it. Reconnect with the login that owns your ads."
+        );
       }
     } else if (kind === "stripe") {
-      if (!conn.secret) return { ok: false, error: "No access token stored." };
+      if (!conn.secret) return { ok: false, error: NOT_FINISHED };
       const res = await fetch("https://api.stripe.com/v1/balance", {
         headers: { Authorization: `Bearer ${conn.secret}` },
       });
-      if (!res.ok) throw new Error(`Stripe returned ${res.status}.`);
+      if (!res.ok) throw new Error(reconnectMessage("Stripe", res.status));
     } else if (kind === "commas") {
-      if (!conn.secret) return { ok: false, error: "No API key stored." };
+      if (!conn.secret) return { ok: false, error: NOT_FINISHED };
       const res = await fetch(`${commasApiBase()}/v1/checkout-sessions?limit=1`, {
         headers: { Authorization: `Bearer ${conn.secret}`, Accept: "application/json" },
       });
-      if (res.status === 401 || res.status === 403) throw new Error("Commas rejected the key.");
-      if (!res.ok && res.status !== 404) throw new Error(`Commas returned ${res.status}.`);
+      if (res.status === 401 || res.status === 403) {
+        throw new Error("Commas would not accept that key. Create a new read-only key and connect again.");
+      }
+      if (!res.ok && res.status !== 404) throw new Error(reconnectMessage("Commas", res.status));
     } else if (kind === "calendar") {
       if (conn.provider === "ghl") {
         const { data: ghl } = await db
@@ -106,10 +127,10 @@ export async function testSourceConnection(
           .eq("org_id", orgId)
           .maybeSingle();
         if (ghl?.status !== "active" || !ghl.location_id) {
-          throw new Error("GoHighLevel is not connected.");
+          throw new Error("Connect your CRM first. The calendar reads from that same connection.");
         }
         const ping = await ghlRequest(db, orgId, `/calendars/?locationId=${encodeURIComponent(ghl.location_id)}`);
-        if (!ping.ok) throw new Error("Could not read calendars from GoHighLevel.");
+        if (!ping.ok) throw new Error("We could not read your calendars. Reconnect your CRM and try again.");
       } else if (conn.secret) {
         const token = await googleAccessToken(db, orgId, "calendar", conn);
         const res = await fetch(
@@ -118,17 +139,20 @@ export async function testSourceConnection(
             headers: { Authorization: `Bearer ${token}` },
           }
         );
-        if (!res.ok) throw new Error(`Google Calendar returned ${res.status}.`);
+        if (!res.ok) throw new Error(reconnectMessage("Google Calendar", res.status));
       } else {
-        throw new Error("No calendar credential stored.");
+        throw new Error(NOT_FINISHED);
       }
     } else if (kind === "form_platform") {
-      if (!conn.publicToken) throw new Error("No webhook token stored.");
+      if (!conn.publicToken) throw new Error(NOT_FINISHED);
     }
     await markSourceVerified(db, orgId, kind);
     return { ok: true };
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Test failed.";
+    const message =
+      error instanceof Error && error.message
+        ? error.message
+        : "We could not reach them just now. Try again in a minute.";
     await markSourceError(db, orgId, kind, message);
     return { ok: false, error: message };
   }
@@ -464,7 +488,7 @@ async function syncCalendar(db: GhlDb, orgId: string) {
       .select("location_id")
       .eq("org_id", orgId)
       .maybeSingle();
-    if (!ghl?.location_id) throw new Error("GoHighLevel location missing.");
+    if (!ghl?.location_id) throw new Error("LeadConnector location missing.");
     const calendars = await ghlRequest<{ calendars?: Array<{ id?: string }> }>(
       db,
       orgId,

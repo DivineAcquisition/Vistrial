@@ -18,6 +18,7 @@ import { OutcomeSyncRuntime } from "@/components/app/outcome-sync-runtime";
 import { OrgSwitcher } from "@/components/app/org-switcher";
 import { MobileWalkthroughNotice } from "@/components/app/mobile-walkthrough";
 import { CoachingDisclosureNotice } from "@/components/app/coaching-disclosure";
+import { FirstRunExplainer } from "@/components/app/first-run";
 import { PushPrompt } from "@/components/app/push-prompt";
 import { UserMenu } from "@/components/app/user-menu";
 import { Button } from "@/components/ui/button";
@@ -187,6 +188,7 @@ export function AppShell({
             {wizard ? null : (
               <>
                 <ConnectionStatus />
+                <FirstRunExplainer />
                 <CoachingDisclosureNotice needed={needsCoachingAck} />
                 <MobileWalkthroughNotice needed={needsMobileOutcomeTraining} />
                 <PushPrompt />

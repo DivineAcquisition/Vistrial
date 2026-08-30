@@ -392,7 +392,6 @@ async function VoicePayoff({ orgId, payoff }: { orgId: string; payoff: Record<st
           <DefinitionList>
             <KeyValue label="Examples on file">{preview.exampleCount}</KeyValue>
             <KeyValue label="Formality">{str(payoff.formality) ?? "not set"}</KeyValue>
-            <KeyValue label="Channel">{str(payoff.default_channel) ?? "not set"}</KeyValue>
             <KeyValue label="First lead it will run on">{preview.leadName ?? "none yet"}</KeyValue>
           </DefinitionList>
         </>

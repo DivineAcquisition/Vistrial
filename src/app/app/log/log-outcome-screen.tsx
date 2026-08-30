@@ -313,9 +313,9 @@ export function LogOutcomeScreen({
             {reasonLabel ? <p className={helperClass}>{reasonLabel}</p> : null}
             {selected.score !== null ? (
               <p className="mt-2 text-sm text-silver">
-                Score {selected.score}
+                How ready: {selected.score}
                 {selected.leadType === "ready_track"
-                  ? " · Ready"
+                  ? " · Ready now"
                   : selected.leadType === "nurture_track"
                     ? " · Nurture"
                     : ""}

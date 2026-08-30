@@ -23,7 +23,7 @@ import { Particles } from "@/components/ui/particles";
 import {
   CASE_FILE,
   FAQ,
-  GHL,
+  CRM,
   HERO,
   MOMENTS,
   OUTCOME,
@@ -215,7 +215,7 @@ export function LandingPage() {
           <p className={cn(marketingLead, "mt-10")}>{OUTCOME.honesty}</p>
       </MarketingSection>
 
-      <MarketingSection headline={GHL.headline} lead={<p>{GHL.body}</p>}>
+      <MarketingSection headline={CRM.headline} lead={<p>{CRM.body}</p>}>
           <GhlConnectVisual />
       </MarketingSection>
 

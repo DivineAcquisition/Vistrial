@@ -10,7 +10,7 @@ export const DEMO_CASE = {
   source: "Meta · High-ticket coaching",
   campaign: "March webinar replay",
   status: "Working",
-  track: "Ready",
+  track: "Ready now",
   setter: "Maya Chen",
   closer: "Chris Adel",
   lastTouch: "14 hours ago",
@@ -23,10 +23,10 @@ export const DEMO_CASE = {
     reasoning:
       "Timeline is this quarter. Budget is in range. Spouse is on the decision. Pain is the missed follow-up on their own list.",
     factors: [
-      { key: "timeline", label: "Timeline", value: 82 },
-      { key: "investment_capacity", label: "Investment capacity", value: 70 },
-      { key: "decision_authority", label: "Decision authority", value: 64 },
-      { key: "pain_severity", label: "Pain severity", value: 81 },
+      { key: "timeline", label: "How soon they want to move", value: 82 },
+      { key: "investment_capacity", label: "What they can spend", value: 70 },
+      { key: "decision_authority", label: "Whether they decide", value: 64 },
+      { key: "pain_severity", label: "How much it hurts", value: 81 },
     ],
   },
   objection: {

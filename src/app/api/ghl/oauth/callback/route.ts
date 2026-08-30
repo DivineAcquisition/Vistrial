@@ -3,7 +3,7 @@ import { NextResponse } from "next/server";
 
 import { GHL_OAUTH_COOKIE } from "@/lib/ghl/constants";
 import { appUrl } from "@/lib/ghl/env";
-import { exchangeAuthorizationCode } from "@/lib/ghl/client";
+import { exchangeAuthorizationCode, fetchLocationName } from "@/lib/ghl/client";
 import { linkLocationToOrg, stashAgencySession } from "@/lib/ghl/connect";
 import { parseOAuthState } from "@/lib/ghl/oauth-state";
 import { recordHttpSample } from "@/lib/ops/alerts";
@@ -26,7 +26,7 @@ export async function GET(request: Request) {
     const db = getSupabaseAdmin();
     const limited = await rateLimitWebhook(db, request, "oauth");
     if (!limited.allowed) {
-      await recordHttpSample(db, "/api/ghl/oauth/callback", true);
+      await recordHttpSample(db, "/api/leadconnector/oauth/callback", true);
       return new NextResponse("Too many requests", { status: 429 });
     }
   } catch {
@@ -81,7 +81,11 @@ export async function GET(request: Request) {
         ghl_error: linked.error === "location_claimed" ? "location_claimed" : "oauth_failed",
       });
     }
-    return redirectToIntegrations({ connected: "1" });
+    // Ask the CRM for a live answer before claiming this worked.
+    const name = await fetchLocationName(admin, state.orgId, locationId).catch(() => null);
+    return redirectToIntegrations(
+      name ? { connected: "1" } : { connected: "1", unverified: "1" }
+    );
   } catch (error) {
     if (error instanceof Error && error.message === "staging_crm_location_not_allowlisted") {
       return redirectToIntegrations({ ghl_error: "staging_blocked" });

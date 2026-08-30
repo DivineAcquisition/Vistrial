@@ -35,7 +35,7 @@ export default async function ScoringSettingsPage() {
   return (
     <PageFrame
       title="Scoring"
-      description="Readiness weights, application mappings, and ghost thresholds for this workspace."
+      description="How ready someone has to be before they sit at the top, and how long they can wait."
       breadcrumbs={advancedSettingsBreadcrumbs("Scoring", "/app/settings/scoring")}
     >
       <ScoringSettings

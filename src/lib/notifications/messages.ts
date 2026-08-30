@@ -26,7 +26,7 @@ export function speedToLeadCopy(
     };
   }
   return {
-    title: `${names.length} leads are past the speed-to-lead window`,
+    title: `${names.length} people have been waiting too long`,
     body: sanitizeNotificationText("Open the queue."),
   };
 }
@@ -40,7 +40,7 @@ export function unassignedReadyCopy(name: string | null): { title: string; body:
 
 export function ghostDigestCopy(count: number): { title: string; body: string } {
   return {
-    title: `${count} lead${count === 1 ? " is" : "s are"} approaching ghost`,
+    title: `${count} ${count === 1 ? "person is" : "people are"} going quiet`,
     body: sanitizeNotificationText("Open case files before they go quiet."),
   };
 }

@@ -4,9 +4,9 @@ Three environments, genuinely separated. A shared API key across any two of them
 
 | Environment | Database | CRM | Data |
 | --- | --- | --- | --- |
-| **Development** | Local Postgres / local Supabase | Never a production HighLevel location | Synthetic / seed only |
-| **Staging** | Its own Supabase project | HighLevel **sandbox** locations on `GHL_ALLOWED_LOCATION_IDS` only | Generated data. Never a production copy. |
-| **Production** | Its own Supabase project | Production HighLevel locations | Real clients |
+| **Development** | Local Postgres / local Supabase | Never a production LeadConnector location | Synthetic / seed only |
+| **Staging** | Its own Supabase project | LeadConnector **sandbox** locations on `GHL_ALLOWED_LOCATION_IDS` only | Generated data. Never a production copy. |
+| **Production** | Its own Supabase project | Production LeadConnector locations | Real clients |
 
 ## Secrets
 
@@ -17,7 +17,7 @@ Production secrets live in the Vercel / Supabase managed stores, not in a laptop
 ## Runtime guards (verified in tests, not assumed)
 
 1. `VISTRIAL_ENV=staging` plus `PRODUCTION_SUPABASE_URLS=<prod project URL>` — if staging is pointed at that URL, `getSupabaseAdmin()` throws `staging_points_at_production_database`. A deployed staging with an empty denylist throws `staging_missing_production_db_denylist`.
-2. Staging HighLevel: `GHL_ALLOWED_LOCATION_IDS`. Empty allowlist **blocks every location**. There is no documented location-id format that distinguishes sandbox from production, so an allowlist is the control. Connecting a production location from staging is refused before tokens are stored.
+2. Staging LeadConnector: `GHL_ALLOWED_LOCATION_IDS`. Empty allowlist **blocks every location**. There is no documented location-id format that distinguishes sandbox from production, so an allowlist is the control. Connecting a production location from staging is refused before tokens are stored.
 
 ## Staging seed policy
 

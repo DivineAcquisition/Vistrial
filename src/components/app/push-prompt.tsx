@@ -50,9 +50,9 @@ export function PushPrompt() {
         }
       >
         <p className={helperClass}>
-          A call starting soon can open the brief on this screen. Speed-to-lead breaches open the
-          queue already filtered. If you decline, the app still works. You can enable this later in
-          Settings.
+          A call starting soon can open the brief on this screen. People who have waited too long
+          open the queue already filtered. If you decline, the app still works. You can enable this
+          later in Settings.
         </p>
         <div className="mt-3">
           <PushEnable />

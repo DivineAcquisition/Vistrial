@@ -54,21 +54,24 @@ import {
   CALL_OUTCOME_LABELS,
   CALL_TYPE_LABELS,
   LEAD_STATUS_LABELS,
-  LEAD_TRACK_LABELS,
   MANUAL_LEAD_STATUSES,
   OBJECTION_TYPE_LABELS,
   PAYMENT_TYPE_LABELS,
-  SCORE_TRIGGER_LABELS,
   leadStatusTone,
   type LeadStatus,
 } from "@/lib/leads/labels";
 import { formatQueueDuration, formatQueueUntil } from "@/lib/queue/duration";
+import { TOUCH_CHANNEL_LABELS, TOUCH_OUTCOME_LABELS } from "@/lib/queue/types";
 import {
-  SCORE_CONFIDENCE_LABELS,
-  TOUCH_CHANNEL_LABELS,
-  TOUCH_OUTCOME_LABELS,
-} from "@/lib/queue/types";
-import { FACTOR_LABELS, SCORE_FACTORS } from "@/lib/scoring/compute";
+  FACTOR_PLAIN,
+  FACTOR_TITLE,
+  SCORE_CHANGE_CAUSE,
+  WORDS,
+  readinessLabel,
+  readinessState,
+  readinessTone,
+} from "@/lib/vocabulary";
+import { SCORE_FACTORS } from "@/lib/scoring/compute";
 import { overrideLeadScore } from "@/lib/scoring/override";
 import {
   errorClass,
@@ -78,7 +81,13 @@ import {
 
 type PanelKind = "outcome" | "assign" | "override" | "status" | "createAction" | null;
 
-export function CaseFileScreen({ initial }: { initial: CaseFilePayload }) {
+export function CaseFileScreen({
+  initial,
+  readyThreshold,
+}: {
+  initial: CaseFilePayload;
+  readyThreshold: number;
+}) {
   const org = useOrg();
   const [file, setFile] = useState(initial);
   const [now] = useState(() => new Date().toISOString());
@@ -155,6 +164,15 @@ export function CaseFileScreen({ initial }: { initial: CaseFilePayload }) {
   const openActions = file.nextActions.filter((item) => !item.completedAt);
   const doneActions = file.nextActions.filter((item) => item.completedAt);
 
+  const state = readinessState(
+    file.score?.total ?? null,
+    readyThreshold,
+    lead.leadType === "nurture_track"
+  );
+  const lastEvent = file.timeline.entries[0]
+    ? timelineSummary(file.timeline.entries[0], now)
+    : "Nothing yet. They have not been contacted.";
+
   return (
     <div className="space-y-8">
       {error ? <p className={errorClass}>{error}</p> : null}
@@ -168,13 +186,12 @@ export function CaseFileScreen({ initial }: { initial: CaseFilePayload }) {
             </p>
             <div className="mt-3 flex flex-wrap gap-2">
               <StatusBadge label={LEAD_STATUS_LABELS[lead.status]} tone={leadStatusTone(lead.status)} />
-              {lead.leadType ? (
-                <StatusBadge
-                  label={LEAD_TRACK_LABELS[lead.leadType]}
-                  tone={lead.leadType === "ready_track" ? "brand" : "neutral"}
-                />
-              ) : null}
+              <StatusBadge label={readinessLabel(state)} tone={readinessTone(state)} />
             </div>
+            <p className="mt-3 text-sm text-silver">
+              <span className="text-dim">Last thing that happened: </span>
+              {lastEvent}
+            </p>
           </div>
           <div className="flex flex-wrap gap-2">
             <Button variant="primary" size="sm" render={<Link href={`/app/cases/${lead.id}/brief`} />}>
@@ -300,54 +317,6 @@ export function CaseFileScreen({ initial }: { initial: CaseFilePayload }) {
           }}
         />
       ) : null}
-
-      <section>
-        <SectionHeader title="Readiness" hint="Four factors, not just the total. The call changes with which one is weak." />
-        <Panel className="p-6">
-          {file.score ? (
-            <DefinitionList>
-              <KeyValue label="Score">
-                <span className="font-medium text-white tabular-nums">{file.score.total}</span>
-                {lead.leadType ? ` · ${LEAD_TRACK_LABELS[lead.leadType]}` : ""}
-              </KeyValue>
-              <KeyValue label="Confidence">
-                {file.score.scoreConfidence
-                  ? `${SCORE_CONFIDENCE_LABELS[file.score.scoreConfidence]} · ${file.score.knownFactorCount} of 4`
-                  : `${file.score.knownFactorCount} of 4`}
-              </KeyValue>
-              <KeyValue label="Timeline">{factorValue(file.score.timeline)}</KeyValue>
-              <KeyValue label="Investment capacity">{factorValue(file.score.investmentCapacity)}</KeyValue>
-              <KeyValue label="Decision authority">{factorValue(file.score.decisionAuthority)}</KeyValue>
-              <KeyValue label="Pain severity">{factorValue(file.score.painSeverity)}</KeyValue>
-              <KeyValue label="Reasoning">{file.score.reasoning || "—"}</KeyValue>
-            </DefinitionList>
-          ) : (
-            <p className="text-sm text-dim">No score yet. Intake or an override will write the first row.</p>
-          )}
-        </Panel>
-      </section>
-
-      <section>
-        <Panel className="p-6">
-          <details>
-            <summary className="cursor-pointer text-sm font-medium text-white">
-              Score history ({file.scoreHistory.length})
-            </summary>
-            <p className={helperClass}>Every score row, with what triggered it and how the total moved.</p>
-            {file.scoreHistory.length === 0 ? (
-              <p className="mt-3 text-sm text-dim">No score rows.</p>
-            ) : (
-              <ol className="mt-4 space-y-3">
-                {file.scoreHistory.map((row) => (
-                  <li key={row.id} className="border-t border-white/[0.05] pt-3 first:border-t-0 first:pt-0">
-                    <ScoreHistoryItem row={row} now={now} />
-                  </li>
-                ))}
-              </ol>
-            )}
-          </details>
-        </Panel>
-      </section>
 
       <section>
         <SectionHeader title="Open objections" hint="Do not re-litigate these. They are already on the table." />
@@ -586,7 +555,7 @@ export function CaseFileScreen({ initial }: { initial: CaseFilePayload }) {
       <section>
         <SectionHeader
           title="Calls"
-          hint="Open a call for the extraction. The brief is one click away."
+          hint="Open a call for what was said. The brief is one click away."
         />
         <div className="space-y-3">
           {file.calls.length === 0 ? (
@@ -602,8 +571,62 @@ export function CaseFileScreen({ initial }: { initial: CaseFilePayload }) {
       <section>
         <Panel className="p-6">
           <details>
-            <summary className="cursor-pointer text-sm font-medium text-white">Application answers</summary>
-            <p className={helperClass}>Raw intake. Mapped answers show which scoring factor they feed.</p>
+            <summary className="cursor-pointer text-sm font-medium text-white">
+              {WORDS.readinessFactors}
+            </summary>
+            <p className={helperClass}>
+              How ready they are is built from these four. The call changes with whichever one is
+              weak.
+            </p>
+            {file.score ? (
+              <DefinitionList>
+                <KeyValue label="Out of 100">
+                  <span className="font-medium text-white tabular-nums">{file.score.total}</span>
+                </KeyValue>
+                <KeyValue label="How soon they want to move">{factorValue(file.score.timeline)}</KeyValue>
+                <KeyValue label="What they can spend">{factorValue(file.score.investmentCapacity)}</KeyValue>
+                <KeyValue label="Whether they decide">{factorValue(file.score.decisionAuthority)}</KeyValue>
+                <KeyValue label="How much it hurts">{factorValue(file.score.painSeverity)}</KeyValue>
+                <KeyValue label="Why">{file.score.reasoning || "—"}</KeyValue>
+              </DefinitionList>
+            ) : (
+              <p className="mt-3 text-sm text-dim">
+                Nobody has been scored yet. The first call or application answer fills this in.
+              </p>
+            )}
+          </details>
+        </Panel>
+      </section>
+
+      <section>
+        <Panel className="p-6">
+          <details>
+            <summary className="cursor-pointer text-sm font-medium text-white">
+              What changed this ({file.scoreHistory.length})
+            </summary>
+            <p className={helperClass}>Every time how ready they are moved, and what moved it.</p>
+            {file.scoreHistory.length === 0 ? (
+              <p className="mt-3 text-sm text-dim">Nothing has changed it yet.</p>
+            ) : (
+              <ol className="mt-4 space-y-3">
+                {file.scoreHistory.map((row) => (
+                  <li key={row.id} className="border-t border-white/[0.05] pt-3 first:border-t-0 first:pt-0">
+                    <ScoreHistoryItem row={row} now={now} />
+                  </li>
+                ))}
+              </ol>
+            )}
+          </details>
+        </Panel>
+      </section>
+
+      <section>
+        <Panel className="p-6">
+          <details>
+            <summary className="cursor-pointer text-sm font-medium text-white">
+              What they told you on the application
+            </summary>
+            <p className={helperClass}>Their own answers, exactly as they gave them.</p>
             <ApplicationAnswers
               answers={lead.applicationAnswers}
               fieldMaps={file.fieldMaps}
@@ -614,21 +637,25 @@ export function CaseFileScreen({ initial }: { initial: CaseFilePayload }) {
 
       {file.revenue !== null ? (
         <section>
-          <SectionHeader title="Revenue" hint="Owner and admin only. A payment here is what sets closed won." />
           <Panel className="p-6">
-            {file.revenue.length === 0 ? (
-              <p className="text-sm text-dim">No payments recorded.</p>
-            ) : (
-              <DefinitionList>
-                {file.revenue.map((row) => (
-                  <KeyValue key={row.id} label={formatQueueDuration(row.occurredAt, now)}>
-                    {formatCents(row.amountCents, row.currency)} · {PAYMENT_TYPE_LABELS[row.paymentType]}
-                    {row.closedByName ? ` · ${row.closedByName}` : ""}
-                    {row.processor ? ` · ${row.processor}` : ""}
-                  </KeyValue>
-                ))}
-              </DefinitionList>
-            )}
+            <details>
+              <summary className="cursor-pointer text-sm font-medium text-white">
+                What they paid ({file.revenue.length})
+              </summary>
+              <p className={helperClass}>Owners and admins only. A payment here is what marks them won.</p>
+              {file.revenue.length === 0 ? (
+                <p className="mt-3 text-sm text-dim">Nothing paid yet.</p>
+              ) : (
+                <DefinitionList>
+                  {file.revenue.map((row) => (
+                    <KeyValue key={row.id} label={formatQueueDuration(row.occurredAt, now)}>
+                      {formatCents(row.amountCents, row.currency)} · {PAYMENT_TYPE_LABELS[row.paymentType]}
+                      {row.closedByName ? ` · ${row.closedByName}` : ""}
+                    </KeyValue>
+                  ))}
+                </DefinitionList>
+              )}
+            </details>
           </Panel>
         </section>
       ) : null}
@@ -643,22 +670,28 @@ function factorValue(value: number | null): string {
 function ScoreHistoryItem({ row, now }: { row: CaseScoreHistoryRow; now: string }) {
   const movement =
     row.previousTotal === null
-      ? `First score ${row.total}`
+      ? `Started at ${row.total} out of 100`
       : row.previousTotal === row.total
-        ? `${row.previousTotal} → ${row.total} (unchanged)`
-        : `${row.previousTotal} → ${row.total} (${row.total - row.previousTotal > 0 ? "+" : ""}${row.total - row.previousTotal})`;
+        ? `Stayed at ${row.total}`
+        : `${row.previousTotal} → ${row.total}`;
   return (
     <div>
       <p className="text-sm text-white">
         {movement}
         <span className="ml-2 text-dim">
-          {SCORE_TRIGGER_LABELS[row.triggeredBy]} · {formatQueueDuration(row.createdAt, now)}
+          {SCORE_CHANGE_CAUSE[row.triggeredBy]} · {formatQueueDuration(row.createdAt, now)}
         </span>
       </p>
       <p className="mt-1 text-xs text-silver">
-        T {factorValue(row.timeline)} · I {factorValue(row.investmentCapacity)} · A{" "}
-        {factorValue(row.decisionAuthority)} · P {factorValue(row.painSeverity)}
-        {row.scoredByName ? ` · ${row.scoredByName}` : ""}
+        {[
+          `How soon ${factorValue(row.timeline)}`,
+          `Can spend ${factorValue(row.investmentCapacity)}`,
+          `Decides ${factorValue(row.decisionAuthority)}`,
+          `Hurts ${factorValue(row.painSeverity)}`,
+          row.scoredByName,
+        ]
+          .filter(Boolean)
+          .join(" · ")}
       </p>
     </div>
   );
@@ -795,7 +828,8 @@ function NextActionBlock({
 function timelineSummary(entry: CaseTimelineEntry, now: string): string {
   const when = formatQueueDuration(entry.at, now);
   if (entry.kind === "touch") {
-    return `${TOUCH_CHANNEL_LABELS[entry.channel]} · ${entry.direction} · ${when}`;
+    const way = entry.direction === "inbound" ? "They replied" : "We contacted them";
+    return `${way} by ${TOUCH_CHANNEL_LABELS[entry.channel].toLowerCase()} · ${when}`;
   }
   if (entry.kind === "call") {
     return `${CALL_TYPE_LABELS[entry.callType]} call · ${when}`;
@@ -919,16 +953,16 @@ function CallBlock({ call, now, leadId }: { call: CaseCall; now: string; leadId:
         <KeyValue label="Duration">{formatCallDuration(call.durationSeconds)}</KeyValue>
         <KeyValue label="Outcome">{call.outcome ? CALL_OUTCOME_LABELS[call.outcome] : "—"}</KeyValue>
         <KeyValue label="Ran by">{call.ranByName || "—"}</KeyValue>
-        <KeyValue label="Extraction">
+        <KeyValue label={WORDS.whatWasSaid}>
           {call.extractionStatus === "failed"
-            ? "Extraction failed"
+            ? "We could not read this recording. Open the call to see the transcript."
             : call.extractionStatus === "pending"
-              ? "Extracting"
+              ? "Being read now"
               : call.hasExtraction
-                ? "Ready"
+                ? "Ready to read"
                 : call.hasTranscript
-                  ? "Transcript stored, not extracted"
-                  : "No transcript"}
+                  ? "Recording saved, not read yet"
+                  : "No recording"}
         </KeyValue>
       </DefinitionList>
       <div className="mt-4 flex flex-wrap gap-2">
@@ -963,10 +997,10 @@ function ApplicationAnswers({
           <KeyValue key={key} label={key}>
             {formatAnswer(answers[key])}
             {factor ? (
-              <span className="mt-1 block text-xs text-brand-300">Maps to {FACTOR_LABELS[factor]}</span>
-            ) : (
-              <span className="mt-1 block text-xs text-dim">Not mapped to a scoring factor</span>
-            )}
+              <span className="mt-1 block text-xs text-brand-300">
+                We use this to judge {FACTOR_PLAIN[factor]}
+              </span>
+            ) : null}
           </KeyValue>
         );
       })}
@@ -1006,7 +1040,7 @@ function OverridePanel({
       <div className="mt-4 grid gap-3 sm:grid-cols-2">
         {SCORE_FACTORS.map((factor) => (
           <label key={factor} className="block">
-            <span className={labelClass}>{FACTOR_LABELS[factor]}</span>
+            <span className={labelClass}>{FACTOR_TITLE[factor]}</span>
             <Input
               name={factor}
               type="number"

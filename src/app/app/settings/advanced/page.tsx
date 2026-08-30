@@ -22,7 +22,7 @@ export default async function AdvancedSettingsPage() {
   return (
     <PageFrame
       title="Advanced"
-      description="Specialist controls. Day-to-day settings stay on You, Notifications, Workspace, and People."
+      description="Specialist controls. Everyday settings stay on the other tabs, and connecting apps lives on Integrations."
     >
       <div className="space-y-8">
         <section className="space-y-3">

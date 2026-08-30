@@ -96,6 +96,7 @@ export const SETTINGS_TABS: Array<{
   { href: "/app/settings/notifications", label: "Notifications", managerOnly: false },
   { href: "/app/settings/organization", label: "Workspace", managerOnly: true },
   { href: "/app/settings/members", label: "People", managerOnly: true },
+  { href: "/app/settings/integrations", label: "Integrations", managerOnly: true },
   { href: "/app/settings/advanced", label: "Advanced", managerOnly: true },
 ];
 
@@ -112,17 +113,12 @@ export const ADVANCED_SETTINGS_PAGES: Array<{
   {
     href: "/app/settings/scoring",
     label: "Scoring",
-    description: "Ready threshold, speed-to-lead window, and how application answers become a score.",
+    description: "How ready someone has to be, how long they can wait, and how answers become a number.",
   },
   {
     href: "/app/settings/follow-up",
     label: "Follow-up",
     description: "Voice examples, quiet hours, and which situations Vistrial drafts for.",
-  },
-  {
-    href: "/app/settings/integrations",
-    label: "Integrations",
-    description: "GoHighLevel connection, field maps, and whether inbound is actually landing.",
   },
   {
     href: "/app/settings/data",

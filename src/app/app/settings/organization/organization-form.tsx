@@ -67,7 +67,7 @@ export function OrganizationForm({
           <Field
             label="Sales cycle (days)"
             name="sales_cycle_days"
-            help="A lead cohort enters the headline outcome metric only after this many days. Default 60. Maturing cohorts are shown separately and never blended into that number."
+            help="A group of leads from the same period enters the headline number only after this many days. Default 60. Groups that are still maturing are shown separately and never mixed into that number."
           >
             <Input
               name="sales_cycle_days"
@@ -84,7 +84,7 @@ export function OrganizationForm({
           <Field
             label="Baseline lookback (days)"
             name="baseline_lookback_days"
-            help="How far the automatic CRM history pull reaches. Default 365. Changing this does not re-run the backfill by itself."
+            help="How far back the automatic CRM history pull reaches. Default 365. Changing this does not pull history again by itself."
           >
             <Input
               name="baseline_lookback_days"
@@ -191,7 +191,7 @@ export function OrganizationForm({
           <Field
             label="CRM location"
             name="ghl_location"
-            help="Set when GoHighLevel is connected. Change the connection under Advanced → Integrations."
+            help="Set when LeadConnector is connected. Change the connection under Integrations."
           >
             <Input
               id="ghl_location"

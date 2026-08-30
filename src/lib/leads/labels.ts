@@ -26,21 +26,21 @@ export const LEAD_STATUS_LABELS: Record<LeadStatus, string> = {
   no_show: "No-show",
   follow_up: "Follow-up",
   objection_hold: "Objection hold",
-  ghost: "Ghost",
+  ghost: "Gone quiet",
   closed_won: "Closed won",
   closed_lost: "Closed lost",
 };
 
 export const LEAD_TRACK_LABELS: Record<Enums<"lead_type">, string> = {
-  ready_track: "Ready",
+  ready_track: "Ready now",
   nurture_track: "Nurture",
 };
 
 export const SCORE_TRIGGER_LABELS: Record<Enums<"score_trigger">, string> = {
-  intake: "Intake",
-  call: "Call",
-  manual: "Manual override",
-  event: "Event",
+  intake: "From what they filled in",
+  call: "From the call",
+  manual: "Changed by a person",
+  event: "From something they did",
 };
 
 export const CALL_TYPE_LABELS: Record<Enums<"call_type">, string> = {
@@ -77,7 +77,7 @@ export const TRANSCRIPT_SOURCE_LABELS: Record<Enums<"transcript_source">, string
   fathom: "Fathom",
   fireflies: "Fireflies",
   zoom: "Zoom",
-  ghl: "GoHighLevel",
+  ghl: "LeadConnector",
   manual: "Manual paste",
 };
 
@@ -88,10 +88,10 @@ export const SIGNAL_STATE_LABELS: Record<Enums<"extraction_signal_state">, strin
 };
 
 export const EXTRACTION_STATUS_LABELS: Record<"none" | "pending" | "ready" | "failed", string> = {
-  none: "No extraction",
-  pending: "Extracting",
-  ready: "Extracted",
-  failed: "Extraction failed",
+  none: "Not read",
+  pending: "Being read",
+  ready: "Ready to read",
+  failed: "Could not read",
 };
 
 export function leadStatusTone(

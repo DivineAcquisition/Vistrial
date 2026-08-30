@@ -5,6 +5,7 @@ import { appUrl } from "@/lib/app-url";
 import { recordHttpSample } from "@/lib/ops/alerts";
 import { rateLimitWebhook } from "@/lib/ops/rate-limit";
 import { completeSourceOAuth } from "@/lib/sources/oauth";
+import { testSourceConnection } from "@/lib/sources/sync";
 import { parseSourceOAuthState } from "@/lib/sources/oauth-state";
 import { sourceOAuthCookieName } from "@/lib/sources/env";
 import { getSupabaseAdmin } from "@/lib/supabase/admin";
@@ -49,8 +50,13 @@ export async function GET(request: Request) {
 
   try {
     await completeSourceOAuth(db, { orgId: state.orgId, kind: state.kind, code });
+    // Verify before telling anyone it worked. A connection that is only
+    // "stored" is the one that fails silently a fortnight later.
+    const verified = await testSourceConnection(db, state.orgId, state.kind);
     await recordHttpSample(db, "/api/sources/oauth/callback", false);
-    return redirectToPortal({ source_connected: state.kind });
+    return verified.ok
+      ? redirectToPortal({ source_connected: state.kind })
+      : redirectToPortal({ source_connected: state.kind, source_unverified: verified.error });
   } catch {
     await recordHttpSample(db, "/api/sources/oauth/callback", true);
     return redirectToPortal({ source_error: "oauth_failed" });

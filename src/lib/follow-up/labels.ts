@@ -1,5 +1,5 @@
 import type { Enums } from "@/types/database";
-import type { FollowUpBranch, FollowUpChannel, FollowUpDraftStatus } from "@/lib/follow-up/types";
+import type { FollowUpBranch, FollowUpChannel, FollowUpDraftStatus, RoutingRule } from "@/lib/follow-up/types";
 
 export const FOLLOW_UP_BRANCH_LABELS: Record<FollowUpBranch, string> = {
   closed: "Closed",
@@ -7,7 +7,7 @@ export const FOLLOW_UP_BRANCH_LABELS: Record<FollowUpBranch, string> = {
   objection_hold: "Objection hold",
   no_show: "No-show",
   not_interested: "Not interested",
-  ghost_risk: "Ghost risk",
+  ghost_risk: "Going quiet",
 };
 
 export const FOLLOW_UP_STATUS_LABELS: Record<FollowUpDraftStatus, string> = {
@@ -48,3 +48,21 @@ export const HALT_REASON_LABELS: Record<Enums<"follow_up_halt_reason">, string> 
   new_call: "A newer call replaced it",
   suppressed: "Contact is suppressed",
 };
+
+function formatWait(hours: number): string {
+  if (hours % 24 === 0) {
+    const days = hours / 24;
+    return `${days} day${days === 1 ? "" : "s"}`;
+  }
+  return `${hours} hour${hours === 1 ? "" : "s"}`;
+}
+
+/** One sentence for a routing rule. The match JSON stays off the screen. */
+export function routingRuleSentence(rule: RoutingRule): string {
+  const waits = rule.sequenceSteps
+    .map((step) => step.delayHours)
+    .filter((hours) => hours > 0)
+    .map(formatWait);
+  const cadence = waits.length === 0 ? "once" : `then again after ${waits.join(", then ")}`;
+  return `When they are ${FOLLOW_UP_BRANCH_LABELS[rule.branch].toLowerCase()}, send ${FOLLOW_UP_CHANNEL_LABELS[rule.channel]} ${cadence}.`;
+}

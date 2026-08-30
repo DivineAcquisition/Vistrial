@@ -19,10 +19,12 @@ import { Panel } from "@/components/ui/panel";
 import { Select } from "@/components/ui/select";
 import { CheckboxField } from "@/components/ui/checkbox";
 import { SliderField } from "@/components/ui/slider-field";
+import { AdvancedDoor } from "@/components/settings/advanced-door";
 import { useSettingsToast } from "@/components/settings/use-settings-toast";
 import { HOLDOUT_DEFAULT_PERCENT, HOLDOUT_MAX_PERCENT, HOLDOUT_PLAIN, HOLDOUT_DISABLED_PLAIN } from "@/lib/calibration/constants";
 import { overrideLeadScore } from "@/lib/scoring/override";
-import { computeReadinessScore, FACTOR_LABELS, SCORE_FACTORS, type ScoreWeights } from "@/lib/scoring/compute";
+import { computeReadinessScore, SCORE_FACTORS, type ScoreWeights } from "@/lib/scoring/compute";
+import { FACTOR_TITLE, WORDS } from "@/lib/vocabulary";
 import { extractFactors, type ScoreFieldMap } from "@/lib/scoring/extract";
 import {
   cardTitle,
@@ -104,60 +106,36 @@ export function ScoringSettings({ config, maps: initialMaps, leads, lastGhostRun
     <div className="space-y-8">
       <Panel className="p-6">
         <p className="text-sm leading-relaxed text-silver">
-          These mappings and weights are generic starting points. Tune them to
-          this workspace&apos;s application and offer — a $3K coach and a $15K
-          consultant should not share a threshold.
+          These numbers already work. Change them only when this business genuinely
+          differs — a $3K offer and a $15K offer should not share the same bar for
+          &quot;ready now.&quot;
         </p>
       </Panel>
 
       <Panel className="p-6">
-        <h2 className={cardTitle}>Weights and thresholds</h2>
+        <h2 className={cardTitle}>{WORDS.readinessScore}</h2>
         <p className={helperClass}>
-          Weights do not auto-balance. The four numbers must add to 100 before
-          save. Changing them does not rewrite old score rows.
+          The bar for calling today, how long someone can wait, and when we say they
+          went quiet. Changing these does not rewrite old scores.
         </p>
         <form action={saveConfig} className="mt-5 grid gap-4 sm:grid-cols-2">
-          {(
-            [
-              ["timeline", "Timeline"],
-              ["investment_capacity", "Investment capacity"],
-              ["decision_authority", "Decision authority"],
-              ["pain_severity", "Pain severity"],
-            ] as const
-          ).map(([key, label]) => (
-            <Field key={key} label={label} name={`${key}_weight`} htmlFor={`weight-${key}`} className="sm:col-span-2">
-              <input type="hidden" name={`${key}_weight`} value={weights[key]} />
-              <SliderField
-                aria-label={label}
-                value={weights[key]}
-                onValueChange={(next) =>
-                  setWeights((current) => ({
-                    ...current,
-                    [key]: Math.round(next),
-                  }))
-                }
-              />
-            </Field>
-          ))}
-
-          <p className={`sm:col-span-2 text-sm ${weightTotal === 100 ? "text-silver" : "text-flag-critical"}`}>
-            Running total: {weightTotal} / 100
-            {weightTotal === 100 ? "" : " — save stays blocked until this is 100."}
-          </p>
-
           <Field
-            label="Ready threshold"
+            label="Ready now at this number"
             name="ready_threshold"
-            help="At or above this total, the lead is on the ready track."
+            help="At or above this, they sit at the top of the queue."
           >
             <input type="hidden" name="ready_threshold" value={readyThreshold} />
             <SliderField
-              aria-label="Ready threshold"
+              aria-label="Ready now at this number"
               value={readyThreshold}
               onValueChange={setReadyThreshold}
             />
           </Field>
-          <Field label="Speed-to-lead minutes" name="speed_to_lead_minutes">
+          <Field
+            label="Minutes they can wait"
+            name="speed_to_lead_minutes"
+            help="After this, they move into Waiting too long."
+          >
             <Input
               id="speed_to_lead_minutes"
               name="speed_to_lead_minutes"
@@ -169,7 +147,7 @@ export function ScoringSettings({ config, maps: initialMaps, leads, lastGhostRun
               placeholder="5"
             />
           </Field>
-          <Field label="Approaching-ghost days" name="ghost_days_soft">
+          <Field label="Days before we say they are going quiet" name="ghost_days_soft">
             <Input
               id="ghost_days_soft"
               name="ghost_days_soft"
@@ -181,7 +159,7 @@ export function ScoringSettings({ config, maps: initialMaps, leads, lastGhostRun
               placeholder="3"
             />
           </Field>
-          <Field label="Ghost days" name="ghost_days_hard">
+          <Field label="Days before we say they went quiet" name="ghost_days_hard">
             <Input
               id="ghost_days_hard"
               name="ghost_days_hard"
@@ -200,19 +178,19 @@ export function ScoringSettings({ config, maps: initialMaps, leads, lastGhostRun
               name="holdout_enabled"
               checked={holdoutEnabled}
               onChange={(event) => setHoldoutEnabled(event.currentTarget.checked)}
-              label="Work a random sample regardless of score"
+              label={WORDS.checkGroup}
               description={holdoutEnabled ? HOLDOUT_PLAIN : HOLDOUT_DISABLED_PLAIN}
             />
             {holdoutEnabled ? (
               <Field
-                label="Holdout percent"
+                label="Share we work anyway"
                 name="holdout_percent"
                 className="mt-3 max-w-sm"
-                help={`Default ${HOLDOUT_DEFAULT_PERCENT}%. Cap ${HOLDOUT_MAX_PERCENT}%. These leads are not marked on the queue.`}
+                help={`Default ${HOLDOUT_DEFAULT_PERCENT}%. Cap ${HOLDOUT_MAX_PERCENT}%. These people are not marked on the queue.`}
               >
                 <input type="hidden" name="holdout_percent" value={holdoutPercent} />
                 <SliderField
-                  aria-label="Holdout percent"
+                  aria-label="Share we work anyway"
                   max={HOLDOUT_MAX_PERCENT}
                   min={1}
                   value={holdoutPercent}
@@ -224,18 +202,60 @@ export function ScoringSettings({ config, maps: initialMaps, leads, lastGhostRun
             )}
           </div>
 
+          <div className="sm:col-span-2">
+            {(
+              ["timeline", "investment_capacity", "decision_authority", "pain_severity"] as const
+            ).map((key) => (
+              <input key={key} type="hidden" name={`${key}_weight`} value={weights[key]} />
+            ))}
+            <AdvancedDoor closedLabel="Show how the number is built">
+              <div className="grid gap-4 sm:grid-cols-2">
+                <p className={`${helperClass} sm:col-span-2`}>
+                  The four numbers must add to 100. They do not rebalance themselves.
+                </p>
+                {(
+                  [
+                    ["timeline", FACTOR_TITLE.timeline],
+                    ["investment_capacity", FACTOR_TITLE.investment_capacity],
+                    ["decision_authority", FACTOR_TITLE.decision_authority],
+                    ["pain_severity", FACTOR_TITLE.pain_severity],
+                  ] as const
+                ).map(([key, label]) => (
+                  <Field key={key} label={label} name={`${key}_weight`} htmlFor={`weight-${key}`} className="sm:col-span-2">
+                    <SliderField
+                      aria-label={label}
+                      value={weights[key]}
+                      onValueChange={(next) =>
+                        setWeights((current) => ({
+                          ...current,
+                          [key]: Math.round(next),
+                        }))
+                      }
+                    />
+                  </Field>
+                ))}
+                <p className={`sm:col-span-2 text-sm ${weightTotal === 100 ? "text-silver" : "text-flag-critical"}`}>
+                  Running total: {weightTotal} / 100
+                  {weightTotal === 100 ? "" : " — save stays blocked until this is 100."}
+                </p>
+              </div>
+            </AdvancedDoor>
+          </div>
+
           {configState.status === "error" ? (
             <p className={`${errorClass} sm:col-span-2`}>{configState.error}</p>
           ) : null}
 
           <div className="sm:col-span-2">
             <SubmitButton variant="primary" pending={configPending} loadingLabel="Saving" disabled={configPending || weightTotal !== 100}>
-            Save weights and thresholds
+            Save
           </SubmitButton>
           </div>
         </form>
       </Panel>
 
+      <AdvancedDoor closedLabel="Preview a person, change one score, or rebuild everyone">
+      <div className="space-y-8">
       <Panel className="p-6">
         <h2 className={cardTitle}>Preview</h2>
         <p className={helperClass}>
@@ -288,7 +308,7 @@ export function ScoringSettings({ config, maps: initialMaps, leads, lastGhostRun
                   </dd>
                 </div>
                 <div>
-                  <dt className={labelClass}>Ready track at {readyThreshold}?</dt>
+                  <dt className={labelClass}>Ready now at {readyThreshold}?</dt>
                   <dd className="text-sm text-card-foreground">
                     {pendingScore.kind === "unscored"
                       ? "No — no score"
@@ -352,7 +372,7 @@ export function ScoringSettings({ config, maps: initialMaps, leads, lastGhostRun
                     >
                     {SCORE_FACTORS.map((factor) => (
                       <option key={factor} value={factor}>
-                        {FACTOR_LABELS[factor]}
+                        {FACTOR_TITLE[factor]}
                       </option>
                     ))}
                     </Select>
@@ -602,8 +622,8 @@ export function ScoringSettings({ config, maps: initialMaps, leads, lastGhostRun
         <h2 className={cardTitle}>Manual override</h2>
         <p className={helperClass}>
           Set factor values, not the total — the same function computes the
-          score. Reasoning is required. A later call extraction will re-score
-          this lead; an override is not a freeze.
+          score. Reasoning is required. A later call will re-score this person;
+          an override is not a freeze.
         </p>
         {leads.length === 0 ? (
           <p className={`${helperClass} mt-3`}>No leads to override yet.</p>
@@ -634,7 +654,7 @@ export function ScoringSettings({ config, maps: initialMaps, leads, lastGhostRun
             </div>
             <div className="grid gap-3 sm:grid-cols-2">
               {SCORE_FACTORS.map((factor) => (
-                <Field key={factor} label={FACTOR_LABELS[factor]} name={factor} htmlFor={`override-${factor}`}>
+                <Field key={factor} label={FACTOR_TITLE[factor]} name={factor} htmlFor={`override-${factor}`}>
                   <Input
                     id={`override-${factor}`}
                     name={factor}
@@ -694,9 +714,9 @@ export function ScoringSettings({ config, maps: initialMaps, leads, lastGhostRun
       </Panel>
 
       <Panel className="p-6">
-        <h2 className={cardTitle}>Ghost detector</h2>
+        <h2 className={cardTitle}>Find people who went quiet</h2>
         <p className={helperClass}>
-          Runs on a schedule, not when someone opens a page. Thresholds use this
+          Runs on a schedule, not when someone opens a page. The day counts use this
           workspace&apos;s timezone. You can also run it here to inspect the
           result.
         </p>
@@ -723,15 +743,17 @@ export function ScoringSettings({ config, maps: initialMaps, leads, lastGhostRun
                   ? `Evaluated ${result.evaluated ?? 0}, changed ${result.changed ?? 0}.`
                   : result.status === "error"
                     ? result.error
-                    : "Could not run the ghost detector."
+                    : "Could not find people who went quiet."
               );
             });
           }}
         >
-          Run ghost detector now
+          Find them now
         </Button>
         {ghostStatus ? <p className={helperClass}>{ghostStatus}</p> : null}
       </Panel>
+      </div>
+      </AdvancedDoor>
     </div>
   );
 }

@@ -6,7 +6,7 @@ import { loadScoreConfig, type ScoringClient } from "@/lib/scoring/store";
 
 export const GHOST_REENGAGEMENT_KIND = "ghost_reengagement";
 export const GHOST_REENGAGEMENT_TEXT =
-  "Attempt re-engagement. This lead has gone quiet and is approaching ghost.";
+  "Reach out again. This person has gone quiet.";
 
 const SKIP_STATUSES = new Set<Enums<"lead_status">>(["closed_won", "closed_lost"]);
 

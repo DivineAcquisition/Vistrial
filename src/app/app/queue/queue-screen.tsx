@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/table";
 import { useOrg } from "@/components/app/org-provider";
 import { QueueFilters } from "@/app/app/queue/queue-filters";
+import { activeQueueFilterCount } from "@/lib/queue/filters";
 import { QueueLeadRow } from "@/app/app/queue/queue-row";
 import { QueueMobileList } from "@/app/app/queue/queue-mobile-list";
 import {
@@ -58,27 +59,17 @@ import { SectionHeader } from "@/components/ui/section-header";
 type QueueColumn = { label: string; hideOnMobile?: boolean };
 
 const ALARM_COLUMNS: QueueColumn[] = [
-  { label: "Lead" },
-  { label: "Breach" },
-  { label: "Score" },
-  { label: "Confidence", hideOnMobile: true },
-  { label: "Source", hideOnMobile: true },
-  { label: "Opted in", hideOnMobile: true },
-  { label: "Last touch", hideOnMobile: true },
-  { label: "Setter", hideOnMobile: true },
-  { label: "Closer", hideOnMobile: true },
+  { label: "Who" },
+  { label: "Waiting too long" },
+  { label: "How ready" },
+  { label: "Waiting", hideOnMobile: true },
   { label: "Actions" },
 ];
 
 const QUEUE_COLUMNS: QueueColumn[] = [
-  { label: "Lead" },
-  { label: "Score" },
-  { label: "Confidence", hideOnMobile: true },
-  { label: "Source", hideOnMobile: true },
-  { label: "Opted in", hideOnMobile: true },
-  { label: "Last touch", hideOnMobile: true },
-  { label: "Setter", hideOnMobile: true },
-  { label: "Closer", hideOnMobile: true },
+  { label: "Who" },
+  { label: "How ready" },
+  { label: "Waiting", hideOnMobile: true },
   { label: "Next action" },
   { label: "Actions" },
 ];
@@ -94,6 +85,7 @@ export function QueueScreen({
   filters,
   canOpenIntegrations,
   voiceExampleCount,
+  readyThreshold,
   recentActivity = [],
   canViewActivity = false,
 }: {
@@ -101,6 +93,7 @@ export function QueueScreen({
   filters: QueueFilterState;
   canOpenIntegrations: boolean;
   voiceExampleCount: number;
+  readyThreshold: number;
   recentActivity?: ActivityEvent[];
   canViewActivity?: boolean;
 }) {
@@ -446,6 +439,11 @@ export function QueueScreen({
     </Button>
   ) : null;
 
+  const activeFilterCount = activeQueueFilterCount(filters, {
+    role: org.role,
+    isPlatformAdmin: org.isPlatformAdmin,
+  });
+
   const alarmVisible = useMemo(() => {
     const exitingIds = new Set(exitingAlarm.map((row) => row.id));
     const live = alarm.filter((row) => !exitingIds.has(row.id));
@@ -521,7 +519,7 @@ export function QueueScreen({
           <EmptyState
             kind="unconfigured"
             title="The CRM connection is broken"
-            detail="GoHighLevel is linked but token refresh failed. Reconnect in Integrations. Existing leads stay on this screen so the outage is not hidden."
+            detail="LeadConnector is linked but token refresh failed. Reconnect in Integrations. Existing leads stay on this screen so the outage is not hidden."
             action={integrations}
           />
         </div>
@@ -532,7 +530,7 @@ export function QueueScreen({
           <EmptyState
             kind="unconfigured"
             title="The CRM is not connected"
-            detail="New inbound will not land until GoHighLevel is linked. Leads already in this workspace still need action below."
+            detail="New inbound will not land until LeadConnector is linked. Leads already in this workspace still need action below."
             action={integrations}
           />
         </div>
@@ -557,7 +555,7 @@ export function QueueScreen({
         <EmptyState
           kind="unconfigured"
           title="The queue is empty until the CRM is connected"
-          detail="New leads land here after GoHighLevel is linked and scoring can rank them. Nothing is missing on your side yet — the connection has not been set up."
+          detail="New leads land here after LeadConnector is linked and scoring can rank them. Nothing is missing on your side yet — the connection has not been set up."
           action={integrations}
         />
       ) : null}
@@ -566,7 +564,7 @@ export function QueueScreen({
         <EmptyState
           kind="unconfigured"
           title="The queue cannot load while the CRM connection is broken"
-          detail="GoHighLevel is linked but token refresh failed. Reconnect in Integrations. Showing an empty queue would hide this outage."
+          detail="LeadConnector is linked but token refresh failed. Reconnect in Integrations. Showing an empty queue would hide this outage."
           action={integrations}
         />
       ) : null}
@@ -575,7 +573,7 @@ export function QueueScreen({
         <EmptyState
           kind="empty"
           title="No leads yet"
-          detail="GoHighLevel is connected and working. Nothing has come in yet. The first contact will appear here after it ingests."
+          detail="LeadConnector is connected and working. Nothing has come in yet. The first contact will appear here after it ingests."
         />
       ) : null}
 
@@ -618,16 +616,16 @@ export function QueueScreen({
             </section>
           ) : null}
 
-          <section className="mb-8" aria-label="Speed-to-lead alarm">
-            <p className={sectionLabel}>Speed-to-lead</p>
+          <section className="mb-8" aria-label="Waiting too long">
+            <p className={sectionLabel}>Waiting too long</p>
             {filters.breached ? (
               <p className="mt-2 text-sm text-silver">
-                Showing breached leads. This band cannot be dismissed.
+                Showing only people who have waited too long. This list cannot be dismissed.
               </p>
             ) : null}
             {alarmVisible.length === 0 ? (
               <p className="mt-3 text-sm text-dim">
-                Nothing unworked past the speed-to-lead window.
+                Nobody has been waiting longer than your response window.
               </p>
             ) : (
               <>
@@ -640,6 +638,7 @@ export function QueueScreen({
                     role={org.role}
                     memberId={org.memberId}
                     isPlatformAdmin={org.isPlatformAdmin}
+                    readyThreshold={readyThreshold}
                     arrivingIds={arrivingIds}
                     exitingIds={new Set(exitingAlarm.map((row) => row.id))}
                     busyLeadId={busyLeadId}
@@ -674,6 +673,7 @@ export function QueueScreen({
                         role={org.role}
                         memberId={org.memberId}
                         isPlatformAdmin={org.isPlatformAdmin}
+                        readyThreshold={readyThreshold}
                         arriving={arrivingIds.has(row.id)}
                         exiting={exitingAlarm.some((item) => item.id === row.id)}
                         busy={busyLeadId === row.id}
@@ -698,10 +698,10 @@ export function QueueScreen({
               type="button"
               variant="secondary"
               size="xl"
-              className="md:hidden"
+              aria-expanded={filtersOpen}
               onClick={() => setFiltersOpen((open) => !open)}
             >
-              Filters
+              {activeFilterCount > 0 ? `Filters (${activeFilterCount})` : "Filters"}
             </Button>
             <Button
               type="button"
@@ -714,9 +714,7 @@ export function QueueScreen({
               {refreshing ? "Refreshing…" : "Refresh"}
             </Button>
           </div>
-          <div className={filtersOpen ? "md:block" : "hidden md:block"}>
-            <QueueFilters filters={filters} sources={sources} />
-          </div>
+          {filtersOpen ? <QueueFilters filters={filters} sources={sources} /> : null}
 
           {emptyKind === "nothing_to_work" ? (
             <EmptyState
@@ -730,7 +728,7 @@ export function QueueScreen({
               <div className="mt-4 md:hidden">
                 {queue.length === 0 ? (
                   <p className="px-4 py-8 text-center text-sm text-dim">
-                    No leads match these filters. The alarm band above still shows every breach.
+                    Nobody matches these filters. Everyone waiting too long is still listed above.
                   </p>
                 ) : (
                   <QueueMobileList
@@ -741,6 +739,7 @@ export function QueueScreen({
                     role={org.role}
                     memberId={org.memberId}
                     isPlatformAdmin={org.isPlatformAdmin}
+                    readyThreshold={readyThreshold}
                     arrivingIds={arrivingIds}
                     busyLeadId={busyLeadId}
                     error={actionError}
@@ -771,8 +770,8 @@ export function QueueScreen({
                           colSpan={QUEUE_COLUMNS.length}
                           className="px-4 py-12 text-center text-sm text-dim"
                         >
-                          No leads match these filters. The alarm band above still shows every
-                          breach.
+                          Nobody matches these filters. Everyone waiting too long is still listed
+                          above.
                         </td>
                       </TableRow>
                     ) : (
@@ -786,6 +785,7 @@ export function QueueScreen({
                           role={org.role}
                           memberId={org.memberId}
                           isPlatformAdmin={org.isPlatformAdmin}
+                          readyThreshold={readyThreshold}
                           arriving={arrivingIds.has(row.id)}
                           busy={busyLeadId === row.id}
                           error={busyLeadId === row.id ? actionError : null}

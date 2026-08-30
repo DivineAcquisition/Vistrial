@@ -8,6 +8,7 @@ import { parseDraftModelOutput } from "@/lib/follow-up/parse";
 import { DRAFT_SYSTEM_PROMPT, draftUserPrompt } from "@/lib/follow-up/prompt";
 import { checkDraftQuality, type QualityInput } from "@/lib/follow-up/quality";
 import { computeSendAt, isInQuietHours } from "@/lib/follow-up/quiet-hours";
+import { FOLLOW_UP_BRANCH_LABELS, routingRuleSentence } from "@/lib/follow-up/labels";
 import { boundedSequenceSteps, routeFollowUp } from "@/lib/follow-up/routing";
 import { suggestionsFromEdits } from "@/lib/follow-up/suggestions";
 import type { RoutingRule, VoiceProfile } from "@/lib/follow-up/types";
@@ -461,5 +462,24 @@ describe("canApproveFollowUp", () => {
         assignedCloserId: null,
       })
     ).toBe(true);
+  });
+});
+
+describe("routing said as a sentence", () => {
+  it("never shows the match JSON", () => {
+    const sentence = routingRuleSentence({
+      priority: 60,
+      branch: "ghost_risk",
+      enabled: true,
+      match: {
+        all: [{ field: "next_step_state", op: "neq", value: "present" }],
+      },
+      channel: "sms",
+      sequenceSteps: [{ delayHours: 0 }, { delayHours: 48 }],
+    });
+    expect(sentence).toBe(
+      `When they are ${FOLLOW_UP_BRANCH_LABELS.ghost_risk.toLowerCase()}, send SMS then again after 2 days.`
+    );
+    expect(sentence).not.toMatch(/next_step_state|neq|present/);
   });
 });

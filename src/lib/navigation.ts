@@ -125,6 +125,11 @@ export const ADVANCED_SETTINGS_PAGES: Array<{
     label: "Data",
     description: "Export this workspace. Deletion is a DA operator action.",
   },
+  {
+    href: "/app/settings/agents",
+    label: "Agents",
+    description: "Who may run on a schedule, what they may change, and the stop switch.",
+  },
 ];
 
 export function advancedSettingsBreadcrumbs(label: string, href: string) {

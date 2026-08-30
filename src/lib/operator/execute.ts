@@ -311,6 +311,22 @@ export async function confirmOperatorConfirmation(input: {
   if (error || !row) return { ok: false, error: "That proposed write is not on this run." };
   if (row.decision !== "pending") return { ok: false, error: "That write was already decided." };
 
+  const { loadOrgAgentSettings } = await import("@/lib/agents/persist");
+  const settings = await loadOrgAgentSettings(db as never, input.ctx.org.id, "operator");
+  if (settings.observationMode) {
+    await db
+      .from("operator_run_confirmations")
+      .update({
+        decision: "cancelled",
+        decided_by: input.ctx.member.id,
+        decided_at: new Date().toISOString(),
+        execute_result: { succeeded: [], failed: [], notAttempted: [], observed: true } as unknown as Json,
+      })
+      .eq("id", row.id)
+      .eq("run_id", input.runId);
+    return { ok: false, error: "This agent is watching first. Nothing was changed." };
+  }
+
   const records = Array.isArray(row.records) ? row.records : [];
   if (input.selectedIds) {
     const allowed = new Set(records.map((item) => (item && typeof item === "object" && "id" in item ? String((item as { id: unknown }).id) : "")));

@@ -16,4 +16,5 @@ export const ACTIVITY_REALTIME_TABLES = [
   "revenue_log",
   "settings_activity",
   "ghost_detector_runs",
+  "agent_runs",
 ] as const;

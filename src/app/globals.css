@@ -1055,6 +1055,22 @@
     flex-shrink: 0;
     color: rgba(195, 182, 254, 0.95);
   }
+
+  /*
+   * Researched company facts vs what a prospect said. Mixing those is how
+   * a call goes badly wrong — the two must never look the same.
+   */
+  .prospect-said {
+    border-left: 2px solid #a3a3a3;
+    padding-left: 0.75rem;
+    color: #fff;
+  }
+
+  .research-not-said {
+    border-left: 2px solid #f0b45c;
+    padding-left: 0.75rem;
+    color: #f0b45c;
+  }
 }
 
 /* ---------- Motion ---------- */

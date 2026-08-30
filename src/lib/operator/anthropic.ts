@@ -1,6 +1,9 @@
 import "server-only";
 
-import { anthropicApiKey, anthropicModel } from "@/lib/extraction/anthropic";
+import { cacheLastTool, withPromptCache } from "@/lib/agents/anthropic";
+import { assertModelAllowed } from "@/lib/agents/model-config";
+import { resolveModel } from "@/lib/agents/router";
+import { anthropicApiKey } from "@/lib/extraction/anthropic";
 import { OPERATOR_MODEL_ENV } from "@/lib/operator/constants";
 import { operatorAnthropicTools } from "@/lib/operator/catalog";
 import { OPERATOR_SYSTEM_PROMPT } from "@/lib/operator/prompt";
@@ -11,17 +14,11 @@ export type OperatorModelEvent =
   | { type: "message"; stopReason: string | null; inputTokens: number; outputTokens: number; content: AgentContentBlock[]; model: string };
 
 export function operatorAgentModel(): string {
-  return process.env[OPERATOR_MODEL_ENV]?.trim() || anthropicModel();
-}
-
-function parseBlock(block: { type?: string; text?: string; id?: string; name?: string; input?: unknown }): AgentContentBlock | null {
-  if (block.type === "text" && typeof block.text === "string") {
-    return { type: "text", text: block.text };
-  }
-  if (block.type === "tool_use" && typeof block.id === "string" && typeof block.name === "string") {
-    return { type: "tool_use", id: block.id, name: block.name, input: block.input ?? {} };
-  }
-  return null;
+  const override = process.env[OPERATOR_MODEL_ENV]?.trim();
+  const resolved = resolveModel({ workKind: "agent_planning", mode: "on_demand" });
+  const id = override || resolved.modelId;
+  assertModelAllowed(id);
+  return id;
 }
 
 export async function streamOperatorMessage(input: {
@@ -29,11 +26,13 @@ export async function streamOperatorMessage(input: {
   onEvent: (event: OperatorModelEvent) => void;
   signal?: AbortSignal;
   timeoutMs: number;
+  model?: string;
 }): Promise<Extract<OperatorModelEvent, { type: "message" }>> {
   const key = anthropicApiKey();
   if (!key) throw new Error("The language model is not configured.");
 
-  const model = operatorAgentModel();
+  const model = input.model?.trim() || operatorAgentModel();
+  assertModelAllowed(model);
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), input.timeoutMs);
   const onAbort = () => controller.abort();
@@ -52,8 +51,8 @@ export async function streamOperatorMessage(input: {
         model,
         max_tokens: 4096,
         stream: true,
-        system: OPERATOR_SYSTEM_PROMPT,
-        tools: operatorAnthropicTools(),
+        system: [withPromptCache(OPERATOR_SYSTEM_PROMPT)],
+        tools: cacheLastTool(operatorAnthropicTools()),
         messages: input.messages,
       }),
       signal: controller.signal,

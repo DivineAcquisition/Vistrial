@@ -21,6 +21,7 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
+import { loadOperatorAvailabilityAction } from "@/app/app/settings/agents/actions";
 import {
   cancelOperatorWriteAction,
   confirmOperatorWriteAction,
@@ -29,6 +30,7 @@ import {
   undoOperatorWriteAction,
 } from "@/app/app/operator/actions";
 import type { OperatorConfirmationView, OperatorRunSummary, OperatorRunView, OperatorStepView } from "@/lib/operator/types";
+import { Notice } from "@/components/ui/states";
 import { helperClass } from "@/lib/ui";
 
 type LiveStep = OperatorStepView;
@@ -105,6 +107,10 @@ export function OperatorCommandBar() {
   const [streaming, setStreaming] = useState(false);
   const [history, setHistory] = useState<OperatorRunSummary[]>([]);
   const [showHistory, setShowHistory] = useState(false);
+  const [availability, setAvailability] = useState<{ ok: boolean; message: string | null }>({
+    ok: true,
+    message: null,
+  });
 
   const refreshHistory = useCallback(async () => {
     const rows = await listOperatorRunsAction();
@@ -123,7 +129,10 @@ export function OperatorCommandBar() {
   }, []);
 
   useEffect(() => {
-    if (open) void refreshHistory();
+    if (open) {
+      void refreshHistory();
+      void loadOperatorAvailabilityAction().then(setAvailability);
+    }
   }, [open, refreshHistory]);
 
   const resetLive = () => {
@@ -169,6 +178,11 @@ export function OperatorCommandBar() {
         headers: { "content-type": "application/json" },
         body: JSON.stringify(body),
       });
+      if (response.status === 403) {
+        const payload = (await response.json()) as { error?: string };
+        setError(payload.error ?? "This agent is off.");
+        return;
+      }
       if (response.status === 429) {
         const payload = (await response.json()) as { error?: string };
         setError(payload.error ?? "Rate limited.");
@@ -309,6 +323,11 @@ export function OperatorCommandBar() {
             </SheetDescription>
           </SheetHeader>
           <div className="flex min-h-0 flex-1 flex-col p-4">
+            {!availability.ok ? (
+              <Notice tone="warning" className="mb-4">
+                {availability.message ?? "This agent is off."}
+              </Notice>
+            ) : null}
             <form
               onSubmit={(event) => {
                 event.preventDefault();
@@ -326,7 +345,7 @@ export function OperatorCommandBar() {
                 />
               </label>
               <div className="mt-2 flex flex-wrap items-center gap-2">
-                <Button type="submit" variant="primary" size="sm" disabled={busy || !request.trim()}>
+                <Button type="submit" variant="primary" size="sm" disabled={busy || !request.trim() || !availability.ok}>
                   Run
                 </Button>
                 <Button

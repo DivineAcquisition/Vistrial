@@ -24,6 +24,24 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Keep the request under 4000 characters." }, { status: 400 });
   }
 
+  const { loadAgentRunContext } = await import("@/lib/agents/context");
+  const { actorFromMember } = await import("@/lib/agents/identity");
+  const gate = await loadAgentRunContext({
+    orgId: ctx.org.id,
+    agentId: "operator",
+    mode: "on_demand",
+    requester: actorFromMember({
+      userId: ctx.user.id,
+      memberId: ctx.member.id,
+      role: ctx.role,
+      displayName: ctx.member.displayName,
+    }),
+    timezone: ctx.org.timezone,
+  });
+  if (!gate.gate.ok) {
+    return NextResponse.json({ error: gate.gate.message }, { status: 403 });
+  }
+
   const limited = await consumeOperatorAgentLimits(ctx.org.id);
   if (!limited.allowed) {
     return NextResponse.json({ error: limited.error, code: "rate_limited" }, { status: 429 });

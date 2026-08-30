@@ -70,7 +70,7 @@ export async function collectDailyBriefItems(
       .in("status", [...OPEN_LEAD_STATUSES]);
     if (ready) {
       items.push({
-        text: `${ready} ready-track untouched`,
+        text: `${ready} ready now and not contacted`,
         href: notificationHref("/app/queue"),
       });
     }
@@ -82,7 +82,7 @@ export async function collectDailyBriefItems(
       .in("status", [...OPEN_LEAD_STATUSES]);
     if (ghosts) {
       items.push({
-        text: `${ghosts} approaching ghost`,
+        text: `${ghosts} going quiet`,
         href: notificationHref("/app/cases"),
       });
     }
@@ -155,7 +155,7 @@ export async function collectDailyBriefItems(
       .lte("opted_in_at", yesterday.toISOString());
     if (overnight) {
       items.push({
-        text: `${overnight} breached overnight`,
+        text: `${overnight} waited too long overnight`,
         href: notificationHref("/app/queue?breached=1"),
       });
     }
@@ -185,7 +185,7 @@ export async function collectDailyBriefItems(
       .in("status", [...OPEN_LEAD_STATUSES]);
     if (waiting) {
       items.push({
-        text: `${waiting} still waiting on speed-to-lead`,
+        text: `${waiting} still waiting too long`,
         href: notificationHref("/app/queue?breached=1"),
       });
     }

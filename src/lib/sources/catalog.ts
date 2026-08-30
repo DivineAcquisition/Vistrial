@@ -88,7 +88,7 @@ export const SOURCE_CATALOG: Record<SourceKind, Omit<SourceCatalogEntry, "connec
 };
 
 export const TERMINAL_CAUSE_FIX: Record<string, string> = {
-  never_touched: "Work speed-to-lead. These leads never received a human touch.",
+  never_touched: "Contact them sooner. These people never received a human touch.",
   no_show: "Unused closer time and confirmation, not more lead spend.",
   ghosted_after_one_call: "Follow-up drafts after the first call.",
   objection_unresolved: "The words on this page. A new closer script from the product will not fix this.",

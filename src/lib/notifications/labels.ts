@@ -1,18 +1,18 @@
 import type { NotificationChannel, NotificationEventType } from "@/lib/notifications/types";
 
 export const EVENT_LABELS: Record<NotificationEventType, string> = {
-  speed_to_lead: "Speed-to-lead breach",
-  unassigned_ready: "Unassigned ready-track lead",
-  approaching_ghost: "Approaching ghost",
-  pending_draft: "Pending draft",
+  speed_to_lead: "Someone waited too long",
+  unassigned_ready: "Ready now, nobody assigned",
+  approaching_ghost: "Going quiet",
+  pending_draft: "A follow-up still needs approval",
   call_starting_soon: "Call starting soon",
-  unmatched_transcript: "Unmatched transcript",
-  ingestion_stalled: "Ingestion stalled",
-  crm_broken: "CRM connection broken",
-  job_failure: "Scheduled job failure",
-  adoption_warning: "Adoption warning",
-  daily_brief: "Daily brief",
-  hourly_summary: "Hourly overflow summary",
+  unmatched_transcript: "Recording we could not match",
+  ingestion_stalled: "New leads have stopped arriving",
+  crm_broken: "The CRM connection is broken",
+  job_failure: "Something we run overnight failed",
+  adoption_warning: "The team has gone quiet on the product",
+  daily_brief: "Morning brief",
+  hourly_summary: "Too many alerts this hour",
   test_send: "Test send",
 };
 

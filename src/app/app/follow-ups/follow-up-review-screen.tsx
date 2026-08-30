@@ -207,7 +207,7 @@ export function FollowUpReviewScreen({ initial }: { initial: FollowUpReviewPaylo
           <Panel className="p-6 space-y-4">
             <div>
               <p className={labelClass}>Call summary</p>
-              <p className="text-sm text-silver">{file.extraction.summary || "Thin extraction — no summary."}</p>
+              <p className="text-sm text-silver">{file.extraction.summary || "Nothing was written down from this call."}</p>
             </div>
             <div>
               <p className={labelClass}>Objection</p>
@@ -229,7 +229,7 @@ export function FollowUpReviewScreen({ initial }: { initial: FollowUpReviewPaylo
             </div>
             <div className="flex flex-wrap gap-2">
               <Button variant="secondary" size="sm" render={<Link href={`/app/calls/${draft.callId}`} />}>
-                Full extraction and transcript
+                What was said and the recording
               </Button>
               <Button variant="ghost" size="sm" render={<Link href={`/app/cases/${draft.leadId}`} />}>
                 Case file

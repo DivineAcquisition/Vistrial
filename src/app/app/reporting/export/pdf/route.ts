@@ -100,7 +100,7 @@ export async function POST(request: Request) {
         lines: [
           rateLine("Human touch", coverage.ever_touched, false),
           rateLine("Inside the window", coverage.within_window, false),
-          `Ghosted with no human touch: ${formatCount(num(coverage.ghosted_no_touch) ?? 0)}`,
+          `Went quiet with no human touch: ${formatCount(num(coverage.ghosted_no_touch) ?? 0)}`,
         ],
       },
       {
@@ -114,7 +114,7 @@ export async function POST(request: Request) {
             : `Terminal n=${formatCount(num(terminal.n) ?? 0)}`,
           speed.too_small === true
             ? String(speed.suppressed_plain ?? "Speed segmentation withheld.")
-            : `Speed-to-lead n=${formatCount(num(speed.n) ?? 0)}`,
+            : `Waiting-time n=${formatCount(num(speed.n) ?? 0)}`,
         ],
       },
       {

@@ -113,7 +113,7 @@ export const ADVANCED_SETTINGS_PAGES: Array<{
   {
     href: "/app/settings/scoring",
     label: "Scoring",
-    description: "Ready threshold, speed-to-lead window, and how application answers become a score.",
+    description: "How ready someone has to be, how long they can wait, and how answers become a number.",
   },
   {
     href: "/app/settings/follow-up",

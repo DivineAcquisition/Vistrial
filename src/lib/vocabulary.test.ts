@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { READINESS, WORDS, readinessLabel, readinessState, waitingFor } from "@/lib/vocabulary";
+import { FACTOR_TITLE, READINESS, WORDS, readinessLabel, readinessState, waitingFor } from "@/lib/vocabulary";
 
 describe("readiness as a state", () => {
   it("calls anything at or above the threshold ready now", () => {
@@ -55,7 +55,11 @@ describe("the words themselves", () => {
       /\bbreach/i,
       /model version/i,
     ];
-    for (const value of [...Object.values(READINESS), ...Object.values(WORDS)]) {
+    for (const value of [
+      ...Object.values(READINESS),
+      ...Object.values(WORDS),
+      ...Object.values(FACTOR_TITLE),
+    ]) {
       for (const pattern of banned) {
         expect(value, `"${value}" still uses internal vocabulary`).not.toMatch(pattern);
       }
@@ -63,7 +67,11 @@ describe("the words themselves", () => {
   });
 
   it("uses no acronyms in any user-facing label", () => {
-    for (const value of [...Object.values(READINESS), ...Object.values(WORDS)]) {
+    for (const value of [
+      ...Object.values(READINESS),
+      ...Object.values(WORDS),
+      ...Object.values(FACTOR_TITLE),
+    ]) {
       expect(value, `"${value}" contains an acronym`).not.toMatch(/\b[A-Z]{2,}\b/);
     }
   });

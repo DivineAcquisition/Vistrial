@@ -42,6 +42,16 @@ export const WORDS = {
   measuringSince: "The date we started measuring",
   checkGroup: "Leads we work regardless of score, to keep the scoring honest",
   followUpPath: "Follow-up path",
+  responseWindow: "How long they can wait",
+  goingQuiet: "Going quiet",
+} as const;
+
+/** Title case for the four factors, used on settings sliders. */
+export const FACTOR_TITLE = {
+  timeline: "How soon they want to move",
+  investment_capacity: "What they can spend",
+  decision_authority: "Whether they decide",
+  pain_severity: "How much it hurts",
 } as const;
 
 /**

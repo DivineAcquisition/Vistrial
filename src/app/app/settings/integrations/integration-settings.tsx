@@ -208,7 +208,7 @@ export function IntegrationSettings(props: IntegrationSettingsProps) {
             <dd className="text-sm text-white">{props.health.deadCount}</dd>
           </div>
           <div>
-            <dt className={labelClass}>Failed extractions</dt>
+            <dt className={labelClass}>Recordings we could not read</dt>
             <dd className="text-sm text-white">{props.transcriptHealth.deadExtractions}</dd>
           </div>
           <div>

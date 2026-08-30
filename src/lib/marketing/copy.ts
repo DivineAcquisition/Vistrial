@@ -4,7 +4,7 @@
  */
 
 export const SITE_DESCRIPTION =
-  "Vistrial gives every lead a case file: readiness score, full contact history, what was said on the last call, and follow-up written from it. Sits on top of LeadConnector. Nothing to migrate.";
+  "Vistrial gives every lead a case file: how ready they are, full contact history, what was said on the last call, and follow-up written from it. Sits on top of LeadConnector. Nothing to migrate.";
 
 export const HERO = {
   headline: "Your team is calling leads they know nothing about.",
@@ -42,13 +42,13 @@ export const CASE_FILE = {
   parts: [
     {
       id: "readiness",
-      title: "Readiness score",
+      title: "How ready they are",
       body: "how close they are to buying, scored on timeline, budget, authority, and pain. Weighted for your offer, not a generic template.",
     },
     {
       id: "touches",
-      title: "Touch history",
-      body: "every message, call, and reply, with who and when. Speed-to-lead measured, not assumed.",
+      title: "Contact history",
+      body: "every message, call, and reply, with who and when. Waiting time measured, not assumed.",
     },
     {
       id: "transcripts",

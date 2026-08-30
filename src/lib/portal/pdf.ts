@@ -111,9 +111,9 @@ export async function portalPdf(args: {
             : "No pre-activation comparison is shown.",
           str(asRecord(args.outcome.comparison).plain) ?? "",
           rateLine("Human touch coverage", args.coverage.ever_touched, false),
-          rateLine("Inside the speed-to-lead window", args.coverage.within_window, false),
+          rateLine("Inside the response window", args.coverage.within_window, false),
           args.coverage.speed_to_lead_minutes != null
-            ? `Configured speed-to-lead target: ${args.coverage.speed_to_lead_minutes} minutes. Median ${args.coverage.median_minutes ?? "—"} min, worst case ${args.coverage.worst_case_minutes ?? "—"} min.`
+            ? `Response window: ${args.coverage.speed_to_lead_minutes} minutes. Median ${args.coverage.median_minutes ?? "—"} min, worst case ${args.coverage.worst_case_minutes ?? "—"} min.`
             : "",
           str(args.outcome.attribution) ?? "",
           str(args.outcome.correlation_caveat) ?? "",

@@ -38,7 +38,7 @@ export function HeroCaseFile() {
             </div>
           </div>
           <div className="text-right">
-            <p className={sectionLabel}>Readiness score</p>
+            <p className={sectionLabel}>How ready they are</p>
             <p className="mt-1 tabular text-3xl font-semibold text-brand-500">
               <NumberTicker
                 value={demo.score.total}

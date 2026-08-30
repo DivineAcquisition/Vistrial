@@ -33,7 +33,7 @@ const STATUS_LABELS: Record<(typeof QUEUE_STATUSES)[number], string> = {
   no_show: "No-show",
   follow_up: "Follow-up",
   objection_hold: "Objection hold",
-  ghost: "Ghost",
+  ghost: "Gone quiet",
   closed_won: "Closed won",
   closed_lost: "Closed lost",
 };

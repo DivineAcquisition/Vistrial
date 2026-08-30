@@ -123,14 +123,14 @@ export function buildClientSummary(input: SummaryInput): string {
   }
 
   lines.push(rateLine("Human-touch coverage", input.coverage.ever_touched, false));
-  lines.push(rateLine("Contacted inside the speed-to-lead window", input.coverage.within_window, false));
+  lines.push(rateLine("Contacted inside the response window", input.coverage.within_window, false));
   if (typeof input.coverage.ghosted_no_touch === "number") {
     lines.push(
-      `Leads that went ghost with no human touch: ${input.coverage.ghosted_no_touch}. That is the most expensive operational miss on this screen.`
+      `People who went quiet with no human touch: ${input.coverage.ghosted_no_touch}. That is the most expensive miss on this screen.`
     );
   }
   if (typeof input.coverage.currently_in_breach === "number") {
-    lines.push(`Leads currently outside the speed-to-lead window with no human touch: ${input.coverage.currently_in_breach}.`);
+    lines.push(`People waiting longer than your response window with no human touch: ${input.coverage.currently_in_breach}.`);
   }
 
   const flag = input.sources.high_readiness_low_close;
@@ -150,7 +150,7 @@ export function buildClientSummary(input: SummaryInput): string {
   }
 
   if (input.speed.too_small) {
-    lines.push(input.speed.suppressed_plain ?? "Speed-to-lead segmentation is withheld; the sample is too small.");
+    lines.push(input.speed.suppressed_plain ?? "Waiting-time split is withheld; the sample is too small.");
   }
 
   lines.push(outcome.attribution ?? ATTRIBUTION_LINE);

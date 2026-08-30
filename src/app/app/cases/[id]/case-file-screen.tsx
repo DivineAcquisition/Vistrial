@@ -64,13 +64,14 @@ import { formatQueueDuration, formatQueueUntil } from "@/lib/queue/duration";
 import { TOUCH_CHANNEL_LABELS, TOUCH_OUTCOME_LABELS } from "@/lib/queue/types";
 import {
   FACTOR_PLAIN,
+  FACTOR_TITLE,
   SCORE_CHANGE_CAUSE,
   WORDS,
   readinessLabel,
   readinessState,
   readinessTone,
 } from "@/lib/vocabulary";
-import { FACTOR_LABELS, SCORE_FACTORS } from "@/lib/scoring/compute";
+import { SCORE_FACTORS } from "@/lib/scoring/compute";
 import { overrideLeadScore } from "@/lib/scoring/override";
 import {
   errorClass,
@@ -554,7 +555,7 @@ export function CaseFileScreen({
       <section>
         <SectionHeader
           title="Calls"
-          hint="Open a call for the extraction. The brief is one click away."
+          hint="Open a call for what was said. The brief is one click away."
         />
         <div className="space-y-3">
           {file.calls.length === 0 ? (
@@ -1039,7 +1040,7 @@ function OverridePanel({
       <div className="mt-4 grid gap-3 sm:grid-cols-2">
         {SCORE_FACTORS.map((factor) => (
           <label key={factor} className="block">
-            <span className={labelClass}>{FACTOR_LABELS[factor]}</span>
+            <span className={labelClass}>{FACTOR_TITLE[factor]}</span>
             <Input
               name={factor}
               type="number"

@@ -131,10 +131,10 @@ export function ReportingPanels({
       <Suspense fallback={<PanelFallback title="Where deals die" />}>
         <TerminalPanel orgId={orgId} range={range} />
       </Suspense>
-      <Suspense fallback={<PanelFallback title="Speed-to-lead" />}>
+      <Suspense fallback={<PanelFallback title="How long they waited" />}>
         <SpeedPanel orgId={orgId} range={range} />
       </Suspense>
-      <Suspense fallback={<PanelFallback title="Readiness" />}>
+      <Suspense fallback={<PanelFallback title="How ready they were" />}>
         <ReadinessPanel orgId={orgId} range={range} />
       </Suspense>
       <Suspense fallback={<PanelFallback title="What Vistrial actually did" />}>
@@ -254,9 +254,9 @@ export async function CoveragePanel({ orgId, range }: { orgId: string; range: Re
         />
       </KpiGrid>
       <div className="mt-4 grid gap-4 sm:grid-cols-2">
-        <KpiCard label="Currently in breach" value={formatCount(num(payload.currently_in_breach) ?? 0)} />
+        <KpiCard label="Waiting too long right now" value={formatCount(num(payload.currently_in_breach) ?? 0)} />
         <KpiCard
-          label="Ghosted with no human touch"
+          label="Went quiet with no human touch"
           value={formatCount(num(payload.ghosted_no_touch) ?? 0)}
           tone="critical"
         />
@@ -590,11 +590,11 @@ export async function TerminalPanel({ orgId, range }: { orgId: string; range: Re
 
 export async function SpeedPanel({ orgId, range }: { orgId: string; range: ReportingRange }) {
   const payload = await loadReportingPanel(orgId, "speed", range);
-  if (payload.blocked === true) return <ReportBlocked title="Speed-to-lead" payload={payload} />;
+  if (payload.blocked === true) return <ReportBlocked title="How long they waited" payload={payload} />;
   if (bool(payload.too_small)) {
     return (
       <Panel className="p-6">
-        <SectionHeader title="Speed-to-lead impact" />
+        <SectionHeader title="What waiting costs" />
         <EmptyState title="Not enough mature leads" detail={str(payload.suppressed_plain) ?? undefined} />
         <Computed payload={payload} />
       </Panel>
@@ -604,7 +604,7 @@ export async function SpeedPanel({ orgId, range }: { orgId: string; range: Repor
   return (
     <Panel className="p-6">
       <SectionHeader
-        title="Speed-to-lead impact"
+        title="What waiting costs"
         hint={str(payload.correlation_caveat) ?? "This workspace's own data, not an industry statistic."}
       />
       <DataTable

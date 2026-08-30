@@ -45,6 +45,25 @@ export const WORDS = {
 } as const;
 
 /**
+ * What moved how ready someone is. The internal trigger is an enum; a person
+ * wants to know whether it was the form, the call, or a colleague.
+ */
+export const SCORE_CHANGE_CAUSE = {
+  intake: "From what they filled in",
+  call: "From the call",
+  manual: "Changed by a person",
+  event: "From something they did",
+} as const;
+
+/** The four things the score looks at, said as questions about the person. */
+export const FACTOR_PLAIN = {
+  timeline: "how soon they want to move",
+  investment_capacity: "what they can spend",
+  decision_authority: "whether they decide",
+  pain_severity: "how much it hurts",
+} as const;
+
+/**
  * Where a lead sits, given its score and this workspace's ready threshold.
  * Ordering still uses the number; people should not have to.
  */

@@ -21,8 +21,8 @@ const ASSIGNED_OPTIONS: Array<{ value: QueueAssignedFilter; label: string }> = [
 ];
 
 const TRACK_OPTIONS: Array<{ value: "" | QueueTrackFilter; label: string }> = [
-  { value: "", label: "Any track" },
-  { value: "ready", label: "Ready" },
+  { value: "", label: "Anyone" },
+  { value: "ready", label: "Ready now" },
   { value: "nurture", label: "Nurture" },
 ];
 
@@ -71,7 +71,7 @@ export function QueueFilters({
         </Select>
       </label>
       <label className="block">
-        <span className={filterLabel}>Track</span>
+        <span className={filterLabel}>How ready</span>
         <Select
           density="compact"
           value={filters.track ?? ""}
@@ -123,7 +123,7 @@ export function QueueFilters({
         </Select>
       </label>
       <div className="lg:col-span-2">
-        <span className={filterLabel}>Score</span>
+        <span className={filterLabel}>How ready, out of 100</span>
         <ScoreRangeSlider
           min={filters.scoreMin}
           max={filters.scoreMax}

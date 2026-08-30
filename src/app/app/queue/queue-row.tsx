@@ -17,13 +17,13 @@ import { StatusBadge } from "@/components/ui/status-badge";
 import { TableCell, TableRow } from "@/components/ui/table";
 import { formatBreachDuration, formatQueueDuration, formatQueueUntil } from "@/lib/queue/duration";
 import {
-  SCORE_CONFIDENCE_LABELS,
   type QueueMemberOption,
   type QueueRow,
   type TouchChannel,
   type TouchDirection,
   type TouchOutcome,
 } from "@/lib/queue/types";
+import { readinessLabel, readinessState, readinessTone, waitingFor } from "@/lib/vocabulary";
 import { cn } from "@/lib/utils";
 import type { OrgRole } from "@/types/database";
 
@@ -37,6 +37,7 @@ export function QueueLeadRow({
   role,
   memberId,
   isPlatformAdmin,
+  readyThreshold,
   arriving,
   exiting,
   busy,
@@ -55,6 +56,7 @@ export function QueueLeadRow({
   role: OrgRole;
   memberId: string;
   isPlatformAdmin: boolean;
+  readyThreshold: number;
   arriving?: boolean;
   exiting?: boolean;
   busy?: boolean;
@@ -78,7 +80,7 @@ export function QueueLeadRow({
   onFollowOn: (input: { leadId: string; actionText: string; dueAt: string | null }) => Promise<boolean>;
 }) {
   const [panel, setPanel] = useState<Panel>(null);
-  const [reasoningOpen, setReasoningOpen] = useState(false);
+  const [detailOpen, setDetailOpen] = useState(false);
 
   function openPanel(next: Panel) {
     setPanel(next);
@@ -90,8 +92,8 @@ export function QueueLeadRow({
     onInteract(null);
   }
 
-  const trackLabel =
-    row.leadType === "ready_track" ? "Ready" : row.leadType === "nurture_track" ? "Nurture" : null;
+  const state = readinessState(row.score, readyThreshold, row.leadType === "nurture_track");
+  const stateLabel = readinessLabel(state);
 
   return (
     <>
@@ -112,29 +114,15 @@ export function QueueLeadRow({
             <PreviewCardTrigger render={<span className="cursor-default text-left" />}>
               <span className="block">{row.name}</span>
               <span className="mt-1 block text-xs font-normal text-dim md:hidden">
-                {[
-                  row.source || null,
-                  `in ${formatQueueDuration(row.optedInAt, now)}`,
-                  row.assignedSetterName,
-                ]
-                  .filter(Boolean)
-                  .join(" · ")}
+                Waiting {waitingFor(row.optedInAt, now)}
               </span>
-              {exiting ? <span className="mt-1 block text-xs text-dim">Leaving the alarm — touched</span> : null}
+              {exiting ? <span className="mt-1 block text-xs text-dim">Contacted — leaving this list</span> : null}
             </PreviewCardTrigger>
             <PreviewCardPopup>
               <div className="flex flex-col gap-2">
                 <p className="font-medium text-sm text-white">{row.name}</p>
-                <p className="text-xs text-muted-foreground">
-                  {row.score === null ? "Unscored" : `Score ${row.score}`}
-                  {trackLabel ? ` · ${trackLabel}` : ""}
-                </p>
-                <p className="text-xs text-muted-foreground">
-                  {[row.source, row.assignedSetterName, row.assignedCloserName]
-                    .filter(Boolean)
-                    .join(" · ") || "No source or assignment yet"}
-                </p>
-                <p className="text-xs text-dim">In queue {formatQueueDuration(row.optedInAt, now)}</p>
+                <p className="text-xs text-muted-foreground">{stateLabel}</p>
+                <p className="text-xs text-dim">Waiting {waitingFor(row.optedInAt, now)}</p>
               </div>
             </PreviewCardPopup>
           </PreviewCard>
@@ -145,50 +133,20 @@ export function QueueLeadRow({
           </TableCell>
         ) : null}
         <TableCell className="px-4 py-3.5 whitespace-normal">
-          {row.score === null ? (
-            <StatusBadge label="Unscored" tone="warning" />
-          ) : (
-            <button
-              type="button"
-              className="text-left"
-              onClick={() => setReasoningOpen((open) => !open)}
-              aria-expanded={reasoningOpen}
-            >
-              <span className="font-medium text-white tabular-nums">{row.score}</span>
-              {trackLabel ? (
-                <span className="ml-2">
-                  <StatusBadge
-                    label={trackLabel}
-                    tone={row.leadType === "ready_track" ? "brand" : "neutral"}
-                  />
-                </span>
-              ) : null}
-              <span className="mt-1 block text-[11px] text-brand-300">Why this score</span>
-            </button>
-          )}
-        </TableCell>
-        <TableCell className="hidden px-4 py-3.5 text-silver whitespace-normal md:table-cell">
-          {row.score === null ? (
-            <span className="text-dim">—</span>
-          ) : (
-            <span>
-              {row.knownFactorCount} of 4
-              {row.scoreConfidence ? ` · ${SCORE_CONFIDENCE_LABELS[row.scoreConfidence]}` : ""}
+          <button
+            type="button"
+            className="text-left"
+            onClick={() => setDetailOpen((open) => !open)}
+            aria-expanded={detailOpen}
+          >
+            <StatusBadge label={stateLabel} tone={readinessTone(state)} />
+            <span className="mt-1 block text-[11px] text-brand-300">
+              {detailOpen ? "Hide details" : "Why"}
             </span>
-          )}
-        </TableCell>
-        <TableCell className="hidden px-4 py-3.5 text-silver md:table-cell">{row.source || "—"}</TableCell>
-        <TableCell className="hidden px-4 py-3.5 text-silver tabular-nums md:table-cell">
-          {formatQueueDuration(row.optedInAt, now)}
+          </button>
         </TableCell>
         <TableCell className="hidden px-4 py-3.5 text-silver tabular-nums md:table-cell">
-          {formatQueueDuration(row.lastTouchAt, now)}
-        </TableCell>
-        <TableCell className="hidden px-4 py-3.5 text-silver whitespace-normal md:table-cell">
-          {row.assignedSetterName || "—"}
-        </TableCell>
-        <TableCell className="hidden px-4 py-3.5 text-silver whitespace-normal md:table-cell">
-          {row.assignedCloserName || "—"}
+          {waitingFor(row.optedInAt, now)}
         </TableCell>
         {variant === "queue" ? (
           <TableCell className="px-4 py-3.5 text-silver whitespace-normal">
@@ -282,10 +240,26 @@ export function QueueLeadRow({
         </ContextMenuItem>
       </ContextMenuPopup>
       </ContextMenu>
-      {reasoningOpen ? (
+      {detailOpen ? (
         <TableRow className="border-border/60 hover:bg-transparent">
           <TableCell colSpan={colSpan} className="px-4 py-3 whitespace-normal text-sm text-silver">
-            {row.scoreReasoning || "No reasoning was stored for this score."}
+            <p>
+              {row.scoreReasoning ||
+                "Nothing was recorded about why this lead sits here. The first call will fill it in."}
+            </p>
+            <p className="mt-2 text-xs text-dim">
+              {[
+                row.score === null ? null : `Out of 100: ${row.score}`,
+                row.source ? `Came from ${row.source}` : null,
+                row.assignedSetterName ? `Setter ${row.assignedSetterName}` : "No setter yet",
+                row.assignedCloserName ? `Closer ${row.assignedCloserName}` : null,
+                row.lastTouchAt
+                  ? `Last contacted ${waitingFor(row.lastTouchAt, now)} ago`
+                  : "Never contacted",
+              ]
+                .filter(Boolean)
+                .join(" · ")}
+            </p>
           </TableCell>
         </TableRow>
       ) : null}

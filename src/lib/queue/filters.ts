@@ -78,6 +78,23 @@ export function parseQueueFilters(
   };
 }
 
+/**
+ * How many filters the person actually chose. The assignment default is not a
+ * choice, so it does not count — otherwise the button always looks filtered.
+ */
+export function activeQueueFilterCount(
+  filters: QueueFilters,
+  opts: { role: OrgRole; isPlatformAdmin?: boolean }
+): number {
+  let count = 0;
+  if (filters.assigned !== defaultAssignedFilter(opts.role, opts.isPlatformAdmin)) count += 1;
+  if (filters.track) count += 1;
+  if (filters.status) count += 1;
+  if (filters.source) count += 1;
+  if (filters.scoreMin !== null || filters.scoreMax !== null) count += 1;
+  return count;
+}
+
 export function queueFiltersToSearchParams(filters: QueueFilters): URLSearchParams {
   const params = new URLSearchParams();
   params.set("assigned", filters.assigned);

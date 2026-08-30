@@ -23,6 +23,9 @@ export type LoadedScoreConfig = {
   ghostDaysHard: number;
 };
 
+/** Matches the seeded `score_configs.ready_threshold`. */
+export const DEFAULT_READY_THRESHOLD = 60;
+
 export function answersFromJson(value: Json): Record<string, unknown> {
   if (value && typeof value === "object" && !Array.isArray(value)) {
     return value as Record<string, unknown>;

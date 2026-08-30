@@ -6,7 +6,8 @@ import { useState } from "react";
 import { AssignPanel, FollowOnPanel } from "@/components/app/lead-action-panels";
 import { Button } from "@/components/ui/button";
 import { StatusBadge } from "@/components/ui/status-badge";
-import { formatBreachDuration, formatQueueDuration } from "@/lib/queue/duration";
+import { formatBreachDuration } from "@/lib/queue/duration";
+import { readinessLabel, readinessState, readinessTone, waitingFor } from "@/lib/vocabulary";
 import type {
   QueueMemberOption,
   QueueRow,
@@ -35,6 +36,7 @@ export function QueueMobileList({
   role,
   memberId,
   isPlatformAdmin,
+  readyThreshold,
   arrivingIds,
   exitingIds,
   busyLeadId,
@@ -50,6 +52,7 @@ export function QueueMobileList({
   role: OrgRole;
   memberId: string;
   isPlatformAdmin: boolean;
+  readyThreshold: number;
   arrivingIds: Set<string>;
   exitingIds?: Set<string>;
   busyLeadId: string | null;
@@ -78,6 +81,7 @@ export function QueueMobileList({
           role={role}
           memberId={memberId}
           isPlatformAdmin={isPlatformAdmin}
+          readyThreshold={readyThreshold}
           arriving={arrivingIds.has(row.id)}
           exiting={exitingIds?.has(row.id) ?? false}
           busy={busyLeadId === row.id}
@@ -99,6 +103,7 @@ function QueueMobileRow({
   role,
   memberId,
   isPlatformAdmin,
+  readyThreshold,
   arriving,
   exiting,
   busy,
@@ -114,6 +119,7 @@ function QueueMobileRow({
   role: OrgRole;
   memberId: string;
   isPlatformAdmin: boolean;
+  readyThreshold: number;
   arriving: boolean;
   exiting: boolean;
   busy: boolean;
@@ -135,12 +141,11 @@ function QueueMobileRow({
   const [followOn, setFollowOn] = useState(false);
   const [swipe, setSwipe] = useState(0);
   const primary = primaryFor(row);
-  const trackLabel =
-    row.leadType === "ready_track" ? "Ready" : row.leadType === "nurture_track" ? "Nurture" : null;
+  const state = readinessState(row.score, readyThreshold, row.leadType === "nurture_track");
   const waiting =
     variant === "alarm"
       ? formatBreachDuration(row.breachSeconds, now)
-      : formatQueueDuration(row.optedInAt, now);
+      : waitingFor(row.optedInAt, now);
 
   function runPrimary() {
     if (!primary.href) return;
@@ -173,17 +178,7 @@ function QueueMobileRow({
       <div style={{ transform: swipe ? `translateX(${swipe}px)` : undefined }}>
         <p className="text-base font-semibold break-words text-white">{row.name}</p>
         <div className="mt-1 flex flex-wrap items-center gap-2 text-sm text-silver">
-          {row.score === null ? (
-            <StatusBadge label="Unscored" tone="warning" />
-          ) : (
-            <span className="tabular-nums text-white">{row.score}</span>
-          )}
-          {trackLabel ? (
-            <StatusBadge
-              label={trackLabel}
-              tone={row.leadType === "ready_track" ? "brand" : "neutral"}
-            />
-          ) : null}
+          <StatusBadge label={readinessLabel(state)} tone={readinessTone(state)} />
           <span className="tabular-nums">{waiting}</span>
         </div>
         {row.nextAction && variant === "queue" ? (

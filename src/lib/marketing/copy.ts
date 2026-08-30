@@ -103,7 +103,7 @@ export const OUTCOME = {
     "We do not make the calls. Your team does. Vistrial makes sure every lead gets worked, and that whoever works it knows what they are walking into.",
 } as const;
 
-export const GHL = {
+export const CRM = {
   headline: "It runs on the CRM you already have.",
   body: "LeadConnector stays your system of record. Your conversations, your calendar, your pipeline, your automations: unchanged. Vistrial reads from it, adds the layer it does not have, and sends through it. One click to connect. Nothing to migrate, nothing to rebuild, nothing to retrain your team on from scratch.",
   listingLive: "Open the LeadConnector Marketplace listing",

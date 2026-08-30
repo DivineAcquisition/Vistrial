@@ -1,7 +1,7 @@
 import { marketingBtnPrimary } from "@/lib/marketing/ui";
 import { Panel } from "@/components/ui/panel";
 import { StatusBadge } from "@/components/ui/status-badge";
-import { GHL } from "@/lib/marketing/copy";
+import { CRM } from "@/lib/marketing/copy";
 import { ghlMarketplaceListingUrl } from "@/lib/marketing/config";
 import { helperClass } from "@/lib/ui";
 
@@ -70,7 +70,7 @@ export function GhlConnectVisual() {
           rel="noopener noreferrer"
           className="font-medium text-brand-300 underline-offset-4 hover:text-white hover:underline"
         >
-          {GHL.listingLive}
+          {CRM.listingLive}
         </a>
       </figcaption>
     </figure>

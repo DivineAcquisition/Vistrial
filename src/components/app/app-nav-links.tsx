@@ -76,11 +76,11 @@ export function AppNavLinks({
                     aria-current={active ? "page" : undefined}
                     aria-label={collapsed ? item.label : undefined}
                     className={cn(
-                      "group flex items-center rounded-xl text-sm transition-colors",
+                      "group flex items-center rounded-xl text-sm transition-[color,background-color,transform] duration-150 ease-out",
                       collapsed ? "size-10 justify-center" : "gap-2.5 px-3 py-2",
                       active
                         ? "bg-brand-950 text-brand-200"
-                        : "text-silver hover:bg-white/[0.05] hover:text-white"
+                        : "text-silver hover:bg-white/[0.05] hover:text-white hover:translate-x-0.5"
                     )}
                   >
                     <Icon

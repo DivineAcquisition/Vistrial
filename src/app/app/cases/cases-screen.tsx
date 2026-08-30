@@ -169,7 +169,7 @@ export function CasesScreen({
                       ))}
                     </TableRow>
                   </TableHeader>
-                  <TableBody>
+                  <TableBody className="app-stagger">
                     {rows.map((row) => (
                       <CaseRow key={row.id} row={row} now={now} />
                     ))}

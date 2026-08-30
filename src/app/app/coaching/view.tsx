@@ -8,7 +8,7 @@ import { SectionHeader } from "@/components/ui/section-header";
 import { CALL_QUALITY_MEASURES, CALL_QUALITY_MEASURE_SURFACES } from "@/lib/coaching/catalog";
 import { CALL_QUALITY_HONESTY, STRUCTURAL_NOT_A_TARGET } from "@/lib/coaching/constants";
 import { formatCallDuration } from "@/lib/cases/format";
-import { helperClass } from "@/lib/ui";
+import { helperClass, pageStack } from "@/lib/ui";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 
@@ -244,7 +244,7 @@ export function CoachingView({
   }
 
   return (
-    <div className="space-y-8">
+    <div className={pageStack}>
       <Notice tone="info">{CALL_QUALITY_HONESTY}</Notice>
       <Notice tone="warning">{STRUCTURAL_NOT_A_TARGET}</Notice>
 

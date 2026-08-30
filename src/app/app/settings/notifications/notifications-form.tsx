@@ -60,7 +60,7 @@ export function NotificationSettingsForm({
   const prefMap = new Map(prefs.map((row) => [`${row.event_type}:${row.channel}`, row.enabled]));
 
   return (
-    <div className="space-y-10">
+    <div className="flex flex-col gap-6">
       <section>
         <SectionHeader
           title="This device"

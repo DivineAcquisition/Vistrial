@@ -319,7 +319,7 @@ function StageBody({ stage, defaults }: { stage: ProfileStage; defaults: Profile
           <p className={helperClass}>
             Anything your CRM already sends is switched off here, so nobody gets the same nudge twice.
           </p>
-          <Panel className="p-4">
+          <Panel>
             <p className="font-heading text-sm text-white">What happens to your team&apos;s calls</p>
             <p className={`${helperClass} mt-2`}>
               Every rep is told, in these words, the first time they sign in: their calls are

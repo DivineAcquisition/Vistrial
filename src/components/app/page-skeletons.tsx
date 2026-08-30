@@ -52,7 +52,7 @@ export function TablePageSkeleton({
   return (
     <PageFrame title={title} description={description}>
       <Loading label="Loading table" />
-      <Panel className="overflow-hidden py-0">
+      <Panel className="overflow-hidden p-0">
         <div className="surface-sunken h-11 border-x-0 border-t-0" />
         {Array.from({ length: rows }).map((_, index) => (
           <div

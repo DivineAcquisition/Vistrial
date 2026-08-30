@@ -33,7 +33,7 @@ export function ConnectStage({
   const connected = status === "active";
 
   return (
-    <Panel className="p-6">
+    <Panel>
       <div className="flex flex-wrap items-start justify-between gap-4">
         <StatusBadge
           label={connected ? (locationName ?? "Connected") : status === "broken" ? "Needs reconnecting" : "Not connected"}

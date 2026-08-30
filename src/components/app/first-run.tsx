@@ -28,7 +28,7 @@ export function FirstRunExplainer() {
   if (!show) return null;
 
   return (
-    <div className="mb-4 print:hidden">
+    <div className="app-scale mb-4 print:hidden">
       <Notice
         tone="info"
         title={copy.title}

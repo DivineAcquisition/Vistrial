@@ -46,7 +46,7 @@ export function CasesFilters({
 
   return (
     <form
-      className="mb-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4"
+      className="app-enter mb-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4"
       onSubmit={(event) => {
         event.preventDefault();
         apply({ q: q.trim() || null });

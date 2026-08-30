@@ -78,7 +78,7 @@ export function KpiCard({
   return (
     <Card
       className={cn(
-        "panel-hover border-t-2 border-t-primary bg-[linear-gradient(180deg,rgba(154,136,252,0.08)_0%,transparent_42%),#0b0a11] p-5",
+        "panel-hover border-t-2 border-t-primary bg-[linear-gradient(180deg,rgba(154,136,252,0.08)_0%,transparent_42%),#0b0a11] p-6",
         className
       )}
     >
@@ -104,5 +104,5 @@ export function KpiGrid({
     4: "sm:grid-cols-2 lg:grid-cols-4",
   }[columns];
 
-  return <div className={cn("grid gap-4", cols)}>{children}</div>;
+  return <div className={cn("app-stagger grid gap-6", cols)}>{children}</div>;
 }

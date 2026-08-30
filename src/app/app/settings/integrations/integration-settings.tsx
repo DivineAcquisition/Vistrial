@@ -25,6 +25,7 @@ import {
   errorClass,
   helperClass,
   labelClass,
+  pageStack,
 } from "@/lib/ui";
 
 export type DeadEvent = {
@@ -99,7 +100,7 @@ export function IntegrationSettings(props: IntegrationSettingsProps) {
   const counts = Object.entries(props.health.receivedLast24h).sort(([a], [b]) => a.localeCompare(b));
 
   return (
-    <div className="space-y-8">
+    <div className={pageStack}>
       {props.connection.status === "broken" ? (
         <Notice tone="critical" title="The CRM connection is broken">
           Token refresh failed. Outbound dispatch is halted until an owner or admin reconnects.

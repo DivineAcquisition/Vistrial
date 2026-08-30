@@ -76,7 +76,9 @@ import { overrideLeadScore } from "@/lib/scoring/override";
 import {
   errorClass,
   helperClass,
+  insetWell,
   labelClass,
+  pageStack,
 } from "@/lib/ui";
 
 type PanelKind = "outcome" | "assign" | "override" | "status" | "createAction" | null;
@@ -174,7 +176,7 @@ export function CaseFileScreen({
     : "Nothing yet. They have not been contacted.";
 
   return (
-    <div className="space-y-8">
+    <div className={pageStack}>
       {error ? <p className={errorClass}>{error}</p> : null}
 
       <Panel className="p-6">
@@ -714,7 +716,7 @@ function ObjectionBlock({
     : "Unlinked call";
 
   return (
-    <div className="rounded-xl border border-white/10 bg-white/[0.03] p-4">
+    <div className={insetWell}>
       <div className="flex flex-wrap items-center gap-2">
         <StatusBadge
           label={OBJECTION_TYPE_LABELS[item.type]}
@@ -774,7 +776,7 @@ function NextActionBlock({
   const [ownerId, setOwnerId] = useState(item.ownerMemberId ?? "");
 
   return (
-    <div className="rounded-xl border border-white/10 bg-white/[0.03] p-4">
+    <div className={insetWell}>
       <p className="text-sm text-white">{item.actionText}</p>
       <p className="mt-1 text-xs">
         {item.overdue ? (
@@ -886,7 +888,7 @@ function TimelineEntry({
   }
 
   return (
-    <div className={expanded ? "rounded-xl border border-white/10 bg-white/[0.03] px-4 py-3" : ""}>
+    <div className={expanded ? insetWell : ""}>
       {entry.kind === "touch" ? (
         <DefinitionList>
           <KeyValue label="Type">{entry.touchType === "human" ? "Human touch" : "System touch"}</KeyValue>
@@ -1024,7 +1026,7 @@ function OverridePanel({
   const [pending, setPending] = useState(false);
   return (
     <form
-      className="rounded-xl border border-white/10 bg-white/[0.03] p-4"
+      className={insetWell}
       onSubmit={(event) => {
         event.preventDefault();
         const formData = new FormData(event.currentTarget);
@@ -1089,7 +1091,7 @@ function StatusPanel({
 
   return (
     <form
-      className="rounded-xl border border-white/10 bg-white/[0.03] p-4"
+      className={insetWell}
       onSubmit={(event) => {
         event.preventDefault();
         setPending(true);

@@ -23,7 +23,7 @@ import {
 } from "@/lib/reporting/format";
 import { goalLine } from "@/lib/profile/goal";
 import { loadStatedGoal } from "@/lib/profile/load";
-import { helperClass } from "@/lib/ui";
+import { helperClass, pageStack } from "@/lib/ui";
 import { FOLLOW_UP_BRANCH_LABELS, HALT_REASON_LABELS } from "@/lib/follow-up/labels";
 import { OBJECTION_TYPE_LABELS } from "@/lib/leads/labels";
 import type { FollowUpBranch } from "@/lib/follow-up/types";
@@ -104,7 +104,7 @@ export function ReportingPanels({
   includeTeam: boolean;
 }) {
   return (
-    <div className="space-y-8">
+    <div className={`${pageStack} app-stagger`}>
       <Suspense fallback={<PanelFallback title="Outcome" />}>
         <OutcomePanel orgId={orgId} range={range} />
       </Suspense>

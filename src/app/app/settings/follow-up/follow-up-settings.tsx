@@ -29,7 +29,7 @@ import { toastManager } from "@/components/ui/toast";
 import { MIN_VOICE_EXAMPLES } from "@/lib/follow-up/constants";
 import { FOLLOW_UP_BRANCH_LABELS, FOLLOW_UP_CHANNEL_LABELS, routingRuleSentence } from "@/lib/follow-up/labels";
 import type { FollowUpSettings, RoutingRule, VoiceExample, VoiceProfile } from "@/lib/follow-up/types";
-import { errorClass, formMeasure, helperClass, labelClass } from "@/lib/ui";
+import { errorClass, formMeasure, helperClass, labelClass, pageStack } from "@/lib/ui";
 
 const idle: SettingsSaveResult = { status: "idle" };
 
@@ -66,7 +66,7 @@ export function FollowUpSettingsScreen({
   useSettingsToast(policyState, policyPending);
 
   return (
-    <div className="space-y-10">
+    <div className={pageStack}>
       <section>
         <SectionHeader
           title="Sequence stop"
@@ -312,7 +312,7 @@ export function FollowUpSettingsScreen({
       </section>
 
       <AdvancedDoor closedLabel="Show how drafts are written">
-      <div className="space-y-10">
+      <div className={pageStack}>
       <section>
         <SectionHeader
           title="When we write, and on which channel"

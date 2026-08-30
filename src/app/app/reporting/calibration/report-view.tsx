@@ -8,7 +8,7 @@ import { FACTOR_LABELS, type ScoreFactor } from "@/lib/scoring/compute";
 import { FOLLOW_UP_BRANCH_LABELS } from "@/lib/follow-up/labels";
 import type { FollowUpBranch } from "@/lib/follow-up/types";
 import { formatCount, formatPct, formatSample } from "@/lib/reporting/format";
-import { helperClass } from "@/lib/ui";
+import { helperClass, pageStack } from "@/lib/ui";
 import { SuggestionActions, VoiceConfirmActions } from "@/app/app/reporting/calibration/suggestion-actions";
 
 function asRecord(value: unknown): Record<string, unknown> {
@@ -196,7 +196,7 @@ export function CalibrationReportView({
   const moves = preview ? arr(preview.threshold_moves) : [];
 
   return (
-    <div className="space-y-8">
+    <div className={pageStack}>
       <HoldoutBanner holdout={holdout} />
       <p className={helperClass}>{str(payload.honesty)}</p>
       {well ? (

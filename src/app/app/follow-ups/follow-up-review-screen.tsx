@@ -33,6 +33,7 @@ import {
   errorClass,
   helperClass,
   labelClass,
+  pageStack,
 } from "@/lib/ui";
 
 export function FollowUpReviewScreen({ initial }: { initial: FollowUpReviewPayload }) {
@@ -79,7 +80,7 @@ export function FollowUpReviewScreen({ initial }: { initial: FollowUpReviewPaylo
   }
 
   return (
-    <div className="space-y-8">
+    <div className={pageStack}>
       {error ? <p className={errorClass}>{error}</p> : null}
 
       <Panel className="p-6">

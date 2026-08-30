@@ -43,7 +43,7 @@ export function ActivityFiltersForm({
   }
 
   return (
-    <form className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4" onSubmit={(event) => event.preventDefault()}>
+    <form className="app-enter grid gap-4 sm:grid-cols-2 lg:grid-cols-4" onSubmit={(event) => event.preventDefault()}>
       <label className="block">
         <span className={filterLabel}>Search lead</span>
         <Input

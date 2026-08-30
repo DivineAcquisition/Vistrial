@@ -124,18 +124,18 @@ export default async function PortalPage({
       ) : null}
       <ReportingRangeForm range={range} action="/portal" />
 
-      <section className="space-y-8">
+      <section className="flex flex-col gap-6">
         <SectionHeader title="Is it working" hint="Clients closed per hundred leads, coverage, and speed. Sample sizes sit beside every rate." />
         <OutcomePanel orgId={ctx.org.id} range={range} />
         <CoveragePanel orgId={ctx.org.id} range={range} />
         <SpeedPanel orgId={ctx.org.id} range={range} />
       </section>
 
-      <section className="space-y-8">
+      <section className="flex flex-col gap-6">
         <AdoptionPanel payload={adoption} />
       </section>
 
-      <section className="space-y-8">
+      <section className="flex flex-col gap-6">
         <SectionHeader title="Where money is leaking" hint="Each cause has a different fix. Lumping them as lost hides which one to work on." />
         <TerminalPanel orgId={ctx.org.id} range={range} />
         <ObjectionsPanel orgId={ctx.org.id} range={range} hideMemberBreakdown />

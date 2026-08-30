@@ -78,14 +78,19 @@ export const sectionLabel =
 export const filterLabel =
   "mb-2.5 text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground";
 
-export const pageTitle = "font-heading text-2xl text-card-foreground sm:text-[28px]";
+export const pageTitle =
+  "font-heading text-[1.75rem] font-semibold tracking-tight text-card-foreground sm:text-[1.875rem]";
 /** A heading that owns a band of the page, above several cards. */
-export const sectionTitle = "font-heading text-base text-card-foreground";
+export const sectionTitle = "font-heading text-base font-semibold tracking-tight text-card-foreground";
 /** The title of one card. The most common heading in the app. */
-export const cardTitle = "font-heading text-sm text-card-foreground";
-export const bodyText = "text-sm leading-relaxed text-muted-foreground";
+export const cardTitle = "font-heading text-sm font-semibold tracking-tight text-card-foreground";
+/** Page and card descriptions. One step up from 14px so subheads read as copy. */
+export const pageLede = "mt-2 max-w-2xl text-[15px] leading-6 text-muted-foreground";
+export const bodyText = "text-[15px] leading-6 text-muted-foreground";
 export const captionText = "text-xs text-muted-foreground";
 export const metricValue = "text-2xl font-semibold tabular-nums";
+/** Nested well inside a card — objections, facts, notes. */
+export const insetWell = "rounded-xl border border-white/10 bg-white/[0.03] p-4";
 
 /* ---------------------------------------------------------------------------
  * Form controls

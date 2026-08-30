@@ -22,7 +22,7 @@ export function AuthCard({
   children?: React.ReactNode;
 }) {
   return (
-    <div className="auth-stage">
+    <div className="app-type auth-stage">
       <div className="auth-stage-atmosphere" aria-hidden>
         <Particles className="absolute inset-0" quantity={56} color="#9A88FC" ease={70} size={0.45} />
         <div className="auth-stage-glow" />
@@ -40,7 +40,7 @@ export function AuthCard({
           {eyebrowLabel ? <p className="auth-eyebrow">{eyebrowLabel}</p> : null}
           <h1 className="auth-title">{title}</h1>
           {subtitle ? <p className="auth-subtitle">{subtitle}</p> : null}
-          {children ? <div className="auth-desk-body">{children}</div> : null}
+          {children ? <div className="auth-desk-body app-stagger">{children}</div> : null}
           <p className="auth-desk-foot">{APP_NAME} is invite only</p>
         </div>
       </main>

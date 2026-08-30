@@ -51,7 +51,7 @@ export function AcceptInviteForm({
 
   if (mode === "create") {
     return (
-      <form action={createAction} className="space-y-4">
+      <form action={createAction} className="app-stagger flex flex-col gap-4">
         <input type="hidden" name="token" value={token} />
         <input type="hidden" name="email" value={email} />
         <p className={helperClass}>
@@ -109,7 +109,7 @@ export function AcceptInviteForm({
   const action = mode === "magic" ? magicAction : passwordAction;
 
   return (
-    <form action={action} className="space-y-4">
+    <form action={action} className="app-stagger flex flex-col gap-4">
       <input type="hidden" name="email" value={email} />
       <input type="hidden" name="redirectTo" value={redirectTo} />
       {signInError ? <p className={errorClass}>{LOGIN_ERROR_COPY[signInError]}</p> : null}

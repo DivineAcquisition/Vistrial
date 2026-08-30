@@ -272,7 +272,7 @@ export function LogOutcomeScreen({
       {discrepancy ? <Notice tone="warning" title="Still recorded">{discrepancy}</Notice> : null}
 
       {queued.length > 0 ? (
-        <Panel className="space-y-3 p-5">
+        <Panel className="flex flex-col gap-3">
           <p className={labelClass}>On this phone</p>
           <ul className="space-y-2">
             {queued.map((row) => (
@@ -305,7 +305,7 @@ export function LogOutcomeScreen({
         </Panel>
       ) : null}
 
-      <Panel className="p-5">
+      <Panel>
         <p className={labelClass}>Lead</p>
         {selected ? (
           <>

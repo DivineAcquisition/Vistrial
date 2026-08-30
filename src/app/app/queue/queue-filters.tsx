@@ -53,7 +53,7 @@ export function QueueFilters({
 
   return (
     <form
-      className="mb-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-6"
+      className="app-enter mb-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-6"
       onSubmit={(event) => event.preventDefault()}
     >
       <label className="block">

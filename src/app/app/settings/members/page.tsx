@@ -57,15 +57,15 @@ export default async function MembersSettingsPage() {
       title="People"
       description="Invite setters and closers. Deactivate instead of deleting — touches and calls keep attribution."
     >
-      <Panel className="mb-8 p-6">
+      <Panel>
         <h2 className={cardTitle}>Invite</h2>
         <div className="mt-4">
           <InviteForm />
         </div>
       </Panel>
 
-      <Panel className="mb-8 overflow-hidden px-2 py-2 sm:px-4">
-        <h2 className="px-2 pt-3 font-heading text-sm text-white">Current members</h2>
+      <Panel className="overflow-hidden px-2 py-2 sm:px-4">
+        <h2 className={`px-2 pt-3 ${cardTitle}`}>Current members</h2>
         <Table>
           <TableHeader>
             <TableRow>
@@ -160,7 +160,7 @@ export default async function MembersSettingsPage() {
         />
       ) : (
         <Panel className="overflow-hidden px-2 py-2 sm:px-4">
-          <h2 className="px-2 pt-3 font-heading text-sm text-white">Pending invites</h2>
+          <h2 className={`px-2 pt-3 ${cardTitle}`}>Pending invites</h2>
           <p className={`${helperClass} px-2`}>
             Share the link by hand until email delivery is wired.
           </p>

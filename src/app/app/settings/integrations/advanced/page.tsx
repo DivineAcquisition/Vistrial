@@ -108,7 +108,7 @@ export default async function IntegrationDiagnosticsPage() {
         { label: "Diagnostics", href: "/app/settings/integrations/advanced" },
       ]}
     >
-      <div className="space-y-8">
+      <div className="flex flex-col gap-6">
         <FieldMapping
           proposed={proposed}
           missing={unmappedFactors(proposed)}

@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Cal_Sans, Geist, Geist_Mono } from "next/font/google";
+import { Cal_Sans, Geist, Geist_Mono, Plus_Jakarta_Sans } from "next/font/google";
 
 import { AnchoredToastProvider, ToastProvider } from "@/components/ui/toast";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -12,7 +12,8 @@ import { cn } from "@/lib/utils";
 /**
  * Magic UI pairing on the coss font contract:
  * Geist → `--font-sans` (body, buttons, fields)
- * Cal Sans → `--font-heading` (titles)
+ * Cal Sans → `--font-heading` (marketing titles)
+ * Plus Jakarta Sans → `--font-app-heading` (in-app / auth titles)
  * Geist Mono → `--font-mono` (code, tabular scores)
  */
 const geistSans = Geist({
@@ -25,6 +26,12 @@ const calSans = Cal_Sans({
   subsets: ["latin"],
   weight: "400",
   variable: "--font-heading",
+  display: "swap",
+});
+
+const plusJakarta = Plus_Jakarta_Sans({
+  subsets: ["latin"],
+  variable: "--font-app-heading",
   display: "swap",
 });
 
@@ -83,7 +90,13 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={cn("dark", geistSans.variable, calSans.variable, geistMono.variable)}
+      className={cn(
+        "dark",
+        geistSans.variable,
+        calSans.variable,
+        plusJakarta.variable,
+        geistMono.variable,
+      )}
       suppressHydrationWarning
     >
       <body className="min-h-screen bg-background font-sans text-foreground antialiased">

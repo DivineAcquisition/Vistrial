@@ -166,7 +166,7 @@ function HubTile({ card, now }: { card: HubCard; now: string }) {
   const connected = card.status === "connected" || card.status === "attention";
 
   return (
-    <Panel className="flex flex-col p-6">
+    <Panel className="flex h-full flex-col">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <h3 className={cardTitle}>{card.title}</h3>
@@ -179,10 +179,10 @@ function HubTile({ card, now }: { card: HubCard; now: string }) {
         <StatusBadge label={card.statusLabel} tone={TONE[card.status]} />
       </div>
 
-      <p className={`${helperClass} mt-3`}>{card.summary}</p>
+      <p className={`${helperClass} mt-3 flex-none`}>{card.summary}</p>
 
       {connected && (card.accountLabel || card.lastVerifiedAt) ? (
-        <p className={`${helperClass} mt-3`}>
+        <p className={`${helperClass} mt-3 min-h-5`}>
           {[
             card.accountLabel,
             card.lastVerifiedAt ? `checked ${formatRelative(card.lastVerifiedAt, now)}` : null,
@@ -216,10 +216,10 @@ export function IntegrationHub({
   flashError: string | null;
 }) {
   return (
-    <div className="space-y-4">
+    <div className="flex flex-col gap-6">
       {flashError ? <p className={errorClass}>{flashError}</p> : null}
-      {flash ? <p className="text-sm text-flag-good">{flash}</p> : null}
-      <div className="grid gap-4 sm:grid-cols-2">
+      {flash ? <p className="app-scale text-sm text-flag-good">{flash}</p> : null}
+      <div className="app-stagger grid items-stretch gap-6 sm:grid-cols-2">
         {cards.map((card) => (
           <HubTile key={card.id} card={card} now={now} />
         ))}

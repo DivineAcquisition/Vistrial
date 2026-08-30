@@ -3,7 +3,7 @@ import type { ReactNode } from "react";
 import { Breadcrumbs, type Crumb } from "@/components/ui/breadcrumbs";
 import { StatusBadge } from "@/components/ui/status-badge";
 import type { Tone } from "@/components/ui/tone";
-import { eyebrow as eyebrowClass, pageTitle } from "@/lib/ui";
+import { eyebrow as eyebrowClass, pageLede, pageTitle } from "@/lib/ui";
 import { cn } from "@/lib/utils";
 
 /**
@@ -43,7 +43,7 @@ export function PageHeader({
   className?: string;
 }) {
   return (
-    <header className={cn("relative mb-8", className)}>
+    <header className={cn("relative mb-6", className)}>
       {breadcrumbs && breadcrumbs.length > 0 ? (
         <Breadcrumbs items={breadcrumbs} className="mb-3" />
       ) : null}
@@ -55,9 +55,7 @@ export function PageHeader({
             <h1 className={pageTitle}>{title}</h1>
             {status ? <StatusBadge label={status} tone={statusTone} /> : null}
           </div>
-          {description ? (
-            <p className="mt-2 max-w-2xl text-sm leading-relaxed text-muted-foreground">{description}</p>
-          ) : null}
+          {description ? <p className={pageLede}>{description}</p> : null}
         </div>
 
         {actions || secondaryActions ? (

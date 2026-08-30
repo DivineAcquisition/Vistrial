@@ -474,11 +474,11 @@ export function QueueScreen({
             title="Recent activity"
             hint="The system is working. Open Activity for the full stream."
           />
-          <Panel className="p-4">
+          <Panel>
             {activity.length === 0 ? (
               <p className="text-sm text-dim">Nothing yet. When Vistrial works, it shows here.</p>
             ) : (
-            <ol className="space-y-2">
+            <ol className="app-stagger space-y-2">
               {activity.map((event) => (
                 <li
                   key={event.id}
@@ -585,10 +585,10 @@ export function QueueScreen({
               <p className="mt-2 text-sm text-dim">
                 Approve one at a time. Each message is grounded in a specific call and does not send until you read it.
               </p>
-              <ul className="mt-4 space-y-3">
+              <ul className="app-stagger mt-4 space-y-3">
                 {pendingDrafts.map((item) => (
                   <li key={item.id}>
-                    <Panel className="p-4">
+                    <Panel>
                     <p className="text-sm text-white">
                       {item.leadName} · {FOLLOW_UP_BRANCH_LABELS[item.branch]} ·{" "}
                       {FOLLOW_UP_CHANNEL_LABELS[item.channel]}
@@ -648,7 +648,7 @@ export function QueueScreen({
                     onFollowOn={handleFollowOn}
                   />
                 </div>
-                <Panel className="mt-4 hidden overflow-hidden py-0 md:block">
+                <Panel className="mt-4 hidden overflow-hidden p-0 md:block">
                 <Table>
                   <TableHeader>
                     <TableRow className="hover:bg-transparent">
@@ -662,7 +662,7 @@ export function QueueScreen({
                       ))}
                     </TableRow>
                   </TableHeader>
-                  <TableBody>
+                  <TableBody className="app-stagger">
                     {alarmVisible.map((row) => (
                       <QueueLeadRow
                         key={row.id}
@@ -749,7 +749,7 @@ export function QueueScreen({
                   />
                 )}
               </div>
-              <Panel className="mt-4 hidden overflow-hidden py-0 md:block">
+              <Panel className="mt-4 hidden overflow-hidden p-0 md:block">
                 <Table>
                   <TableHeader>
                     <TableRow className="hover:bg-transparent">
@@ -763,7 +763,7 @@ export function QueueScreen({
                       ))}
                     </TableRow>
                   </TableHeader>
-                  <TableBody>
+                  <TableBody className="app-stagger">
                     {queue.length === 0 ? (
                       <TableRow className="hover:bg-transparent">
                         <td

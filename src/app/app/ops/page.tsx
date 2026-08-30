@@ -1,4 +1,5 @@
 import { PageFrame } from "@/components/app/page-frame";
+import { AgentRouteControls } from "@/app/app/ops/agent-route-controls";
 import { OpsControls } from "@/app/app/ops/ops-controls";
 import { OpsActivity } from "@/app/app/ops/ops-activity";
 import { VerificationControls } from "@/app/app/ops/verification-controls";
@@ -317,6 +318,47 @@ export default async function OpsPage({
               usd: usd(row.usd),
             }))}
             empty="No daily trend yet."
+          />
+        </div>
+        <div className="mt-4">
+          <DataTable
+            caption="Spend by agent and workspace"
+            columns={[
+              { key: "org", label: "Workspace" },
+              { key: "agent", label: "Agent" },
+              { key: "runs", label: "Runs", align: "right" },
+              { key: "usd", label: "Est. USD", align: "right" },
+            ]}
+            rows={state.agentSpend.map((row) => ({
+              org: row.orgName,
+              agent: row.agentId,
+              runs: String(row.runs),
+              usd: usd(row.estimatedUsd),
+            }))}
+            empty="No agent spend yet."
+          />
+        </div>
+        <div className="mt-4">
+          <DataTable
+            caption="Escalation rate by agent"
+            columns={[
+              { key: "org", label: "Workspace" },
+              { key: "agent", label: "Agent" },
+              { key: "rate", label: "Escalation rate", align: "right" },
+              { key: "n", label: "Escalations", align: "right" },
+            ]}
+            rows={state.escalationRates.map((row) => ({
+              org: row.orgName,
+              agent: row.agentId,
+              rate: `${Math.round(row.rate * 1000) / 10}%`,
+              n: String(row.escalations),
+            }))}
+            empty="No escalations. A step that escalates constantly is a routing error."
+          />
+        </div>
+        <div className="mt-6">
+          <AgentRouteControls
+            routes={state.modelRoutes}
           />
         </div>
       </Panel>

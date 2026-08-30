@@ -184,3 +184,23 @@ export async function submitVerificationSampleAudit(formData: FormData): Promise
   revalidatePath("/app/ops");
   return { status: "ok", message: "Sample audit recorded." };
 }
+
+export async function saveModelRoute(formData: FormData): Promise<OpsActionResult> {
+  await requirePlatformAdmin();
+  const workKind = String(formData.get("work_kind") ?? "").trim();
+  const modelId = String(formData.get("model_id") ?? "").trim();
+  if (!workKind || !modelId) return { status: "error", error: "Work kind and model id are required." };
+  const { assertModelAllowed } = await import("@/lib/agents/model-config");
+  try {
+    assertModelAllowed(modelId);
+  } catch (error) {
+    return { status: "error", error: error instanceof Error ? error.message : "That model is not allowed." };
+  }
+  const { error } = await getSupabaseAdmin()
+    .from("agent_model_routes" as never)
+    .update({ model_id: modelId } as never)
+    .eq("work_kind" as never, workKind);
+  if (error) return { status: "error", error: "Could not change that route." };
+  revalidatePath("/app/ops");
+  return { status: "ok", message: "Route saved. No deploy." };
+}

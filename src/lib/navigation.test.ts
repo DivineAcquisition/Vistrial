@@ -46,6 +46,7 @@ describe("settings IA", () => {
       "Scoring",
       "Follow-up",
       "Data",
+      "Agents",
     ]);
     expect(advancedSettingsBreadcrumbs("Scoring", "/app/settings/scoring")[0]?.href).toBe(
       "/app/settings/advanced"

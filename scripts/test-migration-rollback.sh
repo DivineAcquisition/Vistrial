@@ -332,3 +332,31 @@ if [[ "$(echo "$col_surface" | tr -d ' ')" != "1" ]]; then
 fi
 
 echo "OK: owner portal migration rollback and re-apply succeeded."
+
+echo "Rollback agent framework (tables and wrap gone)..."
+run "${ROOT}/supabase/rollbacks/20260834010000_agent_framework.sql"
+tbl_agent="$("${PSQL[@]}" -d "${DB_NAME}" -tAc "SELECT count(*) FROM information_schema.tables WHERE table_schema='public' AND table_name='agent_runs'")"
+if [[ "$(echo "$tbl_agent" | tr -d ' ')" != "0" ]]; then
+  echo "agent framework rollback left agent_runs in place" >&2
+  exit 1
+fi
+fn_v21="$("${PSQL[@]}" -d "${DB_NAME}" -tAc "SELECT count(*) FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace WHERE n.nspname='public' AND p.proname='activity_stream_source_v21'")"
+if [[ "$(echo "$fn_v21" | tr -d ' ')" != "0" ]]; then
+  echo "agent framework rollback left activity_stream_source_v21 in place" >&2
+  exit 1
+fi
+
+echo "Re-apply agent framework..."
+run "${ROOT}/supabase/migrations/20260834010000_agent_framework.sql"
+tbl_agent="$("${PSQL[@]}" -d "${DB_NAME}" -tAc "SELECT count(*) FROM information_schema.tables WHERE table_schema='public' AND table_name='agent_runs'")"
+if [[ "$(echo "$tbl_agent" | tr -d ' ')" != "1" ]]; then
+  echo "re-apply did not restore agent_runs" >&2
+  exit 1
+fi
+fn_src="$("${PSQL[@]}" -d "${DB_NAME}" -tAc "SELECT count(*) FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace WHERE n.nspname='public' AND p.proname='activity_stream_source'")"
+if [[ "$(echo "$fn_src" | tr -d ' ')" = "0" ]]; then
+  echo "re-apply did not restore activity_stream_source" >&2
+  exit 1
+fi
+
+echo "OK: agent framework migration rollback and re-apply succeeded."

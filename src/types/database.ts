@@ -1901,6 +1901,7 @@ export type Database = {
           mobile_walkthrough_completed_at: string | null;
           call_coaching_acknowledged_at: string | null;
           surface_access: Database["public"]["Enums"]["surface_access"];
+          is_agent_identity: boolean;
         };
         Insert: {
           active?: boolean;
@@ -1922,6 +1923,7 @@ export type Database = {
           mobile_walkthrough_completed_at?: string | null;
           call_coaching_acknowledged_at?: string | null;
           surface_access?: Database["public"]["Enums"]["surface_access"];
+          is_agent_identity?: boolean;
         };
         Update: {
           active?: boolean;
@@ -1943,6 +1945,7 @@ export type Database = {
           mobile_walkthrough_completed_at?: string | null;
           call_coaching_acknowledged_at?: string | null;
           surface_access?: Database["public"]["Enums"]["surface_access"];
+          is_agent_identity?: boolean;
         };
         Relationships: [
           {
@@ -2043,6 +2046,11 @@ export type Database = {
           transcript_retention_days: number;
           call_coaching_embargo_hours: number;
           operator_agent_batch_cap: number;
+          agents_halted: boolean;
+          agent_crm_writes_halted: boolean;
+          agent_calendar_writes_halted: boolean;
+          agent_run_as_member_id: string | null;
+          last_interactive_at: string | null;
           inactive_at: string | null;
           offboarded_at: string | null;
           delete_after: string | null;
@@ -2067,6 +2075,11 @@ export type Database = {
           transcript_retention_days?: number;
           call_coaching_embargo_hours?: number;
           operator_agent_batch_cap?: number;
+          agents_halted?: boolean;
+          agent_crm_writes_halted?: boolean;
+          agent_calendar_writes_halted?: boolean;
+          agent_run_as_member_id?: string | null;
+          last_interactive_at?: string | null;
           inactive_at?: string | null;
           offboarded_at?: string | null;
           delete_after?: string | null;
@@ -2091,6 +2104,11 @@ export type Database = {
           transcript_retention_days?: number;
           call_coaching_embargo_hours?: number;
           operator_agent_batch_cap?: number;
+          agents_halted?: boolean;
+          agent_crm_writes_halted?: boolean;
+          agent_calendar_writes_halted?: boolean;
+          agent_run_as_member_id?: string | null;
+          last_interactive_at?: string | null;
           inactive_at?: string | null;
           offboarded_at?: string | null;
           delete_after?: string | null;

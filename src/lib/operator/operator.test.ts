@@ -165,9 +165,12 @@ describe("operator execute path", () => {
   });
 
   it("streams a plain-language label instead of the function name", () => {
-    const loop = readFileSync(path.join(process.cwd(), "src/lib/operator/loop.ts"), "utf8");
-    expect(loop).toMatch(/label: toolLabel\(tool\.name\)/);
-    expect(loop).not.toMatch(/label: tool\.name/);
+    const adapter = readFileSync(path.join(process.cwd(), "src/lib/agents/operator-adapter.ts"), "utf8");
+    expect(adapter).toMatch(/toolLabel/);
+    expect(adapter).toMatch(/label: store\.toolLabel\(tool\.name\)|toolLabel,/);
+    const runtime = readFileSync(path.join(process.cwd(), "src/lib/agents/runtime.ts"), "utf8");
+    expect(runtime).toMatch(/label: store\.toolLabel\(tool\.name\)/);
+    expect(runtime).not.toMatch(/label: tool\.name/);
     expect(toolLabel("find_leads")).toBe("Finding leads");
   });
 

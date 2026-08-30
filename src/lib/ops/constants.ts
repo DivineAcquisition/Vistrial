@@ -54,6 +54,7 @@ export const OPS_JOB_NAMES = [
   "verification-audit",
   "portal-email",
   "source-sync",
+  "agent-runtime",
 ] as const;
 
 export type OpsJobName = (typeof OPS_JOB_NAMES)[number];

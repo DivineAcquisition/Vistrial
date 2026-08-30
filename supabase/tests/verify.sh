@@ -60,7 +60,9 @@ WHERE n.nspname = 'public'
     'ops_health_samples','ops_incidents','ops_restore_drills','retention_runs',
     'org_deletion_records','lead_assignment_changes','lead_type_changes','settings_activity',
     'source_connections','ad_spend_days','processor_events','calendar_blocks','form_events',
-    'portal_schedules'
+    'portal_schedules',
+    'agent_runs','agent_run_steps','agent_run_approvals','agent_escalations',
+    'agent_assets','agent_research_facts','org_agent_settings','agent_model_routes'
   )
 ORDER BY 1;
 "
@@ -137,7 +139,10 @@ run "${ROOT}/supabase/tests/verify-activity-stream.sql"
 echo "Owner portal checks..."
 run "${ROOT}/supabase/tests/verify-portal.sql"
 
+echo "Agent framework checks..."
+run "${ROOT}/supabase/tests/verify-agent-framework.sql"
+
 echo "Migration rollback (this prompt's migrations)..."
 bash "${ROOT}/scripts/test-migration-rollback.sh"
 
-echo "OK: schema, seed, triggers, RLS, invite, scoring, GHL, platform-admin, queue, case-file, transcript, follow-up, integrity, reporting, business-profile, onboarding-reconcile, notification, hardening, mobile, calibration, call-quality, operator-agent, self-verification, activity-stream, and owner-portal checks passed."
+echo "OK: schema, seed, triggers, RLS, invite, scoring, GHL, platform-admin, queue, case-file, transcript, follow-up, integrity, reporting, business-profile, onboarding-reconcile, notification, hardening, mobile, calibration, call-quality, operator-agent, self-verification, activity-stream, owner-portal, and agent-framework checks passed."

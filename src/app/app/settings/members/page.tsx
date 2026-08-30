@@ -34,7 +34,7 @@ export default async function MembersSettingsPage() {
   const [{ data: members }, { data: invites }, { data: platformAdmins }] = await Promise.all([
     supabase
       .from("org_members")
-      .select("id, display_name, email, role, active, user_id, logged_outcome_from_mobile_at, surface_access")
+      .select("id, display_name, email, role, active, user_id, logged_outcome_from_mobile_at, surface_access, is_agent_identity")
       .eq("org_id", ctx.org.id)
       .order("created_at", { ascending: true }),
     supabase
@@ -89,6 +89,9 @@ export default async function MembersSettingsPage() {
                     <span className="inline-flex items-center gap-2">
                       <PersonAvatar name={member.display_name} size="sm" />
                       {member.display_name}
+                      {member.is_agent_identity ? (
+                        <StatusBadge label="Runs scheduled agents" tone="neutral" />
+                      ) : null}
                     </span>
                   </TableCell>
                   <TableCell className="hidden break-all text-silver md:table-cell">

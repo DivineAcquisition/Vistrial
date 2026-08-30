@@ -2,7 +2,8 @@ import { loadOrgIngestionHealth, loadGlobalIngestionHealth } from "@/lib/ghl/hea
 import type { GhlDb } from "@/lib/ghl/tokens";
 import { loadOpsNotificationState } from "@/lib/notifications/ops";
 import { vistrialEnv } from "@/lib/ops/env";
-import { loadModelSpend } from "@/lib/ops/spend";
+import { DEFAULT_ROUTES } from "@/lib/agents/model-config";
+import { loadAgentSpend, loadEscalationRates, loadModelSpend } from "@/lib/ops/spend";
 import { isJobOverdue } from "@/lib/ops/job-overdue";
 import { loadVerificationOpsState } from "@/lib/verification/ops-state";
 import type { Json } from "@/types/database";
@@ -44,6 +45,8 @@ export async function loadOpsSystemState(db: GhlDb) {
     ingest,
     notifications,
     spend,
+    agentSpend,
+    escalationRates,
     orgs,
     extractTotal,
     extractDead,
@@ -51,6 +54,7 @@ export async function loadOpsSystemState(db: GhlDb) {
     notifyDead,
     calibration,
     verification,
+    modelRouteRows,
   ] = await Promise.all([
     db.from("ops_job_runs").select("*"),
     db.from("ops_job_catalog").select("*"),
@@ -70,6 +74,8 @@ export async function loadOpsSystemState(db: GhlDb) {
     loadGlobalIngestionHealth(db),
     loadOpsNotificationState(db),
     loadModelSpend(db, 30),
+    loadAgentSpend(db, 30),
+    loadEscalationRates(db, 30),
     db.from("organizations").select("id, name, slug, inactive_at, offboarded_at, delete_after, ghl_location_id, holdout_percent"),
     db.from("extraction_jobs").select("id", { count: "exact", head: true }).gte("created_at", since24h),
     db
@@ -90,6 +96,9 @@ export async function loadOpsSystemState(db: GhlDb) {
       .gte("queued_at", since24h),
     db.rpc("load_ops_calibration"),
     loadVerificationOpsState(db),
+    (db as unknown as { from: (t: string) => { select: (c: string) => Promise<{ data: Array<{ work_kind: string; tier: string; model_id: string }> | null }> } })
+      .from("agent_model_routes")
+      .select("work_kind, tier, model_id"),
   ]);
 
   const catalogByName = new Map((catalog.data ?? []).map((row) => [row.job_name, row]));
@@ -174,6 +183,17 @@ export async function loadOpsSystemState(db: GhlDb) {
     orgHealth,
     notifications,
     spend,
+    agentSpend,
+    escalationRates,
+    modelRoutes: (modelRouteRows.data ?? DEFAULT_ROUTES.map((row) => ({
+      work_kind: row.workKind,
+      tier: row.tier,
+      model_id: row.modelId,
+    }))).map((row) => ({
+      workKind: row.work_kind,
+      tier: row.tier,
+      modelId: row.model_id,
+    })),
     orgs: orgs.data ?? [],
     calibration: (calibration.data ?? {}) as Record<string, unknown>,
     verification,

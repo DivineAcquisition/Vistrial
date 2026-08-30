@@ -55,6 +55,10 @@
     {
       "path": "/api/cron/source-sync",
       "schedule": "15 * * * *"
+    },
+    {
+      "path": "/api/cron/agent-runtime",
+      "schedule": "* * * * *"
     }
   ]
 }

@@ -23,6 +23,11 @@ function forbidden(): SettingsSaveResult {
   return { status: "error", error: "You do not have permission to change CRM settings." };
 }
 
+/** The hub and the diagnostics page beneath it both read this data. */
+function revalidateIntegrations() {
+  revalidatePath("/app/settings/integrations", "layout");
+}
+
 async function requireManager() {
   const ctx = await getAuthContext();
   if (!canWorkOperatorApp(ctx.role, ctx.member.surfaceAccess, ctx.isPlatformAdmin)) return null;
@@ -39,7 +44,7 @@ export async function disconnectCrm(
   const ctx = await requireManager();
   if (!ctx) return forbidden();
   await disconnectGhl(getSupabaseAdmin(), ctx.org.id);
-  revalidatePath("/app/settings/integrations");
+  revalidateIntegrations();
   return { status: "saved" };
 }
 
@@ -60,7 +65,7 @@ export async function testCrmConnection(
     .from("ghl_connections")
     .update({ last_verified_at: new Date().toISOString(), last_refresh_error: null })
     .eq("org_id", ctx.org.id);
-  revalidatePath("/app/settings/integrations");
+  revalidateIntegrations();
   revalidatePath("/portal");
   return { status: "saved" };
 }
@@ -79,7 +84,7 @@ export async function selectGhlLocation(
     locationId,
   });
   if (!result.ok) return { status: "error", error: result.error };
-  revalidatePath("/app/settings/integrations");
+  revalidateIntegrations();
   return { status: "saved" };
 }
 
@@ -89,7 +94,7 @@ export async function retryWebhookEvent(eventId: string): Promise<SettingsSaveRe
   const ok = await retryDeadEvent(getSupabaseAdmin(), ctx.org.id, eventId);
   if (!ok) return { status: "error", error: "That event could not be queued for retry." };
   await processGhlWebhookQueue(getSupabaseAdmin(), 5);
-  revalidatePath("/app/settings/integrations");
+  revalidateIntegrations();
   return { status: "saved" };
 }
 
@@ -127,7 +132,7 @@ export async function saveGhlFieldMaps(maps: FieldMapPayload[]): Promise<Setting
     if (error) return { status: "error", error: "Could not save field mapping." };
   }
 
-  revalidatePath("/app/settings/integrations");
+  revalidateIntegrations();
   revalidatePath("/app/settings/scoring");
   return { status: "saved" };
 }
@@ -176,7 +181,7 @@ export async function saveTranscriptConnection(input: {
     if (error) return { status: "error", error: "Could not save that recorder connection." };
   }
 
-  revalidatePath("/app/settings/integrations");
+  revalidateIntegrations();
   return { status: "saved" };
 }
 
@@ -193,7 +198,7 @@ export async function rotateTranscriptWebhookToken(source: string): Promise<Sett
     .eq("org_id", ctx.org.id)
     .eq("source", source as Enums<"transcript_source">);
   if (error) return { status: "error", error: "Could not rotate that webhook URL." };
-  revalidatePath("/app/settings/integrations");
+  revalidateIntegrations();
   return { status: "saved" };
 }
 
@@ -210,7 +215,7 @@ export async function pasteUnmatchedTranscript(transcript: string): Promise<Sett
     status: "open",
   });
   if (error) return { status: "error", error: "The transcript could not be stored." };
-  revalidatePath("/app/settings/integrations");
+  revalidateIntegrations();
   return { status: "saved" };
 }
 
@@ -276,7 +281,7 @@ export async function assignUnmatchedTranscript(input: {
     .eq("org_id", ctx.org.id);
 
   await processExtractionQueue(admin, 1);
-  revalidatePath("/app/settings/integrations");
+  revalidateIntegrations();
   revalidatePath(`/app/calls/${call.id}`);
   revalidatePath(`/app/cases/${call.lead_id}`);
   revalidatePath(`/app/cases/${call.lead_id}/brief`);
@@ -305,7 +310,7 @@ export async function discardUnmatchedTranscript(unmatchedId: string): Promise<S
       raw_transcript: "",
     })
     .eq("id", data.id);
-  revalidatePath("/app/settings/integrations");
+  revalidateIntegrations();
   return { status: "saved" };
 }
 

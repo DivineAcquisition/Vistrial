@@ -8,23 +8,30 @@ import {
 } from "@/lib/navigation";
 
 describe("settings IA", () => {
-  it("keeps day-to-day tabs to You, Notifications, Workspace, People, and Advanced", () => {
+  it("keeps day-to-day tabs to You, Notifications, Workspace, People, Integrations, and Advanced", () => {
     expect(SETTINGS_TABS.map((tab) => tab.label)).toEqual([
       "You",
       "Notifications",
       "Workspace",
       "People",
+      "Integrations",
       "Advanced",
     ]);
   });
 
-  it("does not put scoring, follow-up, integrations, data, or business on the main tabs", () => {
+  it("does not put scoring, follow-up, data, or business on the main tabs", () => {
     const hrefs = SETTINGS_TABS.map((tab) => tab.href);
     expect(hrefs).not.toContain("/app/settings/scoring");
     expect(hrefs).not.toContain("/app/settings/follow-up");
-    expect(hrefs).not.toContain("/app/settings/integrations");
     expect(hrefs).not.toContain("/app/settings/data");
     expect(hrefs).not.toContain("/app/settings/business-profile");
+  });
+
+  it("keeps integration diagnostics under the Integrations tab", () => {
+    expect(settingsTabActiveHref("/app/settings/integrations")).toBe("/app/settings/integrations");
+    expect(settingsTabActiveHref("/app/settings/integrations/advanced")).toBe(
+      "/app/settings/integrations"
+    );
   });
 
   it("highlights Advanced for specialist pages", () => {
@@ -38,7 +45,6 @@ describe("settings IA", () => {
       "Business",
       "Scoring",
       "Follow-up",
-      "Integrations",
       "Data",
     ]);
     expect(advancedSettingsBreadcrumbs("Scoring", "/app/settings/scoring")[0]?.href).toBe(

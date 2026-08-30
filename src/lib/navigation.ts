@@ -96,6 +96,7 @@ export const SETTINGS_TABS: Array<{
   { href: "/app/settings/notifications", label: "Notifications", managerOnly: false },
   { href: "/app/settings/organization", label: "Workspace", managerOnly: true },
   { href: "/app/settings/members", label: "People", managerOnly: true },
+  { href: "/app/settings/integrations", label: "Integrations", managerOnly: true },
   { href: "/app/settings/advanced", label: "Advanced", managerOnly: true },
 ];
 
@@ -118,11 +119,6 @@ export const ADVANCED_SETTINGS_PAGES: Array<{
     href: "/app/settings/follow-up",
     label: "Follow-up",
     description: "Voice examples, quiet hours, and which situations Vistrial drafts for.",
-  },
-  {
-    href: "/app/settings/integrations",
-    label: "Integrations",
-    description: "LeadConnector connection, field maps, and whether inbound is actually landing.",
   },
   {
     href: "/app/settings/data",

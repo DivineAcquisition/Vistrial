@@ -3,10 +3,8 @@
 import { useActionState, useState, useTransition } from "react";
 
 import {
-  disconnectCrm,
   retryWebhookEvent,
   saveGhlFieldMaps,
-  selectGhlLocation,
   saveTranscriptConnection,
   rotateTranscriptWebhookToken,
   pasteUnmatchedTranscript,
@@ -24,7 +22,6 @@ import { DataTable } from "@/components/ui/data-table";
 import { Select } from "@/components/ui/select";
 import { Panel } from "@/components/ui/panel";
 import { Notice } from "@/components/ui/states";
-import { StatusBadge } from "@/components/ui/status-badge";
 import { formatRelative } from "@/lib/format";
 import { RECORDER_SOURCES } from "@/lib/transcripts/constants";
 import { TRANSCRIPT_SOURCE_LABELS } from "@/lib/leads/labels";
@@ -34,11 +31,9 @@ import {
   helperClass,
   labelClass,
 } from "@/lib/ui";
-import type { Tone } from "@/components/ui/tone";
 
 export type IntegrationFieldMap = FieldMapPayload & { id: string };
 export type CustomFieldOption = { id: string; name: string; key?: string };
-export type LocationOption = { id: string; name: string };
 export type DeadEvent = {
   id: string;
   eventType: string;
@@ -47,13 +42,8 @@ export type DeadEvent = {
 };
 
 export type IntegrationSettingsProps = {
-  oauthConfigured: boolean;
-  selectLocation: boolean;
-  locations: LocationOption[];
   connection: {
     status: "active" | "broken" | "inactive" | "missing";
-    locationName: string | null;
-    lastVerifiedAt: string | null;
     lastSetupError: string | null;
   };
   health: {
@@ -69,8 +59,6 @@ export type IntegrationSettingsProps = {
   };
   maps: IntegrationFieldMap[];
   customFields: CustomFieldOption[];
-  flash: string | null;
-  flashError: string | null;
   now: string;
   appUrl: string;
   transcriptHealth: {
@@ -108,23 +96,8 @@ export type IntegrationSettingsProps = {
 
 const initial: SettingsSaveResult = { status: "idle" };
 
-function statusTone(status: IntegrationSettingsProps["connection"]["status"]): Tone {
-  if (status === "active") return "good";
-  if (status === "broken") return "critical";
-  return "neutral";
-}
-
-function statusLabel(status: IntegrationSettingsProps["connection"]["status"]): string {
-  if (status === "active") return "Connected";
-  if (status === "broken") return "Broken";
-  if (status === "inactive") return "Disconnected";
-  return "Not connected";
-}
-
 export function IntegrationSettings(props: IntegrationSettingsProps) {
-  const [disconnectState, disconnectAction, disconnecting] = useActionState(disconnectCrm, initial);
   const [testState, testAction, testing] = useActionState(testCrmConnection, initial);
-  const [locationState, locationAction, locating] = useActionState(selectGhlLocation, initial);
   const [maps, setMaps] = useState<IntegrationFieldMap[]>(props.maps);
   const [mapStatus, setMapStatus] = useState<SettingsSaveResult>(initial);
   const [retryStatus, setRetryStatus] = useState<string | null>(null);
@@ -190,97 +163,17 @@ export function IntegrationSettings(props: IntegrationSettingsProps) {
         </Notice>
       ) : null}
 
-      {props.flashError ? <p className={errorClass}>{props.flashError}</p> : null}
-      {props.flash ? <p className="text-sm text-flag-good">{props.flash}</p> : null}
-
-      {props.selectLocation ? (
-        <Panel className="p-6">
-          <h2 className={cardTitle}>Choose a LeadConnector location</h2>
-          <p className={helperClass}>
-            Agency access was granted. Link exactly one location to this workspace.
-          </p>
-          <form action={locationAction} className="mt-4 space-y-4">
-            <div>
-              <label className={labelClass} htmlFor="location_id">
-                Location
-              </label>
-              <Select id="location_id" name="location_id" required  defaultValue="">
-                <option value="" disabled>
-                  Select a location
-                </option>
-                {props.locations.map((location) => (
-                  <option key={location.id} value={location.id}>
-                    {location.name}
-                  </option>
-                ))}
-              </Select>
-            </div>
-            <SubmitButton variant="gradient" pending={locating} loadingLabel="Linking">
-            Link location
-          </SubmitButton>
-            {locationState.status === "error" ? <p className={errorClass}>{locationState.error}</p> : null}
-          </form>
-        </Panel>
-      ) : null}
-
       <Panel className="p-6">
-        <div className="flex flex-wrap items-start justify-between gap-4">
-          <div>
-            <h2 className={cardTitle}>LeadConnector</h2>
-            <p className={helperClass}>
-              Dispatch goes out through LeadConnector. Conversations stay in LeadConnector — this
-              workspace never renders threads or message bodies. Connect ad spend, the processor,
-              calendar, and forms from the cards below to unlock those owner-portal sections.
-            </p>
-          </div>
-          <StatusBadge label={statusLabel(props.connection.status)} tone={statusTone(props.connection.status)} />
-        </div>
-
-        <dl className="mt-5 grid gap-4 sm:grid-cols-2">
-          <div>
-            <dt className={labelClass}>Linked location</dt>
-            <dd className="text-sm text-white">{props.connection.locationName || "—"}</dd>
-          </div>
-          <div>
-            <dt className={labelClass}>Last verified</dt>
-            <dd className="text-sm text-white">
-              {props.connection.lastVerifiedAt
-                ? formatRelative(props.connection.lastVerifiedAt, props.now)
-                : "—"}
-            </dd>
-          </div>
-        </dl>
-
-        <div className="mt-6 flex flex-wrap gap-3">
-          {props.oauthConfigured ? (
-            <Button variant="gradient" size="lg" render={<a href="/api/leadconnector/oauth/start" />}>
-              {props.connection.status === "active" || props.connection.status === "broken"
-                ? "Reconnect"
-                : "Connect LeadConnector"}
-            </Button>
-          ) : (
-            <p className="text-sm text-silver">
-              Marketplace credentials are not configured on this deployment, so connect stays
-              unavailable.
-            </p>
-          )}
-          {props.connection.status === "active" || props.connection.status === "broken" ? (
-            <>
-              <form action={testAction}>
-                <SubmitButton variant="secondary" pending={testing} loadingLabel="Testing">
-                  Test
-                </SubmitButton>
-              </form>
-              <form action={disconnectAction}>
-                <SubmitButton variant="secondary" pending={disconnecting} loadingLabel="Disconnecting">
-            Disconnect
+        <h2 className={cardTitle}>Connection check</h2>
+        <p className={helperClass}>
+          Ask the CRM for a live answer now. Connecting and disconnecting live on the hub.
+        </p>
+        <form action={testAction} className="mt-5">
+          <SubmitButton variant="secondary" pending={testing} loadingLabel="Testing">
+            Test connection
           </SubmitButton>
-              </form>
-            </>
-          ) : null}
-        </div>
-        {disconnectState.status === "error" ? <p className={errorClass}>{disconnectState.error}</p> : null}
-        {testState.status === "error" ? <p className={errorClass}>{testState.error}</p> : null}
+        </form>
+        {testState.status === "error" ? <p className={`${errorClass} mt-3`}>{testState.error}</p> : null}
         {testState.status === "saved" ? <p className="mt-3 text-sm text-flag-good">Verified just now.</p> : null}
       </Panel>
 

@@ -335,7 +335,7 @@ async function TeamPanel({ orgId, range }: { orgId: string; range: ReportingRang
       />
       <DataTable
         columns={[
-          { key: "name", label: "Operator" },
+          { key: "name", label: "Person" },
           { key: "role", label: "Role" },
           { key: "leads", label: "Leads worked", align: "right" },
           { key: "touches", label: "Touches", align: "right" },
@@ -735,12 +735,9 @@ export function ReportingTabs({
       activeHref={activeHref}
       items={[
         // The two range-aware views carry the selected range across with them.
-        { href: `/app/reporting${query ? `?${query}` : ""}`, label: "Team view" },
+        { href: `/app/reporting${query ? `?${query}` : ""}`, label: "Team" },
         { href: `/portal${query ? `?${query}` : ""}`, label: "Owner portal" },
-        { href: "/app/reporting/calibration", label: "Sales process" },
         { href: "/app/reporting/coaching", label: "Coaching" },
-        { href: "/app/reporting/adoption", label: "Adoption" },
-        { href: "/app/onboarding/report", label: "Leak Report" },
       ]}
     />
   );

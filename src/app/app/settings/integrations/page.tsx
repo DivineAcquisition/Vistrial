@@ -11,18 +11,17 @@ import { listSessionLocations } from "@/lib/ghl/connect";
 import { ghlOAuthConfigured } from "@/lib/ghl/env";
 import { loadOrgIngestionHealth } from "@/lib/ghl/health";
 import { buildHubCards, hubSummaryLine } from "@/lib/integrations/hub";
-import { loadSourceCards } from "@/lib/sources/connections";
 import { getSupabaseAdmin } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import { helperClass } from "@/lib/ui";
 
 const FLASH_ERRORS: Record<string, string> = {
   location_claimed: LOCATION_CLAIMED_MESSAGE,
-  oauth_denied: "The LeadConnector authorization was cancelled.",
+  oauth_denied: "The GoHighLevel authorization was cancelled.",
   oauth_invalid: "The connection attempt was invalid. Start again from this page.",
   oauth_expired: "The connection attempt expired. Start again from this page.",
-  oauth_no_location: "LeadConnector did not return a location to link.",
-  oauth_failed: "The LeadConnector connection could not be completed.",
+  oauth_no_location: "GoHighLevel did not return a location to link.",
+  oauth_failed: "The GoHighLevel connection could not be completed.",
 };
 
 export default async function IntegrationsPage({
@@ -40,33 +39,29 @@ export default async function IntegrationsPage({
   const admin = getSupabaseAdmin();
   const supabase = await createClient();
 
-  const [connection, health, sourceCards] = await Promise.all([
+  const [connection, health] = await Promise.all([
     supabase
       .from("ghl_connections")
       .select("status, location_name, last_verified_at")
       .eq("org_id", ctx.org.id)
       .maybeSingle(),
     loadOrgIngestionHealth(admin, ctx.org.id),
-    loadSourceCards(admin, ctx.org.id),
   ]);
 
   const selectLocation = params.select_location === "1";
   const locations = selectLocation ? await listSessionLocations(admin, ctx.org.id, ctx.member.id) : [];
 
-  const cards = buildHubCards(
-    {
-      status: connection.data?.status ?? health.connectionStatus,
-      locationName: connection.data?.location_name ?? health.locationName,
-      lastVerifiedAt: connection.data?.last_verified_at ?? health.lastVerifiedAt,
-      oauthConfigured: ghlOAuthConfigured(),
-    },
-    sourceCards
-  );
+  const cards = buildHubCards({
+    status: connection.data?.status ?? health.connectionStatus,
+    locationName: connection.data?.location_name ?? health.locationName,
+    lastVerifiedAt: connection.data?.last_verified_at ?? health.lastVerifiedAt,
+    oauthConfigured: ghlOAuthConfigured(),
+  });
 
   return (
     <PageFrame
       title="Integrations"
-      description="Connect an app once. Vistrial keeps it in sync from there."
+      description="Connect GoHighLevel. Airtable is next."
       status={hubSummaryLine(cards)}
       actions={
         ctx.isPlatformAdmin ? (

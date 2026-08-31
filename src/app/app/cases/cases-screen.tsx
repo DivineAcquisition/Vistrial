@@ -96,7 +96,7 @@ export function CasesScreen({
           <EmptyState
             kind="unconfigured"
             title="The CRM connection is broken"
-            detail="LeadConnector is linked but the connection expired. Reconnect in Integrations. Existing case files stay on this screen so the outage is not hidden."
+            detail="GoHighLevel is linked but the connection expired. Reconnect in Integrations. Existing case files stay on this screen so the outage is not hidden."
             action={integrations}
           />
         </div>
@@ -107,7 +107,7 @@ export function CasesScreen({
           <EmptyState
             kind="unconfigured"
             title="The CRM is not connected"
-            detail="New inbound will not land until LeadConnector is linked. Leads already in this workspace are still listed below."
+            detail="New people will not land until GoHighLevel is linked. People already in this workspace are still listed below."
             action={integrations}
           />
         </div>
@@ -117,7 +117,7 @@ export function CasesScreen({
         <EmptyState
           kind="unconfigured"
           title="Case files appear after the CRM is connected"
-          detail="Each inbound lead will get a case file here. That list stays empty until LeadConnector sync is turned on."
+          detail="Each new person will get a case file here. That list stays empty until GoHighLevel is connected."
           action={integrations}
         />
       ) : null}
@@ -135,7 +135,7 @@ export function CasesScreen({
         <EmptyState
           kind="empty"
           title="No case files yet"
-          detail="LeadConnector is connected. Contacts will appear here after they ingest. There is nothing to open yet."
+          detail="GoHighLevel is connected. People will appear here when they arrive. There is nothing to open yet."
         />
       ) : null}
 

@@ -48,7 +48,24 @@ export type CrmHubInput = {
 export const CRM_HUB_ID = "leadconnector";
 
 export const CRM_SUMMARY =
-  "Your CRM stays the system of record. Vistrial reads leads, calls, and appointments from it and sends through it.";
+  "Your CRM. Vistrial reads people, calls, and appointments from it and sends through it.";
+
+export function airtableHubCard(): HubCard {
+  return {
+    id: "airtable",
+    title: "Airtable",
+    summary: "Bring people and notes from Airtable into this workspace.",
+    status: "unavailable",
+    statusLabel: "Coming next",
+    accountLabel: null,
+    lastVerifiedAt: null,
+    connect: { mode: "unavailable" },
+    webhookUrl: null,
+    required: false,
+    kind: null,
+    note: "Airtable connecting is next. Connect GoHighLevel today.",
+  };
+}
 
 const STATUS_LABEL: Record<HubStatus, string> = {
   connected: "Connected",
@@ -72,7 +89,7 @@ export function crmHubCard(input: CrmHubInput): HubCard {
 
   return {
     id: CRM_HUB_ID,
-    title: "LeadConnector",
+    title: "GoHighLevel",
     summary: CRM_SUMMARY,
     status,
     statusLabel: statusLabelFor(status),
@@ -88,7 +105,7 @@ export function crmHubCard(input: CrmHubInput): HubCard {
       ? input.status === "broken"
         ? "The connection stopped refreshing. Reconnect to resume sending."
         : null
-      : "Marketplace credentials are not configured on this deployment.",
+      : "GoHighLevel is not configured on this deployment yet.",
   };
 }
 
@@ -128,18 +145,9 @@ export function sourceHubCard(source: SourceCardModel): HubCard {
   };
 }
 
-/** The CRM first, then whatever can be connected, then what cannot. */
-export function buildHubCards(crm: CrmHubInput, sources: SourceCardModel[]): HubCard[] {
-  const rank: Record<HubStatus, number> = {
-    attention: 0,
-    connected: 1,
-    available: 2,
-    unavailable: 3,
-  };
-  const optional = sources
-    .map(sourceHubCard)
-    .sort((a, b) => rank[a.status] - rank[b.status] || a.title.localeCompare(b.title));
-  return [crmHubCard(crm), ...optional];
+/** Client hub: GoHighLevel and Airtable only. Other sources stay in code, not on this page. */
+export function buildHubCards(crm: CrmHubInput, _sources: SourceCardModel[] = []): HubCard[] {
+  return [crmHubCard(crm), airtableHubCard()];
 }
 
 export function hubSummaryLine(cards: HubCard[]): string {

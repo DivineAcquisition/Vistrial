@@ -20,12 +20,12 @@ import { PROFILE_STAGES, STAGE_META, isProfileStage } from "@/lib/profile/stages
 import { createClient } from "@/lib/supabase/server";
 
 const CONNECT_ERRORS: Record<string, string> = {
-  location_claimed: "That LeadConnector location is already linked to another workspace.",
-  oauth_denied: "The LeadConnector authorization was cancelled.",
+  location_claimed: "That GoHighLevel location is already linked to another workspace.",
+  oauth_denied: "The GoHighLevel authorization was cancelled.",
   oauth_invalid: "The connection attempt was invalid. Start it again from here.",
   oauth_expired: "The connection attempt expired. Start it again from here.",
-  oauth_no_location: "LeadConnector did not return a location to link.",
-  oauth_failed: "The LeadConnector connection could not be completed.",
+  oauth_no_location: "GoHighLevel did not return a location to link.",
+  oauth_failed: "The GoHighLevel connection could not be completed.",
 };
 
 export default async function OnboardingStagePage({

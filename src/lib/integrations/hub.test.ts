@@ -47,6 +47,7 @@ describe("integration hub", () => {
     expect(card.connect.mode).toBe("unavailable");
     expect(card.status).toBe("unavailable");
     expect(card.note).toContain("not configured");
+    expect(card.title).toBe("GoHighLevel");
   });
 
   it("treats a broken CRM token as needing attention, not as disconnected", () => {
@@ -77,7 +78,7 @@ describe("integration hub", () => {
     expect(card.note).toBe("Not configured here.");
   });
 
-  it("puts the CRM first, then what needs attention before what is merely available", () => {
+  it("shows only GoHighLevel and Airtable to clients", () => {
     const cards = buildHubCards(
       { status: "active", locationName: "Main", lastVerifiedAt: null, oauthConfigured: true },
       [
@@ -86,9 +87,8 @@ describe("integration hub", () => {
         source("google_ads", { connectMode: "unavailable", unavailableReason: "No keys." }),
       ]
     );
-    expect(cards[0]?.id).toBe("leadconnector");
-    expect(cards[1]?.id).toBe("stripe");
-    expect(cards.at(-1)?.id).toBe("google_ads");
+    expect(cards.map((card) => card.id)).toEqual(["leadconnector", "airtable"]);
+    expect(cards.map((card) => card.title)).toEqual(["GoHighLevel", "Airtable"]);
   });
 
   it("counts only connectable tiles in the summary line", () => {
@@ -96,14 +96,14 @@ describe("integration hub", () => {
       { status: "active", locationName: "Main", lastVerifiedAt: null, oauthConfigured: true },
       [source("meta_ads"), source("stripe", { connectMode: "unavailable" })]
     );
-    expect(hubSummaryLine(cards)).toBe("1 of 2 connected");
+    expect(hubSummaryLine(cards)).toBe("1 of 1 connected");
   });
 
-  it("names how many need attention so a broken source is not silently counted out", () => {
+  it("names how many need attention so a broken CRM is not silently counted out", () => {
     const cards = buildHubCards(
       { status: "broken", locationName: "Main", lastVerifiedAt: null, oauthConfigured: true },
       [source("meta_ads", { status: "active" })]
     );
-    expect(hubSummaryLine(cards)).toBe("1 of 2 connected · 1 need attention");
+    expect(hubSummaryLine(cards)).toBe("0 of 1 connected · 1 need attention");
   });
 });

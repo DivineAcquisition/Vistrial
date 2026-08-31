@@ -109,7 +109,7 @@ export function ActivityFiltersForm({
           }
         >
           <option value="">Any</option>
-          <option value="gohighlevel">LeadConnector</option>
+          <option value="gohighlevel">GoHighLevel</option>
         </Select>
       </label>
       {clients ? (

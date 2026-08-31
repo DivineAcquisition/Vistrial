@@ -516,10 +516,10 @@ export function CalibrationReportView({
                 <li key={str(item.id) ?? JSON.stringify(item)}>
                   <p className="text-sm text-silver">
                     {str(item.kind) === "drop_phrase"
-                      ? `Operators keep dropping “${str(item.phrase)}”.`
+                      ? `The team keeps dropping “${str(item.phrase)}”.`
                       : str(item.kind) === "shorter"
-                        ? "Operators keep shortening the draft."
-                        : "Operators keep dropping formal phrasing."}{" "}
+                        ? "The team keeps shortening the draft."
+                        : "The team keeps dropping formal phrasing."}{" "}
                     {str(evidence.text)}
                   </p>
                   {str(item.id) ? <VoiceConfirmActions id={str(item.id) as string} /> : null}

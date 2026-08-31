@@ -52,14 +52,6 @@ export const PRIMARY_NAV: NavItem[] = [
     roles: ["owner", "admin"],
   },
   {
-    href: "/app/ops",
-    label: "Operator",
-    match: "/app/ops",
-    group: "measure",
-    icon: "reporting",
-    platformAdminOnly: true,
-  },
-  {
     href: "/app/activity",
     label: "Activity",
     match: "/app/activity",

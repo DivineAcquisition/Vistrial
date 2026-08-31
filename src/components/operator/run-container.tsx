@@ -1,7 +1,6 @@
 "use client";
 
 import { StreamingText } from "@/components/operator/streaming-text";
-import { ToolCallRow } from "@/components/operator/tool-call-row";
 import { ChangePreview } from "@/components/operator/change-preview";
 import { Input } from "@/components/ui/input";
 import type { OperatorConfirmationView, OperatorRunView, OperatorStepView } from "@/lib/operator/types";
@@ -9,7 +8,7 @@ import { helperClass } from "@/lib/ui";
 
 export function RunContainer({
   requestText,
-  steps,
+  steps: _steps,
   confirmations,
   streamedText,
   finalResponse,
@@ -47,9 +46,6 @@ export function RunContainer({
       </header>
 
       <div className="min-h-0 flex-1 space-y-2 overflow-y-auto pr-1">
-        {steps.map((step) => (
-          <ToolCallRow key={step.id} step={step} />
-        ))}
         {confirmations.map((confirmation) => (
           <ChangePreview
             key={confirmation.id}

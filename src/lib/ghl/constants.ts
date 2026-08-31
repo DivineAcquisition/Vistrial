@@ -73,4 +73,4 @@ export const CONTACT_LOCK_STALE_MS = 5 * 60 * 1000;
 export const GHL_OAUTH_COOKIE = "vistrial_ghl_oauth";
 
 export const LOCATION_CLAIMED_MESSAGE =
-  "This LeadConnector location is already linked to another workspace.";
+  "This GoHighLevel location is already linked to another workspace.";

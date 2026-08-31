@@ -312,7 +312,7 @@ export function FollowUpReviewScreen({ initial }: { initial: FollowUpReviewPaylo
             </div>
           ) : (
             <div className="space-y-4">
-              <p className="text-sm text-white">Confirm before dispatch. A message to the wrong person cannot be pulled back.</p>
+              <p className="text-sm text-white">Confirm before sending. A message to the wrong person cannot be pulled back.</p>
               <DefinitionList>
                 <KeyValue label="Channel">{FOLLOW_UP_CHANNEL_LABELS[draft.channel]}</KeyValue>
                 <KeyValue label="Recipient">{recipient}</KeyValue>

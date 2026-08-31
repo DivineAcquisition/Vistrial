@@ -6,7 +6,8 @@ import { cn } from "@/lib/utils";
 /**
  * Landing hero title: the accent phrase still carries the gradient, and both
  * halves enter word by word. The heading itself keeps the full sentence for
- * assistive tech.
+ * assistive tech. The accent uses slide-up, not blur — `filter` on
+ * `background-clip: text` makes the gradient fill disappear.
  */
 export function AnimatedHeroHeadline({
   before,
@@ -34,7 +35,7 @@ export function AnimatedHeroHeadline({
       <TextAnimate
         as="span"
         by="word"
-        animation="blurInUp"
+        animation="slideUp"
         startOnView={false}
         once
         accessible={false}

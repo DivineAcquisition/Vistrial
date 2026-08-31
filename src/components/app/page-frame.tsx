@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 
+import { BlurFade } from "@/components/ui/blur-fade";
 import { PageHeader } from "@/components/ui/page-header";
 import type { Crumb } from "@/components/ui/breadcrumbs";
 import type { Tone } from "@/components/ui/tone";
@@ -45,7 +46,9 @@ export function PageFrame({
         secondaryActions={secondaryActions}
         toolbar={toolbar}
       />
-      <div className={pageStack}>{children}</div>
+      <BlurFade direction="up" offset={8} delay={0.06} duration={0.45}>
+        <div className={pageStack}>{children}</div>
+      </BlurFade>
     </>
   );
 }

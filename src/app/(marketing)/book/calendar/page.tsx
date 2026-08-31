@@ -3,6 +3,7 @@ import { cookies } from "next/headers";
 
 import { BookingCalendar } from "@/components/marketing/booking-calendar";
 import { MarketingShell } from "@/components/marketing/chrome";
+import { AnimatedHeading } from "@/components/ui/animated-heading";
 import { Panel } from "@/components/ui/panel";
 import { CONTACT_EMAIL } from "@/lib/constants";
 import {
@@ -60,9 +61,12 @@ export default async function CalendarPage() {
       <section className="px-5 pb-10 pt-14 sm:px-6 sm:pt-20">
         <div className="mx-auto max-w-3xl text-center">
           <p className={`${eyebrow} animate-rise`}>{CALENDAR.eyebrow}</p>
-          <h1 className={`${marketingHeroTitle} animate-rise delay-1 mt-6 text-[2.1rem] sm:text-4xl md:text-[2.75rem]`}>
+          <AnimatedHeading
+            as="h1"
+            className={`${marketingHeroTitle} mt-6 text-[2.2rem] sm:text-4xl md:text-[2.9rem]`}
+          >
             {CALENDAR.title}
-          </h1>
+          </AnimatedHeading>
           <p className={`${marketingSubhead} animate-rise delay-2 mx-auto mt-5 max-w-xl`}>
             {CALENDAR.description}
           </p>

@@ -42,7 +42,7 @@ export function Backdrop({ className = "" }: { className?: string }) {
       />
 
       <div
-        className="absolute -left-52 top-[28%] h-[520px] w-[520px] rounded-full opacity-60"
+        className="animate-drift-lag absolute -left-52 top-[28%] h-[520px] w-[520px] rounded-full opacity-60"
         style={{
           background:
             "radial-gradient(circle, rgba(102,80,216,0.20) 0%, transparent 68%)",

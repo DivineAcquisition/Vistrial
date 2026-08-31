@@ -69,21 +69,22 @@ export const btnIconLg = "size-10! p-0! sm:size-9!";
  * ------------------------------------------------------------------------- */
 
 export const eyebrow =
-  "inline-flex items-center gap-2 rounded-full border border-brand-500/30 bg-brand-500/[0.08] px-3.5 py-1.5 text-[11px] font-semibold uppercase tracking-[0.14em] text-brand-300";
+  "inline-flex items-center gap-2 rounded-full border border-brand-500/30 bg-brand-500/[0.08] px-3.5 py-1.5 text-xs font-semibold uppercase tracking-[0.14em] text-brand-300";
 
 export const sectionLabel =
-  "text-[11px] font-semibold uppercase tracking-[0.2em] text-brand-300";
+  "text-xs font-semibold uppercase tracking-[0.2em] text-brand-300";
 
 /** Small uppercase caption above a filter or a stat, as on the hiring rail. */
 export const filterLabel =
-  "mb-2.5 text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground";
+  "mb-2.5 text-[11px] font-semibold uppercase tracking-[0.16em] text-muted-foreground";
 
-export const pageTitle = "font-heading text-2xl text-card-foreground sm:text-[28px]";
+export const pageTitle =
+  "font-heading text-[1.85rem] leading-[1.15] text-card-foreground sm:text-[2.15rem]";
 /** A heading that owns a band of the page, above several cards. */
-export const sectionTitle = "font-heading text-base text-card-foreground";
+export const sectionTitle = "font-heading text-lg text-card-foreground";
 /** The title of one card. The most common heading in the app. */
-export const cardTitle = "font-heading text-sm text-card-foreground";
-export const bodyText = "text-sm leading-relaxed text-muted-foreground";
+export const cardTitle = "font-heading text-base text-card-foreground";
+export const bodyText = "text-[15px] leading-relaxed text-muted-foreground";
 export const captionText = "text-xs text-muted-foreground";
 export const metricValue = "text-2xl font-semibold tabular-nums";
 

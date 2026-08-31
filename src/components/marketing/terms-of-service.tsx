@@ -151,7 +151,7 @@ export function TermsOfServiceBody() {
           are produced in part by AI systems.
         </p>
         <p>
-          <strong>They may be wrong.</strong> Extraction can misread a call. A score can be
+          <strong>They may be wrong.</strong> Call notes can misread a call. A score can be
           miscalibrated. A draft can misstate something.
         </p>
         <LegalList>

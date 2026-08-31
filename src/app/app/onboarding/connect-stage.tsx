@@ -56,11 +56,11 @@ export function ConnectStage({
             prefetch={false}
             className={buttonClasses({ variant: connected ? "secondary" : "gradient" })}
           >
-            {connected ? "Reconnect LeadConnector" : "Connect LeadConnector"}
+            {connected ? "Reconnect GoHighLevel" : "Connect GoHighLevel"}
           </Link>
         ) : (
           <p className={helperClass}>
-            The LeadConnector app is not configured on this deployment, so the connection cannot be
+            GoHighLevel is not configured on this deployment, so the connection cannot be
             started from here yet.
           </p>
         )}

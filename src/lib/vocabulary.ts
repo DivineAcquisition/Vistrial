@@ -44,6 +44,10 @@ export const WORDS = {
   followUpPath: "Follow-up path",
   responseWindow: "How long they can wait",
   goingQuiet: "Going quiet",
+  notes: "Notes",
+  askVistrial: "Ask Vistrial",
+  teamApp: "Team app",
+  ownerPortal: "Owner portal",
 } as const;
 
 /** Title case for the four factors, used on settings sliders. */

@@ -11,18 +11,18 @@ export default async function DataSettingsPage() {
   return (
     <PageFrame
       title="Data"
-      description="This workspace's data. Export it without waiting on engineering. Deletion is a DA operator action."
+      description="Download a copy of this workspace."
       breadcrumbs={advancedSettingsBreadcrumbs("Data", "/app/settings/data")}
     >
       <Card className={formMeasure}>
         <CardPanel className={cardStack}>
-          <h2 className={cardTitle}>Export</h2>
+          <h2 className={cardTitle}>Download</h2>
           <p className={helperClass}>
-            Downloads people, contacts, calls, recordings we read, objections, scores, revenue,
-            the business profile, reporting snapshots, and history tables for {org.name} as JSON.
+            A copy of the people, conversations, scores, and history for {org.name}. Ask us if you
+            need this workspace deleted.
           </p>
           <Button asChild variant="secondary">
-            <a href="/app/settings/data/export">Download JSON</a>
+            <a href="/app/settings/data/export">Download my data</a>
           </Button>
         </CardPanel>
       </Card>

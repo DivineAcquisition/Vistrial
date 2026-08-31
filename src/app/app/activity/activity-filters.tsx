@@ -21,8 +21,8 @@ const CATEGORY_LABELS: Record<ActivityCategory | "", string> = {
   inbound: "Inbound",
   system: "System",
   user: "People",
-  agent: "Agent",
-  operator: "DA operator",
+  agent: "Vistrial",
+  operator: "Support",
 };
 
 export function ActivityFiltersForm({
@@ -30,11 +30,13 @@ export function ActivityFiltersForm({
   actors,
   basePath = "/app/activity",
   clients,
+  isPlatformAdmin = false,
 }: {
   filters: ActivityFilters;
   actors: ActivityActorOption[];
   basePath?: string;
   clients?: Array<{ id: string; name: string }>;
+  isPlatformAdmin?: boolean;
 }) {
   const router = useRouter();
 
@@ -69,7 +71,9 @@ export function ActivityFiltersForm({
             apply({ category: (event.target.value || null) as ActivityCategory | null })
           }
         >
-          {(["", ...ACTIVITY_CATEGORIES] as const).map((value) => (
+          {(["", ...ACTIVITY_CATEGORIES] as const)
+            .filter((value) => isPlatformAdmin || value !== "agent")
+            .map((value) => (
             <option key={value || "all"} value={value}>
               {CATEGORY_LABELS[value]}
             </option>
@@ -105,7 +109,7 @@ export function ActivityFiltersForm({
           }
         >
           <option value="">Any</option>
-          <option value="gohighlevel">LeadConnector</option>
+          <option value="gohighlevel">GoHighLevel</option>
         </Select>
       </label>
       {clients ? (

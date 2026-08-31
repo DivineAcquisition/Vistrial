@@ -21,7 +21,7 @@ export const CHANNEL_LABELS: Record<NotificationChannel, string> = {
   email: "Email",
   sms: "SMS",
   team: "Slack or Teams",
-  da_console: "Operator console",
+  da_console: "Support console",
 };
 
 export const WEEKDAY_LABELS: Record<number, string> = {

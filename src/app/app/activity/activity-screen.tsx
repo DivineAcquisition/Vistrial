@@ -135,12 +135,12 @@ export function ActivityScreen({
     <div>
       {channelState === "stalled" ? (
         <Notice tone="critical" className="mb-6" title="The live feed is not connected">
-          This is not a quiet system. The stream is stalled, so new work will not appear until the
-          connection returns.
+          This is not a quiet system. The live list stopped updating, so new work will not appear
+          until the connection returns.
         </Notice>
       ) : channelState === "connecting" ? (
         <Notice tone="warning" className="mb-6" title="Connecting to the live feed">
-          The stream is not live yet. This is not a quiet system.
+          The live list is still connecting. This is not a quiet system.
         </Notice>
       ) : null}
 
@@ -172,7 +172,11 @@ export function ActivityScreen({
         </Button>
       </div>
 
-      <ActivityFiltersForm filters={filters} actors={actors} />
+      <ActivityFiltersForm
+        filters={filters}
+        actors={actors}
+        isPlatformAdmin={org.isPlatformAdmin}
+      />
 
       <ol className="mt-6 space-y-3">
         {lines.length === 0 ? (

@@ -52,14 +52,6 @@ export const PRIMARY_NAV: NavItem[] = [
     roles: ["owner", "admin"],
   },
   {
-    href: "/app/ops",
-    label: "Operator",
-    match: "/app/ops",
-    group: "measure",
-    icon: "reporting",
-    platformAdminOnly: true,
-  },
-  {
     href: "/app/activity",
     label: "Activity",
     match: "/app/activity",
@@ -104,16 +96,18 @@ export const ADVANCED_SETTINGS_PAGES: Array<{
   href: string;
   label: string;
   description: string;
+  /** Hidden from client Advanced. Divine Acquisition only. */
+  platformAdminOnly?: boolean;
 }> = [
   {
     href: "/app/settings/business-profile",
     label: "Business",
-    description: "The living profile and the activation gate. Onboarding is how this gets filled.",
+    description: "What this business is, and whether the workspace is live.",
   },
   {
     href: "/app/settings/scoring",
     label: "Scoring",
-    description: "How ready someone has to be, how long they can wait, and how answers become a number.",
+    description: "How ready someone has to be, and how long they can wait.",
   },
   {
     href: "/app/settings/follow-up",
@@ -123,14 +117,19 @@ export const ADVANCED_SETTINGS_PAGES: Array<{
   {
     href: "/app/settings/data",
     label: "Data",
-    description: "Export this workspace. Deletion is a DA operator action.",
+    description: "Download a copy of this workspace.",
   },
   {
     href: "/app/settings/agents",
     label: "Agents",
     description: "Who may run on a schedule, what they may change, and the stop switch.",
+    platformAdminOnly: true,
   },
 ];
+
+export function advancedSettingsVisibleTo(isPlatformAdmin: boolean) {
+  return ADVANCED_SETTINGS_PAGES.filter((page) => !page.platformAdminOnly || isPlatformAdmin);
+}
 
 export function advancedSettingsBreadcrumbs(label: string, href: string) {
   return [

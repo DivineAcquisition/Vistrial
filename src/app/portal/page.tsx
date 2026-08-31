@@ -13,22 +13,13 @@ import {
 } from "@/app/app/reporting/panels";
 import { ClientSummaryForm } from "@/app/app/reporting/client-summary-form";
 import { PortalScheduleForm } from "@/app/portal/schedule-form";
-import {
-  AdsPanel,
-  AdoptionPanel,
-  CalendarPanel,
-  FormsPanel,
-  ProcessorPanel,
-  RecorderPanel,
-} from "@/app/portal/panels";
+import { AdoptionPanel } from "@/app/portal/panels";
 import { requirePortalAccess } from "@/lib/portal/access";
 import { loadPortalRpc, loadPortalSchedule } from "@/lib/portal/load";
 import { previousEqualRange } from "@/lib/portal/range";
 import { buildPortalSummary } from "@/lib/portal/summary";
 import { loadReportingPanel, loadReportingState } from "@/lib/reporting/load";
 import { parseReportingRange, reportingRangeQuery } from "@/lib/reporting/range";
-import { loadSourceCards } from "@/lib/sources/connections";
-import { getSupabaseAdmin } from "@/lib/supabase/admin";
 import { helperClass } from "@/lib/ui";
 
 const SOURCE_ERRORS: Record<string, string> = {
@@ -54,7 +45,6 @@ export default async function PortalPage({
   const meta = await loadReportingState(ctx.org.id);
   const activatedAt = typeof meta.activated_at === "string" ? meta.activated_at : null;
   const range = parseReportingRange(params, activatedAt);
-  const now = new Date().toISOString();
 
   if (!activatedAt) {
     return (
@@ -70,15 +60,9 @@ export default async function PortalPage({
   }
 
   const previous = previousEqualRange(range, activatedAt);
-  const admin = getSupabaseAdmin();
-  const [sources, schedule] = await Promise.all([
-    loadSourceCards(admin, ctx.org.id),
-    loadPortalSchedule(ctx.org.id),
-  ]);
-  const byKind = Object.fromEntries(sources.map((source) => [source.kind, source]));
-
-  const [outcome, coverage, sourcesPanel, terminal, speed, previousOutcome, previousCoverage, adoption, ads, processor, calendar, forms, recorder] =
+  const [schedule, outcome, coverage, sourcesPanel, terminal, speed, previousOutcome, previousCoverage, adoption] =
     await Promise.all([
+      loadPortalSchedule(ctx.org.id),
       loadReportingPanel(ctx.org.id, "outcome", range),
       loadReportingPanel(ctx.org.id, "coverage", range),
       loadReportingPanel(ctx.org.id, "sources", range),
@@ -87,11 +71,6 @@ export default async function PortalPage({
       previous ? loadReportingPanel(ctx.org.id, "outcome", previous) : Promise.resolve(null),
       previous ? loadReportingPanel(ctx.org.id, "coverage", previous) : Promise.resolve(null),
       loadPortalRpc(ctx.org.id, "portal_adoption", range),
-      loadPortalRpc(ctx.org.id, "portal_ads", range),
-      loadPortalRpc(ctx.org.id, "portal_processor", range),
-      loadPortalRpc(ctx.org.id, "portal_calendar", range),
-      loadPortalRpc(ctx.org.id, "portal_forms", range),
-      loadPortalRpc(ctx.org.id, "portal_recorder", range),
     ]);
 
   const summary = buildPortalSummary({
@@ -140,27 +119,6 @@ export default async function PortalPage({
         <TerminalPanel orgId={ctx.org.id} range={range} />
         <ObjectionsPanel orgId={ctx.org.id} range={range} hideMemberBreakdown />
         <SourcesPanel orgId={ctx.org.id} range={range} />
-        <AdsPanel
-          payload={ads}
-          sources={sources.filter((source) => source.kind === "meta_ads" || source.kind === "google_ads")}
-          now={now}
-        />
-        <ProcessorPanel
-          payload={processor}
-          sources={sources.filter((source) => source.kind === "stripe" || source.kind === "commas")}
-          now={now}
-        />
-        <CalendarPanel
-          payload={calendar}
-          source={byKind.calendar ?? null}
-          now={now}
-        />
-        <FormsPanel
-          payload={forms}
-          source={byKind.form_platform ?? null}
-          now={now}
-        />
-        <RecorderPanel payload={recorder} />
       </section>
 
       <section>

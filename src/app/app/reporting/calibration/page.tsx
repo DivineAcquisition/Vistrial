@@ -20,7 +20,7 @@ export default async function CalibrationPage() {
         <EmptyState
           kind="unconfigured"
           title="Nothing to measure until this workspace is live."
-          detail="Calibration waits for a mature cohort of resolved leads. Activation starts that clock."
+          detail="This view waits until enough people have closed. Going live starts that clock."
         />
       </PageFrame>
     );
@@ -37,7 +37,7 @@ export default async function CalibrationPage() {
         />
       }
     >
-      <CalibrationReport orgId={ctx.org.id} />
+      <CalibrationReport orgId={ctx.org.id} isPlatformAdmin={ctx.isPlatformAdmin} />
     </PageFrame>
   );
 }

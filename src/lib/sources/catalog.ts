@@ -44,15 +44,14 @@ export const SOURCE_CATALOG: Record<SourceKind, Omit<SourceCatalogEntry, "connec
     title: "Meta Ads",
     unlocks: "Connect ad spend to see cost per lead, cost per booked call, and cost per client acquired.",
     providerLabel: "Meta",
-    scopesLine: "Read-only: ads_read. Vistrial does not write to ad accounts.",
+    scopesLine: "Read-only. Vistrial does not write to ad accounts.",
   },
   google_ads: {
     kind: "google_ads",
     title: "Google Ads",
     unlocks: "Connect ad spend to see cost per lead, cost per booked call, and cost per client acquired.",
     providerLabel: "Google",
-    scopesLine:
-      "Read-only: adwords.readonly. Vistrial will not request the write-capable Google Ads scope.",
+    scopesLine: "Read-only. Vistrial does not write to ad accounts.",
   },
   stripe: {
     kind: "stripe",
@@ -60,7 +59,7 @@ export const SOURCE_CATALOG: Record<SourceKind, Omit<SourceCatalogEntry, "connec
     unlocks:
       "Connect the processor to see refunds, chargebacks, and failed payments. A refunded deal is removed from closed-won.",
     providerLabel: "Stripe",
-    scopesLine: "Read-only Connect scope. Vistrial writes only to the CRM.",
+    scopesLine: "Read-only. Vistrial writes only to the CRM.",
   },
   commas: {
     kind: "commas",
@@ -68,7 +67,7 @@ export const SOURCE_CATALOG: Record<SourceKind, Omit<SourceCatalogEntry, "connec
     unlocks:
       "Connect the processor to see refunds, chargebacks, and failed payments. A refunded deal is removed from closed-won.",
     providerLabel: "Commas",
-    scopesLine: "Checkout sessions and webhooks, read-only. Refund write is not requested.",
+    scopesLine: "Checkout events, read-only. Refunds are not requested.",
   },
   calendar: {
     kind: "calendar",
@@ -83,7 +82,7 @@ export const SOURCE_CATALOG: Record<SourceKind, Omit<SourceCatalogEntry, "connec
     title: "Form platform",
     unlocks: "Connect the form platform to see drop-off before the CRM sees a lead, and which question loses people.",
     providerLabel: "Forms",
-    scopesLine: "Inbound webhooks only. Vistrial does not write back to the form platform.",
+    scopesLine: "Incoming form submissions only. Vistrial does not write back to the form platform.",
   },
 };
 

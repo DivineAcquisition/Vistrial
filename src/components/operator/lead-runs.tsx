@@ -10,8 +10,8 @@ export async function OperatorLeadRuns({ leadId }: { leadId: string }) {
   return (
     <Panel className="mt-8 p-5">
       <SectionHeader
-        title="Operator agent"
-        hint="Runs that read or changed this lead. Opens the same record as History in the command panel."
+        title="Ask Vistrial"
+        hint="Questions that mentioned this person. Opens the same record as History."
       />
       <ul className="space-y-2">
         {runs.map((run) => (

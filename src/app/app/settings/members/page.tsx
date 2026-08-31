@@ -89,8 +89,8 @@ export default async function MembersSettingsPage() {
                     <span className="inline-flex items-center gap-2">
                       <PersonAvatar name={member.display_name} size="sm" />
                       {member.display_name}
-                      {member.is_agent_identity ? (
-                        <StatusBadge label="Runs scheduled agents" tone="neutral" />
+                      {ctx.isPlatformAdmin && member.is_agent_identity ? (
+                        <StatusBadge label="Runs scheduled work" tone="neutral" />
                       ) : null}
                     </span>
                   </TableCell>
@@ -165,7 +165,7 @@ export default async function MembersSettingsPage() {
         <Panel className="overflow-hidden px-2 py-2 sm:px-4">
           <h2 className="px-2 pt-3 font-heading text-sm text-white">Pending invites</h2>
           <p className={`${helperClass} px-2`}>
-            Share the link by hand until email delivery is wired.
+            Copy the link and share it. Invites are not emailed yet.
           </p>
           <Table>
             <TableHeader>
@@ -189,7 +189,7 @@ export default async function MembersSettingsPage() {
                 </TableCell>
                   <TableCell className="capitalize text-silver">{invite.role}</TableCell>
                   <TableCell className="text-silver">
-                    {invite.surface_access === "portal" ? "Portal only" : "Operator"}
+                    {invite.surface_access === "portal" ? "Owner portal" : "Team app"}
                   </TableCell>
                   <TableCell className="hidden text-silver md:table-cell">
                     {formatDayLong(invite.expires_at)}

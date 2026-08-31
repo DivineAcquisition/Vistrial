@@ -59,12 +59,12 @@ export function InviteForm() {
         <CheckboxField
           name="portal_only"
           value="1"
-          label="Portal only"
-          description="Owner portal without a seat in the working app. No queue, no case files. An owner who has to navigate the operator tool to find their numbers stops navigating."
+          label="Owner portal only"
+          description="Numbers without a seat in the working app. No queue, no case files."
         />
       ) : null}
       <p className={helperClass}>
-        Email delivery lands in a later prompt. Copy the link and share it by hand for now.
+        Invites are not emailed yet. Copy the link and share it.
       </p>
       {!state.ok ? <p className={errorClass}>{state.error}</p> : null}
       {url ? (
@@ -135,7 +135,7 @@ export function MemberSurfaceSelect({
   const portalAllowed = role === "owner" || role === "admin";
 
   if (!portalAllowed) {
-    return <span className="text-sm text-silver">Operator</span>;
+    return <span className="text-sm text-silver">Team app</span>;
   }
 
   return (
@@ -144,7 +144,7 @@ export function MemberSurfaceSelect({
         density="compact"
         defaultValue={surface}
         disabled={disabled || pending}
-        aria-label="Surface access"
+        aria-label="Which app"
         onChange={(event) => {
           const next = event.target.value as SurfaceAccess;
           startTransition(async () => {
@@ -153,8 +153,8 @@ export function MemberSurfaceSelect({
           });
         }}
       >
-        <option value="operator">Operator</option>
-        <option value="portal">Portal only</option>
+        <option value="operator">Team app</option>
+        <option value="portal">Owner portal</option>
       </Select>
       {error ? <p className={errorClass}>{error}</p> : null}
     </div>

@@ -2,8 +2,10 @@ import { describe, expect, it } from "vitest";
 
 import {
   ADVANCED_SETTINGS_PAGES,
+  PRIMARY_NAV,
   SETTINGS_TABS,
   advancedSettingsBreadcrumbs,
+  advancedSettingsVisibleTo,
   settingsTabActiveHref,
 } from "@/lib/navigation";
 
@@ -51,5 +53,20 @@ describe("settings IA", () => {
     expect(advancedSettingsBreadcrumbs("Scoring", "/app/settings/scoring")[0]?.href).toBe(
       "/app/settings/advanced"
     );
+  });
+
+  it("does not put Operator in the client sidebar", () => {
+    expect(PRIMARY_NAV.map((item) => item.href)).not.toContain("/app/ops");
+    expect(PRIMARY_NAV.map((item) => item.label)).not.toContain("Operator");
+  });
+
+  it("hides Agents from client Advanced", () => {
+    expect(advancedSettingsVisibleTo(false).map((page) => page.label)).toEqual([
+      "Business",
+      "Scoring",
+      "Follow-up",
+      "Data",
+    ]);
+    expect(advancedSettingsVisibleTo(true).map((page) => page.label)).toContain("Agents");
   });
 });

@@ -29,9 +29,18 @@ import {
   loadOperatorRunAction,
   undoOperatorWriteAction,
 } from "@/app/app/operator/actions";
+import { operatorRunStatusLabel } from "@/lib/operator/labels";
 import type { OperatorConfirmationView, OperatorRunSummary, OperatorRunView, OperatorStepView } from "@/lib/operator/types";
 import { Notice } from "@/components/ui/states";
 import { helperClass } from "@/lib/ui";
+import { WORDS } from "@/lib/vocabulary";
+
+function askVistrialUnavailableMessage(message: string | null): string {
+  if (message && /cap/i.test(message)) {
+    return "Ask Vistrial has reached today's limit. Try again tomorrow.";
+  }
+  return "Ask Vistrial is paused right now.";
+}
 
 type LiveStep = OperatorStepView;
 
@@ -180,12 +189,12 @@ export function OperatorCommandBar() {
       });
       if (response.status === 403) {
         const payload = (await response.json()) as { error?: string };
-        setError(payload.error ?? "This agent is off.");
+        setError(askVistrialUnavailableMessage(payload.error ?? null));
         return;
       }
       if (response.status === 429) {
         const payload = (await response.json()) as { error?: string };
-        setError(payload.error ?? "Rate limited.");
+        setError(payload.error ?? "Try again in a moment.");
         return;
       }
       if (!response.ok) {
@@ -304,7 +313,7 @@ export function OperatorCommandBar() {
         variant="ghost"
         size="sm"
         iconOnly
-        aria-label="Open operator agent"
+        aria-label={WORDS.askVistrial}
         aria-keyshortcuts="Meta+K Control+K"
         onClick={() => setOpen(true)}
       >
@@ -317,15 +326,15 @@ export function OperatorCommandBar() {
           showCloseButton
         >
           <SheetHeader className="border-b border-white/[0.07]">
-            <SheetTitle>Operator agent</SheetTitle>
+            <SheetTitle>{WORDS.askVistrial}</SheetTitle>
             <SheetDescription>
-              One task at a time. Writes wait for confirmation. Not a chat.
+              One question at a time. Changes wait for your OK.
             </SheetDescription>
           </SheetHeader>
           <div className="flex min-h-0 flex-1 flex-col p-4">
             {!availability.ok ? (
               <Notice tone="warning" className="mb-4">
-                {availability.message ?? "This agent is off."}
+                {askVistrialUnavailableMessage(availability.message)}
               </Notice>
             ) : null}
             <form
@@ -382,7 +391,7 @@ export function OperatorCommandBar() {
                         }}
                       >
                         <span className="text-white">{item.label}</span>
-                        <span className={helperClass}>{item.status}</span>
+                        <span className={helperClass}>{operatorRunStatusLabel(item.status)}</span>
                       </CommandItem>
                     )}
                   </CommandList>

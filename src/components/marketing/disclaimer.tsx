@@ -83,7 +83,7 @@ export function DisclaimerBody() {
           follow-up messages.
         </p>
         <p>
-          <strong>AI output can be wrong.</strong> Extraction can misread a call, misattribute a
+          <strong>AI output can be wrong.</strong> Call notes can misread a call, misattribute a
           statement, or miss something that was said. Readiness scores can be miscalibrated for
           your business. Drafted messages can misstate a fact or strike the wrong tone.
         </p>

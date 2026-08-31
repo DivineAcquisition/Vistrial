@@ -23,7 +23,7 @@ export default async function ProfileSettingsPage() {
       title="Profile"
       description="Your name, timezone, working hours, and how we reach you."
     >
-      <Panel className="mb-8 space-y-4 p-6">
+      <Panel className="flex flex-col gap-4">
         <h2 className={cardTitle}>This phone</h2>
         <InstallSteps />
         <Button variant="secondary" size="sm" className="inline-flex" render={<Link href="/app/install" />}>

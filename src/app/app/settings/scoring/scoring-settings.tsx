@@ -31,6 +31,7 @@ import {
   errorClass,
   helperClass,
   labelClass,
+  pageStack,
 } from "@/lib/ui";
 
 export type ScoringLeadOption = {
@@ -103,7 +104,7 @@ export function ScoringSettings({ config, maps: initialMaps, leads, lastGhostRun
   }, [previewLead, maps, weights]);
 
   return (
-    <div className="space-y-8">
+    <div className={pageStack}>
       <Panel className="p-6">
         <p className="text-sm leading-relaxed text-silver">
           These numbers already work. Change them only when this business genuinely
@@ -255,7 +256,7 @@ export function ScoringSettings({ config, maps: initialMaps, leads, lastGhostRun
       </Panel>
 
       <AdvancedDoor closedLabel="Preview a person, change one score, or rebuild everyone">
-      <div className="space-y-8">
+      <div className={pageStack}>
       <Panel className="p-6">
         <h2 className={cardTitle}>Preview</h2>
         <p className={helperClass}>

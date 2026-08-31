@@ -107,7 +107,7 @@ export function CallsScreen({
               ))}
             </TableRow>
           </TableHeader>
-          <TableBody>
+          <TableBody className="app-stagger">
             {rows.map((row) => (
               <CallRow key={row.id} row={row} now={now} />
             ))}

@@ -24,7 +24,7 @@ export default async function AdvancedSettingsPage() {
       title="Advanced"
       description="Specialist controls. Everyday settings stay on the other tabs, and connecting apps lives on Integrations."
     >
-      <div className="space-y-8">
+      <div className="flex flex-col gap-6">
         <section className="space-y-3">
           <h2 className={cardTitle}>Workspace policy</h2>
           <p className={helperClass}>
@@ -47,9 +47,9 @@ export default async function AdvancedSettingsPage() {
           />
         </section>
 
-        <div className="grid gap-4 sm:grid-cols-2">
+        <div className="app-stagger grid items-stretch gap-6 sm:grid-cols-2">
           {ADVANCED_SETTINGS_PAGES.map((page) => (
-            <Panel key={page.href} className="p-6">
+            <Panel key={page.href} className="flex h-full flex-col">
               <h2 className={cardTitle}>{page.label}</h2>
               <p className={`mt-2 ${helperClass}`}>{page.description}</p>
               <div className="mt-5">

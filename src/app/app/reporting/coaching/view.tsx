@@ -5,7 +5,7 @@ import { Notice } from "@/components/ui/states";
 import { Panel } from "@/components/ui/panel";
 import { SectionHeader } from "@/components/ui/section-header";
 import { CALL_QUALITY_MEASURES } from "@/lib/coaching/catalog";
-import { helperClass } from "@/lib/ui";
+import { helperClass, pageStack } from "@/lib/ui";
 
 function asRecord(value: unknown): Record<string, unknown> {
   return value && typeof value === "object" && !Array.isArray(value)
@@ -51,7 +51,7 @@ export function CoachingManagerView({ payload }: { payload: Record<string, unkno
   const brief = asRecord(payload.briefUsage);
 
   return (
-    <div className="space-y-8">
+    <div className={pageStack}>
       <Notice tone="info">{str(payload.honesty)}</Notice>
       <Notice tone="warning">{str(payload.structuralNotATarget)}</Notice>
 

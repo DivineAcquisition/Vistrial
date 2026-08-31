@@ -31,6 +31,7 @@ import {
 } from "@/components/ui/sheet";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useSidebarCollapsed } from "@/lib/use-sidebar-collapsed";
+import { PageMotion } from "@/components/app/page-motion";
 import { cn } from "@/lib/utils";
 
 function SidebarBody({
@@ -75,7 +76,7 @@ export function AppShell({
   const wizard = pathname.startsWith("/app/onboarding");
 
   return (
-    <div className="relative flex min-h-screen bg-ink-950 text-card-foreground">
+    <div className="app-type relative flex min-h-screen bg-ink-950 text-card-foreground">
       <div aria-hidden className="pointer-events-none fixed inset-0 z-0 overflow-hidden">
         <div
           className="absolute -top-[22%] left-1/2 h-[520px] w-[820px] -translate-x-1/2"
@@ -194,7 +195,7 @@ export function AppShell({
                 <PushPrompt />
               </>
             )}
-            {children}
+            <PageMotion>{children}</PageMotion>
           </div>
         </main>
         {wizard ? null : <MobileDock />}

@@ -8,7 +8,7 @@ export async function OperatorLeadRuns({ leadId }: { leadId: string }) {
   if (runs.length === 0) return null;
 
   return (
-    <Panel className="mt-8 p-5">
+    <Panel className="mt-6">
       <SectionHeader
         title="Operator agent"
         hint="Runs that read or changed this lead. Opens the same record as History in the command panel."

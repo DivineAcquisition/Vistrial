@@ -19,7 +19,7 @@ export function Panel({
   return (
     <Card
       render={Component === "div" ? undefined : <Component />}
-      className={cn("panel-hover", className)}
+      className={cn("panel-hover p-6", className)}
     >
       {children}
     </Card>
@@ -38,7 +38,7 @@ export function PanelLink({
   return (
     <Card
       render={<Link href={href} />}
-      className={cn("panel-hover block p-5 focus-visible:outline-none", className)}
+      className={cn("panel-hover block p-6 focus-visible:outline-none", className)}
     >
       {children}
     </Card>

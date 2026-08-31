@@ -15,7 +15,7 @@ export function SettingsNav() {
   return (
     <NavTabs
       label="Settings"
-      className="mb-8"
+      className="mb-6"
       activeHref={settingsTabActiveHref(pathname)}
       items={SETTINGS_TABS.filter((tab) => manager || !tab.managerOnly).map((tab) => ({
         href: tab.href,

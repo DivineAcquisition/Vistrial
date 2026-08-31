@@ -85,7 +85,7 @@ export function EmptyState({
   }
 
   return (
-    <Panel className={cn("px-6 py-12", className)}>
+    <Panel className={cn("app-scale px-6 py-12", className)}>
       <Empty className="gap-4 px-0 py-0 md:py-0">{inner}</Empty>
     </Panel>
   );

@@ -103,7 +103,7 @@ export function QueueLeadRow({
           <TableRow
             className={cn(
               "border-border/60 align-top",
-              arriving ? "bg-brand-500/[0.10]" : "hover:bg-white/[0.02]",
+              arriving ? "app-enter bg-brand-500/[0.10]" : "hover:bg-white/[0.02]",
               exiting ? "opacity-40 transition-opacity duration-700" : "transition-opacity duration-300",
             )}
           />
@@ -241,7 +241,7 @@ export function QueueLeadRow({
       </ContextMenuPopup>
       </ContextMenu>
       {detailOpen ? (
-        <TableRow className="border-border/60 hover:bg-transparent">
+        <TableRow className="app-fade border-border/60 hover:bg-transparent">
           <TableCell colSpan={colSpan} className="px-4 py-3 whitespace-normal text-sm text-silver">
             <p>
               {row.scoreReasoning ||
@@ -264,7 +264,7 @@ export function QueueLeadRow({
         </TableRow>
       ) : null}
       {panel === "outcome" ? (
-        <TableRow className="border-border/60 hover:bg-transparent">
+        <TableRow className="app-fade border-border/60 hover:bg-transparent">
           <TableCell colSpan={colSpan} className="p-4 whitespace-normal">
             <OutcomePanel
               row={row}
@@ -284,7 +284,7 @@ export function QueueLeadRow({
         </TableRow>
       ) : null}
       {panel === "assign" ? (
-        <TableRow className="border-border/60 hover:bg-transparent">
+        <TableRow className="app-fade border-border/60 hover:bg-transparent">
           <TableCell colSpan={colSpan} className="p-4 whitespace-normal">
             <AssignPanel
               row={row}
@@ -304,7 +304,7 @@ export function QueueLeadRow({
         </TableRow>
       ) : null}
       {panel === "followOn" ? (
-        <TableRow className="border-border/60 hover:bg-transparent">
+        <TableRow className="app-fade border-border/60 hover:bg-transparent">
           <TableCell colSpan={colSpan} className="p-4 whitespace-normal">
             <FollowOnPanel
               busy={busy}

@@ -136,7 +136,7 @@ const CALL_COLUMNS: Array<{ label: string; hideOnMobile?: boolean }> = [
   { label: "Type", hideOnMobile: true },
   { label: "When" },
   { label: "Outcome", hideOnMobile: true },
-  { label: "Extraction", hideOnMobile: true },
+  { label: "Notes", hideOnMobile: true },
   { label: "" },
 ];
 

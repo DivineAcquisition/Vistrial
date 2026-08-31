@@ -4,6 +4,7 @@ import {
   ADVANCED_SETTINGS_PAGES,
   SETTINGS_TABS,
   advancedSettingsBreadcrumbs,
+  advancedSettingsVisibleTo,
   settingsTabActiveHref,
 } from "@/lib/navigation";
 
@@ -51,5 +52,15 @@ describe("settings IA", () => {
     expect(advancedSettingsBreadcrumbs("Scoring", "/app/settings/scoring")[0]?.href).toBe(
       "/app/settings/advanced"
     );
+  });
+
+  it("hides Agents from client Advanced", () => {
+    expect(advancedSettingsVisibleTo(false).map((page) => page.label)).toEqual([
+      "Business",
+      "Scoring",
+      "Follow-up",
+      "Data",
+    ]);
+    expect(advancedSettingsVisibleTo(true).map((page) => page.label)).toContain("Agents");
   });
 });

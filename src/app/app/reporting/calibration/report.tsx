@@ -1,7 +1,13 @@
 import { CalibrationReportView } from "@/app/app/reporting/calibration/report-view";
 import { loadCalibrationReport, previewScoreConfigChange } from "@/lib/calibration/load";
 
-export async function CalibrationReport({ orgId }: { orgId: string }) {
+export async function CalibrationReport({
+  orgId,
+  isPlatformAdmin = false,
+}: {
+  orgId: string;
+  isPlatformAdmin?: boolean;
+}) {
   const payload = await loadCalibrationReport(orgId);
   const suggestions = Array.isArray(payload.suggestions) ? payload.suggestions : [];
   const pending = suggestions.find((row) => {
@@ -32,5 +38,7 @@ export async function CalibrationReport({ orgId }: { orgId: string }) {
       );
     }
   }
-  return <CalibrationReportView payload={payload} preview={preview} />;
+  return (
+    <CalibrationReportView payload={payload} preview={preview} isPlatformAdmin={isPlatformAdmin} />
+  );
 }

@@ -154,7 +154,13 @@ export function OpsActivity({
       )}
 
       <div className="mt-4">
-        <ActivityFiltersForm filters={filters} actors={[]} basePath="/app/ops" clients={clients} />
+        <ActivityFiltersForm
+          filters={filters}
+          actors={[]}
+          basePath="/app/ops"
+          clients={clients}
+          isPlatformAdmin
+        />
       </div>
 
       <ol className="mt-6 space-y-3">

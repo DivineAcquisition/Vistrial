@@ -519,7 +519,7 @@ export function QueueScreen({
           <EmptyState
             kind="unconfigured"
             title="The CRM connection is broken"
-            detail="LeadConnector is linked but token refresh failed. Reconnect in Integrations. Existing leads stay on this screen so the outage is not hidden."
+            detail="LeadConnector is linked but the connection expired. Reconnect in Integrations. Existing leads stay on this screen so the outage is not hidden."
             action={integrations}
           />
         </div>
@@ -564,7 +564,7 @@ export function QueueScreen({
         <EmptyState
           kind="unconfigured"
           title="The queue cannot load while the CRM connection is broken"
-          detail="LeadConnector is linked but token refresh failed. Reconnect in Integrations. Showing an empty queue would hide this outage."
+          detail="LeadConnector is linked but the connection expired. Reconnect in Integrations. Showing an empty queue would hide this outage."
           action={integrations}
         />
       ) : null}

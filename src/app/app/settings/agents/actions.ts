@@ -4,14 +4,13 @@ import { revalidatePath } from "next/cache";
 
 import type { SettingsSaveResult } from "@/app/app/settings/types";
 import { agentDefinition } from "@/lib/agents/catalog";
-import { canManageOrgSettings } from "@/lib/auth/permissions";
 import { getAuthContext } from "@/lib/auth/session";
 import { createClient } from "@/lib/supabase/server";
 import type { AgentId } from "@/lib/agents/types";
 
 async function requireManager() {
   const ctx = await getAuthContext();
-  if (!canManageOrgSettings(ctx.role, ctx.isPlatformAdmin)) {
+  if (!ctx.isPlatformAdmin) {
     return { ok: false as const, error: "You do not have permission to change these settings.", ctx };
   }
   return { ok: true as const, ctx };

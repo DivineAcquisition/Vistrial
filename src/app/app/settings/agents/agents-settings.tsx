@@ -77,7 +77,7 @@ export function AgentsSettingsForm({ view }: { view: AgentSettingsView }) {
           <Field
             label="Team member"
             name="agent_run_as_member_id"
-            help="They appear on People with “Runs scheduled agents”. Pick someone with the least access that still lets the work happen."
+            help="They appear on People with “Runs scheduled work”. Pick someone with the least access that still lets the work happen."
           >
             <Select
               id="agent_run_as_member_id"

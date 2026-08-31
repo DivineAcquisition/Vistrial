@@ -51,6 +51,7 @@ export type ScoringSettingsProps = {
   maps: ScoreFieldMap[];
   leads: ScoringLeadOption[];
   lastGhostRun: { evaluated: number; changed: number; ranAt: string } | null;
+  isPlatformAdmin?: boolean;
 };
 
 const initialSave: SettingsSaveResult = { status: "idle" };
@@ -59,7 +60,13 @@ function newId() {
   return crypto.randomUUID();
 }
 
-export function ScoringSettings({ config, maps: initialMaps, leads, lastGhostRun }: ScoringSettingsProps) {
+export function ScoringSettings({
+  config,
+  maps: initialMaps,
+  leads,
+  lastGhostRun,
+  isPlatformAdmin = false,
+}: ScoringSettingsProps) {
   const [configState, saveConfig, configPending] = useActionState(updateScoringConfig, initialSave);
   const [weights, setWeights] = useState<ScoreWeights>({
     timeline: config.timeline,
@@ -208,6 +215,7 @@ export function ScoringSettings({ config, maps: initialMaps, leads, lastGhostRun
             ).map((key) => (
               <input key={key} type="hidden" name={`${key}_weight`} value={weights[key]} />
             ))}
+            {isPlatformAdmin ? (
             <AdvancedDoor closedLabel="Show how the number is built">
               <div className="grid gap-4 sm:grid-cols-2">
                 <p className={`${helperClass} sm:col-span-2`}>
@@ -240,6 +248,7 @@ export function ScoringSettings({ config, maps: initialMaps, leads, lastGhostRun
                 </p>
               </div>
             </AdvancedDoor>
+            ) : null}
           </div>
 
           {configState.status === "error" ? (
@@ -254,6 +263,7 @@ export function ScoringSettings({ config, maps: initialMaps, leads, lastGhostRun
         </form>
       </Panel>
 
+      {isPlatformAdmin ? (
       <AdvancedDoor closedLabel="Preview a person, change one score, or rebuild everyone">
       <div className="space-y-8">
       <Panel className="p-6">
@@ -754,6 +764,7 @@ export function ScoringSettings({ config, maps: initialMaps, leads, lastGhostRun
       </Panel>
       </div>
       </AdvancedDoor>
+      ) : null}
     </div>
   );
 }

@@ -66,6 +66,7 @@ export default async function ScoringSettingsPage() {
               }
             : null
         }
+        isPlatformAdmin={ctx.isPlatformAdmin}
       />
     </PageFrame>
   );

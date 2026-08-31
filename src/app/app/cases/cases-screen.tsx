@@ -96,7 +96,7 @@ export function CasesScreen({
           <EmptyState
             kind="unconfigured"
             title="The CRM connection is broken"
-            detail="LeadConnector is linked but token refresh failed. Reconnect in Integrations. Existing case files stay on this screen so the outage is not hidden."
+            detail="LeadConnector is linked but the connection expired. Reconnect in Integrations. Existing case files stay on this screen so the outage is not hidden."
             action={integrations}
           />
         </div>

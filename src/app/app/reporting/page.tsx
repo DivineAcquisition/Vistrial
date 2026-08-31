@@ -39,14 +39,14 @@ export default async function ReportingPage({
           }
           detail={`${
             backfill
-              ? `Baseline backfill status: ${String(backfill.status)}. ${String(
+              ? `History import status: ${String(backfill.status)}. ${String(
                   (backfill.progress as { phase?: string } | undefined)?.phase ?? ""
                 )}`
-              : "Connect the CRM to start the automatic baseline backfill."
-          } Activation is a deliberate step with its own gate.`}
+              : "Connect the CRM so we can read your past history."
+          } Going live is a separate step.`}
           action={
             <Button asChild variant="secondary" size="sm">
-              <Link href="/app/settings/business-profile">Open the activation gate</Link>
+              <Link href="/app/settings/business-profile">Open business settings</Link>
             </Button>
           }
         />
@@ -63,15 +63,20 @@ export default async function ReportingPage({
     >
       {meta.job_stale === true ? (
         <Notice tone="warning" className="mb-6">
-          The scheduled aggregation job looks stale
+          These numbers may be a few hours behind
           {typeof meta.last_job_finished_at === "string"
-            ? ` (last finished ${formatComputedAt(meta.last_job_finished_at)})`
+            ? ` (last updated ${formatComputedAt(meta.last_job_finished_at)})`
             : ""}
-          . Figures below are still computed from the database; they may not be the hourly cache.
+          . The figures below are still current from the database.
         </Notice>
       ) : null}
       <ReportingRangeForm range={range} action="/app/reporting" />
-      <ReportingPanels orgId={ctx.org.id} range={range} includeTeam />
+      <ReportingPanels
+        orgId={ctx.org.id}
+        range={range}
+        includeTeam
+        includeIngestion={ctx.isPlatformAdmin}
+      />
     </PageFrame>
   );
 }

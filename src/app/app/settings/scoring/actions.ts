@@ -97,7 +97,7 @@ export type MappingPayload = {
 
 export async function replaceScoreMaps(maps: MappingPayload[]): Promise<MappingSaveResult> {
   const ctx = await getAuthContext();
-  if (!canManageOrgSettings(ctx.role, ctx.isPlatformAdmin)) {
+  if (!ctx.isPlatformAdmin) {
     return { status: "error", error: "You do not have permission to change scoring mappings." };
   }
 
@@ -148,7 +148,7 @@ export async function replaceScoreMaps(maps: MappingPayload[]): Promise<MappingS
 
 export async function bulkRescoreLeads(): Promise<SettingsSaveResult & { count?: number }> {
   const ctx = await getAuthContext();
-  if (!canManageOrgSettings(ctx.role, ctx.isPlatformAdmin)) {
+  if (!ctx.isPlatformAdmin) {
     return { status: "error", error: "You do not have permission to re-score leads." };
   }
 
@@ -197,7 +197,7 @@ export async function runGhostDetectorNow(): Promise<
   SettingsSaveResult & { evaluated?: number; changed?: number }
 > {
   const ctx = await getAuthContext();
-  if (!canManageOrgSettings(ctx.role, ctx.isPlatformAdmin)) {
+  if (!ctx.isPlatformAdmin) {
     return { status: "error", error: "You do not have permission to run the ghost detector." };
   }
 

@@ -363,7 +363,7 @@ function ObjectionsPayoff({ payoff }: { payoff: Record<string, unknown> }) {
         />
       </div>
       <p className={helperClass}>
-        Extraction now has your prospects&apos; wording to match against before a single transcript has
+        Call notes now have your prospects&apos; wording to match against before a single recording has
         arrived. {num(payoff.extracted_so_far) ?? 0} objections have been pulled from calls so far.
       </p>
     </Panel>

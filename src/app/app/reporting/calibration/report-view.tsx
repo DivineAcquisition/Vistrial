@@ -159,9 +159,11 @@ function FactorTable({ title, payload }: { title: string; payload: Record<string
 export function CalibrationReportView({
   payload,
   preview,
+  isPlatformAdmin = false,
 }: {
   payload: Record<string, unknown>;
   preview: Record<string, unknown> | null;
+  isPlatformAdmin?: boolean;
 }) {
   const holdout = asRecord(payload.holdout);
   const weights = asRecord(payload.current_weights);
@@ -303,21 +305,21 @@ export function CalibrationReportView({
 
       <Panel className="p-6">
         <SectionHeader
-          title="Extraction reliability"
-          hint="Per field, never as one accuracy number. Correction rate is errors someone noticed. The sample audit is a random check against the transcript."
+          title="How well we read recordings"
+          hint="Per field, never as one accuracy number. Correction rate is errors someone noticed. The sample audit is a random check against the recording."
         />
         <KpiGrid columns={3}>
           <KpiCard
-            label="Unmatched transcripts"
+            label="Recordings we could not match"
             value={formatPct(unmatchedRate.pct, unmatchedRate.tooSmall)}
             sub={unmatchedRate.sample}
           />
           <KpiCard
-            label="Extraction jobs dead"
+            label="Could not read"
             value={formatPct(failRate.pct, failRate.tooSmall)}
             sub={failRate.sample}
           />
-          <KpiCard label="Extractions" value={formatCount(num(asRecord(correctionFields[0]).extractions) ?? 0)} />
+          <KpiCard label="Calls read" value={formatCount(num(asRecord(correctionFields[0]).extractions) ?? 0)} />
         </KpiGrid>
         <div className="mt-4">
           <DataTable
@@ -336,7 +338,7 @@ export function CalibrationReportView({
                 rate: formatPct(rate.pct, rate.tooSmall),
               };
             })}
-            empty="No extractions yet."
+            empty="No call notes yet."
           />
         </div>
         <div className="mt-4">
@@ -359,6 +361,7 @@ export function CalibrationReportView({
             empty="The sample audit has not run yet."
           />
         </div>
+        {isPlatformAdmin ? (
         <div className="mt-4">
           <DataTable
             caption="Corrections by model version and field"
@@ -381,6 +384,7 @@ export function CalibrationReportView({
             empty="No model-version trend yet."
           />
         </div>
+        ) : null}
         {unmatched.length > 0 ? (
           <div className="mt-4">
             <DataTable

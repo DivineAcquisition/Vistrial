@@ -88,7 +88,7 @@ export function FollowUpReviewScreen({ initial }: { initial: FollowUpReviewPaylo
             <h2 className="font-heading text-lg text-white">{file.lead.name}</h2>
             <p className="mt-1 text-sm text-silver">
               {FOLLOW_UP_BRANCH_LABELS[draft.branch]} · {FOLLOW_UP_CHANNEL_LABELS[draft.channel]}
-              {draft.sequencePosition > 1 ? ` · sequence ${draft.sequencePosition}` : ""}
+              {draft.sequencePosition > 1 ? ` · message ${draft.sequencePosition}` : ""}
             </p>
           </div>
           <StatusBadge
@@ -97,7 +97,6 @@ export function FollowUpReviewScreen({ initial }: { initial: FollowUpReviewPaylo
           />
         </div>
         <DefinitionList>
-          <KeyValue label="Model">{draft.modelVersion}</KeyValue>
           <KeyValue label="Expires">{formatQueueUntil(draft.expiresAt, now)}</KeyValue>
           <KeyValue label="Recipient">{recipient || "Missing"}</KeyValue>
         </DefinitionList>

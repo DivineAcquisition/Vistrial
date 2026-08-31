@@ -98,10 +98,12 @@ export function ReportingPanels({
   orgId,
   range,
   includeTeam,
+  includeIngestion = false,
 }: {
   orgId: string;
   range: ReportingRange;
   includeTeam: boolean;
+  includeIngestion?: boolean;
 }) {
   return (
     <div className="space-y-8">
@@ -140,9 +142,11 @@ export function ReportingPanels({
       <Suspense fallback={<PanelFallback title="What Vistrial actually did" />}>
         <ContributionPanel orgId={orgId} range={range} />
       </Suspense>
-      <Suspense fallback={<PanelFallback title="Ingestion" />}>
-        <IngestionPanel orgId={orgId} range={range} />
-      </Suspense>
+      {includeIngestion ? (
+        <Suspense fallback={<PanelFallback title="Connection health" />}>
+          <IngestionPanel orgId={orgId} range={range} />
+        </Suspense>
+      ) : null}
     </div>
   );
 }
@@ -685,15 +689,15 @@ async function ContributionPanel({ orgId, range }: { orgId: string; range: Repor
 
 async function IngestionPanel({ orgId, range }: { orgId: string; range: ReportingRange }) {
   const payload = await loadReportingPanel(orgId, "ingestion", range);
-  if (payload.blocked === true) return <ReportBlocked title="Ingestion" payload={payload} />;
+  if (payload.blocked === true) return <ReportBlocked title="Connection health" payload={payload} />;
   const types = Array.isArray(payload.by_type) ? payload.by_type : [];
   return (
     <Panel className="p-6">
-      <SectionHeader title="Ingestion health" hint={str(payload.note) ?? undefined} />
+      <SectionHeader title="Are leads arriving?" hint={str(payload.note) ?? undefined} />
       <KpiGrid columns={3}>
-        <KpiCard label="Received" value={formatCount(num(payload.received) ?? 0)} />
+        <KpiCard label="Arrived" value={formatCount(num(payload.received) ?? 0)} />
         <KpiCard label="Processed" value={formatCount(num(payload.processed) ?? 0)} />
-        <KpiCard label="Dead" value={formatCount(num(payload.dead) ?? 0)} />
+        <KpiCard label="Stuck" value={formatCount(num(payload.dead) ?? 0)} />
       </KpiGrid>
       <div className="mt-4">
         <DataTable
@@ -705,7 +709,7 @@ async function IngestionPanel({ orgId, range }: { orgId: string; range: Reportin
             const item = asRecord(row);
             return { type: str(item.event_type) ?? "", n: formatCount(num(item.n) ?? 0) };
           })}
-          empty="No webhook events in this range."
+          empty="Nothing arrived in this range."
         />
       </div>
       <Computed payload={payload} />
@@ -731,7 +735,7 @@ export function ReportingTabs({
       activeHref={activeHref}
       items={[
         // The two range-aware views carry the selected range across with them.
-        { href: `/app/reporting${query ? `?${query}` : ""}`, label: "Operator view" },
+        { href: `/app/reporting${query ? `?${query}` : ""}`, label: "Team view" },
         { href: `/portal${query ? `?${query}` : ""}`, label: "Owner portal" },
         { href: "/app/reporting/calibration", label: "Sales process" },
         { href: "/app/reporting/coaching", label: "Coaching" },

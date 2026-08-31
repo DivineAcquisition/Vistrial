@@ -33,6 +33,26 @@ export const OPERATOR_WRITE_LABELS: Record<OperatorWriteKind, string> = {
   regenerate_follow_up: "Regenerate follow-up draft",
 };
 
+export const OPERATOR_RUN_STATUS_LABELS: Record<string, string> = {
+  queued: "Waiting to start",
+  running: "Working on it",
+  awaiting_confirmation: "Waiting for you",
+  awaiting_approval: "Waiting for you",
+  applied: "Done",
+  succeeded: "Done",
+  completed: "Done",
+  failed: "Could not finish",
+  cancelled: "Stopped",
+  rejected: "Turned down",
+  rate_limited: "Try again later",
+  stopped_step_limit: "Stopped",
+  stopped_time_limit: "Stopped",
+};
+
+export function operatorRunStatusLabel(status: string): string {
+  return OPERATOR_RUN_STATUS_LABELS[status] ?? "Working";
+}
+
 export function toolLabel(name: string): string {
   return OPERATOR_TOOL_LABELS[name] ?? "Working";
 }

@@ -69,17 +69,19 @@ export default async function IntegrationsPage({
       description="Connect an app once. Vistrial keeps it in sync from there."
       status={hubSummaryLine(cards)}
       actions={
-        <Button variant="secondary" size="sm" render={<Link href="/app/settings/integrations/advanced" />}>
-          Diagnostics
-        </Button>
+        ctx.isPlatformAdmin ? (
+          <Button variant="secondary" size="sm" render={<Link href="/app/settings/integrations/advanced" />}>
+            Diagnostics
+          </Button>
+        ) : undefined
       }
     >
       <div className="space-y-6">
         {selectLocation ? <LocationPicker locations={locations} /> : null}
 
         {health.lastSetupError ? (
-          <Notice tone="warning" title="Inbound events are not subscribed">
-            The location is linked, but the webhook subscription was refused. Reconnect below.
+          <Notice tone="warning" title="New leads are not arriving">
+            The location is linked, but new leads are not coming through. Reconnect below.
           </Notice>
         ) : null}
 
@@ -100,10 +102,12 @@ export default async function IntegrationsPage({
           }
         />
 
-        <p className={helperClass}>
-          Field mapping, ingestion health, call recorders, and the history backfill live under
-          Diagnostics.
-        </p>
+        {ctx.isPlatformAdmin ? (
+          <p className={helperClass}>
+            Field mapping, connection health, call recorders, and history import live under
+            Diagnostics.
+          </p>
+        ) : null}
       </div>
     </PageFrame>
   );

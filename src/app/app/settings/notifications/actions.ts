@@ -111,7 +111,7 @@ export async function saveOrgNotificationSettings(
     if (clearTeams) patch.teams_webhook_encrypted = null;
     else if (teams) patch.teams_webhook_encrypted = encryptSecret(teams);
   } catch {
-    return { status: "error", error: "Could not store the webhook. Encryption key is missing." };
+    return { status: "error", error: "Could not store that connection. Encryption key is missing." };
   }
 
   const { error: teamError } = await supabase.from("notification_team_channels").upsert(patch);

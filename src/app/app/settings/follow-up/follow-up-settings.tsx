@@ -101,7 +101,7 @@ export function FollowUpSettingsScreen({
         <Panel className="p-6 space-y-4">
           {voice.examples.length < MIN_VOICE_EXAMPLES ? (
             <p className="text-sm text-flag-warning">
-              Add at least two real messages so drafts sound like this client, not like a model.
+              Add at least two real messages so drafts sound like this client, not like generic copy.
             </p>
           ) : null}
           {voice.examples.length === 0 ? (

@@ -109,9 +109,9 @@ export function CallDetailScreen({
             {call.outcome ? CALL_OUTCOME_LABELS[call.outcome] : "—"}
           </KeyValue>
           <KeyValue label="Source">
-            {call.transcriptSource ? TRANSCRIPT_SOURCE_LABELS[call.transcriptSource] : "Not ingested"}
+            {call.transcriptSource ? TRANSCRIPT_SOURCE_LABELS[call.transcriptSource] : "No recording"}
           </KeyValue>
-          <KeyValue label="Extraction">
+          <KeyValue label="Notes">
             <StatusBadge
               label={
                 detail.extraction?.verificationStatus === "needs_review"
@@ -205,7 +205,7 @@ export function CallDetailScreen({
       {jobStatus === "failed" ? (
         <Notice
           tone="critical"
-          title="Extraction failed"
+          title="Could not read this recording"
           action={
             <Button
               type="button"
@@ -342,7 +342,7 @@ export function CallDetailScreen({
           </Panel>
         ) : jobStatus === "pending" ? (
           <Panel className="p-6">
-            <p className="text-sm text-silver">Extraction is queued. This page does not run it on view.</p>
+            <p className="text-sm text-silver">Reading this recording. Come back in a moment.</p>
           </Panel>
         ) : jobStatus === "failed" ? null : (
           <Panel className="p-6">

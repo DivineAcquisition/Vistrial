@@ -84,7 +84,7 @@ export function OrganizationForm({
           <Field
             label="Baseline lookback (days)"
             name="baseline_lookback_days"
-            help="How far back the automatic CRM history pull reaches. Default 365. Changing this does not pull history again by itself."
+            help="How far back we read your past CRM history. Default 365. Changing this does not pull history again by itself."
           >
             <Input
               name="baseline_lookback_days"
@@ -101,7 +101,7 @@ export function OrganizationForm({
           <Field
             label="Transcript retention (days)"
             name="transcript_retention_days"
-            help="Raw transcript text is cleared after this many days. Extractions and objections stay. Default 365. Range 30–1095."
+            help="The full recording text is cleared after this many days. Call notes and objections stay. Default 365. Range 30–1095."
           >
             <Input
               name="transcript_retention_days"
@@ -180,7 +180,7 @@ export function OrganizationForm({
             start={workingHoursStart}
             end={workingHoursEnd}
             required
-            help="Notifications wait until this time in each person's timezone, except stalled ingestion and a broken CRM."
+            help="Notifications wait until this time in each person's timezone, except when leads stop arriving or the CRM is broken."
           />
 
           <Fieldset className="flex min-w-0 flex-col gap-2">

@@ -192,21 +192,21 @@ export function NotificationSettingsForm({
             />
             <AdvancedDoor closedLabel="Connect Slack or Teams">
               <Field
-                label="Slack incoming webhook"
+                label="Slack connection address"
                 name="slack_webhook"
-                help={slackSaved ? "A webhook is saved. Paste a new URL to replace it." : "Optional. Paste the address Slack gives you."}
+                help={slackSaved ? "Slack is connected. Paste a new address to replace it." : "Optional. Paste the address Slack gives you."}
               >
                 <Input name="slack_webhook" id="slack_webhook" type="url" placeholder="https://hooks.slack.com/services/…" />
               </Field>
-              {slackSaved ? <CheckboxField name="clear_slack" label="Remove Slack webhook" /> : null}
+              {slackSaved ? <CheckboxField name="clear_slack" label="Disconnect Slack" /> : null}
               <Field
-                label="Teams incoming webhook"
+                label="Teams connection address"
                 name="teams_webhook"
-                help={teamsSaved ? "A webhook is saved. Paste a new URL to replace it." : "Optional. Paste the address Teams gives you."}
+                help={teamsSaved ? "Teams is connected. Paste a new address to replace it." : "Optional. Paste the address Teams gives you."}
               >
                 <Input name="teams_webhook" id="teams_webhook" type="url" placeholder="https://outlook.office.com/webhook/…" />
               </Field>
-              {teamsSaved ? <CheckboxField name="clear_teams" label="Remove Teams webhook" /> : null}
+              {teamsSaved ? <CheckboxField name="clear_teams" label="Disconnect Teams" /> : null}
             </AdvancedDoor>
             {orgState.status === "error" ? <p className={errorClass}>{orgState.error}</p> : null}
           </SettingsFormCard>

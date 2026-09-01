@@ -1,6 +1,6 @@
 import { ForsightPage } from "@/app/app/forsight/forsight-chrome";
 import { WeeklyPulseScreen } from "@/app/app/forsight/weekly-pulse";
-import { loadWeeklyPulse } from "@/lib/forsight/dashboard";
+import { loadLiveSources, loadWeeklyPulse } from "@/lib/forsight/dashboard";
 import { FORSIGHT_PATH } from "@/lib/navigation";
 import { requireReportingAccess } from "@/lib/reporting/access";
 
@@ -11,6 +11,9 @@ export const metadata = { title: "Forsight" };
 export default async function WeeklyPulsePage() {
   await requireReportingAccess();
   const view = await loadWeeklyPulse();
+  // Loaded after the Airtable view so the live sources see the same week
+  // Airtable is reporting on. Neither can fail this page.
+  const live = await loadLiveSources(view.state === "ok" ? view.data.current : null);
 
   return (
     <ForsightPage
@@ -19,7 +22,7 @@ export default async function WeeklyPulsePage() {
       description="How the funnel is doing right now, and which direction it is moving. Every figure is read from Airtable, which is where it is calculated."
       view={view}
     >
-      {(pulse) => <WeeklyPulseScreen pulse={pulse} />}
+      {(pulse) => <WeeklyPulseScreen pulse={pulse} live={live} />}
     </ForsightPage>
   );
 }

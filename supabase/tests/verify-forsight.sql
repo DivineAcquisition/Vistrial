@@ -161,6 +161,76 @@ BEGIN
 END
 $$;
 
+-- A GHL source carries a calendar and no credential; the OAuth connection in
+-- ghl_connections is what authenticates, and it is not duplicated here.
+INSERT INTO public.forsight_sources (org_id, source_type, label, ghl_calendar_id)
+VALUES (
+  'f0f5f0f5-0000-4000-8000-000000000001',
+  'ghl',
+  'Lead Leak Audit calendar',
+  'cal_abc123'
+)
+ON CONFLICT (org_id, source_type) DO NOTHING;
+
+DO $$
+DECLARE
+  v_count integer;
+  v_denied boolean;
+  v_run uuid;
+BEGIN
+  -- A calendar id belongs to a GHL source and nowhere else.
+  SELECT count(*) INTO v_count
+  FROM public.forsight_sources
+  WHERE source_type <> 'ghl' AND ghl_calendar_id IS NOT NULL;
+  IF v_count <> 0 THEN
+    RAISE EXCEPTION '% non-GHL sources kept a calendar id', v_count;
+  END IF;
+
+  -- Sync runs belong to a workspace and outlive nothing else.
+  INSERT INTO public.forsight_sync_runs (org_id, source_type, status, period_start, period_end, unmatched_ads)
+  VALUES (
+    'f0f5f0f5-0000-4000-8000-000000000001',
+    'meta_ads',
+    'succeeded',
+    '2026-08-25',
+    '2026-09-01',
+    '["DA-99 Ad With No Creative"]'::jsonb
+  )
+  RETURNING id INTO v_run;
+
+  -- One workspace never sees another's sync history.
+  PERFORM set_config('request.jwt.claim.sub', 'f0f5f0f5-0000-4000-8000-00000000000b', false);
+  SET ROLE authenticated;
+
+  SELECT count(*) INTO v_count FROM public.forsight_sync_runs;
+  IF v_count <> 0 THEN
+    RAISE EXCEPTION 'client member saw % sync runs belonging to another workspace', v_count;
+  END IF;
+
+  -- Members read the log; only the job writes it.
+  v_denied := false;
+  BEGIN
+    INSERT INTO public.forsight_sync_runs (org_id, source_type)
+    VALUES ('f0f5f0f5-0000-4000-8000-000000000002', 'meta_ads');
+  EXCEPTION
+    WHEN insufficient_privilege THEN v_denied := true;
+  END;
+  IF NOT v_denied THEN
+    RAISE EXCEPTION 'an authenticated member was able to write a sync run';
+  END IF;
+
+  RESET ROLE;
+  PERFORM set_config('request.jwt.claim.sub', '', false);
+
+  -- The scheduled write is registered as a monitored job.
+  SELECT count(*) INTO v_count
+  FROM public.ops_job_catalog WHERE job_name = 'forsight-meta-sync';
+  IF v_count <> 1 THEN
+    RAISE EXCEPTION 'forsight-meta-sync is not in the job catalog';
+  END IF;
+END
+$$;
+
 -- Sources leave with the workspace they belong to.
 DO $$
 DECLARE

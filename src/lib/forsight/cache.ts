@@ -1,6 +1,6 @@
 import "server-only";
 
-import type { ForsightDataset, ForsightRecord } from "@/lib/forsight/types";
+import type { ForsightRecord } from "@/lib/forsight/types";
 
 /**
  * A short hold on what a workspace's base just returned, so opening three
@@ -21,14 +21,15 @@ type Entry = { records: ForsightRecord[]; fetchedAt: number };
 
 const store = new Map<string, Entry>();
 
-function keyFor(args: { orgId: string; sourceId: string; dataset: ForsightDataset }): string {
+/** `dataset` is any stable name for what was read, not only a table. */
+function keyFor(args: { orgId: string; sourceId: string; dataset: string }): string {
   return `${args.orgId}::${args.sourceId}::${args.dataset}`;
 }
 
 export type CachedRead = { records: ForsightRecord[]; fetchedAt: Date; fromCache: boolean };
 
 export async function readCached(
-  args: { orgId: string; sourceId: string; dataset: ForsightDataset },
+  args: { orgId: string; sourceId: string; dataset: string },
   load: () => Promise<ForsightRecord[]>,
   now: () => number = Date.now
 ): Promise<CachedRead> {

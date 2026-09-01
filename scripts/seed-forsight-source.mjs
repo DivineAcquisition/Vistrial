@@ -16,7 +16,13 @@
  *   --org-id <uuid>              instead of --org-slug
  *   --missing leads,creatives    tables this base does not have
  *   --meta-ad-account act_123    also record a Meta ad account for this workspace
+ *   --ghl                        read appointments and message counts from GHL
+ *   --ghl-calendar <id>          one calendar; omit to read every calendar
  *   --dry-run                    print what would be written and stop
+ *
+ * There is no GHL credential to pass. Authentication comes from the
+ * per-sub-account OAuth connection Vistrial's core already holds in
+ * `ghl_connections`; connect LeadConnector in the app first.
  */
 import { createClient } from "@supabase/supabase-js";
 
@@ -79,8 +85,12 @@ const metaAdAccount =
     ? args["meta-ad-account"].trim()
     : (process.env.META_AD_ACCOUNT_ID || "").trim();
 
-if (!baseId && !metaAdAccount) {
-  die("nothing to write: pass --airtable-base, --meta-ad-account, or both.");
+const wantsGhl = Boolean(args.ghl) || typeof args["ghl-calendar"] === "string";
+const ghlCalendar =
+  typeof args["ghl-calendar"] === "string" ? args["ghl-calendar"].trim() : null;
+
+if (!baseId && !metaAdAccount && !wantsGhl) {
+  die("nothing to write: pass --airtable-base, --meta-ad-account, --ghl, or a combination.");
 }
 
 const missing = new Set(
@@ -134,6 +144,32 @@ if (metaAdAccount) {
     status: "active",
     label: typeof args["meta-label"] === "string" ? args["meta-label"] : null,
     meta_ad_account_id: metaAdAccount.startsWith("act_") ? metaAdAccount : `act_${metaAdAccount}`,
+  });
+}
+
+if (wantsGhl) {
+  const { data: connection, error: connectionError } = await db
+    .from("ghl_connections")
+    .select("status, location_id, location_name")
+    .eq("org_id", org.id)
+    .maybeSingle();
+
+  if (connectionError) die(`could not read ghl_connections: ${connectionError.message}`);
+  if (!connection || connection.status !== "active" || !connection.location_id) {
+    die(
+      "this workspace has no active LeadConnector connection. Forsight reads GHL through the existing per-sub-account OAuth, so connect it in the app before adding this source."
+    );
+  }
+
+  rows.push({
+    org_id: org.id,
+    source_type: "ghl",
+    status: "active",
+    label:
+      typeof args["ghl-label"] === "string"
+        ? args["ghl-label"]
+        : (connection.location_name ?? connection.location_id),
+    ghl_calendar_id: ghlCalendar || null,
   });
 }
 

@@ -7,6 +7,7 @@ import {
   FORSIGHT_DATASETS,
   type ForsightAirtableSource,
   type ForsightDataset,
+  type ForsightGhlSource,
   type ForsightMetaSource,
   type ForsightSource,
   type ForsightSourceType,
@@ -43,13 +44,27 @@ export function sourceFromRow(row: ForsightSourceRow): ForsightSource {
     return source;
   }
 
-  const source: ForsightMetaSource = {
+  if (row.source_type === "meta_ads") {
+    const source: ForsightMetaSource = {
+      id: row.id,
+      orgId: row.org_id,
+      type: "meta_ads",
+      status: row.status,
+      label: row.label,
+      adAccountId: row.meta_ad_account_id ?? "",
+      lastVerifiedAt: row.last_verified_at,
+      lastError: row.last_error,
+    };
+    return source;
+  }
+
+  const source: ForsightGhlSource = {
     id: row.id,
     orgId: row.org_id,
-    type: "meta_ads",
+    type: "ghl",
     status: row.status,
     label: row.label,
-    adAccountId: row.meta_ad_account_id ?? "",
+    calendarId: row.ghl_calendar_id,
     lastVerifiedAt: row.last_verified_at,
     lastError: row.last_error,
   };

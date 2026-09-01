@@ -2,7 +2,6 @@ import "server-only";
 
 import type { SupabaseClient } from "@supabase/supabase-js";
 
-import { airtableConfigured, metaConfigured } from "@/lib/forsight/env";
 import { ForsightSourceError } from "@/lib/forsight/errors";
 import {
   FORSIGHT_DATASETS,
@@ -10,7 +9,6 @@ import {
   type ForsightDataset,
   type ForsightMetaSource,
   type ForsightSource,
-  type ForsightSourceSummary,
   type ForsightSourceType,
 } from "@/lib/forsight/types";
 import type { Database, Tables } from "@/types/database";
@@ -97,50 +95,4 @@ export function availableDatasets(source: ForsightSource): ForsightDataset[] {
 export function missingDatasets(source: ForsightSource): ForsightDataset[] {
   if (source.type !== "airtable") return [...FORSIGHT_DATASETS];
   return FORSIGHT_DATASETS.filter((dataset) => !source.tables[dataset]?.trim());
-}
-
-export function credentialConfiguredFor(sourceType: ForsightSourceType): boolean {
-  return sourceType === "airtable" ? airtableConfigured() : metaConfigured();
-}
-
-/**
- * What the Forsight landing page needs: which workspace this is, and whether
- * it has somewhere to read metrics from.
- */
-export function summarizeSource(args: {
-  orgId: string;
-  orgName: string;
-  source: ForsightSource | null;
-  credentialConfigured: boolean;
-}): ForsightSourceSummary {
-  const { orgId, orgName, source } = args;
-  if (!source) {
-    return {
-      orgId,
-      orgName,
-      configured: false,
-      sourceType: null,
-      status: null,
-      label: null,
-      availableDatasets: [],
-      missingDatasets: [...FORSIGHT_DATASETS],
-      lastVerifiedAt: null,
-      lastError: null,
-      credentialConfigured: args.credentialConfigured,
-    };
-  }
-
-  return {
-    orgId,
-    orgName,
-    configured: true,
-    sourceType: source.type,
-    status: source.status,
-    label: source.label,
-    availableDatasets: availableDatasets(source),
-    missingDatasets: missingDatasets(source),
-    lastVerifiedAt: source.lastVerifiedAt,
-    lastError: source.lastError,
-    credentialConfigured: args.credentialConfigured,
-  };
 }

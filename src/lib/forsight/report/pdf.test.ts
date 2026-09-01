@@ -1,3 +1,4 @@
+import { inflateSync } from "node:zlib";
 import { PDFDocument } from "pdf-lib";
 import { describe, expect, it } from "vitest";
 
@@ -55,6 +56,22 @@ function metrics(): MonthlyMetrics {
   };
 }
 
+function readablePdf(bytes: Uint8Array): string {
+  const raw = Buffer.from(bytes).toString("latin1");
+  const inflated = [...raw.matchAll(/stream\r?\n([\s\S]*?)\r?\nendstream/g)].map((match) => {
+    try {
+      return inflateSync(Buffer.from(match[1], "latin1")).toString("latin1");
+    } catch {
+      return match[1];
+    }
+  });
+  const streams = inflated.join("\n");
+  const decodedHex = [...streams.matchAll(/<([0-9A-Fa-f]+)>/g)]
+    .map((match) => Buffer.from(match[1], "hex").toString("latin1"))
+    .join("\n");
+  return `${raw}\n${streams}\n${decodedHex}`;
+}
+
 describe("forsightReportPdf", () => {
   it("contains every section and the generation timestamp", async () => {
     const generatedAt = "2026-09-01T09:00:00.000Z";
@@ -77,8 +94,8 @@ describe("forsightReportPdf", () => {
     };
 
     const bytes = await forsightReportPdf(stored);
-    const text = Buffer.from(bytes).toString("latin1");
-    expect(text.startsWith("%PDF-")).toBe(true);
+    const text = readablePdf(bytes);
+    expect(Buffer.from(bytes).toString("latin1").startsWith("%PDF-")).toBe(true);
     expect(text).toContain("The funnel");
     expect(text).toContain("Speed and touch");
     expect(text).toContain("Revenue");

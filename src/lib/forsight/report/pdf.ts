@@ -72,7 +72,7 @@ export async function forsightReportPdf(stored: StoredReport): Promise<Uint8Arra
     }
   };
 
-  const write = (text: string, opts: { size?: number; font?: PDFFont; color?: ReturnType<typeof rgb>; width?: number }) => {
+  const write = (text: string, opts: { size?: number; font?: PDFFont; color?: ReturnType<typeof rgb>; width?: number } = {}) => {
     const used = opts.font ?? font;
     const size = opts.size ?? 10;
     const color = opts.color ?? ink;

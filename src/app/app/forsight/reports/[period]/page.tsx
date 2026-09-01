@@ -63,8 +63,14 @@ export default async function ForsightReportPage({
       actions={
         stored ? (
           <div className="flex flex-wrap items-center justify-end gap-2">
-            <Button variant="outline" size="sm" nativeButton={false} render={<Link href={`${FORSIGHT_PATH}/reports/${periodPath(periodStart)}/export${stored.version ? `?v=${stored.version}` : ""}`} />}>
-              Export PDF
+            <Button variant="outline" size="sm" asChild>
+              <Link
+                href={`${FORSIGHT_PATH}/reports/${periodPath(periodStart)}/export${
+                  ctx.isPlatformAdmin ? `?v=${stored.version}` : ""
+                }`}
+              >
+                Export PDF
+              </Link>
             </Button>
             {ctx.isPlatformAdmin ? (
               <ReportActions

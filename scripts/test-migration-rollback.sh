@@ -364,6 +364,19 @@ echo "OK: agent framework migration rollback and re-apply succeeded."
 # Newest first throughout: each of these migrations rebuilds the source-type
 # enum, and a column of that type in a later migration blocks an earlier
 # rollback from dropping it.
+echo "Rollback forsight monthly reports (frozen reports and send log gone)..."
+run "${ROOT}/supabase/rollbacks/20260838010000_forsight_reports.sql"
+tbl_reports="$("${PSQL[@]}" -d "${DB_NAME}" -tAc "SELECT count(*) FROM information_schema.tables WHERE table_schema='public' AND table_name='forsight_reports'")"
+if [[ "$(echo "$tbl_reports" | tr -d ' ')" != "0" ]]; then
+  echo "forsight reports rollback left forsight_reports in place" >&2
+  exit 1
+fi
+job_reports="$("${PSQL[@]}" -d "${DB_NAME}" -tAc "SELECT count(*) FROM public.ops_job_catalog WHERE job_name='forsight-reports'")"
+if [[ "$(echo "$job_reports" | tr -d ' ')" != "0" ]]; then
+  echo "forsight reports rollback left forsight-reports in the job catalog" >&2
+  exit 1
+fi
+
 echo "Rollback forsight client workspaces (core type and operator writes gone)..."
 run "${ROOT}/supabase/rollbacks/20260837010000_forsight_client_workspaces.sql"
 enum_core="$("${PSQL[@]}" -d "${DB_NAME}" -tAc "SELECT count(*) FROM pg_enum e JOIN pg_type t ON t.oid=e.enumtypid WHERE t.typname='forsight_source_type' AND e.enumlabel='vistrial_core'")"
@@ -442,3 +455,23 @@ if [[ "$(echo "$policy_write" | tr -d ' ')" != "3" ]]; then
 fi
 
 echo "OK: forsight client workspaces migration rollback and re-apply succeeded."
+
+echo "Re-apply forsight monthly reports..."
+run "${ROOT}/supabase/migrations/20260838010000_forsight_reports.sql"
+tbl_reports="$("${PSQL[@]}" -d "${DB_NAME}" -tAc "SELECT count(*) FROM information_schema.tables WHERE table_schema='public' AND table_name='forsight_reports'")"
+if [[ "$(echo "$tbl_reports" | tr -d ' ')" != "1" ]]; then
+  echo "re-apply did not restore forsight_reports" >&2
+  exit 1
+fi
+job_reports="$("${PSQL[@]}" -d "${DB_NAME}" -tAc "SELECT count(*) FROM public.ops_job_catalog WHERE job_name='forsight-reports'")"
+if [[ "$(echo "$job_reports" | tr -d ' ')" != "1" ]]; then
+  echo "re-apply did not restore forsight-reports in the job catalog" >&2
+  exit 1
+fi
+fn_version="$("${PSQL[@]}" -d "${DB_NAME}" -tAc "SELECT count(*) FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace WHERE n.nspname='public' AND p.proname='forsight_next_report_version'")"
+if [[ "$(echo "$fn_version" | tr -d ' ')" = "0" ]]; then
+  echo "re-apply did not restore forsight_next_report_version" >&2
+  exit 1
+fi
+
+echo "OK: forsight monthly reports migration rollback and re-apply succeeded."

@@ -63,6 +63,10 @@
     {
       "path": "/api/cron/forsight-meta-sync",
       "schedule": "0 8 * * *"
+    },
+    {
+      "path": "/api/cron/forsight-reports",
+      "schedule": "0 9 3 * *"
     }
   ]
 }

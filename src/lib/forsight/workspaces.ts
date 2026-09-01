@@ -2,8 +2,11 @@ import "server-only";
 
 import { coreProvider } from "@/lib/forsight/core-source";
 import { airtableProvider } from "@/lib/forsight/provider";
+import { monthPeriod, previousMonthStart } from "@/lib/forsight/report/build";
+import { loadPeriodReportStatus, type PeriodReportStatus } from "@/lib/forsight/report/load";
 import { loadForsightSources } from "@/lib/forsight/sources";
 import { requireForsightOperator } from "@/lib/forsight/operator";
+import { isoDate } from "@/lib/forsight/weeks";
 import { createClient } from "@/lib/supabase/server";
 import type { ForsightSourceType } from "@/lib/forsight/types";
 import { ABSENT, type MetricValue } from "@/lib/forsight/values";
@@ -31,6 +34,9 @@ export type WorkspaceOverviewRow = {
   neverContacted: number | null;
   goingQuiet: number | null;
   debriefsMissing: number | null;
+  reportPeriodLabel: string;
+  reportVersion: number | null;
+  reportSentAt: string | null;
   error: string | null;
 };
 
@@ -44,15 +50,21 @@ export async function loadWorkspaceOverview(): Promise<WorkspaceOverviewRow[] | 
     .select("id, name, slug")
     .order("name", { ascending: true });
 
+  const reportPeriodStart = previousMonthStart(isoDate(new Date()));
+  const reportPeriod = monthPeriod(reportPeriodStart);
+  const reports = await loadPeriodReportStatus(supabase, reportPeriodStart);
+
   const rows = await Promise.all(
-    (orgs ?? []).map((org) => overviewRow(supabase, org))
+    (orgs ?? []).map((org) => overviewRow(supabase, org, reportPeriod.label, reports.get(org.id)))
   );
   return rows;
 }
 
 async function overviewRow(
   supabase: Awaited<ReturnType<typeof createClient>>,
-  org: { id: string; name: string; slug: string }
+  org: { id: string; name: string; slug: string },
+  reportPeriodLabel: string,
+  report: PeriodReportStatus | undefined
 ): Promise<WorkspaceOverviewRow> {
   const base: WorkspaceOverviewRow = {
     orgId: org.id,
@@ -64,6 +76,9 @@ async function overviewRow(
     neverContacted: null,
     goingQuiet: null,
     debriefsMissing: null,
+    reportPeriodLabel,
+    reportVersion: report?.version ?? null,
+    reportSentAt: report?.sentAt ?? null,
     error: null,
   };
 

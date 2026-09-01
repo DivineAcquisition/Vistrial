@@ -51,6 +51,30 @@ export const LEAD_FIELDS = {
   touchStatus: "Touch Status",
   nextAction: "Next Action",
   debriefMissing: "Debrief Missing",
+  hoursToFirstHuman: "Hours to First Human Touch",
+  auditBookedDate: "Audit Booked Date",
+  auditOutcome: "Audit Outcome",
+  noShowCount: "No-Show Count",
+  isBooked: "Is Booked",
+  isHeld: "Is Held",
+  isClosedWon: "Is Closed Won",
+  objection: "Objection",
+} as const;
+
+/** Closed revenue. Template table name: Deals. Not a dashboard dataset. */
+export const DEAL_FIELDS = {
+  date: "Date",
+  amount: "Amount",
+  type: "Type",
+  status: "Status",
+} as const;
+
+/** One row per held call. Template table name: Call Debriefs. */
+export const DEBRIEF_FIELDS = {
+  callDate: "Call Date",
+  objection: "Objection",
+  outcome: "Outcome",
+  owner: "Owner",
 } as const;
 
 /**

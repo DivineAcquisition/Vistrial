@@ -83,6 +83,10 @@ export function airtableProvider(
       const result = await read("leads");
       return result.available ? { available: true, data: pipelineHealth(result.data) } : result;
     },
+    async monthly(period) {
+      const { airtableMonthly } = await import("@/lib/forsight/report/airtable");
+      return airtableMonthly(source, period, orgLabel, fetchImpl);
+    },
   };
 }
 

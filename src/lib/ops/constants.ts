@@ -56,6 +56,7 @@ export const OPS_JOB_NAMES = [
   "source-sync",
   "agent-runtime",
   "forsight-meta-sync",
+  "forsight-reports",
 ] as const;
 
 export type OpsJobName = (typeof OPS_JOB_NAMES)[number];

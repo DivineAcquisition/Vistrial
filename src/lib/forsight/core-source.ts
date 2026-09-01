@@ -22,6 +22,7 @@ import type {
 import { toMetricValue, type MetricValue } from "@/lib/forsight/values";
 import { isoDate, weekCadence, weekEnd, weekLabel } from "@/lib/forsight/weeks";
 import type { WeekRow, WeeklyPulse } from "@/lib/forsight/weekly";
+import { coreMonthly } from "@/lib/forsight/report/core";
 
 /**
  * Vistrial's own core tables, presented in the shape the Airtable adapter
@@ -85,6 +86,8 @@ export function coreProvider(
     },
 
     pipeline: () => corePipeline(db, source.orgId, now),
+
+    monthly: (period) => coreMonthly(db, source.orgId, period),
   };
 }
 

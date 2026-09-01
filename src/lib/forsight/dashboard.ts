@@ -5,10 +5,14 @@ import { readCached } from "@/lib/forsight/cache";
 import { creativesByCostPerAuditHeld, type CreativeRow } from "@/lib/forsight/creatives";
 import { ForsightSourceError } from "@/lib/forsight/errors";
 import { forsightProviderFor } from "@/lib/forsight/provider";
+import { loadGhlActivity, type GhlActivity } from "@/lib/forsight/ghl";
 import { pipelineHealth, type PipelineHealth } from "@/lib/forsight/pipeline";
+import { reconcileAppointments, type Reconciliation } from "@/lib/forsight/reconcile";
+import { loadSpendToday, type SpendToday } from "@/lib/forsight/spend-today";
 import { createClient } from "@/lib/supabase/server";
 import { FORSIGHT_DATASET_LABELS, type ForsightDataset } from "@/lib/forsight/types";
-import { weeklyPulse, type WeeklyPulse } from "@/lib/forsight/weekly";
+import { isoDate, weekEnd } from "@/lib/forsight/weeks";
+import { weeklyPulse, type WeekRow, type WeeklyPulse } from "@/lib/forsight/weekly";
 
 /**
  * What a Forsight page gets handed. Every absence is its own state, because
@@ -92,6 +96,55 @@ function shape<T>(
 
 export async function loadWeeklyPulse(): Promise<ForsightView<WeeklyPulse>> {
   return shape(await readDataset("weeklySummary"), "weeklySummary", weeklyPulse);
+}
+
+/**
+ * The two live sources, loaded beside Weekly Pulse rather than inside it.
+ * Neither can fail the page: each returns its own unavailable state, and the
+ * Airtable-backed figures above them are unaffected either way.
+ */
+export async function loadLiveSources(
+  current: WeekRow | null
+): Promise<{ spendToday: SpendToday; comms: CommsView }> {
+  const ctx = await getAuthContext();
+  const supabase = await createClient();
+  const now = new Date();
+
+  const [spendToday, activity] = await Promise.all([
+    loadSpendToday(supabase, { orgId: ctx.org.id, orgName: ctx.org.name, now }),
+    loadWeekActivity(supabase, ctx.org.id, current, now),
+  ]);
+
+  return { spendToday, comms: activity };
+}
+
+export type CommsView =
+  | { state: "ok"; activity: GhlActivity; reconciliation: Reconciliation }
+  | { state: "not_tracked" }
+  | { state: "unavailable"; reason: string };
+
+async function loadWeekActivity(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  orgId: string,
+  current: WeekRow | null,
+  now: Date
+): Promise<CommsView> {
+  // The window is the week Airtable itself is reporting on, so the two sides
+  // of the comparison cover the same days.
+  const from = current?.weekStart ?? isoDate(now);
+  const to = isoDate(now) < weekEnd(from) ? isoDate(now) : weekEnd(from);
+
+  const result = await loadGhlActivity(supabase, { orgId, from, to });
+  if (result.state !== "ok") return result;
+
+  return {
+    state: "ok",
+    activity: result.activity,
+    reconciliation: reconcileAppointments(result.activity.appointments, {
+      booked: current?.booked ?? { kind: "absent" },
+      held: current?.held ?? { kind: "absent" },
+    }),
+  };
 }
 
 export async function loadCreativePerformance(): Promise<ForsightView<CreativeRow[]>> {

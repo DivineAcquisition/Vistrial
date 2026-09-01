@@ -94,6 +94,13 @@ export type MetaInsightsArgs = {
   adAccountId: string;
   since: string;
   until: string;
+  /**
+   * Meta's own preset, used instead of the date range. `maximum` gives each
+   * ad's lifetime totals, which is what Airtable's Creatives row needs: its
+   * cost formulas divide spend by lifetime rollups, so a partial-period spend
+   * in that field would make every cost on the page wrong.
+   */
+  datePreset?: "maximum";
   signal?: AbortSignal;
   /** Injected in tests. Defaults to global fetch. */
   fetchImpl?: typeof fetch;
@@ -129,7 +136,11 @@ export async function fetchMetaAdInsights(args: MetaInsightsArgs): Promise<MetaI
   const first = new URL(`${metaGraphApiBase()}/${account}/insights`);
   first.searchParams.set("level", "ad");
   first.searchParams.set("fields", INSIGHT_FIELDS.join(","));
-  first.searchParams.set("time_range", JSON.stringify({ since: args.since, until: args.until }));
+  if (args.datePreset) {
+    first.searchParams.set("date_preset", args.datePreset);
+  } else {
+    first.searchParams.set("time_range", JSON.stringify({ since: args.since, until: args.until }));
+  }
   first.searchParams.set("time_increment", "all_days");
   first.searchParams.set("limit", "500");
 

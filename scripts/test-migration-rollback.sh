@@ -361,6 +361,21 @@ fi
 
 echo "OK: agent framework migration rollback and re-apply succeeded."
 
+# Newest first: forsight_sync_runs holds a column of the type the foundation
+# rollback drops, so live sources has to come off before the foundation can.
+echo "Rollback forsight live sources (ghl type and sync log gone)..."
+run "${ROOT}/supabase/rollbacks/20260836010000_forsight_live_sources.sql"
+tbl_runs="$("${PSQL[@]}" -d "${DB_NAME}" -tAc "SELECT count(*) FROM information_schema.tables WHERE table_schema='public' AND table_name='forsight_sync_runs'")"
+if [[ "$(echo "$tbl_runs" | tr -d ' ')" != "0" ]]; then
+  echo "forsight live sources rollback left forsight_sync_runs in place" >&2
+  exit 1
+fi
+enum_ghl="$("${PSQL[@]}" -d "${DB_NAME}" -tAc "SELECT count(*) FROM pg_enum e JOIN pg_type t ON t.oid=e.enumtypid WHERE t.typname='forsight_source_type' AND e.enumlabel='ghl'")"
+if [[ "$(echo "$enum_ghl" | tr -d ' ')" != "0" ]]; then
+  echo "forsight live sources rollback left the ghl source type in place" >&2
+  exit 1
+fi
+
 echo "Rollback forsight foundation (sources table and type gone)..."
 run "${ROOT}/supabase/rollbacks/20260835010000_forsight_foundation.sql"
 tbl_forsight="$("${PSQL[@]}" -d "${DB_NAME}" -tAc "SELECT count(*) FROM information_schema.tables WHERE table_schema='public' AND table_name='forsight_sources'")"
@@ -383,3 +398,18 @@ if [[ "$(echo "$tbl_forsight" | tr -d ' ')" != "1" ]]; then
 fi
 
 echo "OK: forsight foundation migration rollback and re-apply succeeded."
+
+echo "Re-apply forsight live sources..."
+run "${ROOT}/supabase/migrations/20260836010000_forsight_live_sources.sql"
+tbl_runs="$("${PSQL[@]}" -d "${DB_NAME}" -tAc "SELECT count(*) FROM information_schema.tables WHERE table_schema='public' AND table_name='forsight_sync_runs'")"
+if [[ "$(echo "$tbl_runs" | tr -d ' ')" != "1" ]]; then
+  echo "re-apply did not restore forsight_sync_runs" >&2
+  exit 1
+fi
+col_cal="$("${PSQL[@]}" -d "${DB_NAME}" -tAc "SELECT count(*) FROM information_schema.columns WHERE table_schema='public' AND table_name='forsight_sources' AND column_name='ghl_calendar_id'")"
+if [[ "$(echo "$col_cal" | tr -d ' ')" != "1" ]]; then
+  echo "re-apply did not restore ghl_calendar_id" >&2
+  exit 1
+fi
+
+echo "OK: forsight live sources migration rollback and re-apply succeeded."

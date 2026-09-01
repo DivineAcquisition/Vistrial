@@ -51,6 +51,7 @@ const REASON_TEXT: Record<ForsightFailureReason, string> = {
 const SOURCE_TEXT: Record<ForsightSourceType, string> = {
   airtable: "Airtable base",
   meta_ads: "Meta ad account",
+  ghl: "LeadConnector location",
 };
 
 export function forsightFailureMessage(args: {

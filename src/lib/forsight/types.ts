@@ -52,7 +52,25 @@ export type ForsightMetaSource = {
   lastError: string | null;
 };
 
-export type ForsightSource = ForsightAirtableSource | ForsightMetaSource;
+/**
+ * GoHighLevel. Carries no credential: authentication comes from the
+ * per-sub-account OAuth connection Vistrial's core already holds. All this
+ * record adds is which calendar to read, because the core integration lists
+ * every calendar on a location and never persists a chosen one.
+ */
+export type ForsightGhlSource = {
+  id: string;
+  orgId: string;
+  type: "ghl";
+  status: ForsightSourceStatus;
+  label: string | null;
+  /** NULL reads every calendar on the location. */
+  calendarId: string | null;
+  lastVerifiedAt: string | null;
+  lastError: string | null;
+};
+
+export type ForsightSource = ForsightAirtableSource | ForsightMetaSource | ForsightGhlSource;
 
 /** One row from a source, kept in the source's own vocabulary. */
 export type ForsightRecord = {

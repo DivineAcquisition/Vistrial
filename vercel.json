@@ -59,6 +59,10 @@
     {
       "path": "/api/cron/agent-runtime",
       "schedule": "* * * * *"
+    },
+    {
+      "path": "/api/cron/forsight-meta-sync",
+      "schedule": "0 8 * * *"
     }
   ]
 }

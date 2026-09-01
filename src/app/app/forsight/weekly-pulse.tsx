@@ -1,3 +1,4 @@
+import { CommsSection, SpendTodayCard } from "@/app/app/forsight/live-sources";
 import { KpiCard, Trend } from "@/components/ui/kpi-card";
 import { GroupedBarChart, LineChart } from "@/components/ui/chart";
 import { Notice } from "@/components/ui/states";
@@ -12,6 +13,8 @@ import {
   type MetricSense,
   type MetricValue,
 } from "@/lib/forsight/values";
+import type { CommsView } from "@/lib/forsight/dashboard";
+import type { SpendToday } from "@/lib/forsight/spend-today";
 import type { WeeklyPulse, WeekRow } from "@/lib/forsight/weekly";
 
 /**
@@ -53,7 +56,13 @@ function count(value: MetricValue): number {
   return isNumber(value) ? value.value : 0;
 }
 
-export function WeeklyPulseScreen({ pulse }: { pulse: WeeklyPulse }) {
+export function WeeklyPulseScreen({
+  pulse,
+  live,
+}: {
+  pulse: WeeklyPulse;
+  live: { spendToday: SpendToday; comms: CommsView };
+}) {
   const { current, previous, weeks, hasTrend } = pulse;
   if (!current) return null;
 
@@ -100,7 +109,12 @@ export function WeeklyPulseScreen({ pulse }: { pulse: WeeklyPulse }) {
             );
           })}
         </div>
+        <div className="mt-3">
+          <SpendTodayCard spend={live.spendToday} />
+        </div>
       </section>
+
+      <CommsSection comms={live.comms} />
 
       {hasTrend ? null : (
         <Notice tone="info" title="One week on record">

@@ -30,6 +30,7 @@ export function airtableProvider(
   return {
     sourceType: "airtable",
     orgId: source.orgId,
+    sourceId: source.id,
     availableDatasets: () => availableDatasets(source),
     async readDataset(
       dataset: ForsightDataset,

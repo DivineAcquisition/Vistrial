@@ -5,13 +5,7 @@ import { normalizeMetaAdAccountId } from "@/lib/forsight/env";
 import { ForsightSourceError } from "@/lib/forsight/errors";
 import { fetchMetaAdInsights } from "@/lib/forsight/meta";
 import { airtableProvider } from "@/lib/forsight/provider";
-import {
-  availableDatasets,
-  missingDatasets,
-  sourceFromRow,
-  summarizeSource,
-} from "@/lib/forsight/sources";
-import { connectionView, missingDatasetsSentence } from "@/lib/forsight/status";
+import { availableDatasets, missingDatasets, sourceFromRow } from "@/lib/forsight/sources";
 import type { ForsightAirtableSource } from "@/lib/forsight/types";
 import type { Tables } from "@/types/database";
 
@@ -63,52 +57,6 @@ describe("source records", () => {
     const source = sourceFromRow(airtableRow({ airtable_creatives_table: null }));
     expect(availableDatasets(source)).toEqual(["leads", "weeklySummary", "touches"]);
     expect(missingDatasets(source)).toEqual(["creatives"]);
-
-    const summary = summarizeSource({
-      orgId: ORG_ID,
-      orgName: "Divine Acquisition",
-      source,
-      credentialConfigured: true,
-    });
-    expect(missingDatasetsSentence(summary)).toContain("no Creatives");
-  });
-});
-
-describe("what the landing page says", () => {
-  const base = {
-    orgId: ORG_ID,
-    orgName: "Divine Acquisition",
-    credentialConfigured: true,
-  };
-
-  it("tells an unconfigured workspace nothing is expected of it", () => {
-    const view = connectionView(
-      summarizeSource({ ...base, source: null })
-    );
-    expect(view.label).toBe("Not set up yet");
-    expect(view.tone).toBe("warning");
-    expect(view.detail).toContain("Divine Acquisition connects it");
-  });
-
-  it("reads as connected once a source is on file", () => {
-    const view = connectionView(
-      summarizeSource({ ...base, source: sourceFromRow(airtableRow()) })
-    );
-    expect(view.label).toBe("Connected");
-    expect(view.tone).toBe("good");
-    expect(view.detail).toContain("DA Pipeline");
-  });
-
-  it("separates a missing platform credential from a missing source", () => {
-    const view = connectionView(
-      summarizeSource({
-        ...base,
-        credentialConfigured: false,
-        source: sourceFromRow(airtableRow()),
-      })
-    );
-    expect(view.label).toBe("Needs attention");
-    expect(view.tone).toBe("critical");
   });
 });
 

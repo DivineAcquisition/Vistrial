@@ -80,25 +80,12 @@ export type ForsightReadOptions = {
 export type ForsightMetricsProvider = {
   readonly sourceType: ForsightSourceType;
   readonly orgId: string;
+  /** Identifies the exact source record, so a cache entry cannot outlive it. */
+  readonly sourceId: string;
   /** Datasets this workspace's source actually has. */
   availableDatasets(): ForsightDataset[];
   readDataset(
     dataset: ForsightDataset,
     options?: ForsightReadOptions
   ): Promise<ForsightDatasetResult>;
-};
-
-export type ForsightSourceSummary = {
-  orgId: string;
-  orgName: string;
-  configured: boolean;
-  sourceType: ForsightSourceType | null;
-  status: ForsightSourceStatus | null;
-  label: string | null;
-  availableDatasets: ForsightDataset[];
-  missingDatasets: ForsightDataset[];
-  lastVerifiedAt: string | null;
-  lastError: string | null;
-  /** True when the DA-owned credential this source type needs is present. */
-  credentialConfigured: boolean;
 };

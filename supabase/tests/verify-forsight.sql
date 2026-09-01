@@ -359,7 +359,179 @@ BEGIN
 END
 $$;
 
--- Sources leave with the workspace they belong to.
+-- ---------------------------------------------------------------------------
+-- Monthly reports. Frozen at generation. A correction is a new version.
+-- ---------------------------------------------------------------------------
+
+INSERT INTO public.forsight_reports (
+  id, org_id, period_start, period_end, version, generated_at,
+  generated_by, generated_by_name, source_type, payload, omissions
+) VALUES
+  (
+    'f0f5f0f5-0000-4000-8000-0000000000a1',
+    'f0f5f0f5-0000-4000-8000-000000000001',
+    '2026-08-01',
+    '2026-08-31',
+    1,
+    '2026-09-01T09:00:00Z',
+    'scheduled',
+    'scheduled',
+    'airtable',
+    '{"schemaVersion":1,"workspace":{"id":"f0f5f0f5-0000-4000-8000-000000000001","name":"Forsight DA"},"period":{"start":"2026-08-01","end":"2026-08-31","label":"August 2026"},"generatedAt":"2026-09-01T09:00:00Z","sections":[{"kind":"funnel","title":"The funnel","steps":[{"label":"Closed","count":1}]}],"omissions":[]}'::jsonb,
+    '[]'::jsonb
+  ),
+  (
+    'f0f5f0f5-0000-4000-8000-0000000000a2',
+    'f0f5f0f5-0000-4000-8000-000000000001',
+    '2026-08-01',
+    '2026-08-31',
+    2,
+    '2026-09-01T10:00:00Z',
+    'operator',
+    'Dana',
+    'airtable',
+    '{"schemaVersion":1,"workspace":{"id":"f0f5f0f5-0000-4000-8000-000000000001","name":"Forsight DA"},"period":{"start":"2026-08-01","end":"2026-08-31","label":"August 2026"},"generatedAt":"2026-09-01T10:00:00Z","sections":[{"kind":"funnel","title":"The funnel","steps":[{"label":"Closed","count":2}]}],"omissions":[]}'::jsonb,
+    '[]'::jsonb
+  ),
+  (
+    'f0f5f0f5-0000-4000-8000-0000000000b1',
+    'f0f5f0f5-0000-4000-8000-000000000002',
+    '2026-08-01',
+    '2026-08-31',
+    1,
+    '2026-09-01T09:30:00Z',
+    'operator',
+    'Dana',
+    'vistrial_core',
+    '{"schemaVersion":1,"workspace":{"id":"f0f5f0f5-0000-4000-8000-000000000002","name":"Forsight Client"},"period":{"start":"2026-08-01","end":"2026-08-31","label":"August 2026"},"generatedAt":"2026-09-01T09:30:00Z","sections":[{"kind":"absent","title":"Objections","line":"No calls were held this month, so there are no objections to read."}],"omissions":[]}'::jsonb,
+    '[]'::jsonb
+  );
+
+INSERT INTO public.forsight_report_sends (
+  id, report_id, org_id, version, sent_at, sent_by_email, recipients
+) VALUES (
+  'f0f5f0f5-0000-4000-8000-0000000000c1',
+  'f0f5f0f5-0000-4000-8000-0000000000a2',
+  'f0f5f0f5-0000-4000-8000-000000000001',
+  2,
+  '2026-09-01T11:00:00Z',
+  'forsight-operator@vistrial.local',
+  ARRAY['forsight-da@vistrial.local']
+);
+
+DO $$
+DECLARE
+  v_count integer;
+  v_denied boolean;
+  v_version integer;
+  v_closed integer;
+BEGIN
+  SELECT public.forsight_next_report_version(
+    'f0f5f0f5-0000-4000-8000-000000000001',
+    '2026-08-01'
+  ) INTO v_version;
+  IF v_version <> 3 THEN
+    RAISE EXCEPTION 'next report version was %, expected 3', v_version;
+  END IF;
+
+  v_denied := false;
+  BEGIN
+    UPDATE public.forsight_reports
+    SET generated_by_name = 'rewritten'
+    WHERE id = 'f0f5f0f5-0000-4000-8000-0000000000a1';
+  EXCEPTION
+    WHEN others THEN
+      IF SQLERRM LIKE '%never edited%' THEN v_denied := true; END IF;
+  END;
+  IF NOT v_denied THEN
+    RAISE EXCEPTION 'a generated report was updated';
+  END IF;
+
+  SELECT count(*) INTO v_count FROM public.ops_job_catalog WHERE job_name = 'forsight-reports';
+  IF v_count <> 1 THEN
+    RAISE EXCEPTION 'forsight-reports is not in the job catalog';
+  END IF;
+
+  -- Both versions remain readable. The numbers in v1 did not move when v2 was written.
+  SELECT (payload #>> '{sections,0,steps,0,count}')::integer INTO v_closed
+  FROM public.forsight_reports
+  WHERE id = 'f0f5f0f5-0000-4000-8000-0000000000a1';
+  IF v_closed <> 1 THEN
+    RAISE EXCEPTION 'version 1 closed count was rewritten to %', v_closed;
+  END IF;
+
+  PERFORM set_config('request.jwt.claim.sub', 'f0f5f0f5-0000-4000-8000-00000000000b', false);
+  SET ROLE authenticated;
+
+  SELECT count(*) INTO v_count
+  FROM public.forsight_reports
+  WHERE org_id = 'f0f5f0f5-0000-4000-8000-000000000001';
+  IF v_count <> 0 THEN
+    RAISE EXCEPTION 'client member saw % reports from another workspace', v_count;
+  END IF;
+
+  SELECT count(*) INTO v_count
+  FROM public.forsight_reports
+  WHERE org_id = 'f0f5f0f5-0000-4000-8000-000000000002';
+  IF v_count <> 1 THEN
+    RAISE EXCEPTION 'client member saw % of their own reports, expected 1', v_count;
+  END IF;
+
+  SELECT count(*) INTO v_count FROM public.forsight_report_sends;
+  IF v_count <> 0 THEN
+    RAISE EXCEPTION 'client member saw % report sends', v_count;
+  END IF;
+
+  v_denied := false;
+  BEGIN
+    INSERT INTO public.forsight_reports (
+      org_id, period_start, period_end, version, generated_by, source_type, payload
+    ) VALUES (
+      'f0f5f0f5-0000-4000-8000-000000000002',
+      '2026-07-01',
+      '2026-07-31',
+      1,
+      'operator',
+      'vistrial_core',
+      '{}'::jsonb
+    );
+  EXCEPTION
+    WHEN insufficient_privilege THEN v_denied := true;
+  END;
+  IF NOT v_denied THEN
+    RAISE EXCEPTION 'an authenticated member inserted a report';
+  END IF;
+
+  v_denied := false;
+  BEGIN
+    DELETE FROM public.forsight_reports
+    WHERE org_id = 'f0f5f0f5-0000-4000-8000-000000000002';
+    GET DIAGNOSTICS v_count = ROW_COUNT;
+  EXCEPTION
+    WHEN insufficient_privilege THEN
+      v_denied := true;
+      v_count := 0;
+  END;
+  IF NOT v_denied AND v_count <> 0 THEN
+    RESET ROLE;
+    RAISE EXCEPTION 'an authenticated member deleted % reports', v_count;
+  END IF;
+
+  RESET ROLE;
+  PERFORM set_config('request.jwt.claim.sub', 'f0f5f0f5-0000-4000-8000-00000000000c', false);
+  SET ROLE authenticated;
+
+  SELECT count(*) INTO v_count FROM public.forsight_report_sends;
+  IF v_count <> 1 THEN
+    RAISE EXCEPTION 'operator saw % report sends, expected 1', v_count;
+  END IF;
+
+  RESET ROLE;
+  PERFORM set_config('request.jwt.claim.sub', '', false);
+END
+$$;
+
+-- Sources leave with the workspace they belong to. Reports leave with them.
 DO $$
 DECLARE
   v_count integer;
@@ -371,6 +543,20 @@ BEGIN
   WHERE org_id = 'f0f5f0f5-0000-4000-8000-000000000002';
   IF v_count <> 0 THEN
     RAISE EXCEPTION 'deleting a workspace left % forsight sources behind', v_count;
+  END IF;
+
+  SELECT count(*) INTO v_count
+  FROM public.forsight_reports
+  WHERE org_id = 'f0f5f0f5-0000-4000-8000-000000000002';
+  IF v_count <> 0 THEN
+    RAISE EXCEPTION 'deleting a workspace left % reports behind', v_count;
+  END IF;
+
+  SELECT count(*) INTO v_count
+  FROM public.forsight_reports
+  WHERE org_id = 'f0f5f0f5-0000-4000-8000-000000000001';
+  IF v_count <> 2 THEN
+    RAISE EXCEPTION 'wiping another workspace deleted this one''s reports';
   END IF;
 END
 $$;

@@ -35,7 +35,7 @@ export default async function ForsightWorkspacesPage() {
     <PageFrame
       title="All workspaces"
       eyebrow="Divine Acquisition only"
-      description="Every workspace's headline numbers on one screen. Open one to see its Forsight."
+      description="Every workspace's headline numbers on one screen. Last month's report: whether it exists, which version, and whether anyone has sent it."
       toolbar={<ForsightTabs activeHref={`${FORSIGHT_PATH}/workspaces`} isPlatformAdmin />}
     >
       <Panel>
@@ -49,6 +49,10 @@ export default async function ForsightWorkspacesPage() {
               <TableHead className="text-right">Never contacted</TableHead>
               <TableHead className="text-right">Going quiet</TableHead>
               <TableHead className="text-right">Debriefs missing</TableHead>
+              <TableHead className="text-right">
+                {rows[0]?.reportPeriodLabel ?? "Last month"} report
+              </TableHead>
+              <TableHead>Sent</TableHead>
               <TableHead />
             </TableRow>
           </TableHeader>
@@ -79,6 +83,12 @@ export default async function ForsightWorkspacesPage() {
                 <TableCell className="text-right tabular-nums">{row.goingQuiet ?? "—"}</TableCell>
                 <TableCell className="text-right tabular-nums">
                   {row.debriefsMissing ?? "—"}
+                </TableCell>
+                <TableCell className="text-right tabular-nums">
+                  {row.reportVersion ? `v${row.reportVersion}` : "Not generated"}
+                </TableCell>
+                <TableCell className="text-silver">
+                  {row.reportVersion ? (row.reportSentAt ? "Sent" : "Not sent") : "—"}
                 </TableCell>
                 <TableCell className="text-right">
                   {row.sourceType ? (

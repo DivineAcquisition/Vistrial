@@ -121,4 +121,12 @@ export type ForsightMetricsProvider = {
   weeks(): Promise<ForsightResult<import("@/lib/forsight/weekly").WeeklyPulse>>;
   creatives(): Promise<ForsightResult<import("@/lib/forsight/creatives").CreativeRow[]>>;
   pipeline(): Promise<ForsightResult<import("@/lib/forsight/pipeline").PipelineHealth>>;
+  /**
+   * A calendar month's figures for the client report. Same contract as the
+   * rest: whatever the source cannot produce comes back null with a reason,
+   * and the generator decides what that means on the page.
+   */
+  monthly(
+    period: { start: string; end: string }
+  ): Promise<ForsightResult<import("@/lib/forsight/report/types").MonthlyMetrics>>;
 };

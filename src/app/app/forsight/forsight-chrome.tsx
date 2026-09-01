@@ -14,6 +14,7 @@ export const FORSIGHT_PAGES = [
   { href: FORSIGHT_PATH, label: "Weekly Pulse" },
   { href: `${FORSIGHT_PATH}/creatives`, label: "Creative Performance" },
   { href: `${FORSIGHT_PATH}/pipeline`, label: "Pipeline Health" },
+  { href: `${FORSIGHT_PATH}/reports`, label: "Reports" },
 ] as const;
 
 /** Cross-workspace and configuration. Both pages 404 for anyone else. */

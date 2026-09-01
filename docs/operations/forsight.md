@@ -6,7 +6,7 @@ Forsight is Vistrial's tracking and metrics section: applications, qualified lea
 
 It does not own data and does not calculate anything its sources do not already calculate. It is a display layer over external sources.
 
-It performs exactly one write, described under [The spend sync](#the-spend-sync). Everything else is read-only, and that should stay true.
+It performs exactly one write *to a source*, described under [The spend sync](#the-spend-sync). Generated monthly reports are written to our own `forsight_reports` table and never back to Airtable, Meta, or GHL. Everything else is read-only, and that should stay true.
 
 ## Tenancy
 
@@ -60,7 +60,7 @@ Operator-only, at `/app/forsight/sources`. Pick a workspace, pick a source type,
 
 This is the one screen that asks anyone to type a base ID, and it is the narrow exception to the no-pasting rule: clients still never touch configuration. The page 404s for a client user, and Postgres refuses their writes regardless.
 
-`/app/forsight/workspaces` is the cross-workspace overview: every workspace's cost per audit held, CAC, and pipeline health counts, one row each, with a link into that workspace's Forsight. It shows one tenant's metrics beside another's, which is exactly the boundary the rest of the architecture enforces — legitimate because DA runs these systems on clients' behalf, and gated at the data layer, since the read goes through the operator's own client and `user_org_ids()` decides what comes back. A client user gets a not-found, not a list of one.
+`/app/forsight/workspaces` is the cross-workspace overview: every workspace's cost per audit held, CAC, pipeline health counts, and last month's report (generated, version, sent), one row each, with a link into that workspace's Forsight. It shows one tenant's metrics beside another's, which is exactly the boundary the rest of the architecture enforces — legitimate because DA runs these systems on clients' behalf, and gated at the data layer, since the read goes through the operator's own client and `user_org_ids()` decides what comes back. A client user gets a not-found, not a list of one.
 
 Both use the existing `platform_admins` concept. No new permission was introduced.
 
@@ -158,6 +158,16 @@ GET /api/forsight/checks?source=meta&since=2026-08-01&until=2026-08-31
 ```
 
 Both are read-only, platform-admin only, and scoped to the caller's active workspace.
+
+## Monthly client reports
+
+A report is a snapshot of last month, frozen at generation. Viewing it reads `forsight_reports.payload` and never re-queries a source. That is the opposite of every dashboard page, and it is deliberate: a client will quote a number from it months later, and a figure that has quietly moved destroys more trust than a bad figure ever did.
+
+Six sections, always the same: funnel, speed and touch, revenue, nurture health, team scorecard, objections. A line the workspace's source cannot produce is omitted (never shown as zero or "unavailable") and logged so an operator can see it. A section with nothing in it becomes one plain sentence.
+
+There is no per-workspace contacts table. Recipients are the active owner and admin members on `org_members`. Generation never emails anyone. Sending is an explicit operator action, logged in `forsight_report_sends` (who, when, which version, to whom). Regeneration inserts the next version beside the old one. Nothing updates or deletes a generated row; the only delete is the workspace itself going away.
+
+Scheduled generation runs at 09:00 UTC on the 3rd of the month via `/api/cron/forsight-reports` (`forsight-reports` in the job catalog) and skips a period that already has a report. An operator can generate off-cycle from `/app/forsight/reports`. Export is a PDF built from the stored payload with `pdf-lib`, so the team table and the closed-versus-lost comparison survive.
 
 ## Hosting
 

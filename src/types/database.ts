@@ -4407,6 +4407,90 @@ export type Database = {
         };
         Relationships: [];
       };
+      forsight_reports: {
+        Row: {
+          generated_at: string;
+          generated_by: Database["public"]["Enums"]["forsight_report_actor"];
+          generated_by_member_id: string | null;
+          generated_by_name: string | null;
+          id: string;
+          omissions: Json;
+          org_id: string;
+          payload: Json;
+          period_end: string;
+          period_start: string;
+          source_type: Database["public"]["Enums"]["forsight_source_type"];
+          version: number;
+        };
+        Insert: {
+          generated_at?: string;
+          generated_by: Database["public"]["Enums"]["forsight_report_actor"];
+          generated_by_member_id?: string | null;
+          generated_by_name?: string | null;
+          id?: string;
+          omissions?: Json;
+          org_id: string;
+          payload: Json;
+          period_end: string;
+          period_start: string;
+          source_type: Database["public"]["Enums"]["forsight_source_type"];
+          version?: number;
+        };
+        Update: {
+          generated_at?: string;
+          generated_by?: Database["public"]["Enums"]["forsight_report_actor"];
+          generated_by_member_id?: string | null;
+          generated_by_name?: string | null;
+          id?: string;
+          omissions?: Json;
+          org_id?: string;
+          payload?: Json;
+          period_end?: string;
+          period_start?: string;
+          source_type?: Database["public"]["Enums"]["forsight_source_type"];
+          version?: number;
+        };
+        Relationships: [];
+      };
+      forsight_report_sends: {
+        Row: {
+          error: string | null;
+          id: string;
+          org_id: string;
+          provider_id: string | null;
+          recipients: string[];
+          report_id: string;
+          sent_at: string;
+          sent_by_email: string | null;
+          sent_by_member_id: string | null;
+          version: number;
+        };
+        Insert: {
+          error?: string | null;
+          id?: string;
+          org_id: string;
+          provider_id?: string | null;
+          recipients: string[];
+          report_id: string;
+          sent_at?: string;
+          sent_by_email?: string | null;
+          sent_by_member_id?: string | null;
+          version: number;
+        };
+        Update: {
+          error?: string | null;
+          id?: string;
+          org_id?: string;
+          provider_id?: string | null;
+          recipients?: string[];
+          report_id?: string;
+          sent_at?: string;
+          sent_by_email?: string | null;
+          sent_by_member_id?: string | null;
+          version?: number;
+        };
+        Relationships: [];
+      };
     };
     Views: {
       queue_rows: {
@@ -4756,6 +4840,10 @@ export type Database = {
       is_platform_admin_user: {
         Args: { p_user_id: string };
         Returns: boolean;
+      };
+      forsight_next_report_version: {
+        Args: { p_org_id: string; p_period_start: string };
+        Returns: number;
       };
       assign_org_lead: {
         Args: {
@@ -5372,6 +5460,7 @@ export type Database = {
       org_role: "owner" | "admin" | "closer" | "setter";
       surface_access: "operator" | "portal";
       forsight_source_type: "airtable" | "meta_ads" | "ghl" | "vistrial_core";
+      forsight_report_actor: "scheduled" | "operator";
       forsight_sync_status: "running" | "succeeded" | "failed";
       revenue_kind: "sale" | "refund" | "chargeback" | "failed";
       source_kind:

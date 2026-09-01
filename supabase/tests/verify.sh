@@ -63,7 +63,7 @@ WHERE n.nspname = 'public'
     'portal_schedules',
     'agent_runs','agent_run_steps','agent_run_approvals','agent_escalations',
     'agent_assets','agent_research_facts','org_agent_settings','agent_model_routes',
-    'forsight_sources','forsight_sync_runs'
+    'forsight_sources','forsight_sync_runs','forsight_reports','forsight_report_sends'
   )
 ORDER BY 1;
 "

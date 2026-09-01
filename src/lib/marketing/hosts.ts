@@ -1,4 +1,8 @@
-import { PRODUCTION_APP_ORIGIN, PRODUCTION_SITE_ORIGIN } from "@/lib/constants";
+import {
+  PRODUCTION_APP_ORIGIN,
+  PRODUCTION_FORSIGHT_ORIGIN,
+  PRODUCTION_SITE_ORIGIN,
+} from "@/lib/constants";
 
 /** Intended public marketing host once apex DNS points at Vercel. */
 export const SITE_HOST = "vistrial.io";
@@ -17,6 +21,20 @@ export function isOperatorAppHost(host: string | null | undefined): boolean {
     return hostname === new URL(PRODUCTION_APP_ORIGIN).hostname;
   } catch {
     return hostname === "app.vistrial.io";
+  }
+}
+
+/**
+ * Host of Forsight. Not a separate app — this hostname lands on the Forsight
+ * section of the operator app, behind the same login as everything else.
+ */
+export function isForsightHost(host: string | null | undefined): boolean {
+  const hostname = hostnameFromHostHeader(host);
+  if (!hostname) return false;
+  try {
+    return hostname === new URL(PRODUCTION_FORSIGHT_ORIGIN).hostname;
+  } catch {
+    return hostname === "pulse.vistrial.io";
   }
 }
 

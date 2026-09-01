@@ -40,6 +40,39 @@ INSERT INTO public.score_configs (org_id)
 VALUES ('22222222-2222-4222-8222-222222222222')
 ON CONFLICT (org_id) DO NOTHING;
 
+-- ---------------------------------------------------------------------------
+-- Divine Acquisition. We run our own acquisition on the same install we sell,
+-- so the DA workspace is an ordinary workspace with an ordinary source record.
+-- Nothing here is special-cased: if this works, a client workspace works.
+--
+-- The base id below is a local placeholder. Point the real workspace at the
+-- real base with `node scripts/seed-forsight-source.mjs`, which is the only
+-- supported way to do it against a real database.
+-- ---------------------------------------------------------------------------
+
+INSERT INTO public.organizations (id, name, slug, timezone, holdout_percent)
+VALUES (
+  '2d2d2d2d-2222-4222-8222-222222222222',
+  'Divine Acquisition',
+  'divine-acquisition',
+  'America/New_York',
+  0
+)
+ON CONFLICT (id) DO NOTHING;
+
+INSERT INTO public.score_configs (org_id)
+VALUES ('2d2d2d2d-2222-4222-8222-222222222222')
+ON CONFLICT (org_id) DO NOTHING;
+
+INSERT INTO public.forsight_sources (org_id, source_type, label, airtable_base_id)
+VALUES (
+  '2d2d2d2d-2222-4222-8222-222222222222',
+  'airtable',
+  'DA Pipeline — Client Acquisition',
+  'appDaPipelineLocal'
+)
+ON CONFLICT (org_id, source_type) DO NOTHING;
+
 INSERT INTO public.org_members (
   id,
   org_id,

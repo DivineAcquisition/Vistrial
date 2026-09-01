@@ -2,7 +2,8 @@ import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
 import { pathRefreshesAuthSession, safeInternalPath } from "@/lib/auth/paths";
-import { hostnameFromHostHeader, isOperatorAppHost } from "@/lib/marketing/hosts";
+import { hostnameFromHostHeader, isForsightHost, isOperatorAppHost } from "@/lib/marketing/hosts";
+import { FORSIGHT_PATH } from "@/lib/navigation";
 import { isSupabaseConfigured, supabasePublishableKey, supabaseUrl } from "@/lib/supabase/env";
 import { fetchForSupabaseKey } from "@/lib/supabase/fetch";
 import type { Database } from "@/types/database";
@@ -30,6 +31,16 @@ function nextWithPath(request: NextRequest) {
 export async function proxy(request: NextRequest) {
   const path = request.nextUrl.pathname;
   const hostname = hostnameFromHostHeader(request.headers.get("host"));
+
+  // pulse.vistrial.io is Forsight's front door. Redirect rather than rewrite so
+  // the rest of this function sees an /app path and applies the normal login
+  // gate, which sends people back to Forsight on this same host afterwards.
+  if (path === "/" && isForsightHost(hostname)) {
+    const forsight = request.nextUrl.clone();
+    forsight.pathname = FORSIGHT_PATH;
+    forsight.search = "";
+    return NextResponse.redirect(forsight);
+  }
 
   if (path === "/" && isOperatorAppHost(hostname)) {
     const login = request.nextUrl.clone();

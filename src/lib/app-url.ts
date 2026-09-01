@@ -1,4 +1,4 @@
-import { PRODUCTION_APP_ORIGIN } from "@/lib/constants";
+import { PRODUCTION_APP_ORIGIN, PRODUCTION_FORSIGHT_ORIGIN } from "@/lib/constants";
 
 const LOCAL_ORIGINS = new Set(["http://localhost:3000", "http://127.0.0.1:3000"]);
 
@@ -29,6 +29,8 @@ export function isAllowedAppOrigin(origin: string): boolean {
   const normalized = origin.trim().replace(/\/$/, "");
   if (!normalized) return false;
   if (normalized === PRODUCTION_APP_ORIGIN) return true;
+  // Signing in from pulse.vistrial.io must land back on pulse.vistrial.io.
+  if (normalized === PRODUCTION_FORSIGHT_ORIGIN) return true;
   if (LOCAL_ORIGINS.has(normalized)) return true;
   try {
     const url = new URL(normalized);

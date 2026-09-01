@@ -7,6 +7,7 @@ import {
   BarChart3,
   ClipboardList,
   FolderOpen,
+  Gauge,
   ListChecks,
   Phone,
   Settings2,
@@ -32,6 +33,7 @@ const ICONS: Record<NavIcon, LucideIcon> = {
   reporting: BarChart3,
   settings: Settings2,
   activity: Activity,
+  forsight: Gauge,
 };
 
 export function AppNavLinks({

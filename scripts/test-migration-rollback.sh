@@ -360,3 +360,26 @@ if [[ "$(echo "$fn_src" | tr -d ' ')" = "0" ]]; then
 fi
 
 echo "OK: agent framework migration rollback and re-apply succeeded."
+
+echo "Rollback forsight foundation (sources table and type gone)..."
+run "${ROOT}/supabase/rollbacks/20260835010000_forsight_foundation.sql"
+tbl_forsight="$("${PSQL[@]}" -d "${DB_NAME}" -tAc "SELECT count(*) FROM information_schema.tables WHERE table_schema='public' AND table_name='forsight_sources'")"
+if [[ "$(echo "$tbl_forsight" | tr -d ' ')" != "0" ]]; then
+  echo "forsight rollback left forsight_sources in place" >&2
+  exit 1
+fi
+type_forsight="$("${PSQL[@]}" -d "${DB_NAME}" -tAc "SELECT count(*) FROM pg_type t JOIN pg_namespace n ON n.oid=t.typnamespace WHERE n.nspname='public' AND t.typname='forsight_source_type'")"
+if [[ "$(echo "$type_forsight" | tr -d ' ')" != "0" ]]; then
+  echo "forsight rollback left forsight_source_type in place" >&2
+  exit 1
+fi
+
+echo "Re-apply forsight foundation..."
+run "${ROOT}/supabase/migrations/20260835010000_forsight_foundation.sql"
+tbl_forsight="$("${PSQL[@]}" -d "${DB_NAME}" -tAc "SELECT count(*) FROM information_schema.tables WHERE table_schema='public' AND table_name='forsight_sources'")"
+if [[ "$(echo "$tbl_forsight" | tr -d ' ')" != "1" ]]; then
+  echo "re-apply did not restore forsight_sources" >&2
+  exit 1
+fi
+
+echo "OK: forsight foundation migration rollback and re-apply succeeded."

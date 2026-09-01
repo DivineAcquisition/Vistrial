@@ -12,6 +12,12 @@ export const PRODUCTION_APP_ORIGIN = "https://app.vistrial.io";
 /** Public marketing site. This is the URL people paste into Slack and DMs. */
 export const PRODUCTION_SITE_ORIGIN = "https://vistrial.io";
 
+/**
+ * Forsight, the tracking and metrics section. Same app, same login, same
+ * workspace — a hostname people can bookmark, not a second deployment.
+ */
+export const PRODUCTION_FORSIGHT_ORIGIN = "https://pulse.vistrial.io";
+
 /** Public contact — matches the privacy policy. */
 export const CONTACT_EMAIL = "contact@vistrial.io";
 

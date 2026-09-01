@@ -4302,6 +4302,60 @@ export type Database = {
         };
         Relationships: [];
       };
+      forsight_sources: {
+        Row: {
+          airtable_base_id: string | null;
+          airtable_creatives_table: string | null;
+          airtable_leads_table: string | null;
+          airtable_touches_table: string | null;
+          airtable_weekly_summary_table: string | null;
+          created_at: string;
+          id: string;
+          label: string | null;
+          last_error: string | null;
+          last_verified_at: string | null;
+          meta_ad_account_id: string | null;
+          org_id: string;
+          source_type: Database["public"]["Enums"]["forsight_source_type"];
+          status: Database["public"]["Enums"]["ghl_connection_status"];
+          updated_at: string;
+        };
+        Insert: {
+          airtable_base_id?: string | null;
+          airtable_creatives_table?: string | null;
+          airtable_leads_table?: string | null;
+          airtable_touches_table?: string | null;
+          airtable_weekly_summary_table?: string | null;
+          created_at?: string;
+          id?: string;
+          label?: string | null;
+          last_error?: string | null;
+          last_verified_at?: string | null;
+          meta_ad_account_id?: string | null;
+          org_id: string;
+          source_type: Database["public"]["Enums"]["forsight_source_type"];
+          status?: Database["public"]["Enums"]["ghl_connection_status"];
+          updated_at?: string;
+        };
+        Update: {
+          airtable_base_id?: string | null;
+          airtable_creatives_table?: string | null;
+          airtable_leads_table?: string | null;
+          airtable_touches_table?: string | null;
+          airtable_weekly_summary_table?: string | null;
+          created_at?: string;
+          id?: string;
+          label?: string | null;
+          last_error?: string | null;
+          last_verified_at?: string | null;
+          meta_ad_account_id?: string | null;
+          org_id?: string;
+          source_type?: Database["public"]["Enums"]["forsight_source_type"];
+          status?: Database["public"]["Enums"]["ghl_connection_status"];
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
     };
     Views: {
       queue_rows: {
@@ -5266,6 +5320,7 @@ export type Database = {
         | "superseded";
       org_role: "owner" | "admin" | "closer" | "setter";
       surface_access: "operator" | "portal";
+      forsight_source_type: "airtable" | "meta_ads";
       revenue_kind: "sale" | "refund" | "chargeback" | "failed";
       source_kind:
         | "meta_ads"

@@ -62,7 +62,8 @@ WHERE n.nspname = 'public'
     'source_connections','ad_spend_days','processor_events','calendar_blocks','form_events',
     'portal_schedules',
     'agent_runs','agent_run_steps','agent_run_approvals','agent_escalations',
-    'agent_assets','agent_research_facts','org_agent_settings','agent_model_routes'
+    'agent_assets','agent_research_facts','org_agent_settings','agent_model_routes',
+    'forsight_sources'
   )
 ORDER BY 1;
 "
@@ -142,7 +143,10 @@ run "${ROOT}/supabase/tests/verify-portal.sql"
 echo "Agent framework checks..."
 run "${ROOT}/supabase/tests/verify-agent-framework.sql"
 
+echo "Forsight checks..."
+run "${ROOT}/supabase/tests/verify-forsight.sql"
+
 echo "Migration rollback (this prompt's migrations)..."
 bash "${ROOT}/scripts/test-migration-rollback.sh"
 
-echo "OK: schema, seed, triggers, RLS, invite, scoring, GHL, platform-admin, queue, case-file, transcript, follow-up, integrity, reporting, business-profile, onboarding-reconcile, notification, hardening, mobile, calibration, call-quality, operator-agent, self-verification, activity-stream, owner-portal, and agent-framework checks passed."
+echo "OK: schema, seed, triggers, RLS, invite, scoring, GHL, platform-admin, queue, case-file, transcript, follow-up, integrity, reporting, business-profile, onboarding-reconcile, notification, hardening, mobile, calibration, call-quality, operator-agent, self-verification, activity-stream, owner-portal, agent-framework, and forsight checks passed."

@@ -12,13 +12,27 @@ import { canManageOrgSettings } from "@/lib/auth/permissions";
  */
 export type NavGroupId = "work" | "measure" | "configure";
 
+/**
+ * Forsight, the tracking and metrics section. Also what pulse.vistrial.io
+ * lands on, so the hostname and the sidebar agree on one path.
+ */
+export const FORSIGHT_PATH = "/app/forsight";
+
 export const NAV_GROUPS: Array<{ id: NavGroupId; label: string }> = [
   { id: "work", label: "Work" },
   { id: "measure", label: "Measure" },
   { id: "configure", label: "Configure" },
 ];
 
-export type NavIcon = "queue" | "log" | "cases" | "calls" | "reporting" | "settings" | "activity";
+export type NavIcon =
+  | "queue"
+  | "log"
+  | "cases"
+  | "calls"
+  | "reporting"
+  | "settings"
+  | "activity"
+  | "forsight";
 
 export type NavItem = {
   href: string;
@@ -49,6 +63,14 @@ export const PRIMARY_NAV: NavItem[] = [
     match: "/app/reporting",
     group: "measure",
     icon: "reporting",
+    roles: ["owner", "admin"],
+  },
+  {
+    href: FORSIGHT_PATH,
+    label: "Forsight",
+    match: FORSIGHT_PATH,
+    group: "measure",
+    icon: "forsight",
     roles: ["owner", "admin"],
   },
   {

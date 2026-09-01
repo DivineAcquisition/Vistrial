@@ -361,8 +361,22 @@ fi
 
 echo "OK: agent framework migration rollback and re-apply succeeded."
 
-# Newest first: forsight_sync_runs holds a column of the type the foundation
-# rollback drops, so live sources has to come off before the foundation can.
+# Newest first throughout: each of these migrations rebuilds the source-type
+# enum, and a column of that type in a later migration blocks an earlier
+# rollback from dropping it.
+echo "Rollback forsight client workspaces (core type and operator writes gone)..."
+run "${ROOT}/supabase/rollbacks/20260837010000_forsight_client_workspaces.sql"
+enum_core="$("${PSQL[@]}" -d "${DB_NAME}" -tAc "SELECT count(*) FROM pg_enum e JOIN pg_type t ON t.oid=e.enumtypid WHERE t.typname='forsight_source_type' AND e.enumlabel='vistrial_core'")"
+if [[ "$(echo "$enum_core" | tr -d ' ')" != "0" ]]; then
+  echo "client workspaces rollback left the vistrial_core source type in place" >&2
+  exit 1
+fi
+policy_write="$("${PSQL[@]}" -d "${DB_NAME}" -tAc "SELECT count(*) FROM pg_policies WHERE tablename='forsight_sources' AND policyname LIKE 'forsight_sources_operator_%'")"
+if [[ "$(echo "$policy_write" | tr -d ' ')" != "0" ]]; then
+  echo "client workspaces rollback left the operator write policies in place" >&2
+  exit 1
+fi
+
 echo "Rollback forsight live sources (ghl type and sync log gone)..."
 run "${ROOT}/supabase/rollbacks/20260836010000_forsight_live_sources.sql"
 tbl_runs="$("${PSQL[@]}" -d "${DB_NAME}" -tAc "SELECT count(*) FROM information_schema.tables WHERE table_schema='public' AND table_name='forsight_sync_runs'")"
@@ -413,3 +427,18 @@ if [[ "$(echo "$col_cal" | tr -d ' ')" != "1" ]]; then
 fi
 
 echo "OK: forsight live sources migration rollback and re-apply succeeded."
+
+echo "Re-apply forsight client workspaces..."
+run "${ROOT}/supabase/migrations/20260837010000_forsight_client_workspaces.sql"
+enum_core="$("${PSQL[@]}" -d "${DB_NAME}" -tAc "SELECT count(*) FROM pg_enum e JOIN pg_type t ON t.oid=e.enumtypid WHERE t.typname='forsight_source_type' AND e.enumlabel='vistrial_core'")"
+if [[ "$(echo "$enum_core" | tr -d ' ')" != "1" ]]; then
+  echo "re-apply did not restore the vistrial_core source type" >&2
+  exit 1
+fi
+policy_write="$("${PSQL[@]}" -d "${DB_NAME}" -tAc "SELECT count(*) FROM pg_policies WHERE tablename='forsight_sources' AND policyname LIKE 'forsight_sources_operator_%'")"
+if [[ "$(echo "$policy_write" | tr -d ' ')" != "3" ]]; then
+  echo "re-apply did not restore all three operator write policies" >&2
+  exit 1
+fi
+
+echo "OK: forsight client workspaces migration rollback and re-apply succeeded."

@@ -1,61 +1,87 @@
 import "server-only";
 
 import { listAirtableRecords } from "@/lib/forsight/airtable";
+import { creativesByCostPerAuditHeld, type CreativeRow } from "@/lib/forsight/creatives";
 import { ForsightSourceError } from "@/lib/forsight/errors";
+import { pipelineHealth, type PipelineHealth } from "@/lib/forsight/pipeline";
 import {
   availableDatasets,
   loadForsightSource,
+  loadForsightSources,
   type ForsightDb,
 } from "@/lib/forsight/sources";
 import {
   FORSIGHT_DATASET_LABELS,
   type ForsightAirtableSource,
   type ForsightDataset,
-  type ForsightDatasetResult,
   type ForsightMetricsProvider,
-  type ForsightReadOptions,
+  type ForsightRecord,
+  type ForsightResult,
+  type ForsightSourceType,
 } from "@/lib/forsight/types";
+import { weeklyPulse, type WeeklyPulse } from "@/lib/forsight/weekly";
 
 /**
  * A workspace has a source, the source has a type, and the type decides how
- * Forsight reads it. Airtable is the first type. A Vistrial-core type, for
- * clients whose activity is already logged in the main app, is the second and
- * lands here without touching a single caller.
+ * Forsight reads it.
+ *
+ * The contract is deliberately in the product's own vocabulary — weeks,
+ * creatives, pipeline health — and not in any source's. An adapter's job is to
+ * produce those shapes with the metrics already computed; how it gets there is
+ * its own business. That is what lets a page ask for "this workspace's weekly
+ * metrics" without ever learning where they came from, and it is why adding
+ * the Vistrial-core type below touched no page.
  */
+
+function unavailableDataset<T>(reason: string): ForsightResult<T> {
+  return { available: false, reason };
+}
 
 export function airtableProvider(
   source: ForsightAirtableSource,
-  orgLabel?: string | null
+  orgLabel?: string | null,
+  fetchImpl?: typeof fetch
 ): ForsightMetricsProvider {
+  const read = async (dataset: ForsightDataset): Promise<ForsightResult<ForsightRecord[]>> => {
+    const table = source.tables[dataset]?.trim();
+    if (!table) {
+      return unavailableDataset(
+        `This workspace's base has no ${FORSIGHT_DATASET_LABELS[dataset]} table.`
+      );
+    }
+    const records = await listAirtableRecords({
+      orgId: source.orgId,
+      orgLabel,
+      baseId: source.baseId,
+      table,
+      fetchImpl,
+    });
+    return { available: true, data: records };
+  };
+
   return {
     sourceType: "airtable",
     orgId: source.orgId,
     sourceId: source.id,
     availableDatasets: () => availableDatasets(source),
-    async readDataset(
-      dataset: ForsightDataset,
-      options: ForsightReadOptions = {}
-    ): Promise<ForsightDatasetResult> {
-      const table = source.tables[dataset]?.trim();
-      if (!table) {
-        return {
-          dataset,
-          available: false,
-          reason: `This workspace's base has no ${FORSIGHT_DATASET_LABELS[dataset]} table.`,
-        };
-      }
 
-      const records = await listAirtableRecords({
-        orgId: source.orgId,
-        orgLabel,
-        baseId: source.baseId,
-        table,
-        filterByFormula: options.filterByFormula,
-        maxRecords: options.maxRecords,
-        signal: options.signal,
-      });
-
-      return { dataset, available: true, records };
+    // Airtable calculated all of these in formula fields. The mappers below
+    // read those results; nothing here divides.
+    async weeks() {
+      const result = await read("weeklySummary");
+      return result.available
+        ? { available: true, data: weeklyPulse(result.data) }
+        : result;
+    },
+    async creatives() {
+      const result = await read("creatives");
+      return result.available
+        ? { available: true, data: creativesByCostPerAuditHeld(result.data) }
+        : result;
+    },
+    async pipeline() {
+      const result = await read("leads");
+      return result.available ? { available: true, data: pipelineHealth(result.data) } : result;
     },
   };
 }
@@ -69,27 +95,41 @@ export async function forsightProviderFor(
   db: ForsightDb,
   args: { orgId: string; orgName?: string | null }
 ): Promise<ForsightMetricsProvider> {
-  const source = await loadForsightSource(db, args.orgId, "airtable");
+  const sources = await loadForsightSources(db, args.orgId);
+  const metricsSource = sources.find(
+    (source) => source.type === "airtable" || source.type === "vistrial_core"
+  );
 
-  if (!source) {
+  if (!metricsSource) {
     throw new ForsightSourceError({
       orgId: args.orgId,
       orgLabel: args.orgName,
       sourceType: "airtable",
       reason: "not_configured",
-      detail: "Add a forsight_sources row for this workspace before reading metrics.",
+      detail: "Add a Forsight source for this workspace before reading metrics.",
     });
   }
 
-  if (source.type !== "airtable") {
-    throw new ForsightSourceError({
-      orgId: args.orgId,
-      orgLabel: args.orgName,
-      sourceType: source.type,
-      reason: "not_configured",
-      detail: `Forsight has no reader for source type ${source.type}.`,
+  if (metricsSource.type === "vistrial_core") {
+    const { coreProvider } = await import("@/lib/forsight/core-source");
+    return coreProvider(db, metricsSource, {
+      orgName: args.orgName,
+      meta: sources.find((source) => source.type === "meta_ads") ?? null,
     });
   }
 
-  return airtableProvider(source, args.orgName);
+  return airtableProvider(metricsSource, args.orgName);
 }
+
+/** Kept for the Meta sync, which needs the Airtable source specifically. */
+export async function airtableSourceFor(db: ForsightDb, orgId: string) {
+  return loadForsightSource(db, orgId, "airtable");
+}
+
+export type {
+  CreativeRow,
+  ForsightMetricsProvider,
+  ForsightSourceType,
+  PipelineHealth,
+  WeeklyPulse,
+};

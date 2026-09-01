@@ -8,6 +8,7 @@ import {
   formatMetric,
   formatNumber,
   isNumber,
+  metricReason,
   movement,
   type MetricFormat,
   type MetricSense,
@@ -91,9 +92,12 @@ export function WeeklyPulseScreen({
                 label={headline.label}
                 value={formatMetric(value, headline.format)}
                 sub={
-                  previous && before
+                  // A metric this workspace's source cannot produce says why.
+                  // Never a zero, which would read as a real measurement.
+                  metricReason(value) ??
+                  (previous && before
                     ? `${formatMetric(before, headline.format)} last week`
-                    : undefined
+                    : undefined)
                 }
                 trend={
                   change ? (

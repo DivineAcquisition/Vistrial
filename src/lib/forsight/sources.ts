@@ -6,6 +6,7 @@ import { ForsightSourceError } from "@/lib/forsight/errors";
 import {
   FORSIGHT_DATASETS,
   type ForsightAirtableSource,
+  type ForsightCoreSource,
   type ForsightDataset,
   type ForsightGhlSource,
   type ForsightMetaSource,
@@ -58,13 +59,26 @@ export function sourceFromRow(row: ForsightSourceRow): ForsightSource {
     return source;
   }
 
-  const source: ForsightGhlSource = {
+  if (row.source_type === "ghl") {
+    const source: ForsightGhlSource = {
+      id: row.id,
+      orgId: row.org_id,
+      type: "ghl",
+      status: row.status,
+      label: row.label,
+      calendarId: row.ghl_calendar_id,
+      lastVerifiedAt: row.last_verified_at,
+      lastError: row.last_error,
+    };
+    return source;
+  }
+
+  const source: ForsightCoreSource = {
     id: row.id,
     orgId: row.org_id,
-    type: "ghl",
+    type: "vistrial_core",
     status: row.status,
     label: row.label,
-    calendarId: row.ghl_calendar_id,
     lastVerifiedAt: row.last_verified_at,
     lastError: row.last_error,
   };

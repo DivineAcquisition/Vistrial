@@ -9,7 +9,7 @@ export const dynamic = "force-dynamic";
 export const metadata = { title: "Forsight" };
 
 export default async function WeeklyPulsePage() {
-  await requireReportingAccess();
+  const ctx = await requireReportingAccess();
   const view = await loadWeeklyPulse();
   // Loaded after the Airtable view so the live sources see the same week
   // Airtable is reporting on. Neither can fail this page.
@@ -21,6 +21,7 @@ export default async function WeeklyPulsePage() {
       title="Weekly Pulse"
       description="How the funnel is doing right now, and which direction it is moving. Every figure is read from Airtable, which is where it is calculated."
       view={view}
+      isPlatformAdmin={ctx.isPlatformAdmin}
     >
       {(pulse) => <WeeklyPulseScreen pulse={pulse} live={live} />}
     </ForsightPage>

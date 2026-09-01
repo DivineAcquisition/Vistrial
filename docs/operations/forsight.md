@@ -20,7 +20,7 @@ Each workspace has one row per source type in `public.forsight_sources`:
 
 | Column | Meaning |
 | --- | --- |
-| `source_type` | `airtable`, `meta_ads`, or `ghl`. A `vistrial_core` type, reading the main app's own database, is next and slots in behind the same interface. |
+| `source_type` | `airtable`, `vistrial_core`, `meta_ads`, or `ghl`. A workspace reads its metrics from exactly one of `airtable` or `vistrial_core`, enforced by a partial unique index. |
 | `airtable_base_id` | The base DA created for that client, or `DA Pipeline — ClientAcquisition` for ours. |
 | `airtable_*_table` | Names of the Leads, Creatives, Weekly Summary, and Touches tables. `NULL` means this base does not have that table, and the display layer treats those metrics as unavailable rather than broken. |
 | `meta_ad_account_id` | Only on `meta_ads` rows, and only for workspaces whose ad spend Forsight reads. |
@@ -30,7 +30,39 @@ Source details are database rows and not environment variables on purpose: env v
 
 ### Isolation
 
-`forsight_sources` has RLS on, with a single `SELECT` policy scoped to `user_org_ids()`. `authenticated` has **no** insert, update, or delete grant at all — creating and editing source records is an internal operator action performed with the service role. `supabase/tests/verify-forsight.sql` asserts the cross-workspace read is empty and that a member's write is refused.
+`forsight_sources` has RLS on. Reads are scoped to `user_org_ids()`; writes require `is_platform_admin()`. A client user's insert is refused outright and their update or delete matches zero rows, so provisioning is closed to them in Postgres and not merely hidden behind a missing link. `supabase/tests/verify-forsight.sql` asserts all of it, plus that an operator can do the same things a client cannot.
+
+## The two metrics source types
+
+Both present the same shapes with the metrics already computed, which is what lets a page ask for a workspace's weekly metrics without learning where they came from. No dashboard page branches on source type; adding the second one changed none of them.
+
+| | `airtable` | `vistrial_core` |
+| --- | --- | --- |
+| Where it reads | A base duplicated from our master template | `leads`, `calls`, `touches`, `revenue_log`, `next_actions`, `call_extractions` |
+| How costs are computed | Read from formula fields | Derived in the adapter by `formulas.ts`, which reproduces those formulas including their text branches |
+| Creative performance | Yes | **No** — core holds no per-ad data at all |
+| Ad spend | Synced in from Meta | Read live from the workspace's Meta source, or unavailable |
+
+Existing Airtable clients are untouched. Nothing migrates.
+
+### Matching the formulas
+
+`src/lib/forsight/formulas.ts` is the Airtable formulas written once. A client moved between source types must not see their numbers change meaning, so the edge cases are reproduced exactly: a zero denominator with spend behind it returns `No audits yet` or `No closes yet`, a zero denominator with no spend returns blank, and neither returns zero. `adapter-parity.test.ts` builds the same week both ways and compares.
+
+### What core cannot produce
+
+- **Creative performance.** There is no per-ad-creative data in core: `ad_spend_days` is campaign by day, with no ad name, impressions, or clicks. The page says so rather than showing an empty table.
+- **Ad spend.** Spend comes from the workspace's own Meta source. `ad_spend_days` exists but belongs to the owner-portal integration, with its own sync lifecycle and a rolling window; borrowing another subsystem's numbers is how a dashboard ends up confidently wrong. Without a Meta source, every metric that divides by spend reads `No ad spend connected` — never `$0`.
+
+## Provisioning a client
+
+Operator-only, at `/app/forsight/sources`. Pick a workspace, pick a source type, enter what that type needs, and test the connection; the save button stays disabled until the test passes, and the save action re-runs the test server-side and refuses to write if it fails. A source that saves cleanly and fails at the client's first login is the worst version of this feature.
+
+This is the one screen that asks anyone to type a base ID, and it is the narrow exception to the no-pasting rule: clients still never touch configuration. The page 404s for a client user, and Postgres refuses their writes regardless.
+
+`/app/forsight/workspaces` is the cross-workspace overview: every workspace's cost per audit held, CAC, and pipeline health counts, one row each, with a link into that workspace's Forsight. It shows one tenant's metrics beside another's, which is exactly the boundary the rest of the architecture enforces — legitimate because DA runs these systems on clients' behalf, and gated at the data layer, since the read goes through the operator's own client and `user_org_ids()` decides what comes back. A client user gets a not-found, not a list of one.
+
+Both use the existing `platform_admins` concept. No new permission was introduced.
 
 ## Credentials
 

@@ -70,7 +70,25 @@ export type ForsightGhlSource = {
   lastError: string | null;
 };
 
-export type ForsightSource = ForsightAirtableSource | ForsightMetaSource | ForsightGhlSource;
+/**
+ * Vistrial's own core tables. Needs no configuration at all: the workspace is
+ * the whole address, and the RLS that scopes every other table scopes this.
+ */
+export type ForsightCoreSource = {
+  id: string;
+  orgId: string;
+  type: "vistrial_core";
+  status: ForsightSourceStatus;
+  label: string | null;
+  lastVerifiedAt: string | null;
+  lastError: string | null;
+};
+
+export type ForsightSource =
+  | ForsightAirtableSource
+  | ForsightMetaSource
+  | ForsightGhlSource
+  | ForsightCoreSource;
 
 /** One row from a source, kept in the source's own vocabulary. */
 export type ForsightRecord = {
@@ -78,22 +96,20 @@ export type ForsightRecord = {
   fields: Record<string, unknown>;
 };
 
-export type ForsightDatasetResult =
-  | { dataset: ForsightDataset; available: true; records: ForsightRecord[] }
-  | { dataset: ForsightDataset; available: false; reason: string };
-
-export type ForsightReadOptions = {
-  /** Source-native filter expression. Passed through untouched. */
-  filterByFormula?: string;
-  /** Upper bound on rows read across all pages. */
-  maxRecords?: number;
-  signal?: AbortSignal;
-};
+export type ForsightResult<T> =
+  | { available: true; data: T }
+  | { available: false; reason: string };
 
 /**
- * Every Forsight read goes through this. Airtable is the first implementation;
- * a Vistrial-core reader for clients whose activity lives in the main app is
- * the second, and adds no new call sites.
+ * Every Forsight read goes through this, and it is written in the product's
+ * vocabulary rather than any source's.
+ *
+ * An adapter returns weeks, creatives and pipeline health with their metrics
+ * already computed. The Airtable adapter gets there by reading formula fields;
+ * the Vistrial-core adapter gets there by querying core tables and applying
+ * the same formulas. A page asks for a workspace's weekly metrics and cannot
+ * tell which answered — that is the whole point of the interface, and the
+ * reason adding the second type changed no page.
  */
 export type ForsightMetricsProvider = {
   readonly sourceType: ForsightSourceType;
@@ -102,8 +118,7 @@ export type ForsightMetricsProvider = {
   readonly sourceId: string;
   /** Datasets this workspace's source actually has. */
   availableDatasets(): ForsightDataset[];
-  readDataset(
-    dataset: ForsightDataset,
-    options?: ForsightReadOptions
-  ): Promise<ForsightDatasetResult>;
+  weeks(): Promise<ForsightResult<import("@/lib/forsight/weekly").WeeklyPulse>>;
+  creatives(): Promise<ForsightResult<import("@/lib/forsight/creatives").CreativeRow[]>>;
+  pipeline(): Promise<ForsightResult<import("@/lib/forsight/pipeline").PipelineHealth>>;
 };

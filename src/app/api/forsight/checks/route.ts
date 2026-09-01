@@ -4,7 +4,7 @@ import { getAuthContext } from "@/lib/auth/session";
 import { ForsightSourceError } from "@/lib/forsight/errors";
 import { readWorkspaceAdSpend } from "@/lib/forsight/meta";
 import { forsightProviderFor } from "@/lib/forsight/provider";
-import { FORSIGHT_DATASETS, type ForsightDataset } from "@/lib/forsight/types";
+import type { ForsightResult } from "@/lib/forsight/types";
 import { createClient } from "@/lib/supabase/server";
 
 export const dynamic = "force-dynamic";
@@ -54,19 +54,21 @@ export async function GET(request: NextRequest) {
       orgId: ctx.org.id,
       orgName: ctx.org.name,
     });
-    const requested = datasetsFrom(params.get("dataset"));
-    const results = await Promise.all(
-      requested.map((dataset) => provider.readDataset(dataset, { maxRecords: 1 }))
-    );
+
+    const [weeks, creatives, pipeline] = await Promise.all([
+      provider.weeks(),
+      provider.creatives(),
+      provider.pipeline(),
+    ]);
 
     return NextResponse.json({
       workspace: { id: ctx.org.id, name: ctx.org.name },
       source: provider.sourceType,
-      datasets: results.map((result) =>
-        result.available
-          ? { dataset: result.dataset, available: true, sampleRecords: result.records.length }
-          : { dataset: result.dataset, available: false, reason: result.reason }
-      ),
+      datasets: [
+        describe("weeks", weeks, (data) => data.weeks.length),
+        describe("creatives", creatives, (data) => data.length),
+        describe("pipeline", pipeline, (data) => data.totalLeads),
+      ],
     });
   } catch (error) {
     if (error instanceof ForsightSourceError) {
@@ -83,8 +85,12 @@ function isoDate(value: Date): string {
   return value.toISOString().slice(0, 10);
 }
 
-function datasetsFrom(value: string | null): ForsightDataset[] {
-  if (!value) return [...FORSIGHT_DATASETS];
-  const match = FORSIGHT_DATASETS.find((dataset) => dataset === value);
-  return match ? [match] : [...FORSIGHT_DATASETS];
+function describe<T>(
+  name: string,
+  result: ForsightResult<T>,
+  count: (data: T) => number
+) {
+  return result.available
+    ? { dataset: name, available: true, rows: count(result.data) }
+    : { dataset: name, available: false, reason: result.reason };
 }

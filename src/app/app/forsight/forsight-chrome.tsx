@@ -16,8 +16,26 @@ export const FORSIGHT_PAGES = [
   { href: `${FORSIGHT_PATH}/pipeline`, label: "Pipeline Health" },
 ] as const;
 
-export function ForsightTabs({ activeHref }: { activeHref: string }) {
-  return <NavTabs label="Forsight pages" activeHref={activeHref} items={[...FORSIGHT_PAGES]} />;
+/** Cross-workspace and configuration. Both pages 404 for anyone else. */
+export const FORSIGHT_OPERATOR_PAGES = [
+  { href: `${FORSIGHT_PATH}/workspaces`, label: "All workspaces" },
+  { href: `${FORSIGHT_PATH}/sources`, label: "Sources" },
+] as const;
+
+export function ForsightTabs({
+  activeHref,
+  isPlatformAdmin = false,
+}: {
+  activeHref: string;
+  isPlatformAdmin?: boolean;
+}) {
+  return (
+    <NavTabs
+      label="Forsight pages"
+      activeHref={activeHref}
+      items={[...FORSIGHT_PAGES, ...(isPlatformAdmin ? FORSIGHT_OPERATOR_PAGES : [])]}
+    />
+  );
 }
 
 /**
@@ -30,12 +48,14 @@ export function ForsightPage<T>({
   title,
   description,
   view,
+  isPlatformAdmin = false,
   children,
 }: {
   activeHref: string;
   title: string;
   description: string;
   view: ForsightView<T>;
+  isPlatformAdmin?: boolean;
   children: (data: T) => ReactNode;
 }) {
   const fetchedAt =
@@ -50,7 +70,7 @@ export function ForsightPage<T>({
       description={description}
       status={fetchedAt ? `Read at ${fetchedAt}` : undefined}
       statusTone="neutral"
-      toolbar={<ForsightTabs activeHref={activeHref} />}
+      toolbar={<ForsightTabs activeHref={activeHref} isPlatformAdmin={isPlatformAdmin} />}
     >
       <ForsightBody view={view}>{children}</ForsightBody>
     </PageFrame>

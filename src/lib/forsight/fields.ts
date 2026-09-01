@@ -126,6 +126,12 @@ export function plainText(value: string): string {
     .toLowerCase();
 }
 
+/**
+ * Airtable writes these as "Closed Won"; Vistrial's core `lead_status` enum
+ * writes the same thing as `closed_won`. Both adapters feed this, so the
+ * separator is normalised — otherwise a closed core lead would read as still
+ * in play and turn up in a queue asking someone to chase it.
+ */
 export function isClosedStage(stage: string): boolean {
-  return CLOSED_STAGES.has(stage.trim().toLowerCase());
+  return CLOSED_STAGES.has(stage.trim().toLowerCase().replace(/[_-]+/g, " "));
 }

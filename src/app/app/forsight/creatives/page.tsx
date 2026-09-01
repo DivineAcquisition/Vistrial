@@ -9,7 +9,7 @@ export const dynamic = "force-dynamic";
 export const metadata = { title: "Creative Performance · Forsight" };
 
 export default async function CreativePerformancePage() {
-  await requireReportingAccess();
+  const ctx = await requireReportingAccess();
   const view = await loadCreativePerformance();
 
   return (
@@ -18,6 +18,7 @@ export default async function CreativePerformancePage() {
       title="Creative Performance"
       description="Which ads are earning their spend and which should be killed."
       view={view}
+      isPlatformAdmin={ctx.isPlatformAdmin}
     >
       {(rows) => <CreativeTable rows={rows} />}
     </ForsightPage>

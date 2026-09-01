@@ -2,17 +2,22 @@ import "server-only";
 
 import { getAuthContext } from "@/lib/auth/session";
 import { readCached } from "@/lib/forsight/cache";
-import { creativesByCostPerAuditHeld, type CreativeRow } from "@/lib/forsight/creatives";
+import type { CreativeRow } from "@/lib/forsight/creatives";
 import { ForsightSourceError } from "@/lib/forsight/errors";
 import { forsightProviderFor } from "@/lib/forsight/provider";
 import { loadGhlActivity, type GhlActivity } from "@/lib/forsight/ghl";
-import { pipelineHealth, type PipelineHealth } from "@/lib/forsight/pipeline";
+import type { PipelineHealth } from "@/lib/forsight/pipeline";
 import { reconcileAppointments, type Reconciliation } from "@/lib/forsight/reconcile";
 import { loadSpendToday, type SpendToday } from "@/lib/forsight/spend-today";
 import { createClient } from "@/lib/supabase/server";
-import { FORSIGHT_DATASET_LABELS, type ForsightDataset } from "@/lib/forsight/types";
+import {
+  FORSIGHT_DATASET_LABELS,
+  type ForsightDataset,
+  type ForsightMetricsProvider,
+  type ForsightResult,
+} from "@/lib/forsight/types";
 import { isoDate, weekEnd } from "@/lib/forsight/weeks";
-import { weeklyPulse, type WeekRow, type WeeklyPulse } from "@/lib/forsight/weekly";
+import type { WeekRow, WeeklyPulse } from "@/lib/forsight/weekly";
 
 /**
  * What a Forsight page gets handed. Every absence is its own state, because
@@ -28,12 +33,16 @@ export type ForsightView<T> =
 
 export type Workspace = { id: string; name: string; timezone: string };
 
-async function readDataset(
-  dataset: ForsightDataset
-): Promise<
-  | { state: "ok"; workspace: Workspace; records: import("@/lib/forsight/types").ForsightRecord[]; fetchedAt: Date }
-  | Exclude<ForsightView<never>, { state: "ok" }>
-> {
+/**
+ * Reads one dataset from whichever adapter this workspace uses. Nothing here
+ * knows or asks what type it is; the provider hands back finished shapes and
+ * this only decides which absence to show.
+ */
+async function readVia<T>(
+  dataset: ForsightDataset,
+  read: (provider: ForsightMetricsProvider) => Promise<ForsightResult<T>>,
+  isEmpty: (data: T) => boolean
+): Promise<ForsightView<T>> {
   const ctx = await getAuthContext();
   const workspace: Workspace = {
     id: ctx.org.id,
@@ -48,24 +57,35 @@ async function readDataset(
       orgName: workspace.name,
     });
 
-    let unavailable: string | null = null;
-    const read = await readCached(
+    let reason: string | null = null;
+    let data: T | null = null;
+
+    const cached = await readCached(
       { orgId: workspace.id, sourceId: provider.sourceId, dataset },
       async () => {
-        const result = await provider.readDataset(dataset);
+        const result = await read(provider);
         if (!result.available) {
-          unavailable = result.reason;
+          reason = result.reason;
           return [];
         }
-        return result.records;
+        data = result.data;
+        // The cache stores records; these adapters return finished shapes, so
+        // the payload rides along as a single opaque row.
+        return [{ id: dataset, fields: { data: result.data as unknown } }];
       }
     );
 
-    if (unavailable) {
-      return { state: "unavailable", workspace, dataset, reason: unavailable };
+    if (reason) return { state: "unavailable", workspace, dataset, reason };
+
+    const payload = (data ?? (cached.records[0]?.fields.data as T | undefined)) ?? null;
+    if (payload === null) {
+      return { state: "empty", workspace, dataset, fetchedAt: cached.fetchedAt };
+    }
+    if (isEmpty(payload)) {
+      return { state: "empty", workspace, dataset, fetchedAt: cached.fetchedAt };
     }
 
-    return { state: "ok", workspace, records: read.records, fetchedAt: read.fetchedAt };
+    return { state: "ok", workspace, data: payload, fetchedAt: cached.fetchedAt };
   } catch (error) {
     if (error instanceof ForsightSourceError) {
       if (error.reason === "not_configured") {
@@ -77,25 +97,12 @@ async function readDataset(
   }
 }
 
-function shape<T>(
-  read: Awaited<ReturnType<typeof readDataset>>,
-  dataset: ForsightDataset,
-  build: (records: import("@/lib/forsight/types").ForsightRecord[]) => T
-): ForsightView<T> {
-  if (read.state !== "ok") return read;
-  if (read.records.length === 0) {
-    return { state: "empty", workspace: read.workspace, dataset, fetchedAt: read.fetchedAt };
-  }
-  return {
-    state: "ok",
-    workspace: read.workspace,
-    data: build(read.records),
-    fetchedAt: read.fetchedAt,
-  };
-}
-
 export async function loadWeeklyPulse(): Promise<ForsightView<WeeklyPulse>> {
-  return shape(await readDataset("weeklySummary"), "weeklySummary", weeklyPulse);
+  return readVia(
+    "weeklySummary",
+    (provider) => provider.weeks(),
+    (pulse) => pulse.weeks.length === 0
+  );
 }
 
 /**
@@ -148,11 +155,19 @@ async function loadWeekActivity(
 }
 
 export async function loadCreativePerformance(): Promise<ForsightView<CreativeRow[]>> {
-  return shape(await readDataset("creatives"), "creatives", creativesByCostPerAuditHeld);
+  return readVia(
+    "creatives",
+    (provider) => provider.creatives(),
+    (rows) => rows.length === 0
+  );
 }
 
 export async function loadPipelineHealth(): Promise<ForsightView<PipelineHealth>> {
-  return shape(await readDataset("leads"), "leads", pipelineHealth);
+  return readVia(
+    "leads",
+    (provider) => provider.pipeline(),
+    (health) => health.totalLeads === 0
+  );
 }
 
 /** What will show up here once data flows, said in the base's own vocabulary. */

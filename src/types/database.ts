@@ -5371,7 +5371,7 @@ export type Database = {
         | "superseded";
       org_role: "owner" | "admin" | "closer" | "setter";
       surface_access: "operator" | "portal";
-      forsight_source_type: "airtable" | "meta_ads" | "ghl";
+      forsight_source_type: "airtable" | "meta_ads" | "ghl" | "vistrial_core";
       forsight_sync_status: "running" | "succeeded" | "failed";
       revenue_kind: "sale" | "refund" | "chargeback" | "failed";
       source_kind:

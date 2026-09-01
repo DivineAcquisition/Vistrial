@@ -9,30 +9,32 @@ import {
   isNumber,
   movement,
   type MetricFormat,
+  type MetricSense,
   type MetricValue,
 } from "@/lib/forsight/values";
 import type { WeeklyPulse, WeekRow } from "@/lib/forsight/weekly";
 
 /**
  * Four numbers from the newest Weekly Summary row, each against the row before
- * it. Cost falling is good and ROAS rising is good, so the arrow follows the
- * number while the colour follows the meaning.
+ * it. The arrow follows the number and the colour follows the meaning, which is
+ * why spend gets an arrow and no colour: it went up because someone decided it
+ * should, and that is neither good news nor bad.
  */
 const HEADLINES: Array<{
   label: string;
   read: (week: WeekRow) => MetricValue;
   format: MetricFormat;
-  lowerIsBetter: boolean;
+  better: MetricSense;
 }> = [
-  { label: "Spend", read: (week) => week.spend, format: "currency", lowerIsBetter: false },
+  { label: "Spend", read: (week) => week.spend, format: "currency", better: "neither" },
   {
     label: "Cost per audit held",
     read: (week) => week.costPerAuditHeld,
     format: "currency",
-    lowerIsBetter: true,
+    better: "lower",
   },
-  { label: "CAC", read: (week) => week.cac, format: "currency", lowerIsBetter: true },
-  { label: "ROAS", read: (week) => week.roas, format: "ratio", lowerIsBetter: false },
+  { label: "CAC", read: (week) => week.cac, format: "currency", better: "lower" },
+  { label: "ROAS", read: (week) => week.roas, format: "ratio", better: "higher" },
 ];
 
 const FUNNEL: Array<{
@@ -71,10 +73,7 @@ export function WeeklyPulseScreen({ pulse }: { pulse: WeeklyPulse }) {
             const value = headline.read(current);
             const before = previous ? headline.read(previous) : null;
             const change = before
-              ? movement(value, before, {
-                  format: headline.format,
-                  lowerIsBetter: headline.lowerIsBetter,
-                })
+              ? movement(value, before, { format: headline.format, better: headline.better })
               : null;
 
             return (

@@ -1,7 +1,6 @@
 import { Panel } from "@/components/ui/panel";
 import { SectionHeader } from "@/components/ui/section-header";
-import { StatusBadge } from "@/components/ui/status-badge";
-import type { Tone } from "@/components/ui/tone";
+import { Dot, TonePill, type Tone } from "@/components/ui/tone";
 import { daysSince, type LeadRow, type PipelineHealth } from "@/lib/forsight/pipeline";
 
 function plural(count: number, one: string, many = `${one}s`): string {
@@ -50,11 +49,19 @@ function LeadList({ leads, meta }: { leads: LeadRow[]; meta: (lead: LeadRow) => 
   );
 }
 
+/**
+ * The count and what it means. `TonePill` rather than `StatusBadge` because
+ * the latter title-cases its label, which turns a sentence into
+ * "Waiting On A First Call".
+ */
 function Count({ value, tone, label }: { value: number; tone: Tone; label: string }) {
   return (
-    <div className="flex items-baseline gap-3">
+    <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1.5">
       <span className="text-3xl font-semibold tabular-nums text-white">{value}</span>
-      <StatusBadge label={label} tone={tone} />
+      <TonePill tone={tone}>
+        <Dot tone={tone} />
+        {label}
+      </TonePill>
     </div>
   );
 }

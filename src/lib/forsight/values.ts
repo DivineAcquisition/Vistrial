@@ -122,12 +122,19 @@ export function compareMetricAscending(a: MetricValue, b: MetricValue): number {
 
 export type MetricDirection = "up" | "down" | "flat";
 
+/**
+ * Which way is the good way. Cost falling is good and ROAS rising is good, but
+ * spend has no good direction: it is the budget somebody chose, not a result.
+ * Colouring a rise in spend green would congratulate the reader for it.
+ */
+export type MetricSense = "lower" | "higher" | "neither";
+
 export type MetricMovement = {
   direction: MetricDirection;
   /** Already formatted, e.g. "$12" or "0.4×". */
   amount: string;
-  /** Cost falling is good; ROAS rising is good. The caller says which. */
-  isGood: boolean;
+  /** Undefined when the metric has no good direction. */
+  isGood: boolean | undefined;
 };
 
 /**
@@ -137,20 +144,18 @@ export type MetricMovement = {
 export function movement(
   current: MetricValue,
   previous: MetricValue,
-  args: { format: MetricFormat; lowerIsBetter: boolean }
+  args: { format: MetricFormat; better: MetricSense }
 ): MetricMovement | null {
   if (!isNumber(current) || !isNumber(previous)) return null;
 
   const delta = current.value - previous.value;
   if (delta === 0) {
-    return { direction: "flat", amount: formatNumber(0, args.format), isGood: true };
+    return { direction: "flat", amount: formatNumber(0, args.format), isGood: undefined };
   }
 
-  const direction: MetricDirection = delta > 0 ? "up" : "down";
-  const improved = args.lowerIsBetter ? delta < 0 : delta > 0;
   return {
-    direction,
+    direction: delta > 0 ? "up" : "down",
     amount: formatNumber(Math.abs(delta), args.format),
-    isGood: improved,
+    isGood: args.better === "neither" ? undefined : args.better === "lower" ? delta < 0 : delta > 0,
   };
 }

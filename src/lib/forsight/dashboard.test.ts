@@ -57,37 +57,57 @@ describe("week over week", () => {
   it("calls a falling cost good and a rising cost bad", () => {
     const better = movement(toMetricValue("150"), toMetricValue("175"), {
       format: "currency",
-      lowerIsBetter: true,
+      better: "lower",
     });
     expect(better).toEqual({ direction: "down", amount: "$25", isGood: true });
 
     const worse = movement(toMetricValue("200"), toMetricValue("175"), {
       format: "currency",
-      lowerIsBetter: true,
+      better: "lower",
     });
     expect(worse).toMatchObject({ direction: "up", isGood: false });
   });
 
   it("calls a rising ROAS good", () => {
     expect(
-      movement(toMetricValue("14"), toMetricValue("12"), {
-        format: "ratio",
-        lowerIsBetter: false,
-      })
+      movement(toMetricValue("14"), toMetricValue("12"), { format: "ratio", better: "higher" })
     ).toEqual({ direction: "up", amount: "2×", isGood: true });
+  });
+
+  it("does not congratulate anyone for spending more, in either direction", () => {
+    const up = movement(toMetricValue("700"), toMetricValue("655"), {
+      format: "currency",
+      better: "neither",
+    });
+    expect(up).toEqual({ direction: "up", amount: "$45", isGood: undefined });
+
+    const down = movement(toMetricValue("600"), toMetricValue("655"), {
+      format: "currency",
+      better: "neither",
+    });
+    expect(down?.isGood).toBeUndefined();
+  });
+
+  it("does not call an unchanged number good news", () => {
+    expect(
+      movement(toMetricValue("175"), toMetricValue("175"), {
+        format: "currency",
+        better: "lower",
+      })
+    ).toEqual({ direction: "flat", amount: "$0", isGood: undefined });
   });
 
   it("gives no direction when either week is a text state", () => {
     expect(
       movement(toMetricValue("No closes yet"), toMetricValue("700"), {
         format: "currency",
-        lowerIsBetter: true,
+        better: "lower",
       })
     ).toBeNull();
     expect(
       movement(toMetricValue("700"), toMetricValue(undefined), {
         format: "currency",
-        lowerIsBetter: true,
+        better: "lower",
       })
     ).toBeNull();
   });

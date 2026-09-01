@@ -124,47 +124,66 @@ export function LineChart({
     warning: "stroke-flag-warning",
     critical: "stroke-flag-critical",
   }[tone];
-  const fill = {
-    brand: "fill-brand-500",
-    good: "fill-flag-good",
-    warning: "fill-flag-warning",
-    critical: "fill-flag-critical",
+  const dot = {
+    brand: "bg-brand-500",
+    good: "bg-flag-good",
+    warning: "bg-flag-warning",
+    critical: "bg-flag-critical",
   }[tone];
 
-  const values = points.map((point) => point.value);
-  const max = Math.max(...values);
-  const min = Math.min(...values, 0);
-  const span = max - min || 1;
+  // The baseline is zero and the top of the chart is labelled, so a gentle
+  // slope reads as a gentle slope. Cropping the axis to the data would make
+  // every wobble look like a cliff.
+  const max = Math.max(...points.map((point) => point.value), 0) || 1;
   const width = 100;
   const height = 34;
 
   const coords = points.map((point, index) => ({
     ...point,
+    xPercent: points.length === 1 ? 50 : (index / (points.length - 1)) * 100,
     x: points.length === 1 ? width / 2 : (index / (points.length - 1)) * width,
-    y: height - ((point.value - min) / span) * height,
+    y: height - (point.value / max) * height,
   }));
 
   return (
     <figure className={cn("space-y-2", className)}>
-      <svg
-        viewBox={`0 0 ${width} ${height}`}
-        preserveAspectRatio="none"
-        className="h-32 w-full overflow-visible"
-        role="presentation"
-        aria-hidden
-      >
-        <polyline
-          points={coords.map((point) => `${point.x},${point.y}`).join(" ")}
-          className={cn("fill-none", stroke)}
-          strokeWidth={1}
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          vectorEffect="non-scaling-stroke"
-        />
-        {coords.map((point) => (
-          <circle key={point.label} cx={point.x} cy={point.y} r={1.4} className={fill} />
-        ))}
-      </svg>
+      <div className="flex gap-3">
+        <div className="flex h-32 flex-col justify-between py-px text-[10px] tabular-nums text-dim">
+          <span>{format(max)}</span>
+          <span>{format(0)}</span>
+        </div>
+        <div className="relative h-32 flex-1">
+          <svg
+            viewBox={`0 0 ${width} ${height}`}
+            preserveAspectRatio="none"
+            className="h-full w-full"
+            role="presentation"
+            aria-hidden
+          >
+            <polyline
+              points={coords.map((point) => `${point.x},${point.y}`).join(" ")}
+              className={cn("fill-none", stroke)}
+              strokeWidth={1.5}
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              vectorEffect="non-scaling-stroke"
+            />
+          </svg>
+          {/* Positioned rather than drawn, because the SVG scales x and y by
+              different amounts and would squash a circle into an ellipse. */}
+          {coords.map((point) => (
+            <span
+              key={point.label}
+              title={`${point.label}: ${format(point.value)}`}
+              className={cn("absolute size-1.5 -translate-x-1/2 -translate-y-1/2 rounded-full", dot)}
+              style={{
+                left: `${point.xPercent}%`,
+                top: `${(point.y / height) * 100}%`,
+              }}
+            />
+          ))}
+        </div>
+      </div>
       <div className="flex items-baseline justify-between gap-3 text-xs text-dim">
         <span className="truncate">{coords[0]?.label}</span>
         <span className="tabular-nums text-silver">
@@ -224,21 +243,19 @@ export function GroupedBarChart({
       >
         {groups.map((group) => (
           <div key={group.label} className="flex min-w-16 flex-1 flex-col gap-1.5">
-            <div className="flex h-28 items-end gap-1">
+            {/* No track behind each bar: an empty column reading as a bar is
+                exactly the confusion a funnel chart cannot afford. */}
+            <div className="flex h-28 items-end gap-1 border-b border-white/[0.08]">
               {series.map((entry, index) => {
                 const value = group.values[index] ?? 0;
+                const height = max === 0 ? 0 : (value / max) * 100;
                 return (
                   <span
                     key={entry.label}
                     title={`${entry.label}: ${format(value)}`}
-                    className="flex-1 rounded-t-sm bg-white/[0.04]"
-                    style={{ height: "100%" }}
-                  >
-                    <span
-                      className={cn("block h-full w-full origin-bottom rounded-t-sm", fill[entry.tone])}
-                      style={{ transform: `scaleY(${max === 0 ? 0 : value / max})` }}
-                    />
-                  </span>
+                    className={cn("min-h-px flex-1 rounded-t-sm", fill[entry.tone])}
+                    style={{ height: `${height}%` }}
+                  />
                 );
               })}
             </div>

@@ -42,7 +42,7 @@ export default async function AdvancedSettingsPage() {
             transcriptRetentionDays={data?.transcript_retention_days ?? 365}
             callCoachingEmbargoHours={data?.call_coaching_embargo_hours ?? 48}
             operatorAgentBatchCap={data?.operator_agent_batch_cap ?? 10}
-            showOperatorAgentBatchCap={isPlatformAdmin}
+            showOperatorAgentBatchCap={false}
             surface="policy"
           />
         </section>

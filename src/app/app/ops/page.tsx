@@ -60,8 +60,8 @@ export default async function OpsPage({
 
   return (
     <PageFrame
-      title="Operator"
-      description="Is anything wrong right now. Clients never see this screen."
+      title="System"
+      description="Jobs, alerts, and ingestion. Not part of the sales OS."
     >
       {stopped.length > 0 ? (
         <Notice tone="critical" className="mb-6">

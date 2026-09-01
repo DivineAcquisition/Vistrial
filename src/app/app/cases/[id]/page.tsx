@@ -2,7 +2,6 @@ import { notFound } from "next/navigation";
 
 import { PageFrame } from "@/components/app/page-frame";
 import { CaseFileScreen } from "@/app/app/cases/[id]/case-file-screen";
-import { OperatorLeadRuns } from "@/components/operator/lead-runs";
 import { isLeadId } from "@/lib/cases/filters";
 import { loadOrgCaseFile } from "@/lib/cases/load";
 import { DEFAULT_READY_THRESHOLD, loadScoreConfig } from "@/lib/scoring/store";
@@ -38,7 +37,6 @@ export default async function CaseDetailPage({
         initial={payload}
         readyThreshold={scoreConfig?.readyThreshold ?? DEFAULT_READY_THRESHOLD}
       />
-      <OperatorLeadRuns leadId={payload.lead.id} />
     </PageFrame>
   );
 }

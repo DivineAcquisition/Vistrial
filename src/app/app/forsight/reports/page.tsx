@@ -54,8 +54,8 @@ export default async function ForsightReportsPage() {
           title="No reports yet"
           detail={
             ctx.isPlatformAdmin
-              ? "Generate last month's report when you are ready. Nothing is sent to the client until you send it."
-              : "Your operator generates this report each month. It will appear here when it is ready."
+              ? "Generate last month when you are ready. Nothing is emailed until you send it."
+              : "This report will appear here when it is ready."
           }
         />
       ) : (

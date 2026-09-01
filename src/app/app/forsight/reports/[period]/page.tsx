@@ -92,8 +92,8 @@ export default async function ForsightReportPage({
           title="This month has not been generated"
           detail={
             ctx.isPlatformAdmin
-              ? "Generate it here. Nothing is sent to the client until you send it."
-              : "Your operator has not generated this month yet."
+              ? "Generate it here. Nothing is emailed until you send it."
+              : "This month has not been generated yet."
           }
         />
       ) : (
@@ -124,11 +124,11 @@ export default async function ForsightReportPage({
           {ctx.isPlatformAdmin ? (
             <Panel className="p-5">
               <p className="text-[11px] font-semibold tracking-[0.14em] text-dim uppercase">
-                Operator only
+                Omitted lines
               </p>
               {stored.omissions.length > 0 ? (
                 <div className="mt-3">
-                  <p className="text-sm text-card-foreground">Lines omitted from the client document</p>
+                  <p className="text-sm text-card-foreground">Lines omitted from this report</p>
                   <ul className="mt-2 space-y-1">
                     {stored.omissions.map((row) => (
                       <li key={`${row.section}:${row.line}`} className={bodyText}>

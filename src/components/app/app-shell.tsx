@@ -12,7 +12,6 @@ import { LastLeadTracker } from "@/components/app/last-lead-tracker";
 import { MobileDock } from "@/components/app/mobile-dock";
 import { NotificationInbox } from "@/components/app/notification-inbox";
 import { AppJumpPalette } from "@/components/app/jump-palette";
-import { OperatorCommandBar } from "@/components/operator/command-bar";
 import { NotificationRuntime } from "@/components/app/notification-runtime";
 import { OutcomeSyncRuntime } from "@/components/app/outcome-sync-runtime";
 import { OrgSwitcher } from "@/components/app/org-switcher";
@@ -161,7 +160,6 @@ export function AppShell({
               <>
                 <NotificationInbox />
                 <AppJumpPalette />
-                <OperatorCommandBar />
               </>
             )}
           </div>

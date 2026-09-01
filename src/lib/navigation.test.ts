@@ -48,7 +48,6 @@ describe("settings IA", () => {
       "Scoring",
       "Follow-up",
       "Data",
-      "Agents",
     ]);
     expect(advancedSettingsBreadcrumbs("Scoring", "/app/settings/scoring")[0]?.href).toBe(
       "/app/settings/advanced"
@@ -60,13 +59,18 @@ describe("settings IA", () => {
     expect(PRIMARY_NAV.map((item) => item.label)).not.toContain("Operator");
   });
 
-  it("hides Agents from client Advanced", () => {
+  it("does not put Agents on Advanced for anyone", () => {
     expect(advancedSettingsVisibleTo(false).map((page) => page.label)).toEqual([
       "Business",
       "Scoring",
       "Follow-up",
       "Data",
     ]);
-    expect(advancedSettingsVisibleTo(true).map((page) => page.label)).toContain("Agents");
+    expect(advancedSettingsVisibleTo(true).map((page) => page.label)).toEqual([
+      "Business",
+      "Scoring",
+      "Follow-up",
+      "Data",
+    ]);
   });
 });

@@ -141,12 +141,6 @@ export const ADVANCED_SETTINGS_PAGES: Array<{
     label: "Data",
     description: "Download a copy of this workspace.",
   },
-  {
-    href: "/app/settings/agents",
-    label: "Agents",
-    description: "Who may run on a schedule, what they may change, and the stop switch.",
-    platformAdminOnly: true,
-  },
 ];
 
 export function advancedSettingsVisibleTo(isPlatformAdmin: boolean) {
@@ -160,7 +154,10 @@ export function advancedSettingsBreadcrumbs(label: string, href: string) {
   ];
 }
 
-export const ADVANCED_SETTINGS_PREFIXES = ADVANCED_SETTINGS_PAGES.map((page) => page.href);
+export const ADVANCED_SETTINGS_PREFIXES = [
+  ...ADVANCED_SETTINGS_PAGES.map((page) => page.href),
+  "/app/settings/agents",
+];
 
 export function settingsTabActiveHref(pathname: string): string {
   if (

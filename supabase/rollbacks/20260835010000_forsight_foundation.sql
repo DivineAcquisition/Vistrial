@@ -4,4 +4,6 @@
 
 DROP TABLE IF EXISTS public.forsight_sources;
 
+DROP FUNCTION IF EXISTS public.forsight_sources_clear_foreign_fields();
+
 DROP TYPE IF EXISTS public.forsight_source_type;

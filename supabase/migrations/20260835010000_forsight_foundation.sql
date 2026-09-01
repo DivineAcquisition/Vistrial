@@ -72,6 +72,33 @@ CREATE TRIGGER forsight_sources_set_updated_at
   BEFORE UPDATE ON public.forsight_sources
   FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
 
+-- The table-name columns default to the master template's names so the common
+-- case is a one-column insert. They mean nothing on a source that is not an
+-- Airtable base, so clear them there rather than reject the row.
+CREATE OR REPLACE FUNCTION public.forsight_sources_clear_foreign_fields()
+RETURNS trigger
+LANGUAGE plpgsql
+SET search_path = public
+AS $$
+BEGIN
+  IF NEW.source_type <> 'airtable' THEN
+    NEW.airtable_base_id := NULL;
+    NEW.airtable_leads_table := NULL;
+    NEW.airtable_creatives_table := NULL;
+    NEW.airtable_weekly_summary_table := NULL;
+    NEW.airtable_touches_table := NULL;
+  END IF;
+  IF NEW.source_type <> 'meta_ads' THEN
+    NEW.meta_ad_account_id := NULL;
+  END IF;
+  RETURN NEW;
+END;
+$$;
+
+CREATE TRIGGER forsight_sources_clear_foreign_fields
+  BEFORE INSERT OR UPDATE ON public.forsight_sources
+  FOR EACH ROW EXECUTE FUNCTION public.forsight_sources_clear_foreign_fields();
+
 -- ---------------------------------------------------------------------------
 -- Isolation. A workspace's source is visible to that workspace's members only.
 -- Writes are an internal operator action, so authenticated has no write path.

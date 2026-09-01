@@ -11,7 +11,8 @@ ON CONFLICT (id) DO NOTHING;
 INSERT INTO public.organizations (id, name, slug, timezone, holdout_percent)
 VALUES
   ('f0f5f0f5-0000-4000-8000-000000000001', 'Forsight DA', 'forsight-da', 'America/New_York', 0),
-  ('f0f5f0f5-0000-4000-8000-000000000002', 'Forsight Client', 'forsight-client', 'America/New_York', 0)
+  ('f0f5f0f5-0000-4000-8000-000000000002', 'Forsight Client', 'forsight-client', 'America/New_York', 0),
+  ('f0f5f0f5-0000-4000-8000-000000000003', 'Forsight Unset', 'forsight-unset', 'America/New_York', 0)
 ON CONFLICT (id) DO NOTHING;
 
 INSERT INTO public.org_members (id, org_id, user_id, role, display_name, email)
@@ -76,19 +77,42 @@ BEGIN
     RAISE EXCEPTION 'client base kept a creatives table it does not have';
   END IF;
 
-  -- An Airtable source must name a base.
+  -- A Meta source keeps no Airtable table names, defaults included.
+  SELECT count(*) INTO v_count
+  FROM public.forsight_sources
+  WHERE source_type = 'meta_ads'
+    AND (
+      airtable_base_id IS NOT NULL
+      OR airtable_leads_table IS NOT NULL
+      OR airtable_creatives_table IS NOT NULL
+      OR airtable_weekly_summary_table IS NOT NULL
+      OR airtable_touches_table IS NOT NULL
+    );
+  IF v_count <> 0 THEN
+    RAISE EXCEPTION 'a meta source kept % Airtable fields', v_count;
+  END IF;
+
+  -- A source must name the thing it reads.
   v_denied := false;
   BEGIN
     INSERT INTO public.forsight_sources (org_id, source_type)
-    VALUES ('f0f5f0f5-0000-4000-8000-000000000002', 'meta_ads');
-    INSERT INTO public.forsight_sources (org_id, source_type)
-    VALUES ('f0f5f0f5-0000-4000-8000-000000000002', 'airtable');
+    VALUES ('f0f5f0f5-0000-4000-8000-000000000003', 'meta_ads');
   EXCEPTION
     WHEN check_violation THEN v_denied := true;
-    WHEN unique_violation THEN v_denied := false;
   END;
   IF NOT v_denied THEN
-    RAISE EXCEPTION 'a source without a base id or ad account id was accepted';
+    RAISE EXCEPTION 'a meta source without an ad account id was accepted';
+  END IF;
+
+  v_denied := false;
+  BEGIN
+    INSERT INTO public.forsight_sources (org_id, source_type)
+    VALUES ('f0f5f0f5-0000-4000-8000-000000000003', 'airtable');
+  EXCEPTION
+    WHEN check_violation THEN v_denied := true;
+  END;
+  IF NOT v_denied THEN
+    RAISE EXCEPTION 'an airtable source without a base id was accepted';
   END IF;
 
   -- A workspace only sees its own source.

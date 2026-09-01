@@ -10,7 +10,9 @@ Three environments, genuinely separated. A shared API key across any two of them
 
 ## Secrets
 
-Each environment has its own: `SUPABASE_SERVICE_ROLE_KEY`, `ANTHROPIC_API_KEY`, `GHL_CLIENT_ID` / `GHL_CLIENT_SECRET`, `GHL_TOKEN_ENCRYPTION_KEY`, `CRON_SECRET`, `RESEND_API_KEY`, `TWILIO_*`, `VAPID_PRIVATE_KEY`.
+Each environment has its own: `SUPABASE_SERVICE_ROLE_KEY`, `ANTHROPIC_API_KEY`, `GHL_CLIENT_ID` / `GHL_CLIENT_SECRET`, `GHL_TOKEN_ENCRYPTION_KEY`, `CRON_SECRET`, `RESEND_API_KEY`, `TWILIO_*`, `VAPID_PRIVATE_KEY`, `AIRTABLE_API_KEY`, `META_ACCESS_TOKEN`.
+
+Forsight's credentials are the one deliberate exception to per-tenant configuration: one Airtable key and one Meta token for the whole platform, because Divine Acquisition owns every base and ad account involved. Which base a workspace reads is a row in `forsight_sources`, never an env var. See [Forsight](./forsight.md).
 
 Production secrets live in the Vercel / Supabase managed stores, not in a laptop `.env`.
 

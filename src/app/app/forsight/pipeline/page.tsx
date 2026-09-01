@@ -9,7 +9,7 @@ export const dynamic = "force-dynamic";
 export const metadata = { title: "Pipeline Health · Forsight" };
 
 export default async function PipelineHealthPage() {
-  await requireReportingAccess();
+  const ctx = await requireReportingAccess();
   const view = await loadPipelineHealth();
   const now = new Date();
 
@@ -19,6 +19,7 @@ export default async function PipelineHealthPage() {
       title="Pipeline Health"
       description="Whether anything is slipping that a person needs to act on today. Each lead carries the Next Action Airtable already wrote for it."
       view={view}
+      isPlatformAdmin={ctx.isPlatformAdmin}
     >
       {(health) => <PipelineScreen health={health} now={now} />}
     </ForsightPage>

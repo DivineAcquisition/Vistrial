@@ -12,14 +12,24 @@
  * The third state is not the second. "No closes yet" means money went out and
  * nothing came back; an absent value means there is nothing to say at all.
  * Collapsing them would turn a real signal into a shrug.
+
+ * A fourth state exists that Airtable has no equivalent for: a metric this
+ * workspace's source simply cannot produce. A core-source workspace with no
+ * ad account does not have a cost per audit held that happens to be blank —
+ * it has no way to know one, and saying so is different from saying nothing.
  */
 
 export type MetricValue =
   | { kind: "number"; value: number; raw: string }
   | { kind: "text"; text: string }
-  | { kind: "absent" };
+  | { kind: "absent" }
+  | { kind: "unavailable"; reason: string };
 
 export const ABSENT: MetricValue = { kind: "absent" };
+
+export function unavailable(reason: string): MetricValue {
+  return { kind: "unavailable", reason };
+}
 
 /**
  * Airtable hands back numbers for number and currency fields and strings for
@@ -95,7 +105,13 @@ export function formatMetric(
 ): string {
   if (value.kind === "number") return formatNumber(value.value, format);
   if (value.kind === "text") return value.text;
+  if (value.kind === "unavailable") return "Unavailable";
   return absent;
+}
+
+/** Why a figure is missing, when there is a reason worth reading. */
+export function metricReason(value: MetricValue): string | null {
+  return value.kind === "unavailable" ? value.reason : null;
 }
 
 /* ---------------------------------------------------------------------------
@@ -108,7 +124,8 @@ export function formatMetric(
  * the top would put the worst-understood ad in the best-performer slot.
  */
 export function compareMetricAscending(a: MetricValue, b: MetricValue): number {
-  const rank = (value: MetricValue) => (value.kind === "number" ? 0 : value.kind === "text" ? 1 : 2);
+  const rank = (value: MetricValue) =>
+    value.kind === "number" ? 0 : value.kind === "text" ? 1 : value.kind === "absent" ? 2 : 3;
   const difference = rank(a) - rank(b);
   if (difference !== 0) return difference;
   if (a.kind === "number" && b.kind === "number") return a.value - b.value;

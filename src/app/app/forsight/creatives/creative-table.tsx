@@ -17,7 +17,13 @@ import {
   totalSpend,
   type CreativeRow,
 } from "@/lib/forsight/creatives";
-import { formatMetric, formatNumber, type MetricFormat } from "@/lib/forsight/values";
+import {
+  formatMetric,
+  formatNumber,
+  metricReason,
+  type MetricFormat,
+  type MetricValue,
+} from "@/lib/forsight/values";
 
 const STATUS_TONE: Record<string, Tone> = {
   winner: "good",
@@ -28,17 +34,15 @@ const STATUS_TONE: Record<string, Tone> = {
 
 const COLUMNS: Array<{
   label: string;
-  read: (row: CreativeRow) => string;
+  value: (row: CreativeRow) => MetricValue;
+  format: MetricFormat;
 }> = [
-  { label: "Spend", read: (row) => formatMetric(row.spend, "currency") },
-  { label: "CTR", read: (row) => formatMetric(row.ctr, "percent") },
-  { label: "Cost / lead", read: (row) => formatMetric(row.costPerLead, "currency") },
-  {
-    label: "Cost / qualified",
-    read: (row) => formatMetric(row.costPerQualifiedLead, "currency"),
-  },
-  { label: "Cost / audit held", read: (row) => formatMetric(row.costPerAuditHeld, "currency") },
-  { label: "CAC", read: (row) => formatMetric(row.cac, "currency") },
+  { label: "Spend", value: (row) => row.spend, format: "currency" },
+  { label: "CTR", value: (row) => row.ctr, format: "percent" },
+  { label: "Cost / lead", value: (row) => row.costPerLead, format: "currency" },
+  { label: "Cost / qualified", value: (row) => row.costPerQualifiedLead, format: "currency" },
+  { label: "Cost / audit held", value: (row) => row.costPerAuditHeld, format: "currency" },
+  { label: "CAC", value: (row) => row.cac, format: "currency" },
 ];
 
 const CURRENCY: MetricFormat = "currency";
@@ -105,11 +109,19 @@ export function CreativeTable({ rows }: { rows: CreativeRow[] }) {
                       <span className="text-dim">—</span>
                     )}
                   </TableCell>
-                  {COLUMNS.map((column) => (
-                    <TableCell key={column.label} className="text-right tabular-nums">
-                      {column.read(row)}
-                    </TableCell>
-                  ))}
+                  {COLUMNS.map((column) => {
+                    const value = column.value(row);
+                    const reason = metricReason(value);
+                    return (
+                      <TableCell
+                        key={column.label}
+                        className="text-right tabular-nums"
+                        title={reason ?? undefined}
+                      >
+                        {formatMetric(value, column.format)}
+                      </TableCell>
+                    );
+                  })}
                 </TableRow>
               ))}
             </TableBody>

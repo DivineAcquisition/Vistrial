@@ -163,10 +163,13 @@ describe("provider interface", () => {
   ) as ForsightAirtableSource;
 
   it("reports a missing table instead of calling the source", async () => {
-    const provider = airtableProvider(source, "Divine Acquisition");
-    const result = await provider.readDataset("touches");
+    const provider = airtableProvider(
+      sourceFromRow(airtableRow({ airtable_creatives_table: null })) as ForsightAirtableSource,
+      "Divine Acquisition"
+    );
+    const result = await provider.creatives();
     expect(result.available).toBe(false);
-    if (!result.available) expect(result.reason).toContain("Touches");
+    if (!result.available) expect(result.reason).toContain("Creatives");
   });
 
   it("lists only the datasets this base has", () => {

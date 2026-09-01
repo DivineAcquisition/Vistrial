@@ -52,6 +52,7 @@ const SOURCE_TEXT: Record<ForsightSourceType, string> = {
   airtable: "Airtable base",
   meta_ads: "Meta ad account",
   ghl: "LeadConnector location",
+  vistrial_core: "Vistrial workspace data",
 };
 
 export function forsightFailureMessage(args: {

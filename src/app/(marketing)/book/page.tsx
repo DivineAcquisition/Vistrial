@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 
 import { MarketingShell } from "@/components/marketing/chrome";
 import { QualifyForm } from "@/components/marketing/forms";
+import { AnimatedHeading } from "@/components/ui/animated-heading";
 import { Panel } from "@/components/ui/panel";
 import { trackingFromSearchParams, type SearchParams } from "@/lib/marketing/config";
 import { BOOK } from "@/lib/marketing/copy";
@@ -26,9 +27,12 @@ export default async function BookPage({
       <section className="px-5 pb-10 pt-14 sm:px-6 sm:pt-20">
         <div className="mx-auto max-w-2xl text-center">
           <p className={`${eyebrow} animate-rise`}>{BOOK.eyebrow}</p>
-          <h1 className={`${marketingHeroTitle} animate-rise delay-1 mt-6 text-[2.1rem] sm:text-4xl md:text-[2.75rem]`}>
+          <AnimatedHeading
+            as="h1"
+            className={`${marketingHeroTitle} mt-6 text-[2.2rem] sm:text-4xl md:text-[2.9rem]`}
+          >
             {BOOK.title}
-          </h1>
+          </AnimatedHeading>
           <p className={`${marketingSubhead} animate-rise delay-2 mx-auto mt-5 max-w-md`}>
             {BOOK.description}
           </p>

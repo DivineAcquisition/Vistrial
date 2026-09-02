@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
-import { Cal_Sans, Geist, Geist_Mono } from "next/font/google";
+import { Geist, Geist_Mono, Instrument_Serif } from "next/font/google";
 
+import { MotionProvider } from "@/components/ui/motion-provider";
 import { AnchoredToastProvider, ToastProvider } from "@/components/ui/toast";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { APP_NAME, PRODUCTION_SITE_ORIGIN } from "@/lib/constants";
@@ -12,7 +13,7 @@ import { cn } from "@/lib/utils";
 /**
  * Magic UI pairing on the coss font contract:
  * Geist → `--font-sans` (body, buttons, fields)
- * Cal Sans → `--font-heading` (titles)
+ * Instrument Serif → `--font-heading` (titles)
  * Geist Mono → `--font-mono` (code, tabular scores)
  */
 const geistSans = Geist({
@@ -21,7 +22,7 @@ const geistSans = Geist({
   display: "swap",
 });
 
-const calSans = Cal_Sans({
+const instrumentSerif = Instrument_Serif({
   subsets: ["latin"],
   weight: "400",
   variable: "--font-heading",
@@ -83,13 +84,15 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={cn("dark", geistSans.variable, calSans.variable, geistMono.variable)}
+      className={cn("dark", geistSans.variable, instrumentSerif.variable, geistMono.variable)}
       suppressHydrationWarning
     >
       <body className="min-h-screen bg-background font-sans text-foreground antialiased">
         <ToastProvider position="top-right">
           <AnchoredToastProvider>
-            <TooltipProvider>{children}</TooltipProvider>
+            <TooltipProvider>
+              <MotionProvider>{children}</MotionProvider>
+            </TooltipProvider>
           </AnchoredToastProvider>
         </ToastProvider>
       </body>

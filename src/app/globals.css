@@ -327,6 +327,7 @@
   html {
     color-scheme: dark;
     scroll-behavior: smooth;
+    font-size: 106.25%;
     -webkit-text-size-adjust: 100%;
     text-rendering: optimizeLegibility;
     scroll-padding-top: 6rem;
@@ -357,13 +358,13 @@
   h4,
   h5,
   h6 {
-    font-family: var(--font-heading), ui-sans-serif, system-ui, sans-serif;
+    font-family: var(--font-heading), ui-serif, Georgia, "Times New Roman", serif;
     font-weight: 400;
-    letter-spacing: -0.022em;
+    letter-spacing: -0.015em;
   }
 
   h1 {
-    letter-spacing: -0.032em;
+    letter-spacing: -0.02em;
   }
 
   h1,
@@ -474,6 +475,7 @@
     translate: -50% 0;
     background: radial-gradient(ellipse at center, rgba(154, 136, 252, 0.34) 0%, transparent 68%);
     filter: blur(72px);
+    animation: drift 16s ease-in-out infinite;
   }
 
   .auth-stage-glow-aux {
@@ -484,6 +486,8 @@
     width: 22rem;
     background: radial-gradient(ellipse at center, rgba(154, 136, 252, 0.14) 0%, transparent 70%);
     filter: blur(56px);
+    animation: drift 18s ease-in-out infinite;
+    animation-delay: -7s;
   }
 
   .auth-stage-grid {
@@ -554,10 +558,10 @@
   }
 
   .auth-title {
-    font-family: var(--font-heading), ui-sans-serif, system-ui, sans-serif;
-    font-size: clamp(1.85rem, 3vw, 2.55rem);
+    font-family: var(--font-heading), ui-serif, Georgia, "Times New Roman", serif;
+    font-size: clamp(2rem, 3.2vw, 2.75rem);
     font-weight: 400;
-    letter-spacing: -0.038em;
+    letter-spacing: -0.02em;
     line-height: 1.08;
     color: #fff;
   }
@@ -801,10 +805,11 @@
   /* Lifting the card on hover made every list jitter as the pointer crossed it.
      The border and a soft inner light carry the affordance instead. */
   .panel-hover:hover {
-    border-color: rgba(var(--brand-rgb), 0.32);
+    border-color: rgba(var(--brand-rgb), 0.42);
     box-shadow:
-      inset 0 1px 0 rgba(255, 255, 255, 0.07),
-      0 0 0 1px rgba(var(--brand-rgb), 0.08);
+      inset 0 1px 0 rgba(255, 255, 255, 0.09),
+      0 0 0 1px rgba(var(--brand-rgb), 0.12),
+      0 16px 48px -24px rgba(154, 136, 252, 0.32);
   }
 
   /*
@@ -1127,6 +1132,11 @@
 
 .animate-drift {
   animation: drift 14s ease-in-out infinite;
+}
+
+.animate-drift-lag {
+  animation: drift 18s ease-in-out infinite;
+  animation-delay: -8s;
 }
 
 .delay-1 {

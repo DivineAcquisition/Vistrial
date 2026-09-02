@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 
 import { MarketingShell } from "@/components/marketing/chrome";
 import { ContactForm } from "@/components/marketing/forms";
+import { AnimatedHeading } from "@/components/ui/animated-heading";
 import { Panel } from "@/components/ui/panel";
 import { CONTACT_EMAIL } from "@/lib/constants";
 import { CONTACT_PAGE } from "@/lib/marketing/copy";
@@ -17,7 +18,9 @@ export default function ContactPage() {
     <MarketingShell headerAction="none">
       <section className="px-5 pb-10 pt-14 sm:px-6 sm:pt-20">
         <div className="mx-auto max-w-2xl">
-          <h1 className={`${marketingHeroTitle} text-[2.1rem] sm:text-4xl`}>{CONTACT_PAGE.title}</h1>
+          <AnimatedHeading as="h1" className={`${marketingHeroTitle} text-[2.2rem] sm:text-4xl`}>
+            {CONTACT_PAGE.title}
+          </AnimatedHeading>
           <p className={`${marketingSubhead} mt-4`}>
             {CONTACT_PAGE.description} Or email{" "}
             <a

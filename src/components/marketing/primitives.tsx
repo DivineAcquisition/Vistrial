@@ -10,6 +10,8 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 
+import { AnimatedHeading } from "@/components/ui/animated-heading";
+import { BlurFade } from "@/components/ui/blur-fade";
 import { MagicCard } from "@/components/ui/magic-card";
 import { Panel } from "@/components/ui/panel";
 import {
@@ -81,7 +83,9 @@ export function MarketingSection({
     >
       <div className={cn(marketingShell, narrow && marketingMeasureWide, centered && "text-center")}>
         {eyebrow ? <p className={cn(sectionLabel, "mb-3")}>{eyebrow}</p> : null}
-        <h2 className={cn(marketingSectionTitle, centered && "mx-auto")}>{headline}</h2>
+        <AnimatedHeading as="h2" className={cn(marketingSectionTitle, centered && "mx-auto")}>
+          {headline}
+        </AnimatedHeading>
         {lead ? (
           <div className={cn(marketingLead, "mt-4", centered && "mx-auto")}>{lead}</div>
         ) : null}
@@ -95,23 +99,27 @@ export function FeatureCard({
   step,
   title,
   children,
+  appearDelay = 0,
 }: {
   step?: string;
   title: string;
   children: ReactNode;
+  appearDelay?: number;
 }) {
   return (
-    <Panel className="flex h-full flex-col overflow-hidden p-0">
-      <MagicCard className="flex h-full flex-col rounded-2xl p-6 sm:p-7">
-        {step ? (
-          <p className="mb-5 text-4xl font-semibold leading-none tracking-tight text-brand-500/25 tabular-nums">
-            {step}
-          </p>
-        ) : null}
-        <h3 className={marketingCardTitle}>{title}</h3>
-        <div className={cn(marketingBody, "mt-3")}>{children}</div>
-      </MagicCard>
-    </Panel>
+    <BlurFade delay={appearDelay} inView direction="up" offset={10} className="h-full">
+      <Panel className="flex h-full flex-col overflow-hidden p-0">
+        <MagicCard className="flex h-full flex-col rounded-2xl p-6 sm:p-7">
+          {step ? (
+            <p className="mb-5 text-4xl font-semibold leading-none tracking-tight text-brand-500/25 tabular-nums">
+              {step}
+            </p>
+          ) : null}
+          <h3 className={marketingCardTitle}>{title}</h3>
+          <div className={cn(marketingBody, "mt-3")}>{children}</div>
+        </MagicCard>
+      </Panel>
+    </BlurFade>
   );
 }
 
@@ -225,7 +233,9 @@ export function FinalCta({
         }}
       />
       <div className="relative">
-        <h2 className={cn(marketingSectionTitle, "mx-auto")}>{headline}</h2>
+        <AnimatedHeading as="h2" className={cn(marketingSectionTitle, "mx-auto")}>
+          {headline}
+        </AnimatedHeading>
         <div className="mt-5">{children}</div>
       </div>
     </div>

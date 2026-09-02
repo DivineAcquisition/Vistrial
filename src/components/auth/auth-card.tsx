@@ -1,4 +1,5 @@
 import Logo from "@/components/brand/logo";
+import { AnimatedHeading } from "@/components/ui/animated-heading";
 import { Particles } from "@/components/ui/particles";
 import { ShineBorder } from "@/components/ui/shine-border";
 import { APP_NAME } from "@/lib/constants";
@@ -38,7 +39,9 @@ export function AuthCard({
           />
           <Logo markOnly title="" className="auth-mark" />
           {eyebrowLabel ? <p className="auth-eyebrow">{eyebrowLabel}</p> : null}
-          <h1 className="auth-title">{title}</h1>
+          <AnimatedHeading as="h1" className="auth-title">
+            {title}
+          </AnimatedHeading>
           {subtitle ? <p className="auth-subtitle">{subtitle}</p> : null}
           {children ? <div className="auth-desk-body">{children}</div> : null}
           <p className="auth-desk-foot">{APP_NAME} is invite only</p>

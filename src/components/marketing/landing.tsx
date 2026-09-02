@@ -1,5 +1,6 @@
 import { ArrowRight, AudioLines, Check, ClipboardList, Clock, Gauge, MessageSquareWarning, PenLine } from "lucide-react";
 
+import { AnimatedHeroHeadline } from "@/components/marketing/animated-hero-headline";
 import { HeroCaseFile } from "@/components/marketing/case-file";
 import { CtaLink } from "@/components/marketing/cta-link";
 import { GhlConnectVisual } from "@/components/marketing/ghl-connect";
@@ -14,6 +15,7 @@ import {
 } from "@/components/marketing/primitives";
 import { WaitlistForm } from "@/components/marketing/waitlist-form";
 import { BentoCard, BentoGrid } from "@/components/ui/bento-grid";
+import { BlurFade } from "@/components/ui/blur-fade";
 import { AnimatedShinyText } from "@/components/ui/animated-shiny-text";
 import { Globe } from "@/components/ui/globe";
 import { Marquee } from "@/components/ui/marquee";
@@ -88,10 +90,11 @@ export function LandingPage() {
               </AnimatedShinyText>
             </StatusPill>
             <p className="mt-5 text-[13px] font-medium text-brand-300">{HERO.eyebrow}</p>
-            <h1 className={cn(marketingHeroTitle, "mt-4")}>
-              {headlineBefore}
-              <span className="text-gradient">{HERO.headlineAccent}</span>
-            </h1>
+            <AnimatedHeroHeadline
+              before={headlineBefore}
+              accent={HERO.headlineAccent}
+              className={cn(marketingHeroTitle, "mt-4")}
+            />
             <p className={cn(marketingSubhead, "mt-6 max-w-xl")}>{HERO.subhead}</p>
             <CtaGroup>
               <CtaLink position="hero">
@@ -168,21 +171,29 @@ export function LandingPage() {
       <MarketingSection id="case-file" headline={CASE_FILE.headline}>
           <BentoGrid className="auto-rows-[16rem] grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
             {CASE_FILE.parts.map((part, index) => (
-              <BentoCard
+              <BlurFade
                 key={part.id}
-                name={part.title}
-                description={part.body}
-                href="#waitlist"
-                cta={WAITLIST.cta}
-                Icon={CASE_FILE_ICONS[part.id]}
-                className={cn("col-span-1", CASE_FILE_BENTO_SPAN[index])}
-                background={
-                  <div
-                    aria-hidden
-                    className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,rgba(154,136,252,0.18),transparent_55%)]"
-                  />
-                }
-              />
+                delay={index * 0.06}
+                inView
+                direction="up"
+                offset={10}
+                className={cn("col-span-1 h-full", CASE_FILE_BENTO_SPAN[index])}
+              >
+                <BentoCard
+                  name={part.title}
+                  description={part.body}
+                  href="#waitlist"
+                  cta={WAITLIST.cta}
+                  Icon={CASE_FILE_ICONS[part.id]}
+                  className="h-full"
+                  background={
+                    <div
+                      aria-hidden
+                      className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,rgba(154,136,252,0.18),transparent_55%)]"
+                    />
+                  }
+                />
+              </BlurFade>
             ))}
           </BentoGrid>
       </MarketingSection>
@@ -194,6 +205,7 @@ export function LandingPage() {
                 key={item.title}
                 step={String(index + 1).padStart(2, "0")}
                 title={item.title}
+                appearDelay={index * 0.08}
               >
                 {item.body}
               </FeatureCard>
@@ -203,11 +215,13 @@ export function LandingPage() {
 
       <MarketingSection headline={OUTCOME.headline} lead={<p>{OUTCOME.body}</p>}>
           <ul className="grid gap-4 sm:grid-cols-3">
-            {OUTCOME.lines.map((line) => {
+            {OUTCOME.lines.map((line, index) => {
               const { lead, rest } = splitMetric(line);
               return (
                 <li key={line}>
-                  <FeatureCard title={lead}>{rest}</FeatureCard>
+                  <FeatureCard title={lead} appearDelay={index * 0.08}>
+                    {rest}
+                  </FeatureCard>
                 </li>
               );
             })}

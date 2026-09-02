@@ -76,14 +76,26 @@ export function AppShell({
   return (
     <div className="relative flex min-h-screen bg-ink-950 text-card-foreground">
       <div aria-hidden className="pointer-events-none fixed inset-0 z-0 overflow-hidden">
-        <div
-          className="absolute -top-[22%] left-1/2 h-[520px] w-[820px] -translate-x-1/2"
-          style={{
-            background:
-              "radial-gradient(ellipse at center, rgba(154,136,252,0.16) 0%, transparent 70%)",
-            filter: "blur(64px)",
-          }}
-        />
+        <div className="absolute -top-[22%] left-1/2 h-[520px] w-[820px] -translate-x-1/2">
+          <div
+            className="animate-drift h-full w-full"
+            style={{
+              background:
+                "radial-gradient(ellipse at center, rgba(154,136,252,0.16) 0%, transparent 70%)",
+              filter: "blur(64px)",
+            }}
+          />
+        </div>
+        <div className="absolute -bottom-[8%] -right-[8%] h-[380px] w-[380px]">
+          <div
+            className="animate-drift-lag h-full w-full"
+            style={{
+              background:
+                "radial-gradient(circle, rgba(154,136,252,0.12) 0%, transparent 68%)",
+              filter: "blur(72px)",
+            }}
+          />
+        </div>
       </div>
       {wizard ? null : (
       <aside

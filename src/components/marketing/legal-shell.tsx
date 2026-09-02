@@ -3,6 +3,7 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 
 import { MarketingShell } from "@/components/marketing/chrome";
+import { AnimatedHeading } from "@/components/ui/animated-heading";
 import { marketingHeroTitle } from "@/lib/marketing/ui";
 
 export function LegalShell({
@@ -22,7 +23,9 @@ export function LegalShell({
     <MarketingShell headerAction="none">
       <article className="px-5 py-14 sm:px-6 sm:py-20">
         <div className="mx-auto max-w-3xl">
-          <h1 className={`${marketingHeroTitle} text-[2.1rem] sm:text-4xl`}>{title}</h1>
+          <AnimatedHeading as="h1" className={`${marketingHeroTitle} text-[2.2rem] sm:text-4xl`}>
+            {title}
+          </AnimatedHeading>
           {updated || effective ? (
             <p className="mt-4 text-sm leading-relaxed text-silver">
               {updated ? (
@@ -58,7 +61,7 @@ export function LegalSection({
 }) {
   return (
     <section>
-      <h2 className="font-heading text-xl tracking-tight text-white sm:text-[1.35rem]">{heading}</h2>
+      <h2 className="font-heading text-[1.35rem] tracking-tight text-white sm:text-[1.45rem]">{heading}</h2>
       <div className="mt-4 space-y-4">{children}</div>
     </section>
   );

@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 
+import { AnimatedHeading } from "@/components/ui/animated-heading";
 import { Breadcrumbs, type Crumb } from "@/components/ui/breadcrumbs";
 import { StatusBadge } from "@/components/ui/status-badge";
 import type { Tone } from "@/components/ui/tone";
@@ -52,11 +53,13 @@ export function PageHeader({
         <div className="min-w-0">
           {eyebrow ? <p className={cn(eyebrowClass, "mb-4")}>{eyebrow}</p> : null}
           <div className="flex flex-wrap items-center gap-3">
-            <h1 className={pageTitle}>{title}</h1>
+            <AnimatedHeading as="h1" className={pageTitle}>
+              {title}
+            </AnimatedHeading>
             {status ? <StatusBadge label={status} tone={statusTone} /> : null}
           </div>
           {description ? (
-            <p className="mt-2 max-w-2xl text-sm leading-relaxed text-muted-foreground">{description}</p>
+            <p className="mt-2 max-w-2xl text-[15px] leading-relaxed text-muted-foreground">{description}</p>
           ) : null}
         </div>
 

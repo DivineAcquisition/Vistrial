@@ -75,10 +75,16 @@ export function UserMenu({
         </MenuGroup>
         <MenuSeparator />
         {role === "owner" || role === "admin" || isPlatformAdmin ? (
-          <MenuLinkItem render={<Link href="/portal" />}>Owner portal</MenuLinkItem>
+          <MenuLinkItem render={<Link href="/portal" />}>Report</MenuLinkItem>
         ) : null}
         {surfaceAccess === "portal" ? null : (
-          <MenuLinkItem render={<Link href="/app/settings/profile" />}>Profile</MenuLinkItem>
+          <MenuLinkItem render={<Link href="/app/more" />}>More</MenuLinkItem>
+        )}
+        {isPlatformAdmin ? (
+          <MenuLinkItem render={<Link href="/app/ops" />}>System</MenuLinkItem>
+        ) : null}
+        {surfaceAccess === "portal" ? null : (
+          <MenuLinkItem render={<Link href="/app/settings/profile" />}>You</MenuLinkItem>
         )}
         <MenuLinkItem render={<Link href="/auth/signout" />}>Sign out</MenuLinkItem>
       </MenuPopup>

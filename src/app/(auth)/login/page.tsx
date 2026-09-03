@@ -32,7 +32,7 @@ export default async function LoginPage({
           ? "/portal"
           : redirectTo.startsWith("/app") || redirectTo.startsWith("/portal")
             ? redirectTo
-            : landingPath(memberships[0]?.surfaceAccess)
+            : landingPath(memberships[0]?.surfaceAccess, memberships[0]?.role)
       );
     }
     redirect("/no-access");

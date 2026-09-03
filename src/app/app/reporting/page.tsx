@@ -27,8 +27,8 @@ export default async function ReportingPage({
   if (!activatedAt) {
     return (
       <PageFrame
-        title="Reporting"
-        description="The outcome metric waits until this workspace goes live."
+        title="Numbers"
+        description="The operational figures wait until this workspace goes live."
       >
         <EmptyState
           kind="unconfigured"
@@ -56,8 +56,8 @@ export default async function ReportingPage({
 
   return (
     <PageFrame
-      title="Reporting"
-      description="Clients closed per hundred leads, and the operational numbers that explain it."
+      title="Numbers"
+      description="The operational figures behind the report."
       actions={<ReportingExports range={range} />}
       toolbar={<ReportingTabs range={range} activeHref={reportingViewHref("/app/reporting", range)} />}
     >

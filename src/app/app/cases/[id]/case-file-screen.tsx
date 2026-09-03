@@ -11,6 +11,8 @@ import {
   resolveLeadObjection,
 } from "@/app/app/cases/actions";
 import { haltLeadSequence } from "@/app/app/follow-ups/actions";
+import { recordBriefView } from "@/app/app/coaching/actions";
+import type { BriefPayload } from "@/lib/brief/types";
 import { ActivityEventLine } from "@/app/app/activity/activity-event";
 import type { ActivityEvent } from "@/lib/activity/types";
 import { ACTIVITY_CATEGORIES } from "@/lib/activity/types";
@@ -57,7 +59,6 @@ import {
   MANUAL_LEAD_STATUSES,
   OBJECTION_TYPE_LABELS,
   PAYMENT_TYPE_LABELS,
-  leadStatusTone,
   type LeadStatus,
 } from "@/lib/leads/labels";
 import { formatQueueDuration, formatQueueUntil } from "@/lib/queue/duration";
@@ -67,9 +68,6 @@ import {
   FACTOR_TITLE,
   SCORE_CHANGE_CAUSE,
   WORDS,
-  readinessLabel,
-  readinessState,
-  readinessTone,
 } from "@/lib/vocabulary";
 import { SCORE_FACTORS } from "@/lib/scoring/compute";
 import { overrideLeadScore } from "@/lib/scoring/override";
@@ -83,10 +81,10 @@ type PanelKind = "outcome" | "assign" | "override" | "status" | "createAction" |
 
 export function CaseFileScreen({
   initial,
-  readyThreshold,
+  brief,
 }: {
   initial: CaseFilePayload;
-  readyThreshold: number;
+  brief: BriefPayload | null;
 }) {
   const org = useOrg();
   const [file, setFile] = useState(initial);
@@ -163,15 +161,12 @@ export function CaseFileScreen({
   const resolvedObjections = file.objections.filter((item) => item.resolved);
   const openActions = file.nextActions.filter((item) => !item.completedAt);
   const doneActions = file.nextActions.filter((item) => item.completedAt);
+  const lastCall = brief?.lastCall ?? null;
+  const whereFrom = [lead.source, lead.campaign].filter(Boolean).join(" · ") || "Where they came from is not established";
 
-  const state = readinessState(
-    file.score?.total ?? null,
-    readyThreshold,
-    lead.leadType === "nurture_track"
-  );
-  const lastEvent = file.timeline.entries[0]
-    ? timelineSummary(file.timeline.entries[0], now)
-    : "Nothing yet. They have not been contacted.";
+  useEffect(() => {
+    void recordBriefView(lead.id);
+  }, [lead.id]);
 
   return (
     <div className="space-y-8">
@@ -181,22 +176,15 @@ export function CaseFileScreen({
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div className="min-w-0">
             <h2 className="font-heading text-lg text-white">{lead.name}</h2>
-            <p className="mt-1 text-sm text-silver">
+            <p className="mt-1 text-sm text-silver">{whereFrom}</p>
+            {brief?.lead.offerName ? (
+              <p className="mt-1 text-sm text-dim">{brief.lead.offerName}</p>
+            ) : null}
+            <p className="mt-2 text-sm text-silver">
               {[lead.email, lead.phone].filter(Boolean).join(" · ") || "No contact details"}
-            </p>
-            <div className="mt-3 flex flex-wrap gap-2">
-              <StatusBadge label={LEAD_STATUS_LABELS[lead.status]} tone={leadStatusTone(lead.status)} />
-              <StatusBadge label={readinessLabel(state)} tone={readinessTone(state)} />
-            </div>
-            <p className="mt-3 text-sm text-silver">
-              <span className="text-dim">Last thing that happened: </span>
-              {lastEvent}
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
-            <Button variant="primary" size="sm" render={<Link href={`/app/cases/${lead.id}/brief`} />}>
-              Pre-call brief
-            </Button>
             {lead.crmUrl ? (
               <Button
                 variant="primary"
@@ -213,46 +201,10 @@ export function CaseFileScreen({
               disabled={busy}
               onClick={() => setPanel(panel === "outcome" ? null : "outcome")}
             >
-              Log outcome
-            </Button>
-            <Button
-              type="button"
-              variant="secondary"
-              size="sm"
-              disabled={busy}
-              onClick={() => setPanel(panel === "assign" ? null : "assign")}
-            >
-              Assign
-            </Button>
-            {canOverride ? (
-              <Button
-                type="button"
-                variant="secondary"
-                size="sm"
-                disabled={busy}
-                onClick={() => setPanel(panel === "override" ? null : "override")}
-              >
-                Override score
-              </Button>
-            ) : null}
-            <Button
-              type="button"
-              variant="secondary"
-              size="sm"
-              disabled={busy}
-              onClick={() => setPanel(panel === "status" ? null : "status")}
-            >
-              Change status
+              What happened
             </Button>
           </div>
         </div>
-        <DefinitionList>
-          <KeyValue label="Setter">{lead.assignedSetterName || "Unassigned"}</KeyValue>
-          <KeyValue label="Closer">{lead.assignedCloserName || "Unassigned"}</KeyValue>
-          <KeyValue label="Source">{lead.source || "—"}</KeyValue>
-          <KeyValue label="Opted in">{formatQueueDuration(lead.optedInAt, now)}</KeyValue>
-          <KeyValue label="Last touch">{formatQueueDuration(lead.lastTouchAt, now)}</KeyValue>
-        </DefinitionList>
       </Panel>
 
       {panel === "outcome" ? (
@@ -319,7 +271,10 @@ export function CaseFileScreen({
       ) : null}
 
       <section>
-        <SectionHeader title="Open objections" hint="Do not re-litigate these. They are already on the table." />
+        <SectionHeader
+          title="What they have already objected to"
+          hint="In their own words. Do not re-litigate these."
+        />
         <Panel className="p-6">
           {openObjections.length === 0 ? (
             <p className="text-sm text-dim">No open objections.</p>
@@ -354,6 +309,33 @@ export function CaseFileScreen({
                 ))}
               </ul>
             </details>
+          ) : null}
+        </Panel>
+      </section>
+
+      <section>
+        <SectionHeader
+          title="Last call"
+          hint="What happened last time, and what was agreed."
+        />
+        <Panel className="p-6">
+          {lastCall ? (
+            <div className="space-y-2">
+              <p className="text-sm text-white">{lastCall.summary || "Not established"}</p>
+              <p className="text-sm text-silver">
+                <span className="text-dim">What was agreed: </span>
+                {lastCall.nextStepAgreed || "Not established"}
+              </p>
+            </div>
+          ) : (
+            <p className="text-sm text-dim">No previous call is on file.</p>
+          )}
+          {brief && brief.quotes.length > 0 ? (
+            <ul className="mt-4 space-y-1 text-sm text-silver">
+              {brief.quotes.map((quote) => (
+                <li key={quote.text}>“{quote.text}”</li>
+              ))}
+            </ul>
           ) : null}
         </Panel>
       </section>
@@ -421,6 +403,58 @@ export function CaseFileScreen({
           </Panel>
         </section>
       ) : null}
+
+      <details className="rounded-2xl border border-white/[0.08] px-4 py-3">
+        <summary className="cursor-pointer text-sm font-medium text-white">More on this person</summary>
+        <p className={helperClass}>Assign, status, and anything else that is not the call itself.</p>
+        <div className="mt-3 flex flex-wrap gap-2">
+          <Button
+            type="button"
+            variant="secondary"
+            size="sm"
+            disabled={busy}
+            onClick={() => setPanel(panel === "assign" ? null : "assign")}
+          >
+            Assign
+          </Button>
+          {canOverride ? (
+            <Button
+              type="button"
+              variant="secondary"
+              size="sm"
+              disabled={busy}
+              onClick={() => setPanel(panel === "override" ? null : "override")}
+            >
+              Change how ready they look
+            </Button>
+          ) : null}
+          <Button
+            type="button"
+            variant="secondary"
+            size="sm"
+            disabled={busy}
+            onClick={() => setPanel(panel === "status" ? null : "status")}
+          >
+            Change status
+          </Button>
+        </div>
+        <DefinitionList>
+          <KeyValue label="Setter">{lead.assignedSetterName || "Unassigned"}</KeyValue>
+          <KeyValue label="Closer">{lead.assignedCloserName || "Unassigned"}</KeyValue>
+          <KeyValue label="In the pipeline since">{formatQueueDuration(lead.optedInAt, now)}</KeyValue>
+          <KeyValue label="Last contacted">{formatQueueDuration(lead.lastTouchAt, now)}</KeyValue>
+        </DefinitionList>
+        {brief && brief.setterFacts.length > 0 ? (
+          <ul className="mt-4 space-y-1 text-sm text-silver">
+            {brief.setterFacts.map((fact) => (
+              <li key={fact.label}>
+                <span className="text-dim">{fact.label}: </span>
+                {fact.value}
+              </li>
+            ))}
+          </ul>
+        ) : null}
+      </details>
 
       <section>
         <SectionHeader
@@ -496,8 +530,14 @@ export function CaseFileScreen({
       </section>
 
       <section>
-        <SectionHeader title="Timeline" hint="Everything that happened to this person, in sequence. Notes are yours — not the conversation." />
         <Panel className="p-6">
+          <details>
+            <summary className="cursor-pointer text-sm font-medium text-white">
+              Everything that happened
+            </summary>
+            <p className={helperClass}>
+              Notes, calls, and status changes. Failures stay visible.
+            </p>
           {file.timeline.entries.length === 0 ? (
             <p className="text-sm text-dim">No activity on this lead yet.</p>
           ) : (
@@ -549,13 +589,14 @@ export function CaseFileScreen({
               </Button>
             </div>
           ) : null}
+          </details>
         </Panel>
       </section>
 
       <section>
         <SectionHeader
           title="Calls"
-          hint="Open a call for what was said. The brief is one click away."
+          hint="Open a call for what was said."
         />
         <div className="space-y-3">
           {file.calls.length === 0 ? (
@@ -563,7 +604,7 @@ export function CaseFileScreen({
               <p className="text-sm text-dim">No calls yet.</p>
             </Panel>
           ) : (
-            file.calls.map((call) => <CallBlock key={call.id} call={call} now={now} leadId={lead.id} />)
+            file.calls.map((call) => <CallBlock key={call.id} call={call} now={now} />)
           )}
         </div>
       </section>
@@ -939,7 +980,7 @@ function TimelineEntry({
   );
 }
 
-function CallBlock({ call, now, leadId }: { call: CaseCall; now: string; leadId: string }) {
+function CallBlock({ call, now }: { call: CaseCall; now: string }) {
   return (
     <Panel className="p-6" as="article">
       <DefinitionList>
@@ -968,9 +1009,6 @@ function CallBlock({ call, now, leadId }: { call: CaseCall; now: string; leadId:
       <div className="mt-4 flex flex-wrap gap-2">
         <Button variant="secondary" size="sm" render={<a href={`/app/calls/${call.id}`} />}>
           Open call
-        </Button>
-        <Button variant="primary" size="sm" render={<a href={`/app/cases/${leadId}/brief`} />}>
-          Pre-call brief
         </Button>
       </div>
     </Panel>

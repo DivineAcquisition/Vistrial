@@ -88,11 +88,8 @@ export function CallDetailScreen({
             <p className="mt-1 text-sm text-silver">{detail.lead.name}</p>
           </div>
           <div className="flex flex-wrap gap-2">
-            <Button variant="secondary" size="sm" render={<Link href={`/app/cases/${detail.lead.id}`} />}>
-              Case file
-            </Button>
-            <Button variant="primary" size="sm" render={<Link href={`/app/cases/${detail.lead.id}/brief`} />}>
-              Pre-call brief
+            <Button variant="primary" size="sm" render={<Link href={`/app/cases/${detail.lead.id}`} />}>
+              Person
             </Button>
           </div>
         </div>

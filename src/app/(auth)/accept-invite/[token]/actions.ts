@@ -73,8 +73,8 @@ export async function createAccountFromInvite(
   cookieStore.set(ORG_COOKIE_NAME, result.orgId, orgCookieOptions);
   cookieStore.delete(PENDING_INVITE_COOKIE);
   const memberships = await listActiveMemberships(created.user.id);
-  const surface = memberships.find((m) => m.orgId === result.orgId)?.surfaceAccess;
-  redirect(landingPath(surface));
+  const membership = memberships.find((m) => m.orgId === result.orgId);
+  redirect(landingPath(membership?.surfaceAccess, membership?.role));
 }
 
 export async function markPendingInvite(token: string) {

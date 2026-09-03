@@ -32,8 +32,8 @@ export default async function LogOutcomePage({
 
   return (
     <PageFrame
-      title="Log an outcome"
-      description="One tap. Typing is optional. This is the input every other number depends on."
+      title="What happened"
+      description="Two taps. Typing is optional. This is how we know every lead got worked."
     >
       <LogOutcomeScreen initial={initial} from={from} walkthrough={Boolean(walkthrough)} />
     </PageFrame>

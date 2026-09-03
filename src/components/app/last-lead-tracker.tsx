@@ -15,10 +15,10 @@ export function LastLeadTracker() {
 
   useEffect(() => {
     const match = pathname.match(CASE);
-    if (match?.[1] && match[1] !== "brief") {
-      rememberOpenedLead(org.id, match[1]);
-      if (pathname.includes("/brief")) markPushPromptEligible();
-    }
+      if (match?.[1] && match[1] !== "brief") {
+        rememberOpenedLead(org.id, match[1]);
+        markPushPromptEligible();
+      }
   }, [org.id, pathname]);
 
   return null;

@@ -90,7 +90,7 @@ export function OutcomePanel({
 
   return (
     <div className="rounded-xl border border-white/10 bg-white/[0.03] p-4">
-      <p className="text-sm font-medium text-white">Log an outcome for {row.name}</p>
+      <p className="text-sm font-medium text-white">What happened with {row.name}</p>
       <p className={helperClass}>
         One click on the result writes the touch. Channel and direction stay outbound call unless you change them.
       </p>

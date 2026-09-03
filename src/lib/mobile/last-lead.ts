@@ -18,5 +18,5 @@ export function readLastOpenedLead(orgId: string): string | null {
 
 export function lastOpenedLeadHref(orgId: string): string | null {
   const id = readLastOpenedLead(orgId);
-  return id ? `/app/cases/${id}/brief` : null;
+  return id ? `/app/cases/${id}` : null;
 }

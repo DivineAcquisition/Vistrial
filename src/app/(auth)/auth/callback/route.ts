@@ -45,16 +45,18 @@ export async function GET(request: NextRequest) {
   if (pendingToken) {
     const result = await redeemInvite(pendingToken, user.id, user.email ?? null);
 
-    const dest = result.ok
-      ? landingPath(
-          (await listActiveMemberships(user.id)).find((m) => m.orgId === result.orgId)
-            ?.surfaceAccess
-        )
-      : result.error === "email_mismatch"
-        ? `/accept-invite/${pendingToken}`
-        : isAcceptInvitePath(next)
-          ? next
-          : `/accept-invite/${pendingToken}`;
+    let dest: string;
+    if (result.ok) {
+      const memberships = await listActiveMemberships(user.id);
+      const membership = memberships.find((m) => m.orgId === result.orgId);
+      dest = landingPath(membership?.surfaceAccess, membership?.role);
+    } else if (result.error === "email_mismatch") {
+      dest = `/accept-invite/${pendingToken}`;
+    } else if (isAcceptInvitePath(next)) {
+      dest = next;
+    } else {
+      dest = `/accept-invite/${pendingToken}`;
+    }
     const response = redirectTo(request, dest);
 
     response.cookies.delete(PENDING_INVITE_COOKIE);
@@ -77,6 +79,6 @@ export async function GET(request: NextRequest) {
     request,
     next.startsWith("/app") || next.startsWith("/portal")
       ? next
-      : landingPath(memberships[0]?.surfaceAccess)
+      : landingPath(memberships[0]?.surfaceAccess, memberships[0]?.role)
   );
 }

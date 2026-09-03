@@ -20,7 +20,7 @@ import {
   CommandShortcut,
 } from "@/components/ui/command";
 import { Kbd, KbdGroup } from "@/components/ui/kbd";
-import { NAV_GROUPS, PRIMARY_NAV, navVisibleTo } from "@/lib/navigation";
+import { MORE_NAV, PRIMARY_NAV, navVisibleTo } from "@/lib/navigation";
 
 type JumpItem = {
   value: string;
@@ -34,16 +34,20 @@ export function AppJumpPalette() {
   const router = useRouter();
   const { role, isPlatformAdmin } = useOrg();
 
-  const items = useMemo<JumpItem[]>(
-    () =>
-      PRIMARY_NAV.filter((item) => navVisibleTo(item, role, isPlatformAdmin)).map((item) => ({
+  const items = useMemo<JumpItem[]>(() => {
+    const dests = [
+      ...PRIMARY_NAV,
+      ...MORE_NAV.filter((item) => !PRIMARY_NAV.some((primary) => primary.href === item.href)),
+    ];
+    return dests
+      .filter((item) => navVisibleTo(item, role, isPlatformAdmin))
+      .map((item) => ({
         value: item.href,
         label: item.label,
         href: item.href,
-        group: NAV_GROUPS.find((group) => group.id === item.group)?.label ?? item.group,
-      })),
-    [role, isPlatformAdmin]
-  );
+        group: item.group === "front" ? "Now" : "More",
+      }));
+  }, [role, isPlatformAdmin]);
 
   useEffect(() => {
     function onKey(event: KeyboardEvent) {

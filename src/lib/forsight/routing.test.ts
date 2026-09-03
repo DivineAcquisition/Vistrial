@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import { isAllowedAppOrigin } from "@/lib/app-url";
 import { PRODUCTION_FORSIGHT_ORIGIN } from "@/lib/constants";
 import { isForsightHost, isOperatorAppHost } from "@/lib/marketing/hosts";
-import { FORSIGHT_PATH, PRIMARY_NAV, navVisibleTo } from "@/lib/navigation";
+import { FORSIGHT_PATH, MORE_NAV, PRIMARY_NAV, navVisibleTo } from "@/lib/navigation";
 
 describe("pulse.vistrial.io", () => {
   it("is recognised as Forsight and not as the operator app host", () => {
@@ -30,16 +30,16 @@ describe("Forsight in the app", () => {
     expect(FORSIGHT_PATH.startsWith("/app/")).toBe(true);
   });
 
-  it("sits in the sidebar next to the other measuring screens", () => {
-    const item = PRIMARY_NAV.find((entry) => entry.href === FORSIGHT_PATH);
+  it("sits behind More, not in the sidebar", () => {
+    expect(PRIMARY_NAV.find((entry) => entry.href === FORSIGHT_PATH)).toBeUndefined();
+    const item = MORE_NAV.find((entry) => entry.href === FORSIGHT_PATH);
     expect(item).toBeDefined();
-    expect(item?.label).toBe("Forsight");
-    expect(item?.group).toBe("measure");
+    expect(item?.label).toBe("Tracking");
   });
 
-  it("follows Reporting's visibility rather than inventing its own", () => {
-    const item = PRIMARY_NAV.find((entry) => entry.href === FORSIGHT_PATH);
-    if (!item) throw new Error("Forsight is missing from the sidebar");
+  it("follows the owner's visibility rather than inventing its own", () => {
+    const item = MORE_NAV.find((entry) => entry.href === FORSIGHT_PATH);
+    if (!item) throw new Error("Tracking is missing from More");
     expect(navVisibleTo(item, "owner")).toBe(true);
     expect(navVisibleTo(item, "admin")).toBe(true);
     expect(navVisibleTo(item, "setter")).toBe(false);

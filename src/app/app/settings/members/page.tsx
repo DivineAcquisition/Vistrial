@@ -189,7 +189,7 @@ export default async function MembersSettingsPage() {
                 </TableCell>
                   <TableCell className="capitalize text-silver">{invite.role}</TableCell>
                   <TableCell className="text-silver">
-                    {invite.surface_access === "portal" ? "Owner portal" : "Team app"}
+                    {invite.surface_access === "portal" ? "Report only" : "Team app"}
                   </TableCell>
                   <TableCell className="hidden text-silver md:table-cell">
                     {formatDayLong(invite.expires_at)}

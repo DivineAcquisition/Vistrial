@@ -10,18 +10,25 @@ import { isNavActive } from "@/lib/navigation";
 import { cn } from "@/lib/utils";
 
 /**
- * The three jobs that have to work one-handed. Primary actions sit here, in
- * thumb reach — not in the top corner.
+ * The three jobs that have to work one-handed. Who to call, what happened,
+ * who you are about to talk to.
  */
 export function MobileDock() {
   const pathname = usePathname();
-  const { org } = useOrg();
-  const briefHref = lastOpenedLeadHref(org.id) ?? "/app/calls";
+  const { org, role } = useOrg();
+  if (role === "owner") return null;
+  const personHref = lastOpenedLeadHref(org.id) ?? "/app/cases";
 
   const items = [
-    { href: "/app/queue", label: "Queue", match: "/app/queue", icon: ListChecks, primary: false },
-    { href: "/app/log", label: "Log", match: "/app/log", icon: ClipboardList, primary: true },
-    { href: briefHref, label: "Brief", match: "/app/cases", icon: Phone, primary: false },
+    { href: "/app/queue", label: "To call", match: "/app/queue", icon: ListChecks, primary: false },
+    {
+      href: "/app/log",
+      label: "What happened",
+      match: "/app/log",
+      icon: ClipboardList,
+      primary: true,
+    },
+    { href: personHref, label: "Person", match: "/app/cases", icon: Phone, primary: false },
   ] as const;
 
   return (

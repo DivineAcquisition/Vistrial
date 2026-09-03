@@ -107,7 +107,7 @@ export function CasesScreen({
           <EmptyState
             kind="unconfigured"
             title="The CRM is not connected"
-            detail="New people will not land until GoHighLevel is linked. People already in this workspace are still listed below."
+            detail="New people will not land until your CRM is linked. People already in this workspace are still listed below."
             action={integrations}
           />
         </div>
@@ -116,8 +116,8 @@ export function CasesScreen({
       {emptyKind === "not_connected" ? (
         <EmptyState
           kind="unconfigured"
-          title="Case files appear after the CRM is connected"
-          detail="Each new person will get a case file here. That list stays empty until GoHighLevel is connected."
+          title="People appear after the CRM is connected"
+          detail="Each new person will show up here. This list stays empty until your CRM is connected."
           action={integrations}
         />
       ) : null}
@@ -125,8 +125,8 @@ export function CasesScreen({
       {emptyKind === "broken" ? (
         <EmptyState
           kind="unconfigured"
-          title="Case files cannot load while the CRM connection is broken"
-          detail="The location is linked but the connection is broken. Reconnect in Integrations. This is not an empty caseload."
+          title="People cannot load while the CRM connection is broken"
+          detail="Your CRM is linked but the connection is broken. Reconnect in More, then Settings, then Integrations. This is not an empty list."
           action={integrations}
         />
       ) : null}
@@ -134,8 +134,8 @@ export function CasesScreen({
       {emptyKind === "no_leads" ? (
         <EmptyState
           kind="empty"
-          title="No case files yet"
-          detail="GoHighLevel is connected. People will appear here when they arrive. There is nothing to open yet."
+          title="No one yet"
+          detail="The CRM is connected. People will appear here when they arrive. There is nothing to open yet."
         />
       ) : null}
 
@@ -145,8 +145,8 @@ export function CasesScreen({
           {emptyKind === "no_results" ? (
             <EmptyState
               kind="empty"
-              title="No case files match"
-              detail="Leads exist in this workspace. Nothing matched that name, email, phone, or filter set. This is not an empty caseload."
+              title="No one matches"
+              detail="People exist in this workspace. Nothing matched that name, email, phone, or filter. This is not an empty list."
               action={
                 <Button variant="secondary" size="sm" render={<Link href="/app/cases" />}>
                   Clear search

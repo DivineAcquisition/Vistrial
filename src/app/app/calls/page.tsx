@@ -16,7 +16,7 @@ export default async function CallsPage({
   const payload = await loadOrgCallList();
 
   return (
-    <PageFrame title="Calls" description="Recorded conversations, what was said, and the brief for the next dial.">
+    <PageFrame title="Calls" description="Recorded conversations and what was said.">
       <CallsScreen
         initial={payload}
         canOpenIntegrations={canManageOrgSettings(ctx.role, ctx.isPlatformAdmin)}

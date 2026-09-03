@@ -169,8 +169,8 @@ function CallRow({ row, now }: { row: CallListRow; now: string }) {
           <Button variant="secondary" size="sm" render={<Link href={`/app/calls/${row.id}`} />}>
             Open
           </Button>
-          <Button variant="primary" size="sm" render={<Link href={`/app/cases/${row.leadId}/brief`} />}>
-            Brief
+          <Button variant="primary" size="sm" render={<Link href={`/app/cases/${row.leadId}`} />}>
+            Person
           </Button>
         </div>
       </TableCell>

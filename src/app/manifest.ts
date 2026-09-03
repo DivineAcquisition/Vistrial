@@ -44,15 +44,15 @@ export default function manifest(): MetadataRoute.Manifest {
     ],
     shortcuts: [
       {
-        name: "Log an outcome",
+        name: "What happened",
         short_name: "Log",
-        description: "Record what happened after a contact, one tap.",
+        description: "Record what happened after a contact, two taps.",
         url: "/app/log",
         icons: [{ src: "/icons/icon-192.png", sizes: "192x192", type: "image/png" }],
       },
       {
-        name: "Queue",
-        short_name: "Queue",
+        name: "To call",
+        short_name: "To call",
         description: "Who to contact next.",
         url: "/app/queue",
         icons: [{ src: "/icons/icon-192.png", sizes: "192x192", type: "image/png" }],

@@ -3,25 +3,23 @@ import type { OrgRole, SurfaceAccess } from "@/types/database";
 import { canManageOrgSettings } from "@/lib/auth/permissions";
 
 /**
- * Navigation groups. The items and their labels are unchanged; the grouping
- * only gives the sidebar a heading above each band so a new setter can tell
- * the working screens from the reporting and configuration ones.
- *
- * Icons are named rather than imported so this stays a data module that server
- * code can read without pulling an icon library in with it.
+ * The product is three screens. Everything else is behind a door, or in the
+ * DA console. This module is the map.
  */
-export type NavGroupId = "work" | "measure" | "configure";
+
+export type NavGroupId = "front" | "door";
 
 /**
- * Forsight, the tracking and metrics section. Also what pulse.vistrial.io
- * lands on, so the hostname and the sidebar agree on one path.
+ * Tracking (ads and pipeline). Also what pulse.vistrial.io lands on, so the
+ * hostname and the door agree on one path.
  */
 export const FORSIGHT_PATH = "/app/forsight";
 
+export const MORE_PATH = "/app/more";
+
 export const NAV_GROUPS: Array<{ id: NavGroupId; label: string }> = [
-  { id: "work", label: "Work" },
-  { id: "measure", label: "Measure" },
-  { id: "configure", label: "Configure" },
+  { id: "front", label: "" },
+  { id: "door", label: "" },
 ];
 
 export type NavIcon =
@@ -32,7 +30,9 @@ export type NavIcon =
   | "reporting"
   | "settings"
   | "activity"
-  | "forsight";
+  | "forsight"
+  | "more"
+  | "coaching";
 
 export type NavItem = {
   href: string;
@@ -43,50 +43,131 @@ export type NavItem = {
   icon: NavIcon;
   roles?: OrgRole[];
   platformAdminOnly?: boolean;
+  /** Short line on the More door. */
+  description?: string;
 };
 
+/**
+ * The three product screens, plus the door. Setter: To call. Closer: To call
+ * (then the person). Owner: Report. More is how you reach everything else.
+ */
 export const PRIMARY_NAV: NavItem[] = [
-  { href: "/app/queue", label: "Queue", match: "/app/queue", group: "work", icon: "queue" },
-  { href: "/app/log", label: "Log", match: "/app/log", group: "work", icon: "log" },
-  { href: "/app/cases", label: "Case Files", match: "/app/cases", group: "work", icon: "cases" },
-  { href: "/app/calls", label: "Calls", match: "/app/calls", group: "work", icon: "calls" },
+  {
+    href: "/app/queue",
+    label: "To call",
+    match: "/app/queue",
+    group: "front",
+    icon: "queue",
+    roles: ["setter", "closer", "admin"],
+  },
+  {
+    href: "/portal",
+    label: "Report",
+    match: "/portal",
+    group: "front",
+    icon: "reporting",
+    roles: ["owner", "admin"],
+  },
+  {
+    href: MORE_PATH,
+    label: "More",
+    match: MORE_PATH,
+    group: "door",
+    icon: "more",
+  },
+];
+
+/**
+ * Behind the door. Reachable on purpose. Invisible until someone opens More
+ * or jumps. Capability stays; it is not the first thing on screen.
+ */
+export const MORE_NAV: NavItem[] = [
+  {
+    href: "/app/log",
+    label: "What happened",
+    match: "/app/log",
+    group: "door",
+    icon: "log",
+    description: "Record a call or message after you come back from the CRM.",
+  },
+  {
+    href: "/app/cases",
+    label: "People",
+    match: "/app/cases",
+    group: "door",
+    icon: "cases",
+    description: "Find anyone in this workspace, not only who to call next.",
+  },
+  {
+    href: "/app/calls",
+    label: "Calls",
+    match: "/app/calls",
+    group: "door",
+    icon: "calls",
+    description: "Recordings and what was said.",
+  },
   {
     href: "/app/coaching",
     label: "Coaching",
     match: "/app/coaching",
-    group: "work",
-    icon: "reporting",
-  },
-  {
-    href: "/app/reporting",
-    label: "Reporting",
-    match: "/app/reporting",
-    group: "measure",
-    icon: "reporting",
-    roles: ["owner", "admin"],
-  },
-  {
-    href: FORSIGHT_PATH,
-    label: "Forsight",
-    match: FORSIGHT_PATH,
-    group: "measure",
-    icon: "forsight",
-    roles: ["owner", "admin"],
+    group: "door",
+    icon: "coaching",
+    description: "What to practice after the calls, not during them.",
   },
   {
     href: "/app/activity",
     label: "Activity",
     match: "/app/activity",
-    group: "measure",
+    group: "door",
     icon: "activity",
     roles: ["owner", "admin"],
+    description: "The stream of what this workspace did.",
+  },
+  {
+    href: "/app/reporting",
+    label: "Numbers",
+    match: "/app/reporting",
+    group: "door",
+    icon: "reporting",
+    roles: ["owner", "admin"],
+    description: "The operational figures behind the report.",
+  },
+  {
+    href: FORSIGHT_PATH,
+    label: "Tracking",
+    match: FORSIGHT_PATH,
+    group: "door",
+    icon: "forsight",
+    roles: ["owner", "admin"],
+    description: "Ads, creatives, and pipeline — not the daily list.",
   },
   {
     href: "/app/settings",
     label: "Settings",
     match: "/app/settings",
-    group: "configure",
+    group: "door",
     icon: "settings",
+    description: "People, connections, and how this workspace is set up.",
+  },
+];
+
+/** Divine Acquisition only. Never in the client's sidebar. */
+export const DA_CONSOLE_LINKS: Array<{ href: string; label: string; description: string }> = [
+  { href: "/app/ops", label: "System", description: "Jobs, alerts, and ingestion across clients." },
+  {
+    href: "/app/settings/agents",
+    label: "Agents",
+    description: "How work is routed. Not a client control.",
+  },
+  {
+    href: `${FORSIGHT_PATH}/sources`,
+    label: "Tracking sources",
+    description: "Where ads and pipeline numbers are read from.",
+  },
+  {
+    href: `${FORSIGHT_PATH}/workspaces`,
+    label: "All workspaces",
+    description: "Every client this tracking view can open.",
   },
 ];
 
@@ -182,6 +263,15 @@ export function firstSettingsPath(role: OrgRole, isPlatformAdmin = false): strin
 
 export const DEFAULT_APP_PATH = "/app/queue";
 
-export function landingPath(surfaceAccess: SurfaceAccess | undefined): string {
-  return surfaceAccess === "portal" ? "/portal" : DEFAULT_APP_PATH;
+/**
+ * Where someone lands after sign-in. The owner opens the report. Everyone
+ * who works leads opens the list. Portal-only members never leave the report.
+ */
+export function landingPath(
+  surfaceAccess: SurfaceAccess | undefined,
+  role?: OrgRole | null
+): string {
+  if (surfaceAccess === "portal") return "/portal";
+  if (role === "owner") return "/portal";
+  return DEFAULT_APP_PATH;
 }

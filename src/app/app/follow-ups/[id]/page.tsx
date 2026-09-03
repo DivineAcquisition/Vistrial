@@ -26,7 +26,7 @@ export default async function FollowUpReviewPage({
       title="Follow-up draft"
       description="Vistrial drafts. You approve. The CRM sends."
       breadcrumbs={[
-        { href: "/app/queue", label: "Queue" },
+        { href: "/app/queue", label: "To call" },
         { href: `/app/follow-ups/${payload.draft.id}`, label: payload.lead.name },
       ]}
     >

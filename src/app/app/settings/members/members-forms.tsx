@@ -59,7 +59,7 @@ export function InviteForm() {
         <CheckboxField
           name="portal_only"
           value="1"
-          label="Owner portal only"
+          label="Report only"
           description="Numbers without a seat in the working app. No queue, no case files."
         />
       ) : null}
@@ -154,7 +154,7 @@ export function MemberSurfaceSelect({
         }}
       >
         <option value="operator">Team app</option>
-        <option value="portal">Owner portal</option>
+        <option value="portal">Report only</option>
       </Select>
       {error ? <p className={errorClass}>{error}</p> : null}
     </div>

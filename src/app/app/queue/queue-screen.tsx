@@ -3,8 +3,6 @@
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
-import { refreshRecentActivity } from "@/app/app/activity/actions";
-import { ActivityWhen } from "@/app/app/activity/activity-event";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 import {
@@ -15,8 +13,6 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { useOrg } from "@/components/app/org-provider";
-import { QueueFilters } from "@/app/app/queue/queue-filters";
-import { activeQueueFilterCount } from "@/lib/queue/filters";
 import { QueueLeadRow } from "@/app/app/queue/queue-row";
 import { QueueMobileList } from "@/app/app/queue/queue-mobile-list";
 import {
@@ -37,41 +33,23 @@ import {
   type QueuePayload,
   type QueueRow,
 } from "@/lib/queue/types";
-import { MIN_VOICE_EXAMPLES } from "@/lib/follow-up/constants";
-import { formatQueueUntil } from "@/lib/queue/duration";
-import {
-  FOLLOW_UP_BRANCH_LABELS,
-  FOLLOW_UP_CHANNEL_LABELS,
-  FOLLOW_UP_STATUS_LABELS,
-} from "@/lib/follow-up/labels";
 import { createClient } from "@/lib/supabase/client";
 import { errorClass, sectionLabel } from "@/lib/ui";
-import type { ActivityEvent } from "@/lib/activity/types";
 import { Panel } from "@/components/ui/panel";
-import { StatusBadge } from "@/components/ui/status-badge";
-import { SectionHeader } from "@/components/ui/section-header";
 
-/**
- * Ten columns is right at a desk and wrong on a phone. The context columns fold
- * away below `md` and reappear as a line under the lead's name, so the queue
- * stays readable instead of turning into a sideways scroll.
- */
 type QueueColumn = { label: string; hideOnMobile?: boolean };
 
 const ALARM_COLUMNS: QueueColumn[] = [
   { label: "Who" },
   { label: "Waiting too long" },
-  { label: "How ready" },
   { label: "Waiting", hideOnMobile: true },
-  { label: "Actions" },
+  { label: "" },
 ];
 
 const QUEUE_COLUMNS: QueueColumn[] = [
   { label: "Who" },
-  { label: "How ready" },
   { label: "Waiting", hideOnMobile: true },
-  { label: "Next action" },
-  { label: "Actions" },
+  { label: "" },
 ];
 
 type Snapshot = {
@@ -84,25 +62,16 @@ export function QueueScreen({
   initial,
   filters,
   canOpenIntegrations,
-  voiceExampleCount,
-  readyThreshold,
-  recentActivity = [],
-  canViewActivity = false,
 }: {
   initial: QueuePayload;
   filters: QueueFilterState;
   canOpenIntegrations: boolean;
-  voiceExampleCount: number;
-  readyThreshold: number;
-  recentActivity?: ActivityEvent[];
-  canViewActivity?: boolean;
 }) {
   const org = useOrg();
   const [alarm, setAlarm] = useState(initial.alarm);
   const [queue, setQueue] = useState(initial.queue);
   const [hasMore, setHasMore] = useState(initial.hasMore);
   const [members, setMembers] = useState(initial.members);
-  const [sources, setSources] = useState(initial.sources);
   const [meta, setMeta] = useState({
     crmStatus: initial.crmStatus,
     orgLeadCount: initial.orgLeadCount,
@@ -115,9 +84,7 @@ export function QueueScreen({
   const [busyLeadId, setBusyLeadId] = useState<string | null>(null);
   const [loadingMore, setLoadingMore] = useState(false);
   const [pendingDrafts, setPendingDrafts] = useState(initial.pendingDrafts);
-  const [filtersOpen, setFiltersOpen] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
-  const [activity, setActivity] = useState(recentActivity);
 
   const seenIds = useRef(new Set([...initial.alarm, ...initial.queue].map((row) => row.id)));
   const pendingLive = useRef<QueuePayload | null>(null);
@@ -139,7 +106,7 @@ export function QueueScreen({
     pendingDrafts,
     hasMore,
     members,
-    sources,
+    sources: initial.sources,
   });
   const connectionBanner =
     meta.orgLeadCount > 0 &&
@@ -182,7 +149,6 @@ export function QueueScreen({
     setQueue(nextQueue);
     setHasMore(payload.hasMore);
     setMembers(payload.members);
-    setSources(payload.sources);
     setPendingDrafts(payload.pendingDrafts);
     setMeta({
       crmStatus: payload.crmStatus,
@@ -217,9 +183,6 @@ export function QueueScreen({
         void refreshQueue(filters, { limit: Math.max(QUEUE_PAGE_SIZE, loadedCount.current) }).then(
           (payload) => applyLive(payload, alarmRef.current)
         );
-        if (canViewActivity) {
-          void refreshRecentActivity().then((page) => setActivity(page.events));
-        }
       }, 400);
     };
 
@@ -251,7 +214,7 @@ export function QueueScreen({
       if (debounce) window.clearTimeout(debounce);
       void supabase.removeChannel(channel);
     };
-  }, [applyLive, canViewActivity, filters, org.org.id]);
+  }, [applyLive, filters, org.org.id]);
 
   function flushPendingLive() {
     if (interactingRef.current || busyRef.current || !pendingLive.current) return;
@@ -439,11 +402,6 @@ export function QueueScreen({
     </Button>
   ) : null;
 
-  const activeFilterCount = activeQueueFilterCount(filters, {
-    role: org.role,
-    isPlatformAdmin: org.isPlatformAdmin,
-  });
-
   const alarmVisible = useMemo(() => {
     const exitingIds = new Set(exitingAlarm.map((row) => row.id));
     const live = alarm.filter((row) => !exitingIds.has(row.id));
@@ -468,58 +426,12 @@ export function QueueScreen({
     >
       {actionError ? <p className={`${errorClass} mb-4`}>{actionError}</p> : null}
 
-      {canViewActivity ? (
-        <section className="mb-8">
-          <SectionHeader
-            title="Recent activity"
-            hint="The system is working. Open Activity for the full stream."
-          />
-          <Panel className="p-4">
-            {activity.length === 0 ? (
-              <p className="text-sm text-dim">Nothing yet. When Vistrial works, it shows here.</p>
-            ) : (
-            <ol className="space-y-2">
-              {activity.map((event) => (
-                <li
-                  key={event.id}
-                  className={
-                    event.result === "failed"
-                      ? "rounded-lg border border-flag-critical/35 px-3 py-2"
-                      : "px-1 py-1"
-                  }
-                >
-                  <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
-                    {event.result === "failed" ? (
-                      <StatusBadge label="failed" tone="critical" />
-                    ) : null}
-                    <Link href={event.href} className="min-w-0 flex-1 text-sm text-white hover:underline">
-                      {event.headline}
-                    </Link>
-                    <ActivityWhen at={event.occurredAt} now={now} />
-                  </div>
-                  <p className="text-xs text-dim">
-                    {event.actorLabel}
-                    {event.leadName ? ` · ${event.leadName}` : null}
-                  </p>
-                </li>
-              ))}
-            </ol>
-            )}
-            <div className="mt-3">
-              <Button variant="secondary" size="sm" render={<Link href="/app/activity" />}>
-                Open activity
-              </Button>
-            </div>
-          </Panel>
-        </section>
-      ) : null}
-
       {connectionBanner === "broken" ? (
         <div className="mb-8">
           <EmptyState
             kind="unconfigured"
             title="The CRM connection is broken"
-            detail="GoHighLevel is linked but the connection expired. Reconnect in Integrations. Existing leads stay on this screen so the outage is not hidden."
+            detail="Your CRM is linked but the connection expired. Reconnect in More, then Settings, then Integrations. People already here stay on this list so the outage is not hidden."
             action={integrations}
           />
         </div>
@@ -530,23 +442,8 @@ export function QueueScreen({
           <EmptyState
             kind="unconfigured"
             title="The CRM is not connected"
-            detail="New people will not land until GoHighLevel is linked. People already in this workspace still need action below."
+            detail="New people will not land until your CRM is linked. People already in this workspace still need action below."
             action={integrations}
-          />
-        </div>
-      ) : null}
-
-      {canOpenIntegrations && voiceExampleCount < MIN_VOICE_EXAMPLES ? (
-        <div className="mb-8">
-          <EmptyState
-            kind="unconfigured"
-            title="Add real messages this business has sent"
-            detail="Follow-up drafts copy those examples more than any slider. Paste two to five under Advanced → Follow-up before you start approving."
-            action={
-              <Button variant="primary" size="sm" render={<Link href="/app/settings/follow-up" />}>
-                Open follow-up settings
-              </Button>
-            }
           />
         </div>
       ) : null}
@@ -554,8 +451,8 @@ export function QueueScreen({
       {emptyKind === "not_connected" ? (
         <EmptyState
           kind="unconfigured"
-          title="The queue is empty until the CRM is connected"
-          detail="New people land here after GoHighLevel is linked. Nothing is missing on your side yet — the connection has not been set up."
+          title="This list is empty until the CRM is connected"
+          detail="New people land here after your CRM is linked. Nothing is missing on your side yet — the connection has not been set up."
           action={integrations}
         />
       ) : null}
@@ -563,8 +460,8 @@ export function QueueScreen({
       {emptyKind === "broken" ? (
         <EmptyState
           kind="unconfigured"
-          title="The queue cannot load while the CRM connection is broken"
-          detail="GoHighLevel is linked but the connection expired. Reconnect in Integrations. Showing an empty queue would hide this outage."
+          title="This list cannot load while the CRM connection is broken"
+          detail="Your CRM is linked but the connection expired. Reconnect in More, then Settings, then Integrations. Showing an empty list would hide this outage."
           action={integrations}
         />
       ) : null}
@@ -572,61 +469,17 @@ export function QueueScreen({
       {emptyKind === "no_leads" ? (
         <EmptyState
           kind="empty"
-          title="No leads yet"
-          detail="GoHighLevel is connected and working. Nothing has come in yet. The first person will appear here when they arrive."
+          title="No one yet"
+          detail="The CRM is connected and working. Nobody has come in yet. The first person will appear here when they arrive."
         />
       ) : null}
 
       {showWorkingSurface ? (
         <>
-          {pendingDrafts.length > 0 ? (
-            <section className="mb-8" aria-label="Follow-up drafts">
-              <p className={sectionLabel}>Follow-up drafts</p>
-              <p className="mt-2 text-sm text-dim">
-                Approve one at a time. Each message is grounded in a specific call and does not send until you read it.
-              </p>
-              <ul className="mt-4 space-y-3">
-                {pendingDrafts.map((item) => (
-                  <li key={item.id}>
-                    <Panel className="p-4">
-                    <p className="text-sm text-white">
-                      {item.leadName} · {FOLLOW_UP_BRANCH_LABELS[item.branch]} ·{" "}
-                      {FOLLOW_UP_CHANNEL_LABELS[item.channel]}
-                      {item.lowConfidence ? " · low confidence" : ""}
-                      {item.stale ? " · stale" : ""}
-                    </p>
-                    <p className="mt-1 text-xs text-dim">
-                      {FOLLOW_UP_STATUS_LABELS[item.status]} · expires {formatQueueUntil(item.expiresAt, now)}
-                      {item.lowConfidenceReason ? ` · ${item.lowConfidenceReason}` : ""}
-                      {item.failureReason ? ` · ${item.failureReason}` : ""}
-                    </p>
-                    <div className="mt-3">
-                      <Button
-                        variant="primary"
-                        size="sm"
-                        render={<Link href={`/app/follow-ups/${item.id}`} />}
-                      >
-                        Review
-                      </Button>
-                    </div>
-                    </Panel>
-                  </li>
-                ))}
-              </ul>
-            </section>
-          ) : null}
-
           <section className="mb-8" aria-label="Waiting too long">
             <p className={sectionLabel}>Waiting too long</p>
-            {filters.breached ? (
-              <p className="mt-2 text-sm text-silver">
-                Showing only people who have waited too long. This list cannot be dismissed.
-              </p>
-            ) : null}
             {alarmVisible.length === 0 ? (
-              <p className="mt-3 text-sm text-dim">
-                Nobody has been waiting longer than your response window.
-              </p>
+              <p className="mt-3 text-sm text-dim">Nobody has been waiting too long.</p>
             ) : (
               <>
                 <div className="mt-4 md:hidden">
@@ -638,11 +491,11 @@ export function QueueScreen({
                     role={org.role}
                     memberId={org.memberId}
                     isPlatformAdmin={org.isPlatformAdmin}
-                    readyThreshold={readyThreshold}
                     arrivingIds={arrivingIds}
                     exitingIds={new Set(exitingAlarm.map((row) => row.id))}
                     busyLeadId={busyLeadId}
                     error={actionError}
+                    onLogOutcome={handleLogOutcome}
                     onAssign={handleAssign}
                     onComplete={handleComplete}
                     onFollowOn={handleFollowOn}
@@ -654,7 +507,7 @@ export function QueueScreen({
                     <TableRow className="hover:bg-transparent">
                       {ALARM_COLUMNS.map((column) => (
                         <TableHead
-                          key={column.label}
+                          key={column.label || "actions"}
                           className={column.hideOnMobile ? "hidden md:table-cell" : undefined}
                         >
                           {column.label}
@@ -673,7 +526,6 @@ export function QueueScreen({
                         role={org.role}
                         memberId={org.memberId}
                         isPlatformAdmin={org.isPlatformAdmin}
-                        readyThreshold={readyThreshold}
                         arriving={arrivingIds.has(row.id)}
                         exiting={exitingAlarm.some((item) => item.id === row.id)}
                         busy={busyLeadId === row.id}
@@ -693,28 +545,17 @@ export function QueueScreen({
             )}
           </section>
 
-          <div className="mb-6 flex flex-wrap items-center gap-2">
+          <div className="mb-6 md:hidden">
             <Button
               type="button"
               variant="secondary"
               size="xl"
-              aria-expanded={filtersOpen}
-              onClick={() => setFiltersOpen((open) => !open)}
-            >
-              {activeFilterCount > 0 ? `Filters (${activeFilterCount})` : "Filters"}
-            </Button>
-            <Button
-              type="button"
-              variant="secondary"
-              size="xl"
-              className="md:hidden"
               disabled={refreshing}
               onClick={() => void pullRefresh()}
             >
               {refreshing ? "Refreshing…" : "Refresh"}
             </Button>
           </div>
-          {filtersOpen ? <QueueFilters filters={filters} sources={sources} /> : null}
 
           {emptyKind === "nothing_to_work" ? (
             <EmptyState
@@ -722,13 +563,13 @@ export function QueueScreen({
               title="Nothing to work"
               detail="Every lead that needed a touch is handled. This is the state the day is supposed to reach."
             />
-          ) : filters.breached ? null : (
-            <section aria-label="Working queue">
-              <p className={sectionLabel}>Queue</p>
+          ) : (
+            <section aria-label="Who to call">
+              <p className={sectionLabel}>Next</p>
               <div className="mt-4 md:hidden">
                 {queue.length === 0 ? (
                   <p className="px-4 py-8 text-center text-sm text-dim">
-                    Nobody matches these filters. Everyone waiting too long is still listed above.
+                    Everyone waiting too long is still listed above.
                   </p>
                 ) : (
                   <QueueMobileList
@@ -739,10 +580,10 @@ export function QueueScreen({
                     role={org.role}
                     memberId={org.memberId}
                     isPlatformAdmin={org.isPlatformAdmin}
-                    readyThreshold={readyThreshold}
                     arrivingIds={arrivingIds}
                     busyLeadId={busyLeadId}
                     error={actionError}
+                    onLogOutcome={handleLogOutcome}
                     onAssign={handleAssign}
                     onComplete={handleComplete}
                     onFollowOn={handleFollowOn}
@@ -755,7 +596,7 @@ export function QueueScreen({
                     <TableRow className="hover:bg-transparent">
                       {QUEUE_COLUMNS.map((column) => (
                         <TableHead
-                          key={column.label}
+                          key={column.label || "actions"}
                           className={column.hideOnMobile ? "hidden md:table-cell" : undefined}
                         >
                           {column.label}
@@ -770,8 +611,7 @@ export function QueueScreen({
                           colSpan={QUEUE_COLUMNS.length}
                           className="px-4 py-12 text-center text-sm text-dim"
                         >
-                          Nobody matches these filters. Everyone waiting too long is still listed
-                          above.
+                          Everyone waiting too long is still listed above.
                         </td>
                       </TableRow>
                     ) : (
@@ -785,7 +625,6 @@ export function QueueScreen({
                           role={org.role}
                           memberId={org.memberId}
                           isPlatformAdmin={org.isPlatformAdmin}
-                          readyThreshold={readyThreshold}
                           arriving={arrivingIds.has(row.id)}
                           busy={busyLeadId === row.id}
                           error={busyLeadId === row.id ? actionError : null}

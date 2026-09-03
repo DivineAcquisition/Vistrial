@@ -47,7 +47,7 @@ export const WORDS = {
   notes: "Notes",
   askVistrial: "Ask Vistrial",
   teamApp: "Team app",
-  ownerPortal: "Owner portal",
+  ownerPortal: "Report",
 } as const;
 
 /** Title case for the four factors, used on settings sliders. */

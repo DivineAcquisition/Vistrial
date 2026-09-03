@@ -17,24 +17,17 @@ export const FORSIGHT_PAGES = [
   { href: `${FORSIGHT_PATH}/reports`, label: "Reports" },
 ] as const;
 
-/** Cross-workspace and configuration. Both pages 404 for anyone else. */
-export const FORSIGHT_OPERATOR_PAGES = [
-  { href: `${FORSIGHT_PATH}/workspaces`, label: "All workspaces" },
-  { href: `${FORSIGHT_PATH}/sources`, label: "Sources" },
-] as const;
-
 export function ForsightTabs({
   activeHref,
-  isPlatformAdmin = false,
 }: {
   activeHref: string;
   isPlatformAdmin?: boolean;
 }) {
   return (
     <NavTabs
-      label="Forsight pages"
+      label="Tracking pages"
       activeHref={activeHref}
-      items={[...FORSIGHT_PAGES, ...(isPlatformAdmin ? FORSIGHT_OPERATOR_PAGES : [])]}
+      items={[...FORSIGHT_PAGES]}
     />
   );
 }
@@ -49,7 +42,6 @@ export function ForsightPage<T>({
   title,
   description,
   view,
-  isPlatformAdmin = false,
   children,
 }: {
   activeHref: string;
@@ -71,7 +63,7 @@ export function ForsightPage<T>({
       description={description}
       status={fetchedAt ? `Read at ${fetchedAt}` : undefined}
       statusTone="neutral"
-      toolbar={<ForsightTabs activeHref={activeHref} isPlatformAdmin={isPlatformAdmin} />}
+      toolbar={<ForsightTabs activeHref={activeHref} />}
     >
       <ForsightBody view={view}>{children}</ForsightBody>
     </PageFrame>

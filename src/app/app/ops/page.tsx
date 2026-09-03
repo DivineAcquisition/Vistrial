@@ -13,8 +13,10 @@ import { parseActivityFilters, activityFiltersHref } from "@/lib/activity/filter
 import { loadOpsActivity } from "@/lib/activity/load";
 import { EVENT_LABELS } from "@/lib/notifications/labels";
 import { loadOpsSystemState } from "@/lib/ops/load";
+import { DA_CONSOLE_LINKS } from "@/lib/navigation";
 import { getSupabaseAdmin } from "@/lib/supabase/admin";
 import { cardTitle, helperClass } from "@/lib/ui";
+import Link from "next/link";
 
 function usd(value: number) {
   return `$${value.toFixed(2)}`;
@@ -61,8 +63,22 @@ export default async function OpsPage({
   return (
     <PageFrame
       title="System"
-      description="Jobs, alerts, and ingestion. Not part of the sales OS."
+      description="Jobs, alerts, and ingestion. Yours, not theirs."
     >
+      <Panel className="mb-8 p-6">
+        <h2 className={cardTitle}>Console</h2>
+        <p className={helperClass}>These stay off the client app. Open them from here.</p>
+        <ul className="mt-4 grid gap-3 sm:grid-cols-2">
+          {DA_CONSOLE_LINKS.filter((item) => item.href !== "/app/ops").map((item) => (
+            <li key={item.href}>
+              <Link href={item.href} className="block text-sm text-brand-200 hover:underline">
+                {item.label}
+              </Link>
+              <p className={helperClass}>{item.description}</p>
+            </li>
+          ))}
+        </ul>
+      </Panel>
       {stopped.length > 0 ? (
         <Notice tone="critical" className="mb-6">
           {stopped.length === 1

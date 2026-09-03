@@ -13,20 +13,20 @@ export type FirstRunCopy = {
  */
 export const FIRST_RUN: Record<OrgRole, FirstRunCopy> = {
   setter: {
-    title: "How this list works",
-    body: "Start at the top. People who have waited too long stay there until someone contacts them. Open a person, talk to them, then log what happened.",
+    title: "Who to call next",
+    body: "Start at the top. Open the CRM, talk, then come back and say what happened. People who have waited too long stay at the top until someone contacts them.",
   },
   closer: {
-    title: "How this list works",
-    body: "The people to work today are on the queue. Open a person for the brief and any open objections before you dial. Log what happened after every call.",
+    title: "Who you are about to talk to",
+    body: "Open the person before you dial. You will see who they are, what they already objected to, and what was agreed last time.",
   },
   admin: {
-    title: "Where things live",
-    body: "The queue is what the team works today. Connect apps under Settings, then Integrations. How ready someone has to be, and how follow-up is written, sit behind Advanced. Leave those unless this business genuinely differs.",
+    title: "Three screens",
+    body: "The team works the list. The closer reads the person. You open the report to see if it is working. Everything else is under More.",
   },
   owner: {
-    title: "Where things live",
-    body: "The queue is what the team works today. Connect apps under Settings, then Integrations. How ready someone has to be, and how follow-up is written, sit behind Advanced. Leave those unless this business genuinely differs.",
+    title: "Is this working",
+    body: "This report is how many leads became clients, whether the team is using the system, where deals are dying, and what to do about it.",
   },
 };
 

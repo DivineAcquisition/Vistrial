@@ -49,7 +49,7 @@ export default async function PortalPage({
   if (!activatedAt) {
     return (
       <PageFrame
-        title="Owner portal"
+        title="Report"
         description="Nothing to show until the workspace is activated."
       >
         <p className={helperClass}>
@@ -88,8 +88,8 @@ export default async function PortalPage({
 
   return (
     <PageFrame
-      title="Owner portal"
-      description="Four answers: is it working, is the team using it, where money is leaking, and what to do about it."
+      title="Report"
+      description="How many leads became clients, whether the team is using this, where deals are dying, and what to do about it."
     >
       {sourceError ? (
         <Notice tone="warning" className="mb-6">

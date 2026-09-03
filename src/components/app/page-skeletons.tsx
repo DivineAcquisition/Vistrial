@@ -72,8 +72,8 @@ export function TablePageSkeleton({
 export function ReportingPageSkeleton() {
   return (
     <PageFrame
-      title="Reporting"
-      description="Revenue and conversion once the CRM and scoring engine are connected."
+      title="Numbers"
+      description="The operational figures behind the report."
     >
       <Loading label="Loading reporting" />
       <div className="grid gap-4 sm:grid-cols-3">

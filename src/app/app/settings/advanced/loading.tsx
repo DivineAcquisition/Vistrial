@@ -1,3 +1,13 @@
+import { PageFrame } from "@/components/app/page-frame";
+import { PageLoader } from "@/components/app/page-loader";
+
 export default function AdvancedSettingsLoading() {
-  return <div className="h-40 animate-pulse rounded-2xl bg-white/[0.03]" />;
+  return (
+    <PageFrame
+      title="Advanced"
+      description="Settings you will not touch every day."
+    >
+      <PageLoader label="Loading settings" />
+    </PageFrame>
+  );
 }

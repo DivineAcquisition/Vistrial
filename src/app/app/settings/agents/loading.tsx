@@ -1,5 +1,5 @@
 import { PageFrame } from "@/components/app/page-frame";
-import { Spinner } from "@/components/ui/spinner";
+import { PageLoader } from "@/components/app/page-loader";
 import { advancedSettingsBreadcrumbs } from "@/lib/navigation";
 
 export default function AgentsSettingsLoading() {
@@ -9,7 +9,7 @@ export default function AgentsSettingsLoading() {
       description="Who may run on a schedule, what they may change, and the stop switch."
       breadcrumbs={advancedSettingsBreadcrumbs("Agents", "/app/settings/agents")}
     >
-      <Spinner />
+      <PageLoader />
     </PageFrame>
   );
 }

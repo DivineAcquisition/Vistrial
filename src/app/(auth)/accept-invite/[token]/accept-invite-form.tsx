@@ -9,6 +9,7 @@ import {
 } from "@/app/(auth)/accept-invite/[token]/actions";
 import { sendMagicLink, signInPassword } from "@/app/(auth)/login/actions";
 import { AuthField, AuthOrDivider } from "@/components/auth/auth-fields";
+import { AuthLoader } from "@/components/auth/auth-loader";
 import { LOGIN_ERROR_COPY } from "@/lib/auth/errors";
 import { Button, SubmitButton } from "@/components/ui/button";
 import { errorClass, helperClass } from "@/lib/ui";
@@ -50,6 +51,10 @@ export function AcceptInviteForm({
   }
 
   if (mode === "create") {
+    if (createPending) {
+      return <AuthLoader label="Creating" />;
+    }
+
     return (
       <form action={createAction} className="space-y-4">
         <input type="hidden" name="token" value={token} />
@@ -84,9 +89,7 @@ export function AcceptInviteForm({
           }
         />
         <SubmitButton
-          pending={createPending}
           variant="gradient"
-          loadingLabel="Creating"
           className="auth-submit mt-2 w-full rounded-xl before:rounded-[calc(var(--radius-xl)-1px)]"
         >
           Continue
@@ -107,6 +110,10 @@ export function AcceptInviteForm({
 
   const pending = mode === "magic" ? magicPending : passwordPending;
   const action = mode === "magic" ? magicAction : passwordAction;
+
+  if (pending) {
+    return <AuthLoader />;
+  }
 
   return (
     <form action={action} className="space-y-4">
@@ -138,9 +145,7 @@ export function AcceptInviteForm({
         />
       ) : null}
       <SubmitButton
-        pending={pending}
         variant="gradient"
-        loadingLabel="Working"
         className="auth-submit mt-2 w-full rounded-xl before:rounded-[calc(var(--radius-xl)-1px)]"
       >
         Continue

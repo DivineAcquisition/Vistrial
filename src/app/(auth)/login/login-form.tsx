@@ -9,6 +9,7 @@ import {
   type LoginActionState,
 } from "@/app/(auth)/login/actions";
 import { AuthField, AuthOrDivider } from "@/components/auth/auth-fields";
+import { AuthLoader } from "@/components/auth/auth-loader";
 import { LOGIN_ERROR_COPY, type LoginError } from "@/lib/auth/errors";
 import { Button, SubmitButton } from "@/components/ui/button";
 import { errorClass } from "@/lib/ui";
@@ -44,6 +45,10 @@ export function LoginForm({
         another if it does not arrive.
       </p>
     );
+  }
+
+  if (pending) {
+    return <AuthLoader />;
   }
 
   return (
@@ -91,10 +96,8 @@ export function LoginForm({
       ) : null}
 
       <SubmitButton
-        pending={pending}
         variant="gradient"
         size="lg"
-        loadingLabel="Working"
         className="auth-submit mt-2 w-full rounded-xl before:rounded-[calc(var(--radius-xl)-1px)]"
       >
         Continue

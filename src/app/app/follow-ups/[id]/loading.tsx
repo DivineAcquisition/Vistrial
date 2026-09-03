@@ -1,9 +1,10 @@
 import { PageFrame } from "@/components/app/page-frame";
+import { PageLoader } from "@/components/app/page-loader";
 
 export default function FollowUpReviewLoading() {
   return (
     <PageFrame title="Follow-up draft" description="Loading the draft.">
-      <div className="h-40 rounded-2xl border border-white/10 bg-white/[0.03]" />
+      <PageLoader label="Loading the draft" />
     </PageFrame>
   );
 }

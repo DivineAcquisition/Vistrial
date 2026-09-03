@@ -1,7 +1,10 @@
-import { ListPageSkeleton } from "@/components/app/page-skeletons";
+import { PageFrame } from "@/components/app/page-frame";
+import { PageLoader } from "@/components/app/page-loader";
 
 export default function AppLoading() {
   return (
-    <ListPageSkeleton title="Loading" description="Opening this section." rows={5} />
+    <PageFrame title="Loading" description="Opening this section.">
+      <PageLoader />
+    </PageFrame>
   );
 }

@@ -83,6 +83,14 @@ export const PRIMARY_NAV: NavItem[] = [
  */
 export const MORE_NAV: NavItem[] = [
   {
+    href: "/app/queue",
+    label: "To call",
+    match: "/app/queue",
+    group: "door",
+    icon: "queue",
+    description: "People waiting to be contacted, in order.",
+  },
+  {
     href: "/app/log",
     label: "What happened",
     match: "/app/log",

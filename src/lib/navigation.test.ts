@@ -108,8 +108,15 @@ describe("the three screens", () => {
     expect(PRIMARY_NAV.map((item) => item.label)).not.toContain("Queue");
   });
 
+  it("keeps the list behind More for the owner, who does not work leads", () => {
+    const list = MORE_NAV.find((item) => item.href === "/app/queue");
+    if (!list) throw new Error("To call missing from More");
+    expect(navVisibleTo(list, "owner")).toBe(true);
+  });
+
   it("keeps People, Calls, Tracking, and Settings behind More", () => {
     expect(MORE_NAV.map((item) => item.href)).toEqual([
+      "/app/queue",
       "/app/log",
       "/app/cases",
       "/app/calls",

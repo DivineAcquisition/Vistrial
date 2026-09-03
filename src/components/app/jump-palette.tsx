@@ -37,7 +37,12 @@ export function AppJumpPalette() {
   const items = useMemo<JumpItem[]>(() => {
     const dests = [
       ...PRIMARY_NAV,
-      ...MORE_NAV.filter((item) => !PRIMARY_NAV.some((primary) => primary.href === item.href)),
+      ...MORE_NAV.filter(
+        (item) =>
+          !PRIMARY_NAV.some(
+            (primary) => primary.href === item.href && navVisibleTo(primary, role, isPlatformAdmin)
+          )
+      ),
     ];
     return dests
       .filter((item) => navVisibleTo(item, role, isPlatformAdmin))

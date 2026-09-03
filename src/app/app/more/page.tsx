@@ -8,7 +8,9 @@ import { helperClass } from "@/lib/ui";
 
 export default async function MorePage() {
   const { role, isPlatformAdmin } = await getAuthContext();
-  const items = MORE_NAV.filter((item) => navVisibleTo(item, role, isPlatformAdmin));
+  const items = MORE_NAV.filter((item) => navVisibleTo(item, role, isPlatformAdmin)).filter(
+    (item) => !PRIMARY_NAV.some((primary) => primary.href === item.href && navVisibleTo(primary, role, isPlatformAdmin))
+  );
 
   return (
     <PageFrame

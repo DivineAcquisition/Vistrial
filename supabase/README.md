@@ -30,13 +30,25 @@ must stay in lockstep; do not apply ad-hoc dashboard migrations that are missing
 from the repo.
 
 MCP `apply_migration` records the apply-time timestamp, which can differ from
-the filename in this directory. When that happens, add a file named after the
-hosted version so Preview stays green: keep the real SQL on the original
-filename for local replay, and use `SELECT 1` for the hosted-timestamp file if
-the objects already ship in another migration. Do not re-apply DDL that already
-ran. Mark the original filename's version as applied on hosted
-(`schema_migrations`) so a preview branch does not try to create objects that
-already exist.
+the filename in this directory. Rewrite the hosted row to the filename version
+instead of adding a `SELECT 1` stub for the wall-clock timestamp:
+
+```sql
+UPDATE supabase_migrations.schema_migrations
+SET version = '20260835010000'
+WHERE version = '20260901212323' AND name = 'forsight_foundation';
+```
+
+Do not leave both timestamps in `schema_migrations` unless a stub file for the
+hosted timestamp already exists in this directory. A stub without the original
+filename marked applied will make Preview try to create objects that already
+exist.
+
+Older MCP applies still have both a real file and a `SELECT 1` stub
+(`20260825043959_notifications.sql` and the other `*_pad` / timestamped
+duplicates). Leave those. The Forsight rows on this project were rewritten from
+`20260901212323` / `212409` / `212439` / `212456` to
+`20260835010000`–`20260838010000` so they match the files here.
 
 `20260823013315_halt_queued_dispatches` is in the repo because it already ran
 on this project. It replaces the halt functions so queued GHL dispatches fail

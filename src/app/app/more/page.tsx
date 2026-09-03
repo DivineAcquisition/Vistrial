@@ -1,10 +1,7 @@
-import Link from "next/link";
-
 import { PageFrame } from "@/components/app/page-frame";
-import { Panel } from "@/components/ui/panel";
+import { GlowLinkCard } from "@/components/app/glow-link-card";
 import { getAuthContext } from "@/lib/auth/session";
 import { DA_CONSOLE_LINKS, MORE_NAV, PRIMARY_NAV, navVisibleTo } from "@/lib/navigation";
-import { helperClass } from "@/lib/ui";
 
 export default async function MorePage() {
   const { role, isPlatformAdmin } = await getAuthContext();
@@ -20,15 +17,7 @@ export default async function MorePage() {
       <ul className="grid gap-3 sm:grid-cols-2">
         {items.map((item) => (
           <li key={item.href}>
-            <Link
-              href={item.href}
-              className="block rounded-2xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-400"
-            >
-              <Panel className="h-full p-5 transition-colors hover:bg-white/[0.04]">
-                <p className="text-sm font-medium text-white">{item.label}</p>
-                {item.description ? <p className={`mt-1 ${helperClass}`}>{item.description}</p> : null}
-              </Panel>
-            </Link>
+            <GlowLinkCard href={item.href} title={item.label} description={item.description} />
           </li>
         ))}
       </ul>
@@ -39,15 +28,7 @@ export default async function MorePage() {
           <ul className="grid gap-3 sm:grid-cols-2">
             {DA_CONSOLE_LINKS.map((item) => (
               <li key={item.href}>
-                <Link
-                  href={item.href}
-                  className="block rounded-2xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-400"
-                >
-                  <Panel className="h-full p-5 transition-colors hover:bg-white/[0.04]">
-                    <p className="text-sm font-medium text-white">{item.label}</p>
-                    <p className={`mt-1 ${helperClass}`}>{item.description}</p>
-                  </Panel>
-                </Link>
+                <GlowLinkCard href={item.href} title={item.label} description={item.description} />
               </li>
             ))}
           </ul>

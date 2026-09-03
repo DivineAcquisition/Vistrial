@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type ReactNode, Suspense } from "react";
+import { useState, type Dispatch, type ReactNode, type SetStateAction, Suspense } from "react";
 import { usePathname } from "next/navigation";
 import { Menu, PanelLeftClose, PanelLeftOpen } from "lucide-react";
 
@@ -22,6 +22,11 @@ import { PushPrompt } from "@/components/app/push-prompt";
 import { UserMenu } from "@/components/app/user-menu";
 import { Button } from "@/components/ui/button";
 import {
+  DesktopSidebar,
+  Sidebar,
+  useSidebar,
+} from "@/components/ui/aceternity-sidebar";
+import {
   Sheet,
   SheetContent,
   SheetHeader,
@@ -32,7 +37,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import { useSidebarCollapsed } from "@/lib/use-sidebar-collapsed";
 import { cn } from "@/lib/utils";
 
-function SidebarBody({
+function AppSidebarNav({
   collapsed,
   onNavigate,
 }: {
@@ -59,6 +64,15 @@ function SidebarBody({
   );
 }
 
+function DesktopAppSidebarNav() {
+  const { open } = useSidebar();
+  return (
+    <div className="flex h-full flex-col">
+      <AppSidebarNav collapsed={!open} />
+    </div>
+  );
+}
+
 export function AppShell({
   children,
   needsMobileOutcomeTraining = false,
@@ -72,6 +86,11 @@ export function AppShell({
   const [collapsed, toggleCollapsed] = useSidebarCollapsed();
   const pathname = usePathname();
   const wizard = pathname.startsWith("/app/onboarding");
+  const open = !collapsed;
+  const setOpen: Dispatch<SetStateAction<boolean>> = (value) => {
+    const nextOpen = typeof value === "function" ? value(open) : value;
+    if (nextOpen !== open) toggleCollapsed();
+  };
 
   return (
     <div className="relative flex min-h-screen bg-ink-950 text-card-foreground">
@@ -86,14 +105,16 @@ export function AppShell({
         />
       </div>
       {wizard ? null : (
-      <aside
-        className={cn(
-          "relative z-10 sticky top-0 hidden h-svh shrink-0 flex-col border-r border-white/[0.07] bg-ink-900/90 backdrop-blur-xl transition-[width] duration-200 ease-out print:hidden md:flex",
-          collapsed ? "w-16" : "w-60"
-        )}
-      >
-        <SidebarBody collapsed={collapsed} />
-      </aside>
+        <Sidebar open={open} setOpen={setOpen} animate>
+          <DesktopSidebar
+            hoverExpand={false}
+            expandedWidth="15rem"
+            collapsedWidth="4rem"
+            className="relative z-10 sticky top-0 h-svh border-r border-white/[0.07] bg-ink-900/90 px-0 py-0 backdrop-blur-xl print:hidden dark:bg-ink-900/90"
+          >
+            <DesktopAppSidebarNav />
+          </DesktopSidebar>
+        </Sidebar>
       )}
 
       <div className="relative z-10 flex min-w-0 flex-1 flex-col">
@@ -118,7 +139,7 @@ export function AppShell({
                 <SheetTitle>Navigation</SheetTitle>
               </SheetHeader>
               <div className="flex h-full flex-col">
-                <SidebarBody collapsed={false} onNavigate={() => setMobileOpen(false)} />
+                <AppSidebarNav collapsed={false} onNavigate={() => setMobileOpen(false)} />
               </div>
             </SheetContent>
           </Sheet>

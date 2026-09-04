@@ -25,7 +25,7 @@ export function ForsightTabs({
 }) {
   return (
     <NavTabs
-      label="Tracking pages"
+      label="Forsight pages"
       activeHref={activeHref}
       items={[...FORSIGHT_PAGES]}
     />
@@ -98,7 +98,7 @@ function ForsightBody<T>({
         <EmptyState
           kind="unconfigured"
           title="No metrics source yet"
-          detail={`${view.workspace.name} does not have a Forsight source connected. Divine Acquisition connects it — there is nothing for you to enter here.`}
+          detail={`${view.workspace.name} does not have a Forsight source connected. Divine Acquisition connects Airtable or Meta — there is nothing for you to enter here.`}
         />
       );
 

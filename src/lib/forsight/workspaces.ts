@@ -8,7 +8,7 @@ import { loadForsightSources } from "@/lib/forsight/sources";
 import { requireForsightOperator } from "@/lib/forsight/operator";
 import { isoDate } from "@/lib/forsight/weeks";
 import { createClient } from "@/lib/supabase/server";
-import type { ForsightSourceType } from "@/lib/forsight/types";
+import { metricsSourceFor, type ForsightSourceType } from "@/lib/forsight/types";
 import { ABSENT, type MetricValue } from "@/lib/forsight/values";
 
 /**
@@ -84,11 +84,7 @@ async function overviewRow(
 
   try {
     const sources = await loadForsightSources(supabase, org.id);
-    const metrics = sources.find(
-      (source) => source.type === "airtable" || source.type === "vistrial_core"
-    );
-    if (!metrics) return base;
-
+    const metrics = metricsSourceFor(sources, org.id);
     const provider =
       metrics.type === "vistrial_core"
         ? coreProvider(supabase, metrics, {

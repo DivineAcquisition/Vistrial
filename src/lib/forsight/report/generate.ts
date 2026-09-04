@@ -147,25 +147,22 @@ export async function generatePreviousMonthForAll(
   const { previousMonthStart } = await import("@/lib/forsight/report/build");
   const periodStart = previousMonthStart(today);
 
-  const { data: sources, error } = await db
-    .from("forsight_sources")
-    .select("org_id, source_type")
-    .in("source_type", ["airtable", "vistrial_core"]);
+  const { data: orgs, error } = await db
+    .from("organizations")
+    .select("id, name")
+    .is("offboarded_at", null)
+    .order("name", { ascending: true });
   if (error) throw error;
-
-  const orgIds = [...new Set((sources ?? []).map((row) => row.org_id))];
-  const { data: orgs } = await db.from("organizations").select("id, name").in("id", orgIds);
-  const names = new Map((orgs ?? []).map((org) => [org.id, org.name]));
 
   let generated = 0;
   let skipped = 0;
   let failed = 0;
 
-  for (const orgId of orgIds) {
+  for (const org of orgs ?? []) {
     const result = await generateReport({
       db,
-      orgId,
-      orgName: names.get(orgId) ?? orgId,
+      orgId: org.id,
+      orgName: org.name,
       periodStart,
       actor: { kind: "scheduled", name: "scheduled" },
     });
@@ -174,7 +171,7 @@ export async function generatePreviousMonthForAll(
     else {
       failed += 1;
       forsightLog("forsight.report.failed", {
-        orgId,
+        orgId: org.id,
         period: periodStart,
         reason: result.reason,
       });

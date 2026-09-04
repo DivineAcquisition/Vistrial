@@ -19,7 +19,7 @@ export default async function WeeklyPulsePage() {
     <ForsightPage
       activeHref={FORSIGHT_PATH}
       title="Weekly Pulse"
-      description="How the funnel is doing right now, and which direction it is moving. Every figure is read from Airtable, which is where it is calculated."
+      description="How the funnel is doing right now, and which direction it is moving."
       view={view}
       isPlatformAdmin={ctx.isPlatformAdmin}
     >

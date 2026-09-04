@@ -56,7 +56,7 @@ Existing Airtable clients are untouched. Nothing migrates.
 
 ## Provisioning a client
 
-Operator-only, at `/app/forsight/sources`. Pick a workspace, pick a source type, enter what that type needs, and test the connection; the save button stays disabled until the test passes, and the save action re-runs the test server-side and refuses to write if it fails. A source that saves cleanly and fails at the client's first login is the worst version of this feature.
+Every organization is already a Forsight workspace. With no source row, Forsight reads that workspace's own Vistrial tables (`vistrial_core`). Airtable, Meta, and LeadConnector remain operator-only extras at `/app/forsight/sources`: pick a workspace, pick a source type, enter what that type needs, and test the connection; the save button stays disabled until the test passes, and the save action re-runs the test server-side and refuses to write if it fails. A source that saves cleanly and fails at the client's first login is the worst version of this feature.
 
 This is the one screen that asks anyone to type a base ID, and it is the narrow exception to the no-pasting rule: clients still never touch configuration. The page 404s for a client user, and Postgres refuses their writes regardless.
 

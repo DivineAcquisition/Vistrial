@@ -30,16 +30,16 @@ describe("Forsight in the app", () => {
     expect(FORSIGHT_PATH.startsWith("/app/")).toBe(true);
   });
 
-  it("sits behind More, not in the sidebar", () => {
-    expect(PRIMARY_NAV.find((entry) => entry.href === FORSIGHT_PATH)).toBeUndefined();
-    const item = MORE_NAV.find((entry) => entry.href === FORSIGHT_PATH);
+  it("is a primary screen named Forsight, not a door labelled Tracking", () => {
+    expect(MORE_NAV.find((entry) => entry.href === FORSIGHT_PATH)).toBeUndefined();
+    const item = PRIMARY_NAV.find((entry) => entry.href === FORSIGHT_PATH);
     expect(item).toBeDefined();
-    expect(item?.label).toBe("Tracking");
+    expect(item?.label).toBe("Forsight");
   });
 
   it("follows the owner's visibility rather than inventing its own", () => {
-    const item = MORE_NAV.find((entry) => entry.href === FORSIGHT_PATH);
-    if (!item) throw new Error("Tracking is missing from More");
+    const item = PRIMARY_NAV.find((entry) => entry.href === FORSIGHT_PATH);
+    if (!item) throw new Error("Forsight is missing from the sidebar");
     expect(navVisibleTo(item, "owner")).toBe(true);
     expect(navVisibleTo(item, "admin")).toBe(true);
     expect(navVisibleTo(item, "setter")).toBe(false);

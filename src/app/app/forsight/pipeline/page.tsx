@@ -17,7 +17,7 @@ export default async function PipelineHealthPage() {
     <ForsightPage
       activeHref={`${FORSIGHT_PATH}/pipeline`}
       title="Pipeline Health"
-      description="Whether anything is slipping that a person needs to act on today. Each lead carries the Next Action Airtable already wrote for it."
+      description="Whether anything is slipping that a person needs to act on today."
       view={view}
       isPlatformAdmin={ctx.isPlatformAdmin}
     >

@@ -736,7 +736,7 @@ export function ReportingTabs({
       items={[
         // The two range-aware views carry the selected range across with them.
         { href: `/app/reporting${query ? `?${query}` : ""}`, label: "Team" },
-        { href: `/portal${query ? `?${query}` : ""}`, label: "Report" },
+        { href: `/portal${query ? `?${query}` : ""}`, label: "Portal" },
         { href: "/app/reporting/coaching", label: "Coaching" },
       ]}
     />

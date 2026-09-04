@@ -6,7 +6,11 @@ import { ForsightSourceError } from "@/lib/forsight/errors";
 import { fetchMetaAdInsights } from "@/lib/forsight/meta";
 import { airtableProvider } from "@/lib/forsight/provider";
 import { availableDatasets, missingDatasets, sourceFromRow } from "@/lib/forsight/sources";
-import type { ForsightAirtableSource } from "@/lib/forsight/types";
+import {
+  implicitCoreSource,
+  metricsSourceFor,
+  type ForsightAirtableSource,
+} from "@/lib/forsight/types";
 import type { Tables } from "@/types/database";
 
 const ORG_ID = "11111111-1111-4111-8111-111111111111";
@@ -232,5 +236,34 @@ describe("meta ad spend", () => {
         fetchImpl: fetchImpl as unknown as typeof fetch,
       })
     ).rejects.toMatchObject({ reason: "credential_rejected", sourceType: "meta_ads" });
+  });
+});
+
+describe("every workspace is a Forsight workspace", () => {
+  it("reads this workspace's own tables when no metrics source was provisioned", () => {
+    const source = metricsSourceFor([], ORG_ID);
+    expect(source).toEqual(implicitCoreSource(ORG_ID));
+    expect(source.type).toBe("vistrial_core");
+  });
+
+  it("keeps an Airtable source when one exists", () => {
+    const airtable = sourceFromRow(airtableRow());
+    expect(metricsSourceFor([airtable], ORG_ID)).toBe(airtable);
+  });
+
+  it("does not let a Meta source stand in for weekly metrics", () => {
+    const meta = sourceFromRow(
+      airtableRow({
+        id: "src-meta",
+        source_type: "meta_ads",
+        airtable_base_id: null,
+        airtable_leads_table: null,
+        airtable_creatives_table: null,
+        airtable_weekly_summary_table: null,
+        airtable_touches_table: null,
+        meta_ad_account_id: "act_1",
+      })
+    );
+    expect(metricsSourceFor([meta], ORG_ID).type).toBe("vistrial_core");
   });
 });

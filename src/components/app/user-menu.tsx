@@ -15,6 +15,7 @@ import {
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useOrg } from "@/components/app/org-provider";
 import { initials } from "@/lib/format";
+import { FORSIGHT_PATH } from "@/lib/navigation";
 import { cn } from "@/lib/utils";
 
 export function UserMenu({
@@ -75,7 +76,10 @@ export function UserMenu({
         </MenuGroup>
         <MenuSeparator />
         {role === "owner" || role === "admin" || isPlatformAdmin ? (
-          <MenuLinkItem render={<Link href="/portal" />}>Report</MenuLinkItem>
+          <MenuLinkItem render={<Link href="/portal" />}>Portal</MenuLinkItem>
+        ) : null}
+        {surfaceAccess === "portal" ? null : role === "owner" || role === "admin" || isPlatformAdmin ? (
+          <MenuLinkItem render={<Link href={FORSIGHT_PATH} />}>Forsight</MenuLinkItem>
         ) : null}
         {surfaceAccess === "portal" ? null : (
           <MenuLinkItem render={<Link href="/app/more" />}>More</MenuLinkItem>

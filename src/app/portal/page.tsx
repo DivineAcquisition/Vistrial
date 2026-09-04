@@ -49,8 +49,8 @@ export default async function PortalPage({
   if (!activatedAt) {
     return (
       <PageFrame
-        title="Report"
-        description="Nothing to show until the workspace is activated."
+      title="Portal"
+      description="Nothing to show until the workspace is activated."
       >
         <p className={helperClass}>
           Activation is a deliberate step. This surface has nothing honest to say before that line.
@@ -88,7 +88,7 @@ export default async function PortalPage({
 
   return (
     <PageFrame
-      title="Report"
+      title="Portal"
       description="How many leads became clients, whether the team is using this, where deals are dying, and what to do about it."
     >
       {sourceError ? (

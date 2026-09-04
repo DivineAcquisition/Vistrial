@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { ForsightTabs } from "@/app/app/forsight/forsight-chrome";
@@ -91,13 +90,7 @@ export default async function ForsightWorkspacesPage() {
                   {row.reportVersion ? (row.reportSentAt ? "Sent" : "Not sent") : "—"}
                 </TableCell>
                 <TableCell className="text-right">
-                  {row.sourceType ? (
-                    <OpenWorkspace orgId={row.orgId} name={row.name} />
-                  ) : (
-                    <Link href={`${FORSIGHT_PATH}/sources`} className="text-xs text-brand-300">
-                      Set up
-                    </Link>
-                  )}
+                  <OpenWorkspace orgId={row.orgId} name={row.name} />
                 </TableCell>
               </TableRow>
             ))}

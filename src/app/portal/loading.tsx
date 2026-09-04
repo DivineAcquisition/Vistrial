@@ -4,7 +4,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 
 export default function PortalLoading() {
   return (
-    <PageFrame title="Report" description="Loading this report.">
+    <PageFrame title="Portal" description="Loading this workspace.">
       <span role="status" className="sr-only">
         Loading report
       </span>

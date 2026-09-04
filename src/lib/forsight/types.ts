@@ -84,11 +84,39 @@ export type ForsightCoreSource = {
   lastError: string | null;
 };
 
+/**
+ * What Forsight uses when a workspace has no Airtable or core source row.
+ * Every client workspace is already the address; the row is optional.
+ */
+export function implicitCoreSource(orgId: string): ForsightCoreSource {
+  return {
+    id: `implicit-core:${orgId}`,
+    orgId,
+    type: "vistrial_core",
+    status: "active",
+    label: null,
+    lastVerifiedAt: null,
+    lastError: null,
+  };
+}
+
 export type ForsightSource =
   | ForsightAirtableSource
   | ForsightMetaSource
   | ForsightGhlSource
   | ForsightCoreSource;
+
+/** The one metrics source a workspace reads, or core if none was provisioned. */
+export function metricsSourceFor(
+  sources: ForsightSource[],
+  orgId: string
+): ForsightAirtableSource | ForsightCoreSource {
+  const metrics = sources.find(
+    (source) => source.type === "airtable" || source.type === "vistrial_core"
+  );
+  if (metrics?.type === "airtable" || metrics?.type === "vistrial_core") return metrics;
+  return implicitCoreSource(orgId);
+}
 
 /** One row from a source, kept in the source's own vocabulary. */
 export type ForsightRecord = {

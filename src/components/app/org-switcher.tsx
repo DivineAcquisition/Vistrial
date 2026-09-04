@@ -23,7 +23,7 @@ export function OrgSwitcher() {
   return (
     <div className="px-2">
       <Select
-        aria-label="Switch organization"
+        aria-label="Switch workspace"
         density="compact"
         value={org.id}
         disabled={pending}

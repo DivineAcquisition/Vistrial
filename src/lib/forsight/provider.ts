@@ -2,7 +2,6 @@ import "server-only";
 
 import { listAirtableRecords } from "@/lib/forsight/airtable";
 import { creativesByCostPerAuditHeld, type CreativeRow } from "@/lib/forsight/creatives";
-import { ForsightSourceError } from "@/lib/forsight/errors";
 import { pipelineHealth, type PipelineHealth } from "@/lib/forsight/pipeline";
 import {
   availableDatasets,
@@ -12,6 +11,7 @@ import {
 } from "@/lib/forsight/sources";
 import {
   FORSIGHT_DATASET_LABELS,
+  metricsSourceFor,
   type ForsightAirtableSource,
   type ForsightDataset,
   type ForsightMetricsProvider,
@@ -91,28 +91,20 @@ export function airtableProvider(
 }
 
 /**
- * The one entry point for reading a workspace's metrics. Throws rather than
- * returning an empty provider when the workspace has no source, so a missing
- * configuration can never look like a workspace with no activity.
+ * The one entry point for reading a workspace's metrics.
+ *
+ * A workspace with an Airtable or core source row uses that row. A workspace
+ * with neither still has Forsight: the workspace itself is the source, and
+ * core tables answer. That is what "every client gets a workspace" means —
+ * opening Forsight never depends on DA pasting a base ID first. Missing Meta
+ * or GHL stays a named omission, not an empty dashboard.
  */
 export async function forsightProviderFor(
   db: ForsightDb,
   args: { orgId: string; orgName?: string | null }
 ): Promise<ForsightMetricsProvider> {
   const sources = await loadForsightSources(db, args.orgId);
-  const metricsSource = sources.find(
-    (source) => source.type === "airtable" || source.type === "vistrial_core"
-  );
-
-  if (!metricsSource) {
-    throw new ForsightSourceError({
-      orgId: args.orgId,
-      orgLabel: args.orgName,
-      sourceType: "airtable",
-      reason: "not_configured",
-      detail: "Add a Forsight source for this workspace before reading metrics.",
-    });
-  }
+  const metricsSource = metricsSourceFor(sources, args.orgId);
 
   if (metricsSource.type === "vistrial_core") {
     const { coreProvider } = await import("@/lib/forsight/core-source");

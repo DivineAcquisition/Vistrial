@@ -3,15 +3,15 @@ import type { OrgRole, SurfaceAccess } from "@/types/database";
 import { canManageOrgSettings } from "@/lib/auth/permissions";
 
 /**
- * The product is three screens. Everything else is behind a door, or in the
- * DA console. This module is the map.
+ * The product is Forsight and a client portal. Every client is a workspace.
+ * Sales tools stay reachable behind More. DA-only screens stay in the console.
  */
 
 export type NavGroupId = "front" | "door";
 
 /**
- * Tracking (ads and pipeline). Also what pulse.vistrial.io lands on, so the
- * hostname and the door agree on one path.
+ * Ads, creatives, and pipeline for this workspace. pulse.vistrial.io lands
+ * here, so the hostname and the sidebar agree on one path.
  */
 export const FORSIGHT_PATH = "/app/forsight";
 
@@ -48,25 +48,35 @@ export type NavItem = {
 };
 
 /**
- * The three product screens, plus the door. Setter: To call. Closer: To call
- * (then the person). Owner: Report. More is how you reach everything else.
+ * Owner and admin: Forsight, Portal, More. Setter and closer: To call, More.
+ * The list is not the owner's front door.
  */
 export const PRIMARY_NAV: NavItem[] = [
+  {
+    href: FORSIGHT_PATH,
+    label: "Forsight",
+    match: FORSIGHT_PATH,
+    group: "front",
+    icon: "forsight",
+    roles: ["owner", "admin"],
+    description: "Ads, creatives, and pipeline for this workspace.",
+  },
+  {
+    href: "/portal",
+    label: "Portal",
+    match: "/portal",
+    group: "front",
+    icon: "reporting",
+    roles: ["owner", "admin"],
+    description: "Whether this workspace is turning leads into clients.",
+  },
   {
     href: "/app/queue",
     label: "To call",
     match: "/app/queue",
     group: "front",
     icon: "queue",
-    roles: ["setter", "closer", "admin"],
-  },
-  {
-    href: "/portal",
-    label: "Report",
-    match: "/portal",
-    group: "front",
-    icon: "reporting",
-    roles: ["owner", "admin"],
+    roles: ["setter", "closer"],
   },
   {
     href: MORE_PATH,
@@ -78,8 +88,9 @@ export const PRIMARY_NAV: NavItem[] = [
 ];
 
 /**
- * Behind the door. Reachable on purpose. Invisible until someone opens More
- * or jumps. Capability stays; it is not the first thing on screen.
+ * Behind the door. Sales tools stay here so they are not the story.
+ * Coaching, Activity, and Numbers stay in the product; only Divine
+ * Acquisition sees them on this list.
  */
 export const MORE_NAV: NavItem[] = [
   {
@@ -115,11 +126,20 @@ export const MORE_NAV: NavItem[] = [
     description: "Recordings and what was said.",
   },
   {
+    href: "/app/settings",
+    label: "Settings",
+    match: "/app/settings",
+    group: "door",
+    icon: "settings",
+    description: "People, connections, and how this workspace is set up.",
+  },
+  {
     href: "/app/coaching",
     label: "Coaching",
     match: "/app/coaching",
     group: "door",
     icon: "coaching",
+    platformAdminOnly: true,
     description: "What to practice after the calls, not during them.",
   },
   {
@@ -128,7 +148,7 @@ export const MORE_NAV: NavItem[] = [
     match: "/app/activity",
     group: "door",
     icon: "activity",
-    roles: ["owner", "admin"],
+    platformAdminOnly: true,
     description: "The stream of what this workspace did.",
   },
   {
@@ -137,25 +157,8 @@ export const MORE_NAV: NavItem[] = [
     match: "/app/reporting",
     group: "door",
     icon: "reporting",
-    roles: ["owner", "admin"],
-    description: "The operational figures behind the report.",
-  },
-  {
-    href: FORSIGHT_PATH,
-    label: "Tracking",
-    match: FORSIGHT_PATH,
-    group: "door",
-    icon: "forsight",
-    roles: ["owner", "admin"],
-    description: "Ads, creatives, and pipeline — not the daily list.",
-  },
-  {
-    href: "/app/settings",
-    label: "Settings",
-    match: "/app/settings",
-    group: "door",
-    icon: "settings",
-    description: "People, connections, and how this workspace is set up.",
+    platformAdminOnly: true,
+    description: "The operational figures behind the portal.",
   },
 ];
 
@@ -175,7 +178,7 @@ export const DA_CONSOLE_LINKS: Array<{ href: string; label: string; description:
   {
     href: `${FORSIGHT_PATH}/workspaces`,
     label: "All workspaces",
-    description: "Every client this tracking view can open.",
+    description: "Every client workspace.",
   },
 ];
 
@@ -272,14 +275,15 @@ export function firstSettingsPath(role: OrgRole, isPlatformAdmin = false): strin
 export const DEFAULT_APP_PATH = "/app/queue";
 
 /**
- * Where someone lands after sign-in. The owner opens the report. Everyone
- * who works leads opens the list. Portal-only members never leave the report.
+ * Where someone lands after sign-in. Portal-only members stay in the portal.
+ * Owners and admins open Forsight for this workspace. People who work leads
+ * open the list.
  */
 export function landingPath(
   surfaceAccess: SurfaceAccess | undefined,
   role?: OrgRole | null
 ): string {
   if (surfaceAccess === "portal") return "/portal";
-  if (role === "owner") return "/portal";
+  if (role === "owner" || role === "admin") return FORSIGHT_PATH;
   return DEFAULT_APP_PATH;
 }

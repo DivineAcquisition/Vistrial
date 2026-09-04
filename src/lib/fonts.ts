@@ -21,7 +21,9 @@ export const interDisplay = localFont({
   ],
   variable: "--font-sans",
   display: "swap",
-  declarations: [{ prop: "font-variation-settings", value: '"opsz" 32' }],
+  // Single quotes: next/font serializes this into a query string and
+  // double-quoted `"opsz"` breaks that parse.
+  declarations: [{ prop: "font-variation-settings", value: "'opsz' 32" }],
 });
 
 export const geistMono = Geist_Mono({

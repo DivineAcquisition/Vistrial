@@ -1,6 +1,8 @@
 "use client";
 
 import Logo from "@/components/brand/logo";
+import { geistMono, interDisplay } from "@/lib/fonts";
+import { cn } from "@/lib/utils";
 import "./globals.css";
 
 export default function GlobalError({
@@ -10,8 +12,12 @@ export default function GlobalError({
   retry: () => void;
 }) {
   return (
-    <html lang="en" className="dark" style={{ colorScheme: "dark" }}>
-      <body className="min-h-screen bg-background font-body text-foreground antialiased">
+    <html
+      lang="en"
+      className={cn("dark", interDisplay.variable, geistMono.variable)}
+      style={{ colorScheme: "dark" }}
+    >
+      <body className="min-h-screen bg-background font-sans text-foreground antialiased">
         <div className="mx-auto max-w-lg px-6 py-16">
           <Logo className="h-7 w-auto" />
           <p className="mt-8 font-heading text-sm text-white">Vistrial failed to load</p>

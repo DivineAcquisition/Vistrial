@@ -11,6 +11,7 @@ export const contentType = "image/png";
 
 export default async function Image() {
   let markSrc: string | null = null;
+  const font = await readFile(join(process.cwd(), "src/fonts/InterDisplay-SemiBold.ttf"));
   try {
     const mark = await readFile(join(process.cwd(), "public/brand/vistrial-crest.png"));
     markSrc = `data:image/png;base64,${mark.toString("base64")}`;
@@ -30,6 +31,7 @@ export default async function Image() {
           padding: "72px",
           background: "#07070b",
           color: "#ffffff",
+          fontFamily: "Inter Display",
         }}
       >
         <div
@@ -71,6 +73,16 @@ export default async function Image() {
         </div>
       </div>
     ),
-    { ...size }
+    {
+      ...size,
+      fonts: [
+        {
+          name: "Inter Display",
+          data: font,
+          style: "normal",
+          weight: 600,
+        },
+      ],
+    }
   );
 }

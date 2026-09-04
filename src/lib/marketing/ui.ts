@@ -3,7 +3,7 @@ import { cn } from "@/lib/utils";
 
 /**
  * Headline and form recipes for the public site. Mapped onto Vistrial tokens.
- * Geist for UI copy, Cal Sans for titles, brand-500, ink-950.
+ * Inter Display for UI copy and titles, brand-500, ink-950.
  *
  * Scale is meant to sit with dense dark-SaaS marketing pages: large type,
  * pill CTAs, not compact newsletter chrome.

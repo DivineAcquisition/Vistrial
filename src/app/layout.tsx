@@ -1,38 +1,13 @@
 import type { Metadata, Viewport } from "next";
-import { Cal_Sans, Geist, Geist_Mono } from "next/font/google";
 
 import { AnchoredToastProvider, ToastProvider } from "@/components/ui/toast";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { APP_NAME, PRODUCTION_SITE_ORIGIN } from "@/lib/constants";
+import { geistMono, interDisplay } from "@/lib/fonts";
 import { SITE_DESCRIPTION, SOCIAL_IMAGE } from "@/lib/marketing/copy";
 
 import "./globals.css";
 import { cn } from "@/lib/utils";
-
-/**
- * Magic UI pairing on the coss font contract:
- * Geist → `--font-sans` (body, buttons, fields)
- * Cal Sans → `--font-heading` (titles)
- * Geist Mono → `--font-mono` (code, tabular scores)
- */
-const geistSans = Geist({
-  subsets: ["latin"],
-  variable: "--font-sans",
-  display: "swap",
-});
-
-const calSans = Cal_Sans({
-  subsets: ["latin"],
-  weight: "400",
-  variable: "--font-heading",
-  display: "swap",
-});
-
-const geistMono = Geist_Mono({
-  subsets: ["latin"],
-  variable: "--font-mono",
-  display: "swap",
-});
 
 export const metadata: Metadata = {
   metadataBase: new URL(PRODUCTION_SITE_ORIGIN),
@@ -83,7 +58,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={cn("dark", geistSans.variable, calSans.variable, geistMono.variable)}
+      className={cn("dark", interDisplay.variable, geistMono.variable)}
       suppressHydrationWarning
     >
       <body className="min-h-screen bg-background font-sans text-foreground antialiased">

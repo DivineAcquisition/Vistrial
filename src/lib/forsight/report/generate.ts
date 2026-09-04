@@ -21,6 +21,8 @@ export type GenerateActor = {
  *
  * Scheduled generation skips a period that already has a report. Regeneration
  * is an operator action and always inserts the next version beside the old one.
+ * The scheduled walk visits every live workspace (activated, not offboarded),
+ * because every client workspace is already a Forsight workspace.
  */
 export async function generateReport(args: {
   db: ForsightDb;
@@ -150,6 +152,7 @@ export async function generatePreviousMonthForAll(
   const { data: orgs, error } = await db
     .from("organizations")
     .select("id, name")
+    .not("activated_at", "is", null)
     .is("offboarded_at", null)
     .order("name", { ascending: true });
   if (error) throw error;

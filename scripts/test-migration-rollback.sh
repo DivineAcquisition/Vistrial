@@ -475,3 +475,34 @@ if [[ "$(echo "$fn_version" | tr -d ' ')" = "0" ]]; then
 fi
 
 echo "OK: forsight monthly reports migration rollback and re-apply succeeded."
+
+unscoped_count() {
+  "${PSQL[@]}" -d "${DB_NAME}" -tAc "
+    SELECT count(*) FROM pg_constraint con
+     WHERE con.contype='f' AND con.confdeltype='n'
+       AND array_length(con.conkey,1) > 1
+       AND con.confdelsetcols IS NULL
+       AND EXISTS (SELECT 1 FROM pg_attribute a
+                    WHERE a.attrelid=con.conrelid AND a.attnum=ANY(con.conkey) AND a.attnotnull)"
+}
+
+if [[ "$(unscoped_count | tr -d ' ')" != "0" ]]; then
+  echo "forward migrations left an unscoped composite SET NULL in place" >&2
+  exit 1
+fi
+
+echo "Rollback scoped SET NULL foreign keys (unscoped ones return)..."
+run "${ROOT}/supabase/rollbacks/20260840010000_scoped_set_null_fks.sql"
+if [[ "$(unscoped_count | tr -d ' ')" != "7" ]]; then
+  echo "rollback did not restore all seven unscoped constraints" >&2
+  exit 1
+fi
+
+echo "Re-apply scoped SET NULL foreign keys..."
+run "${ROOT}/supabase/migrations/20260840010000_scoped_set_null_fks.sql"
+if [[ "$(unscoped_count | tr -d ' ')" != "0" ]]; then
+  echo "re-apply did not scope every composite SET NULL" >&2
+  exit 1
+fi
+
+echo "OK: scoped SET NULL foreign key rollback and re-apply succeeded."

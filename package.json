@@ -10,6 +10,7 @@
     "typecheck": "next typegen && tsc --noEmit",
     "test": "vitest run",
     "db:verify": "bash supabase/tests/verify.sh",
+    "db:verify:local": "node scripts/verify-schema-local.mjs",
     "ops:restore-drill": "bash scripts/restore-drill.sh",
     "ops:forsight-source": "node scripts/seed-forsight-source.mjs",
     "ops:migration-rollback": "bash scripts/test-migration-rollback.sh",

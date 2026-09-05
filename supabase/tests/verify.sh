@@ -146,7 +146,10 @@ run "${ROOT}/supabase/tests/verify-agent-framework.sql"
 echo "Forsight checks..."
 run "${ROOT}/supabase/tests/verify-forsight.sql"
 
+echo "Stellar checks..."
+run "${ROOT}/supabase/tests/verify-stellar.sql"
+
 echo "Migration rollback (this prompt's migrations)..."
 bash "${ROOT}/scripts/test-migration-rollback.sh"
 
-echo "OK: schema, seed, triggers, RLS, invite, scoring, GHL, platform-admin, queue, case-file, transcript, follow-up, integrity, reporting, business-profile, onboarding-reconcile, notification, hardening, mobile, calibration, call-quality, operator-agent, self-verification, activity-stream, owner-portal, agent-framework, and forsight checks passed."
+echo "OK: schema, seed, triggers, RLS, invite, scoring, GHL, platform-admin, queue, case-file, transcript, follow-up, integrity, reporting, business-profile, onboarding-reconcile, notification, hardening, mobile, calibration, call-quality, operator-agent, self-verification, activity-stream, owner-portal, agent-framework, forsight, and stellar checks passed."

@@ -44,10 +44,12 @@ BEGIN
   SELECT id INTO v_other_setter_member FROM public.org_members
   WHERE org_id = v_org_b AND user_id = v_other_org_setter_user;
 
-  INSERT INTO public.placements (org_id, setter_member_id, agreement_status, build_stage)
+  INSERT INTO public.placements (
+    org_id, setter_member_id, agreement_status, agreement_signed_at, build_stage
+  )
   VALUES
-    (v_org_a, v_setter_member, 'signed', 'testing'),
-    (v_org_b, v_other_setter_member, 'draft', 'getting_set_up')
+    (v_org_a, v_setter_member, 'signed', now() - interval '10 days', 'testing'),
+    (v_org_b, v_other_setter_member, 'draft', NULL, 'getting_set_up')
   ON CONFLICT DO NOTHING;
 
   INSERT INTO public.stellar_da_operators (user_id) VALUES (v_da_operator_user)

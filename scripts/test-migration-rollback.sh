@@ -475,3 +475,51 @@ if [[ "$(echo "$fn_version" | tr -d ' ')" = "0" ]]; then
 fi
 
 echo "OK: forsight monthly reports migration rollback and re-apply succeeded."
+
+echo "Rollback stellar foundation (placements, DA access, product flag gone)..."
+run "${ROOT}/supabase/rollbacks/20260839020000_stellar_foundation.sql"
+tbl_placements="$("${PSQL[@]}" -d "${DB_NAME}" -tAc "SELECT count(*) FROM information_schema.tables WHERE table_schema='public' AND table_name='placements'")"
+if [[ "$(echo "$tbl_placements" | tr -d ' ')" != "0" ]]; then
+  echo "stellar rollback left placements in place" >&2
+  exit 1
+fi
+col_product="$("${PSQL[@]}" -d "${DB_NAME}" -tAc "SELECT count(*) FROM information_schema.columns WHERE table_schema='public' AND table_name='organizations' AND column_name='product'")"
+if [[ "$(echo "$col_product" | tr -d ' ')" != "0" ]]; then
+  echo "stellar rollback left the product column in place" >&2
+  exit 1
+fi
+fn_da="$("${PSQL[@]}" -d "${DB_NAME}" -tAc "SELECT count(*) FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace WHERE n.nspname='public' AND p.proname IN ('is_stellar_da_operator','stellar_da_list_placements','stellar_da_get_placement','record_stellar_da_access')")"
+if [[ "$(echo "$fn_da" | tr -d ' ')" != "0" ]]; then
+  echo "stellar rollback left DA access functions in place" >&2
+  exit 1
+fi
+
+# The roles rollback cannot drop enum labels, so it demotes any member holding
+# a Stellar-only role instead. Verify that, not the absent label drop.
+run "${ROOT}/supabase/rollbacks/20260839010000_stellar_roles.sql"
+stellar_roles="$("${PSQL[@]}" -d "${DB_NAME}" -tAc "SELECT count(*) FROM public.org_members WHERE role IN ('client_viewer','da_operator')")"
+if [[ "$(echo "$stellar_roles" | tr -d ' ')" != "0" ]]; then
+  echo "roles rollback left members holding a Stellar-only role" >&2
+  exit 1
+fi
+
+echo "Re-apply stellar foundation..."
+run "${ROOT}/supabase/migrations/20260839010000_stellar_roles.sql"
+run "${ROOT}/supabase/migrations/20260839020000_stellar_foundation.sql"
+tbl_placements="$("${PSQL[@]}" -d "${DB_NAME}" -tAc "SELECT count(*) FROM information_schema.tables WHERE table_schema='public' AND table_name='placements'")"
+if [[ "$(echo "$tbl_placements" | tr -d ' ')" != "1" ]]; then
+  echo "re-apply did not restore placements" >&2
+  exit 1
+fi
+col_product="$("${PSQL[@]}" -d "${DB_NAME}" -tAc "SELECT count(*) FROM information_schema.columns WHERE table_schema='public' AND table_name='organizations' AND column_name='product'")"
+if [[ "$(echo "$col_product" | tr -d ' ')" != "1" ]]; then
+  echo "re-apply did not restore the product column" >&2
+  exit 1
+fi
+policy_placements="$("${PSQL[@]}" -d "${DB_NAME}" -tAc "SELECT count(*) FROM pg_policies WHERE tablename='placements'")"
+if [[ "$(echo "$policy_placements" | tr -d ' ')" != "1" ]]; then
+  echo "re-apply did not restore the placements select policy" >&2
+  exit 1
+fi
+
+echo "OK: stellar foundation migration rollback and re-apply succeeded."

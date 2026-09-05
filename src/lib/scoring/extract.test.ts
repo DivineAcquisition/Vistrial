@@ -112,6 +112,79 @@ describe("extractFactors", () => {
   });
 });
 
+describe("mapping is per-org configuration", () => {
+  // The whole reason mappings live in a table is that a $3K coach and a $15K
+  // consultant read the same answer differently. Identical answers, different
+  // org config, different factor values — with no code change between them.
+  it("scores identical application answers differently under two orgs' mappings", () => {
+    const answers = { timeline: "next quarter", annual_revenue: 90000 };
+
+    const patientCoach: ScoreFieldMap[] = [
+      {
+        id: "a-timeline",
+        fieldName: "timeline",
+        factor: "timeline",
+        rules: [
+          { id: "a1", kind: "choice", answerValue: "next quarter", rangeMin: null, rangeMax: null, score: 70 },
+        ],
+      },
+      {
+        id: "a-revenue",
+        fieldName: "annual_revenue",
+        factor: "investment_capacity",
+        rules: [
+          { id: "a2", kind: "range", answerValue: null, rangeMin: 50000, rangeMax: 150000, score: 85 },
+        ],
+      },
+    ];
+
+    const urgentConsultant: ScoreFieldMap[] = [
+      {
+        id: "b-timeline",
+        fieldName: "timeline",
+        factor: "timeline",
+        rules: [
+          { id: "b1", kind: "choice", answerValue: "next quarter", rangeMin: null, rangeMax: null, score: 20 },
+        ],
+      },
+      {
+        id: "b-revenue",
+        fieldName: "annual_revenue",
+        factor: "investment_capacity",
+        rules: [
+          { id: "b2", kind: "range", answerValue: null, rangeMin: 50000, rangeMax: 150000, score: 25 },
+        ],
+      },
+    ];
+
+    const coach = extractFactors(answers, patientCoach);
+    const consultant = extractFactors(answers, urgentConsultant);
+
+    expect(coach.factors.timeline).toBe(70);
+    expect(coach.factors.investment_capacity).toBe(85);
+    expect(consultant.factors.timeline).toBe(20);
+    expect(consultant.factors.investment_capacity).toBe(25);
+  });
+
+  it("leaves a factor unknown for an org that maps no field to it", () => {
+    const onlyTimeline: ScoreFieldMap[] = [
+      {
+        id: "c-timeline",
+        fieldName: "timeline",
+        factor: "timeline",
+        rules: [
+          { id: "c1", kind: "choice", answerValue: "this week", rangeMin: null, rangeMax: null, score: 95 },
+        ],
+      },
+    ];
+
+    const result = extractFactors({ timeline: "this week", authority: "I decide" }, onlyTimeline);
+    expect(result.factors.timeline).toBe(95);
+    expect(result.factors.decision_authority).toBeNull();
+    expect(result.ignoredFields).toContain("authority");
+  });
+});
+
 describe("parseNumericAnswer", () => {
   it("reads numbers, currency strings, and rejects non-numeric text", () => {
     expect(parseNumericAnswer(15000)).toBe(15000);

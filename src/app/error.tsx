@@ -1,15 +1,26 @@
 "use client";
 
+import { useEffect } from "react";
+import { usePathname } from "next/navigation";
+
 import { Button } from "@/components/ui/button";
 import { Panel } from "@/components/ui/panel";
+import { logClientRenderError } from "@/lib/errors/log";
 import { cardTitle } from "@/lib/ui";
 
 export default function ErrorPage({
+  error,
   retry,
 }: {
   error: Error & { digest?: string };
   retry: () => void;
 }) {
+  const pathname = usePathname();
+
+  useEffect(() => {
+    void logClientRenderError({ message: error.message, digest: error.digest, path: pathname });
+  }, [error, pathname]);
+
   return (
     <div className="mx-auto max-w-lg px-6 py-16">
       <Panel className="p-8">

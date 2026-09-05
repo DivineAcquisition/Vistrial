@@ -144,3 +144,100 @@ BEGIN
   END IF;
 END
 $$;
+
+-- Revenue outlives the lead it came from. The tenant-safe foreign key pairs
+-- lead_id with org_id, so an unscoped ON DELETE SET NULL would try to null
+-- org_id too and fail the delete instead of releasing the reference.
+--
+-- Case-file rows are undeletable outside an org wipe, so the wipe GUC is set
+-- here: it is the only path on which the null-out can fire at all.
+DO $$
+DECLARE
+  v_org uuid;
+  v_lead uuid;
+  v_call uuid;
+  v_revenue uuid;
+  v_objection uuid;
+BEGIN
+  PERFORM set_config('vistrial.allow_org_wipe', '1', true);
+
+  INSERT INTO public.organizations (name, slug)
+  VALUES ('Detach Probe', 'detach-probe')
+  RETURNING id INTO v_org;
+
+  INSERT INTO public.leads (org_id, first_name, last_name)
+  VALUES (v_org, 'Detach', 'Probe')
+  RETURNING id INTO v_lead;
+
+  INSERT INTO public.revenue_log (org_id, lead_id, amount_cents, payment_type)
+  VALUES (v_org, v_lead, 500000, 'pif')
+  RETURNING id INTO v_revenue;
+
+  DELETE FROM public.leads WHERE id = v_lead;
+
+  IF NOT EXISTS (
+    SELECT 1 FROM public.revenue_log
+    WHERE id = v_revenue AND org_id = v_org AND lead_id IS NULL
+  ) THEN
+    RAISE EXCEPTION 'revenue did not survive its lead with org_id intact';
+  END IF;
+
+  -- Same shape on objections: the call reference is optional, so deleting the
+  -- call releases it and keeps the objection on the case file.
+  INSERT INTO public.leads (org_id, first_name, last_name)
+  VALUES (v_org, 'Detach', 'Call')
+  RETURNING id INTO v_lead;
+
+  INSERT INTO public.calls (org_id, lead_id, type)
+  VALUES (v_org, v_lead, 'discovery')
+  RETURNING id INTO v_call;
+
+  INSERT INTO public.objections (org_id, lead_id, type, verbatim, call_id)
+  VALUES (v_org, v_lead, 'price', 'Needs to talk to a partner about the number.', v_call)
+  RETURNING id INTO v_objection;
+
+  DELETE FROM public.calls WHERE id = v_call;
+
+  IF NOT EXISTS (
+    SELECT 1 FROM public.objections
+    WHERE id = v_objection AND org_id = v_org AND lead_id = v_lead AND call_id IS NULL
+  ) THEN
+    RAISE EXCEPTION 'objection did not survive its call with org_id intact';
+  END IF;
+
+  DELETE FROM public.revenue_log WHERE org_id = v_org;
+  DELETE FROM public.objections WHERE org_id = v_org;
+  DELETE FROM public.leads WHERE org_id = v_org;
+  DELETE FROM public.score_configs WHERE org_id = v_org;
+  DELETE FROM public.organizations WHERE id = v_org;
+END
+$$;
+
+-- No composite foreign key may keep an unscoped SET NULL: it would try to null
+-- the NOT NULL tenant column and fail the parent delete.
+DO $$
+DECLARE
+  v_offenders text;
+BEGIN
+  SELECT string_agg(cl.relname || '.' || con.conname, ', ' ORDER BY cl.relname)
+    INTO v_offenders
+    FROM pg_constraint con
+    JOIN pg_class cl ON cl.oid = con.conrelid
+    JOIN pg_namespace n ON n.oid = cl.relnamespace
+   WHERE n.nspname = 'public'
+     AND con.contype = 'f'
+     AND con.confdeltype = 'n'
+     AND array_length(con.conkey, 1) > 1
+     AND con.confdelsetcols IS NULL
+     AND EXISTS (
+       SELECT 1 FROM pg_attribute a
+        WHERE a.attrelid = con.conrelid
+          AND a.attnum = ANY (con.conkey)
+          AND a.attnotnull
+     );
+
+  IF v_offenders IS NOT NULL THEN
+    RAISE EXCEPTION 'unscoped composite SET NULL on: %', v_offenders;
+  END IF;
+END
+$$;

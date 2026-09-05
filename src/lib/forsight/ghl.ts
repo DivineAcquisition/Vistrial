@@ -23,7 +23,7 @@ import { loadForsightSource, type ForsightDb } from "@/lib/forsight/sources";
  * direction, a channel and a timestamp.
  */
 
-/** Bounds the live read so a page render cannot walk an entire inbox. */
+/** Bounds the live read so a page render cannot walk a location's entire conversation history. */
 const MAX_CONVERSATION_PAGES = 5;
 const MAX_CONVERSATIONS = 100;
 

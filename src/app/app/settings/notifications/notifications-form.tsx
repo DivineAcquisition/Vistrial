@@ -55,7 +55,7 @@ export function NotificationSettingsForm({
   useSettingsToast(prefState, prefPending);
   useSettingsToast(muteState, mutePending);
   useSettingsToast(orgState, orgPending);
-  useSettingsToast(testState, testPending, "Sent. Check that device or inbox.");
+  useSettingsToast(testState, testPending, "Sent. Check that device or your email.");
 
   const prefMap = new Map(prefs.map((row) => [`${row.event_type}:${row.channel}`, row.enabled]));
 

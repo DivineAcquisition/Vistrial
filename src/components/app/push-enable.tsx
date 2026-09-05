@@ -97,7 +97,7 @@ export function PushEnable() {
     <div>
       <Switch
         label="Enable push on this device"
-        description="Time-sensitive alerts assigned to you. The inbox still records them if this is off."
+        description="Time-sensitive alerts assigned to you. Notifications still record them if this is off."
         checked={status === "on"}
         disabled={status === "denied"}
         onChange={(event) => {

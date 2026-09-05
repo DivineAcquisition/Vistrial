@@ -17,7 +17,7 @@ import { createClient } from "@/lib/supabase/client";
 import { EVENT_LABELS } from "@/lib/notifications/labels";
 import type { NotificationEventType } from "@/lib/notifications/types";
 
-type InboxRow = {
+type NotificationRow = {
   id: string;
   title: string;
   body: string;
@@ -28,10 +28,10 @@ type InboxRow = {
   acted_at: string | null;
 };
 
-export function NotificationInbox() {
+export function NotificationBell() {
   const { org } = useOrg();
   const [open, setOpen] = useState(false);
-  const [rows, setRows] = useState<InboxRow[]>([]);
+  const [rows, setRows] = useState<NotificationRow[]>([]);
 
   const load = useCallback(async () => {
     const supabase = createClient();
@@ -43,7 +43,7 @@ export function NotificationInbox() {
       .in("status", ["queued", "sent", "delivered", "opened", "acted", "skipped"])
       .order("queued_at", { ascending: false })
       .limit(30);
-    setRows((data as InboxRow[] | null) ?? []);
+    setRows((data as NotificationRow[] | null) ?? []);
   }, [org.id]);
 
   useEffect(() => {
@@ -82,7 +82,7 @@ export function NotificationInbox() {
       </SheetTrigger>
       <SheetContent side="right" className="bg-ink-900 text-white" showCloseButton>
         <SheetHeader>
-          <SheetTitle>Inbox</SheetTitle>
+          <SheetTitle>Notifications</SheetTitle>
         </SheetHeader>
         <div className="flex flex-col gap-2 overflow-y-auto px-4 pb-6">
           {rows.length === 0 ? (

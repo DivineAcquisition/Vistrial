@@ -1,15 +1,26 @@
 "use client";
 
+import { useEffect } from "react";
+import { usePathname } from "next/navigation";
+
 import { PageFrame } from "@/components/app/page-frame";
 import { Button } from "@/components/ui/button";
 import { Panel } from "@/components/ui/panel";
+import { logClientRenderError } from "@/lib/errors/log";
 
 export default function AppError({
+  error,
   retry,
 }: {
   error: Error & { digest?: string };
   retry: () => void;
 }) {
+  const pathname = usePathname();
+
+  useEffect(() => {
+    void logClientRenderError({ message: error.message, digest: error.digest, path: pathname });
+  }, [error, pathname]);
+
   return (
     <PageFrame
       title="This section failed to load"

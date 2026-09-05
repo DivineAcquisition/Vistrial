@@ -56,3 +56,36 @@ export function membershipsFromRows(
     .map((row) => membershipFromRow(row, orgsById))
     .filter((row): row is Membership => row !== null);
 }
+
+/**
+ * Picks the active org from the memberships the caller actually holds.
+ *
+ * `cookieOrgId` is attacker-controlled, so it is only ever used to select from
+ * that list — an org id the caller does not belong to is treated the same as no
+ * cookie at all. `cookieNeedsReset` means the stored value disagrees with the
+ * resolved org and should be rewritten.
+ *
+ * Callers must pass only active memberships; this does not filter them.
+ */
+export function resolveActiveMembership(
+  memberships: Membership[],
+  cookieOrgId: string | undefined
+): { active: Membership; cookieNeedsReset: boolean } {
+  if (memberships.length === 1) {
+    const only = memberships[0];
+    return {
+      active: only,
+      cookieNeedsReset: cookieOrgId !== only.orgId,
+    };
+  }
+
+  const fromCookie = cookieOrgId
+    ? memberships.find((membership) => membership.orgId === cookieOrgId)
+    : undefined;
+
+  if (fromCookie) {
+    return { active: fromCookie, cookieNeedsReset: false };
+  }
+
+  return { active: memberships[0], cookieNeedsReset: true };
+}

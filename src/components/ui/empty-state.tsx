@@ -2,9 +2,9 @@ import type { ReactNode } from "react";
 import {
   AlertTriangle,
   Lock,
+  PackageOpen,
   PlugZap,
   SearchX,
-  Inbox,
   type LucideIcon,
 } from "lucide-react";
 
@@ -30,7 +30,7 @@ export type EmptyKind = "unconfigured" | "empty" | "no-results" | "error" | "per
 
 const KIND: Record<EmptyKind, { eyebrow: string; icon: LucideIcon; tint: string }> = {
   unconfigured: { eyebrow: "Not connected yet", icon: PlugZap, tint: "text-primary" },
-  empty: { eyebrow: "Nothing to show", icon: Inbox, tint: "text-muted-foreground" },
+  empty: { eyebrow: "Nothing to show", icon: PackageOpen, tint: "text-muted-foreground" },
   "no-results": { eyebrow: "No matches", icon: SearchX, tint: "text-muted-foreground" },
   error: { eyebrow: "Something went wrong", icon: AlertTriangle, tint: "text-destructive" },
   permission: { eyebrow: "Not yours to see", icon: Lock, tint: "text-warning" },

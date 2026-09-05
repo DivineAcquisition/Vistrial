@@ -10,7 +10,7 @@ import { BriefPrefetcher } from "@/components/app/brief-prefetcher";
 import { ConnectionStatus } from "@/components/app/connection-status";
 import { LastLeadTracker } from "@/components/app/last-lead-tracker";
 import { MobileDock } from "@/components/app/mobile-dock";
-import { NotificationInbox } from "@/components/app/notification-inbox";
+import { NotificationBell } from "@/components/app/notification-bell";
 import { AppJumpPalette } from "@/components/app/jump-palette";
 import { NotificationRuntime } from "@/components/app/notification-runtime";
 import { OutcomeSyncRuntime } from "@/components/app/outcome-sync-runtime";
@@ -179,7 +179,7 @@ export function AppShell({
               <UserMenu placement="header" />
             ) : (
               <>
-                <NotificationInbox />
+                <NotificationBell />
                 <AppJumpPalette />
               </>
             )}

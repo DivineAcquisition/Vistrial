@@ -103,3 +103,26 @@ export function emailsMatch(a: string | null | undefined, b: string | null | und
   if (!a || !b) return false;
   return a.trim().toLowerCase() === b.trim().toLowerCase();
 }
+
+/**
+ * Whether a member change would take away the org's last active owner.
+ *
+ * `activeOwners` counts every active owner including this member, and is NaN
+ * when the count could not be read — an unreadable count blocks, because
+ * guessing here is how an org ends up with nobody who can grant the role back.
+ */
+export function removesLastActiveOwner(args: {
+  role: OrgRole;
+  active: boolean;
+  nextRole: OrgRole;
+  nextActive: boolean;
+  activeOwners: number;
+}): boolean {
+  const wasActiveOwner = args.role === "owner" && args.active;
+  if (!wasActiveOwner) return false;
+
+  const staysActiveOwner = args.nextRole === "owner" && args.nextActive;
+  if (staysActiveOwner) return false;
+
+  return !Number.isFinite(args.activeOwners) || args.activeOwners <= 1;
+}

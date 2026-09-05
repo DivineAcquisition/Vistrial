@@ -9,7 +9,7 @@
 --   * Mute is required to have an end. Maximum 7 days.
 --   * Unmatched-transcript digest goes to admin. Push escalation if 5+ open
 --     or the oldest is 24 hours old.
---   * In-app is the inbox over these rows, not a second simultaneous send.
+--   * The notification bell is the in-app surface over these rows, not a second simultaneous send.
 --     One interrupt channel per event (push, email, sms, or team).
 --   * DA console rows (channel da_console) are staff-only. Clients never see
 --     job-failure noise.
@@ -360,7 +360,7 @@ REVOKE ALL ON FUNCTION public.claim_notification() FROM PUBLIC, anon, authentica
 GRANT EXECUTE ON FUNCTION public.claim_notification() TO service_role;
 
 COMMENT ON TABLE public.notifications IS
-  'Queued and delivered notifications. One row per recipient per channel per event. Inbox reads this table.';
+  'Queued and delivered notifications. One row per recipient per channel per event. The in-app notification bell reads this table.';
 COMMENT ON COLUMN public.notifications.body IS
   'Lock-screen safe. First name or a count. Never contact details, message content, transcripts, or extractions.';
 COMMENT ON TABLE public.notification_mutes IS

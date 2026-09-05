@@ -18,9 +18,13 @@ Next.js 16 (App Router) · TypeScript · Tailwind CSS v4 + shadcn/ui · Supabase
 
 Domains: [`www.vistrial.io`](https://www.vistrial.io) currently serves the
 public site (apex `vistrial.io` is not on Vercel DNS yet — do not 308 www to
-it). [`app.vistrial.io`](https://app.vistrial.io) is the operator app.
-`admin.vistrial.io` (DA staff console) comes later. API routes live inside
-this Next app.
+it). [`app.vistrial.io`](https://app.vistrial.io) is **core Vistrial**, the
+case-file product for a client's sales team. [`pulse.vistrial.io`](https://pulse.vistrial.io)
+is Forsight, the metrics layer inside **Stellar** (DA's delivery system for
+local-business placements). The two products share auth, workspaces, members,
+the activity log, integrations, and the design system — and nothing else.
+Stellar must not inherit scoring, transcripts, or drafting; see
+[`docs/STELLAR.md`](./docs/STELLAR.md). API routes live inside this Next app.
 
 ## Visual language
 

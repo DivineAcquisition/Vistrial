@@ -47,6 +47,16 @@ export const TOKEN_REFRESH_CRON_MS = 30 * 60 * 1000;
 
 export const WEBHOOK_MAX_ATTEMPTS = 8;
 
+/**
+ * Events waiting on a location link retry on a slow cadence instead of burning
+ * the failure budget. Six hours keeps an unclaimed location from crowding the
+ * queue while still draining within a shift once someone links it.
+ */
+export const AWAITING_LINK_MAX_BACKOFF_MINUTES = 360;
+
+/** Unclaimed events past this count mean a location is firing at nobody. */
+export const AWAITING_LINK_ALERT_THRESHOLD = 25;
+
 /** GHL burst is 100 / 10s. Stay under that and queue instead of dropping. */
 export const GHL_RATE_LIMIT = 80;
 export const GHL_RATE_WINDOW_SECONDS = 10;

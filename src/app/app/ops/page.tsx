@@ -195,6 +195,11 @@ export default async function OpsPage({
           tone={state.ingest.unprocessed ? "warning" : "neutral"}
         />
         <KpiCard
+          label="Events on unlinked locations"
+          value={state.ingest.awaitingLocationLink.events}
+          tone={state.ingest.awaitingLocationLink.events ? "critical" : "neutral"}
+        />
+        <KpiCard
           label="Overdue jobs"
           value={overdueJobs}
           tone={overdueJobs ? "critical" : "neutral"}

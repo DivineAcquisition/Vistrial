@@ -2,7 +2,13 @@ import { generateKeyPairSync, sign } from "node:crypto";
 import { describe, expect, it } from "vitest";
 
 import { decryptSecret, encryptSecret } from "@/lib/ghl/crypto";
-import { INGEST_STALE_PENDING_MS, LOCATION_CLAIMED_MESSAGE, WEBHOOK_MAX_ATTEMPTS } from "@/lib/ghl/constants";
+import {
+  AWAITING_LINK_MAX_BACKOFF_MINUTES,
+  INGEST_STALE_PENDING_MS,
+  LOCATION_CLAIMED_MESSAGE,
+  WEBHOOK_MAX_ATTEMPTS,
+} from "@/lib/ghl/constants";
+import { WEBHOOK_PAYLOAD_RETENTION_DAYS } from "@/lib/ops/constants";
 import { normalizeEventKind } from "@/lib/ghl/events";
 import { applyGhlFieldMaps, answersEqual, mergeAnswers } from "@/lib/ghl/field-map";
 import { isIngestionStale } from "@/lib/ghl/health";
@@ -25,7 +31,12 @@ import {
 } from "@/lib/ghl/message-meta";
 import { hashRawBody, parseWebhookPayload } from "@/lib/ghl/payload";
 import { redactForLog } from "@/lib/ghl/redact";
-import { nextAttemptAt, shouldMarkDead } from "@/lib/ghl/retry";
+import {
+  AWAITING_LINK_ERROR,
+  failureDisposition,
+  nextAttemptAt,
+  shouldMarkDead,
+} from "@/lib/ghl/retry";
 import { verifyGhlWebhookSignature } from "@/lib/ghl/signature";
 import { tokensNeedRefresh } from "@/lib/ghl/tokens";
 
@@ -94,7 +105,19 @@ describe("payload parse", () => {
     expect(parsed.eventType).toBe("ContactCreate");
     expect(parsed.providerEventId).toBe("wh-1");
     expect(parsed.locationId).toBe("loc-1");
-    expect(parsed.contactKey).toBe("loc-1:ct-1");
+    expect(parsed.contactKey).toBe("ct-1");
+  });
+
+  it("keys a contact the same way whether or not the event carries a location", () => {
+    const withLocation = parseWebhookPayload(
+      JSON.stringify({ type: "ContactUpdate", webhookId: "wh-a", locationId: "loc-1", contactId: "ct-1" })
+    );
+    const withoutLocation = parseWebhookPayload(
+      JSON.stringify({ type: "InboundMessage", webhookId: "wh-b", contactId: "ct-1" })
+    );
+    // The processing lock keys off contactKey. Two keys for one contact means
+    // two workers, and a create can land after its own update.
+    expect(withoutLocation.contactKey).toBe(withLocation.contactKey);
   });
 
   it("still stores unparsed bodies without the raw string", () => {
@@ -215,6 +238,51 @@ describe("retry and health", () => {
     expect(shouldMarkDead(WEBHOOK_MAX_ATTEMPTS - 1)).toBe(false);
     expect(shouldMarkDead(WEBHOOK_MAX_ATTEMPTS)).toBe(true);
     expect(Date.parse(nextAttemptAt(1))).toBeGreaterThan(Date.now());
+  });
+
+  it("keeps an event waiting on a location link out of the failure budget", () => {
+    const receivedAt = new Date().toISOString();
+    const spent = failureDisposition({
+      reason: AWAITING_LINK_ERROR,
+      attemptCount: WEBHOOK_MAX_ATTEMPTS + 4,
+      receivedAt,
+    });
+    // A null-org event that goes dead is invisible to every per-org health
+    // query and unreachable from the manual retry, so it must not go dead
+    // while the location can still be linked.
+    expect(spent.dead).toBe(false);
+    expect(spent.waiting).toBe(true);
+    expect(Date.parse(spent.nextAttemptAt)).toBeGreaterThan(Date.now());
+  });
+
+  it("gives up on a waiting event once its payload is past retention", () => {
+    const stale = new Date(Date.now() - (WEBHOOK_PAYLOAD_RETENTION_DAYS + 1) * 86_400_000).toISOString();
+    expect(
+      failureDisposition({ reason: AWAITING_LINK_ERROR, attemptCount: 2, receivedAt: stale }).dead
+    ).toBe(true);
+  });
+
+  it("still marks an ordinary processing failure dead at the attempt ceiling", () => {
+    const receivedAt = new Date().toISOString();
+    expect(
+      failureDisposition({ reason: "touch_insert_failed", attemptCount: WEBHOOK_MAX_ATTEMPTS, receivedAt }).dead
+    ).toBe(true);
+    expect(
+      failureDisposition({
+        reason: "touch_insert_failed",
+        attemptCount: WEBHOOK_MAX_ATTEMPTS - 1,
+        receivedAt,
+      }).dead
+    ).toBe(false);
+  });
+
+  it("backs a waiting event off further than an ordinary failure", () => {
+    const now = Date.UTC(2026, 0, 1);
+    const receivedAt = new Date(now).toISOString();
+    const waiting = failureDisposition({ reason: AWAITING_LINK_ERROR, attemptCount: 12, receivedAt, now });
+    const failing = failureDisposition({ reason: "boom", attemptCount: 7, receivedAt, now });
+    expect(Date.parse(waiting.nextAttemptAt) - now).toBe(AWAITING_LINK_MAX_BACKOFF_MINUTES * 60_000);
+    expect(Date.parse(waiting.nextAttemptAt)).toBeGreaterThan(Date.parse(failing.nextAttemptAt));
   });
 
   it("flags stalled ingestion when unprocessed events age out", () => {

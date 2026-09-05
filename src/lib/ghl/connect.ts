@@ -12,6 +12,7 @@ import {
 } from "@/lib/ghl/client";
 import { encryptSecret, decryptSecret } from "@/lib/ghl/crypto";
 import { ghlLog, ghlError } from "@/lib/ghl/log";
+import { adoptEventsForLocation } from "@/lib/ghl/ingest";
 import { assertStagingCrmAllowed } from "@/lib/ops/crm-guard";
 import {
   decryptConnectionTokens,
@@ -83,7 +84,8 @@ export async function linkLocationToOrg(
     await db.from("ghl_connections").update({ location_name: locationName }).eq("org_id", args.orgId);
   }
   await registerLocationWebhooks(db, args.orgId);
-  ghlLog("ghl.oauth.linked", { orgId: args.orgId });
+  const adopted = await adoptEventsForLocation(db, args.orgId, args.locationId);
+  ghlLog("ghl.oauth.linked", { orgId: args.orgId, adopted });
   return { ok: true, locationName };
 }
 

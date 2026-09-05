@@ -1,6 +1,5 @@
 import "server-only";
 
-import { WEBHOOK_MAX_ATTEMPTS } from "@/lib/ghl/constants";
 import { disconnectGhl } from "@/lib/ghl/connect";
 import { fetchUser } from "@/lib/ghl/client";
 import { normalizeEventKind } from "@/lib/ghl/events";
@@ -11,7 +10,7 @@ import {
   type GhlFieldMap,
 } from "@/lib/ghl/field-map";
 import { skipOutboundWebhookTouch } from "@/lib/ghl/dispatch-guard";
-import { ghlError, ghlLog } from "@/lib/ghl/log";
+import { ghlError, ghlLog, ghlWarn } from "@/lib/ghl/log";
 import {
   appointmentFromPayload,
   contactFromPayload,
@@ -26,7 +25,7 @@ import {
   timezoneFromContact,
 } from "@/lib/ghl/message-meta";
 import { asJsonRecord } from "@/lib/ghl/payload";
-import { nextAttemptAt, shouldMarkDead } from "@/lib/ghl/retry";
+import { AWAITING_LINK_ERROR, failureDisposition } from "@/lib/ghl/retry";
 import { scoreInboundReplyAfterSilence, scoreLeadFromAnswerChange, scoreNoShow } from "@/lib/scoring/event-apply";
 import { flagDisqualifiedLead } from "@/lib/profile/intake-flags";
 import { leadStatusForPipelineStage } from "@/lib/profile/stage-mapping";
@@ -108,7 +107,7 @@ async function processOneEvent(db: GhlDb, event: WebhookRow): Promise<void> {
   const kind = normalizeEventKind(event.event_type);
 
   if (!orgId && kind !== "ignored" && kind !== "install") {
-    throw new Error("unresolved_org");
+    throw new Error(AWAITING_LINK_ERROR);
   }
 
   if (orgId && event.org_id !== orgId) {
@@ -600,14 +599,21 @@ async function markEventProcessed(db: GhlDb, id: string) {
 async function markEventFailure(db: GhlDb, event: WebhookRow, cause: unknown) {
   const message = cause instanceof Error ? cause.message : "process_failed";
   const attempts = event.attempt_count + 1;
-  const dead = shouldMarkDead(attempts, WEBHOOK_MAX_ATTEMPTS);
-  ghlError("ghl.webhook.failed", {
+  const { waiting, dead, nextAttemptAt } = failureDisposition({
+    reason: message,
+    attemptCount: attempts,
+    receivedAt: event.received_at,
+  });
+  const fields = {
     eventId: event.id,
     eventType: event.event_type,
+    locationId: event.location_id,
     attempts,
     dead,
     reason: message,
-  });
+  };
+  if (waiting && !dead) ghlWarn("ghl.webhook.awaiting_link", fields);
+  else ghlError("ghl.webhook.failed", fields);
   await db
     .from("webhook_events")
     .update({
@@ -616,7 +622,7 @@ async function markEventFailure(db: GhlDb, event: WebhookRow, cause: unknown) {
       status: dead ? "dead" : "pending",
       processed: dead,
       processed_at: dead ? new Date().toISOString() : null,
-      next_attempt_at: dead ? new Date().toISOString() : nextAttemptAt(attempts),
+      next_attempt_at: nextAttemptAt,
     })
     .eq("id", event.id);
 }

@@ -12,20 +12,18 @@ export const dynamic = "force-dynamic";
 
 export async function POST(request: Request) {
   const db = getSupabaseAdmin();
-  const limited = await rateLimitWebhook(db, request, "ghl");
-  if (!limited.allowed) {
-    await recordHttpSample(db, "/api/leadconnector/webhooks", true);
-    return NextResponse.json({ error: "Too many requests" }, { status: 429 });
-  }
-
   const rawBody = await request.text();
   const { ghlSignature, legacySignature } = signatureHeaders(request.headers);
 
   try {
+    // A signed payload is never rate limited. Turning away a real event with a
+    // 429 stores nothing, and once GHL exhausts its retries that lead is gone
+    // with no trace anywhere in the product. Only forged traffic is throttled.
     const result = await ingestGhlWebhook(db, {
       rawBody,
       ghlSignature,
       legacySignature,
+      allowRejectionRecord: async () => (await rateLimitWebhook(db, request, "ghl")).allowed,
     });
 
     if (result.httpStatus === 401) {

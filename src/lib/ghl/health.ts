@@ -1,9 +1,11 @@
 import {
+  AWAITING_LINK_ALERT_THRESHOLD,
   INGEST_ALERT_COOLDOWN_MS,
   INGEST_BACKLOG_ALERT_THRESHOLD,
   INGEST_STALE_PENDING_MS,
   INGEST_STALE_SUCCESS_MS,
 } from "@/lib/ghl/constants";
+import { AWAITING_LINK_ERROR } from "@/lib/ghl/retry";
 import { ingestionAlertWebhookUrl } from "@/lib/ghl/env";
 import { ghlError, ghlLog } from "@/lib/ghl/log";
 import type { GhlDb } from "@/lib/ghl/tokens";
@@ -38,7 +40,40 @@ export type GlobalIngestionHealth = {
     oldestUnprocessedAgeSeconds: number | null;
     stale: boolean;
   }>;
+  /**
+   * Events from a location no workspace has claimed. These belong to no org,
+   * so no per-org health query or settings screen can see them. If nobody
+   * counts them here, nobody counts them at all.
+   */
+  awaitingLocationLink: {
+    events: number;
+    locations: number;
+    oldestAgeSeconds: number | null;
+  };
 };
+
+export async function loadAwaitingLocationLink(
+  db: GhlDb,
+  now = Date.now()
+): Promise<GlobalIngestionHealth["awaitingLocationLink"]> {
+  const { data, count } = await db
+    .from("webhook_events")
+    .select("location_id, received_at", { count: "exact" })
+    .eq("source", "ghl")
+    .is("org_id", null)
+    .not("location_id", "is", null)
+    .or(`status.eq.pending,and(status.eq.dead,error_text.eq.${AWAITING_LINK_ERROR})`)
+    .order("received_at", { ascending: true })
+    .limit(500);
+
+  const rows = data ?? [];
+  const oldest = rows[0]?.received_at ?? null;
+  return {
+    events: count ?? rows.length,
+    locations: new Set(rows.map((row) => row.location_id)).size,
+    oldestAgeSeconds: oldest ? Math.round((now - Date.parse(oldest)) / 1000) : null,
+  };
+}
 
 export function isIngestionStale(args: {
   connected: boolean;
@@ -208,7 +243,45 @@ export async function loadGlobalIngestionHealth(db: GhlDb): Promise<GlobalIngest
     dead: deadCount ?? 0,
     lastProcessedAt: last?.processed_at ?? null,
     orgs,
+    awaitingLocationLink: await loadAwaitingLocationLink(db, now),
   };
+}
+
+const UNLINKED_LOCATION_FINGERPRINT = "unlinked_location:global";
+
+/**
+ * A location firing at nobody has no org to hang an alert on, so this goes to
+ * ops_alerts rather than the per-org path. Left undetected it looks exactly
+ * like quiet: no errors, no backlog on any client's screen, no leads.
+ */
+async function alertUnlinkedLocations(db: GhlDb): Promise<number> {
+  const awaiting = await loadAwaitingLocationLink(db);
+  if (awaiting.events < AWAITING_LINK_ALERT_THRESHOLD) {
+    await db.rpc("resolve_ops_alert", { p_fingerprint: UNLINKED_LOCATION_FINGERPRINT });
+    return 0;
+  }
+
+  ghlError("ingestion.alert", {
+    kind: "unlinked_location",
+    events: awaiting.events,
+    locations: awaiting.locations,
+    oldestAgeSeconds: awaiting.oldestAgeSeconds,
+  });
+  await db.rpc("upsert_ops_alert", {
+    p_fingerprint: UNLINKED_LOCATION_FINGERPRINT,
+    p_kind: "unlinked_location",
+    p_severity: "critical",
+    p_org_id: null,
+    p_title: `${awaiting.events} events waiting on a location nobody has linked`,
+    p_check_first:
+      "Compare webhook_events.location_id where org_id is null against organizations.ghl_location_id. Finishing the location picker in Integrations adopts the backlog.",
+    p_detail: {
+      events: awaiting.events,
+      locations: awaiting.locations,
+      oldestAgeSeconds: awaiting.oldestAgeSeconds,
+    },
+  });
+  return 1;
 }
 
 export async function emitIngestionAlerts(db: GhlDb): Promise<number> {
@@ -217,7 +290,7 @@ export async function emitIngestionAlerts(db: GhlDb): Promise<number> {
     .select("org_id")
     .eq("status", "active");
 
-  let sent = 0;
+  let sent = await alertUnlinkedLocations(db);
   for (const row of connections ?? []) {
     const health = await loadOrgIngestionHealth(db, row.org_id);
     const kinds: Array<{ kind: string; detail: string }> = [];

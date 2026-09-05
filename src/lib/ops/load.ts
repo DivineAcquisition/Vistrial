@@ -142,6 +142,7 @@ export async function loadOpsSystemState(db: GhlDb) {
     (openAlerts.data ?? []).length > 0 ||
     (incidents.data ?? []).length > 0 ||
     ingest.unprocessed > 0 && (ingest.oldestUnprocessedAgeSeconds ?? 0) >= 30 * 60 ||
+    ingest.awaitingLocationLink.events > 0 ||
     latestHealth?.app_ok === false ||
     latestHealth?.db_ok === false;
 

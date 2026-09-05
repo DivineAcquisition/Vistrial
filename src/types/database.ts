@@ -2851,6 +2851,7 @@ export type Database = {
           source: Database["public"]["Enums"]["webhook_source"];
           provider_event_id: string | null;
           contact_key: string | null;
+          location_id: string | null;
           status: Database["public"]["Enums"]["webhook_event_status"];
           next_attempt_at: string;
           payload_purged_at: string | null;
@@ -2868,6 +2869,7 @@ export type Database = {
           source: Database["public"]["Enums"]["webhook_source"];
           provider_event_id?: string | null;
           contact_key?: string | null;
+          location_id?: string | null;
           status?: Database["public"]["Enums"]["webhook_event_status"];
           next_attempt_at?: string;
           payload_purged_at?: string | null;
@@ -2885,6 +2887,7 @@ export type Database = {
           source?: Database["public"]["Enums"]["webhook_source"];
           provider_event_id?: string | null;
           contact_key?: string | null;
+          location_id?: string | null;
           status?: Database["public"]["Enums"]["webhook_event_status"];
           next_attempt_at?: string;
           payload_purged_at?: string | null;

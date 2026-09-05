@@ -17,6 +17,7 @@ export async function GET(request: Request) {
     oldestUnprocessedAgeSeconds: health.oldestUnprocessedAgeSeconds,
     dead: health.dead,
     lastProcessedAt: health.lastProcessedAt,
+    awaitingLocationLink: health.awaitingLocationLink,
     orgs: health.orgs,
   });
 }

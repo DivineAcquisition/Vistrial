@@ -124,3 +124,37 @@ VALUES (
   'timeline'
 )
 ON CONFLICT DO NOTHING;
+
+-- An event whose location nobody has linked must stay attributable, or the
+-- backlog cannot be adopted when the location is finally claimed.
+DO $$
+DECLARE
+  v_event_id uuid;
+  v_org_id uuid;
+BEGIN
+  INSERT INTO public.webhook_events (org_id, source, event_type, payload, location_id, status)
+  VALUES (
+    NULL,
+    'ghl',
+    'ContactCreate',
+    '{"type":"ContactCreate","locationId":"ghl_loc_dev_unclaimed"}'::jsonb,
+    'ghl_loc_dev_unclaimed',
+    'pending'
+  )
+  RETURNING id INTO v_event_id;
+
+  SELECT org_id INTO v_org_id FROM public.webhook_events WHERE id = v_event_id;
+  IF v_org_id IS NOT NULL THEN
+    RAISE EXCEPTION 'unresolved webhook_events row should keep a null org_id';
+  END IF;
+
+  PERFORM 1
+  FROM public.webhook_events
+  WHERE id = v_event_id AND location_id = 'ghl_loc_dev_unclaimed';
+  IF NOT FOUND THEN
+    RAISE EXCEPTION 'webhook_events.location_id did not survive an unresolved insert';
+  END IF;
+
+  DELETE FROM public.webhook_events WHERE id = v_event_id;
+END
+$$;

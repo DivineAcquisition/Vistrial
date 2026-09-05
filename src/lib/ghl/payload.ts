@@ -82,7 +82,10 @@ export function parseWebhookPayload(raw: string): ParsedWebhook {
     providerEventId,
     locationId,
     contactId,
-    contactKey: locationId && contactId ? `${locationId}:${contactId}` : contactId,
+    // The lock that serialises a contact's events keys off this. It must not
+    // vary with whichever fields a given event type happens to carry, or a
+    // create and its own update take different locks and race.
+    contactKey: contactId,
   };
 }
 

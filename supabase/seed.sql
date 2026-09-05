@@ -382,3 +382,90 @@ VALUES (
   'No-show. Reschedule requested.',
   now() - interval '2 days'
 );
+
+-- ---------------------------------------------------------------------------
+-- Stellar (Prompt S1). One client org, one setter, one client_viewer, one
+-- active placement — the skeleton this prompt targets end to end.
+-- ---------------------------------------------------------------------------
+
+DO $$
+BEGIN
+  INSERT INTO auth.users (id, email)
+  VALUES
+    ('55555555-5555-4555-8555-555555555551', 'setter@stellar.local'),
+    ('55555555-5555-4555-8555-555555555552', 'owner@stellar-client.local'),
+    ('55555555-5555-4555-8555-555555555553', 'da-operator@vistrial.local')
+  ON CONFLICT (id) DO NOTHING;
+EXCEPTION
+  WHEN undefined_table THEN
+    RAISE NOTICE 'auth.users is missing; skip Stellar placeholder users';
+  WHEN not_null_violation OR check_violation OR foreign_key_violation THEN
+    RAISE NOTICE 'auth.users rejected a slim insert for Stellar seed users (expected on hosted Auth).';
+  WHEN OTHERS THEN
+    RAISE NOTICE 'Stellar seed auth.users insert skipped: %', SQLERRM;
+END
+$$;
+
+INSERT INTO public.organizations (id, name, slug, timezone, product, holdout_percent)
+VALUES (
+  '66666666-6666-4666-8666-666666666661',
+  'Riverside Home Services',
+  'riverside-home-services',
+  'America/Chicago',
+  'stellar',
+  0
+)
+ON CONFLICT (id) DO NOTHING;
+
+INSERT INTO public.score_configs (org_id)
+VALUES ('66666666-6666-4666-8666-666666666661')
+ON CONFLICT (org_id) DO NOTHING;
+
+INSERT INTO public.org_members (id, org_id, user_id, role, display_name, email)
+SELECT
+  '77777777-7777-4777-8777-777777777771',
+  '66666666-6666-4666-8666-666666666661',
+  '55555555-5555-4555-8555-555555555551',
+  'setter',
+  'Casey Rivera',
+  'setter@stellar.local'
+WHERE EXISTS (SELECT 1 FROM auth.users WHERE id = '55555555-5555-4555-8555-555555555551')
+ON CONFLICT (org_id, user_id) DO NOTHING;
+
+INSERT INTO public.org_members (id, org_id, user_id, role, display_name, email)
+SELECT
+  '77777777-7777-4777-8777-777777777772',
+  '66666666-6666-4666-8666-666666666661',
+  '55555555-5555-4555-8555-555555555552',
+  'client_viewer',
+  'Riverside Owner',
+  'owner@stellar-client.local'
+WHERE EXISTS (SELECT 1 FROM auth.users WHERE id = '55555555-5555-4555-8555-555555555552')
+ON CONFLICT (org_id, user_id) DO NOTHING;
+
+INSERT INTO public.stellar_da_operators (user_id, note)
+SELECT '55555555-5555-4555-8555-555555555553', 'Dev seed DA operator'
+WHERE EXISTS (SELECT 1 FROM auth.users WHERE id = '55555555-5555-4555-8555-555555555553')
+ON CONFLICT (user_id) DO NOTHING;
+
+INSERT INTO public.placements (
+  id,
+  org_id,
+  setter_member_id,
+  agreement_status,
+  agreement_signed_at,
+  build_stage,
+  started_at
+)
+SELECT
+  '88888888-8888-4888-8888-888888888881',
+  '66666666-6666-4666-8666-666666666661',
+  '77777777-7777-4777-8777-777777777771',
+  'signed',
+  now() - interval '30 days',
+  'building_system',
+  now() - interval '30 days'
+WHERE EXISTS (
+  SELECT 1 FROM public.org_members WHERE id = '77777777-7777-4777-8777-777777777771'
+)
+ON CONFLICT DO NOTHING;

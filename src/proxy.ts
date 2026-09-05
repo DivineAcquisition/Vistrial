@@ -2,7 +2,7 @@ import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
 import { pathRefreshesAuthSession, safeInternalPath } from "@/lib/auth/paths";
-import { hostnameFromHostHeader, isForsightHost, isOperatorAppHost } from "@/lib/marketing/hosts";
+import { hostnameFromHostHeader, isForsightHost, isOperatorAppHost, isStellarHost } from "@/lib/marketing/hosts";
 import { FORSIGHT_PATH } from "@/lib/navigation";
 import { isSupabaseConfigured, supabasePublishableKey, supabaseUrl } from "@/lib/supabase/env";
 import { fetchForSupabaseKey } from "@/lib/supabase/fetch";
@@ -40,6 +40,15 @@ export async function proxy(request: NextRequest) {
     forsight.pathname = FORSIGHT_PATH;
     forsight.search = "";
     return NextResponse.redirect(forsight);
+  }
+
+  // forsight.vistrial.io is Stellar's front door. Same redirect-not-rewrite
+  // reasoning as Forsight above, so the login gate below still applies.
+  if (path === "/" && isStellarHost(hostname)) {
+    const stellar = request.nextUrl.clone();
+    stellar.pathname = "/stellar";
+    stellar.search = "";
+    return NextResponse.redirect(stellar);
   }
 
   if (path === "/" && isOperatorAppHost(hostname)) {
@@ -86,7 +95,7 @@ export async function proxy(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
 
-  if ((path.startsWith("/app") || path.startsWith("/portal")) && !user) {
+  if ((path.startsWith("/app") || path.startsWith("/portal") || path.startsWith("/stellar")) && !user) {
     const login = request.nextUrl.clone();
     login.pathname = "/login";
     login.search = "";
@@ -111,5 +120,7 @@ export const config = {
     "/app/:path*",
     "/portal",
     "/portal/:path*",
+    "/stellar",
+    "/stellar/:path*",
   ],
 };

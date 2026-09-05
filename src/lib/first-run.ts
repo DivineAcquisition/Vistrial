@@ -28,6 +28,16 @@ export const FIRST_RUN: Record<OrgRole, FirstRunCopy> = {
     title: "Your workspace",
     body: "Forsight is ads, creatives, and the pipeline. The portal is how many leads became clients, whether the team is using this, and where deals are dying.",
   },
+  // Stellar roles never reach the operator app's first-run screen — they
+  // land on /stellar instead — but the type below must stay exhaustive.
+  client_viewer: {
+    title: "Your portal",
+    body: "This is where you can see your agreement, payment, build progress, and results.",
+  },
+  da_operator: {
+    title: "The DA console",
+    body: "Every active placement, in one list.",
+  },
 };
 
 export function firstRunStorageKey(role: OrgRole): string {

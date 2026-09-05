@@ -20,7 +20,14 @@ const BANNED = [
 
 describe("first-run explanation", () => {
   it("has a version for every role", () => {
-    expect(Object.keys(FIRST_RUN).sort()).toEqual(["admin", "closer", "owner", "setter"]);
+    expect(Object.keys(FIRST_RUN).sort()).toEqual([
+      "admin",
+      "client_viewer",
+      "closer",
+      "da_operator",
+      "owner",
+      "setter",
+    ]);
   });
 
   it("uses no internal vocabulary", () => {

@@ -40,7 +40,7 @@ export function postAuthPath(next: string, surfaceAccess?: "operator" | "portal"
   if (surfaceAccess === "portal") {
     return next.startsWith("/portal") ? next : "/portal";
   }
-  if (next.startsWith("/portal") || next.startsWith("/app")) return next;
+  if (next.startsWith("/portal") || next.startsWith("/app") || next.startsWith("/stellar")) return next;
   return "/app/queue";
 }
 
@@ -49,6 +49,7 @@ export function pathRefreshesAuthSession(path: string): boolean {
   return (
     path.startsWith("/app") ||
     path.startsWith("/portal") ||
+    path.startsWith("/stellar") ||
     path === "/login" ||
     path === "/no-access" ||
     path.startsWith("/auth/") ||

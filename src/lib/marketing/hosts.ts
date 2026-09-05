@@ -2,6 +2,7 @@ import {
   PRODUCTION_APP_ORIGIN,
   PRODUCTION_FORSIGHT_ORIGIN,
   PRODUCTION_SITE_ORIGIN,
+  PRODUCTION_STELLAR_ORIGIN,
 } from "@/lib/constants";
 
 /** Intended public marketing host once apex DNS points at Vercel. */
@@ -35,6 +36,21 @@ export function isForsightHost(host: string | null | undefined): boolean {
     return hostname === new URL(PRODUCTION_FORSIGHT_ORIGIN).hostname;
   } catch {
     return hostname === "pulse.vistrial.io";
+  }
+}
+
+/**
+ * Host of Stellar (forsight.vistrial.io). A separate product from the
+ * operator app: Setter's Log, Client Portal, and the DA Console live under
+ * /stellar behind their own login gate.
+ */
+export function isStellarHost(host: string | null | undefined): boolean {
+  const hostname = hostnameFromHostHeader(host);
+  if (!hostname) return false;
+  try {
+    return hostname === new URL(PRODUCTION_STELLAR_ORIGIN).hostname;
+  } catch {
+    return hostname === "forsight.vistrial.io";
   }
 }
 

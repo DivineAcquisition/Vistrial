@@ -1972,6 +1972,134 @@ export type Database = {
         };
         Relationships: [];
       };
+      placements: {
+        Row: {
+          id: string;
+          org_id: string;
+          setter_member_id: string | null;
+          agreement_status: Database["public"]["Enums"]["placement_agreement_status"];
+          agreement_document_url: string | null;
+          agreement_signed_at: string | null;
+          build_stage: Database["public"]["Enums"]["placement_build_stage"];
+          build_stage_updated_at: string;
+          started_at: string;
+          ended_at: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          org_id: string;
+          setter_member_id?: string | null;
+          agreement_status?: Database["public"]["Enums"]["placement_agreement_status"];
+          agreement_document_url?: string | null;
+          agreement_signed_at?: string | null;
+          build_stage?: Database["public"]["Enums"]["placement_build_stage"];
+          build_stage_updated_at?: string;
+          started_at?: string;
+          ended_at?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          org_id?: string;
+          setter_member_id?: string | null;
+          agreement_status?: Database["public"]["Enums"]["placement_agreement_status"];
+          agreement_document_url?: string | null;
+          agreement_signed_at?: string | null;
+          build_stage?: Database["public"]["Enums"]["placement_build_stage"];
+          build_stage_updated_at?: string;
+          started_at?: string;
+          ended_at?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "placements_org_id_fkey";
+            columns: ["org_id"];
+            isOneToOne: false;
+            referencedRelation: "organizations";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      stellar_build_stage_mappings: {
+        Row: {
+          id: string;
+          internal_state_key: string;
+          build_stage: Database["public"]["Enums"]["placement_build_stage"];
+          note: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          internal_state_key: string;
+          build_stage: Database["public"]["Enums"]["placement_build_stage"];
+          note?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          internal_state_key?: string;
+          build_stage?: Database["public"]["Enums"]["placement_build_stage"];
+          note?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
+      stellar_da_operators: {
+        Row: {
+          user_id: string;
+          granted_by: string | null;
+          granted_at: string;
+          note: string | null;
+        };
+        Insert: {
+          user_id: string;
+          granted_by?: string | null;
+          granted_at?: string;
+          note?: string | null;
+        };
+        Update: {
+          user_id?: string;
+          granted_by?: string | null;
+          granted_at?: string;
+          note?: string | null;
+        };
+        Relationships: [];
+      };
+      stellar_da_access_log: {
+        Row: {
+          id: string;
+          user_id: string;
+          org_id: string | null;
+          action: string;
+          resource: string;
+          occurred_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          org_id?: string | null;
+          action: string;
+          resource: string;
+          occurred_at?: string;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          org_id?: string | null;
+          action?: string;
+          resource?: string;
+          occurred_at?: string;
+        };
+        Relationships: [];
+      };
       org_invites: {
         Row: {
           accepted_at: string | null;
@@ -2055,6 +2183,7 @@ export type Database = {
           offboarded_at: string | null;
           delete_after: string | null;
           offboard_reason: string | null;
+          product: Database["public"]["Enums"]["org_product"];
         };
         Insert: {
           activated_at?: string | null;
@@ -2084,6 +2213,7 @@ export type Database = {
           offboarded_at?: string | null;
           delete_after?: string | null;
           offboard_reason?: string | null;
+          product?: Database["public"]["Enums"]["org_product"];
         };
         Update: {
           activated_at?: string | null;
@@ -2113,6 +2243,7 @@ export type Database = {
           offboarded_at?: string | null;
           delete_after?: string | null;
           offboard_reason?: string | null;
+          product?: Database["public"]["Enums"]["org_product"];
         };
         Relationships: [];
       };
@@ -4801,6 +4932,45 @@ export type Database = {
         Args: { p_org_id: string };
         Returns: undefined;
       };
+      is_stellar_da_operator: {
+        Args: Record<PropertyKey, never>;
+        Returns: boolean;
+      };
+      record_stellar_da_access: {
+        Args: { p_org_id: string | null; p_action: string; p_resource: string };
+        Returns: undefined;
+      };
+      stellar_da_list_placements: {
+        Args: Record<PropertyKey, never>;
+        Returns: {
+          placement_id: string;
+          org_id: string;
+          org_name: string;
+          setter_member_id: string | null;
+          setter_name: string | null;
+          agreement_status: Database["public"]["Enums"]["placement_agreement_status"];
+          build_stage: Database["public"]["Enums"]["placement_build_stage"];
+          build_stage_updated_at: string;
+          started_at: string;
+        }[];
+      };
+      stellar_da_get_placement: {
+        Args: { p_org_id: string };
+        Returns: {
+          placement_id: string;
+          org_id: string;
+          org_name: string;
+          setter_member_id: string | null;
+          setter_name: string | null;
+          agreement_status: Database["public"]["Enums"]["placement_agreement_status"];
+          agreement_document_url: string | null;
+          agreement_signed_at: string | null;
+          build_stage: Database["public"]["Enums"]["placement_build_stage"];
+          build_stage_updated_at: string;
+          started_at: string;
+          ended_at: string | null;
+        }[];
+      };
       claim_ghl_contact_key: {
         Args: Record<PropertyKey, never>;
         Returns: string | null;
@@ -5457,8 +5627,16 @@ export type Database = {
         | "dismissed"
         | "withheld"
         | "superseded";
-      org_role: "owner" | "admin" | "closer" | "setter";
+      org_role: "owner" | "admin" | "closer" | "setter" | "client_viewer" | "da_operator";
       surface_access: "operator" | "portal";
+      org_product: "stellar" | "core" | "both";
+      placement_agreement_status: "draft" | "sent" | "signed" | "void";
+      placement_build_stage:
+        | "getting_set_up"
+        | "building_system"
+        | "testing"
+        | "live"
+        | "running_smoothly";
       forsight_source_type: "airtable" | "meta_ads" | "ghl" | "vistrial_core";
       forsight_report_actor: "scheduled" | "operator";
       forsight_sync_status: "running" | "succeeded" | "failed";
@@ -5696,5 +5874,8 @@ export type Enums<T extends keyof Database["public"]["Enums"]> =
 
 export type OrgRole = Enums<"org_role">;
 export type SurfaceAccess = Enums<"surface_access">;
+export type OrgProduct = Enums<"org_product">;
+export type PlacementAgreementStatus = Enums<"placement_agreement_status">;
+export type PlacementBuildStage = Enums<"placement_build_stage">;
 export type SourceKind = Enums<"source_kind">;
 export type RevenueKind = Enums<"revenue_kind">;

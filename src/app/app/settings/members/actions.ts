@@ -8,7 +8,12 @@ import {
   newInviteToken,
   normalizeInviteEmail,
 } from "@/lib/auth/invites";
-import { canManageMembers, canWorkOperatorApp, isInvitableRole } from "@/lib/auth/permissions";
+import {
+  canManageMembers,
+  canWorkOperatorApp,
+  isInvitableRole,
+  removesLastActiveOwner,
+} from "@/lib/auth/permissions";
 import { getAuthContext } from "@/lib/auth/session";
 import { createClient } from "@/lib/supabase/server";
 import type { OrgRole, SurfaceAccess } from "@/types/database";
@@ -65,11 +70,14 @@ async function guardLastOwner(args: {
     return null;
   }
 
-  const owners = await activeOwnerCount(args.orgId);
-  if (!Number.isFinite(owners) || owners <= 1) {
-    return "The last active owner cannot be demoted or deactivated.";
-  }
-  return null;
+  const blocked = removesLastActiveOwner({
+    role: args.member.role,
+    active: args.member.active,
+    nextRole: args.nextRole,
+    nextActive: args.nextActive,
+    activeOwners: await activeOwnerCount(args.orgId),
+  });
+  return blocked ? "The last active owner cannot be demoted or deactivated." : null;
 }
 
 export async function inviteMember(

@@ -6,7 +6,11 @@ import { redirect } from "next/navigation";
 import type { User } from "@supabase/supabase-js";
 
 import { ORG_COOKIE_NAME, orgCookieOptions } from "@/lib/auth/cookies";
-import { membershipsFromRows, type MemberRow } from "@/lib/auth/memberships";
+import {
+  membershipsFromRows,
+  resolveActiveMembership,
+  type MemberRow,
+} from "@/lib/auth/memberships";
 import { safeInternalPath } from "@/lib/auth/paths";
 import { DEFAULT_APP_PATH } from "@/lib/navigation";
 import { getSupabaseAdmin } from "@/lib/supabase/admin";
@@ -92,29 +96,6 @@ export const listActiveMemberships = cache(
     return membershipsViaAdmin(userId);
   }
 );
-
-function resolveActiveMembership(
-  memberships: Membership[],
-  cookieOrgId: string | undefined
-): { active: Membership; cookieNeedsReset: boolean } {
-  if (memberships.length === 1) {
-    const only = memberships[0];
-    return {
-      active: only,
-      cookieNeedsReset: cookieOrgId !== only.orgId,
-    };
-  }
-
-  const fromCookie = cookieOrgId
-    ? memberships.find((membership) => membership.orgId === cookieOrgId)
-    : undefined;
-
-  if (fromCookie) {
-    return { active: fromCookie, cookieNeedsReset: false };
-  }
-
-  return { active: memberships[0], cookieNeedsReset: true };
-}
 
 async function writeOrgCookie(orgId: string) {
   const cookieStore = await cookies();

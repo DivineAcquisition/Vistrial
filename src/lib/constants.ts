@@ -13,19 +13,15 @@ export const PRODUCTION_APP_ORIGIN = "https://app.vistrial.io";
 export const PRODUCTION_SITE_ORIGIN = "https://vistrial.io";
 
 /**
- * Forsight, the tracking and metrics section. Same app, same login, same
- * workspace — a hostname people can bookmark, not a second deployment.
+ * Core Forsight (ads, creatives, pipeline) bookmark host. Same deployment and
+ * login as app.vistrial.io — not a second app, and not Stellar.
  */
 export const PRODUCTION_FORSIGHT_ORIGIN = "https://pulse.vistrial.io";
 
 /**
- * Stellar's front door. Deliberately distinct from PRODUCTION_FORSIGHT_ORIGIN
- * above (core Vistrial's own "Forsight" ads/pipeline section, at
- * pulse.vistrial.io). Prompt S1 names Stellar's domain forsight.vistrial.io;
- * that string collides with the unrelated, already-shipped Forsight feature
- * in this same codebase. Flagged as an ambiguity rather than guessed away —
- * the constant name below avoids the collision in code even though the
- * literal hostname, as specified, does not.
+ * Stellar's host. A separate product from core Vistrial, sharing auth and
+ * org records. The hostname is forsight.vistrial.io as specified; pulse.vistrial.io
+ * is core Forsight and must never serve Stellar.
  */
 export const PRODUCTION_STELLAR_ORIGIN = "https://forsight.vistrial.io";
 

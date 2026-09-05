@@ -2,8 +2,11 @@ import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
 import { pathRefreshesAuthSession, safeInternalPath } from "@/lib/auth/paths";
-import { hostnameFromHostHeader, isForsightHost, isOperatorAppHost, isStellarHost } from "@/lib/marketing/hosts";
-import { FORSIGHT_PATH } from "@/lib/navigation";
+import {
+  canonicalOriginUrl,
+  resolveHostRoute,
+  type CanonicalOrigin,
+} from "@/lib/domains/routing";
 import { isSupabaseConfigured, supabasePublishableKey, supabaseUrl } from "@/lib/supabase/env";
 import { fetchForSupabaseKey } from "@/lib/supabase/fetch";
 import type { Database } from "@/types/database";
@@ -18,9 +21,23 @@ function nextWithPath(request: NextRequest) {
   return NextResponse.next({ request: { headers: requestHeaders } });
 }
 
+function hostRedirect(request: NextRequest, origin: "same" | CanonicalOrigin, pathname: string, preserveSearch: boolean) {
+  if (origin === "same") {
+    const dest = request.nextUrl.clone();
+    dest.pathname = pathname;
+    if (!preserveSearch) dest.search = "";
+    return NextResponse.redirect(dest);
+  }
+  const dest = new URL(canonicalOriginUrl(origin));
+  dest.pathname = pathname;
+  dest.search = preserveSearch ? request.nextUrl.search : "";
+  return NextResponse.redirect(dest);
+}
+
 /**
  * Next.js 16 renamed `middleware.ts` to `proxy.ts` (export `proxy`, not
- * `middleware`). Session refresh and `/app` protection live here.
+ * `middleware`). Host isolation, session refresh, and `/app` protection live
+ * here.
  *
  * Cookie writes must land on both the request and the response, or the
  * refreshed session will not persist.
@@ -30,32 +47,11 @@ function nextWithPath(request: NextRequest) {
  */
 export async function proxy(request: NextRequest) {
   const path = request.nextUrl.pathname;
-  const hostname = hostnameFromHostHeader(request.headers.get("host"));
+  const host = request.headers.get("x-forwarded-host") ?? request.headers.get("host");
 
-  // pulse.vistrial.io is Forsight's front door. Redirect rather than rewrite so
-  // the rest of this function sees an /app path and applies the normal login
-  // gate, which sends people back to Forsight on this same host afterwards.
-  if (path === "/" && isForsightHost(hostname)) {
-    const forsight = request.nextUrl.clone();
-    forsight.pathname = FORSIGHT_PATH;
-    forsight.search = "";
-    return NextResponse.redirect(forsight);
-  }
-
-  // forsight.vistrial.io is Stellar's front door. Same redirect-not-rewrite
-  // reasoning as Forsight above, so the login gate below still applies.
-  if (path === "/" && isStellarHost(hostname)) {
-    const stellar = request.nextUrl.clone();
-    stellar.pathname = "/stellar";
-    stellar.search = "";
-    return NextResponse.redirect(stellar);
-  }
-
-  if (path === "/" && isOperatorAppHost(hostname)) {
-    const login = request.nextUrl.clone();
-    login.pathname = "/login";
-    login.search = "";
-    return NextResponse.redirect(login);
+  const hostRoute = resolveHostRoute({ host, pathname: path });
+  if (hostRoute.action === "redirect") {
+    return hostRedirect(request, hostRoute.origin, hostRoute.pathname, hostRoute.preserveSearch);
   }
 
   if (!pathRefreshesAuthSession(path)) {
@@ -111,16 +107,6 @@ export async function proxy(request: NextRequest) {
 
 export const config = {
   matcher: [
-    "/",
-    "/login",
-    "/no-access",
-    "/auth/:path*",
-    "/accept-invite/:path*",
-    "/app",
-    "/app/:path*",
-    "/portal",
-    "/portal/:path*",
-    "/stellar",
-    "/stellar/:path*",
+    "/((?!_next/static|_next/image|favicon.ico|icons/|brand/|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|woff2)$).*)",
   ],
 };

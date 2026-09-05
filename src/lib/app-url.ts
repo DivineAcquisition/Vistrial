@@ -1,4 +1,5 @@
-import { PRODUCTION_APP_ORIGIN, PRODUCTION_FORSIGHT_ORIGIN } from "@/lib/constants";
+import { PRODUCTION_APP_ORIGIN } from "@/lib/constants";
+import { classifyProductHost } from "@/lib/marketing/hosts";
 
 const LOCAL_ORIGINS = new Set(["http://localhost:3000", "http://127.0.0.1:3000"]);
 
@@ -28,17 +29,21 @@ export function appUrl(): string {
 export function isAllowedAppOrigin(origin: string): boolean {
   const normalized = origin.trim().replace(/\/$/, "");
   if (!normalized) return false;
-  if (normalized === PRODUCTION_APP_ORIGIN) return true;
-  // Signing in from pulse.vistrial.io must land back on pulse.vistrial.io.
-  if (normalized === PRODUCTION_FORSIGHT_ORIGIN) return true;
   if (LOCAL_ORIGINS.has(normalized)) return true;
+
+  let url: URL;
   try {
-    const url = new URL(normalized);
-    if (url.protocol === "https:" && url.hostname.endsWith(".vercel.app")) {
-      return true;
-    }
+    url = new URL(normalized);
   } catch {
     return false;
+  }
+
+  const product = classifyProductHost(url.hostname);
+  if (product === "local") {
+    return url.protocol === "http:" || url.protocol === "https:";
+  }
+  if (product === "app" || product === "pulse" || product === "stellar") {
+    return url.protocol === "https:";
   }
   return false;
 }

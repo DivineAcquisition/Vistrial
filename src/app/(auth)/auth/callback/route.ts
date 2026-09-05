@@ -8,7 +8,10 @@ import {
   safeInternalPath,
 } from "@/lib/auth/paths";
 import { listActiveMemberships } from "@/lib/auth/session";
+import { defaultInternalPath, signedInPath } from "@/lib/domains/landing";
+import { classifyProductHost } from "@/lib/marketing/hosts";
 import { landingPath } from "@/lib/navigation";
+import { checkIsStellarDaOperator } from "@/lib/stellar/auth";
 import { createClient } from "@/lib/supabase/server";
 
 function redirectTo(request: NextRequest, path: string) {
@@ -17,8 +20,14 @@ function redirectTo(request: NextRequest, path: string) {
 
 export async function GET(request: NextRequest) {
   const url = new URL(request.url);
+  const product = classifyProductHost(
+    request.headers.get("x-forwarded-host") ?? request.headers.get("host")
+  );
   const code = url.searchParams.get("code");
-  const next = safeInternalPath(url.searchParams.get("next") ?? url.searchParams.get("redirect"));
+  const next = safeInternalPath(
+    url.searchParams.get("next") ?? url.searchParams.get("redirect"),
+    defaultInternalPath(product)
+  );
   const pendingFromQuery = inviteTokenFromPath(next);
   const pendingFromCookie = request.cookies.get(PENDING_INVITE_COOKIE)?.value ?? null;
   const pendingToken = pendingFromQuery ?? pendingFromCookie;
@@ -49,7 +58,11 @@ export async function GET(request: NextRequest) {
     if (result.ok) {
       const memberships = await listActiveMemberships(user.id);
       const membership = memberships.find((m) => m.orgId === result.orgId);
-      dest = landingPath(membership?.surfaceAccess, membership?.role);
+      dest = signedInPath({
+        product,
+        next: landingPath(membership?.surfaceAccess, membership?.role),
+        surfaceAccess: membership?.surfaceAccess,
+      });
     } else if (result.error === "email_mismatch") {
       dest = `/accept-invite/${pendingToken}`;
     } else if (isAcceptInvitePath(next)) {
@@ -72,13 +85,18 @@ export async function GET(request: NextRequest) {
 
   const memberships = await listActiveMemberships(user.id);
   if (memberships.length === 0) {
+    if (await checkIsStellarDaOperator()) {
+      return redirectTo(request, signedInPath({ product, next, stellarDaOperator: true }));
+    }
     return redirectTo(request, "/no-access");
   }
 
   return redirectTo(
     request,
-    next.startsWith("/app") || next.startsWith("/portal")
-      ? next
-      : landingPath(memberships[0]?.surfaceAccess, memberships[0]?.role)
+    signedInPath({
+      product,
+      next,
+      surfaceAccess: memberships[0]?.surfaceAccess,
+    })
   );
 }

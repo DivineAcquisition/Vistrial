@@ -14,6 +14,8 @@ describe("isOperatorAppHost", () => {
     expect(isOperatorAppHost("vistrial.io")).toBe(false);
     expect(isOperatorAppHost("www.vistrial.io")).toBe(false);
     expect(isOperatorAppHost("localhost:3000")).toBe(false);
+    expect(isOperatorAppHost("forsight.vistrial.io")).toBe(false);
+    expect(isOperatorAppHost("pulse.vistrial.io")).toBe(false);
   });
 });
 
@@ -49,5 +51,9 @@ describe("hostnameFromHostHeader", () => {
   it("strips the port", () => {
     expect(hostnameFromHostHeader("localhost:3000")).toBe("localhost");
     expect(hostnameFromHostHeader("vistrial.io")).toBe("vistrial.io");
+  });
+
+  it("uses the first host when the header is a list", () => {
+    expect(hostnameFromHostHeader("app.vistrial.io, www.vistrial.io")).toBe("app.vistrial.io");
   });
 });

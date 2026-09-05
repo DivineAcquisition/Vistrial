@@ -9,12 +9,14 @@ import {
   authCallbackUrl,
   inviteTokenFromPath,
   isAcceptInvitePath,
-  postAuthPath,
   safeInternalPath,
 } from "@/lib/auth/paths";
 import { listActiveMemberships } from "@/lib/auth/session";
 import { appUrl, originFromForwardedHost } from "@/lib/app-url";
+import { defaultInternalPath, signedInPath } from "@/lib/domains/landing";
+import { classifyProductHost } from "@/lib/marketing/hosts";
 import { rateLimitAuth, requestIp } from "@/lib/ops/rate-limit";
+import { checkIsStellarDaOperator } from "@/lib/stellar/auth";
 import { isSupabaseConfigured } from "@/lib/supabase/env";
 import { getSupabaseAdmin } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
@@ -28,6 +30,13 @@ async function requestAppOrigin(): Promise<string> {
       host: headerStore.get("x-forwarded-host") ?? headerStore.get("host"),
       proto: headerStore.get("x-forwarded-proto"),
     }) ?? appUrl()
+  );
+}
+
+async function requestProductHost() {
+  const headerStore = await headers();
+  return classifyProductHost(
+    headerStore.get("x-forwarded-host") ?? headerStore.get("host")
   );
 }
 
@@ -60,7 +69,11 @@ export async function signInPassword(
 
   const email = String(formData.get("email") ?? "").trim();
   const password = String(formData.get("password") ?? "");
-  const next = safeInternalPath(String(formData.get("redirectTo") ?? ""));
+  const product = await requestProductHost();
+  const next = safeInternalPath(
+    String(formData.get("redirectTo") ?? ""),
+    defaultInternalPath(product)
+  );
 
   if (!email || !password) {
     return { error: "generic" };
@@ -85,6 +98,9 @@ export async function signInPassword(
 
   const memberships = await listActiveMemberships(userId);
   if (memberships.length === 0) {
+    if (await checkIsStellarDaOperator()) {
+      redirect(signedInPath({ product, next, stellarDaOperator: true }));
+    }
     const { data: platformAdmin, error: adminError } = await supabase
       .from("platform_admins")
       .select("user_id")
@@ -98,7 +114,13 @@ export async function signInPassword(
     }
   }
 
-  redirect(postAuthPath(next, memberships[0]?.surfaceAccess));
+  redirect(
+    signedInPath({
+      product,
+      next,
+      surfaceAccess: memberships[0]?.surfaceAccess,
+    })
+  );
 }
 
 export async function sendMagicLink(
@@ -110,7 +132,11 @@ export async function sendMagicLink(
   }
 
   const email = String(formData.get("email") ?? "").trim();
-  const next = safeInternalPath(String(formData.get("redirectTo") ?? ""));
+  const product = await requestProductHost();
+  const next = safeInternalPath(
+    String(formData.get("redirectTo") ?? ""),
+    defaultInternalPath(product)
+  );
 
   if (!email) {
     return { error: "generic" };

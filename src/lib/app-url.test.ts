@@ -28,12 +28,22 @@ describe("request origin allowlist", () => {
     expect(isAllowedAppOrigin(PRODUCTION_APP_ORIGIN)).toBe(true);
     expect(isAllowedAppOrigin("http://localhost:3000")).toBe(true);
     expect(isAllowedAppOrigin("https://evil.example")).toBe(false);
+    expect(isAllowedAppOrigin("https://vistrial.io")).toBe(false);
+    expect(isAllowedAppOrigin("https://www.vistrial.io")).toBe(false);
+  });
+
+  it("accepts Pulse and Stellar so magic links land on the host that sent them", () => {
+    expect(isAllowedAppOrigin("https://pulse.vistrial.io")).toBe(true);
+    expect(isAllowedAppOrigin("https://forsight.vistrial.io")).toBe(true);
+    expect(isAllowedAppOrigin("http://pulse.vistrial.io")).toBe(false);
   });
 
   it("builds an origin from forwarded host only when it is allowed", () => {
-    expect(
-      originFromForwardedHost({ host: "app.vistrial.io", proto: "https" })
-    ).toBe(PRODUCTION_APP_ORIGIN);
+    expect(originFromForwardedHost({ host: "app.vistrial.io", proto: "https" }))
+      .toBe(PRODUCTION_APP_ORIGIN);
+    expect(originFromForwardedHost({ host: "forsight.vistrial.io", proto: "https" })).toBe(
+      "https://forsight.vistrial.io"
+    );
     expect(originFromForwardedHost({ host: "evil.example", proto: "https" })).toBeNull();
   });
 });
@@ -57,6 +67,7 @@ describe("pathRefreshesAuthSession", () => {
     expect(pathRefreshesAuthSession("/no-access")).toBe(true);
     expect(pathRefreshesAuthSession("/auth/callback")).toBe(true);
     expect(pathRefreshesAuthSession("/app/queue")).toBe(true);
+    expect(pathRefreshesAuthSession("/stellar/log")).toBe(true);
     expect(pathRefreshesAuthSession("/")).toBe(false);
   });
 });

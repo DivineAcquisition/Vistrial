@@ -59,7 +59,7 @@ async function findStellarMember(userId: string): Promise<StellarMember | null> 
   return null;
 }
 
-async function checkIsStellarDaOperator(): Promise<boolean> {
+export async function checkIsStellarDaOperator(): Promise<boolean> {
   const supabase = await createClient();
   const { data, error } = await supabase.rpc("is_stellar_da_operator");
   if (error) return false;

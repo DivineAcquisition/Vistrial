@@ -56,7 +56,7 @@ export function AcceptInviteForm({
     }
 
     return (
-      <form action={createAction} className="space-y-4">
+      <form action={createAction} className="space-y-3">
         <input type="hidden" name="token" value={token} />
         <input type="hidden" name="email" value={email} />
         <p className={helperClass}>
@@ -116,7 +116,7 @@ export function AcceptInviteForm({
   }
 
   return (
-    <form action={action} className="space-y-4">
+    <form action={action} className="space-y-3">
       <input type="hidden" name="email" value={email} />
       <input type="hidden" name="redirectTo" value={redirectTo} />
       {signInError ? <p className={errorClass}>{LOGIN_ERROR_COPY[signInError]}</p> : null}

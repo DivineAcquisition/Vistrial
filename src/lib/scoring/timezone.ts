@@ -3,7 +3,7 @@
  * threshold of 14 days is fourteen local dates, not a UTC wall-clock span.
  */
 
-function ymdInZone(at: Date, timeZone: string): string {
+export function ymdInZone(at: Date, timeZone: string): string {
   const parts = new Intl.DateTimeFormat("en-US", {
     timeZone,
     year: "numeric",

@@ -130,23 +130,27 @@ export function SiteHeader({
                 <DrawerPanel className="px-4 pt-0">
                   <nav aria-label="Page" className="flex flex-col gap-1">
                     {NAV.sections.map((item) => (
-                      <DrawerClose key={item.href} asChild>
-                        <Link
-                          href={item.href}
-                          className="flex min-h-11 items-center rounded-xl px-3 text-base font-medium text-silver transition-colors hover:bg-white/[0.04] hover:text-white"
-                        >
-                          {item.label}
-                        </Link>
+                      <DrawerClose
+                        key={item.href}
+                        nativeButton={false}
+                        render={
+                          <Link
+                            href={item.href}
+                            className="flex min-h-11 items-center rounded-xl px-3 text-base font-medium text-silver transition-colors hover:bg-white/[0.04] hover:text-white"
+                          />
+                        }
+                      >
+                        {item.label}
                       </DrawerClose>
                     ))}
                   </nav>
                   <div className="mt-6 flex flex-col gap-3">
-                    <DrawerClose asChild>
+                    <DrawerClose asChild nativeButton={false}>
                       <Button variant="outline" className="w-full" render={<a href="#what-it-does" />}>
                         {HERO.secondaryCta}
                       </Button>
                     </DrawerClose>
-                    <DrawerClose asChild>
+                    <DrawerClose asChild nativeButton={false}>
                       <CtaLink position="nav" className="w-full rounded-full">
                         {NAV.book}
                       </CtaLink>

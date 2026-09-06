@@ -10,6 +10,7 @@ import {
   SourcesPanel,
   SpeedPanel,
   TerminalPanel,
+  ThroughputPanel,
 } from "@/app/app/reporting/panels";
 import { ClientSummaryForm } from "@/app/app/reporting/client-summary-form";
 import { PortalScheduleForm } from "@/app/portal/schedule-form";
@@ -18,6 +19,7 @@ import { requirePortalAccess } from "@/lib/portal/access";
 import { loadPortalRpc, loadPortalSchedule } from "@/lib/portal/load";
 import { previousEqualRange } from "@/lib/portal/range";
 import { buildPortalSummary } from "@/lib/portal/summary";
+import { PRODUCT_SCOPE } from "@/lib/product-scope";
 import { loadReportingPanel, loadReportingState } from "@/lib/reporting/load";
 import { parseReportingRange, reportingRangeQuery } from "@/lib/reporting/range";
 import { helperClass } from "@/lib/ui";
@@ -59,18 +61,59 @@ export default async function PortalPage({
     );
   }
 
+  const sourceError = typeof params.source_error === "string" ? params.source_error : "";
+  const sourceConnected = typeof params.source_connected === "string" ? params.source_connected : "";
+
+  return (
+    <PageFrame
+      title="Owner portal"
+      description="Time to first touch, leads with no human touch, bookings, and show rate."
+    >
+      {PRODUCT_SCOPE.extraPortal && sourceError ? (
+        <Notice tone="warning" className="mb-6">
+          {SOURCE_ERRORS[sourceError] ?? SOURCE_ERRORS.oauth_failed}
+        </Notice>
+      ) : null}
+      {PRODUCT_SCOPE.extraPortal && sourceConnected && SOURCE_CONNECTED[sourceConnected] ? (
+        <Notice tone="success" className="mb-6">
+          {SOURCE_CONNECTED[sourceConnected]}
+        </Notice>
+      ) : null}
+      <ReportingRangeForm range={range} action="/portal" />
+
+      <section className="space-y-8">
+        <CoveragePanel orgId={ctx.org.id} range={range} />
+        <ThroughputPanel orgId={ctx.org.id} range={range} />
+      </section>
+
+      {PRODUCT_SCOPE.extraPortal ? (
+        <PortalExtraSections orgId={ctx.org.id} range={range} activatedAt={activatedAt} />
+      ) : null}
+    </PageFrame>
+  );
+}
+
+async function PortalExtraSections({
+  orgId,
+  range,
+  activatedAt,
+}: {
+  orgId: string;
+  range: ReturnType<typeof parseReportingRange>;
+  activatedAt: string;
+}) {
   const previous = previousEqualRange(range, activatedAt);
   const [schedule, outcome, coverage, sourcesPanel, terminal, speed, previousOutcome, previousCoverage, adoption] =
     await Promise.all([
-      loadPortalSchedule(ctx.org.id),
-      loadReportingPanel(ctx.org.id, "outcome", range),
-      loadReportingPanel(ctx.org.id, "coverage", range),
-      loadReportingPanel(ctx.org.id, "sources", range),
-      loadReportingPanel(ctx.org.id, "terminal", range),
-      loadReportingPanel(ctx.org.id, "speed", range),
-      previous ? loadReportingPanel(ctx.org.id, "outcome", previous) : Promise.resolve(null),
-      previous ? loadReportingPanel(ctx.org.id, "coverage", previous) : Promise.resolve(null),
-      loadPortalRpc(ctx.org.id, "portal_adoption", range),
+      loadPortalSchedule(orgId),
+      loadReportingPanel(orgId, "outcome", range),
+      loadReportingPanel(orgId, "coverage", range),
+      loadReportingPanel(orgId, "sources", range),
+      loadReportingPanel(orgId, "terminal", range),
+      loadReportingPanel(orgId, "speed", range),
+      previous ? loadReportingPanel(orgId, "outcome", previous) : Promise.resolve(null),
+      previous ? loadReportingPanel(orgId, "coverage", previous) : Promise.resolve(null),
+      loadPortalRpc(orgId, "portal_adoption", range),
     ]);
 
   const summary = buildPortalSummary({
@@ -83,31 +126,16 @@ export default async function PortalPage({
     speed: speed as never,
   });
   const query = reportingRangeQuery(range);
-  const sourceError = typeof params.source_error === "string" ? params.source_error : "";
-  const sourceConnected = typeof params.source_connected === "string" ? params.source_connected : "";
 
   return (
-    <PageFrame
-      title="Owner portal"
-      description="Four answers: is it working, is the team using it, where money is leaking, and what to do about it."
-    >
-      {sourceError ? (
-        <Notice tone="warning" className="mb-6">
-          {SOURCE_ERRORS[sourceError] ?? SOURCE_ERRORS.oauth_failed}
-        </Notice>
-      ) : null}
-      {sourceConnected && SOURCE_CONNECTED[sourceConnected] ? (
-        <Notice tone="success" className="mb-6">
-          {SOURCE_CONNECTED[sourceConnected]}
-        </Notice>
-      ) : null}
-      <ReportingRangeForm range={range} action="/portal" />
-
+    <>
       <section className="space-y-8">
-        <SectionHeader title="Is it working" hint="Clients closed per hundred leads, coverage, and speed. Sample sizes sit beside every rate." />
-        <OutcomePanel orgId={ctx.org.id} range={range} />
-        <CoveragePanel orgId={ctx.org.id} range={range} />
-        <SpeedPanel orgId={ctx.org.id} range={range} />
+        <SectionHeader
+          title="Is it working"
+          hint="Clients closed per hundred leads, coverage, and speed. Sample sizes sit beside every rate."
+        />
+        <OutcomePanel orgId={orgId} range={range} />
+        <SpeedPanel orgId={orgId} range={range} />
       </section>
 
       <section className="space-y-8">
@@ -115,33 +143,43 @@ export default async function PortalPage({
       </section>
 
       <section className="space-y-8">
-        <SectionHeader title="Where money is leaking" hint="Each cause has a different fix. Lumping them as lost hides which one to work on." />
-        <TerminalPanel orgId={ctx.org.id} range={range} />
-        <ObjectionsPanel orgId={ctx.org.id} range={range} hideMemberBreakdown />
-        <SourcesPanel orgId={ctx.org.id} range={range} />
+        <SectionHeader
+          title="Where money is leaking"
+          hint="Each cause has a different fix. Lumping them as lost hides which one to work on."
+        />
+        <TerminalPanel orgId={orgId} range={range} />
+        <ObjectionsPanel orgId={orgId} range={range} hideMemberBreakdown />
+        <SourcesPanel orgId={orgId} range={range} />
       </section>
 
-      <section>
-        <Panel className="p-6">
-          <SectionHeader
-            title="What to do about it"
-            hint="Review before export. If the period was uneventful, the copy says so."
-          />
-          <ClientSummaryForm summary={summary} query={query} action={`/portal/export/pdf?${query}`} />
-        </Panel>
-      </section>
+      {PRODUCT_SCOPE.documentGeneration ? (
+        <>
+          <section>
+            <Panel className="p-6">
+              <SectionHeader
+                title="What to do about it"
+                hint="Review before export. If the period was uneventful, the copy says so."
+              />
+              <ClientSummaryForm summary={summary} query={query} action={`/portal/export/pdf?${query}`} />
+            </Panel>
+          </section>
 
-      <section>
-        <Panel className="p-6">
-          <SectionHeader title="Email this report" hint="The cheapest referral mechanism the product has is a PDF that gets forwarded." />
-          <PortalScheduleForm
-            cadence={schedule.cadence}
-            enabled={schedule.enabled}
-            lastSentAt={schedule.lastSentAt}
-            lastError={schedule.lastError}
-          />
-        </Panel>
-      </section>
-    </PageFrame>
+          <section>
+            <Panel className="p-6">
+              <SectionHeader
+                title="Email this report"
+                hint="The cheapest referral mechanism the product has is a PDF that gets forwarded."
+              />
+              <PortalScheduleForm
+                cadence={schedule.cadence}
+                enabled={schedule.enabled}
+                lastSentAt={schedule.lastSentAt}
+                lastError={schedule.lastError}
+              />
+            </Panel>
+          </section>
+        </>
+      ) : null}
+    </>
   );
 }

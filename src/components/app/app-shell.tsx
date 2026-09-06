@@ -31,6 +31,7 @@ import {
 } from "@/components/ui/sheet";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useSidebarCollapsed } from "@/lib/use-sidebar-collapsed";
+import { PRODUCT_SCOPE } from "@/lib/product-scope";
 import { cn } from "@/lib/utils";
 
 function SidebarBody({
@@ -189,7 +190,9 @@ export function AppShell({
               <>
                 <ConnectionStatus />
                 <FirstRunExplainer />
-                <CoachingDisclosureNotice needed={needsCoachingAck} />
+                {PRODUCT_SCOPE.coaching ? (
+                  <CoachingDisclosureNotice needed={needsCoachingAck} />
+                ) : null}
                 <MobileWalkthroughNotice needed={needsMobileOutcomeTraining} />
                 <PushPrompt />
               </>

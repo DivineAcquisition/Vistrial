@@ -3,9 +3,11 @@ import { FollowUpSettingsScreen } from "@/app/app/settings/follow-up/follow-up-s
 import { requireOrgSettingsManager } from "@/lib/auth/gates";
 import { loadFollowUpSettings, loadRoutingRules, loadVoiceProfile } from "@/lib/follow-up/load";
 import { advancedSettingsBreadcrumbs } from "@/lib/navigation";
+import { assertProductScope } from "@/lib/product-scope-guard";
 import { createClient } from "@/lib/supabase/server";
 
 export default async function FollowUpSettingsPage() {
+  assertProductScope("followUpSettings");
   const ctx = await requireOrgSettingsManager();
   const supabase = await createClient();
   const [settings, voice, rules, suggestions] = await Promise.all([

@@ -3,12 +3,14 @@ import { ActivityScreen } from "@/app/app/activity/activity-screen";
 import { requireOrgSettingsManager } from "@/lib/auth/gates";
 import { parseActivityFilters, activityFiltersHref } from "@/lib/activity/filters";
 import { loadActivityActors, loadOrgActivity } from "@/lib/activity/load";
+import { assertProductScope } from "@/lib/product-scope-guard";
 
 export default async function ActivityPage({
   searchParams,
 }: {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
+  assertProductScope("activityStream");
   await requireOrgSettingsManager();
   const params = await searchParams;
   const filters = parseActivityFilters(params);

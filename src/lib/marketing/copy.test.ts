@@ -5,6 +5,7 @@ import {
   CASE_FILE,
   FAQ,
   HERO,
+  NAV,
   OUTCOME,
   PROBLEM,
   SITE_DESCRIPTION,
@@ -71,6 +72,32 @@ describe("landing copy", () => {
   it("uses the audit as the only public CTA", () => {
     expect(HERO.primaryCta).toMatch(/Lead Leak Audit/);
     expect(AUDIT.cta).toBe("Book the audit");
+  });
+
+  it("names two products in the marketing nav, with Forsight shorter", () => {
+    expect(NAV.products.map((product) => product.label)).toEqual(["Sales OS", "Forsight"]);
+    expect(NAV.products[0].items).toHaveLength(4);
+    expect(NAV.products[1].items).toHaveLength(3);
+    expect(NAV.book).toBe("Book a Call");
+    expect(NAV).not.toHaveProperty("sections");
+  });
+
+  it("gives every nav dropdown link a description and a landing anchor", () => {
+    const landingIds = [
+      "sales-os",
+      "reporting",
+      "dashboard",
+      "forsight",
+      ...WHAT_IT_DOES.items.map((item) => item.anchor),
+      ...OUTCOME.lines.map((line) => line.id),
+    ];
+    for (const product of NAV.products) {
+      for (const item of product.items) {
+        expect(item.description.length).toBeGreaterThan(12);
+        expect(item.href.startsWith("#")).toBe(true);
+        expect(landingIds).toContain(item.href.slice(1));
+      }
+    }
   });
 });
 

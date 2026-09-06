@@ -81,16 +81,19 @@ export const WHAT_IT_DOES = {
   items: [
     {
       id: "never-miss",
+      anchor: "queue",
       title: "Never miss one.",
       body: "The moment someone comes in, they're in line to be contacted — ranked by how ready they are, not by when they arrived. If someone's been waiting too long, it shows, and it doesn't go away until someone handles it.",
     },
     {
       id: "know-who",
+      anchor: "call-intelligence",
       title: "Know who you're calling.",
       body: "Before a call, your team sees what matters: who this is, what they've already said no to, and what happened last time. No digging through notes.",
     },
     {
       id: "nothing-forgotten",
+      anchor: "follow-up",
       title: "Nothing gets forgotten.",
       body: "Every conversation, every follow-up, every objection — held in one place instead of scattered across memory and message threads.",
     },
@@ -107,9 +110,18 @@ export const OUTCOME = {
   headline: "We track one number: how many of your leads become clients.",
   body: "Before Vistrial and after, from your own history. Not opens, not replies, not activity — clients. You see the same number we do.",
   lines: [
-    "How many leads actually got a human response, and how fast",
-    "Where deals are dying, and why",
-    "What your team is missing that's costing you closes",
+    {
+      id: "coverage",
+      title: "How many leads actually got a human response, and how fast",
+    },
+    {
+      id: "where-deals-die",
+      title: "Where deals are dying, and why",
+    },
+    {
+      id: "missing",
+      title: "What your team is missing that's costing you closes",
+    },
   ],
   honesty:
     "We don't make the calls. Your team does. Vistrial makes sure every lead gets worked, and that whoever works it knows what they're walking into.",
@@ -213,14 +225,67 @@ export const SOCIAL_IMAGE = {
   alt: HERO.headline,
 } as const;
 
+/**
+ * Marketing-site nav. Two products, not a feature grab-bag.
+ * Pricing is omitted: there is no public pricing page or section, and a
+ * placeholder would be a dead link.
+ */
 export const NAV = {
-  book: "Book the audit",
+  book: "Book a Call",
   skipToContent: "Skip to content",
   openMenu: "Open menu",
   closeMenu: "Close menu",
-  sections: [
-    { href: "#what-it-does", label: "What it does" },
-    { href: "#who", label: "Who it's for" },
-    { href: "#faq", label: "FAQ" },
+  products: [
+    {
+      id: "sales-os",
+      label: "Sales OS",
+      header: "The system that works your leads",
+      regionIds: ["sales-os", "queue", "call-intelligence", "follow-up", "reporting"],
+      items: [
+        {
+          href: "#queue",
+          label: "The Queue",
+          description: "Leads sorted by readiness, never left waiting.",
+        },
+        {
+          href: "#call-intelligence",
+          label: "Call Intelligence",
+          description: "Transcripts turned into structure, objections carried forward.",
+        },
+        {
+          href: "#follow-up",
+          label: "Follow-Up",
+          description: "Drafted from what was actually said, approved by your team.",
+        },
+        {
+          href: "#reporting",
+          label: "Reporting",
+          description: "How many leads became clients, before and after.",
+        },
+      ],
+    },
+    {
+      id: "forsight",
+      label: "Forsight",
+      header: "See what's actually working",
+      regionIds: ["forsight", "dashboard", "coverage", "where-deals-die"],
+      items: [
+        {
+          href: "#dashboard",
+          label: "Dashboard",
+          description: "Your numbers, live, in one place.",
+        },
+        {
+          href: "#coverage",
+          label: "Coverage & Speed",
+          description: "How fast leads get worked, and who's handling it.",
+        },
+        {
+          href: "#where-deals-die",
+          label: "Where Deals Die",
+          description: "The specific point in your process losing you clients.",
+        },
+      ],
+    },
   ],
 } as const;

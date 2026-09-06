@@ -6,6 +6,7 @@ import { useState } from "react";
 
 import Logo from "@/components/brand/logo";
 import { CtaLink } from "@/components/marketing/cta-link";
+import { MarketingMobileNav, MarketingNav } from "@/components/marketing/marketing-nav";
 import { Button } from "@/components/ui/button";
 import {
   Drawer,
@@ -17,38 +18,8 @@ import {
 } from "@/components/ui/drawer";
 import { APP_NAME } from "@/lib/constants";
 import { HERO, NAV } from "@/lib/marketing/copy";
-import {
-  marketingNavLink,
-  marketingPageGutter,
-  marketingShell,
-} from "@/lib/marketing/ui";
+import { marketingPageGutter, marketingShell } from "@/lib/marketing/ui";
 import { cn } from "@/lib/utils";
-
-function NavLinks({
-  onPage,
-  className,
-}: {
-  onPage: boolean;
-  className?: string;
-}) {
-  return (
-    <ul className={cn("flex items-center gap-1", className)}>
-      {NAV.sections.map((item) => (
-        <li key={item.href}>
-          {onPage ? (
-            <a href={item.href} className={marketingNavLink}>
-              {item.label}
-            </a>
-          ) : (
-            <Link href={`/${item.href}`} className={marketingNavLink}>
-              {item.label}
-            </Link>
-          )}
-        </li>
-      ))}
-    </ul>
-  );
-}
 
 function AnnouncementBar() {
   return (
@@ -99,8 +70,8 @@ export function SiteHeader({
           <Logo className="h-5 w-auto sm:h-[22px]" />
         </Link>
         {onPage ? (
-          <nav aria-label="Page" className="hidden md:block">
-            <NavLinks onPage className="gap-1" />
+          <nav aria-label="Product" className="hidden md:block">
+            <MarketingNav onPage />
           </nav>
         ) : null}
 
@@ -128,27 +99,11 @@ export function SiteHeader({
                 <DrawerHeader>
                   <DrawerTitle className="text-white">{APP_NAME}</DrawerTitle>
                 </DrawerHeader>
-                <DrawerPanel className="px-4 pt-0">
-                  <nav aria-label="Page" className="flex flex-col gap-1">
-                    {NAV.sections.map((item) => (
-                      <Link
-                        key={item.href}
-                        href={item.href}
-                        className="flex min-h-11 items-center rounded-xl px-3 text-base font-medium text-silver transition-colors hover:bg-white/[0.04] hover:text-white"
-                        onClick={() => setMenuOpen(false)}
-                      >
-                        {item.label}
-                      </Link>
-                    ))}
+                <DrawerPanel className="px-4 pt-0 pb-6">
+                  <nav aria-label="Product">
+                    <MarketingMobileNav onPage onNavigate={() => setMenuOpen(false)} />
                   </nav>
-                  <div className="mt-6 flex flex-col gap-3">
-                    <Button
-                      variant="outline"
-                      className="w-full"
-                      render={<a href="#what-it-does" onClick={() => setMenuOpen(false)} />}
-                    >
-                      {HERO.secondaryCta}
-                    </Button>
+                  <div className="mt-6">
                     <CtaLink position="nav" className="w-full rounded-full">
                       {NAV.book}
                     </CtaLink>

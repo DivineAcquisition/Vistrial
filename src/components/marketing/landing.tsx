@@ -93,7 +93,7 @@ export function LandingPage() {
                 variant="outline"
                 size="xl"
                 className="rounded-full px-6"
-                render={<a href="#what-it-does" />}
+                render={<a href="#sales-os" />}
               >
                 {HERO.secondaryCta}
               </Button>
@@ -130,15 +130,17 @@ export function LandingPage() {
       </MarketingSection>
 
       <MarketingSection
-        id="what-it-does"
+        id="sales-os"
         headline={WHAT_IT_DOES.headline}
         align="center"
       >
         <div className="grid gap-4 md:grid-cols-3">
           {WHAT_IT_DOES.items.map((item) => (
-            <IconCard key={item.id} icon={WHAT_IT_DOES_ICONS[item.id]} title={item.title}>
-              {item.body}
-            </IconCard>
+            <div key={item.id} id={item.anchor} className="scroll-mt-32">
+              <IconCard icon={WHAT_IT_DOES_ICONS[item.id]} title={item.title}>
+                {item.body}
+              </IconCard>
+            </div>
           ))}
         </div>
       </MarketingSection>
@@ -162,17 +164,20 @@ export function LandingPage() {
       </MarketingSection>
 
       <MarketingSection
+        id="reporting"
         headline={OUTCOME.headline}
-        lead={<p>{OUTCOME.body}</p>}
+        lead={<p id="dashboard" className="scroll-mt-32">{OUTCOME.body}</p>}
         align="center"
       >
-        <ul className="grid gap-4 sm:grid-cols-3">
-          {OUTCOME.lines.map((line) => (
-            <li key={line}>
-              <FeatureCard title={line} />
-            </li>
-          ))}
-        </ul>
+        <div id="forsight" className="scroll-mt-32">
+          <ul className="grid gap-4 sm:grid-cols-3">
+            {OUTCOME.lines.map((line) => (
+              <li key={line.id} id={line.id} className="scroll-mt-32">
+                <FeatureCard title={line.title} />
+              </li>
+            ))}
+          </ul>
+        </div>
         <p className={cn(marketingLead, "mx-auto mt-12 text-center")}>{OUTCOME.honesty}</p>
       </MarketingSection>
 

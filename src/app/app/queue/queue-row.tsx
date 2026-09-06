@@ -2,16 +2,8 @@
 
 import { useState } from "react";
 
-import { AssignPanel, FollowOnPanel, OutcomePanel } from "@/components/app/lead-action-panels";
+import { OutcomePanel } from "@/components/app/lead-action-panels";
 import { Button } from "@/components/ui/button";
-import {
-  ContextMenu,
-  ContextMenuItem,
-  ContextMenuLinkItem,
-  ContextMenuPopup,
-  ContextMenuSeparator,
-  ContextMenuTrigger,
-} from "@/components/ui/context-menu";
 import { TableCell, TableRow } from "@/components/ui/table";
 import { formatBreachDuration } from "@/lib/queue/duration";
 import {
@@ -21,12 +13,17 @@ import {
   type TouchDirection,
   type TouchOutcome,
 } from "@/lib/queue/types";
+import { queuePrimaryAction } from "@/lib/queue/worked";
 import { waitingFor } from "@/lib/vocabulary";
 import { cn } from "@/lib/utils";
 import type { OrgRole } from "@/types/database";
 
-type Panel = "outcome" | "assign" | "followOn" | "why" | null;
-
+/**
+ * Exactly one primary action per row (Prompt 7, Part 4). No secondary menu:
+ * once "Assign," "Why this order," and "Mark next step done" are gone, a
+ * context menu whose only remaining item duplicates the name link is not a
+ * second control, it is the first one back.
+ */
 export function QueueLeadRow({
   row,
   now,
@@ -42,9 +39,6 @@ export function QueueLeadRow({
   colSpan,
   onInteract,
   onLogOutcome,
-  onAssign,
-  onComplete,
-  onFollowOn,
 }: {
   row: QueueRow;
   now: string;
@@ -67,43 +61,39 @@ export function QueueLeadRow({
     note: string;
     actorMemberId: string;
   }) => Promise<boolean>;
-  onAssign: (input: {
-    leadId: string;
-    setterId: string | null;
-    closerId: string | null;
-  }) => Promise<boolean>;
-  onComplete: (input: { leadId: string; nextActionId: string }) => Promise<boolean>;
-  onFollowOn: (input: {
-    leadId: string;
-    actionText: string;
-    dueAt: string | null;
-  }) => Promise<boolean>;
 }) {
-  const [panel, setPanel] = useState<Panel>(null);
+  const [outcomeOpen, setOutcomeOpen] = useState(false);
+  // Opening the CRM link does not, by itself, change anything the database
+  // knows about this lead — first_human_touch_at only moves once an outcome
+  // is logged. Without this local flag the button would never leave "Open in
+  // CRM," and there would be no way back to log what happened.
+  const [hasOpenedCrm, setHasOpenedCrm] = useState(false);
+  const computed = queuePrimaryAction(row);
+  const action =
+    computed.kind === "open_crm" && hasOpenedCrm
+      ? { kind: "log_outcome" as const }
+      : computed;
 
-  function openPanel(next: Panel) {
-    setPanel(next);
-    onInteract(next ? row.id : null);
+  function openOutcome() {
+    setOutcomeOpen(true);
+    onInteract(row.id);
   }
 
-  function closePanel() {
-    setPanel(null);
+  function closeOutcome() {
+    setOutcomeOpen(false);
     onInteract(null);
   }
 
   return (
     <>
-      <ContextMenu>
-      <ContextMenuTrigger
-        render={
-          <TableRow
-            className={cn(
-              "border-border/60 align-top",
-              arriving ? "bg-brand-500/[0.10]" : "hover:bg-white/[0.02]",
-              exiting ? "opacity-40 transition-opacity duration-700" : "transition-opacity duration-300",
-            )}
-          />
-        }
+      <TableRow
+        className={cn(
+          "border-border/60 align-top",
+          arriving ? "bg-brand-500/[0.10]" : "hover:bg-white/[0.02]",
+          exiting
+            ? "opacity-40 transition-opacity duration-700"
+            : "transition-opacity duration-300",
+        )}
       >
         <TableCell className="px-4 py-3.5 font-medium whitespace-normal text-white">
           <a href={`/app/cases/${row.id}`} className="hover:underline">
@@ -113,7 +103,9 @@ export function QueueLeadRow({
             Waiting {waitingFor(row.optedInAt, now)}
           </span>
           {exiting ? (
-            <span className="mt-1 block text-xs text-dim">Contacted — leaving this list</span>
+            <span className="mt-1 block text-xs text-dim">
+              Contacted — leaving this list
+            </span>
           ) : null}
         </TableCell>
         {variant === "alarm" ? (
@@ -125,86 +117,35 @@ export function QueueLeadRow({
           {waitingFor(row.optedInAt, now)}
         </TableCell>
         <TableCell className="px-4 py-3.5">
-          <div className="flex flex-wrap gap-2">
-            {row.crmUrl ? (
-              <Button
-                variant="primary"
-                size="sm"
-                render={<a href={row.crmUrl} target="_blank" rel="noopener noreferrer" />}
-              >
-                Open in CRM
-              </Button>
-            ) : (
-              <Button
-                type="button"
-                variant="primary"
-                size="sm"
-                disabled={busy}
-                onClick={() => openPanel(panel === "outcome" ? null : "outcome")}
-              >
-                What happened
-              </Button>
-            )}
-            {row.crmUrl ? (
-              <Button
-                type="button"
-                variant="secondary"
-                size="sm"
-                disabled={busy}
-                onClick={() => openPanel(panel === "outcome" ? null : "outcome")}
-              >
-                What happened
-              </Button>
-            ) : null}
-          </div>
+          {action.kind === "open_crm" ? (
+            <Button
+              variant="primary"
+              size="sm"
+              onClick={() => setHasOpenedCrm(true)}
+              render={
+                <a
+                  href={action.href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                />
+              }
+            >
+              Open in CRM
+            </Button>
+          ) : (
+            <Button
+              type="button"
+              variant="primary"
+              size="sm"
+              disabled={busy}
+              onClick={() => (outcomeOpen ? closeOutcome() : openOutcome())}
+            >
+              What happened
+            </Button>
+          )}
         </TableCell>
-      </ContextMenuTrigger>
-      <ContextMenuPopup>
-        <ContextMenuLinkItem href={`/app/cases/${row.id}`}>Person</ContextMenuLinkItem>
-        {row.crmUrl ? (
-          <ContextMenuLinkItem href={row.crmUrl} rel="noopener noreferrer" target="_blank">
-            Open in CRM
-          </ContextMenuLinkItem>
-        ) : null}
-        <ContextMenuSeparator />
-        <ContextMenuItem disabled={busy} onClick={() => openPanel("outcome")}>
-          What happened
-        </ContextMenuItem>
-        <ContextMenuItem disabled={busy} onClick={() => openPanel("why")}>
-          Why this order
-        </ContextMenuItem>
-        <ContextMenuItem disabled={busy} onClick={() => openPanel("assign")}>
-          Assign
-        </ContextMenuItem>
-        {row.nextAction ? (
-          <ContextMenuItem
-            disabled={busy}
-            onClick={() => {
-              void (async () => {
-                const ok = await onComplete({
-                  leadId: row.id,
-                  nextActionId: row.nextAction!.id,
-                });
-                if (ok) openPanel("followOn");
-              })();
-            }}
-          >
-            Mark next step done
-          </ContextMenuItem>
-        ) : null}
-      </ContextMenuPopup>
-      </ContextMenu>
-      {panel === "why" ? (
-        <TableRow className="border-border/60 hover:bg-transparent">
-          <TableCell colSpan={colSpan} className="px-4 py-3 whitespace-normal text-sm text-silver">
-            <p>
-              {row.scoreReasoning ||
-                "Nothing was recorded about why this person sits here. The first call will fill it in."}
-            </p>
-          </TableCell>
-        </TableRow>
-      ) : null}
-      {panel === "outcome" ? (
+      </TableRow>
+      {outcomeOpen ? (
         <TableRow className="border-border/60 hover:bg-transparent">
           <TableCell colSpan={colSpan} className="p-4 whitespace-normal">
             <OutcomePanel
@@ -215,45 +156,10 @@ export function QueueLeadRow({
               isPlatformAdmin={isPlatformAdmin}
               busy={busy}
               error={error}
-              onCancel={closePanel}
+              onCancel={closeOutcome}
               onSubmit={async (input) => {
                 const ok = await onLogOutcome(input);
-                if (ok) closePanel();
-              }}
-            />
-          </TableCell>
-        </TableRow>
-      ) : null}
-      {panel === "assign" ? (
-        <TableRow className="border-border/60 hover:bg-transparent">
-          <TableCell colSpan={colSpan} className="p-4 whitespace-normal">
-            <AssignPanel
-              row={row}
-              members={members}
-              role={role}
-              memberId={memberId}
-              isPlatformAdmin={isPlatformAdmin}
-              busy={busy}
-              error={error}
-              onCancel={closePanel}
-              onSubmit={async (input) => {
-                const ok = await onAssign(input);
-                if (ok) closePanel();
-              }}
-            />
-          </TableCell>
-        </TableRow>
-      ) : null}
-      {panel === "followOn" ? (
-        <TableRow className="border-border/60 hover:bg-transparent">
-          <TableCell colSpan={colSpan} className="p-4 whitespace-normal">
-            <FollowOnPanel
-              busy={busy}
-              error={error}
-              onSkip={closePanel}
-              onSubmit={async (input) => {
-                const ok = await onFollowOn({ leadId: row.id, ...input });
-                if (ok) closePanel();
+                if (ok) closeOutcome();
               }}
             />
           </TableCell>

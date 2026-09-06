@@ -30,8 +30,6 @@ export async function fetchOrgQueue(
     p_track: filters.track,
     p_status: filters.status,
     p_source: filters.source,
-    p_score_min: filters.scoreMin,
-    p_score_max: filters.scoreMax,
     p_cursor: (opts?.cursor ?? null) as Json | null,
     p_limit: opts?.limit ?? QUEUE_PAGE_SIZE,
   });

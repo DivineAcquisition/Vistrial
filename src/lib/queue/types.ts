@@ -87,8 +87,6 @@ export type QueueFilters = {
   track: QueueTrackFilter | null;
   status: QueueStatusFilter | null;
   source: string | null;
-  scoreMin: number | null;
-  scoreMax: number | null;
   breached: boolean;
 };
 

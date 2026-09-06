@@ -78,7 +78,7 @@ export function MarketingSection({
     <section
       id={id}
       className={cn(
-        "scroll-mt-24 border-t border-white/[0.07]",
+        "scroll-mt-32 border-t border-white/[0.07]",
         marketingPageGutter,
         marketingSectionY,
         className

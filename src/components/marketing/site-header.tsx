@@ -16,7 +16,6 @@ import {
   DrawerTrigger,
 } from "@/components/ui/drawer";
 import { APP_NAME } from "@/lib/constants";
-import { waitlistHref } from "@/lib/marketing/config";
 import { HERO, NAV } from "@/lib/marketing/copy";
 import {
   marketingNavLink,
@@ -36,12 +35,15 @@ function NavLinks({
     <ul className={cn("flex items-center gap-1", className)}>
       {NAV.sections.map((item) => (
         <li key={item.href}>
-          <Link
-            href={onPage ? item.href : `/${item.href}`}
-            className={marketingNavLink}
-          >
-            {item.label}
-          </Link>
+          {onPage ? (
+            <a href={item.href} className={marketingNavLink}>
+              {item.label}
+            </a>
+          ) : (
+            <Link href={`/${item.href}`} className={marketingNavLink}>
+              {item.label}
+            </Link>
+          )}
         </li>
       ))}
     </ul>
@@ -148,7 +150,7 @@ export function SiteHeader({
                       <Button
                         variant="gradient"
                         className="w-full rounded-full"
-                        render={<a href={waitlistHref("nav")} data-cta-position="nav" />}
+                        render={<a href="#waitlist" data-cta-position="nav" />}
                       >
                         {NAV.waitlist}
                       </Button>

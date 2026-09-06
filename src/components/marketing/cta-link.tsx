@@ -1,8 +1,7 @@
-import Link from "next/link";
 import type { ReactNode } from "react";
 
 import { Button, type ButtonSize } from "@/components/ui/button";
-import { waitlistHref, type CtaPosition } from "@/lib/marketing/config";
+import { type CtaPosition } from "@/lib/marketing/config";
 import { NAV } from "@/lib/marketing/copy";
 import { cn } from "@/lib/utils";
 
@@ -33,7 +32,7 @@ export function CtaLink({
       variant="gradient"
       size={size}
       className={cn("rounded-full", className)}
-      render={<Link href={waitlistHref(position)} data-cta-position={position} />}
+      render={<a href="#waitlist" data-cta-position={position} />}
     >
       {children}
     </Button>

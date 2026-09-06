@@ -202,7 +202,7 @@ export function LandingPage() {
 
       <section
         id="waitlist"
-        className={cn("scroll-mt-24 border-t border-white/[0.07]", marketingPageGutter, marketingSectionY)}
+        className={cn("scroll-mt-32 border-t border-white/[0.07]", marketingPageGutter, marketingSectionY)}
       >
         <div className={marketingShell}>
           <FinalCta headline={WAITLIST.headline}>

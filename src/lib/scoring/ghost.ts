@@ -1,6 +1,6 @@
 import type { Enums } from "@/types/database";
 
-import { calendarDaysBetween } from "@/lib/scoring/timezone";
+import { calendarDaysBetween, ymdInZone } from "@/lib/scoring/timezone";
 import { scoreLeadFromEvent } from "@/lib/scoring/event-apply";
 import { loadScoreConfig, type ScoringClient } from "@/lib/scoring/store";
 
@@ -27,19 +27,6 @@ export function decideGhostAction(input: {
     return input.approachingAt ? "noop" : "flag";
   }
   return input.approachingAt ? "clear" : "noop";
-}
-
-function ymdInZone(at: Date, timeZone: string): string {
-  const parts = new Intl.DateTimeFormat("en-US", {
-    timeZone,
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-  }).formatToParts(at);
-  const year = parts.find((part) => part.type === "year")?.value;
-  const month = parts.find((part) => part.type === "month")?.value;
-  const day = parts.find((part) => part.type === "day")?.value;
-  return `${year}-${month}-${day}`;
 }
 
 export type GhostOrgResult = {
@@ -112,13 +99,12 @@ export async function runGhostDetectorForOrg(
     }
 
     if (decision === "flag") {
-      const { error: flagError } = await client
-        .from("leads")
-        .update({ ghost_approaching_at: now.toISOString() })
-        .eq("id", lead.id)
-        .eq("org_id", orgId);
-      if (flagError) continue;
-
+      // The next action goes in before the flag, because the flag is what makes
+      // this lead a noop on the next run. Flag first and a failed insert here
+      // would leave the lead flagged with nothing telling anyone to re-engage,
+      // and no later run would fix it. This order fails the other way: the lead
+      // stays unflagged and the next run retries, and the unique partial index
+      // on open ghost_reengagement rows keeps the retry at one action.
       const { error: actionError } = await client.from("next_actions").insert({
         org_id: orgId,
         lead_id: lead.id,
@@ -127,9 +113,31 @@ export async function runGhostDetectorForOrg(
         kind: GHOST_REENGAGEMENT_KIND,
         due_at: new Date(now.getTime() + 24 * 60 * 60 * 1000).toISOString(),
       });
+      // 23505 is the unique index: an open re-engagement action already exists,
+      // which is the state we wanted anyway.
       if (actionError && actionError.code !== "23505") {
-        // Unique index already held — still a successful flag.
+        console.error("[vistrial] ghost detector could not create the re-engagement action", {
+          orgId,
+          leadId: lead.id,
+          message: actionError.message,
+        });
+        continue;
       }
+
+      const { error: flagError } = await client
+        .from("leads")
+        .update({ ghost_approaching_at: now.toISOString() })
+        .eq("id", lead.id)
+        .eq("org_id", orgId);
+      if (flagError) {
+        console.error("[vistrial] ghost detector could not flag the lead as approaching", {
+          orgId,
+          leadId: lead.id,
+          message: flagError.message,
+        });
+        continue;
+      }
+
       changed += 1;
       continue;
     }

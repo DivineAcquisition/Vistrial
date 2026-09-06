@@ -162,7 +162,7 @@ export function QualifyForm({
         </Select>
       </FormRow>
 
-      <FormRow label="Do you already run LeadConnector?" htmlFor="usesGhl">
+      <FormRow label="Do you already run a CRM?" htmlFor="usesGhl">
         <Select id="usesGhl" name="usesGhl" required defaultValue="" placeholder="Select one">
           <option value="" disabled>
             Select one

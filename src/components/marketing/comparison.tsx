@@ -2,7 +2,7 @@ import { Check } from "lucide-react";
 
 import { MagicCard } from "@/components/ui/magic-card";
 import { Panel } from "@/components/ui/panel";
-import { CASE_FILE, PROBLEM } from "@/lib/marketing/copy";
+import { PROBLEM, WHAT_IT_DOES } from "@/lib/marketing/copy";
 import { cn } from "@/lib/utils";
 
 const LEFT_TAG_CLASS = [
@@ -12,10 +12,9 @@ const LEFT_TAG_CLASS = [
 ] as const;
 
 const RIGHT_TAG_CLASS = [
-  "lg:top-6 lg:-right-12",
-  "lg:top-[28%] lg:-right-20",
-  "lg:top-[55%] lg:-right-10",
-  "lg:bottom-8 lg:-right-16",
+  "lg:top-8 lg:-right-12",
+  "lg:top-1/2 lg:-right-16 lg:-translate-y-1/2",
+  "lg:bottom-10 lg:-right-8",
 ] as const;
 
 function OrbitTag({
@@ -71,26 +70,23 @@ export function ComparisonPair() {
       </div>
 
       <div className="relative">
-        {CASE_FILE.parts.slice(0, 4).map((part, index) => (
-          <OrbitTag key={part.id} className={RIGHT_TAG_CLASS[index]}>
-            {part.title}
+        {WHAT_IT_DOES.items.map((item, index) => (
+          <OrbitTag key={item.id} className={RIGHT_TAG_CLASS[index]}>
+            {item.title.replace(/\.$/, "")}
           </OrbitTag>
         ))}
         <Panel className="overflow-hidden border-brand-500/30 p-0 shadow-[0_0_80px_-28px_rgba(154,136,252,0.55)]">
           <MagicCard className="h-full rounded-2xl p-6 sm:p-8">
-            <p className="text-[11px] font-semibold tracking-[0.16em] text-brand-300 uppercase">
-              Case file
-            </p>
-            <p className="mt-3 font-display text-2xl tracking-tight text-white sm:text-[1.65rem]">
-              {CASE_FILE.headline}
+            <p className="font-display text-2xl tracking-tight text-white sm:text-[1.65rem]">
+              {WHAT_IT_DOES.headline}
             </p>
             <ul className="mt-6 space-y-3">
-              {CASE_FILE.parts.map((part) => (
-                <li key={part.id} className="flex items-start gap-3">
+              {WHAT_IT_DOES.items.map((item) => (
+                <li key={item.id} className="flex items-start gap-3">
                   <span className="mt-0.5 flex size-5 shrink-0 items-center justify-center rounded-md bg-brand-500/15 text-brand-300">
                     <Check className="size-3.5" aria-hidden />
                   </span>
-                  <span className="text-[15px] font-medium text-white">{part.title}</span>
+                  <span className="text-[15px] font-medium text-white">{item.title}</span>
                 </li>
               ))}
             </ul>

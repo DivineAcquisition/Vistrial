@@ -150,7 +150,7 @@ export function parseQualification(input: QualificationInput): QualificationPayl
 
   const usesGhl = GHL_USE_OPTIONS.find((option) => option === input.usesGhl);
   if (!usesGhl) {
-    throw new QualificationError("Select whether you run LeadConnector.", "usesGhl");
+    throw new QualificationError("Select whether you run a CRM.", "usesGhl");
   }
 
   const whoWorksLeads = whoWorksLeadsFromInput(input.whoWorksLeads);

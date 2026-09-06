@@ -1,42 +1,45 @@
 /**
  * Landing copy. Written deliberately in the page brief — do not punch up,
  * do not add exclamation marks, do not invent proof.
+ * No named CRM, platform, or industry.
  */
 
 export const SITE_DESCRIPTION =
-  "Sits on top of LeadConnector. Vistrial is a case-file layer: every lead gets a readiness score, full contact history, what was said on the last call, and follow-up written from it. Nothing to migrate.";
+  "Vistrial makes sure no lead sits untouched and no closer walks into a call blind. Built for sales teams selling something worth a conversation.";
 
 export const HERO = {
-  headline: "Give every closer the file before the call.",
+  headline: "Every lead gets worked. Every call gets remembered.",
   /** The phrase that carries the gradient. Visual only — the headline is unchanged. */
-  headlineAccent: "before the call.",
-  /** Taken from SITE_DESCRIPTION — not a new claim. */
-  eyebrow: "Sits on top of LeadConnector",
+  headlineAccent: "Every call gets remembered.",
+  eyebrow: "Lead Leak Audit",
   subhead: SITE_DESCRIPTION,
-  primaryCta: "Request access",
-  secondaryCta: "See the product",
-  underCta: "Private software. Access is waitlist only.",
+  primaryCta: "Get your free Lead Leak Audit",
+  secondaryCta: "See how it works",
+  underCta: "30 minutes. We look at your own numbers. No pitch deck.",
 } as const;
 
 export const PROBLEM = {
-  headline: "Leads stall where context is missing.",
+  headline: "The leads are fine. What happens after isn't.",
   points: [
     {
-      lead: "Touches are not a system.",
-      rest: "So leads get contacted twice, or never.",
+      lead: "Nobody knows who was contacted, or when.",
+      rest: "So leads get called twice, or never.",
     },
     {
-      lead: "Call context never reaches the next screen.",
-      rest: "A name, a calendar invite, and three form answers.",
+      lead: "Your team walks into calls with nothing.",
+      rest: "A name and a calendar invite.",
     },
     {
-      lead: "Objections get re-litigated.",
-      rest: "What the prospect already said on call one dies in a recording nobody reopens.",
+      lead: "What was said last time is gone.",
+      rest: "Objections get raised, handled, then raised again on the next call because nobody remembers.",
     },
   ],
   closing: "Every one of those is a lead you already paid for.",
 } as const;
 
+/**
+ * Sample-file chrome for the product mock. Not a landing-page feature list.
+ */
 export const CASE_FILE = {
   headline: "One file per lead. Everything known, in one place.",
   parts: [
@@ -73,48 +76,90 @@ export const CASE_FILE = {
   ],
 } as const;
 
-export const MOMENTS = {
-  headline: "Where it sits in the workflow.",
+export const WHAT_IT_DOES = {
+  headline: "One system that tracks who to call, what to say, and what happened.",
   items: [
     {
-      title: "Before the first touch",
-      body: "Leads sort by readiness, not arrival time. Anyone waiting past your response window shows up in an alarm that cannot be dismissed until someone actually works them.",
+      id: "never-miss",
+      title: "Never miss one.",
+      body: "The moment someone comes in, they're in line to be contacted — ranked by how ready they are, not by when they arrived. If someone's been waiting too long, it shows, and it doesn't go away until someone handles it.",
     },
     {
-      title: "Before the call",
-      body: "Your closer opens one screen: who this is, where they came from, what the setter established, what they have already objected to, and what they said in their own words.",
+      id: "know-who",
+      title: "Know who you're calling.",
+      body: "Before a call, your team sees what matters: who this is, what they've already said no to, and what happened last time. No digging through notes.",
     },
     {
-      title: "After the call",
-      body: "The transcript becomes structure. The lead re-scores on what was actually said. Follow-up drafts itself from the real conversation, and a human approves it before it goes.",
+      id: "nothing-forgotten",
+      title: "Nothing gets forgotten.",
+      body: "Every conversation, every follow-up, every objection — held in one place instead of scattered across memory and message threads.",
     },
   ],
+} as const;
+
+export const TOOLS = {
+  headline: "It works with the tools you already use.",
+  body: "Vistrial connects to your existing systems: your CRM, your calendar, your call recordings. Nothing to migrate, nothing to rebuild, nothing your team has to relearn. Connect once, and it runs quietly in the background from there.",
+  chips: ["Your CRM", "Your calendar", "Your call recordings"],
 } as const;
 
 export const OUTCOME = {
-  headline: "The number we track is clients closed per hundred leads.",
-  body: "Not opens. Not replies. Not activity. Vistrial measures how many leads turned into clients before it was installed and how many after, from your own history. You see the same number we do.",
+  headline: "We track one number: how many of your leads become clients.",
+  body: "Before Vistrial and after, from your own history. Not opens, not replies, not activity — clients. You see the same number we do.",
   lines: [
-    "Coverage: what percentage of your leads ever got a human touch",
-    "Speed: how fast, actually, versus how fast you think",
-    "Where deals die: never touched, no-show, ghosted after one call, objection unresolved",
+    "How many leads actually got a human response, and how fast",
+    "Where deals are dying, and why",
+    "What your team is missing that's costing you closes",
   ],
   honesty:
-    "We do not make the calls. Your team does. Vistrial makes sure every lead gets worked, and that whoever works it knows what they are walking into.",
+    "We don't make the calls. Your team does. Vistrial makes sure every lead gets worked, and that whoever works it knows what they're walking into.",
 } as const;
 
-export const CRM = {
-  headline: "It runs on the CRM you already have.",
-  body: "LeadConnector stays your system of record. Your conversations, your calendar, your pipeline, your automations: unchanged. Vistrial reads from it, adds the layer it does not have, and sends through it. One click to connect. Nothing to migrate, nothing to rebuild, nothing to retrain your team on from scratch.",
-  listingLive: "Open the LeadConnector Marketplace listing",
+export const WHO = {
+  headline: "Built for teams that sell on a conversation.",
+  body: "If closing a deal takes a real conversation, not just a checkout page, Vistrial fits. Sales teams, client-facing businesses, anyone whose leads deserve more than a generic follow-up.",
+  notForLabel: "Who it's not for",
+  notFor:
+    "If your product sells itself with no call involved, or your lead volume is small enough to track from memory, you don't need this yet.",
 } as const;
 
 export const AUDIT = {
-  headline: "Find out what you are leaking.",
-  body: "Thirty minutes. We connect to your LeadConnector, pull the last twelve months, and show you: how many leads never got a human touch, your real median response time, how many went quiet after one call, and what that is worth at your close rate and price point.",
-  keep: "You keep the report either way.",
+  headline: "Find out what you're leaking.",
+  body: "Thirty minutes. We look at your own numbers and show you: how many leads never got a response, your real response time, and what a slow follow-up is actually costing you.",
+  keep: "You keep the findings either way.",
   cta: "Book the audit",
   underCta: "No deck, no slides, just your numbers.",
+} as const;
+
+export const FAQ = {
+  headline: "FAQ",
+  items: [
+    {
+      q: "Do I have to change how my team works?",
+      a: "No. It layers on top of what you already use.",
+    },
+    {
+      q: "Does it message people automatically?",
+      a: "It drafts. A person on your team approves every message before it goes out. Nothing sends on its own.",
+    },
+    {
+      q: "What if we don't record calls?",
+      a: "Everything else still works. Recording adds more, but it isn't required.",
+    },
+    {
+      q: "How long to get running?",
+      a: "Connecting takes minutes. Getting your team using it well takes days, not weeks.",
+    },
+    {
+      q: "Who is this not for?",
+      a: "Anyone selling something that closes without a conversation, or working small enough volume to track by memory.",
+    },
+  ],
+} as const;
+
+/** Marketplace listing chrome — not shown on the public landing. */
+export const CRM = {
+  listingLive: "Open the marketplace listing",
 } as const;
 
 export const WAITLIST = {
@@ -127,15 +172,12 @@ export const WAITLIST = {
   sent: "You are on the list. We will email the address you gave when a seat opens.",
   nameLabel: "Name",
   emailLabel: "Work email",
-  notFor:
-    "Not for businesses under roughly $8K a month, anything that closes without a conversation, or lead volume small enough to work by memory.",
 } as const;
 
 export const BOOK = {
   eyebrow: "Lead Leak Audit",
   title: "A few questions, then you pick a time.",
-  description:
-    "Thirty minutes. We pull your own numbers from LeadConnector. No pitch deck.",
+  description: "Thirty minutes. We look at your own numbers. No pitch deck.",
   submit: "Continue to the calendar",
   pending: "Submitting",
 } as const;
@@ -172,13 +214,13 @@ export const SOCIAL_IMAGE = {
 } as const;
 
 export const NAV = {
-  waitlist: "Request access",
   book: "Book the audit",
   skipToContent: "Skip to content",
   openMenu: "Open menu",
   closeMenu: "Close menu",
   sections: [
-    { href: "#case-file", label: "Product" },
-    { href: "#moments", label: "Workflow" },
+    { href: "#what-it-does", label: "What it does" },
+    { href: "#who", label: "Who it's for" },
+    { href: "#faq", label: "FAQ" },
   ],
 } as const;

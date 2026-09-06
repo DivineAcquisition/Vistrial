@@ -47,7 +47,7 @@ export function SiteFooter() {
             heading={FOOTER.product}
             links={[
               { href: "/", label: "Home" },
-              { href: "/#waitlist", label: "Waitlist" },
+              { href: "/book", label: "Lead Leak Audit" },
             ]}
           />
           <FooterList

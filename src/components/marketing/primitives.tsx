@@ -105,7 +105,7 @@ export function FeatureCard({
 }: {
   step?: string;
   title: string;
-  children: ReactNode;
+  children?: ReactNode;
 }) {
   return (
     <Panel className="flex h-full flex-col overflow-hidden p-0">
@@ -116,7 +116,7 @@ export function FeatureCard({
           </p>
         ) : null}
         <h3 className={marketingCardTitle}>{title}</h3>
-        <div className={cn(marketingBody, "mt-3")}>{children}</div>
+        {children ? <div className={cn(marketingBody, "mt-3")}>{children}</div> : null}
       </MagicCard>
     </Panel>
   );

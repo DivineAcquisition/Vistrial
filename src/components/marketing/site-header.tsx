@@ -58,7 +58,7 @@ function AnnouncementBar() {
           <span className="absolute inline-flex size-full animate-ping rounded-full bg-brand-400 opacity-70" />
           <span className="relative inline-flex size-1.5 rounded-full bg-brand-400" />
         </span>
-        Private · waitlist
+        {HERO.eyebrow}
         <span className="hidden font-medium tracking-normal text-silver normal-case sm:inline">
           · {HERO.underCta}
         </span>
@@ -68,11 +68,11 @@ function AnnouncementBar() {
 }
 
 export function SiteHeader({
-  action = "waitlist",
+  action = "cta",
 }: {
-  action?: "waitlist" | "none";
+  action?: "cta" | "none";
 }) {
-  const onPage = action === "waitlist";
+  const onPage = action === "cta";
 
   return (
     <header className="relative sticky top-0 z-50 border-b border-white/[0.06] bg-ink-950/75 backdrop-blur-xl">
@@ -104,9 +104,9 @@ export function SiteHeader({
         ) : null}
 
         <div className="flex items-center justify-end gap-2">
-          {action === "waitlist" ? (
+          {action === "cta" ? (
             <CtaLink position="nav" size="sm" className="rounded-full px-4">
-              {NAV.waitlist}
+              {NAV.book}
             </CtaLink>
           ) : null}
 
@@ -142,18 +142,14 @@ export function SiteHeader({
                   </nav>
                   <div className="mt-6 flex flex-col gap-3">
                     <DrawerClose asChild>
-                      <Button variant="outline" className="w-full" render={<a href="#case-file" />}>
+                      <Button variant="outline" className="w-full" render={<a href="#what-it-does" />}>
                         {HERO.secondaryCta}
                       </Button>
                     </DrawerClose>
                     <DrawerClose asChild>
-                      <Button
-                        variant="gradient"
-                        className="w-full rounded-full"
-                        render={<a href="#waitlist" data-cta-position="nav" />}
-                      >
-                        {NAV.waitlist}
-                      </Button>
+                      <CtaLink position="nav" className="w-full rounded-full">
+                        {NAV.book}
+                      </CtaLink>
                     </DrawerClose>
                   </div>
                 </DrawerPanel>

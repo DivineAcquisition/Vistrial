@@ -50,10 +50,10 @@ function MarketingBackdrop() {
 
 export function MarketingShell({
   children,
-  headerAction = "waitlist",
+  headerAction = "cta",
 }: {
   children: ReactNode;
-  headerAction?: "waitlist" | "none";
+  headerAction?: "cta" | "none";
 }) {
   return (
     <div className="relative min-h-screen overflow-x-hidden bg-ink-950 text-white antialiased">

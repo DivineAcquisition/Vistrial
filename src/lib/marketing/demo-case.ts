@@ -7,7 +7,7 @@ export const DEMO_CASE = {
   name: "Jordan Hale",
   email: "jordan@northline.example",
   phone: "(415) 555-0148",
-  source: "Meta · High-ticket coaching",
+  source: "Paid ads · Webinar replay",
   campaign: "March webinar replay",
   status: "Working",
   track: "Ready now",

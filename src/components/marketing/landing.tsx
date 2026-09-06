@@ -1,17 +1,9 @@
-import {
-  ArrowRight,
-  AudioLines,
-  ClipboardList,
-  Clock,
-  Gauge,
-  MessageSquareWarning,
-  PenLine,
-} from "lucide-react";
+import { ArrowRight, Bell, Bookmark, UserRound } from "lucide-react";
 
 import { HeroCaseFile } from "@/components/marketing/case-file";
 import { ComparisonPair } from "@/components/marketing/comparison";
 import { CtaLink } from "@/components/marketing/cta-link";
-import { GhlConnectVisual } from "@/components/marketing/ghl-connect";
+import { LandingFaq } from "@/components/marketing/faq";
 import {
   CtaGroup,
   FeatureCard,
@@ -21,20 +13,21 @@ import {
   ProductFrame,
   StatusPill,
 } from "@/components/marketing/primitives";
-import { WaitlistForm } from "@/components/marketing/waitlist-form";
 import { AnimatedShinyText } from "@/components/ui/animated-shiny-text";
 import { Button } from "@/components/ui/button";
 import { Globe } from "@/components/ui/globe";
 import { Marquee } from "@/components/ui/marquee";
+import { Panel } from "@/components/ui/panel";
 import { Particles } from "@/components/ui/particles";
 import {
-  CASE_FILE,
-  CRM,
+  AUDIT,
+  FAQ,
   HERO,
-  MOMENTS,
   OUTCOME,
   PROBLEM,
-  WAITLIST,
+  TOOLS,
+  WHAT_IT_DOES,
+  WHO,
 } from "@/lib/marketing/copy";
 import { DEMO_CASE } from "@/lib/marketing/demo-case";
 import {
@@ -48,20 +41,11 @@ import {
 import { captionText } from "@/lib/ui";
 import { cn } from "@/lib/utils";
 
-const CASE_FILE_ICONS = {
-  readiness: Gauge,
-  touches: Clock,
-  transcripts: AudioLines,
-  objections: MessageSquareWarning,
-  brief: ClipboardList,
-  "follow-up": PenLine,
+const WHAT_IT_DOES_ICONS = {
+  "never-miss": Bell,
+  "know-who": UserRound,
+  "nothing-forgotten": Bookmark,
 } as const;
-
-function splitMetric(line: string): { lead: string; rest: string } {
-  const index = line.indexOf(":");
-  if (index === -1) return { lead: line, rest: "" };
-  return { lead: line.slice(0, index), rest: line.slice(index + 1).trim() };
-}
 
 export function LandingPage() {
   const headlineBefore = HERO.headline.slice(0, HERO.headline.indexOf(HERO.headlineAccent));
@@ -109,7 +93,7 @@ export function LandingPage() {
                 variant="outline"
                 size="xl"
                 className="rounded-full px-6"
-                render={<a href="#case-file" />}
+                render={<a href="#what-it-does" />}
               >
                 {HERO.secondaryCta}
               </Button>
@@ -121,7 +105,7 @@ export function LandingPage() {
             <div className="pointer-events-none absolute -inset-x-16 -inset-y-20 -z-10 hidden opacity-40 lg:block">
               <Globe className="max-w-none" />
             </div>
-            <ProductFrame title="Case file" caption={DEMO_CASE.sampleLabel}>
+            <ProductFrame title="File" caption={DEMO_CASE.sampleLabel}>
               <HeroCaseFile />
             </ProductFrame>
           </div>
@@ -130,12 +114,12 @@ export function LandingPage() {
 
       <div className="relative overflow-hidden border-y border-white/[0.07]">
         <Marquee pauseOnHover className="[--duration:36s]">
-          {CASE_FILE.parts.map((part) => (
+          {WHAT_IT_DOES.items.map((item) => (
             <span
-              key={part.id}
+              key={item.id}
               className="mx-4 text-[13px] font-medium tracking-wide text-silver"
             >
-              {part.title}
+              {item.title.replace(/\.$/, "")}
             </span>
           ))}
         </Marquee>
@@ -146,32 +130,35 @@ export function LandingPage() {
       </MarketingSection>
 
       <MarketingSection
-        id="case-file"
-        eyebrow="Case file"
-        headline={CASE_FILE.headline}
+        id="what-it-does"
+        headline={WHAT_IT_DOES.headline}
         align="center"
       >
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {CASE_FILE.parts.map((part) => (
-            <IconCard key={part.id} icon={CASE_FILE_ICONS[part.id]} title={part.title}>
-              {part.body}
+        <div className="grid gap-4 md:grid-cols-3">
+          {WHAT_IT_DOES.items.map((item) => (
+            <IconCard key={item.id} icon={WHAT_IT_DOES_ICONS[item.id]} title={item.title}>
+              {item.body}
             </IconCard>
           ))}
         </div>
       </MarketingSection>
 
-      <MarketingSection id="moments" headline={MOMENTS.headline} align="center">
-        <div className="grid gap-4 md:grid-cols-3">
-          {MOMENTS.items.map((item, index) => (
-            <FeatureCard
-              key={item.title}
-              step={String(index + 1).padStart(2, "0")}
-              title={item.title}
+      <MarketingSection
+        id="how-it-works"
+        headline={TOOLS.headline}
+        lead={<p>{TOOLS.body}</p>}
+        align="center"
+      >
+        <ul className="flex flex-wrap justify-center gap-2">
+          {TOOLS.chips.map((chip) => (
+            <li
+              key={chip}
+              className="rounded-full border border-white/[0.1] bg-white/[0.04] px-4 py-2 text-sm font-medium text-silver"
             >
-              {item.body}
-            </FeatureCard>
+              {chip}
+            </li>
           ))}
-        </div>
+        </ul>
       </MarketingSection>
 
       <MarketingSection
@@ -180,41 +167,54 @@ export function LandingPage() {
         align="center"
       >
         <ul className="grid gap-4 sm:grid-cols-3">
-          {OUTCOME.lines.map((line) => {
-            const { lead, rest } = splitMetric(line);
-            return (
-              <li key={line}>
-                <FeatureCard title={lead}>{rest}</FeatureCard>
-              </li>
-            );
-          })}
+          {OUTCOME.lines.map((line) => (
+            <li key={line}>
+              <FeatureCard title={line} />
+            </li>
+          ))}
         </ul>
         <p className={cn(marketingLead, "mx-auto mt-12 text-center")}>{OUTCOME.honesty}</p>
       </MarketingSection>
 
       <MarketingSection
-        headline={CRM.headline}
-        lead={<p>{CRM.body}</p>}
+        id="who"
+        headline={WHO.headline}
+        lead={<p>{WHO.body}</p>}
         align="center"
       >
-        <GhlConnectVisual />
+        <Panel className="mx-auto max-w-2xl overflow-hidden p-6 sm:p-8">
+          <p className="text-[11px] font-semibold tracking-[0.16em] text-brand-300 uppercase">
+            {WHO.notForLabel}
+          </p>
+          <p className={cn(marketingLead, "mt-3 max-w-none")}>{WHO.notFor}</p>
+        </Panel>
       </MarketingSection>
 
       <section
-        id="waitlist"
+        id="audit"
         className={cn("scroll-mt-32 border-t border-white/[0.07]", marketingPageGutter, marketingSectionY)}
       >
         <div className={marketingShell}>
-          <FinalCta headline={WAITLIST.headline}>
-            <p className={cn(marketingLead, "mx-auto")}>{WAITLIST.body}</p>
-            <div className="mx-auto mt-8 max-w-2xl">
-              <WaitlistForm position="waitlist" />
+          <FinalCta headline={AUDIT.headline}>
+            <p className={cn(marketingLead, "mx-auto")}>{AUDIT.body}</p>
+            <p className={cn(marketingLead, "mx-auto mt-4")}>{AUDIT.keep}</p>
+            <div className="mt-8 flex justify-center">
+              <CtaLink position="audit" size="xl" className="rounded-full px-7">
+                {AUDIT.cta}
+                <ArrowRight
+                  aria-hidden="true"
+                  className="transition-transform in-[[data-slot=button]:hover]:translate-x-0.5"
+                />
+              </CtaLink>
             </div>
-            <p className={cn(captionText, "mt-4")}>{WAITLIST.underCta}</p>
-            <p className={cn(captionText, "mx-auto mt-3 max-w-xl")}>{WAITLIST.notFor}</p>
+            <p className={cn(captionText, "mt-4")}>{AUDIT.underCta}</p>
           </FinalCta>
         </div>
       </section>
+
+      <MarketingSection id="faq" headline={FAQ.headline} align="center">
+        <LandingFaq />
+      </MarketingSection>
     </>
   );
 }

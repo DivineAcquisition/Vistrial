@@ -3,7 +3,7 @@ import type { Metadata, Viewport } from "next";
 import { AnchoredToastProvider, ToastProvider } from "@/components/ui/toast";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { APP_NAME, PRODUCTION_SITE_ORIGIN } from "@/lib/constants";
-import { geistMono, interDisplay } from "@/lib/fonts";
+import { geistMono, instrumentSerif, interDisplay } from "@/lib/fonts";
 import { SITE_DESCRIPTION, SOCIAL_IMAGE } from "@/lib/marketing/copy";
 
 import "./globals.css";
@@ -58,7 +58,12 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={cn("dark", interDisplay.variable, geistMono.variable)}
+      className={cn(
+        "dark",
+        interDisplay.variable,
+        instrumentSerif.variable,
+        geistMono.variable,
+      )}
       suppressHydrationWarning
     >
       <body className="min-h-screen bg-background font-sans text-foreground antialiased">

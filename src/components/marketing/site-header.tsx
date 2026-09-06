@@ -48,6 +48,23 @@ function NavLinks({
   );
 }
 
+function AnnouncementBar() {
+  return (
+    <div className="border-b border-white/[0.06] bg-ink-900/90">
+      <p className="flex items-center justify-center gap-2 px-4 py-2 text-center text-[11px] font-semibold tracking-[0.16em] text-brand-200 uppercase">
+        <span className="relative flex size-1.5">
+          <span className="absolute inline-flex size-full animate-ping rounded-full bg-brand-400 opacity-70" />
+          <span className="relative inline-flex size-1.5 rounded-full bg-brand-400" />
+        </span>
+        Private · waitlist
+        <span className="hidden font-medium tracking-normal text-silver normal-case sm:inline">
+          · {HERO.underCta}
+        </span>
+      </p>
+    </div>
+  );
+}
+
 export function SiteHeader({
   action = "waitlist",
 }: {
@@ -57,6 +74,7 @@ export function SiteHeader({
 
   return (
     <header className="relative sticky top-0 z-50 border-b border-white/[0.06] bg-ink-950/75 backdrop-blur-xl">
+      {onPage ? <AnnouncementBar /> : null}
       <div
         aria-hidden
         className="pointer-events-none absolute inset-x-0 top-0 h-px bg-linear-to-r from-transparent via-brand-500/45 to-transparent"
@@ -65,25 +83,25 @@ export function SiteHeader({
         className={cn(
           marketingShell,
           marketingPageGutter,
-          "flex h-16 items-center justify-between gap-4"
+          onPage
+            ? "grid h-16 grid-cols-[1fr_auto] items-center gap-4 md:grid-cols-[1fr_auto_1fr]"
+            : "flex h-16 items-center justify-between gap-4",
         )}
       >
-        <div className="flex min-w-0 items-center gap-8">
-          <Link
-            href="/"
-            aria-label={`${APP_NAME} home`}
-            className="shrink-0 rounded-sm transition-opacity hover:opacity-80"
-          >
-            <Logo className="h-5 w-auto sm:h-[22px]" />
-          </Link>
-          {onPage ? (
-            <nav aria-label="Page" className="hidden md:block">
-              <NavLinks onPage className="gap-1" />
-            </nav>
-          ) : null}
-        </div>
+        <Link
+          href="/"
+          aria-label={`${APP_NAME} home`}
+          className="shrink-0 justify-self-start rounded-sm transition-opacity hover:opacity-80"
+        >
+          <Logo className="h-5 w-auto sm:h-[22px]" />
+        </Link>
+        {onPage ? (
+          <nav aria-label="Page" className="hidden md:block">
+            <NavLinks onPage className="gap-1" />
+          </nav>
+        ) : null}
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center justify-end gap-2">
           {action === "waitlist" ? (
             <CtaLink position="nav" size="sm" className="rounded-full px-4">
               {NAV.waitlist}

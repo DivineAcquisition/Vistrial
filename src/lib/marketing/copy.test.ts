@@ -59,3 +59,13 @@ describe("landing copy", () => {
     expect(HERO.headline).toContain(HERO.headlineAccent);
   });
 });
+
+describe("landing type recipes", () => {
+  it("sets marketing titles in the display serif", async () => {
+    const { marketingDisplayTitle, marketingHeroTitle, marketingSectionTitle } =
+      await import("@/lib/marketing/ui");
+    expect(marketingDisplayTitle).toContain("font-display");
+    expect(marketingHeroTitle).toContain("font-display");
+    expect(marketingSectionTitle).toContain("font-display");
+  });
+});

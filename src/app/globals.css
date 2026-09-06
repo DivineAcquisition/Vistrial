@@ -74,9 +74,10 @@
   --color-foreground: var(--foreground);
   --font-sans: var(--font-sans);
   --font-body: var(--font-sans);
-  /* Inter Display for every UI face. Geist Mono stays on --font-mono. */
+  /* Inter Display for every UI face. Geist Mono stays on --font-mono.
+     Instrument Serif is --font-display, used on marketing headlines only. */
   --font-heading: var(--font-sans);
-  --font-display: var(--font-sans);
+  --font-display: var(--font-serif), ui-serif, Georgia, "Times New Roman", serif;
   --font-mono: var(--font-mono);
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
@@ -366,6 +367,12 @@
   /* Titles that use the heading utility (often on <p>) need the same presence. */
   .font-heading {
     font-weight: 500;
+  }
+
+  /* Marketing display serif — weight 400 is the cut; do not synthesize 500. */
+  .font-display {
+    font-weight: 400;
+    letter-spacing: -0.018em;
   }
 
   h1 {

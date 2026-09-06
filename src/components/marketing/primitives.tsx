@@ -35,9 +35,20 @@ export function StatusPill({ children }: { children: ReactNode }) {
   );
 }
 
-export function CtaGroup({ children }: { children: ReactNode }) {
+export function CtaGroup({
+  children,
+  align = "left",
+}: {
+  children: ReactNode;
+  align?: "left" | "center";
+}) {
   return (
-    <div className="mt-8 flex flex-col items-stretch gap-3 sm:flex-row sm:items-center">
+    <div
+      className={cn(
+        "mt-8 flex flex-col items-stretch gap-3 sm:flex-row sm:items-center",
+        align === "center" && "sm:justify-center",
+      )}
+    >
       {children}
     </div>
   );
@@ -74,12 +85,14 @@ export function MarketingSection({
       )}
     >
       <div className={cn(marketingShell, narrow && marketingMeasureWide, centered && "text-center")}>
-        {eyebrow ? <p className={cn(sectionLabel, "mb-3")}>{eyebrow}</p> : null}
+        {eyebrow ? (
+          <p className={cn(sectionLabel, "mb-4", centered && "mx-auto")}>{eyebrow}</p>
+        ) : null}
         <h2 className={cn(marketingSectionTitle, centered && "mx-auto")}>{headline}</h2>
         {lead ? (
-          <div className={cn(marketingLead, "mt-4", centered && "mx-auto")}>{lead}</div>
+          <div className={cn(marketingLead, "mt-5", centered && "mx-auto")}>{lead}</div>
         ) : null}
-        <div className={cn(lead ? "mt-10" : "mt-8", centered && "text-left")}>{children}</div>
+        <div className={cn(lead ? "mt-12" : "mt-10", centered && "text-left")}>{children}</div>
       </div>
     </section>
   );
@@ -98,7 +111,7 @@ export function FeatureCard({
     <Panel className="flex h-full flex-col overflow-hidden p-0">
       <MagicCard className="flex h-full flex-col rounded-2xl p-6 sm:p-7">
         {step ? (
-          <p className="mb-5 text-4xl font-semibold leading-none tracking-tight text-brand-500/25 tabular-nums">
+          <p className="mb-6 font-display text-5xl leading-none tracking-tight text-brand-500/30 tabular-nums">
             {step}
           </p>
         ) : null}
@@ -121,11 +134,11 @@ export function IconCard({
   return (
     <Panel className="flex h-full flex-col overflow-hidden p-0">
       <MagicCard className="flex h-full flex-col rounded-2xl p-6">
-        <div className="flex size-10 items-center justify-center rounded-xl border border-brand-500/20 bg-brand-500/[0.1] text-brand-300">
+        <div className="flex size-11 items-center justify-center rounded-2xl border border-brand-500/20 bg-brand-500/[0.1] text-brand-300">
           <Icon className="size-5" aria-hidden />
         </div>
-        <h3 className={cn(marketingCardTitle, "mt-5")}>{title}</h3>
-        <div className={cn(marketingBody, "mt-2")}>{children}</div>
+        <h3 className={cn(marketingCardTitle, "mt-6")}>{title}</h3>
+        <div className={cn(marketingBody, "mt-3")}>{children}</div>
       </MagicCard>
     </Panel>
   );
@@ -184,7 +197,7 @@ export function FinalCta({
   children: ReactNode;
 }) {
   return (
-    <div className="relative overflow-hidden rounded-2xl border border-white/[0.1] bg-ink-900 px-6 py-12 text-center sm:px-12 sm:py-16">
+    <div className="relative overflow-hidden rounded-3xl border border-white/[0.1] bg-ink-900 px-6 py-14 text-center sm:px-16 sm:py-20">
       <ShineBorder shineColor={["#9A88FC", "#C3B6FE"]} duration={12} />
       <div
         aria-hidden

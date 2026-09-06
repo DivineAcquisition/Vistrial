@@ -56,7 +56,7 @@ export function MarketingShell({
   headerAction?: "waitlist" | "none";
 }) {
   return (
-    <div className="relative min-h-screen bg-ink-950 text-white antialiased">
+    <div className="relative min-h-screen overflow-x-hidden bg-ink-950 text-white antialiased">
       <SkipToContent />
       <MarketingBackdrop />
       <div className="relative z-10">

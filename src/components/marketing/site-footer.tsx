@@ -41,7 +41,7 @@ export function SiteFooter() {
             <Link href="/" aria-label={`${APP_NAME} home`} className="inline-block">
               <Logo className="h-6 w-auto" />
             </Link>
-            <p className="mt-4 max-w-xs text-sm leading-relaxed text-dim">{FOOTER.productLine}</p>
+            <p className="mt-4 max-w-xs font-display text-base leading-relaxed text-dim">{FOOTER.productLine}</p>
           </div>
           <FooterList
             heading={FOOTER.product}

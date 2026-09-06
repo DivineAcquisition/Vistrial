@@ -9,7 +9,7 @@ import {
   type ForsightView,
 } from "@/lib/forsight/dashboard";
 import { FORSIGHT_PATH } from "@/lib/navigation";
-import { PRODUCT_SCOPE, type ProductScopeKey } from "@/lib/product-scope";
+import { isProductScopeEnabled, type ProductScopeKey } from "@/lib/product-scope";
 
 export const FORSIGHT_PAGES: Array<{
   href: string;
@@ -22,7 +22,7 @@ export const FORSIGHT_PAGES: Array<{
 ];
 
 export function ForsightTabs({ activeHref }: { activeHref: string }) {
-  const items = FORSIGHT_PAGES.filter((page) => !page.scope || PRODUCT_SCOPE[page.scope]);
+  const items = FORSIGHT_PAGES.filter((page) => !page.scope || isProductScopeEnabled(page.scope));
   if (items.length <= 1) return null;
   return <NavTabs label="Forsight pages" activeHref={activeHref} items={items} />;
 }

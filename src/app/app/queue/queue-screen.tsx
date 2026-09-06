@@ -26,7 +26,7 @@ import {
   logQueueOutcome,
   refreshQueue,
 } from "@/app/app/queue/actions";
-import { PRODUCT_SCOPE } from "@/lib/product-scope";
+import { isProductScopeEnabled } from "@/lib/product-scope";
 import { cursorFromRow } from "@/lib/queue/cursor";
 import { queueEmptyKind } from "@/lib/queue/parse";
 import { detectClientSurface } from "@/lib/mobile/surface";
@@ -537,7 +537,7 @@ export function QueueScreen({
         </div>
       ) : null}
 
-      {PRODUCT_SCOPE.followUpSettings && canOpenIntegrations && voiceExampleCount < MIN_VOICE_EXAMPLES ? (
+      {isProductScopeEnabled("followUpSettings") && canOpenIntegrations && voiceExampleCount < MIN_VOICE_EXAMPLES ? (
         <div className="mb-8">
           <EmptyState
             kind="unconfigured"

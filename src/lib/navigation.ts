@@ -1,7 +1,7 @@
 import type { OrgRole, SurfaceAccess } from "@/types/database";
 
 import { canManageOrgSettings } from "@/lib/auth/permissions";
-import { PRODUCT_SCOPE, type ProductScopeKey } from "@/lib/product-scope";
+import { isProductScopeEnabled, type ProductScopeKey } from "@/lib/product-scope";
 
 /**
  * Navigation groups. The items and their labels are unchanged; the grouping

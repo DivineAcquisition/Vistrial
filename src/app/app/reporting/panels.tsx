@@ -26,7 +26,7 @@ import { loadStatedGoal } from "@/lib/profile/load";
 import { helperClass } from "@/lib/ui";
 import { FOLLOW_UP_BRANCH_LABELS, HALT_REASON_LABELS } from "@/lib/follow-up/labels";
 import { OBJECTION_TYPE_LABELS } from "@/lib/leads/labels";
-import { PRODUCT_SCOPE } from "@/lib/product-scope";
+import { isProductScopeEnabled } from "@/lib/product-scope";
 import type { FollowUpBranch } from "@/lib/follow-up/types";
 import type { Enums } from "@/types/database";
 
@@ -106,7 +106,7 @@ export function ReportingPanels({
   includeTeam: boolean;
   includeIngestion?: boolean;
 }) {
-  const extras = PRODUCT_SCOPE.extraReporting;
+  const extras = isProductScopeEnabled("extraReporting");
   return (
     <div className="space-y-8">
       {extras ? (
@@ -237,7 +237,7 @@ export async function CoveragePanel({ orgId, range }: { orgId: string; range: Re
   const ever = rateOf(payload.ever_touched);
   const within = rateOf(payload.within_window);
   const targetMinutes = num(payload.speed_to_lead_minutes);
-  const extras = PRODUCT_SCOPE.extraReporting;
+  const extras = isProductScopeEnabled("extraReporting");
   return (
     <Panel className="p-6">
       <SectionHeader
@@ -300,7 +300,7 @@ export async function ThroughputPanel({ orgId, range }: { orgId: string; range: 
   const sources = Array.isArray(payload.leads_in_by_source) ? payload.leads_in_by_source : [];
   const funnel = Array.isArray(payload.close_rate_by_stage) ? payload.close_rate_by_stage : [];
   const show = rateOf(payload.show_rate);
-  const extras = PRODUCT_SCOPE.extraReporting;
+  const extras = isProductScopeEnabled("extraReporting");
   return (
     <Panel className="p-6">
       <SectionHeader
@@ -768,7 +768,7 @@ export function ReportingTabs({
       items={[
         { href: `/app/reporting${query ? `?${query}` : ""}`, label: "Team" },
         { href: `/portal${query ? `?${query}` : ""}`, label: "Owner portal" },
-        ...(PRODUCT_SCOPE.coaching
+        ...(isProductScopeEnabled("coaching")
           ? [{ href: "/app/reporting/coaching", label: "Coaching" }]
           : []),
       ]}

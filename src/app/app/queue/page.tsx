@@ -3,7 +3,7 @@ import { QueueScreen } from "@/app/app/queue/queue-screen";
 import { canManageOrgSettings } from "@/lib/auth/permissions";
 import { getAuthContext } from "@/lib/auth/session";
 import { loadRecentActivity } from "@/lib/activity/load";
-import { PRODUCT_SCOPE } from "@/lib/product-scope";
+import { isProductScopeEnabled } from "@/lib/product-scope";
 import { loadVoiceProfile } from "@/lib/follow-up/load";
 import { parseQueueFilters, queueFiltersHref } from "@/lib/queue/filters";
 import { loadOrgQueue } from "@/lib/queue/load";
@@ -25,7 +25,7 @@ export default async function QueuePage({
     isPlatformAdmin: ctx.isPlatformAdmin,
   });
   const canViewActivity =
-    PRODUCT_SCOPE.activityStream && canManageOrgSettings(ctx.role, ctx.isPlatformAdmin);
+    isProductScopeEnabled("activityStream") && canManageOrgSettings(ctx.role, ctx.isPlatformAdmin);
   const [payload, voice, recentActivity, scoreConfig] = await Promise.all([
     loadOrgQueue(filters),
     loadVoiceProfile(ctx.org.id),

@@ -9,7 +9,7 @@ import { previousEqualRange } from "@/lib/portal/range";
 import { loadPortalRpcAdmin, nextSendAtFor, scheduledEmailRange } from "@/lib/portal/load";
 import { portalPdf } from "@/lib/portal/pdf";
 import { buildPortalSummary } from "@/lib/portal/summary";
-import { PRODUCT_SCOPE } from "@/lib/product-scope";
+import { isProductScopeEnabled } from "@/lib/product-scope";
 import { summaryOverstates } from "@/lib/reporting/summary";
 import type { ReportingRange } from "@/lib/reporting/range";
 import { ghlError, ghlLog } from "@/lib/ghl/log";
@@ -21,7 +21,7 @@ function asRecord(value: unknown): Record<string, unknown> {
 }
 
 export async function runPortalEmailJobs(db: GhlDb): Promise<{ sent: number; skipped: number; failed: number }> {
-  if (!PRODUCT_SCOPE.documentGeneration) {
+  if (!isProductScopeEnabled("documentGeneration")) {
     return { sent: 0, skipped: 0, failed: 0 };
   }
   const now = new Date();
@@ -68,7 +68,7 @@ export async function sendPortalEmailForOrg(
   orgId: string,
   cadence: "weekly" | "monthly"
 ): Promise<{ status: "sent" } | { status: "skipped"; reason: string }> {
-  if (!PRODUCT_SCOPE.documentGeneration) {
+  if (!isProductScopeEnabled("documentGeneration")) {
     return { status: "skipped", reason: "Document generation is parked." };
   }
   const cfg = resendConfigured();

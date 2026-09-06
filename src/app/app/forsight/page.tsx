@@ -4,7 +4,7 @@ import { ForsightPage } from "@/app/app/forsight/forsight-chrome";
 import { WeeklyPulseScreen } from "@/app/app/forsight/weekly-pulse";
 import { loadWeeklyPulse } from "@/lib/forsight/dashboard";
 import { FORSIGHT_PATH } from "@/lib/navigation";
-import { PRODUCT_SCOPE } from "@/lib/product-scope";
+import { isProductScopeEnabled } from "@/lib/product-scope";
 import { requireReportingAccess } from "@/lib/reporting/access";
 
 export const dynamic = "force-dynamic";
@@ -12,7 +12,7 @@ export const dynamic = "force-dynamic";
 export const metadata = { title: "Forsight" };
 
 export default async function WeeklyPulsePage() {
-  if (!PRODUCT_SCOPE.forsightWeeklyPulse) {
+  if (!isProductScopeEnabled("forsightWeeklyPulse")) {
     redirect(`${FORSIGHT_PATH}/pipeline`);
   }
   await requireReportingAccess();

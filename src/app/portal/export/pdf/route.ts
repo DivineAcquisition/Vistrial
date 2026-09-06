@@ -5,7 +5,7 @@ import { loadPortalRpc } from "@/lib/portal/load";
 import { previousEqualRange } from "@/lib/portal/range";
 import { portalPdf } from "@/lib/portal/pdf";
 import { buildPortalSummary } from "@/lib/portal/summary";
-import { PRODUCT_SCOPE } from "@/lib/product-scope";
+import { isProductScopeEnabled } from "@/lib/product-scope";
 import { loadReportingPanel, loadReportingState } from "@/lib/reporting/load";
 import { parseReportingRange } from "@/lib/reporting/range";
 import { summaryOverstates } from "@/lib/reporting/summary";
@@ -13,7 +13,7 @@ import { summaryOverstates } from "@/lib/reporting/summary";
 export const dynamic = "force-dynamic";
 
 export async function POST(request: Request) {
-  if (!PRODUCT_SCOPE.documentGeneration) {
+  if (!isProductScopeEnabled("documentGeneration")) {
     return new NextResponse(null, { status: 404 });
   }
   const access = await assertPortalAccess();

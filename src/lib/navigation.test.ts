@@ -6,6 +6,7 @@ import {
   SETTINGS_TABS,
   advancedSettingsBreadcrumbs,
   advancedSettingsVisibleTo,
+  navVisibleTo,
   settingsTabActiveHref,
 } from "@/lib/navigation";
 

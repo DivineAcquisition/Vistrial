@@ -19,7 +19,7 @@ import { requirePortalAccess } from "@/lib/portal/access";
 import { loadPortalRpc, loadPortalSchedule } from "@/lib/portal/load";
 import { previousEqualRange } from "@/lib/portal/range";
 import { buildPortalSummary } from "@/lib/portal/summary";
-import { PRODUCT_SCOPE } from "@/lib/product-scope";
+import { isProductScopeEnabled } from "@/lib/product-scope";
 import { loadReportingPanel, loadReportingState } from "@/lib/reporting/load";
 import { parseReportingRange, reportingRangeQuery } from "@/lib/reporting/range";
 import { helperClass } from "@/lib/ui";
@@ -69,12 +69,12 @@ export default async function PortalPage({
       title="Owner portal"
       description="Time to first touch, leads with no human touch, bookings, and show rate."
     >
-      {PRODUCT_SCOPE.extraPortal && sourceError ? (
+      {isProductScopeEnabled("extraPortal") && sourceError ? (
         <Notice tone="warning" className="mb-6">
           {SOURCE_ERRORS[sourceError] ?? SOURCE_ERRORS.oauth_failed}
         </Notice>
       ) : null}
-      {PRODUCT_SCOPE.extraPortal && sourceConnected && SOURCE_CONNECTED[sourceConnected] ? (
+      {isProductScopeEnabled("extraPortal") && sourceConnected && SOURCE_CONNECTED[sourceConnected] ? (
         <Notice tone="success" className="mb-6">
           {SOURCE_CONNECTED[sourceConnected]}
         </Notice>
@@ -86,7 +86,7 @@ export default async function PortalPage({
         <ThroughputPanel orgId={ctx.org.id} range={range} />
       </section>
 
-      {PRODUCT_SCOPE.extraPortal ? (
+      {isProductScopeEnabled("extraPortal") ? (
         <PortalExtraSections orgId={ctx.org.id} range={range} activatedAt={activatedAt} />
       ) : null}
     </PageFrame>
@@ -152,7 +152,7 @@ async function PortalExtraSections({
         <SourcesPanel orgId={orgId} range={range} />
       </section>
 
-      {PRODUCT_SCOPE.documentGeneration ? (
+      {isProductScopeEnabled("documentGeneration") ? (
         <>
           <section>
             <Panel className="p-6">

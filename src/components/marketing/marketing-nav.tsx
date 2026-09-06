@@ -2,7 +2,7 @@
 
 import { ChevronDown } from "lucide-react";
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import {
   Accordion,
@@ -12,7 +12,6 @@ import {
 } from "@/components/ui/accordion";
 import {
   Menu,
-  MenuCreateHandle,
   MenuGroup,
   MenuGroupLabel,
   MenuLinkItem,
@@ -71,21 +70,21 @@ function ProductDropdown({
   product,
   onPage,
   active,
-  handle,
-  forceClosed,
+  open,
+  onOpenChange,
   onPointerLeave,
 }: {
   product: Product;
   onPage: boolean;
   active: boolean;
-  handle: ReturnType<typeof MenuCreateHandle>;
-  forceClosed: boolean;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
   onPointerLeave: () => void;
 }) {
   return (
-    <Menu handle={handle} open={forceClosed ? false : undefined}>
+    <Menu open={open} onOpenChange={onOpenChange}>
       <MenuTrigger
-        openOnHover={!forceClosed}
+        openOnHover
         delay={75}
         closeDelay={180}
         onPointerLeave={onPointerLeave}
@@ -131,19 +130,17 @@ function ProductDropdown({
 
 export function MarketingNav({ onPage }: { onPage: boolean }) {
   const activeId = useActiveProduct(onPage);
-  const salesHandle = useMemo(() => MenuCreateHandle(), []);
-  const forsightHandle = useMemo(() => MenuCreateHandle(), []);
-  const [forceClosed, setForceClosed] = useState(false);
+  const [openId, setOpenId] = useState<string | null>(null);
+  const skipHover = useRef(false);
 
   useEffect(() => {
     function close() {
-      setForceClosed(true);
-      salesHandle.close();
-      forsightHandle.close();
+      skipHover.current = true;
+      setOpenId(null);
     }
     window.addEventListener("scroll", close, { passive: true });
     return () => window.removeEventListener("scroll", close);
-  }, [salesHandle, forsightHandle]);
+  }, []);
 
   return (
     <ul className="flex items-center gap-1">
@@ -153,9 +150,14 @@ export function MarketingNav({ onPage }: { onPage: boolean }) {
             product={product}
             onPage={onPage}
             active={activeId === product.id}
-            handle={product.id === "sales-os" ? salesHandle : forsightHandle}
-            forceClosed={forceClosed}
-            onPointerLeave={() => setForceClosed(false)}
+            open={openId === product.id}
+            onOpenChange={(open) => {
+              if (open && skipHover.current) return;
+              setOpenId(open ? product.id : null);
+            }}
+            onPointerLeave={() => {
+              skipHover.current = false;
+            }}
           />
         </li>
       ))}

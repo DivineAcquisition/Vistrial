@@ -96,7 +96,7 @@ export const PRIMARY_NAV: NavItem[] = [
 ];
 
 export function navVisibleTo(item: NavItem, role: OrgRole, isPlatformAdmin = false): boolean {
-  if (item.scope && !PRODUCT_SCOPE[item.scope]) return false;
+  if (item.scope && !isProductScopeEnabled(item.scope)) return false;
   if (item.platformAdminOnly) return isPlatformAdmin;
   if (isPlatformAdmin) return true;
   if (!item.roles) return true;
@@ -161,7 +161,7 @@ export const ADVANCED_SETTINGS_PAGES: Array<{
 export function advancedSettingsVisibleTo(isPlatformAdmin: boolean) {
   return ADVANCED_SETTINGS_PAGES.filter(
     (page) =>
-      (!page.platformAdminOnly || isPlatformAdmin) && (!page.scope || PRODUCT_SCOPE[page.scope])
+      (!page.platformAdminOnly || isPlatformAdmin) && (!page.scope || isProductScopeEnabled(page.scope))
   );
 }
 

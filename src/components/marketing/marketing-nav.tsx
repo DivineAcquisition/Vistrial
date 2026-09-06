@@ -72,20 +72,20 @@ function ProductDropdown({
   onPage,
   active,
   handle,
-  hoverEnabled,
+  forceClosed,
   onPointerLeave,
 }: {
   product: Product;
   onPage: boolean;
   active: boolean;
   handle: ReturnType<typeof MenuCreateHandle>;
-  hoverEnabled: boolean;
+  forceClosed: boolean;
   onPointerLeave: () => void;
 }) {
   return (
-    <Menu handle={handle}>
+    <Menu handle={handle} open={forceClosed ? false : undefined}>
       <MenuTrigger
-        openOnHover={hoverEnabled}
+        openOnHover={!forceClosed}
         delay={75}
         closeDelay={180}
         onPointerLeave={onPointerLeave}
@@ -133,13 +133,13 @@ export function MarketingNav({ onPage }: { onPage: boolean }) {
   const activeId = useActiveProduct(onPage);
   const salesHandle = useMemo(() => MenuCreateHandle(), []);
   const forsightHandle = useMemo(() => MenuCreateHandle(), []);
-  const [hoverEnabled, setHoverEnabled] = useState(true);
+  const [forceClosed, setForceClosed] = useState(false);
 
   useEffect(() => {
     function close() {
+      setForceClosed(true);
       salesHandle.close();
       forsightHandle.close();
-      setHoverEnabled(false);
     }
     window.addEventListener("scroll", close, { passive: true });
     return () => window.removeEventListener("scroll", close);
@@ -154,8 +154,8 @@ export function MarketingNav({ onPage }: { onPage: boolean }) {
             onPage={onPage}
             active={activeId === product.id}
             handle={product.id === "sales-os" ? salesHandle : forsightHandle}
-            hoverEnabled={hoverEnabled}
-            onPointerLeave={() => setHoverEnabled(true)}
+            forceClosed={forceClosed}
+            onPointerLeave={() => setForceClosed(false)}
           />
         </li>
       ))}

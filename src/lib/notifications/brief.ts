@@ -166,7 +166,7 @@ export async function collectDailyBriefItems(
     if (alarms.length > 0) {
       items.push({
         text: `${alarms.length} adoption signal${alarms.length === 1 ? "" : "s"}`,
-        href: notificationHref("/app/reporting/adoption"),
+        href: notificationHref("/app/reporting"),
       });
     }
     const health = await loadOrgIngestionHealth(db, orgId);

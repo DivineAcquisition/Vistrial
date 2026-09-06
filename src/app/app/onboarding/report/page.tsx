@@ -19,6 +19,7 @@ import {
 import { loadLatestLeakReport, requireProfileAccess } from "@/lib/profile/load";
 import { asArray, asRecord, num, parseBenchmark, str } from "@/lib/profile/parse";
 import { cardTitle, helperClass } from "@/lib/ui";
+import { isProductScopeEnabled } from "@/lib/product-scope";
 
 const BASIS_TONE = {
   backfill: "good",
@@ -104,11 +105,13 @@ export default async function LeakReportPage() {
       secondaryActions={
         <div className="flex flex-wrap items-center gap-3">
           <RegenerateLeakReport label="Regenerate" />
-          <form action="/app/onboarding/report/pdf" method="post">
-            <Button type="submit" variant="secondary" size="lg">
-              Download PDF
-            </Button>
-          </form>
+          {isProductScopeEnabled("documentGeneration") ? (
+            <form action="/app/onboarding/report/pdf" method="post">
+              <Button type="submit" variant="secondary" size="lg">
+                Download PDF
+              </Button>
+            </form>
+          ) : null}
         </div>
       }
     >

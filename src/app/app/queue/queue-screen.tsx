@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { Button } from "@/components/ui/button";
@@ -15,13 +16,8 @@ import {
 import { useOrg } from "@/components/app/org-provider";
 import { QueueLeadRow } from "@/app/app/queue/queue-row";
 import { QueueMobileList } from "@/app/app/queue/queue-mobile-list";
-import {
-  assignQueueLead,
-  completeQueueNextAction,
-  createQueueFollowOn,
-  logQueueOutcome,
-  refreshQueue,
-} from "@/app/app/queue/actions";
+import { QueueFiltersControl } from "@/app/app/queue/queue-filters";
+import { logQueueOutcome, refreshQueue } from "@/app/app/queue/actions";
 import { cursorFromRow } from "@/lib/queue/cursor";
 import { queueEmptyKind } from "@/lib/queue/parse";
 import { detectClientSurface } from "@/lib/mobile/surface";
@@ -68,6 +64,7 @@ export function QueueScreen({
   canOpenIntegrations: boolean;
 }) {
   const org = useOrg();
+  const router = useRouter();
   const [alarm, setAlarm] = useState(initial.alarm);
   const [queue, setQueue] = useState(initial.queue);
   const [hasMore, setHasMore] = useState(initial.hasMore);
@@ -86,7 +83,9 @@ export function QueueScreen({
   const [pendingDrafts, setPendingDrafts] = useState(initial.pendingDrafts);
   const [refreshing, setRefreshing] = useState(false);
 
-  const seenIds = useRef(new Set([...initial.alarm, ...initial.queue].map((row) => row.id)));
+  const seenIds = useRef(
+    new Set([...initial.alarm, ...initial.queue].map((row) => row.id)),
+  );
   const pendingLive = useRef<QueuePayload | null>(null);
   const snapshot = useRef<Snapshot | null>(null);
   const interactingRef = useRef<string | null>(null);
@@ -110,53 +109,62 @@ export function QueueScreen({
   });
   const connectionBanner =
     meta.orgLeadCount > 0 &&
-    (meta.crmStatus === "broken" || meta.crmStatus === "missing" || meta.crmStatus === "inactive")
+    (meta.crmStatus === "broken" ||
+      meta.crmStatus === "missing" ||
+      meta.crmStatus === "inactive")
       ? meta.crmStatus === "broken"
         ? "broken"
         : "not_connected"
       : null;
 
-  const applyPayload = useCallback((payload: QueuePayload, previousAlarm: QueueRow[]) => {
-    const nextAlarm = payload.alarm;
-    const nextQueue = payload.queue;
+  const applyPayload = useCallback(
+    (payload: QueuePayload, previousAlarm: QueueRow[]) => {
+      const nextAlarm = payload.alarm;
+      const nextQueue = payload.queue;
 
-    const leaving = previousAlarm.filter((row) => !nextAlarm.some((next) => next.id === row.id));
-    if (leaving.length > 0) {
-      setExitingAlarm(leaving);
-      window.setTimeout(() => {
-        setExitingAlarm((current) =>
-          current.filter((row) => leaving.every((left) => left.id !== row.id))
-        );
-      }, 800);
-    }
+      const leaving = previousAlarm.filter(
+        (row) => !nextAlarm.some((next) => next.id === row.id),
+      );
+      if (leaving.length > 0) {
+        setExitingAlarm(leaving);
+        window.setTimeout(() => {
+          setExitingAlarm((current) =>
+            current.filter((row) =>
+              leaving.every((left) => left.id !== row.id),
+            ),
+          );
+        }, 800);
+      }
 
-    const fresh = [...nextAlarm, ...nextQueue]
-      .map((row) => row.id)
-      .filter((id) => !seenIds.current.has(id));
-    if (fresh.length > 0) {
-      for (const id of fresh) seenIds.current.add(id);
-      setArrivingIds((current) => new Set([...current, ...fresh]));
-      window.setTimeout(() => {
-        setArrivingIds((current) => {
-          const next = new Set(current);
-          for (const id of fresh) next.delete(id);
-          return next;
-        });
-      }, 8000);
-    }
+      const fresh = [...nextAlarm, ...nextQueue]
+        .map((row) => row.id)
+        .filter((id) => !seenIds.current.has(id));
+      if (fresh.length > 0) {
+        for (const id of fresh) seenIds.current.add(id);
+        setArrivingIds((current) => new Set([...current, ...fresh]));
+        window.setTimeout(() => {
+          setArrivingIds((current) => {
+            const next = new Set(current);
+            for (const id of fresh) next.delete(id);
+            return next;
+          });
+        }, 8000);
+      }
 
-    setAlarm(nextAlarm);
-    setQueue(nextQueue);
-    setHasMore(payload.hasMore);
-    setMembers(payload.members);
-    setPendingDrafts(payload.pendingDrafts);
-    setMeta({
-      crmStatus: payload.crmStatus,
-      orgLeadCount: payload.orgLeadCount,
-      unfilteredActionableCount: payload.unfilteredActionableCount,
-    });
-    loadedCount.current = nextQueue.length;
-  }, []);
+      setAlarm(nextAlarm);
+      setQueue(nextQueue);
+      setHasMore(payload.hasMore);
+      setMembers(payload.members);
+      setPendingDrafts(payload.pendingDrafts);
+      setMeta({
+        crmStatus: payload.crmStatus,
+        orgLeadCount: payload.orgLeadCount,
+        unfilteredActionableCount: payload.unfilteredActionableCount,
+      });
+      loadedCount.current = nextQueue.length;
+    },
+    [],
+  );
 
   const applyLive = useCallback(
     (payload: QueuePayload, previousAlarm: QueueRow[]) => {
@@ -166,11 +174,14 @@ export function QueueScreen({
       }
       applyPayload(payload, previousAlarm);
     },
-    [applyPayload]
+    [applyPayload],
   );
 
   useEffect(() => {
-    const timer = window.setInterval(() => setNow(new Date().toISOString()), 30000);
+    const timer = window.setInterval(
+      () => setNow(new Date().toISOString()),
+      30000,
+    );
     return () => window.clearInterval(timer);
   }, []);
 
@@ -180,9 +191,9 @@ export function QueueScreen({
     const pull = () => {
       if (debounce) window.clearTimeout(debounce);
       debounce = window.setTimeout(() => {
-        void refreshQueue(filters, { limit: Math.max(QUEUE_PAGE_SIZE, loadedCount.current) }).then(
-          (payload) => applyLive(payload, alarmRef.current)
-        );
+        void refreshQueue(filters, {
+          limit: Math.max(QUEUE_PAGE_SIZE, loadedCount.current),
+        }).then((payload) => applyLive(payload, alarmRef.current));
       }, 400);
     };
 
@@ -190,23 +201,43 @@ export function QueueScreen({
       .channel(`queue:${org.org.id}`)
       .on(
         "postgres_changes",
-        { event: "*", schema: "public", table: "leads", filter: `org_id=eq.${org.org.id}` },
-        pull
+        {
+          event: "*",
+          schema: "public",
+          table: "leads",
+          filter: `org_id=eq.${org.org.id}`,
+        },
+        pull,
       )
       .on(
         "postgres_changes",
-        { event: "*", schema: "public", table: "next_actions", filter: `org_id=eq.${org.org.id}` },
-        pull
+        {
+          event: "*",
+          schema: "public",
+          table: "next_actions",
+          filter: `org_id=eq.${org.org.id}`,
+        },
+        pull,
       )
       .on(
         "postgres_changes",
-        { event: "*", schema: "public", table: "touches", filter: `org_id=eq.${org.org.id}` },
-        pull
+        {
+          event: "*",
+          schema: "public",
+          table: "touches",
+          filter: `org_id=eq.${org.org.id}`,
+        },
+        pull,
       )
       .on(
         "postgres_changes",
-        { event: "*", schema: "public", table: "follow_up_drafts", filter: `org_id=eq.${org.org.id}` },
-        pull
+        {
+          event: "*",
+          schema: "public",
+          table: "follow_up_drafts",
+          filter: `org_id=eq.${org.org.id}`,
+        },
+        pull,
       )
       .subscribe();
 
@@ -217,7 +248,8 @@ export function QueueScreen({
   }, [applyLive, filters, org.org.id]);
 
   function flushPendingLive() {
-    if (interactingRef.current || busyRef.current || !pendingLive.current) return;
+    if (interactingRef.current || busyRef.current || !pendingLive.current)
+      return;
     const pending = pendingLive.current;
     pendingLive.current = null;
     applyPayload(pending, alarmRef.current);
@@ -268,8 +300,10 @@ export function QueueScreen({
       clientLoggedAt: input.clientLoggedAt || new Date().toISOString(),
       clientSurface: input.clientSurface || detectClientSurface(),
       expectedLeadStatus: input.expectedLeadStatus ?? current?.status ?? null,
-      expectedLastTouchAt: input.expectedLastTouchAt ?? current?.lastTouchAt ?? null,
-      expectedFirstHumanTouchAt: input.expectedFirstHumanTouchAt ?? current?.firstHumanTouchAt ?? null,
+      expectedLastTouchAt:
+        input.expectedLastTouchAt ?? current?.lastTouchAt ?? null,
+      expectedFirstHumanTouchAt:
+        input.expectedFirstHumanTouchAt ?? current?.firstHumanTouchAt ?? null,
     };
 
     const result = await logQueueOutcome(payload);
@@ -282,84 +316,7 @@ export function QueueScreen({
     reconcile(
       await refreshQueue(filters, {
         limit: Math.max(QUEUE_PAGE_SIZE, loadedCount.current),
-      })
-    );
-    return true;
-  }
-
-  async function handleAssign(input: {
-    leadId: string;
-    setterId: string | null;
-    closerId: string | null;
-  }) {
-    begin(input.leadId);
-    const setter = members.find((member) => member.id === input.setterId);
-    const closer = members.find((member) => member.id === input.closerId);
-    const patch = (row: QueueRow) =>
-      row.id === input.leadId
-        ? {
-            ...row,
-            assignedSetterId: input.setterId,
-            assignedCloserId: input.closerId,
-            assignedSetterName: setter?.displayName ?? null,
-            assignedCloserName: closer?.displayName ?? null,
-          }
-        : row;
-    setAlarm((rows) => rows.map(patch));
-    setQueue((rows) => rows.map(patch));
-
-    const result = await assignQueueLead(input);
-    if (!result.ok) {
-      revert(result.error);
-      return false;
-    }
-    finishBusy();
-    reconcile(
-      await refreshQueue(filters, {
-        limit: Math.max(QUEUE_PAGE_SIZE, loadedCount.current),
-      })
-    );
-    return true;
-  }
-
-  async function handleComplete(input: { leadId: string; nextActionId: string }) {
-    setInteracting(input.leadId);
-    begin(input.leadId);
-    const clearAction = (row: QueueRow) =>
-      row.id === input.leadId ? { ...row, nextAction: null } : row;
-    setAlarm((rows) => rows.map(clearAction));
-    setQueue((rows) => rows.map(clearAction));
-    const result = await completeQueueNextAction(input);
-    if (!result.ok) {
-      revert(result.error);
-      setInteracting(null);
-      return false;
-    }
-    finishBusy();
-    reconcile(
-      await refreshQueue(filters, {
-        limit: Math.max(QUEUE_PAGE_SIZE, loadedCount.current),
-      })
-    );
-    return true;
-  }
-
-  async function handleFollowOn(input: {
-    leadId: string;
-    actionText: string;
-    dueAt: string | null;
-  }) {
-    begin(input.leadId);
-    const result = await createQueueFollowOn(input);
-    if (!result.ok) {
-      revert(result.error);
-      return false;
-    }
-    finishBusy();
-    reconcile(
-      await refreshQueue(filters, {
-        limit: Math.max(QUEUE_PAGE_SIZE, loadedCount.current),
-      })
+      }),
     );
     return true;
   }
@@ -370,7 +327,7 @@ export function QueueScreen({
       reconcile(
         await refreshQueue(filters, {
           limit: Math.max(QUEUE_PAGE_SIZE, loadedCount.current),
-        })
+        }),
       );
     } finally {
       setRefreshing(false);
@@ -386,7 +343,9 @@ export function QueueScreen({
         cursor: cursorFromRow(last),
         limit: QUEUE_PAGE_SIZE,
       });
-      const incoming = payload.queue.filter((row) => !queue.some((existing) => existing.id === row.id));
+      const incoming = payload.queue.filter(
+        (row) => !queue.some((existing) => existing.id === row.id),
+      );
       setQueue((rows) => [...rows, ...incoming]);
       setHasMore(payload.hasMore);
       loadedCount.current += incoming.length;
@@ -397,7 +356,11 @@ export function QueueScreen({
   }
 
   const integrations = canOpenIntegrations ? (
-    <Button variant="secondary" size="sm" render={<Link href="/app/settings/integrations" />}>
+    <Button
+      variant="secondary"
+      size="sm"
+      render={<Link href="/app/settings/integrations" />}
+    >
       Open integrations
     </Button>
   ) : null;
@@ -408,23 +371,28 @@ export function QueueScreen({
     return [...exitingAlarm, ...live];
   }, [alarm, exitingAlarm]);
 
-  const showWorkingSurface = emptyKind === null || emptyKind === "nothing_to_work";
+  const showWorkingSurface =
+    emptyKind === null || emptyKind === "nothing_to_work";
 
   return (
     <div
       onTouchStart={(event) => {
         if (window.scrollY > 8) return;
         (event.currentTarget as HTMLElement).dataset.pullY = String(
-          event.changedTouches[0]?.clientY ?? 0
+          event.changedTouches[0]?.clientY ?? 0,
         );
       }}
       onTouchEnd={(event) => {
-        const start = Number((event.currentTarget as HTMLElement).dataset.pullY ?? 0);
+        const start = Number(
+          (event.currentTarget as HTMLElement).dataset.pullY ?? 0,
+        );
         const y = event.changedTouches[0]?.clientY ?? 0;
         if (start && y - start > 72) void pullRefresh();
       }}
     >
-      {actionError ? <p className={`${errorClass} mb-4`}>{actionError}</p> : null}
+      {actionError ? (
+        <p className={`${errorClass} mb-4`}>{actionError}</p>
+      ) : null}
 
       {connectionBanner === "broken" ? (
         <div className="mb-8">
@@ -479,7 +447,9 @@ export function QueueScreen({
           <section className="mb-8" aria-label="Waiting too long">
             <p className={sectionLabel}>Waiting too long</p>
             {alarmVisible.length === 0 ? (
-              <p className="mt-3 text-sm text-dim">Nobody has been waiting too long.</p>
+              <p className="mt-3 text-sm text-dim">
+                Nobody has been waiting too long.
+              </p>
             ) : (
               <>
                 <div className="mt-4 md:hidden">
@@ -495,51 +465,52 @@ export function QueueScreen({
                     exitingIds={new Set(exitingAlarm.map((row) => row.id))}
                     busyLeadId={busyLeadId}
                     error={actionError}
+                    onInteract={setInteracting}
                     onLogOutcome={handleLogOutcome}
-                    onAssign={handleAssign}
-                    onComplete={handleComplete}
-                    onFollowOn={handleFollowOn}
                   />
                 </div>
                 <Panel className="mt-4 hidden overflow-hidden py-0 md:block">
-                <Table>
-                  <TableHeader>
-                    <TableRow className="hover:bg-transparent">
-                      {ALARM_COLUMNS.map((column) => (
-                        <TableHead
-                          key={column.label || "actions"}
-                          className={column.hideOnMobile ? "hidden md:table-cell" : undefined}
-                        >
-                          {column.label}
-                        </TableHead>
+                  <Table>
+                    <TableHeader>
+                      <TableRow className="hover:bg-transparent">
+                        {ALARM_COLUMNS.map((column) => (
+                          <TableHead
+                            key={column.label || "actions"}
+                            className={
+                              column.hideOnMobile
+                                ? "hidden md:table-cell"
+                                : undefined
+                            }
+                          >
+                            {column.label}
+                          </TableHead>
+                        ))}
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {alarmVisible.map((row) => (
+                        <QueueLeadRow
+                          key={row.id}
+                          row={row}
+                          now={now}
+                          variant="alarm"
+                          members={members}
+                          role={org.role}
+                          memberId={org.memberId}
+                          isPlatformAdmin={org.isPlatformAdmin}
+                          arriving={arrivingIds.has(row.id)}
+                          exiting={exitingAlarm.some(
+                            (item) => item.id === row.id,
+                          )}
+                          busy={busyLeadId === row.id}
+                          error={busyLeadId === row.id ? actionError : null}
+                          colSpan={ALARM_COLUMNS.length}
+                          onInteract={setInteracting}
+                          onLogOutcome={handleLogOutcome}
+                        />
                       ))}
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {alarmVisible.map((row) => (
-                      <QueueLeadRow
-                        key={row.id}
-                        row={row}
-                        now={now}
-                        variant="alarm"
-                        members={members}
-                        role={org.role}
-                        memberId={org.memberId}
-                        isPlatformAdmin={org.isPlatformAdmin}
-                        arriving={arrivingIds.has(row.id)}
-                        exiting={exitingAlarm.some((item) => item.id === row.id)}
-                        busy={busyLeadId === row.id}
-                        error={busyLeadId === row.id ? actionError : null}
-                        colSpan={ALARM_COLUMNS.length}
-                        onInteract={setInteracting}
-                        onLogOutcome={handleLogOutcome}
-                        onAssign={handleAssign}
-                        onComplete={handleComplete}
-                        onFollowOn={handleFollowOn}
-                      />
-                    ))}
-                  </TableBody>
-                </Table>
+                    </TableBody>
+                  </Table>
                 </Panel>
               </>
             )}
@@ -565,7 +536,16 @@ export function QueueScreen({
             />
           ) : (
             <section aria-label="Who to call">
-              <p className={sectionLabel}>Next</p>
+              <div className="flex items-center justify-between gap-4">
+                <p className={sectionLabel}>Next</p>
+                <QueueFiltersControl
+                  filters={filters}
+                  sources={initial.sources}
+                  role={org.role}
+                  isPlatformAdmin={org.isPlatformAdmin}
+                  onNavigate={(href) => router.replace(href)}
+                />
+              </div>
               <div className="mt-4 md:hidden">
                 {queue.length === 0 ? (
                   <p className="px-4 py-8 text-center text-sm text-dim">
@@ -583,10 +563,8 @@ export function QueueScreen({
                     arrivingIds={arrivingIds}
                     busyLeadId={busyLeadId}
                     error={actionError}
+                    onInteract={setInteracting}
                     onLogOutcome={handleLogOutcome}
-                    onAssign={handleAssign}
-                    onComplete={handleComplete}
-                    onFollowOn={handleFollowOn}
                   />
                 )}
               </div>
@@ -597,7 +575,11 @@ export function QueueScreen({
                       {QUEUE_COLUMNS.map((column) => (
                         <TableHead
                           key={column.label || "actions"}
-                          className={column.hideOnMobile ? "hidden md:table-cell" : undefined}
+                          className={
+                            column.hideOnMobile
+                              ? "hidden md:table-cell"
+                              : undefined
+                          }
                         >
                           {column.label}
                         </TableHead>
@@ -631,9 +613,6 @@ export function QueueScreen({
                           colSpan={QUEUE_COLUMNS.length}
                           onInteract={setInteracting}
                           onLogOutcome={handleLogOutcome}
-                          onAssign={handleAssign}
-                          onComplete={handleComplete}
-                          onFollowOn={handleFollowOn}
                         />
                       ))
                     )}

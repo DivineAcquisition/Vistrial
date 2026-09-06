@@ -181,8 +181,6 @@ export function operatorAnthropicTools(): AnthropicTool[] {
           track: { type: "string", enum: ["ready", "nurture"] },
           status: { type: "string" },
           source: { type: "string" },
-          scoreMin: { type: "integer" },
-          scoreMax: { type: "integer" },
           breached: { type: "boolean" },
           cursor: { type: "string" },
         },

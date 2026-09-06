@@ -487,8 +487,6 @@ async function toolQueue(input: Record<string, unknown>, ctx: AuthContext): Prom
           ? (statusRaw as QueueStatusFilter)
           : null,
       source: asString(input.source),
-      scoreMin: asInt(input.scoreMin),
-      scoreMax: asInt(input.scoreMax),
       breached: asBool(input.breached) === true,
     };
     const cursor = decodeQueueCursor(asString(input.cursor));

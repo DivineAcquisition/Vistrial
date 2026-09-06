@@ -898,9 +898,6 @@ function TimelineEntry({
           </KeyValue>
           <KeyValue label="When">{formatQueueDuration(entry.at, now)}</KeyValue>
           <KeyValue label="Note">{entry.note || "—"}</KeyValue>
-          {entry.direction === "outbound" && entry.outboundBody ? (
-            <KeyValue label="Sent">{entry.outboundBody}</KeyValue>
-          ) : null}
         </DefinitionList>
       ) : null}
       {entry.kind === "call" ? (

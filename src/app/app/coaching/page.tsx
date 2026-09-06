@@ -4,12 +4,14 @@ import { PageFrame } from "@/components/app/page-frame";
 import { CoachingView } from "@/app/app/coaching/view";
 import { getAuthContext } from "@/lib/auth/session";
 import { loadCallQualityRepSnapshotForOrg } from "@/lib/coaching/load";
+import { assertProductScope } from "@/lib/product-scope-guard";
 
 export default async function CoachingPage({
   searchParams,
 }: {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
+  assertProductScope("coaching");
   const ctx = await getAuthContext();
   const params = await searchParams;
   const query = typeof params.q === "string" ? params.q : "";

@@ -6,8 +6,10 @@ import { requireReportingAccess } from "@/lib/reporting/access";
 import { loadReportingState } from "@/lib/reporting/load";
 import { loadCallQualityManagerSnapshot } from "@/lib/coaching/load";
 import { parseReportingRange } from "@/lib/reporting/range";
+import { assertProductScope } from "@/lib/product-scope-guard";
 
 export default async function CoachingReportingPage() {
+  assertProductScope("coaching");
   const ctx = await requireReportingAccess();
   const meta = await loadReportingState(ctx.org.id);
   const activatedAt = typeof meta.activated_at === "string" ? meta.activated_at : null;

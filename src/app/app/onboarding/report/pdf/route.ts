@@ -9,6 +9,7 @@ import {
 import { assertProfileAccess, loadLatestLeakReport } from "@/lib/profile/load";
 import { asRecord } from "@/lib/profile/parse";
 import { documentPdf } from "@/lib/reporting/pdf";
+import { isProductScopeEnabled } from "@/lib/product-scope";
 
 export const dynamic = "force-dynamic";
 
@@ -22,6 +23,9 @@ const BASIS_SUMMARY: Record<string, string> = {
 };
 
 export async function POST() {
+  if (!isProductScopeEnabled("documentGeneration")) {
+    return new NextResponse(null, { status: 404 });
+  }
   const access = await assertProfileAccess();
   if (!access.ok) {
     return NextResponse.json({ error: access.error }, { status: 403 });

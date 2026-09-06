@@ -9,6 +9,7 @@ import { Notice } from "@/components/ui/states";
 import { Panel } from "@/components/ui/panel";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { formatMinutes } from "@/lib/profile/leak";
+import { assertProductScope } from "@/lib/product-scope-guard";
 import { loadAdoptionWatch, requireProfileAccess } from "@/lib/profile/load";
 import { asArray, asRecord, bool, num, str } from "@/lib/profile/parse";
 import {
@@ -49,6 +50,7 @@ function trendOf(now: Rate, before: Rate, higherIsBetter: boolean) {
 }
 
 export default async function AdoptionWatchPage() {
+  assertProductScope("extraPortal");
   const ctx = await requireProfileAccess();
   const watch = await loadAdoptionWatch(ctx.org.id);
 

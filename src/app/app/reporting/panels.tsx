@@ -26,6 +26,7 @@ import { loadStatedGoal } from "@/lib/profile/load";
 import { helperClass } from "@/lib/ui";
 import { FOLLOW_UP_BRANCH_LABELS, HALT_REASON_LABELS } from "@/lib/follow-up/labels";
 import { OBJECTION_TYPE_LABELS } from "@/lib/leads/labels";
+import { isProductScopeEnabled } from "@/lib/product-scope";
 import type { FollowUpBranch } from "@/lib/follow-up/types";
 import type { Enums } from "@/types/database";
 
@@ -105,22 +106,27 @@ export function ReportingPanels({
   includeTeam: boolean;
   includeIngestion?: boolean;
 }) {
+  const extras = isProductScopeEnabled("extraReporting");
   return (
     <div className="space-y-8">
-      <Suspense fallback={<PanelFallback title="Outcome" />}>
-        <OutcomePanel orgId={orgId} range={range} />
-      </Suspense>
+      {extras ? (
+        <Suspense fallback={<PanelFallback title="Outcome" />}>
+          <OutcomePanel orgId={orgId} range={range} />
+        </Suspense>
+      ) : null}
       <Suspense fallback={<PanelFallback title="Coverage" />}>
         <CoveragePanel orgId={orgId} range={range} />
       </Suspense>
       <Suspense fallback={<PanelFallback title="Throughput" />}>
         <ThroughputPanel orgId={orgId} range={range} />
       </Suspense>
-      {includeTeam ? (
+      {extras && includeTeam ? (
         <Suspense fallback={<PanelFallback title="Team" />}>
           <TeamPanel orgId={orgId} range={range} />
         </Suspense>
       ) : null}
+      {extras ? (
+        <>
       <Suspense fallback={<PanelFallback title="Follow-up" />}>
         <FollowUpPanel orgId={orgId} range={range} />
       </Suspense>
@@ -142,7 +148,9 @@ export function ReportingPanels({
       <Suspense fallback={<PanelFallback title="What Vistrial actually did" />}>
         <ContributionPanel orgId={orgId} range={range} />
       </Suspense>
-      {includeIngestion ? (
+        </>
+      ) : null}
+      {extras && includeIngestion ? (
         <Suspense fallback={<PanelFallback title="Connection health" />}>
           <IngestionPanel orgId={orgId} range={range} />
         </Suspense>
@@ -229,23 +237,30 @@ export async function CoveragePanel({ orgId, range }: { orgId: string; range: Re
   const ever = rateOf(payload.ever_touched);
   const within = rateOf(payload.within_window);
   const targetMinutes = num(payload.speed_to_lead_minutes);
+  const extras = isProductScopeEnabled("extraReporting");
   return (
     <Panel className="p-6">
       <SectionHeader
         title="Coverage"
         hint={
-          targetMinutes != null
-            ? `The operational claim: a human actually reached the lead, and did it inside the ${targetMinutes}-minute target.`
-            : "The operational claim: a human actually reached the lead, and did it inside the window."
+          extras
+            ? targetMinutes != null
+              ? `The operational claim: a human actually reached the lead, and did it inside the ${targetMinutes}-minute target.`
+              : "The operational claim: a human actually reached the lead, and did it inside the window."
+            : "Median and worst time to first human touch, and how many people still have none."
         }
       />
-      <KpiGrid columns={4}>
-        <KpiCard label="Ever a human touch" value={formatPct(ever.pct, ever.tooSmall)} sub={ever.sample} />
-        <KpiCard
-          label="Inside the window"
-          value={formatPct(within.pct, within.tooSmall)}
-          sub={targetMinutes != null ? `${within.sample} · ${targetMinutes} min target` : within.sample}
-        />
+      <KpiGrid columns={extras ? 4 : 3}>
+        {extras ? (
+          <KpiCard label="Ever a human touch" value={formatPct(ever.pct, ever.tooSmall)} sub={ever.sample} />
+        ) : null}
+        {extras ? (
+          <KpiCard
+            label="Inside the window"
+            value={formatPct(within.pct, within.tooSmall)}
+            sub={targetMinutes != null ? `${within.sample} · ${targetMinutes} min target` : within.sample}
+          />
+        ) : null}
         <KpiCard
           label="Median time to first touch"
           value={formatMinutes(num(payload.median_minutes))}
@@ -256,7 +271,15 @@ export async function CoveragePanel({ orgId, range }: { orgId: string; range: Re
           value={formatMinutes(num(payload.worst_case_minutes))}
           sub={targetMinutes != null ? `Target ${targetMinutes} min` : undefined}
         />
+        {extras ? null : (
+          <KpiCard
+            label="No human touch"
+            value={formatCount(num(payload.ghosted_no_touch) ?? 0)}
+            tone="critical"
+          />
+        )}
       </KpiGrid>
+      {extras ? (
       <div className="mt-4 grid gap-4 sm:grid-cols-2">
         <KpiCard label="Waiting too long right now" value={formatCount(num(payload.currently_in_breach) ?? 0)} />
         <KpiCard
@@ -265,26 +288,33 @@ export async function CoveragePanel({ orgId, range }: { orgId: string; range: Re
           tone="critical"
         />
       </div>
+      ) : null}
       <Computed payload={payload} />
     </Panel>
   );
 }
 
-async function ThroughputPanel({ orgId, range }: { orgId: string; range: ReportingRange }) {
+export async function ThroughputPanel({ orgId, range }: { orgId: string; range: ReportingRange }) {
   const payload = await loadReportingPanel(orgId, "throughput", range);
   if (payload.blocked === true) return <ReportBlocked title="Throughput" payload={payload} />;
   const sources = Array.isArray(payload.leads_in_by_source) ? payload.leads_in_by_source : [];
   const funnel = Array.isArray(payload.close_rate_by_stage) ? payload.close_rate_by_stage : [];
   const show = rateOf(payload.show_rate);
+  const extras = isProductScopeEnabled("extraReporting");
   return (
     <Panel className="p-6">
-      <SectionHeader title="Throughput" hint="Leads in this range, and what happened to their calls." />
-      <KpiGrid columns={4}>
+      <SectionHeader
+        title="Throughput"
+        hint={extras ? "Leads in this range, and what happened to their calls." : "Bookings and show rate for this range."}
+      />
+      <KpiGrid columns={extras ? 4 : 2}>
         <KpiCard label="Calls booked" value={formatCount(num(payload.calls_booked) ?? 0)} />
-        <KpiCard label="Held" value={formatCount(num(payload.calls_held) ?? 0)} />
-        <KpiCard label="No-showed" value={formatCount(num(payload.calls_no_showed) ?? 0)} />
+        {extras ? <KpiCard label="Held" value={formatCount(num(payload.calls_held) ?? 0)} /> : null}
+        {extras ? <KpiCard label="No-showed" value={formatCount(num(payload.calls_no_showed) ?? 0)} /> : null}
         <KpiCard label="Show rate" value={formatPct(show.pct, show.tooSmall)} sub={show.sample} />
       </KpiGrid>
+      {extras ? (
+        <>
       <div className="mt-6">
         <DataTable
           columns={[
@@ -318,6 +348,8 @@ async function ThroughputPanel({ orgId, range }: { orgId: string; range: Reporti
           })}
         />
       </div>
+        </>
+      ) : null}
       <Computed payload={payload} />
     </Panel>
   );
@@ -734,10 +766,11 @@ export function ReportingTabs({
       label="Reporting views"
       activeHref={activeHref}
       items={[
-        // The two range-aware views carry the selected range across with them.
         { href: `/app/reporting${query ? `?${query}` : ""}`, label: "Team" },
         { href: `/portal${query ? `?${query}` : ""}`, label: "Owner portal" },
-        { href: "/app/reporting/coaching", label: "Coaching" },
+        ...(isProductScopeEnabled("coaching")
+          ? [{ href: "/app/reporting/coaching", label: "Coaching" }]
+          : []),
       ]}
     />
   );

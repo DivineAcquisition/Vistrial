@@ -5,8 +5,10 @@ import { loadReportingState } from "@/lib/reporting/load";
 import { ReportingTabs } from "@/app/app/reporting/panels";
 import { CalibrationReport } from "@/app/app/reporting/calibration/report";
 import { parseReportingRange } from "@/lib/reporting/range";
+import { assertProductScope } from "@/lib/product-scope-guard";
 
 export default async function CalibrationPage() {
+  assertProductScope("extraReporting");
   const ctx = await requireReportingAccess();
   const meta = await loadReportingState(ctx.org.id);
   const activatedAt = typeof meta.activated_at === "string" ? meta.activated_at : null;

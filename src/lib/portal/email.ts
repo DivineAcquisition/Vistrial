@@ -9,6 +9,7 @@ import { previousEqualRange } from "@/lib/portal/range";
 import { loadPortalRpcAdmin, nextSendAtFor, scheduledEmailRange } from "@/lib/portal/load";
 import { portalPdf } from "@/lib/portal/pdf";
 import { buildPortalSummary } from "@/lib/portal/summary";
+import { isProductScopeEnabled } from "@/lib/product-scope";
 import { summaryOverstates } from "@/lib/reporting/summary";
 import type { ReportingRange } from "@/lib/reporting/range";
 import { ghlError, ghlLog } from "@/lib/ghl/log";
@@ -20,6 +21,9 @@ function asRecord(value: unknown): Record<string, unknown> {
 }
 
 export async function runPortalEmailJobs(db: GhlDb): Promise<{ sent: number; skipped: number; failed: number }> {
+  if (!isProductScopeEnabled("documentGeneration")) {
+    return { sent: 0, skipped: 0, failed: 0 };
+  }
   const now = new Date();
   const { data: schedules, error } = await db
     .from("portal_schedules")
@@ -64,6 +68,9 @@ export async function sendPortalEmailForOrg(
   orgId: string,
   cadence: "weekly" | "monthly"
 ): Promise<{ status: "sent" } | { status: "skipped"; reason: string }> {
+  if (!isProductScopeEnabled("documentGeneration")) {
+    return { status: "skipped", reason: "Document generation is parked." };
+  }
   const cfg = resendConfigured();
   if (!cfg) return { status: "skipped", reason: "RESEND_API_KEY or RESEND_FROM is not set. The email was not faked." };
 

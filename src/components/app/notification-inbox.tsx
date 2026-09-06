@@ -55,8 +55,6 @@ export function NotificationInbox() {
     void load();
   }, [open, load]);
 
-  const unread = rows.filter((row) => !row.acted_at && row.status !== "acted").length;
-
   async function markActed(id: string) {
     const supabase = createClient();
     const now = new Date().toISOString();
@@ -73,16 +71,13 @@ export function NotificationInbox() {
     <Sheet open={open} onOpenChange={setOpen}>
       <SheetTrigger
         className="relative rounded-xl p-2 text-silver transition-colors hover:bg-white/[0.05] hover:text-white"
-        aria-label={unread ? `Notifications, ${unread} unread` : "Notifications"}
+        aria-label="Alerts"
       >
         <Bell className="size-5" aria-hidden />
-        {unread ? (
-          <span className="absolute top-1.5 right-1.5 size-2 rounded-full bg-brand-500" aria-hidden />
-        ) : null}
       </SheetTrigger>
       <SheetContent side="right" className="bg-ink-900 text-white" showCloseButton>
         <SheetHeader>
-          <SheetTitle>Inbox</SheetTitle>
+          <SheetTitle>Alerts</SheetTitle>
         </SheetHeader>
         <div className="flex flex-col gap-2 overflow-y-auto px-4 pb-6">
           {rows.length === 0 ? (

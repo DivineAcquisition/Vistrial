@@ -139,7 +139,11 @@ export function MarketingNav({ onPage }: { onPage: boolean }) {
       setOpenId(null);
     }
     window.addEventListener("scroll", close, { passive: true });
-    return () => window.removeEventListener("scroll", close);
+    document.addEventListener("scroll", close, { passive: true, capture: true });
+    return () => {
+      window.removeEventListener("scroll", close);
+      document.removeEventListener("scroll", close, { capture: true });
+    };
   }, []);
 
   return (

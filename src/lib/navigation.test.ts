@@ -60,13 +60,27 @@ describe("settings IA", () => {
     expect(PRIMARY_NAV.map((item) => item.label)).not.toContain("Operator");
   });
 
-  it("hides Agents from client Advanced", () => {
+  it("hides parked Coaching and Activity from every role", () => {
+    const coaching = PRIMARY_NAV.find((item) => item.href === "/app/coaching");
+    const activity = PRIMARY_NAV.find((item) => item.href === "/app/activity");
+    expect(coaching).toBeDefined();
+    expect(activity).toBeDefined();
+    expect(navVisibleTo(coaching!, "owner")).toBe(false);
+    expect(navVisibleTo(activity!, "owner")).toBe(false);
+    expect(navVisibleTo(coaching!, "setter", true)).toBe(false);
+  });
+
+  it("hides Follow-up from Advanced while that surface is parked", () => {
     expect(advancedSettingsVisibleTo(false).map((page) => page.label)).toEqual([
       "Business",
       "Scoring",
-      "Follow-up",
       "Data",
     ]);
-    expect(advancedSettingsVisibleTo(true).map((page) => page.label)).toContain("Agents");
+    expect(advancedSettingsVisibleTo(true).map((page) => page.label)).toEqual([
+      "Business",
+      "Scoring",
+      "Data",
+      "Agents",
+    ]);
   });
 });

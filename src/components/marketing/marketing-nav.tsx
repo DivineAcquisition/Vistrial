@@ -37,7 +37,9 @@ function useActiveProduct(onPage: boolean) {
     const regions = NAV.products.flatMap((product) =>
       product.regionIds.map((id) => ({ id, productId: product.id })),
     );
-    const productByRegion = new Map(regions.map((region) => [region.id, region.productId]));
+    const productByRegion = new Map<string, string>(
+      regions.map((region) => [region.id, region.productId]),
+    );
     const nodes = regions
       .map((region) => document.getElementById(region.id))
       .filter((node): node is HTMLElement => node instanceof HTMLElement);

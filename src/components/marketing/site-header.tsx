@@ -2,13 +2,13 @@
 
 import { Menu } from "lucide-react";
 import Link from "next/link";
+import { useState } from "react";
 
 import Logo from "@/components/brand/logo";
 import { CtaLink } from "@/components/marketing/cta-link";
 import { Button } from "@/components/ui/button";
 import {
   Drawer,
-  DrawerClose,
   DrawerHeader,
   DrawerPanel,
   DrawerPopup,
@@ -73,6 +73,7 @@ export function SiteHeader({
   action?: "cta" | "none";
 }) {
   const onPage = action === "cta";
+  const [menuOpen, setMenuOpen] = useState(false);
 
   return (
     <header className="relative sticky top-0 z-50 border-b border-white/[0.06] bg-ink-950/75 backdrop-blur-xl">
@@ -111,7 +112,7 @@ export function SiteHeader({
           ) : null}
 
           {onPage ? (
-            <Drawer position="bottom">
+            <Drawer position="bottom" open={menuOpen} onOpenChange={setMenuOpen}>
               <DrawerTrigger asChild>
                 <Button
                   variant="ghost"
@@ -130,31 +131,27 @@ export function SiteHeader({
                 <DrawerPanel className="px-4 pt-0">
                   <nav aria-label="Page" className="flex flex-col gap-1">
                     {NAV.sections.map((item) => (
-                      <DrawerClose
+                      <Link
                         key={item.href}
-                        nativeButton={false}
-                        render={
-                          <Link
-                            href={item.href}
-                            className="flex min-h-11 items-center rounded-xl px-3 text-base font-medium text-silver transition-colors hover:bg-white/[0.04] hover:text-white"
-                          />
-                        }
+                        href={item.href}
+                        className="flex min-h-11 items-center rounded-xl px-3 text-base font-medium text-silver transition-colors hover:bg-white/[0.04] hover:text-white"
+                        onClick={() => setMenuOpen(false)}
                       >
                         {item.label}
-                      </DrawerClose>
+                      </Link>
                     ))}
                   </nav>
                   <div className="mt-6 flex flex-col gap-3">
-                    <DrawerClose asChild nativeButton={false}>
-                      <Button variant="outline" className="w-full" render={<a href="#what-it-does" />}>
-                        {HERO.secondaryCta}
-                      </Button>
-                    </DrawerClose>
-                    <DrawerClose asChild nativeButton={false}>
-                      <CtaLink position="nav" className="w-full rounded-full">
-                        {NAV.book}
-                      </CtaLink>
-                    </DrawerClose>
+                    <Button
+                      variant="outline"
+                      className="w-full"
+                      render={<a href="#what-it-does" onClick={() => setMenuOpen(false)} />}
+                    >
+                      {HERO.secondaryCta}
+                    </Button>
+                    <CtaLink position="nav" className="w-full rounded-full">
+                      {NAV.book}
+                    </CtaLink>
                   </div>
                 </DrawerPanel>
               </DrawerPopup>

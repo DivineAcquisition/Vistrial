@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   computeReadinessScore,
+  scoreConfidenceFromKnownCount,
   type FactorValues,
   type ScoreWeights,
 } from "@/lib/scoring/compute";
@@ -241,5 +242,58 @@ describe("computeReadinessScore", () => {
     expect(() =>
       computeReadinessScore(factors({ timeline: -1 }), NORTHSTAR)
     ).toThrow(/timeline/);
+  });
+
+  // A config can legally zero out a factor. If the only factor we know is one
+  // the org gave no weight to, there is no arithmetic to do — and returning 0
+  // would read as "not ready" rather than "not measured".
+  it("returns unscored when the only known factor carries no weight", () => {
+    const result = computeReadinessScore(factors({ pain_severity: 90 }), {
+      timeline: 60,
+      investment_capacity: 40,
+      decision_authority: 0,
+      pain_severity: 0,
+    });
+    expect(result.kind).toBe("unscored");
+    expect(result.confidence).toBe("none");
+    expect(result.explanation).toMatch(/no weight/i);
+  });
+
+  it("still scores when a zero-weight factor is known alongside a weighted one", () => {
+    const result = computeReadinessScore(
+      factors({ timeline: 80, pain_severity: 0 }),
+      { timeline: 100, investment_capacity: 0, decision_authority: 0, pain_severity: 0 }
+    );
+    expect(result.kind).toBe("scored");
+    if (result.kind !== "scored") return;
+    // pain_severity has no weight, so it cannot pull the total off timeline.
+    expect(result.total).toBe(80);
+  });
+
+  it("does not let a zero-valued factor read as unknown", () => {
+    const result = computeReadinessScore(
+      factors({ timeline: 0, investment_capacity: 100 }),
+      NORTHSTAR
+    );
+    expect(result.kind).toBe("scored");
+    if (result.kind !== "scored") return;
+    expect(result.knownFactorCount).toBe(2);
+    expect(result.unknownFactors).toEqual(["decision_authority", "pain_severity"]);
+    // 0 at weight 35 and 100 at weight 30, redistributed across 65.
+    expect(result.total).toBe(46);
+  });
+});
+
+describe("scoreConfidenceFromKnownCount", () => {
+  it("maps known-factor counts onto the confidence ladder", () => {
+    expect(scoreConfidenceFromKnownCount(4)).toBe("high");
+    expect(scoreConfidenceFromKnownCount(3)).toBe("moderate");
+    expect(scoreConfidenceFromKnownCount(2)).toBe("low");
+    expect(scoreConfidenceFromKnownCount(1)).toBe("very_low");
+  });
+
+  it("has no confidence to report when nothing is known", () => {
+    expect(scoreConfidenceFromKnownCount(0)).toBeNull();
+    expect(scoreConfidenceFromKnownCount(-1)).toBeNull();
   });
 });

@@ -1,5 +1,5 @@
 import { overlayCallFactors } from "@/lib/scoring/events";
-import { computeReadinessScore } from "@/lib/scoring/compute";
+import { computeReadinessScore, type FactorValues } from "@/lib/scoring/compute";
 import { extractCallFactors, extractionReasoning } from "@/lib/scoring/extract";
 import {
   insertScoreRow,
@@ -11,6 +11,34 @@ import {
 } from "@/lib/scoring/store";
 import { callScoreReasoning, type CallScoreSignal } from "@/lib/scoring/call-reason";
 import type { Enums } from "@/types/database";
+
+export type CallSignalText = {
+  timeline_signal: string | null;
+  budget_signal: string | null;
+  decision_process: string | null;
+};
+
+/**
+ * Quote only what actually moved a factor. A signal the call raised but that
+ * mapped to nothing explains no part of this score, and naming it as the reason
+ * would send an operator looking for a change that never happened.
+ */
+export function namedCallSignals(
+  signals: CallSignalText,
+  factors: FactorValues
+): CallScoreSignal[] {
+  const named: CallScoreSignal[] = [];
+  if (signals.timeline_signal && factors.timeline !== null) {
+    named.push({ factor: "timeline", text: signals.timeline_signal });
+  }
+  if (signals.budget_signal && factors.investment_capacity !== null) {
+    named.push({ factor: "investment capacity", text: signals.budget_signal });
+  }
+  if (signals.decision_process && factors.decision_authority !== null) {
+    named.push({ factor: "decision authority", text: signals.decision_process });
+  }
+  return named;
+}
 
 /**
  * Re-score from a call extraction. Call-derived factors replace prior ones
@@ -25,11 +53,7 @@ export async function scoreLeadFromCall(
     extractionId?: string | null;
     callType?: Enums<"call_type"> | null;
     callAt?: string | null;
-    signals: {
-      timeline_signal: string | null;
-      budget_signal: string | null;
-      decision_process: string | null;
-    };
+    signals: CallSignalText;
   }
 ): Promise<WriteScoreResult | { written: false; reason: "unscored" }> {
   if (!args.signals.timeline_signal && !args.signals.budget_signal && !args.signals.decision_process) {
@@ -49,20 +73,7 @@ export async function scoreLeadFromCall(
     return { written: false, reason: "unscored" };
   }
 
-  // Quote only what actually moved a factor. A signal the call raised but that
-  // mapped to nothing explains no part of this score, and naming it as the
-  // reason would send an operator looking for a change that never happened.
-  const namedSignals: CallScoreSignal[] = [];
-  if (args.signals.timeline_signal && extracted.factors.timeline !== null) {
-    namedSignals.push({ factor: "timeline", text: args.signals.timeline_signal });
-  }
-  if (args.signals.budget_signal && extracted.factors.investment_capacity !== null) {
-    namedSignals.push({ factor: "investment capacity", text: args.signals.budget_signal });
-  }
-  if (args.signals.decision_process && extracted.factors.decision_authority !== null) {
-    namedSignals.push({ factor: "decision authority", text: args.signals.decision_process });
-  }
-
+  const namedSignals = namedCallSignals(args.signals, extracted.factors);
   const extraction = extractionReasoning(extracted.notes, extracted.ignoredFields);
   const reasoning = callScoreReasoning({
     callId: args.callId,

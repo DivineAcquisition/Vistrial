@@ -14,33 +14,35 @@ export function OrgSwitcher() {
 
   if (memberships.length < 2) {
     return (
-      <p className="truncate px-3 text-xs text-silver" title={org.name}>
+      <p
+        className="truncate rounded-lg bg-sidebar-accent px-2.5 py-1.5 text-xs font-medium text-sidebar-accent-foreground"
+        title={org.name}
+      >
         {org.name}
       </p>
     );
   }
 
   return (
-    <div className="px-2">
-      <Select
-        aria-label="Switch workspace"
-        density="compact"
-        value={org.id}
-        disabled={pending}
-        onChange={(event) => {
-          const orgId = event.target.value;
-          startTransition(async () => {
-            await switchOrg(orgId);
-            router.refresh();
-          });
-        }}
-      >
-        {memberships.map((membership) => (
-          <option key={membership.org.id} value={membership.org.id}>
-            {membership.org.name}
-          </option>
-        ))}
-      </Select>
-    </div>
+    <Select
+      aria-label="Switch workspace"
+      density="compact"
+      className="w-full min-w-0"
+      value={org.id}
+      disabled={pending}
+      onChange={(event) => {
+        const orgId = event.target.value;
+        startTransition(async () => {
+          await switchOrg(orgId);
+          router.refresh();
+        });
+      }}
+    >
+      {memberships.map((membership) => (
+        <option key={membership.org.id} value={membership.org.id}>
+          {membership.org.name}
+        </option>
+      ))}
+    </Select>
   );
 }

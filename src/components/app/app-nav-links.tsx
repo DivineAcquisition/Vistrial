@@ -17,9 +17,23 @@ import {
 } from "lucide-react";
 
 import { useOrg } from "@/components/app/org-provider";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { isNavActive, navVisibleTo, PRIMARY_NAV, type NavIcon } from "@/lib/navigation";
-import { cn } from "@/lib/utils";
+import {
+  SidebarGroup,
+  SidebarGroupContent,
+  SidebarGroupLabel,
+  SidebarMenu,
+  SidebarMenuButton,
+  SidebarMenuItem,
+  SidebarSeparator,
+  useSidebar,
+} from "@/components/ui/sidebar";
+import {
+  isNavActive,
+  navVisibleTo,
+  PRIMARY_NAV,
+  type NavIcon,
+  type NavItem,
+} from "@/lib/navigation";
 
 const ICONS: Record<NavIcon, LucideIcon> = {
   queue: ListChecks,
@@ -34,64 +48,77 @@ const ICONS: Record<NavIcon, LucideIcon> = {
   coaching: Sparkles,
 };
 
-export function AppNavLinks({
+function NavItems({
+  items,
   onNavigate,
-  collapsed = false,
 }: {
+  items: NavItem[];
   onNavigate?: () => void;
-  collapsed?: boolean;
 }) {
   const pathname = usePathname();
+
+  return (
+    <SidebarMenu>
+      {items.map((item) => {
+        const active = isNavActive(pathname, item.match);
+        const Icon = ICONS[item.icon];
+
+        return (
+          <SidebarMenuItem key={item.href}>
+            <SidebarMenuButton
+              isActive={active}
+              tooltip={item.label}
+              className="h-9 data-[active=true]:bg-brand-500/12 data-[active=true]:font-medium data-[active=true]:text-brand-800 data-[active=true]:shadow-[inset_2px_0_0_#9a88fc]"
+              render={
+                <Link
+                  href={item.href}
+                  onClick={onNavigate}
+                  aria-current={active ? "page" : undefined}
+                />
+              }
+            >
+              <Icon aria-hidden="true" />
+              <span>{item.label}</span>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+        );
+      })}
+    </SidebarMenu>
+  );
+}
+
+export function AppNavLinks({ onNavigate }: { onNavigate?: () => void }) {
+  const { setOpenMobile } = useSidebar();
   const { role, isPlatformAdmin } = useOrg();
 
   const visible = PRIMARY_NAV.filter((item) => navVisibleTo(item, role, isPlatformAdmin));
+  const now = visible.filter((item) => item.group === "front");
+  const more = visible.filter((item) => item.group === "door");
+
+  function handleNavigate() {
+    setOpenMobile(false);
+    onNavigate?.();
+  }
 
   return (
     <nav aria-label="Main">
-      <ul className="flex flex-col gap-0.5">
-        {visible.map((item) => {
-          const active = isNavActive(pathname, item.match);
-          const Icon = ICONS[item.icon];
-
-          const link = (
-            <Link
-              href={item.href}
-              onClick={onNavigate}
-              aria-current={active ? "page" : undefined}
-              aria-label={collapsed ? item.label : undefined}
-              className={cn(
-                "group flex items-center rounded-xl text-sm transition-[background-color,color,transform] duration-150",
-                collapsed ? "size-11 justify-center" : "gap-2.5 px-3 py-2.5",
-                active
-                  ? "bg-brand-950 text-brand-100 shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]"
-                  : "text-silver hover:bg-muted hover:text-card-foreground"
-              )}
-            >
-              <Icon
-                className={cn(
-                  "size-4 shrink-0 transition-colors duration-150",
-                  active ? "text-brand-300" : "text-dim group-hover:text-silver"
-                )}
-                aria-hidden
-              />
-              {collapsed ? null : <span className="truncate">{item.label}</span>}
-            </Link>
-          );
-
-          return (
-            <li key={item.href}>
-              {collapsed ? (
-                <Tooltip>
-                  <TooltipTrigger asChild>{link}</TooltipTrigger>
-                  <TooltipContent side="right">{item.label}</TooltipContent>
-                </Tooltip>
-              ) : (
-                link
-              )}
-            </li>
-          );
-        })}
-      </ul>
+      <SidebarGroup>
+        <SidebarGroupLabel>Now</SidebarGroupLabel>
+        <SidebarGroupContent>
+          <NavItems items={now} onNavigate={handleNavigate} />
+        </SidebarGroupContent>
+      </SidebarGroup>
+      {more.length > 0 ? (
+        <>
+          <SidebarSeparator />
+          <SidebarGroup>
+            <SidebarGroupLabel>More</SidebarGroupLabel>
+            <SidebarGroupContent>
+              <NavItems items={more} onNavigate={handleNavigate} />
+            </SidebarGroupContent>
+          </SidebarGroup>
+        </>
+      ) : null}
     </nav>
   );
 }

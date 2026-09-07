@@ -1,11 +1,9 @@
 "use client";
 
-import { useState, type Dispatch, type ReactNode, type SetStateAction, Suspense } from "react";
+import { type CSSProperties, type ReactNode, Suspense } from "react";
 import { usePathname } from "next/navigation";
-import { Menu, PanelLeftClose, PanelLeftOpen } from "lucide-react";
 
-import Logo from "@/components/brand/logo";
-import { AppNavLinks } from "@/components/app/app-nav-links";
+import { AppSidebar } from "@/components/app/app-sidebar";
 import { BriefPrefetcher } from "@/components/app/brief-prefetcher";
 import { ConnectionStatus } from "@/components/app/connection-status";
 import { LastLeadTracker } from "@/components/app/last-lead-tracker";
@@ -14,66 +12,22 @@ import { NotificationBell } from "@/components/app/notification-bell";
 import { AppJumpPalette } from "@/components/app/jump-palette";
 import { NotificationRuntime } from "@/components/app/notification-runtime";
 import { OutcomeSyncRuntime } from "@/components/app/outcome-sync-runtime";
-import { OrgSwitcher } from "@/components/app/org-switcher";
 import { MobileWalkthroughNotice } from "@/components/app/mobile-walkthrough";
 import { CoachingDisclosureNotice } from "@/components/app/coaching-disclosure";
 import { FirstRunExplainer } from "@/components/app/first-run";
 import { PageMotion } from "@/components/app/page-motion";
 import { PushPrompt } from "@/components/app/push-prompt";
 import { UserMenu } from "@/components/app/user-menu";
-import { Button } from "@/components/ui/button";
-import {
-  DesktopSidebar,
-  Sidebar,
-  useSidebar,
-} from "@/components/ui/aceternity-sidebar";
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-  SheetTrigger,
-} from "@/components/ui/sheet";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { useSidebarCollapsed } from "@/lib/use-sidebar-collapsed";
+import Logo from "@/components/brand/logo";
+import { SidebarInset, SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { isProductScopeEnabled } from "@/lib/product-scope";
+import { useSidebarCollapsed } from "@/lib/use-sidebar-collapsed";
 import { cn } from "@/lib/utils";
 
-function AppSidebarNav({
-  collapsed,
-  onNavigate,
-}: {
-  collapsed: boolean;
-  onNavigate?: () => void;
-}) {
-  return (
-    <>
-      <div className={cn("flex items-center py-5", collapsed ? "justify-center px-2" : "px-4")}>
-        <Logo markOnly tone="on-light" className={cn("w-auto", collapsed ? "h-9" : "h-10")} />
-      </div>
-      {collapsed ? null : (
-        <div className="px-2 pb-4">
-          <OrgSwitcher />
-        </div>
-      )}
-      <div className={cn("flex-1 overflow-y-auto", collapsed ? "px-2" : "px-2")}>
-        <AppNavLinks onNavigate={onNavigate} collapsed={collapsed} />
-      </div>
-      <div className="border-t border-border p-2">
-        <UserMenu collapsed={collapsed} />
-      </div>
-    </>
-  );
-}
-
-function DesktopAppSidebarNav() {
-  const { open } = useSidebar();
-  return (
-    <div className="flex h-full flex-col">
-      <AppSidebarNav collapsed={!open} />
-    </div>
-  );
-}
+const SIDEBAR_SIZE = {
+  "--sidebar-width": "16rem",
+  "--sidebar-width-icon": "3.5rem",
+} as CSSProperties;
 
 export function AppShell({
   children,
@@ -84,18 +38,12 @@ export function AppShell({
   needsMobileOutcomeTraining?: boolean;
   needsCoachingAck?: boolean;
 }) {
-  const [mobileOpen, setMobileOpen] = useState(false);
-  const [collapsed, toggleCollapsed] = useSidebarCollapsed();
+  const { collapsed, setCollapsed } = useSidebarCollapsed();
   const pathname = usePathname();
   const wizard = pathname.startsWith("/app/onboarding");
-  const open = !collapsed;
-  const setOpen: Dispatch<SetStateAction<boolean>> = (value) => {
-    const nextOpen = typeof value === "function" ? value(open) : value;
-    if (nextOpen !== open) toggleCollapsed();
-  };
 
   return (
-    <div className="relative isolate flex min-h-screen bg-ink-950 text-card-foreground">
+    <div className="relative isolate min-h-svh bg-background text-card-foreground">
       <div aria-hidden className="pointer-events-none fixed inset-0 z-0 overflow-hidden">
         <div
           className="absolute -top-[22%] left-1/2 h-[520px] w-[820px] -translate-x-1/2"
@@ -117,108 +65,54 @@ export function AppShell({
           }}
         />
       </div>
-      {wizard ? null : (
-        <Sidebar open={open} setOpen={setOpen} animate>
-          <DesktopSidebar
-            hoverExpand={false}
-            expandedWidth="15rem"
-            collapsedWidth="4rem"
-            className="relative z-10 sticky top-0 h-svh border-r border-border bg-card/80 px-0 py-0 backdrop-blur-xl print:hidden dark:border-white/[0.06] dark:bg-ink-900/80"
-          >
-            <DesktopAppSidebarNav />
-          </DesktopSidebar>
-        </Sidebar>
-      )}
 
-      <div className="relative z-10 flex min-w-0 flex-1 flex-col">
-        <header className="sticky top-0 z-30 flex h-16 items-center gap-3 border-b border-border bg-background/80 px-4 backdrop-blur-xl print:hidden sm:px-6">
-          {wizard ? null : (
-          <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
-            <SheetTrigger
-              render={
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  iconOnly
-                  className="md:hidden"
-                  aria-label="Open navigation"
-                />
-              }
-            >
-              <Menu className="size-5" aria-hidden="true" />
-            </SheetTrigger>
-            <SheetContent side="left" className="w-64 bg-ink-900 p-0 text-card-foreground" showCloseButton>
-              <SheetHeader className="sr-only">
-                <SheetTitle>Navigation</SheetTitle>
-              </SheetHeader>
-              <div className="flex h-full flex-col">
-                <AppSidebarNav collapsed={false} onNavigate={() => setMobileOpen(false)} />
-              </div>
-            </SheetContent>
-          </Sheet>
-          )}
-
-          {wizard ? null : (
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                variant="ghost"
-                size="sm"
-                iconOnly
-                onClick={toggleCollapsed}
-                aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
-                aria-pressed={collapsed}
-                className="hidden md:inline-flex"
-              >
-                {collapsed ? (
-                  <PanelLeftOpen className="size-4" aria-hidden />
-                ) : (
-                  <PanelLeftClose className="size-4" aria-hidden />
-                )}
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent side="bottom">
-              {collapsed ? "Expand sidebar" : "Collapse sidebar"}
-            </TooltipContent>
-          </Tooltip>
-          )}
-
-          <Logo markOnly tone="on-light" className={cn("h-8 w-auto", wizard ? "" : "md:hidden")} />
-          {wizard ? (
+      {wizard ? (
+        <div className="relative z-10 flex min-h-svh flex-col">
+          <header className="sticky top-0 z-30 flex h-16 items-center gap-3 border-b border-border bg-background/80 px-4 backdrop-blur-xl print:hidden sm:px-6">
+            <Logo markOnly tone="on-light" className="h-8 w-auto" />
             <p className="text-sm font-medium tracking-wide text-muted-foreground">Setup</p>
-          ) : null}
-          <div className="ml-auto flex items-center gap-1">
-            {wizard ? (
+            <div className="ml-auto">
               <UserMenu placement="header" />
-            ) : (
-              <>
+            </div>
+          </header>
+          <div className="min-w-0 flex-1 overflow-x-hidden px-5 py-8 sm:px-8 lg:px-10">
+            <div className="mx-auto w-full max-w-3xl overflow-x-hidden">
+              <PageMotion>{children}</PageMotion>
+            </div>
+          </div>
+        </div>
+      ) : (
+        <SidebarProvider
+          className="relative z-10"
+          open={!collapsed}
+          onOpenChange={(open) => setCollapsed(!open)}
+          style={SIDEBAR_SIZE}
+        >
+          <AppSidebar />
+          <SidebarInset className="min-w-0 overflow-x-hidden bg-transparent">
+            <header className="sticky top-0 z-30 flex h-16 items-center gap-3 border-b border-border bg-background/80 px-4 backdrop-blur-xl print:hidden sm:px-6">
+              <SidebarTrigger />
+              <Logo markOnly tone="on-light" className="h-8 w-auto md:hidden" />
+              <div className="ml-auto flex items-center gap-1">
                 <NotificationBell />
                 <AppJumpPalette />
-              </>
-            )}
-          </div>
-        </header>
+              </div>
+            </header>
 
-        {wizard ? null : (
-          <>
             <Suspense fallback={null}>
               <NotificationRuntime />
             </Suspense>
             <OutcomeSyncRuntime />
             <LastLeadTracker />
             <BriefPrefetcher />
-          </>
-        )}
 
-        <main
-          className={cn(
-            "min-w-0 flex-1 overflow-x-hidden px-5 py-8 sm:px-8 lg:px-10",
-            wizard ? "pb-8" : "pb-[calc(5.5rem+env(safe-area-inset-bottom))] md:pb-8"
-          )}
-        >
-          <div className={cn("mx-auto w-full overflow-x-hidden", wizard ? "max-w-3xl" : "max-w-[1400px]")}>
-            {wizard ? null : (
-              <>
+            <div
+              className={cn(
+                "min-w-0 flex-1 overflow-x-hidden px-5 py-8 sm:px-8 lg:px-10",
+                "pb-[calc(5.5rem+env(safe-area-inset-bottom))] md:pb-8",
+              )}
+            >
+              <div className="mx-auto w-full max-w-[1400px] overflow-x-hidden">
                 <ConnectionStatus />
                 <FirstRunExplainer />
                 {isProductScopeEnabled("coaching") ? (
@@ -226,13 +120,13 @@ export function AppShell({
                 ) : null}
                 <MobileWalkthroughNotice needed={needsMobileOutcomeTraining} />
                 <PushPrompt />
-              </>
-            )}
-            <PageMotion>{children}</PageMotion>
-          </div>
-        </main>
-        {wizard ? null : <MobileDock />}
-      </div>
+                <PageMotion>{children}</PageMotion>
+              </div>
+            </div>
+            <MobileDock />
+          </SidebarInset>
+        </SidebarProvider>
+      )}
     </div>
   );
 }

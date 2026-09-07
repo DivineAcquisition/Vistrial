@@ -30,13 +30,16 @@ function getServerSnapshot(): boolean {
   return false;
 }
 
-export function useSidebarCollapsed(): [boolean, () => void] {
+export function useSidebarCollapsed(): {
+  collapsed: boolean;
+  setCollapsed: (next: boolean) => void;
+} {
   const collapsed = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
 
-  const toggle = useCallback(() => {
-    window.localStorage.setItem(KEY, collapsed ? "0" : "1");
+  const setCollapsed = useCallback((next: boolean) => {
+    window.localStorage.setItem(KEY, next ? "1" : "0");
     window.dispatchEvent(new Event(EVENT));
-  }, [collapsed]);
+  }, []);
 
-  return [collapsed, toggle];
+  return { collapsed, setCollapsed };
 }

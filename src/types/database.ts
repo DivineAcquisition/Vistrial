@@ -1277,6 +1277,7 @@ export type Database = {
           timezone: string | null;
           updated_at: string;
           has_net_close: boolean;
+          time_to_first_human_touch_seconds: number | null;
         };
         Insert: {
           ad_id?: string | null;
@@ -2706,6 +2707,60 @@ export type Database = {
           },
         ];
       };
+      webhook_dead_letters: {
+        Row: {
+          created_at: string;
+          event_type: string | null;
+          id: string;
+          org_id: string | null;
+          payload: Json | null;
+          provider_event_id: string | null;
+          raw_body: string;
+          reason: string;
+          source: Database["public"]["Enums"]["webhook_source"];
+          webhook_event_id: string | null;
+        };
+        Insert: {
+          created_at?: string;
+          event_type?: string | null;
+          id?: string;
+          org_id?: string | null;
+          payload?: Json | null;
+          provider_event_id?: string | null;
+          raw_body: string;
+          reason: string;
+          source?: Database["public"]["Enums"]["webhook_source"];
+          webhook_event_id?: string | null;
+        };
+        Update: {
+          created_at?: string;
+          event_type?: string | null;
+          id?: string;
+          org_id?: string | null;
+          payload?: Json | null;
+          provider_event_id?: string | null;
+          raw_body?: string;
+          reason?: string;
+          source?: Database["public"]["Enums"]["webhook_source"];
+          webhook_event_id?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "webhook_dead_letters_org_id_fkey";
+            columns: ["org_id"];
+            isOneToOne: false;
+            referencedRelation: "organizations";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "webhook_dead_letters_webhook_event_id_fkey";
+            columns: ["webhook_event_id"];
+            isOneToOne: false;
+            referencedRelation: "webhook_events";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       webhook_events: {
         Row: {
           attempt_count: number;
@@ -2723,6 +2778,7 @@ export type Database = {
           status: Database["public"]["Enums"]["webhook_event_status"];
           next_attempt_at: string;
           payload_purged_at: string | null;
+          raw_body: string | null;
         };
         Insert: {
           attempt_count?: number;
@@ -2740,6 +2796,7 @@ export type Database = {
           status?: Database["public"]["Enums"]["webhook_event_status"];
           next_attempt_at?: string;
           payload_purged_at?: string | null;
+          raw_body?: string | null;
         };
         Update: {
           attempt_count?: number;
@@ -2757,6 +2814,7 @@ export type Database = {
           status?: Database["public"]["Enums"]["webhook_event_status"];
           next_attempt_at?: string;
           payload_purged_at?: string | null;
+          raw_body?: string | null;
         };
         Relationships: [
           {

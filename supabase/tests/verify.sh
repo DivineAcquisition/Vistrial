@@ -35,7 +35,7 @@ WHERE n.nspname = 'public'
   AND c.relname IN (
     'organizations','org_members','org_invites','score_configs','score_field_maps',
     'score_field_rules','leads','readiness_scores','touches','calls','call_extractions',
-    'objections','next_actions','revenue_log','webhook_events','ghost_detector_runs',
+    'objections','next_actions','revenue_log','webhook_events','webhook_dead_letters','ghost_detector_runs',
     'ghl_connections','ghl_oauth_sessions','ghl_field_maps','ghl_dispatches',
     'ghl_rate_windows','ghl_contact_locks','ingestion_alerts','platform_admins',
     'lead_status_changes','transcript_connections','unmatched_transcripts',
@@ -85,6 +85,9 @@ run "${ROOT}/supabase/tests/verify-scoring.sql"
 
 echo "GHL ingest checks..."
 run "${ROOT}/supabase/tests/verify-ghl.sql"
+
+echo "Touch ingest checks..."
+run "${ROOT}/supabase/tests/verify-touch-ingest.sql"
 
 echo "Platform admin checks..."
 run "${ROOT}/supabase/tests/verify-platform-admin.sql"
@@ -149,4 +152,4 @@ run "${ROOT}/supabase/tests/verify-forsight.sql"
 echo "Migration rollback (this prompt's migrations)..."
 bash "${ROOT}/scripts/test-migration-rollback.sh"
 
-echo "OK: schema, seed, triggers, RLS, invite, scoring, GHL, platform-admin, queue, case-file, transcript, follow-up, integrity, reporting, business-profile, onboarding-reconcile, notification, hardening, mobile, calibration, call-quality, operator-agent, self-verification, activity-stream, owner-portal, agent-framework, and forsight checks passed."
+echo "OK: schema, seed, triggers, RLS, invite, scoring, GHL, touch-ingest, platform-admin, queue, case-file, transcript, follow-up, integrity, reporting, business-profile, onboarding-reconcile, notification, hardening, mobile, calibration, call-quality, operator-agent, self-verification, activity-stream, owner-portal, agent-framework, and forsight checks passed."

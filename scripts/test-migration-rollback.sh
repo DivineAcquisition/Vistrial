@@ -383,3 +383,46 @@ if [[ "$(echo "$tbl_forsight" | tr -d ' ')" != "1" ]]; then
 fi
 
 echo "OK: forsight foundation migration rollback and re-apply succeeded."
+
+echo "Rollback touch ingest (dead letters, raw_body, generated seconds gone; actor check restored)..."
+run "${ROOT}/supabase/rollbacks/20260837010000_touch_ingest.sql"
+tbl_dl="$("${PSQL[@]}" -d "${DB_NAME}" -tAc "SELECT count(*) FROM information_schema.tables WHERE table_schema='public' AND table_name='webhook_dead_letters'")"
+if [[ "$(echo "$tbl_dl" | tr -d ' ')" != "0" ]]; then
+  echo "touch ingest rollback left webhook_dead_letters in place" >&2
+  exit 1
+fi
+col_raw="$("${PSQL[@]}" -d "${DB_NAME}" -tAc "SELECT count(*) FROM information_schema.columns WHERE table_schema='public' AND table_name='webhook_events' AND column_name='raw_body'")"
+if [[ "$(echo "$col_raw" | tr -d ' ')" != "0" ]]; then
+  echo "touch ingest rollback left webhook_events.raw_body in place" >&2
+  exit 1
+fi
+col_ttft="$("${PSQL[@]}" -d "${DB_NAME}" -tAc "SELECT count(*) FROM information_schema.columns WHERE table_schema='public' AND table_name='leads' AND column_name='time_to_first_human_touch_seconds'")"
+if [[ "$(echo "$col_ttft" | tr -d ' ')" != "0" ]]; then
+  echo "touch ingest rollback left time_to_first_human_touch_seconds in place" >&2
+  exit 1
+fi
+chk_actor="$("${PSQL[@]}" -d "${DB_NAME}" -tAc "SELECT count(*) FROM pg_constraint WHERE conname='touches_human_requires_actor'")"
+if [[ "$(echo "$chk_actor" | tr -d ' ')" != "1" ]]; then
+  echo "touch ingest rollback did not restore touches_human_requires_actor" >&2
+  exit 1
+fi
+
+echo "Re-apply touch ingest..."
+run "${ROOT}/supabase/migrations/20260837010000_touch_ingest.sql"
+tbl_dl="$("${PSQL[@]}" -d "${DB_NAME}" -tAc "SELECT count(*) FROM information_schema.tables WHERE table_schema='public' AND table_name='webhook_dead_letters'")"
+if [[ "$(echo "$tbl_dl" | tr -d ' ')" != "1" ]]; then
+  echo "re-apply did not restore webhook_dead_letters" >&2
+  exit 1
+fi
+col_raw="$("${PSQL[@]}" -d "${DB_NAME}" -tAc "SELECT count(*) FROM information_schema.columns WHERE table_schema='public' AND table_name='webhook_events' AND column_name='raw_body'")"
+if [[ "$(echo "$col_raw" | tr -d ' ')" != "1" ]]; then
+  echo "re-apply did not restore webhook_events.raw_body" >&2
+  exit 1
+fi
+chk_actor="$("${PSQL[@]}" -d "${DB_NAME}" -tAc "SELECT count(*) FROM pg_constraint WHERE conname='touches_human_requires_actor'")"
+if [[ "$(echo "$chk_actor" | tr -d ' ')" != "0" ]]; then
+  echo "re-apply left touches_human_requires_actor in place" >&2
+  exit 1
+fi
+
+echo "OK: touch ingest migration rollback and re-apply succeeded."

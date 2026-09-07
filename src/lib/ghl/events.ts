@@ -26,6 +26,8 @@ const ALIASES: Record<string, GhlEventKind> = {
   outboundmessage: "outbound_message",
   "outbound.message": "outbound_message",
   outboundmessagesent: "outbound_message",
+  outboundcall: "outbound_message",
+  inboundcall: "inbound_message",
   appointmentcreate: "appointment_booked",
   "appointment.create": "appointment_booked",
   appointmentcreated: "appointment_booked",

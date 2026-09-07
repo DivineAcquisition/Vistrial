@@ -41,8 +41,21 @@ export function mapMessageChannel(messageType: string | null): TouchChannel {
     return "dm";
   }
   if (value.includes("voicemail")) return "voicemail";
-  if (value.includes("call")) return "call";
+  if (value.includes("call") || value.includes("phone") || value.includes("voice")) return "call";
   return "other";
+}
+
+/**
+ * System = automated workflow SMS/email.
+ * Human = outbound call or manual (non-automation) message, even if the GHL
+ * user is not mapped to org_members.
+ */
+export function classifyOutboundTouch(automated: boolean): "system" | "human" {
+  return automated ? "system" : "human";
+}
+
+export function appointmentTouchMessageId(appointmentId: string): string {
+  return `appointment:${appointmentId}`;
 }
 
 export function channelToGhlType(channel: TouchChannel): "SMS" | "Email" | "WhatsApp" | "IG" | "Custom" | null {

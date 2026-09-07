@@ -30,19 +30,19 @@ export default async function PortalLayout({ children }: { children: React.React
             }}
           />
         </div>
-        <header className="sticky top-0 z-20 border-b border-white/[0.06] bg-ink-950/75 backdrop-blur-xl">
+        <header className="sticky top-0 z-20 border-b border-border bg-background/80 backdrop-blur-xl">
           <div className="mx-auto flex h-16 max-w-4xl items-center justify-between gap-3 px-4 sm:px-6">
             <Link href="/portal" className="flex min-w-0 items-center gap-3" aria-label={`${APP_NAME} portal`}>
-              <Logo markOnly className="h-8 w-auto" />
-              <span className="truncate text-sm text-white">{ctx.org.name}</span>
+              <Logo markOnly tone="on-light" className="h-8 w-auto" />
+              <span className="truncate text-sm text-card-foreground">{ctx.org.name}</span>
             </Link>
             <div className="flex min-w-0 items-center gap-3">
               {inApp ? (
                 <nav aria-label="Workspace" className="hidden items-center gap-3 sm:flex">
-                  <Link href={FORSIGHT_PATH} className="text-sm text-silver hover:text-white">
+                  <Link href={FORSIGHT_PATH} className="text-sm text-silver hover:text-card-foreground">
                     Forsight
                   </Link>
-                  <Link href={MORE_PATH} className="text-sm text-silver hover:text-white">
+                  <Link href={MORE_PATH} className="text-sm text-silver hover:text-card-foreground">
                     More
                   </Link>
                 </nav>

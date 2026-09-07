@@ -21,7 +21,7 @@ export const toggleVariants = cva(
       variant: {
         default: "border-transparent",
         outline:
-          "border-white/[0.08] bg-white/[0.04] not-dark:bg-clip-padding shadow-xs/5 not-disabled:not-active:not-data-pressed:before:shadow-[0_1px_--theme(--color-black/4%)] dark:bg-white/[0.04] dark:data-pressed:bg-white/[0.08] dark:hover:bg-white/[0.07] dark:not-disabled:not-active:not-data-pressed:before:shadow-[0_-1px_--theme(--color-white/6%)] dark:not-disabled:not-data-pressed:before:shadow-[0_-1px_--theme(--color-white/2%)] [:disabled,:active,[data-pressed]]:shadow-none",
+          "border-border bg-muted/70 not-dark:bg-clip-padding shadow-xs/5 not-disabled:not-active:not-data-pressed:before:shadow-[0_1px_--theme(--color-black/4%)] dark:border-white/[0.08] dark:bg-white/[0.04] dark:data-pressed:bg-white/[0.08] dark:hover:bg-white/[0.07] dark:not-disabled:not-active:not-data-pressed:before:shadow-[0_-1px_--theme(--color-white/6%)] dark:not-disabled:not-data-pressed:before:shadow-[0_-1px_--theme(--color-white/2%)] [:disabled,:active,[data-pressed]]:shadow-none",
       },
     },
   },

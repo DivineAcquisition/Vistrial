@@ -36,7 +36,7 @@ export function AuthCard({
             duration={14}
             shineColor={["#9A88FC", "#C3B6FE", "#7C63FA"]}
           />
-          <Logo markOnly title="" className="auth-mark" />
+          <Logo markOnly tone="on-light" title="" className="auth-mark" />
           {eyebrowLabel ? <p className="auth-eyebrow">{eyebrowLabel}</p> : null}
           <h1 className="auth-title">{title}</h1>
           {subtitle ? <p className="auth-subtitle">{subtitle}</p> : null}

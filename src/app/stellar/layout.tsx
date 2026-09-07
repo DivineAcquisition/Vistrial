@@ -16,10 +16,10 @@ export default function StellarLayout({ children }: { children: React.ReactNode 
       <header className="sticky top-0 z-20 border-b border-border bg-ink-950/90 backdrop-blur">
         <div className="mx-auto flex max-w-4xl items-center justify-between gap-3 px-4 py-3">
           <span className="flex min-w-0 items-center gap-3">
-            <Logo markOnly className="h-8 w-auto" />
-            <span className="truncate text-sm text-white">{APP_NAME} Stellar</span>
+            <Logo markOnly tone="on-light" className="h-8 w-auto" />
+            <span className="truncate text-sm text-card-foreground">{APP_NAME} Stellar</span>
           </span>
-          <Link href="/auth/signout" className="text-sm text-silver hover:text-white">
+          <Link href="/auth/signout" className="text-sm text-silver hover:text-card-foreground">
             Sign out
           </Link>
         </div>

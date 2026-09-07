@@ -69,7 +69,7 @@ export function PageHeader({
       </div>
 
       {toolbar ? (
-        <div className="mt-6 border-t border-white/[0.07] pt-5">{toolbar}</div>
+        <div className="mt-6 border-t border-border pt-5">{toolbar}</div>
       ) : (
         <div
           aria-hidden

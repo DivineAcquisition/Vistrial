@@ -63,8 +63,8 @@ export function AppNavLinks({
                 "group flex items-center rounded-xl text-sm transition-[background-color,color,transform] duration-150",
                 collapsed ? "size-11 justify-center" : "gap-2.5 px-3 py-2.5",
                 active
-                  ? "bg-brand-950 text-brand-200 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)]"
-                  : "text-silver hover:bg-white/[0.05] hover:text-white"
+                  ? "bg-brand-950 text-brand-100 shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]"
+                  : "text-silver hover:bg-muted hover:text-card-foreground"
               )}
             >
               <Icon

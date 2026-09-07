@@ -49,7 +49,7 @@ function AppSidebarNav({
   return (
     <>
       <div className={cn("flex items-center py-5", collapsed ? "justify-center px-2" : "px-4")}>
-        <Logo markOnly className={cn("w-auto", collapsed ? "h-9" : "h-10")} />
+        <Logo markOnly tone="on-light" className={cn("w-auto", collapsed ? "h-9" : "h-10")} />
       </div>
       {collapsed ? null : (
         <div className="px-2 pb-4">
@@ -123,7 +123,7 @@ export function AppShell({
             hoverExpand={false}
             expandedWidth="15rem"
             collapsedWidth="4rem"
-            className="relative z-10 sticky top-0 h-svh border-r border-white/[0.06] bg-ink-900/80 px-0 py-0 backdrop-blur-xl print:hidden dark:bg-ink-900/80"
+            className="relative z-10 sticky top-0 h-svh border-r border-border bg-card/80 px-0 py-0 backdrop-blur-xl print:hidden dark:border-white/[0.06] dark:bg-ink-900/80"
           >
             <DesktopAppSidebarNav />
           </DesktopSidebar>
@@ -131,7 +131,7 @@ export function AppShell({
       )}
 
       <div className="relative z-10 flex min-w-0 flex-1 flex-col">
-        <header className="sticky top-0 z-30 flex h-16 items-center gap-3 border-b border-white/[0.06] bg-ink-950/75 px-4 backdrop-blur-xl print:hidden sm:px-6">
+        <header className="sticky top-0 z-30 flex h-16 items-center gap-3 border-b border-border bg-background/80 px-4 backdrop-blur-xl print:hidden sm:px-6">
           {wizard ? null : (
           <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
             <SheetTrigger
@@ -183,7 +183,7 @@ export function AppShell({
           </Tooltip>
           )}
 
-          <Logo markOnly className={cn("h-8 w-auto", wizard ? "" : "md:hidden")} />
+          <Logo markOnly tone="on-light" className={cn("h-8 w-auto", wizard ? "" : "md:hidden")} />
           {wizard ? (
             <p className="text-sm font-medium tracking-wide text-muted-foreground">Setup</p>
           ) : null}

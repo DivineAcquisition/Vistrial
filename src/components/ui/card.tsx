@@ -12,7 +12,7 @@ export function Card({
 }: useRender.ComponentProps<"div">): React.ReactElement {
   const defaultProps = {
     className: cn(
-      "relative flex flex-col rounded-2xl border border-white/[0.06] bg-[linear-gradient(180deg,rgba(255,255,255,0.06)_0%,rgba(255,255,255,0.014)_38%,transparent_100%),#0b0a11] not-dark:bg-clip-padding text-card-foreground shadow-[inset_0_1px_0_rgba(255,255,255,0.07),0_24px_64px_-36px_rgba(0,0,0,0.88)] before:pointer-events-none before:absolute before:inset-0 before:rounded-[calc(var(--radius-2xl)-1px)] dark:before:shadow-[0_-1px_--theme(--color-white/8%)]",
+      "relative flex flex-col rounded-2xl border border-border bg-card not-dark:bg-clip-padding text-card-foreground shadow-[inset_0_1px_0_rgba(255,255,255,0.9),0_18px_48px_-32px_rgba(22,20,31,0.16)] before:pointer-events-none before:absolute before:inset-0 before:rounded-[calc(var(--radius-2xl)-1px)] dark:border-white/[0.06] dark:bg-[linear-gradient(180deg,rgba(255,255,255,0.06)_0%,rgba(255,255,255,0.014)_38%,transparent_100%),#0b0a11] dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.07),0_24px_64px_-36px_rgba(0,0,0,0.88)] dark:before:shadow-[0_-1px_--theme(--color-white/8%)]",
       className,
     ),
     "data-slot": "card",

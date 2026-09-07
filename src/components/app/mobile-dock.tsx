@@ -34,7 +34,7 @@ export function MobileDock() {
   return (
     <nav
       aria-label="In the moment"
-      className="fixed inset-x-0 bottom-0 z-40 border-t border-white/[0.08] bg-ink-950/95 px-2 pt-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] backdrop-blur-md print:hidden md:hidden"
+      className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-background/95 px-2 pt-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] backdrop-blur-md print:hidden md:hidden"
     >
       <ul className="grid grid-cols-3 gap-1">
         {items.map((item) => {
@@ -48,9 +48,9 @@ export function MobileDock() {
                 className={cn(
                   "flex min-h-11 flex-col items-center justify-center gap-0.5 rounded-xl text-[11px] font-semibold",
                   item.primary
-                    ? "bg-brand-500 text-ink-950"
+                    ? "bg-brand-500 text-primary-foreground"
                     : active
-                      ? "text-brand-200"
+                      ? "text-brand-700"
                       : "text-silver"
                 )}
               >

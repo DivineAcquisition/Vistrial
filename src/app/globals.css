@@ -5,14 +5,14 @@
 
 /*
  * Divine Acquisition's palette, taken from the hiring site in the DA repo so the
- * product reads as one brand. Permanently dark — no light theme, no toggle.
+ * product reads as one brand.
  *
- * #9A88FC (brand-500) is the prime colour and the action colour — it is light
- * enough that near-black type reads better on it than white, which is why filled
- * buttons invert their label. brand-300 carries eyebrows, section labels, and
- * links; brand-950 is the deep fill behind table headers and active navigation.
- * Neutrals are very slightly violet-shifted (ink-*) so the brand sits naturally
- * on top of them, and status green / amber / red never touch interface chrome.
+ * The operator app, portal, and auth desk are light (paper white, black mark).
+ * The public site stays dark. #9A88FC (brand-500) is the prime colour on both.
+ * It is light enough that near-black type reads better on it than white, which
+ * is why filled buttons invert their label. Neutrals are slightly violet-shifted
+ * (ink-*) so the brand sits naturally on top of them. Status green / amber / red
+ * never touch interface chrome.
  */
 
 @custom-variant dark (&:is(.dark *));
@@ -273,7 +273,61 @@
   --radius-4xl: calc(var(--radius) * 2.6)
 }
 
-:root,
+:root {
+  --brand: #9a88fc;
+  --brand-rgb: 154, 136, 252;
+  --brand-deep: #6650d8;
+  --page: #f6f5fb;
+  --hairline: rgba(22, 20, 31, 0.1);
+
+  --background: #f6f5fb;
+  --foreground: #5c5868;
+  --card: #ffffff;
+  --card-foreground: #16141f;
+  --popover: #ffffff;
+  --popover-foreground: #16141f;
+  /* Near-black type on the light brand — white washes out against #9A88FC. */
+  --primary: #9a88fc;
+  --primary-foreground: #07070b;
+  --secondary: #eceaf6;
+  --secondary-foreground: #3a2f78;
+  --muted: #f0eef8;
+  --muted-foreground: #6f6b7c;
+  --accent: #ece9f8;
+  --accent-foreground: #3a2f78;
+  --destructive: #e11d48;
+  --destructive-foreground: #ffffff;
+  --success: #0f9f6e;
+  --warning: #c47d12;
+  --border: rgba(22, 20, 31, 0.1);
+  --input: rgba(22, 20, 31, 0.12);
+  --ring: #9a88fc;
+  --radius: 0.75rem;
+
+  --chart-1: #9a88fc;
+  --chart-2: #0f9f6e;
+  --chart-3: #c47d12;
+  --chart-4: #e11d48;
+  --chart-5: #5c5868;
+
+  --sidebar: #ffffff;
+  --sidebar-foreground: #5c5868;
+  --sidebar-primary: #9a88fc;
+  --sidebar-primary-foreground: #07070b;
+  --sidebar-accent: #ece9f8;
+  --sidebar-accent-foreground: #3a2f78;
+  --sidebar-border: rgba(22, 20, 31, 0.08);
+  --sidebar-ring: #9a88fc;
+
+  --color-ink-950: #f6f5fb;
+  --color-ink-900: #ffffff;
+  --color-ink-850: #f3f1fa;
+  --color-ink-800: #ebe8f4;
+  --color-ink-700: #ddd8ec;
+  --color-silver: #5c5868;
+  --color-dim: #6f6b7c;
+}
+
 .dark {
   --brand: #9a88fc;
   --brand-rgb: 154, 136, 252;
@@ -287,7 +341,6 @@
   --card-foreground: #ffffff;
   --popover: #100f18;
   --popover-foreground: #ffffff;
-  /* Near-black type on the light brand — white washes out against #9A88FC. */
   --primary: #9a88fc;
   --primary-foreground: #07070b;
   --secondary: #1e1940;
@@ -319,6 +372,14 @@
   --sidebar-accent-foreground: #c3b6fe;
   --sidebar-border: rgba(255, 255, 255, 0.07);
   --sidebar-ring: #9a88fc;
+
+  --color-ink-950: #07070b;
+  --color-ink-900: #0b0a11;
+  --color-ink-850: #100f18;
+  --color-ink-800: #16151f;
+  --color-ink-700: #1e1d29;
+  --color-silver: #a3a3a3;
+  --color-dim: #858585;
 }
 
 @layer base {
@@ -327,7 +388,7 @@
   }
 
   html {
-    color-scheme: dark;
+    color-scheme: light;
     scroll-behavior: smooth;
     -webkit-text-size-adjust: 100%;
     text-rendering: optimizeLegibility;
@@ -446,6 +507,14 @@
    */
   .panel {
     position: relative;
+    background: var(--card);
+    border: 1px solid var(--border);
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.8),
+      0 18px 40px -28px rgba(22, 20, 31, 0.14);
+  }
+
+  .dark .panel {
     background:
       linear-gradient(
         180deg,
@@ -468,8 +537,8 @@
     isolation: isolate;
     overflow: hidden;
     min-height: 100svh;
-    background: #07070b;
-    color: #fff;
+    background: #f6f5fb;
+    color: #16141f;
     -webkit-font-smoothing: antialiased;
   }
 
@@ -506,8 +575,8 @@
     position: absolute;
     inset: 0;
     background-image:
-      linear-gradient(to right, rgba(255, 255, 255, 0.035) 1px, transparent 1px),
-      linear-gradient(to bottom, rgba(255, 255, 255, 0.035) 1px, transparent 1px);
+      linear-gradient(to right, rgba(22, 20, 31, 0.05) 1px, transparent 1px),
+      linear-gradient(to bottom, rgba(22, 20, 31, 0.05) 1px, transparent 1px);
     background-size: 72px 72px;
     mask-image: radial-gradient(ellipse 80% 60% at 50% 42%, black 18%, transparent 78%);
     -webkit-mask-image: radial-gradient(ellipse 80% 60% at 50% 42%, black 18%, transparent 78%);
@@ -531,20 +600,18 @@
     margin-inline: auto;
     padding: 1.7rem 1.4rem 1.35rem;
     text-align: center;
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(22, 20, 31, 0.1);
     border-radius: 1.1rem;
     background:
       linear-gradient(
         180deg,
-        rgba(255, 255, 255, 0.05) 0%,
-        rgba(255, 255, 255, 0.012) 38%,
-        transparent 100%
-      ),
-      #0b0a11;
+        rgba(255, 255, 255, 0.92) 0%,
+        rgba(246, 245, 251, 0.96) 100%
+      );
     box-shadow:
-      inset 0 1px 0 rgba(255, 255, 255, 0.07),
-      0 28px 80px -32px rgba(0, 0, 0, 0.92),
-      0 0 90px -18px rgba(154, 136, 252, 0.42);
+      inset 0 1px 0 rgba(255, 255, 255, 0.9),
+      0 28px 80px -32px rgba(22, 20, 31, 0.22),
+      0 0 90px -18px rgba(154, 136, 252, 0.28);
   }
 
   .auth-desk-inner--wide {
@@ -566,7 +633,7 @@
     letter-spacing: 0.28em;
     text-indent: 0.28em;
     text-transform: uppercase;
-    color: var(--color-brand-300);
+    color: var(--color-brand-700);
   }
 
   .auth-title {
@@ -575,7 +642,7 @@
     font-weight: 500;
     letter-spacing: -0.038em;
     line-height: 1.08;
-    color: #fff;
+    color: #16141f;
   }
 
   .auth-subtitle {
@@ -584,7 +651,7 @@
     max-width: 22rem;
     font-size: 13px;
     line-height: 1.45;
-    color: rgba(255, 255, 255, 0.44);
+    color: #6f6b7c;
   }
 
   .auth-desk-body {
@@ -596,7 +663,7 @@
     margin-top: 1.25rem;
     font-size: 12px;
     letter-spacing: 0.01em;
-    color: rgba(255, 255, 255, 0.28);
+    color: #6f6b7c;
   }
 
   .auth-field-block {
@@ -610,14 +677,14 @@
     font-weight: 500;
     letter-spacing: 0.2em;
     text-transform: uppercase;
-    color: rgba(195, 182, 254, 0.72);
+    color: #6650d8;
   }
 
   .auth-notice {
     padding: 1rem 0 0.25rem;
     font-size: 14px;
     line-height: 1.6;
-    color: rgba(255, 255, 255, 0.58);
+    color: #5c5868;
   }
 
   .auth-field {
@@ -640,19 +707,15 @@
     min-height: 2.75rem;
     padding: 0 1.1rem 0 2.65rem;
     border-radius: 0.75rem;
-    border: 1px solid rgba(255, 255, 255, 0.14);
-    background:
-      linear-gradient(180deg, rgba(255, 255, 255, 0.045) 0%, transparent 42%),
-      rgba(6, 6, 8, 0.78);
-    box-shadow:
-      inset 0 1px 0 rgba(255, 255, 255, 0.06),
-      0 0 0 1px rgba(0, 0, 0, 0.35);
-    color: #fff;
+    border: 1px solid rgba(22, 20, 31, 0.12);
+    background: #ffffff;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.8);
+    color: #16141f;
     font-size: 14.5px;
     font-weight: 400;
     letter-spacing: 0;
     line-height: 1.25;
-    color-scheme: dark;
+    color-scheme: light;
     transition:
       border-color 0.18s ease,
       background-color 0.18s ease,
@@ -669,7 +732,7 @@
   }
 
   .auth-input:hover:not(:disabled) {
-    border-color: rgba(255, 255, 255, 0.2);
+    border-color: rgba(22, 20, 31, 0.18);
   }
 
   .auth-input:focus,
@@ -677,14 +740,14 @@
     outline: none;
     border-color: rgba(154, 136, 252, 0.72);
     background:
-      linear-gradient(180deg, rgba(154, 136, 252, 0.12) 0%, transparent 48%),
-      rgba(8, 8, 12, 0.88);
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.07);
+      linear-gradient(180deg, rgba(154, 136, 252, 0.1) 0%, transparent 48%),
+      #ffffff;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.8);
   }
 
   .auth-input:disabled,
   .auth-input[readonly] {
-    color: rgba(255, 255, 255, 0.72);
+    color: #6f6b7c;
   }
 
   .auth-field-icon {
@@ -720,7 +783,8 @@
   }
 
   .auth-field-action:hover {
-    color: #fff;
+    background: rgba(154, 136, 252, 0.14);
+    color: #16141f;
   }
 
   .auth-or {
@@ -728,7 +792,7 @@
     align-items: center;
     gap: 0.95rem;
     padding: 0.2rem 0;
-    color: rgba(163, 163, 163, 0.55);
+    color: rgba(111, 107, 124, 0.9);
     font-size: 10px;
     font-weight: 500;
     letter-spacing: 0.22em;
@@ -743,17 +807,17 @@
     background: linear-gradient(
       90deg,
       transparent,
-      rgba(255, 255, 255, 0.12),
+      rgba(22, 20, 31, 0.14),
       transparent
     );
   }
 
   .auth-or::before {
-    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.14));
+    background: linear-gradient(90deg, transparent, rgba(22, 20, 31, 0.14));
   }
 
   .auth-or::after {
-    background: linear-gradient(90deg, rgba(255, 255, 255, 0.14), transparent);
+    background: linear-gradient(90deg, rgba(22, 20, 31, 0.14), transparent);
   }
 
   .auth-submit {
@@ -764,7 +828,7 @@
     font-weight: 600;
     letter-spacing: 0.06em;
     text-transform: uppercase;
-    color: var(--color-ink-950);
+    color: #07070b;
     box-shadow:
       inset 0 1px 0 rgba(255, 255, 255, 0.32),
       0 14px 32px -14px rgba(154, 136, 252, 0.85);
@@ -780,21 +844,29 @@
     height: 2.75rem;
     min-height: 2.75rem;
     border-radius: 0.75rem;
-    border-color: rgba(255, 255, 255, 0.14);
+    border-color: rgba(22, 20, 31, 0.12);
     background: transparent;
     font-size: 13.5px;
     font-weight: 500;
     letter-spacing: 0.02em;
-    color: rgba(255, 255, 255, 0.78);
+    color: #3a2f78;
   }
 
   .auth-alt:hover:not(:disabled) {
-    border-color: rgba(255, 255, 255, 0.28);
-    background: rgba(255, 255, 255, 0.035);
-    color: #fff;
+    border-color: rgba(154, 136, 252, 0.4);
+    background: rgba(154, 136, 252, 0.08);
+    color: #16141f;
   }
 
   .surface-raised {
+    background: #ffffff;
+    border: 1px solid rgba(22, 20, 31, 0.1);
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.9),
+      0 16px 40px -16px rgba(22, 20, 31, 0.12);
+  }
+
+  .dark .surface-raised {
     background: #100f18;
     border: 1px solid rgba(255, 255, 255, 0.09);
     box-shadow:
@@ -803,8 +875,12 @@
   }
 
   .surface-sunken {
-    background: rgba(255, 255, 255, 0.022);
+    background: rgba(22, 20, 31, 0.04);
     border: 1px solid var(--hairline);
+  }
+
+  .dark .surface-sunken {
+    background: rgba(255, 255, 255, 0.022);
   }
 
   .panel-hover {
@@ -1087,6 +1163,84 @@
     border-left: 2px solid #f0b45c;
     padding-left: 0.75rem;
     color: #f0b45c;
+  }
+
+  /*
+   * Field recipes were written for the old dark desk. Light is the operator
+   * default; the public site restores the dark shell via the .dark wrapper.
+   */
+  html:not(.dark) .field-input {
+    border-color: rgba(22, 20, 31, 0.12);
+    background: #ffffff;
+    color: #16141f;
+    color-scheme: light;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.8);
+  }
+
+  html:not(.dark) .field-input:focus,
+  html:not(.dark) .field-input:focus-visible,
+  html:not(.dark) .field-input[data-state="open"],
+  html:not(.dark) .field-input[data-popup-open],
+  html:not(.dark) .field-input[data-open] {
+    background:
+      linear-gradient(180deg, rgba(154, 136, 252, 0.1) 0%, transparent 48%),
+      #ffffff;
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.8),
+      0 0 0 4px rgba(154, 136, 252, 0.14);
+  }
+
+  html:not(.dark) .field-input-group .field-control,
+  html:not(.dark) .field-select-item,
+  html:not(.dark) .field-select-item[data-state="checked"] {
+    color: #16141f;
+  }
+
+  html:not(.dark) .field-select-content {
+    background: #ffffff;
+    border-color: rgba(22, 20, 31, 0.1);
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.9),
+      0 18px 48px -20px rgba(22, 20, 31, 0.18);
+  }
+
+  html:not(.dark) .field-affix:first-child {
+    border-right-color: rgba(22, 20, 31, 0.1);
+  }
+
+  html:not(.dark) .field-affix:last-child {
+    border-left-color: rgba(22, 20, 31, 0.1);
+  }
+
+  html:not(.dark) .prospect-said {
+    color: #16141f;
+  }
+
+  html:not(.dark) .dark .field-input {
+    border-color: rgba(255, 255, 255, 0.09);
+    background:
+      linear-gradient(180deg, rgba(255, 255, 255, 0.055) 0%, rgba(255, 255, 255, 0.02) 100%),
+      #100f18;
+    color: #fff;
+    color-scheme: dark;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  }
+
+  html:not(.dark) .dark .field-input-group .field-control,
+  html:not(.dark) .dark .field-select-item,
+  html:not(.dark) .dark .field-select-item[data-state="checked"],
+  html:not(.dark) .dark .prospect-said {
+    color: #fff;
+  }
+
+  html:not(.dark) .dark .field-select-content {
+    background:
+      linear-gradient(180deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0.015) 100%),
+      #0b0a11;
+    border-color: rgba(255, 255, 255, 0.1);
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.07),
+      0 24px 56px -20px rgba(0, 0, 0, 0.86);
   }
 }
 
@@ -1380,11 +1534,69 @@
 
 /*
  * Divine Acquisition wins. The coss CLI rewrites :root/.dark above this block;
- * keep this last so brand-500 stays primary on a dark-only product. html always
- * carries .dark, so both selectors must agree.
+ * keep this last so brand-500 stays primary. :root is the light operator app.
+ * .dark is the public site.
  */
-:root,
+:root {
+  --brand: #9a88fc;
+  --brand-rgb: 154, 136, 252;
+  --brand-deep: #6650d8;
+  --page: #f6f5fb;
+  --hairline: rgba(22, 20, 31, 0.1);
+
+  --background: #f6f5fb;
+  --foreground: #5c5868;
+  --card: #ffffff;
+  --card-foreground: #16141f;
+  --popover: #ffffff;
+  --popover-foreground: #16141f;
+  --primary: #9a88fc;
+  --primary-foreground: #07070b;
+  --secondary: #eceaf6;
+  --secondary-foreground: #3a2f78;
+  --muted: #f0eef8;
+  --muted-foreground: #6f6b7c;
+  --accent: #ece9f8;
+  --accent-foreground: #3a2f78;
+  --destructive: #e11d48;
+  --destructive-foreground: #ffffff;
+  --success: #0f9f6e;
+  --success-foreground: #0f9f6e;
+  --warning: #c47d12;
+  --warning-foreground: #c47d12;
+  --info: #6650d8;
+  --info-foreground: #3a2f78;
+  --border: rgba(22, 20, 31, 0.1);
+  --input: rgba(22, 20, 31, 0.12);
+  --ring: #9a88fc;
+  --radius: 0.75rem;
+
+  --chart-1: #9a88fc;
+  --chart-2: #0f9f6e;
+  --chart-3: #c47d12;
+  --chart-4: #e11d48;
+  --chart-5: #5c5868;
+
+  --sidebar: #ffffff;
+  --sidebar-foreground: #5c5868;
+  --sidebar-primary: #9a88fc;
+  --sidebar-primary-foreground: #07070b;
+  --sidebar-accent: #ece9f8;
+  --sidebar-accent-foreground: #3a2f78;
+  --sidebar-border: rgba(22, 20, 31, 0.08);
+  --sidebar-ring: #9a88fc;
+
+  --color-ink-950: #f6f5fb;
+  --color-ink-900: #ffffff;
+  --color-ink-850: #f3f1fa;
+  --color-ink-800: #ebe8f4;
+  --color-ink-700: #ddd8ec;
+  --color-silver: #5c5868;
+  --color-dim: #6f6b7c;
+}
+
 .dark {
+  color-scheme: dark;
   --brand: #9a88fc;
   --brand-rgb: 154, 136, 252;
   --brand-deep: #6650d8;
@@ -1432,4 +1644,39 @@
   --sidebar-accent-foreground: #c3b6fe;
   --sidebar-border: rgba(255, 255, 255, 0.08);
   --sidebar-ring: #9a88fc;
+
+  --color-ink-950: #07070b;
+  --color-ink-900: #0b0a11;
+  --color-ink-850: #100f18;
+  --color-ink-800: #16151f;
+  --color-ink-700: #1e1d29;
+  --color-silver: #a3a3a3;
+  --color-dim: #858585;
+}
+
+/*
+ * The operator app is light. A lot of screens still say `text-white` and
+ * `border-white/…` from the dark desk. Remap those on paper, but leave the
+ * public site (descendant `.dark`) and filled destructive controls alone.
+ */
+html:not(.dark) .text-white:not(.bg-destructive) {
+  color: var(--card-foreground);
+}
+
+html:not(.dark) .hover\:text-white:hover:not(.bg-destructive) {
+  color: var(--card-foreground);
+}
+
+html:not(.dark) .bg-destructive,
+html:not(.dark) .bg-destructive .text-white {
+  color: #fff;
+}
+
+html:not(.dark) .dark .text-white,
+html:not(.dark) .dark .hover\:text-white:hover {
+  color: #fff;
+}
+
+html:not(.dark) :not(:is(.dark *))[class*="border-white/"] {
+  border-color: var(--border);
 }

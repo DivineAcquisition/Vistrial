@@ -14,7 +14,7 @@ export const metadata: Metadata = {
   applicationName: APP_NAME,
   appleWebApp: {
     capable: true,
-    statusBarStyle: "black-translucent",
+    statusBarStyle: "default",
     title: APP_NAME,
   },
   formatDetection: { telephone: false },
@@ -43,8 +43,8 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#07070b",
-  colorScheme: "dark",
+  themeColor: "#f6f5fb",
+  colorScheme: "light",
   width: "device-width",
   initialScale: 1,
   viewportFit: "cover",
@@ -59,7 +59,6 @@ export default function RootLayout({
     <html
       lang="en"
       className={cn(
-        "dark",
         interDisplay.variable,
         geistMono.variable,
       )}

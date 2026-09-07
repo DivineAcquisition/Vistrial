@@ -2,28 +2,36 @@ type LogoProps = {
   className?: string;
   /** Renders the crest on its own, without the wordmark. */
   markOnly?: boolean;
-  /** Unused for the raster lockup; kept so existing call sites type-check. */
-  tone?: "silver" | "current";
+  /** `on-light` is the black mark for the white operator app. */
+  tone?: "silver" | "current" | "on-light";
   title?: string;
 };
 
 /**
- * Official Vistrial artwork. The crest is the uploaded Comp PNG
- * (`public/brand/Comp (0-00-00-00).png`, also served as `/brand/vistrial-crest.png`)
- * shown as-is through a native img — no next/image resampling, no traced SVG.
+ * Official Vistrial artwork.
+ * Dark surfaces use the silver crest / lockup.
+ * The operator app, portal, and auth desk use the black mark on white.
  */
 export default function Logo({
   className,
   markOnly = false,
+  tone = "silver",
   title = "Vistrial",
 }: LogoProps) {
+  const onLight = tone === "on-light";
+  const src = onLight
+    ? "/brand/vistrial-black-logo.png"
+    : markOnly
+      ? "/brand/vistrial-crest.png"
+      : "/brand/vistrial-lockup.png";
+
   return (
     // eslint-disable-next-line @next/next/no-img-element
     <img
-      src={markOnly ? "/brand/vistrial-crest.png" : "/brand/vistrial-lockup.png"}
+      src={src}
       alt={title}
-      width={markOnly ? 1080 : 460}
-      height={markOnly ? 1080 : 132}
+      width={onLight || markOnly ? 1080 : 460}
+      height={onLight || markOnly ? 1080 : 132}
       className={className}
       aria-hidden={title ? undefined : true}
     />

@@ -69,16 +69,16 @@ export const btnIconLg = "size-10! p-0! sm:size-9!";
  * ------------------------------------------------------------------------- */
 
 export const eyebrow =
-  "inline-flex items-center gap-2 rounded-full border border-brand-500/30 bg-brand-500/[0.08] px-3.5 py-1.5 text-[11px] font-semibold uppercase tracking-[0.14em] text-brand-300";
+  "inline-flex items-center gap-2 rounded-full border border-brand-500/30 bg-brand-500/[0.08] px-3.5 py-1.5 text-[11px] font-semibold uppercase tracking-[0.14em] text-brand-700 dark:text-brand-300";
 
 export const sectionLabel =
-  "text-[11px] font-semibold uppercase tracking-[0.2em] text-brand-300";
+  "text-[11px] font-semibold uppercase tracking-[0.2em] text-brand-700 dark:text-brand-300";
 
 /** Small uppercase caption above a filter or a stat, as on the hiring rail. */
 export const filterLabel =
   "mb-2.5 text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground";
 
-export const pageTitle = "font-heading text-[1.75rem] tracking-tight text-white sm:text-[2rem]";
+export const pageTitle = "font-heading text-[1.75rem] tracking-tight text-card-foreground sm:text-[2rem]";
 /** A heading that owns a band of the page, above several cards. */
 export const sectionTitle = "font-heading text-base text-card-foreground";
 /** The title of one card. The most common heading in the app. */
@@ -99,7 +99,7 @@ export const labelClass =
   "mb-2 inline-flex items-center gap-2 font-medium text-base/4.5 text-card-foreground sm:text-sm/4";
 
 const nativeFieldChrome =
-  "relative w-full min-w-0 rounded-xl border border-white/[0.09] bg-ink-850 text-base text-card-foreground shadow-[inset_0_1px_0_rgba(255,255,255,0.06)] outline-none ring-brand-500/20 transition-shadow scheme-dark not-dark:bg-clip-padding placeholder:text-muted-foreground/72 hover:not-disabled:border-white/[0.16] focus-visible:border-brand-500/55 focus-visible:ring-[3px] aria-invalid:border-destructive/36 focus-visible:aria-invalid:border-destructive/64 focus-visible:aria-invalid:ring-destructive/16 disabled:pointer-events-none disabled:opacity-64 dark:bg-ink-850 dark:aria-invalid:ring-destructive/24 sm:text-sm [&::-webkit-calendar-picker-indicator]:cursor-pointer [&::-webkit-calendar-picker-indicator]:opacity-70 [&::-webkit-calendar-picker-indicator]:invert";
+  "relative w-full min-w-0 rounded-xl border border-border bg-card text-base text-card-foreground shadow-[inset_0_1px_0_rgba(255,255,255,0.8)] outline-none ring-brand-500/20 transition-shadow scheme-light not-dark:bg-clip-padding placeholder:text-muted-foreground/72 hover:not-disabled:border-input focus-visible:border-brand-500/55 focus-visible:ring-[3px] aria-invalid:border-destructive/36 focus-visible:aria-invalid:border-destructive/64 focus-visible:aria-invalid:ring-destructive/16 disabled:pointer-events-none disabled:opacity-64 dark:border-white/[0.09] dark:bg-ink-850 dark:scheme-dark dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.06)] dark:hover:not-disabled:border-white/[0.16] dark:aria-invalid:ring-destructive/24 sm:text-sm [&::-webkit-calendar-picker-indicator]:cursor-pointer [&::-webkit-calendar-picker-indicator]:opacity-70 dark:[&::-webkit-calendar-picker-indicator]:invert";
 
 export const inputClass = cn(
   nativeFieldChrome,
@@ -161,13 +161,13 @@ export const cardStack = "flex flex-col gap-4";
  * lines so they stop reading as empty outlined boxes.
  */
 export const insetChrome =
-  "rounded-xl border border-white/[0.06] bg-white/[0.04] shadow-[inset_0_1px_0_rgba(255,255,255,0.05)]";
+  "rounded-xl border border-border bg-muted/60 shadow-[inset_0_1px_0_rgba(255,255,255,0.8)] dark:border-white/[0.06] dark:bg-white/[0.04] dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.05)]";
 
 export const insetSurface = cn(insetChrome, "p-4");
 
 /** Filter and range bars. Wraps a grid or a wrapping row of compact controls. */
 export const filterBar =
-  "rounded-2xl border border-white/[0.06] bg-white/[0.03] p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.05)] sm:p-5";
+  "rounded-2xl border border-border bg-muted/50 p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.8)] sm:p-5 dark:border-white/[0.06] dark:bg-white/[0.03] dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.05)]";
 
 /** Settings and marketing forms. Wide enough for longer placeholders. */
 export const formMeasure = "w-full max-w-2xl";

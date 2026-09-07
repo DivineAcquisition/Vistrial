@@ -50,6 +50,12 @@ describe("visual recipes stay aligned", () => {
   it("keeps page titles large and pages stacked with room", () => {
     expect(pageTitle).toContain("font-heading");
     expect(pageTitle).toContain("text-[1.75rem]");
+    expect(pageTitle).toContain("text-card-foreground");
     expect(pageStack).toContain("gap-8");
+  });
+
+  it("fills light insets and keeps the dark fill class for marketing", () => {
+    expect(insetChrome).toContain("bg-muted/60");
+    expect(filterBar).toContain("bg-muted/50");
   });
 });

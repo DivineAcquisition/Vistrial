@@ -426,3 +426,36 @@ if [[ "$(echo "$chk_actor" | tr -d ' ')" != "0" ]]; then
 fi
 
 echo "OK: touch ingest migration rollback and re-apply succeeded."
+
+echo "Rollback case-file MVP (lead_files gone; extra list args gone)..."
+run "${ROOT}/supabase/rollbacks/20260838010000_case_file_mvp.sql"
+tbl_files="$("${PSQL[@]}" -d "${DB_NAME}" -tAc "SELECT count(*) FROM information_schema.tables WHERE table_schema='public' AND table_name='lead_files'")"
+if [[ "$(echo "$tbl_files" | tr -d ' ')" != "0" ]]; then
+  echo "case-file rollback left lead_files in place" >&2
+  exit 1
+fi
+fn_list17="$("${PSQL[@]}" -d "${DB_NAME}" -tAc "SELECT count(*) FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace JOIN pg_type t ON t.oid=p.prorettype WHERE n.nspname='public' AND p.proname='load_org_case_list' AND p.pronargs=17")"
+if [[ "$(echo "$fn_list17" | tr -d ' ')" != "0" ]]; then
+  echo "case-file rollback left the 17-arg load_org_case_list" >&2
+  exit 1
+fi
+col_touch="$("${PSQL[@]}" -d "${DB_NAME}" -tAc "SELECT count(*) FROM information_schema.columns WHERE table_schema='public' AND table_name='case_file_rows' AND column_name='first_human_touch_at'")"
+if [[ "$(echo "$col_touch" | tr -d ' ')" != "0" ]]; then
+  echo "case-file rollback left first_human_touch_at on case_file_rows" >&2
+  exit 1
+fi
+
+echo "Re-apply case-file MVP..."
+run "${ROOT}/supabase/migrations/20260838010000_case_file_mvp.sql"
+tbl_files="$("${PSQL[@]}" -d "${DB_NAME}" -tAc "SELECT count(*) FROM information_schema.tables WHERE table_schema='public' AND table_name='lead_files'")"
+if [[ "$(echo "$tbl_files" | tr -d ' ')" != "1" ]]; then
+  echo "re-apply did not restore lead_files" >&2
+  exit 1
+fi
+fn_list17="$("${PSQL[@]}" -d "${DB_NAME}" -tAc "SELECT count(*) FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace WHERE n.nspname='public' AND p.proname='load_org_case_list' AND p.pronargs=17")"
+if [[ "$(echo "$fn_list17" | tr -d ' ')" != "1" ]]; then
+  echo "re-apply did not restore 17-arg load_org_case_list" >&2
+  exit 1
+fi
+
+echo "OK: case-file MVP migration rollback and re-apply succeeded."

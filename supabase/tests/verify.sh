@@ -35,7 +35,7 @@ WHERE n.nspname = 'public'
   AND c.relname IN (
     'organizations','org_members','org_invites','score_configs','score_field_maps',
     'score_field_rules','leads','readiness_scores','touches','calls','call_extractions',
-    'objections','next_actions','revenue_log','webhook_events','webhook_dead_letters','ghost_detector_runs',
+    'objections','next_actions','revenue_log','webhook_events','webhook_dead_letters','lead_files','ghost_detector_runs',
     'ghl_connections','ghl_oauth_sessions','ghl_field_maps','ghl_dispatches',
     'ghl_rate_windows','ghl_contact_locks','ingestion_alerts','platform_admins',
     'lead_status_changes','transcript_connections','unmatched_transcripts',

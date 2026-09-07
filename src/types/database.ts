@@ -1252,6 +1252,7 @@ export type Database = {
           assigned_closer_id: string | null;
           assigned_setter_id: string | null;
           campaign: string | null;
+          context_notes: string | null;
           created_at: string;
           current_score: number | null;
           email: string | null;
@@ -1285,6 +1286,7 @@ export type Database = {
           assigned_closer_id?: string | null;
           assigned_setter_id?: string | null;
           campaign?: string | null;
+          context_notes?: string | null;
           created_at?: string;
           current_score?: number | null;
           email?: string | null;
@@ -1317,6 +1319,7 @@ export type Database = {
           assigned_closer_id?: string | null;
           assigned_setter_id?: string | null;
           campaign?: string | null;
+          context_notes?: string | null;
           created_at?: string;
           current_score?: number | null;
           email?: string | null;
@@ -1350,6 +1353,64 @@ export type Database = {
             isOneToOne: false;
             referencedRelation: "organizations";
             referencedColumns: ["id"];
+          },
+        ];
+      };
+      lead_files: {
+        Row: {
+          byte_size: number;
+          content_type: string;
+          contents: string;
+          created_at: string;
+          file_name: string;
+          id: string;
+          lead_id: string;
+          org_id: string;
+          uploaded_by_member_id: string | null;
+        };
+        Insert: {
+          byte_size: number;
+          content_type: string;
+          contents: string;
+          created_at?: string;
+          file_name: string;
+          id?: string;
+          lead_id: string;
+          org_id: string;
+          uploaded_by_member_id?: string | null;
+        };
+        Update: {
+          byte_size?: number;
+          content_type?: string;
+          contents?: string;
+          created_at?: string;
+          file_name?: string;
+          id?: string;
+          lead_id?: string;
+          org_id?: string;
+          uploaded_by_member_id?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "lead_files_lead_org_fkey";
+            columns: ["lead_id", "org_id"];
+            isOneToOne: false;
+            referencedRelation: "leads";
+            referencedColumns: ["id", "org_id"];
+          },
+          {
+            foreignKeyName: "lead_files_org_id_fkey";
+            columns: ["org_id"];
+            isOneToOne: false;
+            referencedRelation: "organizations";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "lead_files_uploader_org_fkey";
+            columns: ["uploaded_by_member_id", "org_id"];
+            isOneToOne: false;
+            referencedRelation: "org_members";
+            referencedColumns: ["id", "org_id"];
           },
         ];
       };
@@ -4464,6 +4525,8 @@ export type Database = {
           score: number | null;
           opted_in_at: string;
           last_touch_at: string | null;
+          first_human_touch_at: string | null;
+          pipeline_stage: string | null;
           assigned_setter_id: string | null;
           assigned_closer_id: string | null;
           assigned_setter_name: string | null;
@@ -4816,6 +4879,8 @@ export type Database = {
           p_dir?: string | null;
           p_cursor?: Json | null;
           p_limit?: number | null;
+          p_zero_human_touch?: boolean | null;
+          p_ttft_breach?: boolean | null;
         };
         Returns: Json;
       };

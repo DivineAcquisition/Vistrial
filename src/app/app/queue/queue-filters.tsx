@@ -11,7 +11,8 @@ import {
 import { queueFiltersHref } from "@/lib/queue/filters";
 import { Select } from "@/components/ui/select";
 import { ScoreRangeSlider } from "@/components/ui/slider-field";
-import { filterLabel } from "@/lib/ui";
+import { filterBar, filterLabel } from "@/lib/ui";
+import { cn } from "@/lib/utils";
 
 const ASSIGNED_OPTIONS: Array<{ value: QueueAssignedFilter; label: string }> = [
   { value: "all", label: "Everyone" },
@@ -53,7 +54,7 @@ export function QueueFilters({
 
   return (
     <form
-      className="mb-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-6"
+      className={cn(filterBar, "mb-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-6")}
       onSubmit={(event) => event.preventDefault()}
     >
       <label className="block">

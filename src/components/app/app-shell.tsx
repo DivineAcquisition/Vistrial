@@ -18,6 +18,7 @@ import { OrgSwitcher } from "@/components/app/org-switcher";
 import { MobileWalkthroughNotice } from "@/components/app/mobile-walkthrough";
 import { CoachingDisclosureNotice } from "@/components/app/coaching-disclosure";
 import { FirstRunExplainer } from "@/components/app/first-run";
+import { PageMotion } from "@/components/app/page-motion";
 import { PushPrompt } from "@/components/app/push-prompt";
 import { UserMenu } from "@/components/app/user-menu";
 import { Button } from "@/components/ui/button";
@@ -94,14 +95,25 @@ export function AppShell({
   };
 
   return (
-    <div className="relative flex min-h-screen bg-ink-950 text-card-foreground">
+    <div className="relative isolate flex min-h-screen bg-ink-950 text-card-foreground">
       <div aria-hidden className="pointer-events-none fixed inset-0 z-0 overflow-hidden">
         <div
           className="absolute -top-[22%] left-1/2 h-[520px] w-[820px] -translate-x-1/2"
           style={{
             background:
-              "radial-gradient(ellipse at center, rgba(154,136,252,0.16) 0%, transparent 70%)",
+              "radial-gradient(ellipse at center, rgba(154,136,252,0.18) 0%, transparent 70%)",
             filter: "blur(64px)",
+            animation: "app-breathe 9s ease-in-out infinite",
+          }}
+        />
+        <div
+          className="absolute right-[-12%] bottom-[-18%] h-[380px] w-[380px]"
+          style={{
+            background:
+              "radial-gradient(ellipse at center, rgba(154,136,252,0.1) 0%, transparent 70%)",
+            filter: "blur(56px)",
+            animation: "app-breathe 11s ease-in-out infinite",
+            animationDelay: "1.6s",
           }}
         />
       </div>
@@ -111,7 +123,7 @@ export function AppShell({
             hoverExpand={false}
             expandedWidth="15rem"
             collapsedWidth="4rem"
-            className="relative z-10 sticky top-0 h-svh border-r border-white/[0.07] bg-ink-900/90 px-0 py-0 backdrop-blur-xl print:hidden dark:bg-ink-900/90"
+            className="relative z-10 sticky top-0 h-svh border-r border-white/[0.06] bg-ink-900/80 px-0 py-0 backdrop-blur-xl print:hidden dark:bg-ink-900/80"
           >
             <DesktopAppSidebarNav />
           </DesktopSidebar>
@@ -119,7 +131,7 @@ export function AppShell({
       )}
 
       <div className="relative z-10 flex min-w-0 flex-1 flex-col">
-        <header className="sticky top-0 z-30 flex h-14 items-center gap-3 border-b border-white/[0.07] bg-ink-950/80 px-4 backdrop-blur-xl print:hidden sm:px-6">
+        <header className="sticky top-0 z-30 flex h-16 items-center gap-3 border-b border-white/[0.06] bg-ink-950/75 px-4 backdrop-blur-xl print:hidden sm:px-6">
           {wizard ? null : (
           <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
             <SheetTrigger
@@ -200,7 +212,7 @@ export function AppShell({
 
         <main
           className={cn(
-            "min-w-0 flex-1 overflow-x-hidden px-5 py-8 sm:px-8",
+            "min-w-0 flex-1 overflow-x-hidden px-5 py-8 sm:px-8 lg:px-10",
             wizard ? "pb-8" : "pb-[calc(5.5rem+env(safe-area-inset-bottom))] md:pb-8"
           )}
         >
@@ -216,7 +228,7 @@ export function AppShell({
                 <PushPrompt />
               </>
             )}
-            {children}
+            <PageMotion>{children}</PageMotion>
           </div>
         </main>
         {wizard ? null : <MobileDock />}

@@ -17,7 +17,8 @@ import { CheckboxField } from "@/components/ui/checkbox";
 import { Field } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
-import { errorClass, helperClass } from "@/lib/ui";
+import { errorClass, helperClass, insetChrome } from "@/lib/ui";
+import { cn } from "@/lib/utils";
 
 const initialInvite: MemberActionResult = { ok: true };
 
@@ -68,7 +69,7 @@ export function InviteForm() {
       </p>
       {!state.ok ? <p className={errorClass}>{state.error}</p> : null}
       {url ? (
-        <div className="space-y-3 rounded-xl border border-white/10 bg-white/[0.03] px-3 py-3">
+        <div className={cn(insetChrome, "space-y-3 px-3 py-3")}>
           <p className="break-all text-xs text-silver">{url}</p>
           <p className={helperClass}>
             Share this link, and the install steps, so they can log outcomes from a phone.

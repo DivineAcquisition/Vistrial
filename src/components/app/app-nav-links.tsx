@@ -60,16 +60,16 @@ export function AppNavLinks({
               aria-current={active ? "page" : undefined}
               aria-label={collapsed ? item.label : undefined}
               className={cn(
-                "group flex items-center rounded-xl text-sm transition-colors",
-                collapsed ? "size-10 justify-center" : "gap-2.5 px-3 py-2",
+                "group flex items-center rounded-xl text-sm transition-[background-color,color,transform] duration-150",
+                collapsed ? "size-11 justify-center" : "gap-2.5 px-3 py-2.5",
                 active
-                  ? "bg-brand-950 text-brand-200"
+                  ? "bg-brand-950 text-brand-200 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)]"
                   : "text-silver hover:bg-white/[0.05] hover:text-white"
               )}
             >
               <Icon
                 className={cn(
-                  "size-4 shrink-0 transition-colors",
+                  "size-4 shrink-0 transition-colors duration-150",
                   active ? "text-brand-300" : "text-dim group-hover:text-silver"
                 )}
                 aria-hidden

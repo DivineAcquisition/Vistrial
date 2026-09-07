@@ -30,8 +30,10 @@ import {
   cardTitle,
   errorClass,
   helperClass,
+  insetChrome,
   labelClass,
 } from "@/lib/ui";
+import { cn } from "@/lib/utils";
 
 export type ScoringLeadOption = {
   id: string;
@@ -346,7 +348,7 @@ export function ScoringSettings({
         </p>
         <div className="mt-5 space-y-6">
           {maps.map((map, mapIndex) => (
-            <div key={map.id} className="rounded-2xl border border-white/10 p-4">
+            <div key={map.id} className={cn(insetChrome, "rounded-2xl p-4")}>
               <div className="grid gap-3 sm:grid-cols-[1fr_1fr_auto] sm:items-end">
                 <div>
                   <Field label="Application field" name={`field-${map.id}`}>

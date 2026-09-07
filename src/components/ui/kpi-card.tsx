@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import { ArrowDownRight, ArrowRight, ArrowUpRight } from "lucide-react";
 
 import { Card } from "@/components/ui/card";
+import { NumberTicker } from "@/components/ui/number-ticker";
 import { toneValueClass, type Tone } from "@/components/ui/tone";
 import { metricValue } from "@/lib/ui";
 import { cn } from "@/lib/utils";
@@ -53,6 +54,14 @@ export function Trend({
   );
 }
 
+function numericTickerValue(value: string | number): number | null {
+  if (typeof value === "number" && Number.isFinite(value)) return value;
+  if (typeof value === "string" && /^-?\d[\d,]*(\.\d+)?$/.test(value.trim())) {
+    return Number(value.replace(/,/g, ""));
+  }
+  return null;
+}
+
 /**
  * Metric card. The top border is always the brand; the tone colours the value,
  * never the chrome.
@@ -75,17 +84,26 @@ export function KpiCard({
   footer?: ReactNode;
   className?: string;
 }) {
+  const ticker = numericTickerValue(value);
+
   return (
     <Card
       className={cn(
-        "panel-hover border-t-2 border-t-primary bg-[linear-gradient(180deg,rgba(154,136,252,0.08)_0%,transparent_42%),#0b0a11] p-5",
+        "panel-hover border-t-2 border-t-primary bg-[linear-gradient(180deg,rgba(154,136,252,0.12)_0%,transparent_46%),#0b0a11] p-6",
         className
       )}
     >
-      <p className="text-[10px] font-semibold tracking-[0.15em] text-muted-foreground uppercase">{label}</p>
-      <p className={cn("mt-1.5", metricValue, toneValueClass(tone))}>{value}</p>
-      {trend ? <div className="mt-1.5">{trend}</div> : null}
-      {sub ? <p className="mt-1 text-xs text-muted-foreground">{sub}</p> : null}
+      <p className="text-[10px] font-semibold tracking-[0.16em] text-muted-foreground uppercase">{label}</p>
+      {ticker === null ? (
+        <p className={cn("mt-2", metricValue, toneValueClass(tone))}>{value}</p>
+      ) : (
+        <NumberTicker
+          value={ticker}
+          className={cn("mt-2 block", metricValue, toneValueClass(tone))}
+        />
+      )}
+      {trend ? <div className="mt-2">{trend}</div> : null}
+      {sub ? <p className="mt-1.5 text-xs leading-relaxed text-muted-foreground">{sub}</p> : null}
       {footer ? <div className="mt-3">{footer}</div> : null}
     </Card>
   );
@@ -104,5 +122,5 @@ export function KpiGrid({
     4: "sm:grid-cols-2 lg:grid-cols-4",
   }[columns];
 
-  return <div className={cn("grid gap-4", cols)}>{children}</div>;
+  return <div className={cn("app-stagger grid gap-4", cols)}>{children}</div>;
 }

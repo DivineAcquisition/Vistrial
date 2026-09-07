@@ -23,6 +23,7 @@ import {
 import {
   errorClass,
   helperClass,
+  insetSurface,
   labelClass,
 } from "@/lib/ui";
 import type { OrgRole } from "@/types/database";
@@ -89,7 +90,7 @@ export function OutcomePanel({
   }
 
   return (
-    <div className="rounded-xl border border-white/10 bg-white/[0.03] p-4">
+    <div className={insetSurface}>
       <p className="text-sm font-medium text-white">What happened with {row.name}</p>
       <p className={helperClass}>
         One click on the result writes the touch. Channel and direction stay outbound call unless you change them.
@@ -213,7 +214,7 @@ export function AssignPanel({
   }
 
   return (
-    <div className="rounded-xl border border-white/10 bg-white/[0.03] p-4">
+    <div className={insetSurface}>
       <p className="text-sm font-medium text-white">Assign {row.name}</p>
       {!canOthers ? (
         <p className={helperClass}>You can assign this lead to yourself. Owners and admins assign to others.</p>
@@ -360,7 +361,7 @@ export function FollowOnPanel({
   const [pending, setPending] = useState(false);
 
   return (
-    <div className="rounded-xl border border-white/10 bg-white/[0.03] p-4">
+    <div className={insetSurface}>
       <p className="text-sm font-medium text-white">Create a follow-on?</p>
       <p className={helperClass}>Optional. Skip if nothing is next.</p>
       <label className="mt-4 block">

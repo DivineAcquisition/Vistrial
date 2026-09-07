@@ -5,7 +5,7 @@ import { Progress } from "@/components/ui/progress";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { CASE_FILE } from "@/lib/marketing/copy";
 import { DEMO_CASE } from "@/lib/marketing/demo-case";
-import { captionText, sectionLabel } from "@/lib/ui";
+import { captionText, insetSurface, sectionLabel } from "@/lib/ui";
 import { cn } from "@/lib/utils";
 
 function SampleMark() {
@@ -154,7 +154,7 @@ export function AnnotatedCaseFile() {
       </CasePart>
 
       <CasePart title={CASE_FILE.parts[3].title} body={CASE_FILE.parts[3].body}>
-        <div className="rounded-xl border border-white/10 bg-white/[0.03] p-4">
+        <div className={insetSurface}>
           <StatusBadge label={demo.objection.type} tone="warning" />
           <p className="mt-2 text-sm text-white">“{demo.objection.verbatim}”</p>
           <p className="mt-1 text-xs text-dim">{demo.objection.source}</p>

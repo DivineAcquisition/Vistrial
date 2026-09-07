@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 
 export function DefinitionList({ children }: { children: ReactNode }) {
-  return <dl className="divide-y divide-white/[0.05]">{children}</dl>;
+  return <dl className="divide-y divide-white/[0.04]">{children}</dl>;
 }
 
 export function KeyValue({
@@ -12,11 +12,9 @@ export function KeyValue({
   children: ReactNode;
 }) {
   return (
-    <div className="flex flex-col gap-1 py-2.5 sm:flex-row sm:items-baseline sm:gap-4">
-      <dt className="w-full shrink-0 text-xs font-medium tracking-[0.1em] text-dim uppercase sm:w-52">
-        {label}
-      </dt>
-      <dd className="min-w-0 flex-1 text-sm text-silver">{children}</dd>
+    <div className="grid gap-1 py-3 sm:grid-cols-[11rem_minmax(0,1fr)] sm:items-baseline sm:gap-6">
+      <dt className="text-[11px] font-semibold tracking-[0.14em] text-dim uppercase">{label}</dt>
+      <dd className="min-w-0 text-sm leading-relaxed text-white">{children}</dd>
     </div>
   );
 }

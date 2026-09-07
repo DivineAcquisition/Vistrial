@@ -166,7 +166,7 @@ function HubTile({ card, now }: { card: HubCard; now: string }) {
   const connected = card.status === "connected" || card.status === "attention";
 
   return (
-    <Panel className="flex flex-col p-6">
+    <Panel className="flex h-full flex-col p-6">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <h3 className={cardTitle}>{card.title}</h3>
@@ -219,7 +219,7 @@ export function IntegrationHub({
     <div className="space-y-4">
       {flashError ? <p className={errorClass}>{flashError}</p> : null}
       {flash ? <p className="text-sm text-flag-good">{flash}</p> : null}
-      <div className="grid gap-4 sm:grid-cols-2">
+      <div className="app-stagger grid gap-4 sm:grid-cols-2">
         {cards.map((card) => (
           <HubTile key={card.id} card={card} now={now} />
         ))}

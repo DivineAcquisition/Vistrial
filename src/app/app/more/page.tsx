@@ -14,9 +14,9 @@ export default async function MorePage() {
       title="More"
       description="Sales tools and settings for this workspace. Forsight and the portal are in the sidebar."
     >
-      <ul className="grid gap-3 sm:grid-cols-2">
+      <ul className="app-stagger grid gap-4 sm:grid-cols-2">
         {items.map((item) => (
-          <li key={item.href}>
+          <li key={item.href} className="h-full">
             <GlowLinkCard href={item.href} title={item.label} description={item.description} />
           </li>
         ))}
@@ -25,9 +25,9 @@ export default async function MorePage() {
       {isPlatformAdmin ? (
         <section className="mt-10">
           <h2 className="mb-3 text-sm font-medium text-silver">Divine Acquisition</h2>
-          <ul className="grid gap-3 sm:grid-cols-2">
+          <ul className="app-stagger grid gap-4 sm:grid-cols-2">
             {DA_CONSOLE_LINKS.map((item) => (
-              <li key={item.href}>
+              <li key={item.href} className="h-full">
                 <GlowLinkCard href={item.href} title={item.label} description={item.description} />
               </li>
             ))}

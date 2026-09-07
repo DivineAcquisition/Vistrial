@@ -12,7 +12,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Panel } from "@/components/ui/panel";
 import { Select } from "@/components/ui/select";
 import { StatusBadge } from "@/components/ui/status-badge";
-import { cardTitle, errorClass, helperClass, labelClass } from "@/lib/ui";
+import { cardTitle, errorClass, helperClass, insetSurface, labelClass } from "@/lib/ui";
 
 const idle: SettingsSaveResult = { status: "idle" };
 
@@ -48,7 +48,7 @@ export function VoiceExamples({
       {examples.length > 0 ? (
         <ul className="mt-5 space-y-3">
           {examples.map((example, index) => (
-            <li key={`${example.addedAt}-${index}`} className="rounded-xl border border-white/10 p-4">
+            <li key={`${example.addedAt}-${index}`} className={insetSurface}>
               <div className="flex items-start justify-between gap-4">
                 <p className="whitespace-pre-wrap text-sm text-silver">{example.body}</p>
                 <form action={removeAction}>

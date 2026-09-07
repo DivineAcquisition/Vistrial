@@ -108,7 +108,7 @@ export function FeatureCard({
   children?: ReactNode;
 }) {
   return (
-    <Panel className="flex h-full flex-col overflow-hidden p-0">
+    <Panel className="flex h-full min-h-40 flex-col overflow-hidden p-0">
       <MagicCard className="flex h-full flex-col rounded-2xl p-6 sm:p-7">
         {step ? (
           <p className="mb-6 font-display text-5xl leading-none tracking-tight text-brand-500/30 tabular-nums">
@@ -132,9 +132,9 @@ export function IconCard({
   children: ReactNode;
 }) {
   return (
-    <Panel className="flex h-full flex-col overflow-hidden p-0">
+    <Panel className="flex h-full min-h-40 flex-col overflow-hidden p-0">
       <MagicCard className="flex h-full flex-col rounded-2xl p-6">
-        <div className="flex size-11 items-center justify-center rounded-2xl border border-brand-500/20 bg-brand-500/[0.1] text-brand-300">
+        <div className="flex size-12 items-center justify-center rounded-2xl border border-brand-500/25 bg-brand-500/[0.12] text-brand-300 shadow-[0_14px_32px_-16px_rgba(154,136,252,0.75)]">
           <Icon className="size-5" aria-hidden />
         </div>
         <h3 className={cn(marketingCardTitle, "mt-6")}>{title}</h3>

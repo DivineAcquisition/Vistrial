@@ -75,7 +75,7 @@ export function LoadingOverlay({
       </div>
       {active ? (
         <div className="absolute inset-0 grid place-items-center">
-          <span className="inline-flex items-center gap-2 rounded-lg border border-input bg-popover px-3.5 py-1.5 text-xs text-card-foreground shadow-xs/5">
+          <span className="inline-flex items-center gap-2 rounded-full border border-white/[0.08] bg-ink-900/90 px-3.5 py-1.5 text-xs text-card-foreground shadow-[0_12px_32px_-16px_rgba(0,0,0,0.8)]">
             <Spinner className="size-3.5" />
             {label}
           </span>

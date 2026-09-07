@@ -43,7 +43,7 @@ export function PageHeader({
   className?: string;
 }) {
   return (
-    <header className={cn("relative mb-8", className)}>
+    <header className={cn("relative mb-10", className)}>
       {breadcrumbs && breadcrumbs.length > 0 ? (
         <Breadcrumbs items={breadcrumbs} className="mb-3" />
       ) : null}
@@ -56,7 +56,7 @@ export function PageHeader({
             {status ? <StatusBadge label={status} tone={statusTone} /> : null}
           </div>
           {description ? (
-            <p className="mt-2 max-w-2xl text-sm leading-relaxed text-muted-foreground">{description}</p>
+            <p className="mt-2.5 max-w-2xl text-[15px] leading-relaxed text-silver">{description}</p>
           ) : null}
         </div>
 

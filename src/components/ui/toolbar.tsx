@@ -11,7 +11,7 @@ export function Toolbar({
   return (
     <ToolbarPrimitive.Root
       className={cn(
-        "relative flex gap-2 rounded-xl border bg-card not-dark:bg-clip-padding p-1 text-card-foreground",
+        "relative flex gap-2 rounded-xl border border-white/[0.07] bg-white/[0.03] not-dark:bg-clip-padding p-1.5 text-card-foreground shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]",
         className,
       )}
       data-slot="toolbar"

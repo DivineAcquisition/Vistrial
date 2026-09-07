@@ -19,7 +19,8 @@ import { DateRangePicker } from "@/components/ui/date-picker";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { ScoreRangeSlider } from "@/components/ui/slider-field";
-import { filterLabel } from "@/lib/ui";
+import { filterBar, filterLabel } from "@/lib/ui";
+import { cn } from "@/lib/utils";
 
 const SORT_LABELS: Record<CaseSort, string> = {
   last_touch: "Last touch",
@@ -46,7 +47,7 @@ export function CasesFilters({
 
   return (
     <form
-      className="mb-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4"
+      className={cn(filterBar, "mb-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4")}
       onSubmit={(event) => {
         event.preventDefault();
         apply({ q: q.trim() || null });

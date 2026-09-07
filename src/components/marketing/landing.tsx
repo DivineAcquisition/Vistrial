@@ -134,7 +134,7 @@ export function LandingPage() {
         headline={WHAT_IT_DOES.headline}
         align="center"
       >
-        <div className="grid gap-4 md:grid-cols-3">
+        <div className="app-stagger grid gap-4 md:grid-cols-3">
           {WHAT_IT_DOES.items.map((item) => (
             <div key={item.id} id={item.anchor} className="scroll-mt-32">
               <IconCard icon={WHAT_IT_DOES_ICONS[item.id]} title={item.title}>
@@ -170,9 +170,9 @@ export function LandingPage() {
         align="center"
       >
         <div id="forsight" className="scroll-mt-32">
-          <ul className="grid gap-4 sm:grid-cols-3">
+          <ul className="app-stagger grid gap-4 sm:grid-cols-3">
             {OUTCOME.lines.map((line) => (
-              <li key={line.id} id={line.id} className="scroll-mt-32">
+              <li key={line.id} id={line.id} className="h-full scroll-mt-32">
                 <FeatureCard title={line.title} />
               </li>
             ))}

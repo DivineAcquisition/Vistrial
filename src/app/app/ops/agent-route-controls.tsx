@@ -6,7 +6,8 @@ import { saveModelRoute, type OpsActionResult } from "@/app/app/ops/actions";
 import { Button } from "@/components/ui/button";
 import { Field } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
-import { errorClass, helperClass, successClass } from "@/lib/ui";
+import { errorClass, helperClass, insetSurface, successClass } from "@/lib/ui";
+import { cn } from "@/lib/utils";
 
 type RouteRow = { workKind: string; tier: string; modelId: string };
 
@@ -21,7 +22,7 @@ export function AgentRouteControls({ routes }: { routes: RouteRow[] }) {
       {routes.map((route) => (
         <form
           key={route.workKind}
-          className="flex flex-wrap items-end gap-2"
+          className={cn(insetSurface, "flex flex-wrap items-end gap-3")}
           action={async (formData) => setResult(await saveModelRoute(formData))}
         >
           <input type="hidden" name="work_kind" value={route.workKind} />

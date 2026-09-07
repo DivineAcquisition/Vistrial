@@ -7,9 +7,11 @@ import { retryFollowUpSend } from "@/app/app/follow-ups/actions";
 import { Button } from "@/components/ui/button";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import type { Tone } from "@/components/ui/tone";
 import type { ActivityEvent, ActivityLine } from "@/lib/activity/types";
 import { formatDateTime, formatRelative } from "@/lib/format";
-import type { Tone } from "@/components/ui/tone";
+import { insetChrome } from "@/lib/ui";
+import { cn } from "@/lib/utils";
 
 function resultTone(result: ActivityEvent["result"]): Tone {
   if (result === "failed") return "critical";
@@ -144,7 +146,7 @@ export function ActivityEventLine({
       className={
         failed
           ? "rounded-xl border border-flag-critical/40 bg-flag-critical/[0.06] px-4 py-3"
-          : "rounded-xl border border-white/10 bg-white/[0.03] px-4 py-3"
+          : cn(insetChrome, "px-4 py-3")
       }
     >
       <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
@@ -209,7 +211,7 @@ export function ActivityLineView({
   }
 
   return (
-    <details className="rounded-xl border border-white/10 bg-white/[0.03] px-4 py-3">
+    <details className={cn(insetChrome, "px-4 py-3")}>
       <summary className="cursor-pointer">
         <span className="text-sm text-white">{line.headline}</span>
         <span className="ml-3 text-xs text-dim">{formatRelative(line.occurredAt, now)}</span>

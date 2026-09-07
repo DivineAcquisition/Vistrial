@@ -41,7 +41,7 @@ export const btnGradient = buttonVariants({ variant: "gradient" });
 
 export const btnSecondary = buttonVariants({ variant: "secondary" });
 
-/** Quieter than secondary: an outline with no fill until you touch it. */
+/** Quieter than secondary: a filled wash with a soft edge, not an empty ring. */
 export const btnOutline = buttonVariants({ variant: "outline" });
 
 export const btnGhost = buttonVariants({ variant: "ghost" });
@@ -53,7 +53,7 @@ export const btnDestructive = buttonVariants({ variant: "destructive" });
 export const btnLink = buttonVariants({ variant: "link" });
 
 export const btnSizeSm =
-  "h-8! gap-1.5 px-[calc(--spacing(2.5)-1px)]! sm:h-7!";
+  "h-8! gap-1.5 px-[calc(--spacing(2.5)-1px)]! sm:h-8!";
 export const btnSizeMd =
   "h-10! px-[calc(--spacing(3.5)-1px)]! sm:h-9!";
 export const btnSizeLg =
@@ -78,7 +78,7 @@ export const sectionLabel =
 export const filterLabel =
   "mb-2.5 text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground";
 
-export const pageTitle = "font-heading text-2xl text-card-foreground sm:text-[28px]";
+export const pageTitle = "font-heading text-[1.75rem] tracking-tight text-white sm:text-[2rem]";
 /** A heading that owns a band of the page, above several cards. */
 export const sectionTitle = "font-heading text-base text-card-foreground";
 /** The title of one card. The most common heading in the app. */
@@ -152,9 +152,22 @@ export const surfacePad = {
 export type SurfacePad = keyof typeof surfacePad;
 
 /** Vertical rhythm between the major bands of a page. */
-export const pageStack = "flex flex-col gap-6";
+export const pageStack = "flex flex-col gap-8";
 /** Vertical rhythm between rows inside one card. */
 export const cardStack = "flex flex-col gap-4";
+
+/**
+ * Nested inset chrome. Used for action panels, attachments, and activity
+ * lines so they stop reading as empty outlined boxes.
+ */
+export const insetChrome =
+  "rounded-xl border border-white/[0.06] bg-white/[0.04] shadow-[inset_0_1px_0_rgba(255,255,255,0.05)]";
+
+export const insetSurface = cn(insetChrome, "p-4");
+
+/** Filter and range bars. Wraps a grid or a wrapping row of compact controls. */
+export const filterBar =
+  "rounded-2xl border border-white/[0.06] bg-white/[0.03] p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.05)] sm:p-5";
 
 /** Settings and marketing forms. Wide enough for longer placeholders. */
 export const formMeasure = "w-full max-w-2xl";

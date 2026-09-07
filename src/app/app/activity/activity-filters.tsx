@@ -14,7 +14,8 @@ import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { DateRangePicker } from "@/components/ui/date-picker";
-import { filterLabel } from "@/lib/ui";
+import { filterBar, filterLabel } from "@/lib/ui";
+import { cn } from "@/lib/utils";
 
 const CATEGORY_LABELS: Record<ActivityCategory | "", string> = {
   "": "All categories",
@@ -45,7 +46,10 @@ export function ActivityFiltersForm({
   }
 
   return (
-    <form className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4" onSubmit={(event) => event.preventDefault()}>
+    <form
+      className={cn(filterBar, "grid gap-4 sm:grid-cols-2 lg:grid-cols-4")}
+      onSubmit={(event) => event.preventDefault()}
+    >
       <label className="block">
         <span className={filterLabel}>Search lead</span>
         <Input

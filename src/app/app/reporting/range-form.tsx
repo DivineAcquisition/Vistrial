@@ -5,7 +5,8 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { DateRangePicker } from "@/components/ui/date-picker";
 import { Select } from "@/components/ui/select";
-import { filterLabel } from "@/lib/ui";
+import { filterBar, filterLabel } from "@/lib/ui";
+import { cn } from "@/lib/utils";
 import { RANGE_PRESETS, type ReportingRangeKey } from "@/lib/reporting/constants";
 import type { ReportingRange } from "@/lib/reporting/range";
 
@@ -21,7 +22,7 @@ export function ReportingRangeForm({
   const [to, setTo] = useState(range.toDate);
 
   return (
-    <form method="get" action={action} className="mb-6 flex flex-wrap items-end gap-4">
+    <form method="get" action={action} className={cn(filterBar, "mb-6 flex flex-wrap items-end gap-4")}>
       <label className="block">
         <span className={filterLabel}>Range</span>
         <Select

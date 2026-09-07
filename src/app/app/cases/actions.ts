@@ -16,6 +16,13 @@ import {
 import { MANUAL_LEAD_STATUSES, type LeadStatus } from "@/lib/leads/labels";
 import { revalidateLeadSurfaces } from "@/lib/leads/revalidate";
 import { createClient } from "@/lib/supabase/server";
+import {
+  encodeLeadFileContents,
+  isAllowedLeadFileType,
+  MAX_CONTEXT_NOTES_CHARS,
+  MAX_LEAD_FILE_BYTES,
+  sanitizeLeadFileName,
+} from "@/lib/cases/files";
 
 function actionError(error: string): CaseActionResult {
   return { ok: false, error };
@@ -208,6 +215,95 @@ export async function reassignLeadNextAction(input: {
     return actionError(explainWriteError(error.message, "Could not reassign that next action."));
   }
   if (!data) return actionError("That next action is not on this lead.");
+  revalidateLeadSurfaces(scoped.leadId);
+  return { ok: true };
+}
+
+export async function saveLeadContextNotes(input: {
+  leadId: string;
+  notes: string;
+}): Promise<CaseActionResult> {
+  const scoped = await requireLeadInOrg(input.leadId);
+  if (!scoped.ok) return scoped;
+  if (input.notes.length > MAX_CONTEXT_NOTES_CHARS) {
+    return actionError(`Keep context notes under ${MAX_CONTEXT_NOTES_CHARS.toLocaleString()} characters.`);
+  }
+
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("leads")
+    .update({ context_notes: input.notes, updated_at: new Date().toISOString() })
+    .eq("org_id", scoped.orgId)
+    .eq("id", scoped.leadId)
+    .select("id")
+    .maybeSingle();
+
+  if (error) {
+    return actionError(explainWriteError(error.message, "Could not save those notes."));
+  }
+  if (!data) return actionError("You can edit notes on leads assigned to you.");
+  revalidateLeadSurfaces(scoped.leadId);
+  return { ok: true };
+}
+
+export async function uploadLeadFile(formData: FormData): Promise<CaseActionResult> {
+  const leadId = String(formData.get("leadId") ?? "");
+  const scoped = await requireLeadInOrg(leadId);
+  if (!scoped.ok) return scoped;
+
+  const file = formData.get("file");
+  if (!(file instanceof File) || file.size === 0) {
+    return actionError("Choose a file to attach.");
+  }
+  if (file.size > MAX_LEAD_FILE_BYTES) {
+    return actionError("Files must be 8 MB or smaller.");
+  }
+  const contentType = file.type || "application/octet-stream";
+  if (!isAllowedLeadFileType(contentType)) {
+    return actionError("That file type is not allowed. Use PDF, text, image, audio, or Word.");
+  }
+
+  const ctx = await getAuthContext();
+  const bytes = new Uint8Array(await file.arrayBuffer());
+  const supabase = await createClient();
+  const { error } = await supabase.from("lead_files").insert({
+    org_id: scoped.orgId,
+    lead_id: scoped.leadId,
+    file_name: sanitizeLeadFileName(file.name),
+    content_type: contentType,
+    byte_size: file.size,
+    contents: encodeLeadFileContents(bytes),
+    uploaded_by_member_id: ctx.member.id,
+  });
+  if (error) {
+    return actionError(explainWriteError(error.message, "Could not attach that file."));
+  }
+  revalidateLeadSurfaces(scoped.leadId);
+  return { ok: true };
+}
+
+export async function deleteLeadFile(input: {
+  leadId: string;
+  fileId: string;
+}): Promise<CaseActionResult> {
+  const scoped = await requireLeadInOrg(input.leadId);
+  if (!scoped.ok) return scoped;
+  if (!isLeadId(input.fileId)) return actionError("That file is not on this lead.");
+
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("lead_files")
+    .delete()
+    .eq("org_id", scoped.orgId)
+    .eq("lead_id", scoped.leadId)
+    .eq("id", input.fileId)
+    .select("id")
+    .maybeSingle();
+
+  if (error) {
+    return actionError(explainWriteError(error.message, "Could not remove that file."));
+  }
+  if (!data) return actionError("That file is not on this lead.");
   revalidateLeadSurfaces(scoped.leadId);
   return { ok: true };
 }

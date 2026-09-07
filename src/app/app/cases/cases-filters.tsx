@@ -154,6 +154,28 @@ export function CasesFilters({
           ))}
         </Select>
       </label>
+      <label className="block">
+        <span className={filterLabel}>Human touch</span>
+        <Select
+          density="compact"
+          value={filters.zeroHumanTouch ? "zero" : ""}
+          onChange={(event) => apply({ zeroHumanTouch: event.target.value === "zero" })}
+        >
+          <option value="">Anyone</option>
+          <option value="zero">No human touch yet</option>
+        </Select>
+      </label>
+      <label className="block">
+        <span className={filterLabel}>Response window</span>
+        <Select
+          density="compact"
+          value={filters.ttftBreach ? "breached" : ""}
+          onChange={(event) => apply({ ttftBreach: event.target.value === "breached" })}
+        >
+          <option value="">Anyone</option>
+          <option value="breached">Missed first-touch window</option>
+        </Select>
+      </label>
       <div className="sm:col-span-2">
         <span className={filterLabel}>Opted in</span>
         <DateRangePicker

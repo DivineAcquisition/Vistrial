@@ -27,6 +27,7 @@ import {
 } from "@/lib/cases/types";
 import { LEAD_STATUS_LABELS, LEAD_TRACK_LABELS, leadStatusTone } from "@/lib/leads/labels";
 import { formatQueueDuration } from "@/lib/queue/duration";
+import { isTtftBreached } from "@/lib/cases/ttft";
 
 /**
  * On a narrow screen the last three columns fold away rather than pushing the
@@ -171,7 +172,12 @@ export function CasesScreen({
                   </TableHeader>
                   <TableBody>
                     {rows.map((row) => (
-                      <CaseRow key={row.id} row={row} now={now} />
+                      <CaseRow
+                        key={row.id}
+                        row={row}
+                        now={now}
+                        speedToLeadMinutes={initial.speedToLeadMinutes}
+                      />
                     ))}
                   </TableBody>
                 </Table>
@@ -197,9 +203,23 @@ export function CasesScreen({
   );
 }
 
-function CaseRow({ row, now }: { row: CaseListRow; now: string }) {
+function CaseRow({
+  row,
+  now,
+  speedToLeadMinutes,
+}: {
+  row: CaseListRow;
+  now: string;
+  speedToLeadMinutes: number;
+}) {
   const trackLabel = row.leadType ? LEAD_TRACK_LABELS[row.leadType] : null;
   const assigned = [row.assignedSetterName, row.assignedCloserName].filter(Boolean).join(" / ") || "—";
+  const missedWindow = isTtftBreached({
+    optedInAt: row.optedInAt,
+    firstHumanTouchAt: row.firstHumanTouchAt,
+    speedToLeadMinutes,
+    now,
+  });
 
   return (
     <TableRow className="relative border-border/60 hover:bg-white/[0.02]">
@@ -213,6 +233,14 @@ function CaseRow({ row, now }: { row: CaseListRow; now: string }) {
             .filter(Boolean)
             .join(" · ") || "No source recorded"}
         </span>
+        {row.firstHumanTouchAt === null ? (
+          <span className="mt-2 block">
+            <StatusBadge
+              label={missedWindow ? "Missed first-touch window" : "No human touch"}
+              tone={missedWindow ? "critical" : "warning"}
+            />
+          </span>
+        ) : null}
       </TableCell>
       <TableCell className="px-4 py-3.5 whitespace-normal">
         {row.score === null ? (

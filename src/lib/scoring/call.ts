@@ -49,14 +49,17 @@ export async function scoreLeadFromCall(
     return { written: false, reason: "unscored" };
   }
 
+  // Quote only what actually moved a factor. A signal the call raised but that
+  // mapped to nothing explains no part of this score, and naming it as the
+  // reason would send an operator looking for a change that never happened.
   const namedSignals: CallScoreSignal[] = [];
-  if (args.signals.timeline_signal) {
+  if (args.signals.timeline_signal && extracted.factors.timeline !== null) {
     namedSignals.push({ factor: "timeline", text: args.signals.timeline_signal });
   }
-  if (args.signals.budget_signal) {
+  if (args.signals.budget_signal && extracted.factors.investment_capacity !== null) {
     namedSignals.push({ factor: "investment capacity", text: args.signals.budget_signal });
   }
-  if (args.signals.decision_process) {
+  if (args.signals.decision_process && extracted.factors.decision_authority !== null) {
     namedSignals.push({ factor: "decision authority", text: args.signals.decision_process });
   }
 

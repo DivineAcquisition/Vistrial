@@ -11,6 +11,9 @@ import type { Database } from "@/types/database";
 
 type WebhookRow = Database["public"]["Tables"]["webhook_events"]["Row"];
 
+/** Why a matched call did not take the transcript. Both route to the queue. */
+type AttachSkipReason = "call_missing" | "transcript_already_present";
+
 export async function processTranscriptWebhookQueue(db: GhlDb, max = 20): Promise<{
   events: number;
   failed: number;
@@ -64,11 +67,25 @@ export async function processOneTranscriptEvent(db: GhlDb, event: WebhookRow): P
     return;
   }
 
-  await attachTranscriptToCall(db, {
+  const attach = await attachTranscriptToCall(db, {
     orgId: event.org_id,
     callId: match.callId,
     transcript: normalized.value,
   });
+
+  // A matched call that already holds a transcript is not a reason to drop this
+  // one. It goes to the operator queue so nothing arrives and disappears.
+  if (!attach.attached) {
+    await insertUnmatched(db, event, normalized.value);
+    await markProcessed(db, event.id, null);
+    transcriptLog("transcript.process.unmatched", {
+      eventId: event.id,
+      orgId: event.org_id,
+      reason: attach.reason,
+    });
+    return;
+  }
+
   await markProcessed(db, event.id, null);
   transcriptLog("transcript.process.matched", {
     eventId: event.id,
@@ -85,7 +102,7 @@ export async function attachTranscriptToCall(
     transcript: NormalizedTranscript;
     replace?: boolean;
   }
-): Promise<{ attached: boolean }> {
+): Promise<{ attached: boolean; reason: AttachSkipReason | null }> {
   const { data: existing } = await db
     .from("calls")
     .select("id, raw_transcript, lead_id, occurred_at, duration_seconds")
@@ -93,10 +110,10 @@ export async function attachTranscriptToCall(
     .eq("org_id", args.orgId)
     .maybeSingle();
 
-  if (!existing) return { attached: false };
+  if (!existing) return { attached: false, reason: "call_missing" };
 
   if (existing.raw_transcript && !args.replace) {
-    return { attached: false };
+    return { attached: false, reason: "transcript_already_present" };
   }
 
   const { error } = await db
@@ -116,7 +133,7 @@ export async function attachTranscriptToCall(
   if (error) throw new Error("transcript_attach_failed");
 
   await enqueueExtraction(db, args.orgId, args.callId);
-  return { attached: true };
+  return { attached: true, reason: null };
 }
 
 export async function enqueueExtraction(

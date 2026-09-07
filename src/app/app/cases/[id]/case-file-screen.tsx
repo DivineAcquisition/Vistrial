@@ -40,6 +40,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select } from "@/components/ui/select";
 import { Panel } from "@/components/ui/panel";
+import { ScrollProgress } from "@/components/ui/scroll-progress";
 import { SectionHeader } from "@/components/ui/section-header";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { formatAnswer, formatCallDuration, formatCents, formatFileSize } from "@/lib/cases/format";
@@ -198,6 +199,7 @@ export function CaseFileScreen({
 
   return (
     <div className="space-y-8">
+      <ScrollProgress className="print:hidden" />
       {error ? <p className={errorClass}>{error}</p> : null}
 
       <Panel className="p-6">
@@ -236,6 +238,9 @@ export function CaseFileScreen({
                 Open in CRM
               </Button>
             ) : null}
+            <Button variant="secondary" size="sm" render={<Link href={`/app/cases/${lead.id}/brief`} />}>
+              Brief
+            </Button>
             <Button
               type="button"
               variant="secondary"

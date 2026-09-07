@@ -200,6 +200,9 @@ function QueueMobileRow({
               What happened
             </Button>
           )}
+          <Button variant="secondary" size="xl" render={<Link href={`/app/cases/${row.id}/brief`} />}>
+            Brief
+          </Button>
           <Button type="button" variant="secondary" size="xl" onClick={() => setMore((open) => !open)}>
             More
           </Button>

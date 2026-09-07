@@ -160,15 +160,16 @@ async function orgIdForLocation(db: GhlDb, locationId: string): Promise<string |
 }
 
 async function persistRejection(db: GhlDb, reason: "missing" | "invalid", rawBody: string) {
-  const parsed = parseWebhookPayload(rawBody);
+  // Do not parse or copy the forged body onto webhook_events. The dead-letter
+  // row keeps the bytes so a real event is not lost; the events table must not
+  // treat an unsigned blob as a payload.
   const { data, error } = await db
     .from("webhook_events")
     .insert({
       org_id: null,
       source: "ghl",
       event_type: `rejected.${reason}`,
-      payload: parsed.payload,
-      raw_body: rawBody,
+      payload: {},
       processed: true,
       status: "rejected",
       processed_at: new Date().toISOString(),
@@ -183,10 +184,10 @@ async function persistRejection(db: GhlDb, reason: "missing" | "invalid", rawBod
       orgId: null,
       webhookEventId: data?.id ?? null,
       reason: signatureDeadLetterReason(reason),
-      eventType: parsed.eventType,
-      providerEventId: parsed.providerEventId,
+      eventType: `rejected.${reason}`,
+      providerEventId: null,
       rawBody,
-      payload: parsed.payload,
+      payload: null,
     },
     { required: Boolean(error) || !data }
   );

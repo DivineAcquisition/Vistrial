@@ -20,7 +20,7 @@ export default function Logo({
 }: LogoProps) {
   const onLight = tone === "on-light";
   const src = onLight
-    ? "/brand/vistrial-black-logo.png"
+    ? "/brand/Vistrial Black Logo"
     : markOnly
       ? "/brand/vistrial-crest.png"
       : "/brand/vistrial-lockup.png";

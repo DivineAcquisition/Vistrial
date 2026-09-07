@@ -20,9 +20,9 @@ describe("light operator app, dark public site", () => {
   it("uses the black Vistrial mark on operator, portal, stellar, and auth", () => {
     const logo = readFileSync(path.join(process.cwd(), "src/components/brand/logo.tsx"), "utf8");
     expect(logo).toContain('tone?: "silver" | "current" | "on-light"');
-    expect(logo).toContain("/brand/vistrial-black-logo.png");
+    expect(logo).toContain("/brand/Vistrial Black Logo");
     expect(
-      existsSync(path.join(process.cwd(), "public/brand/vistrial-black-logo.png")),
+      existsSync(path.join(process.cwd(), "public/brand/Vistrial Black Logo")),
     ).toBe(true);
 
     for (const file of [

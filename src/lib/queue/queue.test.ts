@@ -5,6 +5,7 @@ import { ghlConversationUrl } from "@/lib/queue/crm-url";
 import { formatQueueDuration } from "@/lib/queue/duration";
 import { defaultAssignedFilter, parseQueueFilters } from "@/lib/queue/filters";
 import { queueEmptyKind } from "@/lib/queue/parse";
+import { queuePrimaryAction, queueRowAlreadyWorked } from "@/lib/queue/worked";
 
 describe("queue durations", () => {
   const now = "2026-08-20T12:00:00.000Z";
@@ -33,8 +34,6 @@ describe("queue filters", () => {
         track: "ready",
         status: "working",
         source: "facebook",
-        scoreMin: "40",
-        scoreMax: "90",
       },
       { role: "setter" }
     );
@@ -43,8 +42,6 @@ describe("queue filters", () => {
       track: "ready",
       status: "working",
       source: "facebook",
-      scoreMin: 40,
-      scoreMax: 90,
       breached: false,
     });
   });
@@ -61,6 +58,34 @@ describe("CRM conversation link", () => {
       "https://app.gohighlevel.com/v2/location/loc_1/conversations/all?contactId=ct_9"
     );
     expect(ghlConversationUrl(null, "ct_9")).toBeNull();
+  });
+});
+
+describe("the one button (Prompt 7, Part 4)", () => {
+  it("opens the CRM for a never-contacted lead with a conversation to open", () => {
+    expect(
+      queuePrimaryAction({ firstHumanTouchAt: null, crmUrl: "https://app.gohighlevel.com/x" })
+    ).toEqual({ kind: "open_crm", href: "https://app.gohighlevel.com/x" });
+  });
+
+  it("logs an outcome once a human has ever reached this person", () => {
+    expect(
+      queuePrimaryAction({
+        firstHumanTouchAt: "2026-08-01T00:00:00.000Z",
+        crmUrl: "https://app.gohighlevel.com/x",
+      })
+    ).toEqual({ kind: "log_outcome" });
+  });
+
+  it("logs an outcome when there is nowhere to open, even if never contacted", () => {
+    expect(queuePrimaryAction({ firstHumanTouchAt: null, crmUrl: null })).toEqual({
+      kind: "log_outcome",
+    });
+  });
+
+  it("ignores a system touch: a robot texting someone is not 'already worked'", () => {
+    expect(queueRowAlreadyWorked({ firstHumanTouchAt: null })).toBe(false);
+    expect(queueRowAlreadyWorked({ firstHumanTouchAt: "2026-08-01T00:00:00.000Z" })).toBe(true);
   });
 });
 

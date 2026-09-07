@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useState } from "react";
 
-import { AssignPanel, FollowOnPanel, OutcomePanel } from "@/components/app/lead-action-panels";
+import { OutcomePanel } from "@/components/app/lead-action-panels";
 import { Button } from "@/components/ui/button";
 import { formatBreachDuration } from "@/lib/queue/duration";
 import { waitingFor } from "@/lib/vocabulary";
@@ -14,11 +14,8 @@ import type {
   TouchDirection,
   TouchOutcome,
 } from "@/lib/queue/types";
+import { queuePrimaryAction } from "@/lib/queue/worked";
 import type { OrgRole } from "@/types/database";
-
-function alreadyWorked(row: QueueRow): boolean {
-  return Boolean(row.firstHumanTouchAt || row.lastTouchAt);
-}
 
 export function QueueMobileList({
   rows,
@@ -32,10 +29,8 @@ export function QueueMobileList({
   exitingIds,
   busyLeadId,
   error,
+  onInteract,
   onLogOutcome,
-  onAssign,
-  onComplete,
-  onFollowOn,
 }: {
   rows: QueueRow[];
   now: string;
@@ -48,6 +43,7 @@ export function QueueMobileList({
   exitingIds?: Set<string>;
   busyLeadId: string | null;
   error: string | null;
+  onInteract: (leadId: string | null) => void;
   onLogOutcome: (input: {
     leadId: string;
     channel: TouchChannel;
@@ -55,17 +51,6 @@ export function QueueMobileList({
     outcome: TouchOutcome;
     note: string;
     actorMemberId: string;
-  }) => Promise<boolean>;
-  onAssign: (input: {
-    leadId: string;
-    setterId: string | null;
-    closerId: string | null;
-  }) => Promise<boolean>;
-  onComplete: (input: { leadId: string; nextActionId: string }) => Promise<boolean>;
-  onFollowOn: (input: {
-    leadId: string;
-    actionText: string;
-    dueAt: string | null;
   }) => Promise<boolean>;
 }) {
   return (
@@ -84,10 +69,8 @@ export function QueueMobileList({
           exiting={exitingIds?.has(row.id) ?? false}
           busy={busyLeadId === row.id}
           error={busyLeadId === row.id ? error : null}
+          onInteract={onInteract}
           onLogOutcome={onLogOutcome}
-          onAssign={onAssign}
-          onComplete={onComplete}
-          onFollowOn={onFollowOn}
         />
       ))}
     </ul>
@@ -106,10 +89,8 @@ function QueueMobileRow({
   exiting,
   busy,
   error,
+  onInteract,
   onLogOutcome,
-  onAssign,
-  onComplete,
-  onFollowOn,
 }: {
   row: QueueRow;
   now: string;
@@ -122,6 +103,7 @@ function QueueMobileRow({
   exiting: boolean;
   busy: boolean;
   error: string | null;
+  onInteract: (leadId: string | null) => void;
   onLogOutcome: (input: {
     leadId: string;
     channel: TouchChannel;
@@ -130,35 +112,38 @@ function QueueMobileRow({
     note: string;
     actorMemberId: string;
   }) => Promise<boolean>;
-  onAssign: (input: {
-    leadId: string;
-    setterId: string | null;
-    closerId: string | null;
-  }) => Promise<boolean>;
-  onComplete: (input: { leadId: string; nextActionId: string }) => Promise<boolean>;
-  onFollowOn: (input: {
-    leadId: string;
-    actionText: string;
-    dueAt: string | null;
-  }) => Promise<boolean>;
 }) {
-  const [more, setMore] = useState(false);
   const [logging, setLogging] = useState(false);
-  const [assigning, setAssigning] = useState(false);
-  const [followOn, setFollowOn] = useState(false);
+  const [hasOpenedCrm, setHasOpenedCrm] = useState(false);
   const [swipe, setSwipe] = useState(0);
   const waiting =
     variant === "alarm"
       ? formatBreachDuration(row.breachSeconds, now)
       : waitingFor(row.optedInAt, now);
-  const showCrm = Boolean(row.crmUrl) && !alreadyWorked(row);
+
+  const computed = queuePrimaryAction(row);
+  const action =
+    computed.kind === "open_crm" && hasOpenedCrm
+      ? { kind: "log_outcome" as const }
+      : computed;
+
+  function openOutcome() {
+    setLogging(true);
+    onInteract(row.id);
+  }
+
+  function closeOutcome() {
+    setLogging(false);
+    onInteract(null);
+  }
 
   function runPrimary() {
-    if (showCrm && row.crmUrl) {
-      window.open(row.crmUrl, "_blank", "noopener,noreferrer");
+    if (action.kind === "open_crm") {
+      setHasOpenedCrm(true);
+      window.open(action.href, "_blank", "noopener,noreferrer");
       return;
     }
-    setLogging(true);
+    openOutcome();
   }
 
   return (
@@ -171,7 +156,9 @@ function QueueMobileRow({
         (event.currentTarget as HTMLElement).dataset.touchX = String(x);
       }}
       onTouchMove={(event) => {
-        const start = Number((event.currentTarget as HTMLElement).dataset.touchX ?? 0);
+        const start = Number(
+          (event.currentTarget as HTMLElement).dataset.touchX ?? 0,
+        );
         const x = event.changedTouches[0]?.clientX ?? start;
         setSwipe(Math.max(0, Math.min(72, x - start)));
       }}
@@ -187,69 +174,34 @@ function QueueMobileRow({
         <p className="mt-1 text-sm tabular-nums text-silver">{waiting}</p>
 
         <div className="mt-3 flex flex-wrap gap-2">
-          {showCrm && row.crmUrl ? (
+          {action.kind === "open_crm" ? (
             <Button
               variant="primary"
               size="xl"
-              render={<a href={row.crmUrl} target="_blank" rel="noopener noreferrer" />}
+              onClick={() => setHasOpenedCrm(true)}
+              render={
+                <a
+                  href={action.href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                />
+              }
             >
               Open in CRM
             </Button>
           ) : (
-            <Button type="button" variant="primary" size="xl" onClick={() => setLogging(true)}>
+            <Button
+              type="button"
+              variant="primary"
+              size="xl"
+              disabled={busy}
+              onClick={openOutcome}
+            >
               What happened
             </Button>
           )}
-          <Button type="button" variant="secondary" size="xl" onClick={() => setMore((open) => !open)}>
-            More
-          </Button>
         </div>
       </div>
-
-      {more ? (
-        <div className="mt-3 flex flex-wrap gap-2">
-          <Button variant="secondary" size="sm" render={<Link href={`/app/cases/${row.id}`} />}>
-            Person
-          </Button>
-          {showCrm ? (
-            <Button type="button" variant="secondary" size="sm" onClick={() => setLogging(true)}>
-              What happened
-            </Button>
-          ) : row.crmUrl ? (
-            <Button
-              variant="secondary"
-              size="sm"
-              render={<a href={row.crmUrl} target="_blank" rel="noopener noreferrer" />}
-            >
-              Open in CRM
-            </Button>
-          ) : null}
-          <Button
-            type="button"
-            variant="secondary"
-            size="sm"
-            disabled={busy}
-            onClick={() => setAssigning((open) => !open)}
-          >
-            Assign
-          </Button>
-          {row.nextAction ? (
-            <Button
-              type="button"
-              variant="secondary"
-              size="sm"
-              disabled={busy}
-              onClick={() => {
-                void onComplete({ leadId: row.id, nextActionId: row.nextAction!.id }).then((ok) => {
-                  if (ok) setFollowOn(true);
-                });
-              }}
-            >
-              Mark next step done
-            </Button>
-          ) : null}
-        </div>
-      ) : null}
 
       {logging ? (
         <div className="mt-3">
@@ -261,41 +213,10 @@ function QueueMobileRow({
             isPlatformAdmin={isPlatformAdmin}
             busy={busy}
             error={error}
-            onCancel={() => setLogging(false)}
+            onCancel={closeOutcome}
             onSubmit={async (input) => {
               const ok = await onLogOutcome(input);
-              if (ok) setLogging(false);
-            }}
-          />
-        </div>
-      ) : null}
-      {assigning ? (
-        <div className="mt-3">
-          <AssignPanel
-            row={row}
-            members={members}
-            role={role}
-            memberId={memberId}
-            isPlatformAdmin={isPlatformAdmin}
-            busy={busy}
-            error={error}
-            onCancel={() => setAssigning(false)}
-            onSubmit={async (input) => {
-              const ok = await onAssign(input);
-              if (ok) setAssigning(false);
-            }}
-          />
-        </div>
-      ) : null}
-      {followOn ? (
-        <div className="mt-3">
-          <FollowOnPanel
-            busy={busy}
-            error={error}
-            onSkip={() => setFollowOn(false)}
-            onSubmit={async (input) => {
-              const ok = await onFollowOn({ leadId: row.id, ...input });
-              if (ok) setFollowOn(false);
+              if (ok) closeOutcome();
             }}
           />
         </div>

@@ -39,6 +39,7 @@ import { Select } from "@/components/ui/select";
 import { Panel } from "@/components/ui/panel";
 import { SectionHeader } from "@/components/ui/section-header";
 import { StatusBadge } from "@/components/ui/status-badge";
+import { SCORE_CONFIDENCE_LABELS } from "@/lib/queue/types";
 import { formatAnswer, formatCallDuration, formatCents } from "@/lib/cases/format";
 import { cursorFromTimelineEntry } from "@/lib/cases/cursor";
 import type {
@@ -623,6 +624,9 @@ export function CaseFileScreen({
               <DefinitionList>
                 <KeyValue label="Out of 100">
                   <span className="font-medium text-white tabular-nums">{file.score.total}</span>
+                </KeyValue>
+                <KeyValue label="Confidence">
+                  {file.score.scoreConfidence ? SCORE_CONFIDENCE_LABELS[file.score.scoreConfidence] : "—"}
                 </KeyValue>
                 <KeyValue label="How soon they want to move">{factorValue(file.score.timeline)}</KeyValue>
                 <KeyValue label="What they can spend">{factorValue(file.score.investmentCapacity)}</KeyValue>

@@ -134,7 +134,7 @@ INSERT INTO public.readiness_scores (
 );
 
 INSERT INTO public.touches (
-  org_id, lead_id, type, channel, direction, actor_member_id, outcome, summary, occurred_at
+  org_id, lead_id, type, channel, direction, actor_member_id, outcome, summary, occurred_at, outbound_body
 )
 SELECT
   '22222222-2222-4222-8222-222222222222',
@@ -145,7 +145,8 @@ SELECT
   id,
   'connected',
   'Operator note only.',
-  now() - interval '3 hours'
+  now() - interval '3 hours',
+  'See you Thursday.'
 FROM public.org_members
 WHERE id = '33333333-3333-4333-8333-333333333333';
 
@@ -305,6 +306,7 @@ BEGIN
   IF EXISTS (
     SELECT 1 FROM jsonb_array_elements(v_timeline->'entries') e
     WHERE e ? 'body' OR e ? 'preview' OR e ? 'unread' OR e ? 'message' OR e ? 'rawTranscript'
+       OR e ? 'outboundBody'
   ) THEN
     RAISE EXCEPTION 'timeline leaked conversation fields';
   END IF;
@@ -492,6 +494,108 @@ BEGIN
   END IF;
   IF NOT v_denied THEN
     RAISE EXCEPTION 'setter override on an unassigned lead did not raise';
+  END IF;
+END
+$$;
+
+DO $$
+DECLARE
+  v_org uuid := '22222222-2222-4222-8222-222222222222';
+  v_owner uuid := '11111111-1111-4111-8111-111111111111';
+  v_member uuid := '33333333-3333-4333-8333-333333333333';
+  v_payload jsonb;
+  v_count integer;
+  v_notes text;
+  v_file_id uuid;
+  v_denied boolean;
+BEGIN
+  PERFORM set_config('request.jwt.claim.sub', v_owner::text, false);
+  SET ROLE authenticated;
+
+  v_payload := public.load_org_case_list(
+    p_org_id := v_org,
+    p_zero_human_touch := true
+  );
+  IF NOT EXISTS (
+    SELECT 1 FROM jsonb_array_elements(v_payload->'rows') r
+    WHERE r->>'id' = 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbb01'
+  ) THEN
+    RAISE EXCEPTION 'zero-human-touch filter missed the untouched lead';
+  END IF;
+  IF EXISTS (
+    SELECT 1 FROM jsonb_array_elements(v_payload->'rows') r
+    WHERE r->>'id' = 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbb02'
+  ) THEN
+    RAISE EXCEPTION 'zero-human-touch filter included a touched lead';
+  END IF;
+
+  v_payload := public.load_org_case_list(
+    p_org_id := v_org,
+    p_ttft_breach := true
+  );
+  IF NOT EXISTS (
+    SELECT 1 FROM jsonb_array_elements(v_payload->'rows') r
+    WHERE r->>'id' = 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbb01'
+  ) THEN
+    RAISE EXCEPTION 'ttft-breach filter missed the overdue untouched lead';
+  END IF;
+
+  UPDATE public.leads
+  SET context_notes = 'Ask about the accountant.'
+  WHERE id = 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbb02'
+    AND org_id = v_org;
+  GET DIAGNOSTICS v_count = ROW_COUNT;
+  IF v_count <> 1 THEN
+    RAISE EXCEPTION 'owner could not write context_notes';
+  END IF;
+  SELECT context_notes INTO v_notes
+  FROM public.leads
+  WHERE id = 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbb02';
+  IF v_notes IS DISTINCT FROM 'Ask about the accountant.' THEN
+    RAISE EXCEPTION 'context_notes did not persist';
+  END IF;
+
+  INSERT INTO public.lead_files (
+    id, org_id, lead_id, file_name, content_type, byte_size, contents, uploaded_by_member_id
+  ) VALUES (
+    'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbb40',
+    v_org,
+    'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbb02',
+    'intake.pdf',
+    'application/pdf',
+    12,
+    'dGVzdCBmaWxl',
+    v_member
+  )
+  RETURNING id INTO v_file_id;
+
+  SELECT count(*) INTO v_count
+  FROM public.lead_files
+  WHERE lead_id = 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbb02';
+  IF v_count < 1 THEN
+    RAISE EXCEPTION 'owner could not see attached files';
+  END IF;
+
+  RESET ROLE;
+
+  v_denied := false;
+  BEGIN
+    INSERT INTO public.lead_files (
+      org_id, lead_id, file_name, content_type, byte_size, contents
+    ) VALUES (
+      v_org,
+      'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbb02',
+      'too-big.bin',
+      'application/pdf',
+      9000000,
+      'dG9vYmln'
+    );
+  EXCEPTION
+    WHEN check_violation THEN
+      v_denied := true;
+  END;
+  IF NOT v_denied THEN
+    RAISE EXCEPTION 'oversized lead file was allowed';
   END IF;
 END
 $$;

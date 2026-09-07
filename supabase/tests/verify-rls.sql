@@ -37,6 +37,18 @@ VALUES (
 )
 ON CONFLICT (id) DO NOTHING;
 
+INSERT INTO public.lead_files (
+  org_id, lead_id, file_name, content_type, byte_size, contents
+) VALUES (
+  '66666666-6666-4666-8666-666666666666',
+  '88888888-8888-4888-8888-888888888888',
+  'org-b.txt',
+  'text/plain',
+  4,
+  'b3JnQg=='
+)
+ON CONFLICT (id) DO NOTHING;
+
 INSERT INTO public.webhook_events (source, event_type, payload)
 VALUES ('ghl', 'contact.create', '{"probe":true}'::jsonb);
 
@@ -63,6 +75,13 @@ BEGIN
   SELECT count(*) INTO v_count FROM public.webhook_dead_letters;
   IF v_count <> 0 THEN
     RAISE EXCEPTION 'authenticated user saw % webhook_dead_letters', v_count;
+  END IF;
+
+  SELECT count(*) INTO v_count
+  FROM public.lead_files
+  WHERE org_id = '66666666-6666-4666-8666-666666666666';
+  IF v_count <> 0 THEN
+    RAISE EXCEPTION 'org A user saw % org B lead_files', v_count;
   END IF;
 
   SELECT count(*) INTO v_count

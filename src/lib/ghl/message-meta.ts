@@ -35,12 +35,12 @@ export function contactFromPayload(payload: Record<string, unknown>): Record<str
 
 export function mapMessageChannel(messageType: string | null): TouchChannel {
   const value = (messageType ?? "").toLowerCase();
+  if (value.includes("voicemail")) return "voicemail";
   if (value.includes("email")) return "email";
   if (value.includes("sms") || value.includes("text")) return "sms";
   if (value.includes("whatsapp") || value.includes("facebook") || value.includes("instagram") || value.includes("live") || value.includes("webchat") || value.includes("ig") || value.includes("fb") || value.includes("custom")) {
     return "dm";
   }
-  if (value.includes("voicemail")) return "voicemail";
   if (value.includes("call") || value.includes("phone") || value.includes("voice")) return "call";
   return "other";
 }

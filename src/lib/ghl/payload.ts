@@ -86,7 +86,7 @@ export function parseWebhookPayload(raw: string): ParsedWebhook {
   };
 }
 
-/** Conversational copy is never stored. Identity fields used to upsert leads stay. */
+/** Conversational copy is stripped from payload jsonb. The original body is stored on webhook_events.raw_body. */
 const BODY_KEY =
   /^(body|html|text|content|raw|rawbody|raw_body|messagebody|message_body|attachments|sms|emailbody|email_body)$/i;
 

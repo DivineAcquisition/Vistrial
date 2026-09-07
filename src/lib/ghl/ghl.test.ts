@@ -13,7 +13,10 @@ import {
   followUpMissingApprover,
   skipOutboundWebhookTouch,
 } from "@/lib/ghl/dispatch-guard";
+import { signatureDeadLetterReason, rawBodyFromEvent } from "@/lib/ghl/dead-letter";
 import {
+  appointmentTouchMessageId,
+  classifyOutboundTouch,
   contactIsSuppressed,
   inboundTouchSummary,
   isAutomationOutbound,
@@ -138,6 +141,8 @@ describe("event kinds", () => {
   it("normalizes GHL aliases", () => {
     expect(normalizeEventKind("ContactCreate")).toBe("contact_created");
     expect(normalizeEventKind("InboundMessage")).toBe("inbound_message");
+    expect(normalizeEventKind("OutboundCall")).toBe("outbound_message");
+    expect(normalizeEventKind("InboundCall")).toBe("inbound_message");
     expect(normalizeEventKind("AppointmentUpdate")).toBe("appointment_status");
     expect(normalizeEventKind("OpportunityUpdate")).toBe("opportunity_stage");
     expect(normalizeEventKind("SomethingElse")).toBe("ignored");
@@ -172,10 +177,23 @@ describe("message metadata", () => {
     expect(summary).not.toMatch(/secret|body|hello/i);
   });
 
-  it("treats campaign outbound as a system touch", () => {
+  it("treats campaign outbound as a system touch and manual outbound as human", () => {
     expect(isAutomationOutbound({ messageType: "TYPE_CAMPAIGN_SMS", userId: "u1" })).toBe(true);
     expect(isAutomationOutbound({ userId: "u1", messageType: "SMS" })).toBe(false);
+    expect(classifyOutboundTouch(true)).toBe("system");
+    expect(classifyOutboundTouch(false)).toBe("human");
     expect(outboundTouchSummary("sms", "system")).toContain("automation");
+  });
+
+  it("maps phone and call message types to the call channel", () => {
+    expect(mapMessageChannel("PHONE")).toBe("call");
+    expect(mapMessageChannel("TYPE_CALL")).toBe("call");
+    expect(mapMessageChannel("Voicemail")).toBe("voicemail");
+    expect(mapMessageChannel("SMS")).toBe("sms");
+  });
+
+  it("uses a stable appointment id so a held-call replay does not double-log", () => {
+    expect(appointmentTouchMessageId("appt-9")).toBe("appointment:appt-9");
   });
 
   it("maps no-show appointment status", () => {
@@ -207,6 +225,22 @@ describe("redaction", () => {
     expect(redacted.eventType).toBe("InboundMessage");
     expect(JSON.stringify(redacted)).not.toContain("tok_live");
     expect(JSON.stringify(redacted)).not.toContain("maya@example.com");
+  });
+});
+
+describe("dead letters", () => {
+  it("maps signature failures onto stored reasons", () => {
+    expect(signatureDeadLetterReason("missing")).toBe("missing_signature");
+    expect(signatureDeadLetterReason("invalid")).toBe("invalid_signature");
+  });
+
+  it("prefers the original raw body over a serialized payload stub", () => {
+    expect(rawBodyFromEvent({ raw_body: '{"keep":true}', payload: { purged: true } })).toBe(
+      '{"keep":true}'
+    );
+    expect(rawBodyFromEvent({ raw_body: null, payload: { type: "ContactCreate" } })).toBe(
+      '{"type":"ContactCreate"}'
+    );
   });
 });
 

@@ -60,6 +60,11 @@ BEGIN
     RAISE EXCEPTION 'authenticated user saw % webhook_events', v_count;
   END IF;
 
+  SELECT count(*) INTO v_count FROM public.webhook_dead_letters;
+  IF v_count <> 0 THEN
+    RAISE EXCEPTION 'authenticated user saw % webhook_dead_letters', v_count;
+  END IF;
+
   SELECT count(*) INTO v_count
   FROM public.leads
   WHERE org_id = '22222222-2222-4222-8222-222222222222';

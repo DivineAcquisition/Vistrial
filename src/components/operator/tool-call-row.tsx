@@ -6,7 +6,8 @@ import Link from "next/link";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { stepStateLabel, stepStateTone, toolLabel } from "@/lib/operator/labels";
 import type { OperatorStepView } from "@/lib/operator/types";
-import { helperClass } from "@/lib/ui";
+import { helperClass, insetChrome } from "@/lib/ui";
+import { cn } from "@/lib/utils";
 
 export function ToolCallRow({
   step,
@@ -22,7 +23,7 @@ export function ToolCallRow({
   const expandable = links.length > 0;
 
   return (
-    <div className="rounded-xl border border-white/[0.08] bg-white/[0.02]">
+    <div className={cn(insetChrome, "rounded-xl")}>
       {expandable ? (
         <button
           type="button"

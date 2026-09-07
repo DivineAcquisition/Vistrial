@@ -85,7 +85,7 @@ export function FollowUpReviewScreen({ initial }: { initial: FollowUpReviewPaylo
       <Panel className="p-6">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
-            <h2 className="font-heading text-lg text-white">{file.lead.name}</h2>
+            <h2 className="font-heading text-2xl tracking-tight text-white">{file.lead.name}</h2>
             <p className="mt-1 text-sm text-silver">
               {FOLLOW_UP_BRANCH_LABELS[draft.branch]} · {FOLLOW_UP_CHANNEL_LABELS[draft.channel]}
               {draft.sequencePosition > 1 ? ` · message ${draft.sequencePosition}` : ""}

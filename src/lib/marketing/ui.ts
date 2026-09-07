@@ -3,22 +3,22 @@ import { cn } from "@/lib/utils";
 
 /**
  * Headline and form recipes for the public site. Mapped onto Vistrial tokens.
- * Instrument Serif for display titles, Inter Display for UI copy, brand-500,
- * ink-950.
+ * Inter Display for titles and UI copy — the same face as the operator app —
+ * brand-500, ink-950.
  *
  * Scale follows high-ticket dark landing pages: centered hero, large type,
  * pill CTAs.
  */
 
 export const marketingHeroTitle =
-  "font-display text-[2.25rem] leading-[1.08] tracking-tight text-white sm:text-5xl md:text-[3.25rem] md:leading-[1.05]";
+  "font-heading text-[2.25rem] leading-[1.08] tracking-tight text-white sm:text-5xl md:text-[3.25rem] md:leading-[1.05]";
 
 /** Landing hero only — larger than inner marketing pages. */
 export const marketingDisplayTitle =
-  "font-display text-[2.6rem] leading-[1.05] tracking-tight text-white sm:text-6xl sm:leading-[1.04] md:text-[4.25rem] md:leading-[1.02]";
+  "font-heading text-[2.6rem] leading-[1.05] tracking-tight text-white sm:text-6xl sm:leading-[1.04] md:text-[4.25rem] md:leading-[1.02]";
 
 export const marketingSectionTitle =
-  "font-display max-w-3xl text-[1.75rem] leading-tight tracking-tight text-white sm:text-4xl sm:leading-[1.12]";
+  "font-heading max-w-3xl text-[1.75rem] leading-tight tracking-tight text-white sm:text-4xl sm:leading-[1.12]";
 
 export const marketingSubhead = "text-[15px] leading-relaxed text-silver sm:text-lg";
 
@@ -27,7 +27,7 @@ export const marketingLead = "max-w-2xl text-[15px] leading-relaxed text-silver 
 export const marketingBody = "text-sm leading-relaxed text-silver sm:text-[15px]";
 
 export const marketingCardTitle =
-  "font-display text-lg tracking-tight text-white sm:text-xl";
+  "font-heading text-lg tracking-tight text-white sm:text-xl";
 
 export const marketingNavLink =
   "rounded-md px-2.5 py-1.5 text-sm font-medium text-silver transition-colors hover:text-white focus-visible:text-white";

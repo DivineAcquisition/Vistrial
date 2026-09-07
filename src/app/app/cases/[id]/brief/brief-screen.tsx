@@ -71,7 +71,7 @@ export function BriefScreen({ brief }: { brief: BriefPayload }) {
       >
         <Panel className="px-4 py-3 max-md:order-1">
           <p className="text-[11px] font-semibold tracking-[0.14em] text-brand-300 uppercase">Who</p>
-          <p className="mt-1 text-base font-semibold break-words text-white">{brief.lead.name}</p>
+          <p className="mt-1 font-heading text-xl tracking-tight break-words text-white">{brief.lead.name}</p>
           <p className="mt-1 text-xs text-silver">
             {gap(brief.lead.source)}
             {brief.lead.campaign ? ` · ${brief.lead.campaign}` : ""}

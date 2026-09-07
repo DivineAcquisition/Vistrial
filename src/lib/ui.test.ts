@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { buttonVariants } from "@/components/ui/button-variants";
+import { segmentedControlRootClassName } from "@/lib/segmented-control";
 import {
   btnSizeSm,
   filterBar,
@@ -40,7 +41,14 @@ describe("visual recipes stay aligned", () => {
     expect(filterBar).toContain("p-4");
   });
 
+  it("fills segmented controls instead of leaving a muted empty track", () => {
+    expect(segmentedControlRootClassName).toContain("rounded-xl");
+    expect(segmentedControlRootClassName).toContain("bg-white/[0.04]");
+    expect(segmentedControlRootClassName).toContain("border-white/[0.06]");
+  });
+
   it("keeps page titles large and pages stacked with room", () => {
+    expect(pageTitle).toContain("font-heading");
     expect(pageTitle).toContain("text-[1.75rem]");
     expect(pageStack).toContain("gap-8");
   });

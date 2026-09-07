@@ -206,7 +206,7 @@ export function CaseFileScreen({
       <Panel className="p-6">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div className="min-w-0">
-            <h2 className="font-heading text-lg text-white">{lead.name}</h2>
+            <h2 className="font-heading text-2xl tracking-tight text-white">{lead.name}</h2>
             <p className="mt-1 text-sm text-silver">{whereFrom}</p>
             {brief?.lead.offerName ? (
               <p className="mt-1 text-sm text-dim">{brief.lead.offerName}</p>
@@ -488,7 +488,7 @@ export function CaseFileScreen({
         </section>
       ) : null}
 
-      <details className="rounded-2xl border border-white/[0.08] px-4 py-3">
+      <details className={cn(insetChrome, "rounded-2xl px-4 py-3")}>
         <summary className="cursor-pointer text-sm font-medium text-white">More on this person</summary>
         <p className={helperClass}>Assign, status, and anything else that is not the call itself.</p>
         <div className="mt-3 flex flex-wrap gap-2">

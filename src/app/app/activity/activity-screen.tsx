@@ -178,7 +178,7 @@ export function ActivityScreen({
         isPlatformAdmin={org.isPlatformAdmin}
       />
 
-      <ol className="mt-6 space-y-3">
+      <ol className="app-stagger mt-6 space-y-3">
         {lines.length === 0 ? (
           <li className="text-sm text-dim">Nothing in this view yet.</li>
         ) : (

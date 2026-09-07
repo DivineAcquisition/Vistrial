@@ -64,7 +64,7 @@ export function ComparisonPair() {
 
       <div
         aria-hidden
-        className="pointer-events-none absolute top-1/2 left-1/2 z-30 hidden size-12 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border border-white/[0.12] bg-ink-950 font-display text-sm text-silver lg:flex"
+        className="pointer-events-none absolute top-1/2 left-1/2 z-30 hidden size-12 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border border-white/[0.12] bg-ink-950 font-heading text-sm text-silver lg:flex"
       >
         /
       </div>
@@ -77,7 +77,7 @@ export function ComparisonPair() {
         ))}
         <Panel className="overflow-hidden border-brand-500/30 p-0 shadow-[0_0_80px_-28px_rgba(154,136,252,0.55)]">
           <MagicCard className="h-full rounded-2xl p-6 sm:p-8">
-            <p className="font-display text-2xl tracking-tight text-white sm:text-[1.65rem]">
+            <p className="font-heading text-2xl tracking-tight text-white sm:text-[1.65rem]">
               {WHAT_IT_DOES.headline}
             </p>
             <ul className="mt-6 space-y-3">

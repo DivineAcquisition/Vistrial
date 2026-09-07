@@ -102,11 +102,13 @@ describe("landing copy", () => {
 });
 
 describe("landing type recipes", () => {
-  it("sets marketing titles in the display serif", async () => {
-    const { marketingDisplayTitle, marketingHeroTitle, marketingSectionTitle } =
+  it("sets marketing titles in Inter Display, same as the app", async () => {
+    const { marketingDisplayTitle, marketingHeroTitle, marketingSectionTitle, marketingCardTitle } =
       await import("@/lib/marketing/ui");
-    expect(marketingDisplayTitle).toContain("font-display");
-    expect(marketingHeroTitle).toContain("font-display");
-    expect(marketingSectionTitle).toContain("font-display");
+    expect(marketingDisplayTitle).toContain("font-heading");
+    expect(marketingHeroTitle).toContain("font-heading");
+    expect(marketingSectionTitle).toContain("font-heading");
+    expect(marketingCardTitle).toContain("font-heading");
+    expect(marketingDisplayTitle).not.toContain("font-display");
   });
 });

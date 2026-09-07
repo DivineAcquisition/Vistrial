@@ -32,7 +32,8 @@ import {
 import { operatorRunStatusLabel } from "@/lib/operator/labels";
 import type { OperatorConfirmationView, OperatorRunSummary, OperatorRunView, OperatorStepView } from "@/lib/operator/types";
 import { Notice } from "@/components/ui/states";
-import { helperClass } from "@/lib/ui";
+import { helperClass, insetChrome } from "@/lib/ui";
+import { cn } from "@/lib/utils";
 import { WORDS } from "@/lib/vocabulary";
 
 function askVistrialUnavailableMessage(message: string | null): string {
@@ -383,7 +384,7 @@ export function OperatorCommandBar() {
                       <CommandItem
                         key={item.value}
                         value={item}
-                        className="mb-2 flex-col items-start rounded-xl border border-white/[0.08] px-3 py-2"
+                        className={cn(insetChrome, "mb-2 flex-col items-start rounded-xl px-3 py-2")}
                         onClick={() => {
                           setShowHistory(false);
                           setRunId(item.value);

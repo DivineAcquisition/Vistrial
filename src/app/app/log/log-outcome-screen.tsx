@@ -309,7 +309,7 @@ export function LogOutcomeScreen({
         <p className={labelClass}>Lead</p>
         {selected ? (
           <>
-            <p className="mt-1 font-heading text-xl text-white">{selected.name}</p>
+            <p className="mt-1 font-heading text-2xl tracking-tight text-white">{selected.name}</p>
             {reasonLabel ? <p className={helperClass}>{reasonLabel}</p> : null}
             {selected.score !== null ? (
               <p className="mt-2 text-sm text-silver">

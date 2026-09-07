@@ -84,7 +84,7 @@ export function CallDetailScreen({
       <Panel className="p-6">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
-            <h2 className="font-heading text-lg text-white">{CALL_TYPE_LABELS[call.type]} call</h2>
+            <h2 className="font-heading text-2xl tracking-tight text-white">{CALL_TYPE_LABELS[call.type]} call</h2>
             <p className="mt-1 text-sm text-silver">{detail.lead.name}</p>
           </div>
           <div className="flex flex-wrap gap-2">

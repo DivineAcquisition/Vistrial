@@ -35,7 +35,11 @@ export function UserMenu({
       aria-label={collapsed ? `Account: ${name}` : undefined}
       className={cn(
         "flex items-center rounded-xl text-left transition-colors hover:bg-white/[0.05]",
-        header ? "gap-2.5 px-2 py-1.5" : collapsed ? "w-full justify-center p-2" : "w-full gap-2.5 px-2 py-2"
+        header
+          ? "min-h-10 gap-2.5 px-2.5 py-2"
+          : collapsed
+            ? "w-full justify-center p-2.5"
+            : "w-full gap-2.5 px-2.5 py-2.5"
       )}
     >
       <Avatar size="sm">

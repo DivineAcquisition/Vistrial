@@ -1,6 +1,8 @@
 "use client";
 
 import { operatorRunStatusLabel } from "@/lib/operator/labels";
+import { insetChrome } from "@/lib/ui";
+import { cn } from "@/lib/utils";
 
 export const OPERATOR_OPEN_RUN_EVENT = "vistrial:operator-open-run";
 
@@ -18,7 +20,7 @@ export function OpenOperatorRunButton({
   return (
     <button
       type="button"
-      className="w-full rounded-xl border border-white/[0.06] px-3 py-2 text-left"
+      className={cn(insetChrome, "w-full rounded-xl px-3 py-2 text-left")}
       onClick={() => {
         window.dispatchEvent(new CustomEvent(OPERATOR_OPEN_RUN_EVENT, { detail: { id: runId } }));
       }}

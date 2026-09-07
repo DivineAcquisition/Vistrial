@@ -3,6 +3,8 @@
 import { useState } from "react";
 
 import { Button } from "@/components/ui/button";
+import { insetChrome } from "@/lib/ui";
+import { cn } from "@/lib/utils";
 
 /**
  * A value the user has to move into another product. They copy it; they never
@@ -16,7 +18,7 @@ export function CopyField({ label, value }: { label: string; value: string }) {
     <div>
       <p className="text-xs text-dim">{label}</p>
       <div className="mt-1 flex flex-wrap items-center gap-2">
-        <code className="min-w-0 flex-1 rounded-lg border border-white/[0.08] bg-white/[0.02] px-3 py-2 text-xs break-all text-silver">
+        <code className={cn(insetChrome, "min-w-0 flex-1 rounded-lg px-3 py-2 text-xs break-all text-silver")}>
           {value}
         </code>
         <Button

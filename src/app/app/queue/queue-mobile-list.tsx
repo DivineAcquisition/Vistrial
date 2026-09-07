@@ -6,6 +6,8 @@ import { useState } from "react";
 import { AssignPanel, FollowOnPanel, OutcomePanel } from "@/components/app/lead-action-panels";
 import { Button } from "@/components/ui/button";
 import { formatBreachDuration } from "@/lib/queue/duration";
+import { insetChrome } from "@/lib/ui";
+import { cn } from "@/lib/utils";
 import { waitingFor } from "@/lib/vocabulary";
 import type {
   QueueMemberOption,
@@ -69,7 +71,7 @@ export function QueueMobileList({
   }) => Promise<boolean>;
 }) {
   return (
-    <ul className="divide-y divide-white/[0.06] overflow-x-hidden rounded-2xl border border-white/[0.08]">
+    <ul className={cn(insetChrome, "divide-y divide-white/[0.06] overflow-x-hidden rounded-2xl")}>
       {rows.map((row) => (
         <QueueMobileRow
           key={row.id}
@@ -163,7 +165,7 @@ function QueueMobileRow({
 
   return (
     <li
-      className={`overflow-x-hidden bg-ink-900 px-4 py-4 ${arriving ? "bg-brand-500/[0.10]" : ""} ${
+      className={`overflow-x-hidden px-4 py-4 ${arriving ? "bg-brand-500/[0.10]" : ""} ${
         exiting ? "opacity-40" : ""
       }`}
       onTouchStart={(event) => {
@@ -181,7 +183,7 @@ function QueueMobileRow({
       }}
     >
       <div style={{ transform: swipe ? `translateX(${swipe}px)` : undefined }}>
-        <p className="text-base font-semibold break-words text-white">
+        <p className="font-heading text-lg tracking-tight break-words text-white">
           <Link href={`/app/cases/${row.id}`}>{row.name}</Link>
         </p>
         <p className="mt-1 text-sm tabular-nums text-silver">{waiting}</p>

@@ -155,7 +155,7 @@ export function LandingPage() {
           {TOOLS.chips.map((chip) => (
             <li
               key={chip}
-              className="rounded-full border border-white/[0.1] bg-white/[0.04] px-4 py-2 text-sm font-medium text-silver"
+              className="rounded-full border border-white/[0.08] bg-white/[0.05] px-4 py-2 text-sm font-medium text-silver shadow-[inset_0_1px_0_rgba(255,255,255,0.06)]"
             >
               {chip}
             </li>
@@ -171,9 +171,12 @@ export function LandingPage() {
       >
         <div id="forsight" className="scroll-mt-32">
           <ul className="app-stagger grid gap-4 sm:grid-cols-3">
-            {OUTCOME.lines.map((line) => (
+            {OUTCOME.lines.map((line, index) => (
               <li key={line.id} id={line.id} className="h-full scroll-mt-32">
-                <FeatureCard title={line.title} />
+                <FeatureCard
+                  step={String(index + 1).padStart(2, "0")}
+                  title={line.title}
+                />
               </li>
             ))}
           </ul>

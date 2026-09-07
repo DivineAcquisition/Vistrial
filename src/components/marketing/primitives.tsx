@@ -108,7 +108,7 @@ export function FeatureCard({
   children?: ReactNode;
 }) {
   return (
-    <Panel className="flex h-full min-h-40 flex-col overflow-hidden p-0">
+    <Panel className="flex h-full flex-col overflow-hidden p-0">
       <MagicCard className="flex h-full flex-col rounded-2xl p-6 sm:p-7">
         {step ? (
           <p className="mb-6 font-display text-5xl leading-none tracking-tight text-brand-500/30 tabular-nums">

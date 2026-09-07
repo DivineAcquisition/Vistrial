@@ -1,6 +1,7 @@
 import type { OrgRole, SurfaceAccess } from "@/types/database";
 
 import { canManageOrgSettings } from "@/lib/auth/permissions";
+import { isProductScopeEnabled, type ProductScopeKey } from "@/lib/product-scope";
 
 /**
  * The product is Forsight and a client portal. Every client is a workspace.
@@ -45,6 +46,8 @@ export type NavItem = {
   platformAdminOnly?: boolean;
   /** Short line on the More door. */
   description?: string;
+  /** When set, the item is hidden unless that product-scope flag is on. */
+  scope?: ProductScopeKey;
 };
 
 /**
@@ -183,6 +186,7 @@ export const DA_CONSOLE_LINKS: Array<{ href: string; label: string; description:
 ];
 
 export function navVisibleTo(item: NavItem, role: OrgRole, isPlatformAdmin = false): boolean {
+  if (item.scope && !isProductScopeEnabled(item.scope)) return false;
   if (item.platformAdminOnly) return isPlatformAdmin;
   if (isPlatformAdmin) return true;
   if (!item.roles) return true;
@@ -212,6 +216,8 @@ export const ADVANCED_SETTINGS_PAGES: Array<{
   description: string;
   /** Hidden from client Advanced. Divine Acquisition only. */
   platformAdminOnly?: boolean;
+  /** When set, the page is omitted unless that product-scope flag is on. */
+  scope?: ProductScopeKey;
 }> = [
   {
     href: "/app/settings/business-profile",
@@ -227,6 +233,7 @@ export const ADVANCED_SETTINGS_PAGES: Array<{
     href: "/app/settings/follow-up",
     label: "Follow-up",
     description: "Voice examples, quiet hours, and which situations Vistrial drafts for.",
+    scope: "followUpSettings",
   },
   {
     href: "/app/settings/data",
@@ -236,7 +243,10 @@ export const ADVANCED_SETTINGS_PAGES: Array<{
 ];
 
 export function advancedSettingsVisibleTo(isPlatformAdmin: boolean) {
-  return ADVANCED_SETTINGS_PAGES.filter((page) => !page.platformAdminOnly || isPlatformAdmin);
+  return ADVANCED_SETTINGS_PAGES.filter(
+    (page) =>
+      (!page.platformAdminOnly || isPlatformAdmin) && (!page.scope || isProductScopeEnabled(page.scope))
+  );
 }
 
 export function advancedSettingsBreadcrumbs(label: string, href: string) {

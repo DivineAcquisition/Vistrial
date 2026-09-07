@@ -107,6 +107,8 @@ function parseFindFilters(input: Record<string, unknown>): CaseListFilters {
     scoreMax: asInt(input.scoreMax),
     optedFrom: asString(input.optedFrom),
     optedTo: asString(input.optedTo),
+    zeroHumanTouch: false,
+    ttftBreach: false,
     sort: sortRaw === "score" || sortRaw === "opted_in" || sortRaw === "status" || sortRaw === "last_touch" ? sortRaw : "last_touch",
     dir: dirRaw === "asc" || dirRaw === "desc" ? dirRaw : "desc",
   };

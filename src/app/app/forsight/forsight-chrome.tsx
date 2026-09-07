@@ -9,13 +9,18 @@ import {
   type ForsightView,
 } from "@/lib/forsight/dashboard";
 import { FORSIGHT_PATH } from "@/lib/navigation";
+import { isProductScopeEnabled, type ProductScopeKey } from "@/lib/product-scope";
 
-export const FORSIGHT_PAGES = [
-  { href: FORSIGHT_PATH, label: "Weekly Pulse" },
-  { href: `${FORSIGHT_PATH}/creatives`, label: "Creative Performance" },
+export const FORSIGHT_PAGES: Array<{
+  href: string;
+  label: string;
+  scope?: ProductScopeKey;
+}> = [
+  { href: FORSIGHT_PATH, label: "Weekly Pulse", scope: "forsightWeeklyPulse" },
+  { href: `${FORSIGHT_PATH}/creatives`, label: "Creative Performance", scope: "forsightCreatives" },
   { href: `${FORSIGHT_PATH}/pipeline`, label: "Pipeline Health" },
   { href: `${FORSIGHT_PATH}/reports`, label: "Reports" },
-] as const;
+];
 
 export function ForsightTabs({
   activeHref,
@@ -23,13 +28,9 @@ export function ForsightTabs({
   activeHref: string;
   isPlatformAdmin?: boolean;
 }) {
-  return (
-    <NavTabs
-      label="Forsight pages"
-      activeHref={activeHref}
-      items={[...FORSIGHT_PAGES]}
-    />
-  );
+  const items = FORSIGHT_PAGES.filter((page) => !page.scope || isProductScopeEnabled(page.scope));
+  if (items.length <= 1) return null;
+  return <NavTabs label="Forsight pages" activeHref={activeHref} items={items} />;
 }
 
 /**

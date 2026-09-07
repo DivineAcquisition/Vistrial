@@ -12,7 +12,9 @@ import {
 import { skipOutboundWebhookTouch } from "@/lib/ghl/dispatch-guard";
 import { ghlError, ghlLog, ghlWarn } from "@/lib/ghl/log";
 import {
+  appointmentTouchMessageId,
   appointmentFromPayload,
+  classifyOutboundTouch,
   contactFromPayload,
   inboundTouchSummary,
   isAutomationOutbound,
@@ -24,6 +26,7 @@ import {
   pick,
   timezoneFromContact,
 } from "@/lib/ghl/message-meta";
+import { rawBodyFromEvent, writeWebhookDeadLetter } from "@/lib/ghl/dead-letter";
 import { asJsonRecord } from "@/lib/ghl/payload";
 import { AWAITING_LINK_ERROR, failureDisposition } from "@/lib/ghl/retry";
 import { scoreInboundReplyAfterSilence, scoreLeadFromAnswerChange, scoreNoShow } from "@/lib/scoring/event-apply";
@@ -355,6 +358,7 @@ async function handleInbound(db: GhlDb, orgId: string, event: WebhookRow, payloa
       summary: inboundTouchSummary(channel),
       ghl_message_id: messageId,
       occurred_at: occurredAt,
+      outcome: "replied",
     })
     .select("id")
     .maybeSingle();
@@ -414,12 +418,12 @@ async function handleOutbound(db: GhlDb, orgId: string, _event: WebhookRow, payl
 
   const channel = mapMessageChannel(pick(payload, ["messageType", "message_type", "type"]));
   const automated = isAutomationOutbound(payload);
+  const type = classifyOutboundTouch(automated);
   const userId = pick(payload, ["userId", "user_id"]);
   let actorId: string | null = null;
-  if (!automated && userId) {
+  if (type === "human" && userId) {
     actorId = await resolveActor(db, orgId, userId);
   }
-  const type = actorId ? "human" : "system";
 
   const { error } = await db.from("touches").insert({
     org_id: orgId,
@@ -509,6 +513,17 @@ async function handleAppointmentStatus(db: GhlDb, orgId: string, _event: Webhook
   } else if (outcome === "cancelled") {
     await db.from("leads").update({ status: "follow_up" }).eq("id", lead.id).eq("org_id", orgId);
   }
+
+  if (outcome === "held" && appointmentId) {
+    await insertHeldCallTouch(db, {
+      orgId,
+      leadId: lead.id,
+      appointmentId,
+      payload,
+      appt,
+      scheduledAt,
+    });
+  }
 }
 
 async function handleOpportunity(db: GhlDb, orgId: string, payload: Record<string, unknown>) {
@@ -533,6 +548,42 @@ async function handleOpportunity(db: GhlDb, orgId: string, payload: Record<strin
   if (mapped && mapped !== lead.status) {
     await db.from("leads").update({ status: mapped }).eq("id", lead.id).eq("org_id", orgId);
   }
+}
+
+async function insertHeldCallTouch(
+  db: GhlDb,
+  args: {
+    orgId: string;
+    leadId: string;
+    appointmentId: string;
+    payload: Record<string, unknown>;
+    appt: Record<string, unknown>;
+    scheduledAt: string | null;
+  }
+) {
+  const messageId = appointmentTouchMessageId(args.appointmentId);
+  if (await touchExists(db, args.orgId, messageId)) return;
+
+  const userId =
+    pick(args.appt, ["assignedUserId", "assigned_user_id", "userId", "user_id"]) ??
+    pick(args.payload, ["userId", "user_id", "assignedUserId"]);
+  const actorId = userId ? await resolveActor(db, args.orgId, userId) : null;
+  const occurredAt = args.scheduledAt ?? occurredAtFromPayload(args.payload);
+
+  const { error } = await db.from("touches").insert({
+    org_id: args.orgId,
+    lead_id: args.leadId,
+    type: "human",
+    channel: "call",
+    direction: "outbound",
+    actor_member_id: actorId,
+    outcome: "connected",
+    summary: outboundTouchSummary("call", "human"),
+    ghl_message_id: messageId,
+    occurred_at: occurredAt,
+  });
+  if (error?.code === "23505") return;
+  if (error) throw new Error("touch_insert_failed");
 }
 
 async function touchExists(db: GhlDb, orgId: string, messageId: string): Promise<boolean> {
@@ -582,6 +633,15 @@ async function markEventUnsupported(db: GhlDb, event: WebhookRow) {
       error_text: "unsupported_event_type",
     })
     .eq("id", event.id);
+  await writeWebhookDeadLetter(db, {
+    orgId: event.org_id,
+    webhookEventId: event.id,
+    reason: "unsupported_event_type",
+    eventType: event.event_type,
+    providerEventId: event.provider_event_id,
+    rawBody: rawBodyFromEvent(event),
+    payload: event.payload,
+  });
 }
 
 async function markEventProcessed(db: GhlDb, id: string) {
@@ -625,6 +685,18 @@ async function markEventFailure(db: GhlDb, event: WebhookRow, cause: unknown) {
       next_attempt_at: nextAttemptAt,
     })
     .eq("id", event.id);
+
+  if (dead) {
+    await writeWebhookDeadLetter(db, {
+      orgId: event.org_id,
+      webhookEventId: event.id,
+      reason: "process_dead",
+      eventType: event.event_type,
+      providerEventId: event.provider_event_id,
+      rawBody: rawBodyFromEvent(event),
+      payload: event.payload,
+    });
+  }
 }
 
 export async function retryDeadEvent(db: GhlDb, orgId: string, eventId: string): Promise<boolean> {

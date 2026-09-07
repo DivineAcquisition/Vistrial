@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 
+import { isProductScopeEnabled } from "@/lib/product-scope";
 import { assertReportingAccess } from "@/lib/reporting/access";
 import { loadReportingPanel, loadReportingState } from "@/lib/reporting/load";
 import { parseReportingRange } from "@/lib/reporting/range";
@@ -34,6 +35,9 @@ function rateLine(label: string, value: unknown, perHundred: boolean): string {
 }
 
 export async function POST(request: Request) {
+  if (!isProductScopeEnabled("documentGeneration")) {
+    return new NextResponse(null, { status: 404 });
+  }
   const access = await assertReportingAccess();
   if (!access.ok) {
     return NextResponse.json({ error: access.error }, { status: 403 });

@@ -638,7 +638,7 @@ async function observeAdoption(db: GhlDb, managers: MemberNotifyTarget[], orgId:
         subjectIds: [orgId],
         title: copy.title,
         body: copy.body,
-        href: notificationHref("/app/reporting/adoption"),
+        href: notificationHref("/app/reporting"),
         dedupeKey: `adoption_warning:email:${target.userId}:${day}`,
       },
     });
@@ -651,7 +651,7 @@ async function observeAdoption(db: GhlDb, managers: MemberNotifyTarget[], orgId:
     subjectIds: [orgId],
     title: copy.title,
     body: copy.body,
-    href: notificationHref("/app/reporting/adoption"),
+    href: notificationHref("/app/reporting"),
     dedupeKey: `adoption_warning:da_console:${orgId}:${day}`,
   });
 }

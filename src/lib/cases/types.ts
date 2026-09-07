@@ -27,6 +27,8 @@ export type CaseListFilters = {
   scoreMax: number | null;
   optedFrom: string | null;
   optedTo: string | null;
+  zeroHumanTouch: boolean;
+  ttftBreach: boolean;
   sort: CaseSort;
   dir: CaseSortDir;
 };
@@ -47,6 +49,7 @@ export type CaseListRow = {
   assignedCloserId: string | null;
   assignedSetterName: string | null;
   assignedCloserName: string | null;
+  firstHumanTouchAt: string | null;
 };
 
 export type CaseListPayload = {
@@ -57,6 +60,7 @@ export type CaseListPayload = {
   hasMore: boolean;
   members: QueueMemberOption[];
   sources: string[];
+  speedToLeadMinutes: number;
 };
 
 export type CaseListEmptyKind = "not_connected" | "broken" | "no_leads" | "no_results";
@@ -65,10 +69,14 @@ export type CaseFileLead = CaseListRow & {
   firstName: string | null;
   lastName: string | null;
   campaign: string | null;
-  firstHumanTouchAt: string | null;
   ghlContactId: string | null;
   crmUrl: string | null;
   applicationAnswers: Record<string, unknown>;
+  contextNotes: string;
+  pipelineStage: string | null;
+  createdAt: string | null;
+  timeToFirstHumanTouchSeconds: number | null;
+  speedToLeadMinutes: number;
 };
 
 export type CaseScore = {
@@ -135,6 +143,16 @@ export type CaseCall = {
   hasTranscript: boolean;
   hasExtraction: boolean;
   extractionStatus: "none" | "pending" | "ready" | "failed";
+  transcript: string | null;
+};
+
+export type CaseLeadFile = {
+  id: string;
+  fileName: string;
+  contentType: string;
+  byteSize: number;
+  uploadedByMemberId: string | null;
+  createdAt: string;
 };
 
 export type CaseFieldMap = {
@@ -162,7 +180,6 @@ export type CaseTimelineTouch = {
   outcome: Enums<"touch_outcome"> | null;
   actorName: string | null;
   note: string | null;
-  outboundBody: string | null;
 };
 
 export type CaseTimelineCall = {
@@ -223,6 +240,7 @@ export type CaseFilePayload = {
   objections: CaseObjection[];
   nextActions: CaseNextAction[];
   calls: CaseCall[];
+  files: CaseLeadFile[];
   fieldMaps: CaseFieldMap[];
   revenue: CaseRevenueRow[] | null;
   members: QueueMemberOption[];

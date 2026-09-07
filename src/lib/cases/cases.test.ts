@@ -19,6 +19,7 @@ const emptyPayload = (over: Partial<CaseListPayload> = {}): CaseListPayload => (
   hasMore: false,
   members: [],
   sources: [],
+  speedToLeadMinutes: 15,
   ...over,
 });
 
@@ -35,6 +36,8 @@ describe("case list filters", () => {
       scoreMax: null,
       optedFrom: null,
       optedTo: null,
+      zeroHumanTouch: false,
+      ttftBreach: false,
       sort: "last_touch",
       dir: "desc",
     });
@@ -77,6 +80,8 @@ describe("case list filters", () => {
       scoreMax: null,
       optedFrom: null,
       optedTo: null,
+      zeroHumanTouch: false,
+      ttftBreach: false,
       sort: "last_touch",
       dir: "desc",
     });
@@ -85,6 +90,28 @@ describe("case list filters", () => {
     expect(href).toContain("scoreMin=40");
     expect(href).not.toContain("sort=");
     expect(href).not.toContain("dir=");
+  });
+
+  it("keeps zero-touch and missed-window filters in the URL", () => {
+    const href = caseFiltersHref({
+      q: null,
+      status: null,
+      track: null,
+      source: null,
+      setterId: null,
+      closerId: null,
+      scoreMin: null,
+      scoreMax: null,
+      optedFrom: null,
+      optedTo: null,
+      zeroHumanTouch: true,
+      ttftBreach: true,
+      sort: "last_touch",
+      dir: "desc",
+    });
+    expect(href).toContain("zeroTouch=1");
+    expect(href).toContain("breached=1");
+    expect(caseListHasConstraints(parseCaseListFilters({ zeroTouch: "1", breached: "1" }))).toBe(true);
   });
 });
 
@@ -128,6 +155,7 @@ describe("case list cursor", () => {
     assignedCloserId: null,
     assignedSetterName: null,
     assignedCloserName: null,
+    firstHumanTouchAt: null,
   };
 
   it("round-trips last-touch cursors", () => {
@@ -159,7 +187,7 @@ describe("case timeline activity merge", () => {
           headline: "Scored 82",
           actorName: "Vistrial scoring",
           result: "succeeded",
-          detail: { total: 82, reasoning: "Strong timeline." },
+          detail: { total: 82, reasoning: "Strong timeline.", outboundBody: "hidden" },
         },
         {
           kind: "touch",
@@ -180,6 +208,10 @@ describe("case timeline activity merge", () => {
       activityKind: "lead_scored",
     });
     expect(page.entries[1]).toMatchObject({ kind: "touch", direction: "outbound" });
+    expect(page.entries[1]).not.toHaveProperty("outboundBody");
+    if (page.entries[0].kind === "activity") {
+      expect(page.entries[0].detail).not.toHaveProperty("outboundBody");
+    }
   });
 });
 
@@ -208,5 +240,89 @@ describe("pre-call brief objections", () => {
       callOccurredAt: "2026-08-20T12:00:00.000Z",
     });
     expect(parsed.whatWorks).toEqual([]);
+  });
+});
+
+describe("time-to-first-touch breach", () => {
+  it("flags untouched leads past the response window and ignores touched ones", async () => {
+    const { isTtftBreached } = await import("@/lib/cases/ttft");
+    expect(
+      isTtftBreached({
+        optedInAt: "2026-08-01T00:00:00.000Z",
+        firstHumanTouchAt: null,
+        speedToLeadMinutes: 15,
+        now: "2026-08-01T00:16:00.000Z",
+      })
+    ).toBe(true);
+    expect(
+      isTtftBreached({
+        optedInAt: "2026-08-01T00:00:00.000Z",
+        firstHumanTouchAt: null,
+        speedToLeadMinutes: 15,
+        now: "2026-08-01T00:10:00.000Z",
+      })
+    ).toBe(false);
+    expect(
+      isTtftBreached({
+        optedInAt: "2026-08-01T00:00:00.000Z",
+        firstHumanTouchAt: "2026-08-01T00:20:00.000Z",
+        speedToLeadMinutes: 15,
+        now: "2026-08-01T01:00:00.000Z",
+      })
+    ).toBe(false);
+  });
+});
+
+describe("lead file helpers", () => {
+  it("accepts listed types and strips path separators from names", async () => {
+    const { isAllowedLeadFileType, sanitizeLeadFileName } = await import("@/lib/cases/files");
+    expect(isAllowedLeadFileType("application/pdf")).toBe(true);
+    expect(isAllowedLeadFileType("application/zip")).toBe(false);
+    expect(sanitizeLeadFileName("../../secret.txt")).toBe(".. .. secret.txt");
+  });
+});
+
+describe("case file parse extras", () => {
+  it("keeps context notes, pipeline, files, and call transcripts without message bodies", async () => {
+    const { parseCaseFilePayload } = await import("@/lib/cases/parse");
+    const parsed = parseCaseFilePayload({
+      lead: {
+        id: "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbb02",
+        orgId: "22222222-2222-4222-8222-222222222222",
+        name: "Worked Lead",
+        status: "working",
+        optedInAt: "2026-08-16T00:00:00.000Z",
+        contextNotes: "Ask about the accountant.",
+        pipelineStage: "Discovery",
+        createdAt: "2026-08-16T00:00:00.000Z",
+        firstHumanTouchAt: "2026-08-16T00:10:00.000Z",
+        timeToFirstHumanTouchSeconds: 600,
+        speedToLeadMinutes: 15,
+      },
+      calls: [
+        {
+          id: "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbb10",
+          type: "discovery",
+          hasTranscript: true,
+          hasExtraction: false,
+          extractionStatus: "none",
+          transcript: "We talked about timing.",
+        },
+      ],
+      files: [
+        {
+          id: "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbb30",
+          fileName: "intake.pdf",
+          contentType: "application/pdf",
+          byteSize: 1200,
+          createdAt: "2026-08-16T00:00:00.000Z",
+        },
+      ],
+      timeline: { entries: [], hasMore: false },
+    });
+    expect(parsed?.lead.contextNotes).toBe("Ask about the accountant.");
+    expect(parsed?.lead.pipelineStage).toBe("Discovery");
+    expect(parsed?.calls[0]?.transcript).toBe("We talked about timing.");
+    expect(parsed?.files[0]?.fileName).toBe("intake.pdf");
   });
 });

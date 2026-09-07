@@ -5,10 +5,13 @@ import { useEffect, useRef, useState } from "react";
 
 import {
   changeLeadStatus,
+  deleteLeadFile,
   loadCaseTimelinePage,
   reassignLeadNextAction,
   refreshCaseFile,
   resolveLeadObjection,
+  saveLeadContextNotes,
+  uploadLeadFile,
 } from "@/app/app/cases/actions";
 import { haltLeadSequence } from "@/app/app/follow-ups/actions";
 import { recordBriefView } from "@/app/app/coaching/actions";
@@ -39,11 +42,15 @@ import { Select } from "@/components/ui/select";
 import { Panel } from "@/components/ui/panel";
 import { SectionHeader } from "@/components/ui/section-header";
 import { StatusBadge } from "@/components/ui/status-badge";
-import { formatAnswer, formatCallDuration, formatCents } from "@/lib/cases/format";
+import { formatAnswer, formatCallDuration, formatCents, formatFileSize } from "@/lib/cases/format";
+import { MAX_CONTEXT_NOTES_CHARS } from "@/lib/cases/files";
+import { isTtftBreached } from "@/lib/cases/ttft";
+import { formatDayLong } from "@/lib/format";
 import { cursorFromTimelineEntry } from "@/lib/cases/cursor";
 import type {
   CaseCall,
   CaseFilePayload,
+  CaseLeadFile,
   CaseNextAction,
   CaseObjection,
   CaseScoreHistoryRow,
@@ -59,6 +66,7 @@ import {
   MANUAL_LEAD_STATUSES,
   OBJECTION_TYPE_LABELS,
   PAYMENT_TYPE_LABELS,
+  leadStatusTone,
   type LeadStatus,
 } from "@/lib/leads/labels";
 import { formatQueueDuration, formatQueueUntil } from "@/lib/queue/duration";
@@ -68,6 +76,9 @@ import {
   FACTOR_TITLE,
   SCORE_CHANGE_CAUSE,
   WORDS,
+  readinessLabel,
+  readinessState,
+  readinessTone,
 } from "@/lib/vocabulary";
 import { SCORE_FACTORS } from "@/lib/scoring/compute";
 import { overrideLeadScore } from "@/lib/scoring/override";
@@ -82,9 +93,11 @@ type PanelKind = "outcome" | "assign" | "override" | "status" | "createAction" |
 export function CaseFileScreen({
   initial,
   brief,
+  readyThreshold,
 }: {
   initial: CaseFilePayload;
   brief: BriefPayload | null;
+  readyThreshold: number;
 }) {
   const org = useOrg();
   const [file, setFile] = useState(initial);
@@ -168,6 +181,21 @@ export function CaseFileScreen({
     void recordBriefView(lead.id);
   }, [lead.id]);
 
+  const state = readinessState(
+    file.score?.total ?? null,
+    readyThreshold,
+    lead.leadType === "nurture_track"
+  );
+  const lastEvent = file.timeline.entries[0]
+    ? timelineSummary(file.timeline.entries[0], now)
+    : "Nothing yet. They have not been contacted.";
+  const missedWindow = isTtftBreached({
+    optedInAt: lead.optedInAt,
+    firstHumanTouchAt: lead.firstHumanTouchAt,
+    speedToLeadMinutes: lead.speedToLeadMinutes,
+    now,
+  });
+
   return (
     <div className="space-y-8">
       {error ? <p className={errorClass}>{error}</p> : null}
@@ -182,6 +210,20 @@ export function CaseFileScreen({
             ) : null}
             <p className="mt-2 text-sm text-silver">
               {[lead.email, lead.phone].filter(Boolean).join(" · ") || "No contact details"}
+            </p>
+            <div className="mt-3 flex flex-wrap gap-2">
+              <StatusBadge label={LEAD_STATUS_LABELS[lead.status]} tone={leadStatusTone(lead.status)} />
+              <StatusBadge label={readinessLabel(state)} tone={readinessTone(state)} />
+              {lead.firstHumanTouchAt === null ? (
+                <StatusBadge
+                  label={missedWindow ? "Missed first-touch window" : "No human touch"}
+                  tone={missedWindow ? "critical" : "warning"}
+                />
+              ) : null}
+            </div>
+            <p className="mt-3 text-sm text-silver">
+              <span className="text-dim">Last thing that happened: </span>
+              {lastEvent}
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
@@ -205,6 +247,32 @@ export function CaseFileScreen({
             </Button>
           </div>
         </div>
+        <DefinitionList>
+          <KeyValue label="Setter">{lead.assignedSetterName || "Unassigned"}</KeyValue>
+          <KeyValue label="Closer">{lead.assignedCloserName || "Unassigned"}</KeyValue>
+          <KeyValue label="Source">{lead.source || "—"}</KeyValue>
+          <KeyValue label="Pipeline">{lead.pipelineStage || "—"}</KeyValue>
+          <KeyValue label="Created">{formatDayLong(lead.createdAt || lead.optedInAt)}</KeyValue>
+          <KeyValue label="Opted in">{formatQueueDuration(lead.optedInAt, now)}</KeyValue>
+          <KeyValue label="Last touch">{formatQueueDuration(lead.lastTouchAt, now)}</KeyValue>
+          <KeyValue label="First human touch">
+            {lead.firstHumanTouchAt ? formatQueueDuration(lead.firstHumanTouchAt, now) : "Not yet"}
+          </KeyValue>
+          <KeyValue label="Time to first touch">
+            {lead.timeToFirstHumanTouchSeconds !== null
+              ? formatCallDuration(lead.timeToFirstHumanTouchSeconds)
+              : missedWindow
+                ? `Past ${lead.speedToLeadMinutes} min window`
+                : "—"}
+          </KeyValue>
+          <KeyValue label="Score">
+            {file.score ? (
+              <span className="font-medium text-white tabular-nums">{file.score.total}</span>
+            ) : (
+              "Unscored"
+            )}
+          </KeyValue>
+        </DefinitionList>
       </Panel>
 
       {panel === "outcome" ? (
@@ -269,6 +337,19 @@ export function CaseFileScreen({
           }}
         />
       ) : null}
+
+      <section>
+        <SectionHeader
+          title="Context notes"
+          hint="Workspace notes for the next closer. Distinct from objections and next actions. Not the conversation."
+        />
+        <ContextNotesPanel
+          leadId={lead.id}
+          notes={lead.contextNotes}
+          busy={busy}
+          onSave={(notes) => run(() => saveLeadContextNotes({ leadId: lead.id, notes }))}
+        />
+      </section>
 
       <section>
         <SectionHeader
@@ -610,6 +691,21 @@ export function CaseFileScreen({
       </section>
 
       <section>
+        <SectionHeader
+          title="Attachments"
+          hint="Call transcripts live on each call. Files here are operator uploads, not CRM messages."
+        />
+        <FilesPanel
+          leadId={lead.id}
+          files={file.files}
+          busy={busy}
+          now={now}
+          onUpload={(formData) => run(() => uploadLeadFile(formData))}
+          onDelete={(fileId) => run(() => deleteLeadFile({ leadId: lead.id, fileId }))}
+        />
+      </section>
+
+      <section>
         <Panel className="p-6">
           <details>
             <summary className="cursor-pointer text-sm font-medium text-white">
@@ -939,9 +1035,6 @@ function TimelineEntry({
           </KeyValue>
           <KeyValue label="When">{formatQueueDuration(entry.at, now)}</KeyValue>
           <KeyValue label="Note">{entry.note || "—"}</KeyValue>
-          {entry.direction === "outbound" && entry.outboundBody ? (
-            <KeyValue label="Sent">{entry.outboundBody}</KeyValue>
-          ) : null}
         </DefinitionList>
       ) : null}
       {entry.kind === "call" ? (
@@ -1006,6 +1099,16 @@ function CallBlock({ call, now }: { call: CaseCall; now: string }) {
                   : "No recording"}
         </KeyValue>
       </DefinitionList>
+      {call.transcript ? (
+        <details className="mt-4">
+          <summary className="cursor-pointer text-sm text-silver">Call transcript</summary>
+          <pre className="mt-3 max-h-80 overflow-auto whitespace-pre-wrap rounded-lg bg-black/30 p-3 text-xs text-silver">
+            {call.transcript}
+          </pre>
+        </details>
+      ) : call.hasTranscript ? (
+        <p className="mt-4 text-sm text-dim">A transcript exists. Open the call if it did not load here.</p>
+      ) : null}
       <div className="mt-4 flex flex-wrap gap-2">
         <Button variant="secondary" size="sm" render={<a href={`/app/calls/${call.id}`} />}>
           Open call
@@ -1173,5 +1276,139 @@ function StatusPanel({
       </div>
       {error ? <p className={errorClass}>{error}</p> : null}
     </form>
+  );
+}
+
+function ContextNotesPanel({
+  leadId,
+  notes,
+  busy,
+  onSave,
+}: {
+  leadId: string;
+  notes: string;
+  busy: boolean;
+  onSave: (notes: string) => Promise<boolean>;
+}) {
+  const [draft, setDraft] = useState(notes);
+  const dirty = draft !== notes;
+
+  useEffect(() => {
+    setDraft(notes);
+  }, [leadId, notes]);
+
+  return (
+    <Panel className="p-6">
+      <form
+        onSubmit={(event) => {
+          event.preventDefault();
+          void onSave(draft);
+        }}
+      >
+        <label className="block">
+          <span className={labelClass}>Notes</span>
+          <Textarea
+            value={draft}
+            maxLength={MAX_CONTEXT_NOTES_CHARS}
+            rows={6}
+            onChange={(event) => setDraft(event.target.value)}
+            placeholder="What the next closer needs before they pick up."
+          />
+        </label>
+        <p className={helperClass}>
+          {draft.length.toLocaleString()} / {MAX_CONTEXT_NOTES_CHARS.toLocaleString()}
+        </p>
+        <div className="mt-4">
+          <Button type="submit" variant="primary" size="sm" disabled={busy || !dirty}>
+            Save notes
+          </Button>
+        </div>
+      </form>
+    </Panel>
+  );
+}
+
+function FilesPanel({
+  leadId,
+  files,
+  busy,
+  now,
+  onUpload,
+  onDelete,
+}: {
+  leadId: string;
+  files: CaseLeadFile[];
+  busy: boolean;
+  now: string;
+  onUpload: (formData: FormData) => Promise<boolean>;
+  onDelete: (fileId: string) => Promise<boolean>;
+}) {
+  return (
+    <Panel className="p-6">
+      <form
+        className="mb-6 flex flex-wrap items-end gap-3"
+        onSubmit={(event) => {
+          event.preventDefault();
+          const form = event.currentTarget;
+          const data = new FormData(form);
+          data.set("leadId", leadId);
+          void onUpload(data).then((ok) => {
+            if (ok) form.reset();
+          });
+        }}
+      >
+        <label className="min-w-[12rem] flex-1">
+          <span className={labelClass}>Upload a file</span>
+          <Input
+            nativeInput
+            type="file"
+            name="file"
+            required
+            disabled={busy}
+            accept=".pdf,.txt,.png,.jpg,.jpeg,.webp,.mp3,.wav,.webm,.docx,application/pdf,text/plain,image/png,image/jpeg"
+          />
+        </label>
+        <Button type="submit" variant="secondary" size="sm" disabled={busy}>
+          Attach
+        </Button>
+      </form>
+      {files.length === 0 ? (
+        <p className="text-sm text-dim">No files attached.</p>
+      ) : (
+        <ul className="space-y-3">
+          {files.map((file) => (
+            <li
+              key={file.id}
+              className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-white/10 bg-white/[0.03] px-4 py-3"
+            >
+              <div className="min-w-0">
+                <p className="truncate text-sm text-white">{file.fileName}</p>
+                <p className="text-xs text-dim">
+                  {formatFileSize(file.byteSize)} · {formatQueueDuration(file.createdAt, now)}
+                </p>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  render={<a href={`/app/cases/${leadId}/files/${file.id}`} />}
+                >
+                  Download
+                </Button>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  disabled={busy}
+                  onClick={() => void onDelete(file.id)}
+                >
+                  Remove
+                </Button>
+              </div>
+            </li>
+          ))}
+        </ul>
+      )}
+    </Panel>
   );
 }

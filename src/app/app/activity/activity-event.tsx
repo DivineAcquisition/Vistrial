@@ -32,7 +32,6 @@ const DETAIL_LABELS: Record<string, string> = {
   reasoning: "Reasoning",
   triggeredBy: "Triggered by",
   channel: "Channel",
-  outboundBody: "Sent",
   emailSubject: "Subject",
   callType: "Call",
   durationSeconds: "Duration (s)",
@@ -66,10 +65,7 @@ const DETAIL_LABELS: Record<string, string> = {
 function detailEntries(event: ActivityEvent): Array<[string, string]> {
   const rows: Array<[string, string]> = [];
   for (const [key, value] of Object.entries(event.detail)) {
-    if (key === "outboundBody" && typeof value === "string") {
-      rows.push(["Sent", value]);
-      continue;
-    }
+    if (key === "outboundBody" || key === "emailSubject") continue;
     if (value === null || value === undefined || value === "") continue;
     const label = DETAIL_LABELS[key];
     if (!label) continue;

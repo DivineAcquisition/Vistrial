@@ -1,7 +1,10 @@
+import { redirect } from "next/navigation";
+
 import { ForsightPage } from "@/app/app/forsight/forsight-chrome";
 import { WeeklyPulseScreen } from "@/app/app/forsight/weekly-pulse";
 import { loadLiveSources, loadWeeklyPulse } from "@/lib/forsight/dashboard";
 import { FORSIGHT_PATH } from "@/lib/navigation";
+import { isProductScopeEnabled } from "@/lib/product-scope";
 import { requireReportingAccess } from "@/lib/reporting/access";
 
 export const dynamic = "force-dynamic";
@@ -10,6 +13,9 @@ export const metadata = { title: "Forsight" };
 
 export default async function WeeklyPulsePage() {
   const ctx = await requireReportingAccess();
+  if (!isProductScopeEnabled("forsightWeeklyPulse")) {
+    redirect(`${FORSIGHT_PATH}/pipeline`);
+  }
   const view = await loadWeeklyPulse();
   // Loaded after the Airtable view so the live sources see the same week
   // Airtable is reporting on. Neither can fail this page.

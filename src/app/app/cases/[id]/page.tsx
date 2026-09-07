@@ -5,6 +5,8 @@ import { CaseFileScreen } from "@/app/app/cases/[id]/case-file-screen";
 import { loadPrecallBrief } from "@/lib/brief/load";
 import { isLeadId } from "@/lib/cases/filters";
 import { loadOrgCaseFile } from "@/lib/cases/load";
+import { DEFAULT_READY_THRESHOLD, loadScoreConfig } from "@/lib/scoring/store";
+import { getSupabaseAdmin } from "@/lib/supabase/admin";
 import { throwIfForcedRouteError } from "@/lib/route-error";
 
 export default async function CaseDetailPage({
@@ -21,6 +23,7 @@ export default async function CaseDetailPage({
   if (!isLeadId(id)) notFound();
   const [payload, brief] = await Promise.all([loadOrgCaseFile(id), loadPrecallBrief(id)]);
   if (!payload) notFound();
+  const scoreConfig = await loadScoreConfig(getSupabaseAdmin(), payload.lead.orgId).catch(() => null);
 
   return (
     <PageFrame
@@ -31,7 +34,11 @@ export default async function CaseDetailPage({
         { href: `/app/cases/${payload.lead.id}`, label: payload.lead.name },
       ]}
     >
-      <CaseFileScreen initial={payload} brief={brief} />
+      <CaseFileScreen
+        initial={payload}
+        brief={brief}
+        readyThreshold={scoreConfig?.readyThreshold ?? DEFAULT_READY_THRESHOLD}
+      />
     </PageFrame>
   );
 }

@@ -31,6 +31,11 @@ const securityHeaders = [
 
 const nextConfig: NextConfig = {
   serverExternalPackages: ["web-push"],
+  experimental: {
+    serverActions: {
+      bodySizeLimit: "9mb",
+    },
+  },
   async headers() {
     return [
       {

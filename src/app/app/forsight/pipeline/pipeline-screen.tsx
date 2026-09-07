@@ -2,6 +2,7 @@ import { Panel } from "@/components/ui/panel";
 import { SectionHeader } from "@/components/ui/section-header";
 import { Dot, TonePill, type Tone } from "@/components/ui/tone";
 import { daysSince, type LeadRow, type PipelineHealth } from "@/lib/forsight/pipeline";
+import { isProductScopeEnabled } from "@/lib/product-scope";
 
 function plural(count: number, one: string, many = `${one}s`): string {
   return `${count} ${count === 1 ? one : many}`;
@@ -103,6 +104,8 @@ export function PipelineScreen({ health, now }: { health: PipelineHealth; now: D
         </Panel>
       </section>
 
+      {isProductScopeEnabled("extraPipeline") ? (
+        <>
       <section>
         <SectionHeader
           title="Going quiet"
@@ -164,6 +167,8 @@ export function PipelineScreen({ health, now }: { health: PipelineHealth; now: D
           )}
         </Panel>
       </section>
+        </>
+      ) : null}
     </>
   );
 }

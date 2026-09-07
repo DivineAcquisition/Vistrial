@@ -76,16 +76,6 @@ BEGIN
     RAISE EXCEPTION 'nurture routing failed: score=% type=%', v_score, v_type;
   END IF;
 
-  -- Human touch with no actor is rejected.
-  BEGIN
-    INSERT INTO public.touches (org_id, lead_id, type, channel, direction)
-    VALUES (v_org, v_lead, 'human', 'sms', 'outbound');
-    RAISE EXCEPTION 'expected human-without-actor rejection';
-  EXCEPTION
-    WHEN check_violation THEN
-      NULL;
-  END;
-
   -- System touch does not set first_human_touch_at.
   INSERT INTO public.touches (org_id, lead_id, type, channel, direction, occurred_at)
   VALUES (v_org, v_lead, 'system', 'email', 'outbound', now() - interval '1 hour');
@@ -95,28 +85,35 @@ BEGIN
     RAISE EXCEPTION 'system touch must not set first_human_touch_at';
   END IF;
 
-  -- Human outbound sets it; a later human outbound does not move it later.
-  v_first := now() - interval '30 minutes';
+  -- Human outbound without a mapped operator still counts as first human touch.
+  v_first := now() - interval '45 minutes';
+  INSERT INTO public.touches (
+    org_id, lead_id, type, channel, direction, occurred_at
+  )
+  VALUES (v_org, v_lead, 'human', 'sms', 'outbound', v_first);
+
+  SELECT first_human_touch_at INTO v_second FROM public.leads WHERE id = v_lead;
+  IF v_second IS DISTINCT FROM v_first THEN
+    RAISE EXCEPTION 'human touch without actor must set first_human_touch_at';
+  END IF;
+
+  IF (
+    SELECT time_to_first_human_touch_seconds FROM public.leads WHERE id = v_lead
+  ) IS NULL THEN
+    RAISE EXCEPTION 'generated time_to_first_human_touch_seconds stayed null';
+  END IF;
+
+  -- A later human outbound does not move first_human_touch_at later.
   INSERT INTO public.touches (
     org_id, lead_id, type, channel, direction, actor_member_id, occurred_at
   )
-  VALUES (v_org, v_lead, 'human', 'sms', 'outbound',
+  VALUES (v_org, v_lead, 'human', 'call', 'outbound',
     CASE WHEN EXISTS (SELECT 1 FROM org_members WHERE id = v_member) THEN v_member ELSE NULL END,
-    v_first);
+    now());
 
-  -- If the member is missing, the human insert is rejected. Skip the later-touch
-  -- assertion in that case; seed/verify still covers it when the owner exists.
-  SELECT first_human_touch_at INTO v_second FROM public.leads WHERE id = v_lead;
-  IF v_second IS NOT NULL THEN
-    INSERT INTO public.touches (
-      org_id, lead_id, type, channel, direction, actor_member_id, occurred_at
-    )
-    VALUES (v_org, v_lead, 'human', 'call', 'outbound', v_member, now());
-
-    SELECT first_human_touch_at INTO v_first FROM public.leads WHERE id = v_lead;
-    IF v_first <> v_second THEN
-      RAISE EXCEPTION 'first_human_touch_at moved later: % -> %', v_second, v_first;
-    END IF;
+  SELECT first_human_touch_at INTO v_first FROM public.leads WHERE id = v_lead;
+  IF v_first IS DISTINCT FROM v_second THEN
+    RAISE EXCEPTION 'first_human_touch_at moved later: % -> %', v_second, v_first;
   END IF;
 
   -- Seed produced five Northstar leads, one never touched.

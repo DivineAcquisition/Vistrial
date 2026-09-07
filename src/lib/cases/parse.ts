@@ -9,6 +9,7 @@ import type {
   CaseFieldMap,
   CaseFileLead,
   CaseFilePayload,
+  CaseLeadFile,
   CaseListEmptyKind,
   CaseListFilters,
   CaseListPayload,
@@ -81,6 +82,7 @@ export function parseCaseListRow(value: unknown): CaseListRow | null {
     assignedCloserId: asString(row.assignedCloserId),
     assignedSetterName: asString(row.assignedSetterName),
     assignedCloserName: asString(row.assignedCloserName),
+    firstHumanTouchAt: asString(row.firstHumanTouchAt),
   };
 }
 
@@ -109,6 +111,7 @@ export function parseCaseListPayload(value: unknown): CaseListPayload {
     hasMore: asBoolean(row.hasMore),
     members,
     sources,
+    speedToLeadMinutes: asNumber(row.speedToLeadMinutes) ?? 15,
   };
 }
 
@@ -245,6 +248,10 @@ function parseCall(value: unknown): CaseCall | null {
         : asBoolean(row.hasExtraction)
           ? "ready"
           : "none",
+    transcript:
+      typeof row.transcript === "string" && row.transcript.trim().length > 0
+        ? row.transcript
+        : null,
   };
 }
 
@@ -300,7 +307,6 @@ function parseTimelineEntry(value: unknown): CaseTimelineEntry | null {
       outcome: (asString(row.outcome) as Enums<"touch_outcome"> | null) ?? null,
       actorName: asString(row.actorName),
       note: asString(row.note),
-      outboundBody: direction === "outbound" ? asString(row.outboundBody) : null,
     };
   }
 
@@ -345,7 +351,14 @@ function parseTimelineEntry(value: unknown): CaseTimelineEntry | null {
     if (!headline || !activityKind || !result) return null;
     const detail =
       row.detail && typeof row.detail === "object" && !Array.isArray(row.detail)
-        ? (row.detail as Record<string, unknown>)
+        ? Object.fromEntries(
+            Object.entries(row.detail as Record<string, unknown>).filter(
+              ([key]) =>
+                key !== "outboundBody" &&
+                key !== "emailSubject" &&
+                key !== "outbound_body"
+            )
+          )
         : {};
     return {
       kind: "activity",
@@ -384,10 +397,33 @@ function parseLead(value: unknown): CaseFileLead | null {
     firstName: asString(row.firstName),
     lastName: asString(row.lastName),
     campaign: asString(row.campaign),
-    firstHumanTouchAt: asString(row.firstHumanTouchAt),
     ghlContactId: asString(row.ghlContactId),
     crmUrl: asString(row.crmUrl),
     applicationAnswers: parseAnswers(row.applicationAnswers),
+    contextNotes: typeof row.contextNotes === "string" ? row.contextNotes : "",
+    pipelineStage: asString(row.pipelineStage),
+    createdAt: asString(row.createdAt),
+    timeToFirstHumanTouchSeconds: asNumber(row.timeToFirstHumanTouchSeconds),
+    speedToLeadMinutes: asNumber(row.speedToLeadMinutes) ?? 15,
+  };
+}
+
+function parseLeadFile(value: unknown): CaseLeadFile | null {
+  if (!value || typeof value !== "object") return null;
+  const row = value as Record<string, unknown>;
+  const id = asString(row.id);
+  const fileName = asString(row.fileName);
+  const contentType = asString(row.contentType);
+  const byteSize = asNumber(row.byteSize);
+  const createdAt = asString(row.createdAt);
+  if (!id || !fileName || !contentType || byteSize === null || !createdAt) return null;
+  return {
+    id,
+    fileName,
+    contentType,
+    byteSize,
+    uploadedByMemberId: asString(row.uploadedByMemberId),
+    createdAt,
   };
 }
 
@@ -419,6 +455,9 @@ export function parseCaseFilePayload(value: unknown): CaseFilePayload | null {
       : [],
     calls: Array.isArray(row.calls)
       ? row.calls.map(parseCall).filter((item): item is CaseCall => item !== null)
+      : [],
+    files: Array.isArray(row.files)
+      ? row.files.map(parseLeadFile).filter((item): item is CaseLeadFile => item !== null)
       : [],
     fieldMaps: Array.isArray(row.fieldMaps)
       ? row.fieldMaps.map(parseFieldMap).filter((item): item is CaseFieldMap => item !== null)

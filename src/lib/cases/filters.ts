@@ -93,6 +93,8 @@ export function parseCaseListFilters(
     scoreMax,
     optedFrom,
     optedTo,
+    zeroHumanTouch: firstParam(params.zeroTouch) === "1",
+    ttftBreach: firstParam(params.breached) === "1",
     sort: sortRaw && isSort(sortRaw) ? sortRaw : "last_touch",
     dir: dirRaw && isDir(dirRaw) ? dirRaw : "desc",
   };
@@ -109,7 +111,9 @@ export function caseListHasConstraints(filters: CaseListFilters): boolean {
       filters.scoreMin !== null ||
       filters.scoreMax !== null ||
       filters.optedFrom ||
-      filters.optedTo
+      filters.optedTo ||
+      filters.zeroHumanTouch ||
+      filters.ttftBreach
   );
 }
 
@@ -125,6 +129,8 @@ export function caseFiltersToSearchParams(filters: CaseListFilters): URLSearchPa
   if (filters.scoreMax !== null) params.set("scoreMax", String(filters.scoreMax));
   if (filters.optedFrom) params.set("optedFrom", filters.optedFrom);
   if (filters.optedTo) params.set("optedTo", filters.optedTo);
+  if (filters.zeroHumanTouch) params.set("zeroTouch", "1");
+  if (filters.ttftBreach) params.set("breached", "1");
   if (filters.sort !== "last_touch") params.set("sort", filters.sort);
   if (filters.dir !== "desc") params.set("dir", filters.dir);
   return params;

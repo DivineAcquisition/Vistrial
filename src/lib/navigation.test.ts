@@ -60,16 +60,19 @@ describe("settings IA", () => {
   });
 
   it("does not put Agents on Advanced for anyone", () => {
+    expect(advancedSettingsVisibleTo(false).map((page) => page.label)).not.toContain("Agents");
+    expect(advancedSettingsVisibleTo(true).map((page) => page.label)).not.toContain("Agents");
+  });
+
+  it("hides Follow-up from Advanced while that surface is parked", () => {
     expect(advancedSettingsVisibleTo(false).map((page) => page.label)).toEqual([
       "Business",
       "Scoring",
-      "Follow-up",
       "Data",
     ]);
     expect(advancedSettingsVisibleTo(true).map((page) => page.label)).toEqual([
       "Business",
       "Scoring",
-      "Follow-up",
       "Data",
     ]);
   });

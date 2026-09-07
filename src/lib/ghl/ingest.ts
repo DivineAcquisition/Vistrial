@@ -1,5 +1,7 @@
-import type { Json } from "@/types/database";
-
+import {
+  signatureDeadLetterReason,
+  writeWebhookDeadLetter,
+} from "@/lib/ghl/dead-letter";
 import { parseWebhookPayload } from "@/lib/ghl/payload";
 import { ghlLog, ghlWarn } from "@/lib/ghl/log";
 import { verifyGhlWebhookSignature, type SignatureResult } from "@/lib/ghl/signature";
@@ -24,13 +26,15 @@ export async function ingestGhlWebhook(
   });
 
   if (!verified.ok) {
-    await recordRejection(db, verified.reason, args.rawBody.length);
+    await persistRejection(db, verified.reason, args.rawBody);
     ghlWarn("ghl.webhook.rejected", { reason: verified.reason, bytes: args.rawBody.length });
     return { httpStatus: 401, reason: verified.reason };
   }
 
   const parsed = parseWebhookPayload(args.rawBody);
   const orgId = parsed.locationId ? await orgIdForLocation(db, parsed.locationId) : null;
+  const malformed = !parsed.parsed;
+  const now = new Date().toISOString();
 
   const { data, error } = await db
     .from("webhook_events")
@@ -39,10 +43,13 @@ export async function ingestGhlWebhook(
       source: "ghl",
       event_type: parsed.eventType,
       payload: parsed.payload,
+      raw_body: args.rawBody,
       provider_event_id: parsed.providerEventId,
       contact_key: parsed.contactKey,
-      processed: false,
-      status: "pending",
+      processed: malformed,
+      status: malformed ? "dead" : "pending",
+      processed_at: malformed ? now : null,
+      error_text: malformed ? "malformed_json" : null,
     })
     .select("id")
     .maybeSingle();
@@ -59,7 +66,31 @@ export async function ingestGhlWebhook(
 
   if (error) {
     ghlWarn("ghl.webhook.insert_failed", { code: error.code });
+    await writeWebhookDeadLetter(
+      db,
+      {
+        orgId,
+        reason: "insert_failed",
+        eventType: parsed.eventType,
+        providerEventId: parsed.providerEventId,
+        rawBody: args.rawBody,
+        payload: parsed.payload,
+      },
+      { required: true }
+    );
     throw new Error("webhook_insert_failed");
+  }
+
+  if (malformed) {
+    await writeWebhookDeadLetter(db, {
+      orgId,
+      webhookEventId: data?.id ?? null,
+      reason: "malformed_json",
+      eventType: parsed.eventType,
+      providerEventId: parsed.providerEventId,
+      rawBody: args.rawBody,
+      payload: parsed.payload,
+    });
   }
 
   ghlLog("ghl.webhook.received", {
@@ -68,6 +99,7 @@ export async function ingestGhlWebhook(
     orgResolved: Boolean(orgId),
     duplicate: false,
     eventId: data?.id ?? null,
+    malformed,
   });
 
   return { httpStatus: 200, duplicate: false, insertedId: data?.id ?? null, orgId };
@@ -82,20 +114,35 @@ async function orgIdForLocation(db: GhlDb, locationId: string): Promise<string |
   return data?.id ?? null;
 }
 
-async function recordRejection(
-  db: GhlDb,
-  reason: string,
-  byteLength: number,
-  payload?: Json
-) {
-  await db.from("webhook_events").insert({
-    org_id: null,
-    source: "ghl",
-    event_type: `rejected.${reason}`,
-    payload: payload ?? { rejected: true, reason, byte_length: byteLength },
-    processed: true,
-    status: "rejected",
-    processed_at: new Date().toISOString(),
-    error_text: reason,
-  });
+async function persistRejection(db: GhlDb, reason: "missing" | "invalid", rawBody: string) {
+  const parsed = parseWebhookPayload(rawBody);
+  const { data, error } = await db
+    .from("webhook_events")
+    .insert({
+      org_id: null,
+      source: "ghl",
+      event_type: `rejected.${reason}`,
+      payload: parsed.payload,
+      raw_body: rawBody,
+      processed: true,
+      status: "rejected",
+      processed_at: new Date().toISOString(),
+      error_text: reason,
+    })
+    .select("id")
+    .maybeSingle();
+
+  await writeWebhookDeadLetter(
+    db,
+    {
+      orgId: null,
+      webhookEventId: data?.id ?? null,
+      reason: signatureDeadLetterReason(reason),
+      eventType: parsed.eventType,
+      providerEventId: parsed.providerEventId,
+      rawBody,
+      payload: parsed.payload,
+    },
+    { required: Boolean(error) || !data }
+  );
 }

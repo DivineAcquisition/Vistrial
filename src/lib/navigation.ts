@@ -4,8 +4,9 @@ import { canManageOrgSettings } from "@/lib/auth/permissions";
 import { isProductScopeEnabled, type ProductScopeKey } from "@/lib/product-scope";
 
 /**
- * The product is Forsight and a client portal. Every client is a workspace.
- * Sales tools stay reachable behind More. DA-only screens stay in the console.
+ * The product is Forsight, people in this workspace, and a client portal.
+ * The rail stays short. Jump (⌘J) still reaches the quieter tools.
+ * DA-only screens stay in the console.
  */
 
 export type NavGroupId = "front" | "door";
@@ -51,8 +52,9 @@ export type NavItem = {
 };
 
 /**
- * Owner and admin: Forsight, Portal, More. Setter and closer: To call, More.
- * The list is not the owner's front door.
+ * Owner and admin: Forsight, People, Settings. Setter and closer: To call,
+ * People, Settings. Portal lives on the account menu. The list is not the
+ * owner's front door.
  */
 export const PRIMARY_NAV: NavItem[] = [
   {
@@ -65,15 +67,6 @@ export const PRIMARY_NAV: NavItem[] = [
     description: "Ads, creatives, and pipeline for this workspace.",
   },
   {
-    href: "/portal",
-    label: "Portal",
-    match: "/portal",
-    group: "front",
-    icon: "reporting",
-    roles: ["owner", "admin"],
-    description: "Whether this workspace is turning leads into clients.",
-  },
-  {
     href: "/app/queue",
     label: "To call",
     match: "/app/queue",
@@ -82,20 +75,38 @@ export const PRIMARY_NAV: NavItem[] = [
     roles: ["setter", "closer"],
   },
   {
-    href: MORE_PATH,
-    label: "More",
-    match: MORE_PATH,
-    group: "door",
-    icon: "more",
+    href: "/app/cases",
+    label: "People",
+    match: "/app/cases",
+    group: "front",
+    icon: "cases",
+    description: "Everyone in this workspace. Vistrial stores them here.",
+  },
+  {
+    href: "/app/settings",
+    label: "Settings",
+    match: "/app/settings",
+    group: "front",
+    icon: "settings",
+    description: "People, connections, and how this workspace is set up.",
   },
 ];
 
 /**
- * Behind the door. Sales tools stay here so they are not the story.
+ * Reachable from jump and from /app/more, not from the rail.
  * Coaching, Activity, and Numbers stay in the product; only Divine
  * Acquisition sees them on this list.
  */
 export const MORE_NAV: NavItem[] = [
+  {
+    href: "/portal",
+    label: "Portal",
+    match: "/portal",
+    group: "door",
+    icon: "reporting",
+    roles: ["owner", "admin"],
+    description: "Whether this workspace is turning leads into clients.",
+  },
   {
     href: "/app/queue",
     label: "To call",
@@ -110,7 +121,7 @@ export const MORE_NAV: NavItem[] = [
     match: "/app/log",
     group: "door",
     icon: "log",
-    description: "Record a call or message after you come back from the CRM.",
+    description: "Record a call or message after it happened.",
   },
   {
     href: "/app/cases",
@@ -118,7 +129,7 @@ export const MORE_NAV: NavItem[] = [
     match: "/app/cases",
     group: "door",
     icon: "cases",
-    description: "Find anyone in this workspace, not only who to call next.",
+    description: "Everyone in this workspace. Vistrial stores them here.",
   },
   {
     href: "/app/calls",

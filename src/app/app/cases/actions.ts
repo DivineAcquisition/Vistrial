@@ -1,6 +1,8 @@
 "use server";
 
-import { canAssignLeadTo } from "@/lib/auth/permissions";
+import { redirect } from "next/navigation";
+
+import { canAssignLeadTo, canCreateLeads } from "@/lib/auth/permissions";
 import { getAuthContext } from "@/lib/auth/session";
 import type { CaseListCursor, CaseTimelineCursor } from "@/lib/cases/cursor";
 import { isLeadId } from "@/lib/cases/filters";
@@ -13,6 +15,7 @@ import {
   type CaseListPayload,
   type CaseTimelinePage,
 } from "@/lib/cases/types";
+import { assignmentForCreator, parseCreateLeadInput, VISTRIAL_LEAD_SOURCE } from "@/lib/leads/create";
 import { MANUAL_LEAD_STATUSES, type LeadStatus } from "@/lib/leads/labels";
 import { revalidateLeadSurfaces } from "@/lib/leads/revalidate";
 import { createClient } from "@/lib/supabase/server";
@@ -64,6 +67,50 @@ async function requireLeadInOrg(leadId: string): Promise<
     .maybeSingle();
   if (error || !data) return { ok: false, error: "That lead is not in this workspace." };
   return { ok: true, orgId: ctx.org.id, leadId };
+}
+
+export async function createLead(
+  _prev: CaseActionResult,
+  formData: FormData
+): Promise<CaseActionResult> {
+  const ctx = await getAuthContext();
+  if (!canCreateLeads(ctx.role, ctx.isPlatformAdmin)) {
+    return actionError("You do not have permission to add people.");
+  }
+
+  const parsed = parseCreateLeadInput({
+    firstName: String(formData.get("first_name") ?? ""),
+    lastName: String(formData.get("last_name") ?? ""),
+    email: String(formData.get("email") ?? ""),
+    phone: String(formData.get("phone") ?? ""),
+  });
+  if (!parsed.ok) return parsed;
+
+  const assignment = assignmentForCreator(ctx.role, ctx.member.id);
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("leads")
+    .insert({
+      org_id: ctx.org.id,
+      first_name: parsed.value.firstName,
+      last_name: parsed.value.lastName,
+      email: parsed.value.email,
+      phone: parsed.value.phone,
+      source: VISTRIAL_LEAD_SOURCE,
+      status: "new",
+      assigned_setter_id: assignment.assignedSetterId,
+      assigned_closer_id: assignment.assignedCloserId,
+    })
+    .select("id")
+    .maybeSingle();
+
+  if (error) {
+    return actionError(explainWriteError(error.message, "Could not add that person."));
+  }
+  if (!data) return actionError("Could not add that person.");
+
+  revalidateLeadSurfaces(data.id);
+  redirect(`/app/cases/${data.id}`);
 }
 
 export async function refreshCaseList(

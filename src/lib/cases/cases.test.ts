@@ -119,8 +119,9 @@ describe("case list empty states", () => {
   const filters = parseCaseListFilters({});
   const searching = parseCaseListFilters({ q: "nobody" });
 
-  it("treats a missing CRM with no leads as not connected, not as no-leads-yet", () => {
-    expect(caseListEmptyKind(emptyPayload({ crmStatus: "missing" }), filters)).toBe("not_connected");
+  it("treats a missing CRM with no leads as an empty workspace, not as unconfigured", () => {
+    expect(caseListEmptyKind(emptyPayload({ crmStatus: "missing" }), filters)).toBe("no_leads");
+    expect(caseListEmptyKind(emptyPayload({ crmStatus: "inactive" }), filters)).toBe("no_leads");
     expect(caseListEmptyKind(emptyPayload({ crmStatus: "active" }), filters)).toBe("no_leads");
     expect(caseListEmptyKind(emptyPayload({ crmStatus: "broken" }), filters)).toBe("broken");
   });

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { buildHubCards, crmHubCard, hubSummaryLine, sourceHubCard } from "@/lib/integrations/hub";
+import { buildHubCards, crmHubCard, airtableHubCard, hubSummaryLine, sourceHubCard } from "@/lib/integrations/hub";
 import { SOURCE_CATALOG } from "@/lib/sources/catalog";
 import type { SourceCardModel } from "@/lib/sources/catalog";
 import type { SourceKind } from "@/types/database";
@@ -34,7 +34,9 @@ describe("integration hub", () => {
     });
     expect(card.connect).toEqual({ mode: "redirect", href: "/api/leadconnector/oauth/start" });
     expect(card.status).toBe("available");
-    expect(card.required).toBe(true);
+    expect(card.required).toBe(false);
+    expect(airtableHubCard().required).toBe(false);
+    expect(airtableHubCard().note).toMatch(/Vistrial already stores/i);
   });
 
   it("says so plainly when the deployment has no marketplace credentials", () => {

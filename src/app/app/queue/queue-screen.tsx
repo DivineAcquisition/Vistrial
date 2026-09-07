@@ -15,6 +15,7 @@ import {
 import { useOrg } from "@/components/app/org-provider";
 import { QueueLeadRow } from "@/app/app/queue/queue-row";
 import { QueueMobileList } from "@/app/app/queue/queue-mobile-list";
+import { AddPersonDialog } from "@/app/app/cases/add-person-dialog";
 import {
   assignQueueLead,
   completeQueueNextAction,
@@ -62,10 +63,12 @@ export function QueueScreen({
   initial,
   filters,
   canOpenIntegrations,
+  canCreateLeads,
 }: {
   initial: QueuePayload;
   filters: QueueFilterState;
   canOpenIntegrations: boolean;
+  canCreateLeads: boolean;
 }) {
   const org = useOrg();
   const [alarm, setAlarm] = useState(initial.alarm);
@@ -396,6 +399,7 @@ export function QueueScreen({
     }
   }
 
+  const addPerson = canCreateLeads ? <AddPersonDialog /> : null;
   const integrations = canOpenIntegrations ? (
     <Button variant="secondary" size="sm" render={<Link href="/app/settings/integrations" />}>
       Open integrations
@@ -431,7 +435,7 @@ export function QueueScreen({
           <EmptyState
             kind="unconfigured"
             title="The CRM connection is broken"
-            detail="Your CRM is linked but the connection expired. Reconnect in More, then Settings, then Integrations. People already here stay on this list so the outage is not hidden."
+            detail="Your CRM is linked but the connection expired. Reconnect in Settings, then Integrations. People already here stay on this list so the outage is not hidden."
             action={integrations}
           />
         </div>
@@ -440,9 +444,9 @@ export function QueueScreen({
       {connectionBanner === "not_connected" ? (
         <div className="mb-8">
           <EmptyState
-            kind="unconfigured"
-            title="The CRM is not connected"
-            detail="New people will not land until your CRM is linked. People already in this workspace still need action below."
+            kind="empty"
+            title="People in this workspace live in Vistrial"
+            detail="GoHighLevel is not connected. People already here still need action below. Connect a CRM later to sync and send."
             action={integrations}
           />
         </div>
@@ -450,10 +454,11 @@ export function QueueScreen({
 
       {emptyKind === "not_connected" ? (
         <EmptyState
-          kind="unconfigured"
-          title="This list is empty until the CRM is connected"
-          detail="New people land here after your CRM is linked. Nothing is missing on your side yet — the connection has not been set up."
-          action={integrations}
+          kind="empty"
+          title="No one yet"
+          detail="Add someone on People, then they show up here. A CRM is optional."
+          action={addPerson}
+          secondaryAction={integrations}
         />
       ) : null}
 
@@ -461,7 +466,7 @@ export function QueueScreen({
         <EmptyState
           kind="unconfigured"
           title="This list cannot load while the CRM connection is broken"
-          detail="Your CRM is linked but the connection expired. Reconnect in More, then Settings, then Integrations. Showing an empty list would hide this outage."
+          detail="Your CRM is linked but the connection expired. Reconnect in Settings, then Integrations. Showing an empty list would hide this outage."
           action={integrations}
         />
       ) : null}
@@ -470,7 +475,8 @@ export function QueueScreen({
         <EmptyState
           kind="empty"
           title="No one yet"
-          detail="The CRM is connected and working. Nobody has come in yet. The first person will appear here when they arrive."
+          detail="Add someone on People, then they show up here to call. A CRM is optional."
+          action={addPerson}
         />
       ) : null}
 

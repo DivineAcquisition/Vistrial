@@ -1,6 +1,7 @@
 import { PageFrame } from "@/components/app/page-frame";
+import { AddPersonDialog } from "@/app/app/cases/add-person-dialog";
 import { CasesScreen } from "@/app/app/cases/cases-screen";
-import { canManageOrgSettings } from "@/lib/auth/permissions";
+import { canCreateLeads, canManageOrgSettings } from "@/lib/auth/permissions";
 import { getAuthContext } from "@/lib/auth/session";
 import { caseFiltersHref, parseCaseListFilters } from "@/lib/cases/filters";
 import { loadOrgCaseList } from "@/lib/cases/load";
@@ -18,16 +19,20 @@ export default async function CasesPage({
   const filters = parseCaseListFilters(params);
   const payload = await loadOrgCaseList(filters);
 
+  const canAdd = canCreateLeads(ctx.role, ctx.isPlatformAdmin);
+
   return (
     <PageFrame
-        title="People"
-        description="Find anyone in this workspace, not only who to call next."
+      title="People"
+      description="Everyone in this workspace. Vistrial stores them here."
+      actions={canAdd ? <AddPersonDialog /> : undefined}
     >
       <CasesScreen
         key={caseFiltersHref(filters)}
         initial={payload}
         filters={filters}
         canOpenIntegrations={canManageOrgSettings(ctx.role, ctx.isPlatformAdmin)}
+        canCreateLeads={canCreateLeads(ctx.role, ctx.isPlatformAdmin)}
       />
     </PageFrame>
   );

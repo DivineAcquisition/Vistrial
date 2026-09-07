@@ -57,9 +57,9 @@ export function CallsScreen({
     if (initial.crmStatus === "missing" || initial.crmStatus === "inactive") {
       return (
         <EmptyState
-          kind="unconfigured"
-          title="Calls appear after capture is connected"
-          detail="Booked and completed calls list here once the CRM and transcript sources are linked."
+          kind="empty"
+          title="No calls yet"
+          detail="Calls appear here when they are logged or synced. A CRM is optional."
           action={integrations}
         />
       );
@@ -67,7 +67,7 @@ export function CallsScreen({
     return (
       <EmptyState
         title="No calls yet"
-        detail="GoHighLevel is connected. Booked appointments will list here when they arrive."
+        detail="Booked appointments and logged calls list here when they arrive."
       />
     );
   }

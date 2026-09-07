@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { canManageMembers, removesLastActiveOwner } from "@/lib/auth/permissions";
+import { canManageMembers, canCreateLeads, removesLastActiveOwner } from "@/lib/auth/permissions";
 
 describe("canManageMembers", () => {
   it("is owner and admin only", () => {
@@ -12,6 +12,15 @@ describe("canManageMembers", () => {
 
   it("lets a platform admin through whatever their org role", () => {
     expect(canManageMembers("setter", true)).toBe(true);
+  });
+});
+
+describe("canCreateLeads", () => {
+  it("lets anyone who works the list add a person", () => {
+    expect(canCreateLeads("owner")).toBe(true);
+    expect(canCreateLeads("admin")).toBe(true);
+    expect(canCreateLeads("setter")).toBe(true);
+    expect(canCreateLeads("closer")).toBe(true);
   });
 });
 

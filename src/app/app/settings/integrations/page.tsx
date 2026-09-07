@@ -61,7 +61,7 @@ export default async function IntegrationsPage({
   return (
     <PageFrame
       title="Integrations"
-      description="Connect GoHighLevel. Airtable is next."
+      description="Connect GoHighLevel to sync and send. People live in Vistrial either way. Airtable is next."
       status={hubSummaryLine(cards)}
       actions={
         ctx.isPlatformAdmin ? (

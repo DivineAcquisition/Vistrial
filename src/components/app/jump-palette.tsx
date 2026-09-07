@@ -50,7 +50,7 @@ export function AppJumpPalette() {
         value: item.href,
         label: item.label,
         href: item.href,
-        group: item.group === "front" ? "Now" : "More",
+                    group: item.group === "front" ? "Main" : "Also",
       }));
   }, [role, isPlatformAdmin]);
 

@@ -12,7 +12,7 @@ export default async function MorePage() {
   return (
     <PageFrame
       title="More"
-      description="Sales tools and settings for this workspace. Forsight and the portal are in the sidebar."
+      description="Quieter tools. Forsight, people, and settings stay in the sidebar."
     >
       <ul className="app-stagger grid gap-4 sm:grid-cols-2">
         {items.map((item) => (

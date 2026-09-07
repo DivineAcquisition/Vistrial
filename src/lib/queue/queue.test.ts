@@ -76,8 +76,9 @@ describe("queue empty states", () => {
     pendingDrafts: [] as [],
   };
 
-  it("treats a missing CRM with no leads as not connected, not as no-leads-yet", () => {
-    expect(queueEmptyKind({ ...base, crmStatus: "missing", orgLeadCount: 0 })).toBe("not_connected");
+  it("treats a missing CRM with no leads as an empty workspace, not as unconfigured", () => {
+    expect(queueEmptyKind({ ...base, crmStatus: "missing", orgLeadCount: 0 })).toBe("no_leads");
+    expect(queueEmptyKind({ ...base, crmStatus: "inactive", orgLeadCount: 0 })).toBe("no_leads");
     expect(queueEmptyKind({ ...base, crmStatus: "active", orgLeadCount: 0 })).toBe("no_leads");
     expect(queueEmptyKind({ ...base, crmStatus: "broken", orgLeadCount: 0 })).toBe("broken");
   });

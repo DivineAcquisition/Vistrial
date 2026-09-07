@@ -30,7 +30,7 @@ export type HubCard = {
   connect: HubConnect;
   /** An address the user pastes into the other product, once connected. */
   webhookUrl: string | null;
-  /** Only the CRM. Without it there is no product. */
+  /** Optional. The workspace stores people itself. */
   required: boolean;
   /** Source kind for the connect/disconnect actions. Null for the CRM. */
   kind: SourceKind | null;
@@ -48,13 +48,13 @@ export type CrmHubInput = {
 export const CRM_HUB_ID = "leadconnector";
 
 export const CRM_SUMMARY =
-  "Your CRM. Vistrial reads people, calls, and appointments from it and sends through it.";
+  "Optional. Vistrial stores people in this workspace without it. Connect to sync and send through GoHighLevel.";
 
 export function airtableHubCard(): HubCard {
   return {
     id: "airtable",
     title: "Airtable",
-    summary: "Bring people and notes from Airtable into this workspace.",
+    summary: "Optional. Forsight already reads this workspace. Connect Airtable if you keep ads and pipeline there.",
     status: "unavailable",
     statusLabel: "Coming next",
     accountLabel: null,
@@ -63,7 +63,7 @@ export function airtableHubCard(): HubCard {
     webhookUrl: null,
     required: false,
     kind: null,
-    note: "Airtable connecting is next. Connect GoHighLevel today.",
+    note: "Airtable connecting is next. Vistrial already stores people and metrics here.",
   };
 }
 
@@ -99,7 +99,7 @@ export function crmHubCard(input: CrmHubInput): HubCard {
       ? { mode: "redirect", href: "/api/leadconnector/oauth/start" }
       : { mode: "unavailable" },
     webhookUrl: null,
-    required: true,
+      required: false,
     kind: null,
     note: input.oauthConfigured
       ? input.status === "broken"

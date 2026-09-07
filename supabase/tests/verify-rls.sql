@@ -208,7 +208,43 @@ BEGIN
     RAISE EXCEPTION 'unassigned setter inserted a readiness_scores row';
   END IF;
 
+  INSERT INTO public.leads (org_id, first_name, email, source, status)
+  VALUES (
+    '22222222-2222-4222-8222-222222222222',
+    'Native',
+    'native.lead@example.com',
+    'vistrial',
+    'new'
+  );
+
+  v_denied := false;
+  BEGIN
+    INSERT INTO public.leads (org_id, first_name, status)
+    VALUES (
+      '66666666-6666-4666-8666-666666666666',
+      'CrossOrg',
+      'new'
+    );
+  EXCEPTION
+    WHEN insufficient_privilege THEN
+      v_denied := true;
+    WHEN OTHERS THEN
+      v_denied := true;
+  END;
+  IF NOT v_denied THEN
+    RAISE EXCEPTION 'setter inserted a lead into another organization';
+  END IF;
+
   RESET ROLE;
+
+  IF NOT EXISTS (
+    SELECT 1 FROM public.leads
+    WHERE org_id = '22222222-2222-4222-8222-222222222222'
+      AND email = 'native.lead@example.com'
+      AND source = 'vistrial'
+  ) THEN
+    RAISE EXCEPTION 'setter could not store a native lead in their workspace';
+  END IF;
 
   SELECT status INTO v_status
   FROM public.leads

@@ -79,56 +79,66 @@ describe("settings IA", () => {
 });
 
 describe("Forsight and the client portal", () => {
-  it("puts Forsight, Portal, To call, and More in the sidebar map", () => {
-    expect(PRIMARY_NAV.map((item) => item.label)).toEqual(["Forsight", "Portal", "To call", "More"]);
+  it("puts Forsight, To call, People, and Settings in the sidebar map", () => {
+    expect(PRIMARY_NAV.map((item) => item.label)).toEqual(["Forsight", "To call", "People", "Settings"]);
     expect(PRIMARY_NAV.map((item) => item.href)).toEqual([
       FORSIGHT_PATH,
-      "/portal",
       "/app/queue",
-      "/app/more",
+      "/app/cases",
+      "/app/settings",
     ]);
   });
 
-  it("shows the owner Forsight and Portal, and the setter the list", () => {
+  it("shows the owner Forsight and People, and the setter the list", () => {
     const forsight = PRIMARY_NAV.find((item) => item.href === FORSIGHT_PATH);
-    const portal = PRIMARY_NAV.find((item) => item.href === "/portal");
+    const people = PRIMARY_NAV.find((item) => item.href === "/app/cases");
     const list = PRIMARY_NAV.find((item) => item.href === "/app/queue");
-    if (!forsight || !portal || !list) throw new Error("missing primary nav");
+    const settings = PRIMARY_NAV.find((item) => item.href === "/app/settings");
+    if (!forsight || !people || !list || !settings) throw new Error("missing primary nav");
     expect(navVisibleTo(forsight, "owner")).toBe(true);
     expect(navVisibleTo(forsight, "admin")).toBe(true);
     expect(navVisibleTo(forsight, "setter")).toBe(false);
-    expect(navVisibleTo(portal, "owner")).toBe(true);
-    expect(navVisibleTo(portal, "setter")).toBe(false);
+    expect(navVisibleTo(people, "owner")).toBe(true);
+    expect(navVisibleTo(people, "setter")).toBe(true);
     expect(navVisibleTo(list, "setter")).toBe(true);
     expect(navVisibleTo(list, "closer")).toBe(true);
     expect(navVisibleTo(list, "owner")).toBe(false);
     expect(navVisibleTo(list, "admin")).toBe(false);
+    expect(navVisibleTo(settings, "owner")).toBe(true);
+    expect(navVisibleTo(settings, "setter")).toBe(true);
   });
 
-  it("does not put the door destinations or ops in the sidebar", () => {
+  it("keeps Portal and More off the rail", () => {
+    const hrefs = PRIMARY_NAV.map((item) => item.href);
+    expect(hrefs).not.toContain("/portal");
+    expect(hrefs).not.toContain("/app/more");
+    expect(PRIMARY_NAV.map((item) => item.label)).not.toContain("More");
+    expect(PRIMARY_NAV.map((item) => item.label)).not.toContain("Portal");
+  });
+
+  it("does not put the quieter tools or ops in the sidebar", () => {
     const hrefs = PRIMARY_NAV.map((item) => item.href);
     expect(hrefs).not.toContain("/app/ops");
     expect(hrefs).not.toContain("/app/log");
-    expect(hrefs).not.toContain("/app/cases");
     expect(hrefs).not.toContain("/app/calls");
     expect(hrefs).not.toContain("/app/coaching");
     expect(hrefs).not.toContain("/app/activity");
     expect(hrefs).not.toContain("/app/reporting");
-    expect(hrefs).not.toContain("/app/settings");
     expect(PRIMARY_NAV.map((item) => item.label)).not.toContain("Operator");
     expect(PRIMARY_NAV.map((item) => item.label)).not.toContain("Queue");
     expect(PRIMARY_NAV.map((item) => item.label)).not.toContain("Report");
     expect(PRIMARY_NAV.map((item) => item.label)).not.toContain("Tracking");
   });
 
-  it("keeps the list behind More for the owner, who does not work leads", () => {
+  it("keeps the list jumpable for the owner, who does not work leads from the rail", () => {
     const list = MORE_NAV.find((item) => item.href === "/app/queue");
-    if (!list) throw new Error("To call missing from More");
+    if (!list) throw new Error("To call missing from jump destinations");
     expect(navVisibleTo(list, "owner")).toBe(true);
   });
 
-  it("keeps People, Calls, and Settings on the client door, and parks the rest", () => {
+  it("keeps Portal, the list, What happened, People, Calls, and Settings jumpable, and parks the rest", () => {
     expect(MORE_NAV.filter((item) => !item.platformAdminOnly).map((item) => item.href)).toEqual([
+      "/portal",
       "/app/queue",
       "/app/log",
       "/app/cases",

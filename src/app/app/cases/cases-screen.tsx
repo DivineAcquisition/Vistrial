@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useState } from "react";
 
 import { CasesFilters } from "@/app/app/cases/cases-filters";
+import { AddPersonDialog } from "@/app/app/cases/add-person-dialog";
 import { refreshCaseList } from "@/app/app/cases/actions";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -46,10 +47,12 @@ export function CasesScreen({
   initial,
   filters,
   canOpenIntegrations,
+  canCreateLeads,
 }: {
   initial: CaseListPayload;
   filters: CaseListFilters;
   canOpenIntegrations: boolean;
+  canCreateLeads: boolean;
 }) {
   const [rows, setRows] = useState(initial.rows);
   const [hasMore, setHasMore] = useState(initial.hasMore);
@@ -65,6 +68,7 @@ export function CasesScreen({
         : "not_connected"
       : null;
 
+  const addPerson = canCreateLeads ? <AddPersonDialog /> : null;
   const integrations = canOpenIntegrations ? (
     <Button variant="secondary" size="sm" render={<Link href="/app/settings/integrations" />}>
       Open integrations
@@ -106,9 +110,9 @@ export function CasesScreen({
       {connectionBanner === "not_connected" ? (
         <div className="mb-8">
           <EmptyState
-            kind="unconfigured"
-            title="The CRM is not connected"
-            detail="New people will not land until your CRM is linked. People already in this workspace are still listed below."
+            kind="empty"
+            title="People in this workspace live in Vistrial"
+            detail="GoHighLevel is not connected. New people can still be added here. Connect a CRM later to sync and send."
             action={integrations}
           />
         </div>
@@ -116,10 +120,11 @@ export function CasesScreen({
 
       {emptyKind === "not_connected" ? (
         <EmptyState
-          kind="unconfigured"
-          title="People appear after the CRM is connected"
-          detail="Each new person will show up here. This list stays empty until your CRM is connected."
-          action={integrations}
+          kind="empty"
+          title="No one yet"
+          detail="Vistrial stores people in this workspace. Add someone, or connect a CRM to sync them in."
+          action={addPerson}
+          secondaryAction={integrations}
         />
       ) : null}
 
@@ -127,7 +132,7 @@ export function CasesScreen({
         <EmptyState
           kind="unconfigured"
           title="People cannot load while the CRM connection is broken"
-          detail="Your CRM is linked but the connection is broken. Reconnect in More, then Settings, then Integrations. This is not an empty list."
+          detail="Your CRM is linked but the connection is broken. Reconnect in Settings, then Integrations. This is not an empty list."
           action={integrations}
         />
       ) : null}
@@ -136,7 +141,8 @@ export function CasesScreen({
         <EmptyState
           kind="empty"
           title="No one yet"
-          detail="The CRM is connected. People will appear here when they arrive. There is nothing to open yet."
+          detail="Add a person to this workspace, or connect a CRM to sync them in. There is nothing to open yet."
+          action={addPerson}
         />
       ) : null}
 

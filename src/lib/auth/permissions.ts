@@ -9,6 +9,7 @@ const ROLE_PERMISSIONS = {
   viewRevenue: ["owner", "admin"],
   manageOrgSettings: ["owner", "admin"],
   assignLeads: ["owner", "admin"],
+  createLeads: ["owner", "admin", "closer", "setter"],
   workQueue: ["owner", "admin", "closer", "setter"],
 } as const satisfies Record<string, readonly OrgRole[]>;
 
@@ -37,6 +38,11 @@ export function canManageOrgSettings(role: OrgRole, isPlatformAdmin = false): bo
 
 export function canAssignLeads(role: OrgRole, isPlatformAdmin = false): boolean {
   return hasPermission(role, "assignLeads", isPlatformAdmin);
+}
+
+/** Anyone who works the list may add a person when no CRM is feeding this workspace. */
+export function canCreateLeads(role: OrgRole, isPlatformAdmin = false): boolean {
+  return hasPermission(role, "createLeads", isPlatformAdmin);
 }
 
 /** Anyone may assign a lead to themselves. Only owner/admin may assign to others. */

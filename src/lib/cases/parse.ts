@@ -121,7 +121,6 @@ export function caseListEmptyKind(
 ): CaseListEmptyKind | null {
   if (payload.orgLeadCount === 0) {
     if (payload.crmStatus === "broken") return "broken";
-    if (payload.crmStatus === "missing" || payload.crmStatus === "inactive") return "not_connected";
     return "no_leads";
   }
   if (payload.rows.length === 0 && caseListHasConstraints(filters)) return "no_results";

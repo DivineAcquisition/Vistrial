@@ -13,7 +13,7 @@ describe("operator sidebar", () => {
     expect(shell).not.toMatch(/PanelLeftClose|PanelLeftOpen/);
   });
 
-  it("renders a branded header, grouped nav, and a rail", () => {
+  it("renders a branded header, a flat nav, and a rail", () => {
     const sidebar = readFileSync(
       path.join(process.cwd(), "src/components/app/app-sidebar.tsx"),
       "utf8",
@@ -32,9 +32,9 @@ describe("operator sidebar", () => {
     );
     expect(nav).toContain("SidebarMenuButton");
     expect(nav).toContain("isActive={active}");
-    expect(nav).toContain("SidebarGroupLabel");
-    expect(nav).toContain(">Now<");
-    expect(nav).toContain(">More<");
+    expect(nav).not.toContain("SidebarGroupLabel");
+    expect(nav).not.toContain(">Now<");
+    expect(nav).not.toContain(">More<");
     expect(nav).not.toContain("bg-brand-950");
   });
 });

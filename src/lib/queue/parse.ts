@@ -132,7 +132,6 @@ export function parseQueuePayload(value: unknown): QueuePayload {
 export function queueEmptyKind(payload: QueuePayload): import("@/lib/queue/types").QueueEmptyKind | null {
   if (payload.orgLeadCount === 0) {
     if (payload.crmStatus === "broken") return "broken";
-    if (payload.crmStatus === "missing" || payload.crmStatus === "inactive") return "not_connected";
     return "no_leads";
   }
   if (payload.unfilteredActionableCount === 0 && payload.alarm.length === 0 && payload.pendingDrafts.length === 0) {

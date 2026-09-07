@@ -6,7 +6,7 @@ import { getAuthContext, toClientOrgState } from "@/lib/auth/session";
 import { canWorkOperatorApp } from "@/lib/auth/permissions";
 import { requirePortalAccess } from "@/lib/portal/access";
 import { APP_NAME } from "@/lib/constants";
-import { FORSIGHT_PATH, MORE_PATH } from "@/lib/navigation";
+import { FORSIGHT_PATH } from "@/lib/navigation";
 import Link from "next/link";
 
 export const dynamic = "force-dynamic";
@@ -42,8 +42,8 @@ export default async function PortalLayout({ children }: { children: React.React
                   <Link href={FORSIGHT_PATH} className="text-sm text-silver hover:text-card-foreground">
                     Forsight
                   </Link>
-                  <Link href={MORE_PATH} className="text-sm text-silver hover:text-card-foreground">
-                    More
+                  <Link href="/app/cases" className="text-sm text-silver hover:text-card-foreground">
+                    People
                   </Link>
                 </nav>
               ) : null}

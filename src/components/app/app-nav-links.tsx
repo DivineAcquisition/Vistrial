@@ -20,11 +20,9 @@ import { useOrg } from "@/components/app/org-provider";
 import {
   SidebarGroup,
   SidebarGroupContent,
-  SidebarGroupLabel,
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
-  SidebarSeparator,
   useSidebar,
 } from "@/components/ui/sidebar";
 import {
@@ -92,8 +90,6 @@ export function AppNavLinks({ onNavigate }: { onNavigate?: () => void }) {
   const { role, isPlatformAdmin } = useOrg();
 
   const visible = PRIMARY_NAV.filter((item) => navVisibleTo(item, role, isPlatformAdmin));
-  const now = visible.filter((item) => item.group === "front");
-  const more = visible.filter((item) => item.group === "door");
 
   function handleNavigate() {
     setOpenMobile(false);
@@ -103,22 +99,10 @@ export function AppNavLinks({ onNavigate }: { onNavigate?: () => void }) {
   return (
     <nav aria-label="Main">
       <SidebarGroup>
-        <SidebarGroupLabel>Now</SidebarGroupLabel>
         <SidebarGroupContent>
-          <NavItems items={now} onNavigate={handleNavigate} />
+          <NavItems items={visible} onNavigate={handleNavigate} />
         </SidebarGroupContent>
       </SidebarGroup>
-      {more.length > 0 ? (
-        <>
-          <SidebarSeparator />
-          <SidebarGroup>
-            <SidebarGroupLabel>More</SidebarGroupLabel>
-            <SidebarGroupContent>
-              <NavItems items={more} onNavigate={handleNavigate} />
-            </SidebarGroupContent>
-          </SidebarGroup>
-        </>
-      ) : null}
     </nav>
   );
 }

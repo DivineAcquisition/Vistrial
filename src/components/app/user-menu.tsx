@@ -15,7 +15,6 @@ import {
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useOrg } from "@/components/app/org-provider";
 import { initials } from "@/lib/format";
-import { FORSIGHT_PATH } from "@/lib/navigation";
 import { cn } from "@/lib/utils";
 
 export function UserMenu({
@@ -79,21 +78,15 @@ export function UserMenu({
           </MenuGroupLabel>
         </MenuGroup>
         <MenuSeparator />
-        {role === "owner" || role === "admin" || isPlatformAdmin ? (
-          <MenuLinkItem render={<Link href="/portal" />}>Portal</MenuLinkItem>
-        ) : null}
-        {surfaceAccess === "portal" ? null : role === "owner" || role === "admin" || isPlatformAdmin ? (
-          <MenuLinkItem render={<Link href={FORSIGHT_PATH} />}>Forsight</MenuLinkItem>
-        ) : null}
-        {surfaceAccess === "portal" ? null : (
-          <MenuLinkItem render={<Link href="/app/more" />}>More</MenuLinkItem>
-        )}
-        {isPlatformAdmin ? (
-          <MenuLinkItem render={<Link href="/app/ops" />}>System</MenuLinkItem>
-        ) : null}
         {surfaceAccess === "portal" ? null : (
           <MenuLinkItem render={<Link href="/app/settings/profile" />}>You</MenuLinkItem>
         )}
+        {role === "owner" || role === "admin" || isPlatformAdmin ? (
+          <MenuLinkItem render={<Link href="/portal" />}>Portal</MenuLinkItem>
+        ) : null}
+        {isPlatformAdmin ? (
+          <MenuLinkItem render={<Link href="/app/ops" />}>System</MenuLinkItem>
+        ) : null}
         <MenuLinkItem render={<Link href="/auth/signout" />}>Sign out</MenuLinkItem>
       </MenuPopup>
     </Menu>

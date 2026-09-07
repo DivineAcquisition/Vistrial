@@ -83,6 +83,34 @@ describe("extraction parse", () => {
     expect(parsed.summary).toBeNull();
   });
 
+  it("keeps nothing from a call the prospect never spoke on", () => {
+    const monologue = [
+      "Setter: Hi, this is Dana calling about the application.",
+      "Setter: Hello? I think you might be on mute.",
+      "Setter: I'll try you again tomorrow.",
+    ].join("\n");
+    const parsed = parseExtraction(
+      {
+        summary: "Prospect said timing is tight and budget is approved.",
+        budget_signal: { state: "present", text: "budget is approved" },
+        timeline_signal: { state: "present", text: "timing is tight" },
+        decision_process: { state: "present", text: "she signs off herself" },
+        next_step_agreed: { state: "present", text: "call back tomorrow" },
+        quotes: [
+          { text: "Timing is tight for us right now", topic: "timeline" },
+          { text: "The budget is already approved", topic: "budget" },
+        ],
+        objections: [{ type: "price", verbatim: "That is more than we planned to spend." }],
+      },
+      monologue
+    );
+    expect(parsed.quotes).toEqual([]);
+    expect(parsed.objections).toEqual([]);
+    expect(parsed.budgetSignal).toEqual({ state: "absent", text: null });
+    expect(parsed.timelineSignal).toEqual({ state: "absent", text: null });
+    expect(parsed.decisionProcess).toEqual({ state: "absent", text: null });
+  });
+
   it("does not keep invented content from a garbled transcript", () => {
     const garbled = "rrrr [inaudible] kkhh ... mm  [unclear]";
     const parsed = parseExtraction(

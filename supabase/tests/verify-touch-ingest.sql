@@ -45,7 +45,7 @@ VALUES (
 DO $$
 DECLARE
   v_org uuid := '22222222-2222-4222-8222-222222222222';
-  v_lead uuid := 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaa10';
+  v_lead uuid := 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaa1e';
   v_event uuid;
   v_seconds integer;
   v_n integer;

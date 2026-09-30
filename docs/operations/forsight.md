@@ -1,10 +1,17 @@
 # Forsight
 
-Forsight is Vistrial's tracking and metrics section: applications, qualified leads, booked calls, held calls, closed revenue, and what each of them costs, per workspace, week over week. This document covers the foundation only — routing, tenancy, sources, and credentials. No metrics render yet.
+Forsight is the metrics layer **inside Stellar**. It reports what happened
+(activity, outcomes where a placement has them, spend where relevant). It does
+not decide what should happen next, and it does not own Stellar's setter log,
+client agreement, payment, or build-progress surfaces.
+
+The governing constraint is [`docs/STELLAR.md`](../STELLAR.md) (Prompt S0).
+This document covers how Forsight is built in this repo: routing, tenancy,
+sources, and credentials.
 
 ## What Forsight is not
 
-It does not own data and does not calculate anything its sources do not already calculate. It is a display layer over external sources.
+It does not own data and does not calculate anything its sources do not already calculate. It is a display layer over external sources. It does not score readiness, extract from transcripts, or draft follow-up. Those belong to core Vistrial at `app.vistrial.io`.
 
 It performs exactly one write *to a source*, described under [The spend sync](#the-spend-sync). Generated monthly reports are written to our own `forsight_reports` table and never back to Airtable, Meta, or GHL. Everything else is read-only, and that should stay true.
 

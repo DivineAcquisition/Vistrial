@@ -2382,6 +2382,7 @@ export type Database = {
           processor: string | null;
           processor_ref: string | null;
           kind: Database["public"]["Enums"]["revenue_kind"];
+          lifecycle: Database["public"]["Enums"]["revenue_lifecycle"] | null;
         };
         Insert: {
           amount_cents: number;
@@ -2396,6 +2397,7 @@ export type Database = {
           processor?: string | null;
           processor_ref?: string | null;
           kind?: Database["public"]["Enums"]["revenue_kind"];
+          lifecycle?: Database["public"]["Enums"]["revenue_lifecycle"] | null;
         };
         Update: {
           amount_cents?: number;
@@ -2410,6 +2412,7 @@ export type Database = {
           processor?: string | null;
           processor_ref?: string | null;
           kind?: Database["public"]["Enums"]["revenue_kind"];
+          lifecycle?: Database["public"]["Enums"]["revenue_lifecycle"] | null;
         };
         Relationships: [
           {
@@ -4744,6 +4747,243 @@ export type Database = {
         };
         Relationships: [];
       };
+      approval_action_types: {
+        Row: {
+          action_type: string;
+          area: string;
+          reaches_people: boolean;
+          default_mode: string;
+          created_at: string;
+        };
+        Insert: {
+          action_type: string;
+          area: string;
+          reaches_people: boolean;
+          default_mode: string;
+          created_at?: string;
+        };
+        Update: {
+          action_type?: string;
+          area?: string;
+          reaches_people?: boolean;
+          default_mode?: string;
+          created_at?: string;
+        };
+        Relationships: [];
+      };
+      approval_gate_settings: {
+        Row: {
+          org_id: string;
+          quiet_hours_start: string;
+          quiet_hours_end: string;
+          daily_send_limit_per_lead: number;
+          queue_wait_limit_minutes: number;
+          reviewed_at: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          org_id: string;
+          quiet_hours_start?: string;
+          quiet_hours_end?: string;
+          daily_send_limit_per_lead?: number;
+          queue_wait_limit_minutes?: number;
+          reviewed_at?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          org_id?: string;
+          quiet_hours_start?: string;
+          quiet_hours_end?: string;
+          daily_send_limit_per_lead?: number;
+          queue_wait_limit_minutes?: number;
+          reviewed_at?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
+      approval_gate_actions: {
+        Row: {
+          org_id: string;
+          action_type: string;
+          mode: string;
+          approver: string;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          org_id: string;
+          action_type: string;
+          mode: string;
+          approver: string;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          org_id?: string;
+          action_type?: string;
+          mode?: string;
+          approver?: string;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
+      approval_gate_changes: {
+        Row: {
+          id: string;
+          org_id: string;
+          created_at: string;
+          actor_member_id: string | null;
+          actor_user_id: string | null;
+          actor_label: string;
+          action_type: string | null;
+          field: string;
+          from_value: string | null;
+          to_value: string | null;
+        };
+        Insert: {
+          id?: string;
+          org_id: string;
+          created_at?: string;
+          actor_member_id?: string | null;
+          actor_user_id?: string | null;
+          actor_label: string;
+          action_type?: string | null;
+          field: string;
+          from_value?: string | null;
+          to_value?: string | null;
+        };
+        Update: {
+          id?: string;
+          org_id?: string;
+          created_at?: string;
+          actor_member_id?: string | null;
+          actor_user_id?: string | null;
+          actor_label?: string;
+          action_type?: string | null;
+          field?: string;
+          from_value?: string | null;
+          to_value?: string | null;
+        };
+        Relationships: [];
+      };
+      approval_items: {
+        Row: {
+          id: string;
+          org_id: string;
+          area: string;
+          kind: string;
+          action_type: string;
+          status: string;
+          urgency: number;
+          title: string;
+          preview: string | null;
+          reason: string | null;
+          lead_ids: string[];
+          assigned_member_id: string | null;
+          drafts: Json;
+          run_mode: string | null;
+          decided_by_member_id: string | null;
+          decided_at: string | null;
+          dismiss_reason: string | null;
+          failure_reason: string | null;
+          attempt_count: number;
+          escalated_at: string | null;
+          dedupe_key: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          org_id: string;
+          area?: string;
+          kind: string;
+          action_type: string;
+          status?: string;
+          urgency?: number;
+          title: string;
+          preview?: string | null;
+          reason?: string | null;
+          lead_ids?: string[];
+          assigned_member_id?: string | null;
+          drafts?: Json;
+          run_mode?: string | null;
+          decided_by_member_id?: string | null;
+          decided_at?: string | null;
+          dismiss_reason?: string | null;
+          failure_reason?: string | null;
+          attempt_count?: number;
+          escalated_at?: string | null;
+          dedupe_key?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          org_id?: string;
+          area?: string;
+          kind?: string;
+          action_type?: string;
+          status?: string;
+          urgency?: number;
+          title?: string;
+          preview?: string | null;
+          reason?: string | null;
+          lead_ids?: string[];
+          assigned_member_id?: string | null;
+          drafts?: Json;
+          run_mode?: string | null;
+          decided_by_member_id?: string | null;
+          decided_at?: string | null;
+          dismiss_reason?: string | null;
+          failure_reason?: string | null;
+          attempt_count?: number;
+          escalated_at?: string | null;
+          dedupe_key?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
+      agent_events: {
+        Row: {
+          id: string;
+          org_id: string;
+          lead_id: string | null;
+          actor: string;
+          occurred_at: string;
+          input: Json;
+          output: Json;
+          action_taken: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          org_id: string;
+          lead_id?: string | null;
+          actor: string;
+          occurred_at?: string;
+          input?: Json;
+          output?: Json;
+          action_taken?: string | null;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          org_id?: string;
+          lead_id?: string | null;
+          actor?: string;
+          occurred_at?: string;
+          input?: Json;
+          output?: Json;
+          action_taken?: string | null;
+          created_at?: string;
+        };
+        Relationships: [];
+      };
     };
     Views: {
       queue_rows: {
@@ -5036,6 +5276,28 @@ export type Database = {
       };
     };
     Functions: {
+      approval_gate_mode: {
+        Args: { p_org_id: string; p_action_type: string };
+        Returns: string;
+      };
+      set_approval_gate_action: {
+        Args: { p_org_id: string; p_action_type: string; p_mode: string; p_approver: string };
+        Returns: undefined;
+      };
+      set_approval_gate_limits: {
+        Args: {
+          p_org_id: string;
+          p_quiet_hours_start: string;
+          p_quiet_hours_end: string;
+          p_daily_send_limit_per_lead: number;
+          p_queue_wait_limit_minutes: number;
+        };
+        Returns: undefined;
+      };
+      mark_approval_gate_reviewed: {
+        Args: { p_org_id: string; p_skipped: boolean };
+        Returns: undefined;
+      };
       redeem_org_invite: {
         Args: { p_token: string; p_user_id: string };
         Returns: Json;
@@ -5767,6 +6029,7 @@ export type Database = {
       forsight_report_actor: "scheduled" | "operator";
       forsight_sync_status: "running" | "succeeded" | "failed";
       revenue_kind: "sale" | "refund" | "chargeback" | "failed";
+      revenue_lifecycle: "new" | "repeat" | "recurring" | "reactivation";
       source_kind:
         | "meta_ads"
         | "google_ads"

@@ -4,6 +4,7 @@ import {
   ADVANCED_SETTINGS_PAGES,
   DA_CONSOLE_LINKS,
   FORSIGHT_PATH,
+  HOME_PATH,
   MORE_NAV,
   PRIMARY_NAV,
   SETTINGS_TABS,
@@ -12,18 +13,30 @@ import {
   landingPath,
   navVisibleTo,
   settingsTabActiveHref,
+  settingsTabsVisibleTo,
 } from "@/lib/navigation";
 
 describe("settings IA", () => {
-  it("keeps day-to-day tabs to You, Notifications, Workspace, People, Integrations, and Advanced", () => {
+  it("keeps day-to-day tabs to You, Notifications, Workspace, People, Approvals, Integrations, and Advanced", () => {
     expect(SETTINGS_TABS.map((tab) => tab.label)).toEqual([
       "You",
       "Notifications",
       "Workspace",
       "People",
+      "Approvals",
       "Integrations",
       "Advanced",
     ]);
+  });
+
+  it("shows Approvals to owners only", () => {
+    const labels = (role: "owner" | "admin" | "setter", platformAdmin = false) =>
+      settingsTabsVisibleTo(role, platformAdmin).map((tab) => tab.label);
+    expect(labels("owner")).toContain("Approvals");
+    expect(labels("admin")).not.toContain("Approvals");
+    expect(labels("admin")).toContain("Workspace");
+    expect(labels("setter")).toEqual(["You", "Notifications"]);
+    expect(labels("admin", true)).toContain("Approvals");
   });
 
   it("does not put scoring, follow-up, data, or business on the main tabs", () => {
@@ -79,9 +92,10 @@ describe("settings IA", () => {
 });
 
 describe("Forsight and the client portal", () => {
-  it("puts Forsight, To call, People, and Settings in the sidebar map", () => {
-    expect(PRIMARY_NAV.map((item) => item.label)).toEqual(["Forsight", "To call", "People", "Settings"]);
+  it("puts Home, Forsight, To call, People, and Settings in the sidebar map", () => {
+    expect(PRIMARY_NAV.map((item) => item.label)).toEqual(["Home", "Forsight", "To call", "People", "Settings"]);
     expect(PRIMARY_NAV.map((item) => item.href)).toEqual([
+      HOME_PATH,
       FORSIGHT_PATH,
       "/app/queue",
       "/app/cases",
@@ -165,10 +179,19 @@ describe("Forsight and the client portal", () => {
     expect(DA_CONSOLE_LINKS.map((item) => item.href)).toContain(`${FORSIGHT_PATH}/workspaces`);
   });
 
-  it("lands the owner and admin on Forsight, and everyone who works leads on the list", () => {
+  it("shows Home to everyone who works in the app", () => {
+    const home = PRIMARY_NAV.find((item) => item.href === HOME_PATH);
+    if (!home) throw new Error("missing Home");
+    expect(navVisibleTo(home, "owner")).toBe(true);
+    expect(navVisibleTo(home, "admin")).toBe(true);
+    expect(navVisibleTo(home, "setter")).toBe(true);
+    expect(navVisibleTo(home, "closer")).toBe(true);
+  });
+
+  it("lands the owner and admin on Home, and everyone who works leads on the list", () => {
     expect(landingPath("portal", "owner")).toBe("/portal");
-    expect(landingPath("operator", "owner")).toBe(FORSIGHT_PATH);
-    expect(landingPath("operator", "admin")).toBe(FORSIGHT_PATH);
+    expect(landingPath("operator", "owner")).toBe(HOME_PATH);
+    expect(landingPath("operator", "admin")).toBe(HOME_PATH);
     expect(landingPath("operator", "setter")).toBe("/app/queue");
     expect(landingPath("operator", "closer")).toBe("/app/queue");
   });

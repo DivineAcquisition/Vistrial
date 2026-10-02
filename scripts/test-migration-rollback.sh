@@ -599,3 +599,26 @@ if [[ "$(echo "$fn_list17" | tr -d ' ')" != "1" ]]; then
 fi
 
 echo "OK: case-file MVP migration rollback and re-apply succeeded."
+
+echo "Rollback home screen (approval tables gone)..."
+run "${ROOT}/supabase/rollbacks/20261002010000_home_screen.sql"
+tbl_home="$("${PSQL[@]}" -d "${DB_NAME}" -tAc "SELECT count(*) FROM information_schema.tables WHERE table_schema='public' AND table_name IN ('approval_items','approval_gate_actions','approval_gate_settings','approval_gate_changes','approval_action_types')")"
+if [[ "$(echo "$tbl_home" | tr -d ' ')" != "0" ]]; then
+  echo "home screen rollback left approval tables in place" >&2
+  exit 1
+fi
+fn_home="$("${PSQL[@]}" -d "${DB_NAME}" -tAc "SELECT count(*) FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace WHERE n.nspname='public' AND p.proname='set_approval_gate_action'")"
+if [[ "$(echo "$fn_home" | tr -d ' ')" != "0" ]]; then
+  echo "home screen rollback left set_approval_gate_action in place" >&2
+  exit 1
+fi
+
+echo "Re-apply home screen..."
+run "${ROOT}/supabase/migrations/20261002010000_home_screen.sql"
+tbl_home="$("${PSQL[@]}" -d "${DB_NAME}" -tAc "SELECT count(*) FROM information_schema.tables WHERE table_schema='public' AND table_name IN ('approval_items','approval_gate_actions','approval_gate_settings','approval_gate_changes','approval_action_types')")"
+if [[ "$(echo "$tbl_home" | tr -d ' ')" != "5" ]]; then
+  echo "re-apply did not restore the approval tables" >&2
+  exit 1
+fi
+
+echo "OK: home screen migration rollback and re-apply succeeded."

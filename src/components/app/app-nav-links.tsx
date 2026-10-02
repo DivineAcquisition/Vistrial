@@ -9,6 +9,7 @@ import {
   Ellipsis,
   FolderOpen,
   Gauge,
+  House,
   ListChecks,
   Phone,
   Settings2,
@@ -34,6 +35,7 @@ import {
 } from "@/lib/navigation";
 
 const ICONS: Record<NavIcon, LucideIcon> = {
+  home: House,
   queue: ListChecks,
   log: ClipboardList,
   cases: FolderOpen,

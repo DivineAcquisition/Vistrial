@@ -599,3 +599,21 @@ if [[ "$(echo "$fn_list17" | tr -d ' ')" != "1" ]]; then
 fi
 
 echo "OK: case-file MVP migration rollback and re-apply succeeded."
+
+echo "Rollback Sales OS agent (sales_os_* tables gone)..."
+run "${ROOT}/supabase/rollbacks/20261003010000_sales_os_agent.sql"
+tbl_sos="$("${PSQL[@]}" -d "${DB_NAME}" -tAc "SELECT count(*) FROM information_schema.tables WHERE table_schema='public' AND table_name LIKE 'sales_os_%'")"
+if [[ "$(echo "$tbl_sos" | tr -d ' ')" != "0" ]]; then
+  echo "Sales OS rollback left sales_os_* tables in place" >&2
+  exit 1
+fi
+
+echo "Re-apply Sales OS agent..."
+run "${ROOT}/supabase/migrations/20261003010000_sales_os_agent.sql"
+tbl_sos="$("${PSQL[@]}" -d "${DB_NAME}" -tAc "SELECT count(*) FROM information_schema.tables WHERE table_schema='public' AND table_name LIKE 'sales_os_%'")"
+if [[ "$(echo "$tbl_sos" | tr -d ' ')" != "9" ]]; then
+  echo "re-apply did not restore the nine sales_os_* tables" >&2
+  exit 1
+fi
+
+echo "OK: Sales OS agent migration rollback and re-apply succeeded."

@@ -4,18 +4,6 @@ const SENSITIVE_KEY =
 const SENSITIVE_FRAGMENT =
   /(access_token|refresh_token|client_secret|authorization|bearer )/i;
 
-// Slack, Discord, and Google credentials (and our own ciphertext) by shape,
-// so one that lands in a value under an innocent key is still caught.
-const CREDENTIAL_SHAPE = [
-  /xox[abposr]-[A-Za-z0-9-]{8,}/,
-  /xapp-[A-Za-z0-9-]{8,}/,
-  /ya29\.[A-Za-z0-9_-]{16,}/,
-  /1\/\/[A-Za-z0-9_-]{30,}/,
-  /AIza[0-9A-Za-z_-]{30,}/,
-  /[MNO][A-Za-z\d]{23,27}\.[\w-]{6}\.[\w-]{25,}/,
-  /\bv1\.[A-Za-z0-9+/=]{12,}\.[A-Za-z0-9+/=]{12,}\.[A-Za-z0-9+/=]{4,}/,
-];
-
 export function isSensitiveKey(key: string): boolean {
   return SENSITIVE_KEY.test(key);
 }
@@ -23,9 +11,7 @@ export function isSensitiveKey(key: string): boolean {
 function redactUnknown(value: unknown, depth: number): unknown {
   if (depth > 8) return "[truncated]";
   if (typeof value === "string") {
-    if (SENSITIVE_FRAGMENT.test(value) || CREDENTIAL_SHAPE.some((pattern) => pattern.test(value))) {
-      return "[redacted]";
-    }
+    if (SENSITIVE_FRAGMENT.test(value)) return "[redacted]";
     return value.length > 240 ? `${value.slice(0, 240)}…` : value;
   }
   if (value === null || value === undefined) return value;
@@ -46,5 +32,5 @@ export function redactForLog(value: unknown): unknown {
 }
 
 export function assertNoSecrets(text: string): boolean {
-  return !SENSITIVE_FRAGMENT.test(text) && !CREDENTIAL_SHAPE.some((pattern) => pattern.test(text));
+  return !SENSITIVE_FRAGMENT.test(text);
 }

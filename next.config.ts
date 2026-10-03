@@ -2,14 +2,13 @@ import type { NextConfig } from "next";
 
 const ContentSecurityPolicy = [
   "default-src 'self'",
-  // apis.google.com and gstatic: Google's folder picker, used only on the Drive connection card.
-  "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://apis.google.com https://www.gstatic.com",
+  "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
   "worker-src 'self'",
   "style-src 'self' 'unsafe-inline'",
   "img-src 'self' data: blob: https:",
   "font-src 'self' data:",
-  "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://www.google.com https://www.googleapis.com https://apis.google.com http://127.0.0.1:54321 http://localhost:54321 ws://127.0.0.1:54321 ws://localhost:54321",
-  "frame-src 'self' https://link.msgsndr.com https://*.leadconnectorhq.com https://*.msgsndr.com https://docs.google.com https://content.googleapis.com",
+  "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://www.google.com https://www.googleapis.com http://127.0.0.1:54321 http://localhost:54321 ws://127.0.0.1:54321 ws://localhost:54321",
+  "frame-src 'self' https://link.msgsndr.com https://*.leadconnectorhq.com https://*.msgsndr.com",
   "frame-ancestors 'none'",
   "base-uri 'self'",
   "form-action 'self'",

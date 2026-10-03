@@ -2,15 +2,10 @@ import Link from "next/link";
 
 import { PageFrame } from "@/components/app/page-frame";
 import { IntegrationHub } from "@/components/integrations/integration-hub";
-import { ExecutionDestinations } from "@/components/integrations/execution-destinations";
 import { LocationPicker } from "@/components/integrations/location-picker";
 import { Button } from "@/components/ui/button";
 import { Notice } from "@/components/ui/states";
 import { requireOrgSettingsManager } from "@/lib/auth/gates";
-import { loadConnectionViews } from "@/lib/execution/connections";
-import { discordConfigured, googleDriveConfigured, slackConfigured } from "@/lib/execution/env";
-import { isExecutionKind } from "@/lib/execution/kinds";
-import { EXECUTION_FLASH_ERRORS } from "@/lib/execution/state";
 import { LOCATION_CLAIMED_MESSAGE } from "@/lib/ghl/constants";
 import { listSessionLocations } from "@/lib/ghl/connect";
 import { ghlOAuthConfigured } from "@/lib/ghl/env";
@@ -37,8 +32,6 @@ export default async function IntegrationsPage({
     connected?: string;
     select_location?: string;
     unverified?: string;
-    exec_connected?: string;
-    exec_error?: string;
   }>;
 }) {
   const ctx = await requireOrgSettingsManager();
@@ -46,15 +39,13 @@ export default async function IntegrationsPage({
   const admin = getSupabaseAdmin();
   const supabase = await createClient();
 
-  const [connection, health, executionViews] = await Promise.all([
+  const [connection, health] = await Promise.all([
     supabase
       .from("ghl_connections")
       .select("status, location_name, last_verified_at")
       .eq("org_id", ctx.org.id)
       .maybeSingle(),
     loadOrgIngestionHealth(admin, ctx.org.id),
-    // The user's own client: row-level security and column grants keep tokens out of reach.
-    loadConnectionViews(supabase, ctx.org.id),
   ]);
 
   const selectLocation = params.select_location === "1";
@@ -104,20 +95,6 @@ export default async function IntegrationsPage({
                 ? FLASH_ERRORS[params.ghl_error] ?? FLASH_ERRORS.oauth_failed
                 : null
           }
-        />
-
-        <ExecutionDestinations
-          views={executionViews}
-          configured={{
-            slack: slackConfigured(),
-            discord: discordConfigured(),
-            google_drive: googleDriveConfigured(),
-          }}
-          canManage
-          flash={
-            isExecutionKind(params.exec_connected) ? "Connected. Now choose where Vistrial posts." : null
-          }
-          flashError={params.exec_error ? (EXECUTION_FLASH_ERRORS[params.exec_error] ?? EXECUTION_FLASH_ERRORS.oauth_failed) : null}
         />
 
         {ctx.isPlatformAdmin ? (

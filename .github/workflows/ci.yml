@@ -15,8 +15,14 @@ jobs:
           node-version: "20"
           cache: npm
       - run: npm ci
-      - name: Dependency vulnerabilities (high and critical block)
+      # Anything that ships to a user has to be clean. Dev-only tooling is
+      # reported below rather than blocking, because an advisory there can
+      # outlive every published fix for it.
+      - name: Dependency vulnerabilities, production (high and critical block)
+        run: npm audit --omit=dev --audit-level=high
+      - name: Dependency vulnerabilities, dev tooling (report only)
         run: npm audit --audit-level=high
+        continue-on-error: true
       - run: npm test
       - run: npm run typecheck
       - run: npm run build

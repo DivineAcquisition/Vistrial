@@ -10,6 +10,7 @@ import {
   FolderOpen,
   Gauge,
   ListChecks,
+  MessageSquareText,
   Phone,
   Settings2,
   Sparkles,
@@ -34,6 +35,7 @@ import {
 } from "@/lib/navigation";
 
 const ICONS: Record<NavIcon, LucideIcon> = {
+  ask: MessageSquareText,
   queue: ListChecks,
   log: ClipboardList,
   cases: FolderOpen,

@@ -473,7 +473,10 @@ export async function StagePayoff({
           </Button>
         ) : (
           <>
-            <Button variant="primary" size="lg" render={<Link href="/app/onboarding/report" />}>
+            <Button variant="primary" size="lg" render={<Link href="/app/onboarding/vistrial" />}>
+              Next: what Vistrial may do for you
+            </Button>
+            <Button variant="secondary" size="lg" render={<Link href="/app/onboarding/report" />}>
               Open the Leak Report
             </Button>
             <Button variant="secondary" size="lg" render={<Link href="/app/settings/business-profile" />}>

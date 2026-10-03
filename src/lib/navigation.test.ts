@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   ADVANCED_SETTINGS_PAGES,
   DA_CONSOLE_LINKS,
+  ASK_PATH,
   FORSIGHT_PATH,
   MORE_NAV,
   PRIMARY_NAV,
@@ -53,6 +54,7 @@ describe("settings IA", () => {
       "Scoring",
       "Follow-up",
       "Data",
+      "Posting and approvals",
     ]);
     expect(advancedSettingsBreadcrumbs("Scoring", "/app/settings/scoring")[0]?.href).toBe(
       "/app/settings/advanced"
@@ -69,19 +71,22 @@ describe("settings IA", () => {
       "Business",
       "Scoring",
       "Data",
+      "Posting and approvals",
     ]);
     expect(advancedSettingsVisibleTo(true).map((page) => page.label)).toEqual([
       "Business",
       "Scoring",
       "Data",
+      "Posting and approvals",
     ]);
   });
 });
 
 describe("Forsight and the client portal", () => {
-  it("puts Forsight, To call, People, and Settings in the sidebar map", () => {
-    expect(PRIMARY_NAV.map((item) => item.label)).toEqual(["Forsight", "To call", "People", "Settings"]);
+  it("puts Ask Vistrial, Forsight, To call, People, and Settings in the sidebar map", () => {
+    expect(PRIMARY_NAV.map((item) => item.label)).toEqual(["Ask Vistrial", "Forsight", "To call", "People", "Settings"]);
     expect(PRIMARY_NAV.map((item) => item.href)).toEqual([
+      ASK_PATH,
       FORSIGHT_PATH,
       "/app/queue",
       "/app/cases",
@@ -165,10 +170,18 @@ describe("Forsight and the client portal", () => {
     expect(DA_CONSOLE_LINKS.map((item) => item.href)).toContain(`${FORSIGHT_PATH}/workspaces`);
   });
 
-  it("lands the owner and admin on Forsight, and everyone who works leads on the list", () => {
+  it("shows Ask Vistrial to everyone who works in the app", () => {
+    const ask = PRIMARY_NAV.find((item) => item.href === ASK_PATH);
+    if (!ask) throw new Error("Ask Vistrial missing from the rail");
+    for (const role of ["owner", "admin", "closer", "setter"] as const) {
+      expect(navVisibleTo(ask, role)).toBe(true);
+    }
+  });
+
+  it("lands the owner and admin in the conversation, and everyone who works leads on the list", () => {
     expect(landingPath("portal", "owner")).toBe("/portal");
-    expect(landingPath("operator", "owner")).toBe(FORSIGHT_PATH);
-    expect(landingPath("operator", "admin")).toBe(FORSIGHT_PATH);
+    expect(landingPath("operator", "owner")).toBe(ASK_PATH);
+    expect(landingPath("operator", "admin")).toBe(ASK_PATH);
     expect(landingPath("operator", "setter")).toBe("/app/queue");
     expect(landingPath("operator", "closer")).toBe("/app/queue");
   });

@@ -17,6 +17,8 @@ import {
   requireProfileAccess,
 } from "@/lib/profile/load";
 import { PROFILE_STAGES, STAGE_META, isProfileStage } from "@/lib/profile/stages";
+import { salesOsActor } from "@/lib/sales-os/session";
+import { salesOsConfigured } from "@/lib/sales-os/settings";
 import { createClient } from "@/lib/supabase/server";
 
 const CONNECT_ERRORS: Record<string, string> = {
@@ -43,9 +45,10 @@ export default async function OnboardingStagePage({
   const query = await searchParams;
   const showPayoff = query.done === "1";
 
-  const [state, defaults] = await Promise.all([
+  const [state, defaults, vistrialDone] = await Promise.all([
     loadBusinessProfileState(ctx.org.id),
     loadProfileDefaults(ctx.org.id),
+    salesOsActor().then(salesOsConfigured),
   ]);
 
   const meta = STAGE_META[stage];
@@ -104,7 +107,7 @@ export default async function OnboardingStagePage({
       description={showPayoff ? undefined : meta.why}
       secondaryActions={showPayoff ? undefined : <FinishLaterButton />}
     >
-      <StageRail current={stage} stages={state.stages} />
+      <StageRail current={stage} stages={state.stages} vistrialDone={vistrialDone} />
       {body}
     </PageFrame>
   );

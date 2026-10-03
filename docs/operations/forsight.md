@@ -4,9 +4,9 @@ Forsight is Vistrial's tracking and metrics section: applications, qualified lea
 
 ## What Forsight is not
 
-It does not own data and does not calculate anything its sources do not already calculate. It is a display layer over external sources.
+It does not own data. Every figure it shows is read from somewhere that already holds it: Vistrial's own tables for lead, call and outcome activity, Meta for ad spend, GoHighLevel for appointment and message counts.
 
-It performs exactly one write *to a source*, described under [The spend sync](#the-spend-sync). Generated monthly reports are written to our own `forsight_reports` table and never back to Airtable, Meta, or GHL. Everything else is read-only, and that should stay true.
+It writes nothing back to any source. Generated monthly reports are written to our own `forsight_reports` table and nowhere else. Everything else is read-only, and that should stay true.
 
 ## Tenancy
 
@@ -20,9 +20,7 @@ Each workspace has one row per source type in `public.forsight_sources`:
 
 | Column | Meaning |
 | --- | --- |
-| `source_type` | `airtable`, `vistrial_core`, `meta_ads`, or `ghl`. A workspace reads its metrics from exactly one of `airtable` or `vistrial_core`, enforced by a partial unique index. |
-| `airtable_base_id` | The base DA created for that client, or `DA Pipeline — ClientAcquisition` for ours. |
-| `airtable_*_table` | Names of the Leads, Creatives, Weekly Summary, and Touches tables. `NULL` means this base does not have that table, and the display layer treats those metrics as unavailable rather than broken. |
+| `source_type` | `vistrial_core`, `meta_ads`, or `ghl`. A workspace reads its metrics from `vistrial_core` and has at most one such row, enforced by a partial unique index. |
 | `meta_ad_account_id` | Only on `meta_ads` rows, and only for workspaces whose ad spend Forsight reads. |
 | `ghl_calendar_id` | Only on `ghl` rows. `NULL` reads every calendar on the location, which is what the rest of Vistrial already does. |
 
@@ -32,22 +30,15 @@ Source details are database rows and not environment variables on purpose: env v
 
 `forsight_sources` has RLS on. Reads are scoped to `user_org_ids()`; writes require `is_platform_admin()`. A client user's insert is refused outright and their update or delete matches zero rows, so provisioning is closed to them in Postgres and not merely hidden behind a missing link. `supabase/tests/verify-forsight.sql` asserts all of it, plus that an operator can do the same things a client cannot.
 
-## The two metrics source types
+## The metrics source
 
-Both present the same shapes with the metrics already computed, which is what lets a page ask for a workspace's weekly metrics without learning where they came from. No dashboard page branches on source type; adding the second one changed none of them.
+Every workspace reads its metrics from `vistrial_core`: `leads`, `calls`, `touches`, `revenue_log`, `next_actions`, and `call_extractions`, the tables the rest of the app already writes. Ad spend is read live from the workspace's Meta source, or reported as unavailable.
 
-| | `airtable` | `vistrial_core` |
-| --- | --- | --- |
-| Where it reads | A base duplicated from our master template | `leads`, `calls`, `touches`, `revenue_log`, `next_actions`, `call_extractions` |
-| How costs are computed | Read from formula fields | Derived in the adapter by `formulas.ts`, which reproduces those formulas including their text branches |
-| Creative performance | Yes | **No** — core holds no per-ad data at all |
-| Ad spend | Synced in from Meta | Read live from the workspace's Meta source, or unavailable |
+The adapter hands back figures that are already computed, which is what lets a page ask for a workspace's weekly metrics without learning where they came from. No dashboard page computes a metric.
 
-Existing Airtable clients are untouched. Nothing migrates.
+### Every cost written once
 
-### Matching the formulas
-
-`src/lib/forsight/formulas.ts` is the Airtable formulas written once. A client moved between source types must not see their numbers change meaning, so the edge cases are reproduced exactly: a zero denominator with spend behind it returns `No audits yet` or `No closes yet`, a zero denominator with no spend returns blank, and neither returns zero. `adapter-parity.test.ts` builds the same week both ways and compares.
+`src/lib/forsight/formulas.ts` holds every cost and ratio Forsight reports. The edge cases matter more than the arithmetic: a zero denominator with spend behind it returns `No audits yet` or `No closes yet`, a zero denominator with no spend returns blank, and neither returns zero. A dash and "no closes yet" say different things to a reader, and `$0` says something false.
 
 ### What core cannot produce
 
@@ -56,9 +47,9 @@ Existing Airtable clients are untouched. Nothing migrates.
 
 ## Provisioning a client
 
-Every organization is already a Forsight workspace. With no source row, Forsight reads that workspace's own Vistrial tables (`vistrial_core`). Airtable, Meta, and LeadConnector remain operator-only extras at `/app/forsight/sources`: pick a workspace, pick a source type, enter what that type needs, and test the connection; the save button stays disabled until the test passes, and the save action re-runs the test server-side and refuses to write if it fails. A source that saves cleanly and fails at the client's first login is the worst version of this feature.
+Every organization is already a Forsight workspace. With no source row at all, Forsight reads that workspace's own Vistrial tables. Meta and LeadConnector are operator-only extras at `/app/forsight/sources`: pick a workspace, pick a source type, enter what that type needs, and test the connection; the save button stays disabled until the test passes, and the save action re-runs the test server-side and refuses to write if it fails. A source that saves cleanly and fails at the client's first login is the worst version of this feature.
 
-This is the one screen that asks anyone to type a base ID, and it is the narrow exception to the no-pasting rule: clients still never touch configuration. The page 404s for a client user, and Postgres refuses their writes regardless.
+Clients never touch any of it. The page 404s for a client user, and Postgres refuses their writes regardless.
 
 `/app/forsight/workspaces` is the cross-workspace overview: every workspace's cost per audit held, CAC, pipeline health counts, and last month's report (generated, version, sent), one row each, with a link into that workspace's Forsight. It shows one tenant's metrics beside another's, which is exactly the boundary the rest of the architecture enforces — legitimate because DA runs these systems on clients' behalf, and gated at the data layer, since the read goes through the operator's own client and `user_org_ids()` decides what comes back. A client user gets a not-found, not a list of one.
 
@@ -66,17 +57,14 @@ Both use the existing `platform_admins` concept. No new permission was introduce
 
 ## Credentials
 
-Airtable and Meta use one Divine Acquisition credential per platform, held in environment configuration:
+Meta uses one Divine Acquisition credential per platform, held in environment configuration:
 
 ```
-AIRTABLE_API_KEY=
 META_ACCESS_TOKEN=
 META_AD_ACCOUNT_ID=
 ```
 
-That works because DA owns every base and ad account Forsight reads. Client users never see, enter, or manage any part of it, and no screen in Forsight asks anyone for a key, URL, id, or field name.
-
-There is deliberately no Airtable base id in the environment.
+That works because DA owns every ad account Forsight reads. Client users never see, enter, or manage any part of it, and no screen in Forsight asks anyone for a key, URL, id, or field name.
 
 **GoHighLevel is different, and deliberately so.** There is no Forsight GHL credential of any kind. Authentication comes from the per-sub-account OAuth connection Vistrial's core already holds in `ghl_connections`, and every call goes through `ghlRequest(db, orgId, path)`, which resolves and refreshes that org's token. Forsight does not stand up a second GHL connection, and a workspace whose LeadConnector connection is not active simply reports that section as unavailable.
 
@@ -91,69 +79,22 @@ Message *content* is never read or displayed. That rule holds across the product
 
 GHL has no aggregate message-count endpoint, so a count means walking conversations. That walk is bounded (5 pages, 100 conversations) and rate-limited through `try_consume_ghl_rate`. When it hits a cap the page says the counts are floors rather than totals.
 
-## Airtable against LeadConnector
-
-Weekly Pulse shows GHL's appointment counts beside Airtable's for the same week. Airtable's booking data arrives through GHL workflow steps; when one silently stops firing, Airtable undercounts and every cost metric that divides by those counts goes quietly wrong.
-
-The page shows both numbers and names the gap. It does not reconcile them or pick a winner — a person decides what to do about it.
-
-## Seeding a workspace's source
-
-```
-npm run ops:forsight-source -- \
-  --org-slug divine-acquisition \
-  --airtable-base appXXXXXXXXXXXXXX \
-  --label "DA Pipeline — Client Acquisition"
-```
-
-Add `--missing creatives,touches` for a base that lacks those tables, `--meta-ad-account act_123` to record an ad account, `--ghl` (optionally `--ghl-calendar <id>`) to read appointments and message counts, and `--dry-run` to see the rows without writing them. The script needs `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY`, and refuses to add a GHL source to a workspace with no active LeadConnector connection.
-
-`supabase/seed.sql` creates a Divine Acquisition workspace with a placeholder base id for local development only.
-
-## The spend sync
-
-The one write. Runs daily at 08:00 UTC via `/api/cron/forsight-meta-sync`, registered in the job catalog as `forsight-meta-sync`, and logged run by run in `forsight_sync_runs`.
-
-Meta ad spend has to land in Airtable because Airtable's cost formulas divide by it: cost per audit held, CAC, cost per application, and ROAS are all spend over a count. If spend only ever existed as a live read, either those formulas go blank or the dashboard starts dividing, and the dashboard does not divide.
-
-### Re-running is safe because nothing is accumulated
-
-Every value written is an absolute total for a fixed window, recomputed from Meta and `PATCH`ed as a set. There are no counters and no read-modify-add, so syncing the same period twice writes the same numbers twice and the second run changes nothing. Idempotency is a property of the shape of the write, not of bookkeeping that could itself go wrong. `forsight_sync_runs` is therefore only a scheduling hint: at worst a wrong one costs a redundant recompute.
-
-### Two windows, because the destinations mean different things
-
-- **Creatives** — lifetime totals (`date_preset=maximum`). That row's cost formulas divide Spend by lifetime rollups, so its Spend must be lifetime spend.
-- **Weekly Summary** — that week's totals. Its formulas divide by that week's counts.
-
-Writing a since-last-sync figure into either would silently corrupt every cost on the dashboard.
-
-### What it will not touch
-
-Applications, qualified, booked, held, closed, revenue, and notes are typed by a person. The sync writes `Total Spend` and nothing else on an existing week row, and `Spend`, `Impressions`, `Clicks` on a creative. The allowlist in `meta-sync.ts` is asserted on every record before it leaves the module.
-
-### Matching, weeks, and failure
-
-- Meta ads are matched to Airtable creatives by **exact name**. That convention is the only join between the two systems. An unmatched ad is recorded in `unmatched_ads` and skipped — never created, never fuzzy matched, because it is almost always a naming mistake on our side that somebody needs to fix.
-- Week boundaries follow the base's own cadence, anchored on the earliest `Week Start Date` already recorded, rather than an imposed Monday. The DA base's weeks start on a Tuesday.
-- A failed run does not record its period, so the next run redoes it. Catch-up is capped at six weeks so a long outage does not time out before reaching today.
-
 ## Spend today
 
-Separate from the sync, and deliberately so. Weekly Pulse shows today's spend read live from Meta, labelled as live rather than as one of the Airtable week-to-date figures. It shares no code path with the sync, writes nothing, and never throws: if Meta is unavailable, that one figure reads as unavailable and the rest of the page is unaffected.
+Weekly Pulse shows today's spend read live from Meta, labelled as live rather than folded into the week-to-date figures beside it. It shares no code path with them, writes nothing, and never throws: if Meta is unavailable, that one figure reads as unavailable and the rest of the page is unaffected.
 
 ## Reading
 
-Everything goes through `src/lib/forsight/provider.ts`. Nothing else in the app calls Airtable.
+Everything goes through `src/lib/forsight/provider.ts`. No page reaches a source directly.
 
-- Pagination is handled inside `listAirtableRecords`; callers never see an offset.
 - A failed read **throws** `ForsightSourceError` naming the workspace. It never returns an empty array, because an empty dashboard that is really a broken connection is worse than an error screen.
 - Rate limits retry with backoff before failing.
-- Reads go through `airtable.ts`; the single write path is `airtable-write.ts`, kept in its own module so "does Forsight write to this base" is answered by grepping one import.
+- Nothing in Forsight writes to a source. There is no write module to grep for.
 
 To prove a workspace's connections without a screen, a Divine Acquisition operator can call:
 
 ```
-GET /api/forsight/checks?source=airtable
+GET /api/forsight/checks
 GET /api/forsight/checks?source=meta&since=2026-08-01&until=2026-08-31
 ```
 

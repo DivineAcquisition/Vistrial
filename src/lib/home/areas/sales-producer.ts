@@ -254,7 +254,9 @@ async function untouchedLeads(db: GhlDb, orgId: string, now: Date): Promise<NewQ
     .select("speed_to_lead_minutes")
     .eq("org_id", orgId)
     .maybeSingle();
-  const windowMinutes = config?.speed_to_lead_minutes ?? 15;
+  // No configured response window means there is nothing to measure "past" against.
+  if (!config) return [];
+  const windowMinutes = config.speed_to_lead_minutes;
   const [handled, { data: leads }, { data: members }] = await Promise.all([
     recentlyHandled(db, orgId, "untouched_lead_nudge", now),
     db

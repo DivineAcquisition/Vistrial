@@ -15,7 +15,15 @@ import type { AssetView } from "@/lib/sales-os/asset-types";
 import { captionText } from "@/lib/ui";
 
 /** Review and edit. Saving an edit writes the next version; this one is kept, marked replaced. */
-export function AssetEditor({ asset, canEdit }: { asset: AssetView; canEdit: boolean }) {
+export function AssetEditor({
+  asset,
+  canEdit,
+  onSaved,
+}: {
+  asset: AssetView;
+  canEdit: boolean;
+  onSaved?: (asset: AssetView) => void;
+}) {
   const router = useRouter();
   const [editing, setEditing] = useState(false);
   const [title, setTitle] = useState(asset.title);
@@ -47,7 +55,8 @@ export function AssetEditor({ asset, canEdit }: { asset: AssetView; canEdit: boo
                       return;
                     }
                     toastManager.add({ title: "Saved", description: `Version ${result.asset.version} is now current.`, type: "success" });
-                    router.push(`/app/ask/assets/${result.asset.id}`);
+                    if (onSaved) onSaved(result.asset);
+                    else router.push(`/app/ask/assets/${result.asset.id}`);
                   })
                 }
               >

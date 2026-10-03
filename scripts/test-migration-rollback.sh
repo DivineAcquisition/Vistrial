@@ -600,6 +600,9 @@ fi
 
 echo "OK: case-file MVP migration rollback and re-apply succeeded."
 
+echo "Rollback pending-execution revisions (plan freezes again once requested)..."
+run "${ROOT}/supabase/rollbacks/20261003020000_sales_os_revise_pending.sql"
+
 echo "Rollback Sales OS agent (sales_os_* tables gone)..."
 run "${ROOT}/supabase/rollbacks/20261003010000_sales_os_agent.sql"
 tbl_sos="$("${PSQL[@]}" -d "${DB_NAME}" -tAc "SELECT count(*) FROM information_schema.tables WHERE table_schema='public' AND table_name LIKE 'sales_os_%'")"
@@ -610,6 +613,7 @@ fi
 
 echo "Re-apply Sales OS agent..."
 run "${ROOT}/supabase/migrations/20261003010000_sales_os_agent.sql"
+run "${ROOT}/supabase/migrations/20261003020000_sales_os_revise_pending.sql"
 tbl_sos="$("${PSQL[@]}" -d "${DB_NAME}" -tAc "SELECT count(*) FROM information_schema.tables WHERE table_schema='public' AND table_name LIKE 'sales_os_%'")"
 if [[ "$(echo "$tbl_sos" | tr -d ' ')" != "9" ]]; then
   echo "re-apply did not restore the nine sales_os_* tables" >&2

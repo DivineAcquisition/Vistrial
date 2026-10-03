@@ -1,6 +1,7 @@
 "use client";
 
 import { MarkdownText } from "@/components/assistant-ui/elements/markdown-text";
+import { ToolCallGroup } from "@/components/sales-os/tool-call";
 import { TooltipIconButton } from "@/components/assistant-ui/elements/tooltip-icon-button";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -83,7 +84,7 @@ const ThreadRoot: FC<{ isEmpty: boolean; autoFocus: boolean }> = ({ isEmpty, aut
       <ThreadPrimitive.Viewport
         turnAnchor="top"
         data-slot="aui_thread-viewport"
-        className="relative flex flex-1 flex-col overflow-x-auto overflow-y-scroll scroll-smooth"
+        className="relative flex flex-1 flex-col overflow-x-hidden overflow-y-scroll scroll-smooth"
       >
         <div
           className={cn(
@@ -207,6 +208,7 @@ const AssistantMessage: FC = () => {
           components={{
             Text: MarkdownText,
             tools: ToolFallback ? { Fallback: ToolFallback } : undefined,
+            ToolGroup: ToolCallGroup,
           }}
         />
         <MessageError />

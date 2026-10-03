@@ -42,7 +42,8 @@ export type Dataset = {
 
 export type FindingPoint = { label: string; value: string; enough: boolean; detail?: string };
 export type FindingTable = { columns: string[]; rows: string[][] };
-export type FindingQuote = { text: string; context: string };
+export type FindingQuote = { text: string; context: string; href?: string };
+export type FindingRecord = { label: string; href: string };
 
 /** One statement about the business, with the evidence behind it. */
 export type Finding = {
@@ -55,6 +56,7 @@ export type Finding = {
   points: FindingPoint[];
   table?: FindingTable;
   quotes?: FindingQuote[];
+  records?: FindingRecord[];
   caveats: string[];
 };
 
@@ -354,6 +356,10 @@ export function analyzeSources(data: Dataset): Finding {
         : []),
     ],
     table,
+    records: sorted.slice(0, 8).map((group) => ({
+      label: `${group.name}: ${sampleLabel(group.leads, "lead")}`,
+      href: group.name === "No source recorded" ? "/app/cases" : `/app/cases?source=${encodeURIComponent(group.name)}`,
+    })),
     caveats,
   };
 }
@@ -451,7 +457,11 @@ export function analyzeObjections(data: Dataset): Finding {
     const recent = row.list.slice(-3).reverse();
     for (const objection of recent.slice(0, 2)) {
       if (objection.verbatim.trim().length < 12) continue;
-      quotes.push({ text: objection.verbatim.trim(), context: `${objectionLabel(row.type)} objection` });
+      quotes.push({
+        text: objection.verbatim.trim(),
+        context: `${objectionLabel(row.type)} objection`,
+        href: `/app/cases/${objection.lead_id}`,
+      });
     }
   }
 

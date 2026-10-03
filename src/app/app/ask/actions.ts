@@ -5,8 +5,8 @@ import { revalidatePath } from "next/cache";
 
 import type { AssetView } from "@/lib/sales-os/asset-types";
 import { assetHistory, markAssetReviewed, saveAssetEdit } from "@/lib/sales-os/assets";
-import { loadExecutionPreview } from "@/lib/sales-os/executions/run";
-import type { ExecutionPreview } from "@/lib/sales-os/executions/types";
+import { listPendingApprovals, loadExecutionPreview, revisePendingExecution } from "@/lib/sales-os/executions/run";
+import type { ExecutionPreview, PendingApproval } from "@/lib/sales-os/executions/types";
 import {
   createConversation,
   isConversationId,
@@ -53,6 +53,26 @@ export async function archiveConversationAction(id: string): Promise<void> {
 export async function unarchiveConversationAction(id: string): Promise<void> {
   const actor = await salesOsActor();
   if (await requireOwnConversation(actor, id)) await setConversationStatus(actor, id, "regular");
+}
+
+export async function listPendingApprovalsAction(): Promise<PendingApproval[]> {
+  const actor = await salesOsActor();
+  return listPendingApprovals(actor.db, actor.orgId);
+}
+
+export async function reviseExecutionAction(input: {
+  conversationId: string;
+  toolCallId: string;
+  title: string;
+  summary: string;
+  sections: Array<{ heading: string; bullets: string[] }>;
+  fileName: string | null;
+}): Promise<{ ok: true; preview: string; plainSummary: string } | { ok: false; error: string }> {
+  const actor = await salesOsActor();
+  if (!(await requireOwnConversation(actor, input.conversationId))) {
+    return { ok: false, error: "That conversation isn't yours to change." };
+  }
+  return revisePendingExecution({ ...actor, conversationId: input.conversationId }, input);
 }
 
 export async function loadExecutionPreviewAction(conversationId: string, toolCallId: string): Promise<ExecutionPreview | null> {

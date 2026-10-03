@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -57,13 +59,33 @@ export function FindingCard({ finding }: { finding: Finding }) {
         </div>
       ) : null}
 
+      {finding.records?.length ? (
+        <div className="flex flex-wrap gap-2 border-t border-border px-4 py-3">
+          {finding.records.map((record) => (
+            <Link key={record.href + record.label} href={record.href} className="text-sm text-brand-700 underline-offset-4 hover:underline">
+              {record.label}
+            </Link>
+          ))}
+        </div>
+      ) : null}
+
       {finding.quotes?.length ? (
         <div className="space-y-2 border-t border-border px-4 py-3">
           <p className={captionText}>In their words</p>
           {finding.quotes.map((quote, index) => (
             <blockquote key={index} className="border-l-2 border-brand-500/50 pl-3 text-sm text-card-foreground">
               “{quote.text}”
-              <span className="mt-0.5 block text-xs text-muted-foreground">{quote.context}</span>
+              <span className="mt-0.5 block text-xs text-muted-foreground">
+                {quote.context}
+                {quote.href ? (
+                  <>
+                    {" "}
+                    <Link href={quote.href} className="text-brand-700 underline-offset-4 hover:underline">
+                      Open their file
+                    </Link>
+                  </>
+                ) : null}
+              </span>
             </blockquote>
           ))}
         </div>

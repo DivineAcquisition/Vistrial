@@ -33,6 +33,18 @@ export type ExecutionPreview = {
   gateReason: string;
   rejectionReason: string | null;
   decidedByName: string | null;
+  /** Present for a channel post, so the text can be changed before it is approved. */
+  editable: { title: string; summary: string; sections: Array<{ heading: string; bullets: string[] }> } | null;
+  fileName: string | null;
+};
+
+export type PendingApproval = {
+  id: string;
+  conversationId: string;
+  conversationTitle: string | null;
+  toolCallId: string;
+  plainSummary: string;
+  createdAt: string;
 };
 
 export type ExecutionRecordView = {

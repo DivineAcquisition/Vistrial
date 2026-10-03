@@ -2,7 +2,8 @@ import type { Metadata } from "next";
 
 import { SalesOsWorkspace } from "@/components/sales-os/workspace";
 import { openingFromPackage, resolveContext } from "@/lib/sales-os/context";
-import { isConversationId } from "@/lib/sales-os/persist";
+import { listPendingApprovals } from "@/lib/sales-os/executions/run";
+import { isConversationId, listToolCalls } from "@/lib/sales-os/persist";
 import { salesOsActor } from "@/lib/sales-os/session";
 
 export const metadata: Metadata = { title: "Ask Vistrial" };
@@ -10,12 +11,18 @@ export const metadata: Metadata = { title: "Ask Vistrial" };
 export default async function AskPage({ searchParams }: { searchParams: Promise<{ c?: string }> }) {
   const actor = await salesOsActor();
   const { c } = await searchParams;
-  const context = await resolveContext(actor, { conversationId: null });
+  const [context, pending, recent] = await Promise.all([
+    resolveContext(actor, { conversationId: null }),
+    listPendingApprovals(actor.db, actor.orgId),
+    listToolCalls(actor, { limit: 6 }),
+  ]);
   return (
     <SalesOsWorkspace
       opening={openingFromPackage(context.pkg)}
       initialThreadId={isConversationId(c) ? c : undefined}
-      canManage={actor.canExecute}
+      canEditAssets={actor.canWriteAssets}
+      pending={pending}
+      recent={recent}
     />
   );
 }

@@ -360,13 +360,12 @@ BEGIN
     WHEN insufficient_privilege THEN NULL;
   END;
 
-  BEGIN
-    UPDATE public.sales_os_executions SET preview = 'Something else entirely'
-    WHERE id = '5a1e5051-0000-4000-8000-0000000000e1';
-    RAISE EXCEPTION 'the preview changed after the request';
-  EXCEPTION
-    WHEN insufficient_privilege THEN NULL;
-  END;
+  UPDATE public.sales_os_executions SET preview = 'This week: 40 leads, revised before approval.'
+  WHERE id = '5a1e5051-0000-4000-8000-0000000000e1';
+  IF (SELECT preview FROM public.sales_os_executions WHERE id = '5a1e5051-0000-4000-8000-0000000000e1')
+     IS DISTINCT FROM 'This week: 40 leads, revised before approval.' THEN
+    RAISE EXCEPTION 'a pending execution could not be revised';
+  END IF;
 END
 $$;
 
@@ -374,6 +373,18 @@ UPDATE public.sales_os_executions
 SET status = 'approved', gate_satisfied_by = 'in_conversation_approval',
     approved_by_member_id = '5a1e5051-0000-4000-8000-0000000000a3', approved_at = now()
 WHERE id = '5a1e5051-0000-4000-8000-0000000000e1';
+
+DO $$
+BEGIN
+  BEGIN
+    UPDATE public.sales_os_executions SET preview = 'Changed after approval'
+    WHERE id = '5a1e5051-0000-4000-8000-0000000000e1';
+    RAISE EXCEPTION 'the preview changed after it was approved';
+  EXCEPTION
+    WHEN insufficient_privilege THEN NULL;
+  END;
+END
+$$;
 
 UPDATE public.sales_os_executions SET status = 'running', started_at = now()
 WHERE id = '5a1e5051-0000-4000-8000-0000000000e1';
@@ -564,6 +575,62 @@ BEGIN
     RAISE EXCEPTION 'another workspace wrote into a conversation';
   EXCEPTION
     WHEN insufficient_privilege OR foreign_key_violation THEN NULL;
+  END;
+END
+$$;
+
+RESET ROLE;
+
+-- A pending post can be revised. An approved one cannot, and a revision cannot approve itself.
+SET ROLE authenticated;
+SELECT set_config('request.jwt.claim.sub', '5a1e5051-0000-4000-8000-0000000000a2', false);
+
+UPDATE public.sales_os_gates
+SET mode = 'always_ask', updated_by_member_id = '5a1e5051-0000-4000-8000-0000000000a3', updated_at = now()
+WHERE org_id = '5a1e5051-0000-4000-8000-0000000000a1' AND execution_type = 'post_slack_update';
+
+INSERT INTO public.sales_os_executions (
+  id, org_id, conversation_id, tool_call_id, execution_type, destination_id, plan,
+  plain_summary, preview, input_hash, gate_mode, status,
+  requested_by_member_id, requested_by_user_id
+) VALUES (
+  '5a1e5051-0000-4000-8000-0000000000e9',
+  '5a1e5051-0000-4000-8000-0000000000a1', '5a1e5051-0000-4000-8000-0000000000c2', 'x-revise',
+  'post_slack_update', '5a1e5051-0000-4000-8000-0000000000d1',
+  '{"update":{"kind":"summary","title":"This week","summary":"42 leads.","sections":[]}}'::jsonb,
+  'Post "This week" in #sales-wins on Slack.', 'This week\n\n42 leads.', 'h-revise', 'always_ask', 'awaiting_approval',
+  '5a1e5051-0000-4000-8000-0000000000a3', '5a1e5051-0000-4000-8000-0000000000a2'
+);
+
+UPDATE public.sales_os_executions
+SET plain_summary = 'Post "This week, revised" in #sales-wins on Slack.',
+    preview = 'This week, revised
+
+40 leads, not 42.',
+    plan = '{"update":{"kind":"summary","title":"This week, revised","summary":"40 leads, not 42.","sections":[]}}'::jsonb,
+    input_hash = 'h-revised'
+WHERE id = '5a1e5051-0000-4000-8000-0000000000e9';
+
+DO $$
+BEGIN
+  IF (SELECT preview FROM public.sales_os_executions WHERE id = '5a1e5051-0000-4000-8000-0000000000e9')
+     NOT LIKE 'This week, revised%' THEN
+    RAISE EXCEPTION 'a pending execution could not be revised';
+  END IF;
+  BEGIN
+    UPDATE public.sales_os_executions
+    SET status = 'approved', gate_satisfied_by = 'prior_configuration'
+    WHERE id = '5a1e5051-0000-4000-8000-0000000000e9' AND status = 'awaiting_approval';
+    RAISE EXCEPTION 'a revision approved itself';
+  EXCEPTION
+    WHEN insufficient_privilege OR check_violation THEN NULL;
+  END;
+  BEGIN
+    UPDATE public.sales_os_executions SET preview = 'Changed after the fact'
+    WHERE id = '5a1e5051-0000-4000-8000-0000000000e1';
+    RAISE EXCEPTION 'a finished execution was revised';
+  EXCEPTION
+    WHEN insufficient_privilege THEN NULL;
   END;
 END
 $$;

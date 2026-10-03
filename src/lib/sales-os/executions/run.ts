@@ -31,6 +31,7 @@ import type {
   ExecutionPreview,
   ExecutionRecordView,
   ExecutionToolResult,
+  PendingApproval,
   RouteView,
 } from "@/lib/sales-os/executions/types";
 import type { SalesDb } from "@/lib/sales-os/data";
@@ -65,6 +66,7 @@ type Plan = {
   update: StructuredUpdate | null;
   asset: AssetView | null;
   footer: string;
+  fileName: string | null;
   plainSummary: string;
   preview: string;
 };
@@ -159,6 +161,7 @@ export async function planExecution(actor: ExecActor, type: ExecutionType, input
         update,
         asset: null,
         footer,
+        fileName: null,
         plainSummary: `Post "${update.title}" in ${where(destination)}.`,
         preview: updatePreview(update, footer),
       },
@@ -188,6 +191,7 @@ export async function planExecution(actor: ExecActor, type: ExecutionType, input
         update: null,
         asset,
         footer: "",
+        fileName: null,
         plainSummary: `Save "${asset.title}" (version ${asset.version}) as a new Google Doc in ${where(drive)}, inside ${DRIVE_ROOT_FOLDER} / ${folder}.`,
         preview: `${docLine}\n\n${asset.basis}\n\n${excerpt}`,
       },
@@ -219,12 +223,144 @@ export async function planExecution(actor: ExecActor, type: ExecutionType, input
       update,
       asset,
       footer,
+      fileName: null,
       plainSummary: `Send "${asset.title}" (version ${asset.version}): ${steps.join(", then ")}.`,
       preview: [drive ? docLine : null, channel ? updatePreview(update, footer) + (drive ? "\n[link to the Google Doc]" : "") : null]
         .filter(Boolean)
         .join("\n\n———\n\n"),
     },
   };
+}
+
+type StoredPlan = {
+  destinationId?: string;
+  channelId?: string | null;
+  assetId?: string | null;
+  update?: StructuredUpdate | null;
+  footer?: string;
+  fileName?: string | null;
+};
+
+function asStoredPlan(value: unknown): StoredPlan {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return {};
+  return value as StoredPlan;
+}
+
+async function hydrateStoredPlan(actor: ExecActor, id: string): Promise<{ ok: true; plan: Plan } | { ok: false; error: string }> {
+  const { data } = await actor.db
+    .from("sales_os_executions")
+    .select("execution_type, plan, plain_summary, preview, destination_id")
+    .eq("id", id)
+    .eq("org_id", actor.orgId)
+    .maybeSingle();
+  if (!data) return { ok: false, error: "That approval is no longer here." };
+  const raw = asStoredPlan(data.plan);
+  const destinations = await loadDestinations(actor.db, actor.orgId);
+  const destination = destinations.find((item) => item.id === data.destination_id);
+  if (!destination) return { ok: false, error: "The place this was going is no longer connected." };
+  const channel = raw.channelId ? destinations.find((item) => item.id === raw.channelId) ?? null : null;
+  const asset = raw.assetId ? await loadAsset(actor, raw.assetId) : null;
+  if (raw.assetId && !asset) return { ok: false, error: "The asset this would save is no longer in this workspace." };
+  return {
+    ok: true,
+    plan: {
+      type: data.execution_type as ExecutionType,
+      destination,
+      channel,
+      update: raw.update ?? null,
+      asset,
+      footer: raw.footer ?? "",
+      fileName: raw.fileName ?? null,
+      plainSummary: data.plain_summary,
+      preview: data.preview,
+    },
+  };
+}
+
+export async function listPendingApprovals(db: SalesDb, orgId: string): Promise<PendingApproval[]> {
+  const { data } = await db
+    .from("sales_os_executions")
+    .select("id, conversation_id, tool_call_id, plain_summary, created_at")
+    .eq("org_id", orgId)
+    .eq("status", "awaiting_approval")
+    .order("created_at", { ascending: false })
+    .limit(20);
+  const ids = [...new Set((data ?? []).map((row) => row.conversation_id))];
+  const { data: conversations } = ids.length
+    ? await db.from("sales_os_conversations").select("id, title").in("id", ids)
+    : { data: [] as Array<{ id: string; title: string | null }> };
+  const titles = new Map((conversations ?? []).map((row) => [row.id, row.title]));
+  return (data ?? []).map((row) => ({
+    id: row.id,
+    conversationId: row.conversation_id,
+    conversationTitle: titles.get(row.conversation_id) ?? null,
+    toolCallId: row.tool_call_id,
+    plainSummary: row.plain_summary,
+    createdAt: row.created_at,
+  }));
+}
+
+/** Changes the text of a post that is still waiting. What was approved is what runs, including this revision. */
+export async function revisePendingExecution(
+  actor: ExecActor,
+  input: { toolCallId: string; title: string; summary: string; sections: Array<{ heading: string; bullets: string[] }>; fileName: string | null }
+): Promise<{ ok: true; preview: string; plainSummary: string } | { ok: false; error: string }> {
+  if (!canRunExecutions(actor.role)) return { ok: false, error: "Only an owner or admin can change what gets sent." };
+  const { data } = await actor.db
+    .from("sales_os_executions")
+    .select("id, status, execution_type, plan, destination_id, preview, plain_summary")
+    .eq("org_id", actor.orgId)
+    .eq("conversation_id", actor.conversationId)
+    .eq("tool_call_id", input.toolCallId)
+    .maybeSingle();
+  if (!data || data.status !== "awaiting_approval") return { ok: false, error: "This is no longer waiting, so it can't be changed." };
+  const raw = asStoredPlan(data.plan);
+  const destinations = await loadDestinations(actor.db, actor.orgId);
+  const destination = destinations.find((item) => item.id === data.destination_id);
+  if (!destination) return { ok: false, error: "The place this was going is no longer connected." };
+
+  let plain = data.plain_summary;
+  let preview = data.preview;
+  if (raw.update) {
+    const update = normalizeUpdate({
+      kind: raw.update.kind,
+      title: input.title,
+      summary: input.summary,
+      sections: input.sections ?? [],
+    });
+    if (!update.title || !update.summary) return { ok: false, error: "A post needs a title and a summary." };
+    const footer = raw.footer || updateFooter(actor.personName, update.kind);
+    raw.update = update;
+    raw.footer = footer;
+    const channel =
+      updatePreview(update, footer) + (data.preview.includes("[link to the Google Doc]") ? "\n[link to the Google Doc]" : "");
+    if (data.execution_type === "post_slack_update" || data.execution_type === "post_discord_update") {
+      preview = channel;
+      plain = `Post "${update.title}" in ${where(destination)}.`;
+    } else {
+      const docPart = data.preview.split("\n\n———\n\n").find((part) => part.startsWith("Google Doc "));
+      preview = docPart ? `${docPart}\n\n———\n\n${channel}` : channel;
+    }
+  }
+  const fileName = input.fileName?.trim().slice(0, 180) || null;
+  if (fileName && (data.execution_type === "save_asset_to_drive" || data.execution_type === "deliver_asset")) {
+    raw.fileName = fileName;
+    if (preview.includes('Google Doc "')) preview = preview.replace(/Google Doc "[^"]*"/g, `Google Doc "${fileName}"`);
+    else if (!raw.update) preview = `The file will be named "${fileName}".\n\n${preview}`;
+    plain = plain.replace(/Google Doc "[^"]*"/g, `Google Doc "${fileName}"`);
+  }
+  const { error } = await actor.db
+    .from("sales_os_executions")
+    .update({
+      plan: raw as unknown as Json,
+      preview,
+      plain_summary: plain,
+      input_hash: inputHash(data.execution_type, { title: input.title, summary: input.summary, sections: input.sections, fileName }),
+    })
+    .eq("id", data.id)
+    .eq("status", "awaiting_approval");
+  if (error) return { ok: false, error: "That change couldn't be saved, so the original is still what would be sent." };
+  return { ok: true, preview, plainSummary: plain };
 }
 
 function planRecord(plan: Plan): Json {
@@ -235,6 +371,7 @@ function planRecord(plan: Plan): Json {
     assetVersion: plan.asset?.version ?? null,
     update: plan.update,
     footer: plan.footer,
+    fileName: plan.fileName,
   } as unknown as Json;
 }
 
@@ -364,7 +501,7 @@ async function perform(actor: ExecActor, plan: Plan): Promise<{ summary: string;
     if (!root) throw new Error("The Vistrial folder in Google Drive is missing. Reconnect Drive in Settings.");
     const folder = await ensureDriveFolder(access, ASSET_TYPE_COPY[asset.type].folder, root);
     const file = await createDriveDoc(access, {
-      name: driveFileName(asset),
+      name: plan.fileName?.trim() || driveFileName(asset),
       parentId: folder,
       html: markdownToDocHtml(asset.title, asset.basis, asset.body),
     });
@@ -425,16 +562,6 @@ export async function runExecution(
     }
     id = existing.id;
     satisfiedBy = existing.gate_satisfied_by === "prior_configuration" ? "prior_configuration" : "in_conversation_approval";
-    if (existing.input_hash !== hash || !planned.ok) {
-      await actor.db.from("sales_os_executions").update({ status: "running", started_at: new Date().toISOString() }).eq("id", id).eq("status", "approved");
-      const why = !planned.ok ? planned.error : "What was approved isn't what was asked to run.";
-      await actor.db
-        .from("sales_os_executions")
-        .update({ status: "failed", finished_at: new Date().toISOString(), error_text: why })
-        .eq("id", id)
-        .eq("status", "running");
-      return blocked(type, "failed", `${why} Nothing was sent.`, planned.ok ? planned.plan : null);
-    }
   } else {
     if (!planned.ok) return blocked(type, "failed", `${planned.error} Nothing was sent.`, null);
     const mode = await loadGateMode(actor.db, actor.orgId, type);
@@ -470,7 +597,17 @@ export async function runExecution(
     satisfiedBy = "prior_configuration";
   }
 
-  const plan = (planned as { ok: true; plan: Plan }).plan;
+  const stored = existing?.status === "approved" ? await hydrateStoredPlan(actor, id) : null;
+  if (stored && !stored.ok) {
+    await actor.db.from("sales_os_executions").update({ status: "running", started_at: new Date().toISOString() }).eq("id", id).eq("status", "approved");
+    await actor.db
+      .from("sales_os_executions")
+      .update({ status: "failed", finished_at: new Date().toISOString(), error_text: stored.error })
+      .eq("id", id)
+      .eq("status", "running");
+    return blocked(type, "failed", `${stored.error} Nothing was sent.`, null);
+  }
+  const plan = stored && stored.ok ? stored.plan : (planned as { ok: true; plan: Plan }).plan;
   const { data: claimed } = await actor.db
     .from("sales_os_executions")
     .update({ status: "running", started_at: new Date().toISOString() })
@@ -530,7 +667,7 @@ export async function loadExecutionPreview(
 ): Promise<ExecutionPreview | null> {
   const { data } = await db
     .from("sales_os_executions")
-    .select("status, execution_type, plain_summary, preview, gate_mode, destination_id, rejection_reason, approved_by_member_id, rejected_by_member_id")
+    .select("status, execution_type, plain_summary, preview, plan, gate_mode, destination_id, rejection_reason, approved_by_member_id, rejected_by_member_id")
     .eq("org_id", orgId)
     .eq("conversation_id", conversationId)
     .eq("tool_call_id", toolCallId)
@@ -553,6 +690,14 @@ export async function loadExecutionPreview(
     gateReason: gateReason(data.gate_mode),
     rejectionReason: data.rejection_reason,
     decidedByName,
+    editable: asStoredPlan(data.plan).update
+      ? {
+          title: asStoredPlan(data.plan).update!.title,
+          summary: asStoredPlan(data.plan).update!.summary,
+          sections: asStoredPlan(data.plan).update!.sections,
+        }
+      : null,
+    fileName: asStoredPlan(data.plan).fileName ?? null,
   };
 }
 

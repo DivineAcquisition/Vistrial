@@ -41,6 +41,7 @@ export function AppShell({
   const { collapsed, setCollapsed } = useSidebarCollapsed();
   const pathname = usePathname();
   const wizard = pathname.startsWith("/app/onboarding");
+  const conversation = pathname === "/app/ask";
 
   return (
     <div className="relative isolate min-h-svh bg-background text-card-foreground">
@@ -80,6 +81,14 @@ export function AppShell({
               <PageMotion>{children}</PageMotion>
             </div>
           </div>
+        </div>
+      ) : conversation ? (
+        <div className="relative z-10 h-svh overflow-hidden">
+          <Suspense fallback={null}>
+            <NotificationRuntime />
+          </Suspense>
+          <OutcomeSyncRuntime />
+          {children}
         </div>
       ) : (
         <SidebarProvider
@@ -123,7 +132,7 @@ export function AppShell({
                 <PageMotion>{children}</PageMotion>
               </div>
             </div>
-            <MobileDock />
+            {pathname.startsWith("/app/ask") ? null : <MobileDock />}
           </SidebarInset>
         </SidebarProvider>
       )}

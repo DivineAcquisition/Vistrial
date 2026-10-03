@@ -67,6 +67,10 @@
     {
       "path": "/api/cron/forsight-reports",
       "schedule": "0 9 3 * *"
+    },
+    {
+      "path": "/api/cron/home-agents",
+      "schedule": "*/15 * * * *"
     }
   ]
 }

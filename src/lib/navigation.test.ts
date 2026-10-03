@@ -5,6 +5,7 @@ import {
   DA_CONSOLE_LINKS,
   ASK_PATH,
   FORSIGHT_PATH,
+  HOME_PATH,
   MORE_NAV,
   PRIMARY_NAV,
   SETTINGS_TABS,
@@ -13,18 +14,30 @@ import {
   landingPath,
   navVisibleTo,
   settingsTabActiveHref,
+  settingsTabsVisibleTo,
 } from "@/lib/navigation";
 
 describe("settings IA", () => {
-  it("keeps day-to-day tabs to You, Notifications, Workspace, People, Integrations, and Advanced", () => {
+  it("keeps day-to-day tabs to You, Notifications, Workspace, People, Approvals, Integrations, and Advanced", () => {
     expect(SETTINGS_TABS.map((tab) => tab.label)).toEqual([
       "You",
       "Notifications",
       "Workspace",
       "People",
+      "Approvals",
       "Integrations",
       "Advanced",
     ]);
+  });
+
+  it("shows Approvals to owners only", () => {
+    const labels = (role: "owner" | "admin" | "setter", platformAdmin = false) =>
+      settingsTabsVisibleTo(role, platformAdmin).map((tab) => tab.label);
+    expect(labels("owner")).toContain("Approvals");
+    expect(labels("admin")).not.toContain("Approvals");
+    expect(labels("admin")).toContain("Workspace");
+    expect(labels("setter")).toEqual(["You", "Notifications"]);
+    expect(labels("admin", true)).toContain("Approvals");
   });
 
   it("does not put scoring, follow-up, data, or business on the main tabs", () => {
@@ -83,9 +96,17 @@ describe("settings IA", () => {
 });
 
 describe("Forsight and the client portal", () => {
-  it("puts Ask Vistrial, Forsight, To call, People, and Settings in the sidebar map", () => {
-    expect(PRIMARY_NAV.map((item) => item.label)).toEqual(["Ask Vistrial", "Forsight", "To call", "People", "Settings"]);
+  it("puts Home, Ask Vistrial, Forsight, To call, People, and Settings in the sidebar map", () => {
+    expect(PRIMARY_NAV.map((item) => item.label)).toEqual([
+      "Home",
+      "Ask Vistrial",
+      "Forsight",
+      "To call",
+      "People",
+      "Settings",
+    ]);
     expect(PRIMARY_NAV.map((item) => item.href)).toEqual([
+      HOME_PATH,
       ASK_PATH,
       FORSIGHT_PATH,
       "/app/queue",
@@ -170,18 +191,20 @@ describe("Forsight and the client portal", () => {
     expect(DA_CONSOLE_LINKS.map((item) => item.href)).toContain(`${FORSIGHT_PATH}/workspaces`);
   });
 
-  it("shows Ask Vistrial to everyone who works in the app", () => {
+  it("shows Home and Ask Vistrial to everyone who works in the app", () => {
+    const home = PRIMARY_NAV.find((item) => item.href === HOME_PATH);
     const ask = PRIMARY_NAV.find((item) => item.href === ASK_PATH);
-    if (!ask) throw new Error("Ask Vistrial missing from the rail");
+    if (!home || !ask) throw new Error("Home or Ask Vistrial missing from the rail");
     for (const role of ["owner", "admin", "closer", "setter"] as const) {
+      expect(navVisibleTo(home, role)).toBe(true);
       expect(navVisibleTo(ask, role)).toBe(true);
     }
   });
 
-  it("lands the owner and admin in the conversation, and everyone who works leads on the list", () => {
+  it("lands the owner and admin on Home, and everyone who works leads on the list", () => {
     expect(landingPath("portal", "owner")).toBe("/portal");
-    expect(landingPath("operator", "owner")).toBe(ASK_PATH);
-    expect(landingPath("operator", "admin")).toBe(ASK_PATH);
+    expect(landingPath("operator", "owner")).toBe(HOME_PATH);
+    expect(landingPath("operator", "admin")).toBe(HOME_PATH);
     expect(landingPath("operator", "setter")).toBe("/app/queue");
     expect(landingPath("operator", "closer")).toBe("/app/queue");
   });

@@ -10,6 +10,7 @@ import { PageFrame } from "@/components/app/page-frame";
 import { MAX_VOICE_EXAMPLES, MIN_VOICE_EXAMPLES } from "@/lib/follow-up/constants";
 import { parseVoiceExamples } from "@/lib/follow-up/voice";
 import { ghlOAuthConfigured } from "@/lib/ghl/env";
+import { loadGateState } from "@/lib/home/gate";
 import {
   loadBusinessProfileState,
   loadOnboardingPayoff,
@@ -45,10 +46,12 @@ export default async function OnboardingStagePage({
   const query = await searchParams;
   const showPayoff = query.done === "1";
 
-  const [state, defaults, vistrialDone] = await Promise.all([
+  const supabaseForRail = await createClient();
+  const [state, defaults, vistrialDone, gate] = await Promise.all([
     loadBusinessProfileState(ctx.org.id),
     loadProfileDefaults(ctx.org.id),
     salesOsActor().then(salesOsConfigured),
+    loadGateState(supabaseForRail, ctx.org.id),
   ]);
 
   const meta = STAGE_META[stage];
@@ -107,7 +110,13 @@ export default async function OnboardingStagePage({
       description={showPayoff ? undefined : meta.why}
       secondaryActions={showPayoff ? undefined : <FinishLaterButton />}
     >
-      <StageRail current={stage} stages={state.stages} vistrialDone={vistrialDone} />
+      <StageRail
+        current={stage}
+        stages={state.stages}
+        vistrialDone={vistrialDone}
+        approvalsReviewed={Boolean(gate.limits.reviewedAt)}
+      />
+
       {body}
     </PageFrame>
   );

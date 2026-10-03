@@ -47,11 +47,11 @@ export function SalesOsOnboardingStep({
                 setError(result.error);
                 return;
               }
-              router.push("/app/onboarding/report");
+              router.push("/app/onboarding/approvals");
             })
           }
         >
-          Save and open the Leak Report
+          Save and continue
         </Button>
       </div>
     </div>

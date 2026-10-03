@@ -4,15 +4,20 @@ import type { StageProgress } from "@/lib/profile/types";
 
 export const VISTRIAL_STEP = { id: "vistrial", label: "What Vistrial may do", href: "/app/onboarding/vistrial" } as const;
 
+/** The approval step sits last. It is optional, so it never blocks the app. */
+export const APPROVAL_STEP = { id: "approvals", label: "What runs without asking", href: "/app/onboarding/approvals" } as const;
+
 /** Where they are in onboarding, and where they can jump back to. */
 export function StageRail({
   current,
   stages,
   vistrialDone = false,
+  approvalsReviewed = false,
 }: {
-  current: ProfileStage | typeof VISTRIAL_STEP.id;
+  current: ProfileStage | typeof VISTRIAL_STEP.id | typeof APPROVAL_STEP.id;
   stages: StageProgress[];
   vistrialDone?: boolean;
+  approvalsReviewed?: boolean;
 }) {
   const done = new Set(stages.filter((row) => row.completedAt).map((row) => row.stage));
 
@@ -28,7 +33,8 @@ export function StageRail({
           href: `/app/onboarding/${stage}`,
           done: done.has(stage),
         })),
-        { id: VISTRIAL_STEP.id, label: VISTRIAL_STEP.label, href: VISTRIAL_STEP.href, done: vistrialDone },
+        { ...VISTRIAL_STEP, done: vistrialDone },
+        { ...APPROVAL_STEP, done: approvalsReviewed },
       ]}
     />
   );

@@ -1,7 +1,9 @@
 import { redirect } from "next/navigation";
 
-import { DEFAULT_APP_PATH } from "@/lib/navigation";
+import { getAuthContext } from "@/lib/auth/session";
+import { landingPath } from "@/lib/navigation";
 
-export default function AppIndexPage() {
-  redirect(DEFAULT_APP_PATH);
+export default async function AppIndexPage() {
+  const ctx = await getAuthContext();
+  redirect(landingPath(ctx.member.surfaceAccess, ctx.role));
 }

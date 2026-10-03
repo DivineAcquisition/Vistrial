@@ -22,12 +22,16 @@ export const ASK_PATH = "/app/ask";
 
 export const MORE_PATH = "/app/more";
 
+/** Outcomes first: booked calls, what they cost, and what is waiting on a person. */
+export const HOME_PATH = "/app/home";
+
 export const NAV_GROUPS: Array<{ id: NavGroupId; label: string }> = [
   { id: "front", label: "" },
   { id: "door", label: "" },
 ];
 
 export type NavIcon =
+  | "home"
   | "ask"
   | "queue"
   | "log"
@@ -56,11 +60,19 @@ export type NavItem = {
 };
 
 /**
- * Owner and admin: Forsight, People, Settings. Setter and closer: To call,
- * People, Settings. Portal lives on the account menu. The list is not the
+ * Owner and admin: Home, Forsight, People, Settings. Setter and closer: Home,
+ * To call, People, Settings. Portal lives on the account menu. The list is not the
  * owner's front door.
  */
 export const PRIMARY_NAV: NavItem[] = [
+  {
+    href: HOME_PATH,
+    label: "Home",
+    match: HOME_PATH,
+    group: "front",
+    icon: "home",
+    description: "Booked calls, what they cost, and what needs your approval.",
+  },
   {
     href: ASK_PATH,
     label: "Ask Vistrial",
@@ -224,11 +236,14 @@ export const SETTINGS_TABS: Array<{
   href: string;
   label: string;
   managerOnly: boolean;
+  /** Owners only. What may run without a person is the owner's call. */
+  ownerOnly?: boolean;
 }> = [
   { href: "/app/settings/profile", label: "You", managerOnly: false },
   { href: "/app/settings/notifications", label: "Notifications", managerOnly: false },
   { href: "/app/settings/organization", label: "Workspace", managerOnly: true },
   { href: "/app/settings/members", label: "People", managerOnly: true },
+  { href: "/app/settings/approvals", label: "Approvals", managerOnly: true, ownerOnly: true },
   { href: "/app/settings/integrations", label: "Integrations", managerOnly: true },
   { href: "/app/settings/advanced", label: "Advanced", managerOnly: true },
 ];
@@ -304,6 +319,12 @@ export function settingsTabActiveHref(pathname: string): string {
   return match?.href ?? pathname;
 }
 
+export function settingsTabsVisibleTo(role: OrgRole, isPlatformAdmin = false) {
+  const manager = canManageOrgSettings(role, isPlatformAdmin);
+  const owner = isPlatformAdmin || role === "owner";
+  return SETTINGS_TABS.filter((tab) => (manager || !tab.managerOnly) && (owner || !tab.ownerOnly));
+}
+
 export function firstSettingsPath(role: OrgRole, isPlatformAdmin = false): string {
   return canManageOrgSettings(role, isPlatformAdmin)
     ? "/app/settings/organization"
@@ -314,14 +335,14 @@ export const DEFAULT_APP_PATH = "/app/queue";
 
 /**
  * Where someone lands after sign-in. Portal-only members stay in the portal.
- * Owners and admins open the conversation with Vistrial. People who work
- * leads open the list.
+ * Owners and admins open Home for this workspace, with the conversation one
+ * click away. People who work leads open the list.
  */
 export function landingPath(
   surfaceAccess: SurfaceAccess | undefined,
   role?: OrgRole | null
 ): string {
   if (surfaceAccess === "portal") return "/portal";
-  if (role === "owner" || role === "admin") return ASK_PATH;
+  if (role === "owner" || role === "admin") return HOME_PATH;
   return DEFAULT_APP_PATH;
 }

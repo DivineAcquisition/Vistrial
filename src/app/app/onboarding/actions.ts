@@ -8,7 +8,7 @@ import { addVoiceExample, removeVoiceExample } from "@/app/app/settings/follow-u
 import type { SettingsSaveResult } from "@/app/app/settings/types";
 import { ONBOARDING_DEFER_COOKIE, onboardingDeferCookieOptions } from "@/lib/auth/cookies";
 import { getAuthContext } from "@/lib/auth/session";
-import { DEFAULT_APP_PATH } from "@/lib/navigation";
+import { landingPath } from "@/lib/navigation";
 import { assertProfileAccess } from "@/lib/profile/load";
 import { rescoreOrgLeads } from "@/lib/profile/rescore";
 import { buildStagePatch } from "@/lib/profile/stage-patch";
@@ -121,5 +121,5 @@ export async function deferOnboarding(): Promise<void> {
   const ctx = await getAuthContext();
   const cookieStore = await cookies();
   cookieStore.set(ONBOARDING_DEFER_COOKIE, ctx.org.id, onboardingDeferCookieOptions);
-  redirect(DEFAULT_APP_PATH);
+  redirect(landingPath(ctx.member.surfaceAccess, ctx.role));
 }

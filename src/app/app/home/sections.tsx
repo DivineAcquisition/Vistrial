@@ -33,6 +33,9 @@ const ACTIVITY_ICONS: Record<string, LucideIcon> = {
   crm_stage_change: Tags,
   setter_nudge: Bell,
   owner_escalation: ArrowUpRight,
+  slack_post: MessageSquare,
+  discord_post: MessageSquare,
+  drive_store: FileText,
 };
 
 function SectionHeading({ id, title, count }: { id: string; title: string; count?: number }) {

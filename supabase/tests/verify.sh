@@ -155,7 +155,10 @@ run "${ROOT}/supabase/tests/verify-stellar.sql"
 echo "Home screen checks..."
 run "${ROOT}/supabase/tests/verify-home-screen.sql"
 
+echo "Execution integration checks..."
+run "${ROOT}/supabase/tests/verify-execution-integrations.sql"
+
 echo "Migration rollback (this prompt's migrations)..."
 bash "${ROOT}/scripts/test-migration-rollback.sh"
 
-echo "OK: schema, seed, triggers, RLS, invite, scoring, GHL, touch-ingest, platform-admin, queue, case-file, transcript, follow-up, integrity, reporting, business-profile, onboarding-reconcile, notification, hardening, mobile, calibration, call-quality, operator-agent, self-verification, activity-stream, owner-portal, agent-framework, forsight, stellar, and home-screen checks passed."
+echo "OK: schema, seed, triggers, RLS, invite, scoring, GHL, touch-ingest, platform-admin, queue, case-file, transcript, follow-up, integrity, reporting, business-profile, onboarding-reconcile, notification, hardening, mobile, calibration, call-quality, operator-agent, self-verification, activity-stream, owner-portal, agent-framework, forsight, stellar, home-screen, and execution-integration checks passed."

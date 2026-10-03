@@ -664,3 +664,31 @@ if [[ "$(echo "$tbl_exec" | tr -d ' ')" != "2" ]]; then
 fi
 
 echo "OK: execution integrations migration rollback and re-apply succeeded."
+
+echo "Rollback the Airtable drop (columns and sync log return)..."
+run "${ROOT}/supabase/rollbacks/20261003040000_drop_airtable_source.sql"
+col_at="$("${PSQL[@]}" -d "${DB_NAME}" -tAc "SELECT count(*) FROM information_schema.columns WHERE table_schema='public' AND table_name='forsight_sources' AND column_name LIKE 'airtable%'")"
+if [[ "$(echo "$col_at" | tr -d ' ')" != "5" ]]; then
+  echo "rollback did not restore the five airtable columns" >&2
+  exit 1
+fi
+tbl_sync="$("${PSQL[@]}" -d "${DB_NAME}" -tAc "SELECT count(*) FROM information_schema.tables WHERE table_schema='public' AND table_name='forsight_sync_runs'")"
+if [[ "$(echo "$tbl_sync" | tr -d ' ')" != "1" ]]; then
+  echo "rollback did not restore forsight_sync_runs" >&2
+  exit 1
+fi
+
+echo "Re-apply the Airtable drop..."
+run "${ROOT}/supabase/migrations/20261003040000_drop_airtable_source.sql"
+col_at="$("${PSQL[@]}" -d "${DB_NAME}" -tAc "SELECT count(*) FROM information_schema.columns WHERE table_schema='public' AND table_name='forsight_sources' AND column_name LIKE 'airtable%'")"
+if [[ "$(echo "$col_at" | tr -d ' ')" != "0" ]]; then
+  echo "re-applied drop left airtable columns in place" >&2
+  exit 1
+fi
+enum_at="$("${PSQL[@]}" -d "${DB_NAME}" -tAc "SELECT count(*) FROM pg_enum e JOIN pg_type t ON t.oid=e.enumtypid WHERE t.typname='forsight_source_type' AND e.enumlabel='airtable'")"
+if [[ "$(echo "$enum_at" | tr -d ' ')" != "0" ]]; then
+  echo "re-applied drop left airtable in forsight_source_type" >&2
+  exit 1
+fi
+
+echo "OK: Airtable drop rollback and re-apply succeeded."

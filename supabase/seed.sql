@@ -64,12 +64,11 @@ INSERT INTO public.score_configs (org_id)
 VALUES ('2d2d2d2d-2222-4222-8222-222222222222')
 ON CONFLICT (org_id) DO NOTHING;
 
-INSERT INTO public.forsight_sources (org_id, source_type, label, airtable_base_id)
+INSERT INTO public.forsight_sources (org_id, source_type, label)
 VALUES (
   '2d2d2d2d-2222-4222-8222-222222222222',
-  'airtable',
-  'DA Pipeline — Client Acquisition',
-  'appDaPipelineLocal'
+  'vistrial_core',
+  'DA Pipeline — Client Acquisition'
 )
 ON CONFLICT (org_id, source_type) DO NOTHING;
 

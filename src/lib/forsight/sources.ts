@@ -4,10 +4,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 
 import { ForsightSourceError } from "@/lib/forsight/errors";
 import {
-  FORSIGHT_DATASETS,
-  type ForsightAirtableSource,
   type ForsightCoreSource,
-  type ForsightDataset,
   type ForsightGhlSource,
   type ForsightMetaSource,
   type ForsightSource,
@@ -25,26 +22,6 @@ type ForsightSourceRow = Tables<"forsight_sources">;
  * a workspace's source is readable by that workspace's members and no one else.
  */
 export function sourceFromRow(row: ForsightSourceRow): ForsightSource {
-  if (row.source_type === "airtable") {
-    const source: ForsightAirtableSource = {
-      id: row.id,
-      orgId: row.org_id,
-      type: "airtable",
-      status: row.status,
-      label: row.label,
-      baseId: row.airtable_base_id ?? "",
-      tables: {
-        leads: row.airtable_leads_table,
-        creatives: row.airtable_creatives_table,
-        weeklySummary: row.airtable_weekly_summary_table,
-        touches: row.airtable_touches_table,
-      },
-      lastVerifiedAt: row.last_verified_at,
-      lastError: row.last_error,
-    };
-    return source;
-  }
-
   if (row.source_type === "meta_ads") {
     const source: ForsightMetaSource = {
       id: row.id,
@@ -98,7 +75,7 @@ export async function loadForsightSources(
   if (error) {
     throw new ForsightSourceError({
       orgId,
-      sourceType: "airtable",
+      sourceType: "vistrial_core",
       reason: "unreachable",
       detail: `Reading the source record failed: ${error.message}`,
     });
@@ -114,14 +91,4 @@ export async function loadForsightSource(
 ): Promise<ForsightSource | null> {
   const sources = await loadForsightSources(db, orgId);
   return sources.find((source) => source.type === sourceType) ?? null;
-}
-
-export function availableDatasets(source: ForsightSource): ForsightDataset[] {
-  if (source.type !== "airtable") return [];
-  return FORSIGHT_DATASETS.filter((dataset) => Boolean(source.tables[dataset]?.trim()));
-}
-
-export function missingDatasets(source: ForsightSource): ForsightDataset[] {
-  if (source.type !== "airtable") return [...FORSIGHT_DATASETS];
-  return FORSIGHT_DATASETS.filter((dataset) => !source.tables[dataset]?.trim());
 }

@@ -3,15 +3,14 @@ import "server-only";
 import type { ForsightRecord } from "@/lib/forsight/types";
 
 /**
- * A short hold on what a workspace's base just returned, so opening three
- * Forsight pages in a row is three renders and not twelve Airtable calls.
+ * A short hold on what a workspace's source just returned, so opening three
+ * Forsight pages in a row is three renders and not twelve round trips.
  *
  * This is a cache, not storage. Nothing here is written to our database,
- * nothing survives a restart, and nothing is read after it expires. Airtable
- * stays the only copy of this data.
+ * nothing survives a restart, and nothing is read after it expires.
  *
  * The key includes the workspace and the source, so a cached read can never be
- * served to a different tenant, and repointing a workspace at another base
+ * served to a different tenant, and repointing a workspace at another source
  * cannot serve the old one.
  */
 

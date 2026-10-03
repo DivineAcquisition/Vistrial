@@ -50,23 +50,6 @@ export const CRM_HUB_ID = "leadconnector";
 export const CRM_SUMMARY =
   "Optional. Vistrial stores people in this workspace without it. Connect to sync and send through GoHighLevel.";
 
-export function airtableHubCard(): HubCard {
-  return {
-    id: "airtable",
-    title: "Airtable",
-    summary: "Optional. Forsight already reads this workspace. Connect Airtable if you keep ads and pipeline there.",
-    status: "unavailable",
-    statusLabel: "Coming next",
-    accountLabel: null,
-    lastVerifiedAt: null,
-    connect: { mode: "unavailable" },
-    webhookUrl: null,
-    required: false,
-    kind: null,
-    note: "Airtable connecting is next. Vistrial already stores people and metrics here.",
-  };
-}
-
 const STATUS_LABEL: Record<HubStatus, string> = {
   connected: "Connected",
   attention: "Needs attention",
@@ -145,9 +128,9 @@ export function sourceHubCard(source: SourceCardModel): HubCard {
   };
 }
 
-/** Client hub: GoHighLevel and Airtable only. Other sources stay in code, not on this page. */
-export function buildHubCards(crm: CrmHubInput, _sources: SourceCardModel[] = []): HubCard[] {
-  return [crmHubCard(crm), airtableHubCard()];
+/** Client hub: GoHighLevel only. Other sources stay in code, not on this page. */
+export function buildHubCards(crm: CrmHubInput): HubCard[] {
+  return [crmHubCard(crm)];
 }
 
 export function hubSummaryLine(cards: HubCard[]): string {

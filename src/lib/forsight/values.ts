@@ -1,22 +1,17 @@
 /**
- * Forsight displays what Airtable computes. It never divides.
+ * One cell on a Forsight page, and why it is not always a number.
  *
- * Every computed cost and ratio field in the base is a formula whose result
- * type is single-line text, and each one has three possible states:
+ * A computed cost or ratio has four states, and they mean different things:
  *
- *   "175"            a number, as text, already rounded by the formula
+ *   175              a number, already rounded
  *   "No audits yet"  a true statement about a young funnel, worth showing
- *   omitted          the formula returned "", and Airtable drops empty fields
- *                    from the API payload entirely
+ *   absent           there is nothing to say at all
+ *   unavailable      this workspace has no way to know
  *
- * The third state is not the second. "No closes yet" means money went out and
- * nothing came back; an absent value means there is nothing to say at all.
- * Collapsing them would turn a real signal into a shrug.
-
- * A fourth state exists that Airtable has no equivalent for: a metric this
- * workspace's source simply cannot produce. A core-source workspace with no
- * ad account does not have a cost per audit held that happens to be blank —
- * it has no way to know one, and saying so is different from saying nothing.
+ * "No closes yet" means money went out and nothing came back; absent means
+ * nothing to say; unavailable means a workspace with no ad account does not
+ * have a blank cost per audit held, it has no way to compute one. Collapsing
+ * any of these into the others turns a real signal into a shrug.
  */
 
 export type MetricValue =
@@ -32,10 +27,9 @@ export function unavailable(reason: string): MetricValue {
 }
 
 /**
- * Airtable hands back numbers for number and currency fields and strings for
- * formula fields, so both arrive here. Currency symbols and thousands
- * separators are tolerated because a formula could be rewritten to include
- * them without that being anyone's idea of a breaking change.
+ * Numbers and the strings that stand in for them both arrive here. Currency
+ * symbols and thousands separators are tolerated, because a figure arriving
+ * pre-formatted is not anyone's idea of a breaking change.
  */
 export function toMetricValue(raw: unknown): MetricValue {
   if (raw === null || raw === undefined) return ABSENT;

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { buildHubCards, crmHubCard, airtableHubCard, hubSummaryLine, sourceHubCard } from "@/lib/integrations/hub";
+import { buildHubCards, crmHubCard, hubSummaryLine, sourceHubCard } from "@/lib/integrations/hub";
 import { SOURCE_CATALOG } from "@/lib/sources/catalog";
 import type { SourceCardModel } from "@/lib/sources/catalog";
 import type { SourceKind } from "@/types/database";
@@ -35,8 +35,6 @@ describe("integration hub", () => {
     expect(card.connect).toEqual({ mode: "redirect", href: "/api/leadconnector/oauth/start" });
     expect(card.status).toBe("available");
     expect(card.required).toBe(false);
-    expect(airtableHubCard().required).toBe(false);
-    expect(airtableHubCard().note).toMatch(/Vistrial already stores/i);
   });
 
   it("says so plainly when the deployment has no marketplace credentials", () => {
@@ -80,32 +78,44 @@ describe("integration hub", () => {
     expect(card.note).toBe("Not configured here.");
   });
 
-  it("shows only GoHighLevel and Airtable to clients", () => {
-    const cards = buildHubCards(
-      { status: "active", locationName: "Main", lastVerifiedAt: null, oauthConfigured: true },
-      [
-        source("meta_ads"),
-        source("stripe", { status: "broken", lastError: "Token expired." }),
-        source("google_ads", { connectMode: "unavailable", unavailableReason: "No keys." }),
-      ]
-    );
-    expect(cards.map((card) => card.id)).toEqual(["leadconnector", "airtable"]);
-    expect(cards.map((card) => card.title)).toEqual(["GoHighLevel", "Airtable"]);
+  it("shows only GoHighLevel to clients", () => {
+    const cards = buildHubCards({
+      status: "active",
+      locationName: "Main",
+      lastVerifiedAt: null,
+      oauthConfigured: true,
+    });
+    expect(cards.map((card) => card.id)).toEqual(["leadconnector"]);
+    expect(cards.map((card) => card.title)).toEqual(["GoHighLevel"]);
   });
 
   it("counts only connectable tiles in the summary line", () => {
-    const cards = buildHubCards(
-      { status: "active", locationName: "Main", lastVerifiedAt: null, oauthConfigured: true },
-      [source("meta_ads"), source("stripe", { connectMode: "unavailable" })]
-    );
+    const cards = buildHubCards({
+      status: "active",
+      locationName: "Main",
+      lastVerifiedAt: null,
+      oauthConfigured: true,
+    });
     expect(hubSummaryLine(cards)).toBe("1 of 1 connected");
   });
 
+  it("does not count a tile this deployment cannot connect at all", () => {
+    const cards = buildHubCards({
+      status: "missing",
+      locationName: null,
+      lastVerifiedAt: null,
+      oauthConfigured: false,
+    });
+    expect(hubSummaryLine(cards)).toBe("0 of 0 connected");
+  });
+
   it("names how many need attention so a broken CRM is not silently counted out", () => {
-    const cards = buildHubCards(
-      { status: "broken", locationName: "Main", lastVerifiedAt: null, oauthConfigured: true },
-      [source("meta_ads", { status: "active" })]
-    );
+    const cards = buildHubCards({
+      status: "broken",
+      locationName: "Main",
+      lastVerifiedAt: null,
+      oauthConfigured: true,
+    });
     expect(hubSummaryLine(cards)).toBe("0 of 1 connected · 1 need attention");
   });
 });

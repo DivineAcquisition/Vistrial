@@ -14,9 +14,9 @@ export const PRODUCT_SCOPE = {
   followUpSettings: false,
   /** Client-facing PDFs, branded reports, and scheduled report email. */
   documentGeneration: false,
-  /** Airtable creative performance (spend / CAC / ROAS). */
+  /** Creative performance (spend / CAC / ROAS). */
   forsightCreatives: false,
-  /** Airtable weekly pulse vanity metrics. Pipeline Health stays on. */
+  /** Weekly pulse vanity metrics. Pipeline Health stays on. */
   forsightWeeklyPulse: false,
   /**
    * Reporting panels outside the MVP metric list: close-rate outcome, team,

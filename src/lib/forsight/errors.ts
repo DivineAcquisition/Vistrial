@@ -2,7 +2,7 @@ import type { ForsightSourceType } from "@/lib/forsight/types";
 
 /**
  * Forsight never answers a broken connection with empty data. An empty
- * dashboard that is really a bad credential or an unreachable base is worse
+ * dashboard that is really a bad credential or an unreachable source is worse
  * than an error screen, so every failed read throws, and the message names the
  * workspace it failed for.
  */
@@ -49,7 +49,6 @@ const REASON_TEXT: Record<ForsightFailureReason, string> = {
 };
 
 const SOURCE_TEXT: Record<ForsightSourceType, string> = {
-  airtable: "Airtable base",
   meta_ads: "Meta ad account",
   ghl: "LeadConnector location",
   vistrial_core: "Vistrial workspace data",

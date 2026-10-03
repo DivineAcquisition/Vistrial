@@ -1,12 +1,11 @@
 import type { MonthlyMetrics, ReportOmission } from "@/lib/forsight/report/types";
 
 /**
- * The month, reduced to the facts both adapters can produce.
+ * The month, reduced to the facts a source has to produce.
  *
- * Airtable maps formula fields and linked tables onto this; Vistrial core
- * maps its own rows onto the same shape. `monthlyFromFacts` is then the only
- * place the report's numbers are derived, so a workspace moved between source
- * types cannot see the arithmetic change meaning.
+ * An adapter maps its own rows onto this shape, and `monthlyFromFacts` is
+ * then the only place the report's numbers are derived. A workspace moved
+ * from one source to another cannot see the arithmetic change meaning.
  */
 
 export type MonthLead = {
@@ -39,23 +38,6 @@ export type MonthFacts = {
   omissions: ReportOmission[];
 };
 
-export function inPeriod(date: string | null | undefined, start: string, end: string): boolean {
-  if (!date) return false;
-  const day = date.slice(0, 10);
-  return day >= start && day <= end;
-}
-
-/** "12 hrs", 12, "NEVER TOUCHED" — Airtable's formula is text. */
-export function parseHours(raw: unknown): number | null {
-  if (typeof raw === "number" && Number.isFinite(raw)) return raw;
-  if (typeof raw !== "string") return null;
-  const trimmed = raw.trim();
-  if (!trimmed || /never/i.test(trimmed)) return null;
-  const match = trimmed.match(/-?\d+(?:\.\d+)?/);
-  if (!match) return null;
-  return Number(match[0]);
-}
-
 export function hoursBetween(from: string | null | undefined, to: string | null | undefined): number | null {
   if (!from || !to) return null;
   const start = Date.parse(from);
@@ -79,25 +61,6 @@ export function average(values: number[]): number | null {
 export function percentOf(part: number, whole: number): number | null {
   if (whole <= 0) return null;
   return (part / whole) * 100;
-}
-
-/**
- * Maps a deal/payment type onto the four revenue buckets. Unknown types are
- * left unclassified rather than folded into New — Reactivated in particular
- * must stand alone, and inventing a bucket would hide it.
- */
-export function revenueBucket(
-  type: string
-): "new" | "repeat" | "recurring" | "reactivated" | null {
-  const key = type.trim().toLowerCase();
-  if (!key) return null;
-  if (key.includes("reactivat")) return "reactivated";
-  if (key.includes("repeat") || key.includes("reorder")) return "repeat";
-  if (key.includes("recurring") || key.includes("retainer") || key.includes("subscription")) {
-    return "recurring";
-  }
-  if (key.includes("install") || key === "new") return "new";
-  return null;
 }
 
 export function monthlyFromFacts(facts: MonthFacts): MonthlyMetrics {

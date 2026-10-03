@@ -1,14 +1,30 @@
-import {
-  LEAD_FIELDS as F,
-  NEVER_TOUCHED_DAYS,
-  QUALIFIED,
-  isClosedStage,
-  plainText,
-  readCount,
-  readDate,
-  readText,
-} from "@/lib/forsight/fields";
-import type { ForsightRecord } from "@/lib/forsight/types";
+/** The readiness verdict a lead carries into this page. */
+export const QUALIFIED = "Qualified";
+
+/** Stages that take a lead out of the working pipeline. */
+const CLOSED_STAGES = new Set(["closed won", "closed lost", "disqualified", "recycled"]);
+
+/**
+ * `lead_status` writes these as `closed_won`, and a human writes the same
+ * thing as "Closed Won", so the separator is normalised. Otherwise a closed
+ * lead would read as still in play and turn up in a queue asking someone to
+ * chase it.
+ */
+export function isClosedStage(stage: string): boolean {
+  return CLOSED_STAGES.has(stage.trim().toLowerCase().replace(/[_-]+/g, " "));
+}
+
+/**
+ * Touch Status is decorated with emoji. Matching on the words rather than the
+ * exact string means a change of icon does not quietly empty a section.
+ */
+export function plainText(value: string): string {
+  return value
+    .replace(/[^\p{Letter}\p{Number}\s+-]/gu, " ")
+    .replace(/\s+/g, " ")
+    .trim()
+    .toLowerCase();
+}
 
 export type LeadRow = {
   id: string;
@@ -18,41 +34,19 @@ export type LeadRow = {
   readinessScore: number | null;
   humanTouches: number | null;
   optInDate: string | null;
-  /** Null when the lead has never been touched, rather than Airtable's 999. */
+  /** Null when the lead has never been touched. */
   daysSinceTouch: number | null;
   touchStatus: string;
-  /** Airtable already worked out what to do about this lead. */
+  /** What this workspace already decided to do about this lead. */
   nextAction: string;
   debriefMissing: boolean;
 };
-
-export function leadRow(record: ForsightRecord): LeadRow {
-  const days = readCount(record, F.daysSinceTouch);
-  return {
-    id: record.id,
-    name: readText(record, F.name) || "Unnamed lead",
-    stage: readText(record, F.stage),
-    qualificationResult: readText(record, F.qualificationResult),
-    readinessScore: readCount(record, F.readinessScore),
-    humanTouches: readCount(record, F.humanTouches),
-    optInDate: readDate(record, F.optInDate),
-    daysSinceTouch: days === null || days >= NEVER_TOUCHED_DAYS ? null : days,
-    touchStatus: readText(record, F.touchStatus),
-    nextAction: readText(record, F.nextAction),
-    debriefMissing: readText(record, F.debriefMissing).length > 0,
-  };
-}
 
 function working(lead: LeadRow): boolean {
   return !isClosedStage(lead.stage);
 }
 
-/**
- * Qualified, never spoken to by a human, still in play. Airtable's own Next
- * Action formula reaches the same conclusion, but this reads the underlying
- * fields instead of matching its wording: if someone changes an emoji in the
- * base, this section must not quietly report that nobody is being missed.
- */
+/** Qualified, never spoken to by a human, still in play. */
 export function neverContacted(leads: LeadRow[]): LeadRow[] {
   return leads
     .filter(
@@ -64,7 +58,7 @@ export function neverContacted(leads: LeadRow[]): LeadRow[] {
 
 export type QuietBucket = "ghosted14" | "ghosted30";
 
-/** The buckets Airtable's Touch Status formula already sorts leads into. */
+/** The buckets the Touch Status wording already sorts leads into. */
 export function quietBucket(lead: LeadRow): QuietBucket | null {
   const status = plainText(lead.touchStatus);
   if (status.includes("ghosted 30d")) return "ghosted30";
@@ -86,9 +80,9 @@ export function goingQuiet(leads: LeadRow[]): Record<QuietBucket, LeadRow[]> {
 }
 
 /**
- * Held a call and nobody wrote it up. Read from the dedicated Debrief Missing
- * field rather than Next Action, because Next Action is a priority stack and a
- * lead with a more urgent problem would hide its missing debrief.
+ * Held a call and nobody wrote it up. Read on its own rather than off the next
+ * action, because the next action is a priority stack and a lead with a more
+ * urgent problem would hide its missing debrief.
  */
 export function debriefsMissing(leads: LeadRow[]): LeadRow[] {
   return leads.filter((lead) => lead.debriefMissing);
@@ -100,16 +94,6 @@ export type PipelineHealth = {
   debriefsMissing: LeadRow[];
   totalLeads: number;
 };
-
-export function pipelineHealth(records: ForsightRecord[]): PipelineHealth {
-  const leads = records.map(leadRow);
-  return {
-    neverContacted: neverContacted(leads),
-    goingQuiet: goingQuiet(leads),
-    debriefsMissing: debriefsMissing(leads),
-    totalLeads: leads.length,
-  };
-}
 
 /**
  * Days between two dates, for showing how long someone has been waiting. This

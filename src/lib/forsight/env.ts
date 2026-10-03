@@ -2,25 +2,13 @@ import "server-only";
 
 /**
  * Forsight authenticates with Divine Acquisition's own credentials, one per
- * platform rather than one per workspace. That works because DA owns every
- * Airtable base and ad account Forsight reads, ours and our clients'. Which
- * base or ad account a workspace reads is a database row, not an env var, so
- * adding a client is never a deployment.
+ * platform rather than one per workspace. That works because DA owns every ad
+ * account Forsight reads, ours and our clients'. Which ad account a workspace
+ * reads is a database row, not an env var, so adding a client is never a
+ * deployment.
  *
  * No screen ever collects any of these.
  */
-
-export function airtableApiKey(env = process.env): string {
-  return env.AIRTABLE_API_KEY?.trim() ?? "";
-}
-
-export function airtableConfigured(env = process.env): boolean {
-  return airtableApiKey(env).length > 0;
-}
-
-export function airtableApiBase(env = process.env): string {
-  return env.AIRTABLE_API_BASE?.trim() || "https://api.airtable.com/v0";
-}
 
 export function metaAccessToken(env = process.env): string {
   return env.META_ACCESS_TOKEN?.trim() ?? "";

@@ -4560,11 +4560,6 @@ export type Database = {
       };
       forsight_sources: {
         Row: {
-          airtable_base_id: string | null;
-          airtable_creatives_table: string | null;
-          airtable_leads_table: string | null;
-          airtable_touches_table: string | null;
-          airtable_weekly_summary_table: string | null;
           created_at: string;
           ghl_calendar_id: string | null;
           id: string;
@@ -4578,11 +4573,6 @@ export type Database = {
           updated_at: string;
         };
         Insert: {
-          airtable_base_id?: string | null;
-          airtable_creatives_table?: string | null;
-          airtable_leads_table?: string | null;
-          airtable_touches_table?: string | null;
-          airtable_weekly_summary_table?: string | null;
           created_at?: string;
           ghl_calendar_id?: string | null;
           id?: string;
@@ -4596,11 +4586,6 @@ export type Database = {
           updated_at?: string;
         };
         Update: {
-          airtable_base_id?: string | null;
-          airtable_creatives_table?: string | null;
-          airtable_leads_table?: string | null;
-          airtable_touches_table?: string | null;
-          airtable_weekly_summary_table?: string | null;
           created_at?: string;
           ghl_calendar_id?: string | null;
           id?: string;
@@ -4612,54 +4597,6 @@ export type Database = {
           source_type?: Database["public"]["Enums"]["forsight_source_type"];
           status?: Database["public"]["Enums"]["ghl_connection_status"];
           updated_at?: string;
-        };
-        Relationships: [];
-      };
-      forsight_sync_runs: {
-        Row: {
-          creatives_written: number;
-          error: string | null;
-          finished_at: string | null;
-          id: string;
-          org_id: string;
-          period_end: string | null;
-          period_start: string | null;
-          source_type: Database["public"]["Enums"]["forsight_source_type"];
-          spend_written: number;
-          started_at: string;
-          status: Database["public"]["Enums"]["forsight_sync_status"];
-          unmatched_ads: Json;
-          weeks_written: number;
-        };
-        Insert: {
-          creatives_written?: number;
-          error?: string | null;
-          finished_at?: string | null;
-          id?: string;
-          org_id: string;
-          period_end?: string | null;
-          period_start?: string | null;
-          source_type: Database["public"]["Enums"]["forsight_source_type"];
-          spend_written?: number;
-          started_at?: string;
-          status?: Database["public"]["Enums"]["forsight_sync_status"];
-          unmatched_ads?: Json;
-          weeks_written?: number;
-        };
-        Update: {
-          creatives_written?: number;
-          error?: string | null;
-          finished_at?: string | null;
-          id?: string;
-          org_id?: string;
-          period_end?: string | null;
-          period_start?: string | null;
-          source_type?: Database["public"]["Enums"]["forsight_source_type"];
-          spend_written?: number;
-          started_at?: string;
-          status?: Database["public"]["Enums"]["forsight_sync_status"];
-          unmatched_ads?: Json;
-          weeks_written?: number;
         };
         Relationships: [];
       };
@@ -6586,9 +6523,8 @@ export type Database = {
         | "testing"
         | "live"
         | "running_smoothly";
-      forsight_source_type: "airtable" | "meta_ads" | "ghl" | "vistrial_core";
+      forsight_source_type: "meta_ads" | "ghl" | "vistrial_core";
       forsight_report_actor: "scheduled" | "operator";
-      forsight_sync_status: "running" | "succeeded" | "failed";
       revenue_kind: "sale" | "refund" | "chargeback" | "failed";
       revenue_lifecycle: "new" | "repeat" | "recurring" | "reactivation";
       source_kind:

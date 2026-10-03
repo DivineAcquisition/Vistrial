@@ -96,7 +96,7 @@ export type MetaInsightsArgs = {
   until: string;
   /**
    * Meta's own preset, used instead of the date range. `maximum` gives each
-   * ad's lifetime totals, which is what Airtable's Creatives row needs: its
+   * ad's lifetime totals, which is not what the Creatives table shows: its
    * cost formulas divide spend by lifetime rollups, so a partial-period spend
    * in that field would make every cost on the page wrong.
    */

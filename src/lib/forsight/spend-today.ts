@@ -9,10 +9,10 @@ import { isoDate } from "@/lib/forsight/weeks";
  * Today's spend, read live from Meta so the dashboard does not have to wait
  * for tomorrow's sync.
  *
- * Deliberately nothing to do with the sync. They answer different questions —
- * this one is "what is happening right now", the sync is "what does Airtable
- * need in order to calculate costs" — and they must not be able to break each
- * other. Nothing here writes, and nothing here throws: an unavailable figure
+ * Deliberately separate from the weekly figures beside it. They answer
+ * different questions — this one is "what is happening right now", those are
+ * "how did the week go" — and they must not be able to break each other.
+ * Nothing here writes, and nothing here throws: an unavailable figure
  * is one unavailable figure, not a blank page.
  */
 

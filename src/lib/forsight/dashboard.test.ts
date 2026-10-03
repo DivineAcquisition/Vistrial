@@ -1,13 +1,21 @@
 import { describe, expect, it } from "vitest";
 
 import { readCached, resetForsightCache } from "@/lib/forsight/cache";
+import { touchStatus } from "@/lib/forsight/core-source";
 import {
   comparableByCostPerAuditHeld,
-  creativesByCostPerAuditHeld,
   totalSpend,
+  type CreativeRow,
 } from "@/lib/forsight/creatives";
-import { plainText } from "@/lib/forsight/fields";
-import { daysSince, leadRow, pipelineHealth } from "@/lib/forsight/pipeline";
+import {
+  daysSince,
+  debriefsMissing,
+  goingQuiet,
+  isClosedStage,
+  neverContacted,
+  plainText,
+  type LeadRow,
+} from "@/lib/forsight/pipeline";
 import type { ForsightRecord } from "@/lib/forsight/types";
 import {
   compareMetricAscending,
@@ -15,13 +23,45 @@ import {
   movement,
   toMetricValue,
 } from "@/lib/forsight/values";
-import { weeklyPulse } from "@/lib/forsight/weekly";
 
 function record(id: string, fields: Record<string, unknown>): ForsightRecord {
   return { id, fields };
 }
 
-describe("the three states an Airtable formula field can be in", () => {
+function creative(name: string, spend: number, costPerAuditHeld: unknown): CreativeRow {
+  return {
+    id: name,
+    name,
+    status: "ACTIVE",
+    spend: toMetricValue(spend),
+    ctr: { kind: "absent" },
+    costPerLead: { kind: "absent" },
+    costPerQualifiedLead: { kind: "absent" },
+    costPerAuditHeld: toMetricValue(costPerAuditHeld),
+    cac: { kind: "absent" },
+  };
+}
+
+function lead(name: string, over: Partial<LeadRow> = {}): LeadRow {
+  const humanTouches = over.humanTouches ?? 0;
+  const daysSinceTouch = over.daysSinceTouch ?? null;
+  return {
+    id: name,
+    name,
+    stage: "qualified",
+    qualificationResult: "Qualified",
+    readinessScore: 80,
+    humanTouches,
+    optInDate: "2026-08-20",
+    daysSinceTouch,
+    touchStatus: touchStatus(humanTouches, daysSinceTouch),
+    nextAction: "",
+    debriefMissing: false,
+    ...over,
+  };
+}
+
+describe("the three states a metric can be in", () => {
   it("reads a numeric string as a number", () => {
     expect(toMetricValue("175")).toEqual({ kind: "number", value: 175, raw: "175" });
     expect(toMetricValue("12.14")).toEqual({ kind: "number", value: 12.14, raw: "12.14" });
@@ -40,7 +80,7 @@ describe("the three states an Airtable formula field can be in", () => {
     expect(toMetricValue("   ").kind).toBe("absent");
   });
 
-  it("tolerates a formula that starts returning a currency symbol", () => {
+  it("tolerates a number that arrives with a currency symbol", () => {
     expect(toMetricValue("$1,750.50")).toMatchObject({ kind: "number", value: 1750.5 });
   });
 
@@ -113,210 +153,105 @@ describe("week over week", () => {
   });
 });
 
-describe("weekly pulse", () => {
-  const weeks = [
-    record("w2", { Week: "Week of 8/25", "Week Start Date": "2026-08-25", "Total Spend": 900 }),
-    record("w1", { Week: "Week of 8/18", "Week Start Date": "2026-08-18", "Total Spend": 700 }),
-  ];
-
-  it("orders weeks oldest to newest and picks the latest as current", () => {
-    const pulse = weeklyPulse(weeks);
-    expect(pulse.weeks.map((week) => week.week)).toEqual(["Week of 8/18", "Week of 8/25"]);
-    expect(pulse.current?.week).toBe("Week of 8/25");
-    expect(pulse.previous?.week).toBe("Week of 8/18");
-    expect(pulse.hasTrend).toBe(true);
-  });
-
-  it("says there is no trend on a workspace with one week, which is today's DA base", () => {
-    const pulse = weeklyPulse([weeks[0]]);
-    expect(pulse.hasTrend).toBe(false);
-    expect(pulse.previous).toBeNull();
-    expect(pulse.current?.week).toBe("Week of 8/25");
-  });
-
-  it("handles no weeks at all without inventing one", () => {
-    const pulse = weeklyPulse([]);
-    expect(pulse.current).toBeNull();
-    expect(pulse.hasTrend).toBe(false);
-  });
-});
-
 describe("creative performance", () => {
   const creatives = [
-    record("c1", { "Creative Name": "DA-01 Scenario Cut", Spend: 300 }),
-    record("c2", {
-      "Creative Name": "DA-02 Direct Cold Cut",
-      Spend: 450,
-      "Cost per Audit Held": "150",
-    }),
-    record("c3", {
-      "Creative Name": "DA-03 Arithmetic Cut",
-      Spend: 200,
-      "Cost per Audit Held": "No audits yet",
-    }),
-    record("c4", {
-      "Creative Name": "DA-04 Proof Cut",
-      Spend: 100,
-      "Cost per Audit Held": "90",
-    }),
+    creative("DA-04 Proof Cut", 100, "90"),
+    creative("DA-02 Direct Cold Cut", 450, "150"),
+    creative("DA-03 Arithmetic Cut", 200, "No audits yet"),
+    creative("DA-01 Scenario Cut", 300, undefined),
   ];
 
-  it("puts the cheapest audit on top and text states below every real number", () => {
-    const rows = creativesByCostPerAuditHeld(creatives);
-    expect(rows.map((row) => row.name)).toEqual([
-      "DA-04 Proof Cut",
-      "DA-02 Direct Cold Cut",
-      "DA-03 Arithmetic Cut",
-      "DA-01 Scenario Cut",
-    ]);
-  });
-
   it("never sorts a creative with no audits yet as if it cost nothing", () => {
-    const rows = creativesByCostPerAuditHeld(creatives);
-    expect(rows[0].name).not.toBe("DA-03 Arithmetic Cut");
     expect(compareMetricAscending(toMetricValue("No audits yet"), toMetricValue("0"))).toBe(1);
   });
 
   it("compares only the creatives that have a real cost per audit held", () => {
-    expect(comparableByCostPerAuditHeld(creativesByCostPerAuditHeld(creatives))).toEqual([
+    expect(comparableByCostPerAuditHeld(creatives)).toEqual([
       { label: "DA-04 Proof Cut", value: 90 },
       { label: "DA-02 Direct Cold Cut", value: 150 },
     ]);
   });
 
   it("totals spend for the footer without deriving anything", () => {
-    expect(totalSpend(creativesByCostPerAuditHeld(creatives))).toMatchObject({ value: 1050 });
+    expect(totalSpend(creatives)).toMatchObject({ value: 1050 });
     expect(totalSpend([]).kind).toBe("absent");
   });
 
-  it("survives a base that has creatives but no spend or cost recorded, as DA's does today", () => {
-    const rows = creativesByCostPerAuditHeld([record("c1", { "Creative Name": "DA-01" })]);
-    expect(rows).toHaveLength(1);
+  it("survives a workspace that has creatives but no cost recorded yet", () => {
+    const rows = [creative("DA-01", 0, undefined)];
     expect(formatMetric(rows[0].costPerAuditHeld, "currency")).toBe("—");
+    expect(comparableByCostPerAuditHeld(rows)).toEqual([]);
   });
 });
 
 describe("pipeline health", () => {
   const leads = [
-    record("l1", {
-      "Lead Name": "TEST - Qualified, No Contact",
-      Stage: "Qualified - Not Booked",
-      "Qualification Result": "Qualified",
-      "Readiness Score": 100,
-      "Human Touches": 0,
-      "Days Since Touch": 999,
-      "Touch Status": "🔴 No human contact",
-      "Next Action": "🔴 CALL NOW - qualified, never contacted",
-      "Opt-In Date": "2026-08-20",
+    lead("Qualified, no contact", { readinessScore: 100, daysSinceTouch: null }),
+    lead("Borderline", { stage: "manual_review", readinessScore: 65 }),
+    lead("Disqualified", { stage: "disqualified", qualificationResult: "Manual Review" }),
+    lead("Closed won", {
+      stage: "closed_won",
+      humanTouches: 5,
+      daysSinceTouch: 44,
+      debriefMissing: true,
     }),
-    record("l2", {
-      "Lead Name": "TEST - Borderline",
-      Stage: "Manual Review",
-      "Qualification Result": "Qualified",
-      "Readiness Score": 65,
-      "Human Touches": 0,
-      "Days Since Touch": 999,
-      "Touch Status": "🔴 No human contact",
-      "Next Action": "🔴 CALL NOW - qualified, never contacted",
-    }),
-    record("l3", {
-      "Lead Name": "TEST - Disqualified",
-      Stage: "Disqualified",
-      "Qualification Result": "Disqualified",
-      "Human Touches": 0,
-      "Days Since Touch": 999,
-      "Touch Status": "🔴 No human contact",
-      "Next Action": "✓ Closed",
-    }),
-    record("l4", {
-      "Lead Name": "TEST - Closed Won",
-      Stage: "Closed Won",
-      "Qualification Result": "Qualified",
-      "Human Touches": 5,
-      "Days Since Touch": 44,
-      "Touch Status": "⚫ Ghosted 30d+",
-      "Debrief Missing": "📄 DEBRIEF MISSING",
-    }),
-    record("l5", {
-      "Lead Name": "Drifting",
-      Stage: "Proposal Out",
-      "Qualification Result": "Qualified",
-      "Human Touches": 3,
-      "Days Since Touch": 18,
-      "Touch Status": "🟠 Ghosted 14d+",
-      "Next Action": "💰 CLOSE - proposal going cold",
-    }),
-    record("l6", {
-      "Lead Name": "Long gone",
-      Stage: "Audit Booked",
-      "Qualification Result": "Qualified",
-      "Human Touches": 2,
-      "Days Since Touch": 40,
-      "Touch Status": "⚫ Ghosted 30d+",
-    }),
+    lead("Drifting", { stage: "proposal_out", humanTouches: 3, daysSinceTouch: 18 }),
+    lead("Long gone", { stage: "audit_booked", humanTouches: 2, daysSinceTouch: 40 }),
   ];
 
-  const health = pipelineHealth(leads);
-
   it("lists qualified leads nobody has spoken to, best score first", () => {
-    expect(health.neverContacted.map((lead) => lead.name)).toEqual([
-      "TEST - Qualified, No Contact",
-      "TEST - Borderline",
+    expect(neverContacted(leads).map((row) => row.name)).toEqual([
+      "Qualified, no contact",
+      "Borderline",
     ]);
   });
 
   it("leaves closed and disqualified leads out of every section", () => {
-    expect(health.neverContacted.map((lead) => lead.name)).not.toContain("TEST - Disqualified");
-    const quiet = [...health.goingQuiet.ghosted30, ...health.goingQuiet.ghosted14];
-    expect(quiet.map((lead) => lead.name)).not.toContain("TEST - Closed Won");
+    expect(neverContacted(leads).map((row) => row.name)).not.toContain("Disqualified");
+    const quiet = goingQuiet(leads);
+    const names = [...quiet.ghosted30, ...quiet.ghosted14].map((row) => row.name);
+    expect(names).not.toContain("Closed won");
   });
 
-  it("groups the quiet leads by the buckets Airtable already sorted them into", () => {
-    expect(health.goingQuiet.ghosted30.map((lead) => lead.name)).toEqual(["Long gone"]);
-    expect(health.goingQuiet.ghosted14.map((lead) => lead.name)).toEqual(["Drifting"]);
+  it("groups the quiet leads by how long they have been silent", () => {
+    const quiet = goingQuiet(leads);
+    expect(quiet.ghosted30.map((row) => row.name)).toEqual(["Long gone"]);
+    expect(quiet.ghosted14.map((row) => row.name)).toEqual(["Drifting"]);
   });
 
   it("does not double-count a never-contacted lead as going quiet", () => {
-    const quiet = [...health.goingQuiet.ghosted30, ...health.goingQuiet.ghosted14];
-    expect(quiet.map((lead) => lead.name)).not.toContain("TEST - Qualified, No Contact");
+    const quiet = goingQuiet(leads);
+    const names = [...quiet.ghosted30, ...quiet.ghosted14].map((row) => row.name);
+    expect(names).not.toContain("Qualified, no contact");
   });
 
-  it("finds held calls with no debrief from the field built for it", () => {
-    expect(health.debriefsMissing.map((lead) => lead.name)).toEqual(["TEST - Closed Won"]);
+  it("finds held calls with no debrief", () => {
+    expect(debriefsMissing(leads).map((row) => row.name)).toEqual(["Closed won"]);
   });
 
-  it("reads 999 days since touch as never, not as nearly three years", () => {
-    const lead = leadRow(leads[0]);
-    expect(lead.daysSinceTouch).toBeNull();
-    expect(leadRow(leads[4]).daysSinceTouch).toBe(18);
+  it("reads a stage the same whether it arrives underscored or written out", () => {
+    expect(isClosedStage("closed_won")).toBe(true);
+    expect(isClosedStage("Closed Won")).toBe(true);
+    expect(isClosedStage("audit_booked")).toBe(false);
   });
 
-  it("carries the Next Action Airtable wrote, rather than writing its own", () => {
-    expect(health.neverContacted[0].nextAction).toBe(
-      "🔴 CALL NOW - qualified, never contacted"
-    );
-  });
-
-  it("still finds the bucket if someone changes the emoji in the base", () => {
-    const renamed = pipelineHealth([
-      record("l7", {
-        "Lead Name": "Renamed icon",
-        Stage: "Audit Booked",
-        "Qualification Result": "Qualified",
-        "Human Touches": 1,
-        "Days Since Touch": 35,
-        "Touch Status": "🟣 Ghosted 30d+",
+  it("still finds the bucket if someone changes the icon on the status", () => {
+    const renamed = goingQuiet([
+      lead("Renamed icon", {
+        stage: "audit_booked",
+        humanTouches: 1,
+        daysSinceTouch: 35,
+        touchStatus: "🟣 Ghosted 30d+",
       }),
     ]);
-    expect(renamed.goingQuiet.ghosted30.map((lead) => lead.name)).toEqual(["Renamed icon"]);
+    expect(renamed.ghosted30.map((row) => row.name)).toEqual(["Renamed icon"]);
     expect(plainText("⚫ Ghosted 30d+")).toBe("ghosted 30d+");
   });
 
   it("reads an empty leads table as an empty pipeline, not a broken one", () => {
-    const none = pipelineHealth([]);
-    expect(none.totalLeads).toBe(0);
-    expect(none.neverContacted).toEqual([]);
-    expect(none.debriefsMissing).toEqual([]);
+    expect(neverContacted([])).toEqual([]);
+    expect(debriefsMissing([])).toEqual([]);
+    expect(goingQuiet([])).toEqual({ ghosted30: [], ghosted14: [] });
   });
 
   it("counts days waiting from the opt-in date", () => {
@@ -328,7 +263,7 @@ describe("pipeline health", () => {
 });
 
 describe("the read cache", () => {
-  it("serves a repeat page load without going back to Airtable", async () => {
+  it("serves a repeat page load without going back to the source", async () => {
     resetForsightCache();
     let calls = 0;
     const load = async () => {
@@ -373,7 +308,7 @@ describe("the read cache", () => {
     expect(theirs.records[0].id).toBe("theirs");
   });
 
-  it("does not cache a failed read, so a broken base never looks like an empty one", async () => {
+  it("does not cache a failed read, so a broken source never looks like an empty one", async () => {
     resetForsightCache();
     const key = { orgId: "org-a", sourceId: "src-a", dataset: "leads" as const };
 

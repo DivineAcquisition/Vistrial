@@ -1,44 +1,37 @@
 import { toMetricValue, unavailable, type MetricValue } from "@/lib/forsight/values";
 
 /**
- * The Airtable formulas, written once in TypeScript.
+ * Every cost and ratio Forsight reports, written once.
  *
- * Forsight still computes no metrics — the *pages* compute no metrics, which
- * is what that rule was always protecting. A source adapter's contract is to
- * hand back computed figures; the Airtable adapter satisfies it by reading
- * formula fields, and the core adapter satisfies it by running these. Both
- * arrive at the page as the same four states.
- *
- * These reproduce the base's formulas exactly, edge cases included, because a
- * client moved from one source type to the other must not see their numbers
- * change meaning. From the base:
+ * Pages compute no metrics. A source adapter's contract is to hand back
+ * figures that are already computed, and it satisfies that by running these,
+ * so each one arrives at the page as one of the four metric states:
  *
  *   Cost per Audit Held
- *     IF(held>0, ROUND(spend/held,2), IF(spend>0, "No audits yet", ""))
+ *     held > 0 ? spend / held : spend > 0 ? "No audits yet" : absent
  *   CAC
- *     IF(closed>0, ROUND(spend/closed,2), IF(spend>0, "No closes yet", ""))
+ *     closed > 0 ? spend / closed : spend > 0 ? "No closes yet" : absent
  *   Cost per Booked Call / Application / Qualified Lead / Lead
- *     IF(n>0, ROUND(spend/n,2), "")
+ *     n > 0 ? spend / n : absent
  *   ROAS
- *     IF(spend>0, ROUND(revenue/spend,2), "")
+ *     spend > 0 ? revenue / spend : absent
  *   CTR %
- *     IF(impressions>0, ROUND(clicks/impressions*100,2), "")
+ *     impressions > 0 ? clicks / impressions * 100 : absent
  *
- * Note what the empty branch means: `""` is a value Airtable omits from its
- * API payload, which arrives here as `absent`. It is not zero and not null,
- * and the text branches are not absent either — "No closes yet" is a true
- * statement about a young funnel and says something a dash does not.
+ * Note what the absent branch means. It is not zero and not null, and the
+ * text branches are not absent either — "No closes yet" is a true statement
+ * about a young funnel and says something a dash does not.
  */
 
-/** Airtable's ROUND(x, 2). */
+/** Two decimal places, the precision every figure on these pages is shown at. */
 export function round2(value: number): number {
   return Math.round((value + Number.EPSILON) * 100) / 100;
 }
 
 /**
- * `spend / count`, with the zero-denominator branch the base uses. `zeroText`
- * is the wording for a denominator of zero when there was spend to divide;
- * omit it for the formulas that just return blank.
+ * `spend / count`, with its zero-denominator branch. `zeroText` is the
+ * wording for a denominator of zero when there was spend to divide; omit it
+ * for the figures that just come back absent.
  */
 export function costPer(
   spend: MetricValue,

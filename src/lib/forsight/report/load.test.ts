@@ -37,7 +37,7 @@ describe("rowToStored", () => {
       generated_by: "scheduled",
       generated_by_member_id: null,
       generated_by_name: "scheduled",
-      source_type: "airtable",
+      source_type: "vistrial_core",
       payload: report as unknown as Json,
       omissions: [] as unknown as Json,
     });

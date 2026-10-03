@@ -21,7 +21,6 @@ export const dynamic = "force-dynamic";
 export const metadata = { title: "All workspaces · Forsight" };
 
 const SOURCE_LABELS: Record<string, string> = {
-  airtable: "Airtable",
   vistrial_core: "Vistrial core",
 };
 

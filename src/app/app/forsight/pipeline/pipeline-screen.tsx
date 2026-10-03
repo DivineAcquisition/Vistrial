@@ -22,7 +22,7 @@ function silentFor(lead: LeadRow): string {
 }
 
 /**
- * One lead, with the Next Action text Airtable already wrote for it. The page
+ * One lead, with the Next Action this workspace already decided on. The page
  * surfaces the queue; the base decides what belongs in it.
  */
 function Lead({ lead, meta }: { lead: LeadRow; meta: string }) {

@@ -12,11 +12,6 @@ import { inputClass, labelClass, selectClass } from "@/lib/ui";
 
 const TYPES: Array<{ value: ForsightSourceType; label: string; hint: string }> = [
   {
-    value: "airtable",
-    label: "Airtable base",
-    hint: "A base duplicated from our master template. Forsight reads the formula fields.",
-  },
-  {
     value: "vistrial_core",
     label: "Vistrial core",
     hint: "This workspace's own leads, calls, touches and revenue. Nothing to configure.",
@@ -33,17 +28,10 @@ const TYPES: Array<{ value: ForsightSourceType; label: string; hint: string }> =
   },
 ];
 
-const TABLES = [
-  { key: "leads", label: "Leads" },
-  { key: "creatives", label: "Creatives" },
-  { key: "weeklySummary", label: "Weekly Summary" },
-  { key: "touches", label: "Touches" },
-] as const;
-
 type Feedback = { tone: "success" | "critical" | "info"; message: string } | null;
 
 /**
- * The one screen that asks anyone to type a base ID, and only an operator ever
+ * Attaching a workspace's ad account or calendar, and only an operator ever
  * sees it. Saving is disabled until the connection has answered, because a
  * source that saves cleanly and fails at the client's first login is the worst
  * version of this feature.
@@ -54,17 +42,10 @@ export function SourceEditor({
   workspaces: Array<{ id: string; name: string; slug: string }>;
 }) {
   const [orgId, setOrgId] = useState(workspaces[0]?.id ?? "");
-  const [sourceType, setSourceType] = useState<ForsightSourceType>("airtable");
+  const [sourceType, setSourceType] = useState<ForsightSourceType>("vistrial_core");
   const [label, setLabel] = useState("");
-  const [baseId, setBaseId] = useState("");
   const [adAccount, setAdAccount] = useState("");
   const [calendarId, setCalendarId] = useState("");
-  const [tables, setTables] = useState({
-    leads: true,
-    creatives: true,
-    weeklySummary: true,
-    touches: true,
-  });
 
   const [tested, setTested] = useState(false);
   const [feedback, setFeedback] = useState<Feedback>(null);
@@ -74,14 +55,12 @@ export function SourceEditor({
     orgId,
     sourceType,
     label,
-    airtableBaseId: baseId,
-    airtableTables: tables,
     metaAdAccountId: adAccount,
     ghlCalendarId: calendarId,
   });
 
-  // Any edit invalidates the test. Otherwise an operator could test one base
-  // and save a different one.
+  // Any edit invalidates the test. Otherwise an operator could test one
+  // account and save a different one.
   const change = <T,>(set: (value: T) => void) => (value: T) => {
     set(value);
     setTested(false);
@@ -165,45 +144,6 @@ export function SourceEditor({
           placeholder="What this source is, for an operator reading it later"
         />
       </div>
-
-      {sourceType === "airtable" ? (
-        <>
-          <div>
-            <label className={labelClass} htmlFor="forsight-base-id">
-              Airtable base ID
-            </label>
-            <input
-              id="forsight-base-id"
-              className={inputClass}
-              value={baseId}
-              onChange={(event) => change(setBaseId)(event.target.value)}
-              placeholder="appXXXXXXXXXXXXXX"
-              spellCheck={false}
-            />
-          </div>
-          <fieldset>
-            <legend className={labelClass}>Tables this base has</legend>
-            <p className="mb-2 text-xs text-dim">
-              Unchecked tables read as unavailable rather than empty.
-            </p>
-            <div className="flex flex-wrap gap-x-5 gap-y-2">
-              {TABLES.map((table) => (
-                <label key={table.key} className="flex items-center gap-2 text-sm text-silver">
-                  <input
-                    type="checkbox"
-                    className="size-4 accent-[var(--color-brand-500)]"
-                    checked={tables[table.key]}
-                    onChange={(event) =>
-                      change(setTables)({ ...tables, [table.key]: event.target.checked })
-                    }
-                  />
-                  {table.label}
-                </label>
-              ))}
-            </div>
-          </fieldset>
-        </>
-      ) : null}
 
       {sourceType === "meta_ads" ? (
         <div>

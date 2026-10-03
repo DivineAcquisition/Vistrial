@@ -11,9 +11,8 @@ import type { MonthlyMetrics } from "@/lib/forsight/report/types";
 import type { ForsightResult } from "@/lib/forsight/types";
 
 /**
- * A month from Vistrial's own tables, in the same facts shape the Airtable
- * adapter produces. Qualification is the readiness threshold (default 60),
- * which is what the base's formula uses for "Qualified".
+ * A month from Vistrial's own tables, in the shared facts shape.
+ * Qualification is the readiness threshold, which defaults to 60.
  */
 
 const DEFAULT_READY_THRESHOLD = 60;

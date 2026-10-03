@@ -17,8 +17,8 @@ export default async function WeeklyPulsePage() {
     redirect(`${FORSIGHT_PATH}/pipeline`);
   }
   const view = await loadWeeklyPulse();
-  // Loaded after the Airtable view so the live sources see the same week
-  // Airtable is reporting on. Neither can fail this page.
+  // Loaded after the pulse so the live sources see the same week the pulse is
+  // reporting on. Neither can fail this page.
   const live = await loadLiveSources(view.state === "ok" ? view.data.current : null);
 
   return (

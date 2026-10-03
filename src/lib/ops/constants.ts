@@ -55,7 +55,6 @@ export const OPS_JOB_NAMES = [
   "portal-email",
   "source-sync",
   "agent-runtime",
-  "forsight-meta-sync",
   "forsight-reports",
   "home-agents",
 ] as const;

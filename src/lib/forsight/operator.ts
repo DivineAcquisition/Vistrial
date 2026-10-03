@@ -1,8 +1,7 @@
 import "server-only";
 
 import { getAuthContext } from "@/lib/auth/session";
-import { listAirtableRecords } from "@/lib/forsight/airtable";
-import { airtableConfigured, metaConfigured, normalizeMetaAdAccountId } from "@/lib/forsight/env";
+import { metaConfigured, normalizeMetaAdAccountId } from "@/lib/forsight/env";
 import { fetchMetaAdInsights } from "@/lib/forsight/meta";
 import { loadConnection } from "@/lib/ghl/tokens";
 import { createClient } from "@/lib/supabase/server";
@@ -13,25 +12,17 @@ import type { TablesInsert } from "@/types/database";
 /**
  * Provisioning, for operators only.
  *
- * This is the one screen in Forsight that asks anyone to type a base ID, and
- * the exception is narrow: it exists so Divine Acquisition can onboard a
- * client, and a client user can never reach it. That is enforced by row-level
- * security on `forsight_sources` — an insert or update from a client user is
- * refused by Postgres, not merely hidden behind a missing link — and by
- * `requireForsightOperator` on every entry point here.
+ * It exists so Divine Acquisition can attach a client's ad account or
+ * calendar, and a client user can never reach it. That is enforced by
+ * row-level security on `forsight_sources` — an insert or update from a client
+ * user is refused by Postgres, not merely hidden behind a missing link — and
+ * by `requireForsightOperator` on every entry point here.
  */
 
 export type SourceDraft = {
   orgId: string;
   sourceType: ForsightSourceType;
   label?: string | null;
-  airtableBaseId?: string | null;
-  airtableTables?: {
-    leads: boolean;
-    creatives: boolean;
-    weeklySummary: boolean;
-    touches: boolean;
-  };
   metaAdAccountId?: string | null;
   ghlCalendarId?: string | null;
 };
@@ -62,38 +53,12 @@ export async function listWorkspacesForOperator(): Promise<
   return data ?? [];
 }
 
-const DEFAULT_TABLES = {
-  leads: "Leads",
-  creatives: "Creatives",
-  weeklySummary: "Weekly Summary",
-  touches: "Touches",
-} as const;
-
 export function draftToRow(draft: SourceDraft): TablesInsert<"forsight_sources"> {
-  const tables = draft.airtableTables ?? {
-    leads: true,
-    creatives: true,
-    weeklySummary: true,
-    touches: true,
-  };
-
   return {
     org_id: draft.orgId,
     source_type: draft.sourceType,
     status: "active",
     label: draft.label?.trim() || null,
-    airtable_base_id:
-      draft.sourceType === "airtable" ? (draft.airtableBaseId?.trim() ?? null) : null,
-    airtable_leads_table:
-      draft.sourceType === "airtable" && tables.leads ? DEFAULT_TABLES.leads : null,
-    airtable_creatives_table:
-      draft.sourceType === "airtable" && tables.creatives ? DEFAULT_TABLES.creatives : null,
-    airtable_weekly_summary_table:
-      draft.sourceType === "airtable" && tables.weeklySummary
-        ? DEFAULT_TABLES.weeklySummary
-        : null,
-    airtable_touches_table:
-      draft.sourceType === "airtable" && tables.touches ? DEFAULT_TABLES.touches : null,
     meta_ad_account_id:
       draft.sourceType === "meta_ads"
         ? normalizeMetaAdAccountId(draft.metaAdAccountId ?? "") || null
@@ -118,41 +83,6 @@ export async function testSourceDraft(draft: SourceDraft): Promise<SourceTestRes
 
   try {
     switch (draft.sourceType) {
-      case "airtable": {
-        const baseId = draft.airtableBaseId?.trim();
-        if (!baseId) return { ok: false, error: "Enter the Airtable base ID." };
-        if (!airtableConfigured()) {
-          return { ok: false, error: "AIRTABLE_API_KEY is not set on this deployment." };
-        }
-
-        const wanted = draft.airtableTables ?? {
-          leads: true,
-          creatives: true,
-          weeklySummary: true,
-          touches: true,
-        };
-        const tables = (Object.keys(DEFAULT_TABLES) as Array<keyof typeof DEFAULT_TABLES>)
-          .filter((key) => wanted[key])
-          .map((key) => DEFAULT_TABLES[key]);
-
-        if (tables.length === 0) {
-          return { ok: false, error: "Pick at least one table for this base." };
-        }
-
-        // Every named table is read, so a base missing one fails here rather
-        // than on the client's dashboard.
-        for (const table of tables) {
-          await listAirtableRecords({
-            orgId: draft.orgId,
-            orgLabel: null,
-            baseId,
-            table,
-            maxRecords: 1,
-          });
-        }
-        return { ok: true, detail: `Read ${tables.length} table${tables.length === 1 ? "" : "s"} from ${baseId}.` };
-      }
-
       case "meta_ads": {
         const account = normalizeMetaAdAccountId(draft.metaAdAccountId ?? "");
         if (!account) return { ok: false, error: "Enter the Meta ad account ID." };

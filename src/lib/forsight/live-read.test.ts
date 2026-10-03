@@ -16,11 +16,6 @@ function dbWithMetaSource(): ForsightDb {
     source_type: "meta_ads",
     status: "active",
     label: "DA ad account",
-    airtable_base_id: null,
-    airtable_leads_table: null,
-    airtable_creatives_table: null,
-    airtable_weekly_summary_table: null,
-    airtable_touches_table: null,
     meta_ad_account_id: "act_1234567890",
     ghl_calendar_id: null,
     last_verified_at: null,
@@ -48,9 +43,9 @@ afterEach(() => {
 });
 
 /**
- * Spend today is a live Meta read sitting on a page whose other figures come
- * from Airtable. Breaking one must not break the other, so this covers the
- * failure path as deliberately as the success path.
+ * Spend today is a live Meta read sitting on a page whose other figures are
+ * read from Vistrial's own tables. Breaking one must not break the other, so
+ * this covers the failure path as deliberately as the success path.
  */
 describe("spend today survives its own failure", () => {
   it("reads today's spend when Meta answers", async () => {

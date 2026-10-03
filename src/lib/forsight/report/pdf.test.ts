@@ -88,7 +88,7 @@ describe("forsightReportPdf", () => {
       generatedAt,
       generatedBy: "operator",
       generatedByName: "Dana",
-      sourceType: "airtable",
+      sourceType: "vistrial_core",
       report,
       omissions: report.omissions,
     };

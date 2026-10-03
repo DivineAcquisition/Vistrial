@@ -1,16 +1,16 @@
 import type { Enums } from "@/types/database";
 
 /**
- * Forsight is a display layer. It never owns metric data and never calculates
- * anything its sources do not already calculate. These are the shapes every
- * source type presents, so a second type slots in behind the same interface.
+ * Forsight reads this workspace's own tables and the ad accounts attached to
+ * it. These are the shapes a source presents, so another one could slot in
+ * behind the same interface without a page learning about it.
  */
 
 export type ForsightSourceType = Enums<"forsight_source_type">;
 
 export type ForsightSourceStatus = Enums<"ghl_connection_status">;
 
-/** The four datasets a workspace's acquisition install is built from. */
+/** The datasets a workspace's acquisition install is built from. */
 export const FORSIGHT_DATASETS = ["leads", "creatives", "weeklySummary", "touches"] as const;
 
 export type ForsightDataset = (typeof FORSIGHT_DATASETS)[number];
@@ -20,25 +20,6 @@ export const FORSIGHT_DATASET_LABELS: Record<ForsightDataset, string> = {
   creatives: "Creatives",
   weeklySummary: "Weekly Summary",
   touches: "Touches",
-};
-
-/**
- * A dataset the workspace's base does not have. Recorded on the source record
- * rather than discovered at read time, so the display layer can say "we do not
- * track this here" instead of showing a broken panel.
- */
-export type ForsightDatasetMap = Record<ForsightDataset, string | null>;
-
-export type ForsightAirtableSource = {
-  id: string;
-  orgId: string;
-  type: "airtable";
-  status: ForsightSourceStatus;
-  label: string | null;
-  baseId: string;
-  tables: ForsightDatasetMap;
-  lastVerifiedAt: string | null;
-  lastError: string | null;
 };
 
 export type ForsightMetaSource = {
@@ -85,8 +66,8 @@ export type ForsightCoreSource = {
 };
 
 /**
- * What Forsight uses when a workspace has no Airtable or core source row.
- * Every client workspace is already the address; the row is optional.
+ * What Forsight uses when a workspace has no core source row. Every client
+ * workspace is already the address; the row is optional.
  */
 export function implicitCoreSource(orgId: string): ForsightCoreSource {
   return {
@@ -100,25 +81,19 @@ export function implicitCoreSource(orgId: string): ForsightCoreSource {
   };
 }
 
-export type ForsightSource =
-  | ForsightAirtableSource
-  | ForsightMetaSource
-  | ForsightGhlSource
-  | ForsightCoreSource;
+export type ForsightSource = ForsightMetaSource | ForsightGhlSource | ForsightCoreSource;
 
 /** The one metrics source a workspace reads, or core if none was provisioned. */
 export function metricsSourceFor(
   sources: ForsightSource[],
   orgId: string
-): ForsightAirtableSource | ForsightCoreSource {
-  const metrics = sources.find(
-    (source) => source.type === "airtable" || source.type === "vistrial_core"
-  );
-  if (metrics?.type === "airtable" || metrics?.type === "vistrial_core") return metrics;
+): ForsightCoreSource {
+  const metrics = sources.find((source) => source.type === "vistrial_core");
+  if (metrics?.type === "vistrial_core") return metrics;
   return implicitCoreSource(orgId);
 }
 
-/** One row from a source, kept in the source's own vocabulary. */
+/** One opaque row held by the read cache, in the shape its producer chose. */
 export type ForsightRecord = {
   id: string;
   fields: Record<string, unknown>;
@@ -133,11 +108,10 @@ export type ForsightResult<T> =
  * vocabulary rather than any source's.
  *
  * An adapter returns weeks, creatives and pipeline health with their metrics
- * already computed. The Airtable adapter gets there by reading formula fields;
- * the Vistrial-core adapter gets there by querying core tables and applying
- * the same formulas. A page asks for a workspace's weekly metrics and cannot
- * tell which answered — that is the whole point of the interface, and the
- * reason adding the second type changed no page.
+ * already computed. Vistrial core gets there by querying its own tables and
+ * applying the formulas. A page asks for a workspace's weekly metrics and
+ * never learns how they were produced, which is what lets the source behind
+ * them change without touching a page.
  */
 export type ForsightMetricsProvider = {
   readonly sourceType: ForsightSourceType;

@@ -20,17 +20,16 @@ import type {
   ForsightResult,
 } from "@/lib/forsight/types";
 import { toMetricValue, type MetricValue } from "@/lib/forsight/values";
-import { isoDate, weekCadence, weekEnd, weekLabel } from "@/lib/forsight/weeks";
+import { isoDate, weekEnd, weekLabel, weekStartFor } from "@/lib/forsight/weeks";
 import type { WeekRow, WeeklyPulse } from "@/lib/forsight/weekly";
 import { coreMonthly } from "@/lib/forsight/report/core";
 
 /**
- * Vistrial's own core tables, presented in the shape the Airtable adapter
- * presents.
+ * Forsight's numbers, read from Vistrial's own tables.
  *
- * Clients whose lead, touch and outcome activity is already logged in the main
- * app have all of this in our database. Making them reach it through an
- * Airtable base would mean copying our own data out and back in.
+ * A client's lead, touch and outcome activity is already logged in the main
+ * app, so this is the whole source: no copy of it lives anywhere else, and
+ * nothing has to be provisioned before a workspace can open Forsight.
  *
  * Every read goes through the caller's Supabase client, so the same row-level
  * security that scopes the rest of the app scopes this. There is no
@@ -40,11 +39,7 @@ import { coreMonthly } from "@/lib/forsight/report/core";
 /** How many weeks of history the dashboard shows. */
 const WEEKS_OF_HISTORY = 12;
 
-/**
- * Airtable's `Qualification Result` has no column in core. The nearest thing
- * with the same meaning is the readiness threshold, which defaults to 60 —
- * the same score the base's own formula uses for "Qualified".
- */
+/** The readiness score at which a lead counts as qualified. */
 const DEFAULT_READY_THRESHOLD = 60;
 
 type CoreLead = {
@@ -73,7 +68,7 @@ export function coreProvider(
     weeks: () => coreWeeks(db, source, context.meta, now, context.orgName),
 
     /**
-     * Core has no per-ad-creative performance anywhere: `ad_spend_days` is
+     * Nothing here holds per-ad-creative performance: `ad_spend_days` is
      * campaign by day, with no ad name, impressions, or clicks. Rather than
      * invent a creative table, the page says this workspace does not track it.
      */
@@ -81,7 +76,7 @@ export function coreProvider(
       return {
         available: false,
         reason:
-          "Creative performance comes from ad-level data, which this workspace's source does not hold. Connecting an Airtable base with a Creatives table would add it.",
+          "Creative performance comes from ad-level data, which this workspace does not collect yet.",
       };
     },
 
@@ -103,8 +98,7 @@ async function coreWeeks(
   orgName?: string | null
 ): Promise<ForsightResult<WeeklyPulse>> {
   const today = isoDate(now);
-  const cadence = weekCadence([], today);
-  const firstWeek = cadence.weekStartFor(today);
+  const firstWeek = weekStartFor(today);
   const starts: string[] = [];
   for (let index = WEEKS_OF_HISTORY - 1; index >= 0; index -= 1) {
     starts.push(shiftWeeks(firstWeek, -index));
@@ -186,11 +180,11 @@ async function coreWeeks(
 }
 
 /**
- * Spend is the one figure core cannot produce. `ad_spend_days` exists, but it
- * belongs to the owner-portal integration with its own sync lifecycle and a
- * rolling window, and quietly borrowing another subsystem's numbers is how a
- * dashboard ends up confidently wrong. Forsight uses its own Meta source or
- * says it does not know.
+ * Spend is the one figure this workspace's own tables cannot produce.
+ * `ad_spend_days` exists, but it belongs to the owner-portal integration with
+ * its own sync lifecycle and a rolling window, and quietly borrowing another
+ * subsystem's numbers is how a dashboard ends up confidently wrong. Forsight
+ * reads its own Meta source or says it does not know.
  */
 async function readSpendByWeek(
   db: ForsightDb,
@@ -259,7 +253,6 @@ async function corePipeline(
       id: row.id,
       name: [row.first_name, row.last_name].filter(Boolean).join(" ").trim() || "Unnamed lead",
       stage: row.status,
-      // Airtable's wording, so both adapters describe a lead the same way.
       qualificationResult: (score ?? 0) >= threshold ? "Qualified" : "Manual Review",
       readinessScore: score,
       humanTouches: humanTouches.get(row.id) ?? 0,
@@ -282,7 +275,7 @@ async function corePipeline(
   };
 }
 
-/** The same buckets the base's Touch Status formula produces. */
+/** The buckets Pipeline Health sorts leads into, by how long they have waited. */
 export function touchStatus(humanTouches: number, daysSinceTouch: number | null): string {
   if (humanTouches === 0) return "🔴 No human contact";
   if (daysSinceTouch === null) return "🔴 No human contact";

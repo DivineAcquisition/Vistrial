@@ -1,7 +1,6 @@
 import "server-only";
 
 import { coreProvider } from "@/lib/forsight/core-source";
-import { airtableProvider } from "@/lib/forsight/provider";
 import { monthPeriod, previousMonthStart } from "@/lib/forsight/report/build";
 import { loadPeriodReportStatus, type PeriodReportStatus } from "@/lib/forsight/report/load";
 import { loadForsightSources } from "@/lib/forsight/sources";
@@ -85,15 +84,12 @@ async function overviewRow(
   try {
     const sources = await loadForsightSources(supabase, org.id);
     const metrics = metricsSourceFor(sources, org.id);
-    const provider =
-      metrics.type === "vistrial_core"
-        ? coreProvider(supabase, metrics, {
-            orgName: org.name,
-            meta: sources.find((source) => source.type === "meta_ads") ?? null,
-          })
-        : airtableProvider(metrics, org.name);
+    const provider = coreProvider(supabase, metrics, {
+      orgName: org.name,
+      meta: sources.find((source) => source.type === "meta_ads") ?? null,
+    });
 
-    // One workspace's broken base must not blank the whole table, so each row
+    // One workspace's broken read must not blank the whole table, so each row
     // carries its own failure.
     const [weeks, pipeline] = await Promise.all([
       provider.weeks().catch((error: unknown) => ({

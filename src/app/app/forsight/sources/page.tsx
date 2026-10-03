@@ -23,7 +23,6 @@ export const dynamic = "force-dynamic";
 export const metadata = { title: "Sources · Forsight" };
 
 const TYPE_LABELS: Record<string, string> = {
-  airtable: "Airtable base",
   vistrial_core: "Vistrial core",
   meta_ads: "Meta ad account",
   ghl: "LeadConnector",
@@ -42,7 +41,7 @@ export default async function ForsightSourcesPage() {
 
   const { data: sources } = await supabase
     .from("forsight_sources")
-    .select("id, org_id, source_type, status, label, airtable_base_id, meta_ad_account_id, last_verified_at")
+    .select("id, org_id, source_type, status, label, meta_ad_account_id, last_verified_at")
     .order("org_id", { ascending: true });
 
   const names = new Map(workspaces.map((workspace) => [workspace.id, workspace.name]));
@@ -82,10 +81,7 @@ export default async function ForsightSourcesPage() {
                   </TableCell>
                   <TableCell>{TYPE_LABELS[source.source_type] ?? source.source_type}</TableCell>
                   <TableCell className="text-silver">
-                    {source.airtable_base_id ??
-                      source.meta_ad_account_id ??
-                      source.label ??
-                      "This workspace"}
+                    {source.meta_ad_account_id ?? source.label ?? "This workspace"}
                   </TableCell>
                   <TableCell>
                     <StatusBadge

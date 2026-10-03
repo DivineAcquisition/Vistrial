@@ -79,7 +79,7 @@ vi.mock("@/lib/supabase/admin", () => ({
 
 vi.mock("@/lib/forsight/provider", () => ({
   forsightProviderFor: async () => ({
-    sourceType: "airtable",
+    sourceType: "vistrial_core",
     monthly: async () => ({ available: true, data: metrics() }),
   }),
 }));

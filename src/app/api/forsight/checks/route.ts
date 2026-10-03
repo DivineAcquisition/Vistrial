@@ -14,7 +14,7 @@ export const dynamic = "force-dynamic";
  * for it. Read-only, Divine Acquisition operators only, and scoped to the
  * caller's active workspace so it can never reach across tenants.
  *
- * GET /api/forsight/checks?source=airtable
+ * GET /api/forsight/checks
  * GET /api/forsight/checks?source=meta&since=2026-08-01&until=2026-08-31
  */
 export async function GET(request: NextRequest) {
@@ -24,7 +24,7 @@ export async function GET(request: NextRequest) {
   }
 
   const params = request.nextUrl.searchParams;
-  const source = params.get("source") ?? "airtable";
+  const source = params.get("source") ?? "core";
   const supabase = await createClient();
 
   try {

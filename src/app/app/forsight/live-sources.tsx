@@ -1,23 +1,13 @@
 import { Panel } from "@/components/ui/panel";
 import { SectionHeader } from "@/components/ui/section-header";
-import { Notice } from "@/components/ui/states";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 import type { CommsView } from "@/lib/forsight/dashboard";
-import { reconciliationSentence } from "@/lib/forsight/reconcile";
 import type { SpendToday } from "@/lib/forsight/spend-today";
 import { formatNumber } from "@/lib/forsight/values";
 
 /**
- * Today's spend, read live from Meta rather than from Airtable. Marked as such
- * on the card, because every other figure on this page is a week-to-date
- * number that Airtable calculated and this one is neither.
+ * Today's spend, read live from Meta. Marked as such on the card, because
+ * every other figure on this page is a week-to-date number and this one is
+ * not.
  */
 export function SpendTodayCard({ spend }: { spend: SpendToday }) {
   if (spend.state === "not_tracked") return null;
@@ -30,7 +20,7 @@ export function SpendTodayCard({ spend }: { spend: SpendToday }) {
           <p className="mt-1 text-2xl font-semibold tabular-nums text-white">
             {formatNumber(spend.spend, "currency")}
           </p>
-          <p className="mt-1 text-xs text-dim">Live from Meta, not yet in Airtable.</p>
+          <p className="mt-1 text-xs text-dim">Live from Meta. Today so far.</p>
         </>
       ) : (
         <>
@@ -82,44 +72,6 @@ export function CommsSection({ comms }: { comms: CommsView }) {
               </p>
             ) : null}
           </Panel>
-
-          <Panel className="p-5">
-            <p className="text-[11px] font-semibold tracking-[0.14em] text-dim uppercase">
-              LeadConnector against Airtable
-            </p>
-            <Table className="mt-3">
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Appointments</TableHead>
-                  <TableHead className="text-right">LeadConnector</TableHead>
-                  <TableHead className="text-right">Airtable</TableHead>
-                  <TableHead className="text-right">Gap</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {comms.reconciliation.lines.map((line) => (
-                  <TableRow key={line.label}>
-                    <TableCell className="font-medium text-card-foreground">{line.label}</TableCell>
-                    <TableCell className="text-right tabular-nums">{line.ghl}</TableCell>
-                    <TableCell className="text-right tabular-nums">
-                      {line.airtable === null ? "—" : line.airtable}
-                    </TableCell>
-                    <TableCell
-                      className={`text-right tabular-nums ${line.agrees ? "text-dim" : "text-destructive"}`}
-                    >
-                      {line.gap === null ? "—" : line.gap === 0 ? "0" : formatGap(line.gap)}
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-            <Notice
-              tone={comms.reconciliation.disagrees ? "warning" : "info"}
-              className="mt-4"
-            >
-              {reconciliationSentence(comms.reconciliation)}
-            </Notice>
-          </Panel>
         </div>
       )}
     </section>
@@ -133,8 +85,4 @@ function Figure({ label, value }: { label: string; value: number }) {
       <dd className="mt-1 text-2xl font-semibold tabular-nums text-white">{value}</dd>
     </div>
   );
-}
-
-function formatGap(gap: number): string {
-  return gap > 0 ? `+${gap}` : String(gap);
 }

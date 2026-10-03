@@ -7,7 +7,6 @@ import { ForsightSourceError } from "@/lib/forsight/errors";
 import { forsightProviderFor } from "@/lib/forsight/provider";
 import { loadGhlActivity, type GhlActivity } from "@/lib/forsight/ghl";
 import type { PipelineHealth } from "@/lib/forsight/pipeline";
-import { reconcileAppointments, type Reconciliation } from "@/lib/forsight/reconcile";
 import { loadSpendToday, type SpendToday } from "@/lib/forsight/spend-today";
 import { createClient } from "@/lib/supabase/server";
 import {
@@ -21,8 +20,8 @@ import type { WeekRow, WeeklyPulse } from "@/lib/forsight/weekly";
 
 /**
  * What a Forsight page gets handed. Every absence is its own state, because
- * "this client has not started yet", "this base does not track that", and
- * "we could not reach the base" need three different sentences on screen.
+ * "this client has not started yet", "this workspace does not track that",
+ * and "we could not read it" need three different sentences on screen.
  */
 export type ForsightView<T> =
   | { state: "ok"; workspace: Workspace; data: T; fetchedAt: Date }
@@ -108,7 +107,7 @@ export async function loadWeeklyPulse(): Promise<ForsightView<WeeklyPulse>> {
 /**
  * The two live sources, loaded beside Weekly Pulse rather than inside it.
  * Neither can fail the page: each returns its own unavailable state, and the
- * Airtable-backed figures above them are unaffected either way.
+ * figures above them are unaffected either way.
  */
 export async function loadLiveSources(
   current: WeekRow | null
@@ -126,7 +125,7 @@ export async function loadLiveSources(
 }
 
 export type CommsView =
-  | { state: "ok"; activity: GhlActivity; reconciliation: Reconciliation }
+  | { state: "ok"; activity: GhlActivity }
   | { state: "not_tracked" }
   | { state: "unavailable"; reason: string };
 
@@ -136,22 +135,15 @@ async function loadWeekActivity(
   current: WeekRow | null,
   now: Date
 ): Promise<CommsView> {
-  // The window is the week Airtable itself is reporting on, so the two sides
-  // of the comparison cover the same days.
+  // The window is the week the figures above are reporting on, so the card
+  // and the table cover the same days.
   const from = current?.weekStart ?? isoDate(now);
   const to = isoDate(now) < weekEnd(from) ? isoDate(now) : weekEnd(from);
 
   const result = await loadGhlActivity(supabase, { orgId, from, to });
   if (result.state !== "ok") return result;
 
-  return {
-    state: "ok",
-    activity: result.activity,
-    reconciliation: reconcileAppointments(result.activity.appointments, {
-      booked: current?.booked ?? { kind: "absent" },
-      held: current?.held ?? { kind: "absent" },
-    }),
-  };
+  return { state: "ok", activity: result.activity };
 }
 
 export async function loadCreativePerformance(): Promise<ForsightView<CreativeRow[]>> {
@@ -170,18 +162,18 @@ export async function loadPipelineHealth(): Promise<ForsightView<PipelineHealth>
   );
 }
 
-/** What will show up here once data flows, said in the base's own vocabulary. */
+/** What will show up here once data flows. */
 export function datasetPromise(dataset: ForsightDataset): string {
   const label = FORSIGHT_DATASET_LABELS[dataset];
   switch (dataset) {
     case "weeklySummary":
-      return `Spend, funnel counts, and the cost of each stage will appear here once the first ${label} row is filled in.`;
+      return "Spend, funnel counts, and the cost of each stage will appear here once this workspace has a week of activity.";
     case "creatives":
-      return `Each ad creative and what it costs per audit held will appear here once the ${label} table has rows.`;
+      return "Each ad creative and what it costs per audit held will appear here once ad-level performance is collected.";
     case "leads":
-      return `Leads needing a call, going quiet, or missing a debrief will appear here once the ${label} table has rows.`;
+      return "Leads needing a call, going quiet, or missing a debrief will appear here once this workspace has leads.";
     default:
-      return `This will fill in once the ${label} table has rows.`;
+      return `This will fill in once this workspace has ${label.toLowerCase()}.`;
   }
 }
 

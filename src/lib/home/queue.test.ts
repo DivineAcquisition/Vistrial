@@ -29,7 +29,7 @@ import {
   type ActivityEvent,
 } from "@/lib/home/queue";
 
-const SEED_MIGRATIONS = ["20261002010000_home_screen.sql", "20261003010000_execution_integrations.sql"];
+const SEED_MIGRATIONS = ["20261002010000_home_screen.sql", "20261003030000_execution_integrations.sql"];
 const migration = SEED_MIGRATIONS.map((file) =>
   readFileSync(path.join(process.cwd(), "supabase/migrations", file), "utf8")
 ).join("\n");

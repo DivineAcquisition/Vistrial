@@ -12,7 +12,7 @@ sees what is posted or filed; no lead ever does. Settings → Integrations →
 | `src/lib/execution/authorize.ts` | What lets a write happen. |
 | `src/lib/execution/write-log.ts` | Every attempt, including blocked ones. |
 | `src/app/api/execution/oauth/{start,callback}` | One redirect URI for all three. |
-| `supabase/migrations/20261003010000_execution_integrations.sql` | Connections, write log, action types. |
+| `supabase/migrations/20261003030000_execution_integrations.sql` | Connections, write log, action types. |
 
 ## How a write is authorised
 

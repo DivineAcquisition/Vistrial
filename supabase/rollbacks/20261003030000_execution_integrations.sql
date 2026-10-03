@@ -1,4 +1,4 @@
--- Inverse of 20261003010000_execution_integrations.sql.
+-- Inverse of 20261003030000_execution_integrations.sql.
 -- Drops the execution tables and the three action types they added. Anything
 -- already posted to Slack or Discord, or filed in Drive, is untouched.
 

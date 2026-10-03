@@ -624,7 +624,7 @@ fi
 echo "OK: home screen migration rollback and re-apply succeeded."
 
 echo "Rollback execution integrations (tables gone)..."
-run "${ROOT}/supabase/rollbacks/20261003010000_execution_integrations.sql"
+run "${ROOT}/supabase/rollbacks/20261003030000_execution_integrations.sql"
 tbl_exec="$("${PSQL[@]}" -d "${DB_NAME}" -tAc "SELECT count(*) FROM information_schema.tables WHERE table_schema='public' AND table_name IN ('execution_connections','execution_writes')")"
 if [[ "$(echo "$tbl_exec" | tr -d ' ')" != "0" ]]; then
   echo "execution rollback left tables in place" >&2
@@ -632,7 +632,7 @@ if [[ "$(echo "$tbl_exec" | tr -d ' ')" != "0" ]]; then
 fi
 
 echo "Re-apply execution integrations..."
-run "${ROOT}/supabase/migrations/20261003010000_execution_integrations.sql"
+run "${ROOT}/supabase/migrations/20261003030000_execution_integrations.sql"
 tbl_exec="$("${PSQL[@]}" -d "${DB_NAME}" -tAc "SELECT count(*) FROM information_schema.tables WHERE table_schema='public' AND table_name IN ('execution_connections','execution_writes')")"
 if [[ "$(echo "$tbl_exec" | tr -d ' ')" != "2" ]]; then
   echo "re-apply did not restore the execution tables" >&2

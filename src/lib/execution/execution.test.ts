@@ -287,7 +287,7 @@ describe("only three named operations", () => {
 
   it("keeps the action types in step with the database and the Home catalog", () => {
     const migration = readFileSync(
-      path.join(process.cwd(), "supabase/migrations/20261003010000_execution_integrations.sql"),
+      path.join(process.cwd(), "supabase/migrations/20261003030000_execution_integrations.sql"),
       "utf8"
     );
     const seeded = [...migration.matchAll(/\('([a-z_]+)', '([a-z_]+)', (true|false), '([a-z_]+)'\)/g)].map(

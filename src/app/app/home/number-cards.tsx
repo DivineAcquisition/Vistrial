@@ -42,7 +42,7 @@ function CostPerBookedCall({ numbers }: { numbers: HomeNumbers }) {
       {cost.state === "not_connected" ? (
         <Link
           href="/portal"
-          className="mt-2 inline-flex items-center gap-1.5 rounded-lg text-sm font-medium text-brand-700 underline-offset-4 hover:underline dark:text-brand-300"
+          className="mt-2 inline-flex items-center gap-1.5 rounded-lg text-sm font-medium text-brand-300 underline-offset-4 hover:underline"
         >
           <PlugZap className="size-4 shrink-0" aria-hidden />
           Connect ad spend

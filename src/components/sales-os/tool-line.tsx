@@ -18,7 +18,7 @@ export function ToolLine({
       {state === "running" ? (
         <Spinner className="size-3.5" />
       ) : state === "done" ? (
-        <CheckIcon className="size-3.5 text-brand-600" aria-hidden />
+        <CheckIcon className="size-3.5 text-brand-300" aria-hidden />
       ) : (
         <CircleAlertIcon className="size-3.5 text-destructive" aria-hidden />
       )}

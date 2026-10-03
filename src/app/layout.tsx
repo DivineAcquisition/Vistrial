@@ -14,7 +14,7 @@ export const metadata: Metadata = {
   applicationName: APP_NAME,
   appleWebApp: {
     capable: true,
-    statusBarStyle: "default",
+    statusBarStyle: "black-translucent",
     title: APP_NAME,
   },
   formatDetection: { telephone: false },
@@ -43,8 +43,8 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#f6f5fb",
-  colorScheme: "light",
+  themeColor: "#07070b",
+  colorScheme: "dark",
   width: "device-width",
   initialScale: 1,
   viewportFit: "cover",
@@ -56,9 +56,12 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
+    // `dark` sits here rather than on a wrapper so there is one theme and no
+    // route can opt out of it. Tailwind's `dark:` variant keys off this class.
     <html
       lang="en"
       className={cn(
+        "dark",
         interDisplay.variable,
         geistMono.variable,
       )}

@@ -62,7 +62,7 @@ export function FindingCard({ finding }: { finding: Finding }) {
       {finding.records?.length ? (
         <div className="flex flex-wrap gap-2 border-t border-border px-4 py-3">
           {finding.records.map((record) => (
-            <Link key={record.href + record.label} href={record.href} className="text-sm text-brand-700 underline-offset-4 hover:underline">
+            <Link key={record.href + record.label} href={record.href} className="text-sm text-brand-300 underline-offset-4 hover:underline">
               {record.label}
             </Link>
           ))}
@@ -80,7 +80,7 @@ export function FindingCard({ finding }: { finding: Finding }) {
                 {quote.href ? (
                   <>
                     {" "}
-                    <Link href={quote.href} className="text-brand-700 underline-offset-4 hover:underline">
+                    <Link href={quote.href} className="text-brand-300 underline-offset-4 hover:underline">
                       Open their file
                     </Link>
                   </>

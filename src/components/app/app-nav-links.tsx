@@ -70,7 +70,7 @@ function NavItems({
             <SidebarMenuButton
               isActive={active}
               tooltip={item.label}
-              className="h-9 data-[active=true]:bg-brand-500/12 data-[active=true]:font-medium data-[active=true]:text-brand-800 data-[active=true]:shadow-[inset_2px_0_0_#9a88fc]"
+              className="h-9 data-[active=true]:bg-brand-500/12 data-[active=true]:font-medium data-[active=true]:text-brand-200 data-[active=true]:shadow-[inset_2px_0_0_#9a88fc]"
               render={
                 <Link
                   href={item.href}

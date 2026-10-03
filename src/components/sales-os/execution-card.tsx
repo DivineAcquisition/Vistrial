@@ -245,7 +245,7 @@ function ResultCard({ result }: { result: ExecutionToolResult }) {
       </div>
       <p className="text-sm leading-relaxed text-card-foreground">{result.summary}</p>
       {result.link ? (
-        <a href={result.link} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-sm text-brand-700 underline-offset-4 hover:underline">
+        <a href={result.link} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-sm text-brand-300 underline-offset-4 hover:underline">
           Open it <ExternalLinkIcon className="size-3.5" aria-hidden />
         </a>
       ) : null}

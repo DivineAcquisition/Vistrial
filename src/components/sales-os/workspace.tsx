@@ -40,7 +40,7 @@ function RailBody({
   return (
     <div className="flex h-full min-h-0 flex-col gap-3 px-3 py-3">
       <Link href="/app/ask" className="flex items-center gap-2 px-1" aria-label="Vistrial">
-        <Logo markOnly tone="on-light" className="size-7" />
+        <Logo markOnly className="size-7" />
         <span className="font-heading text-sm text-card-foreground">Vistrial</span>
       </Link>
       <OrgSwitcher />

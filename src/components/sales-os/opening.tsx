@@ -38,7 +38,7 @@ export function Opening({ state }: { state: OpeningState }) {
                 <ThreadPrimitive.Suggestion
                   prompt={leak.ask}
                   send
-                  className="inline-flex w-fit items-center gap-1.5 text-sm font-medium text-brand-700 underline-offset-4 hover:underline"
+                  className="inline-flex w-fit items-center gap-1.5 text-sm font-medium text-brand-300 underline-offset-4 hover:underline"
                 >
                   {leak.ask}
                   <ArrowRightIcon className="size-3.5" aria-hidden />

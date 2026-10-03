@@ -33,7 +33,7 @@ export default async function PortalLayout({ children }: { children: React.React
         <header className="sticky top-0 z-20 border-b border-border bg-background/80 backdrop-blur-xl">
           <div className="mx-auto flex h-16 max-w-4xl items-center justify-between gap-3 px-4 sm:px-6">
             <Link href="/portal" className="flex min-w-0 items-center gap-3" aria-label={`${APP_NAME} portal`}>
-              <Logo markOnly tone="on-light" className="h-8 w-auto" />
+              <Logo markOnly className="h-8 w-auto" />
               <span className="truncate text-sm text-card-foreground">{ctx.org.name}</span>
             </Link>
             <div className="flex min-w-0 items-center gap-3">

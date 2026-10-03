@@ -38,7 +38,7 @@ export function AppSidebar() {
               collapsed && "justify-center px-0",
             )}
           >
-            <Logo markOnly tone="on-light" className="size-8 shrink-0 object-contain" />
+            <Logo markOnly className="size-8 shrink-0 object-contain" />
             <span className="min-w-0 truncate font-heading text-sm tracking-tight text-sidebar-accent-foreground group-data-[collapsible=icon]:hidden">
               {APP_NAME}
             </span>

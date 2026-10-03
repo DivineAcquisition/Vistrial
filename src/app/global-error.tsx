@@ -14,12 +14,12 @@ export default function GlobalError({
   return (
     <html
       lang="en"
-      className={cn(interDisplay.variable, geistMono.variable)}
-      style={{ colorScheme: "light" }}
+      className={cn("dark", interDisplay.variable, geistMono.variable)}
+      style={{ colorScheme: "dark" }}
     >
       <body className="min-h-screen bg-background font-sans text-foreground antialiased">
         <div className="mx-auto max-w-lg px-6 py-16">
-          <Logo tone="on-light" className="h-7 w-auto" />
+          <Logo className="h-7 w-auto" />
           <p className="mt-8 font-heading text-sm text-card-foreground">Vistrial failed to load</p>
           <p className="mt-3 text-sm leading-relaxed text-silver">
             The app hit a problem before this page could render. Retry the request.

@@ -70,7 +70,7 @@ export function AppShell({
       {wizard ? (
         <div className="relative z-10 flex min-h-svh flex-col">
           <header className="sticky top-0 z-30 flex h-16 items-center gap-3 border-b border-border bg-background/80 px-4 backdrop-blur-xl print:hidden sm:px-6">
-            <Logo markOnly tone="on-light" className="h-8 w-auto" />
+            <Logo markOnly className="h-8 w-auto" />
             <p className="text-sm font-medium tracking-wide text-muted-foreground">Setup</p>
             <div className="ml-auto">
               <UserMenu placement="header" />
@@ -101,7 +101,7 @@ export function AppShell({
           <SidebarInset className="min-w-0 overflow-x-hidden bg-transparent">
             <header className="sticky top-0 z-30 flex h-16 items-center gap-3 border-b border-border bg-background/80 px-4 backdrop-blur-xl print:hidden sm:px-6">
               <SidebarTrigger />
-              <Logo markOnly tone="on-light" className="h-8 w-auto md:hidden" />
+              <Logo markOnly className="h-8 w-auto md:hidden" />
               <div className="ml-auto flex items-center gap-1">
                 <NotificationBell />
                 <AppJumpPalette />

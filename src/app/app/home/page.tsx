@@ -32,8 +32,7 @@ export default async function HomePage({ searchParams }: { searchParams: Promise
     <div className="mx-auto flex w-full max-w-3xl flex-col gap-5 sm:gap-6">
       <header className="flex items-center justify-between gap-3">
         <div className="flex items-center gap-2.5">
-          <Logo markOnly tone="on-light" className="hidden h-8 w-auto md:block dark:md:hidden" />
-          <Logo markOnly className="hidden h-8 w-auto dark:md:block" />
+          <Logo markOnly className="hidden h-8 w-auto md:block" />
           <h1 className="font-heading text-xl text-card-foreground">Home</h1>
         </div>
         <PeriodSelect value={period} />

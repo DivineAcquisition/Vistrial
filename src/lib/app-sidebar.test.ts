@@ -20,7 +20,7 @@ describe("operator sidebar", () => {
     );
     expect(sidebar).toContain("collapsible=\"icon\"");
     expect(sidebar).toContain("SidebarRail");
-    expect(sidebar).toContain("tone=\"on-light\"");
+    expect(sidebar).toContain("<Logo markOnly");
     expect(sidebar).toContain("OrgSwitcher");
     expect(sidebar).toContain("UserMenu");
   });

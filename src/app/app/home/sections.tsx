@@ -58,7 +58,7 @@ function SectionHeading({ id, title, count }: { id: string; title: string; count
 function EmptyWorkspace({ name, canConnect }: { name: string; canConnect: boolean }) {
   return (
     <Card className="items-start gap-4 border-brand-500/30 p-6 sm:p-8">
-      <span className="grid size-10 place-items-center rounded-xl bg-brand-500/12 text-brand-700 dark:text-brand-300">
+      <span className="grid size-10 place-items-center rounded-xl bg-brand-500/12 text-brand-300">
         <Sparkles className="size-5" aria-hidden />
       </span>
       <div className="space-y-2">
@@ -72,7 +72,7 @@ function EmptyWorkspace({ name, canConnect }: { name: string; canConnect: boolea
       {canConnect ? (
         <Link
           href="/app/settings/integrations"
-          className="text-sm font-medium text-brand-700 underline-offset-4 hover:underline dark:text-brand-300"
+          className="text-sm font-medium text-brand-300 underline-offset-4 hover:underline"
         >
           Connect your CRM to bring leads in
         </Link>
@@ -191,7 +191,7 @@ export function ActivityList({ entries, timeZone }: { entries: ActivityEntry[]; 
         const Icon = ACTIVITY_ICONS[entry.actionType] ?? Sparkles;
         return (
           <li key={entry.key} className="flex items-start gap-3 px-4 py-3">
-            <span className="mt-0.5 grid size-8 shrink-0 place-items-center rounded-lg bg-brand-500/10 text-brand-700 dark:text-brand-300">
+            <span className="mt-0.5 grid size-8 shrink-0 place-items-center rounded-lg bg-brand-500/10 text-brand-300">
               <Icon className="size-4" aria-hidden />
             </span>
             <div className="min-w-0 flex-1">
@@ -200,7 +200,7 @@ export function ActivityList({ entries, timeZone }: { entries: ActivityEntry[]; 
                 <span
                   className={cn(
                     "font-medium",
-                    entry.runMode === "auto_run" ? "text-brand-700 dark:text-brand-300" : "text-card-foreground"
+                    entry.runMode === "auto_run" ? "text-brand-300" : "text-card-foreground"
                   )}
                 >
                   {runModeLabel(entry)}
@@ -225,7 +225,7 @@ export async function ActivitySection({ ctx }: { ctx: AuthContext }) {
         {entries.length ? (
           <Link
             href="/app/home/activity"
-            className="shrink-0 text-sm font-medium text-brand-700 underline-offset-4 hover:underline dark:text-brand-300"
+            className="shrink-0 text-sm font-medium text-brand-300 underline-offset-4 hover:underline"
           >
             {more ? "See full log" : "Open log"}
           </Link>

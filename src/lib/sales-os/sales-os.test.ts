@@ -34,6 +34,7 @@ import {
 } from "@/lib/sales-os/executions/format";
 import { canRunExecutions, decideGate, inputHash, parseGateMode } from "@/lib/sales-os/executions/gate";
 import { assertAllowedUrl } from "@/lib/sales-os/executions/http";
+import { dayRange, happenedDuring, timeZoneOffsetMs } from "@/lib/sales-os/day-range";
 import { MIN_SAMPLE_PATTERN, MIN_SAMPLE_RATE, change, insufficient, rate } from "@/lib/sales-os/stats";
 
 const ROOT = path.join(__dirname, "..", "..", "..");
@@ -84,6 +85,25 @@ function dataset(leads: LeadRow[], extra: Partial<Dataset> = {}): Dataset {
 function allText(value: unknown): string {
   return JSON.stringify(value);
 }
+
+describe("finding what happened on a given day", () => {
+  it("bounds the day by the workspace time zone, including across daylight saving", () => {
+    const summer = dayRange("2026-07-15", "America/Chicago");
+    const winter = dayRange("2026-01-15", "America/Chicago");
+    if (!("from" in summer) || !("from" in winter)) throw new Error("expected a bounded day");
+    expect(summer.from).toBe("2026-07-15T05:00:00.000Z");
+    expect(summer.to).toBe("2026-07-16T05:00:00.000Z");
+    expect(winter.from).toBe("2026-01-15T06:00:00.000Z");
+    expect(timeZoneOffsetMs("America/Chicago", new Date(summer.from))).toBe(-5 * 3_600_000);
+  });
+
+  it("counts a conversation by when it was last active, not when it started", () => {
+    const range = dayRange("2026-07-15", "America/Chicago");
+    expect(happenedDuring("2026-07-15T18:00:00.000Z", range)).toBe(true);
+    expect(happenedDuring("2026-07-14T18:00:00.000Z", range)).toBe(false);
+    expect(happenedDuring("2026-06-01T00:00:00.000Z", { label: "Most recent" })).toBe(true);
+  });
+});
 
 describe("every number travels with its sample", () => {
   it("refuses a rate below the minimum instead of caveating it", () => {

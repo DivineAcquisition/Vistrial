@@ -9,40 +9,25 @@ import { StatusBadge } from "@/components/ui/status-badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { listExecutions } from "@/lib/sales-os/executions/run";
 import { EXECUTION_STATUS_LABELS, ROLE_LABELS, TIER_LABELS, TOOL_STATE_LABELS } from "@/lib/sales-os/labels";
+import { dayRange, formatZoned, happenedDuring } from "@/lib/sales-os/day-range";
 import { listConversations, listToolCalls } from "@/lib/sales-os/persist";
 import { salesOsActor } from "@/lib/sales-os/session";
 import { captionText, sectionTitle } from "@/lib/ui";
 
 export const metadata: Metadata = { title: "What Vistrial did" };
 
-function dayRange(day: string | undefined): { from?: string; to?: string; label: string } {
-  if (!day || !/^\d{4}-\d{2}-\d{2}$/.test(day)) return { label: "Most recent" };
-  const from = new Date(`${day}T00:00:00Z`);
-  if (Number.isNaN(from.getTime())) return { label: "Most recent" };
-  const to = new Date(from.getTime() + 86_400_000);
-  return {
-    from: from.toISOString(),
-    to: to.toISOString(),
-    label: from.toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric", year: "numeric", timeZone: "UTC" }),
-  };
-}
-
-function when(iso: string) {
-  return new Date(iso).toLocaleString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
-}
-
 export default async function SalesOsHistoryPage({ searchParams }: { searchParams: Promise<{ day?: string }> }) {
   const actor = await salesOsActor();
   const { day } = await searchParams;
-  const range = dayRange(day);
+  const range = dayRange(day, actor.orgTimezone);
+  const bounds = "from" in range ? { from: range.from, to: range.to } : {};
   const [executions, steps, conversations] = await Promise.all([
-    listExecutions(actor.db, actor.orgId, { from: range.from, to: range.to }),
-    listToolCalls(actor, { from: range.from, to: range.to }),
+    listExecutions(actor.db, actor.orgId, bounds),
+    listToolCalls(actor, bounds),
     listConversations(actor, { everyone: actor.canSeeMoney }),
   ]);
-  const shownConversations = conversations.filter(
-    (c) => !range.from || ((c.lastMessageAt ?? c.createdAt) >= range.from && c.createdAt < (range.to ?? "9999"))
-  );
+  const shownConversations = conversations.filter((c) => happenedDuring(c.lastMessageAt ?? c.createdAt, range));
+  const when = (iso: string) => formatZoned(iso, actor.orgTimezone);
 
   return (
     <PageFrame
@@ -62,7 +47,7 @@ export default async function SalesOsHistoryPage({ searchParams }: { searchParam
           <Button type="submit" variant="outline" size="sm">
             Show that day
           </Button>
-          {range.from ? (
+          {"from" in range ? (
             <Button variant="ghost" size="sm" render={<Link href="/app/ask/history" />}>
               Back to most recent
             </Button>
@@ -70,7 +55,9 @@ export default async function SalesOsHistoryPage({ searchParams }: { searchParam
         </form>
       }
     >
-      <p className={captionText}>Showing: {range.label}. Times are in your browser&apos;s time zone; days are by calendar day in UTC.</p>
+      <p className={captionText}>
+        Showing: {range.label}. Times and days follow this workspace&apos;s time zone ({actor.orgTimezone}).
+      </p>
 
       <section className="space-y-3">
         <h2 className={sectionTitle}>Outside Vistrial</h2>
@@ -120,7 +107,7 @@ export default async function SalesOsHistoryPage({ searchParams }: { searchParam
                 </TableBody>
               </Table>
             ) : (
-              <p className="px-4 py-6 text-sm text-muted-foreground">Nothing left Vistrial {range.from ? "that day" : "yet"}.</p>
+              <p className="px-4 py-6 text-sm text-muted-foreground">Nothing left Vistrial {"from" in range ? "that day" : "yet"}.</p>
             )}
           </CardPanel>
         </Card>
@@ -168,7 +155,7 @@ export default async function SalesOsHistoryPage({ searchParams }: { searchParam
                 </TableBody>
               </Table>
             ) : (
-              <p className="px-4 py-6 text-sm text-muted-foreground">No steps {range.from ? "that day" : "yet"}.</p>
+              <p className="px-4 py-6 text-sm text-muted-foreground">No steps {"from" in range ? "that day" : "yet"}.</p>
             )}
           </CardPanel>
         </Card>
@@ -193,7 +180,7 @@ export default async function SalesOsHistoryPage({ searchParams }: { searchParam
                 ))}
               </ul>
             ) : (
-              <p className="px-4 py-6 text-sm text-muted-foreground">No conversations {range.from ? "that day" : "yet"}.</p>
+              <p className="px-4 py-6 text-sm text-muted-foreground">No conversations {"from" in range ? "that day" : "yet"}.</p>
             )}
           </CardPanel>
         </Card>

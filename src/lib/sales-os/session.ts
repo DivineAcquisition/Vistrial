@@ -16,6 +16,7 @@ export type SalesOsActor = {
   db: SalesDb;
   orgId: string;
   orgName: string;
+  orgTimezone: string;
   memberId: string;
   userId: string;
   personName: string;
@@ -37,6 +38,7 @@ export async function salesOsActor(): Promise<SalesOsActor> {
     db,
     orgId: ctx.org.id,
     orgName: ctx.org.name,
+    orgTimezone: ctx.org.timezone,
     memberId: ctx.member.id,
     userId: ctx.user.id,
     personName: ctx.member.displayName,

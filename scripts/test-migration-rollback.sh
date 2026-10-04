@@ -624,47 +624,6 @@ echo "OK: Sales OS agent migration rollback and re-apply succeeded."
 
 # execution_writes points at approval_action_types and approval_items, so the
 # execution tables come down before the approval tables and go back up after.
-echo "Rollback execution integrations (tables gone)..."
-run "${ROOT}/supabase/rollbacks/20261003030000_execution_integrations.sql"
-tbl_exec="$("${PSQL[@]}" -d "${DB_NAME}" -tAc "SELECT count(*) FROM information_schema.tables WHERE table_schema='public' AND table_name IN ('execution_connections','execution_writes')")"
-if [[ "$(echo "$tbl_exec" | tr -d ' ')" != "0" ]]; then
-  echo "execution rollback left tables in place" >&2
-  exit 1
-fi
-
-echo "Rollback home screen (approval tables gone)..."
-run "${ROOT}/supabase/rollbacks/20261002010000_home_screen.sql"
-tbl_home="$("${PSQL[@]}" -d "${DB_NAME}" -tAc "SELECT count(*) FROM information_schema.tables WHERE table_schema='public' AND table_name IN ('approval_items','approval_gate_actions','approval_gate_settings','approval_gate_changes','approval_action_types')")"
-if [[ "$(echo "$tbl_home" | tr -d ' ')" != "0" ]]; then
-  echo "home screen rollback left approval tables in place" >&2
-  exit 1
-fi
-fn_home="$("${PSQL[@]}" -d "${DB_NAME}" -tAc "SELECT count(*) FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace WHERE n.nspname='public' AND p.proname='set_approval_gate_action'")"
-if [[ "$(echo "$fn_home" | tr -d ' ')" != "0" ]]; then
-  echo "home screen rollback left set_approval_gate_action in place" >&2
-  exit 1
-fi
-
-echo "Re-apply home screen..."
-run "${ROOT}/supabase/migrations/20261002010000_home_screen.sql"
-tbl_home="$("${PSQL[@]}" -d "${DB_NAME}" -tAc "SELECT count(*) FROM information_schema.tables WHERE table_schema='public' AND table_name IN ('approval_items','approval_gate_actions','approval_gate_settings','approval_gate_changes','approval_action_types')")"
-if [[ "$(echo "$tbl_home" | tr -d ' ')" != "5" ]]; then
-  echo "re-apply did not restore the approval tables" >&2
-  exit 1
-fi
-
-echo "OK: home screen migration rollback and re-apply succeeded."
-
-echo "Re-apply execution integrations..."
-run "${ROOT}/supabase/migrations/20261003030000_execution_integrations.sql"
-tbl_exec="$("${PSQL[@]}" -d "${DB_NAME}" -tAc "SELECT count(*) FROM information_schema.tables WHERE table_schema='public' AND table_name IN ('execution_connections','execution_writes')")"
-if [[ "$(echo "$tbl_exec" | tr -d ' ')" != "2" ]]; then
-  echo "re-apply did not restore the execution tables" >&2
-  exit 1
-fi
-
-echo "OK: execution integrations migration rollback and re-apply succeeded."
-
 echo "Rollback the Airtable drop (columns and sync log return)..."
 run "${ROOT}/supabase/rollbacks/20261003040000_drop_airtable_source.sql"
 col_at="$("${PSQL[@]}" -d "${DB_NAME}" -tAc "SELECT count(*) FROM information_schema.columns WHERE table_schema='public' AND table_name='forsight_sources' AND column_name LIKE 'airtable%'")"

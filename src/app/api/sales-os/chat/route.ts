@@ -66,6 +66,7 @@ export async function POST(request: Request) {
   try {
     model = salesOsModel("conversation");
   } catch (cause) {
+    console.error("[sales-os] model unavailable", cause instanceof Error ? cause.message : cause);
     const message = cause instanceof SalesOsUnavailable ? cause.message : "Vistrial can't think right now.";
     return NextResponse.json({ error: message }, { status: 503 });
   }

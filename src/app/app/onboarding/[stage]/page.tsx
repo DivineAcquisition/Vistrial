@@ -10,7 +10,6 @@ import { PageFrame } from "@/components/app/page-frame";
 import { MAX_VOICE_EXAMPLES, MIN_VOICE_EXAMPLES } from "@/lib/follow-up/constants";
 import { parseVoiceExamples } from "@/lib/follow-up/voice";
 import { ghlOAuthConfigured } from "@/lib/ghl/env";
-import { loadGateState } from "@/lib/home/gate";
 import {
   loadBusinessProfileState,
   loadOnboardingPayoff,
@@ -18,6 +17,8 @@ import {
   requireProfileAccess,
 } from "@/lib/profile/load";
 import { PROFILE_STAGES, STAGE_META, isProfileStage } from "@/lib/profile/stages";
+import { salesOsActor } from "@/lib/sales-os/session";
+import { salesOsConfigured } from "@/lib/sales-os/settings";
 import { createClient } from "@/lib/supabase/server";
 
 const CONNECT_ERRORS: Record<string, string> = {
@@ -44,11 +45,10 @@ export default async function OnboardingStagePage({
   const query = await searchParams;
   const showPayoff = query.done === "1";
 
-  const supabaseForRail = await createClient();
-  const [state, defaults, gate] = await Promise.all([
+  const [state, defaults, vistrialDone] = await Promise.all([
     loadBusinessProfileState(ctx.org.id),
     loadProfileDefaults(ctx.org.id),
-    loadGateState(supabaseForRail, ctx.org.id),
+    salesOsActor().then(salesOsConfigured),
   ]);
 
   const meta = STAGE_META[stage];
@@ -107,7 +107,7 @@ export default async function OnboardingStagePage({
       description={showPayoff ? undefined : meta.why}
       secondaryActions={showPayoff ? undefined : <FinishLaterButton />}
     >
-      <StageRail current={stage} stages={state.stages} approvalsReviewed={Boolean(gate.limits.reviewedAt)} />
+      <StageRail current={stage} stages={state.stages} vistrialDone={vistrialDone} />
       {body}
     </PageFrame>
   );

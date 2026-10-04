@@ -63,7 +63,9 @@ WHERE n.nspname = 'public'
     'portal_schedules',
     'agent_runs','agent_run_steps','agent_run_approvals','agent_escalations',
     'agent_assets','agent_research_facts','org_agent_settings','agent_model_routes',
-    'forsight_sources','forsight_sync_runs','forsight_reports','forsight_report_sends'
+    'forsight_sources','forsight_sync_runs','forsight_reports','forsight_report_sends',
+    'sales_os_conversations','sales_os_messages','sales_os_context_packages','sales_os_tool_calls',
+    'sales_os_assets','sales_os_destinations','sales_os_routes','sales_os_gates','sales_os_executions'
   )
 ORDER BY 1;
 "
@@ -152,10 +154,13 @@ run "${ROOT}/supabase/tests/verify-forsight.sql"
 echo "Stellar checks..."
 run "${ROOT}/supabase/tests/verify-stellar.sql"
 
+echo "Sales OS agent checks..."
+run "${ROOT}/supabase/tests/verify-sales-os.sql"
+
 echo "Home screen checks..."
 run "${ROOT}/supabase/tests/verify-home-screen.sql"
 
 echo "Migration rollback (this prompt's migrations)..."
 bash "${ROOT}/scripts/test-migration-rollback.sh"
 
-echo "OK: schema, seed, triggers, RLS, invite, scoring, GHL, touch-ingest, platform-admin, queue, case-file, transcript, follow-up, integrity, reporting, business-profile, onboarding-reconcile, notification, hardening, mobile, calibration, call-quality, operator-agent, self-verification, activity-stream, owner-portal, agent-framework, forsight, stellar, and home-screen checks passed."
+echo "OK: schema, seed, triggers, RLS, invite, scoring, GHL, touch-ingest, platform-admin, queue, case-file, transcript, follow-up, integrity, reporting, business-profile, onboarding-reconcile, notification, hardening, mobile, calibration, call-quality, operator-agent, self-verification, activity-stream, owner-portal, agent-framework, forsight, stellar, sales-os, and home-screen checks passed."

@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   ADVANCED_SETTINGS_PAGES,
+  ASK_PATH,
   DA_CONSOLE_LINKS,
   FORSIGHT_PATH,
   HOME_PATH,
@@ -66,6 +67,7 @@ describe("settings IA", () => {
       "Scoring",
       "Follow-up",
       "Data",
+      "Posting and approvals",
     ]);
     expect(advancedSettingsBreadcrumbs("Scoring", "/app/settings/scoring")[0]?.href).toBe(
       "/app/settings/advanced"
@@ -82,25 +84,35 @@ describe("settings IA", () => {
       "Business",
       "Scoring",
       "Data",
+      "Posting and approvals",
     ]);
     expect(advancedSettingsVisibleTo(true).map((page) => page.label)).toEqual([
       "Business",
       "Scoring",
       "Data",
+      "Posting and approvals",
     ]);
   });
 });
 
 describe("Forsight and the client portal", () => {
-  it("puts Home, Forsight, To call, People, and Settings in the sidebar map", () => {
-    expect(PRIMARY_NAV.map((item) => item.label)).toEqual(["Home", "Forsight", "To call", "People", "Settings"]);
+  it("puts Ask Vistrial, Home, Forsight, To call, People, and Settings in the sidebar map", () => {
+    expect(PRIMARY_NAV.map((item) => item.label)).toEqual(["Ask Vistrial", "Home", "Forsight", "To call", "People", "Settings"]);
     expect(PRIMARY_NAV.map((item) => item.href)).toEqual([
+      ASK_PATH,
       HOME_PATH,
       FORSIGHT_PATH,
       "/app/queue",
       "/app/cases",
       "/app/settings",
     ]);
+  });
+
+  it("shows Home to everyone who works in the app, without making it the landing page", () => {
+    const home = PRIMARY_NAV.find((item) => item.href === HOME_PATH);
+    if (!home) throw new Error("missing Home");
+    for (const role of ["owner", "admin", "setter", "closer"] as const) expect(navVisibleTo(home, role)).toBe(true);
+    expect(landingPath("operator", "owner")).toBe(ASK_PATH);
   });
 
   it("shows the owner Forsight and People, and the setter the list", () => {
@@ -179,19 +191,18 @@ describe("Forsight and the client portal", () => {
     expect(DA_CONSOLE_LINKS.map((item) => item.href)).toContain(`${FORSIGHT_PATH}/workspaces`);
   });
 
-  it("shows Home to everyone who works in the app", () => {
-    const home = PRIMARY_NAV.find((item) => item.href === HOME_PATH);
-    if (!home) throw new Error("missing Home");
-    expect(navVisibleTo(home, "owner")).toBe(true);
-    expect(navVisibleTo(home, "admin")).toBe(true);
-    expect(navVisibleTo(home, "setter")).toBe(true);
-    expect(navVisibleTo(home, "closer")).toBe(true);
+  it("shows Ask Vistrial to everyone who works in the app", () => {
+    const ask = PRIMARY_NAV.find((item) => item.href === ASK_PATH);
+    if (!ask) throw new Error("Ask Vistrial missing from the rail");
+    for (const role of ["owner", "admin", "closer", "setter"] as const) {
+      expect(navVisibleTo(ask, role)).toBe(true);
+    }
   });
 
-  it("lands the owner and admin on Home, and everyone who works leads on the list", () => {
+  it("lands the owner and admin in the conversation, and everyone who works leads on the list", () => {
     expect(landingPath("portal", "owner")).toBe("/portal");
-    expect(landingPath("operator", "owner")).toBe(HOME_PATH);
-    expect(landingPath("operator", "admin")).toBe(HOME_PATH);
+    expect(landingPath("operator", "owner")).toBe(ASK_PATH);
+    expect(landingPath("operator", "admin")).toBe(ASK_PATH);
     expect(landingPath("operator", "setter")).toBe("/app/queue");
     expect(landingPath("operator", "closer")).toBe("/app/queue");
   });

@@ -9,7 +9,7 @@ describe("portal-only landing", () => {
   it("sends a portal-only member to the owner portal", () => {
     expect(landingPath("portal")).toBe("/portal");
     expect(landingPath("operator", "setter")).toBe("/app/queue");
-    expect(landingPath("operator", "owner")).toBe("/app/home");
+    expect(landingPath("operator", "owner")).toBe("/app/ask");
     expect(postAuthPath("/app/queue", "portal")).toBe("/portal");
     expect(postAuthPath("/portal", "portal")).toBe("/portal");
     expect(postAuthPath("/app/queue", "operator")).toBe("/app/queue");

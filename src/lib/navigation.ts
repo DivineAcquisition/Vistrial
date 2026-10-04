@@ -17,9 +17,12 @@ export type NavGroupId = "front" | "door";
  */
 export const FORSIGHT_PATH = "/app/forsight";
 
+/** The front door: a conversation with Vistrial, already primed on this workspace. */
+export const ASK_PATH = "/app/ask";
+
 export const MORE_PATH = "/app/more";
 
-/** Outcomes first: booked calls, what they cost, and what is waiting on a person. */
+/** Booked calls, what they cost, and what is waiting on a person. In the menu, not the landing page. */
 export const HOME_PATH = "/app/home";
 
 export const NAV_GROUPS: Array<{ id: NavGroupId; label: string }> = [
@@ -28,6 +31,7 @@ export const NAV_GROUPS: Array<{ id: NavGroupId; label: string }> = [
 ];
 
 export type NavIcon =
+  | "ask"
   | "home"
   | "queue"
   | "log"
@@ -56,11 +60,19 @@ export type NavItem = {
 };
 
 /**
- * Owner and admin: Home, Forsight, People, Settings. Setter and closer: Home,
- * To call, People, Settings. Portal lives on the account menu. The list is not the
+ * Owner and admin: Forsight, People, Settings. Setter and closer: To call,
+ * People, Settings. Portal lives on the account menu. The list is not the
  * owner's front door.
  */
 export const PRIMARY_NAV: NavItem[] = [
+  {
+    href: ASK_PATH,
+    label: "Ask Vistrial",
+    match: ASK_PATH,
+    group: "front",
+    icon: "ask",
+    description: "Where your leads are leaking, and what to do about it.",
+  },
   {
     href: HOME_PATH,
     label: "Home",
@@ -266,6 +278,11 @@ export const ADVANCED_SETTINGS_PAGES: Array<{
     label: "Data",
     description: "Download a copy of this workspace.",
   },
+  {
+    href: "/app/settings/vistrial",
+    label: "Posting and approvals",
+    description: "What Vistrial may post or save outside Vistrial, where it goes, and what waits for your OK.",
+  },
 ];
 
 export function advancedSettingsVisibleTo(isPlatformAdmin: boolean) {
@@ -318,14 +335,14 @@ export const DEFAULT_APP_PATH = "/app/queue";
 
 /**
  * Where someone lands after sign-in. Portal-only members stay in the portal.
- * Owners and admins open Home for this workspace. People who work leads
- * open the list.
+ * Owners and admins open the conversation with Vistrial. People who work
+ * leads open the list.
  */
 export function landingPath(
   surfaceAccess: SurfaceAccess | undefined,
   role?: OrgRole | null
 ): string {
   if (surfaceAccess === "portal") return "/portal";
-  if (role === "owner" || role === "admin") return HOME_PATH;
+  if (role === "owner" || role === "admin") return ASK_PATH;
   return DEFAULT_APP_PATH;
 }

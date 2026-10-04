@@ -29,10 +29,10 @@ import {
   type ActivityEvent,
 } from "@/lib/home/queue";
 
-const SEED_MIGRATIONS = ["20261002010000_home_screen.sql", "20261003030000_execution_integrations.sql"];
-const migration = SEED_MIGRATIONS.map((file) =>
-  readFileSync(path.join(process.cwd(), "supabase/migrations", file), "utf8")
-).join("\n");
+const migration = readFileSync(
+  path.join(process.cwd(), "supabase/migrations/20261002010000_home_screen.sql"),
+  "utf8"
+);
 
 describe("approval gate catalog", () => {
   it("matches the action types the database registry seeds, with the same defaults", () => {
@@ -59,10 +59,6 @@ describe("approval gate catalog", () => {
       "CRM stage or tag changes": "Ask first",
       "Internal tasks and nudges to setters": "Auto-run",
       "Escalations to the owner": "Auto-run",
-      // Added with the Slack, Discord, and Drive integrations. They ask first like everything new.
-      "Updates posted to Slack": "Ask first",
-      "Updates posted to Discord": "Ask first",
-      "Files stored in Google Drive": "Ask first",
     });
   });
 
@@ -123,8 +119,7 @@ describe("approval gate catalog", () => {
     for (const label of labels) {
       const words = label.split(" ").slice(1);
       for (const word of words) {
-        // Product names keep their capitals.
-        if (["CRM", "Slack", "Discord", "Google", "Drive"].includes(word)) continue;
+        if (word === "CRM") continue;
         expect(word, label).toBe(word.toLowerCase());
       }
     }

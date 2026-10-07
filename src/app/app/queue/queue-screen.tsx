@@ -496,7 +496,7 @@ export function QueueScreen({
                     members={members}
                     role={org.role}
                     memberId={org.memberId}
-                    isPlatformAdmin={org.isPlatformAdmin}
+                    isStaff={org.isStaff}
                     arrivingIds={arrivingIds}
                     exitingIds={new Set(exitingAlarm.map((row) => row.id))}
                     busyLeadId={busyLeadId}
@@ -531,7 +531,7 @@ export function QueueScreen({
                         members={members}
                         role={org.role}
                         memberId={org.memberId}
-                        isPlatformAdmin={org.isPlatformAdmin}
+                        isStaff={org.isStaff}
                         arriving={arrivingIds.has(row.id)}
                         exiting={exitingAlarm.some((item) => item.id === row.id)}
                         busy={busyLeadId === row.id}
@@ -585,7 +585,7 @@ export function QueueScreen({
                     members={members}
                     role={org.role}
                     memberId={org.memberId}
-                    isPlatformAdmin={org.isPlatformAdmin}
+                    isStaff={org.isStaff}
                     arrivingIds={arrivingIds}
                     busyLeadId={busyLeadId}
                     error={actionError}
@@ -630,7 +630,7 @@ export function QueueScreen({
                           members={members}
                           role={org.role}
                           memberId={org.memberId}
-                          isPlatformAdmin={org.isPlatformAdmin}
+                          isStaff={org.isStaff}
                           arriving={arrivingIds.has(row.id)}
                           busy={busyLeadId === row.id}
                           error={busyLeadId === row.id ? actionError : null}

@@ -15,6 +15,7 @@ import { createClient } from "@/lib/supabase/server";
 import type { Database, Json } from "@/types/database";
 import { loadOrgCallDetail, loadOrgCallList } from "@/lib/calls/load";
 import type { CallDetailPayload, CallListPayload } from "@/lib/calls/types";
+import { dbCanWorkLead } from "@/lib/auth/db-checks";
 
 export type CallActionResult = { ok: true } | { ok: false; error: string };
 
@@ -60,6 +61,9 @@ export async function pasteCallTranscript(input: {
     .eq("org_id", ctx.org.id)
     .maybeSingle();
   if (!call) return { ok: false, error: "That call is not in this workspace." };
+  if (!(await dbCanWorkLead(ctx.org.id, call.lead_id))) {
+    return { ok: false, error: "You can change calls only on leads you work." };
+  }
 
   const admin = getSupabaseAdmin();
   await attachTranscriptToCall(admin, {
@@ -94,6 +98,9 @@ export async function reextractCall(callId: string): Promise<CallActionResult> {
     .eq("org_id", ctx.org.id)
     .maybeSingle();
   if (!call) return { ok: false, error: "That call is not in this workspace." };
+  if (!(await dbCanWorkLead(ctx.org.id, call.lead_id))) {
+    return { ok: false, error: "You can change calls only on leads you work." };
+  }
   if (!call.raw_transcript) return { ok: false, error: "This call has no transcript to extract." };
 
   const admin = getSupabaseAdmin();
@@ -114,6 +121,9 @@ export async function retryDeadExtraction(callId: string): Promise<CallActionRes
     .eq("org_id", ctx.org.id)
     .maybeSingle();
   if (!call) return { ok: false, error: "That call is not in this workspace." };
+  if (!(await dbCanWorkLead(ctx.org.id, call.lead_id))) {
+    return { ok: false, error: "You can change calls only on leads you work." };
+  }
 
   const admin = getSupabaseAdmin();
   const { data: job } = await admin

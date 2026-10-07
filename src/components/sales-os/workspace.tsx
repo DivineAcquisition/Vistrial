@@ -35,8 +35,8 @@ function RailBody({
   opening: OpeningState;
   recent: ToolCallRecord[];
 }) {
-  const { role, isPlatformAdmin } = useOrg();
-  const links = PRIMARY_NAV.filter((item) => item.href !== "/app/ask" && navVisibleTo(item, role, isPlatformAdmin));
+  const { role, isStaff } = useOrg();
+  const links = PRIMARY_NAV.filter((item) => item.href !== "/app/ask" && navVisibleTo(item, role, isStaff));
   return (
     <div className="flex h-full min-h-0 flex-col gap-3 px-3 py-3">
       <Link href="/app/ask" className="flex items-center gap-2 px-1" aria-label="Vistrial">

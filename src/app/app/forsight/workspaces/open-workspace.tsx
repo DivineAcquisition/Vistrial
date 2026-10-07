@@ -1,6 +1,5 @@
 "use client";
 
-import { useRouter } from "next/navigation";
 import { useTransition } from "react";
 
 import { Button } from "@/components/ui/button";
@@ -13,11 +12,12 @@ import { FORSIGHT_PATH } from "@/lib/navigation";
  * the workspace the way it always has, and nothing gains a cross-tenant read
  * path that a client could stumble into.
  *
- * Platform admins are enrolled as owner in every workspace by an existing
- * trigger, so the ordinary switcher already allows this.
+ * Staff hold a seat in every workspace they can enter (all of them for a
+ * Platform Admin, assigned ones for the Service Team), so the ordinary
+ * switcher already allows this. A full page load leaves nothing from the
+ * previous workspace on screen.
  */
 export function OpenWorkspace({ orgId, name }: { orgId: string; name: string }) {
-  const router = useRouter();
   const [pending, startTransition] = useTransition();
 
   return (
@@ -30,8 +30,7 @@ export function OpenWorkspace({ orgId, name }: { orgId: string; name: string }) 
         startTransition(async () => {
           const result = await switchOrg(orgId);
           if (result.ok) {
-            router.push(FORSIGHT_PATH);
-            router.refresh();
+            window.location.assign(FORSIGHT_PATH);
           }
         })
       }

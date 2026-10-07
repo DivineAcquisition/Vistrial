@@ -118,17 +118,26 @@ export async function ingestProcessorEvent(db: GhlDb, event: ProcessorIngest): P
   }
 }
 
-export async function findOrgByStripeAccount(db: GhlDb, accountId: string): Promise<string | null> {
+/**
+ * Every workspace with this Stripe account connected. More than one is an
+ * ambiguous match, held for review, never guessed.
+ */
+export async function findOrgsByStripeAccount(db: GhlDb, accountId: string): Promise<string[]> {
   const { data } = await db
     .from("source_connections")
     .select("org_id, metadata")
     .eq("kind", "stripe")
     .eq("status", "active");
-  const match = (data ?? []).find((row) => {
+  const matches = (data ?? []).filter((row) => {
     const meta = row.metadata as Record<string, unknown> | null;
     return meta?.account_id === accountId || meta?.stripe_user_id === accountId;
   });
-  return match?.org_id ?? null;
+  return [...new Set(matches.map((row) => row.org_id))];
+}
+
+export async function findOrgByStripeAccount(db: GhlDb, accountId: string): Promise<string | null> {
+  const orgIds = await findOrgsByStripeAccount(db, accountId);
+  return orgIds.length === 1 ? orgIds[0] : null;
 }
 
 export async function findOrgByCommasPublicToken(db: GhlDb, token: string): Promise<string | null> {

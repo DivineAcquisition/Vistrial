@@ -5,12 +5,14 @@ import { canWorkOperatorApp } from "@/lib/auth/permissions";
 import { redirectIfOnboardingIncomplete } from "@/lib/onboarding/gate";
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
+import { enforceHostForPerson } from "@/lib/domains/host-guard";
 
 export const dynamic = "force-dynamic";
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const ctx = await getAuthContext();
-  if (!canWorkOperatorApp(ctx.role, ctx.member.surfaceAccess, ctx.isPlatformAdmin)) {
+  await enforceHostForPerson(ctx);
+  if (!canWorkOperatorApp(ctx.role, ctx.member.surfaceAccess, ctx.isStaff)) {
     redirect("/portal");
   }
   await redirectIfOnboardingIncomplete();
@@ -25,7 +27,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     <OrgProvider value={toClientOrgState(ctx)} key={ctx.org.id}>
       <AppShell
         needsMobileOutcomeTraining={
-          ctx.role === "setter" && !training?.logged_outcome_from_mobile_at
+          (ctx.role === "setter" || ctx.role === "operator") && !training?.logged_outcome_from_mobile_at
         }
         needsCoachingAck={!training?.call_coaching_acknowledged_at}
       >

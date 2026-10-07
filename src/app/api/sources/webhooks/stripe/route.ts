@@ -2,8 +2,9 @@ import { NextResponse } from "next/server";
 
 import { recordHttpSample } from "@/lib/ops/alerts";
 import { rateLimitWebhook } from "@/lib/ops/rate-limit";
+import { resolveInboundWorkspace } from "@/lib/inbound/holds";
 import {
-  findOrgByStripeAccount,
+  findOrgsByStripeAccount,
   ingestProcessorEvent,
   verifyStripeSignature,
 } from "@/lib/sources/processor";
@@ -49,11 +50,20 @@ export async function POST(request: Request) {
   if (!object) {
     return NextResponse.json({ ok: true, ignored: true });
   }
-  const orgId = account ? await findOrgByStripeAccount(db, account) : null;
-  if (!orgId) {
+  // Exactly one open workspace, or the event is held and nothing is recorded.
+  const decision = await resolveInboundWorkspace(db, {
+    source: "stripe_connect",
+    candidateOrgIds: account ? await findOrgsByStripeAccount(db, account) : [],
+    eventType: type || null,
+    externalRef: asString(event?.id),
+    routingKey: account,
+    payload: event,
+  });
+  if (decision.action === "hold") {
     await recordHttpSample(db, "/api/sources/webhooks/stripe", false);
-    return NextResponse.json({ ok: true, unmatched_org: true });
+    return NextResponse.json({ ok: true, held: true });
   }
+  const orgId = decision.orgId;
 
   const amount = Number(object.amount ?? object.amount_refunded ?? object.amount_captured ?? 0);
   const currency = asString(object.currency) ?? "usd";

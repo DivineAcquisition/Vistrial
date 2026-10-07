@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 
 import { loadConnection } from "@/lib/ghl/tokens";
-import { assertPortalAccess } from "@/lib/portal/access";
+import { assertConnectionManager, assertPortalOwner } from "@/lib/portal/access";
 import { nextSendAtFor } from "@/lib/portal/load";
 import { disconnectSource, newPublicToken, upsertSourceConnection } from "@/lib/sources/connections";
 import { testSourceConnection } from "@/lib/sources/sync";
@@ -33,8 +33,8 @@ export async function savePortalSchedule(
   formData: FormData
 ): Promise<SettingsSaveResult> {
   void _prev;
-  const access = await assertPortalAccess();
-  if (!access.ok) return denied();
+  const access = await assertPortalOwner();
+  if (!access.ok) return { status: "error", error: access.error };
   const cadenceRaw = String(formData.get("cadence") ?? "monthly");
   const cadence = cadenceRaw === "weekly" ? "weekly" : "monthly";
   const enabled = String(formData.get("enabled") ?? "") === "1";
@@ -59,8 +59,8 @@ export async function testConnectedSource(
   formData: FormData
 ): Promise<SettingsSaveResult> {
   void _prev;
-  const access = await assertPortalAccess();
-  if (!access.ok) return denied();
+  const access = await assertConnectionManager();
+  if (!access.ok) return { status: "error", error: access.error };
   const kind = asKind(String(formData.get("kind") ?? ""));
   if (!kind) return { status: "error", error: "Unknown source." };
   const result = await testSourceConnection(getSupabaseAdmin(), access.ctx.org.id, kind);
@@ -74,8 +74,8 @@ export async function disconnectConnectedSource(
   formData: FormData
 ): Promise<SettingsSaveResult> {
   void _prev;
-  const access = await assertPortalAccess();
-  if (!access.ok) return denied();
+  const access = await assertConnectionManager();
+  if (!access.ok) return { status: "error", error: access.error };
   const kind = asKind(String(formData.get("kind") ?? ""));
   if (!kind) return { status: "error", error: "Unknown source." };
   await disconnectSource(getSupabaseAdmin(), access.ctx.org.id, kind);
@@ -89,8 +89,8 @@ export async function connectCommasKey(
   formData: FormData
 ): Promise<SettingsSaveResult> {
   void _prev;
-  const access = await assertPortalAccess();
-  if (!access.ok) return denied();
+  const access = await assertConnectionManager();
+  if (!access.ok) return { status: "error", error: access.error };
   const key = String(formData.get("api_key") ?? "").trim();
   if (!key) return { status: "error", error: "Paste a Commas API key." };
   await upsertSourceConnection(getSupabaseAdmin(), {
@@ -112,8 +112,8 @@ export async function connectFormPlatform(
   formData: FormData
 ): Promise<SettingsSaveResult> {
   void _prev;
-  const access = await assertPortalAccess();
-  if (!access.ok) return denied();
+  const access = await assertConnectionManager();
+  if (!access.ok) return { status: "error", error: access.error };
   const secret = String(formData.get("webhook_secret") ?? "").trim() || newPublicToken();
   await upsertSourceConnection(getSupabaseAdmin(), {
     orgId: access.ctx.org.id,
@@ -134,8 +134,8 @@ export async function connectCalendarViaGhl(
 ): Promise<SettingsSaveResult> {
   void _prev;
   void formData;
-  const access = await assertPortalAccess();
-  if (!access.ok) return denied();
+  const access = await assertConnectionManager();
+  if (!access.ok) return { status: "error", error: access.error };
   const db = getSupabaseAdmin();
   const ghl = await loadConnection(db, access.ctx.org.id);
   if (!ghl || ghl.status !== "active" || !ghl.location_id) {

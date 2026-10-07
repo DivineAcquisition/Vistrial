@@ -75,7 +75,7 @@ export default async function ReportingPage({
         orgId={ctx.org.id}
         range={range}
         includeTeam
-        includeIngestion={ctx.isPlatformAdmin}
+        includeIngestion={ctx.isStaff}
       />
     </PageFrame>
   );

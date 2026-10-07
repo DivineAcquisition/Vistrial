@@ -19,7 +19,7 @@ export default async function CasesPage({
   const filters = parseCaseListFilters(params);
   const payload = await loadOrgCaseList(filters);
 
-  const canAdd = canCreateLeads(ctx.role, ctx.isPlatformAdmin);
+  const canAdd = canCreateLeads(ctx.role, ctx.isStaff);
 
   return (
     <PageFrame
@@ -31,8 +31,8 @@ export default async function CasesPage({
         key={caseFiltersHref(filters)}
         initial={payload}
         filters={filters}
-        canOpenIntegrations={canManageOrgSettings(ctx.role, ctx.isPlatformAdmin)}
-        canCreateLeads={canCreateLeads(ctx.role, ctx.isPlatformAdmin)}
+        canOpenIntegrations={canManageOrgSettings(ctx.role, ctx.isStaff)}
+        canCreateLeads={canCreateLeads(ctx.role, ctx.isStaff)}
       />
     </PageFrame>
   );

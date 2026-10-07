@@ -8,14 +8,14 @@ import { settingsTabActiveHref, settingsTabsVisibleTo } from "@/lib/navigation";
 
 export function SettingsNav() {
   const pathname = usePathname();
-  const { role, isPlatformAdmin } = useOrg();
+  const { role, isStaff } = useOrg();
 
   return (
     <NavTabs
       label="Settings"
       className="mb-8"
       activeHref={settingsTabActiveHref(pathname)}
-      items={settingsTabsVisibleTo(role, isPlatformAdmin).map((tab) => ({
+      items={settingsTabsVisibleTo(role, isStaff).map((tab) => ({
         href: tab.href,
         label: tab.label,
       }))}

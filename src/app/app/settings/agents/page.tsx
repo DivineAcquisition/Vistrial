@@ -1,11 +1,11 @@
 import { AgentsSettingsForm } from "@/app/app/settings/agents/agents-settings";
 import { PageFrame } from "@/components/app/page-frame";
-import { requirePlatformAdmin } from "@/lib/auth/gates";
+import { requireStaff } from "@/lib/auth/gates";
 import { loadAgentSettingsView } from "@/lib/agents/settings";
 import { advancedSettingsBreadcrumbs } from "@/lib/navigation";
 
 export default async function AgentsSettingsPage() {
-  const { org } = await requirePlatformAdmin();
+  const { org } = await requireStaff();
   const view = await loadAgentSettingsView(org.id);
 
   return (

@@ -31,7 +31,7 @@ export async function GET(
   const url = new URL(request.url);
   const requested = Number(url.searchParams.get("v"));
   const version =
-    access.ctx.isPlatformAdmin && Number.isInteger(requested) && requested > 0
+    access.ctx.isStaff && Number.isInteger(requested) && requested > 0
       ? requested
       : null;
 

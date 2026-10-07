@@ -9,6 +9,13 @@ export const COMPANY_ADDRESS = "7404 Executive Place, Lanham, MD 20706";
 /** Canonical operator app origin. Other hostnames land later. */
 export const PRODUCTION_APP_ORIGIN = "https://app.vistrial.io";
 
+/**
+ * The Vistrial team's address: Service Team and Platform Admins. Same
+ * deployment, same permission rules as app.vistrial.io; customers are turned
+ * away here and staff are sent here from the customer address.
+ */
+export const PRODUCTION_ADMIN_ORIGIN = "https://admin.vistrial.io";
+
 /** Public marketing site. This is the URL people paste into Slack and DMs. */
 export const PRODUCTION_SITE_ORIGIN = "https://vistrial.io";
 

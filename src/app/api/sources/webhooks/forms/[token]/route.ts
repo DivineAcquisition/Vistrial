@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { decryptSecret } from "@/lib/ghl/crypto";
+import { resolveInboundWorkspace } from "@/lib/inbound/holds";
 import { recordHttpSample } from "@/lib/ops/alerts";
 import { rateLimitWebhook } from "@/lib/ops/rate-limit";
 import { findOrgByFormToken, verifyHmacSha256Hex } from "@/lib/sources/processor";
@@ -55,6 +56,17 @@ export async function POST(
   const eventKind = (asString(payload.event) ?? asString(payload.event_kind) ?? "").toLowerCase();
   if (!sessionId || !KINDS.has(eventKind)) {
     return NextResponse.json({ error: "session_id and event are required." }, { status: 400 });
+  }
+  const decision = await resolveInboundWorkspace(db, {
+    source: "forms",
+    candidateOrgIds: [orgId],
+    eventType: eventKind,
+    externalRef: `${orgId}:${sessionId}:${eventKind}:${asString(payload.question_key) ?? asString(payload.questionKey) ?? ""}`,
+    payload,
+  });
+  if (decision.action === "hold") {
+    await recordHttpSample(db, "/api/sources/webhooks/forms", false);
+    return NextResponse.json({ ok: true, held: true });
   }
   const { error } = await db.from("form_events").upsert(
     {

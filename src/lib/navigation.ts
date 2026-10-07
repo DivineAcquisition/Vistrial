@@ -96,7 +96,7 @@ export const PRIMARY_NAV: NavItem[] = [
     match: "/app/queue",
     group: "front",
     icon: "queue",
-    roles: ["setter", "closer"],
+    roles: ["setter", "closer", "operator"],
   },
   {
     href: "/app/cases",
@@ -220,10 +220,12 @@ export const DA_CONSOLE_LINKS: Array<{ href: string; label: string; description:
   },
 ];
 
-export function navVisibleTo(item: NavItem, role: OrgRole, isPlatformAdmin = false): boolean {
+export function navVisibleTo(item: NavItem, role: OrgRole, isStaff = false): boolean {
   if (item.scope && !isProductScopeEnabled(item.scope)) return false;
-  if (item.platformAdminOnly) return isPlatformAdmin;
-  if (isPlatformAdmin) return true;
+  // "platformAdminOnly" predates the Service Team: it means Vistrial staff
+  // working this workspace.
+  if (item.platformAdminOnly) return isStaff;
+  if (isStaff) return true;
   if (!item.roles) return true;
   return item.roles.includes(role);
 }
@@ -232,20 +234,26 @@ export function isNavActive(pathname: string, match: string): boolean {
   return pathname === match || pathname.startsWith(`${match}/`);
 }
 
+/**
+ * Who sees each settings tab. "everyone": your own profile and notifications.
+ * "owner": owners and staff (business contact details, your own people).
+ * "staff": configuration, which the Vistrial team runs.
+ */
+export type SettingsTabAccess = "everyone" | "owner" | "staff";
+
 export const SETTINGS_TABS: Array<{
   href: string;
   label: string;
-  managerOnly: boolean;
-  /** Owners only. What may run without a person is the owner's call. */
-  ownerOnly?: boolean;
+  access: SettingsTabAccess;
 }> = [
-  { href: "/app/settings/profile", label: "You", managerOnly: false },
-  { href: "/app/settings/notifications", label: "Notifications", managerOnly: false },
-  { href: "/app/settings/organization", label: "Workspace", managerOnly: true },
-  { href: "/app/settings/members", label: "People", managerOnly: true },
-  { href: "/app/settings/approvals", label: "Approvals", managerOnly: true, ownerOnly: true },
-  { href: "/app/settings/integrations", label: "Integrations", managerOnly: true },
-  { href: "/app/settings/advanced", label: "Advanced", managerOnly: true },
+  { href: "/app/settings/profile", label: "You", access: "everyone" },
+  { href: "/app/settings/notifications", label: "Notifications", access: "everyone" },
+  { href: "/app/settings/history", label: "History", access: "everyone" },
+  { href: "/app/settings/organization", label: "Workspace", access: "owner" },
+  { href: "/app/settings/members", label: "People", access: "owner" },
+  { href: "/app/settings/approvals", label: "Approvals", access: "staff" },
+  { href: "/app/settings/integrations", label: "Integrations", access: "staff" },
+  { href: "/app/settings/advanced", label: "Advanced", access: "staff" },
 ];
 
 export const ADVANCED_SETTINGS_PAGES: Array<{
@@ -285,10 +293,10 @@ export const ADVANCED_SETTINGS_PAGES: Array<{
   },
 ];
 
-export function advancedSettingsVisibleTo(isPlatformAdmin: boolean) {
+export function advancedSettingsVisibleTo(isStaff: boolean) {
   return ADVANCED_SETTINGS_PAGES.filter(
     (page) =>
-      (!page.platformAdminOnly || isPlatformAdmin) && (!page.scope || isProductScopeEnabled(page.scope))
+      (!page.platformAdminOnly || isStaff) && (!page.scope || isProductScopeEnabled(page.scope))
   );
 }
 
@@ -319,14 +327,16 @@ export function settingsTabActiveHref(pathname: string): string {
   return match?.href ?? pathname;
 }
 
-export function settingsTabsVisibleTo(role: OrgRole, isPlatformAdmin = false) {
-  const manager = canManageOrgSettings(role, isPlatformAdmin);
-  const owner = isPlatformAdmin || role === "owner";
-  return SETTINGS_TABS.filter((tab) => (manager || !tab.managerOnly) && (owner || !tab.ownerOnly));
+export function settingsTabsVisibleTo(role: OrgRole, isStaff = false) {
+  const staff = canManageOrgSettings(role, isStaff);
+  const owner = staff || role === "owner";
+  return SETTINGS_TABS.filter(
+    (tab) => tab.access === "everyone" || (tab.access === "owner" && owner) || staff
+  );
 }
 
-export function firstSettingsPath(role: OrgRole, isPlatformAdmin = false): string {
-  return canManageOrgSettings(role, isPlatformAdmin)
+export function firstSettingsPath(role: OrgRole, isStaff = false): string {
+  return canManageOrgSettings(role, isStaff) || role === "owner"
     ? "/app/settings/organization"
     : "/app/settings/profile";
 }
@@ -334,15 +344,16 @@ export function firstSettingsPath(role: OrgRole, isPlatformAdmin = false): strin
 export const DEFAULT_APP_PATH = "/app/queue";
 
 /**
- * Where someone lands after sign-in. Portal-only members stay in the portal.
- * Owners and admins open Home for this workspace, with the conversation one
- * click away. People who work leads open the list.
+ * Where someone lands after sign-in. Members open the customer views. Owners
+ * and staff open Home for this workspace, with the conversation one click
+ * away. Operators open their list.
  */
 export function landingPath(
   surfaceAccess: SurfaceAccess | undefined,
   role?: OrgRole | null
 ): string {
-  if (surfaceAccess === "portal") return "/portal";
+  if (role === "member" || role === "client_viewer") return "/portal";
   if (role === "owner" || role === "admin") return HOME_PATH;
+  if (!role && surfaceAccess === "portal") return "/portal";
   return DEFAULT_APP_PATH;
 }

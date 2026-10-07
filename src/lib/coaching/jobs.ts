@@ -5,6 +5,7 @@ import { CALL_QUALITY_MIN_N } from "@/lib/coaching/constants";
 import { analyzeAndStoreCall } from "@/lib/coaching/persist";
 import { ghlError, ghlLog } from "@/lib/ghl/log";
 import type { GhlDb } from "@/lib/ghl/tokens";
+import { AUTOMATION_STATUSES } from "@/lib/workspaces/status";
 
 function asRecord(value: unknown): Record<string, unknown> {
   return value && typeof value === "object" && !Array.isArray(value)
@@ -39,7 +40,8 @@ export async function runCallQualityJobs(db: GhlDb): Promise<{
   const { data: liveOrgs, error: orgError } = await db
     .from("organizations")
     .select("id")
-    .is("offboarded_at", null);
+    .is("offboarded_at", null)
+    .in("status", AUTOMATION_STATUSES);
   if (orgError) throw orgError;
 
   for (const org of liveOrgs ?? []) {

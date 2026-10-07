@@ -4,9 +4,9 @@ import { getAuthContext } from "@/lib/auth/session";
 import { DA_CONSOLE_LINKS, MORE_NAV, PRIMARY_NAV, navVisibleTo } from "@/lib/navigation";
 
 export default async function MorePage() {
-  const { role, isPlatformAdmin } = await getAuthContext();
-  const items = MORE_NAV.filter((item) => navVisibleTo(item, role, isPlatformAdmin)).filter(
-    (item) => !PRIMARY_NAV.some((primary) => primary.href === item.href && navVisibleTo(primary, role, isPlatformAdmin))
+  const { role, isStaff } = await getAuthContext();
+  const items = MORE_NAV.filter((item) => navVisibleTo(item, role, isStaff)).filter(
+    (item) => !PRIMARY_NAV.some((primary) => primary.href === item.href && navVisibleTo(primary, role, isStaff))
   );
 
   return (
@@ -22,7 +22,7 @@ export default async function MorePage() {
         ))}
       </ul>
 
-      {isPlatformAdmin ? (
+      {isStaff ? (
         <section className="mt-10">
           <h2 className="mb-3 text-sm font-medium text-silver">Divine Acquisition</h2>
           <ul className="app-stagger grid gap-4 sm:grid-cols-2">

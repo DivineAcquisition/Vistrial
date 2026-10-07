@@ -23,7 +23,7 @@ export async function loadLogContext(opts?: {
   const ctx = await getAuthContext();
   const supabase = await createClient();
   const filters = {
-    assigned: defaultAssignedFilter(ctx.role, ctx.isPlatformAdmin),
+    assigned: defaultAssignedFilter(ctx.role, ctx.isStaff),
     track: null,
     status: null,
     source: null,

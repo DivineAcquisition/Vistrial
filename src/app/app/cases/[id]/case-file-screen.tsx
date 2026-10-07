@@ -119,7 +119,7 @@ export function CaseFileScreen({
     memberId: org.memberId,
     assignedSetterId: lead.assignedSetterId,
     assignedCloserId: lead.assignedCloserId,
-    isPlatformAdmin: org.isPlatformAdmin,
+    isStaff: org.isStaff,
   });
 
   async function reload() {
@@ -284,7 +284,7 @@ export function CaseFileScreen({
           members={file.members}
           role={org.role}
           memberId={org.memberId}
-          isPlatformAdmin={org.isPlatformAdmin}
+          isStaff={org.isStaff}
           busy={busy}
           error={error}
           onCancel={() => setPanel(null)}
@@ -306,7 +306,7 @@ export function CaseFileScreen({
           members={file.members}
           role={org.role}
           memberId={org.memberId}
-          isPlatformAdmin={org.isPlatformAdmin}
+          isStaff={org.isStaff}
           busy={busy}
           error={error}
           onCancel={() => setPanel(null)}

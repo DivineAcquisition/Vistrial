@@ -7,6 +7,7 @@ import { generateReport } from "@/lib/forsight/report/generate";
 import { loadStoredReport, periodPath } from "@/lib/forsight/report/load";
 import { sendStoredReport } from "@/lib/forsight/report/send";
 import { FORSIGHT_PATH } from "@/lib/navigation";
+import { dbIsStaff } from "@/lib/auth/db-checks";
 import { createClient } from "@/lib/supabase/server";
 
 export type ReportActionResult = { ok: true; detail: string } | { ok: false; error: string };
@@ -17,6 +18,8 @@ export async function generateWorkspaceReport(args: {
 }): Promise<ReportActionResult> {
   const ctx = await requireForsightOperator();
   if (!ctx) return { ok: false, error: "Not found." };
+  // Staff of this workspace specifically, not just of the one open in the browser.
+  if (!(await dbIsStaff(args.orgId))) return { ok: false, error: "Workspace not found." };
 
   const supabase = await createClient();
   const { data: org } = await supabase
@@ -59,6 +62,8 @@ export async function sendWorkspaceReport(args: {
 }): Promise<ReportActionResult> {
   const ctx = await requireForsightOperator();
   if (!ctx) return { ok: false, error: "Not found." };
+  // Staff of this workspace specifically, not just of the one open in the browser.
+  if (!(await dbIsStaff(args.orgId))) return { ok: false, error: "Workspace not found." };
 
   const supabase = await createClient();
   const stored = await loadStoredReport(supabase, {

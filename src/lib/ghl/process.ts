@@ -28,6 +28,7 @@ import {
 } from "@/lib/ghl/message-meta";
 import { rawBodyFromEvent, writeWebhookDeadLetter } from "@/lib/ghl/dead-letter";
 import { asJsonRecord } from "@/lib/ghl/payload";
+import { holdInboundEvent, parkHeldWebhookEvent, resolveInboundWorkspace, webhookHoldRef } from "@/lib/inbound/holds";
 import { AWAITING_LINK_ERROR, failureDisposition } from "@/lib/ghl/retry";
 import { scoreInboundReplyAfterSilence, scoreLeadFromAnswerChange, scoreNoShow } from "@/lib/scoring/event-apply";
 import { flagDisqualifiedLead } from "@/lib/profile/intake-flags";
@@ -36,7 +37,7 @@ import { scoreLeadOnIntake } from "@/lib/scoring/intake";
 import { assertScorePersisted, loadScoreConfig } from "@/lib/scoring/store";
 import { calendarDaysBetween } from "@/lib/scoring/timezone";
 import type { GhlDb } from "@/lib/ghl/tokens";
-import type { Database, Json } from "@/types/database";
+import type { Database, InboundHoldReason, Json } from "@/types/database";
 
 type WebhookRow = Database["public"]["Tables"]["webhook_events"]["Row"];
 type LeadRow = Database["public"]["Tables"]["leads"]["Row"];
@@ -104,13 +105,42 @@ async function loadClaimedEvents(db: GhlDb, key: string): Promise<WebhookRow[]> 
   return data ?? [];
 }
 
-async function processOneEvent(db: GhlDb, event: WebhookRow): Promise<void> {
+export async function processOneEvent(db: GhlDb, event: WebhookRow): Promise<void> {
   const payload = asJsonRecord(event.payload);
   const orgId = event.org_id ?? (await resolveOrgFromPayload(db, payload));
   const kind = normalizeEventKind(event.event_type);
 
   if (!orgId && kind !== "ignored" && kind !== "install") {
+    // Still retried with backoff until a workspace claims the location. The
+    // holding area shows staff that it is waiting.
+    if (event.attempt_count === 0) {
+      await holdInboundEvent(db, {
+        source: "crm",
+        reason: "unmatched",
+        eventType: event.event_type,
+        externalRef: webhookHoldRef(event.id),
+        routingKey: event.location_id,
+        payload: event.payload,
+      });
+    }
     throw new Error(AWAITING_LINK_ERROR);
+  }
+
+  // Connection lifecycle passes regardless of status; everything else needs an
+  // open workspace, or it is held and nothing happens.
+  if (orgId && kind !== "ignored" && kind !== "install" && kind !== "uninstall") {
+    const decision = await resolveInboundWorkspace(db, {
+      source: "crm",
+      candidateOrgIds: [orgId],
+      eventType: event.event_type,
+      externalRef: webhookHoldRef(event.id),
+      routingKey: event.location_id,
+      payload: event.payload,
+    });
+    if (decision.action === "hold") {
+      await markEventHeld(db, event, orgId, decision.reason);
+      return;
+    }
   }
 
   if (orgId && event.org_id !== orgId) {
@@ -642,6 +672,11 @@ async function markEventUnsupported(db: GhlDb, event: WebhookRow) {
     rawBody: rawBodyFromEvent(event),
     payload: event.payload,
   });
+}
+
+async function markEventHeld(db: GhlDb, event: WebhookRow, orgId: string, reason: InboundHoldReason) {
+  ghlWarn("ghl.webhook.held", { eventId: event.id, eventType: event.event_type, orgId, reason });
+  await parkHeldWebhookEvent(db, event.id, orgId, reason);
 }
 
 async function markEventProcessed(db: GhlDb, id: string) {

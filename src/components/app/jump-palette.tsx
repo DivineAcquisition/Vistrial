@@ -32,7 +32,7 @@ type JumpItem = {
 export function AppJumpPalette() {
   const [open, setOpen] = useState(false);
   const router = useRouter();
-  const { role, isPlatformAdmin } = useOrg();
+  const { role, isStaff } = useOrg();
 
   const items = useMemo<JumpItem[]>(() => {
     const dests = [
@@ -40,19 +40,19 @@ export function AppJumpPalette() {
       ...MORE_NAV.filter(
         (item) =>
           !PRIMARY_NAV.some(
-            (primary) => primary.href === item.href && navVisibleTo(primary, role, isPlatformAdmin)
+            (primary) => primary.href === item.href && navVisibleTo(primary, role, isStaff)
           )
       ),
     ];
     return dests
-      .filter((item) => navVisibleTo(item, role, isPlatformAdmin))
+      .filter((item) => navVisibleTo(item, role, isStaff))
       .map((item) => ({
         value: item.href,
         label: item.label,
         href: item.href,
                     group: item.group === "front" ? "Main" : "Also",
       }));
-  }, [role, isPlatformAdmin]);
+  }, [role, isStaff]);
 
   useEffect(() => {
     function onKey(event: KeyboardEvent) {

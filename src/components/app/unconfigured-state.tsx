@@ -14,8 +14,8 @@ export async function UnconfiguredState({
   detail: string;
   withIntegrationsLink?: boolean;
 }) {
-  const { role, isPlatformAdmin } = await getAuthContext();
-  const showLink = withIntegrationsLink && canManageOrgSettings(role, isPlatformAdmin);
+  const { role, isStaff } = await getAuthContext();
+  const showLink = withIntegrationsLink && canManageOrgSettings(role, isStaff);
 
   return (
     <EmptyState

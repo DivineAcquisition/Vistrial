@@ -23,6 +23,7 @@ import { runBoundedVerification } from "@/lib/verification/engine";
 import { formatFaultsForRetry } from "@/lib/verification/faults";
 import { runModelVerifier, skippedVerifier } from "@/lib/verification/model";
 import { persistBoundedVerification, taskVerificationEnabled } from "@/lib/verification/record";
+import { automationAllowed } from "@/lib/inbound/holds";
 
 function assertFrontierDraftModel(model: string) {
   if (/haiku/i.test(model)) throw new Error("draft_model_too_cheap");
@@ -326,6 +327,15 @@ export async function processFollowUpQueue(db: GhlDb, max = 8): Promise<{
 export async function runFollowUpJob(db: GhlDb, jobId: string): Promise<void> {
   const { data: job } = await db.from("follow_up_jobs").select("*").eq("id", jobId).maybeSingle();
   if (!job) return;
+
+  // A paused or closed workspace drafts nothing; a stale draft is no use when it reopens.
+  if (!(await automationAllowed(db, job.org_id))) {
+    await db
+      .from("follow_up_jobs")
+      .update({ status: "dead", last_error: "workspace_not_open", processed_at: new Date().toISOString() })
+      .eq("id", job.id);
+    return;
+  }
 
   await db
     .from("follow_up_jobs")

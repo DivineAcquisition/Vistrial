@@ -36,9 +36,9 @@ export default async function ForsightReportsPage() {
       title="Monthly reports"
       eyebrow={ctx.org.name}
       description="A snapshot of what happened last month. Once generated, the numbers in a report do not move."
-      toolbar={<ForsightTabs activeHref={`${FORSIGHT_PATH}/reports`} isPlatformAdmin={ctx.isPlatformAdmin} />}
+      toolbar={<ForsightTabs activeHref={`${FORSIGHT_PATH}/reports`} isStaff={ctx.isStaff} />}
       actions={
-        ctx.isPlatformAdmin ? (
+        ctx.isStaff ? (
           <ReportActions
             orgId={ctx.org.id}
             periodStart={lastMonth}
@@ -53,7 +53,7 @@ export default async function ForsightReportsPage() {
           kind="empty"
           title="No reports yet"
           detail={
-            ctx.isPlatformAdmin
+            ctx.isStaff
               ? "Generate last month when you are ready. Nothing is emailed until you send it."
               : "This report will appear here when it is ready."
           }

@@ -25,6 +25,8 @@ describe("first-run explanation", () => {
       "client_viewer",
       "closer",
       "da_operator",
+      "member",
+      "operator",
       "owner",
       "setter",
     ]);

@@ -18,11 +18,11 @@ export default async function QueuePage({
   const ctx = await getAuthContext();
   const filters = parseQueueFilters(params, {
     role: ctx.role,
-    isPlatformAdmin: ctx.isPlatformAdmin,
+    isStaff: ctx.isStaff,
   });
   const payload = await loadOrgQueue(filters);
 
-  const canAdd = canCreateLeads(ctx.role, ctx.isPlatformAdmin);
+  const canAdd = canCreateLeads(ctx.role, ctx.isStaff);
 
   return (
     <PageFrame
@@ -34,8 +34,8 @@ export default async function QueuePage({
         key={queueFiltersHref(filters)}
         initial={payload}
         filters={filters}
-        canOpenIntegrations={canManageOrgSettings(ctx.role, ctx.isPlatformAdmin)}
-        canCreateLeads={canCreateLeads(ctx.role, ctx.isPlatformAdmin)}
+        canOpenIntegrations={canManageOrgSettings(ctx.role, ctx.isStaff)}
+        canCreateLeads={canCreateLeads(ctx.role, ctx.isStaff)}
       />
     </PageFrame>
   );

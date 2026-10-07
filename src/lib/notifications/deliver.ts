@@ -5,6 +5,7 @@ import { isLookingAt } from "@/lib/notifications/policy";
 import { resolveAtSendTime, type NotificationSendRow } from "@/lib/notifications/resolve";
 import { sendOnChannel } from "@/lib/notifications/senders";
 import type { NotificationChannel, NotificationStatus } from "@/lib/notifications/types";
+import { automationAllowed } from "@/lib/inbound/holds";
 
 const CLAIM_BATCH = 25;
 
@@ -59,6 +60,11 @@ export async function deliverOne(
     is_test: row.is_test,
     is_emergency: row.is_emergency,
   };
+
+  if (row.org_id && !(await automationAllowed(db, row.org_id))) {
+    await mark(db, id, "cancelled", { errorText: "workspace_not_open" });
+    return "cancelled";
+  }
 
   const resolved = await resolveAtSendTime(db, sendRow, now);
   if (!resolved.ok) {

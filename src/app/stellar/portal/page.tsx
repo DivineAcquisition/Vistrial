@@ -85,7 +85,7 @@ function BuildProgress({ placement }: { placement: PlacementRow | null }) {
 
 export default async function StellarPortalPage() {
   const ctx = await getStellarAuthContext();
-  if (ctx.kind !== "member" || ctx.member.role !== "client_viewer") {
+  if (ctx.kind !== "member") {
     redirect(stellarLandingPath(ctx));
   }
 

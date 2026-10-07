@@ -9,16 +9,17 @@ export const dynamic = "force-dynamic";
 
 export default async function StellarLogPage() {
   const ctx = await getStellarAuthContext();
-  if (ctx.kind !== "member" || ctx.member.role !== "setter") {
+  if (ctx.kind !== "da_operator" || !ctx.setter) {
     redirect(stellarLandingPath(ctx));
   }
+  const setter = ctx.setter;
 
   const today = new Intl.DateTimeFormat("en-US", {
     weekday: "long",
     month: "long",
     day: "numeric",
     year: "numeric",
-    timeZone: ctx.member.orgTimezone,
+    timeZone: setter.orgTimezone,
   }).format(new Date());
 
   return (
@@ -28,7 +29,7 @@ export default async function StellarLogPage() {
           Setter&apos;s Log
         </p>
         <h1 className="mt-1 text-xl font-medium text-white">{today}</h1>
-        <p className="mt-1 text-sm text-dim">{ctx.member.orgName}</p>
+        <p className="mt-1 text-sm text-dim">{setter.orgName}</p>
       </div>
 
       <Panel className="p-5">

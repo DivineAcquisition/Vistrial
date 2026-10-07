@@ -7,7 +7,7 @@ import {
   PRODUCTION_STELLAR_ORIGIN,
 } from "@/lib/constants";
 import { signedInPath, defaultInternalPath } from "@/lib/domains/landing";
-import { resolveHostRoute, resolvedHostLocation } from "@/lib/domains/routing";
+import { placementFor, resolveHostRoute, resolvedHostLocation } from "@/lib/domains/routing";
 import {
   classifyProductHost,
   isForsightHost,
@@ -28,7 +28,39 @@ describe("product hosts do not overlap", () => {
     expect(classifyProductHost("forsight.vistrial.io")).toBe("stellar");
     expect(classifyProductHost("localhost:3000")).toBe("local");
     expect(classifyProductHost("vistrial-git-preview.vercel.app")).toBe("local");
-    expect(classifyProductHost("admin.vistrial.io")).toBe("unknown");
+    expect(classifyProductHost("admin.vistrial.io")).toBe("admin");
+    expect(classifyProductHost("staff.vistrial.io")).toBe("unknown");
+  });
+
+  it("serves the app's paths on the team's host and sends its root to sign-in", () => {
+    expect(resolveHostRoute({ host: "admin.vistrial.io", pathname: "/" })).toEqual({
+      action: "redirect",
+      origin: "same",
+      pathname: "/login",
+      preserveSearch: false,
+    });
+    expect(resolveHostRoute({ host: "admin.vistrial.io", pathname: "/app/home" })).toEqual({ action: "allow" });
+    expect(resolveHostRoute({ host: "admin.vistrial.io", pathname: "/portal" })).toEqual({ action: "allow" });
+    expect(resolveHostRoute({ host: "admin.vistrial.io", pathname: "/login" })).toEqual({ action: "allow" });
+    expect(resolveHostRoute({ host: "admin.vistrial.io", pathname: "/stellar" })).toMatchObject({
+      action: "redirect",
+      origin: "stellar",
+    });
+  });
+
+  it("puts staff on the team's host and turns customers away from it", () => {
+    expect(placementFor({ product: "app", isStaffPerson: true, path: "/app/cases/1" })).toEqual({
+      action: "to_admin",
+      path: "/app/cases/1",
+    });
+    expect(placementFor({ product: "pulse", isStaffPerson: true, path: "/app/forsight" })).toMatchObject({
+      action: "to_admin",
+    });
+    expect(placementFor({ product: "admin", isStaffPerson: true, path: "/app" })).toEqual({ action: "stay" });
+    expect(placementFor({ product: "admin", isStaffPerson: false, path: "/app" })).toEqual({ action: "turn_away" });
+    expect(placementFor({ product: "app", isStaffPerson: false, path: "/app" })).toEqual({ action: "stay" });
+    expect(placementFor({ product: "local", isStaffPerson: true, path: "/app" })).toEqual({ action: "stay" });
+    expect(placementFor({ product: "local", isStaffPerson: false, path: "/app" })).toEqual({ action: "stay" });
   });
 
   it("rejects suffix lookalikes", () => {

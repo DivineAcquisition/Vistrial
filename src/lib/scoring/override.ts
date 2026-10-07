@@ -66,7 +66,7 @@ export async function overrideLeadScore(formData: FormData): Promise<OverrideSco
       memberId: ctx.member.id,
       assignedSetterId: lead.assigned_setter_id,
       assignedCloserId: lead.assigned_closer_id,
-      isPlatformAdmin: ctx.isPlatformAdmin,
+      isStaff: ctx.isStaff,
     })
   ) {
     return { ok: false, error: "You can only override leads assigned to you." };

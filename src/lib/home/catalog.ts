@@ -82,9 +82,9 @@ export function effectiveGate(rows: GateRow[], id: string): GateChoice {
   };
 }
 
-/** Only owners open the approval settings. The database enforces the same rule. */
-export function canEditApprovalGate(role: OrgRole, isPlatformAdmin: boolean): boolean {
-  return isPlatformAdmin || role === "owner";
+/** Approval rules are configured by the Vistrial team. The database enforces the same rule. */
+export function canEditApprovalGate(_role: OrgRole, isStaff: boolean): boolean {
+  return isStaff;
 }
 
 /** Letting a message to real people send unreviewed asks the owner to confirm. */
@@ -93,21 +93,26 @@ export function needsAutoRunConfirmation(reachesPeople: boolean, from: ApprovalM
 }
 
 /**
- * Whether this person may approve an item. Owners always may. An item that
+ * Whether this person may approve an item. Owners and staff always may.
+ * Operators never do. A member may when an owner has granted it and the
+ * workspace's rule for this action lets more than owners decide. An item that
  * waited past the workspace's limit has been escalated and is the owner's
  * alone.
  */
 export function canApproveItem(args: {
   approver: Approver;
   role: OrgRole;
-  isPlatformAdmin: boolean;
+  isStaff: boolean;
+  canApprove?: boolean;
   memberId: string;
   assignedMemberId: string | null;
   escalated: boolean;
 }): boolean {
-  if (args.isPlatformAdmin || args.role === "owner") return true;
+  if (args.isStaff || args.role === "owner") return true;
   if (args.escalated) return false;
-  if (args.approver === "owners_and_managers") return args.role === "admin";
+  const grantedMember = (args.role === "member" || args.role === "client_viewer") && Boolean(args.canApprove);
+  if (!grantedMember) return false;
+  if (args.approver === "owners_and_managers") return true;
   if (args.approver === "assigned") {
     return args.assignedMemberId !== null && args.assignedMemberId === args.memberId;
   }

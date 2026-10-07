@@ -14,8 +14,17 @@ import {
 } from "@/components/ui/menu";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useOrg } from "@/components/app/org-provider";
+import type { WorkspaceRole } from "@/lib/auth/types";
 import { initials } from "@/lib/format";
 import { cn } from "@/lib/utils";
+
+const WORKSPACE_ROLE_LABEL: Record<WorkspaceRole, string> = {
+  platform_admin: "Platform admin",
+  service_team: "Vistrial team",
+  owner: "Owner",
+  member: "Member",
+  operator: "Operator",
+};
 
 export function UserMenu({
   collapsed = false,
@@ -24,9 +33,9 @@ export function UserMenu({
   collapsed?: boolean;
   placement?: "sidebar" | "header";
 }) {
-  const { user, role, isPlatformAdmin, org, surfaceAccess } = useOrg();
+  const { user, role, isStaff, isPlatformAdmin, workspaceRole, surfaceAccess, org } = useOrg();
   const name = user.displayName || user.email;
-  const roleLabel = isPlatformAdmin ? "Super admin" : role;
+  const roleLabel = WORKSPACE_ROLE_LABEL[workspaceRole];
   const header = placement === "header";
 
   const trigger = (
@@ -47,7 +56,7 @@ export function UserMenu({
       {collapsed ? null : (
         <span className="min-w-0 flex-1">
           <span className="block truncate text-sm text-card-foreground">{name}</span>
-          <span className="block truncate text-[11px] text-dim capitalize">{roleLabel}</span>
+          <span className="block truncate text-[11px] text-dim">{roleLabel}</span>
         </span>
       )}
     </MenuTrigger>
@@ -81,8 +90,11 @@ export function UserMenu({
         {surfaceAccess === "portal" ? null : (
           <MenuLinkItem render={<Link href="/app/settings/profile" />}>You</MenuLinkItem>
         )}
-        {role === "owner" || role === "admin" || isPlatformAdmin ? (
+        {role === "owner" || role === "member" || isStaff ? (
           <MenuLinkItem render={<Link href="/portal" />}>Portal</MenuLinkItem>
+        ) : null}
+        {isStaff ? (
+          <MenuLinkItem render={<Link href="/app/team" />}>Vistrial team</MenuLinkItem>
         ) : null}
         {isPlatformAdmin ? (
           <MenuLinkItem render={<Link href="/app/ops" />}>System</MenuLinkItem>

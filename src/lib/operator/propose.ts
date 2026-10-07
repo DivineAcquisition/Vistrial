@@ -89,13 +89,13 @@ async function proposeAssign(
     role: ctx.role,
     actorMemberId: ctx.member.id,
     targetMemberId: setterId,
-    isPlatformAdmin: ctx.isPlatformAdmin,
+    isStaff: ctx.isStaff,
   });
   const allowedCloser = canAssignLeadTo({
     role: ctx.role,
     actorMemberId: ctx.member.id,
     targetMemberId: closerId,
-    isPlatformAdmin: ctx.isPlatformAdmin,
+    isStaff: ctx.isStaff,
   });
   if (!allowedSetter || !allowedCloser) {
     return permissionDenied("You can assign this lead to yourself, but not to someone else.");
@@ -332,7 +332,7 @@ async function proposeReassignNextAction(
     role: ctx.role,
     actorMemberId: ctx.member.id,
     targetMemberId: ownerMemberId,
-    isPlatformAdmin: ctx.isPlatformAdmin,
+    isStaff: ctx.isStaff,
   });
   if (!allowed) {
     return permissionDenied("You can assign this action to yourself, but not to someone else.");

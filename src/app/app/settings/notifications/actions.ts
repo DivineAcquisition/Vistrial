@@ -82,7 +82,7 @@ export async function saveOrgNotificationSettings(
   formData: FormData
 ): Promise<SettingsSaveResult> {
   const ctx = await getAuthContext();
-  if (!canManageOrgSettings(ctx.role, ctx.isPlatformAdmin)) {
+  if (!canManageOrgSettings(ctx.role, ctx.isStaff)) {
     return { status: "error", error: "You do not have permission to change these settings." };
   }
   const supabase = await createClient();
@@ -129,6 +129,10 @@ export async function sendTestNotification(
   const channel = String(formData.get("channel") ?? "") as NotificationChannel;
   if (!["push", "email", "sms", "team"].includes(channel)) {
     return { status: "error", error: "Choose a channel." };
+  }
+  // The team channel is shared; only the people who set it up may post to it.
+  if (channel === "team" && !canManageOrgSettings(ctx.role, ctx.isStaff)) {
+    return { status: "error", error: "The Vistrial team tests the shared team channel." };
   }
   const copy = testSendCopy(channel);
   const db = getSupabaseAdmin();

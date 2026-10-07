@@ -9,7 +9,7 @@ import { cardTitle, helperClass } from "@/lib/ui";
 import Link from "next/link";
 
 export default async function AdvancedSettingsPage() {
-  const { org, isPlatformAdmin } = await requireOrgSettingsManager();
+  const { org, isStaff } = await requireOrgSettingsManager();
   const supabase = await createClient();
   const { data } = await supabase
     .from("organizations")
@@ -48,7 +48,7 @@ export default async function AdvancedSettingsPage() {
         </section>
 
         <div className="grid gap-4 sm:grid-cols-2">
-          {advancedSettingsVisibleTo(isPlatformAdmin).map((page) => (
+          {advancedSettingsVisibleTo(isStaff).map((page) => (
             <Panel key={page.href} className="p-6">
               <h2 className={cardTitle}>{page.label}</h2>
               <p className={`mt-2 ${helperClass}`}>{page.description}</p>

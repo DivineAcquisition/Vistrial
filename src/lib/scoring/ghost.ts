@@ -3,6 +3,7 @@ import type { Enums } from "@/types/database";
 import { calendarDaysBetween } from "@/lib/scoring/timezone";
 import { scoreLeadFromEvent } from "@/lib/scoring/event-apply";
 import { loadScoreConfig, type ScoringClient } from "@/lib/scoring/store";
+import { AUTOMATION_STATUSES } from "@/lib/workspaces/status";
 
 export const GHOST_REENGAGEMENT_KIND = "ghost_reengagement";
 export const GHOST_REENGAGEMENT_TEXT =
@@ -173,7 +174,7 @@ export async function runGhostDetector(
   client: ScoringClient,
   now = new Date()
 ): Promise<{ evaluated: number; changed: number; orgs: GhostOrgResult[] }> {
-  const { data: orgs, error } = await client.from("organizations").select("id");
+  const { data: orgs, error } = await client.from("organizations").select("id").in("status", AUTOMATION_STATUSES);
   if (error) {
     throw new Error("Could not list organizations for ghost detector.");
   }

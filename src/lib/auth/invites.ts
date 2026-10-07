@@ -72,7 +72,17 @@ export async function lookupInviteByToken(token: string): Promise<InviteLookup> 
 
 export type RedeemResult =
   | { ok: true; orgId: string }
-  | { ok: false; error: "not_found" | "expired" | "already_accepted" | "email_mismatch" | "user_not_found" | "unknown" };
+  | {
+      ok: false;
+      error:
+        | "not_found"
+        | "expired"
+        | "already_accepted"
+        | "email_mismatch"
+        | "user_not_found"
+        | "staff_account"
+        | "unknown";
+    };
 
 export async function redeemInvite(
   token: string,
@@ -105,7 +115,8 @@ export async function redeemInvite(
       code === "expired" ||
       code === "already_accepted" ||
       code === "email_mismatch" ||
-      code === "user_not_found"
+      code === "user_not_found" ||
+      code === "staff_account"
     ) {
       return { ok: false, error: code };
     }

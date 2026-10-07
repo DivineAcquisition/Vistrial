@@ -85,7 +85,8 @@ export async function loadApprovalQueue(ctx: AuthContext): Promise<QueueItemView
       canApprove: canApproveItem({
         approver: choice.approver,
         role: ctx.role,
-        isPlatformAdmin: ctx.isPlatformAdmin,
+        isStaff: ctx.isStaff,
+        canApprove: ctx.member.canApprove,
         memberId: ctx.member.id,
         assignedMemberId: item.assigned_member_id,
         escalated,
@@ -130,7 +131,7 @@ export async function loadActivity(ctx: AuthContext, limit: number): Promise<{ e
     .eq("actor", "vistrial")
     .order("occurred_at", { ascending: false })
     .limit(Math.max(limit * 20, 200));
-  const managerView = ctx.isPlatformAdmin || ctx.role === "owner" || ctx.role === "admin";
+  const managerView = ctx.isStaff || ctx.role === "owner" || ctx.role === "admin";
   const events = (data ?? [])
     .filter((row) => {
       if (managerView) return true;

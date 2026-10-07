@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { recordHttpSample } from "@/lib/ops/alerts";
 import { rateLimitWebhook } from "@/lib/ops/rate-limit";
 import { decryptSecret } from "@/lib/ghl/crypto";
+import { resolveInboundWorkspace } from "@/lib/inbound/holds";
 import {
   findOrgByCommasPublicToken,
   ingestProcessorEvent,
@@ -68,6 +69,20 @@ export async function POST(
           : "sale";
   const amount = Number(payload.amount_cents ?? payload.amountCents ?? 0);
   const ref = asString(payload.ref) ?? asString(payload.id);
+
+  // Signed for this workspace; it still has to be open to record anything.
+  const decision = await resolveInboundWorkspace(db, {
+    source: "commas",
+    candidateOrgIds: [orgId],
+    eventType: event,
+    externalRef: ref ? `${orgId}:${ref}` : null,
+    payload,
+  });
+  if (decision.action === "hold") {
+    await recordHttpSample(db, "/api/sources/webhooks/commas", false);
+    return NextResponse.json({ ok: true, held: true });
+  }
+
   if (!ref || !Number.isFinite(amount) || amount <= 0) {
     return NextResponse.json({ ok: true, ignored: true });
   }

@@ -12,6 +12,7 @@ import {
   type HistoryContact,
 } from "@/lib/ghl/history";
 import { inboundTouchSummary, outboundTouchSummary } from "@/lib/ghl/message-meta";
+import { automationAllowed } from "@/lib/inbound/holds";
 
 async function consumeRate(db: GhlDb, orgId: string): Promise<boolean> {
   const { data, error } = await db.rpc("try_consume_ghl_rate", { p_org_id: orgId });
@@ -55,6 +56,11 @@ export async function runBaselineBackfill(db: GhlDb): Promise<{
 
   const { data: run } = await db.from("baseline_runs").select("*").eq("id", runId).maybeSingle();
   if (!run) return { claimed: 1, advanced: 0, completed: 0, failed: 1 };
+
+  if (!(await automationAllowed(db, run.org_id))) {
+    await db.rpc("fail_baseline_run", { p_run_id: runId, p_error: "Workspace is paused or closed" });
+    return { claimed: 1, advanced: 0, completed: 0, failed: 1 };
+  }
 
   const connection = await loadConnection(db, run.org_id);
   if (!connection?.location_id || connection.status !== "active") {

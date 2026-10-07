@@ -3,6 +3,7 @@ import "server-only";
 import type { GhlDb } from "@/lib/ghl/tokens";
 import { ghlError, ghlLog } from "@/lib/ghl/log";
 import { EXTRACTION_AUDIT_SAMPLE } from "@/lib/calibration/constants";
+import { AUTOMATION_STATUSES } from "@/lib/workspaces/status";
 
 export async function runCalibrationJobs(db: GhlDb): Promise<{
   suggestions: { processed: number; failed: number };
@@ -15,7 +16,8 @@ export async function runCalibrationJobs(db: GhlDb): Promise<{
   const { data: orgs, error } = await db
     .from("organizations")
     .select("id")
-    .is("offboarded_at", null);
+    .is("offboarded_at", null)
+    .in("status", AUTOMATION_STATUSES);
   if (error) throw error;
 
   for (const org of orgs ?? []) {

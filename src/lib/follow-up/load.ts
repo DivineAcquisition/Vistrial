@@ -204,10 +204,8 @@ export async function loadFollowUpReview(draftId: string): Promise<FollowUpRevie
     proposedSendAt,
     canApprove: canApproveFollowUp({
       role: ctx.role,
-      memberId: ctx.member.id,
-      assignedSetterId: lead.assigned_setter_id,
-      assignedCloserId: lead.assigned_closer_id,
-      isPlatformAdmin: ctx.isPlatformAdmin,
+      canApprove: ctx.member.canApprove,
+      isStaff: ctx.isStaff,
     }),
   };
 }

@@ -13,8 +13,8 @@ export const metadata = { title: "Approvals" };
 
 export default async function ApprovalSettingsPage() {
   const ctx = await requireOrgSettingsManager();
-  if (!canEditApprovalGate(ctx.role, ctx.isPlatformAdmin)) {
-    redirect(firstSettingsPath(ctx.role, ctx.isPlatformAdmin));
+  if (!canEditApprovalGate(ctx.role, ctx.isStaff)) {
+    redirect(firstSettingsPath(ctx.role, ctx.isStaff));
   }
   const supabase = await createClient();
   const [state, history] = await Promise.all([

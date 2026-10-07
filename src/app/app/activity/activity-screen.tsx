@@ -175,7 +175,7 @@ export function ActivityScreen({
       <ActivityFiltersForm
         filters={filters}
         actors={actors}
-        isPlatformAdmin={org.isPlatformAdmin}
+        isStaff={org.isStaff}
       />
 
       <ol className="app-stagger mt-6 space-y-3">

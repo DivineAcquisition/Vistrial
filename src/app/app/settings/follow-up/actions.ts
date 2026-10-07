@@ -30,7 +30,7 @@ export async function updateFollowUpPolicy(
   formData: FormData
 ): Promise<SettingsSaveResult> {
   const ctx = await getAuthContext();
-  if (!canManageOrgSettings(ctx.role, ctx.isPlatformAdmin)) return deny();
+  if (!canManageOrgSettings(ctx.role, ctx.isStaff)) return deny();
 
   const maxLength = parseIntField(formData.get("max_sequence_length"), "Maximum sequence length", 1, 8);
   const maxDays = parseIntField(formData.get("max_sequence_duration_days"), "Maximum sequence duration", 1, 90);
@@ -65,7 +65,7 @@ export async function updateFollowUpPolicy(
 
 export async function setOrgSequenceHalt(halted: boolean): Promise<SettingsSaveResult> {
   const ctx = await getAuthContext();
-  if (!canManageOrgSettings(ctx.role, ctx.isPlatformAdmin)) return deny();
+  if (!canManageOrgSettings(ctx.role, ctx.isStaff)) return deny();
   const admin = getSupabaseAdmin();
   if (halted) {
     const { error } = await admin.rpc("halt_org_follow_up_sequences", {
@@ -94,7 +94,7 @@ export async function updateVoiceProfile(
   formData: FormData
 ): Promise<SettingsSaveResult> {
   const ctx = await getAuthContext();
-  if (!canManageOrgSettings(ctx.role, ctx.isPlatformAdmin)) return deny();
+  if (!canManageOrgSettings(ctx.role, ctx.isStaff)) return deny();
 
   const formality = String(formData.get("formality") ?? "casual");
   if (formality !== "casual" && formality !== "professional") {
@@ -140,7 +140,7 @@ export async function addVoiceExample(input: {
   channel: "sms" | "email";
 }): Promise<SettingsSaveResult> {
   const ctx = await getAuthContext();
-  if (!canManageOrgSettings(ctx.role, ctx.isPlatformAdmin)) return deny();
+  if (!canManageOrgSettings(ctx.role, ctx.isStaff)) return deny();
   const body = input.body.trim();
   if (!body) return { status: "error", error: "Paste a real message this business has sent." };
   if (body.length > 4000) return { status: "error", error: "Keep examples under 4,000 characters." };
@@ -165,7 +165,7 @@ export async function addVoiceExample(input: {
 
 export async function removeVoiceExample(index: number): Promise<SettingsSaveResult> {
   const ctx = await getAuthContext();
-  if (!canManageOrgSettings(ctx.role, ctx.isPlatformAdmin)) return deny();
+  if (!canManageOrgSettings(ctx.role, ctx.isStaff)) return deny();
   const supabase = await createClient();
   const { data } = await supabase.from("org_voice_profiles").select("examples").eq("org_id", ctx.org.id).maybeSingle();
   const examples = parseVoiceExamples(data?.examples);
@@ -182,7 +182,7 @@ export async function removeVoiceExample(index: number): Promise<SettingsSaveRes
 
 export async function saveRoutingRules(raw: string): Promise<SettingsSaveResult> {
   const ctx = await getAuthContext();
-  if (!canManageOrgSettings(ctx.role, ctx.isPlatformAdmin)) return deny();
+  if (!canManageOrgSettings(ctx.role, ctx.isStaff)) return deny();
   let parsed: unknown;
   try {
     parsed = JSON.parse(raw);
@@ -216,7 +216,7 @@ export async function saveRoutingRules(raw: string): Promise<SettingsSaveResult>
 
 export async function refreshVoiceSuggestions(): Promise<SettingsSaveResult> {
   const ctx = await getAuthContext();
-  if (!canManageOrgSettings(ctx.role, ctx.isPlatformAdmin)) return deny();
+  if (!canManageOrgSettings(ctx.role, ctx.isStaff)) return deny();
   const admin = getSupabaseAdmin();
   const { data } = await admin
     .from("follow_up_drafts")
@@ -251,7 +251,7 @@ export async function resolveVoiceSuggestion(input: {
   accept: boolean;
 }): Promise<SettingsSaveResult> {
   const ctx = await getAuthContext();
-  if (!canManageOrgSettings(ctx.role, ctx.isPlatformAdmin)) return deny();
+  if (!canManageOrgSettings(ctx.role, ctx.isStaff)) return deny();
   const supabase = await createClient();
   const { data: suggestion } = await supabase
     .from("voice_profile_suggestions")

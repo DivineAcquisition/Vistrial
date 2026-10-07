@@ -20,7 +20,7 @@ export default async function CreativePerformancePage() {
       title="Creative Performance"
       description="Which ads are earning their spend and which should be killed."
       view={view}
-      isPlatformAdmin={ctx.isPlatformAdmin}
+      isStaff={ctx.isStaff}
     >
       {(rows) => <CreativeTable rows={rows} />}
     </ForsightPage>

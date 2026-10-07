@@ -3,6 +3,8 @@ import "server-only";
 import type { GhlDb } from "@/lib/ghl/tokens";
 import { ghlError, ghlLog } from "@/lib/ghl/log";
 import type { Json } from "@/types/database";
+import { AUTOMATION_STATUSES } from "@/lib/workspaces/status";
+import { automationAllowedOrgIds } from "@/lib/inbound/holds";
 
 export async function runReportingJobs(db: GhlDb): Promise<{
   aggregate: { processed: number; failed: number; runId: string | null };
@@ -12,7 +14,8 @@ export async function runReportingJobs(db: GhlDb): Promise<{
     const { data: orgs, error } = await db
       .from("organizations")
       .select("id")
-      .not("activated_at", "is", null);
+      .not("activated_at", "is", null)
+      .in("status", AUTOMATION_STATUSES);
     if (error) throw error;
     let processed = 0;
     const log: Json[] = [];
@@ -35,7 +38,8 @@ export async function runReportingJobs(db: GhlDb): Promise<{
     const { data: orgs, error } = await db
       .from("organizations")
       .select("id")
-      .not("activated_at", "is", null);
+      .not("activated_at", "is", null)
+      .in("status", AUTOMATION_STATUSES);
     if (error) throw error;
     let processed = 0;
     const log: Json[] = [];
@@ -106,8 +110,10 @@ export async function ensureBaselineQueuedForConnectedOrgs(db: GhlDb): Promise<n
     .from("ghl_connections")
     .select("org_id")
     .eq("status", "active");
+  const open = await automationAllowedOrgIds(db, (connections ?? []).map((row) => row.org_id));
   let queued = 0;
   for (const row of connections ?? []) {
+    if (!open.has(row.org_id)) continue;
     const { data: existing } = await db
       .from("baseline_runs")
       .select("id")

@@ -254,7 +254,7 @@ async function toolCaseFile(input: Record<string, unknown>, ctx: AuthContext): P
   try {
     const payload = await refreshCaseFile(leadId);
     if (!payload) return nothingFound("that lead is not in this workspace");
-    const hideRevenue = payload.revenue === null && !canViewReporting(ctx.role, ctx.isPlatformAdmin);
+    const hideRevenue = payload.revenue === null && !canViewReporting(ctx.role, ctx.isStaff);
     const model = caseFileModel(payload, hideRevenue);
     return readOk(`Case file for ${payload.lead.name}.`, model, {
       kind: "leads",
@@ -482,7 +482,7 @@ async function toolQueue(input: Record<string, unknown>, ctx: AuthContext): Prom
       assigned:
         assignedRaw && (QUEUE_ASSIGNED as readonly string[]).includes(assignedRaw)
           ? (assignedRaw as QueueAssignedFilter)
-          : defaultAssignedFilter(ctx.role, ctx.isPlatformAdmin),
+          : defaultAssignedFilter(ctx.role, ctx.isStaff),
       track: trackRaw && (QUEUE_TRACKS as readonly string[]).includes(trackRaw) ? (trackRaw as QueueTrackFilter) : null,
       status:
         statusRaw && (QUEUE_STATUSES as readonly string[]).includes(statusRaw)
@@ -552,7 +552,7 @@ async function toolQueue(input: Record<string, unknown>, ctx: AuthContext): Prom
 }
 
 async function toolReporting(input: Record<string, unknown>, ctx: AuthContext): Promise<ToolOutcome> {
-  if (!canViewReporting(ctx.role, ctx.isPlatformAdmin)) {
+  if (!canViewReporting(ctx.role, ctx.isStaff)) {
     return permissionDenied("You do not have permission to read reporting figures.");
   }
   const panelRaw = asString(input.panel);

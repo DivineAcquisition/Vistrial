@@ -159,7 +159,7 @@ export function OpsActivity({
           actors={[]}
           basePath="/app/ops"
           clients={clients}
-          isPlatformAdmin
+          isStaff
         />
       </div>
 

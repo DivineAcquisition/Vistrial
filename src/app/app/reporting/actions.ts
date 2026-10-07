@@ -25,7 +25,7 @@ export async function skipBaselineBackfill(
   void _prev;
   void _formData;
   const ctx = await getAuthContext();
-  if (!canManageOrgSettings(ctx.role, ctx.isPlatformAdmin)) return initialDenied;
+  if (!canManageOrgSettings(ctx.role, ctx.isStaff)) return initialDenied;
   const supabase = await createClient();
   const { error } = await supabase.rpc("skip_baseline_backfill", {
     p_org_id: ctx.org.id,
@@ -44,7 +44,7 @@ export async function rerunBaselineBackfill(
   void _prev;
   void _formData;
   const ctx = await getAuthContext();
-  if (!canManageOrgSettings(ctx.role, ctx.isPlatformAdmin)) return initialDenied;
+  if (!canManageOrgSettings(ctx.role, ctx.isStaff)) return initialDenied;
   const supabase = await createClient();
   const { error } = await supabase.rpc("enqueue_baseline_backfill", {
     p_org_id: ctx.org.id,
@@ -63,7 +63,7 @@ export async function saveSelfReportedBaseline(
 ): Promise<ReportingActionResult> {
   void _prev;
   const ctx = await getAuthContext();
-  if (!canManageOrgSettings(ctx.role, ctx.isPlatformAdmin)) return initialDenied;
+  if (!canManageOrgSettings(ctx.role, ctx.isStaff)) return initialDenied;
   const leads = Number(formData.get("leads_per_month"));
   const closes = Number(formData.get("clients_closed_per_month"));
   const note = String(formData.get("note") ?? "").trim() || null;

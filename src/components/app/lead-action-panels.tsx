@@ -43,7 +43,7 @@ export function OutcomePanel({
   members,
   role,
   memberId,
-  isPlatformAdmin,
+  isStaff,
   busy,
   error,
   onCancel,
@@ -53,7 +53,7 @@ export function OutcomePanel({
   members: QueueMemberOption[];
   role: OrgRole;
   memberId: string;
-  isPlatformAdmin: boolean;
+  isStaff: boolean;
   busy?: boolean;
   error?: string | null;
   onCancel: () => void;
@@ -66,7 +66,7 @@ export function OutcomePanel({
     actorMemberId: string;
   }) => Promise<void>;
 }) {
-  const canPickActor = canAssignLeads(role, isPlatformAdmin);
+  const canPickActor = canAssignLeads(role, isStaff);
   const [channel, setChannel] = useState<TouchChannel>("call");
   const [direction, setDirection] = useState<TouchDirection>("outbound");
   const [note, setNote] = useState("");
@@ -177,7 +177,7 @@ export function AssignPanel({
   members,
   role,
   memberId,
-  isPlatformAdmin,
+  isStaff,
   busy,
   error,
   onCancel,
@@ -187,7 +187,7 @@ export function AssignPanel({
   members: QueueMemberOption[];
   role: OrgRole;
   memberId: string;
-  isPlatformAdmin: boolean;
+  isStaff: boolean;
   busy?: boolean;
   error?: string | null;
   onCancel: () => void;
@@ -197,7 +197,7 @@ export function AssignPanel({
     closerId: string | null;
   }) => Promise<void>;
 }) {
-  const canOthers = canAssignLeads(role, isPlatformAdmin);
+  const canOthers = canAssignLeads(role, isStaff);
   const [setterId, setSetterId] = useState(row.assignedSetterId ?? "");
   const [closerId, setCloserId] = useState(row.assignedCloserId ?? "");
   const [pending, setPending] = useState(false);

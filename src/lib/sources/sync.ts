@@ -19,6 +19,7 @@ import {
 import { listGoogleAdsCustomerId } from "@/lib/sources/oauth";
 import { ingestProcessorEvent } from "@/lib/sources/processor";
 import type { Enums } from "@/types/database";
+import { automationAllowedOrgIds } from "@/lib/inbound/holds";
 
 function asRecord(value: unknown): Record<string, unknown> | null {
   return value && typeof value === "object" && !Array.isArray(value)
@@ -553,7 +554,8 @@ async function syncCalendar(db: GhlDb, orgId: string) {
 
 export async function runSourceSyncJobs(db: GhlDb): Promise<{ processed: number; failed: number }> {
   const { data: orgs } = await db.from("source_connections").select("org_id").eq("status", "active");
-  const unique = [...new Set((orgs ?? []).map((row) => row.org_id))];
+  const open = await automationAllowedOrgIds(db, (orgs ?? []).map((row) => row.org_id));
+  const unique = [...open];
   let processed = 0;
   let failed = 0;
   for (const orgId of unique) {

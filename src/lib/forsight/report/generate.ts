@@ -8,6 +8,7 @@ import { rowToStored, type ForsightReportRow } from "@/lib/forsight/report/load"
 import type { StoredReport } from "@/lib/forsight/report/types";
 import { getSupabaseAdmin } from "@/lib/supabase/admin";
 import type { Json } from "@/types/database";
+import { AUTOMATION_STATUSES } from "@/lib/workspaces/status";
 
 export type GenerateActor = {
   kind: "scheduled" | "operator";
@@ -154,6 +155,7 @@ export async function generatePreviousMonthForAll(
     .select("id, name")
     .not("activated_at", "is", null)
     .is("offboarded_at", null)
+    .in("status", AUTOMATION_STATUSES)
     .order("name", { ascending: true });
   if (error) throw error;
 

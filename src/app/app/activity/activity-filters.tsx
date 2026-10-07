@@ -31,13 +31,13 @@ export function ActivityFiltersForm({
   actors,
   basePath = "/app/activity",
   clients,
-  isPlatformAdmin = false,
+  isStaff = false,
 }: {
   filters: ActivityFilters;
   actors: ActivityActorOption[];
   basePath?: string;
   clients?: Array<{ id: string; name: string }>;
-  isPlatformAdmin?: boolean;
+  isStaff?: boolean;
 }) {
   const router = useRouter();
 
@@ -76,7 +76,7 @@ export function ActivityFiltersForm({
           }
         >
           {(["", ...ACTIVITY_CATEGORIES] as const)
-            .filter((value) => isPlatformAdmin || value !== "agent")
+            .filter((value) => isStaff || value !== "agent")
             .map((value) => (
             <option key={value || "all"} value={value}>
               {CATEGORY_LABELS[value]}

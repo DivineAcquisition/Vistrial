@@ -3,62 +3,66 @@ import "server-only";
 import { cache } from "react";
 import { redirect } from "next/navigation";
 
-import { getSessionUser } from "@/lib/auth/session";
-import { getSupabaseAdmin } from "@/lib/supabase/admin";
+import { getPlatformStaff, getSessionUser } from "@/lib/auth/session";
 import { createClient } from "@/lib/supabase/server";
-import type { StellarAuthContext, StellarMember, StellarMemberRole } from "@/lib/stellar/types";
+import type { StellarAuthContext, StellarMember } from "@/lib/stellar/types";
 
-const STELLAR_MEMBER_ROLES: StellarMemberRole[] = ["setter", "client_viewer"];
+type OrgEmbed = { id: string; name: string; timezone: string; product: string };
 
-function isStellarMemberRole(role: string): role is StellarMemberRole {
-  return (STELLAR_MEMBER_ROLES as string[]).includes(role);
-}
+type SeatRow = {
+  id: string;
+  org_id: string;
+  role: string;
+  seat: string;
+  display_name: string;
+  email: string;
+  org: OrgEmbed;
+};
 
 /**
- * A Stellar member row for the current user, if any, scoped to orgs whose
- * product includes stellar. Uses the admin client as a fallback the same
- * way core Vistrial's session helper does, so an RLS gap never sends a
- * signed-in member to /no-access.
+ * The caller's seats in Stellar workspaces, read through their own session.
+ * Row-level security decides which come back: a client sees only their own
+ * workspace, staff only the ones they are assigned to. No service-role
+ * fallback, which could return a seat the database has hidden.
  */
-async function findStellarMember(userId: string): Promise<StellarMember | null> {
+async function stellarSeats(userId: string): Promise<SeatRow[]> {
   const supabase = await createClient();
   const { data } = await supabase
     .from("org_members")
-    .select("id, org_id, role, display_name, email, organizations(id, name, timezone, product)")
+    .select("id, org_id, role, seat, display_name, email, organizations(id, name, timezone, product)")
     .eq("user_id", userId)
     .eq("active", true);
-
-  const rows = data ?? [];
-  const admin = getSupabaseAdmin();
-  const fallbackRows = rows.length
-    ? rows
-    : (
-        await admin
-          .from("org_members")
-          .select("id, org_id, role, display_name, email, organizations(id, name, timezone, product)")
-          .eq("user_id", userId)
-          .eq("active", true)
-      ).data ?? [];
-
-  for (const row of fallbackRows) {
-    const org = Array.isArray(row.organizations) ? row.organizations[0] : row.organizations;
-    if (!org) continue;
-    if (org.product !== "stellar" && org.product !== "both") continue;
-    if (!isStellarMemberRole(row.role)) continue;
-    return {
+  const seats: SeatRow[] = [];
+  for (const row of data ?? []) {
+    const embed = row.organizations as OrgEmbed | OrgEmbed[] | null;
+    const org = Array.isArray(embed) ? embed[0] : embed;
+    if (!org || (org.product !== "stellar" && org.product !== "both")) continue;
+    seats.push({
       id: row.id,
-      orgId: row.org_id,
-      orgName: org.name,
-      orgTimezone: org.timezone,
+      org_id: row.org_id,
       role: row.role,
-      displayName: row.display_name,
+      seat: row.seat,
+      display_name: row.display_name,
       email: row.email,
-    };
+      org,
+    });
   }
-
-  return null;
+  return seats;
 }
 
+function toMember(row: SeatRow, role: StellarMember["role"]): StellarMember {
+  return {
+    id: row.id,
+    orgId: row.org_id,
+    orgName: row.org.name,
+    orgTimezone: row.org.timezone,
+    role,
+    displayName: row.display_name,
+    email: row.email,
+  };
+}
+
+/** Whether the caller is Vistrial staff; kept for the sign-in path. */
 export async function checkIsStellarDaOperator(): Promise<boolean> {
   const supabase = await createClient();
   const { data, error } = await supabase.rpc("is_stellar_da_operator");
@@ -67,10 +71,8 @@ export async function checkIsStellarDaOperator(): Promise<boolean> {
 }
 
 /**
- * Current user's Stellar identity: either a da_operator (standing,
- * cross-org, never a membership row) or a single-org member (setter or
- * client_viewer). Redirects to /login if signed out, /no-access if neither
- * applies.
+ * Current user's Stellar identity. Redirects to /login if signed out,
+ * /no-access if they hold no Stellar seat and are not staff.
  */
 export const getStellarAuthContext = cache(async (): Promise<StellarAuthContext> => {
   const user = await getSessionUser();
@@ -78,15 +80,31 @@ export const getStellarAuthContext = cache(async (): Promise<StellarAuthContext>
     redirect("/login?redirect=%2Fstellar");
   }
 
-  const isDaOperator = await checkIsStellarDaOperator();
-  if (isDaOperator) {
-    return { kind: "da_operator", user };
+  const seats = await stellarSeats(user.id);
+
+  if (await getPlatformStaff()) {
+    const staffSeatIds = seats.filter((row) => row.seat === "staff").map((row) => row.id);
+    let setter: StellarMember | null = null;
+    if (staffSeatIds.length > 0) {
+      const supabase = await createClient();
+      const { data: placement } = await supabase
+        .from("placements")
+        .select("setter_member_id")
+        .in("setter_member_id", staffSeatIds)
+        .is("ended_at", null)
+        .limit(1)
+        .maybeSingle();
+      const seat = seats.find((row) => row.id === placement?.setter_member_id);
+      if (seat) setter = toMember(seat, "setter");
+    }
+    return { kind: "da_operator", user, setter };
   }
 
-  const member = await findStellarMember(user.id);
-  if (!member) {
+  const client = seats.find(
+    (row) => row.seat === "customer" && ["owner", "member", "client_viewer"].includes(row.role)
+  );
+  if (!client) {
     redirect("/no-access");
   }
-
-  return { kind: "member", user, member };
+  return { kind: "member", user, member: toMember(client, "client") };
 });

@@ -3,10 +3,10 @@ import { loadCalibrationReport, previewScoreConfigChange } from "@/lib/calibrati
 
 export async function CalibrationReport({
   orgId,
-  isPlatformAdmin = false,
+  isStaff = false,
 }: {
   orgId: string;
-  isPlatformAdmin?: boolean;
+  isStaff?: boolean;
 }) {
   const payload = await loadCalibrationReport(orgId);
   const suggestions = Array.isArray(payload.suggestions) ? payload.suggestions : [];
@@ -39,6 +39,6 @@ export async function CalibrationReport({
     }
   }
   return (
-    <CalibrationReportView payload={payload} preview={preview} isPlatformAdmin={isPlatformAdmin} />
+    <CalibrationReportView payload={payload} preview={preview} isStaff={isStaff} />
   );
 }

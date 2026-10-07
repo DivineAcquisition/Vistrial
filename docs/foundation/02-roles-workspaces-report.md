@@ -4,20 +4,27 @@ Branch: `claude/foundation-roles-discovery`. Discovery and plan: `01-roles-works
 
 ## Status in one paragraph
 
-The database migration, its rollback, the app changes, and the tests are built and pushed.
-**Nothing has been applied to the live database yet.**
+**Live.** The migrations are applied to the production database and the app is deployed from
+`main` (commit `cc44347`, Vercel deployment `dpl_BHKPeY7HB3J5VE5yM6hqjdJgF1af`, serving every
+production domain including `admin.vistrial.io`). No runtime errors in the first hour.
 
-- Every check below passes on a local Postgres copy built from the repo's migrations.
-- Creating the approved Supabase test branch timed out three times, and no branch was created.
-  So the test on a hosted copy has not happened.
-- The backup plan is still waiting on your confirmation.
-- A snapshot of every live row exists on the live project, in schema `vistrial_snapshot_20261007`.
-  The API cannot read that schema.
+How it went live:
 
-**Order matters when this goes live.** The app code expects the new columns, so the migrations
-must reach the live database before this branch's code is deployed. Merging to `main` triggers the
-Supabase GitHub integration, which applies migrations automatically. That integration currently
-reports `MIGRATIONS_FAILED` on main, because of the drift described under Migration results.
+1. A snapshot of every live row was taken first, in schema `vistrial_snapshot_20261007` on the live
+   project. The API cannot read it. It was topped up just before applying with the Ask Vistrial
+   rows added since.
+2. `20261007010000` (the two new roles) was applied directly. It only adds enum values.
+3. The other migrations went through the repo's own path, the Supabase GitHub integration, from a
+   `main` commit holding only database files, so the app could not deploy ahead of its schema.
+   - The first run failed: the snapshot table had copied `forsight_sources.source_type` with its enum
+     type, which blocked `drop_airtable_source` from rebuilding that type. Nothing was applied; the
+     whole run rolled back. The snapshot's enum-typed columns were changed to text (values
+     unchanged) and the second run applied `20261003040000` and `20261007020000`.
+4. Live was checked against the snapshot, then the app code was merged to `main`.
+
+The approved Supabase test branch could not be created (three timeouts, no branch left behind), so
+there was no hosted dry run; the local test suite and the transactional, all-or-nothing integration
+run stood in for it.
 
 ## What changed
 
@@ -116,7 +123,22 @@ Notes:
 
 ## Migration results
 
-Every result in this section is from the local copy. Live has not been touched.
+**On live (production database):**
+
+- Applied: `20261003040000_drop_airtable_source`, `20261003045746_sales_os_agent` (a no-op
+  placeholder for a version that existed only on live), `20261007010000_workspace_roles_enum`,
+  `20261007020000_workspace_isolation`. The repo and live now list the same versions, and the
+  integration on `main` reports healthy again for the first time since 3 October.
+- Row counts match the snapshot in 29 of 31 tables. The two differences are intended:
+  `ops_job_catalog` and `ops_job_runs` each lost their `forsight-meta-sync` row, which
+  `drop_airtable_source` removes. Both rows are in the snapshot.
+- The one Forsight source on Airtable is now `vistrial_core`, as `drop_airtable_source` intends.
+- The one login is unchanged: an active Platform Admin with a staff seat in DivineAcquisition.
+- `workspace_migration_review` is empty: nothing needed a manual decision.
+- Every table has row-level security on. The Supabase security advisor reports no errors (it
+  reported one before: `stellar_build_stage_mappings` had RLS off).
+
+**On the local copy:**
 
 - 30 of the 32 database test files pass. That includes `verify-workspaces.sql`, with 100 checks on two
   near-identical customer workspaces.
@@ -124,21 +146,22 @@ Every result in this section is from the local copy. Live has not been touched.
   - `verify-reporting`: "expected a volume discontinuity";
   - `verify-agent-framework`: "operator was not grandfathered enabled".
 - Rollback, then re-apply, succeeds twice in a row (`scripts/test-workspace-rollback.sh`).
-- 716 unit tests pass. Typecheck is clean.
+- 716 unit tests pass. Typecheck is clean. The production build compiles.
 - Lint shows 20 errors, all in files this work did not change, and all present on main.
 
-**Needs manual review before or after applying:**
+**For you to review:**
 
-1. **Live drift.**
-   - Live is missing `20261003040000_drop_airtable_source`.
-   - Live has an extra migration entry, `20261003045746 sales_os_agent`.
-   - Apply order to live: `20261003040000`, then `20261007010000`, then `20261007020000`.
+1. **Live drift is resolved.** Live was missing `20261003040000_drop_airtable_source` and had an
+   extra `20261003045746 sales_os_agent` entry; both now line up with the repo.
 2. **The DivineAcquisition workspace** (`divine-acquisition`) is marked as Vistrial's own
    (`is_platform_workspace`), because it has no customer seats. Please confirm that's right.
 3. Any `da_operator` seat is deactivated rather than converted, and listed in
    `workspace_migration_review`. Live has none today.
 4. Existing logins are unchanged. The one live user is a Platform Admin and keeps access to everything.
-   After the domain is set up, that user signs in at admin.vistrial.io.
+   Staff now work at admin.vistrial.io and sign in there once (sessions are per host).
+5. **DivineAcquisition's status is `onboarding`**, set from its timestamps because it was never
+   marked activated. Automation runs for onboarding workspaces, so nothing stopped; change it to
+   active from `/app/team` if you prefer.
 
 ## Done When checks
 
@@ -177,8 +200,9 @@ Each check was verified on the local copy.
 9. **Staff actions, role changes, invitations, assignments, and status changes are logged, and entries
    can't be edited.** ✅ Section 6. Users, staff, and the service role are all refused edits and deletes.
 10. **Existing data and users are intact, with a documented rollback.**
-    - ✅ On the local copy: rollback tested twice, and the snapshot was taken on live.
-    - ⏳ On live: pending.
+    - ✅ On the local copy: rollback tested twice.
+    - ✅ On live: row counts checked against the snapshot; the only differences are the two
+      intended job rows. The login is unchanged.
 11. **A written list of covered tables and storage.** ✅ The section above, plus Appendix A of the
     discovery doc.
 
@@ -198,19 +222,15 @@ Each check was verified on the local copy.
   reviewed, and the sender must resend.
 - **Staff sessions are per host.** Staff sign in again at admin.vistrial.io.
 
-## Still to do to go live
+## Still to do
 
-1. You confirm the backup plan.
-2. Run the hosted test. Either the Supabase test branch, once creation works, or the preview branch
-   that opening a PR creates automatically. Then delete it.
-3. Apply the three migrations to live in the order above. Compare row counts with the snapshot, and
-   regenerate types.
-4. Deploy the app.
-5. Set up `admin.vistrial.io`:
-   - add the domain to the Vercel project and DNS;
-   - add `https://admin.vistrial.io/auth/callback` to Supabase Auth redirect URLs.
-6. Later, when plugged in: point Telnyx at `/api/webhooks/telnyx` and Stripe billing at
+1. Optional: add `https://admin.vistrial.io/auth/callback` to Supabase Auth redirect URLs, so
+   email-link sign-in works on the admin address. Password sign-in already works there.
+2. When plugged in: point Telnyx at `/api/webhooks/telnyx` and Stripe billing at
    `/api/webhooks/stripe-billing`.
+3. Drop `vistrial_snapshot_20261007` from live once you are satisfied (it holds a copy of every
+   row, including the auth user's email).
+4. Regenerate `src/types/database.ts` from live at some point; it was edited by hand to match.
 
 ## Found along the way, not fixed here
 

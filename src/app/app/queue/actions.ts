@@ -87,7 +87,7 @@ export async function assignQueueLead(input: {
       role: ctx.role,
       actorMemberId: ctx.member.id,
       targetMemberId: setterId,
-      isPlatformAdmin: ctx.isPlatformAdmin,
+      isStaff: ctx.isStaff,
     });
     if (!allowed) {
       return actionError("You can assign this lead to yourself, but not to someone else.");
@@ -98,7 +98,7 @@ export async function assignQueueLead(input: {
       role: ctx.role,
       actorMemberId: ctx.member.id,
       targetMemberId: closerId,
-      isPlatformAdmin: ctx.isPlatformAdmin,
+      isStaff: ctx.isStaff,
     });
     if (!allowed) {
       return actionError("You can assign this lead to yourself, but not to someone else.");

@@ -36,7 +36,7 @@ export default async function NotificationSettingsPage() {
     >
       <NotificationSettingsForm
         role={ctx.role}
-        isManager={canManageOrgSettings(ctx.role, ctx.isPlatformAdmin)}
+        isManager={canManageOrgSettings(ctx.role, ctx.isStaff)}
         prefs={prefs ?? []}
         mutedUntil={mute?.muted_until ?? null}
         smsEmergenciesEnabled={org?.sms_emergencies_enabled ?? false}

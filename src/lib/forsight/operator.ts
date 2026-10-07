@@ -32,7 +32,7 @@ export type SourceTestResult = { ok: true; detail: string } | { ok: false; error
 /** Every operator entry point starts here. */
 export async function requireForsightOperator() {
   const ctx = await getAuthContext();
-  if (!ctx.isPlatformAdmin) return null;
+  if (!ctx.isStaff) return null;
   return ctx;
 }
 

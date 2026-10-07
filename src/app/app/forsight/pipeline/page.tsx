@@ -19,7 +19,7 @@ export default async function PipelineHealthPage() {
       title="Pipeline Health"
       description="Whether anything is slipping that a person needs to act on today."
       view={view}
-      isPlatformAdmin={ctx.isPlatformAdmin}
+      isStaff={ctx.isStaff}
     >
       {(health) => <PipelineScreen health={health} now={now} />}
     </ForsightPage>

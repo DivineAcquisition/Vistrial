@@ -1499,6 +1499,7 @@ DROP FUNCTION IF EXISTS public.set_workspace_status(uuid, public.workspace_statu
 DROP FUNCTION IF EXISTS public.upsert_platform_staff(uuid, public.platform_role, boolean, boolean, text);
 DROP FUNCTION IF EXISTS public.deactivate_user_everywhere(uuid);
 DROP FUNCTION IF EXISTS public.review_inbound_event_hold(uuid, text, text);
+DROP FUNCTION IF EXISTS public.create_workspace(text, text, text, text);
 
 -- 12. Types, once nothing uses them.
 DROP TYPE IF EXISTS public.workspace_status;

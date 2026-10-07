@@ -37,7 +37,7 @@ export default async function StellarConsolePage() {
         </p>
         <h1 className="mt-1 text-xl font-medium text-white">Active placements</h1>
         <p className="mt-1 text-sm text-dim">
-          Every active Stellar placement. This read was logged to the DA access log.
+          Active Stellar placements in the workspaces assigned to you. This read was logged to the DA access log.
         </p>
       </div>
 

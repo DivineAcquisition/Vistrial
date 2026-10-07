@@ -1,5 +1,5 @@
-import type { Membership, OrgSummary } from "@/lib/auth/types";
-import type { OrgRole, SurfaceAccess } from "@/types/database";
+import type { Membership, OrgSummary, WorkspaceRole } from "@/lib/auth/types";
+import type { MemberSeat, OrgRole, PlatformRole, SurfaceAccess, WorkspaceStatus } from "@/types/database";
 
 export type OrgRow = {
   id: string;
@@ -7,6 +7,8 @@ export type OrgRow = {
   slug: string;
   timezone: string;
   ghl_location_id: string | null;
+  status?: WorkspaceStatus | null;
+  is_platform_workspace?: boolean | null;
 };
 
 export type MemberRow = {
@@ -15,6 +17,8 @@ export type MemberRow = {
   role: OrgRole;
   display_name: string;
   email: string;
+  seat?: MemberSeat | null;
+  can_approve?: boolean | null;
   surface_access?: SurfaceAccess | null;
   organizations?: OrgRow | OrgRow[] | null;
 };
@@ -28,6 +32,8 @@ export function unwrapOrg(value: OrgRow | OrgRow[] | null | undefined): OrgSumma
     slug: row.slug,
     timezone: row.timezone,
     ghlLocationId: row.ghl_location_id,
+    status: row.status ?? "active",
+    isPlatformWorkspace: Boolean(row.is_platform_workspace),
   };
 }
 
@@ -41,6 +47,8 @@ export function membershipFromRow(
     id: row.id,
     orgId: row.org_id,
     role: row.role,
+    seat: row.seat ?? "customer",
+    canApprove: Boolean(row.can_approve),
     displayName: row.display_name,
     email: row.email,
     surfaceAccess: row.surface_access === "portal" ? "portal" : "operator",
@@ -55,6 +63,31 @@ export function membershipsFromRows(
   return rows
     .map((row) => membershipFromRow(row, orgsById))
     .filter((row): row is Membership => row !== null);
+}
+
+/**
+ * The person's role in one workspace, in the five-role vocabulary. Mirrors
+ * public.ws_access(): staff seats take the platform role, customer seats
+ * their own. The database decides access either way; this only labels it.
+ */
+export function workspaceRoleFor(
+  membership: Pick<Membership, "seat" | "role">,
+  platformRole: PlatformRole | null
+): WorkspaceRole {
+  if (membership.seat === "staff" && platformRole) return platformRole;
+  switch (membership.role) {
+    case "owner":
+      return "owner";
+    case "member":
+    case "client_viewer":
+      return "member";
+    default:
+      return "operator";
+  }
+}
+
+export function isStaffRole(role: WorkspaceRole): boolean {
+  return role === "platform_admin" || role === "service_team";
 }
 
 /**

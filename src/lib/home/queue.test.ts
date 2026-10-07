@@ -106,9 +106,9 @@ describe("approval gate catalog", () => {
     expect(needsAutoRunConfirmation(false, "ask_first", "auto_run")).toBe(false);
   });
 
-  it("lets only owners open the settings", () => {
-    expect(canEditApprovalGate("owner", false)).toBe(true);
-    expect(canEditApprovalGate("admin", false)).toBe(false);
+  it("lets only the Vistrial team open the settings", () => {
+    expect(canEditApprovalGate("owner", false)).toBe(false);
+    expect(canEditApprovalGate("member", false)).toBe(false);
     expect(canEditApprovalGate("setter", false)).toBe(false);
     expect(canEditApprovalGate("setter", true)).toBe(true);
   });
@@ -132,20 +132,29 @@ describe("approval gate catalog", () => {
 });
 
 describe("who may approve", () => {
-  const base = { isPlatformAdmin: false, memberId: "m1", assignedMemberId: "m1", escalated: false };
+  const base = { isStaff: false, memberId: "m1", assignedMemberId: "m1", escalated: false };
 
-  it("follows the approver setting", () => {
-    expect(canApproveItem({ ...base, approver: "owner_only", role: "admin" })).toBe(false);
+  it("follows the approver setting for members the owner allowed to approve", () => {
+    const granted = { ...base, role: "member" as const, canApprove: true };
+    expect(canApproveItem({ ...granted, approver: "owner_only" })).toBe(false);
     expect(canApproveItem({ ...base, approver: "owner_only", role: "owner" })).toBe(true);
-    expect(canApproveItem({ ...base, approver: "owners_and_managers", role: "admin" })).toBe(true);
-    expect(canApproveItem({ ...base, approver: "owners_and_managers", role: "setter" })).toBe(false);
-    expect(canApproveItem({ ...base, approver: "assigned", role: "setter" })).toBe(true);
-    expect(canApproveItem({ ...base, approver: "assigned", role: "setter", memberId: "m2" })).toBe(false);
-    expect(canApproveItem({ ...base, approver: "assigned", role: "setter", assignedMemberId: null })).toBe(false);
+    expect(canApproveItem({ ...granted, approver: "owners_and_managers" })).toBe(true);
+    expect(canApproveItem({ ...granted, approver: "assigned" })).toBe(true);
+    expect(canApproveItem({ ...granted, approver: "assigned", memberId: "m2" })).toBe(false);
+    expect(canApproveItem({ ...granted, approver: "assigned", assignedMemberId: null })).toBe(false);
+  });
+
+  it("never lets an operator or an ungranted member approve", () => {
+    expect(canApproveItem({ ...base, approver: "assigned", role: "setter" })).toBe(false);
+    expect(canApproveItem({ ...base, approver: "owners_and_managers", role: "operator" })).toBe(false);
+    expect(canApproveItem({ ...base, approver: "owners_and_managers", role: "member" })).toBe(false);
+    expect(canApproveItem({ ...base, approver: "owner_only", role: "setter", isStaff: true })).toBe(true);
   });
 
   it("hands an escalated item to the owner alone", () => {
-    expect(canApproveItem({ ...base, approver: "owners_and_managers", role: "admin", escalated: true })).toBe(false);
+    expect(
+      canApproveItem({ ...base, approver: "owners_and_managers", role: "member", canApprove: true, escalated: true })
+    ).toBe(false);
     expect(canApproveItem({ ...base, approver: "assigned", role: "owner", escalated: true })).toBe(true);
     expect(whoCanApprove("assigned", true)).toMatch(/only an owner/);
     expect(whoCanApprove("owners_and_managers", false)).toBe("Only owners and managers can approve this.");

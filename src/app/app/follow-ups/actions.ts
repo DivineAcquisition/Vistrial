@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { isLeadId } from "@/lib/cases/filters";
 import { getAuthContext } from "@/lib/auth/session";
 import { canApproveFollowUp } from "@/lib/auth/permissions";
+import { dbCanApprove, dbCanWorkLead, dbIsStaff } from "@/lib/auth/db-checks";
 import { MAX_VOICE_EXAMPLES } from "@/lib/follow-up/constants";
 import { runFollowUpJob } from "@/lib/follow-up/generate";
 import { loadFollowUpReview } from "@/lib/follow-up/load";
@@ -27,22 +28,12 @@ function fail(error: string): FollowUpActionResult {
   return { ok: false, error };
 }
 
-function denyUnlessAssignee(
-  ctx: AuthContext,
-  lead: { assigned_setter_id: string | null; assigned_closer_id: string | null }
-): { ok: false; error: string } | null {
-  if (
-    canApproveFollowUp({
-      role: ctx.role,
-      memberId: ctx.member.id,
-      assignedSetterId: lead.assigned_setter_id,
-      assignedCloserId: lead.assigned_closer_id,
-      isPlatformAdmin: ctx.isPlatformAdmin,
-    })
-  ) {
-    return null;
-  }
-  return { ok: false, error: "You can only work drafts for leads assigned to you." };
+async function denyUnlessApprover(ctx: AuthContext): Promise<{ ok: false; error: string } | null> {
+  const allowed =
+    canApproveFollowUp({ role: ctx.role, canApprove: ctx.member.canApprove, isStaff: ctx.isStaff }) &&
+    (await dbCanApprove(ctx.org.id));
+  if (allowed) return null;
+  return { ok: false, error: "Approving drafts needs an owner, or a member the owner has allowed to approve." };
 }
 
 function revalidateFollowUp(leadId: string, draftId?: string) {
@@ -76,7 +67,7 @@ async function requireAssignedDraft(draftId: string) {
     .eq("org_id", scoped.ctx.org.id)
     .maybeSingle();
   if (!lead) return { ok: false as const, error: "That lead is not in this workspace." };
-  const denied = denyUnlessAssignee(scoped.ctx, lead);
+  const denied = await denyUnlessApprover(scoped.ctx);
   if (denied) return { ok: false as const, error: denied.error };
   return scoped;
 }
@@ -239,7 +230,7 @@ export async function approveFollowUp(input: {
     .eq("org_id", scoped.ctx.org.id)
     .maybeSingle();
   if (!lead) return fail("That lead is not in this workspace.");
-  const denied = denyUnlessAssignee(scoped.ctx, lead);
+  const denied = await denyUnlessApprover(scoped.ctx);
   if (denied) return denied;
   const recipient = channel === "email" ? lead.email : lead.phone;
   if (!recipient) {
@@ -359,7 +350,7 @@ export async function retryFollowUpSend(draftId: string): Promise<FollowUpAction
       .maybeSingle(),
   ]);
   if (!lead) return fail("That lead is not in this workspace.");
-  const denied = denyUnlessAssignee(scoped.ctx, lead);
+  const denied = await denyUnlessApprover(scoped.ctx);
   if (denied) return denied;
   const sendAt = computeSendAt({
     now: new Date(),
@@ -400,6 +391,9 @@ export async function haltLeadSequence(input: {
     return fail("That sequence is not in this workspace.");
   }
   const ctx = await getAuthContext();
+  if (!(await dbCanWorkLead(ctx.org.id, input.leadId))) {
+    return fail("That sequence is not in this workspace.");
+  }
   const admin = getSupabaseAdmin();
   const { data: run } = await admin
     .from("follow_up_sequence_runs")
@@ -423,6 +417,9 @@ export async function haltLeadSequence(input: {
 export async function promoteSentToVoiceExample(draftId: string): Promise<FollowUpActionResult> {
   const scoped = await requireDraft(draftId);
   if (!scoped.ok) return scoped;
+  if (!(await dbIsStaff(scoped.ctx.org.id))) {
+    return fail("Voice examples are managed by the Vistrial team.");
+  }
   if (scoped.draft.status !== "sent" || !scoped.draft.sent_body) {
     return fail("Only a sent message can be promoted.");
   }

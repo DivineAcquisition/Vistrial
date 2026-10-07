@@ -1,4 +1,5 @@
 import {
+  PRODUCTION_ADMIN_ORIGIN,
   PRODUCTION_APP_ORIGIN,
   PRODUCTION_FORSIGHT_ORIGIN,
   PRODUCTION_SITE_ORIGIN,
@@ -22,7 +23,7 @@ function hostnameOf(origin: string, fallback: string): string {
   }
 }
 
-export type ProductHost = "site" | "app" | "pulse" | "stellar" | "local" | "unknown";
+export type ProductHost = "site" | "app" | "admin" | "pulse" | "stellar" | "local" | "unknown";
 
 /** Marketing site. Apex and www are the same product; do not 308 one to the other. */
 export function isSiteHost(host: string | null | undefined): boolean {
@@ -35,6 +36,13 @@ export function isOperatorAppHost(host: string | null | undefined): boolean {
   const hostname = hostnameFromHostHeader(host);
   if (!hostname) return false;
   return hostname === hostnameOf(PRODUCTION_APP_ORIGIN, "app.vistrial.io");
+}
+
+/** Host of the Vistrial team's workspace (admin.vistrial.io). */
+export function isAdminHost(host: string | null | undefined): boolean {
+  const hostname = hostnameFromHostHeader(host);
+  if (!hostname) return false;
+  return hostname === hostnameOf(PRODUCTION_ADMIN_ORIGIN, "admin.vistrial.io");
 }
 
 /**
@@ -71,6 +79,7 @@ export function classifyProductHost(host: string | null | undefined): ProductHos
   if (!hostname) return "local";
   if (isLocalHost(hostname)) return "local";
   if (isOperatorAppHost(hostname)) return "app";
+  if (isAdminHost(hostname)) return "admin";
   if (isForsightHost(hostname)) return "pulse";
   if (isStellarHost(hostname)) return "stellar";
   if (isSiteHost(hostname)) return "site";

@@ -354,7 +354,7 @@ WHERE seat = 'customer' AND role = 'da_operator';
 -- Customer admins are owners; a workspace may have several.
 UPDATE public.org_members SET role = 'owner' WHERE seat = 'customer' AND role = 'admin';
 -- Stellar client viewers are members.
-UPDATE public.org_members SET role = 'member' WHERE seat = 'customer' AND role = 'client_viewer';
+UPDATE public.org_members SET role = 'member', surface_access = 'portal' WHERE seat = 'customer' AND role = 'client_viewer';
 
 -- Open invites follow the same mapping.
 UPDATE public.org_invites SET role = 'owner' WHERE role = 'admin' AND accepted_at IS NULL;
@@ -1804,18 +1804,83 @@ BEGIN
 END;
 $$;
 
+-- A new client workspace starts in onboarding, with an owner invite when an
+-- email is given. Platform admins get their seat from the insert trigger, and
+-- the invite is sent from that seat.
+CREATE OR REPLACE FUNCTION public.create_workspace(
+  p_name text,
+  p_timezone text,
+  p_slug text DEFAULT NULL,
+  p_owner_email text DEFAULT NULL
+)
+RETURNS jsonb
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  v_name text := btrim(COALESCE(p_name, ''));
+  v_base text;
+  v_slug text;
+  v_n integer := 1;
+  v_id uuid;
+  v_member uuid;
+  v_email text := NULLIF(lower(btrim(COALESCE(p_owner_email, ''))), '');
+  v_token text;
+BEGIN
+  PERFORM public.ws_require_platform_admin();
+  IF char_length(v_name) < 2 THEN
+    RAISE EXCEPTION 'A workspace name is required.';
+  END IF;
+  IF NULLIF(btrim(COALESCE(p_timezone, '')), '') IS NULL THEN
+    RAISE EXCEPTION 'A timezone is required.';
+  END IF;
+  IF v_email IS NOT NULL AND v_email !~ '^[^@\s]+@[^@\s]+$' THEN
+    RAISE EXCEPTION 'The owner email is not valid.';
+  END IF;
+
+  v_base := trim(both '-' from lower(regexp_replace(COALESCE(NULLIF(btrim(p_slug), ''), v_name), '[^a-zA-Z0-9]+', '-', 'g')));
+  IF v_base = '' THEN
+    v_base := 'workspace';
+  END IF;
+  v_slug := v_base;
+  WHILE EXISTS (SELECT 1 FROM public.organizations WHERE slug = v_slug) LOOP
+    v_n := v_n + 1;
+    v_slug := v_base || '-' || v_n::text;
+  END LOOP;
+
+  INSERT INTO public.organizations (name, slug, timezone, status, owner_contact_email)
+  VALUES (v_name, v_slug, btrim(p_timezone), 'onboarding', v_email)
+  RETURNING id INTO v_id;
+
+  IF v_email IS NOT NULL THEN
+    SELECT id INTO v_member
+    FROM public.org_members
+    WHERE org_id = v_id AND user_id = auth.uid() AND seat = 'staff' AND active;
+    v_token := replace(gen_random_uuid()::text || gen_random_uuid()::text, '-', '');
+    INSERT INTO public.org_invites (org_id, email, role, token, invited_by, expires_at, surface_access)
+    VALUES (v_id, v_email, 'owner', v_token, v_member, now() + interval '14 days', 'operator');
+  END IF;
+
+  -- The organizations and org_invites audit triggers record the creation and the invite.
+  RETURN jsonb_build_object('org_id', v_id, 'slug', v_slug, 'invite_token', v_token);
+END;
+$$;
+
 REVOKE ALL ON FUNCTION public.ws_require_platform_admin() FROM PUBLIC, anon;
 REVOKE ALL ON FUNCTION public.assign_staff_to_workspace(uuid, uuid, text) FROM PUBLIC, anon;
 REVOKE ALL ON FUNCTION public.end_staff_assignment(uuid, uuid) FROM PUBLIC, anon;
 REVOKE ALL ON FUNCTION public.set_workspace_status(uuid, public.workspace_status, text) FROM PUBLIC, anon;
 REVOKE ALL ON FUNCTION public.upsert_platform_staff(uuid, public.platform_role, boolean, boolean, text) FROM PUBLIC, anon;
 REVOKE ALL ON FUNCTION public.deactivate_user_everywhere(uuid) FROM PUBLIC, anon;
+REVOKE ALL ON FUNCTION public.create_workspace(text, text, text, text) FROM PUBLIC, anon;
 GRANT EXECUTE ON FUNCTION public.ws_require_platform_admin() TO authenticated, service_role;
 GRANT EXECUTE ON FUNCTION public.assign_staff_to_workspace(uuid, uuid, text) TO authenticated, service_role;
 GRANT EXECUTE ON FUNCTION public.end_staff_assignment(uuid, uuid) TO authenticated, service_role;
 GRANT EXECUTE ON FUNCTION public.set_workspace_status(uuid, public.workspace_status, text) TO authenticated, service_role;
 GRANT EXECUTE ON FUNCTION public.upsert_platform_staff(uuid, public.platform_role, boolean, boolean, text) TO authenticated, service_role;
 GRANT EXECUTE ON FUNCTION public.deactivate_user_everywhere(uuid) TO authenticated, service_role;
+GRANT EXECUTE ON FUNCTION public.create_workspace(text, text, text, text) TO authenticated, service_role;
 
 -- ---------------------------------------------------------------------------
 -- 11. The holding area for inbound events.
@@ -3001,7 +3066,7 @@ BEGIN
     v_display_name,
     v_user_email,
     true,
-    CASE WHEN v_invite.role IN ('owner', 'member') THEN 'portal'::public.surface_access
+    CASE WHEN v_invite.role = 'member' THEN 'portal'::public.surface_access
          ELSE 'operator'::public.surface_access END
   )
   ON CONFLICT (org_id, user_id) DO UPDATE

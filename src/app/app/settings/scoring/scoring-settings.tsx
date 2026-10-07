@@ -53,7 +53,7 @@ export type ScoringSettingsProps = {
   maps: ScoreFieldMap[];
   leads: ScoringLeadOption[];
   lastGhostRun: { evaluated: number; changed: number; ranAt: string } | null;
-  isPlatformAdmin?: boolean;
+  isStaff?: boolean;
 };
 
 const initialSave: SettingsSaveResult = { status: "idle" };
@@ -67,7 +67,7 @@ export function ScoringSettings({
   maps: initialMaps,
   leads,
   lastGhostRun,
-  isPlatformAdmin = false,
+  isStaff = false,
 }: ScoringSettingsProps) {
   const [configState, saveConfig, configPending] = useActionState(updateScoringConfig, initialSave);
   const [weights, setWeights] = useState<ScoreWeights>({
@@ -217,7 +217,7 @@ export function ScoringSettings({
             ).map((key) => (
               <input key={key} type="hidden" name={`${key}_weight`} value={weights[key]} />
             ))}
-            {isPlatformAdmin ? (
+            {isStaff ? (
             <AdvancedDoor closedLabel="Show how the number is built">
               <div className="grid gap-4 sm:grid-cols-2">
                 <p className={`${helperClass} sm:col-span-2`}>
@@ -265,7 +265,7 @@ export function ScoringSettings({
         </form>
       </Panel>
 
-      {isPlatformAdmin ? (
+      {isStaff ? (
       <AdvancedDoor closedLabel="Preview a person, change one score, or rebuild everyone">
       <div className="space-y-8">
       <Panel className="p-6">

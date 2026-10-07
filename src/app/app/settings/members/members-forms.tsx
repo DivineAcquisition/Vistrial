@@ -6,14 +6,13 @@ import {
   inviteMember,
   revokeInvite,
   setMemberActive,
+  setMemberApproval,
   updateMemberRole,
-  updateMemberSurfaceAccess,
   type MemberActionResult,
 } from "@/app/app/settings/members/actions";
-import type { OrgRole, SurfaceAccess } from "@/types/database";
+import type { OrgRole } from "@/types/database";
 import { InstallSteps } from "@/components/app/install-steps";
 import { Button, SubmitButton } from "@/components/ui/button";
-import { CheckboxField } from "@/components/ui/checkbox";
 import { Field } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
@@ -22,9 +21,16 @@ import { cn } from "@/lib/utils";
 
 const initialInvite: MemberActionResult = { ok: true };
 
-export function InviteForm() {
+const ROLE_OPTIONS: Array<{ value: OrgRole; label: string }> = [
+  { value: "owner", label: "Owner" },
+  { value: "member", label: "Member (view only)" },
+  { value: "operator", label: "Operator" },
+  { value: "setter", label: "Operator · setter" },
+  { value: "closer", label: "Operator · closer" },
+];
+
+export function InviteForm({ canInviteOwner }: { canInviteOwner: boolean }) {
   const [state, action, pending] = useActionState(inviteMember, initialInvite);
-  const [role, setRole] = useState("setter");
   const url = state.ok ? state.url : undefined;
 
   return (
@@ -40,32 +46,21 @@ export function InviteForm() {
           />
         </Field>
         <Field label="Role" name="role" htmlFor="invite-role">
-          <Select
-            id="invite-role"
-            name="role"
-            value={role}
-            onChange={(event) => setRole(event.target.value)}
-            className="min-w-0"
-          >
-            <option value="setter">Setter</option>
-            <option value="closer">Closer</option>
-            <option value="admin">Admin</option>
+          <Select id="invite-role" name="role" defaultValue="operator" className="min-w-0">
+            {ROLE_OPTIONS.filter((option) => canInviteOwner || option.value !== "owner").map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
           </Select>
         </Field>
         <SubmitButton variant="primary" size="sm" pending={pending} loadingLabel="Creating">
             Create invite
           </SubmitButton>
       </div>
-      {role === "admin" ? (
-        <CheckboxField
-          name="portal_only"
-          value="1"
-          label="Report only"
-          description="Numbers without a seat in the working app. No queue, no case files."
-        />
-      ) : null}
       <p className={helperClass}>
-        Invites are not emailed yet. Copy the link and share it.
+        Operators work the leads assigned to them and the unassigned queue. Members see results and
+        approve only if you allow it. Invites are not emailed yet. Copy the link and share it.
       </p>
       {!state.ok ? <p className={errorClass}>{state.error}</p> : null}
       {url ? (
@@ -94,7 +89,6 @@ export function MemberRoleSelect({
 }) {
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
-  const showOwner = canGrantOwner || role === "owner";
 
   return (
     <div>
@@ -110,52 +104,52 @@ export function MemberRoleSelect({
           });
         }}
       >
-        {showOwner ? <option value="owner">Owner</option> : null}
-        <option value="admin">Admin</option>
-        <option value="closer">Closer</option>
-        <option value="setter">Setter</option>
+        {ROLE_OPTIONS.filter(
+          (option) => canGrantOwner || role === "owner" || option.value !== "owner"
+        ).map((option) => (
+          <option key={option.value} value={option.value}>
+            {option.label}
+          </option>
+        ))}
       </Select>
       {error ? <p className={errorClass}>{error}</p> : null}
     </div>
   );
 }
 
-export function MemberSurfaceSelect({
+/** Owners let a member approve drafts and gated actions. */
+export function MemberApprovalToggle({
   memberId,
-  surface,
   role,
-  disabled,
+  canApprove,
 }: {
   memberId: string;
-  surface: SurfaceAccess;
   role: OrgRole;
-  disabled?: boolean;
+  canApprove: boolean;
 }) {
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
-  const portalAllowed = role === "owner" || role === "admin";
 
-  if (!portalAllowed) {
-    return <span className="text-sm text-silver">Team app</span>;
-  }
+  if (role === "owner") return <span className="text-sm text-silver">Approves</span>;
+  if (role !== "member") return <span className="text-sm text-dim">No</span>;
 
   return (
     <div>
       <Select
         density="compact"
-        defaultValue={surface}
-        disabled={disabled || pending}
-        aria-label="Which app"
+        defaultValue={canApprove ? "yes" : "no"}
+        disabled={pending}
+        aria-label="Can approve"
         onChange={(event) => {
-          const next = event.target.value as SurfaceAccess;
+          const next = event.target.value === "yes";
           startTransition(async () => {
-            const result = await updateMemberSurfaceAccess(memberId, next);
+            const result = await setMemberApproval(memberId, next);
             setError(result.ok ? null : result.error);
           });
         }}
       >
-        <option value="operator">Team app</option>
-        <option value="portal">Report only</option>
+        <option value="no">No</option>
+        <option value="yes">Can approve</option>
       </Select>
       {error ? <p className={errorClass}>{error}</p> : null}
     </div>
@@ -189,10 +183,10 @@ export function MemberActiveToggle({
           });
         }}
       >
-        {active ? "Deactivate" : "Reactivate"}
+        {active ? "Remove" : "Restore"}
       </Button>
       {blocked ? (
-        <p className={helperClass}>The last active owner cannot be deactivated.</p>
+        <p className={helperClass}>A workspace keeps at least one owner. Make someone else an owner first.</p>
       ) : null}
       {error ? <p className={errorClass}>{error}</p> : null}
     </div>

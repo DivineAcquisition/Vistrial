@@ -12,6 +12,7 @@ import { loadOrgNotifyContext } from "@/lib/notifications/members";
 import { notificationHref } from "@/lib/notifications/messages";
 import { offerToMember } from "@/lib/notifications/offer";
 import type { Json } from "@/types/database";
+import { AUTOMATION_STATUSES } from "@/lib/workspaces/status";
 
 export type ScanResult = {
   orgs: number;
@@ -207,7 +208,8 @@ export async function scanAllOrgs(db: GhlDb, now = new Date()): Promise<ScanResu
   const { data: orgs } = await db
     .from("organizations")
     .select("id, name, timezone, agents_halted, agent_crm_writes_halted")
-    .is("offboarded_at", null);
+    .is("offboarded_at", null)
+    .in("status", AUTOMATION_STATUSES);
   const total: ScanResult = { orgs: 0, created: 0, autoRun: 0, escalated: 0, dismissed: 0, errors: 0 };
   for (const row of orgs ?? []) {
     total.orgs += 1;

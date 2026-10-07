@@ -30,14 +30,15 @@ describe("settings IA", () => {
     ]);
   });
 
-  it("shows Approvals to owners only", () => {
-    const labels = (role: "owner" | "admin" | "setter", platformAdmin = false) =>
-      settingsTabsVisibleTo(role, platformAdmin).map((tab) => tab.label);
-    expect(labels("owner")).toContain("Approvals");
-    expect(labels("admin")).not.toContain("Approvals");
-    expect(labels("admin")).toContain("Workspace");
+  it("keeps configuration tabs for staff and gives owners only their own business", () => {
+    const labels = (role: "owner" | "admin" | "setter" | "member", staff = false) =>
+      settingsTabsVisibleTo(role, staff).map((tab) => tab.label);
+    expect(labels("owner")).toEqual(["You", "Notifications", "Workspace", "People"]);
+    expect(labels("admin")).toContain("Approvals");
+    expect(labels("admin")).toContain("Integrations");
     expect(labels("setter")).toEqual(["You", "Notifications"]);
-    expect(labels("admin", true)).toContain("Approvals");
+    expect(labels("member")).toEqual(["You", "Notifications"]);
+    expect(labels("setter", true)).toContain("Advanced");
   });
 
   it("does not put scoring, follow-up, data, or business on the main tabs", () => {
@@ -201,8 +202,11 @@ describe("Forsight and the client portal", () => {
     }
   });
 
-  it("lands the owner and admin on Home, and everyone who works leads on the list", () => {
-    expect(landingPath("portal", "owner")).toBe("/portal");
+  it("lands owners and staff on Home, members on the customer views, operators on the list", () => {
+    expect(landingPath("portal", "owner")).toBe(HOME_PATH);
+    expect(landingPath("portal", "member")).toBe("/portal");
+    expect(landingPath("operator", "member")).toBe("/portal");
+    expect(landingPath("operator", "operator")).toBe("/app/queue");
     expect(landingPath("operator", "owner")).toBe(HOME_PATH);
     expect(landingPath("operator", "admin")).toBe(HOME_PATH);
     expect(landingPath("operator", "setter")).toBe("/app/queue");

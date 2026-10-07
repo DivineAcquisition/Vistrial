@@ -10,7 +10,6 @@ import { driveAuthorizeUrl } from "@/lib/execution/google-drive";
 import { isExecutionKind, type ExecutionKind } from "@/lib/execution/kinds";
 import { createExecutionOAuthState } from "@/lib/execution/oauth-state";
 import { slackAuthorizeUrl } from "@/lib/execution/slack";
-import { createClient } from "@/lib/supabase/server";
 
 export const dynamic = "force-dynamic";
 
@@ -42,13 +41,7 @@ export async function GET(request: Request) {
     memberships.find((membership) => membership.orgId === cookieStore.get(ORG_COOKIE_NAME)?.value) ?? memberships[0];
   if (!active) return NextResponse.json({ error: "No workspace." }, { status: 403 });
 
-  const supabase = await createClient();
-  const { data: platformAdmin } = await supabase
-    .from("platform_admins")
-    .select("user_id")
-    .eq("user_id", user.id)
-    .maybeSingle();
-  if (!canManageOrgSettings(active.role, Boolean(platformAdmin))) {
+  if (!canManageOrgSettings(active.role, active.seat === "staff")) {
     return NextResponse.json({ error: "Only an owner or admin can connect this." }, { status: 403 });
   }
 

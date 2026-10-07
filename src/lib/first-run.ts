@@ -21,8 +21,16 @@ export const FIRST_RUN: Record<OrgRole, FirstRunCopy> = {
     body: "Open the person before you dial. You will see who they are, what they already objected to, and what was agreed last time.",
   },
   admin: {
-    title: "This workspace",
+    title: "This client's workspace",
     body: "Forsight is ads and the pipeline. The portal is whether leads became clients. The team works the list under More.",
+  },
+  operator: {
+    title: "Your leads",
+    body: "Start at the top of the list. Work the people assigned to you and the ones nobody has picked up yet, then say what happened.",
+  },
+  member: {
+    title: "Your workspace",
+    body: "This is where you can see what Vistrial has done for the business: leads, follow-up, and results.",
   },
   owner: {
     title: "Your workspace",

@@ -1,8 +1,8 @@
 import {
   InviteForm,
   MemberActiveToggle,
+  MemberApprovalToggle,
   MemberRoleSelect,
-  MemberSurfaceSelect,
   RevokeInviteButton,
 } from "@/app/app/settings/members/members-forms";
 import { PageFrame } from "@/components/app/page-frame";
@@ -19,6 +19,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { requireMembersManager } from "@/lib/auth/gates";
+import { roleLabel } from "@/lib/auth/permissions";
 import { inviteUrl } from "@/lib/auth/paths";
 import { formatDayLong } from "@/lib/format";
 import { createClient } from "@/lib/supabase/server";
@@ -31,10 +32,10 @@ export default async function MembersSettingsPage() {
   const ctx = await requireMembersManager();
 
   const supabase = await createClient();
-  const [{ data: members }, { data: invites }, { data: platformAdmins }] = await Promise.all([
+  const [{ data: seats }, { data: invites }] = await Promise.all([
     supabase
       .from("org_members")
-      .select("id, display_name, email, role, active, user_id, logged_outcome_from_mobile_at, surface_access, is_agent_identity")
+      .select("id, display_name, email, role, active, user_id, logged_outcome_from_mobile_at, seat, can_approve, is_agent_identity")
       .eq("org_id", ctx.org.id)
       .order("created_at", { ascending: true }),
     supabase
@@ -43,10 +44,12 @@ export default async function MembersSettingsPage() {
       .eq("org_id", ctx.org.id)
       .is("accepted_at", null)
       .order("created_at", { ascending: false }),
-    supabase.from("platform_admins").select("user_id"),
   ]);
 
-  const platformAdminIds = new Set((platformAdmins ?? []).map((row) => row.user_id));
+  // Customer seats are managed here. Staff seats follow assignments and are
+  // listed separately, without controls.
+  const members = (seats ?? []).filter((seat) => seat.seat === "customer");
+  const team = (seats ?? []).filter((seat) => seat.seat === "staff" && seat.active);
 
   const activeOwners = (members ?? []).filter(
     (member) => member.active && member.role === "owner"
@@ -55,12 +58,12 @@ export default async function MembersSettingsPage() {
   return (
     <PageFrame
       title="People"
-      description="Invite setters and closers. Deactivate instead of deleting — touches and calls keep attribution."
+      description="Invite your team. Removing someone ends their access at once; what they did stays under their name."
     >
       <Panel className="mb-8 p-6">
         <h2 className={cardTitle}>Invite</h2>
         <div className="mt-4">
-          <InviteForm />
+          <InviteForm canInviteOwner={ctx.isStaff} />
         </div>
       </Panel>
 
@@ -72,7 +75,7 @@ export default async function MembersSettingsPage() {
               <TableHead>Name</TableHead>
               <TableHead className="hidden md:table-cell">Email</TableHead>
               <TableHead>Role</TableHead>
-              <TableHead>App</TableHead>
+              <TableHead>Approves</TableHead>
               <TableHead className="hidden md:table-cell">Status</TableHead>
               <TableHead>Phone</TableHead>
               <TableHead></TableHead>
@@ -82,14 +85,14 @@ export default async function MembersSettingsPage() {
             {(members ?? []).map((member) => {
               const lastOwner =
                 member.role === "owner" && member.active && activeOwners <= 1;
-              const platformLocked = platformAdminIds.has(member.user_id);
+              const ownerLocked = member.role === "owner" && !ctx.isStaff && member.user_id !== ctx.user.id;
               return (
                 <TableRow key={member.id}>
                   <TableCell className="text-white">
                     <span className="inline-flex items-center gap-2">
                       <PersonAvatar name={member.display_name} size="sm" />
                       {member.display_name}
-                      {ctx.isPlatformAdmin && member.is_agent_identity ? (
+                      {ctx.isStaff && member.is_agent_identity ? (
                         <StatusBadge label="Runs scheduled work" tone="neutral" />
                       ) : null}
                     </span>
@@ -101,19 +104,15 @@ export default async function MembersSettingsPage() {
                     <MemberRoleSelect
                       memberId={member.id}
                       role={member.role}
-                      disabled={lastOwner || platformLocked}
-                      canGrantOwner={ctx.role === "owner" || ctx.isPlatformAdmin}
+                      disabled={lastOwner || ownerLocked}
+                      canGrantOwner={ctx.isStaff}
                     />
-                    {platformLocked ? (
-                      <p className={`${helperClass} mt-1`}>Super admin</p>
-                    ) : null}
                   </TableCell>
                   <TableCell>
-                    <MemberSurfaceSelect
+                    <MemberApprovalToggle
                       memberId={member.id}
-                      surface={member.surface_access === "portal" ? "portal" : "operator"}
                       role={member.role}
-                      disabled={platformLocked}
+                      canApprove={member.can_approve}
                     />
                   </TableCell>
                   <TableCell className="hidden md:table-cell">
@@ -123,7 +122,7 @@ export default async function MembersSettingsPage() {
                     />
                   </TableCell>
                   <TableCell>
-                    {member.role === "setter" ? (
+                    {member.role === "setter" || member.role === "operator" ? (
                       <StatusBadge
                         label={
                           member.logged_outcome_from_mobile_at
@@ -145,7 +144,7 @@ export default async function MembersSettingsPage() {
                     <MemberActiveToggle
                       memberId={member.id}
                       active={member.active}
-                      disableDeactivate={lastOwner || platformLocked}
+                      disableDeactivate={lastOwner || ownerLocked}
                     />
                   </TableCell>
                 </TableRow>
@@ -154,6 +153,23 @@ export default async function MembersSettingsPage() {
           </TableBody>
         </Table>
       </Panel>
+
+      {team.length > 0 ? (
+        <Panel className="mb-8 px-6 py-5">
+          <h2 className={cardTitle}>Your Vistrial team</h2>
+          <p className={`${helperClass} mt-1`}>
+            The people at Vistrial working this account. Their access comes from Vistrial, not this list.
+          </p>
+          <ul className="mt-3 space-y-2">
+            {team.map((person) => (
+              <li key={person.id} className="flex items-center gap-2 text-sm text-white">
+                <PersonAvatar name={person.display_name} size="sm" />
+                {person.display_name}
+              </li>
+            ))}
+          </ul>
+        </Panel>
+      ) : null}
 
       {(invites ?? []).length === 0 ? (
         <EmptyState
@@ -172,7 +188,6 @@ export default async function MembersSettingsPage() {
               <TableRow>
                 <TableHead>Email</TableHead>
                 <TableHead>Role</TableHead>
-                <TableHead>App</TableHead>
                 <TableHead className="hidden md:table-cell">Expires</TableHead>
                 <TableHead>Link</TableHead>
                 <TableHead></TableHead>
@@ -187,10 +202,7 @@ export default async function MembersSettingsPage() {
                     {invite.email}
                   </span>
                 </TableCell>
-                  <TableCell className="capitalize text-silver">{invite.role}</TableCell>
-                  <TableCell className="text-silver">
-                    {invite.surface_access === "portal" ? "Report only" : "Team app"}
-                  </TableCell>
+                  <TableCell className="text-silver">{roleLabel(invite.role)}</TableCell>
                   <TableCell className="hidden text-silver md:table-cell">
                     {formatDayLong(invite.expires_at)}
                   </TableCell>

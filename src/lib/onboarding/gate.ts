@@ -37,7 +37,7 @@ export async function loadFirstIncompleteOnboardingStage(
  */
 export async function redirectIfOnboardingIncomplete(): Promise<void> {
   const ctx = await getAuthContext();
-  if (ctx.isPlatformAdmin) return;
+  if (ctx.isStaff) return;
   if (!canManageOrgSettings(ctx.role, false)) return;
 
   const path = pathOnly((await headers()).get("x-vistrial-pathname"));

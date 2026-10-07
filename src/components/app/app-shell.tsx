@@ -18,6 +18,7 @@ import { FirstRunExplainer } from "@/components/app/first-run";
 import { PageMotion } from "@/components/app/page-motion";
 import { PushPrompt } from "@/components/app/push-prompt";
 import { UserMenu } from "@/components/app/user-menu";
+import { StaffWorkspaceBand, WorkspaceSwitcher } from "@/components/app/workspace-switcher";
 import Logo from "@/components/brand/logo";
 import { SidebarInset, SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { isProductScopeEnabled } from "@/lib/product-scope";
@@ -99,9 +100,11 @@ export function AppShell({
         >
           <AppSidebar />
           <SidebarInset className="min-w-0 overflow-x-hidden bg-transparent">
+            <StaffWorkspaceBand />
             <header className="sticky top-0 z-30 flex h-16 items-center gap-3 border-b border-border bg-background/80 px-4 backdrop-blur-xl print:hidden sm:px-6">
               <SidebarTrigger />
               <Logo markOnly className="h-8 w-auto md:hidden" />
+              <WorkspaceSwitcher />
               <div className="ml-auto flex items-center gap-1">
                 <NotificationBell />
                 <AppJumpPalette />

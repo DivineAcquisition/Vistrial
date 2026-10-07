@@ -159,11 +159,11 @@ function FactorTable({ title, payload }: { title: string; payload: Record<string
 export function CalibrationReportView({
   payload,
   preview,
-  isPlatformAdmin = false,
+  isStaff = false,
 }: {
   payload: Record<string, unknown>;
   preview: Record<string, unknown> | null;
-  isPlatformAdmin?: boolean;
+  isStaff?: boolean;
 }) {
   const holdout = asRecord(payload.holdout);
   const weights = asRecord(payload.current_weights);
@@ -361,7 +361,7 @@ export function CalibrationReportView({
             empty="The sample audit has not run yet."
           />
         </div>
-        {isPlatformAdmin ? (
+        {isStaff ? (
         <div className="mt-4">
           <DataTable
             caption="Corrections by model version and field"

@@ -13,6 +13,7 @@ import { isProductScopeEnabled } from "@/lib/product-scope";
 import { summaryOverstates } from "@/lib/reporting/summary";
 import type { ReportingRange } from "@/lib/reporting/range";
 import { ghlError, ghlLog } from "@/lib/ghl/log";
+import { automationRunsFor } from "@/lib/workspaces/status";
 
 function asRecord(value: unknown): Record<string, unknown> {
   return value && typeof value === "object" && !Array.isArray(value)
@@ -76,10 +77,11 @@ export async function sendPortalEmailForOrg(
 
   const { data: org } = await db
     .from("organizations")
-    .select("id, name, slug, activated_at")
+    .select("id, name, slug, activated_at, status")
     .eq("id", orgId)
     .maybeSingle();
   if (!org?.activated_at) return { status: "skipped", reason: "Workspace is not activated." };
+  if (!automationRunsFor(org.status)) return { status: "skipped", reason: "Workspace is paused or closed." };
 
   const { data: members } = await db
     .from("org_members")

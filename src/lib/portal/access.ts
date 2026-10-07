@@ -9,7 +9,7 @@ import type { AuthContext } from "@/lib/auth/types";
 
 export async function requirePortalAccess(): Promise<AuthContext> {
   const ctx = await getAuthContext();
-  if (!canViewPortal(ctx.role, ctx.isPlatformAdmin)) {
+  if (!canViewPortal(ctx.role, ctx.isStaff)) {
     redirect(DEFAULT_APP_PATH);
   }
   return ctx;
@@ -19,7 +19,7 @@ export async function assertPortalAccess(): Promise<
   { ok: true; ctx: AuthContext } | { ok: false; error: string; status: 403 }
 > {
   const ctx = await getAuthContext();
-  if (!canViewPortal(ctx.role, ctx.isPlatformAdmin)) {
+  if (!canViewPortal(ctx.role, ctx.isStaff)) {
     return { ok: false, error: "The owner portal is owner and admin only.", status: 403 };
   }
   return { ok: true, ctx };

@@ -6,6 +6,7 @@ import { isDueInOrgTimezone } from "@/lib/agents/schedule";
 import { pollMessageBatch } from "@/lib/agents/batch";
 import { loadAwaitingBatch, loadFailedRunsDue, updateAgentRun } from "@/lib/agents/persist";
 import type { GhlDb } from "@/lib/ghl/tokens";
+import { AUTOMATION_STATUSES } from "@/lib/workspaces/status";
 
 /**
  * One cron for the runtime: retry failed runs, finish batch turns,
@@ -77,7 +78,10 @@ export async function runAgentRuntimeJob(db: GhlDb): Promise<{
     batches += 1;
   }
 
-  const { data: orgs } = await db.from("organizations").select("id, timezone, agents_halted");
+  const { data: orgs } = await db
+    .from("organizations")
+    .select("id, timezone, agents_halted")
+    .in("status", AUTOMATION_STATUSES);
   const scheduledAgents = listAgentDefinitions().filter((agent) => agent.modes.includes("scheduled"));
   const now = new Date();
   for (const org of orgs ?? []) {

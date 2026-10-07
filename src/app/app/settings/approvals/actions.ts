@@ -40,7 +40,7 @@ export async function saveApprovalAction(input: {
   confirmed: boolean;
 }): Promise<ApprovalSaveResult> {
   const ctx = await getAuthContext();
-  if (!canEditApprovalGate(ctx.role, ctx.isPlatformAdmin)) {
+  if (!canEditApprovalGate(ctx.role, ctx.isStaff)) {
     return { ok: false, error: "Only an owner can change approval settings." };
   }
   const definition = actionType(input.actionType);
@@ -102,7 +102,7 @@ export async function saveApprovalLimits(input: {
   queueWaitLimitHours: number;
 }): Promise<ApprovalSaveResult> {
   const ctx = await getAuthContext();
-  if (!canEditApprovalGate(ctx.role, ctx.isPlatformAdmin)) {
+  if (!canEditApprovalGate(ctx.role, ctx.isStaff)) {
     return { ok: false, error: "Only an owner can change approval settings." };
   }
   if (!HM.test(input.quietHoursStart) || !HM.test(input.quietHoursEnd)) {

@@ -15,11 +15,14 @@ describe("portal-only landing", () => {
     expect(postAuthPath("/app/queue", "operator")).toBe("/app/queue");
   });
 
-  it("does not give a setter portal access or a portal-only owner an operator seat", () => {
+  it("gives operators the working app, members the customer views, and owners both", () => {
     expect(canViewPortal("setter")).toBe(false);
+    expect(canViewPortal("operator")).toBe(false);
     expect(canViewPortal("owner")).toBe(true);
-    expect(canWorkOperatorApp("owner", "portal")).toBe(false);
-    expect(canWorkOperatorApp("owner", "operator")).toBe(true);
+    expect(canViewPortal("member")).toBe(true);
+    expect(canWorkOperatorApp("owner", "portal")).toBe(true);
+    expect(canWorkOperatorApp("operator")).toBe(true);
+    expect(canWorkOperatorApp("member")).toBe(false);
   });
 });
 

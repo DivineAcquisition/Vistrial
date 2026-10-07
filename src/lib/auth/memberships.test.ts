@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   membershipsFromRows,
   resolveActiveMembership,
+  workspaceRoleFor,
   type MemberRow,
 } from "@/lib/auth/memberships";
 import type { Membership, OrgSummary } from "@/lib/auth/types";
@@ -22,6 +23,8 @@ const org: OrgSummary = {
   slug: "divine-acquisition",
   timezone: "America/New_York",
   ghlLocationId: null,
+  status: "active",
+  isPlatformWorkspace: false,
 };
 
 describe("membershipsFromRows", () => {
@@ -59,6 +62,8 @@ function membership(orgId: string): Membership {
     id: `member-${orgId}`,
     orgId,
     role: "setter",
+    seat: "customer",
+    canApprove: false,
     displayName: "Malik",
     email: "malik@divineacquisition.io",
     surfaceAccess: "operator",
@@ -124,5 +129,25 @@ describe("resolveActiveMembership", () => {
       const resolved = resolveActiveMembership([first, second], cookie);
       expect([first, second]).toContain(resolved.active);
     }
+  });
+});
+
+describe("workspaceRoleFor", () => {
+  it("names staff seats by the platform role, never by the seat's stored role", () => {
+    expect(workspaceRoleFor({ seat: "staff", role: "admin" }, "service_team")).toBe("service_team");
+    expect(workspaceRoleFor({ seat: "staff", role: "admin" }, "platform_admin")).toBe("platform_admin");
+  });
+
+  it("maps customer seats to owner, member, and operator", () => {
+    expect(workspaceRoleFor({ seat: "customer", role: "owner" }, null)).toBe("owner");
+    expect(workspaceRoleFor({ seat: "customer", role: "member" }, null)).toBe("member");
+    expect(workspaceRoleFor({ seat: "customer", role: "client_viewer" }, null)).toBe("member");
+    expect(workspaceRoleFor({ seat: "customer", role: "setter" }, null)).toBe("operator");
+    expect(workspaceRoleFor({ seat: "customer", role: "closer" }, null)).toBe("operator");
+    expect(workspaceRoleFor({ seat: "customer", role: "operator" }, null)).toBe("operator");
+  });
+
+  it("does not grant staff standing to a customer seat held by a staff member elsewhere", () => {
+    expect(workspaceRoleFor({ seat: "customer", role: "owner" }, "service_team")).toBe("owner");
   });
 });

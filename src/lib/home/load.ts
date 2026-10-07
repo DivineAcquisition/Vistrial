@@ -294,7 +294,7 @@ function compute(inputs: Inputs, range: PeriodRange) {
 export async function loadHomeNumbers(ctx: AuthContext, periodKey: HomePeriodKey): Promise<HomeNumbers> {
   const db = await createClient();
   const period = resolveHomePeriod(periodKey, { timeZone: ctx.org.timezone });
-  const canSeeMoney = canViewReporting(ctx.role, ctx.isPlatformAdmin);
+  const canSeeMoney = canViewReporting(ctx.role, ctx.isStaff);
   const inputs = await loadInputs(db, ctx, period, canSeeMoney);
   const current = compute(inputs, period);
   const previous = compute(inputs, period.previous);
@@ -371,7 +371,7 @@ export async function loadMetricLeads(
   metric: HomeMetricId,
   periodKey: HomePeriodKey
 ): Promise<{ period: HomePeriod; rows: MetricLeadRow[] } | null> {
-  const canSeeMoney = canViewReporting(ctx.role, ctx.isPlatformAdmin);
+  const canSeeMoney = canViewReporting(ctx.role, ctx.isStaff);
   if (metric === "revenue_booked" && !canSeeMoney) return null;
   const db = await createClient();
   const period = resolveHomePeriod(periodKey, { timeZone: ctx.org.timezone });

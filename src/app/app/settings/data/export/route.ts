@@ -9,7 +9,7 @@ export const dynamic = "force-dynamic";
 
 export async function GET() {
   const ctx = await getAuthContext();
-  if (!canManageOrgSettings(ctx.role, ctx.isPlatformAdmin)) {
+  if (!canManageOrgSettings(ctx.role, ctx.isStaff)) {
     return new NextResponse("Forbidden", { status: 403 });
   }
   try {

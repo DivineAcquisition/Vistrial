@@ -34,7 +34,7 @@ export default async function ForsightWorkspacesPage() {
       title="All workspaces"
       eyebrow="Divine Acquisition only"
       description="Every workspace's headline numbers on one screen. Last month's report: whether it exists, which version, and whether anyone has sent it."
-      toolbar={<ForsightTabs activeHref={`${FORSIGHT_PATH}/workspaces`} isPlatformAdmin />}
+      toolbar={<ForsightTabs activeHref={`${FORSIGHT_PATH}/workspaces`} isStaff />}
     >
       <Panel>
         <Table>

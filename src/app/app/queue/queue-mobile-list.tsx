@@ -29,7 +29,7 @@ export function QueueMobileList({
   members,
   role,
   memberId,
-  isPlatformAdmin,
+  isStaff,
   arrivingIds,
   exitingIds,
   busyLeadId,
@@ -45,7 +45,7 @@ export function QueueMobileList({
   members: QueueMemberOption[];
   role: OrgRole;
   memberId: string;
-  isPlatformAdmin: boolean;
+  isStaff: boolean;
   arrivingIds: Set<string>;
   exitingIds?: Set<string>;
   busyLeadId: string | null;
@@ -81,7 +81,7 @@ export function QueueMobileList({
           members={members}
           role={role}
           memberId={memberId}
-          isPlatformAdmin={isPlatformAdmin}
+          isStaff={isStaff}
           arriving={arrivingIds.has(row.id)}
           exiting={exitingIds?.has(row.id) ?? false}
           busy={busyLeadId === row.id}
@@ -103,7 +103,7 @@ function QueueMobileRow({
   members,
   role,
   memberId,
-  isPlatformAdmin,
+  isStaff,
   arriving,
   exiting,
   busy,
@@ -119,7 +119,7 @@ function QueueMobileRow({
   members: QueueMemberOption[];
   role: OrgRole;
   memberId: string;
-  isPlatformAdmin: boolean;
+  isStaff: boolean;
   arriving: boolean;
   exiting: boolean;
   busy: boolean;
@@ -260,7 +260,7 @@ function QueueMobileRow({
             members={members}
             role={role}
             memberId={memberId}
-            isPlatformAdmin={isPlatformAdmin}
+            isStaff={isStaff}
             busy={busy}
             error={error}
             onCancel={() => setLogging(false)}
@@ -278,7 +278,7 @@ function QueueMobileRow({
             members={members}
             role={role}
             memberId={memberId}
-            isPlatformAdmin={isPlatformAdmin}
+            isStaff={isStaff}
             busy={busy}
             error={error}
             onCancel={() => setAssigning(false)}

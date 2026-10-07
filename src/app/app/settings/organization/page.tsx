@@ -1,16 +1,36 @@
 import { PageFrame } from "@/components/app/page-frame";
 import { OrganizationForm } from "@/app/app/settings/organization/organization-form";
-import { requireOrgSettingsManager } from "@/lib/auth/gates";
+import { ContactDetailsForm } from "@/app/app/settings/organization/contact-form";
+import { requireOwnerOrStaff } from "@/lib/auth/gates";
 import { createClient } from "@/lib/supabase/server";
 
 export default async function OrganizationSettingsPage() {
-  const { org } = await requireOrgSettingsManager();
+  const { org, isStaff } = await requireOwnerOrStaff();
   const supabase = await createClient();
   const { data } = await supabase
     .from("organizations")
-    .select("working_hours_start, working_hours_end, working_days")
+    .select("working_hours_start, working_hours_end, working_days, owner_contact_name, owner_contact_email, owner_contact_phone")
     .eq("id", org.id)
     .maybeSingle();
+
+  const contact = (
+    <ContactDetailsForm
+      name={data?.owner_contact_name ?? null}
+      email={data?.owner_contact_email ?? null}
+      phone={data?.owner_contact_phone ?? null}
+    />
+  );
+
+  if (!isStaff) {
+    return (
+      <PageFrame
+        title="Workspace"
+        description="Who we contact about this business. Everything else here is set up by your Vistrial team."
+      >
+        {contact}
+      </PageFrame>
+    );
+  }
 
   return (
     <PageFrame
@@ -31,6 +51,7 @@ export default async function OrganizationSettingsPage() {
         operatorAgentBatchCap={10}
         surface="workspace"
       />
+      <div className="mt-8">{contact}</div>
     </PageFrame>
   );
 }

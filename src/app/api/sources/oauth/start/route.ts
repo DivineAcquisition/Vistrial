@@ -19,7 +19,6 @@ import {
   stripeClientId,
   stripeConnectConfigured,
 } from "@/lib/sources/env";
-import { createClient } from "@/lib/supabase/server";
 import type { SourceKind } from "@/types/database";
 
 export const dynamic = "force-dynamic";
@@ -51,13 +50,7 @@ export async function GET(request: Request) {
   const cookieOrgId = cookieStore.get(ORG_COOKIE_NAME)?.value;
   const active = memberships.find((membership) => membership.orgId === cookieOrgId) ?? memberships[0];
   if (!active) return NextResponse.json({ error: "No workspace." }, { status: 403 });
-  const supabase = await createClient();
-  const { data: platformAdmin } = await supabase
-    .from("platform_admins")
-    .select("user_id")
-    .eq("user_id", user.id)
-    .maybeSingle();
-  if (!canViewPortal(active.role, Boolean(platformAdmin))) {
+  if (!canViewPortal(active.role, active.seat === "staff")) {
     return NextResponse.json({ error: "The owner portal is owner and admin only." }, { status: 403 });
   }
 

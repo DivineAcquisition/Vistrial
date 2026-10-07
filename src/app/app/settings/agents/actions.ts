@@ -10,7 +10,7 @@ import type { AgentId } from "@/lib/agents/types";
 
 async function requireManager() {
   const ctx = await getAuthContext();
-  if (!ctx.isPlatformAdmin) {
+  if (!ctx.isStaff) {
     return { ok: false as const, error: "You do not have permission to change these settings.", ctx };
   }
   return { ok: true as const, ctx };

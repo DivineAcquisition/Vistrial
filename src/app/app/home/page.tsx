@@ -26,7 +26,7 @@ export const metadata = { title: "Home" };
 export default async function HomePage({ searchParams }: { searchParams: Promise<{ period?: string }> }) {
   const ctx = await getAuthContext();
   const period = parseHomePeriodKey((await searchParams).period);
-  const showMoney = canViewReporting(ctx.role, ctx.isPlatformAdmin);
+  const showMoney = canViewReporting(ctx.role, ctx.isStaff);
 
   return (
     <div className="mx-auto flex w-full max-w-3xl flex-col gap-5 sm:gap-6">

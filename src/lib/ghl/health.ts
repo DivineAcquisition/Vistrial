@@ -9,6 +9,7 @@ import { AWAITING_LINK_ERROR } from "@/lib/ghl/retry";
 import { ingestionAlertWebhookUrl } from "@/lib/ghl/env";
 import { ghlError, ghlLog } from "@/lib/ghl/log";
 import type { GhlDb } from "@/lib/ghl/tokens";
+import { automationAllowedOrgIds } from "@/lib/inbound/holds";
 
 export type OrgIngestionHealth = {
   orgId: string;
@@ -291,7 +292,9 @@ export async function emitIngestionAlerts(db: GhlDb): Promise<number> {
     .eq("status", "active");
 
   let sent = await alertUnlinkedLocations(db);
+  const open = await automationAllowedOrgIds(db, (connections ?? []).map((row) => row.org_id));
   for (const row of connections ?? []) {
+    if (!open.has(row.org_id)) continue;
     const health = await loadOrgIngestionHealth(db, row.org_id);
     const kinds: Array<{ kind: string; detail: string }> = [];
     if (health.unprocessed >= INGEST_BACKLOG_ALERT_THRESHOLD) {

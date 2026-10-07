@@ -1,18 +1,21 @@
 "use client";
 
 import { useTransition } from "react";
-import { useRouter } from "next/navigation";
 
 import { switchOrg } from "@/lib/auth/actions";
 import { useOrg } from "@/components/app/org-provider";
 import { Select } from "@/components/ui/select";
 
+/**
+ * The sidebar's workspace line. Staff switch from the top bar. A customer who
+ * owns more than one business picks between their own here: names only, no
+ * status, nothing that hints at anyone else's workspace.
+ */
 export function OrgSwitcher() {
-  const { org, memberships } = useOrg();
-  const router = useRouter();
+  const { org, memberships, isStaff } = useOrg();
   const [pending, startTransition] = useTransition();
 
-  if (memberships.length < 2) {
+  if (isStaff || memberships.length < 2) {
     return (
       <p
         className="truncate rounded-lg bg-sidebar-accent px-2.5 py-1.5 text-xs font-medium text-sidebar-accent-foreground"
@@ -25,7 +28,7 @@ export function OrgSwitcher() {
 
   return (
     <Select
-      aria-label="Switch workspace"
+      aria-label="Your businesses"
       density="compact"
       className="w-full min-w-0"
       value={org.id}
@@ -33,8 +36,8 @@ export function OrgSwitcher() {
       onChange={(event) => {
         const orgId = event.target.value;
         startTransition(async () => {
-          await switchOrg(orgId);
-          router.refresh();
+          const result = await switchOrg(orgId);
+          if (result.ok) window.location.assign(result.landing);
         });
       }}
     >

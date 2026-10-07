@@ -426,42 +426,21 @@ describe("bounded sequences", () => {
 });
 
 describe("canApproveFollowUp", () => {
-  it("blocks a setter on an unassigned lead", () => {
-    expect(
-      canApproveFollowUp({
-        role: "setter",
-        memberId: "s",
-        assignedSetterId: null,
-        assignedCloserId: null,
-      })
-    ).toBe(false);
+  it("never lets an operator approve, even on their own lead", () => {
+    expect(canApproveFollowUp({ role: "setter" })).toBe(false);
+    expect(canApproveFollowUp({ role: "closer" })).toBe(false);
+    expect(canApproveFollowUp({ role: "operator" })).toBe(false);
   });
 
-  it("matches override: setter only their assignment, owners anyone", () => {
-    expect(
-      canApproveFollowUp({
-        role: "setter",
-        memberId: "s",
-        assignedSetterId: "s",
-        assignedCloserId: null,
-      })
-    ).toBe(true);
-    expect(
-      canApproveFollowUp({
-        role: "setter",
-        memberId: "s",
-        assignedSetterId: "other",
-        assignedCloserId: null,
-      })
-    ).toBe(false);
-    expect(
-      canApproveFollowUp({
-        role: "owner",
-        memberId: "o",
-        assignedSetterId: null,
-        assignedCloserId: null,
-      })
-    ).toBe(true);
+  it("lets owners and staff approve", () => {
+    expect(canApproveFollowUp({ role: "owner" })).toBe(true);
+    expect(canApproveFollowUp({ role: "admin" })).toBe(true);
+    expect(canApproveFollowUp({ role: "setter", isStaff: true })).toBe(true);
+  });
+
+  it("lets a member approve only with the owner's grant", () => {
+    expect(canApproveFollowUp({ role: "member" })).toBe(false);
+    expect(canApproveFollowUp({ role: "member", canApprove: true })).toBe(true);
   });
 });
 

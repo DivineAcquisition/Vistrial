@@ -27,6 +27,11 @@ const REDEEM_ERRORS: Record<string, { title: string; subtitle: string }> = {
     title: "Invite not found",
     subtitle: "This link is not valid. Ask an owner to send a new invite.",
   },
+  staff_account: {
+    title: "This is a Vistrial team account",
+    subtitle:
+      "Team accounts reach workspaces through assignments, not invites. Ask a Platform Admin to assign you, or accept with a different email.",
+  },
 };
 
 export default async function AcceptInvitePage({

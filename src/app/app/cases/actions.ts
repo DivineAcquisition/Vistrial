@@ -74,7 +74,7 @@ export async function createLead(
   formData: FormData
 ): Promise<CaseActionResult> {
   const ctx = await getAuthContext();
-  if (!canCreateLeads(ctx.role, ctx.isPlatformAdmin)) {
+  if (!canCreateLeads(ctx.role, ctx.isStaff)) {
     return actionError("You do not have permission to add people.");
   }
 
@@ -222,7 +222,7 @@ export async function reassignLeadNextAction(input: {
       role: ctx.role,
       actorMemberId: ctx.member.id,
       targetMemberId: ownerId,
-      isPlatformAdmin: ctx.isPlatformAdmin,
+      isStaff: ctx.isStaff,
     });
     if (!allowed) {
       return actionError("You can assign this action to yourself, but not to someone else.");
@@ -241,7 +241,7 @@ export async function reassignLeadNextAction(input: {
       role: ctx.role,
       actorMemberId: ctx.member.id,
       targetMemberId: null,
-      isPlatformAdmin: ctx.isPlatformAdmin,
+      isStaff: ctx.isStaff,
     });
     if (!allowed) {
       return actionError("You can assign this action to yourself, but not unassign it.");

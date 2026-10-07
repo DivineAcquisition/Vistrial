@@ -2,7 +2,7 @@ import { PageFrame } from "@/components/app/page-frame";
 import { IntegrationSettings } from "@/app/app/settings/integrations/integration-settings";
 import { BaselineSettings } from "@/app/app/settings/integrations/baseline-settings";
 import { FieldMapping } from "@/components/integrations/field-mapping";
-import { requirePlatformAdmin } from "@/lib/auth/gates";
+import { requireStaff } from "@/lib/auth/gates";
 import { fetchCustomFields } from "@/lib/ghl/client";
 import { loadLiveFields } from "@/lib/ghl/live-fields";
 import { proposeFieldMaps, unmappedFactors, type ProposedMap } from "@/lib/ghl/propose-maps";
@@ -15,7 +15,7 @@ import { getSupabaseAdmin } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 
 export default async function IntegrationDiagnosticsPage() {
-  const ctx = await requirePlatformAdmin();
+  const ctx = await requireStaff();
   const admin = getSupabaseAdmin();
   const supabase = await createClient();
 

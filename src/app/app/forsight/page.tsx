@@ -27,7 +27,7 @@ export default async function WeeklyPulsePage() {
       title="Weekly Pulse"
       description="How the funnel is doing right now, and which direction it is moving."
       view={view}
-      isPlatformAdmin={ctx.isPlatformAdmin}
+      isStaff={ctx.isStaff}
     >
       {(pulse) => <WeeklyPulseScreen pulse={pulse} live={live} />}
     </ForsightPage>

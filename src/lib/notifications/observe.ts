@@ -29,6 +29,7 @@ import {
 } from "@/lib/notifications/messages";
 import { offerDaConsole, offerTeam, offerToMember } from "@/lib/notifications/offer";
 import type { MemberNotifyTarget } from "@/lib/notifications/types";
+import { AUTOMATION_STATUSES } from "@/lib/workspaces/status";
 
 type EscalationType =
   | "speed_to_lead"
@@ -752,7 +753,7 @@ export async function observeJobs(db: GhlDb, now = new Date()): Promise<void> {
 }
 
 export async function runNotificationObserve(db: GhlDb, now = new Date()): Promise<{ orgs: number }> {
-  const { data: orgs } = await db.from("organizations").select("id");
+  const { data: orgs } = await db.from("organizations").select("id").in("status", AUTOMATION_STATUSES);
   for (const org of orgs ?? []) {
     await observeOrg(db, org.id, now);
   }

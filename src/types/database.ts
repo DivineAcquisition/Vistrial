@@ -1964,6 +1964,11 @@ export type Database = {
           call_coaching_acknowledged_at: string | null;
           surface_access: Database["public"]["Enums"]["surface_access"];
           is_agent_identity: boolean;
+          seat: Database["public"]["Enums"]["member_seat"];
+          can_approve: boolean;
+          deactivated_at: string | null;
+          deactivated_by: string | null;
+          last_seen_at: string | null;
         };
         Insert: {
           active?: boolean;
@@ -1986,6 +1991,11 @@ export type Database = {
           call_coaching_acknowledged_at?: string | null;
           surface_access?: Database["public"]["Enums"]["surface_access"];
           is_agent_identity?: boolean;
+          seat?: Database["public"]["Enums"]["member_seat"];
+          can_approve?: boolean;
+          deactivated_at?: string | null;
+          deactivated_by?: string | null;
+          last_seen_at?: string | null;
         };
         Update: {
           active?: boolean;
@@ -2008,6 +2018,11 @@ export type Database = {
           call_coaching_acknowledged_at?: string | null;
           surface_access?: Database["public"]["Enums"]["surface_access"];
           is_agent_identity?: boolean;
+          seat?: Database["public"]["Enums"]["member_seat"];
+          can_approve?: boolean;
+          deactivated_at?: string | null;
+          deactivated_by?: string | null;
+          last_seen_at?: string | null;
         };
         Relationships: [
           {
@@ -2018,6 +2033,168 @@ export type Database = {
             referencedColumns: ["id"];
           },
         ];
+      };
+      platform_staff: {
+        Row: {
+          user_id: string;
+          role: Database["public"]["Enums"]["platform_role"];
+          active: boolean;
+          template_access: boolean;
+          display_name: string;
+          email: string;
+          created_at: string;
+          created_by: string | null;
+          deactivated_at: string | null;
+          deactivated_by: string | null;
+        };
+        Insert: {
+          user_id: string;
+          role: Database["public"]["Enums"]["platform_role"];
+          active?: boolean;
+          template_access?: boolean;
+          display_name: string;
+          email: string;
+          created_at?: string;
+          created_by?: string | null;
+          deactivated_at?: string | null;
+          deactivated_by?: string | null;
+        };
+        Update: {
+          user_id?: string;
+          role?: Database["public"]["Enums"]["platform_role"];
+          active?: boolean;
+          template_access?: boolean;
+          display_name?: string;
+          email?: string;
+          created_at?: string;
+          created_by?: string | null;
+          deactivated_at?: string | null;
+          deactivated_by?: string | null;
+        };
+        Relationships: [];
+      };
+      workspace_assignments: {
+        Row: {
+          id: string;
+          org_id: string;
+          user_id: string;
+          assigned_at: string;
+          assigned_by: string | null;
+          ended_at: string | null;
+          ended_by: string | null;
+          note: string | null;
+        };
+        Insert: {
+          id?: string;
+          org_id: string;
+          user_id: string;
+          assigned_at?: string;
+          assigned_by?: string | null;
+          ended_at?: string | null;
+          ended_by?: string | null;
+          note?: string | null;
+        };
+        Update: {
+          id?: string;
+          org_id?: string;
+          user_id?: string;
+          assigned_at?: string;
+          assigned_by?: string | null;
+          ended_at?: string | null;
+          ended_by?: string | null;
+          note?: string | null;
+        };
+        Relationships: [];
+      };
+      workspace_activity_log: {
+        Row: {
+          id: string;
+          created_at: string;
+          org_id: string | null;
+          actor_user_id: string | null;
+          actor_label: string;
+          actor_kind: "customer" | "service_team" | "platform_admin" | "system";
+          action: string;
+          target_table: string | null;
+          target_id: string | null;
+          detail: Json;
+        };
+        Insert: {
+          id?: string;
+          created_at?: string;
+          org_id?: string | null;
+          actor_user_id?: string | null;
+          actor_label: string;
+          actor_kind: "customer" | "service_team" | "platform_admin" | "system";
+          action: string;
+          target_table?: string | null;
+          target_id?: string | null;
+          detail?: Json;
+        };
+        Update: {
+          id?: string;
+          created_at?: string;
+          org_id?: string | null;
+          actor_user_id?: string | null;
+          actor_label?: string;
+          actor_kind?: "customer" | "service_team" | "platform_admin" | "system";
+          action?: string;
+          target_table?: string | null;
+          target_id?: string | null;
+          detail?: Json;
+        };
+        Relationships: [];
+      };
+      inbound_event_holds: {
+        Row: {
+          id: string;
+          received_at: string;
+          source: string;
+          event_type: string | null;
+          external_ref: string | null;
+          routing_key: string | null;
+          reason: InboundHoldReason;
+          candidate_org_ids: string[];
+          org_id: string | null;
+          payload: Json;
+          review_status: "open" | "released" | "discarded";
+          reviewed_at: string | null;
+          reviewed_by: string | null;
+          review_note: string | null;
+        };
+        Insert: {
+          id?: string;
+          received_at?: string;
+          source: string;
+          event_type?: string | null;
+          external_ref?: string | null;
+          routing_key?: string | null;
+          reason: InboundHoldReason;
+          candidate_org_ids?: string[];
+          org_id?: string | null;
+          payload?: Json;
+          review_status?: "open" | "released" | "discarded";
+          reviewed_at?: string | null;
+          reviewed_by?: string | null;
+          review_note?: string | null;
+        };
+        Update: {
+          id?: string;
+          received_at?: string;
+          source?: string;
+          event_type?: string | null;
+          external_ref?: string | null;
+          routing_key?: string | null;
+          reason?: InboundHoldReason;
+          candidate_org_ids?: string[];
+          org_id?: string | null;
+          payload?: Json;
+          review_status?: "open" | "released" | "discarded";
+          reviewed_at?: string | null;
+          reviewed_by?: string | null;
+          review_note?: string | null;
+        };
+        Relationships: [];
       };
       platform_admins: {
         Row: {
@@ -2246,6 +2423,18 @@ export type Database = {
           delete_after: string | null;
           offboard_reason: string | null;
           product: Database["public"]["Enums"]["org_product"];
+          status: Database["public"]["Enums"]["workspace_status"];
+          status_changed_at: string;
+          status_changed_by: string | null;
+          status_reason: string | null;
+          closed_at: string | null;
+          closed_retention_days: number;
+          industry_template_id: string | null;
+          owner_contact_name: string | null;
+          owner_contact_email: string | null;
+          owner_contact_phone: string | null;
+          is_platform_workspace: boolean;
+          managed: boolean;
         };
         Insert: {
           activated_at?: string | null;
@@ -2276,6 +2465,18 @@ export type Database = {
           delete_after?: string | null;
           offboard_reason?: string | null;
           product?: Database["public"]["Enums"]["org_product"];
+          status?: Database["public"]["Enums"]["workspace_status"];
+          status_changed_at?: string;
+          status_changed_by?: string | null;
+          status_reason?: string | null;
+          closed_at?: string | null;
+          closed_retention_days?: number;
+          industry_template_id?: string | null;
+          owner_contact_name?: string | null;
+          owner_contact_email?: string | null;
+          owner_contact_phone?: string | null;
+          is_platform_workspace?: boolean;
+          managed?: boolean;
         };
         Update: {
           activated_at?: string | null;
@@ -2306,6 +2507,18 @@ export type Database = {
           delete_after?: string | null;
           offboard_reason?: string | null;
           product?: Database["public"]["Enums"]["org_product"];
+          status?: Database["public"]["Enums"]["workspace_status"];
+          status_changed_at?: string;
+          status_changed_by?: string | null;
+          status_reason?: string | null;
+          closed_at?: string | null;
+          closed_retention_days?: number;
+          industry_template_id?: string | null;
+          owner_contact_name?: string | null;
+          owner_contact_email?: string | null;
+          owner_contact_phone?: string | null;
+          is_platform_workspace?: boolean;
+          managed?: boolean;
         };
         Relationships: [];
       };
@@ -5879,6 +6092,71 @@ export type Database = {
         Args: { p_org_id: string };
         Returns: { event_type: string; n: number }[];
       };
+      ws_access: {
+        Args: { p_org_id: string };
+        Returns: string | null;
+      };
+      ws_can_approve: {
+        Args: { p_org_id: string };
+        Returns: boolean;
+      };
+      ws_is_staff: {
+        Args: { p_org_id: string };
+        Returns: boolean;
+      };
+      ws_can_work_lead: {
+        Args: { p_org_id: string; p_lead_id: string };
+        Returns: boolean;
+      };
+      ws_automation_allowed: {
+        Args: { p_org_id: string };
+        Returns: boolean;
+      };
+      assign_staff_to_workspace: {
+        Args: { p_org_id: string; p_user_id: string; p_note?: string | null };
+        Returns: string;
+      };
+      end_staff_assignment: {
+        Args: { p_org_id: string; p_user_id: string };
+        Returns: undefined;
+      };
+      set_workspace_status: {
+        Args: { p_org_id: string; p_status: Database["public"]["Enums"]["workspace_status"]; p_reason?: string | null };
+        Returns: undefined;
+      };
+      upsert_platform_staff: {
+        Args: {
+          p_user_id: string;
+          p_role: Database["public"]["Enums"]["platform_role"];
+          p_active?: boolean;
+          p_template_access?: boolean;
+          p_display_name?: string | null;
+        };
+        Returns: undefined;
+      };
+      deactivate_user_everywhere: {
+        Args: { p_user_id: string };
+        Returns: undefined;
+      };
+      create_workspace: {
+        Args: { p_name: string; p_timezone: string; p_slug?: string | null; p_owner_email?: string | null };
+        Returns: Json;
+      };
+      review_inbound_event_hold: {
+        Args: { p_id: string; p_status: "released" | "discarded"; p_note?: string | null };
+        Returns: undefined;
+      };
+      log_workspace_activity: {
+        Args: {
+          p_actor_user_id: string | null;
+          p_org_id: string | null;
+          p_action: string;
+          p_target_table?: string | null;
+          p_target_id?: string | null;
+          p_detail?: Json;
+        };
+        Returns: string;
+      };
       user_has_org_role: {
         Args: { p_org_id: string; p_roles: Database["public"]["Enums"]["org_role"][] };
         Returns: boolean;
@@ -6513,7 +6791,18 @@ export type Database = {
         | "dismissed"
         | "withheld"
         | "superseded";
-      org_role: "owner" | "admin" | "closer" | "setter" | "client_viewer" | "da_operator";
+      org_role:
+        | "owner"
+        | "admin"
+        | "closer"
+        | "setter"
+        | "client_viewer"
+        | "da_operator"
+        | "member"
+        | "operator";
+      workspace_status: "onboarding" | "active" | "paused" | "closed";
+      platform_role: "service_team" | "platform_admin";
+      member_seat: "customer" | "staff" | "agent";
       surface_access: "operator" | "portal";
       org_product: "stellar" | "core" | "both";
       placement_agreement_status: "draft" | "sent" | "signed" | "void";
@@ -6765,3 +7054,13 @@ export type PlacementAgreementStatus = Enums<"placement_agreement_status">;
 export type PlacementBuildStage = Enums<"placement_build_stage">;
 export type SourceKind = Enums<"source_kind">;
 export type RevenueKind = Enums<"revenue_kind">;
+
+export type InboundHoldReason =
+  | "unmatched"
+  | "ambiguous"
+  | "workspace_paused"
+  | "workspace_closed"
+  | "source_not_enabled";
+export type WorkspaceStatus = Enums<"workspace_status">;
+export type PlatformRole = Enums<"platform_role">;
+export type MemberSeat = Enums<"member_seat">;

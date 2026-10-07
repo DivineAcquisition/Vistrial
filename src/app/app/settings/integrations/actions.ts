@@ -32,8 +32,8 @@ function revalidateIntegrations() {
 
 async function requireManager() {
   const ctx = await getAuthContext();
-  if (!canWorkOperatorApp(ctx.role, ctx.member.surfaceAccess, ctx.isPlatformAdmin)) return null;
-  if (!canManageOrgSettings(ctx.role, ctx.isPlatformAdmin)) return null;
+  if (!canWorkOperatorApp(ctx.role, ctx.member.surfaceAccess, ctx.isStaff)) return null;
+  if (!canManageOrgSettings(ctx.role, ctx.isStaff)) return null;
   return ctx;
 }
 

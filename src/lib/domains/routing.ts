@@ -1,4 +1,5 @@
 import {
+  PRODUCTION_ADMIN_ORIGIN,
   PRODUCTION_APP_ORIGIN,
   PRODUCTION_FORSIGHT_ORIGIN,
   PRODUCTION_SITE_ORIGIN,
@@ -15,7 +16,8 @@ import { FORSIGHT_PATH } from "@/lib/navigation";
  * One hostname, one product.
  *
  *   vistrial.io / www.vistrial.io  → marketing site
- *   app.vistrial.io                → core operator app
+ *   app.vistrial.io                → core operator app and customer views
+ *   admin.vistrial.io              → the same app, for the Vistrial team
  *   pulse.vistrial.io              → core Forsight (same app, different front door)
  *   forsight.vistrial.io           → Stellar
  *
@@ -23,7 +25,7 @@ import { FORSIGHT_PATH } from "@/lib/navigation";
  * on a single host. Unknown production hosts never serve /app or /stellar.
  */
 
-export type CanonicalOrigin = "site" | "app" | "pulse" | "stellar";
+export type CanonicalOrigin = "site" | "app" | "admin" | "pulse" | "stellar";
 
 export type HostRouteDecision =
   | { action: "allow" }
@@ -40,6 +42,8 @@ export function canonicalOriginUrl(origin: CanonicalOrigin): string {
       return PRODUCTION_SITE_ORIGIN;
     case "app":
       return PRODUCTION_APP_ORIGIN;
+    case "admin":
+      return PRODUCTION_ADMIN_ORIGIN;
     case "pulse":
       return PRODUCTION_FORSIGHT_ORIGIN;
     case "stellar":
@@ -137,6 +141,7 @@ export function resolveHostRoute(args: {
   if (isStaticAsset(path) || isMetadataPath(path)) return { action: "allow" };
 
   if (product === "app") return routeAppHost(path);
+  if (product === "admin") return routeAdminHost(path);
   if (product === "pulse") return routePulseHost(path);
   if (product === "stellar") return routeStellarHost(path);
   if (isPublicWebHost(product)) return routeSiteHost(path);
@@ -156,6 +161,20 @@ function routeSiteHost(path: string): HostRouteDecision {
 }
 
 function routeAppHost(path: string): HostRouteDecision {
+  if (path === "/") return frontDoor("/login");
+  if (isMarketingPath(path)) return bounce("site", path, false);
+  if (isStellarPath(path)) return bounce("stellar", path);
+  if (isAuthPath(path) || isCoreAppPath(path) || isApiPath(path)) {
+    return { action: "allow" };
+  }
+  return bounce("site", "/");
+}
+
+/**
+ * The team's host serves the same paths as the app host. Which people may use
+ * it is decided after sign-in (enforceHostForPerson), not by path.
+ */
+function routeAdminHost(path: string): HostRouteDecision {
   if (path === "/") return frontDoor("/login");
   if (isMarketingPath(path)) return bounce("site", path, false);
   if (isStellarPath(path)) return bounce("stellar", path);
@@ -205,4 +224,28 @@ export function resolvedHostLocation(args: {
     url.search = args.search.replace(/^\?/, "");
   }
   return url.toString();
+}
+
+export type HostPlacement =
+  | { action: "stay" }
+  | { action: "to_admin"; path: string }
+  | { action: "turn_away" };
+
+/**
+ * Which host a signed-in person belongs on. Staff (anyone with a platform
+ * role) work on admin.vistrial.io; customers on app.vistrial.io. Local and
+ * preview hosts serve everyone so development still works on one host.
+ * Pure: the layouts apply the decision.
+ */
+export function placementFor(args: {
+  product: ProductHost;
+  isStaffPerson: boolean;
+  path: string;
+}): HostPlacement {
+  if (args.product === "local" || args.product === "unknown") return { action: "stay" };
+  if (args.isStaffPerson && (args.product === "app" || args.product === "pulse")) {
+    return { action: "to_admin", path: args.path };
+  }
+  if (!args.isStaffPerson && args.product === "admin") return { action: "turn_away" };
+  return { action: "stay" };
 }

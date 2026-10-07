@@ -19,7 +19,7 @@ export const dynamic = "force-dynamic";
  */
 export async function GET(request: NextRequest) {
   const ctx = await getAuthContext();
-  if (!ctx.isPlatformAdmin) {
+  if (!ctx.isStaff) {
     return NextResponse.json({ error: "Not found." }, { status: 404 });
   }
 

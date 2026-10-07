@@ -82,7 +82,7 @@ export async function saveOrgNotificationSettings(
   formData: FormData
 ): Promise<SettingsSaveResult> {
   const ctx = await getAuthContext();
-  if (!canManageOrgSettings(ctx.role, ctx.isPlatformAdmin)) {
+  if (!canManageOrgSettings(ctx.role, ctx.isStaff)) {
     return { status: "error", error: "You do not have permission to change these settings." };
   }
   const supabase = await createClient();

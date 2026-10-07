@@ -1,6 +1,7 @@
 import "server-only";
 
 import { nextAttemptAt, shouldMarkDead } from "@/lib/ghl/retry";
+import { parkHeldWebhookEvent, resolveInboundWorkspace, webhookHoldRef } from "@/lib/inbound/holds";
 import { EXTRACTION_MAX_ATTEMPTS, TRANSCRIPT_MATCH_WINDOW_MS } from "@/lib/transcripts/constants";
 import { transcriptError, transcriptLog, transcriptWarn } from "@/lib/transcripts/log";
 import { matchTranscriptToCall, type MatchableCall, type MatchableLead } from "@/lib/transcripts/match";
@@ -41,6 +42,19 @@ export async function processOneTranscriptEvent(db: GhlDb, event: WebhookRow): P
   const source = sourceFromEventType(event.event_type);
   if (!source) throw new Error("unsupported_source");
   if (!event.org_id) throw new Error("unresolved_org");
+
+  const decision = await resolveInboundWorkspace(db, {
+    source: "transcripts",
+    candidateOrgIds: [event.org_id],
+    eventType: event.event_type,
+    externalRef: webhookHoldRef(event.id),
+    payload: event.payload,
+  });
+  if (decision.action === "hold") {
+    await parkHeldWebhookEvent(db, event.id, event.org_id, decision.reason);
+    transcriptLog("transcript.process.held", { eventId: event.id, reason: decision.reason });
+    return;
+  }
 
   const normalized = normalizeTranscript(source, event.payload);
   if (!normalized.ok) {

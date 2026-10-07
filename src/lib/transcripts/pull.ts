@@ -9,6 +9,7 @@ import { payloadWithoutAudio } from "@/lib/transcripts/shape";
 import type { GhlDb } from "@/lib/ghl/tokens";
 import type { TranscriptSource } from "@/lib/transcripts/types";
 import type { Json } from "@/types/database";
+import { automationAllowedOrgIds } from "@/lib/inbound/holds";
 
 const PULLABLE: TranscriptSource[] = ["fathom", "fireflies", "zoom"];
 
@@ -20,7 +21,9 @@ export async function pullRecorderTranscripts(db: GhlDb): Promise<{ pulled: numb
 
   let pulled = 0;
   let stored = 0;
+  const open = await automationAllowedOrgIds(db, (connections ?? []).map((row) => row.org_id));
   for (const connection of connections ?? []) {
+    if (!open.has(connection.org_id)) continue;
     if (!PULLABLE.includes(connection.source)) continue;
     if (!connection.api_key_encrypted) continue;
     let apiKey: string;

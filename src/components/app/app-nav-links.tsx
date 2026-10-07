@@ -91,9 +91,9 @@ function NavItems({
 
 export function AppNavLinks({ onNavigate }: { onNavigate?: () => void }) {
   const { setOpenMobile } = useSidebar();
-  const { role, isPlatformAdmin } = useOrg();
+  const { role, isStaff } = useOrg();
 
-  const visible = PRIMARY_NAV.filter((item) => navVisibleTo(item, role, isPlatformAdmin));
+  const visible = PRIMARY_NAV.filter((item) => navVisibleTo(item, role, isStaff));
 
   function handleNavigate() {
     setOpenMobile(false);

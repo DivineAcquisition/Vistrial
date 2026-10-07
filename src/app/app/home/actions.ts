@@ -10,6 +10,7 @@ import { loadGateState } from "@/lib/home/gate";
 import { isDone, itemPreview, parseDrafts } from "@/lib/home/queue";
 import { runApprovalItem } from "@/lib/home/run";
 import { getSupabaseAdmin } from "@/lib/supabase/admin";
+import { dbCanApprove } from "@/lib/auth/db-checks";
 import type { Json } from "@/types/database";
 
 export type QueueActionResult = { ok: true; message?: string } | { ok: false; error: string };
@@ -45,14 +46,16 @@ async function requireDecidableItem(itemId: string): Promise<
   const gate = await loadGateState(admin, ctx.org.id);
   const choice = gate.choice(item.action_type);
   if (choice.mode === "off") return { ok: false, error: "This action is turned off in approval settings." };
-  const allowed = canApproveItem({
-    approver: choice.approver,
-    role: ctx.role,
-    isPlatformAdmin: ctx.isPlatformAdmin,
-    memberId: ctx.member.id,
-    assignedMemberId: item.assigned_member_id,
-    escalated: Boolean(item.escalated_at),
-  });
+  const allowed =
+    canApproveItem({
+      approver: choice.approver,
+      role: ctx.role,
+      isStaff: ctx.isStaff,
+      canApprove: ctx.member.canApprove,
+      memberId: ctx.member.id,
+      assignedMemberId: item.assigned_member_id,
+      escalated: Boolean(item.escalated_at),
+    }) && (await dbCanApprove(ctx.org.id));
   if (!allowed) return { ok: false, error: "You cannot approve this under this workspace's approval settings." };
   return { ok: true, ctx, item };
 }

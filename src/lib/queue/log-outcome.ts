@@ -88,7 +88,7 @@ export async function writeQueueOutcome(input: LogOutcomeInput): Promise<QueueAc
       role: ctx.role,
       actorMemberId: ctx.member.id,
       targetMemberId: actorMemberId,
-      isPlatformAdmin: ctx.isPlatformAdmin,
+      isStaff: ctx.isStaff,
     })
   ) {
     return actionError("Only an owner or admin can log an outcome as someone else.");

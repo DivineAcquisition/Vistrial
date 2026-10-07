@@ -39,7 +39,7 @@ export default async function CalibrationPage() {
         />
       }
     >
-      <CalibrationReport orgId={ctx.org.id} isPlatformAdmin={ctx.isPlatformAdmin} />
+      <CalibrationReport orgId={ctx.org.id} isStaff={ctx.isStaff} />
     </PageFrame>
   );
 }

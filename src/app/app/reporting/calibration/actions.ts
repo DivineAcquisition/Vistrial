@@ -13,7 +13,7 @@ function deny(): SettingsSaveResult {
 
 export async function applyCalibrationSuggestion(suggestionId: string): Promise<SettingsSaveResult> {
   const ctx = await getAuthContext();
-  if (!canManageOrgSettings(ctx.role, ctx.isPlatformAdmin)) return deny();
+  if (!canManageOrgSettings(ctx.role, ctx.isStaff)) return deny();
   const supabase = await createClient();
   const { error } = await supabase.rpc("apply_calibration_suggestion", {
     p_org_id: ctx.org.id,
@@ -27,7 +27,7 @@ export async function applyCalibrationSuggestion(suggestionId: string): Promise<
 
 export async function dismissCalibrationSuggestion(suggestionId: string): Promise<SettingsSaveResult> {
   const ctx = await getAuthContext();
-  if (!canManageOrgSettings(ctx.role, ctx.isPlatformAdmin)) return deny();
+  if (!canManageOrgSettings(ctx.role, ctx.isStaff)) return deny();
   const supabase = await createClient();
   const { error } = await supabase.rpc("dismiss_calibration_suggestion", {
     p_org_id: ctx.org.id,

@@ -603,6 +603,28 @@ SELECT pg_temp.check(
     $q$SELECT count(*) FROM public.inbound_event_holds WHERE external_ref = 'tx-1'$q$) = 1,
   'platform admin cannot read the holding area');
 
+-- Only a Platform Admin creates a workspace. It starts in onboarding, with one
+-- owner invite, and the creation is logged once.
+SELECT pg_temp.check(
+  pg_temp.refused(pg_temp.write_as('7e570000-0000-4000-8000-0000000000d1',
+    $q$SELECT public.create_workspace('Staff Made', 'UTC', NULL, 'x@example.com')$q$)),
+  'service team created a workspace');
+SELECT pg_temp.check(
+  pg_temp.write_as('7e570000-0000-4000-8000-0000000000d3',
+    $q$SELECT public.create_workspace('Fresh Studio', 'UTC', 'fresh-studio', 'Owner@Fresh.test')$q$) LIKE 'ok:%',
+  'platform admin could not create a workspace');
+SELECT pg_temp.check(
+  (SELECT status FROM public.organizations WHERE slug = 'fresh-studio') = 'onboarding',
+  'a new workspace did not start in onboarding');
+SELECT pg_temp.check(
+  (SELECT count(*) FROM public.org_invites i JOIN public.organizations o ON o.id = i.org_id
+   WHERE o.slug = 'fresh-studio' AND i.role = 'owner' AND i.email = 'owner@fresh.test') = 1,
+  'a new workspace did not get exactly one owner invite');
+SELECT pg_temp.check(
+  (SELECT count(*) FROM public.workspace_activity_log l JOIN public.organizations o ON o.id = l.org_id
+   WHERE o.slug = 'fresh-studio' AND l.action = 'workspace.created' AND l.actor_kind = 'platform_admin') = 1,
+  'workspace creation was not logged exactly once');
+
 -- ---------------------------------------------------------------------------
 -- 8. Nothing privileged is open to signed-out visitors, and every table that
 --    holds a workspace has row-level security.

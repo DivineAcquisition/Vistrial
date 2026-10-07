@@ -12,11 +12,11 @@ import {
   safeInternalPath,
 } from "@/lib/auth/paths";
 import { listActiveMemberships } from "@/lib/auth/session";
+import { logWorkspaceActivity } from "@/lib/workspaces/activity";
 import { appUrl, originFromForwardedHost } from "@/lib/app-url";
 import { defaultInternalPath, signedInPath } from "@/lib/domains/landing";
 import { classifyProductHost } from "@/lib/marketing/hosts";
 import { rateLimitAuth, requestIp } from "@/lib/ops/rate-limit";
-import { checkIsStellarDaOperator } from "@/lib/stellar/auth";
 import { isSupabaseConfigured } from "@/lib/supabase/env";
 import { getSupabaseAdmin } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
@@ -97,21 +97,28 @@ export async function signInPassword(
   }
 
   const memberships = await listActiveMemberships(userId);
+  // Read straight after sign-in on the same client, so the new session is the
+  // one asking; the policy returns only the caller's own row.
+  const { data: staff } = await supabase
+    .from("platform_staff")
+    .select("role")
+    .eq("user_id", userId)
+    .eq("active", true)
+    .maybeSingle();
+  await logWorkspaceActivity({
+    actorUserId: userId,
+    orgId: memberships[0]?.orgId ?? null,
+    action: "auth.signed_in",
+    detail: { host: product },
+  });
   if (memberships.length === 0) {
-    if (await checkIsStellarDaOperator()) {
+    if (staff && product === "stellar") {
       redirect(signedInPath({ product, next, stellarDaOperator: true }));
     }
-    const { data: platformAdmin, error: adminError } = await supabase
-      .from("platform_admins")
-      .select("user_id")
-      .eq("user_id", userId)
-      .maybeSingle();
-    if (adminError) {
-      return { error: "generic" };
+    if (staff) {
+      redirect("/no-access?reason=unassigned");
     }
-    if (!platformAdmin) {
-      return { error: "no_membership" };
-    }
+    return { error: "no_membership" };
   }
 
   redirect(

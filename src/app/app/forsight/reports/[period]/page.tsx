@@ -40,7 +40,7 @@ export default async function ForsightReportPage({
   const periodStart = periodStartFromParam(periodParam);
   if (!periodStart) notFound();
 
-  const requestedVersion = ctx.isPlatformAdmin ? parseVersion(query.v) : null;
+  const requestedVersion = ctx.isStaff ? parseVersion(query.v) : null;
   const supabase = await createClient();
   const stored = await loadStoredReport(supabase, {
     orgId: ctx.org.id,
@@ -48,31 +48,31 @@ export default async function ForsightReportPage({
     version: requestedVersion,
   });
 
-  const versions = ctx.isPlatformAdmin
+  const versions = ctx.isStaff
     ? await listReportVersions(supabase, ctx.org.id, periodStart)
     : [];
   const sends =
-    ctx.isPlatformAdmin && stored ? await loadSendsForReport(supabase, stored.id) : [];
+    ctx.isStaff && stored ? await loadSendsForReport(supabase, stored.id) : [];
 
   return (
     <PageFrame
       title={stored?.report.period.label ?? periodParam}
       eyebrow={ctx.org.name}
       description="A frozen snapshot. Viewing it never re-reads the source."
-      toolbar={<ForsightTabs activeHref={`${FORSIGHT_PATH}/reports`} isPlatformAdmin={ctx.isPlatformAdmin} />}
+      toolbar={<ForsightTabs activeHref={`${FORSIGHT_PATH}/reports`} isStaff={ctx.isStaff} />}
       actions={
         stored ? (
           <div className="flex flex-wrap items-center justify-end gap-2">
             <Button variant="outline" size="sm" asChild>
               <Link
                 href={`${FORSIGHT_PATH}/reports/${periodPath(periodStart)}/export${
-                  ctx.isPlatformAdmin ? `?v=${stored.version}` : ""
+                  ctx.isStaff ? `?v=${stored.version}` : ""
                 }`}
               >
                 Export PDF
               </Link>
             </Button>
-            {ctx.isPlatformAdmin ? (
+            {ctx.isStaff ? (
               <ReportActions
                 orgId={ctx.org.id}
                 periodStart={periodStart}
@@ -81,7 +81,7 @@ export default async function ForsightReportPage({
               />
             ) : null}
           </div>
-        ) : ctx.isPlatformAdmin ? (
+        ) : ctx.isStaff ? (
           <ReportActions orgId={ctx.org.id} periodStart={periodStart} version={null} hasReport={false} />
         ) : undefined
       }
@@ -91,14 +91,14 @@ export default async function ForsightReportPage({
           kind="empty"
           title="This month has not been generated"
           detail={
-            ctx.isPlatformAdmin
+            ctx.isStaff
               ? "Generate it here. Nothing is emailed until you send it."
               : "This month has not been generated yet."
           }
         />
       ) : (
         <>
-          {ctx.isPlatformAdmin && versions.length > 1 ? (
+          {ctx.isStaff && versions.length > 1 ? (
             <p className={captionText}>
               Versions:{" "}
               {versions.map((row, index) => (
@@ -121,7 +121,7 @@ export default async function ForsightReportPage({
             version={stored.version}
           />
 
-          {ctx.isPlatformAdmin ? (
+          {ctx.isStaff ? (
             <Panel className="p-5">
               <p className="text-[11px] font-semibold tracking-[0.14em] text-dim uppercase">
                 Omitted lines

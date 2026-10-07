@@ -19,7 +19,7 @@ export default async function CallsPage({
     <PageFrame title="Calls" description="Recorded conversations and what was said.">
       <CallsScreen
         initial={payload}
-        canOpenIntegrations={canManageOrgSettings(ctx.role, ctx.isPlatformAdmin)}
+        canOpenIntegrations={canManageOrgSettings(ctx.role, ctx.isStaff)}
       />
     </PageFrame>
   );

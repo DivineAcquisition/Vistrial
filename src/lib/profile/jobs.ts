@@ -2,6 +2,7 @@ import "server-only";
 
 import type { GhlDb } from "@/lib/ghl/tokens";
 import { ghlError, ghlLog } from "@/lib/ghl/log";
+import { AUTOMATION_STATUSES } from "@/lib/workspaces/status";
 
 export type ProfileJobResult = {
   metricsRefreshed: number;
@@ -26,7 +27,7 @@ export async function runProfileJobs(db: GhlDb): Promise<ProfileJobResult> {
     failed: 0,
   };
 
-  const { data: orgs, error } = await db.from("organizations").select("id");
+  const { data: orgs, error } = await db.from("organizations").select("id").in("status", AUTOMATION_STATUSES);
   if (error) {
     ghlError("profile.jobs.orgs_failed", { error: error.message });
     return { ...result, failed: 1 };

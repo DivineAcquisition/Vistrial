@@ -19,7 +19,7 @@ export default async function OnboardingApprovalsPage() {
   const ctx = await requireProfileAccess();
   const supabase = await createClient();
   const [state, gate] = await Promise.all([loadBusinessProfileState(ctx.org.id), loadGateState(supabase, ctx.org.id)]);
-  const editable = canEditApprovalGate(ctx.role, ctx.isPlatformAdmin);
+  const editable = canEditApprovalGate(ctx.role, ctx.isStaff);
 
   return (
     <PageFrame

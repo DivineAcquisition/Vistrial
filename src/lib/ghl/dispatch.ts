@@ -14,6 +14,7 @@ import { channelToGhlType, contactIsSuppressed, outboundTouchSummary } from "@/l
 import { nextAttemptAt, shouldMarkDead } from "@/lib/ghl/retry";
 import type { GhlDb } from "@/lib/ghl/tokens";
 import type { Enums } from "@/types/database";
+import { automationRunsFor } from "@/lib/workspaces/status";
 
 type TouchChannel = Enums<"touch_channel">;
 
@@ -537,6 +538,10 @@ type DatabaseRow = {
 };
 
 async function haltReasonForDispatch(db: GhlDb, row: DatabaseRow): Promise<string | null> {
+  // Nothing reaches a lead from a paused or closed workspace, whoever asked.
+  const { data: org } = await db.from("organizations").select("status").eq("id", row.org_id).maybeSingle();
+  if (!automationRunsFor(org?.status)) return org?.status === "closed" ? "workspace_closed" : "workspace_paused";
+
   const { data: settings } = await db
     .from("follow_up_settings")
     .select("sequences_halted")

@@ -73,7 +73,7 @@ export default async function IntegrationsPage({
       description="Connect GoHighLevel to sync and send. People live in Vistrial either way."
       status={hubSummaryLine(cards)}
       actions={
-        ctx.isPlatformAdmin ? (
+        ctx.isStaff ? (
           <Button variant="secondary" size="sm" render={<Link href="/app/settings/integrations/advanced" />}>
             Diagnostics
           </Button>
@@ -120,7 +120,7 @@ export default async function IntegrationsPage({
           flashError={params.exec_error ? (EXECUTION_FLASH_ERRORS[params.exec_error] ?? EXECUTION_FLASH_ERRORS.oauth_failed) : null}
         />
 
-        {ctx.isPlatformAdmin ? (
+        {ctx.isStaff ? (
           <p className={helperClass}>
             Field mapping, connection health, call recorders, and history import live under
             Diagnostics.

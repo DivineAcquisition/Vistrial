@@ -23,8 +23,8 @@ import { createClient } from "@/lib/supabase/server";
  */
 export async function requireProfileAccess(): Promise<AuthContext> {
   const ctx = await getAuthContext();
-  if (!canManageOrgSettings(ctx.role, ctx.isPlatformAdmin)) {
-    redirect(firstSettingsPath(ctx.role, ctx.isPlatformAdmin));
+  if (!canManageOrgSettings(ctx.role, ctx.isStaff)) {
+    redirect(firstSettingsPath(ctx.role, ctx.isStaff));
   }
   return ctx;
 }
@@ -33,7 +33,7 @@ export async function assertProfileAccess(): Promise<
   { ok: true; ctx: AuthContext } | { ok: false; error: string }
 > {
   const ctx = await getAuthContext();
-  if (!canManageOrgSettings(ctx.role, ctx.isPlatformAdmin)) {
+  if (!canManageOrgSettings(ctx.role, ctx.isStaff)) {
     return { ok: false, error: "Only an owner or admin can change the business profile." };
   }
   return { ok: true, ctx };

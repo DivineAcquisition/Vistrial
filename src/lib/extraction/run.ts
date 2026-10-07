@@ -23,6 +23,10 @@ import { runModelVerifier, skippedVerifier } from "@/lib/verification/model";
 import { persistBoundedVerification, taskVerificationEnabled } from "@/lib/verification/record";
 import { extractionJsonForVerifier, rawQuotesFromModelJson } from "@/lib/verification/serialize";
 import type { AnthropicMessageResult } from "@/lib/extraction/anthropic";
+import { automationAllowed } from "@/lib/inbound/holds";
+
+/** How long a job for a paused or closed workspace waits before it is looked at again. */
+const WORKSPACE_RECHECK_MS = 6 * 60 * 60_000;
 
 export async function processExtractionQueue(db: GhlDb, max = 10): Promise<{
   jobs: number;
@@ -55,6 +59,15 @@ export async function runExtractionJob(db: GhlDb, jobId: string): Promise<void> 
     .eq("id", jobId)
     .maybeSingle();
   if (!job) return;
+
+  // Paused or closed: the transcript stays, the analysis waits for the workspace to reopen.
+  if (!(await automationAllowed(db, job.org_id))) {
+    await db
+      .from("extraction_jobs")
+      .update({ status: "pending", next_attempt_at: new Date(Date.now() + WORKSPACE_RECHECK_MS).toISOString() })
+      .eq("id", job.id);
+    return;
+  }
 
   await db
     .from("extraction_jobs")

@@ -36,7 +36,7 @@ const PAGE = "/app/settings/integrations";
 
 async function manager(): Promise<AuthContext | null> {
   const ctx = await getAuthContext();
-  return canManageOrgSettings(ctx.role, ctx.isPlatformAdmin) ? ctx : null;
+  return canManageOrgSettings(ctx.role, ctx.isStaff) ? ctx : null;
 }
 
 const DENIED = { ok: false, error: "Only an owner or admin can change this." } as const;

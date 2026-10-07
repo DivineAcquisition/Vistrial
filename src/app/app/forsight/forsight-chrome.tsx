@@ -26,7 +26,7 @@ export function ForsightTabs({
   activeHref,
 }: {
   activeHref: string;
-  isPlatformAdmin?: boolean;
+  isStaff?: boolean;
 }) {
   const items = FORSIGHT_PAGES.filter((page) => !page.scope || isProductScopeEnabled(page.scope));
   if (items.length <= 1) return null;
@@ -49,7 +49,7 @@ export function ForsightPage<T>({
   title: string;
   description: string;
   view: ForsightView<T>;
-  isPlatformAdmin?: boolean;
+  isStaff?: boolean;
   children: (data: T) => ReactNode;
 }) {
   const fetchedAt =

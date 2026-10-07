@@ -34,7 +34,7 @@ export function QueueLeadRow({
   members,
   role,
   memberId,
-  isPlatformAdmin,
+  isStaff,
   arriving,
   exiting,
   busy,
@@ -52,7 +52,7 @@ export function QueueLeadRow({
   members: QueueMemberOption[];
   role: OrgRole;
   memberId: string;
-  isPlatformAdmin: boolean;
+  isStaff: boolean;
   arriving?: boolean;
   exiting?: boolean;
   busy?: boolean;
@@ -212,7 +212,7 @@ export function QueueLeadRow({
               members={members}
               role={role}
               memberId={memberId}
-              isPlatformAdmin={isPlatformAdmin}
+              isStaff={isStaff}
               busy={busy}
               error={error}
               onCancel={closePanel}
@@ -232,7 +232,7 @@ export function QueueLeadRow({
               members={members}
               role={role}
               memberId={memberId}
-              isPlatformAdmin={isPlatformAdmin}
+              isStaff={isStaff}
               busy={busy}
               error={error}
               onCancel={closePanel}

@@ -13,7 +13,7 @@ export async function updateOrganization(
   formData: FormData
 ): Promise<SettingsSaveResult> {
   const ctx = await getAuthContext();
-  if (!canManageOrgSettings(ctx.role, ctx.isPlatformAdmin)) {
+  if (!canManageOrgSettings(ctx.role, ctx.isStaff)) {
     return {
       status: "error",
       error: "You do not have permission to change organization settings.",
@@ -122,5 +122,45 @@ export async function updateOrganization(
   revalidatePath("/", "layout");
   revalidatePath("/app/settings/organization");
   revalidatePath("/app/settings/advanced");
+  return { status: "saved" };
+}
+
+/**
+ * Business contact details: the one part of the workspace record an owner
+ * changes. Written through the owner's own session, so the database's
+ * organizations_guard is what allows it, and refuses anything else.
+ */
+export async function updateContactDetails(
+  _prev: SettingsSaveResult,
+  formData: FormData
+): Promise<SettingsSaveResult> {
+  const ctx = await getAuthContext();
+  if (!ctx.isStaff && ctx.role !== "owner") {
+    return { status: "error", error: "Only an owner can change the business contact details." };
+  }
+
+  const clean = (key: string, max: number) => {
+    const value = String(formData.get(key) ?? "").trim().slice(0, max);
+    return value === "" ? null : value;
+  };
+  const email = clean("owner_contact_email", 254)?.toLowerCase() ?? null;
+  if (email && !/^[^@\s]+@[^@\s]+$/.test(email)) {
+    return { status: "error", error: "Enter a valid email address." };
+  }
+
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("organizations")
+    .update({
+      owner_contact_name: clean("owner_contact_name", 120),
+      owner_contact_email: email,
+      owner_contact_phone: clean("owner_contact_phone", 40),
+    })
+    .eq("id", ctx.org.id);
+
+  if (error) {
+    return { status: "error", error: "Could not save the contact details." };
+  }
+  revalidatePath("/app/settings/organization");
   return { status: "saved" };
 }

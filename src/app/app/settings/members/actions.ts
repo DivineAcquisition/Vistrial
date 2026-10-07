@@ -10,9 +10,10 @@ import {
 } from "@/lib/auth/invites";
 import {
   canManageMembers,
-  canWorkOperatorApp,
+  invitableRolesFor,
   isInvitableRole,
   removesLastActiveOwner,
+  roleLabel,
 } from "@/lib/auth/permissions";
 import { getAuthContext } from "@/lib/auth/session";
 import { createClient } from "@/lib/supabase/server";
@@ -22,15 +23,36 @@ export type MemberActionResult =
   | { ok: true; url?: string }
   | { ok: false; error: string };
 
+const LAST_OWNER =
+  "A workspace must keep at least one owner. Make someone else an owner first, then try again.";
+
 async function requireManager() {
   const ctx = await getAuthContext();
-  if (!canWorkOperatorApp(ctx.role, ctx.member.surfaceAccess, ctx.isPlatformAdmin)) {
-    return { ok: false as const, error: "Portal-only members cannot manage the operator app.", ctx };
-  }
-  if (!canManageMembers(ctx.role, ctx.isPlatformAdmin)) {
-    return { ok: false as const, error: "You do not have permission to manage members.", ctx };
+  if (!canManageMembers(ctx.role, ctx.isStaff)) {
+    return { ok: false as const, error: "Only owners can manage the people in this workspace.", ctx };
   }
   return { ok: true as const, ctx };
+}
+
+function revalidatePeople() {
+  revalidatePath("/app/settings/members");
+  revalidatePath("/app");
+  revalidatePath("/portal");
+}
+
+/** Customer seats only: staff seats follow assignments and are never edited here. */
+async function loadMember(orgId: string, memberId: string) {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("org_members")
+    .select("id, user_id, role, active, display_name, email, seat")
+    .eq("org_id", orgId)
+    .eq("id", memberId)
+    .eq("seat", "customer")
+    .maybeSingle();
+
+  if (error || !data) return null;
+  return data;
 }
 
 async function activeOwnerCount(orgId: string) {
@@ -39,6 +61,7 @@ async function activeOwnerCount(orgId: string) {
     .from("org_members")
     .select("id", { count: "exact", head: true })
     .eq("org_id", orgId)
+    .eq("seat", "customer")
     .eq("role", "owner")
     .eq("active", true);
 
@@ -46,30 +69,13 @@ async function activeOwnerCount(orgId: string) {
   return count ?? 0;
 }
 
-async function loadMember(orgId: string, memberId: string) {
-  const supabase = await createClient();
-  const { data, error } = await supabase
-    .from("org_members")
-    .select("id, user_id, role, active, display_name, email, surface_access")
-    .eq("org_id", orgId)
-    .eq("id", memberId)
-    .maybeSingle();
-
-  if (error || !data) return null;
-  return data;
-}
-
 async function guardLastOwner(args: {
   orgId: string;
-  member: { id: string; role: OrgRole; active: boolean };
+  member: { role: OrgRole; active: boolean };
   nextRole: OrgRole;
   nextActive: boolean;
 }): Promise<string | null> {
-  const staysOwner = args.nextRole === "owner" && args.nextActive;
-  if (args.member.role !== "owner" || !args.member.active || staysOwner) {
-    return null;
-  }
-
+  if (args.member.role !== "owner" || !args.member.active) return null;
   const blocked = removesLastActiveOwner({
     role: args.member.role,
     active: args.member.active,
@@ -77,7 +83,20 @@ async function guardLastOwner(args: {
     nextActive: args.nextActive,
     activeOwners: await activeOwnerCount(args.orgId),
   });
-  return blocked ? "The last active owner cannot be demoted or deactivated." : null;
+  return blocked ? LAST_OWNER : null;
+}
+
+/** The database refuses the same changes; say why in words. */
+function explain(error: { code?: string; hint?: string | null; message?: string } | null, fallback: string) {
+  if (!error) return fallback;
+  if (error.hint === "last_owner") return LAST_OWNER;
+  if (error.code === "42501" && error.message) return error.message;
+  return fallback;
+}
+
+/** Members use the customer views; everyone else the working app. */
+function surfaceFor(role: OrgRole): SurfaceAccess {
+  return role === "member" ? "portal" : "operator";
 }
 
 export async function inviteMember(
@@ -89,15 +108,18 @@ export async function inviteMember(
 
   const email = normalizeInviteEmail(String(formData.get("email") ?? ""));
   const role = String(formData.get("role") ?? "");
-  const portalOnly = String(formData.get("portal_only") ?? "") === "1";
 
   if (!email.includes("@")) {
     return { ok: false, error: "Enter a valid email." };
   }
-  if (!isInvitableRole(role)) {
-    return { ok: false, error: "Invites can only be sent for admin, closer, or setter." };
+  if (!isInvitableRole(role) || !invitableRolesFor(gate.ctx.isStaff).includes(role)) {
+    return {
+      ok: false,
+      error: gate.ctx.isStaff
+        ? "Choose owner, member, or operator."
+        : "Owners can invite members and operators. Ask the Vistrial team to add another owner.",
+    };
   }
-  const surfaceAccess: SurfaceAccess = portalOnly && role === "admin" ? "portal" : "operator";
 
   const supabase = await createClient();
   const token = newInviteToken();
@@ -108,16 +130,15 @@ export async function inviteMember(
     token,
     invited_by: gate.ctx.member.id,
     expires_at: inviteExpiryDate().toISOString(),
-    surface_access: surfaceAccess,
+    surface_access: surfaceFor(role),
   });
 
   if (error) {
-    return { ok: false, error: "Could not create the invite." };
+    return { ok: false, error: explain(error, "Could not create the invite.") };
   }
 
   // Email delivery lands in a later prompt. Return the link for manual sharing.
-  revalidatePath("/app/settings/members");
-  revalidatePath("/portal");
+  revalidatePeople();
   return { ok: true, url: buildInviteLink(token) };
 }
 
@@ -137,31 +158,25 @@ export async function revokeInvite(inviteId: string): Promise<MemberActionResult
     return { ok: false, error: "Could not revoke the invite." };
   }
 
-  revalidatePath("/app/settings/members");
-  revalidatePath("/portal");
+  revalidatePeople();
   return { ok: true };
 }
 
-export async function updateMemberRole(
-  memberId: string,
-  role: OrgRole
-): Promise<MemberActionResult> {
+export async function updateMemberRole(memberId: string, role: OrgRole): Promise<MemberActionResult> {
   const gate = await requireManager();
   if (!gate.ok) return { ok: false, error: gate.error };
 
-  if (role === "owner" && gate.ctx.role !== "owner" && !gate.ctx.isPlatformAdmin) {
-    return { ok: false, error: "Only an owner can grant the owner role." };
+  if (!isInvitableRole(role)) {
+    return { ok: false, error: "Choose owner, member, or operator." };
+  }
+  if (role === "owner" && !gate.ctx.isStaff) {
+    return { ok: false, error: "Ask the Vistrial team to make someone an owner." };
   }
 
   const member = await loadMember(gate.ctx.org.id, memberId);
   if (!member) return { ok: false, error: "Member not found." };
-
-  const supabase = await createClient();
-  const { data: isAdmin } = await supabase.rpc("is_platform_admin_user", {
-    p_user_id: member.user_id,
-  });
-  if (isAdmin) {
-    return { ok: false, error: "Platform admins cannot be demoted or deactivated." };
+  if (member.role === "owner" && !gate.ctx.isStaff && member.user_id !== gate.ctx.user.id) {
+    return { ok: false, error: "Ask the Vistrial team to change another owner's role." };
   }
 
   const blocked = await guardLastOwner({
@@ -172,119 +187,61 @@ export async function updateMemberRole(
   });
   if (blocked) return { ok: false, error: blocked };
 
-  const staysOperatorManager =
-    (role === "owner" || role === "admin") && (member.surface_access ?? "operator") === "operator";
-  if (
-    member.active &&
-    (member.role === "owner" || member.role === "admin") &&
-    (member.surface_access ?? "operator") === "operator" &&
-    !staysOperatorManager
-  ) {
-    const managers = await operatorManagerCount(gate.ctx.org.id);
-    if (!Number.isFinite(managers) || managers <= 1) {
-      return {
-        ok: false,
-        error: "The last operator owner or admin cannot be demoted. Someone still has to reach People and Integrations.",
-      };
-    }
-  }
-
-  const nextSurface: SurfaceAccess =
-    role === "owner" || role === "admin" ? member.surface_access ?? "operator" : "operator";
-
+  const supabase = await createClient();
   const { error } = await supabase
     .from("org_members")
-    .update({ role, surface_access: nextSurface })
+    .update({
+      role,
+      surface_access: surfaceFor(role),
+      ...(role === "member" ? {} : { can_approve: false }),
+    })
     .eq("id", memberId)
     .eq("org_id", gate.ctx.org.id);
 
   if (error) {
-    return { ok: false, error: "Could not update the role." };
+    return { ok: false, error: explain(error, `Could not change the role to ${roleLabel(role)}.`) };
   }
 
-  revalidatePath("/app/settings/members");
-  revalidatePath("/app");
-  revalidatePath("/portal");
+  revalidatePeople();
   return { ok: true };
 }
 
-async function operatorManagerCount(orgId: string) {
-  const supabase = await createClient();
-  const { count, error } = await supabase
-    .from("org_members")
-    .select("id", { count: "exact", head: true })
-    .eq("org_id", orgId)
-    .eq("active", true)
-    .in("role", ["owner", "admin"])
-    .eq("surface_access", "operator");
-  if (error) return Number.NaN;
-  return count ?? 0;
-}
-
-export async function updateMemberSurfaceAccess(
-  memberId: string,
-  surface: SurfaceAccess
-): Promise<MemberActionResult> {
-  const gate = await requireManager();
-  if (!gate.ok) return { ok: false, error: gate.error };
-  if (surface !== "operator" && surface !== "portal") {
-    return { ok: false, error: "Surface must be operator or portal." };
-  }
-
-  const member = await loadMember(gate.ctx.org.id, memberId);
-  if (!member) return { ok: false, error: "Member not found." };
-  if (member.role !== "owner" && member.role !== "admin") {
-    return { ok: false, error: "Portal-only access is for owners and admins." };
-  }
-
-  if (
-    surface === "portal" &&
-    member.active &&
-    (member.surface_access ?? "operator") === "operator"
-  ) {
-    const managers = await operatorManagerCount(gate.ctx.org.id);
-    if (!Number.isFinite(managers) || managers <= 1) {
-      return {
-        ok: false,
-        error: "The last operator owner or admin cannot be portal-only. Someone still has to reach People and Integrations.",
-      };
-    }
-  }
-
-  const supabase = await createClient();
-  const { error } = await supabase
-    .from("org_members")
-    .update({ surface_access: surface })
-    .eq("id", memberId)
-    .eq("org_id", gate.ctx.org.id);
-
-  if (error) {
-    return { ok: false, error: "Could not update surface access." };
-  }
-
-  revalidatePath("/app/settings/members");
-  revalidatePath("/app");
-  revalidatePath("/portal");
-  return { ok: true };
-}
-
-export async function setMemberActive(
-  memberId: string,
-  active: boolean
-): Promise<MemberActionResult> {
+/** An owner lets a Member approve drafts and gated actions, or takes it back. */
+export async function setMemberApproval(memberId: string, canApprove: boolean): Promise<MemberActionResult> {
   const gate = await requireManager();
   if (!gate.ok) return { ok: false, error: gate.error };
 
   const member = await loadMember(gate.ctx.org.id, memberId);
   if (!member) return { ok: false, error: "Member not found." };
+  if (member.role !== "member") {
+    return { ok: false, error: "Approval is granted to members. Owners already approve." };
+  }
 
   const supabase = await createClient();
-  const { data: isAdmin } = await supabase.rpc("is_platform_admin_user", {
-    p_user_id: member.user_id,
-  });
-  if (isAdmin) {
-    return { ok: false, error: "Platform admins cannot be demoted or deactivated." };
+  const { error } = await supabase
+    .from("org_members")
+    .update({ can_approve: canApprove })
+    .eq("id", memberId)
+    .eq("org_id", gate.ctx.org.id);
+
+  if (error) {
+    return { ok: false, error: explain(error, "Could not change approval for this member.") };
   }
+
+  revalidatePeople();
+  return { ok: true };
+}
+
+/**
+ * Remove or restore someone. Removal takes effect on their next request and
+ * keeps everything they did under their name.
+ */
+export async function setMemberActive(memberId: string, active: boolean): Promise<MemberActionResult> {
+  const gate = await requireManager();
+  if (!gate.ok) return { ok: false, error: gate.error };
+
+  const member = await loadMember(gate.ctx.org.id, memberId);
+  if (!member) return { ok: false, error: "Member not found." };
 
   const blocked = await guardLastOwner({
     orgId: gate.ctx.org.id,
@@ -294,21 +251,7 @@ export async function setMemberActive(
   });
   if (blocked) return { ok: false, error: blocked };
 
-  if (
-    !active &&
-    member.active &&
-    (member.role === "owner" || member.role === "admin") &&
-    (member.surface_access ?? "operator") === "operator"
-  ) {
-    const managers = await operatorManagerCount(gate.ctx.org.id);
-    if (!Number.isFinite(managers) || managers <= 1) {
-      return {
-        ok: false,
-        error: "The last operator owner or admin cannot be deactivated. Someone still has to reach People and Integrations.",
-      };
-    }
-  }
-
+  const supabase = await createClient();
   const { error } = await supabase
     .from("org_members")
     .update({ active })
@@ -316,11 +259,9 @@ export async function setMemberActive(
     .eq("org_id", gate.ctx.org.id);
 
   if (error) {
-    return { ok: false, error: "Could not update membership status." };
+    return { ok: false, error: explain(error, "Could not update membership status.") };
   }
 
-  revalidatePath("/app/settings/members");
-  revalidatePath("/app");
-  revalidatePath("/portal");
+  revalidatePeople();
   return { ok: true };
 }

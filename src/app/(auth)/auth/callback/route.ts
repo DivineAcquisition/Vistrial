@@ -1,4 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
+import { logWorkspaceActivity } from "@/lib/workspaces/activity";
 
 import { ORG_COOKIE_NAME, PENDING_INVITE_COOKIE, orgCookieOptions } from "@/lib/auth/cookies";
 import { redeemInvite } from "@/lib/auth/invites";
@@ -50,6 +51,13 @@ export async function GET(request: NextRequest) {
   if (!user) {
     return redirectTo(request, "/login");
   }
+
+  await logWorkspaceActivity({
+    actorUserId: user.id,
+    orgId: null,
+    action: "auth.signed_in",
+    detail: { host: product, method: "link" },
+  });
 
   if (pendingToken) {
     const result = await redeemInvite(pendingToken, user.id, user.email ?? null);

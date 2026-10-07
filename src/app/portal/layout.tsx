@@ -5,6 +5,7 @@ import Logo from "@/components/brand/logo";
 import { getAuthContext, toClientOrgState } from "@/lib/auth/session";
 import { canWorkOperatorApp } from "@/lib/auth/permissions";
 import { requirePortalAccess } from "@/lib/portal/access";
+import { enforceHostForPerson } from "@/lib/domains/host-guard";
 import { APP_NAME } from "@/lib/constants";
 import { FORSIGHT_PATH } from "@/lib/navigation";
 import Link from "next/link";
@@ -14,7 +15,8 @@ export const dynamic = "force-dynamic";
 export default async function PortalLayout({ children }: { children: React.ReactNode }) {
   await requirePortalAccess();
   const ctx = await getAuthContext();
-  const inApp = canWorkOperatorApp(ctx.role, ctx.member.surfaceAccess, ctx.isPlatformAdmin);
+  await enforceHostForPerson(ctx);
+  const inApp = canWorkOperatorApp(ctx.role, ctx.member.surfaceAccess, ctx.isStaff);
 
   return (
     <OrgProvider value={toClientOrgState(ctx)} key={ctx.org.id}>

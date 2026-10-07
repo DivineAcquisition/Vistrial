@@ -1,7 +1,6 @@
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 
-import { canViewPortal } from "@/lib/auth/permissions";
 import { getSessionUser, listActiveMemberships } from "@/lib/auth/session";
 import { ORG_COOKIE_NAME } from "@/lib/auth/cookies";
 import { createSourceOAuthState } from "@/lib/sources/oauth-state";
@@ -50,8 +49,8 @@ export async function GET(request: Request) {
   const cookieOrgId = cookieStore.get(ORG_COOKIE_NAME)?.value;
   const active = memberships.find((membership) => membership.orgId === cookieOrgId) ?? memberships[0];
   if (!active) return NextResponse.json({ error: "No workspace." }, { status: 403 });
-  if (!canViewPortal(active.role, active.seat === "staff")) {
-    return NextResponse.json({ error: "The owner portal is owner and admin only." }, { status: 403 });
+  if (active.seat !== "staff") {
+    return NextResponse.json({ error: "The Vistrial team manages data connections." }, { status: 403 });
   }
 
   const state = createSourceOAuthState(active.orgId, active.id, kind);

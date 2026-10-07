@@ -4,6 +4,7 @@ import { useActionState } from "react";
 
 import { savePortalSchedule } from "@/app/portal/source-actions";
 import type { SettingsSaveResult } from "@/app/app/settings/types";
+import { useOrg } from "@/components/app/org-provider";
 import { SubmitButton } from "@/components/ui/button";
 import { CheckboxField } from "@/components/ui/checkbox";
 import { Select } from "@/components/ui/select";
@@ -24,6 +25,14 @@ export function PortalScheduleForm({
   lastError: string | null;
 }) {
   const [state, action, pending] = useActionState(savePortalSchedule, idle);
+  const { role, isStaff } = useOrg();
+  if (!isStaff && role !== "owner") {
+    return (
+      <p className={helperClass}>
+        {enabled ? `Sent ${cadence} to the owners.` : "Not scheduled."} An owner can change this.
+      </p>
+    );
+  }
   return (
     <form action={action} className="space-y-4">
       <Field label="Email cadence" name="cadence" htmlFor="portal-cadence">

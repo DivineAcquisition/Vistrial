@@ -18,10 +18,11 @@ import {
 } from "@/lib/navigation";
 
 describe("settings IA", () => {
-  it("keeps day-to-day tabs to You, Notifications, Workspace, People, Approvals, Integrations, and Advanced", () => {
+  it("keeps day-to-day tabs to You, Notifications, History, Workspace, People, Approvals, Integrations, and Advanced", () => {
     expect(SETTINGS_TABS.map((tab) => tab.label)).toEqual([
       "You",
       "Notifications",
+      "History",
       "Workspace",
       "People",
       "Approvals",
@@ -33,11 +34,11 @@ describe("settings IA", () => {
   it("keeps configuration tabs for staff and gives owners only their own business", () => {
     const labels = (role: "owner" | "admin" | "setter" | "member", staff = false) =>
       settingsTabsVisibleTo(role, staff).map((tab) => tab.label);
-    expect(labels("owner")).toEqual(["You", "Notifications", "Workspace", "People"]);
+    expect(labels("owner")).toEqual(["You", "Notifications", "History", "Workspace", "People"]);
     expect(labels("admin")).toContain("Approvals");
     expect(labels("admin")).toContain("Integrations");
-    expect(labels("setter")).toEqual(["You", "Notifications"]);
-    expect(labels("member")).toEqual(["You", "Notifications"]);
+    expect(labels("setter")).toEqual(["You", "Notifications", "History"]);
+    expect(labels("member")).toEqual(["You", "Notifications", "History"]);
     expect(labels("setter", true)).toContain("Advanced");
   });
 

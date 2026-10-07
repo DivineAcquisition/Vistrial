@@ -248,6 +248,7 @@ export const SETTINGS_TABS: Array<{
 }> = [
   { href: "/app/settings/profile", label: "You", access: "everyone" },
   { href: "/app/settings/notifications", label: "Notifications", access: "everyone" },
+  { href: "/app/settings/history", label: "History", access: "everyone" },
   { href: "/app/settings/organization", label: "Workspace", access: "owner" },
   { href: "/app/settings/members", label: "People", access: "owner" },
   { href: "/app/settings/approvals", label: "Approvals", access: "staff" },

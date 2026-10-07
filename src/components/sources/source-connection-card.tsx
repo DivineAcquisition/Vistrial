@@ -10,6 +10,7 @@ import {
   testConnectedSource,
 } from "@/app/portal/source-actions";
 import type { SettingsSaveResult } from "@/app/app/settings/types";
+import { useOrg } from "@/components/app/org-provider";
 import { Button, SubmitButton } from "@/components/ui/button";
 import { Field } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
@@ -51,6 +52,7 @@ export function SourceConnectionCard({
   const [formState, formAction, formPending] = useActionState(connectFormPlatform, idle);
   const [ghlCalState, ghlCalAction, ghlCalPending] = useActionState(connectCalendarViaGhl, idle);
 
+  const { isStaff } = useOrg();
   const connected = source.status === "active" || source.status === "broken";
   const error =
     (testState.status === "error" ? testState.error : null) ||
@@ -88,7 +90,10 @@ export function SourceConnectionCard({
         <p className={`${helperClass} mt-3 break-all`}>Webhook URL: {source.webhookUrl}</p>
       ) : null}
 
-      <div className="mt-6 flex flex-wrap gap-3">
+      {isStaff ? null : (
+        <p className={`${helperClass} mt-6`}>The Vistrial team manages this connection. Ask them to connect or change it.</p>
+      )}
+      <div className={isStaff ? "mt-6 flex flex-wrap gap-3" : "hidden"}>
         {source.connectMode === "unavailable" ? (
           <p className="text-sm text-silver">{source.unavailableReason}</p>
         ) : null}

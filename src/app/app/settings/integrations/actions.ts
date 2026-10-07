@@ -365,7 +365,8 @@ export async function assignUnmatchedTranscript(input: {
   unmatchedId: string;
   callId: string;
 }): Promise<SettingsSaveResult> {
-  const ctx = await getAuthContext();
+  const ctx = await requireManager();
+  if (!ctx) return { status: "error", error: "The Vistrial team matches transcripts to calls." };
   if (!isLeadId(input.unmatchedId) || !isLeadId(input.callId)) {
     return { status: "error", error: "Choose a transcript and a call." };
   }
@@ -431,7 +432,8 @@ export async function assignUnmatchedTranscript(input: {
 }
 
 export async function discardUnmatchedTranscript(unmatchedId: string): Promise<SettingsSaveResult> {
-  const ctx = await getAuthContext();
+  const ctx = await requireManager();
+  if (!ctx) return { status: "error", error: "The Vistrial team manages unmatched transcripts." };
   if (!isLeadId(unmatchedId)) return { status: "error", error: "That transcript is not in this workspace." };
   const admin = getSupabaseAdmin();
   const { data } = await admin

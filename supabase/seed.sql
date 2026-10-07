@@ -50,13 +50,14 @@ ON CONFLICT (org_id) DO NOTHING;
 -- supported way to do it against a real database.
 -- ---------------------------------------------------------------------------
 
-INSERT INTO public.organizations (id, name, slug, timezone, holdout_percent)
+INSERT INTO public.organizations (id, name, slug, timezone, holdout_percent, is_platform_workspace)
 VALUES (
   '2d2d2d2d-2222-4222-8222-222222222222',
   'Divine Acquisition',
   'divine-acquisition',
   'America/New_York',
-  0
+  0,
+  true
 )
 ON CONFLICT (id) DO NOTHING;
 
@@ -383,8 +384,10 @@ VALUES (
 );
 
 -- ---------------------------------------------------------------------------
--- Stellar (Prompt S1). One client org, one setter, one client_viewer, one
--- active placement — the skeleton this prompt targets end to end.
+-- Stellar (Prompt S1). One client org, one DA-placed setter, one client
+-- member, one active placement. The setter and the DA operator are Service
+-- Team: their access to the client comes from an assignment, and the setter's
+-- seat is the staff seat that assignment creates.
 -- ---------------------------------------------------------------------------
 
 DO $$
@@ -420,32 +423,34 @@ INSERT INTO public.score_configs (org_id)
 VALUES ('66666666-6666-4666-8666-666666666661')
 ON CONFLICT (org_id) DO NOTHING;
 
-INSERT INTO public.org_members (id, org_id, user_id, role, display_name, email)
-SELECT
-  '77777777-7777-4777-8777-777777777771',
-  '66666666-6666-4666-8666-666666666661',
-  '55555555-5555-4555-8555-555555555551',
-  'setter',
-  'Casey Rivera',
-  'setter@stellar.local'
-WHERE EXISTS (SELECT 1 FROM auth.users WHERE id = '55555555-5555-4555-8555-555555555551')
-ON CONFLICT (org_id, user_id) DO NOTHING;
+INSERT INTO public.platform_staff (user_id, role, display_name, email)
+SELECT u.id, 'service_team', v.name, u.email
+FROM (VALUES
+  ('55555555-5555-4555-8555-555555555551'::uuid, 'Casey Rivera'),
+  ('55555555-5555-4555-8555-555555555553'::uuid, 'DA Operator')
+) AS v(id, name)
+JOIN auth.users u ON u.id = v.id
+ON CONFLICT (user_id) DO NOTHING;
+
+INSERT INTO public.workspace_assignments (org_id, user_id, note)
+SELECT '66666666-6666-4666-8666-666666666661', ps.user_id, 'Dev seed'
+FROM public.platform_staff ps
+WHERE ps.user_id IN ('55555555-5555-4555-8555-555555555551', '55555555-5555-4555-8555-555555555553')
+  AND NOT EXISTS (
+    SELECT 1 FROM public.workspace_assignments a
+    WHERE a.org_id = '66666666-6666-4666-8666-666666666661' AND a.user_id = ps.user_id AND a.ended_at IS NULL
+  );
 
 INSERT INTO public.org_members (id, org_id, user_id, role, display_name, email)
 SELECT
   '77777777-7777-4777-8777-777777777772',
   '66666666-6666-4666-8666-666666666661',
   '55555555-5555-4555-8555-555555555552',
-  'client_viewer',
+  'owner',
   'Riverside Owner',
   'owner@stellar-client.local'
 WHERE EXISTS (SELECT 1 FROM auth.users WHERE id = '55555555-5555-4555-8555-555555555552')
 ON CONFLICT (org_id, user_id) DO NOTHING;
-
-INSERT INTO public.stellar_da_operators (user_id, note)
-SELECT '55555555-5555-4555-8555-555555555553', 'Dev seed DA operator'
-WHERE EXISTS (SELECT 1 FROM auth.users WHERE id = '55555555-5555-4555-8555-555555555553')
-ON CONFLICT (user_id) DO NOTHING;
 
 INSERT INTO public.placements (
   id,
@@ -459,12 +464,13 @@ INSERT INTO public.placements (
 SELECT
   '88888888-8888-4888-8888-888888888881',
   '66666666-6666-4666-8666-666666666661',
-  '77777777-7777-4777-8777-777777777771',
+  m.id,
   'signed',
   now() - interval '30 days',
   'building_system',
   now() - interval '30 days'
-WHERE EXISTS (
-  SELECT 1 FROM public.org_members WHERE id = '77777777-7777-4777-8777-777777777771'
-)
+FROM public.org_members m
+WHERE m.org_id = '66666666-6666-4666-8666-666666666661'
+  AND m.user_id = '55555555-5555-4555-8555-555555555551'
+  AND m.seat = 'staff'
 ON CONFLICT DO NOTHING;

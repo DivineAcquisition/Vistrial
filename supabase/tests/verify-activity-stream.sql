@@ -190,7 +190,41 @@ BEGIN
     RAISE EXCEPTION 'authenticated users must not execute activity_stream_source directly';
   END IF;
 
+  -- The full stream includes the service team's work, so it is staff only.
+  -- A customer owner is refused; a Platform Admin reads it.
   PERFORM set_config('request.jwt.claim.sub', '11111111-1111-4111-8111-111111111111', false);
+  SET ROLE authenticated;
+  v_denied := false;
+  BEGIN
+    PERFORM public.load_org_activity(
+      '22222222-2222-4222-8222-222222222222',
+      NULL, NULL, NULL, NULL, false, false, false, NULL, NULL, NULL, 40, NULL
+    );
+  EXCEPTION
+    WHEN OTHERS THEN
+      IF SQLERRM ILIKE '%not authorized%' THEN
+        v_denied := true;
+      ELSE
+        RAISE;
+      END IF;
+  END;
+  RESET ROLE;
+  IF NOT v_denied THEN
+    RAISE EXCEPTION 'a customer owner reached the full activity stream';
+  END IF;
+
+  -- A Service Team member assigned to org A only.
+  PERFORM set_config('request.jwt.claim.sub', '', false);
+  INSERT INTO auth.users (id, email)
+  VALUES ('acacacac-0000-4000-8000-0000000000a1', 'activity-staff@vistrial.local')
+  ON CONFLICT (id) DO NOTHING;
+  INSERT INTO public.platform_staff (user_id, role, display_name, email)
+  VALUES ('acacacac-0000-4000-8000-0000000000a1', 'service_team', 'Activity Staff', 'activity-staff@vistrial.local')
+  ON CONFLICT (user_id) DO NOTHING;
+  INSERT INTO public.workspace_assignments (org_id, user_id)
+  VALUES ('22222222-2222-4222-8222-222222222222', 'acacacac-0000-4000-8000-0000000000a1');
+
+  PERFORM set_config('request.jwt.claim.sub', 'acacacac-0000-4000-8000-0000000000a1', false);
   SET ROLE authenticated;
 
   v_page := public.load_org_activity(
@@ -295,7 +329,7 @@ BEGIN
   END;
   IF NOT v_denied THEN
     RESET ROLE;
-    RAISE EXCEPTION 'org A owner loaded org B activity';
+    RAISE EXCEPTION 'org A staff loaded org B activity';
   END IF;
 
   v_page := public.load_org_case_timeline(

@@ -254,16 +254,9 @@ BEGIN
   RESET ROLE;
   PERFORM set_config('request.jwt.claim.sub', '', false);
 
-  -- Portal-only is owner/admin. A setter cannot hold it.
-  BEGIN
-    UPDATE public.org_members
-    SET surface_access = 'portal'
-    WHERE id = '222e2222-2222-4222-8222-0000000000a5';
-    RAISE EXCEPTION 'setter was allowed portal-only access';
-  EXCEPTION
-    WHEN check_violation THEN
-      NULL;
-  END;
+  -- Which surface a person sees now follows their role (owners and members
+  -- get the customer views, operators the working app), so there is no
+  -- separate portal-only flag left to guard here.
 END
 $$;
 

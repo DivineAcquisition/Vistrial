@@ -247,9 +247,9 @@ DECLARE
   v_denied boolean;
 BEGIN
   -- The same statements, from an operator.
-  INSERT INTO public.platform_admins (user_id)
-  VALUES ('f0f5f0f5-0000-4000-8000-00000000000c')
-  ON CONFLICT (user_id) DO NOTHING;
+  INSERT INTO public.platform_staff (user_id, role, display_name, email)
+  SELECT id, 'platform_admin', 'Platform Admin', COALESCE(email, '') FROM auth.users WHERE id = 'f0f5f0f5-0000-4000-8000-00000000000c'
+  ON CONFLICT (user_id) DO UPDATE SET role = 'platform_admin', active = true, deactivated_at = NULL;
 
   PERFORM set_config('request.jwt.claim.sub', 'f0f5f0f5-0000-4000-8000-00000000000c', false);
   SET ROLE authenticated;

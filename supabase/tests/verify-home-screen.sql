@@ -1,5 +1,8 @@
--- Home screen: approval gate defaults, owner-only changes with history,
+-- Home screen: approval gate defaults, staff-only changes with history,
 -- approval queue isolation.
+--
+-- Approval rules are configured by the Service Team during onboarding. Letting
+-- a message to a lead send without approval needs a Platform Admin.
 
 INSERT INTO auth.users (id, email)
 VALUES
@@ -20,13 +23,20 @@ VALUES
   ('a0a0a0a0-0001-4001-8001-0000000000a3', 'a0a0a0a0-0001-4001-8001-0000000000a1',
    'a0a0a0a0-0001-4001-8001-0000000000a2', 'owner', 'Olive Owner', 'hs-owner@vistrial.local'),
   ('a0a0a0a0-0001-4001-8001-0000000000a5', 'a0a0a0a0-0001-4001-8001-0000000000a1',
-   'a0a0a0a0-0001-4001-8001-0000000000a4', 'admin', 'Adam Admin', 'hs-admin@vistrial.local'),
+   'a0a0a0a0-0001-4001-8001-0000000000a4', 'member', 'Adam Admin', 'hs-admin@vistrial.local'),
   ('a0a0a0a0-0001-4001-8001-0000000000a7', 'a0a0a0a0-0001-4001-8001-0000000000a1',
    'a0a0a0a0-0001-4001-8001-0000000000a6', 'setter', 'Sam Setter', 'hs-setter@vistrial.local'),
   ('a0a0a0a0-0001-4001-8001-0000000000a9', 'a0a0a0a0-0001-4001-8001-0000000000a1',
    'a0a0a0a0-0001-4001-8001-0000000000a8', 'setter', 'Sid Setter', 'hs-setter2@vistrial.local'),
   ('a0a0a0a0-0001-4001-8001-0000000000b3', 'a0a0a0a0-0001-4001-8001-0000000000b1',
    'a0a0a0a0-0001-4001-8001-0000000000b2', 'owner', 'Other Owner', 'hs-other-owner@vistrial.local');
+
+-- Adam is Service Team assigned to the first workspace. His seat keeps its id.
+INSERT INTO public.platform_staff (user_id, role, display_name, email)
+VALUES ('a0a0a0a0-0001-4001-8001-0000000000a4', 'service_team', 'Adam Admin', 'hs-admin@vistrial.local');
+UPDATE public.org_members SET seat = 'staff', role = 'admin' WHERE id = 'a0a0a0a0-0001-4001-8001-0000000000a5';
+INSERT INTO public.workspace_assignments (org_id, user_id)
+VALUES ('a0a0a0a0-0001-4001-8001-0000000000a1', 'a0a0a0a0-0001-4001-8001-0000000000a4');
 
 INSERT INTO public.leads (id, org_id, first_name, email)
 VALUES
@@ -205,20 +215,40 @@ BEGIN
   END IF;
 END $$;
 
--- Owner: changes settings, every change recorded with who.
+-- A customer owner cannot change approval rules.
+DO $$
+DECLARE
+  v_failed boolean := false;
+BEGIN
+  PERFORM set_config('request.jwt.claim.sub', 'a0a0a0a0-0001-4001-8001-0000000000a2', false);
+  SET ROLE authenticated;
+  BEGIN
+    PERFORM public.set_approval_gate_action(
+      'a0a0a0a0-0001-4001-8001-0000000000a1', 'quiet_lead_follow_up', 'off', 'owner_only');
+  EXCEPTION WHEN insufficient_privilege THEN
+    v_failed := true;
+  END;
+  RESET ROLE;
+  IF NOT v_failed THEN
+    RAISE EXCEPTION 'a customer owner changed approval settings';
+  END IF;
+END $$;
+
+-- Service Team: changes settings in its assigned workspace, every change
+-- recorded with who.
 DO $$
 DECLARE
   v_count integer;
   v_failed boolean := false;
 BEGIN
-  PERFORM set_config('request.jwt.claim.sub', 'a0a0a0a0-0001-4001-8001-0000000000a2', false);
+  PERFORM set_config('request.jwt.claim.sub', 'a0a0a0a0-0001-4001-8001-0000000000a4', false);
   SET ROLE authenticated;
 
   PERFORM public.set_approval_gate_action(
-    'a0a0a0a0-0001-4001-8001-0000000000a1', 'quiet_lead_follow_up', 'auto_run', 'owner_only');
+    'a0a0a0a0-0001-4001-8001-0000000000a1', 'quiet_lead_follow_up', 'off', 'owner_only');
   -- Unchanged save writes nothing.
   PERFORM public.set_approval_gate_action(
-    'a0a0a0a0-0001-4001-8001-0000000000a1', 'quiet_lead_follow_up', 'auto_run', 'owner_only');
+    'a0a0a0a0-0001-4001-8001-0000000000a1', 'quiet_lead_follow_up', 'off', 'owner_only');
   PERFORM public.set_approval_gate_limits(
     'a0a0a0a0-0001-4001-8001-0000000000a1', '21:00', '08:00', 2, 120);
 
@@ -230,13 +260,13 @@ BEGIN
   END;
   IF NOT v_failed THEN
     RESET ROLE;
-    RAISE EXCEPTION 'an owner changed another workspace''s settings';
+    RAISE EXCEPTION 'staff changed an unassigned workspace''s settings';
   END IF;
 
   v_failed := false;
   BEGIN
     PERFORM public.set_approval_gate_action(
-      'a0a0a0a0-0001-4001-8001-0000000000a1', 'not_a_real_action', 'auto_run', 'owner_only');
+      'a0a0a0a0-0001-4001-8001-0000000000a1', 'not_a_real_action', 'off', 'owner_only');
   EXCEPTION WHEN invalid_parameter_value THEN
     v_failed := true;
   END;
@@ -255,9 +285,8 @@ BEGIN
   IF NOT EXISTS (
     SELECT 1 FROM public.approval_gate_changes
     WHERE field = 'mode' AND action_type = 'quiet_lead_follow_up'
-      AND from_value = 'ask_first' AND to_value = 'auto_run'
-      AND actor_label = 'Olive Owner'
-      AND actor_member_id = 'a0a0a0a0-0001-4001-8001-0000000000a3'
+      AND from_value = 'ask_first' AND to_value = 'off'
+      AND actor_member_id = 'a0a0a0a0-0001-4001-8001-0000000000a5'
   ) THEN
     RESET ROLE;
     RAISE EXCEPTION 'mode change was not recorded with who made it';
@@ -272,11 +301,22 @@ BEGIN
 
   RESET ROLE;
 
-  IF public.approval_gate_mode('a0a0a0a0-0001-4001-8001-0000000000a1', 'quiet_lead_follow_up') <> 'auto_run' THEN
-    RAISE EXCEPTION 'the owner''s change did not take effect';
+  IF public.approval_gate_mode('a0a0a0a0-0001-4001-8001-0000000000a1', 'quiet_lead_follow_up') <> 'off' THEN
+    RAISE EXCEPTION 'the change did not take effect';
   END IF;
   IF public.approval_gate_mode('a0a0a0a0-0001-4001-8001-0000000000b1', 'quiet_lead_follow_up') <> 'ask_first' THEN
     RAISE EXCEPTION 'one workspace''s change leaked into another';
+  END IF;
+
+  -- A Platform Admin may let a lead message run without approval.
+  PERFORM set_config('request.jwt.claim.sub', '99999999-9999-4999-8999-999999999999', false);
+  SET ROLE authenticated;
+  PERFORM public.set_approval_gate_action(
+    'a0a0a0a0-0001-4001-8001-0000000000a1', 'quiet_lead_follow_up', 'auto_run', 'owner_only');
+  RESET ROLE;
+  PERFORM set_config('request.jwt.claim.sub', '', false);
+  IF public.approval_gate_mode('a0a0a0a0-0001-4001-8001-0000000000a1', 'quiet_lead_follow_up') <> 'auto_run' THEN
+    RAISE EXCEPTION 'a platform admin could not enable auto-run';
   END IF;
 END $$;
 

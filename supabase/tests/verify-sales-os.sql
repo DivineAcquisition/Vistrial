@@ -21,6 +21,18 @@ VALUES
   ('5a1e5051-0000-4000-8000-0000000000b3', '5a1e5051-0000-4000-8000-0000000000b1',
    '5a1e5051-0000-4000-8000-0000000000b2', 'owner', 'Other Owner', 'sos-other-owner@vistrial.local');
 
+-- The persona that configures destinations and connections below is Service
+-- Team assigned to this workspace (configuration is staff-only). The seat
+-- keeps its id so every reference below still points at it. It was the
+-- workspace's only owner, hence the explicit last-owner override.
+INSERT INTO public.platform_staff (user_id, role, display_name, email)
+SELECT id, 'service_team', 'SOS Owner', email FROM auth.users WHERE id = '5a1e5051-0000-4000-8000-0000000000a2'
+ON CONFLICT (user_id) DO NOTHING;
+SELECT set_config('vistrial.allow_last_owner_removal', '1', false);
+UPDATE public.org_members SET seat = 'staff', role = 'admin' WHERE id = '5a1e5051-0000-4000-8000-0000000000a3';
+SELECT set_config('vistrial.allow_last_owner_removal', '', false);
+INSERT INTO public.workspace_assignments (org_id, user_id) VALUES ('5a1e5051-0000-4000-8000-0000000000a1', '5a1e5051-0000-4000-8000-0000000000a2');
+
 -- A service-role or unauthenticated path cannot request an execution.
 DO $$
 BEGIN

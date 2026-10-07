@@ -814,13 +814,12 @@ BEGIN
   END;
   PERFORM public.seed_default_score_maps(v_org);
 
-  -- 5. Nobody active who can work leads. Platform admins are enrolled as
-  -- owners everywhere and cannot be deactivated, so they are removed from this
-  -- org for the check and re-enrolled straight after.
-  DELETE FROM public.org_members m
-  WHERE m.org_id = v_org
-    AND EXISTS (SELECT 1 FROM public.platform_admins pa WHERE pa.user_id = m.user_id);
+  -- 5. Nobody active who can work leads. That includes the last owner, which
+  -- the last-owner rule normally refuses, so this check sets the explicit
+  -- override for its own transaction.
+  PERFORM set_config('vistrial.allow_last_owner_removal', '1', true);
   UPDATE public.org_members SET active = false WHERE org_id = v_org;
+  PERFORM set_config('vistrial.allow_last_owner_removal', '', true);
   v_state := public.activation_readiness(v_org);
   IF NOT EXISTS (
     SELECT 1 FROM jsonb_array_elements(v_state -> 'hard') h
@@ -835,7 +834,6 @@ BEGIN
     NULL;
   END;
   UPDATE public.org_members SET active = true WHERE org_id = v_org;
-  PERFORM public.enroll_platform_admin_in_orgs(pa.user_id) FROM public.platform_admins pa;
 
   -- Every hard requirement now passes and only the warnings remain.
   v_state := public.activation_readiness(v_org);

@@ -7,7 +7,8 @@
 INSERT INTO auth.users (id, email)
 VALUES
   ('111e1111-1111-4111-8111-1111111111a2', 'report-owner@vistrial.local'),
-  ('111e1111-1111-4111-8111-1111111111a4', 'report-setter@vistrial.local')
+  ('111e1111-1111-4111-8111-1111111111a4', 'report-setter@vistrial.local'),
+  ('111e1111-1111-4111-8111-1111111111a9', 'report-staff@vistrial.local')
 ON CONFLICT (id) DO NOTHING;
 
 INSERT INTO public.organizations (
@@ -47,6 +48,16 @@ VALUES
     'report-setter@vistrial.local'
   )
 ON CONFLICT (org_id, user_id) DO NOTHING;
+
+-- Baseline backfill and self-reported baselines are onboarding configuration,
+-- which the Service Team runs. This staffer is assigned to every workspace the
+-- file creates.
+INSERT INTO public.platform_staff (user_id, role, display_name, email)
+VALUES ('111e1111-1111-4111-8111-1111111111a9', 'service_team', 'Report Staff', 'report-staff@vistrial.local')
+ON CONFLICT (user_id) DO NOTHING;
+
+INSERT INTO public.workspace_assignments (org_id, user_id)
+VALUES ('111e1111-1111-4111-8111-1111111111a1', '111e1111-1111-4111-8111-1111111111a9');
 
 DO $$
 DECLARE
@@ -344,9 +355,12 @@ BEGIN
   END IF;
 
   -- Self-reported is labeled and not blended into comparison.
-  PERFORM set_config('request.jwt.claim.sub', '111e1111-1111-4111-8111-1111111111a2', false);
+  PERFORM set_config('request.jwt.claim.sub', '111e1111-1111-4111-8111-1111111111a9', false);
   SET ROLE authenticated;
   PERFORM public.upsert_self_reported_baseline(v_org, 50, 3, 'from the client');
+  RESET ROLE;
+  PERFORM set_config('request.jwt.claim.sub', '111e1111-1111-4111-8111-1111111111a2', false);
+  SET ROLE authenticated;
   v_json := public.reporting_compute_outcome(v_org, v_activated, now());
   RESET ROLE;
   IF v_json #>> '{self_reported,label}' IS DISTINCT FROM 'self-reported' THEN
@@ -444,7 +458,9 @@ BEGIN
     'Skip Owner',
     'report-owner@vistrial.local'
   );
-  PERFORM set_config('request.jwt.claim.sub', '111e1111-1111-4111-8111-1111111111a2', false);
+  INSERT INTO public.workspace_assignments (org_id, user_id)
+  VALUES (v_skip_org, '111e1111-1111-4111-8111-1111111111a9');
+  PERFORM set_config('request.jwt.claim.sub', '111e1111-1111-4111-8111-1111111111a9', false);
   SET ROLE authenticated;
   PERFORM public.enqueue_baseline_backfill(v_skip_org, '111e1111-1111-4111-8111-1111111111b2', false);
   RESET ROLE;
@@ -456,7 +472,7 @@ BEGIN
     RAISE EXCEPTION 'connect backfill was not queued';
   END IF;
 
-  PERFORM set_config('request.jwt.claim.sub', '111e1111-1111-4111-8111-1111111111a2', false);
+  PERFORM set_config('request.jwt.claim.sub', '111e1111-1111-4111-8111-1111111111a9', false);
   SET ROLE authenticated;
   PERFORM public.skip_baseline_backfill(v_skip_org, '111e1111-1111-4111-8111-1111111111b2');
   RESET ROLE;
@@ -471,7 +487,7 @@ BEGIN
   -- Re-run replaces rows rather than appending.
   INSERT INTO public.baseline_leads (org_id, run_id, ghl_contact_id, created_at_crm)
   SELECT v_org, v_run, 'ghl_replace_old', now() - interval '100 days';
-  PERFORM set_config('request.jwt.claim.sub', '111e1111-1111-4111-8111-1111111111a2', false);
+  PERFORM set_config('request.jwt.claim.sub', '111e1111-1111-4111-8111-1111111111a9', false);
   SET ROLE authenticated;
   PERFORM public.enqueue_baseline_backfill(v_org, v_owner, true);
   RESET ROLE;

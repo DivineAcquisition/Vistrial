@@ -144,14 +144,16 @@ SELECT set_config('request.jwt.claim.role', 'authenticated', false);
 SET ROLE authenticated;
 SELECT set_config('request.jwt.claim.sub', '201e2011-2011-4201-8201-2011111111a2', false);
 
+-- Verification runs are the team's internal quality checks on agent output.
+-- A customer owner does not see them.
 DO $$
 DECLARE
   n int;
 BEGIN
   SELECT count(*) INTO n FROM public.verification_runs
   WHERE org_id = '201e2011-2011-4201-8201-2011111111a1';
-  IF n < 1 THEN
-    RAISE EXCEPTION 'owner should select own verification_runs';
+  IF n <> 0 THEN
+    RAISE EXCEPTION 'a customer owner must not see internal verification_runs, saw %', n;
   END IF;
 END
 $$;
@@ -172,10 +174,12 @@ $$;
 
 RESET ROLE;
 
--- Platform admin can toggle.
-INSERT INTO public.platform_admins (user_id)
-VALUES ('99999999-9999-4999-8999-999999999999')
-ON CONFLICT (user_id) DO NOTHING;
+-- Platform admin can toggle. Clear the impersonated session first.
+SELECT set_config('request.jwt.claim.sub', '', false);
+SELECT set_config('request.jwt.claim.role', '', false);
+INSERT INTO public.platform_staff (user_id, role, display_name, email)
+SELECT id, 'platform_admin', 'Platform Admin', COALESCE(email, '') FROM auth.users WHERE id = '99999999-9999-4999-8999-999999999999'
+ON CONFLICT (user_id) DO UPDATE SET role = 'platform_admin', active = true, deactivated_at = NULL;
 
 SELECT set_config('request.jwt.claim.sub', '99999999-9999-4999-8999-999999999999', false);
 SELECT set_config('request.jwt.claim.role', 'authenticated', false);

@@ -22,6 +22,18 @@ VALUES
   ('b1b1b1b1-0002-4002-8002-0000000000b3', 'b1b1b1b1-0002-4002-8002-0000000000b1',
    'b1b1b1b1-0002-4002-8002-0000000000b2', 'owner', 'EI Other', 'ei-other@vistrial.local');
 
+-- The persona that configures destinations and connections below is Service
+-- Team assigned to this workspace (configuration is staff-only). The seat
+-- keeps its id so every reference below still points at it. It was the
+-- workspace's only owner, hence the explicit last-owner override.
+INSERT INTO public.platform_staff (user_id, role, display_name, email)
+SELECT id, 'service_team', 'EI Owner', email FROM auth.users WHERE id = 'b1b1b1b1-0002-4002-8002-0000000000a2'
+ON CONFLICT (user_id) DO NOTHING;
+SELECT set_config('vistrial.allow_last_owner_removal', '1', false);
+UPDATE public.org_members SET seat = 'staff', role = 'admin' WHERE id = 'b1b1b1b1-0002-4002-8002-0000000000a3';
+SELECT set_config('vistrial.allow_last_owner_removal', '', false);
+INSERT INTO public.workspace_assignments (org_id, user_id) VALUES ('b1b1b1b1-0002-4002-8002-0000000000a1', 'b1b1b1b1-0002-4002-8002-0000000000a2');
+
 INSERT INTO public.execution_connections
   (org_id, kind, status, account_label, external_account_id, secret_encrypted, destination_id, destination_label)
 VALUES

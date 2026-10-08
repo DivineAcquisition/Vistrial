@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { usePathname, useRouter } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { Search } from "lucide-react";
 
 import { useOrg } from "@/components/app/org-provider";
@@ -21,7 +21,7 @@ import {
 } from "@/components/ui/command";
 import { Kbd, KbdGroup } from "@/components/ui/kbd";
 import { DA_CONSOLE_LINKS, MORE_NAV, PRIMARY_NAV, navVisibleTo } from "@/lib/navigation";
-import { isPlatformRoute, shellNavigation } from "@/lib/shell/nav";
+import { shellNavigation } from "@/lib/shell/nav";
 
 type JumpItem = {
   value: string;
@@ -33,14 +33,13 @@ type JumpItem = {
 export function AppJumpPalette() {
   const [open, setOpen] = useState(false);
   const router = useRouter();
-  const pathname = usePathname();
-  const { role, isStaff, workspaceRole, templateAccess } = useOrg();
+  const { role, isStaff, workspaceRole, templateAccess, org } = useOrg();
 
   const items = useMemo<JumpItem[]>(() => {
     const shell = shellNavigation({
       role: workspaceRole,
       templateAccess,
-      inWorkspace: !isStaff || !isPlatformRoute(pathname),
+      workspaceName: org.name,
     });
     const shellItems = shell.groups.flatMap((group) =>
       group.items.flatMap((item) => [item, ...(item.children ?? [])])
@@ -76,7 +75,7 @@ export function AppJumpPalette() {
       }
     }
     return pages;
-  }, [role, isStaff, workspaceRole, templateAccess, pathname]);
+  }, [role, isStaff, workspaceRole, templateAccess, org.name]);
 
   useEffect(() => {
     function onKey(event: KeyboardEvent) {

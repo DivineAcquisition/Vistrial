@@ -1,6 +1,6 @@
 "use client";
 
-import { type CSSProperties, type ReactNode, useEffect, useState } from "react";
+import { type CSSProperties, type ReactNode } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { CircleHelp } from "lucide-react";
@@ -12,6 +12,7 @@ import Logo from "@/components/brand/logo";
 import { Breadcrumbs, type Crumb } from "@/components/ui/breadcrumbs";
 import { SidebarInset, SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useLocationHash } from "@/hooks/use-location-hash";
 import { useMediaQuery } from "@/hooks/use-media-query";
 import { APP_NAME } from "@/lib/constants";
 import {
@@ -71,15 +72,7 @@ export function ApplicationShell({
   const tablet = useMediaQuery({ min: "md", max: "lg" });
   const collapsed = preference === null ? tablet : preference;
   const { switching } = useShellSwitch();
-  const [hash, setHash] = useState("");
-  const liveHash = typeof window === "undefined" ? "" : window.location.hash;
-  if (liveHash !== hash) setHash(liveHash);
-
-  useEffect(() => {
-    const onHash = () => setHash(window.location.hash);
-    window.addEventListener("hashchange", onHash);
-    return () => window.removeEventListener("hashchange", onHash);
-  }, []);
+  const hash = useLocationHash();
 
   const kind = layoutKindForPath(pathname);
   const frame = layoutFrameClass(chat ? "chat" : kind);

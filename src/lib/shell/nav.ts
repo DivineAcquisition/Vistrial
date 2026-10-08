@@ -213,8 +213,8 @@ function workspaceGroup(items: ShellNavItem[]): ShellNavGroup {
 export function shellNavigation(input: {
   role: WorkspaceRole;
   templateAccess: boolean;
-  /** Staff on a customer route, as opposed to a platform page. */
-  inWorkspace: boolean;
+  /** Names the staff "this workspace" group. The group stays put on every page. */
+  workspaceName?: string;
 }): ShellNavigation {
   const groups = groupsFor(input);
   const phone = groups
@@ -236,7 +236,7 @@ export function shellNavigation(input: {
 function groupsFor(input: {
   role: WorkspaceRole;
   templateAccess: boolean;
-  inWorkspace: boolean;
+  workspaceName?: string;
 }): ShellNavGroup[] {
   switch (input.role) {
     case "member":
@@ -316,7 +316,7 @@ function groupsFor(input: {
 function staffGroups(input: {
   role: WorkspaceRole;
   templateAccess: boolean;
-  inWorkspace: boolean;
+  workspaceName?: string;
 }): ShellNavGroup[] {
   const team: ShellNavItem[] = [
     {
@@ -353,7 +353,6 @@ function staffGroups(input: {
           href: "/app/team/activity",
           match: "/app/team/activity",
           icon: "activity",
-          phone: input.inWorkspace ? undefined : 3,
         },
         {
           id: "defaults",
@@ -374,36 +373,34 @@ function staffGroups(input: {
     });
   }
 
-  if (input.inWorkspace) {
-    const views: ShellNavItem[] = [
-      {
-        id: "overview",
-        label: "Overview",
-        href: HOME_PATH,
-        match: HOME_PATH,
-        icon: "overview",
-        badge: "escalations",
-        phone: 3,
-      },
-      {
-        id: "cases",
-        label: "Case Files",
-        href: "/app/cases",
-        match: "/app/cases",
-        icon: "cases",
-        phone: 4,
-      },
-      resultsItem(true),
-      {
-        id: "configuration",
-        label: "Configuration",
-        href: "/app/settings/configuration",
-        match: "/app/settings/configuration",
-        icon: "configuration",
-      },
-    ];
-    groups.push({ id: "here", label: "This workspace", items: views });
-  }
+  const views: ShellNavItem[] = [
+    {
+      id: "overview",
+      label: "Overview",
+      href: HOME_PATH,
+      match: HOME_PATH,
+      icon: "overview",
+      badge: "escalations",
+      phone: 3,
+    },
+    {
+      id: "cases",
+      label: "Case Files",
+      href: "/app/cases",
+      match: "/app/cases",
+      icon: "cases",
+      phone: 4,
+    },
+    resultsItem(true),
+    {
+      id: "configuration",
+      label: "Configuration",
+      href: "/app/settings/configuration",
+      match: "/app/settings/configuration",
+      icon: "configuration",
+    },
+  ];
+  groups.push({ id: "here", label: input.workspaceName?.trim() || "This workspace", items: views });
 
   return groups;
 }

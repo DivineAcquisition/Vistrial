@@ -1,6 +1,6 @@
 "use client";
 
-import { type ReactNode, Suspense, useEffect, useState } from "react";
+import { type ReactNode, Suspense } from "react";
 import { usePathname } from "next/navigation";
 
 import { ApplicationShell } from "@/components/app/application-shell";
@@ -11,8 +11,6 @@ import { NotificationBell } from "@/components/app/notification-bell";
 import { AppJumpPalette } from "@/components/app/jump-palette";
 import { NotificationRuntime } from "@/components/app/notification-runtime";
 import { OutcomeSyncRuntime } from "@/components/app/outcome-sync-runtime";
-import { MobileWalkthroughNotice } from "@/components/app/mobile-walkthrough";
-import { CoachingDisclosureNotice } from "@/components/app/coaching-disclosure";
 import { FirstRunExplainer } from "@/components/app/first-run";
 import { PageMotion } from "@/components/app/page-motion";
 import { PushPrompt } from "@/components/app/push-prompt";
@@ -21,8 +19,8 @@ import { UserMenu } from "@/components/app/user-menu";
 import { ShellLeading } from "@/components/app/shell-leading";
 import { WorkspaceStatusBanner } from "@/components/app/workspace-status-banner";
 import { useOrg } from "@/components/app/org-provider";
+import { useLocationHash } from "@/hooks/use-location-hash";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { isProductScopeEnabled } from "@/lib/product-scope";
 import { landingPath } from "@/lib/navigation";
 import {
   isPlatformRoute,
@@ -36,15 +34,11 @@ export function AppShell({
   counts,
   lostWorkspace = false,
   version,
-  needsMobileOutcomeTraining = false,
-  needsCoachingAck = false,
 }: {
   children: ReactNode;
   counts: AttentionCounts;
   lostWorkspace?: boolean;
   version: string;
-  needsMobileOutcomeTraining?: boolean;
-  needsCoachingAck?: boolean;
 }) {
   const pathname = usePathname();
   if (pathname.startsWith("/app/layouts/preview")) return children;
@@ -55,8 +49,6 @@ export function AppShell({
         counts={counts}
         lostWorkspace={lostWorkspace}
         version={version}
-        needsMobileOutcomeTraining={needsMobileOutcomeTraining}
-        needsCoachingAck={needsCoachingAck}
       >
         {children}
       </ConnectedShell>
@@ -69,32 +61,21 @@ function ConnectedShell({
   counts,
   lostWorkspace,
   version,
-  needsMobileOutcomeTraining,
-  needsCoachingAck,
 }: {
   children: ReactNode;
   counts: AttentionCounts;
   lostWorkspace: boolean;
   version: string;
-  needsMobileOutcomeTraining: boolean;
-  needsCoachingAck: boolean;
 }) {
   const pathname = usePathname();
   const org = useOrg();
-  const [hash, setHash] = useState("");
-  const liveHash = typeof window === "undefined" ? "" : window.location.hash;
-  if (liveHash !== hash) setHash(liveHash);
-  useEffect(() => {
-    const onHash = () => setHash(window.location.hash);
-    window.addEventListener("hashchange", onHash);
-    return () => window.removeEventListener("hashchange", onHash);
-  }, []);
+  const hash = useLocationHash();
 
-  const inWorkspace = !org.isStaff || !isPlatformRoute(pathname);
+  const onPlatformPage = org.isStaff && isPlatformRoute(pathname);
   const nav = shellNavigation({
     role: org.workspaceRole,
     templateAccess: org.templateAccess,
-    inWorkspace,
+    workspaceName: org.org.name,
   });
   const chrome = shellChrome(pathname);
   let title = chrome.title;
@@ -109,7 +90,7 @@ function ConnectedShell({
   }
   const chat = pathname === "/app/ask" || pathname.startsWith("/app/ask/");
   const home = landingPath(org.surfaceAccess, org.role);
-  const showCue = org.isStaff && inWorkspace;
+  const showCue = org.isStaff && !onPlatformPage;
 
   return (
     <ApplicationShell
@@ -122,7 +103,7 @@ function ConnectedShell({
       crumbs={chrome.crumbs}
       version={version}
       chat={chat}
-      leading={<ShellLeading platform={org.isStaff && isPlatformRoute(pathname)} />}
+      leading={<ShellLeading />}
       tools={
         <>
           <AppJumpPalette />
@@ -156,8 +137,6 @@ function ConnectedShell({
       <BriefPrefetcher />
       <ConnectionStatus />
       <FirstRunExplainer />
-      {isProductScopeEnabled("coaching") ? <CoachingDisclosureNotice needed={needsCoachingAck} /> : null}
-      <MobileWalkthroughNotice needed={needsMobileOutcomeTraining} />
       <PushPrompt />
       {chat ? <div className="min-h-0 flex-1">{children}</div> : <PageMotion>{children}</PageMotion>}
     </ApplicationShell>

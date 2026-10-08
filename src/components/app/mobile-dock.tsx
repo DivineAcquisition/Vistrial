@@ -19,7 +19,8 @@ import {
   type LucideIcon,
 } from "lucide-react";
 
-import { ShellMoreList } from "@/components/app/shell-nav";
+import { NavPendingHint, ShellMoreList } from "@/components/app/shell-nav";
+import { watchLocationHash } from "@/hooks/use-location-hash";
 import { Sheet, SheetHeader, SheetPopup, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { isShellItemActive, type ShellIcon, type ShellNavItem } from "@/lib/shell/nav";
 import { cn } from "@/lib/utils";
@@ -78,6 +79,7 @@ export function MobileDock({
                 href={item.href}
                 aria-current={active ? "page" : undefined}
                 title={item.label}
+                onClick={watchLocationHash}
                 className={cn(
                   "flex min-h-11 flex-col items-center justify-center gap-0.5 rounded-xl px-1 text-[11px] font-semibold",
                   active ? "text-brand-200" : "text-silver",
@@ -85,6 +87,7 @@ export function MobileDock({
               >
                 <Icon className="size-5" aria-hidden />
                 <span className="max-w-full truncate">{item.label}</span>
+                <NavPendingHint />
               </Link>
             </li>
           );

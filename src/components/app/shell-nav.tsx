@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import Link, { useLinkStatus } from "next/link";
 import {
   Activity,
   Building2,
@@ -37,6 +37,8 @@ import {
   type ShellNavGroup,
   type ShellNavItem,
 } from "@/lib/shell/nav";
+import { watchLocationHash } from "@/hooks/use-location-hash";
+import { cn } from "@/lib/utils";
 
 const ICONS: Record<ShellIcon, LucideIcon> = {
   overview: House,
@@ -54,6 +56,28 @@ const ICONS: Record<ShellIcon, LucideIcon> = {
   layouts: PanelsTopLeft,
   forsight: Gauge,
 };
+
+/** Confirms the click while the next page renders. Fixed size so nothing shifts. */
+export function NavPendingHint({ className }: { className?: string }) {
+  const { pending } = useLinkStatus();
+  return (
+    <span
+      aria-hidden
+      className={cn(
+        "size-1.5 shrink-0 rounded-full bg-brand-300 opacity-0 transition-opacity",
+        pending && "animate-pulse opacity-100 delay-100",
+        className,
+      )}
+    />
+  );
+}
+
+function navigate(onNavigate?: () => void) {
+  return () => {
+    onNavigate?.();
+    watchLocationHash();
+  };
+}
 
 function CountBadge({ count }: { count: number }) {
   if (count <= 0) return null;
@@ -86,11 +110,12 @@ function ItemLink({
       tooltip={item.label}
       className="h-9 min-w-0 data-[active=true]:bg-brand-500/12 data-[active=true]:font-medium data-[active=true]:text-brand-200 data-[active=true]:shadow-[inset_2px_0_0_#9a88fc]"
       render={
-        <Link href={item.href} onClick={onNavigate} aria-current={active ? "page" : undefined} title={item.label} />
+        <Link href={item.href} onClick={navigate(onNavigate)} aria-current={active ? "page" : undefined} title={item.label} />
       }
     >
       <Icon aria-hidden="true" />
       <span className="truncate">{item.label}</span>
+      <NavPendingHint className="ml-auto group-data-[collapsible=icon]:hidden" />
       <CountBadge count={count} />
     </SidebarMenuButton>
   );
@@ -125,7 +150,7 @@ function NavItem({
                   render={
                     <Link
                       href={child.href}
-                      onClick={onNavigate}
+                      onClick={navigate(onNavigate)}
                       aria-current={active ? "page" : undefined}
                       title={child.label}
                     />
@@ -133,6 +158,7 @@ function NavItem({
                 >
                   <Icon aria-hidden="true" />
                   <span className="truncate">{child.label}</span>
+                  <NavPendingHint className="ml-auto" />
                 </SidebarMenuSubButton>
               </SidebarMenuSubItem>
             );
@@ -204,11 +230,12 @@ export function ShellMoreList({
               href={item.href}
               aria-current={active ? "page" : undefined}
               title={item.label}
-              onClick={onNavigate}
+              onClick={navigate(onNavigate)}
               className="flex min-h-11 items-center gap-3 rounded-lg px-3 text-sm text-card-foreground hover:bg-accent"
             >
               <Icon className="size-4 shrink-0" aria-hidden />
               <span className="truncate">{item.label}</span>
+              <NavPendingHint className="ml-auto" />
             </Link>
           </li>
         );

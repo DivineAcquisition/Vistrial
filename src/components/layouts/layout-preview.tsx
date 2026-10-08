@@ -9,7 +9,7 @@ import { shellChrome, shellNavigation, type PageLayoutKind } from "@/lib/shell/n
 const SAMPLE_NAME = "Harbor & Pine Consulting Group International";
 
 export function LayoutPreview({ kind }: { kind: PageLayoutKind }) {
-  const nav = shellNavigation({ role: "owner", templateAccess: false, inWorkspace: true });
+  const nav = shellNavigation({ role: "owner", templateAccess: false });
   const chrome = shellChrome("/app/home");
   return (
     <ApplicationShell

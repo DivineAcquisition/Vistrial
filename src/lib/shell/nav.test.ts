@@ -12,12 +12,12 @@ const labels = (role: Parameters<typeof shellNavigation>[0]["role"], extra?: Par
   shellNavigation({
     role,
     templateAccess: extra?.templateAccess ?? false,
-    inWorkspace: extra?.inWorkspace ?? true,
+    workspaceName: extra?.workspaceName,
   }).groups.flatMap((group) => group.items.map((item) => item.label));
 
 describe("shell navigation", () => {
   it("shows an owner Overview, Case Files, Results, and Settings, with Forsight nested", () => {
-    const nav = shellNavigation({ role: "owner", templateAccess: false, inWorkspace: true });
+    const nav = shellNavigation({ role: "owner", templateAccess: false });
     expect(labels("owner")).toEqual(["Overview", "Case Files", "Results", "Settings"]);
     expect(nav.groups[0]?.items.find((item) => item.id === "results")?.children?.map((item) => item.label)).toEqual([
       "Forsight",
@@ -28,14 +28,14 @@ describe("shell navigation", () => {
 
   it("shows a member only Overview and Results", () => {
     expect(labels("member")).toEqual(["Overview", "Results"]);
-    const nav = shellNavigation({ role: "member", templateAccess: false, inWorkspace: true });
+    const nav = shellNavigation({ role: "member", templateAccess: false });
     expect(nav.groups[0]?.items.find((item) => item.id === "results")?.children ?? []).toEqual([]);
     expect(nav.phone.map((item) => item.label)).toEqual(["Overview", "Results"]);
     expect(nav.more).toEqual([]);
   });
 
   it("keeps an operator on My Leads, Today, Case Files, and Profile", () => {
-    const nav = shellNavigation({ role: "operator", templateAccess: false, inWorkspace: true });
+    const nav = shellNavigation({ role: "operator", templateAccess: false });
     expect(labels("operator")).toEqual(["My Leads", "Today", "Case Files", "Profile"]);
     expect(nav.phone.map((item) => item.label)).toEqual(["My Leads", "Today", "Case Files", "Profile"]);
     expect(nav.more).toEqual([]);
@@ -44,22 +44,23 @@ describe("shell navigation", () => {
   });
 
   it("hides Templates from service team without template access", () => {
-    expect(labels("service_team", { templateAccess: false, inWorkspace: false })).not.toContain("Templates");
-    expect(labels("service_team", { templateAccess: true, inWorkspace: false })).toContain("Templates");
+    expect(labels("service_team", { templateAccess: false })).not.toContain("Templates");
+    expect(labels("service_team", { templateAccess: true })).toContain("Templates");
   });
 
-  it("adds customer views and Configuration only while staff are inside a workspace", () => {
-    expect(labels("service_team", { templateAccess: true, inWorkspace: false })).not.toContain("Configuration");
-    expect(labels("service_team", { templateAccess: true, inWorkspace: false })).not.toContain("Case Files");
-    const inside = labels("service_team", { templateAccess: true, inWorkspace: true });
-    expect(inside).toContain("Configuration");
-    expect(inside).toContain("Overview");
-    expect(inside).toContain("Case Files");
-    expect(inside).toContain("Results");
+  it("keeps the staff workspace group on every page, named for the current workspace", () => {
+    const nav = shellNavigation({ role: "service_team", templateAccess: true, workspaceName: "Acme Roofing" });
+    const here = nav.groups.find((group) => group.id === "here");
+    expect(here?.label).toBe("Acme Roofing");
+    expect(here?.items.map((item) => item.label)).toEqual(["Overview", "Case Files", "Results", "Configuration"]);
+    expect(nav.phone.map((item) => item.label)).toEqual(["Client Roster", "Templates", "Overview", "Case Files"]);
+    expect(shellNavigation({ role: "service_team", templateAccess: true }).groups.find((g) => g.id === "here")?.label).toBe(
+      "This workspace",
+    );
   });
 
   it("gives a platform admin the team list plus the platform pages, and not Billing", () => {
-    const labelsForAdmin = labels("platform_admin", { templateAccess: true, inWorkspace: false });
+    const labelsForAdmin = labels("platform_admin", { templateAccess: true });
     expect(labelsForAdmin).toContain("Client Roster");
     expect(labelsForAdmin).toContain("Templates");
     expect(labelsForAdmin).toContain("Activity Log");
@@ -97,8 +98,8 @@ describe("shell navigation", () => {
   });
 
   it("highlights the member Results item only for the results anchor", () => {
-    const results = shellNavigation({ role: "member", templateAccess: false, inWorkspace: true }).groups[0]?.items[1];
-    const overview = shellNavigation({ role: "member", templateAccess: false, inWorkspace: true }).groups[0]?.items[0];
+    const results = shellNavigation({ role: "member", templateAccess: false }).groups[0]?.items[1];
+    const overview = shellNavigation({ role: "member", templateAccess: false }).groups[0]?.items[0];
     if (!results || !overview) throw new Error("member nav missing");
     expect(isShellItemActive("/portal", "#results", results)).toBe(true);
     expect(isShellItemActive("/portal", "#results", overview)).toBe(false);

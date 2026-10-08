@@ -1,5 +1,6 @@
 import "server-only";
 
+import { requireConfig } from "@/lib/config/server";
 import { computeSendAt } from "@/lib/follow-up/quiet-hours";
 import { dispatchOutboundMessage } from "@/lib/ghl/dispatch";
 import type { GhlDb } from "@/lib/ghl/tokens";
@@ -134,6 +135,8 @@ export async function runApprovalItem(
   if (args.runMode === "approved" && !args.actor) {
     return { ok: false, error: "A named person has to approve this." };
   }
+  const configured = await requireConfig(db, args.orgId, "approval_queue");
+  if (!configured.ok) return { ok: false, error: configured.reason };
   const { data: claimed } = await db
     .from("approval_items")
     .update({ status: "running" })

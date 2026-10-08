@@ -7,7 +7,7 @@ import { transcriptLog } from "@/lib/transcripts/log";
 import type { GhlDb } from "@/lib/ghl/tokens";
 
 const OPENING_SYSTEM =
-  "Write one or two sentences a closer may use to open a sales call. No pitch. No transcript. Name the prospect and the one fact that should be confirmed first. If nothing is known, say the closer should ask what brought them in. Return plain text only.";
+  "Write one or two sentences the person taking this call may use to open it. No pitch. No transcript. Name the prospect and the one fact that should be confirmed first. If nothing is known, say to ask what brought them in. Return plain text only.";
 
 export async function suggestedOpeningForBrief(
   db: GhlDb,

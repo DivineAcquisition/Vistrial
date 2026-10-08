@@ -1291,9 +1291,6 @@ export type Database = {
           updated_at: string;
           has_net_close: boolean;
           time_to_first_human_touch_seconds: number | null;
-          opted_out_at: string | null;
-          opted_out_word: string | null;
-          opted_out_channel: string | null;
         };
         Insert: {
           ad_id?: string | null;
@@ -1327,9 +1324,6 @@ export type Database = {
           timezone?: string | null;
           updated_at?: string;
           has_net_close?: boolean;
-          opted_out_at?: string | null;
-          opted_out_word?: string | null;
-          opted_out_channel?: string | null;
         };
         Update: {
           ad_id?: string | null;
@@ -1363,9 +1357,6 @@ export type Database = {
           timezone?: string | null;
           updated_at?: string;
           has_net_close?: boolean;
-          opted_out_at?: string | null;
-          opted_out_word?: string | null;
-          opted_out_channel?: string | null;
         };
         Relationships: [
           {
@@ -2448,6 +2439,33 @@ export type Database = {
           occurrences?: number;
           notified_at?: string | null;
           resolved_at?: string | null;
+        };
+        Relationships: [];
+      };
+      lead_opt_outs: {
+        Row: {
+          lead_id: string;
+          org_id: string;
+          opted_out_at: string;
+          word: string;
+          channel: string | null;
+          config_version: string | null;
+        };
+        Insert: {
+          lead_id: string;
+          org_id: string;
+          opted_out_at?: string;
+          word: string;
+          channel?: string | null;
+          config_version?: string | null;
+        };
+        Update: {
+          lead_id?: string;
+          org_id?: string;
+          opted_out_at?: string;
+          word?: string;
+          channel?: string | null;
+          config_version?: string | null;
         };
         Relationships: [];
       };
@@ -6605,6 +6623,10 @@ export type Database = {
       };
       config_effective_at: {
         Args: { p_org_id: string };
+        Returns: Json;
+      };
+      config_agent_gate: {
+        Args: { p_org_id: string; p_consumer: string; p_label: string; p_sections: string[] };
         Returns: Json;
       };
       config_record_stop: {

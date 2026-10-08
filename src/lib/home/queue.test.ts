@@ -177,6 +177,16 @@ describe("drafts", () => {
     expect(noShow.body).toMatch(/^Hey there, sorry we missed/);
   });
 
+  it("leaves the greeting out when the workspace turned greetings off", () => {
+    const quiet = quietLeadDraft({
+      firstName: "Dana",
+      offerName: null,
+      channel: "sms",
+      voice: { greeting: "Hey {name},", signoff: null, useGreeting: false },
+    });
+    expect(quiet.body).toMatch(/^Just checking in\. Is this still/);
+  });
+
   it("texts when there is a phone, emails when there is not, and skips when neither", () => {
     expect(messageChannel({ phone: "+15555550100", email: "a@b.co" })).toBe("sms");
     expect(messageChannel({ phone: " ", email: "a@b.co" })).toBe("email");

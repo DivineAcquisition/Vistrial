@@ -450,10 +450,67 @@ SELECT pg_temp.check(
   (pg_temp.q('c0f10000-0000-4000-8000-0000000000ad', format($q$public.config_effective(%L) ->> 'version'$q$, w2)) #>> '{}') IS NOT NULL,
   'a closed workspace''s configuration cannot be viewed by staff') FROM w;
 
+-- ---------------------------------------------------------------------------
+-- Agents in a person's session check configuration without seeing it, and a
+-- stop is recorded once with its reason, then cleared when they run cleanly.
+-- ---------------------------------------------------------------------------
+
+SELECT pg_temp.check(
+  (pg_temp.q('c0f10000-0000-4000-8000-0000000000b3',
+     format($q$public.config_agent_gate(%L, 'operator', 'The Operator', ARRAY['identity','qualification','response','approval','compliance','operators'])$q$, w1))
+   - 'version' - 'business_description') = '{"ok": true}'::jsonb
+  AND pg_temp.q('c0f10000-0000-4000-8000-0000000000b3',
+     format($q$public.config_agent_gate(%L, 'operator', 'The Operator', ARRAY['identity'])$q$, w1)) ->> 'business_description' IS NOT NULL,
+  'an operator''s agent could not pass a complete configuration, or saw more than it needs') FROM w;
+SELECT pg_temp.check(
+  pg_temp.fails('c0f10000-0000-4000-8000-0000000000b1',
+    format($q$public.config_agent_gate(%L, 'operator', 'The Operator', ARRAY['identity'])$q$, w2)),
+  'a person checked the configuration of a workspace they do not belong to') FROM w;
+
+DO $$
+DECLARE
+  v_w2 uuid := (SELECT w2 FROM w);
+  v_result jsonb;
+BEGIN
+  -- Break a required value the drafter reads, as the platform default would never allow.
+  UPDATE public.config_layers SET field_values = field_values || '{"industry.business_description": ""}'::jsonb
+  WHERE level = 'workspace' AND org_id = v_w2;
+  v_result := public.config_agent_gate(v_w2, 'sales_os', 'Ask Vistrial', ARRAY['identity','industry']);
+  PERFORM pg_temp.check(NOT (v_result ->> 'ok')::boolean AND v_result ->> 'reason' LIKE 'Ask Vistrial stopped because%',
+    'a missing required value did not stop the agent with a reason');
+  PERFORM public.config_agent_gate(v_w2, 'sales_os', 'Ask Vistrial', ARRAY['identity','industry']);
+  PERFORM pg_temp.check(
+    (SELECT occurrences FROM public.config_stops WHERE org_id = v_w2 AND consumer = 'sales_os' AND resolved_at IS NULL) = 2,
+    'a repeated stop was not counted on the one open record');
+  UPDATE public.config_layers SET field_values = field_values - 'industry.business_description'
+  WHERE level = 'workspace' AND org_id = v_w2;
+  PERFORM public.config_agent_gate(v_w2, 'sales_os', 'Ask Vistrial', ARRAY['identity','industry']);
+  PERFORM pg_temp.check(
+    NOT EXISTS (SELECT 1 FROM public.config_stops WHERE org_id = v_w2 AND consumer = 'sales_os' AND resolved_at IS NULL),
+    'the stop stayed open after the agent ran cleanly');
+END $$;
+SELECT pg_temp.check(
+  (pg_temp.q('c0f10000-0000-4000-8000-0000000000b1', format($q$(SELECT count(*) FROM public.config_stops WHERE org_id = %L)$q$, w2)) #>> '{}')::int = 0
+  AND (pg_temp.q('c0f10000-0000-4000-8000-0000000000ad', format($q$(SELECT count(*) FROM public.config_stops WHERE org_id = %L)$q$, w2)) #>> '{}')::int = 1,
+  'configuration stops are not visible to staff only') FROM w;
+
+-- Opt-outs are visible to the people who can see the lead, and to nobody else.
+INSERT INTO public.lead_opt_outs (lead_id, org_id, word, channel)
+SELECT 'c0f10000-0000-4000-8000-00000000ead1', w1, 'STOP', 'sms' FROM w;
+SELECT pg_temp.check(
+  (pg_temp.q('c0f10000-0000-4000-8000-0000000000b2', 'SELECT count(*) FROM public.lead_opt_outs') #>> '{}')::int = 1
+  AND (pg_temp.q('c0f10000-0000-4000-8000-0000000000b2', $q$public.config_agent_gate((SELECT w2 FROM w), 'operator', 'x', ARRAY['identity'])$q$) ? 'failed'),
+  'a member could not see an opt-out on their own workspace');
+SELECT pg_temp.check(
+  pg_temp.fails('c0f10000-0000-4000-8000-0000000000b2',
+    format($q$(WITH x AS (INSERT INTO public.lead_opt_outs (lead_id, org_id, word) VALUES ('c0f10000-0000-4000-8000-00000000ead1', %L, 'STOP') ON CONFLICT DO NOTHING RETURNING 1) SELECT count(*) FROM x)$q$, w1))
+  AND pg_temp.fails('c0f10000-0000-4000-8000-0000000000b2', 'DELETE FROM public.lead_opt_outs'),
+  'a member changed an opt-out directly') FROM w;
+
 -- Every new table has row-level security, and none is open to signed-out visitors.
 SELECT pg_temp.check(
   NOT EXISTS (SELECT 1 FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace
-              WHERE n.nspname = 'public' AND c.relkind = 'r' AND c.relname LIKE '%config%' AND NOT c.relrowsecurity),
+              WHERE n.nspname = 'public' AND c.relkind = 'r' AND (c.relname LIKE '%config%' OR c.relname = 'lead_opt_outs') AND NOT c.relrowsecurity),
   'a configuration table has row-level security off');
 SELECT pg_temp.check(
   NOT EXISTS (SELECT 1 FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace

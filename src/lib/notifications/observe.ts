@@ -30,6 +30,7 @@ import {
 import { offerDaConsole, offerTeam, offerToMember } from "@/lib/notifications/offer";
 import type { MemberNotifyTarget } from "@/lib/notifications/types";
 import { windowsElapsed, type AfterHoursMode, type BusinessHours } from "@/lib/config/clock";
+import { alertNewConfigStops } from "@/lib/config/alerts";
 import { requireConfig } from "@/lib/config/server";
 import { AUTOMATION_STATUSES } from "@/lib/workspaces/status";
 
@@ -805,5 +806,6 @@ export async function runNotificationObserve(db: GhlDb, now = new Date()): Promi
     await observeOrg(db, org.id, now);
   }
   await observeJobs(db, now);
+  await alertNewConfigStops(db);
   return { orgs: orgs?.length ?? 0 };
 }

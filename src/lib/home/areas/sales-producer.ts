@@ -12,17 +12,25 @@ import {
   type QueueDraft,
   type VoiceBits,
 } from "@/lib/home/queue";
-import { QUIET_AFTER_HOURS } from "@/lib/home/metrics";
 import type { NewQueueItem, ProducerContext } from "@/lib/home/areas/producer-types";
+import { requireConfig } from "@/lib/config/server";
 
 const HOUR = 3_600_000;
 const DAY = 24 * HOUR;
 /** A lead quiet longer than this is past saving with a check-in; it is left alone. */
 const QUIET_MAX_DAYS = 30;
-/** How long after a no-show a rebooking message still makes sense. */
-const NO_SHOW_MAX_DAYS = 7;
-/** New leads older than this are not nudged about; the list already shows them. */
-const UNTOUCHED_MAX_DAYS = 3;
+
+/** The workspace's windows (response section of its configuration). */
+type Windows = {
+  /** A lead with no activity this long counts as gone quiet. */
+  quietAfterHours: number;
+  /** How long after a no-show a rebooking message still makes sense. */
+  noShowDays: number;
+  /** New leads older than this are not nudged about; the list already shows them. */
+  untouchedDays: number;
+  /** The first-touch window a new lead is measured against. */
+  firstTouchMinutes: number;
+};
 /** A lead gets at most one item of a kind in this window, whatever happened to it. */
 const REPEAT_WINDOW_DAYS = 7;
 const CANDIDATE_LIMIT = 200;
@@ -70,6 +78,7 @@ async function loadVoice(db: GhlDb, orgId: string): Promise<VoiceBits> {
   return {
     greeting: data?.use_greeting ? (data.greeting_text ?? null) : null,
     signoff: data?.use_signoff ? (data.signoff_text ?? null) : null,
+    useGreeting: data?.use_greeting ?? true,
   };
 }
 
@@ -148,19 +157,30 @@ export async function salesProducer(context: ProducerContext): Promise<NewQueueI
   const items: NewQueueItem[] = [];
   const mode = (actionType: string) => gate.choice(actionType).mode;
 
+  // No configuration, no drafts: the stop and its reason are recorded for the team.
+  const configured = await requireConfig(db, org.id, "approval_queue");
+  if (!configured.ok) return [];
+  const values = configured.config.values;
+  const windows: Windows = {
+    quietAfterHours: Number(values["response.quiet_lead_hours"]),
+    noShowDays: Number(values["response.no_show_window_days"]),
+    untouchedDays: Number(values["response.untouched_window_days"]),
+    firstTouchMinutes: Number(values["response.first_touch_minutes"]),
+  };
+
   if (mode("quiet_lead_follow_up") !== "off") {
-    items.push(...(await quietLeads(db, org.id, now)));
+    items.push(...(await quietLeads(db, org.id, now, windows)));
   }
   if (mode("no_show_rebook") !== "off") {
-    items.push(...(await noShows(db, org.id, now)));
+    items.push(...(await noShows(db, org.id, now, windows)));
   }
   if (mode("setter_nudge") !== "off") {
-    items.push(...(await untouchedLeads(db, org.id, now)));
+    items.push(...(await untouchedLeads(db, org.id, now, windows)));
   }
   return items;
 }
 
-async function quietLeads(db: GhlDb, orgId: string, now: Date): Promise<NewQueueItem[]> {
+async function quietLeads(db: GhlDb, orgId: string, now: Date, windows: Windows): Promise<NewQueueItem[]> {
   const [handled, voice, { data: leads }] = await Promise.all([
     recentlyHandled(db, orgId, "quiet_lead_follow_up", now),
     loadVoice(db, orgId),
@@ -170,7 +190,7 @@ async function quietLeads(db: GhlDb, orgId: string, now: Date): Promise<NewQueue
       .eq("org_id", orgId)
       .eq("is_test", false)
       .in("status", ["working", "follow_up", "objection_hold", "ghost"])
-      .lte("last_touch_at", new Date(now.getTime() - QUIET_AFTER_HOURS * HOUR).toISOString())
+      .lte("last_touch_at", new Date(now.getTime() - windows.quietAfterHours * HOUR).toISOString())
       .gte("last_touch_at", new Date(now.getTime() - QUIET_MAX_DAYS * DAY).toISOString())
       .order("last_touch_at", { ascending: true })
       .limit(CANDIDATE_LIMIT),
@@ -187,13 +207,13 @@ async function quietLeads(db: GhlDb, orgId: string, now: Date): Promise<NewQueue
   );
 }
 
-async function noShows(db: GhlDb, orgId: string, now: Date): Promise<NewQueueItem[]> {
+async function noShows(db: GhlDb, orgId: string, now: Date, windows: Windows): Promise<NewQueueItem[]> {
   const { data: missed } = await db
     .from("calls")
     .select("id, lead_id, scheduled_at")
     .eq("org_id", orgId)
     .eq("outcome", "no_show")
-    .gte("scheduled_at", new Date(now.getTime() - NO_SHOW_MAX_DAYS * DAY).toISOString())
+    .gte("scheduled_at", new Date(now.getTime() - windows.noShowDays * DAY).toISOString())
     .lte("scheduled_at", now.toISOString())
     .order("scheduled_at", { ascending: false })
     .limit(CANDIDATE_LIMIT);
@@ -239,7 +259,7 @@ async function noShows(db: GhlDb, orgId: string, now: Date): Promise<NewQueueIte
     (lead, channel) => noShowDraft({ firstName: lead.first_name, channel, voice }),
     {
       reason: (group) => {
-        if (group.length > 1) return "Missed their appointments in the last week and have not rebooked.";
+        if (group.length > 1) return `Missed their appointments in the last ${windows.noShowDays} days and have not rebooked.`;
         const days = daysAgo(latest.get(group[0].id)?.scheduledAt ?? now.toISOString(), now);
         return days === 0 ? "Missed their appointment today." : `Missed their appointment ${spanText([days])} ago.`;
       },
@@ -248,15 +268,8 @@ async function noShows(db: GhlDb, orgId: string, now: Date): Promise<NewQueueIte
   );
 }
 
-async function untouchedLeads(db: GhlDb, orgId: string, now: Date): Promise<NewQueueItem[]> {
-  const { data: config } = await db
-    .from("score_configs")
-    .select("speed_to_lead_minutes")
-    .eq("org_id", orgId)
-    .maybeSingle();
-  // No configured response window means there is nothing to measure "past" against.
-  if (!config) return [];
-  const windowMinutes = config.speed_to_lead_minutes;
+async function untouchedLeads(db: GhlDb, orgId: string, now: Date, windows: Windows): Promise<NewQueueItem[]> {
+  const windowMinutes = windows.firstTouchMinutes;
   const [handled, { data: leads }, { data: members }] = await Promise.all([
     recentlyHandled(db, orgId, "untouched_lead_nudge", now),
     db
@@ -268,7 +281,7 @@ async function untouchedLeads(db: GhlDb, orgId: string, now: Date): Promise<NewQ
       .is("last_touch_at", null)
       .is("first_human_touch_at", null)
       .lte("opted_in_at", new Date(now.getTime() - windowMinutes * 60_000).toISOString())
-      .gte("opted_in_at", new Date(now.getTime() - UNTOUCHED_MAX_DAYS * DAY).toISOString())
+      .gte("opted_in_at", new Date(now.getTime() - windows.untouchedDays * DAY).toISOString())
       .order("opted_in_at", { ascending: true })
       .limit(CANDIDATE_LIMIT),
     db.from("org_members").select("id, display_name").eq("org_id", orgId),

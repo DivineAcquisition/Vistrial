@@ -428,33 +428,41 @@ async function applyOptOutWords(
   if (!text) return;
   const config = await getEffectiveConfig(db, orgId);
   const words = (config.values["compliance.opt_out_words"] as string[] | undefined) ?? [];
-  if (!lead.opted_out_at && isOptOutReply(text, words)) {
-    const word = text.trim().toUpperCase();
-    await db
-      .from("leads")
-      .update({ opted_out_at: new Date().toISOString(), opted_out_word: word.slice(0, 30), opted_out_channel: channel })
-      .eq("id", lead.id)
-      .eq("org_id", orgId);
+  const { data: existing } = await db
+    .from("lead_opt_outs")
+    .select("lead_id")
+    .eq("lead_id", lead.id)
+    .eq("org_id", orgId)
+    .maybeSingle();
+
+  if (!existing && isOptOutReply(text, words)) {
+    const { error } = await db.from("lead_opt_outs").upsert(
+      {
+        lead_id: lead.id,
+        org_id: orgId,
+        word: text.trim().toUpperCase().slice(0, 30),
+        channel,
+        config_version: config.version,
+      },
+      { onConflict: "lead_id", ignoreDuplicates: true }
+    );
+    if (error) throw new Error(`opt_out_record_failed: ${error.message}`);
     await logWorkspaceActivity({
       actorUserId: null,
       orgId,
       action: "lead.opted_out",
-      targetTable: "leads",
+      targetTable: "lead_opt_outs",
       targetId: lead.id,
       detail: { channel, config_version: config.version },
     });
     ghlLog("ghl.inbound.opted_out", { orgId, leadId: lead.id, channel });
-  } else if (lead.opted_out_at && isOptInReply(text)) {
-    await db
-      .from("leads")
-      .update({ opted_out_at: null, opted_out_word: null, opted_out_channel: null })
-      .eq("id", lead.id)
-      .eq("org_id", orgId);
+  } else if (existing && isOptInReply(text)) {
+    await db.from("lead_opt_outs").delete().eq("lead_id", lead.id).eq("org_id", orgId);
     await logWorkspaceActivity({
       actorUserId: null,
       orgId,
       action: "lead.opted_back_in",
-      targetTable: "leads",
+      targetTable: "lead_opt_outs",
       targetId: lead.id,
       detail: { channel },
     });

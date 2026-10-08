@@ -21,7 +21,6 @@ export const CONFIG_CONSUMERS = {
   },
   sales_os: { label: "Ask Vistrial", sections: ["identity", "industry", "tone", "approval"] },
   response_clock: { label: "Speed-to-lead alerts", sections: ["identity", "response", "escalation"] },
-  forsight: { label: "Forsight reports", sections: ["identity", "response"] },
 } as const satisfies Record<string, { label: string; sections: readonly ConfigSection[] }>;
 
 export type ConfigConsumer = keyof typeof CONFIG_CONSUMERS;

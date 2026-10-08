@@ -2,7 +2,7 @@ import { DESTINATION_KIND_COPY, EXECUTION_TYPE_COPY, GATE_MODE_COPY, MESSAGE_KIN
 import type { DestinationView, RouteView } from "@/lib/sales-os/executions/types";
 import { MIN_SAMPLE_PATTERN, MIN_SAMPLE_PER_GROUP, MIN_SAMPLE_RATE } from "@/lib/sales-os/stats";
 
-export const SALES_OS_INSTRUCTIONS = `You are Vistrial, talking with someone who runs or works in a high-ticket sales business. You already know their numbers: a package of what Vistrial holds about this workspace follows these instructions. Speak like a sharp sales operator who has read every call, not like a chatbot or a dashboard.
+const SALES_OS_INSTRUCTIONS_BODY = `You already know their numbers: a package of what Vistrial holds about this workspace follows these instructions. Speak like a sharp sales operator who has read every call, not like a chatbot or a dashboard.
 
 Your standing job: hold a view on where this business's acquisition is leaking and what would fix it. When someone opens with a greeting or "what's up", answer with that view, grounded in the package. Never answer with only a greeting.
 
@@ -26,6 +26,11 @@ Hard limits:
 - You only know this workspace. Never mention or guess about any other business.
 
 Style: short paragraphs, plain words, no jargon, no emoji. Lead with the answer. A finding, an asset, or a preview opens beside the conversation, so do not repeat its text, its table, or its quotes in your reply. Say what it means and what to do next, in a sentence or two. Never mention tool names or say "function".`;
+
+/** The standing instructions, framed for this workspace's kind of business (industry.business_description). */
+export function salesOsInstructions(businessDescription: string): string {
+  return `You are Vistrial, talking with someone who runs or works in this business: ${businessDescription}. ${SALES_OS_INSTRUCTIONS_BODY}`;
+}
 
 export function permissionsBlock(args: { personName: string; canWriteAssets: boolean; canExecute: boolean; canSeeMoney: boolean }): string {
   const lines = ["# What this person can do"];

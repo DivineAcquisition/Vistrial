@@ -33,12 +33,10 @@ export async function complianceForDispatch(
   const values = gate.config.values;
   const workspaceTimeZone = String(values["identity.timezone"]);
 
-  const { data: lead } = await db
-    .from("leads")
-    .select("opted_out_at, timezone, phone")
-    .eq("id", row.lead_id)
-    .eq("org_id", row.org_id)
-    .maybeSingle();
+  const [{ data: lead }, { data: optOut }] = await Promise.all([
+    db.from("leads").select("timezone, phone").eq("id", row.lead_id).eq("org_id", row.org_id).maybeSingle(),
+    db.from("lead_opt_outs").select("opted_out_at").eq("lead_id", row.lead_id).eq("org_id", row.org_id).maybeSingle(),
+  ]);
 
   const weekAgo = new Date(now.getTime() - 7 * 86_400_000).toISOString();
   const { data: recent } = await db
@@ -57,7 +55,7 @@ export async function complianceForDispatch(
     now,
     rules: complianceRulesFrom(values),
     lead: {
-      optedOutAt: lead?.opted_out_at ?? null,
+      optedOutAt: optOut?.opted_out_at ?? null,
       zones: leadTimeZones({ timezone: lead?.timezone, phone: lead?.phone }, workspaceTimeZone).zones,
     },
     workspaceTimeZone,

@@ -2,11 +2,9 @@ import "server-only";
 
 import type { SupabaseClient } from "@supabase/supabase-js";
 
-import { appUrl } from "@/lib/app-url";
-import { blockingIssues, CONFIG_CONSUMERS, stopReason, type ConfigConsumer } from "@/lib/config/consumers";
+import { blockingIssues, stopReason, type ConfigConsumer } from "@/lib/config/consumers";
 import { resolveConfig } from "@/lib/config/resolve";
 import type { ConfigIssue, ConfigValues, EffectiveConfig, LayerSnapshot } from "@/lib/config/types";
-import { sendEmail } from "@/lib/notifications/senders";
 import type { Database, Json } from "@/types/database";
 
 type Db = SupabaseClient<Database>;
@@ -81,34 +79,16 @@ export type ConfigGate =
   | { ok: true; config: EffectiveConfig }
   | { ok: false; reason: string; version: string; issues: ConfigIssue[] };
 
-/** Email the Service Team assigned to this workspace (Platform Admins if nobody is). */
-async function alertServiceTeam(db: Db, orgId: string, stopId: string, consumer: ConfigConsumer): Promise<void> {
-  const [{ data: org }, { data: assigned }] = await Promise.all([
-    db.from("organizations").select("name").eq("id", orgId).maybeSingle(),
-    db.from("workspace_assignments").select("user_id").eq("org_id", orgId).is("ended_at", null),
-  ]);
-  const assignedIds = (assigned ?? []).map((row) => row.user_id);
-  let staffQuery = db.from("platform_staff").select("email").eq("active", true);
-  staffQuery = assignedIds.length > 0 ? staffQuery.in("user_id", assignedIds) : staffQuery.eq("role", "platform_admin");
-  const { data: staff } = await staffQuery;
-
-  const title = `${CONFIG_CONSUMERS[consumer].label} stopped for ${org?.name ?? "a workspace"}`;
-  const body = "A setting it needs is missing or invalid, so it did nothing rather than guess. Open the workspace configuration to fix it.";
-  const href = `${appUrl()}/app/settings/configuration?workspace=${orgId}`;
-  await Promise.all(
-    (staff ?? []).map((person) =>
-      sendEmail({ to: person.email, title, body, href, notificationId: stopId, eventType: "config.stopped" }).catch(() => null)
-    )
-  );
-  await db.from("config_stops").update({ notified_at: new Date().toISOString() }).eq("id", stopId);
-}
-
 /**
  * The one way an agent or job reads a workspace's configuration. It names
  * itself (see CONFIG_CONSUMERS for the sections each reads). When a required
  * value in those sections is missing or invalid it returns the reason instead
  * of a configuration: the caller stops and records the reason on its run. The
- * stop is recorded for the workspace's staff, who are alerted once.
+ * stop is recorded for the workspace's staff; the notifications job alerts
+ * them once (see alertNewConfigStops).
+ *
+ * For jobs and webhooks, which hold the service-role client. Agents that run
+ * in a person's session use checkAgentConfig instead.
  */
 export async function requireConfig(db: Db, orgId: string, consumer: ConfigConsumer): Promise<ConfigGate> {
   const config = await getEffectiveConfig(db, orgId);
@@ -119,14 +99,12 @@ export async function requireConfig(db: Db, orgId: string, consumer: ConfigConsu
   }
 
   const reason = stopReason(consumer, issues);
-  const { data } = await db.rpc("config_record_stop", {
+  await db.rpc("config_record_stop", {
     p_org_id: orgId,
     p_consumer: consumer,
     p_config_version: config.version,
     p_reason: reason,
     p_problems: issues as unknown as Json,
   });
-  const stop = Array.isArray(data) ? data[0] : null;
-  if (stop?.is_new) await alertServiceTeam(db, orgId, stop.stop_id, consumer);
   return { ok: false, reason, version: config.version, issues };
 }

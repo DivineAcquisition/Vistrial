@@ -54,3 +54,15 @@ for round in 1 2; do
   "${PSQL[@]}" -At < "$ROOT/supabase/tests/config-migration-parity.sql" | tail -1
 done
 echo "OK: configuration migration keeps every workspace's behaviour, and rolls back cleanly twice."
+
+RUNTIME=20261007040000_configuration_runtime.sql
+echo "Runtime migration ($RUNTIME): apply, roll back keeping opt-outs, re-apply..."
+run "$ROOT/supabase/migrations/$RUNTIME"
+"${PSQL[@]}" -q -c "INSERT INTO public.lead_opt_outs (lead_id, org_id, word) SELECT id, org_id, 'STOP' FROM public.leads LIMIT 1" >/dev/null
+run "$ROOT/supabase/rollbacks/$RUNTIME"
+if [ "$("${PSQL[@]}" -At -c "SELECT count(*) FROM vistrial_rollback_keep.lead_opt_outs")" != "1" ]; then
+  echo "FAIL: the runtime rollback did not keep the recorded opt-outs"; exit 1
+fi
+run "$ROOT/supabase/migrations/$RUNTIME"
+"${PSQL[@]}" -At < "$ROOT/supabase/tests/config-migration-parity.sql" | tail -1
+echo "OK: runtime migration rolls back and re-applies cleanly."

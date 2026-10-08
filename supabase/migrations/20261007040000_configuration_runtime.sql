@@ -1,4 +1,4 @@
--- Configuration at run time: opt-outs recorded on the lead, and a visible
+-- Configuration at run time: opt-outs recorded per lead, and a visible
 -- record of every agent that stopped because its configuration was incomplete.
 -- Additive only; nothing existing changes behaviour until the app reads it.
 
@@ -7,15 +7,27 @@
 --    nothing more is sent to them until they text back in (START / UNSTOP).
 -- ---------------------------------------------------------------------------
 
-ALTER TABLE public.leads
-  ADD COLUMN IF NOT EXISTS opted_out_at timestamptz,
-  ADD COLUMN IF NOT EXISTS opted_out_word text,
-  ADD COLUMN IF NOT EXISTS opted_out_channel text;
+CREATE TABLE public.lead_opt_outs (
+  lead_id uuid PRIMARY KEY REFERENCES public.leads (id) ON DELETE CASCADE,
+  org_id uuid NOT NULL REFERENCES public.organizations (id) ON DELETE CASCADE,
+  opted_out_at timestamptz NOT NULL DEFAULT now(),
+  word text NOT NULL,
+  channel text,
+  config_version text
+);
 
-COMMENT ON COLUMN public.leads.opted_out_at IS
-  'When the lead replied with an opt-out word (compliance.opt_out_words). Every send to this lead is blocked while set.';
+COMMENT ON TABLE public.lead_opt_outs IS
+  'Leads who replied with an opt-out word (compliance.opt_out_words). Every send to them is blocked while a row exists; texting START or UNSTOP removes it.';
 
-CREATE INDEX IF NOT EXISTS leads_opted_out_idx ON public.leads (org_id) WHERE opted_out_at IS NOT NULL;
+CREATE INDEX lead_opt_outs_org_idx ON public.lead_opt_outs (org_id);
+
+ALTER TABLE public.lead_opt_outs ENABLE ROW LEVEL SECURITY;
+REVOKE ALL ON public.lead_opt_outs FROM anon, authenticated;
+GRANT SELECT ON public.lead_opt_outs TO authenticated;
+GRANT ALL ON public.lead_opt_outs TO service_role;
+
+CREATE POLICY lead_opt_outs_select ON public.lead_opt_outs
+  FOR SELECT TO authenticated USING (public.ws_lead_visible(org_id, lead_id));
 
 -- ---------------------------------------------------------------------------
 -- 2. Configuration stops. One open row per workspace and consumer; repeats
@@ -107,3 +119,78 @@ REVOKE ALL ON FUNCTION public.config_record_stop(uuid, text, text, text, jsonb) 
 REVOKE ALL ON FUNCTION public.config_resolve_stop(uuid, text) FROM PUBLIC, anon, authenticated;
 GRANT EXECUTE ON FUNCTION public.config_record_stop(uuid, text, text, text, jsonb) TO service_role;
 GRANT EXECUTE ON FUNCTION public.config_resolve_stop(uuid, text) TO service_role;
+
+-- ---------------------------------------------------------------------------
+-- 3. The configuration gate for agents that run in a person's session (the
+--    Operator, Ask Vistrial). They never hold the service-role key, and the
+--    people they act for may not read configuration, so this answers only
+--    "may this run?", the version, what is wrong, and the one line describing
+--    the business that their prompts need. A stop is recorded here; the
+--    Service Team is alerted by the notifications job.
+-- ---------------------------------------------------------------------------
+
+CREATE OR REPLACE FUNCTION public.config_agent_gate(
+  p_org_id uuid,
+  p_consumer text,
+  p_label text,
+  p_sections text[]
+)
+RETURNS jsonb
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  v_values jsonb;
+  v_version text;
+  v_problems jsonb;
+  v_reason text;
+BEGIN
+  IF public.ws_end_user_request() AND public.ws_access(p_org_id) IS NULL THEN
+    RAISE EXCEPTION 'Not a workspace you belong to.' USING ERRCODE = '42501';
+  END IF;
+  IF p_consumer !~ '^[a-z_]+$' OR NOT p_sections <@ (SELECT array_agg(DISTINCT section) FROM public.config_fields) THEN
+    RAISE EXCEPTION 'Unknown configuration consumer.';
+  END IF;
+
+  v_values := public.config_effective_at(p_org_id) -> 'values';
+  v_version := public.config_version_stamp(p_org_id);
+
+  SELECT COALESCE(jsonb_agg(p ORDER BY p ->> 'key'), '[]'::jsonb) INTO v_problems
+  FROM (
+    SELECT jsonb_build_object('key', f.key, 'kind', 'missing',
+             'message', format('"%s" is missing.', f.label)) AS p
+    FROM public.config_fields f
+    WHERE f.section = ANY (p_sections) AND f.required AND NOT f.workspace_only
+      AND public.config_value_empty(f.field_type, v_values -> f.key)
+    UNION ALL
+    SELECT jsonb_build_object('key', f.key, 'kind', 'invalid',
+             'message', public.config_validate_value(f.key, v_values -> f.key))
+    FROM public.config_fields f
+    WHERE f.section = ANY (p_sections)
+      AND NOT public.config_value_empty(f.field_type, v_values -> f.key)
+      AND public.config_validate_value(f.key, v_values -> f.key) IS NOT NULL
+  ) problems;
+
+  IF jsonb_array_length(v_problems) = 0 THEN
+    UPDATE public.config_stops SET resolved_at = now()
+    WHERE org_id = p_org_id AND consumer = p_consumer AND resolved_at IS NULL;
+    RETURN jsonb_build_object(
+      'ok', true,
+      'version', v_version,
+      'business_description', v_values ->> 'industry.business_description'
+    );
+  END IF;
+
+  v_reason := format(
+    '%s stopped because this workspace''s configuration needs attention: %s Fix it under Settings → Configuration.',
+    left(COALESCE(NULLIF(btrim(p_label), ''), p_consumer), 80),
+    (SELECT string_agg(e ->> 'message', ' ') FROM (SELECT e FROM jsonb_array_elements(v_problems) e LIMIT 3) x)
+  );
+  PERFORM public.config_record_stop(p_org_id, p_consumer, v_version, v_reason, v_problems);
+  RETURN jsonb_build_object('ok', false, 'version', v_version, 'reason', v_reason, 'problems', v_problems);
+END;
+$$;
+
+REVOKE ALL ON FUNCTION public.config_agent_gate(uuid, text, text, text[]) FROM PUBLIC, anon;
+GRANT EXECUTE ON FUNCTION public.config_agent_gate(uuid, text, text, text[]) TO authenticated, service_role;

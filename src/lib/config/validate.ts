@@ -337,6 +337,16 @@ export function validateCrossField(values: ConfigValues): ConfigIssue[] {
   const issues: ConfigIssue[] = [];
   const add = (key: string, message: string) => issues.push({ key, message, kind: "invalid" });
 
+  const goingQuiet = values["sources.forsight_quiet_days"];
+  const silent = values["sources.forsight_silent_days"];
+  const longSilent = values["sources.forsight_long_silent_days"];
+  if (typeof goingQuiet === "number" && typeof silent === "number" && silent <= goingQuiet) {
+    add("sources.forsight_silent_days", "Silent must be longer than going quiet.");
+  }
+  if (typeof silent === "number" && typeof longSilent === "number" && longSilent <= silent) {
+    add("sources.forsight_long_silent_days", "Long silent must be longer than silent.");
+  }
+
   const weights = values["qualification.factor_weights"];
   if (isPlainObject(weights)) {
     const total = Object.values(weights).reduce<number>((sum, entry) => sum + (typeof entry === "number" ? entry : 0), 0);

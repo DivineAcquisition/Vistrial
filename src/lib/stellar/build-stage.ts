@@ -23,8 +23,9 @@ export const BUILD_STAGE_LABELS: Record<PlacementBuildStage, string> = {
   running_smoothly: "Running smoothly",
 };
 
-export function buildStageLabel(stage: PlacementBuildStage): string {
-  return BUILD_STAGE_LABELS[stage];
+/** A stage's name: the workspace's own (sources.stellar_stage_labels) when given, else the default. */
+export function buildStageLabel(stage: PlacementBuildStage, labels?: Record<string, string>): string {
+  return labels?.[stage]?.trim() || BUILD_STAGE_LABELS[stage];
 }
 
 export function buildStageIndex(stage: PlacementBuildStage): number {

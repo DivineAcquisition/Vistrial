@@ -6625,6 +6625,10 @@ export type Database = {
         Args: { p_org_id: string };
         Returns: Json;
       };
+      config_display_settings: {
+        Args: { p_org_id: string };
+        Returns: Json;
+      };
       config_agent_gate: {
         Args: { p_org_id: string; p_consumer: string; p_label: string; p_sections: string[] };
         Returns: Json;

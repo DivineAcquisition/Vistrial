@@ -78,7 +78,6 @@ async function loadVoice(db: GhlDb, orgId: string): Promise<VoiceBits> {
   return {
     greeting: data?.use_greeting ? (data.greeting_text ?? null) : null,
     signoff: data?.use_signoff ? (data.signoff_text ?? null) : null,
-    useGreeting: data?.use_greeting ?? true,
   };
 }
 

@@ -1,7 +1,7 @@
 import { Panel } from "@/components/ui/panel";
 import { SectionHeader } from "@/components/ui/section-header";
 import { Dot, TonePill, type Tone } from "@/components/ui/tone";
-import { daysSince, type LeadRow, type PipelineHealth } from "@/lib/forsight/pipeline";
+import { daysSince, DEFAULT_SILENCE, type LeadRow, type PipelineHealth } from "@/lib/forsight/pipeline";
 import { isProductScopeEnabled } from "@/lib/product-scope";
 
 function plural(count: number, one: string, many = `${one}s`): string {
@@ -72,6 +72,7 @@ export function PipelineScreen({ health, now }: { health: PipelineHealth; now: D
   const quiet30 = goingQuiet.ghosted30;
   const quiet14 = goingQuiet.ghosted14;
   const quietTotal = quiet30.length + quiet14.length;
+  const silence = health.thresholds ?? DEFAULT_SILENCE;
 
   return (
     <>
@@ -115,13 +116,13 @@ export function PipelineScreen({ health, now }: { health: PipelineHealth; now: D
           <Panel className="p-5">
             <Count value={0} tone="good" label="Nobody drifting" />
             <p className="mt-3 text-sm text-muted-foreground">
-              No active lead has gone more than a fortnight without contact.
+              No active lead has gone more than {silence.silentDays} days without contact.
             </p>
           </Panel>
         ) : (
           <div className="grid gap-4 lg:grid-cols-2">
             <Panel className="p-5">
-              <Count value={quiet30.length} tone="critical" label="Silent 30+ days" />
+              <Count value={quiet30.length} tone="critical" label={`Silent ${silence.longSilentDays}+ days`} />
               {quiet30.length > 0 ? (
                 <div className="mt-4">
                   <LeadList leads={quiet30} meta={silentFor} />
@@ -131,7 +132,7 @@ export function PipelineScreen({ health, now }: { health: PipelineHealth; now: D
               )}
             </Panel>
             <Panel className="p-5">
-              <Count value={quiet14.length} tone="warning" label="Silent 14+ days" />
+              <Count value={quiet14.length} tone="warning" label={`Silent ${silence.silentDays}+ days`} />
               {quiet14.length > 0 ? (
                 <div className="mt-4">
                   <LeadList leads={quiet14} meta={silentFor} />

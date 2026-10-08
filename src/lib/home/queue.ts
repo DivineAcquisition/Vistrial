@@ -83,16 +83,13 @@ export function parseDrafts(value: unknown): QueueDraft[] {
 export type VoiceBits = {
   greeting: string | null;
   signoff: string | null;
-  /** False when the workspace turned greetings off: the message starts with its first sentence. */
-  useGreeting?: boolean;
 };
 
 function frame(body: string, voice: VoiceBits, firstName: string | null): string {
-  const bye = voice.signoff ? `\n\n${voice.signoff.trim()}` : "";
-  if (voice.useGreeting === false) return `${body.charAt(0).toUpperCase()}${body.slice(1)}${bye}`;
   const hello = voice.greeting
     ? `${voice.greeting.replace(/\{name\}/gi, firstName ?? "there").trim()} `
     : `Hi ${firstName ?? "there"}, `;
+  const bye = voice.signoff ? `\n\n${voice.signoff.trim()}` : "";
   return `${hello}${body}${bye}`;
 }
 

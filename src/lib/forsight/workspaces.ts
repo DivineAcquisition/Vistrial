@@ -9,6 +9,7 @@ import { isoDate } from "@/lib/forsight/weeks";
 import { createClient } from "@/lib/supabase/server";
 import { metricsSourceFor, type ForsightSourceType } from "@/lib/forsight/types";
 import { ABSENT, type MetricValue } from "@/lib/forsight/values";
+import { loadDisplaySettings } from "@/lib/config/display";
 
 /**
  * Every workspace's headline numbers on one screen.
@@ -86,6 +87,7 @@ async function overviewRow(
     const metrics = metricsSourceFor(sources, org.id);
     const provider = coreProvider(supabase, metrics, {
       orgName: org.name,
+      settings: await loadDisplaySettings(supabase, org.id),
       meta: sources.find((source) => source.type === "meta_ads") ?? null,
     });
 

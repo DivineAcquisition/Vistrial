@@ -194,3 +194,36 @@ $$;
 
 REVOKE ALL ON FUNCTION public.config_agent_gate(uuid, text, text, text[]) FROM PUBLIC, anon;
 GRANT EXECUTE ON FUNCTION public.config_agent_gate(uuid, text, text, text[]) TO authenticated, service_role;
+
+-- ---------------------------------------------------------------------------
+-- 4. Display settings for screens customers see (Forsight, the Stellar
+--    portal). Only these few values, to anyone who belongs to the workspace;
+--    the rest of the configuration stays with the Vistrial team.
+-- ---------------------------------------------------------------------------
+
+CREATE OR REPLACE FUNCTION public.config_display_settings(p_org_id uuid)
+RETURNS jsonb
+LANGUAGE plpgsql
+STABLE
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  v_values jsonb;
+BEGIN
+  IF public.ws_end_user_request() AND public.ws_access(p_org_id) IS NULL THEN
+    RAISE EXCEPTION 'Not a workspace you belong to.' USING ERRCODE = '42501';
+  END IF;
+  v_values := public.config_effective_at(p_org_id) -> 'values';
+  RETURN jsonb_build_object(
+    'forsight_history_weeks', v_values -> 'sources.forsight_history_weeks',
+    'forsight_quiet_days', v_values -> 'sources.forsight_quiet_days',
+    'forsight_silent_days', v_values -> 'sources.forsight_silent_days',
+    'forsight_long_silent_days', v_values -> 'sources.forsight_long_silent_days',
+    'stellar_stage_labels', v_values -> 'sources.stellar_stage_labels'
+  );
+END;
+$$;
+
+REVOKE ALL ON FUNCTION public.config_display_settings(uuid) FROM PUBLIC, anon;
+GRANT EXECUTE ON FUNCTION public.config_display_settings(uuid) TO authenticated, service_role;

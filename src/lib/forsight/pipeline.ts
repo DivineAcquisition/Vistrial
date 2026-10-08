@@ -58,19 +58,29 @@ export function neverContacted(leads: LeadRow[]): LeadRow[] {
 
 export type QuietBucket = "ghosted14" | "ghosted30";
 
-/** The buckets the Touch Status wording already sorts leads into. */
-export function quietBucket(lead: LeadRow): QuietBucket | null {
+/** Days without human contact before a lead is going quiet, silent, and long silent. */
+export type SilenceThresholds = { quietDays: number; silentDays: number; longSilentDays: number };
+
+/** What Forsight used before these came from configuration (also the platform defaults). */
+export const DEFAULT_SILENCE: SilenceThresholds = { quietDays: 7, silentDays: 14, longSilentDays: 30 };
+
+/**
+ * The buckets the Touch Status wording already sorts leads into. The bucket
+ * names are historical: "ghosted14" is silent, "ghosted30" long silent, at
+ * whatever the workspace set.
+ */
+export function quietBucket(lead: LeadRow, thresholds: SilenceThresholds = DEFAULT_SILENCE): QuietBucket | null {
   const status = plainText(lead.touchStatus);
-  if (status.includes("ghosted 30d")) return "ghosted30";
-  if (status.includes("ghosted 14d")) return "ghosted14";
+  if (status.includes(`ghosted ${thresholds.longSilentDays}d`)) return "ghosted30";
+  if (status.includes(`ghosted ${thresholds.silentDays}d`)) return "ghosted14";
   return null;
 }
 
-export function goingQuiet(leads: LeadRow[]): Record<QuietBucket, LeadRow[]> {
+export function goingQuiet(leads: LeadRow[], thresholds: SilenceThresholds = DEFAULT_SILENCE): Record<QuietBucket, LeadRow[]> {
   const buckets: Record<QuietBucket, LeadRow[]> = { ghosted30: [], ghosted14: [] };
   for (const lead of leads) {
     if (!working(lead)) continue;
-    const bucket = quietBucket(lead);
+    const bucket = quietBucket(lead, thresholds);
     if (bucket) buckets[bucket].push(lead);
   }
   const bySilence = (a: LeadRow, b: LeadRow) => (b.daysSinceTouch ?? 0) - (a.daysSinceTouch ?? 0);
@@ -93,6 +103,8 @@ export type PipelineHealth = {
   goingQuiet: Record<QuietBucket, LeadRow[]>;
   debriefsMissing: LeadRow[];
   totalLeads: number;
+  /** The silence thresholds the buckets used. */
+  thresholds?: SilenceThresholds;
 };
 
 /**

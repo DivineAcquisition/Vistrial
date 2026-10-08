@@ -1106,6 +1106,67 @@ export const CONFIG_FIELDS: FieldDef[] = [
     platformDefault: [],
   },
 
+  {
+    key: "sources.forsight_history_weeks",
+    section: "sources",
+    label: "Forsight shows (weeks)",
+    help: "How many weeks of history the Forsight dashboard and reports cover.",
+    type: "number",
+    rules: { min: 4, max: 52, integer: true },
+    platformDefault: 12,
+  },
+  {
+    key: "sources.forsight_quiet_days",
+    section: "sources",
+    label: "Forsight: going quiet after (days)",
+    help: "In Forsight's pipeline health, a lead with no human contact for longer than this is going quiet.",
+    type: "number",
+    rules: { min: 1, max: 60, integer: true },
+    platformDefault: 7,
+  },
+  {
+    key: "sources.forsight_silent_days",
+    section: "sources",
+    label: "Forsight: silent after (days)",
+    help: "Longer than this with no human contact counts as silent. Must be longer than going quiet.",
+    type: "number",
+    rules: { min: 2, max: 120, integer: true },
+    platformDefault: 14,
+  },
+  {
+    key: "sources.forsight_long_silent_days",
+    section: "sources",
+    label: "Forsight: long silent after (days)",
+    help: "Longer than this with no human contact counts as long silent. Must be longer than silent.",
+    type: "number",
+    rules: { min: 3, max: 365, integer: true },
+    platformDefault: 30,
+  },
+  {
+    key: "sources.stellar_stage_labels",
+    section: "sources",
+    label: "Stellar build stage names",
+    help: "What the client portal calls each build stage.",
+    type: "key_value",
+    rules: {
+      keys: [
+        { value: "getting_set_up", label: "Stage 1" },
+        { value: "building_system", label: "Stage 2" },
+        { value: "testing", label: "Stage 3" },
+        { value: "live", label: "Stage 4" },
+        { value: "running_smoothly", label: "Stage 5" },
+      ],
+      valueType: "text",
+    },
+    platformDefault: {
+      getting_set_up: "Getting set up",
+      building_system: "Building your system",
+      testing: "Testing",
+      live: "Live",
+      running_smoothly: "Running smoothly",
+    },
+  },
+
   // --------------------------------------------------------------- operators
   {
     key: "operators.assignment_mode",

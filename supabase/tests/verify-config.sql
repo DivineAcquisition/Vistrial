@@ -507,6 +507,16 @@ SELECT pg_temp.check(
   AND pg_temp.fails('c0f10000-0000-4000-8000-0000000000b2', 'DELETE FROM public.lead_opt_outs'),
   'a member changed an opt-out directly') FROM w;
 
+-- Customer screens get only their display values, and only for their own workspace.
+SELECT pg_temp.check(
+  (SELECT array_agg(k ORDER BY k) FROM jsonb_object_keys(
+     pg_temp.q('c0f10000-0000-4000-8000-0000000000b3', format($q$public.config_display_settings(%L)$q$, w1))) k)
+  = ARRAY['forsight_history_weeks','forsight_long_silent_days','forsight_quiet_days','forsight_silent_days','stellar_stage_labels'],
+  'a member saw more than the display values') FROM w;
+SELECT pg_temp.check(
+  pg_temp.fails('c0f10000-0000-4000-8000-0000000000b3', format($q$public.config_display_settings(%L)$q$, w2)),
+  'a member read another workspace''s display values') FROM w;
+
 -- Every new table has row-level security, and none is open to signed-out visitors.
 SELECT pg_temp.check(
   NOT EXISTS (SELECT 1 FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace

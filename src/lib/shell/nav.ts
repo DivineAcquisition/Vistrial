@@ -245,15 +245,15 @@ function groupsFor(input: {
           {
             id: "overview",
             label: "Overview",
-            href: "/portal",
-            match: "/portal",
+            href: HOME_PATH,
+            match: HOME_PATH,
             icon: "overview",
             phone: 1,
           },
           {
             id: "results",
             label: "Results",
-            href: "/portal#results",
+            href: "/portal",
             match: "/portal",
             icon: "results",
             phone: 2,
@@ -413,12 +413,6 @@ export function isPlatformRoute(pathname: string): boolean {
 }
 
 export function isShellItemActive(pathname: string, hash: string, item: ShellNavItem): boolean {
-  if (item.id === "results" && item.href.includes("#results")) {
-    return pathname === "/portal" && hash === "#results";
-  }
-  if (item.id === "overview" && item.href === "/portal") {
-    return pathname === "/portal" && hash !== "#results";
-  }
   if (item.id === "roster") {
     return pathname === "/app/team";
   }

@@ -12,8 +12,8 @@ import { getSupabaseAdmin } from "@/lib/supabase/admin";
 
 export const dynamic = "force-dynamic";
 
-function redirectToPortal(query: Record<string, string>) {
-  const url = new URL("/portal", appUrl());
+function redirectToIntegrations(query: Record<string, string>) {
+  const url = new URL("/app/settings/integrations", appUrl());
   for (const [key, value] of Object.entries(query)) {
     url.searchParams.set(key, value);
   }
@@ -34,7 +34,7 @@ export async function GET(request: Request) {
   }
 
   if (incoming.searchParams.get("error")) {
-    return redirectToPortal({ source_error: "oauth_denied" });
+    return redirectToIntegrations({ source_error: "oauth_denied" });
   }
 
   const code = incoming.searchParams.get("code");
@@ -45,7 +45,7 @@ export async function GET(request: Request) {
   if (state) cookieStore.delete(sourceOAuthCookieName(state.kind));
 
   if (!code || !stateParam || !cookieState || stateParam !== cookieState || !state) {
-    return redirectToPortal({ source_error: "oauth_invalid" });
+    return redirectToIntegrations({ source_error: "oauth_invalid" });
   }
 
   try {
@@ -55,10 +55,10 @@ export async function GET(request: Request) {
     const verified = await testSourceConnection(db, state.orgId, state.kind);
     await recordHttpSample(db, "/api/sources/oauth/callback", false);
     return verified.ok
-      ? redirectToPortal({ source_connected: state.kind })
-      : redirectToPortal({ source_connected: state.kind, source_unverified: verified.error });
+      ? redirectToIntegrations({ source_connected: state.kind })
+      : redirectToIntegrations({ source_connected: state.kind, source_unverified: verified.error });
   } catch {
     await recordHttpSample(db, "/api/sources/oauth/callback", true);
-    return redirectToPortal({ source_error: "oauth_failed" });
+    return redirectToIntegrations({ source_error: "oauth_failed" });
   }
 }

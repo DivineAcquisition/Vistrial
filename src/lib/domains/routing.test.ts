@@ -248,9 +248,12 @@ describe("signed-in landing follows the host", () => {
     expect(signedInPath({ product: "pulse", next: FORSIGHT_PATH })).toBe(FORSIGHT_PATH);
   });
 
-  it("does not send a portal-only member into the operator app", () => {
+  it("sends a former portal-only member into Home, not the parked portal", () => {
     expect(signedInPath({ product: "app", next: "/app/queue", surfaceAccess: "portal" })).toBe(
-      "/portal"
+      "/app/queue"
+    );
+    expect(signedInPath({ product: "app", next: "/portal", surfaceAccess: "portal" })).toBe(
+      "/app/home"
     );
   });
 

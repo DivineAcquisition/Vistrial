@@ -28,7 +28,7 @@ export function UserMenu({
   collapsed?: boolean;
   placement?: "sidebar" | "header";
 }) {
-  const { user, role, isStaff, isPlatformAdmin, workspaceRole, surfaceAccess, org } = useOrg();
+  const { user, isStaff, isPlatformAdmin, workspaceRole, org } = useOrg();
   const name = user.displayName || user.email;
   const roleLabel = SHELL_ROLE_LABEL[workspaceRole];
   const header = placement === "header";
@@ -83,12 +83,7 @@ export function UserMenu({
           </MenuGroupLabel>
         </MenuGroup>
         <MenuSeparator />
-        {surfaceAccess === "portal" || workspaceRole === "member" ? null : (
-          <MenuLinkItem render={<Link href="/app/settings/profile" />}>Personal settings</MenuLinkItem>
-        )}
-        {role === "owner" || role === "member" || isStaff ? (
-          <MenuLinkItem render={<Link href="/portal" />}>Portal</MenuLinkItem>
-        ) : null}
+        <MenuLinkItem render={<Link href="/app/settings/profile" />}>Personal settings</MenuLinkItem>
         {isStaff ? (
           <MenuLinkItem render={<Link href="/app/team" />}>Vistrial team</MenuLinkItem>
         ) : null}

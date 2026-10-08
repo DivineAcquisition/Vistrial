@@ -123,15 +123,6 @@ export const PRIMARY_NAV: NavItem[] = [
  */
 export const MORE_NAV: NavItem[] = [
   {
-    href: "/portal",
-    label: "Portal",
-    match: "/portal",
-    group: "door",
-    icon: "reporting",
-    roles: ["owner", "admin"],
-    description: "Whether this workspace is turning leads into clients.",
-  },
-  {
     href: "/app/queue",
     label: "To call",
     match: "/app/queue",
@@ -350,16 +341,16 @@ export function firstSettingsPath(role: OrgRole, isStaff = false): string {
 export const DEFAULT_APP_PATH = "/app/queue";
 
 /**
- * Where someone lands after sign-in. Members open the customer views. Owners
- * and staff open Home for this workspace, with the conversation one click
- * away. Operators open their list.
+ * Where someone lands after sign-in. Owners, staff, and members open Home.
+ * Operators open their list. The customer portal is parked, so it is not a
+ * destination.
  */
 export function landingPath(
-  surfaceAccess: SurfaceAccess | undefined,
+  _surfaceAccess: SurfaceAccess | undefined,
   role?: OrgRole | null
 ): string {
-  if (role === "member" || role === "client_viewer") return "/portal";
-  if (role === "owner" || role === "admin") return HOME_PATH;
-  if (!role && surfaceAccess === "portal") return "/portal";
+  if (role === "owner" || role === "admin" || role === "member" || role === "client_viewer" || !role) {
+    return HOME_PATH;
+  }
   return DEFAULT_APP_PATH;
 }

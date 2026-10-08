@@ -97,13 +97,14 @@ describe("shell navigation", () => {
     expect(isPlatformRoute("/portal")).toBe(false);
   });
 
-  it("highlights the member Results item only for the results anchor", () => {
+  it("highlights member Overview on Home and Results on the portal", () => {
     const results = shellNavigation({ role: "member", templateAccess: false }).groups[0]?.items[1];
     const overview = shellNavigation({ role: "member", templateAccess: false }).groups[0]?.items[0];
     if (!results || !overview) throw new Error("member nav missing");
-    expect(isShellItemActive("/portal", "#results", results)).toBe(true);
-    expect(isShellItemActive("/portal", "#results", overview)).toBe(false);
-    expect(isShellItemActive("/portal", "", overview)).toBe(true);
+    expect(isShellItemActive("/portal", "", results)).toBe(true);
+    expect(isShellItemActive("/portal", "", overview)).toBe(false);
+    expect(isShellItemActive("/app/home", "", results)).toBe(false);
+    expect(isShellItemActive("/app/home", "", overview)).toBe(true);
   });
 
   it("maps routes onto the eight layouts", () => {

@@ -19,7 +19,6 @@ import { UserMenu } from "@/components/app/user-menu";
 import { ShellLeading } from "@/components/app/shell-leading";
 import { WorkspaceStatusBanner } from "@/components/app/workspace-status-banner";
 import { useOrg } from "@/components/app/org-provider";
-import { useLocationHash } from "@/hooks/use-location-hash";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { landingPath } from "@/lib/navigation";
 import {
@@ -69,7 +68,6 @@ function ConnectedShell({
 }) {
   const pathname = usePathname();
   const org = useOrg();
-  const hash = useLocationHash();
 
   const onPlatformPage = org.isStaff && isPlatformRoute(pathname);
   const nav = shellNavigation({
@@ -84,9 +82,6 @@ function ConnectedShell({
   }
   if (org.workspaceRole === "operator" && pathname.startsWith("/app/settings/profile")) {
     title = "Profile";
-  }
-  if (org.workspaceRole === "member" && pathname === "/portal") {
-    title = hash === "#results" ? "Results" : "Overview";
   }
   const chat = pathname === "/app/ask" || pathname.startsWith("/app/ask/");
   const home = landingPath(org.surfaceAccess, org.role);

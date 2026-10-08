@@ -99,7 +99,7 @@ function ForsightBody<T>({
         <EmptyState
           kind="unconfigured"
           title="No metrics source yet"
-          detail={`${view.workspace.name} does not have a Forsight source connected. Divine Acquisition connects the ad account — there is nothing for you to enter here.`}
+          detail={`${view.workspace.name} does not have a Forsight source connected. The Vistrial team connects the ad account — there is nothing for you to enter here.`}
         />
       );
 

@@ -1,13 +1,12 @@
 "use client";
 
-import { type CSSProperties, type ReactNode, Suspense } from "react";
+import { type ReactNode, Suspense, useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 
-import { AppSidebar } from "@/components/app/app-sidebar";
+import { ApplicationShell } from "@/components/app/application-shell";
 import { BriefPrefetcher } from "@/components/app/brief-prefetcher";
 import { ConnectionStatus } from "@/components/app/connection-status";
 import { LastLeadTracker } from "@/components/app/last-lead-tracker";
-import { MobileDock } from "@/components/app/mobile-dock";
 import { NotificationBell } from "@/components/app/notification-bell";
 import { AppJumpPalette } from "@/components/app/jump-palette";
 import { NotificationRuntime } from "@/components/app/notification-runtime";
@@ -17,128 +16,170 @@ import { CoachingDisclosureNotice } from "@/components/app/coaching-disclosure";
 import { FirstRunExplainer } from "@/components/app/first-run";
 import { PageMotion } from "@/components/app/page-motion";
 import { PushPrompt } from "@/components/app/push-prompt";
+import { ShellSwitchProvider } from "@/components/app/shell-switch";
 import { UserMenu } from "@/components/app/user-menu";
-import { StaffWorkspaceBand, WorkspaceSwitcher } from "@/components/app/workspace-switcher";
-import Logo from "@/components/brand/logo";
-import { SidebarInset, SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
+import { ShellLeading } from "@/components/app/shell-leading";
+import { WorkspaceStatusBanner } from "@/components/app/workspace-status-banner";
+import { useOrg } from "@/components/app/org-provider";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { isProductScopeEnabled } from "@/lib/product-scope";
-import { useSidebarCollapsed } from "@/lib/use-sidebar-collapsed";
-import { cn } from "@/lib/utils";
-
-const SIDEBAR_SIZE = {
-  "--sidebar-width": "16rem",
-  "--sidebar-width-icon": "3.5rem",
-} as CSSProperties;
+import { landingPath } from "@/lib/navigation";
+import {
+  isPlatformRoute,
+  shellChrome,
+  shellNavigation,
+  type AttentionCounts,
+} from "@/lib/shell/nav";
 
 export function AppShell({
   children,
+  counts,
+  lostWorkspace = false,
+  version,
   needsMobileOutcomeTraining = false,
   needsCoachingAck = false,
 }: {
   children: ReactNode;
+  counts: AttentionCounts;
+  lostWorkspace?: boolean;
+  version: string;
   needsMobileOutcomeTraining?: boolean;
   needsCoachingAck?: boolean;
 }) {
-  const { collapsed, setCollapsed } = useSidebarCollapsed();
   const pathname = usePathname();
-  const wizard = pathname.startsWith("/app/onboarding");
-  const conversation = pathname === "/app/ask";
+  if (pathname.startsWith("/app/layouts/preview")) return children;
 
   return (
-    <div className="relative isolate min-h-svh bg-background text-card-foreground">
-      <div aria-hidden className="pointer-events-none fixed inset-0 z-0 overflow-hidden">
-        <div
-          className="absolute -top-[22%] left-1/2 h-[520px] w-[820px] -translate-x-1/2"
-          style={{
-            background:
-              "radial-gradient(ellipse at center, rgba(154,136,252,0.18) 0%, transparent 70%)",
-            filter: "blur(64px)",
-            animation: "app-breathe 9s ease-in-out infinite",
-          }}
+    <ShellSwitchProvider>
+      <ConnectedShell
+        counts={counts}
+        lostWorkspace={lostWorkspace}
+        version={version}
+        needsMobileOutcomeTraining={needsMobileOutcomeTraining}
+        needsCoachingAck={needsCoachingAck}
+      >
+        {children}
+      </ConnectedShell>
+    </ShellSwitchProvider>
+  );
+}
+
+function ConnectedShell({
+  children,
+  counts,
+  lostWorkspace,
+  version,
+  needsMobileOutcomeTraining,
+  needsCoachingAck,
+}: {
+  children: ReactNode;
+  counts: AttentionCounts;
+  lostWorkspace: boolean;
+  version: string;
+  needsMobileOutcomeTraining: boolean;
+  needsCoachingAck: boolean;
+}) {
+  const pathname = usePathname();
+  const org = useOrg();
+  const [hash, setHash] = useState("");
+  const liveHash = typeof window === "undefined" ? "" : window.location.hash;
+  if (liveHash !== hash) setHash(liveHash);
+  useEffect(() => {
+    const onHash = () => setHash(window.location.hash);
+    window.addEventListener("hashchange", onHash);
+    return () => window.removeEventListener("hashchange", onHash);
+  }, []);
+
+  const inWorkspace = !org.isStaff || !isPlatformRoute(pathname);
+  const nav = shellNavigation({
+    role: org.workspaceRole,
+    templateAccess: org.templateAccess,
+    inWorkspace,
+  });
+  const chrome = shellChrome(pathname);
+  let title = chrome.title;
+  if (org.workspaceRole === "operator" && (pathname === "/app/home" || pathname.startsWith("/app/home/"))) {
+    title = "Today";
+  }
+  if (org.workspaceRole === "operator" && pathname.startsWith("/app/settings/profile")) {
+    title = "Profile";
+  }
+  if (org.workspaceRole === "member" && pathname === "/portal") {
+    title = hash === "#results" ? "Results" : "Overview";
+  }
+  const chat = pathname === "/app/ask" || pathname.startsWith("/app/ask/");
+  const home = landingPath(org.surfaceAccess, org.role);
+  const showCue = org.isStaff && inWorkspace;
+
+  return (
+    <ApplicationShell
+      groups={nav.groups}
+      phone={nav.phone}
+      more={nav.more}
+      counts={counts}
+      homeHref={home}
+      title={title}
+      crumbs={chrome.crumbs}
+      version={version}
+      chat={chat}
+      leading={<ShellLeading platform={org.isStaff && isPlatformRoute(pathname)} />}
+      tools={
+        <>
+          <AppJumpPalette />
+          <NotificationBell />
+        </>
+      }
+      renderAccount={(placement, collapsed) => (
+        <UserMenu
+          placement={placement === "header" ? "header" : "sidebar"}
+          collapsed={placement === "header" ? true : collapsed}
         />
-        <div
-          className="absolute right-[-12%] bottom-[-18%] h-[380px] w-[380px]"
-          style={{
-            background:
-              "radial-gradient(ellipse at center, rgba(154,136,252,0.1) 0%, transparent 70%)",
-            filter: "blur(56px)",
-            animation: "app-breathe 11s ease-in-out infinite",
-            animationDelay: "1.6s",
-          }}
-        />
-      </div>
-
-      {wizard ? (
-        <div className="relative z-10 flex min-h-svh flex-col">
-          <header className="sticky top-0 z-30 flex h-16 items-center gap-3 border-b border-border bg-background/80 px-4 backdrop-blur-xl print:hidden sm:px-6">
-            <Logo markOnly className="h-8 w-auto" />
-            <p className="text-sm font-medium tracking-wide text-muted-foreground">Setup</p>
-            <div className="ml-auto">
-              <UserMenu placement="header" />
-            </div>
-          </header>
-          <div className="min-w-0 flex-1 overflow-x-hidden px-5 py-8 sm:px-8 lg:px-10">
-            <div className="mx-auto w-full max-w-3xl overflow-x-hidden">
-              <PageMotion>{children}</PageMotion>
-            </div>
-          </div>
-        </div>
-      ) : conversation ? (
-        <div className="relative z-10 h-svh overflow-hidden">
-          <Suspense fallback={null}>
-            <NotificationRuntime />
-          </Suspense>
-          <OutcomeSyncRuntime />
-          {children}
-        </div>
-      ) : (
-        <SidebarProvider
-          className="relative z-10"
-          open={!collapsed}
-          onOpenChange={(open) => setCollapsed(!open)}
-          style={SIDEBAR_SIZE}
-        >
-          <AppSidebar />
-          <SidebarInset className="min-w-0 overflow-x-hidden bg-transparent">
-            <StaffWorkspaceBand />
-            <header className="sticky top-0 z-30 flex h-16 items-center gap-3 border-b border-border bg-background/80 px-4 backdrop-blur-xl print:hidden sm:px-6">
-              <SidebarTrigger />
-              <Logo markOnly className="h-8 w-auto md:hidden" />
-              <WorkspaceSwitcher />
-              <div className="ml-auto flex items-center gap-1">
-                <NotificationBell />
-                <AppJumpPalette />
-              </div>
-            </header>
-
-            <Suspense fallback={null}>
-              <NotificationRuntime />
-            </Suspense>
-            <OutcomeSyncRuntime />
-            <LastLeadTracker />
-            <BriefPrefetcher />
-
-            <div
-              className={cn(
-                "min-w-0 flex-1 overflow-x-hidden px-5 py-8 sm:px-8 lg:px-10",
-                "pb-[calc(5.5rem+env(safe-area-inset-bottom))] md:pb-8",
-              )}
-            >
-              <div className="mx-auto w-full max-w-[1400px] overflow-x-hidden">
-                <ConnectionStatus />
-                <FirstRunExplainer />
-                {isProductScopeEnabled("coaching") ? (
-                  <CoachingDisclosureNotice needed={needsCoachingAck} />
-                ) : null}
-                <MobileWalkthroughNotice needed={needsMobileOutcomeTraining} />
-                <PushPrompt />
-                <PageMotion>{children}</PageMotion>
-              </div>
-            </div>
-            {pathname.startsWith("/app/ask") ? null : <MobileDock />}
-          </SidebarInset>
-        </SidebarProvider>
       )}
+      cue={showCue ? <StaffCue /> : null}
+      banner={
+        <>
+          {lostWorkspace ? (
+            <Alert variant="warning" className="mb-6">
+              <AlertTitle>That workspace is no longer open to you</AlertTitle>
+              <AlertDescription>You are in {org.org.name}.</AlertDescription>
+            </Alert>
+          ) : null}
+          <WorkspaceStatusBanner />
+        </>
+      }
+    >
+      <Suspense fallback={null}>
+        <NotificationRuntime />
+      </Suspense>
+      <OutcomeSyncRuntime />
+      <LastLeadTracker />
+      <BriefPrefetcher />
+      <ConnectionStatus />
+      <FirstRunExplainer />
+      {isProductScopeEnabled("coaching") ? <CoachingDisclosureNotice needed={needsCoachingAck} /> : null}
+      <MobileWalkthroughNotice needed={needsMobileOutcomeTraining} />
+      <PushPrompt />
+      {chat ? <div className="min-h-0 flex-1">{children}</div> : <PageMotion>{children}</PageMotion>}
+    </ApplicationShell>
+  );
+}
+
+function StaffCue() {
+  const { org, isPlatformAdmin } = useOrg();
+  return (
+    <div className="print:hidden">
+      <div aria-hidden className="h-0.5 bg-brand-500" />
+      <div
+        role="note"
+        className="flex min-w-0 items-center gap-2 border-b border-brand-500/30 bg-brand-500/10 px-4 py-1.5 text-xs text-card-foreground sm:px-6"
+      >
+        <span className="shrink-0 font-medium text-brand-300">{isPlatformAdmin ? "Admin" : "Service Team"}</span>
+        <span aria-hidden>·</span>
+        <span className="truncate" title={org.name}>
+          {org.isPlatformWorkspace ? "Vistrial's own workspace" : "Working inside"}{" "}
+          <span className="font-medium">{org.name}</span>
+        </span>
+      </div>
     </div>
   );
 }

@@ -1,10 +1,9 @@
 import "server-only";
 
-import { redirect } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 
 import { canManageMembers, canManageOrgSettings, canWorkOperatorApp } from "@/lib/auth/permissions";
 import { getAuthContext } from "@/lib/auth/session";
-import { DEFAULT_APP_PATH, firstSettingsPath } from "@/lib/navigation";
 import type { AuthContext } from "@/lib/auth/types";
 
 export async function requireOrgSettingsManager(): Promise<AuthContext> {
@@ -13,7 +12,7 @@ export async function requireOrgSettingsManager(): Promise<AuthContext> {
     redirect("/portal");
   }
   if (!canManageOrgSettings(ctx.role, ctx.isStaff)) {
-    redirect(firstSettingsPath(ctx.role, ctx.isStaff));
+    notFound();
   }
   return ctx;
 }
@@ -22,7 +21,7 @@ export async function requireOrgSettingsManager(): Promise<AuthContext> {
 export async function requirePlatformAdmin(): Promise<AuthContext> {
   const ctx = await getAuthContext();
   if (!ctx.isPlatformAdmin) {
-    redirect(DEFAULT_APP_PATH);
+    notFound();
   }
   return ctx;
 }
@@ -31,7 +30,7 @@ export async function requirePlatformAdmin(): Promise<AuthContext> {
 export async function requireStaff(): Promise<AuthContext> {
   const ctx = await getAuthContext();
   if (!ctx.isStaff) {
-    redirect(DEFAULT_APP_PATH);
+    notFound();
   }
   return ctx;
 }
@@ -42,7 +41,7 @@ export async function requireMembersManager(): Promise<AuthContext> {
     redirect("/portal");
   }
   if (!canManageMembers(ctx.role, ctx.isStaff)) {
-    redirect(firstSettingsPath(ctx.role, ctx.isStaff));
+    notFound();
   }
   return ctx;
 }
@@ -51,7 +50,7 @@ export async function requireMembersManager(): Promise<AuthContext> {
 export async function requireOwnerOrStaff(): Promise<AuthContext> {
   const ctx = await getAuthContext();
   if (!ctx.isStaff && ctx.role !== "owner") {
-    redirect(firstSettingsPath(ctx.role, ctx.isStaff));
+    notFound();
   }
   return ctx;
 }

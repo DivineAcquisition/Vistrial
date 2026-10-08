@@ -32,7 +32,7 @@ export default async function ForsightWorkspacesPage() {
   return (
     <PageFrame
       title="All workspaces"
-      eyebrow="Divine Acquisition only"
+      eyebrow="Vistrial team only"
       description="Every workspace's headline numbers on one screen. Last month's report: whether it exists, which version, and whether anyone has sent it."
       toolbar={<ForsightTabs activeHref={`${FORSIGHT_PATH}/workspaces`} isStaff />}
     >

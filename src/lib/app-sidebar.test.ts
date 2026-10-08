@@ -5,7 +5,7 @@ import { describe, expect, it } from "vitest";
 
 describe("operator sidebar", () => {
   it("uses the coss sidebar instead of the aceternity demo", () => {
-    const shell = readFileSync(path.join(process.cwd(), "src/components/app/app-shell.tsx"), "utf8");
+    const shell = readFileSync(path.join(process.cwd(), "src/components/app/application-shell.tsx"), "utf8");
     expect(shell).toContain('from "@/components/ui/sidebar"');
     expect(shell).toContain("SidebarProvider");
     expect(shell).toContain("SidebarInset");
@@ -13,7 +13,7 @@ describe("operator sidebar", () => {
     expect(shell).not.toMatch(/PanelLeftClose|PanelLeftOpen/);
   });
 
-  it("renders a branded header, a flat nav, and a rail", () => {
+  it("renders a branded header and a rail", () => {
     const sidebar = readFileSync(
       path.join(process.cwd(), "src/components/app/app-sidebar.tsx"),
       "utf8",
@@ -21,20 +21,15 @@ describe("operator sidebar", () => {
     expect(sidebar).toContain("collapsible=\"icon\"");
     expect(sidebar).toContain("SidebarRail");
     expect(sidebar).toContain("<Logo markOnly");
-    expect(sidebar).toContain("OrgSwitcher");
-    expect(sidebar).toContain("UserMenu");
+    expect(sidebar).toContain("Help");
   });
 
   it("marks the current destination on coss menu buttons", () => {
-    const nav = readFileSync(
-      path.join(process.cwd(), "src/components/app/app-nav-links.tsx"),
-      "utf8",
-    );
+    const nav = readFileSync(path.join(process.cwd(), "src/components/app/shell-nav.tsx"), "utf8");
     expect(nav).toContain("SidebarMenuButton");
     expect(nav).toContain("isActive={active}");
-    expect(nav).not.toContain("SidebarGroupLabel");
+    expect(nav).toContain("SidebarGroupLabel");
     expect(nav).not.toContain(">Now<");
-    expect(nav).not.toContain(">More<");
     expect(nav).not.toContain("bg-brand-950");
   });
 });

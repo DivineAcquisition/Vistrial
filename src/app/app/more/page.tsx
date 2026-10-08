@@ -24,7 +24,7 @@ export default async function MorePage() {
 
       {isStaff ? (
         <section className="mt-10">
-          <h2 className="mb-3 text-sm font-medium text-silver">Divine Acquisition</h2>
+          <h2 className="mb-3 text-sm font-medium text-silver">Vistrial team</h2>
           <ul className="app-stagger grid gap-4 sm:grid-cols-2">
             {DA_CONSOLE_LINKS.map((item) => (
               <li key={item.href} className="h-full">

@@ -32,5 +32,5 @@ export const ROLE_LABELS: Record<string, string> = {
   closer: "closer",
   setter: "setter",
   client_viewer: "viewer",
-  da_operator: "Divine Acquisition",
+  da_operator: "Vistrial team",
 };

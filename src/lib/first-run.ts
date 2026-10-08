@@ -43,7 +43,7 @@ export const FIRST_RUN: Record<OrgRole, FirstRunCopy> = {
     body: "This is where you can see your agreement, payment, build progress, and results.",
   },
   da_operator: {
-    title: "The DA console",
+    title: "Vistrial team",
     body: "Every active placement, in one list.",
   },
 };

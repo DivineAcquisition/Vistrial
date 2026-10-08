@@ -49,7 +49,7 @@ export default async function ForsightSourcesPage() {
   return (
     <PageFrame
       title="Sources"
-      eyebrow="Divine Acquisition only"
+      eyebrow="Vistrial team only"
       description="Where each workspace's Forsight reads from. Clients never see this screen and cannot write these records."
       toolbar={<ForsightTabs activeHref={`${FORSIGHT_PATH}/sources`} isStaff />}
     >

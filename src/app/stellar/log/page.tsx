@@ -51,7 +51,7 @@ export default async function StellarLogPage() {
             bare
             kind="unconfigured"
             title="EOD submission is not built yet"
-            detail="Submitting an end-of-day summary ships in Prompt S2. It is also what powers the DA console's days-since-last-EOD figure."
+            detail="Submitting an end-of-day summary ships in Prompt S2. It is also what powers the days-since-last-summary figure."
           />
         </div>
       </Panel>

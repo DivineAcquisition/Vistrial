@@ -50,6 +50,8 @@ export type AuthContext = {
   platformRole: PlatformRole | null;
   /** Service Team granted template access, or any Platform Admin. */
   templateAccess: boolean;
+  /** The stored workspace was not in this person's list, so another one was opened. */
+  lostWorkspace: boolean;
   memberships: Membership[];
   cookieNeedsReset: boolean;
 };
@@ -66,6 +68,8 @@ export type ClientOrgState = {
   isStaff: boolean;
   isPlatformAdmin: boolean;
   canApprove: boolean;
+  templateAccess: boolean;
+  lostWorkspace: boolean;
   memberId: string;
   surfaceAccess: SurfaceAccess;
   memberships: Array<{

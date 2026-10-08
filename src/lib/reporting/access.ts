@@ -1,16 +1,15 @@
 import "server-only";
 
-import { redirect } from "next/navigation";
+import { notFound } from "next/navigation";
 
 import { canViewReporting } from "@/lib/auth/permissions";
 import { getAuthContext } from "@/lib/auth/session";
-import { DEFAULT_APP_PATH } from "@/lib/navigation";
 import type { AuthContext } from "@/lib/auth/types";
 
 export async function requireReportingAccess(): Promise<AuthContext> {
   const ctx = await getAuthContext();
   if (!canViewReporting(ctx.role, ctx.isStaff)) {
-    redirect(DEFAULT_APP_PATH);
+    notFound();
   }
   return ctx;
 }

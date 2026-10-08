@@ -59,7 +59,65 @@ export default async function TeamWorkspacesPage() {
         </Panel>
       ) : null}
 
-      <Panel className="overflow-hidden px-2 py-2 sm:px-4">
+      <ul className="grid gap-3 md:hidden">
+        {(orgs ?? []).map((org) => {
+          const status = workspaceStatus(org.status);
+          const assigned = assignedTo(org.id);
+          const assignedIds = new Set(assigned.map((row) => row.user_id));
+          return (
+            <li key={org.id}>
+              <Panel className="space-y-3 p-4">
+                <div className="min-w-0">
+                  <p className="truncate font-medium text-white" title={org.name}>
+                    {org.name}
+                  </p>
+                  <p className={helperClass}>
+                    {org.slug}
+                    {org.is_platform_workspace ? " · Vistrial's own" : ""}
+                  </p>
+                </div>
+                <div>
+                  {ctx.isPlatformAdmin ? (
+                    <WorkspaceStatusControl orgId={org.id} status={org.status} />
+                  ) : (
+                    <StatusBadge label={status.label} tone={status.tone} />
+                  )}
+                  {org.status_reason ? <p className={helperClass}>{org.status_reason}</p> : null}
+                </div>
+                {ctx.isPlatformAdmin ? (
+                  <div>
+                    <div className="flex flex-wrap gap-1">
+                      {assigned.map((row) => (
+                        <UnassignButton
+                          key={row.user_id}
+                          orgId={org.id}
+                          userId={row.user_id}
+                          name={names.get(row.user_id) ?? "Someone"}
+                        />
+                      ))}
+                    </div>
+                    <AssignStaffControl
+                      orgId={org.id}
+                      options={serviceTeam
+                        .filter((person) => !assignedIds.has(person.user_id))
+                        .map((person) => ({ userId: person.user_id, name: person.display_name }))}
+                    />
+                  </div>
+                ) : null}
+                <div>
+                  {org.id === ctx.org.id ? (
+                    <StatusBadge label="Open now" tone="brand" />
+                  ) : (
+                    <OpenWorkspaceButton orgId={org.id} />
+                  )}
+                </div>
+              </Panel>
+            </li>
+          );
+        })}
+      </ul>
+
+      <Panel className="hidden overflow-hidden px-2 py-2 sm:px-4 md:block">
         <Table>
           <TableHeader>
             <TableRow>

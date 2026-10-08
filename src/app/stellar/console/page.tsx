@@ -33,11 +33,11 @@ export default async function StellarConsolePage() {
     <div className="flex flex-col gap-6">
       <div>
         <p className="text-[11px] font-semibold tracking-[0.14em] text-muted-foreground uppercase">
-          DA Console
+          Vistrial team
         </p>
         <h1 className="mt-1 text-xl font-medium text-white">Active placements</h1>
         <p className="mt-1 text-sm text-dim">
-          Active Stellar placements in the workspaces assigned to you. This read was logged to the DA access log.
+          Active Stellar placements in the workspaces assigned to you. This read was logged.
         </p>
       </div>
 

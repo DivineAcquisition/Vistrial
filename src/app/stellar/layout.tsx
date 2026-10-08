@@ -1,30 +1,40 @@
-import Link from "next/link";
-
-import Logo from "@/components/brand/logo";
-import { APP_NAME } from "@/lib/constants";
+import { StellarShell } from "@/components/stellar/stellar-shell";
+import type { ShellNavGroup, ShellNavItem } from "@/lib/shell/nav";
+import { getStellarAuthContext } from "@/lib/stellar/auth";
+import { stellarLandingPath } from "@/lib/stellar/navigation";
+import packageJson from "../../../package.json";
 
 export const dynamic = "force-dynamic";
 
-/**
- * Chrome shared by all three Stellar surfaces. Deliberately not the
- * operator-app AppShell: Stellar is a distinct product with its own three
- * routes, not a section bolted onto core Vistrial's sidebar.
- */
-export default function StellarLayout({ children }: { children: React.ReactNode }) {
+function item(id: string, label: string, href: string, icon: ShellNavItem["icon"], phone?: number): ShellNavItem {
+  return { id, label, href, match: href, icon, phone };
+}
+
+export default async function StellarLayout({ children }: { children: React.ReactNode }) {
+  const ctx = await getStellarAuthContext();
+  const staff = ctx.kind === "da_operator";
+  const items: ShellNavItem[] = [];
+  if (staff && ctx.setter) items.push(item("log", "Log", "/stellar/log", "today", 1));
+  if (staff) items.push(item("placements", "Placements", "/stellar/console", "roster", 2));
+  if (!staff) items.push(item("portal", "Portal", "/stellar/portal", "overview", 1));
+  const groups: ShellNavGroup[] = [{ id: "stellar", label: "Stellar", items }];
+  const phone = items.filter((entry) => entry.phone != null);
+  const businessName = staff ? (ctx.setter?.orgName ?? "Stellar") : ctx.member.orgName;
+  const accountName = staff ? (ctx.user.email ?? "Vistrial team") : ctx.member.displayName || ctx.member.email;
+
   return (
-    <div className="relative min-h-screen bg-ink-950 text-card-foreground">
-      <header className="sticky top-0 z-20 border-b border-border bg-ink-950/90 backdrop-blur">
-        <div className="mx-auto flex max-w-4xl items-center justify-between gap-3 px-4 py-3">
-          <span className="flex min-w-0 items-center gap-3">
-            <Logo markOnly className="h-8 w-auto" />
-            <span className="truncate text-sm text-white">{APP_NAME} Stellar</span>
-          </span>
-          <Link href="/auth/signout" className="text-sm text-silver hover:text-white">
-            Sign out
-          </Link>
-        </div>
-      </header>
-      <main className="mx-auto w-full max-w-4xl px-4 py-6 sm:px-6">{children}</main>
-    </div>
+    <StellarShell
+      groups={groups}
+      phone={phone}
+      more={[]}
+      homeHref={stellarLandingPath(ctx)}
+      businessName={businessName}
+      roleLabel={staff ? "Service Team" : "Member"}
+      accountName={accountName}
+      cue={Boolean(staff && ctx.setter)}
+      version={packageJson.version}
+    >
+      {children}
+    </StellarShell>
   );
 }

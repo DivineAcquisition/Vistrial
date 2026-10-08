@@ -14,17 +14,9 @@ import {
 } from "@/components/ui/menu";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useOrg } from "@/components/app/org-provider";
-import type { WorkspaceRole } from "@/lib/auth/types";
 import { initials } from "@/lib/format";
+import { SHELL_ROLE_LABEL } from "@/lib/shell/nav";
 import { cn } from "@/lib/utils";
-
-const WORKSPACE_ROLE_LABEL: Record<WorkspaceRole, string> = {
-  platform_admin: "Platform admin",
-  service_team: "Vistrial team",
-  owner: "Owner",
-  member: "Member",
-  operator: "Operator",
-};
 
 export function UserMenu({
   collapsed = false,
@@ -35,7 +27,7 @@ export function UserMenu({
 }) {
   const { user, role, isStaff, isPlatformAdmin, workspaceRole, surfaceAccess, org } = useOrg();
   const name = user.displayName || user.email;
-  const roleLabel = WORKSPACE_ROLE_LABEL[workspaceRole];
+  const roleLabel = SHELL_ROLE_LABEL[workspaceRole];
   const header = placement === "header";
 
   const trigger = (
@@ -87,8 +79,8 @@ export function UserMenu({
           </MenuGroupLabel>
         </MenuGroup>
         <MenuSeparator />
-        {surfaceAccess === "portal" ? null : (
-          <MenuLinkItem render={<Link href="/app/settings/profile" />}>You</MenuLinkItem>
+        {surfaceAccess === "portal" || workspaceRole === "member" ? null : (
+          <MenuLinkItem render={<Link href="/app/settings/profile" />}>Personal settings</MenuLinkItem>
         )}
         {role === "owner" || role === "member" || isStaff ? (
           <MenuLinkItem render={<Link href="/portal" />}>Portal</MenuLinkItem>

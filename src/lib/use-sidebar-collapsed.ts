@@ -21,25 +21,29 @@ function subscribe(onChange: () => void): () => void {
   };
 }
 
-function getSnapshot(): boolean {
-  return window.localStorage.getItem(KEY) === "1";
+/** `true` collapsed, `false` expanded, `null` when the person has not chosen. */
+function getSnapshot(): boolean | null {
+  const stored = window.localStorage.getItem(KEY);
+  if (stored === "1") return true;
+  if (stored === "0") return false;
+  return null;
 }
 
-/** The sidebar starts expanded until a stored preference says otherwise. */
-function getServerSnapshot(): boolean {
-  return false;
+function getServerSnapshot(): boolean | null {
+  return null;
 }
 
 export function useSidebarCollapsed(): {
-  collapsed: boolean;
+  /** null until the person collapses or expands the sidebar themselves. */
+  preference: boolean | null;
   setCollapsed: (next: boolean) => void;
 } {
-  const collapsed = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
+  const preference = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
 
   const setCollapsed = useCallback((next: boolean) => {
     window.localStorage.setItem(KEY, next ? "1" : "0");
     window.dispatchEvent(new Event(EVENT));
   }, []);
 
-  return { collapsed, setCollapsed };
+  return { preference, setCollapsed };
 }

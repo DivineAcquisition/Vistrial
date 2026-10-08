@@ -4,6 +4,7 @@ import { useTransition } from "react";
 
 import { switchOrg } from "@/lib/auth/actions";
 import { useOrg } from "@/components/app/org-provider";
+import { useShellSwitch } from "@/components/app/shell-switch";
 import { Select } from "@/components/ui/select";
 
 /**
@@ -13,6 +14,7 @@ import { Select } from "@/components/ui/select";
  */
 export function OrgSwitcher() {
   const { org, memberships, isStaff } = useOrg();
+  const { beginSwitch, cancelSwitch } = useShellSwitch();
   const [pending, startTransition] = useTransition();
 
   if (isStaff || memberships.length < 2) {
@@ -35,9 +37,11 @@ export function OrgSwitcher() {
       disabled={pending}
       onChange={(event) => {
         const orgId = event.target.value;
+        beginSwitch();
         startTransition(async () => {
           const result = await switchOrg(orgId);
           if (result.ok) window.location.assign(result.landing);
+          else cancelSwitch();
         });
       }}
     >

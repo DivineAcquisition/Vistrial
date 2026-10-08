@@ -103,7 +103,7 @@ export default async function PortalPage({
       ) : null}
       <ReportingRangeForm range={range} action="/portal" />
 
-      <section className="space-y-8">
+      <section id="results" className="space-y-8">
         <SectionHeader title="Is it working" hint="Clients closed per hundred leads, coverage, and speed. Sample sizes sit beside every rate." />
         <OutcomePanel orgId={ctx.org.id} range={range} />
         <CoveragePanel orgId={ctx.org.id} range={range} />

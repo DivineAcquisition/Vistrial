@@ -146,6 +146,7 @@ export const getAuthContext = cache(async (): Promise<AuthContext> => {
   const cookieStore = await cookies();
   const cookieOrgId = cookieStore.get(ORG_COOKIE_NAME)?.value;
   const { active, cookieNeedsReset } = resolveActiveMembership(memberships, cookieOrgId);
+  const lostWorkspace = Boolean(cookieOrgId && !memberships.some((membership) => membership.orgId === cookieOrgId));
 
   if (cookieNeedsReset) {
     await writeOrgCookie(active.orgId);
@@ -164,6 +165,7 @@ export const getAuthContext = cache(async (): Promise<AuthContext> => {
     isPlatformAdmin: platformRole === "platform_admin",
     platformRole,
     templateAccess: platformRole === "platform_admin" || Boolean(staff?.templateAccess),
+    lostWorkspace,
     memberships,
     cookieNeedsReset,
   };
@@ -182,6 +184,8 @@ export function toClientOrgState(ctx: AuthContext): ClientOrgState {
     isStaff: ctx.isStaff,
     isPlatformAdmin: ctx.isPlatformAdmin,
     canApprove: ctx.isStaff || ctx.role === "owner" || ctx.member.canApprove,
+    templateAccess: ctx.templateAccess,
+    lostWorkspace: ctx.lostWorkspace,
     memberId: ctx.member.id,
     surfaceAccess: ctx.member.surfaceAccess,
     memberships: ctx.memberships.map((membership) => ({

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { Search } from "lucide-react";
 
 import { useOrg } from "@/components/app/org-provider";
@@ -20,7 +20,8 @@ import {
   CommandShortcut,
 } from "@/components/ui/command";
 import { Kbd, KbdGroup } from "@/components/ui/kbd";
-import { MORE_NAV, PRIMARY_NAV, navVisibleTo } from "@/lib/navigation";
+import { DA_CONSOLE_LINKS, MORE_NAV, PRIMARY_NAV, navVisibleTo } from "@/lib/navigation";
+import { isPlatformRoute, shellNavigation } from "@/lib/shell/nav";
 
 type JumpItem = {
   value: string;
@@ -32,9 +33,18 @@ type JumpItem = {
 export function AppJumpPalette() {
   const [open, setOpen] = useState(false);
   const router = useRouter();
-  const { role, isStaff } = useOrg();
+  const pathname = usePathname();
+  const { role, isStaff, workspaceRole, templateAccess } = useOrg();
 
   const items = useMemo<JumpItem[]>(() => {
+    const shell = shellNavigation({
+      role: workspaceRole,
+      templateAccess,
+      inWorkspace: !isStaff || !isPlatformRoute(pathname),
+    });
+    const shellItems = shell.groups.flatMap((group) =>
+      group.items.flatMap((item) => [item, ...(item.children ?? [])])
+    );
     const dests = [
       ...PRIMARY_NAV,
       ...MORE_NAV.filter(
@@ -44,15 +54,29 @@ export function AppJumpPalette() {
           )
       ),
     ];
-    return dests
+    const pages = dests
       .filter((item) => navVisibleTo(item, role, isStaff))
       .map((item) => ({
         value: item.href,
         label: item.label,
         href: item.href,
-                    group: item.group === "front" ? "Main" : "Also",
+        group: item.group === "front" ? "Main" : "Also",
       }));
-  }, [role, isStaff]);
+    const seen = new Set(pages.map((item) => item.href));
+    for (const item of shellItems) {
+      if (seen.has(item.href)) continue;
+      seen.add(item.href);
+      pages.push({ value: item.href, label: item.label, href: item.href, group: "Main" });
+    }
+    if (isStaff) {
+      for (const item of DA_CONSOLE_LINKS) {
+        if (seen.has(item.href)) continue;
+        seen.add(item.href);
+        pages.push({ value: item.href, label: item.label, href: item.href, group: "Also" });
+      }
+    }
+    return pages;
+  }, [role, isStaff, workspaceRole, templateAccess, pathname]);
 
   useEffect(() => {
     function onKey(event: KeyboardEvent) {
@@ -72,7 +96,7 @@ export function AppJumpPalette() {
           variant="ghost"
           size="sm"
           iconOnly
-          aria-label="Jump to a page"
+          aria-label="Search"
           aria-keyshortcuts="Meta+J Control+J"
         >
           <Search className="size-4" aria-hidden />

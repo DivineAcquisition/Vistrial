@@ -28,3 +28,14 @@ SET offer_name = 'Private Consulting For Sales Operations',
     top_objections = '[{"type":"price","phrasing":"It is a lot of money right now","response":null},{"type":"timing","phrasing":"Now is not the right time","response":null},{"type":"spouse_partner","phrasing":"I need to talk to my partner","response":null}]'::jsonb,
     voice_formality = 'casual'
 WHERE org_id = '2d2d2d2d-2222-4222-8222-222222222222';
+
+-- As on live (checked 2026-10-08): the workspace is active, greetings and
+-- sign-offs are off, no emoji, and the approval gate has no rows of its own.
+UPDATE public.org_voice_profiles
+SET emoji_usage = 'never', use_greeting = false, use_signoff = false, greeting_text = NULL, signoff_text = NULL,
+    sms_max_chars = 240, email_max_chars = 900, use_contractions = true
+WHERE org_id = '2d2d2d2d-2222-4222-8222-222222222222';
+DELETE FROM public.approval_gate_actions WHERE org_id = '2d2d2d2d-2222-4222-8222-222222222222';
+DELETE FROM public.approval_gate_settings WHERE org_id = '2d2d2d2d-2222-4222-8222-222222222222';
+UPDATE public.organizations SET status = 'active', status_reason = 'As on live'
+WHERE id = '2d2d2d2d-2222-4222-8222-222222222222';

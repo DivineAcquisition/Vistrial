@@ -19,7 +19,7 @@ export function anthropicDraftModel(): string {
 }
 
 export function anthropicApiKey(): string | null {
-  const key = process.env.ANTHROPIC_API_KEY?.trim();
+  const key = process.env.ANTHROPIC_API_KEY?.trim() || process.env.CLAUDE_API_KEY?.trim();
   return key ? key : null;
 }
 

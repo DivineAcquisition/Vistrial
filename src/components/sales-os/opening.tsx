@@ -15,9 +15,14 @@ function builtLabel(iso: string) {
  * What a fresh conversation opens on: Vistrial's current read of the
  * business, built from the context package before anyone types.
  */
-export function Opening({ state }: { state: OpeningState }) {
+export function Opening({ state, unavailable }: { state: OpeningState; unavailable?: string }) {
   return (
     <div className="mb-8 space-y-5 px-2">
+      {unavailable ? (
+        <Card className="gap-1 border-destructive/40 bg-destructive/5 p-4">
+          <p className="text-sm leading-relaxed text-card-foreground">{unavailable}</p>
+        </Card>
+      ) : null}
       <div className="space-y-2">
         <p className="font-heading text-2xl tracking-tight text-card-foreground">Hi {state.greetingName}.</p>
         {state.lines.map((line, index) => (

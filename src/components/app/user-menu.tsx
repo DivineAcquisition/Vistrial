@@ -1,12 +1,15 @@
 "use client";
 
 import Link from "next/link";
+import { useRef } from "react";
 
+import { SignOutForm } from "@/components/auth/sign-out-form";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
   Menu,
   MenuGroup,
   MenuGroupLabel,
+  MenuItem,
   MenuLinkItem,
   MenuPopup,
   MenuSeparator,
@@ -29,6 +32,7 @@ export function UserMenu({
   const name = user.displayName || user.email;
   const roleLabel = SHELL_ROLE_LABEL[workspaceRole];
   const header = placement === "header";
+  const signOutRef = useRef<HTMLFormElement>(null);
 
   const trigger = (
     <MenuTrigger
@@ -91,8 +95,9 @@ export function UserMenu({
         {isPlatformAdmin ? (
           <MenuLinkItem render={<Link href="/app/ops" />}>System</MenuLinkItem>
         ) : null}
-        <MenuLinkItem render={<Link href="/auth/signout" />}>Sign out</MenuLinkItem>
+        <MenuItem onClick={() => signOutRef.current?.requestSubmit()}>Sign out</MenuItem>
       </MenuPopup>
+      <SignOutForm ref={signOutRef} className="hidden" />
     </Menu>
   );
 }

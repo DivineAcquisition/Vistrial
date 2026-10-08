@@ -1,7 +1,7 @@
-import Link from "next/link";
 import { redirect } from "next/navigation";
 
 import { AuthCard } from "@/components/auth/auth-card";
+import { SignOutForm } from "@/components/auth/sign-out-form";
 import { Button } from "@/components/ui/button";
 import { getPlatformStaff, getSessionUser, listActiveMemberships } from "@/lib/auth/session";
 import { PRODUCTION_APP_ORIGIN } from "@/lib/constants";
@@ -67,14 +67,16 @@ export default async function NoAccessPage({
           Open your workspace
         </Button>
       ) : null}
-      <Button
-        variant="secondary"
-        size="lg"
-        className="auth-alt w-full rounded-xl before:rounded-[calc(var(--radius-xl)-1px)]"
-        render={<Link href="/auth/signout" />}
-      >
-        Sign out
-      </Button>
+      <SignOutForm>
+        <Button
+          type="submit"
+          variant="secondary"
+          size="lg"
+          className="auth-alt w-full rounded-xl before:rounded-[calc(var(--radius-xl)-1px)]"
+        >
+          Sign out
+        </Button>
+      </SignOutForm>
     </AuthCard>
   );
 }

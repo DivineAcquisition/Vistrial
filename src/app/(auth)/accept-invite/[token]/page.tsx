@@ -2,6 +2,7 @@ import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 
 import { AuthCard } from "@/components/auth/auth-card";
+import { SignOutForm } from "@/components/auth/sign-out-form";
 import { AcceptInviteForm } from "@/app/(auth)/accept-invite/[token]/accept-invite-form";
 import { InstallSteps } from "@/components/app/install-steps";
 import { PENDING_INVITE_COOKIE, pendingInviteCookieOptions } from "@/lib/auth/cookies";
@@ -81,9 +82,11 @@ export default async function AcceptInvitePage({
               Signed in as {user?.email ?? "a different address"}. The invite is for {invite.email}.
               It is not attached to this account.
             </p>
-            <a href="/auth/signout" className="mt-6 block text-center text-sm text-brand-300 hover:text-white">
-              Sign out
-            </a>
+            <SignOutForm className="mt-6 text-center">
+              <button type="submit" className="text-sm text-brand-300 hover:text-white">
+                Sign out
+              </button>
+            </SignOutForm>
           </>
         ) : null}
       </AuthCard>
@@ -101,9 +104,11 @@ export default async function AcceptInvitePage({
           <p className={helperClass}>
             The invite is not attached to this account. That is intentional — a mismatched sign-in cannot join the workspace.
           </p>
-          <a href="/auth/signout" className="mt-6 block text-center text-sm text-brand-300 hover:text-white">
-            Sign out
-          </a>
+          <SignOutForm className="mt-6 text-center">
+            <button type="submit" className="text-sm text-brand-300 hover:text-white">
+              Sign out
+            </button>
+          </SignOutForm>
         </AuthCard>
       );
     }

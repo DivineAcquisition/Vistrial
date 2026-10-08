@@ -1,9 +1,9 @@
 "use client";
 
-import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 import { ApplicationShell } from "@/components/app/application-shell";
+import { SignOutForm } from "@/components/auth/sign-out-form";
 import { shellChrome, type ShellNavGroup, type ShellNavItem } from "@/lib/shell/nav";
 
 export function StellarShell({
@@ -53,9 +53,11 @@ export function StellarShell({
             </p>
           ) : null}
           <p className="truncate text-[11px] text-dim">{roleLabel}</p>
-          <Link href="/auth/signout" className="mt-1 block truncate text-sm text-muted-foreground hover:text-card-foreground">
-            Sign out
-          </Link>
+          <SignOutForm>
+            <button type="submit" className="mt-1 block truncate text-sm text-muted-foreground hover:text-card-foreground">
+              Sign out
+            </button>
+          </SignOutForm>
         </div>
       )}
       cue={

@@ -1,0 +1,27 @@
+import { ForsightPage } from "@/app/(workspace)/app/forsight/forsight-chrome";
+import { PipelineScreen } from "@/app/(workspace)/app/forsight/pipeline/pipeline-screen";
+import { loadPipelineHealth } from "@/lib/forsight/dashboard";
+import { FORSIGHT_PATH } from "@/lib/navigation";
+import { requireReportingAccess } from "@/lib/reporting/access";
+
+export const dynamic = "force-dynamic";
+
+export const metadata = { title: "Pipeline Health · Forsight" };
+
+export default async function PipelineHealthPage() {
+  const ctx = await requireReportingAccess();
+  const view = await loadPipelineHealth();
+  const now = new Date();
+
+  return (
+    <ForsightPage
+      activeHref={`${FORSIGHT_PATH}/pipeline`}
+      title="Pipeline Health"
+      description="Whether anything is slipping that a person needs to act on today."
+      view={view}
+      isStaff={ctx.isStaff}
+    >
+      {(health) => <PipelineScreen health={health} now={now} />}
+    </ForsightPage>
+  );
+}

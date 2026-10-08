@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from "react";
 
-import { setUpRecorder, testRecorder, type RecorderSetup } from "@/app/app/settings/integrations/actions";
+import { setUpRecorder, testRecorder, type RecorderSetup } from "@/app/(workspace)/app/settings/integrations/actions";
 import { Button } from "@/components/ui/button";
 import { CopyField } from "@/components/ui/copy-field";
 import { errorClass, helperClass } from "@/lib/ui";

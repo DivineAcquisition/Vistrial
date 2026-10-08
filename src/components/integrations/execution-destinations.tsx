@@ -12,7 +12,7 @@ import {
   listDestinationChoices,
   sendTest,
   type Choice,
-} from "@/app/app/settings/integrations/destination-actions";
+} from "@/app/(workspace)/app/settings/integrations/destination-actions";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";

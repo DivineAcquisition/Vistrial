@@ -4,14 +4,14 @@ import {
   changeLeadStatus,
   reassignLeadNextAction,
   resolveLeadObjection,
-} from "@/app/app/cases/actions";
-import { regenerateFollowUp } from "@/app/app/follow-ups/actions";
+} from "@/app/(workspace)/app/cases/actions";
+import { regenerateFollowUp } from "@/app/(workspace)/app/follow-ups/actions";
 import {
   assignQueueLead,
   completeQueueNextAction,
   createQueueFollowOn,
   logQueueOutcome,
-} from "@/app/app/queue/actions";
+} from "@/app/(workspace)/app/queue/actions";
 import type { AuthContext } from "@/lib/auth/types";
 import { OPERATOR_UNDO_WINDOW_MS } from "@/lib/operator/constants";
 import { classifyToolError } from "@/lib/operator/errors";

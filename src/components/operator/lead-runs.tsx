@@ -1,4 +1,4 @@
-import { listOperatorRunsForLeadAction } from "@/app/app/operator/actions";
+import { listOperatorRunsForLeadAction } from "@/app/(workspace)/app/operator/actions";
 import { OpenOperatorRunButton } from "@/components/operator/open-run-button";
 import { Panel } from "@/components/ui/panel";
 import { SectionHeader } from "@/components/ui/section-header";

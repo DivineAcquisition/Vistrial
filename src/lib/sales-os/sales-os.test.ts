@@ -415,8 +415,8 @@ describe("source guards", () => {
     ...files(path.join(ROOT, "src/lib/sales-os")),
     ...files(path.join(ROOT, "src/app/api/sales-os")),
     ...files(path.join(ROOT, "src/components/sales-os")),
-    ...files(path.join(ROOT, "src/app/app/ask")),
-    ...files(path.join(ROOT, "src/app/app/settings/vistrial")),
+    ...files(path.join(ROOT, "src/app/(workspace)/app/ask")),
+    ...files(path.join(ROOT, "src/app/(workspace)/app/settings/vistrial")),
   ];
 
   it("never uses a service-role client", () => {

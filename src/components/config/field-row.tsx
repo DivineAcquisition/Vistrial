@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 
-import { saveConfigField, setFieldLock, type ConfigActionResult } from "@/app/app/settings/configuration/actions";
+import { saveConfigField, setFieldLock, type ConfigActionResult } from "@/app/(workspace)/app/settings/configuration/actions";
 import { ValueInput } from "@/components/config/value-input";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";

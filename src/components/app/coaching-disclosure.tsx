@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from "react";
 
-import { acknowledgeCallCoaching } from "@/app/app/coaching/actions";
+import { acknowledgeCallCoaching } from "@/app/(workspace)/app/coaching/actions";
 import { Button } from "@/components/ui/button";
 import { Notice } from "@/components/ui/states";
 import { COACHING_DISCLOSURE } from "@/lib/coaching/constants";

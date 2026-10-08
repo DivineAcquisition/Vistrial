@@ -8,8 +8,8 @@ import {
   connectFormPlatform,
   disconnectConnectedSource,
   testConnectedSource,
-} from "@/app/portal/source-actions";
-import type { SettingsSaveResult } from "@/app/app/settings/types";
+} from "@/app/(workspace)/portal/source-actions";
+import type { SettingsSaveResult } from "@/app/(workspace)/app/settings/types";
 import { useOrg } from "@/components/app/org-provider";
 import { Button, SubmitButton } from "@/components/ui/button";
 import { Field } from "@/components/ui/field";

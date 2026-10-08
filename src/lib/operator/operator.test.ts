@@ -152,7 +152,7 @@ describe("operator execute path", () => {
       const text = readFileSync(path.join(apiRoot, file), "utf8");
       expect(text).not.toMatch(/getSupabaseAdmin/);
     }
-    const actions = readFileSync(path.join(process.cwd(), "src/app/app/operator/actions.ts"), "utf8");
+    const actions = readFileSync(path.join(process.cwd(), "src/app/(workspace)/app/operator/actions.ts"), "utf8");
     expect(actions).not.toMatch(/getSupabaseAdmin/);
     expect(isOperatorToolName("confirm_write")).toBe(false);
   });

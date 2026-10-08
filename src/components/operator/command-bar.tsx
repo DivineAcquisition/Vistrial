@@ -21,14 +21,14 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
-import { loadOperatorAvailabilityAction } from "@/app/app/settings/agents/actions";
+import { loadOperatorAvailabilityAction } from "@/app/(workspace)/app/settings/agents/actions";
 import {
   cancelOperatorWriteAction,
   confirmOperatorWriteAction,
   listOperatorRunsAction,
   loadOperatorRunAction,
   undoOperatorWriteAction,
-} from "@/app/app/operator/actions";
+} from "@/app/(workspace)/app/operator/actions";
 import { operatorRunStatusLabel } from "@/lib/operator/labels";
 import type { OperatorConfirmationView, OperatorRunSummary, OperatorRunView, OperatorStepView } from "@/lib/operator/types";
 import { Notice } from "@/components/ui/states";

@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 
-import { markAssetReviewedAction, saveAssetEditAction } from "@/app/app/ask/actions";
+import { markAssetReviewedAction, saveAssetEditAction } from "@/app/(workspace)/app/ask/actions";
 import { AssetBody } from "@/components/sales-os/asset-body";
 import { AssetSummary } from "@/components/sales-os/asset-card";
 import { Button } from "@/components/ui/button";

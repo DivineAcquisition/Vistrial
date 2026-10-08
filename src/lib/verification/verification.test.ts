@@ -253,7 +253,7 @@ describe("cost, pass rate, and send path", () => {
   });
 
   it("DA verification toggles run as the signed-in admin so auth.uid() is present", () => {
-    const text = readFileSync(path.join(process.cwd(), "src/app/app/ops/actions.ts"), "utf8");
+    const text = readFileSync(path.join(process.cwd(), "src/app/(workspace)/app/ops/actions.ts"), "utf8");
     expect(text).not.toMatch(/getSupabaseAdmin\(\)\.rpc\("set_verification_task_enabled"/);
     expect(text).not.toMatch(/getSupabaseAdmin\(\)\.rpc\("submit_verification_sample_audit"/);
     expect(text).toMatch(/createClient\(\)[\s\S]*set_verification_task_enabled/);

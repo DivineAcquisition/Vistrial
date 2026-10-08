@@ -484,8 +484,8 @@ The owner read on webhook ciphertext that discovery flagged was already closed b
   - `src/lib/execution/connections.ts`;
   - `src/lib/sales-os/settings.ts`;
   - `src/app/api/sales-os/drive/callback/route.ts`;
-  - `src/app/app/settings/integrations/actions.ts`;
-  - `src/app/app/settings/notifications/actions.ts`.
+  - `src/app/(workspace)/app/settings/integrations/actions.ts`;
+  - `src/app/(workspace)/app/settings/notifications/actions.ts`.
 - **The same key is also an HMAC signing key:**
   - OAuth state: `src/lib/ghl/oauth-state.ts`, `src/lib/sources/oauth-state.ts`,
     `src/lib/execution/oauth-state.ts`;

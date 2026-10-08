@@ -2,7 +2,7 @@
 
 import { useEffect, useRef } from "react";
 
-import type { SettingsSaveResult } from "@/app/app/settings/types";
+import type { SettingsSaveResult } from "@/app/(workspace)/app/settings/types";
 import { toastManager } from "@/components/ui/toast";
 
 export function useSettingsToast(

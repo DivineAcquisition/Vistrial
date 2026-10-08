@@ -4,7 +4,7 @@ import { useAuiState, type ToolCallMessagePartProps } from "@assistant-ui/react"
 import { ExternalLinkIcon } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
-import { loadExecutionPreviewAction, reviseExecutionAction } from "@/app/app/ask/actions";
+import { loadExecutionPreviewAction, reviseExecutionAction } from "@/app/(workspace)/app/ask/actions";
 import { ToolLine } from "@/components/sales-os/tool-line";
 import { useWorkPane } from "@/components/sales-os/work-pane";
 import { Badge } from "@/components/ui/badge";

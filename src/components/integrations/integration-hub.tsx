@@ -7,9 +7,9 @@ import {
   connectCommasKey,
   connectFormPlatform,
   disconnectConnectedSource,
-} from "@/app/portal/source-actions";
-import { disconnectCrm } from "@/app/app/settings/integrations/actions";
-import type { SettingsSaveResult } from "@/app/app/settings/types";
+} from "@/app/(workspace)/portal/source-actions";
+import { disconnectCrm } from "@/app/(workspace)/app/settings/integrations/actions";
+import type { SettingsSaveResult } from "@/app/(workspace)/app/settings/types";
 import { Button, SubmitButton } from "@/components/ui/button";
 import { CopyField } from "@/components/ui/copy-field";
 import { Field } from "@/components/ui/field";

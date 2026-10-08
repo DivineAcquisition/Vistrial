@@ -1,0 +1,66 @@
+import { PageFrame } from "@/components/app/page-frame";
+import { OrganizationForm } from "@/app/(workspace)/app/settings/organization/organization-form";
+import { Button } from "@/components/ui/button";
+import { Panel } from "@/components/ui/panel";
+import { requireOrgSettingsManager } from "@/lib/auth/gates";
+import { advancedSettingsVisibleTo } from "@/lib/navigation";
+import { createClient } from "@/lib/supabase/server";
+import { cardTitle, helperClass } from "@/lib/ui";
+import Link from "next/link";
+
+export default async function AdvancedSettingsPage() {
+  const { org, isStaff } = await requireOrgSettingsManager();
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("organizations")
+    .select(
+      "sales_cycle_days, baseline_lookback_days, working_hours_start, working_hours_end, working_days, transcript_retention_days, call_coaching_embargo_hours, operator_agent_batch_cap"
+    )
+    .eq("id", org.id)
+    .maybeSingle();
+
+  return (
+    <PageFrame
+      title="Advanced"
+      description="Settings you will not touch every day. Everyday settings stay on the other tabs. Connecting apps lives on Integrations."
+    >
+      <div className="space-y-8">
+        <section className="space-y-3">
+          <h2 className={cardTitle}>Workspace policy</h2>
+          <p className={helperClass}>
+            Sales cycle, history window, retention, and coaching delay. These are not daily knobs.
+          </p>
+          <OrganizationForm
+            name={org.name}
+            timezone={org.timezone}
+            ghlLocationId={org.ghlLocationId}
+            salesCycleDays={data?.sales_cycle_days ?? 60}
+            baselineLookbackDays={data?.baseline_lookback_days ?? 365}
+            workingHoursStart={data?.working_hours_start?.slice(0, 5) ?? "08:00"}
+            workingHoursEnd={data?.working_hours_end?.slice(0, 5) ?? "18:00"}
+            workingDays={data?.working_days ?? [1, 2, 3, 4, 5]}
+            transcriptRetentionDays={data?.transcript_retention_days ?? 365}
+            callCoachingEmbargoHours={data?.call_coaching_embargo_hours ?? 48}
+            operatorAgentBatchCap={data?.operator_agent_batch_cap ?? 10}
+            showOperatorAgentBatchCap={false}
+            surface="policy"
+          />
+        </section>
+
+        <div className="grid gap-4 sm:grid-cols-2">
+          {advancedSettingsVisibleTo(isStaff).map((page) => (
+            <Panel key={page.href} className="p-6">
+              <h2 className={cardTitle}>{page.label}</h2>
+              <p className={`mt-2 ${helperClass}`}>{page.description}</p>
+              <div className="mt-5">
+                <Button variant="secondary" size="sm" render={<Link href={page.href} />}>
+                  Open {page.label.toLowerCase()}
+                </Button>
+              </div>
+            </Panel>
+          ))}
+        </div>
+      </div>
+    </PageFrame>
+  );
+}

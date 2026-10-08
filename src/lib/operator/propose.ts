@@ -1,7 +1,7 @@
 import "server-only";
 
-import { refreshCaseFile } from "@/app/app/cases/actions";
-import { refreshFollowUpReview } from "@/app/app/follow-ups/actions";
+import { refreshCaseFile } from "@/app/(workspace)/app/cases/actions";
+import { refreshFollowUpReview } from "@/app/(workspace)/app/follow-ups/actions";
 import { canAssignLeadTo } from "@/lib/auth/permissions";
 import type { AuthContext } from "@/lib/auth/types";
 import { isLeadId } from "@/lib/cases/filters";

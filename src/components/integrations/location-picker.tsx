@@ -2,8 +2,8 @@
 
 import { useActionState } from "react";
 
-import { selectGhlLocation } from "@/app/app/settings/integrations/actions";
-import type { SettingsSaveResult } from "@/app/app/settings/types";
+import { selectGhlLocation } from "@/app/(workspace)/app/settings/integrations/actions";
+import type { SettingsSaveResult } from "@/app/(workspace)/app/settings/types";
 import { SubmitButton } from "@/components/ui/button";
 import { Panel } from "@/components/ui/panel";
 import { Select } from "@/components/ui/select";

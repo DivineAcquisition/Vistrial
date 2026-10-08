@@ -1,0 +1,113 @@
+"use client";
+
+import { useActionState } from "react";
+
+import {
+  addOnboardingVoiceExample,
+  removeOnboardingVoiceExample,
+} from "@/app/(workspace)/app/onboarding/actions";
+import type { SettingsSaveResult } from "@/app/(workspace)/app/settings/types";
+import { Button, SubmitButton } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
+import { Panel } from "@/components/ui/panel";
+import { Select } from "@/components/ui/select";
+import { StatusBadge } from "@/components/ui/status-badge";
+import { cardTitle, errorClass, helperClass, insetSurface, labelClass } from "@/lib/ui";
+
+const idle: SettingsSaveResult = { status: "idle" };
+
+export function VoiceExamples({
+  examples,
+  minimum,
+  maximum,
+}: {
+  examples: Array<{ body: string; channel: string; addedAt: string }>;
+  minimum: number;
+  maximum: number;
+}) {
+  const [addState, addAction, adding] = useActionState(addOnboardingVoiceExample, idle);
+  const [removeState, removeAction] = useActionState(removeOnboardingVoiceExample, idle);
+  const short = examples.length < minimum;
+
+  return (
+    <Panel className="p-6">
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div>
+          <h2 className={cardTitle}>Real messages you have sent</h2>
+          <p className={helperClass}>
+            Two to five messages you have actually sent a prospect. This is the single highest-value
+            thing in the whole of onboarding: two real messages beat any description of your tone.
+          </p>
+        </div>
+        <StatusBadge
+          label={`${examples.length} of ${maximum}`}
+          tone={short ? "warning" : "good"}
+        />
+      </div>
+
+      {examples.length > 0 ? (
+        <ul className="mt-5 space-y-3">
+          {examples.map((example, index) => (
+            <li key={`${example.addedAt}-${index}`} className={insetSurface}>
+              <div className="flex items-start justify-between gap-4">
+                <p className="whitespace-pre-wrap text-sm text-silver">{example.body}</p>
+                <form action={removeAction}>
+                  <input type="hidden" name="index" value={index} />
+                  <Button type="submit" variant="secondary" size="sm">
+                    Remove
+                  </Button>
+                </form>
+              </div>
+              <p className={helperClass}>{example.channel === "email" ? "Email" : "Text message"}</p>
+            </li>
+          ))}
+        </ul>
+      ) : null}
+      {removeState.status === "error" ? <p className={errorClass}>{removeState.error}</p> : null}
+
+      {examples.length < maximum ? (
+        <form action={addAction} className="mt-6 space-y-4 border-t border-white/10 pt-6">
+          <div>
+            <label className={labelClass} htmlFor="voice_example_body">
+              Paste one message
+            </label>
+            <Textarea
+              id="voice_example_body"
+              name="body"
+              rows={5}
+              required
+              
+              placeholder="Paste it exactly as it went out."
+            />
+            <p className={helperClass}>
+              Paste it however it comes to hand. A forwarded email with headers still counts, and a
+              screenshot you type back out counts too. Nothing is reformatted.
+            </p>
+          </div>
+          <div className="sm:w-56">
+            <label className={labelClass} htmlFor="voice_example_channel">
+              Sent as
+            </label>
+            <Select id="voice_example_channel" name="channel"  defaultValue="sms">
+              <option value="sms">Text message</option>
+              <option value="email">Email</option>
+            </Select>
+          </div>
+          <SubmitButton variant="primary" pending={adding} loadingLabel="Adding">
+            Add this message
+          </SubmitButton>
+          {addState.status === "error" ? <p className={errorClass}>{addState.error}</p> : null}
+        </form>
+      ) : (
+        <p className={helperClass}>Five is the cap. Remove one to add another.</p>
+      )}
+
+      {short ? (
+        <p className="mt-4 text-sm text-flag-warning">
+          With fewer than {minimum}, drafts fall back to a generic voice and every one of them will
+          read like it.
+        </p>
+      ) : null}
+    </Panel>
+  );
+}

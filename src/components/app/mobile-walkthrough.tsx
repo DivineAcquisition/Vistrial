@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
-import { markMobileTraining } from "@/app/app/log/actions";
+import { markMobileTraining } from "@/app/(workspace)/app/log/actions";
 import { Button } from "@/components/ui/button";
 import { Notice } from "@/components/ui/states";
 import { detectClientSurface } from "@/lib/mobile/surface";

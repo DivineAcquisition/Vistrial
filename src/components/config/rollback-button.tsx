@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 
-import { rollbackLayer, type ConfigActionResult } from "@/app/app/settings/configuration/actions";
+import { rollbackLayer, type ConfigActionResult } from "@/app/(workspace)/app/settings/configuration/actions";
 import { Button } from "@/components/ui/button";
 import { errorClass, helperClass } from "@/lib/ui";
 

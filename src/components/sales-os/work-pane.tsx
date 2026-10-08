@@ -3,7 +3,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import { ChevronLeftIcon, ChevronRightIcon, XIcon } from "lucide-react";
 
-import { assetHistoryAction } from "@/app/app/ask/actions";
+import { assetHistoryAction } from "@/app/(workspace)/app/ask/actions";
 import { AssetEditor } from "@/components/sales-os/asset-editor";
 import { AssetSummary } from "@/components/sales-os/asset-card";
 import { FindingCard } from "@/components/sales-os/finding-card";

@@ -2,8 +2,8 @@
 
 import { useState, useTransition } from "react";
 
-import { saveProposedFieldMaps } from "@/app/app/settings/integrations/actions";
-import type { SettingsSaveResult } from "@/app/app/settings/types";
+import { saveProposedFieldMaps } from "@/app/(workspace)/app/settings/integrations/actions";
+import type { SettingsSaveResult } from "@/app/(workspace)/app/settings/types";
 import { Button } from "@/components/ui/button";
 import { Panel } from "@/components/ui/panel";
 import { Select } from "@/components/ui/select";

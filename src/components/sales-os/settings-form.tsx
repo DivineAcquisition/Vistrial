@@ -8,7 +8,7 @@ import {
   saveGateAction,
   saveRouteAction,
   setDestinationActiveAction,
-} from "@/app/app/settings/vistrial/actions";
+} from "@/app/(workspace)/app/settings/vistrial/actions";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardPanel } from "@/components/ui/card";

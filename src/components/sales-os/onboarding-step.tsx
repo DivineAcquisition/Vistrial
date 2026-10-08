@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 
-import { saveAllGatesAction } from "@/app/app/settings/vistrial/actions";
+import { saveAllGatesAction } from "@/app/(workspace)/app/settings/vistrial/actions";
 import { DestinationSettings, GateChoices, WhoCanChange } from "@/components/sales-os/settings-form";
 import { Button } from "@/components/ui/button";
 import { Notice } from "@/components/ui/states";

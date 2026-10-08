@@ -25,7 +25,7 @@ import {
   loadConversationMessagesAction,
   renameConversationAction,
   unarchiveConversationAction,
-} from "@/app/app/ask/actions";
+} from "@/app/(workspace)/app/ask/actions";
 
 /**
  * Messages are persisted by the server as they stream, so the browser never

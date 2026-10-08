@@ -1,12 +1,12 @@
 import "server-only";
 
-import { refreshCallDetail, refreshCallList } from "@/app/app/calls/actions";
+import { refreshCallDetail, refreshCallList } from "@/app/(workspace)/app/calls/actions";
 import {
   loadCaseTimelinePage,
   refreshCaseFile,
   refreshCaseList,
-} from "@/app/app/cases/actions";
-import { refreshQueue } from "@/app/app/queue/actions";
+} from "@/app/(workspace)/app/cases/actions";
+import { refreshQueue } from "@/app/(workspace)/app/queue/actions";
 import { canViewReporting } from "@/lib/auth/permissions";
 import type { AuthContext } from "@/lib/auth/types";
 import { isLeadId } from "@/lib/cases/filters";

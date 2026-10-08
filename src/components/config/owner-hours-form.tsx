@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 
-import { setOwnerHours, type ConfigActionResult } from "@/app/app/settings/configuration/actions";
+import { setOwnerHours, type ConfigActionResult } from "@/app/(workspace)/app/settings/configuration/actions";
 import { ValueInput } from "@/components/config/value-input";
 import { Button } from "@/components/ui/button";
 import { Panel } from "@/components/ui/panel";

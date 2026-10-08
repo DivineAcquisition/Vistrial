@@ -29,9 +29,9 @@ describe("one dark theme, everywhere", () => {
     for (const file of [
       "src/components/app/app-shell.tsx",
       "src/components/app/app-sidebar.tsx",
-      "src/app/portal/layout.tsx",
+      "src/app/(workspace)/portal/layout.tsx",
       "src/app/stellar/layout.tsx",
-      "src/app/app/home/page.tsx",
+      "src/app/(workspace)/app/home/page.tsx",
       "src/components/auth/auth-card.tsx",
     ]) {
       expect(read(file)).not.toContain("tone=");

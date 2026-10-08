@@ -11,7 +11,7 @@ import {
   switchTemplate,
   type ConfigActionResult,
   type SwitchPreview,
-} from "@/app/app/settings/configuration/actions";
+} from "@/app/(workspace)/app/settings/configuration/actions";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";

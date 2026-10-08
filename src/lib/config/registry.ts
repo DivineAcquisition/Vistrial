@@ -97,8 +97,8 @@ export const SOURCE_KINDS: ChoiceOption[] = [
 ];
 
 /**
- * Approval action types. The first seven existed before this system (home
- * queue); the last five are the generic kinds every agent maps its actions to.
+ * Approval action types. The first ten existed before this system (the home
+ * queue and Ask Vistrial); the last three are generic kinds for new agents.
  */
 export const APPROVAL_ACTIONS: Array<ChoiceOption & { reachesPeople: boolean }> = [
   { value: "first_reply", label: "First reply to a new lead", reachesPeople: true },
@@ -108,11 +108,12 @@ export const APPROVAL_ACTIONS: Array<ChoiceOption & { reachesPeople: boolean }> 
   { value: "crm_stage_change", label: "Changing a stage in the CRM", reachesPeople: false },
   { value: "setter_nudge", label: "Nudging a team member", reachesPeople: false },
   { value: "owner_escalation", label: "Escalating to the owner", reachesPeople: false },
+  { value: "slack_post", label: "Posting to a Slack channel", reachesPeople: false },
+  { value: "discord_post", label: "Posting to a Discord channel", reachesPeople: false },
+  { value: "drive_store", label: "Storing a file in Google Drive", reachesPeople: false },
   { value: "send_text", label: "Sending a text message", reachesPeople: true },
   { value: "send_email", label: "Sending an email", reachesPeople: true },
   { value: "create_asset", label: "Creating a document or asset", reachesPeople: false },
-  { value: "post_to_channel", label: "Posting to a team chat channel", reachesPeople: false },
-  { value: "store_file", label: "Storing a file", reachesPeople: false },
 ];
 
 const APPROVERS: ChoiceOption[] = [
@@ -143,8 +144,6 @@ const SEVERITIES: ChoiceOption[] = [
   { value: "urgent", label: "Urgent" },
   { value: "critical", label: "Critical" },
 ];
-
-const TIME_PATTERN = "^([01][0-9]|2[0-3]):[0-5][0-9]$";
 
 /** Today's global banned openers and corporate words, which every draft already avoids. */
 export const LEGACY_BANNED_TERMS = [
@@ -923,11 +922,12 @@ export const CONFIG_FIELDS: FieldDef[] = [
       { action: "crm_stage_change", mode: "ask_first", approver: "owners_and_managers" },
       { action: "setter_nudge", mode: "auto_run", approver: "owners_and_managers", auto_run_confirmed: true },
       { action: "owner_escalation", mode: "auto_run", approver: "owners_and_managers", auto_run_confirmed: true },
+      { action: "slack_post", mode: "ask_first", approver: "owners_and_managers" },
+      { action: "discord_post", mode: "ask_first", approver: "owners_and_managers" },
+      { action: "drive_store", mode: "ask_first", approver: "owners_and_managers" },
       { action: "send_text", mode: "ask_first", approver: "owners_and_managers" },
       { action: "send_email", mode: "ask_first", approver: "owners_and_managers" },
       { action: "create_asset", mode: "ask_first", approver: "owners_and_managers" },
-      { action: "post_to_channel", mode: "ask_first", approver: "owners_and_managers" },
-      { action: "store_file", mode: "ask_first", approver: "owners_and_managers" },
     ],
   },
   {

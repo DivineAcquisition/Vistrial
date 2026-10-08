@@ -11,9 +11,19 @@ import type {
 } from "@/lib/config/types";
 
 export type ResolveInput = {
+  /** The platform default at the version this workspace is pinned to. */
   platform: LayerSnapshot;
   template: (LayerSnapshot & { slug: string }) | null;
   workspace: LayerSnapshot | null;
+  /**
+   * The current versions of the platform default and template. Locks, and the
+   * values of locked fields, always come from these: a Platform Admin's change
+   * to a locked rule (a compliance rule, say) applies everywhere at once, with
+   * a record. Every other field comes from the pinned version and waits for
+   * review. When absent, the pinned version is current.
+   */
+  platformCurrent?: LayerSnapshot;
+  templateCurrent?: LayerSnapshot;
   /** False when resolving a template on its own, e.g. for its preview. */
   includeWorkspaceOnly?: boolean;
 };
@@ -26,14 +36,16 @@ export type ResolveInput = {
  */
 function resolveField(key: string, input: ResolveInput): ResolvedField {
   const field = CONFIG_FIELDS.find((entry) => entry.key === key)!;
-  const platformValue = input.platform.values[key];
-  const templateValue = input.template?.values[key];
-  const workspaceValue = input.workspace?.values[key];
-  const lockedAt = input.platform.lockedKeys.includes(key)
+  const platformNow = input.platformCurrent ?? input.platform;
+  const templateNow = input.template ? (input.templateCurrent ?? input.template) : null;
+  const lockedAt = platformNow.lockedKeys.includes(key)
     ? "platform"
-    : input.template?.lockedKeys.includes(key)
+    : templateNow?.lockedKeys.includes(key)
       ? "template"
       : null;
+  const platformValue = lockedAt ? platformNow.values[key] : input.platform.values[key];
+  const templateValue = lockedAt ? templateNow?.values[key] : input.template?.values[key];
+  const workspaceValue = input.workspace?.values[key];
 
   if (lockedAt === "platform" || lockedAt === "template") {
     let value: ConfigValue | undefined = lockedAt === "platform" ? platformValue : templateValue ?? platformValue;
@@ -92,8 +104,11 @@ export function shortHash(text: string): string {
  * can be compared directly.
  */
 export function versionStamp(input: ResolveInput): string {
-  const template = input.template ? `${input.template.slug}@${input.template.version}` : "none";
-  return `p${input.platform.version}.t:${template}.w${input.workspace?.version ?? 0}`;
+  const platformNow = input.platformCurrent?.version ?? input.platform.version;
+  const template = input.template
+    ? `${input.template.slug}@${input.template.version}/${input.templateCurrent?.version ?? input.template.version}`
+    : "none";
+  return `p${input.platform.version}/${platformNow}.t:${template}.w${input.workspace?.version ?? 0}`;
 }
 
 export function resolveConfig(input: ResolveInput): EffectiveConfig {

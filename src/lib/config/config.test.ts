@@ -95,7 +95,7 @@ describe("resolution", () => {
     expect(effective.fields["response.first_touch_minutes"]).toMatchObject({ value: 3, source: "workspace" });
     expect(effective.fields["tone.formality"]).toMatchObject({ value: "friendly", source: "template" });
     expect(effective.fields["tone.use_contractions"]).toMatchObject({ value: true, source: "platform" });
-    expect(effective.version).toBe("p2.t:med-spa@3.w7");
+    expect(effective.version).toBe("p2/2.t:med-spa@3/3.w7");
   });
 
   it("ignores a workspace override of a locked field and explains why", () => {
@@ -150,6 +150,24 @@ describe("resolution", () => {
     for (const issue of effective.issues) expect(issue.message).toMatch(/[.?!]["\u201d]?$/);
   });
 
+  it("takes unlocked fields from the pinned version and locked fields from the current one", () => {
+    const pinned = platform();
+    const current = {
+      ...pinned,
+      version: 3,
+      values: { ...pinned.values, "tone.emoji": "natural", "compliance.daily_cap_per_lead": 1 },
+    };
+    const effective = resolveConfig({
+      platform: pinned,
+      platformCurrent: current,
+      template,
+      workspace: { values: identity, lockedKeys: [], version: 1 },
+    });
+    expect(effective.fields["tone.emoji"]).toMatchObject({ value: "sparing", source: "template" });
+    expect(effective.fields["compliance.daily_cap_per_lead"]).toMatchObject({ value: 1, source: "platform" });
+    expect(effective.version).toBe("p2/3.t:med-spa@3/3.w1");
+  });
+
   it("stores only what differs from the inherited value", () => {
     const { set, unchanged } = sparseOverrides(
       { "tone.formality": "friendly", "response.first_touch_minutes": 2 },
@@ -167,7 +185,7 @@ describe("resolution", () => {
   });
 
   it("stamps the version from the levels that produced it", () => {
-    expect(versionStamp({ platform: platform(), template: null, workspace: null })).toBe("p2.t:none.w0");
+    expect(versionStamp({ platform: platform(), template: null, workspace: null })).toBe("p2/2.t:none.w0");
   });
 });
 

@@ -23,7 +23,7 @@ export default async function TeamWorkspacesPage() {
   const ctx = await requireStaff();
   const supabase = await createClient();
 
-  const [{ data: orgs }, { data: assignments }, { data: staff }] = await Promise.all([
+  const [{ data: orgs }, { data: assignments }, { data: staff }, { data: templates }] = await Promise.all([
     supabase
       .from("organizations")
       .select("id, name, slug, status, status_reason, created_at, is_platform_workspace")
@@ -34,6 +34,7 @@ export default async function TeamWorkspacesPage() {
     ctx.isPlatformAdmin
       ? supabase.from("platform_staff").select("user_id, display_name, role, active").eq("active", true)
       : Promise.resolve({ data: [] as Array<{ user_id: string; display_name: string; role: string; active: boolean }> }),
+    supabase.from("config_templates").select("id, name").eq("status", "active").order("name"),
   ]);
 
   const names = new Map((staff ?? []).map((person) => [person.user_id, person.display_name]));
@@ -53,7 +54,7 @@ export default async function TeamWorkspacesPage() {
         <Panel className="mb-8 p-6">
           <h2 className={cardTitle}>New workspace</h2>
           <div className="mt-4">
-            <CreateWorkspaceForm />
+            <CreateWorkspaceForm templates={templates ?? []} />
           </div>
         </Panel>
       ) : null}

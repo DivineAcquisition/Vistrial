@@ -65,6 +65,7 @@ describe("settings IA", () => {
 
   it("lists the specialist pages behind Advanced", () => {
     expect(ADVANCED_SETTINGS_PAGES.map((page) => page.label)).toEqual([
+      "Configuration",
       "Business",
       "Scoring",
       "Follow-up",
@@ -81,7 +82,7 @@ describe("settings IA", () => {
     expect(advancedSettingsVisibleTo(true).map((page) => page.label)).not.toContain("Agents");
   });
 
-  it("hides Follow-up from Advanced while that surface is parked", () => {
+  it("hides Follow-up from Advanced while that surface is parked, and Configuration from customers", () => {
     expect(advancedSettingsVisibleTo(false).map((page) => page.label)).toEqual([
       "Business",
       "Scoring",
@@ -89,6 +90,7 @@ describe("settings IA", () => {
       "Posting and approvals",
     ]);
     expect(advancedSettingsVisibleTo(true).map((page) => page.label)).toEqual([
+      "Configuration",
       "Business",
       "Scoring",
       "Data",

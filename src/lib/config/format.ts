@@ -31,6 +31,7 @@ function describeItem(field: FieldDef, item: ConfigValue): string {
       if (value === undefined || value === null || value === "") return null;
       if (Array.isArray(value)) return `${column.label}: ${value.map((entry) => optionLabel(column.options, entry)).join(", ")}`;
       if (column.type === "choice") return `${column.label}: ${optionLabel(column.options, value)}`;
+      if (typeof value === "boolean") return `${column.label}: ${value ? "Yes" : "No"}`;
       return `${column.label}: ${String(value)}`;
     })
     .filter(Boolean)

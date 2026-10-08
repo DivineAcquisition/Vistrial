@@ -85,6 +85,31 @@ export async function loadConversationMessages(actor: SalesOsActor, conversation
   }));
 }
 
+function tokenCount(value: number | null | undefined): number {
+  return typeof value === "number" && Number.isFinite(value) && value >= 0 ? Math.round(value) : 0;
+}
+
+/**
+ * Every row carries the same columns. A bulk save that puts token counts on
+ * only the newest reply makes the database write null counts onto the other
+ * messages, and those columns refuse null.
+ */
+export function conversationMessageRows(messages: UIMessage[], orgId: string, memberId: string) {
+  const updatedAt = new Date().toISOString();
+  return messages
+    .filter((message) => message.role === "user" || message.role === "assistant")
+    .map((message, index) => ({
+      id: message.id,
+      org_id: orgId,
+      seq: index + 1,
+      role: message.role,
+      parts: message.parts as unknown as Json,
+      metadata: (message.metadata ?? null) as Json,
+      acted_as_member_id: memberId,
+      updated_at: updatedAt,
+    }));
+}
+
 function firstUserText(messages: UIMessage[]): string | null {
   for (const message of messages) {
     if (message.role !== "user") continue;
@@ -101,30 +126,31 @@ export async function saveConversationMessages(
   messages: UIMessage[],
   usage?: { model: string | null; inputTokens: number; outputTokens: number; cacheReadTokens: number }
 ): Promise<void> {
-  const rows = messages
-    .filter((message) => message.role === "user" || message.role === "assistant")
-    .map((message, index) => ({
-      id: message.id,
-      conversation_id: conversationId,
-      org_id: actor.orgId,
-      seq: index + 1,
-      role: message.role,
-      parts: message.parts as unknown as Json,
-      metadata: (message.metadata ?? null) as Json,
-      acted_as_member_id: actor.memberId,
-      updated_at: new Date().toISOString(),
-      ...(usage && index === messages.length - 1 && message.role === "assistant"
-        ? {
-            model: usage.model,
-            input_tokens: usage.inputTokens,
-            output_tokens: usage.outputTokens,
-            cache_read_tokens: usage.cacheReadTokens,
-          }
-        : {}),
-    }));
+  const rows = conversationMessageRows(messages, actor.orgId, actor.memberId).map((row) => ({
+    ...row,
+    conversation_id: conversationId,
+  }));
   if (rows.length === 0) return;
-  const { error } = await actor.db.from("sales_os_messages").upsert(rows, { onConflict: "conversation_id,id" });
+  const { error } = await actor.db.from("sales_os_messages").upsert(rows, {
+    onConflict: "conversation_id,id",
+    defaultToNull: false,
+  });
   if (error) throw new Error("Couldn't save the conversation.");
+  const last = messages.at(-1);
+  if (usage && last?.role === "assistant") {
+    const { error: usageError } = await actor.db
+      .from("sales_os_messages")
+      .update({
+        model: usage.model,
+        input_tokens: tokenCount(usage.inputTokens),
+        output_tokens: tokenCount(usage.outputTokens),
+        cache_read_tokens: tokenCount(usage.cacheReadTokens),
+      })
+      .eq("org_id", actor.orgId)
+      .eq("conversation_id", conversationId)
+      .eq("id", last.id);
+    if (usageError) throw new Error("Couldn't save the conversation.");
+  }
   const title = firstUserText(messages);
   await actor.db
     .from("sales_os_conversations")

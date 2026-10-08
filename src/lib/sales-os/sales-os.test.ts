@@ -13,6 +13,7 @@ import {
   type Dataset,
 } from "@/lib/sales-os/analysis";
 import { denyUnrecorded, mergeApprovalResponses } from "@/lib/sales-os/approvals";
+import { conversationMessageRows } from "@/lib/sales-os/persist";
 import {
   EXECUTION_TOOLS,
   EXECUTION_TYPE_COPY,
@@ -450,5 +451,27 @@ describe("source guards", () => {
     expect(route).not.toMatch(/body\.messages|body\.tools|body\.system/);
     expect(route).toContain("experimental_toolApprovalSecret");
     expect(route).toContain("loadConversationMessages");
+  });
+});
+
+describe("saving a conversation", () => {
+  it("gives every message the same columns, with token counts kept off the bulk save", () => {
+    const messages = [
+      { id: "user-1", role: "user", parts: [{ type: "text", text: "What's going on this month?" }] },
+      {
+        id: "assistant-1",
+        role: "assistant",
+        parts: [{ type: "text", text: "Looking." }],
+      },
+    ] as UIMessage[];
+    const rows = conversationMessageRows(messages, "org-1", "member-1");
+    expect(rows).toHaveLength(2);
+    const keys = rows.map((row) => Object.keys(row).sort().join(","));
+    expect(new Set(keys).size).toBe(1);
+    for (const row of rows) {
+      expect(row).not.toHaveProperty("input_tokens");
+      expect(row).not.toHaveProperty("output_tokens");
+      expect(row).not.toHaveProperty("cache_read_tokens");
+    }
   });
 });

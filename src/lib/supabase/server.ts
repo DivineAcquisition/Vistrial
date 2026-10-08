@@ -1,7 +1,8 @@
 import { cache } from "react";
 import { createServerClient } from "@supabase/ssr";
-import { cookies } from "next/headers";
+import { cookies, headers } from "next/headers";
 
+import { sessionCookieOptions } from "@/lib/auth/session-cookie";
 import { requireSupabaseBrowserEnv } from "@/lib/supabase/env";
 import { fetchForSupabaseKey } from "@/lib/supabase/fetch";
 import type { Database } from "@/types/database";
@@ -14,11 +15,12 @@ import type { Database } from "@/types/database";
  * comes back empty — which the app treated as "no workspace".
  */
 export const createClient = cache(async () => {
-  const cookieStore = await cookies();
+  const [cookieStore, headerStore] = await Promise.all([cookies(), headers()]);
   const { url, key } = requireSupabaseBrowserEnv();
 
   const client = createServerClient<Database>(url, key, {
     global: { fetch: fetchForSupabaseKey(key) },
+    cookieOptions: sessionCookieOptions(headerStore.get("x-forwarded-host") ?? headerStore.get("host")),
     cookies: {
       getAll() {
         return cookieStore.getAll();

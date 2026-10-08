@@ -2,6 +2,7 @@ import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
 import { pathRefreshesAuthSession, safeInternalPath } from "@/lib/auth/paths";
+import { sessionCookieOptions } from "@/lib/auth/session-cookie";
 import {
   canonicalOriginUrl,
   resolveHostRoute,
@@ -70,6 +71,7 @@ export async function proxy(request: NextRequest) {
     publishableKey,
     {
       global: { fetch: fetchForSupabaseKey(publishableKey) },
+      cookieOptions: sessionCookieOptions(host),
       cookies: {
         getAll() {
           return request.cookies.getAll();

@@ -97,9 +97,16 @@ async function runDraft(
   if (result.status === "sent") return { status: "sent", at };
   if (result.status === "queued") return { status: "scheduled", at, sendAt: args.sendAt };
   if (result.status === "suppressed") {
-    return { status: "skipped", reason: "The CRM reports this contact as opted out. Nothing was sent.", at };
+    const reason =
+      result.reason === "opted_out"
+        ? "This lead replied with an opt-out word. Nothing was sent."
+        : "The CRM reports this contact as opted out. Nothing was sent.";
+    return { status: "skipped", reason, at };
   }
   if (result.status === "halted") return { status: "failed", reason: HALT_MESSAGES[result.reason], at };
+  if (result.reason === "config_incomplete") {
+    return { status: "failed", reason: "Nothing was sent: this workspace's configuration needs attention first.", at };
+  }
   return { status: "failed", reason: `Send failed (${result.reason.replaceAll("_", " ")}).`, at };
 }
 

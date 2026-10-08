@@ -15,6 +15,7 @@ import { nextAttemptAt, shouldMarkDead } from "@/lib/ghl/retry";
 import type { GhlDb } from "@/lib/ghl/tokens";
 import type { Enums } from "@/types/database";
 import { automationRunsFor } from "@/lib/workspaces/status";
+import { complianceForDispatch } from "@/lib/compliance/dispatch";
 
 type TouchChannel = Enums<"touch_channel">;
 
@@ -163,6 +164,25 @@ export async function sendQueuedDispatch(db: GhlDb, dispatchId: string): Promise
 
   const haltReason = await haltReasonForDispatch(db, row);
   if (haltReason) return failDispatch(db, row, haltReason);
+
+  const compliance = await complianceForDispatch(db, row);
+  if (compliance.action === "block" && compliance.reason === "opted_out") {
+    await db
+      .from("ghl_dispatches")
+      .update({ status: "suppressed", failure_reason: "opted_out", body_text: null, sent_at: new Date().toISOString(), claimed_at: null })
+      .eq("id", row.id);
+    ghlLog("ghl.dispatch.suppressed", logFieldsFromRow(row, "suppressed", "opted_out"));
+    return finishDispatch(db, row, { status: "suppressed", dispatchId: row.id, reason: "opted_out" });
+  }
+  if (compliance.action === "block") return failDispatch(db, row, "config_incomplete");
+  if (compliance.action === "defer") {
+    await db
+      .from("ghl_dispatches")
+      .update({ available_at: compliance.until.toISOString(), claimed_at: null })
+      .eq("id", row.id);
+    ghlLog("ghl.dispatch.queued", logFieldsFromRow(row, "queued", compliance.reason));
+    return { status: "queued", dispatchId: row.id };
+  }
 
   const token = await getValidAccessToken(db, row.org_id);
   if (!token.ok) {

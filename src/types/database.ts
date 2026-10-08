@@ -1291,6 +1291,9 @@ export type Database = {
           updated_at: string;
           has_net_close: boolean;
           time_to_first_human_touch_seconds: number | null;
+          opted_out_at: string | null;
+          opted_out_word: string | null;
+          opted_out_channel: string | null;
         };
         Insert: {
           ad_id?: string | null;
@@ -1324,6 +1327,9 @@ export type Database = {
           timezone?: string | null;
           updated_at?: string;
           has_net_close?: boolean;
+          opted_out_at?: string | null;
+          opted_out_word?: string | null;
+          opted_out_channel?: string | null;
         };
         Update: {
           ad_id?: string | null;
@@ -1357,6 +1363,9 @@ export type Database = {
           timezone?: string | null;
           updated_at?: string;
           has_net_close?: boolean;
+          opted_out_at?: string | null;
+          opted_out_word?: string | null;
+          opted_out_channel?: string | null;
         };
         Relationships: [
           {
@@ -2397,6 +2406,48 @@ export type Database = {
           table_name?: string;
           row_data?: Json;
           captured_at?: string;
+        };
+        Relationships: [];
+      };
+      config_stops: {
+        Row: {
+          id: string;
+          org_id: string;
+          consumer: string;
+          config_version: string;
+          reason: string;
+          problems: Json;
+          first_stopped_at: string;
+          last_stopped_at: string;
+          occurrences: number;
+          notified_at: string | null;
+          resolved_at: string | null;
+        };
+        Insert: {
+          id?: string;
+          org_id: string;
+          consumer: string;
+          config_version: string;
+          reason: string;
+          problems?: Json;
+          first_stopped_at?: string;
+          last_stopped_at?: string;
+          occurrences?: number;
+          notified_at?: string | null;
+          resolved_at?: string | null;
+        };
+        Update: {
+          id?: string;
+          org_id?: string;
+          consumer?: string;
+          config_version?: string;
+          reason?: string;
+          problems?: Json;
+          first_stopped_at?: string;
+          last_stopped_at?: string;
+          occurrences?: number;
+          notified_at?: string | null;
+          resolved_at?: string | null;
         };
         Relationships: [];
       };
@@ -6555,6 +6606,20 @@ export type Database = {
       config_effective_at: {
         Args: { p_org_id: string };
         Returns: Json;
+      };
+      config_record_stop: {
+        Args: {
+          p_org_id: string;
+          p_consumer: string;
+          p_config_version: string;
+          p_reason: string;
+          p_problems?: Json;
+        };
+        Returns: { stop_id: string; is_new: boolean }[];
+      };
+      config_resolve_stop: {
+        Args: { p_org_id: string; p_consumer: string };
+        Returns: undefined;
       };
       set_workspace_status: {
         Args: { p_org_id: string; p_status: Database["public"]["Enums"]["workspace_status"]; p_reason?: string | null };

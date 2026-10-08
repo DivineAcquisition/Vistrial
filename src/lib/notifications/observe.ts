@@ -29,6 +29,8 @@ import {
 } from "@/lib/notifications/messages";
 import { offerDaConsole, offerTeam, offerToMember } from "@/lib/notifications/offer";
 import type { MemberNotifyTarget } from "@/lib/notifications/types";
+import { windowsElapsed, type AfterHoursMode, type BusinessHours } from "@/lib/config/clock";
+import { requireConfig } from "@/lib/config/server";
 import { AUTOMATION_STATUSES } from "@/lib/workspaces/status";
 
 type EscalationType =
@@ -116,22 +118,18 @@ export async function observeOrg(db: GhlDb, orgId: string, now = new Date()): Pr
   const ctx = await loadOrgNotifyContext(db, orgId);
   if (!ctx) return;
 
-  const { data: config } = await db
-    .from("score_configs")
-    .select("speed_to_lead_minutes")
-    .eq("org_id", orgId)
-    .maybeSingle();
   const { data: followUp } = await db
     .from("follow_up_settings")
     .select("draft_stale_days")
     .eq("org_id", orgId)
     .maybeSingle();
-
-  const windowMinutes = config?.speed_to_lead_minutes ?? 15;
   const staleDays = followUp?.draft_stale_days ?? 5;
   const sms = ctx.org.smsEmergenciesEnabled;
 
-  await observeSpeedToLead(db, ctx.members, ctx.setters, ctx.managers, orgId, windowMinutes, now);
+  // The response clock reads its window, after-hours rule and ladder from the
+  // workspace configuration, and stops (with a recorded reason) if it cannot.
+  const gate = await requireConfig(db, orgId, "response_clock");
+  if (gate.ok) await observeSpeedToLead(db, ctx, orgId, speedToLeadPlan(gate.config.values), now);
   await observeUnassignedReady(db, ctx.setters, orgId, now);
   await observeGhosts(db, ctx.members, orgId, now);
   await observeDrafts(db, ctx.members, ctx.managers, orgId, staleDays, now);
@@ -143,16 +141,65 @@ export async function observeOrg(db: GhlDb, orgId: string, now = new Date()): Pr
   await observeDailyBriefs(db, ctx.members, orgId, now);
 }
 
+type SpeedToLeadLevel = {
+  step: number;
+  afterWindows: number;
+  notify: string[];
+  team: boolean;
+  critical: boolean;
+};
+
+type SpeedToLeadPlan = {
+  clock: Omit<Parameters<typeof windowsElapsed>[0], "arrivedAt" | "now">;
+  levels: SpeedToLeadLevel[];
+};
+
+/** The first-touch window, after-hours rule, and escalation ladder, from configuration. */
+function speedToLeadPlan(values: Record<string, unknown>): SpeedToLeadPlan {
+  const levels = ((values["escalation.levels"] as Array<Record<string, unknown>> | undefined) ?? [])
+    .filter((level) => typeof level.after_windows === "number")
+    .sort((a, b) => Number(a.after_windows) - Number(b.after_windows))
+    .map((level, index) => ({
+      step: index + 1,
+      afterWindows: Number(level.after_windows),
+      notify: (level.notify as string[] | undefined) ?? [],
+      team: ((level.channels as string[] | undefined) ?? []).includes("team_channel"),
+      critical: level.severity === "critical",
+    }));
+  return {
+    clock: {
+      mode: values["response.after_hours"] as AfterHoursMode,
+      windowMinutes: Number(values["response.first_touch_minutes"]),
+      afterHoursWindowMinutes: Number(values["response.after_hours_window_minutes"] ?? values["response.first_touch_minutes"]),
+      hours: values["identity.business_hours"] as BusinessHours,
+      timeZone: String(values["identity.timezone"]),
+    },
+    levels,
+  };
+}
+
+function levelTargets(
+  ctx: { members: MemberNotifyTarget[]; setters: MemberNotifyTarget[]; closers: MemberNotifyTarget[]; managers: MemberNotifyTarget[] },
+  notify: string[],
+  assigned: MemberNotifyTarget | null
+): MemberNotifyTarget[] {
+  const out = new Map<string, MemberNotifyTarget>();
+  const add = (targets: MemberNotifyTarget[]) => targets.forEach((target) => out.set(target.memberId, target));
+  // Nobody assigned yet: the assignee's alert goes to every setter, as it always has.
+  if (notify.includes("assignee")) add(assigned ? [assigned] : ctx.setters);
+  if (notify.includes("setters")) add(ctx.setters);
+  if (notify.includes("closers")) add(ctx.closers);
+  if (notify.includes("managers")) add(ctx.managers);
+  return [...out.values()];
+}
+
 async function observeSpeedToLead(
   db: GhlDb,
-  members: MemberNotifyTarget[],
-  setters: MemberNotifyTarget[],
-  managers: MemberNotifyTarget[],
+  ctx: { members: MemberNotifyTarget[]; setters: MemberNotifyTarget[]; closers: MemberNotifyTarget[]; managers: MemberNotifyTarget[] },
   orgId: string,
-  windowMinutes: number,
+  plan: SpeedToLeadPlan,
   now: Date
 ) {
-  const windowMs = windowMinutes * 60_000;
   const { data: leads } = await db
     .from("leads")
     .select("id, first_name, first_human_touch_at, opted_in_at, assigned_setter_id, status, is_test")
@@ -162,14 +209,14 @@ async function observeSpeedToLead(
     .in("status", [...OPEN_LEAD_STATUSES]);
 
   for (const lead of leads ?? []) {
-    const age = now.getTime() - Date.parse(lead.opted_in_at);
-    if (age < windowMs) continue;
-    const minutes = Math.round(age / 60000);
-    const assigned = memberById(members, lead.assigned_setter_id);
+    const elapsed = windowsElapsed({ ...plan.clock, arrivedAt: new Date(lead.opted_in_at), now });
+    if (elapsed.windows < 1) continue;
+    const minutes = Math.round(elapsed.minutes);
+    const assigned = memberById(ctx.members, lead.assigned_setter_id);
     const copy = speedToLeadCopy([lead.first_name ?? "a lead"], minutes, Boolean(assigned));
     const href = notificationHref("/app/queue?breached=1");
 
-    const fire = async (step: number, targets: MemberNotifyTarget[], team: boolean) => {
+    const fire = async (step: number, targets: MemberNotifyTarget[], team: boolean, critical: boolean) => {
       if (await alreadyStepped(db, orgId, "speed_to_lead", lead.id, step)) return;
       const bucketId = bucket(now);
       for (const target of targets) {
@@ -177,7 +224,7 @@ async function observeSpeedToLead(
         await offerToMember(db, {
           target,
           now,
-          isEscalationToAdmin: step === 3,
+          isEscalationToAdmin: critical,
           batch: {
             key,
             subjectId: lead.id,
@@ -217,10 +264,10 @@ async function observeSpeedToLead(
       await markEscalation(db, orgId, "speed_to_lead", lead.id, step);
     };
 
-    const step1 = assigned ? [assigned] : setters;
-    await fire(1, step1, false);
-    if (age >= windowMs * 2) await fire(2, setters, true);
-    if (age >= windowMs * 4) await fire(3, managers, false);
+    for (const level of plan.levels) {
+      if (elapsed.windows < level.afterWindows) break;
+      await fire(level.step, levelTargets(ctx, level.notify, assigned), level.team, level.critical);
+    }
   }
 }
 

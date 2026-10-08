@@ -39,10 +39,18 @@ function useAction() {
   return { result, pending, run };
 }
 
-export function CreateWorkspaceForm() {
+export function CreateWorkspaceForm({ templates }: { templates: Array<{ id: string; name: string }> }) {
   const [state, action, pending] = useActionState(createWorkspace, initial);
   return (
     <form action={action} className="space-y-3">
+      <Field label="Industry template" name="template_id" htmlFor="ws-template">
+        <Select
+          id="ws-template"
+          name="template_id"
+          defaultValue={templates[0]?.id ?? ""}
+          options={[...templates.map((template) => ({ value: template.id, label: template.name })), { value: "", label: "None (platform defaults only)" }]}
+        />
+      </Field>
       <div className="grid gap-3 sm:grid-cols-[1fr_200px_1fr_auto] sm:items-end">
         <Field label="Business name" name="name" htmlFor="ws-name">
           <Input id="ws-name" name="name" required minLength={2} placeholder="Northside Fitness" />
@@ -57,7 +65,9 @@ export function CreateWorkspaceForm() {
           Create
         </SubmitButton>
       </div>
-      <p className={helperClass}>New workspaces start in onboarding. Nothing runs for customers until you make it active.</p>
+      <p className={helperClass}>
+        New workspaces start in onboarding on the template you choose. Nothing runs for customers until it passes the go-live check and you make it active.
+      </p>
       <Outcome result={state} />
     </form>
   );

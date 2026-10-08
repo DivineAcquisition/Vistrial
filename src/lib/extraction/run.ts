@@ -5,6 +5,7 @@ import { scoreLeadFromCall } from "@/lib/scoring/call";
 import { createAnthropicMessage } from "@/lib/extraction/anthropic";
 import { extractJsonObject, parseExtraction, presentSignalText } from "@/lib/extraction/parse";
 import { EXTRACTION_SYSTEM_PROMPT, extractionUserPrompt } from "@/lib/extraction/prompt";
+import { requireConfig } from "@/lib/config/server";
 import {
   EXTRACTION_MAX_ATTEMPTS,
   TRANSCRIPT_HEAD_CHARS,
@@ -69,6 +70,20 @@ export async function runExtractionJob(db: GhlDb, jobId: string): Promise<void> 
     return;
   }
 
+  // Missing settings: keep the transcript, say why, and look again later.
+  const gate = await requireConfig(db, job.org_id, "extraction");
+  if (!gate.ok) {
+    await db
+      .from("extraction_jobs")
+      .update({
+        status: "pending",
+        last_error: `config_incomplete: ${gate.reason}`,
+        next_attempt_at: new Date(Date.now() + WORKSPACE_RECHECK_MS).toISOString(),
+      })
+      .eq("id", job.id);
+    return;
+  }
+
   await db
     .from("extraction_jobs")
     .update({ attempt_count: job.attempt_count + 1 })
@@ -102,7 +117,7 @@ export async function runExtractionJob(db: GhlDb, jobId: string): Promise<void> 
         : "";
       const message = await createAnthropicMessage({
         system: EXTRACTION_SYSTEM_PROMPT,
-        user: `${extractionUserPrompt(window.text, window.truncated)}${constraints}`,
+        user: `${extractionUserPrompt(window.text, window.truncated, String(gate.config.values["industry.business_description"]))}${constraints}`,
       });
       generationInput += message.inputTokens;
       generationOutput += message.outputTokens;

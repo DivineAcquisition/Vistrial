@@ -315,11 +315,19 @@ export async function approveFollowUp(input: {
   }
   if (result.status === "suppressed") {
     revalidateFollowUp(scoped.draft.lead_id, scoped.draft.id);
-    return fail(`The CRM reports this contact as opted out (${result.reason}). The draft was discarded. There is no override.`);
+    return fail(
+      result.reason === "opted_out"
+        ? "This lead replied with an opt-out word, so nothing more can be sent to them. The draft was discarded. There is no override."
+        : `The CRM reports this contact as opted out (${result.reason}). The draft was discarded. There is no override.`
+    );
   }
   if (result.status === "failed") {
     revalidateFollowUp(scoped.draft.lead_id, scoped.draft.id);
-    return fail(`Send failed (${result.reason}). No touch was recorded.`);
+    return fail(
+      result.reason === "config_incomplete"
+        ? "Nothing was sent: this workspace's configuration needs attention first. The Vistrial team has been told."
+        : `Send failed (${result.reason}). No touch was recorded.`
+    );
   }
 
   revalidateFollowUp(scoped.draft.lead_id, scoped.draft.id);
@@ -375,7 +383,9 @@ export async function retryFollowUpSend(draftId: string): Promise<FollowUpAction
     revalidateFollowUp(scoped.draft.lead_id, scoped.draft.id);
     return fail(
       result.status === "suppressed"
-        ? "The CRM reports this contact as opted out. The draft was discarded."
+        ? result.reason === "opted_out"
+          ? "This lead replied with an opt-out word. The draft was discarded."
+          : "The CRM reports this contact as opted out. The draft was discarded."
         : "Retry failed. No touch was recorded."
     );
   }

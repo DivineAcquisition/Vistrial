@@ -43,6 +43,7 @@ export async function createWorkspace(_prev: TeamActionResult, formData: FormDat
   const name = String(formData.get("name") ?? "").trim();
   const timezone = String(formData.get("timezone") ?? "").trim() || "America/New_York";
   const ownerEmail = String(formData.get("owner_email") ?? "").trim();
+  const templateId = String(formData.get("template_id") ?? "").trim();
   if (name.length < 2) return { ok: false, error: "Enter the business name." };
 
   const supabase = await createClient();
@@ -50,6 +51,7 @@ export async function createWorkspace(_prev: TeamActionResult, formData: FormDat
     p_name: name,
     p_timezone: timezone,
     p_owner_email: ownerEmail || null,
+    p_template_id: templateId || null,
   });
   if (error) return { ok: false, error: dbMessage(error, "Could not create the workspace.") };
   const slug = (data as { slug?: string } | null)?.slug;

@@ -1,7 +1,9 @@
 import { PageFrame } from "@/components/app/page-frame";
 import { OrganizationForm } from "@/app/app/settings/organization/organization-form";
 import { ContactDetailsForm } from "@/app/app/settings/organization/contact-form";
+import { OwnerHoursForm } from "@/components/config/owner-hours-form";
 import { requireOwnerOrStaff } from "@/lib/auth/gates";
+import type { ConfigValue } from "@/lib/config/types";
 import { createClient } from "@/lib/supabase/server";
 
 export default async function OrganizationSettingsPage() {
@@ -22,12 +24,30 @@ export default async function OrganizationSettingsPage() {
   );
 
   if (!isStaff) {
+    const { data: ownerView } = await supabase.rpc("config_owner_view", { p_org_id: org.id });
+    const owner = (ownerView ?? null) as {
+      business_hours?: ConfigValue;
+      timezone?: string;
+      owners_can_edit_hours?: boolean;
+      workspace_version?: number;
+    } | null;
     return (
       <PageFrame
         title="Workspace"
-        description="Who we contact about this business. Everything else here is set up by your Vistrial team."
+        description="Who we contact about this business, and when you are open. Everything else here is set up by your Vistrial team."
       >
-        {contact}
+        <div className="flex flex-col gap-8">
+          {contact}
+          {owner?.business_hours ? (
+            <OwnerHoursForm
+              orgId={org.id}
+              hours={owner.business_hours}
+              timezone={owner.timezone ?? org.timezone}
+              canEdit={Boolean(owner.owners_can_edit_hours)}
+              version={owner.workspace_version ?? 0}
+            />
+          ) : null}
+        </div>
       </PageFrame>
     );
   }

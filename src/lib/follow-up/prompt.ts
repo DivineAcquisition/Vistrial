@@ -1,6 +1,6 @@
 import type { FollowUpBranch, FollowUpChannel, VoiceProfile } from "@/lib/follow-up/types";
 
-export const DRAFT_SYSTEM_PROMPT = `You write follow-up messages for a closer who was just on a call. You draft. A human will approve. The CRM will send. Never auto-approve or auto-send.
+export const DRAFT_SYSTEM_PROMPT = `You write follow-up messages for the person at this business who was just on a call with the lead. You draft. A human will approve. The CRM will send. Never auto-approve or auto-send.
 
 You are not a marketing writer. You are finishing a conversation that already happened.
 
@@ -61,6 +61,8 @@ function branchInstruction(branch: FollowUpBranch): string {
 }
 
 export function draftUserPrompt(input: {
+  /** industry.business_description: what kind of business is writing. */
+  businessDescription?: string | null;
   branch: FollowUpBranch;
   channel: FollowUpChannel;
   voice: VoiceProfile;
@@ -113,6 +115,7 @@ export function draftUserPrompt(input: {
     .join("\n");
 
   return [
+    input.businessDescription ? `The business: ${input.businessDescription}.` : null,
     branchInstruction(input.branch),
     `Sequence position: ${input.sequencePosition}. Each message is drafted independently and will be approved independently.`,
     input.branch === "no_show"

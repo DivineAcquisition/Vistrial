@@ -6,6 +6,7 @@ import type { PipelineHealth } from "@/lib/forsight/pipeline";
 import { loadForsightSources, type ForsightDb } from "@/lib/forsight/sources";
 import { metricsSourceFor, type ForsightMetricsProvider, type ForsightSourceType } from "@/lib/forsight/types";
 import type { WeeklyPulse } from "@/lib/forsight/weekly";
+import { loadDisplaySettings } from "@/lib/config/display";
 
 /**
  * The one entry point for reading a workspace's metrics.
@@ -29,6 +30,7 @@ export async function forsightProviderFor(
 
   return coreProvider(db, metricsSource, {
     orgName: args.orgName,
+    settings: await loadDisplaySettings(db, args.orgId),
     meta: sources.find((source) => source.type === "meta_ads") ?? null,
   });
 }

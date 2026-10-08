@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { Badge } from "@/components/ui/badge";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Panel } from "@/components/ui/panel";
+import { loadDisplaySettings } from "@/lib/config/display";
 import { createClient } from "@/lib/supabase/server";
 import { getStellarAuthContext } from "@/lib/stellar/auth";
 import { buildStageIndex, buildStageLabel, BUILD_STAGE_ORDER } from "@/lib/stellar/build-stage";
@@ -24,7 +25,7 @@ async function activePlacement(orgId: string): Promise<PlacementRow | null> {
   return data ?? null;
 }
 
-function BuildProgress({ placement }: { placement: PlacementRow | null }) {
+function BuildProgress({ placement, labels }: { placement: PlacementRow | null; labels: Record<string, string> }) {
   if (!placement) {
     return (
       <EmptyState
@@ -66,7 +67,7 @@ function BuildProgress({ placement }: { placement: PlacementRow | null }) {
               >
                 {index + 1}
               </span>
-              <span>{buildStageLabel(stage)}</span>
+              <span>{buildStageLabel(stage, labels)}</span>
               {isCurrent ? (
                 <Badge variant="secondary" className="ml-auto">
                   Current
@@ -89,7 +90,10 @@ export default async function StellarPortalPage() {
     redirect(stellarLandingPath(ctx));
   }
 
-  const placement = await activePlacement(ctx.member.orgId);
+  const [placement, display] = await Promise.all([
+    activePlacement(ctx.member.orgId),
+    loadDisplaySettings(await createClient(), ctx.member.orgId),
+  ]);
 
   return (
     <div className="flex flex-col gap-6">
@@ -127,7 +131,7 @@ export default async function StellarPortalPage() {
       <Panel className="p-5">
         <h2 className="text-sm font-medium text-white">Build Progress</h2>
         <div className="mt-3">
-          <BuildProgress placement={placement} />
+          <BuildProgress placement={placement} labels={display.stellarStageLabels} />
         </div>
       </Panel>
 

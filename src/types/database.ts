@@ -39,6 +39,7 @@ export type Database = {
           verification_status: string;
           verification_faults: Json;
           verification_attempt: number;
+          config_version: string | null;
         };
         Insert: {
           budget_signal?: string | null;
@@ -64,6 +65,7 @@ export type Database = {
           verification_status?: string;
           verification_faults?: Json;
           verification_attempt?: number;
+          config_version?: string | null;
         };
         Update: {
           budget_signal?: string | null;
@@ -89,6 +91,7 @@ export type Database = {
           verification_status?: string;
           verification_faults?: Json;
           verification_attempt?: number;
+          config_version?: string | null;
         };
         Relationships: [
           {
@@ -537,6 +540,7 @@ export type Database = {
           processed_at: string | null;
           requested_by_member_id: string | null;
           status: Database["public"]["Enums"]["extraction_job_status"];
+          config_version: string | null;
         };
         Insert: {
           attempt_count?: number;
@@ -549,6 +553,7 @@ export type Database = {
           processed_at?: string | null;
           requested_by_member_id?: string | null;
           status?: Database["public"]["Enums"]["extraction_job_status"];
+          config_version?: string | null;
         };
         Update: {
           attempt_count?: number;
@@ -561,6 +566,7 @@ export type Database = {
           processed_at?: string | null;
           requested_by_member_id?: string | null;
           status?: Database["public"]["Enums"]["extraction_job_status"];
+          config_version?: string | null;
         };
         Relationships: [];
       };
@@ -815,6 +821,7 @@ export type Database = {
           sequence_position: number;
           sequence_run_id: string | null;
           status: Database["public"]["Enums"]["follow_up_job_status"];
+          config_version: string | null;
         };
         Insert: {
           attempt_count?: number;
@@ -835,6 +842,7 @@ export type Database = {
           sequence_position?: number;
           sequence_run_id?: string | null;
           status?: Database["public"]["Enums"]["follow_up_job_status"];
+          config_version?: string | null;
         };
         Update: {
           attempt_count?: number;
@@ -855,6 +863,7 @@ export type Database = {
           sequence_position?: number;
           sequence_run_id?: string | null;
           status?: Database["public"]["Enums"]["follow_up_job_status"];
+          config_version?: string | null;
         };
         Relationships: [];
       };
@@ -901,6 +910,7 @@ export type Database = {
           verification_status: string;
           verification_faults: Json;
           verification_attempt: number;
+          config_version: string | null;
         };
         Insert: {
           approved_at?: string | null;
@@ -944,6 +954,7 @@ export type Database = {
           verification_status?: string;
           verification_faults?: Json;
           verification_attempt?: number;
+          config_version?: string | null;
         };
         Update: {
           approved_at?: string | null;
@@ -987,6 +998,7 @@ export type Database = {
           verification_status?: string;
           verification_faults?: Json;
           verification_attempt?: number;
+          config_version?: string | null;
         };
         Relationships: [];
       };
@@ -2073,6 +2085,390 @@ export type Database = {
         };
         Relationships: [];
       };
+      config_fields: {
+        Row: {
+          key: string;
+          section: string;
+          field_type: string;
+          label: string;
+          required: boolean;
+          workspace_only: boolean;
+          default_lock: boolean;
+          tighten: string | null;
+          owner_editable: string | null;
+          rules: Json;
+          sort_order: number;
+        };
+        Insert: {
+          key: string;
+          section: string;
+          field_type: string;
+          label: string;
+          required?: boolean;
+          workspace_only?: boolean;
+          default_lock?: boolean;
+          tighten?: string | null;
+          owner_editable?: string | null;
+          rules?: Json;
+          sort_order: number;
+        };
+        Update: {
+          key?: string;
+          section?: string;
+          field_type?: string;
+          label?: string;
+          required?: boolean;
+          workspace_only?: boolean;
+          default_lock?: boolean;
+          tighten?: string | null;
+          owner_editable?: string | null;
+          rules?: Json;
+          sort_order?: number;
+        };
+        Relationships: [];
+      };
+      config_templates: {
+        Row: {
+          id: string;
+          slug: string;
+          name: string;
+          description: string;
+          status: string;
+          created_at: string;
+          created_by: string | null;
+          status_changed_at: string | null;
+          status_changed_by: string | null;
+          created_from_template_id: string | null;
+          created_from_org_id: string | null;
+        };
+        Insert: {
+          id?: string;
+          slug: string;
+          name: string;
+          description?: string;
+          status?: string;
+          created_at?: string;
+          created_by?: string | null;
+          status_changed_at?: string | null;
+          status_changed_by?: string | null;
+          created_from_template_id?: string | null;
+          created_from_org_id?: string | null;
+        };
+        Update: {
+          id?: string;
+          slug?: string;
+          name?: string;
+          description?: string;
+          status?: string;
+          created_at?: string;
+          created_by?: string | null;
+          status_changed_at?: string | null;
+          status_changed_by?: string | null;
+          created_from_template_id?: string | null;
+          created_from_org_id?: string | null;
+        };
+        Relationships: [];
+      };
+      config_layers: {
+        Row: {
+          id: string;
+          level: string;
+          template_id: string | null;
+          org_id: string | null;
+          field_values: Json;
+          locked_keys: string[];
+          version: number;
+          updated_at: string;
+          updated_by: string | null;
+        };
+        Insert: {
+          id?: string;
+          level: string;
+          template_id?: string | null;
+          org_id?: string | null;
+          field_values?: Json;
+          locked_keys?: string[];
+          version?: number;
+          updated_at?: string;
+          updated_by?: string | null;
+        };
+        Update: {
+          id?: string;
+          level?: string;
+          template_id?: string | null;
+          org_id?: string | null;
+          field_values?: Json;
+          locked_keys?: string[];
+          version?: number;
+          updated_at?: string;
+          updated_by?: string | null;
+        };
+        Relationships: [];
+      };
+      config_versions: {
+        Row: {
+          id: string;
+          layer_id: string;
+          level: string;
+          template_id: string | null;
+          org_id: string | null;
+          version: number;
+          field_values: Json;
+          locked_keys: string[];
+          changes: Json;
+          note: string | null;
+          source: string;
+          changed_by: string | null;
+          changed_at: string;
+          affected_org_ids: string[];
+        };
+        Insert: {
+          id?: string;
+          layer_id: string;
+          level: string;
+          template_id?: string | null;
+          org_id?: string | null;
+          version: number;
+          field_values: Json;
+          locked_keys: string[];
+          changes?: Json;
+          note?: string | null;
+          source: string;
+          changed_by?: string | null;
+          changed_at?: string;
+          affected_org_ids?: string[];
+        };
+        Update: {
+          id?: string;
+          layer_id?: string;
+          level?: string;
+          template_id?: string | null;
+          org_id?: string | null;
+          version?: number;
+          field_values?: Json;
+          locked_keys?: string[];
+          changes?: Json;
+          note?: string | null;
+          source?: string;
+          changed_by?: string | null;
+          changed_at?: string;
+          affected_org_ids?: string[];
+        };
+        Relationships: [];
+      };
+      workspace_config_pins: {
+        Row: {
+          org_id: string;
+          template_id: string | null;
+          template_version: number | null;
+          platform_version: number;
+          auto_accept_while_onboarding: boolean;
+          updated_at: string;
+          updated_by: string | null;
+        };
+        Insert: {
+          org_id: string;
+          template_id?: string | null;
+          template_version?: number | null;
+          platform_version: number;
+          auto_accept_while_onboarding?: boolean;
+          updated_at?: string;
+          updated_by?: string | null;
+        };
+        Update: {
+          org_id?: string;
+          template_id?: string | null;
+          template_version?: number | null;
+          platform_version?: number;
+          auto_accept_while_onboarding?: boolean;
+          updated_at?: string;
+          updated_by?: string | null;
+        };
+        Relationships: [];
+      };
+      config_review_notices: {
+        Row: {
+          id: string;
+          org_id: string;
+          level: string;
+          template_id: string | null;
+          from_version: number;
+          to_version: number;
+          changes: Json;
+          status: string;
+          note: string | null;
+          postponed_until: string | null;
+          decided_by: string | null;
+          decided_at: string | null;
+          decision_note: string | null;
+          created_at: string;
+          created_by: string | null;
+        };
+        Insert: {
+          id?: string;
+          org_id: string;
+          level: string;
+          template_id?: string | null;
+          from_version: number;
+          to_version: number;
+          changes?: Json;
+          status?: string;
+          note?: string | null;
+          postponed_until?: string | null;
+          decided_by?: string | null;
+          decided_at?: string | null;
+          decision_note?: string | null;
+          created_at?: string;
+          created_by?: string | null;
+        };
+        Update: {
+          id?: string;
+          org_id?: string;
+          level?: string;
+          template_id?: string | null;
+          from_version?: number;
+          to_version?: number;
+          changes?: Json;
+          status?: string;
+          note?: string | null;
+          postponed_until?: string | null;
+          decided_by?: string | null;
+          decided_at?: string | null;
+          decision_note?: string | null;
+          created_at?: string;
+          created_by?: string | null;
+        };
+        Relationships: [];
+      };
+      config_readiness: {
+        Row: {
+          org_id: string;
+          config_version: string;
+          ready: boolean;
+          missing: Json;
+          problems: Json;
+          test_run: Json | null;
+          checked_at: string;
+          checked_by: string | null;
+          marked_ready_at: string | null;
+          marked_ready_by: string | null;
+        };
+        Insert: {
+          org_id: string;
+          config_version: string;
+          ready: boolean;
+          missing?: Json;
+          problems?: Json;
+          test_run?: Json | null;
+          checked_at?: string;
+          checked_by?: string | null;
+          marked_ready_at?: string | null;
+          marked_ready_by?: string | null;
+        };
+        Update: {
+          org_id?: string;
+          config_version?: string;
+          ready?: boolean;
+          missing?: Json;
+          problems?: Json;
+          test_run?: Json | null;
+          checked_at?: string;
+          checked_by?: string | null;
+          marked_ready_at?: string | null;
+          marked_ready_by?: string | null;
+        };
+        Relationships: [];
+      };
+      config_migration_legacy: {
+        Row: {
+          org_id: string;
+          table_name: string;
+          row_data: Json;
+          captured_at: string;
+        };
+        Insert: {
+          org_id: string;
+          table_name: string;
+          row_data: Json;
+          captured_at?: string;
+        };
+        Update: {
+          org_id?: string;
+          table_name?: string;
+          row_data?: Json;
+          captured_at?: string;
+        };
+        Relationships: [];
+      };
+      config_stops: {
+        Row: {
+          id: string;
+          org_id: string;
+          consumer: string;
+          config_version: string;
+          reason: string;
+          problems: Json;
+          first_stopped_at: string;
+          last_stopped_at: string;
+          occurrences: number;
+          notified_at: string | null;
+          resolved_at: string | null;
+        };
+        Insert: {
+          id?: string;
+          org_id: string;
+          consumer: string;
+          config_version: string;
+          reason: string;
+          problems?: Json;
+          first_stopped_at?: string;
+          last_stopped_at?: string;
+          occurrences?: number;
+          notified_at?: string | null;
+          resolved_at?: string | null;
+        };
+        Update: {
+          id?: string;
+          org_id?: string;
+          consumer?: string;
+          config_version?: string;
+          reason?: string;
+          problems?: Json;
+          first_stopped_at?: string;
+          last_stopped_at?: string;
+          occurrences?: number;
+          notified_at?: string | null;
+          resolved_at?: string | null;
+        };
+        Relationships: [];
+      };
+      lead_opt_outs: {
+        Row: {
+          lead_id: string;
+          org_id: string;
+          opted_out_at: string;
+          word: string;
+          channel: string | null;
+          config_version: string | null;
+        };
+        Insert: {
+          lead_id: string;
+          org_id: string;
+          opted_out_at?: string;
+          word: string;
+          channel?: string | null;
+          config_version?: string | null;
+        };
+        Update: {
+          lead_id?: string;
+          org_id?: string;
+          opted_out_at?: string;
+          word?: string;
+          channel?: string | null;
+          config_version?: string | null;
+        };
+        Relationships: [];
+      };
       workspace_assignments: {
         Row: {
           id: string;
@@ -2538,6 +2934,7 @@ export type Database = {
           timeline_raw: number | null;
           total: number;
           triggered_by: Database["public"]["Enums"]["score_trigger"];
+          config_version: string | null;
         };
         Insert: {
           call_id?: string | null;
@@ -2554,6 +2951,7 @@ export type Database = {
           timeline_raw?: number | null;
           total: number;
           triggered_by: Database["public"]["Enums"]["score_trigger"];
+          config_version?: string | null;
         };
         Update: {
           call_id?: string | null;
@@ -2570,6 +2968,7 @@ export type Database = {
           timeline_raw?: number | null;
           total?: number;
           triggered_by?: Database["public"]["Enums"]["score_trigger"];
+          config_version?: string | null;
         };
         Relationships: [
           {
@@ -2776,6 +3175,7 @@ export type Database = {
           id: string;
           org_id: string;
           ran_at: string;
+          config_version: string | null;
         };
         Insert: {
           changed_count: number;
@@ -2783,6 +3183,7 @@ export type Database = {
           id?: string;
           org_id: string;
           ran_at?: string;
+          config_version?: string | null;
         };
         Update: {
           changed_count?: number;
@@ -2790,6 +3191,7 @@ export type Database = {
           id?: string;
           org_id?: string;
           ran_at?: string;
+          config_version?: string | null;
         };
         Relationships: [
           {
@@ -2939,6 +3341,7 @@ export type Database = {
           org_id: string;
           sent_at: string | null;
           status: Database["public"]["Enums"]["ghl_dispatch_status"];
+          config_version: string | null;
         };
         Insert: {
           actor_member_id?: string | null;
@@ -2957,6 +3360,7 @@ export type Database = {
           org_id: string;
           sent_at?: string | null;
           status?: Database["public"]["Enums"]["ghl_dispatch_status"];
+          config_version?: string | null;
         };
         Update: {
           actor_member_id?: string | null;
@@ -2975,6 +3379,7 @@ export type Database = {
           org_id?: string;
           sent_at?: string | null;
           status?: Database["public"]["Enums"]["ghl_dispatch_status"];
+          config_version?: string | null;
         };
         Relationships: [];
       };
@@ -4373,6 +4778,7 @@ export type Database = {
           messages: Json;
           created_at: string;
           finished_at: string | null;
+          config_version: string | null;
         };
         Insert: {
           id?: string;
@@ -4392,6 +4798,7 @@ export type Database = {
           messages?: Json;
           created_at?: string;
           finished_at?: string | null;
+          config_version?: string | null;
         };
         Update: {
           id?: string;
@@ -4411,6 +4818,7 @@ export type Database = {
           messages?: Json;
           created_at?: string;
           finished_at?: string | null;
+          config_version?: string | null;
         };
         Relationships: [];
       };
@@ -4952,6 +5360,7 @@ export type Database = {
           cache_read_tokens: number;
           created_at: string;
           updated_at: string;
+          config_version: string | null;
         };
         Insert: {
           id: string;
@@ -4968,6 +5377,7 @@ export type Database = {
           cache_read_tokens?: number;
           created_at?: string;
           updated_at?: string;
+          config_version?: string | null;
         };
         Update: {
           id?: string;
@@ -4984,6 +5394,7 @@ export type Database = {
           cache_read_tokens?: number;
           created_at?: string;
           updated_at?: string;
+          config_version?: string | null;
         };
         Relationships: [];
       };
@@ -5262,6 +5673,7 @@ export type Database = {
           created_at: string;
           started_at: string | null;
           finished_at: string | null;
+          config_version: string | null;
         };
         Insert: {
           id?: string;
@@ -5291,6 +5703,7 @@ export type Database = {
           created_at?: string;
           started_at?: string | null;
           finished_at?: string | null;
+          config_version?: string | null;
         };
         Update: {
           id?: string;
@@ -5320,6 +5733,7 @@ export type Database = {
           created_at?: string;
           started_at?: string | null;
           finished_at?: string | null;
+          config_version?: string | null;
         };
         Relationships: [];
       };
@@ -5471,6 +5885,7 @@ export type Database = {
           dedupe_key: string | null;
           created_at: string;
           updated_at: string;
+          config_version: string | null;
         };
         Insert: {
           id?: string;
@@ -5496,6 +5911,7 @@ export type Database = {
           dedupe_key?: string | null;
           created_at?: string;
           updated_at?: string;
+          config_version?: string | null;
         };
         Update: {
           id?: string;
@@ -5521,6 +5937,7 @@ export type Database = {
           dedupe_key?: string | null;
           created_at?: string;
           updated_at?: string;
+          config_version?: string | null;
         };
         Relationships: [];
       };
@@ -6120,6 +6537,116 @@ export type Database = {
         Args: { p_org_id: string; p_user_id: string };
         Returns: undefined;
       };
+      config_effective: {
+        Args: { p_org_id: string };
+        Returns: Json;
+      };
+      config_save_layer: {
+        Args: {
+          p_layer_id: string;
+          p_expected_version: number;
+          p_set?: Json;
+          p_unset?: string[];
+          p_lock?: string[];
+          p_unlock?: string[];
+          p_note?: string | null;
+        };
+        Returns: number;
+      };
+      config_rollback_layer: {
+        Args: { p_layer_id: string; p_to_version: number; p_note?: string | null };
+        Returns: number;
+      };
+      config_decide_notice: {
+        Args: {
+          p_notice_id: string;
+          p_decision: "accept" | "decline" | "postpone";
+          p_note?: string | null;
+          p_postpone_days?: number;
+        };
+        Returns: undefined;
+      };
+      config_create_template: {
+        Args: {
+          p_name: string;
+          p_slug: string;
+          p_description?: string;
+          p_from_template?: string | null;
+          p_from_org?: string | null;
+        };
+        Returns: string;
+      };
+      config_update_template_details: {
+        Args: { p_template_id: string; p_name: string; p_description: string };
+        Returns: undefined;
+      };
+      config_set_template_status: {
+        Args: { p_template_id: string; p_status: "draft" | "active" | "retired"; p_note?: string | null };
+        Returns: undefined;
+      };
+      config_switch_template: {
+        Args: {
+          p_org_id: string;
+          p_template_id: string;
+          p_drop_keys?: string[];
+          p_confirm?: boolean;
+          p_note?: string | null;
+        };
+        Returns: undefined;
+      };
+      config_set_auto_accept: {
+        Args: { p_org_id: string; p_on: boolean };
+        Returns: undefined;
+      };
+      config_record_readiness: {
+        Args: {
+          p_org_id: string;
+          p_version: string;
+          p_ready: boolean;
+          p_missing?: Json;
+          p_problems?: Json;
+          p_test_run?: Json | null;
+        };
+        Returns: undefined;
+      };
+      config_owner_view: {
+        Args: { p_org_id: string };
+        Returns: Json;
+      };
+      config_owner_set_hours: {
+        Args: { p_org_id: string; p_hours: Json; p_expected_version: number };
+        Returns: number;
+      };
+      config_version_stamp: {
+        Args: { p_org_id: string };
+        Returns: string;
+      };
+      config_effective_at: {
+        Args: { p_org_id: string };
+        Returns: Json;
+      };
+      config_display_settings: {
+        Args: { p_org_id: string };
+        Returns: Json;
+      };
+      config_agent_gate: {
+        Args: { p_org_id: string; p_consumer: string; p_label: string; p_sections: string[] };
+        Returns: Json;
+      };
+      config_record_stop: {
+        Args: {
+          p_org_id: string;
+          p_consumer: string;
+          p_config_version: string;
+          p_reason: string;
+          p_problems?: Json;
+        };
+        Returns: { stop_id: string; is_new: boolean }[];
+      };
+      config_resolve_stop: {
+        Args: { p_org_id: string; p_consumer: string };
+        Returns: undefined;
+      };
       set_workspace_status: {
         Args: { p_org_id: string; p_status: Database["public"]["Enums"]["workspace_status"]; p_reason?: string | null };
         Returns: undefined;
@@ -6139,7 +6666,13 @@ export type Database = {
         Returns: undefined;
       };
       create_workspace: {
-        Args: { p_name: string; p_timezone: string; p_slug?: string | null; p_owner_email?: string | null };
+        Args: {
+          p_name: string;
+          p_timezone: string;
+          p_slug?: string | null;
+          p_owner_email?: string | null;
+          p_template_id?: string | null;
+        };
         Returns: Json;
       };
       review_inbound_event_hold: {

@@ -1,5 +1,6 @@
 import "server-only";
 
+import { PLATFORM_DISPLAY_SETTINGS, type DisplaySettings } from "@/lib/config/display";
 import type { CreativeRow } from "@/lib/forsight/creatives";
 import {
   cac,
@@ -10,8 +11,8 @@ import {
   spendUnavailable,
 } from "@/lib/forsight/formulas";
 import { fetchMetaAdInsights } from "@/lib/forsight/meta";
-import type { LeadRow, PipelineHealth } from "@/lib/forsight/pipeline";
-import { debriefsMissing, goingQuiet, neverContacted } from "@/lib/forsight/pipeline";
+import type { LeadRow, PipelineHealth, SilenceThresholds } from "@/lib/forsight/pipeline";
+import { DEFAULT_SILENCE, debriefsMissing, goingQuiet, neverContacted } from "@/lib/forsight/pipeline";
 import type { ForsightDb } from "@/lib/forsight/sources";
 import type {
   ForsightCoreSource,
@@ -36,9 +37,6 @@ import { coreMonthly } from "@/lib/forsight/report/core";
  * service-role escape hatch here.
  */
 
-/** How many weeks of history the dashboard shows. */
-const WEEKS_OF_HISTORY = 12;
-
 /** The readiness score at which a lead counts as qualified. */
 const DEFAULT_READY_THRESHOLD = 60;
 
@@ -55,9 +53,11 @@ type CoreLead = {
 export function coreProvider(
   db: ForsightDb,
   source: ForsightCoreSource,
-  context: { orgName?: string | null; meta: ForsightMetaSource | null; now?: Date }
+  context: { orgName?: string | null; meta: ForsightMetaSource | null; now?: Date; settings?: DisplaySettings }
 ): ForsightMetricsProvider {
   const now = context.now ?? new Date();
+  // History length and silence thresholds come from the workspace configuration.
+  const settings = context.settings ?? PLATFORM_DISPLAY_SETTINGS;
 
   return {
     sourceType: "vistrial_core",
@@ -65,7 +65,7 @@ export function coreProvider(
     sourceId: source.id,
     availableDatasets: () => ["weeklySummary", "leads", "touches"],
 
-    weeks: () => coreWeeks(db, source, context.meta, now, context.orgName),
+    weeks: () => coreWeeks(db, source, context.meta, now, settings.forsightHistoryWeeks, context.orgName),
 
     /**
      * Nothing here holds per-ad-creative performance: `ad_spend_days` is
@@ -80,7 +80,7 @@ export function coreProvider(
       };
     },
 
-    pipeline: () => corePipeline(db, source.orgId, now),
+    pipeline: () => corePipeline(db, source.orgId, now, silenceThresholds(settings)),
 
     monthly: (period) => coreMonthly(db, source.orgId, period),
   };
@@ -95,12 +95,13 @@ async function coreWeeks(
   source: ForsightCoreSource,
   meta: ForsightMetaSource | null,
   now: Date,
+  weeksOfHistory: number,
   orgName?: string | null
 ): Promise<ForsightResult<WeeklyPulse>> {
   const today = isoDate(now);
   const firstWeek = weekStartFor(today);
   const starts: string[] = [];
-  for (let index = WEEKS_OF_HISTORY - 1; index >= 0; index -= 1) {
+  for (let index = weeksOfHistory - 1; index >= 0; index -= 1) {
     starts.push(shiftWeeks(firstWeek, -index));
   }
   const from = starts[0];
@@ -223,7 +224,8 @@ async function readSpendByWeek(
 async function corePipeline(
   db: ForsightDb,
   orgId: string,
-  now: Date
+  now: Date,
+  thresholds: SilenceThresholds
 ): Promise<ForsightResult<PipelineHealth>> {
   const threshold = await readyThreshold(db, orgId);
 
@@ -258,7 +260,7 @@ async function corePipeline(
       humanTouches: humanTouches.get(row.id) ?? 0,
       optInDate: row.opted_in_at ? row.opted_in_at.slice(0, 10) : null,
       daysSinceTouch: days,
-      touchStatus: touchStatus(humanTouches.get(row.id) ?? 0, days),
+      touchStatus: touchStatus(humanTouches.get(row.id) ?? 0, days, thresholds),
       nextAction: actions.get(row.id) ?? "",
       debriefMissing: awaitingDebrief.has(row.id),
     };
@@ -268,20 +270,33 @@ async function corePipeline(
     available: true,
     data: {
       neverContacted: neverContacted(leads),
-      goingQuiet: goingQuiet(leads),
+      goingQuiet: goingQuiet(leads, thresholds),
       debriefsMissing: debriefsMissing(leads),
       totalLeads: leads.length,
+      thresholds,
     },
   };
 }
 
+function silenceThresholds(settings: DisplaySettings): SilenceThresholds {
+  return {
+    quietDays: settings.forsightQuietDays,
+    silentDays: settings.forsightSilentDays,
+    longSilentDays: settings.forsightLongSilentDays,
+  };
+}
+
 /** The buckets Pipeline Health sorts leads into, by how long they have waited. */
-export function touchStatus(humanTouches: number, daysSinceTouch: number | null): string {
+export function touchStatus(
+  humanTouches: number,
+  daysSinceTouch: number | null,
+  thresholds: SilenceThresholds = DEFAULT_SILENCE
+): string {
   if (humanTouches === 0) return "🔴 No human contact";
   if (daysSinceTouch === null) return "🔴 No human contact";
-  if (daysSinceTouch > 30) return "⚫ Ghosted 30d+";
-  if (daysSinceTouch > 14) return "🟠 Ghosted 14d+";
-  if (daysSinceTouch > 7) return "🟡 Going quiet";
+  if (daysSinceTouch > thresholds.longSilentDays) return `⚫ Ghosted ${thresholds.longSilentDays}d+`;
+  if (daysSinceTouch > thresholds.silentDays) return `🟠 Ghosted ${thresholds.silentDays}d+`;
+  if (daysSinceTouch > thresholds.quietDays) return "🟡 Going quiet";
   return "🟢 Active";
 }
 

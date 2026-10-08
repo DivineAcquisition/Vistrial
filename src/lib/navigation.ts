@@ -266,6 +266,12 @@ export const ADVANCED_SETTINGS_PAGES: Array<{
   scope?: ProductScopeKey;
 }> = [
   {
+    href: "/app/settings/configuration",
+    label: "Configuration",
+    description: "The template this workspace runs on, its own settings, whether it is ready to go live, updates to review, and history.",
+    platformAdminOnly: true,
+  },
+  {
     href: "/app/settings/business-profile",
     label: "Business",
     description: "What this business is, and whether the workspace is live.",

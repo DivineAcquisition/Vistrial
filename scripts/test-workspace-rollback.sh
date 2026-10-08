@@ -19,9 +19,13 @@ run() { "${PSQL[@]}" -d "${DB_NAME}" -f "$1" >/dev/null; }
 q() { "${PSQL[@]}" -d "${DB_NAME}" -tAc "$1" | tr -d ' '; }
 fail() { echo "$1" >&2; exit 1; }
 
-echo "Auth stub + all migrations + seed on ${DB_NAME}..."
+echo "Auth stub + migrations through workspace isolation + seed on ${DB_NAME}..."
 run "${ROOT}/supabase/tests/local-auth-stub.sql"
-for f in "${ROOT}/supabase/migrations/"*.sql; do run "$f"; done
+# Later migrations build on this one and have their own rollbacks, run first.
+for f in "${ROOT}/supabase/migrations/"*.sql; do
+  [[ "$(basename "$f")" > "$(basename "${FORWARD}")" ]] && break
+  run "$f"
+done
 run "${ROOT}/supabase/seed.sql"
 
 for round in 1 2; do

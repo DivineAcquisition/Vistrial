@@ -37,6 +37,10 @@ import { scoreLeadOnIntake } from "@/lib/scoring/intake";
 import { assertScorePersisted, loadScoreConfig } from "@/lib/scoring/store";
 import { calendarDaysBetween } from "@/lib/scoring/timezone";
 import type { GhlDb } from "@/lib/ghl/tokens";
+import { inboundMessageText } from "@/lib/compliance/inbound";
+import { isOptInReply, isOptOutReply } from "@/lib/compliance/rules";
+import { getEffectiveConfig } from "@/lib/config/server";
+import { logWorkspaceActivity } from "@/lib/workspaces/activity";
 import type { Database, InboundHoldReason, Json } from "@/types/database";
 
 type WebhookRow = Database["public"]["Tables"]["webhook_events"]["Row"];
@@ -396,6 +400,8 @@ async function handleInbound(db: GhlDb, orgId: string, event: WebhookRow, payloa
   if (error?.code === "23505") return;
   if (error || !touch) throw new Error("touch_insert_failed");
 
+  await applyOptOutWords(db, orgId, lead, inboundMessageText(event.raw_body), channel);
+
   assertScorePersisted(
     await scoreInboundReplyAfterSilence(db, {
       orgId,
@@ -405,6 +411,63 @@ async function handleInbound(db: GhlDb, orgId: string, event: WebhookRow, payloa
       ghostDaysSoft: config.ghostDaysSoft,
     })
   );
+}
+
+/**
+ * A reply that is exactly an opt-out word stops every further message to the
+ * lead; START or UNSTOP lets them text back in. Recorded on the lead and in
+ * the workspace activity log.
+ */
+async function applyOptOutWords(
+  db: GhlDb,
+  orgId: string,
+  lead: LeadRow,
+  text: string | null,
+  channel: string
+): Promise<void> {
+  if (!text) return;
+  const config = await getEffectiveConfig(db, orgId);
+  const words = (config.values["compliance.opt_out_words"] as string[] | undefined) ?? [];
+  const { data: existing } = await db
+    .from("lead_opt_outs")
+    .select("lead_id")
+    .eq("lead_id", lead.id)
+    .eq("org_id", orgId)
+    .maybeSingle();
+
+  if (!existing && isOptOutReply(text, words)) {
+    const { error } = await db.from("lead_opt_outs").upsert(
+      {
+        lead_id: lead.id,
+        org_id: orgId,
+        word: text.trim().toUpperCase().slice(0, 30),
+        channel,
+        config_version: config.version,
+      },
+      { onConflict: "lead_id", ignoreDuplicates: true }
+    );
+    if (error) throw new Error(`opt_out_record_failed: ${error.message}`);
+    await logWorkspaceActivity({
+      actorUserId: null,
+      orgId,
+      action: "lead.opted_out",
+      targetTable: "lead_opt_outs",
+      targetId: lead.id,
+      detail: { channel, config_version: config.version },
+    });
+    ghlLog("ghl.inbound.opted_out", { orgId, leadId: lead.id, channel });
+  } else if (existing && isOptInReply(text)) {
+    await db.from("lead_opt_outs").delete().eq("lead_id", lead.id).eq("org_id", orgId);
+    await logWorkspaceActivity({
+      actorUserId: null,
+      orgId,
+      action: "lead.opted_back_in",
+      targetTable: "lead_opt_outs",
+      targetId: lead.id,
+      detail: { channel },
+    });
+    ghlLog("ghl.inbound.opted_in", { orgId, leadId: lead.id, channel });
+  }
 }
 
 async function handleOutbound(db: GhlDb, orgId: string, _event: WebhookRow, payload: Record<string, unknown>) {

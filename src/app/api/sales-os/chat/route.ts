@@ -17,7 +17,8 @@ import {
   requireOwnConversation,
   saveConversationMessages,
 } from "@/lib/sales-os/persist";
-import { SALES_OS_INSTRUCTIONS, destinationsBlock, permissionsBlock } from "@/lib/sales-os/prompt";
+import { destinationsBlock, permissionsBlock, salesOsInstructions } from "@/lib/sales-os/prompt";
+import { checkAgentConfig } from "@/lib/config/agent-gate";
 import { salesOsActorOrNull } from "@/lib/sales-os/session";
 import { buildSalesOsTools } from "@/lib/sales-os/tools";
 
@@ -60,6 +61,14 @@ export async function POST(request: Request) {
   const { data: org } = await actor.db.from("organizations").select("agents_halted").eq("id", actor.orgId).maybeSingle();
   if (org?.agents_halted) {
     return NextResponse.json({ error: "Vistrial is paused for this workspace right now." }, { status: 403 });
+  }
+
+  const gate = await checkAgentConfig(actor.db, actor.orgId, "sales_os");
+  if (!gate.ok) {
+    return NextResponse.json(
+      { error: "Vistrial can't answer for this workspace until its setup is finished. The Vistrial team has been told." },
+      { status: 503 }
+    );
   }
 
   let model;
@@ -133,7 +142,7 @@ export async function POST(request: Request) {
   const result = streamText({
     model: model.model,
     system: [
-      { role: "system", content: SALES_OS_INSTRUCTIONS },
+      { role: "system", content: salesOsInstructions(gate.businessDescription ?? "a business that sells through conversations with its leads") },
       {
         role: "system",
         content: [permissionsBlock(actor), destinationsBlock({ destinations, routes, gates }), renderContextForPrompt(context.pkg)].join("\n\n"),

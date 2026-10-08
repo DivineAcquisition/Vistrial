@@ -162,7 +162,11 @@ export type AssetDraft = {
 
 export type CapDecision =
   | { ok: true }
-  | { ok: false; reason: "halted" | "disabled" | "run_cap" | "spend_cap" | "no_identity"; message: string };
+  | {
+      ok: false;
+      reason: "halted" | "disabled" | "run_cap" | "spend_cap" | "no_identity" | "config_incomplete";
+      message: string;
+    };
 
 export type AgentHaltState = {
   global: boolean;

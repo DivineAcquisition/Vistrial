@@ -323,3 +323,23 @@ describe("the read cache", () => {
     expect(after.records[0].id).toBe("live");
   });
 });
+
+describe("silence thresholds from configuration", () => {
+  it("keeps today's 7/14/30 wording by default", () => {
+    expect(touchStatus(2, 20)).toBe("🟠 Ghosted 14d+");
+    expect(touchStatus(2, 31)).toBe("⚫ Ghosted 30d+");
+  });
+
+  it("buckets and labels by the workspace's own thresholds", () => {
+    const thresholds = { quietDays: 4, silentDays: 7, longSilentDays: 21 };
+    expect(touchStatus(2, 10, thresholds)).toBe("🟠 Ghosted 7d+");
+    const rows = [
+      lead("Ana", { humanTouches: 1, daysSinceTouch: 10, touchStatus: touchStatus(1, 10, thresholds) }),
+      lead("Ben", { humanTouches: 1, daysSinceTouch: 25, touchStatus: touchStatus(1, 25, thresholds) }),
+      lead("Cy", { humanTouches: 1, daysSinceTouch: 5, touchStatus: touchStatus(1, 5, thresholds) }),
+    ];
+    const buckets = goingQuiet(rows, thresholds);
+    expect(buckets.ghosted14.map((row) => row.name)).toEqual(["Ana"]);
+    expect(buckets.ghosted30.map((row) => row.name)).toEqual(["Ben"]);
+  });
+});

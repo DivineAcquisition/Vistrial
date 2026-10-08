@@ -5,6 +5,7 @@ import { FOLLOW_UP_MAX_ATTEMPTS } from "@/lib/follow-up/constants";
 import { followUpError, followUpLog, followUpWarn } from "@/lib/follow-up/log";
 import { parseDraftModelOutput } from "@/lib/follow-up/parse";
 import { DRAFT_SYSTEM_PROMPT, draftUserPrompt } from "@/lib/follow-up/prompt";
+import { requireConfig } from "@/lib/config/server";
 import { checkDraftQuality } from "@/lib/follow-up/quality";
 import { boundedSequenceSteps, parseRoutingRule, routeFollowUp } from "@/lib/follow-up/routing";
 import type {
@@ -337,6 +338,17 @@ export async function runFollowUpJob(db: GhlDb, jobId: string): Promise<void> {
     return;
   }
 
+  // Drafting reads tone, industry, response and compliance settings; if one it
+  // needs is missing, it drafts nothing and says why.
+  const gate = await requireConfig(db, job.org_id, "follow_up_drafter");
+  if (!gate.ok) {
+    await db
+      .from("follow_up_jobs")
+      .update({ status: "dead", last_error: `config_incomplete: ${gate.reason}`, processed_at: new Date().toISOString() })
+      .eq("id", job.id);
+    return;
+  }
+
   await db
     .from("follow_up_jobs")
     .update({ attempt_count: job.attempt_count + 1 })
@@ -403,7 +415,7 @@ export async function runFollowUpJob(db: GhlDb, jobId: string): Promise<void> {
     }
   }
 
-  const generated = await generateDraft(db, job);
+  const generated = await generateDraft(db, job, String(gate.config.values["industry.business_description"] ?? ""));
 
   await db
     .from("follow_up_jobs")
@@ -441,7 +453,8 @@ async function generateDraft(
     operator_instruction: string | null;
     requested_by_member_id: string | null;
     draft_id: string | null;
-  }
+  },
+  businessDescription: string
 ): Promise<{ draftId: string; model: string; lowConfidence: boolean; attempt: number }> {
   const channel: FollowUpChannel = job.channel === "email" ? "email" : "sms";
   const { data: call } = await db
@@ -508,6 +521,7 @@ async function generateDraft(
   const draftModelEnabled = await taskVerificationEnabled("draft");
 
   const promptInput = {
+    businessDescription,
     branch: job.branch,
     channel,
     voice,

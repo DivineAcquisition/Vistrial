@@ -35,6 +35,41 @@ function collectFiles(dir: string, out: string[] = []): string[] {
   return out;
 }
 
+/**
+ * Prompt 9, Part 6: the brief is reachable in one click from the queue, the
+ * case file, and the call record.
+ *
+ * This is a source-text guard because the brief has already rotted once: the
+ * screen stayed fully written while the route redirected past it, so nothing
+ * rendered and no test failed. These assertions catch that shape of
+ * regression — a live component behind a dead route, or a surface that quietly
+ * drops its link.
+ */
+describe("the pre-call brief is reachable", () => {
+  const read = (relative: string) => readFileSync(path.join(ROOT, relative), "utf8");
+
+  it("renders the brief screen instead of redirecting past it", () => {
+    const route = read("src/app/app/cases/[id]/brief/page.tsx");
+    expect(route).toContain("BriefScreen");
+    expect(route).not.toMatch(/\bredirect\(/);
+  });
+
+  it("is one click from the queue, the case file, and the call record", () => {
+    const surfaces = [
+      "src/app/app/queue/queue-row.tsx",
+      "src/app/app/queue/queue-mobile-list.tsx",
+      "src/app/app/cases/[id]/case-file-screen.tsx",
+      "src/app/app/calls/call-detail-screen.tsx",
+    ];
+    const missing = surfaces.filter((file) => !read(file).includes("}/brief`"));
+    expect(missing).toEqual([]);
+  });
+
+  it("does not put the ninety-second read behind a scroll container", () => {
+    expect(read("src/app/app/cases/[id]/brief/brief-screen.tsx")).not.toContain("overflow-y-auto");
+  });
+});
+
 describe("no messaging surface named Inbox", () => {
   it('never uses the word "Inbox" anywhere in src/ or supabase/', () => {
     const inboxPattern = /\binbox\b/i;

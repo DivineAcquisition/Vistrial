@@ -1,5 +1,8 @@
-import { notFound, redirect } from "next/navigation";
+import { notFound } from "next/navigation";
 
+import { PageFrame } from "@/components/app/page-frame";
+import { BriefScreen } from "@/app/app/cases/[id]/brief/brief-screen";
+import { loadPrecallBrief } from "@/lib/brief/load";
 import { isLeadId } from "@/lib/cases/filters";
 import { throwIfForcedRouteError } from "@/lib/route-error";
 
@@ -14,5 +17,21 @@ export default async function PrecallBriefPage({
   const query = await searchParams;
   throwIfForcedRouteError(query.forceError);
   if (!isLeadId(id)) notFound();
-  redirect(`/app/cases/${id}`);
+
+  const brief = await loadPrecallBrief(id);
+  if (!brief) notFound();
+
+  return (
+    <PageFrame
+      title={brief.lead.name}
+      description="What you need before you dial. Gaps stay visible."
+      breadcrumbs={[
+        { href: "/app/cases", label: "People" },
+        { href: `/app/cases/${brief.lead.id}`, label: brief.lead.name },
+        { href: `/app/cases/${brief.lead.id}/brief`, label: "Brief" },
+      ]}
+    >
+      <BriefScreen brief={brief} />
+    </PageFrame>
+  );
 }

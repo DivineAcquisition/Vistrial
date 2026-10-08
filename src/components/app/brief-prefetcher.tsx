@@ -24,7 +24,7 @@ export function BriefPrefetcher() {
         // Quota is not a reason to skip route prefetch.
       }
       for (const item of items) {
-        router.prefetch(`/app/cases/${item.leadId}`);
+        router.prefetch(`/app/cases/${item.leadId}/brief`);
       }
     }
     void prefetch();

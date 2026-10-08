@@ -156,11 +156,15 @@ export function QueueLeadRow({
                 What happened
               </Button>
             ) : null}
+            <Button variant="secondary" size="sm" render={<a href={`/app/cases/${row.id}/brief`} />}>
+              Brief
+            </Button>
           </div>
         </TableCell>
       </ContextMenuTrigger>
       <ContextMenuPopup>
         <ContextMenuLinkItem href={`/app/cases/${row.id}`}>Person</ContextMenuLinkItem>
+        <ContextMenuLinkItem href={`/app/cases/${row.id}/brief`}>Brief</ContextMenuLinkItem>
         {row.crmUrl ? (
           <ContextMenuLinkItem href={row.crmUrl} rel="noopener noreferrer" target="_blank">
             Open in CRM

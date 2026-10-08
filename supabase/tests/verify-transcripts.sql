@@ -120,10 +120,34 @@ INSERT INTO public.unmatched_transcripts (
   'open'
 );
 
--- Org A must not see org B call/extraction/unmatched
+-- Org B gets an extraction and an objection, so cross-org reads have a target
+INSERT INTO public.call_extractions (
+  org_id, call_id, summary, budget_signal_state, model_version, quotes
+) VALUES (
+  '66666666-6666-4666-8666-666666666666',
+  'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa2',
+  'org B only summary',
+  'present',
+  'model-b',
+  '[{"text": "org B only quote", "topic": "budget"}]'::jsonb
+)
+ON CONFLICT (call_id) DO NOTHING;
+
+INSERT INTO public.objections (
+  org_id, lead_id, call_id, type, verbatim
+) VALUES (
+  '66666666-6666-4666-8666-666666666666',
+  '88888888-8888-4888-8888-888888888888',
+  'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa2',
+  'price',
+  'org B only objection'
+);
+
+-- Org A must not see org B call/extraction/objection/unmatched, by table or by id
 DO $$
 DECLARE
   v_count integer;
+  v_payload jsonb;
 BEGIN
   PERFORM set_config('request.jwt.claim.sub', '11111111-1111-4111-8111-111111111111', false);
   SET ROLE authenticated;
@@ -136,11 +160,73 @@ BEGIN
   END IF;
 
   SELECT count(*) INTO v_count
+  FROM public.call_extractions
+  WHERE call_id = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa2';
+  IF v_count <> 0 THEN
+    RAISE EXCEPTION 'org A user saw org B extraction';
+  END IF;
+
+  SELECT count(*) INTO v_count
+  FROM public.objections
+  WHERE call_id = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa2';
+  IF v_count <> 0 THEN
+    RAISE EXCEPTION 'org A user saw org B objection';
+  END IF;
+
+  SELECT count(*) INTO v_count
   FROM public.unmatched_transcripts
   WHERE org_id = '66666666-6666-4666-8666-666666666666';
   IF v_count <> 0 THEN
     RAISE EXCEPTION 'org A user saw org B unmatched transcripts';
   END IF;
+
+  -- A foreign call id under the caller's own org resolves to nothing
+  v_payload := public.load_org_call_detail(
+    '22222222-2222-4222-8222-222222222222',
+    'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa2'
+  );
+  IF v_payload IS NOT NULL THEN
+    RAISE EXCEPTION 'call detail returned another org call by id';
+  END IF;
+
+  v_payload := public.load_org_precall_brief(
+    '22222222-2222-4222-8222-222222222222',
+    '88888888-8888-4888-8888-888888888888'
+  );
+  IF v_payload IS NOT NULL THEN
+    RAISE EXCEPTION 'brief returned another org lead by id';
+  END IF;
+END
+$$;
+
+-- Naming org B directly is refused outright
+DO $$
+BEGIN
+  PERFORM public.load_org_call_detail(
+    '66666666-6666-4666-8666-666666666666',
+    'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa2'
+  );
+  RAISE EXCEPTION 'call detail served an org the caller does not belong to';
+EXCEPTION
+  WHEN sqlstate 'P0001' THEN
+    IF SQLERRM = 'call detail served an org the caller does not belong to' THEN
+      RAISE;
+    END IF;
+END
+$$;
+
+DO $$
+BEGIN
+  PERFORM public.load_org_precall_brief(
+    '66666666-6666-4666-8666-666666666666',
+    '88888888-8888-4888-8888-888888888888'
+  );
+  RAISE EXCEPTION 'brief served an org the caller does not belong to';
+EXCEPTION
+  WHEN sqlstate 'P0001' THEN
+    IF SQLERRM = 'brief served an org the caller does not belong to' THEN
+      RAISE;
+    END IF;
 END
 $$;
 

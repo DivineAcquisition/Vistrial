@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { extractCallFactors, extractFactors, parseNumericAnswer, type ScoreFieldMap } from "@/lib/scoring/extract";
+import { namedCallSignals } from "@/lib/scoring/call";
 
 function maps(): ScoreFieldMap[] {
   return [
@@ -101,6 +102,18 @@ describe("extractFactors", () => {
     );
     expect(result.factors.timeline).toBeNull();
     expect(result.notes.some((note) => note.detail.includes("left unchanged"))).toBe(true);
+  });
+
+  it("names only the spoken signals that moved a factor", () => {
+    const signals = {
+      timeline_signal: "Realistically we are looking at after Q1.",
+      budget_signal: "whenever the stars align",
+      decision_process: null,
+    };
+    const result = extractCallFactors(signals, maps());
+    expect(namedCallSignals(signals, result.factors)).toEqual([
+      { factor: "timeline", text: "Realistically we are looking at after Q1." },
+    ]);
   });
 
   it("lets the longest mapped phrase win so 15k beats 5k", () => {

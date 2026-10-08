@@ -91,6 +91,13 @@ export function CallDetailScreen({
             <Button variant="primary" size="sm" render={<Link href={`/app/cases/${detail.lead.id}`} />}>
               Person
             </Button>
+            <Button
+              variant="secondary"
+              size="sm"
+              render={<Link href={`/app/cases/${detail.lead.id}/brief`} />}
+            >
+              Brief
+            </Button>
           </div>
         </div>
         <DefinitionList>

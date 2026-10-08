@@ -85,6 +85,31 @@ export async function loadTranscriptHealth(db: GhlDb, orgId: string): Promise<Tr
   };
 }
 
+/**
+ * Unmatched transcripts across every org, for the same health surface that
+ * reports CRM ingestion. A transcript nobody assigns is a lead worked blind.
+ */
+export async function loadGlobalUnmatchedHealth(db: GhlDb): Promise<UnmatchedHealth> {
+  const now = Date.now();
+  const [count, oldest] = await Promise.all([
+    db.from("unmatched_transcripts").select("id", { count: "exact", head: true }).eq("status", "open"),
+    db
+      .from("unmatched_transcripts")
+      .select("received_at")
+      .eq("status", "open")
+      .order("received_at", { ascending: true })
+      .limit(1)
+      .maybeSingle(),
+  ]);
+
+  const oldestAt = oldest.data?.received_at ?? null;
+  return {
+    count: count.count ?? 0,
+    oldestAt,
+    oldestAgeMs: oldestAt ? now - Date.parse(oldestAt) : null,
+  };
+}
+
 export async function loadOpenUnmatched(
   db: GhlDb,
   orgId: string,

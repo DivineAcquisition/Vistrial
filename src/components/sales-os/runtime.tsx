@@ -12,6 +12,8 @@ import {
 } from "@assistant-ui/react";
 import { useAISDKRuntime } from "@assistant-ui/react-ai-sdk";
 import { DefaultChatTransport, lastAssistantMessageIsCompleteWithApprovalResponses, type UIMessage } from "ai";
+
+import { chatErrorMessage } from "@/lib/sales-os/chat-error";
 import { createAssistantStream } from "assistant-stream";
 import { useMemo, type PropsWithChildren } from "react";
 
@@ -106,6 +108,11 @@ function useConversationRuntime() {
     () =>
       new DefaultChatTransport<UIMessage>({
         api: "/api/sales-os/chat",
+        fetch: async (input, init) => {
+          const response = await globalThis.fetch(input, init);
+          if (!response.ok) throw new Error(chatErrorMessage(await response.text()));
+          return response;
+        },
         prepareSendMessagesRequest: async ({ messages, trigger }) => {
           const item = aui.threadListItem.source ? aui.threadListItem() : null;
           const remoteId = item ? (await item.initialize()).remoteId : null;

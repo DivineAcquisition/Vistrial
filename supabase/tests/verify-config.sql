@@ -434,6 +434,27 @@ SELECT pg_temp.check(
   AND EXISTS (SELECT 1 FROM public.config_versions WHERE org_id = w1 AND source = 'switch' AND note = 'Moving to home services'),
   'the template switch was not applied and recorded') FROM w;
 
+-- The workspace's template reference follows its pin, and cannot be set apart from it.
+SELECT pg_temp.check(
+  (SELECT industry_template_id FROM public.organizations WHERE id = w1) = (SELECT id FROM public.config_templates WHERE slug = 'home-services')
+  AND (SELECT industry_template_id FROM public.organizations WHERE id = w2) = (SELECT id FROM public.config_templates WHERE slug = 'med-spa'),
+  'a workspace''s template reference does not match the template it resolves against') FROM w;
+SELECT pg_temp.check(
+  NOT EXISTS (SELECT 1 FROM public.organizations o LEFT JOIN public.workspace_config_pins p ON p.org_id = o.id
+              WHERE o.industry_template_id IS DISTINCT FROM p.template_id),
+  'a workspace''s template reference drifted from its pin');
+SELECT pg_temp.check(
+  pg_temp.fails('c0f10000-0000-4000-8000-0000000000ad',
+    format($q$(WITH x AS (UPDATE public.organizations SET industry_template_id = (SELECT id FROM public.config_templates WHERE slug = 'med-spa') WHERE id = %L RETURNING 1) SELECT count(*) FROM x)$q$, w1)),
+  'a workspace''s template reference was changed without switching templates') FROM w;
+DO $$
+BEGIN
+  UPDATE public.organizations SET industry_template_id = NULL WHERE industry_template_id IS NOT NULL;
+  RAISE EXCEPTION 'config check failed: the template reference was cleared without switching templates';
+EXCEPTION WHEN insufficient_privilege THEN
+  NULL;
+END $$;
+
 SELECT pg_temp.q('c0f10000-0000-4000-8000-0000000000ad', $q$public.config_set_template_status((SELECT id FROM public.config_templates WHERE slug = 'med-spa'), 'retired')$q$);
 SELECT pg_temp.check(
   pg_temp.fails('c0f10000-0000-4000-8000-0000000000ad',

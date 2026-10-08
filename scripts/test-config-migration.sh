@@ -66,3 +66,21 @@ fi
 run "$ROOT/supabase/migrations/$RUNTIME"
 "${PSQL[@]}" -At < "$ROOT/supabase/tests/config-migration-parity.sql" | tail -1
 echo "OK: runtime migration rolls back and re-applies cleanly."
+
+REFERENCE=20261007050000_workspace_template_reference.sql
+reference_drift() {
+  "${PSQL[@]}" -At -c "SELECT count(*) FROM public.organizations o LEFT JOIN public.workspace_config_pins p ON p.org_id = o.id
+    WHERE o.industry_template_id IS DISTINCT FROM p.template_id"
+}
+echo "Template reference migration ($REFERENCE): apply, roll back, re-apply..."
+run "$ROOT/supabase/migrations/$REFERENCE"
+[ "$(reference_drift)" = "0" ] || { echo "FAIL: a workspace's template reference does not match its pin"; exit 1; }
+[ "$("${PSQL[@]}" -At -c "SELECT count(*) FROM public.organizations WHERE industry_template_id IS NOT NULL")" != "0" ] \
+  || { echo "FAIL: the template reference was not backfilled"; exit 1; }
+BEFORE="$(legacy_rows)"
+run "$ROOT/supabase/rollbacks/$REFERENCE"
+[ "$(legacy_rows)" = "$BEFORE" ] || { echo "FAIL: the template reference rollback changed legacy settings"; exit 1; }
+run "$ROOT/supabase/migrations/$REFERENCE"
+[ "$(reference_drift)" = "0" ] || { echo "FAIL: the template reference drifted after re-apply"; exit 1; }
+"${PSQL[@]}" -At < "$ROOT/supabase/tests/config-migration-parity.sql" | tail -1
+echo "OK: template reference migration rolls back and re-applies cleanly."

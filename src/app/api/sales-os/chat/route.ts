@@ -29,8 +29,13 @@ const MAX_USER_CHARS = 8000;
 const MAX_STEPS = 8;
 const CACHE = { anthropic: { cacheControl: { type: "ephemeral" as const } } };
 
-function approvalSecret(): Uint8Array {
-  return createHmac("sha256", getTokenEncryptionKey()).update("sales-os-tool-approval").digest();
+function approvalSecret(): Uint8Array | undefined {
+  try {
+    return createHmac("sha256", getTokenEncryptionKey()).update("sales-os-tool-approval").digest();
+  } catch (cause) {
+    console.error("[sales-os] tool approvals are unsigned", cause instanceof Error ? cause.message : cause);
+    return undefined;
+  }
 }
 
 function userText(message: UIMessage): string {
@@ -139,6 +144,7 @@ export async function POST(request: Request) {
   const gates = Object.fromEntries(gateEntries) as Record<ExecutionType, (typeof gateEntries)[number][1]>;
 
   const tools = buildSalesOsTools(actor, conversation.id);
+  const secret = approvalSecret();
   const result = streamText({
     model: model.model,
     system: [
@@ -153,7 +159,7 @@ export async function POST(request: Request) {
     tools,
     stopWhen: stepCountIs(MAX_STEPS),
     maxOutputTokens: 4000,
-    experimental_toolApprovalSecret: approvalSecret(),
+    ...(secret ? { experimental_toolApprovalSecret: secret } : {}),
     abortSignal: request.signal,
   });
   result.consumeStream();

@@ -108,19 +108,21 @@ export function SalesOsWorkspace({
   canEditAssets,
   pending,
   recent,
+  unavailable,
 }: {
   opening: OpeningState;
   initialThreadId?: string;
   canEditAssets: boolean;
   pending: PendingApproval[];
   recent: ToolCallRecord[];
+  unavailable?: string;
 }) {
   const Welcome = useMemo(
     () =>
       function Welcome() {
-        return <Opening state={opening} />;
+        return <Opening state={opening} unavailable={unavailable} />;
       },
-    [opening]
+    [opening, unavailable]
   );
   const onThreadIdChange = useCallback((id: string | undefined) => {
     const url = new URL(window.location.href);

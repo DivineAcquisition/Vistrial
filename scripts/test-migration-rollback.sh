@@ -24,6 +24,7 @@ done
 # The configuration system watches columns these older rollbacks drop; take it
 # off first, newest migration first (each has its own round-trip test in
 # test-config-migration.sh).
+run "${ROOT}/supabase/rollbacks/20261007050000_workspace_template_reference.sql"
 run "${ROOT}/supabase/rollbacks/20261007040000_configuration_runtime.sql"
 run "${ROOT}/supabase/rollbacks/20261007030000_configuration_system.sql"
 

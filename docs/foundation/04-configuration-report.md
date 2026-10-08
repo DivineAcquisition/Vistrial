@@ -13,7 +13,7 @@ on day one are the four launch compliance rules you approved, recorded as platfo
 
 ## What changed
 
-### Database (two migrations, each with a rollback)
+### Database (three migrations, each with a rollback)
 
 `20261007030000_configuration_system.sql`:
 
@@ -52,6 +52,15 @@ on day one are the four launch compliance rules you approved, recorded as platfo
   this run", the version, the problems, and the one-line business description.
 - `config_display_settings`: the few values customer screens show (Forsight thresholds, Stellar
   stage names), and nothing else.
+
+`20261007050000_workspace_template_reference.sql`:
+
+- `organizations.industry_template_id` (added by Prompt 1, left empty until templates existed) is
+  backfilled from each workspace's pin and now references `config_templates`.
+- A trigger on `workspace_config_pins` keeps it in step on creation, template switch and the
+  migration; a direct write that would set it apart from the pin is refused. The pin stays the
+  source of truth; the column is there so workspace lists and reports can join on it.
+- Rollback removes the link and the triggers and keeps the values.
 
 ### App
 
@@ -554,5 +563,9 @@ database in between:
 - old screens' edits are captured as overrides;
 - new columns are optional.
 
-Rollback: `supabase/rollbacks/20261007040000_configuration_runtime.sql`, then
+`20261007050000_workspace_template_reference.sql` follows the same path on its own: it only fills
+and guards a column no code writes, so the deployed app needs no change.
+
+Rollback: `supabase/rollbacks/20261007050000_workspace_template_reference.sql`, then
+`supabase/rollbacks/20261007040000_configuration_runtime.sql`, then
 `supabase/rollbacks/20261007030000_configuration_system.sql`, then redeploy the previous app.

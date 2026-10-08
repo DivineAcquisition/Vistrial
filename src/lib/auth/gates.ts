@@ -4,12 +4,13 @@ import { notFound, redirect } from "next/navigation";
 
 import { canManageMembers, canManageOrgSettings, canWorkOperatorApp } from "@/lib/auth/permissions";
 import { getAuthContext } from "@/lib/auth/session";
+import { firstSettingsPath } from "@/lib/navigation";
 import type { AuthContext } from "@/lib/auth/types";
 
 export async function requireOrgSettingsManager(): Promise<AuthContext> {
   const ctx = await getAuthContext();
   if (!canWorkOperatorApp(ctx.role, ctx.member.surfaceAccess, ctx.isStaff)) {
-    redirect("/portal");
+    redirect(firstSettingsPath(ctx.role, ctx.isStaff));
   }
   if (!canManageOrgSettings(ctx.role, ctx.isStaff)) {
     notFound();
@@ -38,7 +39,7 @@ export async function requireStaff(): Promise<AuthContext> {
 export async function requireMembersManager(): Promise<AuthContext> {
   const ctx = await getAuthContext();
   if (!canWorkOperatorApp(ctx.role, ctx.member.surfaceAccess, ctx.isStaff)) {
-    redirect("/portal");
+    redirect(firstSettingsPath(ctx.role, ctx.isStaff));
   }
   if (!canManageMembers(ctx.role, ctx.isStaff)) {
     notFound();

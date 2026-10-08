@@ -41,7 +41,7 @@ function CostPerBookedCall({ numbers }: { numbers: HomeNumbers }) {
       <p className="text-xs font-medium text-muted-foreground">Cost per booked call</p>
       {cost.state === "not_connected" ? (
         <Link
-          href="/portal"
+          href="/app/settings/integrations"
           className="mt-2 inline-flex items-center gap-1.5 rounded-lg text-sm font-medium text-brand-300 underline-offset-4 hover:underline"
         >
           <PlugZap className="size-4 shrink-0" aria-hidden />

@@ -166,9 +166,8 @@ describe("Forsight and the client portal", () => {
     expect(navVisibleTo(list, "owner")).toBe(true);
   });
 
-  it("keeps Portal, the list, What happened, People, Calls, and Settings jumpable, and parks the rest", () => {
+  it("keeps the list, What happened, People, Calls, and Settings jumpable, and parks the rest", () => {
     expect(MORE_NAV.filter((item) => !item.platformAdminOnly).map((item) => item.href)).toEqual([
-      "/portal",
       "/app/queue",
       "/app/log",
       "/app/cases",
@@ -205,10 +204,10 @@ describe("Forsight and the client portal", () => {
     }
   });
 
-  it("lands owners and staff on Home, members on the customer views, operators on the list", () => {
+  it("lands owners, staff, and members on Home, and operators on the list", () => {
     expect(landingPath("portal", "owner")).toBe(HOME_PATH);
-    expect(landingPath("portal", "member")).toBe("/portal");
-    expect(landingPath("operator", "member")).toBe("/portal");
+    expect(landingPath("portal", "member")).toBe(HOME_PATH);
+    expect(landingPath("operator", "member")).toBe(HOME_PATH);
     expect(landingPath("operator", "operator")).toBe("/app/queue");
     expect(landingPath("operator", "owner")).toBe(HOME_PATH);
     expect(landingPath("operator", "admin")).toBe(HOME_PATH);

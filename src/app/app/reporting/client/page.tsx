@@ -15,5 +15,5 @@ export default async function ReportingClientRedirectPage({
   const activatedAt = typeof meta.activated_at === "string" ? meta.activated_at : null;
   const range = parseReportingRange(params, activatedAt);
   const query = reportingRangeQuery(range);
-  redirect(query ? `/portal?${query}` : "/portal");
+  redirect(query ? `/app/home?${query}` : "/app/home");
 }

@@ -1,11 +1,9 @@
 import { OrgProvider } from "@/components/app/org-provider";
 import { AppShell } from "@/components/app/app-shell";
 import { getAuthContext, toClientOrgState } from "@/lib/auth/session";
-import { canWorkOperatorApp } from "@/lib/auth/permissions";
 import { redirectIfOnboardingIncomplete } from "@/lib/onboarding/gate";
 import { loadAttentionCounts } from "@/lib/shell/attention";
 import { createClient } from "@/lib/supabase/server";
-import { redirect } from "next/navigation";
 import { enforceHostForPerson } from "@/lib/domains/host-guard";
 import packageJson from "../../../package.json";
 
@@ -14,9 +12,6 @@ export const dynamic = "force-dynamic";
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const ctx = await getAuthContext();
   await enforceHostForPerson(ctx);
-  if (!canWorkOperatorApp(ctx.role, ctx.member.surfaceAccess, ctx.isStaff)) {
-    redirect("/portal");
-  }
   await redirectIfOnboardingIncomplete();
   const supabase = await createClient();
   const { data: training } = await supabase

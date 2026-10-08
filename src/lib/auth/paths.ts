@@ -1,4 +1,5 @@
 import { appUrl } from "@/lib/app-url";
+import { HOME_PATH } from "@/lib/navigation";
 
 /**
  * Relative in-app paths only. Rejects protocol-relative and off-site URLs.
@@ -65,12 +66,12 @@ export function authCallbackUrl(next?: string, origin = appUrl()): string {
   return url.toString();
 }
 
-export function postAuthPath(next: string, surfaceAccess?: "operator" | "portal"): string {
+export function postAuthPath(next: string, _surfaceAccess?: "operator" | "portal"): string {
   if (isAcceptInvitePath(next)) return next;
-  if (surfaceAccess === "portal") {
-    return next.startsWith("/portal") ? next : "/portal";
-  }
-  if (next.startsWith("/portal") || next.startsWith("/app") || next.startsWith("/stellar")) return next;
+  // The customer portal is parked. A saved /portal address, or a seat that used
+  // to be portal-only, lands on Home.
+  if (next.startsWith("/portal")) return HOME_PATH;
+  if (next.startsWith("/app") || next.startsWith("/stellar")) return next;
   return "/app/queue";
 }
 

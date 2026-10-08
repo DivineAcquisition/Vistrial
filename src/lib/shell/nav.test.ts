@@ -102,7 +102,7 @@ describe("shell navigation", () => {
     if (!results || !overview) throw new Error("member nav missing");
     expect(isShellItemActive("/portal", "#results", results)).toBe(true);
     expect(isShellItemActive("/portal", "#results", overview)).toBe(false);
-    expect(isShellItemActive("/portal", "", overview)).toBe(true);
+    expect(isShellItemActive("/app/home", "", overview)).toBe(true);
   });
 
   it("maps routes onto the eight layouts", () => {

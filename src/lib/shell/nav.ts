@@ -245,8 +245,8 @@ function groupsFor(input: {
           {
             id: "overview",
             label: "Overview",
-            href: "/portal",
-            match: "/portal",
+            href: HOME_PATH,
+            match: HOME_PATH,
             icon: "overview",
             phone: 1,
           },

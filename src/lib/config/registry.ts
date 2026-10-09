@@ -1090,6 +1090,15 @@ export const CONFIG_FIELDS: FieldDef[] = [
     platformDefault: { call_transcripts: 365, email: 365, text_messages: 365, forms: 365, crm_notes: 365 },
   },
   {
+    key: "sources.agent_run_history_days",
+    section: "sources",
+    label: "Keep agent run history for (days)",
+    help: "How long the step-by-step record of each agent run is kept. Case files and messages are not affected.",
+    type: "number",
+    rules: { min: 7, max: 730, integer: true },
+    platformDefault: 90,
+  },
+  {
     key: "sources.excluded",
     section: "sources",
     label: "Never read",

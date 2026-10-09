@@ -1,5 +1,6 @@
 import { runAuthorizedCron } from "@/lib/ops/jobs";
 import { deleteOrgsPastGrace } from "@/lib/ops/lifecycle";
+import { pruneAgentRunHistory } from "@/lib/live/maintenance";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
@@ -11,10 +12,11 @@ export async function GET(request: Request) {
   return runAuthorizedCron(request, "retention", async (db) => {
     const { data: preview, error } = await db.rpc("run_data_retention", { p_dry_run: dryRun });
     if (error) throw new Error(error.message);
+    const agentRuns = await pruneAgentRunHistory(db, dryRun);
     let deletedOrgs = 0;
     if (!dryRun) {
       deletedOrgs = await deleteOrgsPastGrace(db);
     }
-    return { retention: preview, deletedOrgs, dryRun };
+    return { retention: preview, agentRuns, deletedOrgs, dryRun };
   });
 }

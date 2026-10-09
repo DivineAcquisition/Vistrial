@@ -44,7 +44,23 @@ export type DispatchResult =
  * Follow-up drafts must carry a named approver. Cron only drains rows that
  * an operator already approved.
  */
+/**
+ * Vistrial does not send messages to leads until a Platform Admin turns
+ * sending on. The database refuses the dispatch row as well; this stops
+ * earlier with a clear reason.
+ */
+export async function leadSendingEnabled(db: GhlDb): Promise<boolean> {
+  const { data } = await (db as unknown as { rpc: (fn: string) => Promise<{ data: unknown }> }).rpc("lead_sending_enabled");
+  return data === true;
+}
+
+export const SENDING_OFF_REASON = "lead_sending_off";
+
 export async function dispatchOutboundMessage(db: GhlDb, input: DispatchInput): Promise<DispatchResult> {
+  if (!(await leadSendingEnabled(db))) {
+    ghlWarn("ghl.dispatch.refused", logFields(input, "failed", SENDING_OFF_REASON));
+    return { status: "failed", dispatchId: null, reason: SENDING_OFF_REASON };
+  }
   if (followUpMissingApprover(input)) {
     ghlError("ghl.dispatch.failed", logFields(input, "failed", "missing_approver"));
     return { status: "failed", dispatchId: null, reason: "missing_approver" };
@@ -110,6 +126,7 @@ export async function dispatchOutboundMessage(db: GhlDb, input: DispatchInput): 
 }
 
 export async function drainDispatchQueue(db: GhlDb, limit = 25): Promise<{ sent: number; queued: number; failed: number }> {
+  if (!(await leadSendingEnabled(db))) return { sent: 0, queued: 0, failed: 0 };
   const { data } = await db
     .from("ghl_dispatches")
     .select("id")
@@ -133,6 +150,7 @@ export async function drainDispatchQueue(db: GhlDb, limit = 25): Promise<{ sent:
 }
 
 export async function sendQueuedDispatch(db: GhlDb, dispatchId: string): Promise<DispatchResult> {
+  if (!(await leadSendingEnabled(db))) return { status: "failed", dispatchId, reason: SENDING_OFF_REASON };
   const { data: claimed } = await db.rpc("claim_ghl_dispatch", { p_id: dispatchId });
   if (!claimed) {
     const { data: row } = await db.from("ghl_dispatches").select("*").eq("id", dispatchId).maybeSingle();

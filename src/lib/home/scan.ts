@@ -171,6 +171,9 @@ export async function scanOrg(db: GhlDb, org: ProducerOrg, now = new Date()): Pr
   const result = { created: 0, autoRun: 0, escalated: 0, dismissed: 0 };
 
   if (!org.halted) {
+    // While Vistrial does not send to leads, messages come from Relay, which
+    // a person sends from the CRM; the Home producers' own message items wait.
+    const { data: sending } = await (db as unknown as { rpc: (fn: string) => Promise<{ data: unknown }> }).rpc("lead_sending_enabled");
     for (const area of HOME_AREAS) {
       const producer = AREA_PRODUCERS[area.id];
       if (!producer) continue;
@@ -178,6 +181,7 @@ export async function scanOrg(db: GhlDb, org: ProducerOrg, now = new Date()): Pr
       for (const item of items) {
         const mode = gate.choice(item.actionType).mode;
         if (mode === "off") continue;
+        if (sending !== true && (actionType(item.actionType)?.reachesPeople ?? true)) continue;
         const autoRun = mayAutoRun(org, gate, item.actionType);
         const id = await insertItem(db, org.id, area.id, item);
         if (!id) continue;

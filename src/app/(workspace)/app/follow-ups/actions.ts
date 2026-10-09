@@ -28,6 +28,17 @@ function fail(error: string): FollowUpActionResult {
   return { ok: false, error };
 }
 
+const SENDING_OFF: FollowUpActionResult = {
+  ok: false,
+  error: "Sending from Vistrial is off. Every approval now goes through Needs your approval on Home, and you send the message from your CRM.",
+};
+
+async function sendingOn(): Promise<boolean> {
+  const supabase = (await createClient()) as unknown as { rpc: (fn: string) => Promise<{ data: unknown }> };
+  const { data } = await supabase.rpc("lead_sending_enabled");
+  return data === true;
+}
+
 async function denyUnlessApprover(ctx: AuthContext): Promise<{ ok: false; error: string } | null> {
   const allowed =
     canApproveFollowUp({ role: ctx.role, canApprove: ctx.member.canApprove, isStaff: ctx.isStaff }) &&
@@ -204,6 +215,7 @@ export async function approveFollowUp(input: {
 }): Promise<FollowUpActionResult> {
   const scoped = await requireDraft(input.draftId);
   if (!scoped.ok) return scoped;
+  if (!(await sendingOn())) return SENDING_OFF;
   const stale =
     scoped.draft.status === "expired" || Date.parse(scoped.draft.expires_at) <= Date.now();
   if (stale) {
@@ -337,6 +349,7 @@ export async function approveFollowUp(input: {
 export async function retryFollowUpSend(draftId: string): Promise<FollowUpActionResult> {
   const scoped = await requireDraft(draftId);
   if (!scoped.ok) return scoped;
+  if (!(await sendingOn())) return SENDING_OFF;
   if (scoped.draft.status !== "failed") return fail("Only a failed send can be retried.");
   if (!scoped.draft.approved_by_member_id) return fail("This draft was never approved.");
   if (Date.parse(scoped.draft.expires_at) <= Date.now()) {

@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 
 import { PageFrame } from "@/components/app/page-frame";
 import { AgentDetail } from "@/components/live/agent-pages";
+import { ScribeReprocess } from "@/components/live/scribe-reprocess";
 import { AGENTS, isLiveAgentId } from "@/lib/agents/roster";
 import { getAuthContext } from "@/lib/auth/session";
 import { loadAgentPage } from "@/lib/live/load";
@@ -56,6 +57,7 @@ export default async function AgentPage({
         showConfig={ctx.isStaff}
         filter={{ result, from: query.from ?? "", to: query.to ?? "" }}
       />
+      {agent === "scribe" && canPause ? <ScribeReprocess /> : null}
     </PageFrame>
   );
 }

@@ -17,6 +17,7 @@ import { AGENTS } from "@/lib/agents/roster";
 import {
   deriveAllPresence,
   mapControl,
+  isOpenRequest,
   mapEvent,
   mapOutput,
   mapRun,
@@ -272,7 +273,7 @@ export function LiveProvider({
           case "approval_items": {
             if (!row.agent_id) return;
             const item = mapWaiting(row);
-            if (item.status === "pending") {
+            if (isOpenRequest(item.status)) {
               const isNew = !draft.waiting.has(item.id);
               draft.waiting.set(item.id, item);
               if (isNew) announce(`New request: ${item.title}.`);

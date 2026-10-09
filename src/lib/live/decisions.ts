@@ -46,11 +46,17 @@ async function simulatedContinuation(context: DecisionContext): Promise<void> {
     await recorder.finish({ reason: `Answered by ${who}. Case file updated.` });
     return;
   }
-  const sending = await recorder.step(`Approved by ${who}, sending now`);
+  const approvedStep = await recorder.step(`Approved by ${who}`);
   await sleep(1800);
-  await sending.done({ detail: "Simulation: nothing left Vistrial." });
-  await recorder.output({ kind: "note", title: "Marked sent (simulation, nothing left Vistrial)" });
-  await recorder.finish({ reason: `Approved by ${who} and marked sent. This was a simulation.` });
+  await approvedStep.done({ detail: "Simulation: in a real workspace a person now sends it from the CRM and marks it sent. Nothing was sent." });
+  await (getSupabaseAdmin() as unknown as SupabaseClient)
+    .from("approval_items")
+    .update({ status: "succeeded", performed_at: new Date().toISOString() })
+    .eq("run_id", context.runId)
+    .eq("org_id", context.orgId)
+    .eq("status", "approved");
+  await recorder.output({ kind: "note", title: "Simulation: nothing was sent" });
+  await recorder.finish({ reason: `Approved by ${who}. This was a simulation; nothing was sent.` });
 }
 
 export async function continueAfterDecision(input: {

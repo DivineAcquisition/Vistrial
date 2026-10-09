@@ -17,6 +17,7 @@ import {
   type ActivityEvent,
   type QueueDraft,
 } from "@/lib/home/queue";
+import { mapWaiting, OPEN_REQUEST_STATUSES, type WaitingItem } from "@/lib/live/model";
 import { createClient } from "@/lib/supabase/server";
 
 export type QueueItemView = {
@@ -44,6 +45,24 @@ function asRecord(value: unknown): Record<string, unknown> {
 }
 
 /**
+ * Agent requests waiting on a person, including approved messages that still
+ * need sending from the CRM. These are decided through the shared request
+ * card, never the queue's own run path.
+ */
+export async function loadAgentRequests(ctx: AuthContext): Promise<WaitingItem[]> {
+  const db = (await createClient()) as unknown as import("@supabase/supabase-js").SupabaseClient;
+  const { data } = await db
+    .from("approval_items")
+    .select("id, agent_id, run_id, action_type, title, reason, preview, lead_ids, status, created_at")
+    .eq("org_id", ctx.org.id)
+    .not("agent_id", "is", null)
+    .in("status", [...OPEN_REQUEST_STATUSES])
+    .order("created_at", { ascending: true })
+    .limit(50);
+  return ((data ?? []) as Array<Record<string, unknown>>).map(mapWaiting);
+}
+
+/**
  * The approval queue as this person sees it. Row-level security already
  * limits setters and closers to items assigned to them; the gate settings
  * decide who may press approve.
@@ -57,6 +76,7 @@ export async function loadApprovalQueue(ctx: AuthContext): Promise<QueueItemView
       .select("id, kind, action_type, title, preview, reason, status, failure_reason, created_at, escalated_at, drafts, assigned_member_id")
       .eq("org_id", ctx.org.id)
       .in("status", [...QUEUE_OPEN_STATUSES])
+      .is("agent_id", null)
       .order("created_at", { ascending: true })
       .limit(200),
     db.from("org_members").select("id, display_name").eq("org_id", ctx.org.id),

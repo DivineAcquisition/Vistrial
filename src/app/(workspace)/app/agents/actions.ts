@@ -7,7 +7,10 @@ import { getAuthContext } from "@/lib/auth/session";
 import { isLiveAgentId } from "@/lib/agents/roster";
 import { loadAwaySummary, loadLiveSince, loadRunDetail, type AwaySummary, type LiveSnapshot, type RunDetail } from "@/lib/live/load";
 import { continueAfterDecision } from "@/lib/live/decisions";
+import { resumeRun } from "@/lib/live/record";
+import { wordEditDistance } from "@/lib/follow-up/edit-distance";
 import "@/lib/scribe/continuation";
+import "@/lib/relay/continuation";
 import { runSimulation, SIMULATION_SCENARIOS, type SimulationScenario } from "@/lib/live/simulator";
 import { createClient } from "@/lib/supabase/server";
 import { getSupabaseAdmin } from "@/lib/supabase/admin";
@@ -56,10 +59,27 @@ export async function setCalmModeAction(on: boolean): Promise<Result<null>> {
   return { ok: true, data: null };
 }
 
+type Rpc = { rpc: (fn: string, args: object) => Promise<{ data: unknown; error: { message: string; code?: string } | null }> };
+type GateResult = { state?: string; already?: boolean; by?: string | null; reason?: string | null };
+
+const STATE_NOTE: Record<string, string> = {
+  approved: "Already approved. It is ready to send from your CRM.",
+  succeeded: "Already done.",
+  dismissed: "Already rejected.",
+  expired: "This expired before anyone decided.",
+  withdrawn: "This was withdrawn.",
+};
+
+function gateError(error: { message: string; code?: string }): string {
+  if (error.code === "42501" || error.code === "22023" || error.code === "P0002") return error.message;
+  return "Could not save that. Try again.";
+}
+
 /**
  * The one decision path for agent requests, used by the panel, Home, the run
- * viewer, and record pages. First decision wins: the update only applies to a
- * pending item, so a second click anywhere gets a clear note instead.
+ * viewer, and record pages. It runs as the signed-in person through
+ * gate_decide, so the database decides who may approve. First decision wins;
+ * a second click anywhere gets a clear note instead.
  */
 export async function decideAgentRequest(input: {
   itemId: string;
@@ -67,62 +87,135 @@ export async function decideAgentRequest(input: {
   reason?: string;
   answer?: string;
   editedPreview?: string;
-}): Promise<Result<{ already?: string }>> {
+  editedSubject?: string;
+}): Promise<Result<{ already?: string; state?: string }>> {
+  if (!/^[0-9a-f-]{36}$/i.test(input.itemId)) return { ok: false, error: "Not found." };
   const ctx = await getAuthContext();
-  const canApprove = ctx.isStaff || ctx.role === "owner" || ctx.member.canApprove;
-  if (!canApprove) return { ok: false, error: "You are not set up to approve. An owner can grant this." };
-  const admin = getSupabaseAdmin() as unknown as import("@supabase/supabase-js").SupabaseClient;
+  const answer = input.answer?.trim().slice(0, 2000) || null;
+  if (input.decision === "answer" && !answer) return { ok: false, error: "Write an answer first." };
+  const db = (await createClient()) as unknown as Rpc & import("@supabase/supabase-js").SupabaseClient;
 
-  const { data: item } = await admin
+  const { data: item } = await db
     .from("approval_items")
-    .select("id, org_id, run_id, agent_id, status, decided_by_member_id, action_type, title")
+    .select("id, run_id, agent_id")
     .eq("id", input.itemId)
     .eq("org_id", ctx.org.id)
     .maybeSingle();
   if (!item || !item.agent_id) return { ok: false, error: "Not found." };
 
-  const now = new Date().toISOString();
-  const approving = input.decision !== "reject";
-  const answer = input.answer?.trim().slice(0, 2000) || null;
-  if (input.decision === "answer" && !answer) return { ok: false, error: "Write an answer first." };
-  const patch: Record<string, unknown> = approving
-    ? { status: "succeeded", run_mode: "approved", decided_by_member_id: ctx.member.id, decided_at: now, answer_text: answer }
-    : { status: "dismissed", decided_by_member_id: ctx.member.id, decided_at: now, dismiss_reason: input.reason?.trim().slice(0, 500) || null };
-  if (input.editedPreview && approving) patch.preview = input.editedPreview.slice(0, 4000);
-
-  const { data: updated } = await admin
-    .from("approval_items")
-    .update(patch)
-    .eq("id", input.itemId)
-    .eq("org_id", ctx.org.id)
-    .eq("status", "pending")
-    .select("id")
-    .maybeSingle();
-
-  if (!updated) {
-    const { data: decider } = item.decided_by_member_id
-      ? await admin.from("org_members").select("display_name").eq("id", item.decided_by_member_id).maybeSingle()
-      : { data: null };
-    const name = (decider as { display_name?: string } | null)?.display_name;
-    return { ok: true, data: { already: name ? `Already decided by ${name}.` : "Already decided." } };
+  let editDistance: number | null = null;
+  const edited = input.editedPreview?.trim() ? input.editedPreview.slice(0, 4000) : null;
+  if (edited && input.decision === "approve") {
+    const { data: draft } = await db.from("relay_drafts").select("body").eq("approval_item_id", input.itemId).maybeSingle();
+    const original = (draft as { body?: string } | null)?.body;
+    if (original) editDistance = wordEditDistance(original, edited);
   }
 
-  await admin.rpc("log_workspace_activity", {
-    p_actor_user_id: ctx.user.id,
-    p_org_id: ctx.org.id,
-    p_action: approving ? (input.decision === "answer" ? "agent.question_answered" : "agent.request_approved") : "agent.request_rejected",
-    p_target_table: "approval_items",
-    p_target_id: input.itemId,
-    p_detail: { agent: item.agent_id, run: item.run_id, reason: input.reason ?? null },
+  const { data, error } = await db.rpc("gate_decide", {
+    p_item_id: input.itemId,
+    p_decision: input.decision,
+    p_body: input.decision === "approve" ? edited : null,
+    p_subject: input.decision === "approve" ? input.editedSubject?.trim().slice(0, 200) || null : null,
+    p_reason: input.decision === "reject" ? input.reason?.trim().slice(0, 500) || null : null,
+    p_answer: answer,
+    p_edit_distance: editDistance,
   });
+  if (error) return { ok: false, error: gateError(error) };
+  const result = (data ?? {}) as GateResult;
+  if (result.already) {
+    const note = result.by ? `Already decided by ${result.by}.` : (STATE_NOTE[result.state ?? ""] ?? "Already decided.");
+    return { ok: true, data: { already: note, state: result.state } };
+  }
+  if (result.state === "withdrawn" || result.state === "expired") {
+    return { ok: true, data: { already: result.reason ? `Withdrawn: ${result.reason}` : (STATE_NOTE[result.state] ?? "Closed."), state: result.state } };
+  }
 
   if (item.run_id) {
     const runId = String(item.run_id);
     const orgId = ctx.org.id;
     const who = ctx.member.displayName || "a person";
-    after(() => continueAfterDecision({ runId, orgId, approved: approving, who, answer, reason: input.reason ?? null }));
+    const approved = input.decision !== "reject";
+    after(() => continueAfterDecision({ runId, orgId, approved, who, answer, reason: input.reason ?? null }));
   }
-  return { ok: true, data: {} };
+  revalidatePath("/app/home");
+  return { ok: true, data: { state: result.state } };
+}
+
+/** The person sent the approved message from the CRM. Runs as them; the database re-checks the lead first. */
+export async function markRequestSentAction(itemId: string): Promise<Result<{ state: string; note?: string }>> {
+  if (!/^[0-9a-f-]{36}$/i.test(itemId)) return { ok: false, error: "Not found." };
+  const ctx = await getAuthContext();
+  const db = (await createClient()) as unknown as Rpc & import("@supabase/supabase-js").SupabaseClient;
+  const { data: item } = await db.from("approval_items").select("run_id").eq("id", itemId).eq("org_id", ctx.org.id).maybeSingle();
+  const { data, error } = await db.rpc("gate_mark_sent", { p_item_id: itemId });
+  if (error) return { ok: false, error: gateError(error) };
+  const result = (data ?? {}) as GateResult;
+  if (result.state === "withdrawn") return { ok: true, data: { state: "withdrawn", note: `Not marked sent: ${result.reason ?? "it no longer applies."}` } };
+  if (result.already) return { ok: true, data: { state: "performed", note: "Already marked sent." } };
+  const runId = (item as { run_id?: string | null } | null)?.run_id;
+  if (runId) {
+    const orgId = ctx.org.id;
+    const who = ctx.member.displayName || "a person";
+    after(async () => {
+      const recorder = await resumeRun(runId, orgId);
+      if (!recorder) return;
+      const step = await recorder.step(`Sent from the CRM by ${who}`);
+      await step.done({ detail: "Logged as a touch on the case file." });
+      await recorder.finish({ reason: `Sent from the CRM by ${who}.` });
+    });
+  }
+  revalidatePath("/app/home");
+  return { ok: true, data: { state: "performed" } };
+}
+
+export async function withdrawRequestAction(itemId: string, reason?: string): Promise<Result<{ state: string }>> {
+  if (!/^[0-9a-f-]{36}$/i.test(itemId)) return { ok: false, error: "Not found." };
+  await getAuthContext();
+  const db = (await createClient()) as unknown as Rpc;
+  const { data, error } = await db.rpc("gate_withdraw", { p_item_id: itemId, p_reason: reason?.trim().slice(0, 300) || null });
+  if (error) return { ok: false, error: gateError(error) };
+  revalidatePath("/app/home");
+  return { ok: true, data: { state: String((data as GateResult | null)?.state ?? "withdrawn") } };
+}
+
+export type RelayDraftView = {
+  channel: "sms" | "email";
+  status: string;
+  body: string;
+  subject: string | null;
+  footer: string | null;
+  facts: Array<{ key: string; label: string; value: string; source: string; quote: string | null; used: boolean }>;
+  expiresAt: string;
+  approvedAt: string | null;
+};
+
+/** The draft behind a Relay request, read through row level security as the signed-in person. */
+export async function fetchRelayDraft(itemId: string): Promise<Result<RelayDraftView>> {
+  if (!/^[0-9a-f-]{36}$/i.test(itemId)) return { ok: false, error: "Not found." };
+  const ctx = await getAuthContext();
+  const db = (await createClient()) as unknown as import("@supabase/supabase-js").SupabaseClient;
+  const { data } = await db
+    .from("relay_drafts")
+    .select("channel, status, body, subject, footer, facts, final_body, final_subject, expires_at, approved_at")
+    .eq("approval_item_id", itemId)
+    .eq("org_id", ctx.org.id)
+    .maybeSingle();
+  if (!data) return { ok: false, error: "Not found." };
+  const row = data as Record<string, unknown>;
+  const facts = Array.isArray(row.facts) ? (row.facts as RelayDraftView["facts"]) : [];
+  return {
+    ok: true,
+    data: {
+      channel: row.channel === "email" ? "email" : "sms",
+      status: String(row.status),
+      body: String(row.final_body ?? row.body ?? ""),
+      subject: (row.final_subject ?? row.subject ?? null) as string | null,
+      footer: (row.footer ?? null) as string | null,
+      facts: facts.slice(0, 30),
+      expiresAt: String(row.expires_at),
+      approvedAt: (row.approved_at ?? null) as string | null,
+    },
+  };
 }
 
 export async function runSimulatorAction(scenario: string, agentId?: string): Promise<Result<null>> {

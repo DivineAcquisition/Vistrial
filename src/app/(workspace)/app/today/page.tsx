@@ -5,20 +5,32 @@ import { getAuthContext } from "@/lib/auth/session";
 import { loadExperiencePage } from "@/lib/cases/experience-load";
 import { EMPTY_EXPERIENCE_FILTER, RESPONSE_LABEL } from "@/lib/cases/experience";
 import { StatusBadge } from "@/components/ui/status-badge";
+import { AgentRequestCard } from "@/components/live/request-card";
+import { loadAgentRequests } from "@/lib/home/views";
 
 export const metadata = { title: "Today" };
 
 export default async function TodayPage() {
   const ctx = await getAuthContext();
   const mine = ctx.workspaceRole === "operator" ? "me" : null;
-  const [attention, waiting] = await Promise.all([
+  const [attention, waiting, requests] = await Promise.all([
     loadExperiencePage({ ...EMPTY_EXPERIENCE_FILTER, view: "needs_attention", assignee: mine }),
     loadExperiencePage({ ...EMPTY_EXPERIENCE_FILTER, view: "waiting", assignee: mine }),
+    loadAgentRequests(ctx),
   ]);
+  const messages = requests.filter((item) => item.agentId === "relay");
   const rows = [...attention.rows, ...waiting.rows.filter((row) => !attention.rows.some((existing) => existing.id === row.id))].slice(0, 30);
 
   return (
     <PageFrame title="Today" description="What to do now, most urgent first.">
+      {messages.length ? (
+        <section aria-labelledby="today-messages" className="mb-6 space-y-3">
+          <h2 id="today-messages" className="text-sm font-semibold">Messages to send from your CRM</h2>
+          {messages.map((item) => (
+            <AgentRequestCard key={item.id} item={item} />
+          ))}
+        </section>
+      ) : null}
       {rows.length === 0 ? (
         <p className="text-sm text-muted-foreground">Nothing is waiting. New work shows up here as it becomes due.</p>
       ) : (

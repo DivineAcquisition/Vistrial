@@ -213,28 +213,28 @@ async function relayApproval(orgId: string, lead: Lead | null, pace: number) {
     scenario: "approval",
     subject: lead ? `a follow-up for ${lead.name}` : "a follow-up",
     lead,
-    plan: ["Reading Scribe's case file", "Checking quiet hours", "Drafting message", "Waiting for approval"],
+    plan: ["Reading the case file", "Writing a draft", "Checking the draft", "Waiting for approval"],
   });
   await walk(
     recorder,
     [
-      { label: "Reading Scribe's case file", detail: "Used the summary, the price objection, and the next step." },
-      { label: "Checking quiet hours", detail: "It is within business hours for the lead." },
-      { label: "Drafting message" },
+      { label: "Reading the case file", detail: "Used the summary, the price objection, and the next step. Nothing the lead wrote was read." },
+      { label: "Writing a draft", detail: "Wrote a text in this workspace's voice." },
+      { label: "Checking the draft", detail: "No invented details, links, or opt-out text." },
     ],
     pace
   );
-  const draft = "Hi! Thanks for the call earlier. Happy to walk through pricing options tomorrow morning if that works for you.";
-  await recorder.output({ kind: "draft", title: "Follow-up text", body: draft });
+  const draft = "Thanks for the call earlier. Happy to walk through pricing options tomorrow morning if that works for you.";
+  await recorder.output({ kind: "draft", title: "Text drafted. Open the request to read it." });
   const { data: item } = await db()
     .from("approval_items")
     .insert({
       org_id: orgId,
       kind: "relay_draft",
-      action_type: "quiet_lead_follow_up",
-      title: lead ? `Send a follow-up to ${lead.name}` : "Send a follow-up",
+      action_type: "send_text",
+      title: lead ? `Text for ${lead.name}` : "A follow-up text",
       preview: draft,
-      reason: "Scribe found a price objection and a callback request. Relay drafted a short reply in your voice.",
+      reason: "Simulation. Scribe found a price objection and a callback request. Approve it, then a person would send it from the CRM.",
       lead_ids: lead ? [lead.id] : [],
       run_id: recorder.id,
       agent_id: "relay",
@@ -244,10 +244,10 @@ async function relayApproval(orgId: string, lead: Lead | null, pace: number) {
     .select("id")
     .single();
   const step = await recorder.step("Waiting for approval");
-  await step.wait("Relay never sends a message without your approval.");
+  await step.wait("Vistrial never sends it. A person approves it, sends it from the CRM, and marks it sent.");
   await recorder.needPerson({
     kind: "approval",
-    prompt: "Approve this follow-up text?",
+    prompt: "Approve this text, then send it from your CRM.",
     approvalItemId: (item as { id?: string } | null)?.id ?? null,
     whoCanAct: "Owners, approvers, and the Vistrial team",
   });

@@ -71,7 +71,7 @@ function AgentPanelBody({ onNavigate }: { onNavigate: () => void }) {
         {waiting.length ? (
           <div className="space-y-2">
             {waiting.slice(0, 10).map((item) => (
-              <AgentRequestCard key={item.id} item={item} compact />
+              <AgentRequestCard key={item.id} item={item} compact={item.status !== "approved"} />
             ))}
             {waiting.length > 10 ? (
               <p className="text-xs text-muted-foreground">{waiting.length - 10} more on Overview.</p>

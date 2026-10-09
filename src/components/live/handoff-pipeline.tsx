@@ -8,7 +8,7 @@ import { useLeadLive, useRecentlyTouched } from "@/components/live/live-provider
 import { AgentRequestCard } from "@/components/live/request-card";
 import { useRunViewer } from "@/components/live/run-viewer";
 import { AGENTS, type LiveAgentId } from "@/lib/agents/roster";
-import { RUN_STATUS_LABEL, RUN_STATUS_TONE, liveStepLabel, type LiveRun, type WaitingItem } from "@/lib/live/model";
+import { RUN_STATUS_LABEL, RUN_STATUS_TONE, isOpenRequest, liveStepLabel, type LiveRun, type WaitingItem } from "@/lib/live/model";
 import { cn } from "@/lib/utils";
 
 const PIPELINE: LiveAgentId[] = ["scribe", "sentry", "relay"];
@@ -42,9 +42,9 @@ export function HandoffPipeline({
     return [...byId.values()];
   }, [initialRuns, live.runs]);
   const waiting = useMemo(() => {
-    const byId = new Map(initialWaiting.filter((item) => item.status === "pending").map((item) => [item.id, item]));
+    const byId = new Map(initialWaiting.filter((item) => isOpenRequest(item.status)).map((item) => [item.id, item]));
     for (const item of live.waiting) byId.set(item.id, item);
-    return [...byId.values()].filter((item) => item.status === "pending");
+    return [...byId.values()].filter((item) => isOpenRequest(item.status));
   }, [initialWaiting, live.waiting]);
   const latest = latestByAgent(runs);
 
@@ -87,7 +87,7 @@ export function HandoffPipeline({
         })}
       </ol>
       {waiting.map((item) => (
-        <AgentRequestCard key={item.id} item={item} compact />
+        <AgentRequestCard key={item.id} item={item} compact={item.status !== "approved"} />
       ))}
     </section>
   );

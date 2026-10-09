@@ -458,9 +458,18 @@ async function scribeStages(input: StageInput): Promise<Outcome> {
     transcriptError("call_quality.analyze_failed", { callId: call.id, reason: cause instanceof Error ? cause.message.slice(0, 80) : "analyze_failed" });
   }
 
-  if (optOut) {
-    await s.skip("The lead opted out on this call, so Relay will not draft a follow-up.");
-    await recorder.finish({ reason: `Case file updated. ${input.leadName} asked not to be contacted; no follow-up will be drafted.` });
+  const { data: contactFlag } = await db.from("leads").select("do_not_contact").eq("id", call.lead_id).eq("org_id", call.org_id).maybeSingle();
+  if (optOut || contactFlag?.do_not_contact) {
+    await s.skip(
+      optOut
+        ? "The lead opted out on this call, so Relay will not draft a follow-up."
+        : "This lead is marked do not contact, so Relay will not draft a follow-up."
+    );
+    await recorder.finish({
+      reason: optOut
+        ? `Case file updated. ${input.leadName} asked not to be contacted; no follow-up will be drafted.`
+        : `Case file updated. ${input.leadName} is marked do not contact; no follow-up will be drafted.`,
+    });
     logDone(input, extraction);
     return "opted_out";
   }

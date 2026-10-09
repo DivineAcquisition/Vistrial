@@ -282,8 +282,8 @@ function groupsFor(input: {
             {
               id: "today",
               label: "Today",
-              href: HOME_PATH,
-              match: HOME_PATH,
+              href: "/app/today",
+              match: "/app/today",
               icon: "today",
               badge: "dueToday",
               description: "What is waiting, and what already happened.",
@@ -476,6 +476,7 @@ const TITLE_RULES: Array<{ prefix: string; title: string; crumbs: Array<{ href: 
   { prefix: "/app/cases", title: "Case Files", crumbs: [{ href: "/app/cases", label: "Case Files" }] },
   { prefix: "/app/calls/", title: "Call", crumbs: [{ href: "/app/calls", label: "Calls" }, { href: "", label: "Call" }] },
   { prefix: "/app/calls", title: "Calls", crumbs: [{ href: "/app/calls", label: "Calls" }] },
+  { prefix: "/app/today", title: "Today", crumbs: [{ href: "/app/today", label: "Today" }] },
   { prefix: "/app/queue", title: "My Leads", crumbs: [{ href: "/app/queue", label: "My Leads" }] },
   { prefix: "/app/home", title: "Overview", crumbs: [{ href: HOME_PATH, label: "Overview" }] },
   { prefix: "/app/forsight", title: "Forsight", crumbs: [{ href: "/portal", label: "Results" }, { href: FORSIGHT_PATH, label: "Forsight" }] },
@@ -533,6 +534,7 @@ export function layoutKindForPath(pathname: string): PageLayoutKind {
   if (/^\/app\/cases\/[^/]+/.test(pathname) || /^\/app\/calls\/[^/]+/.test(pathname)) return "record";
   if (
     pathname.startsWith("/app/cases") ||
+    pathname.startsWith("/app/today") ||
     pathname.startsWith("/app/queue") ||
     pathname.startsWith("/app/calls") ||
     pathname.startsWith("/app/follow-ups")

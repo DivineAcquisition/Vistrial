@@ -1291,6 +1291,11 @@ export type Database = {
           updated_at: string;
           has_net_close: boolean;
           time_to_first_human_touch_seconds: number | null;
+          do_not_contact: boolean;
+          do_not_contact_reason: string | null;
+          do_not_contact_by: string | null;
+          do_not_contact_at: string | null;
+          merged_into: string | null;
         };
         Insert: {
           ad_id?: string | null;
@@ -1324,6 +1329,11 @@ export type Database = {
           timezone?: string | null;
           updated_at?: string;
           has_net_close?: boolean;
+          do_not_contact?: boolean;
+          do_not_contact_reason?: string | null;
+          do_not_contact_by?: string | null;
+          do_not_contact_at?: string | null;
+          merged_into?: string | null;
         };
         Update: {
           ad_id?: string | null;
@@ -1357,6 +1367,11 @@ export type Database = {
           timezone?: string | null;
           updated_at?: string;
           has_net_close?: boolean;
+          do_not_contact?: boolean;
+          do_not_contact_reason?: string | null;
+          do_not_contact_by?: string | null;
+          do_not_contact_at?: string | null;
+          merged_into?: string | null;
         };
         Relationships: [
           {

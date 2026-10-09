@@ -36,7 +36,7 @@ export async function setSentryModeAction(input: { mode: "off" | "practice" | "l
     p_watch_from: input.watchFrom,
     p_preview: false,
   });
-  if (error) return { ok: false, error: error.message.includes("owner") ? error.message : "Could not change Sentry." };
+  if (error) return { ok: false, error: error.message.includes("owner") || error.message.includes("onboarding") ? error.message : "Could not change Sentry." };
   revalidatePath("/app/agents/sentry");
   return { ok: true, data: null };
 }
@@ -46,11 +46,9 @@ export async function acknowledgeSentryAlert(input: { alertId: string; snoozeMin
   if (ctx.workspaceRole === "member" && !ctx.isStaff) return { ok: false, error: "You can look, but you cannot answer alerts." };
   const db = await client();
   const minutes = Math.min(Math.max(input.snoozeMinutes ?? 0, 0), 240);
-  const patch = minutes
-    ? { status: "snoozed", snoozed_until: new Date(Date.now() + minutes * 60_000).toISOString(), acknowledged_by: ctx.user.id, acknowledged_at: new Date().toISOString() }
-    : { status: "acknowledged", acknowledged_by: ctx.user.id, acknowledged_at: new Date().toISOString() };
-  const { error } = await db.from("sentry_alerts").update(patch).eq("id", input.alertId).eq("org_id", ctx.org.id).in("status", ["open", "acknowledged", "snoozed"]);
-  if (error) return { ok: false, error: "Could not update that alert." };
+  const { error } = await db.rpc("acknowledge_sentry_alert", { p_alert_id: input.alertId, p_snooze_minutes: minutes });
+  if (error) return { ok: false, error: error.code === "42501" ? "You can look, but you cannot answer alerts." : "Could not update that alert." };
+  revalidatePath("/app/agents/sentry");
   return { ok: true, data: null };
 }
 

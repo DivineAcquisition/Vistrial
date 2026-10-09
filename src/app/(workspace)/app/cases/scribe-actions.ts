@@ -7,6 +7,8 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { getAuthContext } from "@/lib/auth/session";
 import { isLeadId } from "@/lib/cases/filters";
 import { processExtractionQueue } from "@/lib/extraction/run";
+import { loadScribeCaseFile } from "@/lib/scribe/case-file";
+import type { ScribeCaseFileView } from "@/lib/scribe/view";
 import { createClient } from "@/lib/supabase/server";
 import { getSupabaseAdmin } from "@/lib/supabase/admin";
 
@@ -43,6 +45,14 @@ async function log(userId: string, orgId: string, action: string, targetId: stri
     p_target_id: targetId,
     p_detail: detail,
   });
+}
+
+/** Refetch after a live change. RLS decides what comes back. */
+export async function fetchScribeCaseFile(leadId: string): Promise<Result<ScribeCaseFileView | null>> {
+  if (!isLeadId(leadId)) return { ok: false, error: "That lead is not in this workspace." };
+  const ctx = await getAuthContext().catch(() => null);
+  if (!ctx) return { ok: false, error: "Signed out." };
+  return { ok: true, data: await loadScribeCaseFile(ctx.org.id, leadId) };
 }
 
 /** A person's value wins from now on; Scribe only suggests beside it. */

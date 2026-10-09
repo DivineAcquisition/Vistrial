@@ -62,7 +62,7 @@ export async function createAnthropicMessage(args: {
   }
 
   if (!response.ok) {
-    throw new Error("anthropic_http");
+    throw Object.assign(new Error("anthropic_http"), { status: response.status });
   }
 
   const body = (await response.json()) as {

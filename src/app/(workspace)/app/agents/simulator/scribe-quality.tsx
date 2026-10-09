@@ -68,7 +68,7 @@ export function ScribeQuality({ templates, runs }: { templates: string[]; runs: 
             </thead>
             <tbody>
               {runs.map((run) => (
-                <tr key={run.id} className="border-t" title={run.model ?? undefined}>
+                <tr key={run.id} className="border-t">
                   <td className="py-1 pr-3">{run.template}</td>
                   <td className="py-1 pr-3">{pct(run.metrics.recall)}</td>
                   <td className="py-1 pr-3">{pct(run.metrics.noInvention)}</td>

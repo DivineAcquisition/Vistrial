@@ -54,6 +54,7 @@ const REVIEWED = new Set([
   "src/lib/live/decisions.ts",
   "src/lib/live/record.ts",
   "src/lib/live/simulator.ts",
+  "src/lib/scribe/store.ts",
   "src/lib/ops/jobs.ts",
   "src/lib/portal/load.ts",
   "src/lib/profile/preview-draft.ts",

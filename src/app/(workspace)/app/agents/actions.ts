@@ -7,6 +7,7 @@ import { getAuthContext } from "@/lib/auth/session";
 import { isLiveAgentId } from "@/lib/agents/roster";
 import { loadAwaySummary, loadLiveSince, loadRunDetail, type AwaySummary, type LiveSnapshot, type RunDetail } from "@/lib/live/load";
 import { continueAfterDecision } from "@/lib/live/decisions";
+import "@/lib/scribe/continuation";
 import { runSimulation, SIMULATION_SCENARIOS, type SimulationScenario } from "@/lib/live/simulator";
 import { createClient } from "@/lib/supabase/server";
 import { getSupabaseAdmin } from "@/lib/supabase/admin";

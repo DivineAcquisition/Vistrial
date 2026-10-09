@@ -1099,6 +1099,15 @@ export const CONFIG_FIELDS: FieldDef[] = [
     platformDefault: 90,
   },
   {
+    key: "sources.scribe_calls_per_hour",
+    section: "sources",
+    label: "Calls Scribe reads per hour",
+    help: "The most calls Scribe works through in an hour for this workspace. Extra calls wait their turn.",
+    type: "number",
+    rules: { min: 1, max: 1000, integer: true },
+    platformDefault: 120,
+  },
+  {
     key: "sources.excluded",
     section: "sources",
     label: "Never read",

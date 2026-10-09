@@ -19,6 +19,8 @@ import {
 } from "@/lib/sales-os/persist";
 import { destinationsBlock, permissionsBlock, salesOsInstructions } from "@/lib/sales-os/prompt";
 import { checkAgentConfig } from "@/lib/config/agent-gate";
+import { beginCompassTurn, compassContextRead, failCompassTurn, finishCompassTurn } from "@/lib/live/compass";
+import { agentMayRun } from "@/lib/live/record";
 import { salesOsActorOrNull } from "@/lib/sales-os/session";
 import { buildSalesOsTools } from "@/lib/sales-os/tools";
 
@@ -66,6 +68,11 @@ export async function POST(request: Request) {
   const { data: org } = await actor.db.from("organizations").select("agents_halted").eq("id", actor.orgId).maybeSingle();
   if (org?.agents_halted) {
     return NextResponse.json({ error: "Vistrial is paused for this workspace right now." }, { status: 403 });
+  }
+
+  const compassAllowed = await agentMayRun(actor.orgId, "compass").catch(() => ({ ok: true as const }));
+  if (!compassAllowed.ok && compassAllowed.reason === "paused") {
+    return NextResponse.json({ error: "Compass is paused for this workspace. An owner can resume it from Agents." }, { status: 403 });
   }
 
   const gate = await checkAgentConfig(actor.db, actor.orgId, "sales_os");
@@ -133,7 +140,16 @@ export async function POST(request: Request) {
 
   await saveConversationMessages(actor, conversation.id, messages);
 
+  const turn = await beginCompassTurn({
+    orgId: actor.orgId,
+    memberId: actor.memberId,
+    conversationId: conversation.id,
+    messages,
+    resumingApproval: incoming.role === "assistant",
+  });
+
   const context = await resolveContext(actor, { conversationId: conversation.id });
+  await compassContextRead(turn);
   if (conversation.context_package_id !== context.id) await pinContextPackage(actor, conversation.id, context.id);
 
   const [destinations, routes, gateEntries] = await Promise.all([
@@ -168,7 +184,10 @@ export async function POST(request: Request) {
     originalMessages: messages,
     generateMessageId: generateId,
     sendReasoning: false,
-    onError: (error) => (error instanceof Error && error.message.length < 300 ? error.message : "Something went wrong. Nothing outside Vistrial was changed."),
+    onError: (error) => {
+      void failCompassTurn(turn, error instanceof Error ? error.message : "stream error");
+      return error instanceof Error && error.message.length < 300 ? error.message : "Something went wrong. Nothing outside Vistrial was changed.";
+    },
     onFinish: async ({ messages: finished }) => {
       const usage = await Promise.resolve(result.totalUsage).catch(() => null);
       await saveConversationMessages(actor, conversation.id, finished, {
@@ -177,6 +196,7 @@ export async function POST(request: Request) {
         outputTokens: usage?.outputTokens ?? 0,
         cacheReadTokens: usage?.cachedInputTokens ?? 0,
       });
+      await finishCompassTurn(turn, finished);
     },
   });
 }

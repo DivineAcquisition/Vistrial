@@ -3,7 +3,9 @@
 import { ThreadPrimitive } from "@assistant-ui/react";
 import { ArrowRightIcon } from "lucide-react";
 
+import { AgentGlyph } from "@/components/live/agent-identity";
 import { Card } from "@/components/ui/card";
+import { AGENTS } from "@/lib/agents/roster";
 import type { OpeningState } from "@/lib/sales-os/context-types";
 import { captionText, cardTitle } from "@/lib/ui";
 
@@ -23,6 +25,15 @@ export function Opening({ state, unavailable }: { state: OpeningState; unavailab
           <p className="text-sm leading-relaxed text-card-foreground">{unavailable}</p>
         </Card>
       ) : null}
+      <div className="flex items-start gap-3">
+        <AgentGlyph agentId="compass" size="md" />
+        <div className="min-w-0">
+          <p className="text-sm font-medium text-card-foreground">{AGENTS.compass.name}</p>
+          <p className={captionText}>
+            {AGENTS.compass.role} {AGENTS.compass.promise}
+          </p>
+        </div>
+      </div>
       <div className="space-y-2">
         <p className="font-heading text-2xl tracking-tight text-card-foreground">Hi {state.greetingName}.</p>
         {state.lines.map((line, index) => (

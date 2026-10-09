@@ -39,6 +39,7 @@ export function CaseRecord({
   partial,
   windowMinutes,
   timezone,
+  clock,
   firstHumanTouchAt,
   optedInAt,
   drafts,
@@ -63,6 +64,7 @@ export function CaseRecord({
   partial: boolean;
   windowMinutes: number;
   timezone: string;
+  clock?: { state: string; reason: string | null; deadlineAt: string | null; overdueMinutes: number | null } | null;
   firstHumanTouchAt: string | null;
   optedInAt: string;
   drafts: PendingFollowUpItem[];
@@ -146,9 +148,12 @@ export function CaseRecord({
         <HandoffPipeline leadId={leadId} initialRuns={pipelineRuns} initialWaiting={pipelineWaiting} />
         <Card className="space-y-2 p-3">
           <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Response clock</p>
-          <p className="text-sm">First touch within {windowMinutes} minutes. Times use {timezone}.</p>
+          <p className="text-sm">{clock ? `${clock.state.replaceAll("_", " ")}. ${clock.reason ?? ""}` : `First touch within ${windowMinutes} minutes.`}</p>
           <p className="text-xs text-muted-foreground">
-            A call, text, or email from a person counts. {firstHumanTouchAt ? `First human touch recorded.` : `No human touch yet. Arrived ${optedInAt.slice(0, 16).replace("T", " ")}.`}
+            Times use {timezone}. A call, text, or email from a person counts. Automated messages do not.
+            {clock?.deadlineAt ? ` Deadline ${clock.deadlineAt.slice(0, 16).replace("T", " ")}.` : ""}
+            {clock?.overdueMinutes ? ` Overdue ${clock.overdueMinutes} minutes.` : ""}
+            {firstHumanTouchAt ? " A person has already reached them." : ` Arrived ${optedInAt.slice(0, 16).replace("T", " ")}.`}
           </p>
         </Card>
         <Card className="space-y-2 p-3">

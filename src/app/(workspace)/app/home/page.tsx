@@ -11,6 +11,9 @@ import {
 } from "@/app/(workspace)/app/home/sections";
 import Logo from "@/components/brand/logo";
 import { HomeLiveBand } from "@/components/live/home-live";
+import { ResponseHealth } from "@/components/sentry/response-health";
+import { createClient } from "@/lib/supabase/server";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { canViewReporting } from "@/lib/auth/permissions";
 import { getAuthContext } from "@/lib/auth/session";
 import { parseHomePeriodKey } from "@/lib/home/periods";
@@ -44,6 +47,7 @@ export default async function HomePage({ searchParams }: { searchParams: Promise
       </Suspense>
 
       <HomeLiveBand />
+      <SentryHealth orgId={ctx.org.id} />
 
       <Suspense fallback={<QueueSkeleton />}>
         <QueueSection ctx={ctx} />
@@ -53,5 +57,20 @@ export default async function HomePage({ searchParams }: { searchParams: Promise
         <ActivitySection ctx={ctx} />
       </Suspense>
     </div>
+  );
+}
+
+async function SentryHealth({ orgId }: { orgId: string }) {
+  const db = (await createClient()) as unknown as SupabaseClient;
+  const { data } = await db.from("sentry_clocks").select("state").eq("org_id", orgId);
+  const states = ((data ?? []) as Array<{ state: string }>).map((row) => row.state);
+  if (states.length === 0) return null;
+  return (
+    <ResponseHealth
+      watched={states.length}
+      onTime={states.filter((state) => state === "on_time" || state === "resolved" || state === "paused").length}
+      atRisk={states.filter((state) => state === "at_risk").length}
+      missed={states.filter((state) => state === "missed").length}
+    />
   );
 }

@@ -34,7 +34,7 @@ export default async function CaseDetailPage({
   const [payload, brief, ctx] = await Promise.all([loadOrgCaseFile(id), loadPrecallBrief(id), getAuthContext()]);
   if (!payload) notFound();
   const db = (await createClient()) as unknown as SupabaseClient;
-  const [scoreConfig, pipeline, scribeFile, notes, flag, optOut, settings, activity] = await Promise.all([
+  const [scoreConfig, pipeline, scribeFile, notes, flag, optOut, settings, clockRow, activity] = await Promise.all([
     loadScoreConfig(getSupabaseAdmin(), payload.lead.orgId).catch(() => null),
     loadLeadPipeline(payload.lead.orgId, payload.lead.id).catch(() => ({ runs: [], waiting: [] })),
     loadScribeCaseFile(payload.lead.orgId, payload.lead.id).catch(() => null),
@@ -42,6 +42,7 @@ export default async function CaseDetailPage({
     db.from("leads").select("do_not_contact, do_not_contact_reason, merged_into").eq("id", id).eq("org_id", ctx.org.id).maybeSingle(),
     db.from("lead_opt_outs").select("lead_id").eq("lead_id", id).eq("org_id", ctx.org.id).maybeSingle(),
     db.rpc("case_list_settings", { p_org_id: ctx.org.id }),
+    db.from("sentry_clocks").select("state, reason, deadline_at, overdue_minutes").eq("org_id", ctx.org.id).eq("lead_id", id).maybeSingle(),
     loadCaseActivity(ctx.org.id, id, ctx.isStaff).catch(() => []),
   ]);
   const windowMinutes = Number((settings.data as { windowMinutes?: number } | null)?.windowMinutes) || payload.lead.speedToLeadMinutes || 15;
@@ -69,6 +70,16 @@ export default async function CaseDetailPage({
         partial={scribeFile?.status === "needs_review" || scribeFile?.status === "held"}
         windowMinutes={windowMinutes}
         timezone={timezone}
+        clock={
+          clockRow.data
+            ? {
+                state: String((clockRow.data as { state: string }).state),
+                reason: ((clockRow.data as { reason?: string | null }).reason ?? null),
+                deadlineAt: ((clockRow.data as { deadline_at?: string | null }).deadline_at ?? null),
+                overdueMinutes: ((clockRow.data as { overdue_minutes?: number | null }).overdue_minutes ?? null),
+              }
+            : null
+        }
         firstHumanTouchAt={payload.lead.firstHumanTouchAt}
         optedInAt={payload.lead.optedInAt}
         drafts={payload.pendingFollowUps}

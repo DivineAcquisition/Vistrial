@@ -93,6 +93,8 @@ export type ExperienceRow = {
   setterName: string | null;
   closerName: string | null;
   pipelineStage: string | null;
+  clockLabel: string | null;
+  clockReason: string | null;
 };
 
 export type ListSettings = {
@@ -297,5 +299,7 @@ export function mapExperienceRow(raw: Record<string, unknown>): ExperienceRow {
     setterName: (raw.setter_name as string | null) ?? null,
     closerName: (raw.closer_name as string | null) ?? null,
     pipelineStage: (raw.pipeline_stage as string | null) ?? null,
+    clockLabel: null,
+    clockReason: null,
   };
 }

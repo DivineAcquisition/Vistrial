@@ -40,9 +40,23 @@ export async function loadExperiencePage(filter: ExperienceFilter, offset = 0): 
   });
   if (listed.error) throw new Error(listed.error.message);
   const body = (listed.data ?? {}) as { rows?: Array<Record<string, unknown>>; hasMore?: boolean };
+  const mapped = (body.rows ?? []).map(mapExperienceRow);
+  if (mapped.length) {
+    const { data: clocks } = await db.from("sentry_clocks").select("lead_id, state, reason").in("lead_id", mapped.map((row) => row.id)).eq("org_id", ctx.org.id);
+    const byLead = new Map(((clocks ?? []) as Array<{ lead_id: string; state: string; reason: string | null }>).map((clock) => [clock.lead_id, clock]));
+    for (const row of mapped) {
+      const clock = byLead.get(row.id);
+      if (!clock) continue;
+      row.clockLabel = clock.state.replaceAll("_", " ");
+      row.clockReason = clock.reason;
+      if (clock.state === "on_time" || clock.state === "at_risk" || clock.state === "missed" || clock.state === "not_applicable") {
+        row.responseState = clock.state;
+      }
+    }
+  }
   const uniqueSources = [...new Set(((sources.data ?? []) as Array<{ source: string | null }>).map((row) => row.source).filter((s): s is string => !!s))].sort();
   return {
-    rows: (body.rows ?? []).map(mapExperienceRow),
+    rows: mapped,
     hasMore: body.hasMore === true,
     settings: parsed,
     counts: (counts.data ?? {}) as Record<string, number>,

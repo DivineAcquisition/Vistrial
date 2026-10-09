@@ -30,7 +30,7 @@ export default async function TodayPage() {
                   <Link href={`/app/cases/${row.id}`} className="text-base font-medium hover:underline">{row.name}</Link>
                   <p className="text-sm text-muted-foreground">{row.nextStep ?? row.headline ?? "Open the case file"}</p>
                   <div className="mt-2">
-                    <StatusBadge label={RESPONSE_LABEL[row.responseState]} tone={row.responseState === "missed" ? "critical" : row.responseState === "at_risk" ? "warning" : "neutral"} />
+                    <StatusBadge label={row.clockLabel ?? RESPONSE_LABEL[row.responseState]} tone={row.responseState === "missed" ? "critical" : row.responseState === "at_risk" ? "warning" : "neutral"} />
                   </div>
                 </div>
                 <div className="flex flex-wrap gap-2">

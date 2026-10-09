@@ -335,7 +335,7 @@ export function ExperienceList({
                   <td className="p-2"><RowBody row={row} /></td>
                   <td className="p-2">{row.band ?? "Not yet scored"}</td>
                   <td className="p-2">{LEAD_STATUS_LABELS[row.status as keyof typeof LEAD_STATUS_LABELS] ?? row.status}</td>
-                  <td className="hidden p-2 md:table-cell">{RESPONSE_LABEL[row.responseState]}</td>
+                  <td className="hidden p-2 md:table-cell">{row.clockLabel ?? RESPONSE_LABEL[row.responseState]}</td>
                   <td className="hidden p-2 lg:table-cell">{row.nextStep ?? "—"}</td>
                 </tr>
               ))}
@@ -353,7 +353,7 @@ export function ExperienceList({
                   <div className="flex flex-wrap gap-2">
                     <StatusBadge label={row.band ?? "Not yet scored"} tone={row.band ? "good" : "neutral"} />
                     <StatusBadge label={LEAD_STATUS_LABELS[row.status as keyof typeof LEAD_STATUS_LABELS] ?? row.status} tone={leadStatusTone(row.status as never)} />
-                    <StatusBadge label={RESPONSE_LABEL[row.responseState]} tone={RESPONSE_TONE[row.responseState]} />
+                    <StatusBadge label={row.clockLabel ?? RESPONSE_LABEL[row.responseState]} tone={RESPONSE_TONE[row.responseState]} />
                   </div>
                   <p className="text-sm text-muted-foreground">{row.nextStep ?? "No next step yet"}</p>
                   <p className="text-xs text-muted-foreground">

@@ -130,7 +130,13 @@ export async function observeOrg(db: GhlDb, orgId: string, now = new Date()): Pr
   // The response clock reads its window, after-hours rule and ladder from the
   // workspace configuration, and stops (with a recorded reason) if it cannot.
   const gate = await requireConfig(db, orgId, "response_clock");
-  if (gate.ok) await observeSpeedToLead(db, ctx, orgId, speedToLeadPlan(gate.config.values), now);
+  const sentry = await (db as unknown as { from: (t: string) => { select: (s: string) => { eq: (c: string, v: string) => { maybeSingle: () => Promise<{ data: { mode?: string } | null }> } } } })
+    .from("sentry_workspaces")
+    .select("mode")
+    .eq("org_id", orgId)
+    .maybeSingle();
+  const sentryOwnsClock = sentry.data?.mode === "practice" || sentry.data?.mode === "live";
+  if (gate.ok && !sentryOwnsClock) await observeSpeedToLead(db, ctx, orgId, speedToLeadPlan(gate.config.values), now);
   await observeUnassignedReady(db, ctx.setters, orgId, now);
   await observeGhosts(db, ctx.members, orgId, now);
   await observeDrafts(db, ctx.members, ctx.managers, orgId, staleDays, now);

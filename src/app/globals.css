@@ -1418,6 +1418,76 @@
   --color-dim: #858585;
 }
 
+/* ---------- Live agent motion ----------
+   Quiet by design: working agents breathe, new items fade in, changed rows get
+   a short highlight that fades. Calm mode and reduced motion turn all of it
+   off; the text labels carry the state either way. */
+
+@keyframes live-highlight {
+  from {
+    background-color: color-mix(in srgb, var(--color-brand-500) 14%, transparent);
+  }
+  to {
+    background-color: transparent;
+  }
+}
+
+@keyframes live-shimmer {
+  0% {
+    background-position: 100% 0;
+  }
+  100% {
+    background-position: -100% 0;
+  }
+}
+
+.live-pulse {
+  animation: app-breathe 2.4s ease-in-out infinite;
+}
+
+.live-enter {
+  animation: app-fade 0.4s ease both;
+}
+
+.live-highlight {
+  animation: live-highlight 2.6s ease-out both;
+}
+
+.live-shimmer-text {
+  background-image: linear-gradient(
+    90deg,
+    currentColor 0%,
+    currentColor 40%,
+    color-mix(in srgb, currentColor 45%, transparent) 50%,
+    currentColor 60%,
+    currentColor 100%
+  );
+  background-size: 200% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: live-shimmer 2.8s linear infinite;
+}
+
+html[data-calm="true"] .live-pulse,
+html[data-calm="true"] .live-enter,
+html[data-calm="true"] .live-highlight,
+html[data-calm="true"] .live-shimmer-text {
+  animation: none !important;
+}
+
+html[data-calm="true"] .live-shimmer-text {
+  -webkit-text-fill-color: currentColor;
+  background-image: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .live-shimmer-text {
+    -webkit-text-fill-color: currentColor;
+    background-image: none;
+  }
+}
+
 @custom-variant data-open (&:where([data-state="open"], [data-open]:not([data-open="false"])));
 
 @custom-variant data-closed (&:where([data-state="closed"], [data-closed]:not([data-closed="false"])));

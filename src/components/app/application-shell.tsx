@@ -47,6 +47,7 @@ export function ApplicationShell({
   title,
   crumbs,
   cue,
+  strip,
   banner,
   version,
   chat = false,
@@ -63,6 +64,8 @@ export function ApplicationShell({
   title: string;
   crumbs: Crumb[];
   cue?: ReactNode;
+  /** Live line under the header, on every width. */
+  strip?: ReactNode;
   banner?: ReactNode;
   version: string;
   chat?: boolean;
@@ -138,6 +141,7 @@ export function ApplicationShell({
               {renderAccount("header", false)}
             </div>
           </header>
+          {strip}
 
           {chat ? (
             <div className="flex min-h-0 flex-1 flex-col overflow-hidden pb-[calc(5.5rem+env(safe-area-inset-bottom))] md:pb-0">

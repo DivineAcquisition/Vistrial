@@ -10,6 +10,7 @@ import {
   QueueSkeleton,
 } from "@/app/(workspace)/app/home/sections";
 import Logo from "@/components/brand/logo";
+import { HomeLiveBand } from "@/components/live/home-live";
 import { canViewReporting } from "@/lib/auth/permissions";
 import { getAuthContext } from "@/lib/auth/session";
 import { parseHomePeriodKey } from "@/lib/home/periods";
@@ -41,6 +42,8 @@ export default async function HomePage({ searchParams }: { searchParams: Promise
       <Suspense key={period} fallback={<NumbersSkeleton showMoney={showMoney} />}>
         <NumbersSection ctx={ctx} period={period} />
       </Suspense>
+
+      <HomeLiveBand />
 
       <Suspense fallback={<QueueSkeleton />}>
         <QueueSection ctx={ctx} />

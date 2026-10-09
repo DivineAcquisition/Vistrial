@@ -2,6 +2,8 @@
 
 import Link, { useLinkStatus } from "next/link";
 import {
+  HeartPulse,
+  Bot,
   Activity,
   Building2,
   CalendarCheck,
@@ -55,6 +57,8 @@ const ICONS: Record<ShellIcon, LucideIcon> = {
   defaults: SlidersHorizontal,
   layouts: PanelsTopLeft,
   forsight: Gauge,
+  agents: Bot,
+  health: HeartPulse,
 };
 
 /** Confirms the click while the next page renders. Fixed size so nothing shifts. */

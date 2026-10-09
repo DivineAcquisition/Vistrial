@@ -3,6 +3,8 @@
 import Link from "next/link";
 import { useState } from "react";
 import {
+  HeartPulse,
+  Bot,
   Activity,
   Building2,
   CalendarCheck,
@@ -40,6 +42,8 @@ const ICONS: Record<ShellIcon, LucideIcon> = {
   defaults: SlidersHorizontal,
   layouts: PanelsTopLeft,
   forsight: Gauge,
+  agents: Bot,
+  health: HeartPulse,
 };
 
 /**

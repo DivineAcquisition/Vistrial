@@ -24,7 +24,9 @@ export type ShellIcon =
   | "activity"
   | "defaults"
   | "layouts"
-  | "forsight";
+  | "forsight"
+  | "agents"
+  | "health";
 
 export type AttentionKey = "approvals" | "dueToday" | "escalations";
 
@@ -75,13 +77,6 @@ export const HIDDEN_NAV: HiddenNavItem[] = [
     roles: "Owner, Member",
     reason:
       "No owner- or member-safe approvals screen. Pending items stay on Home for people who can already open Home. Settings → Approvals stays with the team.",
-  },
-  {
-    id: "agents",
-    label: "Agents",
-    roles: "Owner, Member",
-    reason:
-      "Agent controls stay at /app/settings/agents for the team. Ask Vistrial stays at /app/ask for people who can already open it.",
   },
   {
     id: "member-cases",
@@ -162,6 +157,15 @@ const FORSIGHT: ShellNavItem = {
   description: "Ads, creatives, and pipeline for this workspace.",
 };
 
+const AGENTS_ITEM: ShellNavItem = {
+  id: "agents",
+  label: "Agents",
+  href: "/app/agents",
+  match: "/app/agents",
+  icon: "agents",
+  description: "Who is working right now, and what each agent did.",
+};
+
 function resultsItem(withForsight: boolean): ShellNavItem {
   return {
     id: "results",
@@ -195,6 +199,7 @@ function customerViews(role: WorkspaceRole): ShellNavItem[] {
       phone: 2,
     },
     { ...resultsItem(true), phone: 3 },
+    AGENTS_ITEM,
     {
       id: "settings",
       label: "Settings",
@@ -340,6 +345,15 @@ function staffGroups(input: {
     });
   }
 
+  team.push({
+    id: "agent-health",
+    label: "Agent Health",
+    href: "/app/agents/health",
+    match: "/app/agents/health",
+    icon: "health",
+    description: "Agents that are stopped or erroring, across your workspaces.",
+  });
+
   const groups: ShellNavGroup[] = [{ id: "team", label: "Team", items: team }];
 
   if (input.role === "platform_admin") {
@@ -392,6 +406,7 @@ function staffGroups(input: {
       phone: 4,
     },
     resultsItem(true),
+    AGENTS_ITEM,
     {
       id: "configuration",
       label: "Configuration",
@@ -407,7 +422,7 @@ function staffGroups(input: {
 
 /** Platform pages are not "inside" one customer workspace. */
 export function isPlatformRoute(pathname: string): boolean {
-  return ["/app/team", "/app/ops", "/app/layouts"].some(
+  return ["/app/team", "/app/ops", "/app/layouts", "/app/agents/health"].some(
     (prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`)
   );
 }
@@ -421,6 +436,9 @@ export function isShellItemActive(pathname: string, hash: string, item: ShellNav
       (pathname === "/app/team/templates" || pathname.startsWith("/app/team/templates/")) &&
       !pathname.startsWith("/app/team/templates/platform")
     );
+  }
+  if (item.id === "agents") {
+    return isNavActive(pathname, item.match) && !pathname.startsWith("/app/agents/health");
   }
   if (item.id === "settings") {
     return isNavActive(pathname, item.match) && !pathname.startsWith("/app/settings/configuration");
@@ -461,6 +479,11 @@ const TITLE_RULES: Array<{ prefix: string; title: string; crumbs: Array<{ href: 
   { prefix: "/app/queue", title: "My Leads", crumbs: [{ href: "/app/queue", label: "My Leads" }] },
   { prefix: "/app/home", title: "Overview", crumbs: [{ href: HOME_PATH, label: "Overview" }] },
   { prefix: "/app/forsight", title: "Forsight", crumbs: [{ href: "/portal", label: "Results" }, { href: FORSIGHT_PATH, label: "Forsight" }] },
+  { prefix: "/app/agents/health", title: "Agent Health", crumbs: [{ href: "/app/agents", label: "Agents" }, { href: "/app/agents/health", label: "Agent Health" }] },
+  { prefix: "/app/agents/simulator", title: "Simulator", crumbs: [{ href: "/app/agents", label: "Agents" }, { href: "/app/agents/simulator", label: "Simulator" }] },
+  { prefix: "/app/agents/", title: "Agent", crumbs: [{ href: "/app/agents", label: "Agents" }, { href: "", label: "Agent" }] },
+  { prefix: "/app/agents", title: "Agents", crumbs: [{ href: "/app/agents", label: "Agents" }] },
+  { prefix: "/app/runs/", title: "Agent run", crumbs: [{ href: "/app/agents", label: "Agents" }, { href: "", label: "Run" }] },
   { prefix: "/app/ask", title: "Ask Vistrial", crumbs: [{ href: "/app/ask", label: "Ask Vistrial" }] },
   { prefix: "/app/onboarding", title: "Onboarding", crumbs: [{ href: "/app/onboarding", label: "Onboarding" }] },
   { prefix: "/portal", title: "Results", crumbs: [{ href: "/portal", label: "Results" }] },

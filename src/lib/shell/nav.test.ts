@@ -16,14 +16,14 @@ const labels = (role: Parameters<typeof shellNavigation>[0]["role"], extra?: Par
   }).groups.flatMap((group) => group.items.map((item) => item.label));
 
 describe("shell navigation", () => {
-  it("shows an owner Overview, Case Files, Results, and Settings, with Forsight nested", () => {
+  it("shows an owner Overview, Case Files, Results, Agents, and Settings, with Forsight nested", () => {
     const nav = shellNavigation({ role: "owner", templateAccess: false });
-    expect(labels("owner")).toEqual(["Overview", "Case Files", "Results", "Settings"]);
+    expect(labels("owner")).toEqual(["Overview", "Case Files", "Results", "Agents", "Settings"]);
+    expect(nav.phone.map((item) => item.label)).toEqual(["Overview", "Case Files", "Results", "Settings"]);
     expect(nav.groups[0]?.items.find((item) => item.id === "results")?.children?.map((item) => item.label)).toEqual([
       "Forsight",
     ]);
     expect(labels("owner")).not.toContain("Approvals");
-    expect(labels("owner")).not.toContain("Agents");
   });
 
   it("shows a member only Overview and Results", () => {
@@ -52,7 +52,7 @@ describe("shell navigation", () => {
     const nav = shellNavigation({ role: "service_team", templateAccess: true, workspaceName: "Acme Roofing" });
     const here = nav.groups.find((group) => group.id === "here");
     expect(here?.label).toBe("Acme Roofing");
-    expect(here?.items.map((item) => item.label)).toEqual(["Overview", "Case Files", "Results", "Configuration"]);
+    expect(here?.items.map((item) => item.label)).toEqual(["Overview", "Case Files", "Results", "Agents", "Configuration"]);
     expect(nav.phone.map((item) => item.label)).toEqual(["Client Roster", "Templates", "Overview", "Case Files"]);
     expect(shellNavigation({ role: "service_team", templateAccess: true }).groups.find((g) => g.id === "here")?.label).toBe(
       "This workspace",
@@ -66,6 +66,7 @@ describe("shell navigation", () => {
     expect(labelsForAdmin).toContain("Activity Log");
     expect(labelsForAdmin).toContain("Platform Defaults");
     expect(labelsForAdmin).toContain("Layouts");
+    expect(labelsForAdmin).toContain("Agent Health");
     expect(labelsForAdmin).not.toContain("Billing");
     expect(labelsForAdmin).not.toContain("Assignments");
   });
@@ -73,7 +74,6 @@ describe("shell navigation", () => {
   it("keeps the hidden list for later prompts", () => {
     expect(HIDDEN_NAV.map((item) => item.id)).toEqual([
       "approvals",
-      "agents",
       "member-cases",
       "member-approvals",
       "member-agents",

@@ -19,6 +19,7 @@ import { UserMenu } from "@/components/app/user-menu";
 import { ShellLeading } from "@/components/app/shell-leading";
 import { WorkspaceStatusBanner } from "@/components/app/workspace-status-banner";
 import { useOrg } from "@/components/app/org-provider";
+import { LiveStatusStrip } from "@/components/live/agent-panel";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { landingPath } from "@/lib/navigation";
 import {
@@ -112,6 +113,7 @@ function ConnectedShell({
         />
       )}
       cue={showCue ? <StaffCue /> : null}
+      strip={<LiveStatusStrip />}
       banner={
         <>
           {lostWorkspace ? (

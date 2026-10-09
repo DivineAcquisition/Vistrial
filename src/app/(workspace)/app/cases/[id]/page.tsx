@@ -2,6 +2,8 @@ import { notFound } from "next/navigation";
 
 import { PageFrame } from "@/components/app/page-frame";
 import { CaseFileScreen } from "@/app/(workspace)/app/cases/[id]/case-file-screen";
+import { HandoffPipeline, LeadLiveIndicator } from "@/components/live/handoff-pipeline";
+import { loadLeadPipeline } from "@/lib/live/load";
 import { loadPrecallBrief } from "@/lib/brief/load";
 import { isLeadId } from "@/lib/cases/filters";
 import { loadOrgCaseFile } from "@/lib/cases/load";
@@ -23,7 +25,10 @@ export default async function CaseDetailPage({
   if (!isLeadId(id)) notFound();
   const [payload, brief] = await Promise.all([loadOrgCaseFile(id), loadPrecallBrief(id)]);
   if (!payload) notFound();
-  const scoreConfig = await loadScoreConfig(getSupabaseAdmin(), payload.lead.orgId).catch(() => null);
+  const [scoreConfig, pipeline] = await Promise.all([
+    loadScoreConfig(getSupabaseAdmin(), payload.lead.orgId).catch(() => null),
+    loadLeadPipeline(payload.lead.orgId, payload.lead.id).catch(() => ({ runs: [], waiting: [] })),
+  ]);
 
   return (
     <PageFrame
@@ -34,6 +39,10 @@ export default async function CaseDetailPage({
         { href: `/app/cases/${payload.lead.id}`, label: payload.lead.name },
       ]}
     >
+      <div className="mb-6 space-y-2">
+        <LeadLiveIndicator leadId={payload.lead.id} />
+        <HandoffPipeline leadId={payload.lead.id} initialRuns={pipeline.runs} initialWaiting={pipeline.waiting} />
+      </div>
       <CaseFileScreen
         initial={payload}
         brief={brief}

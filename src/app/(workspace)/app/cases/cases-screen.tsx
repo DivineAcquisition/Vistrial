@@ -1,5 +1,6 @@
 "use client";
 
+import { LeadLiveIndicator } from "@/components/live/handoff-pipeline";
 import Link from "next/link";
 import { useState } from "react";
 
@@ -233,6 +234,7 @@ function CaseRow({
         <Link href={`/app/cases/${row.id}`} className="after:absolute after:inset-0">
           {row.name}
         </Link>
+        <LeadLiveIndicator leadId={row.id} className="ml-2 align-middle" />
         {row.email ? <span className="mt-1 block text-xs text-dim">{row.email}</span> : null}
         <span className="mt-1 block text-xs text-dim md:hidden">
           {[row.source || null, assigned === "—" ? null : assigned]

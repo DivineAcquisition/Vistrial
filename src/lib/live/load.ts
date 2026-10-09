@@ -10,6 +10,7 @@ import {
   mapRun,
   mapStep,
   mapWaiting,
+  OPEN_REQUEST_STATUSES,
   OPEN_RUN_STATUSES,
   type AgentControl,
   type LiveEvent,
@@ -61,7 +62,7 @@ export async function loadLiveSnapshot(orgId: string, options: { eventLimit?: nu
     db.from("agent_activity_runs").select(RUN_COLUMNS).eq("org_id", orgId).gte("created_at", since).order("created_at", { ascending: false }).limit(60),
     db.from("agent_activity_events").select("id, run_id, agent_id, lead_id, kind, label, occurred_at").eq("org_id", orgId).gte("occurred_at", since).order("occurred_at", { ascending: false }).limit(options.eventLimit ?? 120),
     db.from("agent_presence_controls").select("agent_id, paused, changed_at, changed_by_name, reason").eq("org_id", orgId),
-    db.from("approval_items").select("id, agent_id, run_id, action_type, title, reason, preview, lead_ids, status, created_at").eq("org_id", orgId).eq("status", "pending").not("agent_id", "is", null).order("created_at", { ascending: false }).limit(40),
+    db.from("approval_items").select("id, agent_id, run_id, action_type, title, reason, preview, lead_ids, status, created_at").eq("org_id", orgId).in("status", [...OPEN_REQUEST_STATUSES]).not("agent_id", "is", null).order("created_at", { ascending: false }).limit(40),
   ]);
   const byId = new Map<string, LiveRun>();
   for (const run of [...runs(recentRuns.data), ...runs(openRuns.data)]) byId.set(run.id, run);
@@ -82,7 +83,7 @@ export async function loadLiveSince(orgId: string, sinceIso: string): Promise<Li
     db.from("agent_activity_runs").select(RUN_COLUMNS).eq("org_id", orgId).gte("updated_at", sinceIso).order("updated_at", { ascending: false }).limit(100),
     db.from("agent_activity_events").select("id, run_id, agent_id, lead_id, kind, label, occurred_at").eq("org_id", orgId).gte("occurred_at", sinceIso).order("occurred_at", { ascending: false }).limit(200),
     db.from("agent_presence_controls").select("agent_id, paused, changed_at, changed_by_name, reason").eq("org_id", orgId),
-    db.from("approval_items").select("id, agent_id, run_id, action_type, title, reason, preview, lead_ids, status, created_at").eq("org_id", orgId).eq("status", "pending").not("agent_id", "is", null).limit(40),
+    db.from("approval_items").select("id, agent_id, run_id, action_type, title, reason, preview, lead_ids, status, created_at").eq("org_id", orgId).in("status", [...OPEN_REQUEST_STATUSES]).not("agent_id", "is", null).limit(40),
   ]);
   return {
     orgId,
@@ -227,7 +228,7 @@ export async function loadAwaySummary(orgId: string, sinceIso: string): Promise<
     .from("approval_items")
     .select("agent_id")
     .eq("org_id", orgId)
-    .eq("status", "pending")
+    .in("status", [...OPEN_REQUEST_STATUSES])
     .not("agent_id", "is", null)
     .limit(500);
   const waitingBy = new Map<string, number>();
@@ -273,7 +274,7 @@ export async function loadStaffHealth(): Promise<WorkspaceHealth[]> {
   const [{ data: orgs }, { data: recent }, { data: pending }] = await Promise.all([
     db.from("organizations").select("id, name, status").order("name").limit(500),
     db.from("agent_activity_runs").select("org_id, status, last_progress_at").gte("last_progress_at", since).limit(5000),
-    db.from("approval_items").select("org_id").eq("status", "pending").not("agent_id", "is", null).limit(5000),
+    db.from("approval_items").select("org_id").in("status", [...OPEN_REQUEST_STATUSES]).not("agent_id", "is", null).limit(5000),
   ]);
   const health = new Map<string, WorkspaceHealth>();
   for (const org of (orgs ?? []) as Array<{ id: string; name: string; status: string }>) {

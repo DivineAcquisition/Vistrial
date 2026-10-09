@@ -1,9 +1,11 @@
 import { PageFrame } from "@/components/app/page-frame";
 import { ScribeQuality, type QualityRunRow } from "@/app/(workspace)/app/agents/simulator/scribe-quality";
+import { RelayQuality } from "@/app/(workspace)/app/agents/simulator/relay-quality";
 import { SentryQuality } from "@/app/(workspace)/app/agents/simulator/sentry-quality";
 import { SimulatorControls } from "@/app/(workspace)/app/agents/simulator/simulator-controls";
 import { SENTRY_QUALITY_TEMPLATES } from "@/lib/sentry/quality";
 import { mapSentryQualityRow, SENTRY_QUALITY_COLUMNS } from "@/lib/sentry/quality-rows";
+import { mapRelayQualityRow, RELAY_QUALITY_COLUMNS } from "@/lib/relay/quality-rows";
 import { requirePlatformAdmin } from "@/lib/auth/gates";
 import { SCENARIO_LABEL, SIMULATION_SCENARIOS } from "@/lib/live/simulator";
 import { QUALITY_TEMPLATES } from "@/lib/scribe/quality/samples";
@@ -21,7 +23,7 @@ export const metadata = { title: "Agent simulator" };
 export default async function SimulatorPage() {
   const ctx = await requirePlatformAdmin();
   const admin = getSupabaseAdmin() as unknown as import("@supabase/supabase-js").SupabaseClient;
-  const [{ data }, { data: quality }, { data: sentryQuality }] = await Promise.all([
+  const [{ data }, { data: quality }, { data: sentryQuality }, { data: relayQuality }] = await Promise.all([
     admin.from("organizations").select("is_test_workspace").eq("id", ctx.org.id).maybeSingle(),
     admin
       .from("scribe_quality_runs")
@@ -29,6 +31,7 @@ export default async function SimulatorPage() {
       .order("created_at", { ascending: false })
       .limit(9),
     admin.from("sentry_quality_runs").select(SENTRY_QUALITY_COLUMNS).order("created_at", { ascending: false }).limit(12),
+    admin.from("relay_quality_runs").select(RELAY_QUALITY_COLUMNS).order("created_at", { ascending: false }).limit(12),
   ]);
   const runs: QualityRunRow[] = ((quality ?? []) as Array<Record<string, unknown>>).map((row) => ({
     id: String(row.id),
@@ -59,6 +62,10 @@ export default async function SimulatorPage() {
         templates={SENTRY_QUALITY_TEMPLATES}
         runs={((sentryQuality ?? []) as Array<Record<string, unknown>>).map(mapSentryQualityRow)}
         canRun
+      />
+      <RelayQuality
+        templates={SENTRY_QUALITY_TEMPLATES}
+        runs={((relayQuality ?? []) as Array<Record<string, unknown>>).map(mapRelayQualityRow)}
       />
     </PageFrame>
   );

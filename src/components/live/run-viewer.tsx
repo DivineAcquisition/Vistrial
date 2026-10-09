@@ -18,6 +18,7 @@ import { AGENTS } from "@/lib/agents/roster";
 import type { RunDetail } from "@/lib/live/load";
 import {
   formatDuration,
+  isOpenRequest,
   OPEN_RUN_STATUSES,
   RUN_STATUS_LABEL,
   RUN_STATUS_TONE,
@@ -164,7 +165,7 @@ export function RunViewer({ runId, initial, staff }: { runId: string; initial?: 
   const agent = AGENTS[run.agentId];
   const open = OPEN_RUN_STATUSES.includes(run.status);
   const tone = RUN_STATUS_TONE[run.status];
-  const waiting = detail?.waiting && detail.waiting.status === "pending" ? detail.waiting : null;
+  const waiting = detail?.waiting && isOpenRequest(detail.waiting.status) ? detail.waiting : null;
 
   return (
     <div className="space-y-5">

@@ -20,7 +20,8 @@ import type { AuthContext } from "@/lib/auth/types";
 import { loadHomeNumbers } from "@/lib/home/load";
 import type { HomePeriodKey } from "@/lib/home/periods";
 import { runModeLabel, type ActivityEntry } from "@/lib/home/queue";
-import { loadActivity, loadApprovalQueue } from "@/lib/home/views";
+import { loadActivity, loadAgentRequests, loadApprovalQueue } from "@/lib/home/views";
+import { AgentRequestCard } from "@/components/live/request-card";
 import { cn } from "@/lib/utils";
 
 export const ACTIVITY_PREVIEW = 5;
@@ -131,15 +132,18 @@ export function NumbersSkeleton({ showMoney = true }: { showMoney?: boolean }) {
  * ------------------------------------------------------------------------- */
 
 export async function QueueSection({ ctx }: { ctx: AuthContext }) {
-  const items = await loadApprovalQueue(ctx);
+  const [items, requests] = await Promise.all([loadApprovalQueue(ctx), loadAgentRequests(ctx)]);
   return (
     <section aria-labelledby="home-queue" className="flex flex-col gap-3">
-      <SectionHeading id="home-queue" title="Needs your approval" count={items.length} />
+      <SectionHeading id="home-queue" title="Needs your approval" count={items.length + requests.length} />
+      {requests.map((item) => (
+        <AgentRequestCard key={item.id} item={item} />
+      ))}
       {items.length ? (
         <ApprovalQueueList items={items} />
-      ) : (
+      ) : requests.length ? null : (
         <p className="rounded-2xl border border-dashed border-border px-4 py-5 text-sm text-muted-foreground">
-          Nothing is waiting on you. Drafts Vistrial wants to send will show up here first.
+          Nothing is waiting on you. Drafts from Relay show up here first, and you send them from your CRM.
         </p>
       )}
     </section>

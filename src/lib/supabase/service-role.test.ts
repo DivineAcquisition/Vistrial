@@ -55,6 +55,8 @@ const REVIEWED = new Set([
   "src/lib/live/decisions.ts",
   "src/lib/live/record.ts",
   "src/lib/live/simulator.ts",
+  "src/lib/relay/quality-run.ts",
+  "src/lib/relay/run.ts",
   "src/lib/scribe/store.ts",
   "src/lib/sentry/quality.ts",
   "src/lib/sentry/sweep.ts",

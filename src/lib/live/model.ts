@@ -256,6 +256,13 @@ export function mapControl(row: Row): AgentControl | null {
   };
 }
 
+/** Waiting for a decision, or approved and waiting for a person to send it. */
+export const OPEN_REQUEST_STATUSES = ["pending", "approved"] as const;
+
+export function isOpenRequest(status: string): boolean {
+  return (OPEN_REQUEST_STATUSES as readonly string[]).includes(status);
+}
+
 export function mapWaiting(row: Row): WaitingItem {
   const agentId = isLiveAgentId(row.agent_id) ? row.agent_id : null;
   return {
@@ -329,7 +336,7 @@ export function derivePresence(input: {
     .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
   const waitingRuns = mine.filter((run) => run.status === "waiting_person");
   const waitingItems = input.waiting.filter(
-    (item) => item.agentId === input.agentId && item.status === "pending"
+    (item) => item.agentId === input.agentId && isOpenRequest(item.status)
   );
   const runIdsWithItem = new Set(waitingItems.map((item) => item.runId).filter(Boolean));
   const waitingCount = waitingItems.length + waitingRuns.filter((run) => !runIdsWithItem.has(run.id)).length;

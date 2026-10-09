@@ -434,6 +434,14 @@ export const CONFIG_FIELDS: FieldDef[] = [
     platformDefault: ["call", "text", "email"],
   },
   {
+    key: "response.relay_counts_as_human_touch",
+    section: "response",
+    label: "An approved Relay message counts as a human touch",
+    help: "When on, a message Relay drafted that a person approved and sent stops the response clock, the same as one a person wrote.",
+    type: "boolean",
+    platformDefault: true,
+  },
+  {
     key: "response.warning_threshold_percent",
     section: "response",
     label: "Nudge at",

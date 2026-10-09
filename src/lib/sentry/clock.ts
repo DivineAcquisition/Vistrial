@@ -33,6 +33,19 @@ export type ClockTouch = {
   manual?: boolean;
 };
 
+/**
+ * A saved touch as the clock sees it. A Relay draft a person approved and sent
+ * counts as a human touch unless the workspace turned that off
+ * (response.relay_counts_as_human_touch; missing means on).
+ */
+export function clockTouchFromRow(
+  row: { occurred_at: string; type: string; channel: string; queued_offline?: boolean | null; drafted_by_agent?: string | null },
+  relayCountsAsHuman: unknown
+): ClockTouch {
+  const human = row.type === "human" && !(row.drafted_by_agent === "relay" && relayCountsAsHuman === false);
+  return { at: row.occurred_at, type: human ? "human" : "system", channel: row.channel, manual: row.queued_offline === true };
+}
+
 export type ClockInput = {
   now: string;
   startedAt: string;

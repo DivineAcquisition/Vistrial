@@ -3,12 +3,14 @@ import { notFound } from "next/navigation";
 import { PageFrame } from "@/components/app/page-frame";
 import { AgentDetail } from "@/components/live/agent-pages";
 import { ScribeReprocess } from "@/components/live/scribe-reprocess";
+import { RelayPanel } from "@/components/relay/relay-panel";
 import { SentryPanel } from "@/components/sentry/sentry-panel";
 import { createClient } from "@/lib/supabase/server";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { AGENTS, isLiveAgentId } from "@/lib/agents/roster";
 import { getAuthContext } from "@/lib/auth/session";
 import { loadAgentPage } from "@/lib/live/load";
+import { loadRelaySection } from "@/lib/relay/page";
 import { RUN_STATUS_LABEL, type RunStatus } from "@/lib/live/model";
 import { sentryStatus, summarizeMeasures, type MeasureRow } from "@/lib/sentry/measures";
 
@@ -63,8 +65,14 @@ export default async function AgentPage({
       />
       {agent === "scribe" && canPause ? <ScribeReprocess /> : null}
       {agent === "sentry" ? <SentrySection orgId={ctx.org.id} canControl={canPause} /> : null}
+      {agent === "relay" ? <RelaySection orgId={ctx.org.id} isStaff={ctx.isStaff} /> : null}
     </PageFrame>
   );
+}
+
+async function RelaySection({ orgId, isStaff }: { orgId: string; isStaff: boolean }) {
+  const data = await loadRelaySection(orgId, isStaff);
+  return <RelayPanel data={data} isStaff={isStaff} />;
 }
 
 async function SentrySection({ orgId, canControl }: { orgId: string; canControl: boolean }) {

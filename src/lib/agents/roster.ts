@@ -78,7 +78,7 @@ export const AGENTS: Record<LiveAgentId, AgentIdentity> = {
     name: "Relay",
     role: "Drafts follow-ups for your approval.",
     description:
-      "Relay writes follow-up messages in your voice from what Scribe learned. Every draft waits for a person to approve it.",
+      "Relay writes follow-up messages in your voice from what Scribe learned. Every draft waits for a person to approve it, and that person sends it from the CRM.",
     glyph: "send",
     accent: {
       text: "text-info",
@@ -86,7 +86,7 @@ export const AGENTS: Record<LiveAgentId, AgentIdentity> = {
       ring: "ring-info/40",
       dot: "bg-info",
     },
-    promise: "Relay never sends a message without your approval.",
+    promise: "Relay never sends anything. You approve each draft and send it from your CRM.",
     configSections: ["tone", "approval", "compliance"],
     order: 3,
   },

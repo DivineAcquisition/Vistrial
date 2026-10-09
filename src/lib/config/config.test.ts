@@ -225,7 +225,19 @@ describe("validation", () => {
       template: { slug: "x", values: MED_SPA.values, lockedKeys: [], version: 1 },
       workspace: { values: { ...identity, "approval.actions": actions as never }, lockedKeys: [], version: 1 },
     });
-    expect(effective.issues.map((issue) => issue.message).join("\n")).toContain("always needs approval");
+    expect(effective.issues.map((issue) => issue.message).join("\n")).toContain("a person always approves it");
+  });
+
+  it("keeps messages to leads behind approval even when the always-approve list is emptied", () => {
+    const actions = (FIELD_BY_KEY["approval.actions"].platformDefault as Array<Record<string, unknown>>).map((row) =>
+      row.action === "first_reply" ? { ...row, mode: "auto_run", auto_run_confirmed: true } : row
+    );
+    const effective = resolveConfig({
+      platform: { ...platform(), lockedKeys: [] },
+      template: { slug: "x", values: MED_SPA.values, lockedKeys: [], version: 1 },
+      workspace: { values: { ...identity, "approval.actions": actions as never, "approval.never_auto": [] as never }, lockedKeys: [], version: 1 },
+    });
+    expect(effective.issues.map((issue) => issue.message).join("\n")).toContain("a person always approves it");
   });
 
   it("refuses anything that looks like a credential", () => {

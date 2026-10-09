@@ -1,4 +1,4 @@
-import { CONFIG_FIELDS, FIELD_BY_KEY, WEEKDAYS } from "@/lib/config/registry";
+import { APPROVAL_ACTIONS, CONFIG_FIELDS, FIELD_BY_KEY, WEEKDAYS } from "@/lib/config/registry";
 import { isAtLeastAsStrict, minutesOfDay, tightenExplanation, windowMinutes } from "@/lib/config/tighten";
 import type { ConfigIssue, ConfigValue, ConfigValues, FieldDef, ItemField } from "@/lib/config/types";
 
@@ -439,9 +439,12 @@ export function validateCrossField(values: ConfigValues): ConfigIssue[] {
   });
 
   const neverAuto = new Set((Array.isArray(values["approval.never_auto"]) ? values["approval.never_auto"] : []).map(String));
+  const reachesPeople = new Set(APPROVAL_ACTIONS.filter((item) => item.reachesPeople).map((item) => item.value));
   for (const action of asList(values["approval.actions"])) {
     if (action.mode !== "auto_run") continue;
-    if (neverAuto.has(String(action.action))) {
+    if (reachesPeople.has(String(action.action))) {
+      add("approval.actions", `"${labelForAction(String(action.action))}" reaches a lead or client, so a person always approves it. Set it to "Ask first".`);
+    } else if (neverAuto.has(String(action.action))) {
       add("approval.actions", `"${labelForAction(String(action.action))}" always needs approval and cannot proceed without it. Set it to "Ask first".`);
     } else if (action.auto_run_confirmed !== true) {
       add("approval.actions", `"${labelForAction(String(action.action))}" is set to proceed without approval. Tick the confirmation on that row to accept this, or set it to "Ask first".`);

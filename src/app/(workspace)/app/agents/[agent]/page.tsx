@@ -10,6 +10,7 @@ import { AGENTS, isLiveAgentId } from "@/lib/agents/roster";
 import { getAuthContext } from "@/lib/auth/session";
 import { loadAgentPage } from "@/lib/live/load";
 import { RUN_STATUS_LABEL, type RunStatus } from "@/lib/live/model";
+import { sentryStatus, summarizeMeasures, type MeasureRow } from "@/lib/sentry/measures";
 
 export const dynamic = "force-dynamic";
 
@@ -67,30 +68,44 @@ export default async function AgentPage({
 }
 
 async function SentrySection({ orgId, canControl }: { orgId: string; canControl: boolean }) {
+  const data = await loadSentrySection(orgId);
+  return <SentryPanel canControl={canControl} {...data} />;
+}
+
+async function loadSentrySection(orgId: string) {
   const db = (await createClient()) as unknown as SupabaseClient;
-  const [{ data: space }, { data: clocks }, { data: alerts }] = await Promise.all([
-    db.from("sentry_workspaces").select("mode").eq("org_id", orgId).maybeSingle(),
-    db.from("sentry_clocks").select("state").eq("org_id", orgId),
+  const now = Date.now();
+  const since = new Date(now - 30 * 86_400_000).toISOString();
+  const count = (states: string[]) =>
+    db.from("sentry_clocks").select("id", { count: "exact", head: true }).eq("org_id", orgId).in("state", states);
+  const [{ data: space }, { data: org }, watched, onTime, atRisk, missed, { data: alerts }, { data: measured }] = await Promise.all([
+    db.from("sentry_workspaces").select("mode, last_sweep_at, last_error").eq("org_id", orgId).maybeSingle(),
+    db.from("organizations").select("status").eq("id", orgId).maybeSingle(),
+    db.from("sentry_clocks").select("id", { count: "exact", head: true }).eq("org_id", orgId),
+    count(["on_time", "paused", "resolved"]),
+    count(["at_risk"]),
+    count(["missed"]),
     db.from("sentry_alerts").select("id, title, body, lead_id").eq("org_id", orgId).in("status", ["open", "snoozed"]).order("created_at", { ascending: false }).limit(8),
+    db.from("sentry_measurements").select("metric, seconds, met").eq("org_id", orgId).gte("recorded_at", since).limit(5000),
   ]);
-  const states = ((clocks ?? []) as Array<{ state: string }>).map((row) => row.state);
-  const mode = ((space as { mode?: string } | null)?.mode ?? "off") as "off" | "practice" | "live";
-  return (
-    <SentryPanel
-      mode={mode === "practice" || mode === "live" ? mode : "off"}
-      canControl={canControl}
-      counts={{
-        watched: states.length,
-        onTime: states.filter((state) => state === "on_time" || state === "paused" || state === "resolved").length,
-        atRisk: states.filter((state) => state === "at_risk").length,
-        missed: states.filter((state) => state === "missed").length,
-      }}
-      alerts={((alerts ?? []) as Array<{ id: string; title: string; body: string; lead_id: string }>).map((alert) => ({
-        id: alert.id,
-        title: alert.title,
-        body: alert.body,
-        leadId: alert.lead_id,
-      }))}
-    />
-  );
+  const row = (space ?? null) as { mode?: string; last_sweep_at?: string | null; last_error?: string | null } | null;
+  const mode = (row?.mode ?? "off") as "off" | "practice" | "live";
+  return {
+    mode: mode === "practice" || mode === "live" ? mode : ("off" as const),
+    liveAllowed: (org as { status?: string } | null)?.status === "active",
+    status: sentryStatus({ mode, lastSweepAt: row?.last_sweep_at ?? null, lastError: row?.last_error ?? null, now }),
+    measures: summarizeMeasures((measured ?? []) as MeasureRow[]),
+    counts: {
+      watched: watched.count ?? 0,
+      onTime: onTime.count ?? 0,
+      atRisk: atRisk.count ?? 0,
+      missed: missed.count ?? 0,
+    },
+    alerts: ((alerts ?? []) as Array<{ id: string; title: string; body: string; lead_id: string }>).map((alert) => ({
+      id: alert.id,
+      title: alert.title,
+      body: alert.body,
+      leadId: alert.lead_id,
+    })),
+  };
 }

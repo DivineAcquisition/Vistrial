@@ -32,6 +32,7 @@ export default async function TodayPage() {
                   <div className="mt-2">
                     <StatusBadge label={row.clockLabel ?? RESPONSE_LABEL[row.responseState]} tone={row.responseState === "missed" ? "critical" : row.responseState === "at_risk" ? "warning" : "neutral"} />
                   </div>
+                  {row.clockReason ? <p className="mt-1 text-xs text-muted-foreground">Sentry: {row.clockReason}</p> : null}
                 </div>
                 <div className="flex flex-wrap gap-2">
                   {row.phone ? <a className="rounded-md border border-border px-3 py-2 text-sm" href={`tel:${row.phone}`}>Call</a> : null}

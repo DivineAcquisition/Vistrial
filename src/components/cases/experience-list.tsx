@@ -335,7 +335,12 @@ export function ExperienceList({
                   <td className="p-2"><RowBody row={row} /></td>
                   <td className="p-2">{row.band ?? "Not yet scored"}</td>
                   <td className="p-2">{LEAD_STATUS_LABELS[row.status as keyof typeof LEAD_STATUS_LABELS] ?? row.status}</td>
-                  <td className="hidden p-2 md:table-cell">{row.clockLabel ?? RESPONSE_LABEL[row.responseState]}</td>
+                  <td className="hidden p-2 md:table-cell" title={row.clockReason ? `Sentry: ${row.clockReason}` : undefined}>
+                    {row.clockLabel ?? RESPONSE_LABEL[row.responseState]}
+                    {row.clockReason && (row.responseState === "at_risk" || row.responseState === "missed") ? (
+                      <span className="block text-xs text-muted-foreground">Sentry: {row.clockReason}</span>
+                    ) : null}
+                  </td>
                   <td className="hidden p-2 lg:table-cell">{row.nextStep ?? "—"}</td>
                 </tr>
               ))}
@@ -356,6 +361,9 @@ export function ExperienceList({
                     <StatusBadge label={row.clockLabel ?? RESPONSE_LABEL[row.responseState]} tone={RESPONSE_TONE[row.responseState]} />
                   </div>
                   <p className="text-sm text-muted-foreground">{row.nextStep ?? "No next step yet"}</p>
+                  {row.clockReason && (row.responseState === "at_risk" || row.responseState === "missed") ? (
+                    <p className="text-xs text-muted-foreground">Sentry: {row.clockReason}</p>
+                  ) : null}
                   <p className="text-xs text-muted-foreground">
                     {row.source ?? "Unknown source"} · {row.setterName || row.closerName || "Unassigned"} · Last touch {row.lastTouchAt ? formatQueueDuration(row.lastTouchAt, now) : "never"}
                     {row.lastTouchKind ? ` · ${row.lastTouchKind === "human" ? "a person" : "automated"}` : ""}

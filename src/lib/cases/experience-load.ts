@@ -10,6 +10,7 @@ import {
   type ExperienceRow,
   type ListSettings,
 } from "@/lib/cases/experience";
+import { CLOCK_STATE_LABEL, type ClockState } from "@/lib/sentry/clock";
 import { createClient } from "@/lib/supabase/server";
 
 type Loose = SupabaseClient;
@@ -47,7 +48,7 @@ export async function loadExperiencePage(filter: ExperienceFilter, offset = 0): 
     for (const row of mapped) {
       const clock = byLead.get(row.id);
       if (!clock) continue;
-      row.clockLabel = clock.state.replaceAll("_", " ");
+      row.clockLabel = CLOCK_STATE_LABEL[clock.state as ClockState] ?? clock.state.replaceAll("_", " ");
       row.clockReason = clock.reason;
       if (clock.state === "on_time" || clock.state === "at_risk" || clock.state === "missed" || clock.state === "not_applicable") {
         row.responseState = clock.state;

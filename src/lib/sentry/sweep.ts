@@ -9,7 +9,7 @@ import { loadOrgNotifyContext, memberById } from "@/lib/notifications/members";
 import { offerTeam, offerToMember } from "@/lib/notifications/offer";
 import type { MemberNotifyTarget } from "@/lib/notifications/types";
 import { notifyDaAlert } from "@/lib/ops/alerts";
-import { deadlineAt, evaluateClock, escalationLevel, type ClockAnswer, type ClockTouch } from "@/lib/sentry/clock";
+import { clockTouchFromRow, deadlineAt, evaluateClock, escalationLevel, type ClockAnswer, type ClockTouch } from "@/lib/sentry/clock";
 import { followUpStart, holdForQuietHours, levelFor, routeChannels, routeTargets, type EscalationLevel, type SendChannel } from "@/lib/sentry/routing";
 
 type Query = PromiseLike<{ data: unknown }> & {
@@ -246,15 +246,16 @@ async function watchLead(db: GhlDb, run: OrgRun, lead: Record<string, unknown>):
   const first = lead.first_human_touch_at as string | null;
   const { data: touchRows } = await raw
     .from("touches")
-    .select("occurred_at, type, channel, queued_offline")
+    .select("occurred_at, type, channel, queued_offline, drafted_by_agent")
     .eq("org_id", run.orgId)
     .eq("lead_id", leadId)
     .gte("occurred_at", arrived)
     .order("occurred_at", { ascending: false })
     .limit(40);
-  const touches = ((touchRows ?? []) as Array<{ occurred_at: string; type: string; channel: string; queued_offline: boolean }>).map(
-    (touch): ClockTouch => ({ at: touch.occurred_at, type: touch.type === "human" ? "human" : "system", channel: touch.channel, manual: touch.queued_offline === true })
-  );
+  const relayCounts = run.values["response.relay_counts_as_human_touch"];
+  const touches = (
+    (touchRows ?? []) as Array<{ occurred_at: string; type: string; channel: string; queued_offline: boolean; drafted_by_agent: string | null }>
+  ).map((touch): ClockTouch => clockTouchFromRow(touch, relayCounts));
   const { data: existing } = await raw
     .from("sentry_clocks")
     .select("id, state, kind, started_at, deadline_at")
@@ -377,10 +378,19 @@ async function watchLead(db: GhlDb, run: OrgRun, lead: Record<string, unknown>):
   }
   if (!alertId) return false;
 
+  let relayQueued = false;
   if (answer.state === "missed") {
-    await raw.from("sentry_handoffs").upsert({ org_id: run.orgId, lead_id: leadId, status: "relay_unavailable" }, { onConflict: "org_id,lead_id" });
+    if (run.mode === "live") {
+      const { enqueueRelayJob } = await import("@/lib/relay/run");
+      relayQueued = await enqueueRelayJob({ orgId: run.orgId, leadId, trigger: "missed_window", dedupeKey: `missed_window:${leadId}:${startedAt}` })
+        .then(() => true)
+        .catch(() => false);
+    }
+    await raw
+      .from("sentry_handoffs")
+      .upsert({ org_id: run.orgId, lead_id: leadId, status: relayQueued ? "relay_queued" : "relay_unavailable" }, { onConflict: "org_id,lead_id" });
   }
-  if (changed || raised) await recordRun(run, { leadId, name, level, answer });
+  if (changed || raised) await recordRun(run, { leadId, name, level, answer, relayQueued });
 
   if (snoozed) return false;
   const open_ = run.hours && !run.hoursMissing ? isOpenAt(new Date(), run.hours, run.timeZone) : true;
@@ -466,7 +476,7 @@ async function measure(
   });
 }
 
-async function recordRun(run: OrgRun, args: { leadId: string; name: string; level: number; answer: ClockAnswer }) {
+async function recordRun(run: OrgRun, args: { leadId: string; name: string; level: number; answer: ClockAnswer; relayQueued: boolean }) {
   const recorder = await startRun({
     orgId: run.orgId,
     agentId: "sentry",
@@ -482,9 +492,13 @@ async function recordRun(run: OrgRun, args: { leadId: string; name: string; leve
   const step = await recorder.step(args.level === 0 ? "Nudging the assigned person" : "Escalating");
   await step.done({
     detail:
-      run.mode === "live"
-        ? "Relay is not available yet, so no draft was written. Nothing was sent to the lead."
-        : "Practice mode: the alert is shown in Vistrial only. Nothing was sent to the team or the lead.",
+      run.mode !== "live"
+        ? "Practice mode: the alert is shown in Vistrial only. Nothing was sent to the team or the lead."
+        : args.answer.state !== "missed"
+          ? "Nothing was sent to the lead."
+          : args.relayQueued
+            ? "Asked Relay for a draft. A person approves it and sends it from the CRM. Nothing was sent to the lead."
+            : "Relay could not be asked for a draft this time. Nothing was sent to the lead.",
   });
   await recorder.finish({ reason: args.answer.reason });
 }

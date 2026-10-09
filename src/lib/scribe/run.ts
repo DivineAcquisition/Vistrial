@@ -480,12 +480,12 @@ async function scribeStages(input: StageInput): Promise<Outcome> {
     return "held";
   }
   try {
-    const { enqueueFollowUpAfterExtraction } = await import("@/lib/follow-up/generate");
-    await enqueueFollowUpAfterExtraction(db, { orgId: call.org_id, leadId: call.lead_id, callId: call.id, extractionId });
-    await s.done({ detail: "Relay can now draft a follow-up. Every draft waits for approval." });
+    const { enqueueRelayJob } = await import("@/lib/relay/run");
+    await enqueueRelayJob({ orgId: call.org_id, leadId: call.lead_id, trigger: "after_call", dedupeKey: `after_call:${call.id}` });
+    await s.done({ detail: "Asked Relay for a follow-up draft. A person approves it and sends it from the CRM." });
   } catch (cause) {
-    transcriptError("follow_up.enqueue_failed", { callId: call.id, reason: cause instanceof Error ? cause.message.slice(0, 80) : "enqueue_failed" });
-    await s.done({ detail: "Coaching is updated. Relay will pick this up on its next pass." });
+    transcriptError("relay.enqueue_failed", { callId: call.id, reason: cause instanceof Error ? cause.message.slice(0, 80) : "enqueue_failed" });
+    await s.done({ detail: "Coaching is updated. Relay could not be asked for a draft this time." });
   }
   await recorder.finish({
     reason: `Case file for ${input.leadName} updated${band ? `: ${band.name}` : ""}.${written.review ? " Some changes are waiting for a person." : ""}`,

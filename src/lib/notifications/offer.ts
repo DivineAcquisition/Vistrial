@@ -24,6 +24,8 @@ export async function offerToMember(
     isEscalationToAdmin?: boolean;
     orgSmsEnabled?: boolean;
     forceChannel?: boolean;
+    /** Skip instead of falling back when the requested channel is not allowed. */
+    exactChannel?: boolean;
     skipWorkingHours?: boolean;
     batch?: {
       key: string;
@@ -50,6 +52,7 @@ export async function offerToMember(
     orgSmsEnabled: args.orgSmsEnabled,
   });
   if (!channel) return "skipped";
+  if (args.exactChannel && channel !== input.channel) return "skipped";
 
   if (
     muteApplies({

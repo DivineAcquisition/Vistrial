@@ -73,12 +73,19 @@ export function countedChannel(channel: string): string {
   return CHANNEL_MAP[channel] ?? channel;
 }
 
-/** A person reached the lead. Automated messages never qualify. */
-export function validHumanTouch(touches: ClockTouch[], startedAt: string, counted: string[]): ClockTouch | null {
+/**
+ * A person reached the lead. Automated messages never qualify. A follow-up
+ * clock starts at a human touch, so only a later one can end it.
+ */
+export function validHumanTouch(touches: ClockTouch[], startedAt: string, counted: string[], strict = false): ClockTouch | null {
   const start = Date.parse(startedAt);
   const allowed = new Set(counted);
   const hits = touches
-    .filter((touch) => touch.type === "human" && allowed.has(countedChannel(touch.channel)) && Date.parse(touch.at) >= start)
+    .filter((touch) => {
+      if (touch.type !== "human" || !allowed.has(countedChannel(touch.channel))) return false;
+      const at = Date.parse(touch.at);
+      return strict ? at > start : at >= start;
+    })
     .sort((a, b) => Date.parse(a.at) - Date.parse(b.at));
   return hits[0] ?? null;
 }
@@ -119,7 +126,7 @@ export function evaluateClock(input: ClockInput): ClockAnswer {
   if (input.closed) return na("This lead is closed.");
   if (input.noWindow) return na("This stage has no follow-up window.");
 
-  const touch = validHumanTouch(input.touches, input.startedAt, input.countedChannels);
+  const touch = validHumanTouch(input.touches, input.startedAt, input.countedChannels, input.kind === "follow_up");
   if (touch) {
     const gap = Math.max(0, Math.round((Date.parse(touch.at) - Date.parse(input.startedAt)) / 60_000));
     return {

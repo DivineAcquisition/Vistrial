@@ -124,4 +124,15 @@ describe("Sentry clock", () => {
   it("stops when hours are missing instead of inventing a deadline", () => {
     expect(evaluateClock(input({ hoursMissing: true })).reason).toMatch(/business hours/i);
   });
+
+  it("does not let the touch that started a follow-up also end it", () => {
+    const touch = { at: "2026-06-02T13:00:00.000Z", type: "human" as const, channel: "call" };
+    const answer = evaluateClock(input({ kind: "follow_up", now: "2026-06-02T14:10:00.000Z", touches: [touch] }));
+    expect(answer.state).toBe("missed");
+    expect(validHumanTouch([touch], touch.at, ["call"])).not.toBeNull();
+    expect(validHumanTouch([touch], touch.at, ["call"], true)).toBeNull();
+    const later = evaluateClock(input({ kind: "follow_up", touches: [touch, { ...touch, at: "2026-06-02T13:40:00.000Z" }] }));
+    expect(later.state).toBe("resolved");
+    expect(later.elapsedMinutes).toBe(40);
+  });
 });

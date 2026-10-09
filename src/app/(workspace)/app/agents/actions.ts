@@ -174,3 +174,18 @@ export async function setTestWorkspaceAction(on: boolean): Promise<Result<null>>
   revalidatePath("/app/agents/simulator");
   return { ok: true, data: null };
 }
+
+/** Platform Admin only. Runs Scribe on synthetic calls for one template; no workspace data is read. */
+export async function runScribeQualityAction(template: string): Promise<Result<null>> {
+  const ctx = await getAuthContext();
+  if (!ctx.isPlatformAdmin) return { ok: false, error: "Only a Platform Admin can run the quality check." };
+  const { QUALITY_TEMPLATES } = await import("@/lib/scribe/quality/samples");
+  if (!(QUALITY_TEMPLATES as readonly string[]).includes(template)) return { ok: false, error: "Unknown template." };
+  const { runScribeQuality } = await import("@/lib/scribe/quality/run");
+  const userId = ctx.user.id;
+  after(async () => {
+    await runScribeQuality(template as (typeof QUALITY_TEMPLATES)[number], userId).catch(() => null);
+    revalidatePath("/app/agents/simulator");
+  });
+  return { ok: true, data: null };
+}

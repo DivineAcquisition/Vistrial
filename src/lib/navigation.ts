@@ -209,6 +209,11 @@ export const DA_CONSOLE_LINKS: Array<{ href: string; label: string; description:
     label: "All workspaces",
     description: "Every client workspace.",
   },
+  {
+    href: "/app/agents/response-health",
+    label: "Response health",
+    description: "Response windows, open alerts, and Sentry's state in every workspace.",
+  },
 ];
 
 export function navVisibleTo(item: NavItem, role: OrgRole, isStaff = false): boolean {

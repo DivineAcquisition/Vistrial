@@ -189,3 +189,16 @@ export async function runScribeQualityAction(template: string): Promise<Result<n
   });
   return { ok: true, data: null };
 }
+
+/** Platform Admin only. Runs Sentry's synthetic scenarios against one template and keeps the result. */
+export async function runSentryQualityAction(template: string): Promise<Result<{ passed: boolean; failed: number }>> {
+  const ctx = await getAuthContext();
+  if (!ctx.isPlatformAdmin) return { ok: false, error: "Only a Platform Admin can run the scenario check." };
+  const { runSentryQuality, SENTRY_QUALITY_TEMPLATES } = await import("@/lib/sentry/quality");
+  if (!SENTRY_QUALITY_TEMPLATES.includes(template)) return { ok: false, error: "Unknown template." };
+  const result = await runSentryQuality(template, ctx.user.id).catch(() => null);
+  if (!result) return { ok: false, error: "The scenario check could not run. Try again." };
+  revalidatePath("/app/agents/simulator");
+  revalidatePath("/app/agents/response-health");
+  return { ok: true, data: { passed: result.passed, failed: result.results.filter((row) => !row.passed).length } };
+}

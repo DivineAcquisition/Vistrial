@@ -4,11 +4,12 @@ import Link from "next/link";
 
 import { ApplicationShell } from "@/components/app/application-shell";
 import { LayoutSample } from "@/components/layouts/layout-samples";
+import type { LayoutState } from "@/components/layouts/layout-states";
 import { shellChrome, shellNavigation, type PageLayoutKind } from "@/lib/shell/nav";
 
 const SAMPLE_NAME = "Harbor & Pine Consulting Group International";
 
-export function LayoutPreview({ kind }: { kind: PageLayoutKind }) {
+export function LayoutPreview({ kind, state }: { kind: PageLayoutKind; state: LayoutState }) {
   const nav = shellNavigation({ role: "owner", templateAccess: false });
   const chrome = shellChrome("/app/home");
   return (
@@ -32,7 +33,7 @@ export function LayoutPreview({ kind }: { kind: PageLayoutKind }) {
         </Link>
       )}
     >
-      <LayoutSample kind={kind} />
+      <LayoutSample kind={kind} state={state} />
     </ApplicationShell>
   );
 }

@@ -131,7 +131,11 @@ export function ApplicationShell({
               {leading}
               {tools}
               <Link
-                href="/contact"
+                href={
+                  pathname.startsWith("/app/") && !pathname.startsWith("/app/help")
+                    ? `/app/help?from=${encodeURIComponent(pathname)}`
+                    : "/app/help"
+                }
                 aria-label="Help"
                 title="Help"
                 className="inline-flex size-9 items-center justify-center rounded-lg text-muted-foreground hover:bg-accent hover:text-card-foreground"

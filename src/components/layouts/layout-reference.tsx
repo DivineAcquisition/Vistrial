@@ -1,5 +1,6 @@
 import Link from "next/link";
 
+import { LAYOUT_STATES, type LayoutState } from "@/components/layouts/layout-states";
 import { PageHeader } from "@/components/ui/page-header";
 import type { PageLayoutKind } from "@/lib/shell/nav";
 import { cn } from "@/lib/utils";
@@ -21,7 +22,7 @@ const FRAMES = [
   { id: "desktop", label: "Desktop", width: "100%" },
 ] as const;
 
-export function LayoutReference({ kind }: { kind: PageLayoutKind }) {
+export function LayoutReference({ kind, state }: { kind: PageLayoutKind; state: LayoutState }) {
   return (
     <div className="mx-auto flex w-full min-w-0 max-w-[1400px] flex-col gap-8">
       <PageHeader
@@ -32,11 +33,28 @@ export function LayoutReference({ kind }: { kind: PageLayoutKind }) {
         {KINDS.map((item) => (
           <Link
             key={item.id}
-            href={`/app/layouts?layout=${item.id}`}
+            href={`/app/layouts?layout=${item.id}&state=${state}`}
             aria-current={item.id === kind ? "page" : undefined}
             className={cn(
               "inline-flex min-h-11 items-center rounded-full border px-3 text-sm",
               item.id === kind
+                ? "border-brand-500/40 bg-brand-500/12 text-brand-200"
+                : "border-border text-muted-foreground hover:text-card-foreground",
+            )}
+          >
+            {item.label}
+          </Link>
+        ))}
+      </div>
+      <div className="flex flex-wrap gap-2">
+        {LAYOUT_STATES.map((item) => (
+          <Link
+            key={item.id}
+            href={`/app/layouts?layout=${kind}&state=${item.id}`}
+            aria-current={item.id === state ? "page" : undefined}
+            className={cn(
+              "inline-flex min-h-11 items-center rounded-full border px-3 text-sm",
+              item.id === state
                 ? "border-brand-500/40 bg-brand-500/12 text-brand-200"
                 : "border-border text-muted-foreground hover:text-card-foreground",
             )}
@@ -50,8 +68,8 @@ export function LayoutReference({ kind }: { kind: PageLayoutKind }) {
           <section key={frame.id} className="min-w-0">
             <h2 className="mb-3 text-sm font-medium text-card-foreground">{frame.label}</h2>
             <iframe
-              title={`${frame.label} ${kind} layout`}
-              src={`/app/layouts/preview?layout=${kind}`}
+              title={`${frame.label} ${kind} layout, ${state}`}
+              src={`/app/layouts/preview?layout=${kind}&state=${state}`}
               className="block max-w-full rounded-xl border border-border bg-background"
               style={{ width: frame.width, height: "720px" }}
             />

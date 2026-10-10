@@ -12,11 +12,14 @@ import {
   StandardPage,
   WorkflowPage,
 } from "@/components/layouts/page-layouts";
+import type { LayoutState } from "@/components/layouts/layout-states";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { EmptyState } from "@/components/ui/empty-state";
 import { KpiCard } from "@/components/ui/kpi-card";
 import { PageHeader } from "@/components/ui/page-header";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Stepper } from "@/components/ui/stepper";
 import { bodyText, filterBar } from "@/lib/ui";
 import type { PageLayoutKind } from "@/lib/shell/nav";
@@ -27,7 +30,8 @@ const ROWS = [
   { name: "Riley Chen", status: "Booked", due: "Friday" },
 ];
 
-export function LayoutSample({ kind }: { kind: PageLayoutKind }) {
+export function LayoutSample({ kind, state = "ready" }: { kind: PageLayoutKind; state?: LayoutState }) {
+  if (state !== "ready") return <StateSample state={state} />;
   switch (kind) {
     case "standard":
       return (
@@ -181,6 +185,36 @@ export function LayoutSample({ kind }: { kind: PageLayoutKind }) {
     default:
       return null;
   }
+}
+
+const STATE_COPY: Record<Exclude<LayoutState, "ready" | "loading">, { title: string; detail: string }> = {
+  empty: { title: "No leads yet", detail: "They show up here once your CRM sends the first one." },
+  "no-results": { title: "Nothing matched", detail: "Try a wider range, or clear a filter." },
+  unconfigured: { title: "Connect your CRM", detail: "Vistrial cannot show this until the connection is working." },
+  error: { title: "This did not load", detail: "Nothing was changed. Try again in a minute." },
+  permission: { title: "You cannot see this", detail: "It belongs to someone else in the workspace, or to another role." },
+};
+
+function StateSample({ state }: { state: Exclude<LayoutState, "ready"> }) {
+  if (state === "loading") {
+    return (
+      <StandardPage header={<PageHeader title="Overview" description="The page is still loading." />}>
+        <Skeleton className="h-24 w-full" />
+        <Skeleton className="h-40 w-full" />
+      </StandardPage>
+    );
+  }
+  const copy = STATE_COPY[state];
+  return (
+    <StandardPage header={<PageHeader title="Overview" description="What the page says when there is nothing to show." />}>
+      <EmptyState
+        kind={state}
+        title={copy.title}
+        detail={copy.detail}
+        action={<Button size="sm">{state === "error" ? "Try again" : "Continue"}</Button>}
+      />
+    </StandardPage>
+  );
 }
 
 function ListDetailSample() {

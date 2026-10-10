@@ -9,6 +9,8 @@ const TABS = [
   { href: "/app/team", label: "Workspaces", adminOnly: false },
   { href: "/app/team/templates", label: "Templates", adminOnly: false },
   { href: "/app/team/notices", label: "Review notices", adminOnly: false },
+  { href: "/app/team/requests", label: "Requests", adminOnly: false },
+  { href: "/app/team/updates", label: "What is new", adminOnly: true },
   { href: "/app/team/staff", label: "Staff", adminOnly: true },
   { href: "/app/team/holds", label: "Holding area", adminOnly: true },
   { href: "/app/team/activity", label: "Activity", adminOnly: false },

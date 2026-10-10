@@ -84,6 +84,8 @@ export function UserMenu({
         </MenuGroup>
         <MenuSeparator />
         <MenuLinkItem render={<Link href="/app/settings/profile" />}>Personal settings</MenuLinkItem>
+        <MenuLinkItem render={<Link href="/app/notifications" />}>Notifications</MenuLinkItem>
+        <MenuLinkItem render={<Link href="/app/help" />}>Help</MenuLinkItem>
         {isStaff ? (
           <MenuLinkItem render={<Link href="/app/team" />}>Vistrial team</MenuLinkItem>
         ) : null}

@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
 import { LayoutPreview } from "@/components/layouts/layout-preview";
+import { isLayoutState } from "@/components/layouts/layout-states";
 import { getAuthContext } from "@/lib/auth/session";
 import type { PageLayoutKind } from "@/lib/shell/nav";
 
@@ -27,11 +28,12 @@ const KINDS = new Set<PageLayoutKind>([
 export default async function LayoutPreviewPage({
   searchParams,
 }: {
-  searchParams: Promise<{ layout?: string }>;
+  searchParams: Promise<{ layout?: string; state?: string }>;
 }) {
   const ctx = await getAuthContext();
   if (!ctx.isPlatformAdmin) notFound();
-  const raw = (await searchParams).layout;
-  const kind = raw && KINDS.has(raw as PageLayoutKind) ? (raw as PageLayoutKind) : "standard";
-  return <LayoutPreview kind={kind} />;
+  const query = await searchParams;
+  const kind = query.layout && KINDS.has(query.layout as PageLayoutKind) ? (query.layout as PageLayoutKind) : "standard";
+  const state = isLayoutState(query.state) ? query.state : "ready";
+  return <LayoutPreview kind={kind} state={state} />;
 }

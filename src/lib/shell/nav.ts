@@ -26,7 +26,8 @@ export type ShellIcon =
   | "layouts"
   | "forsight"
   | "agents"
-  | "health";
+  | "health"
+  | "talent";
 
 export type AttentionKey = "approvals" | "dueToday" | "escalations";
 
@@ -353,6 +354,14 @@ function staffGroups(input: {
     icon: "health",
     description: "Agents that are stopped or erroring, across your workspaces.",
   });
+  team.push({
+    id: "talent",
+    label: "Talent",
+    href: "/app/talent",
+    match: "/app/talent",
+    icon: "talent",
+    description: "Sales operator applicants and interview reports.",
+  });
 
   const groups: ShellNavGroup[] = [{ id: "team", label: "Team", items: team }];
 
@@ -422,7 +431,7 @@ function staffGroups(input: {
 
 /** Platform pages are not "inside" one customer workspace. */
 export function isPlatformRoute(pathname: string): boolean {
-  return ["/app/team", "/app/ops", "/app/layouts", "/app/agents/health"].some(
+  return ["/app/team", "/app/ops", "/app/layouts", "/app/agents/health", "/app/talent"].some(
     (prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`)
   );
 }
@@ -480,6 +489,8 @@ const TITLE_RULES: Array<{ prefix: string; title: string; crumbs: Array<{ href: 
   { prefix: "/app/queue", title: "My Leads", crumbs: [{ href: "/app/queue", label: "My Leads" }] },
   { prefix: "/app/home", title: "Overview", crumbs: [{ href: HOME_PATH, label: "Overview" }] },
   { prefix: "/app/forsight", title: "Forsight", crumbs: [{ href: "/portal", label: "Results" }, { href: FORSIGHT_PATH, label: "Forsight" }] },
+  { prefix: "/app/talent/", title: "Interview", crumbs: [{ href: "/app/talent", label: "Talent" }, { href: "", label: "Interview" }] },
+  { prefix: "/app/talent", title: "Talent", crumbs: [{ href: "/app/talent", label: "Talent" }] },
   { prefix: "/app/agents/health", title: "Agent Health", crumbs: [{ href: "/app/agents", label: "Agents" }, { href: "/app/agents/health", label: "Agent Health" }] },
   { prefix: "/app/agents/simulator", title: "Simulator", crumbs: [{ href: "/app/agents", label: "Agents" }, { href: "/app/agents/simulator", label: "Simulator" }] },
   { prefix: "/app/agents/", title: "Agent", crumbs: [{ href: "/app/agents", label: "Agents" }, { href: "", label: "Agent" }] },
@@ -527,11 +538,12 @@ export function layoutKindForPath(pathname: string): PageLayoutKind {
     pathname === "/app/team" ||
     pathname.startsWith("/app/team/activity") ||
     pathname.startsWith("/app/team/staff") ||
-    pathname.startsWith("/app/team/holds")
+    pathname.startsWith("/app/team/holds") ||
+    pathname === "/app/talent"
   ) {
     return "table";
   }
-  if (/^\/app\/cases\/[^/]+/.test(pathname) || /^\/app\/calls\/[^/]+/.test(pathname)) return "record";
+  if (/^\/app\/cases\/[^/]+/.test(pathname) || /^\/app\/calls\/[^/]+/.test(pathname) || /^\/app\/talent\/[^/]+/.test(pathname)) return "record";
   if (
     pathname.startsWith("/app/cases") ||
     pathname.startsWith("/app/today") ||

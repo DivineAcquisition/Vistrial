@@ -87,6 +87,7 @@ export function isMarketingPath(path: string): boolean {
     path === "/terms" ||
     path === "/disclaimer" ||
     path === "/contact" ||
+    path === "/hiring" ||
     pathIs(path, "/book")
   );
 }

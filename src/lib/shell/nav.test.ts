@@ -67,6 +67,9 @@ describe("shell navigation", () => {
     expect(labelsForAdmin).toContain("Platform Defaults");
     expect(labelsForAdmin).toContain("Layouts");
     expect(labelsForAdmin).toContain("Agent Health");
+    expect(labelsForAdmin).toContain("Talent");
+    expect(labels("service_team")).toContain("Talent");
+    expect(labels("owner")).not.toContain("Talent");
     expect(labelsForAdmin).not.toContain("Billing");
     expect(labelsForAdmin).not.toContain("Assignments");
   });
@@ -93,6 +96,8 @@ describe("shell navigation", () => {
     expect(isPlatformRoute("/app/team/templates/platform")).toBe(true);
     expect(isPlatformRoute("/app/ops")).toBe(true);
     expect(isPlatformRoute("/app/layouts")).toBe(true);
+    expect(isPlatformRoute("/app/talent")).toBe(true);
+    expect(isPlatformRoute("/app/talent/abc")).toBe(true);
     expect(isPlatformRoute("/app/home")).toBe(false);
     expect(isPlatformRoute("/portal")).toBe(false);
   });
@@ -113,6 +118,8 @@ describe("shell navigation", () => {
     expect(layoutKindForPath("/app/cases")).toBe("list-detail");
     expect(layoutKindForPath("/app/cases/abc")).toBe("record");
     expect(layoutKindForPath("/app/team")).toBe("table");
+    expect(layoutKindForPath("/app/talent")).toBe("table");
+    expect(layoutKindForPath("/app/talent/abc")).toBe("record");
     expect(layoutKindForPath("/app/onboarding")).toBe("workflow");
     expect(layoutKindForPath("/app/ask")).toBe("chat");
     expect(layoutKindForPath("/login")).toBe("message");

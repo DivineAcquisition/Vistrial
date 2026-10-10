@@ -234,8 +234,9 @@ export function isNavActive(pathname: string, match: string): boolean {
  * Who sees each settings tab. "everyone": your own profile and notifications.
  * "owner": owners and staff (business contact details, your own people).
  * "staff": configuration, which the Vistrial team runs.
+ * "results": owners, Members, and staff; never operators.
  */
-export type SettingsTabAccess = "everyone" | "owner" | "staff";
+export type SettingsTabAccess = "everyone" | "results" | "owner" | "staff";
 
 export const SETTINGS_TABS: Array<{
   href: string;
@@ -246,7 +247,10 @@ export const SETTINGS_TABS: Array<{
   { href: "/app/settings/notifications", label: "Notifications", access: "everyone" },
   { href: "/app/settings/history", label: "History", access: "everyone" },
   { href: "/app/settings/organization", label: "Workspace", access: "owner" },
-  { href: "/app/settings/members", label: "People", access: "owner" },
+  { href: "/app/settings/members", label: "People", access: "results" },
+  { href: "/app/settings/connections", label: "Connections", access: "owner" },
+  { href: "/app/settings/billing", label: "Billing", access: "owner" },
+  { href: "/app/settings/privacy", label: "Privacy", access: "owner" },
   { href: "/app/settings/approvals", label: "Approvals", access: "staff" },
   { href: "/app/settings/integrations", label: "Integrations", access: "staff" },
   { href: "/app/settings/advanced", label: "Advanced", access: "staff" },
@@ -332,8 +336,13 @@ export function settingsTabActiveHref(pathname: string): string {
 export function settingsTabsVisibleTo(role: OrgRole, isStaff = false) {
   const staff = canManageOrgSettings(role, isStaff);
   const owner = staff || role === "owner";
+  const results = owner || role === "member" || role === "client_viewer";
   return SETTINGS_TABS.filter(
-    (tab) => tab.access === "everyone" || (tab.access === "owner" && owner) || staff
+    (tab) =>
+      tab.access === "everyone" ||
+      (tab.access === "results" && results) ||
+      (tab.access === "owner" && owner) ||
+      staff
   );
 }
 

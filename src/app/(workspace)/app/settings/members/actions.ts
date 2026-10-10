@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import type { SupabaseClient } from "@supabase/supabase-js";
 
 import {
   buildInviteLink,
@@ -16,11 +17,12 @@ import {
   roleLabel,
 } from "@/lib/auth/permissions";
 import { getAuthContext } from "@/lib/auth/session";
+import { sendPortalMail } from "@/lib/portal/notices";
 import { createClient } from "@/lib/supabase/server";
 import type { OrgRole, SurfaceAccess } from "@/types/database";
 
 export type MemberActionResult =
-  | { ok: true; url?: string }
+  | { ok: true; url?: string; emailed?: boolean; emailError?: string }
   | { ok: false; error: string };
 
 const LAST_OWNER =
@@ -122,6 +124,35 @@ export async function inviteMember(
   }
 
   const supabase = await createClient();
+  const [{ data: existing }, { data: pending }] = await Promise.all([
+    supabase
+      .from("org_members")
+      .select("id, active")
+      .eq("org_id", gate.ctx.org.id)
+      .eq("seat", "customer")
+      .ilike("email", email)
+      .limit(1),
+    supabase
+      .from("org_invites")
+      .select("id")
+      .eq("org_id", gate.ctx.org.id)
+      .ilike("email", email)
+      .is("accepted_at", null)
+      .gt("expires_at", new Date().toISOString())
+      .limit(1),
+  ]);
+  if (existing?.[0]) {
+    return {
+      ok: false,
+      error: existing[0].active
+        ? `${email} is already in this workspace.`
+        : `${email} was removed from this workspace. Restore them from the list below instead.`,
+    };
+  }
+  if (pending?.[0]) {
+    return { ok: false, error: `${email} already has an invite waiting. Resend it from the list below.` };
+  }
+
   const token = newInviteToken();
   const { error } = await supabase.from("org_invites").insert({
     org_id: gate.ctx.org.id,
@@ -137,9 +168,140 @@ export async function inviteMember(
     return { ok: false, error: explain(error, "Could not create the invite.") };
   }
 
-  // Email delivery lands in a later prompt. Return the link for manual sharing.
+  const url = buildInviteLink(token);
+  const mail = await sendInviteEmail({
+    to: email,
+    url,
+    role: role as OrgRole,
+    orgName: gate.ctx.org.name,
+    inviter: gate.ctx.member.displayName,
+    key: `invite:${token}`,
+  });
   revalidatePeople();
-  return { ok: true, url: buildInviteLink(token) };
+  return { ok: true, url, emailed: mail.ok, emailError: mail.ok ? undefined : mail.error };
+}
+
+function sendInviteEmail(args: {
+  to: string;
+  url: string;
+  role: OrgRole;
+  orgName: string;
+  inviter: string;
+  key: string;
+}) {
+  return sendPortalMail({
+    to: args.to,
+    subject: `${args.inviter} invited you to ${args.orgName} on Vistrial`,
+    heading: `Join ${args.orgName} on Vistrial`,
+    lines: [
+      `${args.inviter} added you to ${args.orgName} as ${ROLE_WORDS[args.role] ?? roleLabel(args.role)}.`,
+      "Use the button below to set up your sign-in. The link works for 7 days and only for this email address.",
+    ],
+    cta: { label: "Accept the invite", href: args.url },
+    idempotencyKey: args.key,
+  });
+}
+
+const ROLE_WORDS: Partial<Record<OrgRole, string>> = {
+  owner: "an owner",
+  member: "a member who sees results",
+  operator: "an operator who works leads",
+  setter: "a setter",
+  closer: "a closer",
+};
+
+const RESEND_WAIT_MS = 5 * 60_000;
+
+/** Sends the same invite again and gives it a fresh 7 days. */
+export async function resendInvite(inviteId: string): Promise<MemberActionResult> {
+  const gate = await requireManager();
+  if (!gate.ok) return { ok: false, error: gate.error };
+  const supabase = await createClient();
+  const { data: invite } = await supabase
+    .from("org_invites")
+    .select("id, email, role, token, expires_at")
+    .eq("id", inviteId)
+    .eq("org_id", gate.ctx.org.id)
+    .is("accepted_at", null)
+    .maybeSingle();
+  if (!invite) return { ok: false, error: "That invite is no longer waiting." };
+
+  const lastSent = Date.parse(invite.expires_at) - (inviteExpiryDate(new Date(0)).getTime());
+  if (Date.now() - lastSent < RESEND_WAIT_MS) {
+    return { ok: false, error: "It was sent a moment ago. Give it a few minutes before sending again." };
+  }
+
+  const expiresAt = inviteExpiryDate();
+  const { error } = await supabase
+    .from("org_invites")
+    .update({ expires_at: expiresAt.toISOString() })
+    .eq("id", invite.id)
+    .eq("org_id", gate.ctx.org.id);
+  if (error) return { ok: false, error: "Could not resend the invite." };
+
+  const url = buildInviteLink(invite.token);
+  const mail = await sendInviteEmail({
+    to: invite.email,
+    url,
+    role: invite.role,
+    orgName: gate.ctx.org.name,
+    inviter: gate.ctx.member.displayName,
+    key: `invite:${invite.token}:${expiresAt.getTime()}`,
+  });
+  revalidatePeople();
+  if (!mail.ok) return { ok: false, error: `The invite has 7 more days, but the email did not send: ${mail.error}` };
+  return { ok: true, emailed: true };
+}
+
+/** Lets a Member see money or export Results, or takes it back. Owners and staff always can. */
+export async function setMemberGrant(
+  memberId: string,
+  grant: "money" | "export",
+  value: boolean
+): Promise<MemberActionResult> {
+  const gate = await requireManager();
+  if (!gate.ok) return { ok: false, error: gate.error };
+  const member = await loadMember(gate.ctx.org.id, memberId);
+  if (!member) return { ok: false, error: "Member not found." };
+  if (member.role !== "member") {
+    return { ok: false, error: "These are for members. Owners already see money and can export." };
+  }
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("org_members")
+    .update(grant === "money" ? { can_see_money: value } : { can_export: value })
+    .eq("id", memberId)
+    .eq("org_id", gate.ctx.org.id);
+  if (error) return { ok: false, error: explain(error, "Could not change that for this member.") };
+  revalidatePeople();
+  return { ok: true };
+}
+
+export type OffboardResult =
+  | { ok: true; leads: number; approvals: number; tasks: number }
+  | { ok: false; error: string };
+
+/**
+ * Removes someone and hands their open work to another person first, so no
+ * lead, approval, or task is left with nobody.
+ */
+export async function offboardMember(memberId: string, reassignTo: string | null): Promise<OffboardResult> {
+  const gate = await requireManager();
+  if (!gate.ok) return { ok: false, error: gate.error };
+  const member = await loadMember(gate.ctx.org.id, memberId);
+  if (!member) return { ok: false, error: "Member not found." };
+  if (member.user_id === gate.ctx.user.id) return { ok: false, error: "You cannot remove yourself." };
+  const blocked = await guardLastOwner({ orgId: gate.ctx.org.id, member, nextRole: member.role, nextActive: false });
+  if (blocked) return { ok: false, error: blocked };
+
+  const db = (await createClient()) as unknown as SupabaseClient;
+  const { data, error } = await db.rpc("member_offboard", { p_member_id: memberId, p_reassign_to: reassignTo });
+  if (error) {
+    return { ok: false, error: error.code === "22023" ? error.message : explain(error, "Could not remove this person.") };
+  }
+  const moved = (data ?? {}) as { leads?: number; approvals?: number; tasks?: number };
+  revalidatePeople();
+  return { ok: true, leads: moved.leads ?? 0, approvals: moved.approvals ?? 0, tasks: moved.tasks ?? 0 };
 }
 
 export async function revokeInvite(inviteId: string): Promise<MemberActionResult> {

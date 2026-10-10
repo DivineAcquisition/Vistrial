@@ -62,6 +62,7 @@ const REVIEWED = new Set([
   "src/lib/sentry/quality.ts",
   "src/lib/sentry/sweep.ts",
   "src/lib/ops/jobs.ts",
+  "src/lib/portal/avatars.ts",
   "src/lib/portal/export.ts",
   "src/lib/portal/load.ts",
   "src/lib/portal/notices.ts",

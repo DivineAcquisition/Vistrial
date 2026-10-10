@@ -1,6 +1,6 @@
 "use client";
 
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
 
 function initials(name: string): string {
@@ -14,13 +14,16 @@ export function PersonAvatar({
   name,
   size = "default",
   className,
+  src,
 }: {
   name: string;
   size?: "sm" | "default" | "lg";
   className?: string;
+  src?: string | null;
 }) {
   return (
     <Avatar className={cn("bg-brand-500/20 text-brand-100 ring-2 ring-background", className)} size={size}>
+      {src ? <AvatarImage src={src} alt="" /> : null}
       <AvatarFallback className="bg-brand-500/20 text-[0.65rem] font-medium text-brand-100">
         {initials(name)}
       </AvatarFallback>

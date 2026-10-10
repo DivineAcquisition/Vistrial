@@ -4,12 +4,16 @@ import { useActionState, useState, useTransition } from "react";
 
 import {
   inviteMember,
+  offboardMember,
+  resendInvite,
   revokeInvite,
   setMemberActive,
   setMemberApproval,
+  setMemberGrant,
   updateMemberRole,
   type MemberActionResult,
 } from "@/app/(workspace)/app/settings/members/actions";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import type { OrgRole } from "@/types/database";
 import { InstallSteps } from "@/components/app/install-steps";
 import { Button, SubmitButton } from "@/components/ui/button";
@@ -59,12 +63,17 @@ export function InviteForm({ canInviteOwner }: { canInviteOwner: boolean }) {
           </SubmitButton>
       </div>
       <p className={helperClass}>
-        Operators work the leads assigned to them and the unassigned queue. Members see results and
-        approve only if you allow it. Invites are not emailed yet. Copy the link and share it.
+        Operators work the leads assigned to them and the unassigned queue. Members see Home and Results, and
+        approve, see money, or export only if you allow it. We email the invite; the link works for 7 days.
       </p>
       {!state.ok ? <p className={errorClass}>{state.error}</p> : null}
       {url ? (
-        <div className={cn(insetChrome, "space-y-3 px-3 py-3")}>
+        <div className={cn(insetChrome, "space-y-3 px-3 py-3")} role="status">
+          <p className="text-sm text-white">
+            {state.ok && state.emailed
+              ? "Invite emailed. You can also copy the link."
+              : `The invite is ready, but the email did not send${state.ok && state.emailError ? ` (${state.emailError})` : ""}. Copy the link and share it.`}
+          </p>
           <p className="break-all text-xs text-silver">{url}</p>
           <p className={helperClass}>
             Share this link, and the install steps, so they can log outcomes from a phone.
@@ -211,9 +220,131 @@ export function RevokeInviteButton({ inviteId }: { inviteId: string }) {
           });
         }}
       >
-        Revoke
+        Cancel invite
       </Button>
       {error ? <p className={errorClass}>{error}</p> : null}
+    </div>
+  );
+}
+
+export function ResendInviteButton({ inviteId }: { inviteId: string }) {
+  const [message, setMessage] = useState<{ ok: boolean; text: string } | null>(null);
+  const [pending, startTransition] = useTransition();
+  return (
+    <div>
+      <Button
+        type="button"
+        variant="secondary"
+        size="sm"
+        loading={pending}
+        onClick={() =>
+          startTransition(async () => {
+            const result = await resendInvite(inviteId);
+            setMessage(result.ok ? { ok: true, text: "Sent again." } : { ok: false, text: result.error });
+          })
+        }
+      >
+        Resend
+      </Button>
+      {message ? (
+        <p role="status" className={message.ok ? helperClass : errorClass}>
+          {message.text}
+        </p>
+      ) : null}
+    </div>
+  );
+}
+
+/** A Member's money or export permission. Owners and staff always have both. */
+export function MemberGrantToggle({
+  memberId,
+  role,
+  grant,
+  value,
+}: {
+  memberId: string;
+  role: OrgRole;
+  grant: "money" | "export";
+  value: boolean;
+}) {
+  const [error, setError] = useState<string | null>(null);
+  const [pending, startTransition] = useTransition();
+  if (role === "owner") return <span className="text-sm text-silver">Yes</span>;
+  if (role !== "member") return <span className="text-sm text-dim">No</span>;
+  return (
+    <div>
+      <Select
+        density="compact"
+        defaultValue={value ? "yes" : "no"}
+        disabled={pending}
+        aria-label={grant === "money" ? "Sees money" : "Can export"}
+        onChange={(event) => {
+          const next = event.target.value === "yes";
+          startTransition(async () => {
+            const result = await setMemberGrant(memberId, grant, next);
+            setError(result.ok ? null : result.error);
+          });
+        }}
+      >
+        <option value="no">No</option>
+        <option value="yes">{grant === "money" ? "Sees money" : "Can export"}</option>
+      </Select>
+      {error ? <p className={errorClass}>{error}</p> : null}
+    </div>
+  );
+}
+
+/** Remove someone, handing their leads, approvals, and tasks to another person first. */
+export function OffboardButton({
+  memberId,
+  name,
+  others,
+  disabled,
+}: {
+  memberId: string;
+  name: string;
+  others: Array<{ id: string; name: string }>;
+  disabled?: boolean;
+}) {
+  const [target, setTarget] = useState<string>(others[0]?.id ?? "");
+  const [message, setMessage] = useState<{ ok: boolean; text: string } | null>(null);
+  return (
+    <div>
+      <ConfirmDialog
+        trigger={
+          <Button type="button" variant="secondary" size="sm" disabled={disabled}>
+            Remove
+          </Button>
+        }
+        title={`Remove ${name}?`}
+        description="They lose access at once. What they did stays under their name. Their open leads, approvals, and tasks move to the person you choose."
+        confirmLabel="Remove"
+        onConfirm={async () => {
+          const result = await offboardMember(memberId, target || null);
+          setMessage(
+            result.ok
+              ? {
+                  ok: true,
+                  text: `Removed. Moved ${result.leads} ${result.leads === 1 ? "lead" : "leads"}, ${result.approvals} ${result.approvals === 1 ? "approval" : "approvals"}, and ${result.tasks} ${result.tasks === 1 ? "task" : "tasks"}.`,
+                }
+              : { ok: false, text: result.error }
+          );
+        }}
+      >
+        <Field label="Hand their work to" name="reassign" htmlFor={`reassign-${memberId}`}>
+          <Select
+            id={`reassign-${memberId}`}
+            value={target}
+            onChange={(event) => setTarget(event.target.value)}
+            options={[...others.map((person) => ({ value: person.id, label: person.name })), { value: "", label: "Nobody, leave it unassigned" }]}
+          />
+        </Field>
+      </ConfirmDialog>
+      {message ? (
+        <p role="status" className={message.ok ? helperClass : errorClass}>
+          {message.text}
+        </p>
+      ) : null}
     </div>
   );
 }

@@ -163,6 +163,51 @@ export async function finalizeFollowUpDispatch(
   }
 }
 
+/**
+ * A follow-up draft handed to the gate was marked sent from the CRM. The
+ * database already marked the draft sent; this records it and moves the
+ * sequence on, as a send through dispatch would.
+ */
+export async function advanceAfterGateSend(db: GhlDb, followUpDraftId: string): Promise<void> {
+  const { data: draft } = await db.from("follow_up_drafts").select("*").eq("id", followUpDraftId).maybeSingle();
+  if (!draft || draft.status !== "sent") return;
+
+  const { data: call } = await db.from("calls").select("occurred_at, scheduled_at").eq("id", draft.call_id).maybeSingle();
+  const callEnd = call?.occurred_at ?? call?.scheduled_at ?? null;
+  const sentAt = draft.sent_at ?? new Date().toISOString();
+  const callEndToSentMs = callEnd ? Math.max(0, Date.parse(sentAt) - Date.parse(callEnd)) : null;
+  if (callEndToSentMs !== null) {
+    await db.from("follow_up_drafts").update({ call_end_to_sent_ms: callEndToSentMs }).eq("id", draft.id);
+  }
+
+  await db.from("follow_up_events").insert({
+    org_id: draft.org_id,
+    lead_id: draft.lead_id,
+    draft_id: draft.id,
+    sequence_run_id: draft.sequence_run_id,
+    kind: "sent",
+    actor_member_id: draft.approved_by_member_id,
+    payload: { touchId: draft.touch_id, editDistance: draft.edit_distance, callEndToSentMs, via: "crm" } as Json,
+  });
+
+  if (!draft.sequence_run_id) return;
+  await db
+    .from("follow_up_sequence_runs")
+    .update({ last_sent_at: sentAt, last_sent_draft_id: draft.id, next_position: draft.sequence_position + 1 })
+    .eq("id", draft.sequence_run_id)
+    .eq("status", "active");
+  await maybeEnqueueNextStep(db, {
+    orgId: draft.org_id,
+    leadId: draft.lead_id,
+    callId: draft.call_id,
+    extractionId: draft.extraction_id,
+    sequenceRunId: draft.sequence_run_id,
+    positionJustSent: draft.sequence_position,
+    branch: draft.branch,
+    callAt: callEnd,
+  });
+}
+
 async function maybeEnqueueNextStep(
   db: GhlDb,
   args: {

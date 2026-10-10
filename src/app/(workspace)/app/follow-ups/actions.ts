@@ -9,11 +9,11 @@ import { dbCanApprove, dbCanWorkLead, dbIsStaff } from "@/lib/auth/db-checks";
 import { MAX_VOICE_EXAMPLES } from "@/lib/follow-up/constants";
 import { runFollowUpJob } from "@/lib/follow-up/generate";
 import { loadFollowUpReview } from "@/lib/follow-up/load";
-import { computeSendAt } from "@/lib/follow-up/quiet-hours";
 import { editDistanceFor } from "@/lib/follow-up/suggestions";
 import type { FollowUpReviewPayload } from "@/lib/follow-up/types";
 import { examplesToJson, parseVoiceExamples } from "@/lib/follow-up/voice";
-import { dispatchOutboundMessage } from "@/lib/ghl/dispatch";
+import { requireConfig } from "@/lib/config/server";
+import { buildFooter } from "@/lib/relay/footer";
 import { revalidateLeadSurfaces } from "@/lib/leads/revalidate";
 import { getSupabaseAdmin } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
@@ -26,17 +26,6 @@ export type FollowUpActionResult =
 
 function fail(error: string): FollowUpActionResult {
   return { ok: false, error };
-}
-
-const SENDING_OFF: FollowUpActionResult = {
-  ok: false,
-  error: "Sending from Vistrial is off. Every approval now goes through Needs your approval on Home, and you send the message from your CRM.",
-};
-
-async function sendingOn(): Promise<boolean> {
-  const supabase = (await createClient()) as unknown as { rpc: (fn: string) => Promise<{ data: unknown }> };
-  const { data } = await supabase.rpc("lead_sending_enabled");
-  return data === true;
 }
 
 async function denyUnlessApprover(ctx: AuthContext): Promise<{ ok: false; error: string } | null> {
@@ -80,7 +69,22 @@ async function requireAssignedDraft(draftId: string) {
   if (!lead) return { ok: false as const, error: "That lead is not in this workspace." };
   const denied = await denyUnlessApprover(scoped.ctx);
   if (denied) return { ok: false as const, error: denied.error };
+  if (await waitingOnGate(scoped.draft.id)) {
+    return { ok: false as const, error: "This draft is waiting in Needs your approval. Withdraw it there to change it here." };
+  }
   return scoped;
+}
+
+async function waitingOnGate(draftId: string): Promise<boolean> {
+  const admin = getSupabaseAdmin() as unknown as import("@supabase/supabase-js").SupabaseClient;
+  const { data } = await admin
+    .from("relay_drafts")
+    .select("id")
+    .eq("follow_up_draft_id", draftId)
+    .in("status", ["waiting", "approved"])
+    .limit(1)
+    .maybeSingle();
+  return Boolean(data);
 }
 
 export async function refreshFollowUpReview(draftId: string): Promise<FollowUpReviewPayload | null> {
@@ -204,205 +208,59 @@ export async function rejectFollowUp(input: {
   return { ok: true };
 }
 
-export async function approveFollowUp(input: {
+/**
+ * The follow-up screen no longer approves or sends. It hands the draft, as
+ * edited, to Needs your approval, where it is approved like every other
+ * message and the person sends it from the CRM.
+ */
+export async function sendFollowUpToApproval(input: {
   draftId: string;
   body: string;
   subject: string;
-  confirmChannel: string;
-  confirmRecipient: string;
-  confirmSendAt: string;
   confirmLowConfidence?: boolean;
 }): Promise<FollowUpActionResult> {
   const scoped = await requireDraft(input.draftId);
   if (!scoped.ok) return scoped;
-  if (!(await sendingOn())) return SENDING_OFF;
-  const stale =
-    scoped.draft.status === "expired" || Date.parse(scoped.draft.expires_at) <= Date.now();
-  if (stale) {
-    return fail("This draft is stale. Regenerate it before sending.");
-  }
-  if (scoped.draft.status !== "pending" && scoped.draft.status !== "failed") {
-    return fail("This draft is not waiting for approval.");
-  }
   if (scoped.draft.low_confidence && input.confirmLowConfidence !== true) {
-    return fail("This draft failed the quality check. Confirm that you still want to send it.");
+    return fail("This draft failed the quality check. Confirm that you still want to send it for approval.");
   }
-
+  const channel = scoped.draft.channel === "email" ? "email" : "sms";
   const body = input.body.trim();
   if (!body) return fail("The message cannot be empty.");
-  const channel = scoped.draft.channel === "email" ? "email" : "sms";
-  if (input.confirmChannel !== channel) {
-    return fail("Channel confirmation does not match this draft.");
-  }
-  const supabase = await createClient();
-  const { data: lead } = await supabase
-    .from("leads")
-    .select("email, phone, timezone, assigned_setter_id, assigned_closer_id")
-    .eq("id", scoped.draft.lead_id)
-    .eq("org_id", scoped.ctx.org.id)
-    .maybeSingle();
-  if (!lead) return fail("That lead is not in this workspace.");
-  const denied = await denyUnlessApprover(scoped.ctx);
-  if (denied) return denied;
-  const recipient = channel === "email" ? lead.email : lead.phone;
-  if (!recipient) {
-    return fail(channel === "email" ? "This lead has no email." : "This lead has no phone number.");
-  }
-  if (input.confirmRecipient.trim() !== recipient) {
-    return fail("Recipient confirmation does not match the lead.");
-  }
-
-  const { data: settings } = await supabase
-    .from("follow_up_settings")
-    .select("quiet_hours_enabled, quiet_hours_start, quiet_hours_end")
-    .eq("org_id", scoped.ctx.org.id)
-    .maybeSingle();
-  const timeZone = lead.timezone || scoped.ctx.org.timezone;
-  const sendAt = computeSendAt({
-    now: new Date(),
-    timeZone,
-    enabled: settings?.quiet_hours_enabled ?? true,
-    startHm: (settings?.quiet_hours_start ?? "21:00").slice(0, 5),
-    endHm: (settings?.quiet_hours_end ?? "08:00").slice(0, 5),
-  }).toISOString();
-  if (input.confirmSendAt && Math.abs(Date.parse(input.confirmSendAt) - Date.parse(sendAt)) > 120_000) {
-    return fail("Send time changed (quiet hours). Confirm again.");
-  }
-
-  const subject = channel === "email" ? input.subject.trim() : null;
+  const subject = channel === "email" ? input.subject.trim() : "";
   if (channel === "email" && !subject) return fail("Email needs a subject.");
 
-  const distance = editDistanceFor(scoped.draft.generated_body, body);
   const admin = getSupabaseAdmin();
-  if (
-    scoped.draft.verification_status === "needs_review" &&
-    body === scoped.draft.generated_body &&
-    (channel !== "email" || (subject ?? "") === (scoped.draft.generated_subject ?? ""))
-  ) {
-    await admin.rpc("record_verification_false_positive", {
-      p_org_id: scoped.ctx.org.id,
-      p_task: "draft",
-      p_subject_id: scoped.draft.id,
-      p_run_id: null,
-    });
+  const configured = await requireConfig(admin, scoped.ctx.org.id, "follow_up_drafter");
+  if (!configured.ok) return fail("This workspace's configuration needs attention first. The Vistrial team has been told.");
+  const values = configured.config.values;
+  const footer = buildFooter({
+    channel,
+    optOutWords: values["compliance.opt_out_words"],
+    disclosures: values["compliance.required_disclosures"],
+  });
+
+  const distance = editDistanceFor(scoped.draft.generated_body, body);
+  const supabase = (await createClient()) as unknown as {
+    rpc: (fn: string, args: object) => Promise<{ data: unknown; error: { message: string; code?: string } | null }>;
+  };
+  const { error } = await supabase.rpc("follow_up_to_gate", {
+    p_draft_id: scoped.draft.id,
+    p_body: body,
+    p_subject: subject || null,
+    p_footer: footer,
+  });
+  if (error) {
+    const known = error.code === "42501" || error.code === "22023" || error.code === "P0002";
+    return fail(known ? error.message : "Could not send this for approval. Try again.");
   }
   await admin
     .from("follow_up_drafts")
-    .update({
-      edited_body: body,
-      edited_subject: subject,
-      edit_distance: distance,
-    })
+    .update({ edit_distance: distance })
     .eq("id", scoped.draft.id)
     .eq("org_id", scoped.ctx.org.id);
-
-  await admin.from("follow_up_events").insert({
-    org_id: scoped.ctx.org.id,
-    lead_id: scoped.draft.lead_id,
-    draft_id: scoped.draft.id,
-    sequence_run_id: scoped.draft.sequence_run_id,
-    kind: "approved",
-    actor_member_id: scoped.ctx.member.id,
-    payload: { channel, sendAt, editDistance: distance } as Json,
-  });
-
-  const result = await dispatchOutboundMessage(admin, {
-    orgId: scoped.ctx.org.id,
-    leadId: scoped.draft.lead_id,
-    channel,
-    content: body,
-    subject: subject ?? undefined,
-    actorMemberId: scoped.ctx.member.id,
-    idempotencyKey: `follow-up:${scoped.draft.id}`,
-    availableAt: sendAt,
-    followUpDraftId: scoped.draft.id,
-  });
-
-  if (result.status === "halted") {
-    return fail(
-      result.reason === "connection_missing"
-        ? "The CRM is not connected, so nothing was sent."
-        : "The CRM connection is broken, so nothing was sent."
-    );
-  }
-  if (result.status === "suppressed") {
-    revalidateFollowUp(scoped.draft.lead_id, scoped.draft.id);
-    return fail(
-      result.reason === "opted_out"
-        ? "This lead replied with an opt-out word, so nothing more can be sent to them. The draft was discarded. There is no override."
-        : `The CRM reports this contact as opted out (${result.reason}). The draft was discarded. There is no override.`
-    );
-  }
-  if (result.status === "failed") {
-    revalidateFollowUp(scoped.draft.lead_id, scoped.draft.id);
-    return fail(
-      result.reason === "config_incomplete"
-        ? "Nothing was sent: this workspace's configuration needs attention first. The Vistrial team has been told."
-        : `Send failed (${result.reason}). No touch was recorded.`
-    );
-  }
-
   revalidateFollowUp(scoped.draft.lead_id, scoped.draft.id);
-  return { ok: true };
-}
-
-export async function retryFollowUpSend(draftId: string): Promise<FollowUpActionResult> {
-  const scoped = await requireDraft(draftId);
-  if (!scoped.ok) return scoped;
-  if (!(await sendingOn())) return SENDING_OFF;
-  if (scoped.draft.status !== "failed") return fail("Only a failed send can be retried.");
-  if (!scoped.draft.approved_by_member_id) return fail("This draft was never approved.");
-  if (Date.parse(scoped.draft.expires_at) <= Date.now()) {
-    return fail("This draft is stale. Regenerate it before sending.");
-  }
-  const channel = scoped.draft.channel === "email" ? "email" : "sms";
-  const supabase = await createClient();
-  const [{ data: lead }, { data: settings }] = await Promise.all([
-    supabase
-      .from("leads")
-      .select("timezone, assigned_setter_id, assigned_closer_id")
-      .eq("id", scoped.draft.lead_id)
-      .eq("org_id", scoped.ctx.org.id)
-      .maybeSingle(),
-    supabase
-      .from("follow_up_settings")
-      .select("quiet_hours_enabled, quiet_hours_start, quiet_hours_end")
-      .eq("org_id", scoped.ctx.org.id)
-      .maybeSingle(),
-  ]);
-  if (!lead) return fail("That lead is not in this workspace.");
-  const denied = await denyUnlessApprover(scoped.ctx);
-  if (denied) return denied;
-  const sendAt = computeSendAt({
-    now: new Date(),
-    timeZone: lead.timezone || scoped.ctx.org.timezone,
-    enabled: settings?.quiet_hours_enabled ?? true,
-    startHm: (settings?.quiet_hours_start ?? "21:00").slice(0, 5),
-    endHm: (settings?.quiet_hours_end ?? "08:00").slice(0, 5),
-  }).toISOString();
-  const admin = getSupabaseAdmin();
-  const result = await dispatchOutboundMessage(admin, {
-    orgId: scoped.ctx.org.id,
-    leadId: scoped.draft.lead_id,
-    channel,
-    content: scoped.draft.edited_body,
-    subject: scoped.draft.edited_subject ?? undefined,
-    actorMemberId: scoped.draft.approved_by_member_id,
-    idempotencyKey: `follow-up:${scoped.draft.id}`,
-    availableAt: sendAt,
-    followUpDraftId: scoped.draft.id,
-  });
-  if (result.status === "failed" || result.status === "halted" || result.status === "suppressed") {
-    revalidateFollowUp(scoped.draft.lead_id, scoped.draft.id);
-    return fail(
-      result.status === "suppressed"
-        ? result.reason === "opted_out"
-          ? "This lead replied with an opt-out word. The draft was discarded."
-          : "The CRM reports this contact as opted out. The draft was discarded."
-        : "Retry failed. No touch was recorded."
-    );
-  }
-  revalidateFollowUp(scoped.draft.lead_id, scoped.draft.id);
+  revalidatePath("/app/home");
   return { ok: true };
 }
 

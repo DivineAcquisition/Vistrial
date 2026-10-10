@@ -4,14 +4,13 @@ import Link from "next/link";
 import { useState } from "react";
 
 import {
-  approveFollowUp,
   haltLeadSequence,
   promoteSentToVoiceExample,
   refreshFollowUpReview,
   regenerateFollowUp,
   rejectFollowUp,
-  retryFollowUpSend,
   saveFollowUpEdit,
+  sendFollowUpToApproval,
 } from "@/app/(workspace)/app/follow-ups/actions";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -27,7 +26,6 @@ import {
   FOLLOW_UP_STATUS_LABELS,
 } from "@/lib/follow-up/labels";
 import type { FollowUpReviewPayload } from "@/lib/follow-up/types";
-import { formatDateTime } from "@/lib/format";
 import { formatQueueUntil } from "@/lib/queue/duration";
 import {
   errorClass,
@@ -48,10 +46,13 @@ export function FollowUpReviewScreen({ initial }: { initial: FollowUpReviewPaylo
   const [now] = useState(() => new Date().toISOString());
   const draft = file.draft;
   const recipient = draft.channel === "email" ? file.lead.email : file.lead.phone;
-  const editable = draft.status === "pending" || draft.status === "failed" || draft.status === "expired";
+  const waitingOnGate =
+    file.gateRequest !== null && (file.gateRequest.status === "waiting" || file.gateRequest.status === "approved");
+  const editable =
+    !waitingOnGate && (draft.status === "pending" || draft.status === "failed" || draft.status === "expired");
   const stale = draft.stale || draft.status === "expired";
-  const canApprove = file.canApprove && draft.status === "pending" && !stale;
-  const canRetry = file.canApprove && draft.status === "failed";
+  const canHandOff =
+    file.canApprove && !waitingOnGate && (draft.status === "pending" || draft.status === "failed") && !stale;
 
   async function reload() {
     const next = await refreshFollowUpReview(draft.id);
@@ -136,7 +137,7 @@ export function FollowUpReviewScreen({ initial }: { initial: FollowUpReviewPaylo
 
       <div className="grid gap-8 lg:grid-cols-2">
         <section>
-          <SectionHeader title="Draft" hint="Free editing. Nothing sends until you approve this one." />
+          <SectionHeader title="Draft" hint="Free editing. Vistrial never sends it: it is approved in Needs your approval and sent from your CRM." />
           <Panel className="p-6">
             {draft.channel === "email" ? (
               <div className="mb-4">
@@ -283,40 +284,38 @@ export function FollowUpReviewScreen({ initial }: { initial: FollowUpReviewPaylo
         </section>
       ) : null}
 
-      {canApprove || canRetry ? (
+      {waitingOnGate ? (
+        <Panel className="p-6">
+          <p className="text-sm text-white">
+            {file.gateRequest?.status === "approved"
+              ? "Approved. Send it from your CRM, then mark it sent in Needs your approval."
+              : "Waiting in Needs your approval on Home."}
+          </p>
+          <Button variant="secondary" size="sm" className="mt-3" render={<Link href="/app/home" />}>
+            Open Needs your approval
+          </Button>
+        </Panel>
+      ) : canHandOff ? (
         <Panel className="p-6">
           {!confirming ? (
-            <div className="flex flex-wrap gap-2">
-              {canApprove ? (
-                <Button
-                  type="button"
-                  variant="primary"
-                  size="sm"
-                  disabled={busy || !recipient}
-                  onClick={() => setConfirming(true)}
-                >
-                  Approve…
-                </Button>
-              ) : null}
-              {canRetry ? (
-                <Button
-                  type="button"
-                  variant="primary"
-                  size="sm"
-                  disabled={busy}
-                  onClick={() => run(() => retryFollowUpSend(draft.id))}
-                >
-                  Retry send
-                </Button>
-              ) : null}
-            </div>
+            <Button
+              type="button"
+              variant="primary"
+              size="sm"
+              disabled={busy || !recipient}
+              onClick={() => setConfirming(true)}
+            >
+              Send for approval…
+            </Button>
           ) : (
             <div className="space-y-4">
-              <p className="text-sm text-white">Confirm before sending. A message to the wrong person cannot be pulled back.</p>
+              <p className="text-sm text-white">
+                This goes to Needs your approval exactly as written. Once approved, it is sent from your CRM, not from
+                Vistrial.
+              </p>
               <DefinitionList>
                 <KeyValue label="Channel">{FOLLOW_UP_CHANNEL_LABELS[draft.channel]}</KeyValue>
                 <KeyValue label="Recipient">{recipient}</KeyValue>
-                <KeyValue label="Send time">{formatDateTime(file.proposedSendAt)}</KeyValue>
               </DefinitionList>
               {draft.channel === "email" && subject ? (
                 <div>
@@ -337,8 +336,7 @@ export function FollowUpReviewScreen({ initial }: { initial: FollowUpReviewPaylo
                     onChange={(event) => setConfirmLowConfidence(event.target.checked)}
                   />
                   <span>
-                    This draft failed the quality check. I still want to send it to this
-                    person.
+                    This draft failed the quality check. I still want to send it for approval.
                   </span>
                 </label>
               ) : null}
@@ -350,19 +348,16 @@ export function FollowUpReviewScreen({ initial }: { initial: FollowUpReviewPaylo
                   disabled={busy || (draft.lowConfidence && !confirmLowConfidence)}
                   onClick={() =>
                     run(() =>
-                      approveFollowUp({
+                      sendFollowUpToApproval({
                         draftId: draft.id,
                         body,
                         subject,
-                        confirmChannel: draft.channel,
-                        confirmRecipient: recipient ?? "",
-                        confirmSendAt: file.proposedSendAt,
                         confirmLowConfidence: draft.lowConfidence ? confirmLowConfidence : undefined,
                       })
                     )
                   }
                 >
-                  Confirm and send
+                  Send for approval
                 </Button>
                 <Button
                   type="button"
@@ -383,8 +378,8 @@ export function FollowUpReviewScreen({ initial }: { initial: FollowUpReviewPaylo
       {file.draft.sequenceRunId ? (
         <Panel className="p-6">
           <p className={helperClass}>
-            This draft is part of a sequence. Later messages are drafted on a schedule and still
-            require their own approval. Sending is never scheduled.
+            This draft is part of a sequence. Later messages are drafted on a schedule and each
+            one needs its own approval. Vistrial never sends them.
           </p>
           <Button
             type="button"

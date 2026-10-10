@@ -9,6 +9,7 @@ import { loadAwaySummary, loadLiveSince, loadRunDetail, type AwaySummary, type L
 import { continueAfterDecision } from "@/lib/live/decisions";
 import { resumeRun } from "@/lib/live/record";
 import { wordEditDistance } from "@/lib/follow-up/edit-distance";
+import { advanceAfterGateSend } from "@/lib/follow-up/finalize";
 import "@/lib/scribe/continuation";
 import "@/lib/relay/continuation";
 import { runSimulation, SIMULATION_SCENARIOS, type SimulationScenario } from "@/lib/live/simulator";
@@ -152,6 +153,17 @@ export async function markRequestSentAction(itemId: string): Promise<Result<{ st
   const result = (data ?? {}) as GateResult;
   if (result.state === "withdrawn") return { ok: true, data: { state: "withdrawn", note: `Not marked sent: ${result.reason ?? "it no longer applies."}` } };
   if (result.already) return { ok: true, data: { state: "performed", note: "Already marked sent." } };
+  after(async () => {
+    const admin = getSupabaseAdmin();
+    const { data: handed } = await (admin as unknown as import("@supabase/supabase-js").SupabaseClient)
+      .from("relay_drafts")
+      .select("follow_up_draft_id")
+      .eq("approval_item_id", itemId)
+      .eq("org_id", ctx.org.id)
+      .maybeSingle();
+    const followUpDraftId = (handed as { follow_up_draft_id?: string | null } | null)?.follow_up_draft_id;
+    if (followUpDraftId) await advanceAfterGateSend(admin, followUpDraftId);
+  });
   const runId = (item as { run_id?: string | null } | null)?.run_id;
   if (runId) {
     const orgId = ctx.org.id;

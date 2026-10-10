@@ -2,7 +2,6 @@ import "server-only";
 
 import { canApproveFollowUp } from "@/lib/auth/permissions";
 import { getAuthContext } from "@/lib/auth/session";
-import { computeSendAt } from "@/lib/follow-up/quiet-hours";
 import { parseRoutingRule } from "@/lib/follow-up/routing";
 import type {
   FollowUpChannel,
@@ -121,14 +120,15 @@ export async function loadFollowUpReview(draftId: string): Promise<FollowUpRevie
   ]);
   if (!lead || !call) return null;
 
-  const timeZone = lead.timezone || ctx.org.timezone;
-  const proposedSendAt = computeSendAt({
-    now: new Date(),
-    timeZone,
-    enabled: settings.quietHoursEnabled,
-    startHm: settings.quietHoursStart,
-    endHm: settings.quietHoursEnd,
-  }).toISOString();
+  const { data: handed } = await (supabase as unknown as import("@supabase/supabase-js").SupabaseClient)
+    .from("relay_drafts")
+    .select("approval_item_id, status")
+    .eq("follow_up_draft_id", draft.id)
+    .eq("org_id", ctx.org.id)
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  const gate = handed as { approval_item_id: string | null; status: string } | null;
 
   const quotesUsed = Array.isArray(draft.quotes_used)
     ? draft.quotes_used.filter((item): item is string => typeof item === "string")
@@ -201,7 +201,7 @@ export async function loadFollowUpReview(draftId: string): Promise<FollowUpRevie
     },
     settings,
     orgTimezone: ctx.org.timezone,
-    proposedSendAt,
+    gateRequest: gate?.approval_item_id ? { itemId: gate.approval_item_id, status: gate.status } : null,
     canApprove: canApproveFollowUp({
       role: ctx.role,
       canApprove: ctx.member.canApprove,

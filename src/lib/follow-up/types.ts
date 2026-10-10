@@ -171,5 +171,6 @@ export type FollowUpReviewPayload = {
   };
   settings: FollowUpSettings;
   orgTimezone: string;
-  proposedSendAt: string;
+  /** The request in Needs your approval this draft was handed to, if any. */
+  gateRequest: { itemId: string; status: string } | null;
 };

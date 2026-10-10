@@ -1,9 +1,7 @@
 "use client";
 
-import { useState } from "react";
 import Link from "next/link";
 
-import { retryFollowUpSend } from "@/app/(workspace)/app/follow-ups/actions";
 import { Button } from "@/components/ui/button";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
@@ -77,36 +75,12 @@ function detailEntries(event: ActivityEvent): Array<[string, string]> {
   return rows;
 }
 
-function RetryDispatchButton({
-  draftId,
-  onRetried,
-}: {
-  draftId: string;
-  onRetried?: () => void;
-}) {
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+function RetryDispatchLink({ draftId }: { draftId: string }) {
   return (
     <div className="mt-3">
-      <Button
-        type="button"
-        variant="secondary"
-        size="sm"
-        disabled={busy}
-        onClick={() => {
-          setBusy(true);
-          setError(null);
-          void retryFollowUpSend(draftId)
-            .then((result) => {
-              if (!result.ok) setError(result.error);
-              else onRetried?.();
-            })
-            .finally(() => setBusy(false));
-        }}
-      >
-        {busy ? "Retrying…" : "Retry send"}
+      <Button variant="secondary" size="sm" render={<Link href={`/app/follow-ups/${draftId}`} />}>
+        Open the draft to send it for approval
       </Button>
-      {error ? <p className="mt-1 text-xs text-flag-critical">{error}</p> : null}
     </div>
   );
 }
@@ -129,7 +103,6 @@ export function ActivityEventLine({
   now,
   showOrg = false,
   defaultOpen = false,
-  onRetried,
 }: {
   event: ActivityEvent;
   now: string;
@@ -185,7 +158,7 @@ export function ActivityEventLine({
             ))}
           </dl>
           {event.retryable && event.retryId ? (
-            <RetryDispatchButton draftId={event.retryId} onRetried={onRetried} />
+            <RetryDispatchLink draftId={event.retryId} />
           ) : null}
         </details>
       ) : null}

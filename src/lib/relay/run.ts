@@ -193,8 +193,21 @@ async function draftForJob(job: RelayJob): Promise<Outcome> {
     .gte("created_at", dayStart.toISOString());
   if ((today ?? 0) >= RELAY_DAILY_LIMIT) return { kind: "later", result: "This workspace reached today's draft limit.", minutes: 60 };
 
-  const channel = pickChannel(lead);
-  if (!channel) return { kind: "skipped", result: "There is no phone number or email for this lead." };
+  const { data: suppression } = await client
+    .from("lead_email_suppressions")
+    .select("reason")
+    .eq("org_id", job.org_id)
+    .eq("lead_id", job.lead_id)
+    .maybeSingle();
+  const channel = pickChannel(lead, { emailSuppressed: Boolean(suppression) });
+  if (!channel) {
+    return {
+      kind: "skipped",
+      result: suppression
+        ? "There is no phone number, and email to this lead bounced or was marked as spam."
+        : "There is no phone number or email for this lead.",
+    };
+  }
 
   const [{ data: caseFile }, { data: fieldRows }] = await Promise.all([
     client.from("case_files").select("status, summary, next_step").eq("org_id", job.org_id).eq("lead_id", job.lead_id).maybeSingle(),

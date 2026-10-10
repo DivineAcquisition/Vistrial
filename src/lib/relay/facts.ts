@@ -124,8 +124,12 @@ export function factsForChannel(facts: RelayFact[], channel: RelayChannel): Rela
 }
 
 /** Texts when there is a number to text, otherwise email. */
-export function pickChannel(lead: { phone: string | null; email: string | null }): RelayChannel | null {
+export function pickChannel(
+  lead: { phone: string | null; email: string | null },
+  options: { emailSuppressed?: boolean } = {}
+): RelayChannel | null {
   if (lead.phone && /\d{7,}/.test(lead.phone.replace(/\D/g, ""))) return "sms";
+  if (options.emailSuppressed) return null;
   if (lead.email && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(lead.email.trim())) return "email";
   return null;
 }

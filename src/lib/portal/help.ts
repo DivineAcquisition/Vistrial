@@ -2,6 +2,7 @@ import "server-only";
 
 import type { SupabaseClient } from "@supabase/supabase-js";
 
+import { containsContactDetails } from "@/lib/notifications/copy";
 import { queuePortalNotice } from "@/lib/portal/notices";
 
 export function excerpt(text: string): string {
@@ -23,7 +24,7 @@ export async function tellRequester(db: SupabaseClient, requestId: string, body:
     memberId: row.created_by_member_id,
     eventType: "help_reply",
     title: "Your Vistrial team replied",
-    body: excerpt(body),
+    body: containsContactDetails(body) ? "Open the request to read the reply." : excerpt(body),
     path: `/app/help/${requestId}`,
     dedupeKey: `help-reply:${requestId}:${Date.now()}`,
   });

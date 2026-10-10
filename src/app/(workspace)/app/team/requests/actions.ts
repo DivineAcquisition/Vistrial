@@ -5,6 +5,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 
 import type { SettingsSaveResult } from "@/app/(workspace)/app/settings/types";
 import { getAuthContext } from "@/lib/auth/session";
+import { containsContactDetails } from "@/lib/notifications/copy";
 import { excerpt, tellRequester } from "@/lib/portal/help";
 import { queuePortalNotice } from "@/lib/portal/notices";
 import { createClient } from "@/lib/supabase/server";
@@ -95,7 +96,7 @@ export async function updateDataRequest(
         memberId,
         eventType: "data_request",
         title: `Your request for ${words} ${done}`,
-        body: note ? excerpt(note) : "Open Privacy to see the latest.",
+        body: note && !containsContactDetails(note) ? excerpt(note) : "Open Privacy to see the latest.",
         path: "/app/settings/privacy",
         dedupeKey: `data-request:${requestId}:${status}:${note.slice(0, 40)}`,
       });

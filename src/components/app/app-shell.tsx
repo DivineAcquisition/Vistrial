@@ -1,6 +1,7 @@
 "use client";
 
 import { type ReactNode, Suspense } from "react";
+import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 import { ApplicationShell } from "@/components/app/application-shell";
@@ -21,6 +22,7 @@ import { WorkspaceStatusBanner } from "@/components/app/workspace-status-banner"
 import { useOrg } from "@/components/app/org-provider";
 import { LiveStatusStrip } from "@/components/live/agent-panel";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import type { PaymentProblem } from "@/lib/billing/labels";
 import { landingPath } from "@/lib/navigation";
 import {
   isPlatformRoute,
@@ -33,11 +35,13 @@ export function AppShell({
   children,
   counts,
   lostWorkspace = false,
+  paymentProblem = null,
   version,
 }: {
   children: ReactNode;
   counts: AttentionCounts;
   lostWorkspace?: boolean;
+  paymentProblem?: PaymentProblem | null;
   version: string;
 }) {
   const pathname = usePathname();
@@ -48,6 +52,7 @@ export function AppShell({
       <ConnectedShell
         counts={counts}
         lostWorkspace={lostWorkspace}
+        paymentProblem={paymentProblem}
         version={version}
       >
         {children}
@@ -60,11 +65,13 @@ function ConnectedShell({
   children,
   counts,
   lostWorkspace,
+  paymentProblem,
   version,
 }: {
   children: ReactNode;
   counts: AttentionCounts;
   lostWorkspace: boolean;
+  paymentProblem: PaymentProblem | null;
   version: string;
 }) {
   const pathname = usePathname();
@@ -123,6 +130,18 @@ function ConnectedShell({
             </Alert>
           ) : null}
           <WorkspaceStatusBanner />
+          {paymentProblem && !pathname.startsWith("/app/settings/billing") ? (
+            <Alert variant="warning" className="mb-6">
+              <AlertTitle>The last payment to Vistrial did not go through</AlertTitle>
+              <AlertDescription>
+                Everything keeps working.{" "}
+                <Link href="/app/settings/billing" className="underline">
+                  Open Billing
+                </Link>{" "}
+                to sort it out.
+              </AlertDescription>
+            </Alert>
+          ) : null}
         </>
       }
     >

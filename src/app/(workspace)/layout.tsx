@@ -7,6 +7,7 @@ import { getAuthContext, toClientOrgState } from "@/lib/auth/session";
 import { enforceHostForPerson } from "@/lib/domains/host-guard";
 import { loadCalmMode, loadLiveSnapshot, type LiveSnapshot } from "@/lib/live/load";
 import { loadAttentionCounts } from "@/lib/shell/attention";
+import { loadPaymentProblem } from "@/lib/billing/banner";
 import packageJson from "../../../package.json";
 
 export const dynamic = "force-dynamic";
@@ -28,10 +29,11 @@ export default async function WorkspaceLayout({ children }: { children: React.Re
     waiting: [],
     loadedAt: new Date().toISOString(),
   };
-  const [counts, snapshot, calm] = await Promise.all([
+  const [counts, snapshot, calm, paymentProblem] = await Promise.all([
     loadAttentionCounts(ctx),
     loadLiveSnapshot(ctx.org.id).catch(() => emptySnapshot),
     loadCalmMode(ctx.user.id).catch(() => false),
+    loadPaymentProblem(ctx).catch(() => null),
   ]);
 
   return (
@@ -39,7 +41,12 @@ export default async function WorkspaceLayout({ children }: { children: React.Re
       <LiveProvider orgId={ctx.org.id} workspaceStatus={ctx.org.status} initial={snapshot} initialCalm={calm}>
         <RunViewerProvider staff={ctx.isStaff}>
           <AgentPanelProvider>
-            <AppShell counts={counts} lostWorkspace={ctx.lostWorkspace} version={packageJson.version}>
+            <AppShell
+              counts={counts}
+              lostWorkspace={ctx.lostWorkspace}
+              paymentProblem={paymentProblem}
+              version={packageJson.version}
+            >
               {children}
             </AppShell>
           </AgentPanelProvider>

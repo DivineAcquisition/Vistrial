@@ -18,7 +18,6 @@ import {
   Settings2,
   SlidersHorizontal,
   UserRound,
-  Users,
   type LucideIcon,
 } from "lucide-react";
 
@@ -45,7 +44,6 @@ const ICONS: Record<ShellIcon, LucideIcon> = {
   forsight: Gauge,
   agents: Bot,
   health: HeartPulse,
-  talent: Users,
 };
 
 /**

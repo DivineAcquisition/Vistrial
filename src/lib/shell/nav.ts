@@ -170,8 +170,8 @@ function resultsItem(withForsight: boolean): ShellNavItem {
   return {
     id: "results",
     label: "Results",
-    href: "/portal",
-    match: "/portal",
+    href: "/app/results",
+    match: "/app/results",
     icon: "results",
     description: "Whether this workspace is turning leads into clients.",
     children: withForsight ? [FORSIGHT] : undefined,
@@ -258,8 +258,8 @@ function groupsFor(input: {
           {
             id: "results",
             label: "Results",
-            href: "/portal",
-            match: "/portal",
+            href: "/app/results",
+            match: "/app/results",
             icon: "results",
             phone: 2,
           },
@@ -443,6 +443,9 @@ export function isShellItemActive(pathname: string, hash: string, item: ShellNav
   if (item.id === "settings") {
     return isNavActive(pathname, item.match) && !pathname.startsWith("/app/settings/configuration");
   }
+  if (item.id === "results") {
+    return isNavActive(pathname, item.match) || isNavActive(pathname, "/portal");
+  }
   if (item.id === "profile") {
     return pathname === item.match || pathname.startsWith(`${item.match}/`);
   }
@@ -479,7 +482,11 @@ const TITLE_RULES: Array<{ prefix: string; title: string; crumbs: Array<{ href: 
   { prefix: "/app/today", title: "Today", crumbs: [{ href: "/app/today", label: "Today" }] },
   { prefix: "/app/queue", title: "My Leads", crumbs: [{ href: "/app/queue", label: "My Leads" }] },
   { prefix: "/app/home", title: "Overview", crumbs: [{ href: HOME_PATH, label: "Overview" }] },
-  { prefix: "/app/forsight", title: "Forsight", crumbs: [{ href: "/portal", label: "Results" }, { href: FORSIGHT_PATH, label: "Forsight" }] },
+  { prefix: "/app/forsight", title: "Forsight", crumbs: [{ href: "/app/results", label: "Results" }, { href: FORSIGHT_PATH, label: "Forsight" }] },
+  { prefix: "/app/results/leads", title: "Results", crumbs: [{ href: "/app/results", label: "Results" }, { href: "", label: "Leads" }] },
+  { prefix: "/app/results", title: "Results", crumbs: [{ href: "/app/results", label: "Results" }] },
+  { prefix: "/app/help", title: "Help", crumbs: [{ href: "/app/help", label: "Help" }] },
+  { prefix: "/app/notifications", title: "Notifications", crumbs: [{ href: "/app/notifications", label: "Notifications" }] },
   { prefix: "/app/agents/health", title: "Agent Health", crumbs: [{ href: "/app/agents", label: "Agents" }, { href: "/app/agents/health", label: "Agent Health" }] },
   { prefix: "/app/agents/simulator", title: "Simulator", crumbs: [{ href: "/app/agents", label: "Agents" }, { href: "/app/agents/simulator", label: "Simulator" }] },
   { prefix: "/app/agents/", title: "Agent", crumbs: [{ href: "/app/agents", label: "Agents" }, { href: "", label: "Agent" }] },
@@ -487,7 +494,7 @@ const TITLE_RULES: Array<{ prefix: string; title: string; crumbs: Array<{ href: 
   { prefix: "/app/runs/", title: "Agent run", crumbs: [{ href: "/app/agents", label: "Agents" }, { href: "", label: "Run" }] },
   { prefix: "/app/ask", title: "Ask Vistrial", crumbs: [{ href: "/app/ask", label: "Ask Vistrial" }] },
   { prefix: "/app/onboarding", title: "Onboarding", crumbs: [{ href: "/app/onboarding", label: "Onboarding" }] },
-  { prefix: "/portal", title: "Results", crumbs: [{ href: "/portal", label: "Results" }] },
+  { prefix: "/portal", title: "Client report", crumbs: [{ href: "/app/results", label: "Results" }, { href: "/portal", label: "Client report" }] },
   { prefix: "/stellar/console", title: "Placements", crumbs: [{ href: "/stellar/console", label: "Placements" }] },
   { prefix: "/stellar/log", title: "Log", crumbs: [{ href: "/stellar/log", label: "Log" }] },
   { prefix: "/stellar/portal", title: "Portal", crumbs: [{ href: "/stellar/portal", label: "Portal" }] },
@@ -543,6 +550,7 @@ export function layoutKindForPath(pathname: string): PageLayoutKind {
   }
   if (
     pathname.startsWith("/app/home") ||
+    pathname.startsWith("/app/results") ||
     pathname === "/portal" ||
     pathname.startsWith("/portal/") ||
     pathname.startsWith("/app/forsight") ||

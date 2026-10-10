@@ -101,6 +101,8 @@ describe("shell navigation", () => {
     const results = shellNavigation({ role: "member", templateAccess: false }).groups[0]?.items[1];
     const overview = shellNavigation({ role: "member", templateAccess: false }).groups[0]?.items[0];
     if (!results || !overview) throw new Error("member nav missing");
+    expect(isShellItemActive("/app/results", "", results)).toBe(true);
+    expect(isShellItemActive("/app/results/leads", "", results)).toBe(true);
     expect(isShellItemActive("/portal", "", results)).toBe(true);
     expect(isShellItemActive("/portal", "", overview)).toBe(false);
     expect(isShellItemActive("/app/home", "", results)).toBe(false);

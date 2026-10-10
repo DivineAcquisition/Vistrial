@@ -1,3 +1,5 @@
+import { REVENUE_LIFECYCLE_LABELS } from "@/lib/home/metrics";
+
 /**
  * The one list of portal numbers. Home, Results, the drill-through lists, and
  * exports all read these ids, and every one is computed by
@@ -95,6 +97,13 @@ export const METRICS = defs({
   open_leads: {
     label: "Open leads",
     explain: "Leads in any stage that is not won, lost, or gone quiet. Practice leads are left out.",
+    unit: "count",
+    measure: "count",
+    now: true,
+  },
+  open_band: {
+    label: "Open leads in this band",
+    explain: "Open leads whose case file sits in the readiness band named, by your workspace's band names and scores.",
     unit: "count",
     measure: "count",
     now: true,
@@ -322,6 +331,51 @@ export const OBJECTION_LABELS: Record<string, string> = {
 
 export function stageLabel(key: string): string {
   return STAGE_LABELS[key] ?? key.replace(/_/g, " ");
+}
+
+const DETAIL_WORDS: Record<string, string> = {
+  within: "Answered in time",
+  late: "Late",
+  missed: "Missed",
+  on_time: "On time",
+  first_touch: "First response",
+  follow_up: "Follow-up",
+  built: "Built",
+  updated: "Updated",
+  needs_review: "Needs a check",
+  sent: "Marked sent",
+  rejected: "Turned down",
+  approved: "Approved",
+  pending: "Waiting for approval",
+  nudge: "Nudge",
+  escalation: "Escalation",
+  at_risk: "At risk",
+  resolved: "Resolved",
+  paused: "Paused",
+};
+
+function words(key: string): string {
+  return DETAIL_WORDS[key] ?? STAGE_LABELS[key] ?? OBJECTION_LABELS[key] ?? key.replace(/_/g, " ");
+}
+
+/** The short label under a lead in a drill-through list. */
+export function detailLabel(metric: string, detail: string | null): string | null {
+  if (!detail) return null;
+  const base = metric.split(":")[0];
+  if (base === "bookings" || base === "drafts_waiting") return null;
+  if (base === "stage_moves") return moveLabel(detail);
+  if (base === "band_moves") return moveLabel(detail, (part) => (part === "none" ? "No band" : part));
+  if (base === "objections") {
+    const [type, state] = detail.split(":");
+    return `${words(type ?? "other")}${state === "resolved" ? ", resolved" : ""}`;
+  }
+  if (base === "alerts_raised" || base === "alerts_acknowledged") {
+    const [kind] = detail.split(":");
+    return words(kind ?? "");
+  }
+  if (base === "revenue") return REVENUE_LIFECYCLE_LABELS[detail as keyof typeof REVENUE_LIFECYCLE_LABELS] ?? words(detail);
+  if (base === "open_band" || base === "hot_open") return detail === "none" ? "No band" : detail;
+  return words(detail);
 }
 
 /** "working>call_booked" as words. */

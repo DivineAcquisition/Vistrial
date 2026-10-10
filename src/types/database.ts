@@ -1996,6 +1996,12 @@ export type Database = {
           deactivated_at: string | null;
           deactivated_by: string | null;
           last_seen_at: string | null;
+          can_see_money: boolean;
+          can_export: boolean;
+          avatar_path: string | null;
+          notification_delivery: "instant" | "digest";
+          home_seen_at: string | null;
+          home_prev_seen_at: string | null;
         };
         Insert: {
           active?: boolean;
@@ -2023,6 +2029,12 @@ export type Database = {
           deactivated_at?: string | null;
           deactivated_by?: string | null;
           last_seen_at?: string | null;
+          can_see_money?: boolean;
+          can_export?: boolean;
+          avatar_path?: string | null;
+          notification_delivery?: "instant" | "digest";
+          home_seen_at?: string | null;
+          home_prev_seen_at?: string | null;
         };
         Update: {
           active?: boolean;
@@ -2050,6 +2062,12 @@ export type Database = {
           deactivated_at?: string | null;
           deactivated_by?: string | null;
           last_seen_at?: string | null;
+          can_see_money?: boolean;
+          can_export?: boolean;
+          avatar_path?: string | null;
+          notification_delivery?: "instant" | "digest";
+          home_seen_at?: string | null;
+          home_prev_seen_at?: string | null;
         };
         Relationships: [
           {
@@ -2067,6 +2085,7 @@ export type Database = {
           role: Database["public"]["Enums"]["platform_role"];
           active: boolean;
           template_access: boolean;
+          billing_access: boolean;
           display_name: string;
           email: string;
           created_at: string;
@@ -2079,6 +2098,7 @@ export type Database = {
           role: Database["public"]["Enums"]["platform_role"];
           active?: boolean;
           template_access?: boolean;
+          billing_access?: boolean;
           display_name: string;
           email: string;
           created_at?: string;
@@ -2091,6 +2111,7 @@ export type Database = {
           role?: Database["public"]["Enums"]["platform_role"];
           active?: boolean;
           template_access?: boolean;
+          billing_access?: boolean;
           display_name?: string;
           email?: string;
           created_at?: string;
@@ -7567,7 +7588,12 @@ export type Database = {
         | "adoption_warning"
         | "daily_brief"
         | "hourly_summary"
-        | "test_send";
+        | "test_send"
+        | "help_request"
+        | "help_reply"
+        | "export_ready"
+        | "billing_issue"
+        | "data_request";
       notification_channel: "push" | "email" | "sms" | "team" | "da_console";
       notification_status:
         | "queued"

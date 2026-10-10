@@ -250,32 +250,13 @@ export function FollowUpSettingsScreen({
       </AdvancedDoor>
 
       <section>
-        <SectionHeader title="Quiet hours" hint="Quiet hours default on. How long a sequence can run cannot be turned off." />
+        <SectionHeader title="Sequence limits" hint="How long a sequence can run cannot be turned off." />
         <Panel className={`${formMeasure} p-6`}>
           <form action={savePolicy} className="space-y-4">
-            <CheckboxField
-              name="quiet_hours_enabled"
-              defaultChecked={settings.quietHoursEnabled}
-              label="Respect quiet hours"
-            />
-            <div className="grid grid-cols-2 gap-3">
-              <Field label="Quiet start" name="quiet_hours_start">
-                <Input
-                  id="quiet_hours_start"
-                  name="quiet_hours_start"
-                  type="time"
-                  defaultValue={settings.quietHoursStart}
-                />
-              </Field>
-              <Field label="Quiet end" name="quiet_hours_end">
-                <Input
-                  id="quiet_hours_end"
-                  name="quiet_hours_end"
-                  type="time"
-                  defaultValue={settings.quietHoursEnd}
-                />
-              </Field>
-            </div>
+            <p className={helperClass}>
+              Quiet hours come from this workspace&apos;s configuration, set by the Vistrial team. Every message follows
+              them, in the lead&apos;s own time zone.
+            </p>
             <Field label="Maximum sequence length" name="max_sequence_length">
               <Input
                 id="max_sequence_length"
@@ -305,7 +286,7 @@ export function FollowUpSettingsScreen({
             </Field>
             {policyState.status === "error" ? <p className={errorClass}>{policyState.error}</p> : null}
             <Button type="submit" variant="primary" size="lg" disabled={policyPending}>
-              Save quiet hours and limits
+              Save limits
             </Button>
           </form>
         </Panel>

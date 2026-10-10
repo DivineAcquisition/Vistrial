@@ -64,6 +64,35 @@ export function checkQuietHours(now: Date, window: QuietWindow, zones: readonly 
   };
 }
 
+/** When a message may go out under quiet hours: now, or when quiet hours end in every zone that applies. */
+export function quietSendTime(input: {
+  now: Date;
+  rules: Pick<ComplianceRules, "quietHours" | "basis">;
+  leadZones: readonly string[];
+  workspaceTimeZone: string;
+}): Date {
+  const zones = input.rules.basis === "lead_local" && input.leadZones.length ? input.leadZones : [input.workspaceTimeZone];
+  const quiet = checkQuietHours(input.now, input.rules.quietHours, zones);
+  return quiet.quiet ? quiet.resumeAt : input.now;
+}
+
+function normalizeForDisclosure(text: string): string {
+  return text.replace(/\s+/g, " ").trim().toLowerCase();
+}
+
+/**
+ * Required disclosures the message does not contain, compared without case
+ * or spacing differences. Matches gate_missing_disclosure in the database.
+ */
+export function missingDisclosures(text: string | null | undefined, disclosures: unknown): string[] {
+  if (!Array.isArray(disclosures)) return [];
+  const haystack = normalizeForDisclosure(text ?? "");
+  return disclosures
+    .filter((line): line is string => typeof line === "string" && normalizeForDisclosure(line) !== "")
+    .filter((line) => !haystack.includes(normalizeForDisclosure(line)))
+    .map((line) => line.trim());
+}
+
 export type CapRules = {
   dailyCap: number;
   /** 0 means no weekly limit. */

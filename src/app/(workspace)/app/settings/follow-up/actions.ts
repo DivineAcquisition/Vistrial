@@ -39,13 +39,6 @@ export async function updateFollowUpPolicy(
     if (typeof value === "string") return { status: "error", error: value };
   }
 
-  const quietEnabled = formData.get("quiet_hours_enabled") === "on";
-  const quietStart = String(formData.get("quiet_hours_start") ?? "21:00").slice(0, 5);
-  const quietEnd = String(formData.get("quiet_hours_end") ?? "08:00").slice(0, 5);
-  if (!/^\d{2}:\d{2}$/.test(quietStart) || !/^\d{2}:\d{2}$/.test(quietEnd)) {
-    return { status: "error", error: "Quiet hours must be HH:MM." };
-  }
-
   const supabase = await createClient();
   const { error } = await supabase
     .from("follow_up_settings")
@@ -53,9 +46,6 @@ export async function updateFollowUpPolicy(
       max_sequence_length: maxLength as number,
       max_sequence_duration_days: maxDays as number,
       draft_stale_days: staleDays as number,
-      quiet_hours_enabled: quietEnabled,
-      quiet_hours_start: quietStart,
-      quiet_hours_end: quietEnd,
     })
     .eq("org_id", ctx.org.id);
   if (error) return { status: "error", error: "Could not save follow-up policy." };

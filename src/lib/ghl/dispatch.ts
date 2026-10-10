@@ -184,14 +184,15 @@ export async function sendQueuedDispatch(db: GhlDb, dispatchId: string): Promise
   if (haltReason) return failDispatch(db, row, haltReason);
 
   const compliance = await complianceForDispatch(db, row);
-  if (compliance.action === "block" && compliance.reason === "opted_out") {
+  if (compliance.action === "block" && (compliance.reason === "opted_out" || compliance.reason === "email_suppressed")) {
     await db
       .from("ghl_dispatches")
-      .update({ status: "suppressed", failure_reason: "opted_out", body_text: null, sent_at: new Date().toISOString(), claimed_at: null })
+      .update({ status: "suppressed", failure_reason: compliance.reason, body_text: null, sent_at: new Date().toISOString(), claimed_at: null })
       .eq("id", row.id);
-    ghlLog("ghl.dispatch.suppressed", logFieldsFromRow(row, "suppressed", "opted_out"));
-    return finishDispatch(db, row, { status: "suppressed", dispatchId: row.id, reason: "opted_out" });
+    ghlLog("ghl.dispatch.suppressed", logFieldsFromRow(row, "suppressed", compliance.reason));
+    return finishDispatch(db, row, { status: "suppressed", dispatchId: row.id, reason: compliance.reason });
   }
+  if (compliance.action === "block" && compliance.reason === "missing_disclosure") return failDispatch(db, row, "missing_disclosure");
   if (compliance.action === "block") return failDispatch(db, row, "config_incomplete");
   if (compliance.action === "defer") {
     await db

@@ -1,10 +1,10 @@
 import "server-only";
 
 import { requireConfig } from "@/lib/config/server";
-import { computeSendAt } from "@/lib/follow-up/quiet-hours";
+import { complianceSendAt } from "@/lib/compliance/dispatch";
 import { dispatchOutboundMessage } from "@/lib/ghl/dispatch";
 import type { GhlDb } from "@/lib/ghl/tokens";
-import { loadGateState, type GateLimits } from "@/lib/home/gate";
+import { loadGateState } from "@/lib/home/gate";
 import { zonedStartOfDay } from "@/lib/home/periods";
 import { isDone, parseDrafts, type DraftResult, type QueueDraft } from "@/lib/home/queue";
 import type { Json } from "@/types/database";
@@ -43,17 +43,6 @@ export async function sendsToday(db: GhlDb, orgId: string, leadId: string, timeZ
     .in("status", ["queued", "sent"])
     .gte("created_at", midnight);
   return count ?? 0;
-}
-
-/** When a message may go out: now, or the end of the workspace's quiet hours. */
-export function sendTimeFor(limits: GateLimits, timeZone: string, now = new Date()): string {
-  return computeSendAt({
-    now,
-    timeZone,
-    enabled: true,
-    startHm: limits.quietHoursStart,
-    endHm: limits.quietHoursEnd,
-  }).toISOString();
 }
 
 async function runDraft(
@@ -101,12 +90,17 @@ async function runDraft(
     const reason =
       result.reason === "opted_out"
         ? "This lead replied with an opt-out word. Nothing was sent."
-        : "The CRM reports this contact as opted out. Nothing was sent.";
+        : result.reason === "email_suppressed"
+          ? "Email to this lead bounced or was marked as spam. Nothing was sent."
+          : "The CRM reports this contact as opted out. Nothing was sent.";
     return { status: "skipped", reason, at };
   }
   if (result.status === "halted") return { status: "failed", reason: HALT_MESSAGES[result.reason], at };
   if (result.reason === "config_incomplete") {
     return { status: "failed", reason: "Nothing was sent: this workspace's configuration needs attention first.", at };
+  }
+  if (result.reason === "missing_disclosure") {
+    return { status: "failed", reason: "Nothing was sent: the message is missing a required disclosure.", at };
   }
   return { status: "failed", reason: `Send failed (${result.reason.replaceAll("_", " ")}).`, at };
 }
@@ -148,7 +142,7 @@ export async function runApprovalItem(
   if (!claimed) return { ok: false, error: "This was already handled, or someone else is running it." };
 
   const gate = await loadGateState(db, args.orgId);
-  const sendAt = sendTimeFor(gate.limits, args.timeZone, args.now);
+  const now = args.now ?? new Date();
   const drafts = parseDrafts(claimed.drafts);
   const results: QueueDraft[] = [];
 
@@ -177,7 +171,7 @@ export async function runApprovalItem(
       draft,
       actor: args.actor,
       assignedMemberId: claimed.assigned_member_id,
-      sendAt,
+      sendAt: (await complianceSendAt(db, args.orgId, draft.leadId, now)) ?? now.toISOString(),
     });
     results.push({ ...draft, result });
   }

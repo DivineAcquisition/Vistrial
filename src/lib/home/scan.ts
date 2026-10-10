@@ -6,6 +6,8 @@ import type { GhlDb } from "@/lib/ghl/tokens";
 import { AREA_PRODUCERS } from "@/lib/home/areas/producers";
 import type { NewQueueItem, ProducerOrg } from "@/lib/home/areas/producer-types";
 import { actionType, HOME_AREAS, queueKind, type ApprovalMode } from "@/lib/home/catalog";
+import { requireConfig } from "@/lib/config/server";
+import { timeoutChoice, waitedTooLong, waitLimitMinutes } from "@/lib/gate/timeout";
 import { loadGateState, type GateState } from "@/lib/home/gate";
 import { runApprovalItem } from "@/lib/home/run";
 import { loadOrgNotifyContext } from "@/lib/notifications/members";
@@ -111,21 +113,71 @@ export async function applyGateToOpenItems(
   return { autoRun, dismissed };
 }
 
-async function escalate(db: GhlDb, org: ProducerOrg, gate: GateState, now: Date): Promise<number> {
-  const cutoff = new Date(now.getTime() - gate.limits.queueWaitLimitMinutes * 60_000).toISOString();
+async function escalate(
+  db: GhlDb,
+  org: ProducerOrg,
+  gate: GateState,
+  now: Date
+): Promise<{ escalated: number; proceeded: number }> {
+  const configured = await requireConfig(db, org.id, "approval_queue");
+  // Without a readable configuration the safe rule applies: wait the old
+  // limit, then escalate. Nothing proceeds.
+  const values: Record<string, unknown> = configured.ok
+    ? (configured.config.values as Record<string, unknown>)
+    : { "approval.timeout_behavior": "escalate" };
+  const fallback = gate.limits.queueWaitLimitMinutes;
+
+  const { data: open } = await db
+    .from("approval_items")
+    .select("id, action_type, created_at, lead_ids, agent_id")
+    .eq("org_id", org.id)
+    .eq("status", "pending")
+    .is("escalated_at", null);
+  type OpenItem = { id: string; action_type: string; created_at: string; lead_ids: string[] | null; agent_id: string | null };
+  const due = ((open ?? []) as unknown as OpenItem[]).filter((item) =>
+    waitedTooLong(item.created_at, waitLimitMinutes(item.action_type, values, fallback), now)
+  );
+
+  let proceeded = 0;
+  const toEscalate: string[] = [];
+  for (const item of due) {
+    const choice = timeoutChoice({
+      actionType: item.action_type,
+      values,
+      vistrialCanPerform: !item.agent_id && !org.halted,
+    });
+    if (choice === "wait") continue;
+    if (choice === "proceed") {
+      const outcome = await runApprovalItem(db, {
+        orgId: org.id,
+        itemId: item.id,
+        runMode: "auto_run",
+        actor: null,
+        timeZone: org.timezone,
+        now,
+      });
+      if (outcome.ok) {
+        proceeded += 1;
+        continue;
+      }
+    }
+    toEscalate.push(item.id);
+  }
+  if (!toEscalate.length) return { escalated: 0, proceeded };
+
   const { data: waiting } = await db
     .from("approval_items")
     .update({ escalated_at: now.toISOString() })
     .eq("org_id", org.id)
     .eq("status", "pending")
     .is("escalated_at", null)
-    .lte("created_at", cutoff)
+    .in("id", toEscalate)
     .select("id, lead_ids");
-  if (!waiting?.length) return 0;
+  if (!waiting?.length) return { escalated: 0, proceeded };
 
   // Escalated items never send on their own; they wait for an owner. Whether
   // the owner is also told depends on the escalation setting.
-  if (!mayAutoRun(org, gate, "owner_escalation")) return waiting.length;
+  if (!mayAutoRun(org, gate, "owner_escalation")) return { escalated: waiting.length, proceeded };
   const context = await loadOrgNotifyContext(db, org.id);
   const owners = (context?.members ?? []).filter((member) => member.role === "owner");
   for (const owner of owners) {
@@ -163,7 +215,7 @@ async function escalate(db: GhlDb, org: ProducerOrg, gate: GateState, now: Date)
       leadIds: [...new Set(waiting.flatMap((item) => item.lead_ids ?? []))],
     } as Json,
   });
-  return waiting.length;
+  return { escalated: waiting.length, proceeded };
 }
 
 export async function scanOrg(db: GhlDb, org: ProducerOrg, now = new Date()): Promise<Omit<ScanResult, "orgs" | "errors">> {
@@ -204,7 +256,9 @@ export async function scanOrg(db: GhlDb, org: ProducerOrg, now = new Date()): Pr
   const swept = await applyGateToOpenItems(db, org, gate);
   result.autoRun += swept.autoRun;
   result.dismissed += swept.dismissed;
-  result.escalated = await escalate(db, org, gate, now);
+  const timedOut = await escalate(db, org, gate, now);
+  result.escalated = timedOut.escalated;
+  result.autoRun += timedOut.proceeded;
   return result;
 }
 

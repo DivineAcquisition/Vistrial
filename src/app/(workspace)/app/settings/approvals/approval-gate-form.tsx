@@ -53,8 +53,6 @@ export type GateLimitsModel = {
   queueWaitLimitMinutes: number;
 };
 
-const WAIT_OPTIONS = [1, 2, 4, 8, 12, 24, 48];
-
 function notify(result: ApprovalSaveResult) {
   if (result.ok) toastManager.add({ title: "Saved", type: "success" });
   else toastManager.add({ title: "Not saved", description: result.error, type: "error" });
@@ -183,18 +181,16 @@ export function ApprovalLimitsForm({
   timeZone: string;
   editable: boolean;
 }) {
-  const [quietStart, setQuietStart] = useState(limits.quietHoursStart);
-  const [quietEnd, setQuietEnd] = useState(limits.quietHoursEnd);
   const [dailyLimit, setDailyLimit] = useState(String(limits.dailySendLimitPerLead));
-  const waitHours = limits.queueWaitLimitMinutes / 60;
-  const [wait, setWait] = useState(String(waitHours));
   const [pending, startTransition] = useTransition();
-  const waitOptions = WAIT_OPTIONS.includes(waitHours) ? WAIT_OPTIONS : [...WAIT_OPTIONS, waitHours].sort((a, b) => a - b);
 
   return (
     <Card className="p-5 sm:p-6">
       <h2 className="font-heading text-base text-card-foreground">Limits on what runs on its own</h2>
-      <p className="mt-1 text-xs text-muted-foreground">Times are in the workspace time zone, {timeZone}.</p>
+      <p className="mt-1 text-xs text-muted-foreground">
+        Quiet hours, and how long a request may wait before the owner is told, are set in this workspace&apos;s
+        configuration by the Vistrial team ({timeZone}). Every message follows them.
+      </p>
       <form
         className="mt-4 grid gap-4 sm:grid-cols-2"
         onSubmit={(event) => {
@@ -202,23 +198,15 @@ export function ApprovalLimitsForm({
           startTransition(async () => {
             notify(
               await saveApprovalLimits({
-                quietHoursStart: quietStart,
-                quietHoursEnd: quietEnd,
+                quietHoursStart: limits.quietHoursStart,
+                quietHoursEnd: limits.quietHoursEnd,
                 dailySendLimitPerLead: Number(dailyLimit),
-                queueWaitLimitHours: Number(wait),
+                queueWaitLimitHours: limits.queueWaitLimitMinutes / 60,
               })
             );
           });
         }}
       >
-        <label className="flex flex-col gap-1.5 text-sm font-medium text-card-foreground">
-          Quiet hours start
-          <Input type="time" value={quietStart} disabled={!editable} onChange={(event) => setQuietStart(event.target.value)} />
-        </label>
-        <label className="flex flex-col gap-1.5 text-sm font-medium text-card-foreground">
-          Quiet hours end
-          <Input type="time" value={quietEnd} disabled={!editable} onChange={(event) => setQuietEnd(event.target.value)} />
-        </label>
         <label className="flex flex-col gap-1.5 text-sm font-medium text-card-foreground">
           Messages per lead per day
           <Input
@@ -232,19 +220,6 @@ export function ApprovalLimitsForm({
           />
           <span className="text-xs font-normal text-muted-foreground">Auto-run messages stop at this many.</span>
         </label>
-        <div className="flex flex-col gap-1.5 text-sm font-medium text-card-foreground">
-          <span id="wait-limit-label">Escalate after waiting</span>
-          <Select
-            aria-labelledby="wait-limit-label"
-            value={wait}
-            disabled={!editable}
-            options={waitOptions.map((hours) => ({ value: String(hours), label: hours === 1 ? "1 hour" : `${hours} hours` }))}
-            onChange={(event) => setWait(event.target.value)}
-          />
-          <span className="text-xs font-normal text-muted-foreground">
-            Past this, an item never sends on its own. It goes to the owner.
-          </span>
-        </div>
         {editable ? (
           <div className="sm:col-span-2">
             <Button type="submit" variant="primary" loading={pending} loadingLabel="Saving">

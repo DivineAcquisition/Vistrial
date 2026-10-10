@@ -45,6 +45,12 @@ export function visible(entry: SummaryEntry | undefined): entry is Exclude<Summa
   return Boolean(entry && !entry.hidden);
 }
 
+/** The current number for one metric, or null when the person may not see it. */
+export function currentNumber(metric: string, entry: SummaryEntry | undefined): number | null {
+  if (!visible(entry)) return null;
+  return metricNumber(metricDefinition(metric), entry.current);
+}
+
 export type MetricView = {
   metric: string;
   label: string;

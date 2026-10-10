@@ -1,10 +1,23 @@
 import Link from "next/link";
-import { ChevronRight } from "lucide-react";
+import { ArrowDownRight, ArrowRight, ArrowUpRight, ChevronRight } from "lucide-react";
 
-import { ComparisonLine } from "@/app/(workspace)/app/home/number-cards";
 import { Card } from "@/components/ui/card";
 import type { Comparison } from "@/lib/home/metrics";
 import { cn } from "@/lib/utils";
+
+/** Green when it got better, red when it got worse. The arrow follows the number. */
+export function ComparisonLine({ comparison, className }: { comparison: Comparison | null; className?: string }) {
+  if (!comparison) return null;
+  const Icon = comparison.direction === "up" ? ArrowUpRight : comparison.direction === "down" ? ArrowDownRight : ArrowRight;
+  const tone =
+    comparison.improved === null ? "text-muted-foreground" : comparison.improved ? "text-success" : "text-destructive";
+  return (
+    <p className={cn("inline-flex items-center gap-1 text-sm font-medium", tone, className)}>
+      <Icon className="size-4 shrink-0" aria-hidden />
+      {comparison.text}
+    </p>
+  );
+}
 
 /** "How is this calculated?" one tap away, without leaving the page. */
 export function MetricExplain({ explain, className }: { explain: string; className?: string }) {

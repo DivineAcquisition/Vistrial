@@ -12,13 +12,10 @@ import {
 } from "lucide-react";
 
 import { ApprovalQueueList } from "@/app/(workspace)/app/home/approval-queue";
-import { HeroCard, SupportingNumbers } from "@/app/(workspace)/app/home/number-cards";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { AuthContext } from "@/lib/auth/types";
-import { loadHomeNumbers } from "@/lib/home/load";
-import type { HomePeriodKey } from "@/lib/home/periods";
 import { runModeLabel, type ActivityEntry } from "@/lib/home/queue";
 import { loadActivity, loadAgentRequests, loadApprovalQueue } from "@/lib/home/views";
 import { AgentRequestCard } from "@/components/live/request-card";
@@ -56,7 +53,7 @@ function SectionHeading({ id, title, count }: { id: string; title: string; count
  * Numbers
  * ------------------------------------------------------------------------- */
 
-function EmptyWorkspace({ name, canConnect }: { name: string; canConnect: boolean }) {
+export function EmptyWorkspace({ name, canConnect }: { name: string; canConnect: boolean }) {
   return (
     <Card className="items-start gap-4 border-brand-500/30 p-6 sm:p-8">
       <span className="grid size-10 place-items-center rounded-xl bg-brand-500/12 text-brand-300">
@@ -79,51 +76,6 @@ function EmptyWorkspace({ name, canConnect }: { name: string; canConnect: boolea
         </Link>
       ) : null}
     </Card>
-  );
-}
-
-export async function NumbersSection({ ctx, period }: { ctx: AuthContext; period: HomePeriodKey }) {
-  const numbers = await loadHomeNumbers(ctx, period);
-  if (numbers.isEmpty) {
-    return <EmptyWorkspace name={numbers.workspaceName} canConnect={numbers.canSeeMoney} />;
-  }
-  return (
-    <>
-      <HeroCard numbers={numbers} />
-      <SupportingNumbers numbers={numbers} />
-    </>
-  );
-}
-
-export function NumbersSkeleton({ showMoney = true }: { showMoney?: boolean }) {
-  return (
-    <>
-      <Card className="p-5 sm:p-7" aria-busy="true" aria-label="Loading numbers">
-        <Skeleton className="h-4 w-56 max-w-full" />
-        <div className="mt-5 flex items-end justify-between gap-4">
-          <div className="space-y-2">
-            <Skeleton className="h-3 w-20" />
-            <Skeleton className="h-14 w-24 sm:h-[4.5rem]" />
-          </div>
-          {showMoney ? (
-            <div className="flex flex-col items-end gap-2">
-              <Skeleton className="h-3 w-28" />
-              <Skeleton className="h-8 w-20" />
-            </div>
-          ) : null}
-        </div>
-        <Skeleton className="mt-4 h-4 w-40" />
-      </Card>
-      <div className="grid grid-cols-2 gap-3 sm:gap-4">
-        {Array.from({ length: showMoney ? 4 : 3 }, (_, index) => (
-          <Card key={index} className="p-4 sm:p-5">
-            <Skeleton className="h-3 w-24" />
-            <Skeleton className="mt-3 h-8 w-16" />
-            <Skeleton className="mt-2 h-3 w-20" />
-          </Card>
-        ))}
-      </div>
-    </>
   );
 }
 

@@ -1,4 +1,5 @@
-import { ActivitySkeleton, NumbersSkeleton, QueueSkeleton } from "@/app/(workspace)/app/home/sections";
+import { AttentionSkeleton, StatCardsSkeleton } from "@/app/(workspace)/app/home/portal-sections";
+import { ActivitySkeleton, QueueSkeleton } from "@/app/(workspace)/app/home/sections";
 import { Skeleton } from "@/components/ui/skeleton";
 
 export default function HomeLoading() {
@@ -8,7 +9,8 @@ export default function HomeLoading() {
         <Skeleton className="h-7 w-24" />
         <Skeleton className="h-8 w-40" />
       </div>
-      <NumbersSkeleton />
+      <AttentionSkeleton />
+      <StatCardsSkeleton />
       <QueueSkeleton />
       <ActivitySkeleton />
     </div>

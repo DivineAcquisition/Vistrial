@@ -14,6 +14,7 @@ import {
   type MemberRow,
 } from "@/lib/auth/memberships";
 import { safeInternalPath } from "@/lib/auth/paths";
+import { canExport, canSeeMoney } from "@/lib/auth/portal-access";
 import { DEFAULT_APP_PATH } from "@/lib/navigation";
 import { createClient } from "@/lib/supabase/server";
 import type { AuthContext, ClientOrgState, Membership, OrgSummary } from "@/lib/auth/types";
@@ -21,7 +22,8 @@ import type { PlatformRole } from "@/types/database";
 
 export type { AuthContext, ClientOrgState, Membership, OrgSummary } from "@/lib/auth/types";
 
-const MEMBER_COLUMNS = "id, org_id, role, seat, can_approve, display_name, email, surface_access" as const;
+const MEMBER_COLUMNS =
+  "id, org_id, role, seat, can_approve, can_see_money, can_export, avatar_path, display_name, email, surface_access" as const;
 const ORG_COLUMNS = "id, name, slug, timezone, ghl_location_id, status, is_platform_workspace" as const;
 
 export const getSessionUser = cache(async (): Promise<User | null> => {
@@ -184,6 +186,9 @@ export function toClientOrgState(ctx: AuthContext): ClientOrgState {
     isStaff: ctx.isStaff,
     isPlatformAdmin: ctx.isPlatformAdmin,
     canApprove: ctx.isStaff || ctx.role === "owner" || ctx.member.canApprove,
+    canSeeMoney: canSeeMoney(ctx),
+    canExport: canExport(ctx),
+    avatarPath: ctx.member.avatarPath,
     templateAccess: ctx.templateAccess,
     lostWorkspace: ctx.lostWorkspace,
     memberId: ctx.member.id,

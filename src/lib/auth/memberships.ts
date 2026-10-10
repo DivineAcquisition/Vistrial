@@ -19,6 +19,9 @@ export type MemberRow = {
   email: string;
   seat?: MemberSeat | null;
   can_approve?: boolean | null;
+  can_see_money?: boolean | null;
+  can_export?: boolean | null;
+  avatar_path?: string | null;
   surface_access?: SurfaceAccess | null;
   organizations?: OrgRow | OrgRow[] | null;
 };
@@ -49,6 +52,9 @@ export function membershipFromRow(
     role: row.role,
     seat: row.seat ?? "customer",
     canApprove: Boolean(row.can_approve),
+    canSeeMoney: Boolean(row.can_see_money),
+    canExport: Boolean(row.can_export),
+    avatarPath: row.avatar_path ?? null,
     displayName: row.display_name,
     email: row.email,
     surfaceAccess: row.surface_access === "portal" ? "portal" : "operator",

@@ -14,6 +14,11 @@ export const EVENT_LABELS: Record<NotificationEventType, string> = {
   daily_brief: "Morning brief",
   hourly_summary: "Too many alerts this hour",
   test_send: "Test send",
+  help_request: "Someone asked for help",
+  help_reply: "Your team replied",
+  export_ready: "Your export is ready",
+  billing_issue: "A payment did not go through",
+  data_request: "A data request was made",
 };
 
 export const CHANNEL_LABELS: Record<NotificationChannel, string> = {

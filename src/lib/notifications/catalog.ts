@@ -93,4 +93,34 @@ export const NOTIFICATION_CATALOG: CatalogEntry[] = [
     saturday9pm: false,
     why: "Requested from settings so a broken channel is found during onboarding.",
   },
+  {
+    type: "help_request",
+    canActNow: true,
+    saturday9pm: false,
+    why: "Staff can answer the customer. Email to the team, never a push to the customer.",
+  },
+  {
+    type: "help_reply",
+    canActNow: true,
+    saturday9pm: false,
+    why: "The person who asked can read the answer. Email and the notifications page.",
+  },
+  {
+    type: "export_ready",
+    canActNow: true,
+    saturday9pm: false,
+    why: "The person who asked for the export can download it. Email and the notifications page.",
+  },
+  {
+    type: "billing_issue",
+    canActNow: true,
+    saturday9pm: false,
+    why: "An owner can update the payment method. Email only. Nothing is switched off.",
+  },
+  {
+    type: "data_request",
+    canActNow: true,
+    saturday9pm: false,
+    why: "Staff can start the export or deletion the owner asked for. Email to the team.",
+  },
 ];

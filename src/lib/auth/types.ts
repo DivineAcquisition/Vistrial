@@ -31,6 +31,11 @@ export type Membership = {
   role: OrgRole;
   seat: MemberSeat;
   canApprove: boolean;
+  /** Member seats only: an owner granted revenue figures. */
+  canSeeMoney: boolean;
+  /** Member seats only: an owner granted exports. */
+  canExport: boolean;
+  avatarPath: string | null;
   displayName: string;
   email: string;
   surfaceAccess: SurfaceAccess;
@@ -68,6 +73,9 @@ export type ClientOrgState = {
   isStaff: boolean;
   isPlatformAdmin: boolean;
   canApprove: boolean;
+  canSeeMoney: boolean;
+  canExport: boolean;
+  avatarPath: string | null;
   templateAccess: boolean;
   lostWorkspace: boolean;
   memberId: string;

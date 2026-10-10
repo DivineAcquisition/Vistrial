@@ -66,6 +66,11 @@ export const NOTIFICATION_EVENT_TYPES = [
   "daily_brief",
   "hourly_summary",
   "test_send",
+  "help_request",
+  "help_reply",
+  "export_ready",
+  "billing_issue",
+  "data_request",
 ] as const;
 
 export const INTERRUPT_CHANNELS = ["push", "email", "sms", "team"] as const;

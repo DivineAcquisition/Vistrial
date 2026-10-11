@@ -123,4 +123,10 @@ export const NOTIFICATION_CATALOG: CatalogEntry[] = [
     saturday9pm: false,
     why: "Staff can start the export or deletion the owner asked for. Email to the team.",
   },
+  {
+    type: "workspace_notice",
+    canActNow: true,
+    saturday9pm: false,
+    why: "The Vistrial team paused an agent or found something an owner should fix. Email and the notifications page.",
+  },
 ];

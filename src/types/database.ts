@@ -7593,7 +7593,8 @@ export type Database = {
         | "help_reply"
         | "export_ready"
         | "billing_issue"
-        | "data_request";
+        | "data_request"
+        | "workspace_notice";
       notification_channel: "push" | "email" | "sms" | "team" | "da_console";
       notification_status:
         | "queued"

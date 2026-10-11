@@ -19,6 +19,7 @@ export const EVENT_LABELS: Record<NotificationEventType, string> = {
   export_ready: "Your export is ready",
   billing_issue: "A payment did not go through",
   data_request: "A data request was made",
+  workspace_notice: "A note from the Vistrial team",
 };
 
 export const CHANNEL_LABELS: Record<NotificationChannel, string> = {

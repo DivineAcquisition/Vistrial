@@ -307,15 +307,21 @@ export async function resumeRun(runId: string, orgId: string): Promise<RunRecord
   });
 }
 
-/** Whether this agent may run in this workspace right now. */
+/**
+ * Whether this agent may run in this workspace right now. A Platform Admin's
+ * emergency halt stops the agent everywhere and reads as a pause, so callers
+ * defer and re-check instead of failing.
+ */
 export async function agentMayRun(orgId: string, agentId: LiveAgentId): Promise<{ ok: true } | { ok: false; reason: "workspace" | "paused" }> {
   const client = db();
-  const [{ data: org }, { data: control }] = await Promise.all([
+  const [{ data: org }, { data: control }, { data: halt }] = await Promise.all([
     client.from("organizations").select("status").eq("id", orgId).maybeSingle(),
     client.from("agent_presence_controls").select("paused").eq("org_id", orgId).eq("agent_id", agentId).maybeSingle(),
+    client.from("platform_agent_halts").select("halted").eq("agent_id", agentId).maybeSingle(),
   ]);
   const status = (org as { status?: string } | null)?.status;
   if (status !== "active" && status !== "onboarding") return { ok: false, reason: "workspace" };
+  if ((halt as { halted?: boolean } | null)?.halted) return { ok: false, reason: "paused" };
   if ((control as { paused?: boolean } | null)?.paused) return { ok: false, reason: "paused" };
   return { ok: true };
 }

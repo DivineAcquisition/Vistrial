@@ -87,16 +87,17 @@ export function canOverrideLead(args: {
 }
 
 /**
- * Approving a draft: staff, owners, and members an owner has granted it.
- * Operators never approve. Server actions also ask the database
- * (ws_can_approve) before acting.
+ * Approving a draft: owners, members an owner has granted it, and staff where
+ * the Owner allowed staff approvals. Operators never approve. Server actions
+ * also ask the database (ws_can_approve) before acting.
  */
 export function canApproveFollowUp(args: {
   role: OrgRole;
   canApprove?: boolean;
   isStaff?: boolean;
+  staffMayApprove?: boolean;
 }): boolean {
-  if (args.isStaff) return true;
+  if (args.isStaff) return Boolean(args.staffMayApprove);
   if (args.role === "owner" || args.role === "admin") return true;
   return (args.role === "member" || args.role === "client_viewer") && Boolean(args.canApprove);
 }

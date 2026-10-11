@@ -3,7 +3,7 @@ import "server-only";
 import { cache } from "react";
 import { cookies, headers } from "next/headers";
 import { redirect } from "next/navigation";
-import type { User } from "@supabase/supabase-js";
+import type { SupabaseClient, User } from "@supabase/supabase-js";
 
 import { ORG_COOKIE_NAME, orgCookieOptions } from "@/lib/auth/cookies";
 import {
@@ -116,6 +116,12 @@ export const listActiveMemberships = cache(
   }
 );
 
+async function loadStaffMayApprove(orgId: string): Promise<boolean> {
+  const supabase = (await createClient()) as unknown as SupabaseClient;
+  const { data, error } = await supabase.rpc("staff_may_approve", { p_org_id: orgId });
+  return !error && data === true;
+}
+
 async function writeOrgCookie(orgId: string) {
   const cookieStore = await cookies();
   try {
@@ -156,6 +162,7 @@ export const getAuthContext = cache(async (): Promise<AuthContext> => {
 
   const platformRole = staff?.role ?? null;
   const workspaceRole = workspaceRoleFor(active, platformRole);
+  const isStaff = isStaffRole(workspaceRole);
 
   return {
     user,
@@ -163,8 +170,9 @@ export const getAuthContext = cache(async (): Promise<AuthContext> => {
     org: active.org,
     role: active.role,
     workspaceRole,
-    isStaff: isStaffRole(workspaceRole),
+    isStaff,
     isPlatformAdmin: platformRole === "platform_admin",
+    staffMayApprove: isStaff ? await loadStaffMayApprove(active.orgId) : false,
     platformRole,
     templateAccess: platformRole === "platform_admin" || Boolean(staff?.templateAccess),
     lostWorkspace,
@@ -185,7 +193,7 @@ export function toClientOrgState(ctx: AuthContext): ClientOrgState {
     workspaceRole: ctx.workspaceRole,
     isStaff: ctx.isStaff,
     isPlatformAdmin: ctx.isPlatformAdmin,
-    canApprove: ctx.isStaff || ctx.role === "owner" || ctx.member.canApprove,
+    canApprove: ctx.isStaff ? ctx.staffMayApprove : ctx.role === "owner" || ctx.member.canApprove,
     canSeeMoney: canSeeMoney(ctx),
     canExport: canExport(ctx),
     avatarPath: ctx.member.avatarPath,

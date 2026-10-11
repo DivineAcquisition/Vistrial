@@ -38,7 +38,7 @@ export async function replyToHelpRequest(
     p_status: HELP_STATUS.has(status) ? status : null,
   });
   if (error) return { status: "error", error: error.code === "42501" ? "That request was not found." : "Could not save the reply." };
-  if (body) await tellRequester(db, requestId, body);
+  if (body) await tellRequester(db, requestId);
   revalidatePath(`/app/team/requests/${requestId}`);
   revalidatePath("/app/team/requests");
   revalidatePath(`/app/help/${requestId}`);

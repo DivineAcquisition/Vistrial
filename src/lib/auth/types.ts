@@ -52,6 +52,8 @@ export type AuthContext = {
   isStaff: boolean;
   /** A Platform Admin, whatever the workspace. Platform-wide screens only. */
   isPlatformAdmin: boolean;
+  /** Staff may approve here only when this workspace's Owner turned it on. */
+  staffMayApprove: boolean;
   platformRole: PlatformRole | null;
   /** Service Team granted template access, or any Platform Admin. */
   templateAccess: boolean;

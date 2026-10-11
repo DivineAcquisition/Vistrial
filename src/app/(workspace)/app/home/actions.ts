@@ -9,6 +9,7 @@ import { canApproveItem } from "@/lib/home/catalog";
 import { loadGateState } from "@/lib/home/gate";
 import { isDone, itemPreview, parseDrafts } from "@/lib/home/queue";
 import { runApprovalItem } from "@/lib/home/run";
+import { actorLabel } from "@/lib/staff/labels";
 import { getSupabaseAdmin } from "@/lib/supabase/admin";
 import { dbCanApprove } from "@/lib/auth/db-checks";
 import type { Json } from "@/types/database";
@@ -51,6 +52,7 @@ async function requireDecidableItem(itemId: string): Promise<
       approver: choice.approver,
       role: ctx.role,
       isStaff: ctx.isStaff,
+      staffMayApprove: ctx.staffMayApprove,
       canApprove: ctx.member.canApprove,
       memberId: ctx.member.id,
       assignedMemberId: item.assigned_member_id,
@@ -65,7 +67,7 @@ async function run(ctx: AuthContext, itemId: string): Promise<QueueActionResult>
     orgId: ctx.org.id,
     itemId,
     runMode: "approved",
-    actor: { memberId: ctx.member.id, name: ctx.member.displayName },
+    actor: { memberId: ctx.member.id, name: actorLabel(ctx) },
     timeZone: ctx.org.timezone,
   });
   revalidateHome();

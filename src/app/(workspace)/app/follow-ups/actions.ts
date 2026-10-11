@@ -30,7 +30,7 @@ function fail(error: string): FollowUpActionResult {
 
 async function denyUnlessApprover(ctx: AuthContext): Promise<{ ok: false; error: string } | null> {
   const allowed =
-    canApproveFollowUp({ role: ctx.role, canApprove: ctx.member.canApprove, isStaff: ctx.isStaff }) &&
+    canApproveFollowUp({ role: ctx.role, canApprove: ctx.member.canApprove, isStaff: ctx.isStaff, staffMayApprove: ctx.staffMayApprove }) &&
     (await dbCanApprove(ctx.org.id));
   if (allowed) return null;
   return { ok: false, error: "Approving drafts needs an owner, or a member the owner has allowed to approve." };

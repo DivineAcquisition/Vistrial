@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 
 import { getAuthContext } from "@/lib/auth/session";
 import { isLiveAgentId } from "@/lib/agents/roster";
+import { actorLabel } from "@/lib/staff/labels";
 import { loadAwaySummary, loadLiveSince, loadRunDetail, type AwaySummary, type LiveSnapshot, type RunDetail } from "@/lib/live/load";
 import { continueAfterDecision } from "@/lib/live/decisions";
 import { resumeRun } from "@/lib/live/record";
@@ -134,7 +135,7 @@ export async function decideAgentRequest(input: {
   if (item.run_id) {
     const runId = String(item.run_id);
     const orgId = ctx.org.id;
-    const who = ctx.member.displayName || "a person";
+    const who = actorLabel(ctx);
     const approved = input.decision !== "reject";
     after(() => continueAfterDecision({ runId, orgId, approved, who, answer, reason: input.reason ?? null }));
   }
@@ -167,7 +168,7 @@ export async function markRequestSentAction(itemId: string): Promise<Result<{ st
   const runId = (item as { run_id?: string | null } | null)?.run_id;
   if (runId) {
     const orgId = ctx.org.id;
-    const who = ctx.member.displayName || "a person";
+    const who = actorLabel(ctx);
     after(async () => {
       const recorder = await resumeRun(runId, orgId);
       if (!recorder) return;

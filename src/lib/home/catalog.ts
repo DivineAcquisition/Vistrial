@@ -93,8 +93,8 @@ export function needsAutoRunConfirmation(reachesPeople: boolean, from: ApprovalM
 }
 
 /**
- * Whether this person may approve an item. Owners and staff always may.
- * Operators never do. A member may when an owner has granted it and the
+ * Whether this person may approve an item. Owners always may; staff only
+ * where the Owner allowed staff approvals. Operators never do. A member may when an owner has granted it and the
  * workspace's rule for this action lets more than owners decide. An item that
  * waited past the workspace's limit has been escalated and is the owner's
  * alone.
@@ -103,12 +103,14 @@ export function canApproveItem(args: {
   approver: Approver;
   role: OrgRole;
   isStaff: boolean;
+  staffMayApprove?: boolean;
   canApprove?: boolean;
   memberId: string;
   assignedMemberId: string | null;
   escalated: boolean;
 }): boolean {
-  if (args.isStaff || args.role === "owner") return true;
+  if (args.isStaff) return Boolean(args.staffMayApprove);
+  if (args.role === "owner") return true;
   if (args.escalated) return false;
   const grantedMember = (args.role === "member" || args.role === "client_viewer") && Boolean(args.canApprove);
   if (!grantedMember) return false;

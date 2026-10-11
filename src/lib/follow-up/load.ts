@@ -206,6 +206,7 @@ export async function loadFollowUpReview(draftId: string): Promise<FollowUpRevie
       role: ctx.role,
       canApprove: ctx.member.canApprove,
       isStaff: ctx.isStaff,
+      staffMayApprove: ctx.staffMayApprove,
     }),
   };
 }

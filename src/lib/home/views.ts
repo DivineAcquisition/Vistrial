@@ -106,6 +106,7 @@ export async function loadApprovalQueue(ctx: AuthContext): Promise<QueueItemView
         approver: choice.approver,
         role: ctx.role,
         isStaff: ctx.isStaff,
+        staffMayApprove: ctx.staffMayApprove,
         canApprove: ctx.member.canApprove,
         memberId: ctx.member.id,
         assignedMemberId: item.assigned_member_id,

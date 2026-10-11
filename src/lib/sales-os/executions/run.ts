@@ -26,6 +26,7 @@ import {
   type StructuredUpdate,
 } from "@/lib/sales-os/executions/format";
 import { canRunExecutions, decideGate, inputHash, parseGateMode } from "@/lib/sales-os/executions/gate";
+import { seatLabel } from "@/lib/staff/labels";
 import type {
   DestinationView,
   ExecutionPreview,
@@ -619,8 +620,8 @@ export async function runExecution(
   let approvedByName: string | null = null;
   const approver = claimed[0].approved_by_member_id;
   if (approver) {
-    const { data: member } = await actor.db.from("org_members").select("display_name").eq("id", approver).maybeSingle();
-    approvedByName = member?.display_name ?? null;
+    const { data: member } = await actor.db.from("org_members").select("display_name, seat").eq("id", approver).maybeSingle();
+    approvedByName = member ? seatLabel(member) : null;
   }
 
   try {
@@ -678,8 +679,8 @@ export async function loadExecutionPreview(
   const decider = data.approved_by_member_id ?? data.rejected_by_member_id;
   let decidedByName: string | null = null;
   if (decider) {
-    const { data: member } = await db.from("org_members").select("display_name").eq("id", decider).maybeSingle();
-    decidedByName = member?.display_name ?? null;
+    const { data: member } = await db.from("org_members").select("display_name, seat").eq("id", decider).maybeSingle();
+    decidedByName = member ? seatLabel(member) : null;
   }
   return {
     status: data.status as ExecutionPreview["status"],

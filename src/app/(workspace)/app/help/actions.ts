@@ -72,7 +72,7 @@ export async function followUpHelpRequest(
   const result = data as { org_id: string; from_team: boolean };
 
   if (result.from_team) {
-    await tellRequester(db, requestId, body);
+    await tellRequester(db, requestId);
   } else {
     await emailStaff({
       orgId: result.org_id,

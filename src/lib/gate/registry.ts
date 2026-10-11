@@ -93,10 +93,11 @@ export function canDecide(input: {
   role: "owner" | "member" | "operator" | null;
   canApprove: boolean;
   isStaff: boolean;
+  staffMayApprove?: boolean;
   isAssigned: boolean;
   assignedSomeone: boolean;
 }): boolean {
-  if (input.isStaff) return true;
+  if (input.isStaff) return Boolean(input.staffMayApprove);
   if (input.role === "owner") return true;
   if (input.rule === "owner_only") return false;
   const approver = input.role === "member" && input.canApprove;

@@ -2,7 +2,6 @@ import "server-only";
 
 import type { SupabaseClient } from "@supabase/supabase-js";
 
-import { containsContactDetails } from "@/lib/notifications/copy";
 import { queuePortalNotice } from "@/lib/portal/notices";
 
 export function excerpt(text: string): string {
@@ -10,8 +9,11 @@ export function excerpt(text: string): string {
   return flat.length > 280 ? `${flat.slice(0, 277)}…` : flat;
 }
 
-/** A team reply reaches the person who asked as a notice, by email, following their timing choice. */
-export async function tellRequester(db: SupabaseClient, requestId: string, body: string): Promise<void> {
+/**
+ * A team reply reaches the person who asked as a notice, by email, following
+ * their timing choice. The reply itself stays in the app, behind sign-in.
+ */
+export async function tellRequester(db: SupabaseClient, requestId: string): Promise<void> {
   const { data } = await db
     .from("help_requests")
     .select("org_id, created_by_member_id, topic")
@@ -24,7 +26,7 @@ export async function tellRequester(db: SupabaseClient, requestId: string, body:
     memberId: row.created_by_member_id,
     eventType: "help_reply",
     title: "Your Vistrial team replied",
-    body: containsContactDetails(body) ? "Open the request to read the reply." : excerpt(body),
+    body: "Open the request to read the reply.",
     path: `/app/help/${requestId}`,
     dedupeKey: `help-reply:${requestId}:${Date.now()}`,
   });

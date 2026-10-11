@@ -1,188 +1,90 @@
-import {
-  AssignStaffControl,
-  CreateWorkspaceForm,
-  OpenWorkspaceButton,
-  UnassignButton,
-  WorkspaceStatusControl,
-} from "@/app/(workspace)/app/team/team-forms";
+import Link from "next/link";
+
 import { PageFrame } from "@/components/app/page-frame";
 import { Panel } from "@/components/ui/panel";
 import { StatusBadge } from "@/components/ui/status-badge";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { requireStaff } from "@/lib/auth/gates";
-import { formatDay } from "@/lib/format";
-import { createClient } from "@/lib/supabase/server";
-import { cardTitle, helperClass } from "@/lib/ui";
-import { workspaceStatus } from "@/lib/workspaces/status";
+import { formatRelative } from "@/lib/format";
+import { HEALTH_LABEL, HEALTH_ORDER, HEALTH_TONE } from "@/lib/staff/health";
+import { loadQueueCounts, loadRoster } from "@/lib/staff/load";
+import { staffDb } from "@/lib/staff/db";
+import { cardTitle, helperClass, metricValue } from "@/lib/ui";
 
-/**
- * Every workspace the person may enter. Row-level security decides the list:
- * a Platform Admin sees all of them, Service Team only their assignments.
- */
-export default async function TeamWorkspacesPage() {
+export const dynamic = "force-dynamic";
+
+export const metadata = { title: "Today" };
+
+/** What changed, and what needs a person, across the workspaces this person works. */
+export default async function StaffTodayPage() {
   const ctx = await requireStaff();
-  const supabase = await createClient();
-
-  const [{ data: orgs }, { data: assignments }, { data: staff }, { data: templates }] = await Promise.all([
-    supabase
-      .from("organizations")
-      .select("id, name, slug, status, status_reason, created_at, is_platform_workspace")
-      .order("name", { ascending: true }),
-    ctx.isPlatformAdmin
-      ? supabase.from("workspace_assignments").select("org_id, user_id").is("ended_at", null)
-      : Promise.resolve({ data: [] as Array<{ org_id: string; user_id: string }> }),
-    ctx.isPlatformAdmin
-      ? supabase.from("platform_staff").select("user_id, display_name, role, active").eq("active", true)
-      : Promise.resolve({ data: [] as Array<{ user_id: string; display_name: string; role: string; active: boolean }> }),
-    supabase.from("config_templates").select("id, name").eq("status", "active").order("name"),
+  const scope = ctx.isPlatformAdmin ? "all" : "mine";
+  const db = await staffDb();
+  const [{ rows }, counts, sinceResult, statesResult] = await Promise.all([
+    loadRoster(scope),
+    loadQueueCounts(scope),
+    db.rpc("staff_mark_home_seen"),
+    db.from("workspace_health_state").select("org_id, level, previous_level, changed_at"),
   ]);
+  const since = typeof sinceResult.data === "string" ? sinceResult.data : new Date(0).toISOString();
+  const now = new Date().toISOString();
+  const changed = new Set(
+    ((statesResult.data ?? []) as Array<{ org_id: string; level: string; previous_level: string | null; changed_at: string }>)
+      .filter((row) => row.changed_at > since && row.previous_level && row.previous_level !== row.level)
+      .map((row) => row.org_id)
+  );
+  const attention = [...rows]
+    .filter((row) => row.health.level === "needs_attention" || row.health.level === "watch")
+    .sort((a, b) => HEALTH_ORDER[a.health.level] - HEALTH_ORDER[b.health.level] || a.name.localeCompare(b.name));
 
-  const names = new Map((staff ?? []).map((person) => [person.user_id, person.display_name]));
-  const serviceTeam = (staff ?? []).filter((person) => person.role === "service_team");
-  const assignedTo = (orgId: string) => (assignments ?? []).filter((row) => row.org_id === orgId);
+  const figures = [
+    { label: "Escalations", value: counts.escalations, href: "/app/team/queue" },
+    { label: "Requests waiting", value: counts.requests, href: "/app/team/queue" },
+    { label: "Overdue", value: counts.requests_overdue, href: "/app/team/queue" },
+    { label: "Data requests", value: counts.data_requests, href: "/app/team/data-requests" },
+    { label: "Runs to review", value: counts.failed_runs, href: "/app/team/agents" },
+  ];
 
   return (
     <PageFrame
-      title="Workspaces"
-      description={
-        ctx.isPlatformAdmin
-          ? "Every client workspace. Status, assignments and new workspaces are yours to manage."
-          : "The workspaces assigned to you. A Platform Admin manages assignments."
-      }
+      title="Today"
+      description={ctx.isPlatformAdmin ? "Every workspace." : "The workspaces assigned to you."}
     >
-      {ctx.isPlatformAdmin ? (
-        <Panel className="mb-8 p-6">
-          <h2 className={cardTitle}>New workspace</h2>
-          <div className="mt-4">
-            <CreateWorkspaceForm templates={templates ?? []} />
-          </div>
-        </Panel>
-      ) : null}
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-5">
+        {figures.map((figure) => (
+          <Link key={figure.label} href={figure.href}>
+            <Panel className="p-4">
+              <p className={metricValue}>{figure.value}</p>
+              <p className={helperClass}>{figure.label}</p>
+            </Panel>
+          </Link>
+        ))}
+      </div>
 
-      <ul className="grid gap-3 md:hidden">
-        {(orgs ?? []).map((org) => {
-          const status = workspaceStatus(org.status);
-          const assigned = assignedTo(org.id);
-          const assignedIds = new Set(assigned.map((row) => row.user_id));
-          return (
-            <li key={org.id}>
-              <Panel className="space-y-3 p-4">
-                <div className="min-w-0">
-                  <p className="truncate font-medium text-white" title={org.name}>
-                    {org.name}
-                  </p>
-                  <p className={helperClass}>
-                    {org.slug}
-                    {org.is_platform_workspace ? " · Vistrial's own" : ""}
-                  </p>
-                </div>
-                <div>
-                  {ctx.isPlatformAdmin ? (
-                    <WorkspaceStatusControl orgId={org.id} status={org.status} />
-                  ) : (
-                    <StatusBadge label={status.label} tone={status.tone} />
-                  )}
-                  {org.status_reason ? <p className={helperClass}>{org.status_reason}</p> : null}
-                </div>
-                {ctx.isPlatformAdmin ? (
-                  <div>
-                    <div className="flex flex-wrap gap-1">
-                      {assigned.map((row) => (
-                        <UnassignButton
-                          key={row.user_id}
-                          orgId={org.id}
-                          userId={row.user_id}
-                          name={names.get(row.user_id) ?? "Someone"}
-                        />
-                      ))}
-                    </div>
-                    <AssignStaffControl
-                      orgId={org.id}
-                      options={serviceTeam
-                        .filter((person) => !assignedIds.has(person.user_id))
-                        .map((person) => ({ userId: person.user_id, name: person.display_name }))}
-                    />
-                  </div>
-                ) : null}
-                <div>
-                  {org.id === ctx.org.id ? (
-                    <StatusBadge label="Open now" tone="brand" />
-                  ) : (
-                    <OpenWorkspaceButton orgId={org.id} />
-                  )}
-                </div>
-              </Panel>
-            </li>
-          );
-        })}
-      </ul>
-
-      <Panel className="hidden overflow-hidden px-2 py-2 sm:px-4 md:block">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Workspace</TableHead>
-              <TableHead>Status</TableHead>
-              {ctx.isPlatformAdmin ? <TableHead>Assigned</TableHead> : null}
-              <TableHead className="hidden md:table-cell">Created</TableHead>
-              <TableHead></TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {(orgs ?? []).map((org) => {
-              const status = workspaceStatus(org.status);
-              const assigned = assignedTo(org.id);
-              const assignedIds = new Set(assigned.map((row) => row.user_id));
-              return (
-                <TableRow key={org.id}>
-                  <TableCell className="text-white">
-                    <div>{org.name}</div>
-                    <div className={helperClass}>
-                      {org.slug}
-                      {org.is_platform_workspace ? " · Vistrial's own" : ""}
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    {ctx.isPlatformAdmin ? (
-                      <WorkspaceStatusControl orgId={org.id} status={org.status} />
-                    ) : (
-                      <StatusBadge label={status.label} tone={status.tone} />
-                    )}
-                    {org.status_reason ? <p className={helperClass}>{org.status_reason}</p> : null}
-                  </TableCell>
-                  {ctx.isPlatformAdmin ? (
-                    <TableCell>
-                      <div className="flex flex-wrap gap-1">
-                        {assigned.map((row) => (
-                          <UnassignButton
-                            key={row.user_id}
-                            orgId={org.id}
-                            userId={row.user_id}
-                            name={names.get(row.user_id) ?? "Someone"}
-                          />
-                        ))}
-                      </div>
-                      <AssignStaffControl
-                        orgId={org.id}
-                        options={serviceTeam
-                          .filter((person) => !assignedIds.has(person.user_id))
-                          .map((person) => ({ userId: person.user_id, name: person.display_name }))}
-                      />
-                    </TableCell>
-                  ) : null}
-                  <TableCell className="hidden text-silver md:table-cell">{formatDay(org.created_at)}</TableCell>
-                  <TableCell>
-                    {org.id === ctx.org.id ? (
-                      <StatusBadge label="Open now" tone="brand" />
-                    ) : (
-                      <OpenWorkspaceButton orgId={org.id} />
-                    )}
-                  </TableCell>
-                </TableRow>
-              );
-            })}
-          </TableBody>
-        </Table>
+      <Panel className="p-6">
+        <h2 className={cardTitle}>Needs a look</h2>
+        {attention.length ? (
+          <ul className="mt-3 divide-y divide-white/[0.06]">
+            {attention.map((row) => (
+              <li key={row.org_id} className="flex flex-wrap items-start justify-between gap-3 py-3">
+                <span className="min-w-0">
+                  <Link href={`/app/team/workspaces/${row.org_id}`} className="text-sm font-medium text-white">
+                    {row.name}
+                  </Link>
+                  <span className={`block ${helperClass}`}>
+                    {row.health.factors[0]?.label ?? HEALTH_LABEL[row.health.level]}
+                    {row.last_activity_at ? ` · last activity ${formatRelative(row.last_activity_at, now)}` : ""}
+                  </span>
+                </span>
+                <span className="flex items-center gap-2">
+                  {changed.has(row.org_id) ? <StatusBadge label="Changed" tone="brand" /> : null}
+                  <StatusBadge label={HEALTH_LABEL[row.health.level]} tone={HEALTH_TONE[row.health.level]} />
+                </span>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p className={`mt-2 ${helperClass}`}>Nothing is flagged. Open the roster to look through the workspaces.</p>
+        )}
       </Panel>
     </PageFrame>
   );

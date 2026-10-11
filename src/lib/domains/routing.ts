@@ -77,7 +77,8 @@ export function isAuthPath(path: string): boolean {
     path === "/login" ||
     path === "/no-access" ||
     pathIs(path, "/auth") ||
-    pathIs(path, "/accept-invite")
+    pathIs(path, "/accept-invite") ||
+    pathIs(path, "/security")
   );
 }
 

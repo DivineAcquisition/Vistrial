@@ -35,10 +35,30 @@ export async function requestData(_prev: SettingsSaveResult, formData: FormData)
       note ? `Their note: ${note}` : "They did not add a note.",
       "Nothing happens automatically. Update the request when it is done or if you decline it.",
     ],
-    href: "/app/team/requests",
+    href: "/app/team/data-requests",
     ctaLabel: "Open requests",
     idempotencyKey: `data-request:${result.id}`,
   });
+  revalidatePath("/app/settings/privacy");
+  return { status: "saved" };
+}
+
+export async function cancelDataRequestForm(formData: FormData): Promise<void> {
+  await cancelDataRequest(String(formData.get("id") ?? ""));
+}
+
+export async function cancelDataRequest(requestId: string): Promise<SettingsSaveResult> {
+  const ctx = await getAuthContext();
+  if (!canRequestData(ctx)) return { status: "error", error: "Only an owner can cancel this." };
+  const db = (await createClient()) as unknown as SupabaseClient;
+  const { error } = await db.rpc("data_request_act", {
+    p_request_id: requestId,
+    p_action: "cancel",
+    p_note: "Cancelled by the Owner.",
+    p_user_id: null,
+    p_expected: null,
+  });
+  if (error) return { status: "error", error: "It can no longer be cancelled." };
   revalidatePath("/app/settings/privacy");
   return { status: "saved" };
 }

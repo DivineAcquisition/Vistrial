@@ -1,15 +1,9 @@
 import type { ReactNode } from "react";
 
-import { TeamNav } from "@/app/(workspace)/app/team/team-nav";
 import { requireStaff } from "@/lib/auth/gates";
 
-/** Vistrial staff only. Customers are sent back to their own app. */
+/** Vistrial staff only. Customers never reach these pages. The shell is the navigation. */
 export default async function TeamLayout({ children }: { children: ReactNode }) {
   await requireStaff();
-  return (
-    <>
-      <TeamNav />
-      {children}
-    </>
-  );
+  return children;
 }

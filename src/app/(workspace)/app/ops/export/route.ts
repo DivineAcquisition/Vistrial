@@ -15,6 +15,8 @@ export async function GET(request: Request) {
   if (!orgId) {
     return NextResponse.json({ error: "orgId is required." }, { status: 400 });
   }
+  const { assertRecentAuth } = await import("@/lib/staff/mfa-check");
+  await assertRecentAuth(`/app/ops/export?orgId=${orgId}`);
   try {
     const bundle = await buildOrgExport(getSupabaseAdmin(), orgId);
     const body = exportJson(bundle);

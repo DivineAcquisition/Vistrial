@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 import { AddStaffForm, StaffRow } from "@/app/(workspace)/app/team/team-forms";
 import { PageFrame } from "@/components/app/page-frame";
 import { Panel } from "@/components/ui/panel";
@@ -63,12 +65,19 @@ export default async function TeamStaffPage() {
                   <TableCell className="hidden text-silver md:table-cell">{formatDay(person.created_at)}</TableCell>
                   <TableCell>
                     {person.active ? (
-                      <StaffRow
-                        userId={person.user_id}
-                        role={person.role}
-                        templateAccess={person.template_access}
-                        isSelf={person.user_id === ctx.user.id}
-                      />
+                      <div className="space-y-2">
+                        <StaffRow
+                          userId={person.user_id}
+                          role={person.role}
+                          templateAccess={person.template_access}
+                          isSelf={person.user_id === ctx.user.id}
+                        />
+                        {person.user_id !== ctx.user.id ? (
+                          <Link href={`/app/team/staff/${person.user_id}`} className="text-xs text-brand-300 underline">
+                            Hand over and deactivate
+                          </Link>
+                        ) : null}
+                      </div>
                     ) : (
                       <StatusBadge
                         label={person.deactivated_at ? `Deactivated ${formatDay(person.deactivated_at)}` : "Inactive"}

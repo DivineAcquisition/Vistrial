@@ -46,7 +46,7 @@ export default async function SimulatorPage() {
   return (
     <PageFrame
       title="Agent simulator"
-      description="Plays scripted agent runs so the live screens can be checked end to end. Nothing leaves Vistrial."
+      description="Plays scripted agent runs so the live screens can be checked end to end. Nothing leaves Vistrial. A pause made here is labelled as a simulation and is not a customer's pause."
       breadcrumbs={[
         { href: "/app/agents", label: "Agents" },
         { href: "/app/agents/simulator", label: "Simulator" },

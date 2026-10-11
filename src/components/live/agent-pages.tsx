@@ -8,6 +8,7 @@ import { setAgentPausedAction } from "@/app/(workspace)/app/agents/actions";
 import { AgentGlyph, formatClock, PresenceLabel, toneText } from "@/components/live/agent-identity";
 import { useLiveState, usePresence, useRecentlyTouched } from "@/components/live/live-provider";
 import { useRunViewer } from "@/components/live/run-viewer";
+import { useOrg } from "@/components/app/org-provider";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
@@ -129,7 +130,9 @@ export function AgentDetail({
   const presence = usePresence().find((item) => item.agentId === agentId)!;
   const liveControl = live.controls.get(agentId) ?? control;
   const paused = liveControl?.paused === true;
+  const org = useOrg();
   const [error, setError] = useState<string | null>(null);
+  const [reason, setReason] = useState("");
   const [pending, startTransition] = useTransition();
 
   const openRuns = useMemo(() => {
@@ -147,7 +150,11 @@ export function AgentDetail({
 
   const setPaused = async (next: boolean) => {
     setError(null);
-    const result = await setAgentPausedAction(agentId, next);
+    if (next && org.isStaff && !reason.trim()) {
+      setError("Say why you are pausing it. The Owner sees this.");
+      return;
+    }
+    const result = await setAgentPausedAction(agentId, next, reason.trim() || undefined);
     if (!result.ok) setError(result.error);
     else router.refresh();
   };
@@ -198,7 +205,16 @@ export function AgentDetail({
                 description={`${agent.name} stops starting new work in this workspace. Work in progress pauses at its next step. Nothing is lost.`}
                 confirmLabel={`Pause ${agent.name}`}
                 onConfirm={() => setPaused(true)}
-              />
+              >
+                {org.isStaff ? (
+                  <Input
+                    aria-label="Why you are pausing it"
+                    placeholder="Why you are pausing it. The Owner sees this."
+                    value={reason}
+                    onChange={(event) => setReason(event.target.value)}
+                  />
+                ) : null}
+              </ConfirmDialog>
             )
           ) : null}
         </div>

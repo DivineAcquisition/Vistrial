@@ -1,8 +1,8 @@
 "use client";
 
-import { type ReactNode, Suspense } from "react";
+import { type ReactNode, Suspense, useEffect, useState } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 
 import { ApplicationShell } from "@/components/app/application-shell";
 import { BriefPrefetcher } from "@/components/app/brief-prefetcher";
@@ -23,6 +23,7 @@ import { useOrg } from "@/components/app/org-provider";
 import { LiveStatusStrip } from "@/components/live/agent-panel";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import type { PaymentProblem } from "@/lib/billing/labels";
+import { exitWorkspace } from "@/app/(workspace)/app/team/staff-actions";
 import { landingPath } from "@/lib/navigation";
 import {
   isPlatformRoute,
@@ -37,12 +38,16 @@ export function AppShell({
   lostWorkspace = false,
   paymentProblem = null,
   version,
+  staffSessionEndsAt = null,
+  mfaGraceUntil = null,
 }: {
   children: ReactNode;
   counts: AttentionCounts;
   lostWorkspace?: boolean;
   paymentProblem?: PaymentProblem | null;
   version: string;
+  staffSessionEndsAt?: string | null;
+  mfaGraceUntil?: string | null;
 }) {
   const pathname = usePathname();
   if (pathname.startsWith("/app/layouts/preview")) return children;
@@ -54,6 +59,8 @@ export function AppShell({
         lostWorkspace={lostWorkspace}
         paymentProblem={paymentProblem}
         version={version}
+        staffSessionEndsAt={staffSessionEndsAt}
+        mfaGraceUntil={mfaGraceUntil}
       >
         {children}
       </ConnectedShell>
@@ -67,12 +74,16 @@ function ConnectedShell({
   lostWorkspace,
   paymentProblem,
   version,
+  staffSessionEndsAt,
+  mfaGraceUntil,
 }: {
   children: ReactNode;
   counts: AttentionCounts;
   lostWorkspace: boolean;
   paymentProblem: PaymentProblem | null;
   version: string;
+  staffSessionEndsAt: string | null;
+  mfaGraceUntil: string | null;
 }) {
   const pathname = usePathname();
   const org = useOrg();
@@ -119,7 +130,7 @@ function ConnectedShell({
           collapsed={placement === "header" ? true : collapsed}
         />
       )}
-      cue={showCue ? <StaffCue /> : null}
+      cue={showCue ? <StaffCue endsAt={staffSessionEndsAt} /> : null}
       strip={<LiveStatusStrip />}
       banner={
         <>
@@ -130,6 +141,18 @@ function ConnectedShell({
             </Alert>
           ) : null}
           <WorkspaceStatusBanner />
+          {mfaGraceUntil ? (
+            <Alert variant="warning" className="mb-6">
+              <AlertTitle>Set up your authenticator app</AlertTitle>
+              <AlertDescription>
+                The Vistrial team will need an authenticator app after {new Date(mfaGraceUntil).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric", timeZone: "UTC" })}.{" "}
+                <Link href="/security/setup?next=/app/team" className="underline">
+                  Set it up now
+                </Link>
+                . Recovery codes are shown once.
+              </AlertDescription>
+            </Alert>
+          ) : null}
           {paymentProblem && !pathname.startsWith("/app/settings/billing") ? (
             <Alert variant="warning" className="mb-6">
               <AlertTitle>The last payment to Vistrial did not go through</AlertTitle>
@@ -159,7 +182,7 @@ function ConnectedShell({
   );
 }
 
-function StaffCue() {
+function StaffCue({ endsAt }: { endsAt: string | null }) {
   const { org, isPlatformAdmin } = useOrg();
   return (
     <div className="print:hidden">
@@ -174,7 +197,32 @@ function StaffCue() {
           {org.isPlatformWorkspace ? "Vistrial's own workspace" : "Working inside"}{" "}
           <span className="font-medium">{org.name}</span>
         </span>
+        {endsAt ? <SessionClock endsAt={endsAt} /> : null}
+        {endsAt ? (
+          <form action={exitWorkspace} className="ml-auto shrink-0">
+            <button type="submit" className="font-medium text-brand-300 underline">
+              Exit
+            </button>
+          </form>
+        ) : null}
       </div>
     </div>
   );
+}
+
+function SessionClock({ endsAt }: { endsAt: string }) {
+  const router = useRouter();
+  const [now, setNow] = useState<number | null>(null);
+  useEffect(() => {
+    const tick = () => setNow(Date.now());
+    tick();
+    const id = setInterval(tick, 30_000);
+    return () => clearInterval(id);
+  }, []);
+  const minutes = now === null ? null : Math.max(0, Math.round((Date.parse(endsAt) - now) / 60_000));
+  useEffect(() => {
+    if (minutes === 0) router.refresh();
+  }, [minutes, router]);
+  if (minutes === null) return null;
+  return <span className="shrink-0 text-muted-foreground">{minutes} min left</span>;
 }

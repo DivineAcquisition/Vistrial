@@ -28,7 +28,7 @@ export type ShellIcon =
   | "agents"
   | "health";
 
-export type AttentionKey = "approvals" | "dueToday" | "escalations";
+export type AttentionKey = "approvals" | "dueToday" | "escalations" | "queue";
 
 export type AttentionCounts = Record<AttentionKey, number>;
 
@@ -102,12 +102,6 @@ export const HIDDEN_NAV: HiddenNavItem[] = [
     roles: "Owner, Operator, Service Team, Admin",
     reason:
       "The conversation stays at /app/ask and in search. It is not a new role destination in this shell.",
-  },
-  {
-    id: "escalations",
-    label: "Escalations",
-    roles: "Service Team, Admin",
-    reason: "No escalations screen yet. Escalated items stay on Home.",
   },
   {
     id: "operator-logs",
@@ -325,13 +319,53 @@ function staffGroups(input: {
 }): ShellNavGroup[] {
   const team: ShellNavItem[] = [
     {
-      id: "roster",
-      label: "Client Roster",
+      id: "staff-home",
+      label: "Today",
       href: "/app/team",
       match: "/app/team",
+      icon: "today",
+      description: "What needs you across your workspaces.",
+      phone: 1,
+    },
+    {
+      id: "queue",
+      label: "Queue",
+      href: "/app/team/queue",
+      match: "/app/team/queue",
+      icon: "leads",
+      description: "Requests and escalations.",
+      badge: "queue",
+      phone: 2,
+    },
+    {
+      id: "roster",
+      label: "Client Roster",
+      href: "/app/team/roster",
+      match: "/app/team/roster",
       icon: "roster",
       description: "Workspaces you can enter.",
-      phone: 1,
+      phone: 3,
+    },
+    {
+      id: "connections",
+      label: "Connections",
+      href: "/app/team/connections",
+      match: "/app/team/connections",
+      icon: "configuration",
+    },
+    {
+      id: "oversight",
+      label: "Agent oversight",
+      href: "/app/team/agents",
+      match: "/app/team/agents",
+      icon: "agents",
+    },
+    {
+      id: "notices",
+      label: "Review notices",
+      href: "/app/team/notices",
+      match: "/app/team/notices",
+      icon: "activity",
     },
   ];
   if (input.templateAccess) {
@@ -341,7 +375,6 @@ function staffGroups(input: {
       href: "/app/team/templates",
       match: "/app/team/templates",
       icon: "templates",
-      phone: 2,
     });
   }
 
@@ -363,10 +396,52 @@ function staffGroups(input: {
       items: [
         {
           id: "activity",
-          label: "Activity Log",
+          label: "Audit log",
           href: "/app/team/activity",
           match: "/app/team/activity",
           icon: "activity",
+        },
+        {
+          id: "staff",
+          label: "Staff",
+          href: "/app/team/staff",
+          match: "/app/team/staff",
+          icon: "profile",
+        },
+        {
+          id: "metrics",
+          label: "Metrics",
+          href: "/app/team/metrics",
+          match: "/app/team/metrics",
+          icon: "results",
+        },
+        {
+          id: "health-rules",
+          label: "Health rules",
+          href: "/app/team/health-rules",
+          match: "/app/team/health-rules",
+          icon: "health",
+        },
+        {
+          id: "support",
+          label: "Support",
+          href: "/app/team/support",
+          match: "/app/team/support",
+          icon: "settings",
+        },
+        {
+          id: "sign-in",
+          label: "Sign-in",
+          href: "/app/team/security",
+          match: "/app/team/security",
+          icon: "defaults",
+        },
+        {
+          id: "updates",
+          label: "What is new",
+          href: "/app/team/updates",
+          match: "/app/team/updates",
+          icon: "layouts",
         },
         {
           id: "defaults",
@@ -395,7 +470,7 @@ function staffGroups(input: {
       match: HOME_PATH,
       icon: "overview",
       badge: "escalations",
-      phone: 3,
+      phone: 4,
     },
     {
       id: "cases",
@@ -403,7 +478,6 @@ function staffGroups(input: {
       href: "/app/cases",
       match: "/app/cases",
       icon: "cases",
-      phone: 4,
     },
     resultsItem(true),
     AGENTS_ITEM,
@@ -428,8 +502,16 @@ export function isPlatformRoute(pathname: string): boolean {
 }
 
 export function isShellItemActive(pathname: string, hash: string, item: ShellNavItem): boolean {
+  if (item.id === "staff-home") return pathname === "/app/team";
   if (item.id === "roster") {
-    return pathname === "/app/team";
+    return pathname === "/app/team/roster" || pathname.startsWith("/app/team/workspaces/");
+  }
+  if (item.id === "queue") {
+    return (
+      pathname.startsWith("/app/team/queue") ||
+      pathname.startsWith("/app/team/requests") ||
+      pathname.startsWith("/app/team/data-requests")
+    );
   }
   if (item.id === "templates") {
     return (
@@ -464,11 +546,22 @@ const TITLE_RULES: Array<{ prefix: string; title: string; crumbs: Array<{ href: 
     { href: "/app/team/templates/platform", label: "Platform Defaults" },
   ] },
   { prefix: "/app/team/templates", title: "Templates", crumbs: [{ href: "/app/team/templates", label: "Templates" }] },
-  { prefix: "/app/team/activity", title: "Activity Log", crumbs: [{ href: "/app/team/activity", label: "Activity Log" }] },
-  { prefix: "/app/team/staff", title: "Staff", crumbs: [{ href: "/app/team", label: "Client Roster" }, { href: "/app/team/staff", label: "Staff" }] },
-  { prefix: "/app/team/holds", title: "Holding area", crumbs: [{ href: "/app/team", label: "Client Roster" }, { href: "/app/team/holds", label: "Holding area" }] },
-  { prefix: "/app/team/notices", title: "Review notices", crumbs: [{ href: "/app/team", label: "Client Roster" }, { href: "/app/team/notices", label: "Review notices" }] },
-  { prefix: "/app/team", title: "Client Roster", crumbs: [{ href: "/app/team", label: "Client Roster" }] },
+  { prefix: "/app/team/activity", title: "Audit log", crumbs: [{ href: "/app/team/activity", label: "Audit log" }] },
+  { prefix: "/app/team/queue", title: "Requests and escalations", crumbs: [{ href: "/app/team/queue", label: "Queue" }] },
+  { prefix: "/app/team/roster", title: "Client Roster", crumbs: [{ href: "/app/team/roster", label: "Client Roster" }] },
+  { prefix: "/app/team/connections", title: "Connections", crumbs: [{ href: "/app/team/connections", label: "Connections" }] },
+  { prefix: "/app/team/agents", title: "Agent oversight", crumbs: [{ href: "/app/team/agents", label: "Agent oversight" }] },
+  { prefix: "/app/team/data-requests", title: "Data requests", crumbs: [{ href: "/app/team/queue", label: "Queue" }, { href: "/app/team/data-requests", label: "Data requests" }] },
+  { prefix: "/app/team/metrics", title: "Metrics", crumbs: [{ href: "/app/team/metrics", label: "Metrics" }] },
+  { prefix: "/app/team/health-rules", title: "Health rules", crumbs: [{ href: "/app/team/health-rules", label: "Health rules" }] },
+  { prefix: "/app/team/support", title: "Support", crumbs: [{ href: "/app/team/support", label: "Support" }] },
+  { prefix: "/app/team/security", title: "Sign-in", crumbs: [{ href: "/app/team/security", label: "Sign-in" }] },
+  { prefix: "/app/team/enter", title: "Enter workspace", crumbs: [{ href: "/app/team/roster", label: "Client Roster" }, { href: "/app/team/enter", label: "Enter" }] },
+  { prefix: "/app/team/staff", title: "Staff", crumbs: [{ href: "/app/team/staff", label: "Staff" }] },
+  { prefix: "/app/team/holds", title: "Holding area", crumbs: [{ href: "/app/team/holds", label: "Holding area" }] },
+  { prefix: "/app/team/notices", title: "Review notices", crumbs: [{ href: "/app/team/notices", label: "Review notices" }] },
+  { prefix: "/app/team/workspaces", title: "Workspace", crumbs: [{ href: "/app/team/roster", label: "Client Roster" }, { href: "", label: "Workspace" }] },
+  { prefix: "/app/team", title: "Today", crumbs: [{ href: "/app/team", label: "Today" }] },
   { prefix: "/app/ops", title: "System", crumbs: [{ href: "/app/ops", label: "System" }] },
   { prefix: "/app/settings/configuration", title: "Configuration", crumbs: [
     { href: "/app/settings", label: "Settings" },
@@ -531,12 +624,19 @@ export function layoutKindForPath(pathname: string): PageLayoutKind {
     return "message";
   }
   if (
-    pathname === "/app/team" ||
+    pathname === "/app/team/roster" ||
+    pathname.startsWith("/app/team/queue") ||
+    pathname.startsWith("/app/team/connections") ||
     pathname.startsWith("/app/team/activity") ||
     pathname.startsWith("/app/team/staff") ||
-    pathname.startsWith("/app/team/holds")
+    pathname.startsWith("/app/team/holds") ||
+    pathname.startsWith("/app/team/agents")
   ) {
     return "table";
+  }
+  if (pathname === "/app/team") return "dashboard";
+  if (/^\/app\/team\/workspaces\/[^/]+/.test(pathname) || /^\/app\/team\/data-requests\/[^/]+/.test(pathname)) {
+    return "record";
   }
   if (/^\/app\/cases\/[^/]+/.test(pathname) || /^\/app\/calls\/[^/]+/.test(pathname)) return "record";
   if (

@@ -8,6 +8,9 @@ import { enforceHostForPerson } from "@/lib/domains/host-guard";
 import { loadCalmMode, loadLiveSnapshot, type LiveSnapshot } from "@/lib/live/load";
 import { loadAttentionCounts } from "@/lib/shell/attention";
 import { loadPaymentProblem } from "@/lib/billing/banner";
+import { mfaPrompt, mfaSelf } from "@/lib/staff/mfa-check";
+import { guardStaffSession } from "@/lib/staff/session";
+import { redirect } from "next/navigation";
 import packageJson from "../../../package.json";
 
 export const dynamic = "force-dynamic";
@@ -29,12 +32,16 @@ export default async function WorkspaceLayout({ children }: { children: React.Re
     waiting: [],
     loadedAt: new Date().toISOString(),
   };
-  const [counts, snapshot, calm, paymentProblem] = await Promise.all([
+  const [counts, snapshot, calm, paymentProblem, session, mfa] = await Promise.all([
     loadAttentionCounts(ctx),
     loadLiveSnapshot(ctx.org.id).catch(() => emptySnapshot),
     loadCalmMode(ctx.user.id).catch(() => false),
     loadPaymentProblem(ctx).catch(() => null),
+    guardStaffSession(ctx),
+    ctx.platformRole ? mfaSelf() : Promise.resolve(null),
   ]);
+  const prompt = mfaPrompt(mfa);
+  if (prompt.lock) redirect("/security/setup?next=/app/team");
 
   return (
     <OrgProvider value={toClientOrgState(ctx)} key={ctx.org.id}>
@@ -46,6 +53,8 @@ export default async function WorkspaceLayout({ children }: { children: React.Re
               lostWorkspace={ctx.lostWorkspace}
               paymentProblem={paymentProblem}
               version={packageJson.version}
+              staffSessionEndsAt={session?.state === "active" ? session.ends_at : null}
+              mfaGraceUntil={prompt.graceUntil}
             >
               {children}
             </AppShell>

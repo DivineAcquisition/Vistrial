@@ -53,7 +53,7 @@ describe("shell navigation", () => {
     const here = nav.groups.find((group) => group.id === "here");
     expect(here?.label).toBe("Acme Roofing");
     expect(here?.items.map((item) => item.label)).toEqual(["Overview", "Case Files", "Results", "Agents", "Configuration"]);
-    expect(nav.phone.map((item) => item.label)).toEqual(["Client Roster", "Templates", "Overview", "Case Files"]);
+    expect(nav.phone.map((item) => item.label)).toEqual(["Today", "Queue", "Client Roster", "Overview"]);
     expect(shellNavigation({ role: "service_team", templateAccess: true }).groups.find((g) => g.id === "here")?.label).toBe(
       "This workspace",
     );
@@ -63,7 +63,8 @@ describe("shell navigation", () => {
     const labelsForAdmin = labels("platform_admin", { templateAccess: true });
     expect(labelsForAdmin).toContain("Client Roster");
     expect(labelsForAdmin).toContain("Templates");
-    expect(labelsForAdmin).toContain("Activity Log");
+    expect(labelsForAdmin).toContain("Audit log");
+    expect(labelsForAdmin).toContain("Queue");
     expect(labelsForAdmin).toContain("Platform Defaults");
     expect(labelsForAdmin).toContain("Layouts");
     expect(labelsForAdmin).toContain("Agent Health");
@@ -78,7 +79,6 @@ describe("shell navigation", () => {
       "member-approvals",
       "member-agents",
       "ask",
-      "escalations",
       "operator-logs",
       "onboarding",
       "assignments",
@@ -114,7 +114,8 @@ describe("shell navigation", () => {
     expect(layoutKindForPath("/app/home")).toBe("dashboard");
     expect(layoutKindForPath("/app/cases")).toBe("list-detail");
     expect(layoutKindForPath("/app/cases/abc")).toBe("record");
-    expect(layoutKindForPath("/app/team")).toBe("table");
+    expect(layoutKindForPath("/app/team")).toBe("dashboard");
+    expect(layoutKindForPath("/app/team/roster")).toBe("table");
     expect(layoutKindForPath("/app/onboarding")).toBe("workflow");
     expect(layoutKindForPath("/app/ask")).toBe("chat");
     expect(layoutKindForPath("/login")).toBe("message");

@@ -5,7 +5,6 @@ import { revalidatePath } from "next/cache";
 
 import { ORG_COOKIE_NAME, orgCookieOptions } from "@/lib/auth/cookies";
 import { getAuthContext } from "@/lib/auth/session";
-import { logWorkspaceActivity } from "@/lib/workspaces/activity";
 import { landingPath } from "@/lib/navigation";
 
 /**
@@ -25,12 +24,8 @@ export async function switchOrg(orgId: string) {
   cookieStore.set(ORG_COOKIE_NAME, orgId, orgCookieOptions);
 
   if (ctx.platformRole && orgId !== ctx.org.id) {
-    await logWorkspaceActivity({
-      actorUserId: ctx.user.id,
-      orgId,
-      action: "workspace.entered",
-      detail: { from_org_id: ctx.org.id },
-    });
+    const { staffDb } = await import("@/lib/staff/db");
+    await (await staffDb()).rpc("staff_session_exit");
   }
 
   revalidatePath("/", "layout");

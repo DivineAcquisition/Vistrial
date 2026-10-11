@@ -57,6 +57,7 @@ export const OPS_JOB_NAMES = [
   "agent-runtime",
   "forsight-reports",
   "home-agents",
+  "staff-workspace",
 ] as const;
 
 export type OpsJobName = (typeof OPS_JOB_NAMES)[number];

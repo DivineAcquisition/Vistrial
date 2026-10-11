@@ -32,7 +32,7 @@ const SIDEBAR_SIZE = {
   "--sidebar-width-icon": "3.5rem",
 } as CSSProperties;
 
-const EMPTY_COUNTS: AttentionCounts = { approvals: 0, dueToday: 0, escalations: 0 };
+const EMPTY_COUNTS: AttentionCounts = { approvals: 0, dueToday: 0, escalations: 0, queue: 0 };
 
 export function ApplicationShell({
   children,

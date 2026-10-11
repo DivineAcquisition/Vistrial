@@ -39,6 +39,10 @@ export async function fetchRunDetail(runId: string): Promise<Result<RunDetail>> 
 export async function setAgentPausedAction(agentId: string, paused: boolean, reason?: string): Promise<Result<null>> {
   if (!isLiveAgentId(agentId)) return { ok: false, error: "Unknown agent." };
   const ctx = await getAuthContext();
+  if (ctx.isStaff && paused) {
+    const { assertRecentAuth } = await import("@/lib/staff/mfa-check");
+    await assertRecentAuth(`/app/agents/${agentId}`);
+  }
   const db = await createClient();
   const { error } = await (db as unknown as { rpc: (fn: string, args: object) => Promise<{ error: { message: string } | null }> }).rpc(
     "set_agent_paused",

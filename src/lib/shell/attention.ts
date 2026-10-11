@@ -2,9 +2,20 @@ import "server-only";
 
 import type { AuthContext } from "@/lib/auth/types";
 import type { AttentionCounts } from "@/lib/shell/nav";
+import { loadQueueCounts } from "@/lib/staff/load";
+import type { StaffScope } from "@/lib/staff/types";
 import { createClient } from "@/lib/supabase/server";
 
-const EMPTY: AttentionCounts = { approvals: 0, dueToday: 0, escalations: 0 };
+async function loadStaffQueueBadge(scope: StaffScope): Promise<number> {
+  try {
+    const counts = await loadQueueCounts(scope);
+    return counts.escalations + counts.requests + counts.data_requests;
+  } catch {
+    return 0;
+  }
+}
+
+const EMPTY: AttentionCounts = { approvals: 0, dueToday: 0, escalations: 0, queue: 0 };
 
 /**
  * Counts for nav badges. Read with the caller's own session, so row-level
@@ -34,10 +45,12 @@ export async function loadAttentionCounts(ctx: AuthContext): Promise<AttentionCo
         .not("escalated_at", "is", null)
         .in("status", ["pending", "running", "failed"]),
     ]);
+    const queue = ctx.isStaff ? await loadStaffQueueBadge(ctx.isPlatformAdmin ? "all" : "mine") : 0;
     return {
       approvals: approvals.count ?? 0,
       dueToday: due.count ?? 0,
       escalations: escalations.count ?? 0,
+      queue,
     };
   } catch {
     return EMPTY;

@@ -2,10 +2,15 @@ export type StatusTone = "good" | "warning" | "neutral";
 
 export const DATA_REQUEST_STATUS: Record<string, { label: string; tone: StatusTone }> = {
   received: { label: "Received", tone: "neutral" },
+  in_review: { label: "In review", tone: "warning" },
+  approved: { label: "Approved", tone: "warning" },
   in_progress: { label: "In progress", tone: "warning" },
   completed: { label: "Done", tone: "good" },
   declined: { label: "Declined", tone: "neutral" },
+  cancelled: { label: "Cancelled", tone: "neutral" },
 };
+
+export const OPEN_DATA_REQUEST = new Set(["received", "in_review", "approved", "in_progress"]);
 
 export const HELP_STATUS: Record<string, { label: string; tone: StatusTone }> = {
   received: { label: "With your team", tone: "neutral" },

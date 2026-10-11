@@ -12,6 +12,10 @@ export async function GET() {
   if (!canManageOrgSettings(ctx.role, ctx.isStaff)) {
     return new NextResponse("Forbidden", { status: 403 });
   }
+  if (ctx.isStaff) {
+    const { assertRecentAuth } = await import("@/lib/staff/mfa-check");
+    await assertRecentAuth("/app/settings/data");
+  }
   try {
     const bundle = await buildOrgExport(getSupabaseAdmin(), ctx.org.id);
     const body = exportJson(bundle);

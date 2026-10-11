@@ -84,6 +84,7 @@ export function pathRefreshesAuthSession(path: string): boolean {
     path === "/login" ||
     path === "/no-access" ||
     path.startsWith("/auth/") ||
-    path.startsWith("/accept-invite/")
+    path.startsWith("/accept-invite/") ||
+    path.startsWith("/security")
   );
 }

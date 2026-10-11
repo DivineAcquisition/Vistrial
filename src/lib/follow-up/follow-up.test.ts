@@ -432,10 +432,11 @@ describe("canApproveFollowUp", () => {
     expect(canApproveFollowUp({ role: "operator" })).toBe(false);
   });
 
-  it("lets owners and staff approve", () => {
+  it("lets owners approve, and staff only where the Owner allowed it", () => {
     expect(canApproveFollowUp({ role: "owner" })).toBe(true);
     expect(canApproveFollowUp({ role: "admin" })).toBe(true);
-    expect(canApproveFollowUp({ role: "setter", isStaff: true })).toBe(true);
+    expect(canApproveFollowUp({ role: "setter", isStaff: true })).toBe(false);
+    expect(canApproveFollowUp({ role: "setter", isStaff: true, staffMayApprove: true })).toBe(true);
   });
 
   it("lets a member approve only with the owner's grant", () => {

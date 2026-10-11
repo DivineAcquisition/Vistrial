@@ -148,7 +148,8 @@ describe("who may approve", () => {
     expect(canApproveItem({ ...base, approver: "assigned", role: "setter" })).toBe(false);
     expect(canApproveItem({ ...base, approver: "owners_and_managers", role: "operator" })).toBe(false);
     expect(canApproveItem({ ...base, approver: "owners_and_managers", role: "member" })).toBe(false);
-    expect(canApproveItem({ ...base, approver: "owner_only", role: "setter", isStaff: true })).toBe(true);
+    expect(canApproveItem({ ...base, approver: "owner_only", role: "setter", isStaff: true })).toBe(false);
+    expect(canApproveItem({ ...base, approver: "owner_only", role: "setter", isStaff: true, staffMayApprove: true })).toBe(true);
   });
 
   it("hands an escalated item to the owner alone", () => {

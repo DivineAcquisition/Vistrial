@@ -37,7 +37,8 @@ describe("approval gate registry", () => {
     expect(canDecide({ ...base, rule: "owner_only", role: "owner" })).toBe(true);
     expect(canDecide({ ...base, rule: "assigned" })).toBe(false);
     expect(canDecide({ ...base, rule: "assigned", isAssigned: true })).toBe(true);
-    expect(canDecide({ ...base, role: null, canApprove: false, isStaff: true })).toBe(true);
+    expect(canDecide({ ...base, role: null, canApprove: false, isStaff: true })).toBe(false);
+    expect(canDecide({ ...base, role: null, canApprove: false, isStaff: true, staffMayApprove: true })).toBe(true);
   });
 });
 

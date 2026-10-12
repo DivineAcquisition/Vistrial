@@ -218,6 +218,23 @@ export const FOOTER = {
   legal: "Legal",
 } as const;
 
+/**
+ * Coaches offer page (/coaches). Separate from the public landing, which does
+ * not name a platform or a dollar floor.
+ */
+export const COACHES = {
+  pill: "Are you spending 5k+ on Meta paying for leads that never become calls?",
+  headline:
+    "We'll install the system that raises your show rate and sales from the same ad spend. Done for you, live in 14 days (or you get 75% back)",
+  /** Italic purple clause. The headline renders in all caps. */
+  headlineAccent: "Done for you, live in 14 days (or you get 75% back)",
+  subhead:
+    "Done for you in 3 months, built around your numbers: intake, buying-intent scoring, nurture sequences, AI workflows for your setters and closers, and call protection. No retainer, and you keep everything we build.",
+  qualifier: "You need to be spending at least $5K/month on ads.",
+  cta: "See if you qualify",
+  terms: ["$6,500 for 3 months", "No retainers", "75% back if we miss your targets"],
+} as const;
+
 export const SOCIAL_IMAGE = {
   url: "/opengraph-image",
   width: 1200,

@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   AUDIT,
   CASE_FILE,
+  COACHES,
   FAQ,
   HERO,
   NAV,
@@ -98,6 +99,28 @@ describe("landing copy", () => {
         expect(landingIds).toContain(item.href.slice(1));
       }
     }
+  });
+});
+
+describe("coaches offer", () => {
+  it("keeps the offer off the public landing", () => {
+    expect(landingBlob).not.toContain(COACHES.pill);
+    expect(landingBlob).not.toContain("$6,500");
+    expect(HERO.primaryCta).toMatch(/Lead Leak Audit/);
+  });
+
+  it("states the pill, the guarantee, and the three terms", () => {
+    expect(COACHES.pill).toBe(
+      "Are you spending 5k+ on Meta paying for leads that never become calls?",
+    );
+    expect(COACHES.headline).toContain(COACHES.headlineAccent);
+    expect(COACHES.qualifier).toBe("You need to be spending at least $5K/month on ads.");
+    expect(COACHES.cta).toBe("See if you qualify");
+    expect(COACHES.terms).toEqual([
+      "$6,500 for 3 months",
+      "No retainers",
+      "75% back if we miss your targets",
+    ]);
   });
 });
 

@@ -3,7 +3,6 @@
 import { Menu } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
-import { usePathname } from "next/navigation";
 
 import Logo from "@/components/brand/logo";
 import { CtaLink } from "@/components/marketing/cta-link";
@@ -45,12 +44,11 @@ export function SiteHeader({
   action?: "cta" | "none";
 }) {
   const onPage = action === "cta";
-  const onHome = usePathname() === "/";
   const [menuOpen, setMenuOpen] = useState(false);
 
   return (
     <header className="relative sticky top-0 z-50 border-b border-white/[0.06] bg-ink-950/75 backdrop-blur-xl">
-      {onPage && onHome ? <AnnouncementBar /> : null}
+      {onPage ? <AnnouncementBar /> : null}
       <div
         aria-hidden
         className="pointer-events-none absolute inset-x-0 top-0 h-px bg-linear-to-r from-transparent via-brand-500/45 to-transparent"
@@ -73,7 +71,7 @@ export function SiteHeader({
         </Link>
         {onPage ? (
           <nav aria-label="Product" className="hidden md:block">
-            <MarketingNav onPage={onHome} />
+            <MarketingNav onPage />
           </nav>
         ) : null}
 
@@ -103,7 +101,7 @@ export function SiteHeader({
                 </DrawerHeader>
                 <DrawerPanel className="px-4 pt-0 pb-6">
                   <nav aria-label="Product">
-                    <MarketingMobileNav onPage={onHome} onNavigate={() => setMenuOpen(false)} />
+                    <MarketingMobileNav onPage onNavigate={() => setMenuOpen(false)} />
                   </nav>
                   <div className="mt-6">
                     <CtaLink position="nav" className="w-full rounded-full">

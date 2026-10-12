@@ -23,14 +23,9 @@ export function Eyebrow({ children }: { children: ReactNode }) {
   return <p className={sectionLabel}>{children}</p>;
 }
 
-export function StatusPill({ children, className }: { children: ReactNode; className?: string }) {
+export function StatusPill({ children }: { children: ReactNode }) {
   return (
-    <p
-      className={cn(
-        "inline-flex max-w-full items-center gap-2 rounded-full border border-white/[0.1] bg-white/[0.04] px-3 py-1 text-[11px] font-semibold tracking-[0.16em] text-brand-300 uppercase",
-        className,
-      )}
-    >
+    <p className="inline-flex items-center gap-2 rounded-full border border-white/[0.1] bg-white/[0.04] px-3 py-1 text-[11px] font-semibold tracking-[0.16em] text-brand-300 uppercase">
       <span className="relative flex size-1.5">
         <span className="absolute inline-flex size-full animate-ping rounded-full bg-brand-400 opacity-70" />
         <span className="relative inline-flex size-1.5 rounded-full bg-brand-400" />

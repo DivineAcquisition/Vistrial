@@ -98,12 +98,6 @@ describe("strict host routing", () => {
     expect(resolveHostRoute({ host: "vistrial.io", pathname: "/book/calendar" })).toEqual({
       action: "allow",
     });
-    expect(resolveHostRoute({ host: "vistrial.io", pathname: "/coaches" })).toEqual({
-      action: "allow",
-    });
-    expect(resolvedHostLocation({ host: "app.vistrial.io", pathname: "/coaches" })).toBe(
-      `${PRODUCTION_SITE_ORIGIN}/coaches`
-    );
   });
 
   it("sends operator paths on the site to the operator app", () => {

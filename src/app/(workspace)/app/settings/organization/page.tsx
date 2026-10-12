@@ -11,7 +11,7 @@ export default async function OrganizationSettingsPage() {
   const supabase = await createClient();
   const { data } = await supabase
     .from("organizations")
-    .select("working_hours_start, working_hours_end, working_days, owner_contact_name, owner_contact_email, owner_contact_phone")
+    .select("working_hours_start, working_hours_end, working_days, owner_contact_name, owner_contact_email, owner_contact_phone, business_address")
     .eq("id", org.id)
     .maybeSingle();
 
@@ -20,6 +20,7 @@ export default async function OrganizationSettingsPage() {
       name={data?.owner_contact_name ?? null}
       email={data?.owner_contact_email ?? null}
       phone={data?.owner_contact_phone ?? null}
+      address={(data as { business_address?: string | null } | null)?.business_address ?? null}
     />
   );
 

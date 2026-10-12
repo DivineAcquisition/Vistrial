@@ -81,6 +81,8 @@ export const INGEST_ALERT_COOLDOWN_MS = 60 * 60 * 1000;
 export const CONTACT_LOCK_STALE_MS = 5 * 60 * 1000;
 
 export const GHL_OAUTH_COOKIE = "vistrial_ghl_oauth";
+/** Set when an Owner connects their CRM from the guided setup, so they return there. */
+export const CRM_RETURN_COOKIE = "vistrial_crm_return";
 
 export const LOCATION_CLAIMED_MESSAGE =
   "This GoHighLevel location is already linked to another workspace.";

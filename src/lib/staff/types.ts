@@ -57,7 +57,8 @@ export type RosterFacts = {
   template_id: string | null;
   template_name: string | null;
   went_live_at: string | null;
-  onboarding_steps: Record<string, { state?: string; note?: string | null; eta?: string | null }> | null;
+  /** The setup steps as the onboarding record keeps them; read with readSteps. */
+  onboarding_steps: unknown;
   onboarding_updated_at: string | null;
   primary_contact: { name?: string; email?: string; phone?: string } | null;
   assigned: StaffPerson[];

@@ -88,7 +88,9 @@ async function runDraft(
   if (result.status === "queued") return { status: "scheduled", at, sendAt: args.sendAt };
   if (result.status === "suppressed") {
     const reason =
-      result.reason === "opted_out"
+      result.reason === "sample_lead"
+        ? "This is the sample lead, so nothing was sent. With a real lead, this is where the message would go out from your CRM."
+        : result.reason === "opted_out"
         ? "This lead replied with an opt-out word. Nothing was sent."
         : result.reason === "email_suppressed"
           ? "Email to this lead bounced or was marked as spam. Nothing was sent."

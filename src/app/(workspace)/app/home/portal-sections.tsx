@@ -3,6 +3,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { ChevronRight, ListChecks } from "lucide-react";
 
 import { AttentionPanel } from "@/app/(workspace)/app/home/attention-panel";
+import { FeedbackPrompt } from "@/app/(workspace)/app/home/feedback-prompt";
 import { LiveMessage } from "@/app/(workspace)/app/home/live-message";
 import { BarList, MetricCard } from "@/components/metrics/metric-card";
 import { Card } from "@/components/ui/card";
@@ -14,6 +15,8 @@ import { compare } from "@/lib/home/metrics";
 import type { HomePeriod, PeriodRange } from "@/lib/home/periods";
 import { describeRange } from "@/lib/home/periods";
 import { METRICS, OPEN_STAGES, stageLabel } from "@/lib/metrics/definitions";
+import { loadCustomerView } from "@/lib/onboarding/load";
+import { nextCustomerStep, progressCounts } from "@/lib/onboarding/stages";
 import {
   currentNumber,
   formatCents,
@@ -103,34 +106,38 @@ export async function AwaySummary({ ctx, facts }: { ctx: AuthContext; facts: Wor
  * Onboarding
  * ------------------------------------------------------------------------- */
 
-type Step = {
-  key: string;
-  label: string;
-  state: "done" | "in_progress" | "waiting_on_customer" | "waiting_on_team";
-  action?: { label: string; href: string } | null;
-};
-
-type OnboardingRow = { steps: Step[]; live: boolean; live_seen_at: string | null };
-
+/**
+ * The setup card. It reads the one onboarding record (the same one the setup
+ * flow, the staff queue, and the roster read). Owners and staff act from it;
+ * Members see it read-only; Operators never see it.
+ */
 export async function OnboardingCard({ ctx }: { ctx: AuthContext }) {
-  if (ctx.workspaceRole !== "owner" && !ctx.isStaff) return null;
-  const db = (await portalDb()) as SupabaseClient;
-  if (ctx.org.status !== "onboarding") {
-    const { data: existing } = await db
-      .from("workspace_onboarding_status")
-      .select("org_id")
-      .eq("org_id", ctx.org.id)
-      .maybeSingle();
-    if (!existing) return null;
+  if (ctx.workspaceRole !== "owner" && ctx.workspaceRole !== "member" && !ctx.isStaff) return null;
+  const view = await loadCustomerView(ctx.org.id);
+  if (!view) return null;
+  if (view.live) {
+    return (
+      <>
+        {view.liveSeenAt ? null : <LiveMessage name={ctx.org.name} />}
+        {view.feedbackDue ? <FeedbackPrompt /> : null}
+      </>
+    );
   }
-  const { data } = await db.rpc("onboarding_status_refresh", { p_org_id: ctx.org.id });
-  const row = data as OnboardingRow | null;
-  if (!row) return null;
-  if (row.live) return row.live_seen_at ? null : <LiveMessage name={ctx.org.name} />;
+  if (view.phase === "cancelled") return null;
 
-  const steps = row.steps ?? [];
-  const done = steps.filter((step) => step.state === "done").length;
-  const next = steps.find((step) => step.state === "waiting_on_customer" && step.action);
+  const canAct = ctx.workspaceRole === "owner" || ctx.isStaff;
+  const { done, total } = progressCounts(view.steps);
+  const next = canAct ? nextCustomerStep(view.steps) : null;
+  const status =
+    view.phase === "ready_for_review"
+      ? " You said you are ready; your team is reviewing."
+      : view.phase === "activating"
+        ? " Approved. Your agents are being switched on one at a time."
+        : view.phase === "paused"
+          ? " Setup is paused."
+          : next
+            ? ` Next for you: ${next.label.toLowerCase()}.`
+            : " The rest is with your Vistrial team.";
   return (
     <Card className="gap-4 p-5">
       <div className="flex items-start gap-3">
@@ -140,23 +147,22 @@ export async function OnboardingCard({ ctx }: { ctx: AuthContext }) {
         <div className="min-w-0 flex-1">
           <h2 className="font-heading text-base text-card-foreground">Getting {ctx.org.name} ready</h2>
           <p className="mt-1 text-sm text-muted-foreground">
-            {done} of {steps.length} steps done.
-            {next ? ` Next for you: ${next.label.toLowerCase()}.` : " The rest is with your Vistrial team."}
+            {done} of {total} steps done.{status}
           </p>
         </div>
       </div>
-      <Progress value={steps.length ? Math.round((done / steps.length) * 100) : 0} aria-label="Setup progress" />
+      <Progress value={total ? Math.round((done / total) * 100) : 0} aria-label="Setup progress" />
       <div className="flex flex-wrap gap-x-4 gap-y-2 text-sm">
         {next?.action ? (
           <Link href={next.action.href} className="font-medium text-brand-300 underline-offset-4 hover:underline">
-            {next.action.label}
+            {next.action.label}: {next.label}
           </Link>
         ) : null}
         <Link
-          href="/app/onboarding/progress"
+          href={canAct ? "/app/onboarding" : "/app/onboarding/progress"}
           className="inline-flex items-center gap-1 font-medium text-brand-300 underline-offset-4 hover:underline"
         >
-          See every step
+          {canAct ? "Open setup" : "See every step"}
           <ChevronRight className="size-4" aria-hidden />
         </Link>
       </div>

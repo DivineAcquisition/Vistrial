@@ -15,6 +15,8 @@ import { helperClass } from "@/lib/ui";
 export function FirstRunExplainer() {
   const { role } = useOrg();
   const copy = FIRST_RUN[role];
+  // Members and Operators get the server-remembered welcome instead (RoleWelcome).
+  const replaced = role === "member" || role === "operator" || role === "setter" || role === "closer" || role === "client_viewer";
   const [show, setShow] = useState(false);
 
   useEffect(() => {
@@ -25,7 +27,7 @@ export function FirstRunExplainer() {
     setShow(true);
   }, [role]);
 
-  if (!show) return null;
+  if (!show || replaced) return null;
 
   return (
     <div className="mb-4 print:hidden">

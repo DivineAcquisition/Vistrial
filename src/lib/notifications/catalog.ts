@@ -129,4 +129,10 @@ export const NOTIFICATION_CATALOG: CatalogEntry[] = [
     saturday9pm: false,
     why: "The Vistrial team paused an agent or found something an owner should fix. Email and the notifications page.",
   },
+  {
+    type: "onboarding",
+    canActNow: true,
+    saturday9pm: false,
+    why: "A setup step needs the owner, or the team finished something. Grouped, limited, and never about a lead. Email and the notifications page.",
+  },
 ];

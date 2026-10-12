@@ -51,3 +51,19 @@ export const FIRST_RUN: Record<OrgRole, FirstRunCopy> = {
 export function firstRunStorageKey(role: OrgRole): string {
   return `${FIRST_RUN_STORAGE_KEY}:${role}`;
 }
+
+/** The server-remembered welcome for Members and Operators (Prompt 10). */
+export const ROLE_WELCOME: Record<"member" | "operator", { title: string; see: string; can: string; cannot: string }> = {
+  member: {
+    title: "Welcome to Vistrial",
+    see: "You will see your leads, what Vistrial has done for the business, and your results.",
+    can: "You can follow any lead's case file, and approve messages if the owner lets you.",
+    cannot: "You cannot change setup or settings; the owner and your Vistrial team look after those.",
+  },
+  operator: {
+    title: "Welcome to Vistrial",
+    see: "You will see the leads assigned to you and the ones nobody has picked up yet, each with a case file.",
+    can: "You can call, work your leads, and log what happened so the next step is clear.",
+    cannot: "You will not see results, billing, or setup; those are for the owner.",
+  },
+};

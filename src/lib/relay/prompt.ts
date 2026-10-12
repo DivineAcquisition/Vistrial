@@ -1,7 +1,7 @@
 import { extractJsonObject } from "@/lib/extraction/parse";
 import type { RelayChannel, RelayFact } from "@/lib/relay/facts";
 
-export type RelayTrigger = "after_call" | "missed_window";
+export type RelayTrigger = "after_call" | "missed_window" | "sample";
 
 export type RelayVoice = {
   formality: string;

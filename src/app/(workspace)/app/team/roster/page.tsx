@@ -12,9 +12,11 @@ import { Panel } from "@/components/ui/panel";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { requireStaff } from "@/lib/auth/gates";
+import { listPlanPrices } from "@/lib/billing/stripe";
 import { formatDay } from "@/lib/format";
 import { HEALTH_LABEL, HEALTH_TONE } from "@/lib/staff/health";
 import type { Health } from "@/lib/staff/types";
+import { staffDb } from "@/lib/staff/db";
 import { loadRoster } from "@/lib/staff/load";
 import { createClient } from "@/lib/supabase/server";
 import { cardTitle, helperClass } from "@/lib/ui";
@@ -30,7 +32,7 @@ export default async function TeamWorkspacesPage() {
   const { rows: healthRows } = await loadRoster(ctx.isPlatformAdmin ? "all" : "mine");
   const healthById = new Map(healthRows.map((row) => [row.org_id, row.health]));
 
-  const [{ data: orgs }, { data: assignments }, { data: staff }, { data: templates }] = await Promise.all([
+  const [{ data: orgs }, { data: assignments }, { data: staff }, { data: templates }, { data: canCreate }] = await Promise.all([
     supabase
       .from("organizations")
       .select("id, name, slug, status, status_reason, created_at, is_platform_workspace")
@@ -42,7 +44,9 @@ export default async function TeamWorkspacesPage() {
       ? supabase.from("platform_staff").select("user_id, display_name, role, active").eq("active", true)
       : Promise.resolve({ data: [] as Array<{ user_id: string; display_name: string; role: string; active: boolean }> }),
     supabase.from("config_templates").select("id, name").eq("status", "active").order("name"),
+    staffDb().then((db) => db.rpc("onboarding_can_create_workspaces")),
   ]);
+  const plans = canCreate === true ? await listPlanPrices().catch(() => [] as Array<{ id: string; label: string }>) : [];
 
   const names = new Map((staff ?? []).map((person) => [person.user_id, person.display_name]));
   const serviceTeam = (staff ?? []).filter((person) => person.role === "service_team");
@@ -57,11 +61,12 @@ export default async function TeamWorkspacesPage() {
           : "The workspaces assigned to you. A Platform Admin manages assignments."
       }
     >
-      {ctx.isPlatformAdmin ? (
+      {canCreate === true ? (
         <Panel className="mb-8 p-6">
           <h2 className={cardTitle}>New workspace</h2>
+          <p className={helperClass}>Creates the workspace with every agent off and invites the Owner. Nobody is charged.</p>
           <div className="mt-4">
-            <CreateWorkspaceForm templates={templates ?? []} />
+            <CreateWorkspaceForm templates={templates ?? []} staff={staff ?? []} plans={plans} />
           </div>
         </Panel>
       ) : null}

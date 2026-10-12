@@ -44,7 +44,7 @@ const DIRTY_PER_ORG = 60;
 const STALE_MS = 20 * 60_000;
 const CATCHUP_MS = 30 * 60_000;
 const PER_PERSON = 8;
-const HELD = ["paused", "workspace"];
+const HELD = ["paused", "workspace", "not_activated"];
 
 type Space = {
   org_id: string;
@@ -198,8 +198,17 @@ async function sweepOrg(
     seen.add(id);
     return true;
   });
+  // Leads brought in from the CRM's history are not watched until a person
+  // works them or they get in touch again (the database refuses their clocks
+  // and alerts too; this just saves the work).
+  const ids = rows.map((lead) => String(lead.id));
+  const { data: historicRows } = ids.length
+    ? await raw.from("lead_import_marks").select("lead_id").in("lead_id", ids).is("reactivated_at", null)
+    : { data: [] };
+  const historic = new Set(((historicRows ?? []) as Array<{ lead_id: string }>).map((row) => row.lead_id));
   let alerts = 0;
   for (const lead of rows) {
+    if (historic.has(String(lead.id))) continue;
     if (await watchLead(db, run, lead)) alerts += 1;
   }
   return { leads: rows.length, alerts, cursor, error: null, held: false, detail: null };
@@ -571,7 +580,10 @@ async function send(
         },
       }).catch(() => "skipped" as const);
     let reached = false;
-    for (const channel of channels) {
+    // A named escalation contact also hears on the channel the Owner chose for them.
+    const own = target.escalationChannel;
+    const targetChannels = own && !channels.includes(own) ? [...channels, own] : channels;
+    for (const channel of targetChannels) {
       if (channel === "team") continue;
       const outcome = await offer(channel, true);
       if (outcome !== "skipped") reached = true;

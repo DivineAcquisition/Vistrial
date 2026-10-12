@@ -143,11 +143,20 @@ type LeadRow = {
 
 async function draftForJob(job: RelayJob): Promise<Outcome> {
   const client = db();
-  const may = await agentMayRun(job.org_id, "relay");
+  // The onboarding sample test drafts for its sample lead before Relay is
+  // switched on; that lead never receives anything.
+  const sample = job.trigger === "sample";
+  if (sample) {
+    const { data: test } = await client.from("leads").select("is_test").eq("id", job.lead_id).eq("org_id", job.org_id).maybeSingle();
+    if (!(test as { is_test?: boolean } | null)?.is_test) return { kind: "skipped", result: "Only the sample lead can be drafted for in a test." };
+  }
+  const may = await agentMayRun(job.org_id, "relay", { sample });
   if (!may.ok) {
     return may.reason === "paused"
       ? { kind: "skipped", result: "Relay is paused in this workspace, so nothing was drafted." }
-      : { kind: "skipped", result: "This workspace is not active, so nothing was drafted." };
+      : may.reason === "not_activated"
+        ? { kind: "skipped", result: "Relay is not switched on in this workspace yet, so nothing was drafted." }
+        : { kind: "skipped", result: "This workspace is not active, so nothing was drafted." };
   }
 
   const { data: leadData } = await client

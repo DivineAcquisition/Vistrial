@@ -43,6 +43,17 @@ describe("shell navigation", () => {
     expect(labels("operator")).not.toContain("Results");
   });
 
+  it("shows the onboarding queue to staff only", () => {
+    const hrefs = (role: Parameters<typeof shellNavigation>[0]["role"]) =>
+      shellNavigation({ role, templateAccess: false }).groups.flatMap((group) => group.items.flatMap((item) => [item.href, ...(item.children ?? []).map((child) => child.href)]));
+    for (const role of ["owner", "member", "operator"] as const) {
+      expect(hrefs(role).some((href) => href.startsWith("/app/team/onboarding"))).toBe(false);
+    }
+    expect(hrefs("service_team")).toContain("/app/team/onboarding");
+    expect(hrefs("platform_admin")).toContain("/app/team/onboarding");
+    expect(isPlatformRoute("/app/team/onboarding/abc")).toBe(true);
+  });
+
   it("hides Templates from service team without template access", () => {
     expect(labels("service_team", { templateAccess: false })).not.toContain("Templates");
     expect(labels("service_team", { templateAccess: true })).toContain("Templates");
@@ -80,7 +91,6 @@ describe("shell navigation", () => {
       "member-agents",
       "ask",
       "operator-logs",
-      "onboarding",
       "assignments",
       "billing",
       "template-library",
@@ -117,6 +127,9 @@ describe("shell navigation", () => {
     expect(layoutKindForPath("/app/team")).toBe("dashboard");
     expect(layoutKindForPath("/app/team/roster")).toBe("table");
     expect(layoutKindForPath("/app/onboarding")).toBe("workflow");
+    expect(layoutKindForPath("/app/team/onboarding")).toBe("table");
+    expect(layoutKindForPath("/app/team/onboarding/abc")).toBe("record");
+    expect(layoutKindForPath("/app/team/onboarding/settings")).toBe("standard");
     expect(layoutKindForPath("/app/ask")).toBe("chat");
     expect(layoutKindForPath("/login")).toBe("message");
   });

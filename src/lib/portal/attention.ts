@@ -151,7 +151,7 @@ export async function loadAttention(ctx: AuthContext): Promise<AttentionState> {
       label: plural(waiting.length, "setup step is waiting on you", "setup steps are waiting on you"),
       detail: waiting.map((step) => step.label).join(", "),
       count: waiting.length,
-      href: "/app/onboarding/progress",
+      href: "/app/onboarding",
       tone: "info",
     });
   }

@@ -49,6 +49,7 @@ export default async function HelpPage({ searchParams }: { searchParams: Promise
   const from = one("from");
   const pagePath = from && from.startsWith("/") && !from.startsWith("//") ? from.slice(0, 300) : null;
   const leadParam = one("lead");
+  const about = one("about")?.replace(/[\r\n]+/g, " ").trim().slice(0, 200);
 
   const db = await portalDb();
   const supabase = await createClient();
@@ -107,7 +108,12 @@ export default async function HelpPage({ searchParams }: { searchParams: Promise
         <h2 id="help-ask" className={cardTitle}>
           Ask your team
         </h2>
-        <HelpRequestForm defaultTopic={topic} pagePath={pagePath} lead={lead} />
+        <HelpRequestForm
+          defaultTopic={topic}
+          pagePath={pagePath}
+          lead={lead}
+          defaultMessage={about ? `I need help with this setup step: ${about}.\n\n` : undefined}
+        />
       </section>
 
       {rows.length ? (

@@ -19,10 +19,13 @@ export function HelpRequestForm({
   defaultTopic,
   pagePath,
   lead,
+  defaultMessage,
 }: {
   defaultTopic: HelpTopic;
   pagePath: string | null;
   lead: { id: string; name: string } | null;
+  /** A starting line, like the setup step the person was on. They can change it. */
+  defaultMessage?: string;
 }) {
   const [state, action, pending] = useActionState(createHelpRequest, initial);
   return (
@@ -37,7 +40,7 @@ export function HelpRequestForm({
         </Select>
       </Field>
       <Field label="Message" name="message" htmlFor="help-message">
-        <Textarea id="help-message" name="message" rows={5} maxLength={4000} required />
+        <Textarea id="help-message" name="message" rows={5} maxLength={4000} required defaultValue={defaultMessage} />
       </Field>
       {pagePath ? <input type="hidden" name="page_path" value={pagePath} /> : null}
       {lead ? <input type="hidden" name="lead_id" value={lead.id} /> : null}

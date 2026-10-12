@@ -72,6 +72,7 @@ export const NOTIFICATION_EVENT_TYPES = [
   "billing_issue",
   "data_request",
   "workspace_notice",
+  "onboarding",
 ] as const;
 
 export const INTERRUPT_CHANNELS = ["push", "email", "sms", "team"] as const;

@@ -266,3 +266,21 @@ export async function createPortalSession(customerId: string, returnUrl: string)
     configuration,
   });
 }
+
+/** Recurring prices to pick a plan from when creating a workspace. Nothing is charged by listing them. */
+export async function listPlanPrices(): Promise<Array<{ id: string; label: string }>> {
+  if (!billingConfigured()) return [];
+  const result = await stripeRequest<{ data: Array<StripePrice & { id: string; active: boolean }> }>("GET", "/prices", {
+    active: "true",
+    type: "recurring",
+    limit: "50",
+    "expand[]": ["data.product"],
+  });
+  if (!result.ok) return [];
+  return result.data.data.map((price) => {
+    const product = typeof price.product === "object" && price.product ? price.product.name : null;
+    const amount = price.unit_amount != null ? `${(price.unit_amount / 100).toFixed(0)} ${price.currency.toUpperCase()}` : "";
+    const per = price.recurring ? `/${price.recurring.interval_count > 1 ? `${price.recurring.interval_count} ` : ""}${price.recurring.interval}` : "";
+    return { id: price.id, label: [product ?? price.nickname ?? "Plan", amount ? `${amount}${per}` : ""].filter(Boolean).join(" · ").slice(0, 120) };
+  });
+}

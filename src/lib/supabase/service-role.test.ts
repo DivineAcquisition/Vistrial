@@ -11,6 +11,8 @@ import { describe, expect, it } from "vitest";
  * fails here until someone reviews it and adds it below.
  */
 const REVIEWED = new Set([
+  "src/app/(workspace)/app/onboarding/setup-actions.ts",
+  "src/app/(workspace)/app/team/onboarding/actions.ts",
   "src/app/(auth)/accept-invite/[token]/actions.ts",
   "src/app/(auth)/login/actions.ts",
   "src/app/api/execution/oauth/callback/route.ts",

@@ -148,19 +148,34 @@ export async function updateContactDetails(
     return { status: "error", error: "Enter a valid email address." };
   }
 
+  const phone = clean("owner_contact_phone", 40);
+  if (phone && phone.replace(/\D/g, "").length < 7) {
+    return { status: "error", error: "Enter a phone number with area code." };
+  }
+  const patch: {
+    owner_contact_name: string | null;
+    owner_contact_email: string | null;
+    owner_contact_phone: string | null;
+    business_address?: string | null;
+  } = {
+    owner_contact_name: clean("owner_contact_name", 120),
+    owner_contact_email: email,
+    owner_contact_phone: phone,
+  };
+  // The address is only on forms that show it, so an older form never clears it.
+  if (formData.has("business_address")) patch.business_address = clean("business_address", 300);
+
   const supabase = await createClient();
   const { error } = await supabase
     .from("organizations")
-    .update({
-      owner_contact_name: clean("owner_contact_name", 120),
-      owner_contact_email: email,
-      owner_contact_phone: clean("owner_contact_phone", 40),
-    })
+    .update(patch)
     .eq("id", ctx.org.id);
 
   if (error) {
     return { status: "error", error: "Could not save the contact details." };
   }
+  await supabase.rpc("onboarding_refresh" as never, { p_org_id: ctx.org.id } as never);
   revalidatePath("/app/settings/organization");
+  revalidatePath("/app/onboarding", "layout");
   return { status: "saved" };
 }

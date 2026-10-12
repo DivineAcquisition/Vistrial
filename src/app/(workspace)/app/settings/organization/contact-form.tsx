@@ -18,10 +18,12 @@ export function ContactDetailsForm({
   name,
   email,
   phone,
+  address,
 }: {
   name: string | null;
   email: string | null;
   phone: string | null;
+  address?: string | null;
 }) {
   const [state, action, pending] = useActionState(updateContactDetails, initial);
   useSettingsToast(state, pending, "Contact details saved.");
@@ -42,6 +44,15 @@ export function ContactDetailsForm({
       </Field>
       <Field label="Contact phone" name="owner_contact_phone">
         <Input id="owner_contact_phone" name="owner_contact_phone" type="tel" defaultValue={phone ?? ""} autoComplete="tel" />
+      </Field>
+      <Field label="Business address" name="business_address" help="Street, city, state or region, and postal code.">
+        <Input
+          id="business_address"
+          name="business_address"
+          defaultValue={address ?? ""}
+          autoComplete="street-address"
+          maxLength={300}
+        />
       </Field>
       {state.status === "error" ? <p className={errorClass}>{state.error}</p> : null}
     </SettingsFormCard>

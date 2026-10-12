@@ -200,6 +200,22 @@ function levelTargets(
   return [...out.values()];
 }
 
+/**
+ * Leads brought in from the CRM's history that nobody has worked since. They
+ * never produce lead alerts (the database refuses those notices as well).
+ */
+async function historicLeadIds(db: GhlDb, orgId: string): Promise<Set<string>> {
+  const { data } = await (db as unknown as {
+    from: (t: string) => { select: (c: string) => { eq: (k: string, v: string) => { is: (k: string, v: null) => { limit: (n: number) => Promise<{ data: Array<{ lead_id: string }> | null }> } } } };
+  })
+    .from("lead_import_marks")
+    .select("lead_id")
+    .eq("org_id", orgId)
+    .is("reactivated_at", null)
+    .limit(100000);
+  return new Set((data ?? []).map((row) => row.lead_id));
+}
+
 async function observeSpeedToLead(
   db: GhlDb,
   ctx: { members: MemberNotifyTarget[]; setters: MemberNotifyTarget[]; closers: MemberNotifyTarget[]; managers: MemberNotifyTarget[] },
@@ -214,8 +230,9 @@ async function observeSpeedToLead(
     .is("first_human_touch_at", null)
     .eq("is_test", false)
     .in("status", [...OPEN_LEAD_STATUSES]);
+  const historic = await historicLeadIds(db, orgId);
 
-  for (const lead of leads ?? []) {
+  for (const lead of (leads ?? []).filter((row) => !historic.has(row.id))) {
     const elapsed = windowsElapsed({ ...plan.clock, arrivedAt: new Date(lead.opted_in_at), now });
     if (elapsed.windows < 1) continue;
     const minutes = Math.round(elapsed.minutes);
@@ -292,8 +309,9 @@ async function observeUnassignedReady(
     .is("assigned_setter_id", null)
     .eq("is_test", false)
     .in("status", [...OPEN_LEAD_STATUSES]);
+  const historic = await historicLeadIds(db, orgId);
 
-  for (const lead of leads ?? []) {
+  for (const lead of (leads ?? []).filter((row) => !historic.has(row.id))) {
     const copy = unassignedReadyCopy(lead.first_name);
     for (const setter of setters) {
       await offerToMember(db, {
@@ -322,9 +340,10 @@ async function observeGhosts(db: GhlDb, members: MemberNotifyTarget[], orgId: st
     .eq("org_id", orgId)
     .not("ghost_approaching_at", "is", null)
     .in("status", [...OPEN_LEAD_STATUSES]);
+  const historic = await historicLeadIds(db, orgId);
 
   const byOwner = new Map<string, { target: MemberNotifyTarget; names: string[] }>();
-  for (const lead of leads ?? []) {
+  for (const lead of (leads ?? []).filter((row) => !historic.has(row.id))) {
     const owner =
       memberById(members, lead.assigned_setter_id) ?? memberById(members, lead.assigned_closer_id);
     if (!owner) continue;

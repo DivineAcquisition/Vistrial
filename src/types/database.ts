@@ -2086,6 +2086,7 @@ export type Database = {
           active: boolean;
           template_access: boolean;
           billing_access: boolean;
+          can_create_workspaces: boolean;
           display_name: string;
           email: string;
           created_at: string;
@@ -2099,6 +2100,7 @@ export type Database = {
           active?: boolean;
           template_access?: boolean;
           billing_access?: boolean;
+          can_create_workspaces?: boolean;
           display_name: string;
           email: string;
           created_at?: string;
@@ -2112,6 +2114,7 @@ export type Database = {
           active?: boolean;
           template_access?: boolean;
           billing_access?: boolean;
+          can_create_workspaces?: boolean;
           display_name?: string;
           email?: string;
           created_at?: string;
@@ -2865,6 +2868,7 @@ export type Database = {
           owner_contact_name: string | null;
           owner_contact_email: string | null;
           owner_contact_phone: string | null;
+          business_address: string | null;
           is_platform_workspace: boolean;
           managed: boolean;
         };
@@ -2907,6 +2911,7 @@ export type Database = {
           owner_contact_name?: string | null;
           owner_contact_email?: string | null;
           owner_contact_phone?: string | null;
+          business_address?: string | null;
           is_platform_workspace?: boolean;
           managed?: boolean;
         };
@@ -2949,6 +2954,7 @@ export type Database = {
           owner_contact_name?: string | null;
           owner_contact_email?: string | null;
           owner_contact_phone?: string | null;
+          business_address?: string | null;
           is_platform_workspace?: boolean;
           managed?: boolean;
         };
@@ -7594,7 +7600,8 @@ export type Database = {
         | "export_ready"
         | "billing_issue"
         | "data_request"
-        | "workspace_notice";
+        | "workspace_notice"
+        | "onboarding";
       notification_channel: "push" | "email" | "sms" | "team" | "da_console";
       notification_status:
         | "queued"

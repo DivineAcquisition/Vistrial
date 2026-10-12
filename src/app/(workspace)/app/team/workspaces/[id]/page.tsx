@@ -8,6 +8,7 @@ import { PageFrame } from "@/components/app/page-frame";
 import { KeyValue } from "@/components/ui/definition-list";
 import { Panel } from "@/components/ui/panel";
 import { StatusBadge } from "@/components/ui/status-badge";
+import { STAGE_STATUS_LABEL, readSteps } from "@/lib/onboarding/stages";
 import { requireStaff } from "@/lib/auth/gates";
 import { AGENTS, type LiveAgentId } from "@/lib/agents/roster";
 import { formatDateTime, formatRelative, orGap } from "@/lib/format";
@@ -82,16 +83,19 @@ export default async function WorkspaceOverviewPage({ params }: { params: Promis
             ? `Onboarding${row.went_live_at ? "" : ", not live yet"}.`
             : `Went live ${orGap(row.went_live_at, (value) => formatDateTime(value))}.`}
         </p>
-        {row.onboarding_steps ? (
+        {readSteps(row.onboarding_steps).length ? (
           <ul className={`mt-2 ${helperClass} list-disc pl-5`}>
-            {Object.entries(row.onboarding_steps).map(([key, step]) => (
-              <li key={key}>
-                {key}: {step?.state ?? "unknown"}
-                {step?.note ? ` — ${step.note}` : ""}
+            {readSteps(row.onboarding_steps).map((step) => (
+              <li key={step.key}>
+                {step.label}: {STAGE_STATUS_LABEL[step.status].label}
+                {step.note ? ` — ${step.note}` : ""}
               </li>
             ))}
           </ul>
         ) : null}
+        <Link href={`/app/team/onboarding/${row.org_id}`} className="mt-3 inline-block text-sm text-brand-300 underline underline-offset-2">
+          Open the onboarding workbench
+        </Link>
       </Panel>
 
       <div className="grid gap-4 lg:grid-cols-2">

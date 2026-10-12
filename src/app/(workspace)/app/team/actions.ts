@@ -1,10 +1,12 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import type { SupabaseClient } from "@supabase/supabase-js";
 
 import { getAuthContext } from "@/lib/auth/session";
 import { PRODUCTION_ADMIN_ORIGIN } from "@/lib/constants";
 import { requeueHeldWebhookEvent, webhookEventIdFromHoldRef } from "@/lib/inbound/holds";
+import { sendOwnerInvite } from "@/lib/onboarding/invite-email";
 import { getSupabaseAdmin } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import type { PlatformRole, WorkspaceStatus } from "@/types/database";
@@ -37,30 +39,52 @@ function revalidateTeam() {
   revalidatePath("/app", "layout");
 }
 
+/**
+ * A new workspace: the template's defaults, the onboarding record, the staff
+ * assigned, the intended plan (the subscription itself is set up later through
+ * billing; nothing is charged here), and the Owner invitation, emailed.
+ * Platform Admins, and Service Team a Platform Admin has allowed; the database
+ * checks and logs it.
+ */
 export async function createWorkspace(_prev: TeamActionResult, formData: FormData): Promise<TeamActionResult> {
-  const gate = await requireAdmin();
-  if (!gate.ok) return gate;
+  const ctx = await getAuthContext();
+  if (!ctx.isStaff) return { ok: false, error: "Only the Vistrial team can create a workspace." };
   const name = String(formData.get("name") ?? "").trim();
   const timezone = String(formData.get("timezone") ?? "").trim() || "America/New_York";
   const ownerEmail = String(formData.get("owner_email") ?? "").trim();
+  const contactName = String(formData.get("contact_name") ?? "").trim();
   const templateId = String(formData.get("template_id") ?? "").trim();
+  const staffIds = formData.getAll("staff_ids").map(String).filter((value) => /^[0-9a-f-]{36}$/i.test(value));
+  const plan = String(formData.get("plan") ?? "").trim();
+  const [priceId, ...labelParts] = plan.split("|");
+  const note = String(formData.get("internal_note") ?? "").trim();
   if (name.length < 2) return { ok: false, error: "Enter the business name." };
+  if (!templateId) return { ok: false, error: "Choose an industry template." };
+  if (!ownerEmail.includes("@")) return { ok: false, error: "Enter the primary contact's email. They are invited as the Owner." };
 
   const supabase = await createClient();
-  const { data, error } = await supabase.rpc("create_workspace", {
+  const { data, error } = await (supabase as unknown as SupabaseClient).rpc("create_workspace", {
     p_name: name,
     p_timezone: timezone,
-    p_owner_email: ownerEmail || null,
-    p_template_id: templateId || null,
+    p_owner_email: ownerEmail,
+    p_template_id: templateId,
+    p_contact_name: contactName || null,
+    p_staff_ids: staffIds.length ? staffIds : null,
+    p_price_id: priceId || null,
+    p_plan_label: labelParts.join("|") || null,
+    p_internal_note: note || null,
   });
   if (error) return { ok: false, error: dbMessage(error, "Could not create the workspace.") };
-  const slug = (data as { slug?: string } | null)?.slug;
+  const created = data as { slug?: string; org_id?: string; invite_token?: string } | null;
   revalidateTeam();
+  revalidatePath("/app/team/onboarding");
+  if (!created?.invite_token) return { ok: true, message: `Created ${created?.slug ?? name}.` };
+  const mail = await sendOwnerInvite({ to: ownerEmail.toLowerCase(), orgName: name, token: created.invite_token, key: `owner-invite:${created.invite_token}` });
   return {
     ok: true,
-    message: ownerEmail
-      ? `Created ${slug}. The owner invite is in that workspace's People page.`
-      : `Created ${slug}. Invite an owner from that workspace's People page.`,
+    message: mail.ok
+      ? `Created ${created.slug}. The Owner invitation was emailed to ${ownerEmail}.`
+      : `Created ${created.slug}, but the invitation email did not send (${mail.error}). Resend it from the onboarding workbench.`,
   };
 }
 

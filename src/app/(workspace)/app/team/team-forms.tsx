@@ -18,7 +18,8 @@ import { switchOrg } from "@/lib/auth/actions";
 import { Field } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
-import { errorClass, helperClass } from "@/lib/ui";
+import { ORG_TIMEZONES, ORG_TIMEZONE_LABELS } from "@/lib/timezones";
+import { checkboxClass, errorClass, helperClass } from "@/lib/ui";
 import { WORKSPACE_STATUS } from "@/lib/workspaces/status";
 import type { PlatformRole, WorkspaceStatus } from "@/types/database";
 
@@ -39,34 +40,80 @@ function useAction() {
   return { result, pending, run };
 }
 
-export function CreateWorkspaceForm({ templates }: { templates: Array<{ id: string; name: string }> }) {
+export function CreateWorkspaceForm({
+  templates,
+  staff = [],
+  plans = [],
+}: {
+  templates: Array<{ id: string; name: string }>;
+  staff?: Array<{ user_id: string; display_name: string; role: string }>;
+  plans?: Array<{ id: string; label: string }>;
+}) {
   const [state, action, pending] = useActionState(createWorkspace, initial);
   return (
-    <form action={action} className="space-y-3">
-      <Field label="Industry template" name="template_id" htmlFor="ws-template">
-        <Select
-          id="ws-template"
-          name="template_id"
-          defaultValue={templates[0]?.id ?? ""}
-          options={[...templates.map((template) => ({ value: template.id, label: template.name })), { value: "", label: "None (platform defaults only)" }]}
-        />
-      </Field>
-      <div className="grid gap-3 sm:grid-cols-[1fr_200px_1fr_auto] sm:items-end">
-        <Field label="Business name" name="name" htmlFor="ws-name">
+    <form action={action} className="space-y-4">
+      <div className="grid gap-3 sm:grid-cols-2">
+        <Field label="Business name" name="name" htmlFor="ws-name" required>
           <Input id="ws-name" name="name" required minLength={2} placeholder="Northside Fitness" />
         </Field>
-        <Field label="Timezone" name="timezone" htmlFor="ws-tz">
-          <Input id="ws-tz" name="timezone" defaultValue="America/New_York" />
+        <Field label="Industry template" name="template_id" htmlFor="ws-template" required>
+          <Select
+            id="ws-template"
+            name="template_id"
+            required
+            defaultValue={templates[0]?.id ?? ""}
+            options={templates.map((template) => ({ value: template.id, label: template.name }))}
+            placeholder="No active template yet"
+          />
         </Field>
-        <Field label="Owner email (optional)" name="owner_email" htmlFor="ws-owner">
-          <Input id="ws-owner" name="owner_email" type="email" placeholder="owner@business.example" />
+        <Field label="Time zone" name="timezone" htmlFor="ws-tz">
+          <Select
+            id="ws-tz"
+            name="timezone"
+            defaultValue="America/New_York"
+            options={ORG_TIMEZONES.map((zone) => ({ value: zone, label: ORG_TIMEZONE_LABELS[zone] }))}
+          />
         </Field>
-        <SubmitButton variant="primary" size="sm" pending={pending} loadingLabel="Creating">
-          Create
-        </SubmitButton>
+        <Field label="Plan" name="plan" htmlFor="ws-plan" help="Recorded for billing. Nothing is charged now.">
+          {plans.length ? (
+            <Select
+              id="ws-plan"
+              name="plan"
+              defaultValue=""
+              options={[{ value: "", label: "Decide later" }, ...plans.map((plan) => ({ value: `${plan.id}|${plan.label}`, label: plan.label }))]}
+            />
+          ) : (
+            <Input id="ws-plan" name="plan" placeholder="price_... (optional)" />
+          )}
+        </Field>
+        <Field label="Primary contact name" name="contact_name" htmlFor="ws-contact">
+          <Input id="ws-contact" name="contact_name" autoComplete="off" />
+        </Field>
+        <Field label="Primary contact email" name="owner_email" htmlFor="ws-owner" required help="Invited as the Owner. The invitation is emailed now.">
+          <Input id="ws-owner" name="owner_email" type="email" required placeholder="owner@business.example" />
+        </Field>
       </div>
+      {staff.length ? (
+        <fieldset>
+          <legend className="text-sm font-medium text-card-foreground">Assigned Service Team</legend>
+          <div className="mt-2 flex flex-wrap gap-x-5 gap-y-2">
+            {staff.map((person) => (
+              <label key={person.user_id} className="inline-flex items-center gap-2 text-sm">
+                <input type="checkbox" name="staff_ids" value={person.user_id} className={checkboxClass} />
+                {person.display_name}
+              </label>
+            ))}
+          </div>
+        </fieldset>
+      ) : null}
+      <Field label="Internal note (staff only)" name="internal_note" htmlFor="ws-note">
+        <Input id="ws-note" name="internal_note" maxLength={2000} />
+      </Field>
+      <SubmitButton variant="primary" pending={pending} loadingLabel="Creating">
+        Create and invite the Owner
+      </SubmitButton>
       <p className={helperClass}>
-        New workspaces start in onboarding on the template you choose. Nothing runs for customers until it passes the go-live check and you make it active.
+        New workspaces start in onboarding with every agent off. The Owner gets a guided setup; going live needs every go-live check to pass and your approval.
       </p>
       <Outcome result={state} />
     </form>

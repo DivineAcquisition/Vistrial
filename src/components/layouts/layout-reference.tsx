@@ -29,6 +29,9 @@ export function LayoutReference({ kind, state }: { kind: PageLayoutKind; state: 
         title="Layouts"
         description="Sample content in the shell at a phone width, a tablet width, and a desktop width. Nothing here is a live workspace."
       />
+      <Link href="/app/layouts/onboarding" className="self-start text-sm text-brand-300 underline underline-offset-2">
+        Onboarding in each state
+      </Link>
       <div className="flex flex-wrap gap-2">
         {KINDS.map((item) => (
           <Link

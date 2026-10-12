@@ -22,6 +22,7 @@ export const SIMULATION_SCENARIOS = [
   "burst",
   "paused",
   "provider_wait",
+  "watch_only",
 ] as const;
 
 export type SimulationScenario = (typeof SIMULATION_SCENARIOS)[number];
@@ -35,6 +36,7 @@ export const SCENARIO_LABEL: Record<SimulationScenario, string> = {
   burst: "A burst of many events",
   paused: "A paused agent",
   provider_wait: "Waiting on an outside service",
+  watch_only: "Sentry watching only, during setup",
 };
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -175,6 +177,33 @@ async function sentryNormal(orgId: string, lead: Lead | null, pace: number) {
   );
   await recorder.output({ kind: "alert", title: "Follow-up at risk", body: "This lead is past its follow-up window." });
   await recorder.finish({ reason: "Raised a follow-up at risk." });
+}
+
+/** Sentry's first day after go-live: it records what it would have flagged and tells nobody. */
+async function sentryWatchOnly(orgId: string, lead: Lead | null, pace: number) {
+  const recorder = await begin({
+    orgId,
+    agentId: "sentry",
+    scenario: "watch_only",
+    subject: lead ? `${lead.name}'s response window` : "a response window",
+    lead,
+    plan: ["Checking the response window", "Looking at the last touch", "Deciding urgency"],
+  });
+  await walk(
+    recorder,
+    [
+      { label: "Checking the response window", detail: "The window is 15 minutes during business hours." },
+      { label: "Looking at the last touch", detail: "The last human touch was 3 hours ago." },
+      { label: "Deciding urgency", reason: "Past the follow-up window for a warm lead, so this would be at risk." },
+    ],
+    pace
+  );
+  await recorder.output({
+    kind: "note",
+    title: "Would have flagged: follow-up at risk",
+    body: "Sentry is watching only while your team checks it. Nobody was told. Alerts start when your team switches them on.",
+  });
+  await recorder.finish({ reason: "Watching only: recorded what it would have flagged and told nobody." });
 }
 
 async function compassNormal(orgId: string, pace: number, actorMemberId?: string) {
@@ -362,6 +391,9 @@ export async function runSimulation(input: {
       break;
     case "provider_wait":
       await providerWait(input.orgId, lead ?? null, pace);
+      break;
+    case "watch_only":
+      await sentryWatchOnly(input.orgId, lead ?? null, pace);
       break;
     case "paused":
       await pauseAgent(input.orgId, agent === "scribe" ? "sentry" : agent, input.adminName, input.adminMemberId);

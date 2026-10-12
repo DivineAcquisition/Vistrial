@@ -40,4 +40,6 @@ export type MemberNotifyTarget = {
   email: string;
   phone: string | null;
   hours: WorkingHours;
+  /** Set for a named escalation contact: the channel the Owner chose for them. */
+  escalationChannel?: "push" | "email" | "sms" | null;
 };

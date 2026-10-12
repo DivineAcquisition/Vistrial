@@ -56,7 +56,16 @@ export async function leadSendingEnabled(db: GhlDb): Promise<boolean> {
 
 export const SENDING_OFF_REASON = "lead_sending_off";
 
+export const SAMPLE_LEAD_REASON = "sample_lead";
+
 export async function dispatchOutboundMessage(db: GhlDb, input: DispatchInput): Promise<DispatchResult> {
+  // The onboarding sample lead never receives anything. Its "send" is a
+  // simulation: recorded as not sent, before any outside service is called.
+  const { data: sample } = await db.from("leads").select("is_test").eq("id", input.leadId).eq("org_id", input.orgId).maybeSingle();
+  if (sample?.is_test) {
+    ghlLog("ghl.dispatch.simulated", logFields(input, "suppressed", SAMPLE_LEAD_REASON));
+    return { status: "suppressed", dispatchId: "", reason: SAMPLE_LEAD_REASON };
+  }
   if (!(await leadSendingEnabled(db))) {
     ghlWarn("ghl.dispatch.refused", logFields(input, "failed", SENDING_OFF_REASON));
     return { status: "failed", dispatchId: null, reason: SENDING_OFF_REASON };

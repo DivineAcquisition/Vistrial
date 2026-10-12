@@ -7,10 +7,14 @@ import { ORG_COOKIE_NAME } from "@/lib/auth/cookies";
 import { GHL_OAUTH_COOKIE, GHL_OAUTH_SCOPES } from "@/lib/ghl/constants";
 import { ghlClientId, ghlOAuthAuthorizeUrl, ghlOAuthConfigured, ghlOAuthRedirectUri } from "@/lib/ghl/env";
 import { createOAuthState } from "@/lib/ghl/oauth-state";
+import { CRM_RETURN_COOKIE } from "@/lib/ghl/constants";
 
 export const dynamic = "force-dynamic";
 
-export async function GET() {
+export async function GET(request: Request) {
+  // An Owner connects their own CRM from the guided setup (Prompt 10); the
+  // integrations page stays the team's.
+  const fromSetup = new URL(request.url).searchParams.get("from") === "onboarding";
   if (!ghlOAuthConfigured()) {
     return NextResponse.json({ error: "LeadConnector credentials are not configured." }, { status: 503 });
   }
@@ -28,7 +32,8 @@ export async function GET() {
   if (!active) {
     return NextResponse.json({ error: "No workspace." }, { status: 403 });
   }
-  if (!canManageOrgSettings(active.role, active.seat === "staff")) {
+  const ownerInSetup = fromSetup && active.seat === "customer" && active.role === "owner";
+  if (!canManageOrgSettings(active.role, active.seat === "staff") && !ownerInSetup) {
     return NextResponse.json({ error: "You do not have permission to connect the CRM." }, { status: 403 });
   }
 
@@ -47,6 +52,16 @@ export async function GET() {
     path: "/",
     maxAge: 15 * 60,
   });
+
+  if (fromSetup) {
+    cookieStore.set(CRM_RETURN_COOKIE, "onboarding", {
+      httpOnly: true,
+      sameSite: "lax",
+      secure: process.env.NODE_ENV === "production",
+      path: "/",
+      maxAge: 15 * 60,
+    });
+  }
 
   return NextResponse.redirect(url.toString());
 }

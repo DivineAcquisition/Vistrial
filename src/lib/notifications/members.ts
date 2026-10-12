@@ -4,7 +4,7 @@ import type { MemberNotifyTarget } from "@/lib/notifications/types";
 import type { OrgRole } from "@/types/database";
 
 export async function loadOrgNotifyContext(db: GhlDb, orgId: string) {
-  const [{ data: org }, { data: members }] = await Promise.all([
+  const [{ data: org }, { data: members }, { data: contacts }] = await Promise.all([
     db
       .from("organizations")
       .select(
@@ -19,6 +19,20 @@ export async function loadOrgNotifyContext(db: GhlDb, orgId: string) {
       )
       .eq("org_id", orgId)
       .eq("active", true),
+    (db as unknown as {
+      from: (t: string) => {
+        select: (c: string) => {
+          eq: (k: string, v: string) => {
+            not: (k: string, op: string, v: null) => { order: (k: string) => Promise<{ data: Array<{ member_id: string; channel: string }> | null }> };
+          };
+        };
+      };
+    })
+      .from("workspace_escalation_contacts")
+      .select("member_id, channel")
+      .eq("org_id", orgId)
+      .not("member_id", "is", null)
+      .order("position"),
   ]);
   if (!org) return null;
 
@@ -40,6 +54,15 @@ export async function loadOrgNotifyContext(db: GhlDb, orgId: string) {
     }),
   }));
 
+  // The Owner's named escalation contacts, in their order, are "Owners and
+  // managers" and the final fallback. Without any, owners and admins are.
+  const named: MemberNotifyTarget[] = [];
+  for (const contact of contacts ?? []) {
+    const target = targets.find((member) => member.memberId === contact.member_id);
+    if (target) named.push({ ...target, escalationChannel: contact.channel as MemberNotifyTarget["escalationChannel"] });
+  }
+  const owners = targets.filter((member) => member.role === "owner" || member.role === "admin");
+
   return {
     org: {
       id: org.id,
@@ -50,7 +73,7 @@ export async function loadOrgNotifyContext(db: GhlDb, orgId: string) {
     members: targets,
     setters: targets.filter((member) => member.role === "setter"),
     closers: targets.filter((member) => member.role === "closer"),
-    managers: targets.filter((member) => member.role === "owner" || member.role === "admin"),
+    managers: named.length ? named : owners,
   };
 }
 

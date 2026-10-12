@@ -110,13 +110,6 @@ export const HIDDEN_NAV: HiddenNavItem[] = [
     reason: "No operator-log screen yet. Logging an outcome stays at /app/log.",
   },
   {
-    id: "onboarding",
-    label: "Onboarding",
-    roles: "Service Team, Admin",
-    reason:
-      "Onboarding is still the workspace setup flow at /app/onboarding, not a staff list of onboardings.",
-  },
-  {
     id: "assignments",
     label: "Assignments",
     roles: "Admin",
@@ -347,6 +340,14 @@ function staffGroups(input: {
       phone: 3,
     },
     {
+      id: "staff-onboarding",
+      label: "Onboarding",
+      href: "/app/team/onboarding",
+      match: "/app/team/onboarding",
+      icon: "activity",
+      description: "Workspaces getting ready to go live.",
+    },
+    {
       id: "connections",
       label: "Connections",
       href: "/app/team/connections",
@@ -549,6 +550,7 @@ const TITLE_RULES: Array<{ prefix: string; title: string; crumbs: Array<{ href: 
   { prefix: "/app/team/activity", title: "Audit log", crumbs: [{ href: "/app/team/activity", label: "Audit log" }] },
   { prefix: "/app/team/queue", title: "Requests and escalations", crumbs: [{ href: "/app/team/queue", label: "Queue" }] },
   { prefix: "/app/team/roster", title: "Client Roster", crumbs: [{ href: "/app/team/roster", label: "Client Roster" }] },
+  { prefix: "/app/team/onboarding", title: "Onboarding", crumbs: [{ href: "/app/team/onboarding", label: "Onboarding" }] },
   { prefix: "/app/team/connections", title: "Connections", crumbs: [{ href: "/app/team/connections", label: "Connections" }] },
   { prefix: "/app/team/agents", title: "Agent oversight", crumbs: [{ href: "/app/team/agents", label: "Agent oversight" }] },
   { prefix: "/app/team/data-requests", title: "Data requests", crumbs: [{ href: "/app/team/queue", label: "Queue" }, { href: "/app/team/data-requests", label: "Data requests" }] },
@@ -625,6 +627,7 @@ export function layoutKindForPath(pathname: string): PageLayoutKind {
   }
   if (
     pathname === "/app/team/roster" ||
+    pathname === "/app/team/onboarding" ||
     pathname.startsWith("/app/team/queue") ||
     pathname.startsWith("/app/team/connections") ||
     pathname.startsWith("/app/team/activity") ||
@@ -635,7 +638,11 @@ export function layoutKindForPath(pathname: string): PageLayoutKind {
     return "table";
   }
   if (pathname === "/app/team") return "dashboard";
-  if (/^\/app\/team\/workspaces\/[^/]+/.test(pathname) || /^\/app\/team\/data-requests\/[^/]+/.test(pathname)) {
+  if (
+    /^\/app\/team\/workspaces\/[^/]+/.test(pathname) ||
+    /^\/app\/team\/data-requests\/[^/]+/.test(pathname) ||
+    /^\/app\/team\/onboarding\/(?!settings(?:\/|$))[^/]+/.test(pathname)
+  ) {
     return "record";
   }
   if (/^\/app\/cases\/[^/]+/.test(pathname) || /^\/app\/calls\/[^/]+/.test(pathname)) return "record";

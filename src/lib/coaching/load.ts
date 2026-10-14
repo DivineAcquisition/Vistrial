@@ -1,6 +1,7 @@
 import "server-only";
 
 import { createClient } from "@/lib/supabase/server";
+import { canSeeTranscripts } from "@/lib/transcripts/access";
 
 export async function loadCallQualityRepSnapshotForOrg(
   orgId: string,
@@ -46,8 +47,13 @@ export async function loadCallQualityForCall(callId: string): Promise<{
     .from("call_objection_handlings")
     .select("objection_type, handling, verbatim, evidence_span")
     .eq("call_id", callId);
+  const { data: org } = await supabase.from("calls").select("org_id").eq("id", callId).maybeSingle();
+  const allowed = org?.org_id ? await canSeeTranscripts(supabase as never, org.org_id as string) : false;
   return {
     measure: measure ? (measure as Record<string, unknown>) : null,
-    handlings: (handlings ?? []) as Array<Record<string, unknown>>,
+    // Objection wording and evidence are for people who may read transcripts.
+    handlings: ((handlings ?? []) as Array<Record<string, unknown>>).map((row) =>
+      allowed ? row : { ...row, verbatim: null, evidence_span: null }
+    ),
   };
 }

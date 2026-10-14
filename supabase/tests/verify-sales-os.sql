@@ -202,10 +202,12 @@ DECLARE
   v_v1 public.sales_os_assets;
   v_v2 public.sales_os_assets;
 BEGIN
+  -- Since Compass, an old conversation is private to its author. What the
+  -- agent did (tool calls) stays reviewable for the Owner.
   SELECT count(*) INTO v_count FROM public.sales_os_conversations
   WHERE id = '5a1e5051-0000-4000-8000-0000000000c1';
-  IF v_count <> 1 THEN
-    RAISE EXCEPTION 'owner cannot review the setter''s conversation';
+  IF v_count <> 0 THEN
+    RAISE EXCEPTION 'owner read the setter''s conversation';
   END IF;
 
   SELECT count(*) INTO v_count FROM public.sales_os_tool_calls

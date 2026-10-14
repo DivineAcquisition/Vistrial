@@ -32,6 +32,9 @@ export function LayoutReference({ kind, state }: { kind: PageLayoutKind; state: 
       <Link href="/app/layouts/onboarding" className="self-start text-sm text-brand-300 underline underline-offset-2">
         Onboarding in each state
       </Link>
+      <Link href="/app/layouts/compass" className="self-start text-sm text-brand-300 underline underline-offset-2">
+        Compass in each state
+      </Link>
       <div className="flex flex-wrap gap-2">
         {KINDS.map((item) => (
           <Link

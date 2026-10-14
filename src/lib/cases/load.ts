@@ -14,6 +14,7 @@ import {
   type CaseTimelinePage,
 } from "@/lib/cases/types";
 import { createClient } from "@/lib/supabase/server";
+import { canSeeTranscripts } from "@/lib/transcripts/access";
 import type { Database, Json } from "@/types/database";
 
 export async function loadOrgCaseList(
@@ -91,7 +92,7 @@ export async function fetchOrgCaseFile(
   const payload = parseCaseFilePayload(data);
   if (!payload) return null;
 
-  const [extraLead, files, transcripts, config] = await Promise.all([
+  const [extraLead, files, transcripts, config, transcriptsAllowed] = await Promise.all([
     supabase
       .from("leads")
       .select("context_notes, pipeline_stage, created_at, time_to_first_human_touch_seconds")
@@ -114,6 +115,7 @@ export async function fetchOrgCaseFile(
       .select("speed_to_lead_minutes")
       .eq("org_id", orgId)
       .maybeSingle(),
+    canSeeTranscripts(supabase as unknown as SupabaseClient, orgId),
   ]);
 
   const transcriptById = new Map(
@@ -138,10 +140,12 @@ export async function fetchOrgCaseFile(
       const raw = row?.raw_transcript?.trim() ?? "";
       return {
         ...call,
-        transcript: raw.length > 0 ? raw : null,
+        transcript: transcriptsAllowed && raw.length > 0 ? raw : null,
         hasTranscript: call.hasTranscript || raw.length > 0,
       };
     }),
+    // What the lead said, word for word, is for people who may read transcripts.
+    objections: transcriptsAllowed ? payload.objections : payload.objections.map((item) => ({ ...item, verbatim: "" })),
     files: (files.data ?? []).map((row) => ({
       id: row.id,
       fileName: row.file_name,

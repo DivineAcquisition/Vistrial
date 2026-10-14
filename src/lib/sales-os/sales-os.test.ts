@@ -447,10 +447,13 @@ describe("source guards", () => {
   });
 
   it("builds its conversation from the server's copy, not the browser's", () => {
-    const route = readFileSync(path.join(ROOT, "src/app/api/sales-os/chat/route.ts"), "utf8");
+    // Ask Vistrial's chat is now Compass: the old route only answers that it moved.
+    const old = readFileSync(path.join(ROOT, "src/app/api/sales-os/chat/route.ts"), "utf8");
+    expect(old).toContain("status: 410");
+    expect(old).not.toMatch(/streamText|generateText/);
+    const route = readFileSync(path.join(ROOT, "src/app/api/compass/chat/route.ts"), "utf8");
     expect(route).not.toMatch(/body\.messages|body\.tools|body\.system/);
-    expect(route).toContain("experimental_toolApprovalSecret");
-    expect(route).toContain("loadConversationMessages");
+    expect(route).toContain("loadMessages(actor, conversation.id)");
   });
 });
 

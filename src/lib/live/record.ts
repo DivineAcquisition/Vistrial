@@ -332,9 +332,8 @@ export async function agentMayRun(
   // go-live. The onboarding sample test is the one exception, and it never
   // reaches a real lead.
   const stage = (activation as { stage?: string } | null)?.stage;
-  // Compass's step is a placeholder until it is built; Ask Vistrial keeps
-  // working as it does today.
-  if (agentId !== "compass" && !options.sample && stage && !["on", "watch", "drafts_only"].includes(stage)) {
+  // Compass is the last step; it answers only once switched on.
+  if (!options.sample && stage && !["on", "watch", "drafts_only"].includes(stage)) {
     return { ok: false, reason: "not_activated" };
   }
   return { ok: true };

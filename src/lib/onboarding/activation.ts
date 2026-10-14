@@ -39,7 +39,10 @@ export function activationStepCopy(agent: LiveAgentId, watchDays: number): { tit
         plain: `${name} writes follow-ups for your approvers. Nothing is sent unless one of them approves it.`,
       };
     case "compass":
-      return { title: `${name} (coming soon)`, plain: `${name} will answer questions about your sales. It is not switched on yet.` };
+      return {
+        title: `${name} answers questions`,
+        plain: `${name} answers questions about your own workspace from what Vistrial recorded, and shows where each answer came from. It can suggest an action, and nothing happens until you confirm it.`,
+      };
   }
 }
 

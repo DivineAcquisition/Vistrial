@@ -43,6 +43,8 @@ export type RelayJob = {
   org_id: string;
   lead_id: string;
   trigger: RelayTrigger;
+  requested_by_label?: string | null;
+  requested_by_member?: string | null;
   attempts: number;
   created_at: string;
 };
@@ -258,6 +260,7 @@ async function draftForJob(job: RelayJob): Promise<Outcome> {
     subjectLabel: `a ${channel === "sms" ? "text" : "email"} for ${name}`,
     subjectHref: `/app/cases/${job.lead_id}`,
     leadId: job.lead_id,
+    actorMemberId: job.trigger === "compass_request" ? (job.requested_by_member ?? null) : null,
     plan: ["Reading the case file", "Writing a draft", "Checking the draft", "Waiting for approval"],
     configVersion: gate.config.version,
     sources: [{ kind: "case_file", label: "Case file", href: `/app/cases/${job.lead_id}` }],
@@ -375,6 +378,8 @@ async function writeAndQueue(args: {
       reason:
         job.trigger === "missed_window"
           ? "Nobody has reached this lead within the response window. Approve it, then send it from your CRM."
+          : job.trigger === "compass_request"
+            ? `${job.requested_by_label ? `${job.requested_by_label} asked` : "Someone asked"} for this draft from Compass. Approve it, then send it from your CRM.`
           : "Scribe updated the case file after a call. Approve it, then send it from your CRM.",
       lead_ids: [job.lead_id],
       assigned_member_id: assigned,

@@ -189,7 +189,7 @@ describe("staged activation", () => {
   it("explains Sentry's watch period and that nothing is sent unapproved", () => {
     expect(activationStepCopy("sentry", 1).plain).toMatch(/first day/);
     expect(activationStepCopy("relay", 1).plain).toMatch(/Nothing is sent unless/);
-    expect(activationStepCopy("compass", 1).title).toMatch(/coming soon/);
+    expect(activationStepCopy("compass", 1).plain).toMatch(/nothing happens until you confirm/);
   });
 });
 

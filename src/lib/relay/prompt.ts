@@ -1,7 +1,7 @@
 import { extractJsonObject } from "@/lib/extraction/parse";
 import type { RelayChannel, RelayFact } from "@/lib/relay/facts";
 
-export type RelayTrigger = "after_call" | "missed_window" | "sample";
+export type RelayTrigger = "after_call" | "missed_window" | "sample" | "compass_request";
 
 export type RelayVoice = {
   formality: string;
@@ -55,6 +55,9 @@ function voiceLines(channel: RelayChannel, voice: RelayVoice): string[] {
 }
 
 function triggerLine(trigger: RelayTrigger): string {
+  if (trigger === "compass_request") {
+    return "Why now: someone on the team asked for a follow-up for this lead. Move toward the case file's next step with one easy next step for the lead.";
+  }
   return trigger === "after_call"
     ? "Why now: the lead was just on a call with the business. Confirm the agreed next step, or offer one easy next step if none was agreed."
     : "Why now: nobody on the team has reached this lead in the time the business promises. A short, warm note that someone will help, with one easy next step. Do not apologize at length.";

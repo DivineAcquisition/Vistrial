@@ -66,6 +66,7 @@ export default async function AgentPage({
       {agent === "scribe" && canPause ? <ScribeReprocess /> : null}
       {agent === "sentry" ? <SentrySection orgId={ctx.org.id} canControl={canPause} /> : null}
       {agent === "relay" ? <RelaySection orgId={ctx.org.id} isStaff={ctx.isStaff} /> : null}
+      {agent === "compass" && canPause ? <CompassUsage orgId={ctx.org.id} /> : null}
     </PageFrame>
   );
 }
@@ -116,4 +117,28 @@ async function loadSentrySection(orgId: string) {
       leadId: alert.lead_id,
     })),
   };
+}
+
+/** Questions this month against the workspace's limits. Counts only: nobody's questions are shown. */
+async function CompassUsage({ orgId }: { orgId: string }) {
+  const db = (await createClient()) as unknown as SupabaseClient;
+  const { data } = await db.rpc("compass_workspace_usage", { p_org_id: orgId });
+  const usage = data as { today?: number; month?: number; people_month?: number; limits?: Record<string, number> } | null;
+  if (!usage?.limits) return null;
+  const limits = usage.limits;
+  return (
+    <section className="mt-8 rounded-xl border border-border p-6" aria-labelledby="compass-usage">
+      <h2 id="compass-usage" className="font-heading text-base text-card-foreground">
+        Questions asked
+      </h2>
+      <p className="mt-2 text-sm text-muted-foreground">
+        {usage.today ?? 0} of {limits.workspace_per_day} today · {usage.month ?? 0} of {limits.workspace_per_month} this month · {usage.people_month ?? 0}{" "}
+        {usage.people_month === 1 ? "person" : "people"} asked this month.
+      </p>
+      <p className="mt-2 text-sm text-muted-foreground">
+        Each person can ask {limits.person_per_day} questions a day. Conversations are private to the person who asked; this shows counts only.
+        If you need more, ask the Vistrial team from Help.
+      </p>
+    </section>
+  );
 }

@@ -24,6 +24,18 @@ describe("shell navigation", () => {
       "Forsight",
     ]);
     expect(labels("owner")).not.toContain("Approvals");
+    expect(nav.groups[0]?.items.find((item) => item.id === "agents")?.children?.map((item) => item.href)).toEqual(["/app/compass"]);
+  });
+
+  it("keeps Compass out of the main items for every role", () => {
+    for (const role of ["owner", "member", "operator"] as const) {
+      expect(labels(role)).not.toContain("Compass");
+    }
+    for (const role of ["service_team", "platform_admin"] as const) {
+      const here = shellNavigation({ role, templateAccess: true }).groups.find((group) => group.id === "here");
+      expect(here?.items.map((item) => item.label)).not.toContain("Compass");
+    }
+    expect(labels("owner").length).toBeLessThanOrEqual(6);
   });
 
   it("shows a member only Overview and Results", () => {
@@ -89,7 +101,7 @@ describe("shell navigation", () => {
       "member-cases",
       "member-approvals",
       "member-agents",
-      "ask",
+      "compass",
       "operator-logs",
       "assignments",
       "billing",
@@ -130,7 +142,9 @@ describe("shell navigation", () => {
     expect(layoutKindForPath("/app/team/onboarding")).toBe("table");
     expect(layoutKindForPath("/app/team/onboarding/abc")).toBe("record");
     expect(layoutKindForPath("/app/team/onboarding/settings")).toBe("standard");
-    expect(layoutKindForPath("/app/ask")).toBe("chat");
+    expect(layoutKindForPath("/app/compass")).toBe("chat");
+    expect(layoutKindForPath("/app/compass/definitions")).toBe("standard");
+    expect(layoutKindForPath("/app/ask/history")).toBe("chat");
     expect(layoutKindForPath("/login")).toBe("message");
   });
 });

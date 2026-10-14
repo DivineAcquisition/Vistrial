@@ -191,7 +191,7 @@ export function CallDetailScreen({
               {quality.handlings.map((item, index) => (
                 <li key={`${String(item.objection_type)}-${index}`}>
                   {String(item.objection_type)}: {String(item.handling)}
-                  {typeof item.verbatim === "string" ? ` — “${item.verbatim}”` : ""}
+                  {typeof item.verbatim === "string" && item.verbatim ? ` — “${item.verbatim}”` : ""}
                 </li>
               ))}
             </ul>
@@ -357,7 +357,7 @@ export function CallDetailScreen({
             <DefinitionList>
               {detail.objections.map((objection) => (
                 <KeyValue key={objection.id} label={OBJECTION_TYPE_LABELS[objection.type]}>
-                  “{objection.verbatim}”
+                  {objection.verbatim ? `“${objection.verbatim}”` : null}
                   <span className="mt-1 block text-xs text-dim">
                     {objection.resolved ? "Resolved" : "Open"}
                   </span>
@@ -418,6 +418,10 @@ export function CallDetailScreen({
                 />
               </div>
             </details>
+          </Panel>
+        ) : call.transcriptHidden ? (
+          <Panel className="p-6">
+            <p className="text-sm text-silver">Call transcripts are not shared with you. An Owner can switch on &ldquo;Can see transcripts&rdquo; for you in People.</p>
           </Panel>
         ) : (
           <Panel className="p-6">

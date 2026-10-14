@@ -172,13 +172,19 @@ run "${ROOT}/supabase/tests/verify-config.sql"
 echo "Onboarding flow checks..."
 run "${ROOT}/supabase/tests/verify-onboarding.sql"
 
+echo "Compass checks..."
+run "${ROOT}/supabase/tests/verify-compass.sql"
+
 echo "Configuration migration parity and rollback round trip..."
 bash "${ROOT}/scripts/test-config-migration.sh"
 
 echo "Workspace isolation rollback round trip..."
 bash "${ROOT}/scripts/test-workspace-rollback.sh"
 
+echo "Compass rollback round trip..."
+bash "${ROOT}/scripts/test-compass-rollback.sh"
+
 echo "Migration rollback (this prompt's migrations)..."
 bash "${ROOT}/scripts/test-migration-rollback.sh"
 
-echo "OK: schema, seed, triggers, RLS, invite, scoring, GHL, touch-ingest, platform-admin, queue, case-file, transcript, follow-up, integrity, reporting, business-profile, onboarding-reconcile, notification, hardening, mobile, calibration, call-quality, operator-agent, self-verification, activity-stream, owner-portal, agent-framework, forsight, stellar, sales-os, home-screen, execution-integration, workspace-isolation, configuration, and onboarding checks passed."
+echo "OK: schema, seed, triggers, RLS, invite, scoring, GHL, touch-ingest, platform-admin, queue, case-file, transcript, follow-up, integrity, reporting, business-profile, onboarding-reconcile, notification, hardening, mobile, calibration, call-quality, operator-agent, self-verification, activity-stream, owner-portal, agent-framework, forsight, stellar, sales-os, home-screen, execution-integration, workspace-isolation, configuration, onboarding, and Compass checks passed."

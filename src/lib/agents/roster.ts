@@ -95,7 +95,7 @@ export const AGENTS: Record<LiveAgentId, AgentIdentity> = {
     name: "Compass",
     role: "Answers questions about your sales.",
     description:
-      "Compass is the sales chat. Ask it about your calls, objections, and pipeline; it shows each step it takes and cites the records it used.",
+      "Compass answers questions about this workspace's leads, calls, follow-ups and numbers. It shows each lookup it makes and links the records it used.",
     glyph: "compass",
     accent: {
       text: "text-chart-4",
@@ -103,7 +103,7 @@ export const AGENTS: Record<LiveAgentId, AgentIdentity> = {
       ring: "ring-chart-4/40",
       dot: "bg-chart-4",
     },
-    promise: "Compass asks before anything leaves Vistrial.",
+    promise: "Compass only reads. It never sends a message, and nothing changes until you confirm a suggestion.",
     configSections: ["approval", "integrations"],
     order: 4,
   },

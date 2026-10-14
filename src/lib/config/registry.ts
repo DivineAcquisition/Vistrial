@@ -78,6 +78,13 @@ export const LEAD_STAGES: ChoiceOption[] = [
   { value: "ghost", label: "Gone quiet" },
 ];
 
+/** Who sees a Compass starter question: everyone, owners and members, or operators. */
+export const COMPASS_QUESTION_AUDIENCES: ChoiceOption[] = [
+  { value: "everyone", label: "Everyone" },
+  { value: "managers", label: "Owners and members" },
+  { value: "operators", label: "Operators" },
+];
+
 export const OBJECTION_CATEGORIES: ChoiceOption[] = [
   { value: "price", label: "Price or cost" },
   { value: "timing", label: "Timing" },
@@ -750,6 +757,29 @@ export const CONFIG_FIELDS: FieldDef[] = [
     type: "list",
     rules: { maxItems: 50, itemMaxLength: 120 },
     platformDefault: [],
+  },
+  {
+    key: "industry.compass_questions",
+    section: "industry",
+    label: "Compass starter questions",
+    help: "Questions Compass suggests when someone opens it. Plain words about this business's own leads and results.",
+    type: "list",
+    rules: {
+      maxItems: 20,
+      uniqueBy: "question",
+      itemFields: [
+        { key: "question", label: "Question", type: "text", required: true, maxLength: 160 },
+        { key: "audience", label: "Shown to", type: "choice", required: true, options: COMPASS_QUESTION_AUDIENCES },
+      ],
+    },
+    platformDefault: [
+      { question: "Which hot leads have not been contacted in the last two days?", audience: "managers" },
+      { question: "How did our response time look this week?", audience: "managers" },
+      { question: "What are the most common objections this month?", audience: "managers" },
+      { question: "Which drafts are waiting for approval?", audience: "managers" },
+      { question: "What should I follow up on first today?", audience: "operators" },
+      { question: "Which of my leads are at risk of missing their response window?", audience: "operators" },
+    ],
   },
   {
     key: "industry.objections",

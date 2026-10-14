@@ -60,6 +60,8 @@ export type CallDetailPayload = {
     transcriptSource: Enums<"transcript_source"> | null;
     transcriptArrivedAt: string | null;
     rawTranscript: string | null;
+    /** Set when this person may not read transcripts, so the screen says so instead of offering a paste. */
+    transcriptHidden?: boolean;
   };
   lead: { id: string; name: string };
   extraction: CallExtractionView | null;

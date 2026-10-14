@@ -862,7 +862,7 @@ function ObjectionBlock({
         />
         {item.resolved ? <span className="text-xs text-dim">Resolved</span> : null}
       </div>
-      <p className="mt-2 text-sm text-white">&ldquo;{item.verbatim}&rdquo;</p>
+      {item.verbatim ? <p className="mt-2 text-sm text-white">&ldquo;{item.verbatim}&rdquo;</p> : null}
       <p className="mt-1 text-xs text-dim">{callLabel}</p>
       {item.resolved && item.resolvedNote ? (
         <p className="mt-2 text-xs text-silver">{item.resolvedNote}</p>

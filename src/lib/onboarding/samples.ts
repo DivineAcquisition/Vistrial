@@ -157,7 +157,7 @@ export function sampleCustomerView(state: SampleState, now: number): CustomerVie
           { agent: "scribe", stage: "on", order: 1 },
           { agent: "sentry", stage: "watch", order: 2 },
           { agent: "relay", stage: "drafts_only", order: 3 },
-          { agent: "compass", stage: "coming_soon", order: 4 },
+          { agent: "compass", stage: "off", order: 4 },
         ],
       };
     case "settled":
@@ -167,7 +167,7 @@ export function sampleCustomerView(state: SampleState, now: number): CustomerVie
           { agent: "scribe", stage: "on", order: 1 },
           { agent: "sentry", stage: "on", order: 2 },
           { agent: "relay", stage: "drafts_only", order: 3 },
-          { agent: "compass", stage: "coming_soon", order: 4 },
+          { agent: "compass", stage: "on", order: 4 },
         ],
       };
   }

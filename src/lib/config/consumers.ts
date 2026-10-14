@@ -19,7 +19,7 @@ export const CONFIG_CONSUMERS = {
     label: "The Operator",
     sections: ["identity", "qualification", "response", "approval", "compliance", "operators"],
   },
-  sales_os: { label: "Ask Vistrial", sections: ["identity", "industry", "tone", "approval"] },
+  sales_os: { label: "Compass", sections: ["identity", "industry", "tone", "approval"] },
   response_clock: { label: "Speed-to-lead alerts", sections: ["identity", "response", "escalation"] },
 } as const satisfies Record<string, { label: string; sections: readonly ConfigSection[] }>;
 

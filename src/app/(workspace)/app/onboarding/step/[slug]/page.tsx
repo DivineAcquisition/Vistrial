@@ -612,7 +612,7 @@ export default async function SetupStepPage({
               <Panel key={agent.id} className="p-6">
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <h2 className={`${cardTitle} ${agent.accent.text}`}>{agent.name}</h2>
-                  {agent.id === "compass" ? <StatusBadge label="Coming soon" tone="neutral" /> : null}
+                  {agent.id === "compass" ? <StatusBadge label="Switched on last" tone="neutral" /> : null}
                 </div>
                 <p className="mt-2 text-sm text-white">{agent.role}</p>
                 <p className={helperClass}>{agent.description}</p>

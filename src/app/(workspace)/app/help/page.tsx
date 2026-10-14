@@ -1,5 +1,7 @@
+import type { SupabaseClient } from "@supabase/supabase-js";
 import Link from "next/link";
 
+import { HelpArticles, type HelpArticleView } from "@/app/(workspace)/app/help/help-articles";
 import { HelpRequestForm } from "@/app/(workspace)/app/help/help-forms";
 import { PageFrame } from "@/components/app/page-frame";
 import { Accordion, AccordionItem, AccordionPanel, AccordionTrigger } from "@/components/ui/accordion";
@@ -53,7 +55,7 @@ export default async function HelpPage({ searchParams }: { searchParams: Promise
 
   const db = await portalDb();
   const supabase = await createClient();
-  const [{ data: requests }, { data: updates }, leadResult] = await Promise.all([
+  const [{ data: requests }, { data: updates }, leadResult, { data: articleRows }] = await Promise.all([
     db
       .from("help_requests")
       .select("id, topic, message, status, created_by_name, created_by_user_id, created_at, last_reply_at")
@@ -64,7 +66,11 @@ export default async function HelpPage({ searchParams }: { searchParams: Promise
     leadParam && UUID.test(leadParam)
       ? supabase.from("leads").select("id, first_name, last_name").eq("org_id", ctx.org.id).eq("id", leadParam).maybeSingle()
       : Promise.resolve({ data: null }),
+    (supabase as unknown as SupabaseClient).from("help_articles").select("slug, question, body, link_label, link_href").eq("published", true).order("sort").limit(200),
   ]);
+  const articles: HelpArticleView[] = ((articleRows ?? []) as Array<{ slug: string; question: string; body: string; link_label: string | null; link_href: string | null }>).map(
+    (row) => ({ slug: row.slug, question: row.question, body: row.body, linkLabel: row.link_label, linkHref: row.link_href })
+  );
   const rows = (requests ?? []) as RequestRow[];
   const leadRow = leadResult.data as { id: string; first_name: string | null; last_name: string | null } | null;
   const lead = leadRow
@@ -103,6 +109,17 @@ export default async function HelpPage({ searchParams }: { searchParams: Promise
           </Accordion>
         </Panel>
       </section>
+
+      {articles.length ? (
+        <section className="space-y-3" aria-labelledby="help-product">
+          <h2 id="help-product" className={cardTitle}>
+            How Vistrial works
+          </h2>
+          <Panel className="px-6 py-2">
+            <HelpArticles articles={articles} />
+          </Panel>
+        </section>
+      ) : null}
 
       <section className="space-y-3" aria-labelledby="help-ask">
         <h2 id="help-ask" className={cardTitle}>

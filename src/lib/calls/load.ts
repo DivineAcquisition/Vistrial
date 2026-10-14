@@ -4,6 +4,7 @@ import { getAuthContext } from "@/lib/auth/session";
 import { parseCallDetailPayload, parseCallListPayload } from "@/lib/calls/parse";
 import { CALL_PAGE_SIZE, type CallDetailPayload, type CallListPayload } from "@/lib/calls/types";
 import { createClient } from "@/lib/supabase/server";
+import { canSeeTranscripts } from "@/lib/transcripts/access";
 import type { Json } from "@/types/database";
 
 export async function loadOrgCallList(opts?: {
@@ -31,6 +32,13 @@ export async function loadOrgCallDetail(callId: string): Promise<CallDetailPaylo
   if (error) throw new Error(error.message || "Could not load that call.");
   if (data == null) return null;
   const parsed = parseCallDetailPayload(data);
+  // Transcript text, quotes and objection wording are for people who may read transcripts.
+  if (parsed && !(await canSeeTranscripts(supabase as never, ctx.org.id))) {
+    parsed.call.rawTranscript = null;
+    parsed.call.transcriptHidden = true;
+    parsed.objections = parsed.objections.map((item) => ({ ...item, verbatim: "" }));
+    if (parsed.extraction) parsed.extraction.quotes = [];
+  }
   if (!parsed?.extraction) return parsed;
   const { data: verification } = await supabase
     .from("call_extractions")

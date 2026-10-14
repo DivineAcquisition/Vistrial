@@ -1,3 +1,5 @@
+import type { SupabaseClient } from "@supabase/supabase-js";
+
 import { runAuthorizedCron } from "@/lib/ops/jobs";
 import { deleteOrgsPastGrace } from "@/lib/ops/lifecycle";
 import { pruneAgentRunHistory } from "@/lib/live/maintenance";
@@ -14,9 +16,14 @@ export async function GET(request: Request) {
     if (error) throw new Error(error.message);
     const agentRuns = await pruneAgentRunHistory(db, dryRun);
     let deletedOrgs = 0;
+    // Compass conversations older than the workspace's retention setting, and long-expired shares.
+    let compass: unknown = null;
     if (!dryRun) {
       deletedOrgs = await deleteOrgsPastGrace(db);
+      const { data: purged, error: purgeError } = await (db as unknown as SupabaseClient).rpc("compass_purge");
+      if (purgeError) throw new Error(purgeError.message);
+      compass = purged;
     }
-    return { retention: preview, agentRuns, deletedOrgs, dryRun };
+    return { retention: preview, agentRuns, deletedOrgs, compass, dryRun };
   });
 }

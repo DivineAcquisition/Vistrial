@@ -1998,6 +1998,7 @@ export type Database = {
           last_seen_at: string | null;
           can_see_money: boolean;
           can_export: boolean;
+          can_see_transcripts: boolean;
           avatar_path: string | null;
           notification_delivery: "instant" | "digest";
           home_seen_at: string | null;
@@ -2031,6 +2032,7 @@ export type Database = {
           last_seen_at?: string | null;
           can_see_money?: boolean;
           can_export?: boolean;
+          can_see_transcripts?: boolean;
           avatar_path?: string | null;
           notification_delivery?: "instant" | "digest";
           home_seen_at?: string | null;
@@ -2064,6 +2066,7 @@ export type Database = {
           last_seen_at?: string | null;
           can_see_money?: boolean;
           can_export?: boolean;
+          can_see_transcripts?: boolean;
           avatar_path?: string | null;
           notification_delivery?: "instant" | "digest";
           home_seen_at?: string | null;

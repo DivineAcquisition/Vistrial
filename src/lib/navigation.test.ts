@@ -103,10 +103,10 @@ describe("settings IA", () => {
 });
 
 describe("Forsight and the client portal", () => {
-  it("puts Home, Ask Vistrial, Forsight, To call, People, and Settings in the sidebar map", () => {
+  it("puts Home, Compass, Forsight, To call, People, and Settings in the sidebar map", () => {
     expect(PRIMARY_NAV.map((item) => item.label)).toEqual([
       "Home",
-      "Ask Vistrial",
+      "Compass",
       "Forsight",
       "To call",
       "People",
@@ -197,10 +197,10 @@ describe("Forsight and the client portal", () => {
     expect(DA_CONSOLE_LINKS.map((item) => item.href)).toContain(`${FORSIGHT_PATH}/workspaces`);
   });
 
-  it("shows Home and Ask Vistrial to everyone who works in the app", () => {
+  it("shows Home and Compass to everyone who works in the app", () => {
     const home = PRIMARY_NAV.find((item) => item.href === HOME_PATH);
     const ask = PRIMARY_NAV.find((item) => item.href === ASK_PATH);
-    if (!home || !ask) throw new Error("Home or Ask Vistrial missing from the rail");
+    if (!home || !ask) throw new Error("Home or Compass missing from the rail");
     for (const role of ["owner", "admin", "closer", "setter"] as const) {
       expect(navVisibleTo(home, role)).toBe(true);
       expect(navVisibleTo(ask, role)).toBe(true);

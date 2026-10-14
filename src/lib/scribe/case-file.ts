@@ -4,6 +4,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 
 import type { CaseFieldView, ScribeCaseFileView } from "@/lib/scribe/view";
 import { createClient } from "@/lib/supabase/server";
+import { canSeeTranscripts } from "@/lib/transcripts/access";
 
 /**
  * The lead's case file, read with the person's own client so workspace and
@@ -29,6 +30,8 @@ export async function loadScribeCaseFile(orgId: string, leadId: string): Promise
     .eq("case_file_id", file.id)
     .order("field_key");
   const fields = (rows ?? []) as Array<Record<string, unknown>>;
+  // A quote is what the lead said, word for word: only for people who may read transcripts.
+  const quotesAllowed = await canSeeTranscripts(db, orgId);
   const passageIds = [...new Set(fields.flatMap((f) => ((f.passage_ids as string[] | null) ?? []).slice(0, 1)))];
   const { data: passages } = passageIds.length
     ? await db.from("transcript_passages").select("id, call_id, speaker").eq("org_id", orgId).in("id", passageIds)
@@ -43,7 +46,7 @@ export async function loadScribeCaseFile(orgId: string, leadId: string): Promise
       label: String(f.label),
       value: (f.value as CaseFieldView["value"]) ?? null,
       state: f.state as CaseFieldView["state"],
-      quote: (f.quote as string | null) ?? null,
+      quote: quotesAllowed ? ((f.quote as string | null) ?? null) : null,
       source: f.source as CaseFieldView["source"],
       locked: f.locked === true,
       editedAt: (f.edited_at as string | null) ?? null,

@@ -97,11 +97,11 @@ export const HIDDEN_NAV: HiddenNavItem[] = [
     reason: "Members are not granted agents from the shell.",
   },
   {
-    id: "ask",
-    label: "Ask Vistrial",
-    roles: "Owner, Operator, Service Team, Admin",
+    id: "compass",
+    label: "Compass",
+    roles: "Owner, Member, Operator, Service Team, Admin",
     reason:
-      "The conversation stays at /app/ask and in search. It is not a new role destination in this shell.",
+      "Compass is not a main item. It sits under Agents for Owners and staff, and opens from Ask Compass in the top bar for everyone who can use it.",
   },
   {
     id: "operator-logs",
@@ -144,6 +144,15 @@ const FORSIGHT: ShellNavItem = {
   description: "Ads, creatives, and pipeline for this workspace.",
 };
 
+const COMPASS_ITEM: ShellNavItem = {
+  id: "compass",
+  label: "Compass",
+  href: "/app/compass",
+  match: "/app/compass",
+  icon: "agents",
+  description: "Ask about your leads, calls and numbers.",
+};
+
 const AGENTS_ITEM: ShellNavItem = {
   id: "agents",
   label: "Agents",
@@ -151,6 +160,7 @@ const AGENTS_ITEM: ShellNavItem = {
   match: "/app/agents",
   icon: "agents",
   description: "Who is working right now, and what each agent did.",
+  children: [COMPASS_ITEM],
 };
 
 function resultsItem(withForsight: boolean): ShellNavItem {
@@ -362,6 +372,14 @@ function staffGroups(input: {
       icon: "agents",
     },
     {
+      id: "staff-compass",
+      label: "Compass",
+      href: "/app/team/compass",
+      match: "/app/team/compass",
+      icon: "agents",
+      description: "Shared conversations, limits, and how answers are going.",
+    },
+    {
       id: "notices",
       label: "Review notices",
       href: "/app/team/notices",
@@ -552,6 +570,8 @@ const TITLE_RULES: Array<{ prefix: string; title: string; crumbs: Array<{ href: 
   { prefix: "/app/team/roster", title: "Client Roster", crumbs: [{ href: "/app/team/roster", label: "Client Roster" }] },
   { prefix: "/app/team/onboarding", title: "Onboarding", crumbs: [{ href: "/app/team/onboarding", label: "Onboarding" }] },
   { prefix: "/app/team/connections", title: "Connections", crumbs: [{ href: "/app/team/connections", label: "Connections" }] },
+  { prefix: "/app/team/compass/help", title: "Help articles", crumbs: [{ href: "/app/team/compass", label: "Compass" }, { href: "/app/team/compass/help", label: "Help articles" }] },
+  { prefix: "/app/team/compass", title: "Compass", crumbs: [{ href: "/app/team/compass", label: "Compass" }] },
   { prefix: "/app/team/agents", title: "Agent oversight", crumbs: [{ href: "/app/team/agents", label: "Agent oversight" }] },
   { prefix: "/app/team/data-requests", title: "Data requests", crumbs: [{ href: "/app/team/queue", label: "Queue" }, { href: "/app/team/data-requests", label: "Data requests" }] },
   { prefix: "/app/team/metrics", title: "Metrics", crumbs: [{ href: "/app/team/metrics", label: "Metrics" }] },
@@ -587,7 +607,9 @@ const TITLE_RULES: Array<{ prefix: string; title: string; crumbs: Array<{ href: 
   { prefix: "/app/agents/", title: "Agent", crumbs: [{ href: "/app/agents", label: "Agents" }, { href: "", label: "Agent" }] },
   { prefix: "/app/agents", title: "Agents", crumbs: [{ href: "/app/agents", label: "Agents" }] },
   { prefix: "/app/runs/", title: "Agent run", crumbs: [{ href: "/app/agents", label: "Agents" }, { href: "", label: "Run" }] },
-  { prefix: "/app/ask", title: "Ask Vistrial", crumbs: [{ href: "/app/ask", label: "Ask Vistrial" }] },
+  { prefix: "/app/compass/definitions", title: "How Compass counts", crumbs: [{ href: "/app/compass", label: "Compass" }, { href: "", label: "Definitions" }] },
+  { prefix: "/app/compass", title: "Compass", crumbs: [{ href: "/app/agents", label: "Agents" }, { href: "/app/compass", label: "Compass" }] },
+  { prefix: "/app/ask", title: "Ask Vistrial", crumbs: [{ href: "/app/compass", label: "Compass" }, { href: "", label: "Earlier work" }] },
   { prefix: "/app/onboarding", title: "Onboarding", crumbs: [{ href: "/app/onboarding", label: "Onboarding" }] },
   { prefix: "/portal", title: "Client report", crumbs: [{ href: "/app/results", label: "Results" }, { href: "/portal", label: "Client report" }] },
   { prefix: "/stellar/console", title: "Placements", crumbs: [{ href: "/stellar/console", label: "Placements" }] },
@@ -620,7 +642,7 @@ export type PageLayoutKind =
 
 /** Which reusable layout a route sits in. Existing pages keep their own internals. */
 export function layoutKindForPath(pathname: string): PageLayoutKind {
-  if (pathname.startsWith("/app/ask")) return "chat";
+  if (pathname.startsWith("/app/ask") || pathname === "/app/compass") return "chat";
   if (pathname.startsWith("/app/onboarding")) return "workflow";
   if (pathname.startsWith("/login") || pathname.startsWith("/no-access") || pathname.startsWith("/auth")) {
     return "message";

@@ -19,6 +19,7 @@ import { ShellSwitchProvider } from "@/components/app/shell-switch";
 import { UserMenu } from "@/components/app/user-menu";
 import { ShellLeading } from "@/components/app/shell-leading";
 import { WorkspaceStatusBanner } from "@/components/app/workspace-status-banner";
+import { CompassPanelButton } from "@/components/compass/panel";
 import { useOrg } from "@/components/app/org-provider";
 import { LiveStatusStrip } from "@/components/live/agent-panel";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -102,7 +103,7 @@ function ConnectedShell({
   if (org.workspaceRole === "operator" && pathname.startsWith("/app/settings/profile")) {
     title = "Profile";
   }
-  const chat = pathname === "/app/ask" || pathname.startsWith("/app/ask/");
+  const chat = pathname === "/app/compass" || pathname === "/app/ask" || pathname.startsWith("/app/ask/");
   const home = landingPath(org.surfaceAccess, org.role);
   const showCue = org.isStaff && !onPlatformPage;
 
@@ -120,6 +121,7 @@ function ConnectedShell({
       leading={<ShellLeading />}
       tools={
         <>
+          {onPlatformPage ? null : <CompassPanelButton />}
           <AppJumpPalette />
           <NotificationBell />
         </>

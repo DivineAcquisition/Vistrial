@@ -58,6 +58,14 @@ export const MED_SPA: SeedTemplate = {
       { key: "budget_comfort", label: "Budget they are comfortable with", type: "text", required: false },
       { key: "consultation_preference", label: "In-person or virtual consultation", type: "text", required: false },
     ],
+    "industry.compass_questions": [
+      { question: "Which consultation leads have gone quiet for three days?", audience: "managers" },
+      { question: "Which hot leads have not been contacted in the last two days?", audience: "managers" },
+      { question: "How did our response time look this week?", audience: "managers" },
+      { question: "What are the most common objections from consultation leads this month?", audience: "managers" },
+      { question: "Which of my consultation leads should I follow up on first?", audience: "operators" },
+      { question: "Which of my leads are waiting on a reply?", audience: "operators" },
+    ],
     "industry.urgency_signals": [
       "An upcoming event, like a wedding, holiday, or trip",
       "As soon as possible",
@@ -201,6 +209,14 @@ export const HOME_SERVICES: SeedTemplate = {
       { key: "frequency", label: "One-time or recurring", type: "text", required: false },
       { key: "access_notes", label: "Access notes (gate code, pets, parking)", type: "text", required: false },
     ],
+    "industry.compass_questions": [
+      { question: "Which estimate requests have not been called back yet?", audience: "managers" },
+      { question: "How quickly did we reach new leads this week?", audience: "managers" },
+      { question: "Which leads went quiet after an estimate?", audience: "managers" },
+      { question: "What are the most common objections this month?", audience: "managers" },
+      { question: "Which of my leads need a call back today?", audience: "operators" },
+      { question: "Which of my leads are at risk of missing their response window?", audience: "operators" },
+    ],
     "industry.urgency_signals": [
       "today",
       "leak",
@@ -326,6 +342,14 @@ export const COACHES_CONSULTANTS: SeedTemplate = {
       { key: "timeline", label: "When they want to start", type: "text", required: true },
       { key: "previous_coaching", label: "Coaching or consulting they have had before", type: "text", required: false },
       { key: "objections_raised", label: "Objections raised on the call", type: "text", required: false },
+    ],
+    "industry.compass_questions": [
+      { question: "Which strategy-call leads went quiet after a good first call?", audience: "managers" },
+      { question: "Which hot leads have not had a follow-up in two days?", audience: "managers" },
+      { question: "How did our response time look this week?", audience: "managers" },
+      { question: "What objections came up most on sales calls this month?", audience: "managers" },
+      { question: "Which of my leads should I follow up on first today?", audience: "operators" },
+      { question: "Which of my booked calls need a reminder?", audience: "operators" },
     ],
     "industry.urgency_signals": [
       "A stated deadline",

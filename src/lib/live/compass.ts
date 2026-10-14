@@ -1,21 +1,25 @@
 import "server-only";
 
-import type { UIMessage } from "ai";
-
 import { startRun, type RunRecorder, type StepHandle } from "@/lib/live/record";
 
 /**
- * Ask Vistrial turns, recorded as Compass runs. Labels never carry the
- * question or answer text: the conversation itself holds that, and the live
- * record is visible to more people than the person asking.
+ * Compass turns, recorded as Compass runs in the shared event record. Each
+ * lookup Compass makes is a real step ("Checking response times for last 7
+ * days"), so the work shown in the chat matches what the product shows for
+ * other agents.
  *
- * Every call here swallows its own errors. Recording is a view of the work,
- * so a failure to record must never fail the conversation.
+ * Labels never carry the question, the answer, or a lead's name: the run is a
+ * private conversation's working record, visible only to the person who asked,
+ * and it holds what Compass did (lookups, counts, durations, errors), not what
+ * was said.
+ *
+ * Every call here swallows its own errors. Recording is a view of the work, so
+ * a failure to record must never fail the conversation.
  */
 
 export type CompassTurn = {
   recorder: RunRecorder;
-  thinking: StepHandle | null;
+  open: StepHandle | null;
 };
 
 async function quiet<T>(fn: () => Promise<T>): Promise<T | null> {
@@ -27,91 +31,98 @@ async function quiet<T>(fn: () => Promise<T>): Promise<T | null> {
   }
 }
 
-function lastUserMessageId(messages: UIMessage[]): string | null {
-  for (let index = messages.length - 1; index >= 0; index -= 1) {
-    if (messages[index].role === "user") return messages[index].id;
-  }
-  return null;
-}
-
-export function waitingForApproval(messages: UIMessage[]): boolean {
-  const last = messages.at(-1);
-  if (!last || last.role !== "assistant") return false;
-  return last.parts.some(
-    (part) => typeof part.type === "string" && part.type.startsWith("tool-") && (part as { state?: string }).state === "approval-requested"
-  );
-}
-
-function toolCount(messages: UIMessage[]): number {
-  const last = messages.at(-1);
-  if (!last || last.role !== "assistant") return 0;
-  return last.parts.filter((part) => typeof part.type === "string" && part.type.startsWith("tool-")).length;
-}
-
 export async function beginCompassTurn(input: {
   orgId: string;
-  memberId: string;
+  memberId: string | null;
   conversationId: string;
-  messages: UIMessage[];
-  resumingApproval: boolean;
+  userMessageId: string;
 }): Promise<CompassTurn | null> {
-  const userMessageId = lastUserMessageId(input.messages);
-  if (!userMessageId) return null;
   return quiet(async () => {
     const recorder = await startRun({
       orgId: input.orgId,
       agentId: "compass",
-      triggerKey: `chat:${input.conversationId}:${userMessageId}`,
-      subjectLabel: "A question in Ask Vistrial",
-      subjectHref: `/app/ask?c=${input.conversationId}`,
+      triggerKey: `compass:${input.conversationId}:${input.userMessageId}`,
+      subjectLabel: "A question in Compass",
+      subjectHref: `/app/compass?c=${input.conversationId}`,
       actorMemberId: input.memberId,
-      plan: ["Reading this workspace", "Thinking through the answer", "Answer ready"],
+      plan: ["Understanding the question", "Looking it up", "Answer ready"],
     });
-    if (input.resumingApproval) {
-      const step = await recorder.step("Carrying out what you decided");
-      return { recorder, thinking: step };
-    }
     await recorder.begin();
-    const reading = await recorder.step("Reading this workspace");
-    return { recorder, thinking: reading };
+    const open = await recorder.step("Understanding the question");
+    return { recorder, open };
   });
 }
 
-export async function compassContextRead(turn: CompassTurn | null): Promise<void> {
-  if (!turn) return;
-  await quiet(async () => {
-    await turn.thinking?.done({
-      sources: [
-        { kind: "configuration", label: "Workspace setup" },
-        { kind: "record", label: "Recent leads and results" },
-      ],
-    });
-    turn.thinking = await turn.recorder.step("Thinking through the answer");
-  });
-}
-
-export async function finishCompassTurn(turn: CompassTurn | null, messages: UIMessage[]): Promise<void> {
-  if (!turn) return;
-  await quiet(async () => {
-    const tools = toolCount(messages);
-    await turn.thinking?.done({ detail: tools ? `Used ${tools} ${tools === 1 ? "tool" : "tools"}.` : null });
-    if (waitingForApproval(messages)) {
-      await turn.recorder.needPerson({
-        kind: "approval",
-        prompt: "Compass wants to do something outside Vistrial and is waiting for your approval in the conversation.",
-        whoCanAct: "The person who asked",
-      });
-      return;
+/** One real piece of work, shown live while it runs. */
+export async function compassStep(turn: CompassTurn | null, label: string) {
+  if (!turn) return null;
+  return quiet(async () => {
+    if (turn.open) {
+      await turn.open.done();
+      turn.open = null;
     }
-    await turn.recorder.output({ kind: "answer", title: "Answer ready in Ask Vistrial" });
-    await turn.recorder.finish({ reason: "Answered in Ask Vistrial." });
+    const handle = await turn.recorder.step(label.slice(0, 200));
+    return {
+      done: async (detail?: string | null) => {
+        await quiet(() => handle.done({ detail: detail ?? null }));
+      },
+      fail: async () => {
+        await quiet(() => handle.fail());
+      },
+    };
+  });
+}
+
+export async function finishCompassTurn(
+  turn: CompassTurn | null,
+  result: { lookups: number; outcome: string; suggestions: number }
+): Promise<void> {
+  if (!turn) return;
+  await quiet(async () => {
+    await turn.open?.done();
+    const parts = [`${result.lookups} ${result.lookups === 1 ? "lookup" : "lookups"}`];
+    if (result.suggestions) parts.push(`${result.suggestions} ${result.suggestions === 1 ? "suggestion" : "suggestions"}`);
+    await turn.recorder.output({ kind: "answer", title: result.outcome === "answered" ? "Answer ready" : "Answered with a note", body: parts.join(", ") });
+    await turn.recorder.finish({ reason: `Answered in Compass (${parts.join(", ")}).` });
   });
 }
 
 export async function failCompassTurn(turn: CompassTurn | null, technical: string): Promise<void> {
   if (!turn) return;
   await quiet(async () => {
-    await turn.thinking?.fail();
-    await turn.recorder.fail("Compass could not finish this answer. Nothing outside Vistrial was changed.", technical);
+    await turn.open?.fail();
+    await turn.recorder.fail("Compass could not finish this answer. Nothing was changed.", technical.slice(0, 300));
+  });
+}
+
+/** A suggestion the person confirmed: its own short run, attributed to them, with Compass as the suggester. */
+export async function recordCompassAction(input: {
+  orgId: string;
+  memberId: string | null;
+  suggestionId: string;
+  label: string;
+  outcome: "done" | "refused";
+  detail?: string;
+}): Promise<void> {
+  await quiet(async () => {
+    const recorder = await startRun({
+      orgId: input.orgId,
+      agentId: "compass",
+      triggerKey: `compass-action:${input.suggestionId}`,
+      subjectLabel: "A suggestion from Compass",
+      actorMemberId: input.memberId,
+      plan: ["Checking you may do this", input.label],
+    });
+    await recorder.begin();
+    const check = await recorder.step("Checking you may do this");
+    await check.done();
+    const act = await recorder.step(input.label.slice(0, 200));
+    if (input.outcome === "done") {
+      await act.done({ detail: input.detail ?? null });
+      await recorder.finish({ reason: "Confirmed by the person; suggested by Compass." });
+    } else {
+      await act.fail();
+      await recorder.fail(input.detail ?? "That could not be done.", "refused");
+    }
   });
 }

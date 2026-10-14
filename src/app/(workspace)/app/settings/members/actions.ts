@@ -256,20 +256,24 @@ export async function resendInvite(inviteId: string): Promise<MemberActionResult
 /** Lets a Member see money or export Results, or takes it back. Owners and staff always can. */
 export async function setMemberGrant(
   memberId: string,
-  grant: "money" | "export",
+  grant: "money" | "export" | "transcripts",
   value: boolean
 ): Promise<MemberActionResult> {
   const gate = await requireManager();
   if (!gate.ok) return { ok: false, error: gate.error };
+  // Who reads call transcripts is the Owner's call alone; the database holds the same line.
+  if (grant === "transcripts" && (gate.ctx.isStaff || gate.ctx.role !== "owner")) {
+    return { ok: false, error: "Only an Owner can change who sees call transcripts." };
+  }
   const member = await loadMember(gate.ctx.org.id, memberId);
   if (!member) return { ok: false, error: "Member not found." };
   if (member.role !== "member") {
-    return { ok: false, error: "These are for members. Owners already see money and can export." };
+    return { ok: false, error: "These are for members. Owners already see money, transcripts, and can export." };
   }
   const supabase = await createClient();
   const { error } = await supabase
     .from("org_members")
-    .update(grant === "money" ? { can_see_money: value } : { can_export: value })
+    .update(grant === "money" ? { can_see_money: value } : grant === "export" ? { can_export: value } : { can_see_transcripts: value })
     .eq("id", memberId)
     .eq("org_id", gate.ctx.org.id);
   if (error) return { ok: false, error: explain(error, "Could not change that for this member.") };

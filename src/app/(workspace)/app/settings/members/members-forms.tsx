@@ -255,29 +255,35 @@ export function ResendInviteButton({ inviteId }: { inviteId: string }) {
   );
 }
 
-/** A Member's money or export permission. Owners and staff always have both. */
+const GRANT_LABEL = { money: "Sees money", export: "Can export", transcripts: "Sees transcripts" } as const;
+
+/** A Member's money, export, or transcript permission. Owners and staff always have them. */
 export function MemberGrantToggle({
   memberId,
   role,
   grant,
   value,
+  disabled = false,
 }: {
   memberId: string;
   role: OrgRole;
-  grant: "money" | "export";
+  grant: "money" | "export" | "transcripts";
   value: boolean;
+  /** Read only for this viewer, such as transcripts for anyone but an Owner. */
+  disabled?: boolean;
 }) {
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
   if (role === "owner") return <span className="text-sm text-silver">Yes</span>;
-  if (role !== "member") return <span className="text-sm text-dim">No</span>;
+  if (role !== "member") return <span className="text-sm text-dim">{grant === "transcripts" && role === "operator" ? "Assigned leads" : "No"}</span>;
+  if (disabled) return <span className="text-sm text-silver">{value ? "Yes" : "No"}</span>;
   return (
     <div>
       <Select
         density="compact"
         defaultValue={value ? "yes" : "no"}
         disabled={pending}
-        aria-label={grant === "money" ? "Sees money" : "Can export"}
+        aria-label={GRANT_LABEL[grant]}
         onChange={(event) => {
           const next = event.target.value === "yes";
           startTransition(async () => {
@@ -287,7 +293,7 @@ export function MemberGrantToggle({
         }}
       >
         <option value="no">No</option>
-        <option value="yes">{grant === "money" ? "Sees money" : "Can export"}</option>
+        <option value="yes">{GRANT_LABEL[grant]}</option>
       </Select>
       {error ? <p className={errorClass}>{error}</p> : null}
     </div>

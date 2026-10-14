@@ -17,8 +17,8 @@ export type NavGroupId = "front" | "door";
  */
 export const FORSIGHT_PATH = "/app/forsight";
 
-/** The front door: a conversation with Vistrial, already primed on this workspace. */
-export const ASK_PATH = "/app/ask";
+/** Compass: questions about this workspace's own leads, calls and numbers. */
+export const ASK_PATH = "/app/compass";
 
 export const MORE_PATH = "/app/more";
 
@@ -75,11 +75,11 @@ export const PRIMARY_NAV: NavItem[] = [
   },
   {
     href: ASK_PATH,
-    label: "Ask Vistrial",
+    label: "Compass",
     match: ASK_PATH,
     group: "front",
     icon: "ask",
-    description: "Where your leads are leaking, and what to do about it.",
+    description: "Ask about your leads, calls and numbers.",
   },
   {
     href: FORSIGHT_PATH,

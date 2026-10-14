@@ -23,6 +23,8 @@ export const SIMULATION_SCENARIOS = [
   "paused",
   "provider_wait",
   "watch_only",
+  "compass_no_data",
+  "compass_suggestion",
 ] as const;
 
 export type SimulationScenario = (typeof SIMULATION_SCENARIOS)[number];
@@ -37,6 +39,8 @@ export const SCENARIO_LABEL: Record<SimulationScenario, string> = {
   paused: "A paused agent",
   provider_wait: "Waiting on an outside service",
   watch_only: "Sentry watching only, during setup",
+  compass_no_data: "Compass with no records to answer from",
+  compass_suggestion: "Compass suggestion, confirmed",
 };
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -211,9 +215,9 @@ async function compassNormal(orgId: string, pace: number, actorMemberId?: string
     orgId,
     agentId: "compass",
     triggerKey: key("normal"),
-    subjectLabel: "a question about objections",
+    subjectLabel: "A question in Compass",
     actorMemberId: actorMemberId ?? null,
-    plan: ["Searching your call transcripts", "Comparing objections across 12 calls", "Drafting a script"],
+    plan: ["Checking response times", "Listing the leads behind a number"],
     simulated: true,
     configVersion: "simulation",
   });
@@ -221,18 +225,64 @@ async function compassNormal(orgId: string, pace: number, actorMemberId?: string
   await walk(
     recorder,
     [
-      { label: "Searching your call transcripts", detail: "Found 12 calls from the last 30 days." },
-      { label: "Comparing objections across 12 calls", detail: "Price came up in 7 calls, timing in 4." },
-      { label: "Drafting a script" },
+      { label: "Checking response times", detail: "Last 7 days, the same numbers as Results." },
+      { label: "Listing the leads behind a number", detail: "4 leads answered late." },
     ],
     pace
   );
-  await recorder.output({
-    kind: "answer",
-    title: "Handling price objections",
-    body: "Price is the most common objection (7 of 12 calls). The calls that moved forward named the cost of waiting before quoting a number.",
+  await recorder.finish({ reason: "Answered from 2 lookups, with sources." });
+}
+
+async function compassNoData(orgId: string, pace: number, actorMemberId?: string) {
+  const recorder = await startRun({
+    orgId,
+    agentId: "compass",
+    triggerKey: key("no-data"),
+    subjectLabel: "A question in Compass",
+    actorMemberId: actorMemberId ?? null,
+    plan: ["Checking the pipeline"],
+    simulated: true,
+    configVersion: "simulation",
   });
-  await recorder.finish({ reason: "Answered with 12 calls as sources." });
+  await recorder.begin();
+  await walk(recorder, [{ label: "Checking the pipeline", detail: "Nothing to show for this." }], pace);
+  await recorder.finish({ reason: "Said it does not have that: no records in the range." });
+}
+
+async function compassSuggestion(orgId: string, pace: number, actorMemberId?: string) {
+  const question = await startRun({
+    orgId,
+    agentId: "compass",
+    triggerKey: key("suggestion"),
+    subjectLabel: "A question in Compass",
+    actorMemberId: actorMemberId ?? null,
+    plan: ["Reading the case file", "Preparing a suggestion"],
+    simulated: true,
+    configVersion: "simulation",
+  });
+  await question.begin();
+  await walk(
+    question,
+    [
+      { label: "Reading the case file", detail: "Summary, stage and next step. No transcript text." },
+      { label: "Preparing a suggestion", detail: "Offered: ask Relay for a draft. Nothing happens until confirmed." },
+    ],
+    pace
+  );
+  await question.finish({ reason: "Answered and offered one suggestion." });
+  const action = await startRun({
+    orgId,
+    agentId: "compass",
+    triggerKey: key("suggestion-confirmed"),
+    subjectLabel: "A Compass suggestion",
+    actorMemberId: actorMemberId ?? null,
+    plan: ["Asked Relay for a draft"],
+    simulated: true,
+    configVersion: "simulation",
+  });
+  await action.begin();
+  await walk(action, [{ label: "Asked Relay for a draft", detail: "Relay will prepare it and send it to the approval queue." }], pace);
+  await action.finish({ reason: "Confirmed by a person. Nothing was sent." });
 }
 
 async function relayApproval(orgId: string, lead: Lead | null, pace: number) {
@@ -394,6 +444,13 @@ export async function runSimulation(input: {
       break;
     case "watch_only":
       await sentryWatchOnly(input.orgId, lead ?? null, pace);
+      break;
+    case "compass_no_data":
+      await compassNoData(input.orgId, pace, input.adminMemberId);
+      break;
+    case "compass_suggestion":
+      await compassSuggestion(input.orgId, pace, input.adminMemberId);
+      runs = 2;
       break;
     case "paused":
       await pauseAgent(input.orgId, agent === "scribe" ? "sentry" : agent, input.adminName, input.adminMemberId);

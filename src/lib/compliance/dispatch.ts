@@ -17,6 +17,7 @@ import { zonedStartOfDay } from "@/lib/home/periods";
 export type DispatchCompliance =
   | Exclude<ComplianceDecision, { action: "block" }>
   | { action: "block"; reason: "opted_out" }
+  | { action: "block"; reason: "do_not_contact" }
   | { action: "block"; reason: "email_suppressed" }
   | { action: "block"; reason: "missing_disclosure"; detail: string }
   | { action: "block"; reason: "config_incomplete"; detail: string };
@@ -61,11 +62,12 @@ export async function complianceForDispatch(
   const workspaceTimeZone = String(values["identity.timezone"]);
 
   const [{ data: lead }, { data: optOut }, suppressed] = await Promise.all([
-    db.from("leads").select("timezone, phone").eq("id", row.lead_id).eq("org_id", row.org_id).maybeSingle(),
+    db.from("leads").select("timezone, phone, do_not_contact").eq("id", row.lead_id).eq("org_id", row.org_id).maybeSingle(),
     db.from("lead_opt_outs").select("opted_out_at").eq("lead_id", row.lead_id).eq("org_id", row.org_id).maybeSingle(),
     row.channel === "email" ? emailSuppressed(db, row.org_id, row.lead_id) : Promise.resolve(false),
   ]);
   if (optOut?.opted_out_at) return { action: "block", reason: "opted_out" };
+  if (lead?.do_not_contact) return { action: "block", reason: "do_not_contact" };
   if (suppressed) return { action: "block", reason: "email_suppressed" };
 
   const missing = missingDisclosures(row.body_text, values["compliance.required_disclosures"]);

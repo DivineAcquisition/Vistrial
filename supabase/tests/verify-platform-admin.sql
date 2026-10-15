@@ -121,6 +121,14 @@ BEGIN
     RAISE EXCEPTION 'a new workspace did not seat the platform admin';
   END IF;
 
+  -- A second Platform Admin has to exist first. The last one cannot be removed.
+  INSERT INTO auth.users (id, email)
+  VALUES ('99999999-9999-4999-8999-999999999998', 'super-admin-2@vistrial.local')
+  ON CONFLICT (id) DO NOTHING;
+  INSERT INTO public.platform_staff (user_id, role, display_name, email)
+  VALUES ('99999999-9999-4999-8999-999999999998', 'platform_admin', 'Super Admin Two', 'super-admin-2@vistrial.local')
+  ON CONFLICT (user_id) DO UPDATE SET active = true, deactivated_at = NULL, role = 'platform_admin';
+
   -- Deactivating the platform admin removes every staff seat at once.
   UPDATE public.platform_staff
   SET active = false, deactivated_at = now()
@@ -141,10 +149,13 @@ BEGIN
     RAISE EXCEPTION 'deactivated platform admin still sees % leads', v_count;
   END IF;
 
-  -- Restore for later checks.
+  -- Restore for later checks. The spare admin can leave once this one is back.
   UPDATE public.platform_staff
   SET active = true, deactivated_at = NULL
   WHERE user_id = '99999999-9999-4999-8999-999999999999';
+  UPDATE public.platform_staff
+  SET active = false, deactivated_at = now()
+  WHERE user_id = '99999999-9999-4999-8999-999999999998';
   PERFORM set_config('request.jwt.claim.sub', '', false);
 END
 $$;

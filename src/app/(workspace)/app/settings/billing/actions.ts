@@ -81,6 +81,20 @@ export async function refreshBilling(): Promise<SettingsSaveResult> {
   return synced.ok ? { status: "saved" } : { status: "error", error: synced.error };
 }
 
+/** Owners cancel from Billing. The database keeps access until the period ends. */
+export async function cancelPlan(_prev: SettingsSaveResult, formData: FormData): Promise<SettingsSaveResult> {
+  const ctx = await getAuthContext();
+  if (ctx.workspaceRole !== "owner" && !ctx.isPlatformAdmin) {
+    return { status: "error", error: "Only an owner can cancel." };
+  }
+  const db = (await createClient()) as unknown as SupabaseClient;
+  const reason = String(formData.get("reason") ?? "").trim();
+  const { error } = await db.rpc("billing_cancel", { p_org_id: ctx.org.id, p_reason: reason || null });
+  if (error) return { status: "error", error: "Could not schedule the cancellation." };
+  revalidatePath(PATH);
+  return { status: "saved" };
+}
+
 /** Owners only: the hosted page where they can update the card or download receipts. */
 export async function openBillingPortal(): Promise<SettingsSaveResult> {
   const ctx = await getAuthContext();

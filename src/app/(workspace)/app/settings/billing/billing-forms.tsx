@@ -3,6 +3,7 @@
 import { useActionState, useState, useTransition } from "react";
 
 import {
+  cancelPlan,
   linkStripeCustomer,
   openBillingPortal,
   refreshBilling,
@@ -92,6 +93,23 @@ export function UnlinkButton() {
       />
       <Message message={message} />
     </div>
+  );
+}
+
+/** One optional question. No extra steps. */
+export function CancelPlanForm() {
+  const [state, action, pending] = useActionState(cancelPlan, initial);
+  useSettingsToast(state, pending, "Cancellation scheduled. Access continues until the end of the paid period.");
+  return (
+    <SettingsFormCard action={action} footer={<SubmitButton pending={pending}>Cancel at period end</SubmitButton>}>
+      <Field label="Why are you leaving? (optional)" name="reason" htmlFor="billing-cancel-reason">
+        <Input id="billing-cancel-reason" name="reason" maxLength={500} />
+      </Field>
+      <p className={helperClass}>
+        You keep access until the end of the paid period. Export your data from Privacy first if you want a copy. Nothing is deleted by canceling.
+      </p>
+      {state.status === "error" ? <p className={errorClass}>{state.error}</p> : null}
+    </SettingsFormCard>
   );
 }
 

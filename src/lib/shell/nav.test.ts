@@ -91,7 +91,7 @@ describe("shell navigation", () => {
     expect(labelsForAdmin).toContain("Platform Defaults");
     expect(labelsForAdmin).toContain("Layouts");
     expect(labelsForAdmin).toContain("Agent Health");
-    expect(labelsForAdmin).not.toContain("Billing");
+    expect(labelsForAdmin).toContain("Billing");
     expect(labelsForAdmin).not.toContain("Assignments");
   });
 
@@ -104,7 +104,7 @@ describe("shell navigation", () => {
       "compass",
       "operator-logs",
       "assignments",
-      "billing",
+      "billing-hidden-note",
       "template-library",
       "workspaces-duplicate",
     ]);

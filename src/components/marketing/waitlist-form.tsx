@@ -2,6 +2,7 @@
 
 import { useRef, useState, type FormEvent } from "react";
 
+import { FormGlow, publicFieldClass, publicFormClass, publicSubmitClass } from "@/components/marketing/public-form";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { trackMarketingEvent } from "@/components/marketing/track";
@@ -65,39 +66,38 @@ export function WaitlistForm({
       onFocus={markStart}
       noValidate
       data-marketing-form="waitlist"
-      className={cn("relative", className)}
+      className={cn(publicFormClass, className)}
     >
-      <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-        <label htmlFor={`waitlist-name-${position}`} className="sr-only">
-          {WAITLIST.nameLabel}
-        </label>
-        <Input
-          id={`waitlist-name-${position}`}
-          name="name"
-          type="text"
-          autoComplete="name"
-          required
-          className="min-w-0 flex-1 sm:min-w-52"
-          size="lg"
-          placeholder="Jordan Blake"
-        />
-        <label htmlFor={`waitlist-email-${position}`} className="sr-only">
-          {WAITLIST.emailLabel}
-        </label>
-        <Input
-          id={`waitlist-email-${position}`}
-          name="email"
-          type="email"
-          autoComplete="email"
-          required
-          placeholder="you@company.com"
-          className="min-w-0 flex-1"
-          size="lg"
-        />
-        <Button type="submit" variant="gradient" size="lg" className="rounded-full px-5" loading={pending} loadingLabel={WAITLIST.pending}>
-          {WAITLIST.submit}
-        </Button>
-      </div>
+      <FormGlow />
+      <label htmlFor={`waitlist-name-${position}`} className="sr-only">
+        {WAITLIST.nameLabel}
+      </label>
+      <Input
+        id={`waitlist-name-${position}`}
+        name="name"
+        type="text"
+        autoComplete="name"
+        required
+        className={publicFieldClass}
+        size="lg"
+        placeholder="Jordan Blake"
+      />
+      <label htmlFor={`waitlist-email-${position}`} className="sr-only">
+        {WAITLIST.emailLabel}
+      </label>
+      <Input
+        id={`waitlist-email-${position}`}
+        name="email"
+        type="email"
+        autoComplete="email"
+        required
+        placeholder="you@company.com"
+        className={publicFieldClass}
+        size="lg"
+      />
+      <Button type="submit" variant="gradient" size="lg" className={publicSubmitClass} loading={pending} loadingLabel={WAITLIST.pending}>
+        {WAITLIST.submit}
+      </Button>
       <div aria-hidden className="absolute -left-[9999px] h-0 w-0 overflow-hidden">
         <label>
           Website

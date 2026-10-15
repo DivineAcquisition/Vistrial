@@ -2,6 +2,7 @@
 
 import { useRef, useState, type FormEvent, type ReactNode } from "react";
 
+import { FormGlow, publicFieldClass, publicFormClass, publicSubmitClass } from "@/components/marketing/public-form";
 import { SubmitButton } from "@/components/ui/button";
 import { Field, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
@@ -90,15 +91,16 @@ export function QualifyForm({
       onFocus={markStart}
       noValidate
       data-marketing-form="qualify"
-      className="relative grid gap-4"
+      className={publicFormClass}
     >
+      <FormGlow />
       {Object.entries(tracking).map(([key, value]) =>
         value ? <input key={key} type="hidden" name={key} value={value} /> : null
       )}
 
       <div className="grid gap-4 sm:grid-cols-2">
         <FormRow label="Full name" htmlFor="fullName">
-          <Input
+          <Input className={publicFieldClass}
             id="fullName"
             name="fullName"
             type="text"
@@ -108,7 +110,7 @@ export function QualifyForm({
           />
         </FormRow>
         <FormRow label="Email" htmlFor="email">
-          <Input
+          <Input className={publicFieldClass}
             id="email"
             name="email"
             type="email"
@@ -121,7 +123,7 @@ export function QualifyForm({
 
       <div className="grid gap-4 sm:grid-cols-2">
         <FormRow label="Phone" htmlFor="phone">
-          <Input
+          <Input className={publicFieldClass}
             id="phone"
             name="phone"
             type="tel"
@@ -132,7 +134,7 @@ export function QualifyForm({
           />
         </FormRow>
         <FormRow label="Company name" htmlFor="companyName">
-          <Input
+          <Input className={publicFieldClass}
             id="companyName"
             name="companyName"
             type="text"
@@ -144,7 +146,7 @@ export function QualifyForm({
       </div>
 
       <FormRow label="Roughly what does a typical month of revenue look like?" htmlFor="monthlyRevenue">
-        <Select
+        <Select className={publicFieldClass}
           id="monthlyRevenue"
           name="monthlyRevenue"
           required
@@ -163,7 +165,7 @@ export function QualifyForm({
       </FormRow>
 
       <FormRow label="Do you already run a CRM?" htmlFor="usesGhl">
-        <Select id="usesGhl" name="usesGhl" required defaultValue="" placeholder="Select one">
+        <Select className={publicFieldClass} id="usesGhl" name="usesGhl" required defaultValue="" placeholder="Select one">
           <option value="" disabled>
             Select one
           </option>
@@ -176,7 +178,7 @@ export function QualifyForm({
       </FormRow>
 
       <FormRow label="Who works inbound leads today?" htmlFor="whoWorksLeads">
-        <Select
+        <Select className={publicFieldClass}
           id="whoWorksLeads"
           name="whoWorksLeads"
           required
@@ -195,7 +197,7 @@ export function QualifyForm({
       </FormRow>
 
       <FormRow label="What is the offer priced at?" htmlFor="offerPrice">
-        <Select id="offerPrice" name="offerPrice" required defaultValue="" placeholder="Select one">
+        <Select className={publicFieldClass} id="offerPrice" name="offerPrice" required defaultValue="" placeholder="Select one">
           <option value="" disabled>
             Select one
           </option>
@@ -220,7 +222,7 @@ export function QualifyForm({
         </p>
       ) : null}
 
-      <SubmitButton pending={pending} variant="gradient" size="lg" loadingLabel={BOOK.pending} className="mt-1 w-full rounded-full">
+      <SubmitButton pending={pending} variant="gradient" size="lg" loadingLabel={BOOK.pending} className={publicSubmitClass}>
         {BOOK.submit}
       </SubmitButton>
     </form>
@@ -270,10 +272,12 @@ export function ContactForm() {
       onFocus={markStart}
       noValidate
       data-marketing-form="contact"
-      className="relative grid gap-4"
+      className={publicFormClass}
     >
+      <FormGlow />
       <FormRow label="Name" htmlFor="contact-name">
         <Input
+          className={publicFieldClass}
           id="contact-name"
           name="fullName"
           type="text"
@@ -284,6 +288,7 @@ export function ContactForm() {
       </FormRow>
       <FormRow label="Email" htmlFor="contact-email">
         <Input
+          className={publicFieldClass}
           id="contact-email"
           name="email"
           type="email"
@@ -298,7 +303,7 @@ export function ContactForm() {
           name="message"
           required
           rows={5}
-          className="min-h-32"
+          className={`${publicFieldClass} min-h-32`}
           placeholder="What should we know before we talk?"
         />
       </FormRow>
@@ -313,7 +318,7 @@ export function ContactForm() {
           {error}
         </p>
       ) : null}
-      <SubmitButton pending={pending} variant="gradient" size="lg" loadingLabel={CONTACT_PAGE.pending} className="w-full rounded-full">
+      <SubmitButton pending={pending} variant="gradient" size="lg" loadingLabel={CONTACT_PAGE.pending} className={publicSubmitClass}>
         {CONTACT_PAGE.submit}
       </SubmitButton>
     </form>

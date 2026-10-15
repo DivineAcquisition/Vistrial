@@ -18,7 +18,12 @@ import {
 } from "@/lib/access-requests/options";
 import { trackMarketingEvent } from "@/components/marketing/track";
 import { FORMS } from "@/lib/marketing/content";
+import { marketingPanel } from "@/lib/marketing/ui";
 import { checkboxClass, selectClass, textareaClass } from "@/lib/ui";
+import { cn } from "@/lib/utils";
+
+const fieldOutline =
+  "border-[#2a2833]! bg-[#12111a]! shadow-none! hover:border-[#2a2833]!";
 
 const initial: AccessFormState = { ok: true, message: "", errors: {} };
 
@@ -42,7 +47,7 @@ function Choice({
 }) {
   return (
     <Field label={label} name={name} htmlFor={name} required={required}>
-      <select id={name} name={name} required={required} aria-invalid={error ? true : undefined} className={selectClass} defaultValue="">
+      <select id={name} name={name} required={required} aria-invalid={error ? true : undefined} className={cn(selectClass, fieldOutline)} defaultValue="">
         <option value="">Choose</option>
         {options.map((option) => (
           <option key={option.value || "blank"} value={option.value}>
@@ -75,7 +80,7 @@ export function AccessRequestForm({ kind }: { kind: "private_access" | "custom" 
   return (
     <form
       action={formAction}
-      className="space-y-4"
+      className={cn(marketingPanel, "space-y-4 p-5 sm:p-6")}
       noValidate
       onSubmit={(event) => {
         const params = new URLSearchParams(window.location.search);
@@ -94,26 +99,26 @@ export function AccessRequestForm({ kind }: { kind: "private_access" | "custom" 
         </p>
       ) : null}
       <Field label="Full name" name="full_name" htmlFor="full_name" required>
-        <Input id="full_name" name="full_name" type="text" autoComplete="name" required aria-invalid={error?.full_name ? true : undefined} maxLength={120} />
+        <Input className={fieldOutline} id="full_name" name="full_name" type="text" autoComplete="name" required aria-invalid={error?.full_name ? true : undefined} maxLength={120} />
         <FieldMessage message={error?.full_name} />
       </Field>
       <Field label="Work email" name="email" htmlFor="email" required>
-        <Input id="email" name="email" type="email" inputMode="email" autoComplete="email" required aria-invalid={error?.email ? true : undefined} maxLength={200} />
+        <Input className={fieldOutline} id="email" name="email" type="email" inputMode="email" autoComplete="email" required aria-invalid={error?.email ? true : undefined} maxLength={200} />
         <FieldMessage message={error?.email} />
       </Field>
       <Field label="Business name" name="business_name" htmlFor="business_name" required>
-        <Input id="business_name" name="business_name" type="text" autoComplete="organization" required aria-invalid={error?.business_name ? true : undefined} maxLength={160} />
+        <Input className={fieldOutline} id="business_name" name="business_name" type="text" autoComplete="organization" required aria-invalid={error?.business_name ? true : undefined} maxLength={160} />
         <FieldMessage message={error?.business_name} />
       </Field>
       {kind === "private_access" ? (
         <>
           <Field label="Business website" name="website" htmlFor="website" help="Optional.">
-            <Input id="website" name="website" type="text" inputMode="url" autoComplete="url" aria-invalid={error?.website ? true : undefined} maxLength={200} placeholder="example.com" />
+            <Input className={fieldOutline} id="website" name="website" type="text" inputMode="url" autoComplete="url" aria-invalid={error?.website ? true : undefined} maxLength={200} placeholder="example.com" />
             <FieldMessage message={error?.website} />
           </Field>
           <Choice name="business_type" label="Type of business" options={BUSINESS_TYPES} required error={error?.business_type} />
           <Field label="If other, what do you sell" name="business_type_other" htmlFor="business_type_other">
-            <Input id="business_type_other" name="business_type_other" type="text" maxLength={120} aria-invalid={error?.business_type_other ? true : undefined} />
+            <Input className={fieldOutline} id="business_type_other" name="business_type_other" type="text" maxLength={120} aria-invalid={error?.business_type_other ? true : undefined} />
             <FieldMessage message={error?.business_type_other} />
           </Field>
           <Choice name="team_size" label="People who handle leads" options={TEAM_SIZES} required error={error?.team_size} />
@@ -122,46 +127,46 @@ export function AccessRequestForm({ kind }: { kind: "private_access" | "custom" 
             <div className="mt-2 grid gap-2">
               {LEAD_SOURCES.map((source) => (
                 <label key={source.value} className="flex items-center gap-2 text-sm">
-                  <input type="checkbox" name="lead_sources" value={source.value} className={checkboxClass} />
+                  <input type="checkbox" name="lead_sources" value={source.value} className={cn(checkboxClass, "border-[#2a2833]!")} />
                   {source.label}
                 </label>
               ))}
             </div>
           </fieldset>
           <Field label="If other, where" name="lead_sources_other" htmlFor="lead_sources_other">
-            <Input id="lead_sources_other" name="lead_sources_other" type="text" maxLength={120} />
+            <Input className={fieldOutline} id="lead_sources_other" name="lead_sources_other" type="text" maxLength={120} />
           </Field>
           <Choice name="crm" label="Which CRM you use" options={CRMS} error={error?.crm} />
           <Field label="If another CRM, which one" name="crm_other" htmlFor="crm_other">
-            <Input id="crm_other" name="crm_other" type="text" maxLength={120} aria-invalid={error?.crm_other ? true : undefined} />
+            <Input className={fieldOutline} id="crm_other" name="crm_other" type="text" maxLength={120} aria-invalid={error?.crm_other ? true : undefined} />
             <FieldMessage message={error?.crm_other} />
           </Field>
           <Choice name="deal_value" label="Average value of a closed deal" options={DEAL_VALUES} required error={error?.deal_value} />
           <Choice name="calls_per_week" label="Sales calls or consultations each week" options={CALLS_PER_WEEK} required error={error?.calls_per_week} />
           <Choice name="leads_per_month" label="New leads each month" options={LEADS_PER_MONTH} required error={error?.leads_per_month} />
           <Field label="Main problem you want help with" name="problem" htmlFor="problem" help={FORMS.problemHelp}>
-            <textarea id="problem" name="problem" maxLength={1000} className={textareaClass} aria-invalid={error?.problem ? true : undefined} />
+            <textarea id="problem" name="problem" maxLength={1000} className={cn(textareaClass, fieldOutline)} aria-invalid={error?.problem ? true : undefined} />
             <FieldMessage message={error?.problem} />
           </Field>
           <Field label="How did you hear about Vistrial" name="heard_about" htmlFor="heard_about" help="Optional.">
-            <Input id="heard_about" name="heard_about" type="text" maxLength={160} />
+            <Input className={fieldOutline} id="heard_about" name="heard_about" type="text" maxLength={160} />
           </Field>
         </>
       ) : (
         <>
           <Field label="What you need" name="need" htmlFor="need" required>
-            <textarea id="need" name="need" required maxLength={1000} className={textareaClass} aria-invalid={error?.need ? true : undefined} />
+            <textarea id="need" name="need" required maxLength={1000} className={cn(textareaClass, fieldOutline)} aria-invalid={error?.need ? true : undefined} />
             <FieldMessage message={error?.need} />
           </Field>
           <Choice name="team_size" label="Approximate team size" options={CUSTOM_TEAM_SIZES} />
         </>
       )}
       <Field label="Phone" name="phone" htmlFor="phone" help={FORMS.phoneHelp}>
-        <Input id="phone" name="phone" type="tel" inputMode="tel" autoComplete="tel" maxLength={40} aria-invalid={error?.phone ? true : undefined} />
+        <Input className={fieldOutline} id="phone" name="phone" type="tel" inputMode="tel" autoComplete="tel" maxLength={40} aria-invalid={error?.phone ? true : undefined} />
         <FieldMessage message={error?.phone} />
       </Field>
       <label className="flex items-start gap-3 text-sm">
-        <input type="checkbox" name="consent" value="yes" className={checkboxClass} aria-invalid={error?.consent ? true : undefined} />
+        <input type="checkbox" name="consent" value="yes" className={cn(checkboxClass, "border-[#2a2833]!")} aria-invalid={error?.consent ? true : undefined} />
         <span>
           {FORMS.consent}{" "}
           <a href={FORMS.privacyHref} className="text-brand-300 underline">

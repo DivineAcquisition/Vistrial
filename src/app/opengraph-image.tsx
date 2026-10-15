@@ -68,7 +68,7 @@ export default async function Image() {
             {HERO.headline}
           </div>
           <div style={{ fontSize: 24, color: "#a3a3a3", lineHeight: 1.35 }}>
-            {HERO.underCta}
+            {HERO.trust}
           </div>
         </div>
       </div>

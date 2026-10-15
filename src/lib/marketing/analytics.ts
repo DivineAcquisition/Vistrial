@@ -12,7 +12,7 @@ export const MARKETING_EVENT_TYPES = [
 ] as const;
 
 export type MarketingEventType = (typeof MARKETING_EVENT_TYPES)[number];
-export type MarketingFormId = "qualify" | "contact" | "waitlist";
+export type MarketingFormId = "qualify" | "contact" | "waitlist" | "access" | "custom";
 
 type EventBase = {
   path: string;
@@ -53,8 +53,8 @@ export type MarketingEvent =
   | FormStartEvent
   | FormCompleteEvent;
 
-const CTA_POSITIONS: CtaPosition[] = ["nav", "hero", "audit", "waitlist"];
-const FORMS: MarketingFormId[] = ["qualify", "contact", "waitlist"];
+const CTA_POSITIONS: CtaPosition[] = ["nav", "hero", "audit", "waitlist", "pricing", "final", "safety", "contact"];
+const FORMS: MarketingFormId[] = ["qualify", "contact", "waitlist", "access", "custom"];
 
 function isObject(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null;

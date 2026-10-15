@@ -699,3 +699,19 @@ if [[ "$(echo "$enum_at" | tr -d ' ')" != "0" ]]; then
 fi
 
 echo "OK: Airtable drop rollback and re-apply succeeded."
+
+echo "Rollback public access requests..."
+run "${ROOT}/supabase/rollbacks/20261015010000_public_access_requests.sql"
+tbl_access="$("${PSQL[@]}" -d "${DB_NAME}" -tAc "SELECT count(*) FROM information_schema.tables WHERE table_schema='public' AND table_name='access_requests'")"
+if [[ "$(echo "$tbl_access" | tr -d ' ')" != "0" ]]; then
+  echo "access request rollback left the table in place" >&2
+  exit 1
+fi
+echo "Re-apply public access requests..."
+run "${ROOT}/supabase/migrations/20261015010000_public_access_requests.sql"
+tbl_access="$("${PSQL[@]}" -d "${DB_NAME}" -tAc "SELECT count(*) FROM information_schema.tables WHERE table_schema='public' AND table_name='access_requests'")
+if [[ "$(echo "$tbl_access" | tr -d ' ')" != "1" ]]; then
+  echo "re-apply did not restore access_requests" >&2
+  exit 1
+fi
+echo "OK: public access request rollback and re-apply succeeded."

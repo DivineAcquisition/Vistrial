@@ -224,11 +224,14 @@ describe("strict host routing", () => {
       `${PRODUCTION_SITE_ORIGIN}/`
     );
     expect(resolveHostRoute({ host: "vistrial.io", pathname: "/booking" })).toEqual({
-      action: "redirect",
-      origin: "site",
-      pathname: "/",
-      preserveSearch: true,
+      action: "allow",
     });
+    expect(resolveHostRoute({ host: "vistrial.io", pathname: "/request" })).toEqual({
+      action: "allow",
+    });
+    expect(resolvedHostLocation({ host: "app.vistrial.io", pathname: "/request" })).toBe(
+      `${PRODUCTION_SITE_ORIGIN}/request`
+    );
   });
 });
 

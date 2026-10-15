@@ -3,6 +3,7 @@ import Link from "next/link";
 
 import { HelpArticles, type HelpArticleView } from "@/app/(workspace)/app/help/help-articles";
 import { HelpRequestForm } from "@/app/(workspace)/app/help/help-forms";
+import { requestSecurityReviewFromHelp, requestWorkspaceData } from "@/app/(workspace)/app/help/trust-actions";
 import { PageFrame } from "@/components/app/page-frame";
 import { Accordion, AccordionItem, AccordionPanel, AccordionTrigger } from "@/components/ui/accordion";
 import { Panel } from "@/components/ui/panel";
@@ -81,6 +82,31 @@ export default async function HelpPage({ searchParams }: { searchParams: Promise
 
   return (
     <PageFrame title="Help" description="Quick answers, and a direct line to your Vistrial team.">
+      {ctx.workspaceRole === "owner" ? (
+        <section className="grid gap-4 md:grid-cols-2">
+          <Panel className="space-y-3 p-4">
+            <h2 className={cardTitle}>Request a security review</h2>
+            <p className={helperClass}>For this workspace. It is tagged as an existing customer.</p>
+            <form action={requestSecurityReviewFromHelp} className="space-y-2">
+              <textarea name="details" className="min-h-20 w-full rounded-xl border border-white/10 bg-transparent p-3 text-sm" placeholder="What do you need?" maxLength={2000} />
+              <button type="submit" className="text-sm font-medium text-brand-300 underline">Send to the team</button>
+            </form>
+          </Panel>
+          <Panel className="space-y-3 p-4">
+            <h2 className={cardTitle}>Data request</h2>
+            <p className={helperClass}>Export, correction, or deletion. A person verifies it. Nothing happens automatically.</p>
+            <form action={requestWorkspaceData} className="space-y-2">
+              <select name="kind" className="h-10 w-full rounded-xl border border-white/10 bg-transparent px-3 text-sm" defaultValue="export">
+                <option value="export">Export</option>
+                <option value="correction">Correction</option>
+                <option value="deletion">Deletion</option>
+              </select>
+              <textarea name="details" className="min-h-20 w-full rounded-xl border border-white/10 bg-transparent p-3 text-sm" maxLength={2000} />
+              <button type="submit" className="text-sm font-medium text-brand-300 underline">Submit request</button>
+            </form>
+          </Panel>
+        </section>
+      ) : null}
       <section className="space-y-3" aria-labelledby="help-answers">
         <h2 id="help-answers" className={cardTitle}>
           Common questions

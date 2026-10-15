@@ -16,7 +16,14 @@ export default async function ThanksPage({
   searchParams: Promise<{ kind?: string }>;
 }) {
   const params = await searchParams;
-  const body = params.kind === "custom" ? THANKS.custom : THANKS.access;
+  const body =
+    params.kind === "custom"
+      ? THANKS.custom
+      : params.kind === "review"
+        ? "We received your security review request. A person will reply from contact@vistrial.io. This page does not promise a date."
+        : params.kind === "report"
+          ? "We received your security report. A person will reply from contact@vistrial.io."
+          : THANKS.access;
   return (
     <MarketingShell headerAction="none">
       <section className="mx-auto max-w-xl px-5 py-20 sm:px-6">

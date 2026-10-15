@@ -32,8 +32,20 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   ]);
   const showWelcome = welcomeRole !== null && !(welcome as { welcome_seen_at?: string | null } | null)?.welcome_seen_at;
 
+  const { data: legalDue } = await (supabase as unknown as SupabaseClient).rpc("legal_acceptance_due");
   return (
     <>
+      {legalDue === true ? (
+        <form action={async () => {
+          "use server";
+          const { createClient: client } = await import("@/lib/supabase/server");
+          const db = (await client()) as unknown as SupabaseClient;
+          await db.rpc("accept_legal_versions");
+        }} className="border-b border-white/10 bg-white/[0.03] px-4 py-3 text-sm text-white">
+          <p>The current Privacy and Terms are published. Accept them to keep going.</p>
+          <button type="submit" className="mt-2 text-brand-300 underline">I accept the current Privacy and Terms</button>
+        </form>
+      ) : null}
       {showWelcome && welcomeRole ? <RoleWelcome copy={ROLE_WELCOME[welcomeRole]} /> : null}
       {isProductScopeEnabled("coaching") ? (
         <CoachingDisclosureNotice needed={!training?.call_coaching_acknowledged_at} />

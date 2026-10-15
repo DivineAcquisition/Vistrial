@@ -18,7 +18,7 @@ import { helperClass, selectClass, textareaClass } from "@/lib/ui";
 
 export const dynamic = "force-dynamic";
 
-const STATUSES = ["new", "in_review", "approved", "waitlisted", "declined", "archived"];
+const STATUSES = ["new", "in_review", "waiting", "answered", "closed", "approved", "waitlisted", "declined", "archived"];
 
 export default async function AccessRequestDetail({ params }: { params: Promise<{ id: string }> }) {
   const ctx = await requireStaff();
@@ -47,6 +47,11 @@ export default async function AccessRequestDetail({ params }: { params: Promise<
   const admin = level === "admin";
   const fields: Array<[string, unknown]> = [
     ["Type", row.kind],
+    ["Role", row.request_role],
+    ["Needs", Array.isArray(row.review_needs) ? row.review_needs.join(", ") : ""],
+    ["Deadline", row.deadline],
+    ["Priority", row.priority],
+    ["Existing customer", row.existing_customer ? "Yes" : ""],
     ["Name", row.full_name],
     ["Email", row.email],
     ["Business", row.business_name],

@@ -30,6 +30,9 @@ const STATUSES = [
   { value: "waitlisted", label: "Waitlisted" },
   { value: "declined", label: "Declined" },
   { value: "archived", label: "Archived" },
+  { value: "waiting", label: "Waiting on requester" },
+  { value: "answered", label: "Answered" },
+  { value: "closed", label: "Closed" },
 ];
 
 export function RequestQueue({ rows, admin }: { rows: QueueRow[]; admin: boolean }) {

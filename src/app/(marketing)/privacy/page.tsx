@@ -1,32 +1,33 @@
 import type { Metadata } from "next";
 
 import { MarketingShell } from "@/components/marketing/chrome";
-import { LEGAL_DRAFT_BANNER, PRIVACY_PAGE } from "@/lib/marketing/content";
-import { marketingHeroTitle } from "@/lib/marketing/ui";
+import { LegalDraft } from "@/components/marketing/legal-draft";
+import { loadTrustPublic } from "@/lib/trust/public";
+import { marketingHeroTitle, marketingLead } from "@/lib/marketing/ui";
 
 export const metadata: Metadata = {
-  title: PRIVACY_PAGE.title,
-  description: PRIVACY_PAGE.description,
+  title: "Privacy",
+  description: "How Vistrial handles personal data.",
   robots: { index: false, follow: false },
 };
 
-export default function PrivacyPage() {
+export default async function PrivacyPage() {
+  const trust = await loadTrustPublic();
+  if (!trust.privacyLive || !trust.legalEntity || !trust.mailingAddress) {
+    return (
+      <MarketingShell headerAction="none">
+        <article className="mx-auto max-w-xl px-5 py-20">
+          <h1 className={`${marketingHeroTitle} text-[2.1rem] sm:text-4xl`}>Privacy</h1>
+          <p className={`${marketingLead} mt-4`}>
+            The privacy policy is not published yet. Email {trust.privacyEmail} if you need to reach us about personal data.
+          </p>
+        </article>
+      </MarketingShell>
+    );
+  }
   return (
     <MarketingShell headerAction="none">
-      <article className="mx-auto max-w-3xl px-5 py-14 sm:px-6 sm:py-20">
-        <p className="rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3 text-sm leading-relaxed text-white">
-          {LEGAL_DRAFT_BANNER}
-        </p>
-        <h1 className={`${marketingHeroTitle} mt-8 text-[2.1rem] sm:text-4xl`}>{PRIVACY_PAGE.title}</h1>
-        <div className="mt-8 space-y-8">
-          {PRIVACY_PAGE.sections.map((section) => (
-            <section key={section.heading}>
-              <h2 className="font-heading text-xl text-white">{section.heading}</h2>
-              <p className="mt-2 text-sm leading-relaxed text-silver">{section.body}</p>
-            </section>
-          ))}
-        </div>
-      </article>
+      <LegalDraft kind="privacy" trust={trust} />
     </MarketingShell>
   );
 }

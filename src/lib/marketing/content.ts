@@ -157,7 +157,7 @@ export const SAFETY = {
     "Every important action is recorded.",
   ],
   linkLabel: "Security overview",
-  linkHref: "/security-overview",
+  linkHref: "/security",
 } as const;
 
 export const FAQ = {

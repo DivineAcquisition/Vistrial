@@ -24,7 +24,7 @@ export default async function SubprocessorsPage() {
           <div className="mt-8 overflow-x-auto">
             <table className="w-full min-w-[36rem] text-left text-sm">
               <thead>
-                <tr className="border-b border-white/10 text-xs tracking-wide text-dim uppercase">
+                <tr className="border-b border-[#2a2833] text-xs tracking-wide text-dim uppercase">
                   <th className="py-2 pr-4 font-medium">Company</th>
                   <th className="py-2 pr-4 font-medium">What they do</th>
                   <th className="py-2 pr-4 font-medium">What data</th>
@@ -33,7 +33,7 @@ export default async function SubprocessorsPage() {
               </thead>
               <tbody>
                 {rows.map((row) => (
-                  <tr key={row.company} className="border-b border-white/10 align-top">
+                  <tr key={row.company} className="border-b border-[#2a2833] align-top">
                     <td className="py-3 pr-4 text-white">{row.company}</td>
                     <td className="py-3 pr-4 text-silver">{row.purpose}</td>
                     <td className="py-3 pr-4 text-silver">{row.dataHandled}</td>

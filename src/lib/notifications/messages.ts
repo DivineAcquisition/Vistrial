@@ -98,10 +98,16 @@ export function adoptionCopy(alarmCount: number): { title: string; body: string 
   };
 }
 
-export function hourlySummaryCopy(count: number): { title: string; body: string } {
+export function hourlySummaryCopy(count: number, critical = false): { title: string; body: string } {
   return {
-    title: `${count} more alerts were rolled up this hour`,
-    body: sanitizeNotificationText("Open the queue. The cap held; this is the overflow."),
+    title: critical
+      ? `${count} more alerts were rolled up this hour, including a critical one`
+      : `${count} more alerts were rolled up this hour`,
+    body: sanitizeNotificationText(
+      critical
+        ? "Open the queue. A critical alert is in this summary."
+        : "Open the queue. The cap held; this is the overflow."
+    ),
   };
 }
 

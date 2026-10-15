@@ -5,7 +5,9 @@ import { useActionState } from "react";
 import {
   saveNotificationMute,
   saveNotificationPreferences,
+  saveNotificationQuietHours,
   saveOrgNotificationSettings,
+  saveTextOptIn,
   sendTestNotification,
 } from "@/app/(workspace)/app/settings/notifications/actions";
 import type { SettingsSaveResult } from "@/app/(workspace)/app/settings/types";
@@ -39,6 +41,10 @@ export function NotificationSettingsForm({
   smsEmergenciesEnabled,
   slackSaved,
   teamsSaved,
+  quietStart,
+  quietEnd,
+  textOptedIn,
+  textChannelOpen,
 }: {
   role: OrgRole;
   isManager: boolean;
@@ -47,13 +53,21 @@ export function NotificationSettingsForm({
   smsEmergenciesEnabled: boolean;
   slackSaved: boolean;
   teamsSaved: boolean;
+  quietStart: string | null;
+  quietEnd: string | null;
+  textOptedIn: boolean;
+  textChannelOpen: boolean;
 }) {
   const [prefState, savePrefs, prefPending] = useActionState(saveNotificationPreferences, idle);
   const [muteState, saveMute, mutePending] = useActionState(saveNotificationMute, idle);
+  const [quietState, saveQuiet, quietPending] = useActionState(saveNotificationQuietHours, idle);
+  const [textState, saveText, textPending] = useActionState(saveTextOptIn, idle);
   const [orgState, saveOrg, orgPending] = useActionState(saveOrgNotificationSettings, idle);
   const [testState, sendTest, testPending] = useActionState(sendTestNotification, idle);
   useSettingsToast(prefState, prefPending);
   useSettingsToast(muteState, mutePending);
+  useSettingsToast(quietState, quietPending);
+  useSettingsToast(textState, textPending);
   useSettingsToast(orgState, orgPending);
   useSettingsToast(testState, testPending, "Sent. Check that device or your email.");
 
@@ -122,6 +136,60 @@ export function NotificationSettingsForm({
 
       <section>
         <SectionHeader
+          title="Quiet hours"
+          hint="Quiet hours are off until you set them. Critical problems, account mail, and billing still come through."
+        />
+        <SettingsFormCard
+          action={saveQuiet}
+          footer={<SubmitButton pending={quietPending}>Save quiet hours</SubmitButton>}
+        >
+          {quietStart && quietEnd ? (
+            <p className={helperClass}>
+              Non-critical alerts wait from {quietStart} to {quietEnd} in your time zone.
+            </p>
+          ) : (
+            <Notice tone="info">Quiet hours are off. Set a window if you want non-critical alerts to wait.</Notice>
+          )}
+          <Field label="Start" name="quiet_start">
+            <Input name="quiet_start" id="quiet_start" type="time" defaultValue={quietStart ?? ""} />
+          </Field>
+          <Field label="End" name="quiet_end">
+            <Input name="quiet_end" id="quiet_end" type="time" defaultValue={quietEnd ?? ""} />
+          </Field>
+          {quietStart && quietEnd ? <CheckboxField name="clear_quiet" label="Turn quiet hours off" /> : null}
+          {quietState.status === "error" ? <p className={errorClass}>{quietState.error}</p> : null}
+        </SettingsFormCard>
+      </section>
+
+      <section>
+        <SectionHeader
+          title="Critical texts"
+          hint="Texts use the Vistrial notification number. They are only for a critical problem, at most 5 a day, and they do not include lead details. Reply STOP to opt out."
+        />
+        <SettingsFormCard
+          action={saveText}
+          footer={<SubmitButton pending={textPending}>Save text choice</SubmitButton>}
+        >
+          {textChannelOpen ? (
+            <p className={helperClass}>The notification number is registered. Texts send only after you opt in.</p>
+          ) : (
+            <Notice tone="info">
+              Text is off until the notification number is registered with the carrier. You can opt in now. Nothing
+              sends before that.
+            </Notice>
+          )}
+          <Switch
+            name="text_opt_in"
+            defaultChecked={textOptedIn}
+            label="Text me when something critical is broken"
+            description="Reply STOP to opt out. Reply HELP for help."
+          />
+          {textState.status === "error" ? <p className={errorClass}>{textState.error}</p> : null}
+        </SettingsFormCard>
+      </section>
+
+      <section>
+        <SectionHeader
           title="Temporary mute"
           hint="Mute always ends. There is no permanent silent mute. Emergencies and admin escalation still send."
         />
@@ -187,8 +255,8 @@ export function NotificationSettingsForm({
             <Switch
               name="sms_emergencies_enabled"
               defaultChecked={smsEmergenciesEnabled}
-              label="Text me if new leads stop arriving or the CRM breaks"
-              description="Off until you turn it on. Fires one hour after the push if the condition still holds, never at the same time."
+              label="Allow critical texts for this workspace"
+              description="Off until you turn it on. Each person still has to opt in. Texts wait an hour after the first alert, and only if the problem is still open. The number is Vistrial's, not a lead number."
             />
             <AdvancedDoor closedLabel="Connect Slack or Teams">
               <Field

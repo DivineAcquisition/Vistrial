@@ -7,6 +7,7 @@ import { roleLabel } from "@/lib/auth/permissions";
 import type { OrgRole } from "@/types/database";
 import { appUrl } from "@/lib/app-url";
 import { renderFooter } from "@/lib/email/footer";
+import { EMAIL_REPLY_TO, streamSendAllowed } from "@/lib/email/streams";
 import { emailLogoUrl, transactionalEmailHtml } from "@/lib/email/layout";
 import { recordEmailSend, withPreferences } from "@/lib/email/send-guard";
 import { resendConfigured } from "@/lib/notifications/env";
@@ -164,8 +165,15 @@ export async function sendPortalEmailForOrg(
       }),
     });
     if (!rendered.ok) throw new Error(rendered.error);
+    const allowed = streamSendAllowed({
+      category: "C",
+      transactionalFrom: cfg.from,
+      lifecycleFrom: cfg.lifecycleFrom,
+    });
+    if (!allowed.ok) throw new Error(allowed.error);
     const { error, data } = await resend.emails.send({
-      from: cfg.from,
+      from: allowed.from,
+      replyTo: EMAIL_REPLY_TO,
       to: [address],
       subject,
       text: `${summary}\n\n${detail}\n${href}\n\n${rendered.footer.text}`,

@@ -35,6 +35,11 @@ export async function GET(request: Request) {
       await retryAccessRequestEmail();
       await notifyStaleRequests();
     }
-    return { retention: preview, agentRuns, deletedOrgs, compass, accessRequests, dryRun };
+    const { data: notices, error: noticeError } = await (db as unknown as SupabaseClient).rpc(
+      "purge_notification_retention",
+      { p_dry_run: dryRun }
+    );
+    if (noticeError) throw new Error(noticeError.message);
+    return { retention: preview, agentRuns, deletedOrgs, compass, accessRequests, notices, dryRun };
   });
 }

@@ -3,6 +3,7 @@ import { loadOrgIngestionHealth } from "@/lib/ghl/health";
 import {
   CALL_SOON_MS,
   DAILY_BRIEF_WINDOW_MINUTES,
+  DIGEST_LOCAL_HOUR,
   GHOST_DETECTOR_STALE_MS,
   JOB_FAILURE_LOOKBACK_MS,
   notificationBatchBucket,
@@ -12,7 +13,8 @@ import {
   UNMATCHED_ESCALATE_COUNT,
 } from "@/lib/notifications/constants";
 import { collectDailyBriefItems } from "@/lib/notifications/brief";
-import { isWithinWorkingHours, localDateKey, minutesIntoWorkingDay, nextWorkingStart } from "@/lib/notifications/hours";
+import { isWithinWorkingHours, localDateKey, minutesAfterLocalHour, minutesIntoWorkingDay, nextWorkingStart } from "@/lib/notifications/hours";
+import { textChannelEnabled } from "@/lib/notifications/text";
 import { loadOrgNotifyContext, memberById } from "@/lib/notifications/members";
 import {
   adoptionCopy,
@@ -608,7 +610,7 @@ async function offerEmergency(
     return;
   }
 
-  if (!args.sms) return;
+  if (!args.sms || !textChannelEnabled()) return;
   if (await alreadyStepped(db, args.orgId, args.eventType, args.orgId, 2)) return;
   const first = await escalationFiredAt(db, args.orgId, args.eventType, args.orgId, 1);
   if (!first || args.now.getTime() - first.getTime() < SMS_EMERGENCY_DELAY_MS) return;
@@ -732,7 +734,7 @@ async function observeAdoption(db: GhlDb, managers: MemberNotifyTarget[], orgId:
 
 async function observeDailyBriefs(db: GhlDb, members: MemberNotifyTarget[], orgId: string, now: Date) {
   for (const member of members) {
-    const into = minutesIntoWorkingDay(now, member.hours);
+    const into = minutesAfterLocalHour(now, member.hours.timeZone, DIGEST_LOCAL_HOUR);
     if (into === null || into > DAILY_BRIEF_WINDOW_MINUTES) continue;
     const day = localDateKey(now, member.hours.timeZone);
     const { data: existing } = await db

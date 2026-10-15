@@ -4,7 +4,8 @@ import { Resend } from "resend";
 
 import { appUrl } from "@/lib/app-url";
 import type { EmailCategory, FooterVars } from "@/lib/email/footer";
-import { lifecycleFromSeparated, renderFooter, sendingStream, staffRecipientAllowed, unresolvedCopy } from "@/lib/email/footer";
+import { renderFooter, sendingStream, staffRecipientAllowed, unresolvedCopy } from "@/lib/email/footer";
+import { EMAIL_REPLY_TO, streamSendAllowed } from "@/lib/email/streams";
 import { emailLogoUrl, transactionalEmailHtml } from "@/lib/email/layout";
 import {
   activeStaffEmails,
@@ -104,10 +105,13 @@ export async function sendPortalMail(args: {
   }
 
   const stream = sendingStream(args.category);
+  const allowed = streamSendAllowed({
+    category: args.category,
+    transactionalFrom: cfg.from,
+    lifecycleFrom: cfg.lifecycleFrom,
+  });
+  if (!allowed.ok) return { ok: false, error: allowed.error };
   if (stream === "lifecycle") {
-    if (!lifecycleFromSeparated(cfg.from, cfg.lifecycleFrom)) {
-      return { ok: false, error: "Lifecycle email needs its own sending host (RESEND_FROM_LIFECYCLE)." };
-    }
     const kept: string[] = [];
     for (const address of to) {
       if (await lifecycleSuppressed(address)) continue;
@@ -127,7 +131,7 @@ export async function sendPortalMail(args: {
     return { ok: false, error: rendered.error };
   }
 
-  const from = stream === "lifecycle" ? cfg.lifecycleFrom! : cfg.from;
+  const from = allowed.from;
   const cta = args.cta ? { label: args.cta.label, href: absoluteUrl(args.cta.href) } : undefined;
   const headers: Record<string, string> = {};
   if (footerVars.unsubscribeUrl && (args.category === "E" || args.category === "F")) {
@@ -139,6 +143,7 @@ export async function sendPortalMail(args: {
       {
         from,
         to,
+        replyTo: EMAIL_REPLY_TO,
         subject: args.subject,
         html: portalEmailHtml({
           heading: args.heading ?? args.subject,
@@ -170,7 +175,8 @@ export async function sendPortalMail(args: {
 
 /**
  * The Vistrial people to tell about a workspace: Service Team assigned to it,
- * or every active Platform Admin when nobody is assigned.
+ * then Platform Admins when nobody is assigned. The first build does not page
+ * staff after hours.
  */
 export async function staffAddressesFor(orgId: string): Promise<string[]> {
   const db = getSupabaseAdmin();

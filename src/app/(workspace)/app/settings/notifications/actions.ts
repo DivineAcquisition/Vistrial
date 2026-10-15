@@ -11,6 +11,7 @@ import { deliverOne } from "@/lib/notifications/deliver";
 import { enqueueNotification } from "@/lib/notifications/enqueue";
 import { testSendCopy, notificationHref } from "@/lib/notifications/messages";
 import { muteUntilValid, preferenceLocked } from "@/lib/notifications/policy";
+import { TEXT_OPT_IN_WORDING } from "@/lib/notifications/text";
 import { getSupabaseAdmin } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import type { NotificationChannel, NotificationEventType } from "@/lib/notifications/types";
@@ -117,6 +118,58 @@ export async function saveOrgNotificationSettings(
   const { error: teamError } = await supabase.from("notification_team_channels").upsert(patch);
   if (teamError) return { status: "error", error: "Could not save team channels." };
 
+  revalidatePath("/app/settings/notifications");
+  return { status: "saved" };
+}
+
+const HM = /^\d{2}:\d{2}$/;
+
+export async function saveNotificationQuietHours(
+  _prev: SettingsSaveResult,
+  formData: FormData
+): Promise<SettingsSaveResult> {
+  const ctx = await getAuthContext();
+  const clear = formData.get("clear_quiet") === "on";
+  const start = String(formData.get("quiet_start") ?? "").trim();
+  const end = String(formData.get("quiet_end") ?? "").trim();
+  if (!clear && ((start && !end) || (!start && end))) {
+    return { status: "error", error: "Set both a start and an end, or leave both empty." };
+  }
+  if (!clear && start && (!HM.test(start) || !HM.test(end) || start === end)) {
+    return { status: "error", error: "Quiet hours need a start and a different end." };
+  }
+  const { error } = await getSupabaseAdmin()
+    .from("org_members")
+    .update({
+      notification_quiet_start: clear || !start ? null : start,
+      notification_quiet_end: clear || !end ? null : end,
+    })
+    .eq("id", ctx.member.id)
+    .eq("org_id", ctx.org.id)
+    .eq("user_id", ctx.user.id);
+  if (error) return { status: "error", error: "Could not save quiet hours." };
+  revalidatePath("/app/settings/notifications");
+  return { status: "saved" };
+}
+
+export async function saveTextOptIn(
+  _prev: SettingsSaveResult,
+  formData: FormData
+): Promise<SettingsSaveResult> {
+  const ctx = await getAuthContext();
+  const enabled = formData.get("text_opt_in") === "on";
+  const now = new Date().toISOString();
+  const { error } = await getSupabaseAdmin()
+    .from("org_members")
+    .update(
+      enabled
+        ? { text_opt_in_at: now, text_opt_in_wording: TEXT_OPT_IN_WORDING, text_opted_out_at: null }
+        : { text_opted_out_at: now }
+    )
+    .eq("id", ctx.member.id)
+    .eq("org_id", ctx.org.id)
+    .eq("user_id", ctx.user.id);
+  if (error) return { status: "error", error: "Could not save text opt-in." };
   revalidatePath("/app/settings/notifications");
   return { status: "saved" };
 }

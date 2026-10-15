@@ -42,4 +42,6 @@ export type MemberNotifyTarget = {
   hours: WorkingHours;
   /** Set for a named escalation contact: the channel the Owner chose for them. */
   escalationChannel?: "push" | "email" | "sms" | null;
+  /** Unset means no quiet hours. */
+  quiet?: { startHm: string; endHm: string } | null;
 };

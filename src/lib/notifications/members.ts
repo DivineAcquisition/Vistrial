@@ -15,7 +15,7 @@ export async function loadOrgNotifyContext(db: GhlDb, orgId: string) {
     db
       .from("org_members")
       .select(
-        "id, user_id, role, email, phone, timezone, working_hours_start, working_hours_end, working_days, active"
+        "id, user_id, role, email, phone, timezone, working_hours_start, working_hours_end, working_days, notification_quiet_start, notification_quiet_end, active"
       )
       .eq("org_id", orgId)
       .eq("active", true),
@@ -52,6 +52,13 @@ export async function loadOrgNotifyContext(db: GhlDb, orgId: string) {
       memberEnd: row.working_hours_end?.slice(0, 5),
       memberDays: row.working_days,
     }),
+    quiet:
+      row.notification_quiet_start && row.notification_quiet_end
+        ? {
+            startHm: row.notification_quiet_start.slice(0, 5),
+            endHm: row.notification_quiet_end.slice(0, 5),
+          }
+        : null,
   }));
 
   // The Owner's named escalation contacts, in their order, are "Owners and

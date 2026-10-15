@@ -7,7 +7,7 @@ import { lengthRatio, wordEditDistance } from "@/lib/follow-up/edit-distance";
 import { parseDraftModelOutput } from "@/lib/follow-up/parse";
 import { DRAFT_SYSTEM_PROMPT, draftUserPrompt } from "@/lib/follow-up/prompt";
 import { checkDraftQuality, type QualityInput } from "@/lib/follow-up/quality";
-import { computeSendAt, isInQuietHours } from "@/lib/follow-up/quiet-hours";
+import { computeSendAt, isInQuietHours, scheduleOutsideQuiet } from "@/lib/follow-up/quiet-hours";
 import { FOLLOW_UP_BRANCH_LABELS, routingRuleSentence } from "@/lib/follow-up/labels";
 import { boundedSequenceSteps, routeFollowUp } from "@/lib/follow-up/routing";
 import { suggestionsFromEdits } from "@/lib/follow-up/suggestions";
@@ -376,26 +376,20 @@ describe("draft parse and model tier", () => {
 });
 
 describe("quiet hours", () => {
-  it("holds a send in the lead timezone overnight window and is on by default logic", () => {
-    const late = new Date("2026-08-20T02:00:00.000Z");
-    expect(isInQuietHours(late, "America/New_York", "21:00", "08:00")).toBe(true);
+  it("holds a send from 8pm, which the old 9pm window would have allowed", () => {
+    const eightThirty = new Date("2026-08-21T00:30:00.000Z");
+    expect(isInQuietHours(eightThirty, "America/New_York", "21:00", "08:00")).toBe(false);
+    expect(isInQuietHours(eightThirty, "America/New_York", "20:00", "08:00")).toBe(true);
     const sendAt = computeSendAt({
-      now: late,
+      now: eightThirty,
       timeZone: "America/New_York",
       enabled: true,
-      startHm: "21:00",
+      startHm: "20:00",
       endHm: "08:00",
     });
-    expect(isInQuietHours(sendAt, "America/New_York", "21:00", "08:00")).toBe(false);
-    expect(
-      computeSendAt({
-        now: late,
-        timeZone: "America/New_York",
-        enabled: false,
-        startHm: "21:00",
-        endHm: "08:00",
-      }).toISOString()
-    ).toBe(late.toISOString());
+    expect(isInQuietHours(sendAt, "America/New_York", "20:00", "08:00")).toBe(false);
+    expect(scheduleOutsideQuiet(eightThirty, sendAt.toISOString()).toISOString()).toBe(sendAt.toISOString());
+    expect(scheduleOutsideQuiet(sendAt, eightThirty.toISOString()).toISOString()).toBe(sendAt.toISOString());
   });
 });
 

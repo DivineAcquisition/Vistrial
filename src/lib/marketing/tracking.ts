@@ -3,29 +3,10 @@ import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 import { getSupabaseAdmin } from "@/lib/supabase/admin";
+import type { TrackingSettings, TrackingTool } from "@/lib/marketing/tracking-types";
 
 export { googleAnalyticsId, metaPixelId, GA_ID_PATTERN, META_PIXEL_PATTERN } from "@/lib/marketing/tracking-ids";
-
-export type TrackingCategory = "essential" | "analytics" | "advertising";
-
-export type TrackingTool = {
-  slug: string;
-  name: string;
-  company: string;
-  category: TrackingCategory;
-  purpose: string;
-  collects: string;
-  storage: string;
-  duration: string;
-  privacyUrl: string;
-  enabled: boolean;
-};
-
-export type TrackingSettings = {
-  version: number;
-  lifetimeDays: number;
-  dismissDays: number;
-};
+export type { TrackingCategory, TrackingSettings, TrackingTool } from "@/lib/marketing/tracking-types";
 
 export const FALLBACK_TRACKING_TOOLS: TrackingTool[] = [
   {

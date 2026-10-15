@@ -32,6 +32,7 @@ describe("tracking stays registered", () => {
       if (allowed.has(rel) || rel.endsWith(".test.ts") || rel.endsWith(".test.tsx")) continue;
       const text = readFileSync(file, "utf8");
       if (/googletagmanager\.com|connect\.facebook\.net|fbq\(/.test(text)) hits.push(rel);
+      if (text.startsWith('"use client"') && /@\/lib\/marketing\/tracking["']/.test(text)) hits.push(`${rel} imports server tracking`);
     }
     expect(hits).toEqual([]);
   });

@@ -103,6 +103,18 @@ export function writeConsentCookie(choice: StoredConsent, maxAgeSeconds: number)
   }
 }
 
+/**
+ * useSyncExternalStore compares snapshots with Object.is. Returning a new
+ * object when the key has not changed makes React re-render forever.
+ */
+export function rememberSnapshot<T>(slot: { key: string; value?: T }, key: string, create: () => T): T {
+  if (slot.key === key && slot.value !== undefined) return slot.value;
+  const value = create();
+  slot.key = key;
+  slot.value = value;
+  return value;
+}
+
 export function optionalAnalyticsAllowed(): boolean {
   const choice = readConsentCookie();
   return categoryAllowed({

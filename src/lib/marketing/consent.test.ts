@@ -1,6 +1,13 @@
 import { describe, expect, it } from "vitest";
 
-import { categoryAllowed, choiceFromMode, consentIsCurrent, parseConsent, serializeConsent } from "@/lib/marketing/consent";
+import {
+  categoryAllowed,
+  choiceFromMode,
+  consentIsCurrent,
+  parseConsent,
+  rememberSnapshot,
+  serializeConsent,
+} from "@/lib/marketing/consent";
 
 const now = Date.parse("2026-10-15T12:00:00Z");
 
@@ -30,6 +37,16 @@ describe("cookie consent", () => {
     expect(consentIsCurrent(rejected, 1, now + 200 * 24 * 60 * 60 * 1000)).toBe(true);
     expect(consentIsCurrent(rejected, 1, now + 366 * 24 * 60 * 60 * 1000)).toBe(false);
     expect(categoryAllowed({ choice: rejected, category: "analytics", gpc: false, version: 1, now })).toBe(false);
+  });
+
+  it("returns the same snapshot object until the consent value changes", () => {
+    const slot: { key: string; value?: { n: number } } = { key: "" };
+    const first = rememberSnapshot(slot, "same", () => ({ n: 1 }));
+    const again = rememberSnapshot(slot, "same", () => ({ n: 2 }));
+    expect(again).toBe(first);
+    const next = rememberSnapshot(slot, "next", () => ({ n: 3 }));
+    expect(next).not.toBe(first);
+    expect(next.n).toBe(3);
   });
 
   it("asks again when the consent version changes", () => {

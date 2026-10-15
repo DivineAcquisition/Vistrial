@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useSyncExternalStore } from "react";
+import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -11,38 +11,48 @@ import {
   consentIsCurrent,
   globalPrivacyControlOn,
   readConsentCookie,
+  rememberSnapshot,
   writeConsentCookie,
   type ConsentMode,
   type StoredConsent,
 } from "@/lib/marketing/consent";
-import type { TrackingTool } from "@/lib/marketing/tracking";
+import type { TrackingTool } from "@/lib/marketing/tracking-types";
 
 type Snap = { ready: boolean; choice: StoredConsent | null; gpc: boolean; saved: boolean };
 
 const SERVER: Snap = { ready: false, choice: null, gpc: false, saved: true };
+const snapSlot: { key: string; value?: Snap } = { key: "" };
+
+function subscribeConsent(onChange: () => void) {
+  const refresh = () => onChange();
+  window.addEventListener("vistrial-consent", refresh);
+  window.addEventListener("vistrial-open-consent", refresh);
+  return () => {
+    window.removeEventListener("vistrial-consent", refresh);
+    window.removeEventListener("vistrial-open-consent", refresh);
+  };
+}
+
+function consentSnapKey(version: number, choice: StoredConsent | null, gpc: boolean, saved: boolean) {
+  const fields = choice ? `${choice.v}.${choice.a}.${choice.d}.${choice.m}.${choice.t}.${choice.o}` : "";
+  return `${version}|${gpc ? 1 : 0}|${saved ? 1 : 0}|${fields}`;
+}
+
+function readClientSnap(version: number): Snap {
+  const choice = readConsentCookie();
+  const gpc = globalPrivacyControlOn();
+  const saved = consentIsCurrent(choice, version);
+  return rememberSnapshot(snapSlot, consentSnapKey(version, choice, gpc, saved), () => ({
+    ready: true,
+    choice,
+    gpc,
+    saved,
+  }));
+}
 
 function useConsent(version: number) {
-  return useSyncExternalStore(
-    (onChange) => {
-      const refresh = () => onChange();
-      window.addEventListener("vistrial-consent", refresh);
-      window.addEventListener("vistrial-open-consent", refresh);
-      return () => {
-        window.removeEventListener("vistrial-consent", refresh);
-        window.removeEventListener("vistrial-open-consent", refresh);
-      };
-    },
-    () => {
-      const choice = readConsentCookie();
-      return {
-        ready: true,
-        choice,
-        gpc: globalPrivacyControlOn(),
-        saved: consentIsCurrent(choice, version),
-      };
-    },
-    () => SERVER,
-  );
+  const getSnapshot = useCallback(() => readClientSnap(version), [version]);
+  return useSyncExternalStore(subscribeConsent, getSnapshot, () => SERVER);
 }
 
 function save(mode: ConsentMode, version: number, gpc: boolean, custom?: { analytics: boolean; advertising: boolean }) {
@@ -90,11 +100,13 @@ export function ConsentBanner({
     setBlocked(false);
   }
 
+  const openPreferencesRef = useRef(openPreferences);
+  openPreferencesRef.current = openPreferences;
   useEffect(() => {
-    const listener = () => openPreferences();
+    const listener = () => openPreferencesRef.current();
     window.addEventListener("vistrial-open-consent", listener);
     return () => window.removeEventListener("vistrial-open-consent", listener);
-  });
+  }, []);
 
   return (
     <>

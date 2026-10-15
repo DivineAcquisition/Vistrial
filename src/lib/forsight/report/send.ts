@@ -6,6 +6,7 @@ import { roleLabel } from "@/lib/auth/permissions";
 import type { OrgRole } from "@/types/database";
 import { appUrl } from "@/lib/app-url";
 import { renderFooter } from "@/lib/email/footer";
+import { EMAIL_REPLY_TO, streamSendAllowed } from "@/lib/email/streams";
 import { emailLogoUrl, transactionalEmailHtml } from "@/lib/email/layout";
 import { recordEmailSend, withPreferences } from "@/lib/email/send-guard";
 import { forsightLog } from "@/lib/forsight/report/log";
@@ -88,8 +89,15 @@ export async function sendStoredReport(args: {
       }),
     });
     if (!rendered.ok) return { status: "failed", reason: rendered.error };
+    const allowed = streamSendAllowed({
+      category: "C",
+      transactionalFrom: cfg.from,
+      lifecycleFrom: cfg.lifecycleFrom,
+    });
+    if (!allowed.ok) return { status: "failed", reason: allowed.error };
     const sent = await resend.emails.send({
-      from: cfg.from,
+      from: allowed.from,
+      replyTo: EMAIL_REPLY_TO,
       to: [address],
       subject: `${report.workspace.name}, ${report.period.label} report`,
       text: [...lines, href, rendered.footer.text].join("\n"),

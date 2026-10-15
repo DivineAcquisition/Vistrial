@@ -1,4 +1,4 @@
-import { appUrl } from "@/lib/app-url";
+import { PRODUCTION_APP_ORIGIN } from "@/lib/constants";
 
 /**
  * Transactional mail shell.
@@ -7,8 +7,14 @@ import { appUrl } from "@/lib/app-url";
  * The mark is public/brand/Vistrial 1.png. The legal footer sits under the card.
  */
 
-/** Icon logo. The space in the filename is encoded so mail clients can load it. */
-export const EMAIL_LOGO_PATH = "/brand/Vistrial%201.png";
+/**
+ * The icon in public/brand/Vistrial 1.png, copied here so the address has no
+ * space. Mail apps drop images whose URL contains a space or percent encoding.
+ */
+export const EMAIL_LOGO_PATH = "/brand/vistrial-icon.png";
+
+/** Inline id used when the icon is attached to a Resend message. */
+export const EMAIL_LOGO_CID = "vistrial-icon";
 
 /** Display size of the square icon. */
 const LOGO_WIDTH = 48;
@@ -45,8 +51,12 @@ export type TransactionalEmail = {
   footerHtml?: string;
 };
 
-export function emailLogoUrl(origin = appUrl()): string {
+export function emailLogoUrl(origin = PRODUCTION_APP_ORIGIN): string {
   return `${origin.replace(/\/$/, "")}${EMAIL_LOGO_PATH}`;
+}
+
+export function emailLogoSrc(): string {
+  return `cid:${EMAIL_LOGO_CID}`;
 }
 
 function escapeHtml(value: string): string {
@@ -90,7 +100,7 @@ export function transactionalEmailHtml(args: TransactionalEmail): string {
   const heading = escapeHtml(args.heading);
   const preheader = escapeHtml(args.preheader?.trim() || args.lines?.[0] || args.heading);
   const logoUrl = escapeHtml(args.logoUrl ?? emailLogoUrl());
-  const homeHref = escapeHtml(args.homeHref ?? appUrl());
+  const homeHref = escapeHtml(args.homeHref ?? PRODUCTION_APP_ORIGIN);
   const lines = (args.lines ?? []).filter((line) => line.trim().length > 0).map(paragraph).join("");
   const items = args.items && args.items.length > 0 ? itemList(args.items) : "";
   const code = args.code?.trim()

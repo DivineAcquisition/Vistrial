@@ -1,10 +1,16 @@
 import { describe, expect, it } from "vitest";
 
-import { EMAIL_LOGO_PATH, transactionalEmailHtml } from "@/lib/email/layout";
+import { EMAIL_LOGO_PATH, emailLogoUrl, transactionalEmailHtml } from "@/lib/email/layout";
 
-const logoUrl = "https://app.vistrial.io/brand/Vistrial%201.png";
+const logoUrl = "https://app.vistrial.io/brand/vistrial-icon.png";
 
 describe("transactionalEmailHtml", () => {
+  it("points the icon at the public site, never localhost", () => {
+    expect(emailLogoUrl()).toBe("https://app.vistrial.io/brand/vistrial-icon.png");
+    expect(emailLogoUrl()).not.toContain("localhost");
+    expect(EMAIL_LOGO_PATH).toBe("/brand/vistrial-icon.png");
+  });
+
   it("puts the ink wordmark at the top left of the card, ahead of the heading", () => {
     const html = transactionalEmailHtml({
       heading: "Welcome to Vistrial",

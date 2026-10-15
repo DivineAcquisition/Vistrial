@@ -41,7 +41,7 @@ try {
 
 const subject = parsed.mailer_subjects_magic_link;
 const html = String(parsed.mailer_templates_magic_link_content ?? "");
-if (subject !== "Your Vistrial sign-in link" || !html.includes("vistrial-lockup-ink.png")) {
+if (subject !== "Your Vistrial sign-in link" || !html.includes("vistrial-icon.png")) {
   console.error("The hosted magic-link template did not come back with the Vistrial card.");
   process.exit(1);
 }

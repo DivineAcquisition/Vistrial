@@ -18,12 +18,12 @@ import {
 } from "@/lib/access-requests/options";
 import { trackMarketingEvent } from "@/components/marketing/track";
 import { FORMS } from "@/lib/marketing/content";
-import { marketingPanel } from "@/lib/marketing/ui";
 import { checkboxClass, selectClass, textareaClass } from "@/lib/ui";
 import { cn } from "@/lib/utils";
 
+const formBox = "rounded-xl border border-[#2a2833] bg-[#0c0b10]";
 const fieldOutline =
-  "border-[#2a2833]! bg-[#12111a]! shadow-none! hover:border-[#2a2833]!";
+  "border-[#2a2833]! bg-[#111014]! shadow-none! before:shadow-none! hover:border-[#2a2833]! dark:bg-[#111014]!";
 
 const initial: AccessFormState = { ok: true, message: "", errors: {} };
 
@@ -80,7 +80,7 @@ export function AccessRequestForm({ kind }: { kind: "private_access" | "custom" 
   return (
     <form
       action={formAction}
-      className={cn(marketingPanel, "space-y-4 p-5 sm:p-6")}
+      className={cn(formBox, "space-y-4 p-5 sm:p-6")}
       noValidate
       onSubmit={(event) => {
         const params = new URLSearchParams(window.location.search);
@@ -127,7 +127,7 @@ export function AccessRequestForm({ kind }: { kind: "private_access" | "custom" 
             <div className="mt-2 grid gap-2">
               {LEAD_SOURCES.map((source) => (
                 <label key={source.value} className="flex items-center gap-2 text-sm">
-                  <input type="checkbox" name="lead_sources" value={source.value} className={cn(checkboxClass, "border-[#2a2833]!")} />
+                  <input type="checkbox" name="lead_sources" value={source.value} className={cn(checkboxClass, "border-[#2a2833]! bg-[#111014]! dark:bg-[#111014]!")} />
                   {source.label}
                 </label>
               ))}
@@ -166,7 +166,7 @@ export function AccessRequestForm({ kind }: { kind: "private_access" | "custom" 
         <FieldMessage message={error?.phone} />
       </Field>
       <label className="flex items-start gap-3 text-sm">
-        <input type="checkbox" name="consent" value="yes" className={cn(checkboxClass, "border-[#2a2833]!")} aria-invalid={error?.consent ? true : undefined} />
+        <input type="checkbox" name="consent" value="yes" className={cn(checkboxClass, "border-[#2a2833]! bg-[#111014]! dark:bg-[#111014]!")} aria-invalid={error?.consent ? true : undefined} />
         <span>
           {FORMS.consent}{" "}
           <a href={FORMS.privacyHref} className="text-brand-300 underline">

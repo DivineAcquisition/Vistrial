@@ -17,6 +17,7 @@ import {
   type StoredConsent,
 } from "@/lib/marketing/consent";
 import type { TrackingTool } from "@/lib/marketing/tracking-types";
+import { cn } from "@/lib/utils";
 
 type Snap = { ready: boolean; choice: StoredConsent | null; gpc: boolean; saved: boolean };
 
@@ -101,7 +102,9 @@ export function ConsentBanner({
   }
 
   const openPreferencesRef = useRef(openPreferences);
-  openPreferencesRef.current = openPreferences;
+  useEffect(() => {
+    openPreferencesRef.current = openPreferences;
+  });
   useEffect(() => {
     const listener = () => openPreferencesRef.current();
     window.addEventListener("vistrial-open-consent", listener);
@@ -183,11 +186,11 @@ function Category({
   );
 }
 
-export function OpenConsentButton({ label = "Cookie preferences" }: { label?: string }) {
+export function OpenConsentButton({ label = "Cookie preferences", className }: { label?: string; className?: string }) {
   return (
     <button
       type="button"
-      className="text-sm text-silver hover:text-brand-300"
+      className={cn("text-sm text-silver hover:text-brand-300", className)}
       onClick={() => window.dispatchEvent(new Event("vistrial-open-consent"))}
     >
       {label}

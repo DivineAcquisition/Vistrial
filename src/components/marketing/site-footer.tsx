@@ -1,34 +1,53 @@
+import type { ReactNode } from "react";
 import Link from "next/link";
 
 import { OpenConsentButton } from "@/components/marketing/consent-banner";
-import Logo from "@/components/brand/logo";
+import { Button } from "@/components/ui/button";
 import { APP_NAME } from "@/lib/constants";
+import { EMAIL_LOGO_PATH } from "@/lib/email/layout";
 import { FOOTER, NAV } from "@/lib/marketing/content";
 import { marketingPageGutter, marketingShell } from "@/lib/marketing/ui";
 import { loadTrustPublic } from "@/lib/trust/public";
 import { cn } from "@/lib/utils";
 
-const footerLinkClass = "text-sm text-silver transition-colors hover:text-brand-300";
+const footerLinkClass = "text-sm text-silver transition-colors hover:text-white";
+const footerButton = "rounded-[8px]! before:rounded-[7px]!";
+const footerOutline = "rounded-[8px]! border-[#2a2833]! bg-[#12111a] before:rounded-[7px]! hover:bg-[#1c1a27]";
+
+const productLinks = NAV.links;
+const trustLinks = [
+  { href: "/security", label: "Security" },
+  { href: "/security/subprocessors", label: "Subprocessors" },
+  { href: "/security/report", label: "Report a vulnerability" },
+] as const;
+const legalLinks = [
+  { href: "/privacy", label: "Privacy" },
+  { href: "/cookies", label: "Cookies" },
+  { href: "/terms", label: "Terms" },
+  { href: "/privacy/requests", label: "Data requests" },
+  { href: "/contact", label: "Contact" },
+] as const;
+
+function FooterColumn({ title, children }: { title: string; children: ReactNode }) {
+  return (
+    <div>
+      <p className="text-xs font-semibold tracking-[0.14em] text-white uppercase">{title}</p>
+      <ul className="mt-4 grid gap-2.5">{children}</ul>
+    </div>
+  );
+}
 
 export async function SiteFooter() {
   const trust = await loadTrustPublic();
-  const links: Array<{ href?: string; label: string }> = [
-    { href: "/security", label: "Security" },
-    { href: "/security/subprocessors", label: "Subprocessors" },
-    { href: "/security/report", label: "Report a vulnerability" },
-    { href: "/privacy", label: "Privacy" },
-    { href: "/cookies", label: "Cookies" },
-    { href: "/terms", label: "Terms" },
-    { href: "/privacy/requests", label: "Data requests" },
-    { href: "/contact", label: "Contact" },
-  ];
+
   return (
-    <footer className="relative border-t border-[#2a2833]">
-      <div className={cn(marketingShell, marketingPageGutter, "py-10 sm:py-12")}>
-        <div className="grid gap-8 sm:grid-cols-[1.4fr_1fr]">
+    <footer className="relative border-t border-[#2a2833] bg-[#0c0b10]">
+      <div className={cn(marketingShell, marketingPageGutter, "py-12 sm:py-16")}>
+        <div className="grid gap-10 sm:grid-cols-2 lg:grid-cols-[1.4fr_0.8fr_0.9fr_0.8fr]">
           <div>
-            <Link href="/" aria-label={`${APP_NAME} home`} className="inline-block">
-              <Logo className="h-6 w-auto" />
+            <Link href="/" className="inline-block rounded-md" aria-label={`${APP_NAME} home`}>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={EMAIL_LOGO_PATH} alt="" width={40} height={40} className="size-10 rounded-[10px]" />
             </Link>
             <p className="mt-4 max-w-xs text-sm leading-relaxed text-silver">{FOOTER.productLine}</p>
             {trust.legalEntity && trust.mailingAddress ? (
@@ -36,33 +55,58 @@ export async function SiteFooter() {
                 {trust.legalEntity}. {trust.mailingAddress}
               </p>
             ) : null}
+            <div className="mt-6 flex flex-col gap-2 sm:flex-row">
+              <Button variant="gradient" size="sm" className={footerButton} render={<Link href="/request?from=contact" data-cta-position="contact" />}>
+                {NAV.request}
+              </Button>
+              <Button variant="outline" size="sm" className={footerOutline} render={<a href={NAV.signInHref} />}>
+                {NAV.signIn}
+              </Button>
+            </div>
           </div>
-          <ul className="grid gap-2 sm:justify-items-end">
-            {links.map((link) => (
-              <li key={link.label}>
-                {link.href ? (
-                  <Link href={link.href} className={footerLinkClass}>
-                    {link.label}
-                  </Link>
-                ) : (
-                  <span className="text-sm text-dim">{link.label}</span>
-                )}
+
+          <FooterColumn title="Product">
+            {productLinks.map((link) => (
+              <li key={link.href}>
+                <Link href={link.href} className={footerLinkClass}>
+                  {link.label}
+                </Link>
+              </li>
+            ))}
+          </FooterColumn>
+
+          <FooterColumn title="Trust">
+            {trustLinks.map((link) => (
+              <li key={link.href}>
+                <Link href={link.href} className={footerLinkClass}>
+                  {link.label}
+                </Link>
+              </li>
+            ))}
+          </FooterColumn>
+
+          <FooterColumn title="Legal">
+            {legalLinks.map((link) => (
+              <li key={link.href}>
+                <Link href={link.href} className={footerLinkClass}>
+                  {link.label}
+                </Link>
               </li>
             ))}
             <li>
-              <a href={NAV.signInHref} className={footerLinkClass}>
-                {NAV.signIn}
-              </a>
+              <OpenConsentButton className={footerLinkClass} />
             </li>
-          </ul>
+          </FooterColumn>
         </div>
-        <OpenConsentButton />
-        <p className="mt-8 border-t border-[#2a2833] pt-6 text-xs text-dim">
-          © {new Date().getFullYear()} {FOOTER.copyright}.{" "}
+
+        <div className="mt-12 flex flex-col gap-2 border-t border-[#2a2833] pt-6 text-xs text-dim sm:flex-row sm:items-center sm:justify-between">
+          <p>
+            © {new Date().getFullYear()} {FOOTER.copyright}
+          </p>
           <a href={`mailto:${trust.supportEmail}`} className="hover:text-white">
             {trust.supportEmail}
           </a>
-        </p>
+        </div>
       </div>
     </footer>
   );

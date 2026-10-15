@@ -3,6 +3,7 @@ import "server-only";
 import { Resend } from "resend";
 
 import { appUrl } from "@/lib/app-url";
+import { transactionalEmailHtml } from "@/lib/email/layout";
 import { forsightLog } from "@/lib/forsight/report/log";
 import { forsightReportPdf } from "@/lib/forsight/report/pdf";
 import { periodPath } from "@/lib/forsight/report/load";
@@ -56,18 +57,23 @@ export async function sendStoredReport(args: {
   const href = `${appUrl()}/app/forsight/reports/${periodPath(report.period.start)}`;
   const filename = `forsight-${periodPath(report.period.start)}-v${args.stored.version}.pdf`;
 
+  const lines = [
+    `${report.workspace.name} — ${report.period.label}.`,
+    `Generated ${report.generatedAt}. Version ${args.stored.version}.`,
+    "This is a snapshot. The numbers in it will not move.",
+  ];
   const resend = new Resend(cfg.apiKey);
   const { data, error } = await resend.emails.send({
     from: cfg.from,
     to: recipients,
     subject: `${report.workspace.name} · ${report.period.label} report`,
-    text: [
-      `${report.workspace.name} — ${report.period.label}.`,
-      `Generated ${report.generatedAt}. Version ${args.stored.version}.`,
-      `This is a snapshot. The numbers in it will not move.`,
-      href,
-    ].join("\n"),
-    html: `<p>${escapeHtml(report.workspace.name)} — ${escapeHtml(report.period.label)}.</p><p>Generated ${escapeHtml(report.generatedAt)}. Version ${args.stored.version}.</p><p>This is a snapshot. The numbers in it will not move.</p><p><a href="${escapeHtml(href)}">Open in Forsight</a></p>`,
+    text: [...lines, href].join("\n"),
+    html: transactionalEmailHtml({
+      heading: `${report.workspace.name} report`,
+      preheader: lines[0],
+      lines,
+      cta: { label: "Open in Forsight", href },
+    }),
     attachments: [{ filename, content: Buffer.from(bytes) }],
   });
 
@@ -105,12 +111,4 @@ export async function sendStoredReport(args: {
   });
 
   return { status: "sent", recipients };
-}
-
-function escapeHtml(value: string): string {
-  return value
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;");
 }

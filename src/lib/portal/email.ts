@@ -4,6 +4,7 @@ import { Resend } from "resend";
 
 import type { GhlDb } from "@/lib/ghl/tokens";
 import { appUrl } from "@/lib/app-url";
+import { transactionalEmailHtml } from "@/lib/email/layout";
 import { resendConfigured } from "@/lib/notifications/env";
 import { previousEqualRange } from "@/lib/portal/range";
 import { loadPortalRpcAdmin, nextSendAtFor, scheduledEmailRange } from "@/lib/portal/load";
@@ -142,13 +143,19 @@ export async function sendPortalEmailForOrg(
   });
 
   const href = `${appUrl()}/portal?range=custom&from=${range.fromDate}&to=${range.toDate}`;
+  const detail = `Range ${range.fromDate} to ${range.toDate}. Generated ${generatedAt}. Workspace ${org.slug}.`;
   const resend = new Resend(cfg.apiKey);
   const { error } = await resend.emails.send({
     from: cfg.from,
     to: recipients,
     subject: `${org.name} owner report · ${range.fromDate} to ${range.toDate}`,
-    text: `${summary}\n\nRange ${range.fromDate} to ${range.toDate}. Generated ${generatedAt}. Workspace ${org.slug}.\n${href}`,
-    html: `<p style="white-space:pre-wrap;font-family:ui-sans-serif,system-ui,sans-serif;line-height:1.45">${escapeHtml(summary)}</p><p>Range ${escapeHtml(range.fromDate)} to ${escapeHtml(range.toDate)}. Generated ${escapeHtml(generatedAt)}. Workspace ${escapeHtml(org.slug)}.</p><p><a href="${escapeHtml(href)}">Open the owner portal</a></p>`,
+    text: `${summary}\n\n${detail}\n${href}`,
+    html: transactionalEmailHtml({
+      heading: `${org.name} owner report`,
+      preheader: summary,
+      lines: [summary, detail],
+      cta: { label: "Open the owner portal", href },
+    }),
     attachments: [
       {
         filename: `vistrial-owner-report-${org.slug}-${range.fromDate}.pdf`,
@@ -175,12 +182,4 @@ async function loadReportingPanelAdmin(
   });
   if (error) throw new Error(error.message);
   return asRecord(data);
-}
-
-function escapeHtml(value: string): string {
-  return value
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;");
 }

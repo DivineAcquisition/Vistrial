@@ -3,6 +3,7 @@ import "server-only";
 import { Resend } from "resend";
 
 import { appUrl } from "@/lib/app-url";
+import { transactionalEmailHtml } from "@/lib/email/layout";
 import { localDate, zonedStartOfDay } from "@/lib/home/periods";
 import type { GhlDb } from "@/lib/ghl/tokens";
 import { ghlError } from "@/lib/ghl/log";
@@ -26,20 +27,17 @@ import { getSupabaseAdmin } from "@/lib/supabase/admin";
 
 export type MailResult = { ok: true; id?: string } | { ok: false; error: string };
 
-function escapeHtml(value: string): string {
-  return value.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
-}
-
 export function absoluteUrl(path: string): string {
   return path.startsWith("http") ? path : `${appUrl()}${path.startsWith("/") ? path : `/${path}`}`;
 }
 
 export function portalEmailHtml(args: { heading: string; lines: string[]; cta?: { label: string; href: string } }): string {
-  const paragraphs = args.lines.map((line) => `<p style="margin:0 0 12px">${escapeHtml(line)}</p>`).join("");
-  const button = args.cta
-    ? `<p style="margin:20px 0"><a href="${escapeHtml(args.cta.href)}" style="background:#7c6cf2;color:#fff;padding:10px 16px;border-radius:8px;text-decoration:none;display:inline-block">${escapeHtml(args.cta.label)}</a></p>`
-    : "";
-  return `<!doctype html><html><body style="font-family:ui-sans-serif,system-ui,sans-serif;font-size:16px;line-height:1.5;color:#111;padding:16px;max-width:560px"><h1 style="font-size:20px;margin:0 0 16px">${escapeHtml(args.heading)}</h1>${paragraphs}${button}<p style="margin:24px 0 0;font-size:13px;color:#666">Sent by Vistrial.</p></body></html>`;
+  return transactionalEmailHtml({
+    heading: args.heading,
+    preheader: args.lines[0],
+    lines: args.lines,
+    cta: args.cta,
+  });
 }
 
 export async function sendPortalMail(args: {

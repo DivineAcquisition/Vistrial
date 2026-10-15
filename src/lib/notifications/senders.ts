@@ -1,6 +1,7 @@
 import { Resend } from "resend";
 import webpush from "web-push";
 
+import { transactionalEmailHtml } from "@/lib/email/layout";
 import { decryptSecret } from "@/lib/ghl/crypto";
 import type { GhlDb } from "@/lib/ghl/tokens";
 import { assertLockScreenSafe } from "@/lib/notifications/copy";
@@ -18,24 +19,14 @@ function emailHtml(args: {
   href: string;
   items?: Array<{ text: string; href: string }>;
 }): string {
-  const items =
-    args.items && args.items.length > 0
-      ? `<ul>${args.items
-          .map(
-            (item) =>
-              `<li style="margin:0 0 12px"><a href="${escapeHtml(item.href)}">${escapeHtml(item.text)}</a></li>`
-          )
-          .join("")}</ul>`
-      : `<p>${escapeHtml(args.body)}</p><p><a href="${escapeHtml(args.href)}">Open in Vistrial</a></p>`;
-  return `<!doctype html><html><body style="font-family:ui-sans-serif,system-ui,sans-serif;font-size:16px;line-height:1.45;color:#111;padding:16px">${items}</body></html>`;
-}
-
-function escapeHtml(value: string): string {
-  return value
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;");
+  const lines = args.body && args.body !== args.title ? [args.body] : [];
+  return transactionalEmailHtml({
+    heading: args.title,
+    preheader: args.body || args.title,
+    lines,
+    items: args.items,
+    cta: { label: "Open in Vistrial", href: args.href },
+  });
 }
 
 export async function sendEmail(args: {

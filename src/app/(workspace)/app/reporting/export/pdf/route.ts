@@ -39,8 +39,8 @@ export async function POST(request: Request) {
     return new NextResponse(null, { status: 404 });
   }
   const access = await assertReportingAccess();
-  if (!access.ok) {
-    return NextResponse.json({ error: access.error }, { status: 403 });
+  if (!access.ok || !access.ctx.isPlatformAdmin) {
+    return new NextResponse(null, { status: 404 });
   }
   const url = new URL(request.url);
   const params = Object.fromEntries(url.searchParams.entries());

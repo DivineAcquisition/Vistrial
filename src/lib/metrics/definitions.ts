@@ -235,6 +235,119 @@ export const METRICS = defs({
     measure: "count",
     now: true,
   },
+  gone_quiet: {
+    label: "Gone quiet",
+    explain:
+      "Open leads in a consultation, follow-up, objection, or gone-quiet stage with no recorded movement for at least 3 days. Grouped by how long they have been quiet.",
+    unit: "count",
+    measure: "count",
+    now: true,
+  },
+  gone_quiet_value: {
+    label: "Recorded value on quiet leads",
+    explain:
+      "The deal value recorded on those quiet leads, where a connected tool or the case file has a number. Missing values are left out.",
+    unit: "money",
+    measure: "sum",
+    now: true,
+  },
+  gone_quiet_reply_after: {
+    label: "Reply recorded after",
+    explain:
+      "Quiet leads that later had a reply recorded. This is a count of what was recorded afterward. It does not say the follow-up caused the reply.",
+    unit: "count",
+    measure: "count",
+    rowsAreEvents: true,
+  },
+  gone_quiet_booking_after: {
+    label: "Booking recorded after",
+    explain:
+      "Quiet leads that later had a call booked. This is a count of what was recorded afterward. It does not say a follow-up caused the booking.",
+    unit: "count",
+    measure: "count",
+    rowsAreEvents: true,
+  },
+  after_hours_first_touch: {
+    label: "First response by hours",
+    explain:
+      "New leads whose first measured human reply landed inside or outside the workspace's business hours. Use the after_hours or in_hours detail to split them.",
+    unit: "count",
+    measure: "count",
+  },
+  approval_time: {
+    label: "Time to approve",
+    explain: "The median time from a Relay draft being ready until someone decided it, for decisions in the range.",
+    unit: "duration",
+    measure: "median",
+    lowerIsBetter: true,
+    rowsAreEvents: true,
+  },
+  approval_expired: {
+    label: "Approvals that expired",
+    explain: "Relay drafts in the range that expired before anyone decided them.",
+    unit: "count",
+    measure: "count",
+    rowsAreEvents: true,
+  },
+  tasks_open: {
+    label: "Tasks open",
+    explain: "Open tasks on leads. Owners and the Vistrial team only. The count follows assignment, not a score.",
+    unit: "count",
+    measure: "count",
+    now: true,
+    rowsAreEvents: true,
+  },
+  tasks_overdue: {
+    label: "Tasks overdue",
+    explain: "Open tasks whose due time has passed. Owners and the Vistrial team only.",
+    unit: "count",
+    measure: "count",
+    now: true,
+    rowsAreEvents: true,
+  },
+  touches_logged: {
+    label: "Touches logged",
+    explain: "Touches recorded in the range. The count is metadata only. Message text is not part of this number.",
+    unit: "count",
+    measure: "count",
+    rowsAreEvents: true,
+  },
+  coverage_sources: {
+    label: "Sources connected",
+    explain: "Connections that are active right now, including the CRM.",
+    unit: "count",
+    measure: "count",
+    now: true,
+    rowsAreEvents: true,
+  },
+  coverage_stale: {
+    label: "Sources that need a check",
+    explain: "Connections that are broken, or active but not verified in the last 48 hours.",
+    unit: "count",
+    measure: "count",
+    now: true,
+    rowsAreEvents: true,
+  },
+  coverage_with_calls: {
+    label: "New leads with a call record",
+    explain: "New leads in the range that have at least one call record.",
+    unit: "count",
+    measure: "count",
+  },
+  coverage_manual: {
+    label: "New leads entered directly",
+    explain: "New leads in the range whose source is empty, manual, direct, or the API, rather than a named tool.",
+    unit: "count",
+    measure: "count",
+  },
+  coverage_unmatched: {
+    label: "Items waiting for review",
+    explain: "Inbound items for this workspace that are still waiting to be matched.",
+    unit: "count",
+    measure: "count",
+    now: true,
+    rowsAreEvents: true,
+  },
 });
 
 export type MetricId = keyof typeof METRICS;
@@ -299,6 +412,13 @@ export type ShareId = keyof typeof SHARES;
 
 /** Below this many, a share or median is shown with a note that it is too few to read much into. */
 export const SMALL_SAMPLE = 10;
+
+/** Comparisons between periods need at least this many rows on both sides. */
+export const COMPARISON_MIN = 20;
+
+export function comparisonAllowed(current: number | null | undefined, previous: number | null | undefined): boolean {
+  return typeof current === "number" && current >= COMPARISON_MIN && typeof previous === "number" && previous >= COMPARISON_MIN;
+}
 
 export function isSmallSample(denominator: number | null | undefined): boolean {
   return typeof denominator === "number" && denominator > 0 && denominator < SMALL_SAMPLE;
@@ -374,6 +494,16 @@ export function detailLabel(metric: string, detail: string | null): string | nul
     return words(kind ?? "");
   }
   if (base === "revenue") return REVENUE_LIFECYCLE_LABELS[detail as keyof typeof REVENUE_LIFECYCLE_LABELS] ?? words(detail);
+  if (base === "gone_quiet" || base === "gone_quiet_value") {
+    const bands: Record<string, string> = {
+      "3_7": "Quiet 3 to 7 days",
+      "8_14": "Quiet 8 to 14 days",
+      "15_21": "Quiet 15 to 21 days",
+      over_21: "Quiet more than 21 days",
+    };
+    return bands[detail] ?? words(detail);
+  }
+  if (base === "after_hours_first_touch") return detail === "after_hours" ? "Outside business hours" : "Inside business hours";
   if (base === "open_band" || base === "hot_open") return detail === "none" ? "No band" : detail;
   return words(detail);
 }

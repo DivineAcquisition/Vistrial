@@ -21,6 +21,7 @@ describe("shell navigation", () => {
     expect(labels("owner")).toEqual(["Overview", "Case Files", "Results", "Agents", "Settings"]);
     expect(nav.phone.map((item) => item.label)).toEqual(["Overview", "Case Files", "Results", "Settings"]);
     expect(nav.groups[0]?.items.find((item) => item.id === "results")?.children?.map((item) => item.label)).toEqual([
+      "Reports",
       "Forsight",
     ]);
     expect(labels("owner")).not.toContain("Approvals");
@@ -38,11 +39,11 @@ describe("shell navigation", () => {
     expect(labels("owner").length).toBeLessThanOrEqual(6);
   });
 
-  it("shows a member only Overview and Results", () => {
-    expect(labels("member")).toEqual(["Overview", "Results"]);
+  it("shows a member Overview, Results, and Reports", () => {
+    expect(labels("member")).toEqual(["Overview", "Results", "Reports"]);
     const nav = shellNavigation({ role: "member", templateAccess: false });
     expect(nav.groups[0]?.items.find((item) => item.id === "results")?.children ?? []).toEqual([]);
-    expect(nav.phone.map((item) => item.label)).toEqual(["Overview", "Results"]);
+    expect(nav.phone.map((item) => item.label)).toEqual(["Overview", "Results", "Reports"]);
     expect(nav.more).toEqual([]);
   });
 

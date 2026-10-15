@@ -21,6 +21,12 @@ export const EVENT_LABELS: Record<NotificationEventType, string> = {
   data_request: "A data request was made",
   workspace_notice: "A note from the Vistrial team",
   onboarding: "Your setup",
+  report_ready: "A report is ready",
+  export_failed: "An export did not finish",
+  export_expiring: "An export link is about to expire",
+  api_key_notice: "An API key changed",
+  webhook_notice: "A webhook needs attention",
+  client_report_review: "A client report is waiting for review",
 };
 
 export const CHANNEL_LABELS: Record<NotificationChannel, string> = {

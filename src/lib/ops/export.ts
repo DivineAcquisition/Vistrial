@@ -1,12 +1,18 @@
+import { sanitizeExportTables, DATA_DICTIONARY, type SanitizeOptions } from "@/lib/exports/sanitize";
 import type { GhlDb } from "@/lib/ghl/tokens";
 
 export type OrgExportBundle = {
   exportedAt: string;
   org: Record<string, unknown>;
+  dictionary?: readonly { field: string; type: string; values: string; source: string }[];
   tables: Record<string, unknown[]>;
 };
 
-export async function buildOrgExport(db: GhlDb, orgId: string): Promise<OrgExportBundle> {
+export async function buildOrgExport(
+  db: GhlDb,
+  orgId: string,
+  options: SanitizeOptions = { includeOutbound: false, includeTranscripts: false }
+): Promise<OrgExportBundle> {
   const { data: org, error } = await db.from("organizations").select("*").eq("id", orgId).maybeSingle();
   if (error || !org) throw new Error("org_missing");
 
@@ -46,27 +52,33 @@ export async function buildOrgExport(db: GhlDb, orgId: string): Promise<OrgExpor
     db.from("self_reported_baselines").select("*").eq("org_id", orgId),
   ]);
 
+  const orgRow = { ...(org as unknown as Record<string, unknown>) };
+  delete orgRow.service_role;
   return {
     exportedAt: new Date().toISOString(),
-    org: org as unknown as Record<string, unknown>,
-    tables: {
-      leads: leads.data ?? [],
-      touches: touches.data ?? [],
-      calls: calls.data ?? [],
-      extractions: extractions.data ?? [],
-      objections: objections.data ?? [],
-      scores: scores.data ?? [],
-      revenue: revenue.data ?? [],
-      businessProfile: businessProfile.data ?? [],
-      reportingSnapshots: reportingSnapshots.data ?? [],
-      reportingCohorts: reportingCohorts.data ?? [],
-      baselineRuns: baselineRuns.data ?? [],
-      baselineLeads: baselineLeads.data ?? [],
-      baselineTouches: baselineTouches.data ?? [],
-      baselineCalls: baselineCalls.data ?? [],
-      baselineRevenue: baselineRevenue.data ?? [],
-      selfReportedBaselines: selfReportedBaselines.data ?? [],
-    },
+    org: orgRow,
+    dictionary: DATA_DICTIONARY,
+    tables: sanitizeExportTables(
+      {
+        leads: leads.data ?? [],
+        touches: touches.data ?? [],
+        calls: calls.data ?? [],
+        extractions: extractions.data ?? [],
+        objections: objections.data ?? [],
+        scores: scores.data ?? [],
+        revenue: revenue.data ?? [],
+        businessProfile: businessProfile.data ?? [],
+        reportingSnapshots: reportingSnapshots.data ?? [],
+        reportingCohorts: reportingCohorts.data ?? [],
+        baselineRuns: baselineRuns.data ?? [],
+        baselineLeads: baselineLeads.data ?? [],
+        baselineTouches: baselineTouches.data ?? [],
+        baselineCalls: baselineCalls.data ?? [],
+        baselineRevenue: baselineRevenue.data ?? [],
+        selfReportedBaselines: selfReportedBaselines.data ?? [],
+      },
+      options
+    ),
   };
 }
 

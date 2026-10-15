@@ -7619,7 +7619,13 @@ export type Database = {
         | "billing_issue"
         | "data_request"
         | "workspace_notice"
-        | "onboarding";
+        | "onboarding"
+        | "report_ready"
+        | "export_failed"
+        | "export_expiring"
+        | "api_key_notice"
+        | "webhook_notice"
+        | "client_report_review";
       notification_channel: "push" | "email" | "sms" | "team" | "da_console";
       notification_status:
         | "queued"

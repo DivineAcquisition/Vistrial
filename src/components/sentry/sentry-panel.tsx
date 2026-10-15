@@ -181,13 +181,14 @@ export function SentryPanel({
         {message ? <p role="alert" className="text-sm text-destructive">{message}</p> : null}
       </Card>
       <Card className="space-y-2 p-4">
-        <h2 className="text-sm font-semibold">Last 30 days</h2>
+        <h2 className="text-sm font-semibold">30-day rolling average</h2>
+        <p className="text-sm text-muted-foreground">This is a 30-day rolling average on the Sentry page. Results uses the median for the range you pick.</p>
         {measures.firstTouches === 0 && measures.gaps === 0 ? (
           <p className="text-sm text-muted-foreground">No measurements yet. They start once Sentry has watched a lead to its first touch.</p>
         ) : (
           <dl className="grid grid-cols-2 gap-3 text-sm sm:grid-cols-4">
             <div>
-              <dt className="text-muted-foreground">Average to first touch</dt>
+              <dt className="text-muted-foreground">30-day rolling average to first touch</dt>
               <dd className="font-medium">{minutes(measures.averageMinutes)}</dd>
             </div>
             <div>

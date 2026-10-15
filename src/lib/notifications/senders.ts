@@ -1,6 +1,7 @@
 import { Resend } from "resend";
 import webpush from "web-push";
 
+import { postOutbound } from "@/lib/security/outbound-url";
 import { categoryForEvent } from "@/lib/email/category";
 import type { EmailCategory, FooterVars } from "@/lib/email/footer";
 import { renderFooter, sendingStream, staffRecipientAllowed } from "@/lib/email/footer";
@@ -249,13 +250,13 @@ export async function sendTeam(args: {
   let sent = 0;
   let lastError = "";
   for (const url of urls) {
-    const response = await fetch(url, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ text }),
-    });
-    if (response.ok) sent += 1;
-    else lastError = `Webhook ${response.status}`;
+    try {
+      const response = await postOutbound({ url, body: JSON.stringify({ text }) });
+      if (response.status >= 200 && response.status < 300) sent += 1;
+      else lastError = `Webhook ${response.status}`;
+    } catch (error) {
+      lastError = error instanceof Error ? error.message : "Webhook refused";
+    }
   }
   if (sent === 0) return { ok: false, error: lastError || "Team webhook failed.", retry: true };
   return { ok: true };

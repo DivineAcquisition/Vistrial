@@ -93,9 +93,9 @@ export default async function ResultsPage({ searchParams }: { searchParams: Prom
       ) : null}
       {canViewPortal(ctx.role, ctx.isStaff) ? (
         <p className="text-sm text-muted-foreground">
-          Looking for the client report and its email schedule?{" "}
-          <Link href="/portal" className="font-medium text-brand-300 underline-offset-4 hover:underline">
-            Open the report
+          Saved and scheduled copies of these numbers live in{" "}
+          <Link href="/app/reports" className="font-medium text-brand-300 underline-offset-4 hover:underline">
+            Reports
           </Link>
         </p>
       ) : null}
@@ -316,5 +316,7 @@ function breakdownHref(
       return drill(breakdown.metric, { range: "custom", from: key, to: key });
     case "detail":
       return PARAM_METRICS.has(breakdown.metric) && key !== "none" ? drill(`${breakdown.metric}:${key}`) : null;
+    case "offer":
+      return drill(breakdown.metric, { offer: key });
   }
 }

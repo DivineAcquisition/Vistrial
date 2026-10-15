@@ -77,6 +77,10 @@
       "schedule": "*/5 * * * *"
     },
     {
+      "path": "/api/cron/reports-api",
+      "schedule": "* * * * *"
+    },
+    {
       "path": "/api/cron/billing",
       "schedule": "30 13 * * *"
     }

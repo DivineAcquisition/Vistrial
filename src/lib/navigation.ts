@@ -251,6 +251,7 @@ export const SETTINGS_TABS: Array<{
   { href: "/app/settings/connections", label: "Connections", access: "owner" },
   { href: "/app/settings/billing", label: "Billing", access: "owner" },
   { href: "/app/settings/privacy", label: "Privacy", access: "owner" },
+  { href: "/app/settings/developers", label: "Developers", access: "owner" },
   { href: "/app/settings/service", label: "Vistrial team", access: "owner" },
   { href: "/app/settings/approvals", label: "Approvals", access: "staff" },
   { href: "/app/settings/integrations", label: "Integrations", access: "staff" },

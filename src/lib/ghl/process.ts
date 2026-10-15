@@ -400,7 +400,8 @@ async function handleInbound(db: GhlDb, orgId: string, event: WebhookRow, payloa
   if (error?.code === "23505") return;
   if (error || !touch) throw new Error("touch_insert_failed");
 
-  await applyOptOutWords(db, orgId, lead, inboundMessageText(event.raw_body), channel);
+  const signal = payload._compliance_signal === "opt_out" || payload._compliance_signal === "opt_in" ? payload._compliance_signal : null;
+  await applyOptOutWords(db, orgId, lead, signal ? null : inboundMessageText(event.raw_body), channel, signal);
 
   assertScorePersisted(
     await scoreInboundReplyAfterSilence(db, {
@@ -423,9 +424,10 @@ async function applyOptOutWords(
   orgId: string,
   lead: LeadRow,
   text: string | null,
-  channel: string
+  channel: string,
+  forced: "opt_out" | "opt_in" | null = null
 ): Promise<void> {
-  if (!text) return;
+  if (!text && !forced) return;
   const config = await getEffectiveConfig(db, orgId);
   const words = (config.values["compliance.opt_out_words"] as string[] | undefined) ?? [];
   const { data: existing } = await db
@@ -435,12 +437,12 @@ async function applyOptOutWords(
     .eq("org_id", orgId)
     .maybeSingle();
 
-  if (!existing && isOptOutReply(text, words)) {
+  if (!existing && (forced === "opt_out" || isOptOutReply(text, words))) {
     const { error } = await db.from("lead_opt_outs").upsert(
       {
         lead_id: lead.id,
         org_id: orgId,
-        word: text.trim().toUpperCase().slice(0, 30),
+        word: (forced === "opt_out" ? "STOP" : (text ?? "STOP")).trim().toUpperCase().slice(0, 30),
         channel,
         config_version: config.version,
       },
@@ -456,7 +458,7 @@ async function applyOptOutWords(
       detail: { channel, config_version: config.version },
     });
     ghlLog("ghl.inbound.opted_out", { orgId, leadId: lead.id, channel });
-  } else if (existing && isOptInReply(text)) {
+  } else if (existing && (forced === "opt_in" || isOptInReply(text))) {
     await db.from("lead_opt_outs").delete().eq("lead_id", lead.id).eq("org_id", orgId);
     await logWorkspaceActivity({
       actorUserId: null,

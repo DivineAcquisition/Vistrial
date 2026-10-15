@@ -4,6 +4,9 @@ import { zonedStartOfDay } from "@/lib/home/periods";
 /** Words that undo an opt-out: the carrier convention for texting back in. */
 export const OPT_IN_WORDS = ["START", "UNSTOP"] as const;
 
+/** Platform default opt-out words. A workspace may add its own in configuration. */
+export const PLATFORM_OPT_OUT_WORDS = ["STOP", "STOPALL", "UNSUBSCRIBE", "CANCEL", "END", "QUIT"] as const;
+
 /** A reply reduced to the word it is: trimmed, without surrounding punctuation, in capitals. */
 function normalizeReply(text: string): string {
   return text

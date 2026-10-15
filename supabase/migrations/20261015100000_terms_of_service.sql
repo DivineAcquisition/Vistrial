@@ -6,7 +6,7 @@ ALTER TABLE public.public_site_settings
   ADD COLUMN IF NOT EXISTS terms_effective_on date NOT NULL DEFAULT DATE '2026-11-01';
 
 UPDATE public.public_site_settings
-SET legal_entity_name = 'Vistrial LLC, operated by DivineAcquisition LLC',
+SET legal_entity_name = 'Divine Agency LLC',
     mailing_address = '7404 Executive Place, Lanham, MD 20706',
     terms_updated_on = DATE '2026-10-15',
     terms_effective_on = DATE '2026-11-01',

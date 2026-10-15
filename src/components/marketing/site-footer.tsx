@@ -1,6 +1,6 @@
 import Link from "next/link";
 
-import { CookiePreferences } from "@/components/marketing/cookie-preferences";
+import { OpenConsentButton } from "@/components/marketing/consent-banner";
 import Logo from "@/components/brand/logo";
 import { APP_NAME } from "@/lib/constants";
 import { FOOTER, NAV } from "@/lib/marketing/content";
@@ -17,6 +17,7 @@ export async function SiteFooter() {
     { href: "/security/subprocessors", label: "Subprocessors" },
     { href: "/security/report", label: "Report a vulnerability" },
     { href: "/privacy", label: "Privacy" },
+    { href: "/cookies", label: "Cookies" },
     { href: "/terms", label: "Terms" },
     { href: "/privacy/requests", label: "Data requests" },
     { href: "/contact", label: "Contact" },
@@ -55,7 +56,7 @@ export async function SiteFooter() {
             </li>
           </ul>
         </div>
-        <CookiePreferences />
+        <OpenConsentButton />
         <p className="mt-8 border-t border-white/[0.05] pt-6 text-xs text-dim">
           © {new Date().getFullYear()} {FOOTER.copyright}.{" "}
           <a href={`mailto:${trust.supportEmail}`} className="hover:text-white">

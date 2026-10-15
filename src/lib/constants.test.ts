@@ -14,7 +14,7 @@ import {
 
 describe("public legal identity", () => {
   it("matches the published privacy policy", () => {
-    expect(LEGAL_ENTITY).toBe("Vistrial LLC, operated by DivineAcquisition LLC");
+    expect(LEGAL_ENTITY).toBe("Divine Agency LLC");
     expect(COMPANY_ADDRESS).toBe("7404 Executive Place, Lanham, MD 20706");
     expect(CONTACT_EMAIL).toBe("contact@vistrial.io");
     expect(LEGAL_EMAIL).toBe("legal@divineacquisition.io");

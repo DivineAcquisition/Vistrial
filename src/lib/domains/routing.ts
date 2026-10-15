@@ -90,6 +90,7 @@ export function isAuthPath(path: string): boolean {
 export function isMarketingPath(path: string): boolean {
   return (
     path === "/privacy" ||
+    path === "/cookies" ||
     path === "/terms" ||
     path === "/disclaimer" ||
     path === "/contact" ||

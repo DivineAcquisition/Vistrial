@@ -45,7 +45,7 @@ export const TRUST_FALLBACK: TrustPublic = {
   privacyUpdatedOn: "2026-10-15",
   termsUpdatedOn: "2026-10-15",
   termsEffectiveOn: "2026-11-01",
-  legalEntity: "Vistrial LLC, operated by DivineAcquisition LLC",
+  legalEntity: "Divine Agency LLC",
   mailingAddress: "7404 Executive Place, Lanham, MD 20706",
   governingPlace: "Maryland, United States",
   switches: {

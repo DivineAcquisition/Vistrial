@@ -307,18 +307,18 @@ export function privacyPolicySections(trust: TrustPublic): PolicySection[] {
           kind: "ul",
           items: [
             "Essential: keeping you signed in, protecting against abuse, and remembering security settings. The application cannot work without these.",
-            "Preferences: remembering the choice to allow or refuse site measurement. That choice is stored in the browser.",
-            "Site measurement: on the public website, if you allow it, we count page views on our own servers. A count is a daily total for an event type and a page path. It does not include your name, your email address, or a cookie that follows you on other sites.",
-            "Advertising: we do not load advertising pixels, and we do not load third-party analytics.",
+            "Preferences: remembering choices such as display settings.",
+            "Analytics, off until you allow it: our own count of public page visits, and Google Analytics when that tool is switched on. They collect pages visited, device and browser type, approximate location, and referring page. They do not receive your name, email, or form answers.",
+            "Advertising, off until you allow it: the Meta pixel, when that tool is switched on, to measure our own ads. It does not receive your name, email, phone number, or form answers. Google Analytics and the Meta pixel stay switched off until this policy is in effect and a Platform Admin enables them.",
           ],
         },
         {
           kind: "p",
-          text: "Optional site measurement runs only on the public website, and only after you allow it. It is not used inside the Vistrial application or on workspace pages, and information in a customer workspace is not sent to it. Hosting the website can still create ordinary server logs. Those logs are separate from the optional page counts.",
+          text: "Analytics and advertising tools run only on the public website, and only after you allow them. They are not used inside the Vistrial application or on workspace pages. The booking calendar is provided by GoHighLevel and does not load until you click to open it. Details are on /cookies.",
         },
         {
           kind: "p",
-          text: "You can control site measurement. Use the cookie preferences control on our website to turn it on or off. If your browser sends a Global Privacy Control signal, we treat it as a request to keep site measurement off. Blocking essential cookies may stop parts of the service from working. We do not currently respond to Do Not Track signals other than as described here.",
+          text: "You can change your choice at any time from the cookie preferences link on our website, or at /cookies. If your browser sends a Global Privacy Control signal, we keep analytics and advertising off unless you deliberately turn a category on. Blocking essential cookies may stop parts of the service from working. We do not currently respond to Do Not Track signals other than as described here.",
         },
       ],
     },

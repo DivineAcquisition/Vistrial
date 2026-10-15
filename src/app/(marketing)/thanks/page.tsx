@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 
 import { MarketingShell } from "@/components/marketing/chrome";
+import { LeadEvent } from "@/components/marketing/lead-event";
 import { THANKS } from "@/lib/marketing/content";
 import { marketingHeroTitle, marketingSubhead } from "@/lib/marketing/ui";
 
@@ -26,6 +27,7 @@ export default async function ThanksPage({
           : THANKS.access;
   return (
     <MarketingShell headerAction="none">
+      {params.kind === "report" ? null : <LeadEvent />}
       <section className="mx-auto max-w-xl px-5 py-20 sm:px-6">
         <h1 className={`${marketingHeroTitle} text-[2.1rem] sm:text-4xl`}>{THANKS.title}</h1>
         <p className={`${marketingSubhead} mt-4`}>{body}</p>

@@ -2,7 +2,7 @@ export const APP_NAME = "Vistrial";
 export const APP_OWNER = "Divine Acquisition";
 
 /** Public operator. Vistrial LLC is operated by DivineAcquisition LLC. */
-export const LEGAL_ENTITY = "Vistrial LLC, operated by DivineAcquisition LLC";
+export const LEGAL_ENTITY = "Divine Agency LLC";
 
 export const COMPANY_ADDRESS = "7404 Executive Place, Lanham, MD 20706";
 

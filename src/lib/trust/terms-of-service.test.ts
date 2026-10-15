@@ -7,7 +7,7 @@ const text = termsText(TRUST_FALLBACK);
 
 describe("terms stay inside the billing system", () => {
   it("uses the filled operator, address, and dates", () => {
-    expect(text).toContain("Vistrial LLC, operated by DivineAcquisition LLC");
+    expect(text).toContain("Divine Agency LLC");
     expect(text).toContain("7404 Executive Place, Lanham, MD 20706");
     expect(text).toContain("Last updated: October 15, 2026");
     expect(text).toContain("Effective: November 1, 2026");

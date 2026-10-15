@@ -49,6 +49,37 @@ async function saveSetting(formData: FormData) {
   });
 }
 
+async function setTrackingTool(formData: FormData) {
+  "use server";
+  const { staffDb: dbClient } = await import("@/lib/staff/db");
+  const db = await dbClient();
+  await db.rpc("set_tracking_tool_enabled", {
+    p_slug: String(formData.get("slug") ?? ""),
+    p_enabled: String(formData.get("enabled") ?? "") === "true",
+  });
+}
+
+async function TrackingTools() {
+  const db = await staffDb();
+  const { data } = await db.from("tracking_tools").select("slug, name, category, enabled").order("sort_order");
+  const rows = (data ?? []) as Array<{ slug: string; name: string; category: string; enabled: boolean }>;
+  if (rows.length === 0) return <p className={helperClass}>The tool registry is empty until the database migration is applied.</p>;
+  return (
+    <ul className="mt-3 space-y-2 text-sm text-silver">
+      {rows.map((row) => (
+        <li key={row.slug}>
+          <form action={setTrackingTool} className="flex flex-wrap items-center gap-3">
+            <input type="hidden" name="slug" value={row.slug} />
+            <input type="hidden" name="enabled" value={row.enabled ? "false" : "true"} />
+            <span>{row.name} · {row.category} · {row.enabled ? "on" : "off"}</span>
+            <button type="submit" className="text-brand-300 underline">{row.enabled ? "Turn off" : "Turn on"}</button>
+          </form>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
 export default async function TrustSettingsPage() {
   const ctx = await requireStaff();
   if (!ctx.isPlatformAdmin) notFound();
@@ -133,6 +164,11 @@ export default async function TrustSettingsPage() {
           })}
         </ul>
         {(dataRequests ?? []).length === 0 ? <p className={helperClass}>No privacy data requests.</p> : null}
+      </section>
+      <section className="mt-8">
+        <h2 className="font-heading text-lg text-white">Cookies and tracking tools</h2>
+        <p className={helperClass}>Google Analytics and the Meta pixel stay off until you enable them and the privacy policy is live. Enabling a tool asks visitors again.</p>
+        <TrackingTools />
       </section>
       <section className="mt-8">
         <h2 className="font-heading text-lg text-white">Subprocessors</h2>

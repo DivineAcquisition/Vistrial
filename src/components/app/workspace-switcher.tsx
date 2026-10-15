@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Popover, PopoverPopup, PopoverTrigger } from "@/components/ui/popover";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { switchOrg } from "@/lib/auth/actions";
+import { clearOutcomeQueue } from "@/lib/mobile/outcome-queue";
 import { workspaceStatus } from "@/lib/workspaces/status";
 import { cn } from "@/lib/utils";
 
@@ -74,6 +75,7 @@ export function WorkspaceSwitcher() {
                       }
                       beginSwitch();
                       startTransition(async () => {
+                        await clearOutcomeQueue().catch(() => undefined);
                         const result = await switchOrg(membership.org.id);
                         if (!result.ok) {
                           cancelSwitch();

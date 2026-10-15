@@ -138,7 +138,25 @@ export async function sendPush(args: {
   href: string;
   notificationId: string;
 }): Promise<SendResult> {
-  assertLockScreenSafe(args.title, args.body);
+  let body = args.body;
+  const loose = args.db as unknown as {
+    from: (table: string) => {
+      select: (cols: string) => {
+        eq: (col: string, val: string) => { maybeSingle: () => Promise<{ data: { show_first_names?: boolean } | null }> };
+      };
+    };
+  };
+  const { data: pref } = await loose.from("notification_push_settings").select("show_first_names").eq("user_id", args.userId).maybeSingle();
+  if (pref?.show_first_names) {
+    const { data: note } = await args.db.from("notifications").select("subject_ids, event_type").eq("id", args.notificationId).maybeSingle();
+    const leadId = note?.subject_ids?.[0];
+    if (leadId) {
+      const { data: lead } = await args.db.from("leads").select("first_name").eq("id", leadId).maybeSingle();
+      const name = lead?.first_name?.trim().split(/\s+/)[0];
+      if (name && !name.includes("@") && !/\d/.test(name)) body = `${args.body} ${name}`;
+    }
+  }
+  assertLockScreenSafe(args.title, body);
   const cfg = vapidConfigured();
   if (!cfg) return { ok: false, error: "VAPID keys are not set.", retry: false };
 
@@ -153,9 +171,10 @@ export async function sendPush(args: {
   webpush.setVapidDetails(cfg.subject, cfg.publicKey, cfg.privateKey);
   const payload = JSON.stringify({
     title: args.title,
-    body: args.body,
+    body,
     href: hrefWithNotification(args.href, args.notificationId),
     nid: args.notificationId,
+    tag: args.notificationId,
   });
 
   let sent = 0;
@@ -176,6 +195,12 @@ export async function sendPush(args: {
     }
   }
   if (sent === 0) return { ok: false, error: lastError || "Push delivery failed.", retry: true };
+  const { data: noteOrg } = await args.db.from("notifications").select("org_id").eq("id", args.notificationId).maybeSingle();
+  if (noteOrg?.org_id) {
+    await (args.db as unknown as { from: (table: string) => { insert: (row: object) => Promise<unknown> } })
+      .from("usage_events")
+      .insert({ org_id: noteOrg.org_id, user_id: args.userId, kind: "push_send", quantity: sent });
+  }
   return { ok: true };
 }
 

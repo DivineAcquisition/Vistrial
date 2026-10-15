@@ -13,6 +13,7 @@ export async function flushQueuedOutcomes(): Promise<{
   pending: QueuedOutcome[];
   synced: QueuedOutcome[];
   failed: QueuedOutcome[];
+  expired: QueuedOutcome[];
 }> {
   const store = await openIndexedDbOutcomeStore();
   const result = await syncQueuedOutcomes(store, postQueuedOutcome, () => navigator.onLine);

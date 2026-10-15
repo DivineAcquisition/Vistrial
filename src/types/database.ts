@@ -1444,39 +1444,69 @@ export type Database = {
       next_actions: {
         Row: {
           action_text: string;
+          accepted_at: string | null;
+          cancel_reason: string | null;
+          canceled_at: string | null;
           completed_at: string | null;
           created_at: string;
           created_by: Database["public"]["Enums"]["action_creator"];
           due_at: string | null;
           id: string;
           kind: string | null;
-          lead_id: string;
+          lead_id: string | null;
           org_id: string;
           owner_member_id: string | null;
+          purpose_key: string | null;
+          reminded_at: string | null;
+          snoozed_until: string | null;
+          source_kind: string;
+          source_sentence: string | null;
+          status: string;
+          task_type: string;
         };
         Insert: {
           action_text: string;
+          accepted_at?: string | null;
+          cancel_reason?: string | null;
+          canceled_at?: string | null;
           completed_at?: string | null;
           created_at?: string;
           created_by: Database["public"]["Enums"]["action_creator"];
           due_at?: string | null;
           id?: string;
           kind?: string | null;
-          lead_id: string;
+          lead_id?: string | null;
           org_id: string;
           owner_member_id?: string | null;
+          purpose_key?: string | null;
+          reminded_at?: string | null;
+          snoozed_until?: string | null;
+          source_kind?: string;
+          source_sentence?: string | null;
+          status?: string;
+          task_type?: string;
         };
         Update: {
           action_text?: string;
+          accepted_at?: string | null;
+          cancel_reason?: string | null;
+          canceled_at?: string | null;
           completed_at?: string | null;
           created_at?: string;
           created_by?: Database["public"]["Enums"]["action_creator"];
           due_at?: string | null;
           id?: string;
           kind?: string | null;
-          lead_id?: string;
+          lead_id?: string | null;
           org_id?: string;
           owner_member_id?: string | null;
+          purpose_key?: string | null;
+          reminded_at?: string | null;
+          snoozed_until?: string | null;
+          source_kind?: string;
+          source_sentence?: string | null;
+          status?: string;
+          task_type?: string;
         };
         Relationships: [
           {
@@ -1699,6 +1729,7 @@ export type Database = {
         Row: {
           auth: string;
           created_at: string;
+          device_label: string | null;
           endpoint: string;
           id: string;
           last_seen_at: string;
@@ -1709,6 +1740,7 @@ export type Database = {
         Insert: {
           auth: string;
           created_at?: string;
+          device_label?: string | null;
           endpoint: string;
           id?: string;
           last_seen_at?: string;
@@ -1719,6 +1751,7 @@ export type Database = {
         Update: {
           auth?: string;
           created_at?: string;
+          device_label?: string | null;
           endpoint?: string;
           id?: string;
           last_seen_at?: string;
@@ -7619,7 +7652,21 @@ export type Database = {
         | "billing_issue"
         | "data_request"
         | "workspace_notice"
-        | "onboarding";
+        | "onboarding"
+        | "task_assigned"
+        | "task_due"
+        | "task_overdue"
+        | "task_suggested"
+        | "lead_assigned"
+        | "lead_to_claim"
+        | "lead_reassigned"
+        | "routing_nobody"
+        | "away_holds_leads"
+        | "claim_timer_expired"
+        | "stale_reassign"
+        | "team_workload"
+        | "push_device"
+        | "install_help";
       notification_channel: "push" | "email" | "sms" | "team" | "da_console";
       notification_status:
         | "queued"

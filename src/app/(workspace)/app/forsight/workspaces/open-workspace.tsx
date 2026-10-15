@@ -4,6 +4,7 @@ import { useTransition } from "react";
 
 import { Button } from "@/components/ui/button";
 import { switchOrg } from "@/lib/auth/actions";
+import { clearOutcomeQueue } from "@/lib/mobile/outcome-queue";
 import { FORSIGHT_PATH } from "@/lib/navigation";
 
 /**
@@ -28,6 +29,7 @@ export function OpenWorkspace({ orgId, name }: { orgId: string; name: string }) 
       aria-label={`Open ${name}'s Forsight`}
       onClick={() =>
         startTransition(async () => {
+          await clearOutcomeQueue().catch(() => undefined);
           const result = await switchOrg(orgId);
           if (result.ok) {
             window.location.assign(FORSIGHT_PATH);

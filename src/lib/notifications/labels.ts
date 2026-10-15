@@ -21,6 +21,20 @@ export const EVENT_LABELS: Record<NotificationEventType, string> = {
   data_request: "A data request was made",
   workspace_notice: "A note from the Vistrial team",
   onboarding: "Your setup",
+  task_assigned: "A task was handed to you",
+  task_due: "A task is due",
+  task_overdue: "A task is overdue",
+  task_suggested: "A suggested task is waiting",
+  lead_assigned: "A lead was assigned to you",
+  lead_to_claim: "A new lead can be claimed",
+  lead_reassigned: "A lead was reassigned",
+  routing_nobody: "A new lead has nobody to take it",
+  away_holds_leads: "Someone away still has leads",
+  claim_timer_expired: "A new lead is still unclaimed",
+  stale_reassign: "A lead may need a different person",
+  team_workload: "The team has tasks waiting",
+  push_device: "A phone or browser was added or removed",
+  install_help: "How to install the app",
 };
 
 export const CHANNEL_LABELS: Record<NotificationChannel, string> = {

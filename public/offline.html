@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Offline · Vistrial</title>
+    <style>
+      body {
+        margin: 0;
+        min-height: 100vh;
+        display: grid;
+        place-items: center;
+        background: #07070b;
+        color: #f4f1ea;
+        font-family: Georgia, "Times New Roman", serif;
+      }
+      main { max-width: 28rem; padding: 2rem; }
+      button {
+        margin-top: 1.25rem;
+        background: #f4f1ea;
+        color: #07070b;
+        border: 0;
+        border-radius: 999px;
+        padding: 0.75rem 1.1rem;
+        font: inherit;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>You are offline</h1>
+      <p>Vistrial needs a connection to show leads. Nothing from a case file is stored on this device.</p>
+      <button type="button" onclick="location.reload()">Try again</button>
+    </main>
+  </body>
+</html>

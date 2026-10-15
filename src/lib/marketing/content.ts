@@ -166,7 +166,7 @@ export const FAQ = {
   items: [
     {
       q: "Does it replace my CRM?",
-      a: "No. Vistrial sits on top of the CRM you already use. Your team still qualifies, books, and closes. Vistrial keeps the case file and drafts follow-ups a person approves.",
+      a: "No. Vistrial brings together the records from your CRM and your other tools, such as call tools, spreadsheets, and calendars, into one case file for each lead. Each of your tools stays the record for its own data.",
     },
     {
       q: "Which CRMs work with it?",

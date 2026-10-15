@@ -15,6 +15,20 @@ const PRODUCT = new Set([
   "hourly_summary",
   "test_send",
   "workspace_notice",
+  "task_assigned",
+  "task_due",
+  "task_overdue",
+  "task_suggested",
+  "lead_assigned",
+  "lead_to_claim",
+  "lead_reassigned",
+  "routing_nobody",
+  "away_holds_leads",
+  "claim_timer_expired",
+  "stale_reassign",
+  "team_workload",
+  "push_device",
+  "install_help",
 ]);
 
 /** Product notification events map to a footer. Unknown events do not send. */

@@ -364,6 +364,7 @@ export function landingPath(
   _surfaceAccess: SurfaceAccess | undefined,
   role?: OrgRole | null
 ): string {
+  if (role === "setter" || role === "closer" || role === "operator") return "/app/today";
   if (role === "owner" || role === "admin" || role === "member" || role === "client_viewer" || !role) {
     return HOME_PATH;
   }

@@ -12,18 +12,10 @@ export async function postQueuedOutcome(entry: QueuedOutcome): Promise<OutcomeSy
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         leadId: entry.leadId,
-        channel: entry.channel,
-        direction: entry.direction,
         outcome: entry.outcome,
-        note: entry.note,
-        actorMemberId: entry.actorMemberId,
         clientEventId: entry.clientEventId,
         clientLoggedAt: entry.clientLoggedAt,
-        queuedOffline: entry.queuedOffline,
-        clientSurface: entry.clientSurface,
-        expectedLeadStatus: entry.expectedLeadStatus,
-        expectedLastTouchAt: entry.expectedLastTouchAt,
-        expectedFirstHumanTouchAt: entry.expectedFirstHumanTouchAt,
+        queuedOffline: true,
       }),
     });
     const json = (await response.json().catch(() => null)) as {

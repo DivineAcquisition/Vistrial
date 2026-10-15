@@ -3,6 +3,7 @@
 import { useTransition } from "react";
 
 import { switchOrg } from "@/lib/auth/actions";
+import { clearOutcomeQueue } from "@/lib/mobile/outcome-queue";
 import { useOrg } from "@/components/app/org-provider";
 import { useShellSwitch } from "@/components/app/shell-switch";
 import { Select } from "@/components/ui/select";
@@ -39,6 +40,7 @@ export function OrgSwitcher() {
         const orgId = event.target.value;
         beginSwitch();
         startTransition(async () => {
+          await clearOutcomeQueue().catch(() => undefined);
           const result = await switchOrg(orgId);
           if (result.ok) window.location.assign(result.landing);
           else cancelSwitch();

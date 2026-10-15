@@ -41,6 +41,20 @@ export const USER_PREF_EVENTS = [
   "crm_broken",
   "adoption_warning",
   "daily_brief",
+  "task_assigned",
+  "task_due",
+  "task_overdue",
+  "task_suggested",
+  "lead_assigned",
+  "lead_to_claim",
+  "lead_reassigned",
+  "routing_nobody",
+  "away_holds_leads",
+  "claim_timer_expired",
+  "stale_reassign",
+  "team_workload",
+  "push_device",
+  "install_help",
 ] as const;
 
 export const USER_PREF_CHANNELS = ["push", "email", "sms"] as const;
@@ -77,6 +91,20 @@ export const NOTIFICATION_EVENT_TYPES = [
   "data_request",
   "workspace_notice",
   "onboarding",
+  "task_assigned",
+  "task_due",
+  "task_overdue",
+  "task_suggested",
+  "lead_assigned",
+  "lead_to_claim",
+  "lead_reassigned",
+  "routing_nobody",
+  "away_holds_leads",
+  "claim_timer_expired",
+  "stale_reassign",
+  "team_workload",
+  "push_device",
+  "install_help",
 ] as const;
 
 export const INTERRUPT_CHANNELS = ["push", "email", "sms", "team"] as const;

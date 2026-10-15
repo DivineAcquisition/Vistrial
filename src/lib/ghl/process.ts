@@ -33,6 +33,7 @@ import { AWAITING_LINK_ERROR, failureDisposition } from "@/lib/ghl/retry";
 import { scoreInboundReplyAfterSilence, scoreLeadFromAnswerChange, scoreNoShow } from "@/lib/scoring/event-apply";
 import { flagDisqualifiedLead } from "@/lib/profile/intake-flags";
 import { leadStatusForPipelineStage } from "@/lib/profile/stage-mapping";
+import { assignArrivingLead } from "@/lib/routing/assign";
 import { scoreLeadOnIntake } from "@/lib/scoring/intake";
 import { assertScorePersisted, loadScoreConfig } from "@/lib/scoring/store";
 import { calendarDaysBetween } from "@/lib/scoring/timezone";
@@ -326,6 +327,9 @@ async function handleContact(
     .eq("org_id", orgId);
 
   if (created) {
+    await assignArrivingLead(db, { orgId, leadId: lead.id }).catch((cause) => {
+      ghlWarn("routing.skipped", { orgId, leadId: lead.id, error: cause instanceof Error ? cause.message : "failed" });
+    });
     assertScorePersisted(
       await scoreLeadOnIntake(db, {
         orgId,

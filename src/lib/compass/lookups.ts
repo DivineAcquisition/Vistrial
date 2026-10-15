@@ -695,6 +695,47 @@ export function buildCompassTools(args: {
     });
   }
 
+  tools.list_open_tasks = tool({
+    description:
+      "List open, snoozed, and suggested tasks the person is allowed to see. Use for questions about what is due today or which tasks are overdue. Never rank people.",
+    inputSchema: z.object({
+      mine: z.boolean().optional(),
+      overdue_only: z.boolean().optional(),
+    }),
+    execute: run("list_open_tasks", () => "Reading open tasks", async (input: { mine?: boolean; overdue_only?: boolean }): Promise<LookupOutput> => {
+      let query = db
+        .from("next_actions")
+        .select("id, action_text, status, due_at, source_sentence, lead_id")
+        .eq("org_id", actor.orgId)
+        .in("status", ["open", "snoozed", "suggested"])
+        .order("due_at", { ascending: true })
+        .limit(20);
+      if (input.mine && actor.memberId) query = query.eq("owner_member_id", actor.memberId);
+      const { data, error } = await query;
+      if (error) throw new Error(error.message);
+      const now = Date.now();
+      const rows = ((data ?? []) as Array<{ id: string; action_text: string; status: string; due_at: string | null; source_sentence: string | null; lead_id: string | null }>).filter((row) => {
+        if (!input.overdue_only) return true;
+        return Boolean(row.due_at && Date.parse(row.due_at) < now);
+      });
+      return {
+        ok: true,
+        gap: rows.length ? undefined : "empty",
+        note: rows.length ? "Open tasks this person can see." : "No open tasks.",
+        data: {
+          tasks: rows.map((row) => ({
+            title: row.action_text,
+            status: row.status,
+            due_at: row.due_at,
+            source: row.source_sentence,
+            lead_id: row.lead_id,
+          })),
+        },
+        sources: rows.filter((row) => row.lead_id).map((row) => ({ kind: "lead" as const, id: row.lead_id as string, label: row.action_text, href: `/app/cases/${row.lead_id}` })),
+      };
+    }),
+  });
+
   return tools;
 }
 

@@ -15,6 +15,7 @@ import {
 } from "@/app/(workspace)/app/team/actions";
 import { Button, SubmitButton } from "@/components/ui/button";
 import { switchOrg } from "@/lib/auth/actions";
+import { clearOutcomeQueue } from "@/lib/mobile/outcome-queue";
 import { Field } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
@@ -382,6 +383,7 @@ export function OpenWorkspaceButton({ orgId }: { orgId: string }) {
         disabled={pending}
         onClick={() =>
           startTransition(async () => {
+            await clearOutcomeQueue().catch(() => undefined);
             const result = await switchOrg(orgId);
             if (result.ok) window.location.assign(result.landing);
             else setError(result.error);

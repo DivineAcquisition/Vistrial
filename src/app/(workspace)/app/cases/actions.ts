@@ -16,6 +16,7 @@ import {
   type CaseTimelinePage,
 } from "@/lib/cases/types";
 import { assignmentForCreator, parseCreateLeadInput, VISTRIAL_LEAD_SOURCE } from "@/lib/leads/create";
+import { assignArrivingLead } from "@/lib/routing/assign";
 import { MANUAL_LEAD_STATUSES, type LeadStatus } from "@/lib/leads/labels";
 import { revalidateLeadSurfaces } from "@/lib/leads/revalidate";
 import { createClient } from "@/lib/supabase/server";
@@ -108,6 +109,10 @@ export async function createLead(
     return actionError(explainWriteError(error.message, "Could not add that person."));
   }
   if (!data) return actionError("Could not add that person.");
+
+  if (!assignment.assignedSetterId && !assignment.assignedCloserId) {
+    await assignArrivingLead(supabase, { orgId: ctx.org.id, leadId: data.id }).catch(() => undefined);
+  }
 
   revalidateLeadSurfaces(data.id);
   redirect(`/app/cases/${data.id}`);

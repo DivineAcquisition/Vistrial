@@ -95,7 +95,7 @@ export function ConnectionStatus() {
           }
         >
           Waiting to sync. Not shown as logged until the server confirms.
-          {waiting[0]?.leadName ? ` ${waiting[0].leadName}: ${TOUCH_OUTCOME_LABELS[waiting[0].outcome]}.` : null}
+          {waiting[0] ? ` ${TOUCH_OUTCOME_LABELS[waiting[0].outcome]}.` : null}
         </Notice>
       ) : null}
       {failed.length > 0 ? (

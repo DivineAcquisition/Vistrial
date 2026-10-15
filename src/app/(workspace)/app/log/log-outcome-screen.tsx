@@ -12,7 +12,6 @@ import { RemainingCount } from "@/components/ui/remaining-count";
 import { SegmentedRadioGroup } from "@/components/ui/segmented-radio";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { useOrg } from "@/components/app/org-provider";
-import { describeOutcomeDiscrepancy } from "@/lib/mobile/discrepancy";
 import { flushQueuedOutcomes } from "@/lib/mobile/flush-outcomes";
 import {
   enqueueOutcome,
@@ -160,70 +159,68 @@ export function LogOutcomeScreen({
     setDiscrepancy(null);
     const surface = detectClientSurface();
     const onlineNow = navigator.onLine;
-    const draft: Omit<QueuedOutcome, "status" | "lastError" | "discrepancy" | "createdAt" | "syncedAt"> = {
-      clientEventId: newClientEventId(),
-      leadId: selected.id,
-      leadName: selected.name,
-      orgId: org.org.id,
-      channel,
-      direction,
-      outcome,
-      note,
-      actorMemberId: org.memberId,
-      clientLoggedAt: new Date().toISOString(),
-      queuedOffline: !onlineNow,
-      clientSurface: surface,
-      expectedLeadStatus: selected.status,
-      expectedLastTouchAt: selected.lastTouchAt,
-      expectedFirstHumanTouchAt: selected.firstHumanTouchAt,
-    };
+    const clientEventId = newClientEventId();
+    const clientLoggedAt = new Date().toISOString();
 
     try {
-      const store = await openIndexedDbOutcomeStore();
-      await enqueueOutcome(store, draft);
-      await registerBackgroundSync();
-      const result = await flushQueuedOutcomes();
-      const row =
-        result.synced.find((item) => item.clientEventId === draft.clientEventId) ??
-        result.pending.find((item) => item.clientEventId === draft.clientEventId) ??
-        result.failed.find((item) => item.clientEventId === draft.clientEventId);
-
-      if (row?.status === "failed") {
-        setError(row.lastError || "Could not log that outcome.");
-        await loadQueued();
-        return;
-      }
-      if (row?.status === "pending") {
-        setPendingNotice("Queued on this phone. It will sync when there is signal. It is not logged yet.");
-      } else if (row?.discrepancy) {
-        setDiscrepancy(row.discrepancy);
-      } else {
-        const expected = describeOutcomeDiscrepancy(
-          {
-            status: selected.status,
-            lastTouchAt: selected.lastTouchAt,
-            firstHumanTouchAt: selected.firstHumanTouchAt,
-          },
-          {
-            status: selected.status,
-            lastTouchAt: selected.lastTouchAt,
-            firstHumanTouchAt: selected.firstHumanTouchAt,
+      if (onlineNow) {
+        const response = await fetch("/api/outcomes/sync", {
+          method: "POST",
+          credentials: "include",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            leadId: selected.id,
+            channel,
+            direction,
+            outcome,
+            note,
+            actorMemberId: org.memberId,
+            clientEventId,
+            clientLoggedAt,
+            queuedOffline: false,
+            clientSurface: surface,
+            expectedLeadStatus: selected.status,
+            expectedLastTouchAt: selected.lastTouchAt,
+            expectedFirstHumanTouchAt: selected.firstHumanTouchAt,
+          }),
+        });
+        const json = (await response.json().catch(() => null)) as {
+          ok?: boolean;
+          error?: string;
+          discrepancy?: string | null;
+        } | null;
+        if (response.ok && json?.ok) {
+          if (json.discrepancy) setDiscrepancy(json.discrepancy);
+          if (walkthrough && surface === "mobile") void markMobileTraining("walkthrough");
+          try {
+            window.localStorage.setItem("vistrial:push-prompt-eligible", "1");
+          } catch {
+            // Ignore quota.
           }
-        );
-        if (expected) setDiscrepancy(expected);
+          window.setTimeout(() => {
+            router.replace("/app/queue");
+            router.refresh();
+          }, json.discrepancy ? 1400 : 600);
+          return;
+        }
+        if (response.status >= 400 && response.status < 500 && response.status !== 408) {
+          setError(json?.error || "Could not log that outcome.");
+          return;
+        }
       }
-      if (walkthrough && surface === "mobile") {
-        void markMobileTraining("walkthrough");
-      }
-      try {
-        window.localStorage.setItem("vistrial:push-prompt-eligible", "1");
-      } catch {
-        // Ignore quota.
-      }
+
+      const store = await openIndexedDbOutcomeStore();
+      await enqueueOutcome(store, { clientEventId, leadId: selected.id, outcome, clientLoggedAt });
+      await registerBackgroundSync();
+      setPendingNotice(
+        note.trim()
+          ? "Queued on this phone without the note. Notes are not kept offline."
+          : "Queued on this phone. It will sync when there is signal. It is not logged yet."
+      );
       window.setTimeout(() => {
         router.replace("/app/queue");
         router.refresh();
-      }, row?.status === "pending" || row?.discrepancy ? 1400 : 600);
+      }, 1400);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not log that outcome.");
     } finally {
@@ -258,8 +255,8 @@ export function LogOutcomeScreen({
     <div className="space-y-5 pb-8">
       {!online ? (
         <Notice tone="warning" title="No signal">
-          You can still log an outcome. It stays pending on this phone until it syncs. It will not
-          show as logged until the server has it.
+          You can still log an outcome. Only the lead, the outcome, and the time stay on this phone.
+          Notes are not kept offline. It is not logged until the server has it.
         </Notice>
       ) : null}
       {walkthrough ? (
@@ -278,7 +275,7 @@ export function LogOutcomeScreen({
             {queued.map((row) => (
               <li key={row.clientEventId} className="flex flex-wrap items-center justify-between gap-2">
                 <p className="min-w-0 break-words text-sm text-silver">
-                  {row.leadName} · {TOUCH_OUTCOME_LABELS[row.outcome]} ·{" "}
+                  {TOUCH_OUTCOME_LABELS[row.outcome]} ·{" "}
                   {row.status === "failed" ? row.lastError || "failed" : "pending"}
                 </p>
                 <StatusBadge

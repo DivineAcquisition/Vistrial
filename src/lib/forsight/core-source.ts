@@ -338,7 +338,7 @@ async function readNextActions(
     .order("created_at", { ascending: false });
 
   for (const row of data ?? []) {
-    if (!actions.has(row.lead_id)) actions.set(row.lead_id, row.action_text);
+    if (row.lead_id && !actions.has(row.lead_id)) actions.set(row.lead_id, row.action_text);
   }
   return actions;
 }

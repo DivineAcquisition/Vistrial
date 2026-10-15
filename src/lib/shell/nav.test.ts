@@ -46,10 +46,10 @@ describe("shell navigation", () => {
     expect(nav.more).toEqual([]);
   });
 
-  it("keeps an operator on My Leads, Today, Case Files, and Profile", () => {
+  it("keeps an operator on My Leads, My day, Case Files, and Profile", () => {
     const nav = shellNavigation({ role: "operator", templateAccess: false });
-    expect(labels("operator")).toEqual(["My Leads", "Today", "Case Files", "Profile"]);
-    expect(nav.phone.map((item) => item.label)).toEqual(["My Leads", "Today", "Case Files", "Profile"]);
+    expect(labels("operator")).toEqual(["My Leads", "My day", "Case Files", "Profile"]);
+    expect(nav.phone.map((item) => item.label)).toEqual(["My Leads", "My day", "Case Files", "Profile"]);
     expect(nav.more).toEqual([]);
     expect(labels("operator")).not.toContain("Settings");
     expect(labels("operator")).not.toContain("Results");

@@ -17,7 +17,18 @@ function urlBase64ToUint8Array(base64: string): Uint8Array {
 export function PushEnable() {
   const [status, setStatus] = useState<"idle" | "on" | "denied" | "error">("idle");
   const [error, setError] = useState<string | null>(null);
+  const [names, setNames] = useState(false);
+  const [devices, setDevices] = useState<Array<{ label: string; endpoint: string; lastSeenAt: string }>>([]);
   const key = vapidPublicKey();
+
+  useEffect(() => {
+    void fetch("/api/notifications/push")
+      .then((response) => response.json())
+      .then((json: { devices?: Array<{ label: string; endpoint: string; lastSeenAt: string }> }) => {
+        setDevices(json.devices ?? []);
+      })
+      .catch(() => undefined);
+  }, [status]);
 
   useEffect(() => {
     if (typeof Notification === "undefined") return;
@@ -110,6 +121,42 @@ export function PushEnable() {
           Alerts are blocked for this origin. The rest of the app still works. Enable notifications
           in the browser site settings, then return to this screen.
         </p>
+      ) : null}
+      <Switch
+        label="Show a lead's first name on this phone"
+        description="Off by default. A lock screen can be seen by people nearby."
+        checked={names}
+        onChange={(event) => {
+          const next = event.target.checked;
+          setNames(next);
+          void fetch("/api/notifications/push", {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ showFirstNames: next }),
+          });
+        }}
+      />
+      {devices.length ? (
+        <ul className="mt-3 space-y-2 text-sm">
+          {devices.map((device) => (
+            <li key={device.endpoint} className="flex items-center justify-between gap-2">
+              <span>{device.label}</span>
+              <button
+                type="button"
+                className="rounded-md border border-border px-2 py-1"
+                onClick={() => {
+                  void fetch("/api/notifications/push", {
+                    method: "DELETE",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ endpoint: device.endpoint }),
+                  }).then(() => setDevices((current) => current.filter((row) => row.endpoint !== device.endpoint)));
+                }}
+              >
+                Remove
+              </button>
+            </li>
+          ))}
+        </ul>
       ) : null}
       {error ? <p className={errorClass}>{error}</p> : null}
       {!key ? <p className={helperClass}>VAPID keys are missing, so push cannot be enabled yet.</p> : null}

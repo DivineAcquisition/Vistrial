@@ -4,36 +4,26 @@ import { describeOutcomeDiscrepancy } from "@/lib/mobile/discrepancy";
 import {
   createMemoryOutcomeStore,
   enqueueOutcome,
-  newClientEventId,
+  isExpiredOutcome,
+  OUTCOME_MAX_AGE_MS,
+  pendingOutcomeCount,
+  STORED_OUTCOME_KEYS,
+  storedOutcome,
   syncQueuedOutcomes,
   unsyncedOutcomes,
-  type QueuedOutcome,
   type OutcomeSyncResult,
+  type QueuedOutcome,
 } from "@/lib/mobile/outcome-queue";
 import { detectClientSurface } from "@/lib/mobile/surface";
 
-function draft(overrides: Partial<QueuedOutcome> = {}): Omit<
-  QueuedOutcome,
-  "status" | "lastError" | "discrepancy" | "createdAt" | "syncedAt"
-> {
+function draft(overrides: Partial<Pick<QueuedOutcome, "clientEventId" | "leadId" | "outcome" | "clientLoggedAt" | "createdAt">> = {}) {
   return {
-    clientEventId: newClientEventId(),
-    leadId: "lead-1",
-    leadName: "Jordan",
-    orgId: "org-1",
-    channel: "call",
-    direction: "outbound",
-    outcome: "connected",
-    note: "",
-    actorMemberId: "member-1",
-    clientLoggedAt: "2026-08-25T12:00:00.000Z",
-    queuedOffline: true,
-    clientSurface: "mobile",
-    expectedLeadStatus: "new",
-    expectedLastTouchAt: null,
-    expectedFirstHumanTouchAt: null,
-    ...overrides,
-  };
+    clientEventId: overrides.clientEventId ?? "evt",
+    leadId: overrides.leadId ?? "lead-1",
+    outcome: overrides.outcome ?? "connected",
+    clientLoggedAt: overrides.clientLoggedAt ?? new Date().toISOString(),
+    createdAt: overrides.createdAt,
+  } as const;
 }
 
 describe("client surface", () => {
@@ -46,13 +36,12 @@ describe("client surface", () => {
 });
 
 describe("offline outcome queue", () => {
-  it("writes pending before any network call", async () => {
+  it("stores only the lead id, outcome code, and time", async () => {
     const store = createMemoryOutcomeStore();
-    const posted: string[] = [];
     const entry = await enqueueOutcome(store, draft({ clientEventId: "evt-1" }));
+    expect(Object.keys(storedOutcome(entry)).sort()).toEqual([...STORED_OUTCOME_KEYS].sort());
+    expect(JSON.stringify(await store.get("evt-1"))).not.toMatch(/Jordan|note|@|phone/i);
     expect(entry.status).toBe("pending");
-    expect((await store.get("evt-1"))?.status).toBe("pending");
-    expect(posted).toEqual([]);
   });
 
   it("never marks synced until the server confirms", async () => {
@@ -74,21 +63,10 @@ describe("offline outcome queue", () => {
   it("keeps a row pending when the network is down and never drops it", async () => {
     const store = createMemoryOutcomeStore();
     await enqueueOutcome(store, draft({ clientEventId: "evt-3" }));
-    const first = await syncQueuedOutcomes(
-      store,
-      async () => ({ ok: false, error: "offline", retryable: true }),
-      () => false
-    );
+    const first = await syncQueuedOutcomes(store, async () => ({ ok: false, error: "offline", retryable: true }), () => false);
     expect(first.pending).toHaveLength(1);
-    expect(first.synced).toHaveLength(0);
     expect(await store.get("evt-3")).not.toBeNull();
-
-    const second = await syncQueuedOutcomes(
-      store,
-      async () => ({ ok: true, discrepancy: null }),
-      () => true
-    );
-    expect(second.synced).toHaveLength(1);
+    const second = await syncQueuedOutcomes(store, async () => ({ ok: true, discrepancy: null }), () => true);
     expect(second.synced[0]?.clientEventId).toBe("evt-3");
   });
 
@@ -97,25 +75,18 @@ describe("offline outcome queue", () => {
     await enqueueOutcome(store, draft({ clientEventId: "evt-4" }));
     await syncQueuedOutcomes(
       store,
-      async () => ({ ok: false, error: "That lead is not in this workspace.", retryable: false }),
+      async () => ({ ok: false, error: "You can no longer open that lead, so this outcome was not saved.", retryable: false }),
       () => true
     );
     const row = await store.get("evt-4");
     expect(row?.status).toBe("failed");
-    expect(row?.lastError).toMatch(/not in this workspace/);
     expect(unsyncedOutcomes(await store.getAll())).toHaveLength(1);
-
-    const retried = await syncQueuedOutcomes(
-      store,
-      async () => ({ ok: true, discrepancy: null }),
-      () => true
-    );
-    expect(retried.synced).toHaveLength(1);
+    expect(pendingOutcomeCount(await store.getAll())).toBe(1);
   });
 
-  it("syncs anyway when the lead changed and surfaces the discrepancy", async () => {
+  it("returns a discrepancy in memory and does not store it", async () => {
     const store = createMemoryOutcomeStore();
-    await enqueueOutcome(store, draft({ clientEventId: "evt-5", expectedLeadStatus: "new" }));
+    await enqueueOutcome(store, draft({ clientEventId: "evt-5" }));
     const result = await syncQueuedOutcomes(
       store,
       async () => ({
@@ -127,30 +98,24 @@ describe("offline outcome queue", () => {
       }),
       () => true
     );
-    expect(result.synced).toHaveLength(1);
     expect(result.synced[0]?.discrepancy).toMatch(/still recorded/);
-    expect(result.synced[0]?.discrepancy).toMatch(/status was new, now working/);
+    expect(JSON.stringify(await store.get("evt-5"))).not.toMatch(/discrepancy|working/);
   });
 
-  it("treats a duplicate client event as synced rather than inserting twice", async () => {
+  it("drops an outcome that stayed unsent past the limit", async () => {
+    const store = createMemoryOutcomeStore();
+    const old = new Date(Date.now() - OUTCOME_MAX_AGE_MS - 1000).toISOString();
+    await enqueueOutcome(store, draft({ clientEventId: "evt-old", clientLoggedAt: old, createdAt: old }));
+    expect(isExpiredOutcome((await store.get("evt-old"))!)).toBe(true);
+    const result = await syncQueuedOutcomes(store, async () => ({ ok: true }), () => true);
+    expect(result.expired).toHaveLength(1);
+    expect(await store.get("evt-old")).toBeNull();
+  });
+
+  it("clears every row", async () => {
     const store = createMemoryOutcomeStore();
     await enqueueOutcome(store, draft({ clientEventId: "evt-6" }));
-    const result = await syncQueuedOutcomes(
-      store,
-      async () => ({ ok: true, duplicate: true, discrepancy: null }),
-      () => true
-    );
-    expect(result.synced[0]?.status).toBe("synced");
-  });
-});
-
-describe("discrepancy copy", () => {
-  it("says nothing when the snapshot matches", () => {
-    expect(
-      describeOutcomeDiscrepancy(
-        { status: "new", lastTouchAt: null, firstHumanTouchAt: null },
-        { status: "new", lastTouchAt: null, firstHumanTouchAt: null }
-      )
-    ).toBeNull();
+    await store.clear();
+    expect(await store.getAll()).toEqual([]);
   });
 });

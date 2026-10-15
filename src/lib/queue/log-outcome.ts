@@ -72,14 +72,31 @@ function isLeadStatus(value: string | null | undefined): value is Enums<"lead_st
   ].includes(value);
 }
 
+function channelForQueuedOutcome(outcome: TouchOutcome): TouchChannel {
+  if (outcome === "left_voicemail") return "voicemail";
+  return "call";
+}
+
 export async function writeQueueOutcome(input: LogOutcomeInput): Promise<QueueActionResult> {
   const ctx = await getAuthContext();
-  if (!isChannel(input.channel)) return actionError("Pick a channel.");
-  if (!isDirection(input.direction)) return actionError("Pick inbound or outbound.");
   if (!isOutcome(input.outcome)) return actionError("Pick an outcome.");
+  const queuedOffline = Boolean(input.queuedOffline);
+  const channel: TouchChannel | null =
+    input.channel && isChannel(input.channel)
+      ? input.channel
+      : queuedOffline
+        ? channelForQueuedOutcome(input.outcome)
+        : null;
+  const direction: TouchDirection | null =
+    input.direction && isDirection(input.direction) ? input.direction : queuedOffline ? "outbound" : null;
+  if (!channel) return actionError("Pick a channel.");
+  if (!direction) return actionError("Pick inbound or outbound.");
 
-  const note = input.note?.trim() ?? "";
+  const note = queuedOffline ? "" : (input.note?.trim() ?? "");
   if (note.length > 280) return actionError("Keep the note under 280 characters.");
+  if (queuedOffline && input.clientLoggedAt && Date.now() - Date.parse(input.clientLoggedAt) > 7 * 24 * 60 * 60 * 1000) {
+    return actionError("This outcome expired before it could be saved.");
+  }
 
   const actorMemberId = input.actorMemberId?.trim() || ctx.member.id;
   if (
@@ -117,7 +134,9 @@ export async function writeQueueOutcome(input: LogOutcomeInput): Promise<QueueAc
     .eq("id", input.leadId)
     .maybeSingle();
 
-  if (leadError || !lead) return actionError("That lead is not in this workspace.");
+  if (leadError || !lead) {
+    return actionError("You can no longer open that lead, so this outcome was not saved.");
+  }
 
   const discrepancy = describeOutcomeDiscrepancy(
     {
@@ -149,8 +168,8 @@ export async function writeQueueOutcome(input: LogOutcomeInput): Promise<QueueAc
     org_id: ctx.org.id,
     lead_id: input.leadId,
     type: "human",
-    channel: input.channel,
-    direction: input.direction,
+    channel,
+    direction,
     outcome: input.outcome,
     actor_member_id: actorMemberId,
     summary: note || null,

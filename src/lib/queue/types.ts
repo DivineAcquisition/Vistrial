@@ -118,8 +118,8 @@ export type QueueActionResult =
 
 export type LogOutcomeInput = {
   leadId: string;
-  channel: string;
-  direction: string;
+  channel?: string;
+  direction?: string;
   outcome: string;
   note?: string;
   actorMemberId?: string;

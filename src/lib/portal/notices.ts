@@ -5,7 +5,8 @@ import { Resend } from "resend";
 import { appUrl } from "@/lib/app-url";
 import type { EmailCategory, FooterVars } from "@/lib/email/footer";
 import { lifecycleFromSeparated, renderFooter, sendingStream, staffRecipientAllowed, unresolvedCopy } from "@/lib/email/footer";
-import { transactionalEmailHtml } from "@/lib/email/layout";
+import { emailLogoSrc, transactionalEmailHtml } from "@/lib/email/layout";
+import { emailLogoAttachment } from "@/lib/email/logo-file";
 import {
   activeStaffEmails,
   issueUnsubscribeUrl,
@@ -53,6 +54,7 @@ export function portalEmailHtml(args: {
     lines: args.lines,
     cta: args.cta,
     footerHtml: args.footerHtml,
+    logoUrl: emailLogoSrc(),
   });
 }
 
@@ -147,6 +149,7 @@ export async function sendPortalMail(args: {
         }),
         text: [...args.lines, cta ? `${cta.label}: ${cta.href}` : "", rendered.footer.text].filter(Boolean).join("\n\n"),
         headers,
+        attachments: [emailLogoAttachment()],
         tags: [{ name: "category", value: args.category }, { name: "footer_version", value: rendered.footer.version }],
       },
       { idempotencyKey: args.idempotencyKey.slice(0, 256) }

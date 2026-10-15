@@ -7,10 +7,10 @@ import { marketingNavLink } from "@/lib/marketing/ui";
 
 export function MarketingNav() {
   return (
-    <ul className="flex items-center gap-1">
+    <ul className="flex items-center gap-0.5 rounded-lg border border-[#2a2833] bg-[#12111a] p-1">
       {NAV.links.map((link) => (
         <li key={link.href}>
-          <Link href={link.href} className={marketingNavLink}>
+          <Link href={link.href} className={`${marketingNavLink} hover:bg-[#1c1a27]`}>
             {link.label}
           </Link>
         </li>

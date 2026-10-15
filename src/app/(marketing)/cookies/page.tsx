@@ -38,7 +38,7 @@ export default async function CookiesPage() {
             </thead>
             <tbody>
               {tools.map((tool) => (
-                <tr key={tool.slug} className="border-t border-white/10 align-top">
+                <tr key={tool.slug} className="border-t border-[#2a2833] align-top">
                   <td className="py-3 pr-3">
                     <span className="text-white">{tool.name}</span>
                     <span className="block text-xs text-dim">{tool.company}</span>

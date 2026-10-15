@@ -52,7 +52,7 @@ function BlockView({ block }: { block: PolicyBlock }) {
   }
   if (block.kind === "note") {
     return (
-      <p className="rounded-xl border border-white/15 bg-white/[0.03] px-3 py-2 text-white">
+      <p className="rounded-[8px] border border-[#2a2833] bg-[#111014] px-3 py-2 text-white">
         <RichText text={block.text} />
       </p>
     );
@@ -70,7 +70,7 @@ export function PrivacyPolicy({ trust }: { trust: TrustPublic }) {
   return (
     <article className="mx-auto max-w-3xl px-5 py-12 sm:px-6 sm:py-16">
       {trust.privacyLive ? null : (
-        <p className="rounded-2xl border border-white/10 px-4 py-3 text-sm leading-relaxed text-white">
+        <p className="rounded-[12px] border border-[#2a2833] bg-[#0c0b10] px-4 py-3 text-sm leading-relaxed text-white">
           Draft for review by qualified counsel. Not legal advice. This page is not in effect until a Platform Admin approves it and a mailing address is on file.
         </p>
       )}

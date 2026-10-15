@@ -27,7 +27,7 @@ describe("privacy policy stays inside verified behavior", () => {
     expect(text).not.toMatch(/at rest/i);
     expect(text).toContain("Global Privacy Control");
     expect(text).toContain("Meta pixel");
-    expect(text).toContain("[COUNSEL:");
+    expect(text).not.toContain("[COUNSEL:");
     expect(text).toContain("US East, N. Virginia");
   });
 

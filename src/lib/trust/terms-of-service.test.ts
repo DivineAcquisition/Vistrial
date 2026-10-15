@@ -26,7 +26,7 @@ describe("terms stay inside the billing system", () => {
     expect(text).toMatch(/six \(6\) months/i);
     expect(text).toContain("$97");
     expect(text).toContain("Prince George's County");
-    expect(text).toContain("[COUNSEL:");
+    expect(text).not.toContain("[COUNSEL:");
     expect(text).not.toMatch(/legal@divineacquisition/i);
   });
 

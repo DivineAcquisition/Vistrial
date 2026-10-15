@@ -32,10 +32,10 @@ export default async function SecurityPage() {
               Vistrial brings together calls, touches, and outcomes for each lead. Here is where that data comes from, how it is protected, and what we never do.
             </p>
             <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-              <Button variant="gradient" className="rounded-full" render={<Link href="/security/review" />}>
+              <Button variant="gradient" className="h-12! rounded-[8px]! before:rounded-[7px]!" render={<Link href="/security/review" />}>
                 Request a security review
               </Button>
-              <Button variant="outline" className="rounded-full" render={<a href="#glance" />}>
+              <Button variant="outline" className="h-12! rounded-[8px]! border-[#2a2833]! before:rounded-[7px]!" render={<a href="#glance" />}>
                 Read the details
               </Button>
             </div>
@@ -137,10 +137,10 @@ export default async function SecurityPage() {
               Vistrial is not certified under SOC 2, ISO 27001, or a similar standard. There is no badge for that. We will answer a security questionnaire.
             </p>
             <div className="mt-6 flex flex-col gap-3 sm:flex-row">
-              <Button variant="gradient" className="rounded-full" render={<Link href="/security/review" />}>
+              <Button variant="gradient" className="h-12! rounded-[8px]! before:rounded-[7px]!" render={<Link href="/security/review" />}>
                 Request a security review
               </Button>
-              <Button variant="outline" className="rounded-full" render={<Link href="/security/report" />}>
+              <Button variant="outline" className="h-12! rounded-[8px]! border-[#2a2833]! before:rounded-[7px]!" render={<Link href="/security/report" />}>
                 Report a vulnerability
               </Button>
             </div>

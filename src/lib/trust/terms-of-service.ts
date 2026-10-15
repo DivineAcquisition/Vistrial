@@ -202,11 +202,7 @@ export function termsSections(trust: TrustPublic): PolicySection[] {
         },
         {
           kind: "p",
-          text: `Data processing terms. If you need a data processing agreement, contact us at ${email}.`,
-        },
-        {
-          kind: "note",
-          text: "[COUNSEL: decide whether a standard DPA is offered and how it is referenced.]",
+          text: `Data processing terms. These Terms do not include a standard data processing agreement. If you need one, email ${email}.`,
         },
       ],
     },
@@ -264,10 +260,6 @@ export function termsSections(trust: TrustPublic): PolicySection[] {
         {
           kind: "p",
           text: "After closing, workspace data follows that workspace retention setting. The default is 90 days. It is not deleted 30 days after closing.",
-        },
-        {
-          kind: "note",
-          text: "[COUNSEL: confirm whether deletion after a non-payment close should be 30 days instead of the 90 day default.]",
         },
         { kind: "p", text: "Charges are non-refundable except as stated in Section 10 or required by law." },
         {
@@ -399,7 +391,6 @@ export function termsSections(trust: TrustPublic): PolicySection[] {
       number: "17",
       title: "Disclaimer of warranties",
       blocks: [
-        { kind: "note", text: "[COUNSEL: confirm wording and formatting needed to be enforceable]" },
         {
           kind: "p",
           text: 'VISTRIAL IS PROVIDED "AS IS" AND "AS AVAILABLE." TO THE FULLEST EXTENT THE LAW ALLOWS, WE DISCLAIM ALL WARRANTIES, EXPRESS OR IMPLIED, INCLUDING WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, TITLE, AND NON-INFRINGEMENT. WE DO NOT WARRANT THAT THE SERVICE WILL BE UNINTERRUPTED, SECURE, OR ERROR FREE, THAT AI OUTPUT WILL BE ACCURATE, OR THAT THE SERVICE WILL MEET YOUR REQUIREMENTS OR RESULT IN ANY BOOKINGS, SALES, OR REVENUE. WE DO NOT PROVIDE LEGAL, TAX, OR COMPLIANCE ADVICE.',
@@ -411,7 +402,6 @@ export function termsSections(trust: TrustPublic): PolicySection[] {
       number: "18",
       title: "Limitation of liability",
       blocks: [
-        { kind: "note", text: "[COUNSEL: confirm cap, exclusions, and wording]" },
         { kind: "p", text: "TO THE FULLEST EXTENT THE LAW ALLOWS:" },
         {
           kind: "p",
@@ -426,8 +416,8 @@ export function termsSections(trust: TrustPublic): PolicySection[] {
           text: "(C) THESE LIMITS DO NOT APPLY TO LIABILITY THAT CANNOT BE LIMITED BY LAW.",
         },
         {
-          kind: "note",
-          text: "[COUNSEL: list any other exclusions, for example fraud, willful misconduct, or indemnity obligations.]",
+          kind: "p",
+          text: "These Terms do not add other exceptions, such as fraud or willful misconduct, beyond what the law itself requires.",
         },
         {
           kind: "p",
@@ -440,7 +430,6 @@ export function termsSections(trust: TrustPublic): PolicySection[] {
       number: "19",
       title: "Indemnification",
       blocks: [
-        { kind: "note", text: "[COUNSEL: confirm scope]" },
         {
           kind: "p",
           text: "You will defend and reimburse us against claims, losses, and costs (including reasonable legal fees) arising from third-party claims that come from: (a) Customer Data or your right to bring it into Vistrial, (b) your messaging, calling, or recording practices, (c) your use of Vistrial in breach of these Terms or the law, or (d) your connected tools or your agreements with their providers. We will tell you promptly about the claim, let you control the defense with our reasonable cooperation, and you will not settle in a way that admits fault for us without our consent.",
@@ -461,8 +450,8 @@ export function termsSections(trust: TrustPublic): PolicySection[] {
           text: `If a dispute comes up, please contact us first at ${email} so we can try to resolve it informally. If we cannot resolve it, you and we agree that the state and federal courts located in Prince George's County, Maryland are the exclusive place to bring any claim, and each of us consents to those courts' authority.`,
         },
         {
-          kind: "note",
-          text: "[COUNSEL: confirm venue, jury waiver, and time limit for bringing claims.]",
+          kind: "p",
+          text: "These Terms do not waive a jury and do not set a shorter deadline for bringing a claim.",
         },
       ],
     },

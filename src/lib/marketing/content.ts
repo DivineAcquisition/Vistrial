@@ -284,15 +284,15 @@ export const PRIVACY_PAGE = {
   sections: [
     {
       heading: "What this site collects",
-      body: "[Counsel will replace this section.] The access form collects the name, work email, business, and answers the visitor types. A phone number is optional. The form also stores the time, the page it came from, and campaign parameters when they are present.",
+      body: "The access form collects the name, work email, business, and answers the visitor types. A phone number is optional. The form also stores the time, the page it came from, and campaign parameters when they are present.",
     },
     {
       heading: "Why",
-      body: "[Counsel will replace this section.] The purpose is to review a request for Private Access or a Custom conversation, and to reply about that request.",
+      body: "The purpose is to review a request for Private Access or a Custom conversation, and to reply about that request.",
     },
     {
       heading: "Who receives it",
-      body: "[Counsel will replace this section.] Platform Admins can review requests. Service Team can see them only when a Platform Admin grants that. Request data is not copied into a customer workspace except the fields needed to start onboarding, and only when a Platform Admin converts the request.",
+      body: "Platform Admins can review requests. Service Team can see them only when a Platform Admin grants that. Request data is not copied into a customer workspace except the fields needed to start onboarding, and only when a Platform Admin converts the request.",
     },
     {
       heading: "How long it is kept",
@@ -300,7 +300,7 @@ export const PRIVACY_PAGE = {
     },
     {
       heading: "How to ask for deletion",
-      body: "[Counsel will replace this section.] Email the contact address below and ask for the request to be deleted. A Platform Admin can delete it, and the deletion is recorded.",
+      body: "Email contact@vistrial.io and ask for the request to be deleted. A Platform Admin can delete it, and the deletion is recorded.",
     },
     {
       heading: "Contact",
@@ -312,7 +312,7 @@ export const PRIVACY_PAGE = {
 export const TERMS_PAGE = {
   title: "Terms",
   description: "A placeholder for the terms counsel will provide.",
-  body: "[Counsel will replace this page.] No contract term, setup fee, or guarantee is stated here.",
+  body: "No contract term, setup fee, or guarantee is stated on this placeholder. The Terms of Service page is the draft visitors read.",
 } as const;
 
 export const THANKS = {

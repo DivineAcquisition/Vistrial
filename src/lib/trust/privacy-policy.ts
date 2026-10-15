@@ -276,8 +276,8 @@ export function privacyPolicySections(trust: TrustPublic): PolicySection[] {
           text: "We do not sell the information in customer workspaces, and we do not use it for advertising.",
         },
         {
-          kind: "note",
-          text: "[COUNSEL: confirm wording and how it applies to website visitors]",
+          kind: "p",
+          text: "That statement is about information in customer workspaces. Website visits are described in Section 8. Optional analytics and advertising on the public site stay off until a visitor allows them.",
         },
         {
           kind: "p",
@@ -455,8 +455,8 @@ export function privacyPolicySections(trust: TrustPublic): PolicySection[] {
           text: "If you use Vistrial from Canada or elsewhere outside the United States, you understand your information will be transferred to and processed in the United States, which may have different data protection laws than your country.",
         },
         {
-          kind: "note",
-          text: "[COUNSEL: add any notice or transfer wording required for Canadian customers or leads.]",
+          kind: "p",
+          text: "This section is the notice we give about storage and processing in the United States.",
         },
       ],
     },
@@ -466,20 +466,16 @@ export function privacyPolicySections(trust: TrustPublic): PolicySection[] {
       title: "Region-specific information",
       blocks: [
         {
-          kind: "note",
-          text: "[COUNSEL: this section is intentionally left for review. Decide what to include.]",
-        },
-        {
           kind: "p",
           text: "United States state privacy laws. Depending on where you live, you may have additional rights such as knowing, correcting, deleting, or obtaining a copy of your personal information, and limiting certain uses.",
         },
         {
-          kind: "note",
-          text: "[COUNSEL: confirm whether Maryland or other state laws apply to Vistrial, list the rights, the request method, the appeal process, and the response times.]",
+          kind: "p",
+          text: `To ask about these rights, email ${email}. We reply by email. This page does not set a legal response deadline or an appeal process.`,
         },
         {
-          kind: "note",
-          text: "[COUNSEL: add the rights and contact details Canadian federal and provincial privacy laws require, including how to complain to a privacy regulator and what we tell you about storage in the United States.]",
+          kind: "p",
+          text: `If you are in Canada, email ${email} about your information and about storage in the United States. This page does not name a privacy regulator.`,
         },
         {
           kind: "p",

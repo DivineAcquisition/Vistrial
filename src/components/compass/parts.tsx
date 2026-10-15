@@ -37,8 +37,9 @@ function outputOf(props: ToolCallMessagePartProps): LookupOutput | null {
 export function LookupStep(props: ToolCallMessagePartProps) {
   const labels = STEP_LABELS[props.toolName] ?? { running: "Looking this up", done: "Looked this up" };
   const output = outputOf(props);
-  const running = props.status.type === "running" || props.status.type === "requires-action";
-  const failed = props.status.type === "incomplete" || (output && !output.ok && (output.gap === "unavailable" || output.gap === "hidden"));
+  const statusType = props.status?.type;
+  const running = statusType === "running" || statusType === "requires-action";
+  const failed = statusType === "incomplete" || (output && !output.ok && (output.gap === "unavailable" || output.gap === "hidden"));
   return (
     <div className="flex flex-col gap-1">
       <ToolLine state={running ? "running" : failed ? "failed" : "done"}>
@@ -70,7 +71,7 @@ export function SuggestionCard(props: ToolCallMessagePartProps) {
   const output = outputOf(props) as LookupOutput<{ suggestion?: SuggestedAction }> | null;
   const suggestion = output?.data?.suggestion;
 
-  if (props.status.type === "running") return <ToolLine state="running">Preparing a suggestion</ToolLine>;
+  if (props.status?.type === "running") return <ToolLine state="running">Preparing a suggestion</ToolLine>;
   if (!suggestion || state.kind === "dismissed") return null;
 
   if (suggestion.unavailable) {

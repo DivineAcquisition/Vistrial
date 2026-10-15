@@ -1,8 +1,8 @@
 export const APP_NAME = "Vistrial";
 export const APP_OWNER = "Divine Acquisition";
 
-/** Legal operator named in the privacy policy. */
-export const LEGAL_ENTITY = "Divine Acquisition LLC";
+/** Public operator. Vistrial LLC is operated by DivineAcquisition LLC. */
+export const LEGAL_ENTITY = "Vistrial LLC, operated by DivineAcquisition LLC";
 
 export const COMPANY_ADDRESS = "7404 Executive Place, Lanham, MD 20706";
 
@@ -42,7 +42,7 @@ export const PRIVACY_LAST_UPDATED = "8/25/2026";
 export const PRIVACY_EFFECTIVE = "8/25/2026";
 
 /** Filled from the draft's [DATE] placeholders when this page was published. */
-export const TERMS_LAST_UPDATED = "8/23/2026";
-export const TERMS_EFFECTIVE = "8/23/2026";
+export const TERMS_LAST_UPDATED = "October 15, 2026";
+export const TERMS_EFFECTIVE = "November 1, 2026";
 
 export const DISCLAIMER_LAST_UPDATED = "8/22/2026";

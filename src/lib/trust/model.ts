@@ -23,6 +23,7 @@ export type TrustPublic = {
   subprocessorsUpdatedOn: string;
   privacyUpdatedOn: string;
   termsUpdatedOn: string;
+  termsEffectiveOn: string;
   legalEntity: string | null;
   mailingAddress: string | null;
   governingPlace: string;
@@ -42,9 +43,10 @@ export const TRUST_FALLBACK: TrustPublic = {
   securityUpdatedOn: "2026-10-14",
   subprocessorsUpdatedOn: "2026-10-14",
   privacyUpdatedOn: "2026-10-15",
-  termsUpdatedOn: "2026-10-14",
-  legalEntity: null,
-  mailingAddress: null,
+  termsUpdatedOn: "2026-10-15",
+  termsEffectiveOn: "2026-11-01",
+  legalEntity: "Vistrial LLC, operated by DivineAcquisition LLC",
+  mailingAddress: "7404 Executive Place, Lanham, MD 20706",
   governingPlace: "Maryland, United States",
   switches: {
     aiNoTraining: false,
@@ -60,8 +62,13 @@ export const TRUST_FALLBACK: TrustPublic = {
 };
 
 export function snapshotHasNoInternalAddress(raw: Record<string, unknown>): boolean {
-  const text = JSON.stringify(raw).toLowerCase();
-  return !("internal_forward_email" in raw) && !text.includes("divineacquisition");
+  return !("internal_forward_email" in raw);
+}
+
+function publicEntity(value: unknown): string | null {
+  const named = value ? String(value).trim() : "";
+  if (!named || named === "Divine Agency LLC") return TRUST_FALLBACK.legalEntity;
+  return named;
 }
 
 export function asTrust(raw: Record<string, unknown> | null): TrustPublic {
@@ -77,8 +84,9 @@ export function asTrust(raw: Record<string, unknown> | null): TrustPublic {
     subprocessorsUpdatedOn: String(raw.subprocessors_updated_on || TRUST_FALLBACK.subprocessorsUpdatedOn).slice(0, 10),
     privacyUpdatedOn: String(raw.privacy_updated_on || TRUST_FALLBACK.privacyUpdatedOn).slice(0, 10),
     termsUpdatedOn: String(raw.terms_updated_on || TRUST_FALLBACK.termsUpdatedOn).slice(0, 10),
-    legalEntity: raw.legal_entity_name ? String(raw.legal_entity_name) : null,
-    mailingAddress: raw.mailing_address ? String(raw.mailing_address) : null,
+    termsEffectiveOn: String(raw.terms_effective_on || TRUST_FALLBACK.termsEffectiveOn).slice(0, 10),
+    legalEntity: publicEntity(raw.legal_entity_name),
+    mailingAddress: raw.mailing_address ? String(raw.mailing_address) : TRUST_FALLBACK.mailingAddress,
     governingPlace: String(raw.governing_place || TRUST_FALLBACK.governingPlace),
     switches: {
       aiNoTraining: bool("switch_ai_no_training"),

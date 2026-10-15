@@ -8,11 +8,9 @@ import { requestAgeDays, requestNeedsAttention } from "@/lib/trust/request-age";
 const text = privacyPolicyText(TRUST_FALLBACK);
 
 describe("privacy policy stays inside verified behavior", () => {
-  it("uses the answered entity and leaves the address blank", () => {
-    expect(text).toContain("Divine Agency LLC");
-    expect(text).toContain("Mailing address not on file yet");
-    expect(text).not.toMatch(/divineacquisition/i);
-    expect(text).not.toContain("7404");
+  it("names the operator and the Lanham address", () => {
+    expect(text).toContain("Vistrial LLC, operated by DivineAcquisition LLC");
+    expect(text).toContain("7404 Executive Place, Lanham, MD 20706");
     expect(text).toContain("Effective: Not in effect");
     expect(text).toContain("Last updated: October 15, 2026");
   });

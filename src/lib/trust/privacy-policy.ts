@@ -1,3 +1,4 @@
+import { COMPANY_ADDRESS, LEGAL_ENTITY } from "@/lib/constants";
 import { formatTrustDate, type TrustPublic } from "@/lib/trust/model";
 
 /**
@@ -19,11 +20,9 @@ export type PolicySection = {
   blocks: PolicyBlock[];
 };
 
-const NAMED_ENTITY = "Divine Agency LLC";
-
 export function privacyEntity(trust: TrustPublic): string {
   const named = trust.legalEntity?.trim();
-  return named || NAMED_ENTITY;
+  return named || LEGAL_ENTITY;
 }
 
 export function privacyDates(trust: TrustPublic): { updated: string; effective: string } {
@@ -34,10 +33,8 @@ export function privacyDates(trust: TrustPublic): { updated: string; effective: 
 export function privacyPolicySections(trust: TrustPublic): PolicySection[] {
   const entity = privacyEntity(trust);
   const email = trust.privacyEmail;
-  const address = trust.mailingAddress?.trim() || "";
-  const addressLine = address
-    ? `Mailing address: ${address}.`
-    : "The registered agent mailing address in Maryland is not on file yet. It will be added before this policy takes effect.";
+  const address = trust.mailingAddress?.trim() || COMPANY_ADDRESS;
+  const addressLine = `Mailing address: ${address}.`;
 
   const ai: string[] = [
     "Agents work only inside the workspace they belong to.",
@@ -109,7 +106,7 @@ export function privacyPolicySections(trust: TrustPublic): PolicySection[] {
       blocks: [
         {
           kind: "p",
-          text: `Vistrial is operated by ${entity} ("Vistrial," "we," "us," or "our"). We are based in Maryland, United States. ${addressLine}`,
+          text: `The operator is ${entity} ("Vistrial," "we," "us," or "our"). We are based in Maryland, United States. ${addressLine}`,
         },
         { kind: "p", text: "This policy covers:" },
         {
@@ -519,7 +516,7 @@ export function privacyPolicySections(trust: TrustPublic): PolicySection[] {
       blocks: [
         { kind: "p", text: "Questions, requests, or concerns about this policy or your information:" },
         { kind: "p", text: `Email: ${email}` },
-        { kind: "p", text: address ? `${entity}, ${address}` : `${entity}. Mailing address not on file yet.` },
+        { kind: "p", text: `${entity}. ${address}.` },
         { kind: "p", text: "To report a security issue, visit /security/report." },
       ],
     },

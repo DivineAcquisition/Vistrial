@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 
 import { ORG_COOKIE_NAME, PENDING_INVITE_COOKIE, orgCookieOptions } from "@/lib/auth/cookies";
 import { redeemInvite } from "@/lib/auth/invites";
+import { recordLegalAcceptance } from "@/lib/trust/accept";
 import { DEFAULT_APP_PATH } from "@/lib/navigation";
 import { createClient } from "@/lib/supabase/server";
 
@@ -22,6 +23,7 @@ export async function GET(request: NextRequest) {
 
   const result = await redeemInvite(token, user.id, user.email ?? null);
   if (result.ok) {
+    await recordLegalAcceptance(user.id);
     const response = NextResponse.redirect(new URL(DEFAULT_APP_PATH, request.url));
     response.cookies.set(ORG_COOKIE_NAME, result.orgId, orgCookieOptions);
     response.cookies.delete(PENDING_INVITE_COOKIE);

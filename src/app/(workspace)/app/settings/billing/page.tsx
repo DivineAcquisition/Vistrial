@@ -166,6 +166,9 @@ export default async function BillingPage() {
       {linked ? (
         <Panel className="p-6">
           <h2 className={cardTitle}>Receipts</h2>
+          <p className={helperClass}>
+            Invoices follow the <Link href="/terms" className="underline">Terms of Service</Link>.
+          </p>
           {!invoices ? (
             <p className={`mt-2 ${helperClass}`}>Receipts show here once billing is connected.</p>
           ) : !invoices.ok ? (

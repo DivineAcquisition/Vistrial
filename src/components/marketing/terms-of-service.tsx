@@ -4,14 +4,14 @@ import {
   LegalMail,
   LegalSection,
 } from "@/components/marketing/legal-shell";
-import { COMPANY_ADDRESS, LEGAL_EMAIL, LEGAL_ENTITY } from "@/lib/constants";
+import { COMPANY_ADDRESS, CONTACT_EMAIL, LEGAL_ENTITY } from "@/lib/constants";
 
 export function TermsOfServiceBody() {
   return (
     <>
       <p>
-        These Terms govern your use of Vistrial, operated by {LEGAL_ENTITY}, a Maryland limited
-        liability company (&quot;Vistrial,&quot; &quot;we,&quot; &quot;us&quot;). By creating an
+        These Terms govern your use of Vistrial. The operator is {LEGAL_ENTITY}
+        (&quot;Vistrial,&quot; &quot;we,&quot; &quot;us&quot;). By creating an
         account, connecting a CRM, or using the service, you agree to them. If you are agreeing on
         behalf of a business, you represent that you have authority to bind it, and
         &quot;you&quot; means that business.
@@ -342,7 +342,7 @@ export function TermsOfServiceBody() {
           <br />
           {COMPANY_ADDRESS}
           <br />
-          <LegalMail email={LEGAL_EMAIL} />
+          <LegalMail email={CONTACT_EMAIL} />
         </address>
       </LegalSection>
     </>

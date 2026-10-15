@@ -338,7 +338,7 @@ export const FORMS = {
   submitAccess: "Submit request",
   submitCustom: "Send",
   pending: "Sending",
-  consent: "I agree to be contacted about this request, and I agree to the Privacy page.",
+  consent: "I agree to be contacted about this request, and I agree to the",
   privacyHref: "/privacy",
   phoneHelp: "Optional. We will not use this for marketing texts.",
   problemHelp: "Optional. 1000 characters at most.",
@@ -346,7 +346,7 @@ export const FORMS = {
   errors: {
     required: "This field is required.",
     email: "Enter a work email, like name@company.com.",
-    consent: "Check the box to agree to be contacted and to the Privacy page.",
+    consent: "Check the box to agree to be contacted and to the Privacy Policy and Terms.",
     long: "Keep that to 1000 characters.",
     website: "Enter a website like example.com, or leave it blank.",
     phone: "That phone number is too long.",

@@ -148,6 +148,7 @@ export function transactionalEmailHtml(args: TransactionalEmail): string {
                 Vistrial<br />
                 Need a hand? <a href="mailto:${CONTACT_EMAIL}" style="color:${INK};text-decoration:underline;">Contact us</a><br />
                 <a href="${PRODUCTION_SITE_ORIGIN}/privacy" style="color:${INK};text-decoration:underline;">Privacy</a>
+                · <a href="${PRODUCTION_SITE_ORIGIN}/terms" style="color:${INK};text-decoration:underline;">Terms</a>
               </td>
             </tr>
           </table>

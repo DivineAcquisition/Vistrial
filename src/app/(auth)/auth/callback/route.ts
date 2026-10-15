@@ -3,6 +3,7 @@ import { logWorkspaceActivity } from "@/lib/workspaces/activity";
 
 import { ORG_COOKIE_NAME, PENDING_INVITE_COOKIE, orgCookieOptions } from "@/lib/auth/cookies";
 import { redeemInvite } from "@/lib/auth/invites";
+import { recordLegalAcceptance } from "@/lib/trust/accept";
 import {
   inviteTokenFromPath,
   isAcceptInvitePath,
@@ -64,6 +65,7 @@ export async function GET(request: NextRequest) {
 
     let dest: string;
     if (result.ok) {
+      await recordLegalAcceptance(user.id);
       const memberships = await listActiveMemberships(user.id);
       const membership = memberships.find((m) => m.orgId === result.orgId);
       dest = signedInPath({

@@ -4,14 +4,14 @@ import {
   LegalMail,
   LegalSection,
 } from "@/components/marketing/legal-shell";
-import { COMPANY_ADDRESS, LEGAL_EMAIL, LEGAL_ENTITY } from "@/lib/constants";
+import { COMPANY_ADDRESS, CONTACT_EMAIL, LEGAL_ENTITY } from "@/lib/constants";
 
 export function DisclaimerBody() {
   return (
     <>
       <p>
-        Vistrial is operated by {LEGAL_ENTITY}, a Maryland limited liability company
-        (&quot;Vistrial,&quot; &quot;we,&quot; &quot;us&quot;). This page explains the limits of
+        {LEGAL_ENTITY} (&quot;Vistrial,&quot; &quot;we,&quot; &quot;us&quot;) provides this website
+        from Maryland. This page explains the limits of
         what our website, marketing, and product represent. It works alongside our{" "}
         <LegalHref href="/terms">Terms of Service</LegalHref> and{" "}
         <LegalHref href="/privacy">Privacy Policy</LegalHref>, and where those documents conflict
@@ -233,7 +233,7 @@ export function DisclaimerBody() {
           <br />
           {COMPANY_ADDRESS}
           <br />
-          <LegalMail email={LEGAL_EMAIL} />
+          <LegalMail email={CONTACT_EMAIL} />
         </address>
       </LegalSection>
     </>

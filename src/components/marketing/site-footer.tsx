@@ -17,7 +17,7 @@ export async function SiteFooter() {
     { href: "/security/subprocessors", label: "Subprocessors" },
     { href: "/security/report", label: "Report a vulnerability" },
     { href: "/privacy", label: "Privacy" },
-    trust.termsLive ? { href: "/terms", label: "Terms" } : { label: "Terms, coming soon" },
+    { href: "/terms", label: "Terms" },
     { href: "/privacy/requests", label: "Data requests" },
     { href: "/contact", label: "Contact" },
   ];

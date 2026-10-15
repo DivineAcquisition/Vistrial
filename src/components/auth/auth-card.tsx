@@ -46,6 +46,10 @@ export function AuthCard({
             <a href="/privacy" className="underline">
               Privacy
             </a>
+            {" · "}
+            <a href="/terms" className="underline">
+              Terms
+            </a>
           </p>
         </div>
       </main>

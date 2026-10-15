@@ -24,6 +24,8 @@ Dashboard: https://supabase.com/dashboard/project/jizzmlvpnykazrsiotqq/auth/prov
    - Expiry: 1 hour (3600 seconds)
    - Refresh tokens: enabled
 
-Invite email delivery is not wired yet. Members settings returns a link to share by hand.
+Auth emails (magic link, confirm, invite, password reset, email change, reauthentication, and the security notices) use the templates in `supabase/templates/`. They are the same card as product mail. Local `supabase start` reads them from `config.toml`. The hosted project is updated with `scripts/push-auth-email-templates.ts`, which sends only the mailer fields.
+
+Workspace invites from Members are sent by the app, not by Auth.
 
 Production sign-in reads `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY` from the Vercel **Vistrial** project (`jizzmlvpnykazrsiotqq`). Those names must be static in application code so Next.js inlines them into the browser bundle. Do not point the app at the DivineACQ project.

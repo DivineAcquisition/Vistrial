@@ -35,6 +35,8 @@ export type TransactionalEmail = {
   lines?: string[];
   items?: EmailLink[];
   cta?: { label: string; href: string };
+  /** A one-time code, shown large between the copy and the button. */
+  code?: string;
   /** Quiet line under the button. */
   footnote?: string;
   /** Absolute logo URL. Defaults to the app origin plus the ink lockup. */
@@ -91,6 +93,9 @@ export function transactionalEmailHtml(args: TransactionalEmail): string {
   const homeHref = escapeHtml(args.homeHref ?? appUrl());
   const lines = (args.lines ?? []).filter((line) => line.trim().length > 0).map(paragraph).join("");
   const items = args.items && args.items.length > 0 ? itemList(args.items) : "";
+  const code = args.code?.trim()
+    ? `<p style="margin:4px 0 20px;font-size:32px;line-height:40px;font-weight:600;letter-spacing:6px;color:${INK};">${escapeHtml(args.code.trim())}</p>`
+    : "";
   const button = args.cta ? actionButton(args.cta.label, args.cta.href) : "";
   const footnote = args.footnote?.trim()
     ? `<p style="margin:24px 0 0;font-size:14px;line-height:22px;color:${QUIET};">${escapeHtml(args.footnote)}</p>`
@@ -130,6 +135,7 @@ export function transactionalEmailHtml(args: TransactionalEmail): string {
                       <h1 style="margin:28px 0 16px;font-size:26px;line-height:34px;font-weight:600;letter-spacing:-0.4px;color:${INK};">${heading}</h1>
                       ${lines}
                       ${items}
+                      ${code}
                       ${button}
                       ${footnote}
                     </td>

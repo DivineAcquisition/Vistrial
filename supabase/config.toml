@@ -38,3 +38,66 @@ enable_signup = false
 # are disabled", which is not what the hosted project does.
 enable_signup = true
 enable_confirmations = true
+
+# Paths are relative to this directory. The HTML is generated from
+# src/lib/email/auth-templates.ts so Auth mail matches product mail.
+# Do not `config push` this file as a whole: site_url here is localhost.
+
+[auth.email.template.magic_link]
+subject = "Your Vistrial sign-in link"
+content_path = "./templates/magic_link.html"
+
+[auth.email.template.confirmation]
+subject = "Confirm your email for Vistrial"
+content_path = "./templates/confirmation.html"
+
+[auth.email.template.recovery]
+subject = "Reset your Vistrial password"
+content_path = "./templates/recovery.html"
+
+[auth.email.template.invite]
+subject = "You've been invited to Vistrial"
+content_path = "./templates/invite.html"
+
+[auth.email.template.email_change]
+subject = "Confirm your new email address"
+content_path = "./templates/email_change.html"
+
+[auth.email.template.reauthentication]
+subject = "{{ .Token }} is your Vistrial verification code"
+content_path = "./templates/reauthentication.html"
+
+[auth.email.notification.password_changed]
+enabled = true
+subject = "Your Vistrial password was changed"
+content_path = "./templates/password_changed.html"
+
+[auth.email.notification.email_changed]
+enabled = true
+subject = "Your Vistrial email address was changed"
+content_path = "./templates/email_changed.html"
+
+[auth.email.notification.phone_changed]
+enabled = true
+subject = "Your Vistrial phone number was changed"
+content_path = "./templates/phone_changed.html"
+
+[auth.email.notification.mfa_factor_enrolled]
+enabled = true
+subject = "A verification method was added to your Vistrial account"
+content_path = "./templates/mfa_factor_enrolled.html"
+
+[auth.email.notification.mfa_factor_unenrolled]
+enabled = true
+subject = "A verification method was removed from your Vistrial account"
+content_path = "./templates/mfa_factor_unenrolled.html"
+
+[auth.email.notification.identity_linked]
+enabled = true
+subject = "A sign-in method was linked to your Vistrial account"
+content_path = "./templates/identity_linked.html"
+
+[auth.email.notification.identity_unlinked]
+enabled = true
+subject = "A sign-in method was removed from your Vistrial account"
+content_path = "./templates/identity_unlinked.html"

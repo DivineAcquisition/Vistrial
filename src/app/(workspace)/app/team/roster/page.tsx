@@ -7,10 +7,12 @@ import {
   UnassignButton,
   WorkspaceStatusControl,
 } from "@/app/(workspace)/app/team/team-forms";
+import { RosterTabs } from "@/components/staff/roster-tabs";
 import { PageFrame } from "@/components/app/page-frame";
 import { Panel } from "@/components/ui/panel";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { accessRequestLevel } from "@/lib/access-requests/access";
 import { requireStaff } from "@/lib/auth/gates";
 import { listPlanPrices } from "@/lib/billing/stripe";
 import { formatDay } from "@/lib/format";
@@ -26,8 +28,14 @@ import { workspaceStatus } from "@/lib/workspaces/status";
  * Every workspace the person may enter. Row-level security decides the list:
  * a Platform Admin sees all of them, Service Team only their assignments.
  */
-export default async function TeamWorkspacesPage() {
+export default async function TeamWorkspacesPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ request?: string }>;
+}) {
   const ctx = await requireStaff();
+  const requestId = (await searchParams).request;
+  const canSeeRequests = (await accessRequestLevel(ctx)) !== "none";
   const supabase = await createClient();
   const { rows: healthRows } = await loadRoster(ctx.isPlatformAdmin ? "all" : "mine");
   const healthById = new Map(healthRows.map((row) => [row.org_id, row.health]));
@@ -43,10 +51,40 @@ export default async function TeamWorkspacesPage() {
     ctx.isPlatformAdmin
       ? supabase.from("platform_staff").select("user_id, display_name, role, active").eq("active", true)
       : Promise.resolve({ data: [] as Array<{ user_id: string; display_name: string; role: string; active: boolean }> }),
-    supabase.from("config_templates").select("id, name").eq("status", "active").order("name"),
+    supabase.from("config_templates").select("id, name, slug").eq("status", "active").order("name"),
     staffDb().then((db) => db.rpc("onboarding_can_create_workspaces")),
   ]);
   const plans = canCreate === true ? await listPlanPrices().catch(() => [] as Array<{ id: string; label: string }>) : [];
+
+  let requestDefaults: {
+    name?: string;
+    templateId?: string;
+    contactName?: string;
+    ownerEmail?: string;
+    requestId?: string;
+    version?: number;
+    existingAccount?: boolean;
+  } | undefined;
+  if (requestId && ctx.isPlatformAdmin) {
+    const requestDb = await staffDb();
+    const { data: request } = await requestDb
+      .from("access_requests")
+      .select("id, business_name, full_name, email, business_type, version, existing_account")
+      .eq("id", requestId)
+      .maybeSingle();
+    if (request) {
+      const template = (templates ?? []).find((item) => (item as { slug?: string }).slug === request.business_type);
+      requestDefaults = {
+        name: String(request.business_name),
+        templateId: template?.id,
+        contactName: String(request.full_name),
+        ownerEmail: String(request.email),
+        requestId: String(request.id),
+        version: Number(request.version),
+        existingAccount: request.existing_account === true,
+      };
+    }
+  }
 
   const names = new Map((staff ?? []).map((person) => [person.user_id, person.display_name]));
   const serviceTeam = (staff ?? []).filter((person) => person.role === "service_team");
@@ -61,14 +99,17 @@ export default async function TeamWorkspacesPage() {
           : "The workspaces assigned to you. A Platform Admin manages assignments."
       }
     >
+      <RosterTabs current="workspaces" showRequests={canSeeRequests} />
       {canCreate === true ? (
+        <div id="new-workspace" className="scroll-mt-24">
         <Panel className="mb-8 p-6">
           <h2 className={cardTitle}>New workspace</h2>
           <p className={helperClass}>Creates the workspace with every agent off and invites the Owner. Nobody is charged.</p>
           <div className="mt-4">
-            <CreateWorkspaceForm templates={templates ?? []} staff={staff ?? []} plans={plans} />
+            <CreateWorkspaceForm templates={templates ?? []} staff={staff ?? []} plans={plans} defaults={requestDefaults} />
           </div>
         </Panel>
+        </div>
       ) : null}
 
       <ul className="grid gap-3 md:hidden">

@@ -1,228 +1,249 @@
-import { ArrowRight, Bell, Bookmark, UserRound } from "lucide-react";
+import type { ReactNode } from "react";
+import Link from "next/link";
 
-import { HeroCaseFile } from "@/components/marketing/case-file";
-import { ComparisonPair } from "@/components/marketing/comparison";
-import { CtaLink } from "@/components/marketing/cta-link";
-import { LandingFaq } from "@/components/marketing/faq";
-import {
-  CtaGroup,
-  FeatureCard,
-  FinalCta,
-  IconCard,
-  MarketingSection,
-  ProductFrame,
-  StatusPill,
-} from "@/components/marketing/primitives";
-import { AnimatedShinyText } from "@/components/ui/animated-shiny-text";
+import { ApprovalExample, HeroExample } from "@/components/marketing/hero-example";
 import { Button } from "@/components/ui/button";
-import { Globe } from "@/components/ui/globe";
-import { Marquee } from "@/components/ui/marquee";
-import { Panel } from "@/components/ui/panel";
-import { Particles } from "@/components/ui/particles";
+import { AgentName } from "@/components/live/agent-identity";
+import { AGENT_LIST } from "@/lib/agents/roster";
 import {
-  AUDIT,
+  AGENTS_SECTION,
   FAQ,
-  HERO,
-  OUTCOME,
+  FINAL_CTA,
+  HOW,
+  INDUSTRIES,
   PROBLEM,
-  TOOLS,
-  WHAT_IT_DOES,
-  WHO,
-} from "@/lib/marketing/copy";
-import { DEMO_CASE } from "@/lib/marketing/demo-case";
+  PROOF,
+  SAFETY,
+  SECTIONS,
+} from "@/lib/marketing/content";
+import { HERO } from "@/lib/marketing/content";
+import { PRICING_DISPLAY } from "@/lib/marketing/pricing";
 import {
   marketingDisplayTitle,
   marketingLead,
   marketingPageGutter,
-  marketingSectionY,
+  marketingSectionTitle,
   marketingShell,
   marketingSubhead,
 } from "@/lib/marketing/ui";
-import { captionText } from "@/lib/ui";
 import { cn } from "@/lib/utils";
 
-const WHAT_IT_DOES_ICONS = {
-  "never-miss": Bell,
-  "know-who": UserRound,
-  "nothing-forgotten": Bookmark,
-} as const;
+function Section({
+  id,
+  headline,
+  lead,
+  children,
+}: {
+  id?: string;
+  headline: string;
+  lead?: string;
+  children: ReactNode;
+}) {
+  return (
+    <section id={id} className={cn(marketingPageGutter, "scroll-mt-24 py-16 sm:py-24")}>
+      <div className={marketingShell}>
+        <h2 className={marketingSectionTitle}>{headline}</h2>
+        {lead ? <p className={cn(marketingLead, "mt-4")}>{lead}</p> : null}
+        <div className="mt-8">{children}</div>
+      </div>
+    </section>
+  );
+}
 
 export function LandingPage() {
-  const headlineBefore = HERO.headline.slice(0, HERO.headline.indexOf(HERO.headlineAccent));
+  const home = {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "Organization",
+        name: "Vistrial",
+        url: "https://vistrial.io",
+        email: "contact@vistrial.io",
+      },
+      {
+        "@type": "SoftwareApplication",
+        name: "Vistrial",
+        applicationCategory: "BusinessApplication",
+        operatingSystem: "Web",
+        description: HERO.supporting,
+        offers: {
+          "@type": "Offer",
+          price: "97",
+          priceCurrency: "USD",
+          description: PRICING_DISPLAY.privateAccess.price,
+        },
+      },
+    ],
+  };
 
   return (
     <>
-      <section
-        className={cn(
-          marketingPageGutter,
-          "relative overflow-hidden pb-16 pt-16 text-center sm:pb-24 sm:pt-24",
-        )}
-      >
-        <div
-          aria-hidden
-          className="pointer-events-none absolute inset-0 z-0 bg-linear-to-b from-brand-500/18 via-brand-500/5 to-transparent"
-        />
-        <Particles
-          className="absolute inset-0 z-0"
-          quantity={48}
-          color="#9A88FC"
-          ease={80}
-          size={0.5}
-        />
-        <div className={cn(marketingShell, "relative z-10")}>
-          <div className="animate-rise mx-auto max-w-4xl">
-            <StatusPill>
-              <AnimatedShinyText className="mx-0 max-w-none text-[11px] font-semibold tracking-[0.16em] text-brand-200 uppercase dark:text-brand-200">
-                {HERO.eyebrow}
-              </AnimatedShinyText>
-            </StatusPill>
-            <h1 className={cn(marketingDisplayTitle, "mx-auto mt-6 max-w-4xl")}>
-              {headlineBefore}
-              <span className="text-gradient italic">{HERO.headlineAccent}</span>
-            </h1>
-            <p className={cn(marketingSubhead, "mx-auto mt-6 max-w-2xl")}>{HERO.subhead}</p>
-            <CtaGroup align="center">
-              <CtaLink position="hero" size="xl" className="rounded-full px-7">
-                {HERO.primaryCta}
-                <ArrowRight
-                  aria-hidden="true"
-                  className="transition-transform in-[[data-slot=button]:hover]:translate-x-0.5"
-                />
-              </CtaLink>
-              <Button
-                variant="outline"
-                size="xl"
-                className="rounded-full px-6"
-                render={<a href="#sales-os" />}
-              >
-                {HERO.secondaryCta}
-              </Button>
-            </CtaGroup>
-            <p className={cn(captionText, "mt-4")}>{HERO.underCta}</p>
-          </div>
-
-          <div className="relative mx-auto mt-16 max-w-4xl animate-rise delay-1 sm:mt-20">
-            <div className="pointer-events-none absolute -inset-x-16 -inset-y-20 -z-10 hidden opacity-40 lg:block">
-              <Globe className="max-w-none" />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(home) }} />
+      {SECTIONS.hero ? (
+        <section className={cn(marketingPageGutter, "pb-16 pt-14 sm:pb-24 sm:pt-20")}>
+          <div className={cn(marketingShell, "grid items-start gap-10 lg:grid-cols-[1.1fr_0.9fr]")}>
+            <div>
+              <h1 className={marketingDisplayTitle}>{HERO.headline}</h1>
+              <p className={cn(marketingSubhead, "mt-6 max-w-xl")}>{HERO.supporting}</p>
+              <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+                <Button variant="gradient" size="xl" className="rounded-full" render={<Link href="/request?from=hero" data-cta-position="hero" />}>
+                  {HERO.primaryCta}
+                </Button>
+                <Button variant="outline" size="xl" className="rounded-full" render={<a href="#how" />}>
+                  {HERO.secondaryCta}
+                </Button>
+              </div>
+              <p className="mt-4 max-w-xl text-sm leading-relaxed text-silver">{HERO.trust}</p>
             </div>
-            <ProductFrame title="File" caption={DEMO_CASE.sampleLabel}>
-              <HeroCaseFile />
-            </ProductFrame>
-          </div>
-        </div>
-      </section>
-
-      <div className="relative overflow-hidden border-y border-white/[0.07]">
-        <Marquee pauseOnHover className="[--duration:36s]">
-          {WHAT_IT_DOES.items.map((item) => (
-            <span
-              key={item.id}
-              className="mx-4 text-[13px] font-medium tracking-wide text-silver"
-            >
-              {item.title.replace(/\.$/, "")}
-            </span>
-          ))}
-        </Marquee>
-      </div>
-
-      <MarketingSection headline={PROBLEM.headline} align="center">
-        <ComparisonPair />
-      </MarketingSection>
-
-      <MarketingSection
-        id="sales-os"
-        headline={WHAT_IT_DOES.headline}
-        align="center"
-      >
-        <div className="app-stagger grid gap-4 md:grid-cols-3">
-          {WHAT_IT_DOES.items.map((item) => (
-            <div key={item.id} id={item.anchor} className="scroll-mt-32">
-              <IconCard icon={WHAT_IT_DOES_ICONS[item.id]} title={item.title}>
-                {item.body}
-              </IconCard>
+            <div className="rounded-3xl border border-white/10 bg-white/[0.03] p-5 sm:p-6">
+              <HeroExample />
             </div>
-          ))}
-        </div>
-      </MarketingSection>
+          </div>
+        </section>
+      ) : null}
 
-      <MarketingSection
-        id="how-it-works"
-        headline={TOOLS.headline}
-        lead={<p>{TOOLS.body}</p>}
-        align="center"
-      >
-        <ul className="flex flex-wrap justify-center gap-2">
-          {TOOLS.chips.map((chip) => (
-            <li
-              key={chip}
-              className="rounded-full border border-white/[0.08] bg-white/[0.05] px-4 py-2 text-sm font-medium text-silver shadow-[inset_0_1px_0_rgba(255,255,255,0.06)]"
-            >
-              {chip}
-            </li>
-          ))}
-        </ul>
-      </MarketingSection>
-
-      <MarketingSection
-        id="reporting"
-        headline={OUTCOME.headline}
-        lead={<p id="dashboard" className="scroll-mt-32">{OUTCOME.body}</p>}
-        align="center"
-      >
-        <div id="forsight" className="scroll-mt-32">
-          <ul className="app-stagger grid gap-4 sm:grid-cols-3">
-            {OUTCOME.lines.map((line, index) => (
-              <li key={line.id} id={line.id} className="h-full scroll-mt-32">
-                <FeatureCard
-                  step={String(index + 1).padStart(2, "0")}
-                  title={line.title}
-                />
+      {SECTIONS.problem ? (
+        <Section headline={PROBLEM.headline}>
+          <div className="max-w-3xl space-y-4 text-[15px] leading-relaxed text-silver">
+            <p>{PROBLEM.opening}</p>
+            <p>{PROBLEM.scattered}</p>
+          </div>
+          <ul className="mt-8 grid gap-3">
+            {PROBLEM.pains.map((pain) => (
+              <li key={pain} className="rounded-2xl border border-white/10 px-4 py-3 text-sm leading-relaxed text-white">
+                {pain}
               </li>
             ))}
           </ul>
-        </div>
-        <p className={cn(marketingLead, "mx-auto mt-12 text-center")}>{OUTCOME.honesty}</p>
-      </MarketingSection>
+        </Section>
+      ) : null}
 
-      <MarketingSection
-        id="who"
-        headline={WHO.headline}
-        lead={<p>{WHO.body}</p>}
-        align="center"
-      >
-        <Panel className="mx-auto max-w-2xl overflow-hidden p-6 sm:p-8">
-          <p className="text-[11px] font-semibold tracking-[0.16em] text-brand-300 uppercase">
-            {WHO.notForLabel}
-          </p>
-          <p className={cn(marketingLead, "mt-3 max-w-none")}>{WHO.notFor}</p>
-        </Panel>
-      </MarketingSection>
+      {SECTIONS.how ? (
+        <Section id={HOW.id} headline={HOW.headline}>
+          <ol className="grid gap-4 md:grid-cols-3">
+            {HOW.steps.map((step) => (
+              <li key={step.id} className="rounded-2xl border border-white/10 p-5">
+                <h3 className="font-heading text-xl text-white">{step.title}</h3>
+                <p className="mt-3 text-sm leading-relaxed text-silver">{step.body}</p>
+              </li>
+            ))}
+          </ol>
+        </Section>
+      ) : null}
 
-      <section
-        id="audit"
-        className={cn("scroll-mt-32 border-t border-white/[0.07]", marketingPageGutter, marketingSectionY)}
-      >
-        <div className={marketingShell}>
-          <FinalCta headline={AUDIT.headline}>
-            <p className={cn(marketingLead, "mx-auto")}>{AUDIT.body}</p>
-            <p className={cn(marketingLead, "mx-auto mt-4")}>{AUDIT.keep}</p>
-            <div className="mt-8 flex justify-center">
-              <CtaLink position="audit" size="xl" className="rounded-full px-7">
-                {AUDIT.cta}
-                <ArrowRight
-                  aria-hidden="true"
-                  className="transition-transform in-[[data-slot=button]:hover]:translate-x-0.5"
-                />
-              </CtaLink>
-            </div>
-            <p className={cn(captionText, "mt-4")}>{AUDIT.underCta}</p>
-          </FinalCta>
-        </div>
-      </section>
+      {SECTIONS.agents ? (
+        <Section id={AGENTS_SECTION.id} headline={AGENTS_SECTION.headline} lead={AGENTS_SECTION.lead}>
+          <ul className="grid gap-4 sm:grid-cols-2">
+            {AGENT_LIST.map((agent) => (
+              <li key={agent.id} className="rounded-2xl border border-white/10 p-5">
+                <AgentName agentId={agent.id} size="md" />
+                <p className="mt-3 text-sm leading-relaxed text-silver">{agent.role}</p>
+                <p className="mt-2 text-sm leading-relaxed text-white">{agent.promise}</p>
+              </li>
+            ))}
+          </ul>
+        </Section>
+      ) : null}
 
-      <MarketingSection id="faq" headline={FAQ.headline} align="center">
-        <LandingFaq />
-      </MarketingSection>
+      {SECTIONS.industries ? (
+        <Section id={INDUSTRIES.id} headline={INDUSTRIES.headline} lead={INDUSTRIES.lead}>
+          <ul className="grid gap-4 lg:grid-cols-3">
+            {INDUSTRIES.cards.map((card) => (
+              <li key={card.id} className="rounded-2xl border border-white/10 p-5">
+                <h3 className="font-heading text-xl text-white">{card.title}</h3>
+                <p className="mt-2 text-sm text-silver">{card.motion}</p>
+                <ul className="mt-4 space-y-2 text-sm text-white">
+                  {card.watches.map((item) => (
+                    <li key={item}>{item}</li>
+                  ))}
+                </ul>
+              </li>
+            ))}
+          </ul>
+          <p className={cn(marketingLead, "mt-8")}>{INDUSTRIES.closing}</p>
+        </Section>
+      ) : null}
+
+      {SECTIONS.safety ? (
+        <Section id={SAFETY.id} headline={SAFETY.headline} lead={SAFETY.lead}>
+          <ul className="grid gap-3">
+            {SAFETY.items.map((item) => (
+              <li key={item} className="rounded-2xl border border-white/10 px-4 py-3 text-sm leading-relaxed text-white">
+                {item}
+              </li>
+            ))}
+          </ul>
+          <div className="mt-8 grid gap-6 lg:grid-cols-[1fr_0.8fr] lg:items-start">
+            <p>
+              <Link href={SAFETY.linkHref} className="text-sm font-medium text-brand-300 underline">
+                {SAFETY.linkLabel}
+              </Link>
+            </p>
+            <ApprovalExample />
+          </div>
+        </Section>
+      ) : null}
+
+      {SECTIONS.pricing ? (
+        <Section id="pricing" headline="Pricing">
+          <div className="grid gap-4 lg:grid-cols-2">
+            <article className="rounded-3xl border border-white/10 p-6">
+              <h3 className="font-heading text-2xl text-white">{PRICING_DISPLAY.privateAccess.name}</h3>
+              <p className="mt-2 text-lg text-white">{PRICING_DISPLAY.privateAccess.price}</p>
+              <ul className="mt-4 space-y-2 text-sm leading-relaxed text-silver">
+                {PRICING_DISPLAY.privateAccess.includes.map((item) => (
+                  <li key={item}>{item}</li>
+                ))}
+              </ul>
+              <p className="mt-4 text-sm leading-relaxed text-silver">{PRICING_DISPLAY.privateAccess.why}</p>
+              <p className="mt-3 text-sm leading-relaxed text-silver">{PRICING_DISPLAY.privateAccess.billingNote}</p>
+              <Button variant="gradient" className="mt-6 rounded-full" render={<Link href="/request?from=pricing" data-cta-position="pricing" />}>
+                {PRICING_DISPLAY.privateAccess.cta}
+              </Button>
+            </article>
+            <article className="rounded-3xl border border-white/10 p-6">
+              <h3 className="font-heading text-2xl text-white">{PRICING_DISPLAY.custom.name}</h3>
+              <p className="mt-2 text-lg text-white">{PRICING_DISPLAY.custom.price}</p>
+              <p className="mt-4 text-sm leading-relaxed text-silver">{PRICING_DISPLAY.custom.body}</p>
+              <Button variant="outline" className="mt-6 rounded-full" render={<Link href="/contact?from=pricing" data-cta-position="pricing" />}>
+                {PRICING_DISPLAY.custom.cta}
+              </Button>
+            </article>
+          </div>
+        </Section>
+      ) : null}
+
+      {SECTIONS.faq ? (
+        <Section id={FAQ.id} headline={FAQ.headline}>
+          <div className="divide-y divide-white/10 rounded-2xl border border-white/10">
+            {FAQ.items.map((item) => (
+              <details key={item.q} className="group px-4 py-3">
+                <summary className="cursor-pointer text-sm font-medium text-white">{item.q}</summary>
+                <p className="mt-2 text-sm leading-relaxed text-silver">{item.a}</p>
+              </details>
+            ))}
+          </div>
+        </Section>
+      ) : null}
+
+      {SECTIONS.proof ? (
+        <Section id={PROOF.id} headline={PROOF.headline}>
+          <p className={marketingLead}>{PROOF.body}</p>
+        </Section>
+      ) : null}
+
+      {SECTIONS.final ? (
+        <Section id={FINAL_CTA.id} headline={FINAL_CTA.headline} lead={FINAL_CTA.body}>
+          <div className="flex flex-col gap-3 sm:flex-row">
+            <Button variant="gradient" size="xl" className="rounded-full" render={<Link href="/request?from=final" data-cta-position="final" />}>
+              {FINAL_CTA.primary}
+            </Button>
+            <Button variant="outline" size="xl" className="rounded-full" render={<Link href={FINAL_CTA.secondaryHref} />}>
+              {FINAL_CTA.secondary}
+            </Button>
+          </div>
+        </Section>
+      ) : null}
     </>
   );
 }

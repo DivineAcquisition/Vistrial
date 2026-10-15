@@ -29,6 +29,13 @@ export async function POST(request: Request) {
     return NextResponse.json({ ok: false }, { status: 400 });
   }
 
+  try {
+    const admin = getSupabaseAdmin() as unknown as { rpc: (fn: string, args: object) => Promise<unknown> };
+    await admin.rpc("record_public_site_event", { p_type: event.type, p_path: event.path });
+  } catch {
+    /* counts are optional; the page still works */
+  }
+
   const webhook = marketingEventsWebhookUrl();
   if (webhook) {
     try {

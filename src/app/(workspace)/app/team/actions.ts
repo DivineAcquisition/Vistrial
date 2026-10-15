@@ -58,6 +58,17 @@ export async function createWorkspace(_prev: TeamActionResult, formData: FormDat
   const plan = String(formData.get("plan") ?? "").trim();
   const [priceId, ...labelParts] = plan.split("|");
   const note = String(formData.get("internal_note") ?? "").trim();
+  const requestId = String(formData.get("access_request_id") ?? "").trim();
+  if (requestId && String(formData.get("confirm_existing_owner") ?? "") !== "yes") {
+    const { data: existing } = await (await createClient() as unknown as SupabaseClient)
+      .from("access_requests")
+      .select("existing_account")
+      .eq("id", requestId)
+      .maybeSingle();
+    if (existing?.existing_account === true) {
+      return { ok: false, error: "This email already belongs to an account. Confirm that before creating the workspace." };
+    }
+  }
   if (name.length < 2) return { ok: false, error: "Enter the business name." };
   if (!templateId) return { ok: false, error: "Choose an industry template." };
   if (!ownerEmail.includes("@")) return { ok: false, error: "Enter the primary contact's email. They are invited as the Owner." };
@@ -78,13 +89,26 @@ export async function createWorkspace(_prev: TeamActionResult, formData: FormDat
   const created = data as { slug?: string; org_id?: string; invite_token?: string } | null;
   revalidateTeam();
   revalidatePath("/app/team/onboarding");
-  if (!created?.invite_token) return { ok: true, message: `Created ${created?.slug ?? name}.` };
+  const requestVersion = Number(formData.get("access_request_version") ?? "");
+  let linked = "";
+  if (requestId && created?.org_id && Number.isFinite(requestVersion)) {
+    const converted = await (supabase as unknown as SupabaseClient).rpc("convert_access_request", {
+      p_id: requestId,
+      p_org_id: created.org_id,
+      p_version: requestVersion,
+    });
+    linked = converted.error
+      ? " The workspace exists, but the request was not linked. Open the request and try again."
+      : " The access request is now converted. Nothing was billed.";
+    revalidatePath("/app/team/roster/requests");
+  }
+  if (!created?.invite_token) return { ok: true, message: `Created ${created?.slug ?? name}.${linked}` };
   const mail = await sendOwnerInvite({ to: ownerEmail.toLowerCase(), orgName: name, token: created.invite_token, key: `owner-invite:${created.invite_token}` });
   return {
     ok: true,
     message: mail.ok
-      ? `Created ${created.slug}. The Owner invitation was emailed to ${ownerEmail}.`
-      : `Created ${created.slug}, but the invitation email did not send (${mail.error}). Resend it from the onboarding workbench.`,
+      ? `Created ${created.slug}. The Owner invitation was emailed to ${ownerEmail}.${linked}`
+      : `Created ${created.slug}, but the invitation email did not send (${mail.error}). Resend it from the onboarding workbench.${linked}`,
   };
 }
 

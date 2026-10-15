@@ -35,7 +35,7 @@ export type BreakdownRow = {
   median: number | null;
 };
 
-export type BreakdownDimension = "source" | "person" | "stage" | "band" | "day" | "detail";
+export type BreakdownDimension = "source" | "person" | "stage" | "band" | "day" | "detail" | "offer";
 
 export type MetricLeadRow = {
   leadId: string;

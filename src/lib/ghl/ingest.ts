@@ -2,7 +2,11 @@ import {
   signatureDeadLetterReason,
   writeWebhookDeadLetter,
 } from "@/lib/ghl/dead-letter";
-import { parseWebhookPayload } from "@/lib/ghl/payload";
+import { inboundMessageText } from "@/lib/compliance/inbound";
+import { isOptInReply, isOptOutReply, PLATFORM_OPT_OUT_WORDS } from "@/lib/compliance/rules";
+import { getEffectiveConfig } from "@/lib/config/server";
+import { parseWebhookPayload, storedWebhookBody } from "@/lib/ghl/payload";
+import type { Json } from "@/types/database";
 import { ghlLog, ghlWarn } from "@/lib/ghl/log";
 import { AWAITING_LINK_ERROR } from "@/lib/ghl/retry";
 import { verifyGhlWebhookSignature, type SignatureResult } from "@/lib/ghl/signature";
@@ -45,6 +49,10 @@ export async function ingestGhlWebhook(
 
   const parsed = parseWebhookPayload(args.rawBody);
   const orgId = parsed.locationId ? await orgIdForLocation(db, parsed.locationId) : null;
+  const signal = await complianceSignal(db, orgId, args.rawBody);
+  const payload = (
+    signal ? { ...(parsed.payload as Record<string, Json>), _compliance_signal: signal } : parsed.payload
+  ) as Json;
   const malformed = !parsed.parsed;
   const now = new Date().toISOString();
 
@@ -54,8 +62,8 @@ export async function ingestGhlWebhook(
       org_id: orgId,
       source: "ghl",
       event_type: parsed.eventType,
-      payload: parsed.payload,
-      raw_body: args.rawBody,
+      payload,
+      raw_body: storedWebhookBody(args.rawBody),
       provider_event_id: parsed.providerEventId,
       contact_key: parsed.contactKey,
       location_id: parsed.locationId,
@@ -86,7 +94,7 @@ export async function ingestGhlWebhook(
         reason: "insert_failed",
         eventType: parsed.eventType,
         providerEventId: parsed.providerEventId,
-        rawBody: args.rawBody,
+        rawBody: storedWebhookBody(args.rawBody),
         payload: parsed.payload,
       },
       { required: true }
@@ -101,7 +109,7 @@ export async function ingestGhlWebhook(
       reason: "malformed_json",
       eventType: parsed.eventType,
       providerEventId: parsed.providerEventId,
-      rawBody: args.rawBody,
+      rawBody: storedWebhookBody(args.rawBody),
       payload: parsed.payload,
     });
   }
@@ -159,6 +167,23 @@ async function orgIdForLocation(db: GhlDb, locationId: string): Promise<string |
   return data?.id ?? null;
 }
 
+async function complianceSignal(db: GhlDb, orgId: string | null, rawBody: string): Promise<"opt_out" | "opt_in" | null> {
+  const text = inboundMessageText(rawBody);
+  if (!text) return null;
+  if (isOptInReply(text)) return "opt_in";
+  let words: readonly string[] = PLATFORM_OPT_OUT_WORDS;
+  if (orgId) {
+    try {
+      const config = await getEffectiveConfig(db, orgId);
+      const configured = config.values["compliance.opt_out_words"];
+      if (Array.isArray(configured) && configured.every((word) => typeof word === "string")) words = configured;
+    } catch {
+      words = PLATFORM_OPT_OUT_WORDS;
+    }
+  }
+  return isOptOutReply(text, words) ? "opt_out" : null;
+}
+
 async function persistRejection(db: GhlDb, reason: "missing" | "invalid", rawBody: string) {
   // Do not parse or copy the forged body onto webhook_events. The dead-letter
   // row keeps the bytes so a real event is not lost; the events table must not
@@ -186,7 +211,7 @@ async function persistRejection(db: GhlDb, reason: "missing" | "invalid", rawBod
       reason: signatureDeadLetterReason(reason),
       eventType: `rejected.${reason}`,
       providerEventId: null,
-      rawBody,
+      rawBody: storedWebhookBody(rawBody),
       payload: null,
     },
     { required: Boolean(error) || !data }

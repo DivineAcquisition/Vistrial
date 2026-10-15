@@ -105,6 +105,12 @@ export const NOTIFICATION_EVENT_TYPES = [
   "team_workload",
   "push_device",
   "install_help",
+  "report_ready",
+  "export_failed",
+  "export_expiring",
+  "api_key_notice",
+  "webhook_notice",
+  "client_report_review",
 ] as const;
 
 export const INTERRUPT_CHANNELS = ["push", "email", "sms", "team"] as const;

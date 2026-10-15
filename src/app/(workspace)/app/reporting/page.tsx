@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { notFound } from "next/navigation";
 
 import { PageFrame } from "@/components/app/page-frame";
 import { Button } from "@/components/ui/button";
@@ -17,6 +18,7 @@ export default async function ReportingPage({
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const ctx = await requireReportingAccess();
+  if (!ctx.isPlatformAdmin) notFound();
   const params = await searchParams;
   const meta = await loadReportingState(ctx.org.id);
   const activatedAt = typeof meta.activated_at === "string" ? meta.activated_at : null;

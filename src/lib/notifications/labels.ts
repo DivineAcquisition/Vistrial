@@ -35,6 +35,12 @@ export const EVENT_LABELS: Record<NotificationEventType, string> = {
   team_workload: "The team has tasks waiting",
   push_device: "A phone or browser was added or removed",
   install_help: "How to install the app",
+  report_ready: "A report is ready",
+  export_failed: "An export did not finish",
+  export_expiring: "An export link is about to expire",
+  api_key_notice: "An API key changed",
+  webhook_notice: "A webhook needs attention",
+  client_report_review: "A client report is waiting for review",
 };
 
 export const CHANNEL_LABELS: Record<NotificationChannel, string> = {

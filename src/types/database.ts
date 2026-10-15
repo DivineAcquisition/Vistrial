@@ -7666,7 +7666,13 @@ export type Database = {
         | "stale_reassign"
         | "team_workload"
         | "push_device"
-        | "install_help";
+        | "install_help"
+        | "report_ready"
+        | "export_failed"
+        | "export_expiring"
+        | "api_key_notice"
+        | "webhook_notice"
+        | "client_report_review";
       notification_channel: "push" | "email" | "sms" | "team" | "da_console";
       notification_status:
         | "queued"

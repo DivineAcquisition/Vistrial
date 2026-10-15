@@ -80,6 +80,16 @@ const REVIEWED = new Set([
   "src/lib/supabase/admin.ts",
   "src/lib/verification/record.ts",
   "src/lib/workspaces/activity.ts",
+  "src/lib/api/v1/gateway.ts",
+  "src/lib/exports/purge.ts",
+  "src/lib/exports/store.ts",
+  "src/app/(workspace)/app/cases/[id]/files/[fileId]/route.ts",
+  "src/app/(workspace)/app/reports/client-actions.ts",
+  "src/app/(workspace)/app/settings/developers/actions.ts",
+  "src/app/(workspace)/app/team/billing/actions.ts",
+  "src/app/api/webhooks/telnyx/notifications/route.ts",
+  "src/lib/access-requests/submit.ts",
+  "src/lib/email/send-guard.ts",
 ]);
 
 const ROOT = path.join(__dirname, "..", "..", "..");

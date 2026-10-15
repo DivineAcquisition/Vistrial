@@ -149,4 +149,40 @@ export const NOTIFICATION_CATALOG: CatalogEntry[] = [
   { type: "team_workload", canActNow: true, saturday9pm: false, why: "An owner can open the task list. Counts only, not a ranking." },
   { type: "push_device", canActNow: true, saturday9pm: false, why: "Security notice that a device was added or removed. Email." },
   { type: "install_help", canActNow: true, saturday9pm: false, why: "Optional help. Never asked on the first visit." },
+  {
+    type: "report_ready",
+    canActNow: true,
+    saturday9pm: false,
+    why: "The owner can open a scheduled report. Email with counts only, no lead names.",
+  },
+  {
+    type: "export_failed",
+    canActNow: true,
+    saturday9pm: false,
+    why: "The person who asked can try the export again. Email, no file contents.",
+  },
+  {
+    type: "export_expiring",
+    canActNow: true,
+    saturday9pm: false,
+    why: "The person who asked can download before the file is deleted. Email, no file contents.",
+  },
+  {
+    type: "api_key_notice",
+    canActNow: true,
+    saturday9pm: false,
+    why: "The owner can review or revoke a key. Email, never the secret.",
+  },
+  {
+    type: "webhook_notice",
+    canActNow: true,
+    saturday9pm: false,
+    why: "The owner can fix or turn a webhook back on. Email, no payload contents.",
+  },
+  {
+    type: "client_report_review",
+    canActNow: true,
+    saturday9pm: false,
+    why: "A Vistrial team member can review the draft before it is released. Nothing sends to the customer until then.",
+  },
 ];

@@ -29,6 +29,8 @@ const PRODUCT = new Set([
   "team_workload",
   "push_device",
   "install_help",
+  "api_key_notice",
+  "webhook_notice",
 ]);
 
 /** Product notification events map to a footer. Unknown events do not send. */
@@ -36,7 +38,16 @@ export function categoryForEvent(eventType: string): EmailCategory | null {
   if (eventType === "billing_issue") return "B";
   if (eventType === "help_reply") return "H";
   if (eventType === "help_request") return "I";
-  if (eventType === "data_request" || eventType === "export_ready") return "G";
+  if (
+    eventType === "data_request" ||
+    eventType === "export_ready" ||
+    eventType === "export_failed" ||
+    eventType === "export_expiring" ||
+    eventType === "report_ready"
+  ) {
+    return "G";
+  }
+  if (eventType === "client_report_review") return "I";
   if (eventType === "onboarding") return "E";
   if (PRODUCT.has(eventType)) return "C";
   return null;

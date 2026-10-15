@@ -6,7 +6,7 @@ Owners and admins land here after sign-in.
 
 | Where | What |
 |---|---|
-| `src/lib/home/metrics.ts` | Every number's definition, once. Cards, drill-down lists, and future reports call these. |
+| `src/lib/metrics/definitions.ts` and `public.portal_metric_rows()` | Every customer-facing number, once. Home, Results, Reports, and Compass read these. `src/lib/home/metrics.ts` is an older calculator the Home cards no longer use. |
 | `src/lib/home/periods.ts` | This week, last week, last 30 days, this month, in the workspace time zone, each with an equal-length previous period. |
 | `src/lib/home/catalog.ts` | Areas, action types, modes, who may approve. |
 | `src/lib/home/queue.ts` | Drafting, queue order, activity grouping. Pure. |

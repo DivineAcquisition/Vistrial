@@ -152,6 +152,12 @@ async function draftForJob(job: RelayJob): Promise<Outcome> {
     const { data: test } = await client.from("leads").select("is_test").eq("id", job.lead_id).eq("org_id", job.org_id).maybeSingle();
     if (!(test as { is_test?: boolean } | null)?.is_test) return { kind: "skipped", result: "Only the sample lead can be drafted for in a test." };
   }
+  const planGate = await client.rpc("entitlement_check", { p_org_id: job.org_id, p_key: "relay_drafts" });
+  const planRow = planGate.data as { allowed?: boolean; reason?: string } | null;
+  if (!planGate.error && planRow && planRow.allowed === false) {
+    return { kind: "skipped", result: planRow.reason || "Relay is paused until billing is sorted. Nothing was drafted." };
+  }
+
   const may = await agentMayRun(job.org_id, "relay", { sample });
   if (!may.ok) {
     return may.reason === "paused"

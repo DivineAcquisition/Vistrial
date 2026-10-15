@@ -116,10 +116,10 @@ export const HIDDEN_NAV: HiddenNavItem[] = [
     reason: "Assignments are edited on Workspaces (/app/team). There is no separate page.",
   },
   {
-    id: "billing",
-    label: "Billing",
+    id: "billing-hidden-note",
+    label: "Billing note",
     roles: "Admin",
-    reason: "No platform billing screen yet.",
+    reason: "Billing is in the platform group at /app/team/billing. This placeholder id stays out of the shell.",
   },
   {
     id: "template-library",
@@ -413,6 +413,13 @@ function staffGroups(input: {
       id: "platform",
       label: "Platform",
       items: [
+        {
+          id: "billing",
+          label: "Billing",
+          href: "/app/team/billing",
+          match: "/app/team/billing",
+          icon: "settings",
+        },
         {
           id: "activity",
           label: "Audit log",

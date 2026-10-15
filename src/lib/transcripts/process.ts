@@ -56,6 +56,25 @@ export async function processOneTranscriptEvent(db: GhlDb, event: WebhookRow): P
     return;
   }
 
+  const plan = await (db as unknown as { rpc: (name: string, args: Record<string, unknown>) => Promise<{ data: { allowed?: boolean } | null; error: { message?: string } | null }> }).rpc(
+    "entitlement_check",
+    { p_org_id: event.org_id, p_key: "transcript_minutes" }
+  );
+  const planRow = plan.data as { allowed?: boolean } | null;
+  if (!plan.error && planRow && planRow.allowed === false) {
+    await db
+      .from("webhook_events")
+      .update({
+        status: "pending",
+        processed: false,
+        error_text: "billing_paused",
+        next_attempt_at: new Date(Date.now() + 6 * 60 * 60 * 1000).toISOString(),
+      })
+      .eq("id", event.id);
+    transcriptLog("transcript.process.billing_paused", { eventId: event.id, orgId: event.org_id });
+    return;
+  }
+
   const normalized = normalizeTranscript(source, event.payload);
   if (!normalized.ok) {
     await markProcessed(db, event.id, `normalize_${normalized.reason}`);
@@ -83,6 +102,16 @@ export async function processOneTranscriptEvent(db: GhlDb, event: WebhookRow): P
     callId: match.callId,
     transcript: normalized.value,
   });
+  const seconds = normalized.value.durationSeconds ?? 0;
+  if (seconds > 0) {
+    await (db as unknown as { rpc: (name: string, args: Record<string, unknown>) => Promise<unknown> }).rpc("billing_consume", {
+      p_org_id: event.org_id,
+      p_meter: "transcript_minutes",
+      p_quantity: Math.ceil(seconds / 60),
+      p_key: `transcript:${event.id}`,
+      p_kind: "live",
+    });
+  }
   await markProcessed(db, event.id, null);
   transcriptLog("transcript.process.matched", {
     eventId: event.id,

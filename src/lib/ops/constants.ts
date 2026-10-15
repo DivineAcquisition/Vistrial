@@ -59,6 +59,7 @@ export const OPS_JOB_NAMES = [
   "home-agents",
   "staff-workspace",
   "onboarding",
+  "billing",
 ] as const;
 
 export type OpsJobName = (typeof OPS_JOB_NAMES)[number];

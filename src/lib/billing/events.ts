@@ -70,6 +70,8 @@ export async function applyBillingEvent(event: StripeEvent): Promise<BillingEven
       .eq("org_id", orgId);
   }
   if (billingConfigured()) await syncWorkspaceBilling(orgId);
+  if (type === "invoice.payment_failed") await db.rpc("billing_note_failure", { p_org_id: orgId });
+  if (type === "invoice.paid" || type === "invoice.payment_succeeded") await db.rpc("billing_note_paid", { p_org_id: orgId });
 
   const { data: after } = await db.from("workspace_billing").select("payment_failed_at").eq("org_id", orgId).maybeSingle();
   const failureStarted = !row.payment_failed_at && Boolean((after as { payment_failed_at: string | null } | null)?.payment_failed_at);

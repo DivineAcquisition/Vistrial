@@ -10,6 +10,7 @@ import {
   sendingStream,
   staffRecipientAllowed,
   lifecycleFromSeparated,
+  unresolvedCopy,
   type EmailCategory,
 } from "@/lib/email/footer";
 
@@ -39,6 +40,11 @@ describe("email footers", () => {
       else expect(result.footer.text).toContain("Internal Vistrial message.");
       expect(result.footer.text.length).toBeGreaterThan(40);
     }
+  });
+
+  it("blocks message copy that still has a draft placeholder", () => {
+    expect(unresolvedCopy("We reply within 2 business days.")).toBe(false);
+    expect(unresolvedCopy("[CONFIRM: we reply within 2 business days.]")).toBe(true);
   });
 
   it("blocks a send when a required fact is missing", () => {

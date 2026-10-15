@@ -95,6 +95,8 @@ export async function sendRequestReply(id: string, templateId: string): Promise<
     subject,
     lines: body.split("\n").filter((line) => line.length > 0),
     idempotencyKey: `access-reply:${id}:${templateId}:${new Date().toISOString().slice(0, 16)}`,
+    category: "H",
+    footer: { recipientEmail: String(request.email), referenceId: id },
   });
   if (!mail.ok) return { ok: false, error: "The email did not send. The request was not changed." };
   const { error } = await gate.db.rpc("log_access_request_reply", { p_id: id, p_template: templateId });

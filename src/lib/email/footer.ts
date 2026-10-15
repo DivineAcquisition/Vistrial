@@ -24,7 +24,7 @@ export const EMAIL_IDENTITY = {
   supportEmail: CONTACT_EMAIL,
   privacyUrl: `${PRODUCTION_SITE_ORIGIN}/privacy`,
   termsUrl: `${PRODUCTION_SITE_ORIGIN}/terms`,
-  securityUrl: `${PRODUCTION_SITE_ORIGIN}/privacy#security`,
+  securityUrl: `${PRODUCTION_SITE_ORIGIN}/security-overview`,
 } as const;
 
 /**
@@ -76,7 +76,12 @@ export type RenderedFooter = {
 
 export type FooterFailure = { ok: false; error: string; missing: string[] };
 
-const PLACEHOLDER = /\{[a-z][a-z0-9_]*\}|\[[A-Z][A-Z0-9 ]+\]/;
+const PLACEHOLDER = /\{[a-z][a-z0-9_]*\}|\[[^\]]+\]/;
+
+/** True when message copy still has a draft placeholder or an em dash. */
+export function unresolvedCopy(value: string): boolean {
+  return PLACEHOLDER.test(value) || EM_DASH.test(value);
+}
 const EM_DASH = /\u2014/;
 
 function link(key: LinkKey, label: string, href: string): Segment {

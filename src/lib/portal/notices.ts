@@ -4,7 +4,7 @@ import { Resend } from "resend";
 
 import { appUrl } from "@/lib/app-url";
 import type { EmailCategory, FooterVars } from "@/lib/email/footer";
-import { lifecycleFromSeparated, renderFooter, sendingStream, staffRecipientAllowed } from "@/lib/email/footer";
+import { lifecycleFromSeparated, renderFooter, sendingStream, staffRecipientAllowed, unresolvedCopy } from "@/lib/email/footer";
 import { transactionalEmailHtml } from "@/lib/email/layout";
 import {
   activeStaffEmails,
@@ -84,6 +84,11 @@ export async function sendPortalMail(args: {
 }): Promise<MailResult> {
   const cfg = resendConfigured();
   if (!cfg) return { ok: false, error: "Email is not set up yet (RESEND_API_KEY or RESEND_FROM is missing)." };
+  if (unresolvedCopy([args.subject, ...args.lines].join("\n"))) {
+    const reason = "Email was not sent. The message still has an unresolved placeholder.";
+    if (!args.skipBlockAlert) await alertFooterBlocked(reason);
+    return { ok: false, error: reason };
+  }
   let to = (Array.isArray(args.to) ? args.to : [args.to]).filter((address) => address.includes("@"));
   if (to.length === 0) return { ok: false, error: "No address to send to." };
 

@@ -117,10 +117,28 @@ export async function POST(request: Request) {
   const unanswered = loaded.at(-1)?.role === "user" ? loaded.at(-1)! : null;
   const stored = unanswered ? loaded.slice(0, -1) : loaded;
 
+  const plan = await actor.db.rpc("entitlement_check", { p_org_id: actor.orgId, p_key: "compass_questions" });
+  const planRow = plan.data as { allowed?: boolean; reason?: string } | null;
+  if (!plan.error && planRow && planRow.allowed === false) {
+    await recordUsage(actor, { conversationId: conversation.id, messageId: null, origin, route: "none", model: null, lookups: [], durationMs: Date.now() - started, firstOutputMs: null, outcome: "limited" });
+    return json(planRow.reason || "Compass is paused until billing is sorted. Ask your Owner.", 429, "plan_limit");
+  }
+
   const limit = await consumeQuestion(actor);
   if (!limit.allowed) {
     await recordUsage(actor, { conversationId: conversation.id, messageId: null, origin, route: "none", model: null, lookups: [], durationMs: Date.now() - started, firstOutputMs: null, outcome: "limited" });
     return json(limitMessage(limit.scope), 429, "limit");
+  }
+  const counted = await actor.db.rpc("billing_consume", {
+    p_org_id: actor.orgId,
+    p_meter: "compass_questions",
+    p_quantity: 1,
+    p_key: `compass:${incoming.id}`,
+    p_kind: "live",
+  });
+  if (!counted.error && counted.data === false) {
+    await recordUsage(actor, { conversationId: conversation.id, messageId: null, origin, route: "none", model: null, lookups: [], durationMs: Date.now() - started, firstOutputMs: null, outcome: "limited" });
+    return json(planRow?.reason || "This workspace has reached its Compass questions for this period. Ask your Owner.", 429, "plan_limit");
   }
   if (text.length > limit.limits.max_question_chars) {
     return json(`Keep a question under ${limit.limits.max_question_chars} characters.`, 400, "too_long");

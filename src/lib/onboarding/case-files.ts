@@ -172,8 +172,16 @@ async function buildOne(db: Db, orgId: string, leadId: string, values: Record<st
       await db.from("lead_import_marks").update({ ai_state: "eligible" }).eq("lead_id", leadId);
       return "wait";
     }
-    await writing.fail("Could not write this case file.");
-    await recorder.fail("Scribe could not write this case file. It keeps its basic case file.", cause instanceof Error ? cause.message : null);
+    const capped = cause instanceof Error && cause.message.includes("billing_capped");
+    await writing.fail(capped ? "The plan limit is reached, so this stays a basic case file." : "Could not write this case file.");
+    await recorder.fail(
+      capped ? "The full case file waits. The basic case file stays." : "Scribe could not write this case file. It keeps its basic case file.",
+      capped ? null : cause instanceof Error ? cause.message : null
+    );
+    if (capped) {
+      await db.from("lead_import_marks").update({ ai_state: "over_limit", ai_updated_at: new Date().toISOString() }).eq("lead_id", leadId);
+      return "failed";
+    }
     await db.from("lead_import_marks").update({ ai_state: "failed", ai_updated_at: new Date().toISOString() }).eq("lead_id", leadId);
     return "failed";
   }

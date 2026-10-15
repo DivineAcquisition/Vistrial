@@ -262,18 +262,22 @@ export function LandingPage() {
       ) : null}
 
       {SECTIONS.final ? (
-        <Section id={FINAL_CTA.id} headline={FINAL_CTA.headline} lead={FINAL_CTA.body} align="center">
-          <BeamFrame glow beamDelay={1.4}>
-            <div className="flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
-              <Button variant="gradient" size="xl" className={landingButton} render={<Link href="/request?from=final" data-cta-position="final" />}>
-                {FINAL_CTA.primary}
-              </Button>
-              <Button variant="outline" size="xl" className={landingOutline} render={<Link href={FINAL_CTA.secondaryHref} />}>
-                {FINAL_CTA.secondary}
-              </Button>
-            </div>
-          </BeamFrame>
-        </Section>
+        <section id={FINAL_CTA.id} className={cn(marketingPageGutter, "scroll-mt-24 border-t border-[#2a2833] py-20 sm:py-28")}>
+          <BlurFade inView offset={12} blur="8px" duration={0.55} className={marketingShell}>
+            <BeamFrame glow beamDelay={1.4} className="mx-auto max-w-3xl text-center">
+              <h2 className={cn(marketingSectionTitle, "mx-auto text-center")}>{FINAL_CTA.headline}</h2>
+              <p className={cn(marketingLead, "mx-auto mt-4 text-center")}>{FINAL_CTA.body}</p>
+              <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
+                <Button variant="gradient" size="xl" className={landingButton} render={<Link href="/request?from=final" data-cta-position="final" />}>
+                  {FINAL_CTA.primary}
+                </Button>
+                <Button variant="outline" size="xl" className={landingOutline} render={<Link href={FINAL_CTA.secondaryHref} />}>
+                  {FINAL_CTA.secondary}
+                </Button>
+              </div>
+            </BeamFrame>
+          </BlurFade>
+        </section>
       ) : null}
     </>
   );

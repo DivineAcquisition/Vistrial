@@ -33,24 +33,22 @@ export function SiteHeader({ action = "cta" }: { action?: "cta" | "none" }) {
             <MarketingNav />
           </nav>
         ) : null}
-        <div className="flex items-center gap-2">
-          {showNav ? (
-            <Button variant="gradient" size="lg" className={navButton} render={<Link href="/request?from=nav" data-cta-position="nav" />}>
-              {NAV.request}
-            </Button>
-          ) : null}
-          {showNav ? (
-            <details className="relative shrink-0 md:hidden">
-              <summary className="flex size-10 cursor-pointer list-none items-center justify-center rounded-md border border-[#2a2833] bg-[#12111a] text-white [&::-webkit-details-marker]:hidden">
-                <span className="sr-only">{NAV.openMenu}</span>
-                <Menu className="size-4" aria-hidden="true" />
-              </summary>
-              <nav aria-label="On this page" className="absolute right-0 z-50 mt-2 w-60 rounded-lg border border-[#2a2833] bg-[#12111a] p-2 shadow-xl">
+        {showNav ? (
+          <details className="relative shrink-0">
+            <summary className="flex size-10 cursor-pointer list-none items-center justify-center rounded-md border border-[#2a2833] bg-[#12111a] text-white [&::-webkit-details-marker]:hidden">
+              <span className="sr-only">{NAV.openMenu}</span>
+              <Menu className="size-4" aria-hidden="true" />
+            </summary>
+            <div className="absolute right-0 z-50 mt-2 w-64 rounded-lg border border-[#2a2833] bg-[#12111a] p-3 shadow-xl">
+              <Button variant="gradient" size="lg" className={cn(navButton, "w-full")} render={<Link href="/request?from=nav" data-cta-position="nav" />}>
+                {NAV.request}
+              </Button>
+              <nav aria-label="On this page" className="mt-2 md:hidden">
                 <MarketingMobileNav />
               </nav>
-            </details>
-          ) : null}
-        </div>
+            </div>
+          </details>
+        ) : null}
       </div>
     </header>
   );

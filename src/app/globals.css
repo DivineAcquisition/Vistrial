@@ -1255,8 +1255,8 @@
   50% { width: 92%; }
 }
 @keyframes vistrial-highlight {
-  0%, 100% { background-color: #1c1a27; border-color: #6b6784; }
-  45% { background-color: #2a2540; border-color: #9a88fc; }
+  0%, 100% { background-color: #12111a; border-color: #2a2833; }
+  45% { background-color: #241f33; border-color: #2a2833; }
 }
 
 @media (prefers-reduced-motion: reduce) {

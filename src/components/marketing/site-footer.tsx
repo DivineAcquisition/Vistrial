@@ -23,7 +23,7 @@ export async function SiteFooter() {
     { href: "/contact", label: "Contact" },
   ];
   return (
-    <footer className="relative border-t border-white/[0.06]">
+    <footer className="relative border-t border-[#2a2833]">
       <div className={cn(marketingShell, marketingPageGutter, "py-10 sm:py-12")}>
         <div className="grid gap-8 sm:grid-cols-[1.4fr_1fr]">
           <div>
@@ -57,7 +57,7 @@ export async function SiteFooter() {
           </ul>
         </div>
         <OpenConsentButton />
-        <p className="mt-8 border-t border-white/[0.05] pt-6 text-xs text-dim">
+        <p className="mt-8 border-t border-[#2a2833] pt-6 text-xs text-dim">
           © {new Date().getFullYear()} {FOOTER.copyright}.{" "}
           <a href={`mailto:${trust.supportEmail}`} className="hover:text-white">
             {trust.supportEmail}

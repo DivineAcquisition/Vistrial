@@ -34,8 +34,8 @@ import {
 } from "@/lib/marketing/ui";
 import { cn } from "@/lib/utils";
 
-const landingButton = "rounded-[8px]! before:rounded-[7px]!";
-const landingOutline = "rounded-[8px]! border-[#8a86a3] bg-[#1c1a27] before:rounded-[7px]! hover:bg-[#262333]";
+const landingButton = "rounded-[8px]! border-brand-800! before:rounded-[7px]!";
+const landingOutline = "rounded-[8px]! border-[#2a2833] bg-[#1c1a27] before:rounded-[7px]! hover:bg-[#262333]";
 
 function Section({
   id,
@@ -52,7 +52,7 @@ function Section({
 }) {
   const centered = align === "center";
   return (
-    <section id={id} className={cn(marketingPageGutter, "scroll-mt-24 border-t border-white/[0.06] py-20 sm:py-28")}>
+    <section id={id} className={cn(marketingPageGutter, "scroll-mt-24 border-t border-[#2a2833] py-20 sm:py-28")}>
       <div className={marketingShell}>
         <h2 className={cn(marketingSectionTitle, centered && "mx-auto text-center")}>{headline}</h2>
         {lead ? <p className={cn(marketingLead, "mt-4", centered && "mx-auto text-center")}>{lead}</p> : null}
@@ -133,7 +133,7 @@ export function LandingPage() {
               {PROBLEM.pains.map((pain, index) => (
                 <li key={pain}>
                   <SpotlightCard className="flex items-start gap-3">
-                    <span className="inline-flex h-7 min-w-7 items-center justify-center rounded-md border border-[#6b6784] bg-[#12111a] px-1.5 font-heading text-xs text-white" aria-hidden>
+                    <span className="inline-flex h-7 min-w-7 items-center justify-center rounded-md border border-[#2a2833] bg-[#12111a] px-1.5 font-heading text-xs text-white" aria-hidden>
                       {String(index + 1).padStart(2, "0")}
                     </span>
                     <span className="text-sm leading-relaxed text-white">{pain}</span>
@@ -152,7 +152,7 @@ export function LandingPage() {
               <li key={step.id}>
                 <SpotlightCard className="relative overflow-hidden">
                   <HowScene id={step.id} />
-                  <Badge variant="outline" size="sm" className="mt-4 border-[#6b6784] bg-[#12111a]">
+                  <Badge variant="outline" size="sm" className="mt-4 border-[#2a2833] bg-[#12111a]">
                     {String(index + 1).padStart(2, "0")}
                   </Badge>
                   <h3 className="mt-4 font-heading text-2xl text-white">{step.title}</h3>

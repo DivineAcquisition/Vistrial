@@ -2,7 +2,7 @@ import type { LiveAgentId } from "@/lib/agents/roster";
 import { marketingInset } from "@/lib/marketing/ui";
 import { cn } from "@/lib/utils";
 
-const scene = "h-32 overflow-hidden rounded-lg border border-[#6b6784] bg-[#12111a] p-3";
+const scene = "h-32 overflow-hidden rounded-lg border border-[#2a2833] bg-[#12111a] p-3";
 
 /** Three records that do not line up: CRM, dialer, and calendar. */
 export function ProblemScene() {
@@ -60,7 +60,7 @@ function CentralizeScene() {
 function WatchScene() {
   return (
     <div className={cn(scene, "flex flex-col justify-center gap-3")} aria-hidden>
-      <div className="h-2.5 overflow-hidden rounded-sm border border-[#6b6784] bg-[#1c1a27]">
+      <div className="h-2.5 overflow-hidden rounded-sm border border-[#2a2833] bg-[#1c1a27]">
         <div className="h-full animate-vistrial-grow bg-brand-400 motion-reduce:w-2/3 motion-reduce:animate-none" />
       </div>
       <div className={cn(marketingInset, "px-3 py-2 text-xs text-white")}>Past the team&apos;s standard</div>
@@ -74,7 +74,7 @@ function ActScene() {
       <div className={cn(marketingInset, "h-full p-3")}>
         <div className="h-2 w-4/5 rounded-sm bg-[#3a3650]" />
         <div className="mt-2 h-2 w-3/5 rounded-sm bg-[#3a3650]" />
-        <div className="mt-4 inline-flex animate-vistrial-highlight rounded-md border border-[#6b6784] bg-[#1c1a27] px-3 py-1.5 text-xs font-medium text-white motion-reduce:animate-none">
+        <div className="mt-4 inline-flex animate-vistrial-highlight rounded-md border border-[#2a2833] bg-[#1c1a27] px-3 py-1.5 text-xs font-medium text-white motion-reduce:animate-none">
           Approve
         </div>
       </div>
@@ -90,7 +90,7 @@ export function AgentScene({ id }: { id: LiveAgentId }) {
           <div key={height} className="flex h-full flex-1 items-end">
             <div
               className={cn(
-                "w-full rounded-sm border border-[#6b6784]",
+                "w-full rounded-sm border border-[#2a2833]",
                 index === 3 ? "animate-vistrial-highlight bg-brand-400 motion-reduce:animate-none" : "bg-[#1c1a27]",
               )}
               style={{ height: `${height}%` }}
@@ -122,7 +122,7 @@ export function AgentScene({ id }: { id: LiveAgentId }) {
   return (
     <div className={cn(scene, "flex flex-col justify-center gap-2")} aria-hidden>
       {["w-4/5", "w-full", "w-2/3", "w-3/5"].map((width, index) => (
-        <div key={width} className="h-2 overflow-hidden rounded-sm border border-[#6b6784] bg-[#1c1a27]">
+        <div key={width} className="h-2 overflow-hidden rounded-sm border border-[#2a2833] bg-[#1c1a27]">
           <div
             className={cn("h-full animate-vistrial-grow bg-[#3a3650] motion-reduce:animate-none", width)}
             style={{ animationDelay: `${index * 0.35}s` }}

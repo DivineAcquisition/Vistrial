@@ -78,8 +78,8 @@ export const marketingFieldCompactControl = cn(
 );
 
 /** Solid marketing surfaces. The page is #07070b, so these stay visibly separate. */
-export const marketingPanel = "rounded-xl border border-[#8a86a3] bg-[#1c1a27]";
-export const marketingInset = "rounded-lg border border-[#6b6784] bg-[#12111a]";
+export const marketingPanel = "rounded-xl border border-[#2a2833] bg-[#1c1a27]";
+export const marketingInset = "rounded-lg border border-[#2a2833] bg-[#12111a]";
 
 export const marketingPageGutter = "px-5 sm:px-6 lg:px-8";
 

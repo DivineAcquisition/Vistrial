@@ -92,7 +92,7 @@ export function HeroExample() {
               key={item.agent}
               className={cn(
                 "flex items-start gap-2 rounded-xl border px-3 py-2 transition-colors",
-                on ? "border-brand-300 bg-[#2a2540]" : "border-[#6b6784] bg-[#12111a]",
+                on ? "border-[#2a2833] bg-[#241f33]" : "border-[#2a2833] bg-[#12111a]",
               )}
             >
               <AgentGlyph agentId={item.agent} size="sm" working={motion && on} />
@@ -117,7 +117,7 @@ export function HeroExample() {
 
 function SourceChip({ children }: { children: string }) {
   return (
-    <span className="rounded-lg border border-[#6b6784] bg-[#1c1a27] px-3 py-1 text-xs text-white">
+    <span className="rounded-lg border border-[#2a2833] bg-[#1c1a27] px-3 py-1 text-xs text-white">
       {children}
     </span>
   );
@@ -125,8 +125,8 @@ function SourceChip({ children }: { children: string }) {
 
 export function ApprovalExample() {
   return (
-    <div className="overflow-hidden rounded-xl border border-[#8a86a3] bg-[#1c1a27] text-left" aria-label={HERO.exampleLabel}>
-      <div className="flex items-center justify-between gap-3 border-b border-[#6b6784] px-4 py-3">
+    <div className="overflow-hidden rounded-xl border border-[#2a2833] bg-[#1c1a27] text-left" aria-label={HERO.exampleLabel}>
+      <div className="flex items-center justify-between gap-3 border-b border-[#2a2833] px-4 py-3">
         <p className="text-[11px] font-semibold tracking-[0.16em] text-brand-300 uppercase">{HERO.exampleLabel}</p>
         <span className="size-2 rounded-full bg-brand-400" aria-hidden />
       </div>

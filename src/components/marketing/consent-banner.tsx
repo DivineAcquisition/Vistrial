@@ -111,7 +111,7 @@ export function ConsentBanner({
   return (
     <>
       {showBanner ? (
-        <div className="fixed inset-x-0 bottom-0 z-40 border-t border-white/10 bg-ink-950/95 px-4 py-3 backdrop-blur" role="dialog" aria-label="Cookie choices">
+        <div className="fixed inset-x-0 bottom-0 z-40 border-t border-[#2a2833] bg-[#07070b] px-4 py-3 backdrop-blur" role="dialog" aria-label="Cookie choices">
           <div className="mx-auto flex max-w-3xl flex-col gap-3">
             <p className="text-sm leading-relaxed text-silver">
               We use cookies and similar tools to keep this site working, and, if you allow it, to understand how it is used and to measure our ads. Nothing optional runs until you choose.{" "}
@@ -133,7 +133,7 @@ export function ConsentBanner({
       ) : null}
       {open ? (
         <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 p-4 sm:items-center" role="dialog" aria-modal="true" aria-label="Cookie preferences">
-          <div className="max-h-[85vh] w-full max-w-lg overflow-y-auto rounded-2xl border border-white/10 bg-ink-950 p-5">
+          <div className="max-h-[85vh] w-full max-w-lg overflow-y-auto rounded-xl border border-[#2a2833] bg-[#07070b] p-5">
             <h2 className="font-heading text-xl text-white">Cookie preferences</h2>
             <p className="mt-2 text-sm text-silver">Your choice applies to this browser.</p>
             {gpc ? <p className="mt-2 text-sm text-white">We detected your Global Privacy Control setting and are honoring it. You can still allow a category here.</p> : null}

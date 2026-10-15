@@ -2,8 +2,7 @@
  * Public page copy. One source for the landing page, pricing, forms, and
  * supporting pages. Layout code reads this file and does not own sentences.
  *
- * Strings marked [CONFIRM] are drafts for the operator to replace before
- * launch. Legal pages are drafts for qualified counsel, not final text.
+ * Legal pages are drafts for qualified counsel, not final text.
  *
  * Display prices are not connected to billing.
  */
@@ -182,19 +181,19 @@ export const FAQ = {
     },
     {
       q: "How long does setup take?",
-      a: "[CONFIRM: how long setup usually takes after approval. The product has a guided onboarding inside the workspace. Do not invent a number of days here.]",
+      a: "Setup is guided step by step inside your workspace, and we pace it with your team.",
     },
     {
       q: "Who is Private Access for?",
-      a: "Teams that sell considered purchases through calls or consultations, already use a CRM, and want a limited number of people set up properly. [CONFIRM: we onboard a limited number of teams at a time.]",
+      a: "Teams that sell considered purchases through calls or consultations, already use a CRM, and want a limited number of people set up properly. We bring on a limited number of teams at a time.",
     },
     {
       q: "What happens after I request access?",
-      a: "We review the request. You get a confirmation email, and a person replies about whether access is available. [CONFIRM: reply within 2 business days.]",
+      a: "We review the request. You get a confirmation email, and a person replies about whether access is available. A person on our team reviews every request and will reply by email.",
     },
     {
       q: "Can I cancel?",
-      a: "[CONFIRM: cancellation terms. Billing starts only after approval and onboarding are agreed. This page does not take payment, and no contract length is stated here.]",
+      a: "Yes. You can cancel anytime from your billing settings, and your access continues through the period you have paid for. Full details are in our Terms of Service.",
     },
   ],
 } as const;
@@ -202,7 +201,7 @@ export const FAQ = {
 export const FINAL_CTA = {
   id: "final",
   headline: "Request access. We review each team.",
-  body: "Private Access is for a limited number of teams at a time, so each one is set up properly. [CONFIRM: this matches how you want to operate.]",
+  body: "Private Access is for a limited number of teams at a time, so each one is set up properly.",
   primary: "Request private access",
   secondary: "Contact us about Custom",
   secondaryHref: "/contact",
@@ -210,7 +209,7 @@ export const FINAL_CTA = {
 
 export const PROOF = {
   id: "proof",
-  headline: "[CONFIRM: real proof, only after you have it.]",
+  headline: "Hidden until real testimonials, logos, or results are added.",
   body: "No testimonials, logos, or results are shown until you add real ones here.",
 } as const;
 
@@ -297,7 +296,7 @@ export const PRIVACY_PAGE = {
     },
     {
       heading: "How long it is kept",
-      body: "[CONFIRM: 12 months for declined or inactive requests, then automatic deletion. Counsel should confirm the period.]",
+      body: "Access requests that are declined or inactive are kept for 12 months, then deleted. This is our current default.",
     },
     {
       heading: "How to ask for deletion",
@@ -305,7 +304,7 @@ export const PRIVACY_PAGE = {
     },
     {
       heading: "Contact",
-      body: "[CONFIRM: the contact address for privacy requests. The product contact address is contact@vistrial.io until you replace it.]",
+      body: "For privacy questions or requests, email contact@vistrial.io.",
     },
   ],
 } as const;
@@ -319,9 +318,9 @@ export const TERMS_PAGE = {
 export const THANKS = {
   title: "Request received",
   access:
-    "We have your request for Private Access. We will email the address you gave. [CONFIRM: we reply within 2 business days.] Reply to that email if something needs a correction.",
+    "We have your request for Private Access. We will email the address you gave. A person on our team reviews every request and will reply by email. Reply to that email if something needs a correction.",
   custom:
-    "We have your note. We will email the address you gave. [CONFIRM: we reply within 2 business days.] Reply to that email if something needs a correction.",
+    "We have your note. We will email the address you gave. A person on our team will reply by email to set up a short call about what your team needs. Reply to that email if something needs a correction.",
 } as const;
 
 export const NOT_FOUND = {
@@ -359,14 +358,14 @@ export const EMAIL_DEFAULTS = {
   accessConfirm: {
     id: "access_confirm",
     label: "Private Access confirmation",
-    subject: "We received your Vistrial request",
-    body: "Hello {{name}},\n\nWe received your request for Private Access. A person on the Vistrial team will review it.\n\n[CONFIRM: we reply within 2 business days.]\n\nReply to this email if something you sent needs a correction. This note does not include the details you submitted.\n\nVistrial",
+    subject: "We received your Private Access request",
+    body: "Hi {{name}},\n\nThanks for requesting Private Access to Vistrial.\n\nA person on our team reviews every request and will reply by email.\n\nWe bring on a limited number of teams at a time so each one is set up properly. If your team is a fit, we will walk you through next steps, including guided setup inside your workspace.\n\nIf you want to add anything to your request, just reply to this email.\n\nThe Vistrial team",
   },
   customConfirm: {
     id: "custom_confirm",
     label: "Custom confirmation",
-    subject: "We received your note to Vistrial",
-    body: "Hello {{name}},\n\nWe received your note. A person on the Vistrial team will read it.\n\n[CONFIRM: we reply within 2 business days.]\n\nReply to this email if something needs a correction. This note does not include the details you submitted.\n\nVistrial",
+    subject: "We received your request about Vistrial Custom",
+    body: "Hi {{name}},\n\nThanks for reaching out about Vistrial Custom.\n\nA person on our team will reply by email to set up a short call about what your team needs.\n\nIf it helps, reply with a few details: your team size, the tools you use today, and how many businesses you manage.\n\nThe Vistrial team",
   },
   declined: {
     id: "declined",
@@ -377,8 +376,8 @@ export const EMAIL_DEFAULTS = {
   waitlisted: {
     id: "waitlisted",
     label: "Waitlisted",
-    subject: "Your Vistrial request is on the list",
-    body: "Hello {{name}},\n\nWe are keeping your request on the list. We onboard a limited number of teams at a time.\n\n[CONFIRM: what you want this note to promise, if anything.]\n\nVistrial",
+    subject: "You're on the Vistrial waitlist",
+    body: "Hi {{name}},\n\nThanks for your interest in Vistrial. We bring on a limited number of teams at a time, and we are not able to bring your team on just yet.\n\nWe will email you when we can bring your team on. Your request stays on file for up to 12 months.\n\nIf anything changes on your side, reply to this email.\n\nThe Vistrial team",
   },
 } as const;
 

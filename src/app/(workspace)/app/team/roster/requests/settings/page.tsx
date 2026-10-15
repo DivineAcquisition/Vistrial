@@ -44,7 +44,7 @@ export default async function AccessRequestSettingsPage() {
           <textarea name="fit_rules" className={textareaClass} defaultValue={JSON.stringify(settings?.fit_rules ?? [], null, 2)} />
         </label>
         <Button type="submit" size="sm">Save settings</Button>
-        <p className={helperClass}>[CONFIRM: 12 months and 2 business days are the proposed defaults.]</p>
+        <p className={helperClass}>Keep 12 months as the request retention default. The 2 business day stale flag is an internal staff reminder only. It is not shown or promised to visitors.</p>
       </form>
       <section className="mt-10 space-y-6">
         <h2 className="font-heading text-lg text-white">Reply templates</h2>

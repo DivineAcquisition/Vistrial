@@ -119,14 +119,14 @@ INSERT INTO public.access_request_templates (id, label, subject, body) VALUES
   (
     'access_confirm',
     'Private Access confirmation',
-    'We received your Vistrial request',
-    E'Hello {{name}},\n\nWe received your request for Private Access. A person on the Vistrial team will review it.\n\n[CONFIRM: we reply within 2 business days.]\n\nReply to this email if something you sent needs a correction. This note does not include the details you submitted.\n\nVistrial'
+    'We received your Private Access request',
+    E'Hi {{name}},\n\nThanks for requesting Private Access to Vistrial.\n\nA person on our team reviews every request and will reply by email.\n\nWe bring on a limited number of teams at a time so each one is set up properly. If your team is a fit, we will walk you through next steps, including guided setup inside your workspace.\n\nIf you want to add anything to your request, just reply to this email.\n\nThe Vistrial team'
   ),
   (
     'custom_confirm',
     'Custom confirmation',
-    'We received your note to Vistrial',
-    E'Hello {{name}},\n\nWe received your note. A person on the Vistrial team will read it.\n\n[CONFIRM: we reply within 2 business days.]\n\nReply to this email if something needs a correction. This note does not include the details you submitted.\n\nVistrial'
+    'We received your request about Vistrial Custom',
+    E'Hi {{name}},\n\nThanks for reaching out about Vistrial Custom.\n\nA person on our team will reply by email to set up a short call about what your team needs.\n\nIf it helps, reply with a few details: your team size, the tools you use today, and how many businesses you manage.\n\nThe Vistrial team'
   ),
   (
     'declined',
@@ -137,8 +137,8 @@ INSERT INTO public.access_request_templates (id, label, subject, body) VALUES
   (
     'waitlisted',
     'Waitlisted',
-    'Your Vistrial request is on the list',
-    E'Hello {{name}},\n\nWe are keeping your request on the list. We onboard a limited number of teams at a time.\n\n[CONFIRM: what you want this note to promise, if anything.]\n\nVistrial'
+    'You''re on the Vistrial waitlist',
+    E'Hi {{name}},\n\nThanks for your interest in Vistrial. We bring on a limited number of teams at a time, and we are not able to bring your team on just yet.\n\nWe will email you when we can bring your team on. Your request stays on file for up to 12 months.\n\nIf anything changes on your side, reply to this email.\n\nThe Vistrial team'
   );
 
 CREATE TABLE public.access_request_views (

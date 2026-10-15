@@ -3,8 +3,11 @@
 import { useEffect, useState } from "react";
 
 import { AgentGlyph } from "@/components/live/agent-identity";
+import { Badge } from "@/components/ui/badge";
+import { Marquee } from "@/components/ui/marquee";
 import { EXAMPLE, HERO } from "@/lib/marketing/content";
 import { AGENTS } from "@/lib/agents/roster";
+import { cn } from "@/lib/utils";
 
 export function HeroExample() {
   const [step, setStep] = useState<number | "still">("still");
@@ -32,29 +35,66 @@ export function HeroExample() {
   }, []);
 
   const motion = step !== "still";
-  const active = motion ? EXAMPLE.steps[step] : null;
+  const activeIndex = motion ? step : EXAMPLE.steps.length - 1;
+  const active = EXAMPLE.steps[activeIndex];
 
   return (
     <div className="space-y-4 text-left" aria-label={HERO.exampleLabel}>
-      <p className="text-[11px] font-semibold tracking-[0.16em] text-brand-300 uppercase">{HERO.exampleLabel}</p>
-      <div className="flex flex-wrap gap-2">
-        {EXAMPLE.sources.map((source) => (
-          <span key={source} className="rounded-full border border-white/10 px-3 py-1 text-xs text-silver">
-            {source}
-          </span>
-        ))}
+      <div className="flex items-center justify-between gap-3">
+        <div className="flex items-center gap-1.5" aria-hidden>
+          <span className="size-2 rounded-full bg-white/25" />
+          <span className="size-2 rounded-full bg-white/25" />
+          <span className="size-2 rounded-full bg-brand-400" />
+        </div>
+        <Badge variant="outline" size="sm">
+          {HERO.exampleLabel}
+        </Badge>
       </div>
-      <div>
-        <p className="font-heading text-lg text-white">{EXAMPLE.lead}</p>
-        <p className="text-sm text-silver">{EXAMPLE.business}</p>
-        <p className="mt-2 text-sm leading-relaxed text-silver">{EXAMPLE.summary}</p>
+
+      <div className="flex items-end justify-between gap-3">
+        <div>
+          <p className="font-heading text-2xl tracking-tight text-white">{EXAMPLE.lead}</p>
+          <p className="text-sm text-silver">{EXAMPLE.business}</p>
+        </div>
+        <p className="text-[11px] font-medium tracking-[0.14em] text-brand-200 uppercase">Case file</p>
       </div>
+
+      <div className="overflow-hidden rounded-xl border border-white/10 bg-black/20">
+        <ul className="flex flex-wrap gap-2 p-2 motion-safe:hidden">
+          {EXAMPLE.sources.map((source) => (
+            <li key={source}>
+              <SourceChip>{source}</SourceChip>
+            </li>
+          ))}
+        </ul>
+        <Marquee pauseOnHover className="[--duration:32s] motion-reduce:hidden" aria-hidden>
+          {EXAMPLE.sources.map((source) => (
+            <SourceChip key={source}>{source}</SourceChip>
+          ))}
+        </Marquee>
+      </div>
+
+      <p className="text-sm leading-relaxed text-silver">{EXAMPLE.summary}</p>
+
+      <div className="h-1 overflow-hidden rounded-full bg-white/10" aria-hidden>
+        <div
+          className="h-full rounded-full bg-gradient-to-r from-brand-500 to-brand-300 transition-[width] duration-700 motion-reduce:transition-none"
+          style={{ width: `${((activeIndex + 1) / EXAMPLE.steps.length) * 100}%` }}
+        />
+      </div>
+
       <ol className="space-y-2">
         {EXAMPLE.steps.map((item, index) => {
-          const shown = step === "still" || index === step;
+          const on = index === activeIndex;
           return (
-            <li key={item.agent} className={shown ? "flex items-start gap-2" : "hidden"} aria-hidden={!shown}>
-              <AgentGlyph agentId={item.agent} size="sm" working={active?.agent === item.agent} />
+            <li
+              key={item.agent}
+              className={cn(
+                "flex items-start gap-2 rounded-xl border px-3 py-2 transition-colors",
+                on ? "border-brand-400/40 bg-brand-500/10" : "border-transparent bg-white/[0.03]",
+              )}
+            >
+              <AgentGlyph agentId={item.agent} size="sm" working={motion && on} />
               <span>
                 <span className="block text-sm font-medium text-card-foreground">{AGENTS[item.agent].name}</span>
                 <span className="block text-sm text-silver">{item.line}</span>
@@ -63,18 +103,37 @@ export function HeroExample() {
           );
         })}
       </ol>
-      {!motion ? null : <p className="sr-only">{active?.line}</p>}
+      {motion ? <p className="sr-only">{active.line}</p> : null}
+
+      <div className="rounded-xl border border-white/10 bg-white/[0.03] p-3">
+        <p className="text-[11px] font-semibold tracking-[0.14em] text-brand-300 uppercase">Draft for {EXAMPLE.lead}</p>
+        <p className="mt-2 text-sm leading-relaxed text-white">{EXAMPLE.draft}</p>
+        <p className="mt-2 text-xs leading-relaxed text-silver">{EXAMPLE.draftStatus}</p>
+      </div>
     </div>
+  );
+}
+
+function SourceChip({ children }: { children: string }) {
+  return (
+    <span className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1 text-xs text-silver">
+      {children}
+    </span>
   );
 }
 
 export function ApprovalExample() {
   return (
-    <div className="rounded-2xl border border-white/10 p-4 text-left" aria-label={HERO.exampleLabel}>
-      <p className="text-[11px] font-semibold tracking-[0.16em] text-brand-300 uppercase">{HERO.exampleLabel}</p>
-      <p className="mt-3 text-sm font-medium text-white">Draft for {EXAMPLE.lead}</p>
-      <p className="mt-2 text-sm leading-relaxed text-silver">{EXAMPLE.draft}</p>
-      <p className="mt-3 text-sm text-silver">{EXAMPLE.draftStatus}</p>
+    <div className="overflow-hidden rounded-2xl border border-white/10 bg-[#0c0b14] text-left shadow-[0_24px_60px_-36px_rgba(154,136,252,0.7)]" aria-label={HERO.exampleLabel}>
+      <div className="flex items-center justify-between gap-3 border-b border-white/10 px-4 py-3">
+        <p className="text-[11px] font-semibold tracking-[0.16em] text-brand-300 uppercase">{HERO.exampleLabel}</p>
+        <span className="size-2 rounded-full bg-brand-400" aria-hidden />
+      </div>
+      <div className="p-4">
+        <p className="text-sm font-medium text-white">Draft for {EXAMPLE.lead}</p>
+        <p className="mt-2 text-sm leading-relaxed text-silver">{EXAMPLE.draft}</p>
+        <p className="mt-3 text-sm text-silver">{EXAMPLE.draftStatus}</p>
+      </div>
     </div>
   );
 }

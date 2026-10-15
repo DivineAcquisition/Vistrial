@@ -1,3 +1,5 @@
+import { redirect } from "next/navigation";
+
 import { PageFrame } from "@/components/app/page-frame";
 import { Panel } from "@/components/ui/panel";
 import { SectionHeader } from "@/components/ui/section-header";
@@ -36,6 +38,16 @@ const SOURCE_CONNECTED: Record<string, string> = {
 };
 
 export default async function PortalPage({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
+  const ctx = await requirePortalAccess();
+  if (!ctx.isPlatformAdmin) redirect("/app/reports");
+  return <ParkedPortal searchParams={searchParams} />;
+}
+
+async function ParkedPortal({
   searchParams,
 }: {
   searchParams: Promise<Record<string, string | string[] | undefined>>;

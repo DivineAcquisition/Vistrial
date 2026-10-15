@@ -1,5 +1,6 @@
 import { compare, formatCents, formatReplyTime, type Comparison } from "@/lib/home/metrics";
 import {
+  comparisonAllowed,
   isSmallSample,
   metricDefinition,
   SHARES,
@@ -82,7 +83,7 @@ export function metricView(args: {
     value,
     display: formatMetricValue(def, value),
     comparison:
-      def.now || !entry.previous
+      def.now || !entry.previous || !comparisonAllowed(entry.current.count, entry.previous.count)
         ? null
         : compare({
             current: value,
@@ -137,13 +138,15 @@ export function shareView(args: {
     display: formatShare(value),
     numerator,
     denominator,
-    comparison: compare({
-      current: value === null ? null : Math.round(value * 100),
-      previous: previous === null ? null : Math.round(previous * 100),
-      hasPreviousData: args.hasPreviousData,
-      comparisonLabel: args.comparisonLabel,
-      format: (delta) => `${Math.round(delta)} points`,
-    }),
+    comparison: comparisonAllowed(denominator, bottom.previous?.count)
+      ? compare({
+          current: value === null ? null : Math.round(value * 100),
+          previous: previous === null ? null : Math.round(previous * 100),
+          hasPreviousData: args.hasPreviousData,
+          comparisonLabel: args.comparisonLabel,
+          format: (delta) => `${Math.round(delta)} points`,
+        })
+      : null,
     smallSample: isSmallSample(denominator),
     drill: share.drill,
   };

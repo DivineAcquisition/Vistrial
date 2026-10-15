@@ -89,7 +89,7 @@ export function parseWebhookPayload(raw: string): ParsedWebhook {
   };
 }
 
-/** Conversational copy is stripped from payload jsonb. The original body is stored on webhook_events.raw_body. */
+/** Conversational copy is stripped before anything is stored. Opt-out is decided from the text in memory and saved only as a signal. */
 const BODY_KEY =
   /^(body|html|text|content|raw|rawbody|raw_body|messagebody|message_body|attachments|sms|emailbody|email_body)$/i;
 
@@ -113,6 +113,15 @@ function stripMessageBodies(value: Json, depth = 0): Json {
     out[key] = stripMessageBodies(nested as Json, depth + 1);
   }
   return out;
+}
+
+/** What is safe to keep from an inbound body: structure and ids, no message text. */
+export function storedWebhookBody(raw: string): string {
+  try {
+    return JSON.stringify(stripMessageBodies(JSON.parse(raw) as Json));
+  } catch {
+    return JSON.stringify({ _unparsed: true, bytes: raw.length });
+  }
 }
 
 export function asJsonRecord(value: Json): Record<string, unknown> {

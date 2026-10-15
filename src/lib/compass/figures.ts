@@ -1,4 +1,4 @@
-import { isSmallSample, metricDefinition, SHARES, type ShareId } from "@/lib/metrics/definitions";
+import { comparisonAllowed, isSmallSample, metricDefinition, SHARES, type ShareId } from "@/lib/metrics/definitions";
 import { formatMetricValue, formatShare, metricNumber } from "@/lib/metrics/format";
 import type { Aggregate, Summary, SummaryEntry } from "@/lib/metrics/load";
 
@@ -16,6 +16,8 @@ export type Figure = {
   display: string;
   previous: number | null;
   previousDisplay: string | null;
+  /** Set when a previous period exists but the sample is too small to compare. */
+  comparisonNote: string | null;
   /** Rows behind the number. */
   rows: number;
   smallSample: boolean;
@@ -63,13 +65,18 @@ export function figureFor(metric: string, summary: Summary): Figure | null {
   const def = metricDefinition(metric);
   const value = metricNumber(def, entry.current);
   const previous = entry.previous ? metricNumber(def, entry.previous) : null;
+  const allowCompare = !def.now && comparisonAllowed(entry.current.count, entry.previous?.count);
   return {
     metric,
     label: def.label,
     value,
     display: formatMetricValue(def, value),
-    previous,
-    previousDisplay: entry.previous ? formatMetricValue(def, previous) : null,
+    previous: allowCompare ? previous : null,
+    previousDisplay: allowCompare && entry.previous ? formatMetricValue(def, previous) : null,
+    comparisonNote:
+      entry.previous && !def.now && !allowCompare
+        ? "The comparison is hidden because one period has fewer than 20 records."
+        : null,
     rows: entry.current.count,
     smallSample: def.measure === "median" && isSmallSample(entry.current.count),
     definition: def.explain,

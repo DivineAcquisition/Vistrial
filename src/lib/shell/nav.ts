@@ -163,6 +163,15 @@ const AGENTS_ITEM: ShellNavItem = {
   children: [COMPASS_ITEM],
 };
 
+const REPORTS_ITEM: ShellNavItem = {
+  id: "reports",
+  label: "Reports",
+  href: "/app/reports",
+  match: "/app/reports",
+  icon: "results",
+  description: "Saved views of the same numbers as Results.",
+};
+
 function resultsItem(withForsight: boolean): ShellNavItem {
   return {
     id: "results",
@@ -171,7 +180,7 @@ function resultsItem(withForsight: boolean): ShellNavItem {
     match: "/app/results",
     icon: "results",
     description: "Whether this workspace is turning leads into clients.",
-    children: withForsight ? [FORSIGHT] : undefined,
+    children: withForsight ? [REPORTS_ITEM, FORSIGHT] : [REPORTS_ITEM],
   };
 }
 
@@ -259,6 +268,14 @@ function groupsFor(input: {
             match: "/app/results",
             icon: "results",
             phone: 2,
+          },
+          {
+            id: "reports",
+            label: "Reports",
+            href: "/app/reports",
+            match: "/app/reports",
+            icon: "results",
+            phone: 3,
           },
         ]),
       ];

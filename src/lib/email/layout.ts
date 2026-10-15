@@ -1,20 +1,21 @@
-import { appUrl } from "@/lib/app-url";
-import { CONTACT_EMAIL, PRODUCTION_SITE_ORIGIN } from "@/lib/constants";
+import { CONTACT_EMAIL, PRODUCTION_APP_ORIGIN, PRODUCTION_SITE_ORIGIN } from "@/lib/constants";
 
 /**
  * Transactional mail shell.
  *
- * Light paper, a single card, the wordmark at the top left, one action.
- * The structure follows the usual SaaS receipt (card, heading, button,
- * quiet footer). The colour, type, and mark are Vistrial's: ink wordmark,
- * a brand rule on the card, and the same near-black action the app uses.
+ * Light paper, a single card, the icon at the top left, one action.
+ * The mark is public/brand/Vistrial 1.png. The legal footer sits under the card.
  */
 
-export const EMAIL_LOGO_PATH = "/brand/vistrial-lockup-ink.png";
+/**
+ * The icon in public/brand/Vistrial 1.png, copied here so the address has no
+ * space. Mail apps drop images whose URL contains a space or percent encoding.
+ */
+export const EMAIL_LOGO_PATH = "/brand/vistrial-icon.png";
 
-/** Display size of the lockup. Source is 452×125. */
-const LOGO_WIDTH = 116;
-const LOGO_HEIGHT = 32;
+/** Display size of the square icon. */
+const LOGO_WIDTH = 48;
+const LOGO_HEIGHT = 48;
 
 const CANVAS = "#f3f1f8";
 const CARD = "#ffffff";
@@ -39,13 +40,15 @@ export type TransactionalEmail = {
   code?: string;
   /** Quiet line under the button. */
   footnote?: string;
-  /** Absolute logo URL. Defaults to the app origin plus the ink lockup. */
+  /** Absolute logo URL. Defaults to the app origin plus the icon. */
   logoUrl?: string;
-  /** Where the wordmark points. Defaults to the app origin. */
+  /** Where the icon points. Defaults to the app origin. */
   homeHref?: string;
+  /** Legal footer HTML, already escaped. Rendered under the card. */
+  footerHtml?: string;
 };
 
-export function emailLogoUrl(origin = appUrl()): string {
+export function emailLogoUrl(origin = PRODUCTION_APP_ORIGIN): string {
   return `${origin.replace(/\/$/, "")}${EMAIL_LOGO_PATH}`;
 }
 
@@ -90,7 +93,7 @@ export function transactionalEmailHtml(args: TransactionalEmail): string {
   const heading = escapeHtml(args.heading);
   const preheader = escapeHtml(args.preheader?.trim() || args.lines?.[0] || args.heading);
   const logoUrl = escapeHtml(args.logoUrl ?? emailLogoUrl());
-  const homeHref = escapeHtml(args.homeHref ?? appUrl());
+  const homeHref = escapeHtml(args.homeHref ?? PRODUCTION_APP_ORIGIN);
   const lines = (args.lines ?? []).filter((line) => line.trim().length > 0).map(paragraph).join("");
   const items = args.items && args.items.length > 0 ? itemList(args.items) : "";
   const code = args.code?.trim()
@@ -100,6 +103,8 @@ export function transactionalEmailHtml(args: TransactionalEmail): string {
   const footnote = args.footnote?.trim()
     ? `<p style="margin:24px 0 0;font-size:14px;line-height:22px;color:${QUIET};">${escapeHtml(args.footnote)}</p>`
     : "";
+  const legalFooter = `Vistrial<br />Need a hand? <a href="mailto:${CONTACT_EMAIL}" style="color:${INK};text-decoration:underline;">Contact us</a><br /><a href="${PRODUCTION_SITE_ORIGIN}/privacy" style="color:${INK};text-decoration:underline;">Privacy</a> · <a href="${PRODUCTION_SITE_ORIGIN}/terms" style="color:${INK};text-decoration:underline;">Terms</a>`;
+  const footer = `<tr><td style="padding:18px 8px 0;font-size:12px;line-height:18px;color:${QUIET};">${args.footerHtml ?? legalFooter}</td></tr>`;
 
   return `<!doctype html>
 <html lang="en">
@@ -130,7 +135,7 @@ export function transactionalEmailHtml(args: TransactionalEmail): string {
                   <tr>
                     <td style="padding:28px 32px 32px;">
                       <a href="${homeHref}" style="text-decoration:none;">
-                        <img src="${logoUrl}" width="${LOGO_WIDTH}" height="${LOGO_HEIGHT}" alt="Vistrial" style="display:block;border:0;outline:none;text-decoration:none;width:${LOGO_WIDTH}px;height:${LOGO_HEIGHT}px;" />
+                        <img src="${logoUrl}" width="${LOGO_WIDTH}" height="${LOGO_HEIGHT}" alt="Vistrial" style="display:block;border:0;outline:none;text-decoration:none;width:${LOGO_WIDTH}px;height:${LOGO_HEIGHT}px;border-radius:10px;" />
                       </a>
                       <h1 style="margin:28px 0 16px;font-size:26px;line-height:34px;font-weight:600;letter-spacing:-0.4px;color:${INK};">${heading}</h1>
                       ${lines}
@@ -143,14 +148,7 @@ export function transactionalEmailHtml(args: TransactionalEmail): string {
                 </table>
               </td>
             </tr>
-            <tr>
-              <td style="padding:18px 8px 0;font-size:12px;line-height:18px;color:${QUIET};">
-                Vistrial<br />
-                Need a hand? <a href="mailto:${CONTACT_EMAIL}" style="color:${INK};text-decoration:underline;">Contact us</a><br />
-                <a href="${PRODUCTION_SITE_ORIGIN}/privacy" style="color:${INK};text-decoration:underline;">Privacy</a>
-                · <a href="${PRODUCTION_SITE_ORIGIN}/terms" style="color:${INK};text-decoration:underline;">Terms</a>
-              </td>
-            </tr>
+            ${footer}
           </table>
         </td>
       </tr>

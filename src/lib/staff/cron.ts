@@ -108,6 +108,7 @@ async function notifyFlagged(db: SupabaseClient) {
     .gte("escalated_at", since);
   const { data: admins } = await db.from("platform_staff").select("email").eq("active", true).eq("role", "platform_admin");
   const to = ((admins ?? []) as Array<{ email: string | null }>).map((row) => row.email).filter((email): email is string => Boolean(email));
+  if (!to[0]) return { flagged: (flagged ?? []).length, escalated: (escalated ?? []).length };
   for (const row of (escalated ?? []) as Array<{ id: string; org_id: string }>) {
     await sendPortalMail({
       to,
@@ -115,6 +116,8 @@ async function notifyFlagged(db: SupabaseClient) {
       lines: ["A question has been waiting a business day without a reply.", "It is now with the Platform Admins."],
       cta: { label: "Open the request", href: `/app/team/requests/${row.id}` },
       idempotencyKey: `help-escalated:${row.id}`,
+      category: "I",
+      footer: { recipientEmail: to[0], workspaceName: "Vistrial" },
     });
   }
   return { flagged: (flagged ?? []).length, escalated: (escalated ?? []).length };
@@ -165,6 +168,12 @@ async function runDataRequests(db: SupabaseClient) {
             "The activity log and the billing records are kept. Your CRM was not changed.",
           ],
           idempotencyKey: `data-deleted:${request.id}`,
+          category: "G",
+          footer: {
+            recipientEmail: request.requested_by_email,
+            workspaceName: request.org_name,
+            referenceId: request.id,
+          },
         });
       }
       deleted += 1;

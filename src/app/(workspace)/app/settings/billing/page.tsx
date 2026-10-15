@@ -3,11 +3,13 @@ import { notFound } from "next/navigation";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 import {
+  CancelPlanForm,
   LinkCustomerForm,
   ManagePaymentButton,
   RefreshBillingButton,
   UnlinkButton,
 } from "@/app/(workspace)/app/settings/billing/billing-forms";
+import { meterLabel, formatMinutes } from "@/lib/billing/rules";
 import { PageFrame } from "@/components/app/page-frame";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { DefinitionList, KeyValue } from "@/components/ui/definition-list";
@@ -68,7 +70,7 @@ export default async function BillingPage() {
   const ctx = await getAuthContext();
   if (!mayOpenBilling(ctx)) notFound();
   const db = (await createClient()) as unknown as SupabaseClient;
-  const [{ data: allowed }, { data }] = await Promise.all([
+  const [{ data: allowed }, { data }, { data: screen }] = await Promise.all([
     db.rpc("portal_can_see_billing", { p_org_id: ctx.org.id }),
     db
       .from("workspace_billing")
@@ -77,6 +79,7 @@ export default async function BillingPage() {
       )
       .eq("org_id", ctx.org.id)
       .maybeSingle(),
+    db.rpc("billing_screen", { p_org_id: ctx.org.id }),
   ]);
   if (allowed !== true) notFound();
   const row = data as BillingRow | null;
@@ -87,6 +90,16 @@ export default async function BillingPage() {
   const status = row?.status ? (BILLING_STATUS[row.status] ?? { label: row.status, tone: "neutral" as const }) : null;
   const limits = Object.entries(row?.limits ?? {});
   const features = row?.features ?? [];
+  const plan = (screen ?? null) as {
+    plan_name?: string;
+    state?: string;
+    price_cents?: number | null;
+    reset_on?: string;
+    money?: boolean;
+    bullets?: string[];
+    meters?: Array<{ key: string; used: number; limit: number | null; remaining: number | null; reset_on: string }>;
+  } | null;
+  const showMoney = plan?.money !== false && (ctx.workspaceRole === "owner" || ctx.isPlatformAdmin);
 
   return (
     <PageFrame title="Billing" description="Your Vistrial plan, renewal, and receipts.">
@@ -123,11 +136,15 @@ export default async function BillingPage() {
           </div>
           <DefinitionList>
             <KeyValue label="Plan">{row?.plan_name ?? "Not named in billing yet"}</KeyValue>
-            <KeyValue label="Price">
-              {row?.price_cents != null && row.currency
-                ? formatPlanPrice(row.price_cents, row.currency, row.billing_interval, row.interval_count)
-                : "Not set in billing yet"}
-            </KeyValue>
+            {showMoney ? (
+              <KeyValue label="Price">
+                {plan?.price_cents != null
+                  ? formatPlanPrice(plan.price_cents, "usd", "month", 1)
+                  : row?.price_cents != null && row.currency
+                    ? formatPlanPrice(row.price_cents, row.currency, row.billing_interval, row.interval_count)
+                    : "Not set in billing yet"}
+              </KeyValue>
+            ) : null}
             {row?.trial_end && row.status === "trialing" ? (
               <KeyValue label="Trial ends">{formatDayLong(row.trial_end)}</KeyValue>
             ) : null}
@@ -163,7 +180,7 @@ export default async function BillingPage() {
         </Panel>
       )}
 
-      {linked ? (
+      {linked && showMoney ? (
         <Panel className="p-6">
           <h2 className={cardTitle}>Receipts</h2>
           <p className={helperClass}>
@@ -204,6 +221,32 @@ export default async function BillingPage() {
         </Panel>
       ) : null}
 
+      {plan?.meters?.length ? (
+        <Panel className="p-6">
+          <h2 className={cardTitle}>What is included</h2>
+          <p className={`mt-1 ${helperClass}`}>
+            Resets {plan.reset_on ? formatDayLong(plan.reset_on) : "each billing period"} ({"America/New_York"}). A lead counts when it first gets a full case file in the period. Historic imports, samples, and replays do not count.
+          </p>
+          <ul className="mt-3 space-y-2">
+            {plan.meters.map((meter) => (
+              <li key={meter.key} className="text-sm text-white">
+                {meterLabel(meter.key)}: {meter.key === "transcript_minutes" ? formatMinutes(meter.used) : meter.used.toLocaleString("en-US")}
+                {meter.limit != null
+                  ? ` of ${meter.key === "transcript_minutes" ? formatMinutes(meter.limit) : meter.limit.toLocaleString("en-US")}`
+                  : ""}
+              </li>
+            ))}
+          </ul>
+          {plan.bullets?.length ? (
+            <ul className="mt-3 list-disc space-y-1 pl-5 text-sm text-white/80">
+              {plan.bullets.map((item) => (
+                <li key={item}>{item}</li>
+              ))}
+            </ul>
+          ) : null}
+        </Panel>
+      ) : null}
+
       <Panel className="space-y-2 p-6">
         <h2 className={cardTitle}>Changing or cancelling</h2>
         <p className={helperClass}>
@@ -221,6 +264,7 @@ export default async function BillingPage() {
           </Link>
           . Vistrial never touches the records in your CRM.
         </p>
+        {showMoney && ctx.workspaceRole === "owner" ? <CancelPlanForm /> : null}
       </Panel>
 
       {ctx.isPlatformAdmin ? (

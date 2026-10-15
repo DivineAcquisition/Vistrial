@@ -1,4 +1,5 @@
 import { PRODUCTION_APP_ORIGIN } from "@/lib/constants";
+import { renderFooter } from "@/lib/email/footer";
 import { EMAIL_LOGO_PATH, transactionalEmailHtml } from "@/lib/email/layout";
 
 /**
@@ -30,11 +31,17 @@ function card(args: {
   code?: string;
   footnote?: string;
 }): string {
+  const footer = renderFooter({
+    category: "A",
+    vars: { recipientEmail: "{{ .Email }}" },
+  });
+  if (!footer.ok) throw new Error(footer.error);
   return transactionalEmailHtml({
     ...args,
     preheader: args.lines[0],
     logoUrl: LOGO_URL,
     homeHref: HOME_HREF,
+    footerHtml: footer.footer.html,
   });
 }
 

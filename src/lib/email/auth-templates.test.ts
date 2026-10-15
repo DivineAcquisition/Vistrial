@@ -27,8 +27,10 @@ describe("auth email templates", () => {
     ]);
 
     for (const template of AUTH_EMAIL_TEMPLATES) {
-      expect(template.html).toContain("https://app.vistrial.io/brand/vistrial-lockup-ink.png");
-      expect(template.html.indexOf("vistrial-lockup-ink.png")).toBeLessThan(template.html.indexOf("<h1"));
+      expect(template.html).toContain("https://app.vistrial.io/brand/vistrial-icon.png");
+      expect(template.html).toContain("Vistrial will never ask for your password by email.");
+      expect(template.html).toContain("Divine Acquisition LLC");
+      expect(template.html.indexOf("vistrial-icon.png")).toBeLessThan(template.html.indexOf("<h1"));
       expect(template.html).toContain("{{ .SiteURL }}");
       const onDisk = readFileSync(path.join(TEMPLATES, template.filename), "utf8");
       expect(onDisk).toBe(template.html);

@@ -38,8 +38,8 @@ export async function loadFollowUpSettings(orgId: string): Promise<FollowUpSetti
     maxSequenceLength: data?.max_sequence_length ?? 3,
     maxSequenceDurationDays: data?.max_sequence_duration_days ?? 21,
     draftStaleDays: data?.draft_stale_days ?? 5,
-    quietHoursEnabled: data?.quiet_hours_enabled ?? true,
-    quietHoursStart: (data?.quiet_hours_start ?? "21:00").slice(0, 5),
+    quietHoursEnabled: true,
+    quietHoursStart: (data?.quiet_hours_start ?? "20:00").slice(0, 5),
     quietHoursEnd: (data?.quiet_hours_end ?? "08:00").slice(0, 5),
   };
 }

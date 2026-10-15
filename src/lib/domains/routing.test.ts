@@ -32,6 +32,12 @@ describe("product hosts do not overlap", () => {
     expect(classifyProductHost("staff.vistrial.io")).toBe("unknown");
   });
 
+  it("keeps the unsubscribe link on the app host", () => {
+    expect(resolveHostRoute({ host: "app.vistrial.io", pathname: "/email/unsubscribe" })).toEqual({
+      action: "allow",
+    });
+  });
+
   it("serves the app's paths on the team's host and sends its root to sign-in", () => {
     expect(resolveHostRoute({ host: "admin.vistrial.io", pathname: "/" })).toEqual({
       action: "redirect",

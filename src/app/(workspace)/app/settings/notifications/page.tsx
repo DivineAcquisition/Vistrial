@@ -3,7 +3,13 @@ import { NotificationSettingsForm } from "@/app/(workspace)/app/settings/notific
 import { getAuthContext } from "@/lib/auth/session";
 import { canManageOrgSettings } from "@/lib/auth/permissions";
 import { Panel } from "@/components/ui/panel";
-import { EMERGENCY_EVENTS, ESCALATION_LOCKED_EVENTS, NOTIFICATION_HOURLY_CAP } from "@/lib/notifications/constants";
+import {
+  EMERGENCY_EVENTS,
+  ESCALATION_LOCKED_EVENTS,
+  NOTIFICATION_HOURLY_CAP,
+  NOTIFICATION_WORKSPACE_HOURLY_CAP,
+} from "@/lib/notifications/constants";
+import { textChannelEnabled, textOptInAllows } from "@/lib/notifications/text";
 import { EVENT_LABELS } from "@/lib/notifications/labels";
 import type { NotificationEventType } from "@/lib/notifications/types";
 import { createClient } from "@/lib/supabase/server";
@@ -20,9 +26,13 @@ function HowItWorks({ manager }: { manager: boolean }) {
       <h2 className={cardTitle}>How notifications are limited</h2>
       <ul className={`${helperClass} list-disc space-y-2 pl-5`}>
         <li>
-          At most {NOTIFICATION_HOURLY_CAP} reach you in any hour. Past that, the rest are folded into one summary so
-          your phone does not keep buzzing.
+          At most {NOTIFICATION_HOURLY_CAP} interrupt you in any hour, and {NOTIFICATION_WORKSPACE_HOURLY_CAP} interrupt
+          a workspace. Past that, the rest fold into one summary. A critical alert is named in that summary.
         </li>
+        <li>Account and billing email are not counted, and they are not grouped.</li>
+        <li>Related alerts that can wait are grouped for 15 minutes. Critical alerts are not held.</li>
+        <li>A daily digest goes out at 8:00 in your time zone.</li>
+        <li>Quiet hours are off until you set them.</li>
         <li>
           Outside your working hours, anything that can wait is held until your next working hour. Only two alerts come
           through at any time ({labels(EMERGENCY_EVENTS).toLowerCase()}), because leads stop arriving until someone
@@ -38,6 +48,7 @@ function HowItWorks({ manager }: { manager: boolean }) {
           </li>
         ) : null}
         <li>Emails about your account, like replies from your Vistrial team, follow the choice on your profile.</li>
+        <li>Notices about security, billing, and required alerts cannot be turned off.</li>
       </ul>
     </Panel>
   );
@@ -46,7 +57,7 @@ function HowItWorks({ manager }: { manager: boolean }) {
 export default async function NotificationSettingsPage() {
   const ctx = await getAuthContext();
   const supabase = await createClient();
-  const [{ data: prefs }, { data: mute }, { data: org }, { data: team }] = await Promise.all([
+  const [{ data: prefs }, { data: mute }, { data: org }, { data: team }, { data: self }] = await Promise.all([
     supabase
       .from("notification_preferences")
       .select("event_type, channel, enabled")
@@ -66,6 +77,11 @@ export default async function NotificationSettingsPage() {
       .select("slack_webhook_encrypted, teams_webhook_encrypted")
       .eq("org_id", ctx.org.id)
       .maybeSingle(),
+    supabase
+      .from("org_members")
+      .select("notification_quiet_start, notification_quiet_end, text_opt_in_at, text_opted_out_at")
+      .eq("id", ctx.member.id)
+      .maybeSingle(),
   ]);
 
   return (
@@ -82,6 +98,13 @@ export default async function NotificationSettingsPage() {
         smsEmergenciesEnabled={org?.sms_emergencies_enabled ?? false}
         slackSaved={Boolean(team?.slack_webhook_encrypted)}
         teamsSaved={Boolean(team?.teams_webhook_encrypted)}
+        quietStart={self?.notification_quiet_start?.slice(0, 5) ?? null}
+        quietEnd={self?.notification_quiet_end?.slice(0, 5) ?? null}
+        textOptedIn={textOptInAllows({
+          optedInAt: self?.text_opt_in_at ?? null,
+          optedOutAt: self?.text_opted_out_at ?? null,
+        })}
+        textChannelOpen={textChannelEnabled()}
       />
     </PageFrame>
   );

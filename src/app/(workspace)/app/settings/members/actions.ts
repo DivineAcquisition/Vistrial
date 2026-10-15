@@ -199,6 +199,18 @@ function sendInviteEmail(args: {
     ],
     cta: { label: "Accept the invite", href: args.url },
     idempotencyKey: args.key,
+    category: "A2",
+    footer: {
+      recipientEmail: args.to,
+      inviterName: args.inviter,
+      workspaceName: args.orgName,
+      date: new Intl.DateTimeFormat("en-US", {
+        month: "long",
+        day: "numeric",
+        year: "numeric",
+        timeZone: "UTC",
+      }).format(new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)),
+    },
   });
 }
 

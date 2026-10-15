@@ -66,6 +66,14 @@ export function isInQuietHours(
   return now >= startMin || now < endMin;
 }
 
+/** The later of the requested time and the time quiet hours allow. */
+export function scheduleOutsideQuiet(desired: Date, quietUntilIso: string | null): Date {
+  if (!quietUntilIso) return desired;
+  const quietUntil = new Date(quietUntilIso);
+  if (Number.isNaN(quietUntil.getTime())) return desired;
+  return quietUntil.getTime() > desired.getTime() ? quietUntil : desired;
+}
+
 /** If `at` falls in quiet hours, return the next local end; otherwise `at`. */
 export function computeSendAt(args: {
   now: Date;

@@ -6,8 +6,10 @@ import {
   NOTIFICATION_HOURLY_CAP,
   NOTIFICATION_MUTE_MAX_MS,
   NOTIFICATION_PRESENCE_TTL_MS,
+  NOTIFICATION_WORKSPACE_HOURLY_CAP,
   USER_PREF_CHANNELS,
 } from "@/lib/notifications/constants";
+import { LIMIT_EXEMPT_EVENTS } from "@/lib/notifications/decisions";
 import { defaultChannelEnabled } from "@/lib/notifications/defaults";
 import type { NotificationChannel, NotificationEventType } from "@/lib/notifications/types";
 
@@ -142,6 +144,22 @@ export async function hourlyCount(
     .in("status", ["queued", "sent", "delivered", "opened", "acted"])
     .in("channel", ["push", "email", "sms"])
     .neq("event_type", "hourly_summary")
+    .not("event_type", "in", `(${LIMIT_EXEMPT_EVENTS.map((event) => `"${event}"`).join(",")})`)
+    .eq("is_test", false)
+    .gte("queued_at", since);
+  return count ?? 0;
+}
+
+export async function workspaceHourlyCount(db: GhlDb, orgId: string, now = new Date()): Promise<number> {
+  const since = new Date(now.getTime() - 60 * 60 * 1000).toISOString();
+  const { count } = await db
+    .from("notifications")
+    .select("id", { count: "exact", head: true })
+    .eq("org_id", orgId)
+    .in("status", ["queued", "sent", "delivered", "opened", "acted"])
+    .in("channel", ["push", "email", "sms", "team"])
+    .neq("event_type", "hourly_summary")
+    .not("event_type", "in", `(${LIMIT_EXEMPT_EVENTS.map((event) => `"${event}"`).join(",")})`)
     .eq("is_test", false)
     .gte("queued_at", since);
   return count ?? 0;
@@ -149,6 +167,10 @@ export async function hourlyCount(
 
 export function overHourlyCap(count: number): boolean {
   return count >= NOTIFICATION_HOURLY_CAP;
+}
+
+export function overWorkspaceHourlyCap(count: number): boolean {
+  return count >= NOTIFICATION_WORKSPACE_HOURLY_CAP;
 }
 
 export async function isLookingAt(

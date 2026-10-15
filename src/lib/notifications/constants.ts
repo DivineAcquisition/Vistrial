@@ -1,7 +1,11 @@
 /** Prompt 13 constants. Numbers the prompt did not name are listed here. */
 
 export const NOTIFICATION_HOURLY_CAP = 8;
-export const NOTIFICATION_BATCH_WINDOW_MS = 10 * 60 * 1000;
+export const NOTIFICATION_WORKSPACE_HOURLY_CAP = 200;
+/** Related non-critical alerts share this window. Critical alerts are not held. */
+export const NOTIFICATION_BATCH_WINDOW_MS = 15 * 60 * 1000;
+/** Daily digest is 8:00 in the person's time zone, not the start of working hours. */
+export const DIGEST_LOCAL_HOUR = 8;
 export const NOTIFICATION_MUTE_MAX_MS = 7 * 24 * 60 * 60 * 1000;
 export const NOTIFICATION_PRESENCE_TTL_MS = 45 * 1000;
 export const NOTIFICATION_CLAIM_LEASE_MS = 2 * 60 * 1000;

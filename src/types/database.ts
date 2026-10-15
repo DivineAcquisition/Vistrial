@@ -2003,6 +2003,11 @@ export type Database = {
           notification_delivery: "instant" | "digest";
           home_seen_at: string | null;
           home_prev_seen_at: string | null;
+          notification_quiet_start: string | null;
+          notification_quiet_end: string | null;
+          text_opt_in_at: string | null;
+          text_opt_in_wording: string | null;
+          text_opted_out_at: string | null;
         };
         Insert: {
           active?: boolean;
@@ -2037,6 +2042,11 @@ export type Database = {
           notification_delivery?: "instant" | "digest";
           home_seen_at?: string | null;
           home_prev_seen_at?: string | null;
+          notification_quiet_start?: string | null;
+          notification_quiet_end?: string | null;
+          text_opt_in_at?: string | null;
+          text_opt_in_wording?: string | null;
+          text_opted_out_at?: string | null;
         };
         Update: {
           active?: boolean;
@@ -2071,6 +2081,11 @@ export type Database = {
           notification_delivery?: "instant" | "digest";
           home_seen_at?: string | null;
           home_prev_seen_at?: string | null;
+          notification_quiet_start?: string | null;
+          notification_quiet_end?: string | null;
+          text_opt_in_at?: string | null;
+          text_opt_in_wording?: string | null;
+          text_opted_out_at?: string | null;
         };
         Relationships: [
           {

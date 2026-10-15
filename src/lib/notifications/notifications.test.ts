@@ -67,12 +67,13 @@ describe("working hours", () => {
 });
 
 describe("anti-fatigue", () => {
-  it("batches five breaches in a ten-minute window to one key", () => {
+  it("batches related alerts inside a fifteen-minute window", () => {
     const first = new Date("2026-08-24T14:01:00.000Z");
-    const fifth = new Date("2026-08-24T14:09:00.000Z");
-    expect(notificationBatchBucket(first)).toBe(notificationBatchBucket(fifth));
-    const later = new Date("2026-08-24T14:12:00.000Z");
-    expect(notificationBatchBucket(later)).not.toBe(notificationBatchBucket(first));
+    const start = new Date(Math.floor(first.getTime() / (15 * 60 * 1000)) * 15 * 60 * 1000);
+    const inside = new Date(start.getTime() + 14 * 60 * 1000);
+    const later = new Date(start.getTime() + 15 * 60 * 1000);
+    expect(notificationBatchBucket(start)).toBe(notificationBatchBucket(inside));
+    expect(notificationBatchBucket(later)).not.toBe(notificationBatchBucket(start));
   });
 
   it("caps the eighth interrupt and names the overflow a summary", () => {

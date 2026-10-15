@@ -1,11 +1,32 @@
 import { Resend } from "resend";
 import webpush from "web-push";
 
-import { transactionalEmailHtml } from "@/lib/email/layout";
+import { categoryForEvent } from "@/lib/email/category";
+import type { EmailCategory, FooterVars } from "@/lib/email/footer";
+import { renderFooter, sendingStream, staffRecipientAllowed } from "@/lib/email/footer";
+import { EMAIL_REPLY_TO, streamSendAllowed } from "@/lib/email/streams";
+import { emailLogoUrl, transactionalEmailHtml } from "@/lib/email/layout";
+import {
+  activeStaffEmails,
+  issueUnsubscribeUrl,
+  lifecycleSuppressed,
+  recordEmailSend,
+  withPreferences,
+} from "@/lib/email/send-guard";
 import { decryptSecret } from "@/lib/ghl/crypto";
 import type { GhlDb } from "@/lib/ghl/tokens";
 import { assertLockScreenSafe } from "@/lib/notifications/copy";
-import { resendConfigured, twilioConfigured, vapidConfigured } from "@/lib/notifications/env";
+import { resendConfigured, vapidConfigured } from "@/lib/notifications/env";
+import {
+  criticalText,
+  overTextDailyCap,
+  sendTelnyxText,
+  textAllowedForEvent,
+  textChannelEnabled,
+  textOptInAllows,
+  TEXT_DAY_MS,
+  withStopHelp,
+} from "@/lib/notifications/text";
 import { hrefWithNotification } from "@/lib/notifications/messages";
 import type { NotificationChannel } from "@/lib/notifications/types";
 
@@ -18,6 +39,7 @@ function emailHtml(args: {
   body: string;
   href: string;
   items?: Array<{ text: string; href: string }>;
+  footerHtml: string;
 }): string {
   const lines = args.body && args.body !== args.title ? [args.body] : [];
   return transactionalEmailHtml({
@@ -26,6 +48,8 @@ function emailHtml(args: {
     lines,
     items: args.items,
     cta: { label: "Open in Vistrial", href: args.href },
+    footerHtml: args.footerHtml,
+    logoUrl: emailLogoUrl(),
   });
 }
 
@@ -37,23 +61,72 @@ export async function sendEmail(args: {
   notificationId: string;
   eventType: string;
   items?: Array<{ text: string; href: string }>;
+  category?: EmailCategory;
+  footer?: FooterVars;
 }): Promise<SendResult> {
   assertLockScreenSafe(args.title, args.body);
+  const category = args.category ?? categoryForEvent(args.eventType);
+  if (!category) return { ok: false, error: "This email has no category, so it was not sent.", retry: false };
   const cfg = resendConfigured();
   if (!cfg) return { ok: false, error: "RESEND_API_KEY or RESEND_FROM is not set.", retry: false };
+
+  if (category === "I") {
+    const staff = await activeStaffEmails();
+    if (!staffRecipientAllowed(args.to, staff)) {
+      return { ok: false, error: "Internal email was not sent. The recipient is not staff.", retry: false };
+    }
+  }
+
+  const stream = sendingStream(category);
+  const allowed = streamSendAllowed({
+    category,
+    transactionalFrom: cfg.from,
+    lifecycleFrom: cfg.lifecycleFrom,
+  });
+  if (!allowed.ok) return { ok: false, error: allowed.error, retry: false };
+  if (stream === "lifecycle" && (await lifecycleSuppressed(args.to))) {
+    return { ok: false, error: "This address is unsubscribed from lifecycle email.", retry: false };
+  }
+
+  const footerVars = withPreferences({ recipientEmail: args.to, ...args.footer });
+  if ((category === "E" || category === "F") && !footerVars.unsubscribeUrl) {
+    footerVars.unsubscribeUrl = (await issueUnsubscribeUrl(args.to, category)) ?? undefined;
+  }
+  const rendered = renderFooter({ category, vars: footerVars });
+  if (!rendered.ok) return { ok: false, error: rendered.error, retry: false };
+
+  const from = allowed.from;
+  const headers: Record<string, string> = {};
+  if (footerVars.unsubscribeUrl && (category === "E" || category === "F")) {
+    headers["List-Unsubscribe"] = `<${footerVars.unsubscribeUrl}>`;
+    headers["List-Unsubscribe-Post"] = "List-Unsubscribe=One-Click";
+  }
 
   const resend = new Resend(cfg.apiKey);
   const { data, error } = await resend.emails.send(
     {
-      from: cfg.from,
+      from,
       to: [args.to],
+      replyTo: EMAIL_REPLY_TO,
       subject: args.title,
-      html: emailHtml(args),
-      text: `${args.body}\n${args.href}`,
+      html: emailHtml({ ...args, footerHtml: rendered.footer.html }),
+      text: `${args.body}\n${args.href}\n\n${rendered.footer.text}`,
+      headers,
+      tags: [
+        { name: "category", value: category },
+        { name: "footer_version", value: rendered.footer.version },
+      ],
     },
     { idempotencyKey: `${args.eventType}/${args.notificationId}` }
   );
   if (error) return { ok: false, error: error.message, retry: true };
+  await recordEmailSend({
+    category,
+    version: rendered.footer.version,
+    recipient: args.to,
+    stream,
+    providerId: data?.id,
+  });
   return { ok: true, providerId: data?.id };
 }
 
@@ -107,36 +180,44 @@ export async function sendPush(args: {
 }
 
 export async function sendSms(args: {
+  db: GhlDb;
+  userId: string | null;
   to: string;
-  title: string;
-  body: string;
+  eventType: string;
 }): Promise<SendResult> {
-  assertLockScreenSafe(args.title, args.body);
-  const cfg = twilioConfigured();
-  if (!cfg) return { ok: false, error: "Twilio is not configured.", retry: false };
   if (!args.to) return { ok: false, error: "No phone number on this profile.", retry: false };
-
-  const auth = Buffer.from(`${cfg.accountSid}:${cfg.authToken}`).toString("base64");
-  const response = await fetch(
-    `https://api.twilio.com/2010-04-01/Accounts/${cfg.accountSid}/Messages.json`,
-    {
-      method: "POST",
-      headers: {
-        Authorization: `Basic ${auth}`,
-        "Content-Type": "application/x-www-form-urlencoded",
-      },
-      body: new URLSearchParams({
-        To: args.to,
-        From: cfg.from,
-        Body: `${args.title}. ${args.body}`,
-      }),
-    }
-  );
-  const json = (await response.json()) as { sid?: string; message?: string };
-  if (!response.ok) {
-    return { ok: false, error: json.message || `Twilio ${response.status}`, retry: response.status >= 500 };
+  if (!textChannelEnabled()) {
+    return { ok: false, error: "Text is off until the notification number is registered.", retry: false };
   }
-  return { ok: true, providerId: json.sid };
+  if (!textAllowedForEvent(args.eventType)) {
+    return { ok: false, error: "Text is only for a critical problem.", retry: false };
+  }
+  const copy = criticalText(args.eventType);
+  if (!copy) return { ok: false, error: "Text is only for a critical problem.", retry: false };
+
+  if (!args.userId) return { ok: false, error: "Text needs a person who opted in.", retry: false };
+  const { data: members } = await args.db
+    .from("org_members")
+    .select("text_opt_in_at, text_opted_out_at")
+    .eq("user_id", args.userId);
+  const optedIn = (members ?? []).some((member) =>
+    textOptInAllows({ optedInAt: member.text_opt_in_at, optedOutAt: member.text_opted_out_at })
+  );
+  if (!optedIn) return { ok: false, error: "This person has not opted in to texts.", retry: false };
+
+  const since = new Date(Date.now() - TEXT_DAY_MS).toISOString();
+  const { count } = await args.db
+    .from("notifications")
+    .select("id", { count: "exact", head: true })
+    .eq("recipient_user_id", args.userId)
+    .eq("channel", "sms")
+    .in("status", ["sent", "delivered", "opened", "acted"])
+    .gte("sent_at", since);
+  if (overTextDailyCap(count ?? 0)) {
+    return { ok: false, error: "This person already received 5 texts today.", retry: false };
+  }
+
+  return sendTelnyxText({ to: args.to, body: withStopHelp(copy) });
 }
 
 export async function sendTeam(args: {
@@ -194,6 +275,8 @@ export async function sendOnChannel(
     notificationId: string;
     eventType: string;
     items?: Array<{ text: string; href: string }>;
+    footer?: FooterVars;
+    category?: EmailCategory;
   }
 ): Promise<SendResult> {
   switch (channel) {
@@ -206,6 +289,8 @@ export async function sendOnChannel(
         href: args.href,
         notificationId: args.notificationId,
         eventType: args.eventType,
+        category: args.category,
+        footer: { recipientEmail: args.email, referenceId: args.notificationId, ...args.footer },
         items: args.items?.map((item) => ({
           text: item.text,
           href: hrefWithNotification(item.href, args.notificationId),
@@ -223,7 +308,12 @@ export async function sendOnChannel(
       });
     case "sms":
       if (!args.phone) return { ok: false, error: "No phone number on this profile.", retry: false };
-      return sendSms({ to: args.phone, title: args.title, body: args.body });
+      return sendSms({
+        db: args.db,
+        userId: args.userId,
+        to: args.phone,
+        eventType: args.eventType,
+      });
     case "team":
       if (!args.orgId) return { ok: false, error: "Team channel needs an organization.", retry: false };
       return sendTeam({

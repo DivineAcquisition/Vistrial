@@ -1,8 +1,8 @@
-export function resendConfigured(env = process.env): { apiKey: string; from: string } | null {
+export function resendConfigured(env = process.env): { apiKey: string; from: string; lifecycleFrom: string | null } | null {
   const apiKey = env.RESEND_API_KEY?.trim();
   const from = env.RESEND_FROM?.trim();
   if (!apiKey || !from) return null;
-  return { apiKey, from };
+  return { apiKey, from, lifecycleFrom: env.RESEND_FROM_LIFECYCLE?.trim() || null };
 }
 
 export function vapidConfigured(env = process.env): {

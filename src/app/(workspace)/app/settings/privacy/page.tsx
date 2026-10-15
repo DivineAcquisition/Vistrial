@@ -55,6 +55,7 @@ export default async function PrivacyPage() {
           <li>The lead details your CRM sends, and the case files, response times, and follow-up clocks built from them.</li>
           <li>Drafts Relay prepared, and who approved, changed, or turned each one down.</li>
           <li>Who did what in this workspace, so history stays under each person&apos;s name.</li>
+          <li>The wording of notices Vistrial sends you, for 90 days. The record that a notice was sent is kept for one year.</li>
         </ul>
         <p className={helperClass}>
           Vistrial reads from your CRM and never writes back to it. Deleting data here does not touch your CRM.

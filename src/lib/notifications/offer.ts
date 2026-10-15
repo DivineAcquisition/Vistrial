@@ -1,7 +1,8 @@
 import type { GhlDb } from "@/lib/ghl/tokens";
-import { NOTIFICATION_HOURLY_CAP } from "@/lib/notifications/constants";
+import { NOTIFICATION_HOURLY_CAP, NOTIFICATION_WORKSPACE_HOURLY_CAP } from "@/lib/notifications/constants";
+import { exemptFromLimits, groupHoldUntil, interruptCapped, isCriticalEvent, shouldGroup } from "@/lib/notifications/decisions";
 import { appendToBatch, enqueueNotification } from "@/lib/notifications/enqueue";
-import { isWithinWorkingHours, nextWorkingStart } from "@/lib/notifications/hours";
+import { isInsideQuiet, isWithinWorkingHours, nextQuietEnd, nextWorkingStart } from "@/lib/notifications/hours";
 import { hourlySummaryCopy, notificationHref } from "@/lib/notifications/messages";
 import {
   hourlyCount,
@@ -9,9 +10,9 @@ import {
   isMuted,
   loadPreferenceOverrides,
   muteApplies,
-  overHourlyCap,
   pickChannel,
   skipSelf,
+  workspaceHourlyCount,
 } from "@/lib/notifications/policy";
 import type { EnqueueInput, MemberNotifyTarget, NotificationChannel } from "@/lib/notifications/types";
 
@@ -65,16 +66,42 @@ export async function offerToMember(
     return "skipped";
   }
 
-  const sendAfter =
+  let sendAfter =
     emergency || args.skipWorkingHours || isWithinWorkingHours(now, args.target.hours)
       ? now
       : nextWorkingStart(now, args.target.hours);
 
-  if (!emergency && channel !== "team" && channel !== "da_console" && !input.isTest) {
-    const count = await hourlyCount(db, args.target.userId, now);
-    if (overHourlyCap(count)) {
-      const summary = hourlySummaryCopy(count - NOTIFICATION_HOURLY_CAP + 1);
-      await enqueueNotification(db, {
+  if (
+    !emergency &&
+    !exemptFromLimits(input.eventType) &&
+    args.target.quiet &&
+    isInsideQuiet(now, args.target.quiet, args.target.hours.timeZone)
+  ) {
+    const resume = nextQuietEnd(now, args.target.quiet, args.target.hours.timeZone);
+    if (resume.getTime() > sendAfter.getTime()) sendAfter = resume;
+  }
+
+  if (channel !== "team" && channel !== "da_console") {
+    const exempt = exemptFromLimits(input.eventType);
+    const person = exempt || input.isTest ? 0 : await hourlyCount(db, args.target.userId, now);
+    const workspace =
+      exempt || input.isTest || !input.orgId ? 0 : await workspaceHourlyCount(db, input.orgId, now);
+    if (
+      interruptCapped({
+        personCount: person,
+        workspaceCount: workspace,
+        eventType: input.eventType,
+        isTest: Boolean(input.isTest),
+      }) === "summarize"
+    ) {
+      const overflow = Math.max(
+        person - NOTIFICATION_HOURLY_CAP + 1,
+        workspace - NOTIFICATION_WORKSPACE_HOURLY_CAP + 1,
+        1
+      );
+      const critical = isCriticalEvent(input.eventType);
+      const summary = hourlySummaryCopy(overflow, critical);
+      const summaryId = await enqueueNotification(db, {
         orgId: input.orgId,
         eventType: "hourly_summary",
         channel,
@@ -85,13 +112,29 @@ export async function offerToMember(
         body: summary.body,
         href: notificationHref("/app/queue"),
         dedupeKey: `hourly_summary:${args.target.userId}:${Math.floor(now.getTime() / 3600000)}`,
-        sendAfter,
+        isEmergency: critical,
+        sendAfter: critical ? now : sendAfter,
       });
+      if (summaryId && critical) {
+        await db
+          .from("notifications")
+          .update({
+            title: summary.title,
+            body: summary.body,
+            is_emergency: true,
+            updated_at: now.toISOString(),
+          })
+          .eq("id", summaryId)
+          .eq("status", "queued");
+      }
       return "capped";
     }
   }
 
-  if (args.batch) {
+  const hold = emergency ? null : groupHoldUntil(now, input.eventType, Boolean(args.batch));
+  if (hold && hold.getTime() > sendAfter.getTime()) sendAfter = hold;
+
+  if (args.batch && shouldGroup(input.eventType) && !emergency) {
     const batched = await appendToBatch(db, {
       orgId: input.orgId ?? "",
       batchKey: args.batch.key,
@@ -108,6 +151,7 @@ export async function offerToMember(
     channel,
     recipientUserId: args.target.userId,
     recipientMemberId: args.target.memberId,
+    batchKey: args.batch && shouldGroup(input.eventType) && !emergency ? args.batch.key : input.batchKey,
     sendAfter,
   });
   return id ? "enqueued" : "skipped";

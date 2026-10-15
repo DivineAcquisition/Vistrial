@@ -6,6 +6,8 @@ import { followUpError, followUpLog, followUpWarn } from "@/lib/follow-up/log";
 import { parseDraftModelOutput } from "@/lib/follow-up/parse";
 import { DRAFT_SYSTEM_PROMPT, draftUserPrompt } from "@/lib/follow-up/prompt";
 import { requireConfig } from "@/lib/config/server";
+import { complianceSendAt } from "@/lib/compliance/dispatch";
+import { scheduleOutsideQuiet } from "@/lib/follow-up/quiet-hours";
 import { checkDraftQuality } from "@/lib/follow-up/quality";
 import { boundedSequenceSteps, parseRoutingRule, routeFollowUp } from "@/lib/follow-up/routing";
 import type {
@@ -346,6 +348,23 @@ export async function runFollowUpJob(db: GhlDb, jobId: string): Promise<void> {
       .from("follow_up_jobs")
       .update({ status: "dead", last_error: `config_incomplete: ${gate.reason}`, processed_at: new Date().toISOString() })
       .eq("id", job.id);
+    return;
+  }
+
+  const quietUntil = await complianceSendAt(db, job.org_id, job.lead_id);
+  if (!quietUntil) {
+    await db
+      .from("follow_up_jobs")
+      .update({ status: "pending", next_attempt_at: new Date(Date.now() + 15 * 60 * 1000).toISOString() })
+      .eq("id", job.id);
+    return;
+  }
+  if (Date.parse(quietUntil) > Date.now() + 1000) {
+    await db
+      .from("follow_up_jobs")
+      .update({ status: "pending", next_attempt_at: quietUntil, last_error: "quiet_hours" })
+      .eq("id", job.id);
+    followUpLog("follow_up.held_for_quiet_hours", { jobId: job.id, until: quietUntil });
     return;
   }
 
@@ -816,7 +835,8 @@ export async function enqueueSequenceStep(
 
   const base = args.callAt ? Date.parse(args.callAt) : Date.now();
   const nextAttempt = new Date(base + args.delayHours * 3_600_000);
-  const when = nextAttempt.getTime() < Date.now() ? new Date() : nextAttempt;
+  const desired = nextAttempt.getTime() < Date.now() ? new Date() : nextAttempt;
+  const when = scheduleOutsideQuiet(desired, await complianceSendAt(db, args.orgId, args.leadId, desired));
 
   await db.from("follow_up_jobs").insert({
     org_id: args.orgId,

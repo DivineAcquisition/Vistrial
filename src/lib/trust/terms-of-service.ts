@@ -259,11 +259,15 @@ export function termsSections(trust: TrustPublic): PolicySection[] {
         },
         {
           kind: "p",
-          text: "If a payment fails. We notify the workspace Owner. The workspace keeps working while the payment is sorted. The billing system does not restrict the workspace, suspend it, or close it because a payment failed, and it does not delete workspace data on a day count after the failure. Nothing is switched off automatically.",
+          text: "If a payment fails. Days are counted in America/New_York from the date the payment failed. That date is day 0. Through day 7, everything keeps working. From day 8, new drafts, new AI case files, Compass, and new transcription wait. You can still read your leads. At day 30 the workspace is suspended. Follow-ups stop, and the Owner can still pay, export, and cancel. At day 60 the workspace is closed. Paying what is owed restores a workspace that is past due, restricted, suspended, or closed for non-payment.",
+        },
+        {
+          kind: "p",
+          text: "After closing, workspace data follows that workspace retention setting. The default is 90 days. It is not deleted 30 days after closing.",
         },
         {
           kind: "note",
-          text: "[COUNSEL: a schedule of 7 days of grace, restriction from day 8, suspension at day 30, closure at day 60, and deletion 30 days after closing is not what the billing system does. It is omitted above. America/New_York is the staff timezone default, not a billing-stage clock.]",
+          text: "[COUNSEL: confirm whether deletion after a non-payment close should be 30 days instead of the 90 day default.]",
         },
         { kind: "p", text: "Charges are non-refundable except as stated in Section 10 or required by law." },
         {
@@ -279,7 +283,7 @@ export function termsSections(trust: TrustPublic): PolicySection[] {
       blocks: [
         {
           kind: "p",
-          text: `You can cancel at any time by contacting ${email}. Billing settings do not include a cancel button. The team confirms the date before access ends. When cancellation is set to the end of the paid period, you keep access until then. We do not refund the remainder of a period you chose to finish.`,
+          text: `You can cancel at any time from billing settings, or by contacting ${email}. Cancellation takes effect at the end of the period you have already paid for, and you keep access until then. We do not refund the remainder of a period you chose to cancel. Canceling does not delete the workspace.`,
         },
         {
           kind: "p",

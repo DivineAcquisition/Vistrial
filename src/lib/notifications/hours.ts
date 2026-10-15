@@ -3,6 +3,8 @@ import {
   DEFAULT_WORKING_HOURS_END,
   DEFAULT_WORKING_HOURS_START,
 } from "@/lib/notifications/constants";
+
+export type QuietHours = { startHm: string; endHm: string };
 import type { WorkingHours } from "@/lib/notifications/types";
 
 function zonedParts(at: Date, timeZone: string): {
@@ -132,6 +134,42 @@ export function localDateKey(at: Date, timeZone: string): string {
   const month = String(parts.month).padStart(2, "0");
   const day = String(parts.day).padStart(2, "0");
   return `${parts.year}-${month}-${day}`;
+}
+
+/** Minutes after a local clock hour, or null when that hour has not started yet. */
+export function minutesAfterLocalHour(at: Date, timeZone: string, hour: number): number | null {
+  const parts = zonedParts(at, timeZone);
+  const delta = minutesOfDay(parts.hour, parts.minute) - hour * 60;
+  if (delta < 0) return null;
+  return delta;
+}
+
+/** Quiet hours are optional. An unset window never holds a notice. */
+export function isInsideQuiet(at: Date, quiet: QuietHours | null | undefined, timeZone: string): boolean {
+  if (!quiet?.startHm || !quiet.endHm) return false;
+  const parts = zonedParts(at, timeZone);
+  const now = minutesOfDay(parts.hour, parts.minute);
+  const start = parseHm(quiet.startHm);
+  const end = parseHm(quiet.endHm);
+  const startMin = minutesOfDay(start.hour, start.minute);
+  const endMin = minutesOfDay(end.hour, end.minute);
+  if (startMin === endMin) return false;
+  if (startMin < endMin) return now >= startMin && now < endMin;
+  return now >= startMin || now < endMin;
+}
+
+export function nextQuietEnd(at: Date, quiet: QuietHours, timeZone: string): Date {
+  if (!isInsideQuiet(at, quiet, timeZone)) return at;
+  const end = parseHm(quiet.endHm);
+  const base = zonedParts(at, timeZone);
+  const localNoon = zonedDate(timeZone, base.year, base.month, base.day, 12, 0);
+  for (let add = 0; add < 3; add += 1) {
+    const shifted = new Date(localNoon.getTime() + add * 24 * 60 * 60 * 1000);
+    const day = zonedParts(shifted, timeZone);
+    const candidate = zonedDate(timeZone, day.year, day.month, day.day, end.hour, end.minute);
+    if (candidate.getTime() > at.getTime()) return candidate;
+  }
+  return new Date(at.getTime() + 12 * 60 * 60 * 1000);
 }
 
 export function minutesIntoWorkingDay(at: Date, hours: WorkingHours): number | null {

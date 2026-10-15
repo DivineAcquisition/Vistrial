@@ -82,6 +82,8 @@ export async function sendRequestConfirmation(email: string, name: string, kind:
     subject,
     lines: body.split("\n").filter((line) => line.length > 0),
     idempotencyKey: `access-confirm:${id ?? email}:${Date.now()}`,
+    category: "D",
+    footer: { recipientEmail: email, siteName: "vistrial.io" },
   });
   if (id) {
     await db().rpc("mark_access_request_confirmation", {
@@ -107,6 +109,8 @@ export async function notifyStaffOfRequests(): Promise<void> {
     lines: ["New access requests are waiting in the queue.", "Open the client roster and choose Access requests."],
     cta: { label: "Open the queue", href: "/app/team/roster/requests" },
     idempotencyKey: `access-notice:${new Date().toISOString().slice(0, 13)}`,
+    category: "I",
+    footer: { recipientEmail: to[0], workspaceName: "Vistrial" },
   });
 }
 
@@ -120,6 +124,8 @@ export async function notifyStaffOfAbuse(): Promise<void> {
     subject: "Access request volume is high",
     lines: ["A lot of access requests were blocked in a short time. Check the queue before treating the new rows as real."],
     idempotencyKey: `access-abuse:${new Date().toISOString().slice(0, 13)}`,
+    category: "I",
+    footer: { recipientEmail: to[0], workspaceName: "Vistrial" },
   });
 }
 
@@ -147,5 +153,7 @@ export async function notifyStaleRequests(): Promise<void> {
     subject: "Access requests have been waiting",
     lines: [`${count} access requests have been waiting past the reminder.`],
     idempotencyKey: `access-stale:${new Date().toISOString().slice(0, 10)}`,
+    category: "I",
+    footer: { recipientEmail: to[0], workspaceName: "Vistrial" },
   });
 }

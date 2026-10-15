@@ -16,10 +16,13 @@ describe("terms stay inside the billing system", () => {
     expect(text).not.toMatch(/apply this/i);
   });
 
-  it("does not promise the unpaid-account day count", () => {
-    expect(text).toContain("keeps working");
-    expect(text).not.toMatch(/from day 8: your workspace is restricted/i);
-    expect(text).toContain("not what the billing system does");
+  it("matches the billing day count and the 90 day close retention", () => {
+    expect(text).toContain("Through day 7, everything keeps working");
+    expect(text).toContain("From day 8");
+    expect(text).toContain("At day 30");
+    expect(text).toContain("At day 60");
+    expect(text).toContain("America/New_York");
+    expect(text).toContain("default is 90 days");
     expect(text).toMatch(/six \(6\) months/i);
     expect(text).toContain("$97");
     expect(text).toContain("Prince George's County");

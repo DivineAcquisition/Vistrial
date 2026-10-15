@@ -3,7 +3,18 @@ import "server-only";
 import { Resend } from "resend";
 
 import { appUrl } from "@/lib/app-url";
-import { transactionalEmailHtml } from "@/lib/email/layout";
+import type { EmailCategory, FooterVars } from "@/lib/email/footer";
+import { renderFooter, sendingStream, staffRecipientAllowed, unresolvedCopy } from "@/lib/email/footer";
+import { EMAIL_REPLY_TO, streamSendAllowed } from "@/lib/email/streams";
+import { emailLogoUrl, transactionalEmailHtml } from "@/lib/email/layout";
+import {
+  activeStaffEmails,
+  issueUnsubscribeUrl,
+  lifecycleSuppressed,
+  platformAdminEmails,
+  recordEmailSend,
+  withPreferences,
+} from "@/lib/email/send-guard";
 import { localDate, zonedStartOfDay } from "@/lib/home/periods";
 import type { GhlDb } from "@/lib/ghl/tokens";
 import { ghlError } from "@/lib/ghl/log";
@@ -31,12 +42,34 @@ export function absoluteUrl(path: string): string {
   return path.startsWith("http") ? path : `${appUrl()}${path.startsWith("/") ? path : `/${path}`}`;
 }
 
-export function portalEmailHtml(args: { heading: string; lines: string[]; cta?: { label: string; href: string } }): string {
+export function portalEmailHtml(args: {
+  heading: string;
+  lines: string[];
+  cta?: { label: string; href: string };
+  footerHtml?: string;
+}): string {
   return transactionalEmailHtml({
     heading: args.heading,
     preheader: args.lines[0],
     lines: args.lines,
     cta: args.cta,
+    footerHtml: args.footerHtml,
+    logoUrl: emailLogoUrl(),
+  });
+}
+
+async function alertFooterBlocked(reason: string): Promise<void> {
+  ghlError("email.footer.blocked", { error: reason });
+  const emails = await platformAdminEmails();
+  if (emails.length === 0 || !emails[0]) return;
+  await sendPortalMail({
+    to: emails,
+    subject: "An email was not sent",
+    lines: [reason],
+    category: "I",
+    footer: { workspaceName: "Vistrial", recipientEmail: emails[0] },
+    idempotencyKey: `footer-blocked:${reason.slice(0, 120)}`,
+    skipBlockAlert: true,
   });
 }
 
@@ -47,24 +80,93 @@ export async function sendPortalMail(args: {
   lines: string[];
   cta?: { label: string; href: string };
   idempotencyKey: string;
+  category: EmailCategory;
+  footer: FooterVars;
+  skipBlockAlert?: boolean;
 }): Promise<MailResult> {
   const cfg = resendConfigured();
   if (!cfg) return { ok: false, error: "Email is not set up yet (RESEND_API_KEY or RESEND_FROM is missing)." };
-  const to = (Array.isArray(args.to) ? args.to : [args.to]).filter((address) => address.includes("@"));
+  if (unresolvedCopy([args.subject, ...args.lines].join("\n"))) {
+    const reason = "Email was not sent. The message still has an unresolved placeholder.";
+    if (!args.skipBlockAlert) await alertFooterBlocked(reason);
+    return { ok: false, error: reason };
+  }
+  let to = (Array.isArray(args.to) ? args.to : [args.to]).filter((address) => address.includes("@"));
   if (to.length === 0) return { ok: false, error: "No address to send to." };
+
+  if (args.category === "I") {
+    const staff = await activeStaffEmails();
+    const blocked = to.filter((address) => !staffRecipientAllowed(address, staff));
+    to = to.filter((address) => staffRecipientAllowed(address, staff));
+    if (blocked.length > 0 && !args.skipBlockAlert) {
+      await alertFooterBlocked(`Internal email was not sent to a non-staff address: ${blocked.join(", ")}`);
+    }
+    if (to.length === 0) return { ok: false, error: "Internal email was not sent. The recipient is not staff." };
+  }
+
+  const stream = sendingStream(args.category);
+  const allowed = streamSendAllowed({
+    category: args.category,
+    transactionalFrom: cfg.from,
+    lifecycleFrom: cfg.lifecycleFrom,
+  });
+  if (!allowed.ok) return { ok: false, error: allowed.error };
+  if (stream === "lifecycle") {
+    const kept: string[] = [];
+    for (const address of to) {
+      if (await lifecycleSuppressed(address)) continue;
+      kept.push(address);
+    }
+    if (kept.length === 0) return { ok: false, error: "This address is unsubscribed from lifecycle email." };
+    to = kept;
+  }
+
+  const footerVars = withPreferences({ ...args.footer });
+  if ((args.category === "E" || args.category === "F") && !footerVars.unsubscribeUrl && to[0]) {
+    footerVars.unsubscribeUrl = (await issueUnsubscribeUrl(to[0], args.category)) ?? undefined;
+  }
+  const rendered = renderFooter({ category: args.category, vars: footerVars });
+  if (!rendered.ok) {
+    if (!args.skipBlockAlert) await alertFooterBlocked(rendered.error);
+    return { ok: false, error: rendered.error };
+  }
+
+  const from = allowed.from;
   const cta = args.cta ? { label: args.cta.label, href: absoluteUrl(args.cta.href) } : undefined;
+  const headers: Record<string, string> = {};
+  if (footerVars.unsubscribeUrl && (args.category === "E" || args.category === "F")) {
+    headers["List-Unsubscribe"] = `<${footerVars.unsubscribeUrl}>`;
+    headers["List-Unsubscribe-Post"] = "List-Unsubscribe=One-Click";
+  }
   try {
     const { data, error } = await new Resend(cfg.apiKey).emails.send(
       {
-        from: cfg.from,
+        from,
         to,
+        replyTo: EMAIL_REPLY_TO,
         subject: args.subject,
-        html: portalEmailHtml({ heading: args.heading ?? args.subject, lines: args.lines, cta }),
-        text: [...args.lines, cta ? `${cta.label}: ${cta.href}` : ""].filter(Boolean).join("\n\n"),
+        html: portalEmailHtml({
+          heading: args.heading ?? args.subject,
+          lines: args.lines,
+          cta,
+          footerHtml: rendered.footer.html,
+        }),
+        text: [...args.lines, cta ? `${cta.label}: ${cta.href}` : "", rendered.footer.text].filter(Boolean).join("\n\n"),
+        headers,
+        tags: [{ name: "category", value: args.category }, { name: "footer_version", value: rendered.footer.version }],
       },
       { idempotencyKey: args.idempotencyKey.slice(0, 256) }
     );
     if (error) return { ok: false, error: error.message };
+    for (const address of to) {
+      await recordEmailSend({
+        category: args.category,
+        version: rendered.footer.version,
+        recipient: address,
+        stream,
+        providerId: data?.id,
+      });
+    }
     return { ok: true, id: data?.id };
   } catch (caught) {
     return { ok: false, error: caught instanceof Error ? caught.message : "Email failed." };
@@ -73,7 +175,8 @@ export async function sendPortalMail(args: {
 
 /**
  * The Vistrial people to tell about a workspace: Service Team assigned to it,
- * or every active Platform Admin when nobody is assigned.
+ * then Platform Admins when nobody is assigned. The first build does not page
+ * staff after hours.
  */
 export async function staffAddressesFor(orgId: string): Promise<string[]> {
   const db = getSupabaseAdmin();
@@ -100,12 +203,19 @@ export async function emailStaff(args: {
   idempotencyKey: string;
 }): Promise<MailResult> {
   const to = await staffAddressesFor(args.orgId);
+  if (to.length === 0 || !to[0]) return { ok: false, error: "No staff address to send to." };
+  const { data: org } = await getSupabaseAdmin().from("organizations").select("name").eq("id", args.orgId).maybeSingle();
   const result = await sendPortalMail({
     to,
     subject: args.subject,
     lines: args.lines,
     cta: { label: args.ctaLabel, href: args.href },
     idempotencyKey: args.idempotencyKey,
+    category: "I",
+    footer: {
+      recipientEmail: to[0],
+      workspaceName: org?.name || "Vistrial",
+    },
   });
   if (!result.ok) ghlError("portal.staff_email.failed", { orgId: args.orgId, error: result.error });
   return result;

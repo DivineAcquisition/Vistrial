@@ -41,7 +41,7 @@ export const TRUST_FALLBACK: TrustPublic = {
   supportEmail: "contact@vistrial.io",
   securityUpdatedOn: "2026-10-14",
   subprocessorsUpdatedOn: "2026-10-14",
-  privacyUpdatedOn: "2026-10-14",
+  privacyUpdatedOn: "2026-10-15",
   termsUpdatedOn: "2026-10-14",
   legalEntity: null,
   mailingAddress: null,

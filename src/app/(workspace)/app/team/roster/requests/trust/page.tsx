@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { PageFrame } from "@/components/app/page-frame";
 import { requireStaff } from "@/lib/auth/gates";
 import { staffDb } from "@/lib/staff/db";
+import { requestAgeDays, requestNeedsAttention } from "@/lib/trust/request-age";
 import { helperClass } from "@/lib/ui";
 
 export const dynamic = "force-dynamic";
@@ -52,10 +53,11 @@ export default async function TrustSettingsPage() {
   const ctx = await requireStaff();
   if (!ctx.isPlatformAdmin) notFound();
   const db = await staffDb();
-  const [{ data: settings }, { data: rows }, { data: docs }] = await Promise.all([
+  const [{ data: settings }, { data: rows }, { data: docs }, { data: dataRequests }] = await Promise.all([
     db.from("public_site_settings").select("*").eq("id", 1).maybeSingle(),
     db.from("subprocessors").select("id, company, purpose, data_handled, location, published").order("sort_order"),
     db.from("security_documents").select("id, title, version, created_at").order("created_at", { ascending: false }),
+    db.from("trust_data_requests").select("id, reference, kind, status, requester_email, created_at").order("created_at", { ascending: false }).limit(50),
   ]);
   const setting = (settings ?? {}) as Record<string, unknown>;
 
@@ -65,7 +67,7 @@ export default async function TrustSettingsPage() {
         <Link href="/app/team/roster/requests" className="text-brand-300 underline">Back to requests</Link>
       </p>
       <p className={helperClass}>
-        Draft for admins: legal pages stay off the public site until the legal entity, mailing address, and approval switches are set. Vulnerability safe harbor text stays off the report page until you approve it.
+        The privacy draft is readable at /privacy, with a draft banner, until the mailing address is saved and privacy is approved. It stays out of search results until then. Vulnerability safe harbor text stays off the report page until you approve it.
       </p>
       <form action={saveSetting} className="mt-6 grid max-w-xl gap-3">
         <input type="hidden" name="field" value="legal_entity_name" />
@@ -111,6 +113,26 @@ export default async function TrustSettingsPage() {
             </button>
           </form>
         ))}
+      </section>
+      <section className="mt-8">
+        <h2 className="font-heading text-lg text-white">Privacy data requests</h2>
+        <p className={helperClass}>Open requests older than 30 days are marked so the queue can meet the response aim in the privacy policy.</p>
+        <ul className="mt-3 space-y-2 text-sm text-silver">
+          {(dataRequests ?? []).map((row) => {
+            const created = String(row.created_at ?? "");
+            const status = String(row.status ?? "");
+            const late = created ? requestNeedsAttention(status, created) : false;
+            return (
+              <li key={String(row.id)}>
+                {String(row.reference)} · {String(row.kind)} · {status}
+                {row.requester_email ? ` · ${String(row.requester_email)}` : ""}
+                {created ? ` · ${requestAgeDays(created)} days old` : ""}
+                {late ? " · older than 30 days" : ""}
+              </li>
+            );
+          })}
+        </ul>
+        {(dataRequests ?? []).length === 0 ? <p className={helperClass}>No privacy data requests.</p> : null}
       </section>
       <section className="mt-8">
         <h2 className="font-heading text-lg text-white">Subprocessors</h2>

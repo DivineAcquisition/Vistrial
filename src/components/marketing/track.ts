@@ -1,4 +1,5 @@
 import type { MarketingEvent } from "@/lib/marketing/analytics";
+import { optionalAnalyticsAllowed } from "@/lib/marketing/consent";
 
 const ENDPOINT = "/api/marketing/events";
 
@@ -19,6 +20,7 @@ function payload(event: TrackInput): MarketingEvent {
 /** Fire-and-forget. Beacon when the tab is closing; fetch otherwise. */
 export function trackMarketingEvent(event: TrackInput) {
   if (typeof window === "undefined") return;
+  if (!optionalAnalyticsAllowed()) return;
   const body = JSON.stringify(payload(event));
   try {
     if (navigator.sendBeacon) {

@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 
 import { LeadDataForm } from "@/components/marketing/lead-data-form";
 import { MarketingShell } from "@/components/marketing/chrome";
@@ -19,6 +20,9 @@ export default async function DataRequestsPage() {
         <div className={`${marketingLead} mt-4 space-y-3`}>
           <p>Workspace Owners can ask for an export, a correction, or deletion from inside the product, under Help. A person verifies the request. Nothing is deleted or exported on its own.</p>
           <p>If you are a person contacted by one of our customers and want your information changed or removed, contact that business. You can also email {trust.privacyEmail} and we will pass your request to them when we can tell who they are.</p>
+          <p>
+            The <Link href="/privacy" className="text-brand-300 underline">privacy policy</Link> explains what we keep and how to ask.
+          </p>
         </div>
         <div className="mt-8">
           <LeadDataForm />

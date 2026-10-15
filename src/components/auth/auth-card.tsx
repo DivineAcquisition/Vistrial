@@ -41,7 +41,12 @@ export function AuthCard({
           <h1 className="auth-title">{title}</h1>
           {subtitle ? <p className="auth-subtitle">{subtitle}</p> : null}
           {children ? <div className="auth-desk-body">{children}</div> : null}
-          <p className="auth-desk-foot">{APP_NAME} is invite only</p>
+          <p className="auth-desk-foot">
+            {APP_NAME} is invite only.{" "}
+            <a href="/privacy" className="underline">
+              Privacy
+            </a>
+          </p>
         </div>
       </main>
     </div>

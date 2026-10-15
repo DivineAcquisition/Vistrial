@@ -1,5 +1,5 @@
 import { appUrl } from "@/lib/app-url";
-import { CONTACT_EMAIL } from "@/lib/constants";
+import { CONTACT_EMAIL, PRODUCTION_SITE_ORIGIN } from "@/lib/constants";
 
 /**
  * Transactional mail shell.
@@ -146,7 +146,8 @@ export function transactionalEmailHtml(args: TransactionalEmail): string {
             <tr>
               <td style="padding:18px 8px 0;font-size:12px;line-height:18px;color:${QUIET};">
                 Vistrial<br />
-                Need a hand? <a href="mailto:${CONTACT_EMAIL}" style="color:${INK};text-decoration:underline;">Contact us</a>
+                Need a hand? <a href="mailto:${CONTACT_EMAIL}" style="color:${INK};text-decoration:underline;">Contact us</a><br />
+                <a href="${PRODUCTION_SITE_ORIGIN}/privacy" style="color:${INK};text-decoration:underline;">Privacy</a>
               </td>
             </tr>
           </table>

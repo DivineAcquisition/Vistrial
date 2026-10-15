@@ -6,6 +6,7 @@ import { StatusBadge } from "@/components/ui/status-badge";
 import { requireStaff } from "@/lib/auth/gates";
 import { formatDayLong } from "@/lib/format";
 import { staffDb } from "@/lib/staff/db";
+import { requestAgeDays, requestNeedsAttention } from "@/lib/trust/request-age";
 import { helperClass } from "@/lib/ui";
 
 export const dynamic = "force-dynamic";
@@ -38,6 +39,8 @@ export default async function DataRequestsPage() {
                 </span>
                 <span className={helperClass}>
                   {row.requested_by_name ?? "Owner"}, {formatDayLong(row.created_at)}
+                  {` · ${requestAgeDays(row.created_at)} days old`}
+                  {requestNeedsAttention(row.status, row.created_at) ? " · older than 30 days" : ""}
                   {row.scheduled_for ? ` · scheduled ${formatDayLong(row.scheduled_for)}` : ""}
                 </span>
               </Link>

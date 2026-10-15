@@ -44,24 +44,42 @@ export function CreateWorkspaceForm({
   templates,
   staff = [],
   plans = [],
+  defaults,
 }: {
-  templates: Array<{ id: string; name: string }>;
+  templates: Array<{ id: string; name: string; slug?: string | null }>;
   staff?: Array<{ user_id: string; display_name: string; role: string }>;
   plans?: Array<{ id: string; label: string }>;
+  defaults?: {
+    name?: string;
+    templateId?: string;
+    contactName?: string;
+    ownerEmail?: string;
+    requestId?: string;
+    version?: number;
+    existingAccount?: boolean;
+  };
 }) {
   const [state, action, pending] = useActionState(createWorkspace, initial);
   return (
     <form action={action} className="space-y-4">
+      {defaults?.requestId ? <input type="hidden" name="access_request_id" value={defaults.requestId} /> : null}
+      {defaults?.version != null ? <input type="hidden" name="access_request_version" value={String(defaults.version)} /> : null}
+      {defaults?.existingAccount ? (
+        <label className="flex items-start gap-2 text-sm">
+          <input type="checkbox" name="confirm_existing_owner" value="yes" className={checkboxClass} required />
+          This email already belongs to an account. Creating the workspace still sends an Owner invitation.
+        </label>
+      ) : null}
       <div className="grid gap-3 sm:grid-cols-2">
         <Field label="Business name" name="name" htmlFor="ws-name" required>
-          <Input id="ws-name" name="name" required minLength={2} placeholder="Northside Fitness" />
+          <Input id="ws-name" name="name" required minLength={2} placeholder="Northside Fitness" defaultValue={defaults?.name} />
         </Field>
         <Field label="Industry template" name="template_id" htmlFor="ws-template" required>
           <Select
             id="ws-template"
             name="template_id"
             required
-            defaultValue={templates[0]?.id ?? ""}
+            defaultValue={defaults?.templateId || templates[0]?.id || ""}
             options={templates.map((template) => ({ value: template.id, label: template.name }))}
             placeholder="No active template yet"
           />
@@ -87,10 +105,10 @@ export function CreateWorkspaceForm({
           )}
         </Field>
         <Field label="Primary contact name" name="contact_name" htmlFor="ws-contact">
-          <Input id="ws-contact" name="contact_name" autoComplete="off" />
+          <Input id="ws-contact" name="contact_name" autoComplete="off" defaultValue={defaults?.contactName} />
         </Field>
         <Field label="Primary contact email" name="owner_email" htmlFor="ws-owner" required help="Invited as the Owner. The invitation is emailed now.">
-          <Input id="ws-owner" name="owner_email" type="email" required placeholder="owner@business.example" />
+          <Input id="ws-owner" name="owner_email" type="email" required placeholder="owner@business.example" defaultValue={defaults?.ownerEmail} />
         </Field>
       </div>
       {staff.length ? (

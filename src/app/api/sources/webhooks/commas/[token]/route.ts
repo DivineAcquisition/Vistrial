@@ -51,7 +51,7 @@ export async function POST(
   const secret = conn?.secret_encrypted ? decryptSecret(conn.secret_encrypted) : null;
   const signature =
     request.headers.get("x-commas-signature") ?? request.headers.get("x-webhook-signature") ?? "";
-  if (secret && signature && !verifyHmacSha256Hex(rawBody, signature, secret)) {
+  if (secret && !verifyHmacSha256Hex(rawBody, signature, secret)) {
     await recordHttpSample(db, "/api/sources/webhooks/commas", true);
     return NextResponse.json({ error: "Invalid signature" }, { status: 401 });
   }

@@ -13,6 +13,7 @@
     "ops:restore-drill": "bash scripts/restore-drill.sh",
     "ops:migration-rollback": "bash scripts/test-migration-rollback.sh",
     "assert:no-secrets": "node scripts/assert-no-secrets-in-client.mjs",
+    "postinstall": "node scripts/patch-assistant-ui-snapshot.mjs",
     "audit:deps": "npm audit --audit-level=high"
   },
   "dependencies": {

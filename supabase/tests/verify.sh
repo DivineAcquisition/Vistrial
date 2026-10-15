@@ -175,6 +175,9 @@ run "${ROOT}/supabase/tests/verify-onboarding.sql"
 echo "Compass checks..."
 run "${ROOT}/supabase/tests/verify-compass.sql"
 
+echo "Public access request checks..."
+run "${ROOT}/supabase/tests/verify-access-requests.sql"
+
 echo "Configuration migration parity and rollback round trip..."
 bash "${ROOT}/scripts/test-config-migration.sh"
 

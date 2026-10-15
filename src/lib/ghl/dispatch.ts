@@ -193,7 +193,10 @@ export async function sendQueuedDispatch(db: GhlDb, dispatchId: string): Promise
   if (haltReason) return failDispatch(db, row, haltReason);
 
   const compliance = await complianceForDispatch(db, row);
-  if (compliance.action === "block" && (compliance.reason === "opted_out" || compliance.reason === "email_suppressed")) {
+  if (
+    compliance.action === "block" &&
+    (compliance.reason === "opted_out" || compliance.reason === "do_not_contact" || compliance.reason === "email_suppressed")
+  ) {
     await db
       .from("ghl_dispatches")
       .update({ status: "suppressed", failure_reason: compliance.reason, body_text: null, sent_at: new Date().toISOString(), claimed_at: null })

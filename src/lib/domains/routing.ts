@@ -93,6 +93,9 @@ export function isMarketingPath(path: string): boolean {
     path === "/terms" ||
     path === "/disclaimer" ||
     path === "/contact" ||
+    path === "/request" ||
+    path === "/thanks" ||
+    path === "/security-overview" ||
     pathIs(path, "/book")
   );
 }
@@ -163,7 +166,7 @@ function routeSiteHost(path: string): HostRouteDecision {
   if (isStellarPath(path)) return bounce("stellar", path);
   if (pathIs(path, FORSIGHT_PATH)) return bounce("pulse", path);
   if (isCoreAppPath(path) || isApiPath(path)) return bounce("app", path);
-  return bounce("site", "/");
+  return { action: "allow" };
 }
 
 function routeAppHost(path: string): HostRouteDecision {

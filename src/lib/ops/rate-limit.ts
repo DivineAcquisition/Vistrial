@@ -34,7 +34,7 @@ export async function consumeRateLimit(
     p_window_seconds: args.windowSeconds,
   });
   if (error || !data || typeof data !== "object") {
-    return { allowed: true, remaining: args.limit };
+    return { allowed: false, remaining: 0 };
   }
   const row = data as { allowed?: boolean; remaining?: number };
   return {

@@ -567,6 +567,8 @@ const TITLE_RULES: Array<{ prefix: string; title: string; crumbs: Array<{ href: 
   { prefix: "/app/team/templates", title: "Templates", crumbs: [{ href: "/app/team/templates", label: "Templates" }] },
   { prefix: "/app/team/activity", title: "Audit log", crumbs: [{ href: "/app/team/activity", label: "Audit log" }] },
   { prefix: "/app/team/queue", title: "Requests and escalations", crumbs: [{ href: "/app/team/queue", label: "Queue" }] },
+  { prefix: "/app/team/roster/requests/settings", title: "Request settings", crumbs: [{ href: "/app/team/roster", label: "Client Roster" }, { href: "/app/team/roster/requests", label: "Access requests" }, { href: "/app/team/roster/requests/settings", label: "Settings" }] },
+  { prefix: "/app/team/roster/requests", title: "Access requests", crumbs: [{ href: "/app/team/roster", label: "Client Roster" }, { href: "/app/team/roster/requests", label: "Access requests" }] },
   { prefix: "/app/team/roster", title: "Client Roster", crumbs: [{ href: "/app/team/roster", label: "Client Roster" }] },
   { prefix: "/app/team/onboarding", title: "Onboarding", crumbs: [{ href: "/app/team/onboarding", label: "Onboarding" }] },
   { prefix: "/app/team/connections", title: "Connections", crumbs: [{ href: "/app/team/connections", label: "Connections" }] },
@@ -649,6 +651,7 @@ export function layoutKindForPath(pathname: string): PageLayoutKind {
   }
   if (
     pathname === "/app/team/roster" ||
+    pathname.startsWith("/app/team/roster/requests") ||
     pathname === "/app/team/onboarding" ||
     pathname.startsWith("/app/team/queue") ||
     pathname.startsWith("/app/team/connections") ||

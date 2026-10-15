@@ -24,6 +24,17 @@ export async function GET(request: Request) {
       if (purgeError) throw new Error(purgeError.message);
       compass = purged;
     }
-    return { retention: preview, agentRuns, deletedOrgs, compass, dryRun };
+    let accessRequests = 0;
+    if (!dryRun) {
+      const { data: purgedRequests, error: requestError } = await (db as unknown as SupabaseClient).rpc(
+        "purge_expired_access_requests"
+      );
+      if (requestError) throw new Error(requestError.message);
+      accessRequests = typeof purgedRequests === "number" ? purgedRequests : 0;
+      const { retryAccessRequestEmail, notifyStaleRequests } = await import("@/lib/access-requests/submit");
+      await retryAccessRequestEmail();
+      await notifyStaleRequests();
+    }
+    return { retention: preview, agentRuns, deletedOrgs, compass, accessRequests, dryRun };
   });
 }

@@ -17,5 +17,7 @@ export async function sendOwnerInvite(args: { to: string; orgName: string; token
     ],
     cta: { label: "Set up my account", href: buildInviteLink(args.token) },
     idempotencyKey: args.key,
+    category: "A",
+    footer: { recipientEmail: args.to },
   });
 }

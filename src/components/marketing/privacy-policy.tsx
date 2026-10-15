@@ -256,7 +256,7 @@ export function PrivacyPolicyBody() {
         </p>
       </LegalSection>
 
-      <LegalSection heading="9. Security">
+      <LegalSection id="security" heading="9. Security">
         <LegalList>
           <li>Encryption in transit and at rest</li>
           <li>

@@ -37,7 +37,16 @@ export async function alertNewConfigStops(db: GhlDb): Promise<{ alerted: number 
     const href = `${appUrl()}/app/settings/configuration?workspace=${stop.org_id}`;
     await Promise.all(
       (staff ?? []).map((person) =>
-        sendEmail({ to: person.email, title, body, href, notificationId: stop.id, eventType: "config.stopped" }).catch(() => null)
+        sendEmail({
+          to: person.email,
+          title,
+          body,
+          href,
+          notificationId: stop.id,
+          eventType: "config.stopped",
+          category: "I",
+          footer: { recipientEmail: person.email, workspaceName: org?.name || "Vistrial" },
+        }).catch(() => null)
       )
     );
     await db.from("config_stops").update({ notified_at: new Date().toISOString() }).eq("id", stop.id);

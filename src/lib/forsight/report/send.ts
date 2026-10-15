@@ -2,8 +2,12 @@ import "server-only";
 
 import { Resend } from "resend";
 
+import { roleLabel } from "@/lib/auth/permissions";
+import type { OrgRole } from "@/types/database";
 import { appUrl } from "@/lib/app-url";
+import { renderFooter } from "@/lib/email/footer";
 import { transactionalEmailHtml } from "@/lib/email/layout";
+import { recordEmailSend, withPreferences } from "@/lib/email/send-guard";
 import { forsightLog } from "@/lib/forsight/report/log";
 import { forsightReportPdf } from "@/lib/forsight/report/pdf";
 import { periodPath } from "@/lib/forsight/report/load";
@@ -58,24 +62,65 @@ export async function sendStoredReport(args: {
   const filename = `forsight-${periodPath(report.period.start)}-v${args.stored.version}.pdf`;
 
   const lines = [
-    `${report.workspace.name} — ${report.period.label}.`,
+    `${report.workspace.name}. ${report.period.label}.`,
     `Generated ${report.generatedAt}. Version ${args.stored.version}.`,
     "This is a snapshot. The numbers in it will not move.",
   ];
   const resend = new Resend(cfg.apiKey);
-  const { data, error } = await resend.emails.send({
-    from: cfg.from,
-    to: recipients,
-    subject: `${report.workspace.name} · ${report.period.label} report`,
-    text: [...lines, href].join("\n"),
-    html: transactionalEmailHtml({
-      heading: `${report.workspace.name} report`,
-      preheader: lines[0],
-      lines,
-      cta: { label: "Open in Forsight", href },
-    }),
-    attachments: [{ filename, content: Buffer.from(bytes) }],
-  });
+  const { data: members } = await args.db
+    .from("org_members")
+    .select("email, role")
+    .eq("org_id", args.stored.orgId)
+    .eq("active", true)
+    .in("role", ["owner", "admin"]);
+  let data: { id?: string } | null = null;
+  let error: { message: string } | null = null;
+  let sentCount = 0;
+  for (const member of members ?? []) {
+    const address = member.email?.trim().toLowerCase();
+    if (!address || !recipients.includes(address)) continue;
+    const rendered = renderFooter({
+      category: "C",
+      vars: withPreferences({
+        recipientEmail: address,
+        role: roleLabel(member.role as OrgRole),
+        workspaceName: report.workspace.name,
+      }),
+    });
+    if (!rendered.ok) return { status: "failed", reason: rendered.error };
+    const sent = await resend.emails.send({
+      from: cfg.from,
+      to: [address],
+      subject: `${report.workspace.name}, ${report.period.label} report`,
+      text: [...lines, href, rendered.footer.text].join("\n"),
+      html: transactionalEmailHtml({
+        heading: `${report.workspace.name} report`,
+        preheader: lines[0],
+        lines,
+        cta: { label: "Open in Forsight", href },
+        footerHtml: rendered.footer.html,
+      }),
+      tags: [
+        { name: "category", value: "C" },
+        { name: "footer_version", value: rendered.footer.version },
+      ],
+      attachments: [{ filename, content: Buffer.from(bytes) }],
+    });
+    data = sent.data;
+    error = sent.error;
+    if (error) break;
+    sentCount += 1;
+    await recordEmailSend({
+      category: "C",
+      version: rendered.footer.version,
+      recipient: address,
+      stream: "transactional",
+      providerId: sent.data?.id,
+    });
+  }
+  if (!error && sentCount === 0) {
+    return { status: "failed", reason: "No owner or admin email could be sent with a footer." };
+  }
 
   const admin = getSupabaseAdmin();
   const { error: logError } = await admin.from("forsight_report_sends").insert({

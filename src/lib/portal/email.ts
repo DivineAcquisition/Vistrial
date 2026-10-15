@@ -3,8 +3,12 @@ import "server-only";
 import { Resend } from "resend";
 
 import type { GhlDb } from "@/lib/ghl/tokens";
+import { roleLabel } from "@/lib/auth/permissions";
+import type { OrgRole } from "@/types/database";
 import { appUrl } from "@/lib/app-url";
+import { renderFooter } from "@/lib/email/footer";
 import { transactionalEmailHtml } from "@/lib/email/layout";
+import { recordEmailSend, withPreferences } from "@/lib/email/send-guard";
 import { resendConfigured } from "@/lib/notifications/env";
 import { previousEqualRange } from "@/lib/portal/range";
 import { loadPortalRpcAdmin, nextSendAtFor, scheduledEmailRange } from "@/lib/portal/load";
@@ -144,26 +148,54 @@ export async function sendPortalEmailForOrg(
 
   const href = `${appUrl()}/portal?range=custom&from=${range.fromDate}&to=${range.toDate}`;
   const detail = `Range ${range.fromDate} to ${range.toDate}. Generated ${generatedAt}. Workspace ${org.slug}.`;
+  const subject = `${org.name} owner report, ${range.fromDate} to ${range.toDate}`;
   const resend = new Resend(cfg.apiKey);
-  const { error } = await resend.emails.send({
-    from: cfg.from,
-    to: recipients,
-    subject: `${org.name} owner report · ${range.fromDate} to ${range.toDate}`,
-    text: `${summary}\n\n${detail}\n${href}`,
-    html: transactionalEmailHtml({
-      heading: `${org.name} owner report`,
-      preheader: summary,
-      lines: [summary, detail],
-      cta: { label: "Open the owner portal", href },
-    }),
-    attachments: [
-      {
-        filename: `vistrial-owner-report-${org.slug}-${range.fromDate}.pdf`,
-        content: Buffer.from(bytes),
-      },
-    ],
-  });
-  if (error) throw new Error(error.message);
+  const seen = new Set<string>();
+  for (const member of members ?? []) {
+    const address = member.email?.trim();
+    if (!address || seen.has(address.toLowerCase())) continue;
+    seen.add(address.toLowerCase());
+    const rendered = renderFooter({
+      category: "C",
+      vars: withPreferences({
+        recipientEmail: address,
+        role: roleLabel(member.role as OrgRole),
+        workspaceName: org.name,
+      }),
+    });
+    if (!rendered.ok) throw new Error(rendered.error);
+    const { error, data } = await resend.emails.send({
+      from: cfg.from,
+      to: [address],
+      subject,
+      text: `${summary}\n\n${detail}\n${href}\n\n${rendered.footer.text}`,
+      html: transactionalEmailHtml({
+        heading: `${org.name} owner report`,
+        preheader: summary,
+        lines: [summary, detail],
+        cta: { label: "Open the owner portal", href },
+        footerHtml: rendered.footer.html,
+      }),
+      tags: [
+        { name: "category", value: "C" },
+        { name: "footer_version", value: rendered.footer.version },
+      ],
+      attachments: [
+        {
+          filename: `vistrial-owner-report-${org.slug}-${range.fromDate}.pdf`,
+          content: Buffer.from(bytes),
+        },
+      ],
+    });
+    if (error) throw new Error(error.message);
+    await recordEmailSend({
+      category: "C",
+      version: rendered.footer.version,
+      recipient: address,
+      stream: "transactional",
+      providerId: data?.id,
+    });
+  }
   return { status: "sent" };
 }
 

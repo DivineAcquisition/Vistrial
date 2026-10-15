@@ -38,6 +38,7 @@ function HowItWorks({ manager }: { manager: boolean }) {
           </li>
         ) : null}
         <li>Emails about your account, like replies from your Vistrial team, follow the choice on your profile.</li>
+        <li>Notices about security, billing, and required alerts cannot be turned off.</li>
       </ul>
     </Panel>
   );

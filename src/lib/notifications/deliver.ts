@@ -1,3 +1,5 @@
+import { roleLabel } from "@/lib/auth/permissions";
+import type { OrgRole } from "@/types/database";
 import { NOTIFICATION_MAX_ATTEMPTS } from "@/lib/notifications/constants";
 import { nextAttemptAt, shouldMarkDead } from "@/lib/ghl/retry";
 import type { GhlDb } from "@/lib/ghl/tokens";
@@ -101,15 +103,25 @@ export async function deliverOne(
 
   let email: string | null = null;
   let phone: string | null = null;
+  let role = "";
+  let workspaceName = "";
   if (row.recipient_member_id) {
     const { data: member } = await db
       .from("org_members")
-      .select("email, phone")
+      .select("email, phone, role, organizations(name)")
       .eq("id", row.recipient_member_id)
       .maybeSingle();
     email = member?.email ?? null;
     phone = member?.phone ?? null;
+    if (member?.role) role = roleLabel(member.role as OrgRole);
+    const org = member?.organizations as { name?: string } | Array<{ name?: string }> | null;
+    workspaceName = (Array.isArray(org) ? org[0]?.name : org?.name) ?? "";
   }
+  if (!workspaceName && row.org_id) {
+    const { data: org } = await db.from("organizations").select("name").eq("id", row.org_id).maybeSingle();
+    workspaceName = org?.name ?? "";
+  }
+  const referenceId = row.subject_ids?.[0] || row.id;
 
   const result = await sendOnChannel(row.channel as NotificationChannel, {
     db,
@@ -123,6 +135,7 @@ export async function deliverOne(
     notificationId: row.id,
     eventType: row.event_type,
     items: resolved.items,
+    footer: { recipientEmail: email ?? undefined, role, workspaceName, referenceId },
   });
 
   if (result.ok) {

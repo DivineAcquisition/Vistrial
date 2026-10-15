@@ -72,6 +72,11 @@ function isMetadataPath(path: string): boolean {
   );
 }
 
+/** One-click and browser unsubscribe. Must stay reachable without signing in. */
+export function isEmailPublicPath(path: string): boolean {
+  return pathIs(path, "/email");
+}
+
 export function isAuthPath(path: string): boolean {
   return (
     path === "/login" ||
@@ -165,7 +170,7 @@ function routeAppHost(path: string): HostRouteDecision {
   if (path === "/") return frontDoor("/login");
   if (isMarketingPath(path)) return bounce("site", path, false);
   if (isStellarPath(path)) return bounce("stellar", path);
-  if (isAuthPath(path) || isCoreAppPath(path) || isApiPath(path)) {
+  if (isAuthPath(path) || isCoreAppPath(path) || isApiPath(path) || isEmailPublicPath(path)) {
     return { action: "allow" };
   }
   return bounce("site", "/");
@@ -179,7 +184,7 @@ function routeAdminHost(path: string): HostRouteDecision {
   if (path === "/") return frontDoor("/login");
   if (isMarketingPath(path)) return bounce("site", path, false);
   if (isStellarPath(path)) return bounce("stellar", path);
-  if (isAuthPath(path) || isCoreAppPath(path) || isApiPath(path)) {
+  if (isAuthPath(path) || isCoreAppPath(path) || isApiPath(path) || isEmailPublicPath(path)) {
     return { action: "allow" };
   }
   return bounce("site", "/");

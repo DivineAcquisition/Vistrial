@@ -1,7 +1,17 @@
 import { Resend } from "resend";
 import webpush from "web-push";
 
+import { categoryForEvent } from "@/lib/email/category";
+import type { EmailCategory, FooterVars } from "@/lib/email/footer";
+import { lifecycleFromSeparated, renderFooter, sendingStream, staffRecipientAllowed } from "@/lib/email/footer";
 import { transactionalEmailHtml } from "@/lib/email/layout";
+import {
+  activeStaffEmails,
+  issueUnsubscribeUrl,
+  lifecycleSuppressed,
+  recordEmailSend,
+  withPreferences,
+} from "@/lib/email/send-guard";
 import { decryptSecret } from "@/lib/ghl/crypto";
 import type { GhlDb } from "@/lib/ghl/tokens";
 import { assertLockScreenSafe } from "@/lib/notifications/copy";
@@ -18,6 +28,7 @@ function emailHtml(args: {
   body: string;
   href: string;
   items?: Array<{ text: string; href: string }>;
+  footerHtml: string;
 }): string {
   const lines = args.body && args.body !== args.title ? [args.body] : [];
   return transactionalEmailHtml({
@@ -26,6 +37,7 @@ function emailHtml(args: {
     lines,
     items: args.items,
     cta: { label: "Open in Vistrial", href: args.href },
+    footerHtml: args.footerHtml,
   });
 }
 
@@ -37,23 +49,70 @@ export async function sendEmail(args: {
   notificationId: string;
   eventType: string;
   items?: Array<{ text: string; href: string }>;
+  category?: EmailCategory;
+  footer?: FooterVars;
 }): Promise<SendResult> {
   assertLockScreenSafe(args.title, args.body);
+  const category = args.category ?? categoryForEvent(args.eventType);
+  if (!category) return { ok: false, error: "This email has no category, so it was not sent.", retry: false };
   const cfg = resendConfigured();
   if (!cfg) return { ok: false, error: "RESEND_API_KEY or RESEND_FROM is not set.", retry: false };
+
+  if (category === "I") {
+    const staff = await activeStaffEmails();
+    if (!staffRecipientAllowed(args.to, staff)) {
+      return { ok: false, error: "Internal email was not sent. The recipient is not staff.", retry: false };
+    }
+  }
+
+  const stream = sendingStream(category);
+  if (stream === "lifecycle") {
+    if (!lifecycleFromSeparated(cfg.from, cfg.lifecycleFrom)) {
+      return { ok: false, error: "Lifecycle email needs its own sending host (RESEND_FROM_LIFECYCLE).", retry: false };
+    }
+    if (await lifecycleSuppressed(args.to)) {
+      return { ok: false, error: "This address is unsubscribed from lifecycle email.", retry: false };
+    }
+  }
+
+  const footerVars = withPreferences({ recipientEmail: args.to, ...args.footer });
+  if ((category === "E" || category === "F") && !footerVars.unsubscribeUrl) {
+    footerVars.unsubscribeUrl = (await issueUnsubscribeUrl(args.to, category)) ?? undefined;
+  }
+  const rendered = renderFooter({ category, vars: footerVars });
+  if (!rendered.ok) return { ok: false, error: rendered.error, retry: false };
+
+  const from = stream === "lifecycle" ? cfg.lifecycleFrom! : cfg.from;
+  const headers: Record<string, string> = {};
+  if (footerVars.unsubscribeUrl && (category === "E" || category === "F")) {
+    headers["List-Unsubscribe"] = `<${footerVars.unsubscribeUrl}>`;
+    headers["List-Unsubscribe-Post"] = "List-Unsubscribe=One-Click";
+  }
 
   const resend = new Resend(cfg.apiKey);
   const { data, error } = await resend.emails.send(
     {
-      from: cfg.from,
+      from,
       to: [args.to],
       subject: args.title,
-      html: emailHtml(args),
-      text: `${args.body}\n${args.href}`,
+      html: emailHtml({ ...args, footerHtml: rendered.footer.html }),
+      text: `${args.body}\n${args.href}\n\n${rendered.footer.text}`,
+      headers,
+      tags: [
+        { name: "category", value: category },
+        { name: "footer_version", value: rendered.footer.version },
+      ],
     },
     { idempotencyKey: `${args.eventType}/${args.notificationId}` }
   );
   if (error) return { ok: false, error: error.message, retry: true };
+  await recordEmailSend({
+    category,
+    version: rendered.footer.version,
+    recipient: args.to,
+    stream,
+    providerId: data?.id,
+  });
   return { ok: true, providerId: data?.id };
 }
 
@@ -194,6 +253,8 @@ export async function sendOnChannel(
     notificationId: string;
     eventType: string;
     items?: Array<{ text: string; href: string }>;
+    footer?: FooterVars;
+    category?: EmailCategory;
   }
 ): Promise<SendResult> {
   switch (channel) {
@@ -206,6 +267,8 @@ export async function sendOnChannel(
         href: args.href,
         notificationId: args.notificationId,
         eventType: args.eventType,
+        category: args.category,
+        footer: { recipientEmail: args.email, referenceId: args.notificationId, ...args.footer },
         items: args.items?.map((item) => ({
           text: item.text,
           href: hrefWithNotification(item.href, args.notificationId),

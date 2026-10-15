@@ -11,8 +11,8 @@ import { loadTrustPublic } from "@/lib/trust/public";
 import { cn } from "@/lib/utils";
 
 const footerLinkClass = "text-sm text-silver transition-colors hover:text-white";
-const footerButton = "rounded-[8px]! before:rounded-[7px]!";
-const footerOutline = "rounded-[8px]! border-[#2a2833]! bg-[#12111a] before:rounded-[7px]! hover:bg-[#1c1a27]";
+const footerButton =
+  "h-12! rounded-[8px]! border-white! bg-white! px-5! text-[#07070b]! shadow-none! before:rounded-[7px]! hover:bg-neutral-200!";
 
 const productLinks = NAV.links;
 const trustLinks = [
@@ -55,12 +55,9 @@ export async function SiteFooter() {
                 {trust.legalEntity}. {trust.mailingAddress}
               </p>
             ) : null}
-            <div className="mt-6 flex flex-col gap-2 sm:flex-row">
-              <Button variant="gradient" size="sm" className={footerButton} render={<Link href="/request?from=contact" data-cta-position="contact" />}>
+            <div className="mt-6">
+              <Button variant="outline" size="lg" className={footerButton} render={<Link href="/request?from=contact" data-cta-position="contact" />}>
                 {NAV.request}
-              </Button>
-              <Button variant="outline" size="sm" className={footerOutline} render={<a href={NAV.signInHref} />}>
-                {NAV.signIn}
               </Button>
             </div>
           </div>

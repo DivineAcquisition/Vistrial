@@ -3,6 +3,7 @@
 import { useActionState, useEffect } from "react";
 
 import { submitCustomContact, submitPrivateAccess, type AccessFormState } from "@/app/(marketing)/request/actions";
+import { BorderBeam } from "@/components/ui/border-beam";
 import { SubmitButton } from "@/components/ui/button";
 import { Field } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
@@ -21,9 +22,10 @@ import { FORMS } from "@/lib/marketing/content";
 import { checkboxClass, selectClass, textareaClass } from "@/lib/ui";
 import { cn } from "@/lib/utils";
 
-const formBox = "rounded-xl border border-[#2a2833] bg-[#0c0b10]";
+const formBox =
+  "relative overflow-hidden rounded-[8px] border border-[#2a2833] bg-[#0c0b10] shadow-[0_0_72px_-20px_rgba(154,136,252,0.85)]";
 const fieldOutline =
-  "border-[#2a2833]! bg-[#111014]! shadow-none! before:shadow-none! hover:border-[#2a2833]! dark:bg-[#111014]!";
+  "rounded-[8px]! border-[#2a2833]! bg-[#111014]! shadow-none! before:rounded-[7px]! before:shadow-none! hover:border-[#2a2833]! dark:bg-[#111014]!";
 
 const initial: AccessFormState = { ok: true, message: "", errors: {} };
 
@@ -93,6 +95,9 @@ export function AccessRequestForm({ kind }: { kind: "private_access" | "custom" 
         if (field instanceof HTMLInputElement) field.value = JSON.stringify(picked);
       }}
     >
+      <div className="pointer-events-none absolute inset-0 mt-0! motion-safe:block motion-reduce:hidden" aria-hidden>
+        <BorderBeam duration={8} size={120} borderWidth={1} colorFrom="#9A88FC" colorTo="#6650D8" />
+      </div>
       {state.message && !state.ok ? (
         <p role="alert" className="text-sm text-destructive">
           {state.message}
@@ -193,7 +198,7 @@ export function AccessRequestForm({ kind }: { kind: "private_access" | "custom" 
       {siteKey ? (
         <div className="cf-turnstile" data-sitekey={siteKey} />
       ) : null}
-      <SubmitButton pending={pending} loadingLabel={FORMS.pending}>
+      <SubmitButton pending={pending} loadingLabel={FORMS.pending} size="lg" className="h-12! rounded-[8px]! before:rounded-[7px]!">
         {kind === "custom" ? FORMS.submitCustom : FORMS.submitAccess}
       </SubmitButton>
     </form>

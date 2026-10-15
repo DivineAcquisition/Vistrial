@@ -9,8 +9,7 @@ import { NAV } from "@/lib/marketing/content";
 import { marketingPageGutter, marketingShell } from "@/lib/marketing/ui";
 import { cn } from "@/lib/utils";
 
-const navButton = "rounded-[8px]! before:rounded-[7px]!";
-const navOutline = "rounded-[8px]! border-[#2a2833]! bg-[#12111a] before:rounded-[7px]! hover:bg-[#1c1a27]";
+const navButton = "h-12! rounded-[8px]! before:rounded-[7px]!";
 
 export function SiteHeader({ action = "cta" }: { action?: "cta" | "none" }) {
   const showNav = action === "cta";
@@ -35,11 +34,8 @@ export function SiteHeader({ action = "cta" }: { action?: "cta" | "none" }) {
           </nav>
         ) : null}
         <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" className={cn(navOutline, "hidden sm:inline-flex")} render={<a href={NAV.signInHref} />}>
-            {NAV.signIn}
-          </Button>
           {showNav ? (
-            <Button variant="gradient" size="sm" className={navButton} render={<Link href="/request?from=nav" data-cta-position="nav" />}>
+            <Button variant="gradient" size="lg" className={navButton} render={<Link href="/request?from=nav" data-cta-position="nav" />}>
               {NAV.request}
             </Button>
           ) : null}

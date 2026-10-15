@@ -29,11 +29,6 @@ export function MarketingMobileNav({ onNavigate }: { onNavigate?: () => void }) 
           </Link>
         </li>
       ))}
-      <li>
-        <a href={NAV.signInHref} className={`${marketingNavLink} block py-2`} onClick={onNavigate}>
-          {NAV.signIn}
-        </a>
-      </li>
     </ul>
   );
 }

@@ -35,7 +35,7 @@ import {
 } from "@/lib/marketing/ui";
 import { cn } from "@/lib/utils";
 
-const landingButton = "rounded-[8px]! border-brand-800! before:rounded-[7px]!";
+const landingButton = "h-12! rounded-[8px]! border-brand-800! before:rounded-[7px]!";
 const landingOutline = "rounded-[8px]! border-[#2a2833] bg-[#1c1a27] before:rounded-[7px]! hover:bg-[#262333]";
 
 function Section({

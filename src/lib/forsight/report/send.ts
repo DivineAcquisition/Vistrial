@@ -6,8 +6,7 @@ import { roleLabel } from "@/lib/auth/permissions";
 import type { OrgRole } from "@/types/database";
 import { appUrl } from "@/lib/app-url";
 import { renderFooter } from "@/lib/email/footer";
-import { emailLogoSrc, transactionalEmailHtml } from "@/lib/email/layout";
-import { emailLogoAttachment } from "@/lib/email/logo-file";
+import { emailLogoUrl, transactionalEmailHtml } from "@/lib/email/layout";
 import { recordEmailSend, withPreferences } from "@/lib/email/send-guard";
 import { forsightLog } from "@/lib/forsight/report/log";
 import { forsightReportPdf } from "@/lib/forsight/report/pdf";
@@ -100,13 +99,13 @@ export async function sendStoredReport(args: {
         lines,
         cta: { label: "Open in Forsight", href },
         footerHtml: rendered.footer.html,
-        logoUrl: emailLogoSrc(),
+        logoUrl: emailLogoUrl(),
       }),
       tags: [
         { name: "category", value: "C" },
         { name: "footer_version", value: rendered.footer.version },
       ],
-      attachments: [emailLogoAttachment(), { filename, content: Buffer.from(bytes) }],
+      attachments: [{ filename, content: Buffer.from(bytes) }],
     });
     data = sent.data;
     error = sent.error;

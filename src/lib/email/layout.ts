@@ -13,9 +13,6 @@ import { PRODUCTION_APP_ORIGIN } from "@/lib/constants";
  */
 export const EMAIL_LOGO_PATH = "/brand/vistrial-icon.png";
 
-/** Inline id used when the icon is attached to a Resend message. */
-export const EMAIL_LOGO_CID = "vistrial-icon";
-
 /** Display size of the square icon. */
 const LOGO_WIDTH = 48;
 const LOGO_HEIGHT = 48;
@@ -53,10 +50,6 @@ export type TransactionalEmail = {
 
 export function emailLogoUrl(origin = PRODUCTION_APP_ORIGIN): string {
   return `${origin.replace(/\/$/, "")}${EMAIL_LOGO_PATH}`;
-}
-
-export function emailLogoSrc(): string {
-  return `cid:${EMAIL_LOGO_CID}`;
 }
 
 function escapeHtml(value: string): string {

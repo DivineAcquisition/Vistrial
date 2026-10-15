@@ -4,8 +4,7 @@ import webpush from "web-push";
 import { categoryForEvent } from "@/lib/email/category";
 import type { EmailCategory, FooterVars } from "@/lib/email/footer";
 import { lifecycleFromSeparated, renderFooter, sendingStream, staffRecipientAllowed } from "@/lib/email/footer";
-import { emailLogoSrc, transactionalEmailHtml } from "@/lib/email/layout";
-import { emailLogoAttachment } from "@/lib/email/logo-file";
+import { emailLogoUrl, transactionalEmailHtml } from "@/lib/email/layout";
 import {
   activeStaffEmails,
   issueUnsubscribeUrl,
@@ -39,7 +38,7 @@ function emailHtml(args: {
     items: args.items,
     cta: { label: "Open in Vistrial", href: args.href },
     footerHtml: args.footerHtml,
-    logoUrl: emailLogoSrc(),
+    logoUrl: emailLogoUrl(),
   });
 }
 
@@ -100,7 +99,6 @@ export async function sendEmail(args: {
       html: emailHtml({ ...args, footerHtml: rendered.footer.html }),
       text: `${args.body}\n${args.href}\n\n${rendered.footer.text}`,
       headers,
-      attachments: [emailLogoAttachment()],
       tags: [
         { name: "category", value: category },
         { name: "footer_version", value: rendered.footer.version },

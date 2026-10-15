@@ -18,7 +18,7 @@ export function SiteHeader({ action = "cta" }: { action?: "cta" | "none" }) {
   return (
     <header className="relative sticky top-0 z-50 border-b border-[#2a2833] bg-[#07070b]">
       <div className={cn(marketingShell, marketingPageGutter, "flex h-[4.5rem] items-center justify-between gap-4")}>
-        <Link href="/" className="flex min-w-0 shrink-0 items-center gap-2.5 rounded-md">
+        <Link href="/" className="shrink-0 rounded-md" aria-label={`${APP_NAME} home`}>
           {/* Same square mark as the email header. */}
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
@@ -28,7 +28,6 @@ export function SiteHeader({ action = "cta" }: { action?: "cta" | "none" }) {
             height={40}
             className="size-10 rounded-[10px]"
           />
-          <span className="font-heading text-lg tracking-tight text-white">{APP_NAME}</span>
         </Link>
         {showNav ? (
           <nav aria-label="On this page" className="hidden md:block">

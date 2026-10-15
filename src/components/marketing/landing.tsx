@@ -4,6 +4,7 @@ import Link from "next/link";
 import { LandingFaq } from "@/components/marketing/faq";
 import { ApprovalExample, HeroExample } from "@/components/marketing/hero-example";
 import { BeamFrame, HeroAtmosphere, ShinyLabel, SpotlightCard } from "@/components/marketing/saas-frame";
+import { AgentScene, HowScene, ProblemScene, SafetyScene } from "@/components/marketing/section-scenes";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { AgentName } from "@/components/live/agent-identity";
@@ -30,6 +31,9 @@ import {
   marketingSubhead,
 } from "@/lib/marketing/ui";
 import { cn } from "@/lib/utils";
+
+const landingButton = "rounded-[8px]! before:rounded-[7px]!";
+const landingOutline = "rounded-[8px]! border-[#8a86a3] bg-[#1c1a27] before:rounded-[7px]! hover:bg-[#262333]";
 
 function Section({
   id,
@@ -94,10 +98,10 @@ export function LandingPage() {
               <h1 className={marketingDisplayTitle}>{HERO.headline}</h1>
               <p className={cn(marketingSubhead, "mt-6 max-w-xl")}>{HERO.supporting}</p>
               <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-                <Button variant="gradient" size="xl" className="rounded-full" render={<Link href="/request?from=hero" data-cta-position="hero" />}>
+                <Button variant="gradient" size="xl" className={landingButton} render={<Link href="/request?from=hero" data-cta-position="hero" />}>
                   {HERO.primaryCta}
                 </Button>
-                <Button variant="outline" size="xl" className="rounded-full" render={<a href="#how" />}>
+                <Button variant="outline" size="xl" className={landingOutline} render={<a href="#how" />}>
                   {HERO.secondaryCta}
                 </Button>
               </div>
@@ -114,15 +118,18 @@ export function LandingPage() {
       {SECTIONS.problem ? (
         <Section headline={PROBLEM.headline}>
           <div className="grid items-start gap-8 lg:grid-cols-[1.05fr_0.95fr]">
-            <div className="space-y-4 text-[15px] leading-relaxed text-silver sm:text-base">
-              <p>{PROBLEM.opening}</p>
-              <p>{PROBLEM.scattered}</p>
+            <div className="space-y-5">
+              <ProblemScene />
+              <div className="space-y-4 text-[15px] leading-relaxed text-silver sm:text-base">
+                <p>{PROBLEM.opening}</p>
+                <p>{PROBLEM.scattered}</p>
+              </div>
             </div>
             <ul className="grid gap-3">
               {PROBLEM.pains.map((pain, index) => (
                 <li key={pain}>
                   <SpotlightCard className="flex items-start gap-3">
-                    <span className="font-heading text-sm text-brand-300" aria-hidden>
+                    <span className="inline-flex h-7 min-w-7 items-center justify-center rounded-md border border-[#6b6784] bg-[#12111a] px-1.5 font-heading text-xs text-white" aria-hidden>
                       {String(index + 1).padStart(2, "0")}
                     </span>
                     <span className="text-sm leading-relaxed text-white">{pain}</span>
@@ -140,13 +147,8 @@ export function LandingPage() {
             {HOW.steps.map((step, index) => (
               <li key={step.id}>
                 <SpotlightCard className="relative overflow-hidden">
-                  <span
-                    aria-hidden
-                    className="pointer-events-none absolute -top-4 right-3 font-heading text-6xl text-white/[0.06]"
-                  >
-                    {String(index + 1).padStart(2, "0")}
-                  </span>
-                  <Badge variant="outline" size="sm">
+                  <HowScene id={step.id} />
+                  <Badge variant="outline" size="sm" className="mt-4 border-[#6b6784] bg-[#12111a]">
                     {String(index + 1).padStart(2, "0")}
                   </Badge>
                   <h3 className="mt-4 font-heading text-2xl text-white">{step.title}</h3>
@@ -164,7 +166,10 @@ export function LandingPage() {
             {AGENT_LIST.map((agent) => (
               <li key={agent.id}>
                 <SpotlightCard>
-                  <AgentName agentId={agent.id} size="lg" />
+                  <AgentScene id={agent.id} />
+                  <div className="mt-4">
+                    <AgentName agentId={agent.id} size="lg" />
+                  </div>
                   <p className="mt-3 text-sm leading-relaxed text-silver">{agent.role}</p>
                   <p className="mt-2 text-sm leading-relaxed text-white">{agent.promise}</p>
                 </SpotlightCard>
@@ -183,10 +188,13 @@ export function LandingPage() {
                   <h3 className="font-heading text-xl text-white">{card.title}</h3>
                   <p className="mt-2 text-sm leading-relaxed text-silver">{card.motion}</p>
                   <ul className="mt-4 space-y-2 text-sm text-white">
-                    {card.watches.map((item) => (
-                      <li key={item} className="flex gap-2">
-                        <span className="mt-2 size-1.5 shrink-0 rounded-full bg-brand-400" aria-hidden />
-                        <span>{item}</span>
+                    {card.watches.map((item, index) => (
+                      <li
+                        key={item}
+                        className="animate-vistrial-highlight rounded-lg border border-[#6b6784] bg-[#12111a] px-3 py-2 motion-reduce:animate-none"
+                        style={{ animationDelay: `${index * 0.4}s` }}
+                      >
+                        {item}
                       </li>
                     ))}
                   </ul>
@@ -200,7 +208,8 @@ export function LandingPage() {
 
       {SECTIONS.safety ? (
         <Section id={SAFETY.id} headline={SAFETY.headline} lead={SAFETY.lead}>
-          <ul className="grid gap-3 sm:grid-cols-2">
+          <SafetyScene />
+          <ul className="mt-4 grid gap-3 sm:grid-cols-2">
             {SAFETY.items.map((item) => (
               <li key={item}>
                 <SpotlightCard>
@@ -223,7 +232,7 @@ export function LandingPage() {
       {SECTIONS.pricing ? (
         <Section id="pricing" headline="Pricing">
           <div className="grid gap-4 lg:grid-cols-2">
-            <SpotlightCard className="rounded-3xl p-6 ring-1 ring-brand-400/30">
+            <SpotlightCard className="p-6">
               <h3 className="font-heading text-2xl text-white">{PRICING_DISPLAY.privateAccess.name}</h3>
               <p className="mt-2 text-lg text-white">{PRICING_DISPLAY.privateAccess.price}</p>
               <ul className="mt-4 space-y-2 text-sm leading-relaxed text-silver">
@@ -233,15 +242,15 @@ export function LandingPage() {
               </ul>
               <p className="mt-4 text-sm leading-relaxed text-silver">{PRICING_DISPLAY.privateAccess.why}</p>
               <p className="mt-3 text-sm leading-relaxed text-silver">{PRICING_DISPLAY.privateAccess.billingNote}</p>
-              <Button variant="gradient" className="mt-6 rounded-full" render={<Link href="/request?from=pricing" data-cta-position="pricing" />}>
+              <Button variant="gradient" className={cn("mt-6", landingButton)} render={<Link href="/request?from=pricing" data-cta-position="pricing" />}>
                 {PRICING_DISPLAY.privateAccess.cta}
               </Button>
             </SpotlightCard>
-            <SpotlightCard className="rounded-3xl p-6">
+            <SpotlightCard className="p-6">
               <h3 className="font-heading text-2xl text-white">{PRICING_DISPLAY.custom.name}</h3>
               <p className="mt-2 text-lg text-white">{PRICING_DISPLAY.custom.price}</p>
               <p className="mt-4 text-sm leading-relaxed text-silver">{PRICING_DISPLAY.custom.body}</p>
-              <Button variant="outline" className="mt-6 rounded-full" render={<Link href="/contact?from=pricing" data-cta-position="pricing" />}>
+              <Button variant="outline" className={cn("mt-6", landingOutline)} render={<Link href="/contact?from=pricing" data-cta-position="pricing" />}>
                 {PRICING_DISPLAY.custom.cta}
               </Button>
             </SpotlightCard>
@@ -265,10 +274,10 @@ export function LandingPage() {
         <Section id={FINAL_CTA.id} headline={FINAL_CTA.headline} lead={FINAL_CTA.body} align="center">
           <BeamFrame>
             <div className="flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
-              <Button variant="gradient" size="xl" className="rounded-full" render={<Link href="/request?from=final" data-cta-position="final" />}>
+              <Button variant="gradient" size="xl" className={landingButton} render={<Link href="/request?from=final" data-cta-position="final" />}>
                 {FINAL_CTA.primary}
               </Button>
-              <Button variant="outline" size="xl" className="rounded-full" render={<Link href={FINAL_CTA.secondaryHref} />}>
+              <Button variant="outline" size="xl" className={landingOutline} render={<Link href={FINAL_CTA.secondaryHref} />}>
                 {FINAL_CTA.secondary}
               </Button>
             </div>

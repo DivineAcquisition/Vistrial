@@ -130,6 +130,9 @@
   --animate-shiny-text: shiny-text 8s infinite;
   --animate-shimmer-slide: shimmer-slide var(--speed) ease-in-out infinite alternate;
   --animate-spin-around: spin-around calc(var(--speed) * 2) infinite linear;
+  --animate-vistrial-shift: vistrial-shift 3.4s ease-in-out infinite;
+  --animate-vistrial-grow: vistrial-grow 2.8s ease-in-out infinite;
+  --animate-vistrial-highlight: vistrial-highlight 3.2s ease-in-out infinite;
   --color-warning-foreground: var(--warning-foreground);
   --color-success-foreground: var(--success-foreground);
   --color-info-foreground: var(--info-foreground);
@@ -1241,6 +1244,19 @@
   .brief-sheet dd {
     break-inside: avoid;
   }
+}
+
+@keyframes vistrial-shift {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(7px); }
+}
+@keyframes vistrial-grow {
+  0%, 100% { width: 24%; }
+  50% { width: 92%; }
+}
+@keyframes vistrial-highlight {
+  0%, 100% { background-color: #1c1a27; border-color: #6b6784; }
+  45% { background-color: #2a2540; border-color: #9a88fc; }
 }
 
 @media (prefers-reduced-motion: reduce) {

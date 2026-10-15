@@ -7,7 +7,7 @@ import { cn } from "@/lib/utils";
  * brand-500, ink-950.
  *
  * Scale follows high-ticket dark landing pages: centered hero, large type,
- * pill CTAs.
+ * rectangular buttons with rounded corners.
  */
 
 export const marketingHeroTitle =
@@ -76,6 +76,10 @@ export const marketingFieldCompactControl = cn(
   "placeholder:font-medium placeholder:text-silver/55",
   "focus:outline-none"
 );
+
+/** Solid marketing surfaces. The page is #07070b, so these stay visibly separate. */
+export const marketingPanel = "rounded-xl border border-[#8a86a3] bg-[#1c1a27]";
+export const marketingInset = "rounded-lg border border-[#6b6784] bg-[#12111a]";
 
 export const marketingPageGutter = "px-5 sm:px-6 lg:px-8";
 

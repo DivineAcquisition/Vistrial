@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Marquee } from "@/components/ui/marquee";
 import { EXAMPLE, HERO } from "@/lib/marketing/content";
 import { AGENTS } from "@/lib/agents/roster";
+import { marketingInset } from "@/lib/marketing/ui";
 import { cn } from "@/lib/utils";
 
 export function HeroExample() {
@@ -59,7 +60,7 @@ export function HeroExample() {
         <p className="text-[11px] font-medium tracking-[0.14em] text-brand-200 uppercase">Case file</p>
       </div>
 
-      <div className="overflow-hidden rounded-xl border border-white/10 bg-black/20">
+      <div className={cn(marketingInset, "overflow-hidden")}>
         <ul className="flex flex-wrap gap-2 p-2 motion-safe:hidden">
           {EXAMPLE.sources.map((source) => (
             <li key={source}>
@@ -91,7 +92,7 @@ export function HeroExample() {
               key={item.agent}
               className={cn(
                 "flex items-start gap-2 rounded-xl border px-3 py-2 transition-colors",
-                on ? "border-brand-400/40 bg-brand-500/10" : "border-transparent bg-white/[0.03]",
+                on ? "border-brand-300 bg-[#2a2540]" : "border-[#6b6784] bg-[#12111a]",
               )}
             >
               <AgentGlyph agentId={item.agent} size="sm" working={motion && on} />
@@ -105,7 +106,7 @@ export function HeroExample() {
       </ol>
       {motion ? <p className="sr-only">{active.line}</p> : null}
 
-      <div className="rounded-xl border border-white/10 bg-white/[0.03] p-3">
+      <div className={cn(marketingInset, "p-3")}>
         <p className="text-[11px] font-semibold tracking-[0.14em] text-brand-300 uppercase">Draft for {EXAMPLE.lead}</p>
         <p className="mt-2 text-sm leading-relaxed text-white">{EXAMPLE.draft}</p>
         <p className="mt-2 text-xs leading-relaxed text-silver">{EXAMPLE.draftStatus}</p>
@@ -116,7 +117,7 @@ export function HeroExample() {
 
 function SourceChip({ children }: { children: string }) {
   return (
-    <span className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1 text-xs text-silver">
+    <span className="rounded-lg border border-[#6b6784] bg-[#1c1a27] px-3 py-1 text-xs text-white">
       {children}
     </span>
   );
@@ -124,8 +125,8 @@ function SourceChip({ children }: { children: string }) {
 
 export function ApprovalExample() {
   return (
-    <div className="overflow-hidden rounded-2xl border border-white/10 bg-[#0c0b14] text-left shadow-[0_24px_60px_-36px_rgba(154,136,252,0.7)]" aria-label={HERO.exampleLabel}>
-      <div className="flex items-center justify-between gap-3 border-b border-white/10 px-4 py-3">
+    <div className="overflow-hidden rounded-xl border border-[#8a86a3] bg-[#1c1a27] text-left" aria-label={HERO.exampleLabel}>
+      <div className="flex items-center justify-between gap-3 border-b border-[#6b6784] px-4 py-3">
         <p className="text-[11px] font-semibold tracking-[0.16em] text-brand-300 uppercase">{HERO.exampleLabel}</p>
         <span className="size-2 rounded-full bg-brand-400" aria-hidden />
       </div>

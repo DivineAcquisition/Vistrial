@@ -6,6 +6,7 @@ import { AnimatedShinyText } from "@/components/ui/animated-shiny-text";
 import { BorderBeam } from "@/components/ui/border-beam";
 import { MagicCard } from "@/components/ui/magic-card";
 import { Particles } from "@/components/ui/particles";
+import { marketingPanel } from "@/lib/marketing/ui";
 import { cn } from "@/lib/utils";
 
 /** Soft brand field behind the hero. Motion stays inside the existing particle component. */
@@ -46,20 +47,10 @@ export function BeamFrame({ children, className }: { children: ReactNode; classN
   return (
     <div
       className={cn(
-        "relative overflow-hidden rounded-[28px] border border-white/10 bg-[#0c0b14] p-5 shadow-[0_40px_90px_-48px_rgba(154,136,252,0.85),inset_0_1px_0_rgba(255,255,255,0.08)] sm:p-6",
+        "relative overflow-hidden rounded-xl border border-[#8a86a3] bg-[#1c1a27] p-5 shadow-[0_24px_50px_-28px_rgba(0,0,0,0.85)] sm:p-6",
         className,
       )}
     >
-      <div
-        aria-hidden
-        className="pointer-events-none absolute inset-0 opacity-50"
-        style={{
-          backgroundImage:
-            "linear-gradient(to right, rgba(255,255,255,0.045) 1px, transparent 1px), linear-gradient(to bottom, rgba(255,255,255,0.045) 1px, transparent 1px)",
-          backgroundSize: "28px 28px",
-          maskImage: "radial-gradient(ellipse 80% 70% at 50% 0%, black 20%, transparent 75%)",
-        }}
-      />
       <div className="pointer-events-none absolute inset-0 motion-safe:block motion-reduce:hidden">
         <BorderBeam colorFrom="#9A88FC" colorTo="#6650D8" size={120} duration={9} />
       </div>
@@ -70,7 +61,7 @@ export function BeamFrame({ children, className }: { children: ReactNode; classN
 
 export function SpotlightCard({ children, className }: { children: ReactNode; className?: string }) {
   return (
-    <MagicCard className={cn("h-full rounded-2xl border border-white/10 p-5", className)}>
+    <MagicCard className={cn("h-full p-5", marketingPanel, className)}>
       {children}
     </MagicCard>
   );

@@ -32,7 +32,7 @@ export function CtaLink({
     <Button
       variant="gradient"
       size={size}
-      className={cn("rounded-full", className)}
+      className={cn("rounded-[8px]! before:rounded-[7px]!", className)}
       render={<Link href={bookingHref(position)} data-cta-position={position} />}
     >
       {children}

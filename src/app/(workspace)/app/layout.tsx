@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { headers } from "next/headers";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
@@ -49,8 +50,22 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     path.startsWith("/app/settings/billing") || path.startsWith("/app/settings/privacy") || path.startsWith("/app/help");
   const ownerHeld = held && ctx.workspaceRole === "owner" && !billingPath;
 
+  const { data: legalDue } = await (supabase as unknown as SupabaseClient).rpc("legal_acceptance_due");
   return (
     <>
+      {legalDue === true ? (
+        <form action={async () => {
+          "use server";
+          const { createClient: client } = await import("@/lib/supabase/server");
+          const db = (await client()) as unknown as SupabaseClient;
+          await db.rpc("accept_legal_versions");
+        }} className="border-b border-white/10 bg-white/[0.03] px-4 py-3 text-sm text-white">
+          <p>
+            The current <Link href="/privacy" className="underline">Privacy Policy</Link> and <Link href="/terms" className="underline">Terms</Link> have a new approved version. Accept them to keep going.
+          </p>
+          <button type="submit" className="mt-2 text-brand-300 underline">I accept the current Privacy and Terms</button>
+        </form>
+      ) : null}
       {billing?.state === "restricted" ? (
         <Alert variant="warning">
           <AlertTitle>Some automation is paused</AlertTitle>

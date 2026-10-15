@@ -10,6 +10,7 @@ import { requireStaff } from "@/lib/auth/gates";
 import { formatDateTime } from "@/lib/format";
 import { deletionTerms, exportTerms } from "@/lib/staff/copy";
 import { staffDb } from "@/lib/staff/db";
+import { requestAgeDays, requestNeedsAttention } from "@/lib/trust/request-age";
 import { helperClass } from "@/lib/ui";
 
 export const dynamic = "force-dynamic";
@@ -31,6 +32,7 @@ type RequestRow = {
   failure: string | null;
   team_note: string | null;
   updated_at: string;
+  created_at: string;
   export_expires_at: string | null;
 };
 
@@ -56,6 +58,10 @@ export default async function DataRequestPage({ params }: { params: Promise<{ id
     >
       <Panel className="space-y-2 p-6">
         <p className="text-sm text-white">Asked by {row.requested_by_name ?? "an Owner"}{row.staff_created ? ", recorded by the team" : ""}.</p>
+        <p className={requestNeedsAttention(row.status, row.created_at) ? "text-sm text-white" : helperClass}>
+          Opened {formatDateTime(row.created_at)}. {requestAgeDays(row.created_at)} days old.
+          {requestNeedsAttention(row.status, row.created_at) ? " Older than the 30 day response aim." : ""}
+        </p>
         {row.note ? <p className={helperClass}>{row.note}</p> : null}
         <ul className={`${helperClass} list-disc space-y-1 pl-5`}>
           {terms.map((line) => (

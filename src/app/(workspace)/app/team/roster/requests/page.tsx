@@ -15,8 +15,13 @@ import { helperClass, selectClass } from "@/lib/ui";
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Access requests" };
 
-const KINDS: Record<string, string> = { private_access: "Private Access", custom: "Custom" };
-const STATUSES = ["new", "in_review", "approved", "waitlisted", "declined", "converted", "archived"];
+const KINDS: Record<string, string> = {
+  private_access: "Private Access",
+  custom: "Custom",
+  security_review: "Security review",
+  vulnerability: "Vulnerability report",
+};
+const STATUSES = ["new", "in_review", "waiting", "answered", "closed", "approved", "waitlisted", "declined", "converted", "archived"];
 
 function one(value: string | string[] | undefined): string {
   return Array.isArray(value) ? value[0] ?? "" : value ?? "";
@@ -108,6 +113,8 @@ export default async function AccessRequestsPage({
           <option value="">Any type</option>
           <option value="private_access">Private Access</option>
           <option value="custom">Custom</option>
+          <option value="security_review">Security review</option>
+          <option value="vulnerability">Vulnerability report</option>
         </select>
         <select name="sort" defaultValue={sort} aria-label="Sort" className={selectClass}>
           <option value="newest">Newest activity</option>
@@ -139,6 +146,8 @@ export default async function AccessRequestsPage({
           <Link href="/app/team/roster/requests/export" className="underline">Export</Link>
           {" · "}
           <Link href="/app/team/roster/requests/settings" className="underline">Settings</Link>
+          {" · "}
+          <Link href="/app/team/roster/requests/trust" className="underline">Trust</Link>
         </p>
       ) : null}
       <RequestQueue rows={list} admin={level === "admin"} />

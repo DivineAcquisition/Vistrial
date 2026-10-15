@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 
 import { MarketingShell } from "@/components/marketing/chrome";
+import { COMPANY_ADDRESS, CONTACT_EMAIL, LEGAL_ENTITY } from "@/lib/constants";
 import { LEGAL_DRAFT_BANNER } from "@/lib/marketing/content";
 import { marketingHeroTitle, marketingSubhead } from "@/lib/marketing/ui";
 
@@ -17,6 +18,9 @@ export default function DisclaimerPage() {
         <h1 className={`${marketingHeroTitle} mt-8 text-[2.1rem] sm:text-4xl`}>Disclaimer</h1>
         <p className={`${marketingSubhead} mt-4`}>
           [Counsel will replace this page.] Nothing on the public site is a promise of results.
+        </p>
+        <p className={`${marketingSubhead} mt-4`}>
+          {LEGAL_ENTITY}. {COMPANY_ADDRESS}. {CONTACT_EMAIL}
         </p>
       </article>
     </MarketingShell>

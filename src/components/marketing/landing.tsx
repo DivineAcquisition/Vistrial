@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import Link from "next/link";
 
 import { ApprovalExample, HeroExample } from "@/components/marketing/hero-example";
+import { BeamFrame, HeroAtmosphere, ShinyLabel, SpotlightCard } from "@/components/marketing/saas-frame";
 import { Button } from "@/components/ui/button";
 import { AgentName } from "@/components/live/agent-identity";
 import { AGENT_LIST } from "@/lib/agents/roster";
@@ -80,9 +81,11 @@ export function LandingPage() {
     <>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(home) }} />
       {SECTIONS.hero ? (
-        <section className={cn(marketingPageGutter, "pb-16 pt-14 sm:pb-24 sm:pt-20")}>
+        <section className={cn(marketingPageGutter, "relative overflow-hidden pb-16 pt-14 sm:pb-24 sm:pt-20")}>
+          <HeroAtmosphere>
           <div className={cn(marketingShell, "grid items-start gap-10 lg:grid-cols-[1.1fr_0.9fr]")}>
             <div>
+              <ShinyLabel>Vistrial</ShinyLabel>
               <h1 className={marketingDisplayTitle}>{HERO.headline}</h1>
               <p className={cn(marketingSubhead, "mt-6 max-w-xl")}>{HERO.supporting}</p>
               <div className="mt-8 flex flex-col gap-3 sm:flex-row">
@@ -95,10 +98,11 @@ export function LandingPage() {
               </div>
               <p className="mt-4 max-w-xl text-sm leading-relaxed text-silver">{HERO.trust}</p>
             </div>
-            <div className="rounded-3xl border border-white/10 bg-white/[0.03] p-5 sm:p-6">
+            <BeamFrame>
               <HeroExample />
-            </div>
+            </BeamFrame>
           </div>
+          </HeroAtmosphere>
         </section>
       ) : null}
 
@@ -122,9 +126,11 @@ export function LandingPage() {
         <Section id={HOW.id} headline={HOW.headline}>
           <ol className="grid gap-4 md:grid-cols-3">
             {HOW.steps.map((step) => (
-              <li key={step.id} className="rounded-2xl border border-white/10 p-5">
-                <h3 className="font-heading text-xl text-white">{step.title}</h3>
-                <p className="mt-3 text-sm leading-relaxed text-silver">{step.body}</p>
+              <li key={step.id}>
+                <SpotlightCard>
+                  <h3 className="font-heading text-xl text-white">{step.title}</h3>
+                  <p className="mt-3 text-sm leading-relaxed text-silver">{step.body}</p>
+                </SpotlightCard>
               </li>
             ))}
           </ol>
@@ -135,10 +141,12 @@ export function LandingPage() {
         <Section id={AGENTS_SECTION.id} headline={AGENTS_SECTION.headline} lead={AGENTS_SECTION.lead}>
           <ul className="grid gap-4 sm:grid-cols-2">
             {AGENT_LIST.map((agent) => (
-              <li key={agent.id} className="rounded-2xl border border-white/10 p-5">
-                <AgentName agentId={agent.id} size="md" />
-                <p className="mt-3 text-sm leading-relaxed text-silver">{agent.role}</p>
-                <p className="mt-2 text-sm leading-relaxed text-white">{agent.promise}</p>
+              <li key={agent.id}>
+                <SpotlightCard>
+                  <AgentName agentId={agent.id} size="md" />
+                  <p className="mt-3 text-sm leading-relaxed text-silver">{agent.role}</p>
+                  <p className="mt-2 text-sm leading-relaxed text-white">{agent.promise}</p>
+                </SpotlightCard>
               </li>
             ))}
           </ul>
@@ -187,7 +195,7 @@ export function LandingPage() {
       {SECTIONS.pricing ? (
         <Section id="pricing" headline="Pricing">
           <div className="grid gap-4 lg:grid-cols-2">
-            <article className="rounded-3xl border border-white/10 p-6">
+            <SpotlightCard className="rounded-3xl p-6">
               <h3 className="font-heading text-2xl text-white">{PRICING_DISPLAY.privateAccess.name}</h3>
               <p className="mt-2 text-lg text-white">{PRICING_DISPLAY.privateAccess.price}</p>
               <ul className="mt-4 space-y-2 text-sm leading-relaxed text-silver">
@@ -200,15 +208,15 @@ export function LandingPage() {
               <Button variant="gradient" className="mt-6 rounded-full" render={<Link href="/request?from=pricing" data-cta-position="pricing" />}>
                 {PRICING_DISPLAY.privateAccess.cta}
               </Button>
-            </article>
-            <article className="rounded-3xl border border-white/10 p-6">
+            </SpotlightCard>
+            <SpotlightCard className="rounded-3xl p-6">
               <h3 className="font-heading text-2xl text-white">{PRICING_DISPLAY.custom.name}</h3>
               <p className="mt-2 text-lg text-white">{PRICING_DISPLAY.custom.price}</p>
               <p className="mt-4 text-sm leading-relaxed text-silver">{PRICING_DISPLAY.custom.body}</p>
               <Button variant="outline" className="mt-6 rounded-full" render={<Link href="/contact?from=pricing" data-cta-position="pricing" />}>
                 {PRICING_DISPLAY.custom.cta}
               </Button>
-            </article>
+            </SpotlightCard>
           </div>
         </Section>
       ) : null}

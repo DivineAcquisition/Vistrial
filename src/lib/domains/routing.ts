@@ -96,6 +96,11 @@ export function isMarketingPath(path: string): boolean {
     path === "/request" ||
     path === "/thanks" ||
     path === "/security-overview" ||
+    path === "/security" ||
+    path === "/security/subprocessors" ||
+    path === "/security/review" ||
+    path === "/security/report" ||
+    path === "/privacy/requests" ||
     pathIs(path, "/book")
   );
 }

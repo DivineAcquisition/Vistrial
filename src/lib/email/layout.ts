@@ -1,4 +1,4 @@
-import { PRODUCTION_APP_ORIGIN } from "@/lib/constants";
+import { CONTACT_EMAIL, PRODUCTION_APP_ORIGIN, PRODUCTION_SITE_ORIGIN } from "@/lib/constants";
 
 /**
  * Transactional mail shell.
@@ -103,9 +103,8 @@ export function transactionalEmailHtml(args: TransactionalEmail): string {
   const footnote = args.footnote?.trim()
     ? `<p style="margin:24px 0 0;font-size:14px;line-height:22px;color:${QUIET};">${escapeHtml(args.footnote)}</p>`
     : "";
-  const footer = args.footerHtml
-    ? `<tr><td style="padding:18px 8px 0;">${args.footerHtml}</td></tr>`
-    : "";
+  const legalFooter = `Vistrial<br />Need a hand? <a href="mailto:${CONTACT_EMAIL}" style="color:${INK};text-decoration:underline;">Contact us</a><br /><a href="${PRODUCTION_SITE_ORIGIN}/privacy" style="color:${INK};text-decoration:underline;">Privacy</a> · <a href="${PRODUCTION_SITE_ORIGIN}/terms" style="color:${INK};text-decoration:underline;">Terms</a>`;
+  const footer = `<tr><td style="padding:18px 8px 0;font-size:12px;line-height:18px;color:${QUIET};">${args.footerHtml ?? legalFooter}</td></tr>`;
 
   return `<!doctype html>
 <html lang="en">

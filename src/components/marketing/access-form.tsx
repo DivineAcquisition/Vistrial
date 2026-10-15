@@ -165,7 +165,11 @@ export function AccessRequestForm({ kind }: { kind: "private_access" | "custom" 
         <span>
           {FORMS.consent}{" "}
           <a href={FORMS.privacyHref} className="text-brand-300 underline">
-            Privacy
+            Privacy Policy
+          </a>{" "}
+          and the{" "}
+          <a href="/terms" className="text-brand-300 underline">
+            Terms
           </a>
           .
         </span>

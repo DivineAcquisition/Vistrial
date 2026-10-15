@@ -7,6 +7,7 @@ import { ORG_COOKIE_NAME, PENDING_INVITE_COOKIE, orgCookieOptions, pendingInvite
 import { lookupInviteByToken, redeemInvite } from "@/lib/auth/invites";
 import { listActiveMemberships } from "@/lib/auth/session";
 import { landingPath } from "@/lib/navigation";
+import { recordLegalAcceptance } from "@/lib/trust/accept";
 import { getSupabaseAdmin } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 
@@ -50,6 +51,8 @@ export async function createAccountFromInvite(
     }
     return { error: "Could not create the account. Sign in if you already have one." };
   }
+
+  await recordLegalAcceptance(created.user.id);
 
   const supabase = await createClient();
   const { error: signInError } = await supabase.auth.signInWithPassword({

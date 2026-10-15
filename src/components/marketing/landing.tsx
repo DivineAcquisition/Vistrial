@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import Link from "next/link";
 
+import { BlurFade } from "@/components/ui/blur-fade";
 import { LandingFaq } from "@/components/marketing/faq";
 import { ApprovalExample, HeroExample } from "@/components/marketing/hero-example";
 import { BeamFrame, HeroAtmosphere, ShinyLabel, SpotlightCard } from "@/components/marketing/saas-frame";
@@ -53,11 +54,11 @@ function Section({
   const centered = align === "center";
   return (
     <section id={id} className={cn(marketingPageGutter, "scroll-mt-24 border-t border-[#2a2833] py-20 sm:py-28")}>
-      <div className={marketingShell}>
+      <BlurFade inView offset={12} blur="8px" duration={0.55} className={marketingShell}>
         <h2 className={cn(marketingSectionTitle, centered && "mx-auto text-center")}>{headline}</h2>
         {lead ? <p className={cn(marketingLead, "mt-4", centered && "mx-auto text-center")}>{lead}</p> : null}
         <div className="mt-10">{children}</div>
-      </div>
+      </BlurFade>
     </section>
   );
 }
@@ -92,7 +93,7 @@ export function LandingPage() {
     <>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(home) }} />
       {SECTIONS.hero ? (
-        <section className={cn(marketingPageGutter, "relative overflow-hidden pb-16 pt-14 sm:pb-24 sm:pt-20")}>
+        <section className={cn(marketingPageGutter, "relative pb-16 pt-14 sm:pb-24 sm:pt-20")}>
           <HeroAtmosphere>
           <div className={cn(marketingShell, "grid items-start gap-10 lg:grid-cols-[1.1fr_0.9fr]")}>
             <div>
@@ -109,7 +110,7 @@ export function LandingPage() {
               </div>
               <p className="mt-4 max-w-xl text-sm leading-relaxed text-silver">{HERO.trust}</p>
             </div>
-            <BeamFrame>
+            <BeamFrame glow>
               <HeroExample />
             </BeamFrame>
           </div>
@@ -150,7 +151,7 @@ export function LandingPage() {
           <ol className="grid gap-4 md:grid-cols-3">
             {HOW.steps.map((step, index) => (
               <li key={step.id}>
-                <SpotlightCard className="relative overflow-hidden">
+                <SpotlightCard glow beamDelay={index * 2.6} className="relative">
                   <HowScene id={step.id} />
                   <Badge variant="outline" size="sm" className="mt-4 border-[#2a2833] bg-[#12111a]">
                     {String(index + 1).padStart(2, "0")}
@@ -222,7 +223,7 @@ export function LandingPage() {
       {SECTIONS.pricing ? (
         <Section id="pricing" headline="Pricing">
           <div className="grid gap-4 lg:grid-cols-2">
-            <SpotlightCard className="p-6">
+            <SpotlightCard glow className="p-6">
               <h3 className="font-heading text-2xl text-white">{PRICING_DISPLAY.privateAccess.name}</h3>
               <p className="mt-2 text-lg text-white">{PRICING_DISPLAY.privateAccess.price}</p>
               <ul className="mt-4 space-y-2 text-sm leading-relaxed text-silver">
@@ -262,7 +263,7 @@ export function LandingPage() {
 
       {SECTIONS.final ? (
         <Section id={FINAL_CTA.id} headline={FINAL_CTA.headline} lead={FINAL_CTA.body} align="center">
-          <BeamFrame>
+          <BeamFrame glow beamDelay={1.4}>
             <div className="flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
               <Button variant="gradient" size="xl" className={landingButton} render={<Link href="/request?from=final" data-cta-position="final" />}>
                 {FINAL_CTA.primary}

@@ -61,7 +61,7 @@ function WatchScene() {
   return (
     <div className={cn(scene, "flex flex-col justify-center gap-3")} aria-hidden>
       <div className="h-2.5 overflow-hidden rounded-sm border border-[#2a2833] bg-[#1c1a27]">
-        <div className="h-full animate-vistrial-grow bg-brand-400 motion-reduce:w-2/3 motion-reduce:animate-none" />
+        <div className="h-full animate-vistrial-grow bg-brand-400 shadow-[0_0_16px_rgba(154,136,252,0.85)] motion-reduce:w-2/3 motion-reduce:animate-none" />
       </div>
       <div className={cn(marketingInset, "px-3 py-2 text-xs text-white")}>Past the team&apos;s standard</div>
     </div>
@@ -74,7 +74,7 @@ function ActScene() {
       <div className={cn(marketingInset, "h-full p-3")}>
         <div className="h-2 w-4/5 rounded-sm bg-[#3a3650]" />
         <div className="mt-2 h-2 w-3/5 rounded-sm bg-[#3a3650]" />
-        <div className="mt-4 inline-flex animate-vistrial-highlight rounded-md border border-[#2a2833] bg-[#1c1a27] px-3 py-1.5 text-xs font-medium text-white motion-reduce:animate-none">
+        <div className="mt-4 inline-flex animate-vistrial-glow rounded-md border border-[#2a2833] bg-brand-500 px-3 py-1.5 text-xs font-medium text-white motion-reduce:animate-none">
           Approve
         </div>
       </div>

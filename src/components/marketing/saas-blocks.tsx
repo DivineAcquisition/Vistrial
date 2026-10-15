@@ -5,6 +5,7 @@ import { Tabs, TabsList, TabsPanel, TabsTab } from "@/components/ui/tabs";
 import { AGENT_LIST } from "@/lib/agents/roster";
 import { CASE_FILE } from "@/lib/marketing/copy";
 import { EXAMPLE, HERO, HOW, INDUSTRIES } from "@/lib/marketing/content";
+import { GlowPanel } from "@/components/marketing/saas-frame";
 import { marketingInset, marketingPanel } from "@/lib/marketing/ui";
 import { cn } from "@/lib/utils";
 
@@ -51,7 +52,7 @@ export function StackStrip() {
 export function CaseFileBoard() {
   return (
     <div className="grid items-stretch gap-4 lg:grid-cols-[1.15fr_0.85fr]">
-      <div className={cn(marketingPanel, "overflow-hidden p-0")}>
+      <GlowPanel className="p-0">
         <div className="flex items-center justify-between gap-3 border-b border-[#2a2833] px-4 py-3">
           <p className="text-[11px] font-semibold tracking-[0.14em] text-brand-200 uppercase">{HERO.exampleLabel}</p>
           <p className="text-sm text-white">{EXAMPLE.business}</p>
@@ -88,7 +89,7 @@ export function CaseFileBoard() {
             </ul>
           </div>
         </div>
-      </div>
+      </GlowPanel>
       <ul className="grid content-start gap-3 sm:grid-cols-2 lg:grid-cols-1">
         {CASE_FILE.parts.map((part, index) => (
           <li key={part.id} className={cn(marketingInset, "px-4 py-3")}>

@@ -133,6 +133,7 @@
   --animate-vistrial-shift: vistrial-shift 3.4s ease-in-out infinite;
   --animate-vistrial-grow: vistrial-grow 2.8s ease-in-out infinite;
   --animate-vistrial-highlight: vistrial-highlight 3.2s ease-in-out infinite;
+  --animate-vistrial-glow: vistrial-glow 2.6s ease-in-out infinite;
   --color-warning-foreground: var(--warning-foreground);
   --color-success-foreground: var(--success-foreground);
   --color-info-foreground: var(--info-foreground);
@@ -1248,7 +1249,11 @@
 
 @keyframes vistrial-shift {
   0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(7px); }
+  50% { transform: translateY(14px); }
+}
+@keyframes vistrial-glow {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(154, 136, 252, 0.15); }
+  50% { box-shadow: 0 0 22px 0 rgba(154, 136, 252, 0.55); }
 }
 @keyframes vistrial-grow {
   0%, 100% { width: 24%; }

@@ -4,6 +4,7 @@ import Link from "next/link";
 import { LandingFaq } from "@/components/marketing/faq";
 import { ApprovalExample, HeroExample } from "@/components/marketing/hero-example";
 import { BeamFrame, HeroAtmosphere, ShinyLabel, SpotlightCard } from "@/components/marketing/saas-frame";
+import { CaseFileBoard, IndustrySwitcher, StackStrip } from "@/components/marketing/saas-blocks";
 import { AgentScene, HowScene, ProblemScene, SafetyScene } from "@/components/marketing/section-scenes";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -21,6 +22,7 @@ import {
   SECTIONS,
 } from "@/lib/marketing/content";
 import { HERO } from "@/lib/marketing/content";
+import { CASE_FILE } from "@/lib/marketing/copy";
 import { PRICING_DISPLAY } from "@/lib/marketing/pricing";
 import {
   marketingDisplayTitle,
@@ -115,6 +117,8 @@ export function LandingPage() {
         </section>
       ) : null}
 
+      {SECTIONS.hero ? <StackStrip /> : null}
+
       {SECTIONS.problem ? (
         <Section headline={PROBLEM.headline}>
           <div className="grid items-start gap-8 lg:grid-cols-[1.05fr_0.95fr]">
@@ -160,6 +164,12 @@ export function LandingPage() {
         </Section>
       ) : null}
 
+      {SECTIONS.how ? (
+        <Section headline={CASE_FILE.headline}>
+          <CaseFileBoard />
+        </Section>
+      ) : null}
+
       {SECTIONS.agents ? (
         <Section id={AGENTS_SECTION.id} headline={AGENTS_SECTION.headline} lead={AGENTS_SECTION.lead}>
           <ul className="grid gap-4 sm:grid-cols-2">
@@ -181,27 +191,7 @@ export function LandingPage() {
 
       {SECTIONS.industries ? (
         <Section id={INDUSTRIES.id} headline={INDUSTRIES.headline} lead={INDUSTRIES.lead}>
-          <ul className="grid gap-4 lg:grid-cols-3">
-            {INDUSTRIES.cards.map((card) => (
-              <li key={card.id}>
-                <SpotlightCard>
-                  <h3 className="font-heading text-xl text-white">{card.title}</h3>
-                  <p className="mt-2 text-sm leading-relaxed text-silver">{card.motion}</p>
-                  <ul className="mt-4 space-y-2 text-sm text-white">
-                    {card.watches.map((item, index) => (
-                      <li
-                        key={item}
-                        className="animate-vistrial-highlight rounded-lg border border-[#6b6784] bg-[#12111a] px-3 py-2 motion-reduce:animate-none"
-                        style={{ animationDelay: `${index * 0.4}s` }}
-                      >
-                        {item}
-                      </li>
-                    ))}
-                  </ul>
-                </SpotlightCard>
-              </li>
-            ))}
-          </ul>
+          <IndustrySwitcher />
           <p className={cn(marketingLead, "mt-8")}>{INDUSTRIES.closing}</p>
         </Section>
       ) : null}

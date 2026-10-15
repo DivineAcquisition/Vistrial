@@ -4,7 +4,7 @@ import { BorderBeam } from "@/components/ui/border-beam";
 
 /** Solid near-black panel with a purple glow on the edge. */
 export const publicFormClass =
-  "relative overflow-hidden space-y-4 rounded-[8px] border border-[#2a2833] bg-[#0c0b10] p-5 shadow-[0_0_72px_-20px_rgba(154,136,252,0.85)] sm:p-6";
+  "relative overflow-hidden space-y-4 rounded-[12px] border border-[#2a2833] bg-[#0c0b10] p-5 shadow-[0_0_72px_-20px_rgba(154,136,252,0.85)] sm:p-6";
 
 /** Rectangle with rounded corners, just lighter than the page. */
 export const publicFieldClass =

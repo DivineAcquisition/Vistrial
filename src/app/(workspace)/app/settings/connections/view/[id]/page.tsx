@@ -3,6 +3,7 @@ import { cookies } from "next/headers";
 
 import { disconnectAction, pauseAction, resumeAction, rotateSecretAction } from "@/app/(workspace)/app/settings/connections/actions";
 import { PageFrame } from "@/components/app/page-frame";
+import { ToolMark } from "@/components/connectors/tool-mark";
 import { Button } from "@/components/ui/button";
 import { Panel } from "@/components/ui/panel";
 import { StatusBadge } from "@/components/ui/status-badge";
@@ -46,7 +47,10 @@ export default async function ConnectionDetailPage({
     <PageFrame title={tool?.name ?? "Connection"} description={view.sentence}>
       <Panel className="p-6">
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <StatusBadge label={view.label} tone={view.tone} />
+          <span className="flex items-center gap-3">
+            <ToolMark id={row.connector_key} size={36} />
+            <StatusBadge label={view.label} tone={view.tone} />
+          </span>
           <p className={helperClass}>{row.external_account_label ?? "No account name yet"}</p>
         </div>
         <dl className="mt-4 grid gap-2 text-sm">

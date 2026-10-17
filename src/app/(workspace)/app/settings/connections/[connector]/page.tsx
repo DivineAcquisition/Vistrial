@@ -2,6 +2,7 @@ import Link from "next/link";
 
 import { connectApiKey, connectSimple, sendConnectLink } from "@/app/(workspace)/app/settings/connections/actions";
 import { PageFrame } from "@/components/app/page-frame";
+import { ToolMark } from "@/components/connectors/tool-mark";
 import { Button } from "@/components/ui/button";
 import { Notice } from "@/components/ui/states";
 import { Panel } from "@/components/ui/panel";
@@ -49,7 +50,14 @@ export default async function ToolPage({
     : `/api/connectors/oauth/start?connector=${connector.key}`;
 
   return (
-    <PageFrame title={connector.name} description={connector.summary}>
+    <PageFrame
+      title={connector.name}
+      description={connector.summary}
+    >
+      <div className="flex items-center gap-3">
+        <ToolMark id={connector.key} size={40} />
+        <p className="text-sm text-white">{connector.methodLabel}</p>
+      </div>
       {query.notice ? <Notice tone="info" title="Nothing was changed">{query.notice}</Notice> : null}
       {query.error ? (
         <Notice tone="warning" title="Try again">

@@ -1,5 +1,6 @@
 "use client";
 
+import { ToolMark } from "@/components/connectors/tool-mark";
 import { AgentGlyph } from "@/components/live/agent-identity";
 import { Tabs, TabsList, TabsPanel, TabsTab } from "@/components/ui/tabs";
 import { AGENT_LIST } from "@/lib/agents/roster";
@@ -10,21 +11,22 @@ import { marketingInset, marketingPanel } from "@/lib/marketing/ui";
 import { cn } from "@/lib/utils";
 
 const STACK = [
-  "GoHighLevel",
-  "Google Calendar",
-  "CRM calendar",
-  "Call recordings",
-  "Case file",
-  "Approval before send",
+  { key: "gohighlevel", label: "GoHighLevel" },
+  { key: "google_calendar", label: "Google Calendar" },
+  { key: "fathom", label: "Fathom" },
+  { key: "fireflies", label: "Fireflies" },
+  { key: null, label: "Case file" },
+  { key: null, label: "Approval before send" },
 ] as const;
 
-function StackChip({ children, delay }: { children: string; delay: string }) {
+function StackChip({ label, logo, delay }: { label: string; logo: string | null; delay: string }) {
   return (
     <span
-      className="inline-flex animate-vistrial-highlight items-center rounded-md border border-[#2a2833] bg-[#12111a] px-3 py-2 text-sm font-medium text-white motion-reduce:animate-none"
+      className="inline-flex animate-vistrial-highlight items-center gap-2 rounded-md border border-[#2a2833] bg-[#12111a] px-2.5 py-1.5 text-sm font-medium text-white motion-reduce:animate-none"
       style={{ animationDelay: delay }}
     >
-      {children}
+      {logo ? <ToolMark id={logo} size={22} /> : null}
+      {label}
     </span>
   );
 }
@@ -39,8 +41,8 @@ export function StackStrip() {
         </p>
         <ul className="flex min-w-0 flex-1 flex-wrap gap-2">
           {STACK.map((item, index) => (
-            <li key={item}>
-              <StackChip delay={`${index * 0.35}s`}>{item}</StackChip>
+            <li key={item.label}>
+              <StackChip label={item.label} logo={item.key} delay={`${index * 0.35}s`} />
             </li>
           ))}
         </ul>

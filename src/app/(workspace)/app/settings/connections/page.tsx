@@ -2,6 +2,7 @@ import Link from "next/link";
 
 import { notifyInterest, submitToolRequest } from "@/app/(workspace)/app/settings/connections/actions";
 import { PageFrame } from "@/components/app/page-frame";
+import { ToolMark } from "@/components/connectors/tool-mark";
 import { Button } from "@/components/ui/button";
 import { Notice } from "@/components/ui/states";
 import { Panel } from "@/components/ui/panel";
@@ -69,9 +70,12 @@ export default async function ConnectionsPage({
               });
               return (
                 <li key={row.id} className="flex flex-wrap items-center justify-between gap-3 py-3">
-                  <span>
-                    <span className="block text-sm text-white">{tool?.name ?? row.connector_key}</span>
-                    <span className={helperClass}>{row.external_account_label ?? view.sentence}</span>
+                  <span className="flex min-w-0 items-center gap-3">
+                    <ToolMark id={row.connector_key} />
+                    <span>
+                      <span className="block text-sm text-white">{tool?.name ?? row.connector_key}</span>
+                      <span className={helperClass}>{row.external_account_label ?? view.sentence}</span>
+                    </span>
                   </span>
                   <span className="flex items-center gap-3">
                     <StatusBadge label={view.label} tone={view.tone} />
@@ -114,12 +118,15 @@ export default async function ConnectionsPage({
                     <li key={connector.key}>
                       <Panel className="p-4">
                         <div className="flex flex-wrap items-start justify-between gap-3">
-                          <div>
+                          <div className="flex min-w-0 items-start gap-3">
+                            <ToolMark id={connector.key} />
+                            <div>
                             <p className="text-sm text-white">{connector.name}</p>
                             <p className={`${helperClass} mt-1`}>{connector.summary}</p>
                             <p className={`${helperClass} mt-1`}>{connector.methodLabel}</p>
                             {connector.beta ? <p className={helperClass}>Beta</p> : null}
                             {connector.testModeNote && on ? <p className={`${helperClass} mt-2`}>{connector.testModeNote}</p> : null}
+                            </div>
                           </div>
                           <TileAction
                             connectorKey={connector.key}

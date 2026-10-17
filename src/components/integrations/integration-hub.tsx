@@ -10,6 +10,7 @@ import {
 } from "@/app/(workspace)/portal/source-actions";
 import { disconnectCrm } from "@/app/(workspace)/app/settings/integrations/actions";
 import type { SettingsSaveResult } from "@/app/(workspace)/app/settings/types";
+import { ToolMark } from "@/components/connectors/tool-mark";
 import { Button, SubmitButton } from "@/components/ui/button";
 import { CopyField } from "@/components/ui/copy-field";
 import { Field } from "@/components/ui/field";
@@ -169,7 +170,10 @@ function HubTile({ card, now }: { card: HubCard; now: string }) {
     <Panel className="flex h-full flex-col p-6">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h3 className={cardTitle}>{card.title}</h3>
+          <h3 className={`${cardTitle} flex items-center gap-2`}>
+            <ToolMark id={card.id === "leadconnector" ? "gohighlevel" : card.id} size={22} />
+            {card.title}
+          </h3>
           {card.required ? (
             <p className="mt-1 text-[11px] font-semibold tracking-[0.14em] text-brand-300 uppercase">
               Required

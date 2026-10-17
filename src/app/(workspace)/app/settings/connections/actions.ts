@@ -226,6 +226,11 @@ export async function uploadSheet(formData: FormData): Promise<void> {
   const existing = await listConnections(ctx.org.id);
   const connection = existing.find((row) => row.connector_key === "file_upload" && row.status !== "disconnected");
   const plan = planRows({ sheet, matches, existingKeys: new Set(), mode, activeAllowed });
+  const { importPastRows } = await import("@/lib/connectors/apply");
+  const created = await importPastRows({
+    orgId: ctx.org.id,
+    rows: plan.rows.filter((row) => row.action === "create"),
+  });
   const rejected = plan.rows.filter((row) => row.action === "reject");
   if (mode === "active") {
     redirect("/app/settings/connections/file_upload?error=active_off");
@@ -236,7 +241,7 @@ export async function uploadSheet(formData: FormData): Promise<void> {
     fileHash: hash,
     recordKind: String(formData.get("record_kind") ?? "people"),
     mode: "past",
-    created: plan.rows.filter((row) => row.action === "create").length,
+    created,
     updated: plan.rows.filter((row) => row.action === "update").length,
     skipped: plan.rows.filter((row) => row.action === "skip").length,
     rejected: rejected.length,

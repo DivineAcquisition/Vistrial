@@ -25,6 +25,40 @@ type LooseQuery = PromiseLike<{ data: unknown; error: { message: string; code?: 
  * Turns one accepted webhook into a lead. Historic, duplicate, and pre-go-live
  * events are stored and marked historic so they cannot start a clock or a draft.
  */
+export async function importPastRows(args: {
+  orgId: string;
+  rows: Array<{ preview: Record<string, string> }>;
+}): Promise<number> {
+  const admin = getSupabaseAdmin() as unknown as Loose;
+  let created = 0;
+  for (const row of args.rows) {
+    const email = row.preview.email?.toLowerCase() || null;
+    if (email) {
+      const existing = await admin.from("leads").select("id").eq("org_id", args.orgId).ilike("email", email).maybeSingle();
+      if (existing.data?.id) continue;
+    }
+    const inserted = await admin
+      .from("leads")
+      .insert({
+        org_id: args.orgId,
+        first_name: row.preview.first_name || null,
+        last_name: row.preview.last_name || null,
+        email,
+        phone: row.preview.phone || null,
+        source: "file_upload",
+        status: "new",
+        opted_in_at: new Date().toISOString(),
+      })
+      .select("id")
+      .single();
+    const leadId = typeof inserted.data?.id === "string" ? inserted.data.id : null;
+    if (!leadId) continue;
+    await admin.from("lead_import_marks").insert({ lead_id: leadId, org_id: args.orgId, ai_state: "none" });
+    created += 1;
+  }
+  return created;
+}
+
 export async function applyInboundEvent(args: {
   orgId: string;
   connection: ConnectionRow;

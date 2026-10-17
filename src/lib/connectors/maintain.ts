@@ -73,7 +73,7 @@ export async function maintainConnections(): Promise<{ checked: number }> {
         const hours = reconnectReminderHours(row.test_mode);
         const ageHours = (now - Date.parse(row.updated_at ?? row.created_at)) / (60 * 60 * 1000);
         const step = hours.filter((hour) => ageHours >= hour).length;
-        if (step > row.reconnect_notice_step) {
+        if (step > (row.reconnect_notice_step ?? 0)) {
           await notifyReconnect({
             orgId,
             connectorName: connector.name,
@@ -81,7 +81,14 @@ export async function maintainConnections(): Promise<{ checked: number }> {
             testMode: row.test_mode,
             step,
           });
+          await patchConnection(row.id, { reconnect_notice_step: step });
         }
+      }
+      if (row.connector_key === "gohighlevel" && row.status === "importing") {
+        await finishGhlImport(orgId, row.id);
+      }
+      if (row.connected_by_member_id && !row.author_removed_at) {
+        await flagRemovedAuthor(orgId, row.id, row.connected_by_member_id, connector.name);
       }
       if (row.status === "needs_attention" && attentionDigestAllowed(row.attention_notified_at ? Date.parse(row.attention_notified_at) : null, now)) {
         const { data: owners } = await getSupabaseAdmin()
@@ -110,4 +117,75 @@ export async function maintainConnections(): Promise<{ checked: number }> {
   }
   await purgeExpiredRawFiles();
   return { checked: ids.length };
+}
+
+type Patch = {
+  from: (table: string) => {
+    update: (row: object) => { eq: (column: string, value: string) => Promise<unknown> };
+    select: (columns: string) => {
+      eq: (column: string, value: string) => {
+        order: (column: string, options: { ascending: boolean }) => {
+          limit: (count: number) => Promise<{ data: Array<{ status: string }> | null }>;
+        };
+        maybeSingle: () => Promise<{ data: { active: boolean } | null }>;
+      };
+    };
+  };
+};
+
+function patchDb(): Patch {
+  return getSupabaseAdmin() as unknown as Patch;
+}
+
+async function patchConnection(id: string, row: object): Promise<void> {
+  await patchDb().from("workspace_connections").update(row).eq("id", id);
+}
+
+async function finishGhlImport(orgId: string, connectionId: string): Promise<void> {
+  const result = await patchDb()
+    .from("onboarding_import_runs")
+    .select("status")
+    .eq("org_id", orgId)
+    .order("updated_at", { ascending: false })
+    .limit(1);
+  if (result.data?.[0]?.status !== "done") return;
+  await setConnectionStatus({
+    orgId,
+    connectionId,
+    status: "live",
+    detail: null,
+    action: "connection.live",
+  });
+  await notifyOwnersHistory(orgId, "GoHighLevel");
+}
+
+async function flagRemovedAuthor(orgId: string, connectionId: string, memberId: string, tool: string): Promise<void> {
+  const member = await getSupabaseAdmin().from("org_members").select("active").eq("id", memberId).maybeSingle();
+  if (!member.data || member.data.active) return;
+  const now = new Date().toISOString();
+  await patchConnection(connectionId, {
+    author_removed_at: now,
+    status_detail: "Connected by someone who no longer has access. Reconnect to keep this under your control.",
+  });
+  const { data: owners } = await getSupabaseAdmin()
+    .from("org_members")
+    .select("id, user_id")
+    .eq("org_id", orgId)
+    .eq("role", "owner")
+    .eq("active", true);
+  for (const owner of owners ?? []) {
+    if (!owner.user_id) continue;
+    await enqueueNotification(getSupabaseAdmin(), {
+      orgId,
+      eventType: "workspace_notice",
+      channel: "email",
+      recipientUserId: owner.user_id,
+      recipientMemberId: owner.id,
+      subjectIds: [],
+      title: `${tool} needs a reconnect`,
+      body: "Connected by someone who no longer has access. Reconnect to keep this under your control.",
+      href: `/app/settings/connections/view/${connectionId}`,
+      dedupeKey: `author-removed:${connectionId}:${owner.id}`,
+    });
+  }
 }

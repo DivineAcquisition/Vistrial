@@ -23,10 +23,17 @@ function redirectToIntegrations(query: Record<string, string>, base = "/app/sett
 export async function GET(request: Request) {
   const incoming = new URL(request.url);
   const returnStore = await cookies();
-  const fromSetup = returnStore.get(CRM_RETURN_COOKIE)?.value === "onboarding";
+  const crmReturn = returnStore.get(CRM_RETURN_COOKIE)?.value;
   returnStore.delete(CRM_RETURN_COOKIE);
   const back = (query: Record<string, string>) =>
-    redirectToIntegrations(query, fromSetup ? "/app/onboarding/step/crm" : "/app/settings/integrations");
+    redirectToIntegrations(
+      query,
+      crmReturn === "onboarding"
+        ? "/app/onboarding/step/crm"
+        : crmReturn === "connections"
+          ? "/app/settings/connections/gohighlevel"
+          : "/app/settings/integrations"
+    );
   try {
     const db = getSupabaseAdmin();
     const limited = await rateLimitWebhook(db, request, "oauth");

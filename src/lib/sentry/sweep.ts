@@ -74,7 +74,19 @@ type OrgRun = {
   catchup: boolean;
   grouped: Map<string, number>;
   team: Team | null;
+  sourceHold: string | null;
 };
+
+async function sourceHoldFor(db: GhlDb, orgId: string): Promise<string | null> {
+  try {
+    const { unhealthyTools } = await import("@/lib/connectors/store");
+    const names = await unhealthyTools(orgId);
+    return names[0] ?? null;
+  } catch {
+    void db;
+    return null;
+  }
+}
 
 export async function runSentrySweep(db: GhlDb): Promise<{ workspaces: number; leads: number; alerts: number; waiting: number; ms: number }> {
   const raw = db as unknown as Loose;
@@ -162,6 +174,7 @@ async function sweepOrg(
     catchup,
     grouped: new Map(),
     team: mode === "live" ? await loadTeam(db, space.org_id) : null,
+    sourceHold: await sourceHoldFor(db, space.org_id),
   };
 
   const columns = "id, first_name, status, opted_in_at, created_at, first_human_touch_at, do_not_contact, merged_into, assigned_setter_id, assigned_closer_id";
@@ -334,6 +347,14 @@ async function watchLead(db: GhlDb, run: OrgRun, lead: Record<string, unknown>):
     .eq("lead_id", leadId)
     .in("status", ["open", "acknowledged", "snoozed"])
     .maybeSingle();
+
+  if (kind === "first_touch" && run.sourceHold && (answer.state === "at_risk" || answer.state === "missed")) {
+    await raw
+      .from("sentry_clocks")
+      .update({ reason: `Held. Some data from ${run.sourceHold} may be out of date.` })
+      .eq("id", clockId);
+    return false;
+  }
 
   if (answer.state !== "at_risk" && answer.state !== "missed") {
     if (open) {

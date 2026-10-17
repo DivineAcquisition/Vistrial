@@ -35,6 +35,8 @@ export type Membership = {
   canSeeMoney: boolean;
   /** Member seats only: an owner granted exports. */
   canExport: boolean;
+  /** Member seats only: an owner granted connection management. Off by default. */
+  canManageConnections: boolean;
   avatarPath: string | null;
   displayName: string;
   email: string;

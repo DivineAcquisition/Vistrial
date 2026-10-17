@@ -176,6 +176,10 @@ export async function processOneEvent(db: GhlDb, event: WebhookRow): Promise<voi
       break;
     case "uninstall":
       await disconnectGhl(db, orgId as string);
+      {
+        const { markGhlDisconnected } = await import("@/lib/connectors/store");
+        await markGhlDisconnected(db, orgId as string, pick(payload, ["locationId", "location_id"]), "Disconnected in HighLevel");
+      }
       break;
     case "install":
       break;

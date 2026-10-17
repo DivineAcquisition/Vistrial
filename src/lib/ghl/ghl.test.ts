@@ -346,7 +346,9 @@ describe("tokens and suppression", () => {
 
   it("does not name the org that already claimed a location", () => {
     expect(LOCATION_CLAIMED_MESSAGE.toLowerCase()).not.toContain("org");
-    expect(LOCATION_CLAIMED_MESSAGE).toContain("already linked");
+    expect(LOCATION_CLAIMED_MESSAGE).toBe(
+      "This account is already connected to another Vistrial workspace. Contact your team if you need help."
+    );
   });
 });
 

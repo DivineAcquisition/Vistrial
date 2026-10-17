@@ -249,7 +249,7 @@ export const SETTINGS_TABS: Array<{
   { href: "/app/settings/history", label: "History", access: "everyone" },
   { href: "/app/settings/organization", label: "Workspace", access: "owner" },
   { href: "/app/settings/members", label: "People", access: "results" },
-  { href: "/app/settings/connections", label: "Connections", access: "owner" },
+  { href: "/app/settings/connections", label: "Connections", access: "results" },
   { href: "/app/settings/billing", label: "Billing", access: "owner" },
   { href: "/app/settings/privacy", label: "Privacy", access: "owner" },
   { href: "/app/settings/developers", label: "Developers", access: "owner" },

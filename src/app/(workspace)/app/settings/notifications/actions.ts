@@ -6,6 +6,7 @@ import type { SettingsSaveResult } from "@/app/(workspace)/app/settings/types";
 import { canManageOrgSettings } from "@/lib/auth/permissions";
 import { getAuthContext } from "@/lib/auth/session";
 import { encryptSecret } from "@/lib/ghl/crypto";
+import { assertPublicHttps } from "@/lib/security/outbound-url";
 import { USER_PREF_CHANNELS, USER_PREF_EVENTS } from "@/lib/notifications/constants";
 import { deliverOne } from "@/lib/notifications/deliver";
 import { enqueueNotification } from "@/lib/notifications/enqueue";
@@ -107,12 +108,14 @@ export async function saveOrgNotificationSettings(
   } = { org_id: ctx.org.id, updated_at: new Date().toISOString() };
 
   try {
+    if (slack) await assertPublicHttps(slack);
+    if (teams) await assertPublicHttps(teams);
     if (clearSlack) patch.slack_webhook_encrypted = null;
     else if (slack) patch.slack_webhook_encrypted = encryptSecret(slack);
     if (clearTeams) patch.teams_webhook_encrypted = null;
     else if (teams) patch.teams_webhook_encrypted = encryptSecret(teams);
   } catch {
-    return { status: "error", error: "Could not store that connection. Encryption key is missing." };
+    return { status: "error", error: "That address cannot be used. Use a public https address." };
   }
 
   const { error: teamError } = await supabase.from("notification_team_channels").upsert(patch);

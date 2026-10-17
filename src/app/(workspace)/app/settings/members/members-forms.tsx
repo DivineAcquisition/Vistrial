@@ -255,7 +255,12 @@ export function ResendInviteButton({ inviteId }: { inviteId: string }) {
   );
 }
 
-const GRANT_LABEL = { money: "Sees money", export: "Can export", transcripts: "Sees transcripts" } as const;
+const GRANT_LABEL = {
+  money: "Sees money",
+  export: "Can export",
+  transcripts: "Sees transcripts",
+  connections: "Manage connections",
+} as const;
 
 /** A Member's money, export, or transcript permission. Owners and staff always have them. */
 export function MemberGrantToggle({
@@ -267,7 +272,7 @@ export function MemberGrantToggle({
 }: {
   memberId: string;
   role: OrgRole;
-  grant: "money" | "export" | "transcripts";
+  grant: "money" | "export" | "transcripts" | "connections";
   value: boolean;
   /** Read only for this viewer, such as transcripts for anyone but an Owner. */
   disabled?: boolean;

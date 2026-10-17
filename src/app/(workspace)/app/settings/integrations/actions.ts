@@ -37,6 +37,22 @@ async function requireManager() {
   return ctx;
 }
 
+/** The person who signed in at HighLevel picks the location. Staff cannot. */
+async function requireConnector() {
+  const ctx = await getAuthContext();
+  const { canManageConnections } = await import("@/lib/connectors/access");
+  if (
+    !canManageConnections({
+      role: ctx.role,
+      isStaff: ctx.isStaff,
+      canManageFlag: ctx.member.canManageConnections,
+    })
+  ) {
+    return null;
+  }
+  return ctx;
+}
+
 export async function disconnectCrm(
   _prev: SettingsSaveResult,
   _formData: FormData
@@ -76,7 +92,7 @@ export async function selectGhlLocation(
   _prev: SettingsSaveResult,
   formData: FormData
 ): Promise<SettingsSaveResult> {
-  const ctx = await requireManager();
+  const ctx = await requireConnector();
   if (!ctx) return forbidden();
   const locationId = String(formData.get("location_id") ?? "").trim();
   if (!locationId) return { status: "error", error: "Choose a location to link." };
@@ -87,6 +103,8 @@ export async function selectGhlLocation(
   });
   if (!result.ok) return { status: "error", error: result.error };
   revalidateIntegrations();
+  revalidatePath("/app/onboarding/step/crm");
+  revalidatePath("/app/settings/connections");
   return { status: "saved" };
 }
 

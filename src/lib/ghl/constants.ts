@@ -85,4 +85,4 @@ export const GHL_OAUTH_COOKIE = "vistrial_ghl_oauth";
 export const CRM_RETURN_COOKIE = "vistrial_crm_return";
 
 export const LOCATION_CLAIMED_MESSAGE =
-  "This GoHighLevel location is already linked to another workspace.";
+  "This account is already connected to another Vistrial workspace. Contact your team if you need help.";

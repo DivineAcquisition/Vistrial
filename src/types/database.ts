@@ -2031,6 +2031,7 @@ export type Database = {
           last_seen_at: string | null;
           can_see_money: boolean;
           can_export: boolean;
+          can_manage_connections: boolean;
           can_see_transcripts: boolean;
           avatar_path: string | null;
           notification_delivery: "instant" | "digest";
@@ -2070,6 +2071,7 @@ export type Database = {
           last_seen_at?: string | null;
           can_see_money?: boolean;
           can_export?: boolean;
+          can_manage_connections?: boolean;
           can_see_transcripts?: boolean;
           avatar_path?: string | null;
           notification_delivery?: "instant" | "digest";
@@ -2109,6 +2111,7 @@ export type Database = {
           last_seen_at?: string | null;
           can_see_money?: boolean;
           can_export?: boolean;
+          can_manage_connections?: boolean;
           can_see_transcripts?: boolean;
           avatar_path?: string | null;
           notification_delivery?: "instant" | "digest";
@@ -3309,6 +3312,7 @@ export type Database = {
           location_name: string | null;
           org_id: string;
           refresh_token_encrypted: string | null;
+          refresh_claimed_at: string | null;
           status: Database["public"]["Enums"]["ghl_connection_status"];
           token_expires_at: string | null;
           updated_at: string;
@@ -3326,6 +3330,7 @@ export type Database = {
           location_name?: string | null;
           org_id: string;
           refresh_token_encrypted?: string | null;
+          refresh_claimed_at?: string | null;
           status?: Database["public"]["Enums"]["ghl_connection_status"];
           token_expires_at?: string | null;
           updated_at?: string;
@@ -3343,6 +3348,7 @@ export type Database = {
           location_name?: string | null;
           org_id?: string;
           refresh_token_encrypted?: string | null;
+          refresh_claimed_at?: string | null;
           status?: Database["public"]["Enums"]["ghl_connection_status"];
           token_expires_at?: string | null;
           updated_at?: string;
@@ -6593,6 +6599,22 @@ export type Database = {
       try_consume_ghl_rate: {
         Args: { p_org_id: string };
         Returns: boolean;
+      };
+      claim_ghl_refresh: {
+        Args: { p_org_id: string };
+        Returns: boolean;
+      };
+      release_ghl_refresh: {
+        Args: { p_org_id: string };
+        Returns: undefined;
+      };
+      connector_enabled: {
+        Args: { p_org_id: string; p_key: string };
+        Returns: boolean;
+      };
+      external_account_block: {
+        Args: { p_connector: string; p_external: string; p_org_id: string };
+        Returns: string | null;
       };
       user_member_id: {
         Args: { p_org_id: string };

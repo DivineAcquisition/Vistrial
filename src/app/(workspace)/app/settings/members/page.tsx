@@ -45,7 +45,7 @@ export default async function MembersSettingsPage() {
   const [{ data: seats }, { data: invites }] = await Promise.all([
     supabase
       .from("org_members")
-      .select("id, display_name, email, role, active, user_id, logged_outcome_from_mobile_at, seat, can_approve, can_see_money, can_export, can_see_transcripts, is_agent_identity, avatar_path")
+      .select("id, display_name, email, role, active, user_id, logged_outcome_from_mobile_at, seat, can_approve, can_see_money, can_export, can_see_transcripts, can_manage_connections, is_agent_identity, avatar_path")
       .eq("org_id", ctx.org.id)
       .order("created_at", { ascending: true }),
     supabase
@@ -127,6 +127,7 @@ export default async function MembersSettingsPage() {
               <TableHead className="hidden lg:table-cell">Money</TableHead>
               <TableHead className="hidden lg:table-cell">Export</TableHead>
               <TableHead className="hidden lg:table-cell">Transcripts</TableHead>
+              <TableHead className="hidden lg:table-cell">Connections</TableHead>
               <TableHead className="hidden md:table-cell">Status</TableHead>
               <TableHead>Phone</TableHead>
               <TableHead></TableHead>
@@ -178,6 +179,15 @@ export default async function MembersSettingsPage() {
                       role={member.role}
                       grant="transcripts"
                       value={Boolean(member.can_see_transcripts)}
+                      disabled={ctx.isStaff || ctx.role !== "owner"}
+                    />
+                  </TableCell>
+                  <TableCell className="hidden lg:table-cell">
+                    <MemberGrantToggle
+                      memberId={member.id}
+                      role={member.role}
+                      grant="connections"
+                      value={Boolean(member.can_manage_connections)}
                       disabled={ctx.isStaff || ctx.role !== "owner"}
                     />
                   </TableCell>

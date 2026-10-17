@@ -23,7 +23,7 @@ import type { PlatformRole } from "@/types/database";
 export type { AuthContext, ClientOrgState, Membership, OrgSummary } from "@/lib/auth/types";
 
 const MEMBER_COLUMNS =
-  "id, org_id, role, seat, can_approve, can_see_money, can_export, avatar_path, display_name, email, surface_access" as const;
+  "id, org_id, role, seat, can_approve, can_see_money, can_export, can_manage_connections, avatar_path, display_name, email, surface_access" as const;
 const ORG_COLUMNS = "id, name, slug, timezone, ghl_location_id, status, is_platform_workspace" as const;
 
 export const getSessionUser = cache(async (): Promise<User | null> => {

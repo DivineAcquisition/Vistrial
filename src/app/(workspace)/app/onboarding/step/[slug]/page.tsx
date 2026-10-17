@@ -26,6 +26,9 @@ import {
 import { ContactDetailsForm } from "@/app/(workspace)/app/settings/organization/contact-form";
 import { OwnerHoursForm } from "@/components/config/owner-hours-form";
 import { Button } from "@/components/ui/button";
+import { LocationPicker } from "@/components/integrations/location-picker";
+import { listSessionLocations } from "@/lib/ghl/connect";
+import { getSupabaseAdmin } from "@/lib/supabase/admin";
 import { Panel } from "@/components/ui/panel";
 import { Notice } from "@/components/ui/states";
 import { StatusBadge } from "@/components/ui/status-badge";
@@ -252,6 +255,9 @@ export default async function SetupStepPage({
       const conn = connection as { status: string; location_name: string | null } | null;
       const connected = conn?.status === "active";
       const error = one("ghl_error");
+      const locations = one("select_location")
+        ? await listSessionLocations(getSupabaseAdmin(), ctx.org.id, ctx.member.id)
+        : [];
       return frame({
         title: titleFor(view, slug, "Connect your CRM"),
         why: whyFor(view, slug, "Your leads come from your CRM."),
@@ -275,11 +281,7 @@ export default async function SetupStepPage({
                   {CRM_ERRORS[error] ?? CRM_ERRORS.oauth_failed}
                 </p>
               ) : null}
-              {one("select_location") ? (
-                <Notice tone="info" title="Almost there" className="mt-3">
-                  <p className={helperClass}>Your CRM account has more than one location. Your team will pick the right one with you.</p>
-                </Notice>
-              ) : null}
+              {locations.length ? <LocationPicker locations={locations} /> : null}
               {connected && one("connected") ? (
                 <p role="status" className="mt-3 text-sm text-flag-good">
                   Connected{conn?.location_name ? ` to ${conn.location_name}` : ""}. Your leads can be brought in at the &quot;Bring in your existing leads&quot; step.
@@ -294,6 +296,9 @@ export default async function SetupStepPage({
                   <p className={helperClass}>Connecting is not available on this site yet. Ask your team.</p>
                 )}
                 {connected ? <NextLink href={nextHref} /> : null}
+                <Button variant="secondary" render={<Link href="/app/settings/connections" />}>
+                  See every source
+                </Button>
               </div>
             </Panel>
             {!connected ? (

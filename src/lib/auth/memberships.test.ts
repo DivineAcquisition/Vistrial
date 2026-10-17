@@ -66,6 +66,7 @@ function membership(orgId: string): Membership {
     canApprove: false,
     canSeeMoney: false,
     canExport: false,
+    canManageConnections: false,
     avatarPath: null,
     displayName: "Malik",
     email: "malik@divineacquisition.io",

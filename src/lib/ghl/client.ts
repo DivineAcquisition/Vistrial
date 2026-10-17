@@ -200,12 +200,25 @@ export async function getValidAccessToken(
     return { ok: true, token: tokens.accessToken };
   }
 
+  const claim = await db.rpc("claim_ghl_refresh", { p_org_id: orgId });
+  if (claim.error) {
+    ghlWarn("ghl.token.refresh_lock_failed", { orgId, code: claim.error.code });
+  } else if (claim.data !== true) {
+    const again = await loadConnection(db, orgId);
+    const current = again ? decryptConnectionTokens(again) : null;
+    if (current && !tokensNeedRefresh(current.expiresAt)) return { ok: true, token: current.accessToken };
+    if (current) return { ok: true, token: current.accessToken };
+    return { ok: false, reason: "refresh_failed" };
+  }
+
   try {
     const refreshed = await refreshGhlTokens(tokens.refreshToken);
     await persistTokens(db, orgId, refreshed);
     ghlLog("ghl.token.refreshed", { orgId });
+    await db.rpc("release_ghl_refresh", { p_org_id: orgId });
     return { ok: true, token: refreshed.accessToken };
   } catch (error) {
+    await db.rpc("release_ghl_refresh", { p_org_id: orgId });
     const reloaded = await loadConnection(db, orgId);
     const again = reloaded ? decryptConnectionTokens(reloaded) : null;
     if (again && !tokensNeedRefresh(again.expiresAt)) {

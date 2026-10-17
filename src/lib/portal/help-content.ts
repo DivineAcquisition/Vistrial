@@ -36,6 +36,7 @@ export const HELP_ANSWERS: HelpAnswer[] = [
     answer: [
       "Your CRM stopped accepting Vistrial's access, usually after a password change or a removed app. New leads are not arriving until it is fixed.",
       "Reconnect it from Connections. Nothing that was already in Vistrial is lost.",
+      "Never send a password, token, or API key to the Vistrial team. Staff cannot connect a tool for you.",
     ],
     link: { label: "Open Connections", href: "/app/settings/connections" },
   },

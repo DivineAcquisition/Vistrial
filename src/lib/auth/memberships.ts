@@ -21,6 +21,7 @@ export type MemberRow = {
   can_approve?: boolean | null;
   can_see_money?: boolean | null;
   can_export?: boolean | null;
+  can_manage_connections?: boolean | null;
   avatar_path?: string | null;
   surface_access?: SurfaceAccess | null;
   organizations?: OrgRow | OrgRow[] | null;
@@ -54,6 +55,7 @@ export function membershipFromRow(
     canApprove: Boolean(row.can_approve),
     canSeeMoney: Boolean(row.can_see_money),
     canExport: Boolean(row.can_export),
+    canManageConnections: Boolean(row.can_manage_connections),
     avatarPath: row.avatar_path ?? null,
     displayName: row.display_name,
     email: row.email,

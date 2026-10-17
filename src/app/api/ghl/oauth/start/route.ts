@@ -1,8 +1,8 @@
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 
-import { canManageOrgSettings } from "@/lib/auth/permissions";
 import { getSessionUser, listActiveMemberships } from "@/lib/auth/session";
+import { canManageConnections } from "@/lib/connectors/access";
 import { ORG_COOKIE_NAME } from "@/lib/auth/cookies";
 import { GHL_OAUTH_COOKIE, GHL_OAUTH_SCOPES } from "@/lib/ghl/constants";
 import { ghlClientId, ghlOAuthAuthorizeUrl, ghlOAuthConfigured, ghlOAuthRedirectUri } from "@/lib/ghl/env";
@@ -32,8 +32,12 @@ export async function GET(request: Request) {
   if (!active) {
     return NextResponse.json({ error: "No workspace." }, { status: 403 });
   }
-  const ownerInSetup = fromSetup && active.seat === "customer" && active.role === "owner";
-  if (!canManageOrgSettings(active.role, active.seat === "staff") && !ownerInSetup) {
+  const allowed = canManageConnections({
+    role: active.role,
+    isStaff: active.seat === "staff",
+    canManageFlag: active.canManageConnections,
+  });
+  if (!allowed) {
     return NextResponse.json({ error: "You do not have permission to connect the CRM." }, { status: 403 });
   }
 
@@ -53,8 +57,9 @@ export async function GET(request: Request) {
     maxAge: 15 * 60,
   });
 
-  if (fromSetup) {
-    cookieStore.set(CRM_RETURN_COOKIE, "onboarding", {
+  const fromConnections = new URL(request.url).searchParams.get("from") === "connections";
+  if (fromSetup || fromConnections) {
+    cookieStore.set(CRM_RETURN_COOKIE, fromConnections ? "connections" : "onboarding", {
       httpOnly: true,
       sameSite: "lax",
       secure: process.env.NODE_ENV === "production",

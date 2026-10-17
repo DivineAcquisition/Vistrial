@@ -215,6 +215,15 @@ export async function sendQueuedDispatch(db: GhlDb, dispatchId: string): Promise
     return { status: "queued", dispatchId: row.id };
   }
 
+  const { ghlCatalogLive } = await import("@/lib/connectors/store");
+  if (!(await ghlCatalogLive(row.org_id))) {
+    await db
+      .from("ghl_dispatches")
+      .update({ available_at: new Date(Date.now() + 15 * 60 * 1000).toISOString(), claimed_at: null })
+      .eq("id", row.id);
+    return { status: "queued", dispatchId: row.id };
+  }
+
   const token = await getValidAccessToken(db, row.org_id);
   if (!token.ok) {
     await db

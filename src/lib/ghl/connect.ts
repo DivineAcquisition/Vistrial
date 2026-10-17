@@ -1,6 +1,6 @@
 import "server-only";
 
-import { LOCATION_CLAIMED_MESSAGE, OAUTH_SESSION_TTL_MS } from "@/lib/ghl/constants";
+import { GHL_OAUTH_SCOPES, LOCATION_CLAIMED_MESSAGE, OAUTH_SESSION_TTL_MS } from "@/lib/ghl/constants";
 import {
   deleteLocationWebhook,
   exchangeLocationToken,
@@ -38,7 +38,7 @@ export async function linkLocationToOrg(
     p_org_id: args.orgId,
     p_location_id: args.locationId,
   });
-  const result = linked.data as { ok?: boolean; error?: string } | null;
+  const result = linked.data as { ok?: boolean; error?: string; shared?: boolean } | null;
   if (!result?.ok) {
     const error = result?.error === "org_missing" ? "org_missing" : "location_claimed";
     ghlError("ghl.oauth.link_failed", { orgId: args.orgId, error });
@@ -46,6 +46,22 @@ export async function linkLocationToOrg(
   }
 
   const expiresAt = new Date(Date.now() + args.tokens.expiresIn * 1000).toISOString();
+  if (result.shared) {
+    const { upsertCatalogConnection, saveOAuthTokens } = await import("@/lib/connectors/store");
+    const { connectorByKey } = await import("@/lib/connectors/catalog");
+    const connector = connectorByKey("gohighlevel");
+    if (connector) {
+      const row = await upsertCatalogConnection({
+        orgId: args.orgId,
+        connector,
+        memberId: args.memberId ?? null,
+        externalAccountId: args.locationId,
+        status: "setting_up",
+      });
+      await saveOAuthTokens(row.id, args.tokens.accessToken, args.tokens.refreshToken, expiresAt);
+    }
+    return { ok: true, locationName: null };
+  }
   const { error } = await db.from("ghl_connections").upsert(
     {
       org_id: args.orgId,
@@ -86,6 +102,20 @@ export async function linkLocationToOrg(
   await registerLocationWebhooks(db, args.orgId);
   const adopted = await adoptEventsForLocation(db, args.orgId, args.locationId);
   ghlLog("ghl.oauth.linked", { orgId: args.orgId, adopted });
+  const { upsertCatalogConnection } = await import("@/lib/connectors/store");
+  const { connectorByKey } = await import("@/lib/connectors/catalog");
+  const connector = connectorByKey("gohighlevel");
+  if (connector) {
+    await upsertCatalogConnection({
+      orgId: args.orgId,
+      connector,
+      memberId: args.memberId ?? null,
+      externalAccountId: args.locationId,
+      externalAccountLabel: locationName,
+      grantedScopes: GHL_OAUTH_SCOPES.split(" "),
+      status: "setting_up",
+    });
+  }
   return { ok: true, locationName };
 }
 

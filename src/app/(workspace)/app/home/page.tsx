@@ -21,6 +21,7 @@ import {
 } from "@/app/(workspace)/app/home/sections";
 import Logo from "@/components/brand/logo";
 import { HomeLiveBand } from "@/components/live/home-live";
+import { ConnectionHold } from "@/components/connectors/connection-hold";
 import { canSeePeople, canSeeResults } from "@/lib/auth/portal-access";
 import { getAuthContext } from "@/lib/auth/session";
 import { parseHomePeriodKey, resolveHomePeriod } from "@/lib/home/periods";
@@ -58,6 +59,10 @@ export default async function HomePage({ searchParams }: { searchParams: Promise
           <AwaySummary ctx={ctx} facts={facts} />
         </Suspense>
       </header>
+
+      <Suspense fallback={null}>
+        <ConnectionHold orgId={ctx.org.id} />
+      </Suspense>
 
       <Suspense fallback={null}>
         <OnboardingCard ctx={ctx} />

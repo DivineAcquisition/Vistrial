@@ -389,8 +389,8 @@ BEGIN
       RETURN jsonb_build_object('allowed', false, 'feature', false, 'reason',
         'Compass is paused until billing is sorted. Ask your Owner.', 'reset_on', v_reset);
     END IF;
-    RETURN jsonb_build_object('allowed', v_feature, 'feature', v_feature, 'limit', null, 'used', 0, 'remaining', null,
-      'reason', CASE WHEN v_feature THEN 'Included.' ELSE 'Not included on this plan.' END, 'reset_on', v_reset);
+    RETURN jsonb_build_object('allowed', v_feature, 'feature', v_feature, 'reason',
+      CASE WHEN v_feature THEN 'Included.' ELSE 'Not included on this plan.' END, 'reset_on', v_reset);
   END IF;
 
   IF p_key = 'team_members' THEN
@@ -646,11 +646,29 @@ CREATE POLICY file_imports_select ON public.file_imports
   FOR SELECT TO authenticated
   USING (public.can_view_connections(org_id));
 
-REVOKE ALL ON public.connection_secrets FROM PUBLIC, authenticated;
-REVOKE ALL ON public.connection_attempts FROM PUBLIC, authenticated;
-REVOKE ALL ON public.connection_invites FROM PUBLIC, authenticated;
-REVOKE ALL ON public.inbound_event_ids FROM PUBLIC, authenticated;
-REVOKE ALL ON public.external_account_exceptions FROM PUBLIC, authenticated;
+ALTER TABLE public.connection_secrets ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.connection_attempts ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.connection_invites ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.inbound_endpoints ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.inbound_event_ids ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.external_account_exceptions ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.connector_people ENABLE ROW LEVEL SECURITY;
+
+REVOKE ALL ON public.connection_secrets FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON public.connection_attempts FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON public.connection_invites FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON public.inbound_endpoints FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON public.inbound_event_ids FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON public.external_account_exceptions FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON public.connector_people FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON public.workspace_connections FROM anon;
+REVOKE ALL ON public.connection_state_events FROM anon;
+REVOKE ALL ON public.inbound_deliveries FROM anon;
+REVOKE ALL ON public.connection_audit FROM anon;
+REVOKE ALL ON public.connector_interest FROM anon;
+REVOKE ALL ON public.connector_requests FROM anon;
+REVOKE ALL ON public.file_imports FROM anon;
+REVOKE ALL ON public.workspace_connector_access FROM anon;
 
 GRANT SELECT ON public.workspace_connections TO authenticated;
 GRANT SELECT ON public.connection_state_events TO authenticated;
@@ -691,3 +709,4 @@ GRANT EXECUTE ON FUNCTION public.claim_ghl_refresh(uuid) TO service_role;
 GRANT EXECUTE ON FUNCTION public.release_ghl_refresh(uuid) TO service_role;
 GRANT EXECUTE ON FUNCTION public.connector_enabled(uuid, text) TO service_role;
 GRANT EXECUTE ON FUNCTION public.external_account_shared(text, text, uuid, uuid) TO service_role;
+GRANT EXECUTE ON FUNCTION public.can_view_connections(uuid) TO authenticated, service_role;

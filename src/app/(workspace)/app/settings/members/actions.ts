@@ -3,12 +3,8 @@
 import { revalidatePath } from "next/cache";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
-import {
-  buildInviteLink,
-  inviteExpiryDate,
-  newInviteToken,
-  normalizeInviteEmail,
-} from "@/lib/auth/invites";
+import { buildInviteLink, inviteExpiryDate, normalizeInviteEmail } from "@/lib/auth/invites";
+import { commitInvite, commitInviteExpiry, commitMemberPatch, commitRevokeInvite } from "@/lib/directory/commit";
 import {
   canManageMembers,
   invitableRolesFor,
@@ -91,7 +87,7 @@ async function guardLastOwner(args: {
 /** The database refuses the same changes; say why in words. */
 function explain(error: { code?: string; hint?: string | null; message?: string } | null, fallback: string) {
   if (!error) return fallback;
-  if (error.hint === "last_owner") return LAST_OWNER;
+  if (error.hint === "last_owner" || error.message?.includes("at least one owner")) return LAST_OWNER;
   if (error.code === "42501" && error.message) return error.message;
   return fallback;
 }
@@ -153,19 +149,18 @@ export async function inviteMember(
     return { ok: false, error: `${email} already has an invite waiting. Resend it from the list below.` };
   }
 
-  const token = newInviteToken();
-  const { error } = await supabase.from("org_invites").insert({
-    org_id: gate.ctx.org.id,
-    email,
-    role,
-    token,
-    invited_by: gate.ctx.member.id,
-    expires_at: inviteExpiryDate().toISOString(),
-    surface_access: surfaceFor(role),
-  });
-
-  if (error) {
-    return { ok: false, error: explain(error, "Could not create the invite.") };
+  let token: string;
+  try {
+    const created = await commitInvite({
+      workspaceId: gate.ctx.org.id,
+      email,
+      role,
+      invitedBy: gate.ctx.member.id,
+      surfaceAccess: surfaceFor(role),
+    });
+    token = created.token;
+  } catch (error) {
+    return { ok: false, error: explain(error instanceof Error ? error : null, "Could not create the invite.") };
   }
 
   const url = buildInviteLink(token);
@@ -244,12 +239,11 @@ export async function resendInvite(inviteId: string): Promise<MemberActionResult
   }
 
   const expiresAt = inviteExpiryDate();
-  const { error } = await supabase
-    .from("org_invites")
-    .update({ expires_at: expiresAt.toISOString() })
-    .eq("id", invite.id)
-    .eq("org_id", gate.ctx.org.id);
-  if (error) return { ok: false, error: "Could not resend the invite." };
+  try {
+    await commitInviteExpiry(gate.ctx.org.id, invite.id, expiresAt.toISOString());
+  } catch {
+    return { ok: false, error: "Could not resend the invite." };
+  }
 
   const url = buildInviteLink(invite.token);
   const mail = await sendInviteEmail({
@@ -282,21 +276,21 @@ export async function setMemberGrant(
   if (member.role !== "member") {
     return { ok: false, error: "These are for members. Owners already see money, transcripts, and can export." };
   }
-  const supabase = await createClient();
-  const { error } = await supabase
-    .from("org_members")
-    .update(
+  try {
+    await commitMemberPatch(
+      gate.ctx.org.id,
+      memberId,
       grant === "money"
         ? { can_see_money: value }
         : grant === "export"
           ? { can_export: value }
           : grant === "connections"
             ? { can_manage_connections: value }
-            : { can_see_transcripts: value }
-    )
-    .eq("id", memberId)
-    .eq("org_id", gate.ctx.org.id);
-  if (error) return { ok: false, error: explain(error, "Could not change that for this member.") };
+            : { can_see_transcripts: value },
+    );
+  } catch (error) {
+    return { ok: false, error: explain(error instanceof Error ? error : null, "Could not change that for this member.") };
+  }
   revalidatePeople();
   return { ok: true };
 }
@@ -332,15 +326,9 @@ export async function revokeInvite(inviteId: string): Promise<MemberActionResult
   const gate = await requireManager();
   if (!gate.ok) return { ok: false, error: gate.error };
 
-  const supabase = await createClient();
-  const { error } = await supabase
-    .from("org_invites")
-    .delete()
-    .eq("id", inviteId)
-    .eq("org_id", gate.ctx.org.id)
-    .is("accepted_at", null);
-
-  if (error) {
+  try {
+    await commitRevokeInvite(gate.ctx.org.id, inviteId);
+  } catch {
     return { ok: false, error: "Could not revoke the invite." };
   }
 
@@ -373,19 +361,14 @@ export async function updateMemberRole(memberId: string, role: OrgRole): Promise
   });
   if (blocked) return { ok: false, error: blocked };
 
-  const supabase = await createClient();
-  const { error } = await supabase
-    .from("org_members")
-    .update({
+  try {
+    await commitMemberPatch(gate.ctx.org.id, memberId, {
       role,
       surface_access: surfaceFor(role),
       ...(role === "member" ? {} : { can_approve: false }),
-    })
-    .eq("id", memberId)
-    .eq("org_id", gate.ctx.org.id);
-
-  if (error) {
-    return { ok: false, error: explain(error, `Could not change the role to ${roleLabel(role)}.`) };
+    });
+  } catch (error) {
+    return { ok: false, error: explain(error instanceof Error ? error : null, `Could not change the role to ${roleLabel(role)}.`) };
   }
 
   revalidatePeople();
@@ -403,15 +386,10 @@ export async function setMemberApproval(memberId: string, canApprove: boolean): 
     return { ok: false, error: "Approval is granted to members. Owners already approve." };
   }
 
-  const supabase = await createClient();
-  const { error } = await supabase
-    .from("org_members")
-    .update({ can_approve: canApprove })
-    .eq("id", memberId)
-    .eq("org_id", gate.ctx.org.id);
-
-  if (error) {
-    return { ok: false, error: explain(error, "Could not change approval for this member.") };
+  try {
+    await commitMemberPatch(gate.ctx.org.id, memberId, { can_approve: canApprove });
+  } catch (error) {
+    return { ok: false, error: explain(error instanceof Error ? error : null, "Could not change approval for this member.") };
   }
 
   revalidatePeople();
@@ -437,15 +415,10 @@ export async function setMemberActive(memberId: string, active: boolean): Promis
   });
   if (blocked) return { ok: false, error: blocked };
 
-  const supabase = await createClient();
-  const { error } = await supabase
-    .from("org_members")
-    .update({ active })
-    .eq("id", memberId)
-    .eq("org_id", gate.ctx.org.id);
-
-  if (error) {
-    return { ok: false, error: explain(error, "Could not update membership status.") };
+  try {
+    await commitMemberPatch(gate.ctx.org.id, memberId, { active });
+  } catch (error) {
+    return { ok: false, error: explain(error instanceof Error ? error : null, "Could not update membership status.") };
   }
 
   revalidatePeople();

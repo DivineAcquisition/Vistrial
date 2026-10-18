@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 
 import { canManageOrgSettings } from "@/lib/auth/permissions";
 import { getAuthContext } from "@/lib/auth/session";
+import { commitWorkspacePatch } from "@/lib/directory/commit";
 import { createClient } from "@/lib/supabase/server";
 import { isOrgTimezone } from "@/lib/timezones";
 import type { SettingsSaveResult } from "@/app/(workspace)/app/settings/types";
@@ -107,15 +108,9 @@ export async function updateOrganization(
     return { status: "error", error: "Nothing to save." };
   }
 
-  const supabase = await createClient();
-  const { data, error } = await supabase
-    .from("organizations")
-    .update(patch)
-    .eq("id", ctx.org.id)
-    .select("id")
-    .maybeSingle();
-
-  if (error || !data) {
+  try {
+    await commitWorkspacePatch(ctx.org.id, patch);
+  } catch {
     return { status: "error", error: "Could not save organization settings." };
   }
 
@@ -166,12 +161,9 @@ export async function updateContactDetails(
   if (formData.has("business_address")) patch.business_address = clean("business_address", 300);
 
   const supabase = await createClient();
-  const { error } = await supabase
-    .from("organizations")
-    .update(patch)
-    .eq("id", ctx.org.id);
-
-  if (error) {
+  try {
+    await commitWorkspacePatch(ctx.org.id, patch);
+  } catch {
     return { status: "error", error: "Could not save the contact details." };
   }
   await supabase.rpc("onboarding_refresh" as never, { p_org_id: ctx.org.id } as never);

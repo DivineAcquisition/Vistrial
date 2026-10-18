@@ -1,13 +1,12 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import type { SupabaseClient } from "@supabase/supabase-js";
 
 import type { SettingsSaveResult } from "@/app/(workspace)/app/settings/types";
 import { normalizeInviteEmail } from "@/lib/auth/invites";
 import { getAuthContext } from "@/lib/auth/session";
+import { commitSelfPatch } from "@/lib/directory/commit";
 import { removeAvatar, storeAvatar } from "@/lib/portal/avatars";
-import { getSupabaseAdmin } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import { parseIanaTimeZone } from "@/lib/timezones";
 
@@ -39,9 +38,8 @@ export async function updateProfile(
     return { status: "error", error: "Choose a supported timezone." };
   }
 
-  const { error } = await getSupabaseAdmin()
-    .from("org_members")
-    .update({
+  try {
+    await commitSelfPatch(ctx.org.id, ctx.member.id, {
       display_name: displayName,
       email,
       phone: phoneRaw || null,
@@ -49,12 +47,8 @@ export async function updateProfile(
       working_hours_start: startRaw || null,
       working_hours_end: endRaw || null,
       working_days: days.length > 0 ? days : null,
-    })
-    .eq("id", ctx.member.id)
-    .eq("org_id", ctx.org.id)
-    .eq("user_id", ctx.user.id);
-
-  if (error) {
+    });
+  } catch {
     return { status: "error", error: "Could not save your profile." };
   }
 
@@ -65,18 +59,23 @@ export async function updateProfile(
 
 export async function updatePhoto(_prev: SettingsSaveResult, formData: FormData): Promise<SettingsSaveResult> {
   const ctx = await getAuthContext();
-  const db = (await createClient()) as unknown as SupabaseClient;
   if (formData.get("remove") === "1") {
-    const { error } = await db.rpc("portal_update_self", { p_org_id: ctx.org.id, p_clear_avatar: true });
-    if (error) return { status: "error", error: "Could not remove your photo." };
+    try {
+      await commitSelfPatch(ctx.org.id, ctx.member.id, { avatar_path: null });
+    } catch {
+      return { status: "error", error: "Could not remove your photo." };
+    }
     await removeAvatar(ctx.org.id, ctx.member.id);
   } else {
     const file = formData.get("photo");
     if (!(file instanceof File) || file.size === 0) return { status: "error", error: "Choose a photo first." };
     const stored = await storeAvatar(ctx.org.id, ctx.member.id, file);
     if ("error" in stored) return { status: "error", error: stored.error };
-    const { error } = await db.rpc("portal_update_self", { p_org_id: ctx.org.id, p_avatar_path: stored.path });
-    if (error) return { status: "error", error: "Could not save that photo." };
+    try {
+      await commitSelfPatch(ctx.org.id, ctx.member.id, { avatar_path: stored.path });
+    } catch {
+      return { status: "error", error: "Could not save that photo." };
+    }
   }
   revalidatePath("/", "layout");
   return { status: "saved" };
@@ -86,9 +85,11 @@ export async function updateDelivery(_prev: SettingsSaveResult, formData: FormDa
   const ctx = await getAuthContext();
   const delivery = String(formData.get("delivery") ?? "");
   if (delivery !== "instant" && delivery !== "digest") return { status: "error", error: "Choose how you hear from us." };
-  const db = (await createClient()) as unknown as SupabaseClient;
-  const { error } = await db.rpc("portal_update_self", { p_org_id: ctx.org.id, p_notification_delivery: delivery });
-  if (error) return { status: "error", error: "Could not save that." };
+  try {
+    await commitSelfPatch(ctx.org.id, ctx.member.id, { notification_delivery: delivery });
+  } catch {
+    return { status: "error", error: "Could not save that." };
+  }
   revalidatePath("/app/settings/profile");
   return { status: "saved" };
 }

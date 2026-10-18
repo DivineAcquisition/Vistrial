@@ -1,6 +1,7 @@
 import "server-only";
 
 import { getAuthContext } from "@/lib/auth/session";
+import { commitWorkspacePatch } from "@/lib/directory/commit";
 import { OPERATOR_BATCH_CAP_DEFAULT, OPERATOR_BATCH_CAP_MAX, OPERATOR_BATCH_CAP_MIN } from "@/lib/operator/constants";
 import { toolLabel } from "@/lib/operator/labels";
 import type {
@@ -158,10 +159,7 @@ export async function insertOperatorRun(input: {
     .select("id, org_id, member_id, user_id")
     .maybeSingle();
   if (error || !data) return { error: "Could not start that run." };
-  await db
-    .from("organizations")
-    .update({ last_interactive_at: new Date().toISOString() })
-    .eq("id", ctx.org.id);
+  await commitWorkspacePatch(ctx.org.id, { last_interactive_at: new Date().toISOString() });
   return { id: data.id, orgId: data.org_id, memberId: data.member_id, userId: data.user_id };
 }
 

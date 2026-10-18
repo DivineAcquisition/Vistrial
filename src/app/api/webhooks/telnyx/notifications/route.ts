@@ -62,12 +62,14 @@ export async function POST(request: Request) {
   if (command === "stop") {
     const last10 = phoneDigits(sender).slice(-10);
     if (last10.length === 10) {
-      const { data: members } = await db.from("org_members").select("id, phone").ilike("phone", `%${last10}`);
-      const ids = (members ?? [])
-        .filter((row) => row.phone && samePhone(row.phone, sender))
-        .map((row) => row.id);
-      if (ids.length > 0) {
-        await db.from("org_members").update({ text_opted_out_at: new Date().toISOString() }).in("id", ids);
+      const { data: members } = await db.from("org_members").select("id, phone, org_id").ilike("phone", `%${last10}`);
+      const matches = (members ?? []).filter((row) => row.phone && samePhone(row.phone, sender));
+      if (matches.length > 0) {
+        const { systemMemberPatch } = await import("@/lib/directory/commit");
+        const optedOutAt = new Date().toISOString();
+        for (const member of matches) {
+          await systemMemberPatch(member.org_id, member.id, { text_opted_out_at: optedOutAt });
+        }
       }
     }
     await sendTelnyxText({ to: sender, body: TEXT_STOP_REPLY });

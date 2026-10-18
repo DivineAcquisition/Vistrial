@@ -2780,7 +2780,7 @@ export type Database = {
         };
         Relationships: [];
       };
-      stellar_da_operators: {
+      placed_operators: {
         Row: {
           user_id: string;
           granted_by: string | null;
@@ -2801,7 +2801,7 @@ export type Database = {
         };
         Relationships: [];
       };
-      stellar_da_access_log: {
+      placed_access_log: {
         Row: {
           id: string;
           user_id: string;
@@ -6545,15 +6545,15 @@ export type Database = {
         Args: { p_org_id: string };
         Returns: undefined;
       };
-      is_stellar_da_operator: {
+      is_placed_operator: {
         Args: Record<PropertyKey, never>;
         Returns: boolean;
       };
-      record_stellar_da_access: {
+      record_placed_access: {
         Args: { p_org_id: string | null; p_action: string; p_resource: string };
         Returns: undefined;
       };
-      stellar_da_list_placements: {
+      placed_list_placements: {
         Args: Record<PropertyKey, never>;
         Returns: {
           placement_id: string;
@@ -6567,7 +6567,7 @@ export type Database = {
           started_at: string;
         }[];
       };
-      stellar_da_get_placement: {
+      placed_get_placement: {
         Args: { p_org_id: string };
         Returns: {
           placement_id: string;
@@ -7446,6 +7446,7 @@ export type Database = {
         | "setter"
         | "client_viewer"
         | "da_operator"
+        | "placed_operator"
         | "member"
         | "operator";
       workspace_status: "onboarding" | "active" | "paused" | "closed";

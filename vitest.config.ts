@@ -4,7 +4,8 @@ import path from "node:path";
 export default defineConfig({
   test: {
     environment: "node",
-    include: ["src/**/*.test.ts", "src/**/*.test.tsx"],
+    include: ["src/**/*.test.ts", "src/**/*.test.tsx", "convex/**/*.test.ts"],
+    server: { deps: { inline: ["convex-test"] } },
   },
   resolve: {
     alias: {

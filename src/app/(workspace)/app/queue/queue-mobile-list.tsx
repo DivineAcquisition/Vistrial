@@ -186,6 +186,13 @@ function QueueMobileRow({
         <p className="font-heading text-lg tracking-tight break-words text-white">
           <Link href={`/app/cases/${row.id}`}>{row.name}</Link>
         </p>
+        {row.assayDisplay === "do_not_contact" ? (
+          <p className="mt-1 text-sm text-dim">Do not contact</p>
+        ) : row.score != null ? (
+          <p className={`mt-1 text-sm ${row.assayEarly ? "text-dim" : "text-silver"}`}>
+            {row.assayTier ? `${row.assayTier} ${row.score}` : row.score}
+          </p>
+        ) : null}
         <p className="mt-1 text-sm tabular-nums text-silver">{waiting}</p>
 
         <div className="mt-3 flex flex-wrap gap-2">

@@ -19,6 +19,11 @@ const SETTER: DefaultMap = {
   lead_assigned: { push: true },
   lead_to_claim: { push: true },
   push_device: { email: true },
+  assay_hot: { push: true },
+  assay_no_show: { push: true },
+  assay_jump: { email: true },
+  assay_quiet: { email: true },
+  assay_summary: { email: true },
 };
 
 const CLOSER: DefaultMap = {
@@ -33,6 +38,11 @@ const CLOSER: DefaultMap = {
   task_overdue: { push: true },
   lead_assigned: { push: true },
   push_device: { email: true },
+  assay_hot: { push: true },
+  assay_no_show: { push: true },
+  assay_jump: { email: true },
+  assay_quiet: { email: true },
+  assay_summary: { email: true },
 };
 
 const MANAGER: DefaultMap = {
@@ -54,6 +64,11 @@ const MANAGER: DefaultMap = {
   team_workload: { email: true },
   lead_reassigned: { email: true },
   push_device: { email: true },
+  assay_hot: { push: true },
+  assay_no_show: { push: true },
+  assay_jump: { email: true },
+  assay_quiet: { email: true },
+  assay_summary: { email: true },
 };
 
 export function defaultChannelEnabled(

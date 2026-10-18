@@ -31,7 +31,7 @@ export async function scoreLeadFromEvent(
     return { written: false, reason: "unscored" };
   }
 
-  return insertScoreRow(client, {
+  const written = await insertScoreRow(client, {
     orgId: args.orgId,
     leadId: args.leadId,
     factors: computed.factors,
@@ -40,6 +40,9 @@ export async function scoreLeadFromEvent(
     triggeredBy: "event",
     idempotencyKey: args.idempotencyKey,
   });
+  const { noteLeadForAssay } = await import("@/lib/assay/enqueue");
+  await noteLeadForAssay({ orgId: args.orgId, leadId: args.leadId, eventKey: `event:${args.idempotencyKey}` });
+  return written;
 }
 
 /**

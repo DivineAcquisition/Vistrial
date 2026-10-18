@@ -1,6 +1,6 @@
 /** Filters, response clock, and saved views for the lead list. Pure and client-safe. */
 
-export const EXPERIENCE_SORTS = ["urgency", "last_touch", "readiness", "created", "name"] as const;
+export const EXPERIENCE_SORTS = ["urgency", "best", "last_touch", "readiness", "created", "name"] as const;
 export type ExperienceSort = (typeof EXPERIENCE_SORTS)[number];
 
 export const RESPONSE_STATES = ["on_time", "at_risk", "missed", "not_applicable"] as const;
@@ -45,6 +45,7 @@ export type ExperienceFilter = {
   sort: ExperienceSort;
   dir: "asc" | "desc";
   meaning: boolean;
+  orderMode: "best" | "oldest";
 };
 
 export const EMPTY_EXPERIENCE_FILTER: ExperienceFilter = {
@@ -68,6 +69,7 @@ export const EMPTY_EXPERIENCE_FILTER: ExperienceFilter = {
   sort: "urgency",
   dir: "desc",
   meaning: false,
+  orderMode: "best",
 };
 
 export type ExperienceRow = {
@@ -172,6 +174,7 @@ export function parseExperienceFilter(params: Record<string, string | string[] |
     sort: EXPERIENCE_SORTS.includes(sort as ExperienceSort) ? (sort as ExperienceSort) : "urgency",
     dir: dir === "asc" ? "asc" : "desc",
     meaning: one(params.meaning) === "1",
+    orderMode: one(params.order) === "oldest" ? "oldest" : "best",
   };
 }
 
@@ -199,6 +202,7 @@ export function experienceSearchParams(filter: ExperienceFilter, extra?: Record<
   set("factValue", filter.factValue);
   set("view", filter.view);
   if (filter.sort !== "urgency") params.set("sort", filter.sort);
+  if (filter.orderMode === "oldest") params.set("order", "oldest");
   if (filter.dir !== "desc") params.set("dir", filter.dir);
   if (filter.meaning) params.set("meaning", "1");
   for (const [key, value] of Object.entries(extra ?? {})) if (value) params.set(key, value);
@@ -268,6 +272,7 @@ export function toRpcFilter(filter: ExperienceFilter, windowMinutes: number, mem
     view: filter.view,
     sort: filter.sort,
     dir: filter.dir,
+    orderMode: filter.orderMode,
     windowMinutes,
     offset,
   };

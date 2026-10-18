@@ -85,6 +85,19 @@ export function parseQueueRow(value: unknown): QueueRow | null {
     breachSeconds: asNumber(row.breachSeconds),
     urgencyRank: asNumber(row.urgencyRank),
     sortScore: asNumber(row.sortScore) ?? 0,
+    assayTier: asString(row.assayTier),
+    assayEarly: row.assayEarly === true,
+    assayNoCall: row.assayNoCall === true,
+    assayDisplay: asString(row.assayDisplay),
+    assayReasons: Array.isArray(row.assayReasons)
+      ? row.assayReasons
+          .map((item) => {
+            const reason = item && typeof item === "object" ? (item as Record<string, unknown>) : null;
+            if (!reason || typeof reason.reason !== "string") return null;
+            return { reason: reason.reason, points: Number(reason.points ?? 0), callBased: reason.callBased === true };
+          })
+          .filter((item): item is { reason: string; points: number; callBased: boolean } => item !== null)
+      : [],
   };
 }
 

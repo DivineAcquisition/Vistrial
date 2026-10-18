@@ -80,6 +80,11 @@ export type QueueRow = {
   breachSeconds: number | null;
   urgencyRank: number | null;
   sortScore: number;
+  assayTier?: string | null;
+  assayEarly?: boolean;
+  assayReasons?: Array<{ reason: string; points: number; callBased: boolean }>;
+  assayNoCall?: boolean;
+  assayDisplay?: string | null;
 };
 
 export type QueueFilters = {

@@ -73,8 +73,8 @@ describe("presence", () => {
 
   it("shows every agent paused when the workspace is paused", () => {
     const all = deriveAllPresence({ runs: [run({})], controls: [], waiting: [], workspace: "paused", now: NOW });
-    expect(all.map((item) => item.state)).toEqual(["paused", "paused", "paused", "paused"]);
-    expect(all.map((item) => item.agentId)).toEqual(["scribe", "sentry", "relay", "compass"]);
+    expect(all.map((item) => item.state)).toEqual(["paused", "paused", "paused", "paused", "paused"]);
+    expect(all.map((item) => item.agentId)).toEqual(["scribe", "sentry", "relay", "compass", "assay"]);
   });
 
   it("counts requests waiting on a person", () => {

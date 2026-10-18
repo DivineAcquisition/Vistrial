@@ -44,16 +44,23 @@ export type RelayJob = {
   lead_id: string;
   trigger: RelayTrigger;
   requested_by_label?: string | null;
+  context_note?: string | null;
   requested_by_member?: string | null;
   attempts: number;
   created_at: string;
 };
 
-export async function enqueueRelayJob(input: { orgId: string; leadId: string; trigger: RelayTrigger; dedupeKey: string }): Promise<boolean> {
+export async function enqueueRelayJob(input: { orgId: string; leadId: string; trigger: RelayTrigger; dedupeKey: string; note?: string | null }): Promise<boolean> {
   const { data, error } = await db()
     .from("relay_jobs")
     .upsert(
-      { org_id: input.orgId, lead_id: input.leadId, trigger: input.trigger, dedupe_key: input.dedupeKey.slice(0, 200) },
+      {
+        org_id: input.orgId,
+        lead_id: input.leadId,
+        trigger: input.trigger,
+        dedupe_key: input.dedupeKey.slice(0, 200),
+        context_note: input.note ? input.note.slice(0, 300) : null,
+      } as never,
       { onConflict: "org_id,dedupe_key", ignoreDuplicates: true }
     )
     .select("id")
@@ -326,7 +333,7 @@ async function writeAndQueue(args: {
   for (let attempt = 0; attempt < 2; attempt += 1) {
     const result = await createAnthropicMessage({
       system: RELAY_SYSTEM_PROMPT,
-      user: relayUserPrompt({ trigger: job.trigger, channel, facts, voice, feedback, previousFaults: faults.map((fault) => fault.message) }),
+      user: relayUserPrompt({ trigger: job.trigger, channel, facts, voice, feedback, previousFaults: faults.map((fault) => fault.message), situation: job.context_note }),
       model,
       maxTokens: 900,
       timeoutMs: 45_000,
@@ -386,6 +393,10 @@ async function writeAndQueue(args: {
           ? "Nobody has reached this lead within the response window. Approve it, then send it from your CRM."
           : job.trigger === "compass_request"
             ? `${job.requested_by_label ? `${job.requested_by_label} asked` : "Someone asked"} for this draft from Compass. Approve it, then send it from your CRM.`
+          : job.trigger === "assay_no_show"
+            ? "Assay: the lead missed a booking. Approve a new-time note, then send it from your CRM."
+          : job.trigger === "assay_request"
+            ? `Assay: ${job.context_note ?? "this lead heated up"}. Approve it, then send it from your CRM.`
           : "Scribe updated the case file after a call. Approve it, then send it from your CRM.",
       lead_ids: [job.lead_id],
       assigned_member_id: assigned,

@@ -41,6 +41,11 @@ export const EVENT_LABELS: Record<NotificationEventType, string> = {
   api_key_notice: "An API key changed",
   webhook_notice: "A webhook needs attention",
   client_report_review: "A client report is waiting for review",
+  assay_hot: "A lead became Hot",
+  assay_jump: "A lead's score jumped",
+  assay_quiet: "A Hot lead is going quiet",
+  assay_no_show: "A Hot lead missed a booking",
+  assay_summary: "More leads need attention",
 };
 
 export const CHANNEL_LABELS: Record<NotificationChannel, string> = {

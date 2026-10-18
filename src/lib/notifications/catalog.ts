@@ -185,4 +185,9 @@ export const NOTIFICATION_CATALOG: CatalogEntry[] = [
     saturday9pm: false,
     why: "A Vistrial team member can review the draft before it is released. Nothing sends to the customer until then.",
   },
+  { type: "assay_hot", canActNow: true, saturday9pm: false, why: "The owner can call a lead that became Hot. Push, deferred outside working hours." },
+  { type: "assay_jump", canActNow: true, saturday9pm: false, why: "The owner can open a lead whose score jumped. Normal delivery, grouped." },
+  { type: "assay_quiet", canActNow: true, saturday9pm: false, why: "The owner can reach a Hot lead who has gone quiet. Normal delivery, grouped." },
+  { type: "assay_no_show", canActNow: true, saturday9pm: false, why: "The owner can reschedule a missed booking. Push, deferred outside working hours." },
+  { type: "assay_summary", canActNow: true, saturday9pm: false, why: "The daily task cap grouped the rest. Open the queue." },
 ];

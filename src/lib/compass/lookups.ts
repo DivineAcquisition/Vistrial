@@ -695,6 +695,33 @@ export function buildCompassTools(args: {
     });
   }
 
+  tools.explain_lead_score = tool({
+    description:
+      "Explain why a lead has their Assay tier. Use the reasons returned. Do not invent reasons, and do not reveal call-based reasons that are marked hidden.",
+    inputSchema: z.object({ lead_id: z.string().uuid() }),
+    execute: run("explain_lead_score", () => "Reading the lead score", async ({ lead_id }: { lead_id: string }): Promise<LookupOutput> => {
+      const { data: allowed } = await db.rpc("compass_lead_allowed", { p_org_id: actor.orgId, p_lead_id: lead_id });
+      if (allowed !== true) return { ok: false, gap: "hidden", note: "That lead is not available.", sources: [] };
+      const { data } = await db.from("assay_lead_scores").select("score, tier, display_tier, reasons, early, no_call").eq("org_id", actor.orgId).eq("lead_id", lead_id).maybeSingle();
+      const row = data as { score?: number; tier?: string; display_tier?: string; reasons?: Array<{ reason: string; points: number; callBased?: boolean }>; early?: boolean; no_call?: boolean } | null;
+      if (!row || row.score == null) return { ok: true, gap: "empty", note: "This lead has no Assay score yet.", sources: [] };
+      const reasons = (row.reasons ?? []).filter((reason) => actor.canSeeTranscripts || !reason.callBased).map((reason) => reason.reason);
+      const hidden = actor.canSeeTranscripts ? 0 : (row.reasons ?? []).filter((reason) => reason.callBased).length;
+      return {
+        ok: true,
+        data: {
+          score: row.score,
+          tier: row.display_tier === "do_not_contact" ? "Do not contact" : row.tier,
+          early: row.early === true,
+          no_call: row.no_call === true,
+          reasons,
+          hidden_call_reasons: hidden,
+        },
+        sources: [{ kind: "lead", id: lead_id, label: "Assay score", href: leadHref(lead_id) }],
+      };
+    }),
+  });
+
   tools.list_open_tasks = tool({
     description:
       "List open, snoozed, and suggested tasks the person is allowed to see. Use for questions about what is due today or which tasks are overdue. Never rank people.",

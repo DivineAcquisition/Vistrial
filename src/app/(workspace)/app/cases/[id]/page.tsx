@@ -18,6 +18,10 @@ import { DEFAULT_READY_THRESHOLD, loadScoreConfig } from "@/lib/scoring/store";
 import { getSupabaseAdmin } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import { throwIfForcedRouteError } from "@/lib/route-error";
+import { AssayScorePanel, type AssayReasonView } from "@/components/assay/score-panel";
+import { historyLine, LEARNING_NOTE } from "@/lib/assay/copy";
+import { canSeeTranscripts } from "@/lib/transcripts/access";
+import type { Tier } from "@/lib/assay/types";
 
 export default async function CaseDetailPage({
   params,
@@ -48,6 +52,21 @@ export default async function CaseDetailPage({
   const windowMinutes = Number((settings.data as { windowMinutes?: number } | null)?.windowMinutes) || payload.lead.speedToLeadMinutes || 15;
   const timezone = String((settings.data as { timezone?: string } | null)?.timezone || "the workspace time zone");
   const leadFlag = flag.data as { do_not_contact?: boolean; do_not_contact_reason?: string | null; merged_into?: string | null } | null;
+  const [{ data: assayRow }, { data: assayHistory }, transcripts] = await Promise.all([
+    db.from("assay_lead_scores").select("score, tier, display_tier, early, no_call, call_pending, reasons, unclear_call").eq("org_id", ctx.org.id).eq("lead_id", id).maybeSingle(),
+    db.from("assay_score_history").select("score, tier, previous_tier, summary, created_at").eq("org_id", ctx.org.id).eq("lead_id", id).order("created_at", { ascending: false }).limit(6),
+    canSeeTranscripts(db, ctx.org.id),
+  ]);
+  const assay = assayRow as {
+    score: number;
+    tier: Tier;
+    display_tier: Tier | "do_not_contact";
+    early: boolean;
+    no_call: boolean;
+    call_pending: boolean;
+    reasons: AssayReasonView[];
+    unclear_call: number;
+  } | null;
 
   return (
     <PageFrame
@@ -59,6 +78,28 @@ export default async function CaseDetailPage({
       ]}
     >
       <LeadLiveIndicator leadId={payload.lead.id} className="mb-3" />
+      {assay ? (
+        <div className="mb-6">
+          <AssayScorePanel
+            model={{
+              score: assay.score,
+              tier: assay.tier,
+              displayTier: leadFlag?.do_not_contact || optOut.data ? "do_not_contact" : assay.display_tier,
+              early: assay.early,
+              noCall: assay.no_call,
+              callPending: assay.call_pending,
+              unclearCall: assay.unclear_call,
+              reasons: Array.isArray(assay.reasons) ? assay.reasons : [],
+              canSeeCall: transcripts,
+              learningNote: LEARNING_NOTE,
+              history: ((assayHistory ?? []) as Array<{ previous_tier: Tier | null; tier: Tier; summary: string; created_at: string }>).map((row) => ({
+                at: row.created_at,
+                line: historyLine(row.previous_tier, row.tier, new Date(row.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric" }), row.summary),
+              })),
+            }}
+          />
+        </div>
+      ) : null}
       <CaseRecord
         leadId={payload.lead.id}
         leadName={payload.lead.name}

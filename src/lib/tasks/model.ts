@@ -9,7 +9,7 @@ export type TaskType = (typeof TASK_TYPES)[number];
 export const TASK_STATUSES = ["suggested", "open", "snoozed", "done", "canceled"] as const;
 export type TaskStatus = (typeof TASK_STATUSES)[number];
 
-export const TASK_SOURCES = ["person", "sentry", "scribe", "playbook", "booking", "service_team"] as const;
+export const TASK_SOURCES = ["person", "sentry", "scribe", "playbook", "booking", "service_team", "assay"] as const;
 export type TaskSource = (typeof TASK_SOURCES)[number];
 
 export const OPEN_TASK_STATUSES: TaskStatus[] = ["suggested", "open", "snoozed"];
@@ -128,6 +128,8 @@ export function sourceSentence(source: TaskSource, because: string): string {
       return reason ? `From a booking: ${reason}` : "From a booking";
     case "service_team":
       return reason ? `From the Vistrial team: ${reason}` : "From the Vistrial team";
+    case "assay":
+      return reason ? `Assay: ${reason}` : "Assay";
     default:
       return reason ? `Added by a person: ${reason}` : "Added by a person";
   }

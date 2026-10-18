@@ -227,12 +227,20 @@ export function ExperienceList({
             }}
           >
             <option value="urgency:desc">Most urgent</option>
+            <option value="best:desc">Best first</option>
             <option value="last_touch:desc">Last touch, newest</option>
             <option value="readiness:desc">Readiness, highest</option>
             <option value="created:desc">Newest</option>
             <option value="name:asc">Name</option>
           </select>
         </label>
+        <Button
+          size="sm"
+          variant="outline"
+          onClick={() => go({ ...filter, orderMode: filter.orderMode === "oldest" ? "best" : "oldest" })}
+        >
+          {filter.orderMode === "oldest" ? "Oldest first" : "Best first"}
+        </Button>
         <Button
           size="sm"
           variant="outline"
@@ -333,7 +341,7 @@ export function ExperienceList({
                     </td>
                   ) : null}
                   <td className="p-2"><RowBody row={row} /></td>
-                  <td className="p-2">{row.band ?? "Not yet scored"}</td>
+                  <td className="p-2">{row.doNotContact || row.optedOut ? "Do not contact" : row.score == null ? "Not yet scored" : `${row.band ?? "Scored"} ${row.score}`}</td>
                   <td className="p-2">{LEAD_STATUS_LABELS[row.status as keyof typeof LEAD_STATUS_LABELS] ?? row.status}</td>
                   <td className="hidden p-2 md:table-cell" title={row.clockReason ? `Sentry: ${row.clockReason}` : undefined}>
                     {row.clockLabel ?? RESPONSE_LABEL[row.responseState]}
@@ -356,7 +364,7 @@ export function ExperienceList({
                 <div className="min-w-0 flex-1 space-y-1">
                   <RowBody row={row} />
                   <div className="flex flex-wrap gap-2">
-                    <StatusBadge label={row.band ?? "Not yet scored"} tone={row.band ? "good" : "neutral"} />
+                    <StatusBadge label={row.doNotContact || row.optedOut ? "Do not contact" : row.score == null ? "Not yet scored" : `${row.band ?? "Scored"} ${row.score}`} tone={row.doNotContact || row.optedOut ? "neutral" : row.band === "hot" ? "critical" : "good"} />
                     <StatusBadge label={LEAD_STATUS_LABELS[row.status as keyof typeof LEAD_STATUS_LABELS] ?? row.status} tone={leadStatusTone(row.status as never)} />
                     <StatusBadge label={row.clockLabel ?? RESPONSE_LABEL[row.responseState]} tone={RESPONSE_TONE[row.responseState]} />
                   </div>

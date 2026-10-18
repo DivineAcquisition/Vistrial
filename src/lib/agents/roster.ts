@@ -9,11 +9,11 @@
  * accent, so an agent is never identified by color alone.
  */
 
-export const LIVE_AGENT_IDS = ["scribe", "sentry", "relay", "compass"] as const;
+export const LIVE_AGENT_IDS = ["scribe", "sentry", "relay", "compass", "assay"] as const;
 
 export type LiveAgentId = (typeof LIVE_AGENT_IDS)[number];
 
-export type AgentGlyph = "scroll" | "shield" | "send" | "compass";
+export type AgentGlyph = "scroll" | "shield" | "send" | "compass" | "scale";
 
 export type AgentIdentity = {
   id: LiveAgentId;
@@ -106,6 +106,23 @@ export const AGENTS: Record<LiveAgentId, AgentIdentity> = {
     promise: "Compass only reads. It never sends a message, and nothing changes until you confirm a suggestion.",
     configSections: ["approval", "integrations"],
     order: 4,
+  },
+  assay: {
+    id: "assay",
+    name: "Assay",
+    role: "Scores which leads are worth working now.",
+    description:
+      "Assay scores every lead from fit, what they do, and what Scribe heard on calls. It explains the number, puts stronger leads first after time-critical work, and can ask Relay for a draft. It never sends, never assigns, and never hides a lead.",
+    glyph: "scale",
+    accent: {
+      text: "text-chart-3",
+      soft: "bg-chart-3/12",
+      ring: "ring-chart-3/40",
+      dot: "bg-chart-3",
+    },
+    promise: "Assay never sends a message, never assigns a lead, and never overrides a do-not-contact.",
+    configSections: ["qualification"],
+    order: 5,
   },
 };
 

@@ -21,6 +21,7 @@ import {
   type TouchDirection,
   type TouchOutcome,
 } from "@/lib/queue/types";
+import { WhyFirst } from "@/components/assay/score-panel";
 import { waitingFor } from "@/lib/vocabulary";
 import { cn } from "@/lib/utils";
 import type { OrgRole } from "@/types/database";
@@ -35,6 +36,7 @@ export function QueueLeadRow({
   role,
   memberId,
   isStaff,
+  canSeeCall = false,
   arriving,
   exiting,
   busy,
@@ -53,6 +55,7 @@ export function QueueLeadRow({
   role: OrgRole;
   memberId: string;
   isStaff: boolean;
+  canSeeCall?: boolean;
   arriving?: boolean;
   exiting?: boolean;
   busy?: boolean;
@@ -109,6 +112,14 @@ export function QueueLeadRow({
           <a href={`/app/cases/${row.id}`} className="hover:underline">
             {row.name}
           </a>
+          {row.assayDisplay === "do_not_contact" ? (
+            <span className="mt-1 block text-xs font-normal text-dim">Do not contact</span>
+          ) : row.score != null ? (
+            <span className={`mt-1 block text-xs font-normal ${row.assayEarly ? "text-dim" : "text-silver"}`}>
+              {row.assayTier ? `${row.assayTier} ${row.score}` : row.score}
+              {row.assayNoCall ? " · No call yet" : ""}
+            </span>
+          ) : null}
           <span className="mt-1 block text-xs font-normal text-dim md:hidden">
             Waiting {waitingFor(row.optedInAt, now)}
           </span>
@@ -197,10 +208,12 @@ export function QueueLeadRow({
       {panel === "why" ? (
         <TableRow className="border-border/60 hover:bg-transparent">
           <TableCell colSpan={colSpan} className="px-4 py-3 whitespace-normal text-sm text-silver">
-            <p>
-              {row.scoreReasoning ||
-                "Nothing was recorded about why this person sits here. The first call will fill it in."}
-            </p>
+            <WhyFirst
+              urgency={row.inAlarm ? "Waiting on a first response" : row.nextAction?.overdue ? "A task is overdue" : null}
+              reasons={row.assayReasons ?? []}
+              canSeeCall={canSeeCall}
+            />
+            {!row.assayReasons?.length && row.scoreReasoning ? <p className="mt-2">{row.scoreReasoning}</p> : null}
           </TableCell>
         </TableRow>
       ) : null}

@@ -36,7 +36,7 @@ export async function scoreLeadOnIntake(
     return { written: false, reason: "unscored" };
   }
 
-  return insertScoreRow(client, {
+  const written = await insertScoreRow(client, {
     orgId: args.orgId,
     leadId: args.leadId,
     factors: computed.factors,
@@ -45,4 +45,7 @@ export async function scoreLeadOnIntake(
     triggeredBy: "intake",
     idempotencyKey: `intake:${args.leadId}`,
   });
+  const { noteLeadForAssay } = await import("@/lib/assay/enqueue");
+  await noteLeadForAssay({ orgId: args.orgId, leadId: args.leadId, eventKey: `intake:${args.leadId}` });
+  return written;
 }

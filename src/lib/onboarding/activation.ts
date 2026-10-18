@@ -43,6 +43,11 @@ export function activationStepCopy(agent: LiveAgentId, watchDays: number): { tit
         title: `${name} answers questions`,
         plain: `${name} answers questions about your own workspace from what Vistrial recorded, and shows where each answer came from. It can suggest an action, and nothing happens until you confirm it.`,
       };
+    case "assay":
+      return {
+        title: `${name} scores leads`,
+        plain: `${name} ranks leads and can ask Relay for a draft. It never sends, and it never assigns a lead.`,
+      };
   }
 }
 

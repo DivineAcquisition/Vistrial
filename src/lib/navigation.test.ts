@@ -22,10 +22,12 @@ describe("settings IA", () => {
     expect(SETTINGS_TABS.map((tab) => tab.label)).toEqual([
       "You",
       "Notifications",
+      "Privacy and cookies",
       "History",
       "Workspace",
       "People",
       "Connections",
+      "Lead score",
       "Billing",
       "Privacy",
       "Developers",
@@ -39,11 +41,11 @@ describe("settings IA", () => {
   it("keeps configuration tabs for staff and gives owners only their own business", () => {
     const labels = (role: "owner" | "admin" | "setter" | "member", staff = false) =>
       settingsTabsVisibleTo(role, staff).map((tab) => tab.label);
-    expect(labels("owner")).toEqual(["You", "Notifications", "History", "Workspace", "People", "Connections", "Billing", "Privacy", "Developers", "Vistrial team"]);
+    expect(labels("owner")).toEqual(["You", "Notifications", "Privacy and cookies", "History", "Workspace", "People", "Connections", "Lead score", "Billing", "Privacy", "Developers", "Vistrial team"]);
     expect(labels("admin")).toContain("Approvals");
     expect(labels("admin")).toContain("Integrations");
-    expect(labels("setter")).toEqual(["You", "Notifications", "History"]);
-    expect(labels("member")).toEqual(["You", "Notifications", "History", "People"]);
+    expect(labels("setter")).toEqual(["You", "Notifications", "Privacy and cookies", "History"]);
+    expect(labels("member")).toEqual(["You", "Notifications", "Privacy and cookies", "History", "People", "Connections", "Lead score"]);
     expect(labels("setter", true)).toContain("Advanced");
   });
 

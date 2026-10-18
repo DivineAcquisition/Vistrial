@@ -111,6 +111,11 @@ export const NOTIFICATION_EVENT_TYPES = [
   "api_key_notice",
   "webhook_notice",
   "client_report_review",
+  "assay_hot",
+  "assay_jump",
+  "assay_quiet",
+  "assay_no_show",
+  "assay_summary",
 ] as const;
 
 export const INTERRUPT_CHANNELS = ["push", "email", "sms", "team"] as const;

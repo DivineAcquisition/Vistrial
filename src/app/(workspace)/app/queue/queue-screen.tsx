@@ -64,11 +64,13 @@ export function QueueScreen({
   filters,
   canOpenIntegrations,
   canCreateLeads,
+  canSeeCall = false,
 }: {
   initial: QueuePayload;
   filters: QueueFilterState;
   canOpenIntegrations: boolean;
   canCreateLeads: boolean;
+  canSeeCall?: boolean;
 }) {
   const org = useOrg();
   const [alarm, setAlarm] = useState(initial.alarm);
@@ -532,6 +534,7 @@ export function QueueScreen({
                         role={org.role}
                         memberId={org.memberId}
                         isStaff={org.isStaff}
+                        canSeeCall={canSeeCall}
                         arriving={arrivingIds.has(row.id)}
                         exiting={exitingAlarm.some((item) => item.id === row.id)}
                         busy={busyLeadId === row.id}
@@ -631,6 +634,7 @@ export function QueueScreen({
                           role={org.role}
                           memberId={org.memberId}
                           isStaff={org.isStaff}
+                        canSeeCall={canSeeCall}
                           arriving={arrivingIds.has(row.id)}
                           busy={busyLeadId === row.id}
                           error={busyLeadId === row.id ? actionError : null}

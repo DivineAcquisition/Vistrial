@@ -448,6 +448,19 @@ async function scribeStages(input: StageInput): Promise<Outcome> {
   });
 
   await db.from("extraction_jobs").update({ status: "processed", processed_at: new Date().toISOString(), last_error: null }).eq("id", input.job.id);
+  try {
+    const { noteLeadForAssay, rememberCallSignals } = await import("@/lib/assay/enqueue");
+    await rememberCallSignals({
+      orgId: call.org_id,
+      leadId: call.lead_id,
+      callId: call.id,
+      raw: lastJson,
+      occurredAt: call.occurred_at ?? null,
+    });
+    await noteLeadForAssay({ orgId: call.org_id, leadId: call.lead_id, eventKey: `scribe:${call.id}` });
+  } catch {
+    // Assay scoring is queued work. A miss here does not undo the case file.
+  }
 
   // 8. Hand-offs
   s = await step(7);

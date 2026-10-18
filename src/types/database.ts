@@ -7694,7 +7694,12 @@ export type Database = {
         | "export_expiring"
         | "api_key_notice"
         | "webhook_notice"
-        | "client_report_review";
+        | "client_report_review"
+        | "assay_hot"
+        | "assay_jump"
+        | "assay_quiet"
+        | "assay_no_show"
+        | "assay_summary";
       notification_channel: "push" | "email" | "sms" | "team" | "da_console";
       notification_status:
         | "queued"

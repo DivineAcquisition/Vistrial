@@ -76,6 +76,10 @@ export default async function ResultsPage({ searchParams }: { searchParams: Prom
         <EmptyWorkspace name={ctx.org.name} canConnect={canSeePeople(ctx)} />
       ) : (
         <>
+          <p className="mb-4 text-sm">
+            <Link href="/app/settings/assay" className="underline">Assay tiers</Link>
+            {" "}show how leads are scored. Totals by tier can appear in a client report. Individual scores do not.
+          </p>
           <ResultsFiltersForm current={allParams} choices={filterChoices(facts)} />
           <p className="text-xs text-muted-foreground">
             {range.label}, {describeRange(range)}

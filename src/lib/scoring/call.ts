@@ -74,7 +74,7 @@ export async function scoreLeadFromCall(
     ? `call:${args.callId}:extract:${args.extractionId}`
     : `call:${args.callId}`;
 
-  return insertScoreRow(client, {
+  const written = await insertScoreRow(client, {
     orgId: args.orgId,
     leadId: args.leadId,
     factors: computed.factors,
@@ -84,4 +84,7 @@ export async function scoreLeadFromCall(
     callId: args.callId,
     idempotencyKey,
   });
+  const { noteLeadForAssay } = await import("@/lib/assay/enqueue");
+  await noteLeadForAssay({ orgId: args.orgId, leadId: args.leadId, eventKey: `call:${args.callId}` });
+  return written;
 }

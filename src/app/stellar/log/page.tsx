@@ -9,7 +9,7 @@ export const dynamic = "force-dynamic";
 
 export default async function StellarLogPage() {
   const ctx = await getStellarAuthContext();
-  if (ctx.kind !== "da_operator" || !ctx.setter) {
+  if (ctx.kind !== "placed_operator" || !ctx.setter) {
     redirect(stellarLandingPath(ctx));
   }
   const setter = ctx.setter;

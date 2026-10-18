@@ -154,4 +154,10 @@ describe("workspaceRoleFor", () => {
   it("does not grant staff standing to a customer seat held by a staff member elsewhere", () => {
     expect(workspaceRoleFor({ seat: "customer", role: "owner" }, "service_team")).toBe("owner");
   });
+
+  it("does not treat a placed operator as a workspace operator or member", () => {
+    expect(workspaceRoleFor({ seat: "staff", role: "placed_operator" }, "service_team")).toBe("service_team");
+    expect(() => workspaceRoleFor({ seat: "customer", role: "placed_operator" }, null)).toThrow(/not a workspace role/);
+    expect(() => workspaceRoleFor({ seat: "customer", role: "da_operator" }, null)).toThrow(/not a workspace role/);
+  });
 });

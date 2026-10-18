@@ -718,7 +718,8 @@ async function resolveActor(db: GhlDb, orgId: string, ghlUserId: string): Promis
     .eq("email", email)
     .maybeSingle();
   if (!byEmail) return null;
-  await db.from("org_members").update({ ghl_user_id: ghlUserId }).eq("id", byEmail.id).eq("org_id", orgId);
+  const { systemMemberPatch } = await import("@/lib/directory/commit");
+  await systemMemberPatch(orgId, byEmail.id, { ghl_user_id: ghlUserId });
   return byEmail.id;
 }
 

@@ -6,25 +6,16 @@ import { redirect } from "next/navigation";
 import type { SupabaseClient, User } from "@supabase/supabase-js";
 
 import { ORG_COOKIE_NAME, orgCookieOptions } from "@/lib/auth/cookies";
-import {
-  isStaffRole,
-  membershipsFromRows,
-  resolveActiveMembership,
-  workspaceRoleFor,
-  type MemberRow,
-} from "@/lib/auth/memberships";
+import { isStaffRole, resolveActiveMembership, workspaceRoleFor } from "@/lib/auth/memberships";
 import { safeInternalPath } from "@/lib/auth/paths";
 import { canExport, canSeeMoney } from "@/lib/auth/portal-access";
 import { DEFAULT_APP_PATH } from "@/lib/navigation";
+import { loadConvexDirectory } from "@/lib/directory/load";
 import { createClient } from "@/lib/supabase/server";
-import type { AuthContext, ClientOrgState, Membership, OrgSummary } from "@/lib/auth/types";
+import type { AuthContext, ClientOrgState, Membership } from "@/lib/auth/types";
 import type { PlatformRole } from "@/types/database";
 
 export type { AuthContext, ClientOrgState, Membership, OrgSummary } from "@/lib/auth/types";
-
-const MEMBER_COLUMNS =
-  "id, org_id, role, seat, can_approve, can_see_money, can_export, can_manage_connections, avatar_path, display_name, email, surface_access" as const;
-const ORG_COLUMNS = "id, name, slug, timezone, ghl_location_id, status, is_platform_workspace" as const;
 
 export const getSessionUser = cache(async (): Promise<User | null> => {
   const supabase = await createClient();
@@ -48,73 +39,22 @@ export type PlatformStaffRecord = {
 export const getPlatformStaff = cache(async (): Promise<PlatformStaffRecord | null> => {
   const user = await getSessionUser();
   if (!user) return null;
-  const supabase = await createClient();
-  const { data } = await supabase
-    .from("platform_staff")
-    .select("role, template_access, display_name, active")
-    .eq("user_id", user.id)
-    .maybeSingle();
-  if (!data || !data.active) return null;
-  return {
-    role: data.role,
-    templateAccess: data.template_access,
-    displayName: data.display_name,
-  };
+  const directory = await loadConvexDirectory();
+  return directory.staff;
 });
 
-async function orgsByIds(
-  db: Awaited<ReturnType<typeof createClient>>,
-  orgIds: string[]
-): Promise<Map<string, OrgSummary>> {
-  if (orgIds.length === 0) return new Map();
-  const { data, error } = await db.from("organizations").select(ORG_COLUMNS).in("id", orgIds);
-  if (error || !data) return new Map();
-  return new Map(
-    data.map((org) => [
-      org.id,
-      {
-        id: org.id,
-        name: org.name,
-        slug: org.slug,
-        timezone: org.timezone,
-        ghlLocationId: org.ghl_location_id,
-        status: org.status,
-        isPlatformWorkspace: org.is_platform_workspace,
-      },
-    ])
-  );
-}
-
 /**
- * Every workspace the caller can enter right now, read through their own
- * session. Row-level security is the whole rule: closed workspaces drop out
- * for customers, ended assignments drop out for staff, and a seat whose
- * workspace the caller cannot see is not returned. There is deliberately no
- * service-role fallback, which could resurrect a seat the database has hidden.
+ * Every workspace the caller can enter right now. Convex is the source.
+ * Closed workspaces drop out for customers, and an ended Service Team
+ * assignment drops out. There is no fallback that reads the replica as if
+ * it were still the owner.
  */
-export const listActiveMemberships = cache(
-  async (userId: string): Promise<Membership[]> => {
-    const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    if (!user || user.id !== userId) return [];
-
-    const { data, error } = await supabase
-      .from("org_members")
-      .select(MEMBER_COLUMNS)
-      .eq("user_id", userId)
-      .eq("active", true)
-      .neq("seat", "agent")
-      .order("created_at", { ascending: true });
-
-    if (error || !data || data.length === 0) return [];
-    const orgs = await orgsByIds(supabase, [...new Set(data.map((row) => row.org_id))]);
-    return membershipsFromRows(data as MemberRow[], orgs).sort((a, b) =>
-      a.org.name.localeCompare(b.org.name)
-    );
-  }
-);
+export const listActiveMemberships = cache(async (userId: string): Promise<Membership[]> => {
+  const user = await getSessionUser();
+  if (!user || user.id !== userId) return [];
+  const directory = await loadConvexDirectory();
+  return directory.memberships;
+});
 
 async function loadStaffMayApprove(orgId: string): Promise<boolean> {
   const supabase = (await createClient()) as unknown as SupabaseClient;
@@ -145,10 +85,11 @@ export const getAuthContext = cache(async (): Promise<AuthContext> => {
     redirect(`/login?redirect=${encodeURIComponent(dest)}`);
   }
 
-  const staff = await getPlatformStaff();
-  const memberships = await listActiveMemberships(user.id);
+  const directory = await loadConvexDirectory();
+  const staff = directory.staff;
+  const memberships = directory.memberships;
   if (memberships.length === 0) {
-    redirect(staff ? "/no-access?reason=unassigned" : "/no-access");
+    redirect(directory.legacyStillHasSeats ? "/no-access?reason=directory" : staff ? "/no-access?reason=unassigned" : "/no-access");
   }
 
   const cookieStore = await cookies();

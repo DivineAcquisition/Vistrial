@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import type { SettingsSaveResult } from "@/app/(workspace)/app/settings/types";
 import { canManageOrgSettings } from "@/lib/auth/permissions";
 import { getAuthContext } from "@/lib/auth/session";
+import { commitSelfPatch, commitWorkspacePatch } from "@/lib/directory/commit";
 import { encryptSecret } from "@/lib/ghl/crypto";
 import { assertPublicHttps } from "@/lib/security/outbound-url";
 import { USER_PREF_CHANNELS, USER_PREF_EVENTS } from "@/lib/notifications/constants";
@@ -87,13 +88,12 @@ export async function saveOrgNotificationSettings(
   if (!canManageOrgSettings(ctx.role, ctx.isStaff)) {
     return { status: "error", error: "You do not have permission to change these settings." };
   }
-  const supabase = await createClient();
   const sms = formData.get("sms_emergencies_enabled") === "on";
-  const { error } = await supabase
-    .from("organizations")
-    .update({ sms_emergencies_enabled: sms })
-    .eq("id", ctx.org.id);
-  if (error) return { status: "error", error: "Could not save SMS setting." };
+  try {
+    await commitWorkspacePatch(ctx.org.id, { sms_emergencies_enabled: sms });
+  } catch {
+    return { status: "error", error: "Could not save SMS setting." };
+  }
 
   const slack = String(formData.get("slack_webhook") ?? "").trim();
   const teams = String(formData.get("teams_webhook") ?? "").trim();
@@ -118,6 +118,7 @@ export async function saveOrgNotificationSettings(
     return { status: "error", error: "That address cannot be used. Use a public https address." };
   }
 
+  const supabase = await createClient();
   const { error: teamError } = await supabase.from("notification_team_channels").upsert(patch);
   if (teamError) return { status: "error", error: "Could not save team channels." };
 
@@ -141,16 +142,14 @@ export async function saveNotificationQuietHours(
   if (!clear && start && (!HM.test(start) || !HM.test(end) || start === end)) {
     return { status: "error", error: "Quiet hours need a start and a different end." };
   }
-  const { error } = await getSupabaseAdmin()
-    .from("org_members")
-    .update({
+  try {
+    await commitSelfPatch(ctx.org.id, ctx.member.id, {
       notification_quiet_start: clear || !start ? null : start,
       notification_quiet_end: clear || !end ? null : end,
-    })
-    .eq("id", ctx.member.id)
-    .eq("org_id", ctx.org.id)
-    .eq("user_id", ctx.user.id);
-  if (error) return { status: "error", error: "Could not save quiet hours." };
+    });
+  } catch {
+    return { status: "error", error: "Could not save quiet hours." };
+  }
   revalidatePath("/app/settings/notifications");
   return { status: "saved" };
 }
@@ -162,17 +161,17 @@ export async function saveTextOptIn(
   const ctx = await getAuthContext();
   const enabled = formData.get("text_opt_in") === "on";
   const now = new Date().toISOString();
-  const { error } = await getSupabaseAdmin()
-    .from("org_members")
-    .update(
+  try {
+    await commitSelfPatch(
+      ctx.org.id,
+      ctx.member.id,
       enabled
         ? { text_opt_in_at: now, text_opt_in_wording: TEXT_OPT_IN_WORDING, text_opted_out_at: null }
-        : { text_opted_out_at: now }
-    )
-    .eq("id", ctx.member.id)
-    .eq("org_id", ctx.org.id)
-    .eq("user_id", ctx.user.id);
-  if (error) return { status: "error", error: "Could not save text opt-in." };
+        : { text_opted_out_at: now },
+    );
+  } catch {
+    return { status: "error", error: "Could not save text opt-in." };
+  }
   revalidatePath("/app/settings/notifications");
   return { status: "saved" };
 }

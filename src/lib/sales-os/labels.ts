@@ -33,4 +33,5 @@ export const ROLE_LABELS: Record<string, string> = {
   setter: "setter",
   client_viewer: "viewer",
   da_operator: "Vistrial team",
+  placed_operator: "Vistrial team",
 };

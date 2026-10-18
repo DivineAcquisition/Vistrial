@@ -89,6 +89,16 @@ export function workspaceRoleFor(
     case "member":
     case "client_viewer":
       return "member";
+    case "setter":
+    case "closer":
+    case "operator":
+      return "operator";
+    case "placed_operator":
+    case "da_operator":
+      // Platform staff keep their platform role. A customer seat with this
+      // label is not a Workspace Operator and not a Workspace Member.
+      if (platformRole) return platformRole;
+      throw new Error("placed_operator is not a workspace role");
     default:
       return "operator";
   }

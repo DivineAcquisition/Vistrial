@@ -65,7 +65,7 @@ function toMember(row: SeatRow, role: StellarMember["role"]): StellarMember {
 /** Whether the caller is Vistrial staff; kept for the sign-in path. */
 export async function checkIsStellarDaOperator(): Promise<boolean> {
   const supabase = await createClient();
-  const { data, error } = await supabase.rpc("is_stellar_da_operator");
+  const { data, error } = await supabase.rpc("is_placed_operator");
   if (error) return false;
   return Boolean(data);
 }
@@ -97,7 +97,7 @@ export const getStellarAuthContext = cache(async (): Promise<StellarAuthContext>
       const seat = seats.find((row) => row.id === placement?.setter_member_id);
       if (seat) setter = toMember(seat, "setter");
     }
-    return { kind: "da_operator", user, setter };
+    return { kind: "placed_operator", user, setter };
   }
 
   const client = seats.find(

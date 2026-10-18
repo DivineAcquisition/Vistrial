@@ -144,6 +144,7 @@ export function roleLabel(role: OrgRole): string {
       return "Operator";
     case "admin":
     case "da_operator":
+    case "placed_operator":
       return "Vistrial team";
   }
 }

@@ -12,18 +12,18 @@ import type { Database } from "@/types/database";
 export const dynamic = "force-dynamic";
 
 type PlacementListRow =
-  Database["public"]["Functions"]["stellar_da_list_placements"]["Returns"][number];
+  Database["public"]["Functions"]["placed_list_placements"]["Returns"][number];
 
 async function listPlacements(): Promise<PlacementListRow[]> {
   const supabase = await createClient();
-  const { data, error } = await supabase.rpc("stellar_da_list_placements");
+  const { data, error } = await supabase.rpc("placed_list_placements");
   if (error) return [];
   return data ?? [];
 }
 
 export default async function StellarConsolePage() {
   const ctx = await getStellarAuthContext();
-  if (ctx.kind !== "da_operator") {
+  if (ctx.kind !== "placed_operator") {
     redirect(stellarLandingPath(ctx));
   }
 

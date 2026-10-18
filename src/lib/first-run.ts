@@ -46,6 +46,10 @@ export const FIRST_RUN: Record<OrgRole, FirstRunCopy> = {
     title: "Vistrial team",
     body: "Every active placement, in one list.",
   },
+  placed_operator: {
+    title: "Vistrial team",
+    body: "Every active placement, in one list.",
+  },
 };
 
 export function firstRunStorageKey(role: OrgRole): string {

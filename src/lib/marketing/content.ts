@@ -7,6 +7,7 @@
  * Display prices are not connected to billing.
  */
 
+import { AGENTS } from "@/lib/agents/roster";
 import { PRODUCTION_APP_ORIGIN } from "@/lib/constants";
 
 export const SITE_DESCRIPTION =
@@ -241,9 +242,9 @@ export const EXAMPLE = {
     "Hi Jordan, following up on the consultation. We can hold the Thursday time we discussed if you still want it.",
   draftStatus: "Waiting for a person to approve. Nothing has been sent.",
   steps: [
-    { agent: "sentry" as const, line: "Sentry noticed this lead waiting past the team's standard." },
-    { agent: "scribe" as const, line: "Scribe updated the case file from the call." },
-    { agent: "relay" as const, line: "Relay prepared a draft. It waits for approval." },
+    { agent: "sentry" as const, line: `${AGENTS.sentry.name}, ${AGENTS.sentry.sublabel}, noticed this lead waiting past the team's standard.` },
+    { agent: "scribe" as const, line: `${AGENTS.scribe.name}, ${AGENTS.scribe.sublabel}, updated the case file from the call.` },
+    { agent: "relay" as const, line: `${AGENTS.relay.name}, ${AGENTS.relay.sublabel}, prepared a draft. It waits for approval.` },
   ],
 } as const;
 
@@ -419,19 +420,19 @@ export const CLAIMS: Array<{ statement: string; support: string }> = [
     support: "Approval changes, workspace activity, and staff actions write an audit row with actor and time.",
   },
   {
-    statement: "Sentry watches response time and alerts the team. It does not message leads.",
-    support: "Agent roster: Sentry catches missed follow-ups and only alerts the team.",
+    statement: `${AGENTS.sentry.name} watches response time and alerts the team. It does not message leads.`,
+    support: `${AGENTS.sentry.name}, ${AGENTS.sentry.sublabel}. ${AGENTS.sentry.description}`,
   },
   {
-    statement: "Scribe builds the case file and does not contact a lead.",
-    support: "Agent roster: Scribe builds case files from calls and context and never contacts a lead.",
+    statement: `${AGENTS.scribe.name} builds the case file and does not contact a lead.`,
+    support: `${AGENTS.scribe.name}, ${AGENTS.scribe.sublabel}. ${AGENTS.scribe.description}`,
   },
   {
-    statement: "Relay drafts follow-ups and does not send them.",
-    support: "Agent roster: Relay drafts for approval. A person sends from the CRM.",
+    statement: `${AGENTS.relay.name} drafts follow-ups and does not send them.`,
+    support: `${AGENTS.relay.name}, ${AGENTS.relay.sublabel}. ${AGENTS.relay.description}`,
   },
   {
-    statement: "Compass answers from the workspace's own data and does not invent numbers.",
+    statement: `${AGENTS.compass.name}, ${AGENTS.compass.sublabel}, answers from the workspace's own data and does not invent numbers.`,
     support: "Compass instructions require every number to come from a lookup result and forbid estimates.",
   },
   {

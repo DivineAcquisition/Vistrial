@@ -9,18 +9,23 @@
  * accent, so an agent is never identified by color alone.
  */
 
-export const LIVE_AGENT_IDS = ["scribe", "sentry", "relay", "compass"] as const;
+export const LIVE_AGENT_IDS = ["scribe", "sentry", "relay", "compass", "assay"] as const;
+
+/** The Sales room order. Pipeline order on a lead stays Scribe, Sentry, Relay. */
+export const SALES_ROOM_IDS = ["compass", "scribe", "assay", "sentry", "relay"] as const;
 
 export type LiveAgentId = (typeof LIVE_AGENT_IDS)[number];
 
-export type AgentGlyph = "scroll" | "shield" | "send" | "compass";
+export type AgentGlyph = "scroll" | "shield" | "send" | "compass" | "scale";
 
 export type AgentIdentity = {
   id: LiveAgentId;
   name: string;
-  /** One line, plain language. */
+  /** Title shown under the name. Replaces the old role sentence. */
+  sublabel: string;
+  /** Same words as sublabel, so older screens that read `role` show the title. */
   role: string;
-  /** Longer description for the agent page. */
+  /** One sentence, shown on hover or tap. */
   description: string;
   glyph: AgentGlyph;
   /** Tailwind classes built from existing tokens. */
@@ -42,9 +47,9 @@ export const AGENTS: Record<LiveAgentId, AgentIdentity> = {
   scribe: {
     id: "scribe",
     name: "Scribe",
-    role: "Builds case files from calls and context.",
-    description:
-      "Scribe reads call transcripts and notes, then writes a case file: a summary, key facts, objections, how ready the lead is and why, and the next best step. Every claim links to where it came from.",
+    sublabel: "Sales Analyst",
+    role: "Sales Analyst",
+    description: "Turns your calls, emails and texts into case files.",
     glyph: "scroll",
     accent: {
       text: "text-brand-300",
@@ -59,9 +64,9 @@ export const AGENTS: Record<LiveAgentId, AgentIdentity> = {
   sentry: {
     id: "sentry",
     name: "Sentry",
-    role: "Catches missed follow-ups.",
-    description:
-      "Sentry watches each lead's response window and raises it when a follow-up is at risk or missed, so nothing slips.",
+    sublabel: "Pipeline Manager",
+    role: "Pipeline Manager",
+    description: "Watches your response times and flags leads waiting too long.",
     glyph: "shield",
     accent: {
       text: "text-chart-2",
@@ -76,9 +81,9 @@ export const AGENTS: Record<LiveAgentId, AgentIdentity> = {
   relay: {
     id: "relay",
     name: "Relay",
-    role: "Drafts follow-ups for your approval.",
-    description:
-      "Relay writes follow-up messages in your voice from what Scribe learned. Every draft waits for a person to approve it, and that person sends it from the CRM.",
+    sublabel: "Sales Development Rep",
+    role: "Sales Development Rep",
+    description: "Drafts your follow-ups and sends them once you approve.",
     glyph: "send",
     accent: {
       text: "text-info",
@@ -93,9 +98,9 @@ export const AGENTS: Record<LiveAgentId, AgentIdentity> = {
   compass: {
     id: "compass",
     name: "Compass",
-    role: "Answers questions about your sales.",
-    description:
-      "Compass answers questions about this workspace's leads, calls, follow-ups and numbers. It shows each lookup it makes and links the records it used.",
+    sublabel: "Sales Director",
+    role: "Sales Director",
+    description: "Answers your questions, coordinates the team, and reports what it did.",
     glyph: "compass",
     accent: {
       text: "text-chart-4",
@@ -106,6 +111,23 @@ export const AGENTS: Record<LiveAgentId, AgentIdentity> = {
     promise: "Compass only reads. It never sends a message, and nothing changes until you confirm a suggestion.",
     configSections: ["approval", "integrations"],
     order: 4,
+  },
+  assay: {
+    id: "assay",
+    name: "Assay",
+    sublabel: "Lead Qualifier",
+    role: "Lead Qualifier",
+    description: "Scores your leads and puts your queue in order.",
+    glyph: "scale",
+    accent: {
+      text: "text-chart-3",
+      soft: "bg-chart-3/12",
+      ring: "ring-chart-3/40",
+      dot: "bg-chart-3",
+    },
+    promise: "Assay is getting ready. It does not score leads or start work yet.",
+    configSections: [],
+    order: 5,
   },
 };
 
@@ -121,7 +143,13 @@ export function agentIdentity(id: LiveAgentId): AgentIdentity {
   return AGENTS[id];
 }
 
-/** "Drafted by Relay", "Scored by Scribe". */
+/** "Relay, Sales Development Rep". Name always comes first. */
+export function agentCredit(id: LiveAgentId): string {
+  const agent = AGENTS[id];
+  return `${agent.name}, ${agent.sublabel}`;
+}
+
+/** "Drafted by Relay, Sales Development Rep". */
 export function producedBy(id: LiveAgentId, verb: string): string {
-  return `${verb} by ${AGENTS[id].name}`;
+  return `${verb} by ${agentCredit(id)}`;
 }

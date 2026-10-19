@@ -317,6 +317,7 @@ export async function agentMayRun(
   agentId: LiveAgentId,
   options: { sample?: boolean } = {}
 ): Promise<{ ok: true } | { ok: false; reason: "workspace" | "paused" | "not_activated" }> {
+  if (agentId === "assay") return { ok: false, reason: "not_activated" };
   const client = db();
   const [{ data: org }, { data: control }, { data: halt }, { data: activation }] = await Promise.all([
     client.from("organizations").select("status").eq("id", orgId).maybeSingle(),

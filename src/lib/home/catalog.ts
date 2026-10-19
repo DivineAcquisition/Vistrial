@@ -63,7 +63,7 @@ export function queueKind(id: string): QueueKindDefinition | null {
 }
 
 /** A workspace's stored choice for one action type, if it made one. */
-export type GateRow = { actionType: string; mode: string; approver: string };
+export type GateRow = { actionType: string; mode: string; approver: string; locked?: boolean; lockReason?: string | null };
 
 export type GateChoice = { mode: ApprovalMode; approver: Approver; reachesPeople: boolean };
 
@@ -82,9 +82,18 @@ export function effectiveGate(rows: GateRow[], id: string): GateChoice {
   };
 }
 
-/** Approval rules are configured by the Vistrial team. The database enforces the same rule. */
-export function canEditApprovalGate(_role: OrgRole, isStaff: boolean): boolean {
-  return isStaff;
+/**
+ * Owners set their own approval rules. Staff who can already open Approvals
+ * in an assigned workspace can too. Members and Operators cannot.
+ * The database enforces the same split, and a staff lock blocks the Owner.
+ */
+export function canEditApprovalGate(role: OrgRole, isStaff: boolean): boolean {
+  return role === "owner" || isStaff;
+}
+
+/** Platform Admin, or Service Team with configuration access, may lock a level. */
+export function canLockApprovalGate(isPlatformAdmin: boolean, templateAccess: boolean): boolean {
+  return isPlatformAdmin || templateAccess;
 }
 
 /** Letting a message to real people send unreviewed asks the owner to confirm. */

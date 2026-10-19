@@ -1,6 +1,8 @@
 "use client";
 
 import { CompassIcon, PinIcon, PinOffIcon } from "lucide-react";
+
+import { AGENTS } from "@/lib/agents/roster";
 import { useState } from "react";
 
 import { unpinAction } from "@/app/(workspace)/app/compass/actions";
@@ -33,7 +35,7 @@ export function CompassWelcome({
       <div className="flex flex-col gap-2">
         <div className="flex items-center gap-2">
           <CompassIcon className="size-5 text-brand-300" aria-hidden />
-          <h1 className="font-heading text-xl text-card-foreground">Compass</h1>
+          <h1 className="font-heading text-xl text-card-foreground">{AGENTS.compass.name}, {AGENTS.compass.sublabel}</h1>
         </div>
         <p className="text-sm text-muted-foreground">
           Ask about your leads, calls, follow-ups and numbers. Compass answers from this workspace&apos;s own records and shows where each answer came from.

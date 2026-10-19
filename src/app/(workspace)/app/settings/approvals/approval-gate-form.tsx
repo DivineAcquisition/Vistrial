@@ -44,6 +44,8 @@ export type GateRowModel = {
   reachesPeople: boolean;
   mode: ApprovalMode;
   approver: Approver;
+  locked?: boolean;
+  lockReason?: string | null;
 };
 
 export type GateLimitsModel = {
@@ -58,7 +60,8 @@ function notify(result: ApprovalSaveResult) {
   else toastManager.add({ title: "Not saved", description: result.error, type: "error" });
 }
 
-function ActionRow({ row, editable }: { row: GateRowModel; editable: boolean }) {
+function ActionRow({ row, editable, canOverrideLock }: { row: GateRowModel; editable: boolean; canOverrideLock: boolean }) {
+  const canChange = editable && (!row.locked || canOverrideLock);
   const [mode, setMode] = useState<ApprovalMode>(row.mode);
   const [approver, setApprover] = useState<Approver>(row.approver);
   const [confirming, setConfirming] = useState<{ mode: ApprovalMode; approver: Approver } | null>(null);
@@ -84,9 +87,12 @@ function ActionRow({ row, editable }: { row: GateRowModel; editable: boolean }) 
         <p className="text-sm font-medium text-card-foreground">{row.label}</p>
         <p className="mt-0.5 text-xs leading-relaxed text-muted-foreground">{row.description}</p>
         <p className="mt-1 text-xs text-muted-foreground">{APPROVAL_MODE_HINTS[mode]}</p>
+        {row.locked ? (
+          <p className="mt-1 text-xs text-muted-foreground">Locked by your Vistrial team{row.lockReason ? `: ${row.lockReason}` : ""}.</p>
+        ) : null}
       </div>
       <div className={cn("flex w-full flex-col gap-2 sm:w-72 sm:shrink-0", pending && "opacity-70")}>
-        {editable ? (
+        {canChange ? (
           <>
             <SegmentedRadioGroup
               aria-label={`${row.label}: mode`}
@@ -141,7 +147,15 @@ function ActionRow({ row, editable }: { row: GateRowModel; editable: boolean }) 
   );
 }
 
-export function ApprovalActionsForm({ rows, editable }: { rows: GateRowModel[]; editable: boolean }) {
+export function ApprovalActionsForm({
+  rows,
+  editable,
+  canOverrideLock = false,
+}: {
+  rows: GateRowModel[];
+  editable: boolean;
+  canOverrideLock?: boolean;
+}) {
   return (
     <div className="flex flex-col gap-4">
       {!editable ? (
@@ -162,7 +176,7 @@ export function ApprovalActionsForm({ rows, editable }: { rows: GateRowModel[]; 
             </p>
             <ul className="mt-4 divide-y divide-border">
               {groupRows.map((row) => (
-                <ActionRow key={row.id} row={row} editable={editable} />
+                <ActionRow key={row.id} row={row} editable={editable} canOverrideLock={canOverrideLock} />
               ))}
             </ul>
           </Card>

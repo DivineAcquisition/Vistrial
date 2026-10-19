@@ -31,18 +31,30 @@ export type GateState = {
  * the next thing every one of them sees.
  */
 export async function loadGateState(db: GhlDb, orgId: string): Promise<GateState> {
-  const [{ data: rows }, { data: settings }] = await Promise.all([
-    db.from("approval_gate_actions").select("action_type, mode, approver").eq("org_id", orgId),
+  const loose = db as unknown as {
+    from: (table: string) => {
+      select: (columns: string) => {
+        eq: (column: string, value: string) => Promise<{ data: Array<Record<string, unknown>> | null; error: { message: string } | null }>;
+      };
+    };
+  };
+  const withLock = await loose.from("approval_gate_actions").select("action_type, mode, approver, locked, lock_reason").eq("org_id", orgId);
+  const rows = withLock.error
+    ? (await db.from("approval_gate_actions").select("action_type, mode, approver").eq("org_id", orgId)).data
+    : withLock.data;
+  const [{ data: settings }] = await Promise.all([
     db
       .from("approval_gate_settings")
       .select("quiet_hours_start, quiet_hours_end, daily_send_limit_per_lead, queue_wait_limit_minutes, reviewed_at")
       .eq("org_id", orgId)
       .maybeSingle(),
   ]);
-  const gateRows: GateRow[] = (rows ?? []).map((row) => ({
-    actionType: row.action_type,
-    mode: row.mode,
-    approver: row.approver,
+  const gateRows: GateRow[] = ((rows ?? []) as Array<Record<string, unknown>>).map((row) => ({
+    actionType: String(row.action_type),
+    mode: String(row.mode),
+    approver: String(row.approver),
+    locked: row.locked === true,
+    lockReason: typeof row.lock_reason === "string" && row.lock_reason.length > 0 ? row.lock_reason : null,
   }));
   return {
     rows: gateRows,
@@ -101,5 +113,7 @@ export function gateFormRows(state: GateState) {
     reachesPeople: type.reachesPeople,
     mode: choice.mode,
     approver: choice.approver,
+    locked: state.rows.find((row) => row.actionType === type.id)?.locked === true,
+    lockReason: state.rows.find((row) => row.actionType === type.id)?.lockReason ?? null,
   }));
 }

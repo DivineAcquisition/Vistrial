@@ -5,6 +5,7 @@ import { randomUUID } from "node:crypto";
 import { tool, type ToolSet } from "ai";
 import { z } from "zod";
 
+import { AGENTS } from "@/lib/agents/roster";
 import type { CompassActor } from "@/lib/compass/actor";
 import { figureFor, hiddenMetrics, parseSummary, shareFor, type Figure, type ShareFigure } from "@/lib/compass/figures";
 import { searchHelp, type HelpArticle } from "@/lib/compass/help-search";
@@ -277,7 +278,7 @@ export function buildCompassTools(args: {
 
     read_case_file: tool({
       description:
-        "Read one lead's case file: Scribe's summary, readiness band and reason, next step, open questions, the facts Scribe keeps, objections, recent activity (when and how, never message text), response clock, and the open next action.",
+        `Read one lead's case file: ${AGENTS.scribe.name}'s summary, readiness band and reason, next step, open questions, the facts ${AGENTS.scribe.name} keeps, objections, recent activity (when and how, never message text), response clock, and the open next action.`,
       inputSchema: z.object({ lead_id: z.string().uuid() }),
       execute: run(
         "read_case_file",
@@ -420,7 +421,7 @@ export function buildCompassTools(args: {
 
     agent_activity: tool({
       description:
-        "What the agents did in a range: case files Scribe built or updated and ones set aside for a check; alerts Sentry raised and acknowledged (with the median time to acknowledge) and alerts open now; drafts Relay prepared, approved as written, edited, rejected, marked sent, and waiting now.",
+        `What the agents did in a range: case files ${AGENTS.scribe.name} built or updated and ones set aside for a check; alerts ${AGENTS.sentry.name} raised and acknowledged (with the median time to acknowledge) and alerts open now; drafts ${AGENTS.relay.name} prepared, approved as written, edited, rejected, marked sent, and waiting now.`,
       inputSchema: z.object(rangeSchema),
       execute: run(
         "agent_activity",
@@ -587,7 +588,7 @@ export function buildCompassTools(args: {
 
     suggest_action: tool({
       description:
-        "Offer the person an action as a card they can confirm. Nothing happens until they confirm on screen. Kinds: open_list (a filtered lead list), open_case_file, relay_draft (ask Relay to prepare a follow-up draft for one lead; it goes to the approval queue and is never sent without approval), scribe_refresh (ask Scribe to rebuild one lead's case file), next_action (a follow-up reminder for this person on one lead), pin_question (save a question as a shortcut).",
+        `Offer the person an action as a card they can confirm. Nothing happens until they confirm on screen. Kinds: open_list (a filtered lead list), open_case_file, relay_draft (ask ${AGENTS.relay.name} to prepare a follow-up draft for one lead; it goes to the approval queue and is never sent without approval), scribe_refresh (ask ${AGENTS.scribe.name} to rebuild one lead's case file), next_action (a follow-up reminder for this person on one lead), pin_question (save a question as a shortcut).`,
       inputSchema: z.object({
         kind: z.enum(["open_list", "open_case_file", "relay_draft", "scribe_refresh", "next_action", "pin_question"]),
         lead_id: z.string().uuid().optional(),
@@ -767,11 +768,11 @@ export async function prepareSuggestion(
       return {
         id,
         kind: "relay_draft",
-        description: `Ask Relay to prepare a follow-up draft for ${label}. It goes to the approval queue, and nothing is sent unless someone approves it. Right before sending, Vistrial checks consent, quiet hours, contact limits and do-not-contact again.`,
+        description: `Ask ${AGENTS.relay.name} to prepare a follow-up draft for ${label}. It goes to the approval queue, and nothing is sent unless someone approves it. Right before sending, Vistrial checks consent, quiet hours, contact limits and do-not-contact again.`,
         leadId: input.lead_id ?? null,
         leadLabel: label,
         needsConfirm: true,
-        unavailable: data === true ? null : "You can't ask Relay for a draft for this lead.",
+        unavailable: data === true ? null : `You can't ask ${AGENTS.relay.name} for a draft for this lead.`,
       };
     }
     case "scribe_refresh": {
@@ -779,11 +780,11 @@ export async function prepareSuggestion(
       return {
         id,
         kind: "scribe_refresh",
-        description: `Ask Scribe to read ${label}'s recent calls again and rebuild the case file. Fields someone locked stay as they are.`,
+        description: `Ask ${AGENTS.scribe.name} to read ${label}'s recent calls again and rebuild the case file. Fields someone locked stay as they are.`,
         leadId: input.lead_id ?? null,
         leadLabel: label,
         needsConfirm: true,
-        unavailable: allowed ? null : "Only an Owner or the Vistrial team can ask Scribe to rebuild a case file.",
+        unavailable: allowed ? null : `Only an Owner or the Vistrial team can ask ${AGENTS.scribe.name} to rebuild a case file.`,
       };
     }
     case "next_action": {

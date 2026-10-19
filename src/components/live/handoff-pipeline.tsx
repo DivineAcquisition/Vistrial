@@ -67,6 +67,7 @@ export function HandoffPipeline({
                 <AgentGlyph agentId={agentId} size="sm" working={run?.status === "working"} />
                 <span className="min-w-0">
                   <span className="block text-xs font-medium text-card-foreground">{AGENTS[agentId].name}</span>
+                  <span className="block truncate text-[11px] text-muted-foreground">{AGENTS[agentId].sublabel}</span>
                   {run ? (
                     <>
                       <span className={cn("block truncate text-xs", toneText(RUN_STATUS_TONE[run.status]))}>

@@ -29,9 +29,8 @@ export function Opening({ state, unavailable }: { state: OpeningState; unavailab
         <AgentGlyph agentId="compass" size="md" />
         <div className="min-w-0">
           <p className="text-sm font-medium text-card-foreground">{AGENTS.compass.name}</p>
-          <p className={captionText}>
-            {AGENTS.compass.role} {AGENTS.compass.promise}
-          </p>
+          <p className={captionText}>{AGENTS.compass.sublabel}</p>
+          <p className={captionText}>{AGENTS.compass.description}</p>
         </div>
       </div>
       <div className="space-y-2">

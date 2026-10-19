@@ -2,7 +2,7 @@ import "server-only";
 
 import type { SupabaseClient } from "@supabase/supabase-js";
 
-import { isLiveAgentId, type LiveAgentId } from "@/lib/agents/roster";
+import { AGENTS, isLiveAgentId, type LiveAgentId } from "@/lib/agents/roster";
 import {
   mapControl,
   mapEvent,
@@ -34,7 +34,7 @@ async function rls(): Promise<Untyped> {
 }
 
 const RUN_COLUMNS =
-  "id, org_id, agent_id, lead_id, actor_member_id, subject_label, subject_href, status, current_step_label, plan, reason_summary, plain_error, needs_person, sources, config_version, batch_id, simulated, created_at, started_at, finished_at, last_progress_at";
+  "id, org_id, agent_id, lead_id, actor_member_id, subject_label, subject_href, status, current_step_label, plan, reason_summary, plain_error, needs_person, sources, config_version, batch_id, simulated, trigger_key, created_at, started_at, finished_at, last_progress_at";
 
 export type LiveSnapshot = {
   orgId: string;
@@ -238,15 +238,15 @@ export async function loadAwaySummary(orgId: string, sinceIso: string): Promise<
   const lines: AwaySummary["lines"] = [];
   const plural = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`;
   const scribe = counts.get("scribe");
-  if (scribe?.completed) lines.push({ agentId: "scribe", text: `Scribe built ${plural(scribe.completed, "case file", "case files")}`, href: "/app/agents/scribe" });
+  if (scribe?.completed) lines.push({ agentId: "scribe", text: `${AGENTS.scribe.name} built ${plural(scribe.completed, "case file", "case files")}`, href: "/app/agents/scribe" });
   const sentry = counts.get("sentry");
   const sentryTotal = sentry ? Object.values(sentry).reduce((a, b) => a + b, 0) : 0;
-  if (sentryTotal) lines.push({ agentId: "sentry", text: `Sentry checked ${plural(sentryTotal, "lead", "leads")}`, href: "/app/agents/sentry" });
+  if (sentryTotal) lines.push({ agentId: "sentry", text: `${AGENTS.sentry.name} checked ${plural(sentryTotal, "lead", "leads")}`, href: "/app/agents/sentry" });
   const relayWaiting = waitingBy.get("relay") ?? 0;
-  if (relayWaiting) lines.push({ agentId: "relay", text: `Relay has ${plural(relayWaiting, "draft", "drafts")} waiting for you`, href: "/app/agents/relay" });
+  if (relayWaiting) lines.push({ agentId: "relay", text: `${AGENTS.relay.name} has ${plural(relayWaiting, "draft", "drafts")} waiting for you`, href: "/app/agents/relay" });
   const compass = counts.get("compass");
   const compassTotal = compass ? Object.values(compass).reduce((a, b) => a + b, 0) : 0;
-  if (compassTotal) lines.push({ agentId: "compass", text: `Compass answered ${plural(compassTotal, "question", "questions")}`, href: "/app/agents/compass" });
+  if (compassTotal) lines.push({ agentId: "compass", text: `${AGENTS.compass.name} answered ${plural(compassTotal, "question", "questions")}`, href: "/app/agents/compass" });
   for (const [agentId, entry] of counts) {
     const failed = (entry.failed ?? 0) + (entry.stuck ?? 0);
     if (failed && isLiveAgentId(agentId)) {

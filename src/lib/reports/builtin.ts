@@ -1,3 +1,4 @@
+import { AGENTS } from "@/lib/agents/roster";
 import type { MetricId } from "@/lib/metrics/definitions";
 import type { BreakdownDimension } from "@/lib/metrics/load";
 
@@ -60,7 +61,7 @@ export const BUILT_IN_REPORTS: BuiltInReport[] = [
   {
     key: "objections",
     title: "Objections",
-    howToRead: "Each objection is one recorded on a call. Resolved means someone marked it resolved. The list is the words your team and Scribe use, not a ranking of people.",
+    howToRead: `Each objection is one recorded on a call. Resolved means someone marked it resolved. The list is the words your team and ${AGENTS.scribe.name} use, not a ranking of people.`,
     metrics: ["objections"],
     breakdowns: [{ metric: "objections", dimension: "detail", title: "Objections by type" }],
   },
@@ -75,7 +76,7 @@ export const BUILT_IN_REPORTS: BuiltInReport[] = [
   {
     key: "approvals",
     title: "Agent activity and approvals",
-    howToRead: "Drafts Relay prepared, and what a person did with them. Time to approve is the median wait for a decision.",
+    howToRead: `Drafts ${AGENTS.relay.name} prepared, and what a person did with them. Time to approve is the median wait for a decision.`,
     metrics: ["relay_prepared", "relay_approved_unchanged", "relay_edited", "relay_rejected", "approval_expired", "approval_time"],
     breakdowns: [],
   },

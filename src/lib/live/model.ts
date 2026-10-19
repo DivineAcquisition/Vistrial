@@ -50,6 +50,8 @@ export type LiveRun = {
   configVersion: string | null;
   batchId: string | null;
   simulated: boolean;
+  /** Set when this Relay run was started by a Sentry sweep or an after-call Scribe handoff. */
+  cause: "missed_window" | "after_call" | null;
   createdAt: string;
   startedAt: string | null;
   finishedAt: string | null;
@@ -141,6 +143,13 @@ export type StaffRunDetail = {
 
 type Row = Record<string, unknown>;
 
+function relayCause(triggerKey: string | null): "missed_window" | "after_call" | null {
+  if (!triggerKey) return null;
+  if (triggerKey.startsWith("relay:missed_window:")) return "missed_window";
+  if (triggerKey.startsWith("relay:after_call:")) return "after_call";
+  return null;
+}
+
 function str(value: unknown): string | null {
   return typeof value === "string" && value.length > 0 ? value : null;
 }
@@ -193,6 +202,7 @@ export function mapRun(row: Row): LiveRun | null {
     configVersion: str(row.config_version),
     batchId: str(row.batch_id),
     simulated: row.simulated === true,
+    cause: relayCause(str(row.trigger_key)),
     createdAt: String(row.created_at),
     startedAt: str(row.started_at),
     finishedAt: str(row.finished_at),
@@ -283,7 +293,7 @@ export function mapWaiting(row: Row): WaitingItem {
 // Presence
 // ---------------------------------------------------------------------------
 
-export type PresenceState = "idle" | "working" | "waiting" | "attention" | "paused" | "stopped";
+export type PresenceState = "idle" | "working" | "waiting" | "attention" | "paused" | "stopped" | "getting_ready";
 
 export type AgentPresence = {
   agentId: LiveAgentId;
@@ -307,6 +317,7 @@ export const PRESENCE_LABEL: Record<PresenceState, string> = {
   attention: "Needs attention",
   paused: "Paused",
   stopped: "Stopped",
+  getting_ready: "Getting ready",
 };
 
 export type WorkspaceRunState = "active" | "paused" | "closed";
@@ -358,6 +369,29 @@ export function derivePresence(input: {
       liveLabel: null,
       currentRunId: null,
       runSummary: closed ? "This workspace is closed, so agents are not running." : "This workspace is paused, so agents are not running.",
+    };
+  }
+
+  if (input.agentId === "assay") {
+    if (input.control?.paused) {
+      return {
+        ...base,
+        state: "paused",
+        stateLabel: PRESENCE_LABEL.paused,
+        liveLabel: null,
+        currentRunId: null,
+        runSummary: "Paused. Assay is not scoring leads.",
+        pausedBy: input.control.changedByName,
+        pausedAt: input.control.changedAt,
+      };
+    }
+    return {
+      ...base,
+      state: "getting_ready",
+      stateLabel: PRESENCE_LABEL.getting_ready,
+      liveLabel: null,
+      currentRunId: null,
+      runSummary: "Assay is not scoring leads yet.",
     };
   }
 
@@ -493,6 +527,7 @@ export const PRESENCE_TONE: Record<PresenceState, StatusTone> = {
   attention: "warning",
   paused: "neutral",
   stopped: "critical",
+  getting_ready: "neutral",
 };
 
 export function runOneLine(run: LiveRun): string {
@@ -581,4 +616,43 @@ export function presenceForWorkspaceStatus(status: string | null | undefined): W
   if (status === "closed") return "closed";
   if (status === "paused") return "paused";
   return "active";
+}
+
+export type DepartmentFeedItem =
+  | { id: string; kind: "single"; run: LiveRun }
+  | { id: string; kind: "handoff"; from: LiveRun; to: LiveRun };
+
+/**
+ * Newest first. A Relay draft joins the earlier run only when the draft's
+ * cause says Sentry's missed-window sweep or Scribe's after-call handoff
+ * started it for that same lead. Two unrelated runs on one lead stay apart.
+ */
+export function departmentFeed(runs: LiveRun[]): DepartmentFeedItem[] {
+  const sorted = [...runs].sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+  const used = new Set<string>();
+  const items: DepartmentFeedItem[] = [];
+  for (const run of sorted) {
+    if (used.has(run.id)) continue;
+    const partnerAgent = run.cause === "missed_window" ? "sentry" : run.cause === "after_call" ? "scribe" : null;
+    const partner =
+      partnerAgent && run.leadId
+        ? sorted.find(
+            (candidate) =>
+              !used.has(candidate.id) &&
+              candidate.id !== run.id &&
+              candidate.agentId === partnerAgent &&
+              candidate.leadId === run.leadId &&
+              candidate.createdAt <= run.createdAt
+          )
+        : undefined;
+    if (partner) {
+      used.add(run.id);
+      used.add(partner.id);
+      items.push({ id: `${partner.id}:${run.id}`, kind: "handoff", from: partner, to: run });
+      continue;
+    }
+    used.add(run.id);
+    items.push({ id: run.id, kind: "single", run });
+  }
+  return items;
 }

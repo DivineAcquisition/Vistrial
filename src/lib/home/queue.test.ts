@@ -107,7 +107,7 @@ describe("approval gate catalog", () => {
   });
 
   it("lets only the Vistrial team open the settings", () => {
-    expect(canEditApprovalGate("owner", false)).toBe(false);
+    expect(canEditApprovalGate("owner", false)).toBe(true);
     expect(canEditApprovalGate("member", false)).toBe(false);
     expect(canEditApprovalGate("setter", false)).toBe(false);
     expect(canEditApprovalGate("setter", true)).toBe(true);

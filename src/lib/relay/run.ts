@@ -262,7 +262,7 @@ async function draftForJob(job: RelayJob): Promise<Outcome> {
   const recorder = await startRun({
     orgId: job.org_id,
     agentId: "relay",
-    triggerKey: `relay:${job.id}`,
+    triggerKey: `relay:${job.trigger}:${job.id}`,
     subjectLabel: `a ${channel === "sms" ? "text" : "email"} for ${name}`,
     subjectHref: `/app/cases/${job.lead_id}`,
     leadId: job.lead_id,

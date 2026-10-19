@@ -7,6 +7,7 @@ import { getAuthContext } from "@/lib/auth/session";
 import {
   actionType,
   canEditApprovalGate,
+  canLockApprovalGate,
   isApprovalMode,
   isApprover,
   needsAutoRunConfirmation,
@@ -15,6 +16,7 @@ import { loadGateState } from "@/lib/home/gate";
 import { applyGateToOpenItems } from "@/lib/home/scan";
 import { getSupabaseAdmin } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
+import { logWorkspaceActivity } from "@/lib/workspaces/activity";
 
 export type ApprovalSaveResult =
   | { ok: true }
@@ -26,6 +28,7 @@ function revalidateApprovals() {
   revalidatePath("/app/settings/approvals");
   revalidatePath("/app/onboarding/approvals");
   revalidatePath("/app/home");
+  revalidatePath("/app/agents");
 }
 
 function rpcError(error: { code?: string; message: string }): string {
@@ -41,7 +44,7 @@ export async function saveApprovalAction(input: {
 }): Promise<ApprovalSaveResult> {
   const ctx = await getAuthContext();
   if (!canEditApprovalGate(ctx.role, ctx.isStaff)) {
-    return { ok: false, error: "Only an owner can change approval settings." };
+    return { ok: false, error: "You cannot change approval settings." };
   }
   const definition = actionType(input.actionType);
   if (!definition) return { ok: false, error: "That action does not exist." };
@@ -91,6 +94,49 @@ export async function saveApprovalAction(input: {
       );
     }
   }
+  await logWorkspaceActivity({
+    actorUserId: ctx.user.id,
+    orgId: ctx.org.id,
+    action: ctx.isStaff ? "staff.approval_gate_changed" : "approval_gate.changed",
+    targetTable: "approval_gate_actions",
+    targetId: definition.id,
+    detail: { mode: input.mode, from: before.mode },
+  });
+  revalidateApprovals();
+  return { ok: true };
+}
+
+export async function lockApprovalAction(input: {
+  actionType: string;
+  locked: boolean;
+  reason: string;
+}): Promise<ApprovalSaveResult> {
+  const ctx = await getAuthContext();
+  if (!canLockApprovalGate(ctx.isPlatformAdmin, ctx.templateAccess)) {
+    return { ok: false, error: "You cannot lock an approval setting." };
+  }
+  const definition = actionType(input.actionType);
+  if (!definition) return { ok: false, error: "That action does not exist." };
+  const reason = input.reason.trim();
+  if (input.locked && reason.length < 3) return { ok: false, error: "Say why this is locked." };
+  const supabase = await createClient();
+  const { error } = await (supabase as unknown as {
+    rpc: (name: string, args: Record<string, unknown>) => Promise<{ error: { code?: string; message: string } | null }>;
+  }).rpc("set_approval_gate_lock", {
+    p_org_id: ctx.org.id,
+    p_action_type: definition.id,
+    p_locked: input.locked,
+    p_reason: input.locked ? reason : "",
+  });
+  if (error) return { ok: false, error: rpcError(error) };
+  await logWorkspaceActivity({
+    actorUserId: ctx.user.id,
+    orgId: ctx.org.id,
+    action: "staff.approval_gate_locked",
+    targetTable: "approval_gate_actions",
+    targetId: definition.id,
+    detail: { locked: input.locked, reason },
+  });
   revalidateApprovals();
   return { ok: true };
 }

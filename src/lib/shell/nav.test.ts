@@ -18,7 +18,7 @@ const labels = (role: Parameters<typeof shellNavigation>[0]["role"], extra?: Par
 describe("shell navigation", () => {
   it("shows an owner Overview, Case Files, Results, Agents, and Settings, with Forsight nested", () => {
     const nav = shellNavigation({ role: "owner", templateAccess: false });
-    expect(labels("owner")).toEqual(["Overview", "Case Files", "Results", "Agents", "Settings"]);
+    expect(labels("owner")).toEqual(["Overview", "Case Files", "Results", "Sales", "Settings"]);
     expect(nav.phone.map((item) => item.label)).toEqual(["Overview", "Case Files", "Results", "Settings"]);
     expect(nav.groups[0]?.items.find((item) => item.id === "results")?.children?.map((item) => item.label)).toEqual([
       "Reports",
@@ -76,7 +76,7 @@ describe("shell navigation", () => {
     const nav = shellNavigation({ role: "service_team", templateAccess: true, workspaceName: "Acme Roofing" });
     const here = nav.groups.find((group) => group.id === "here");
     expect(here?.label).toBe("Acme Roofing");
-    expect(here?.items.map((item) => item.label)).toEqual(["Overview", "Case Files", "Results", "Agents", "Configuration"]);
+    expect(here?.items.map((item) => item.label)).toEqual(["Overview", "Case Files", "Results", "Sales", "Configuration"]);
     expect(nav.phone.map((item) => item.label)).toEqual(["Today", "Queue", "Client Roster", "Overview"]);
     expect(shellNavigation({ role: "service_team", templateAccess: true }).groups.find((g) => g.id === "here")?.label).toBe(
       "This workspace",

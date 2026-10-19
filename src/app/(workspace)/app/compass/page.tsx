@@ -7,6 +7,7 @@ import { isConversationId, listConversations, loadLegacyMessages, loadMessages, 
 import { startersFor } from "@/lib/compass/starters";
 import type { CompassContext } from "@/lib/compass/types";
 import { getEffectiveConfig } from "@/lib/config/server";
+import { AGENTS } from "@/lib/agents/roster";
 import { CompassIcon } from "lucide-react";
 
 export const metadata: Metadata = { title: "Compass" };
@@ -19,7 +20,7 @@ export default async function CompassRoute({ searchParams }: { searchParams: Pro
     return (
       <div className="mx-auto flex w-full max-w-xl flex-col items-start gap-3 px-4 pt-16" role="status">
         <CompassIcon className="size-6 text-brand-300" aria-hidden />
-        <h1 className="font-heading text-xl text-card-foreground">Compass</h1>
+        <h1 className="font-heading text-xl text-card-foreground">{AGENTS.compass.name}, {AGENTS.compass.sublabel}</h1>
         <p className="text-sm text-muted-foreground">{unavailableMessage(actor.unavailableReason)}</p>
       </div>
     );

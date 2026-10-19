@@ -35,6 +35,7 @@ export default async function AgentPage({
 }) {
   const [{ agent }, query, ctx] = await Promise.all([params, searchParams, getAuthContext()]);
   if (!isLiveAgentId(agent)) notFound();
+  if (ctx.workspaceRole !== "owner" && !ctx.isStaff) notFound();
   const result = query.result && query.result in RUN_STATUS_LABEL ? (query.result as RunStatus) : null;
   const data = await loadAgentPage(ctx.org.id, agent, {
     result,

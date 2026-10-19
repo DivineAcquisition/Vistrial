@@ -34,6 +34,7 @@ function run(partial: Partial<LiveRun>): LiveRun {
     configVersion: null,
     batchId: null,
     simulated: false,
+    cause: partial.cause ?? null,
     createdAt: partial.createdAt ?? new Date(NOW - 60_000).toISOString(),
     startedAt: null,
     finishedAt: partial.finishedAt ?? null,
@@ -73,8 +74,14 @@ describe("presence", () => {
 
   it("shows every agent paused when the workspace is paused", () => {
     const all = deriveAllPresence({ runs: [run({})], controls: [], waiting: [], workspace: "paused", now: NOW });
-    expect(all.map((item) => item.state)).toEqual(["paused", "paused", "paused", "paused"]);
-    expect(all.map((item) => item.agentId)).toEqual(["scribe", "sentry", "relay", "compass"]);
+    expect(all.map((item) => item.state)).toEqual(["paused", "paused", "paused", "paused", "paused"]);
+    expect(all.map((item) => item.agentId)).toEqual(["scribe", "sentry", "relay", "compass", "assay"]);
+  });
+
+  it("shows Assay as getting ready and not working", () => {
+    const presence = derivePresence({ ...base, agentId: "assay", runs: [run({ status: "working" })] });
+    expect(presence.stateLabel).toBe("Getting ready");
+    expect(presence.currentRunId).toBeNull();
   });
 
   it("counts requests waiting on a person", () => {

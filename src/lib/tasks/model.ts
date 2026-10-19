@@ -1,3 +1,5 @@
+import { AGENTS } from "@/lib/agents/roster";
+
 /**
  * Task rules that do not touch the database. Completing a task never logs a
  * touch. One open task per lead, source, and purpose.
@@ -119,9 +121,9 @@ export function sourceSentence(source: TaskSource, because: string): string {
   const reason = because.trim();
   switch (source) {
     case "sentry":
-      return reason ? `Suggested by Sentry because ${reason}` : "Suggested by Sentry";
+      return reason ? `Suggested by ${AGENTS.sentry.name} because ${reason}` : `Suggested by ${AGENTS.sentry.name}`;
     case "scribe":
-      return reason ? `Suggested by Scribe because ${reason}` : "Suggested by Scribe";
+      return reason ? `Suggested by ${AGENTS.scribe.name} because ${reason}` : `Suggested by ${AGENTS.scribe.name}`;
     case "playbook":
       return reason ? `From a play: ${reason}` : "From a play";
     case "booking":

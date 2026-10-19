@@ -1,21 +1,18 @@
-import { redirect } from "next/navigation";
+import { notFound } from "next/navigation";
 
 import { ApprovalActionsForm, ApprovalLimitsForm } from "@/app/(workspace)/app/settings/approvals/approval-gate-form";
 import { PageFrame } from "@/components/app/page-frame";
 import { Card } from "@/components/ui/card";
-import { requireOrgSettingsManager } from "@/lib/auth/gates";
-import { canEditApprovalGate, describeGateChange } from "@/lib/home/catalog";
+import { getAuthContext } from "@/lib/auth/session";
+import { canEditApprovalGate, canLockApprovalGate, describeGateChange } from "@/lib/home/catalog";
 import { gateFormRows, loadGateHistory, loadGateState } from "@/lib/home/gate";
-import { firstSettingsPath } from "@/lib/navigation";
 import { createClient } from "@/lib/supabase/server";
 
 export const metadata = { title: "Approvals" };
 
 export default async function ApprovalSettingsPage() {
-  const ctx = await requireOrgSettingsManager();
-  if (!canEditApprovalGate(ctx.role, ctx.isStaff)) {
-    redirect(firstSettingsPath(ctx.role, ctx.isStaff));
-  }
+  const ctx = await getAuthContext();
+  if (!canEditApprovalGate(ctx.role, ctx.isStaff)) notFound();
   const supabase = await createClient();
   const [state, history] = await Promise.all([
     loadGateState(supabase, ctx.org.id),
@@ -28,7 +25,11 @@ export default async function ApprovalSettingsPage() {
       description="Decide what Vistrial asks you about first, what it does on its own, and what it never does. Changes apply right away."
     >
       <div className="flex max-w-3xl flex-col gap-6">
-        <ApprovalActionsForm rows={gateFormRows(state)} editable />
+        <ApprovalActionsForm
+          rows={gateFormRows(state)}
+          editable={canEditApprovalGate(ctx.role, ctx.isStaff)}
+          canOverrideLock={canLockApprovalGate(ctx.isPlatformAdmin, ctx.templateAccess)}
+        />
         <ApprovalLimitsForm limits={state.limits} timeZone={ctx.org.timezone} editable />
         <Card className="p-5 sm:p-6">
           <h2 className="font-heading text-base text-card-foreground">History</h2>

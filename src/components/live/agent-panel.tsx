@@ -103,6 +103,7 @@ function AgentPanelBody({ onNavigate }: { onNavigate: () => void }) {
                     </Link>
                     <PresenceLabel state={item.state} label={item.stateLabel} />
                   </div>
+                  <p className="truncate text-xs text-muted-foreground">{agent.sublabel}</p>
                   <p className="truncate text-xs text-muted-foreground" title={item.liveLabel ?? item.runSummary ?? ""}>
                     {item.liveLabel ?? item.runSummary}
                   </p>

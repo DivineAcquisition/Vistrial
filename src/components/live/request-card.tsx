@@ -14,7 +14,7 @@ import { useOrg } from "@/components/app/org-provider";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { AGENTS } from "@/lib/agents/roster";
+import { AGENTS, producedBy } from "@/lib/agents/roster";
 import type { WaitingItem } from "@/lib/live/model";
 import { finalMessage } from "@/lib/relay/footer";
 import { cn } from "@/lib/utils";
@@ -148,6 +148,7 @@ export function AgentRequestCard({
         <div className="min-w-0 flex-1 space-y-1">
           <p className="text-xs font-medium text-warning">{heading}</p>
           <h3 className="text-sm font-medium text-card-foreground">{item.title}</h3>
+          {item.agentId ? <p className="text-xs text-muted-foreground">{producedBy(item.agentId, item.kind === "question" ? "Asked" : "Drafted")}</p> : null}
           {item.reason && !approved ? (
             <p className="text-sm text-muted-foreground">
               <span className="font-medium text-card-foreground">Why: </span>

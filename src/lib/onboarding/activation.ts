@@ -43,6 +43,11 @@ export function activationStepCopy(agent: LiveAgentId, watchDays: number): { tit
         title: `${name} answers questions`,
         plain: `${name} answers questions about your own workspace from what Vistrial recorded, and shows where each answer came from. It can suggest an action, and nothing happens until you confirm it.`,
       };
+    case "assay":
+      return {
+        title: `${name} is getting ready`,
+        plain: `${name} is not scoring leads yet, and it does not start work.`,
+      };
   }
 }
 

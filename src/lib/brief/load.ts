@@ -1,5 +1,8 @@
 import "server-only";
 
+import type { SupabaseClient } from "@supabase/supabase-js";
+
+import { parseAssayScore } from "@/lib/assay/view";
 import { parseBriefPayload } from "@/lib/brief/parse";
 import { suggestedOpeningForBrief } from "@/lib/brief/opening";
 import type { BriefPayload } from "@/lib/brief/types";
@@ -17,11 +20,14 @@ export async function loadPrecallBrief(leadId: string): Promise<BriefPayload | n
   if (error) throw new Error(error.message || "Could not load that brief.");
   if (data == null) return null;
 
-  const { data: profile } = await supabase
-    .from("business_profiles")
-    .select("setter_establishes, setter_establishes_other")
-    .eq("org_id", ctx.org.id)
-    .maybeSingle();
+  const [{ data: profile }, assay] = await Promise.all([
+    supabase
+      .from("business_profiles")
+      .select("setter_establishes, setter_establishes_other")
+      .eq("org_id", ctx.org.id)
+      .maybeSingle(),
+    (supabase as unknown as SupabaseClient).rpc("assay_lead_score", { p_org_id: ctx.org.id, p_lead_id: leadId }),
+  ]);
 
   const parsed = parseBriefPayload(
     data,
@@ -31,6 +37,7 @@ export async function loadPrecallBrief(leadId: string): Promise<BriefPayload | n
   );
   const payload: BriefPayload = {
     ...parsed,
+    score: assay.error ? null : parseAssayScore(assay.data),
     suggestedOpening:
       parsed.cachedOpening && parsed.cachedOpeningKey === parsed.cacheKey ? parsed.cachedOpening : null,
   };

@@ -1,3 +1,4 @@
+import { ASSAY_COACHES, ASSAY_HOME_SERVICES, ASSAY_MED_SPA } from "@/lib/assay/templates";
 import { LEGACY_BANNED_TERMS } from "@/lib/config/registry";
 import type { ConfigValues } from "@/lib/config/types";
 
@@ -173,6 +174,7 @@ export const MED_SPA: SeedTemplate = {
         body: "Thanks for asking about laser skin resurfacing. A short consultation lets our provider look at your skin and talk through what to expect, including downtime and cost. We have openings this week on Tuesday and Thursday afternoon. Would either suit you?",
       },
     ],
+    ...ASSAY_MED_SPA,
   },
 };
 
@@ -319,6 +321,7 @@ export const HOME_SERVICES: SeedTemplate = {
       { channel: "sms", body: "Hi Dan, it's Luis from Northside Plumbing. We can be there tomorrow between 8 and 10 to look at the leak. Does that work?" },
       { channel: "sms", body: "Thanks for the photos. A full gutter clean for a two-story house is usually $180 to $240. Want me to book you in for Saturday morning?" },
     ],
+    ...ASSAY_HOME_SERVICES,
   },
 };
 
@@ -439,6 +442,7 @@ export const COACHES_CONSULTANTS: SeedTemplate = {
         body: "Thanks for walking me through where the business is. You mentioned two things are holding growth back: no consistent lead flow and closing calls yourself. The program covers both, and the next step is a 20-minute call with your business partner so you can decide together. Does Thursday at 2 work?",
       },
     ],
+    ...ASSAY_COACHES,
   },
 };
 

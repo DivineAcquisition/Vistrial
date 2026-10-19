@@ -2,6 +2,7 @@ import Link from "next/link";
 
 import { ReportActions } from "@/app/(workspace)/app/forsight/reports/report-actions";
 import { ForsightTabs } from "@/app/(workspace)/app/forsight/forsight-chrome";
+import { AssayReportNote } from "@/components/assay/report-note";
 import { PageFrame } from "@/components/app/page-frame";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Panel } from "@/components/ui/panel";
@@ -48,6 +49,7 @@ export default async function ForsightReportsPage() {
         ) : undefined
       }
     >
+      <AssayReportNote />
       {periods.length === 0 ? (
         <EmptyState
           kind="empty"

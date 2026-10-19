@@ -49,7 +49,6 @@ export const OPS_JOB_NAMES = [
   "notifications",
   "ops-health",
   "retention",
-  "calibration",
   "call-quality",
   "verification-audit",
   "portal-email",
@@ -61,6 +60,7 @@ export const OPS_JOB_NAMES = [
   "onboarding",
   "billing",
   "reports-api",
+  "assay",
 ] as const;
 
 export type OpsJobName = (typeof OPS_JOB_NAMES)[number];

@@ -12,10 +12,9 @@ import type { ForsightResult } from "@/lib/forsight/types";
 
 /**
  * A month from Vistrial's own tables, in the shared facts shape.
- * Qualification is the readiness threshold, which defaults to 60.
+ * Qualified means Warm or higher on the Assay score (50 and up). From
+ * Oct 19, 2026; before that it was the readiness score at the ready line.
  */
-
-const DEFAULT_READY_THRESHOLD = 60;
 
 const OBJECTION_LABEL: Record<string, string> = {
   price: "Price",
@@ -52,7 +51,6 @@ export async function coreMonthly(
   orgId: string,
   period: { start: string; end: string }
 ): Promise<ForsightResult<MonthlyMetrics>> {
-  const threshold = await readyThreshold(db, orgId);
   const [leads, calls, touches, members, objections, trackChanges, revenue] = await Promise.all([
     readLeads(db, orgId, period.start, period.end),
     readCalls(db, orgId, period.start),
@@ -71,7 +69,6 @@ export async function coreMonthly(
     objections,
     trackChanges,
     revenue,
-    threshold,
     period,
   });
 
@@ -86,7 +83,6 @@ export function coreMonthFacts(args: {
   objections: Array<{ objection: string; count: number }>;
   trackChanges: { poolSize: number; movedIds: string[] };
   revenue: Map<string, number>;
-  threshold: number;
   period: { start: string; end: string };
 }): MonthFacts {
   const callsByLead = new Map<string, CoreCallRow[]>();
@@ -117,7 +113,7 @@ export function coreMonthFacts(args: {
       hoursToFirstHuman: hoursBetween(lead.opted_in_at, lead.first_human_touch_at),
       humanTouches,
       scored: lead.current_score !== null,
-      qualified: (lead.current_score ?? 0) >= args.threshold,
+      qualified: lead.lead_type === "ready_track",
       contacted: humanTouches > 0 || Boolean(lead.first_human_touch_at),
       booked,
       held,
@@ -152,15 +148,6 @@ export function coreMonthFacts(args: {
     teamAvailable: true,
     omissions: [],
   };
-}
-
-async function readyThreshold(db: ForsightDb, orgId: string): Promise<number> {
-  const { data } = await db
-    .from("score_configs")
-    .select("ready_threshold")
-    .eq("org_id", orgId)
-    .maybeSingle();
-  return data?.ready_threshold ?? DEFAULT_READY_THRESHOLD;
 }
 
 async function readLeads(

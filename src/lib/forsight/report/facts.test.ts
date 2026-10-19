@@ -113,7 +113,6 @@ describe("core mapping", () => {
         objections: [{ objection: "Price", count: 1 }],
         trackChanges: { poolSize: 4, movedIds: ["a"] },
         revenue: new Map([["a", 150_000]]),
-        threshold: 60,
         period: PERIOD,
       })
     );

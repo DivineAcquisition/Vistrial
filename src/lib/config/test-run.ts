@@ -1,11 +1,15 @@
+import { computeAssayScore, type AssayInput } from "@/lib/assay/compute";
+import { parseRules } from "@/lib/assay/rules";
+import { stickyTier } from "@/lib/assay/tiers";
+import { TIER_LABEL } from "@/lib/assay/vocabulary";
 import { isOpenAt, type AfterHoursMode, type BusinessHours } from "@/lib/config/clock";
 import { describeMinutes } from "@/lib/config/format";
 import { checkQuietHours, type QuietWindow } from "@/lib/compliance/rules";
 import type { ConfigValues } from "@/lib/config/types";
 
 /**
- * A dry run of one sample lead through a configuration: how it would be
- * qualified, when it must hear from a person, what a first text would look
+ * A dry run of one sample lead through a configuration: how Assay would
+ * score it, when it must hear from a person, what a first text would look
  * like, and what the compliance rules would do. Nothing is sent or saved
  * except the result, which the go-live check records.
  */
@@ -14,16 +18,28 @@ export type TestRunStep = { title: string; lines: string[]; ok: boolean };
 export type SampleLead = {
   firstName: string;
   arrivedAt: Date;
-  /** 0–100 per scoring factor. */
-  factors: Record<string, number>;
+  /** What Assay would see: approved inputs and activity metadata only. */
+  assay: AssayInput;
   knownFacts: string[];
 };
 
 export function defaultSampleLead(now: Date): SampleLead {
+  const hoursAgo = (hours: number) => new Date(now.getTime() - hours * 60 * 60 * 1000).toISOString();
   return {
     firstName: "Jordan",
     arrivedAt: now,
-    factors: { timeline: 80, investment_capacity: 60, decision_authority: 100, pain_severity: 50 },
+    assay: {
+      leadId: "sample",
+      fields: { contact_complete: true, service_offered: true, in_service_area: true },
+      activities: [
+        { id: "sample-reply", event: "replied", at: hoursAgo(20) },
+        { id: "sample-booking", event: "booked", at: hoursAgo(19) },
+      ],
+      teamTouches: [{ id: "sample-text", at: hoursAgo(20.1) }],
+      calls: { held: 0, pending: false },
+      signals: [],
+      source: null,
+    },
     knownFacts: [],
   };
 }
@@ -64,28 +80,20 @@ export function runConfigTest(values: ConfigValues, lead: SampleLead): TestRunSt
   const steps: TestRunStep[] = [];
   const timeZone = String(values["identity.timezone"] ?? "America/New_York");
 
-  // Qualification
-  const weights = (values["qualification.factor_weights"] ?? {}) as Record<string, number>;
-  const score = Math.round(
-    Object.entries(weights).reduce((sum, [factor, weight]) => sum + ((lead.factors[factor] ?? 0) * Number(weight)) / 100, 0)
-  );
-  const bands = ((values["qualification.scoring_bands"] ?? []) as Array<{ name: string; min_score: number; next_step: string }>)
-    .slice()
-    .sort((a, b) => a.min_score - b.min_score);
-  const band = [...bands].reverse().find((entry) => score >= entry.min_score);
-  const threshold = Number(values["qualification.ready_threshold"] ?? 0);
+  // Qualification, as Assay would score the sample lead.
+  const { rules, problems } = parseRules(values);
+  const scored = computeAssayScore(lead.assay, rules, lead.arrivedAt.toISOString());
+  const tier = stickyTier(scored.score, rules.tiers, null, rules.stickiness);
   const missingFacts = ((values["qualification.minimum_info"] ?? []) as string[]).filter((fact) => !lead.knownFacts.includes(fact));
   steps.push({
     title: "Qualification",
-    ok: Boolean(band),
+    ok: problems.length === 0,
     lines: [
-      `${lead.firstName} scores ${score} out of 100.`,
-      band ? `That is "${band.name}": ${band.next_step}` : "No score band covers this score. Start the first band at 0.",
-      score >= threshold && missingFacts.length === 0
-        ? `Counts as ready to buy (ready from ${threshold}).`
-        : missingFacts.length
-          ? `Not counted as ready yet: still need ${missingFacts.join(", ")}.`
-          : `Not ready yet (ready from ${threshold}).`,
+      `Assay scores ${lead.firstName} ${scored.score} out of 100: ${TIER_LABEL[tier]}${scored.early ? " (early score)" : ""}.`,
+      ...scored.raising.map((hit) => `Raises it: ${hit.text}`),
+      ...scored.notes,
+      ...problems.map((problem) => problem.message),
+      ...(missingFacts.length ? [`Not counted as ready yet: still need ${missingFacts.join(", ")}.`] : []),
     ],
   });
 

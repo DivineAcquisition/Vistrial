@@ -64,11 +64,7 @@ export async function saveOnboardingStage(
   // already in the workspace are scored under it. The payoff for these two
   // stages is exactly that, so it cannot be left for someone to find later.
   if (stage === "funnel" || stage === "qualification") {
-    await rescoreOrgLeads(supabase, {
-      orgId: access.ctx.org.id,
-      memberId: access.ctx.member.id,
-      reason: `Re-scored when ${access.ctx.member.displayName} saved the ${stage} stage of onboarding.`,
-    });
+    await rescoreOrgLeads(supabase, { orgId: access.ctx.org.id });
     revalidatePath("/app/queue");
     revalidatePath("/app/cases");
   }

@@ -50,7 +50,6 @@ const REVIEWED = new Set([
   "src/app/(workspace)/app/settings/integrations/page.tsx",
   "src/app/(workspace)/app/settings/notifications/actions.ts",
   "src/app/(workspace)/app/settings/profile/actions.ts",
-  "src/app/(workspace)/app/settings/scoring/actions.ts",
   "src/app/(workspace)/app/team/actions.ts",
   "src/app/(workspace)/app/team/staff-actions.ts",
   "src/app/(auth)/security/actions.ts",

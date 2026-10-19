@@ -184,26 +184,26 @@ function caseFileModel(payload: NonNullable<Awaited<ReturnType<typeof refreshCas
       lastTouchAt: payload.lead.lastTouchAt,
       href: `/app/cases/${payload.lead.id}`,
     },
+    // Assay's score as the asking person may see it; call-based reasons are already filtered.
     score: payload.score
       ? {
-          total: payload.score.total,
-          timeline: payload.score.timeline,
-          investmentCapacity: payload.score.investmentCapacity,
-          decisionAuthority: payload.score.decisionAuthority,
-          painSeverity: payload.score.painSeverity,
-          reasoning: payload.score.reasoning,
-          triggeredBy: payload.score.triggeredBy,
-          createdAt: payload.score.createdAt,
+          score: payload.score.score,
+          tier: payload.score.tier,
+          early: payload.score.early,
+          contactable: payload.score.contactable,
+          raising: payload.score.raising.map((reason) => reason.text),
+          lowering: payload.score.lowering.map((reason) => reason.text),
+          hiddenCallReasons: payload.score.hiddenCallReasons,
+          notes: payload.score.notes,
         }
       : null,
-    scoreHistory: payload.scoreHistory.map((row) => ({
-      id: row.id,
-      total: row.total,
-      previousTotal: row.previousTotal,
-      reasoning: row.reasoning,
-      triggeredBy: row.triggeredBy,
-      createdAt: row.createdAt,
-      scoredByName: row.scoredByName,
+    scoreHistory: (payload.score?.history ?? []).map((row) => ({
+      score: row.score,
+      tier: row.tier,
+      previousScore: row.previousScore,
+      previousTier: row.previousTier,
+      reason: row.reason,
+      at: row.at,
     })),
     objections: payload.objections.map((row) => ({
       id: row.id,
@@ -272,14 +272,14 @@ async function toolScoreHistory(input: Record<string, unknown>): Promise<ToolOut
   try {
     const payload = await refreshCaseFile(leadId);
     if (!payload) return nothingFound("that lead is not in this workspace");
-    if (!payload.score && payload.scoreHistory.length === 0) {
+    if (!payload.score) {
       return nothingFound("no score history on this lead");
     }
     return readOk(`Score history for ${payload.lead.name}.`, {
       found: true,
       lead: { id: payload.lead.id, name: payload.lead.name, href: `/app/cases/${payload.lead.id}` },
       score: payload.score,
-      scoreHistory: payload.scoreHistory,
+      scoreHistory: payload.score.history,
     }, {
       kind: "leads",
       rows: [{ name: payload.lead.name, score: payload.lead.score }],

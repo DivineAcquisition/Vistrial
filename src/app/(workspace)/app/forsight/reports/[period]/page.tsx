@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { ReportActions } from "@/app/(workspace)/app/forsight/reports/report-actions";
 import { ReportDocument } from "@/app/(workspace)/app/forsight/reports/report-document";
 import { ForsightTabs } from "@/app/(workspace)/app/forsight/forsight-chrome";
+import { AssayReportNote } from "@/components/assay/report-note";
 import { PageFrame } from "@/components/app/page-frame";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -69,6 +70,7 @@ export default async function ForsightReportPage({
                   ctx.isStaff ? `?v=${stored.version}` : ""
                 }`}
               >
+                <AssayReportNote />
                 Export PDF
               </Link>
             </Button>

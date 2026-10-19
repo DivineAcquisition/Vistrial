@@ -9,5 +9,4 @@ export function revalidateLeadSurfaces(leadId?: string) {
     revalidatePath(`/app/cases/${leadId}/brief`);
   }
   revalidatePath("/app/calls");
-  revalidatePath("/app/settings/scoring");
 }

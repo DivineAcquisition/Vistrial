@@ -128,7 +128,7 @@ export function buildStagePatch(stage: ProfileStage, form: FormData): PatchResul
       if (fieldRows.some((row) => !row.answer_key && row.factor)) {
         return {
           ok: false,
-          error: "One application question has a factor but no answer key. Fill it in or remove the row.",
+          error: "One application question says what it tells Assay but has no answer key. Fill it in or remove the row.",
         };
       }
       return {

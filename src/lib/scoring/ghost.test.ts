@@ -2,7 +2,6 @@ import { describe, expect, it } from "vitest";
 
 import { decideGhostAction } from "@/lib/scoring/ghost";
 import { canOverrideLead } from "@/lib/auth/permissions";
-import { assertScorePersisted } from "@/lib/scoring/store";
 
 describe("decideGhostAction", () => {
   const base = {
@@ -87,14 +86,5 @@ describe("canOverrideLead", () => {
         assignedCloserId: "c",
       })
     ).toBe(true);
-  });
-});
-
-describe("assertScorePersisted", () => {
-  it("fails webhook processing when the score row did not write", () => {
-    expect(() => assertScorePersisted({ written: false, reason: "db" })).toThrow("score_write_failed");
-    expect(() => assertScorePersisted({ written: false, reason: "duplicate" })).not.toThrow();
-    expect(() => assertScorePersisted({ written: false, reason: "unscored" })).not.toThrow();
-    expect(() => assertScorePersisted({ written: true, id: "score-1" })).not.toThrow();
   });
 });

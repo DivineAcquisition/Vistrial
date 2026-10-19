@@ -1,3 +1,4 @@
+import { ASSAY_FIELDS } from "@/lib/config/assay-fields";
 import type { ChoiceOption, ConfigSection, ConfigValue, FieldDef } from "@/lib/config/types";
 
 /**
@@ -50,6 +51,10 @@ export const SECTION_INFO: Record<ConfigSection, { label: string; description: s
   operators: {
     label: "Operators and routing",
     description: "How leads reach the customer's own team, and their daily summaries.",
+  },
+  assay: {
+    label: "Lead scoring (Assay)",
+    description: "How Assay scores leads, when it acts, and its limits. Staff change these; Owners can read them.",
   },
   compliance: {
     label: "Compliance and messaging rules",
@@ -301,60 +306,6 @@ export const CONFIG_FIELDS: FieldDef[] = [
       ],
     },
     platformDefault: [],
-  },
-  {
-    key: "qualification.scoring_bands",
-    section: "qualification",
-    label: "Score bands",
-    help: "What each score range means and the next step it implies. Start the first band at 0.",
-    type: "list",
-    rules: {
-      minItems: 2,
-      maxItems: 6,
-      uniqueBy: "name",
-      itemFields: [
-        { key: "name", label: "Band", type: "text", required: true, maxLength: 40 },
-        { key: "min_score", label: "From score", type: "number", required: true, min: 0, max: 100 },
-        { key: "meaning", label: "What it means", type: "text", required: true, maxLength: 200 },
-        { key: "next_step", label: "Next step", type: "text", required: true, maxLength: 200 },
-      ],
-    },
-    required: true,
-    platformDefault: [
-      { name: "Cold", min_score: 0, meaning: "Interested, but not ready to decide.", next_step: "Keep in touch with useful, low-pressure follow-up." },
-      { name: "Warm", min_score: 40, meaning: "Engaged, with some of what they need in place.", next_step: "Fill the gaps: timing, budget, and who decides." },
-      { name: "Hot", min_score: 60, meaning: "Ready to buy now.", next_step: "Call today and book the next step." },
-    ],
-  },
-  {
-    key: "qualification.ready_threshold",
-    section: "qualification",
-    label: "Ready from score",
-    help: "The score at which a lead counts as ready to buy. It must match the start of one of your score bands.",
-    type: "number",
-    rules: { min: 0, max: 100, integer: true },
-    required: true,
-    platformDefault: 60,
-  },
-  {
-    key: "qualification.factor_weights",
-    section: "qualification",
-    label: "How much each factor counts",
-    help: "The share of the score each factor carries. They must add up to 100.",
-    type: "key_value",
-    rules: {
-      keys: [
-        { value: "timeline", label: "Timeline" },
-        { value: "investment_capacity", label: "Ability to pay" },
-        { value: "decision_authority", label: "Can decide" },
-        { value: "pain_severity", label: "How much it matters to them" },
-      ],
-      valueType: "number",
-      min: 0,
-      max: 100,
-    },
-    required: true,
-    platformDefault: { timeline: 35, investment_capacity: 30, decision_authority: 20, pain_severity: 15 },
   },
   {
     key: "qualification.minimum_info",
@@ -1461,6 +1412,7 @@ export const CONFIG_FIELDS: FieldDef[] = [
     tighten: "superset_list",
     platformDefault: [],
   },
+  ...ASSAY_FIELDS,
 ];
 
 export const FIELD_BY_KEY: Record<string, FieldDef> = Object.fromEntries(

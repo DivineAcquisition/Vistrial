@@ -315,7 +315,6 @@ describe("channel-native prompts", () => {
       quotes: [{ text: "Realistically we are looking at after Q1.", topic: "timeline" }],
     },
     priorOpenObjections: [] as string[],
-    readiness: { total: 62, reasoning: null },
     priorTouches: [] as Array<{ at: string; channel: string; direction: string; type: string }>,
   };
 

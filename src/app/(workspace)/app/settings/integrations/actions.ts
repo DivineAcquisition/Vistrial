@@ -16,7 +16,7 @@ import { retryDeadEvent, processGhlWebhookQueue } from "@/lib/ghl/process";
 import { processExtractionQueue } from "@/lib/extraction/run";
 import { RECORDER_SOURCES } from "@/lib/transcripts/constants";
 import { attachTranscriptToCall } from "@/lib/transcripts/process";
-import { SCORE_FACTORS, type ScoreFactor } from "@/lib/scoring/compute";
+import { isMappableInput } from "@/lib/ghl/propose-maps";
 import { getSupabaseAdmin } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import type { Enums } from "@/types/database";
@@ -127,17 +127,17 @@ export type FieldMapPayload = {
 /**
  * Save a mapping the user confirmed rather than typed.
  *
- * The answer key is derived from the factor, not entered, so two things stay
- * true: nobody invents a key by hand, and the key a scoring rule looks for is
- * predictable. Existing hand-made rows are replaced wholesale, same as before.
+ * The answer key is the approved Assay input, not entered, so two things stay
+ * true: nobody invents a key by hand, and Assay reads only approved inputs.
+ * Existing hand-made rows are replaced wholesale, same as before.
  */
 export async function saveProposedFieldMaps(
-  maps: Array<{ fieldId: string; fieldKey: string | null; factor: string }>
+  maps: Array<{ fieldId: string; fieldKey: string | null; input: string }>
 ): Promise<SettingsSaveResult> {
   const ctx = await requireManager();
   if (!ctx) return forbidden();
 
-  const valid = maps.filter((map) => SCORE_FACTORS.includes(map.factor as ScoreFactor) && map.fieldId);
+  const valid = maps.filter((map) => isMappableInput(map.input) && map.fieldId);
   if (valid.length !== maps.length) {
     return { status: "error", error: "One of those rows is no longer valid. Reload and try again." };
   }
@@ -154,7 +154,7 @@ export async function saveProposedFieldMaps(
         org_id: ctx.org.id,
         ghl_field_id: map.fieldId,
         ghl_field_key: map.fieldKey,
-        answer_key: map.factor,
+        answer_key: map.input,
       }))
     );
     if (error) {
@@ -163,7 +163,6 @@ export async function saveProposedFieldMaps(
   }
 
   revalidateIntegrations();
-  revalidatePath("/app/settings/scoring");
   return { status: "saved" };
 }
 
@@ -196,7 +195,6 @@ export async function saveGhlFieldMaps(maps: FieldMapPayload[]): Promise<Setting
   }
 
   revalidateIntegrations();
-  revalidatePath("/app/settings/scoring");
   return { status: "saved" };
 }
 

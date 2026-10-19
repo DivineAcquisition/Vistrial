@@ -1,3 +1,5 @@
+import { isBlockedFieldName } from "@/lib/assay/inputs";
+import { CALL_SIGNALS, isCallSignal, isSignalValue } from "@/lib/assay/vocabulary";
 import { APPROVAL_ACTIONS, CONFIG_FIELDS, FIELD_BY_KEY, WEEKDAYS } from "@/lib/config/registry";
 import { isAtLeastAsStrict, minutesOfDay, tightenExplanation, windowMinutes } from "@/lib/config/tighten";
 import type { ConfigIssue, ConfigValue, ConfigValues, FieldDef, ItemField } from "@/lib/config/types";
@@ -347,28 +349,35 @@ export function validateCrossField(values: ConfigValues): ConfigIssue[] {
     add("sources.forsight_long_silent_days", "Long silent must be longer than silent.");
   }
 
-  const weights = values["qualification.factor_weights"];
-  if (isPlainObject(weights)) {
-    const total = Object.values(weights).reduce<number>((sum, entry) => sum + (typeof entry === "number" ? entry : 0), 0);
-    if (total !== 100) {
-      add("qualification.factor_weights", `The factor shares add up to ${total}. Change them so they add up to exactly 100.`);
+  const tiers = values["assay.tiers"];
+  if (isPlainObject(tiers)) {
+    const hot = Number(tiers.hot);
+    const warm = Number(tiers.warm);
+    const cool = Number(tiers.cool);
+    if (!(hot > warm && warm > cool)) {
+      add("assay.tiers", "The tier lines must go down in order: Hot above Warm, Warm above Cool.");
     }
   }
 
-  const bands = asList(values["qualification.scoring_bands"]);
-  if (bands.length > 0) {
-    const mins = bands.map((band) => Number(band.min_score));
-    const sorted = [...mins].sort((a, b) => a - b);
-    if (sorted[0] !== 0) add("qualification.scoring_bands", "The first score band must start at 0, so every score has a meaning.");
-    if (new Set(mins).size !== mins.length) {
-      add("qualification.scoring_bands", "Two score bands start at the same score. Give each band its own starting score.");
+  for (const row of asList(values["assay.call_rules"])) {
+    const signal = String(row.signal ?? "");
+    const value = String(row.value ?? "");
+    if (isCallSignal(signal) && !isSignalValue(signal, value)) {
+      add("assay.call_rules", `Call rule "${String(row.id ?? "")}" uses "${value}", which Scribe does not record for ${signal.replaceAll("_", " ")}. Use one of: ${CALL_SIGNALS[signal].join(", ")}.`);
     }
-    const threshold = values["qualification.ready_threshold"];
-    if (typeof threshold === "number" && !mins.includes(threshold)) {
-      add(
-        "qualification.ready_threshold",
-        `"Ready from score" is ${threshold}, but no score band starts there. Start a band at ${threshold}, or change the score to match a band.`
-      );
+  }
+
+  for (const row of asList(values["assay.fit_rules"])) {
+    const op = String(row.op ?? "");
+    if ((op === "gte" || op === "lte") && !Number.isFinite(Number(row.value))) {
+      add("assay.fit_rules", `Fit rule "${String(row.id ?? "")}" compares with a number, so "Compared with" must be a number.`);
+    }
+  }
+
+  for (const row of asList(values["assay.field_map"])) {
+    const source = String(row.source ?? "");
+    if (isBlockedFieldName(source)) {
+      add("assay.field_map", `"${source}" looks like a personal detail Assay must never read (such as a name, age, zip code, income, or health detail). Remove it.`);
     }
   }
 

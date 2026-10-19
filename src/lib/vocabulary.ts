@@ -9,20 +9,6 @@
  * that a business owner would say to another person without explaining it.
  */
 
-/** How ready a lead is, as a state someone can act on rather than a number. */
-export const READINESS = {
-  /** At or above the ready threshold. Call today. */
-  ready: "Ready now",
-  /** Scored, below the threshold, still worth a person's time. */
-  working: "Worth working",
-  /** Long game. Keep warm, do not burn a call slot on it. */
-  nurture: "Nurture",
-  /** No score yet, which is a fact about us, not about them. */
-  unscored: "Not scored yet",
-} as const;
-
-export type ReadinessState = keyof typeof READINESS;
-
 /** Plain replacements for the internal vocabulary, used across surfaces. */
 export const WORDS = {
   readinessScore: "How ready they are",
@@ -49,57 +35,6 @@ export const WORDS = {
   teamApp: "Team app",
   ownerPortal: "Portal",
 } as const;
-
-/** Title case for the four factors, used on settings sliders. */
-export const FACTOR_TITLE = {
-  timeline: "How soon they want to move",
-  investment_capacity: "What they can spend",
-  decision_authority: "Whether they decide",
-  pain_severity: "How much it hurts",
-} as const;
-
-/**
- * What moved how ready someone is. The internal trigger is an enum; a person
- * wants to know whether it was the form, the call, or a colleague.
- */
-export const SCORE_CHANGE_CAUSE = {
-  intake: "From what they filled in",
-  call: "From the call",
-  manual: "Changed by a person",
-  event: "From something they did",
-} as const;
-
-/** The four things the score looks at, said as questions about the person. */
-export const FACTOR_PLAIN = {
-  timeline: "how soon they want to move",
-  investment_capacity: "what they can spend",
-  decision_authority: "whether they decide",
-  pain_severity: "how much it hurts",
-} as const;
-
-/**
- * Where a lead sits, given its score and this workspace's ready threshold.
- * Ordering still uses the number; people should not have to.
- */
-export function readinessState(
-  score: number | null,
-  readyThreshold: number,
-  isNurture: boolean
-): ReadinessState {
-  if (score === null) return "unscored";
-  if (score >= readyThreshold) return "ready";
-  return isNurture ? "nurture" : "working";
-}
-
-export function readinessLabel(state: ReadinessState): string {
-  return READINESS[state];
-}
-
-export function readinessTone(state: ReadinessState): "brand" | "neutral" | "warning" {
-  if (state === "ready") return "brand";
-  if (state === "unscored") return "warning";
-  return "neutral";
-}
 
 /**
  * How long someone has been waiting, said the way a person would say it.

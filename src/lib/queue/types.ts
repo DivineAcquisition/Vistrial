@@ -1,6 +1,5 @@
 import type { PendingFollowUpItem } from "@/lib/follow-up/types";
 import type { Enums } from "@/types/database";
-import type { ScoreConfidence } from "@/lib/scoring/compute";
 
 export const QUEUE_PAGE_SIZE = 50;
 
@@ -150,9 +149,10 @@ export const TOUCH_CHANNEL_LABELS: Record<TouchChannel, string> = {
   other: "Other",
 };
 
+/** Assay marks a score made from very little as early; everything else is a full score. */
+export type ScoreConfidence = "high" | "low";
+
 export const SCORE_CONFIDENCE_LABELS: Record<ScoreConfidence, string> = {
-  high: "high",
-  moderate: "moderate",
-  low: "low",
-  very_low: "very low",
+  high: "full score",
+  low: "early score",
 };

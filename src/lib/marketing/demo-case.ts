@@ -1,6 +1,6 @@
 /**
  * Fabricated, plausible case file used on the public site. Not a client.
- * Shape matches the operator Case File: score, factors, objection, last touch.
+ * Shape matches the operator Case File: Assay score and its parts, objection, last touch.
  */
 export const DEMO_CASE = {
   sampleLabel: "Sample",
@@ -19,14 +19,13 @@ export const DEMO_CASE = {
   optedIn: "3 days ago",
   score: {
     total: 74,
-    confidence: "High · 4 of 4",
+    confidence: "Warm · Assay score",
     reasoning:
-      "Timeline is this quarter. Budget is in range. Spouse is on the decision. Pain is the missed follow-up on their own list.",
+      "Booked a discovery call. Replied within 15 minutes twice this week. Said they want to start after the Q4 launch.",
     factors: [
-      { key: "timeline", label: "How soon they want to move", value: 82 },
-      { key: "investment_capacity", label: "What they can spend", value: 70 },
-      { key: "decision_authority", label: "Whether they decide", value: 64 },
-      { key: "pain_severity", label: "How much it hurts", value: 81 },
+      { key: "fit", label: "Fit", value: 70 },
+      { key: "engagement", label: "Engagement", value: 82 },
+      { key: "call", label: "Call signals", value: 64 },
     ],
   },
   objection: {

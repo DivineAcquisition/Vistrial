@@ -240,7 +240,6 @@ function FunnelPayoff({ payoff }: { payoff: Record<string, unknown> }) {
 }
 
 function QualificationPayoff({ payoff }: { payoff: Record<string, unknown> }) {
-  const weights = asRecord(payoff.weights);
   const top = asArray(payoff.top_leads);
   return (
     <>
@@ -253,12 +252,10 @@ function QualificationPayoff({ payoff }: { payoff: Record<string, unknown> }) {
             <KpiCard label="Ready threshold" value={String(num(payoff.ready_threshold) ?? 0)} />
           </KpiGrid>
         </div>
-        <DefinitionList>
-          <KeyValue label="Timeline">{num(weights.timeline) ?? 0}</KeyValue>
-          <KeyValue label="Investment capacity">{num(weights.investment_capacity) ?? 0}</KeyValue>
-          <KeyValue label="Decision authority">{num(weights.decision_authority) ?? 0}</KeyValue>
-          <KeyValue label="Pain severity">{num(weights.pain_severity) ?? 0}</KeyValue>
-        </DefinitionList>
+        <p className="mt-4 text-sm text-silver">
+          Assay scores each lead on who they are, what they are doing, and what they said on calls.
+          Ready means Warm or higher (50 and up).
+        </p>
       </Panel>
       <Panel className="p-6">
         <h3 className={cardTitle}>Your highest scoring leads right now</h3>

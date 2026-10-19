@@ -53,10 +53,8 @@ import type {
   CaseLeadFile,
   CaseNextAction,
   CaseObjection,
-  CaseScoreHistoryRow,
   CaseTimelineEntry,
 } from "@/lib/cases/types";
-import { canOverrideLead } from "@/lib/auth/permissions";
 import { detectClientSurface } from "@/lib/mobile/surface";
 import { newClientEventId } from "@/lib/mobile/outcome-queue";
 import {
@@ -71,17 +69,9 @@ import {
 } from "@/lib/leads/labels";
 import { formatQueueDuration, formatQueueUntil } from "@/lib/queue/duration";
 import { TOUCH_CHANNEL_LABELS, TOUCH_OUTCOME_LABELS } from "@/lib/queue/types";
-import {
-  FACTOR_PLAIN,
-  FACTOR_TITLE,
-  SCORE_CHANGE_CAUSE,
-  WORDS,
-  readinessLabel,
-  readinessState,
-  readinessTone,
-} from "@/lib/vocabulary";
-import { SCORE_FACTORS } from "@/lib/scoring/compute";
-import { overrideLeadScore } from "@/lib/scoring/override";
+import { WORDS } from "@/lib/vocabulary";
+import { AssayScorePanel } from "@/components/assay/score-panel";
+import { tierChipLabel, tierTone } from "@/lib/assay/view";
 import {
   errorClass,
   helperClass,
@@ -91,16 +81,14 @@ import {
 } from "@/lib/ui";
 import { cn } from "@/lib/utils";
 
-type PanelKind = "outcome" | "assign" | "override" | "status" | "createAction" | null;
+type PanelKind = "outcome" | "assign" | "status" | "createAction" | null;
 
 export function CaseFileScreen({
   initial,
   brief,
-  readyThreshold,
 }: {
   initial: CaseFilePayload;
   brief: BriefPayload | null;
-  readyThreshold: number;
 }) {
   const org = useOrg();
   const [file, setFile] = useState(initial);
@@ -114,13 +102,6 @@ export function CaseFileScreen({
   const busyRef = useRef(busy);
   panelRef.current = panel;
   busyRef.current = busy;
-  const canOverride = canOverrideLead({
-    role: org.role,
-    memberId: org.memberId,
-    assignedSetterId: lead.assignedSetterId,
-    assignedCloserId: lead.assignedCloserId,
-    isStaff: org.isStaff,
-  });
 
   async function reload() {
     const next = await refreshCaseFile(lead.id);
@@ -184,11 +165,6 @@ export function CaseFileScreen({
     void recordBriefView(lead.id);
   }, [lead.id]);
 
-  const state = readinessState(
-    file.score?.total ?? null,
-    readyThreshold,
-    lead.leadType === "nurture_track"
-  );
   const lastEvent = file.timeline.entries[0]
     ? timelineSummary(file.timeline.entries[0], now)
     : "Nothing yet. They have not been contacted.";
@@ -216,7 +192,13 @@ export function CaseFileScreen({
             </p>
             <div className="mt-3 flex flex-wrap gap-2">
               <StatusBadge label={LEAD_STATUS_LABELS[lead.status]} tone={leadStatusTone(lead.status)} />
-              <StatusBadge label={readinessLabel(state)} tone={readinessTone(state)} />
+              {file.score ? (
+                <span className={file.score.early ? "opacity-60" : undefined}>
+                  <StatusBadge label={tierChipLabel(file.score)} tone={tierTone(file.score)} />
+                </span>
+              ) : (
+                <StatusBadge label="Not scored yet" tone="warning" />
+              )}
               {lead.firstHumanTouchAt === null ? (
                 <StatusBadge
                   label={missedWindow ? "Missed first-touch window" : "No human touch"}
@@ -270,7 +252,7 @@ export function CaseFileScreen({
           </KeyValue>
           <KeyValue label="Score">
             {file.score ? (
-              <span className="font-medium text-white tabular-nums">{file.score.total}</span>
+              <span className="font-medium text-white tabular-nums">{file.score.score}</span>
             ) : (
               "Unscored"
             )}
@@ -312,20 +294,6 @@ export function CaseFileScreen({
           onCancel={() => setPanel(null)}
           onSubmit={async (input) => {
             await run(() => assignQueueLead(input));
-          }}
-        />
-      ) : null}
-      {panel === "override" ? (
-        <OverridePanel
-          leadId={lead.id}
-          busy={busy}
-          error={error}
-          onCancel={() => setPanel(null)}
-          onSubmit={async (formData) => {
-            await run(async () => {
-              const result = await overrideLeadScore(formData);
-              return result.ok ? { ok: true } : result;
-            });
           }}
         />
       ) : null}
@@ -501,17 +469,6 @@ export function CaseFileScreen({
           >
             Assign
           </Button>
-          {canOverride ? (
-            <Button
-              type="button"
-              variant="secondary"
-              size="sm"
-              disabled={busy}
-              onClick={() => setPanel(panel === "override" ? null : "override")}
-            >
-              Change how ready they look
-            </Button>
-          ) : null}
           <Button
             type="button"
             variant="secondary"
@@ -709,55 +666,7 @@ export function CaseFileScreen({
       </section>
 
       <section>
-        <Panel className="p-6">
-          <details>
-            <summary className="cursor-pointer text-sm font-medium text-white">
-              {WORDS.readinessFactors}
-            </summary>
-            <p className={helperClass}>
-              How ready they are is built from these four. The call changes with whichever one is
-              weak.
-            </p>
-            {file.score ? (
-              <DefinitionList>
-                <KeyValue label="Out of 100">
-                  <span className="font-medium text-white tabular-nums">{file.score.total}</span>
-                </KeyValue>
-                <KeyValue label="How soon they want to move">{factorValue(file.score.timeline)}</KeyValue>
-                <KeyValue label="What they can spend">{factorValue(file.score.investmentCapacity)}</KeyValue>
-                <KeyValue label="Whether they decide">{factorValue(file.score.decisionAuthority)}</KeyValue>
-                <KeyValue label="How much it hurts">{factorValue(file.score.painSeverity)}</KeyValue>
-                <KeyValue label="Why">{file.score.reasoning || "—"}</KeyValue>
-              </DefinitionList>
-            ) : (
-              <p className="mt-3 text-sm text-dim">
-                Nobody has been scored yet. The first call or application answer fills this in.
-              </p>
-            )}
-          </details>
-        </Panel>
-      </section>
-
-      <section>
-        <Panel className="p-6">
-          <details>
-            <summary className="cursor-pointer text-sm font-medium text-white">
-              What changed this ({file.scoreHistory.length})
-            </summary>
-            <p className={helperClass}>Every time how ready they are moved, and what moved it.</p>
-            {file.scoreHistory.length === 0 ? (
-              <p className="mt-3 text-sm text-dim">Nothing has changed it yet.</p>
-            ) : (
-              <ol className="mt-4 space-y-3">
-                {file.scoreHistory.map((row) => (
-                  <li key={row.id} className="border-t border-white/[0.05] pt-3 first:border-t-0 first:pt-0">
-                    <ScoreHistoryItem row={row} now={now} />
-                  </li>
-                ))}
-              </ol>
-            )}
-          </details>
-        </Panel>
+        <AssayScorePanel score={file.score} />
       </section>
 
       <section>
@@ -767,10 +676,7 @@ export function CaseFileScreen({
               What they told you on the application
             </summary>
             <p className={helperClass}>Their own answers, exactly as they gave them.</p>
-            <ApplicationAnswers
-              answers={lead.applicationAnswers}
-              fieldMaps={file.fieldMaps}
-            />
+            <ApplicationAnswers answers={lead.applicationAnswers} />
           </details>
         </Panel>
       </section>
@@ -799,40 +705,6 @@ export function CaseFileScreen({
           </Panel>
         </section>
       ) : null}
-    </div>
-  );
-}
-
-function factorValue(value: number | null): string {
-  return value === null ? "—" : String(value);
-}
-
-function ScoreHistoryItem({ row, now }: { row: CaseScoreHistoryRow; now: string }) {
-  const movement =
-    row.previousTotal === null
-      ? `Started at ${row.total} out of 100`
-      : row.previousTotal === row.total
-        ? `Stayed at ${row.total}`
-        : `${row.previousTotal} → ${row.total}`;
-  return (
-    <div>
-      <p className="text-sm text-white">
-        {movement}
-        <span className="ml-2 text-dim">
-          {SCORE_CHANGE_CAUSE[row.triggeredBy]} · {formatQueueDuration(row.createdAt, now)}
-        </span>
-      </p>
-      <p className="mt-1 text-xs text-silver">
-        {[
-          `How soon ${factorValue(row.timeline)}`,
-          `Can spend ${factorValue(row.investmentCapacity)}`,
-          `Decides ${factorValue(row.decisionAuthority)}`,
-          `Hurts ${factorValue(row.painSeverity)}`,
-          row.scoredByName,
-        ]
-          .filter(Boolean)
-          .join(" · ")}
-      </p>
     </div>
   );
 }
@@ -1121,94 +993,19 @@ function CallBlock({ call, now }: { call: CaseCall; now: string }) {
   );
 }
 
-function ApplicationAnswers({
-  answers,
-  fieldMaps,
-}: {
-  answers: Record<string, unknown>;
-  fieldMaps: CaseFilePayload["fieldMaps"];
-}) {
+function ApplicationAnswers({ answers }: { answers: Record<string, unknown> }) {
   const keys = Object.keys(answers);
   if (keys.length === 0) {
     return <p className="mt-3 text-sm text-dim">No intake answers.</p>;
   }
-  const factorByField = new Map(fieldMaps.map((map) => [map.fieldName, map.factor]));
   return (
     <DefinitionList>
-      {keys.sort().map((key) => {
-        const factor = factorByField.get(key);
-        return (
-          <KeyValue key={key} label={key}>
-            {formatAnswer(answers[key])}
-            {factor ? (
-              <span className="mt-1 block text-xs text-brand-300">
-                We use this to judge {FACTOR_PLAIN[factor]}
-              </span>
-            ) : null}
-          </KeyValue>
-        );
-      })}
+      {keys.sort().map((key) => (
+        <KeyValue key={key} label={key}>
+          {formatAnswer(answers[key])}
+        </KeyValue>
+      ))}
     </DefinitionList>
-  );
-}
-
-function OverridePanel({
-  leadId,
-  busy,
-  error,
-  onCancel,
-  onSubmit,
-}: {
-  leadId: string;
-  busy: boolean;
-  error: string | null;
-  onCancel: () => void;
-  onSubmit: (formData: FormData) => Promise<void>;
-}) {
-  const [pending, setPending] = useState(false);
-  return (
-    <form
-      className={insetSurface}
-      onSubmit={(event) => {
-        event.preventDefault();
-        const formData = new FormData(event.currentTarget);
-        formData.set("lead_id", leadId);
-        setPending(true);
-        void onSubmit(formData).finally(() => setPending(false));
-      }}
-    >
-      <p className="text-sm font-medium text-white">Override score</p>
-      <p className={helperClass}>
-        Set factor values. The total is computed. Reasoning is required. A later call will re-score this lead.
-      </p>
-      <div className="mt-4 grid gap-3 sm:grid-cols-2">
-        {SCORE_FACTORS.map((factor) => (
-          <label key={factor} className="block">
-            <span className={labelClass}>{FACTOR_TITLE[factor]}</span>
-            <Input
-              name={factor}
-              type="number"
-              min={0}
-              max={100}
-              placeholder="Unknown"
-            />
-          </label>
-        ))}
-      </div>
-      <label className="mt-4 block">
-        <span className={labelClass}>Reasoning</span>
-        <Textarea name="reasoning" required rows={3} placeholder="Why this override is right for this lead" />
-      </label>
-      <div className="mt-4 flex flex-wrap gap-2">
-        <Button type="submit" variant="primary" size="sm" disabled={busy || pending}>
-          Save override
-        </Button>
-        <Button type="button" variant="ghost" size="sm" onClick={onCancel}>
-          Cancel
-        </Button>
-      </div>
-      {error ? <p className={errorClass}>{error}</p> : null}
-    </form>
   );
 }
 

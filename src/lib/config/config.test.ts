@@ -197,8 +197,8 @@ describe("validation", () => {
       workspace: {
         values: {
           ...identity,
-          "qualification.factor_weights": { timeline: 50, investment_capacity: 30, decision_authority: 20, pain_severity: 15 },
-          "qualification.ready_threshold": 55,
+          "assay.tiers": { hot: 50, warm: 60, cool: 25 },
+          "assay.field_map": [{ source: "date_of_birth", input: "target_client" }],
           "response.ghost_days_soft": 10,
           "response.ghost_days_hard": 5,
           "response.first_touch_minutes": 600,
@@ -209,8 +209,8 @@ describe("validation", () => {
       },
     });
     const messages = effective.issues.map((issue) => issue.message).join("\n");
-    expect(messages).toContain("add up to 115");
-    expect(messages).toContain("no score band starts there");
+    expect(messages).toContain("must go down in order");
+    expect(messages).toContain("personal detail Assay must never read");
     expect(messages).toContain("must be longer than");
     expect(messages).toContain("should always come sooner");
     expect(messages).toContain("\"shoe_size\"");

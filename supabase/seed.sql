@@ -93,7 +93,7 @@ WHERE EXISTS (
 )
 ON CONFLICT (org_id, user_id) DO NOTHING;
 
--- 1. Fully worked lead: intake 83, system + human touch, call booked.
+-- 1. Fully worked lead: system + human touch, call booked.
 INSERT INTO public.leads (
   id,
   org_id,
@@ -134,36 +134,7 @@ VALUES (
 )
 ON CONFLICT (id) DO NOTHING;
 
-INSERT INTO public.readiness_scores (
-  org_id,
-  lead_id,
-  timeline_raw,
-  investment_capacity_raw,
-  decision_authority_raw,
-  pain_severity_raw,
-  total,
-  reasoning,
-  triggered_by,
-  scored_by_member_id
-)
-VALUES (
-  '22222222-2222-4222-8222-222222222222',
-  '44444444-4444-4444-8444-444444444441',
-  90,
-  80,
-  85,
-  75,
-  83,
-  'Strong timeline and authority. Budget language matches the offer.',
-  'intake',
-  CASE
-    WHEN EXISTS (
-      SELECT 1 FROM public.org_members
-      WHERE id = '33333333-3333-4333-8333-333333333333'
-    ) THEN '33333333-3333-4333-8333-333333333333'::uuid
-    ELSE NULL
-  END
-);
+-- Assay scores this lead from its queue once the seed is in; nothing writes readiness_scores now.
 
 INSERT INTO public.touches (
   org_id,

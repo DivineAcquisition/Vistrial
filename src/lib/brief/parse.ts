@@ -55,7 +55,6 @@ export function parseBriefPayload(
 } {
   const row = asRecord(raw);
   const lead = asRecord(row.lead);
-  const score = asRecord(row.score);
   const lastCall = asRecord(row.lastCall);
   const triage = asRecord(row.triage);
   const inbound = asRecord(row.lastInbound);
@@ -131,17 +130,8 @@ export function parseBriefPayload(
       assignedCloserName: asString(lead.assignedCloserName),
       applicationAnswers: answers,
     },
-    score: asString(score.id) && asNumber(score.total) !== null
-      ? {
-          id: asString(score.id)!,
-          total: asNumber(score.total)!,
-          timeline: asNumber(score.timeline),
-          investmentCapacity: asNumber(score.investmentCapacity),
-          decisionAuthority: asNumber(score.decisionAuthority),
-          painSeverity: asNumber(score.painSeverity),
-          triggeredBy: (asString(score.triggeredBy) as Enums<"score_trigger">) ?? "intake",
-        }
-      : null,
+    // Filled from Assay by the loader.
+    score: null,
     setterFacts,
     openObjections: objections,
     lastCall: asString(lastCall.id)
@@ -188,10 +178,9 @@ export function openingInputFromBrief(brief: BriefPayload): Record<string, strin
     name: brief.lead.name,
     source: brief.lead.source,
     offer: brief.lead.offerName,
-    score: brief.score?.total ?? null,
+    score: brief.score?.score ?? null,
+    tier: brief.score?.tier ?? null,
     track: brief.lead.leadType,
-    timeline: brief.score?.timeline ?? null,
-    authority: brief.score?.decisionAuthority ?? null,
     lastSummary: brief.lastCall?.summary ?? null,
     nextStep: brief.lastCall?.nextStepAgreed ?? null,
     objectionTypes: brief.openObjections.map((item) => item.type).join(", ") || null,

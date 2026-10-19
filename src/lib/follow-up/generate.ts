@@ -526,15 +526,6 @@ async function generateDraft(
     .order("occurred_at", { ascending: false })
     .limit(8);
 
-  const { data: score } = await db
-    .from("readiness_scores")
-    .select("total, reasoning")
-    .eq("org_id", job.org_id)
-    .eq("lead_id", job.lead_id)
-    .order("created_at", { ascending: false })
-    .limit(1)
-    .maybeSingle();
-
   const model = anthropicDraftModel();
   assertFrontierDraftModel(model);
   const draftModelEnabled = await taskVerificationEnabled("draft");
@@ -568,7 +559,6 @@ async function generateDraft(
       quotes,
     },
     priorOpenObjections: (objections ?? []).map((item) => item.verbatim).filter(Boolean),
-    readiness: { total: score?.total ?? null, reasoning: score?.reasoning ?? null },
     priorTouches: (touches ?? []).map((item) => ({
       at: item.occurred_at,
       channel: item.channel,

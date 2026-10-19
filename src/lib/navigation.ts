@@ -280,11 +280,6 @@ export const ADVANCED_SETTINGS_PAGES: Array<{
     description: "What this business is, and whether the workspace is live.",
   },
   {
-    href: "/app/settings/scoring",
-    label: "Scoring",
-    description: "How ready someone has to be, and how long they can wait.",
-  },
-  {
     href: "/app/settings/follow-up",
     label: "Follow-up",
     description: "Voice examples, quiet hours, and which situations Vistrial drafts for.",

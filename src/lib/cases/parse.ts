@@ -2,7 +2,6 @@ import { parseActiveSequenceItems, parsePendingFollowUpItems } from "@/lib/follo
 import type { Enums } from "@/types/database";
 
 import { LEAD_STATUSES, type LeadStatus } from "@/lib/leads/labels";
-import { scoreConfidenceFromKnownCount, type ScoreConfidence } from "@/lib/scoring/compute";
 import type { QueueCrmStatus, QueueMemberOption } from "@/lib/queue/types";
 import type {
   CaseCall,
@@ -17,8 +16,6 @@ import type {
   CaseNextAction,
   CaseObjection,
   CaseRevenueRow,
-  CaseScore,
-  CaseScoreHistoryRow,
   CaseTimelineEntry,
   CaseTimelinePage,
 } from "@/lib/cases/types";
@@ -125,59 +122,6 @@ export function caseListEmptyKind(
   }
   if (payload.rows.length === 0 && caseListHasConstraints(filters)) return "no_results";
   return null;
-}
-
-function parseConfidence(value: unknown, knownFactorCount: number): ScoreConfidence | null {
-  const raw = asString(value);
-  if (raw === "high" || raw === "moderate" || raw === "low" || raw === "very_low") return raw;
-  return scoreConfidenceFromKnownCount(knownFactorCount);
-}
-
-function parseScore(value: unknown): CaseScore | null {
-  if (!value || typeof value !== "object") return null;
-  const row = value as Record<string, unknown>;
-  const id = asString(row.id);
-  const total = asNumber(row.total);
-  const triggeredBy = asString(row.triggeredBy) as Enums<"score_trigger"> | null;
-  const createdAt = asString(row.createdAt);
-  if (!id || total === null || !triggeredBy || !createdAt) return null;
-  const knownFactorCount = asNumber(row.knownFactorCount) ?? 0;
-  return {
-    id,
-    total,
-    timeline: asNumber(row.timeline),
-    investmentCapacity: asNumber(row.investmentCapacity),
-    decisionAuthority: asNumber(row.decisionAuthority),
-    painSeverity: asNumber(row.painSeverity),
-    reasoning: asString(row.reasoning),
-    triggeredBy,
-    createdAt,
-    knownFactorCount,
-    scoreConfidence: parseConfidence(row.scoreConfidence, knownFactorCount),
-  };
-}
-
-function parseScoreHistory(value: unknown): CaseScoreHistoryRow | null {
-  if (!value || typeof value !== "object") return null;
-  const row = value as Record<string, unknown>;
-  const id = asString(row.id);
-  const total = asNumber(row.total);
-  const triggeredBy = asString(row.triggeredBy) as Enums<"score_trigger"> | null;
-  const createdAt = asString(row.createdAt);
-  if (!id || total === null || !triggeredBy || !createdAt) return null;
-  return {
-    id,
-    total,
-    previousTotal: asNumber(row.previousTotal),
-    timeline: asNumber(row.timeline),
-    investmentCapacity: asNumber(row.investmentCapacity),
-    decisionAuthority: asNumber(row.decisionAuthority),
-    painSeverity: asNumber(row.painSeverity),
-    reasoning: asString(row.reasoning),
-    triggeredBy,
-    createdAt,
-    scoredByName: asString(row.scoredByName),
-  };
 }
 
 function parseObjection(value: unknown): CaseObjection | null {
@@ -442,10 +386,8 @@ export function parseCaseFilePayload(value: unknown): CaseFilePayload | null {
 
   return {
     lead,
-    score: parseScore(row.score),
-    scoreHistory: Array.isArray(row.scoreHistory)
-      ? row.scoreHistory.map(parseScoreHistory).filter((item): item is CaseScoreHistoryRow => item !== null)
-      : [],
+    // Filled from Assay by the loader; the legacy readiness score is history only.
+    score: null,
     objections: Array.isArray(row.objections)
       ? row.objections.map(parseObjection).filter((item): item is CaseObjection => item !== null)
       : [],

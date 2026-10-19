@@ -5,7 +5,6 @@ export const ACTIVITY_REALTIME_TABLES = [
   "next_actions",
   "follow_up_drafts",
   "ghl_dispatches",
-  "readiness_scores",
   "lead_status_changes",
   "lead_assignment_changes",
   "lead_type_changes",

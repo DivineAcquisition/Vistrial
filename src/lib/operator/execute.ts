@@ -16,7 +16,6 @@ import type { AuthContext } from "@/lib/auth/types";
 import { OPERATOR_UNDO_WINDOW_MS } from "@/lib/operator/constants";
 import { classifyToolError } from "@/lib/operator/errors";
 import type { OperatorBatchReport, OperatorWriteKind } from "@/lib/operator/types";
-import { overrideLeadScore } from "@/lib/scoring/override";
 import { createClient } from "@/lib/supabase/server";
 import type { Json } from "@/types/database";
 
@@ -167,31 +166,6 @@ async function undoReassignNextAction(payload: Record<string, unknown>): Promise
   return report;
 }
 
-async function executeOverrideScore(payload: Record<string, unknown>, undo = false): Promise<OperatorBatchReport> {
-  const report = emptyReport();
-  const leadId = str(payload.leadId);
-  if (!leadId) return report;
-  const factors = undo
-    ? (payload.before as Record<string, unknown> | null)
-    : (payload.factors as Record<string, unknown> | null);
-  if (undo && !factors) {
-    report.failed.push({ id: leadId, label: leadId, error: "This override cannot be undone." });
-    return report;
-  }
-  const form = new FormData();
-  form.set("lead_id", leadId);
-  form.set("reasoning", undo ? "Undo of operator-agent score override within the undo window." : str(payload.reasoning) ?? "");
-  const keys = ["timeline", "investment_capacity", "decision_authority", "pain_severity"] as const;
-  for (const key of keys) {
-    const value = factors?.[key];
-    if (typeof value === "number") form.set(key, String(value));
-  }
-  const result = await overrideLeadScore(form);
-  if (result.ok) report.succeeded.push({ id: leadId, label: leadId });
-  else report.failed.push({ id: leadId, label: leadId, error: result.error });
-  return report;
-}
-
 async function executeResolveObjection(payload: Record<string, unknown>): Promise<OperatorBatchReport> {
   const report = emptyReport();
   const leadId = str(payload.leadId);
@@ -256,8 +230,6 @@ export async function executeWriteKind(
       return executeCompleteNextAction(payload);
     case "reassign_next_action":
       return executeReassignNextAction(payload);
-    case "override_score":
-      return executeOverrideScore(payload);
     case "resolve_objection":
       return executeResolveObjection(payload);
     case "change_status":
@@ -278,8 +250,6 @@ export async function undoWriteKind(
       return undoAssign(payload, ids);
     case "reassign_next_action":
       return undoReassignNextAction(payload);
-    case "override_score":
-      return executeOverrideScore(payload, true);
     case "change_status":
       return executeChangeStatus(payload, true);
     default:

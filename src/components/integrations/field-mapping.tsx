@@ -7,17 +7,8 @@ import type { SettingsSaveResult } from "@/app/(workspace)/app/settings/types";
 import { Button } from "@/components/ui/button";
 import { Panel } from "@/components/ui/panel";
 import { Select } from "@/components/ui/select";
-import { mappingSentence, type ProposedMap } from "@/lib/ghl/propose-maps";
-import { FACTOR_PLAIN } from "@/lib/vocabulary";
+import { MAPPABLE_INPUTS, inputPlain, mappingSentence, type MappableInput, type ProposedMap } from "@/lib/ghl/propose-maps";
 import { cardTitle, errorClass, helperClass } from "@/lib/ui";
-import type { ScoreFactor } from "@/lib/scoring/compute";
-
-const FACTOR_OPTIONS: ScoreFactor[] = [
-  "timeline",
-  "investment_capacity",
-  "decision_authority",
-  "pain_severity",
-];
 
 type Row = ProposedMap & { include: boolean };
 
@@ -32,7 +23,7 @@ export function FieldMapping({
   alreadyConfigured,
 }: {
   proposed: ProposedMap[];
-  missing: ScoreFactor[];
+  missing: MappableInput[];
   alreadyConfigured: boolean;
 }) {
   const [rows, setRows] = useState<Row[]>(
@@ -46,9 +37,10 @@ export function FieldMapping({
       <Panel className="p-6">
         <h2 className={cardTitle}>What we read from each lead</h2>
         <p className={helperClass}>
-          We looked through the questions on your own form and could not tell which ones ask about
-          timing, budget, who decides, or what is going wrong. Add one of those questions to your
-          form and reconnect, and this fills itself in.
+          We looked through the questions on your own form and could not tell which ones Assay may
+          read, such as whether they own the property, whether they are in your service area, the
+          job value, or who decides. Assay never reads names, ages, zip codes, income, or health
+          details.
         </p>
       </Panel>
     );
@@ -92,20 +84,20 @@ export function FieldMapping({
               <Select
                 density="compact"
                 aria-label={`What “${row.fieldName}” tells us`}
-                value={row.factor}
+                value={row.input}
                 onChange={(event) =>
                   setRows((current) =>
                     current.map((item, itemIndex) =>
                       itemIndex === index
-                        ? { ...item, factor: event.target.value as ScoreFactor }
+                        ? { ...item, input: event.target.value as MappableInput }
                         : item
                     )
                   )
                 }
               >
-                {FACTOR_OPTIONS.map((factor) => (
-                  <option key={factor} value={factor}>
-                    Use it to judge {FACTOR_PLAIN[factor]}
+                {MAPPABLE_INPUTS.map((input) => (
+                  <option key={input} value={input}>
+                    Read it as: {inputPlain(input)}
                   </option>
                 ))}
               </Select>
@@ -116,7 +108,7 @@ export function FieldMapping({
 
       {missing.length > 0 ? (
         <p className={`${helperClass} mt-5`}>
-          Nothing on your form asks about {missing.map((factor) => FACTOR_PLAIN[factor]).join(", ")}.
+          Nothing on your form asks about {missing.map((input) => inputPlain(input)).join(", ")}.
           Leads still score without it, on less information.
         </p>
       ) : null}
@@ -135,7 +127,7 @@ export function FieldMapping({
                     .map((row) => ({
                       fieldId: row.fieldId,
                       fieldKey: row.fieldKey,
-                      factor: row.factor,
+                      input: row.input,
                     }))
                 )
               );

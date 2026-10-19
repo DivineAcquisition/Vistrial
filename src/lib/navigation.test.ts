@@ -63,7 +63,7 @@ describe("settings IA", () => {
   });
 
   it("highlights Advanced for specialist pages", () => {
-    expect(settingsTabActiveHref("/app/settings/scoring")).toBe("/app/settings/advanced");
+    expect(settingsTabActiveHref("/app/settings/follow-up")).toBe("/app/settings/advanced");
     expect(settingsTabActiveHref("/app/settings/business-profile")).toBe("/app/settings/advanced");
     expect(settingsTabActiveHref("/app/settings/organization")).toBe("/app/settings/organization");
   });
@@ -72,12 +72,11 @@ describe("settings IA", () => {
     expect(ADVANCED_SETTINGS_PAGES.map((page) => page.label)).toEqual([
       "Configuration",
       "Business",
-      "Scoring",
       "Follow-up",
       "Data",
       "Posting and approvals",
     ]);
-    expect(advancedSettingsBreadcrumbs("Scoring", "/app/settings/scoring")[0]?.href).toBe(
+    expect(advancedSettingsBreadcrumbs("Follow-up", "/app/settings/follow-up")[0]?.href).toBe(
       "/app/settings/advanced"
     );
   });
@@ -90,14 +89,12 @@ describe("settings IA", () => {
   it("hides Follow-up from Advanced while that surface is parked, and Configuration from customers", () => {
     expect(advancedSettingsVisibleTo(false).map((page) => page.label)).toEqual([
       "Business",
-      "Scoring",
       "Data",
       "Posting and approvals",
     ]);
     expect(advancedSettingsVisibleTo(true).map((page) => page.label)).toEqual([
       "Configuration",
       "Business",
-      "Scoring",
       "Data",
       "Posting and approvals",
     ]);

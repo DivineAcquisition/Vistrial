@@ -30,13 +30,9 @@ import { rawBodyFromEvent, writeWebhookDeadLetter } from "@/lib/ghl/dead-letter"
 import { asJsonRecord } from "@/lib/ghl/payload";
 import { holdInboundEvent, parkHeldWebhookEvent, resolveInboundWorkspace, webhookHoldRef } from "@/lib/inbound/holds";
 import { AWAITING_LINK_ERROR, failureDisposition } from "@/lib/ghl/retry";
-import { scoreInboundReplyAfterSilence, scoreLeadFromAnswerChange, scoreNoShow } from "@/lib/scoring/event-apply";
 import { flagDisqualifiedLead } from "@/lib/profile/intake-flags";
 import { leadStatusForPipelineStage } from "@/lib/profile/stage-mapping";
 import { assignArrivingLead } from "@/lib/routing/assign";
-import { scoreLeadOnIntake } from "@/lib/scoring/intake";
-import { assertScorePersisted, loadScoreConfig } from "@/lib/scoring/store";
-import { calendarDaysBetween } from "@/lib/scoring/timezone";
 import type { GhlDb } from "@/lib/ghl/tokens";
 import { inboundMessageText } from "@/lib/compliance/inbound";
 import { isOptInReply, isOptOutReply } from "@/lib/compliance/rules";
@@ -154,10 +150,8 @@ export async function processOneEvent(db: GhlDb, event: WebhookRow): Promise<voi
 
   switch (kind) {
     case "contact_created":
-      await handleContact(db, orgId as string, event, payload, true);
-      break;
     case "contact_updated":
-      await handleContact(db, orgId as string, event, payload, false);
+      await handleContact(db, orgId as string, payload);
       break;
     case "inbound_message":
       await handleInbound(db, orgId as string, event, payload);
@@ -295,13 +289,7 @@ async function findOrCreateLead(
   return { lead: data, created: true };
 }
 
-async function handleContact(
-  db: GhlDb,
-  orgId: string,
-  event: WebhookRow,
-  payload: Record<string, unknown>,
-  createdEvent: boolean
-) {
+async function handleContact(db: GhlDb, orgId: string, payload: Record<string, unknown>) {
   const contact = contactFromPayload(payload);
   const contactId = pick(contact, ["id", "contactId", "contact_id"]) ?? pick(payload, ["contactId", "contact_id"]);
   if (!contactId) throw new Error("missing_contact_id");
@@ -334,31 +322,8 @@ async function handleContact(
     await assignArrivingLead(db, { orgId, leadId: lead.id }).catch((cause) => {
       ghlWarn("routing.skipped", { orgId, leadId: lead.id, error: cause instanceof Error ? cause.message : "failed" });
     });
-    assertScorePersisted(
-      await scoreLeadOnIntake(db, {
-        orgId,
-        leadId: lead.id,
-        answers: nextAnswers as Json,
-      })
-    );
-  } else if (answersChanged) {
-    assertScorePersisted(
-      await scoreLeadFromAnswerChange(db, {
-        orgId,
-        leadId: lead.id,
-        answers: nextAnswers as Json,
-        idempotencyKey: `event:contact_update:${event.id}`,
-      })
-    );
-  } else if (createdEvent) {
-    assertScorePersisted(
-      await scoreLeadOnIntake(db, {
-        orgId,
-        leadId: lead.id,
-        answers: nextAnswers as Json,
-      })
-    );
   }
+  // Assay rescores from its queue: the lead insert or answer change above adds the job.
 
   if (created || answersChanged) {
     await flagDisqualifiedLead(db, { orgId, leadId: lead.id, answers: nextAnswers as Json });
@@ -383,11 +348,6 @@ async function handleInbound(db: GhlDb, orgId: string, event: WebhookRow, payloa
 
   const channel = mapMessageChannel(pick(payload, ["messageType", "message_type", "type"]));
   const occurredAt = occurredAtFromPayload(payload);
-  const previousTouch = lead.last_touch_at ?? lead.opted_in_at;
-  const { data: org } = await db.from("organizations").select("timezone").eq("id", orgId).maybeSingle();
-  const timezone = org?.timezone ?? "America/New_York";
-  const config = await loadScoreConfig(db, orgId);
-  const daysSilent = calendarDaysBetween(new Date(previousTouch), new Date(occurredAt), timezone);
 
   const { data: touch, error } = await db
     .from("touches")
@@ -410,16 +370,6 @@ async function handleInbound(db: GhlDb, orgId: string, event: WebhookRow, payloa
 
   const signal = payload._compliance_signal === "opt_out" || payload._compliance_signal === "opt_in" ? payload._compliance_signal : null;
   await applyOptOutWords(db, orgId, lead, signal ? null : inboundMessageText(event.raw_body), channel, signal);
-
-  assertScorePersisted(
-    await scoreInboundReplyAfterSilence(db, {
-      orgId,
-      leadId: lead.id,
-      touchId: touch.id,
-      daysSilentBeforeTouch: daysSilent,
-      ghostDaysSoft: config.ghostDaysSoft,
-    })
-  );
 }
 
 /**
@@ -610,9 +560,6 @@ async function handleAppointmentStatus(db: GhlDb, orgId: string, _event: Webhook
 
   if (outcome === "no_show") {
     await db.from("leads").update({ status: "no_show" }).eq("id", lead.id).eq("org_id", orgId);
-    if (callId) {
-      assertScorePersisted(await scoreNoShow(db, { orgId, leadId: lead.id, callId }));
-    }
   } else if (outcome === "cancelled") {
     await db.from("leads").update({ status: "follow_up" }).eq("id", lead.id).eq("org_id", orgId);
   }

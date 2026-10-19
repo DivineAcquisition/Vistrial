@@ -74,7 +74,7 @@ export function parseApplicationFields(value: unknown): ApplicationField[] {
       {
         answerKey,
         question: str(row.question),
-        factor: (str(row.factor) as Enums<"score_factor"> | null) ?? null,
+        factor: str(row.factor) ?? null,
       },
     ];
   });

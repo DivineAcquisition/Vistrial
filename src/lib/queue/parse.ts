@@ -1,7 +1,6 @@
 import { parsePendingFollowUpItems } from "@/lib/follow-up/items";
 import type { Enums } from "@/types/database";
 
-import { scoreConfidenceFromKnownCount } from "@/lib/scoring/compute";
 import type {
   QueueCrmStatus,
   QueueMemberOption,
@@ -49,15 +48,7 @@ export function parseQueueRow(value: unknown): QueueRow | null {
   const knownFactorCount = asNumber(row.knownFactorCount) ?? 0;
   const score = asNumber(row.score);
   const confidenceRaw = asString(row.scoreConfidence);
-  const scoreConfidence =
-    score === null
-      ? null
-      : confidenceRaw === "high" ||
-          confidenceRaw === "moderate" ||
-          confidenceRaw === "low" ||
-          confidenceRaw === "very_low"
-        ? confidenceRaw
-        : scoreConfidenceFromKnownCount(knownFactorCount);
+  const scoreConfidence = score === null ? null : confidenceRaw === "low" ? "low" : "high";
 
   return {
     id,

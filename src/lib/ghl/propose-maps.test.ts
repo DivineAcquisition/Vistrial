@@ -1,9 +1,11 @@
 import { describe, expect, it } from "vitest";
 
+import { isApprovedInput } from "@/lib/assay/inputs";
 import {
+  MAPPABLE_INPUTS,
   mappingSentence,
   proposeFieldMaps,
-  unmappedFactors,
+  unmappedInputs,
   type LiveField,
 } from "@/lib/ghl/propose-maps";
 
@@ -12,50 +14,41 @@ function field(name: string, samples: string[] = [], id = name): LiveField {
 }
 
 describe("proposing a mapping from live fields", () => {
-  it("reads the question, not our own vocabulary", () => {
+  it("reads the question and maps it to an approved Assay input", () => {
     const maps = proposeFieldMaps([
-      field("What's your timeline?", ["Next 30 days"]),
-      field("Budget for this", ["$10k"]),
-      field("Who else decides?", ["Just me"]),
-      field("Biggest problem right now", ["Leads go cold"]),
+      field("Do you own or rent?", ["Own"]),
+      field("Are you in our service area?", ["Yes"]),
+      field("Estimated value of the job", ["$4,000"]),
+      field("Who decides on this?", ["Me"]),
     ]);
-    expect(maps.map((map) => map.factor)).toEqual([
-      "timeline",
-      "investment_capacity",
-      "decision_authority",
-      "pain_severity",
-    ]);
+    expect(maps.map((map) => map.input)).toEqual(["property_owner", "in_service_area", "estimated_value", "decision_maker"]);
     expect(maps.every((map) => map.confident)).toBe(true);
   });
 
-  it("falls back to the shape of real answers when the question is opaque", () => {
-    const maps = proposeFieldMaps([field("Q3 response", ["$12,000", "$8k", "$25,000"])]);
-    expect(maps).toHaveLength(1);
-    expect(maps[0]?.factor).toBe("investment_capacity");
-    expect(maps[0]?.confident).toBe(false);
+  it("only ever proposes approved inputs", () => {
+    for (const input of MAPPABLE_INPUTS) expect(isApprovedInput(input)).toBe(true);
   });
 
-  it("treats a duration answer as a timeline", () => {
-    const maps = proposeFieldMaps([field("Field 7", ["Next 2 weeks", "ASAP", "3 months"])]);
-    expect(maps[0]?.factor).toBe("timeline");
-    expect(maps[0]?.confident).toBe(false);
+  it("never proposes a personal detail, whatever the question is called", () => {
+    expect(
+      proposeFieldMaps([
+        field("First name"),
+        field("Your age"),
+        field("Zip code", ["60614"]),
+        field("Household income", ["$90k"]),
+        field("Health conditions"),
+        field("Preferred language"),
+      ])
+    ).toEqual([]);
   });
 
-  it("prefers the named question over one guessed from values", () => {
-    const maps = proposeFieldMaps([
-      field("Unlabelled", ["$5,000"], "a"),
-      field("What is your budget?", ["Not sure"], "b"),
-    ]);
-    expect(maps).toHaveLength(1);
-    expect(maps[0]?.fieldId).toBe("b");
-    expect(maps[0]?.confident).toBe(true);
+  it("does not guess from money-looking answers, which may be about the person", () => {
+    expect(proposeFieldMaps([field("Q3 response", ["$12,000", "$8k", "$25,000"])])).toEqual([]);
+    expect(proposeFieldMaps([field("Budget", ["$10k"])])).toEqual([]);
   });
 
   it("never proposes two fields for the same thing", () => {
-    const maps = proposeFieldMaps([
-      field("Timeline", ["30 days"], "a"),
-      field("What is your time frame?", ["60 days"], "b"),
-    ]);
+    const maps = proposeFieldMaps([field("Homeowner?", ["Yes"], "a"), field("Do you own the home?", ["Yes"], "b")]);
     expect(maps).toHaveLength(1);
   });
 
@@ -63,60 +56,27 @@ describe("proposing a mapping from live fields", () => {
     expect(proposeFieldMaps([field("Notes", ["hello"])])).toEqual([]);
   });
 
-  it("carries a real answer through as the example", () => {
-    const maps = proposeFieldMaps([field("Timeline", ["Next 30 days"])]);
-    expect(maps[0]?.example).toBe("Next 30 days");
-  });
-
-  it("survives a field nobody has answered yet", () => {
-    const maps = proposeFieldMaps([field("Timeline", [])]);
-    expect(maps[0]?.example).toBeNull();
+  it("carries a real answer through as the example, or none", () => {
+    expect(proposeFieldMaps([field("Homeowner", ["Yes"])])[0]?.example).toBe("Yes");
+    expect(proposeFieldMaps([field("Homeowner", [])])[0]?.example).toBeNull();
   });
 });
 
 describe("the sentence a person reads", () => {
   it("names the customer's own field and shows their own answer", () => {
-    const [map] = proposeFieldMaps([field("What's your timeline?", ["Next 30 days"])]);
-    expect(mappingSentence(map!)).toBe(
-      "We'll use “What's your timeline?” to judge how soon they are ready. Example answer: “Next 30 days”."
-    );
+    const [map] = proposeFieldMaps([field("Do you own or rent?", ["Own"])]);
+    expect(mappingSentence(map!)).toBe("We'll read “Do you own or rent?” as: owns the property. Example answer: “Own”.");
   });
 
   it("drops the example rather than inventing one", () => {
-    const [map] = proposeFieldMaps([field("Budget", [])]);
-    expect(mappingSentence(map!)).toBe("We'll use “Budget” to judge what they can spend.");
-  });
-
-  it("never leaks an internal factor name into the sentence", () => {
-    const maps = proposeFieldMaps([
-      field("Timeline", ["30 days"]),
-      field("Budget", ["$5k"]),
-      field("Who decides", ["Me"]),
-      field("Biggest challenge", ["Cost"]),
-    ]);
-    for (const map of maps) {
-      expect(mappingSentence(map)).not.toMatch(/investment_capacity|decision_authority|pain_severity/);
-    }
+    const [map] = proposeFieldMaps([field("Service area", [])]);
+    expect(mappingSentence(map!)).toBe("We'll read “Service area” as: inside the service area.");
   });
 });
 
 describe("what is still missing", () => {
-  it("names the factors nothing was proposed for", () => {
-    const maps = proposeFieldMaps([field("Timeline", ["30 days"])]);
-    expect(unmappedFactors(maps)).toEqual([
-      "investment_capacity",
-      "decision_authority",
-      "pain_severity",
-    ]);
-  });
-
-  it("is empty once all four are covered", () => {
-    const maps = proposeFieldMaps([
-      field("Timeline", []),
-      field("Budget", []),
-      field("Decision maker", []),
-      field("Biggest problem", []),
-    ]);
-    expect(unmappedFactors(maps)).toEqual([]);
+  it("names the inputs nothing was proposed for", () => {
+    const maps = proposeFieldMaps([field("Homeowner", [])]);
+    expect(unmappedInputs(maps)).toEqual(["in_service_area", "travel_distance", "estimated_value", "decision_maker"]);
   });
 });

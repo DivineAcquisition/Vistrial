@@ -5,8 +5,7 @@ import { FieldMapping } from "@/components/integrations/field-mapping";
 import { requireStaff } from "@/lib/auth/gates";
 import { fetchCustomFields } from "@/lib/ghl/client";
 import { loadLiveFields } from "@/lib/ghl/live-fields";
-import { proposeFieldMaps, unmappedFactors, type ProposedMap } from "@/lib/ghl/propose-maps";
-import { SCORE_FACTORS, type ScoreFactor } from "@/lib/scoring/compute";
+import { isMappableInput, proposeFieldMaps, unmappedInputs, type ProposedMap } from "@/lib/ghl/propose-maps";
 import { appUrl } from "@/lib/ghl/env";
 import { loadFollowUpHealth } from "@/lib/follow-up/health";
 import { loadOrgIngestionHealth } from "@/lib/ghl/health";
@@ -75,7 +74,7 @@ export default async function IntegrationDiagnosticsPage() {
   const configured = (maps.data ?? []).map((row) => ({
     fieldId: row.ghl_field_id ?? "",
     fieldKey: row.ghl_field_key,
-    factor: row.answer_key,
+    input: row.answer_key,
   }));
 
   // Read the CRM's own questions and a few real answers, so the mapping can be
@@ -90,9 +89,7 @@ export default async function IntegrationDiagnosticsPage() {
       // Anything already saved wins over a fresh guess.
       proposed = proposed.map((map) => {
         const saved = configured.find((row) => row.fieldId === map.fieldId);
-        return saved && SCORE_FACTORS.includes(saved.factor as ScoreFactor)
-          ? { ...map, factor: saved.factor as ScoreFactor, confident: true }
-          : map;
+        return saved && isMappableInput(saved.input) ? { ...map, input: saved.input, confident: true } : map;
       });
     } catch {
       proposed = [];
@@ -111,7 +108,7 @@ export default async function IntegrationDiagnosticsPage() {
       <div className="space-y-8">
         <FieldMapping
           proposed={proposed}
-          missing={unmappedFactors(proposed)}
+          missing={unmappedInputs(proposed)}
           alreadyConfigured={configured.length > 0}
         />
         <IntegrationSettings

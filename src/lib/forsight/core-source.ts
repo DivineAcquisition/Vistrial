@@ -37,15 +37,14 @@ import { coreMonthly } from "@/lib/forsight/report/core";
  * service-role escape hatch here.
  */
 
-/** The readiness score at which a lead counts as qualified. */
-const DEFAULT_READY_THRESHOLD = 60;
-
 type CoreLead = {
   id: string;
   name: string;
   optedInAt: string;
   status: string;
   currentScore: number | null;
+  /** Warm or higher on the Assay score (sticky tier), the "qualified" line. */
+  ready: boolean;
   hasNetClose: boolean;
   lastTouchAt: string | null;
 };
@@ -106,7 +105,6 @@ async function coreWeeks(
   }
   const from = starts[0];
 
-  const threshold = await readyThreshold(db, source.orgId);
   const [leads, calls, revenue] = await Promise.all([
     readLeads(db, source.orgId, from),
     readCalls(db, source.orgId, from),
@@ -126,9 +124,7 @@ async function coreWeeks(
     const cohortIds = new Set(cohort.map((lead) => lead.id));
 
     const applications = cohort.length;
-    const qualified = cohort.filter(
-      (lead) => (lead.currentScore ?? 0) >= threshold
-    ).length;
+    const qualified = cohort.filter((lead) => lead.ready).length;
     const booked = new Set(
       calls.filter((call) => call.scheduledAt && cohortIds.has(call.leadId)).map((call) => call.leadId)
     ).size;
@@ -227,12 +223,10 @@ async function corePipeline(
   now: Date,
   thresholds: SilenceThresholds
 ): Promise<ForsightResult<PipelineHealth>> {
-  const threshold = await readyThreshold(db, orgId);
-
   const { data: rows, error } = await db
     .from("leads")
     .select(
-      "id, first_name, last_name, opted_in_at, status, current_score, has_net_close, last_touch_at, is_test"
+      "id, first_name, last_name, opted_in_at, status, current_score, lead_type, has_net_close, last_touch_at, is_test"
     )
     .eq("org_id", orgId)
     .eq("is_test", false)
@@ -255,7 +249,7 @@ async function corePipeline(
       id: row.id,
       name: [row.first_name, row.last_name].filter(Boolean).join(" ").trim() || "Unnamed lead",
       stage: row.status,
-      qualificationResult: (score ?? 0) >= threshold ? "Qualified" : "Manual Review",
+      qualificationResult: row.lead_type === "ready_track" ? "Qualified" : "Manual Review",
       readinessScore: score,
       humanTouches: humanTouches.get(row.id) ?? 0,
       optInDate: row.opted_in_at ? row.opted_in_at.slice(0, 10) : null,
@@ -379,19 +373,10 @@ async function readAwaitingDebrief(
  * Core reads
  * ------------------------------------------------------------------------- */
 
-async function readyThreshold(db: ForsightDb, orgId: string): Promise<number> {
-  const { data } = await db
-    .from("score_configs")
-    .select("ready_threshold")
-    .eq("org_id", orgId)
-    .maybeSingle();
-  return data?.ready_threshold ?? DEFAULT_READY_THRESHOLD;
-}
-
 async function readLeads(db: ForsightDb, orgId: string, from: string): Promise<CoreLead[]> {
   const { data } = await db
     .from("leads")
-    .select("id, first_name, last_name, opted_in_at, status, current_score, has_net_close, last_touch_at")
+    .select("id, first_name, last_name, opted_in_at, status, current_score, lead_type, has_net_close, last_touch_at")
     .eq("org_id", orgId)
     .eq("is_test", false)
     .gte("opted_in_at", `${from}T00:00:00Z`);
@@ -402,6 +387,7 @@ async function readLeads(db: ForsightDb, orgId: string, from: string): Promise<C
     optedInAt: row.opted_in_at,
     status: row.status,
     currentScore: row.current_score,
+    ready: row.lead_type === "ready_track",
     hasNetClose: Boolean(row.has_net_close),
     lastTouchAt: row.last_touch_at,
   }));

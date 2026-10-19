@@ -2,6 +2,7 @@ import "server-only";
 
 import type { SupabaseClient } from "@supabase/supabase-js";
 
+import { parseAssayScore } from "@/lib/assay/view";
 import { getAuthContext } from "@/lib/auth/session";
 import type { CaseListCursor, CaseTimelineCursor } from "@/lib/cases/cursor";
 import { parseCaseFilePayload, parseCaseListPayload, parseCaseTimelinePage } from "@/lib/cases/parse";
@@ -92,7 +93,7 @@ export async function fetchOrgCaseFile(
   const payload = parseCaseFilePayload(data);
   if (!payload) return null;
 
-  const [extraLead, files, transcripts, config, transcriptsAllowed] = await Promise.all([
+  const [extraLead, files, transcripts, config, transcriptsAllowed, assay] = await Promise.all([
     supabase
       .from("leads")
       .select("context_notes, pipeline_stage, created_at, time_to_first_human_touch_seconds")
@@ -116,6 +117,7 @@ export async function fetchOrgCaseFile(
       .eq("org_id", orgId)
       .maybeSingle(),
     canSeeTranscripts(supabase as unknown as SupabaseClient, orgId),
+    (supabase as unknown as SupabaseClient).rpc("assay_lead_score", { p_org_id: orgId, p_lead_id: leadId }),
   ]);
 
   const transcriptById = new Map(
@@ -124,6 +126,7 @@ export async function fetchOrgCaseFile(
 
   return {
     ...payload,
+    score: assay.error ? null : parseAssayScore(assay.data),
     lead: {
       ...payload.lead,
       contextNotes: extraLead.data?.context_notes ?? payload.lead.contextNotes,

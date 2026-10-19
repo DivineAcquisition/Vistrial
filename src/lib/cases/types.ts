@@ -1,6 +1,6 @@
 import type { ActiveSequenceItem, PendingFollowUpItem } from "@/lib/follow-up/types";
 import type { Enums } from "@/types/database";
-import type { ScoreConfidence } from "@/lib/scoring/compute";
+import type { AssayScoreView } from "@/lib/assay/view";
 import type { QueueCrmStatus, QueueMemberOption } from "@/lib/queue/types";
 import type { LeadStatus } from "@/lib/leads/labels";
 
@@ -79,33 +79,8 @@ export type CaseFileLead = CaseListRow & {
   speedToLeadMinutes: number;
 };
 
-export type CaseScore = {
-  id: string;
-  total: number;
-  timeline: number | null;
-  investmentCapacity: number | null;
-  decisionAuthority: number | null;
-  painSeverity: number | null;
-  reasoning: string | null;
-  triggeredBy: Enums<"score_trigger">;
-  createdAt: string;
-  knownFactorCount: number;
-  scoreConfidence: ScoreConfidence | null;
-};
-
-export type CaseScoreHistoryRow = {
-  id: string;
-  total: number;
-  previousTotal: number | null;
-  timeline: number | null;
-  investmentCapacity: number | null;
-  decisionAuthority: number | null;
-  painSeverity: number | null;
-  reasoning: string | null;
-  triggeredBy: Enums<"score_trigger">;
-  createdAt: string;
-  scoredByName: string | null;
-};
+/** The lead's Assay score, as the viewer may see it. */
+export type CaseScore = AssayScoreView;
 
 export type CaseObjection = {
   id: string;
@@ -236,7 +211,6 @@ export type CaseTimelinePage = {
 export type CaseFilePayload = {
   lead: CaseFileLead;
   score: CaseScore | null;
-  scoreHistory: CaseScoreHistoryRow[];
   objections: CaseObjection[];
   nextActions: CaseNextAction[];
   calls: CaseCall[];

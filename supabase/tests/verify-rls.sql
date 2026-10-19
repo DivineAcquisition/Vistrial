@@ -153,7 +153,7 @@ BEGIN
   SELECT current_score INTO v_score
   FROM public.leads
   WHERE id = '44444444-4444-4444-8444-444444444441';
-  IF v_score IS DISTINCT FROM 83 THEN
+  IF v_score IS NOT DISTINCT FROM 1 THEN
     RAISE EXCEPTION 'owner score-cache write leaked; current_score=%', v_score;
   END IF;
 

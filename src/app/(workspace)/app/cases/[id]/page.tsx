@@ -14,8 +14,6 @@ import { isLeadId } from "@/lib/cases/filters";
 import { loadOrgCaseFile } from "@/lib/cases/load";
 import { loadLeadPipeline } from "@/lib/live/load";
 import { loadScribeCaseFile } from "@/lib/scribe/case-file";
-import { DEFAULT_READY_THRESHOLD, loadScoreConfig } from "@/lib/scoring/store";
-import { getSupabaseAdmin } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import { throwIfForcedRouteError } from "@/lib/route-error";
 
@@ -34,8 +32,7 @@ export default async function CaseDetailPage({
   const [payload, brief, ctx] = await Promise.all([loadOrgCaseFile(id), loadPrecallBrief(id), getAuthContext()]);
   if (!payload) notFound();
   const db = (await createClient()) as unknown as SupabaseClient;
-  const [scoreConfig, pipeline, scribeFile, notes, flag, optOut, settings, clockRow, activity] = await Promise.all([
-    loadScoreConfig(getSupabaseAdmin(), payload.lead.orgId).catch(() => null),
+  const [pipeline, scribeFile, notes, flag, optOut, settings, clockRow, activity] = await Promise.all([
     loadLeadPipeline(payload.lead.orgId, payload.lead.id).catch(() => ({ runs: [], waiting: [] })),
     loadScribeCaseFile(payload.lead.orgId, payload.lead.id).catch(() => null),
     db.from("lead_notes").select("id, body, visibility, created_at").eq("org_id", ctx.org.id).eq("lead_id", id).order("created_at", { ascending: false }).limit(20),
@@ -97,7 +94,7 @@ export default async function CaseDetailPage({
         overview={
           <>
             <ScribeCaseFile leadId={payload.lead.id} initial={scribeFile} />
-            <CaseFileScreen initial={payload} brief={brief} readyThreshold={scoreConfig?.readyThreshold ?? DEFAULT_READY_THRESHOLD} />
+            <CaseFileScreen initial={payload} brief={brief} />
           </>
         }
         timeline={

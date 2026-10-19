@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 
+import { AssayReportNote } from "@/components/assay/report-note";
 import { PageFrame } from "@/components/app/page-frame";
 import { EmptyState } from "@/components/ui/empty-state";
 import { NavTabs } from "@/components/ui/tabs";
@@ -66,6 +67,7 @@ export function ForsightPage<T>({
       statusTone="neutral"
       toolbar={<ForsightTabs activeHref={activeHref} />}
     >
+      <AssayReportNote />
       <ForsightBody view={view}>{children}</ForsightBody>
     </PageFrame>
   );

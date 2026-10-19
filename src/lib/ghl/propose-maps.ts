@@ -1,4 +1,4 @@
-import type { ScoreFactor } from "@/lib/scoring/compute";
+import { approvedInput, isBlockedFieldName, type ApprovedInputKey } from "@/lib/assay/inputs";
 
 /**
  * A field as it exists in the connected CRM, with whatever real answers we
@@ -12,12 +12,29 @@ export type LiveField = {
   samples: string[];
 };
 
+/** The approved inputs a CRM field can fill. Assay reads nothing else from a form. */
+export const MAPPABLE_INPUTS = [
+  "property_owner",
+  "in_service_area",
+  "travel_distance",
+  "estimated_value",
+  "decision_maker",
+  "target_client",
+  "high_value_interest",
+] as const satisfies readonly ApprovedInputKey[];
+
+export type MappableInput = (typeof MAPPABLE_INPUTS)[number];
+
+export function isMappableInput(value: string): value is MappableInput {
+  return (MAPPABLE_INPUTS as readonly string[]).includes(value);
+}
+
 export type ProposedMap = {
   fieldId: string;
   fieldKey: string | null;
   /** The CRM's own name for the field. Never our name for it. */
   fieldName: string;
-  factor: ScoreFactor;
+  input: MappableInput;
   /** A real answer someone gave, or null when no contact has answered yet. */
   example: string | null;
   /** How sure we are, which decides whether it is pre-checked. */
@@ -25,172 +42,70 @@ export type ProposedMap = {
 };
 
 /**
- * Words that mean each factor, in the language a form actually uses. Ordered
- * so the most specific phrase wins: "how soon" is a timeline question, but
- * "how much" is a budget one, and both contain "how".
+ * Words that mean each input, in the language a form actually uses. Only the
+ * question's own name is read. Answers that look like money are never taken
+ * as a value, because they may be about the person rather than the job.
  */
-const FACTOR_HINTS: Array<{ factor: ScoreFactor; phrases: string[] }> = [
-  {
-    factor: "timeline",
-    phrases: [
-      "timeline",
-      "time frame",
-      "timeframe",
-      "how soon",
-      "when do you",
-      "when are you",
-      "start date",
-      "urgency",
-      "ready to start",
-    ],
-  },
-  {
-    factor: "investment_capacity",
-    phrases: [
-      "budget",
-      "invest",
-      "investment",
-      "spend",
-      "afford",
-      "price range",
-      "revenue",
-      "how much",
-      "capital",
-      "financ",
-    ],
-  },
-  {
-    factor: "decision_authority",
-    phrases: [
-      "decision",
-      "decide",
-      "decision maker",
-      "who else",
-      "partner",
-      "spouse",
-      "authority",
-      "sign off",
-      "approve",
-      "owner",
-    ],
-  },
-  {
-    factor: "pain_severity",
-    phrases: [
-      "pain",
-      "problem",
-      "struggle",
-      "challenge",
-      "biggest issue",
-      "frustrat",
-      "why now",
-      "goal",
-      "what is stopping",
-      "bottleneck",
-    ],
-  },
+const INPUT_HINTS: Array<{ input: MappableInput; phrases: string[] }> = [
+  { input: "property_owner", phrases: ["own or rent", "homeowner", "home owner", "do you own", "owner occupied", "property owner"] },
+  { input: "in_service_area", phrases: ["service area", "in our area", "serviceable", "area we serve"] },
+  { input: "travel_distance", phrases: ["distance", "miles away", "how far"] },
+  { input: "estimated_value", phrases: ["job value", "project value", "estimated value", "deal value", "quote amount", "job size"] },
+  { input: "decision_maker", phrases: ["decision maker", "who decides", "make the decision", "sign off", "who else"] },
 ];
-
-/** Money-looking answers point at budget even when the question does not. */
-const MONEY = /(^|\s)(\$|usd|eur|gbp)\s?\d|(\d[\d,.]*\s?(k|m)\b)|\b\d{3,}\b/i;
-
-/** Answers that read like a period of time point at timeline. */
-const DURATION =
-  /\b(day|days|week|weeks|month|months|quarter|asap|immediately|right away|next \d+)\b/i;
 
 function normalize(value: string): string {
   return value.toLowerCase().replace(/[_\-]+/g, " ").replace(/\s+/g, " ").trim();
 }
 
-function factorFromName(name: string, key: string | null): ScoreFactor | null {
+function inputFromName(name: string, key: string | null): MappableInput | null {
   const haystack = `${normalize(name)} ${normalize(key ?? "")}`;
-  for (const hint of FACTOR_HINTS) {
+  for (const hint of INPUT_HINTS) {
     for (const phrase of hint.phrases) {
-      if (haystack.includes(phrase)) return hint.factor;
+      if (haystack.includes(phrase)) return hint.input;
     }
   }
-  return null;
-}
-
-function factorFromSamples(samples: string[]): ScoreFactor | null {
-  if (samples.length === 0) return null;
-  const money = samples.filter((value) => MONEY.test(value)).length;
-  const duration = samples.filter((value) => DURATION.test(value)).length;
-  const half = Math.ceil(samples.length / 2);
-  if (money >= half && money > duration) return "investment_capacity";
-  if (duration >= half && duration > money) return "timeline";
   return null;
 }
 
 /**
- * Propose one mapping per field we can place. A field whose name we recognise
- * is pre-checked; one placed only by the shape of its answers is proposed but
- * left for the user to confirm, because guessing from values is weaker
- * evidence than the question itself.
+ * Propose one mapping per field we can place from its name. A field that
+ * looks like a personal detail (a name, age, zip code, income, health) is
+ * never proposed, whatever it is called.
  */
 export function proposeFieldMaps(fields: LiveField[]): ProposedMap[] {
   const out: ProposedMap[] = [];
-  const claimed = new Set<ScoreFactor>();
-
-  const byName: ProposedMap[] = [];
-  const bySample: ProposedMap[] = [];
-
+  const claimed = new Set<MappableInput>();
   for (const field of fields) {
     const key = field.key ?? null;
-    const example = field.samples.find((value) => value.trim().length > 0) ?? null;
-    const named = factorFromName(field.name, key);
-    if (named) {
-      byName.push({
-        fieldId: field.id,
-        fieldKey: key,
-        fieldName: field.name,
-        factor: named,
-        example,
-        confident: true,
-      });
-      continue;
-    }
-    const sampled = factorFromSamples(field.samples);
-    if (sampled) {
-      bySample.push({
-        fieldId: field.id,
-        fieldKey: key,
-        fieldName: field.name,
-        factor: sampled,
-        example,
-        confident: false,
-      });
-    }
-  }
-
-  // One field per factor. A name match beats a value match every time.
-  for (const proposal of [...byName, ...bySample]) {
-    if (claimed.has(proposal.factor)) continue;
-    claimed.add(proposal.factor);
-    out.push(proposal);
+    if (isBlockedFieldName(field.name) || (key && isBlockedFieldName(key))) continue;
+    const input = inputFromName(field.name, key);
+    if (!input || claimed.has(input)) continue;
+    claimed.add(input);
+    out.push({
+      fieldId: field.id,
+      fieldKey: key,
+      fieldName: field.name,
+      input,
+      example: field.samples.find((value) => value.trim().length > 0) ?? null,
+      confident: true,
+    });
   }
   return out;
 }
 
-/**
- * The mapping as a sentence, which is the only form most people will read.
- * Deliberately says what it is used for rather than naming the factor.
- */
-export function mappingSentence(map: ProposedMap): string {
-  const use: Record<ScoreFactor, string> = {
-    timeline: "judge how soon they are ready",
-    investment_capacity: "judge what they can spend",
-    decision_authority: "judge whether they can decide",
-    pain_severity: "judge how badly they need this",
-  };
-  const base = `We'll use “${map.fieldName}” to ${use[map.factor]}.`;
+export function inputPlain(input: MappableInput): string {
+  return (approvedInput(input)?.label ?? input).toLowerCase();
+}
+
+/** The mapping as a sentence, which is the only form most people will read. */
+export function mappingSentence(map: Pick<ProposedMap, "fieldName" | "input" | "example">): string {
+  const base = `We'll read “${map.fieldName}” as: ${inputPlain(map.input)}.`;
   return map.example ? `${base} Example answer: “${map.example}”.` : base;
 }
 
-/** Which factors nothing was proposed for, so the screen can say so plainly. */
-export function unmappedFactors(maps: ProposedMap[]): ScoreFactor[] {
-  const claimed = new Set(maps.map((map) => map.factor));
-  return (["timeline", "investment_capacity", "decision_authority", "pain_severity"] as const).filter(
-    (factor) => !claimed.has(factor)
-  );
+/** Which inputs nothing was proposed for, so the screen can say so plainly. */
+export function unmappedInputs(maps: ProposedMap[]): MappableInput[] {
+  const claimed = new Set(maps.map((map) => map.input));
+  return INPUT_HINTS.map((hint) => hint.input).filter((input) => !claimed.has(input));
 }

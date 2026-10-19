@@ -7,9 +7,8 @@ import type { GhlDb } from "@/lib/ghl/tokens";
 import { automationAllowed } from "@/lib/inbound/holds";
 import { agentMayRun, startRun, type RunRecorder, type StepHandle } from "@/lib/live/record";
 import { notifyDaAlert } from "@/lib/ops/alerts";
-import { scoreLeadFromCall } from "@/lib/scoring/call";
 import { analyzeCase, type Analysis } from "@/lib/scribe/analyze";
-import { bandForScore, readBands } from "@/lib/scribe/bands";
+import { assayBandFor } from "@/lib/scribe/bands";
 import { extractCall, type ExtractCallResult } from "@/lib/scribe/extract";
 import { planFieldWrites, type ExistingField, type ExtractedFact } from "@/lib/scribe/merge";
 import { findSpokenOptOut } from "@/lib/scribe/optout";
@@ -45,7 +44,7 @@ export const SCRIBE_PLAN = [
   "Checking for an opt-out or a sensitive situation",
   "Pulling out the facts this business tracks",
   "Checking every quote against the transcript",
-  "Scoring readiness",
+  "Reading the Assay score",
   "Looking back at earlier calls",
   "Writing the case file",
   "Handing off to Relay and coaching",
@@ -151,7 +150,7 @@ export async function runScribeJob(db: GhlDb, jobId: string): Promise<Outcome> {
     configVersion: gate.config.version,
     sources: [
       { kind: "call", label: "The call transcript", href: `/app/calls/${call.id}` },
-      { kind: "configuration", label: "Case-file facts and score bands" },
+      { kind: "configuration", label: "Case-file facts" },
     ],
   });
   await recorder.begin();
@@ -334,33 +333,19 @@ async function scribeStages(input: StageInput): Promise<Outcome> {
     detail: `${grounding.grounded} of ${grounding.quoted} quotes found word for word.${verificationStatus === "needs_review" ? " Some parts need a person to check." : ""}`,
   });
 
-  // 5. Score and band
+  // 5. Assay's score. Assay scores from its own queue with rules only; the
+  // facts written above add the job. Scribe reads the score as it stands.
   s = await step(4);
-  const scored = await scoreLeadFromCall(db, {
-    orgId: call.org_id,
-    leadId: call.lead_id,
-    callId: call.id,
-    extractionId,
-    callType: call.type as never,
-    callAt: call.occurred_at ?? call.scheduled_at,
-    signals: {
-      timeline_signal: presentSignalText(parsed.timelineSignal),
-      budget_signal: presentSignalText(parsed.budgetSignal),
-      decision_process: presentSignalText(parsed.decisionProcess),
-    },
-  });
-  if (scored.written === false && scored.reason === "db") throw new Error("score_write_failed");
-  const { data: latest } = await db
-    .from("readiness_scores")
-    .select("total")
+  const { data: latest } = await raw
+    .from("lead_scores")
+    .select("score, tier")
     .eq("org_id", call.org_id)
     .eq("lead_id", call.lead_id)
-    .order("created_at", { ascending: false })
-    .limit(1)
     .maybeSingle();
-  const score = latest?.total == null ? null : Math.round(Number(latest.total));
-  const band = bandForScore(score, readBands(values["qualification.scoring_bands"]));
-  await s.done({ detail: score == null ? "Not enough to score yet." : `Readiness ${score}${band ? `, ${band.name}` : ""}.` });
+  const current = latest as { score?: number | null; tier?: string | null } | null;
+  const score = current?.score == null ? null : Math.round(Number(current.score));
+  const band = assayBandFor(current?.tier ?? null);
+  await s.done({ detail: score == null ? "Assay has not scored this lead yet." : `Assay score ${score}${band ? `, ${band.name}` : ""}.` });
 
   // 6. Earlier calls (retrieval stays inside this workspace and this lead)
   s = await step(5);

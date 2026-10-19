@@ -174,7 +174,8 @@ export type ProfileRow = {
 export type ApplicationField = {
   answerKey: string;
   question: string | null;
-  factor: Enums<"score_factor"> | null;
+  /** An approved Assay input this answer fills, or null. */
+  factor: string | null;
 };
 
 export type ScoreBand = {

@@ -90,7 +90,6 @@ export function draftUserPrompt(input: {
     quotes: Array<{ text: string; topic: string }>;
   };
   priorOpenObjections: string[];
-  readiness: { total: number | null; reasoning: string | null };
   priorTouches: Array<{ at: string; channel: string; direction: string; type: string }>;
 }): string {
   const examples = input.voice.examples
@@ -136,7 +135,6 @@ export function draftUserPrompt(input: {
     input.priorOpenObjections.length
       ? `Open objections from prior calls:\n${input.priorOpenObjections.map((item) => `- ${item}`).join("\n")}`
       : null,
-    `Readiness total: ${input.readiness.total ?? "unknown"}.`,
     touches ? `Prior touch history (no message bodies):\n${touches}` : "No prior touches recorded.",
     input.operatorInstruction ? `Operator instruction for this regeneration: ${input.operatorInstruction}` : null,
     input.previousFailure

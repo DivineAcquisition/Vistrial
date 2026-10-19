@@ -6,6 +6,8 @@
  * escape, which is why most lists end in "other" with a paired text field.
  */
 
+import { approvedInput } from "@/lib/assay/inputs";
+import { MAPPABLE_INPUTS, type MappableInput } from "@/lib/ghl/propose-maps";
 import type { Enums } from "@/types/database";
 
 export type Choice<T extends string> = {
@@ -136,12 +138,11 @@ export const CHANNEL_PREFERENCES: Array<Choice<"sms" | "email">> = [
   { value: "email", label: "Email" },
 ];
 
-export const SCORE_FACTOR_CHOICES: Array<Choice<Enums<"score_factor">>> = [
-  { value: "timeline", label: "Timeline" },
-  { value: "investment_capacity", label: "Investment capacity" },
-  { value: "decision_authority", label: "Decision authority" },
-  { value: "pain_severity", label: "Pain severity" },
-];
+/** What an application answer can tell Assay. Only approved inputs; never a personal detail. */
+export const ASSAY_INPUT_CHOICES: Array<Choice<MappableInput>> = MAPPABLE_INPUTS.map((input) => ({
+  value: input,
+  label: approvedInput(input)?.label ?? input,
+}));
 
 export const BENCHMARK_METRIC_LABELS: Record<Enums<"benchmark_metric">, string> = {
   speed_to_lead_minutes: "Minutes to first response",

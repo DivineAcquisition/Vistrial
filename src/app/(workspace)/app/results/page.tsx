@@ -6,6 +6,7 @@ import { ExportButton } from "@/app/(workspace)/app/results/export-button";
 import { ExportsList, type ExportRow } from "@/app/(workspace)/app/results/exports-list";
 import { ResultsFiltersForm } from "@/app/(workspace)/app/results/filters-form";
 import { buildDrillHref, filterChoices } from "@/app/(workspace)/app/results/shared";
+import { AssayReportNote } from "@/components/assay/report-note";
 import { PageFrame } from "@/components/app/page-frame";
 import { BarList, MetricCard } from "@/components/metrics/metric-card";
 import { Card } from "@/components/ui/card";
@@ -72,6 +73,7 @@ export default async function ResultsPage({ searchParams }: { searchParams: Prom
       description="Whether this workspace is turning leads into booked calls and clients, and where it is slipping."
       actions={exportable && facts.has_leads ? <ExportButton params={allParams} /> : undefined}
     >
+      <AssayReportNote />
       {!facts.has_leads ? (
         <EmptyWorkspace name={ctx.org.name} canConnect={canSeePeople(ctx)} />
       ) : (

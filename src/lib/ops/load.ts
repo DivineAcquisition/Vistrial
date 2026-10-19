@@ -52,7 +52,6 @@ export async function loadOpsSystemState(db: GhlDb) {
     extractDead,
     notifyTotal,
     notifyDead,
-    calibration,
     verification,
     modelRouteRows,
   ] = await Promise.all([
@@ -94,7 +93,6 @@ export async function loadOpsSystemState(db: GhlDb) {
       .eq("is_test", false)
       .eq("status", "dead")
       .gte("queued_at", since24h),
-    db.rpc("load_ops_calibration"),
     loadVerificationOpsState(db),
     (db as unknown as { from: (t: string) => { select: (c: string) => Promise<{ data: Array<{ work_kind: string; tier: string; model_id: string }> | null }> } })
       .from("agent_model_routes")
@@ -196,7 +194,6 @@ export async function loadOpsSystemState(db: GhlDb) {
       modelId: row.model_id,
     })),
     orgs: orgs.data ?? [],
-    calibration: (calibration.data ?? {}) as Record<string, unknown>,
     verification,
   };
 }

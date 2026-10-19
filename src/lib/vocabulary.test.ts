@@ -1,28 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { FACTOR_TITLE, READINESS, WORDS, readinessLabel, readinessState, waitingFor } from "@/lib/vocabulary";
-
-describe("readiness as a state", () => {
-  it("calls anything at or above the threshold ready now", () => {
-    expect(readinessState(78, 60, false)).toBe("ready");
-    expect(readinessState(60, 60, false)).toBe("ready");
-  });
-
-  it("separates worth working from nurture below the threshold", () => {
-    expect(readinessState(59, 60, false)).toBe("working");
-    expect(readinessState(59, 60, true)).toBe("nurture");
-  });
-
-  it("says a missing score is missing rather than implying a low one", () => {
-    expect(readinessState(null, 60, false)).toBe("unscored");
-    expect(readinessLabel("unscored")).toBe("Not scored yet");
-  });
-
-  it("follows the workspace threshold rather than a fixed number", () => {
-    expect(readinessState(55, 50, false)).toBe("ready");
-    expect(readinessState(55, 80, false)).toBe("working");
-  });
-});
+import { WORDS, waitingFor } from "@/lib/vocabulary";
 
 describe("waiting time", () => {
   const now = "2026-08-30T12:00:00.000Z";
@@ -56,9 +34,7 @@ describe("the words themselves", () => {
       /model version/i,
     ];
     for (const value of [
-      ...Object.values(READINESS),
       ...Object.values(WORDS),
-      ...Object.values(FACTOR_TITLE),
     ]) {
       for (const pattern of banned) {
         expect(value, `"${value}" still uses internal vocabulary`).not.toMatch(pattern);
@@ -68,9 +44,7 @@ describe("the words themselves", () => {
 
   it("uses no acronyms in any user-facing label", () => {
     for (const value of [
-      ...Object.values(READINESS),
       ...Object.values(WORDS),
-      ...Object.values(FACTOR_TITLE),
     ]) {
       expect(value, `"${value}" contains an acronym`).not.toMatch(/\b[A-Z]{2,}\b/);
     }

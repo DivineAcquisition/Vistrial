@@ -16,7 +16,7 @@ import {
   OBJECTION_TYPE_LABELS,
 } from "@/lib/leads/labels";
 import { formatQueueDuration } from "@/lib/queue/duration";
-import { FACTOR_PLAIN, WORDS } from "@/lib/vocabulary";
+import { tierChipLabel } from "@/lib/assay/view";
 
 function gap(value: string | number | null | undefined): string {
   if (value === null || value === undefined || value === "") return "Not established";
@@ -81,19 +81,20 @@ export function BriefScreen({ brief }: { brief: BriefPayload }) {
 
         <Panel className="px-4 py-3 max-md:order-2">
           <p className="text-[11px] font-semibold tracking-[0.14em] text-brand-300 uppercase">
-            {WORDS.readinessScore}
+            Assay score
           </p>
           {score ? (
             <>
-              <p className="mt-1 font-heading text-base tabular-nums text-white">
-                {score.total}
+              <p className={`mt-1 font-heading text-base tabular-nums text-white${score.early ? " opacity-60" : ""}`}>
+                {tierChipLabel(score)}
+                {score.early ? " · early score" : ""}
                 {brief.lead.leadType ? ` · ${LEAD_TRACK_LABELS[brief.lead.leadType]}` : ""}
               </p>
-              <p className="mt-1 text-[11px] leading-relaxed text-silver">
-                {FACTOR_PLAIN.timeline} {gap(score.timeline)} · {FACTOR_PLAIN.investment_capacity}{" "}
-                {gap(score.investmentCapacity)} · {FACTOR_PLAIN.decision_authority} {gap(score.decisionAuthority)} ·{" "}
-                {FACTOR_PLAIN.pain_severity} {gap(score.painSeverity)}
-              </p>
+              {score.raising.length || score.lowering.length ? (
+                <p className="mt-1 text-[11px] leading-relaxed text-silver">
+                  {[...score.raising.slice(0, 2), ...score.lowering.slice(0, 1)].map((reason) => reason.text).join(" ")}
+                </p>
+              ) : null}
             </>
           ) : (
             <p className="mt-1 text-sm text-dim">Not established</p>

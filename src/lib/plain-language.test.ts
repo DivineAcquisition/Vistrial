@@ -6,7 +6,7 @@ import { EXTRACTION_STATUS_LABELS, LEAD_STATUS_LABELS, LEAD_TRACK_LABELS } from 
 import { advancedSettingsVisibleTo } from "@/lib/navigation";
 import { CHANNEL_LABELS, EVENT_LABELS } from "@/lib/notifications/labels";
 import { OPERATOR_RUN_STATUS_LABELS, OPERATOR_TOOL_LABELS } from "@/lib/operator/labels";
-import { FACTOR_TITLE, READINESS, WORDS } from "@/lib/vocabulary";
+import { WORDS } from "@/lib/vocabulary";
 
 const BANNED = [
   /readiness/i,
@@ -37,9 +37,7 @@ function values(record: Record<string, string>): string[] {
 describe("user-facing labels stay in plain language", () => {
   it("keeps jargon out of the words people read", () => {
     const blob = [
-      ...values(READINESS),
       ...values(WORDS),
-      ...values(FACTOR_TITLE),
       ...values(LEAD_STATUS_LABELS),
       ...values(LEAD_TRACK_LABELS),
       ...values(EXTRACTION_STATUS_LABELS),

@@ -48,12 +48,25 @@ BEGIN
   INSERT INTO public.leads (id, org_id, first_name, last_name, status)
   VALUES (v_lead, v_org, 'Trigger', 'Probe', 'new');
 
-  -- Inserting a readiness score updates current_score and lead_type.
-  INSERT INTO public.readiness_scores (
-    org_id, lead_id,
-    timeline_raw, investment_capacity_raw, decision_authority_raw, pain_severity_raw,
-    total, reasoning, triggered_by
-  ) VALUES (v_org, v_lead, 70, 70, 70, 70, 70, 'Trigger probe: above threshold.', 'intake');
+  -- The readiness score is read-only history now.
+  BEGIN
+    INSERT INTO public.readiness_scores (
+      org_id, lead_id,
+      timeline_raw, investment_capacity_raw, decision_authority_raw, pain_severity_raw,
+      total, reasoning, triggered_by
+    ) VALUES (v_org, v_lead, 70, 70, 70, 70, 70, 'Trigger probe.', 'intake');
+    RAISE EXCEPTION 'readiness_scores accepted a new row';
+  EXCEPTION
+    WHEN raise_exception THEN
+      IF SQLERRM NOT LIKE 'readiness_scores is read-only history%' THEN
+        RAISE;
+      END IF;
+  END;
+
+  -- An Assay score updates the current_score and lead_type caches. Warm is ready.
+  PERFORM public.assay_write_scores(v_org, jsonb_build_array(jsonb_build_object(
+    'leadId', v_lead, 'score', 70, 'tier', 'warm', 'rulesVersion', 'atest', 'inputsHash', 'itest',
+    'cause', 'manual', 'asOf', now())));
 
   SELECT current_score, lead_type INTO v_score, v_type
   FROM public.leads WHERE id = v_lead;
@@ -62,18 +75,20 @@ BEGIN
     RAISE EXCEPTION 'score sync failed: score=% type=%', v_score, v_type;
   END IF;
 
-  -- Below-threshold score routes to nurture.
-  INSERT INTO public.readiness_scores (
-    org_id, lead_id,
-    timeline_raw, investment_capacity_raw, decision_authority_raw, pain_severity_raw,
-    total, reasoning, triggered_by
-  ) VALUES (v_org, v_lead, 10, 10, 10, 10, 40, 'Trigger probe: below threshold.', 'manual');
+  -- Cool and below routes to nurture.
+  PERFORM public.assay_write_scores(v_org, jsonb_build_array(jsonb_build_object(
+    'leadId', v_lead, 'score', 40, 'tier', 'cool', 'rulesVersion', 'atest', 'inputsHash', 'itest2',
+    'cause', 'manual', 'asOf', now())));
 
   SELECT current_score, lead_type INTO v_score, v_type
   FROM public.leads WHERE id = v_lead;
 
   IF v_score <> 40 OR v_type <> 'nurture_track' THEN
     RAISE EXCEPTION 'nurture routing failed: score=% type=%', v_score, v_type;
+  END IF;
+
+  IF (SELECT count(*) FROM public.lead_score_history WHERE lead_id = v_lead) <> 2 THEN
+    RAISE EXCEPTION 'score history should hold one row per change';
   END IF;
 
   -- System touch does not set first_human_touch_at.
@@ -133,11 +148,9 @@ BEGIN
   IF NOT EXISTS (
     SELECT 1 FROM public.leads
     WHERE id = '44444444-4444-4444-8444-444444444441'
-      AND current_score = 83
-      AND lead_type = 'ready_track'
       AND status = 'call_booked'
   ) THEN
-    RAISE EXCEPTION 'worked seed lead missing score/type/status';
+    RAISE EXCEPTION 'worked seed lead missing status';
   END IF;
 END
 $$;

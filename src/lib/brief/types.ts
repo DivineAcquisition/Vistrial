@@ -1,3 +1,4 @@
+import type { AssayScoreView } from "@/lib/assay/view";
 import type { Enums } from "@/types/database";
 import type { ExtractionSignalState } from "@/lib/transcripts/types";
 
@@ -20,15 +21,8 @@ export type BriefPayload = {
     assignedCloserName: string | null;
     applicationAnswers: Record<string, unknown>;
   };
-  score: {
-    id: string;
-    total: number;
-    timeline: number | null;
-    investmentCapacity: number | null;
-    decisionAuthority: number | null;
-    painSeverity: number | null;
-    triggeredBy: Enums<"score_trigger">;
-  } | null;
+  /** Assay's score, as the viewer may see it. */
+  score: AssayScoreView | null;
   setterFacts: Array<{ label: string; value: string }>;
   openObjections: Array<{
     id: string;

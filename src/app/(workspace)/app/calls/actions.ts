@@ -8,8 +8,6 @@ import { EXTRACTION_CORRECTABLE_FIELDS, type ExtractionCorrectableField } from "
 import { enqueueExtraction, attachTranscriptToCall } from "@/lib/transcripts/process";
 import { processExtractionQueue } from "@/lib/extraction/run";
 import { keepVerbatimQuotes } from "@/lib/transcripts/quotes";
-import { presentSignalText } from "@/lib/extraction/parse";
-import { scoreLeadFromCall } from "@/lib/scoring/call";
 import { getSupabaseAdmin } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import type { Database, Json } from "@/types/database";
@@ -261,38 +259,6 @@ export async function correctExtractionField(input: {
 
   const { error: updateError } = await supabase.from("call_extractions").update(patch).eq("id", extraction.id);
   if (updateError) return { ok: false, error: "The extraction could not be updated." };
-
-  if (fieldName === "budget_signal" || fieldName === "timeline_signal" || fieldName === "decision_process") {
-    const { data: latest } = await supabase
-      .from("call_extractions")
-      .select("budget_signal, budget_signal_state, timeline_signal, timeline_signal_state, decision_process, decision_process_state")
-      .eq("id", extraction.id)
-      .maybeSingle();
-    if (latest) {
-      await scoreLeadFromCall(getSupabaseAdmin(), {
-        orgId: ctx.org.id,
-        leadId: call.lead_id,
-        callId: call.id,
-        extractionId: `${extraction.id}:${Date.now()}`,
-        callType: call.type,
-        callAt: call.occurred_at ?? call.scheduled_at,
-        signals: {
-          timeline_signal: presentSignalText({
-            state: latest.timeline_signal_state,
-            text: latest.timeline_signal,
-          }),
-          budget_signal: presentSignalText({
-            state: latest.budget_signal_state,
-            text: latest.budget_signal,
-          }),
-          decision_process: presentSignalText({
-            state: latest.decision_process_state,
-            text: latest.decision_process,
-          }),
-        },
-      });
-    }
-  }
 
   revalidateCallSurfaces(call.lead_id, call.id);
   return { ok: true };

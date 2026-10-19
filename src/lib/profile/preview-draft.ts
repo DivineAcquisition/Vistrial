@@ -145,7 +145,6 @@ export async function previewVoiceDraft(orgId: string): Promise<VoicePreview> {
       quotes,
     },
     priorOpenObjections: [],
-    readiness: { total: lead.current_score, reasoning: null },
     priorTouches: [],
   });
 

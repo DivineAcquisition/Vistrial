@@ -29,7 +29,7 @@ import {
   OFFER_TYPES,
   PAYMENT_STRUCTURES,
   QUALIFICATION_SIGNALS,
-  SCORE_FACTOR_CHOICES,
+  ASSAY_INPUT_CHOICES,
   SETTER_FACTS,
   TEAM_STRUCTURES,
   VOICE_FORMALITIES,
@@ -190,13 +190,13 @@ function StageBody({ stage, defaults }: { stage: ProfileStage; defaults: Profile
             addLabel="Add a question"
             emptyLabel="Nothing is mapped yet. Connect the CRM and these fill themselves in."
             columns={[
-              { key: "answer_key", label: "Answer key", kind: "text", placeholder: "budget" },
+              { key: "answer_key", label: "Answer key", kind: "text", placeholder: "homeowner" },
               {
                 key: "factor",
-                label: "Scores which factor",
+                label: "What it tells Assay",
                 kind: "select",
                 allowEmpty: true,
-                choices: SCORE_FACTOR_CHOICES.map((choice) => ({
+                choices: ASSAY_INPUT_CHOICES.map((choice) => ({
                   value: choice.value,
                   label: choice.label,
                 })),

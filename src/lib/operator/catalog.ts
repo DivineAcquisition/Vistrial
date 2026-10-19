@@ -19,7 +19,6 @@ export const OPERATOR_PROPOSE_TOOLS = [
   "propose_create_next_action",
   "propose_complete_next_action",
   "propose_reassign_next_action",
-  "propose_override_score",
   "propose_resolve_objection",
   "propose_change_status",
   "propose_regenerate_follow_up",
@@ -42,6 +41,7 @@ export const OPERATOR_FORBIDDEN_TOOLS = [
   "delete",
   "activate_org",
   "change_scoring_config",
+  "override_score",
   "change_org_settings",
   "manage_members",
   "billing",
@@ -55,7 +55,6 @@ export const PROPOSE_TO_WRITE_KIND = {
   propose_create_next_action: "create_next_action",
   propose_complete_next_action: "complete_next_action",
   propose_reassign_next_action: "reassign_next_action",
-  propose_override_score: "override_score",
   propose_resolve_objection: "resolve_objection",
   propose_change_status: "change_status",
   propose_regenerate_follow_up: "regenerate_follow_up",
@@ -118,7 +117,7 @@ export function operatorAnthropicTools(): AnthropicTool[] {
     },
     {
       name: "get_score_history",
-      description: "Score history and reasoning for one lead. Use this to explain a score.",
+      description: "Assay score, its reasons, and how it moved for one lead. Use this to explain a score. Call-based reasons are left out when the person cannot see transcripts.",
       input_schema: {
         type: "object",
         properties: { leadId: uuidProp },
@@ -267,22 +266,6 @@ export function operatorAnthropicTools(): AnthropicTool[] {
           ownerMemberId: { type: ["string", "null"] },
         },
         required: ["leadId", "nextActionId"],
-      },
-    },
-    {
-      name: "propose_override_score",
-      description: "Propose a manual score override. Factors 0–100 or omitted. Total is computed. Does not execute until confirmed.",
-      input_schema: {
-        type: "object",
-        properties: {
-          leadId: uuidProp,
-          reasoning: { type: "string" },
-          timeline: { type: ["integer", "null"] },
-          investment_capacity: { type: ["integer", "null"] },
-          decision_authority: { type: ["integer", "null"] },
-          pain_severity: { type: ["integer", "null"] },
-        },
-        required: ["leadId", "reasoning"],
       },
     },
     {

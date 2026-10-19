@@ -20,6 +20,7 @@ export const CONFIG_SECTIONS = [
   "integrations",
   "sources",
   "operators",
+  "assay",
   "compliance",
 ] as const;
 export type ConfigSection = (typeof CONFIG_SECTIONS)[number];

@@ -39,13 +39,6 @@ function asUuidList(value: unknown): string[] | null {
   return ids.length ? ids : null;
 }
 
-function asInt(value: unknown): number | null {
-  if (value === null) return null;
-  if (typeof value === "number" && Number.isInteger(value)) return value;
-  if (typeof value === "string" && /^-?\d+$/.test(value.trim())) return Number(value.trim());
-  return null;
-}
-
 function memberName(
   members: Array<{ id: string; displayName: string }>,
   id: string | null
@@ -385,77 +378,6 @@ async function proposeReassignNextAction(
   };
 }
 
-async function proposeOverrideScore(
-  input: Record<string, unknown>,
-  ctx: AuthContext,
-  runId: string,
-  stepId: string
-): Promise<ToolOutcome> {
-  const leadId = asUuid(input.leadId);
-  const reasoning = asString(input.reasoning);
-  if (!leadId || !reasoning) {
-    return { ok: false, kind: "failed", error: "A lead and reasoning are required.", summary: "A lead and reasoning are required.", leadIds: [] };
-  }
-  const file = await refreshCaseFile(leadId);
-  if (!file) return { ok: false, kind: "failed", error: "That lead is not in this workspace.", summary: "That lead is not in this workspace.", leadIds: [] };
-  const factors = {
-    timeline: asInt(input.timeline),
-    investment_capacity: asInt(input.investment_capacity),
-    decision_authority: asInt(input.decision_authority),
-    pain_severity: asInt(input.pain_severity),
-  };
-  const reversible = Boolean(file.score);
-  const records = [
-    record({
-      id: leadId,
-      leadId,
-      label: file.lead.name,
-      href: `/app/cases/${leadId}`,
-      fields: [
-        { field: "Score", before: file.score ? String(file.score.total) : null, after: "Recomputed from the factors below" },
-        { field: "Timeline", before: file.score?.timeline != null ? String(file.score.timeline) : null, after: factors.timeline != null ? String(factors.timeline) : "unknown" },
-        { field: "Investment", before: file.score?.investmentCapacity != null ? String(file.score.investmentCapacity) : null, after: factors.investment_capacity != null ? String(factors.investment_capacity) : "unknown" },
-        { field: "Authority", before: file.score?.decisionAuthority != null ? String(file.score.decisionAuthority) : null, after: factors.decision_authority != null ? String(factors.decision_authority) : "unknown" },
-        { field: "Pain", before: file.score?.painSeverity != null ? String(file.score.painSeverity) : null, after: factors.pain_severity != null ? String(factors.pain_severity) : "unknown" },
-      ],
-    }),
-  ];
-  const confirmation = await insertConfirmation({
-    orgId: ctx.org.id,
-    runId,
-    stepId,
-    toolName: "propose_override_score",
-    writeKind: "override_score",
-    reversible,
-    irreversibleReason: reversible ? null : "This lead has no previous scored factors to restore.",
-    records,
-    executePayload: {
-      kind: "override_score",
-      leadId,
-      reasoning,
-      factors,
-      before: file.score
-        ? {
-            timeline: file.score.timeline,
-            investment_capacity: file.score.investmentCapacity,
-            decision_authority: file.score.decisionAuthority,
-            pain_severity: file.score.painSeverity,
-          }
-        : null,
-    },
-  });
-  return {
-    ok: true,
-    kind: "propose",
-    summary: reversible
-      ? `Proposed a score override on ${file.lead.name}. Waiting for confirmation.`
-      : `Proposed a score override on ${file.lead.name}. Irreversible. Waiting for confirmation.`,
-    model: redactForAgent({ pendingConfirmation: true, confirmationId: confirmation.id, records, reversible }),
-    confirmation,
-    leadIds: [leadId],
-  };
-}
-
 async function proposeResolveObjection(
   input: Record<string, unknown>,
   ctx: AuthContext,
@@ -641,8 +563,6 @@ export async function runProposeTool(input: {
         return await proposeCompleteNextAction(args, input.ctx, input.runId, input.stepId);
       case "propose_reassign_next_action":
         return await proposeReassignNextAction(args, input.ctx, input.runId, input.stepId);
-      case "propose_override_score":
-        return await proposeOverrideScore(args, input.ctx, input.runId, input.stepId);
       case "propose_resolve_objection":
         return await proposeResolveObjection(args, input.ctx, input.runId, input.stepId);
       case "propose_change_status":

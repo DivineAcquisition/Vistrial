@@ -1,9 +1,21 @@
-import type { Enums } from "@/types/database";
+import type { SupabaseClient } from "@supabase/supabase-js";
 
 import { calendarDaysBetween } from "@/lib/scoring/timezone";
-import { scoreLeadFromEvent } from "@/lib/scoring/event-apply";
-import { loadScoreConfig, type ScoringClient } from "@/lib/scoring/store";
 import { AUTOMATION_STATUSES } from "@/lib/workspaces/status";
+import type { Database, Enums } from "@/types/database";
+
+type GhostClient = SupabaseClient<Database>;
+
+/** Going-quiet days for the ghost detector. Scores are Assay's; this only marks status. */
+async function loadGhostDays(client: GhostClient, orgId: string): Promise<{ ghostDaysSoft: number; ghostDaysHard: number }> {
+  const { data, error } = await client
+    .from("score_configs")
+    .select("ghost_days_soft, ghost_days_hard")
+    .eq("org_id", orgId)
+    .maybeSingle();
+  if (error || !data) throw new Error("This workspace has no going-quiet settings.");
+  return { ghostDaysSoft: data.ghost_days_soft, ghostDaysHard: data.ghost_days_hard };
+}
 
 export const GHOST_REENGAGEMENT_KIND = "ghost_reengagement";
 export const GHOST_REENGAGEMENT_TEXT =
@@ -30,19 +42,6 @@ export function decideGhostAction(input: {
   return input.approachingAt ? "clear" : "noop";
 }
 
-function ymdInZone(at: Date, timeZone: string): string {
-  const parts = new Intl.DateTimeFormat("en-US", {
-    timeZone,
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-  }).formatToParts(at);
-  const year = parts.find((part) => part.type === "year")?.value;
-  const month = parts.find((part) => part.type === "month")?.value;
-  const day = parts.find((part) => part.type === "day")?.value;
-  return `${year}-${month}-${day}`;
-}
-
 export type GhostOrgResult = {
   orgId: string;
   evaluated: number;
@@ -50,7 +49,7 @@ export type GhostOrgResult = {
 };
 
 export async function runGhostDetectorForOrg(
-  client: ScoringClient,
+  client: GhostClient,
   orgId: string,
   now = new Date()
 ): Promise<GhostOrgResult> {
@@ -64,7 +63,7 @@ export async function runGhostDetectorForOrg(
     throw new Error("Organization not found for ghost detector.");
   }
 
-  const config = await loadScoreConfig(client, orgId);
+  const config = await loadGhostDays(client, orgId);
   const { data: leads, error: leadError } = await client
     .from("leads")
     .select("id, status, last_touch_at, opted_in_at, ghost_approaching_at")
@@ -76,7 +75,6 @@ export async function runGhostDetectorForOrg(
 
   let evaluated = 0;
   let changed = 0;
-  const todayKey = ymdInZone(now, org.timezone);
 
   for (const lead of leads ?? []) {
     if (SKIP_STATUSES.has(lead.status)) continue;
@@ -141,13 +139,7 @@ export async function runGhostDetectorForOrg(
       .eq("id", lead.id)
       .eq("org_id", orgId);
     if (ghostError) continue;
-
-    await scoreLeadFromEvent(client, {
-      orgId,
-      leadId: lead.id,
-      event: "ghost",
-      idempotencyKey: `event:ghost:${lead.id}:${todayKey}`,
-    });
+    // The status change queues an Assay rescore; silence already counts there.
     changed += 1;
   }
 
@@ -171,7 +163,7 @@ export async function runGhostDetectorForOrg(
 }
 
 export async function runGhostDetector(
-  client: ScoringClient,
+  client: GhostClient,
   now = new Date()
 ): Promise<{ evaluated: number; changed: number; orgs: GhostOrgResult[] }> {
   const { data: orgs, error } = await client.from("organizations").select("id").in("status", AUTOMATION_STATUSES);

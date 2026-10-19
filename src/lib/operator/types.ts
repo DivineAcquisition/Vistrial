@@ -25,7 +25,6 @@ export const OPERATOR_WRITE_KINDS = [
   "create_next_action",
   "complete_next_action",
   "reassign_next_action",
-  "override_score",
   "resolve_objection",
   "change_status",
   "regenerate_follow_up",

@@ -2,8 +2,6 @@ import { describe, expect, it, vi } from "vitest";
 
 import { keepVerbatimQuotes, quoteAppearsInTranscript } from "@/lib/transcripts/quotes";
 import { parseExtraction } from "@/lib/extraction/parse";
-import { callScoreReasoning } from "@/lib/scoring/call-reason";
-import { overlayCallFactors } from "@/lib/scoring/events";
 import { payloadWithoutAudio } from "@/lib/transcripts/shape";
 import { transcriptLog, logHasForbiddenContent } from "@/lib/transcripts/log";
 
@@ -96,28 +94,6 @@ describe("extraction parse", () => {
     expect(parsed.quotes).toEqual([]);
     expect(parsed.budgetSignal.state).toBe("absent");
     expect(parsed.budgetSignal.text).toBeNull();
-  });
-});
-
-describe("call re-score overlay", () => {
-  it("lets call evidence replace a conflicting form answer and names the call", () => {
-    const merged = overlayCallFactors(
-      { timeline: 80, investment_capacity: 70, decision_authority: 60, pain_severity: 50 },
-      { timeline: 40, investment_capacity: null, decision_authority: null, pain_severity: null }
-    );
-    expect(merged.timeline).toBe(40);
-    expect(merged.investment_capacity).toBe(70);
-    const reasoning = callScoreReasoning({
-      callId: "call-99",
-      callType: "triage",
-      callAt: "2026-03-12T15:00:00.000Z",
-      explanation: "Total 55.",
-      signals: [{ factor: "timeline", text: "realistically after Q1" }],
-      mapping: "Mapped.",
-    });
-    expect(reasoning).toContain("call-99");
-    expect(reasoning).toContain("realistically after Q1");
-    expect(reasoning).toContain("nothing was averaged");
   });
 });
 

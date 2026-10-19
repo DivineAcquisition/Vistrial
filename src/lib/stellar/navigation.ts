@@ -10,6 +10,6 @@ export const STELLAR_CONSOLE_PATH = "/stellar/console";
  * landing path.
  */
 export function stellarLandingPath(ctx: StellarAuthContext): string {
-  if (ctx.kind === "da_operator") return ctx.setter ? STELLAR_LOG_PATH : STELLAR_CONSOLE_PATH;
+  if (ctx.kind === "placed_operator") return ctx.setter ? STELLAR_LOG_PATH : STELLAR_CONSOLE_PATH;
   return STELLAR_PORTAL_PATH;
 }

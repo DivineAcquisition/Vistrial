@@ -8,7 +8,7 @@ const ContentSecurityPolicy = [
   "style-src 'self' 'unsafe-inline'",
   "img-src 'self' data: blob: https:",
   "font-src 'self' data:",
-  "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://www.google.com https://www.googleapis.com https://apis.google.com http://127.0.0.1:54321 http://localhost:54321 ws://127.0.0.1:54321 ws://localhost:54321",
+  "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://*.convex.cloud wss://*.convex.cloud https://www.google.com https://www.googleapis.com https://apis.google.com http://127.0.0.1:54321 http://localhost:54321 ws://127.0.0.1:54321 ws://localhost:54321",
   "frame-src 'self' https://link.msgsndr.com https://*.leadconnectorhq.com https://*.msgsndr.com https://docs.google.com https://content.googleapis.com https://challenges.cloudflare.com",
   "frame-ancestors 'none'",
   "base-uri 'self'",

@@ -28,6 +28,7 @@ describe("first-run explanation", () => {
       "member",
       "operator",
       "owner",
+      "placed_operator",
       "setter",
     ]);
   });

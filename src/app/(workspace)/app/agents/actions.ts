@@ -15,6 +15,7 @@ import "@/lib/scribe/continuation";
 import "@/lib/relay/continuation";
 import { runSimulation, SIMULATION_SCENARIOS, type SimulationScenario } from "@/lib/live/simulator";
 import { createClient } from "@/lib/supabase/server";
+import { commitWorkspacePatch } from "@/lib/directory/commit";
 import { getSupabaseAdmin } from "@/lib/supabase/admin";
 
 type Result<T> = { ok: true; data: T } | { ok: false; error: string; lost?: boolean };
@@ -271,8 +272,11 @@ export async function setTestWorkspaceAction(on: boolean): Promise<Result<null>>
   const ctx = await getAuthContext();
   if (!ctx.isPlatformAdmin) return { ok: false, error: "Only a Platform Admin can change this." };
   const admin = getSupabaseAdmin() as unknown as import("@supabase/supabase-js").SupabaseClient;
-  const { error } = await admin.from("organizations").update({ is_test_workspace: on }).eq("id", ctx.org.id);
-  if (error) return { ok: false, error: "Could not change the test flag." };
+  try {
+    await commitWorkspacePatch(ctx.org.id, { is_test_workspace: on });
+  } catch {
+    return { ok: false, error: "Could not change the test flag." };
+  }
   await admin.rpc("log_workspace_activity", {
     p_actor_user_id: ctx.user.id,
     p_org_id: ctx.org.id,

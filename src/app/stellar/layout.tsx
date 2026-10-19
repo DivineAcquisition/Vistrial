@@ -12,7 +12,7 @@ function item(id: string, label: string, href: string, icon: ShellNavItem["icon"
 
 export default async function StellarLayout({ children }: { children: React.ReactNode }) {
   const ctx = await getStellarAuthContext();
-  const staff = ctx.kind === "da_operator";
+  const staff = ctx.kind === "placed_operator";
   const items: ShellNavItem[] = [];
   if (staff && ctx.setter) items.push(item("log", "Log", "/stellar/log", "today", 1));
   if (staff) items.push(item("placements", "Placements", "/stellar/console", "roster", 2));

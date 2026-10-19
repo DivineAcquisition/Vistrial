@@ -21,7 +21,7 @@ export type StellarMember = {
  */
 export type StellarAuthContext =
   | {
-      kind: "da_operator";
+      kind: "placed_operator";
       user: User;
       /** Set when this staff member is the setter on a live placement. */
       setter: StellarMember | null;

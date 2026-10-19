@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 import { getAuthContext } from "@/lib/auth/session";
+import { commitAssign, commitPlatformStaff, commitUnassign, commitWorkspacePatch } from "@/lib/directory/commit";
 import { PRODUCTION_ADMIN_ORIGIN } from "@/lib/constants";
 import { requeueHeldWebhookEvent, webhookEventIdFromHoldRef } from "@/lib/inbound/holds";
 import { sendOwnerInvite } from "@/lib/onboarding/invite-email";
@@ -116,13 +117,11 @@ export async function setWorkspaceStatus(orgId: string, status: string, reason: 
   const gate = await requireAdmin();
   if (!gate.ok) return gate;
   if (!WORKSPACE_STATUSES.includes(status as WorkspaceStatus)) return { ok: false, error: "Choose a status." };
-  const supabase = await createClient();
-  const { error } = await supabase.rpc("set_workspace_status", {
-    p_org_id: orgId,
-    p_status: status as WorkspaceStatus,
-    p_reason: reason.trim() || null,
-  });
-  if (error) return { ok: false, error: dbMessage(error, "Could not change the status.") };
+  try {
+    await commitWorkspacePatch(orgId, { status, status_reason: reason.trim() || null });
+  } catch (error) {
+    return { ok: false, error: dbMessage(error instanceof Error ? error : null, "Could not change the status.") };
+  }
   revalidateTeam();
   return { ok: true };
 }
@@ -131,9 +130,11 @@ export async function assignStaff(orgId: string, userId: string): Promise<TeamAc
   const gate = await requireAdmin();
   if (!gate.ok) return gate;
   if (!userId) return { ok: false, error: "Choose someone to assign." };
-  const supabase = await createClient();
-  const { error } = await supabase.rpc("assign_staff_to_workspace", { p_org_id: orgId, p_user_id: userId });
-  if (error) return { ok: false, error: dbMessage(error, "Could not assign them.") };
+  try {
+    await commitAssign(orgId, userId);
+  } catch (error) {
+    return { ok: false, error: dbMessage(error instanceof Error ? error : null, "Could not assign them.") };
+  }
   revalidateTeam();
   return { ok: true };
 }
@@ -141,9 +142,11 @@ export async function assignStaff(orgId: string, userId: string): Promise<TeamAc
 export async function unassignStaff(orgId: string, userId: string): Promise<TeamActionResult> {
   const gate = await requireAdmin();
   if (!gate.ok) return gate;
-  const supabase = await createClient();
-  const { error } = await supabase.rpc("end_staff_assignment", { p_org_id: orgId, p_user_id: userId });
-  if (error) return { ok: false, error: dbMessage(error, "Could not end the assignment.") };
+  try {
+    await commitUnassign(orgId, userId);
+  } catch (error) {
+    return { ok: false, error: dbMessage(error instanceof Error ? error : null, "Could not end the assignment.") };
+  }
   revalidateTeam();
   return { ok: true };
 }
@@ -180,15 +183,18 @@ export async function addStaff(_prev: TeamActionResult, formData: FormData): Pro
   const account = await authUserForEmail(email, displayName);
   if ("error" in account) return { ok: false, error: account.error };
 
-  const supabase = await createClient();
-  const { error } = await supabase.rpc("upsert_platform_staff", {
-    p_user_id: account.id,
-    p_role: role,
-    p_active: true,
-    p_template_access: templateAccess,
-    p_display_name: displayName || null,
-  });
-  if (error) return { ok: false, error: dbMessage(error, "Could not add them to the team.") };
+  try {
+    await commitPlatformStaff({
+      user_id: account.id,
+      role,
+      active: true,
+      template_access: templateAccess,
+      display_name: displayName || email,
+      email,
+    });
+  } catch (error) {
+    return { ok: false, error: dbMessage(error instanceof Error ? error : null, "Could not add them to the team.") };
+  }
   revalidateTeam();
   return {
     ok: true,
@@ -203,14 +209,16 @@ export async function updateStaff(
   const gate = await requireAdmin();
   if (!gate.ok) return gate;
   if (!PLATFORM_ROLES.includes(patch.role)) return { ok: false, error: "Choose a role." };
-  const supabase = await createClient();
-  const { error } = await supabase.rpc("upsert_platform_staff", {
-    p_user_id: userId,
-    p_role: patch.role,
-    p_active: true,
-    p_template_access: patch.templateAccess,
-  });
-  if (error) return { ok: false, error: dbMessage(error, "Could not update them.") };
+  try {
+    await commitPlatformStaff({
+      user_id: userId,
+      role: patch.role,
+      active: true,
+      template_access: patch.templateAccess,
+    });
+  } catch (error) {
+    return { ok: false, error: dbMessage(error instanceof Error ? error : null, "Could not update them.") };
+  }
   revalidateTeam();
   return { ok: true };
 }

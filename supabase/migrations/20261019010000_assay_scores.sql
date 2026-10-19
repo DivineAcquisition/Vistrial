@@ -24,6 +24,31 @@
 --     rule. Scores never reach anything sent to a lead.
 
 -- ---------------------------------------------------------------------------
+-- Replace the earlier Assay build (20261018010000 to 20261018010002). Its
+-- scores were derived and are rebuilt by the first scoring below. The queue
+-- view read its scores; the view and its row function are recreated in
+-- section 8 at their earlier definitions plus Assay.
+-- ---------------------------------------------------------------------------
+
+DROP VIEW IF EXISTS public.queue_rows CASCADE;
+DROP FUNCTION IF EXISTS public.assay_claim_jobs(integer);
+DROP TABLE IF EXISTS
+  public.assay_writeback_log,
+  public.assay_writeback,
+  public.assay_workspace_state,
+  public.assay_score_history,
+  public.assay_rule_versions,
+  public.assay_queue_prefs,
+  public.assay_proposals,
+  public.assay_lead_scores,
+  public.assay_jobs,
+  public.assay_daily,
+  public.assay_change_requests,
+  public.assay_call_signals,
+  public.assay_actions
+CASCADE;
+
+-- ---------------------------------------------------------------------------
 -- 0. The switch report. Before counts are taken first, from the legacy bands.
 -- ---------------------------------------------------------------------------
 
@@ -1004,8 +1029,9 @@ GRANT EXECUTE ON FUNCTION public.assay_request_workspace_rescore(uuid, text) TO 
 -- 8. Older readers that bypassed the caches now read Assay.
 -- ---------------------------------------------------------------------------
 
--- The older queue view reads Assay's score, tier flags, and visible reasons.
-CREATE OR REPLACE VIEW public.queue_rows
+-- The older queue view reads Assay's score, tier flags, and visible reasons. It was
+-- dropped above with the earlier Assay build's tables, so its grant comes back too.
+CREATE VIEW public.queue_rows
 WITH (security_invoker = true) AS
 SELECT
   l.id,
@@ -1108,6 +1134,83 @@ LEFT JOIN LATERAL (
 ) na ON true
 WHERE NOT l.is_test;
 
+GRANT SELECT ON public.queue_rows TO authenticated, service_role;
+
+CREATE OR REPLACE FUNCTION public.queue_row_to_json(r public.queue_rows)
+RETURNS jsonb
+LANGUAGE sql
+STABLE
+SET search_path = public
+AS $$
+  SELECT jsonb_build_object(
+    'id', r.id,
+    'orgId', r.org_id,
+    'name', r.name,
+    'email', r.email,
+    'source', r.source,
+    'offerName', r.offer_name,
+    'status', r.status,
+    'leadType', r.lead_type,
+    'score', r.score,
+    'scoreConfidence', r.score_confidence,
+    'knownFactorCount', r.known_factor_count,
+    'scoreReasoning', r.score_reasoning,
+    'optedInAt', r.opted_in_at,
+    'lastTouchAt', r.last_touch_at,
+    'firstHumanTouchAt', r.first_human_touch_at,
+    'assignedSetterId', r.assigned_setter_id,
+    'assignedCloserId', r.assigned_closer_id,
+    'assignedSetterName', r.assigned_setter_name,
+    'assignedCloserName', r.assigned_closer_name,
+    'ghlContactId', r.ghl_contact_id,
+    'crmUrl', r.crm_url,
+    'nextAction', CASE
+      WHEN r.next_action_id IS NULL THEN NULL
+      ELSE jsonb_build_object(
+        'id', r.next_action_id,
+        'actionText', r.next_action_text,
+        'dueAt', r.next_action_due_at,
+        'overdue', r.next_action_overdue
+      )
+    END,
+    'inAlarm', r.in_alarm,
+    'breachSeconds', r.breach_seconds,
+    'urgencyRank', r.urgency_rank,
+    'sortScore', r.sort_score
+  );
+$$;
+
+REVOKE ALL ON FUNCTION public.queue_row_to_json(public.queue_rows) FROM PUBLIC, anon;
+GRANT EXECUTE ON FUNCTION public.queue_row_to_json(public.queue_rows) TO authenticated, service_role;
+
+-- Lead search as it was before the earlier Assay build.
+CREATE OR REPLACE FUNCTION public.search_visible_leads(p_org_id uuid, p_query text, p_limit integer DEFAULT 8)
+RETURNS TABLE (id uuid, title text, detail text)
+LANGUAGE sql
+STABLE
+SECURITY DEFINER
+SET search_path = public
+AS $$
+  SELECT l.id,
+    btrim(concat_ws(' ', l.first_name, l.last_name)),
+    concat_ws(' · ', l.status, NULLIF(btrim(concat_ws(' ', setter.display_name, closer.display_name)), ''))
+  FROM public.leads l
+  LEFT JOIN public.org_members setter ON setter.id = l.assigned_setter_id
+  LEFT JOIN public.org_members closer ON closer.id = l.assigned_closer_id
+  WHERE l.org_id = p_org_id
+    AND p_org_id IN (SELECT public.user_org_ids())
+    AND public.ws_lead_visible(p_org_id, l.id)
+    AND l.merged_into IS NULL
+    AND (
+      btrim(concat_ws(' ', l.first_name, l.last_name, l.email, l.source)) ILIKE '%' || btrim(p_query) || '%'
+      OR (
+        length(regexp_replace(p_query, '\D', '', 'g')) >= 3
+        AND regexp_replace(COALESCE(l.phone, ''), '\D', '', 'g') LIKE '%' || regexp_replace(p_query, '\D', '', 'g') || '%'
+      )
+    )
+  ORDER BY l.last_touch_at DESC NULLS LAST
+  LIMIT LEAST(GREATEST(COALESCE(p_limit, 8), 1), 20);
+$$;
 
 CREATE OR REPLACE FUNCTION public.load_case_experience(p_org_id uuid, p_filter jsonb DEFAULT '{}'::jsonb, p_limit integer DEFAULT 50)
 RETURNS jsonb

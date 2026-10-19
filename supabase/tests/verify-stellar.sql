@@ -98,24 +98,24 @@ BEGIN
   -- The DA operator reaches only assigned workspaces, through the logged RPC.
   PERFORM set_config('request.jwt.claim.sub', v_da_operator_user::text, false);
   SET ROLE authenticated;
-  SELECT count(*) INTO v_count FROM public.stellar_da_list_placements();
+  SELECT count(*) INTO v_count FROM public.placed_list_placements();
   RESET ROLE;
   IF v_count <> 1 THEN
-    RAISE EXCEPTION 'stellar_da_list_placements should return only assigned workspaces, saw %', v_count;
+    RAISE EXCEPTION 'placed_list_placements should return only assigned workspaces, saw %', v_count;
   END IF;
 
   SELECT count(*) INTO v_count
-  FROM public.stellar_da_access_log
+  FROM public.placed_access_log
   WHERE user_id = v_da_operator_user AND action = 'list' AND resource = 'placements';
   IF v_count < 1 THEN
-    RAISE EXCEPTION 'da operator read via stellar_da_list_placements was not logged';
+    RAISE EXCEPTION 'da operator read via placed_list_placements was not logged';
   END IF;
 
   PERFORM set_config('request.jwt.claim.sub', v_da_operator_user::text, false);
   SET ROLE authenticated;
   v_denied := false;
   BEGIN
-    PERFORM public.stellar_da_get_placement(v_org_b);
+    PERFORM public.placed_get_placement(v_org_b);
   EXCEPTION
     WHEN OTHERS THEN
       IF SQLERRM ILIKE '%not authorized%' THEN
@@ -133,7 +133,7 @@ BEGIN
   -- Staff with no assignment see nothing at all.
   PERFORM set_config('request.jwt.claim.sub', v_unassigned_staff_user::text, false);
   SET ROLE authenticated;
-  SELECT count(*) INTO v_count FROM public.stellar_da_list_placements();
+  SELECT count(*) INTO v_count FROM public.placed_list_placements();
   RESET ROLE;
   IF v_count <> 0 THEN
     RAISE EXCEPTION 'unassigned staff listed % placements', v_count;
@@ -144,7 +144,7 @@ BEGIN
   SET ROLE authenticated;
   v_denied := false;
   BEGIN
-    PERFORM public.stellar_da_list_placements();
+    PERFORM public.placed_list_placements();
   EXCEPTION
     WHEN OTHERS THEN
       IF SQLERRM ILIKE '%not authorized%' THEN
@@ -156,7 +156,7 @@ BEGIN
   END;
   RESET ROLE;
   IF NOT v_denied THEN
-    RAISE EXCEPTION 'a customer was able to call stellar_da_list_placements';
+    RAISE EXCEPTION 'a customer was able to call placed_list_placements';
   END IF;
 
   PERFORM set_config('request.jwt.claim.sub', '', false);

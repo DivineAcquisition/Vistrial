@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import type { SettingsSaveResult } from "@/app/(workspace)/app/settings/types";
 import { agentDefinition } from "@/lib/agents/catalog";
 import { getAuthContext } from "@/lib/auth/session";
+import { commitAgentIdentity, commitWorkspacePatch } from "@/lib/directory/commit";
 import { createClient } from "@/lib/supabase/server";
 import type { AgentId } from "@/lib/agents/types";
 
@@ -25,16 +26,15 @@ export async function saveAgentHalt(
   const global = formData.get("agents_halted") === "on";
   const crm = formData.get("agent_crm_writes_halted") === "on";
   const calendar = formData.get("agent_calendar_writes_halted") === "on";
-  const db = await createClient();
-  const { error } = await db
-    .from("organizations")
-    .update({
+  try {
+    await commitWorkspacePatch(gate.ctx.org.id, {
       agents_halted: global,
       agent_crm_writes_halted: crm,
       agent_calendar_writes_halted: calendar,
-    })
-    .eq("id", gate.ctx.org.id);
-  if (error) return { status: "error", error: "Could not save the stop switches." };
+    });
+  } catch {
+    return { status: "error", error: "Could not save the stop switches." };
+  }
   revalidatePath("/app/settings/agents");
   return { status: "saved" };
 }
@@ -48,12 +48,11 @@ export async function saveAgentIdentity(
   const memberId = String(formData.get("agent_run_as_member_id") ?? "").trim();
   const db = await createClient();
   if (!memberId) {
-    await db.from("org_members").update({ is_agent_identity: false }).eq("org_id", gate.ctx.org.id);
-    const { error } = await db
-      .from("organizations")
-      .update({ agent_run_as_member_id: null })
-      .eq("id", gate.ctx.org.id);
-    if (error) return { status: "error", error: "Could not clear who scheduled work runs as." };
+    try {
+      await commitAgentIdentity(gate.ctx.org.id, null);
+    } catch {
+      return { status: "error", error: "Could not clear who scheduled work runs as." };
+    }
     revalidatePath("/app/settings/agents");
     revalidatePath("/app/settings/members");
     return { status: "saved" };
@@ -67,18 +66,11 @@ export async function saveAgentIdentity(
   if (!member || !member.active) {
     return { status: "error", error: "Pick an active person on this team." };
   }
-  await db.from("org_members").update({ is_agent_identity: false }).eq("org_id", gate.ctx.org.id);
-  const { error: flagError } = await db
-    .from("org_members")
-    .update({ is_agent_identity: true })
-    .eq("org_id", gate.ctx.org.id)
-    .eq("id", memberId);
-  if (flagError) return { status: "error", error: "Could not mark that person." };
-  const { error } = await db
-    .from("organizations")
-    .update({ agent_run_as_member_id: memberId })
-    .eq("id", gate.ctx.org.id);
-  if (error) return { status: "error", error: "Could not save who scheduled work runs as." };
+  try {
+    await commitAgentIdentity(gate.ctx.org.id, memberId);
+  } catch {
+    return { status: "error", error: "Could not save who scheduled work runs as." };
+  }
   revalidatePath("/app/settings/agents");
   revalidatePath("/app/settings/members");
   return { status: "saved" };

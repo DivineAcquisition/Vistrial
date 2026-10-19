@@ -44,10 +44,9 @@ export const getPlatformStaff = cache(async (): Promise<PlatformStaffRecord | nu
 });
 
 /**
- * Every workspace the caller can enter right now. Convex is the source.
- * Closed workspaces drop out for customers, and an ended Service Team
- * assignment drops out. There is no fallback that reads the replica as if
- * it were still the owner.
+ * Every workspace the caller can enter right now. Convex is the source once
+ * it has the caller's seats. A failed or empty Convex read uses the Postgres
+ * seats the caller can already see, so sign-in still opens the workspace.
  */
 export const listActiveMemberships = cache(async (userId: string): Promise<Membership[]> => {
   const user = await getSessionUser();

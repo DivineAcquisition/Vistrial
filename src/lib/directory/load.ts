@@ -11,7 +11,13 @@ import { getSupabaseAdmin } from "@/lib/supabase/admin";
 import { ConvexHttpClient } from "convex/browser";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
+import { chooseDirectory, type DirectorySnapshot } from "@/lib/directory/choose";
 import { userConvex } from "@/lib/directory/commit";
+
+const MEMBER_COLUMNS =
+  "id, org_id, role, seat, can_approve, can_see_money, can_export, can_manage_connections, avatar_path, display_name, email, surface_access";
+const ORG_COLUMNS = "id, name, slug, timezone, ghl_location_id, status, is_platform_workspace";
+const CONVEX_DIRECTORY_MS = 4000;
 
 type Mine = {
   staff: {
@@ -90,14 +96,23 @@ async function flushDirectoryOutbox(): Promise<void> {
   }
 }
 
-export const loadConvexDirectory = cache(async (): Promise<{
-  staff: { role: PlatformRole; templateAccess: boolean; displayName: string } | null;
-  memberships: Membership[];
-  legacyStillHasSeats: boolean;
-}> => {
-  await flushDirectoryOutbox();
-  const client = await userConvex();
-  const mine = (await client.query(api.directory.listMine, {})) as Mine;
+function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
+  return new Promise((resolve, reject) => {
+    const timer = setTimeout(() => reject(new Error("Convex directory timed out.")), ms);
+    promise.then(
+      (value) => {
+        clearTimeout(timer);
+        resolve(value);
+      },
+      (error: unknown) => {
+        clearTimeout(timer);
+        reject(error);
+      },
+    );
+  });
+}
+
+function snapshotFromMine(mine: Mine): DirectorySnapshot {
   const orgs = new Map<string, OrgSummary>();
   const rows: MemberRow[] = [];
   for (const member of mine.memberships) {
@@ -125,21 +140,6 @@ export const loadConvexDirectory = cache(async (): Promise<{
       surface_access: member.surfaceAccess as SurfaceAccess,
     });
   }
-  let legacyStillHasSeats = false;
-  if (rows.length === 0) {
-    const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    if (user) {
-      const { count } = await supabase
-        .from("org_members")
-        .select("id", { count: "exact", head: true })
-        .eq("user_id", user.id)
-        .eq("active", true);
-      legacyStillHasSeats = (count ?? 0) > 0;
-    }
-  }
   return {
     staff: mine.staff
       ? {
@@ -149,6 +149,98 @@ export const loadConvexDirectory = cache(async (): Promise<{
         }
       : null,
     memberships: membershipsFromRows(rows, orgs),
-    legacyStillHasSeats,
   };
+}
+
+async function orgsByIds(orgIds: string[]): Promise<Map<string, OrgSummary>> {
+  if (orgIds.length === 0) return new Map();
+  const supabase = await createClient();
+  const { data, error } = await supabase.from("organizations").select(ORG_COLUMNS).in("id", orgIds);
+  if (error || !data) return new Map();
+  return new Map(
+    data.map((org) => [
+      org.id,
+      {
+        id: org.id,
+        name: org.name,
+        slug: org.slug,
+        timezone: org.timezone,
+        ghlLocationId: org.ghl_location_id,
+        status: org.status,
+        isPlatformWorkspace: org.is_platform_workspace,
+      },
+    ]),
+  );
+}
+
+async function loadPostgresDirectory(): Promise<DirectorySnapshot & { seatCount: number }> {
+  const empty = { staff: null, memberships: [], seatCount: 0 };
+  try {
+    const supabase = await createClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) return empty;
+
+    const { data: staffRow } = await supabase
+      .from("platform_staff")
+      .select("role, template_access, display_name, active")
+      .eq("user_id", user.id)
+      .maybeSingle();
+    const staff =
+      staffRow && staffRow.active
+        ? {
+            role: staffRow.role,
+            templateAccess: staffRow.template_access,
+            displayName: staffRow.display_name,
+          }
+        : null;
+
+    const { data, error } = await supabase
+      .from("org_members")
+      .select(MEMBER_COLUMNS)
+      .eq("user_id", user.id)
+      .eq("active", true)
+      .neq("seat", "agent")
+      .order("created_at", { ascending: true });
+    if (error || !data) {
+      const { count } = await supabase
+        .from("org_members")
+        .select("id", { count: "exact", head: true })
+        .eq("user_id", user.id)
+        .eq("active", true);
+      return { staff, memberships: [], seatCount: count ?? 0 };
+    }
+    if (data.length === 0) return { staff, memberships: [], seatCount: 0 };
+
+    const orgs = await orgsByIds([...new Set(data.map((row) => row.org_id))]);
+    const memberships = membershipsFromRows(data as MemberRow[], orgs).sort((a, b) => a.org.name.localeCompare(b.org.name));
+    return { staff, memberships, seatCount: memberships.length > 0 ? memberships.length : data.length };
+  } catch {
+    return empty;
+  }
+}
+
+async function loadConvexSnapshot(): Promise<DirectorySnapshot | null> {
+  try {
+    await withTimeout(flushDirectoryOutbox(), CONVEX_DIRECTORY_MS);
+    const client = await userConvex();
+    const mine = (await withTimeout(client.query(api.directory.listMine, {}), CONVEX_DIRECTORY_MS)) as Mine;
+    return snapshotFromMine(mine);
+  } catch {
+    return null;
+  }
+}
+
+export const loadConvexDirectory = cache(async (): Promise<{
+  staff: { role: PlatformRole; templateAccess: boolean; displayName: string } | null;
+  memberships: Membership[];
+  legacyStillHasSeats: boolean;
+}> => {
+  const convex = await loadConvexSnapshot();
+  if (convex && convex.memberships.length > 0) {
+    return { ...convex, legacyStillHasSeats: false };
+  }
+  const postgres = await loadPostgresDirectory();
+  return chooseDirectory({ convex, postgres, postgresSeatCount: postgres.seatCount });
 });

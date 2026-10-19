@@ -11,6 +11,9 @@
 import type * as access from "../access.js";
 import type * as directory from "../directory.js";
 import type * as importDirectory from "../importDirectory.js";
+import type * as importLive from "../importLive.js";
+import type * as live from "../live.js";
+import type * as liveRows from "../liveRows.js";
 import type * as rows from "../rows.js";
 import type * as seatMap from "../seatMap.js";
 
@@ -24,6 +27,9 @@ declare const fullApi: ApiFromModules<{
   access: typeof access;
   directory: typeof directory;
   importDirectory: typeof importDirectory;
+  importLive: typeof importLive;
+  live: typeof live;
+  liveRows: typeof liveRows;
   rows: typeof rows;
   seatMap: typeof seatMap;
 }>;

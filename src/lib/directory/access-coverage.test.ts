@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 
 import { ROLE_RENAMES } from "@/lib/directory/seat-map";
 
-const FILES = ["convex/directory.ts", "convex/importDirectory.ts"];
+const FILES = ["convex/directory.ts", "convex/importDirectory.ts", "convex/live.ts", "convex/importLive.ts"];
 
 describe("directory functions call the access check", () => {
   it("starts every Convex function with requireAccess", () => {

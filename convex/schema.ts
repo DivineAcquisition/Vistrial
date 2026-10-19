@@ -82,4 +82,97 @@ export default defineSchema({
     email: v.string(),
     row: v.any(),
   }).index("by_userId", ["userId"]),
+
+  /**
+   * Domain 2: the shared event record, approvals, and notification rows.
+   * workspaceId is the existing organizations id.
+   */
+  activityRuns: defineTable({
+    legacyId: v.string(),
+    workspaceId: v.string(),
+    agentId: v.string(),
+    leadId: v.optional(v.string()),
+    actorMemberId: v.optional(v.string()),
+    setterMemberId: v.optional(v.string()),
+    closerMemberId: v.optional(v.string()),
+    status: v.string(),
+    subjectLabel: v.string(),
+    row: v.any(),
+  })
+    .index("by_legacyId", ["legacyId"])
+    .index("by_workspace", ["workspaceId"]),
+
+  activitySteps: defineTable({
+    legacyId: v.string(),
+    workspaceId: v.string(),
+    runId: v.string(),
+    agentId: v.string(),
+    leadId: v.optional(v.string()),
+    actorMemberId: v.optional(v.string()),
+    seq: v.number(),
+    status: v.string(),
+    row: v.any(),
+  })
+    .index("by_legacyId", ["legacyId"])
+    .index("by_workspace", ["workspaceId"])
+    .index("by_run", ["runId"]),
+
+  activityEvents: defineTable({
+    legacyId: v.string(),
+    workspaceId: v.string(),
+    runId: v.string(),
+    agentId: v.string(),
+    leadId: v.optional(v.string()),
+    actorMemberId: v.optional(v.string()),
+    occurredAt: v.string(),
+    row: v.any(),
+  })
+    .index("by_legacyId", ["legacyId"])
+    .index("by_workspace", ["workspaceId"]),
+
+  activityOutputs: defineTable({
+    legacyId: v.string(),
+    workspaceId: v.string(),
+    runId: v.string(),
+    agentId: v.string(),
+    leadId: v.optional(v.string()),
+    actorMemberId: v.optional(v.string()),
+    row: v.any(),
+  })
+    .index("by_legacyId", ["legacyId"])
+    .index("by_workspace", ["workspaceId"]),
+
+  activityStaff: defineTable({
+    runId: v.string(),
+    workspaceId: v.string(),
+    row: v.any(),
+  }).index("by_run", ["runId"]),
+
+  presenceControls: defineTable({
+    workspaceId: v.string(),
+    agentId: v.string(),
+    paused: v.boolean(),
+    row: v.any(),
+  }).index("by_workspace", ["workspaceId"]),
+
+  approvalItems: defineTable({
+    legacyId: v.string(),
+    workspaceId: v.string(),
+    status: v.string(),
+    assignedMemberId: v.optional(v.string()),
+    title: v.string(),
+    row: v.any(),
+  })
+    .index("by_legacyId", ["legacyId"])
+    .index("by_workspace", ["workspaceId"]),
+
+  notifications: defineTable({
+    legacyId: v.string(),
+    workspaceId: v.string(),
+    status: v.string(),
+    queuedAt: v.string(),
+    row: v.any(),
+  })
+    .index("by_legacyId", ["legacyId"])
+    .index("by_workspace", ["workspaceId"]),
 });

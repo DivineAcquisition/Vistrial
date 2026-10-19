@@ -23,7 +23,7 @@ export type Access =
   | { principal: "import" };
 
 export function denied(): never {
-  throw new ConvexError({ code: "denied", message: "You do not have access to that." });
+  throw new ConvexError({ code: "not_found", message: "Not found." });
 }
 
 async function staffFor(ctx: Ctx, userId: string): Promise<Doc<"platformStaff"> | null> {

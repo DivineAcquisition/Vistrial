@@ -10,6 +10,7 @@ import { loadAgentRequests } from "@/lib/home/views";
 import { createClient } from "@/lib/supabase/server";
 import { TaskButtons } from "@/app/(workspace)/app/tasks/task-form";
 import { ClaimLeadButton } from "@/app/(workspace)/app/today/claim";
+import { LeadPeek } from "@/components/cases/lead-peek";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 export const metadata = { title: "Today" };
@@ -107,14 +108,19 @@ export default async function TodayPage() {
         </section>
       ) : null}
       {rows.length === 0 && tasks.length === 0 ? (
-        <p className="text-sm text-muted-foreground">Nothing is waiting. New work shows up here as it becomes due.</p>
+        <div className="flex flex-col items-start gap-3">
+          <p className="text-sm text-muted-foreground">Nothing needs you right now. New work shows up here as it becomes due.</p>
+          <Link href="/app/queue" className="inline-flex h-11 items-center rounded-xl bg-primary px-4 text-sm font-medium text-primary-foreground">
+            Open my leads
+          </Link>
+        </div>
       ) : rows.length === 0 ? null : (
         <ul className="space-y-3">
           {rows.map((row) => (
             <li key={row.id} className="rounded-lg border border-border p-4">
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div>
-                  <Link href={`/app/cases/${row.id}`} className="text-base font-medium hover:underline">{row.name}</Link>
+                  <LeadPeek name={row.name} summary={row.headline ?? "A short read of this lead."} nextStep={row.nextStep ?? "Open the case file for the full record."} caseHref={`/app/cases/${row.id}`} />
                   <p className="text-sm text-muted-foreground">{row.nextStep ?? row.headline ?? "Open the case file"}</p>
                   <div className="mt-2">
                     <StatusBadge label={row.clockLabel ?? RESPONSE_LABEL[row.responseState]} tone={row.responseState === "missed" ? "critical" : row.responseState === "at_risk" ? "warning" : "neutral"} />

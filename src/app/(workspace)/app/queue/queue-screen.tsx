@@ -446,7 +446,7 @@ export function QueueScreen({
           <EmptyState
             kind="empty"
             title="People in this workspace live in Vistrial"
-            detail="GoHighLevel is not connected. People already here still need action below. Connect a CRM later to sync and send."
+            detail="Your CRM is not connected. People already here still need action below. Connect a CRM later to bring data in."
             action={integrations}
           />
         </div>

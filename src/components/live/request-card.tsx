@@ -47,6 +47,7 @@ export function AgentRequestCard({
   const [answer, setAnswer] = useState("");
   const [note, setNote] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [undoUntil, setUndoUntil] = useState<number | null>(null);
   const [copied, setCopied] = useState(false);
   const [localState, setLocalState] = useState<string | null>(null);
   const agent = item.agentId ? AGENTS[item.agentId] : null;
@@ -68,6 +69,16 @@ export function AgentRequestCard({
       live = false;
     };
   }, [isRelay, compact, item.id, item.status]);
+
+  useEffect(() => {
+    if (!undoUntil) return;
+    const wait = Math.max(0, undoUntil - Date.now());
+    const timer = window.setTimeout(() => {
+      setUndoUntil(null);
+      decide("approve");
+    }, wait);
+    return () => window.clearTimeout(timer);
+  }, [undoUntil]);
 
   function decide(decision: "approve" | "reject" | "answer") {
     setError(null);
@@ -148,7 +159,12 @@ export function AgentRequestCard({
         <div className="min-w-0 flex-1 space-y-1">
           <p className="text-xs font-medium text-warning">{heading}</p>
           <h3 className="text-sm font-medium text-card-foreground">{item.title}</h3>
-          {item.agentId ? <p className="text-xs text-muted-foreground">{producedBy(item.agentId, item.kind === "question" ? "Asked" : "Drafted")}</p> : null}
+          <p className="text-sm text-card-foreground">{item.reason || item.title}</p>
+          <p className="text-sm text-muted-foreground">
+            {item.agentId ? producedBy(item.agentId, item.kind === "question" ? "Asked" : "Drafted") : "A draft is waiting."}
+            {item.preview ? ` ${item.preview}` : ""}
+          </p>
+          <p className="text-sm text-muted-foreground">Nothing goes out until you approve. You send it from your CRM, and the checks run again at that moment.</p>
           {item.reason && !approved ? (
             <p className="text-sm text-muted-foreground">
               <span className="font-medium text-card-foreground">Why: </span>
@@ -257,9 +273,18 @@ export function AgentRequestCard({
             </Button>
           ) : (
             <>
-              <Button size="sm" onClick={() => decide("approve")} disabled={pending || (editing && !draft.trim())}>
-                Approve
+              <Button
+                size="sm"
+                onClick={() => setUndoUntil(Date.now() + 30_000)}
+                disabled={pending || Boolean(undoUntil) || (editing && !draft.trim())}
+              >
+                {undoUntil ? "Sending after a short wait" : "Approve"}
               </Button>
+              {undoUntil ? (
+                <Button size="sm" variant="secondary" onClick={() => setUndoUntil(null)} disabled={pending}>
+                  Undo
+                </Button>
+              ) : null}
               {(relay || item.preview) && !compact ? (
                 <Button size="sm" variant="outline" onClick={() => setEditing((on) => !on)} disabled={pending}>
                   {editing ? "Done editing" : "Edit"}
@@ -273,7 +298,7 @@ export function AgentRequestCard({
             </Button>
           ) : (
             <Button size="sm" variant="ghost" onClick={() => setRejecting(true)} disabled={pending}>
-              {item.kind === "question" ? "Skip" : "Reject"}
+              Skip
             </Button>
           )}
         </div>

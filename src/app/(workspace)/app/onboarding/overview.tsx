@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Panel } from "@/components/ui/panel";
 import { Notice } from "@/components/ui/states";
 import { StatusBadge } from "@/components/ui/status-badge";
-import { SETUP_STEPS, TOTAL_TIME, resumeSlug, setupHref, stageState } from "@/lib/onboarding/customer-steps";
+import { SETUP_STEPS, resumeSlug, setupHref, stageState } from "@/lib/onboarding/customer-steps";
 import type { CustomerView } from "@/lib/onboarding/load";
 import { CUSTOMER_STATE_LABEL, PHASE_LABEL, progressCounts, waitingText } from "@/lib/onboarding/stages";
 import { cardTitle, helperClass } from "@/lib/ui";
@@ -27,7 +27,7 @@ export function OnboardingOverview({ view, isStaff, now }: { view: CustomerView;
       description={
         live
           ? "Everything is set up. You can come back here any time to see what was done."
-          : `${counts.done} of ${counts.total} steps done. ${TOTAL_TIME}`
+          : `${counts.done} of ${counts.total} steps done. Your part is about ten minutes. Texting registration and email setup stay with your team, and sending stays off until they are done.`
       }
       status={phase.label}
       statusTone={phase.tone}
@@ -59,6 +59,34 @@ export function OnboardingOverview({ view, isStaff, now }: { view: CustomerView;
           </div>
         </Panel>
       ) : null}
+
+      <section aria-labelledby="your-part" className="space-y-3">
+        <h2 id="your-part" className={cardTitle}>
+          Your part
+        </h2>
+        <ol className="space-y-3">
+          {[
+            { title: "Connect", href: setupHref("crm"), detail: "Mailbox, calendar, call recordings, and your CRM. You can skip one and finish it later from Home." },
+            { title: "Pick your sales process", href: setupHref("approach"), detail: "Choose a starting point. Nothing to configure on this step." },
+            { title: "Choose how careful to be", href: setupHref("approvers"), detail: "Ask first, or let routine follow-ups run. Change it later in Sales. Pricing, refunds, and deletions cannot run on their own." },
+            { title: "Invite your team", href: setupHref("team"), detail: "Add the people who work your leads." },
+            { title: "First win", href: setupHref("test"), detail: "A sample draft shows what a follow-up looks like. It cannot be sent. Imported history does not start a draft." },
+          ].map((step, index) => (
+            <li key={step.title}>
+              <Panel className="p-5">
+                <h3 className="text-sm text-white">{index + 1}. {step.title}</h3>
+                <p className="mt-1 text-sm text-dim">{step.detail}</p>
+                <div className="mt-3">
+                  <Button variant={index === 0 ? "primary" : "secondary"} size="sm" render={<Link href={step.href} />}>
+                    {step.title}
+                  </Button>
+                </div>
+              </Panel>
+            </li>
+          ))}
+        </ol>
+        <p className="text-sm text-dim">Texting registration and email setup stay in progress with your team until they are done. Sending to leads stays off until then.</p>
+      </section>
 
       <section aria-labelledby="all-steps" className="space-y-3">
         <h2 id="all-steps" className={cardTitle}>

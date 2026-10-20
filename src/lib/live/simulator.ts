@@ -4,6 +4,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 
 import { AGENTS, LIVE_AGENT_IDS, type LiveAgentId } from "@/lib/agents/roster";
 import { startRun, type RunRecorder } from "@/lib/live/record";
+import { liveRecordSink } from "@/lib/live/words";
 import { getSupabaseAdmin } from "@/lib/supabase/admin";
 
 /**
@@ -374,11 +375,15 @@ async function scribeFailed(orgId: string, lead: Lead | null, pace: number) {
 async function stuckRun(orgId: string, lead: Lead | null, agentId: LiveAgentId) {
   const recorder = await begin({ orgId, agentId, scenario: "stuck", subject: lead ? `${lead.name}` : "a lead", lead, plan: ["Checking the input and configuration", "Reading the transcript"] });
   await recorder.step("Reading the transcript");
-  await db()
-    .from("agent_activity_runs")
-    .update({ last_progress_at: new Date(Date.now() - 11 * 60 * 1000).toISOString() })
-    .eq("id", recorder.id);
-  await db().rpc("agent_activity_mark_stuck", { p_minutes: 10 });
+  if (liveRecordSink() === "postgres") {
+    await db()
+      .from("agent_activity_runs")
+      .update({ last_progress_at: new Date(Date.now() - 11 * 60 * 1000).toISOString() })
+      .eq("id", recorder.id);
+    await db().rpc("agent_activity_mark_stuck", { p_minutes: 10 });
+    return;
+  }
+  await recorder.markStuck();
 }
 
 async function providerWait(orgId: string, lead: Lead | null, pace: number) {

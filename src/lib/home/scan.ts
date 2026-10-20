@@ -201,7 +201,7 @@ async function escalate(
       },
     });
   }
-  await db.from("agent_events").insert({
+  const entry = {
     org_id: org.id,
     actor: "vistrial",
     action_taken: "owner_escalation",
@@ -214,7 +214,14 @@ async function escalate(
       count: waiting.length,
       leadIds: [...new Set(waiting.flatMap((item) => item.lead_ids ?? []))],
     } as Json,
-  });
+  };
+  const { liveRecordSink } = await import("@/lib/live/words");
+  if (liveRecordSink() === "convex") {
+    const { writeLegacyLog } = await import("@/lib/live/legacy-log");
+    await writeLegacyLog({ workspaceId: org.id, kind: "agent_events", legacyId: crypto.randomUUID(), occurredAt: now.toISOString(), row: entry });
+  } else {
+    await db.from("agent_events").insert(entry);
+  }
   return { escalated: waiting.length, proceeded };
 }
 

@@ -20,6 +20,7 @@ import {
   type StaffRunDetail,
   type WaitingItem,
 } from "@/lib/live/model";
+import { displayLeadPhrase } from "@/lib/live/words";
 import { createClient } from "@/lib/supabase/server";
 
 /**
@@ -53,6 +54,31 @@ function events(rows: unknown[] | null): LiveEvent[] {
   return (rows ?? []).map((row) => mapEvent(row as Record<string, unknown>)).filter((event): event is LiveEvent => event !== null);
 }
 
+async function fillLeadNames(db: Untyped, list: LiveRun[]): Promise<LiveRun[]> {
+  const ids = [...new Set(list.filter((run) => run.leadId && run.subjectLabel.includes("a lead")).map((run) => run.leadId as string))];
+  const names = new Map<string, string>();
+  if (ids.length > 0) {
+    const { data } = await db.from("leads").select("id, first_name, last_name").in("id", ids);
+    for (const lead of (data ?? []) as Array<{ id: string; first_name?: string | null; last_name?: string | null }>) {
+      const name = [lead.first_name, lead.last_name].filter(Boolean).join(" ");
+      if (name) names.set(lead.id, name);
+    }
+  }
+  return list.map((run) => {
+    if (!run.subjectLabel.includes("a lead")) return run;
+    const name = run.leadId ? names.get(run.leadId) ?? null : null;
+    return {
+      ...run,
+      subjectLabel: displayLeadPhrase({
+        verbatim: false,
+        stored: run.subjectLabel,
+        leadName: name,
+        canSeeLead: Boolean(name),
+      }),
+    };
+  });
+}
+
 /** Current state for the strip, panel, and Home, from saved data. */
 export async function loadLiveSnapshot(orgId: string, options: { eventLimit?: number } = {}): Promise<LiveSnapshot> {
   const db = await rls();
@@ -65,7 +91,7 @@ export async function loadLiveSnapshot(orgId: string, options: { eventLimit?: nu
     db.from("approval_items").select("id, agent_id, run_id, action_type, title, reason, preview, lead_ids, status, created_at").eq("org_id", orgId).in("status", [...OPEN_REQUEST_STATUSES]).not("agent_id", "is", null).order("created_at", { ascending: false }).limit(40),
   ]);
   const byId = new Map<string, LiveRun>();
-  for (const run of [...runs(recentRuns.data), ...runs(openRuns.data)]) byId.set(run.id, run);
+  for (const run of await fillLeadNames(db, [...runs(recentRuns.data), ...runs(openRuns.data)])) byId.set(run.id, run);
   return {
     orgId,
     runs: [...byId.values()],
@@ -122,8 +148,15 @@ export async function loadRunDetail(runId: string): Promise<RunDetail | null> {
       : Promise.resolve({ data: null }),
   ]);
   const leadRow = lead.data as { first_name?: string | null; last_name?: string | null } | null;
+  const seenName = leadRow ? [leadRow.first_name, leadRow.last_name].filter(Boolean).join(" ") || null : null;
+  const subjectLabel = displayLeadPhrase({
+    verbatim: !run.subjectLabel.includes("a lead"),
+    stored: run.subjectLabel,
+    leadName: seenName,
+    canSeeLead: Boolean(seenName),
+  });
   return {
-    run,
+    run: { ...run, subjectLabel },
     steps: (steps.data ?? []).map((item) => mapStep(item as Record<string, unknown>)),
     events: events(evs.data),
     outputs: (outs.data ?? []).map((item) => mapOutput(item as Record<string, unknown>)).filter((o): o is LiveOutput => o !== null),
@@ -131,7 +164,9 @@ export async function loadRunDetail(runId: string): Promise<RunDetail | null> {
     staff: staff.data
       ? { detail: ((staff.data as { detail?: Record<string, unknown> }).detail ?? {}), errorDetail: (staff.data as { error_detail?: string | null }).error_detail ?? null }
       : null,
-    leadName: leadRow ? [leadRow.first_name, leadRow.last_name].filter(Boolean).join(" ") || null : null,
+    leadName: run.subjectLabel.includes("a lead")
+      ? displayLeadPhrase({ verbatim: false, stored: "a lead", leadName: seenName, canSeeLead: Boolean(seenName) })
+      : seenName,
   };
 }
 

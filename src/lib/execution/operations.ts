@@ -1,6 +1,8 @@
 import "server-only";
 
 import { authorizeExecution, type AuthorizationResult, type ExecutionAuthorization } from "@/lib/execution/authorize";
+import { outboundGate } from "@/lib/live/transport";
+import { decideOutbound, liveRecordSink } from "@/lib/live/words";
 import { loadConnection, markBroken, type ExecutionConnection } from "@/lib/execution/connections";
 import { discordPostMessage } from "@/lib/execution/discord";
 import { assetFolderPath } from "@/lib/execution/drive-layout";
@@ -108,6 +110,15 @@ async function execute(
     return blocked("That looked like it contained a password or access key, so it was not sent.", prepared.value);
   }
 
+  const gate = await outboundGate(args.orgId);
+  if (decideOutbound(gate) === "wait") {
+    return blocked(
+      !gate.ok && gate.reason === "unreadable"
+        ? "Pause state could not be read, so nothing was sent."
+        : "Agents are paused, so nothing was sent.",
+    );
+  }
+
   const authorized = await authorizeExecution(db, {
     orgId: args.orgId,
     kind: args.kind,
@@ -164,7 +175,7 @@ async function recordActivity(
     const { data } = await db.from("org_members").select("display_name").eq("id", authorized.memberId).eq("org_id", orgId).maybeSingle();
     approvedByName = data?.display_name ?? null;
   }
-  await db.from("agent_events").insert({
+  const entry = {
     org_id: orgId,
     actor: "vistrial",
     action_taken: EXECUTION_ACTION_TYPES[kind],
@@ -176,7 +187,13 @@ async function recordActivity(
       count: 1,
       leadIds: [],
     },
-  });
+  };
+  if (liveRecordSink() === "convex") {
+    const { writeLegacyLog } = await import("@/lib/live/legacy-log");
+    await writeLegacyLog({ workspaceId: orgId, kind: "agent_events", legacyId: crypto.randomUUID(), row: entry });
+    return;
+  }
+  await db.from("agent_events").insert(entry);
 }
 
 function invalid(error: string): ExecutionResult {

@@ -6,17 +6,25 @@ import type { Doc } from "./_generated/dataModel";
 
 type RunDoc = Doc<"activityRuns">;
 
-function seesRun(access: Extract<Access, { scope: "workspace" }>, run: RunDoc): boolean {
+async function seesRun(
+  ctx: import("./_generated/server").QueryCtx,
+  access: Extract<Access, { principal: "user"; scope: "workspace" }>,
+  run: RunDoc,
+): Promise<boolean> {
   if (access.role === "platform_admin" || access.role === "service_team") return true;
   if (run.agentId === "compass") return run.actorMemberId === access.memberLegacyId;
   if (access.role === "owner" || access.role === "member") return true;
-  if (access.role !== "operator" || !run.leadId) return access.role === "operator" && !run.leadId;
-  const mine = access.memberLegacyId;
-  const unassigned = !run.setterMemberId && !run.closerMemberId;
-  return unassigned || run.setterMemberId === mine || run.closerMemberId === mine;
+  if (access.role !== "operator" || !run.leadId || !access.memberLegacyId) return false;
+  const lead = await ctx.db
+    .query("leadAccess")
+    .withIndex("by_lead", (q) => q.eq("leadId", run.leadId as string))
+    .unique();
+  if (!lead || lead.workspaceId !== access.workspaceId || lead.drifted) return false;
+  const unassigned = !lead.setterMemberId && !lead.closerMemberId;
+  return unassigned || lead.setterMemberId === access.memberLegacyId || lead.closerMemberId === access.memberLegacyId;
 }
 
-function seesApproval(access: Extract<Access, { scope: "workspace" }>, item: Doc<"approvalItems">): boolean {
+function seesApproval(access: Extract<Access, { principal: "user"; scope: "workspace" }>, item: Doc<"approvalItems">): boolean {
   if (access.role === "owner" || access.role === "platform_admin" || access.role === "service_team") return true;
   return Boolean(item.assignedMemberId && item.assignedMemberId === access.memberLegacyId);
 }
@@ -26,12 +34,14 @@ export const feed = query({
   args: { workspaceId: v.string() },
   handler: async (ctx, args) => {
     const access = await requireAccess(ctx, { scope: "workspace", workspaceId: args.workspaceId });
-    const runs = (
-      await ctx.db
-        .query("activityRuns")
-        .withIndex("by_workspace", (q) => q.eq("workspaceId", args.workspaceId))
-        .take(200)
-    ).filter((run) => seesRun(access, run));
+    const loaded = await ctx.db
+      .query("activityRuns")
+      .withIndex("by_workspace", (q) => q.eq("workspaceId", args.workspaceId))
+      .take(200);
+    const runs = [];
+    for (const run of loaded) {
+      if (await seesRun(ctx, access, run)) runs.push(run);
+    }
     const visibleRuns = new Set(runs.map((run) => run.legacyId));
     const steps = (
       await ctx.db

@@ -78,21 +78,11 @@ export async function continueAfterDecision(input: {
   const recorder = await resumeRun(input.runId, input.orgId);
   if (!recorder) return;
 
-  await db
-    .from("agent_activity_runs")
-    .update({ status: "working", needs_person: null, last_progress_at: new Date().toISOString() })
-    .eq("id", input.runId)
-    .eq("org_id", input.orgId);
-  await db.from("agent_activity_events").insert({
-    org_id: input.orgId,
-    run_id: input.runId,
-    agent_id: run.agent_id,
-    kind: input.approved ? "approval_given" : "approval_rejected",
-    label: input.approved
-      ? input.answer
-        ? `Answered by ${input.who}`
-        : `Approved by ${input.who}`
-      : `Rejected by ${input.who}${input.reason ? `: ${input.reason.slice(0, 200)}` : ""}`,
+  await recorder.noteDecision({
+    approved: input.approved,
+    who: input.who,
+    answer: input.answer,
+    reason: input.reason,
   });
 
   const context: DecisionContext = {

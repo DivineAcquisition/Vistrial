@@ -61,6 +61,7 @@ export async function upsertEvent(ctx: MutationCtx, row: Row) {
     leadId: text(row, "lead_id"),
     actorMemberId: text(row, "actor_member_id"),
     occurredAt: required(row, "occurred_at"),
+    ...(typeof row.seq === "number" ? { seq: row.seq } : {}),
     row,
   };
   const existing = await ctx.db

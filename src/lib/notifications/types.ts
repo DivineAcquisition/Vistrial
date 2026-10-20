@@ -24,6 +24,15 @@ export type EnqueueInput = {
   isEmergency?: boolean;
   isTest?: boolean;
   sendAfter?: Date;
+  historic?: boolean;
+  duplicate?: boolean;
+  replay?: boolean;
+  pausedCatchup?: boolean;
+  occurredBeforeGoLive?: boolean;
+  imported?: boolean;
+  personCount?: number;
+  workspaceCount?: number;
+  leadId?: string | null;
 };
 
 export type WorkingHours = {

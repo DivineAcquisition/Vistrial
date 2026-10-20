@@ -12,7 +12,7 @@ import {
   type VisitState,
 } from "./homeRules";
 
-type WorkspaceAccess = Extract<Access, { scope: "workspace" }>;
+type WorkspaceAccess = Extract<Access, { principal: "user"; scope: "workspace" }>;
 type Ctx = QueryCtx | MutationCtx;
 
 const MAX_SNOOZE_MS = 7 * 86_400_000;

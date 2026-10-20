@@ -44,6 +44,25 @@ export async function setAgentPausedAction(agentId: string, paused: boolean, rea
     const { assertRecentAuth } = await import("@/lib/staff/mfa-check");
     await assertRecentAuth(`/app/agents/${agentId}`);
   }
+  const { liveRecordSink } = await import("@/lib/live/words");
+  if (liveRecordSink() === "convex") {
+    try {
+      const { userConvex } = await import("@/lib/directory/commit");
+      const { api } = await import("../../../../../convex/_generated/api");
+      const client = await userConvex();
+      await client.mutation(api.pause.setPaused, {
+        workspaceId: ctx.org.id,
+        agentId,
+        paused,
+        reason: reason ?? undefined,
+        actorName: actorLabel(ctx),
+      });
+    } catch {
+      return { ok: false, error: "Could not change that. Try again." };
+    }
+    revalidatePath("/app/agents", "layout");
+    return { ok: true, data: null };
+  }
   const db = await createClient();
   const { error } = await (db as unknown as { rpc: (fn: string, args: object) => Promise<{ error: { message: string } | null }> }).rpc(
     "set_agent_paused",

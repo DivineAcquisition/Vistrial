@@ -7,14 +7,47 @@ import { isLookingAt } from "@/lib/notifications/policy";
 import { resolveAtSendTime, type NotificationSendRow } from "@/lib/notifications/resolve";
 import { sendOnChannel } from "@/lib/notifications/senders";
 import type { NotificationChannel, NotificationStatus } from "@/lib/notifications/types";
+import { ConvexHttpClient } from "convex/browser";
+
+import { api } from "../../../convex/_generated/api";
+import { liveRecordSink } from "@/lib/live/words";
 import { automationAllowed } from "@/lib/inbound/holds";
 
 const CLAIM_BATCH = 25;
+
+async function deliverFromConvex(
+  db: GhlDb,
+  now: Date,
+): Promise<{ claimed: number; sent: number; cancelled: number; failed: number }> {
+  const url = process.env.NEXT_PUBLIC_CONVEX_URL;
+  const key = process.env.CONVEX_SYSTEM_KEY;
+  if (!url || !key) return { claimed: 0, sent: 0, cancelled: 0, failed: 0 };
+  const client = new ConvexHttpClient(url);
+  const ids = await client.query(api.notify.due, { key, job: "notifications" });
+  let claimed = 0;
+  let sent = 0;
+  let cancelled = 0;
+  let failed = 0;
+  for (const id of ids) {
+    const claim = await client.mutation(api.notify.claim, { key, job: "notifications", legacyId: id });
+    claimed += 1;
+    if (!claim.send) {
+      if ("reason" in claim && claim.reason === "not_visible") cancelled += 1;
+      continue;
+    }
+    const outcome = await deliverOne(db, id, now);
+    if (outcome === "sent" || outcome === "skipped") sent += 1;
+    else if (outcome === "cancelled") cancelled += 1;
+    else failed += 1;
+  }
+  return { claimed, sent, cancelled, failed };
+}
 
 export async function deliverQueuedNotifications(
   db: GhlDb,
   now = new Date()
 ): Promise<{ claimed: number; sent: number; cancelled: number; failed: number }> {
+  if (liveRecordSink() === "convex") return deliverFromConvex(db, now);
   let claimed = 0;
   let sent = 0;
   let cancelled = 0;

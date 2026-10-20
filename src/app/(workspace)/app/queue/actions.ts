@@ -116,6 +116,14 @@ export async function assignQueueLead(input: {
     return actionError(explainWriteError(error.message, "Could not update assignment."));
   }
 
+  const { syncLeadAssignment } = await import("@/lib/live/assignment");
+  await syncLeadAssignment({
+    workspaceId: ctx.org.id,
+    leadId: input.leadId,
+    setterMemberId: setterId,
+    closerMemberId: closerId,
+  }).catch(() => undefined);
+
   revalidateLeadSurfaces(input.leadId);
   const row = await fetchQueueRow(supabase, ctx.org.id, input.leadId);
   return { ok: true, row };

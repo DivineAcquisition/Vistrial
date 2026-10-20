@@ -159,6 +159,9 @@ async function draftForJob(job: RelayJob): Promise<Outcome> {
   }
 
   const may = await agentMayRun(job.org_id, "relay", { sample });
+  if (!may.ok && may.reason === "unreadable") {
+    return { kind: "later", result: "Pause state could not be read, so Relay waited.", minutes: 1 };
+  }
   if (!may.ok) {
     return may.reason === "paused"
       ? { kind: "skipped", result: "Relay is paused in this workspace, so nothing was drafted." }
@@ -264,6 +267,7 @@ async function draftForJob(job: RelayJob): Promise<Outcome> {
     agentId: "relay",
     triggerKey: `relay:${job.trigger}:${job.id}`,
     subjectLabel: `a ${channel === "sms" ? "text" : "email"} for ${name}`,
+    leadName: name,
     subjectHref: `/app/cases/${job.lead_id}`,
     leadId: job.lead_id,
     actorMemberId: job.trigger === "compass_request" ? (job.requested_by_member ?? null) : null,

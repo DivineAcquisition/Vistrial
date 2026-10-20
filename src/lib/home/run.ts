@@ -210,7 +210,7 @@ export async function runApprovalItem(
 
   if (newlyDone.length) {
     const leadIds = newlyDone.map((draft) => draft.leadId);
-    await db.from("agent_events").insert({
+    const entry = {
       org_id: args.orgId,
       lead_id: leadIds.length === 1 ? leadIds[0] : null,
       actor: "vistrial",
@@ -226,7 +226,14 @@ export async function runApprovalItem(
         leadIds,
         scheduled: newlyDone.filter((draft) => draft.result?.status === "scheduled").length,
       } as Json,
-    });
+    };
+    const { liveRecordSink } = await import("@/lib/live/words");
+    if (liveRecordSink() === "convex") {
+      const { writeLegacyLog } = await import("@/lib/live/legacy-log");
+      await writeLegacyLog({ workspaceId: args.orgId, kind: "agent_events", legacyId: crypto.randomUUID(), occurredAt: decidedAt, row: entry });
+    } else {
+      await db.from("agent_events").insert(entry);
+    }
   }
 
   return { ok: true, status, done: newlyDone.length, failed: failed.length, failureReason };

@@ -1,9 +1,94 @@
+import { ConvexHttpClient } from "convex/browser";
+
+import { api } from "../../../convex/_generated/api";
 import type { GhlDb } from "@/lib/ghl/tokens";
 import { assertLockScreenSafe } from "@/lib/notifications/copy";
+import { liveRecordSink } from "@/lib/live/words";
 import type { EnqueueInput } from "@/lib/notifications/types";
+
+async function enqueueInConvex(db: GhlDb, input: EnqueueInput, id: string): Promise<string | null> {
+  const url = process.env.NEXT_PUBLIC_CONVEX_URL;
+  const key = process.env.CONVEX_SYSTEM_KEY;
+  if (!url || !key || !input.orgId) throw new Error("Notifications are not configured.");
+  const client = new ConvexHttpClient(url);
+  const sendAfter = (input.sendAfter ?? new Date()).toISOString();
+  const result = await client.mutation(api.notify.enqueue, {
+    key,
+    job: "notifications",
+    workspaceId: input.orgId,
+    legacyId: id,
+    eventType: input.eventType,
+    channel: input.channel,
+    recipientUserId: input.recipientUserId ?? undefined,
+    recipientMemberId: input.recipientMemberId ?? undefined,
+    leadId: input.leadId ?? input.subjectIds[0],
+    title: input.title,
+    body: input.body,
+    dedupeKey: input.dedupeKey,
+    sendAfter,
+    isTest: input.isTest,
+    personCount: input.personCount,
+    workspaceCount: input.workspaceCount,
+    historic: input.historic,
+    duplicate: input.duplicate,
+    replay: input.replay,
+    pausedCatchup: input.pausedCatchup,
+    occurredBeforeGoLive: input.occurredBeforeGoLive,
+    imported: input.imported,
+  });
+  if (result.id) {
+    const loose = db as unknown as { rpc: (fn: string, args: object) => Promise<{ error: { message: string } | null }> };
+    await loose.rpc("live_record_replicate", {
+      p_table: "notifications",
+      p_row: {
+        id,
+        org_id: input.orgId,
+        event_type: result.eventType ?? input.eventType,
+        channel: input.channel,
+        recipient_user_id: input.recipientUserId,
+        recipient_member_id: input.recipientMemberId,
+        actor_user_id: input.actorUserId ?? null,
+        subject_kind: input.subjectKind ?? null,
+        subject_ids: input.subjectIds,
+        title: input.title,
+        body: input.body,
+        href: input.href,
+        dedupe_key: input.dedupeKey,
+        batch_key: input.batchKey ?? null,
+        escalation_step: input.escalationStep ?? 1,
+        is_emergency: input.isEmergency ?? false,
+        is_test: input.isTest ?? false,
+        status: "queued",
+        send_after: sendAfter,
+      },
+    });
+  }
+  return result.created || result.id ? result.id : null;
+}
 
 export async function enqueueNotification(db: GhlDb, input: EnqueueInput): Promise<string | null> {
   assertLockScreenSafe(input.title, input.body);
+  if (liveRecordSink() === "convex" && input.orgId) {
+    const id = crypto.randomUUID();
+    try {
+      return await enqueueInConvex(db, input, id);
+    } catch (error) {
+      console.error(JSON.stringify({ src: "vistrial", event: "notification.enqueue_failed" }));
+      const loose = db as unknown as {
+        from: (table: string) => { insert: (row: object) => Promise<{ error: { message: string } | null }> };
+      };
+      const { error: outboxError } = await loose.from("live_record_outbox").insert({
+        seq: Date.now(),
+        idempotency_key: `notification:${input.dedupeKey}`,
+        workspace_id: input.orgId,
+        job: "notifications",
+        phase: "commit",
+        payload: { ...input, legacyId: id, sendAfter: (input.sendAfter ?? new Date()).toISOString() },
+      });
+      if (outboxError) throw new Error(outboxError.message);
+      return id;
+    }
+  }
   const sendAfter = (input.sendAfter ?? new Date()).toISOString();
 
   const { data: queued } = await db

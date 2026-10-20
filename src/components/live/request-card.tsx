@@ -11,6 +11,7 @@ import {
 } from "@/app/(workspace)/app/agents/actions";
 import { AgentGlyph } from "@/components/live/agent-identity";
 import { useOrg } from "@/components/app/org-provider";
+import { useLiveMeta } from "@/components/live/live-provider";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -35,6 +36,7 @@ export function AgentRequestCard({
   checks,
   leadHref,
   onDecided,
+  variant = "default",
 }: {
   item: WaitingItem;
   compact?: boolean;
@@ -45,8 +47,11 @@ export function AgentRequestCard({
   checks?: string | null;
   leadHref?: string | null;
   onDecided?: (outcome: "approved" | "rejected" | "answered" | "sent" | "withdrawn") => void;
+  /** "decision": what it wants, why once, the draft, the checks, then the buttons. */
+  variant?: "default" | "decision";
 }) {
   const org = useOrg();
+  const { offline } = useLiveMeta();
   const [pending, start] = useTransition();
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(item.preview ?? "");
@@ -67,7 +72,7 @@ export function AgentRequestCard({
   const decided = status !== "pending";
 
   useEffect(() => {
-    if (!isRelay || compact) return;
+    if (!isRelay || compact || offline) return;
     let live = true;
     void fetchRelayDraft(item.id).then((result) => {
       if (!live || !result.ok) return;
@@ -78,7 +83,7 @@ export function AgentRequestCard({
     return () => {
       live = false;
     };
-  }, [isRelay, compact, item.id, item.status]);
+  }, [isRelay, compact, offline, item.id, item.status]);
 
   useEffect(() => {
     if (!undoUntil) return;
@@ -174,12 +179,16 @@ export function AgentRequestCard({
         <div className="min-w-0 flex-1 space-y-1">
           <p className="text-xs font-medium text-warning">{heading}</p>
           <h3 className="text-sm font-medium text-card-foreground">{item.title}</h3>
-          <p className="text-sm text-card-foreground">{item.reason || item.title}</p>
-          <p className="text-sm text-muted-foreground">
-            {item.agentId ? producedBy(item.agentId, item.kind === "question" ? "Asked" : "Drafted") : "A draft is waiting."}
-            {item.preview ? ` ${item.preview}` : ""}
-          </p>
-          <p className="text-sm text-muted-foreground">Nothing goes out until you approve. You send it from your CRM, and the checks run again at that moment.</p>
+          {variant === "default" ? (
+            <>
+              <p className="text-sm text-card-foreground">{item.reason || item.title}</p>
+              <p className="text-sm text-muted-foreground">
+                {item.agentId ? producedBy(item.agentId, item.kind === "question" ? "Asked" : "Drafted") : "A draft is waiting."}
+                {item.preview ? ` ${item.preview}` : ""}
+              </p>
+              <p className="text-sm text-muted-foreground">Nothing goes out until you approve. You send it from your CRM, and the checks run again at that moment.</p>
+            </>
+          ) : null}
           {item.reason && !approved ? (
             <p className="text-sm text-muted-foreground">
               <span className="font-medium text-card-foreground">Why: </span>

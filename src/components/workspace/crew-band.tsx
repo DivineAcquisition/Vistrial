@@ -9,7 +9,7 @@ import { setAgentPausedAction } from "@/app/(workspace)/app/agents/actions";
 import { useOrg } from "@/components/app/org-provider";
 import { AgentGlyph, PresenceLabel } from "@/components/live/agent-identity";
 import { useAgentPanel } from "@/components/live/agent-panel";
-import { useLiveState, usePresence } from "@/components/live/live-provider";
+import { useLiveMeta, useLiveState, usePresence } from "@/components/live/live-provider";
 import { useRunViewer } from "@/components/live/run-viewer";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -17,7 +17,7 @@ import { useIsMobile } from "@/hooks/use-media-query";
 import { AGENTS, LIVE_AGENT_IDS, type LiveAgentId } from "@/lib/agents/roster";
 import { isOpenRequest, type AgentPresence } from "@/lib/live/model";
 import type { CrewServerFacts } from "@/lib/workspace/load";
-import { capCount, crewLine, crewStateWord, operatorAgentLine, trustLine } from "@/lib/workspace/voice";
+import { capCount, crewLine, crewStateWord, operatorAgentLine, trustLine, workspacePausedLine } from "@/lib/workspace/voice";
 import { cn } from "@/lib/utils";
 
 /**
@@ -28,7 +28,9 @@ export function CrewBand({ facts, now }: { facts: CrewServerFacts; now: number }
   const org = useOrg();
   const presence = usePresence();
   const state = useLiveState();
+  const { workspaceStatus } = useLiveMeta();
   const mobile = useIsMobile();
+  const workspacePaused = workspaceStatus === "paused" || workspaceStatus === "closed";
 
   const relay = useMemo(() => {
     let waiting = 0;
@@ -43,7 +45,7 @@ export function CrewBand({ facts, now }: { facts: CrewServerFacts; now: number }
 
   const byId = new Map(presence.map((item) => [item.agentId, item]));
   const order: LiveAgentId[] = ["sentry", "scribe", "relay", "assay", "compass"];
-  const canResume = org.workspaceRole === "owner" || org.isStaff;
+  const canResume = (org.workspaceRole === "owner" || org.isStaff) && !workspacePaused;
 
   return (
     <div className="flex min-w-0 flex-col gap-2">
@@ -56,7 +58,7 @@ export function CrewBand({ facts, now }: { facts: CrewServerFacts; now: number }
           const item = byId.get(agentId);
           if (!item) return null;
           const run = item.currentRunId ? state.runs.get(item.currentRunId) ?? null : null;
-          const line = crewLine(
+          const line = workspacePaused ? workspacePausedLine() : crewLine(
             agentId,
             {
               state: item.state,
@@ -108,7 +110,7 @@ function CrewCard({ presence, line, mobile, canResume }: { presence: AgentPresen
   return (
     <div
       className={cn(
-        "relative flex h-full w-44 shrink-0 flex-col gap-1.5 rounded-xl border bg-card p-3 sm:w-56 lg:w-full",
+        "relative flex h-full w-52 shrink-0 flex-col gap-1.5 rounded-xl border bg-card p-3 sm:w-56 lg:w-full",
         needsYou ? "border-warning/50 bg-warning/5" : "border-border"
       )}
     >

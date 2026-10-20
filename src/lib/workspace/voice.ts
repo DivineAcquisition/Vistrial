@@ -179,6 +179,10 @@ export function crewLine(agentId: LiveAgentId, presence: CrewPresence, facts: Cr
   }
 }
 
+export function workspacePausedLine(): string {
+  return "The workspace is paused, so I am not working.";
+}
+
 /** The compact state word on phones. Always a word, never only a color. */
 export function crewStateWord(state: CrewPresence["state"]): string {
   return {

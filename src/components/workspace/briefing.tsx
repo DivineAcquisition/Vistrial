@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 
 import { markBriefingSeenAction } from "@/app/(workspace)/app/home/workspace-actions";
 import { AgentGlyph } from "@/components/live/agent-identity";
+import { useLiveMeta } from "@/components/live/live-provider";
 import { Button } from "@/components/ui/button";
 import { BRIEFING_COPY, type Briefing } from "@/lib/workspace/voice";
 
@@ -22,10 +23,11 @@ export function BriefingSection({
   history: Array<{ day: string; briefing: Briefing }>;
 }) {
   const [open, setOpen] = useState(firstViewToday && !briefing.quiet);
+  const { offline } = useLiveMeta();
 
   useEffect(() => {
-    if (firstViewToday) void markBriefingSeenAction();
-  }, [firstViewToday]);
+    if (firstViewToday && !offline) void markBriefingSeenAction();
+  }, [firstViewToday, offline]);
 
   return (
     <div className="flex flex-col gap-3 rounded-xl border border-border bg-card p-3 sm:p-4">

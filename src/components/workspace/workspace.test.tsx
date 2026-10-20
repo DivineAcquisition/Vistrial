@@ -105,6 +105,14 @@ describe("decisions by role", () => {
     expect(html).not.toContain("Approve");
   });
 
+  it("members without approval permission can still accept their own suggested tasks", () => {
+    const withTask = { ...data(false), suggestedTasks: [{ id: "t", text: "Call the Hendersons back", because: null, leadId: null, leadName: null, source: "sentry" }] };
+    const html = text(render(<DecisionsSection data={withTask} queue={[]} now={NOW} />, org("member", false), { waiting: items }));
+    expect(html).toContain("2 decisions are waiting.");
+    expect(html).toContain("Call the Hendersons back");
+    expect(html).toContain("Accept");
+  });
+
   it("operators see suggestions for their leads but cannot approve", () => {
     const html = text(render(<DecisionsSection data={data(false)} queue={[]} now={NOW} />, org("operator", false), { waiting: [waiting("a")] }));
     expect(html).toContain("An owner or approver decides this.");

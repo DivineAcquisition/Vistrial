@@ -77,7 +77,15 @@ export function DecisionsSection({ data, queue, now }: { data: DecisionsData; qu
 
   if (!data.canDecide && org.workspaceRole !== "operator") {
     const waiting = open.length + queue.length;
-    return waiting ? <p className="rounded-xl border border-border px-4 py-3 text-sm text-muted-foreground">{DECISION_COPY.readOnly(waiting)}</p> : null;
+    if (!waiting && !data.suggestedTasks.length) return null;
+    return (
+      <div className="flex flex-col gap-3">
+        {waiting ? <p className="rounded-xl border border-border px-4 py-3 text-sm text-muted-foreground">{DECISION_COPY.readOnly(waiting)}</p> : null}
+        {data.suggestedTasks.map((task) => (
+          <SuggestedTaskCard key={task.id} task={task} />
+        ))}
+      </div>
+    );
   }
 
   if (!total && !held.size) {
@@ -186,6 +194,7 @@ function DecisionCard({ row, meta, now }: { row: Shown; meta: DecisionMeta | und
     <div id={`decision-${row.item.id}`} className={cn("scroll-mt-24 transition-opacity", row.leaving && "opacity-70")}>
       <AgentRequestCard
         item={row.item}
+        variant="decision"
         className="max-sm:[&_button]:min-h-11"
         context={<DecisionContext item={row.item} meta={meta} now={now} />}
         checks={meta && meta.checks.kind !== "unknown" ? checksLine(meta.checks) : null}
@@ -291,6 +300,7 @@ function ReviewMode({
             <AgentRequestCard
               key={current.id}
               item={current}
+              variant="decision"
               className="max-sm:[&_button]:min-h-11"
               context={<DecisionContext item={current} meta={meta[current.id]} now={now} />}
               checks={meta[current.id] && meta[current.id].checks.kind !== "unknown" ? checksLine(meta[current.id].checks) : null}

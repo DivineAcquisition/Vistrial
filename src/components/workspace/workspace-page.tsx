@@ -1,7 +1,6 @@
 import Link from "next/link";
 import { after } from "next/server";
 import { Suspense, type ReactNode } from "react";
-import { AlertTriangleIcon, PauseCircleIcon } from "lucide-react";
 
 import { api } from "../../../convex/_generated/api";
 import { BriefingSection } from "@/components/workspace/briefing";
@@ -13,8 +12,8 @@ import { AgenticHomeSwitch, WorkspaceRuntime } from "@/components/workspace/runt
 import { SectionError, SectionSkeleton, WorkspaceSection } from "@/components/workspace/section";
 import { LiveStream } from "@/components/workspace/stream";
 import { WelcomePanel, type FirstMove } from "@/components/workspace/welcome";
+import { AttentionNotice, Importing, WorkspaceLayout } from "@/components/workspace/layout";
 import { DueNowList, TaskList, WorkNextList } from "@/components/workspace/work";
-import { Button } from "@/components/ui/button";
 import type { AuthContext } from "@/lib/auth/types";
 import { userConvex } from "@/lib/directory/commit";
 import { loadApprovalQueue } from "@/lib/home/views";
@@ -59,28 +58,7 @@ function collapsed(home: HomeState, id: SectionId): boolean {
 }
 
 function AttentionBanner({ frame }: { frame: FrameFacts }) {
-  const { attention, workspacePaused } = frame.state;
-  if (workspacePaused) {
-    return (
-      <div role="status" className="flex items-start gap-3 rounded-xl border border-border bg-card px-4 py-3">
-        <PauseCircleIcon aria-hidden className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
-        <p className="text-sm text-card-foreground">{STATE_COPY.workspacePaused}</p>
-      </div>
-    );
-  }
-  if (!attention) return null;
-  return (
-    <div role="status" className="flex flex-wrap items-center gap-3 rounded-xl border border-warning/40 bg-warning/5 px-4 py-3">
-      <AlertTriangleIcon aria-hidden className="size-4 shrink-0 text-warning" />
-      <p className="min-w-0 flex-1 text-sm text-card-foreground">
-        {attention.text}
-        {STATE_COPY.attentionMore(attention.others)}
-      </p>
-      <Button size="sm" variant="outline" render={<Link href={attention.href} />}>
-        {attention.action}
-      </Button>
-    </div>
-  );
+  return <AttentionNotice attention={frame.state.attention} paused={frame.state.workspacePaused} />;
 }
 
 async function CrewBlock({ ctx, frame, home }: { ctx: AuthContext; frame: FrameFacts; home: HomeState }) {
@@ -183,14 +161,6 @@ async function WelcomeArea({ ctx, frame }: { ctx: AuthContext; frame: FrameFacts
   });
 }
 
-function Importing({ frame }: { frame: FrameFacts }) {
-  return (
-    <section aria-label="Importing" className="flex flex-col gap-1 rounded-xl border border-border bg-card px-4 py-3">
-      <p className="text-sm font-medium text-card-foreground">{STATE_COPY.importing(frame.imported)}</p>
-      <p className="text-sm text-muted-foreground">{STATE_COPY.importingNote}</p>
-    </section>
-  );
-}
 
 async function Subtitle({ ctx, showDecisions }: { ctx: AuthContext; showDecisions: boolean }) {
   const due = await loadDueCount(ctx).catch(() => 0);
@@ -203,32 +173,33 @@ export async function AgenticWorkspace({ ctx, home }: { ctx: AuthContext; home: 
   const canSeeDecisions = ctx.isStaff || ctx.workspaceRole === "owner" || ctx.workspaceRole === "member";
 
   return (
-    <div className="mx-auto flex w-full max-w-6xl min-w-0 flex-col gap-5">
-      <WorkspaceRuntime />
-      <AttentionBanner frame={frame} />
-      <header className="flex min-w-0 flex-col gap-1">
-        <h1 className="truncate font-heading text-2xl text-card-foreground">{ctx.org.name}</h1>
+    <WorkspaceLayout
+      runtime={<WorkspaceRuntime />}
+      banner={<AttentionBanner frame={frame} />}
+      title={ctx.org.name}
+      subtitle={
         <Suspense fallback={<p className="h-5" aria-hidden />}>
           <Subtitle ctx={ctx} showDecisions={canSeeDecisions} />
         </Suspense>
-      </header>
-      <CommandBarField />
-
-      <div className="grid min-w-0 gap-6 lg:grid-cols-[minmax(0,1fr)_20rem]">
-        <div className="flex min-w-0 flex-col gap-6">
-          <div className="lg:hidden">
-            <Suspense fallback={<SectionSkeleton label="your agents" rows={1} />}>
-              <CrewBlock ctx={ctx} frame={frame} home={home} />
-            </Suspense>
-          </div>
-
-          {state.lifecycle === "importing" ? <Importing frame={frame} /> : null}
+      }
+      crew={(key) => (
+        <Suspense key={key} fallback={<SectionSkeleton label="your agents" rows={key === "aside" ? 5 : 1} />}>
+          <CrewBlock ctx={ctx} frame={frame} home={home} />
+        </Suspense>
+      )}
+      stream={(key) => (
+        <Suspense key={key} fallback={<SectionSkeleton label="live" rows={3} />}>
+          <StreamArea ctx={ctx} home={home} />
+        </Suspense>
+      )}
+      main={
+        <>
+          {state.lifecycle === "importing" ? <Importing imported={frame.imported} /> : null}
           {state.showWelcome ? (
             <Suspense fallback={<SectionSkeleton label="welcome" rows={2} tall />}>
               <WelcomeArea ctx={ctx} frame={frame} />
             </Suspense>
           ) : null}
-
           {state.showWork ? (
             <>
               <Suspense fallback={<SectionSkeleton label="decisions" rows={2} tall />}>
@@ -239,42 +210,21 @@ export async function AgenticWorkspace({ ctx, home }: { ctx: AuthContext; home: 
               </Suspense>
             </>
           ) : null}
-
           {!state.showWelcome ? (
             <Suspense fallback={<SectionSkeleton label="briefing" rows={1} tall />}>
               <BriefingArea ctx={ctx} home={home} />
             </Suspense>
           ) : null}
-
           {state.lifecycle !== "importing" && state.lifecycle !== "setup" ? (
             <Suspense fallback={<SectionSkeleton label="numbers" rows={1} />}>
               <OutcomeArea ctx={ctx} frame={frame} home={home} />
             </Suspense>
           ) : null}
-
           {state.lifecycle === "quiet" ? <p className="text-sm text-muted-foreground">{STATE_COPY.quietWatching}</p> : null}
-
-          <div className="lg:hidden">
-            <Suspense fallback={<SectionSkeleton label="live" rows={3} />}>
-              <StreamArea ctx={ctx} home={home} />
-            </Suspense>
-          </div>
-        </div>
-
-        <aside aria-label="Your agents and what they are doing" className="hidden min-w-0 flex-col gap-6 lg:flex">
-          <div className="sticky top-4 flex max-h-[calc(100svh-2rem)] flex-col gap-6 overflow-y-auto">
-            <Suspense fallback={<SectionSkeleton label="your agents" rows={5} />}>
-              <CrewBlock ctx={ctx} frame={frame} home={home} />
-            </Suspense>
-            <Suspense fallback={<SectionSkeleton label="live" rows={4} />}>
-              <StreamArea ctx={ctx} home={home} />
-            </Suspense>
-          </div>
-        </aside>
-      </div>
-
-      {ctx.isStaff ? <AgenticHomeSwitch enabled available={home.available} /> : null}
-    </div>
+        </>
+      }
+      footer={ctx.isStaff ? <AgenticHomeSwitch enabled available={home.available} /> : null}
+    />
   );
 }
 

@@ -129,6 +129,8 @@ type LiveContextValue = {
   store: Store;
   orgId: string;
   workspaceStatus: string;
+  /** Saved state only: no live channel and no fetches. */
+  offline: boolean;
   calm: boolean;
   setCalm: (on: boolean) => void;
   announce: (text: string) => void;
@@ -150,12 +152,15 @@ export function LiveProvider({
   workspaceStatus,
   initial,
   initialCalm,
+  offline = false,
   children,
 }: {
   orgId: string;
   workspaceStatus: string;
   initial: LiveSnapshot;
   initialCalm: boolean;
+  /** Show the saved snapshot without connecting: previews and tests. */
+  offline?: boolean;
   children: ReactNode;
 }) {
   const [store] = useState(() => createStore(fromSnapshot(initial)));
@@ -180,6 +185,12 @@ export function LiveProvider({
   }, [calm]);
 
   useEffect(() => {
+    if (offline) {
+      store.apply((draft) => {
+        draft.connection = "live";
+      });
+      return;
+    }
     if (presenceForWorkspaceStatus(workspaceStatus) !== "active") {
       store.apply((draft) => {
         draft.connection = "live";
@@ -337,11 +348,11 @@ export function LiveProvider({
       window.removeEventListener("online", onOnline);
       void supabase.removeChannel(channel);
     };
-  }, [announce, orgId, store, workspaceStatus]);
+  }, [announce, offline, orgId, store, workspaceStatus]);
 
   const value = useMemo(
-    () => ({ store, orgId, workspaceStatus, calm, setCalm, announce }),
-    [store, orgId, workspaceStatus, calm, setCalm, announce]
+    () => ({ store, orgId, workspaceStatus, offline, calm, setCalm, announce }),
+    [store, orgId, workspaceStatus, offline, calm, setCalm, announce]
   );
 
   return (
@@ -388,6 +399,7 @@ export function useLiveMeta() {
     available: ctx !== null,
     orgId: ctx?.orgId ?? null,
     workspaceStatus: ctx?.workspaceStatus ?? "active",
+    offline: ctx?.offline ?? false,
     calm: ctx?.calm ?? false,
     setCalm: ctx?.setCalm ?? (() => undefined),
   };

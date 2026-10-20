@@ -196,7 +196,7 @@ async function escalate(
             ? "Something has waited too long for approval"
             : `${waiting.length} items have waited too long for approval`,
         body: "Nothing sends until you decide. Open Vistrial to approve or dismiss.",
-        href: notificationHref("/app/home"),
+        href: notificationHref(waiting.length === 1 ? `/app/home#decision-${waiting[0].id}` : "/app/home#decisions"),
         dedupeKey: `approval_escalation:${owner.userId}:${waiting.map((item) => item.id).sort().join(",")}`,
       },
     });

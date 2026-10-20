@@ -594,7 +594,7 @@ async function send(
           subjectIds: [args.leadId],
           title,
           body,
-          href: grouped ? "/app/agents/sentry" : href,
+          href: grouped ? "/app#work" : href,
           dedupeKey: channel === "push" ? dedupeKey : `${dedupeKey}:${channel}`,
           escalationStep: args.step,
           isEmergency: critical,

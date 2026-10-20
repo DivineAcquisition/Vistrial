@@ -1,5 +1,29 @@
 # Home screen
 
+## Agentic workspace (behind a per-workspace switch)
+
+When Vistrial staff switch it on for a workspace (the switch sits at the
+bottom of Home for staff), `/app/home` becomes the sales team's office and
+Operators get the same language on `/app/today`. Every other workspace keeps
+the Home described below until the old one is retired.
+
+| Where | What |
+|---|---|
+| `src/lib/workspace/voice.ts` | Every sentence the workspace says: crew lines, briefing, decisions, checks, stream, empty and error states, welcome. One edit changes the copy everywhere. |
+| `src/lib/workspace/state.ts` | Lifecycle state from real records: setup, importing, quiet, steady, the welcome (Owners, 14 days or until dismissed), learning, attention banner, paused. |
+| `src/lib/workspace/load.ts` | Every read, through the person's row-level-security client. |
+| `src/lib/workspace/briefing.ts` | Briefing facts counted from saved records. History imports never count. |
+| `src/lib/workspace/work.ts` | Due now (Sentry clock order, always on top), Work next (Assay score or age), tasks, and the rule that rows never move under the cursor. |
+| `src/lib/workspace/outcomes.ts` | Outcome tiles built from ids in the one metric catalog. Untracked tiles are left out. |
+| `convex/home.ts`, `convex/homeRules.ts` | The switch, the Owner's four numbers, and each person's own view: collapsed sections, Work next order and scope, snoozed leads, last visit, three days of briefings (counts and lead ids only). |
+| `src/components/workspace/*` | The sections. Decisions reuse the shared request card, so a decision anywhere shows everywhere. |
+| `/app/agents/autonomy` | What each agent does on its own, only suggests, and never does, from the real approval settings. |
+| `/preview/workspace?state=…` | Development only: every state from seeded fake records, for layout checks. Returns 404 in production. |
+
+Nothing on this page sends. Drafts are approved one at a time through the
+shared card and sent by a person from the CRM; "Text draft" asks Relay through
+`compass_request_draft`, which keeps its daily cap and do-not-contact refusal.
+
 `/app/home` leads with outcomes: booked calls and cost per booked call, then
 four supporting numbers, then what needs approval, then what already happened.
 Owners and admins land here after sign-in.

@@ -10,6 +10,8 @@
 
 import type * as access from "../access.js";
 import type * as directory from "../directory.js";
+import type * as home from "../home.js";
+import type * as homeRules from "../homeRules.js";
 import type * as importDirectory from "../importDirectory.js";
 import type * as importLive from "../importLive.js";
 import type * as live from "../live.js";
@@ -26,6 +28,8 @@ import type {
 declare const fullApi: ApiFromModules<{
   access: typeof access;
   directory: typeof directory;
+  home: typeof home;
+  homeRules: typeof homeRules;
   importDirectory: typeof importDirectory;
   importLive: typeof importLive;
   live: typeof live;

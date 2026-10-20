@@ -175,4 +175,49 @@ export default defineSchema({
   })
     .index("by_legacyId", ["legacyId"])
     .index("by_workspace", ["workspaceId"]),
+
+  /**
+   * Domain 3: the agentic workspace. Workspace switches set by staff, the
+   * Owner's outcome choice, and each person's own view of Home. Nothing here
+   * is lead content: ids, counts, and choices only.
+   */
+  workspaceHome: defineTable({
+    workspaceId: v.string(),
+    enabled: v.boolean(),
+    outcomeMetrics: v.array(v.string()),
+    changedBy: v.string(),
+    changedAt: v.number(),
+  }).index("by_workspace", ["workspaceId"]),
+
+  memberHome: defineTable({
+    workspaceId: v.string(),
+    userId: v.string(),
+    collapsed: v.array(v.string()),
+    workOrder: v.union(v.literal("best"), v.literal("oldest")),
+    workScope: v.union(v.literal("mine"), v.literal("everyone"), v.literal("auto")),
+    lastVisitAt: v.union(v.number(), v.null()),
+    visitDay: v.union(v.string(), v.null()),
+    sinceAt: v.union(v.number(), v.null()),
+    briefingSeenDay: v.union(v.string(), v.null()),
+    firstSeenAt: v.number(),
+    welcomeDismissedAt: v.union(v.number(), v.null()),
+  }).index("by_workspace_user", ["workspaceId", "userId"]),
+
+  briefings: defineTable({
+    workspaceId: v.string(),
+    userId: v.string(),
+    day: v.string(),
+    sinceAt: v.union(v.number(), v.null()),
+    facts: v.any(),
+    savedAt: v.number(),
+  }).index("by_workspace_user_day", ["workspaceId", "userId", "day"]),
+
+  workSnoozes: defineTable({
+    workspaceId: v.string(),
+    userId: v.string(),
+    leadId: v.string(),
+    until: v.number(),
+  })
+    .index("by_workspace_user", ["workspaceId", "userId"])
+    .index("by_workspace_user_lead", ["workspaceId", "userId", "leadId"]),
 });

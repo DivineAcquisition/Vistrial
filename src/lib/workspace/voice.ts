@@ -324,6 +324,9 @@ export const DECISION_COPY = {
   expired: "Expired, not sent.",
   approvedNote: "Approved. Ready to send from your CRM.",
   sentNote: (iso: string, timeZone: string) => `Marked sent at ${clockTime(iso, timeZone)}.`,
+  swipeApprove: "Approve this draft?",
+  swipeSkip: "Skip this draft? Nothing is sent.",
+  cancel: "Cancel",
 } as const;
 
 // ---------------------------------------------------------------------------
@@ -354,6 +357,7 @@ export const WORK_COPY = {
   textDraftConfirm: "Ask Relay for a draft? It will wait under Decisions waiting. Nothing is sent without approval.",
   textDraftDone: "Relay will prepare a draft. It will wait for approval.",
   snoozed: "Snoozed until tomorrow morning.",
+  swipeCall: (name: string) => `Call ${name}?`,
   taskSource: { person: "Yours", sentry: "Sentry", scribe: "Scribe", assay: "Assay", playbook: "Playbook", booking: "Booking", service_team: "Vistrial team" } as Record<string, string>,
 } as const;
 
@@ -636,4 +640,7 @@ export const STATE_COPY = {
   sectionError: "This part did not load.",
   retry: "Try again",
   allClear: "All clear. Nothing is waiting on you and nothing is due.",
+  billingRestricted: "Some automation is paused until the payment is sorted. You can still read your leads.",
+  billingPastDue: "A payment did not go through. Everything keeps working for now.",
+  billingAskOwner: "Ask the Owner to update the payment method.",
 } as const;

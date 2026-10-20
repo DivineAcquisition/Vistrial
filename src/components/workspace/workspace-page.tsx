@@ -33,6 +33,7 @@ import {
   loadWork,
   type FrameFacts,
 } from "@/lib/workspace/load";
+import { welcomeWindowOpen } from "@/lib/workspace/state";
 import { BRIEFING_COPY, briefingFrom, OUTCOME_COPY, STATE_COPY, STREAM_COPY, WORK_COPY, welcomeLines } from "@/lib/workspace/voice";
 import type { SectionId } from "../../../convex/homeRules";
 
@@ -167,9 +168,10 @@ async function Subtitle({ ctx, showDecisions }: { ctx: AuthContext; showDecision
   return <WorkspaceSubtitle firstName={firstName(ctx)} dueNow={due} showDecisions={showDecisions} />;
 }
 
-export async function AgenticWorkspace({ ctx, home }: { ctx: AuthContext; home: HomeState }) {
+export async function AgenticWorkspace({ ctx, home, forceWelcome = false }: { ctx: AuthContext; home: HomeState; forceWelcome?: boolean }) {
   const frame = await loadFrame(ctx, home);
   const { state } = frame;
+  const showWelcome = state.showWelcome || (forceWelcome && ctx.workspaceRole === "owner" && welcomeWindowOpen(home.prefs.firstSeenAt, home.now));
   const canSeeDecisions = ctx.isStaff || ctx.workspaceRole === "owner" || ctx.workspaceRole === "member";
 
   return (
@@ -195,7 +197,7 @@ export async function AgenticWorkspace({ ctx, home }: { ctx: AuthContext; home: 
       main={
         <>
           {state.lifecycle === "importing" ? <Importing imported={frame.imported} /> : null}
-          {state.showWelcome ? (
+          {showWelcome ? (
             <Suspense fallback={<SectionSkeleton label="welcome" rows={2} tall />}>
               <WelcomeArea ctx={ctx} frame={frame} />
             </Suspense>
@@ -210,7 +212,7 @@ export async function AgenticWorkspace({ ctx, home }: { ctx: AuthContext; home: 
               </Suspense>
             </>
           ) : null}
-          {!state.showWelcome ? (
+          {!showWelcome ? (
             <Suspense fallback={<SectionSkeleton label="briefing" rows={1} tall />}>
               <BriefingArea ctx={ctx} home={home} />
             </Suspense>

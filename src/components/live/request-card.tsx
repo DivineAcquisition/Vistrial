@@ -2,6 +2,8 @@
 
 import { useEffect, useState, useTransition, type ReactNode } from "react";
 
+import { swipeMotion, useSwipe } from "@/components/workspace/swipe";
+
 import {
   decideAgentRequest,
   fetchRelayDraft,
@@ -18,6 +20,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { AGENTS, producedBy } from "@/lib/agents/roster";
 import type { WaitingItem } from "@/lib/live/model";
 import { finalMessage } from "@/lib/relay/footer";
+import { DECISION_COPY } from "@/lib/workspace/voice";
 import { cn } from "@/lib/utils";
 
 /**
@@ -164,13 +167,19 @@ export function AgentRequestCard({
     }
   }
 
+  const swipe = useSwipe(variant === "decision" && item.kind === "approval" && !decided && org.canApprove && !undoUntil);
   const used = relay?.facts.filter((fact) => fact.used) ?? [];
   const heading =
     item.kind === "question" ? "Question for you" : approved ? "Approved, ready to send from your CRM" : "Waiting for your approval";
 
   return (
     <article
-      className={cn("live-enter rounded-xl border border-warning/30 bg-warning/5 p-3 sm:p-4", className)}
+      className={cn("live-enter rounded-xl border border-warning/30 bg-warning/5 p-3 sm:p-4", swipe.dx !== 0 && "relative z-10", className)}
+      style={swipeMotion(swipe.dx)}
+      onPointerDown={swipe.onPointerDown}
+      onPointerMove={swipe.onPointerMove}
+      onPointerUp={swipe.onPointerUp}
+      onPointerCancel={swipe.onPointerCancel}
       aria-label={item.title}
     >
       {context ? <div className="mb-2">{context}</div> : null}
@@ -262,6 +271,26 @@ export function AgentRequestCard({
           <span className="font-medium">Checks: </span>
           {checks}
         </p>
+      ) : null}
+
+      {swipe.intent ? (
+        <div role="group" aria-label={swipe.intent === "right" ? DECISION_COPY.swipeApprove : DECISION_COPY.swipeSkip} className="mt-3 flex flex-wrap items-center gap-2 rounded-lg border border-border bg-background/80 p-2">
+          <p className="min-w-0 flex-1 text-sm text-card-foreground">{swipe.intent === "right" ? DECISION_COPY.swipeApprove : DECISION_COPY.swipeSkip}</p>
+          <Button
+            size="sm"
+            onClick={() => {
+              const intent = swipe.intent;
+              swipe.clear();
+              if (intent === "right") setUndoUntil(Date.now() + 30_000);
+              else decide("reject");
+            }}
+          >
+            {swipe.intent === "right" ? "Approve" : "Skip"}
+          </Button>
+          <Button size="sm" variant="ghost" onClick={swipe.clear}>
+            {DECISION_COPY.cancel}
+          </Button>
+        </div>
       ) : null}
 
       {agent && !compact ? (

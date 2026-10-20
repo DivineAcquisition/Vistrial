@@ -68,7 +68,7 @@ export type FrameFacts = {
 export async function loadFrame(ctx: AuthContext, home: HomeState): Promise<FrameFacts> {
   const db = await rls();
   const operator = ctx.workspaceRole === "operator";
-  const [view, imports, sentry, connections, recentRuns, closed, routing] = await Promise.all([
+  const [view, imports, sentry, connections, recentRuns, closed, routing, billing] = await Promise.all([
     operator ? Promise.resolve(null) : loadCustomerView(ctx.org.id).catch(() => null),
     db.from("onboarding_import_runs").select("status, imported").eq("org_id", ctx.org.id).in("status", ["queued", "running"]).limit(5),
     db.from("sentry_workspaces").select("mode, watch_from").eq("org_id", ctx.org.id).maybeSingle(),
@@ -86,6 +86,12 @@ export async function loadFrame(ctx: AuthContext, home: HomeState): Promise<Fram
       ? Promise.resolve({ data: [] })
       : db.from("leads").select("source").eq("org_id", ctx.org.id).eq("is_test", false).in("status", ["closed_won", "closed_lost"]).limit(5000),
     db.from("routing_settings").select("agent_tasks").eq("org_id", ctx.org.id).maybeSingle(),
+    operator
+      ? Promise.resolve({ data: null })
+      : db.rpc("billing_notice", { p_org_id: ctx.org.id }).then(
+          (result) => result,
+          () => ({ data: null })
+        ),
   ]);
 
   const wentLiveAt = view?.wentLiveAt ?? (operator && ctx.org.status === "active" ? new Date(0).toISOString() : null);
@@ -94,6 +100,11 @@ export async function loadFrame(ctx: AuthContext, home: HomeState): Promise<Fram
     : 0;
 
   const problems: Problem[] = [];
+  const billingState = (billing.data as { state?: string } | null)?.state;
+  if (billingState === "restricted" || billingState === "past_due") {
+    const canOpen = ctx.workspaceRole === "owner" || ctx.isStaff;
+    problems.push({ kind: "billing", level: billingState, href: "/app/settings/billing", canOpen });
+  }
   for (const row of (connections.data ?? []) as Array<{ connector_key: string; status: string }>) {
     const name = connectorByKey(row.connector_key)?.name ?? "A connected tool";
     problems.push(

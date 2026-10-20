@@ -12,6 +12,8 @@ import { MEMBER_LIMIT_MESSAGE } from "@/lib/billing/copy";
 import { redirectIfOnboardingIncomplete } from "@/lib/onboarding/gate";
 import { isProductScopeEnabled } from "@/lib/product-scope";
 import { createClient } from "@/lib/supabase/server";
+import { agenticHomeEnabled } from "@/lib/workspace/home-state";
+import { isAgenticSurface } from "@/lib/workspace/state";
 
 export const dynamic = "force-dynamic";
 
@@ -37,6 +39,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   ]);
   const showWelcome = welcomeRole !== null && !(welcome as { welcome_seen_at?: string | null } | null)?.welcome_seen_at;
   const path = (await headers()).get("x-vistrial-pathname") ?? "";
+  const agenticSurface = isAgenticSurface(path.split("?")[0] ?? path) && (await agenticHomeEnabled(ctx).catch(() => false));
   const billing = ctx.isStaff
     ? null
     : ((
@@ -66,7 +69,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           <button type="submit" className="mt-2 text-brand-300 underline">I accept the current Privacy and Terms</button>
         </form>
       ) : null}
-      {billing?.state === "restricted" ? (
+      {billing?.state === "restricted" && !agenticSurface ? (
         <Alert variant="warning">
           <AlertTitle>Some automation is paused</AlertTitle>
           <AlertDescription>
@@ -75,7 +78,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           </AlertDescription>
         </Alert>
       ) : null}
-      {billing?.state === "past_due" && ctx.workspaceRole === "owner" ? (
+      {billing?.state === "past_due" && ctx.workspaceRole === "owner" && !agenticSurface ? (
         <Alert variant="warning">
           <AlertTitle>A payment did not go through</AlertTitle>
           <AlertDescription>Everything keeps working for now. Open Billing to update the payment method.</AlertDescription>

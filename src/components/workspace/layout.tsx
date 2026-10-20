@@ -75,9 +75,11 @@ export function AttentionNotice({ attention, paused }: { attention: Attention | 
         {attention.text}
         {STATE_COPY.attentionMore(attention.others)}
       </p>
-      <Button size="sm" variant="outline" render={<Link href={attention.href} />}>
-        {attention.action}
-      </Button>
+      {attention.action ? (
+        <Button size="sm" variant="outline" render={<Link href={attention.href} />}>
+          {attention.action}
+        </Button>
+      ) : null}
     </div>
   );
 }

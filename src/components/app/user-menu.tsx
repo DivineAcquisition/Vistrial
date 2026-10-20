@@ -18,15 +18,19 @@ import {
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useOrg } from "@/components/app/org-provider";
 import { initials } from "@/lib/format";
+import { WELCOME_COPY } from "@/lib/workspace/voice";
 import { SHELL_ROLE_LABEL } from "@/lib/shell/nav";
 import { cn } from "@/lib/utils";
 
 export function UserMenu({
   collapsed = false,
   placement = "sidebar",
+  welcomeTour = false,
 }: {
   collapsed?: boolean;
   placement?: "sidebar" | "header";
+  /** Owner, for 14 days after they dismiss the welcome. */
+  welcomeTour?: boolean;
 }) {
   const { user, isStaff, isPlatformAdmin, workspaceRole, org } = useOrg();
   const name = user.displayName || user.email;
@@ -86,6 +90,7 @@ export function UserMenu({
         <MenuLinkItem render={<Link href="/app/settings/profile" />}>Personal settings</MenuLinkItem>
         <MenuLinkItem render={<Link href="/app/notifications" />}>Notifications</MenuLinkItem>
         <MenuLinkItem render={<Link href="/app/help" />}>Help</MenuLinkItem>
+        {welcomeTour ? <MenuLinkItem render={<Link href="/app/home?tour=1" />}>{WELCOME_COPY.tour}</MenuLinkItem> : null}
         {isStaff ? (
           <MenuLinkItem render={<Link href="/app/team" />}>Vistrial team</MenuLinkItem>
         ) : null}

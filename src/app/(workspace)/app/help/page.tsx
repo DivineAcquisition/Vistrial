@@ -15,6 +15,9 @@ import { HELP_ANSWERS } from "@/lib/portal/help-content";
 import { HELP_STATUS, HELP_TOPICS, isHelpTopic, type HelpTopic } from "@/lib/portal/requests";
 import { createClient } from "@/lib/supabase/server";
 import { cardTitle, helperClass } from "@/lib/ui";
+import { loadHomeState } from "@/lib/workspace/home-state";
+import { welcomeTourLink } from "@/lib/workspace/state";
+import { WELCOME_COPY } from "@/lib/workspace/voice";
 
 export const dynamic = "force-dynamic";
 
@@ -77,11 +80,28 @@ export default async function HelpPage({ searchParams }: { searchParams: Promise
   const lead = leadRow
     ? { id: leadRow.id, name: [leadRow.first_name, leadRow.last_name].filter(Boolean).join(" ").trim() || "this lead" }
     : null;
+  const home = await loadHomeState(ctx).catch(() => null);
+  const tour = home
+    ? welcomeTourLink({
+        role: ctx.workspaceRole,
+        enabled: home.available && home.enabled,
+        firstSeenAt: home.prefs.firstSeenAt,
+        dismissedAt: home.prefs.welcomeDismissedAt,
+        now: home.now,
+      })
+    : false;
   const answers = [...HELP_ANSWERS].sort((a, b) => Number(b.topic === topic) - Number(a.topic === topic));
   const seesOthers = ctx.workspaceRole === "owner" || ctx.isStaff;
 
   return (
     <PageFrame title="Help" description="Quick answers, and a direct line to your Vistrial team.">
+      {tour ? (
+        <p className="text-sm">
+          <Link href="/app/home?tour=1" className="font-medium text-brand-300 underline">
+            {WELCOME_COPY.tour}
+          </Link>
+        </p>
+      ) : null}
       {ctx.workspaceRole === "owner" ? (
         <section className="grid gap-4 md:grid-cols-2">
           <Panel className="space-y-3 p-4">

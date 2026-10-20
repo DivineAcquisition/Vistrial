@@ -27,6 +27,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import type { PaymentProblem } from "@/lib/billing/labels";
 import { exitWorkspace } from "@/app/(workspace)/app/team/staff-actions";
 import { landingPath } from "@/lib/navigation";
+import { isAgenticSurface } from "@/lib/workspace/state";
 import {
   isPlatformRoute,
   shellChrome,
@@ -43,6 +44,7 @@ export function AppShell({
   staffSessionEndsAt = null,
   mfaGraceUntil = null,
   agentic = false,
+  welcomeTour = false,
 }: {
   children: ReactNode;
   counts: AttentionCounts;
@@ -53,6 +55,7 @@ export function AppShell({
   mfaGraceUntil?: string | null;
   /** The agentic workspace is on: one command bar replaces search and the Compass button. */
   agentic?: boolean;
+  welcomeTour?: boolean;
 }) {
   const pathname = usePathname();
   if (pathname.startsWith("/app/layouts/preview")) return children;
@@ -67,6 +70,7 @@ export function AppShell({
         staffSessionEndsAt={staffSessionEndsAt}
         mfaGraceUntil={mfaGraceUntil}
         agentic={agentic}
+        welcomeTour={welcomeTour}
       >
         {children}
       </ConnectedShell>
@@ -83,6 +87,7 @@ function ConnectedShell({
   staffSessionEndsAt,
   mfaGraceUntil,
   agentic,
+  welcomeTour,
 }: {
   children: ReactNode;
   counts: AttentionCounts;
@@ -92,6 +97,7 @@ function ConnectedShell({
   staffSessionEndsAt: string | null;
   mfaGraceUntil: string | null;
   agentic: boolean;
+  welcomeTour: boolean;
 }) {
   const pathname = usePathname();
   const org = useOrg();
@@ -111,6 +117,7 @@ function ConnectedShell({
     title = "Profile";
   }
   const chat = pathname === "/app/compass" || pathname === "/app/ask" || pathname.startsWith("/app/ask/");
+  const foldedBanner = agentic && isAgenticSurface(pathname);
   const home = landingPath(org.surfaceAccess, org.role);
   const showCue = org.isStaff && !onPlatformPage;
 
@@ -142,10 +149,11 @@ function ConnectedShell({
           </>
         )
       }
-      renderAccount={(placement, collapsed) => (
+        renderAccount={(placement, collapsed) => (
         <UserMenu
           placement={placement === "header" ? "header" : "sidebar"}
           collapsed={placement === "header" ? true : collapsed}
+          welcomeTour={welcomeTour}
         />
       )}
       cue={showCue ? <StaffCue endsAt={staffSessionEndsAt} /> : null}
@@ -158,7 +166,7 @@ function ConnectedShell({
               <AlertDescription>You are in {org.org.name}.</AlertDescription>
             </Alert>
           ) : null}
-          <WorkspaceStatusBanner />
+          {foldedBanner && (org.org.status === "paused" || org.org.status === "closed") ? null : <WorkspaceStatusBanner />}
           {mfaGraceUntil ? (
             <Alert variant="warning" className="mb-6">
               <AlertTitle>Set up your authenticator app</AlertTitle>
@@ -171,7 +179,7 @@ function ConnectedShell({
               </AlertDescription>
             </Alert>
           ) : null}
-          {paymentProblem && !pathname.startsWith("/app/settings/billing") ? (
+          {paymentProblem && !foldedBanner && !pathname.startsWith("/app/settings/billing") ? (
             <Alert variant="warning" className="mb-6">
               <AlertTitle>The last payment to Vistrial did not go through</AlertTitle>
               <AlertDescription>

@@ -12,6 +12,7 @@ import { StatusBadge } from "@/components/ui/status-badge";
 import type { WorkData } from "@/lib/workspace/load";
 import { dueLabel, TIER_WORD, WORK_COPY, type Tier } from "@/lib/workspace/voice";
 import { holdOrder, type DueRow, type TaskRow, type WorkRow } from "@/lib/workspace/work";
+import { SwipeCall } from "@/components/workspace/swipe";
 import { useNow } from "@/components/workspace/use-now";
 import { cn } from "@/lib/utils";
 
@@ -39,7 +40,8 @@ export function DueNowList({ rows }: { rows: DueRow[] }) {
       {held.waiting ? <NewItems count={held.waiting} onClick={held.accept} /> : null}
       <ul className="flex flex-col gap-2">
         {held.rows.map((row) => (
-          <li key={row.leadId} className={cn("rounded-xl border p-3", row.state === "missed" ? "border-destructive/40 bg-destructive/5" : "border-warning/40 bg-warning/5")}>
+          <li key={row.leadId}>
+            <SwipeCall name={row.name} phone={row.phone} className={cn("rounded-xl border p-3", row.state === "missed" ? "border-destructive/40 bg-destructive/5" : "border-warning/40 bg-warning/5")}>
             <div className="flex flex-wrap items-start justify-between gap-2">
               <div className="min-w-0">
                 <p className="truncate text-sm font-medium text-card-foreground">{row.name}</p>
@@ -51,6 +53,7 @@ export function DueNowList({ rows }: { rows: DueRow[] }) {
               {row.tier ? <StatusBadge label={TIER_WORD[row.tier]} tone={tierTone(row.tier)} /> : null}
             </div>
             <LeadActions leadId={row.leadId} phone={row.phone} />
+            </SwipeCall>
           </li>
         ))}
       </ul>
@@ -106,7 +109,8 @@ export function WorkNextList({
       {held.rows.length ? (
         <ol className="flex flex-col gap-2">
           {held.rows.map((row) => (
-            <li key={row.leadId} className="rounded-xl border border-border bg-card p-3">
+            <li key={row.leadId}>
+              <SwipeCall name={row.name} phone={row.phone} className="rounded-xl border border-border bg-card p-3">
               <div className="flex flex-wrap items-start justify-between gap-2">
                 <div className="min-w-0 flex-1">
                   <p className="flex flex-wrap items-center gap-2 text-sm font-medium text-card-foreground">
@@ -118,6 +122,7 @@ export function WorkNextList({
                 <WhyFirstButton leadId={row.leadId} />
               </div>
               <LeadActions leadId={row.leadId} phone={row.phone} snooze />
+              </SwipeCall>
             </li>
           ))}
         </ol>

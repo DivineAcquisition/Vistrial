@@ -10,12 +10,13 @@ export const dynamic = "force-dynamic";
 
 export const metadata = { title: "Home" };
 
-export default async function HomePage() {
+export default async function HomePage({ searchParams }: { searchParams: Promise<{ tour?: string }> }) {
   const ctx = await getAuthContext();
   const home = await loadHomeState(ctx);
+  const tour = (await searchParams).tour === "1";
   if (home.available && home.enabled) {
     if (ctx.workspaceRole === "operator") redirect("/app/today");
-    return <AgenticWorkspace ctx={ctx} home={home} />;
+    return <AgenticWorkspace ctx={ctx} home={home} forceWelcome={tour} />;
   }
   return <LegacyHome ctx={ctx} footer={ctx.isStaff ? <AgenticHomeSwitch enabled={false} available={home.available} /> : null} />;
 }

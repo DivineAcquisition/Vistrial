@@ -1,8 +1,12 @@
 import { describe, expect, it } from "vitest";
 
+import { buildStream } from "@/components/workspace/stream";
+import type { LiveRun } from "@/lib/live/model";
+
 import { aggregateBriefing, briefingNumbers, type BriefingRecords } from "@/lib/workspace/briefing";
 import { outcomeCatalog, outcomeValue } from "@/lib/workspace/outcomes";
-import { attentionFor, detectWorkspaceState, type StateInput } from "@/lib/workspace/state";
+import { attentionFor, detectWorkspaceState, welcomeTourLink, type StateInput } from "@/lib/workspace/state";
+import { swipeIntent } from "@/lib/workspace/swipe";
 import * as voice from "@/lib/workspace/voice";
 import { holdOrder, orderDueNow, orderWorkNext, sortTasks, type DueRow, type WorkRow } from "@/lib/workspace/work";
 import type { Summary, WorkspaceFacts } from "@/lib/metrics/load";
@@ -291,6 +295,30 @@ describe("workspace state detection", () => {
     expect(attentionFor([])).toBeNull();
   });
 
+  it("keeps a single banner, with a blocked payment ahead of a broken connection", () => {
+    const attention = attentionFor([
+      { kind: "reconnect", connector: "Your CRM", href: "/app/settings/connections" },
+      { kind: "billing", level: "restricted", href: "/app/settings/billing", canOpen: true },
+      { kind: "delayed", connector: "Your calendar", href: "/app/settings/connections" },
+    ]);
+    expect(attention?.kind).toBe("billing");
+    expect(attention?.action).toBe("Open Billing");
+    expect(attention?.others).toBe(2);
+    expect(attention?.text).toContain("Some automation is paused");
+    const member = attentionFor([{ kind: "billing", level: "past_due", href: "/app/settings/billing", canOpen: false }]);
+    expect(member?.action).toBe("");
+    expect(member?.text).toContain("Ask the Owner");
+  });
+
+  it("keeps the welcome tour in Help for 14 days after an Owner dismisses it", () => {
+    const base = { role: "owner" as const, enabled: true, firstSeenAt: NOW - 2 * DAY, dismissedAt: NOW - DAY, now: NOW };
+    expect(welcomeTourLink(base)).toBe(true);
+    expect(welcomeTourLink({ ...base, dismissedAt: null })).toBe(false);
+    expect(welcomeTourLink({ ...base, role: "member" })).toBe(false);
+    expect(welcomeTourLink({ ...base, firstSeenAt: NOW - 15 * DAY })).toBe(false);
+    expect(welcomeTourLink({ ...base, enabled: false })).toBe(false);
+  });
+
   it("paused and closed workspaces say so", () => {
     expect(detectWorkspaceState(stateInput({ workspaceStatus: "paused" })).workspacePaused).toBe(true);
     expect(detectWorkspaceState(stateInput({ workspaceStatus: "closed" })).workspacePaused).toBe(true);
@@ -328,6 +356,23 @@ describe("due now and work next ordering", () => {
   it("never moves rows under the cursor", () => {
     const incoming = [{ id: "new" }, { id: "b" }, { id: "a" }];
     expect(holdOrder(["a", "b", "gone"], incoming, (row) => row.id)).toEqual({ rows: [{ id: "a" }, { id: "b" }], waiting: 1 });
+  });
+
+  it("orders 5,000 leads by score in well under a tenth of a second", () => {
+    const rows = Array.from({ length: 5000 }, (_, index) => ({
+      leadId: String(index).padStart(5, "0"),
+      name: `Lead ${index}`,
+      phone: null,
+      tier: "warm" as const,
+      score: index % 101,
+      reason: null,
+      createdAt: iso(NOW - index * MIN),
+    }));
+    const start = performance.now();
+    const ordered = orderWorkNext(rows, "best");
+    expect(performance.now() - start).toBeLessThan(100);
+    expect(ordered[0]?.score).toBe(100);
+    expect(ordered).toHaveLength(5000);
   });
 
   it("puts overdue tasks first", () => {
@@ -375,6 +420,48 @@ function facts(overrides: Partial<WorkspaceFacts> = {}): WorkspaceFacts {
 }
 
 const agg = (count: number, median: number | null = null, sum: number | null = null) => ({ count, leads: count, sum, avg: null, median });
+
+describe("live stream bursts", () => {
+  it("folds a burst of 200 finishes into a handful of lines", () => {
+    const runs: LiveRun[] = Array.from({ length: 200 }, (_, index) => ({
+      id: `r${index}`,
+      orgId: "org",
+      agentId: "scribe",
+      leadId: null,
+      actorMemberId: null,
+      subjectLabel: `call ${index}`,
+      subjectHref: null,
+      status: "completed",
+      currentStepLabel: null,
+      plan: [],
+      reasonSummary: null,
+      plainError: null,
+      needsPerson: null,
+      sources: [],
+      configVersion: null,
+      batchId: null,
+      simulated: true,
+      cause: null,
+      createdAt: iso(NOW - index * 1000),
+      startedAt: null,
+      finishedAt: iso(NOW - index * 1000),
+      lastProgressAt: iso(NOW - index * 1000),
+    }));
+    const start = performance.now();
+    const items = buildStream(runs, []);
+    expect(performance.now() - start).toBeLessThan(50);
+    expect(items.length).toBeLessThan(10);
+    expect(items[0]?.kind).toBe("burst");
+  });
+});
+
+describe("swipe confirmation", () => {
+  it("asks for a tap only after a deliberate drag, and ignores a small one", () => {
+    expect(swipeIntent(10)).toBeNull();
+    expect(swipeIntent(72)).toBe("right");
+    expect(swipeIntent(-80)).toBe("left");
+  });
+});
 
 describe("outcome strip", () => {
   it("leaves out what the workspace does not track, and money for people who may not see it", () => {

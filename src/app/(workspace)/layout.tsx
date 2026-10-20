@@ -10,7 +10,8 @@ import { loadAttentionCounts } from "@/lib/shell/attention";
 import { loadPaymentProblem } from "@/lib/billing/banner";
 import { mfaPrompt, mfaSelf } from "@/lib/staff/mfa-check";
 import { guardStaffSession } from "@/lib/staff/session";
-import { agenticHomeEnabled } from "@/lib/workspace/home-state";
+import { loadHomeState } from "@/lib/workspace/home-state";
+import { welcomeTourLink } from "@/lib/workspace/state";
 import { redirect } from "next/navigation";
 import packageJson from "../../../package.json";
 
@@ -33,15 +34,25 @@ export default async function WorkspaceLayout({ children }: { children: React.Re
     waiting: [],
     loadedAt: new Date().toISOString(),
   };
-  const [counts, snapshot, calm, paymentProblem, session, mfa, agentic] = await Promise.all([
+  const [counts, snapshot, calm, paymentProblem, session, mfa, home] = await Promise.all([
     loadAttentionCounts(ctx),
     loadLiveSnapshot(ctx.org.id).catch(() => emptySnapshot),
     loadCalmMode(ctx.user.id).catch(() => false),
     loadPaymentProblem(ctx).catch(() => null),
     guardStaffSession(ctx),
     ctx.platformRole ? mfaSelf() : Promise.resolve(null),
-    agenticHomeEnabled(ctx).catch(() => false),
+    loadHomeState(ctx).catch(() => null),
   ]);
+  const agentic = Boolean(home?.available && home.enabled);
+  const welcomeTour = home
+    ? welcomeTourLink({
+        role: ctx.workspaceRole,
+        enabled: agentic,
+        firstSeenAt: home.prefs.firstSeenAt,
+        dismissedAt: home.prefs.welcomeDismissedAt,
+        now: home.now,
+      })
+    : false;
   const prompt = mfaPrompt(mfa);
   if (prompt.lock) redirect("/security/setup?next=/app/team");
 
@@ -58,6 +69,7 @@ export default async function WorkspaceLayout({ children }: { children: React.Re
               staffSessionEndsAt={session?.state === "active" ? session.ends_at : null}
               mfaGraceUntil={prompt.graceUntil}
               agentic={agentic}
+              welcomeTour={welcomeTour}
             >
               {children}
             </AppShell>

@@ -207,14 +207,14 @@ describe("Forsight and the client portal", () => {
     }
   });
 
-  it("lands owners, staff, and members on Home, and operators on the list", () => {
+  it("lands owners, staff, and members on Home, and operators on Today", () => {
     expect(landingPath("portal", "owner")).toBe(HOME_PATH);
     expect(landingPath("portal", "member")).toBe(HOME_PATH);
     expect(landingPath("operator", "member")).toBe(HOME_PATH);
-    expect(landingPath("operator", "operator")).toBe("/app/queue");
+    expect(landingPath("operator", "operator")).toBe("/app/today");
     expect(landingPath("operator", "owner")).toBe(HOME_PATH);
     expect(landingPath("operator", "admin")).toBe(HOME_PATH);
-    expect(landingPath("operator", "setter")).toBe("/app/queue");
-    expect(landingPath("operator", "closer")).toBe("/app/queue");
+    expect(landingPath("operator", "setter")).toBe("/app/today");
+    expect(landingPath("operator", "closer")).toBe("/app/today");
   });
 });

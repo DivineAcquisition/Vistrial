@@ -12,11 +12,51 @@ import { TaskButtons } from "@/app/(workspace)/app/tasks/task-form";
 import { ClaimLeadButton } from "@/app/(workspace)/app/today/claim";
 import { LeadPeek } from "@/components/cases/lead-peek";
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { OperatorToday } from "@/components/workspace/workspace-page";
+import { loadHomeState } from "@/lib/workspace/home-state";
+import type { AuthContext } from "@/lib/auth/types";
+
+export const dynamic = "force-dynamic";
 
 export const metadata = { title: "Today" };
 
+/** Leads nobody owns yet, which an Operator may claim. */
+async function ClaimableLeads({ ctx }: { ctx: AuthContext }) {
+  const db = (await createClient()) as unknown as SupabaseClient;
+  const { data } = await db
+    .from("leads")
+    .select("id, first_name, last_name")
+    .eq("org_id", ctx.org.id)
+    .is("assigned_setter_id", null)
+    .is("assigned_closer_id", null)
+    .eq("is_test", false)
+    .eq("do_not_contact", false)
+    .limit(5);
+  const rows = (data ?? []) as Array<{ id: string; first_name: string | null; last_name: string | null }>;
+  if (!rows.length) return null;
+  return (
+    <section className="flex flex-col gap-2" aria-labelledby="claimable-leads">
+      <h2 id="claimable-leads" className="font-heading text-base text-card-foreground">New leads you can claim</h2>
+      <ul className="flex flex-col gap-2">
+        {rows.map((lead) => (
+          <li key={lead.id} className="flex items-center justify-between gap-3 rounded-xl border border-border bg-card p-3">
+            <Link href={`/app/cases/${lead.id}`} className="text-sm font-medium text-card-foreground">
+              {[lead.first_name, lead.last_name].filter(Boolean).join(" ") || "Lead"}
+            </Link>
+            <ClaimLeadButton leadId={lead.id} />
+          </li>
+        ))}
+      </ul>
+    </section>
+  );
+}
+
 export default async function TodayPage() {
   const ctx = await getAuthContext();
+  if (ctx.workspaceRole === "operator") {
+    const home = await loadHomeState(ctx);
+    if (home.available && home.enabled) return <OperatorToday ctx={ctx} home={home} claimable={<ClaimableLeads ctx={ctx} />} />;
+  }
   const mine = ctx.workspaceRole === "operator" ? "me" : null;
   const [attention, waiting, requests] = await Promise.all([
     loadExperiencePage({ ...EMPTY_EXPERIENCE_FILTER, view: "needs_attention", assignee: mine }),
@@ -136,7 +176,6 @@ export default async function TodayPage() {
           ))}
         </ul>
       )}
-      <p className="mt-6 text-xs text-muted-foreground">A daily summary to confirm will live here later. It is not built yet.</p>
     </PageFrame>
   );
 }

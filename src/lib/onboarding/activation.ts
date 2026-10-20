@@ -45,8 +45,8 @@ export function activationStepCopy(agent: LiveAgentId, watchDays: number): { tit
       };
     case "assay":
       return {
-        title: `${name} is getting ready`,
-        plain: `${name} is not scoring leads yet, and it does not start work.`,
+        title: `${name} scores leads`,
+        plain: `${name} scores each lead from its activity and puts your list in order. It never contacts a lead, and past leads are scored quietly.`,
       };
   }
 }

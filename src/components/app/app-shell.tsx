@@ -20,6 +20,7 @@ import { UserMenu } from "@/components/app/user-menu";
 import { ShellLeading } from "@/components/app/shell-leading";
 import { WorkspaceStatusBanner } from "@/components/app/workspace-status-banner";
 import { CompassPanelButton } from "@/components/compass/panel";
+import { CommandBarDialog, CommandBarTrigger } from "@/components/workspace/command-bar";
 import { useOrg } from "@/components/app/org-provider";
 import { LiveStatusStrip } from "@/components/live/agent-panel";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -41,6 +42,7 @@ export function AppShell({
   version,
   staffSessionEndsAt = null,
   mfaGraceUntil = null,
+  agentic = false,
 }: {
   children: ReactNode;
   counts: AttentionCounts;
@@ -49,6 +51,8 @@ export function AppShell({
   version: string;
   staffSessionEndsAt?: string | null;
   mfaGraceUntil?: string | null;
+  /** The agentic workspace is on: one command bar replaces search and the Compass button. */
+  agentic?: boolean;
 }) {
   const pathname = usePathname();
   if (pathname.startsWith("/app/layouts/preview")) return children;
@@ -62,6 +66,7 @@ export function AppShell({
         version={version}
         staffSessionEndsAt={staffSessionEndsAt}
         mfaGraceUntil={mfaGraceUntil}
+        agentic={agentic}
       >
         {children}
       </ConnectedShell>
@@ -77,6 +82,7 @@ function ConnectedShell({
   version,
   staffSessionEndsAt,
   mfaGraceUntil,
+  agentic,
 }: {
   children: ReactNode;
   counts: AttentionCounts;
@@ -85,6 +91,7 @@ function ConnectedShell({
   version: string;
   staffSessionEndsAt: string | null;
   mfaGraceUntil: string | null;
+  agentic: boolean;
 }) {
   const pathname = usePathname();
   const org = useOrg();
@@ -120,11 +127,20 @@ function ConnectedShell({
       chat={chat}
       leading={<ShellLeading />}
       tools={
-        <>
-          {onPlatformPage ? null : <CompassPanelButton />}
-          <AppJumpPalette />
-          <NotificationBell />
-        </>
+        agentic ? (
+          <>
+            {onPlatformPage ? null : <CompassPanelButton hideTrigger />}
+            <CommandBarTrigger />
+            <CommandBarDialog />
+            <NotificationBell />
+          </>
+        ) : (
+          <>
+            {onPlatformPage ? null : <CompassPanelButton />}
+            <AppJumpPalette />
+            <NotificationBell />
+          </>
+        )
       }
       renderAccount={(placement, collapsed) => (
         <UserMenu

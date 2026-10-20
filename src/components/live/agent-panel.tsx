@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { createContext, useContext, useMemo, useState, type ReactNode } from "react";
+import { createContext, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { ChevronDownIcon, WifiOffIcon } from "lucide-react";
 
 import { AgentGlyph, formatClock, PresenceDot, PresenceLabel, toneText } from "@/components/live/agent-identity";
@@ -11,7 +11,7 @@ import { useRunViewer } from "@/components/live/run-viewer";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetPanel, SheetPopup, SheetTitle } from "@/components/ui/sheet";
 import { Switch } from "@/components/ui/switch";
-import { AGENTS } from "@/lib/agents/roster";
+import { AGENTS, isLiveAgentId, type LiveAgentId } from "@/lib/agents/roster";
 import {
   collapseBurst,
   groupFeed,
@@ -23,7 +23,8 @@ import {
 } from "@/lib/live/model";
 import { cn } from "@/lib/utils";
 
-type PanelContext = { open: () => void };
+/** Open the panel, optionally at one agent. Click handlers may pass their event; it is ignored. */
+type PanelContext = { open: (agentId?: unknown) => void };
 
 const AgentPanelContext = createContext<PanelContext>({ open: () => undefined });
 
@@ -33,7 +34,16 @@ export function useAgentPanel(): PanelContext {
 
 export function AgentPanelProvider({ children }: { children: ReactNode }) {
   const [open, setOpen] = useState(false);
-  const value = useMemo(() => ({ open: () => setOpen(true) }), []);
+  const [focus, setFocus] = useState<LiveAgentId | null>(null);
+  const value = useMemo(
+    () => ({
+      open: (agentId?: unknown) => {
+        setFocus(isLiveAgentId(agentId) ? agentId : null);
+        setOpen(true);
+      },
+    }),
+    []
+  );
   return (
     <AgentPanelContext.Provider value={value}>
       {children}
@@ -41,7 +51,7 @@ export function AgentPanelProvider({ children }: { children: ReactNode }) {
         <SheetPopup side="right" className="w-full max-w-md">
           <SheetPanel className="space-y-6 p-5">
             <SheetTitle className="pr-8 text-base font-semibold text-card-foreground">Agents</SheetTitle>
-            {open ? <AgentPanelBody onNavigate={() => setOpen(false)} /> : null}
+            {open ? <AgentPanelBody focus={focus} onNavigate={() => setOpen(false)} /> : null}
           </SheetPanel>
         </SheetPopup>
       </Sheet>
@@ -49,7 +59,7 @@ export function AgentPanelProvider({ children }: { children: ReactNode }) {
   );
 }
 
-function AgentPanelBody({ onNavigate }: { onNavigate: () => void }) {
+function AgentPanelBody({ focus, onNavigate }: { focus: LiveAgentId | null; onNavigate: () => void }) {
   const state = useLiveState();
   const presence = usePresence();
   const { calm, setCalm } = useLiveMeta();
@@ -59,6 +69,10 @@ function AgentPanelBody({ onNavigate }: { onNavigate: () => void }) {
   );
   const groups = useMemo(() => groupFeed(collapseBurst(state.events)), [state.events]);
   const viewer = useRunViewer();
+  const focusRef = useRef<HTMLLIElement | null>(null);
+  useEffect(() => {
+    if (focus) focusRef.current?.scrollIntoView({ block: "center" });
+  }, [focus]);
 
   return (
     <>
@@ -90,7 +104,12 @@ function AgentPanelBody({ onNavigate }: { onNavigate: () => void }) {
           {presence.map((item) => {
             const agent = AGENTS[item.agentId];
             return (
-              <li key={item.agentId} className="flex items-start gap-3 p-3">
+              <li
+                key={item.agentId}
+                ref={item.agentId === focus ? focusRef : undefined}
+                aria-current={item.agentId === focus ? "true" : undefined}
+                className={cn("flex items-start gap-3 p-3", item.agentId === focus && "bg-accent/60")}
+              >
                 <AgentGlyph agentId={item.agentId} working={item.state === "working"} />
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center justify-between gap-2">

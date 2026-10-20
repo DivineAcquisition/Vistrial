@@ -32,11 +32,13 @@ export type CompassThreadProps = {
   contextChip?: { label: string; onRemove: () => void } | null;
   /** Prefills the composer once, for links like /app/compass?q=... */
   prefill?: string | null;
+  /** Send the prefilled question at once, as if the person pressed enter. */
+  sendPrefill?: boolean;
   compact?: boolean;
   autoFocus?: boolean;
 };
 
-export const CompassThread: FC<CompassThreadProps> = ({ welcome, placeholder, contextChip, prefill, compact = false, autoFocus = true }) => {
+export const CompassThread: FC<CompassThreadProps> = ({ welcome, placeholder, contextChip, prefill, sendPrefill = false, compact = false, autoFocus = true }) => {
   const isEmpty = useAuiState((s) => s.thread.messages.length === 0);
   const { readOnly } = useCompassChat();
   return (
@@ -79,7 +81,7 @@ export const CompassThread: FC<CompassThreadProps> = ({ welcome, placeholder, co
                 This is an earlier conversation from before Compass. You can read or delete it, but not continue it.
               </p>
             ) : (
-              <Composer placeholder={placeholder} contextChip={contextChip ?? null} prefill={prefill ?? null} autoFocus={autoFocus} />
+              <Composer placeholder={placeholder} contextChip={contextChip ?? null} prefill={prefill ?? null} sendPrefill={sendPrefill} autoFocus={autoFocus} />
             )}
           </ThreadPrimitive.ViewportFooter>
         </div>
@@ -119,10 +121,11 @@ const ChatError: FC = () => {
   );
 };
 
-const Composer: FC<{ placeholder?: string; contextChip: CompassThreadProps["contextChip"]; prefill: string | null; autoFocus: boolean }> = ({
+const Composer: FC<{ placeholder?: string; contextChip: CompassThreadProps["contextChip"]; prefill: string | null; sendPrefill: boolean; autoFocus: boolean }> = ({
   placeholder = "Ask about your leads, calls and numbers",
   contextChip,
   prefill,
+  sendPrefill,
   autoFocus,
 }) => {
   const composer = useComposerRuntime();
@@ -131,8 +134,9 @@ const Composer: FC<{ placeholder?: string; contextChip: CompassThreadProps["cont
     if (prefill && !filled.current) {
       filled.current = true;
       composer.setText(prefill.slice(0, 2000));
+      if (sendPrefill) composer.send();
     }
-  }, [composer, prefill]);
+  }, [composer, prefill, sendPrefill]);
 
   return (
     <ComposerPrimitive.Root className="relative flex w-full flex-col">

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useTransition } from "react";
+import { useEffect, useState, useTransition, type ReactNode } from "react";
 
 import {
   decideAgentRequest,
@@ -31,10 +31,20 @@ export function AgentRequestCard({
   item,
   compact = false,
   className,
+  context,
+  checks,
+  leadHref,
+  onDecided,
 }: {
   item: WaitingItem;
   compact?: boolean;
   className?: string;
+  /** A line above the card: the agent, the lead, and the urgency. */
+  context?: ReactNode;
+  /** The send-time checks in plain words, shown before the buttons. */
+  checks?: string | null;
+  leadHref?: string | null;
+  onDecided?: (outcome: "approved" | "rejected" | "answered" | "sent" | "withdrawn") => void;
 }) {
   const org = useOrg();
   const [pending, start] = useTransition();
@@ -104,9 +114,11 @@ export function AgentRequestCard({
       if (result.data.state === "approved") {
         setLocalState("approved");
         setNote(null);
+        onDecided?.("approved");
         return;
       }
       setNote(decision === "reject" ? "Rejected. Nothing was sent." : decision === "answer" ? "Answer sent." : "Approved. It continues now.");
+      onDecided?.(decision === "reject" ? "rejected" : decision === "answer" ? "answered" : "approved");
     });
   }
 
@@ -118,6 +130,7 @@ export function AgentRequestCard({
       else {
         setLocalState(result.data.state === "withdrawn" ? "withdrawn" : "succeeded");
         setNote(result.data.note ?? "Marked sent. It is logged on the case file.");
+        onDecided?.(result.data.state === "withdrawn" ? "withdrawn" : "sent");
       }
     });
   }
@@ -130,6 +143,7 @@ export function AgentRequestCard({
       else {
         setLocalState("withdrawn");
         setNote("Withdrawn. Nothing was sent.");
+        onDecided?.("withdrawn");
       }
     });
   }
@@ -154,6 +168,7 @@ export function AgentRequestCard({
       className={cn("live-enter rounded-xl border border-warning/30 bg-warning/5 p-3 sm:p-4", className)}
       aria-label={item.title}
     >
+      {context ? <div className="mb-2">{context}</div> : null}
       <div className="flex items-start gap-3">
         {item.agentId ? <AgentGlyph agentId={item.agentId} size="md" /> : null}
         <div className="min-w-0 flex-1 space-y-1">
@@ -233,6 +248,13 @@ export function AgentRequestCard({
         </div>
       ) : null}
 
+      {checks && !decided ? (
+        <p className="mt-3 rounded-lg border border-border bg-background/60 px-3 py-2 text-sm text-card-foreground">
+          <span className="font-medium">Checks: </span>
+          {checks}
+        </p>
+      ) : null}
+
       {agent && !compact ? (
         <p className="mt-3 text-xs text-muted-foreground">
           {isRelay ? "Vistrial never sends this. You send it from your CRM, then mark it sent here." : agent.promise}
@@ -257,6 +279,11 @@ export function AgentRequestCard({
           <Button size="sm" onClick={markSent} disabled={pending}>
             I sent it from the CRM
           </Button>
+          {leadHref ? (
+            <Button size="sm" variant="ghost" render={<a href={leadHref} />}>
+              Open lead
+            </Button>
+          ) : null}
           {org.canApprove ? (
             <Button size="sm" variant="ghost" onClick={withdraw} disabled={pending}>
               Withdraw
@@ -301,6 +328,11 @@ export function AgentRequestCard({
               Skip
             </Button>
           )}
+          {leadHref ? (
+            <Button size="sm" variant="ghost" render={<a href={leadHref} />}>
+              Open lead
+            </Button>
+          ) : null}
         </div>
       )}
     </article>

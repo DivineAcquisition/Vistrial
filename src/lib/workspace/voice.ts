@@ -309,6 +309,7 @@ export const DECISION_COPY = {
   reviewNext: "Review next",
   done: "Done",
   counter: (index: number, total: number) => `${index} of ${total}`,
+  waiting: (count: number) => `${plural(count, "decision is", "decisions are")} waiting.`,
   readOnly: (count: number) =>
     `${plural(count, "decision is", "decisions are")} waiting. Ask the Owner to approve, or ask for approval permission.`,
   allClear: (lastDecisionAt: string | null, now: number, timeZone: string) =>

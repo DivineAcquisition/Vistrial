@@ -8,7 +8,7 @@ import { canViewPortal, canWorkOperatorApp } from "@/lib/auth/permissions";
 describe("portal-only landing", () => {
   it("sends a portal-only member to the owner portal", () => {
     expect(landingPath("portal")).toBe("/app/home");
-    expect(landingPath("operator", "setter")).toBe("/app/queue");
+    expect(landingPath("operator", "setter")).toBe("/app/today");
     expect(landingPath("operator", "owner")).toBe("/app/home");
     expect(postAuthPath("/app/queue", "portal")).toBe("/app/queue");
     expect(postAuthPath("/portal", "portal")).toBe("/app/home");

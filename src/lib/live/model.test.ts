@@ -78,9 +78,9 @@ describe("presence", () => {
     expect(all.map((item) => item.agentId)).toEqual(["scribe", "sentry", "relay", "compass", "assay"]);
   });
 
-  it("shows Assay as getting ready and not working", () => {
+  it("shows Assay as idle: it scores from score history, not runs", () => {
     const presence = derivePresence({ ...base, agentId: "assay", runs: [run({ status: "working" })] });
-    expect(presence.stateLabel).toBe("Getting ready");
+    expect(presence.stateLabel).toBe("Idle");
     expect(presence.currentRunId).toBeNull();
   });
 

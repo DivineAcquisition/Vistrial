@@ -5,12 +5,13 @@ import type { SurfaceAccess } from "@/types/database";
 
 /**
  * Fallback after login when the request did not name a destination.
- * The host decides the product; role landing inside that product is separate.
+ * The host decides the product; `/app` then sends each role to its own
+ * landing (Home for Owners and Members, Today for Operators).
  */
 export function defaultInternalPath(product: ProductHost): string {
   if (product === "stellar") return "/stellar";
   if (product === "pulse") return FORSIGHT_PATH;
-  return "/app/queue";
+  return "/app";
 }
 
 /**

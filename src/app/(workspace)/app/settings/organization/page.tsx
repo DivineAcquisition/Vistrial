@@ -2,12 +2,25 @@ import { PageFrame } from "@/components/app/page-frame";
 import { OrganizationForm } from "@/app/(workspace)/app/settings/organization/organization-form";
 import { ContactDetailsForm } from "@/app/(workspace)/app/settings/organization/contact-form";
 import { OwnerHoursForm } from "@/components/config/owner-hours-form";
+import { OutcomePicker } from "@/components/workspace/outcome-picker";
 import { requireOwnerOrStaff } from "@/lib/auth/gates";
+import { canSeeMoney } from "@/lib/auth/portal-access";
+import { getAuthContext } from "@/lib/auth/session";
+import { loadHomeState } from "@/lib/workspace/home-state";
+import { outcomeChoices } from "@/lib/workspace/outcomes";
 import type { ConfigValue } from "@/lib/config/types";
 import { createClient } from "@/lib/supabase/server";
 
 export default async function OrganizationSettingsPage() {
   const { org, isStaff } = await requireOwnerOrStaff();
+  const ctx = await getAuthContext();
+  const home = await loadHomeState(ctx);
+  const picker =
+    home.available && home.enabled ? (
+      <div className="mt-8">
+        <OutcomePicker choices={outcomeChoices(canSeeMoney(ctx))} selected={home.outcomeMetrics} />
+      </div>
+    ) : null;
   const supabase = await createClient();
   const { data } = await supabase
     .from("organizations")
@@ -48,6 +61,7 @@ export default async function OrganizationSettingsPage() {
               version={owner.workspace_version ?? 0}
             />
           ) : null}
+          {picker}
         </div>
       </PageFrame>
     );
@@ -73,6 +87,7 @@ export default async function OrganizationSettingsPage() {
         surface="workspace"
       />
       <div className="mt-8">{contact}</div>
+      {picker}
     </PageFrame>
   );
 }

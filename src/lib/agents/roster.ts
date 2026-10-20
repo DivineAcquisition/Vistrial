@@ -125,7 +125,7 @@ export const AGENTS: Record<LiveAgentId, AgentIdentity> = {
       ring: "ring-chart-3/40",
       dot: "bg-chart-3",
     },
-    promise: "Assay is getting ready. It does not score leads or start work yet.",
+    promise: "Assay only scores and orders your leads. It never contacts a lead, and past leads are scored quietly.",
     configSections: [],
     order: 5,
   },

@@ -385,13 +385,14 @@ export function derivePresence(input: {
         pausedAt: input.control.changedAt,
       };
     }
+    // Assay scores from its own queue and records score history, not agent runs.
     return {
       ...base,
-      state: "getting_ready",
-      stateLabel: PRESENCE_LABEL.getting_ready,
+      state: "idle",
+      stateLabel: PRESENCE_LABEL.idle,
       liveLabel: null,
       currentRunId: null,
-      runSummary: "Assay is not scoring leads yet.",
+      runSummary: "Scores leads as their activity changes.",
     };
   }
 

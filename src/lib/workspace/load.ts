@@ -17,7 +17,7 @@ import { finalMessage } from "@/lib/relay/footer";
 import { createClient } from "@/lib/supabase/server";
 import { aggregateBriefing, type AggregatedBriefing } from "@/lib/workspace/briefing";
 import { orderDueNow, orderWorkNext, sortTasks, type DueRow, type TaskRow, type WorkRow } from "@/lib/workspace/work";
-import { outcomeCatalog, outcomeValue, type OutcomeTile } from "@/lib/workspace/outcomes";
+import { OPERATOR_NUMBERS, outcomeCatalog, outcomeValue, type OutcomeTile } from "@/lib/workspace/outcomes";
 import { detectWorkspaceState, sourceLearningStarted, type Problem, type WorkspaceState } from "@/lib/workspace/state";
 import type { ChecksInput, CrewFacts, SuggestionFacts, Tier, WelcomeFacts } from "@/lib/workspace/voice";
 import type { HomeState } from "@/lib/workspace/home-state";
@@ -641,6 +641,43 @@ export async function loadOutcomes(ctx: AuthContext, chosen: OutcomeMetricId[]):
     contribution: { caseFiles: value(contribution, "scribe_updated"), clocks, drafts: value(contribution, "relay_prepared") },
     facts,
   };
+}
+
+export type PersonalNumber = { id: string; label: string; unit: "count" | "duration"; value: number | null };
+
+/**
+ * An Operator's own numbers this week. compass_metric_summary pins the person
+ * filter to the caller for Operators, so these are the same definitions as
+ * Results, limited to leads assigned to them.
+ */
+export async function loadOperatorNumbers(ctx: AuthContext): Promise<PersonalNumber[]> {
+  const db = await rls();
+  const now = new Date();
+  const from = new Date(startOfToday(ctx.org.timezone, now).getTime() - 6 * 86_400_000).toISOString();
+  const { data, error } = await db.rpc("compass_metric_summary", {
+    p_org_id: ctx.org.id,
+    p_metrics: OPERATOR_NUMBERS.map((row) => row.id),
+    p_from: from,
+    p_to: now.toISOString(),
+    p_prev_from: null,
+    p_prev_to: null,
+    p_filters: {},
+  });
+  if (error || !data) return [];
+  const summary = data as Record<string, { hidden?: boolean; current?: { count?: number; median?: number | null } }>;
+  return OPERATOR_NUMBERS.flatMap((row) => {
+    const entry = summary[row.id];
+    if (!entry || entry.hidden || !entry.current) return [];
+    const value = row.unit === "duration" ? (entry.current.median ?? null) : Number(entry.current.count ?? 0);
+    return [{ id: row.id, label: row.label, unit: row.unit, value }];
+  });
+}
+
+export async function loadDueCount(ctx: AuthContext): Promise<number> {
+  const db = await rls();
+  return count(
+    db.from("sentry_clocks").select("id", { count: "exact", head: true }).eq("org_id", ctx.org.id).in("state", ["missed", "at_risk"]).is("resolved_at", null)
+  );
 }
 
 // ---------------------------------------------------------------------------

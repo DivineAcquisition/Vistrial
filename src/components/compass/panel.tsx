@@ -17,7 +17,7 @@ import type { CompassContext } from "@/lib/compass/types";
 
 /** Other screens can open the panel with a question ready: dispatch this event. */
 export const COMPASS_OPEN_EVENT = "compass:open";
-export type CompassOpenDetail = { question?: string };
+export type CompassOpenDetail = { question?: string; send?: boolean };
 
 type Session = { chatKey: string; conversationId: string | null; context: CompassContext; messageCount: number };
 
@@ -34,13 +34,14 @@ function sameContext(a: CompassContext, b: CompassContext): boolean {
  * the person is looking at (a case file, a lead list, Home, Results) and
  * shares conversations with the full Compass page.
  */
-export function CompassPanelButton() {
+export function CompassPanelButton({ hideTrigger = false }: { hideTrigger?: boolean } = {}) {
   const pathname = usePathname();
   const mobile = useIsMobile();
   const [open, setOpen] = useState(false);
   const [state, setState] = useState<PanelState | null>(null);
   const [session, setSession] = useState<Session>(() => ({ chatKey: newKey(), conversationId: null, context: { kind: "none" }, messageCount: 0 }));
   const [prefill, setPrefill] = useState<string | null>(null);
+  const [autoSend, setAutoSend] = useState(false);
   const load = useCallback(async () => {
     const next = await panelStateAction(pathname, window.location.search);
     setState(next);
@@ -53,8 +54,11 @@ export function CompassPanelButton() {
   }, [pathname]);
 
   const show = useCallback(
-    (question?: string) => {
+    (question?: string, send = false) => {
       setPrefill(question ?? null);
+      setAutoSend(Boolean(question) && send);
+      // A new question from the command bar starts its own conversation.
+      if (question && send) setSession((prev) => ({ chatKey: newKey(), conversationId: null, context: prev.context, messageCount: 0 }));
       setOpen(true);
       void load();
     },
@@ -62,7 +66,10 @@ export function CompassPanelButton() {
   );
 
   useEffect(() => {
-    const onOpen = (event: Event) => show((event as CustomEvent<CompassOpenDetail>).detail?.question);
+    const onOpen = (event: Event) => {
+      const detail = (event as CustomEvent<CompassOpenDetail>).detail;
+      show(detail?.question, detail?.send === true);
+    };
     window.addEventListener(COMPASS_OPEN_EVENT, onOpen);
     return () => window.removeEventListener(COMPASS_OPEN_EVENT, onOpen);
   }, [show]);
@@ -74,10 +81,12 @@ export function CompassPanelButton() {
 
   return (
     <>
-      <Button variant="ghost" size="sm" onClick={() => show()} aria-label="Ask Compass" aria-haspopup="dialog" className="text-muted-foreground hover:text-card-foreground">
-        <CompassIcon aria-hidden />
-        <span className="hidden sm:inline">Ask Compass</span>
-      </Button>
+      {hideTrigger ? null : (
+        <Button variant="ghost" size="sm" onClick={() => show()} aria-label="Ask Compass" aria-haspopup="dialog" className="text-muted-foreground hover:text-card-foreground">
+          <CompassIcon aria-hidden />
+          <span className="hidden sm:inline">Ask Compass</span>
+        </Button>
+      )}
       <Sheet open={open} onOpenChange={setOpen}>
         <SheetPopup side={mobile ? "bottom" : "right"} className={mobile ? "h-[85svh]" : "sm:max-w-lg"}>
           <div className="flex items-center gap-2 border-b border-border py-2 ps-4 pe-12">
@@ -123,6 +132,7 @@ export function CompassPanelButton() {
                   compact
                   autoFocus={!mobile}
                   prefill={prefill}
+                  sendPrefill={autoSend}
                   welcome={<CompassWelcome compact starters={state.starters} pins={state.pins} staffNote={state.staffNote} />}
                   contextChip={contextLabel ? { label: contextLabel, onRemove: () => setSession((prev) => ({ ...prev, context: { kind: "none" } })) } : null}
                 />

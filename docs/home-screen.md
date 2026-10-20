@@ -23,6 +23,13 @@ the Home described below until the old one is retired.
 Nothing on this page sends. Drafts are approved one at a time through the
 shared card and sent by a person from the CRM; "Text draft" asks Relay through
 `compass_request_draft`, which keeps its daily cap and do-not-contact refusal.
+A swipe on a decision or a work row only reveals a confirmation tap. The
+buttons stay, and calm mode or reduced motion turns the swipe off.
+
+Home and Today show one banner. A blocked payment outranks a broken
+connection, and the rest are a count. The same warnings stay on other pages.
+After an Owner dismisses the welcome, Help keeps a Welcome tour link for 14
+days (`/app/home?tour=1`).
 
 `/app/home` leads with outcomes: booked calls and cost per booked call, then
 four supporting numbers, then what needs approval, then what already happened.

@@ -116,6 +116,7 @@ async function buildOne(db: Db, orgId: string, leadId: string, values: Record<st
     agentId: "scribe",
     triggerKey: `import-case-file:${leadId}`,
     subjectLabel: `A case file for ${name} from your CRM history`,
+    leadName: name,
     subjectHref: `/app/cases/${leadId}`,
     leadId,
     plan: ["Reading the CRM details", "Writing the case file"],

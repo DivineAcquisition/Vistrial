@@ -14,6 +14,7 @@ import { channelToGhlType, contactIsSuppressed, outboundTouchSummary } from "@/l
 import { nextAttemptAt, shouldMarkDead } from "@/lib/ghl/retry";
 import type { GhlDb } from "@/lib/ghl/tokens";
 import type { Enums } from "@/types/database";
+import { outboundGate } from "@/lib/live/transport";
 import { automationRunsFor } from "@/lib/workspaces/status";
 import { complianceForDispatch } from "@/lib/compliance/dispatch";
 
@@ -186,6 +187,16 @@ export async function sendQueuedDispatch(db: GhlDb, dispatchId: string): Promise
   }
   if (Date.parse(row.available_at) > Date.now()) {
     await db.from("ghl_dispatches").update({ claimed_at: null }).eq("id", row.id);
+    return { status: "queued", dispatchId: row.id };
+  }
+
+  const pause = await outboundGate(row.org_id);
+  if (!pause.ok) {
+    await db
+      .from("ghl_dispatches")
+      .update({ available_at: new Date(Date.now() + 60_000).toISOString(), claimed_at: null })
+      .eq("id", row.id);
+    ghlLog("ghl.dispatch.queued", logFieldsFromRow(row, "queued", pause.reason));
     return { status: "queued", dispatchId: row.id };
   }
 

@@ -20,7 +20,20 @@ export type Access =
       memberLegacyId: string | null;
       canExport: boolean;
     }
+  | { principal: "system"; job: string; scope: "workspace"; workspaceId: string }
+  | { principal: "system"; job: string; scope: "platform" }
   | { principal: "import" };
+
+/** Jobs that may touch platform-scope records. Every other system call names one workspace. */
+const PLATFORM_JOBS = new Set(["notifications", "platform-halt", "deletion", "lead-access"]);
+
+function systemKeyAccepted(key: string): boolean {
+  const expected = process.env.CONVEX_SYSTEM_KEY;
+  const importKey = process.env.DIRECTORY_IMPORT_KEY;
+  if (!expected || key !== expected) return false;
+  if (importKey && key === importKey) return false;
+  return true;
+}
 
 export function denied(): never {
   throw new ConvexError({ code: "not_found", message: "Not found." });
@@ -75,16 +88,41 @@ export function requireAccess(ctx: Ctx, request: { scope: "platform" }): Promise
 export function requireAccess(
   ctx: Ctx,
   request: { scope: "workspace"; workspaceId: string },
-): Promise<Extract<Access, { scope: "workspace" }>>;
+): Promise<Extract<Access, { principal: "user"; scope: "workspace" }>>;
 export function requireAccess(ctx: Ctx, request: { scope: "import"; key: string }): Promise<Extract<Access, { principal: "import" }>>;
+export function requireAccess(
+  ctx: Ctx,
+  request: { scope: "system"; key: string; job: string; workspaceId: string },
+): Promise<Extract<Access, { principal: "system"; scope: "workspace" }>>;
+export function requireAccess(
+  ctx: Ctx,
+  request: { scope: "system"; key: string; job: string; platform: true },
+): Promise<Extract<Access, { principal: "system"; scope: "platform" }>>;
 export async function requireAccess(
   ctx: Ctx,
   request:
     | { scope: "self" }
     | { scope: "platform" }
     | { scope: "workspace"; workspaceId: string }
-    | { scope: "import"; key: string },
+    | { scope: "import"; key: string }
+    | { scope: "system"; key: string; job: string; workspaceId: string }
+    | { scope: "system"; key: string; job: string; platform: true },
 ): Promise<Access> {
+  if (request.scope === "system") {
+    const identity = await ctx.auth.getUserIdentity();
+    if (identity || !systemKeyAccepted(request.key)) denied();
+    const job = request.job.trim();
+    if (!job || job.length > 80) denied();
+    if ("platform" in request && request.platform === true) {
+      if (!PLATFORM_JOBS.has(job)) denied();
+      return { principal: "system", job, scope: "platform" };
+    }
+    if (!("workspaceId" in request) || !request.workspaceId) denied();
+    const workspace = await workspaceByLegacy(ctx, request.workspaceId);
+    if (!workspace) denied();
+    return { principal: "system", job, scope: "workspace", workspaceId: request.workspaceId };
+  }
+
   if (request.scope === "import") {
     const expected = process.env.DIRECTORY_IMPORT_KEY;
     const identity = await ctx.auth.getUserIdentity();

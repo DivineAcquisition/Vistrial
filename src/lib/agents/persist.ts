@@ -413,6 +413,26 @@ export async function insertEscalation(db: Db, input: {
   fromTier: string;
   toTier: string;
 }): Promise<void> {
+  const { liveRecordSink } = await import("@/lib/live/words");
+  if (liveRecordSink() === "convex") {
+    const { writeLegacyLog } = await import("@/lib/live/legacy-log");
+    await writeLegacyLog({
+      workspaceId: input.orgId,
+      kind: "agent_escalations",
+      legacyId: crypto.randomUUID(),
+      row: {
+        org_id: input.orgId,
+        agent_id: input.agentId,
+        run_id: input.runId,
+        step_index: input.stepIndex,
+        work_kind: input.workKind,
+        from_tier: input.fromTier,
+        to_tier: input.toTier,
+        reason: "verification_failed",
+      },
+    });
+    return;
+  }
   await table(db, "agent_escalations").insert({
     org_id: input.orgId,
     agent_id: input.agentId,

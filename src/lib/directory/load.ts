@@ -11,7 +11,7 @@ import { getSupabaseAdmin } from "@/lib/supabase/admin";
 import { ConvexHttpClient } from "convex/browser";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
-import { chooseDirectory, type DirectorySnapshot } from "@/lib/directory/choose";
+import { chooseDirectory, directoryFallbackSwitch, type DirectorySnapshot } from "@/lib/directory/choose";
 import { userConvex } from "@/lib/directory/commit";
 
 const MEMBER_COLUMNS =
@@ -238,6 +238,13 @@ export const loadConvexDirectory = cache(async (): Promise<{
   legacyStillHasSeats: boolean;
 }> => {
   const convex = await loadConvexSnapshot();
+  if (directoryFallbackSwitch() === "off") {
+    return {
+      staff: convex?.staff ?? null,
+      memberships: convex?.memberships ?? [],
+      legacyStillHasSeats: false,
+    };
+  }
   if (convex && convex.memberships.length > 0) {
     return { ...convex, legacyStillHasSeats: false };
   }

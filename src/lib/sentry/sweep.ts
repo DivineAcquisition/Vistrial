@@ -512,6 +512,7 @@ async function recordRun(run: OrgRun, args: { leadId: string; name: string; leve
     agentId: "sentry",
     triggerKey: `sentry:${args.leadId}:${args.answer.state}:${args.level}`,
     subjectLabel: `Response window for ${args.name}`,
+    leadName: args.name,
     subjectHref: `/app/cases/${args.leadId}`,
     leadId: args.leadId,
     plan: ["Checking the response window", args.level === 0 ? "Nudging the assigned person" : "Escalating", "Asking Relay for a draft"],

@@ -74,6 +74,20 @@ async function seed() {
       subjectLabel: "South lead",
       row: { id: "run-b", subject_label: "South lead" },
     });
+    await ctx.db.insert("leadAccess", {
+      leadId: "lead-1",
+      workspaceId: "ws-a",
+      setterMemberId: "m-op",
+      syncedAt: Date.now(),
+      drifted: false,
+    });
+    await ctx.db.insert("leadAccess", {
+      leadId: "lead-2",
+      workspaceId: "ws-a",
+      setterMemberId: "someone-else",
+      syncedAt: Date.now(),
+      drifted: false,
+    });
     await ctx.db.insert("approvalItems", {
       legacyId: "ap-a",
       workspaceId: "ws-a",

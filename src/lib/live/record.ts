@@ -4,7 +4,31 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 
 import { AGENTS, type LiveAgentId } from "@/lib/agents/roster";
 import type { NeedsPerson, OutputKind, RunStatus, SourceRef } from "@/lib/live/model";
+import { commitLive, readPause } from "@/lib/live/transport";
+import { liveRecordSink, type ActivityWrite } from "@/lib/live/words";
 import { getSupabaseAdmin } from "@/lib/supabase/admin";
+
+let activitySeq = 0;
+
+async function persist(
+  op: Omit<ActivityWrite, "seq" | "occurredAt"> & { occurredAt?: string },
+  postgres: () => Promise<void>,
+): Promise<void> {
+  if (liveRecordSink() === "postgres") {
+    await postgres();
+    return;
+  }
+  activitySeq += 1;
+  try {
+    await commitLive({
+      ...op,
+      seq: activitySeq,
+      occurredAt: op.occurredAt ?? new Date().toISOString(),
+    });
+  } catch (error) {
+    console.error(JSON.stringify({ src: "vistrial", event: "activity.commit_failed" }));
+  }
+}
 
 /**
  * The one writer for the shared record of agent work. Every agent (and the
@@ -39,6 +63,8 @@ export type StartRunInput = {
   subjectLabel: string;
   subjectHref?: string | null;
   leadId?: string | null;
+  /** Used only to strip a name before storage. It is not written. */
+  leadName?: string | null;
   actorMemberId?: string | null;
   plan?: string[];
   configVersion?: string | null;
@@ -62,33 +88,70 @@ export class RunRecorder {
   readonly agentId: LiveAgentId;
   readonly created: boolean;
   private seq = 0;
+  private leadName: string | null;
   private stepTimes = new Map<number, number>();
   private staff: Record<string, unknown> = {};
 
-  constructor(input: { id: string; orgId: string; agentId: LiveAgentId; created: boolean; lastSeq?: number }) {
+  constructor(input: { id: string; orgId: string; agentId: LiveAgentId; created: boolean; lastSeq?: number; leadName?: string | null }) {
     this.id = input.id;
     this.orgId = input.orgId;
     this.agentId = input.agentId;
     this.created = input.created;
     this.seq = input.lastSeq ?? 0;
+    this.leadName = input.leadName ?? null;
   }
 
   private async event(kind: string, label: string): Promise<void> {
-    await db().from("agent_activity_events").insert({
+    const occurredAt = new Date().toISOString();
+    const row = {
+      id: crypto.randomUUID(),
       org_id: this.orgId,
       run_id: this.id,
       agent_id: this.agentId,
       kind,
       label: clip(label, 300) ?? AGENTS[this.agentId].name,
-    });
+      occurred_at: occurredAt,
+    };
+    await persist(
+      {
+        idempotencyKey: `event:${row.id}`,
+        workspaceId: this.orgId,
+        job: this.agentId,
+        kind: "event",
+        action: "insert",
+        leadName: this.leadName,
+        occurredAt,
+        row,
+      },
+      async () => {
+        await db().from("agent_activity_events").insert(row);
+      },
+    );
   }
 
   private async touch(patch: Record<string, unknown>): Promise<void> {
-    await db()
-      .from("agent_activity_runs")
-      .update({ ...patch, last_progress_at: new Date().toISOString() })
-      .eq("id", this.id)
-      .eq("org_id", this.orgId);
+    const occurredAt = new Date().toISOString();
+    const row = {
+      id: this.id,
+      org_id: this.orgId,
+      ...patch,
+      last_progress_at: typeof patch.last_progress_at === "string" ? patch.last_progress_at : occurredAt,
+    };
+    await persist(
+      {
+        idempotencyKey: `run:${this.id}:${occurredAt}`,
+        workspaceId: this.orgId,
+        job: this.agentId,
+        kind: "run",
+        action: "update",
+        leadName: this.leadName,
+        occurredAt,
+        row,
+      },
+      async () => {
+        await db().from("agent_activity_runs").update(row).eq("id", this.id).eq("org_id", this.orgId);
+      },
+    );
   }
 
   async begin(): Promise<void> {
@@ -102,24 +165,37 @@ export class RunRecorder {
     const startedAt = Date.now();
     this.stepTimes.set(seq, startedAt);
     const text = clip(label, 200) ?? "Working";
-    const { data } = await db()
-      .from("agent_activity_steps")
-      .insert({
-        org_id: this.orgId,
-        run_id: this.id,
-        agent_id: this.agentId,
-        seq,
-        label: text,
-        status: "working",
-        detail: clip(options.detail, 2000),
-        sources: options.sources ?? [],
-        started_at: new Date(startedAt).toISOString(),
-      })
-      .select("id")
-      .single();
+    const id = crypto.randomUUID();
+    const startedIso = new Date(startedAt).toISOString();
+    const row = {
+      id,
+      org_id: this.orgId,
+      run_id: this.id,
+      agent_id: this.agentId,
+      seq,
+      label: text,
+      status: "working",
+      detail: clip(options.detail, 2000),
+      sources: options.sources ?? [],
+      started_at: startedIso,
+    };
+    await persist(
+      {
+        idempotencyKey: `step:${id}`,
+        workspaceId: this.orgId,
+        job: this.agentId,
+        kind: "step",
+        action: "insert",
+        leadName: this.leadName,
+        occurredAt: startedIso,
+        row,
+      },
+      async () => {
+        await db().from("agent_activity_steps").insert(row);
+      },
+    );
     await this.touch({ status: "working", current_step_label: text });
     await this.event("step_started", text);
-    const id = String((data as { id?: string } | null)?.id ?? "");
 
     const finish = async (
       status: "done" | "failed" | "skipped" | "waiting",
@@ -134,7 +210,22 @@ export class RunRecorder {
       if (input.detail !== undefined) patch.detail = clip(input.detail, 2000);
       if (input.reason !== undefined) patch.reason = clip(input.reason, 2000);
       if (input.sources) patch.sources = input.sources;
-      await db().from("agent_activity_steps").update(patch).eq("run_id", this.id).eq("seq", seq);
+      const occurredAt = new Date(finishedAt).toISOString();
+      await persist(
+        {
+          idempotencyKey: `step:${id}:${status}:${occurredAt}`,
+          workspaceId: this.orgId,
+          job: this.agentId,
+          kind: "step",
+          action: "update",
+          leadName: this.leadName,
+          occurredAt,
+          row: { id, run_id: this.id, org_id: this.orgId, seq, ...patch },
+        },
+        async () => {
+          await db().from("agent_activity_steps").update(patch).eq("run_id", this.id).eq("seq", seq);
+        },
+      );
       this.staff.steps = { ...(this.staff.steps as object | undefined), [seq]: { label: text, ms: finishedAt - startedAt, status } };
       await this.touch({});
       if (status !== "waiting") await this.event("step_finished", text);
@@ -157,7 +248,9 @@ export class RunRecorder {
     before?: unknown;
     after?: unknown;
   }): Promise<void> {
-    await db().from("agent_activity_outputs").insert({
+    const occurredAt = new Date().toISOString();
+    const row = {
+      id: crypto.randomUUID(),
       org_id: this.orgId,
       run_id: this.id,
       agent_id: this.agentId,
@@ -166,7 +259,23 @@ export class RunRecorder {
       body: input.body == null ? null : input.body.slice(0, 8000),
       before_value: input.before ?? null,
       after_value: input.after ?? null,
-    });
+      created_at: occurredAt,
+    };
+    await persist(
+      {
+        idempotencyKey: `output:${row.id}`,
+        workspaceId: this.orgId,
+        job: this.agentId,
+        kind: "output",
+        action: "insert",
+        leadName: this.leadName,
+        occurredAt,
+        row,
+      },
+      async () => {
+        await db().from("agent_activity_outputs").insert(row);
+      },
+    );
     await this.touch({});
     await this.event("output", input.title);
   }
@@ -192,18 +301,28 @@ export class RunRecorder {
   }
 
   private async flushStaff(errorDetail?: string | null): Promise<void> {
-    await db()
-      .from("agent_activity_staff")
-      .upsert(
-        {
-          run_id: this.id,
-          org_id: this.orgId,
-          detail: this.staff,
-          error_detail: errorDetail == null ? undefined : errorDetail.slice(0, 4000),
-          updated_at: new Date().toISOString(),
-        },
-        { onConflict: "run_id" }
-      );
+    const occurredAt = new Date().toISOString();
+    const row = {
+      run_id: this.id,
+      org_id: this.orgId,
+      detail: this.staff,
+      error_detail: errorDetail == null ? undefined : errorDetail.slice(0, 4000),
+      updated_at: occurredAt,
+    };
+    await persist(
+      {
+        idempotencyKey: `staff:${this.id}:${occurredAt}`,
+        workspaceId: this.orgId,
+        job: this.agentId,
+        kind: "staff",
+        action: "upsert",
+        occurredAt,
+        row,
+      },
+      async () => {
+        await db().from("agent_activity_staff").upsert(row, { onConflict: "run_id" });
+      },
+    );
   }
 
   async finish(input: { status?: Extract<RunStatus, "completed" | "needs_person" | "stopped" | "expired">; reason?: string | null } = {}): Promise<void> {
@@ -220,6 +339,21 @@ export class RunRecorder {
   }
 
   /** Plain words for the customer; technical detail for staff only. */
+  async markStuck(): Promise<void> {
+    await this.touch({ last_progress_at: new Date(Date.now() - 11 * 60 * 1000).toISOString(), status: "stuck" });
+    await this.event("stuck", "Stopped making progress");
+  }
+
+  async noteDecision(input: { approved: boolean; who: string; answer: string | null; reason: string | null }): Promise<void> {
+    await this.touch({ status: "working", needs_person: null });
+    const label = input.approved
+      ? input.answer
+        ? `Answered by ${input.who}`
+        : `Approved by ${input.who}`
+      : `Rejected by ${input.who}${input.reason ? `: ${input.reason.slice(0, 200)}` : ""}`;
+    await this.event(input.approved ? "approval_given" : "approval_rejected", label);
+  }
+
   async fail(plain: string, technical?: string | null): Promise<void> {
     await this.touch({
       status: "failed",
@@ -234,7 +368,10 @@ export class RunRecorder {
 
 export async function startRun(input: StartRunInput): Promise<RunRecorder> {
   const client = db();
+  const id = crypto.randomUUID();
+  const occurredAt = new Date().toISOString();
   const row = {
+    id,
     org_id: input.orgId,
     agent_id: input.agentId,
     trigger_key: input.triggerKey.slice(0, 300),
@@ -248,7 +385,25 @@ export async function startRun(input: StartRunInput): Promise<RunRecorder> {
     simulated: input.simulated === true,
     batch_id: input.batchId ?? null,
     status: "queued",
+    created_at: occurredAt,
+    verbatim: false,
   };
+  if (liveRecordSink() === "convex") {
+    await persist(
+      {
+        idempotencyKey: `run:${input.orgId}:${input.agentId}:${row.trigger_key}`,
+        workspaceId: input.orgId,
+        job: input.agentId,
+        kind: "run",
+        action: "insert",
+        leadName: input.leadName,
+        occurredAt,
+        row,
+      },
+      async () => undefined,
+    );
+    return new RunRecorder({ id, orgId: input.orgId, agentId: input.agentId, created: true, leadName: input.leadName });
+  }
   const inserted = await client
     .from("agent_activity_runs")
     .upsert(row, { onConflict: "org_id,agent_id,trigger_key", ignoreDuplicates: true })
@@ -256,7 +411,7 @@ export async function startRun(input: StartRunInput): Promise<RunRecorder> {
     .maybeSingle();
   if (inserted.error) throw new Error(inserted.error.message);
   if (inserted.data?.id) {
-    return new RunRecorder({ id: String(inserted.data.id), orgId: input.orgId, agentId: input.agentId, created: true });
+    return new RunRecorder({ id: String(inserted.data.id), orgId: input.orgId, agentId: input.agentId, created: true, leadName: input.leadName });
   }
   const existing = await client
     .from("agent_activity_runs")
@@ -279,6 +434,7 @@ export async function startRun(input: StartRunInput): Promise<RunRecorder> {
     agentId: input.agentId,
     created: false,
     lastSeq: Number((last.data as { seq?: number } | null)?.seq ?? 0),
+    leadName: input.leadName,
   });
 }
 
@@ -316,19 +472,24 @@ export async function agentMayRun(
   orgId: string,
   agentId: LiveAgentId,
   options: { sample?: boolean } = {}
-): Promise<{ ok: true } | { ok: false; reason: "workspace" | "paused" | "not_activated" }> {
+): Promise<{ ok: true } | { ok: false; reason: "workspace" | "paused" | "not_activated" | "unreadable" }> {
   if (agentId === "assay") return { ok: false, reason: "not_activated" };
+  const pause = await readPause(orgId, agentId, agentId);
+  if (!pause.ok) return pause;
   const client = db();
-  const [{ data: org }, { data: control }, { data: halt }, { data: activation }] = await Promise.all([
+  const [{ data: org, error: orgError }, { data: control, error: controlError }, { data: halt, error: haltError }, { data: activation, error: activationError }] = await Promise.all([
     client.from("organizations").select("status").eq("id", orgId).maybeSingle(),
     client.from("agent_presence_controls").select("paused").eq("org_id", orgId).eq("agent_id", agentId).maybeSingle(),
     client.from("platform_agent_halts").select("halted").eq("agent_id", agentId).maybeSingle(),
     client.from("workspace_agent_activation").select("stage").eq("org_id", orgId).eq("agent_id", agentId).maybeSingle(),
   ]);
+  if (orgError || (liveRecordSink() === "postgres" && (controlError || haltError)) || activationError) {
+    return { ok: false, reason: "unreadable" };
+  }
   const status = (org as { status?: string } | null)?.status;
   if (status !== "active" && status !== "onboarding") return { ok: false, reason: "workspace" };
-  if ((halt as { halted?: boolean } | null)?.halted) return { ok: false, reason: "paused" };
-  if ((control as { paused?: boolean } | null)?.paused) return { ok: false, reason: "paused" };
+  if (liveRecordSink() === "postgres" && (halt as { halted?: boolean } | null)?.halted) return { ok: false, reason: "paused" };
+  if (liveRecordSink() === "postgres" && (control as { paused?: boolean } | null)?.paused) return { ok: false, reason: "paused" };
   // Staged activation: an agent acts only once it has been switched on after
   // go-live. The onboarding sample test is the one exception, and it never
   // reaches a real lead.

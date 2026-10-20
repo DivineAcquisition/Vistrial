@@ -125,6 +125,7 @@ export default defineSchema({
     leadId: v.optional(v.string()),
     actorMemberId: v.optional(v.string()),
     occurredAt: v.string(),
+    seq: v.optional(v.number()),
     row: v.any(),
   })
     .index("by_legacyId", ["legacyId"])
@@ -172,7 +173,120 @@ export default defineSchema({
     status: v.string(),
     queuedAt: v.string(),
     row: v.any(),
+    recipientUserId: v.optional(v.string()),
+    recipientMemberId: v.optional(v.string()),
+    eventType: v.optional(v.string()),
+    channel: v.optional(v.string()),
+    dedupeKey: v.optional(v.string()),
+    leadId: v.optional(v.string()),
+    sendAfter: v.optional(v.string()),
+    receipt: v.optional(v.string()),
+    attempt: v.optional(v.number()),
+  })
+    .index("by_legacyId", ["legacyId"])
+    .index("by_workspace", ["workspaceId"])
+    .index("by_dedupe", ["dedupeKey"])
+    .index("by_status", ["status"]),
+
+  /**
+   * One-way copy of lead assignment. Ids only. Postgres remains the owner.
+   * A missing row denies an operator. It is not treated as unassigned.
+   */
+  leadAccess: defineTable({
+    leadId: v.string(),
+    workspaceId: v.string(),
+    setterMemberId: v.optional(v.string()),
+    closerMemberId: v.optional(v.string()),
+    syncedAt: v.number(),
+    drifted: v.boolean(),
+  })
+    .index("by_lead", ["leadId"])
+    .index("by_workspace", ["workspaceId"]),
+
+  platformHalts: defineTable({
+    agentId: v.string(),
+    halted: v.boolean(),
+    actorId: v.string(),
+    actorName: v.string(),
+    reason: v.optional(v.string()),
+    at: v.string(),
+    job: v.string(),
+  }).index("by_agent", ["agentId"]),
+
+  activityReceipts: defineTable({
+    key: v.string(),
+  }).index("by_key", ["key"]),
+
+  importUses: defineTable({
+    at: v.string(),
+    purpose: v.string(),
+    redacted: v.number(),
+    counts: v.any(),
+  }),
+
+  notificationPreferences: defineTable({
+    legacyId: v.string(),
+    workspaceId: v.string(),
+    memberId: v.string(),
+    eventType: v.string(),
+    channel: v.string(),
+    enabled: v.boolean(),
+    row: v.any(),
   })
     .index("by_legacyId", ["legacyId"])
     .index("by_workspace", ["workspaceId"]),
+
+  notificationMutes: defineTable({
+    legacyId: v.string(),
+    workspaceId: v.string(),
+    memberId: v.string(),
+    mutedUntil: v.string(),
+    row: v.any(),
+  })
+    .index("by_member", ["memberId"])
+    .index("by_workspace", ["workspaceId"]),
+
+  notificationDigestLog: defineTable({
+    legacyId: v.string(),
+    workspaceId: v.string(),
+    userId: v.string(),
+    kind: v.string(),
+    sentOn: v.string(),
+    row: v.any(),
+  }).index("by_user_day", ["workspaceId", "userId", "kind", "sentOn"]),
+
+  notificationEscalations: defineTable({
+    legacyId: v.string(),
+    workspaceId: v.string(),
+    eventType: v.string(),
+    subjectId: v.string(),
+    step: v.number(),
+    row: v.any(),
+  }).index("by_subject", ["workspaceId", "eventType", "subjectId", "step"]),
+
+  notificationPresence: defineTable({
+    userId: v.string(),
+    workspaceId: v.string(),
+    path: v.string(),
+    seenAt: v.string(),
+    row: v.any(),
+  }).index("by_user", ["workspaceId", "userId"]),
+
+  notificationPushSettings: defineTable({
+    userId: v.string(),
+    showFirstNames: v.boolean(),
+    row: v.any(),
+  }).index("by_user", ["userId"]),
+
+  notificationPushSubscriptions: defineTable({
+    legacyId: v.string(),
+    userId: v.string(),
+    endpoint: v.string(),
+    row: v.any(),
+  }).index("by_endpoint", ["endpoint"]),
+
+  notificationTeamChannels: defineTable({
+    workspaceId: v.string(),
+    row: v.any(),
+  }).index("by_workspace", ["workspaceId"]),
 });

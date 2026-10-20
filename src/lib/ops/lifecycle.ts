@@ -56,6 +56,13 @@ export async function deleteOrganizationData(
   } catch {
     // Tokens may already be gone. Deletion must still complete.
   }
+  const { data: leads } = await db.from("leads").select("id, first_name, last_name").eq("org_id", args.orgId);
+  const { redactMovedLeadWords } = await import("@/lib/live/deletion");
+  for (const lead of leads ?? []) {
+    const names = [lead.first_name, lead.last_name].filter((part): part is string => Boolean(part));
+    if (names.length === 0) continue;
+    await redactMovedLeadWords({ workspaceId: args.orgId, leadId: lead.id, names });
+  }
   const { data, error } = await db.rpc("delete_org_data", {
     p_org_id: args.orgId,
     p_confirmation_name: args.confirmationName,

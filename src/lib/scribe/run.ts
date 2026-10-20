@@ -109,7 +109,8 @@ export async function runScribeJob(db: GhlDb, jobId: string): Promise<Outcome> {
   }
   const may = await agentMayRun(job.org_id, "scribe");
   if (!may.ok) {
-    await defer(db, job.id, may.reason === "paused" ? PAUSED_RECHECK_MS : WORKSPACE_RECHECK_MS, may.reason === "paused" ? "scribe_paused" : undefined);
+    const paused = may.reason === "paused" || may.reason === "unreadable";
+    await defer(db, job.id, paused ? PAUSED_RECHECK_MS : WORKSPACE_RECHECK_MS, paused ? "scribe_paused" : undefined);
     return "deferred";
   }
   const gate = await requireConfig(db, job.org_id, "extraction");
@@ -143,6 +144,7 @@ export async function runScribeJob(db: GhlDb, jobId: string): Promise<Outcome> {
     agentId: "scribe",
     triggerKey: `call:${call.id}:job:${job.id}`,
     subjectLabel: `Call with ${leadName}`,
+    leadName,
     subjectHref: `/app/cases/${call.lead_id}`,
     leadId: call.lead_id,
     actorMemberId: job.requested_by_member_id ?? null,

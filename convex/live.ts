@@ -96,3 +96,22 @@ export const staffDetail = query({
     return row.row;
   },
 });
+
+/**
+ * Run ids and statuses in a window, for the reconciliation against the
+ * Postgres copy. Identifiers and statuses only.
+ */
+export const runIdsSince = query({
+  args: { key: v.string(), job: v.string(), workspaceId: v.string(), since: v.string() },
+  handler: async (ctx, args) => {
+    await requireAccess(ctx, { scope: "system", key: args.key, job: args.job, workspaceId: args.workspaceId });
+    const rows = await ctx.db
+      .query("activityRuns")
+      .withIndex("by_workspace", (q) => q.eq("workspaceId", args.workspaceId))
+      .order("desc")
+      .take(2000);
+    return rows
+      .filter((run) => String((run.row as { created_at?: string }).created_at ?? "") >= args.since)
+      .map((run) => ({ id: run.legacyId, status: run.status }));
+  },
+});

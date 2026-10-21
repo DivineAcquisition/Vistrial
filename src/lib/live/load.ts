@@ -338,3 +338,38 @@ export async function loadCalmMode(userId: string): Promise<boolean> {
   const { data } = await db.from("user_preferences").select("calm_mode").eq("user_id", userId).maybeSingle();
   return (data as { calm_mode?: boolean } | null)?.calm_mode === true;
 }
+
+export type CopyHealth = {
+  delay: { events: number; p50Ms: number; p95Ms: number; maxMs: number; over2s: number; backlog: number } | null;
+  drift: { checkedAt: string; workspaces: number; drifted: number; missingInPostgres: number; missingInConvex: number; statusMismatch: number } | null;
+};
+
+/** Staff only: delay from a change to the copy the screens read, and the latest drift check. */
+export async function loadCopyHealth(): Promise<CopyHealth> {
+  const db = await rls();
+  const [delay, drift] = await Promise.all([
+    db.rpc("live_record_copy_delay", { p_minutes: 60 }),
+    db
+      .from("live_record_drift")
+      .select("checked_at, missing_in_postgres, missing_in_convex, status_mismatch")
+      .gte("checked_at", new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString())
+      .order("checked_at", { ascending: false })
+      .limit(500),
+  ]);
+  const rows = (drift.data ?? []) as Array<{ checked_at: string; missing_in_postgres: number; missing_in_convex: number; status_mismatch: number }>;
+  const latestAt = rows[0]?.checked_at ?? null;
+  const latest = latestAt ? rows.filter((row) => row.checked_at === latestAt) : [];
+  return {
+    delay: delay.error ? null : (delay.data as CopyHealth["delay"]),
+    drift: latestAt
+      ? {
+          checkedAt: latestAt,
+          workspaces: latest.length,
+          drifted: latest.filter((row) => row.missing_in_postgres + row.missing_in_convex + row.status_mismatch > 0).length,
+          missingInPostgres: latest.reduce((sum, row) => sum + row.missing_in_postgres, 0),
+          missingInConvex: latest.reduce((sum, row) => sum + row.missing_in_convex, 0),
+          statusMismatch: latest.reduce((sum, row) => sum + row.status_mismatch, 0),
+        }
+      : null,
+  };
+}

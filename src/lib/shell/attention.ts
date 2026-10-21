@@ -1,6 +1,7 @@
 import "server-only";
 
 import type { AuthContext } from "@/lib/auth/types";
+import { loadWaitingTotal } from "@/lib/agents/summary-load";
 import type { AttentionCounts } from "@/lib/shell/nav";
 import { loadQueueCounts } from "@/lib/staff/load";
 import type { StaffScope } from "@/lib/staff/types";
@@ -26,11 +27,8 @@ export async function loadAttentionCounts(ctx: AuthContext): Promise<AttentionCo
     const db = await createClient();
     const dueBy = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
     const [approvals, due, escalations] = await Promise.all([
-      db
-        .from("approval_items")
-        .select("id", { count: "exact", head: true })
-        .eq("org_id", ctx.org.id)
-        .eq("status", "pending"),
+      // The one "waiting on you" definition, shared with the agent summary.
+      loadWaitingTotal(ctx.org.id),
       db
         .from("next_actions")
         .select("id", { count: "exact", head: true })
@@ -47,7 +45,7 @@ export async function loadAttentionCounts(ctx: AuthContext): Promise<AttentionCo
     ]);
     const queue = ctx.isStaff ? await loadStaffQueueBadge(ctx.isPlatformAdmin ? "all" : "mine") : 0;
     return {
-      approvals: approvals.count ?? 0,
+      approvals,
       dueToday: due.count ?? 0,
       escalations: escalations.count ?? 0,
       queue,

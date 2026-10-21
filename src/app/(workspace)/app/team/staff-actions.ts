@@ -10,7 +10,7 @@ import { getAuthContext } from "@/lib/auth/session";
 import { landingPath } from "@/lib/navigation";
 import { assertRecentAuth } from "@/lib/staff/mfa-check";
 import { dbMessage, staffDb } from "@/lib/staff/db";
-import { LIVE_AGENT_IDS } from "@/lib/agents/roster";
+import { actorLabel } from "@/lib/staff/labels";
 
 export type StaffResult = { ok: true; message?: string } | { ok: false; error: string };
 
@@ -192,11 +192,30 @@ export async function setAgentHalt(agentId: string, halted: boolean, reason: str
   const allowed = await gate();
   if (!allowed.ok) return allowed;
   if (!allowed.admin) return { ok: false, error: "Only a Platform Admin can halt an agent everywhere." };
-  if (!LIVE_AGENT_IDS.includes(agentId as (typeof LIVE_AGENT_IDS)[number])) return { ok: false, error: "Unknown agent." };
+  if (!/^[a-z][a-z0-9_]{1,39}$/.test(agentId)) return { ok: false, error: "Unknown agent." };
   await assertRecentAuth("/app/team/agents");
   const db = await staffDb();
+  // Postgres holds the halt; every agent reads it there. Convex gets the same change.
   const { error } = await db.rpc("set_platform_agent_halt", { p_agent_id: agentId, p_halted: halted, p_reason: reason });
   if (error) return { ok: false, error: dbMessage(error, "Could not change that halt.") };
+  const { liveRecordSink } = await import("@/lib/live/words");
+  if (liveRecordSink() === "convex") {
+    try {
+      const ctx = await getAuthContext();
+      const { userConvex } = await import("@/lib/directory/commit");
+      const { api } = await import("../../../../../convex/_generated/api");
+      const client = await userConvex();
+      await client.mutation(api.pause.setHalt, {
+        agentId,
+        halted,
+        actorId: ctx.user.id,
+        actorName: actorLabel(ctx),
+        reason,
+      });
+    } catch {
+      console.error(JSON.stringify({ src: "vistrial", event: "halt.mirror_failed", agentId }));
+    }
+  }
   revalidatePath("/app/team/agents");
   return { ok: true };
 }

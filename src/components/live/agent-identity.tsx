@@ -1,6 +1,6 @@
 "use client";
 
-import { CompassIcon, ScaleIcon, ScrollTextIcon, SendIcon, ShieldIcon, type LucideIcon } from "lucide-react";
+import { CompassIcon, ScaleIcon, ScrollTextIcon, SendIcon, ShieldIcon, SparklesIcon, type LucideIcon } from "lucide-react";
 
 import { AGENTS, type AgentGlyph as GlyphName, type LiveAgentId } from "@/lib/agents/roster";
 import { PRESENCE_TONE, type PresenceState } from "@/lib/live/model";
@@ -12,6 +12,7 @@ const GLYPHS: Record<GlyphName, LucideIcon> = {
   send: SendIcon,
   compass: CompassIcon,
   scale: ScaleIcon,
+  spark: SparklesIcon,
 };
 
 export function AgentGlyph({

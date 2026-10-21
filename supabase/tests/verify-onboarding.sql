@@ -137,8 +137,11 @@ SELECT pg_temp.check(
   (SELECT expires_at BETWEEN now() + interval '6 days' AND now() + interval '8 days' FROM public.org_invites i, w WHERE i.org_id = w1 AND i.role = 'owner'),
   'the Owner invitation does not expire in 7 days');
 SELECT pg_temp.check(
-  (SELECT bool_and(stage = 'off') AND count(*) = 4 FROM public.workspace_agent_activation a, w WHERE a.org_id = w1),
-  'a new workspace did not start with every agent off');
+  (SELECT bool_and(a.stage = 'off') AND count(*) = 4
+   FROM public.workspace_agent_activation a JOIN public.agent_registry r ON r.id = a.agent_id, w
+   WHERE a.org_id = w1 AND NOT r.starts_on)
+  AND (SELECT a.stage FROM public.workspace_agent_activation a, w WHERE a.org_id = w1 AND a.agent_id = 'assay') = 'on',
+  'a new workspace did not start with every staged agent off and Assay on');
 SELECT pg_temp.check(
   NOT (SELECT public.agent_activation_allows(w1, 'relay') FROM w) AND NOT (SELECT public.agent_activation_allows(w1, 'scribe') FROM w),
   'agents may act in a workspace that has not gone live');

@@ -21,6 +21,7 @@ type JobRow = {
 
 const BATCH = 50;
 const MAX_ATTEMPTS = 6;
+const HELD_RECHECK_MS = 5 * 60_000;
 
 /**
  * Ask for a lead to be rescored. Webhook receivers and agents call this; the
@@ -57,8 +58,24 @@ export async function runAssayJobs(db: Db, now = new Date()): Promise<{ jobs: nu
     .order("next_attempt_at", { ascending: true })
     .limit(BATCH);
   if (error) throw new Error("assay_jobs_read_failed");
-  const pending = (data ?? []) as JobRow[];
-  if (!pending.length) return { jobs: 0, scored: 0, failed: 0 };
+  const queued = (data ?? []) as JobRow[];
+  if (!queued.length) return { jobs: 0, scored: 0, failed: 0 };
+
+  // Paused, halted, stopped or switched off: the jobs wait, out of the way of
+  // other workspaces. They are kept, and catch-up after a pause is quiet.
+  const held = new Set<string>();
+  for (const orgId of new Set(queued.map((job) => job.org_id))) {
+    const { data: may, error: mayError } = await loose.rpc("agent_may_run", { p_org_id: orgId, p_agent_id: "assay", p_sample: false });
+    if (mayError || (may as { ok?: boolean } | null)?.ok !== true) held.add(orgId);
+  }
+  if (held.size) {
+    await loose
+      .from("assay_jobs")
+      .update({ next_attempt_at: new Date(now.getTime() + HELD_RECHECK_MS).toISOString() })
+      .in("org_id", [...held])
+      .eq("status", "pending");
+  }
+  const pending = queued.filter((job) => !held.has(job.org_id));
 
   const claimed: JobRow[] = [];
   for (const job of pending) {

@@ -349,8 +349,9 @@ export function derivePresence(input: {
   const waitingItems = input.waiting.filter(
     (item) => item.agentId === input.agentId && isOpenRequest(item.status)
   );
-  const runIdsWithItem = new Set(waitingItems.map((item) => item.runId).filter(Boolean));
-  const waitingCount = waitingItems.length + waitingRuns.filter((run) => !runIdsWithItem.has(run.id)).length;
+  // The one "waiting on you" rule (agent_waiting_items): open requests this
+  // person can see. A run waiting on someone else is not counted here.
+  const waitingCount = waitingItems.length;
   const working = mine.find((run) => run.status === "working" || run.status === "queued");
   const latest = mine[0] ?? null;
   const base = {
@@ -455,6 +456,17 @@ export function derivePresence(input: {
         latest.status === "waiting_provider"
           ? "Waiting on an outside service. It will continue on its own."
           : latest.plainError ?? `Something looked unusual on ${latest.subjectLabel}.`,
+    };
+  }
+
+  if (waitingRuns.length > 0) {
+    return {
+      ...base,
+      state: "idle",
+      stateLabel: PRESENCE_LABEL.idle,
+      liveLabel: null,
+      currentRunId: waitingRuns[0].id,
+      runSummary: "Waiting on someone on your team.",
     };
   }
 

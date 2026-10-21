@@ -138,14 +138,9 @@ export async function commandSuggestionsAction(): Promise<string[]> {
   const ctx = await getAuthContext();
   const { loadSuggestionFacts } = await import("@/lib/workspace/load");
   const { commandSuggestions } = await import("@/lib/workspace/voice");
-  const db = (await createClient()) as unknown as SupabaseClient;
-  const { count } = await db
-    .from("approval_items")
-    .select("id", { count: "exact", head: true })
-    .eq("org_id", ctx.org.id)
-    .not("agent_id", "is", null)
-    .eq("status", "pending");
-  const facts = await loadSuggestionFacts(ctx, count ?? 0).catch(() => null);
+  const { loadWaitingTotal } = await import("@/lib/agents/summary-load");
+  const waiting = await loadWaitingTotal(ctx.org.id);
+  const facts = await loadSuggestionFacts(ctx, waiting).catch(() => null);
   return facts ? commandSuggestions(facts) : [];
 }
 

@@ -167,7 +167,9 @@ async function draftForJob(job: RelayJob): Promise<Outcome> {
       ? { kind: "skipped", result: "Relay is paused in this workspace, so nothing was drafted." }
       : may.reason === "not_activated"
         ? { kind: "skipped", result: "Relay is not switched on in this workspace yet, so nothing was drafted." }
-        : { kind: "skipped", result: "This workspace is not active, so nothing was drafted." };
+        : may.reason === "locked"
+          ? { kind: "skipped", result: "Relay is not included on this workspace's plan, so nothing was drafted." }
+          : { kind: "skipped", result: "This workspace is not active, so nothing was drafted." };
   }
 
   const { data: leadData } = await client

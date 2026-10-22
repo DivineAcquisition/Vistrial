@@ -29,6 +29,7 @@ import { Button } from "@/components/ui/button";
 import { LocationPicker } from "@/components/integrations/location-picker";
 import { listSessionLocations } from "@/lib/ghl/connect";
 import { getSupabaseAdmin } from "@/lib/supabase/admin";
+import { OnboardCard } from "@/components/ui/onboard-card";
 import { Panel } from "@/components/ui/panel";
 import { Notice } from "@/components/ui/states";
 import { StatusBadge } from "@/components/ui/status-badge";
@@ -613,6 +614,13 @@ export default async function SetupStepPage({
         estimate: "About 2 minutes to read",
         children: (
           <div className={cardStack}>
+            <Panel className="flex flex-col items-center gap-4 p-6 sm:flex-row sm:justify-between">
+              <div className="min-w-0">
+                <h2 className={cardTitle}>How they come online</h2>
+                <p className={helperClass}>Setup, a check that the connections are in place, then drafts that wait for a person.</p>
+              </div>
+              <OnboardCard step1="Agent setup" step2="Verifying connections" step3="Ready to draft" />
+            </Panel>
             {AGENT_LIST.map((agent) => (
               <Panel key={agent.id} className="p-6">
                 <div className="flex flex-wrap items-center justify-between gap-2">
@@ -716,8 +724,17 @@ export default async function SetupStepPage({
               </ul>
             </Panel>
             <Panel className="p-6">
-              <h2 className={cardTitle}>How your agents are switched on</h2>
-              <p className={helperClass}>After your team approves, one at a time, so you see each one working before the next starts.</p>
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                <div className="min-w-0">
+                  <h2 className={cardTitle}>How your agents are switched on</h2>
+                  <p className={helperClass}>After your team approves, one at a time, so you see each one working before the next starts.</p>
+                </div>
+                <OnboardCard
+                  step1={`${AGENTS.scribe.name} switches on`}
+                  step2={`${AGENTS.sentry.name} watches first`}
+                  step3={`${AGENTS.relay.name} drafts next`}
+                />
+              </div>
               <ol className="mt-3 space-y-3">
                 {ACTIVATION_ORDER.map((agent, index) => {
                   const copy = activationStepCopy(agent, view.sentryWatchDays);

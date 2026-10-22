@@ -6,9 +6,11 @@ import { LandingFaq } from "@/components/marketing/faq";
 import { ApprovalExample, HeroExample } from "@/components/marketing/hero-example";
 import { BeamFrame, HeroAtmosphere, ShinyLabel, SpotlightCard } from "@/components/marketing/saas-frame";
 import { CaseFileBoard, IndustrySwitcher, StackStrip } from "@/components/marketing/saas-blocks";
-import { AgentScene, HowScene, ProblemScene, SafetyScene } from "@/components/marketing/section-scenes";
-import { Badge } from "@/components/ui/badge";
+import { AgentScene, ProblemScene, SafetyScene } from "@/components/marketing/section-scenes";
 import { Button } from "@/components/ui/button";
+import { HowItWorks } from "@/components/ui/how-it-works";
+import { glowColorForAccent } from "@/components/ui/glow-color";
+import { GlowCard } from "@/components/ui/spotlight-card";
 import { AgentName } from "@/components/live/agent-identity";
 import { AGENT_LIST } from "@/lib/agents/roster";
 import {
@@ -110,9 +112,9 @@ export function LandingPage() {
               </div>
               <p className="mt-4 max-w-xl text-sm leading-relaxed text-silver">{HERO.trust}</p>
             </div>
-            <BeamFrame glow>
+            <GlowCard customSize glowColor="brand" className="w-full p-5 sm:p-6">
               <HeroExample />
-            </BeamFrame>
+            </GlowCard>
           </div>
           </HeroAtmosphere>
         </section>
@@ -146,24 +148,7 @@ export function LandingPage() {
         </Section>
       ) : null}
 
-      {SECTIONS.how ? (
-        <Section id={HOW.id} headline={HOW.headline}>
-          <ol className="grid gap-4 md:grid-cols-3">
-            {HOW.steps.map((step, index) => (
-              <li key={step.id}>
-                <SpotlightCard glow beamDelay={index * 2.6} className="relative">
-                  <HowScene id={step.id} />
-                  <Badge variant="outline" size="sm" className="mt-4 border-[#2a2833] bg-[#12111a]">
-                    {String(index + 1).padStart(2, "0")}
-                  </Badge>
-                  <h3 className="mt-4 font-heading text-2xl text-white">{step.title}</h3>
-                  <p className="mt-3 text-sm leading-relaxed text-silver">{step.body}</p>
-                </SpotlightCard>
-              </li>
-            ))}
-          </ol>
-        </Section>
-      ) : null}
+      {SECTIONS.how ? <HowItWorks id={HOW.id} /> : null}
 
       {SECTIONS.how ? (
         <Section headline={CASE_FILE.headline}>
@@ -176,14 +161,14 @@ export function LandingPage() {
           <ul className="grid gap-4 sm:grid-cols-2">
             {AGENT_LIST.map((agent) => (
               <li key={agent.id}>
-                <SpotlightCard>
+                <GlowCard customSize glowColor={glowColorForAccent(agent.accentKey)} className="h-full w-full p-5">
                   <AgentScene id={agent.id} />
                   <div className="mt-4">
                     <AgentName agentId={agent.id} size="lg" />
                   </div>
                   <p className="mt-3 text-sm leading-relaxed text-silver">{agent.role}</p>
                   <p className="mt-2 text-sm leading-relaxed text-white">{agent.promise}</p>
-                </SpotlightCard>
+                </GlowCard>
               </li>
             ))}
           </ul>

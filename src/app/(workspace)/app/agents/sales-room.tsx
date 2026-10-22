@@ -11,6 +11,8 @@ import { useLiveMeta, useLiveState, usePresence } from "@/components/live/live-p
 import { useRunViewer } from "@/components/live/run-viewer";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { OnboardCard } from "@/components/ui/onboard-card";
+import { GlowCard, glowColorForAccent } from "@/components/ui/spotlight-card";
 import { SegmentedRadioGroup } from "@/components/ui/segmented-radio";
 import { Tabs, TabsList, TabsPanel, TabsTab } from "@/components/ui/tabs";
 import { AGENTS, SALES_ROOM_IDS, agentCredit, type LiveAgentId } from "@/lib/agents/roster";
@@ -71,25 +73,29 @@ function TeamCard({
   const agent = AGENTS[agentId];
   const line = presence?.liveLabel ?? presence?.runSummary ?? "Nothing to do right now.";
   return (
-    <button
-      type="button"
-      onClick={onSelect}
-      aria-pressed={selected}
-      title={agent.description}
-      className={cn(
-        "flex h-full min-w-0 items-start gap-3 rounded-2xl border bg-card p-3 text-left focus-visible:ring-2 focus-visible:ring-ring",
-        compact ? "w-56 shrink-0" : "w-full",
-        selected ? "border-brand-500/50" : "border-border"
-      )}
+    <GlowCard
+      customSize
+      glowColor={glowColorForAccent(agent.accentKey)}
+      borderWidth={2}
+      edge={selected ? "primary" : "default"}
+      className={cn("h-full p-0", compact ? "w-56 shrink-0" : "w-full")}
     >
-      <AgentGlyph agentId={agentId} size="md" working={presence?.state === "working"} />
-      <span className="min-w-0">
-        <span className="block truncate text-sm font-medium text-card-foreground">{agent.name}</span>
-        <span className="block truncate text-xs text-muted-foreground">{agent.sublabel}</span>
-        <span className="mt-1 block text-xs font-medium text-card-foreground">{presence?.stateLabel ?? "Idle"}</span>
-        {compact ? null : <span className="mt-0.5 block truncate text-xs text-muted-foreground">{line}</span>}
-      </span>
-    </button>
+      <button
+        type="button"
+        onClick={onSelect}
+        aria-pressed={selected}
+        title={agent.description}
+        className="flex h-full min-w-0 w-full items-start gap-3 p-3 text-left focus-visible:ring-2 focus-visible:ring-ring"
+      >
+        <AgentGlyph agentId={agentId} size="md" working={presence?.state === "working"} />
+        <span className="min-w-0">
+          <span className="block truncate text-sm font-medium text-card-foreground">{agent.name}</span>
+          <span className="block truncate text-xs text-muted-foreground">{agent.sublabel}</span>
+          <span className="mt-1 block text-xs font-medium text-card-foreground">{presence?.stateLabel ?? "Idle"}</span>
+          {compact ? null : <span className="mt-0.5 block truncate text-xs text-muted-foreground">{line}</span>}
+        </span>
+      </button>
+    </GlowCard>
   );
 }
 
@@ -310,17 +316,20 @@ export function SalesRoom({
   const select = (agentId: LiveAgentId) => setFilter((current) => (current === agentId ? null : agentId));
 
   const empty = (
-    <Card className="gap-3 p-6">
-      <p className="text-sm text-card-foreground">Your team&apos;s work shows up here as it happens.</p>
-      {crmConnected ? (
-        <Button variant="primary" render={<Link href="/app/compass" />}>
-          Ask Compass
-        </Button>
-      ) : (
-        <Button variant="primary" render={<Link href="/app/settings/connections" />}>
-          Connect your CRM
-        </Button>
-      )}
+    <Card className="flex flex-col items-center gap-4 p-6 sm:flex-row sm:justify-between">
+      <div className="flex min-w-0 flex-col items-start gap-3">
+        <p className="text-sm text-card-foreground">Your team&apos;s work shows up here as it happens.</p>
+        {crmConnected ? (
+          <Button variant="primary" render={<Link href="/app/compass" />}>
+            Ask Compass
+          </Button>
+        ) : (
+          <Button variant="primary" render={<Link href="/app/settings/connections" />}>
+            Connect your CRM
+          </Button>
+        )}
+      </div>
+      <OnboardCard step1="Standing by" step2="Watching new leads" step3="Drafts wait for you" />
     </Card>
   );
 

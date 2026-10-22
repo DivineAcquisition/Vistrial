@@ -11,6 +11,7 @@ import { useRunViewer } from "@/components/live/run-viewer";
 import { useOrg } from "@/components/app/org-provider";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { OnboardCard } from "@/components/ui/onboard-card";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Input } from "@/components/ui/input";
 import { AGENTS, type LiveAgentId } from "@/lib/agents/roster";
@@ -218,6 +219,14 @@ export function AgentDetail({
             )
           ) : null}
         </div>
+        {openRuns.length === 0 ? (
+          <OnboardCard
+            className="shrink-0"
+            step1={`${agent.name} is set up`}
+            step2={presence.state === "working" ? "Working a lead" : "Watching for work"}
+            step3="Ready for your review"
+          />
+        ) : null}
         {error ? (
           <p role="alert" className="text-sm text-destructive">
             {error}

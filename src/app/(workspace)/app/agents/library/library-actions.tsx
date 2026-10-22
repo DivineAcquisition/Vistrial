@@ -11,7 +11,7 @@ import { GlyphMark } from "@/components/live/agent-identity";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
-import { Panel } from "@/components/ui/panel";
+import { GlowCard, glowColorForAccent } from "@/components/ui/spotlight-card";
 import { SETUP_STEPS, type AgentSummaryRow } from "@/lib/agents/summary";
 import type { WorkspaceRole } from "@/lib/auth/types";
 
@@ -250,7 +250,7 @@ export function LibraryCard({
 }) {
   return (
     <div id={row.id} className="scroll-mt-24">
-    <Panel className="flex flex-col gap-3 p-4">
+    <GlowCard customSize glowColor={glowColorForAccent(row.accent)} borderWidth={2} className="flex h-full flex-col gap-3 p-4">
       <div className="flex items-start gap-3">
         <GlyphMark glyph={row.glyph} accent={row.accent} size="md" />
         <div className="min-w-0 flex-1">
@@ -266,7 +266,7 @@ export function LibraryCard({
       <Needs row={row} detail={detail} />
       {row.state === "pending" && row.requestedBy ? <p className="text-xs text-warning">Turned on by {row.requestedBy}. It does nothing until the Owner confirms.</p> : null}
       {readOnly ? null : <Action row={row} detail={detail} role={role} />}
-    </Panel>
+    </GlowCard>
     </div>
   );
 }

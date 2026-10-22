@@ -1408,6 +1408,29 @@
   --brand: #9a88fc;
   --brand-rgb: 154, 136, 252;
   --brand-deep: #6650d8;
+  /* Spotlight hues taken from the brand, success, warning, and danger tokens. */
+  --glow-hue-brand: 249;
+  --glow-sat-brand: 95;
+  --glow-light-brand: 76;
+  --glow-hue-brand-soft: 251;
+  --glow-sat-brand-soft: 96;
+  --glow-light-brand-soft: 80;
+  --glow-hue-brand-deep: 250;
+  --glow-sat-brand-deep: 64;
+  --glow-light-brand-deep: 58;
+  --glow-hue-success: 160;
+  --glow-sat-success: 70;
+  --glow-light-success: 58;
+  --glow-hue-warning: 36;
+  --glow-sat-warning: 83;
+  --glow-light-warning: 65;
+  --glow-hue-danger: 0;
+  --glow-sat-danger: 84;
+  --glow-light-danger: 64;
+  --glow-backdrop: color-mix(in srgb, var(--card) 86%, transparent);
+  --glow-spot-opacity: 0.28;
+  --glow-border-opacity: 1;
+  --glow-border-light-opacity: 0.4;
   --page: #ffffff;
   --hairline: rgba(11, 10, 17, 0.08);
   --strong: #0b0a11;
@@ -1499,6 +1522,28 @@
   --brand: #9a88fc;
   --brand-rgb: 154, 136, 252;
   --brand-deep: #6650d8;
+  --glow-hue-brand: 249;
+  --glow-sat-brand: 95;
+  --glow-light-brand: 76;
+  --glow-hue-brand-soft: 251;
+  --glow-sat-brand-soft: 96;
+  --glow-light-brand-soft: 80;
+  --glow-hue-brand-deep: 250;
+  --glow-sat-brand-deep: 64;
+  --glow-light-brand-deep: 58;
+  --glow-hue-success: 160;
+  --glow-sat-success: 70;
+  --glow-light-success: 58;
+  --glow-hue-warning: 36;
+  --glow-sat-warning: 83;
+  --glow-light-warning: 65;
+  --glow-hue-danger: 0;
+  --glow-sat-danger: 84;
+  --glow-light-danger: 64;
+  --glow-backdrop: color-mix(in srgb, var(--card) 88%, transparent);
+  --glow-spot-opacity: 0.12;
+  --glow-border-opacity: 0.9;
+  --glow-border-light-opacity: 0.4;
   --page: #07070b;
   --hairline: rgba(255, 255, 255, 0.08);
   --strong: #ffffff;
@@ -1710,6 +1755,124 @@ html[data-calm="true"] .live-shimmer-text {
     -webkit-text-fill-color: currentColor;
     background-image: none;
   }
+}
+
+/* Pointer-follow spotlight. One stylesheet, scoped so cards do not inject duplicate CSS. */
+[data-slot="glow-card"] {
+  --glow-border-size: calc(var(--glow-border-width, 3) * 1px);
+  --glow-spotlight-size: calc(var(--glow-size, 200) * 1px);
+  --glow-hue: calc(var(--glow-base, var(--glow-hue-brand, 249)) + (var(--xp, 0) * var(--glow-spread, 24)));
+  position: relative;
+  isolation: isolate;
+  border-radius: calc(var(--glow-radius, 14) * 1px);
+  background-image: radial-gradient(
+    var(--glow-spotlight-size) var(--glow-spotlight-size) at calc(var(--x, 0) * 1px) calc(var(--y, 0) * 1px),
+    hsl(
+        var(--glow-hue) calc(var(--glow-saturation, var(--glow-sat-brand, 95)) * 1%)
+          calc(var(--glow-lightness, var(--glow-light-brand, 76)) * 1%) / var(--glow-spot-opacity, 0.16)
+      )
+      ,
+    transparent
+  );
+  background-color: var(--glow-backdrop, transparent);
+  background-size: calc(100% + (2 * var(--glow-border-size))) calc(100% + (2 * var(--glow-border-size)));
+  background-position: 50% 50%;
+  background-attachment: fixed;
+  border: var(--glow-border-size) solid var(--glow-edge, var(--border));
+  box-shadow: 0 1rem 2rem -1rem var(--shadow-deep);
+}
+
+[data-slot="glow-card"]::before,
+[data-slot="glow-card"]::after {
+  pointer-events: none;
+  content: "";
+  position: absolute;
+  inset: calc(var(--glow-border-size) * -1);
+  border: var(--glow-border-size) solid transparent;
+  border-radius: calc(var(--glow-radius, 14) * 1px);
+  background-attachment: fixed;
+  background-size: calc(100% + (2 * var(--glow-border-size))) calc(100% + (2 * var(--glow-border-size)));
+  background-repeat: no-repeat;
+  background-position: 50% 50%;
+  mask: linear-gradient(#0000, #0000), linear-gradient(#fff, #fff);
+  mask-clip: padding-box, border-box;
+  mask-composite: intersect;
+  -webkit-mask: linear-gradient(#0000, #0000), linear-gradient(#fff, #fff);
+  -webkit-mask-clip: padding-box, border-box;
+  -webkit-mask-composite: source-in;
+}
+
+[data-slot="glow-card"]::before {
+  background-image: radial-gradient(
+    calc(var(--glow-spotlight-size) * 0.75) calc(var(--glow-spotlight-size) * 0.75) at calc(var(--x, 0) * 1px)
+      calc(var(--y, 0) * 1px),
+    hsl(
+        var(--glow-hue) calc(var(--glow-saturation, var(--glow-sat-brand, 95)) * 1%)
+          calc(var(--glow-lightness, var(--glow-light-brand, 70)) * 1%) / var(--glow-border-opacity, 1)
+      )
+      ,
+    transparent 100%
+  );
+  filter: brightness(1.2);
+  z-index: 0;
+}
+
+[data-slot="glow-card"]::after {
+  background-image: radial-gradient(
+    calc(var(--glow-spotlight-size) * 0.5) calc(var(--glow-spotlight-size) * 0.5) at calc(var(--x, 0) * 1px)
+      calc(var(--y, 0) * 1px),
+    hsl(0 0% 100% / var(--glow-border-light-opacity, 0.7)),
+    transparent 100%
+  );
+  z-index: 0;
+}
+
+[data-slot="glow-card"] > [data-glow-spot] {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  border: none;
+  border-radius: calc(var(--glow-radius, 14) * 1px);
+  background: none;
+  opacity: calc(var(--glow-outer, 1) * 0.55);
+  filter: blur(calc(var(--glow-border-size) * 10));
+  pointer-events: none;
+  will-change: filter;
+}
+
+[data-slot="glow-card"] > [data-glow-spot]::before {
+  content: "";
+  position: absolute;
+  inset: -10px;
+  border: 10px solid transparent;
+  border-radius: inherit;
+  background-image: radial-gradient(
+    calc(var(--glow-spotlight-size) * 0.75) calc(var(--glow-spotlight-size) * 0.75) at calc(var(--x, 0) * 1px)
+      calc(var(--y, 0) * 1px),
+    hsl(
+        var(--glow-hue) calc(var(--glow-saturation, var(--glow-sat-brand, 95)) * 1%)
+          calc(var(--glow-lightness, 50) * 1%) / var(--glow-border-opacity, 1)
+      )
+      ,
+    transparent 100%
+  );
+  background-repeat: no-repeat;
+  background-attachment: fixed;
+  background-position: 50% 50%;
+  background-size: calc(100% + (2 * var(--glow-border-size))) calc(100% + (2 * var(--glow-border-size)));
+  filter: brightness(1.2);
+  pointer-events: none;
+  mask: linear-gradient(#0000, #0000), linear-gradient(#fff, #fff);
+  mask-clip: padding-box, border-box;
+  mask-composite: intersect;
+  -webkit-mask: linear-gradient(#0000, #0000), linear-gradient(#fff, #fff);
+  -webkit-mask-clip: padding-box, border-box;
+  -webkit-mask-composite: source-in;
+}
+
+[data-slot="glow-card"] > :not([data-glow-spot]) {
+  position: relative;
+  z-index: 1;
 }
 
 @custom-variant data-open (&:where([data-state="open"], [data-open]:not([data-open="false"])));

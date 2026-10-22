@@ -197,6 +197,7 @@ export async function rotateSecretAction(formData: FormData): Promise<void> {
   const ctx = await requireConnectionViewer();
   if (!managesConnections(ctx)) return;
   const id = String(formData.get("connection") ?? "");
+  if (!(await loadConnection(ctx.org.id, id))) return;
   const secret = await rotateWebhookSecret(id, ctx.org.id, ctx.member.id);
   const jar = await cookies();
   jar.set("vistrial_hook_secret_once", secret, {

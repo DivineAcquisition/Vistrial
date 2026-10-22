@@ -387,6 +387,7 @@ export async function ensureWebhook(connectionId: string, orgId: string): Promis
 }
 
 export async function rotateWebhookSecret(connectionId: string, orgId: string, actorMemberId: string | null): Promise<string> {
+  if (!(await loadConnection(orgId, connectionId))) throw new Error("connection not in workspace");
   const current = await db()
     .from("connection_secrets")
     .select("webhook_secret_encrypted")
@@ -497,6 +498,7 @@ export async function disconnectConnection(args: {
   actorMemberId: string | null;
   detail: string;
 }): Promise<void> {
+  if (!(await loadConnection(args.orgId, args.connectionId))) return;
   await db().from("connection_secrets").delete().eq("connection_id", args.connectionId);
   await db().from("inbound_endpoints").update({ disabled_at: new Date().toISOString() }).eq("connection_id", args.connectionId);
   await setConnectionStatus({

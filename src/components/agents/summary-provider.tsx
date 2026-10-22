@@ -6,6 +6,7 @@ import { fetchAgentSummaryAction } from "@/app/(workspace)/app/agents/roster-act
 import { AgentSummaryContext } from "@/components/agents/summary-context";
 import { useLiveMeta, useLiveState } from "@/components/live/live-provider";
 import type { AgentSummary } from "@/lib/agents/summary";
+import { withoutRetiredPages } from "@/lib/sales-os/routes";
 
 /** Rows change at most this often, so a busy agent never flickers. */
 const MIN_REFRESH_MS = 2000;
@@ -21,10 +22,12 @@ const BACKSTOP_MS = 30_000;
 export function AgentSummaryProvider({
   orgId,
   initial,
+  salesOs = false,
   children,
 }: {
   orgId: string;
   initial: AgentSummary | null;
+  salesOs?: boolean;
   children: ReactNode;
 }) {
   const [summary, setSummary] = useState<AgentSummary | null>(initial);
@@ -91,11 +94,11 @@ export function AgentSummaryProvider({
   const connection = live.connection;
   const value = useMemo(
     () => ({
-      summary,
+      summary: summary && salesOs ? withoutRetiredPages(summary) : summary,
       refresh: () => void load(),
       reconnecting: Boolean(summary?.reconnecting) || connection === "reconnecting" || connection === "polling",
     }),
-    [connection, load, summary]
+    [connection, load, salesOs, summary]
   );
 
   return <AgentSummaryContext.Provider value={value}>{children}</AgentSummaryContext.Provider>;

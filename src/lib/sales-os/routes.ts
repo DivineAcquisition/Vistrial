@@ -16,3 +16,8 @@ export function salesOsRedirect(path: string): string | null {
   }
   return null;
 }
+
+/** The roster keeps no links to screens the Sales OS replaced. */
+export function withoutRetiredPages<T extends { areas: { workPage: { href: string } | null }[] }>(summary: T): T {
+  return { ...summary, areas: summary.areas.map((area) => (area.workPage && salesOsRedirect(area.workPage.href) ? { ...area, workPage: null } : area)) };
+}

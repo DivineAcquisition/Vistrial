@@ -2,6 +2,7 @@ import { PolicyToggle, UndoButton } from "@/components/sales-os/action-controls"
 import { EmptyLine, RecordSection } from "@/components/sales-os/record-section";
 import { Badge } from "@/components/ui/badge";
 import { executorFor } from "@/lib/actions/executors";
+import { MCP_SERVERS } from "@/lib/actions/mcp";
 import { ACTIONS, DEFAULT_INTERNAL_POLICY, TIER_LABEL, type InternalPolicy } from "@/lib/actions/registry";
 import type { RunView } from "@/lib/actions/views";
 import { connectorByKey } from "@/lib/connectors/catalog";
@@ -17,7 +18,7 @@ const STATUS_LABEL: Record<string, string> = {
 };
 
 function appNames(keys: readonly string[]): string {
-  return keys.map((key) => connectorByKey(key)?.name ?? key).join(", ");
+  return keys.map((key) => connectorByKey(key)?.name ?? MCP_SERVERS.find((server) => server.connector === key)?.label ?? key).join(", ");
 }
 
 /** The Actions page body: the three tiers, the Owner's settings, and recent changes. */
@@ -53,7 +54,7 @@ export function ActionsView({ policies, runs, owner, now }: { policies: Map<stri
             const ready = action.connectors.some((key) => executorFor(action.name, key));
             return (
               <li key={action.name} className="flex flex-col gap-2 py-2.5 sm:flex-row sm:items-center sm:justify-between">
-                <div>
+                <div className="min-w-0">
                   <p className="text-sm">{action.label}</p>
                   <p className="text-xs text-muted-foreground">
                     {appNames(action.connectors)}
@@ -61,7 +62,9 @@ export function ActionsView({ policies, runs, owner, now }: { policies: Map<stri
                     {ready ? "" : " · Coming soon"}
                   </p>
                 </div>
-                <PolicyToggle action={action.name} label={action.label} mode={policies.get(action.name) ?? DEFAULT_INTERNAL_POLICY} disabled={!owner} />
+                <div className="shrink-0">
+                  <PolicyToggle action={action.name} label={action.label} mode={policies.get(action.name) ?? DEFAULT_INTERNAL_POLICY} disabled={!owner} />
+                </div>
               </li>
             );
           })}

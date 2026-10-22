@@ -134,7 +134,7 @@ export function CommandView({
       </div>
 
       {lead ? (
-        <aside aria-label="Selected lead" className="flex min-w-0 flex-col gap-4 lg:sticky lg:top-4 lg:self-start">
+        <aside aria-label="Selected lead" className="order-first flex min-w-0 flex-col gap-4 lg:order-last lg:sticky lg:top-4 lg:self-start">
           {lead}
         </aside>
       ) : null}

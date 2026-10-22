@@ -8,7 +8,7 @@ import { FIELDS, confirmationCounts, fieldProblem, type StoredField } from "@/li
 import { businessDayOver, dayWindow, eodActivity, localDay, type ActivityRows } from "@/lib/manager/eod";
 import { MIN_SAMPLE, coachingMoments, scorecard, type ScoreInputs } from "@/lib/manager/scorecard";
 import { nowSummary } from "@/lib/sales-os/now";
-import { salesOsRedirect } from "@/lib/sales-os/routes";
+import { salesOsRedirect, withoutRetiredPages } from "@/lib/sales-os/routes";
 import { SALES_OS_HOME, salesOsNavigation } from "@/lib/shell/nav";
 
 const ROOT = path.join(__dirname, "..", "..", "..");
@@ -164,6 +164,11 @@ describe("Sales OS routes", () => {
 
   it("leaves every other screen alone", () => {
     for (const keep of ["/app/command", "/app/leads", "/app/settings", "/app/casework", "/app/forsighted"]) expect(salesOsRedirect(keep)).toBeNull();
+  });
+
+  it("drops roster links to replaced screens and keeps the rest", () => {
+    const summary = { areas: [{ workPage: { href: "/app/cases" } }, { workPage: { href: "/app/leads" } }, { workPage: null }] };
+    expect(withoutRetiredPages(summary).areas.map((area) => area.workPage?.href ?? null)).toEqual([null, "/app/leads", null]);
   });
 });
 

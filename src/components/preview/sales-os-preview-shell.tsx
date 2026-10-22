@@ -9,6 +9,7 @@ import { OrgProvider } from "@/components/app/org-provider";
 import { LiveProvider } from "@/components/live/live-provider";
 import type { AgentSummary } from "@/lib/agents/summary";
 import type { ClientOrgState } from "@/lib/auth/types";
+import { withoutRetiredPages } from "@/lib/sales-os/routes";
 import { salesOsNavigation } from "@/lib/shell/nav";
 
 const ORG_ID = "00000000-0000-4000-8000-000000000001";
@@ -38,7 +39,7 @@ export function SalesOsPreviewShell({ title, summary, generatedAt, children }: {
   return (
     <OrgProvider value={PREVIEW_ORG}>
       <LiveProvider orgId={ORG_ID} workspaceStatus="active" initial={{ orgId: ORG_ID, runs: [], events: [], controls: [], waiting: [], loadedAt: generatedAt }} initialCalm={false} offline>
-        <AgentSummaryContext.Provider value={{ summary, refresh: () => undefined, reconnecting: false }}>
+        <AgentSummaryContext.Provider value={{ summary: withoutRetiredPages(summary), refresh: () => undefined, reconnecting: false }}>
           <ApplicationShell
             groups={nav.groups}
             phone={nav.phone}

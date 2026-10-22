@@ -65,7 +65,7 @@ export default async function WorkspaceLayout({ children }: { children: React.Re
   return (
     <OrgProvider value={toClientOrgState(ctx)} key={ctx.org.id}>
       <LiveProvider orgId={ctx.org.id} workspaceStatus={ctx.org.status} initial={snapshot} initialCalm={calm}>
-        <AgentSummaryProvider orgId={ctx.org.id} initial={summary}>
+        <AgentSummaryProvider orgId={ctx.org.id} initial={summary} salesOs={salesOs}>
         <RunViewerProvider staff={ctx.isStaff}>
           <AgentPanelProvider>
             <AppShell

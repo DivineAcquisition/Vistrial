@@ -4,9 +4,10 @@ import { useChat } from "@ai-sdk/react";
 import { AssistantRuntimeProvider } from "@assistant-ui/react";
 import { useAISDKRuntime } from "@assistant-ui/react-ai-sdk";
 import { DefaultChatTransport, type UIMessage } from "ai";
-import { createContext, useCallback, useContext, useEffect, useMemo, useRef, type PropsWithChildren } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type PropsWithChildren } from "react";
 
 import { createConversationAction } from "@/app/(workspace)/app/compass/actions";
+import { parseAgentIntent, type AgentIntent } from "@/lib/agent-elements/intent";
 import type { CompassAnswerMeta, CompassContext } from "@/lib/compass/types";
 
 /**
@@ -27,6 +28,9 @@ type CompassChatValue = {
   readOnly: boolean;
   /** Layout samples only: an error to show without a request. */
   sampleError: string | null;
+  sample: boolean;
+  intent: AgentIntent;
+  setIntent: (intent: AgentIntent) => void;
 };
 
 const CompassChatContext = createContext<CompassChatValue | null>(null);
@@ -67,6 +71,7 @@ export function CompassChatProvider({
   readOnly = false,
   sample = false,
   sampleError = null,
+  initialIntent = "lookup",
   onConversation,
   onSettled,
   children,
@@ -81,6 +86,7 @@ export function CompassChatProvider({
   /** A layout sample: nothing is ever sent. */
   sample?: boolean;
   sampleError?: string | null;
+  initialIntent?: AgentIntent;
   onConversation?: (id: string) => void;
   /** After each answer finishes or fails, so lists can pick up the new title. */
   onSettled?: (messageCount: number) => void;
@@ -88,13 +94,20 @@ export function CompassChatProvider({
   // What the transport reads when it sends. Refs, so a new id or context never rebuilds the chat.
   const idRef = useRef<string | null>(conversationId);
   const contextRef = useRef<CompassContext>(context);
+  const [intent, setIntentState] = useState<AgentIntent>(parseAgentIntent(initialIntent));
+  const intentRef = useRef(intent);
+  const setIntent = useCallback((next: AgentIntent) => {
+    intentRef.current = next;
+    setIntentState(next);
+  }, []);
   const onConversationRef = useRef(onConversation);
   const onSettledRef = useRef(onSettled);
   useEffect(() => {
+    intentRef.current = intent;
     contextRef.current = context;
     onConversationRef.current = onConversation;
     onSettledRef.current = onSettled;
-  }, [context, onConversation, onSettled]);
+  }, [intent, context, onConversation, onSettled]);
 
   const transport = useMemo(
     () =>
@@ -113,7 +126,7 @@ export function CompassChatProvider({
             idRef.current = await createConversationAction(origin, contextRef.current);
             onConversationRef.current?.(idRef.current);
           }
-          return { body: { id: idRef.current, message: messages.at(-1), trigger: "submit-message", context: contextRef.current } };
+          return { body: { id: idRef.current, message: messages.at(-1), trigger: "submit-message", context: contextRef.current, intent: intentRef.current } };
         },
       }),
     [origin, sample]
@@ -158,8 +171,8 @@ export function CompassChatProvider({
   );
 
   const value = useMemo<CompassChatValue>(
-    () => ({ chat, conversationId: () => idRef.current, retry, ask, metaFor, readOnly, sampleError }),
-    [chat, retry, ask, metaFor, readOnly, sampleError]
+    () => ({ chat, conversationId: () => idRef.current, retry, ask, metaFor, readOnly, sampleError, sample, intent, setIntent }),
+    [chat, retry, ask, metaFor, readOnly, sampleError, sample, intent, setIntent]
   );
 
   return (

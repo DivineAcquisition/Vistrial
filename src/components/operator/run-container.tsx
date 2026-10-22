@@ -1,14 +1,17 @@
 "use client";
 
+import { useState } from "react";
+
+import { ToolGroupCard, type ToolGroupStep } from "@/components/agent-elements/cards";
+import { AgentComposer } from "@/components/agent-elements/composer";
 import { StreamingText } from "@/components/operator/streaming-text";
 import { ChangePreview } from "@/components/operator/change-preview";
-import { Input } from "@/components/ui/input";
 import type { OperatorConfirmationView, OperatorRunView, OperatorStepView } from "@/lib/operator/types";
 import { helperClass } from "@/lib/ui";
 
 export function RunContainer({
   requestText,
-  steps: _steps,
+  steps,
   confirmations,
   streamedText,
   finalResponse,
@@ -36,6 +39,25 @@ export function RunContainer({
   onFollowUp?: (text: string) => void;
 }) {
   const answer = finalResponse ?? streamedText;
+  const groupSteps: ToolGroupStep[] = steps.map((step) => ({
+    id: step.id,
+    title: step.label || "Working",
+    detail: step.errorText || step.resultSummary,
+    state: step.state === "running" || step.state === "done" || step.state === "permission" ? step.state : "failed",
+    links: step.ui?.links.map((link) => ({
+      id: link.id,
+      href: link.href,
+      name: link.name,
+      meta: [link.status, link.score != null ? String(link.score) : null].filter(Boolean).join(" · ") || null,
+    })),
+  }));
+  const groupLabel = streaming
+    ? steps.length
+      ? steps[steps.length - 1]?.label || "Working on it"
+      : "Working on it"
+    : steps.length
+      ? `Checked ${steps.length} ${steps.length === 1 ? "thing" : "things"}`
+      : "Nothing to check";
 
   return (
     <article className="flex min-h-0 flex-1 flex-col gap-4">
@@ -46,6 +68,7 @@ export function RunContainer({
       </header>
 
       <div className="min-h-0 flex-1 space-y-2 overflow-y-auto pr-1">
+        {groupSteps.length || streaming ? <ToolGroupCard label={groupLabel} pending={streaming} steps={groupSteps} /> : null}
         {confirmations.map((confirmation) => (
           <ChangePreview
             key={confirmation.id}
@@ -62,31 +85,26 @@ export function RunContainer({
       </div>
 
       {followUp?.enabled && !followUp.used && onFollowUp && !streaming ? (
-        <form
-          className="shrink-0"
-          onSubmit={(event) => {
-            event.preventDefault();
-            const form = event.currentTarget;
-            const data = new FormData(form);
-            const text = String(data.get("followUp") ?? "").trim();
-            if (text) {
-              onFollowUp(text);
-              form.reset();
-            }
-          }}
-        >
-          <label className="block">
-            <span className={helperClass}>One follow-up on this run</span>
-            <Input
-              name="followUp"
-              type="text"
-              className="mt-1"
-              placeholder="Narrow or correct this result"
-            />
-          </label>
-        </form>
+        <FollowUpComposer onFollowUp={onFollowUp} />
       ) : null}
     </article>
+  );
+}
+
+function FollowUpComposer({ onFollowUp }: { onFollowUp: (text: string) => void }) {
+  const [value, setValue] = useState("");
+  return (
+    <AgentComposer
+      value={value}
+      onChange={setValue}
+      intent="lookup"
+      showIntent={false}
+      placeholder="Narrow or correct this result"
+      onSend={(text) => {
+        onFollowUp(text);
+        setValue("");
+      }}
+    />
   );
 }
 

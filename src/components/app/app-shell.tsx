@@ -20,6 +20,7 @@ import { UserMenu } from "@/components/app/user-menu";
 import { ShellLeading } from "@/components/app/shell-leading";
 import { WorkspaceStatusBanner } from "@/components/app/workspace-status-banner";
 import { CompassPanelButton } from "@/components/compass/panel";
+import { OperatorCommandBar } from "@/components/operator/command-bar";
 import { CommandBarDialog, CommandBarTrigger } from "@/components/workspace/command-bar";
 import { useOrg } from "@/components/app/org-provider";
 import { LiveStatusStrip } from "@/components/live/agent-panel";
@@ -203,6 +204,7 @@ function ConnectedShell({
       <ConnectionStatus />
       <FirstRunExplainer />
       <PushPrompt />
+      <OperatorCommandBar />
       {chat ? <div className="min-h-0 flex-1">{children}</div> : <PageMotion>{children}</PageMotion>}
     </ApplicationShell>
   );

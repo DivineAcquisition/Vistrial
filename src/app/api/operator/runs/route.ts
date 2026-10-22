@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 
+import { operatorModelRequest, parseAgentIntent } from "@/lib/agent-elements/intent";
 import { getAuthContext } from "@/lib/auth/session";
 import { insertOperatorRun, updateRunState } from "@/lib/operator/persist";
 import { consumeOperatorAgentLimits } from "@/lib/operator/rate-limit";
@@ -15,8 +16,9 @@ function encode(event: OperatorLoopEvent | { type: "run"; id: string }): string 
 
 export async function POST(request: Request) {
   const ctx = await getAuthContext();
-  const body = (await request.json().catch(() => null)) as { request?: unknown } | null;
+  const body = (await request.json().catch(() => null)) as { request?: unknown; intent?: unknown } | null;
   const text = typeof body?.request === "string" ? body.request.trim() : "";
+  const intent = parseAgentIntent(body?.intent);
   if (!text) {
     return NextResponse.json({ error: "Write what you want done." }, { status: 400 });
   }
@@ -52,7 +54,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: created.error }, { status: 500 });
   }
 
-  const messages: AgentMessage[] = [{ role: "user", content: text }];
+  const messages: AgentMessage[] = [{ role: "user", content: operatorModelRequest(text, intent) }];
   await updateRunState({ runId: created.id, orgId: created.orgId, messages, status: "running" });
 
   const stream = new ReadableStream({

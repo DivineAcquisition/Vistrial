@@ -66,6 +66,16 @@ export function isInQuietHours(
   return now >= startMin || now < endMin;
 }
 
+/** The first moment at or after `at` when the clock in `timeZone` reads `hm` (for example "09:00"). */
+export function nextLocalTime(at: Date, timeZone: string, hm: string): Date {
+  const parts = zonedParts(at, timeZone);
+  const target = parseHm(hm);
+  const today = zonedDate(timeZone, parts.year, parts.month, parts.day, target.hour, target.minute);
+  if (today.getTime() >= at.getTime()) return today;
+  const next = new Date(Date.UTC(parts.year, parts.month - 1, parts.day + 1));
+  return zonedDate(timeZone, next.getUTCFullYear(), next.getUTCMonth() + 1, next.getUTCDate(), target.hour, target.minute);
+}
+
 /** The later of the requested time and the time quiet hours allow. */
 export function scheduleOutsideQuiet(desired: Date, quietUntilIso: string | null): Date {
   if (!quietUntilIso) return desired;

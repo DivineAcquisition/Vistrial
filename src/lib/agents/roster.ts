@@ -9,8 +9,8 @@
  * lives in contract.ts, with a generic default so a registered agent with no
  * code of its own still shows up everywhere.
  *
- * Accents use existing color tokens. The glyph and name always accompany the
- * accent, so an agent is never identified by color alone.
+ * Each agent wears an orb in its accent, and the name is always next to it,
+ * so an agent is never identified by color alone.
  */
 
 export const LIVE_AGENT_IDS = ["scribe", "sentry", "relay", "compass", "assay"] as const;
@@ -36,6 +36,19 @@ export const AGENT_ACCENTS: Record<AgentAccentKey, AgentAccent> = {
   "chart-4": { text: "text-chart-4", soft: "bg-chart-4/12", ring: "ring-chart-4/40", dot: "bg-chart-4" },
   "chart-3": { text: "text-chart-3", soft: "bg-chart-3/12", ring: "ring-chart-3/40", dot: "bg-chart-3" },
   neutral: { text: "text-silver", soft: "bg-overlay/8", ring: "ring-overlay/20", dot: "bg-silver" },
+};
+
+/**
+ * The three wash stops for an agent's orb. Light enough that the dark eyes
+ * still read at the size of a sidebar row.
+ */
+export const AGENT_ORB_COLORS: Record<AgentAccentKey, [string, string, string]> = {
+  brand: ["#C3B6FE", "#9A88FC", "#6650D8"],
+  "chart-2": ["#5EEAD4", "#14B8A6", "#0F766E"],
+  info: ["#93C5FD", "#60A5FA", "#1D4ED8"],
+  "chart-4": ["#FDE68A", "#FBBF24", "#B45309"],
+  "chart-3": ["#A5F3FC", "#22D3EE", "#0E7490"],
+  neutral: ["#F4F4F5", "#D4D4D8", "#A1A1AA"],
 };
 
 /** The kinds of record an agent acts on. Later areas add customer, account, renewal. */

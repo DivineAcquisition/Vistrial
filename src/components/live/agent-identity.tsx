@@ -1,19 +1,9 @@
 "use client";
 
-import { CompassIcon, ScaleIcon, ScrollTextIcon, SendIcon, ShieldIcon, SparklesIcon, type LucideIcon } from "lucide-react";
-
-import { AGENT_ACCENTS, AGENTS, type AgentAccentKey, type AgentGlyph as GlyphName, type LiveAgentId } from "@/lib/agents/roster";
+import { AGENT_ACCENTS, AGENT_ORB_COLORS, AGENTS, type AgentAccentKey, type AgentGlyph as GlyphName, type LiveAgentId } from "@/lib/agents/roster";
 import { PRESENCE_TONE, type PresenceState } from "@/lib/live/model";
+import { LiveOrb } from "@/components/ui/live-orb";
 import { cn } from "@/lib/utils";
-
-const GLYPHS: Record<GlyphName, LucideIcon> = {
-  scroll: ScrollTextIcon,
-  shield: ShieldIcon,
-  send: SendIcon,
-  compass: CompassIcon,
-  scale: ScaleIcon,
-  spark: SparklesIcon,
-};
 
 export function AgentGlyph({
   agentId,
@@ -44,17 +34,23 @@ export function GlyphMark({
   working?: boolean;
   className?: string;
 }) {
-  const Icon = GLYPHS[glyph] ?? SparklesIcon;
   const tone = AGENT_ACCENTS[accent] ?? AGENT_ACCENTS.neutral;
-  const box = { xs: "size-5", sm: "size-6", md: "size-8", lg: "size-11" }[size];
-  const icon = { xs: "size-3", sm: "size-3.5", md: "size-4", lg: "size-5" }[size];
+  const px = { xs: 20, sm: 24, md: 32, lg: 44 }[size];
+  // The smallest marks sit in long lists. A painted face keeps the browser's
+  // WebGL budget for the orbs a person is actually looking at.
+  const still = size === "xs";
   return (
-    <span
-      aria-hidden
-      className={cn("relative inline-flex shrink-0 items-center justify-center rounded-md ring-1", tone.soft, tone.ring, box, className)}
-    >
-      <Icon className={cn(icon, tone.text)} />
-      {working ? <span className={cn("live-pulse absolute -right-0.5 -top-0.5 size-1.5 rounded-full", tone.dot)} /> : null}
+    <span aria-hidden data-glyph={glyph} className={cn("relative inline-flex shrink-0", className)}>
+      <LiveOrb
+        variant="webgl"
+        size={px}
+        colors={AGENT_ORB_COLORS[accent]}
+        interactive={!still}
+        blink={!still}
+        still={still}
+        className="pointer-events-none"
+      />
+      {working ? <span className={cn("live-pulse absolute -right-0.5 -top-0.5 size-1.5 rounded-full ring-2 ring-background", tone.dot)} /> : null}
     </span>
   );
 }

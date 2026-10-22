@@ -13,9 +13,12 @@ import {
 } from "react";
 
 import { fetchLiveSince, setCalmModeAction } from "@/app/(workspace)/app/agents/actions";
-import { AGENTS } from "@/lib/agents/roster";
+import { useAgentSummary } from "@/components/agents/summary-context";
+import { AGENTS, isLiveAgentId, type AgentAccentKey, type AgentGlyph as AgentGlyphName, type LiveAgentId } from "@/lib/agents/roster";
+import type { AgentSummaryRow } from "@/lib/agents/summary";
 import {
   deriveAllPresence,
+  liveStepLabel,
   mapControl,
   isOpenRequest,
   mapEvent,
@@ -405,25 +408,118 @@ export function useLiveMeta() {
   };
 }
 
+function fromSummary(row: AgentSummaryRow): AgentPresence | null {
+  if (!row.presence || !isLiveAgentId(row.id)) return null;
+  return {
+    agentId: row.id,
+    state: row.presence,
+    stateLabel: row.stateLabel,
+    liveLabel: row.presence === "working" ? liveStepLabel(row.id, row.line) : null,
+    waitingCount: row.waiting.total,
+    currentRunId: row.currentRunId,
+    runSummary: row.line,
+    pausedBy: row.paused?.byVistrial ? "the Vistrial team" : row.paused?.byName ?? null,
+    pausedAt: row.paused?.at ?? null,
+  };
+}
+
+/**
+ * Presence for every agent. The shared summary decides it when it is loaded,
+ * in registry order; the live record fills in only for an agent the summary
+ * does not cover (switched off, or the summary not loaded yet).
+ */
 export function usePresence(): AgentPresence[] {
   const state = useLiveState();
   const { workspaceStatus } = useLiveMeta();
+  const { summary } = useAgentSummary();
   const [now, setNow] = useState(() => Date.now());
   useEffect(() => {
     const timer = setInterval(() => setNow(Date.now()), 30_000);
     return () => clearInterval(timer);
   }, []);
-  return useMemo(
-    () =>
-      deriveAllPresence({
-        runs: [...state.runs.values()],
-        controls: [...state.controls.values()],
-        waiting: [...state.waiting.values()],
-        workspace: presenceForWorkspaceStatus(workspaceStatus),
-        now,
-      }),
-    [state.version, workspaceStatus, now] // eslint-disable-line react-hooks/exhaustive-deps
-  );
+  return useMemo(() => {
+    const derived = deriveAllPresence({
+      runs: [...state.runs.values()],
+      controls: [...state.controls.values()],
+      waiting: [...state.waiting.values()],
+      workspace: presenceForWorkspaceStatus(workspaceStatus),
+      now,
+    });
+    if (!summary) return derived;
+    const byId = new Map(derived.map((item) => [item.agentId, item]));
+    const ordered: AgentPresence[] = [];
+    for (const row of summary.agents) {
+      if (!isLiveAgentId(row.id)) continue;
+      const item = fromSummary(row) ?? byId.get(row.id);
+      if (item) ordered.push(item);
+      byId.delete(row.id);
+    }
+    return [...ordered, ...byId.values()];
+  }, [state.version, workspaceStatus, now, summary]); // eslint-disable-line react-hooks/exhaustive-deps
+}
+
+/** One agent as every live surface shows it, from the registry and the shared summary. */
+export type AgentEntry = AgentPresence & {
+  id: string;
+  name: string;
+  sublabel: string;
+  glyph: AgentGlyphName;
+  accent: AgentAccentKey;
+  /** True when this is one of the agents with code of its own (pages, crew lines). */
+  known: boolean;
+};
+
+/**
+ * Every agent the person should see, in registry order: the summary's rows
+ * when loaded (so a newly registered agent appears with no screen change),
+ * or the built-in roster from the live record until then.
+ */
+export function useAgentEntries(): AgentEntry[] {
+  const presence = usePresence();
+  const { summary } = useAgentSummary();
+  return useMemo(() => {
+    const byId = new Map(presence.map((item) => [item.agentId as string, item]));
+    if (!summary) {
+      return presence.map((item) => {
+        const agent = AGENTS[item.agentId];
+        return { ...item, id: item.agentId, name: agent.name, sublabel: agent.sublabel, glyph: agent.glyph, accent: agent.accentKey, known: true };
+      });
+    }
+    const out: AgentEntry[] = [];
+    for (const row of summary.agents) {
+      const known = isLiveAgentId(row.id);
+      // Agents with code of their own stay listed while switched off (as before);
+      // a registry-only agent shows once it is on. Locked agents never show.
+      const listed = row.inSidebar || (known && (row.state === "available" || row.state === "off"));
+      if (!listed || row.hidden) continue;
+      const item = known ? byId.get(row.id) : null;
+      const base: AgentPresence = item ?? {
+        agentId: row.id as LiveAgentId,
+        state: row.presence ?? "idle",
+        stateLabel: row.stateLabel,
+        liveLabel: row.presence === "working" ? `${row.name} is ${row.line.charAt(0).toLowerCase()}${row.line.slice(1)}` : null,
+        waitingCount: row.waiting.total,
+        currentRunId: row.currentRunId,
+        runSummary: row.line,
+        pausedBy: row.paused?.byName ?? null,
+        pausedAt: row.paused?.at ?? null,
+      };
+      out.push({ ...base, id: row.id, name: row.name, sublabel: row.sublabel, glyph: row.glyph, accent: row.accent, known });
+    }
+    return out;
+  }, [presence, summary]);
+}
+
+/** The one "waiting on you" total for this person, from the shared summary when loaded. */
+export function useWaitingTotal(): number {
+  const state = useLiveState();
+  const { summary } = useAgentSummary();
+  return useMemo(() => {
+    if (summary) return summary.waitingTotal;
+    let count = 0;
+    for (const item of state.waiting.values()) if (isOpenRequest(item.status)) count += 1;
+    return count;
+  }, [state.waiting, summary]);
 }
 
 /** Live merge for one run: steps and outputs arrive while the viewer is open. */

@@ -1,6 +1,7 @@
 import { runAgentRuntimeJob } from "@/lib/agents/jobs";
-import { drainLiveOutbox } from "@/lib/live/drain";
+import { drainCopyOutbox, drainLiveOutbox } from "@/lib/live/drain";
 import { flagStuckAgentRuns } from "@/lib/live/maintenance";
+import { reconcileLiveRecord } from "@/lib/live/reconcile";
 import { notifyDaAlert } from "@/lib/ops/alerts";
 import { runAuthorizedCron } from "@/lib/ops/jobs";
 import { processRelayJobs } from "@/lib/relay/run";
@@ -10,7 +11,10 @@ export const maxDuration = 60;
 
 export async function GET(request: Request) {
   return runAuthorizedCron(request, "agent-runtime", async (db) => {
+    const copy = await drainCopyOutbox().catch(() => null);
     const drained = await drainLiveOutbox().catch(() => 0);
+    // Once an hour: does the Convex record agree with the copy the screens read?
+    const drift = new Date().getUTCMinutes() === 0 ? await reconcileLiveRecord().catch(() => null) : null;
     const runtime = await runAgentRuntimeJob(db);
     const stuck = await flagStuckAgentRuns(db);
     const relay = await processRelayJobs().catch(() => null);
@@ -25,6 +29,6 @@ export async function GET(request: Request) {
         detail: { dead: relay.dead },
       });
     }
-    return { ...runtime, stuck, relay, drained };
+    return { ...runtime, stuck, relay, drained, copy, drift };
   });
 }

@@ -37,12 +37,27 @@ export async function fetchRunDetail(runId: string): Promise<Result<RunDetail>> 
   return { ok: true, data: detail };
 }
 
+/**
+ * Pause or resume one agent in one workspace. Postgres holds the pause: the
+ * database checks the role, records who and when in the activity log, and
+ * every agent reads it there. The Convex record gets the same change so its
+ * open runs read paused too.
+ */
 export async function setAgentPausedAction(agentId: string, paused: boolean, reason?: string): Promise<Result<null>> {
-  if (!isLiveAgentId(agentId)) return { ok: false, error: "Unknown agent." };
+  if (!/^[a-z][a-z0-9_]{1,39}$/.test(agentId)) return { ok: false, error: "Unknown agent." };
   const ctx = await getAuthContext();
   if (ctx.isStaff && paused) {
     const { assertRecentAuth } = await import("@/lib/staff/mfa-check");
     await assertRecentAuth(`/app/agents/${agentId}`);
+  }
+  const db = await createClient();
+  const { error } = await (db as unknown as { rpc: (fn: string, args: object) => Promise<{ error: { message: string; code?: string } | null }> }).rpc(
+    "set_agent_paused",
+    { p_org_id: ctx.org.id, p_agent_id: agentId, p_paused: paused, p_reason: reason ?? null }
+  );
+  if (error) {
+    const plain = error.code === "42501" || error.code === "22023" || error.message === "Unknown agent.";
+    return { ok: false, error: plain ? error.message : "Could not change that. Try again." };
   }
   const { liveRecordSink } = await import("@/lib/live/words");
   if (liveRecordSink() === "convex") {
@@ -58,17 +73,9 @@ export async function setAgentPausedAction(agentId: string, paused: boolean, rea
         actorName: actorLabel(ctx),
       });
     } catch {
-      return { ok: false, error: "Could not change that. Try again." };
+      console.error(JSON.stringify({ src: "vistrial", event: "pause.mirror_failed", agentId }));
     }
-    revalidatePath("/app/agents", "layout");
-    return { ok: true, data: null };
   }
-  const db = await createClient();
-  const { error } = await (db as unknown as { rpc: (fn: string, args: object) => Promise<{ error: { message: string } | null }> }).rpc(
-    "set_agent_paused",
-    { p_org_id: ctx.org.id, p_agent_id: agentId, p_paused: paused, p_reason: reason ?? null }
-  );
-  if (error) return { ok: false, error: error.message.includes("Only an owner") ? error.message : "Could not change that. Try again." };
   revalidatePath("/app/agents", "layout");
   return { ok: true, data: null };
 }

@@ -88,14 +88,18 @@ async function sourceHoldFor(db: GhlDb, orgId: string): Promise<string | null> {
   }
 }
 
-export async function runSentrySweep(db: GhlDb): Promise<{ workspaces: number; leads: number; alerts: number; waiting: number; ms: number }> {
+export async function runSentrySweep(
+  db: GhlDb,
+  options: { orgId?: string } = {},
+): Promise<{ workspaces: number; leads: number; alerts: number; waiting: number; ms: number }> {
   const raw = db as unknown as Loose;
-  const listed = (await raw
+  let query = raw
     .from("sentry_workspaces")
     .select("org_id, mode, watch_from, last_sweep_at, scan_after, last_error")
-    .in("mode", ["practice", "live"])
-    .order("last_checked_at", { ascending: true, nullsFirst: true })
-    .limit(12)) as { data: Space[] | null };
+    .in("mode", ["practice", "live"]);
+  // Run now: one workspace, straight away.
+  if (options.orgId) query = query.eq("org_id", options.orgId);
+  const listed = (await query.order("last_checked_at", { ascending: true, nullsFirst: true }).limit(12)) as { data: Space[] | null };
   const spaces = listed.data ?? [];
   let leads = 0;
   let alerts = 0;

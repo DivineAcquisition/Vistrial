@@ -3,11 +3,13 @@ import { after } from "next/server";
 import { Suspense, type ReactNode } from "react";
 
 import { api } from "../../../convex/_generated/api";
+import { loadWaitingTotal } from "@/lib/agents/summary-load";
 import { BriefingSection } from "@/components/workspace/briefing";
 import { DecisionsBlock, WorkspaceSubtitle } from "@/components/workspace/blocks";
 import { CommandBarField } from "@/components/workspace/command-bar";
 import { CrewBand, OperatorAgentLine } from "@/components/workspace/crew-band";
 import { OutcomeStrip } from "@/components/workspace/outcomes";
+import { AgentSidebarSwitch } from "@/components/agents/sidebar-switch";
 import { AgenticHomeSwitch, WorkspaceRuntime } from "@/components/workspace/runtime";
 import { SectionError, SectionSkeleton, WorkspaceSection } from "@/components/workspace/section";
 import { LiveStream } from "@/components/workspace/stream";
@@ -151,7 +153,7 @@ async function StreamArea({ ctx, home }: { ctx: AuthContext; home: HomeState }) 
 
 async function WelcomeArea({ ctx, frame }: { ctx: AuthContext; frame: FrameFacts }) {
   return guarded("Welcome", async () => {
-    const facts = await loadWelcomeFacts(ctx, frame, 0);
+    const facts = await loadWelcomeFacts(ctx, frame, await loadWaitingTotal(ctx.org.id, "relay"));
     const moves: FirstMove[] = [];
     if (facts.draftsWaiting || facts.firstDraftDecided) moves.push({ key: "draft", label: "Approve or skip your first draft", href: "#decisions", done: facts.firstDraftDecided });
     moves.push({ key: "team", label: "Invite your closers and setters", href: "/app/settings/members", done: facts.members > 1 });
@@ -225,7 +227,7 @@ export async function AgenticWorkspace({ ctx, home, forceWelcome = false }: { ct
           {state.lifecycle === "quiet" ? <p className="text-sm text-muted-foreground">{STATE_COPY.quietWatching}</p> : null}
         </>
       }
-      footer={ctx.isStaff ? <AgenticHomeSwitch enabled available={home.available} /> : null}
+      footer={ctx.isStaff ? <div className="space-y-3"><AgenticHomeSwitch enabled available={home.available} /><AgentSidebarSwitch /></div> : null}
     />
   );
 }

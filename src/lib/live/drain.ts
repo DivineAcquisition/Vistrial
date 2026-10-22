@@ -4,6 +4,7 @@ import { ConvexHttpClient } from "convex/browser";
 
 import { api } from "../../../convex/_generated/api";
 import { getSupabaseAdmin } from "@/lib/supabase/admin";
+import { copyToPostgres } from "@/lib/live/transport";
 import { liveRecordSink, type ActivityWrite } from "@/lib/live/words";
 
 type OutboxRow = {
@@ -24,8 +25,10 @@ export async function drainLiveOutbox(): Promise<number> {
     from: (table: string) => {
       select: (columns: string) => {
         is: (column: string, value: null) => {
-          order: (column: string, options: { ascending: boolean }) => {
-            limit: (n: number) => Promise<{ data: OutboxRow[] | null; error: { message: string } | null }>;
+          eq: (column: string, value: string) => {
+            order: (column: string, options: { ascending: boolean }) => {
+              limit: (n: number) => Promise<{ data: OutboxRow[] | null; error: { message: string } | null }>;
+            };
           };
         };
       };
@@ -36,6 +39,7 @@ export async function drainLiveOutbox(): Promise<number> {
     .from("live_record_outbox")
     .select("id, idempotency_key, workspace_id, job, payload")
     .is("delivered_at", null)
+    .eq("phase", "commit")
     .order("seq", { ascending: true })
     .limit(100);
   if (error || !data?.length) return 0;
@@ -97,4 +101,45 @@ export async function drainLiveOutbox(): Promise<number> {
     delivered += 1;
   }
   return delivered;
+}
+
+/**
+ * Retries changes the Postgres copy could not take yet, oldest first. A
+ * change for a run not copied yet stays and is tried again next pass, so the
+ * copy catches up in order without losing anything.
+ */
+export async function drainCopyOutbox(limit = 200): Promise<{ copied: number; waiting: number }> {
+  const db = getSupabaseAdmin() as unknown as {
+    from: (table: string) => {
+      select: (columns: string) => {
+        is: (column: string, value: null) => {
+          eq: (column: string, value: string) => {
+            order: (column: string, options: { ascending: boolean }) => {
+              limit: (n: number) => Promise<{ data: Array<{ id: number; payload: ActivityWrite }> | null; error: { message: string } | null }>;
+            };
+          };
+        };
+      };
+      update: (row: object) => { eq: (column: string, value: number) => Promise<{ error: { message: string } | null }> };
+    };
+  };
+  const { data, error } = await db
+    .from("live_record_outbox")
+    .select("id, payload")
+    .is("delivered_at", null)
+    .eq("phase", "replicate")
+    .order("id", { ascending: true })
+    .limit(limit);
+  if (error || !data?.length) return { copied: 0, waiting: 0 };
+  let copied = 0;
+  for (const row of data) {
+    try {
+      await copyToPostgres(row.payload);
+    } catch {
+      continue;
+    }
+    await db.from("live_record_outbox").update({ delivered_at: new Date().toISOString() }).eq("id", row.id);
+    copied += 1;
+  }
+  return { copied, waiting: data.length - copied };
 }

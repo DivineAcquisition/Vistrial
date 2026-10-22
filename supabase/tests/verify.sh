@@ -85,6 +85,9 @@ run "${ROOT}/supabase/tests/verify-invites.sql"
 echo "Scoring checks..."
 run "${ROOT}/supabase/tests/verify-scoring.sql"
 
+echo "Agent registry, live record copy, and shared summary checks..."
+run "${ROOT}/supabase/tests/verify-agent-registry.sql"
+
 echo "GHL ingest checks..."
 run "${ROOT}/supabase/tests/verify-ghl.sql"
 

@@ -22,6 +22,7 @@ import { WorkspaceStatusBanner } from "@/components/app/workspace-status-banner"
 import { CompassPanelButton } from "@/components/compass/panel";
 import { CommandBarDialog, CommandBarTrigger } from "@/components/workspace/command-bar";
 import { useOrg } from "@/components/app/org-provider";
+import { useAgentSummary } from "@/components/agents/summary-context";
 import { LiveStatusStrip } from "@/components/live/agent-panel";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import type { PaymentProblem } from "@/lib/billing/labels";
@@ -30,6 +31,7 @@ import { landingPath } from "@/lib/navigation";
 import { isAgenticSurface } from "@/lib/workspace/state";
 import {
   isPlatformRoute,
+  rosterNavigation,
   shellChrome,
   shellNavigation,
   type AttentionCounts,
@@ -103,11 +105,23 @@ function ConnectedShell({
   const org = useOrg();
 
   const onPlatformPage = org.isStaff && isPlatformRoute(pathname);
-  const nav = shellNavigation({
-    role: org.workspaceRole,
-    templateAccess: org.templateAccess,
-    workspaceName: org.org.name,
-  });
+  const { summary } = useAgentSummary();
+  // The Overview badge is the one waiting total, live from the shared summary.
+  const liveCounts = summary && summary.orgId === org.org.id ? { ...counts, approvals: summary.waitingTotal } : counts;
+  // The agent-first sidebar is a per-workspace switch; the old one stays behind it.
+  const roster = Boolean(summary?.sidebar && summary.orgId === org.org.id);
+  const nav = roster
+    ? rosterNavigation({
+        role: org.workspaceRole,
+        templateAccess: org.templateAccess,
+        workspaceName: org.org.name,
+        areaWorkPages: (summary?.areas ?? []).filter((area) => area.inSidebar && area.workPage).map((area) => area.workPage!.href),
+      })
+    : shellNavigation({
+        role: org.workspaceRole,
+        templateAccess: org.templateAccess,
+        workspaceName: org.org.name,
+      });
   const chrome = shellChrome(pathname);
   let title = chrome.title;
   if (org.workspaceRole === "operator" && (pathname === "/app/home" || pathname.startsWith("/app/home/"))) {
@@ -124,9 +138,10 @@ function ConnectedShell({
   return (
     <ApplicationShell
       groups={nav.groups}
+      roster={roster}
       phone={nav.phone}
       more={nav.more}
-      counts={counts}
+      counts={liveCounts}
       homeHref={home}
       title={title}
       crumbs={chrome.crumbs}

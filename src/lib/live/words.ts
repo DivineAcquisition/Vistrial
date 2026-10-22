@@ -35,19 +35,44 @@ export function prepareActivity(op: ActivityWrite): ActivityWrite {
   return { ...rest, row };
 }
 
+/** What the Postgres copy did with one change. A run that already existed returns its id. */
+export type CopyResult = { applied: boolean; id: string | null; existing: boolean };
+
 export type ActivityDeps = {
   sink: () => "convex" | "postgres";
   convex: (op: ActivityWrite) => Promise<void>;
   outbox: (op: ActivityWrite) => Promise<void>;
   postgres: (op: ActivityWrite) => Promise<void>;
+  /**
+   * The Postgres copy every screen reads. It runs before Convex so the
+   * screens are not held up by it, and a failed copy waits in the outbox and
+   * is retried, so a dropped write shows as "Reconnecting", never as lost.
+   */
+  copy?: (op: ActivityWrite) => Promise<CopyResult>;
+  copyOutbox?: (op: ActivityWrite) => Promise<void>;
 };
 
-export async function commitActivity(op: ActivityWrite, deps: ActivityDeps): Promise<"convex" | "outbox" | "postgres"> {
+export async function commitActivity(
+  op: ActivityWrite,
+  deps: ActivityDeps,
+  options: { onCopy?: (result: CopyResult | null) => void } = {},
+): Promise<"convex" | "outbox" | "postgres"> {
   const prepared = prepareActivity(op);
   if (deps.sink() === "postgres") {
     await deps.postgres(prepared);
     return "postgres";
   }
+  let copied: CopyResult | null = null;
+  if (deps.copy) {
+    try {
+      copied = await deps.copy(prepared);
+      // The same trigger twice is one run: keep both records on the first id.
+      if (copied.existing && copied.id && prepared.kind === "run") prepared.row = { ...prepared.row, id: copied.id };
+    } catch {
+      await deps.copyOutbox?.(prepared);
+    }
+  }
+  options.onCopy?.(copied);
   try {
     await deps.convex(prepared);
     return "convex";
@@ -55,6 +80,53 @@ export async function commitActivity(op: ActivityWrite, deps: ActivityDeps): Pro
     await deps.outbox(prepared);
     return "outbox";
   }
+}
+
+/** Run statuses the Postgres copy may hold while the source still calls the run open. */
+const COPY_ONLY_STATUSES = new Set(["stuck"]);
+const OPEN_STATUSES = new Set(["queued", "working", "waiting_provider", "waiting_person", "paused"]);
+
+export type DriftCount = {
+  convexRuns: number;
+  postgresRuns: number;
+  missingInPostgres: number;
+  missingInConvex: number;
+  statusMismatch: number;
+  sample: string[];
+};
+
+/**
+ * Compares run ids and statuses between the two records. A run Postgres
+ * marked stuck while the source still calls it open is not drift: stuck runs
+ * are judged on the Postgres copy's own timestamps.
+ */
+export function compareRuns(
+  convex: Array<{ id: string; status: string }>,
+  postgres: Array<{ id: string; status: string }>,
+): DriftCount {
+  const left = new Map(convex.map((run) => [run.id, run.status]));
+  const right = new Map(postgres.map((run) => [run.id, run.status]));
+  const sample: string[] = [];
+  let missingInPostgres = 0;
+  let missingInConvex = 0;
+  let statusMismatch = 0;
+  for (const [id, status] of left) {
+    const other = right.get(id);
+    if (other === undefined) {
+      missingInPostgres += 1;
+      if (sample.length < 10) sample.push(id);
+    } else if (other !== status && !(COPY_ONLY_STATUSES.has(other) && OPEN_STATUSES.has(status))) {
+      statusMismatch += 1;
+      if (sample.length < 10) sample.push(id);
+    }
+  }
+  for (const id of right.keys()) {
+    if (!left.has(id)) {
+      missingInConvex += 1;
+      if (sample.length < 10) sample.push(id);
+    }
+  }
+  return { convexRuns: left.size, postgresRuns: right.size, missingInPostgres, missingInConvex, statusMismatch, sample };
 }
 
 export function drainInOrder<T extends { seq: number; idempotencyKey: string }>(rows: T[], already: Set<string>): T[] {

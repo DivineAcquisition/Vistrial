@@ -50,18 +50,12 @@ async function pace(db: Db, orgId: string): Promise<Pace> {
   };
 }
 
+/** Held by the same decision every agent uses. History is built before activation, so the stage is not checked. */
 async function scribeHeld(db: Db, orgId: string): Promise<boolean> {
-  const [{ data: org }, { data: control }, { data: halt }] = await Promise.all([
-    db.from("organizations").select("status").eq("id", orgId).maybeSingle(),
-    db.from("agent_presence_controls").select("paused").eq("org_id", orgId).eq("agent_id", "scribe").maybeSingle(),
-    db.from("platform_agent_halts").select("halted").eq("agent_id", "scribe").maybeSingle(),
-  ]);
-  const status = (org as { status?: string } | null)?.status;
-  return (
-    (status !== "onboarding" && status !== "active") ||
-    (control as { paused?: boolean } | null)?.paused === true ||
-    (halt as { halted?: boolean } | null)?.halted === true
-  );
+  const { data, error } = await (db as unknown as {
+    rpc: (fn: string, args: object) => Promise<{ data: { ok?: boolean } | null; error: unknown }>;
+  }).rpc("agent_may_run", { p_org_id: orgId, p_agent_id: "scribe", p_sample: true });
+  return Boolean(error) || data?.ok !== true;
 }
 
 /** Where a workspace stands, for the workbench. */

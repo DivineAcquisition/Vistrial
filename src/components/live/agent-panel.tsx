@@ -4,14 +4,14 @@ import Link from "next/link";
 import { createContext, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { ChevronDownIcon, WifiOffIcon } from "lucide-react";
 
-import { AgentGlyph, formatClock, PresenceDot, PresenceLabel, toneText } from "@/components/live/agent-identity";
-import { useLiveMeta, useLiveState, usePresence } from "@/components/live/live-provider";
+import { AgentGlyph, formatClock, GlyphMark, PresenceDot, PresenceLabel, toneText } from "@/components/live/agent-identity";
+import { useAgentEntries, useLiveMeta, useLiveState, useWaitingTotal } from "@/components/live/live-provider";
 import { AgentRequestCard } from "@/components/live/request-card";
 import { useRunViewer } from "@/components/live/run-viewer";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetPanel, SheetPopup, SheetTitle } from "@/components/ui/sheet";
 import { Switch } from "@/components/ui/switch";
-import { AGENTS, isLiveAgentId, type LiveAgentId } from "@/lib/agents/roster";
+import { isLiveAgentId, type LiveAgentId } from "@/lib/agents/roster";
 import {
   collapseBurst,
   groupFeed,
@@ -61,7 +61,8 @@ export function AgentPanelProvider({ children }: { children: ReactNode }) {
 
 function AgentPanelBody({ focus, onNavigate }: { focus: LiveAgentId | null; onNavigate: () => void }) {
   const state = useLiveState();
-  const presence = usePresence();
+  const presence = useAgentEntries();
+  const waitingTotal = useWaitingTotal();
   const { calm, setCalm } = useLiveMeta();
   const waiting = useMemo(
     () => [...state.waiting.values()].sort((a, b) => b.createdAt.localeCompare(a.createdAt)),
@@ -80,15 +81,15 @@ function AgentPanelBody({ focus, onNavigate }: { focus: LiveAgentId | null; onNa
 
       <section aria-labelledby="panel-waiting">
         <h3 id="panel-waiting" className="mb-2 text-xs font-medium uppercase tracking-wide text-warning">
-          Waiting on you{waiting.length ? ` (${waiting.length})` : ""}
+          Waiting on you{waitingTotal ? ` (${waitingTotal})` : ""}
         </h3>
         {waiting.length ? (
           <div className="space-y-2">
             {waiting.slice(0, 10).map((item) => (
               <AgentRequestCard key={item.id} item={item} compact={item.status !== "approved"} />
             ))}
-            {waiting.length > 10 ? (
-              <p className="text-xs text-muted-foreground">{waiting.length - 10} more on Overview.</p>
+            {waitingTotal > 10 ? (
+              <p className="text-xs text-muted-foreground">{waitingTotal - Math.min(waiting.length, 10)} more on Overview.</p>
             ) : null}
           </div>
         ) : (
@@ -102,27 +103,30 @@ function AgentPanelBody({ focus, onNavigate }: { focus: LiveAgentId | null; onNa
         </h3>
         <ul className="divide-y divide-border rounded-lg border border-border">
           {presence.map((item) => {
-            const agent = AGENTS[item.agentId];
             return (
               <li
-                key={item.agentId}
-                ref={item.agentId === focus ? focusRef : undefined}
-                aria-current={item.agentId === focus ? "true" : undefined}
-                className={cn("flex items-start gap-3 p-3", item.agentId === focus && "bg-accent/60")}
+                key={item.id}
+                ref={item.id === focus ? focusRef : undefined}
+                aria-current={item.id === focus ? "true" : undefined}
+                className={cn("flex items-start gap-3 p-3", item.id === focus && "bg-accent/60")}
               >
-                <AgentGlyph agentId={item.agentId} working={item.state === "working"} />
+                <GlyphMark glyph={item.glyph} accent={item.accent} working={item.state === "working"} />
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center justify-between gap-2">
-                    <Link
-                      href={`/app/agents/${item.agentId}`}
-                      onClick={onNavigate}
-                      className="text-sm font-medium text-card-foreground hover:underline"
-                    >
-                      {agent.name}
-                    </Link>
+                    {item.known ? (
+                      <Link
+                        href={`/app/agents/${item.id}`}
+                        onClick={onNavigate}
+                        className="text-sm font-medium text-card-foreground hover:underline"
+                      >
+                        {item.name}
+                      </Link>
+                    ) : (
+                      <span className="text-sm font-medium text-card-foreground">{item.name}</span>
+                    )}
                     <PresenceLabel state={item.state} label={item.stateLabel} />
                   </div>
-                  <p className="truncate text-xs text-muted-foreground">{agent.sublabel}</p>
+                  <p className="truncate text-xs text-muted-foreground">{item.sublabel}</p>
                   <p className="truncate text-xs text-muted-foreground" title={item.liveLabel ?? item.runSummary ?? ""}>
                     {item.liveLabel ?? item.runSummary}
                   </p>
@@ -244,12 +248,11 @@ export function ConnectionNotice({ compact = false }: { compact?: boolean }) {
 /** The thin live line under the header. Every agent, every width. */
 export function LiveStatusStrip() {
   const { available } = useLiveMeta();
-  const presence = usePresence();
-  const state = useLiveState();
+  const presence = useAgentEntries();
+  const waitingTotal = useWaitingTotal();
   const panel = useAgentPanel();
   if (!available) return null;
   const working = presence.find((item) => item.state === "working");
-  const waitingTotal = state.waiting.size;
 
   return (
     <div className="print:hidden border-b border-border bg-background/60 backdrop-blur-xl">
@@ -257,13 +260,13 @@ export function LiveStatusStrip() {
         <button
           type="button"
           onClick={panel.open}
-          aria-label={`Agents: ${presence.map((item) => `${AGENTS[item.agentId].name} ${item.stateLabel}`).join(", ")}. Open the agent panel.`}
+          aria-label={`Agents: ${presence.map((item) => `${item.name} ${item.stateLabel}`).join(", ")}. Open the agent panel.`}
           className="flex min-w-0 items-center gap-1 rounded-md p-0.5 hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring sm:gap-3"
         >
           {presence.map((item) => (
-            <span key={item.agentId} className="inline-flex items-center gap-1.5 px-1" title={`${AGENTS[item.agentId].name}: ${item.stateLabel}`}>
-              <AgentGlyph agentId={item.agentId} size="xs" working={item.state === "working"} />
-              <span className="hidden text-xs font-medium text-card-foreground lg:inline">{AGENTS[item.agentId].name}</span>
+            <span key={item.id} className="inline-flex items-center gap-1.5 px-1" title={`${item.name}: ${item.stateLabel}`}>
+              <GlyphMark glyph={item.glyph} accent={item.accent} size="xs" working={item.state === "working"} />
+              <span className="hidden text-xs font-medium text-card-foreground lg:inline">{item.name}</span>
               <PresenceDot state={item.state} />
               <span className={cn("hidden text-xs xl:inline", toneText(PRESENCE_TONE[item.state]))}>{item.stateLabel}</span>
             </span>

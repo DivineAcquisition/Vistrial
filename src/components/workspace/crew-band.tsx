@@ -7,26 +7,28 @@ import { ShieldCheckIcon } from "lucide-react";
 
 import { setAgentPausedAction } from "@/app/(workspace)/app/agents/actions";
 import { useOrg } from "@/components/app/org-provider";
-import { AgentGlyph, PresenceLabel } from "@/components/live/agent-identity";
+import { GlyphMark, PresenceLabel } from "@/components/live/agent-identity";
 import { useAgentPanel } from "@/components/live/agent-panel";
-import { useLiveMeta, useLiveState, usePresence } from "@/components/live/live-provider";
+import { useAgentEntries, useLiveMeta, useLiveState, type AgentEntry } from "@/components/live/live-provider";
 import { useRunViewer } from "@/components/live/run-viewer";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useIsMobile } from "@/hooks/use-media-query";
-import { AGENTS, LIVE_AGENT_IDS, type LiveAgentId } from "@/lib/agents/roster";
-import { isOpenRequest, type AgentPresence } from "@/lib/live/model";
+import { AGENT_LIST, isLiveAgentId } from "@/lib/agents/roster";
+import { isOpenRequest } from "@/lib/live/model";
 import type { CrewServerFacts } from "@/lib/workspace/load";
 import { capCount, crewLine, crewStateWord, operatorAgentLine, trustLine, workspacePausedLine } from "@/lib/workspace/voice";
 import { cn } from "@/lib/utils";
 
 /**
- * The five agents, alive. State comes from the live record (never invented);
- * each card's sentence comes from the voice templates and real counts.
+ * The agents, alive, in registry order. State comes from the shared summary
+ * (never invented); a built-in agent's sentence comes from the voice
+ * templates and real counts, and any other registered agent shows its
+ * summary line.
  */
 export function CrewBand({ facts, now }: { facts: CrewServerFacts; now: number }) {
   const org = useOrg();
-  const presence = usePresence();
+  const presence = useAgentEntries();
   const state = useLiveState();
   const { workspaceStatus } = useLiveMeta();
   const mobile = useIsMobile();
@@ -43,8 +45,6 @@ export function CrewBand({ facts, now }: { facts: CrewServerFacts; now: number }
     return { waiting, readyToSend };
   }, [state.waiting]);
 
-  const byId = new Map(presence.map((item) => [item.agentId, item]));
-  const order: LiveAgentId[] = ["sentry", "scribe", "relay", "assay", "compass"];
   const canResume = (org.workspaceRole === "owner" || org.isStaff) && !workspacePaused;
 
   return (
@@ -54,11 +54,10 @@ export function CrewBand({ facts, now }: { facts: CrewServerFacts; now: number }
         aria-label="Your agents"
         className="-mx-4 flex snap-x gap-2 overflow-x-auto px-4 pb-1 [scrollbar-width:none] sm:mx-0 sm:px-0 lg:flex-col lg:overflow-visible lg:pb-0"
       >
-        {order.filter((id) => LIVE_AGENT_IDS.includes(id)).map((agentId) => {
-          const item = byId.get(agentId);
-          if (!item) return null;
+        {presence.map((item) => {
+          const agentId = item.id;
           const run = item.currentRunId ? state.runs.get(item.currentRunId) ?? null : null;
-          const line = workspacePaused ? workspacePausedLine() : crewLine(
+          const line = workspacePaused ? workspacePausedLine() : !isLiveAgentId(agentId) ? item.runSummary ?? "" : crewLine(
             agentId,
             {
               state: item.state,
@@ -84,8 +83,8 @@ export function CrewBand({ facts, now }: { facts: CrewServerFacts; now: number }
   );
 }
 
-function CrewCard({ presence, line, mobile, canResume }: { presence: AgentPresence; line: string; mobile: boolean; canResume: boolean }) {
-  const agent = AGENTS[presence.agentId];
+function CrewCard({ presence, line, mobile, canResume }: { presence: AgentEntry; line: string; mobile: boolean; canResume: boolean }) {
+  const agent = { name: presence.name, sublabel: presence.sublabel };
   const panel = useAgentPanel();
   const viewer = useRunViewer();
   const router = useRouter();
@@ -94,15 +93,15 @@ function CrewCard({ presence, line, mobile, canResume }: { presence: AgentPresen
   const needsYou = presence.waitingCount > 0 || presence.state === "attention" || presence.state === "stopped";
 
   function openAgent() {
-    if (mobile) return panel.open(presence.agentId);
+    if (mobile || !presence.known) return panel.open(presence.id);
     if (presence.state === "working" && presence.currentRunId) return viewer.open(presence.currentRunId);
-    router.push(`/app/agents/${presence.agentId}`);
+    router.push(`/app/agents/${presence.id}`);
   }
 
   function resume() {
     setError(null);
     start(async () => {
-      const result = await setAgentPausedAction(presence.agentId, false);
+      const result = await setAgentPausedAction(presence.id, false);
       if (!result.ok) setError(result.error);
     });
   }
@@ -121,7 +120,7 @@ function CrewCard({ presence, line, mobile, canResume }: { presence: AgentPresen
         className="absolute inset-0 rounded-xl focus-visible:ring-2 focus-visible:ring-ring"
       />
       <div className="pointer-events-none flex items-center gap-2">
-        <AgentGlyph agentId={presence.agentId} size="md" working={presence.state === "working"} />
+        <GlyphMark glyph={presence.glyph} accent={presence.accent} size="md" working={presence.state === "working"} />
         <div className="min-w-0 flex-1">
           <p className="truncate text-sm font-medium text-card-foreground">{agent.name}</p>
           <p className="truncate text-xs text-muted-foreground">{agent.sublabel}</p>
@@ -174,9 +173,11 @@ export function OperatorAgentLine() {
       className="flex min-h-11 w-full items-center gap-2 rounded-xl border border-border bg-card px-3 py-2 text-left text-sm text-card-foreground hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring"
     >
       <span className="flex -space-x-1" aria-hidden>
-        {(["sentry", "scribe", "relay", "assay"] as const).map((id) => (
-          <AgentGlyph key={id} agentId={id} size="xs" />
-        ))}
+        {AGENT_LIST.filter((agent) => agent.area !== null)
+          .sort((a, b) => a.sort - b.sort)
+          .map((agent) => (
+            <GlyphMark key={agent.id} glyph={agent.glyph} accent={agent.accentKey} size="xs" />
+          ))}
       </span>
       <span className="min-w-0 flex-1">{operatorAgentLine(suggestions)}</span>
     </button>

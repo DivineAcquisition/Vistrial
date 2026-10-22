@@ -4,8 +4,8 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 
 import { AGENTS, type LiveAgentId } from "@/lib/agents/roster";
 import type { NeedsPerson, OutputKind, RunStatus, SourceRef } from "@/lib/live/model";
-import { commitLive, readPause } from "@/lib/live/transport";
-import { liveRecordSink, type ActivityWrite } from "@/lib/live/words";
+import { commitLive } from "@/lib/live/transport";
+import { liveRecordSink, type ActivityWrite, type CopyResult } from "@/lib/live/words";
 import { getSupabaseAdmin } from "@/lib/supabase/admin";
 
 let activitySeq = 0;
@@ -13,20 +13,21 @@ let activitySeq = 0;
 async function persist(
   op: Omit<ActivityWrite, "seq" | "occurredAt"> & { occurredAt?: string },
   postgres: () => Promise<void>,
-): Promise<void> {
+): Promise<CopyResult | null> {
   if (liveRecordSink() === "postgres") {
     await postgres();
-    return;
+    return null;
   }
   activitySeq += 1;
   try {
-    await commitLive({
+    return await commitLive({
       ...op,
       seq: activitySeq,
       occurredAt: op.occurredAt ?? new Date().toISOString(),
     });
-  } catch (error) {
+  } catch {
     console.error(JSON.stringify({ src: "vistrial", event: "activity.commit_failed" }));
+    return null;
   }
 }
 
@@ -389,7 +390,7 @@ export async function startRun(input: StartRunInput): Promise<RunRecorder> {
     verbatim: false,
   };
   if (liveRecordSink() === "convex") {
-    await persist(
+    const copied = await persist(
       {
         idempotencyKey: `run:${input.orgId}:${input.agentId}:${row.trigger_key}`,
         workspaceId: input.orgId,
@@ -402,6 +403,24 @@ export async function startRun(input: StartRunInput): Promise<RunRecorder> {
       },
       async () => undefined,
     );
+    // The same trigger twice is one run: carry on with the run already copied.
+    if (copied?.existing && copied.id) {
+      const last = await client
+        .from("agent_activity_steps")
+        .select("seq")
+        .eq("run_id", copied.id)
+        .order("seq", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      return new RunRecorder({
+        id: copied.id,
+        orgId: input.orgId,
+        agentId: input.agentId,
+        created: false,
+        lastSeq: Number((last.data as { seq?: number } | null)?.seq ?? 0),
+        leadName: input.leadName,
+      });
+    }
     return new RunRecorder({ id, orgId: input.orgId, agentId: input.agentId, created: true, leadName: input.leadName });
   }
   const inserted = await client
@@ -463,40 +482,34 @@ export async function resumeRun(runId: string, orgId: string): Promise<RunRecord
   });
 }
 
+export type MayRunReason = "workspace" | "paused" | "not_activated" | "locked" | "unreadable";
+
 /**
- * Whether this agent may run in this workspace right now. A Platform Admin's
- * emergency halt stops the agent everywhere and reads as a pause, so callers
- * defer and re-check instead of failing.
+ * Whether this agent may run in this workspace right now, from the one
+ * decision in Postgres (agent_may_run): workspace status, the platform halt,
+ * the workspace "Stop all agents" switch, the pause, availability, the plan,
+ * and staged activation. A Platform Admin's halt reads as a pause, so callers
+ * defer and re-check instead of failing. A failed read waits.
  */
 export async function agentMayRun(
   orgId: string,
-  agentId: LiveAgentId,
+  agentId: string,
   options: { sample?: boolean } = {}
-): Promise<{ ok: true } | { ok: false; reason: "workspace" | "paused" | "not_activated" | "unreadable" }> {
-  if (agentId === "assay") return { ok: false, reason: "not_activated" };
-  const pause = await readPause(orgId, agentId, agentId);
-  if (!pause.ok) return pause;
-  const client = db();
-  const [{ data: org, error: orgError }, { data: control, error: controlError }, { data: halt, error: haltError }, { data: activation, error: activationError }] = await Promise.all([
-    client.from("organizations").select("status").eq("id", orgId).maybeSingle(),
-    client.from("agent_presence_controls").select("paused").eq("org_id", orgId).eq("agent_id", agentId).maybeSingle(),
-    client.from("platform_agent_halts").select("halted").eq("agent_id", agentId).maybeSingle(),
-    client.from("workspace_agent_activation").select("stage").eq("org_id", orgId).eq("agent_id", agentId).maybeSingle(),
-  ]);
-  if (orgError || (liveRecordSink() === "postgres" && (controlError || haltError)) || activationError) {
-    return { ok: false, reason: "unreadable" };
+): Promise<{ ok: true } | { ok: false; reason: MayRunReason }> {
+  const { data, error } = await db().rpc("agent_may_run", {
+    p_org_id: orgId,
+    p_agent_id: agentId,
+    p_sample: options.sample === true,
+  });
+  if (error || !data) return { ok: false, reason: "unreadable" };
+  const result = data as { ok?: boolean; reason?: string };
+  if (result.ok === true) return { ok: true };
+  switch (result.reason) {
+    case "workspace":
+    case "paused":
+    case "locked":
+      return { ok: false, reason: result.reason };
+    default:
+      return { ok: false, reason: "not_activated" };
   }
-  const status = (org as { status?: string } | null)?.status;
-  if (status !== "active" && status !== "onboarding") return { ok: false, reason: "workspace" };
-  if (liveRecordSink() === "postgres" && (halt as { halted?: boolean } | null)?.halted) return { ok: false, reason: "paused" };
-  if (liveRecordSink() === "postgres" && (control as { paused?: boolean } | null)?.paused) return { ok: false, reason: "paused" };
-  // Staged activation: an agent acts only once it has been switched on after
-  // go-live. The onboarding sample test is the one exception, and it never
-  // reaches a real lead.
-  const stage = (activation as { stage?: string } | null)?.stage;
-  // Compass is the last step; it answers only once switched on.
-  if (!options.sample && stage && !["on", "watch", "drafts_only"].includes(stage)) {
-    return { ok: false, reason: "not_activated" };
-  }
-  return { ok: true };
 }

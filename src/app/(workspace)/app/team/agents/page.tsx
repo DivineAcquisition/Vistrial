@@ -4,7 +4,6 @@ import { PageFrame } from "@/components/app/page-frame";
 import { Panel } from "@/components/ui/panel";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { AGENTS, LIVE_AGENT_IDS } from "@/lib/agents/roster";
 import { requireStaff } from "@/lib/auth/gates";
 import { formatRelative } from "@/lib/format";
 import { staffDb } from "@/lib/staff/db";
@@ -38,17 +37,24 @@ type Failure = {
   created_at: string;
 };
 type Halt = { agent_id: string; halted: boolean; reason: string | null; changed_by_name: string | null };
+type Entry = { id: string; name: string };
 
 export default async function AgentOversightPage() {
   const ctx = await requireStaff();
   const db = await staffDb();
   const scope = ctx.isPlatformAdmin ? "all" : "mine";
   const now = new Date().toISOString();
-  const [{ data: overview }, { data: failures }, { data: halts }] = await Promise.all([
+  const [{ data: overview }, { data: failures }, { data: halts }, { data: entries }] = await Promise.all([
     db.rpc("staff_agent_overview", { p_scope: scope, p_org_id: null }),
     db.rpc("staff_agent_failures", { p_scope: scope, p_days: 7, p_limit: 50 }),
     db.from("platform_agent_halts").select("agent_id, halted, reason, changed_by_name"),
+    (db as unknown as { from: (t: string) => { select: (c: string) => { order: (c: string) => Promise<{ data: Entry[] | null }> } } })
+      .from("agent_registry")
+      .select("id, name")
+      .order("sort"),
   ]);
+  const registry = (entries ?? []) as Entry[];
+  const nameOf = (id: string) => registry.find((entry) => entry.id === id)?.name ?? id;
   const flagged = ((overview ?? []) as Overview[]).filter(
     (row) => row.platform_halted || row.failed_24h > 0 || row.stuck_now > 0 || (row.paused && !row.paused_by_owner && row.org_status === "active")
   );
@@ -61,17 +67,19 @@ export default async function AgentOversightPage() {
       {ctx.isPlatformAdmin ? (
         <Panel className="space-y-3 p-6">
           <h2 className={cardTitle}>Halt everywhere</h2>
-          <p className={helperClass}>A halt stops the agent in every workspace until a Platform Admin resumes it. Say why. The check must be recent.</p>
+          <p className={helperClass}>
+            A halt stops the agent in every workspace until a Platform Admin resumes it. Customers see &quot;Paused by the Vistrial team&quot;. Say why. The check must be recent.
+          </p>
           <ul className="space-y-3">
-            {LIVE_AGENT_IDS.map((agentId) => {
+            {registry.map(({ id: agentId, name }) => {
               const halt = ((halts ?? []) as Halt[]).find((row) => row.agent_id === agentId);
               return (
                 <li key={agentId} className="flex flex-wrap items-center gap-3">
-                  <span className="w-24 text-sm text-white">{AGENTS[agentId].name}</span>
+                  <span className="w-24 text-sm text-white">{name}</span>
                   <StatusBadge label={halt?.halted ? "Halted" : "Running"} tone={halt?.halted ? "critical" : "good"} />
                   {halt?.reason ? <span className={helperClass}>{halt.reason}</span> : null}
                   <NoteBox
-                    label={halt?.halted ? `Why ${AGENTS[agentId].name} should resume` : `Why halt ${AGENTS[agentId].name}`}
+                    label={halt?.halted ? `Why ${name} should resume` : `Why halt ${name}`}
                     action={(note) => setAgentHalt(agentId, !halt?.halted, note)}
                   />
                 </li>
@@ -97,7 +105,7 @@ export default async function AgentOversightPage() {
             {flagged.map((row) => (
               <TableRow key={`${row.org_id}-${row.agent_id}`}>
                 <TableCell className="text-white">{row.org_name}</TableCell>
-                <TableCell>{AGENTS[row.agent_id as keyof typeof AGENTS]?.name ?? row.agent_id}</TableCell>
+                <TableCell>{nameOf(row.agent_id)}</TableCell>
                 <TableCell>
                   {row.platform_halted ? "Halted everywhere" : row.paused ? (row.paused_by_owner ? "Paused by the Owner" : "Paused") : row.stuck_now ? "Stuck" : "Running"}
                 </TableCell>
@@ -116,7 +124,7 @@ export default async function AgentOversightPage() {
           <div key={row.run_id} className="flex flex-wrap items-start justify-between gap-3 border-b border-white/[0.06] py-3">
             <span>
               <span className="block text-sm text-white">
-                {row.org_name} · {AGENTS[row.agent_id as keyof typeof AGENTS]?.name ?? row.agent_id} · {row.status}
+                {row.org_name} · {nameOf(row.agent_id)} · {row.status}
               </span>
               <span className={helperClass}>{row.plain_error ?? row.subject_label ?? "No detail recorded."}</span>
             </span>

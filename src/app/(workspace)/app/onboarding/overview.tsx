@@ -67,7 +67,7 @@ export function OnboardingOverview({ view, isStaff, now }: { view: CustomerView;
         </Panel>
       ) : null}
 
-      <HowItWorks id="setup-path" className="scroll-mt-24 border-0 bg-transparent px-0 py-2" />
+      <HowItWorks id="setup-path" />
 
       <section aria-labelledby="your-part" className="space-y-3">
         <h2 id="your-part" className={cardTitle}>

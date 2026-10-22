@@ -375,6 +375,16 @@ describe("draft parse and model tier", () => {
 });
 
 describe("quiet hours", () => {
+  it("falls back to the locked 8pm to 8am window when a stored time is unreadable", () => {
+    const eightThirtyPm = new Date("2026-08-21T00:30:00.000Z");
+    const sevenAm = new Date("2026-08-21T11:00:00.000Z");
+    expect(isInQuietHours(eightThirtyPm, "America/New_York", "", "08:00")).toBe(true);
+    expect(isInQuietHours(sevenAm, "America/New_York", "20:00", "garbled")).toBe(true);
+    expect(computeSendAt({ now: sevenAm, timeZone: "America/New_York", enabled: true, startHm: "x", endHm: "y" }).toISOString()).toBe(
+      "2026-08-21T12:00:00.000Z"
+    );
+  });
+
   it("holds a send from 8pm, which the old 9pm window would have allowed", () => {
     const eightThirty = new Date("2026-08-21T00:30:00.000Z");
     expect(isInQuietHours(eightThirty, "America/New_York", "21:00", "08:00")).toBe(false);

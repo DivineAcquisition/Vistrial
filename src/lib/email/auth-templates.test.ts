@@ -3,6 +3,7 @@ import path from "node:path";
 
 import { describe, expect, it } from "vitest";
 
+import { LEGAL_ENTITY } from "@/lib/constants";
 import { AUTH_EMAIL_TEMPLATES, authEmailManagementPayload } from "@/lib/email/auth-templates";
 
 const TEMPLATES = path.join(__dirname, "..", "..", "..", "supabase", "templates");
@@ -29,7 +30,7 @@ describe("auth email templates", () => {
     for (const template of AUTH_EMAIL_TEMPLATES) {
       expect(template.html).toContain("https://app.vistrial.io/brand/vistrial-icon.png");
       expect(template.html).toContain("Vistrial will never ask for your password by email.");
-      expect(template.html).toContain("Divine Acquisition LLC");
+      expect(template.html).toContain(`Vistrial is operated by ${LEGAL_ENTITY}`);
       expect(template.html.indexOf("vistrial-icon.png")).toBeLessThan(template.html.indexOf("<h1"));
       expect(template.html).toContain("{{ .SiteURL }}");
       const onDisk = readFileSync(path.join(TEMPLATES, template.filename), "utf8");

@@ -40,7 +40,7 @@ describe("settings IA", () => {
   it("keeps configuration tabs for staff and gives owners only their own business", () => {
     const labels = (role: "owner" | "admin" | "setter" | "member", staff = false) =>
       settingsTabsVisibleTo(role, staff).map((tab) => tab.label);
-    expect(labels("owner")).toEqual(["You", "Notifications", "Privacy and cookies", "History", "Workspace", "People", "Connections", "Billing", "Privacy", "Developers", "Vistrial team"]);
+    expect(labels("owner")).toEqual(["You", "Notifications", "Privacy and cookies", "History", "Workspace", "People", "Connections", "Billing", "Privacy", "Developers", "Vistrial team", "Approvals"]);
     expect(labels("admin")).toContain("Approvals");
     expect(labels("admin")).toContain("Integrations");
     expect(labels("setter")).toEqual(["You", "Notifications", "Privacy and cookies", "History"]);

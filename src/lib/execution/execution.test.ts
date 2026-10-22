@@ -37,6 +37,10 @@ const FAKE_GOOGLE_ACCESS = "ya29.FAKE_ACCESS_TOKEN_0000000000";
 const FAKE_GOOGLE_REFRESH = "1//FAKE_REFRESH_TOKEN_000000000000000000000000";
 const FAKE_BOT = "MFAKEBOTTOKENFAKEBOTTOKE.FAKE00.FAKEBOTTOKENFAKEBOTTOKENFAKEBOTT";
 
+const relayPause = vi.hoisted(() => ({ read: { ok: true } as { ok: true } | { ok: false; reason: "paused" | "unreadable" } }));
+vi.mock("@/lib/live/transport", () => ({ outboundGate: async () => relayPause.read }));
+vi.stubEnv("LIVE_RECORD_SINK", "postgres");
+
 const ORG = "11111111-1111-4111-8111-111111111111";
 const OWNER = "22222222-2222-4222-8222-222222222222";
 const SETTER = "33333333-3333-4333-8333-333333333333";
@@ -426,6 +430,22 @@ describe("Slack posts", () => {
     expect(
       await operations.postSlackMessage(off.db, { orgId: ORG, message, authorization: { kind: "owner_test", memberId: OWNER } })
     ).toMatchObject({ ok: false, blocked: true });
+    expect(calls).toHaveLength(0);
+  });
+
+  it("sends nothing while Relay is paused, or when the pause cannot be read", async () => {
+    const calls = mockFetch(() => ({ json: { ok: true, ts: "1" } }));
+    try {
+      for (const read of [{ ok: false, reason: "paused" }, { ok: false, reason: "unreadable" }] as const) {
+        relayPause.read = read;
+        const { db } = slackSeed();
+        expect(
+          await operations.postSlackMessage(db, { orgId: ORG, message, authorization: { kind: "owner_test", memberId: OWNER } })
+        ).toMatchObject({ ok: false, blocked: true });
+      }
+    } finally {
+      relayPause.read = { ok: true };
+    }
     expect(calls).toHaveLength(0);
   });
 

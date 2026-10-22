@@ -32,7 +32,8 @@ export type ShellIcon =
   | "approvals"
   | "connections"
   | "team"
-  | "workflows";
+  | "workflows"
+  | "actions";
 
 export type AttentionKey = "approvals" | "dueToday" | "escalations" | "queue";
 
@@ -720,6 +721,15 @@ const SO_WORKFLOWS: ShellNavItem = {
   icon: "workflows",
 };
 
+const SO_ACTIONS: ShellNavItem = {
+  id: "so-actions",
+  label: "Actions",
+  href: "/app/actions",
+  match: "/app/actions",
+  icon: "actions",
+  description: "What agents may do in your tools, and the log of what they did.",
+};
+
 const SO_CONNECTIONS: ShellNavItem = {
   id: "so-connections",
   label: "Connections",
@@ -765,7 +775,7 @@ export function salesOsNavigation(input: {
       built = [
         workspaceGroup([SO_FOUNDATION, SO_COMMAND, soLeads(false)]),
         ROSTER_GROUP,
-        { id: "workspace-more", label: "", items: [soTeam(true), SO_WORKFLOWS, SO_CONNECTIONS, SO_SETTINGS] },
+        { id: "workspace-more", label: "", items: [soTeam(true), SO_WORKFLOWS, SO_ACTIONS, SO_CONNECTIONS, SO_SETTINGS] },
       ];
       phone = [SO_COMMAND, soLeads(false), SO_APPROVALS, AGENTS_SHEET];
       extra.push(resultsItem(false));
@@ -803,7 +813,7 @@ export function salesOsNavigation(input: {
         {
           id: "workspace-more",
           label: "",
-          items: [soTeam(true), SO_WORKFLOWS, { ...SO_CONNECTIONS, id: "so-connections-here" }, {
+          items: [soTeam(true), SO_WORKFLOWS, SO_ACTIONS, { ...SO_CONNECTIONS, id: "so-connections-here" }, {
             id: "configuration",
             label: "Configuration",
             href: "/app/settings/configuration",

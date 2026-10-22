@@ -19,6 +19,7 @@ import {
   UserRound,
   UsersRound,
   Workflow,
+  Zap,
   type LucideIcon,
 } from "lucide-react";
 
@@ -47,4 +48,5 @@ export const SHELL_ICONS: Record<ShellIcon, LucideIcon> = {
   connections: Plug,
   team: UsersRound,
   workflows: Workflow,
+  actions: Zap,
 };

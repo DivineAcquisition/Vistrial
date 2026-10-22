@@ -94,8 +94,11 @@ The existing admin policy keeps working once RLS is on.
 Onboarding
 - Routes: `src/app/(workspace)/app/onboarding/**` (page, `[stage]`, `step/[slug]`,
   `approvals`, `progress`, `report` with a PDF route, `vistrial`,
-  `confirm-contact/[id]`, `actions.ts`, `setup-actions.ts`), cron
+  `confirm-contact/[id]`, `actions.ts`, `setup-actions.ts`), the staff side at
+  `src/app/(workspace)/app/team/onboarding/**`, the layout sample at
+  `src/app/(workspace)/app/layouts/onboarding`, and cron
   `src/app/api/cron/onboarding` (every 5 minutes in `vercel.json`).
+- Tests: `src/lib/onboarding/onboarding.test.ts`.
 - Library: `src/lib/onboarding/*` (activation, imports, stages, samples,
   registration, email domain, reminders, gate). `redirectIfOnboardingIncomplete`
   in `src/lib/onboarding/gate.ts` is called from the `/app` layout.
@@ -150,17 +153,32 @@ Tables stay. Screens, navigation, crons and their tests go in build step 10.
 - Connectors: `src/lib/connectors/catalog.ts` with `workspace_connections`,
   `connection_secrets` (ciphertext only), `inbound_endpoints`, `inbound_deliveries`.
 
-Identity today is per source: the GHL contact id on `leads`, a transcript to
-call match, and `lead_merges` for manual merges. There is no single matcher
-across email, phone, CRM id and calendar attendee. That is the data spine gap.
+Identity today is per source, and no two sources agree on the key:
+
+| Source | How a person is matched to a lead |
+|---|---|
+| GoHighLevel | `findOrCreateLead` in `src/lib/ghl/process.ts`, by `ghl_contact_id` only. `identityFromContact` copies email and phone but never merges on them. |
+| Spreadsheet upload and connector events | `applyInboundEvent` and `importPastRows` in `src/lib/connectors/apply.ts`, by email (`ilike`) only. Phone is stored, not matched. |
+| Onboarding import | `normalizedPhone` (`libphonenumber-js`) and email duplicate checks in `src/lib/onboarding/import-plan.ts`. |
+| Calendar | `keepCalendarEvent` in `src/lib/connectors/calendar-match.ts`, by attendee email against known leads. |
+| Transcripts | `matchTranscriptToCall`: provider id, then time window, then participant email. Fails closed. |
+| Manual entry | `createLead` in `src/app/(workspace)/app/cases/actions.ts`. No dedupe. |
+| Manual merge | `lead_merges`. |
+
+There is no single matcher across email, phone, CRM id and calendar attendee.
+That is the data spine gap. The import's phone normalizer is the piece to reuse.
 
 ## 5. Agents, gate and actions
 
 - Registry and roster: `src/lib/agents/roster.ts`, `registry.ts`, `contract.ts`,
   tables `agent_registry` and `agent_areas` (not yet in production).
 - Runs: `src/lib/agents/runtime.ts`, `jobs.ts`, `persist.ts`, `agent_runs`,
-  `agent_activity_*`. Caps: `decideCaps` in `caps.ts`. Spend: `spend.ts`.
+  `agent_activity_*`, cron `/api/cron/agent-runtime`. Caps: `decideCaps` in
+  `caps.ts`, defaults 40 runs and $25 a day per agent (`constants.ts`). Spend:
+  `spend.ts`. Observation mode: `observationBlocksExecution` in `approvals.ts`.
   Halt: `agentWritesHalted` in `halt.ts`, `platform_agent_halts`.
+- Flags: `workspace_flags` allows `agent_sidebar` and `workflows` today, set by
+  staff through `set_workspace_flag`. `sales_os` is a one-line constraint change.
 - Gate: `src/lib/gate/registry.ts`, `approval_items`, `approval_gate_settings`,
   `approval_gate_actions`, with send-time rechecks.
 - Actions in connected apps: `src/lib/execution` (Slack, Discord, Drive) with
@@ -172,7 +190,9 @@ across email, phone, CRM id and calendar attendee. That is the data spine gap.
 ## 6. Roles
 
 `org_role` values: `owner`, `admin`, `closer`, `setter`, `member`, `operator`,
-`client_viewer`, `da_operator`, and `placed_operator` (not yet in production).
+`placed_operator` (not yet in production), and the retired `client_viewer` and
+`da_operator`, which stay in the enum because Postgres cannot drop enum values.
+`admin` is used as a staff seat label, not a customer workspace role.
 The app maps them to `WorkspaceRole` (`platform_admin`, `service_team`, `owner`,
 `member`, `operator`) in `src/lib/auth/types.ts`. Staff are `platform_role`
 (`service_team`, `platform_admin`) in `platform_staff`. A Manager fits best as a
@@ -192,10 +212,31 @@ permission on `admin` (see decision 1).
   rule to name no other company in the interface.
 - Prompt 16 (Playbook Studio) is not built. Workflows store the playbook graph
   now; snippets and talk tracks fill the empty slots when Prompt 16 lands.
-- The old follow-up sequences hold quiet hours from 8 pm in the database
-  (`20261015070000_sequence_quiet_hours`), but `parseHm` in
-  `src/lib/follow-up/quiet-hours.ts` falls back to 9 pm if a stored time is
+- Two follow-up paths run side by side. The old sequence engine
+  (`src/lib/follow-up`, `processFollowUpQueue`, called from the transcript cron
+  in `src/lib/transcripts/jobs.ts`) drafts into `follow_up_drafts`, and Relay
+  (`src/lib/relay`) drafts into `relay_drafts` and `approval_items`, bridged by
+  `relay_drafts.follow_up_draft_id`. Both need a person to approve and send from
+  the CRM. The seeded sequences (`seed_default_follow_up_rules`) to convert into
+  workflows or retire:
+
+  | Branch | Starts when | Steps |
+  |---|---|---|
+  | `no_show` | outcome is no-show | text at 0, 24, 72 hours |
+  | `closed` (two rules) | next step reads as paid or onboarding, or lead closed won | email at 0 |
+  | `not_interested` | next step says so | text at 0 |
+  | `objection_hold` | an objection was stated | text at 0, 48, 120 hours |
+  | `follow_up_scheduled` | a next step is set after a held call | text at 0 |
+  | `ghost_risk` | held call, no next step | text at 0, 48, 120 hours |
+
+- Quiet hours: the first follow-up migration defaulted to 9 pm to 8 am;
+  `20261015070000_sequence_quiet_hours` (applied in production) moved the
+  default to 8 pm and clamps stored values. `parseHm` in
+  `src/lib/follow-up/quiet-hours.ts` still falls back to 9 pm if a stored time is
   unreadable. Recommendation: fall back to the locked 8 pm and 8 am.
+- Hosts: `pulse.vistrial.io` opens Forsight, and `forsight.vistrial.io` opens
+  Stellar (`src/lib/domains/routing.ts`). Retiring Forsight should not take the
+  `forsight` host with it.
 
 ## Plan and build order
 

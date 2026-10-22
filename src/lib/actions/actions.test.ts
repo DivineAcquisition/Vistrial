@@ -23,7 +23,7 @@ function context(overrides: Partial<ActionContext> = {}): ActionContext {
   };
 }
 
-const note = (requestedBy = agent): ActionRequest => ({ action: "crm.add_note", params: { leadId: LEAD, connector: "hubspot", body: "Called, left voicemail." }, requestedBy });
+const note = (requestedBy: ActionRequest["requestedBy"] = agent): ActionRequest => ({ action: "crm.add_note", params: { leadId: LEAD, connector: "hubspot", body: "Called, left voicemail." }, requestedBy });
 
 describe("decideAction", () => {
   it("never executes anything that reaches a person, whatever the policy or requester", () => {

@@ -2,7 +2,7 @@ import Link from "next/link";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 import { PageFrame } from "@/components/app/page-frame";
-import { ConfirmEodForm, DraftTodayButton } from "@/app/(workspace)/app/manager/eod-controls";
+import { ConfirmEodForm, DraftTodayButton, ManagerSwitch } from "@/app/(workspace)/app/manager/eod-controls";
 import { EmptyLine, RecordSection } from "@/components/sales-os/record-section";
 import { Badge } from "@/components/ui/badge";
 import { EOD_LABEL, EOD_METRICS, localDay, type EodActivity } from "@/lib/manager/eod";
@@ -10,6 +10,7 @@ import type { Metric } from "@/lib/manager/scorecard";
 import { loadEods, loadScorecard, teamReps, type EodReport, type Rep, type RepScorecard } from "@/lib/manager/store";
 import { isTeamManager } from "@/lib/sales-os/flag";
 import { requireSalesOs } from "@/lib/sales-os/guard";
+import { requestNow } from "@/lib/sales-os/now";
 import { createClient } from "@/lib/supabase/server";
 
 export const dynamic = "force-dynamic";
@@ -105,7 +106,7 @@ export default async function ManagerPage({ searchParams }: { searchParams: Prom
   const db = (await createClient()) as unknown as SupabaseClient;
   const manager = await isTeamManager(ctx.org.id);
   const tz = ctx.org.timezone;
-  const since = localDay(Date.now() - PERIOD_DAYS * DAY, tz);
+  const since = localDay(requestNow() - PERIOD_DAYS * DAY, tz);
   const { rep: repParam } = await searchParams;
 
   if (!manager) {
@@ -146,6 +147,14 @@ export default async function ManagerPage({ searchParams }: { searchParams: Prom
     Promise.all((selected ? [selected] : reps).map((rep) => loadScorecard(db, ctx.org.id, rep, PERIOD_DAYS, tz))),
   ]);
   const names = new Map(reps.map((rep) => [rep.memberId, rep.name]));
+  const seats =
+    ctx.workspaceRole === "owner" && !selected
+      ? (((await db.from("org_members").select("id, display_name, can_manage_team").eq("org_id", ctx.org.id).eq("active", true).eq("role", "member")).data ?? []) as Array<{
+          id: string;
+          display_name: string | null;
+          can_manage_team: boolean | null;
+        }>)
+      : [];
 
   return (
     <PageFrame
@@ -190,6 +199,23 @@ export default async function ManagerPage({ searchParams }: { searchParams: Prom
             )}
           </RecordSection>
         )}
+        {ctx.workspaceRole === "owner" && !selected ? (
+          <RecordSection id="team-managers" title="Managers">
+            <p className="text-sm text-muted-foreground">A Manager sees the team board and every rep&apos;s reports. It never changes pay, role or access.</p>
+            {seats.length === 0 ? (
+              <EmptyLine>Invite a member to the workspace to make them a Manager.</EmptyLine>
+            ) : (
+              <ul className="divide-y divide-border">
+                {seats.map((seat) => (
+                  <li key={seat.id} className="flex items-center justify-between gap-3 py-2.5">
+                    <span className="text-sm">{seat.display_name?.trim() || "Member"}</span>
+                    <ManagerSwitch memberId={seat.id} name={seat.display_name?.trim() || "Member"} on={seat.can_manage_team === true} />
+                  </li>
+                ))}
+              </ul>
+            )}
+          </RecordSection>
+        ) : null}
         <RecordSection id="team-eods" title="End of day reports" owner="Sales Manager">
           {reports.length === 0 ? (
             <EmptyLine>Reports are drafted at the end of each business day, and reps confirm them.</EmptyLine>

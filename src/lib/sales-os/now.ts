@@ -28,6 +28,11 @@ export type NowSummary = {
   firstLook: boolean;
 };
 
+/** The request's clock, for server components that render once per request. */
+export function requestNow(): number {
+  return Date.now();
+}
+
 export function relativeTime(iso: string, now: number): string {
   const diff = Date.parse(iso) - now;
   const minutes = Math.round(Math.abs(diff) / 60_000);

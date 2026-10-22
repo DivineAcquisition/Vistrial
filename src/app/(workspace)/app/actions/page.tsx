@@ -8,7 +8,7 @@ import { executorFor } from "@/lib/actions/executors";
 import { ACTIONS, DEFAULT_INTERNAL_POLICY, TIER_LABEL, type InternalPolicy } from "@/lib/actions/registry";
 import { loadRuns } from "@/lib/actions/views";
 import { connectorByKey } from "@/lib/connectors/catalog";
-import { relativeTime } from "@/lib/sales-os/now";
+import { relativeTime, requestNow } from "@/lib/sales-os/now";
 import { requireSalesOs } from "@/lib/sales-os/guard";
 import { createClient } from "@/lib/supabase/server";
 
@@ -38,7 +38,7 @@ export default async function ActionsPage() {
   ]);
   const policies = new Map(((policyRows ?? []) as Array<{ action: string; mode: InternalPolicy }>).map((row) => [row.action, row.mode]));
   const owner = ctx.workspaceRole === "owner";
-  const now = Date.now();
+  const now = requestNow();
   const byTier = (tier: string) => ACTIONS.filter((action) => action.tier === tier);
 
   return (

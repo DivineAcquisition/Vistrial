@@ -10,7 +10,7 @@ import { isLeadId } from "@/lib/cases/filters";
 import type { CaseTimelineEntry } from "@/lib/cases/types";
 import { requireSalesOs } from "@/lib/sales-os/guard";
 import { loadLeadRecord } from "@/lib/sales-os/lead-record";
-import { relativeTime } from "@/lib/sales-os/now";
+import { relativeTime, requestNow } from "@/lib/sales-os/now";
 import { loadScribeCaseFile } from "@/lib/scribe/case-file";
 
 export const dynamic = "force-dynamic";
@@ -56,7 +56,7 @@ export default async function LeadRecordPage({ params }: { params: Promise<{ id:
   ]);
   if (!record) notFound();
   const { payload } = record;
-  const now = Date.now();
+  const now = requestNow();
   const tz = ctx.org.timezone;
 
   return (

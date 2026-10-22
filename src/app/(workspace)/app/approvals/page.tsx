@@ -7,7 +7,7 @@ import { SuggestionButtons } from "@/components/sales-os/action-controls";
 import { EmptyLine, RecordSection } from "@/components/sales-os/record-section";
 import { loadRuns } from "@/lib/actions/views";
 import { requireSalesOs } from "@/lib/sales-os/guard";
-import { relativeTime } from "@/lib/sales-os/now";
+import { relativeTime, requestNow } from "@/lib/sales-os/now";
 import { createClient } from "@/lib/supabase/server";
 
 export const dynamic = "force-dynamic";
@@ -18,7 +18,7 @@ export default async function ApprovalsPage() {
   const ctx = await requireSalesOs();
   const db = (await createClient()) as unknown as SupabaseClient;
   const suggestions = await loadRuns(db, ctx.org.id, { statuses: ["suggested"], limit: 50 });
-  const now = Date.now();
+  const now = requestNow();
 
   return (
     <PageFrame title="Approvals" description="Nothing reaches a lead or client until a person approves it here. Changes inside your tools wait here too while they are set to Suggest.">

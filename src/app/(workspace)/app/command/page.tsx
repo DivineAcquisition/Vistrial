@@ -13,7 +13,7 @@ import { loadCommand, type CommandLead } from "@/lib/sales-os/command";
 import { isTeamManager } from "@/lib/sales-os/flag";
 import { requireSalesOs } from "@/lib/sales-os/guard";
 import { loadLeadRecord } from "@/lib/sales-os/lead-record";
-import { relativeTime } from "@/lib/sales-os/now";
+import { relativeTime, requestNow } from "@/lib/sales-os/now";
 import { createClient } from "@/lib/supabase/server";
 
 export const dynamic = "force-dynamic";
@@ -45,7 +45,7 @@ export default async function CommandPage({ searchParams }: { searchParams: Prom
   const db = (await createClient()) as unknown as SupabaseClient;
   const leads = ctx.workspaceRole !== "member" || ctx.isStaff;
   const manager = await isTeamManager(ctx.org.id);
-  const now = Date.now();
+  const now = requestNow();
   const [data, record] = await Promise.all([
     loadCommand(db, {
       orgId: ctx.org.id,

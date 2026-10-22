@@ -2,8 +2,9 @@
 
 import { useState, useTransition } from "react";
 
-import { confirmEodAction, draftTodayAction } from "@/app/(workspace)/app/manager/actions";
+import { confirmEodAction, draftTodayAction, setTeamManagerAction } from "@/app/(workspace)/app/manager/actions";
 import { Button } from "@/components/ui/button";
+import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 
 export function DraftTodayButton() {
@@ -70,5 +71,33 @@ export function ConfirmEodForm({ reportId }: { reportId: string }) {
         </p>
       ) : null}
     </form>
+  );
+}
+
+export function ManagerSwitch({ memberId, name, on }: { memberId: string; name: string; on: boolean }) {
+  const [checked, setChecked] = useState(on);
+  const [pending, start] = useTransition();
+  const [message, setMessage] = useState<string | null>(null);
+  return (
+    <div className="flex flex-col items-end gap-1">
+      <Switch
+        aria-label={`${name} is a Manager`}
+        checked={checked}
+        disabled={pending}
+        onCheckedChange={(next) => {
+          setChecked(next);
+          start(async () => {
+            const result = await setTeamManagerAction(memberId, next);
+            if (!result.ok) setChecked(!next);
+            setMessage(result.message ?? null);
+          });
+        }}
+      />
+      {message ? (
+        <p role="status" className="max-w-56 text-right text-xs text-muted-foreground">
+          {message}
+        </p>
+      ) : null}
+    </div>
   );
 }

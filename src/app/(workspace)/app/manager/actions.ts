@@ -35,3 +35,14 @@ export async function confirmEodAction(reportId: string, note: string): Promise<
   revalidatePath("/app/command");
   return { ok: true, message: "Report confirmed." };
 }
+
+export async function setTeamManagerAction(memberId: string, on: boolean): Promise<Result> {
+  const ctx = await getAuthContext();
+  if (!(await salesOsEnabled(ctx.org.id))) return { ok: false, message: "The Sales OS is not switched on for this workspace." };
+  if (ctx.workspaceRole !== "owner") return { ok: false, message: "Only an Owner can make someone a Manager." };
+  const db = (await createClient()) as unknown as SupabaseClient;
+  const { error } = await db.rpc("set_team_manager", { p_member_id: memberId, p_on: on });
+  if (error) return { ok: false, message: /member seats|only an owner|not in this workspace/i.test(error.message) ? error.message : "That did not save. Try again." };
+  revalidatePath("/app/manager");
+  return { ok: true, message: on ? "They can now see the team board and every rep's reports." : "Manager access removed." };
+}

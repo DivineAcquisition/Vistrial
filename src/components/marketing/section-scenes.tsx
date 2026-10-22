@@ -31,6 +31,43 @@ export function ProblemScene() {
   );
 }
 
+export function HowScene({ id }: { id: "centralize" | "watch" | "act" }) {
+  if (id === "watch") return <WatchScene />;
+  if (id === "act") return <ActScene />;
+  return <CentralizeScene />;
+}
+
+function CentralizeScene() {
+  const sources = ["CRM record", "Recorded call", "Calendar booking"];
+  return (
+    <div className={cn(scene, "flex flex-col justify-between")} aria-hidden>
+      <div className="grid grid-cols-3 gap-2">
+        {sources.map((label, index) => (
+          <div
+            key={label}
+            className={cn(marketingInset, "animate-vistrial-shift px-1.5 py-2 text-center text-[10px] leading-tight text-white motion-reduce:animate-none")}
+            style={{ animationDelay: `${index * 0.3}s` }}
+          >
+            {label}
+          </div>
+        ))}
+      </div>
+      <div className={cn(marketingInset, "px-3 py-2 text-xs font-medium text-white")}>One case file</div>
+    </div>
+  );
+}
+
+function WatchScene() {
+  return (
+    <div className={cn(scene, "flex flex-col justify-center gap-3")} aria-hidden>
+      <div className="h-2.5 overflow-hidden rounded-sm border border-[#2a2833] bg-[#1c1a27]">
+        <div className="h-full animate-vistrial-grow bg-brand-400 shadow-[0_0_16px_rgba(154,136,252,0.85)] motion-reduce:w-2/3 motion-reduce:animate-none" />
+      </div>
+      <div className={cn(marketingInset, "px-3 py-2 text-xs text-white")}>Past the team&apos;s standard</div>
+    </div>
+  );
+}
+
 function ActScene() {
   return (
     <div className={scene} aria-hidden>

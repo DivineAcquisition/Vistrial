@@ -20,8 +20,9 @@ describe("visual recipes stay aligned", () => {
 
   it("fills outline buttons instead of leaving an empty ring", () => {
     const classes = buttonVariants({ variant: "outline" });
-    expect(classes).toContain("bg-overlay/[0.04]");
-    expect(classes).toContain("border-overlay/[0.08]");
+    expect(classes).toContain("bg-gradient-to-b");
+    expect(classes).toContain("border-overlay/[0.12]");
+    expect(classes).toContain("to-overlay/[0.05]");
   });
 
   it("keeps compact row actions at 32px on desktop", () => {

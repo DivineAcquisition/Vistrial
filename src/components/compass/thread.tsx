@@ -9,13 +9,16 @@ import {
   useAuiState,
   useComposerRuntime,
 } from "@assistant-ui/react";
-import { ArrowDownIcon, ArrowUpIcon, CheckIcon, CopyIcon, RotateCcwIcon, SquareIcon, XIcon } from "lucide-react";
+import { ArrowDownIcon, ArrowUpIcon, CheckIcon, CopyIcon, SquareIcon, XIcon } from "lucide-react";
 import { useEffect, useRef, type FC, type ReactNode } from "react";
 
 import { MarkdownText } from "@/components/assistant-ui/elements/markdown-text";
 import { TooltipIconButton } from "@/components/assistant-ui/elements/tooltip-icon-button";
+import { AgentError } from "@/components/agent-elements/cards";
+import { IntentSelector } from "@/components/agent-elements/intent-selector";
 import { useCompassChat } from "@/components/compass/chat";
 import { AnswerFeedback, AnswerNotes, AnswerSources, LookupStep, SuggestionCard } from "@/components/compass/parts";
+import { OPERATOR_OPEN_RUN_EVENT, type OperatorOpenDetail } from "@/components/operator/open-run-button";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
@@ -110,15 +113,7 @@ const ChatError: FC = () => {
   const { chat, retry, sampleError } = useCompassChat();
   const message = chat.error?.message || sampleError;
   if (!message) return null;
-  return (
-    <div className="flex flex-wrap items-center gap-3 rounded-lg border border-destructive/40 bg-destructive/5 px-3 py-2 text-sm text-card-foreground" role="alert">
-      <span className="min-w-0 flex-1">{message}</span>
-      <Button size="xs" variant="outline" onClick={() => retry()}>
-        <RotateCcwIcon aria-hidden />
-        Try again
-      </Button>
-    </div>
-  );
+  return <AgentError message={message} onRetry={() => retry()} />;
 };
 
 const Composer: FC<{ placeholder?: string; contextChip: CompassThreadProps["contextChip"]; prefill: string | null; sendPrefill: boolean; autoFocus: boolean }> = ({
@@ -129,6 +124,8 @@ const Composer: FC<{ placeholder?: string; contextChip: CompassThreadProps["cont
   autoFocus,
 }) => {
   const composer = useComposerRuntime();
+  const { intent, setIntent, sample } = useCompassChat();
+  const draft = useAuiState((s) => s.composer.text);
   const filled = useRef(false);
   useEffect(() => {
     if (prefill && !filled.current) {
@@ -165,21 +162,47 @@ const Composer: FC<{ placeholder?: string; contextChip: CompassThreadProps["cont
           maxLength={2000}
           aria-label="Question for Compass"
         />
-        <div className="flex items-center justify-end">
-          <AuiIf condition={(s) => !s.composer.canCancel}>
-            <ComposerPrimitive.Send asChild>
-              <TooltipIconButton tooltip="Ask" side="bottom" type="button" variant="default" size="icon" className="size-8 rounded-full" aria-label="Ask Compass">
-                <ArrowUpIcon className="size-4" />
-              </TooltipIconButton>
-            </ComposerPrimitive.Send>
-          </AuiIf>
-          <AuiIf condition={(s) => s.composer.canCancel}>
-            <ComposerPrimitive.Cancel asChild>
-              <Button type="button" variant="default" size="icon" className="size-8 rounded-full" aria-label="Stop answering">
-                <SquareIcon className="size-3.5 fill-current" />
-              </Button>
-            </ComposerPrimitive.Cancel>
-          </AuiIf>
+        <div className="flex flex-wrap items-end justify-between gap-2">
+          <IntentSelector value={intent} onChange={setIntent} />
+          <div className="flex items-center">
+            <AuiIf condition={(s) => !s.composer.canCancel}>
+              {intent === "propose" ? (
+                <TooltipIconButton
+                  tooltip="Propose a change"
+                  side="bottom"
+                  type="button"
+                  variant="default"
+                  size="icon"
+                  className="size-8 rounded-full"
+                  aria-label="Propose a change"
+                  disabled={!draft.trim() || sample}
+                  onClick={() => {
+                    const text = draft.trim();
+                    if (!text || sample) return;
+                    window.dispatchEvent(
+                      new CustomEvent<OperatorOpenDetail>(OPERATOR_OPEN_RUN_EVENT, { detail: { request: text, intent: "propose" } })
+                    );
+                    composer.setText("");
+                  }}
+                >
+                  <ArrowUpIcon className="size-4" />
+                </TooltipIconButton>
+              ) : (
+                <ComposerPrimitive.Send asChild>
+                  <TooltipIconButton tooltip="Ask" side="bottom" type="button" variant="default" size="icon" className="size-8 rounded-full" aria-label="Ask Compass">
+                    <ArrowUpIcon className="size-4" />
+                  </TooltipIconButton>
+                </ComposerPrimitive.Send>
+              )}
+            </AuiIf>
+            <AuiIf condition={(s) => s.composer.canCancel}>
+              <ComposerPrimitive.Cancel asChild>
+                <Button type="button" variant="default" size="icon" className="size-8 rounded-full" aria-label="Stop answering">
+                  <SquareIcon className="size-3.5 fill-current" />
+                </Button>
+              </ComposerPrimitive.Cancel>
+            </AuiIf>
+          </div>
         </div>
       </div>
     </ComposerPrimitive.Root>

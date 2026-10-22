@@ -1,10 +1,17 @@
 "use client";
 
+import type { AgentIntent } from "@/lib/agent-elements/intent";
 import { operatorRunStatusLabel } from "@/lib/operator/labels";
 import { insetChrome } from "@/lib/ui";
 import { cn } from "@/lib/utils";
 
 export const OPERATOR_OPEN_RUN_EVENT = "vistrial:operator-open-run";
+
+export type OperatorOpenDetail = {
+  id?: string;
+  request?: string;
+  intent?: AgentIntent;
+};
 
 export function OpenOperatorRunButton({
   runId,

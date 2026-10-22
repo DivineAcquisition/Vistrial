@@ -1,7 +1,11 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Command as CommandIcon } from "lucide-react";
+
+import { AgentComposer } from "@/components/agent-elements/composer";
+import { AgentError } from "@/components/agent-elements/cards";
+import type { AgentIntent } from "@/lib/agent-elements/intent";
 
 import {
   Command,
@@ -10,10 +14,9 @@ import {
   CommandItem,
   CommandList,
 } from "@/components/ui/command";
-import { OPERATOR_OPEN_RUN_EVENT } from "@/components/operator/open-run-button";
+import { OPERATOR_OPEN_RUN_EVENT, type OperatorOpenDetail } from "@/components/operator/open-run-button";
 import { RunContainer, runStatusLabel } from "@/components/operator/run-container";
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
 import {
   Sheet,
   SheetContent,
@@ -35,6 +38,12 @@ import { Notice } from "@/components/ui/states";
 import { helperClass, insetChrome } from "@/lib/ui";
 import { cn } from "@/lib/utils";
 import { WORDS } from "@/lib/vocabulary";
+
+const STARTERS = [
+  { label: "Quiet after one call", value: "Which leads went quiet after one call this month?" },
+  { label: "Ready and unassigned", value: "Who is ready and still unassigned?" },
+  { label: "Open objections", value: "Which open objections need a person?" },
+];
 
 function askVistrialUnavailableMessage(message: string | null): string {
   if (message && /cap/i.test(message)) {
@@ -104,9 +113,12 @@ async function readSse(
   }
 }
 
-export function OperatorCommandBar() {
+export function OperatorCommandBar({ showTrigger = false }: { showTrigger?: boolean }) {
   const [open, setOpen] = useState(false);
   const [request, setRequest] = useState("");
+  const [intent, setIntent] = useState<AgentIntent>("propose");
+  const abortRef = useRef<AbortController | null>(null);
+  const startStreamRef = useRef<(url: string, body: unknown, seedId?: string | null) => Promise<void>>(async () => {});
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [runId, setRunId] = useState<string | null>(null);
@@ -139,11 +151,18 @@ export function OperatorCommandBar() {
   }, []);
 
   useEffect(() => {
-    if (open) {
-      void refreshHistory();
-      void loadOperatorAvailabilityAction().then(setAvailability);
-    }
-  }, [open, refreshHistory]);
+    if (!open) return;
+    let cancelled = false;
+    void listOperatorRunsAction().then((rows) => {
+      if (!cancelled) setHistory(rows);
+    });
+    void loadOperatorAvailabilityAction().then((next) => {
+      if (!cancelled) setAvailability(next);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [open]);
 
   const resetLive = () => {
     setSteps([]);
@@ -166,18 +185,35 @@ export function OperatorCommandBar() {
 
   useEffect(() => {
     function onOpenRun(event: Event) {
-      const id = (event as CustomEvent<{ id?: string }>).detail?.id;
-      if (!id) return;
+      const detail = (event as CustomEvent<OperatorOpenDetail>).detail;
+      if (!detail) return;
       setOpen(true);
       setShowHistory(false);
-      setRunId(id);
-      void hydrate(id);
+      if (detail.intent) setIntent(detail.intent);
+      if (detail.id) {
+        setRunId(detail.id);
+        void hydrate(detail.id);
+        return;
+      }
+      const text = detail.request?.trim();
+      if (!text) return;
+      setSteps([]);
+      setConfirmations([]);
+      setStreamed("");
+      setError(null);
+      setRun(null);
+      setRequest("");
+      setRunId(null);
+      void startStreamRef.current("/api/operator/runs", { request: text, intent: detail.intent ?? "propose" });
     }
     window.addEventListener(OPERATOR_OPEN_RUN_EVENT, onOpenRun);
     return () => window.removeEventListener(OPERATOR_OPEN_RUN_EVENT, onOpenRun);
   }, [hydrate]);
 
   const startStream = async (url: string, body: unknown, seedId: string | null = null) => {
+    abortRef.current?.abort();
+    const controller = new AbortController();
+    abortRef.current = controller;
     setBusy(true);
     setStreaming(true);
     setError(null);
@@ -187,6 +223,7 @@ export function OperatorCommandBar() {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify(body),
+        signal: controller.signal,
       });
       if (response.status === 403) {
         const payload = (await response.json()) as { error?: string };
@@ -219,7 +256,8 @@ export function OperatorCommandBar() {
       });
       if (currentId) await hydrate(currentId);
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "The run failed.");
+      if (controller.signal.aborted) setError("Stopped. Nothing else will be asked.");
+      else setError(cause instanceof Error ? cause.message : "That could not finish.");
     } finally {
       setStreaming(false);
       setBusy(false);
@@ -227,15 +265,18 @@ export function OperatorCommandBar() {
     }
   };
 
-  const onSubmit = async () => {
-    const text = request.trim();
-    if (!text || busy) return;
+  const onSubmit = async (text: string) => {
+    const trimmed = text.trim();
+    if (!trimmed || busy) return;
     resetLive();
     setShowHistory(false);
     setRequest("");
     setRunId(null);
-    await startStream("/api/operator/runs", { request: text });
+    await startStream("/api/operator/runs", { request: trimmed, intent });
   };
+  useEffect(() => {
+    startStreamRef.current = startStream;
+  });
 
   const continueRun = async (id: string, decisionNote?: string, followUp?: string) => {
     setStreamed("");
@@ -303,23 +344,24 @@ export function OperatorCommandBar() {
   const followUpEnabled = run?.status === "completed" && !run.followUpUsed && !streaming;
 
   const statusLabel = useMemo(() => {
-    if (error) return error;
+    if (error) return null;
     if (run) return runStatusLabel(run);
     return null;
   }, [error, run]);
 
   return (
     <>
-      <Button
-        variant="ghost"
-        size="sm"
-        iconOnly
-        aria-label={WORDS.askVistrial}
-        aria-keyshortcuts="Meta+K Control+K"
-        onClick={() => setOpen(true)}
-      >
-        <CommandIcon className="size-4" aria-hidden />
-      </Button>
+      {showTrigger ? (
+        <Button
+          variant="ghost"
+          size="sm"
+          iconOnly
+          aria-label={WORDS.askVistrial}
+          onClick={() => setOpen(true)}
+        >
+          <CommandIcon className="size-4" aria-hidden />
+        </Button>
+      ) : null}
       <Sheet open={open} onOpenChange={setOpen}>
         <SheetContent
           side="right"
@@ -338,46 +380,36 @@ export function OperatorCommandBar() {
                 {askVistrialUnavailableMessage(availability.message)}
               </Notice>
             ) : null}
-            <form
-              onSubmit={(event) => {
-                event.preventDefault();
-                void onSubmit();
-              }}
-            >
-              <label className="block">
-                <span className="sr-only">Request</span>
-                <Textarea
-                  value={request}
-                  onChange={(event) => setRequest(event.target.value)}
-                  rows={3}
-                  placeholder="Which leads went quiet after one call this month?"
-                  disabled={busy}
-                />
-              </label>
-              <div className="mt-2 flex flex-wrap items-center gap-2">
-                <Button type="submit" variant="primary" size="sm" disabled={busy || !request.trim() || !availability.ok}>
-                  Run
+            <AgentComposer
+              value={request}
+              onChange={setRequest}
+              intent={intent}
+              onIntentChange={setIntent}
+              pending={streaming}
+              disabled={!availability.ok}
+              placeholder="Which leads went quiet after one call this month?"
+              suggestions={runId || streaming || showHistory ? [] : STARTERS}
+              onStop={() => abortRef.current?.abort()}
+              onSend={(text) => void onSubmit(text)}
+              extra={
+                <Button type="button" variant="ghost" size="sm" onClick={() => setShowHistory((value) => !value)}>
+                  {showHistory ? "Hide earlier" : "Earlier"}
                 </Button>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setShowHistory((value) => !value)}
-                >
-                  {showHistory ? "Hide history" : "History"}
-                </Button>
-                <span className={helperClass}>⌘K</span>
-              </div>
-            </form>
+              }
+            />
 
-            {error ? <p className="mt-3 text-sm text-flag-critical">{error}</p> : null}
+            {error ? (
+              <div className="mt-3">
+                <AgentError message={error} />
+              </div>
+            ) : null}
 
             {showHistory ? (
               <div className="mt-4 min-h-0 flex-1">
                 <Command items={historyItems}>
-                  <CommandInput placeholder="Search runs" />
+                  <CommandInput placeholder="Search earlier questions" />
                   <CommandEmpty>
-                    {history.length === 0 ? "No runs yet." : "No matching runs."}
+                    {history.length === 0 ? "Nothing earlier yet." : "No matching questions."}
                   </CommandEmpty>
                   <CommandList className="max-h-80">
                     {(item) => (

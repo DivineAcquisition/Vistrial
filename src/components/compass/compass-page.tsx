@@ -2,12 +2,13 @@
 
 import type { UIMessage } from "ai";
 import { MenuIcon } from "lucide-react";
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 import { listConversationsAction, loadLegacyConversationAction, loadMessagesAction } from "@/app/(workspace)/app/compass/actions";
 import { CompassChatProvider } from "@/components/compass/chat";
 import { ConversationList } from "@/components/compass/conversation-list";
 import { CompassThread } from "@/components/compass/thread";
+import { COMPASS_OPEN_EVENT, type CompassOpenDetail } from "@/components/compass/panel";
 import { CompassWelcome, type PinnedQuestion } from "@/components/compass/welcome";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetPopup, SheetTrigger } from "@/components/ui/sheet";
@@ -15,9 +16,10 @@ import { toastManager } from "@/components/ui/toast";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import type { ConversationRow } from "@/lib/compass/persist";
 import type { Starter } from "@/lib/compass/starters";
+import type { AgentIntent } from "@/lib/agent-elements/intent";
 import type { CompassContext } from "@/lib/compass/types";
 
-type Active = { chatKey: string; conversationId: string | null; messages: UIMessage[]; legacy: boolean; context: CompassContext };
+type Active = { chatKey: string; conversationId: string | null; messages: UIMessage[]; legacy: boolean; context: CompassContext; intent: AgentIntent };
 
 function newKey(): string {
   return typeof crypto !== "undefined" && "randomUUID" in crypto ? crypto.randomUUID() : `k${Date.now()}${Math.random()}`;
@@ -49,7 +51,9 @@ export function CompassPage({
   prefill: string | null;
 }) {
   const [rows, setRows] = useState(initialRows);
-  const [active, setActive] = useState<Active>(() => ({ chatKey: initial.conversationId ?? newKey(), ...initial }));
+  const [active, setActive] = useState<Active>(() => ({ chatKey: initial.conversationId ?? newKey(), intent: "lookup", ...initial }));
+  const [prefillText, setPrefillText] = useState(prefill);
+  const [sendPrefill, setSendPrefill] = useState(false);
   const [railOpen, setRailOpen] = useState(false);
 
   const refresh = useCallback(async () => {
@@ -57,19 +61,43 @@ export function CompassPage({
   }, []);
 
   const startNew = useCallback(() => {
-    setActive({ chatKey: newKey(), conversationId: null, messages: [], legacy: false, context: { kind: "none" } });
+    setActive({ chatKey: newKey(), conversationId: null, messages: [], legacy: false, context: { kind: "none" }, intent: "lookup" });
+    setPrefillText(null);
+    setSendPrefill(false);
     setUrl(null);
     setRailOpen(false);
   }, []);
 
+  useEffect(() => {
+    const onOpen = (event: Event) => {
+      const detail = (event as CustomEvent<CompassOpenDetail>).detail;
+      if (!detail?.question || detail.intent === "propose") return;
+      setActive({
+        chatKey: newKey(),
+        conversationId: null,
+        messages: [],
+        legacy: false,
+        context: { kind: "none" },
+        intent: detail.intent ?? "lookup",
+      });
+      setPrefillText(detail.question);
+      setSendPrefill(detail.send === true);
+      setUrl(null);
+    };
+    window.addEventListener(COMPASS_OPEN_EVENT, onOpen);
+    return () => window.removeEventListener(COMPASS_OPEN_EVENT, onOpen);
+  }, []);
+
   const select = useCallback(async (row: ConversationRow) => {
     setRailOpen(false);
+    setPrefillText(null);
+    setSendPrefill(false);
     const messages = row.legacy ? await loadLegacyConversationAction(row.id) : await loadMessagesAction(row.id);
     if (!messages) {
       toastManager.add({ title: "That conversation isn't available.", type: "error" });
       return;
     }
-    setActive({ chatKey: row.id, conversationId: row.id, messages, legacy: row.legacy, context: row.context ?? { kind: "none" } });
+    setActive({ chatKey: row.id, conversationId: row.id, messages, legacy: row.legacy, context: row.context ?? { kind: "none" }, intent: "lookup" });
     setUrl(row.id, row.legacy);
   }, []);
 
@@ -114,6 +142,7 @@ export function CompassPage({
               initialMessages={active.messages}
               origin="page"
               context={active.context}
+              initialIntent={active.intent}
               readOnly={active.legacy}
               onConversation={(id) => {
                 setActive((prev) => ({ ...prev, conversationId: id }));
@@ -124,7 +153,8 @@ export function CompassPage({
             >
               <CompassThread
                 welcome={<CompassWelcome starters={starters} pins={pins} staffNote={staffNote} />}
-                prefill={prefill}
+                prefill={prefillText}
+                sendPrefill={sendPrefill}
                 contextChip={
                   contextLabel && !active.legacy
                     ? { label: contextLabel, onRemove: () => setActive((prev) => ({ ...prev, context: { kind: "none" } })) }

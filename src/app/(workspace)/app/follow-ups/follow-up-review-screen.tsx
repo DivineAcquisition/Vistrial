@@ -12,6 +12,7 @@ import {
   saveFollowUpEdit,
   sendFollowUpToApproval,
 } from "@/app/(workspace)/app/follow-ups/actions";
+import { FieldChangeList } from "@/components/agent-elements/cards";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
@@ -138,6 +139,19 @@ export function FollowUpReviewScreen({ initial }: { initial: FollowUpReviewPaylo
       <div className="grid gap-8 lg:grid-cols-2">
         <section>
           <SectionHeader title="Draft" hint="Free editing. Vistrial never sends it: it is approved in Needs your approval and sent from your CRM." />
+          {draft.generatedBody !== body || (draft.generatedSubject ?? "") !== subject ? (
+            <div className="mb-4 max-h-40 overflow-y-auto rounded-xl border border-border bg-card px-4 py-3">
+              <p className="mb-2 text-xs text-muted-foreground">What changed from the generated draft</p>
+              <FieldChangeList
+                rows={[
+                  ...(draft.channel === "email"
+                    ? [{ field: "Subject", before: draft.generatedSubject, after: subject || null }]
+                    : []),
+                  { field: "Message", before: draft.generatedBody, after: body },
+                ]}
+              />
+            </div>
+          ) : null}
           <Panel className="p-6">
             {draft.channel === "email" ? (
               <div className="mb-4">

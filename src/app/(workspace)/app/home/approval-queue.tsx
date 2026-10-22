@@ -10,9 +10,9 @@ import {
   saveQueueItemDrafts,
   type QueueActionResult,
 } from "@/app/(workspace)/app/home/actions";
+import { AgentCard } from "@/components/agent-elements/cards";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
 import {
   Dialog,
   DialogClose,
@@ -195,7 +195,11 @@ function QueueItem({ item }: { item: QueueItemView }) {
 
   return (
     <li>
-      <Card className="gap-3 p-4 sm:p-5">
+      <AgentCard
+        title={item.title}
+        status={failed ? "failed" : running ? "working" : "waiting"}
+        className="gap-3"
+      >
         <div className="flex flex-wrap items-center gap-1.5">
           <Badge variant="outline" size="sm">
             {item.kindLabel}
@@ -212,14 +216,13 @@ function QueueItem({ item }: { item: QueueItemView }) {
           ) : null}
           {running ? (
             <Badge variant="outline" size="sm">
-              Running
+              Working
             </Badge>
           ) : null}
           {item.assignedName ? <span className="text-xs text-muted-foreground">For {item.assignedName}</span> : null}
         </div>
         <div className="min-w-0">
-          <h3 className="text-[15px] font-medium text-card-foreground">{item.title}</h3>
-          {item.preview ? <p className="mt-1 line-clamp-2 text-sm text-muted-foreground">{item.preview}</p> : null}
+          {item.preview ? <p className="line-clamp-3 text-sm text-muted-foreground">{item.preview}</p> : null}
           {item.reason ? <p className="mt-1 text-xs text-muted-foreground">{item.reason}</p> : null}
           {failed && item.failureReason ? (
             <p className="mt-2 text-sm text-destructive" role="status">
@@ -245,7 +248,7 @@ function QueueItem({ item }: { item: QueueItemView }) {
             {item.whoCanApprove}
           </p>
         ) : null}
-      </Card>
+      </AgentCard>
       {editing ? <EditDialog item={item} open={editing} onOpenChange={setEditing} /> : null}
       {dismissing ? <DismissDialog item={item} open={dismissing} onOpenChange={setDismissing} /> : null}
     </li>

@@ -6,7 +6,10 @@ import { CompassIcon, SearchIcon } from "lucide-react";
 
 import { commandSuggestionsAction } from "@/app/(workspace)/app/home/workspace-actions";
 import { useOrg } from "@/components/app/org-provider";
+import { IntentSelector } from "@/components/agent-elements/intent-selector";
 import { COMPASS_OPEN_EVENT, type CompassOpenDetail } from "@/components/compass/panel";
+import { OPERATOR_OPEN_RUN_EVENT, type OperatorOpenDetail } from "@/components/operator/open-run-button";
+import { AGENT_INTENT_COPY, type AgentIntent } from "@/lib/agent-elements/intent";
 import { Command, CommandDialog, CommandDialogPopup, CommandDialogTitle, CommandEmpty, CommandFooter, CommandInput, CommandItem, CommandList, CommandShortcut } from "@/components/ui/command";
 import { Kbd, KbdGroup } from "@/components/ui/kbd";
 import { MORE_NAV, PRIMARY_NAV, navVisibleTo } from "@/lib/navigation";
@@ -19,8 +22,18 @@ type Item = { value: string; label: string; group: string; href?: string; ask?: 
 export const COMMAND_OPEN_EVENT = "vistrial:command";
 export type CommandOpenDetail = { query?: string };
 
-function askCompass(question: string) {
-  window.dispatchEvent(new CustomEvent<CompassOpenDetail>(COMPASS_OPEN_EVENT, { detail: { question, send: true } }));
+function askVistrial(question: string, intent: AgentIntent) {
+  if (intent === "propose") {
+    window.dispatchEvent(new CustomEvent<OperatorOpenDetail>(OPERATOR_OPEN_RUN_EVENT, { detail: { request: question, intent } }));
+    return;
+  }
+  window.dispatchEvent(new CustomEvent<CompassOpenDetail>(COMPASS_OPEN_EVENT, { detail: { question, send: true, intent } }));
+}
+
+function askLabel(intent: AgentIntent, question: string): string {
+  if (intent === "propose") return `Propose: "${question}"`;
+  if (intent === "draft") return `Draft: "${question}"`;
+  return COMMAND_COPY.ask(question);
 }
 
 /**
@@ -43,6 +56,7 @@ export function CommandBarDialog() {
     }
   }, []);
   const [query, setQuery] = useState("");
+  const [intent, setIntent] = useState<AgentIntent>("lookup");
   const [remote, setRemote] = useState<Item[]>([]);
   const router = useRouter();
   const { role, isStaff, workspaceRole, templateAccess, org } = useOrg();
@@ -108,12 +122,12 @@ export function CommandBarDialog() {
     if (!q) return (suggestions ?? []).map((text) => ({ value: `suggest:${text}`, label: text, ask: text, group: COMMAND_COPY.groups.suggested }));
     const lower = q.toLowerCase();
     const matchingPages = pages.filter((page) => page.label.toLowerCase().includes(lower)).slice(0, 6);
-    return [...(q.length >= 2 ? remote : []), ...matchingPages, { value: `ask:${q}`, label: COMMAND_COPY.ask(q), ask: q, group: COMMAND_COPY.groups.ask }];
-  }, [q, remote, pages, suggestions]);
+    return [...(q.length >= 2 ? remote : []), ...matchingPages, { value: `ask:${q}`, label: askLabel(intent, q), ask: q, group: COMMAND_COPY.groups.ask }];
+  }, [q, remote, pages, suggestions, intent]);
 
   function choose(item: Item) {
     setOpen(false);
-    if (item.ask) askCompass(item.ask);
+    if (item.ask) askVistrial(item.ask, intent);
     else if (item.href) router.push(item.href);
   }
 
@@ -134,7 +148,10 @@ export function CommandBarDialog() {
             )}
           </CommandList>
           <CommandFooter>
-            <span>{COMMAND_COPY.footer}</span>
+            <div className="flex min-w-0 flex-1 flex-col gap-2">
+              <IntentSelector value={intent} onChange={setIntent} />
+              <span>{intent === "lookup" ? COMMAND_COPY.footer : AGENT_INTENT_COPY[intent].description}</span>
+            </div>
             <KbdGroup>
               <Kbd>⌘</Kbd>
               <Kbd>K</Kbd>

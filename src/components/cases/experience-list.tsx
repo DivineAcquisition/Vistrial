@@ -50,6 +50,7 @@ export function ExperienceList({
   canBulk,
   memberId,
   orgId,
+  basePath = "/app/cases",
 }: {
   filter: ExperienceFilter;
   rows: ExperienceRow[];
@@ -63,6 +64,8 @@ export function ExperienceList({
   canBulk: boolean;
   memberId: string;
   orgId: string;
+  /** Where the list and each lead open. The Sales OS shows leads at /app/leads. */
+  basePath?: string;
 }) {
   const router = useRouter();
   const [rows, setRows] = useState(initialRows);
@@ -115,7 +118,7 @@ export function ExperienceList({
     return () => clearTimeout(timer);
   }, [fresh]);
 
-  const href = (next: ExperienceFilter) => `/app/cases?${experienceSearchParams(next).toString()}`;
+  const href = (next: ExperienceFilter) => `${basePath}?${experienceSearchParams(next).toString()}`;
   const chips = activeChips(filter, settings.facts);
 
   function go(next: ExperienceFilter) {
@@ -133,7 +136,7 @@ export function ExperienceList({
         ))}
         {savedViews.map((view) => (
           <span key={view.id} className="inline-flex items-center gap-1">
-            <Button size="sm" variant="outline" render={<Link href={`/app/cases?saved=${view.id}`} />}>
+            <Button size="sm" variant="outline" render={<Link href={`${basePath}?saved=${view.id}`} />}>
               {view.name}
               {view.shared ? " · shared" : ""}
             </Button>
@@ -211,7 +214,7 @@ export function ExperienceList({
               {chip.label} ×
             </Button>
           ))}
-          <Button size="sm" variant="ghost" render={<Link href="/app/cases" />}>Clear all</Button>
+          <Button size="sm" variant="ghost" render={<Link href={basePath} />}>Clear all</Button>
         </div>
       ) : null}
 
@@ -284,7 +287,7 @@ export function ExperienceList({
           <ul className="space-y-1">
             {meaningHits.map((hit) => (
               <li key={hit.leadId}>
-                <Link className="text-sm underline underline-offset-2" href={`/app/cases/${hit.leadId}`}>{rows.find((row) => row.id === hit.leadId)?.name ?? "Open lead"}</Link>
+                <Link className="text-sm underline underline-offset-2" href={`${basePath}/${hit.leadId}`}>{rows.find((row) => row.id === hit.leadId)?.name ?? "Open lead"}</Link>
                 {hit.excerpt ? <p className="text-xs text-muted-foreground">{hit.excerpt}</p> : null}
               </li>
             ))}
@@ -332,7 +335,7 @@ export function ExperienceList({
                       <input type="checkbox" aria-label={`Select ${row.name}`} checked={selected.has(row.id)} onChange={() => setSelected((current) => toggle(current, row.id))} />
                     </td>
                   ) : null}
-                  <td className="p-2"><RowBody row={row} /></td>
+                  <td className="p-2"><RowBody row={row} basePath={basePath} /></td>
                   <td className="p-2">{row.band ?? "Not yet scored"}</td>
                   <td className="p-2">{LEAD_STATUS_LABELS[row.status as keyof typeof LEAD_STATUS_LABELS] ?? row.status}</td>
                   <td className="hidden p-2 md:table-cell" title={row.clockReason ? `Sentry: ${row.clockReason}` : undefined}>
@@ -354,7 +357,7 @@ export function ExperienceList({
               <div className="flex items-start gap-2">
                 {canBulk ? <input type="checkbox" className="mt-1" aria-label={`Select ${row.name}`} checked={selected.has(row.id)} onChange={() => setSelected((current) => toggle(current, row.id))} /> : null}
                 <div className="min-w-0 flex-1 space-y-1">
-                  <RowBody row={row} />
+                  <RowBody row={row} basePath={basePath} />
                   <div className="flex flex-wrap gap-2">
                     <StatusBadge label={row.band ?? "Not yet scored"} tone={row.band ? "good" : "neutral"} />
                     <StatusBadge label={LEAD_STATUS_LABELS[row.status as keyof typeof LEAD_STATUS_LABELS] ?? row.status} tone={leadStatusTone(row.status as never)} />
@@ -397,10 +400,10 @@ export function ExperienceList({
   );
 }
 
-function RowBody({ row }: { row: ExperienceRow }) {
+function RowBody({ row, basePath }: { row: ExperienceRow; basePath: string }) {
   return (
     <div className="min-w-0">
-      <Link href={`/app/cases/${row.id}`} className="font-medium text-foreground hover:underline">
+      <Link href={`${basePath}/${row.id}`} className="font-medium text-foreground hover:underline">
         {row.name}
       </Link>
       <LeadLiveIndicator leadId={row.id} className="ml-2" />

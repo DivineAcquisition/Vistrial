@@ -33,6 +33,8 @@ import { isAgenticSurface } from "@/lib/workspace/state";
 import {
   isPlatformRoute,
   rosterNavigation,
+  SALES_OS_HOME,
+  salesOsNavigation,
   shellChrome,
   shellNavigation,
   type AttentionCounts,
@@ -48,6 +50,8 @@ export function AppShell({
   mfaGraceUntil = null,
   agentic = false,
   welcomeTour = false,
+  salesOs = false,
+  manager = false,
 }: {
   children: ReactNode;
   counts: AttentionCounts;
@@ -59,6 +63,9 @@ export function AppShell({
   /** The agentic workspace is on: one command bar replaces search and the Compass button. */
   agentic?: boolean;
   welcomeTour?: boolean;
+  /** The Sales OS shell is on for this workspace. */
+  salesOs?: boolean;
+  manager?: boolean;
 }) {
   const pathname = usePathname();
   if (pathname.startsWith("/app/layouts/preview")) return children;
@@ -74,6 +81,8 @@ export function AppShell({
         mfaGraceUntil={mfaGraceUntil}
         agentic={agentic}
         welcomeTour={welcomeTour}
+        salesOs={salesOs}
+        manager={manager}
       >
         {children}
       </ConnectedShell>
@@ -91,6 +100,8 @@ function ConnectedShell({
   mfaGraceUntil,
   agentic,
   welcomeTour,
+  salesOs,
+  manager,
 }: {
   children: ReactNode;
   counts: AttentionCounts;
@@ -101,6 +112,8 @@ function ConnectedShell({
   mfaGraceUntil: string | null;
   agentic: boolean;
   welcomeTour: boolean;
+  salesOs: boolean;
+  manager: boolean;
 }) {
   const pathname = usePathname();
   const org = useOrg();
@@ -110,8 +123,15 @@ function ConnectedShell({
   // The Overview badge is the one waiting total, live from the shared summary.
   const liveCounts = summary && summary.orgId === org.org.id ? { ...counts, approvals: summary.waitingTotal } : counts;
   // The agent-first sidebar is a per-workspace switch; the old one stays behind it.
-  const roster = Boolean(summary?.sidebar && summary.orgId === org.org.id);
-  const nav = roster
+  const roster = salesOs || Boolean(summary?.sidebar && summary.orgId === org.org.id);
+  const nav = salesOs
+    ? salesOsNavigation({
+        role: org.workspaceRole,
+        templateAccess: org.templateAccess,
+        workspaceName: org.org.name,
+        manager,
+      })
+    : roster
     ? rosterNavigation({
         role: org.workspaceRole,
         templateAccess: org.templateAccess,
@@ -133,7 +153,7 @@ function ConnectedShell({
   }
   const chat = pathname === "/app/compass" || pathname === "/app/ask" || pathname.startsWith("/app/ask/");
   const foldedBanner = agentic && isAgenticSurface(pathname);
-  const home = landingPath(org.surfaceAccess, org.role);
+  const home = salesOs ? SALES_OS_HOME : landingPath(org.surfaceAccess, org.role);
   const showCue = org.isStaff && !onPlatformPage;
 
   return (

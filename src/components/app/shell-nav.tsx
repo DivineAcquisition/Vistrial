@@ -1,23 +1,8 @@
 "use client";
 
 import Link, { useLinkStatus } from "next/link";
-import {
-  HeartPulse,
-  Bot,
-  Activity,
-  Building2,
-  CalendarCheck,
-  FolderOpen,
-  Gauge,
-  House,
-  LayoutTemplate,
-  ListChecks,
-  PanelsTopLeft,
-  Settings2,
-  SlidersHorizontal,
-  UserRound,
-  type LucideIcon,
-} from "lucide-react";
+
+import { SHELL_ICONS } from "@/components/app/shell-icons";
 
 import { AgentRail, AgentRoster } from "@/components/agents/agent-roster";
 import { Badge } from "@/components/ui/badge";
@@ -37,31 +22,11 @@ import {
   countFor,
   isShellItemActive,
   type AttentionCounts,
-  type ShellIcon,
   type ShellNavGroup,
   type ShellNavItem,
 } from "@/lib/shell/nav";
 import { watchLocationHash } from "@/hooks/use-location-hash";
 import { cn } from "@/lib/utils";
-
-const ICONS: Record<ShellIcon, LucideIcon> = {
-  overview: House,
-  cases: FolderOpen,
-  results: Activity,
-  settings: Settings2,
-  leads: ListChecks,
-  today: CalendarCheck,
-  profile: UserRound,
-  roster: Building2,
-  templates: LayoutTemplate,
-  configuration: SlidersHorizontal,
-  activity: Activity,
-  defaults: SlidersHorizontal,
-  layouts: PanelsTopLeft,
-  forsight: Gauge,
-  agents: Bot,
-  health: HeartPulse,
-};
 
 /** Confirms the click while the next page renders. Fixed size so nothing shifts. */
 export function NavPendingHint({ className }: { className?: string }) {
@@ -108,7 +73,7 @@ function ItemLink({
   onNavigate?: () => void;
 }) {
   const active = isShellItemActive(pathname, hash, item);
-  const Icon = ICONS[item.icon];
+  const Icon = SHELL_ICONS[item.icon];
   const count = countFor(item, counts);
   return (
     <SidebarMenuButton
@@ -148,7 +113,7 @@ function NavItem({
         <SidebarMenuSub>
           {children.map((child) => {
             const active = isShellItemActive(pathname, hash, child);
-            const Icon = ICONS[child.icon];
+            const Icon = SHELL_ICONS[child.icon];
             return (
               <SidebarMenuSubItem key={child.id}>
                 <SidebarMenuSubButton
@@ -245,7 +210,7 @@ export function ShellMoreList({
     <ul className="grid gap-1">
       {items.map((item) => {
         const active = isShellItemActive(pathname, hash, item);
-        const Icon = ICONS[item.icon];
+        const Icon = SHELL_ICONS[item.icon];
         return (
           <li key={item.id}>
             <Link

@@ -26,7 +26,13 @@ export type ShellIcon =
   | "layouts"
   | "forsight"
   | "agents"
-  | "health";
+  | "health"
+  | "foundation"
+  | "command"
+  | "approvals"
+  | "connections"
+  | "team"
+  | "workflows";
 
 export type AttentionKey = "approvals" | "dueToday" | "escalations" | "queue";
 
@@ -655,6 +661,178 @@ export function rosterNavigation(input: {
   return { groups: built, phone, more };
 }
 
+export const SALES_OS_HOME = "/app/command";
+
+const SO_FOUNDATION: ShellNavItem = {
+  id: "foundation",
+  label: "Foundation",
+  href: "/app/foundation",
+  match: "/app/foundation",
+  icon: "foundation",
+  description: "Your goal, offer, ideal customer, team, stages and targets.",
+};
+
+const SO_COMMAND: ShellNavItem = {
+  id: "command",
+  label: "Command center",
+  href: SALES_OS_HOME,
+  match: SALES_OS_HOME,
+  icon: "command",
+  badge: "approvals",
+  description: "What needs a person now.",
+};
+
+function soLeads(mine: boolean): ShellNavItem {
+  return {
+    id: "so-leads",
+    label: mine ? "My leads" : "Leads",
+    href: "/app/leads",
+    match: "/app/leads",
+    icon: "leads",
+  };
+}
+
+const SO_APPROVALS: ShellNavItem = {
+  id: "approvals",
+  label: "Approvals",
+  href: "/app/approvals",
+  match: "/app/approvals",
+  icon: "approvals",
+  badge: "approvals",
+};
+
+function soTeam(manager: boolean): ShellNavItem {
+  return {
+    id: "so-team",
+    label: manager ? "Team" : "My scorecard",
+    href: "/app/manager",
+    match: "/app/manager",
+    icon: "team",
+    description: manager ? "Scorecards, end of day reports and coaching." : "Your end of day report and scorecard.",
+  };
+}
+
+const SO_WORKFLOWS: ShellNavItem = {
+  id: "so-workflows",
+  label: "Playbooks",
+  href: "/app/workflows",
+  match: "/app/workflows",
+  icon: "workflows",
+};
+
+const SO_CONNECTIONS: ShellNavItem = {
+  id: "so-connections",
+  label: "Connections",
+  href: "/app/settings/connections",
+  match: "/app/settings/connections",
+  icon: "connections",
+};
+
+const SO_SETTINGS: ShellNavItem = {
+  id: "so-settings",
+  label: "Settings",
+  href: "/app/settings",
+  match: "/app/settings",
+  icon: "settings",
+};
+
+const SO_PROFILE: ShellNavItem = {
+  id: "so-profile",
+  label: "Profile",
+  href: "/app/settings/profile",
+  match: "/app/settings/profile",
+  icon: "profile",
+};
+
+/**
+ * The Sales OS shell (Prompt 26), behind the per-workspace sales_os switch.
+ * Rail order: Foundation, Command center, Leads, the agents from the
+ * registry, then Connections and Settings. Phone tabs: Command center,
+ * Leads, Approvals, Agents, with everything else under More.
+ */
+export function salesOsNavigation(input: {
+  role: WorkspaceRole;
+  templateAccess: boolean;
+  workspaceName?: string;
+  /** Owners, staff, and members an Owner made a Manager. */
+  manager: boolean;
+}): ShellNavigation {
+  let built: ShellNavGroup[];
+  let phone: ShellNavItem[];
+  const extra: ShellNavItem[] = [];
+  switch (input.role) {
+    case "owner": {
+      built = [
+        workspaceGroup([SO_FOUNDATION, SO_COMMAND, soLeads(false)]),
+        ROSTER_GROUP,
+        { id: "workspace-more", label: "", items: [soTeam(true), SO_WORKFLOWS, SO_CONNECTIONS, SO_SETTINGS] },
+      ];
+      phone = [SO_COMMAND, soLeads(false), SO_APPROVALS, AGENTS_SHEET];
+      extra.push(resultsItem(false));
+      break;
+    }
+    case "member": {
+      const tail = input.manager ? [soTeam(true), SO_SETTINGS] : [SO_SETTINGS];
+      built = [workspaceGroup([SO_FOUNDATION, SO_COMMAND]), ROSTER_GROUP, { id: "workspace-more", label: "", items: tail }];
+      phone = [SO_COMMAND, SO_APPROVALS, AGENTS_SHEET, ...(input.manager ? [soTeam(true)] : [])];
+      extra.push(resultsItem(false), REPORTS_ITEM);
+      break;
+    }
+    case "operator": {
+      built = [
+        { id: "work", label: "Work", items: [SO_COMMAND, soLeads(true)] },
+        ROSTER_GROUP,
+        { id: "workspace-more", label: "", items: [soTeam(false), SO_PROFILE] },
+      ];
+      phone = [SO_COMMAND, soLeads(true), SO_APPROVALS, AGENTS_SHEET];
+      extra.push(SO_FOUNDATION);
+      break;
+    }
+    case "service_team":
+    case "platform_admin": {
+      const platform = groupsFor(input).filter((group) => group.id !== "here");
+      const staffHome = platform.flatMap((group) => group.items).find((item) => item.id === "staff-home")!;
+      built = [
+        ...platform,
+        {
+          id: "here",
+          label: input.workspaceName?.trim() || "This workspace",
+          items: [SO_FOUNDATION, SO_COMMAND, soLeads(false)],
+        },
+        ROSTER_GROUP,
+        {
+          id: "workspace-more",
+          label: "",
+          items: [soTeam(true), SO_WORKFLOWS, { ...SO_CONNECTIONS, id: "so-connections-here" }, {
+            id: "configuration",
+            label: "Configuration",
+            href: "/app/settings/configuration",
+            match: "/app/settings/configuration",
+            icon: "configuration",
+          }],
+        },
+      ];
+      phone = [staffHome, SO_COMMAND, soLeads(false), AGENTS_SHEET];
+      extra.push(SO_APPROVALS);
+      break;
+    }
+    default:
+      return { groups: [], phone: [], more: [] };
+  }
+
+  const phoneIds = new Set(phone.map((item) => item.id));
+  const more: ShellNavItem[] = [];
+  for (const group of built) {
+    for (const item of group.items) {
+      if (!phoneIds.has(item.id)) more.push({ ...item, phone: undefined });
+      for (const child of item.children ?? []) if (!phoneIds.has(child.id)) more.push(child);
+    }
+  }
+  for (const item of extra) if (!phoneIds.has(item.id) && !more.some((entry) => entry.id === item.id)) more.push(item);
+  if (input.role !== "operator") more.push(LIBRARY_ITEM);
+  return { groups: built, phone, more };
+}
+
 /** Platform pages are not "inside" one customer workspace. */
 export function isPlatformRoute(pathname: string): boolean {
   return ["/app/team", "/app/ops", "/app/layouts", "/app/agents/health"].some(
@@ -688,6 +866,13 @@ export function isShellItemActive(pathname: string, hash: string, item: ShellNav
   }
   if (item.id === "settings") {
     return isNavActive(pathname, item.match) && !pathname.startsWith("/app/settings/configuration");
+  }
+  if (item.id === "so-settings") {
+    return (
+      isNavActive(pathname, item.match) &&
+      !pathname.startsWith("/app/settings/connections") &&
+      !pathname.startsWith("/app/settings/profile")
+    );
   }
   if (item.id === "results") {
     return isNavActive(pathname, item.match) || isNavActive(pathname, "/portal");
@@ -737,7 +922,15 @@ const TITLE_RULES: Array<{ prefix: string; title: string; crumbs: Array<{ href: 
     { href: "/app/settings", label: "Settings" },
     { href: "/app/settings/configuration", label: "Configuration" },
   ] },
+  { prefix: "/app/settings/connections", title: "Connections", crumbs: [{ href: "/app/settings/connections", label: "Connections" }] },
   { prefix: "/app/settings", title: "Settings", crumbs: [{ href: "/app/settings", label: "Settings" }] },
+  { prefix: "/app/command", title: "Command center", crumbs: [{ href: "/app/command", label: "Command center" }] },
+  { prefix: "/app/foundation", title: "Foundation", crumbs: [{ href: "/app/foundation", label: "Foundation" }] },
+  { prefix: "/app/leads/", title: "Lead", crumbs: [{ href: "/app/leads", label: "Leads" }, { href: "", label: "Lead" }] },
+  { prefix: "/app/leads", title: "Leads", crumbs: [{ href: "/app/leads", label: "Leads" }] },
+  { prefix: "/app/approvals", title: "Approvals", crumbs: [{ href: "/app/approvals", label: "Approvals" }] },
+  { prefix: "/app/manager", title: "Team", crumbs: [{ href: "/app/manager", label: "Team" }] },
+  { prefix: "/app/actions", title: "Actions", crumbs: [{ href: "/app/settings", label: "Settings" }, { href: "/app/actions", label: "Actions" }] },
   { prefix: "/app/cases/", title: "Case file", crumbs: [{ href: "/app/cases", label: "Case Files" }, { href: "", label: "Case file" }] },
   { prefix: "/app/cases", title: "Case Files", crumbs: [{ href: "/app/cases", label: "Case Files" }] },
   { prefix: "/app/calls/", title: "Call", crumbs: [{ href: "/app/calls", label: "Calls" }, { href: "", label: "Call" }] },
@@ -821,6 +1014,9 @@ export function layoutKindForPath(pathname: string): PageLayoutKind {
     return "record";
   }
   if (/^\/app\/cases\/[^/]+/.test(pathname) || /^\/app\/calls\/[^/]+/.test(pathname)) return "record";
+  if (/^\/app\/leads\/[^/]+/.test(pathname)) return "record";
+  if (pathname.startsWith("/app/command") || pathname.startsWith("/app/manager")) return "dashboard";
+  if (pathname.startsWith("/app/leads") || pathname.startsWith("/app/approvals")) return "list-detail";
   if (
     pathname.startsWith("/app/cases") ||
     pathname.startsWith("/app/today") ||

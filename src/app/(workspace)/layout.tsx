@@ -13,6 +13,7 @@ import { loadPaymentProblem } from "@/lib/billing/banner";
 import { mfaPrompt, mfaSelf } from "@/lib/staff/mfa-check";
 import { guardStaffSession } from "@/lib/staff/session";
 import { loadHomeState } from "@/lib/workspace/home-state";
+import { isTeamManager, salesOsEnabled } from "@/lib/sales-os/flag";
 import { welcomeTourLink } from "@/lib/workspace/state";
 import { redirect } from "next/navigation";
 import packageJson from "../../../package.json";
@@ -36,7 +37,7 @@ export default async function WorkspaceLayout({ children }: { children: React.Re
     waiting: [],
     loadedAt: new Date().toISOString(),
   };
-  const [counts, snapshot, calm, paymentProblem, session, mfa, home, summary] = await Promise.all([
+  const [counts, snapshot, calm, paymentProblem, session, mfa, home, summary, salesOs, manager] = await Promise.all([
     loadAttentionCounts(ctx),
     loadLiveSnapshot(ctx.org.id).catch(() => emptySnapshot),
     loadCalmMode(ctx.user.id).catch(() => false),
@@ -45,6 +46,8 @@ export default async function WorkspaceLayout({ children }: { children: React.Re
     ctx.platformRole ? mfaSelf() : Promise.resolve(null),
     loadHomeState(ctx).catch(() => null),
     loadAgentSummary(ctx.org.id).catch(() => null),
+    salesOsEnabled(ctx.org.id),
+    isTeamManager(ctx.org.id).catch(() => false),
   ]);
   const agentic = Boolean(home?.available && home.enabled);
   const welcomeTour = home
@@ -74,6 +77,8 @@ export default async function WorkspaceLayout({ children }: { children: React.Re
               mfaGraceUntil={prompt.graceUntil}
               agentic={agentic}
               welcomeTour={welcomeTour}
+              salesOs={salesOs}
+              manager={manager}
             >
               {children}
             </AppShell>

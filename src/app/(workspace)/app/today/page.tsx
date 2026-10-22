@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 
 import { PageFrame } from "@/components/app/page-frame";
 import { getAuthContext } from "@/lib/auth/session";
@@ -12,7 +13,10 @@ import { TaskButtons } from "@/app/(workspace)/app/tasks/task-form";
 import { ClaimLeadButton } from "@/app/(workspace)/app/today/claim";
 import { LeadPeek } from "@/components/cases/lead-peek";
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { SalesOsSwitch } from "@/components/sales-os/flag-switch";
 import { OperatorToday } from "@/components/workspace/workspace-page";
+import { salesOsEnabled } from "@/lib/sales-os/flag";
+import { SALES_OS_HOME } from "@/lib/shell/nav";
 import { loadHomeState } from "@/lib/workspace/home-state";
 import type { AuthContext } from "@/lib/auth/types";
 
@@ -53,6 +57,7 @@ async function ClaimableLeads({ ctx }: { ctx: AuthContext }) {
 
 export default async function TodayPage() {
   const ctx = await getAuthContext();
+  if (await salesOsEnabled(ctx.org.id)) redirect(SALES_OS_HOME);
   if (ctx.workspaceRole === "operator") {
     const home = await loadHomeState(ctx);
     if (home.available && home.enabled) return <OperatorToday ctx={ctx} home={home} claimable={<ClaimableLeads ctx={ctx} />} />;
@@ -176,6 +181,7 @@ export default async function TodayPage() {
           ))}
         </ul>
       )}
+      {ctx.isStaff ? <SalesOsSwitch enabled={false} /> : null}
     </PageFrame>
   );
 }

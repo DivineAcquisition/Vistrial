@@ -18,6 +18,7 @@ import {
   Target,
   UserRound,
   UsersRound,
+  MessageSquare,
   Workflow,
   Zap,
   type LucideIcon,
@@ -49,4 +50,5 @@ export const SHELL_ICONS: Record<ShellIcon, LucideIcon> = {
   team: UsersRound,
   workflows: Workflow,
   actions: Zap,
+  ask: MessageSquare,
 };

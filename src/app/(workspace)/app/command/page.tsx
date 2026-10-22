@@ -5,6 +5,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { ActivitySection, ActivitySkeleton, QueueSection, QueueSkeleton } from "@/app/(workspace)/app/home/sections";
 import { PageFrame } from "@/components/app/page-frame";
 import { CommandView } from "@/components/sales-os/command-view";
+import { SalesOsSwitch } from "@/components/sales-os/flag-switch";
 import { LeadHeader, NowPanel } from "@/components/sales-os/lead-summary";
 import { RecordSection } from "@/components/sales-os/record-section";
 import { isLeadId } from "@/lib/cases/filters";
@@ -71,6 +72,7 @@ export default async function CommandPage({ searchParams }: { searchParams: Prom
           ) : null
         }
       />
+      {ctx.isStaff ? <SalesOsSwitch enabled /> : null}
     </PageFrame>
   );
 }

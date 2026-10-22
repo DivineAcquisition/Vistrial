@@ -8,7 +8,7 @@ import { FIELDS, confirmationCounts, fieldProblem, type StoredField } from "@/li
 import { businessDayOver, dayWindow, eodActivity, localDay, type ActivityRows } from "@/lib/manager/eod";
 import { MIN_SAMPLE, coachingMoments, scorecard, type ScoreInputs } from "@/lib/manager/scorecard";
 import { nowSummary } from "@/lib/sales-os/now";
-import { salesOsRedirect, withoutRetiredPages } from "@/lib/sales-os/routes";
+import { askHref, askPageRedirect, salesOsRedirect, withoutRetiredPages } from "@/lib/sales-os/routes";
 import { SALES_OS_HOME, salesOsNavigation } from "@/lib/shell/nav";
 
 const ROOT = path.join(__dirname, "..", "..", "..");
@@ -160,6 +160,17 @@ describe("Sales OS routes", () => {
     expect(salesOsRedirect("/app/cases/6f1c2a8e-1b2c-4d3e-8f90-123456789abc/files")).toBe("/app/leads/6f1c2a8e-1b2c-4d3e-8f90-123456789abc");
     expect(salesOsRedirect("/app/onboarding/step/crm")).toBe(SALES_OS_HOME);
     expect(salesOsRedirect("/app/forsight/pipeline")).toBe(SALES_OS_HOME);
+    expect(salesOsRedirect("/app/today")).toBe(SALES_OS_HOME);
+  });
+
+  it("renders Ask inside a Sales OS workspace and sends everyone else to Compass", () => {
+    expect(askPageRedirect(true, "6f1c2a8e-1b2c-4d3e-8f90-123456789abc")).toBeNull();
+    expect(askPageRedirect(false, undefined)).toBe("/app/compass");
+    expect(askPageRedirect(false, "6f1c2a8e-1b2c-4d3e-8f90-123456789abc")).toBe(
+      "/app/compass?c=6f1c2a8e-1b2c-4d3e-8f90-123456789abc&legacy=1"
+    );
+    expect(askHref()).toBe("/app/ask");
+    expect(askHref("  What's going on?  ")).toBe("/app/ask?q=What's%20going%20on%3F");
   });
 
   it("leaves every other screen alone", () => {
@@ -180,7 +191,8 @@ describe("Sales OS navigation", () => {
 
   it("gives the Owner the full rail and the four phone tabs", () => {
     const owner = ids("owner");
-    expect(owner.rail).toEqual(expect.arrayContaining(["foundation", "command", "so-leads", "so-team", "so-workflows", "so-actions", "so-connections", "so-settings"]));
+    expect(owner.rail).toEqual(expect.arrayContaining(["foundation", "command", "ask", "so-leads", "so-team", "so-workflows", "so-actions", "so-connections", "so-settings"]));
+    expect(owner.phone).not.toContain("ask");
     expect(owner.phone).toEqual(["command", "so-leads", "approvals", "agents-sheet"].filter((id) => owner.phone.includes(id)));
     expect(owner.phone).toHaveLength(4);
   });
@@ -193,7 +205,7 @@ describe("Sales OS navigation", () => {
 
   it("gives operators their own leads and scorecard, never Actions or Connections", () => {
     const operator = ids("operator");
-    expect(operator.rail).toEqual(expect.arrayContaining(["command", "so-leads", "so-team"]));
+    expect(operator.rail).toEqual(expect.arrayContaining(["command", "ask", "so-leads", "so-team"]));
     expect(operator.rail).not.toContain("so-actions");
     expect(operator.rail).not.toContain("so-connections");
   });

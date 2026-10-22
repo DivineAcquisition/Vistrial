@@ -21,7 +21,7 @@ import {
 } from "@/components/ui/command";
 import { Kbd, KbdGroup } from "@/components/ui/kbd";
 import { DA_CONSOLE_LINKS, MORE_NAV, PRIMARY_NAV, navVisibleTo } from "@/lib/navigation";
-import { shellNavigation } from "@/lib/shell/nav";
+import { salesOsNavigation, shellNavigation } from "@/lib/shell/nav";
 
 type JumpItem = {
   value: string;
@@ -30,7 +30,7 @@ type JumpItem = {
   group: string;
 };
 
-export function AppJumpPalette() {
+export function AppJumpPalette({ salesOs = false, manager = false }: { salesOs?: boolean; manager?: boolean }) {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [meaning, setMeaning] = useState(false);
@@ -40,11 +40,13 @@ export function AppJumpPalette() {
   const { role, isStaff, workspaceRole, templateAccess, org } = useOrg();
 
   const items = useMemo<JumpItem[]>(() => {
-    const shell = shellNavigation({
-      role: workspaceRole,
-      templateAccess,
-      workspaceName: org.name,
-    });
+    const shell = salesOs
+      ? salesOsNavigation({ role: workspaceRole, templateAccess, workspaceName: org.name, manager })
+      : shellNavigation({
+          role: workspaceRole,
+          templateAccess,
+          workspaceName: org.name,
+        });
     const shellItems = shell.groups.flatMap((group) =>
       group.items.flatMap((item) => [item, ...(item.children ?? [])])
     );
@@ -57,14 +59,16 @@ export function AppJumpPalette() {
           )
       ),
     ];
-    const pages = dests
-      .filter((item) => navVisibleTo(item, role, isStaff))
-      .map((item) => ({
-        value: item.href,
-        label: item.label,
-        href: item.href,
-        group: item.group === "front" ? "Main" : "Also",
-      }));
+    const pages = salesOs
+      ? []
+      : dests
+          .filter((item) => navVisibleTo(item, role, isStaff))
+          .map((item) => ({
+            value: item.href,
+            label: item.label,
+            href: item.href,
+            group: item.group === "front" ? "Main" : "Also",
+          }));
     const seen = new Set(pages.map((item) => item.href));
     for (const item of shellItems) {
       if (seen.has(item.href)) continue;
@@ -84,7 +88,7 @@ export function AppJumpPalette() {
     }
     pages.push({ value: "/app/settings/install", label: "Install the app", href: "/app/settings/install", group: "Also" });
     return pages;
-  }, [role, isStaff, workspaceRole, templateAccess, org.name]);
+  }, [role, isStaff, workspaceRole, templateAccess, org.name, salesOs, manager]);
 
   useEffect(() => {
     const q = query.trim();

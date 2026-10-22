@@ -75,7 +75,7 @@ type AvatarImageProps = React.ComponentPropsWithoutRef<typeof AvatarPrimitive.Im
 
 function AvatarImage({ className, alt = "", onError, ...props }: AvatarImageProps) {
   return (
-    // The photo has to be a real img. Radix keeps its image out of the document until a load effect runs, so the portrait never paints.
+    // Radix Avatar.Image stays out of the DOM until its load effect finishes, so the photo never appears. A plain img paints immediately and hides if the file fails.
     // eslint-disable-next-line @next/next/no-img-element
     <img
       alt={alt}

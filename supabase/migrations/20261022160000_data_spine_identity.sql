@@ -28,6 +28,9 @@ GRANT ALL ON public.lead_identities TO service_role;
 DROP POLICY IF EXISTS lead_identities_select ON public.lead_identities;
 CREATE POLICY lead_identities_select ON public.lead_identities FOR SELECT TO authenticated
   USING (org_id IN (SELECT public.user_org_ids()));
+DROP POLICY IF EXISTS ws_operator_lead_scope ON public.lead_identities;
+CREATE POLICY ws_operator_lead_scope ON public.lead_identities AS RESTRICTIVE FOR SELECT TO authenticated
+  USING ((NOT (org_id IN (SELECT public.user_operator_org_ids()))) OR (lead_id IN (SELECT public.operator_visible_lead_ids())));
 
 CREATE TABLE IF NOT EXISTS public.identity_reviews (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -52,8 +55,9 @@ REVOKE ALL ON public.identity_reviews FROM PUBLIC, anon, authenticated;
 GRANT SELECT ON public.identity_reviews TO authenticated;
 GRANT ALL ON public.identity_reviews TO service_role;
 DROP POLICY IF EXISTS identity_reviews_select ON public.identity_reviews;
+-- Deciding who a person is spans leads, so operators do not see reviews.
 CREATE POLICY identity_reviews_select ON public.identity_reviews FOR SELECT TO authenticated
-  USING (org_id IN (SELECT public.user_org_ids()));
+  USING (org_id IN (SELECT public.user_org_ids()) AND NOT (org_id IN (SELECT public.user_operator_org_ids())));
 
 -- E.164 for the numbers the app stores. Ten digits read as US, eleven starting
 -- with 1 as US with the country code, a leading + as already international.

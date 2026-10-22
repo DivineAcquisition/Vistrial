@@ -9,8 +9,8 @@
  * lives in contract.ts, with a generic default so a registered agent with no
  * code of its own still shows up everywhere.
  *
- * Each agent wears an orb in its accent, and the name is always next to it,
- * so an agent is never identified by color alone.
+ * Each agent wears a squircle avatar: its glyph on its accent, with the name
+ * always next to it, so an agent is never identified by color alone.
  */
 
 export const LIVE_AGENT_IDS = ["scribe", "sentry", "relay", "compass", "assay"] as const;

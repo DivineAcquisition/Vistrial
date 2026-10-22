@@ -194,7 +194,7 @@ function QueueItem({ item }: { item: QueueItemView }) {
     });
 
   return (
-    <li>
+    <li id={`approval-${item.id}`}>
       <AgentCard
         title={item.title}
         status={failed ? "failed" : running ? "working" : "waiting"}

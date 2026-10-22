@@ -5,12 +5,14 @@ import { useRouter } from "next/navigation";
 import { useMemo, useState, useTransition } from "react";
 
 import { setAgentPausedAction } from "@/app/(workspace)/app/agents/actions";
+import { AgentWorkMeters } from "@/components/live/agent-work-meters";
 import { AgentGlyph, formatClock, PresenceLabel, toneText } from "@/components/live/agent-identity";
 import { useLiveState, usePresence, useRecentlyTouched } from "@/components/live/live-provider";
 import { useRunViewer } from "@/components/live/run-viewer";
 import { useOrg } from "@/components/app/org-provider";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { OnboardCard } from "@/components/ui/onboard-card";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Input } from "@/components/ui/input";
 import { AGENTS, type LiveAgentId } from "@/lib/agents/roster";
@@ -218,6 +220,14 @@ export function AgentDetail({
             )
           ) : null}
         </div>
+        {openRuns.length === 0 ? (
+          <OnboardCard
+            className="shrink-0"
+            step1={`${agent.name} is set up`}
+            step2={presence.state === "working" ? "Working a lead" : "Watching for work"}
+            step3="Ready for your review"
+          />
+        ) : null}
         {error ? (
           <p role="alert" className="text-sm text-destructive">
             {error}
@@ -245,22 +255,12 @@ export function AgentDetail({
         ) : null}
       </Card>
 
-      <section aria-labelledby="agent-now" className="space-y-2">
+      <div className="space-y-2">
         <h2 id="agent-now" className="font-heading text-base text-card-foreground">
           Working now
         </h2>
-        {openRuns.length ? (
-          <ul className="rounded-2xl border border-border bg-card p-1">
-            {openRuns.map((run) => (
-              <RunRow key={run.id} run={run} />
-            ))}
-          </ul>
-        ) : (
-          <p className="rounded-2xl border border-dashed border-border px-4 py-5 text-sm text-muted-foreground">
-            {paused ? `${agent.name} is paused.` : `${agent.name} has nothing in progress.`}
-          </p>
-        )}
-      </section>
+        <AgentWorkMeters agentIds={[agentId]} runs={openRuns} labelledBy="agent-now" />
+      </div>
 
       <section aria-labelledby="agent-history" className="space-y-2">
         <h2 id="agent-history" className="font-heading text-base text-card-foreground">

@@ -5,7 +5,7 @@ import { describe, expect, it } from "vitest";
 
 import { agentContract, waitingPhrase } from "@/lib/agents/contract";
 import { AGENT_AREAS, AGENTS, LIVE_AGENT_IDS, registrySeed } from "@/lib/agents/roster";
-import { buildAgentSummary, outputLine, rowLabel, STUCK_AFTER_MS, type RawAgent, type RawSummary } from "@/lib/agents/summary";
+import { buildAgentSummary, outputLine, pinnedPages, rowLabel, STUCK_AFTER_MS, type RawAgent, type RawSummary } from "@/lib/agents/summary";
 import { commitActivity, compareRuns, type ActivityWrite } from "@/lib/live/words";
 
 const MIGRATIONS = join(process.cwd(), "supabase/migrations");
@@ -125,6 +125,21 @@ describe("agent registry", () => {
     expect(agentContract("compass").quickActions.runNow).toBeNull();
     expect(agentContract("sample_agent").pages("sample_agent")[0].href).toBe("/app/agents/sample_agent");
     expect(waitingPhrase("relay", { approvals: 3, questions: 1 })).toBe("3 drafts waiting, 1 question");
+  });
+});
+
+describe("pinned work pages", () => {
+  const sales = {
+    label: "Case Files",
+    href: "/app/cases",
+    roles: ["owner", "operator", "service_team", "platform_admin"],
+    also: [{ label: "Calendar", href: "/app/calendar", roles: ["owner", "member", "operator", "service_team", "platform_admin"] }],
+  };
+
+  it("keeps Case Files and hides Calendar until the flag is on", () => {
+    expect(pinnedPages(sales, "owner", false).map((page) => page.label)).toEqual(["Case Files"]);
+    expect(pinnedPages(sales, "owner", true).map((page) => page.label)).toEqual(["Case Files", "Calendar"]);
+    expect(pinnedPages(sales, "member", true).map((page) => page.href)).toEqual(["/app/calendar"]);
   });
 });
 

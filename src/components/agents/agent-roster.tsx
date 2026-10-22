@@ -380,15 +380,16 @@ function AreaSection({
       </div>
       {collapsed ? null : (
         <>
-          {area.workPage ? (
+          {((area.workPages ?? []).length > 0 ? area.workPages : area.workPage ? [area.workPage] : []).map((page) => (
             <Link
-              href={area.workPage.href}
+              key={page.href}
+              href={page.href}
               onClick={onNavigate}
               className="ml-8 flex min-h-8 items-center rounded-md px-2 text-sm text-sidebar-foreground hover:bg-sidebar-accent"
             >
-              {area.workPage.label}
+              {page.label}
             </Link>
-          ) : null}
+          ))}
           <ul className="space-y-0.5">
             {shown.map((row) => (
               <AgentRow key={row.id} row={row} onNavigate={onNavigate} readOnly={readOnly} />

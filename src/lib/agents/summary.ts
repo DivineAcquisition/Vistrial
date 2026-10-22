@@ -88,7 +88,10 @@ export type AgentSummaryRow = {
 export type AreaSummary = {
   id: string;
   name: string;
+  /** The first pinned page. Case Files stays here so the shell can tuck it under Sales. */
   workPage: { label: string; href: string } | null;
+  /** Every pinned page this person can open, Case Files first, then Calendar when the flag is on. */
+  workPages: Array<{ label: string; href: string }>;
   homePage: string | null;
   availability: "available" | "coming_soon";
   description: string;
@@ -106,6 +109,8 @@ export type AgentSummary = {
   role: WorkspaceRole;
   /** The new sidebar is switched on for this workspace. */
   sidebar: boolean;
+  /** The sales calendar is switched on for this workspace. */
+  salesCalendar: boolean;
   /** The copy is behind: show the quiet Reconnecting note, never stale Working. */
   reconnecting: boolean;
   waitingTotal: number;
@@ -190,7 +195,12 @@ export type RawArea = {
   name: string;
   description: string;
   recordKind: string;
-  workPage: { label: string; href: string; roles: string[] } | null;
+  workPage: {
+    label: string;
+    href: string;
+    roles: string[];
+    also?: Array<{ label: string; href: string; roles: string[] }>;
+  } | null;
   homePage: { href: string; roles: string[] } | null;
   availability: "available" | "coming_soon";
   sort: number;
@@ -204,6 +214,8 @@ export type RawSummary = {
   workspace: { status: string; agentsHalted: boolean; billingState: string | null };
   backlog: { pending: number; oldestSeconds: number };
   sidebar?: boolean;
+  /** The sales calendar is switched on for this workspace. Off unless a row says on. */
+  salesCalendar?: boolean;
   areas: RawArea[];
   agents: RawAgent[];
   waitingTotal: number;
@@ -460,10 +472,16 @@ export function buildAgentSummary(raw: RawSummary, setup: SetupFacts, now: numbe
     .map((area) => {
       const members = agents.filter((agent) => agent.area === area.id && agent.inSidebar && !agent.hidden);
       const urgent = URGENCY.find((state) => members.some((agent) => agent.presence === state)) ?? null;
+      const workPages = pinnedPages(area.workPage, role, raw.salesCalendar === true);
+      const primary =
+        area.workPage && area.workPage.roles.includes(role)
+          ? { label: area.workPage.label, href: area.workPage.href }
+          : null;
       return {
         id: area.id,
         name: area.name,
-        workPage: area.workPage && area.workPage.roles.includes(role) ? { label: area.workPage.label, href: area.workPage.href } : null,
+        workPage: primary,
+        workPages,
         homePage: area.homePage && area.homePage.roles.includes(role) ? area.homePage.href : null,
         availability: area.availability,
         description: area.description,
@@ -480,11 +498,31 @@ export function buildAgentSummary(raw: RawSummary, setup: SetupFacts, now: numbe
     generatedAt: raw.generatedAt,
     role,
     sidebar: raw.sidebar === true,
+    salesCalendar: raw.salesCalendar === true,
     reconnecting,
     waitingTotal: raw.waitingTotal,
     areas,
     agents,
   };
+}
+
+const CALENDAR_HREF = "/app/calendar";
+
+/** Pinned work pages for one area. Calendar stays hidden until the workspace flag is on. */
+export function pinnedPages(
+  workPage: RawArea["workPage"],
+  role: WorkspaceRole,
+  salesCalendar: boolean,
+): Array<{ label: string; href: string }> {
+  if (!workPage) return [];
+  const pages: Array<{ label: string; href: string }> = [];
+  if (workPage.roles.includes(role)) pages.push({ label: workPage.label, href: workPage.href });
+  for (const extra of workPage.also ?? []) {
+    if (!extra.roles.includes(role)) continue;
+    if (extra.href === CALENDAR_HREF && !salesCalendar) continue;
+    pages.push({ label: extra.label, href: extra.href });
+  }
+  return pages;
 }
 
 /** "Relay, waiting on you, 3 drafts waiting". Read by screen readers. */

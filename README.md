@@ -24,17 +24,23 @@ this Next app.
 
 ## Visual language
 
-The app is **permanently dark**. Tokens and surfaces come from the Divine
-Acquisition hiring site: brand `#9A88FC` on ink `#07070B`, Inter Display for UI type
-and headings, Geist Mono for code. Filled actions invert to near-black type —
-never white on the brand fill.
+The workspace is **white by default** with a dark theme a person can switch to
+from the header (kept per device, applied before the first paint). The public
+site and the auth desk stay dark. Tokens and surfaces come from the Divine
+Acquisition hiring site: brand `#9A88FC`, ink `#07070B`, Inter Display for UI type
+and headings, Geist Mono for code. Filled actions invert to near-black type, never
+white on the brand fill. Write colour through tokens (`text-strong`,
+`bg-overlay/5`, `bg-card`), never hard-coded white; `src/lib/theme.test.ts` checks.
 
 | Where | What |
 |---|---|
-| `src/app/globals.css` | Palette, semantic tokens, `.panel`, motion |
+| `src/app/globals.css` | Light `:root` and dark `.dark` palettes, semantic tokens, `.panel`, motion |
+| `src/lib/theme.ts`, `src/components/app/theme-toggle.tsx` | Theme choice, head script, toggle |
 | `src/lib/ui.ts` | Button / input / eyebrow class recipes |
 | `src/components/ui` | Panels, KPI cards, tones, backdrop, shadcn |
-| `src/components/brand/logo.tsx` | Official Vistrial lockup (`public/brand/vistrial-lockup.png`) |
+| `src/components/ai-elements` | AI Elements workflow canvas pieces on React Flow |
+| `src/components/agent-elements` | Agent Elements cards, plus Vistrial's own composer |
+| `src/components/brand/logo.tsx` | Official lockup: ink on white, silver on dark |
 
 ## Build order
 1. Foundation

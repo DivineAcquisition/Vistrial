@@ -60,8 +60,42 @@ so they cannot disagree.
   only owners and admins read, so staff see an empty list until a staff read
   path is added.
 
+## Build step 3: Design mode (canvas, outline, settings, test run)
+
+- AI Elements workflow pieces (canvas, node, edge, connection, controls, panel,
+  toolbar) are installed in `src/components/ai-elements` through the shadcn
+  installer from the AI Elements registry, on `@xyflow/react` 12.12 (MIT). The
+  shadcn/ui rebuild of AI Elements did not carry these pieces over, so the
+  copied code is ours to keep. The animated edge with a moving dot is replaced by
+  a still, labeled edge. The library attribution is hidden because the interface
+  names no other company.
+- `src/components/workflows/workflow-editor.tsx` holds the graph in an undo
+  history. The canvas (`toFlow` in `src/lib/workflows/flow.ts`) and the outline
+  (`toOutline`) are both drawn from it. Box positions a person drags are view
+  state only; Tidy up returns to `autoLayout`, which keeps the longest branch on
+  one row and drops side branches (a draft's Expired line always) below it.
+- Desktop and tablet edit on the canvas: select a box, add a box after any exit
+  from its toolbar, drag between exits to reconnect (a line back to an earlier
+  box becomes a counted loop that runs once), Delete removes. A phone edits in
+  the outline (Edit, Move up, Move down, Add on each exit, Remove) and reads a
+  top to bottom diagram.
+- Settings are plain fields per box type with a preview line from a test run
+  steered to that box (`choicesToReach`), and the checker's messages for it.
+  Quiet hours are shown on every draft and cannot be changed.
+- Test with a sample lead (`simulateWorkflow`) walks a labeled fake lead through
+  the graph in its own time zone, holds drafts out of 8 pm to 8 am, asks at each
+  Check through the Agent Elements question prompt, and lists what a real run
+  would make. It runs in the browser on the graph alone and creates nothing.
+  When a counted loop has run its maximum, the lead leaves as Stopped.
+- The publish checklist is the checker's errors on the Agent Elements to-do card.
+- Autosave writes only a draft version (`saveDraftGraph`), after
+  `parseWorkflowGraph` refuses any box or setting outside the list. It updates
+  the open draft or proposal, or starts a new draft after the published one, and
+  stops when a version is waiting for the owner to confirm it.
+- `/preview/workflows` (development only) shows the editor on three proposed
+  starting workflows against a labeled fake playbook (`src/lib/workflows/samples.ts`).
+
 ## Not built yet
 
-Canvas and AI Elements install, Outline editing UI, publish and enrollment
-runner, lead strip, live counts, Compass drafting, roles beyond the data layer,
-the "Where leads go" report, and sequence migration.
+Publish and enrollment runner, lead strip, live counts, Compass drafting, roles
+beyond the data layer, the "Where leads go" report, and sequence migration.

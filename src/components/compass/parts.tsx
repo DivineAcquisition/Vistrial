@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 
 import { confirmSuggestionAction, dismissSuggestionAction, feedbackAction } from "@/app/(workspace)/app/compass/actions";
+import { PlanCard } from "@/components/agent-elements/cards";
 import { useCompassChat } from "@/components/compass/chat";
 import { ToolLine } from "@/components/sales-os/tool-line";
 import { Button } from "@/components/ui/button";
@@ -41,7 +42,7 @@ export function LookupStep(props: ToolCallMessagePartProps) {
   const running = statusType === "running" || statusType === "requires-action";
   const failed = statusType === "incomplete" || (output && !output.ok && (output.gap === "unavailable" || output.gap === "hidden"));
   return (
-    <div className="flex flex-col gap-1">
+    <div className="flex flex-col gap-1 rounded-lg border border-border/80 bg-card px-3 py-2">
       <ToolLine state={running ? "running" : failed ? "failed" : "done"}>
         {running ? labels.running : failed ? `${labels.running}: not available` : labels.done}
       </ToolLine>
@@ -115,32 +116,18 @@ export function SuggestionCard(props: ToolCallMessagePartProps) {
   }
 
   return (
-    <section
-      className="flex flex-col gap-3 rounded-xl border border-brand-500/30 bg-brand-500/5 px-4 py-3"
-      aria-label="Suggested action"
-    >
-      <p className={captionText}>Suggested. Nothing happens until you confirm.</p>
-      <p className="text-sm text-card-foreground">{suggestion.description}</p>
-      {state.kind === "done" ? (
-        <p className="text-sm text-card-foreground" role="status">
-          {state.message}
-        </p>
-      ) : (
-        <div className="flex flex-wrap items-center gap-2">
-          <Button size="sm" onClick={confirm} loading={state.kind === "working"} disabled={readOnly || !id}>
-            {KIND_VERB[suggestion.kind]}
-          </Button>
-          <Button size="sm" variant="ghost" onClick={dismiss} disabled={state.kind === "working" || readOnly}>
-            Not now
-          </Button>
-          {state.kind === "error" ? (
-            <span className="text-sm text-destructive" role="alert">
-              {state.message}
-            </span>
-          ) : null}
-        </div>
-      )}
-    </section>
+    <PlanCard
+      title="Suggested. Nothing happens until you confirm."
+      body={suggestion.description}
+      detail={state.kind === "error" ? state.message : null}
+      status={state.kind === "error" ? "failed" : "waiting"}
+      approveLabel={KIND_VERB[suggestion.kind]}
+      onApprove={readOnly || !id ? undefined : () => void confirm()}
+      onDecline={readOnly ? undefined : () => void dismiss()}
+      busy={state.kind === "working"}
+      disabled={readOnly || !id}
+      doneMessage={state.kind === "done" ? state.message : null}
+    />
   );
 }
 

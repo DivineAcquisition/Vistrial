@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 
+import { FieldChangeList, QuestionChoices } from "@/components/agent-elements/cards";
 import { Button } from "@/components/ui/button";
 import { Notice } from "@/components/ui/states";
 import { OPERATOR_WRITE_LABELS } from "@/lib/operator/labels";
@@ -29,13 +30,17 @@ export function ChangePreview({
   const [selected, setSelected] = useState<Set<string>>(
     () => new Set(confirmation.records.map((row) => row.id))
   );
+  const [acknowledged, setAcknowledged] = useState<string | null>(null);
   const pending = confirmation.decision === "pending";
+  const needsAnswer = pending && confirmation.verificationGate === "question";
   const canUndo =
     Boolean(onUndo) &&
     confirmation.reversible &&
     !confirmation.undoneAt &&
     (confirmation.decision === "confirmed" || confirmation.decision === "adjusted") &&
     confirmation.undoUntil &&
+    // The undo window is a clock check, so it has to read the current time.
+    // eslint-disable-next-line react-hooks/purity
     new Date(confirmation.undoUntil).getTime() > Date.now();
 
   const records = confirmation.records;
@@ -58,13 +63,27 @@ export function ChangePreview({
         <p className={`mt-2 ${helperClass}`}>This write can be undone for a short window after it runs.</p>
       )}
 
-      {pending && confirmation.verificationGate === "question" ? (
-        <Notice tone="warning" className="mt-3">
-          {confirmation.verificationFaults.length
-            ? confirmation.verificationFaults.map((item) => item.what).join(" ")
-            : "This change may not match the request."}{" "}
-          Confirming still runs the write. Cancel if the scope is wrong.
-        </Notice>
+      {needsAnswer ? (
+        <div className="mt-3">
+          <QuestionChoices
+            prompt={
+              confirmation.verificationFaults.length
+                ? confirmation.verificationFaults.map((item) => item.what).join(" ")
+                : "This change may not match what you asked. Does the scope look right?"
+            }
+            options={[
+              { id: "yes", label: "Yes, this matches what I asked" },
+              { id: "no", label: "No, leave it unchanged" },
+            ]}
+            value={acknowledged}
+            onChange={(id) => {
+              setAcknowledged(id);
+              if (id === "no") onCancel?.();
+            }}
+            disabled={busy}
+            name={confirmation.id}
+          />
+        </div>
       ) : null}
 
       <div className="mt-3 max-h-80 overflow-y-auto rounded-lg border border-white/[0.06]">
@@ -107,16 +126,9 @@ export function ChangePreview({
                   ) : (
                     <p className="text-sm text-white">{row.label}</p>
                   )}
-                  <dl className="mt-1 space-y-0.5">
-                    {row.fields.map((field) => (
-                      <div key={field.field} className="text-xs text-silver">
-                        <span className="text-dim">{field.field}: </span>
-                        <span>{field.before ?? "—"}</span>
-                        <span className="text-dim"> → </span>
-                        <span>{field.after ?? "—"}</span>
-                      </div>
-                    ))}
-                  </dl>
+                  <div className="mt-1">
+                    <FieldChangeList rows={row.fields} />
+                  </div>
                 </div>
               </div>
             </li>
@@ -139,7 +151,7 @@ export function ChangePreview({
           <Button
             variant="primary"
             size="sm"
-            disabled={busy || selected.size === 0}
+            disabled={busy || selected.size === 0 || (needsAnswer && acknowledged !== "yes")}
             onClick={() => onConfirm([...selected])}
           >
             {confirmation.verificationGate === "question" ? "Yes, proceed" : `Confirm ${selected.size}`}

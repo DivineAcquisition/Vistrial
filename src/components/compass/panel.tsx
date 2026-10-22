@@ -13,13 +13,14 @@ import { Button } from "@/components/ui/button";
 import { Sheet, SheetPopup, SheetTitle } from "@/components/ui/sheet";
 import { Spinner } from "@/components/ui/spinner";
 import { useIsMobile } from "@/hooks/use-media-query";
+import type { AgentIntent } from "@/lib/agent-elements/intent";
 import type { CompassContext } from "@/lib/compass/types";
 
 /** Other screens can open the panel with a question ready: dispatch this event. */
 export const COMPASS_OPEN_EVENT = "compass:open";
-export type CompassOpenDetail = { question?: string; send?: boolean };
+export type CompassOpenDetail = { question?: string; send?: boolean; intent?: AgentIntent };
 
-type Session = { chatKey: string; conversationId: string | null; context: CompassContext; messageCount: number };
+type Session = { chatKey: string; conversationId: string | null; context: CompassContext; messageCount: number; intent: AgentIntent };
 
 function newKey(): string {
   return typeof crypto !== "undefined" && "randomUUID" in crypto ? crypto.randomUUID() : `k${Date.now()}${Math.random()}`;
@@ -39,7 +40,7 @@ export function CompassPanelButton({ hideTrigger = false }: { hideTrigger?: bool
   const mobile = useIsMobile();
   const [open, setOpen] = useState(false);
   const [state, setState] = useState<PanelState | null>(null);
-  const [session, setSession] = useState<Session>(() => ({ chatKey: newKey(), conversationId: null, context: { kind: "none" }, messageCount: 0 }));
+  const [session, setSession] = useState<Session>(() => ({ chatKey: newKey(), conversationId: null, context: { kind: "none" }, messageCount: 0, intent: "lookup" }));
   const [prefill, setPrefill] = useState<string | null>(null);
   const [autoSend, setAutoSend] = useState(false);
   const load = useCallback(async () => {
@@ -48,17 +49,21 @@ export function CompassPanelButton({ hideTrigger = false }: { hideTrigger?: bool
     // A fresh page gets a fresh conversation once the last one has started; an empty one just takes the new context.
     setSession((current) => {
       if (current.messageCount === 0) return { ...current, context: next.context };
-      if (!sameContext(current.context, next.context)) return { chatKey: newKey(), conversationId: null, context: next.context, messageCount: 0 };
+      if (!sameContext(current.context, next.context)) return { chatKey: newKey(), conversationId: null, context: next.context, messageCount: 0, intent: current.intent };
       return current;
     });
   }, [pathname]);
 
   const show = useCallback(
-    (question?: string, send = false) => {
+    (question?: string, send = false, intent?: AgentIntent) => {
       setPrefill(question ?? null);
       setAutoSend(Boolean(question) && send);
       // A new question from the command bar starts its own conversation.
-      if (question && send) setSession((prev) => ({ chatKey: newKey(), conversationId: null, context: prev.context, messageCount: 0 }));
+      if (question && send) {
+        setSession((prev) => ({ chatKey: newKey(), conversationId: null, context: prev.context, messageCount: 0, intent: intent ?? prev.intent }));
+      } else if (intent) {
+        setSession((prev) => ({ ...prev, intent }));
+      }
       setOpen(true);
       void load();
     },
@@ -68,7 +73,7 @@ export function CompassPanelButton({ hideTrigger = false }: { hideTrigger?: bool
   useEffect(() => {
     const onOpen = (event: Event) => {
       const detail = (event as CustomEvent<CompassOpenDetail>).detail;
-      show(detail?.question, detail?.send === true);
+      show(detail?.question, detail?.send === true, detail?.intent);
     };
     window.addEventListener(COMPASS_OPEN_EVENT, onOpen);
     return () => window.removeEventListener(COMPASS_OPEN_EVENT, onOpen);
@@ -97,7 +102,7 @@ export function CompassPanelButton({ hideTrigger = false }: { hideTrigger?: bool
             <Button
               variant="ghost"
               size="xs"
-              onClick={() => setSession({ chatKey: newKey(), conversationId: null, context: state?.context ?? { kind: "none" }, messageCount: 0 })}
+              onClick={() => setSession({ chatKey: newKey(), conversationId: null, context: state?.context ?? { kind: "none" }, messageCount: 0, intent: "lookup" })}
             >
               <PlusIcon aria-hidden />
               New
@@ -125,6 +130,7 @@ export function CompassPanelButton({ hideTrigger = false }: { hideTrigger?: bool
                 initialMessages={[]}
                 origin="panel"
                 context={session.context}
+                initialIntent={session.intent}
                 onConversation={(id) => setSession((prev) => ({ ...prev, conversationId: id }))}
                 onSettled={(count) => setSession((prev) => ({ ...prev, messageCount: count }))}
               >

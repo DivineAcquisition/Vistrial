@@ -8,6 +8,7 @@ import { verifyNumbers } from "@/lib/compass/grounding";
 import { buildCompassTools, newTrace, type StepLog } from "@/lib/compass/lookups";
 import { costMicros, modelIdFor } from "@/lib/compass/models";
 import { dropMessage, loadMessages, requireOwnConversation, saveMessages, setTitleIfMissing } from "@/lib/compass/persist";
+import { compassIntentInstruction, parseAgentIntent } from "@/lib/agent-elements/intent";
 import { COMPASS_RULES, contextBlock, ROUTER_PROMPT } from "@/lib/compass/prompt";
 import { classifyQuestion, routeFromLabel } from "@/lib/compass/route";
 import { titleFor } from "@/lib/compass/titles";
@@ -22,7 +23,7 @@ export const maxDuration = 120;
 const MAX_STEPS = 6;
 const CACHE = { anthropic: { cacheControl: { type: "ephemeral" as const } } };
 
-type Body = { id?: unknown; message?: unknown; trigger?: unknown; context?: unknown };
+type Body = { id?: unknown; message?: unknown; trigger?: unknown; context?: unknown; intent?: unknown };
 
 function userText(message: UIMessage): string {
   return message.parts.map((part) => (part.type === "text" ? part.text : "")).join("\n").trim();
@@ -158,6 +159,7 @@ export async function POST(request: Request) {
   }
 
   const context = await validContext(actor, body.context ?? conversation.context);
+  const intent = parseAgentIntent(body.intent);
   const userMessage: UIMessage = { id: incoming.id, role: "user", parts: incoming.parts.filter((part) => part.type === "text") };
   const messages: UIMessage[] = [...stored, userMessage];
   if (unanswered) await dropMessage(actor, conversation.id, unanswered.id);
@@ -226,6 +228,7 @@ export async function POST(request: Request) {
                 canSeeMoney: actor.canSeeMoney,
               }),
             },
+            { role: "system", content: compassIntentInstruction(intent) },
           ],
           messages: await convertToModelMessages(messages, { tools, ignoreIncompleteToolCalls: true }),
           tools,

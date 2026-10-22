@@ -24,6 +24,7 @@
   "registries": {
     "@magicui": "https://magicui.design/r/{name}",
     "@coss": "https://coss.com/ui/r/{name}.json",
-    "@aceternity": "https://ui.aceternity.com/registry/{name}.json"
+    "@aceternity": "https://ui.aceternity.com/registry/{name}.json",
+    "@agent-elements": "https://agent-elements.21st.dev/r/{name}.json"
   }
 }

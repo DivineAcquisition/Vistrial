@@ -4,6 +4,8 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 
 import { PageFrame } from "@/components/app/page-frame";
 import { CaseFileScreen } from "@/app/(workspace)/app/cases/[id]/case-file-screen";
+import { CaseAgentBar } from "@/components/agent-elements/case-bar";
+import { OperatorLeadRuns } from "@/components/operator/lead-runs";
 import { CaseRecord } from "@/components/cases/case-tools";
 import { LeadLiveIndicator } from "@/components/live/handoff-pipeline";
 import { ScribeCaseFile } from "@/components/live/scribe-case-file";
@@ -93,8 +95,10 @@ export default async function CaseDetailPage({
         }))}
         overview={
           <>
+            <CaseAgentBar leadName={payload.lead.name} />
             <ScribeCaseFile leadId={payload.lead.id} initial={scribeFile} />
             <CaseFileScreen initial={payload} brief={brief} />
+            <OperatorLeadRuns leadId={payload.lead.id} />
           </>
         }
         timeline={

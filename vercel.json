@@ -83,6 +83,10 @@
     {
       "path": "/api/cron/assay",
       "schedule": "* * * * *"
+    },
+    {
+      "path": "/api/cron/sales-manager",
+      "schedule": "5 * * * *"
     }
   ]
 }

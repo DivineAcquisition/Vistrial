@@ -3,6 +3,8 @@ import "server-only";
 import { sideEffectsFor } from "@/lib/connectors/historic";
 import type { InboundEvent } from "@/lib/connectors/payload";
 import type { ConnectionRow } from "@/lib/connectors/store";
+import { identitySourceFor } from "@/lib/spine/sources";
+import { matchPerson, rememberKeys, type SpineDb } from "@/lib/spine/store";
 import { getSupabaseAdmin } from "@/lib/supabase/admin";
 
 type Loose = {
@@ -33,10 +35,13 @@ export async function importPastRows(args: {
   let created = 0;
   for (const row of args.rows) {
     const email = row.preview.email?.toLowerCase() || null;
-    if (email) {
-      const existing = await admin.from("leads").select("id").eq("org_id", args.orgId).ilike("email", email).maybeSingle();
-      if (existing.data?.id) continue;
-    }
+    const { decision } = await matchPerson(admin as unknown as SpineDb, {
+      orgId: args.orgId,
+      person: { source: "upload", email, phone: row.preview.phone || null },
+      sourceId: null,
+    });
+    // Already known, or a person has to decide which lead this is.
+    if (decision.kind === "match" || decision.kind === "review") continue;
     const inserted = await admin
       .from("leads")
       .insert({
@@ -87,10 +92,21 @@ export async function applyInboundEvent(args: {
     .eq("external_id", externalId)
     .maybeSingle();
   let leadId = typeof linked.data?.lead_id === "string" ? linked.data.lead_id : null;
-  if (!leadId && person.email) {
-    const byEmail = await admin.from("leads").select("id").eq("org_id", args.orgId).ilike("email", person.email).maybeSingle();
-    leadId = typeof byEmail.data?.id === "string" ? byEmail.data.id : null;
-  }
+  const spine = getSupabaseAdmin() as unknown as SpineDb;
+  const source = identitySourceFor(args.connection.connector_key);
+  const { decision, keys } = await matchPerson(spine, {
+    orgId: args.orgId,
+    person: {
+      source,
+      email: person.email,
+      phone: person.phone,
+      crm: person.externalId ? { system: args.connection.connector_key, id: person.externalId } : null,
+    },
+    sourceId: externalId,
+  });
+  // Two leads claim this person, or only a phone matched: a person decides.
+  if (!leadId && decision.kind === "review") return;
+  if (!leadId && decision.kind === "match") leadId = decision.leadId;
   if (!leadId) {
     const created = await admin
       .from("leads")
@@ -109,6 +125,7 @@ export async function applyInboundEvent(args: {
     leadId = typeof created.data?.id === "string" ? created.data.id : null;
   }
   if (!leadId) return;
+  await rememberKeys(spine, { orgId: args.orgId, leadId, keys, source, sourceId: externalId });
   await admin.from("connector_people").insert({
     org_id: args.orgId,
     connection_id: args.connection.id,
@@ -116,7 +133,7 @@ export async function applyInboundEvent(args: {
     lead_id: leadId,
   });
   if (args.event.optOut) {
-    await admin.from("leads").update({ do_not_contact: true, do_not_contact_reason: "source_opt_out" }).eq("id", leadId);
+    await admin.from("leads").update({ do_not_contact: true, do_not_contact_reason: "source_opt_out" }).eq("id", leadId).eq("org_id", args.orgId);
     await admin.from("lead_opt_outs").insert({
       org_id: args.orgId,
       lead_id: leadId,

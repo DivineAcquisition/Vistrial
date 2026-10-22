@@ -2,6 +2,7 @@ import Link from "next/link";
 
 import { PageFrame } from "@/components/app/page-frame";
 import { Button } from "@/components/ui/button";
+import { OnboardCard } from "@/components/ui/onboard-card";
 import { Panel } from "@/components/ui/panel";
 import { Notice } from "@/components/ui/states";
 import { StatusBadge } from "@/components/ui/status-badge";
@@ -50,12 +51,17 @@ export function OnboardingOverview({ view, isStaff, now }: { view: CustomerView;
 
       {!live && view.phase !== "paused" && view.phase !== "cancelled" ? (
         <Panel className="p-6">
-          <h2 className={cardTitle}>Next for you</h2>
-          <p className="mt-2 text-sm text-strong">{SETUP_STEPS.find((step) => step.slug === resume)?.short}</p>
-          <div className="mt-4">
-            <Button variant="primary" render={<Link href={setupHref(resume)} />}>
-              Continue where you left off
-            </Button>
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="min-w-0">
+              <h2 className={cardTitle}>Next for you</h2>
+              <p className="mt-2 text-sm text-strong">{SETUP_STEPS.find((step) => step.slug === resume)?.short}</p>
+              <div className="mt-4">
+                <Button variant="primary" render={<Link href={setupHref(resume)} />}>
+                  Continue where you left off
+                </Button>
+              </div>
+            </div>
+            <OnboardCard step1="Tools connected" step2="Setting up your agents" step3="Ready to go live" />
           </div>
         </Panel>
       ) : null}

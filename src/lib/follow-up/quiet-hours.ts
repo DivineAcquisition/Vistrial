@@ -25,12 +25,16 @@ function zonedParts(at: Date, timeZone: string): {
   };
 }
 
-function parseHm(value: string): { hour: number; minute: number } {
-  const [hour, minute] = value.split(":").map((part) => Number(part));
-  return {
-    hour: Number.isFinite(hour) ? hour : 21,
-    minute: Number.isFinite(minute) ? minute : 0,
-  };
+/** Quiet hours are locked to 8 pm to 8 am, so an unreadable time falls back to those. */
+const QUIET_START = { hour: 20, minute: 0 };
+const QUIET_END = { hour: 8, minute: 0 };
+
+function parseHm(value: string, fallback: { hour: number; minute: number }): { hour: number; minute: number } {
+  const match = /^(\d{1,2}):(\d{2})/.exec(value.trim());
+  if (!match) return fallback;
+  const hour = Number(match[1]);
+  const minute = Number(match[2]);
+  return hour < 24 && minute < 60 ? { hour, minute } : fallback;
 }
 
 function minutesOfDay(hour: number, minute: number): number {
@@ -57,8 +61,8 @@ export function isInQuietHours(
 ): boolean {
   const parts = zonedParts(at, timeZone);
   const now = minutesOfDay(parts.hour, parts.minute);
-  const start = parseHm(startHm);
-  const end = parseHm(endHm);
+  const start = parseHm(startHm, QUIET_START);
+  const end = parseHm(endHm, QUIET_END);
   const startMin = minutesOfDay(start.hour, start.minute);
   const endMin = minutesOfDay(end.hour, end.minute);
   if (startMin === endMin) return false;
@@ -69,7 +73,7 @@ export function isInQuietHours(
 /** The first moment at or after `at` when the clock in `timeZone` reads `hm` (for example "09:00"). */
 export function nextLocalTime(at: Date, timeZone: string, hm: string): Date {
   const parts = zonedParts(at, timeZone);
-  const target = parseHm(hm);
+  const target = parseHm(hm, QUIET_END);
   const today = zonedDate(timeZone, parts.year, parts.month, parts.day, target.hour, target.minute);
   if (today.getTime() >= at.getTime()) return today;
   const next = new Date(Date.UTC(parts.year, parts.month - 1, parts.day + 1));
@@ -96,8 +100,8 @@ export function computeSendAt(args: {
   if (!isInQuietHours(args.now, args.timeZone, args.startHm, args.endHm)) return args.now;
 
   const parts = zonedParts(args.now, args.timeZone);
-  const end = parseHm(args.endHm);
-  const start = parseHm(args.startHm);
+  const end = parseHm(args.endHm, QUIET_END);
+  const start = parseHm(args.startHm, QUIET_START);
   const nowMin = minutesOfDay(parts.hour, parts.minute);
   const startMin = minutesOfDay(start.hour, start.minute);
   const wraps = startMin > minutesOfDay(end.hour, end.minute);

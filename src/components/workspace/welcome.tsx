@@ -7,6 +7,7 @@ import { CheckCircle2Icon, CircleIcon } from "lucide-react";
 import { dismissWelcomeAction } from "@/app/(workspace)/app/home/workspace-actions";
 import { AgentGlyph } from "@/components/live/agent-identity";
 import { Button } from "@/components/ui/button";
+import { OnboardCard } from "@/components/ui/onboard-card";
 import { AGENTS, type LiveAgentId } from "@/lib/agents/roster";
 import { WELCOME_COPY } from "@/lib/workspace/voice";
 
@@ -35,16 +36,19 @@ export function WelcomePanel({
 
   return (
     <section aria-labelledby="ws-welcome" className="flex flex-col gap-4 rounded-2xl border border-brand-500/30 bg-brand-500/5 p-4 sm:p-6">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div className="min-w-0 space-y-1">
-          <h2 id="ws-welcome" className="font-heading text-xl text-card-foreground">
-            {WELCOME_COPY.title(businessName)}
-          </h2>
+      <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+        <div className="min-w-0 flex-1 space-y-1">
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <h2 id="ws-welcome" className="font-heading text-xl text-card-foreground">
+              {WELCOME_COPY.title(businessName)}
+            </h2>
+            <Button size="sm" variant="ghost" onClick={dismiss} disabled={pending}>
+              {WELCOME_COPY.skip}
+            </Button>
+          </div>
           <p className="max-w-prose text-sm text-muted-foreground">{WELCOME_COPY.intro}</p>
         </div>
-        <Button size="sm" variant="ghost" onClick={dismiss} disabled={pending}>
-          {WELCOME_COPY.skip}
-        </Button>
+        <OnboardCard className="shrink-0" step1="Workspace ready" step2="Agents checking in" step3="First drafts waiting" />
       </div>
 
       <div className="flex flex-col gap-2">

@@ -3,50 +3,19 @@
 import Link from "next/link";
 import { useState } from "react";
 import {
-  HeartPulse,
   Bot,
-  Activity,
-  Building2,
-  CalendarCheck,
   Ellipsis,
-  FolderOpen,
-  Gauge,
-  House,
-  LayoutTemplate,
-  ListChecks,
-  PanelsTopLeft,
-  Settings2,
-  SlidersHorizontal,
-  UserRound,
-  type LucideIcon,
 } from "lucide-react";
+
+import { SHELL_ICONS } from "@/components/app/shell-icons";
 
 import { AgentRoster, AddAgentsLink, ReconnectingNote } from "@/components/agents/agent-roster";
 import { useAgentSummary } from "@/components/agents/summary-context";
 import { NavPendingHint, ShellMoreList } from "@/components/app/shell-nav";
 import { watchLocationHash } from "@/hooks/use-location-hash";
 import { Sheet, SheetHeader, SheetPopup, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
-import { isShellItemActive, type ShellIcon, type ShellNavItem } from "@/lib/shell/nav";
+import { isShellItemActive, type ShellNavItem } from "@/lib/shell/nav";
 import { cn } from "@/lib/utils";
-
-const ICONS: Record<ShellIcon, LucideIcon> = {
-  overview: House,
-  cases: FolderOpen,
-  results: Activity,
-  settings: Settings2,
-  leads: ListChecks,
-  today: CalendarCheck,
-  profile: UserRound,
-  roster: Building2,
-  templates: LayoutTemplate,
-  configuration: SlidersHorizontal,
-  activity: Activity,
-  defaults: SlidersHorizontal,
-  layouts: PanelsTopLeft,
-  forsight: Gauge,
-  agents: Bot,
-  health: HeartPulse,
-};
 
 /** The phone Agents tab: the same live roster as the sidebar, full screen. */
 function AgentsTab({ label }: { label: string }) {
@@ -112,7 +81,7 @@ export function MobileDock({
         {items.map((item) => {
           if (item.sheet === "agents") return <AgentsTab key={item.id} label={item.label} />;
           const active = isShellItemActive(pathname, hash, item);
-          const Icon = ICONS[item.icon];
+          const Icon = SHELL_ICONS[item.icon];
           return (
             <li key={item.id} className="min-w-0">
               <Link

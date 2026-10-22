@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { headers } from "next/headers";
+import { redirect } from "next/navigation";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 import { CoachingDisclosureNotice } from "@/components/app/coaching-disclosure";
@@ -11,6 +12,8 @@ import { getAuthContext } from "@/lib/auth/session";
 import { MEMBER_LIMIT_MESSAGE } from "@/lib/billing/copy";
 import { redirectIfOnboardingIncomplete } from "@/lib/onboarding/gate";
 import { isProductScopeEnabled } from "@/lib/product-scope";
+import { salesOsEnabled } from "@/lib/sales-os/flag";
+import { salesOsRedirect } from "@/lib/sales-os/routes";
 import { createClient } from "@/lib/supabase/server";
 import { agenticHomeEnabled } from "@/lib/workspace/home-state";
 import { isAgenticSurface } from "@/lib/workspace/state";
@@ -19,7 +22,13 @@ export const dynamic = "force-dynamic";
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const ctx = await getAuthContext();
-  await redirectIfOnboardingIncomplete();
+  const path = (await headers()).get("x-vistrial-pathname") ?? "";
+  if (await salesOsEnabled(ctx.org.id)) {
+    const moved = salesOsRedirect(path);
+    if (moved) redirect(moved);
+  } else {
+    await redirectIfOnboardingIncomplete();
+  }
   const supabase = await createClient();
   const welcomeRole = !ctx.isStaff && (ctx.workspaceRole === "member" || ctx.workspaceRole === "operator") ? ctx.workspaceRole : null;
   const [{ data: training }, { data: welcome }] = await Promise.all([
@@ -38,7 +47,6 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       : Promise.resolve({ data: null }),
   ]);
   const showWelcome = welcomeRole !== null && !(welcome as { welcome_seen_at?: string | null } | null)?.welcome_seen_at;
-  const path = (await headers()).get("x-vistrial-pathname") ?? "";
   const agenticSurface = isAgenticSurface(path.split("?")[0] ?? path) && (await agenticHomeEnabled(ctx).catch(() => false));
   const billing = ctx.isStaff
     ? null

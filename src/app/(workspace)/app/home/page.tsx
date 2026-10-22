@@ -6,6 +6,8 @@ import { SalesCalendarSwitch } from "@/components/calendar/flag-switch";
 import { AgenticHomeSwitch } from "@/components/workspace/runtime";
 import { AgenticWorkspace } from "@/components/workspace/workspace-page";
 import { getAuthContext } from "@/lib/auth/session";
+import { salesOsEnabled } from "@/lib/sales-os/flag";
+import { SALES_OS_HOME } from "@/lib/shell/nav";
 import { loadHomeState } from "@/lib/workspace/home-state";
 
 export const dynamic = "force-dynamic";
@@ -14,6 +16,7 @@ export const metadata = { title: "Home" };
 
 export default async function HomePage({ searchParams }: { searchParams: Promise<{ tour?: string }> }) {
   const ctx = await getAuthContext();
+  if (await salesOsEnabled(ctx.org.id)) redirect(SALES_OS_HOME);
   const home = await loadHomeState(ctx);
   const tour = (await searchParams).tour === "1";
   if (home.available && home.enabled) {

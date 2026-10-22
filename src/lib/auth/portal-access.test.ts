@@ -17,6 +17,7 @@ describe("portal access", () => {
     expect(settingsTabsVisibleTo("operator").map((tab) => tab.href)).toEqual([
       "/app/settings/profile",
       "/app/settings/notifications",
+      "/app/settings/cookies",
       "/app/settings/history",
     ]);
   });

@@ -353,6 +353,11 @@ export async function readAccessToken(connectionId: string): Promise<string | nu
   return row?.access_token_encrypted ? decryptSecret(row.access_token_encrypted) : null;
 }
 
+export async function readConnectionSetup(connectionId: string): Promise<Record<string, unknown>> {
+  const result = await db().from("workspace_connections").select("setup").eq("id", connectionId).maybeSingle();
+  return ((result.data as { setup?: Record<string, unknown> } | null)?.setup ?? {}) as Record<string, unknown>;
+}
+
 export async function ensureWebhook(connectionId: string, orgId: string): Promise<{ token: string; secret: string | null; previousUntil: string | null }> {
   const existing = await db().from("inbound_endpoints").select("public_token").eq("connection_id", connectionId).maybeSingle();
   const endpoint = existing.data as { public_token: string } | null;

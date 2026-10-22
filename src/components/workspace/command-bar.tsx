@@ -13,7 +13,8 @@ import { AGENT_INTENT_COPY, type AgentIntent } from "@/lib/agent-elements/intent
 import { Command, CommandDialog, CommandDialogPopup, CommandDialogTitle, CommandEmpty, CommandFooter, CommandInput, CommandItem, CommandList, CommandShortcut } from "@/components/ui/command";
 import { Kbd, KbdGroup } from "@/components/ui/kbd";
 import { MORE_NAV, PRIMARY_NAV, navVisibleTo } from "@/lib/navigation";
-import { shellNavigation } from "@/lib/shell/nav";
+import { askHref } from "@/lib/sales-os/routes";
+import { salesOsNavigation, shellNavigation } from "@/lib/shell/nav";
 import { COMMAND_COPY } from "@/lib/workspace/voice";
 import { cn } from "@/lib/utils";
 
@@ -41,7 +42,7 @@ function askLabel(intent: AgentIntent, question: string): string {
  * same search the jump palette used (row security decides which leads);
  * anything else goes to Compass, which only suggests and waits for a tap.
  */
-export function CommandBarDialog() {
+export function CommandBarDialog({ salesOs = false, manager = false }: { salesOs?: boolean; manager?: boolean }) {
   const [open, setOpenState] = useState(false);
   const [suggestions, setSuggestions] = useState<string[] | null>(null);
   const asked = useRef(false);
@@ -62,7 +63,9 @@ export function CommandBarDialog() {
   const { role, isStaff, workspaceRole, templateAccess, org } = useOrg();
 
   const pages = useMemo<Item[]>(() => {
-    const shell = shellNavigation({ role: workspaceRole, templateAccess, workspaceName: org.name });
+    const shell = salesOs
+      ? salesOsNavigation({ role: workspaceRole, templateAccess, workspaceName: org.name, manager })
+      : shellNavigation({ role: workspaceRole, templateAccess, workspaceName: org.name });
     const seen = new Set<string>();
     const out: Item[] = [];
     const push = (href: string, label: string) => {
@@ -71,10 +74,12 @@ export function CommandBarDialog() {
       out.push({ value: `page:${href}`, label, href, group: COMMAND_COPY.groups.pages });
     };
     for (const group of shell.groups) for (const item of group.items) for (const entry of [item, ...(item.children ?? [])]) push(entry.href, entry.label);
-    for (const item of [...PRIMARY_NAV, ...MORE_NAV]) if (navVisibleTo(item, role, isStaff)) push(item.href, item.label);
+    if (!salesOs) {
+      for (const item of [...PRIMARY_NAV, ...MORE_NAV]) if (navVisibleTo(item, role, isStaff)) push(item.href, item.label);
+    }
     push("/app/tasks", "Tasks");
     return out;
-  }, [role, isStaff, workspaceRole, templateAccess, org.name]);
+  }, [role, isStaff, workspaceRole, templateAccess, org.name, salesOs, manager]);
 
   useEffect(() => {
     function onKey(event: KeyboardEvent) {
@@ -127,8 +132,10 @@ export function CommandBarDialog() {
 
   function choose(item: Item) {
     setOpen(false);
-    if (item.ask) askVistrial(item.ask, intent);
-    else if (item.href) router.push(item.href);
+    if (item.ask) {
+      if (salesOs && intent !== "propose") router.push(askHref(item.ask));
+      else askVistrial(item.ask, intent);
+    } else if (item.href) router.push(item.href);
   }
 
   return (

@@ -11,6 +11,7 @@ import { CrewBand, OperatorAgentLine } from "@/components/workspace/crew-band";
 import { OutcomeStrip } from "@/components/workspace/outcomes";
 import { AgentSidebarSwitch } from "@/components/agents/sidebar-switch";
 import { SalesCalendarSwitch } from "@/components/calendar/flag-switch";
+import { SalesOsSwitch } from "@/components/sales-os/flag-switch";
 import { AgenticHomeSwitch, WorkspaceRuntime } from "@/components/workspace/runtime";
 import { SectionError, SectionSkeleton, WorkspaceSection } from "@/components/workspace/section";
 import { LiveStream } from "@/components/workspace/stream";
@@ -228,7 +229,7 @@ export async function AgenticWorkspace({ ctx, home, forceWelcome = false }: { ct
           {state.lifecycle === "quiet" ? <p className="text-sm text-muted-foreground">{STATE_COPY.quietWatching}</p> : null}
         </>
       }
-      footer={ctx.isStaff ? <div className="space-y-3"><AgenticHomeSwitch enabled available={home.available} /><AgentSidebarSwitch /><SalesCalendarSwitch /></div> : null}
+      footer={ctx.isStaff ? <div className="space-y-3"><AgenticHomeSwitch enabled available={home.available} /><AgentSidebarSwitch /><SalesCalendarSwitch /><SalesOsSwitch enabled={false} /></div> : null}
     />
   );
 }
@@ -254,6 +255,7 @@ export async function OperatorToday({ ctx, home, claimable }: { ctx: AuthContext
         <OperatorSuggestions ctx={ctx} frame={frame} home={home} />
       </Suspense>
       {claimable}
+      {ctx.isStaff ? <SalesOsSwitch enabled={false} /> : null}
       <Suspense fallback={<SectionSkeleton label="your numbers" rows={1} />}>
         <OperatorNumbers ctx={ctx} />
       </Suspense>

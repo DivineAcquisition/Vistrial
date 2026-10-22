@@ -26,6 +26,7 @@ import { useOrg } from "@/components/app/org-provider";
 import { useAgentSummary } from "@/components/agents/summary-context";
 import { LiveStatusStrip } from "@/components/live/agent-panel";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
 import type { PaymentProblem } from "@/lib/billing/labels";
 import { exitWorkspace } from "@/app/(workspace)/app/team/staff-actions";
 import { landingPath } from "@/lib/navigation";
@@ -170,20 +171,27 @@ function ConnectedShell({
       chat={chat}
       leading={<ShellLeading />}
       tools={
-        agentic ? (
-          <>
-            {onPlatformPage ? null : <CompassPanelButton hideTrigger />}
-            <CommandBarTrigger />
-            <CommandBarDialog />
-            <NotificationBell />
-          </>
-        ) : (
-          <>
-            {onPlatformPage ? null : <CompassPanelButton />}
-            <AppJumpPalette />
-            <NotificationBell />
-          </>
-        )
+        <>
+          {salesOs ? (
+            <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-card-foreground" render={<Link href="/app/ask" />}>
+              Ask
+            </Button>
+          ) : null}
+          {agentic ? (
+            <>
+              {onPlatformPage || salesOs ? null : <CompassPanelButton hideTrigger />}
+              <CommandBarTrigger />
+              <CommandBarDialog salesOs={salesOs} manager={manager} />
+              <NotificationBell />
+            </>
+          ) : (
+            <>
+              {onPlatformPage || salesOs ? null : <CompassPanelButton />}
+              <AppJumpPalette salesOs={salesOs} manager={manager} />
+              <NotificationBell />
+            </>
+          )}
+        </>
       }
         renderAccount={(placement, collapsed) => (
         <UserMenu

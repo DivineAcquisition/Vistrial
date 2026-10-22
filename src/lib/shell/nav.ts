@@ -33,7 +33,8 @@ export type ShellIcon =
   | "connections"
   | "team"
   | "workflows"
-  | "actions";
+  | "actions"
+  | "ask";
 
 export type AttentionKey = "approvals" | "dueToday" | "escalations" | "queue";
 
@@ -683,6 +684,15 @@ const SO_COMMAND: ShellNavItem = {
   description: "What needs a person now.",
 };
 
+const SO_ASK: ShellNavItem = {
+  id: "ask",
+  label: "Ask",
+  href: "/app/ask",
+  match: "/app/ask",
+  icon: "ask",
+  description: "Talk with Vistrial about this business.",
+};
+
 function soLeads(mine: boolean): ShellNavItem {
   return {
     id: "so-leads",
@@ -756,7 +766,7 @@ const SO_PROFILE: ShellNavItem = {
 
 /**
  * The Sales OS shell (Prompt 26), behind the per-workspace sales_os switch.
- * Rail order: Foundation, Command center, Leads, the agents from the
+ * Rail order: Foundation, Command center, Ask, Leads, the agents from the
  * registry, then Connections and Settings. Phone tabs: Command center,
  * Leads, Approvals, Agents, with everything else under More.
  */
@@ -773,7 +783,7 @@ export function salesOsNavigation(input: {
   switch (input.role) {
     case "owner": {
       built = [
-        workspaceGroup([SO_FOUNDATION, SO_COMMAND, soLeads(false)]),
+        workspaceGroup([SO_FOUNDATION, SO_COMMAND, SO_ASK, soLeads(false)]),
         ROSTER_GROUP,
         { id: "workspace-more", label: "", items: [soTeam(true), SO_WORKFLOWS, SO_ACTIONS, SO_CONNECTIONS, SO_SETTINGS] },
       ];
@@ -783,14 +793,14 @@ export function salesOsNavigation(input: {
     }
     case "member": {
       const tail = input.manager ? [soTeam(true), SO_SETTINGS] : [SO_SETTINGS];
-      built = [workspaceGroup([SO_FOUNDATION, SO_COMMAND]), ROSTER_GROUP, { id: "workspace-more", label: "", items: tail }];
+      built = [workspaceGroup([SO_FOUNDATION, SO_COMMAND, SO_ASK]), ROSTER_GROUP, { id: "workspace-more", label: "", items: tail }];
       phone = [SO_COMMAND, SO_APPROVALS, AGENTS_SHEET, ...(input.manager ? [soTeam(true)] : [])];
       extra.push(resultsItem(false), REPORTS_ITEM);
       break;
     }
     case "operator": {
       built = [
-        { id: "work", label: "Work", items: [SO_COMMAND, soLeads(true)] },
+        { id: "work", label: "Work", items: [SO_COMMAND, SO_ASK, soLeads(true)] },
         ROSTER_GROUP,
         { id: "workspace-more", label: "", items: [soTeam(false), SO_PROFILE] },
       ];
@@ -807,7 +817,7 @@ export function salesOsNavigation(input: {
         {
           id: "here",
           label: input.workspaceName?.trim() || "This workspace",
-          items: [SO_FOUNDATION, SO_COMMAND, soLeads(false)],
+          items: [SO_FOUNDATION, SO_COMMAND, SO_ASK, soLeads(false)],
         },
         ROSTER_GROUP,
         {

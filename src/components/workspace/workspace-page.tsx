@@ -10,6 +10,7 @@ import { CommandBarField } from "@/components/workspace/command-bar";
 import { CrewBand, OperatorAgentLine } from "@/components/workspace/crew-band";
 import { OutcomeStrip } from "@/components/workspace/outcomes";
 import { AgentSidebarSwitch } from "@/components/agents/sidebar-switch";
+import { SalesCalendarSwitch } from "@/components/calendar/flag-switch";
 import { AgenticHomeSwitch, WorkspaceRuntime } from "@/components/workspace/runtime";
 import { SectionError, SectionSkeleton, WorkspaceSection } from "@/components/workspace/section";
 import { LiveStream } from "@/components/workspace/stream";
@@ -227,7 +228,7 @@ export async function AgenticWorkspace({ ctx, home, forceWelcome = false }: { ct
           {state.lifecycle === "quiet" ? <p className="text-sm text-muted-foreground">{STATE_COPY.quietWatching}</p> : null}
         </>
       }
-      footer={ctx.isStaff ? <div className="space-y-3"><AgenticHomeSwitch enabled available={home.available} /><AgentSidebarSwitch /></div> : null}
+      footer={ctx.isStaff ? <div className="space-y-3"><AgenticHomeSwitch enabled available={home.available} /><AgentSidebarSwitch /><SalesCalendarSwitch /></div> : null}
     />
   );
 }

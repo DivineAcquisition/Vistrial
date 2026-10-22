@@ -121,7 +121,7 @@ export default async function ManagerPage({ searchParams }: { searchParams: Prom
     return (
       <PageFrame title="My scorecard" description="Your end of day reports and your numbers. Only you and your managers can see them.">
         <div className="flex flex-col gap-4">
-          <RecordSection id="my-eod" title="End of day reports" owner="Sales Manager">
+          <RecordSection id="my-eod" title="End of day reports" owner="Helm">
             {reports.length === 0 ? (
               <EmptyLine>Your first report is drafted at the end of your business day.</EmptyLine>
             ) : (
@@ -132,7 +132,7 @@ export default async function ManagerPage({ searchParams }: { searchParams: Prom
               </ul>
             )}
           </RecordSection>
-          <RecordSection id="my-scorecard" title={`Last ${PERIOD_DAYS} days`} owner="Sales Manager">
+          <RecordSection id="my-scorecard" title={`Last ${PERIOD_DAYS} days`} owner="Helm">
             <ScorecardBlock card={card} timeZone={tz} />
           </RecordSection>
         </div>
@@ -165,11 +165,11 @@ export default async function ManagerPage({ searchParams }: { searchParams: Prom
     >
       <div className="flex flex-col gap-4">
         {selected ? (
-          <RecordSection id="rep-scorecard" title={`Last ${PERIOD_DAYS} days`} owner="Sales Manager">
+          <RecordSection id="rep-scorecard" title={`Last ${PERIOD_DAYS} days`} owner="Helm">
             <ScorecardBlock card={cards[0]} timeZone={tz} />
           </RecordSection>
         ) : (
-          <RecordSection id="team-board" title={`Team board, last ${PERIOD_DAYS} days`} owner="Sales Manager">
+          <RecordSection id="team-board" title={`Team board, last ${PERIOD_DAYS} days`} owner="Helm">
             {reps.length === 0 ? (
               <EmptyLine>No setters or closers in this workspace yet.</EmptyLine>
             ) : (
@@ -216,7 +216,7 @@ export default async function ManagerPage({ searchParams }: { searchParams: Prom
             )}
           </RecordSection>
         ) : null}
-        <RecordSection id="team-eods" title="End of day reports" owner="Sales Manager">
+        <RecordSection id="team-eods" title="End of day reports" owner="Helm">
           {reports.length === 0 ? (
             <EmptyLine>Reports are drafted at the end of each business day, and reps confirm them.</EmptyLine>
           ) : (

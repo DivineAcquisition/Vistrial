@@ -53,7 +53,7 @@ function sampleSummary(now: number) {
   });
   const agents = [
     ...seed.agents.map((row) => agent(row)),
-    agent({ id: "sales_manager", area_id: "sales", name: "Sales Manager", sublabel: "Team Manager", description: "End of day reports and scorecards.", glyph: "spark", accent: "neutral", promise: "It never changes pay, role or access.", sort: 5 }),
+    agent({ id: "sales_manager", area_id: "sales", name: "Helm", sublabel: "Team Manager", description: "End of day reports and scorecards.", glyph: "spark", accent: "neutral", promise: "It never changes pay, role or access.", sort: 5 }),
   ];
   const raw: RawSummary = {
     orgId: ORG_ID,

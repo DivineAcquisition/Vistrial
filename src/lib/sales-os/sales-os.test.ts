@@ -86,7 +86,7 @@ describe("Now summary", () => {
   });
 });
 
-describe("Sales Manager", () => {
+describe("Helm", () => {
   const window = dayWindow("2026-10-21", "America/New_York");
   const at = "2026-10-21T16:00:00Z";
   const rows: ActivityRows = {

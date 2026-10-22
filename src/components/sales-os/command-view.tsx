@@ -113,7 +113,7 @@ export function CommandView({
             <RecordSection
               id="command-eod"
               title={manager ? "End of day" : "Your end of day"}
-              owner="Sales Manager"
+              owner="Helm"
               action={
                 <Link href="/app/manager" className="text-sm underline-offset-4 hover:underline">
                   {manager ? "Open Team" : "Open scorecard"}

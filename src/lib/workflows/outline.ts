@@ -63,9 +63,14 @@ export function toOutline(graph: WorkflowGraph): OutlineItem[] {
   return items;
 }
 
+function sentence(text: string): string {
+  const trimmed = text.trim();
+  return /[.?!]$/.test(trimmed) ? trimmed : `${trimmed}.`;
+}
+
 /** Plain words for screen readers and the phone outline: one sentence per row. */
 export function outlineSentence(item: OutlineItem): string {
   const lead = item.branch ? `If ${item.branch}: ` : "";
-  if (item.goesTo) return `${lead}Go back to ${item.title}.${item.loopPasses ? ` Up to ${item.loopPasses} times.` : ""}`;
-  return `${lead}${item.title}. ${item.summary}`;
+  if (item.goesTo) return `${lead}Go back to ${sentence(item.title)}${item.loopPasses ? ` Up to ${item.loopPasses} times.` : ""}`;
+  return `${lead}${sentence(item.title)} ${sentence(item.summary)}`;
 }

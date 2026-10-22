@@ -2,6 +2,7 @@ import "server-only";
 
 import type { SupabaseClient } from "@supabase/supabase-js";
 
+import type { EditorContext } from "@/lib/workflows/editor-context";
 import type { CheckContext, WorkflowGraph } from "@/lib/workflows/types";
 
 export type WorkflowRow = {
@@ -117,4 +118,75 @@ export async function loadCheckContext(supabase: SupabaseClient, orgId: string):
     memberIds: new Set((members.data ?? []).map((row) => row.id as string)),
     roles: new Set(["owner", "admin", "closer", "setter"]),
   };
+}
+
+/**
+ * The same facts as the check context, with names, for the editor's menus.
+ * Snippets and talk tracks stay empty until Playbook Studio fills them, and
+ * channel availability and routing stay unknown, so the checker says so.
+ */
+export async function loadEditorContext(supabase: SupabaseClient, orgId: string): Promise<EditorContext> {
+  const [stages, members] = await Promise.all([
+    supabase.from("lead_stage_history").select("to_stage").eq("org_id", orgId).not("to_stage", "is", null).limit(2000),
+    supabase.from("org_members").select("id, display_name, email").eq("org_id", orgId).eq("active", true).order("display_name"),
+  ]);
+  return {
+    stages: [...new Set((stages.data ?? []).map((row) => row.to_stage as string))].sort(),
+    snippets: [],
+    talkTracks: [],
+    members: (members.data ?? []).map((row) => ({ id: row.id as string, name: (row.display_name as string) || (row.email as string) })),
+    roles: ["owner", "admin", "closer", "setter"],
+    channels: null,
+    routingAvailable: null,
+    unhealthyChannels: [],
+  };
+}
+
+/**
+ * Keep the edited graph as the workflow's open draft: update the draft or
+ * proposal in place, or start a new draft version after the published one.
+ * Never publishes. The data policies allow owners and admins to write drafts
+ * and proposals only, so a published version cannot change here either.
+ */
+export async function saveDraftGraph(
+  supabase: SupabaseClient,
+  input: { orgId: string; playbookId: string; memberId: string; graph: WorkflowGraph }
+): Promise<{ ok: true; versionId: string } | { ok: false; message: string }> {
+  const { data: versions, error } = await supabase
+    .from("playbook_versions")
+    .select("id, version, status")
+    .eq("org_id", input.orgId)
+    .eq("playbook_id", input.playbookId)
+    .order("version", { ascending: false })
+    .limit(20);
+  if (error) return { ok: false, message: "The draft could not be saved. Try again in a moment." };
+  const open = (versions ?? []).find((row) => row.status === "draft" || row.status === "proposed");
+  if (open) {
+    const { error: updateError } = await supabase
+      .from("playbook_versions")
+      .update({ graph: input.graph, status: "draft" })
+      .eq("org_id", input.orgId)
+      .eq("id", open.id);
+    if (updateError) return { ok: false, message: "You do not have permission to change this workflow." };
+    return { ok: true, versionId: open.id as string };
+  }
+  if ((versions ?? []).some((row) => row.status === "pending_confirmation")) {
+    return { ok: false, message: "A version is waiting for the owner to confirm it. Changes can be made after that." };
+  }
+  const next = ((versions ?? [])[0]?.version as number | undefined) ?? 0;
+  const { data: created, error: insertError } = await supabase
+    .from("playbook_versions")
+    .insert({
+      org_id: input.orgId,
+      playbook_id: input.playbookId,
+      version: next + 1,
+      status: "draft",
+      graph: input.graph,
+      drafted_by: "person",
+      created_by_member_id: input.memberId,
+    })
+    .select("id")
+    .single();
+  if (insertError || !created) return { ok: false, message: "You do not have permission to change this workflow." };
+  return { ok: true, versionId: created.id as string };
 }

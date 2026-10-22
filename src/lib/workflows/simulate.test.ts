@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import { checkWorkflow } from "@/lib/workflows/checker";
 import { NEW_LEAD_RESPONSE, NO_SHOW_RECOVERY, QUOTE_GONE_QUIET, SAMPLE_WORKFLOWS, sampleCheckContext } from "@/lib/workflows/samples";
-import { simulateWorkflow, simulationControls } from "@/lib/workflows/simulate";
+import { choicesToReach, simulateWorkflow, simulationControls } from "@/lib/workflows/simulate";
 
 const NY = { name: "Jordan", timeZone: "America/New_York" };
 
@@ -105,6 +105,24 @@ describe("test with a sample lead", () => {
     const before = structuredClone(NO_SHOW_RECOVERY.graph);
     simulateWorkflow(NO_SHOW_RECOVERY.graph, { start: new Date(), lead: NY, choices: { checks: { c1: "no", c2: "no" } } });
     expect(NO_SHOW_RECOVERY.graph).toEqual(before);
+  });
+
+  it("waits at each Check for a choice when stepping through by hand", () => {
+    const start = new Date("2026-10-22T15:00:00Z");
+    const first = simulateWorkflow(NEW_LEAD_RESPONSE.graph, { start, lead: NY, askAtChecks: true });
+    expect(first.end).toMatchObject({ kind: "question", boxId: "c1" });
+    expect(first.steps.map((step) => step.boxId)).toEqual(["s1", "d1", "w1"]);
+    const second = simulateWorkflow(NEW_LEAD_RESPONSE.graph, { start, lead: NY, askAtChecks: true, choices: { checks: { c1: "no" } } });
+    expect(second.end).toMatchObject({ kind: "question", boxId: "c2" });
+  });
+
+  it("finds the choices that reach any box, for the settings preview", () => {
+    for (const sample of SAMPLE_WORKFLOWS) {
+      for (const box of sample.graph.boxes.filter((item) => item.config.kind !== "note")) {
+        const run = simulateWorkflow(sample.graph, { start: new Date("2026-10-22T15:00:00Z"), lead: NY, choices: choicesToReach(sample.graph, box.id) });
+        expect(run.steps.some((step) => step.boxId === box.id), `${sample.name} ${box.id}`).toBe(true);
+      }
+    }
   });
 
   it("says where a broken workflow gets stuck instead of guessing", () => {

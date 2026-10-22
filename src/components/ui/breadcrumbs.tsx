@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { Fragment } from "react";
 
 import {
   Breadcrumb,
@@ -29,19 +30,21 @@ export function Breadcrumbs({
         {items.map((crumb, index) => {
           const last = index === items.length - 1;
           return (
-            <BreadcrumbItem key={`${crumb.href}-${crumb.label}`}>
+            <Fragment key={`${crumb.href}-${crumb.label}`}>
               {index > 0 ? <BreadcrumbSeparator /> : null}
-              {last ? (
-                <BreadcrumbPage className="text-silver">{crumb.label}</BreadcrumbPage>
-              ) : (
-                <BreadcrumbLink
-                  render={<Link href={crumb.href} />}
-                  className="text-dim hover:text-strong"
-                >
-                  {crumb.label}
-                </BreadcrumbLink>
-              )}
-            </BreadcrumbItem>
+              <BreadcrumbItem>
+                {last ? (
+                  <BreadcrumbPage className="text-silver">{crumb.label}</BreadcrumbPage>
+                ) : (
+                  <BreadcrumbLink
+                    render={<Link href={crumb.href} />}
+                    className="text-dim hover:text-strong"
+                  >
+                    {crumb.label}
+                  </BreadcrumbLink>
+                )}
+              </BreadcrumbItem>
+            </Fragment>
           );
         })}
       </BreadcrumbList>

@@ -33,6 +33,8 @@ export type SimulationStep = {
 
 export type SimulationEnd =
   | { kind: "end"; at: Date; reason: EndReason; handOffTo: string | null; sentence: string }
+  /** Step-through only: the run waits at a Check for the person to choose a branch. */
+  | { kind: "question"; at: Date; boxId: string; sentence: string }
   | { kind: "loop_limit"; at: Date; boxId: string; sentence: string }
   | { kind: "stuck"; at: Date; boxId: string; sentence: string };
 
@@ -87,7 +89,7 @@ function plural(n: number, one: string): string {
  */
 export function simulateWorkflow(
   graph: WorkflowGraph,
-  input: { start: Date; lead: SampleLead; choices?: SimulationChoices; maxSteps?: number }
+  input: { start: Date; lead: SampleLead; choices?: SimulationChoices; maxSteps?: number; askAtChecks?: boolean }
 ): Simulation {
   const { lead } = input;
   const checks = input.choices?.checks ?? {};
@@ -140,6 +142,9 @@ export function simulateWorkflow(
         break;
       }
       case "check": {
+        if (input.askAtChecks && !(box.id in checks)) {
+          return { steps, wouldCreate, end: { kind: "question", at: now, boxId: box.id, sentence: `${title} Choose which way this test goes.` } };
+        }
         exit = checks[box.id] ?? "no";
         exitLabel = exit === "yes" ? c.yesLabel : c.noLabel;
         sentence = `${title} For this run you chose "${exitLabel}".`;
@@ -217,6 +222,47 @@ export function simulateWorkflow(
   }
 
   return { steps, wouldCreate, end: { kind: "stuck", at: now, boxId: currentId, sentence: "The test run stopped after too many steps." } };
+}
+
+/**
+ * The choices that steer a test run to one box, so its settings can say exactly
+ * what would happen there. Each Check and draft takes the exit the box can be
+ * reached from, preferring "no" and "approved" when both can.
+ */
+export function choicesToReach(graph: WorkflowGraph, targetId: string): Required<SimulationChoices> {
+  const reaches = (fromId: string): boolean => {
+    const seen = new Set<string>();
+    const stack = [fromId];
+    while (stack.length > 0) {
+      const id = stack.pop() as string;
+      if (id === targetId) return true;
+      if (seen.has(id)) continue;
+      seen.add(id);
+      for (const edge of outgoing(graph, id)) if (edge.maxPasses === undefined) stack.push(edge.to);
+    }
+    return false;
+  };
+  const checks: Record<string, "yes" | "no"> = {};
+  const drafts: Record<string, "approved" | "expired"> = {};
+  for (const box of graph.boxes) {
+    const out = outgoing(graph, box.id);
+    // A counted loop only ever leads back, so it is never the way forward to a box.
+    const to = (exit: EdgeExit) => {
+      const edge = out.find((item) => item.exit === exit);
+      return edge && edge.maxPasses === undefined ? edge.to : undefined;
+    };
+    if (box.config.kind === "check") {
+      const yes = to("yes");
+      const no = to("no");
+      checks[box.id] = no && reaches(no) ? "no" : yes && reaches(yes) ? "yes" : "no";
+    }
+    if (box.config.kind === "draft") {
+      const next = to("next");
+      const expired = to("expired");
+      drafts[box.id] = next && reaches(next) ? "approved" : expired && reaches(expired) ? "expired" : "approved";
+    }
+  }
+  return { checks, drafts };
 }
 
 /** Every Check and Draft a person can set by hand in the test run, in path order. */

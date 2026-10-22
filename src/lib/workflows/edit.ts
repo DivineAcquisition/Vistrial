@@ -1,5 +1,76 @@
-import { incoming, outgoing } from "@/lib/workflows/graph";
-import type { Box, BoxConfig, WorkflowGraph } from "@/lib/workflows/types";
+import { forwardEdges, hasCycle, incoming, outgoing, requiredExits } from "@/lib/workflows/graph";
+import type { Box, BoxConfig, BoxKind, EdgeExit, WorkflowGraph } from "@/lib/workflows/types";
+
+/** Box kinds a person can add. Start exists once and is never added by hand. */
+export const ADDABLE_KINDS = ["wait", "check", "draft", "task", "route", "end", "note"] as const satisfies readonly BoxKind[];
+export type AddableKind = (typeof ADDABLE_KINDS)[number];
+
+/** The settings a new box starts with. Plain and safe: a draft has no content until one is chosen. */
+export function defaultConfig(kind: AddableKind): BoxConfig {
+  switch (kind) {
+    case "wait":
+      return { kind, amount: 1, unit: "days" };
+    case "check":
+      return { kind, check: "replied_since", yesLabel: "Replied", noLabel: "No reply" };
+    case "draft":
+      return { kind, channel: "text", contentKind: "talk_track", contentRef: null, windowHours: 24 };
+    case "task":
+      return { kind, text: "", dueHours: 4, assignee: { kind: "lead_owner" }, alert: false };
+    case "route":
+      return { kind, mode: "assign_unowned" };
+    case "end":
+      return { kind, reason: "stopped" };
+    case "note":
+      return { kind, text: "A note for the team." };
+  }
+}
+
+/** Plain words for each exit a box has, in the order the diagram shows them. */
+export function exitsOf(config: BoxConfig): Array<{ exit: EdgeExit; label: string }> {
+  return requiredExits(config).map((exit) => ({
+    exit,
+    label:
+      config.kind === "check"
+        ? exit === "yes"
+          ? config.yesLabel || "Yes"
+          : config.noLabel || "No"
+        : exit === "expired"
+          ? "Expired"
+          : config.kind === "draft"
+            ? "Approved"
+            : "Next",
+  }));
+}
+
+/** Add a box of a kind on an exit. Notes stand on their own and join nothing. */
+export function addBox(graph: WorkflowGraph, kind: AddableKind, after?: { fromId: string; exit: EdgeExit }): { graph: WorkflowGraph; id: string } {
+  const box: Box = { id: newId("b"), config: defaultConfig(kind) };
+  if (kind === "note" || !after) return { graph: { ...graph, boxes: [...graph.boxes, box] }, id: box.id };
+  return { graph: insertAfter(graph, after.fromId, after.exit, box), id: box.id };
+}
+
+/**
+ * Point an exit at a box. A line that would lead back to an earlier box becomes
+ * a counted loop that runs once, which the person can raise up to the limit.
+ */
+export function connectExit(graph: WorkflowGraph, fromId: string, exit: EdgeExit, toId: string): WorkflowGraph {
+  if (fromId === toId) return graph;
+  const kept = graph.edges.filter((edge) => !(edge.from === fromId && edge.exit === exit));
+  const candidate = { id: newId("e"), from: fromId, to: toId, exit };
+  const loops = hasCycle(
+    graph.boxes.map((box) => box.id),
+    forwardEdges({ ...graph, edges: [...kept, candidate] })
+  );
+  return { ...graph, edges: [...kept, loops ? { ...candidate, maxPasses: 1 } : candidate] };
+}
+
+export function removeEdge(graph: WorkflowGraph, edgeId: string): WorkflowGraph {
+  return { ...graph, edges: graph.edges.filter((edge) => edge.id !== edgeId) };
+}
+
+export function setLoopPasses(graph: WorkflowGraph, edgeId: string, maxPasses: number): WorkflowGraph {
+  return { ...graph, edges: graph.edges.map((edge) => (edge.id === edgeId && edge.maxPasses !== undefined ? { ...edge, maxPasses } : edge)) };
+}
 
 let counter = 0;
 export function newId(prefix: string): string {

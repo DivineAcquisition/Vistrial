@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 
+import { InlineScript } from "@/components/app/inline-script";
 import { ThemeSync } from "@/components/app/theme-toggle";
 import { AnchoredToastProvider, ToastProvider } from "@/components/ui/toast";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -62,7 +63,7 @@ export default function RootLayout({
     // the dark theme, so <html> must accept a class React did not render.
     <html lang="en" className={cn(interDisplay.variable, geistMono.variable)} suppressHydrationWarning>
       <head>
-        <script dangerouslySetInnerHTML={{ __html: THEME_SCRIPT }} />
+        <InlineScript html={THEME_SCRIPT} />
       </head>
       <body className="min-h-screen bg-background font-sans text-foreground antialiased">
         <ThemeSync />

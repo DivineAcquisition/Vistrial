@@ -18,7 +18,7 @@ const labels = (role: Parameters<typeof shellNavigation>[0]["role"], extra?: Par
 describe("shell navigation", () => {
   it("shows an owner Overview, Case Files, Results, Agents, and Settings, with Forsight nested", () => {
     const nav = shellNavigation({ role: "owner", templateAccess: false });
-    expect(labels("owner")).toEqual(["Overview", "Case Files", "Results", "Sales", "Settings"]);
+    expect(labels("owner")).toEqual(["Overview", "Case Files", "Workflows", "Results", "Sales", "Settings"]);
     expect(nav.phone.map((item) => item.label)).toEqual(["Overview", "Case Files", "Results", "Settings"]);
     expect(nav.groups[0]?.items.find((item) => item.id === "results")?.children?.map((item) => item.label)).toEqual([
       "Reports",
@@ -40,11 +40,11 @@ describe("shell navigation", () => {
   });
 
   it("shows a member Overview, Results, and Reports", () => {
-    expect(labels("member")).toEqual(["Overview", "Results", "Reports"]);
+    expect(labels("member")).toEqual(["Overview", "Results", "Workflows", "Reports"]);
     const nav = shellNavigation({ role: "member", templateAccess: false });
     expect(nav.groups[0]?.items.find((item) => item.id === "results")?.children ?? []).toEqual([]);
     expect(nav.phone.map((item) => item.label)).toEqual(["Overview", "Results", "Reports"]);
-    expect(nav.more).toEqual([]);
+    expect(nav.more.map((item) => item.label)).toEqual(["Workflows"]);
   });
 
   it("keeps an operator on My Leads, My day, Case Files, and Profile", () => {
@@ -76,7 +76,7 @@ describe("shell navigation", () => {
     const nav = shellNavigation({ role: "service_team", templateAccess: true, workspaceName: "Acme Roofing" });
     const here = nav.groups.find((group) => group.id === "here");
     expect(here?.label).toBe("Acme Roofing");
-    expect(here?.items.map((item) => item.label)).toEqual(["Overview", "Case Files", "Results", "Sales", "Configuration"]);
+    expect(here?.items.map((item) => item.label)).toEqual(["Overview", "Case Files", "Workflows", "Results", "Sales", "Configuration"]);
     expect(nav.phone.map((item) => item.label)).toEqual(["Today", "Queue", "Client Roster", "Overview"]);
     expect(shellNavigation({ role: "service_team", templateAccess: true }).groups.find((g) => g.id === "here")?.label).toBe(
       "This workspace",

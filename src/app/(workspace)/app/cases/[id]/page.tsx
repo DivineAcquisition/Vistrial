@@ -8,6 +8,8 @@ import { CaseAgentBar } from "@/components/agent-elements/case-bar";
 import { OperatorLeadRuns } from "@/components/operator/lead-runs";
 import { CaseRecord } from "@/components/cases/case-tools";
 import { LeadLiveIndicator } from "@/components/live/handoff-pipeline";
+import { LeadWorkflowStrip } from "@/components/workflows/lead-strip";
+import { workflowPowers } from "@/lib/workflows/access";
 import { ScribeCaseFile } from "@/components/live/scribe-case-file";
 import { getAuthContext } from "@/lib/auth/session";
 import { loadPrecallBrief } from "@/lib/brief/load";
@@ -34,7 +36,7 @@ export default async function CaseDetailPage({
   const [payload, brief, ctx] = await Promise.all([loadOrgCaseFile(id), loadPrecallBrief(id), getAuthContext()]);
   if (!payload) notFound();
   const db = (await createClient()) as unknown as SupabaseClient;
-  const [pipeline, scribeFile, notes, flag, optOut, settings, clockRow, activity] = await Promise.all([
+  const [pipeline, scribeFile, notes, flag, optOut, settings, clockRow, activity, enrollmentRow, managerRow] = await Promise.all([
     loadLeadPipeline(payload.lead.orgId, payload.lead.id).catch(() => ({ runs: [], waiting: [] })),
     loadScribeCaseFile(payload.lead.orgId, payload.lead.id).catch(() => null),
     db.from("lead_notes").select("id, body, visibility, created_at").eq("org_id", ctx.org.id).eq("lead_id", id).order("created_at", { ascending: false }).limit(20),
@@ -43,10 +45,16 @@ export default async function CaseDetailPage({
     db.rpc("case_list_settings", { p_org_id: ctx.org.id }),
     db.from("sentry_clocks").select("state, reason, deadline_at, overdue_minutes").eq("org_id", ctx.org.id).eq("lead_id", id).maybeSingle(),
     loadCaseActivity(ctx.org.id, id, ctx.isStaff).catch(() => []),
+    db.from("playbook_enrollments").select("id, workflow_name, step_label, next_label, playbook_id").eq("org_id", ctx.org.id).eq("lead_id", id).in("status", ["active", "paused", "needs_attention"]).limit(1).maybeSingle(),
+    ctx.workspaceRole === "member"
+      ? db.from("workflow_managers").select("member_id").eq("org_id", ctx.org.id).eq("member_id", ctx.member.id).maybeSingle()
+      : Promise.resolve({ data: null, error: null }),
   ]);
   const windowMinutes = Number((settings.data as { windowMinutes?: number } | null)?.windowMinutes) || payload.lead.speedToLeadMinutes || 15;
   const timezone = String((settings.data as { timezone?: string } | null)?.timezone || "the workspace time zone");
   const leadFlag = flag.data as { do_not_contact?: boolean; do_not_contact_reason?: string | null; merged_into?: string | null } | null;
+  const workflowAccess = workflowPowers(ctx.workspaceRole, Boolean(managerRow.data));
+  const enrollment = enrollmentRow.error ? null : (enrollmentRow.data as { id: string; workflow_name?: string; step_label?: string; next_label?: string; playbook_id: string } | null);
 
   return (
     <PageFrame
@@ -58,6 +66,17 @@ export default async function CaseDetailPage({
       ]}
     >
       <LeadLiveIndicator leadId={payload.lead.id} className="mb-3" />
+      {enrollment ? (
+        <LeadWorkflowStrip
+          enrollmentId={enrollment.id}
+          workflowName={enrollment.workflow_name || "Workflow"}
+          stepLabel={enrollment.step_label || ""}
+          nextLabel={enrollment.next_label || ""}
+          href={workflowAccess.seeCanvas ? `/app/workflows/${enrollment.playbook_id}` : null}
+          canSkip={workflowAccess.skip}
+          canPause={workflowAccess.pauseLead || workflowAccess.takeOver}
+        />
+      ) : null}
       <CaseRecord
         leadId={payload.lead.id}
         leadName={payload.lead.name}

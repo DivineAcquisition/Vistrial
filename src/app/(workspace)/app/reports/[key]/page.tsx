@@ -43,6 +43,11 @@ export default async function ReportPage({ params, searchParams }: { params: Pro
         {range.label}, {describeRange(range)}. {freshnessLabel(loadedAt, ctx.org.timezone, loadedAt)}. Times use {ctx.org.timezone}.
       </p>
       {report.note ? <p className="text-sm text-muted-foreground">{report.note}</p> : null}
+      {key === "playbooks" ? (
+        <p className="text-sm">
+          <Link href="/app/workflows" className="text-brand-300">Open Workflows</Link> to see the path and where leads leave it.
+        </p>
+      ) : null}
       {key === "sources" ? <p className="text-sm">{SOURCE_ATTRIBUTION_NOTE}</p> : null}
       <div className="grid gap-3 sm:grid-cols-2">
         {report.metrics.map((metric) => {

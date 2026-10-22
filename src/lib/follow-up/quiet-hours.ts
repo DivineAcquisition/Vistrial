@@ -28,7 +28,7 @@ function zonedParts(at: Date, timeZone: string): {
 function parseHm(value: string): { hour: number; minute: number } {
   const [hour, minute] = value.split(":").map((part) => Number(part));
   return {
-    hour: Number.isFinite(hour) ? hour : 21,
+    hour: Number.isFinite(hour) ? hour : 20,
     minute: Number.isFinite(minute) ? minute : 0,
   };
 }

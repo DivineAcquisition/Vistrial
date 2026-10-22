@@ -116,7 +116,10 @@ function ConnectedShell({
         role: org.workspaceRole,
         templateAccess: org.templateAccess,
         workspaceName: org.org.name,
-        areaWorkPages: (summary?.areas ?? []).filter((area) => area.inSidebar && area.workPage).map((area) => area.workPage!.href),
+        areaWorkPages: [
+          ...(summary?.areas ?? []).filter((area) => area.inSidebar && area.workPage).map((area) => area.workPage!.href),
+          ...(org.workspaceRole === "operator" ? [] : ["/app/workflows"]),
+        ],
       })
     : shellNavigation({
         role: org.workspaceRole,

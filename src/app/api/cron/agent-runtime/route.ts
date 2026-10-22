@@ -5,6 +5,7 @@ import { reconcileLiveRecord } from "@/lib/live/reconcile";
 import { notifyDaAlert } from "@/lib/ops/alerts";
 import { runAuthorizedCron } from "@/lib/ops/jobs";
 import { processRelayJobs } from "@/lib/relay/run";
+import { advanceWorkflows } from "@/lib/workflows/run";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
@@ -18,6 +19,7 @@ export async function GET(request: Request) {
     const runtime = await runAgentRuntimeJob(db);
     const stuck = await flagStuckAgentRuns(db);
     const relay = await processRelayJobs().catch(() => null);
+    const workflows = await advanceWorkflows(db as never).catch(() => null);
     if (!relay) {
       await notifyDaAlert({ kind: "relay_pass_failed", title: "Relay's pass failed", checkFirst: "The agent-runtime cron logs and the relay_jobs table.", severity: "warning" });
     } else if (relay.dead > 0) {
@@ -29,6 +31,6 @@ export async function GET(request: Request) {
         detail: { dead: relay.dead },
       });
     }
-    return { ...runtime, stuck, relay, drained, copy, drift };
+    return { ...runtime, stuck, relay, workflows, drained, copy, drift };
   });
 }

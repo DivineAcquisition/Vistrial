@@ -38,6 +38,13 @@ function db(): Loose {
   return getSupabaseAdmin() as unknown as Loose;
 }
 
+function workflowChannel(job: RelayJob): RelayChannel | null {
+  if (job.trigger !== "workflow" || !job.context_note) return null;
+  if (job.context_note.startsWith("email:")) return "email";
+  if (job.context_note.startsWith("sms:")) return "sms";
+  return null;
+}
+
 export type RelayJob = {
   id: string;
   org_id: string;
@@ -45,15 +52,22 @@ export type RelayJob = {
   trigger: RelayTrigger;
   requested_by_label?: string | null;
   requested_by_member?: string | null;
+  context_note?: string | null;
   attempts: number;
   created_at: string;
 };
 
-export async function enqueueRelayJob(input: { orgId: string; leadId: string; trigger: RelayTrigger; dedupeKey: string }): Promise<boolean> {
+export async function enqueueRelayJob(input: { orgId: string; leadId: string; trigger: RelayTrigger; dedupeKey: string; contextNote?: string | null }): Promise<boolean> {
   const { data, error } = await db()
     .from("relay_jobs")
     .upsert(
-      { org_id: input.orgId, lead_id: input.leadId, trigger: input.trigger, dedupe_key: input.dedupeKey.slice(0, 200) },
+      {
+        org_id: input.orgId,
+        lead_id: input.leadId,
+        trigger: input.trigger,
+        dedupe_key: input.dedupeKey.slice(0, 200),
+        context_note: input.contextNote?.slice(0, 300) ?? null,
+      },
       { onConflict: "org_id,dedupe_key", ignoreDuplicates: true }
     )
     .select("id")
@@ -221,7 +235,10 @@ async function draftForJob(job: RelayJob): Promise<Outcome> {
     .eq("org_id", job.org_id)
     .eq("lead_id", job.lead_id)
     .maybeSingle();
-  const channel = pickChannel(lead, { emailSuppressed: Boolean(suppression) });
+  const asked = workflowChannel(job);
+  const channel = asked ?? pickChannel(lead, { emailSuppressed: Boolean(suppression) });
+  if (asked === "sms" && !lead.phone) return { kind: "skipped", result: "This step is a text, and the lead has no phone number." };
+  if (asked === "email" && !lead.email) return { kind: "skipped", result: "This step is an email, and the lead has no email address." };
   if (!channel) {
     return {
       kind: "skipped",
@@ -332,7 +349,15 @@ async function writeAndQueue(args: {
   for (let attempt = 0; attempt < 2; attempt += 1) {
     const result = await createAnthropicMessage({
       system: RELAY_SYSTEM_PROMPT,
-      user: relayUserPrompt({ trigger: job.trigger, channel, facts, voice, feedback, previousFaults: faults.map((fault) => fault.message) }),
+      user: relayUserPrompt({
+        trigger: job.trigger,
+        channel,
+        facts,
+        voice,
+        feedback,
+        previousFaults: faults.map((fault) => fault.message),
+        purpose: job.context_note,
+      }),
       model,
       maxTokens: 900,
       timeoutMs: 45_000,
@@ -388,7 +413,9 @@ async function writeAndQueue(args: {
       title: `${channel === "sms" ? "Text" : "Email"} for ${args.name}`,
       preview: draft.body,
       reason:
-        job.trigger === "missed_window"
+        job.trigger === "workflow"
+          ? "A workflow step asked for this draft. Approve it, then send it from your CRM."
+          : job.trigger === "missed_window"
           ? "Nobody has reached this lead within the response window. Approve it, then send it from your CRM."
           : job.trigger === "compass_request"
             ? `${job.requested_by_label ? `${job.requested_by_label} asked` : "Someone asked"} for this draft from Compass. Approve it, then send it from your CRM.`

@@ -71,7 +71,7 @@ export const BUILT_IN_REPORTS: BuiltInReport[] = [
     howToRead: "When a playbook runs, its results use the same sample rules as the rest of Reports. Nothing here claims a play caused a booking.",
     metrics: [],
     breakdowns: [],
-    note: "No playbook has run in this workspace yet. This report will fill in from the playbook tables when they exist.",
+    note: "Open Workflows for the picture of where leads are. Percentages stay hidden until 20 leads have taken a path.",
   },
   {
     key: "approvals",

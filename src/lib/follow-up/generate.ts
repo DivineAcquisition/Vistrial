@@ -1,5 +1,7 @@
 import "server-only";
 
+import type { SupabaseClient } from "@supabase/supabase-js";
+
 import { anthropicDraftModel, createAnthropicMessage } from "@/lib/extraction/anthropic";
 import { FOLLOW_UP_MAX_ATTEMPTS } from "@/lib/follow-up/constants";
 import { followUpError, followUpLog, followUpWarn } from "@/lib/follow-up/log";
@@ -178,6 +180,18 @@ async function enqueueFollowUpAfterExtractionInner(
   db: GhlDb,
   args: { orgId: string; leadId: string; callId: string; extractionId: string | null }
 ): Promise<void> {
+  const published = await (db as unknown as SupabaseClient)
+    .from("playbooks")
+    .select("id")
+    .eq("org_id", args.orgId)
+    .eq("status", "published")
+    .limit(1)
+    .maybeSingle();
+  if (!published.error && published.data) {
+    followUpLog("follow_up.enqueue_skipped", { callId: args.callId, reason: "workflow_published" });
+    return;
+  }
+
   const { data: existing } = await db
     .from("follow_up_jobs")
     .select("id")

@@ -208,6 +208,7 @@ function customerViews(role: WorkspaceRole): ShellNavItem[] {
       icon: "cases",
       phone: 2,
     },
+    WORKFLOWS_ITEM,
     { ...resultsItem(true), phone: 3 },
     AGENTS_ITEM,
     {
@@ -273,6 +274,7 @@ function groupsFor(input: {
             icon: "results",
             phone: 2,
           },
+          WORKFLOWS_ITEM,
           {
             id: "reports",
             label: "Reports",
@@ -534,6 +536,7 @@ function staffGroups(input: {
       match: "/app/cases",
       icon: "cases",
     },
+    WORKFLOWS_ITEM,
     resultsItem(true),
     AGENTS_ITEM,
     {
@@ -557,6 +560,15 @@ const AGENTS_SHEET: ShellNavItem = {
   match: "/app/agents/__sheet",
   icon: "agents",
   sheet: "agents",
+};
+
+const WORKFLOWS_ITEM: ShellNavItem = {
+  id: "workflows",
+  label: "Workflows",
+  href: "/app/workflows",
+  match: "/app/workflows",
+  icon: "cases",
+  description: "The picture of how this business follows up.",
 };
 
 const LIBRARY_ITEM: ShellNavItem = {
@@ -738,6 +750,8 @@ const TITLE_RULES: Array<{ prefix: string; title: string; crumbs: Array<{ href: 
     { href: "/app/settings/configuration", label: "Configuration" },
   ] },
   { prefix: "/app/settings", title: "Settings", crumbs: [{ href: "/app/settings", label: "Settings" }] },
+  { prefix: "/app/workflows/", title: "Workflow", crumbs: [{ href: "/app/workflows", label: "Workflows" }, { href: "", label: "Workflow" }] },
+  { prefix: "/app/workflows", title: "Workflows", crumbs: [{ href: "/app/workflows", label: "Workflows" }] },
   { prefix: "/app/cases/", title: "Case file", crumbs: [{ href: "/app/cases", label: "Case Files" }, { href: "", label: "Case file" }] },
   { prefix: "/app/cases", title: "Case Files", crumbs: [{ href: "/app/cases", label: "Case Files" }] },
   { prefix: "/app/calls/", title: "Call", crumbs: [{ href: "/app/calls", label: "Calls" }, { href: "", label: "Call" }] },

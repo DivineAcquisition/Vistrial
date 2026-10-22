@@ -242,7 +242,7 @@ describe("navigation with the agent roster", () => {
   });
 
   it("moves Case Files under Sales for the Owner, keeps it for Operators, and gives Operators My day, My Leads, Agents, Profile on the phone", () => {
-    const owner = rosterNavigation({ role: "owner", templateAccess: false, areaWorkPages: ["/app/cases"] });
+    const owner = rosterNavigation({ role: "owner", templateAccess: false, areaWorkPages: ["/app/cases", "/app/workflows"] });
     expect(owner.groups.flatMap((group) => group.items).map((item) => item.label)).toEqual(["Overview", "Results", "Settings"]);
     const operator = rosterNavigation({ role: "operator", templateAccess: false, areaWorkPages: ["/app/cases"] });
     expect(operator.phone.map((item) => item.label)).toEqual(["My day", "My Leads", "Agents", "Profile"]);

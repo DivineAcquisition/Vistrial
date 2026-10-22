@@ -344,7 +344,9 @@ function AreaSection({
   onNavigate?: () => void;
   readOnly: boolean;
 }) {
+  const org = useOrg();
   const [collapsed, setCollapsed] = useAreaCollapsed(orgId, area.id);
+  const showWorkflows = area.id === "sales" && org.workspaceRole !== "operator";
   const shown = rows.slice(0, ROWS_PER_AREA);
   const urgentLabel = area.urgent && area.urgent !== "idle" ? area.urgent : null;
   return (
@@ -387,6 +389,15 @@ function AreaSection({
               className="ml-8 flex min-h-8 items-center rounded-md px-2 text-sm text-sidebar-foreground hover:bg-sidebar-accent"
             >
               {area.workPage.label}
+            </Link>
+          ) : null}
+          {showWorkflows ? (
+            <Link
+              href="/app/workflows"
+              onClick={onNavigate}
+              className="ml-8 flex min-h-8 items-center rounded-md px-2 text-sm text-sidebar-foreground hover:bg-sidebar-accent"
+            >
+              Workflows
             </Link>
           ) : null}
           <ul className="space-y-0.5">

@@ -94,6 +94,23 @@ const REVIEWED = new Set([
   "src/app/api/webhooks/telnyx/notifications/route.ts",
   "src/lib/access-requests/submit.ts",
   "src/lib/email/send-guard.ts",
+  "src/app/(marketing)/privacy/requests/actions.ts",
+  "src/app/(marketing)/security/actions.ts",
+  "src/app/(workspace)/app/onboarding/step/[slug]/page.tsx",
+  "src/app/(workspace)/app/settings/connections/[connector]/page.tsx",
+  "src/app/api/connectors/oauth/callback/route.ts",
+  "src/app/api/connectors/oauth/start/route.ts",
+  "src/app/api/marketing/consent/route.ts",
+  "src/lib/connectors/apply.ts",
+  "src/lib/connectors/maintain.ts",
+  "src/lib/connectors/store.ts",
+  "src/lib/connectors/sync.ts",
+  "src/lib/directory/commit.ts",
+  "src/lib/directory/load.ts",
+  "src/lib/marketing/tracking.ts",
+  "src/lib/trust/accept.ts",
+  "src/lib/trust/public.ts",
+  "src/app/(workspace)/app/actions/policy-actions.ts",
 ]);
 
 const ROOT = path.join(__dirname, "..", "..", "..");

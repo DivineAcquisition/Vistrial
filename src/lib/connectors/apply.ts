@@ -133,7 +133,7 @@ export async function applyInboundEvent(args: {
     lead_id: leadId,
   });
   if (args.event.optOut) {
-    await admin.from("leads").update({ do_not_contact: true, do_not_contact_reason: "source_opt_out" }).eq("id", leadId);
+    await admin.from("leads").update({ do_not_contact: true, do_not_contact_reason: "source_opt_out" }).eq("id", leadId).eq("org_id", args.orgId);
     await admin.from("lead_opt_outs").insert({
       org_id: args.orgId,
       lead_id: leadId,

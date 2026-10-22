@@ -15,6 +15,8 @@ type LooseQuery = PromiseLike<LooseResult> & {
   neq: (column: string, value: unknown) => LooseQuery;
   in: (column: string, value: unknown[]) => LooseQuery;
   is: (column: string, value: null) => LooseQuery;
+  not: (column: string, operator: string, value: unknown) => LooseQuery;
+  lte: (column: string, value: unknown) => LooseQuery;
   order: (column: string, options?: { ascending?: boolean }) => LooseQuery;
   limit: (count: number) => LooseQuery;
   maybeSingle: () => Promise<LooseResult>;
@@ -721,16 +723,10 @@ export async function saveFileImport(args: {
 
 export async function purgeExpiredRawFiles(): Promise<number> {
   const now = new Date().toISOString();
-  const result = await db().from("file_imports").select("id").limit(100);
+  const result = await db().from("file_imports").select("id").not("raw_body", "is", null).lte("raw_delete_after", now).limit(100);
   const due = rows<{ id: string }>(result);
-  let cleared = 0;
   for (const row of due) {
-    const full = await db().from("file_imports").select("id, raw_delete_after, raw_body").eq("id", row.id).maybeSingle();
-    const item = full.data as { id: string; raw_delete_after: string; raw_body: string | null } | null;
-    if (item?.raw_body && item.raw_delete_after <= now) {
-      await db().from("file_imports").update({ raw_body: null }).eq("id", item.id);
-      cleared += 1;
-    }
+    await db().from("file_imports").update({ raw_body: null }).eq("id", row.id);
   }
-  return cleared;
+  return due.length;
 }

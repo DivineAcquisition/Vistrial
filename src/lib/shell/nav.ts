@@ -942,6 +942,8 @@ const TITLE_RULES: Array<{ prefix: string; title: string; crumbs: Array<{ href: 
   { prefix: "/app/manager", title: "Team", crumbs: [{ href: "/app/manager", label: "Team" }] },
   { prefix: "/app/actions", title: "Actions", crumbs: [{ href: "/app/settings", label: "Settings" }, { href: "/app/actions", label: "Actions" }] },
   { prefix: "/app/cases/", title: "Case file", crumbs: [{ href: "/app/cases", label: "Case Files" }, { href: "", label: "Case file" }] },
+  { prefix: "/app/calendar/preview", title: "Calendar preview", crumbs: [{ href: "/app/calendar", label: "Calendar" }, { href: "/app/calendar/preview", label: "Preview" }] },
+  { prefix: "/app/calendar", title: "Calendar", crumbs: [{ href: "/app/cases", label: "Case Files" }, { href: "/app/calendar", label: "Calendar" }] },
   { prefix: "/app/cases", title: "Case Files", crumbs: [{ href: "/app/cases", label: "Case Files" }] },
   { prefix: "/app/calls/", title: "Call", crumbs: [{ href: "/app/calls", label: "Calls" }, { href: "", label: "Call" }] },
   { prefix: "/app/calls", title: "Calls", crumbs: [{ href: "/app/calls", label: "Calls" }] },
@@ -1029,6 +1031,7 @@ export function layoutKindForPath(pathname: string): PageLayoutKind {
   if (pathname.startsWith("/app/leads") || pathname.startsWith("/app/approvals")) return "list-detail";
   if (
     pathname.startsWith("/app/cases") ||
+    pathname.startsWith("/app/calendar") ||
     pathname.startsWith("/app/today") ||
     pathname.startsWith("/app/queue") ||
     pathname.startsWith("/app/calls") ||

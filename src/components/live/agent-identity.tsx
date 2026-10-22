@@ -43,10 +43,10 @@ const AVATAR_SIZE: Record<"xs" | "sm" | "md" | "lg", AvatarSize> = {
 };
 
 const BOX = {
-  xs: "size-6 rounded-xl",
-  sm: "size-8 rounded-2xl",
-  md: "size-10 rounded-3xl",
-  lg: "size-12 rounded-3xl",
+  xs: "size-6 rounded-lg",
+  sm: "size-8 rounded-lg",
+  md: "size-10 rounded-xl",
+  lg: "size-12 rounded-xl",
 } as const;
 
 const ICON = {

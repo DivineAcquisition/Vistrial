@@ -4,6 +4,7 @@ import { EllipsisVertical, Plus } from "lucide-react";
 import Link from "next/link";
 import type { CSSProperties } from "react";
 
+import { Avatar } from "@/components/ui/heroui-avatar";
 import { cn } from "@/lib/utils";
 
 export type CourseColor = "green" | "orange" | "red" | "blue" | "violet";
@@ -20,8 +21,11 @@ export interface CardData {
   progressValue: string;
   imgSrc1?: string;
   imgAlt1?: string;
+  /** Green presence dot on the first portrait. */
+  imgMarked1?: boolean;
   imgSrc2?: string;
   imgAlt2?: string;
+  imgMarked2?: boolean;
   countdownText: string;
   /** Accessible name for the countdown control when it does more than its visible label. */
   countdownLabel?: string;
@@ -53,11 +57,23 @@ function progressNumber(value: string): number {
   return Math.max(0, Math.min(100, amount));
 }
 
-function Portrait({ src, alt }: { src: string; alt: string }) {
+function letters(alt: string): string {
+  const parts = alt.trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return "";
+  if (parts.length === 1) return parts[0]!.slice(0, 2).toUpperCase();
+  return `${parts[0]![0] ?? ""}${parts[1]![0] ?? ""}`.toUpperCase();
+}
+
+function Portrait({ src, alt, marked }: { src: string; alt: string; marked?: boolean }) {
+  const label = letters(alt);
   return (
-    // Fixed-size remote portraits. The optimizer is not configured for these hosts.
-    // eslint-disable-next-line @next/next/no-img-element
-    <img src={src} alt={alt} width={30} height={30} />
+    <span className="course-avatar relative inline-flex">
+      <Avatar size="sm" className="size-11 rounded-xl ring-2 ring-[var(--bg-footer)]">
+        <Avatar.Image src={src} alt={alt} />
+        <Avatar.Fallback>{label || "?"}</Avatar.Fallback>
+      </Avatar>
+      {marked ? <span className="course-avatar-mark" aria-hidden /> : null}
+    </span>
   );
 }
 
@@ -123,12 +139,12 @@ function Card({ data, selected, onSelect, onCountdown }: CardProps) {
         <ul>
           {data.imgSrc1 ? (
             <li>
-              <Portrait src={data.imgSrc1} alt={data.imgAlt1 || ""} />
+              <Portrait src={data.imgSrc1} alt={data.imgAlt1 || ""} marked={data.imgMarked1} />
             </li>
           ) : null}
           {data.imgSrc2 ? (
             <li>
-              <Portrait src={data.imgSrc2} alt={data.imgAlt2 || ""} />
+              <Portrait src={data.imgSrc2} alt={data.imgAlt2 || ""} marked={data.imgMarked2} />
             </li>
           ) : null}
           <li>

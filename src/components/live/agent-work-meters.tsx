@@ -86,9 +86,10 @@ function countdownForRun(run: LiveRun): string {
   }
 }
 
-function faces(agentId: LiveAgentId): Pick<CardData, "imgSrc1" | "imgAlt1" | "imgSrc2" | "imgAlt2"> {
+function faces(agentId: LiveAgentId, working: boolean): Pick<CardData, "imgSrc1" | "imgAlt1" | "imgMarked1" | "imgSrc2" | "imgAlt2"> {
   const [first, second] = PORTRAITS[agentId];
-  return { imgSrc1: first, imgAlt1: "", imgSrc2: second, imgAlt2: "" };
+  const name = AGENTS[agentId].name;
+  return { imgSrc1: first, imgAlt1: name, imgMarked1: working, imgSrc2: second, imgAlt2: "" };
 }
 
 function percentLabel(value: number): string {
@@ -159,7 +160,7 @@ export function AgentWorkMeters({
           description: `${agent.sublabel}. ${work}`,
           progressPercent: percentLabel(percent),
           progressValue: percentLabel(percent),
-          ...faces(agentId),
+          ...faces(agentId, item.state === "working"),
           countdownText: countdown,
           countdownLabel: open && run ? `${countdown}. Watch ${run.subjectLabel}` : undefined,
           selectLabel: `${selectedId === agentId ? "Showing" : "Show"} ${agent.name}. ${agent.sublabel}. ${work} Progress ${percentLabel(percent)}.`,
@@ -186,7 +187,7 @@ export function AgentWorkMeters({
           description: `${agent.sublabel}. ${detail}`,
           progressPercent: percentLabel(percent),
           progressValue: percentLabel(percent),
-          ...faces(run.agentId),
+          ...faces(run.agentId, run.status === "working"),
           countdownText: countdown,
           countdownLabel: `${countdown}. Watch ${title}`,
           selectLabel: `Watch ${title}. ${detail} Progress ${percentLabel(percent)}.`,

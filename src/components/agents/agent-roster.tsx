@@ -17,7 +17,7 @@ import { Popover, PopoverPopup, PopoverTrigger } from "@/components/ui/popover";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
 import { agentContract } from "@/lib/agents/contract";
-import { rowLabel, type AgentSummary, type AgentSummaryRow, type AreaSummary, type SummaryPresence } from "@/lib/agents/summary";
+import { IDLE_LINE, rowLabel, type AgentSummary, type AgentSummaryRow, type AreaSummary, type SummaryPresence } from "@/lib/agents/summary";
 import type { WorkspaceRole } from "@/lib/auth/types";
 import { cn } from "@/lib/utils";
 
@@ -305,9 +305,11 @@ export function AgentRow({ row, onNavigate, readOnly = false }: { row: AgentSumm
             ) : null}
           </div>
           <StateLine row={row} />
-          <p className="truncate text-xs text-muted-foreground" title={row.line}>
-            {row.line}
-          </p>
+          {row.presence === "idle" && row.line === IDLE_LINE ? null : (
+            <p className="truncate text-xs text-muted-foreground" title={row.line}>
+              {row.line}
+            </p>
+          )}
         </div>
         {row.state === "on" ? (
           <button
@@ -337,12 +339,14 @@ function AreaSection({
   orgId,
   onNavigate,
   readOnly,
+  hideWorkPages,
 }: {
   area: AreaSummary;
   rows: AgentSummaryRow[];
   orgId: string;
   onNavigate?: () => void;
   readOnly: boolean;
+  hideWorkPages?: string[];
 }) {
   const [collapsed, setCollapsed] = useAreaCollapsed(orgId, area.id);
   const shown = rows.slice(0, ROWS_PER_AREA);
@@ -380,7 +384,9 @@ function AreaSection({
       </div>
       {collapsed ? null : (
         <>
-          {((area.workPages ?? []).length > 0 ? area.workPages : area.workPage ? [area.workPage] : []).map((page) => (
+          {((area.workPages ?? []).length > 0 ? area.workPages : area.workPage ? [area.workPage] : [])
+            .filter((page) => !hideWorkPages?.includes(page.href))
+            .map((page) => (
             <Link
               key={page.href}
               href={page.href}
@@ -481,7 +487,7 @@ export function ReconnectingNote() {
 }
 
 /** The roster: Compass above the areas, then each area with its work page and agent rows. */
-export function AgentRoster({ onNavigate }: { onNavigate?: () => void }) {
+export function AgentRoster({ onNavigate, hideWorkPages }: { onNavigate?: () => void; hideWorkPages?: string[] }) {
   const { summary } = useAgentSummary();
   const { workspaceRole, org } = useOrg();
   if (!summary || summary.orgId !== org.id) return <SkeletonRows />;
@@ -509,6 +515,7 @@ export function AgentRoster({ onNavigate }: { onNavigate?: () => void }) {
           orgId={summary.orgId}
           onNavigate={onNavigate}
           readOnly={readOnly}
+          hideWorkPages={hideWorkPages}
         />
       ))}
       {!across.length && !areas.length ? <p className="px-2 py-1 text-xs text-muted-foreground">No agents are on yet.</p> : null}

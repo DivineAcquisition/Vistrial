@@ -29,7 +29,7 @@ so they cannot disagree.
 - `outline.ts`: the list view, one sentence per row for screen readers.
 - `edit.ts`: insert, remove, update, move up and down, on the graph.
 - `layout.ts`: automatic layout for Tidy up, left to right or top to bottom.
-- Migration `20261021010000_workflows_foundation.sql` with a rollback and
+- Migration `20261022020000_workflows_foundation.sql` with a rollback and
   `supabase/tests/verify-workflows.sql`.
 
 ## Checks run

@@ -1,12 +1,12 @@
--- Rolls back 20261021010000_workflows_foundation.sql.
+-- Rolls back 20261022020000_workflows_foundation.sql.
 -- Copies the rows to vistrial_rollback_keep first. Run in one transaction.
 
 BEGIN;
 
 CREATE SCHEMA IF NOT EXISTS vistrial_rollback_keep;
 REVOKE ALL ON SCHEMA vistrial_rollback_keep FROM PUBLIC, anon, authenticated;
-DROP TABLE IF EXISTS vistrial_rollback_keep.workflows_20261021;
-CREATE TABLE vistrial_rollback_keep.workflows_20261021 AS
+DROP TABLE IF EXISTS vistrial_rollback_keep.workflows_20261022;
+CREATE TABLE vistrial_rollback_keep.workflows_20261022 AS
 SELECT 'playbooks' AS source, id::text AS ref, to_jsonb(p) AS data FROM public.playbooks p
 UNION ALL
 SELECT 'playbook_versions', id::text, to_jsonb(v) FROM public.playbook_versions v

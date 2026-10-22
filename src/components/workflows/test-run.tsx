@@ -70,6 +70,7 @@ export function TestRun({ graph, defaultTimeZone, now }: { graph: WorkflowGraph;
         <label className="flex flex-col">
           <span className={labelClass}>Lead&apos;s time zone</span>
           <Select
+            className="min-w-0"
             aria-label="Lead's time zone"
             value={timeZone}
             options={zones.map((zone) => ({ value: zone, label: ORG_TIMEZONE_LABELS[zone as keyof typeof ORG_TIMEZONE_LABELS] ?? zone }))}
@@ -79,6 +80,7 @@ export function TestRun({ graph, defaultTimeZone, now }: { graph: WorkflowGraph;
         <label className="flex flex-col">
           <span className={labelClass}>Lead enters</span>
           <Select
+            className="min-w-0"
             aria-label="When the lead enters"
             value={startKind}
             options={[

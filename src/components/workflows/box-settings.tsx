@@ -125,6 +125,7 @@ export function BoxSettings({
           <Row label="What starts it">
             {(id) => (
               <Select
+                className="min-w-0"
                 id={id}
                 value={c.trigger}
                 options={ENTRY_TRIGGERS.map((value) => ({ value, label: TRIGGER_WORDS[value] }))}
@@ -134,7 +135,7 @@ export function BoxSettings({
           </Row>
           {c.trigger === "stage_changed" ? (
             <Row label="Stage" help={ctx.stages.length === 0 ? "No stages are mapped from your CRM yet." : undefined}>
-              {(id) => <Select id={id} value={c.stage ?? ""} options={stageOptions} onChange={(event) => set({ stage: event.target.value || undefined })} />}
+              {(id) => <Select className="min-w-0" id={id} value={c.stage ?? ""} options={stageOptions} onChange={(event) => set({ stage: event.target.value || undefined })} />}
             </Row>
           ) : null}
           {c.trigger === "no_activity" ? (
@@ -146,6 +147,7 @@ export function BoxSettings({
             <Row label="Booking event">
               {(id) => (
                 <Select
+                  className="min-w-0"
                   id={id}
                   value={c.bookingEvent ?? ""}
                   options={[{ value: "", label: "Choose an event" }, ...BOOKING_EVENTS.map((value) => ({ value, label: BOOKING_WORDS[value] }))]}
@@ -158,6 +160,7 @@ export function BoxSettings({
             <Row label="Becomes">
               {(id) => (
                 <Select
+                  className="min-w-0"
                   id={id}
                   value={c.tier ?? ""}
                   options={[{ value: "", label: "Choose a tier" }, ...TIERS.map((value) => ({ value, label: TIER_WORDS[value] }))]}
@@ -181,6 +184,7 @@ export function BoxSettings({
             <Row label="Unit">
               {(id) => (
                 <Select
+                  className="min-w-0"
                   id={id}
                   value={c.unit}
                   options={[
@@ -203,6 +207,7 @@ export function BoxSettings({
           <Row label="Question">
             {(id) => (
               <Select
+                className="min-w-0"
                 id={id}
                 value={c.check}
                 options={CHECK_KINDS.map((value) => ({ value, label: CHECK_WORDS[value] }))}
@@ -211,12 +216,13 @@ export function BoxSettings({
             )}
           </Row>
           {c.check === "stage_is" ? (
-            <Row label="Stage">{(id) => <Select id={id} value={c.value ?? ""} options={stageOptions} onChange={(event) => set({ value: event.target.value || undefined })} />}</Row>
+            <Row label="Stage">{(id) => <Select className="min-w-0" id={id} value={c.value ?? ""} options={stageOptions} onChange={(event) => set({ value: event.target.value || undefined })} />}</Row>
           ) : null}
           {c.check === "tier_at_least" ? (
             <Row label="Tier">
               {(id) => (
                 <Select
+                  className="min-w-0"
                   id={id}
                   value={c.value ?? ""}
                   options={[{ value: "", label: "Choose a tier" }, ...TIERS.map((value) => ({ value, label: TIER_WORDS[value] }))]}
@@ -229,6 +235,7 @@ export function BoxSettings({
             <Row label="Booking is">
               {(id) => (
                 <Select
+                  className="min-w-0"
                   id={id}
                   value={c.value ?? ""}
                   options={[
@@ -287,6 +294,7 @@ export function BoxSettings({
           >
             {(id) => (
               <Select
+                className="min-w-0"
                 id={id}
                 value={c.contentRef ?? ""}
                 options={[
@@ -319,6 +327,7 @@ export function BoxSettings({
           <Row label="Who it goes to">
             {(id) => (
               <Select
+                className="min-w-0"
                 id={id}
                 value={c.assignee.kind === "lead_owner" ? "lead_owner" : c.assignee.kind === "role" ? `role:${c.assignee.role}` : `person:${c.assignee.memberId}`}
                 options={[
@@ -349,6 +358,7 @@ export function BoxSettings({
           <Row label="What it does">
             {(id) => (
               <Select
+                className="min-w-0"
                 id={id}
                 value={c.mode}
                 options={[
@@ -371,6 +381,7 @@ export function BoxSettings({
         <Row label="Why the lead leaves">
           {(id) => (
             <Select
+              className="min-w-0"
               id={id}
               value={c.reason}
               options={END_REASONS.map((value) => ({ value, label: END_WORDS[value] }))}

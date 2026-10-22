@@ -13,7 +13,7 @@ import type { WorkspaceRole } from "@/lib/auth/types";
  *
  * Count rules (the only definitions):
  * - Waiting on you: an open agent request the person can see (pending, or
- *   approved and waiting to be sent). agent_waiting_items in Postgres.
+ *   approved and waiting to be sent). agent_waiting_for() in Postgres.
  * - Needs attention: a run with no progress past STUCK_AFTER_MS on the
  *   Postgres copy's own timestamps, a run waiting on an outside service, or
  *   a run flagged stuck in the last day.
@@ -76,6 +76,13 @@ export type AgentSummaryRow = {
   outputs: OutputLine[];
   /** Shown in the sidebar (On, Needs setup, Pending confirmation). */
   inSidebar: boolean;
+  /** Hidden from this person's own sidebar. It keeps running. */
+  hidden: boolean;
+  /** Who turned it on for the Owner to confirm. */
+  requestedBy: string | null;
+  /** What this workspace already asked for (notify_me, request_access, early_access). */
+  interest: string[];
+  availability: "available" | "beta" | "coming_soon";
 };
 
 export type AreaSummary = {
@@ -84,6 +91,8 @@ export type AreaSummary = {
   workPage: { label: string; href: string } | null;
   homePage: string | null;
   availability: "available" | "coming_soon";
+  description: string;
+  interest: string[];
   /** Most urgent presence among its sidebar agents, or null when it has none. */
   urgent: SummaryPresence | null;
   waiting: number;
@@ -95,6 +104,8 @@ export type AgentSummary = {
   orgId: string;
   generatedAt: string;
   role: WorkspaceRole;
+  /** The new sidebar is switched on for this workspace. */
+  sidebar: boolean;
   /** The copy is behind: show the quiet Reconnecting note, never stale Working. */
   reconnecting: boolean;
   waitingTotal: number;
@@ -152,6 +163,10 @@ export type RawAgent = {
   outputSource: "activity" | "requests" | "windows" | "tiers";
   version: number;
   stage: string | null;
+  requestedByLabel?: string | null;
+  requestedAt?: string | null;
+  hidden?: boolean;
+  interest?: string[];
   paused: boolean;
   pausedByName: string | null;
   pausedAt: string | null;
@@ -179,6 +194,7 @@ export type RawArea = {
   homePage: { href: string; roles: string[] } | null;
   availability: "available" | "coming_soon";
   sort: number;
+  interest?: string[];
 };
 
 export type RawSummary = {
@@ -187,6 +203,7 @@ export type RawSummary = {
   access: WorkspaceRole;
   workspace: { status: string; agentsHalted: boolean; billingState: string | null };
   backlog: { pending: number; oldestSeconds: number };
+  sidebar?: boolean;
   areas: RawArea[];
   agents: RawAgent[];
   waitingTotal: number;
@@ -274,6 +291,8 @@ export function workspaceState(agent: RawAgent, setup: SetupFacts): { state: Wor
     return { state: "not_available", step: null };
   }
   if (!agent.planAllowed) return { state: "locked", step: null };
+  if (agent.stage === "pending") return { state: "pending", step: null };
+  if (agent.stage === "off_by_choice") return { state: "off", step: null };
   // No row means the agent runs (agent_may_run treats it the same way).
   const on = agent.stage === null || ON_STAGES.has(agent.stage);
   if (!on) return { state: "available", step: null };
@@ -387,7 +406,9 @@ export function buildAgentSummary(raw: RawSummary, setup: SetupFacts, now: numbe
         state === "needs_setup"
           ? "Needs setup"
           : state === "pending"
-            ? "Waiting for your OK"
+            ? role === "owner"
+              ? "Waiting for your OK"
+              : "Waiting for the Owner"
             : presence
               ? presence.presence === "paused" && (agent.halted || raw.workspace.agentsHalted)
                 ? "Paused by the Vistrial team"
@@ -409,7 +430,14 @@ export function buildAgentSummary(raw: RawSummary, setup: SetupFacts, now: numbe
         lockedReason: state === "locked" ? agent.lockedReason : null,
         presence: presence?.presence ?? null,
         stateLabel,
-        line: state === "needs_setup" && step ? step.label : presence?.line ?? agent.description,
+        line:
+          state === "needs_setup" && step
+            ? step.label
+            : state === "pending"
+              ? role === "owner"
+                ? "Turned on by the Vistrial team. It starts once you confirm."
+                : "Waiting for the Owner to confirm."
+              : presence?.line ?? agent.description,
         waiting: live ? { ...waiting, total: waiting.approvals + waiting.questions } : { approvals: 0, questions: 0, total: 0 },
         paused:
           agent.halted || raw.workspace.agentsHalted
@@ -420,13 +448,17 @@ export function buildAgentSummary(raw: RawSummary, setup: SetupFacts, now: numbe
         currentRunId: presence?.currentRunId ?? null,
         outputs: live ? (agent.facts?.outputs ?? []).slice(0, 5).map((output) => outputLine(output, role, now)) : [],
         inSidebar: SIDEBAR_STATES.has(state),
+        hidden: agent.hidden === true,
+        requestedBy: state === "pending" ? agent.requestedByLabel ?? "The Vistrial team" : null,
+        interest: agent.interest ?? [],
+        availability: agent.availability,
       };
     });
 
   const areas: AreaSummary[] = [...raw.areas]
     .sort((a, b) => a.sort - b.sort || a.id.localeCompare(b.id))
     .map((area) => {
-      const members = agents.filter((agent) => agent.area === area.id && agent.inSidebar);
+      const members = agents.filter((agent) => agent.area === area.id && agent.inSidebar && !agent.hidden);
       const urgent = URGENCY.find((state) => members.some((agent) => agent.presence === state)) ?? null;
       return {
         id: area.id,
@@ -434,6 +466,8 @@ export function buildAgentSummary(raw: RawSummary, setup: SetupFacts, now: numbe
         workPage: area.workPage && area.workPage.roles.includes(role) ? { label: area.workPage.label, href: area.workPage.href } : null,
         homePage: area.homePage && area.homePage.roles.includes(role) ? area.homePage.href : null,
         availability: area.availability,
+        description: area.description,
+        interest: area.interest ?? [],
         urgent,
         waiting: members.reduce((sum, agent) => sum + agent.waiting.total, 0),
         agentIds: members.map((agent) => agent.id),
@@ -445,6 +479,7 @@ export function buildAgentSummary(raw: RawSummary, setup: SetupFacts, now: numbe
     orgId: raw.orgId,
     generatedAt: raw.generatedAt,
     role,
+    sidebar: raw.sidebar === true,
     reconnecting,
     waitingTotal: raw.waitingTotal,
     areas,

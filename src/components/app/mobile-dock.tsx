@@ -21,6 +21,8 @@ import {
   type LucideIcon,
 } from "lucide-react";
 
+import { AgentRoster, AddAgentsLink, ReconnectingNote } from "@/components/agents/agent-roster";
+import { useAgentSummary } from "@/components/agents/summary-context";
 import { NavPendingHint, ShellMoreList } from "@/components/app/shell-nav";
 import { watchLocationHash } from "@/hooks/use-location-hash";
 import { Sheet, SheetHeader, SheetPopup, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
@@ -45,6 +47,39 @@ const ICONS: Record<ShellIcon, LucideIcon> = {
   agents: Bot,
   health: HeartPulse,
 };
+
+/** The phone Agents tab: the same live roster as the sidebar, full screen. */
+function AgentsTab({ label }: { label: string }) {
+  const [open, setOpen] = useState(false);
+  const { summary } = useAgentSummary();
+  const waiting = summary?.waitingTotal ?? 0;
+  return (
+    <li className="min-w-0">
+      <Sheet open={open} onOpenChange={setOpen}>
+        <SheetTrigger
+          aria-label={waiting ? `${label}, ${waiting} waiting on you` : label}
+          className="relative flex min-h-11 w-full flex-col items-center justify-center gap-0.5 rounded-xl px-1 text-[11px] font-semibold text-silver"
+        >
+          <Bot className="size-5" aria-hidden />
+          <span className="truncate">{label}</span>
+          {waiting > 0 ? (
+            <span className="absolute right-3 top-0.5 rounded-full bg-warning px-1 text-[10px] leading-4 text-ink-950">{waiting > 99 ? "99+" : waiting}</span>
+          ) : null}
+        </SheetTrigger>
+        <SheetPopup side="bottom" className="h-[100svh] max-h-[100svh]">
+          <SheetHeader>
+            <SheetTitle>{label}</SheetTitle>
+          </SheetHeader>
+          <div className="space-y-3 overflow-y-auto px-2 pb-[max(1.5rem,env(safe-area-inset-bottom))]">
+            <ReconnectingNote />
+            <AgentRoster onNavigate={() => setOpen(false)} />
+            <AddAgentsLink onNavigate={() => setOpen(false)} />
+          </div>
+        </SheetPopup>
+      </Sheet>
+    </li>
+  );
+}
 
 /**
  * Phone bar. Four destinations at most, plus More when anything is left over.
@@ -75,6 +110,7 @@ export function MobileDock({
         style={{ gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))` }}
       >
         {items.map((item) => {
+          if (item.sheet === "agents") return <AgentsTab key={item.id} label={item.label} />;
           const active = isShellItemActive(pathname, hash, item);
           const Icon = ICONS[item.icon];
           return (

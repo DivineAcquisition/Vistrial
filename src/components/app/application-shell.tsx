@@ -51,9 +51,12 @@ export function ApplicationShell({
   banner,
   version,
   chat = false,
+  roster = false,
 }: {
   children: ReactNode;
   groups: ShellNavGroup[];
+  /** The agent-first sidebar is on for this workspace. */
+  roster?: boolean;
   phone: ShellNavItem[];
   more: ShellNavItem[];
   counts?: AttentionCounts;
@@ -114,6 +117,7 @@ export function ApplicationShell({
           pathname={pathname}
           hash={hash}
           counts={counts}
+          roster={roster}
           account={renderAccount("sidebar", collapsed)}
         />
         <SidebarInset className={cn("min-w-0 overflow-x-hidden bg-transparent", chat && "h-svh max-h-svh")}>

@@ -17,6 +17,7 @@ import {
 } from "@/components/ui/menu";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useOrg } from "@/components/app/org-provider";
+import { HiddenAgentItems } from "@/components/agents/hidden-agents";
 import { initials } from "@/lib/format";
 import { WELCOME_COPY } from "@/lib/workspace/voice";
 import { SHELL_ROLE_LABEL } from "@/lib/shell/nav";
@@ -91,6 +92,7 @@ export function UserMenu({
         <MenuLinkItem render={<Link href="/app/notifications" />}>Notifications</MenuLinkItem>
         <MenuLinkItem render={<Link href="/app/help" />}>Help</MenuLinkItem>
         {welcomeTour ? <MenuLinkItem render={<Link href="/app/home?tour=1" />}>{WELCOME_COPY.tour}</MenuLinkItem> : null}
+        <HiddenAgentItems />
         {isStaff ? (
           <MenuLinkItem render={<Link href="/app/team" />}>Vistrial team</MenuLinkItem>
         ) : null}

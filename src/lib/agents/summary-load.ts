@@ -26,16 +26,7 @@ export async function loadAgentSummary(orgId: string, now: number = Date.now()):
 
 /** The one "waiting on you" count, for badges that do not need the whole summary. */
 export async function loadWaitingTotal(orgId: string, agentId?: string): Promise<number> {
-  const db = (await createClient()) as unknown as {
-    from: (table: string) => {
-      select: (columns: string, options: { count: "exact"; head: true }) => {
-        eq: (column: string, value: string) => PromiseLike<{ count: number | null; error: unknown }> & {
-          eq: (column: string, value: string) => PromiseLike<{ count: number | null; error: unknown }>;
-        };
-      };
-    };
-  };
-  const base = db.from("agent_waiting_items").select("id", { count: "exact", head: true }).eq("org_id", orgId);
-  const { count, error } = await (agentId ? base.eq("agent_id", agentId) : base);
-  return error ? 0 : count ?? 0;
+  const db = (await createClient()) as unknown as Rpc;
+  const { data, error } = await db.rpc("agent_waiting_count", { p_org_id: orgId, p_agent_id: agentId ?? null });
+  return error ? 0 : Number(data ?? 0);
 }

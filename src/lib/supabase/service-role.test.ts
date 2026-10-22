@@ -28,6 +28,8 @@ const REVIEWED = new Set([
   "src/app/api/webhooks/resend/route.ts",
   "src/app/api/webhooks/stripe-billing/route.ts",
   "src/app/(workspace)/app/agents/actions.ts",
+  "src/app/(workspace)/app/agents/roster-actions.ts",
+  "src/app/(workspace)/app/team/agents/registry/page.tsx",
   "src/app/(workspace)/app/cases/scribe-actions.ts",
   "src/app/(workspace)/app/agents/simulator/page.tsx",
   "src/app/(workspace)/app/calls/actions.ts",

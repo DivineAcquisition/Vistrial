@@ -2,7 +2,7 @@
 
 import { CompassIcon, ScaleIcon, ScrollTextIcon, SendIcon, ShieldIcon, SparklesIcon, type LucideIcon } from "lucide-react";
 
-import { AGENTS, type AgentGlyph as GlyphName, type LiveAgentId } from "@/lib/agents/roster";
+import { AGENT_ACCENTS, AGENTS, type AgentAccentKey, type AgentGlyph as GlyphName, type LiveAgentId } from "@/lib/agents/roster";
 import { PRESENCE_TONE, type PresenceState } from "@/lib/live/model";
 import { cn } from "@/lib/utils";
 
@@ -27,22 +27,34 @@ export function AgentGlyph({
   className?: string;
 }) {
   const agent = AGENTS[agentId];
-  const Icon = GLYPHS[agent.glyph];
+  return <GlyphMark glyph={agent.glyph} accent={agent.accentKey} size={size} working={working} className={className} />;
+}
+
+/** A glyph from registry data, so an agent with no code of its own still has one. */
+export function GlyphMark({
+  glyph,
+  accent,
+  size = "sm",
+  working = false,
+  className,
+}: {
+  glyph: GlyphName;
+  accent: AgentAccentKey;
+  size?: "xs" | "sm" | "md" | "lg";
+  working?: boolean;
+  className?: string;
+}) {
+  const Icon = GLYPHS[glyph] ?? SparklesIcon;
+  const tone = AGENT_ACCENTS[accent] ?? AGENT_ACCENTS.neutral;
   const box = { xs: "size-5", sm: "size-6", md: "size-8", lg: "size-11" }[size];
   const icon = { xs: "size-3", sm: "size-3.5", md: "size-4", lg: "size-5" }[size];
   return (
     <span
       aria-hidden
-      className={cn(
-        "relative inline-flex shrink-0 items-center justify-center rounded-md ring-1",
-        agent.accent.soft,
-        agent.accent.ring,
-        box,
-        className
-      )}
+      className={cn("relative inline-flex shrink-0 items-center justify-center rounded-md ring-1", tone.soft, tone.ring, box, className)}
     >
-      <Icon className={cn(icon, agent.accent.text)} />
-      {working ? <span className={cn("live-pulse absolute -right-0.5 -top-0.5 size-1.5 rounded-full", agent.accent.dot)} /> : null}
+      <Icon className={cn(icon, tone.text)} />
+      {working ? <span className={cn("live-pulse absolute -right-0.5 -top-0.5 size-1.5 rounded-full", tone.dot)} /> : null}
     </span>
   );
 }

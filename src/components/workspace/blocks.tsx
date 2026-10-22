@@ -1,19 +1,16 @@
 "use client";
 
 import { useOrg } from "@/components/app/org-provider";
-import { useLiveState } from "@/components/live/live-provider";
+import { useWaitingTotal } from "@/components/live/live-provider";
 import { WorkspaceSection } from "@/components/workspace/section";
 import { DecisionsSection } from "@/components/workspace/decisions";
 import type { QueueItemView } from "@/lib/home/views";
-import { isOpenRequest } from "@/lib/live/model";
 import type { DecisionsData } from "@/lib/workspace/load";
 import { DECISION_COPY, subtitle } from "@/lib/workspace/voice";
 
+/** The one "waiting on you" total, the same number as the sidebar and the Overview badge. */
 function useOpenDecisions(): number {
-  const live = useLiveState();
-  let count = 0;
-  for (const item of live.waiting.values()) if (isOpenRequest(item.status)) count += 1;
-  return count;
+  return useWaitingTotal();
 }
 
 /** The true line under the business name. Decisions are live; due now comes from Sentry's clocks. */

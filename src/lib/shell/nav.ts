@@ -44,12 +44,16 @@ export type ShellNavItem = {
   /** Lower numbers sit in the phone bar. Omitted items go under More. */
   phone?: number;
   children?: ShellNavItem[];
+  /** Opens a sheet instead of a page (the phone Agents view). */
+  sheet?: "agents";
 };
 
 export type ShellNavGroup = {
   id: string;
   label: string;
   items: ShellNavItem[];
+  /** The generated agent roster renders here instead of items. */
+  roster?: boolean;
 };
 
 export type ShellNavigation = {
@@ -459,6 +463,14 @@ function staffGroups(input: {
           icon: "results",
         },
         {
+          id: "agent-registry",
+          label: "Agent registry",
+          href: "/app/team/agents/registry",
+          match: "/app/team/agents/registry",
+          icon: "agents",
+          description: "Every agent Vistrial hosts, its plans, and where it is on.",
+        },
+        {
           id: "health-rules",
           label: "Health rules",
           href: "/app/team/health-rules",
@@ -537,6 +549,112 @@ function staffGroups(input: {
   return groups;
 }
 
+/** The phone Agents view: a full-screen roster, not a page. */
+const AGENTS_SHEET: ShellNavItem = {
+  id: "agents-sheet",
+  label: "Agents",
+  href: "/app/agents",
+  match: "/app/agents/__sheet",
+  icon: "agents",
+  sheet: "agents",
+};
+
+const LIBRARY_ITEM: ShellNavItem = {
+  id: "library",
+  label: "Add agents",
+  href: "/app/agents/library",
+  match: "/app/agents/library",
+  icon: "agents",
+  description: "Agents this workspace can turn on or ask about.",
+};
+
+const ROSTER_GROUP: ShellNavGroup = { id: "agents", label: "Agents", items: [], roster: true };
+
+function withPhone(item: ShellNavItem, phone: number | undefined): ShellNavItem {
+  const next = { ...item };
+  if (phone === undefined) delete next.phone;
+  else next.phone = phone;
+  return next;
+}
+
+/**
+ * The agent-first navigation (Prompt 24), behind the per-workspace switch.
+ * Fixed destinations stay at six or fewer for customer roles; the agent
+ * roster is generated from the shared summary and is not counted. An area's
+ * work page (Case Files for Sales) moves under its area header when the
+ * roster shows it, and stays a fixed item otherwise.
+ */
+export function rosterNavigation(input: {
+  role: WorkspaceRole;
+  templateAccess: boolean;
+  workspaceName?: string;
+  /** Work pages the roster shows under an area header for this person. */
+  areaWorkPages: string[];
+}): ShellNavigation {
+  const underArea = (href: string) => input.areaWorkPages.includes(href);
+  const groups = groupsFor(input);
+  const flat = groups.flatMap((group) => group.items);
+  const find = (id: string) => flat.find((item) => item.id === id);
+
+  let built: ShellNavGroup[];
+  let phone: ShellNavItem[];
+  switch (input.role) {
+    case "owner": {
+      const overview = find("overview")!;
+      const cases = find("cases")!;
+      const results = find("results")!;
+      const settings = find("settings")!;
+      built = [
+        workspaceGroup([withPhone(overview, 1)]),
+        ROSTER_GROUP,
+        { id: "workspace-more", label: "", items: [...(underArea(cases.href) ? [] : [cases]), results, settings] },
+      ];
+      phone = [withPhone(overview, 1), AGENTS_SHEET, cases, results];
+      break;
+    }
+    case "member": {
+      const [overview, results, reports] = ["overview", "results", "reports"].map((id) => find(id)!);
+      built = [workspaceGroup([overview]), ROSTER_GROUP, { id: "workspace-more", label: "", items: [results, reports] }];
+      phone = [overview, AGENTS_SHEET, results, reports];
+      break;
+    }
+    case "operator": {
+      const [leads, today, cases, profile] = ["leads", "today", "cases", "profile"].map((id) => find(id)!);
+      built = [{ id: "work", label: "Work", items: [leads, today, cases, profile] }, ROSTER_GROUP];
+      phone = [today, leads, AGENTS_SHEET, profile];
+      break;
+    }
+    case "service_team":
+    case "platform_admin": {
+      built = groups.map((group) =>
+        group.id === "here"
+          ? { ...group, items: group.items.filter((item) => item.id !== "agents" && !(item.id === "cases" && underArea(item.href))) }
+          : group
+      );
+      const here = built.findIndex((group) => group.id === "here");
+      built.splice(here + 1, 0, ROSTER_GROUP);
+      const staffHome = find("staff-home")!;
+      const queue = find("queue")!;
+      const overview = built.find((group) => group.id === "here")!.items.find((item) => item.id === "overview")!;
+      phone = [staffHome, queue, overview, AGENTS_SHEET];
+      break;
+    }
+    default:
+      return { groups: [], phone: [], more: [] };
+  }
+
+  const phoneIds = new Set(phone.map((item) => item.id));
+  const more: ShellNavItem[] = [];
+  for (const group of built) {
+    for (const item of group.items) {
+      if (!phoneIds.has(item.id)) more.push(item);
+      for (const child of item.children ?? []) if (!phoneIds.has(child.id)) more.push(child);
+    }
+  }
+  if (input.role !== "operator") more.push(LIBRARY_ITEM);
+  return { groups: built, phone, more };
+}
+
 /** Platform pages are not "inside" one customer workspace. */
 export function isPlatformRoute(pathname: string): boolean {
   return ["/app/team", "/app/ops", "/app/layouts", "/app/agents/health"].some(
@@ -564,6 +682,9 @@ export function isShellItemActive(pathname: string, hash: string, item: ShellNav
   }
   if (item.id === "agents") {
     return isNavActive(pathname, item.match) && !pathname.startsWith("/app/agents/health");
+  }
+  if (item.id === "oversight") {
+    return isNavActive(pathname, item.match) && !pathname.startsWith("/app/team/agents/registry");
   }
   if (item.id === "settings") {
     return isNavActive(pathname, item.match) && !pathname.startsWith("/app/settings/configuration");
@@ -598,6 +719,7 @@ const TITLE_RULES: Array<{ prefix: string; title: string; crumbs: Array<{ href: 
   { prefix: "/app/team/connections", title: "Connections", crumbs: [{ href: "/app/team/connections", label: "Connections" }] },
   { prefix: "/app/team/compass/help", title: "Help articles", crumbs: [{ href: "/app/team/compass", label: "Compass" }, { href: "/app/team/compass/help", label: "Help articles" }] },
   { prefix: "/app/team/compass", title: "Compass", crumbs: [{ href: "/app/team/compass", label: "Compass" }] },
+  { prefix: "/app/team/agents/registry", title: "Agent registry", crumbs: [{ href: "/app/team/agents/registry", label: "Agent registry" }] },
   { prefix: "/app/team/agents", title: "Agent oversight", crumbs: [{ href: "/app/team/agents", label: "Agent oversight" }] },
   { prefix: "/app/team/data-requests", title: "Data requests", crumbs: [{ href: "/app/team/queue", label: "Queue" }, { href: "/app/team/data-requests", label: "Data requests" }] },
   { prefix: "/app/team/metrics", title: "Metrics", crumbs: [{ href: "/app/team/metrics", label: "Metrics" }] },
@@ -631,6 +753,7 @@ const TITLE_RULES: Array<{ prefix: string; title: string; crumbs: Array<{ href: 
   { prefix: "/app/results", title: "Results", crumbs: [{ href: "/app/results", label: "Results" }] },
   { prefix: "/app/help", title: "Help", crumbs: [{ href: "/app/help", label: "Help" }] },
   { prefix: "/app/notifications", title: "Notifications", crumbs: [{ href: "/app/notifications", label: "Notifications" }] },
+  { prefix: "/app/agents/library", title: "Add agents", crumbs: [{ href: "/app/agents", label: "Sales" }, { href: "/app/agents/library", label: "Add agents" }] },
   { prefix: "/app/agents/health", title: "Agent Health", crumbs: [{ href: "/app/agents", label: "Sales" }, { href: "/app/agents/health", label: "Agent Health" }] },
   { prefix: "/app/agents/simulator", title: "Simulator", crumbs: [{ href: "/app/agents", label: "Sales" }, { href: "/app/agents/simulator", label: "Simulator" }] },
   { prefix: "/app/agents/", title: "Agent", crumbs: [{ href: "/app/agents", label: "Sales" }, { href: "", label: "Agent" }] },

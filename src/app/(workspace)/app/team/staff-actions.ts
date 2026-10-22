@@ -216,6 +216,15 @@ export async function setAgentHalt(agentId: string, halted: boolean, reason: str
       console.error(JSON.stringify({ src: "vistrial", event: "halt.mirror_failed", agentId }));
     }
   }
+  // Platform Admins and the Service Team hear about a halt or a resume at once.
+  const { notifyDaAlert } = await import("@/lib/ops/alerts");
+  await notifyDaAlert({
+    kind: halted ? "agent_halted_everywhere" : "agent_resumed_everywhere",
+    title: halted ? `An agent was halted in every workspace (${agentId})` : `An agent was resumed in every workspace (${agentId})`,
+    checkFirst: "Agent oversight shows who changed it and why.",
+    severity: halted ? "high" : "info",
+    detail: { agentId },
+  });
   revalidatePath("/app/team/agents");
   return { ok: true };
 }

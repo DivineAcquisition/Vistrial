@@ -4,6 +4,8 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 import { CircleHelp } from "lucide-react";
 
+import { AddAgentsLink, ReconnectingNote } from "@/components/agents/agent-roster";
+import { useOrg } from "@/components/app/org-provider";
 import { ShellNav } from "@/components/app/shell-nav";
 import Logo from "@/components/brand/logo";
 import {
@@ -23,6 +25,14 @@ import { APP_NAME } from "@/lib/constants";
 import type { AttentionCounts, ShellNavGroup } from "@/lib/shell/nav";
 import { cn } from "@/lib/utils";
 
+/** One word for the workspace under its name. */
+const WORKSPACE_STATUS: Record<string, string> = {
+  active: "Live",
+  onboarding: "Setting up",
+  paused: "Paused",
+  closed: "Closed",
+};
+
 export function AppSidebar({
   homeHref,
   groups,
@@ -30,7 +40,9 @@ export function AppSidebar({
   hash,
   counts,
   account,
+  roster = false,
 }: {
+  roster?: boolean;
   homeHref: string;
   groups: ShellNavGroup[];
   pathname: string;
@@ -39,6 +51,7 @@ export function AppSidebar({
   account: ReactNode;
 }) {
   const { state, isMobile, setOpenMobile } = useSidebar();
+  const { org } = useOrg();
   const collapsed = !isMobile && state === "collapsed";
 
   function closeMobile() {
@@ -66,6 +79,14 @@ export function AppSidebar({
           </Link>
           <SidebarTrigger className="group-data-[collapsible=icon]:hidden" />
         </div>
+        {roster ? (
+          <div className="min-w-0 px-1 group-data-[collapsible=icon]:hidden">
+            <p className="truncate text-sm font-medium text-sidebar-accent-foreground" title={org.name}>
+              {org.name}
+            </p>
+            <p className="text-xs text-muted-foreground">{WORKSPACE_STATUS[org.status] ?? "Live"}</p>
+          </div>
+        ) : null}
       </SidebarHeader>
       <SidebarContent>
         <ShellNav
@@ -77,6 +98,12 @@ export function AppSidebar({
         />
       </SidebarContent>
       <SidebarFooter className="border-t border-sidebar-border">
+        {roster ? (
+          <div className="space-y-1 group-data-[collapsible=icon]:hidden">
+            <ReconnectingNote />
+            <AddAgentsLink onNavigate={closeMobile} />
+          </div>
+        ) : null}
         <SidebarGroup className="p-0">
           <SidebarMenu>
             <SidebarMenuItem>

@@ -349,7 +349,7 @@ export function derivePresence(input: {
   const waitingItems = input.waiting.filter(
     (item) => item.agentId === input.agentId && isOpenRequest(item.status)
   );
-  // The one "waiting on you" rule (agent_waiting_items): open requests this
+  // The one "waiting on you" rule (agent_waiting_for): open requests this
   // person can see. A run waiting on someone else is not counted here.
   const waitingCount = waitingItems.length;
   const working = mine.find((run) => run.status === "working" || run.status === "queued");

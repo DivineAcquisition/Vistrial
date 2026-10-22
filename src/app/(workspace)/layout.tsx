@@ -1,10 +1,12 @@
 import { OrgProvider } from "@/components/app/org-provider";
 import { AppShell } from "@/components/app/app-shell";
+import { AgentSummaryProvider } from "@/components/agents/summary-provider";
 import { AgentPanelProvider } from "@/components/live/agent-panel";
 import { LiveProvider } from "@/components/live/live-provider";
 import { RunViewerProvider } from "@/components/live/run-viewer";
 import { getAuthContext, toClientOrgState } from "@/lib/auth/session";
 import { enforceHostForPerson } from "@/lib/domains/host-guard";
+import { loadAgentSummary } from "@/lib/agents/summary-load";
 import { loadCalmMode, loadLiveSnapshot, type LiveSnapshot } from "@/lib/live/load";
 import { loadAttentionCounts } from "@/lib/shell/attention";
 import { loadPaymentProblem } from "@/lib/billing/banner";
@@ -34,7 +36,7 @@ export default async function WorkspaceLayout({ children }: { children: React.Re
     waiting: [],
     loadedAt: new Date().toISOString(),
   };
-  const [counts, snapshot, calm, paymentProblem, session, mfa, home] = await Promise.all([
+  const [counts, snapshot, calm, paymentProblem, session, mfa, home, summary] = await Promise.all([
     loadAttentionCounts(ctx),
     loadLiveSnapshot(ctx.org.id).catch(() => emptySnapshot),
     loadCalmMode(ctx.user.id).catch(() => false),
@@ -42,6 +44,7 @@ export default async function WorkspaceLayout({ children }: { children: React.Re
     guardStaffSession(ctx),
     ctx.platformRole ? mfaSelf() : Promise.resolve(null),
     loadHomeState(ctx).catch(() => null),
+    loadAgentSummary(ctx.org.id).catch(() => null),
   ]);
   const agentic = Boolean(home?.available && home.enabled);
   const welcomeTour = home
@@ -59,6 +62,7 @@ export default async function WorkspaceLayout({ children }: { children: React.Re
   return (
     <OrgProvider value={toClientOrgState(ctx)} key={ctx.org.id}>
       <LiveProvider orgId={ctx.org.id} workspaceStatus={ctx.org.status} initial={snapshot} initialCalm={calm}>
+        <AgentSummaryProvider orgId={ctx.org.id} initial={summary}>
         <RunViewerProvider staff={ctx.isStaff}>
           <AgentPanelProvider>
             <AppShell
@@ -75,6 +79,7 @@ export default async function WorkspaceLayout({ children }: { children: React.Re
             </AppShell>
           </AgentPanelProvider>
         </RunViewerProvider>
+        </AgentSummaryProvider>
       </LiveProvider>
     </OrgProvider>
   );

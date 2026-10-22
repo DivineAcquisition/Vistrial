@@ -19,6 +19,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 
+import { AgentRail, AgentRoster } from "@/components/agents/agent-roster";
 import { Badge } from "@/components/ui/badge";
 import {
   SidebarGroup,
@@ -30,6 +31,7 @@ import {
   SidebarMenuSub,
   SidebarMenuSubButton,
   SidebarMenuSubItem,
+  useSidebar,
 } from "@/components/ui/sidebar";
 import {
   countFor,
@@ -188,7 +190,10 @@ export function ShellNav({
 }) {
   return (
     <nav aria-label="Main">
-      {groups.map((group) => (
+      {groups.map((group) =>
+        group.roster ? (
+          <RosterGroup key={group.id} label={group.label} onNavigate={onNavigate} />
+        ) : (
         <SidebarGroup key={group.id}>
           <SidebarGroupLabel className="truncate">{group.label}</SidebarGroupLabel>
           <SidebarGroupContent>
@@ -206,8 +211,21 @@ export function ShellNav({
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
-      ))}
+        )
+      )}
     </nav>
+  );
+}
+
+/** The generated roster in the sidebar: full rows when open, glyphs with flyouts on the icon rail. */
+function RosterGroup({ label, onNavigate }: { label: string; onNavigate?: () => void }) {
+  const { state, isMobile } = useSidebar();
+  const collapsed = !isMobile && state === "collapsed";
+  return (
+    <SidebarGroup aria-label={label}>
+      <SidebarGroupLabel className="truncate">{label}</SidebarGroupLabel>
+      <SidebarGroupContent>{collapsed ? <AgentRail /> : <AgentRoster onNavigate={onNavigate} />}</SidebarGroupContent>
+    </SidebarGroup>
   );
 }
 

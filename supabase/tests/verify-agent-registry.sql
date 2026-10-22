@@ -296,7 +296,7 @@ BEGIN
   EXCEPTION WHEN insufficient_privilege THEN
     v_denied := true;
   END;
-  SELECT count(*) INTO v_count FROM public.agent_waiting_items WHERE org_id = v_org;
+  v_count := public.agent_waiting_count(v_org);
   RESET ROLE;
   IF NOT v_denied OR v_count <> 0 THEN
     RAISE EXCEPTION 'another workspace read the agent summary';
@@ -340,5 +340,280 @@ BEGIN
   FOR i IN 1..50 LOOP
     PERFORM public.agent_summary_frame(v_org);
   END LOOP;
+END
+$$;
+
+-- The sidebar switch, turning agents on and off, Run now, interest, hidden rows, and the registry tools.
+INSERT INTO auth.users (id, email)
+VALUES ('18181818-1818-4181-8181-181818181818', 'registry-admin@vistrial.local')
+ON CONFLICT (id) DO NOTHING;
+INSERT INTO public.platform_staff (user_id, role, display_name, email)
+VALUES ('18181818-1818-4181-8181-181818181818', 'platform_admin', 'Registry Admin', 'registry-admin@vistrial.local')
+ON CONFLICT (user_id) DO NOTHING;
+
+DO $$
+DECLARE
+  v_org uuid := '22222222-2222-4222-8222-222222222222';
+  v_owner text := '11111111-1111-4111-8111-111111111111';
+  v_admin text := '18181818-1818-4181-8181-181818181818';
+  v_out jsonb;
+  v_denied boolean;
+  v_count integer;
+  v_version integer;
+BEGIN
+  -- Only the Vistrial team flips the sidebar switch.
+  PERFORM set_config('request.jwt.claim.sub', v_owner, false);
+  SET ROLE authenticated;
+  v_denied := false;
+  BEGIN
+    PERFORM public.set_workspace_flag(v_org, 'agent_sidebar', true);
+  EXCEPTION WHEN insufficient_privilege THEN
+    v_denied := true;
+  END;
+  RESET ROLE;
+  IF NOT v_denied THEN
+    RAISE EXCEPTION 'an Owner flipped the sidebar switch';
+  END IF;
+  PERFORM set_config('request.jwt.claim.sub', v_admin, false);
+  SET ROLE authenticated;
+  PERFORM public.set_workspace_flag(v_org, 'agent_sidebar', true);
+  v_out := public.agent_summary(v_org);
+  RESET ROLE;
+  IF NOT (v_out ->> 'sidebar')::boolean THEN
+    RAISE EXCEPTION 'the summary did not report the sidebar switch';
+  END IF;
+
+  -- Staff turn an agent on: it waits for the Owner, and does not run.
+  UPDATE public.workspace_agent_activation SET stage = 'off_by_choice' WHERE org_id = v_org AND agent_id = 'relay';
+  SET ROLE authenticated;
+  v_out := public.agent_set_enabled(v_org, 'relay', true, false);
+  RESET ROLE;
+  IF v_out ->> 'stage' <> 'pending' THEN
+    RAISE EXCEPTION 'a staff enable did not wait for the Owner: %', v_out;
+  END IF;
+  IF (public.agent_may_run(v_org, 'relay') ->> 'ok')::boolean THEN
+    RAISE EXCEPTION 'an agent waiting for the Owner ran';
+  END IF;
+
+  -- The Owner confirms, during onboarding they cannot, and once live they can.
+  PERFORM set_config('request.jwt.claim.sub', v_owner, false);
+  UPDATE public.organizations SET status = 'onboarding' WHERE id = v_org;
+  SET ROLE authenticated;
+  v_denied := false;
+  BEGIN
+    PERFORM public.agent_set_enabled(v_org, 'relay', true, false);
+  EXCEPTION WHEN invalid_parameter_value THEN
+    v_denied := true;
+  END;
+  RESET ROLE;
+  UPDATE public.organizations SET status = 'active' WHERE id = v_org;
+  IF NOT v_denied THEN
+    RAISE EXCEPTION 'an Owner turned an agent on before go-live';
+  END IF;
+  SET ROLE authenticated;
+  v_out := public.agent_set_enabled(v_org, 'relay', true, false);
+  RESET ROLE;
+  IF v_out ->> 'action' <> 'agent.confirmed' OR NOT (public.agent_may_run(v_org, 'relay') ->> 'ok')::boolean THEN
+    RAISE EXCEPTION 'the Owner''s confirmation did not turn the agent on: %', v_out;
+  END IF;
+
+  -- A locked agent cannot be turned on by any route.
+  INSERT INTO public.billing_overrides (org_id, entitlement_key, enabled, reason) VALUES (v_org, 'agent:compass', false, 'verify lock');
+  SET ROLE authenticated;
+  v_denied := false;
+  BEGIN
+    PERFORM public.agent_set_enabled(v_org, 'compass', true, false);
+  EXCEPTION WHEN insufficient_privilege THEN
+    v_denied := true;
+  END;
+  RESET ROLE;
+  DELETE FROM public.billing_overrides WHERE org_id = v_org AND entitlement_key = 'agent:compass';
+  IF NOT v_denied THEN
+    RAISE EXCEPTION 'a locked agent was turned on';
+  END IF;
+
+  -- Turning off can withdraw open requests; data is kept either way.
+  INSERT INTO public.approval_items (org_id, kind, action_type, title, agent_id)
+  VALUES (v_org, 'no_show_rebook', 'no_show_rebook', 'Follow-up for a lead', 'relay');
+  SET ROLE authenticated;
+  v_out := public.agent_set_enabled(v_org, 'relay', false, true);
+  RESET ROLE;
+  IF v_out ->> 'stage' <> 'off_by_choice' OR (v_out ->> 'withdrawn')::integer < 1 THEN
+    RAISE EXCEPTION 'turning off did not withdraw the open request: %', v_out;
+  END IF;
+  SELECT count(*) INTO v_count FROM public.approval_items WHERE org_id = v_org AND agent_id = 'relay' AND status = 'withdrawn';
+  IF v_count < 1 THEN
+    RAISE EXCEPTION 'the withdrawn request was not kept';
+  END IF;
+  SET ROLE authenticated;
+  PERFORM public.agent_set_enabled(v_org, 'relay', true, false);
+  RESET ROLE;
+
+  -- Members and Operators cannot turn agents on.
+  PERFORM set_config('request.jwt.claim.sub', '14141414-1414-4141-8141-141414141414', false);
+  SET ROLE authenticated;
+  v_denied := false;
+  BEGIN
+    PERFORM public.agent_set_enabled(v_org, 'scribe', true, false);
+  EXCEPTION WHEN insufficient_privilege THEN
+    v_denied := true;
+  END;
+  RESET ROLE;
+  IF NOT v_denied THEN
+    RAISE EXCEPTION 'a Member turned an agent on';
+  END IF;
+
+  -- Run now: one per cooldown, a daily cap, and never while paused.
+  v_out := public.agent_run_now_claim(v_org, 'assay', v_owner::uuid, 10, 6);
+  IF NOT (v_out ->> 'ok')::boolean THEN
+    RAISE EXCEPTION 'the first Run now was refused: %', v_out;
+  END IF;
+  v_out := public.agent_run_now_claim(v_org, 'assay', v_owner::uuid, 10, 6);
+  IF v_out ->> 'reason' <> 'cooldown' OR v_out ->> 'availableAt' IS NULL THEN
+    RAISE EXCEPTION 'Run now ignored the cooldown: %', v_out;
+  END IF;
+  UPDATE public.agent_run_now_log SET requested_at = now() - interval '11 minutes' WHERE org_id = v_org AND agent_id = 'assay';
+  INSERT INTO public.agent_run_now_log (org_id, agent_id, requested_at)
+  SELECT v_org, 'assay', now() - make_interval(mins => 20 + g) FROM generate_series(1, 5) g;
+  v_out := public.agent_run_now_claim(v_org, 'assay', v_owner::uuid, 10, 6);
+  IF v_out ->> 'reason' <> 'cap' THEN
+    RAISE EXCEPTION 'Run now ignored the daily cap: %', v_out;
+  END IF;
+  PERFORM set_config('vistrial.live_record_replica', 'on', true);
+  INSERT INTO public.agent_presence_controls (org_id, agent_id, paused) VALUES (v_org, 'sentry', true)
+  ON CONFLICT (org_id, agent_id) DO UPDATE SET paused = true;
+  v_out := public.agent_run_now_claim(v_org, 'sentry', v_owner::uuid, 10, 6);
+  UPDATE public.agent_presence_controls SET paused = false WHERE org_id = v_org AND agent_id = 'sentry';
+  PERFORM set_config('vistrial.live_record_replica', '', true);
+  IF v_out ->> 'reason' <> 'paused' THEN
+    RAISE EXCEPTION 'Run now went past a pause: %', v_out;
+  END IF;
+
+  -- Interest is recorded once, and only the Owner or staff record it.
+  PERFORM set_config('request.jwt.claim.sub', v_owner, false);
+  SET ROLE authenticated;
+  PERFORM public.agent_record_interest(v_org, NULL, 'client_retention', 'notify_me');
+  PERFORM public.agent_record_interest(v_org, NULL, 'client_retention', 'notify_me');
+  v_out := public.agent_summary(v_org);
+  RESET ROLE;
+  SELECT count(*) INTO v_count FROM public.agent_interest WHERE org_id = v_org AND area_id = 'client_retention';
+  IF v_count <> 1 THEN
+    RAISE EXCEPTION 'interest was recorded % times', v_count;
+  END IF;
+  IF NOT EXISTS (
+    SELECT 1 FROM jsonb_array_elements(v_out -> 'areas') a WHERE a ->> 'id' = 'client_retention' AND a -> 'interest' ? 'notify_me'
+  ) THEN
+    RAISE EXCEPTION 'the summary did not show the recorded interest';
+  END IF;
+
+  -- A hidden row is the Owner's own: the agent stays on, and nobody else's view changes.
+  SET ROLE authenticated;
+  INSERT INTO public.agent_hidden (user_id, org_id, agent_id) VALUES (v_owner::uuid, v_org, 'assay');
+  v_out := public.agent_summary(v_org);
+  RESET ROLE;
+  IF NOT EXISTS (SELECT 1 FROM jsonb_array_elements(v_out -> 'agents') a WHERE a ->> 'id' = 'assay' AND (a ->> 'hidden')::boolean) THEN
+    RAISE EXCEPTION 'the hidden row was not reported';
+  END IF;
+  IF NOT (public.agent_may_run(v_org, 'assay') ->> 'ok')::boolean THEN
+    RAISE EXCEPTION 'hiding a row stopped the agent';
+  END IF;
+  PERFORM set_config('request.jwt.claim.sub', '12121212-1212-4121-8121-121212121212', false);
+  SET ROLE authenticated;
+  v_denied := false;
+  BEGIN
+    INSERT INTO public.agent_hidden (user_id, org_id, agent_id) VALUES ('12121212-1212-4121-8121-121212121212', v_org, 'relay');
+  EXCEPTION WHEN insufficient_privilege THEN
+    v_denied := true;
+  END;
+  RESET ROLE;
+  IF NOT v_denied THEN
+    RAISE EXCEPTION 'an Operator hid a row';
+  END IF;
+
+  -- Registry tools: Platform Admin only, every save a new version with a note.
+  PERFORM set_config('request.jwt.claim.sub', v_owner, false);
+  SET ROLE authenticated;
+  v_denied := false;
+  BEGIN
+    PERFORM public.agent_registry_save('relay', '{"name": "Renamed"}'::jsonb, 'not allowed');
+  EXCEPTION WHEN insufficient_privilege THEN
+    v_denied := true;
+  END;
+  RESET ROLE;
+  IF NOT v_denied THEN
+    RAISE EXCEPTION 'an Owner edited the registry';
+  END IF;
+  PERFORM set_config('request.jwt.claim.sub', v_admin, false);
+  SET ROLE authenticated;
+  v_denied := false;
+  BEGIN
+    PERFORM public.agent_registry_save('relay', '{"sort": 3}'::jsonb, '');
+  EXCEPTION WHEN invalid_parameter_value THEN
+    v_denied := true;
+  END;
+  v_version := public.agent_registry_save('relay', '{"sort": 3}'::jsonb, 'Verify a version bump.');
+  RESET ROLE;
+  IF NOT v_denied THEN
+    RAISE EXCEPTION 'a registry edit was saved without a note';
+  END IF;
+  IF v_version <> 2 OR NOT EXISTS (
+    SELECT 1 FROM public.agent_registry_versions WHERE kind = 'agent' AND entry_id = 'relay' AND version = 2 AND note = 'Verify a version bump.'
+  ) THEN
+    RAISE EXCEPTION 'the registry edit was not versioned: %', v_version;
+  END IF;
+
+  -- The sample agent proof: registered as a beta for this workspace only, it
+  -- appears in this workspace's summary and nowhere else, and goes when removed.
+  SET ROLE authenticated;
+  PERFORM public.agent_registry_save('sample_agent', jsonb_build_object(
+    'name', 'Sample', 'sublabel', 'Test agent', 'description', 'A sample agent for the registry test.',
+    'long_description', 'A sample agent for the registry test.', 'promise', 'It never contacts a lead.',
+    'area_id', 'sales', 'availability', 'beta', 'beta_org_ids', jsonb_build_array(v_org), 'included_plans', jsonb_build_array('internal')
+  ), 'Sample agent for the registry test.');
+  RESET ROLE;
+  PERFORM set_config('request.jwt.claim.sub', v_owner, false);
+  SET ROLE authenticated;
+  v_out := public.agent_summary(v_org);
+  RESET ROLE;
+  IF NOT EXISTS (SELECT 1 FROM jsonb_array_elements(v_out -> 'agents') a WHERE a ->> 'id' = 'sample_agent' AND (a ->> 'inCohort')::boolean) THEN
+    RAISE EXCEPTION 'the sample agent did not appear in its beta workspace';
+  END IF;
+  PERFORM set_config('request.jwt.claim.sub', '55555555-5555-4555-8555-555555555555', false);
+  SET ROLE authenticated;
+  v_out := public.agent_summary((SELECT o.id FROM public.organizations o JOIN public.org_members m ON m.org_id = o.id
+    WHERE m.user_id = '55555555-5555-4555-8555-555555555555' LIMIT 1));
+  RESET ROLE;
+  IF EXISTS (SELECT 1 FROM jsonb_array_elements(v_out -> 'agents') a WHERE a ->> 'id' = 'sample_agent') THEN
+    RAISE EXCEPTION 'the sample agent leaked to another workspace';
+  END IF;
+  DELETE FROM public.agent_registry_versions WHERE entry_id = 'sample_agent';
+  DELETE FROM public.workspace_agent_activation WHERE agent_id = 'sample_agent';
+  DELETE FROM public.agent_registry WHERE id = 'sample_agent';
+  PERFORM set_config('request.jwt.claim.sub', v_owner, false);
+  SET ROLE authenticated;
+  v_out := public.agent_summary(v_org);
+  RESET ROLE;
+  IF EXISTS (SELECT 1 FROM jsonb_array_elements(v_out -> 'agents') a WHERE a ->> 'id' = 'sample_agent') THEN
+    RAISE EXCEPTION 'the sample agent stayed after it was removed';
+  END IF;
+
+  DELETE FROM public.agent_hidden WHERE org_id = v_org;
+  DELETE FROM public.approval_items WHERE org_id = v_org AND agent_id IS NOT NULL;
+END
+$$;
+
+-- Summary cost on the seeded workspace, as the Owner.
+DO $$
+DECLARE
+  v_started timestamptz;
+BEGIN
+  PERFORM set_config('request.jwt.claim.sub', '11111111-1111-4111-8111-111111111111', false);
+  SET ROLE authenticated;
+  v_started := clock_timestamp();
+  FOR i IN 1..20 LOOP
+    PERFORM public.agent_summary('22222222-2222-4222-8222-222222222222');
+  END LOOP;
+  RESET ROLE;
+  RAISE NOTICE 'agent_summary: % ms each', round(EXTRACT(EPOCH FROM clock_timestamp() - v_started) * 1000 / 20, 1);
 END
 $$;

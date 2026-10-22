@@ -29,6 +29,7 @@ import { Button } from "@/components/ui/button";
 import { LocationPicker } from "@/components/integrations/location-picker";
 import { listSessionLocations } from "@/lib/ghl/connect";
 import { getSupabaseAdmin } from "@/lib/supabase/admin";
+import { HowItWorks } from "@/components/ui/how-it-works";
 import { OnboardCard } from "@/components/ui/onboard-card";
 import { Panel } from "@/components/ui/panel";
 import { Notice } from "@/components/ui/states";
@@ -150,6 +151,7 @@ export default async function SetupStepPage({
                 Setup never messages a lead. Even after you go live, every message Vistrial drafts waits for a person you choose to approve it.
               </p>
             </Notice>
+            <HowItWorks />
             <p className={helperClass}>
               You will confirm your setup, connect your CRM and texting, choose who approves and who gets told, and run a test with a practice lead.
               Your team does the technical parts and tells you when something needs you. You can stop at any point and come back; nothing is lost.

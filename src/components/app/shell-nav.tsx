@@ -157,7 +157,7 @@ export function ShellNav({
     <nav aria-label="Main">
       {groups.map((group) =>
         group.roster ? (
-          <RosterGroup key={group.id} label={group.label} onNavigate={onNavigate} />
+          <RosterGroup key={group.id} label={group.label} onNavigate={onNavigate} hideWorkPages={group.hideWorkPages} />
         ) : (
         <SidebarGroup key={group.id}>
           <SidebarGroupLabel className="truncate">{group.label}</SidebarGroupLabel>
@@ -183,13 +183,13 @@ export function ShellNav({
 }
 
 /** The generated roster in the sidebar: full rows when open, glyphs with flyouts on the icon rail. */
-function RosterGroup({ label, onNavigate }: { label: string; onNavigate?: () => void }) {
+function RosterGroup({ label, onNavigate, hideWorkPages }: { label: string; onNavigate?: () => void; hideWorkPages?: string[] }) {
   const { state, isMobile } = useSidebar();
   const collapsed = !isMobile && state === "collapsed";
   return (
     <SidebarGroup aria-label={label}>
       <SidebarGroupLabel className="truncate">{label}</SidebarGroupLabel>
-      <SidebarGroupContent>{collapsed ? <AgentRail /> : <AgentRoster onNavigate={onNavigate} />}</SidebarGroupContent>
+      <SidebarGroupContent>{collapsed ? <AgentRail /> : <AgentRoster onNavigate={onNavigate} hideWorkPages={hideWorkPages} />}</SidebarGroupContent>
     </SidebarGroup>
   );
 }

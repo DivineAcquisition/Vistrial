@@ -22,6 +22,9 @@ import type { CheckIssue, EdgeExit, WorkflowGraph } from "@/lib/workflows/types"
 const NODE_TYPES = { box: BoxNode };
 const EDGE_TYPES = { labeled: Edge.Labeled };
 
+/** A small diagram is read at a glance. The overview map only earns its space on a larger one. */
+const MINIMAP_MIN_BOXES = 14;
+
 /** Ask the canvas to move: "home" opens on Start at a readable size, "fit" shows everything. */
 export type ViewRequest = { kind: "home" | "fit"; n: number };
 
@@ -166,7 +169,9 @@ export function WorkflowCanvas({
         aria-label="Workflow diagram"
       >
         <Controls showInteractive={false} position="bottom-right" />
-        <MiniMap pannable zoomable className="hidden! rounded-lg border lg:block!" position="top-right" ariaLabel="Overview of the whole workflow" />
+        {flow.nodes.length > MINIMAP_MIN_BOXES ? (
+          <MiniMap pannable zoomable className="hidden! rounded-lg border lg:block!" position="top-right" ariaLabel="Overview of the whole workflow" />
+        ) : null}
         <Panel position="bottom-left" className="hidden max-w-xs items-start gap-2 px-3 py-2 text-xs text-muted-foreground sm:flex">
           <LockIcon className="mt-0.5 size-3.5 shrink-0" aria-hidden />
           <span>Every message waits for approval. Sends happen only from 8 am to 8 pm in the lead&apos;s time.</span>

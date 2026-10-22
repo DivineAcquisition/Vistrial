@@ -25,20 +25,13 @@ const steps = [
   },
 ];
 
-export function HowItWorks({ id = "how", className }: { id?: string; className?: string }) {
+export function HowItWorks({ id, className }: { id?: string; className?: string }) {
   return (
-    <section id={id} className={cn("scroll-mt-24 border-t border-border bg-background py-20 sm:py-28", className)}>
-      <div className="mx-auto max-w-3xl px-6 sm:px-10">
+    <section id={id} className={cn("scroll-mt-24 bg-transparent py-2", className)}>
+      <div className="mx-auto max-w-3xl px-5 sm:px-6">
         <div className="flex flex-col gap-3 text-center">
           <span className="text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground">How it works</span>
-          <h2
-            className="text-balance font-semibold tracking-tight text-card-foreground"
-            style={{
-              fontSize: "clamp(1.85rem, 4vw, 2.75rem)",
-              letterSpacing: "-0.03em",
-              lineHeight: 1.08,
-            }}
-          >
+          <h2 className="text-balance font-heading text-xl tracking-tight text-card-foreground sm:text-2xl">
             Four steps from a scattered record to a live sales team
           </h2>
         </div>

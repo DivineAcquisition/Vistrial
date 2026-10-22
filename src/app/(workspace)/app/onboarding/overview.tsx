@@ -2,6 +2,7 @@ import Link from "next/link";
 
 import { PageFrame } from "@/components/app/page-frame";
 import { Button } from "@/components/ui/button";
+import { HowItWorks } from "@/components/ui/how-it-works";
 import { OnboardCard } from "@/components/ui/onboard-card";
 import { Panel } from "@/components/ui/panel";
 import { Notice } from "@/components/ui/states";
@@ -65,6 +66,8 @@ export function OnboardingOverview({ view, isStaff, now }: { view: CustomerView;
           </div>
         </Panel>
       ) : null}
+
+      <HowItWorks id="setup-path" />
 
       <section aria-labelledby="your-part" className="space-y-3">
         <h2 id="your-part" className={cardTitle}>

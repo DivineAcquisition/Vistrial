@@ -5,14 +5,14 @@
 -- There is no second store of follow-up logic.
 --
 -- Also adds stage history (a record only: nothing fires from it, and nothing
--- is backfilled), per-lead enrollments, and a per-workspace switch.
+-- is backfilled), per-lead enrollments, and a per-workspace switch (workspace_flags).
 -- Publishing, enrolling and counting run on the server with the service role.
 
-ALTER TABLE public.organizations
-  ADD COLUMN IF NOT EXISTS workflows_enabled boolean NOT NULL DEFAULT false;
-
-COMMENT ON COLUMN public.organizations.workflows_enabled IS
-  'Per-workspace switch for Sales Workflows during Private Access. Off by default.';
+-- The per-workspace switch is a workspace_flags row, set by Vistrial staff and
+-- logged, the same way as the agent sidebar. Off unless a row says on.
+ALTER TABLE public.workspace_flags DROP CONSTRAINT IF EXISTS workspace_flags_flag_check;
+ALTER TABLE public.workspace_flags ADD CONSTRAINT workspace_flags_flag_check
+  CHECK (flag IN ('agent_sidebar', 'workflows'));
 
 -- ---------------------------------------------------------------------------
 -- Stage history

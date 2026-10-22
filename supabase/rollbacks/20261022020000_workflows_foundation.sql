@@ -25,6 +25,8 @@ DROP TABLE IF EXISTS public.lead_stage_history;
 DROP FUNCTION IF EXISTS public.workflow_enrollments_lead_limit();
 DROP FUNCTION IF EXISTS public.playbooks_published_limit();
 DROP FUNCTION IF EXISTS public.playbook_versions_freeze();
-ALTER TABLE public.organizations DROP COLUMN IF EXISTS workflows_enabled;
+DELETE FROM public.workspace_flags WHERE flag = 'workflows';
+ALTER TABLE public.workspace_flags DROP CONSTRAINT IF EXISTS workspace_flags_flag_check;
+ALTER TABLE public.workspace_flags ADD CONSTRAINT workspace_flags_flag_check CHECK (flag IN ('agent_sidebar'));
 
 COMMIT;

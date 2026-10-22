@@ -95,9 +95,14 @@ export type CheckContext = {
   talkTrackIds: ReadonlySet<string>;
   memberIds: ReadonlySet<string>;
   roles: ReadonlySet<string>;
-  /** Channels this workspace may use (text needs registration, email a sender). */
-  channels: ReadonlySet<"text" | "email">;
-  routingAvailable: boolean;
+  /**
+   * Channels this workspace may use (text needs registration, email a sender).
+   * Leave out when availability is not known. The checker then says so
+   * instead of guessing.
+   */
+  channels?: ReadonlySet<"text" | "email">;
+  /** Leave out when not known. The route check is then skipped. */
+  routingAvailable?: boolean;
   /** Connections that are currently unhealthy. Warns, never blocks. */
   unhealthyChannels?: ReadonlySet<"text" | "email">;
   limits?: Partial<WorkflowLimits>;

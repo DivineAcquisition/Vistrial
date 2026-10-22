@@ -18,7 +18,7 @@ so they cannot disagree.
 - The old follow-up sequence engine keeps running. It is the only follow-up
   path today and already holds the 8 pm to 8 am floor. It is migrated once
   workflows can send through Relay.
-- The per-workspace switch is `organizations.workflows_enabled`, off by default.
+- The per-workspace switch is a `workspace_flags` row with flag `workflows`, switched by Vistrial staff and logged, the same way as the agent sidebar.
 
 ## What is here
 
@@ -45,6 +45,20 @@ so they cannot disagree.
 - `vitest` has 16 failing tests in six files (navigation, plain-language,
   portal-access, auth email templates, execution) that fail the same way
   without this change.
+
+## Read-only pages (this slice)
+
+- `/app/workflows` lists workflows as cards. `/app/workflows/[id]` shows the
+  steps as an indented list (the same form the phone and screen readers use)
+  and the checker's messages. Both return not found unless the workspace has
+  the `workflows` flag on, and only owners (and staff) can open them.
+- A Workflows button appears on the Sales page when the flag is on. It is not in
+  the sidebar yet: the Prompt 24 registry holds one work page per area, and
+  adding a second means changing the registry shape and its seed test. That is
+  its own change.
+- Staff open these pages through their own session, and the data policies let
+  only owners and admins read, so staff see an empty list until a staff read
+  path is added.
 
 ## Not built yet
 

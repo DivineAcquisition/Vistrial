@@ -195,7 +195,9 @@ function checkBox(box: Box, ctx: CheckContext, issues: CheckIssue[], longWaitDay
       return;
     case "draft":
       if (!c.channel) err("missing_channel", "Choose text or email.");
-      else if (!ctx.channels.has(c.channel)) {
+      else if (!ctx.channels) {
+        warn("channel_unchecked", "Whether this channel is available was not checked yet.");
+      } else if (!ctx.channels.has(c.channel)) {
         err(
           "channel_unavailable",
           c.channel === "text" ? "Text is not available yet: the number is not registered." : "Email is not available: no sender is connected."
@@ -220,7 +222,7 @@ function checkBox(box: Box, ctx: CheckContext, issues: CheckIssue[], longWaitDay
       if (c.assignee.kind === "role" && !ctx.roles.has(c.assignee.role)) err("role_gone", "The role chosen here does not exist.");
       return;
     case "route":
-      if (!ctx.routingAvailable) err("no_routing", "No routing rule is available. Set one up under routing first.");
+      if (ctx.routingAvailable === false) err("no_routing", "No routing rule is available. Set one up under routing first.");
       return;
     case "note":
       if (!c.text.trim()) err("empty_note", "A note needs some text.");

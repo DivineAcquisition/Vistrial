@@ -8,6 +8,7 @@ import { getAuthContext } from "@/lib/auth/session";
 import { canEditApprovalGate, canLockApprovalGate } from "@/lib/home/catalog";
 import { gateFormRows, loadGateState } from "@/lib/home/gate";
 import { createClient } from "@/lib/supabase/server";
+import { workflowsEnabled } from "@/lib/workflows/store";
 
 export const dynamic = "force-dynamic";
 
@@ -17,9 +18,10 @@ export default async function AgentsPage() {
   const ctx = await getAuthContext();
   if (ctx.workspaceRole !== "owner" && !ctx.isStaff) notFound();
   const supabase = await createClient();
-  const [gate, crm] = await Promise.all([
+  const [gate, crm, hasWorkflows] = await Promise.all([
     loadGateState(supabase, ctx.org.id),
     supabase.from("ghl_connections").select("status").eq("org_id", ctx.org.id).eq("status", "active").limit(1),
+    workflowsEnabled(supabase, ctx.org.id),
   ]);
   const rows: AutomationRow[] = gateFormRows(gate).map((row) => ({
     id: row.id,
@@ -36,9 +38,16 @@ export default async function AgentsPage() {
       title="Sales"
       description="Your sales team. It watches, drafts, and waits for your OK."
       actions={
-        <Button variant="primary" render={<Link href="/app/compass" />}>
-          Ask Compass
-        </Button>
+        <div className="flex flex-wrap gap-2">
+          {hasWorkflows ? (
+            <Button variant="outline" render={<Link href="/app/workflows" />}>
+              Workflows
+            </Button>
+          ) : null}
+          <Button variant="primary" render={<Link href="/app/compass" />}>
+            Ask Compass
+          </Button>
+        </div>
       }
       secondaryActions={
         ctx.isStaff ? (

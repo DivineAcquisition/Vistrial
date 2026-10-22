@@ -246,3 +246,11 @@ describe("layout", () => {
     expect(top.find((p) => p.id === "d1")!.y).toBeGreaterThan(top.find((p) => p.id === "w1")!.y);
   });
 });
+
+describe("checker with unknown channels", () => {
+  it("warns instead of guessing when channel availability is not supplied", () => {
+    const result = checkWorkflow(valid(), { ...ctx, channels: undefined });
+    expect(result.ok).toBe(true);
+    expect(result.issues.some((i) => i.code === "channel_unchecked")).toBe(true);
+  });
+});

@@ -18,7 +18,7 @@ import { FORSIGHT_PATH } from "@/lib/navigation";
  *   vistrial.io / www.vistrial.io  → marketing site
  *   app.vistrial.io                → core operator app and customer views
  *   admin.vistrial.io              → the same app, for the Vistrial team
- *   pulse.vistrial.io              → core Forsight (same app, different front door)
+ *   pulse.vistrial.io              → retired; every path moves to app.vistrial.io
  *   forsight.vistrial.io           → Stellar
  *
  * Localhost and Vercel previews serve every product so development still works
@@ -170,7 +170,6 @@ function routeSiteHost(path: string): HostRouteDecision {
   if (isMarketingApi(path) || isHealthApi(path)) return { action: "allow" };
   if (isAuthPath(path)) return bounce("app", path);
   if (isStellarPath(path)) return bounce("stellar", path);
-  if (pathIs(path, FORSIGHT_PATH)) return bounce("pulse", path);
   if (isCoreAppPath(path) || isApiPath(path)) return bounce("app", path);
   return { action: "allow" };
 }
@@ -200,12 +199,10 @@ function routeAdminHost(path: string): HostRouteDecision {
 }
 
 function routePulseHost(path: string): HostRouteDecision {
-  if (path === "/") return frontDoor(FORSIGHT_PATH);
+  if (path === "/" || pathIs(path, FORSIGHT_PATH)) return bounce("app", "/login", false);
   if (isMarketingPath(path)) return bounce("site", path, false);
   if (isStellarPath(path)) return bounce("stellar", path);
-  if (isAuthPath(path) || isCoreAppPath(path) || isApiPath(path)) {
-    return { action: "allow" };
-  }
+  if (isAuthPath(path) || isCoreAppPath(path) || isApiPath(path)) return bounce("app", path);
   return bounce("site", "/");
 }
 

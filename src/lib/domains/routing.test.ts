@@ -125,13 +125,13 @@ describe("strict host routing", () => {
     );
   });
 
-  it("sends Forsight bookmark paths on the site to pulse", () => {
+  it("sends Forsight bookmark paths on the site to the app host", () => {
     expect(resolvedHostLocation({ host: "vistrial.io", pathname: FORSIGHT_PATH })).toBe(
-      `${PRODUCTION_FORSIGHT_ORIGIN}${FORSIGHT_PATH}`
+      `${PRODUCTION_APP_ORIGIN}${FORSIGHT_PATH}`
     );
     expect(
       resolvedHostLocation({ host: "www.vistrial.io", pathname: `${FORSIGHT_PATH}/pipeline` })
-    ).toBe(`${PRODUCTION_FORSIGHT_ORIGIN}${FORSIGHT_PATH}/pipeline`);
+    ).toBe(`${PRODUCTION_APP_ORIGIN}${FORSIGHT_PATH}/pipeline`);
   });
 
   it("sends Stellar paths on every other host to forsight.vistrial.io", () => {
@@ -166,7 +166,7 @@ describe("strict host routing", () => {
       `${PRODUCTION_APP_ORIGIN}/login`
     );
     expect(resolvedHostLocation({ host: "pulse.vistrial.io", pathname: "/" })).toBe(
-      `${PRODUCTION_FORSIGHT_ORIGIN}${FORSIGHT_PATH}`
+      `${PRODUCTION_APP_ORIGIN}/login`
     );
     expect(resolvedHostLocation({ host: "forsight.vistrial.io", pathname: "/" })).toBe(
       `${PRODUCTION_STELLAR_ORIGIN}/stellar`
@@ -174,13 +174,16 @@ describe("strict host routing", () => {
     expect(resolveHostRoute({ host: "vistrial.io", pathname: "/" })).toEqual({ action: "allow" });
   });
 
-  it("lets pulse serve the rest of the operator app", () => {
-    expect(resolveHostRoute({ host: "pulse.vistrial.io", pathname: "/app/queue" })).toEqual({
-      action: "allow",
-    });
-    expect(resolveHostRoute({ host: "pulse.vistrial.io", pathname: FORSIGHT_PATH })).toEqual({
-      action: "allow",
-    });
+  it("moves every pulse path to the app host", () => {
+    expect(resolvedHostLocation({ host: "pulse.vistrial.io", pathname: "/app/queue", search: "?a=1" })).toBe(
+      `${PRODUCTION_APP_ORIGIN}/app/queue?a=1`
+    );
+    expect(resolvedHostLocation({ host: "pulse.vistrial.io", pathname: FORSIGHT_PATH })).toBe(
+      `${PRODUCTION_APP_ORIGIN}/login`
+    );
+    expect(resolvedHostLocation({ host: "pulse.vistrial.io", pathname: "/login" })).toBe(
+      `${PRODUCTION_APP_ORIGIN}/login`
+    );
     expect(resolveHostRoute({ host: "app.vistrial.io", pathname: FORSIGHT_PATH })).toEqual({
       action: "allow",
     });

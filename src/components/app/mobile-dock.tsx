@@ -63,7 +63,7 @@ function AgentsTab({ label }: { label: string }) {
           <Bot className="size-5" aria-hidden />
           <span className="truncate">{label}</span>
           {waiting > 0 ? (
-            <span className="absolute right-3 top-0.5 rounded-full bg-warning px-1 text-[10px] leading-4 text-ink-950">{waiting > 99 ? "99+" : waiting}</span>
+            <span className="absolute right-3 top-0.5 rounded-full bg-warning px-1 text-[10px] leading-4 text-[#07070b]">{waiting > 99 ? "99+" : waiting}</span>
           ) : null}
         </SheetTrigger>
         <SheetPopup side="bottom" className="h-[100svh] max-h-[100svh]">
@@ -103,7 +103,7 @@ export function MobileDock({
   return (
     <nav
       aria-label="Primary"
-      className="fixed inset-x-0 bottom-0 z-40 border-t border-white/[0.08] bg-ink-950/95 px-2 pt-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] backdrop-blur-md print:hidden md:hidden"
+      className="fixed inset-x-0 bottom-0 z-40 border-t border-overlay/[0.08] bg-ink-950/95 px-2 pt-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] backdrop-blur-md print:hidden md:hidden"
     >
       <ul
         className="grid gap-1"

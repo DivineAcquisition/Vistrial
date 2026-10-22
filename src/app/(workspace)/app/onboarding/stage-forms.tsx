@@ -320,7 +320,7 @@ function StageBody({ stage, defaults }: { stage: ProfileStage; defaults: Profile
             Anything your CRM already sends is switched off here, so nobody gets the same nudge twice.
           </p>
           <Panel className="p-4">
-            <p className="font-heading text-sm text-white">What happens to your team&apos;s calls</p>
+            <p className="font-heading text-sm text-strong">What happens to your team&apos;s calls</p>
             <p className={`${helperClass} mt-2`}>
               Every rep is told, in these words, the first time they sign in: their calls are
               transcribed, Vistrial reads those transcripts for patterns — what was asked, which
@@ -436,7 +436,7 @@ function StageBody({ stage, defaults }: { stage: ProfileStage; defaults: Profile
             {GOAL_METRICS.length > 0 ? "You can change it later." : null}
           </p>
           <div>
-            <label className="flex items-start gap-3 text-sm text-white">
+            <label className="flex items-start gap-3 text-sm text-strong">
               <Checkbox
                 name="aggregate_opt_out"
                 defaultChecked={defaults.aggregate_opt_out?.value === true}
@@ -476,7 +476,7 @@ export function StageForm({
         <input type="hidden" name="stage" value={stage} />
         <StageBody stage={stage} defaults={defaults} />
         {state.status === "error" ? <p className={errorClass}>{state.error}</p> : null}
-        <div className="flex flex-wrap items-center gap-3 border-t border-white/10 pt-5">
+        <div className="flex flex-wrap items-center gap-3 border-t border-overlay/10 pt-5">
           <Button type="submit" variant="primary" size="lg" disabled={pending}>
             {pending ? "Saving…" : `Continue — ${meta.payoff.toLowerCase()}`}
           </Button>

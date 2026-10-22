@@ -51,13 +51,13 @@ export default async function OnboardingProgressPage() {
             <li key={step.key}>
               <Panel className="p-5">
                 <div className="flex flex-wrap items-start justify-between gap-2">
-                  <h2 className="min-w-0 text-sm text-white">
+                  <h2 className="min-w-0 text-sm text-strong">
                     {index + 1}. {step.label}
                   </h2>
                   <StatusBadge label={state.label} tone={state.tone} />
                 </div>
                 <p className={helperClass}>{step.state === "coming_next" ? "Coming next." : (step.detail ?? step.why)}</p>
-                {step.note ? <p className="mt-2 text-sm text-white">Your team: {step.note}</p> : null}
+                {step.note ? <p className="mt-2 text-sm text-strong">Your team: {step.note}</p> : null}
                 {step.eta ? <p className={helperClass}>Expected: {step.eta}</p> : null}
                 {waiting ? <p className={helperClass}>Waiting {waiting}.</p> : null}
               </Panel>

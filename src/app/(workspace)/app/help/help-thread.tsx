@@ -25,7 +25,7 @@ export function HelpThread({ request, replies }: { request: HelpRequestView; rep
           <p className={helperClass}>
             {request.created_by_name} · {formatDateTime(request.created_at)} UTC
           </p>
-          <p className="mt-2 text-sm whitespace-pre-line text-white">{request.message}</p>
+          <p className="mt-2 text-sm whitespace-pre-line text-strong">{request.message}</p>
         </Panel>
       </li>
       {replies.map((reply) => (
@@ -34,7 +34,7 @@ export function HelpThread({ request, replies }: { request: HelpRequestView; rep
             <p className={helperClass}>
               {reply.author_name} · {formatDateTime(reply.created_at)} UTC
             </p>
-            <p className="mt-2 text-sm whitespace-pre-line text-white">{reply.body}</p>
+            <p className="mt-2 text-sm whitespace-pre-line text-strong">{reply.body}</p>
           </Panel>
         </li>
       ))}

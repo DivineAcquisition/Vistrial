@@ -54,14 +54,14 @@ export default async function ConnectionDetailPage({
           <p className={helperClass}>{row.external_account_label ?? "No account name yet"}</p>
         </div>
         <dl className="mt-4 grid gap-2 text-sm">
-          <div><dt className={helperClass}>Last update</dt><dd className="text-white">{row.last_update_at ?? "None yet"}</dd></div>
-          <div><dt className={helperClass}>Last full check</dt><dd className="text-white">{row.last_full_check_at ?? "None yet"}</dd></div>
-          <div><dt className={helperClass}>Permissions</dt><dd className="text-white">{row.granted_scopes.join(", ") || "None recorded"}</dd></div>
-          <div><dt className={helperClass}>Mapping version</dt><dd className="text-white">{row.mapping_version}</dd></div>
-          {key.last4 ? <div><dt className={helperClass}>Key</dt><dd className="text-white">Ends in {key.last4}. Added {key.addedAt ?? "when it was saved"}.</dd></div> : null}
+          <div><dt className={helperClass}>Last update</dt><dd className="text-strong">{row.last_update_at ?? "None yet"}</dd></div>
+          <div><dt className={helperClass}>Last full check</dt><dd className="text-strong">{row.last_full_check_at ?? "None yet"}</dd></div>
+          <div><dt className={helperClass}>Permissions</dt><dd className="text-strong">{row.granted_scopes.join(", ") || "None recorded"}</dd></div>
+          <div><dt className={helperClass}>Mapping version</dt><dd className="text-strong">{row.mapping_version}</dd></div>
+          {key.last4 ? <div><dt className={helperClass}>Key</dt><dd className="text-strong">Ends in {key.last4}. Added {key.addedAt ?? "when it was saved"}.</dd></div> : null}
         </dl>
         {row.author_removed_at ? (
-          <p className="mt-4 text-sm text-white">Connected by someone who no longer has access. Reconnect to keep this under your control.</p>
+          <p className="mt-4 text-sm text-strong">Connected by someone who no longer has access. Reconnect to keep this under your control.</p>
         ) : null}
         {canManage ? (
           <div className="mt-5 flex flex-wrap gap-2">
@@ -88,7 +88,7 @@ export default async function ConnectionDetailPage({
         <ul className="mt-3 space-y-2">
           {history.length === 0 ? <li className={helperClass}>No changes yet.</li> : null}
           {history.map((item) => (
-            <li key={item.created_at} className="text-sm text-white">
+            <li key={item.created_at} className="text-sm text-strong">
               {item.created_at.slice(0, 16).replace("T", " ")} · {item.status}
               {item.detail ? ` · ${item.detail}` : ""}
             </li>
@@ -101,7 +101,7 @@ export default async function ConnectionDetailPage({
           <h2 className={cardTitle}>Recent events</h2>
           <ul className="mt-3 space-y-2">
             {deliveries.map((item) => (
-              <li key={item.received_at} className="text-sm text-white">
+              <li key={item.received_at} className="text-sm text-strong">
                 {item.received_at.slice(0, 16).replace("T", " ")} · {item.event_type ?? "event"} · {item.result}
                 {item.reason ? ` · ${item.reason}` : ""}
                 {item.ignored_fields?.length ? ` · ignored fields: ${item.ignored_fields.join(", ")}` : ""}
@@ -112,7 +112,7 @@ export default async function ConnectionDetailPage({
             <form action={rotateSecretAction} className="mt-4">
               <input type="hidden" name="connection" value={row.id} />
               <Button type="submit" variant="secondary">Rotate secret</Button>
-              {once ? <p className="mt-2 text-sm text-white">New secret, shown once: {once}</p> : null}
+              {once ? <p className="mt-2 text-sm text-strong">New secret, shown once: {once}</p> : null}
             </form>
           ) : null}
         </Panel>
@@ -121,7 +121,7 @@ export default async function ConnectionDetailPage({
       {canManage && row.status !== "disconnected" ? (
         <Panel className="p-6">
           <h2 className={cardTitle}>Disconnect</h2>
-          <p className="mt-3 text-sm text-white">
+          <p className="mt-3 text-sm text-strong">
             {`Vistrial will stop receiving data from ${tool?.name ?? "this tool"}. Anything already in Vistrial stays until you ask us to delete it. Agents will stop using new data from ${tool?.name ?? "this tool"}.`}
           </p>
           <p className={`${helperClass} mt-2`}>
@@ -129,7 +129,7 @@ export default async function ConnectionDetailPage({
           </p>
           <form action={disconnectAction} className="mt-4 grid gap-3">
             <input type="hidden" name="connection" value={row.id} />
-            <label className="flex items-start gap-2 text-sm text-white">
+            <label className="flex items-start gap-2 text-sm text-strong">
               <input type="checkbox" name="delete_data" />
               Also delete the data that came from {tool?.name ?? "this tool"}. This starts a request. It is not deleted instantly.
             </label>

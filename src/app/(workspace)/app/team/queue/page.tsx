@@ -58,11 +58,11 @@ export default async function QueuePage() {
       <Panel className="p-6">
         <h2 className={cardTitle}>Escalations</h2>
         {(escalations ?? []).length ? (
-          <ul className="mt-3 divide-y divide-white/[0.06]">
+          <ul className="mt-3 divide-y divide-overlay/[0.06]">
             {((escalations ?? []) as Escalation[]).map((row) => (
               <li key={row.id} className="flex flex-wrap items-center justify-between gap-2 py-3">
                 <Link href={`/app/team/queue/${row.id}`} className="min-w-0">
-                  <span className="block text-sm text-white">{row.title}</span>
+                  <span className="block text-sm text-strong">{row.title}</span>
                   <span className={helperClass}>
                     {names.get(row.org_id) ?? "A workspace"} · {row.kind.replaceAll("_", " ")} · {formatRelative(row.created_at, now)}
                   </span>
@@ -79,11 +79,11 @@ export default async function QueuePage() {
       <Panel className="p-6">
         <h2 className={cardTitle}>Customer requests</h2>
         {(requests ?? []).length ? (
-          <ul className="mt-3 divide-y divide-white/[0.06]">
+          <ul className="mt-3 divide-y divide-overlay/[0.06]">
             {((requests ?? []) as Help[]).map((row) => (
               <li key={row.id} className="flex flex-wrap items-center justify-between gap-2 py-3">
                 <Link href={`/app/team/requests/${row.id}`} className="min-w-0">
-                  <span className="block text-sm text-white">{firstLine(row.message)}</span>
+                  <span className="block text-sm text-strong">{firstLine(row.message)}</span>
                   <span className={helperClass}>
                     {names.get(row.org_id) ?? "A workspace"} · {row.created_by_name}
                     {row.waiting_since ? ` · waiting ${formatRelative(row.waiting_since, now)}` : ""}
@@ -110,10 +110,10 @@ export default async function QueuePage() {
           </Link>
         </div>
         {(dataRequests ?? []).length ? (
-          <ul className="mt-3 divide-y divide-white/[0.06]">
+          <ul className="mt-3 divide-y divide-overlay/[0.06]">
             {((dataRequests ?? []) as DataReq[]).map((row) => (
               <li key={row.id} className="flex items-center justify-between gap-2 py-3">
-                <Link href={`/app/team/data-requests/${row.id}`} className="text-sm text-white">
+                <Link href={`/app/team/data-requests/${row.id}`} className="text-sm text-strong">
                   {row.org_name ?? names.get(row.org_id ?? "") ?? "A workspace"} · {row.kind === "export" ? "Copy" : "Deletion"}
                 </Link>
                 <StatusBadge label={row.status.replaceAll("_", " ")} tone="warning" />

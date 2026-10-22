@@ -55,19 +55,19 @@ export function DeliveryForm({ delivery }: { delivery: "instant" | "digest" }) {
   return (
     <SettingsFormCard action={action} footer={<SubmitButton pending={pending}>Save</SubmitButton>}>
       <fieldset className="flex flex-col gap-3">
-        <legend className="text-sm font-medium text-white">Emails from Vistrial about your account</legend>
+        <legend className="text-sm font-medium text-strong">Emails from Vistrial about your account</legend>
         <p className={helperClass}>
           Replies from your Vistrial team, exports that are ready, and billing notices. Alerts about leads follow your
           notification settings instead.
         </p>
-        <label className="flex items-start gap-2 text-sm text-white">
+        <label className="flex items-start gap-2 text-sm text-strong">
           <input type="radio" name="delivery" value="instant" defaultChecked={delivery === "instant"} className="mt-1" />
           <span>
             As they happen
             <span className={`block ${helperClass}`}>One email for each.</span>
           </span>
         </label>
-        <label className="flex items-start gap-2 text-sm text-white">
+        <label className="flex items-start gap-2 text-sm text-strong">
           <input type="radio" name="delivery" value="digest" defaultChecked={delivery === "digest"} className="mt-1" />
           <span>
             One email each morning

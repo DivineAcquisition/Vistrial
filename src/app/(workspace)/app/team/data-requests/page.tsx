@@ -34,7 +34,7 @@ export default async function DataRequestsPage() {
           <li key={row.id}>
             <Panel className="flex flex-wrap items-center justify-between gap-3 p-4">
               <Link href={`/app/team/data-requests/${row.id}`}>
-                <span className="block text-sm text-white">
+                <span className="block text-sm text-strong">
                   {row.org_name ?? "Deleted workspace"} · {row.kind === "export" ? "Copy" : "Deletion"}
                 </span>
                 <span className={helperClass}>

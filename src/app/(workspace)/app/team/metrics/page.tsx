@@ -51,9 +51,9 @@ export default async function MetricsPage() {
       </div>
       <Panel className="p-6">
         <h2 className={cardTitle}>This month, by workspace</h2>
-        <ul className="mt-3 divide-y divide-white/[0.06]">
+        <ul className="mt-3 divide-y divide-overlay/[0.06]">
           {((usage ?? []) as Array<{ org_name: string; relay_drafts: number; runs: Record<string, number> }>).map((item) => (
-            <li key={item.org_name} className="flex justify-between gap-3 py-2 text-sm text-white">
+            <li key={item.org_name} className="flex justify-between gap-3 py-2 text-sm text-strong">
               <span>{item.org_name}</span>
               <span className={helperClass}>
                 {Object.values(item.runs ?? {}).reduce((sum, n) => sum + Number(n), 0)} runs · {item.relay_drafts} drafts

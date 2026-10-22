@@ -81,7 +81,7 @@ export function ActivationGate({
         ) : null}
 
         {changes.length > 0 ? (
-          <div className="mt-6 border-t border-white/10 pt-5">
+          <div className="mt-6 border-t border-overlay/10 pt-5">
             <p className={cardTitle}>This timestamp has been moved</p>
             <ul className="mt-3 space-y-3 text-sm text-silver">
               {changes.map((change) => (
@@ -95,7 +95,7 @@ export function ActivationGate({
           </div>
         ) : null}
 
-        <div className="mt-6 border-t border-white/10 pt-5">
+        <div className="mt-6 border-t border-overlay/10 pt-5">
           {showMove ? (
             <form action={moveAction} className="space-y-4">
               <p className="text-sm text-flag-warning">
@@ -163,7 +163,7 @@ export function ActivationGate({
               tone={requirement.ok ? "good" : "critical"}
             />
             <div className="min-w-0 flex-1">
-              <p className="text-sm text-white">{requirement.label}</p>
+              <p className="text-sm text-strong">{requirement.label}</p>
               <p className={helperClass}>{requirement.detail}</p>
             </div>
           </li>
@@ -171,8 +171,8 @@ export function ActivationGate({
       </ul>
 
       {backfillNeedsFallback ? (
-        <form action={declineAction} className="mt-5 space-y-3 border-t border-white/10 pt-5">
-          <p className="text-sm text-white">
+        <form action={declineAction} className="mt-5 space-y-3 border-t border-overlay/10 pt-5">
+          <p className="text-sm text-strong">
             The CRM history is unusable. Either record the owner&apos;s own prior figures on the
             integrations page, or record that they will not give them.
           </p>
@@ -188,14 +188,14 @@ export function ActivationGate({
         </form>
       ) : null}
 
-      <form action={action} className="mt-6 space-y-4 border-t border-white/10 pt-6">
+      <form action={action} className="mt-6 space-y-4 border-t border-overlay/10 pt-6">
         {activation.warnings.length > 0 ? (
           <>
             <p className={cardTitle}>
               You can go live with these, but you have to say you have read them
             </p>
             {activation.warnings.map((warning) => (
-              <label key={warning.key} className="flex items-start gap-3 text-sm text-white">
+              <label key={warning.key} className="flex items-start gap-3 text-sm text-strong">
                 <Checkbox name="acknowledge" value={warning.key} className="mt-0.5" />
                 <span>
                   {warning.label}

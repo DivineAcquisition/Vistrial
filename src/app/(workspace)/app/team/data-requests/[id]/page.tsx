@@ -57,8 +57,8 @@ export default async function DataRequestPage({ params }: { params: Promise<{ id
       actions={<StatusBadge label={row.status.replaceAll("_", " ")} tone={row.status === "completed" ? "good" : "warning"} />}
     >
       <Panel className="space-y-2 p-6">
-        <p className="text-sm text-white">Asked by {row.requested_by_name ?? "an Owner"}{row.staff_created ? ", recorded by the team" : ""}.</p>
-        <p className={requestNeedsAttention(row.status, row.created_at) ? "text-sm text-white" : helperClass}>
+        <p className="text-sm text-strong">Asked by {row.requested_by_name ?? "an Owner"}{row.staff_created ? ", recorded by the team" : ""}.</p>
+        <p className={requestNeedsAttention(row.status, row.created_at) ? "text-sm text-strong" : helperClass}>
           Opened {formatDateTime(row.created_at)}. {requestAgeDays(row.created_at)} days old.
           {requestNeedsAttention(row.status, row.created_at) ? " Older than the 30 day response aim." : ""}
         </p>
@@ -68,7 +68,7 @@ export default async function DataRequestPage({ params }: { params: Promise<{ id
             <li key={line}>{line}</li>
           ))}
         </ul>
-        {typeof block === "string" ? <p className="text-sm text-white">{block}</p> : null}
+        {typeof block === "string" ? <p className="text-sm text-strong">{block}</p> : null}
         {row.failure ? <p className="text-sm text-destructive">{row.failure}</p> : null}
         {row.scheduled_for ? <p className={helperClass}>Scheduled for {formatDateTime(row.scheduled_for)}.</p> : null}
         {row.verification_note ? <p className={helperClass}>Verified: {row.verification_note}</p> : null}

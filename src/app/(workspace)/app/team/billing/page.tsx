@@ -47,7 +47,7 @@ export default async function PlatformBillingPage() {
     <PageFrame title="Billing" description="Plans, usage, and revenue. Internal and pilot workspaces are left out of revenue.">
       <Panel className="p-6">
         <h2 className={cardTitle}>Limit review</h2>
-        <p className="mt-2 text-sm text-white">
+        <p className="mt-2 text-sm text-strong">
           Review Private Access limits on {view?.review_on ?? LIMIT_REVIEW_ON}, after 30 days of measured cost. Resets use America/New_York.
         </p>
         <p className={`mt-2 ${helperClass}`}>{view?.margin_note}</p>
@@ -59,17 +59,17 @@ export default async function PlatformBillingPage() {
       <div className="grid gap-4 md:grid-cols-3">
         <Panel className="p-6">
           <h2 className={cardTitle}>Monthly recurring revenue</h2>
-          <p className="mt-2 text-sm text-white">{view ? formatPlanPrice(view.mrr_cents, "usd", "month", 1) : "Not available"}</p>
+          <p className="mt-2 text-sm text-strong">{view ? formatPlanPrice(view.mrr_cents, "usd", "month", 1) : "Not available"}</p>
           <p className={helperClass}>Annualized {view ? formatPlanPrice(view.arr_cents, "usd", null, null) : ""}. Active, past due, and canceling only.</p>
         </Panel>
         <Panel className="p-6">
           <h2 className={cardTitle}>Recorded cost</h2>
-          <p className="mt-2 text-sm text-white">{cost.toLocaleString("en-US", { style: "currency", currency: "USD" })}</p>
+          <p className="mt-2 text-sm text-strong">{cost.toLocaleString("en-US", { style: "currency", currency: "USD" })}</p>
           <p className={helperClass}>Provider usage already stored. Gaps are not filled in.</p>
         </Panel>
         <Panel className="p-6">
           <h2 className={cardTitle}>Workspaces</h2>
-          <ul className="mt-2 space-y-1 text-sm text-white">
+          <ul className="mt-2 space-y-1 text-sm text-strong">
             {view
               ? Object.entries(view.states).map(([state, count]) => (
                   <li key={state}>
@@ -83,7 +83,7 @@ export default async function PlatformBillingPage() {
 
       <Panel className="p-6">
         <h2 className={cardTitle}>By plan</h2>
-        <ul className="mt-2 space-y-1 text-sm text-white">
+        <ul className="mt-2 space-y-1 text-sm text-strong">
           {(view?.by_plan ?? []).map((row) => (
             <li key={row.plan}>
               {row.plan}: {row.workspaces} workspace{row.workspaces === 1 ? "" : "s"}, {formatPlanPrice(row.mrr_cents, "usd", "month", 1)}
@@ -95,12 +95,12 @@ export default async function PlatformBillingPage() {
       <Panel className="p-6">
         <h2 className={cardTitle}>Public catalog data</h2>
         <p className={helperClass}>The landing page does not read this yet. Prompt 17 will. Layout stays as it is.</p>
-        <pre className="mt-3 overflow-x-auto text-xs text-white/80">{JSON.stringify(catalog ?? [], null, 2)}</pre>
+        <pre className="mt-3 overflow-x-auto text-xs text-strong/80">{JSON.stringify(catalog ?? [], null, 2)}</pre>
       </Panel>
 
       <Panel className="p-6">
         <h2 className={cardTitle}>Assignments</h2>
-        <ul className="mt-2 space-y-1 text-sm text-white">
+        <ul className="mt-2 space-y-1 text-sm text-strong">
           {rows.map((row) => (
             <li key={row.org_id}>
               {row.plan_id} · {row.state.replaceAll("_", " ")}

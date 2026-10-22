@@ -153,11 +153,11 @@ export default async function OnboardingWorkbenchPage({ params }: { params: Para
       <Section id="go-live" title={preLive ? "Go-live checks" : "Switching agents on"}>
         {preLive ? (
           <>
-            <ul className="divide-y divide-white/[0.06]">
+            <ul className="divide-y divide-overlay/[0.06]">
               {wb.header.checks.map((check) => (
                 <li key={check.key} className="py-3">
                   <div className="flex flex-wrap items-start justify-between gap-2">
-                    <span className="text-sm text-white">{check.label}</span>
+                    <span className="text-sm text-strong">{check.label}</span>
                     <StatusBadge
                       label={check.accepted ? "Warning accepted" : CHECK_WORD[check.result]}
                       tone={check.accepted ? "neutral" : CHECK_TONE[check.result]}
@@ -193,7 +193,7 @@ export default async function OnboardingWorkbenchPage({ params }: { params: Para
             <ol className="space-y-2">
               {wb.activation.map((row) => (
                 <li key={row.agent} className="flex flex-wrap items-center justify-between gap-2">
-                  <span className="text-sm text-white">
+                  <span className="text-sm text-strong">
                     {row.order}. {AGENTS[row.agent].name}
                   </span>
                   <StatusBadge label={ACTIVATION_STAGE_LABEL[row.stage]} tone={row.stage === "off" ? "neutral" : row.stage === "coming_soon" ? "neutral" : "good"} />
@@ -212,7 +212,7 @@ export default async function OnboardingWorkbenchPage({ params }: { params: Para
             ) : null}
             {sentryRow?.stage === "watch" ? (
               <div className="mt-4 space-y-2">
-                <p className="text-sm text-white">Sentry is watching only.</p>
+                <p className="text-sm text-strong">Sentry is watching only.</p>
                 <p className={helperClass}>
                   {watchUntil && Date.parse(watchUntil) > now
                     ? `The watch period ends ${formatRelative(watchUntil, nowIso)} (${zoned(watchUntil, wb.org.timezone)}). Alerts never switch on by themselves.`
@@ -237,9 +237,9 @@ export default async function OnboardingWorkbenchPage({ params }: { params: Para
             const def = stage.definition;
             return (
               <li key={stage.stage_key}>
-                <div className="rounded-xl border border-white/[0.06] p-4">
+                <div className="rounded-xl border border-overlay/[0.06] p-4">
                   <div className="flex flex-wrap items-start justify-between gap-2">
-                    <h3 className="min-w-0 text-sm text-white">
+                    <h3 className="min-w-0 text-sm text-strong">
                       {def.position}. {def.staff_label}
                       {def.required_for_go_live ? "" : " (optional)"}
                     </h3>
@@ -252,7 +252,7 @@ export default async function OnboardingWorkbenchPage({ params }: { params: Para
                     <p className={helperClass}>Waiting {waitingText(stage.waiting_since, now)}.</p>
                   ) : null}
                   {stage.skip_reason ? <p className={helperClass}>Skipped: {stage.skip_reason}</p> : null}
-                  {stage.note ? <p className="mt-1 text-sm text-white">To customer: {stage.note}</p> : null}
+                  {stage.note ? <p className="mt-1 text-sm text-strong">To customer: {stage.note}</p> : null}
                   {stage.staff_note ? <p className="mt-1 text-sm text-silver">Staff note: {stage.staff_note}</p> : null}
                   {stage.eta ? <p className={helperClass}>Expected: {stage.eta}</p> : null}
                   {stage.completed_by_label && stage.status === "done" ? (
@@ -314,11 +314,11 @@ export default async function OnboardingWorkbenchPage({ params }: { params: Para
       </Section>
 
       <Section id="people" title="People and escalation">
-        <h3 className="text-sm text-white">Escalation contacts, in order</h3>
+        <h3 className="text-sm text-strong">Escalation contacts, in order</h3>
         {wb.contacts.length ? (
           <ol className="mt-2 space-y-1">
             {wb.contacts.map((contact) => (
-              <li key={contact.id} className="text-sm text-white">
+              <li key={contact.id} className="text-sm text-strong">
                 {contact.position}. {contact.display_name} · {channelWord(contact.channel)}
                 <span className={helperClass}>
                   {" "}
@@ -331,10 +331,10 @@ export default async function OnboardingWorkbenchPage({ params }: { params: Para
         ) : (
           <p className={helperClass}>None named yet. Alerts for required levels fall back to the Owner.</p>
         )}
-        <h3 className="mt-4 text-sm text-white">Customer team</h3>
+        <h3 className="mt-4 text-sm text-strong">Customer team</h3>
         <ul className="mt-2 space-y-1">
           {wb.people.map((person) => (
-            <li key={person.id} className="text-sm text-white">
+            <li key={person.id} className="text-sm text-strong">
               {person.display_name ?? person.email} · {person.role}
               {person.can_approve ? " · approver" : ""}
               <span className={helperClass}> {person.last_seen_at ? `seen ${formatRelative(person.last_seen_at, nowIso)}` : "not signed in yet"}</span>
@@ -373,9 +373,9 @@ export default async function OnboardingWorkbenchPage({ params }: { params: Para
         <Section id="checkins" title="First-week check-ins">
           <ul className="space-y-4">
             {wb.checkins.map((checkin) => (
-              <li key={checkin.id} className="rounded-xl border border-white/[0.06] p-4">
+              <li key={checkin.id} className="rounded-xl border border-overlay/[0.06] p-4">
                 <div className="flex flex-wrap items-center justify-between gap-2">
-                  <h3 className="text-sm text-white">Day {checkin.day}</h3>
+                  <h3 className="text-sm text-strong">Day {checkin.day}</h3>
                   <StatusBadge
                     label={checkin.status === "done" ? "Done" : Date.parse(checkin.due_at) <= now ? "Due" : `Due ${formatDay(checkin.due_at)}`}
                     tone={checkin.status === "done" ? "good" : Date.parse(checkin.due_at) <= now ? "warning" : "neutral"}
@@ -383,7 +383,7 @@ export default async function OnboardingWorkbenchPage({ params }: { params: Para
                 </div>
                 {checkin.status === "done" ? (
                   <>
-                    <p className="mt-2 text-sm text-white">{checkin.staff_note}</p>
+                    <p className="mt-2 text-sm text-strong">{checkin.staff_note}</p>
                     <p className={helperClass}>
                       By {checkin.completed_by_label ?? "the team"}
                       {checkin.follow_up_at ? ` · follow up ${formatDay(checkin.follow_up_at)}` : ""}
@@ -394,7 +394,7 @@ export default async function OnboardingWorkbenchPage({ params }: { params: Para
                     <ul className="mt-2 space-y-1">
                       {checkin.items.map((item) => (
                         <li key={item.key} className="text-sm">
-                          <span className="text-white">{item.question}</span> <span className={item.ok === false ? "text-flag-critical" : "text-silver"}>{item.answer}</span>
+                          <span className="text-strong">{item.question}</span> <span className={item.ok === false ? "text-flag-critical" : "text-silver"}>{item.answer}</span>
                         </li>
                       ))}
                     </ul>
@@ -426,10 +426,10 @@ export default async function OnboardingWorkbenchPage({ params }: { params: Para
 
       <Section id="activity" title="Activity">
         {wb.activity.length ? (
-          <ul className="divide-y divide-white/[0.06]">
+          <ul className="divide-y divide-overlay/[0.06]">
             {wb.activity.map((row) => (
               <li key={row.id} className="py-2">
-                <span className="text-sm text-white">{activityWord(row.action)}</span>
+                <span className="text-sm text-strong">{activityWord(row.action)}</span>
                 <span className={helperClass}>
                   {" "}
                   {row.actor_label} · {formatRelative(row.created_at, nowIso)}
@@ -464,7 +464,7 @@ function MessagingSection({ wb }: { wb: Workbench }) {
   return (
     <Section id="messaging" title="Text messaging registration">
       {wb.header.texting_enabled === false ? <p className={helperClass}>The Owner has chosen not to use texting for now.</p> : null}
-      <p className="text-sm text-white">{CARRIER_STATUS_LABEL[status] ?? status}</p>
+      <p className="text-sm text-strong">{CARRIER_STATUS_LABEL[status] ?? status}</p>
       {reg?.rejection_code ? (
         <p className={helperClass}>
           Told the Owner: {REJECTION_GUIDANCE[reg.rejection_code].reason} Fix: {REJECTION_GUIDANCE[reg.rejection_code].fix}
@@ -518,7 +518,7 @@ function ImportSection({ wb }: { wb: Workbench }) {
     <Section id="import" title="Lead import">
       {run ? (
         <>
-          <p className="text-sm text-white">
+          <p className="text-sm text-strong">
             {importWord(String(run.status))} · looking back {String(run.lookback_days)} days
           </p>
           {found > 0 ? <Progress label="Leads handled" value={handled} max={found} valueLabel={`${handled} of ${found}`} /> : null}
@@ -543,11 +543,11 @@ function ImportSection({ wb }: { wb: Workbench }) {
 
       {open.length ? (
         <>
-          <h3 className="text-sm text-white">Needs a decision ({open.length})</h3>
-          <ul className="divide-y divide-white/[0.06]">
+          <h3 className="text-sm text-strong">Needs a decision ({open.length})</h3>
+          <ul className="divide-y divide-overlay/[0.06]">
             {open.slice(0, 50).map((problem) => (
               <li key={problem.id} className="flex flex-wrap items-center justify-between gap-2 py-2">
-                <span className="text-sm text-white">
+                <span className="text-sm text-strong">
                   {problem.display_label} <span className={helperClass}>· {PROBLEM_LABEL[problem.kind].one}</span>
                 </span>
                 <ProblemDecision orgId={wb.org.id} problemId={problem.id} label={problem.display_label} />
@@ -560,7 +560,7 @@ function ImportSection({ wb }: { wb: Workbench }) {
 
       {cf ? (
         <>
-          <h3 className="text-sm text-white">Case files</h3>
+          <h3 className="text-sm text-strong">Case files</h3>
           <p className={helperClass}>
             Every imported lead gets a basic case file from its CRM details. Full case files are built only for open leads active recently, at most {cf.pace.limit} for this
             workspace and {cf.pace.ratePerHour} an hour{cf.pace.paused ? ". Paused for now" : ""}.

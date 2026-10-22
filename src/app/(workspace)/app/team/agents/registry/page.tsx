@@ -100,7 +100,7 @@ export default async function AgentRegistryPage({ searchParams }: { searchParams
               const row = stats.get(entry.id);
               return (
                 <TableRow key={entry.id}>
-                  <TableCell className="text-white">{entry.name}</TableCell>
+                  <TableCell className="text-strong">{entry.name}</TableCell>
                   <TableCell>{areaName(entry.area_id)}</TableCell>
                   <TableCell>{entry.availability}</TableCell>
                   <TableCell>{entry.included_plans.join(", ") || "None"}</TableCell>
@@ -137,7 +137,7 @@ export default async function AgentRegistryPage({ searchParams }: { searchParams
         <h2 className={cardTitle}>Areas</h2>
         {areaRows.map((area) => (
           <details key={area.id} className="space-y-3">
-            <summary className="cursor-pointer text-sm text-white">
+            <summary className="cursor-pointer text-sm text-strong">
               {area.name} <span className={helperClass}>({area.availability}, {((areaInterest.data ?? []) as Array<{ area_id: string; notify_me: number }>).find((row) => row.area_id === area.id)?.notify_me ?? 0} asked to be told)</span>
             </summary>
             <AreaEditor
@@ -191,7 +191,7 @@ export default async function AgentRegistryPage({ searchParams }: { searchParams
             <TableBody>
               {cells.map((cell) => (
                 <TableRow key={cell.agent_id}>
-                  <TableCell className="text-white">{registry.find((entry) => entry.id === cell.agent_id)?.name ?? cell.agent_id}</TableCell>
+                  <TableCell className="text-strong">{registry.find((entry) => entry.id === cell.agent_id)?.name ?? cell.agent_id}</TableCell>
                   <TableCell>{cell.paused ? "Paused" : STAGE[cell.stage ?? "on"] ?? cell.stage}</TableCell>
                   <TableCell>{cell.locked_override ? "Locked by staff" : cell.plan_allowed ? "Included" : "Not on this plan"}</TableCell>
                   <TableCell>

@@ -78,7 +78,7 @@ export const sectionLabel =
 export const filterLabel =
   "mb-2.5 text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground";
 
-export const pageTitle = "font-heading text-[1.75rem] tracking-tight text-white sm:text-[2rem]";
+export const pageTitle = "font-heading text-[1.75rem] tracking-tight text-strong sm:text-[2rem]";
 /** A heading that owns a band of the page, above several cards. */
 export const sectionTitle = "font-heading text-base text-card-foreground";
 /** The title of one card. The most common heading in the app. */
@@ -99,7 +99,7 @@ export const labelClass =
   "mb-2 inline-flex items-center gap-2 font-medium text-base/4.5 text-card-foreground sm:text-sm/4";
 
 const nativeFieldChrome =
-  "relative w-full min-w-0 rounded-xl border border-white/[0.09] bg-ink-850 text-base text-card-foreground shadow-[inset_0_1px_0_rgba(255,255,255,0.06)] outline-none ring-brand-500/20 transition-shadow scheme-dark not-dark:bg-clip-padding placeholder:text-muted-foreground/72 hover:not-disabled:border-white/[0.16] focus-visible:border-brand-500/55 focus-visible:ring-[3px] aria-invalid:border-destructive/36 focus-visible:aria-invalid:border-destructive/64 focus-visible:aria-invalid:ring-destructive/16 disabled:pointer-events-none disabled:opacity-64 dark:bg-ink-850 dark:aria-invalid:ring-destructive/24 sm:text-sm [&::-webkit-calendar-picker-indicator]:cursor-pointer [&::-webkit-calendar-picker-indicator]:opacity-70 [&::-webkit-calendar-picker-indicator]:invert";
+  "relative w-full min-w-0 rounded-xl border border-overlay/[0.09] bg-ink-850 text-base text-card-foreground shadow-[inset_0_1px_0_rgba(255,255,255,0.06)] outline-none ring-brand-500/20 transition-shadow dark:scheme-dark not-dark:bg-clip-padding placeholder:text-muted-foreground/72 hover:not-disabled:border-overlay/[0.16] focus-visible:border-brand-500/55 focus-visible:ring-[3px] aria-invalid:border-destructive/36 focus-visible:aria-invalid:border-destructive/64 focus-visible:aria-invalid:ring-destructive/16 disabled:pointer-events-none disabled:opacity-64 dark:bg-ink-850 dark:aria-invalid:ring-destructive/24 sm:text-sm [&::-webkit-calendar-picker-indicator]:cursor-pointer [&::-webkit-calendar-picker-indicator]:opacity-70 dark:[&::-webkit-calendar-picker-indicator]:invert";
 
 export const inputClass = cn(
   nativeFieldChrome,
@@ -125,10 +125,10 @@ export const selectCompactClass = inputCompactClass;
 export const readonlyFieldClass = cn(inputClass, "pointer-events-none opacity-80");
 
 export const checkboxClass =
-  "relative inline-flex size-4.5 shrink-0 cursor-pointer appearance-none items-center justify-center rounded-[.25rem] border border-white/[0.14] bg-ink-850 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)] checked:border-primary checked:bg-primary sm:size-4 dark:not-checked:bg-ink-850";
+  "relative inline-flex size-4.5 shrink-0 cursor-pointer appearance-none items-center justify-center rounded-[.25rem] border border-overlay/[0.14] bg-ink-850 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)] checked:border-primary checked:bg-primary sm:size-4 dark:not-checked:bg-ink-850";
 
 export const radioClass =
-  "relative inline-flex size-4.5 shrink-0 cursor-pointer appearance-none rounded-full border border-white/[0.14] bg-ink-850 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)] checked:border-[5px] checked:border-primary sm:size-4 dark:not-checked:bg-ink-850";
+  "relative inline-flex size-4.5 shrink-0 cursor-pointer appearance-none rounded-full border border-overlay/[0.14] bg-ink-850 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)] checked:border-[5px] checked:border-primary sm:size-4 dark:not-checked:bg-ink-850";
 
 export const helperClass = "mt-1.5 text-xs leading-relaxed text-muted-foreground";
 
@@ -161,13 +161,13 @@ export const cardStack = "flex flex-col gap-4";
  * lines so they stop reading as empty outlined boxes.
  */
 export const insetChrome =
-  "rounded-xl border border-white/[0.06] bg-white/[0.04] shadow-[inset_0_1px_0_rgba(255,255,255,0.05)]";
+  "rounded-xl border border-overlay/[0.06] bg-overlay/[0.04] shadow-[inset_0_1px_0_rgba(255,255,255,0.05)]";
 
 export const insetSurface = cn(insetChrome, "p-4");
 
 /** Filter and range bars. Wraps a grid or a wrapping row of compact controls. */
 export const filterBar =
-  "rounded-2xl border border-white/[0.06] bg-white/[0.03] p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.05)] sm:p-5";
+  "rounded-2xl border border-overlay/[0.06] bg-overlay/[0.03] p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.05)] sm:p-5";
 
 /** Settings and marketing forms. Wide enough for longer placeholders. */
 export const formMeasure = "w-full max-w-2xl";

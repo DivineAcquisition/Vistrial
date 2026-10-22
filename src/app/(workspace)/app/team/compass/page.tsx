@@ -100,10 +100,10 @@ export default async function TeamCompassPage() {
         <h2 className={cardTitle}>Shared with the team</h2>
         <p className={helperClass}>Conversations a customer shared with you. Each share ends after 7 days, and every opening is logged in the workspace.</p>
         {shareRows.length ? (
-          <ul className="mt-3 divide-y divide-white/[0.06]">
+          <ul className="mt-3 divide-y divide-overlay/[0.06]">
             {shareRows.map((row) => (
               <li key={row.share_id} className="flex flex-wrap items-center justify-between gap-2 py-3">
-                <Link href={`/app/team/compass/shared/${row.share_id}`} className="text-sm text-white underline">
+                <Link href={`/app/team/compass/shared/${row.share_id}`} className="text-sm text-strong underline">
                   {row.org_name}
                 </Link>
                 <span className={helperClass}>
@@ -120,7 +120,7 @@ export default async function TeamCompassPage() {
       {ctx.isPlatformAdmin ? (
         <>
           <Panel className="overflow-hidden px-2 py-2 sm:px-4">
-            <h2 className="px-2 pt-3 font-heading text-sm text-white">Last 30 days</h2>
+            <h2 className="px-2 pt-3 font-heading text-sm text-strong">Last 30 days</h2>
             <p className={`${helperClass} px-2`}>
               {totalQuestions} questions
               {totalQuestions ? ` · ${dollars(totalCost)} in model cost · ${dollars(Math.round(totalCost / totalQuestions))} per question` : ""}. Cost is
@@ -146,7 +146,7 @@ export default async function TeamCompassPage() {
                 <TableBody>
                   {usageRows.map((row) => (
                     <TableRow key={row.org_id}>
-                      <TableCell className="text-white">{row.org_name}</TableCell>
+                      <TableCell className="text-strong">{row.org_name}</TableCell>
                       <TableCell>{row.questions}</TableCell>
                       <TableCell className="hidden md:table-cell">{row.people}</TableCell>
                       <TableCell>{seconds(row.median_first_ms)}</TableCell>
@@ -169,7 +169,7 @@ export default async function TeamCompassPage() {
           </Panel>
 
           <Panel className="overflow-hidden px-2 py-2 sm:px-4">
-            <h2 className="px-2 pt-3 font-heading text-sm text-white">Answers worth a look</h2>
+            <h2 className="px-2 pt-3 font-heading text-sm text-strong">Answers worth a look</h2>
             <p className={`${helperClass} px-2`}>Errors, answers with figures Compass could not match, and thumbs down. Outcomes only, never the words.</p>
             {reviewRows.length ? (
               <Table>
@@ -187,7 +187,7 @@ export default async function TeamCompassPage() {
                   {reviewRows.map((row, index) => (
                     <TableRow key={`${row.at}-${index}`}>
                       <TableCell>{formatDateTime(row.at)}</TableCell>
-                      <TableCell className="text-white">
+                      <TableCell className="text-strong">
                         {row.org_name}
                         {row.staff ? <span className={helperClass}> · staff</span> : null}
                       </TableCell>

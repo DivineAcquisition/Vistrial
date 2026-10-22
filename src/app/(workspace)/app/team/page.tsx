@@ -63,11 +63,11 @@ export default async function StaffTodayPage() {
       <Panel className="p-6">
         <h2 className={cardTitle}>Needs a look</h2>
         {attention.length ? (
-          <ul className="mt-3 divide-y divide-white/[0.06]">
+          <ul className="mt-3 divide-y divide-overlay/[0.06]">
             {attention.map((row) => (
               <li key={row.org_id} className="flex flex-wrap items-start justify-between gap-3 py-3">
                 <span className="min-w-0">
-                  <Link href={`/app/team/workspaces/${row.org_id}`} className="text-sm font-medium text-white">
+                  <Link href={`/app/team/workspaces/${row.org_id}`} className="text-sm font-medium text-strong">
                     {row.name}
                   </Link>
                   <span className={`block ${helperClass}`}>

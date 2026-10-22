@@ -17,7 +17,7 @@ export function OutlineView({ items }: { items: OutlineItem[] }) {
         <li
           key={`${item.boxId}-${index}`}
           style={{ marginLeft: `${Math.min(item.depth, 4) * 1.25}rem` }}
-          className="rounded-lg border border-white/[0.06] bg-white/[0.03] px-3 py-2"
+          className="rounded-lg border border-overlay/[0.06] bg-overlay/[0.03] px-3 py-2"
         >
           <div className="flex flex-wrap items-center gap-2">
             {item.branch ? (

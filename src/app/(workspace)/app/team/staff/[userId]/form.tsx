@@ -23,7 +23,7 @@ export function HandoverForm({
   return (
     <div className="space-y-3">
       {workspaces.map((workspace) => (
-        <label key={workspace.org_id} className="block text-sm text-white">
+        <label key={workspace.org_id} className="block text-sm text-strong">
           {workspace.name}
           <Select
             className="mt-1"

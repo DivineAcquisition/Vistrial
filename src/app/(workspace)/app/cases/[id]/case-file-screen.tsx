@@ -182,7 +182,7 @@ export function CaseFileScreen({
       <Panel className="p-6">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div className="min-w-0">
-            <h2 className="font-heading text-2xl tracking-tight text-white">{lead.name}</h2>
+            <h2 className="font-heading text-2xl tracking-tight text-strong">{lead.name}</h2>
             <p className="mt-1 text-sm text-silver">{whereFrom}</p>
             {brief?.lead.offerName ? (
               <p className="mt-1 text-sm text-dim">{brief.lead.offerName}</p>
@@ -252,7 +252,7 @@ export function CaseFileScreen({
           </KeyValue>
           <KeyValue label="Score">
             {file.score ? (
-              <span className="font-medium text-white tabular-nums">{file.score.score}</span>
+              <span className="font-medium text-strong tabular-nums">{file.score.score}</span>
             ) : (
               "Unscored"
             )}
@@ -373,7 +373,7 @@ export function CaseFileScreen({
         <Panel className="p-6">
           {lastCall ? (
             <div className="space-y-2">
-              <p className="text-sm text-white">{lastCall.summary || "Not established"}</p>
+              <p className="text-sm text-strong">{lastCall.summary || "Not established"}</p>
               <p className="text-sm text-silver">
                 <span className="text-dim">What was agreed: </span>
                 {lastCall.nextStepAgreed || "Not established"}
@@ -403,7 +403,7 @@ export function CaseFileScreen({
               <div className="mb-4 space-y-3">
                 {file.activeSequences.map((sequenceRun) => (
                   <div key={sequenceRun.id}>
-                    <p className="text-sm text-white">
+                    <p className="text-sm text-strong">
                       Active {FOLLOW_UP_BRANCH_LABELS[sequenceRun.branch]} sequence · next draft{" "}
                       {sequenceRun.nextPosition} of {sequenceRun.maxSteps}
                     </p>
@@ -433,7 +433,7 @@ export function CaseFileScreen({
               <ul className="space-y-4">
                 {file.pendingFollowUps.map((item) => (
                   <li key={item.id}>
-                    <p className="text-sm text-white">
+                    <p className="text-sm text-strong">
                       {FOLLOW_UP_BRANCH_LABELS[item.branch]} · {FOLLOW_UP_CHANNEL_LABELS[item.channel]}
                       {item.lowConfidence ? " · low confidence" : ""}
                       {item.stale ? " · stale" : ""}
@@ -457,7 +457,7 @@ export function CaseFileScreen({
       ) : null}
 
       <details className={cn(insetChrome, "rounded-2xl px-4 py-3")}>
-        <summary className="cursor-pointer text-sm font-medium text-white">More on this person</summary>
+        <summary className="cursor-pointer text-sm font-medium text-strong">More on this person</summary>
         <p className={helperClass}>Assign, status, and anything else that is not the call itself.</p>
         <div className="mt-3 flex flex-wrap gap-2">
           <Button
@@ -573,7 +573,7 @@ export function CaseFileScreen({
       <section>
         <Panel className="p-6">
           <details>
-            <summary className="cursor-pointer text-sm font-medium text-white">
+            <summary className="cursor-pointer text-sm font-medium text-strong">
               Everything that happened
             </summary>
             <p className={helperClass}>
@@ -672,7 +672,7 @@ export function CaseFileScreen({
       <section>
         <Panel className="p-6">
           <details>
-            <summary className="cursor-pointer text-sm font-medium text-white">
+            <summary className="cursor-pointer text-sm font-medium text-strong">
               What they told you on the application
             </summary>
             <p className={helperClass}>Their own answers, exactly as they gave them.</p>
@@ -685,7 +685,7 @@ export function CaseFileScreen({
         <section>
           <Panel className="p-6">
             <details>
-              <summary className="cursor-pointer text-sm font-medium text-white">
+              <summary className="cursor-pointer text-sm font-medium text-strong">
                 What they paid ({file.revenue.length})
               </summary>
               <p className={helperClass}>Owners and admins only. A payment here is what marks them won.</p>
@@ -734,7 +734,7 @@ function ObjectionBlock({
         />
         {item.resolved ? <span className="text-xs text-dim">Resolved</span> : null}
       </div>
-      {item.verbatim ? <p className="mt-2 text-sm text-white">&ldquo;{item.verbatim}&rdquo;</p> : null}
+      {item.verbatim ? <p className="mt-2 text-sm text-strong">&ldquo;{item.verbatim}&rdquo;</p> : null}
       <p className="mt-1 text-xs text-dim">{callLabel}</p>
       {item.resolved && item.resolvedNote ? (
         <p className="mt-2 text-xs text-silver">{item.resolvedNote}</p>
@@ -787,7 +787,7 @@ function NextActionBlock({
 
   return (
     <div className={insetSurface}>
-      <p className="text-sm text-white">{item.actionText}</p>
+      <p className="text-sm text-strong">{item.actionText}</p>
       <p className="mt-1 text-xs">
         {item.overdue ? (
           <span className="text-flag-critical">Overdue</span>
@@ -1037,7 +1037,7 @@ function StatusPanel({
         void onSubmit({ status, note }).finally(() => setPending(false));
       }}
     >
-      <p className="text-sm font-medium text-white">Change status</p>
+      <p className="text-sm font-medium text-strong">Change status</p>
       <p className={helperClass}>
         A later real event still wins. Closed won cannot be set here — it follows a recorded payment.
       </p>
@@ -1182,7 +1182,7 @@ function FilesPanel({
               className={cn(insetChrome, "flex flex-wrap items-center justify-between gap-3 px-4 py-3")}
             >
               <div className="min-w-0">
-                <p className="truncate text-sm text-white">{file.fileName}</p>
+                <p className="truncate text-sm text-strong">{file.fileName}</p>
                 <p className="text-xs text-dim">
                   {formatFileSize(file.byteSize)} · {formatQueueDuration(file.createdAt, now)}
                 </p>

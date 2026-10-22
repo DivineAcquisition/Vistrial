@@ -32,7 +32,7 @@ export function OpenOperatorRunButton({
         window.dispatchEvent(new CustomEvent(OPERATOR_OPEN_RUN_EVENT, { detail: { id: runId } }));
       }}
     >
-      <p className="text-sm text-white">{requestText}</p>
+      <p className="text-sm text-strong">{requestText}</p>
       <p className="mt-1 text-xs text-dim">
         {operatorRunStatusLabel(status)} · {new Date(createdAt).toLocaleString()}
       </p>

@@ -31,7 +31,7 @@ export function ReviewPrompts({ prompts }: { prompts: ReviewPrompt[] }) {
         {prompts.map((prompt) => (
           <li key={prompt.id} className="flex flex-wrap items-start justify-between gap-4">
             <div className="min-w-0 flex-1">
-              <p className="text-sm text-white">{REVIEW_REASON_LABELS[prompt.reason]}</p>
+              <p className="text-sm text-strong">{REVIEW_REASON_LABELS[prompt.reason]}</p>
               <p className={helperClass}>{prompt.detail}</p>
             </div>
             <form action={action}>
@@ -67,7 +67,7 @@ export function Contradictions({ contradictions }: { contradictions: Contradicti
         {contradictions.map((item) => (
           <li key={item.id} className="flex flex-wrap items-start justify-between gap-4">
             <div className="min-w-0 flex-1">
-              <p className="text-sm text-white">{CONTRADICTION_LABELS[item.kind]}</p>
+              <p className="text-sm text-strong">{CONTRADICTION_LABELS[item.kind]}</p>
               <p className={helperClass}>
                 You said {item.stated}. Across {item.sampleN} of your own records, {item.observed}.
               </p>

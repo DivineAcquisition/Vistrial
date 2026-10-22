@@ -51,7 +51,7 @@ export default async function TeamStaffPage() {
               const assigned = (assignments ?? []).filter((row) => row.user_id === person.user_id);
               return (
                 <TableRow key={person.user_id}>
-                  <TableCell className="text-white">
+                  <TableCell className="text-strong">
                     <div>{person.display_name}</div>
                     <div className={`${helperClass} break-all`}>{person.email}</div>
                   </TableCell>

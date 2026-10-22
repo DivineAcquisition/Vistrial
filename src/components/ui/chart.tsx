@@ -48,13 +48,13 @@ export function BarChart({
           <span className="truncate text-xs text-silver" title={point.label}>
             {point.label}
           </span>
-          <span className="h-2.5 overflow-hidden rounded-full bg-white/[0.06]">
+          <span className="h-2.5 overflow-hidden rounded-full bg-overlay/[0.06]">
             <span
               className={cn("block h-full rounded-full", fill)}
               style={{ width: `${max === 0 ? 0 : Math.round((point.value / max) * 100)}%` }}
             />
           </span>
-          <span className="text-xs tabular-nums text-white">{format(point.value)}</span>
+          <span className="text-xs tabular-nums text-strong">{format(point.value)}</span>
         </div>
       ))}
     </div>
@@ -245,7 +245,7 @@ export function GroupedBarChart({
           <div key={group.label} className="flex min-w-16 flex-1 flex-col gap-1.5">
             {/* No track behind each bar: an empty column reading as a bar is
                 exactly the confusion a funnel chart cannot afford. */}
-            <div className="flex h-28 items-end gap-1 border-b border-white/[0.08]">
+            <div className="flex h-28 items-end gap-1 border-b border-overlay/[0.08]">
               {series.map((entry, index) => {
                 const value = group.values[index] ?? 0;
                 const height = max === 0 ? 0 : (value / max) * 100;

@@ -79,8 +79,8 @@ export default async function AccessRequestDetail({ params }: { params: Promise<
       <p className="mb-4 text-sm">
         <Link href="/app/team/roster/requests" className="text-brand-300 underline">Back to requests</Link>
       </p>
-      <section className="rounded-2xl border border-white/10 p-4">
-        <h2 className="font-heading text-lg text-white">Fit summary</h2>
+      <section className="rounded-2xl border border-overlay/10 p-4">
+        <h2 className="font-heading text-lg text-strong">Fit summary</h2>
         <ul className="mt-2 space-y-1 text-sm text-silver">
           {lines.map((line) => (
             <li key={line}>{line}</li>
@@ -91,7 +91,7 @@ export default async function AccessRequestDetail({ params }: { params: Promise<
         {fields.map(([label, value]) => (
           <div key={label}>
             <dt className="text-xs text-muted-foreground">{label}</dt>
-            <dd className="text-sm text-white">{value ? String(value) : "Not given"}</dd>
+            <dd className="text-sm text-strong">{value ? String(value) : "Not given"}</dd>
           </div>
         ))}
       </dl>
@@ -140,7 +140,7 @@ export default async function AccessRequestDetail({ params }: { params: Promise<
             "use server";
             await addRequestNote(id, String(formData.get("note") ?? ""));
           }}>
-            <label htmlFor="note" className="text-sm text-white">Internal note</label>
+            <label htmlFor="note" className="text-sm text-strong">Internal note</label>
             <textarea id="note" name="note" className={textareaClass} maxLength={2000} />
             <Button type="submit" size="sm" className="mt-2">Add note</Button>
           </form>
@@ -160,8 +160,8 @@ export default async function AccessRequestDetail({ params }: { params: Promise<
             "use server";
             await deleteRequest(id, String(formData.get("reason") ?? ""));
           }}>
-            <label htmlFor="reason" className="text-sm text-white">Delete this request</label>
-            <input id="reason" name="reason" className="mt-2 h-10 w-full rounded-xl border border-white/10 bg-transparent px-3 text-sm" placeholder="Why it is being deleted" />
+            <label htmlFor="reason" className="text-sm text-strong">Delete this request</label>
+            <input id="reason" name="reason" className="mt-2 h-10 w-full rounded-xl border border-overlay/10 bg-transparent px-3 text-sm" placeholder="Why it is being deleted" />
             <Button type="submit" size="sm" variant="destructive" className="mt-2">Delete</Button>
           </form>
         </div>
@@ -169,7 +169,7 @@ export default async function AccessRequestDetail({ params }: { params: Promise<
         <p className={`${helperClass} mt-6`}>You can read this request. A Platform Admin changes it.</p>
       )}
       <section className="mt-10">
-        <h2 className="font-heading text-lg text-white">History</h2>
+        <h2 className="font-heading text-lg text-strong">History</h2>
         <ul className="mt-3 space-y-2 text-sm text-silver">
           {(events ?? []).map((event) => (
             <li key={String(event.id)}>

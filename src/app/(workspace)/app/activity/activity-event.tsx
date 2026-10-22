@@ -124,7 +124,7 @@ export function ActivityEventLine({
     >
       <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
         <StatusBadge label={resultLabel(event.result)} tone={resultTone(event.result)} />
-        <p className="min-w-0 flex-1 text-sm text-white">{event.headline}</p>
+        <p className="min-w-0 flex-1 text-sm text-strong">{event.headline}</p>
         <ActivityWhen at={event.occurredAt} now={now} />
       </div>
       <p className="mt-1 text-xs text-silver">
@@ -133,14 +133,14 @@ export function ActivityEventLine({
         {event.leadName ? (
           <>
             {" · "}
-            <Link href={event.href} className="text-brand-300 hover:text-white hover:underline">
+            <Link href={event.href} className="text-brand-300 hover:text-strong hover:underline">
               {event.leadName}
             </Link>
           </>
         ) : (
           <>
             {" · "}
-            <Link href={event.href} className="text-brand-300 hover:text-white hover:underline">
+            <Link href={event.href} className="text-brand-300 hover:text-strong hover:underline">
               Open record
             </Link>
           </>
@@ -153,7 +153,7 @@ export function ActivityEventLine({
             {details.map(([label, value]) => (
               <div key={label} className="grid grid-cols-[7rem_minmax(0,1fr)] gap-2">
                 <dt className="text-dim">{label}</dt>
-                <dd className="whitespace-pre-wrap text-white">{value}</dd>
+                <dd className="whitespace-pre-wrap text-strong">{value}</dd>
               </div>
             ))}
           </dl>
@@ -186,7 +186,7 @@ export function ActivityLineView({
   return (
     <details className={cn(insetChrome, "px-4 py-3")}>
       <summary className="cursor-pointer">
-        <span className="text-sm text-white">{line.headline}</span>
+        <span className="text-sm text-strong">{line.headline}</span>
         <span className="ml-3 text-xs text-dim">{formatRelative(line.occurredAt, now)}</span>
       </summary>
       <ol className="mt-3 space-y-2">

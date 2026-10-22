@@ -161,7 +161,7 @@ export function MultiChoiceField<T extends string>(props: {
       <div className="grid gap-2 sm:grid-cols-2">
         {props.choices.map((choice) => (
           <div key={choice.value} className="flex items-center gap-3">
-            <label className="flex flex-1 items-center gap-2 text-sm text-white">
+            <label className="flex flex-1 items-center gap-2 text-sm text-strong">
               <Checkbox
                 name={props.name}
                 value={choice.value}

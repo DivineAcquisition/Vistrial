@@ -75,11 +75,11 @@ export function SourceConnectionCard({
       <dl className="mt-5 grid gap-4 sm:grid-cols-2">
         <div>
           <dt className="text-xs text-dim">Account</dt>
-          <dd className="text-sm text-white">{source.accountLabel || "—"}</dd>
+          <dd className="text-sm text-strong">{source.accountLabel || "—"}</dd>
         </div>
         <div>
           <dt className="text-xs text-dim">Last verified</dt>
-          <dd className="text-sm text-white">
+          <dd className="text-sm text-strong">
             {source.lastVerifiedAt ? formatRelative(source.lastVerifiedAt, now) : "—"}
           </dd>
         </div>

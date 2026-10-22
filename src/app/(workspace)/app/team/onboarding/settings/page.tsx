@@ -77,7 +77,7 @@ export default async function OnboardingSettingsPage() {
         <p className={helperClass}>The order, who does each stage, and what finishes it are fixed. Wording and time estimates are yours to change.</p>
         {((defs ?? []) as Definition[]).map((def) => (
           <Panel key={def.key} className="p-5">
-            <h3 className="mb-3 text-sm text-white">
+            <h3 className="mb-3 text-sm text-strong">
               {def.position}. {def.staff_label}
             </h3>
             <StageDefinitionForm

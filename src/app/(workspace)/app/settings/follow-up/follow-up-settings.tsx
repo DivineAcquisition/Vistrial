@@ -109,7 +109,7 @@ export function FollowUpSettingsScreen({
           ) : (
             <ol className="space-y-3">
               {voice.examples.map((item: VoiceExample, index) => (
-                <li key={`${item.addedAt}-${index}`} className="border-t border-white/[0.05] pt-3 first:border-t-0 first:pt-0">
+                <li key={`${item.addedAt}-${index}`} className="border-t border-overlay/[0.05] pt-3 first:border-t-0 first:pt-0">
                   <p className="text-xs uppercase tracking-[0.14em] text-dim">
                     {FOLLOW_UP_CHANNEL_LABELS[item.channel]}
                   </p>
@@ -301,8 +301,8 @@ export function FollowUpSettingsScreen({
         />
         <Panel className="p-6 space-y-4">
           {rules.map((rule, index) => (
-            <div key={`${rule.priority}-${index}`} className="border-t border-white/[0.05] pt-4 first:border-t-0 first:pt-0">
-              <label className="flex items-center gap-2 text-sm text-white">
+            <div key={`${rule.priority}-${index}`} className="border-t border-overlay/[0.05] pt-4 first:border-t-0 first:pt-0">
+              <label className="flex items-center gap-2 text-sm text-strong">
                 <Checkbox
                   checked={rule.enabled}
                   onChange={(event) => {
@@ -409,7 +409,7 @@ export function FollowUpSettingsScreen({
                 .filter((item) => item.status === "pending")
                 .map((item) => (
                   <li key={item.id}>
-                    <p className="text-sm text-white">{item.evidence}</p>
+                    <p className="text-sm text-strong">{item.evidence}</p>
                     <div className="mt-2 flex flex-wrap gap-2">
                       <Button
                         type="button"

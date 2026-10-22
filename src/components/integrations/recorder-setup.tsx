@@ -32,9 +32,9 @@ export function RecorderSetup({
   const [pending, startTransition] = useTransition();
 
   return (
-    <div className="border-t border-white/[0.06] pt-4 first:border-t-0 first:pt-0">
+    <div className="border-t border-overlay/[0.06] pt-4 first:border-t-0 first:pt-0">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <p className="text-sm font-medium text-white">{label}</p>
+        <p className="text-sm font-medium text-strong">{label}</p>
         <Button
           type="button"
           variant={alreadySetUp || setup ? "secondary" : "gradient"}

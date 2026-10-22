@@ -138,7 +138,7 @@ export default async function SetupStepPage({
         children: (
           <div className={cardStack}>
             <Panel className="p-6">
-              <ul className="space-y-3 text-sm text-white">
+              <ul className="space-y-3 text-sm text-strong">
                 <li>It builds a case file for every lead, from your calls and your CRM, so anyone can pick a lead up.</li>
                 <li>It notices when a lead is waiting too long and tells the right person.</li>
                 <li>It drafts follow-ups for your approval, so nobody slips through.</li>
@@ -172,12 +172,12 @@ export default async function SetupStepPage({
               <dl className="mt-4 space-y-3 text-sm">
                 <div>
                   <dt className="text-muted-foreground">How fast a new lead should hear from you</dt>
-                  <dd className="text-white">Within {minutes(a.firstTouchMinutes)}.{a.afterHours === "pause" ? " Outside business hours the clock waits until you open." : ""}</dd>
+                  <dd className="text-strong">Within {minutes(a.firstTouchMinutes)}.{a.afterHours === "pause" ? " Outside business hours the clock waits until you open." : ""}</dd>
                 </div>
                 {a.maxSequenceLength ? (
                   <div>
                     <dt className="text-muted-foreground">Follow-up rhythm</dt>
-                    <dd className="text-white">
+                    <dd className="text-strong">
                       Up to {a.maxSequenceLength} follow-ups{a.maxSequenceDays ? ` over ${a.maxSequenceDays} days` : ""}, each one approved by a person first.
                     </dd>
                   </div>
@@ -185,13 +185,13 @@ export default async function SetupStepPage({
                 {a.urgencySignals?.length ? (
                   <div>
                     <dt className="text-muted-foreground">What it watches for</dt>
-                    <dd className="text-white">{a.urgencySignals.slice(0, 5).join("; ")}.</dd>
+                    <dd className="text-strong">{a.urgencySignals.slice(0, 5).join("; ")}.</dd>
                   </div>
                 ) : null}
                 {a.readyCriteria?.length ? (
                   <div>
                     <dt className="text-muted-foreground">A lead looks ready when</dt>
-                    <dd className="text-white">{a.readyCriteria.slice(0, 4).join(" ")}</dd>
+                    <dd className="text-strong">{a.readyCriteria.slice(0, 4).join(" ")}</dd>
                   </div>
                 ) : null}
               </dl>
@@ -221,7 +221,7 @@ export default async function SetupStepPage({
         children: (
           <div className={cardStack}>
             {stageDetail(view, slug) && view.steps.find((step) => step.key === "business_details")?.state !== "done" ? (
-              <p className="text-sm text-white">{stageDetail(view, slug)}</p>
+              <p className="text-sm text-strong">{stageDetail(view, slug)}</p>
             ) : null}
             <Panel className="p-6">
               <h2 className={cardTitle}>{view.business.name}</h2>
@@ -272,7 +272,7 @@ export default async function SetupStepPage({
                   tone={connected ? "good" : conn?.status === "broken" ? "critical" : "neutral"}
                 />
               </div>
-              <p className="mt-3 text-sm text-white">
+              <p className="mt-3 text-sm text-strong">
                 Vistrial reads your leads, contacts, stages, and users. It does not change anything in your CRM unless you turn that on later.
               </p>
               <p className={helperClass}>It never reads what your leads wrote to you. Only who, when, and which channel.</p>
@@ -336,7 +336,7 @@ export default async function SetupStepPage({
                       tone={m.carrierStatus === "approved" ? "good" : m.carrierStatus === "rejected" ? "critical" : m.carrierStatus === "pending" ? "warning" : "neutral"}
                     />
                   </div>
-                  <p className="mt-3 text-sm text-white">
+                  <p className="mt-3 text-sm text-strong">
                     Phone carriers only deliver business texts from numbers registered to a real business. You give the details once; your team submits
                     them and tells you when they are approved.
                   </p>
@@ -356,7 +356,7 @@ export default async function SetupStepPage({
                 </Panel>
                 {guidance ? (
                   <Notice tone="critical" title="What the carriers said">
-                    <p className="text-sm text-white">{guidance.reason}</p>
+                    <p className="text-sm text-strong">{guidance.reason}</p>
                     <p className={helperClass}>What to do: {guidance.fix}</p>
                   </Notice>
                 ) : null}
@@ -392,7 +392,7 @@ export default async function SetupStepPage({
               </Notice>
             ) : (
               <>
-                <p className="text-sm text-white">
+                <p className="text-sm text-strong">
                   To send email from your own address, your domain needs a few records that prove the emails really come from you. Adding them takes
                   about 10 minutes where your domain is managed.
                 </p>
@@ -480,7 +480,7 @@ export default async function SetupStepPage({
         estimate: estimateFor(view, slug),
         children: (
           <div className={cardStack}>
-            <p className="text-sm text-white">
+            <p className="text-sm text-strong">
               When a lead is not answered in time, the person it is assigned to hears first. If nobody responds, the people below hear, in this order,
               on the channel you choose. They are also who hears when nobody else can.
             </p>
@@ -545,19 +545,19 @@ export default async function SetupStepPage({
                 <dl className="mt-4 grid grid-cols-2 gap-3 text-sm sm:grid-cols-4" aria-live="polite">
                   <div>
                     <dt className="text-muted-foreground">Found</dt>
-                    <dd className="text-white tabular-nums">{imp.found}</dd>
+                    <dd className="text-strong tabular-nums">{imp.found}</dd>
                   </div>
                   <div>
                     <dt className="text-muted-foreground">Brought in</dt>
-                    <dd className="text-white tabular-nums">{imp.imported}</dd>
+                    <dd className="text-strong tabular-nums">{imp.imported}</dd>
                   </div>
                   <div>
                     <dt className="text-muted-foreground">Left out</dt>
-                    <dd className="text-white tabular-nums">{imp.skipped}</dd>
+                    <dd className="text-strong tabular-nums">{imp.skipped}</dd>
                   </div>
                   <div>
                     <dt className="text-muted-foreground">Could not read</dt>
-                    <dd className="text-white tabular-nums">{imp.failed}</dd>
+                    <dd className="text-strong tabular-nums">{imp.failed}</dd>
                   </div>
                 </dl>
                 {reasons.length ? (
@@ -575,7 +575,7 @@ export default async function SetupStepPage({
                   The rest keep a basic case file from your CRM details.
                 </p>
                 {imp.status === "failed" ? (
-                  <p className="mt-3 text-sm text-white">It stopped part way. Your team has been told. Nothing already brought in is lost, and it carries on from where it stopped.</p>
+                  <p className="mt-3 text-sm text-strong">It stopped part way. Your team has been told. Nothing already brought in is lost, and it carries on from where it stopped.</p>
                 ) : null}
               </Panel>
             ) : null}
@@ -619,9 +619,9 @@ export default async function SetupStepPage({
                   <h2 className={`${cardTitle} ${agent.accent.text}`}>{agent.name}</h2>
                   {agent.id === "compass" ? <StatusBadge label="Switched on last" tone="neutral" /> : null}
                 </div>
-                <p className="mt-2 text-sm text-white">{agent.role}</p>
+                <p className="mt-2 text-sm text-strong">{agent.role}</p>
                 <p className={helperClass}>{agent.description}</p>
-                <p className="mt-3 text-sm text-white">What it will not do: {agent.promise}</p>
+                <p className="mt-3 text-sm text-strong">What it will not do: {agent.promise}</p>
               </Panel>
             ))}
             <Notice tone="success" title={`${AGENTS.relay.name} only drafts`}>
@@ -670,7 +670,7 @@ export default async function SetupStepPage({
                   </div>
                 ) : null}
                 {s.status === "failed" ? (
-                  <p className="mt-4 text-sm text-white">The test stopped at: {s.failedStep ?? "a step"}. Your team has been told. You can run it again.</p>
+                  <p className="mt-4 text-sm text-strong">The test stopped at: {s.failedStep ?? "a step"}. Your team has been told. You can run it again.</p>
                 ) : null}
               </Panel>
             ) : null}
@@ -709,7 +709,7 @@ export default async function SetupStepPage({
               <ul className="mt-3 space-y-2">
                 {required.map((step) => (
                   <li key={step.key} className="flex flex-wrap items-center justify-between gap-2 text-sm">
-                    <span className="text-white">{step.label}</span>
+                    <span className="text-strong">{step.label}</span>
                     <StatusBadge label={CUSTOMER_STATE_LABEL[step.state].label} tone={CUSTOMER_STATE_LABEL[step.state].tone} />
                   </li>
                 ))}
@@ -725,7 +725,7 @@ export default async function SetupStepPage({
                   return (
                     <li key={agent} className={insetSurface}>
                       <div className="flex flex-wrap items-center justify-between gap-2">
-                        <p className="text-sm text-white">
+                        <p className="text-sm text-strong">
                           {index + 1}. {copy.title}
                         </p>
                         {row && row.stage !== "off" ? <StatusBadge label="Done" tone="good" /> : null}
@@ -747,7 +747,7 @@ export default async function SetupStepPage({
               ready ? (
                 ctx.workspaceRole === "owner" ? (
                   <div className={cardStack}>
-                    <p className="text-sm text-white">When you confirm, your team reviews everything and approves going live. It is not instant, usually within 1 business day.</p>
+                    <p className="text-sm text-strong">When you confirm, your team reviews everything and approves going live. It is not instant, usually within 1 business day.</p>
                     <ConfirmReady />
                   </div>
                 ) : (

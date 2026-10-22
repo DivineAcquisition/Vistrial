@@ -23,7 +23,7 @@ export function SettingsFormCard({
     <Card className={cn(formMeasure, className)} render={<form action={action} />}>
       <CardPanel className={cn(cardStack, footer ? "pb-0" : undefined)}>{children}</CardPanel>
       {footer ? (
-        <CardFooter className="border-t border-white/[0.06]">{footer}</CardFooter>
+        <CardFooter className="border-t border-overlay/[0.06]">{footer}</CardFooter>
       ) : null}
     </Card>
   );

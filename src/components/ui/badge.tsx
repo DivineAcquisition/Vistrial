@@ -24,12 +24,12 @@ export const badgeVariants = cva(
         default:
           "bg-primary text-primary-foreground [button&,a&]:hover:bg-primary/90",
         destructive:
-          "bg-destructive text-white [button&,a&]:hover:bg-destructive/90",
+          "bg-destructive text-strong [button&,a&]:hover:bg-destructive/90",
         error:
           "bg-destructive/8 text-destructive-foreground dark:bg-destructive/16",
         info: "bg-info/8 text-info-foreground dark:bg-info/16",
         outline:
-          "border-white/[0.08] bg-white/[0.05] text-foreground [button&,a&]:hover:bg-white/[0.09]",
+          "border-overlay/[0.08] bg-overlay/[0.05] text-foreground [button&,a&]:hover:bg-overlay/[0.09]",
         secondary:
           "bg-secondary text-secondary-foreground [button&,a&]:hover:bg-secondary/90",
         success: "bg-success/8 text-success-foreground dark:bg-success/16",

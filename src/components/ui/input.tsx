@@ -29,7 +29,7 @@ function densitySize(
 const temporalTypes = new Set(["date", "time", "datetime-local", "month", "week"]);
 
 const inputShellClassName =
-  "relative inline-flex w-full rounded-xl border border-white/[0.09] bg-ink-850 not-dark:bg-clip-padding text-base shadow-[inset_0_1px_0_rgba(255,255,255,0.06)] ring-brand-500/20 transition-[box-shadow,border-color,background-color] duration-150 scheme-dark before:pointer-events-none before:absolute before:inset-0 before:rounded-[calc(var(--radius-xl)-1px)] not-has-disabled:not-has-focus-visible:not-has-aria-invalid:before:shadow-[0_1px_--theme(--color-black/4%)] has-focus-visible:has-aria-invalid:border-destructive/64 has-focus-visible:has-aria-invalid:ring-destructive/16 has-aria-invalid:border-destructive/36 has-focus-visible:border-brand-500/55 has-autofill:bg-foreground/4 has-disabled:opacity-64 has-[:disabled,:focus-visible,[aria-invalid]]:shadow-none has-focus-visible:ring-[3px] hover:not-has-disabled:not-has-focus-visible:border-white/[0.16] sm:text-sm dark:bg-ink-850 dark:has-autofill:bg-foreground/8 dark:has-aria-invalid:ring-destructive/24 dark:not-has-disabled:not-has-focus-visible:not-has-aria-invalid:before:shadow-[0_-1px_--theme(--color-white/6%)]";
+  "relative inline-flex w-full rounded-xl border border-overlay/[0.09] bg-ink-850 not-dark:bg-clip-padding text-base shadow-[inset_0_1px_0_rgba(255,255,255,0.06)] ring-brand-500/20 transition-[box-shadow,border-color,background-color] duration-150 dark:scheme-dark before:pointer-events-none before:absolute before:inset-0 before:rounded-[calc(var(--radius-xl)-1px)] not-has-disabled:not-has-focus-visible:not-has-aria-invalid:before:shadow-[0_1px_--theme(--color-black/4%)] has-focus-visible:has-aria-invalid:border-destructive/64 has-focus-visible:has-aria-invalid:ring-destructive/16 has-aria-invalid:border-destructive/36 has-focus-visible:border-brand-500/55 has-autofill:bg-foreground/4 has-disabled:opacity-64 has-[:disabled,:focus-visible,[aria-invalid]]:shadow-none has-focus-visible:ring-[3px] hover:not-has-disabled:not-has-focus-visible:border-overlay/[0.16] sm:text-sm dark:bg-ink-850 dark:has-autofill:bg-foreground/8 dark:has-aria-invalid:ring-destructive/24 dark:not-has-disabled:not-has-focus-visible:not-has-aria-invalid:before:shadow-[0_-1px_--theme(--color-white/6%)]";
 
 export function Input({
   className,
@@ -52,7 +52,7 @@ export function Input({
     props.type === "file" &&
       "text-muted-foreground file:me-3 file:bg-transparent file:font-medium file:text-foreground file:text-sm",
     temporalTypes.has(String(props.type)) &&
-      "[&::-webkit-calendar-picker-indicator]:cursor-pointer [&::-webkit-calendar-picker-indicator]:opacity-70 [&::-webkit-calendar-picker-indicator]:invert [&::-webkit-calendar-picker-indicator]:hover:opacity-100",
+      "[&::-webkit-calendar-picker-indicator]:cursor-pointer [&::-webkit-calendar-picker-indicator]:opacity-70 dark:[&::-webkit-calendar-picker-indicator]:invert [&::-webkit-calendar-picker-indicator]:hover:opacity-100",
   );
 
   return (

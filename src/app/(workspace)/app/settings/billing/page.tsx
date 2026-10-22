@@ -193,14 +193,14 @@ export default async function BillingPage() {
           ) : invoices.data.length === 0 ? (
             <p className={`mt-2 ${helperClass}`}>No receipts yet.</p>
           ) : (
-            <ul className="mt-3 divide-y divide-white/[0.06]">
+            <ul className="mt-3 divide-y divide-overlay/[0.06]">
               {invoices.data.map((invoice) => {
                 const label = INVOICE_STATUS[invoice.status ?? ""] ?? { label: invoice.status ?? "Unknown", tone: "neutral" as const };
                 const href = invoice.hostedUrl ?? invoice.pdfUrl;
                 return (
                   <li key={invoice.id} className="flex flex-wrap items-center justify-between gap-2 py-3">
                     <span className="min-w-0">
-                      <span className="block text-sm text-white">
+                      <span className="block text-sm text-strong">
                         {formatDayLong(invoice.created)} · {invoiceAmount(invoice)}
                       </span>
                       {invoice.number ? <span className={helperClass}>{invoice.number}</span> : null}
@@ -229,7 +229,7 @@ export default async function BillingPage() {
           </p>
           <ul className="mt-3 space-y-2">
             {plan.meters.map((meter) => (
-              <li key={meter.key} className="text-sm text-white">
+              <li key={meter.key} className="text-sm text-strong">
                 {meterLabel(meter.key)}: {meter.key === "transcript_minutes" ? formatMinutes(meter.used) : meter.used.toLocaleString("en-US")}
                 {meter.limit != null
                   ? ` of ${meter.key === "transcript_minutes" ? formatMinutes(meter.limit) : meter.limit.toLocaleString("en-US")}`
@@ -238,7 +238,7 @@ export default async function BillingPage() {
             ))}
           </ul>
           {plan.bullets?.length ? (
-            <ul className="mt-3 list-disc space-y-1 pl-5 text-sm text-white/80">
+            <ul className="mt-3 list-disc space-y-1 pl-5 text-sm text-strong/80">
               {plan.bullets.map((item) => (
                 <li key={item}>{item}</li>
               ))}

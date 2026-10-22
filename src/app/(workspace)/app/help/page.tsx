@@ -108,7 +108,7 @@ export default async function HelpPage({ searchParams }: { searchParams: Promise
             <h2 className={cardTitle}>Request a security review</h2>
             <p className={helperClass}>For this workspace. It is tagged as an existing customer.</p>
             <form action={requestSecurityReviewFromHelp} className="space-y-2">
-              <textarea name="details" className="min-h-20 w-full rounded-xl border border-white/10 bg-transparent p-3 text-sm" placeholder="What do you need?" maxLength={2000} />
+              <textarea name="details" className="min-h-20 w-full rounded-xl border border-overlay/10 bg-transparent p-3 text-sm" placeholder="What do you need?" maxLength={2000} />
               <button type="submit" className="text-sm font-medium text-brand-300 underline">Send to the team</button>
             </form>
           </Panel>
@@ -116,12 +116,12 @@ export default async function HelpPage({ searchParams }: { searchParams: Promise
             <h2 className={cardTitle}>Data request</h2>
             <p className={helperClass}>Export, correction, or deletion. A person verifies it. Nothing happens automatically.</p>
             <form action={requestWorkspaceData} className="space-y-2">
-              <select name="kind" className="h-10 w-full rounded-xl border border-white/10 bg-transparent px-3 text-sm" defaultValue="export">
+              <select name="kind" className="h-10 w-full rounded-xl border border-overlay/10 bg-transparent px-3 text-sm" defaultValue="export">
                 <option value="export">Export</option>
                 <option value="correction">Correction</option>
                 <option value="deletion">Deletion</option>
               </select>
-              <textarea name="details" className="min-h-20 w-full rounded-xl border border-white/10 bg-transparent p-3 text-sm" maxLength={2000} />
+              <textarea name="details" className="min-h-20 w-full rounded-xl border border-overlay/10 bg-transparent p-3 text-sm" maxLength={2000} />
               <button type="submit" className="text-sm font-medium text-brand-300 underline">Submit request</button>
             </form>
           </Panel>
@@ -182,14 +182,14 @@ export default async function HelpPage({ searchParams }: { searchParams: Promise
       {rows.length ? (
         <Panel className="p-6">
           <h2 className={cardTitle}>{seesOthers ? "Requests from this workspace" : "Your requests"}</h2>
-          <ul className="mt-3 divide-y divide-white/[0.06]">
+          <ul className="mt-3 divide-y divide-overlay/[0.06]">
             {rows.map((row) => {
               const status = HELP_STATUS[row.status] ?? HELP_STATUS.received!;
               return (
                 <li key={row.id} className="py-3">
                   <Link href={`/app/help/${row.id}`} className="flex flex-wrap items-start justify-between gap-2">
                     <span className="min-w-0">
-                      <span className="block text-sm text-white">{firstLine(row.message)}</span>
+                      <span className="block text-sm text-strong">{firstLine(row.message)}</span>
                       <span className={helperClass}>
                         {HELP_TOPICS[row.topic] ?? HELP_TOPICS.general}
                         {seesOthers && row.created_by_user_id !== ctx.user.id ? ` · ${row.created_by_name}` : ""} ·{" "}
@@ -208,10 +208,10 @@ export default async function HelpPage({ searchParams }: { searchParams: Promise
       {(updates ?? []).length ? (
         <Panel className="p-6">
           <h2 className={cardTitle}>What is new</h2>
-          <ul className="mt-3 divide-y divide-white/[0.06]">
+          <ul className="mt-3 divide-y divide-overlay/[0.06]">
             {((updates ?? []) as UpdateRow[]).map((update) => (
               <li key={update.id} className="py-3">
-                <p className="text-sm text-white">{update.title}</p>
+                <p className="text-sm text-strong">{update.title}</p>
                 <p className={helperClass}>{formatDayLong(update.published_at)}</p>
                 <p className={`mt-1 whitespace-pre-line ${helperClass}`}>{update.body}</p>
               </li>

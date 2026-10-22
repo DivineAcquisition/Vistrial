@@ -36,7 +36,7 @@ export function Breadcrumbs({
               ) : (
                 <BreadcrumbLink
                   render={<Link href={crumb.href} />}
-                  className="text-dim hover:text-white"
+                  className="text-dim hover:text-strong"
                 >
                   {crumb.label}
                 </BreadcrumbLink>

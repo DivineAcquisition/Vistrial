@@ -56,7 +56,7 @@ export function NoteBox({
           placeholder={placeholder}
           rows={3}
           maxLength={2000}
-          className="mt-1 w-full rounded-lg border border-white/[0.09] bg-transparent px-3 py-2 text-sm text-white"
+          className="mt-1 w-full rounded-lg border border-overlay/[0.09] bg-transparent px-3 py-2 text-sm text-strong"
         />
       </label>
       <Button type="submit" size="sm" disabled={pending || !note.trim()}>

@@ -365,10 +365,10 @@ export function OperatorCommandBar({ showTrigger = false }: { showTrigger?: bool
       <Sheet open={open} onOpenChange={setOpen}>
         <SheetContent
           side="right"
-          className="w-full gap-0 bg-ink-900 p-0 text-white sm:max-w-2xl"
+          className="w-full gap-0 bg-ink-900 p-0 text-strong sm:max-w-2xl"
           showCloseButton
         >
-          <SheetHeader className="border-b border-white/[0.07]">
+          <SheetHeader className="border-b border-overlay/[0.07]">
             <SheetTitle>{WORDS.askVistrial}</SheetTitle>
             <SheetDescription>
               One question at a time. Changes wait for your OK.
@@ -423,7 +423,7 @@ export function OperatorCommandBar({ showTrigger = false }: { showTrigger?: bool
                           void hydrate(item.value);
                         }}
                       >
-                        <span className="text-white">{item.label}</span>
+                        <span className="text-strong">{item.label}</span>
                         <span className={helperClass}>{operatorRunStatusLabel(item.status)}</span>
                       </CommandItem>
                     )}

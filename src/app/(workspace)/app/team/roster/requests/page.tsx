@@ -100,7 +100,7 @@ export default async function AccessRequestsPage({
     <PageFrame title="Access requests" description="Private Access and Custom requests. They are not inside a customer workspace.">
       <RosterTabs current="requests" showRequests />
       <form className="mb-4 flex flex-wrap gap-2" action="/app/team/roster/requests">
-        <input name="q" defaultValue={q} placeholder="Search name or business" aria-label="Search" className="h-10 rounded-xl border border-white/10 bg-transparent px-3 text-sm" />
+        <input name="q" defaultValue={q} placeholder="Search name or business" aria-label="Search" className="h-10 rounded-xl border border-overlay/10 bg-transparent px-3 text-sm" />
         <select name="status" defaultValue={status} aria-label="Status" className={selectClass}>
           <option value="">Any status</option>
           {STATUSES.map((item) => (
@@ -133,7 +133,7 @@ export default async function AccessRequestsPage({
         })}
         <form action={saveRequestViewForm}>
           <input type="hidden" name="query" value={queryString} />
-          <input name="name" aria-label="View name" placeholder="Save this view" className="h-8 rounded-lg border border-white/10 bg-transparent px-2 text-sm" maxLength={80} />
+          <input name="name" aria-label="View name" placeholder="Save this view" className="h-8 rounded-lg border border-overlay/10 bg-transparent px-2 text-sm" maxLength={80} />
         </form>
       </div>
       <p className={`${helperClass} mb-4`}>

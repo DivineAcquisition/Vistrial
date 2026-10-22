@@ -57,7 +57,7 @@ export function TablePageSkeleton({
         {Array.from({ length: rows }).map((_, index) => (
           <div
             key={index}
-            className="flex h-[3.25rem] items-center gap-4 border-b border-white/[0.06] px-4 last:border-b-0"
+            className="flex h-[3.25rem] items-center gap-4 border-b border-overlay/[0.06] px-4 last:border-b-0"
           >
             <Skeleton className="h-3.5 w-40" />
             <Skeleton className="hidden h-3.5 w-24 sm:block" />

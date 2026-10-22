@@ -54,7 +54,7 @@ export default async function EscalationPage({ params }: { params: Promise<{ id:
       actions={<StatusBadge label={row.status} tone={row.status === "resolved" ? "good" : row.status === "open" ? "critical" : "warning"} />}
     >
       <Panel className="space-y-3 p-6">
-        {row.rule ? <p className="text-sm text-white">{row.rule}</p> : null}
+        {row.rule ? <p className="text-sm text-strong">{row.rule}</p> : null}
         {row.next_step ? <p className={helperClass}>Next: {row.next_step}</p> : null}
         <p className={helperClass}>
           {row.affected} affected · opened {formatDateTime(row.created_at)}
@@ -72,7 +72,7 @@ export default async function EscalationPage({ params }: { params: Promise<{ id:
             </ul>
           </div>
         ) : null}
-        {row.outcome ? <p className="text-sm text-white">Outcome: {row.outcome}</p> : null}
+        {row.outcome ? <p className="text-sm text-strong">Outcome: {row.outcome}</p> : null}
         {row.snooze_reason ? (
           <p className={helperClass}>
             Snoozed{row.snoozed_until ? ` until ${formatDateTime(row.snoozed_until)}` : ""}: {row.snooze_reason}
@@ -105,10 +105,10 @@ export default async function EscalationPage({ params }: { params: Promise<{ id:
       {(notes ?? []).length ? (
         <Panel className="p-6">
           <h2 className={cardTitle}>Notes</h2>
-          <ul className="mt-3 divide-y divide-white/[0.06]">
+          <ul className="mt-3 divide-y divide-overlay/[0.06]">
             {((notes ?? []) as Array<{ id: string; author_name: string; body: string; created_at: string }>).map((note) => (
               <li key={note.id} className="py-3">
-                <p className="text-sm text-white">{note.body}</p>
+                <p className="text-sm text-strong">{note.body}</p>
                 <p className={helperClass}>
                   {note.author_name} · {formatDateTime(note.created_at)}
                 </p>

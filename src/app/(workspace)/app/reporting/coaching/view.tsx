@@ -102,8 +102,8 @@ export function CoachingManagerView({ payload }: { payload: Record<string, unkno
               const patterns = asRecord(row.patterns);
               const workOn = arr(patterns.workOn);
               return (
-                <li key={str(row.memberId)} className="border-t border-white/[0.06] pt-4 first:border-t-0 first:pt-0">
-                  <p className="font-heading text-sm text-white">{str(row.displayName)}</p>
+                <li key={str(row.memberId)} className="border-t border-overlay/[0.06] pt-4 first:border-t-0 first:pt-0">
+                  <p className="font-heading text-sm text-strong">{str(row.displayName)}</p>
                   <p className="mt-1 text-sm text-silver">{str(row.coachingPrompt)}</p>
                   {workOn.length > 0 ? (
                     <ul className="mt-2 space-y-1 text-sm text-silver">

@@ -32,7 +32,7 @@ export default async function ConfirmContactPage({ params }: { params: Promise<{
   return (
     <PageFrame title="You are an escalation contact" description="This was a test. No lead is waiting.">
       <Panel className="p-6">
-        <p className="text-sm text-white">
+        <p className="text-sm text-strong">
           When a lead waits too long and nobody has responded, Vistrial tells you. This confirms the message reached you.
         </p>
         <p className={helperClass}>You can change how you hear about things in your notification settings.</p>

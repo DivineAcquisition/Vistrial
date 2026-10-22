@@ -74,13 +74,13 @@ export default async function PrivacyPage() {
       {rows.length ? (
         <Panel className="p-6">
           <h2 className={cardTitle}>Requests</h2>
-          <ul className="mt-3 divide-y divide-white/[0.06]">
+          <ul className="mt-3 divide-y divide-overlay/[0.06]">
             {rows.map((row) => {
               const status = DATA_REQUEST_STATUS[row.status] ?? DATA_REQUEST_STATUS.received!;
               return (
                 <li key={row.id} className="flex flex-wrap items-start justify-between gap-2 py-3">
                   <span className="min-w-0">
-                    <span className="block text-sm text-white">
+                    <span className="block text-sm text-strong">
                       {row.kind === "export" ? "Copy of the data" : "Delete the data"}
                     </span>
                     <span className={helperClass}>

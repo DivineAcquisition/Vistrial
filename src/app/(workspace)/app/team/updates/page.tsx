@@ -26,13 +26,13 @@ export default async function ProductUpdatesPage() {
       {rows.length ? (
         <Panel className="p-6">
           <h2 className={cardTitle}>Published</h2>
-          <ul className="mt-3 divide-y divide-white/[0.06]">
+          <ul className="mt-3 divide-y divide-overlay/[0.06]">
             {rows.map((row) => {
               const scheduled = row.published_at > now;
               return (
                 <li key={row.id} className="flex flex-wrap items-start justify-between gap-3 py-3">
                   <span className="min-w-0">
-                    <span className="block text-sm text-white">{row.title}</span>
+                    <span className="block text-sm text-strong">{row.title}</span>
                     <span className={helperClass}>
                       {scheduled ? "Shows " : ""}
                       {formatDateTime(row.published_at)} UTC

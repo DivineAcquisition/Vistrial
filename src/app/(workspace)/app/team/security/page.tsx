@@ -32,7 +32,7 @@ export default async function StaffSecurityPage() {
       description="Turn this on only after your own authenticator app is set up, and either a second Platform Admin is enrolled or you still have unused recovery codes. That is what keeps a Platform Admin from being locked out."
     >
       <Panel className="space-y-3 p-6">
-        <p className="text-sm text-white">{enforced ? `Required since ${formatDayLong(enforced)}. Grace is ${grace} days.` : "Not required yet."}</p>
+        <p className="text-sm text-strong">{enforced ? `Required since ${formatDayLong(enforced)}. Grace is ${grace} days.` : "Not required yet."}</p>
         <p className={helperClass}>
           Existing staff get the grace period to enroll. You turn on authenticator apps in the Supabase dashboard yourself; this switch is the product rule on top of that.{" "}
           <Link href="/security/setup?next=/app/team/security" className="text-brand-300 underline">
@@ -56,7 +56,7 @@ export default async function StaffSecurityPage() {
           <TableBody>
             {((people ?? []) as Row[]).map((person) => (
               <TableRow key={person.user_id}>
-                <TableCell className="text-white">{person.name}</TableCell>
+                <TableCell className="text-strong">{person.name}</TableCell>
                 <TableCell>{person.role === "platform_admin" ? "Platform Admin" : "Service Team"}</TableCell>
                 <TableCell>
                   <StatusBadge label={person.enrolled ? "Set up" : "Not yet"} tone={person.enrolled ? "good" : "warning"} />

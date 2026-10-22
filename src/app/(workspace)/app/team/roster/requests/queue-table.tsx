@@ -49,8 +49,8 @@ export function RequestQueue({ rows, admin }: { rows: QueueRow[]; admin: boolean
   return (
     <div className="space-y-4">
       {admin && picked.length ? (
-        <div className="flex flex-wrap items-center gap-2 rounded-xl border border-white/10 p-3">
-          <p className="text-sm text-white">{picked.length} selected</p>
+        <div className="flex flex-wrap items-center gap-2 rounded-xl border border-overlay/10 p-3">
+          <p className="text-sm text-strong">{picked.length} selected</p>
           <select className={selectClass} value={status} onChange={(event) => setStatus(event.target.value)} aria-label="Status for the selected requests">
             {STATUSES.map((item) => (
               <option key={item.value} value={item.value}>
@@ -84,7 +84,7 @@ export function RequestQueue({ rows, admin }: { rows: QueueRow[]; admin: boolean
       {message ? <p className={helperClass}>{message}</p> : null}
       <ul className="grid gap-3">
         {rows.map((row) => (
-          <li key={row.id} className="rounded-2xl border border-white/10 p-4">
+          <li key={row.id} className="rounded-2xl border border-overlay/10 p-4">
             <div className="flex items-start gap-3">
               {admin ? (
                 <input
@@ -96,7 +96,7 @@ export function RequestQueue({ rows, admin }: { rows: QueueRow[]; admin: boolean
                 />
               ) : null}
               <div className="min-w-0 flex-1">
-                <Link href={`/app/team/roster/requests/${row.id}`} className="font-medium text-white">
+                <Link href={`/app/team/roster/requests/${row.id}`} className="font-medium text-strong">
                   {row.business}
                 </Link>
                 <p className="text-sm text-silver">

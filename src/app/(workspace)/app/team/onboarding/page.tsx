@@ -106,7 +106,7 @@ export default async function OnboardingQueuePage({ searchParams }: { searchPara
                   const risk = QUEUE_RISK_LABEL[queueRisk(row, now)];
                   return (
                     <TableRow key={row.org_id}>
-                      <TableCell className="text-white">
+                      <TableCell className="text-strong">
                         <Link href={`/app/team/onboarding/${row.org_id}`} className="underline-offset-2 hover:underline">
                           {row.name}
                         </Link>
@@ -119,11 +119,11 @@ export default async function OnboardingQueuePage({ searchParams }: { searchPara
                         <StatusBadge label={phase.label} tone={phase.tone} />
                       </TableCell>
                       <TableCell>
-                        <div className="text-sm text-white">{row.current_stage_label ?? "Nothing open"}</div>
+                        <div className="text-sm text-strong">{row.current_stage_label ?? "Nothing open"}</div>
                         {row.next_action ? <div className={helperClass}>Next: {row.next_action}</div> : null}
                       </TableCell>
                       <TableCell>
-                        <div className="text-sm text-white">{WAITING_ON_LABEL[row.waiting_on]}</div>
+                        <div className="text-sm text-strong">{WAITING_ON_LABEL[row.waiting_on]}</div>
                         {row.waiting_on !== "nobody" && row.waiting_since ? <div className={helperClass}>{waitingText(row.waiting_since, now)}</div> : null}
                       </TableCell>
                       <TableCell>
@@ -161,7 +161,7 @@ function QueueCard({ row, now }: { row: QueueRow; now: number }) {
   return (
     <Panel className="space-y-2 p-4">
       <div className="flex flex-wrap items-start justify-between gap-2">
-        <Link href={`/app/team/onboarding/${row.org_id}`} className="min-w-0 truncate font-medium text-white underline-offset-2 hover:underline" title={row.name}>
+        <Link href={`/app/team/onboarding/${row.org_id}`} className="min-w-0 truncate font-medium text-strong underline-offset-2 hover:underline" title={row.name}>
           {row.name}
         </Link>
         <StatusBadge label={risk.label} tone={risk.tone} />
@@ -172,7 +172,7 @@ function QueueCard({ row, now }: { row: QueueRow; now: number }) {
           {row.done_count} of {row.total_count} done
         </span>
       </div>
-      <p className="text-sm text-white">{row.current_stage_label ?? "Nothing open"}</p>
+      <p className="text-sm text-strong">{row.current_stage_label ?? "Nothing open"}</p>
       <p className={helperClass}>
         Waiting on: {WAITING_ON_LABEL[row.waiting_on]}
         {row.waiting_on !== "nobody" && row.waiting_since ? ` (${waitingText(row.waiting_since, now)})` : ""}

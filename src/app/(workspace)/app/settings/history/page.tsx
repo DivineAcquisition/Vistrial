@@ -39,7 +39,7 @@ export default async function HistorySettingsPage() {
               {(rows ?? []).map((row) => (
                 <TableRow key={row.id}>
                   <TableCell className="whitespace-nowrap text-silver">{formatDateTime(row.created_at)}</TableCell>
-                  <TableCell className="text-white">{describeActivity(row.action)}</TableCell>
+                  <TableCell className="text-strong">{describeActivity(row.action)}</TableCell>
                 </TableRow>
               ))}
             </TableBody>

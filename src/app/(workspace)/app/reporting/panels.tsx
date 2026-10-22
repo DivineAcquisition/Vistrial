@@ -510,8 +510,8 @@ export async function ObjectionsPanel({
           const quotes = Array.isArray(item.quotes) ? item.quotes : [];
           const members = Array.isArray(item.by_member) ? item.by_member : [];
           return (
-            <div key={str(item.type) ?? "objection"} className="border-t border-white/10 pt-4">
-              <p className="text-sm font-medium text-white">
+            <div key={str(item.type) ?? "objection"} className="border-t border-overlay/10 pt-4">
+              <p className="text-sm font-medium text-strong">
                 {type && type in OBJECTION_TYPE_LABELS ? OBJECTION_TYPE_LABELS[type] : type} · {formatCount(num(item.n) ?? 0)}
               </p>
               <p className="mt-1 text-sm text-dim">

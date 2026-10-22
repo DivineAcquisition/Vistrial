@@ -20,8 +20,8 @@ export function DataRequestForm({ openKinds }: { openKinds: string[] }) {
   return (
     <SettingsFormCard action={action} footer={<SubmitButton pending={pending}>Send request</SubmitButton>}>
       <fieldset className="flex flex-col gap-2">
-        <legend className="text-sm font-medium text-white">What do you need?</legend>
-        <label className="flex items-start gap-2 text-sm text-white">
+        <legend className="text-sm font-medium text-strong">What do you need?</legend>
+        <label className="flex items-start gap-2 text-sm text-strong">
           <input
             type="radio"
             name="kind"
@@ -38,7 +38,7 @@ export function DataRequestForm({ openKinds }: { openKinds: string[] }) {
             </span>
           </span>
         </label>
-        <label className="flex items-start gap-2 text-sm text-white">
+        <label className="flex items-start gap-2 text-sm text-strong">
           <input
             type="radio"
             name="kind"
@@ -59,7 +59,7 @@ export function DataRequestForm({ openKinds }: { openKinds: string[] }) {
         </label>
       </fieldset>
       {kind === "deletion" ? (
-        <label className="flex items-start gap-2 text-sm text-white">
+        <label className="flex items-start gap-2 text-sm text-strong">
           <input type="checkbox" name="confirm" value="yes" className="mt-1" required />
           <span>
             I understand that once deleted, case files, results, and history in Vistrial cannot be brought back.

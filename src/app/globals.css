@@ -8,12 +8,12 @@
  * Divine Acquisition's palette, taken from the hiring site in the DA repo so the
  * product reads as one brand.
  *
- * The operator app, portal, and auth desk are light (paper white, black mark).
- * The public site stays dark. #9A88FC (brand-500) is the prime colour on both.
- * It is light enough that near-black type reads better on it than white, which
- * is why filled buttons invert their label. Neutrals are slightly violet-shifted
- * (ink-*) so the brand sits naturally on top of them. Status green / amber / red
- * never touch interface chrome.
+ * The workspace is white by default with a dark theme a person can switch to.
+ * The public site and the auth desk stay dark. #9A88FC (brand-500) is the prime
+ * colour in both themes. It is light enough that near-black type reads better on
+ * it than white, which is why filled buttons invert their label. Neutrals are
+ * slightly violet-shifted (ink-*) so the brand sits naturally on top of them.
+ * Status green / amber / red never touch interface chrome.
  */
 
 @custom-variant dark (&:is(.dark *));
@@ -141,6 +141,10 @@
   --color-code-highlight: var(--code-highlight);
   --code-foreground: var(--code-foreground);
   --color-code: var(--code);
+  /* The strongest text tone: headings, names, values. White in dark, ink in light. */
+  --color-strong: var(--strong);
+  /* Tints and hairlines over a surface. bg-overlay/5 is a faint wash in either theme. */
+  --color-overlay: var(--overlay);
   @keyframes skeleton {
   to {
     background-position: -200% 0;
@@ -300,7 +304,6 @@
   }
 
   html {
-    color-scheme: dark;
     scroll-behavior: smooth;
     -webkit-text-size-adjust: 100%;
     text-rendering: optimizeLegibility;
@@ -368,7 +371,7 @@
 
   ::selection {
     background-color: rgba(var(--brand-rgb), 0.35);
-    color: #f6f4ff;
+    color: var(--selection-foreground);
   }
 
   /* The focus ring follows the shape it is on. Forcing a 4px radius here put a
@@ -388,12 +391,12 @@
   }
 
   ::-webkit-scrollbar-thumb {
-    background: #232131;
+    background: var(--scrollbar);
     border-radius: 999px;
   }
 
   ::-webkit-scrollbar-thumb:hover {
-    background: #322f45;
+    background: var(--scrollbar-hover);
   }
   code, kbd, samp, pre {
     font-family: var(--font-mono);
@@ -422,15 +425,13 @@
     background:
       linear-gradient(
         180deg,
-        rgba(255, 255, 255, 0.055) 0%,
-        rgba(255, 255, 255, 0.014) 42%,
+        var(--panel-sheen) 0%,
+        var(--panel-sheen-soft) 42%,
         transparent 100%
       ),
-      #0b0a11;
-    border: 1px solid rgba(255, 255, 255, 0.06);
-    box-shadow:
-      inset 0 1px 0 rgba(255, 255, 255, 0.07),
-      0 24px 64px -36px rgba(0, 0, 0, 0.88);
+      var(--card);
+    border: 1px solid var(--panel-border);
+    box-shadow: var(--panel-shadow);
   }
 
   /*
@@ -769,15 +770,13 @@
   }
 
   .surface-raised {
-    background: #100f18;
-    border: 1px solid rgba(255, 255, 255, 0.09);
-    box-shadow:
-      inset 0 1px 0 rgba(255, 255, 255, 0.05),
-      0 16px 40px -16px rgba(0, 0, 0, 0.8);
+    background: var(--popover);
+    border: 1px solid var(--raised-border);
+    box-shadow: var(--raised-shadow);
   }
 
   .surface-sunken {
-    background: rgba(255, 255, 255, 0.022);
+    background: color-mix(in srgb, var(--overlay) 2.2%, transparent);
     border: 1px solid var(--hairline);
   }
 
@@ -793,9 +792,9 @@
   .panel-hover:hover {
     border-color: rgba(var(--brand-rgb), 0.28);
     box-shadow:
-      inset 0 1px 0 rgba(255, 255, 255, 0.09),
+      inset 0 1px 0 var(--panel-edge),
       0 0 0 1px rgba(var(--brand-rgb), 0.1),
-      0 22px 48px -28px rgba(var(--brand-rgb), 0.45);
+      0 22px 48px -28px rgba(var(--brand-rgb), var(--panel-hover-glow));
   }
 
   /*
@@ -803,22 +802,13 @@
    * going live, generating the report. Built from brand-500 to brand-600, so it
    * introduces no colour the palette did not already have.
    */
+  /* Literal shades: the brand scale flips in the light theme, a gradient must not. */
   .action-gradient {
-    background-image: linear-gradient(
-      180deg,
-      var(--color-brand-300) 0%,
-      var(--color-brand-500) 52%,
-      var(--color-brand-700) 100%
-    );
+    background-image: linear-gradient(180deg, #c3b6fe 0%, #9a88fc 52%, #6650d8 100%);
   }
 
   .action-gradient:hover:not(:disabled) {
-    background-image: linear-gradient(
-      180deg,
-      var(--color-brand-200) 0%,
-      var(--color-brand-400) 52%,
-      var(--color-brand-600) 100%
-    );
+    background-image: linear-gradient(180deg, #d9d1fe 0%, #ae9dfd 52%, #7e67f2 100%);
   }
 
   /* Thin luminous rule used to separate major bands. */
@@ -839,8 +829,8 @@
   .text-gradient {
     background: linear-gradient(
       180deg,
-      #ffffff 0%,
-      #f1eeff 42%,
+      var(--strong) 0%,
+      color-mix(in srgb, var(--strong) 85%, var(--brand)) 42%,
       var(--brand) 78%,
       var(--brand-deep) 100%
     );
@@ -861,17 +851,16 @@
     min-height: 3.15rem;
     padding: 0.8rem 1rem;
     border-radius: 0.9rem;
-    border: 1px solid rgba(255, 255, 255, 0.09);
+    border: 1px solid var(--field-border);
     background:
-      linear-gradient(180deg, rgba(255, 255, 255, 0.055) 0%, rgba(255, 255, 255, 0.02) 100%),
-      #100f18;
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
-    color: #fff;
+      linear-gradient(180deg, var(--panel-sheen) 0%, var(--panel-sheen-soft) 100%),
+      var(--field-bg);
+    box-shadow: inset 0 1px 0 var(--panel-edge);
+    color: var(--strong);
     font-size: 15px;
     font-weight: 500;
     letter-spacing: -0.022em;
     line-height: 1.25;
-    color-scheme: dark;
     transition:
       border-color 0.18s ease,
       box-shadow 0.18s ease,
@@ -879,12 +868,12 @@
   }
 
   .field-input::placeholder {
-    color: rgba(163, 163, 163, 0.72);
+    color: color-mix(in srgb, var(--color-silver) 72%, transparent);
     font-weight: 500;
   }
 
   .field-input:hover:not(:disabled):not([data-disabled]) {
-    border-color: rgba(255, 255, 255, 0.16);
+    border-color: var(--field-border-hover);
   }
 
   .field-input:focus,
@@ -895,10 +884,10 @@
     outline: none;
     border-color: rgba(154, 136, 252, 0.55);
     background:
-      linear-gradient(180deg, rgba(154, 136, 252, 0.1) 0%, rgba(255, 255, 255, 0.025) 100%),
-      #100f18;
+      linear-gradient(180deg, rgba(154, 136, 252, 0.1) 0%, transparent 100%),
+      var(--field-bg);
     box-shadow:
-      inset 0 1px 0 rgba(255, 255, 255, 0.08),
+      inset 0 1px 0 var(--panel-edge),
       0 0 0 4px rgba(154, 136, 252, 0.14);
   }
 
@@ -912,7 +901,7 @@
   .field-input[aria-invalid="true"][data-popup-open],
   .field-input[aria-invalid="true"][data-open] {
     box-shadow:
-      inset 0 1px 0 rgba(255, 255, 255, 0.08),
+      inset 0 1px 0 var(--panel-edge),
       0 0 0 4px rgba(248, 113, 113, 0.14);
   }
 
@@ -959,7 +948,7 @@
     padding: 0.8rem 1rem;
     border: 0;
     background: transparent;
-    color: #fff;
+    color: var(--strong);
     font-size: 15px;
     font-weight: 500;
     letter-spacing: -0.022em;
@@ -973,7 +962,7 @@
   }
 
   .field-input-group .field-control::placeholder {
-    color: rgba(163, 163, 163, 0.72);
+    color: color-mix(in srgb, var(--color-silver) 72%, transparent);
     font-weight: 500;
   }
 
@@ -988,30 +977,28 @@
   }
 
   .field-affix:first-child {
-    border-right: 1px solid rgba(255, 255, 255, 0.07);
+    border-right: 1px solid var(--hairline);
   }
 
   .field-affix:last-child {
-    border-left: 1px solid rgba(255, 255, 255, 0.07);
+    border-left: 1px solid var(--hairline);
   }
 
   .field-select-chevron {
     flex-shrink: 0;
     width: 0.85rem;
     height: 0.85rem;
-    color: rgba(195, 182, 254, 0.8);
+    color: color-mix(in srgb, var(--color-brand-300) 80%, transparent);
   }
 
   .field-select-content {
     overflow: hidden;
     border-radius: 0.9rem;
     background:
-      linear-gradient(180deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0.015) 100%),
-      #0b0a11;
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    box-shadow:
-      inset 0 1px 0 rgba(255, 255, 255, 0.07),
-      0 24px 56px -20px rgba(0, 0, 0, 0.86);
+      linear-gradient(180deg, var(--panel-sheen) 0%, var(--panel-sheen-soft) 100%),
+      var(--popover);
+    border: 1px solid var(--raised-border);
+    box-shadow: var(--raised-shadow);
   }
 
   .field-select-item {
@@ -1024,7 +1011,7 @@
     font-size: 14px;
     font-weight: 500;
     letter-spacing: -0.022em;
-    color: #fff;
+    color: var(--strong);
     cursor: pointer;
     outline: none;
   }
@@ -1034,7 +1021,7 @@
   }
 
   .field-select-item[data-state="checked"] {
-    color: #fff;
+    color: var(--strong);
   }
 
   .field-select-item[data-disabled] {
@@ -1044,7 +1031,7 @@
 
   .field-select-item-indicator {
     flex-shrink: 0;
-    color: rgba(195, 182, 254, 0.95);
+    color: var(--color-brand-300);
   }
 
   /*
@@ -1052,15 +1039,15 @@
    * a call goes badly wrong — the two must never look the same.
    */
   .prospect-said {
-    border-left: 2px solid #a3a3a3;
+    border-left: 2px solid var(--color-silver);
     padding-left: 0.75rem;
-    color: #fff;
+    color: var(--strong);
   }
 
   .research-not-said {
-    border-left: 2px solid #f0b45c;
+    border-left: 2px solid var(--color-flag-warning);
     padding-left: 0.75rem;
-    color: #f0b45c;
+    color: var(--color-flag-warning);
   }
 }
 
@@ -1371,15 +1358,109 @@
 
 /*
  * Divine Acquisition wins. The coss CLI rewrites :root/.dark above this block,
- * so this one stays last.
+ * so these two stay last.
  *
- * One palette, written to both selectors. `:root` and `.dark` carry the same
- * specificity, so when they disagree the winner is whichever appears later in
- * the file — and the CLI rewrites part of this file. Giving them identical
- * values means a reordering cannot change what anyone sees. `.dark` is still
- * on `<html>` because Tailwind's `dark:` variant looks for the class.
+ * :root is the white workspace and .dark is the dark theme. They carry the same
+ * specificity, so .dark must come after :root, and nothing may redefine either
+ * below this point. .dark goes on <html> when a person picks the dark theme, and
+ * on the public site and auth desk wrappers, which are always dark. Tailwind's
+ * `dark:` variant keys off the class.
+ *
+ * In the light theme the brand scale flips around 500, so a shade picked to read
+ * on a dark page (brand-300 for links, brand-950 for an active row) reads the
+ * same way on a white one. brand-500 itself never changes.
  */
-:root,
+:root {
+  color-scheme: light;
+  --brand: #9a88fc;
+  --brand-rgb: 154, 136, 252;
+  --brand-deep: #6650d8;
+  --page: #ffffff;
+  --hairline: rgba(11, 10, 17, 0.08);
+  --strong: #0b0a11;
+  --overlay: #0b0a11;
+  --selection-foreground: #0b0a11;
+  --scrollbar: #d9d8e0;
+  --scrollbar-hover: #c2c0cc;
+
+  --background: #ffffff;
+  --foreground: #52525b;
+  --card: #ffffff;
+  --card-foreground: #0b0a11;
+  --popover: #ffffff;
+  --popover-foreground: #0b0a11;
+  --primary: #9a88fc;
+  --primary-foreground: #07070b;
+  --secondary: #f3f1ff;
+  --secondary-foreground: #5140a9;
+  --muted: #f6f6f9;
+  --muted-foreground: #6b6b76;
+  --accent: #f3f1ff;
+  --accent-foreground: #5140a9;
+  --destructive: #dc2626;
+  --destructive-foreground: #b91c1c;
+  --success: #059669;
+  --success-foreground: #047857;
+  --warning: #d97706;
+  --warning-foreground: #b45309;
+  --info: #7e67f2;
+  --info-foreground: #5140a9;
+  --border: rgba(11, 10, 17, 0.09);
+  --input: rgba(11, 10, 17, 0.14);
+  --ring: #9a88fc;
+  --radius: 0.75rem;
+
+  --chart-1: #7e67f2;
+  --chart-2: #10b981;
+  --chart-3: #f59e0b;
+  --chart-4: #ef4444;
+  --chart-5: #ae9dfd;
+
+  --sidebar: #ffffff;
+  --sidebar-foreground: #52525b;
+  --sidebar-primary: #9a88fc;
+  --sidebar-primary-foreground: #07070b;
+  --sidebar-accent: #f3f1ff;
+  --sidebar-accent-foreground: #5140a9;
+  --sidebar-border: rgba(11, 10, 17, 0.08);
+  --sidebar-ring: #9a88fc;
+
+  --panel-sheen: transparent;
+  --panel-sheen-soft: transparent;
+  --panel-border: rgba(11, 10, 17, 0.08);
+  --panel-edge: rgba(255, 255, 255, 0);
+  --panel-shadow: 0 1px 2px rgba(11, 10, 17, 0.04), 0 12px 32px -22px rgba(11, 10, 17, 0.16);
+  --panel-hover-glow: 0.28;
+  --raised-border: rgba(11, 10, 17, 0.1);
+  --raised-shadow: 0 1px 2px rgba(11, 10, 17, 0.05), 0 16px 40px -16px rgba(11, 10, 17, 0.2);
+  --field-bg: #ffffff;
+  --field-border: rgba(11, 10, 17, 0.14);
+  --field-border-hover: rgba(11, 10, 17, 0.24);
+  --shadow-deep: rgba(11, 10, 17, 0.16);
+
+  --color-ink-950: #ffffff;
+  --color-ink-900: #ffffff;
+  --color-ink-850: #f7f7fa;
+  --color-ink-800: #f0f0f4;
+  --color-ink-700: #e6e6ec;
+  --color-silver: #52525b;
+  --color-dim: #6b6b76;
+  --color-flag-good: #047857;
+  --color-flag-warning: #b45309;
+  --color-flag-critical: #dc2626;
+
+  --color-brand-50: #1e1940;
+  --color-brand-100: #3a2f78;
+  --color-brand-200: #5140a9;
+  --color-brand-300: #6650d8;
+  --color-brand-400: #7e67f2;
+  --color-brand-600: #ae9dfd;
+  --color-brand-700: #c3b6fe;
+  --color-brand-800: #d9d1fe;
+  --color-brand-900: #ebe7ff;
+  --color-brand-950: #f5f3ff;
+}
+
 .dark {
   color-scheme: dark;
   --brand: #9a88fc;
@@ -1387,6 +1468,11 @@
   --brand-deep: #6650d8;
   --page: #07070b;
   --hairline: rgba(255, 255, 255, 0.08);
+  --strong: #ffffff;
+  --overlay: #ffffff;
+  --selection-foreground: #f6f4ff;
+  --scrollbar: #232131;
+  --scrollbar-hover: #322f45;
 
   --background: #07070b;
   --foreground: #a3a3a3;
@@ -1430,6 +1516,19 @@
   --sidebar-border: rgba(255, 255, 255, 0.08);
   --sidebar-ring: #9a88fc;
 
+  --panel-sheen: rgba(255, 255, 255, 0.055);
+  --panel-sheen-soft: rgba(255, 255, 255, 0.014);
+  --panel-border: rgba(255, 255, 255, 0.06);
+  --panel-edge: rgba(255, 255, 255, 0.07);
+  --panel-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.07), 0 24px 64px -36px rgba(0, 0, 0, 0.88);
+  --panel-hover-glow: 0.45;
+  --raised-border: rgba(255, 255, 255, 0.09);
+  --raised-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05), 0 16px 40px -16px rgba(0, 0, 0, 0.8);
+  --field-bg: #100f18;
+  --field-border: rgba(255, 255, 255, 0.09);
+  --field-border-hover: rgba(255, 255, 255, 0.16);
+  --shadow-deep: rgba(0, 0, 0, 0.88);
+
   --color-ink-950: #07070b;
   --color-ink-900: #0b0a11;
   --color-ink-850: #100f18;
@@ -1437,6 +1536,20 @@
   --color-ink-700: #1e1d29;
   --color-silver: #a3a3a3;
   --color-dim: #858585;
+  --color-flag-good: #52d6a4;
+  --color-flag-warning: #f0b45c;
+  --color-flag-critical: #f87171;
+
+  --color-brand-50: #f5f3ff;
+  --color-brand-100: #ebe7ff;
+  --color-brand-200: #d9d1fe;
+  --color-brand-300: #c3b6fe;
+  --color-brand-400: #ae9dfd;
+  --color-brand-600: #7e67f2;
+  --color-brand-700: #6650d8;
+  --color-brand-800: #5140a9;
+  --color-brand-900: #3a2f78;
+  --color-brand-950: #1e1940;
 }
 
 /* ---------- Live agent motion ----------

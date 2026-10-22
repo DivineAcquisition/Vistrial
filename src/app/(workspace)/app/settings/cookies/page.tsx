@@ -23,7 +23,7 @@ export default async function CookieSettingsPage() {
   return (
     <PageFrame title="Privacy and cookies" description="Choices for this browser, and the notices that belong to your account.">
       <Panel className="space-y-3 p-6">
-        <h2 className="text-white">Cookies</h2>
+        <h2 className="text-strong">Cookies</h2>
         <p className={helperClass}>
           The signed-in application uses essential cookies only: the sign-in session, the open workspace, and display choices such as the sidebar. It does not load Google Analytics or the Meta pixel.
         </p>
@@ -34,14 +34,14 @@ export default async function CookieSettingsPage() {
         </p>
       </Panel>
       <Panel className="mt-4 space-y-3 p-6">
-        <h2 className="text-white">Email and notifications</h2>
+        <h2 className="text-strong">Email and notifications</h2>
         <p className={helperClass}>
           Account, security, and billing notices cannot be turned off. Setup tips can be stopped from the unsubscribe link in those emails. Other notification choices are on the notifications page.
         </p>
         <Link href="/app/settings/notifications" className="text-sm text-brand-300 underline">Notification preferences</Link>
       </Panel>
       <Panel className="mt-4 space-y-3 p-6">
-        <h2 className="text-white">Legal documents</h2>
+        <h2 className="text-strong">Legal documents</h2>
         {rows.length === 0 ? <p className={helperClass}>No acceptance is recorded for this account yet.</p> : (
           <ul className={`${helperClass} space-y-1`}>
             {rows.map((row) => (
@@ -54,7 +54,7 @@ export default async function CookieSettingsPage() {
         )}
       </Panel>
       <Panel className="mt-4 space-y-3 p-6">
-        <h2 className="text-white">Your data</h2>
+        <h2 className="text-strong">Your data</h2>
         {ctx.workspaceRole === "owner" || ctx.isStaff ? (
           <Link href="/app/settings/privacy" className="text-sm text-brand-300 underline">Data requests</Link>
         ) : (

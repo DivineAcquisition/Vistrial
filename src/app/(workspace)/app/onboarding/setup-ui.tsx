@@ -296,7 +296,7 @@ export function EmailRecords({
             return (
               <li key={`${record.type}-${record.host}-${index}`} className={insetSurface}>
                 <div className="flex flex-wrap items-center justify-between gap-2">
-                  <p className="text-sm text-white">
+                  <p className="text-sm text-strong">
                     {index + 1}. {plainRecordType(record.type)}
                     {record.purpose ? <span className={cn(helperClass, "ml-2 inline")}>{record.purpose}</span> : null}
                   </p>
@@ -346,7 +346,7 @@ export function ApproverList({
         {people.map((person) => (
           <li key={person.id} className={cn(insetSurface, "flex flex-wrap items-center justify-between gap-3")}>
             <div className="min-w-0">
-              <p className="truncate text-sm text-white">{person.name}</p>
+              <p className="truncate text-sm text-strong">{person.name}</p>
               <p className={helperClass}>
                 {person.role === "owner" ? "Owner. Always approves." : "Member"}
                 {person.signedIn ? "" : " · Has not signed in yet"}
@@ -411,7 +411,7 @@ export function EscalationEditor({ candidates, contacts }: { candidates: Candida
             return (
               <li key={row.key} className={cn(insetSurface, "space-y-3")}>
                 <div className="flex flex-wrap items-center justify-between gap-2">
-                  <p className="min-w-0 truncate text-sm text-white">
+                  <p className="min-w-0 truncate text-sm text-strong">
                     {index + 1}. {who?.name ?? contact?.name ?? "Someone"}
                   </p>
                   {contact?.verified && contact.channel === row.channel ? (
@@ -557,11 +557,11 @@ export function InviteTeam({
       ) : null}
       {invites.length ? (
         <div>
-          <p className="text-sm text-white">Waiting to accept</p>
+          <p className="text-sm text-strong">Waiting to accept</p>
           <ul className="mt-2 space-y-2">
             {invites.map((invite) => (
               <li key={invite.id} className={cn(insetSurface, "flex flex-wrap items-center justify-between gap-2")}>
-                <span className="min-w-0 break-all text-sm text-white">
+                <span className="min-w-0 break-all text-sm text-strong">
                   {invite.email} <span className={cn(helperClass, "inline")}>· {invite.role === "member" ? "Sees results" : "Works leads"}</span>
                 </span>
                 {canInvite ? (
@@ -664,11 +664,11 @@ export function ImportProblems({ problems }: { problems: Partial<Record<ProblemK
   if (!kinds.length) return null;
   return (
     <div className={cardStack}>
-      <p className="text-sm text-white">A few things to decide</p>
+      <p className="text-sm text-strong">A few things to decide</p>
       <ul className="space-y-3">
         {kinds.map(([kind, count]) => (
           <li key={kind} className={insetSurface}>
-            <p className="text-sm text-white">
+            <p className="text-sm text-strong">
               {count} {count === 1 ? PROBLEM_LABEL[kind].one : PROBLEM_LABEL[kind].many}.
             </p>
             <p className={helperClass}>{PROBLEM_LABEL[kind].choice}</p>
@@ -715,7 +715,7 @@ export function SampleSteps({ steps }: { steps: SampleStep[] }) {
       {steps.map((step, index) => (
         <li key={step.key} className={insetSurface}>
           <div className="flex flex-wrap items-center justify-between gap-2">
-            <p className="text-sm text-white">
+            <p className="text-sm text-strong">
               {index + 1}. {step.label}
             </p>
             <StatusBadge label={STEP_TONE[step.status].label} tone={STEP_TONE[step.status].tone} />

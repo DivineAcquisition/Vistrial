@@ -89,7 +89,7 @@ export function KpiCard({
   return (
     <Card
       className={cn(
-        "panel-hover border-t-2 border-t-primary bg-[linear-gradient(180deg,rgba(154,136,252,0.12)_0%,transparent_46%),#0b0a11] p-6",
+        "panel-hover border-t-2 border-t-primary bg-[linear-gradient(180deg,rgba(154,136,252,0.12)_0%,transparent_46%),var(--card)] p-6",
         className
       )}
     >

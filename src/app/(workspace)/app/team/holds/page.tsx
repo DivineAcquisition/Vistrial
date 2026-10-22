@@ -68,7 +68,7 @@ export default async function TeamHoldsPage() {
                 return (
                   <TableRow key={hold.id}>
                     <TableCell className="text-silver">{formatDateTime(hold.received_at)}</TableCell>
-                    <TableCell className="text-white">
+                    <TableCell className="text-strong">
                       <div>{SOURCE[hold.source] ?? hold.source}</div>
                       <div className={helperClass}>{hold.event_type ?? "unknown event"}</div>
                     </TableCell>

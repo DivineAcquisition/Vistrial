@@ -1,29 +1,68 @@
-import { readFileSync } from "node:fs";
+import { readdirSync, readFileSync, statSync } from "node:fs";
 import path from "node:path";
 
 import { describe, expect, it } from "vitest";
 
 const read = (file: string) => readFileSync(path.join(process.cwd(), file), "utf8");
 
-describe("one dark theme, everywhere", () => {
-  it("puts .dark on <html> so no route can opt out", () => {
-    const layout = read("src/app/layout.tsx");
-    expect(layout).toContain('colorScheme: "dark"');
-    expect(layout).toContain('themeColor: "#07070b"');
-    expect(layout).toMatch(/className=\{cn\(\s*"dark"/);
+function filesUnder(dir: string): string[] {
+  const out: string[] = [];
+  for (const name of readdirSync(path.join(process.cwd(), dir))) {
+    const rel = path.join(dir, name);
+    if (statSync(path.join(process.cwd(), rel)).isDirectory()) out.push(...filesUnder(rel));
+    else if (/\.(ts|tsx)$/.test(name) && !/\.test\.tsx?$/.test(name)) out.push(rel);
+  }
+  return out;
+}
 
-    // global-error.tsx renders its own <html>, so it carries the class itself.
+/** Surfaces that are always dark: the public site, the auth desk, and email. */
+const ALWAYS_DARK = [
+  "src/components/marketing/",
+  "src/app/(marketing)/",
+  "src/lib/marketing/",
+  "src/app/(auth)/",
+  "src/components/auth/",
+  "src/app/email/",
+  "src/lib/email/",
+];
+
+/** Third-party demos that carry their own light and dark pairs. */
+const DEMOS = ["src/components/sidebar-demo.tsx", "src/components/glowing-effect-demo.tsx", "src/components/ui/aceternity-sidebar.tsx"];
+
+describe("a white workspace with a dark theme a person can choose", () => {
+  it("leaves .dark off <html> and lets the head script add it before paint", () => {
+    const layout = read("src/app/layout.tsx");
+    expect(layout).toContain("THEME_SCRIPT");
+    expect(layout).toContain("themeColor: THEME_COLOR.light");
+    expect(layout).toContain("suppressHydrationWarning");
+    expect(layout).not.toMatch(/className=\{cn\(\s*"dark"/);
+
+    const theme = read("src/lib/theme.ts");
+    expect(theme).toContain('light: "#ffffff"');
+    expect(theme).toContain('dark: "#07070b"');
+
+    // global-error.tsx renders its own <html> with no script, so it stays dark.
     expect(read("src/app/global-error.tsx")).toContain('cn("dark"');
   });
 
-  it("stops wrapping marketing in its own .dark", () => {
-    const marketing = read("src/app/(marketing)/layout.tsx");
-    expect(marketing).toContain('className="min-h-screen bg-background text-foreground"');
+  it("keeps the public site and the auth desk dark, menus included", () => {
+    for (const file of ["src/app/(marketing)/layout.tsx", "src/app/(auth)/layout.tsx"]) {
+      const layout = read(file);
+      expect(layout).toMatch(/className="dark /);
+      expect(layout).toContain("<ForceDarkTheme />");
+    }
   });
 
-  it("serves the silver Vistrial mark on every surface", () => {
+  it("puts the theme switch in the shell header", () => {
+    expect(read("src/components/app/application-shell.tsx")).toContain("<ThemeToggle />");
+  });
+
+  it("serves the ink mark on white and the silver mark on dark", () => {
     const logo = read("src/components/brand/logo.tsx");
-    expect(logo).not.toContain("on-light");
+    expect(logo).toContain("/brand/vistrial-lockup-ink.png");
+    expect(logo).toContain("/brand/vistrial-crest-ink.png");
+    expect(logo).toContain('"dark:hidden!"');
+    expect(logo).toContain('"not-dark:hidden!"');
     expect(logo).not.toContain("Vistrial Black Logo");
 
     for (const file of [
@@ -38,32 +77,47 @@ describe("one dark theme, everywhere", () => {
     }
   });
 
-  it("gives :root and .dark the same palette so source order cannot change it", () => {
+  it("defines the light palette on :root and the dark one on .dark, last in the file", () => {
     const css = read("src/app/globals.css");
+    const light = css.lastIndexOf("\n:root {");
+    const dark = css.lastIndexOf("\n.dark {");
+    expect(light).toBeGreaterThan(0);
+    expect(dark).toBeGreaterThan(light);
+    // :root and .dark share a specificity, so a later block would win.
+    expect(css.indexOf(":root", dark)).toBe(-1);
+    expect(css.indexOf(".dark {", dark + 2)).toBe(-1);
 
-    const selector = ":root,\n.dark {";
-    const combined = css.lastIndexOf(selector);
-    expect(combined).toBeGreaterThan(0);
-    // Nothing may redefine the palette after the combined block, since :root
-    // and .dark share a specificity and the later rule would win.
-    const after = combined + selector.length;
-    expect(css.indexOf(":root {", after)).toBe(-1);
-    expect(css.indexOf(".dark {", after)).toBe(-1);
+    const lightPalette = css.slice(light, dark);
+    expect(lightPalette).toContain("color-scheme: light");
+    expect(lightPalette).toContain("--page: #ffffff");
+    expect(lightPalette).toContain("--background: #ffffff");
+    expect(lightPalette).toContain("--primary: #9a88fc");
+    expect(lightPalette).toContain("--primary-foreground: #07070b");
+    expect(lightPalette).toContain("--strong: #0b0a11");
 
-    const palette = css.slice(combined);
-    expect(palette).toContain("color-scheme: dark");
-    expect(palette).toContain("--page: #07070b");
-    expect(palette).toContain("--background: #07070b");
-    expect(palette).toContain("--card: #0b0a11");
-    expect(palette).toContain("--card-foreground: #ffffff");
-    expect(palette).toContain("--primary: #9a88fc");
-    expect(palette).toContain("--color-silver: #a3a3a3");
-    expect(palette).not.toContain("#f6f5fb");
+    const darkPalette = css.slice(dark);
+    expect(darkPalette).toContain("color-scheme: dark");
+    expect(darkPalette).toContain("--page: #07070b");
+    expect(darkPalette).toContain("--background: #07070b");
+    expect(darkPalette).toContain("--card: #0b0a11");
+    expect(darkPalette).toContain("--card-foreground: #ffffff");
+    expect(darkPalette).toContain("--primary: #9a88fc");
+    expect(darkPalette).toContain("--color-silver: #a3a3a3");
+    expect(darkPalette).toContain("--strong: #ffffff");
   });
 
-  it("keeps no light-mode escape hatches in the stylesheet", () => {
-    const css = read("src/app/globals.css");
-    expect(css).not.toContain("html:not(.dark)");
-    expect(css).not.toContain("color-scheme: light");
+  it("writes workspace colour through theme tokens, not hard-coded white", () => {
+    const offenders: string[] = [];
+    for (const file of [...filesUnder("src/app"), ...filesUnder("src/components"), ...filesUnder("src/lib")]) {
+      if (ALWAYS_DARK.some((prefix) => file.startsWith(prefix)) || DEMOS.includes(file)) continue;
+      const source = read(file);
+      const lines = source.split("\n");
+      lines.forEach((line, index) => {
+        if (/(?<![\w-])(bg|border|ring|divide)-white\//.test(line)) offenders.push(`${file}:${index + 1}`);
+        // White type is right only on a filled destructive button.
+        if (/(?<![\w-:])text-white(?![\w-])/.test(line) && !line.includes("bg-destructive")) offenders.push(`${file}:${index + 1}`);
+      });
+    }
+    expect(offenders).toEqual([]);
   });
 });

@@ -50,7 +50,7 @@ function BuildProgress({ placement, labels }: { placement: PlacementRow | null; 
               key={stage}
               className={`flex items-center gap-3 rounded-lg border px-3 py-2 text-sm ${
                 isCurrent
-                  ? "border-brand-400/40 bg-brand-400/10 text-white"
+                  ? "border-brand-400/40 bg-brand-400/10 text-strong"
                   : isDone
                     ? "border-transparent text-dim"
                     : "border-transparent text-muted-foreground"
@@ -61,8 +61,8 @@ function BuildProgress({ placement, labels }: { placement: PlacementRow | null; 
                   isCurrent
                     ? "bg-brand-400 text-black"
                     : isDone
-                      ? "bg-white/20 text-white"
-                      : "bg-white/[0.06] text-muted-foreground"
+                      ? "bg-overlay/20 text-strong"
+                      : "bg-overlay/[0.06] text-muted-foreground"
                 }`}
               >
                 {index + 1}
@@ -101,11 +101,11 @@ export default async function StellarPortalPage() {
         <p className="text-[11px] font-semibold tracking-[0.14em] text-muted-foreground uppercase">
           Client Portal
         </p>
-        <h1 className="mt-1 text-xl font-medium text-white">{ctx.member.orgName}</h1>
+        <h1 className="mt-1 text-xl font-medium text-strong">{ctx.member.orgName}</h1>
       </div>
 
       <Panel className="p-5">
-        <h2 className="text-sm font-medium text-white">Agreement</h2>
+        <h2 className="text-sm font-medium text-strong">Agreement</h2>
         <div className="mt-3">
           <EmptyState
             bare
@@ -117,7 +117,7 @@ export default async function StellarPortalPage() {
       </Panel>
 
       <Panel className="p-5">
-        <h2 className="text-sm font-medium text-white">Payment</h2>
+        <h2 className="text-sm font-medium text-strong">Payment</h2>
         <div className="mt-3">
           <EmptyState
             bare
@@ -129,14 +129,14 @@ export default async function StellarPortalPage() {
       </Panel>
 
       <Panel className="p-5">
-        <h2 className="text-sm font-medium text-white">Build Progress</h2>
+        <h2 className="text-sm font-medium text-strong">Build Progress</h2>
         <div className="mt-3">
           <BuildProgress placement={placement} labels={display.stellarStageLabels} />
         </div>
       </Panel>
 
       <Panel className="p-5">
-        <h2 className="text-sm font-medium text-white">Results</h2>
+        <h2 className="text-sm font-medium text-strong">Results</h2>
         <div className="mt-3">
           <EmptyState
             bare

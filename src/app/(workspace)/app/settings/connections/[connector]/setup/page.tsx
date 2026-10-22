@@ -39,11 +39,11 @@ export default async function SetupPage({
         <p className={`${helperClass} mt-2`}>Anything you leave out is not read beyond the list you see here.</p>
         <form action={saveMapping} className="mt-4 grid gap-3">
           <input type="hidden" name="connection" value={row.id} />
-          <label className="text-sm text-white" htmlFor="include">What to include</label>
+          <label className="text-sm text-strong" htmlFor="include">What to include</label>
           <textarea id="include" name="include" defaultValue={String(row.setup.include ?? "")} rows={3} className="rounded-md border bg-background px-3 py-2 text-sm" placeholder="Pipelines, tables, or calendars to include" />
-          <label className="text-sm text-white" htmlFor="stages">Stage and field matching</label>
+          <label className="text-sm text-strong" htmlFor="stages">Stage and field matching</label>
           <textarea id="stages" name="stages" defaultValue={String(row.setup.stages ?? "")} rows={3} className="rounded-md border bg-background px-3 py-2 text-sm" placeholder="Unmatched stages stay flagged. They are not guessed." />
-          <label className="text-sm text-white" htmlFor="record">Which source is the record</label>
+          <label className="text-sm text-strong" htmlFor="record">Which source is the record</label>
           <input id="record" name="record" defaultValue={String(row.setup.record ?? "")} className="rounded-md border bg-background px-3 py-2 text-sm" placeholder="Only needed when two sources cover the same fields" />
           {canManage || ctx.isStaff ? <Button type="submit" variant="secondary">Save this step</Button> : null}
         </form>
@@ -52,13 +52,13 @@ export default async function SetupPage({
       {hook ? (
         <Panel className="p-6">
           <h2 className={cardTitle}>Webhook address</h2>
-          <p className="mt-3 break-all text-sm text-white">{`${appUrl()}/api/connectors/hooks/${hook.token}`}</p>
+          <p className="mt-3 break-all text-sm text-strong">{`${appUrl()}/api/connectors/hooks/${hook.token}`}</p>
           <p className={`${helperClass} mt-2`}>
             Put this address in the tool that sends events. Sign the body with the secret and send it as x-vistrial-signature.
             <Link href="/guides/webhook" className="ml-1 text-brand-300 underline">Payload guide</Link>
           </p>
-          {hook.secret ? <p className="mt-3 text-sm text-white">Signing secret, shown once: {hook.secret}</p> : null}
-          {query.secret ? <p className="mt-3 text-sm text-white">New signing secret, shown once: {query.secret}</p> : null}
+          {hook.secret ? <p className="mt-3 text-sm text-strong">Signing secret, shown once: {hook.secret}</p> : null}
+          {query.secret ? <p className="mt-3 text-sm text-strong">New signing secret, shown once: {query.secret}</p> : null}
         </Panel>
       ) : null}
 
@@ -79,7 +79,7 @@ export default async function SetupPage({
 
       <Panel className="p-6">
         <h2 className={cardTitle}>Preview and start</h2>
-        <p className="mt-3 text-sm text-white">
+        <p className="mt-3 text-sm text-strong">
           Nothing is written until you start the import. History comes in quietly. New activity after go-live can start clocks and drafts.
         </p>
         {canManage ? (

@@ -19,15 +19,15 @@ export default async function TeamConnectorsPage() {
       <Panel className="p-6">
         <h2 className={cardTitle}>Enable for a workspace</h2>
         <form action={enableConnector} className="mt-4 grid gap-3">
-          <label className="text-sm text-white" htmlFor="org_id">Workspace id</label>
+          <label className="text-sm text-strong" htmlFor="org_id">Workspace id</label>
           <input id="org_id" name="org_id" required className="rounded-md border bg-background px-3 py-2 text-sm" />
-          <label className="text-sm text-white" htmlFor="connector">Connector</label>
+          <label className="text-sm text-strong" htmlFor="connector">Connector</label>
           <select id="connector" name="connector" className="rounded-md border bg-background px-3 py-2 text-sm">
             {CONNECTORS.filter((row) => row.availability === "connect").map((row) => (
               <option key={row.key} value={row.key}>{row.name}</option>
             ))}
           </select>
-          <label className="flex items-center gap-2 text-sm text-white">
+          <label className="flex items-center gap-2 text-sm text-strong">
             <input type="checkbox" name="enabled" defaultChecked />
             Enabled
           </label>

@@ -99,13 +99,13 @@ export function QueueLeadRow({
           <TableRow
             className={cn(
               "border-border/60 align-top",
-              arriving ? "bg-brand-500/[0.10]" : "hover:bg-white/[0.02]",
+              arriving ? "bg-brand-500/[0.10]" : "hover:bg-overlay/[0.02]",
               exiting ? "opacity-40 transition-opacity duration-700" : "transition-opacity duration-300",
             )}
           />
         }
       >
-        <TableCell className="px-4 py-3.5 font-medium whitespace-normal text-white">
+        <TableCell className="px-4 py-3.5 font-medium whitespace-normal text-strong">
           <a href={`/app/cases/${row.id}`} className="hover:underline">
             {row.name}
           </a>

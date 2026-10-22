@@ -76,7 +76,7 @@ export default async function MembersSettingsPage() {
             {members
               .filter((member) => member.active && !member.is_agent_identity)
               .map((member) => (
-                <li key={member.id} className="flex items-center gap-2 text-sm text-white">
+                <li key={member.id} className="flex items-center gap-2 text-sm text-strong">
                   <PersonAvatar name={member.display_name} src={photo(member.avatar_path)} size="sm" />
                   <span className="min-w-0 flex-1 truncate">{member.display_name}</span>
                   <span className="text-silver">{roleLabel(member.role)}</span>
@@ -89,7 +89,7 @@ export default async function MembersSettingsPage() {
             <h2 className={cardTitle}>Your Vistrial team</h2>
             <ul className="mt-3 space-y-2">
               {team.map((person) => (
-                <li key={person.id} className="flex items-center gap-2 text-sm text-white">
+                <li key={person.id} className="flex items-center gap-2 text-sm text-strong">
                   <PersonAvatar name={person.display_name} size="sm" />
                   {person.display_name}
                 </li>
@@ -116,7 +116,7 @@ export default async function MembersSettingsPage() {
       </Panel>
 
       <Panel className="mb-8 overflow-hidden px-2 py-2 sm:px-4">
-        <h2 className="px-2 pt-3 font-heading text-sm text-white">Current members</h2>
+        <h2 className="px-2 pt-3 font-heading text-sm text-strong">Current members</h2>
         <Table>
           <TableHeader>
             <TableRow>
@@ -140,7 +140,7 @@ export default async function MembersSettingsPage() {
               const ownerLocked = member.role === "owner" && !ctx.isStaff && member.user_id !== ctx.user.id;
               return (
                 <TableRow key={member.id}>
-                  <TableCell className="text-white">
+                  <TableCell className="text-strong">
                     <span className="inline-flex items-center gap-2">
                       <PersonAvatar name={member.display_name} src={photo(member.avatar_path)} size="sm" />
                       {member.display_name}
@@ -245,7 +245,7 @@ export default async function MembersSettingsPage() {
           </p>
           <ul className="mt-3 space-y-2">
             {team.map((person) => (
-              <li key={person.id} className="flex items-center gap-2 text-sm text-white">
+              <li key={person.id} className="flex items-center gap-2 text-sm text-strong">
                 <PersonAvatar name={person.display_name} size="sm" />
                 {person.display_name}
               </li>
@@ -262,7 +262,7 @@ export default async function MembersSettingsPage() {
         />
       ) : (
         <Panel className="overflow-hidden px-2 py-2 sm:px-4">
-          <h2 className="px-2 pt-3 font-heading text-sm text-white">Pending invites</h2>
+          <h2 className="px-2 pt-3 font-heading text-sm text-strong">Pending invites</h2>
           <p className={`${helperClass} px-2`}>
             We emailed each of these. Resend gives the link another 7 days.
           </p>
@@ -279,7 +279,7 @@ export default async function MembersSettingsPage() {
             <TableBody>
               {(invites ?? []).map((invite) => (
                 <TableRow key={invite.id}>
-                <TableCell className="break-all text-white">
+                <TableCell className="break-all text-strong">
                   <span className="inline-flex items-center gap-2">
                     <PersonAvatar name={invite.email} size="sm" />
                     {invite.email}

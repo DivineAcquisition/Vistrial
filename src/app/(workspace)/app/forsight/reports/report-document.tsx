@@ -24,7 +24,7 @@ export function ReportDocument({
 }) {
   return (
     <article className="mx-auto max-w-2xl">
-      <header className="border-b border-white/10 pb-8">
+      <header className="border-b border-overlay/10 pb-8">
         <p className="text-[11px] font-semibold tracking-[0.14em] text-brand-300 uppercase">
           {report.workspace.name}
         </p>
@@ -35,7 +35,7 @@ export function ReportDocument({
         </p>
       </header>
 
-      <div className="divide-y divide-white/8">
+      <div className="divide-y divide-overlay/8">
         {report.sections.map((section) => (
           <section key={section.title} className="py-8">
             <h3 className={sectionTitle}>{section.title}</h3>
@@ -143,7 +143,7 @@ function ComparisonBar({
     <div>
       <p className={captionText}>{side.label}</p>
       <p className="mt-1 font-heading text-4xl tabular-nums text-card-foreground">{side.display}</p>
-      <div className="mt-3 h-2 rounded-full bg-white/8">
+      <div className="mt-3 h-2 rounded-full bg-overlay/8">
         <div className="h-2 rounded-full bg-brand-500" style={{ width: `${width}%` }} />
       </div>
     </div>

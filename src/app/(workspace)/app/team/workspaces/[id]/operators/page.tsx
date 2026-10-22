@@ -51,7 +51,7 @@ export default async function OperatorsPage({ params }: { params: Promise<{ id: 
     >
       {ctx.isPlatformAdmin ? (
         <Panel className="flex flex-wrap items-center gap-3 p-4">
-          <p className="text-sm text-white">{allowed ? "Summaries are on." : "Summaries are off for this workspace."}</p>
+          <p className="text-sm text-strong">{allowed ? "Summaries are on." : "Summaries are off for this workspace."}</p>
           <ResultButton
             label={allowed ? "Turn off" : "Turn on"}
             action={() => setOperatorSummaries(id, !allowed, allowed ? "Turned off by a Platform Admin." : "")}
@@ -94,7 +94,7 @@ async function OperatorTable({ orgId, from, to }: { orgId: string; from: string;
           <TableBody>
             {rows.map((row) => (
               <TableRow key={row.member_id}>
-                <TableCell className="text-white">
+                <TableCell className="text-strong">
                   {row.name}
                   {!row.active ? <span className={helperClass}> · deactivated</span> : null}
                 </TableCell>
@@ -112,7 +112,7 @@ async function OperatorTable({ orgId, from, to }: { orgId: string; from: string;
       </Panel>
       <Panel className="space-y-2 p-6">
         <h2 className={cardTitle}>Patterns, with the sample size</h2>
-        <p className="text-sm text-white">
+        <p className="text-sm text-strong">
           Daytime first responses: {pattern.evening?.day_n ?? 0}. Evening: {pattern.evening?.evening_n ?? 0}.
         </p>
         <p className={helperClass}>

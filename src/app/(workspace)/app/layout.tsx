@@ -62,7 +62,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           const { createClient: client } = await import("@/lib/supabase/server");
           const db = (await client()) as unknown as SupabaseClient;
           await db.rpc("accept_legal_versions");
-        }} className="border-b border-white/10 bg-white/[0.03] px-4 py-3 text-sm text-white">
+        }} className="border-b border-overlay/10 bg-overlay/[0.03] px-4 py-3 text-sm text-strong">
           <p>
             The current <Link href="/privacy" className="underline">Privacy Policy</Link> and <Link href="/terms" className="underline">Terms</Link> have a new approved version. Accept them to keep going.
           </p>

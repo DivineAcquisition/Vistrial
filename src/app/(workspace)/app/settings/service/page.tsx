@@ -43,10 +43,10 @@ export default async function ServiceSettingsPage() {
         <h2 className="font-heading text-sm text-card-foreground">Visits and actions</h2>
         <p className={`mt-1 ${helperClass}`}>Members and Operators do not see this. Internal team notes are not included.</p>
         {rows.length ? (
-          <ul className="mt-3 divide-y divide-white/[0.06]">
+          <ul className="mt-3 divide-y divide-overlay/[0.06]">
             {rows.map((row) => (
               <li key={row.id} className="py-3">
-                <p className="text-sm text-white">
+                <p className="text-sm text-strong">
                   {row.who} {ACTION_LABEL[row.action] ?? row.action}
                   {row.detail?.agent ? ` (${row.detail.agent})` : ""}
                   {row.detail?.reason ? `: ${row.detail.reason}` : ""}

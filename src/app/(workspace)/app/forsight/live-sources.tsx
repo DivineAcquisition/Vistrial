@@ -17,7 +17,7 @@ export function SpendTodayCard({ spend }: { spend: SpendToday }) {
       <p className="text-[11px] font-semibold tracking-[0.14em] text-dim uppercase">Spend today</p>
       {spend.state === "ok" ? (
         <>
-          <p className="mt-1 text-2xl font-semibold tabular-nums text-white">
+          <p className="mt-1 text-2xl font-semibold tabular-nums text-strong">
             {formatNumber(spend.spend, "currency")}
           </p>
           <p className="mt-1 text-xs text-dim">Live from Meta. Today so far.</p>
@@ -82,7 +82,7 @@ function Figure({ label, value }: { label: string; value: number }) {
   return (
     <div>
       <dt className="text-xs tracking-[0.1em] text-dim uppercase">{label}</dt>
-      <dd className="mt-1 text-2xl font-semibold tabular-nums text-white">{value}</dd>
+      <dd className="mt-1 text-2xl font-semibold tabular-nums text-strong">{value}</dd>
     </div>
   );
 }

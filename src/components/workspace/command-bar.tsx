@@ -175,7 +175,7 @@ export function CommandBarTrigger() {
       onClick={() => openCommand()}
       aria-label={COMMAND_COPY.placeholder}
       aria-keyshortcuts="Meta+K Control+K"
-      className="inline-flex h-9 items-center gap-2 rounded-lg border border-white/[0.08] bg-white/[0.04] px-2.5 text-sm text-muted-foreground hover:text-card-foreground focus-visible:ring-2 focus-visible:ring-ring"
+      className="inline-flex h-9 items-center gap-2 rounded-lg border border-overlay/[0.08] bg-overlay/[0.04] px-2.5 text-sm text-muted-foreground hover:text-card-foreground focus-visible:ring-2 focus-visible:ring-ring"
     >
       <SearchIcon aria-hidden className="size-4" />
       <span className="hidden md:inline">{COMMAND_COPY.placeholderShort}</span>
@@ -196,7 +196,7 @@ export function CommandBarField({ className }: { className?: string }) {
         }
       }}
       className={cn(
-        "flex min-h-12 w-full items-center gap-3 rounded-xl border border-white/[0.08] bg-white/[0.04] px-4 text-left text-sm text-muted-foreground hover:border-white/[0.14] focus-visible:ring-2 focus-visible:ring-ring",
+        "flex min-h-12 w-full items-center gap-3 rounded-xl border border-overlay/[0.08] bg-overlay/[0.04] px-4 text-left text-sm text-muted-foreground hover:border-overlay/[0.14] focus-visible:ring-2 focus-visible:ring-ring",
         className
       )}
     >

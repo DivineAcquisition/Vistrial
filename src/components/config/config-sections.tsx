@@ -36,7 +36,7 @@ export function ConfigSections({
         {sections.map((section) => {
           const issues = effective.issues.filter((issue) => section.fields.some((field) => field.key === issue.key)).length;
           return (
-            <a key={section.section} href={`#section-${section.section}`} className="text-muted-foreground hover:text-white">
+            <a key={section.section} href={`#section-${section.section}`} className="text-muted-foreground hover:text-strong">
               {section.label}
               {issues ? <span className="text-flag-critical"> ({issues})</span> : null}
             </a>

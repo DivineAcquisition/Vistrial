@@ -1,10 +1,12 @@
 import type { Metadata, Viewport } from "next";
 
+import { ThemeSync } from "@/components/app/theme-toggle";
 import { AnchoredToastProvider, ToastProvider } from "@/components/ui/toast";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { APP_NAME, PRODUCTION_SITE_ORIGIN } from "@/lib/constants";
 import { geistMono, interDisplay } from "@/lib/fonts";
 import { SITE_DESCRIPTION, SOCIAL_IMAGE } from "@/lib/marketing/copy";
+import { THEME_COLOR, THEME_SCRIPT } from "@/lib/theme";
 
 import "./globals.css";
 import { cn } from "@/lib/utils";
@@ -14,7 +16,7 @@ export const metadata: Metadata = {
   applicationName: APP_NAME,
   appleWebApp: {
     capable: true,
-    statusBarStyle: "black-translucent",
+    statusBarStyle: "default",
     title: APP_NAME,
   },
   formatDetection: { telephone: false },
@@ -43,8 +45,8 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#07070b",
-  colorScheme: "dark",
+  themeColor: THEME_COLOR.light,
+  colorScheme: "light dark",
   width: "device-width",
   initialScale: 1,
   viewportFit: "cover",
@@ -56,18 +58,14 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    // `dark` sits here rather than on a wrapper so there is one theme and no
-    // route can opt out of it. Tailwind's `dark:` variant keys off this class.
-    <html
-      lang="en"
-      className={cn(
-        "dark",
-        interDisplay.variable,
-        geistMono.variable,
-      )}
-      suppressHydrationWarning
-    >
+    // The head script adds `dark` before the first paint when the person chose
+    // the dark theme, so <html> must accept a class React did not render.
+    <html lang="en" className={cn(interDisplay.variable, geistMono.variable)} suppressHydrationWarning>
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: THEME_SCRIPT }} />
+      </head>
       <body className="min-h-screen bg-background font-sans text-foreground antialiased">
+        <ThemeSync />
         <ToastProvider position="top-right">
           <AnchoredToastProvider>
             <TooltipProvider>{children}</TooltipProvider>

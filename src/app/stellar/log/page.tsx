@@ -28,12 +28,12 @@ export default async function StellarLogPage() {
         <p className="text-[11px] font-semibold tracking-[0.14em] text-muted-foreground uppercase">
           Setter&apos;s Log
         </p>
-        <h1 className="mt-1 text-xl font-medium text-white">{today}</h1>
+        <h1 className="mt-1 text-xl font-medium text-strong">{today}</h1>
         <p className="mt-1 text-sm text-dim">{setter.orgName}</p>
       </div>
 
       <Panel className="p-5">
-        <h2 className="text-sm font-medium text-white">Log what happened</h2>
+        <h2 className="text-sm font-medium text-strong">Log what happened</h2>
         <div className="mt-3">
           <EmptyState
             bare
@@ -45,7 +45,7 @@ export default async function StellarLogPage() {
       </Panel>
 
       <Panel className="p-5">
-        <h2 className="text-sm font-medium text-white">End-of-day submission</h2>
+        <h2 className="text-sm font-medium text-strong">End-of-day submission</h2>
         <div className="mt-3">
           <EmptyState
             bare

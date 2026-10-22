@@ -20,10 +20,10 @@ export default async function HealthRulesPage() {
       <HealthRulesForm rules={current.rules} />
       <Panel className="p-6">
         <h2 className="font-heading text-sm text-card-foreground">Versions</h2>
-        <ul className="mt-3 divide-y divide-white/[0.06]">
+        <ul className="mt-3 divide-y divide-overlay/[0.06]">
           {history.map((row) => (
             <li key={row.version} className="py-3">
-              <p className="text-sm text-white">
+              <p className="text-sm text-strong">
                 Version {row.version}: {row.description}
               </p>
               <p className={helperClass}>

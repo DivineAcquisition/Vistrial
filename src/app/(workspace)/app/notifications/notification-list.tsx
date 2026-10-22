@@ -45,7 +45,7 @@ export function NotificationList({ groups, readLabel }: { groups: NoticeGroup[];
       {visible.length === 0 ? (
         <p className={helperClass}>Nothing yet. Alerts land here when there is something to do, and so do replies from your team.</p>
       ) : (
-        <ul className="divide-y divide-white/[0.06]">
+        <ul className="divide-y divide-overlay/[0.06]">
           {visible.map((group) => (
             <li key={group.key} className="flex flex-wrap items-start justify-between gap-3 py-4">
               <span className="min-w-0">
@@ -53,7 +53,7 @@ export function NotificationList({ groups, readLabel }: { groups: NoticeGroup[];
                   {EVENT_LABELS[group.eventType]}
                   {group.unread ? " · Unread" : ""}
                 </span>
-                <span className="mt-1 block text-sm text-white">{group.title}</span>
+                <span className="mt-1 block text-sm text-strong">{group.title}</span>
                 <span className={`mt-0.5 block ${helperClass}`}>{group.body}</span>
                 <span className={helperClass}>
                   {readLabel(group.queuedAt)} · {group.channels.join(", ")}

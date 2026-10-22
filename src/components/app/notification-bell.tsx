@@ -72,7 +72,7 @@ export function NotificationBell() {
   return (
     <Sheet open={open} onOpenChange={setOpen}>
       <SheetTrigger
-        className="relative rounded-xl p-2 text-silver transition-colors hover:bg-white/[0.05] hover:text-white"
+        className="relative rounded-xl p-2 text-silver transition-colors hover:bg-overlay/[0.05] hover:text-strong"
         aria-label={unread ? `Notifications, ${unread} unread` : "Notifications"}
       >
         <Bell className="size-5" aria-hidden />
@@ -80,7 +80,7 @@ export function NotificationBell() {
           <span className="absolute top-1.5 right-1.5 size-2 rounded-full bg-brand-500" aria-hidden />
         ) : null}
       </SheetTrigger>
-      <SheetContent side="right" className="bg-ink-900 text-white" showCloseButton>
+      <SheetContent side="right" className="bg-ink-900 text-strong" showCloseButton>
         <SheetHeader>
           <SheetTitle>Notifications</SheetTitle>
         </SheetHeader>
@@ -98,11 +98,11 @@ export function NotificationBell() {
                 href = `/app/queue?nid=${row.id}`;
               }
               return (
-              <div key={row.id} className="border-t border-white/[0.06] py-3 first:border-t-0">
+              <div key={row.id} className="border-t border-overlay/[0.06] py-3 first:border-t-0">
                 <p className="text-[10px] font-semibold tracking-[0.14em] text-dim uppercase">
                   {EVENT_LABELS[row.event_type]}
                 </p>
-                <p className="mt-1 text-sm text-white">{row.title}</p>
+                <p className="mt-1 text-sm text-strong">{row.title}</p>
                 <p className="mt-0.5 text-xs text-silver">{row.body}</p>
                 <div className="mt-2">
                   <Button asChild variant="link" size="sm">

@@ -57,7 +57,7 @@ export default async function WorkspaceOverviewPage({ params }: { params: Promis
         {row.status_reason ? <p className={`mt-2 ${helperClass}`}>{row.status_reason}</p> : null}
         <ul className="mt-3 space-y-1">
           {row.health.factors.map((factor) => (
-            <li key={factor.key} className="text-sm text-white">
+            <li key={factor.key} className="text-sm text-strong">
               {factor.label}
               <span className={`block ${helperClass}`}>{factor.detail}</span>
             </li>
@@ -101,12 +101,12 @@ export default async function WorkspaceOverviewPage({ params }: { params: Promis
       <div className="grid gap-4 lg:grid-cols-2">
         <Panel className="p-6">
           <h2 className={cardTitle}>4. Response</h2>
-          <p className="mt-2 text-sm text-white">{response} reached in time, this period.</p>
+          <p className="mt-2 text-sm text-strong">{response} reached in time, this period.</p>
           <p className={helperClass}>{row.open_alerts} open response alerts.</p>
         </Panel>
         <Panel className="p-6">
           <h2 className={cardTitle}>5. Agents</h2>
-          <p className="mt-2 text-sm text-white">
+          <p className="mt-2 text-sm text-strong">
             {row.runs_24h} runs in 24 hours, {row.failed_runs_24h} not yet reviewed.
           </p>
           {row.paused_agents.length ? (
@@ -128,14 +128,14 @@ export default async function WorkspaceOverviewPage({ params }: { params: Promis
         </Panel>
         <Panel className="p-6">
           <h2 className={cardTitle}>6. Approvals</h2>
-          <p className="mt-2 text-sm text-white">{row.pending_approvals} waiting.</p>
+          <p className="mt-2 text-sm text-strong">{row.pending_approvals} waiting.</p>
           <p className={helperClass}>
             Oldest: {orGap(row.oldest_pending_at, (value) => formatRelative(value, now))}
           </p>
         </Panel>
         <Panel className="p-6">
           <h2 className={cardTitle}>7. Requests</h2>
-          <p className="mt-2 text-sm text-white">
+          <p className="mt-2 text-sm text-strong">
             {row.requests_waiting} waiting, {row.requests_overdue} overdue, {row.requests_escalated} with a Platform Admin.
           </p>
           <Link href="/app/team/queue" className="mt-2 inline-block text-sm text-brand-300 underline">
@@ -151,7 +151,7 @@ export default async function WorkspaceOverviewPage({ params }: { params: Promis
       <Panel className="p-6">
         <h2 className={cardTitle}>9. Billing</h2>
         {row.billing_visible ? (
-          <p className="mt-2 text-sm text-white">
+          <p className="mt-2 text-sm text-strong">
             {row.billing_status ?? "No subscription recorded"}
             {row.payment_failed_at ? " · the last payment failed" : ""}
             {row.cancel_at_period_end ? " · cancels at the period end" : ""}
@@ -163,7 +163,7 @@ export default async function WorkspaceOverviewPage({ params }: { params: Promis
 
       <Panel className="p-6">
         <h2 className={cardTitle}>10. Data requests</h2>
-        <p className="mt-2 text-sm text-white">{row.data_requests_open} open.</p>
+        <p className="mt-2 text-sm text-strong">{row.data_requests_open} open.</p>
         <Link href="/app/team/data-requests" className="text-sm text-brand-300 underline">
           Data requests
         </Link>
@@ -193,7 +193,7 @@ async function ConnectionSection({ orgId }: { orgId: string }) {
       {bad.length ? (
         <ul className="mt-2 space-y-1">
           {bad.map((row) => (
-            <li key={`${row.kind}-${row.label}`} className="text-sm text-white">
+            <li key={`${row.kind}-${row.label}`} className="text-sm text-strong">
               {row.label}: {row.state.replaceAll("_", " ")}
               {row.last_error ? <span className={`block ${helperClass}`}>{row.last_error}</span> : null}
             </li>
@@ -223,11 +223,11 @@ async function Notes({ orgId, userId, admin }: { orgId: string; userId: string; 
     <Panel className="space-y-4 p-6">
       <h2 className={cardTitle}>11. Team notes</h2>
       <p className={helperClass}>Only the Vistrial team sees these. They are never in a customer export or on a customer page.</p>
-      <ul className="divide-y divide-white/[0.06]">
+      <ul className="divide-y divide-overlay/[0.06]">
         {notes.map((note) => (
           <li key={note.id} className="flex items-start justify-between gap-3 py-3">
             <span>
-              <span className="block text-sm text-white">{note.body}</span>
+              <span className="block text-sm text-strong">{note.body}</span>
               <span className={helperClass}>
                 {note.author_name} · {formatDateTime(note.created_at)}
               </span>

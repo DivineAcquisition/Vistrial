@@ -44,7 +44,7 @@ export default async function TemplatesPage() {
             <TableBody>
               <TableRow>
                 <TableCell>
-                  <Link href="/app/team/templates/platform" className="text-white hover:underline">
+                  <Link href="/app/team/templates/platform" className="text-strong hover:underline">
                     Platform default
                   </Link>
                   <div className="text-xs text-muted-foreground">Under every template. Locked rules here apply everywhere.</div>
@@ -58,7 +58,7 @@ export default async function TemplatesPage() {
               {templates.map((template) => (
                 <TableRow key={template.id}>
                   <TableCell>
-                    <Link href={`/app/team/templates/${template.id}`} className="text-white hover:underline">
+                    <Link href={`/app/team/templates/${template.id}`} className="text-strong hover:underline">
                       {template.name}
                     </Link>
                     <div className="text-xs text-muted-foreground">{template.description}</div>

@@ -66,7 +66,7 @@ export function VoiceExamples({
       {removeState.status === "error" ? <p className={errorClass}>{removeState.error}</p> : null}
 
       {examples.length < maximum ? (
-        <form action={addAction} className="mt-6 space-y-4 border-t border-white/10 pt-6">
+        <form action={addAction} className="mt-6 space-y-4 border-t border-overlay/10 pt-6">
           <div>
             <label className={labelClass} htmlFor="voice_example_body">
               Paste one message

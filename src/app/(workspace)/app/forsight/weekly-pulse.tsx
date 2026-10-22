@@ -170,7 +170,7 @@ export function WeeklyPulseScreen({
               {FUNNEL.map((stage) => (
                 <div key={stage.label}>
                   <dt className="text-xs tracking-[0.1em] text-dim uppercase">{stage.label}</dt>
-                  <dd className="mt-1 text-2xl font-semibold tabular-nums text-white">
+                  <dd className="mt-1 text-2xl font-semibold tabular-nums text-strong">
                     {formatMetric(stage.read(current), "number")}
                   </dd>
                 </div>

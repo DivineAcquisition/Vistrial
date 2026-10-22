@@ -34,7 +34,7 @@ export function GlowLinkCard({
         />
         <Panel className="relative h-full overflow-hidden p-0">
           <MagicCard className="flex h-full flex-col rounded-2xl p-6">
-            <p className="text-base font-medium text-white">{title}</p>
+            <p className="text-base font-medium text-strong">{title}</p>
             {description ? <p className={`mt-2 ${helperClass}`}>{description}</p> : null}
           </MagicCard>
         </Panel>

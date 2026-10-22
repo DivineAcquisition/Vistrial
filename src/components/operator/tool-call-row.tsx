@@ -32,7 +32,7 @@ export function ToolCallRow({
           aria-expanded={open}
         >
           <span className="min-w-0">
-            <span className="block text-sm text-white">{label}</span>
+            <span className="block text-sm text-strong">{label}</span>
             {step.resultSummary ? <span className={`mt-0.5 block ${helperClass}`}>{step.resultSummary}</span> : null}
             {step.errorText ? <span className="mt-0.5 block text-xs text-flag-critical">{step.errorText}</span> : null}
           </span>
@@ -41,7 +41,7 @@ export function ToolCallRow({
       ) : (
         <div className="flex w-full items-start justify-between gap-3 px-3 py-2.5">
           <span className="min-w-0">
-            <span className="block text-sm text-white">{label}</span>
+            <span className="block text-sm text-strong">{label}</span>
             {step.resultSummary ? <span className={`mt-0.5 block ${helperClass}`}>{step.resultSummary}</span> : null}
             {step.errorText ? <span className="mt-0.5 block text-xs text-flag-critical">{step.errorText}</span> : null}
           </span>
@@ -49,11 +49,11 @@ export function ToolCallRow({
         </div>
       )}
       {open && expandable ? (
-        <div className="border-t border-white/[0.06] px-3 py-3">
+        <div className="border-t border-overlay/[0.06] px-3 py-3">
           <ul className="space-y-1.5">
             {links.map((link) => (
               <li key={`${link.href}-${link.id}`}>
-                <Link href={link.href} className="text-sm text-brand-300 hover:text-white">
+                <Link href={link.href} className="text-sm text-brand-300 hover:text-strong">
                   {link.name}
                   {link.status ? ` · ${link.status}` : ""}
                   {link.score != null ? ` · ${link.score}` : ""}

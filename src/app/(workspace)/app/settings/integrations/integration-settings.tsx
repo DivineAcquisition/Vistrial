@@ -177,7 +177,7 @@ export function IntegrationSettings(props: IntegrationSettingsProps) {
         <dl className="mt-5 grid gap-4 sm:grid-cols-3">
           <div>
             <dt className={labelClass}>Unprocessed</dt>
-            <dd className="text-sm text-white">{props.health.unprocessed}</dd>
+            <dd className="text-sm text-strong">{props.health.unprocessed}</dd>
             <p className={helperClass}>
               Oldest:{" "}
               {props.health.oldestUnprocessedAgeMs === null
@@ -187,7 +187,7 @@ export function IntegrationSettings(props: IntegrationSettingsProps) {
           </div>
           <div>
             <dt className={labelClass}>Unmatched transcripts</dt>
-            <dd className="text-sm text-white">{props.transcriptHealth.unmatchedCount}</dd>
+            <dd className="text-sm text-strong">{props.transcriptHealth.unmatchedCount}</dd>
             <p className={helperClass}>
               Oldest:{" "}
               {props.transcriptHealth.unmatchedOldestAgeMs === null
@@ -197,7 +197,7 @@ export function IntegrationSettings(props: IntegrationSettingsProps) {
           </div>
           <div>
             <dt className={labelClass}>Last processed</dt>
-            <dd className="text-sm text-white">
+            <dd className="text-sm text-strong">
               {props.health.lastProcessedAt
                 ? formatRelative(props.health.lastProcessedAt, props.now)
                 : "Never"}
@@ -205,19 +205,19 @@ export function IntegrationSettings(props: IntegrationSettingsProps) {
           </div>
           <div>
             <dt className={labelClass}>Failed permanently</dt>
-            <dd className="text-sm text-white">{props.health.deadCount}</dd>
+            <dd className="text-sm text-strong">{props.health.deadCount}</dd>
           </div>
           <div>
             <dt className={labelClass}>Recordings we could not read</dt>
-            <dd className="text-sm text-white">{props.transcriptHealth.deadExtractions}</dd>
+            <dd className="text-sm text-strong">{props.transcriptHealth.deadExtractions}</dd>
           </div>
           <div>
             <dt className={labelClass}>Failed follow-up jobs</dt>
-            <dd className="text-sm text-white">{props.followUpHealth.deadJobs}</dd>
+            <dd className="text-sm text-strong">{props.followUpHealth.deadJobs}</dd>
           </div>
           <div>
             <dt className={labelClass}>Enqueue failures</dt>
-            <dd className="text-sm text-white">{props.followUpHealth.enqueueFailed}</dd>
+            <dd className="text-sm text-strong">{props.followUpHealth.enqueueFailed}</dd>
             <p className={helperClass}>
               Last 7 days
               {props.followUpHealth.enqueueNoRoute > 0
@@ -227,7 +227,7 @@ export function IntegrationSettings(props: IntegrationSettingsProps) {
           </div>
           <div>
             <dt className={labelClass}>Stale follow-up jobs</dt>
-            <dd className="text-sm text-white">{props.followUpHealth.stalePendingJobs}</dd>
+            <dd className="text-sm text-strong">{props.followUpHealth.stalePendingJobs}</dd>
             <p className={helperClass}>Pending longer than 15 minutes</p>
           </div>
         </dl>

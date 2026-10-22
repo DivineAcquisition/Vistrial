@@ -1,9 +1,11 @@
+import { ForceDarkTheme } from "@/components/app/theme-toggle";
 import { ConsentShell } from "@/components/marketing/consent-shell";
 import { PublicTrackers } from "@/components/marketing/public-trackers";
 
 export default function MarketingLayout({ children }: { children: React.ReactNode }) {
   return (
-    <div className="min-h-screen bg-background text-foreground">
+    <div className="dark min-h-screen bg-background text-foreground">
+      <ForceDarkTheme />
       <PublicTrackers />
       {children}
       <ConsentShell />

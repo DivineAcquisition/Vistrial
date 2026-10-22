@@ -143,7 +143,7 @@ const CALL_COLUMNS: Array<{ label: string; hideOnMobile?: boolean }> = [
 function CallRow({ row, now }: { row: CallListRow; now: string }) {
   return (
     <TableRow className="border-border/60">
-            <TableCell className="px-4 py-3.5 font-medium text-white">
+            <TableCell className="px-4 py-3.5 font-medium text-strong">
         {row.leadName}
         <span className="mt-1 block text-xs font-normal text-dim md:hidden">
           {CALL_TYPE_LABELS[row.type]}

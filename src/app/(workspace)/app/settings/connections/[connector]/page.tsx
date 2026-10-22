@@ -56,7 +56,7 @@ export default async function ToolPage({
     >
       <div className="flex items-center gap-3">
         <ToolMark id={connector.key} size={40} />
-        <p className="text-sm text-white">{connector.methodLabel}</p>
+        <p className="text-sm text-strong">{connector.methodLabel}</p>
       </div>
       {query.notice ? <Notice tone="info" title="Nothing was changed">{query.notice}</Notice> : null}
       {query.error ? (
@@ -76,14 +76,14 @@ export default async function ToolPage({
 
       <Panel className="p-6">
         <h2 className={cardTitle}>What Vistrial will read</h2>
-        <ul className="mt-3 list-disc space-y-1 pl-5 text-sm text-white">
+        <ul className="mt-3 list-disc space-y-1 pl-5 text-sm text-strong">
           {connector.reads.map((line) => <li key={line}>{line}</li>)}
         </ul>
         <p className={`${helperClass} mt-4`}>{connector.doesNotRead}</p>
       </Panel>
       <Panel className="p-6">
         <h2 className={cardTitle}>What Vistrial will never do without your permission</h2>
-        <p className="mt-3 text-sm text-white">{connector.neverDoes}</p>
+        <p className="mt-3 text-sm text-strong">{connector.neverDoes}</p>
       </Panel>
       {connector.permissions.length ? (
         <Panel className="p-6">
@@ -91,7 +91,7 @@ export default async function ToolPage({
           <ul className="mt-3 space-y-2">
             {connector.permissions.map((row) => (
               <li key={row.scope}>
-                <p className="text-sm text-white">{row.scope}</p>
+                <p className="text-sm text-strong">{row.scope}</p>
                 <p className={helperClass}>{row.reason}</p>
               </li>
             ))}
@@ -99,7 +99,7 @@ export default async function ToolPage({
         </Panel>
       ) : null}
       <Panel className="p-6">
-        <p className="text-sm text-white">{connector.firstImport}</p>
+        <p className="text-sm text-strong">{connector.firstImport}</p>
         <p className={`${helperClass} mt-2`}>
           <Link href="/security" className="text-brand-300 underline">Learn more on the Security page</Link>
         </p>
@@ -120,7 +120,7 @@ export default async function ToolPage({
                 In {connector.name}, open the developer or API settings and create a key that can read meetings. Paste it here once.
                 It is tested immediately, then only the last four characters are shown.
               </p>
-              <label className="text-sm text-white" htmlFor="secret">API key</label>
+              <label className="text-sm text-strong" htmlFor="secret">API key</label>
               <input id="secret" name="secret" type="password" autoComplete="off" required className="rounded-md border bg-background px-3 py-2 text-sm" />
               <Button type="submit">Test and save</Button>
             </form>

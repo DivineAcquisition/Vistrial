@@ -121,7 +121,7 @@ export default async function TeamWorkspacesPage({
             <li key={org.id}>
               <Panel className="space-y-3 p-4">
                 <div className="min-w-0">
-                  <p className="truncate font-medium text-white" title={org.name}>
+                  <p className="truncate font-medium text-strong" title={org.name}>
                     {org.name}
                   </p>
                   <p className={helperClass}>
@@ -184,7 +184,7 @@ export default async function TeamWorkspacesPage({
               const assignedIds = new Set(assigned.map((row) => row.user_id));
               return (
                 <TableRow key={org.id}>
-                  <TableCell className="text-white">
+                  <TableCell className="text-strong">
                     <div>{org.name}</div>
                     <div className={helperClass}>
                       {org.slug}

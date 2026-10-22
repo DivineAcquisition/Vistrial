@@ -63,7 +63,7 @@ export function RunContainer({
     <article className="flex min-h-0 flex-1 flex-col gap-4">
       <header>
         <p className={helperClass}>Request</p>
-        <p className="mt-1 text-sm text-white">{requestText}</p>
+        <p className="mt-1 text-sm text-strong">{requestText}</p>
         {statusLabel ? <p className={`mt-1 ${helperClass}`}>{statusLabel}</p> : null}
       </header>
 

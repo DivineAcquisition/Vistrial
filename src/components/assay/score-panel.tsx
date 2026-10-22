@@ -10,7 +10,7 @@ export function AssayScorePanel({ score, timeZone }: { score: AssayScoreView | n
   if (!score) {
     return (
       <Panel className="p-6">
-        <h2 className="text-sm font-medium text-white">Assay score</h2>
+        <h2 className="text-sm font-medium text-strong">Assay score</h2>
         <p className="mt-2 text-sm text-dim">Assay has not scored this lead yet. It does within a minute of anything new happening.</p>
       </Panel>
     );
@@ -19,7 +19,7 @@ export function AssayScorePanel({ score, timeZone }: { score: AssayScoreView | n
   return (
     <Panel className="p-6">
       <div className="flex flex-wrap items-center gap-3">
-        <h2 className="text-sm font-medium text-white">Assay score</h2>
+        <h2 className="text-sm font-medium text-strong">Assay score</h2>
         <span className={score.early ? "opacity-60" : undefined}>
           <StatusBadge label={tierChipLabel(score)} tone={tierTone(score)} />
         </span>
@@ -73,7 +73,7 @@ export function AssayScorePanel({ score, timeZone }: { score: AssayScoreView | n
 
       {score.history.length ? (
         <details className="mt-4">
-          <summary className="cursor-pointer text-sm text-white">How the score moved ({score.history.length})</summary>
+          <summary className="cursor-pointer text-sm text-strong">How the score moved ({score.history.length})</summary>
           <ol className="mt-3 space-y-2 text-sm text-silver">
             {score.history.map((row) => (
               <li key={`${row.at}-${row.score}-${row.tier}`}>{historyLine(row, timeZone)}</li>

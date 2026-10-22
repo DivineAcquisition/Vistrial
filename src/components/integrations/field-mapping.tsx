@@ -57,7 +57,7 @@ export function FieldMapping({
 
       <ul className="mt-5 space-y-4">
         {rows.map((row, index) => (
-          <li key={row.fieldId} className="border-t border-white/[0.06] pt-4 first:border-t-0 first:pt-0">
+          <li key={row.fieldId} className="border-t border-overlay/[0.06] pt-4 first:border-t-0 first:pt-0">
             <label className="flex items-start gap-3">
               <input
                 type="checkbox"
@@ -72,7 +72,7 @@ export function FieldMapping({
                 }
               />
               <span className="min-w-0">
-                <span className="block text-sm text-white">{mappingSentence(row)}</span>
+                <span className="block text-sm text-strong">{mappingSentence(row)}</span>
                 {row.confident ? null : (
                   <span className="mt-1 block text-xs text-dim">
                     We guessed this one from the answers people gave. Worth a look.

@@ -72,7 +72,7 @@ export function Switch({
       {name && isOn ? <input type="hidden" name={name} value="on" /> : null}
       <span className="mt-0.5 flex">{control}</span>
       <span className="min-w-0">
-        <span className="block text-sm text-white">{label}</span>
+        <span className="block text-sm text-strong">{label}</span>
         {description ? (
           <span className="mt-0.5 block text-xs leading-relaxed text-dim">{description}</span>
         ) : null}

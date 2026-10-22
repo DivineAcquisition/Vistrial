@@ -50,8 +50,8 @@ export function ChangePreview({
   );
 
   return (
-    <div className="rounded-xl border border-white/[0.1] bg-white/[0.03] p-4">
-      <p className="text-sm font-medium text-white">
+    <div className="rounded-xl border border-overlay/[0.1] bg-overlay/[0.03] p-4">
+      <p className="text-sm font-medium text-strong">
         {OPERATOR_WRITE_LABELS[confirmation.writeKind]} · {confirmation.recordCount} record
         {confirmation.recordCount === 1 ? "" : "s"}
       </p>
@@ -86,9 +86,9 @@ export function ChangePreview({
         </div>
       ) : null}
 
-      <div className="mt-3 max-h-80 overflow-y-auto rounded-lg border border-white/[0.06]">
+      <div className="mt-3 max-h-80 overflow-y-auto rounded-lg border border-overlay/[0.06]">
         {pending ? (
-          <label className="flex items-center gap-2 border-b border-white/[0.06] px-3 py-2 text-xs text-dim">
+          <label className="flex items-center gap-2 border-b border-overlay/[0.06] px-3 py-2 text-xs text-dim">
             <input
               type="checkbox"
               checked={allSelected}
@@ -101,7 +101,7 @@ export function ChangePreview({
         ) : null}
         <ul>
           {records.map((row) => (
-            <li key={row.id} className="border-b border-white/[0.05] px-3 py-2 last:border-b-0">
+            <li key={row.id} className="border-b border-overlay/[0.05] px-3 py-2 last:border-b-0">
               <div className="flex items-start gap-2">
                 {pending ? (
                   <input
@@ -120,11 +120,11 @@ export function ChangePreview({
                 ) : null}
                 <div className="min-w-0 flex-1">
                   {row.href ? (
-                    <Link href={row.href} className="text-sm text-brand-300 hover:text-white">
+                    <Link href={row.href} className="text-sm text-brand-300 hover:text-strong">
                       {row.label}
                     </Link>
                   ) : (
-                    <p className="text-sm text-white">{row.label}</p>
+                    <p className="text-sm text-strong">{row.label}</p>
                   )}
                   <div className="mt-1">
                     <FieldChangeList rows={row.fields} />

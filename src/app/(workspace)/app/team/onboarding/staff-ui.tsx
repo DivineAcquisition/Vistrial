@@ -146,12 +146,12 @@ export function QueueFilterForm({ filters, showMine }: { filters: Record<string,
         />
       </label>
       {showMine ? (
-        <label className="flex items-center gap-2 text-sm text-white">
+        <label className="flex items-center gap-2 text-sm text-strong">
           <input type="checkbox" name="mine" value="1" defaultChecked={filters.mine === "1"} className={checkboxClass} />
           Mine only
         </label>
       ) : null}
-      <label className="flex items-center gap-2 text-sm text-white">
+      <label className="flex items-center gap-2 text-sm text-strong">
         <input type="checkbox" name="settled" value="1" defaultChecked={filters.settled === "1"} className={checkboxClass} />
         Include settled
       </label>
@@ -400,7 +400,7 @@ export function ActivateNext({ orgId, agent, title, plain }: { orgId: string; ag
   const [note, setNote] = useState("");
   return (
     <div className="space-y-2">
-      <p className="text-sm text-white">{title}</p>
+      <p className="text-sm text-strong">{title}</p>
       <p className={helperClass}>{plain}</p>
       <Field label="Note (optional)" name="activate_note" htmlFor={`activate-${agent}`}>
         <Input id={`activate-${agent}`} value={note} onChange={(event) => setNote(event.target.value)} maxLength={300} />

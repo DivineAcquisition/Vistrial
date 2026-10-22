@@ -87,7 +87,7 @@ export function FollowUpReviewScreen({ initial }: { initial: FollowUpReviewPaylo
       <Panel className="p-6">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
-            <h2 className="font-heading text-2xl tracking-tight text-white">{file.lead.name}</h2>
+            <h2 className="font-heading text-2xl tracking-tight text-strong">{file.lead.name}</h2>
             <p className="mt-1 text-sm text-silver">
               {FOLLOW_UP_BRANCH_LABELS[draft.branch]} · {FOLLOW_UP_CHANNEL_LABELS[draft.channel]}
               {draft.sequencePosition > 1 ? ` · message ${draft.sequencePosition}` : ""}
@@ -300,7 +300,7 @@ export function FollowUpReviewScreen({ initial }: { initial: FollowUpReviewPaylo
 
       {waitingOnGate ? (
         <Panel className="p-6">
-          <p className="text-sm text-white">
+          <p className="text-sm text-strong">
             {file.gateRequest?.status === "approved"
               ? "Approved. Send it from your CRM, then mark it sent in Needs your approval."
               : "Waiting in Needs your approval on Home."}
@@ -323,7 +323,7 @@ export function FollowUpReviewScreen({ initial }: { initial: FollowUpReviewPaylo
             </Button>
           ) : (
             <div className="space-y-4">
-              <p className="text-sm text-white">
+              <p className="text-sm text-strong">
                 This goes to Needs your approval exactly as written. Once approved, it is sent from your CRM, not from
                 Vistrial.
               </p>
@@ -334,12 +334,12 @@ export function FollowUpReviewScreen({ initial }: { initial: FollowUpReviewPaylo
               {draft.channel === "email" && subject ? (
                 <div>
                   <p className={labelClass}>Subject</p>
-                  <p className="whitespace-pre-wrap break-words text-sm text-white">{subject}</p>
+                  <p className="whitespace-pre-wrap break-words text-sm text-strong">{subject}</p>
                 </div>
               ) : null}
               <div>
                 <p className={labelClass}>Full message</p>
-                <p className="whitespace-pre-wrap break-words text-sm text-white">{body}</p>
+                <p className="whitespace-pre-wrap break-words text-sm text-strong">{body}</p>
               </div>
               {draft.lowConfidence ? (
                 <label className="flex items-start gap-2 text-sm text-silver">

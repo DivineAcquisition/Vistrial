@@ -84,7 +84,7 @@ export function CallDetailScreen({
       <Panel className="p-6">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
-            <h2 className="font-heading text-2xl tracking-tight text-white">{CALL_TYPE_LABELS[call.type]} call</h2>
+            <h2 className="font-heading text-2xl tracking-tight text-strong">{CALL_TYPE_LABELS[call.type]} call</h2>
             <p className="mt-1 text-sm text-silver">{detail.lead.name}</p>
           </div>
           <div className="flex flex-wrap gap-2">
@@ -405,11 +405,11 @@ export function CallDetailScreen({
         {call.rawTranscript ? (
           <Panel className="p-6">
             <details>
-              <summary className="cursor-pointer text-sm font-medium text-white">Show raw transcript</summary>
+              <summary className="cursor-pointer text-sm font-medium text-strong">Show raw transcript</summary>
               <pre className="mt-3 whitespace-pre-wrap text-sm leading-relaxed text-silver">{call.rawTranscript}</pre>
             </details>
             <details className="mt-4">
-              <summary className="cursor-pointer text-sm font-medium text-white">Replace with a pasted transcript</summary>
+              <summary className="cursor-pointer text-sm font-medium text-strong">Replace with a pasted transcript</summary>
               <div className="mt-3">
                 <PasteTranscript
                   busy={busy}
@@ -470,7 +470,7 @@ function SignalField({
         : text || "Not established";
 
   return (
-    <div className="border-b border-white/[0.05] py-3">
+    <div className="border-b border-overlay/[0.05] py-3">
       <div className="flex flex-wrap items-start justify-between gap-2">
         <div>
           <p className={labelClass}>{label}</p>
@@ -534,7 +534,7 @@ function QuotesField({
   const [rows, setRows] = useState(quotes);
 
   return (
-    <div className="border-b border-white/[0.05] py-3">
+    <div className="border-b border-overlay/[0.05] py-3">
       <div className="flex flex-wrap items-start justify-between gap-2">
         <div>
           <p className={labelClass}>Quotes</p>

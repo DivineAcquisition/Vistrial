@@ -35,7 +35,7 @@ export default async function StellarConsolePage() {
         <p className="text-[11px] font-semibold tracking-[0.14em] text-muted-foreground uppercase">
           Vistrial team
         </p>
-        <h1 className="mt-1 text-xl font-medium text-white">Active placements</h1>
+        <h1 className="mt-1 text-xl font-medium text-strong">Active placements</h1>
         <p className="mt-1 text-sm text-dim">
           Active Stellar placements in the workspaces assigned to you. This read was logged.
         </p>
@@ -50,7 +50,7 @@ export default async function StellarConsolePage() {
       ) : (
         <Panel className="overflow-hidden p-0">
           <table className="w-full text-left text-sm">
-            <thead className="border-b border-white/[0.08] text-[11px] uppercase tracking-[0.08em] text-muted-foreground">
+            <thead className="border-b border-overlay/[0.08] text-[11px] uppercase tracking-[0.08em] text-muted-foreground">
               <tr>
                 <th className="px-4 py-3 font-medium">Org</th>
                 <th className="px-4 py-3 font-medium">Setter</th>
@@ -59,10 +59,10 @@ export default async function StellarConsolePage() {
                 <th className="px-4 py-3 font-medium">Days since last EOD</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-white/[0.06]">
+            <tbody className="divide-y divide-overlay/[0.06]">
               {placements.map((placement) => (
                 <tr key={placement.placement_id}>
-                  <td className="px-4 py-3 text-white">{placement.org_name}</td>
+                  <td className="px-4 py-3 text-strong">{placement.org_name}</td>
                   <td className="px-4 py-3 text-dim">{placement.setter_name ?? "Unassigned"}</td>
                   <td className="px-4 py-3">
                     <Badge variant="outline">

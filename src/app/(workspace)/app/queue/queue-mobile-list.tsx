@@ -71,7 +71,7 @@ export function QueueMobileList({
   }) => Promise<boolean>;
 }) {
   return (
-    <ul className={cn(insetChrome, "divide-y divide-white/[0.06] overflow-x-hidden rounded-2xl")}>
+    <ul className={cn(insetChrome, "divide-y divide-overlay/[0.06] overflow-x-hidden rounded-2xl")}>
       {rows.map((row) => (
         <QueueMobileRow
           key={row.id}
@@ -183,7 +183,7 @@ function QueueMobileRow({
       }}
     >
       <div style={{ transform: swipe ? `translateX(${swipe}px)` : undefined }}>
-        <p className="font-heading text-lg tracking-tight break-words text-white">
+        <p className="font-heading text-lg tracking-tight break-words text-strong">
           <Link href={`/app/cases/${row.id}`}>{row.name}</Link>
         </p>
         <p className="mt-1 text-sm tabular-nums text-silver">{waiting}</p>

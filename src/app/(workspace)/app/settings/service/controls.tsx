@@ -11,7 +11,7 @@ export function ServiceControls({ orgId, allowed }: { orgId: string; allowed: bo
   const [pending, startTransition] = useTransition();
   return (
     <div className="space-y-2">
-      <p className="text-sm text-white">
+      <p className="text-sm text-strong">
         {allowed
           ? "The Vistrial team can approve drafts in this workspace. Approvals are labeled as the Vistrial team."
           : "The Vistrial team cannot approve drafts here. This is the default."}

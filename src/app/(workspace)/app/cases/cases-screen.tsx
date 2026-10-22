@@ -229,8 +229,8 @@ function CaseRow({
   });
 
   return (
-    <TableRow className="relative border-border/60 hover:bg-white/[0.02]">
-      <TableCell className="px-4 py-3.5 font-medium whitespace-normal text-white">
+    <TableRow className="relative border-border/60 hover:bg-overlay/[0.02]">
+      <TableCell className="px-4 py-3.5 font-medium whitespace-normal text-strong">
         <Link href={`/app/cases/${row.id}`} className="after:absolute after:inset-0">
           {row.name}
         </Link>
@@ -255,7 +255,7 @@ function CaseRow({
           <StatusBadge label="Unscored" tone="warning" />
         ) : (
           <span>
-            <span className="font-medium text-white tabular-nums">{row.score}</span>
+            <span className="font-medium text-strong tabular-nums">{row.score}</span>
             {trackLabel ? (
               <span className="ml-2">
                 <StatusBadge

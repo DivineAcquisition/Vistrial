@@ -42,7 +42,7 @@ function Lead({ lead, meta }: { lead: LeadRow; meta: string }) {
 
 function LeadList({ leads, meta }: { leads: LeadRow[]; meta: (lead: LeadRow) => string }) {
   return (
-    <ul className="divide-y divide-white/[0.05]">
+    <ul className="divide-y divide-overlay/[0.05]">
       {leads.map((lead) => (
         <Lead key={lead.id} lead={lead} meta={meta(lead)} />
       ))}
@@ -58,7 +58,7 @@ function LeadList({ leads, meta }: { leads: LeadRow[]; meta: (lead: LeadRow) => 
 function Count({ value, tone, label }: { value: number; tone: Tone; label: string }) {
   return (
     <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1.5">
-      <span className="text-3xl font-semibold tabular-nums text-white">{value}</span>
+      <span className="text-3xl font-semibold tabular-nums text-strong">{value}</span>
       <TonePill tone={tone}>
         <Dot tone={tone} />
         {label}

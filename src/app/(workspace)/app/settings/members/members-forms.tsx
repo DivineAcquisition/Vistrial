@@ -69,7 +69,7 @@ export function InviteForm({ canInviteOwner }: { canInviteOwner: boolean }) {
       {!state.ok ? <p className={errorClass}>{state.error}</p> : null}
       {url ? (
         <div className={cn(insetChrome, "space-y-3 px-3 py-3")} role="status">
-          <p className="text-sm text-white">
+          <p className="text-sm text-strong">
             {state.ok && state.emailed
               ? "Invite emailed. You can also copy the link."
               : `The invite is ready, but the email did not send${state.ok && state.emailError ? ` (${state.emailError})` : ""}. Copy the link and share it.`}

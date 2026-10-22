@@ -50,7 +50,7 @@ export default async function ConnectionsPage({
           <li key={`${row.org_id}-${row.kind}-${row.label}`}>
             <Panel className="space-y-2 p-4">
               <div className="flex flex-wrap items-center justify-between gap-2">
-                <span className="text-sm text-white">
+                <span className="text-sm text-strong">
                   {row.org_name} · {row.label}
                 </span>
                 <StatusBadge label={row.state.replaceAll("_", " ")} tone={TONE[row.state]} />
@@ -59,7 +59,7 @@ export default async function ConnectionsPage({
                 Last success {orGap(row.last_success_at, (value) => formatRelative(value, now))}
                 {row.failing_since ? ` · failing since ${formatRelative(row.failing_since, now)}` : ""}
               </p>
-              {row.last_error ? <p className="text-sm text-white">{row.last_error}</p> : null}
+              {row.last_error ? <p className="text-sm text-strong">{row.last_error}</p> : null}
               {row.kind === "carrier" ? (
                 <div className="flex flex-wrap gap-2">
                   {(["not_registered", "pending", "approved", "rejected"] as const).map((status) => (

@@ -102,9 +102,9 @@ export function NotificationSettingsForm({
             {USER_PREF_EVENTS.map((eventType) => (
               <div
                 key={eventType}
-                className="border-t border-white/[0.06] pt-4 first:border-t-0 first:pt-0"
+                className="border-t border-overlay/[0.06] pt-4 first:border-t-0 first:pt-0"
               >
-                <p className="text-sm text-white">{EVENT_LABELS[eventType]}</p>
+                <p className="text-sm text-strong">{EVENT_LABELS[eventType]}</p>
                 <div className="mt-2 grid gap-2">
                   {USER_PREF_CHANNELS.map((channel) => {
                     const locked = preferenceLocked({ role, eventType, channel });

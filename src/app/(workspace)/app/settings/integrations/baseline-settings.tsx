@@ -95,14 +95,14 @@ export function BaselineSettings(props: BaselineSettingsProps) {
       <dl className="mt-5 grid gap-4 sm:grid-cols-2">
         <div>
           <dt className={labelClass}>Status</dt>
-          <dd className="text-sm text-white">
+          <dd className="text-sm text-strong">
             {props.backfill.status ?? "—"}
             {props.backfill.progressPhase ? ` · ${props.backfill.progressPhase}` : ""}
           </dd>
         </div>
         <div>
           <dt className={labelClass}>Activation</dt>
-          <dd className="text-sm text-white">{props.activatedAt ?? "Not set until backfill completes or is skipped"}</dd>
+          <dd className="text-sm text-strong">{props.activatedAt ?? "Not set until backfill completes or is skipped"}</dd>
         </div>
       </dl>
 
@@ -118,19 +118,19 @@ export function BaselineSettings(props: BaselineSettingsProps) {
         <dl className="mt-5 grid gap-4 sm:grid-cols-3">
           <div>
             <dt className={labelClass}>Contacts with a creation date</dt>
-            <dd className="text-sm text-white">
+            <dd className="text-sm text-strong">
               {props.backfill.quality.contactsWithCreatedDate} of {props.backfill.quality.contactsSeen}
             </dd>
           </div>
           <div>
             <dt className={labelClass}>Contacts with activity</dt>
-            <dd className="text-sm text-white">
+            <dd className="text-sm text-strong">
               {props.backfill.quality.contactsWithActivity} of {props.backfill.quality.contactsSeen}
             </dd>
           </div>
           <div>
             <dt className={labelClass}>Closes</dt>
-            <dd className="text-sm text-white">
+            <dd className="text-sm text-strong">
               {props.backfill.quality.opportunitiesWithValue + props.backfill.quality.paymentsSeen > 0
                 ? "Valued"
                 : props.backfill.quality.opportunitiesSeen > 0
@@ -176,7 +176,7 @@ export function BaselineSettings(props: BaselineSettingsProps) {
       {rerunState.status === "error" ? <p className={errorClass}>{rerunState.error}</p> : null}
 
       {unusable ? (
-        <form action={selfAction} className="mt-8 space-y-4 border-t border-white/10 pt-6">
+        <form action={selfAction} className="mt-8 space-y-4 border-t border-overlay/10 pt-6">
           <p className={cardTitle}>Self-reported prior figures</p>
           <p className={helperClass}>
             Used only when CRM history is unusable. Labeled self-reported on every screen and every

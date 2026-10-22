@@ -99,7 +99,7 @@ export function AdoptionPanel({ payload }: { payload: Record<string, unknown> })
       </KpiGrid>
       <div className="mt-6 grid gap-6 lg:grid-cols-2">
         <div>
-          <h3 className="mb-2 text-sm text-white">Used it this period</h3>
+          <h3 className="mb-2 text-sm text-strong">Used it this period</h3>
           <DataTable
             columns={[
               { key: "name", label: "Name" },
@@ -113,7 +113,7 @@ export function AdoptionPanel({ payload }: { payload: Record<string, unknown> })
           />
         </div>
         <div>
-          <h3 className="mb-2 text-sm text-white">Has not used it this period</h3>
+          <h3 className="mb-2 text-sm text-strong">Has not used it this period</h3>
           <DataTable
             columns={[
               { key: "name", label: "Name" },

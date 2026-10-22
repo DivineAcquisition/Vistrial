@@ -51,7 +51,7 @@ export function OnboardingOverview({ view, isStaff, now }: { view: CustomerView;
       {!live && view.phase !== "paused" && view.phase !== "cancelled" ? (
         <Panel className="p-6">
           <h2 className={cardTitle}>Next for you</h2>
-          <p className="mt-2 text-sm text-white">{SETUP_STEPS.find((step) => step.slug === resume)?.short}</p>
+          <p className="mt-2 text-sm text-strong">{SETUP_STEPS.find((step) => step.slug === resume)?.short}</p>
           <div className="mt-4">
             <Button variant="primary" render={<Link href={setupHref(resume)} />}>
               Continue where you left off
@@ -74,7 +74,7 @@ export function OnboardingOverview({ view, isStaff, now }: { view: CustomerView;
           ].map((step, index) => (
             <li key={step.title}>
               <Panel className="p-5">
-                <h3 className="text-sm text-white">{index + 1}. {step.title}</h3>
+                <h3 className="text-sm text-strong">{index + 1}. {step.title}</h3>
                 <p className="mt-1 text-sm text-dim">{step.detail}</p>
                 <div className="mt-3">
                   <Button variant={index === 0 ? "primary" : "secondary"} size="sm" render={<Link href={step.href} />}>
@@ -101,13 +101,13 @@ export function OnboardingOverview({ view, isStaff, now }: { view: CustomerView;
               <li key={step.key}>
                 <Panel className="p-5">
                   <div className="flex flex-wrap items-start justify-between gap-2">
-                    <h3 className="min-w-0 text-sm text-white">
+                    <h3 className="min-w-0 text-sm text-strong">
                       {index + 1}. {step.label}
                     </h3>
                     <StatusBadge label={state.label} tone={state.tone} />
                   </div>
                   <p className={helperClass}>{step.state === "coming_next" ? "Coming next." : (step.detail ?? step.why)}</p>
-                  {step.note ? <p className="mt-2 text-sm text-white">Your team: {step.note}</p> : null}
+                  {step.note ? <p className="mt-2 text-sm text-strong">Your team: {step.note}</p> : null}
                   {step.eta ? <p className={helperClass}>Expected: {step.eta}</p> : null}
                   {waiting ? <p className={helperClass}>Waiting {waiting}.</p> : null}
                   {step.owner !== "staff" && step.state !== "coming_next" && step.state !== "done" && slug ? (

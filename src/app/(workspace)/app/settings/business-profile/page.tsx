@@ -142,7 +142,7 @@ export default async function BusinessProfileSettingsPage() {
             <ul className="mt-3 space-y-3">
               {state.patternFeedback.map((item) => (
                 <li key={item.key}>
-                  <p className="text-sm text-white">{item.plain}</p>
+                  <p className="text-sm text-strong">{item.plain}</p>
                   <p className={helperClass}>{item.basis}</p>
                 </li>
               ))}

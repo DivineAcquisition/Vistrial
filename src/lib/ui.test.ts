@@ -20,8 +20,8 @@ describe("visual recipes stay aligned", () => {
 
   it("fills outline buttons instead of leaving an empty ring", () => {
     const classes = buttonVariants({ variant: "outline" });
-    expect(classes).toContain("bg-white/[0.04]");
-    expect(classes).toContain("border-white/[0.08]");
+    expect(classes).toContain("bg-overlay/[0.04]");
+    expect(classes).toContain("border-overlay/[0.08]");
   });
 
   it("keeps compact row actions at 32px on desktop", () => {
@@ -31,8 +31,8 @@ describe("visual recipes stay aligned", () => {
   });
 
   it("gives nested panels a filled inset rather than a hairline outline", () => {
-    expect(insetChrome).toContain("bg-white/[0.04]");
-    expect(insetChrome).toContain("border-white/[0.06]");
+    expect(insetChrome).toContain("bg-overlay/[0.04]");
+    expect(insetChrome).toContain("border-overlay/[0.06]");
     expect(insetSurface).toContain("p-4");
   });
 
@@ -43,8 +43,8 @@ describe("visual recipes stay aligned", () => {
 
   it("fills segmented controls instead of leaving a muted empty track", () => {
     expect(segmentedControlRootClassName).toContain("rounded-xl");
-    expect(segmentedControlRootClassName).toContain("bg-white/[0.04]");
-    expect(segmentedControlRootClassName).toContain("border-white/[0.06]");
+    expect(segmentedControlRootClassName).toContain("bg-overlay/[0.04]");
+    expect(segmentedControlRootClassName).toContain("border-overlay/[0.06]");
   });
 
   it("keeps page titles large and pages stacked with room", () => {

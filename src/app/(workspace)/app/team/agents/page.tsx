@@ -75,7 +75,7 @@ export default async function AgentOversightPage() {
               const halt = ((halts ?? []) as Halt[]).find((row) => row.agent_id === agentId);
               return (
                 <li key={agentId} className="flex flex-wrap items-center gap-3">
-                  <span className="w-24 text-sm text-white">{name}</span>
+                  <span className="w-24 text-sm text-strong">{name}</span>
                   <StatusBadge label={halt?.halted ? "Halted" : "Running"} tone={halt?.halted ? "critical" : "good"} />
                   {halt?.reason ? <span className={helperClass}>{halt.reason}</span> : null}
                   <NoteBox
@@ -104,7 +104,7 @@ export default async function AgentOversightPage() {
           <TableBody>
             {flagged.map((row) => (
               <TableRow key={`${row.org_id}-${row.agent_id}`}>
-                <TableCell className="text-white">{row.org_name}</TableCell>
+                <TableCell className="text-strong">{row.org_name}</TableCell>
                 <TableCell>{nameOf(row.agent_id)}</TableCell>
                 <TableCell>
                   {row.platform_halted ? "Halted everywhere" : row.paused ? (row.paused_by_owner ? "Paused by the Owner" : "Paused") : row.stuck_now ? "Stuck" : "Running"}
@@ -121,9 +121,9 @@ export default async function AgentOversightPage() {
       <Panel className="space-y-4 p-6">
         <h2 className={cardTitle}>Runs nobody has reviewed</h2>
         {((failures ?? []) as Failure[]).map((row) => (
-          <div key={row.run_id} className="flex flex-wrap items-start justify-between gap-3 border-b border-white/[0.06] py-3">
+          <div key={row.run_id} className="flex flex-wrap items-start justify-between gap-3 border-b border-overlay/[0.06] py-3">
             <span>
-              <span className="block text-sm text-white">
+              <span className="block text-sm text-strong">
                 {row.org_name} · {nameOf(row.agent_id)} · {row.status}
               </span>
               <span className={helperClass}>{row.plain_error ?? row.subject_label ?? "No detail recorded."}</span>

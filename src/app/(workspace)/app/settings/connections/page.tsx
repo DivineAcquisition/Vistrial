@@ -58,7 +58,7 @@ export default async function ConnectionsPage({
         {connected.length === 0 ? (
           <p className={`${helperClass} mt-2`}>Nothing is connected yet.</p>
         ) : (
-          <ul className="mt-3 divide-y divide-white/10">
+          <ul className="mt-3 divide-y divide-overlay/10">
             {connected.map((row) => {
               const tool = connectorByKey(row.connector_key);
               const view = statusView({
@@ -73,7 +73,7 @@ export default async function ConnectionsPage({
                   <span className="flex min-w-0 items-center gap-3">
                     <ToolMark id={row.connector_key} />
                     <span>
-                      <span className="block text-sm text-white">{tool?.name ?? row.connector_key}</span>
+                      <span className="block text-sm text-strong">{tool?.name ?? row.connector_key}</span>
                       <span className={helperClass}>{row.external_account_label ?? view.sentence}</span>
                     </span>
                   </span>
@@ -91,7 +91,7 @@ export default async function ConnectionsPage({
       </Panel>
 
       <form className="mt-6" action="/app/settings/connections">
-        <label className="block text-sm text-white" htmlFor="q">
+        <label className="block text-sm text-strong" htmlFor="q">
           Search tools
         </label>
         <input
@@ -110,7 +110,7 @@ export default async function ConnectionsPage({
           if (tools.length === 0) return null;
           return (
             <section key={category.id}>
-              <h3 className="text-sm font-medium text-white">{category.label}</h3>
+              <h3 className="text-sm font-medium text-strong">{category.label}</h3>
               <ul className="mt-3 grid gap-3">
                 {tools.map(({ connector, on }) => {
                   const blocked = connector.countsTowardLimit && !plan.allowed && connector.availability === "connect";
@@ -121,7 +121,7 @@ export default async function ConnectionsPage({
                           <div className="flex min-w-0 items-start gap-3">
                             <ToolMark id={connector.key} />
                             <div>
-                            <p className="text-sm text-white">{connector.name}</p>
+                            <p className="text-sm text-strong">{connector.name}</p>
                             <p className={`${helperClass} mt-1`}>{connector.summary}</p>
                             <p className={`${helperClass} mt-1`}>{connector.methodLabel}</p>
                             {connector.beta ? <p className={helperClass}>Beta</p> : null}
@@ -156,11 +156,11 @@ export default async function ConnectionsPage({
         </p>
         {canManage ? (
           <form action={submitToolRequest} className="mt-4 grid gap-3">
-            <label className="text-sm text-white" htmlFor="tool_name">Tool name</label>
+            <label className="text-sm text-strong" htmlFor="tool_name">Tool name</label>
             <input id="tool_name" name="tool_name" required className="rounded-md border bg-background px-3 py-2 text-sm" />
-            <label className="text-sm text-white" htmlFor="wanted">What data do you want from it?</label>
+            <label className="text-sm text-strong" htmlFor="wanted">What data do you want from it?</label>
             <textarea id="wanted" name="wanted" required className="rounded-md border bg-background px-3 py-2 text-sm" rows={3} />
-            <label className="text-sm text-white" htmlFor="urgency">How urgent?</label>
+            <label className="text-sm text-strong" htmlFor="urgency">How urgent?</label>
             <select id="urgency" name="urgency" className="rounded-md border bg-background px-3 py-2 text-sm">
               <option value="now">Need it now</option>
               <option value="soon">Soon</option>

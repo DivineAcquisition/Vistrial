@@ -56,7 +56,7 @@ export function OutcomeStrip({
       <ul className="grid grid-cols-2 gap-2 lg:grid-cols-4">
         {tiles.map((tile) => (
           <li key={tile.id}>
-            <Link href={tile.href} title={tile.explain} className="flex h-full flex-col gap-1 rounded-xl border border-border bg-card p-3 hover:border-white/[0.14] focus-visible:ring-2 focus-visible:ring-ring">
+            <Link href={tile.href} title={tile.explain} className="flex h-full flex-col gap-1 rounded-xl border border-border bg-card p-3 hover:border-overlay/[0.14] focus-visible:ring-2 focus-visible:ring-ring">
               <span className="text-xs text-muted-foreground">{tile.label}</span>
               <span className="font-heading text-xl text-card-foreground">{formatValue(tile.unit, tile.value)}</span>
               {tile.trend ? <Trend values={tile.trend} label={tile.label} /> : null}

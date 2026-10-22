@@ -55,7 +55,7 @@ export function HealthRulesForm({ rules }: { rules: HealthRules }) {
           ["agent_paused_watch", "An agent paused by someone other than the Owner is Watch"],
         ] as const
       ).map(([key, label]) => (
-        <label key={key} className="flex items-center gap-2 text-sm text-white">
+        <label key={key} className="flex items-center gap-2 text-sm text-strong">
           <input type="checkbox" name={key} defaultChecked={rules[key]} />
           {label}
         </label>

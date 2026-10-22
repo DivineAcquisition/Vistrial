@@ -10,7 +10,7 @@ export function RosterTabs({ current, showRequests }: { current: "workspaces" | 
       aria-current={active ? "page" : undefined}
       className={cn(
         "rounded-full px-3 py-1.5 text-sm",
-        active ? "bg-white/10 text-white" : "text-silver hover:text-white"
+        active ? "bg-overlay/10 text-strong" : "text-silver hover:text-strong"
       )}
     >
       {label}

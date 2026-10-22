@@ -8,6 +8,7 @@ import { CircleHelp } from "lucide-react";
 import { AppSidebar } from "@/components/app/app-sidebar";
 import { MobileDock } from "@/components/app/mobile-dock";
 import { useShellSwitch } from "@/components/app/shell-switch";
+import { ThemeToggle } from "@/components/app/theme-toggle";
 import Logo from "@/components/brand/logo";
 import { Breadcrumbs, type Crumb } from "@/components/ui/breadcrumbs";
 import { SidebarInset, SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
@@ -134,6 +135,7 @@ export function ApplicationShell({
             <div className="ml-auto flex min-w-0 items-center gap-1 sm:gap-2">
               {leading}
               {tools}
+              <ThemeToggle />
               <Link
                 href={
                   pathname.startsWith("/app/") && !pathname.startsWith("/app/help")

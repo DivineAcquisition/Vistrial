@@ -156,7 +156,7 @@ function BusinessPayoff({ payoff }: { payoff: Record<string, unknown> }) {
               const row = asRecord(item);
               return (
                 <li key={str(row.key) ?? index}>
-                  <p className="text-sm text-white">{str(row.plain)}</p>
+                  <p className="text-sm text-strong">{str(row.plain)}</p>
                   <p className={helperClass}>{str(row.basis)}</p>
                 </li>
               );
@@ -378,7 +378,7 @@ async function VoicePayoff({ orgId, payoff }: { orgId: string; payoff: Record<st
             For {preview.leadName}, over {preview.channel === "sms" ? "text" : "email"}.
           </p>
           {preview.subject ? (
-            <p className="mt-4 text-sm font-medium text-white">{preview.subject}</p>
+            <p className="mt-4 text-sm font-medium text-strong">{preview.subject}</p>
           ) : null}
           <p className="mt-2 whitespace-pre-wrap text-sm text-silver">{preview.body}</p>
           <p className={helperClass}>{preview.basis}</p>

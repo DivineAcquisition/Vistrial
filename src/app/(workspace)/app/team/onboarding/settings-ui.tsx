@@ -233,7 +233,7 @@ export function TemplateDefaultsForm({ templateId, name, lookback, watchDays }: 
         run(() => saveTemplateDefaults(templateId, Number(days), Number(watch)));
       }}
     >
-      <p className="w-full text-sm text-white">{name}</p>
+      <p className="w-full text-sm text-strong">{name}</p>
       <Field label="Import look-back (days)" name="lookback" htmlFor={`tpl-${templateId}-l`}>
         <Input id={`tpl-${templateId}-l`} type="number" min={7} max={365} value={days} onChange={(event) => setDays(event.target.value)} />
       </Field>

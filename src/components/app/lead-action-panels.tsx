@@ -91,7 +91,7 @@ export function OutcomePanel({
 
   return (
     <div className={insetSurface}>
-      <p className="text-sm font-medium text-white">What happened with {row.name}</p>
+      <p className="text-sm font-medium text-strong">What happened with {row.name}</p>
       <p className={helperClass}>
         One click on the result writes the touch. Channel and direction stay outbound call unless you change them.
       </p>
@@ -215,7 +215,7 @@ export function AssignPanel({
 
   return (
     <div className={insetSurface}>
-      <p className="text-sm font-medium text-white">Assign {row.name}</p>
+      <p className="text-sm font-medium text-strong">Assign {row.name}</p>
       {!canOthers ? (
         <p className={helperClass}>You can assign this lead to yourself. Owners and admins assign to others.</p>
       ) : (
@@ -362,7 +362,7 @@ export function FollowOnPanel({
 
   return (
     <div className={insetSurface}>
-      <p className="text-sm font-medium text-white">Create a follow-on?</p>
+      <p className="text-sm font-medium text-strong">Create a follow-on?</p>
       <p className={helperClass}>Optional. Skip if nothing is next.</p>
       <label className="mt-4 block">
         <span className={labelClass}>Next action</span>

@@ -35,7 +35,7 @@ export const AGENT_ACCENTS: Record<AgentAccentKey, AgentAccent> = {
   info: { text: "text-info", soft: "bg-info/12", ring: "ring-info/40", dot: "bg-info" },
   "chart-4": { text: "text-chart-4", soft: "bg-chart-4/12", ring: "ring-chart-4/40", dot: "bg-chart-4" },
   "chart-3": { text: "text-chart-3", soft: "bg-chart-3/12", ring: "ring-chart-3/40", dot: "bg-chart-3" },
-  neutral: { text: "text-silver", soft: "bg-white/8", ring: "ring-white/20", dot: "bg-silver" },
+  neutral: { text: "text-silver", soft: "bg-overlay/8", ring: "ring-overlay/20", dot: "bg-silver" },
 };
 
 /** The kinds of record an agent acts on. Later areas add customer, account, renewal. */

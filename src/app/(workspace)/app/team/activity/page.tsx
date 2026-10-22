@@ -50,14 +50,14 @@ export default async function TeamActivityPage({
       }
     >
       <nav aria-label="Filter by workspace" className="mb-4 flex flex-wrap gap-2 text-sm">
-        <Link href="/app/team/activity" className={orgFilter ? "text-silver" : "text-white underline"}>
+        <Link href="/app/team/activity" className={orgFilter ? "text-silver" : "text-strong underline"}>
           All
         </Link>
         {(orgs ?? []).map((org) => (
           <Link
             key={org.id}
             href={`/app/team/activity?org=${org.id}`}
-            className={orgFilter === org.id ? "text-white underline" : "text-silver"}
+            className={orgFilter === org.id ? "text-strong underline" : "text-silver"}
           >
             {org.name}
           </Link>
@@ -80,11 +80,11 @@ export default async function TeamActivityPage({
               {(rows ?? []).map((row) => (
                 <TableRow key={row.id}>
                   <TableCell className="whitespace-nowrap text-silver">{formatDateTime(row.created_at)}</TableCell>
-                  <TableCell className="text-white">
+                  <TableCell className="text-strong">
                     <div>{row.actor_label}</div>
                     <StatusBadge label={ACTOR_KIND_LABEL[row.actor_kind] ?? row.actor_kind} tone="neutral" />
                   </TableCell>
-                  <TableCell className="text-white">
+                  <TableCell className="text-strong">
                     <div>{describeActivity(row.action)}</div>
                     {row.target_table ? <div className={helperClass}>{row.target_table}</div> : null}
                   </TableCell>

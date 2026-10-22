@@ -18,8 +18,8 @@ export function WeekdayToggleRow({
           key={day}
           className={cn(
             "relative flex h-9 min-w-0 cursor-pointer items-center justify-center rounded-xl border px-0.5 text-[10px] font-medium tracking-wide transition-colors sm:h-10 sm:text-xs",
-            "border-white/[0.09] bg-ink-850 text-muted-foreground shadow-[inset_0_1px_0_rgba(255,255,255,0.06)]",
-            "hover:border-white/[0.16] hover:text-card-foreground",
+            "border-overlay/[0.09] bg-ink-850 text-muted-foreground shadow-[inset_0_1px_0_rgba(255,255,255,0.06)]",
+            "hover:border-overlay/[0.16] hover:text-card-foreground",
             "has-[:checked]:border-brand-400/70 has-[:checked]:bg-brand-500/18 has-[:checked]:text-foreground",
             "has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-ring has-[:focus-visible]:ring-offset-1 has-[:focus-visible]:ring-offset-background",
           )}

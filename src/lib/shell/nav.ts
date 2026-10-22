@@ -61,6 +61,8 @@ export type ShellNavGroup = {
   items: ShellNavItem[];
   /** The generated agent roster renders here instead of items. */
   roster?: boolean;
+  /** Work pages the roster must not pin because the rail already has them. */
+  hideWorkPages?: string[];
 };
 
 export type ShellNavigation = {
@@ -576,6 +578,8 @@ const LIBRARY_ITEM: ShellNavItem = {
 };
 
 const ROSTER_GROUP: ShellNavGroup = { id: "agents", label: "Agents", items: [], roster: true };
+/** The Sales OS rail has Leads, so the Case Files work page is not pinned again under Sales. */
+const SO_ROSTER_GROUP: ShellNavGroup = { ...ROSTER_GROUP, hideWorkPages: ["/app/cases"] };
 
 function withPhone(item: ShellNavItem, phone: number | undefined): ShellNavItem {
   const next = { ...item };
@@ -715,7 +719,7 @@ function soTeam(manager: boolean): ShellNavItem {
 
 const SO_WORKFLOWS: ShellNavItem = {
   id: "so-workflows",
-  label: "Playbooks",
+  label: "Workflows",
   href: "/app/workflows",
   match: "/app/workflows",
   icon: "workflows",
@@ -774,7 +778,7 @@ export function salesOsNavigation(input: {
     case "owner": {
       built = [
         workspaceGroup([SO_FOUNDATION, SO_COMMAND, soLeads(false)]),
-        ROSTER_GROUP,
+        SO_ROSTER_GROUP,
         { id: "workspace-more", label: "", items: [soTeam(true), SO_WORKFLOWS, SO_ACTIONS, SO_CONNECTIONS, SO_SETTINGS] },
       ];
       phone = [SO_COMMAND, soLeads(false), SO_APPROVALS, AGENTS_SHEET];
@@ -783,7 +787,7 @@ export function salesOsNavigation(input: {
     }
     case "member": {
       const tail = input.manager ? [soTeam(true), SO_SETTINGS] : [SO_SETTINGS];
-      built = [workspaceGroup([SO_FOUNDATION, SO_COMMAND]), ROSTER_GROUP, { id: "workspace-more", label: "", items: tail }];
+      built = [workspaceGroup([SO_FOUNDATION, SO_COMMAND]), SO_ROSTER_GROUP, { id: "workspace-more", label: "", items: tail }];
       phone = [SO_COMMAND, SO_APPROVALS, AGENTS_SHEET, ...(input.manager ? [soTeam(true)] : [])];
       extra.push(resultsItem(false), REPORTS_ITEM);
       break;
@@ -791,7 +795,7 @@ export function salesOsNavigation(input: {
     case "operator": {
       built = [
         { id: "work", label: "Work", items: [SO_COMMAND, soLeads(true)] },
-        ROSTER_GROUP,
+        SO_ROSTER_GROUP,
         { id: "workspace-more", label: "", items: [soTeam(false), SO_PROFILE] },
       ];
       phone = [SO_COMMAND, soLeads(true), SO_APPROVALS, AGENTS_SHEET];
@@ -809,7 +813,7 @@ export function salesOsNavigation(input: {
           label: input.workspaceName?.trim() || "This workspace",
           items: [SO_FOUNDATION, SO_COMMAND, soLeads(false)],
         },
-        ROSTER_GROUP,
+        SO_ROSTER_GROUP,
         {
           id: "workspace-more",
           label: "",

@@ -16,7 +16,7 @@ import { CrewBand } from "@/components/workspace/crew-band";
 import { registrySeed } from "@/lib/agents/roster";
 import { buildAgentSummary, type AgentSummary, type RawAgent, type RawSummary } from "@/lib/agents/summary";
 import type { ClientOrgState, WorkspaceRole } from "@/lib/auth/types";
-import { rosterNavigation } from "@/lib/shell/nav";
+import { rosterNavigation, salesOsNavigation } from "@/lib/shell/nav";
 
 const NOW = Date.parse("2026-10-22T15:00:00.000Z");
 const ORG = "org-1";
@@ -255,5 +255,30 @@ describe("navigation with the agent roster", () => {
     expect(here.items.map((item) => item.id)).not.toContain("agents");
     const index = staff.groups.findIndex((group) => group.id === "here");
     expect(staff.groups[index + 1].roster).toBe(true);
+  });
+});
+
+describe("the Sales OS rail", () => {
+  it("names the playbooks page Workflows, like the page itself, and does not pin Case Files again under Sales", () => {
+    const nav = salesOsNavigation({ role: "owner", templateAccess: false, manager: true });
+    const items = nav.groups.flatMap((group) => group.items);
+    expect(items.find((item) => item.href === "/app/workflows")?.label).toBe("Workflows");
+    expect(items.some((item) => item.label === "Leads")).toBe(true);
+    expect(nav.groups.find((group) => group.roster)?.hideWorkPages).toEqual(["/app/cases"]);
+  });
+
+  it("leaves the Case Files work page in the older rail", () => {
+    const nav = rosterNavigation({ role: "owner", templateAccess: false, areaWorkPages: ["/app/cases"] });
+    expect(nav.groups.find((group) => group.roster)?.hideWorkPages).toBeUndefined();
+  });
+
+  it("hides a work page when told to, and says nothing for an agent with nothing to report", () => {
+    const value = summary(BUILT_IN.map((id) => agent(id)));
+    const shown = text(render(<AgentRoster />, "owner", value));
+    expect(shown).toContain("Case Files");
+    expect(shown).not.toContain("Nothing to do right now");
+    const hidden = text(render(<AgentRoster hideWorkPages={["/app/cases"]} />, "owner", value));
+    expect(hidden).not.toContain("Case Files");
+    expect(hidden).not.toContain("Nothing to do right now");
   });
 });

@@ -391,7 +391,7 @@ function presenceFor(agent: RawAgent, raw: RawSummary, now: number, reconnecting
     const head = done > 0 ? `${done} ${noun} today` : "Last run";
     return { presence: "idle", line: `${head}, last ${ago(facts.lastDoneAt, now)}`, currentRunId: null };
   }
-  return { presence: "idle", line: "Nothing to do right now.", currentRunId: null };
+  return { presence: "idle", line: IDLE_LINE, currentRunId: null };
 }
 
 const SIDEBAR_STATES = new Set<WorkspaceAgentState>(["on", "needs_setup", "pending"]);
@@ -507,6 +507,9 @@ export function buildAgentSummary(raw: RawSummary, setup: SetupFacts, now: numbe
 }
 
 const CALENDAR_HREF = "/app/calendar";
+
+/** What an idle agent says when it has nothing to report. The sidebar leaves it out. */
+export const IDLE_LINE = "Nothing to do right now.";
 
 /** Pinned work pages for one area. Calendar stays hidden until the workspace flag is on. */
 export function pinnedPages(

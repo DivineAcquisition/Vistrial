@@ -5,12 +5,14 @@ import { useMemo, useState } from "react";
 
 import { lockApprovalAction, saveApprovalAction } from "@/app/(workspace)/app/settings/approvals/actions";
 import { ConnectionNotice } from "@/components/live/agent-panel";
-import { AgentGlyph, formatAgo } from "@/components/live/agent-identity";
+import { formatAgo } from "@/components/live/agent-identity";
+import { AgentWorkMeters } from "@/components/live/agent-work-meters";
 import { AgentRequestCard } from "@/components/live/request-card";
 import { useLiveMeta, useLiveState, usePresence } from "@/components/live/live-provider";
 import { useRunViewer } from "@/components/live/run-viewer";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { OnboardCard } from "@/components/ui/onboard-card";
 import { SegmentedRadioGroup } from "@/components/ui/segmented-radio";
 import { Tabs, TabsList, TabsPanel, TabsTab } from "@/components/ui/tabs";
 import { AGENTS, SALES_ROOM_IDS, agentCredit, type LiveAgentId } from "@/lib/agents/roster";
@@ -21,7 +23,6 @@ import {
   type ApprovalMode,
 } from "@/lib/home/catalog";
 import { departmentFeed, type LiveRun } from "@/lib/live/model";
-import { cn } from "@/lib/utils";
 
 const PAGE_SIZE = 20;
 
@@ -54,43 +55,6 @@ function participants(id: string): string {
   const agents = AGENTS_FOR[id] ?? [];
   if (!agents.length) return "A person does this.";
   return agents.map((agentId) => agentCredit(agentId)).join(", ");
-}
-
-function TeamCard({
-  agentId,
-  selected,
-  compact,
-  onSelect,
-}: {
-  agentId: LiveAgentId;
-  selected: boolean;
-  compact?: boolean;
-  onSelect: () => void;
-}) {
-  const presence = usePresence().find((item) => item.agentId === agentId);
-  const agent = AGENTS[agentId];
-  const line = presence?.liveLabel ?? presence?.runSummary ?? "Nothing to do right now.";
-  return (
-    <button
-      type="button"
-      onClick={onSelect}
-      aria-pressed={selected}
-      title={agent.description}
-      className={cn(
-        "flex h-full min-w-0 items-start gap-3 rounded-2xl border bg-card p-3 text-left focus-visible:ring-2 focus-visible:ring-ring",
-        compact ? "w-56 shrink-0" : "w-full",
-        selected ? "border-brand-500/50" : "border-border"
-      )}
-    >
-      <AgentGlyph agentId={agentId} size="md" working={presence?.state === "working"} />
-      <span className="min-w-0">
-        <span className="block truncate text-sm font-medium text-card-foreground">{agent.name}</span>
-        <span className="block truncate text-xs text-muted-foreground">{agent.sublabel}</span>
-        <span className="mt-1 block text-xs font-medium text-card-foreground">{presence?.stateLabel ?? "Idle"}</span>
-        {compact ? null : <span className="mt-0.5 block truncate text-xs text-muted-foreground">{line}</span>}
-      </span>
-    </button>
-  );
 }
 
 function RunLine({ run }: { run: LiveRun }) {
@@ -310,17 +274,20 @@ export function SalesRoom({
   const select = (agentId: LiveAgentId) => setFilter((current) => (current === agentId ? null : agentId));
 
   const empty = (
-    <Card className="gap-3 p-6">
-      <p className="text-sm text-card-foreground">Your team&apos;s work shows up here as it happens.</p>
-      {crmConnected ? (
-        <Button variant="primary" render={<Link href="/app/compass" />}>
-          Ask Compass
-        </Button>
-      ) : (
-        <Button variant="primary" render={<Link href="/app/settings/connections" />}>
-          Connect your CRM
-        </Button>
-      )}
+    <Card className="flex flex-col items-center gap-4 p-6 sm:flex-row sm:justify-between">
+      <div className="flex min-w-0 flex-col items-start gap-3">
+        <p className="text-sm text-card-foreground">Your team&apos;s work shows up here as it happens.</p>
+        {crmConnected ? (
+          <Button variant="primary" render={<Link href="/app/compass" />}>
+            Ask Compass
+          </Button>
+        ) : (
+          <Button variant="primary" render={<Link href="/app/settings/connections" />}>
+            Connect your CRM
+          </Button>
+        )}
+      </div>
+      <OnboardCard step1="Standing by" step2="Watching new leads" step3="Drafts wait for you" />
     </Card>
   );
 
@@ -336,17 +303,13 @@ export function SalesRoom({
         </p>
       ) : null}
 
-      <div className="hidden gap-3 md:grid md:grid-cols-5">
-        {SALES_ROOM_IDS.map((agentId) => (
-          <TeamCard key={agentId} agentId={agentId} selected={filter === agentId} onSelect={() => select(agentId)} />
-        ))}
+      <div className="flex flex-col gap-3">
+        <h2 id="agent-progress" className="font-heading text-base text-card-foreground">
+          Progress
+        </h2>
+        <AgentWorkMeters agentIds={SALES_ROOM_IDS} selectedId={filter} onSelect={select} labelledBy="agent-progress" />
       </div>
-      <div className="flex gap-3 overflow-x-auto pb-1 md:hidden">
-        {SALES_ROOM_IDS.map((agentId) => (
-          <TeamCard key={agentId} agentId={agentId} compact selected={filter === agentId} onSelect={() => select(agentId)} />
-        ))}
-      </div>
-      {selected ? <p className="text-sm text-muted-foreground md:hidden">{selected.description}</p> : null}
+      {selected ? <p className="text-sm text-muted-foreground">{selected.description}</p> : null}
 
       <div className="hidden md:grid md:grid-cols-[minmax(0,1fr)_20rem] md:items-start md:gap-6">
         <Tabs value={deskTab} onValueChange={setDeskTab}>

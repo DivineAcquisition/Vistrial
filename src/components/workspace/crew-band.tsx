@@ -13,6 +13,7 @@ import { useAgentEntries, useLiveMeta, useLiveState, type AgentEntry } from "@/c
 import { useRunViewer } from "@/components/live/run-viewer";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { GlowCard, glowColorForAccent } from "@/components/ui/spotlight-card";
 import { useIsMobile } from "@/hooks/use-media-query";
 import { AGENT_LIST, isLiveAgentId } from "@/lib/agents/roster";
 import { isOpenRequest } from "@/lib/live/model";
@@ -107,12 +108,15 @@ function CrewCard({ presence, line, mobile, canResume }: { presence: AgentEntry;
   }
 
   return (
-    <div
-      className={cn(
-        "relative flex h-full w-52 shrink-0 flex-col gap-1.5 rounded-xl border bg-card p-3 sm:w-56 lg:w-full",
-        needsYou ? "border-warning/50 bg-warning/5" : "border-border"
-      )}
+    <GlowCard
+      customSize
+      glowColor={glowColorForAccent(presence.accent)}
+      borderWidth={2}
+      edge={needsYou ? "warning" : "default"}
+      className="h-full w-52 shrink-0 p-0 sm:w-56 lg:w-full"
     >
+    <div className="relative flex h-full flex-col gap-1.5 p-3">
+      {needsYou ? <span aria-hidden className="pointer-events-none absolute inset-0 bg-warning/5" /> : null}
       <button
         type="button"
         onClick={openAgent}
@@ -146,6 +150,7 @@ function CrewCard({ presence, line, mobile, canResume }: { presence: AgentEntry;
         </p>
       ) : null}
     </div>
+    </GlowCard>
   );
 }
 

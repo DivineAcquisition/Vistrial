@@ -1552,6 +1552,57 @@
   --color-brand-950: #1e1940;
 }
 
+/* ---------- Workflow canvas (AI Elements on React Flow) ----------
+   React Flow reads these variables before its own defaults, so the canvas
+   follows the theme with no colorMode prop. Nothing here animates. */
+
+.react-flow {
+  --xy-background-color: var(--background);
+  --xy-background-pattern-color: color-mix(in srgb, var(--overlay) 16%, transparent);
+  --xy-edge-stroke: color-mix(in srgb, var(--overlay) 34%, transparent);
+  --xy-edge-stroke-selected: var(--brand);
+  --xy-edge-label-color: var(--card-foreground);
+  --xy-edge-label-background-color: var(--background);
+  --xy-connectionline-stroke: var(--ring);
+  --xy-handle-background-color: var(--card);
+  --xy-handle-border-color: color-mix(in srgb, var(--overlay) 40%, transparent);
+  --xy-node-color: inherit;
+  --xy-node-border: none;
+  --xy-node-background-color: transparent;
+  --xy-node-boxshadow-hover: none;
+  --xy-node-boxshadow-selected: none;
+  --xy-selection-background-color: rgba(var(--brand-rgb), 0.08);
+  --xy-selection-border: 1px dashed rgba(var(--brand-rgb), 0.6);
+  --xy-minimap-background-color: var(--card);
+  --xy-minimap-mask-background-color: color-mix(in srgb, var(--overlay) 6%, transparent);
+  --xy-minimap-mask-stroke-color: var(--border);
+  --xy-minimap-node-background-color: color-mix(in srgb, var(--overlay) 18%, transparent);
+  --xy-minimap-node-stroke-color: transparent;
+  --xy-controls-button-background-color: transparent;
+  --xy-controls-button-background-color-hover: var(--secondary);
+  --xy-controls-button-color: var(--card-foreground);
+  --xy-controls-button-color-hover: var(--card-foreground);
+  --xy-controls-button-border-color: transparent;
+  --xy-controls-box-shadow: none;
+  font-family: var(--font-sans), ui-sans-serif, system-ui, sans-serif;
+}
+
+.react-flow .react-flow__handle {
+  width: 9px;
+  height: 9px;
+  border-width: 1.5px;
+}
+
+.react-flow .react-flow__node.selected .node-container,
+.react-flow .react-flow__node:focus-visible .node-container {
+  outline: 2px solid rgba(var(--brand-rgb), 0.7);
+  outline-offset: 2px;
+}
+
+.react-flow .react-flow__node:focus-visible {
+  outline: none;
+}
+
 /* ---------- Live agent motion ----------
    Quiet by design: working agents breathe, new items fade in, changed rows get
    a short highlight that fades. Calm mode and reduced motion turn all of it

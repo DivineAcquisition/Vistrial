@@ -2,6 +2,7 @@
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
 @import "tw-shimmer";
+@import "../components/agent-elements/agent-ui.css";
 @plugin "@tailwindcss/typography";
 
 /*
@@ -1357,6 +1358,38 @@
 }
 
 /*
+ * Agent Elements reads its own --an-* variables. Point them at Vistrial's
+ * tokens so its cards follow the white workspace and the dark theme alike.
+ * Declared on both selectors so a .dark wrapper resolves them against its
+ * own palette, not the one on <html>.
+ */
+:root,
+.dark {
+  --an-border-radius: 14px;
+  --an-tool-border-radius: 10px;
+  --an-background: var(--background);
+  --an-background-secondary: var(--muted);
+  --an-background-tertiary: color-mix(in srgb, var(--overlay) 3%, var(--background));
+  --an-foreground: var(--card-foreground);
+  --an-foreground-muted: var(--muted-foreground);
+  --an-foreground-subtle: var(--color-dim);
+  --an-border-color: var(--border);
+  --an-primary-color: var(--primary);
+  --an-user-message-bg: var(--secondary);
+  --an-user-message-text: var(--secondary-foreground);
+  --an-input-background: var(--card);
+  --an-input-border-color: var(--input);
+  --an-input-color: var(--card-foreground);
+  --an-input-placeholder-color: var(--muted-foreground);
+  --an-send-button-bg: var(--primary);
+  --an-send-button-color: var(--primary-foreground);
+  --an-tool-background: var(--card);
+  --an-tool-border-color: var(--border);
+  --an-tool-color: var(--card-foreground);
+  --an-tool-color-muted: var(--muted-foreground);
+}
+
+/*
  * Divine Acquisition wins. The coss CLI rewrites :root/.dark above this block,
  * so these two stay last.
  *
@@ -1654,6 +1687,7 @@
   animation: live-shimmer 2.8s linear infinite;
 }
 
+html[data-calm="true"] .an-text-shimmer,
 html[data-calm="true"] .live-pulse,
 html[data-calm="true"] .live-enter,
 html[data-calm="true"] .live-highlight,
@@ -1667,6 +1701,11 @@ html[data-calm="true"] .live-shimmer-text {
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .an-text-shimmer {
+    color: var(--an-foreground-muted);
+    background-image: none;
+  }
+
   .live-shimmer-text {
     -webkit-text-fill-color: currentColor;
     background-image: none;

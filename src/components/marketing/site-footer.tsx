@@ -4,11 +4,12 @@ import Link from "next/link";
 import { OpenConsentButton } from "@/components/marketing/consent-banner";
 import { Button } from "@/components/ui/button";
 import { APP_NAME } from "@/lib/constants";
-import { EMAIL_LOGO_PATH } from "@/lib/email/layout";
 import { FOOTER, NAV } from "@/lib/marketing/content";
 import { marketingPageGutter, marketingShell } from "@/lib/marketing/ui";
 import { loadTrustPublic } from "@/lib/trust/public";
 import { cn } from "@/lib/utils";
+
+const EMAIL_LOGO_PATH = "/brand/vistrial-icon.png";
 
 const footerLinkClass = "text-sm text-silver transition-colors hover:text-white";
 const footerButton =

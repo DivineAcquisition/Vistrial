@@ -7,10 +7,12 @@ existed before each reset.
 Git history still contains previous implementations if anything needs to be
 recovered.
 
-The current tree keeps only the Divine Acquisition hiring-site visual language
-(`app/globals.css`, `lib/ui.ts`, `components/ui`, `components/brand`,
-`components/auth/auth-card.tsx`). Nothing below is a commitment to rebuild
-every former feature.
+The reset on October 22, 2026 keeps the public landing site and the visual
+system: brand `#9A88FC`, ink `#07070B`, Inter Display, Geist Mono, the light
+workspace with an optional dark theme, and the tokens and components in
+`src/app/globals.css`, `src/lib/ui.ts`, `src/lib/theme.ts`, `src/components/ui`,
+and `src/components/brand`. The signed-in product starts over on Convex.
+Nothing below is a commitment to rebuild every former feature.
 
 ---
 
@@ -134,13 +136,100 @@ files, and a large surface of App Router pages + API routes.
 
 ---
 
+## Era 3 — Case files, then a Sales OS
+
+The tree removed on October 22, 2026 was a multi-tenant operator app for
+high-ticket sales teams. The public line in the README was: every inbound lead
+gets a persistent case file (readiness score, touch history, call transcripts,
+extracted objections, and a follow-up drafted from what was said).
+LeadConnector stayed the CRM. Vistrial was the intelligence layer on top.
+
+By the last weeks of the era the same codebase was also being pulled toward a
+fuller Sales OS: Foundation, Forsight (ads, creatives, pipeline), a separate
+Stellar host, an approval gate, playbooks, and a six-agent roster. That second
+shape was not finished. The TypeScript roster still listed five agents.
+A Helm migration existed in the repo and was not wired through that roster.
+
+### What a person could open
+
+Customer app at `app.vistrial.io`, under `/app`. The short rail was Home,
+Compass, Forsight (owner and admin), To call (setter, closer, operator),
+People, and Settings. Quieter tools lived behind jump and `/app/more`.
+
+Rough surface, grouped:
+
+- Home, queue ("To call"), people and case files, call log, tasks, follow-ups
+- Compass ask, agent runs, approvals, notifications
+- Forsight: pipeline, sources, creatives, reports
+- Reporting, results, coaching, activity
+- Onboarding, foundation, workflows, command
+- Settings: organization, members, billing, connections, integrations, agents, approvals, privacy, profile
+- A client portal, plus Stellar at `forsight.vistrial.io` (separate from core Forsight on `pulse.vistrial.io`)
+- Staff tools under the team console, meant for `admin.vistrial.io`
+- Public marketing site on `vistrial.io` (the landing page this reset keeps), with request, book, contact, security, privacy, terms, and cookies
+
+Workspace roles in the nav were owner, admin, setter, closer, and operator.
+Platform staff lived outside the workspace, in `platform_admins`, and were
+enrolled as owner. Auth was invite-only through Supabase Auth.
+
+### Agents in code
+
+| Agent | Job in this era |
+|---|---|
+| Compass | Answer questions about leads, calls, and numbers |
+| Scribe | Turn calls, email, and texts into case files |
+| Assay | Score leads and order the queue |
+| Sentry | Watch response time and flag leads waiting too long |
+| Relay | Draft follow-ups and wait for approval |
+| Helm | End-of-day reports. Migration only; not in the TypeScript roster |
+
+### Stack and size
+
+| Area | Technology |
+|---|---|
+| App | Next.js 16.4 (App Router), React 19, TypeScript |
+| UI | Tailwind CSS v4, coss / Base UI primitives, the hiring-site palette |
+| System of record | Supabase Postgres, RLS, Auth. Project **Vistrial**, ref `jizzmlvpnykazrsiotqq`, created August 20, 2026, region us-east-1 |
+| Live mirror | Convex 1.47. Directory, home, notifications, and agent activity, keyed by the Postgres ids. Not the system of record |
+| AI | Anthropic, AI SDK, assistant-ui |
+| Email / ads / CRM | Resend, GoHighLevel / LeadConnector, Telnyx webhooks, Stripe billing |
+| Deploy | Vercel, with a large cron list in `vercel.json` |
+
+About 1,700 files under `src/`, about 180 App Router pages, and 127 SQL
+migrations in `supabase/migrations/` (August 17, 2026 through October 22, 2026),
+from `case` / `readiness` through assay, the approval gate, the agent registry,
+workflows, and helm. `npm run db:verify` checked those policies. Scores were
+append-only. Money was bigint cents.
+
+Convex tables in that mirror included workspaces, members, assignments,
+invites, platform staff, activity runs, approval items, notifications, lead
+access, and home briefings. Customer rows carried the old organization uuid
+as `legacyId`.
+
+A discovery note from the same week recorded that production was behind the
+repo (no `assay_*`, `agent_registry`, or `playbooks` tables yet) and that
+`public.billing_settings` had row level security off in production. Those
+facts died with this reset. They are not a task list for the new build.
+
+### What happened to the database
+
+The new build does not use this Supabase project. Pausing it was attempted
+and refused: the DivineAcquisition organization is on the Pro plan, and a
+paid project cannot be paused unless it is first moved to a free organization.
+The organization was not downgraded. These other projects were left running:
+DivineACQ, AlphaLuxClean, NovaraCleaning, and BayAreaCleaningPros.
+
+The project was still `ACTIVE_HEALTHY` when the code stopped referencing it.
+Dashboard: `https://supabase.com/dashboard/project/jizzmlvpnykazrsiotqq`
+
 ## Why this archive exists
 
 Each reset leaves:
 
 1. This document as institutional memory of product scope and architecture
 2. Git history as the recoverable source of truth for any prior implementation
-3. The hiring-site visual system as the foundation for the next build
+3. The landing page and the hiring-site visual system as the foundation for the next build
 
+The source of truth for the rebuild is `docs/foundation/00-product-brief.md`.
 Nothing in this file is a commitment to rebuild every former feature. It is a
 map of what once shipped in this repo.

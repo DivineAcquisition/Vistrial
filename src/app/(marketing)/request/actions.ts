@@ -3,10 +3,10 @@
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 
-import { notifyStaffOfAbuse, savePublicRequest, verifyTurnstile } from "@/lib/access-requests/submit";
 import { parseAccessForm, type RequestKind } from "@/lib/access-requests/validate";
+import { capturePublicRequest } from "@/lib/marketing/capture";
 import { FORMS } from "@/lib/marketing/content";
-import { requestIp } from "@/lib/ops/rate-limit";
+import { requestIp, verifyTurnstile } from "@/lib/marketing/turnstile";
 
 export type AccessFormState = {
   ok: boolean;
@@ -19,16 +19,25 @@ const initialErrors: AccessFormState["errors"] = {};
 async function submit(kind: RequestKind, formData: FormData): Promise<AccessFormState> {
   const parsed = parseAccessForm(formData, kind);
   if (!parsed.ok) return { ok: false, message: parsed.message, errors: parsed.errors };
-  const headerStore = await headers();
-  const ip = requestIp(headerStore);
-  const token = String(formData.get("cf-turnstile-response") ?? "");
-  const human = await verifyTurnstile(token, ip);
-  if (!human) return { ok: false, message: FORMS.errors.generic, errors: initialErrors };
-  const saved = await savePublicRequest(parsed.value, ip);
-  if (!saved.ok) {
-    await notifyStaffOfAbuse();
-    return { ok: false, message: saved.message, errors: initialErrors };
+  if (parsed.value.honeypot) {
+    redirect(kind === "custom" ? "/thanks?kind=custom" : "/thanks?kind=access");
   }
+  const headerStore = await headers();
+  const human = await verifyTurnstile(String(formData.get("cf-turnstile-response") ?? ""), requestIp(headerStore));
+  if (!human) return { ok: false, message: FORMS.errors.generic, errors: initialErrors };
+  const saved = await capturePublicRequest({
+    kind,
+    email: parsed.value.email,
+    name: parsed.value.fullName,
+    detail: [
+      parsed.value.businessName,
+      parsed.value.need,
+      parsed.value.problem,
+    ]
+      .filter(Boolean)
+      .join("\n"),
+  });
+  if (!saved.ok) return { ok: false, message: saved.message, errors: initialErrors };
   redirect(kind === "custom" ? "/thanks?kind=custom" : "/thanks?kind=access");
 }
 

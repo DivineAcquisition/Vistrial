@@ -15,15 +15,12 @@ function filesUnder(dir: string): string[] {
   return out;
 }
 
-/** Surfaces that are always dark: the public site, the auth desk, and email. */
+/** Surfaces that are always dark: the public site and the auth desk. */
 const ALWAYS_DARK = [
   "src/components/marketing/",
   "src/app/(marketing)/",
   "src/lib/marketing/",
-  "src/app/(auth)/",
   "src/components/auth/",
-  "src/app/email/",
-  "src/lib/email/",
 ];
 
 /** Third-party demos that carry their own light and dark pairs. */
@@ -45,16 +42,15 @@ describe("a white workspace with a dark theme a person can choose", () => {
     expect(read("src/app/global-error.tsx")).toContain('cn("dark"');
   });
 
-  it("keeps the public site and the auth desk dark, menus included", () => {
-    for (const file of ["src/app/(marketing)/layout.tsx", "src/app/(auth)/layout.tsx"]) {
-      const layout = read(file);
-      expect(layout).toMatch(/className="dark /);
-      expect(layout).toContain("<ForceDarkTheme />");
-    }
+  it("keeps the public site dark", () => {
+    const layout = read("src/app/(marketing)/layout.tsx");
+    expect(layout).toMatch(/className="dark /);
+    expect(layout).toContain("<ForceDarkTheme />");
   });
 
-  it("puts the theme switch in the shell header", () => {
-    expect(read("src/components/app/application-shell.tsx")).toContain("<ThemeToggle />");
+  it("puts the theme switch on the workspace shell and the staff page", () => {
+    expect(read("src/components/shell/product-shell.tsx")).toContain("<ThemeToggle />");
+    expect(read("src/app/(product)/admin/page.tsx")).toContain("<ThemeToggle />");
   });
 
   it("serves the ink mark on white and the silver mark on dark", () => {
@@ -66,11 +62,8 @@ describe("a white workspace with a dark theme a person can choose", () => {
     expect(logo).not.toContain("Vistrial Black Logo");
 
     for (const file of [
-      "src/components/app/app-shell.tsx",
-      "src/components/app/app-sidebar.tsx",
-      "src/app/(workspace)/portal/layout.tsx",
-      "src/app/stellar/layout.tsx",
-      "src/app/(workspace)/app/home/page.tsx",
+      "src/components/shell/product-shell.tsx",
+      "src/app/(product)/admin/page.tsx",
       "src/components/auth/auth-card.tsx",
     ]) {
       expect(read(file)).not.toContain("tone=");

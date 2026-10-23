@@ -1,34 +1,28 @@
-import type { Metadata } from "next";
-import { notFound } from "next/navigation";
+"use client";
 
+import { useParams } from "next/navigation";
+
+import { useWorkspaceShell } from "@/components/shell/shell-context";
 import { PageHeader } from "@/components/ui/page-header";
 import { Panel } from "@/components/ui/panel";
 import { StatusBadge } from "@/components/ui/status-badge";
-import { loadCatalog } from "@/lib/shell/load-catalog";
 import { bodyText } from "@/lib/ui";
 
-type PageProps = { params: Promise<{ slug: string }> };
-
-export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
-  const { slug } = await params;
-  const agents = await loadCatalog();
-  const agent = agents.find((row) => row.slug === slug);
-  return { title: agent?.name ?? "Agent" };
-}
-
-export default async function AgentPage({ params }: PageProps) {
-  const { slug } = await params;
-  const agents = await loadCatalog();
-  const agent = agents.find((row) => row.slug === slug);
-  if (!agent) notFound();
+export default function AgentPage() {
+  const params = useParams<{ slug: string }>();
+  const shell = useWorkspaceShell();
+  if (!shell) return <p className="text-sm text-muted-foreground">Sign in to open your workspace.</p>;
+  const agent = shell.agents.find((row) => row.slug === params.slug);
+  if (!agent) return <p className="text-sm text-muted-foreground">Not found.</p>;
+  const stateLabel = agent.state === "off" ? "Off" : agent.state === "suggesting" ? "Suggesting" : "On";
 
   return (
     <div className="mx-auto grid w-full max-w-3xl gap-6">
-      <PageHeader eyebrow="Agent" title={agent.name} description={agent.job} status="Off" statusTone="neutral" />
+      <PageHeader eyebrow="Agent" title={agent.name} description={agent.job} status={stateLabel} statusTone="neutral" />
       <Panel className="grid gap-4 p-6">
-        <StatusBadge label="Off" />
+        <StatusBadge label={stateLabel} />
         <p className={bodyText}>{agent.promise}</p>
-        <p className="text-sm text-muted-foreground">This agent is off. It will not run, and it will not send anything.</p>
+        <p className="text-sm text-muted-foreground">No agent runs in this step, and nothing is sent.</p>
       </Panel>
     </div>
   );

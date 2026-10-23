@@ -1,6 +1,9 @@
-import type { Id } from "./_generated/dataModel";
-import type { MutationCtx } from "./_generated/server";
+import type { Id } from "../_generated/dataModel";
+import type { MutationCtx } from "../_generated/server";
 
+/**
+ * Audit rows store ids, kinds, and counts. No message, transcript, email, or reason text.
+ */
 export async function writeAudit(
   ctx: MutationCtx,
   entry: {
@@ -9,7 +12,7 @@ export async function writeAudit(
     actorId: string;
     action: string;
     subject: string;
-    detail?: Record<string, string>;
+    count?: number;
   },
 ) {
   await ctx.db.insert("auditLog", {
@@ -18,7 +21,7 @@ export async function writeAudit(
     actorId: entry.actorId,
     action: entry.action,
     subject: entry.subject,
-    detail: entry.detail ?? {},
+    count: entry.count,
     createdAt: Date.now(),
   });
 }

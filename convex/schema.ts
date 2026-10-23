@@ -40,7 +40,6 @@ export default defineSchema({
   staff: defineTable({
     userId: v.string(),
     role: v.union(v.literal("platform_admin"), v.literal("service_team")),
-    mfaEnrolled: v.boolean(),
   }).index("by_user", ["userId"]),
 
   staffAccessGrants: defineTable({
@@ -52,7 +51,8 @@ export default defineSchema({
     revokedAt: v.optional(v.number()),
   })
     .index("by_staff", ["staffUserId"])
-    .index("by_workspace", ["workspaceId"]),
+    .index("by_workspace", ["workspaceId"])
+    .index("by_staff_workspace", ["staffUserId", "workspaceId"]),
 
   auditLog: defineTable({
     workspaceId: v.optional(v.id("workspaces")),
@@ -60,11 +60,9 @@ export default defineSchema({
     actorId: v.string(),
     action: v.string(),
     subject: v.string(),
-    detail: v.record(v.string(), v.string()),
+    count: v.optional(v.number()),
     createdAt: v.number(),
-  })
-    .index("by_workspace", ["workspaceId"])
-    .index("by_actor", ["actorId"]),
+  }).index("by_workspace", ["workspaceId"]),
 
   agents: defineTable({
     slug: v.string(),
@@ -73,7 +71,9 @@ export default defineSchema({
     job: v.string(),
     promise: v.string(),
     sort: v.number(),
-  }).index("by_slug", ["slug"]),
+  })
+    .index("by_slug", ["slug"])
+    .index("by_sort", ["sort"]),
 
   workspaceAgents: defineTable({
     workspaceId: v.id("workspaces"),
@@ -95,13 +95,15 @@ export default defineSchema({
     workspaceId: v.id("workspaces"),
     assignedMemberId: v.optional(v.id("members")),
     createdAt: v.number(),
-  }).index("by_workspace", ["workspaceId"]),
+  })
+    .index("by_workspace", ["workspaceId"])
+    .index("by_workspace_assignee", ["workspaceId", "assignedMemberId"]),
 
-  publicRequests: defineTable({
+  events: defineTable({
+    workspaceId: v.id("workspaces"),
     kind: v.string(),
-    email: v.string(),
-    name: v.string(),
-    detail: v.string(),
+    subjectId: v.optional(v.string()),
+    count: v.optional(v.number()),
     createdAt: v.number(),
-  }).index("by_email", ["email"]),
+  }).index("by_workspace", ["workspaceId"]),
 });

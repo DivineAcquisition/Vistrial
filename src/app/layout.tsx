@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 
 import { InlineScript } from "@/components/app/inline-script";
 import { ThemeSync } from "@/components/app/theme-toggle";
+import { AppProviders } from "@/components/providers/app-providers";
 import { AnchoredToastProvider, ToastProvider } from "@/components/ui/toast";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { APP_NAME, PRODUCTION_SITE_ORIGIN } from "@/lib/constants";
@@ -69,7 +70,9 @@ export default function RootLayout({
         <ThemeSync />
         <ToastProvider position="top-right">
           <AnchoredToastProvider>
-            <TooltipProvider>{children}</TooltipProvider>
+            <TooltipProvider>
+              <AppProviders>{children}</AppProviders>
+            </TooltipProvider>
           </AnchoredToastProvider>
         </ToastProvider>
       </body>

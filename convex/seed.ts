@@ -1,12 +1,11 @@
-import { CATALOG } from "./catalog";
-import type { MutationCtx } from "./_generated/server";
+import { internalMutation } from "./_generated/server";
+import { ensureAgents } from "./lib/agents";
 
-export async function ensureAgents(ctx: MutationCtx) {
-  for (const agent of CATALOG) {
-    const existing = await ctx.db
-      .query("agents")
-      .withIndex("by_slug", (q) => q.eq("slug", agent.slug))
-      .unique();
-    if (!existing) await ctx.db.insert("agents", agent);
-  }
-}
+/** Idempotent catalog seed. Does not create workspaces. */
+export const agents = internalMutation({
+  args: {},
+  handler: async (ctx) => {
+    await ensureAgents(ctx);
+    return null;
+  },
+});

@@ -10,11 +10,11 @@ What the previous apps were is in [`docs/WHAT_THE_APP_ONCE_WAS.md`](docs/WHAT_TH
 
 1. `npm install`
 2. `cp .env.local.example .env.local`
-3. `npx convex dev` once a Convex project is linked, then put its URL in `NEXT_PUBLIC_CONVEX_URL`
+3. After the Convex team and Clerk app exist, set `NEXT_PUBLIC_CONVEX_URL` and the Clerk keys in `.env.local.example`. Do not guess the team, and do not deploy before that.
 4. `npm run dev` → http://localhost:3000
 
-`/` is the landing page. `/app` is the empty workspace shell. `/admin` is the empty staff page.
-Sign-in is not wired yet. Workspace rules (roles, invites, lead visibility, staff grants) live in `convex/` and are covered by `npm test`.
+`/` is the landing page. `/app` is the workspace shell. `/admin` is the staff page.
+Sign-in is Clerk. The `secondFactor` claim is set in Clerk's token settings. Workspace rules live in `convex/lib` and are covered by `npm test`.
 
 ## Stack
 

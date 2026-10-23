@@ -8,6 +8,7 @@ import { LayoutListIcon, MenuIcon, SunMediumIcon, UsersIcon } from "lucide-react
 import { ThemeToggle } from "@/components/app/theme-toggle";
 import Logo from "@/components/brand/logo";
 import { CommandBar } from "@/components/shell/command-bar";
+import { LiveAside } from "@/components/shell/live-aside";
 import { StatusBadge } from "@/components/ui/status-badge";
 import type { CatalogAgent } from "@/lib/shell/rail";
 import { railFromCatalog } from "@/lib/shell/rail";
@@ -153,7 +154,7 @@ export function ProductShell({ agents, children }: { agents: CatalogAgent[]; chi
             </main>
             <aside aria-label="Live stream" className="hidden w-72 shrink-0 border-l border-border p-4 lg:block">
               <p className="text-[11px] font-semibold tracking-[0.14em] text-muted-foreground uppercase">Live</p>
-              <p className="mt-3 text-sm text-muted-foreground">Nothing is running. Agents are off.</p>
+              <LiveAside />
             </aside>
           </div>
         </div>

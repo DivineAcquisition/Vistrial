@@ -23,6 +23,7 @@ jobs:
       - name: Dependency vulnerabilities, dev tooling (report only)
         run: npm audit --audit-level=high
         continue-on-error: true
+      - run: npm run lint
       - run: npm test
       - run: npm run typecheck
       - run: npm run build

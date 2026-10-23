@@ -12,8 +12,7 @@ export type CatalogAgent = {
 };
 
 /**
- * The six agents. The database copy is what the rail reads once Convex is
- * connected. This list is the seed, and the fallback when it is not.
+ * Seed rows for the agents table. The rail reads the table, not this list.
  */
 export const CATALOG: CatalogAgent[] = [
   {

@@ -6,6 +6,7 @@
 2. **The Vistrial Supabase project is retired in this repo.** Ref `jizzmlvpnykazrsiotqq`. Pausing it was refused because the DivineAcquisition organization is on the Pro plan, and a paid project cannot be paused without moving it to a free organization. That organization was not downgraded, and its other projects were not touched.
 3. **The visual system stays.** Light workspace, dark public site, brand `#9A88FC`, ink `#07070B`, Inter Display, Geist Mono, tokens in `src/app/globals.css`. Status color is for state only. This is the calm, white, premium look. Do not invent a second palette.
 4. **The public landing page stays.** The signed-in product under it is the new build.
+5. **Confirmed for Step 1.** Clerk is the sign-in provider. `secondFactor` is a boolean claim from Clerk token settings, never a function argument. A `workspaceId` the caller does not belong to returns the same not-found as a missing workspace. One active workspace per person. The agent catalog is global. The empty decisions line does not use a placeholder count. The first Platform Admin is enrolled, removed, or rotated by internal functions that write audit rows. Do not deploy until the Convex team name is given.
 
 The rest of this document is the source of truth carried forward from the uploaded brief.
 

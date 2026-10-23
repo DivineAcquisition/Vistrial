@@ -7,6 +7,25 @@ const eslintConfig = defineConfig([
   ...nextTs,
   // Override default ignores of eslint-config-next.
   {
+    files: ["convex/lib/builders.ts"],
+    rules: {
+      "@typescript-eslint/no-explicit-any": "off",
+    },
+  },
+  {
+    files: [
+      "src/components/ui/onboarding-checklist.tsx",
+      "src/components/ui/particles.tsx",
+      "src/components/ui/sidebar.tsx",
+      "src/components/ui/terminal.tsx",
+    ],
+    rules: {
+      "react-hooks/set-state-in-effect": "off",
+      "react-hooks/refs": "off",
+      "react-hooks/purity": "off",
+    },
+  },
+  {
     files: ["src/components/reui/event-calendar/**/*.{ts,tsx}"],
     rules: {
       "react-hooks/refs": "off",

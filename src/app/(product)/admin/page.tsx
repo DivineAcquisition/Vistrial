@@ -3,7 +3,7 @@ import Link from "next/link";
 
 import { ThemeToggle } from "@/components/app/theme-toggle";
 import Logo from "@/components/brand/logo";
-import { EmptyState } from "@/components/ui/empty-state";
+import { StaffDesk } from "@/components/shell/staff-desk";
 import { PageHeader } from "@/components/ui/page-header";
 
 export const metadata: Metadata = {
@@ -26,11 +26,7 @@ export default function StaffPage() {
           title="Workspace access"
           description="Platform admin and service team are not a workspace role. A second factor is required before a grant."
         />
-        <EmptyState
-          kind="permission"
-          title="No grant is open"
-          detail="A staff member sees a workspace only after a logged grant with a reason and an expiry. Without one, there is nothing here."
-        />
+        <StaffDesk />
       </main>
     </div>
   );

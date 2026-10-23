@@ -1,3 +1,4 @@
+import { clerkMiddleware } from "@clerk/nextjs/server";
 import { NextResponse, type NextRequest } from "next/server";
 
 import { PRODUCTION_APP_ORIGIN } from "@/lib/constants";
@@ -13,12 +14,7 @@ function continueWithPath(request: NextRequest) {
   return NextResponse.next({ request: { headers: requestHeaders } });
 }
 
-/**
- * Host split for the restart. The public site stays on vistrial.io.
- * app.vistrial.io opens the workspace shell. admin.vistrial.io opens staff.
- * Sign-in is not wired yet, so these paths are not behind a session.
- */
-export function proxy(request: NextRequest) {
+function hostProxy(request: NextRequest) {
   const path = request.nextUrl.pathname;
   const host = request.headers.get("x-forwarded-host") ?? request.headers.get("host");
   const product = classifyProductHost(host);
@@ -57,8 +53,13 @@ export function proxy(request: NextRequest) {
   return continueWithPath(request);
 }
 
+const publishableKey = process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY;
+
+export default publishableKey ? clerkMiddleware((_auth, request) => hostProxy(request)) : hostProxy;
+
 export const config = {
   matcher: [
     "/((?!_next/static|_next/image|favicon.ico|icons/|brand/|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|woff2)$).*)",
+    "/__clerk/(.*)",
   ],
 };

@@ -1,8 +1,5 @@
 import "server-only";
 
-import type { SupabaseClient } from "@supabase/supabase-js";
-
-import { getSupabaseAdmin } from "@/lib/supabase/admin";
 import type { TrackingSettings, TrackingTool } from "@/lib/marketing/tracking-types";
 
 export { googleAnalyticsId, metaPixelId, GA_ID_PATTERN, META_PIXEL_PATTERN } from "@/lib/marketing/tracking-ids";
@@ -93,43 +90,9 @@ function CONSENT_VERSION_FALLBACK(): number {
   return 1;
 }
 
-function asTool(row: Record<string, unknown>): TrackingTool | null {
-  const category = row.category;
-  if (category !== "essential" && category !== "analytics" && category !== "advertising") return null;
-  return {
-    slug: String(row.slug ?? ""),
-    name: String(row.name ?? ""),
-    company: String(row.company ?? ""),
-    category,
-    purpose: String(row.purpose ?? ""),
-    collects: String(row.collects ?? ""),
-    storage: String(row.storage ?? ""),
-    duration: String(row.duration ?? ""),
-    privacyUrl: String(row.privacy_url ?? ""),
-    enabled: row.enabled === true,
-  };
-}
-
+/** The public site no longer reads a database for this list. The fallback is the catalog. */
 export async function loadTrackingCatalog(): Promise<{ tools: TrackingTool[]; settings: TrackingSettings }> {
-  try {
-    const db = getSupabaseAdmin() as unknown as SupabaseClient;
-    const [{ data: tools }, { data: settings }] = await Promise.all([
-      db.from("tracking_tools").select("slug, name, company, category, purpose, collects, storage, duration, privacy_url, enabled").order("sort_order"),
-      db.from("tracking_settings").select("consent_version, lifetime_days, dismiss_days").eq("id", 1).maybeSingle(),
-    ]);
-    const parsed = Array.isArray(tools) ? tools.map((row) => asTool(row as Record<string, unknown>)).filter((row): row is TrackingTool => Boolean(row?.slug)) : [];
-    if (!parsed.length || !settings) return { tools: FALLBACK_TRACKING_TOOLS, settings: FALLBACK_TRACKING_SETTINGS };
-    return {
-      tools: parsed,
-      settings: {
-        version: Number((settings as { consent_version?: number }).consent_version ?? 1),
-        lifetimeDays: Number((settings as { lifetime_days?: number }).lifetime_days ?? 365),
-        dismissDays: Number((settings as { dismiss_days?: number }).dismiss_days ?? 30),
-      },
-    };
-  } catch {
-    return { tools: FALLBACK_TRACKING_TOOLS, settings: FALLBACK_TRACKING_SETTINGS };
-  }
+  return { tools: FALLBACK_TRACKING_TOOLS, settings: FALLBACK_TRACKING_SETTINGS };
 }
 
 export function toolEnabled(tools: TrackingTool[], slug: string): boolean {

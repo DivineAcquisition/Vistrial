@@ -4,10 +4,11 @@ import Link from "next/link";
 import { MarketingMobileNav, MarketingNav } from "@/components/marketing/marketing-nav";
 import { Button } from "@/components/ui/button";
 import { APP_NAME } from "@/lib/constants";
-import { EMAIL_LOGO_PATH } from "@/lib/email/layout";
 import { NAV } from "@/lib/marketing/content";
 import { marketingPageGutter, marketingShell } from "@/lib/marketing/ui";
 import { cn } from "@/lib/utils";
+
+const EMAIL_LOGO_PATH = "/brand/vistrial-icon.png";
 
 const navButton = "h-12! rounded-[8px]! before:rounded-[7px]!";
 

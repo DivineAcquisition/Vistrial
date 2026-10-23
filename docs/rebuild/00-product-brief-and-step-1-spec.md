@@ -106,7 +106,7 @@ Service Team and Platform Admin are staff, not a workspace role. They sign in at
 
 **For a Rep**, the center is their own ranked list with the draft ready, because the morning question is "who do I go after, and what do I say?" The ordering and the quality of the first draft matter more than anything else on the screen.
 
-**Empty queue:** never blank. Show the briefing and the next best action, such as "Nothing waiting. Compass suggests calling these 3 warm leads today."
+**Empty queue:** never blank. In Step 1 it says "Nothing is waiting." Once Compass has real data, it adds a next best action drawn from real records, for example "Compass suggests calling these warm leads today", with the real count. A number is shown only when it comes from data.
 
 **First sign-in:** before any agent has done anything, the center is the setup path: connect your tools, pick which agents to turn on, then go live. Once data is flowing it becomes the decisions queue and stays that way.
 
@@ -238,7 +238,9 @@ We chose this on purpose, and these are the things to plan around:
 - Query and document size limits. Large lists are paginated, large text goes to file storage, and nothing unbounded is read in one function.
 - Isolation is our code, not a database feature, which is why the access layer and the guard test are in Step 1 and are non-negotiable.
 
-## Open decisions for you
+## Decisions
+
+Confirmed: Clerk for auth, "Rep" as the lowest role, one active workspace per person in Step 1, and no `convex-helpers` (the access builders are hand-written). Still open for you:
 
 1. **Auth provider.** I recommend Clerk: it has organizations, invitations, and a second factor, and it connects to Convex. Alternatives are WorkOS AuthKit and Convex Auth. Convex Auth keeps one vendor but means building staff MFA and invites ourselves.
 2. Call the lowest role "Rep" in the product, or "Member"? (I recommend Rep.)

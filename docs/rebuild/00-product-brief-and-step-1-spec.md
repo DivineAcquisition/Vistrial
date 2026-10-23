@@ -22,7 +22,7 @@ It works in three stages, and the whole product is organized around them:
 |---|---|
 | Customers | All four (service, SaaS, coaches and consultants, agencies). One product, not four. |
 | Starting point | Fresh app. We reuse ideas, not code. Proven pieces are copied only when we choose to. |
-| Stack | Next.js, Supabase (Postgres, the system of record), Convex (only the live agent stream), Vercel. |
+| Stack | Convex is the whole backend: database, server functions, realtime, scheduled jobs, file storage, and HTTP endpoints for webhooks. Next.js (TypeScript) on Vercel for the front end. A hosted auth provider connected to Convex. There is no separate SQL database. |
 | Who builds | I write the specs and the build prompts. Grok builds. I review code and tests before we move on. |
 | Look and feel | Calm, white, premium. Light by default, dark as an option. Soft color only to show state. |
 | Workspaces | One workspace per customer business. It is the isolation boundary. Agencies running several client workspaces come later, and the data is designed so they can be added without a rewrite. |
@@ -135,7 +135,7 @@ Note: Gmail and Google Calendar are covered by Nylas. Google Drive, Docs, and Sh
 4. First connection: email and calendar. Scribe and the lead record come alive.
 5. Second connection: GoHighLevel. Assay scores and orders.
 6. Relay drafts into the decisions queue. The first real loop: intake, score, draft, approve.
-7. Sentry alerts, and the Convex live stream.
+7. Sentry alerts, and the live agent stream. Convex queries are reactive, so the stream needs no separate system.
 8. Transcripts and Scribe facts.
 9. Playbooks.
 10. Helm: EODs and scorecards.
@@ -150,72 +150,98 @@ Each step ships behind its own review and is verified on a real or seeded accoun
 
 ## Goal
 
-A signed-in person lands in their own workspace in the new layout. Every page exists and is real but empty. Roles and isolation are enforced by the database. No agent runs and nothing is sent.
+A signed-in person lands in their own workspace in the new layout. Every page exists and is real but empty. Roles and isolation are enforced on the server for every function. No agent runs and nothing is sent.
+
+## How isolation works in Convex
+
+Convex has no Row Level Security. Isolation is something we build and prove, so it is designed first.
+
+1. **One access layer.** Every public query and mutation is created through shared builders (for example `workspaceQuery`, `workspaceMutation`, `staffQuery`). A builder resolves the signed-in identity, finds that person's membership in the workspace, checks the role, and hands the function a trusted context. A function never accepts a role or member id from its arguments.
+2. **Every workspace table is indexed by workspace.** Reads go through an index that starts with `workspaceId`. No unbounded `collect()`. Lists are paginated.
+3. **A guard test fails the build** if any public function in `convex/` is not created through a builder. A new function cannot be added that skips the access layer.
+4. **Rep scoping is enforced in the function,** not on the screen. A Rep's lead queries filter to their own leads on the server.
+5. **Audit in the same transaction.** Mutations write their audit row in the same mutation, so an action and its log cannot disagree.
+6. **Private logic is internal.** Anything that should not be called from a browser is an internal function. Outside services are called only from actions.
+7. **Secrets** live in Convex environment variables, never in client code.
 
 ## What exists at the end of Step 1
 
 **Sign-in and workspaces**
 
-- Email sign-in with Supabase Auth.
+- Sign-in through the hosted auth provider, connected to Convex. The provider supplies email sign-in and a second factor.
 - Creating a workspace makes the creator its Owner.
 - Invite a person by email with a role (Manager or Rep). Accepting the invite creates their membership.
-- A person can belong to one workspace in Step 1. The data model must not prevent more later.
+- A person belongs to one workspace in Step 1. The data model must not prevent more later.
 
 **Roles and isolation**
 
-- Row Level Security on every table. A person can read only rows in a workspace they belong to, and only what their role allows.
-- A Rep sees only leads assigned to them. (The leads table is a stub in Step 1, but the policy is real and tested.)
-- Every write by a person is logged to an audit table with who, when, and what.
+- Owner, Manager, Rep, enforced by the access layer above on every function.
+- A Rep sees only leads assigned to them. (The leads table is a stub in Step 1, but the scoping is real and tested.)
+- Every write by a person is logged to the audit table with who, when, and what.
 
 **Staff path**
 
 - Platform Admin and Service Team are separate from workspace membership.
-- A staff member can enter a workspace only by creating a logged access grant with a reason and an expiry. Without a grant they see nothing.
-- Staff sign-in requires a second factor. The admin surface is a separate route group reachable at admin.vistrial.io.
+- A staff member can enter a workspace only by creating a logged access grant with a reason and an expiry. Without a grant they read nothing.
+- Staff sign-in requires a second factor, read from the auth provider's token claims and checked on every staff function. The staff surface is a separate route group served at admin.vistrial.io.
 
 **The shell**
 
-- Left rail generated from a registry, not hard-coded: Compass above, then the agents grouped by stage (Foundation, Organization, Execution), then Connections and Settings.
+- Left rail generated from the `agents` table, not hard-coded: Compass above, then the agents grouped by stage (Foundation, Organization, Execution), then Connections and Settings.
 - The six agents appear in the rail with state "Off" and their one-line job and promise.
 - Center: the first-sign-in setup path, with steps shown but not connected. When setup is marked done, the center shows the empty decisions queue with its briefing and next-best-action empty state.
 - A command bar above the center with the Compass prompt. It accepts input and answers "Compass is not on yet" until a later step.
-- Crew band, briefing slot, due now and work next slot, and a quiet side panel for the live stream, all present as empty states.
+- Crew band, briefing slot, due now and work next slot, and a quiet side panel, all present as empty states.
+- The side panel is already subscribed to the `events` table through a reactive Convex query. It shows nothing yet. This proves the live path end to end, and later steps only add producers.
 - Pages that exist and are real but empty: Decisions, My day (Reps), Leads, Team (Owner and Manager), each agent's page, Connections, Settings (Owner), and a Staff area.
 - Light theme by default with a dark option. Tokens for color, type, and spacing defined once.
 - Phone: bottom tabs, command bar button, no horizontal scroll.
 
-**Not in Step 1:** any connection, any agent behavior, the approval gate logic, Convex, billing, texting. Convex is added when the first agent produces live events (Step 7), and Step 1 only defines the event shape so the side panel has a contract.
+**Not in Step 1:** any connection, any agent behavior, the approval gate logic, billing, texting, and any call to an outside service.
 
 ## Data model (Step 1)
 
-Postgres tables, all with `workspace_id` where they belong to a workspace:
+Convex tables with validators in `convex/schema.ts`. Every table that belongs to a workspace has `workspaceId` and an index that starts with it.
 
-- `workspaces` (id, name, slug, timezone, status, created_at)
-- `members` (id, workspace_id, user_id, role: owner | manager | rep, display_name, active)
-- `invitations` (id, workspace_id, email, role, token_hash, expires_at, accepted_at)
-- `staff` (user_id, role: platform_admin | service_team, mfa_enrolled)
-- `staff_access_grants` (id, staff_user_id, workspace_id, reason, starts_at, expires_at, revoked_at)
-- `audit_log` (id, workspace_id, actor_type, actor_id, action, subject, detail, created_at). No message or transcript text.
+- `workspaces` (name, slug, timezone, status)
+- `members` (workspaceId, userId, role: owner | manager | rep, displayName, active). Indexes by workspace and by user.
+- `invitations` (workspaceId, email, role, tokenHash, expiresAt, acceptedAt)
+- `staff` (userId, role: platform_admin | service_team)
+- `staffAccessGrants` (staffUserId, workspaceId, reason, startsAt, expiresAt, revokedAt)
+- `auditLog` (workspaceId, actorType, actorId, action, subject, detail). No message or transcript text.
 - `agents` (id, area, stage, name, job, promise, sort). Seeded with the six agents. The registry the rail reads from.
-- `workspace_agents` (workspace_id, agent_id, state: off | suggesting | on, updated_at, updated_by)
-- `workspace_settings` (workspace_id, setup_done, theme_default)
-- `leads` (stub: id, workspace_id, assigned_member_id, created_at), only to prove the Rep policy.
+- `workspaceAgents` (workspaceId, agentId, state: off | suggesting | on, updatedAt, updatedBy)
+- `workspaceSettings` (workspaceId, setupDone, themeDefault)
+- `events` (workspaceId, agentId, kind, subjectId, at). Ids and kinds only, never text. The live stream contract.
+- `leads` (stub: workspaceId, assignedMemberId), only to prove Rep scoping.
 
 ## Acceptance tests (all must pass before Step 2)
 
-1. A user in workspace A cannot read or write any row in workspace B, through any table, tested with real Postgres policies and not mocks.
+Tests run with `convex-test` using real function code and fake identities, and are repeated once against a dev deployment.
+
+1. A user in workspace A cannot read or write any document in workspace B through any public function. Tested by calling every public function as a member of A with B's ids.
 2. A Rep reads only leads assigned to them. A Manager and an Owner read all.
 3. A Manager cannot change settings or workspace agents. An Owner can.
-4. Staff with no grant read nothing. Staff with a grant read only that workspace until it expires. Every grant and every entry is in the audit log.
+4. Staff with no grant read nothing. Staff with a grant read only that workspace until it expires. Staff without a second-factor claim are refused. Every grant and every entry is in the audit log.
 5. An invite for the wrong email, an expired invite, and a reused invite are all refused.
-6. The rail shows exactly the agents in the `agents` table. Adding a row with no code change adds it to the rail.
-7. First sign-in shows the setup path. After setup is marked done it shows the decisions empty state.
-8. Phone, tablet, and desktop widths with no horizontal scroll. Keyboard-only navigation. Screen reader labels. Reduced motion honored.
-9. No secret appears in client code, and the build, type check, and tests run in CI.
+6. The guard test: adding a public function that does not use a builder fails the test run.
+7. The rail shows exactly the rows in `agents`. Adding a row with no code change adds it to the rail.
+8. First sign-in shows the setup path. After setup is marked done it shows the decisions empty state. Inserting an `events` row appears in the side panel without a refresh.
+9. Phone, tablet, and desktop widths with no horizontal scroll. Keyboard-only navigation. Screen reader labels. Reduced motion honored.
+10. No secret appears in client code, and the build, type check, and tests run in CI.
+
+## Known costs of an all-Convex backend
+
+We chose this on purpose, and these are the things to plan around:
+
+- No SQL joins or ad hoc analytics. Reports (scorecards, "where leads go") will use maintained counters and indexed queries, and heavy analytics may later export to a warehouse.
+- Query and document size limits. Large lists are paginated, large text goes to file storage, and nothing unbounded is read in one function.
+- Isolation is our code, not a database feature, which is why the access layer and the guard test are in Step 1 and are non-negotiable.
 
 ## Open decisions for you
 
-1. Call the lowest role "Rep" in the product, or "Member"? (I recommend Rep.)
-2. Confirm the Google Drive, Docs, and Sheets items move to after launch, with Nylas covering Gmail and Calendar.
-3. One workspace per person in Step 1 (recommended), or allow several from the start?
-4. New repo name and domain plan: app.vistrial.io for customers and admin.vistrial.io for staff.
+1. **Auth provider.** I recommend Clerk: it has organizations, invitations, and a second factor, and it connects to Convex. Alternatives are WorkOS AuthKit and Convex Auth. Convex Auth keeps one vendor but means building staff MFA and invites ourselves.
+2. Call the lowest role "Rep" in the product, or "Member"? (I recommend Rep.)
+3. Confirm the Google Drive, Docs, and Sheets items move to after launch, with Nylas covering Gmail and Calendar.
+4. One workspace per person in Step 1 (recommended), or allow several from the start?
+5. New repo name and domain plan: app.vistrial.io for customers and admin.vistrial.io for staff.

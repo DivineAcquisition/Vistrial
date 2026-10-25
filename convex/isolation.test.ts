@@ -128,13 +128,36 @@ describe("workspace isolation", () => {
     expect(repAMember && repBMember).toBeTruthy();
 
     const leadForA = await t.run(async (ctx) =>
-      ctx.db.insert("leads", { workspaceId: workspaceA, assignedMemberId: repAMember!._id, createdAt: Date.now() }),
+      ctx.db.insert("leads", {
+        workspaceId: workspaceA,
+        ownerMemberId: repAMember!._id,
+        status: "open",
+        source: "manual",
+        historic: false,
+        lastActivityAt: 3,
+        createdAt: 3,
+      }),
     );
     const leadForB = await t.run(async (ctx) =>
-      ctx.db.insert("leads", { workspaceId: workspaceA, assignedMemberId: repBMember!._id, createdAt: Date.now() }),
+      ctx.db.insert("leads", {
+        workspaceId: workspaceA,
+        ownerMemberId: repBMember!._id,
+        status: "open",
+        source: "manual",
+        historic: false,
+        lastActivityAt: 2,
+        createdAt: 2,
+      }),
     );
     const leadInBeta = await t.run(async (ctx) =>
-      ctx.db.insert("leads", { workspaceId: workspaceB, createdAt: Date.now() }),
+      ctx.db.insert("leads", {
+        workspaceId: workspaceB,
+        status: "open",
+        source: "manual",
+        historic: false,
+        lastActivityAt: 1,
+        createdAt: 1,
+      }),
     );
 
     const seenByRep = await repA.query(api.leads.list, { workspaceId: workspaceA, paginationOpts: page });
@@ -146,7 +169,7 @@ describe("workspace isolation", () => {
 
     expect(await message(ownerA.query(api.leads.get, { workspaceId: workspaceA, leadId: leadInBeta }))).toBe(NOT_FOUND);
     expect(await message(repA.query(api.leads.get, { workspaceId: workspaceA, leadId: leadForB }))).toBe(NOT_FOUND);
-    expect(await message(ownerA.mutation(api.leads.assign, { workspaceId: workspaceB, leadId: leadForA, assignedMemberId: repAMember!._id }))).toBe(
+    expect(await message(ownerA.mutation(api.leads.assign, { workspaceId: workspaceB, leadId: leadForA, ownerMemberId: repAMember!._id }))).toBe(
       NOT_FOUND,
     );
 
@@ -174,6 +197,56 @@ describe("workspace isolation", () => {
     expect(shell.agents.find((agent: { slug: string; state: string }) => agent.slug === "assay")?.state).toBe("suggesting");
     expect(shell.agents.map((agent: { slug: string }) => agent.slug)).toContain("north");
     expect(shell.agents.filter((agent: { slug: string }) => agent.slug === "compass")).toHaveLength(1);
+
+    const noteId = await ownerA.mutation(api.records.addNote, {
+      workspaceId: workspaceA,
+      leadId: leadForA,
+      body: "private note",
+    });
+    const taskId = await ownerA.mutation(api.records.addTask, {
+      workspaceId: workspaceA,
+      leadId: leadForA,
+      title: "Ping",
+      purposeKey: "ping",
+    });
+    const callId = await ownerA.mutation(api.records.addCall, {
+      workspaceId: workspaceA,
+      leadId: leadForA,
+      occurredAt: 10,
+    });
+    const bookingId = await ownerA.mutation(api.records.addBooking, {
+      workspaceId: workspaceA,
+      leadId: leadForA,
+      startsAt: 11,
+      endsAt: 12,
+    });
+    const messageId = await ownerA.mutation(api.records.addMessage, {
+      workspaceId: workspaceA,
+      leadId: leadForA,
+      text: "private message",
+      at: 13,
+      direction: "in",
+    });
+    const conversationId = await t.run(async (ctx) => {
+      const rows = await ctx.db
+        .query("conversations")
+        .withIndex("by_workspace_lead", (q) => q.eq("workspaceId", workspaceA).eq("leadId", leadForA))
+        .take(1);
+      return rows[0]!._id;
+    });
+    const foreign = [
+      ownerB.query(api.records.timeline, { workspaceId: workspaceA, leadId: leadForA }),
+      ownerB.query(api.records.timeline, { workspaceId: missing, leadId: leadForA }),
+      ownerB.query(api.records.getNote, { workspaceId: workspaceB, noteId }),
+      ownerB.query(api.records.getTask, { workspaceId: workspaceB, taskId }),
+      ownerB.query(api.records.getCall, { workspaceId: workspaceB, callId }),
+      ownerB.query(api.records.getBooking, { workspaceId: workspaceB, bookingId }),
+      ownerB.query(api.records.getMessage, { workspaceId: workspaceB, messageId }),
+      ownerB.query(api.records.getConversation, { workspaceId: workspaceB, conversationId }),
+      ownerA.query(api.records.getNote, { workspaceId: workspaceB, noteId }),
+      ownerA.query(api.records.getMessage, { workspaceId: missing, messageId }),
+    ];
+    for (const call of foreign) expect(await message(call)).toBe(NOT_FOUND);
 
     const events = await ownerA.query(api.events.recent, { workspaceId: workspaceA });
     expect(events).toEqual([]);

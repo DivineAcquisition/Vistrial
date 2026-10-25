@@ -34,6 +34,30 @@ const eslintConfig = defineConfig([
       "@typescript-eslint/no-unused-vars": "off",
     },
   },
+  {
+    files: ["src/**/*.{ts,tsx}"],
+    rules: {
+      "no-restricted-imports": [
+        "error",
+        {
+          paths: [
+            {
+              name: "libphonenumber-js",
+              message: "Parse phones in Convex with libphonenumber-js/min.",
+            },
+            {
+              name: "libphonenumber-js/min",
+              message: "Parse phones in Convex with libphonenumber-js/min.",
+            },
+            {
+              name: "papaparse",
+              message: "Parse CSV files in a Convex action.",
+            },
+          ],
+        },
+      ],
+    },
+  },
   globalIgnores([
     // Default ignores of eslint-config-next:
     ".next/**",

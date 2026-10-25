@@ -6,6 +6,7 @@ import { activeMembership } from "./lib/access";
 import { notFound } from "./lib/errors";
 import { ensureAgents } from "./lib/agents";
 import { hashToken, randomToken, slugFromName } from "./lib/token";
+import { seedSpine } from "./lib/seedSpine";
 
 const INVITE_MS = 7 * 24 * 60 * 60 * 1000;
 
@@ -51,7 +52,9 @@ export const create = signedInMutation({
       workspaceId,
       setupDone: false,
       themeDefault: "light",
+      defaultCountry: "US",
     });
+    await seedSpine(ctx, workspaceId);
     const agents = await ctx.db.query("agents").withIndex("by_sort").take(50);
     for (const agent of agents) {
       await ctx.db.insert("workspaceAgents", {

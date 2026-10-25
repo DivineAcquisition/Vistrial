@@ -4,6 +4,7 @@ import path from "node:path";
 import { describe, expect, it } from "vitest";
 
 import { guardViolations, type GuardFile } from "./lib/guard";
+import { leadBuilderViolations } from "./lib/leadGuard";
 
 function filesUnder(dir: string): GuardFile[] {
   const out: GuardFile[] = [];
@@ -41,5 +42,26 @@ describe("access builder guard", () => {
   it("finds no plain query, mutation, or action in convex/", () => {
     const violations = guardViolations(filesUnder(path.join(process.cwd(), "convex")));
     expect(violations).toEqual([]);
+  });
+
+  it("requires a lead builder when a function takes a lead-scoped id", () => {
+    const bad = leadBuilderViolations([
+      {
+        path: "convex/openLead.ts",
+        source: `export const get = workspaceQuery({\n  args: { leadId: v.id("leads") },\n  handler: async () => null,\n});\n`,
+      },
+    ]);
+    expect(bad.length).toBeGreaterThan(0);
+    const tree = filesUnder(path.join(process.cwd(), "convex"));
+    expect(leadBuilderViolations(tree)).toEqual([]);
+    const leads = readFileSync(path.join(process.cwd(), "convex/leads.ts"), "utf8");
+    const records = readFileSync(path.join(process.cwd(), "convex/records.ts"), "utf8");
+    const imports = readFileSync(path.join(process.cwd(), "convex/imports.ts"), "utf8");
+    expect(leads).not.toContain(".filter(");
+    expect(records).not.toContain(".filter(");
+    expect(imports).not.toContain(".filter(");
+    const schemaSource = readFileSync(path.join(process.cwd(), "convex/schema.ts"), "utf8");
+    expect(schemaSource).toContain('index("by_workspace_owner_activity"');
+    expect(schemaSource).toContain('index("by_workspace_lead_at", ["workspaceId", "leadId", "at"])');
   });
 });

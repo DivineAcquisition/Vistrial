@@ -3,16 +3,17 @@ import type { NextConfig } from "next";
 const ContentSecurityPolicy = [
   "default-src 'self'",
   // apis.google.com and gstatic: Google's folder picker, used only on the Drive connection card.
-  "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://apis.google.com https://www.gstatic.com https://challenges.cloudflare.com",
-  "worker-src 'self'",
+  // clerk.vistrial.io: production sign-in. *.clerk.accounts.dev: the development instance.
+  "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://apis.google.com https://www.gstatic.com https://challenges.cloudflare.com https://clerk.vistrial.io https://*.clerk.accounts.dev",
+  "worker-src 'self' blob:",
   "style-src 'self' 'unsafe-inline'",
   "img-src 'self' data: blob: https:",
   "font-src 'self' data:",
-  "connect-src 'self' https://*.convex.cloud wss://*.convex.cloud https://challenges.cloudflare.com",
-  "frame-src 'self' https://link.msgsndr.com https://*.leadconnectorhq.com https://*.msgsndr.com https://docs.google.com https://content.googleapis.com https://challenges.cloudflare.com",
+  "connect-src 'self' https://*.convex.cloud wss://*.convex.cloud https://challenges.cloudflare.com https://clerk.vistrial.io https://*.clerk.accounts.dev https://clerk-telemetry.com https://*.clerk-telemetry.com",
+  "frame-src 'self' https://link.msgsndr.com https://*.leadconnectorhq.com https://*.msgsndr.com https://docs.google.com https://content.googleapis.com https://challenges.cloudflare.com https://clerk.vistrial.io https://accounts.vistrial.io https://*.clerk.accounts.dev",
   "frame-ancestors 'none'",
   "base-uri 'self'",
-  "form-action 'self'",
+  "form-action 'self' https://clerk.vistrial.io https://accounts.vistrial.io https://*.clerk.accounts.dev",
   "object-src 'none'",
   "upgrade-insecure-requests",
 ].join("; ");

@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from "next";
+import { headers } from "next/headers";
 
 import { InlineScript } from "@/components/app/inline-script";
 import { ThemeSync } from "@/components/app/theme-toggle";
@@ -8,6 +9,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { APP_NAME, PRODUCTION_SITE_ORIGIN } from "@/lib/constants";
 import { geistMono, interDisplay } from "@/lib/fonts";
 import { SITE_DESCRIPTION, SOCIAL_IMAGE } from "@/lib/marketing/copy";
+import { isClerkHost } from "@/lib/marketing/hosts";
 import { THEME_COLOR, THEME_SCRIPT } from "@/lib/theme";
 
 import "./globals.css";
@@ -54,11 +56,13 @@ export const viewport: Viewport = {
   viewportFit: "cover",
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  const headerList = await headers();
+  const clerk = isClerkHost(headerList.get("x-forwarded-host") ?? headerList.get("host"));
   return (
     // The head script adds `dark` before the first paint when the person chose
     // the dark theme, so <html> must accept a class React did not render.
@@ -71,7 +75,7 @@ export default function RootLayout({
         <ToastProvider position="top-right">
           <AnchoredToastProvider>
             <TooltipProvider>
-              <AppProviders>{children}</AppProviders>
+              <AppProviders clerk={clerk}>{children}</AppProviders>
             </TooltipProvider>
           </AnchoredToastProvider>
         </ToastProvider>

@@ -1,8 +1,8 @@
 import { clerkMiddleware } from "@clerk/nextjs/server";
-import { NextResponse, type NextRequest } from "next/server";
+import { NextResponse, type NextFetchEvent, type NextRequest } from "next/server";
 
 import { PRODUCTION_APP_ORIGIN } from "@/lib/constants";
-import { classifyProductHost } from "@/lib/marketing/hosts";
+import { classifyProductHost, isClerkHost } from "@/lib/marketing/hosts";
 
 function pathWithSearch(request: NextRequest) {
   return request.nextUrl.pathname + request.nextUrl.search;
@@ -53,9 +53,14 @@ function hostProxy(request: NextRequest) {
   return continueWithPath(request);
 }
 
-const publishableKey = process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY;
+const withClerk = clerkMiddleware((_auth, request: NextRequest) => hostProxy(request));
 
-export default publishableKey ? clerkMiddleware((_auth, request) => hostProxy(request)) : hostProxy;
+export default function proxy(request: NextRequest, event: NextFetchEvent) {
+  if (process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY && process.env.CLERK_SECRET_KEY && isClerkHost(request.headers.get("x-forwarded-host") ?? request.headers.get("host"))) {
+    return withClerk(request, event);
+  }
+  return hostProxy(request);
+}
 
 export const config = {
   matcher: [

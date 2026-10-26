@@ -31,6 +31,13 @@ export function isSiteHost(host: string | null | undefined): boolean {
   return hostname === SITE_HOST || hostname === WWW_SITE_HOST;
 }
 
+/** Sign-in runs on the app hosts. The public site stays free of Clerk. */
+export function isClerkHost(host: string | null | undefined): boolean {
+  const hostname = hostnameFromHostHeader(host);
+  if (hostname === "localhost" || hostname === "127.0.0.1") return true;
+  return isOperatorAppHost(host) || isAdminHost(host) || isForsightHost(host);
+}
+
 /** Host of the operator app. Marketing lives on vistrial.io / www, not here. */
 export function isOperatorAppHost(host: string | null | undefined): boolean {
   const hostname = hostnameFromHostHeader(host);

@@ -16,10 +16,10 @@ function clientFor(url: string) {
   return client;
 }
 
-export function AppProviders({ children }: { children: React.ReactNode }) {
+export function AppProviders({ children, clerk = false }: { children: React.ReactNode; clerk?: boolean }) {
   const key = process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY;
   const url = process.env.NEXT_PUBLIC_CONVEX_URL;
-  if (!key || !url) return children;
+  if (!clerk || !key || !url) return children;
   return (
     <ClerkProvider publishableKey={key}>
       <ConvexProviderWithClerk client={clientFor(url)} useAuth={useAuth}>

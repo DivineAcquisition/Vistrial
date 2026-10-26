@@ -11,7 +11,7 @@ export const authAppearance = {
     colorDanger: "#dc2626",
     colorSuccess: "#059669",
     colorWarning: "#d97706",
-    colorBackground: "transparent",
+    colorBackground: "var(--card)",
     colorForeground: "var(--strong)",
     colorMutedForeground: "var(--muted-foreground)",
     colorNeutral: "var(--strong)",

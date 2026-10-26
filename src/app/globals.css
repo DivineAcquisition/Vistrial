@@ -2186,3 +2186,12 @@ html[data-calm="true"] .live-shimmer-text {
     max-width: none;
   }
 }
+
+/* Clerk paints a black strip behind "Secured by". Keep that line on the card. */
+.cl-footer,
+.cl-footerItem {
+  background-color: var(--card) !important;
+  background-image: none !important;
+  box-shadow: none !important;
+  color: var(--muted-foreground) !important;
+}

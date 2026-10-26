@@ -17,7 +17,7 @@ export function LeadDataForm() {
   return (
     <form action={action} className={publicFormClass}>
       <FormGlow />
-      {state.message ? <p role="status" className="text-sm text-silver">{state.message}</p> : null}
+      {state.message ? <p role="status" className="text-sm text-muted-foreground">{state.message}</p> : null}
       <Field label="Your name" name="name" htmlFor="lead-name">
         <Input className={publicFieldClass} id="lead-name" name="name" autoComplete="name" />
       </Field>

@@ -43,8 +43,8 @@ export function HeroExample() {
     <div className="space-y-4 text-left" aria-label={HERO.exampleLabel}>
       <div className="flex items-center justify-between gap-3">
         <div className="flex items-center gap-1.5" aria-hidden>
-          <span className="size-2 rounded-full bg-white/25" />
-          <span className="size-2 rounded-full bg-white/25" />
+          <span className="size-2 rounded-full bg-foreground/20" />
+          <span className="size-2 rounded-full bg-foreground/20" />
           <span className="size-2 rounded-full bg-brand-400" />
         </div>
         <Badge variant="outline" size="sm">
@@ -54,8 +54,8 @@ export function HeroExample() {
 
       <div className="flex items-end justify-between gap-3">
         <div>
-          <p className="font-heading text-2xl tracking-tight text-white">{EXAMPLE.lead}</p>
-          <p className="text-sm text-silver">{EXAMPLE.business}</p>
+          <p className="font-heading text-2xl tracking-tight text-strong">{EXAMPLE.lead}</p>
+          <p className="text-sm text-muted-foreground">{EXAMPLE.business}</p>
         </div>
         <p className="text-[11px] font-medium tracking-[0.14em] text-brand-200 uppercase">Case file</p>
       </div>
@@ -75,9 +75,9 @@ export function HeroExample() {
         </Marquee>
       </div>
 
-      <p className="text-sm leading-relaxed text-silver">{EXAMPLE.summary}</p>
+      <p className="text-sm leading-relaxed text-muted-foreground">{EXAMPLE.summary}</p>
 
-      <div className="h-1 overflow-hidden rounded-full bg-white/10" aria-hidden>
+      <div className="h-1 overflow-hidden rounded-full bg-foreground/10" aria-hidden>
         <div
           className="h-full rounded-full bg-gradient-to-r from-brand-500 to-brand-300 transition-[width] duration-700 motion-reduce:transition-none"
           style={{ width: `${((activeIndex + 1) / EXAMPLE.steps.length) * 100}%` }}
@@ -92,13 +92,13 @@ export function HeroExample() {
               key={item.agent}
               className={cn(
                 "flex items-start gap-2 rounded-xl border px-3 py-2 transition-colors",
-                on ? "border-[#2a2833] bg-[#241f33]" : "border-[#2a2833] bg-[#12111a]",
+                on ? "border-border bg-muted" : "border-border bg-muted",
               )}
             >
               <AgentGlyph agentId={item.agent} size="sm" working={motion && on} />
               <span>
                 <span className="block text-sm font-medium text-card-foreground">{AGENTS[item.agent].name}</span>
-                <span className="block text-sm text-silver">{item.line}</span>
+                <span className="block text-sm text-muted-foreground">{item.line}</span>
               </span>
             </li>
           );
@@ -108,8 +108,8 @@ export function HeroExample() {
 
       <div className={cn(marketingInset, "p-3")}>
         <p className="text-[11px] font-semibold tracking-[0.14em] text-brand-300 uppercase">Draft for {EXAMPLE.lead}</p>
-        <p className="mt-2 text-sm leading-relaxed text-white">{EXAMPLE.draft}</p>
-        <p className="mt-2 text-xs leading-relaxed text-silver">{EXAMPLE.draftStatus}</p>
+        <p className="mt-2 text-sm leading-relaxed text-strong">{EXAMPLE.draft}</p>
+        <p className="mt-2 text-xs leading-relaxed text-muted-foreground">{EXAMPLE.draftStatus}</p>
       </div>
     </div>
   );
@@ -117,7 +117,7 @@ export function HeroExample() {
 
 function SourceChip({ children }: { children: string }) {
   return (
-    <span className="rounded-lg border border-[#2a2833] bg-[#1c1a27] px-3 py-1 text-xs text-white">
+    <span className="rounded-lg border border-border bg-card px-3 py-1 text-xs text-strong">
       {children}
     </span>
   );
@@ -125,15 +125,15 @@ function SourceChip({ children }: { children: string }) {
 
 export function ApprovalExample() {
   return (
-    <div className="overflow-hidden rounded-xl border border-[#2a2833] bg-[#1c1a27] text-left" aria-label={HERO.exampleLabel}>
-      <div className="flex items-center justify-between gap-3 border-b border-[#2a2833] px-4 py-3">
+    <div className="overflow-hidden rounded-xl border border-border bg-card text-left" aria-label={HERO.exampleLabel}>
+      <div className="flex items-center justify-between gap-3 border-b border-border px-4 py-3">
         <p className="text-[11px] font-semibold tracking-[0.16em] text-brand-300 uppercase">{HERO.exampleLabel}</p>
         <span className="size-2 rounded-full bg-brand-400" aria-hidden />
       </div>
       <div className="p-4">
-        <p className="text-sm font-medium text-white">Draft for {EXAMPLE.lead}</p>
-        <p className="mt-2 text-sm leading-relaxed text-silver">{EXAMPLE.draft}</p>
-        <p className="mt-3 text-sm text-silver">{EXAMPLE.draftStatus}</p>
+        <p className="text-sm font-medium text-strong">Draft for {EXAMPLE.lead}</p>
+        <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{EXAMPLE.draft}</p>
+        <p className="mt-3 text-sm text-muted-foreground">{EXAMPLE.draftStatus}</p>
       </div>
     </div>
   );

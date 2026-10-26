@@ -37,7 +37,7 @@ function RichText({ text }: { text: string }) {
 
 function BlockView({ block }: { block: PolicyBlock }) {
   if (block.kind === "h") {
-    return <h3 className="pt-2 font-heading text-base text-white">{block.text}</h3>;
+    return <h3 className="pt-2 font-heading text-base text-strong">{block.text}</h3>;
   }
   if (block.kind === "ul") {
     return (
@@ -52,7 +52,7 @@ function BlockView({ block }: { block: PolicyBlock }) {
   }
   if (block.kind === "note") {
     return (
-      <p className="rounded-[8px] border border-[#2a2833] bg-[#111014] px-3 py-2 text-white">
+      <p className="rounded-[8px] border border-border bg-muted px-3 py-2 text-strong">
         <RichText text={block.text} />
       </p>
     );
@@ -70,32 +70,32 @@ export function PrivacyPolicy({ trust }: { trust: TrustPublic }) {
   return (
     <article className="mx-auto max-w-3xl px-5 py-12 sm:px-6 sm:py-16">
       {trust.privacyLive ? null : (
-        <p className="rounded-[12px] border border-[#2a2833] bg-[#0c0b10] px-4 py-3 text-sm leading-relaxed text-white">
+        <p className="rounded-[12px] border border-border bg-muted px-4 py-3 text-sm leading-relaxed text-strong">
           Draft for review by qualified counsel. Not legal advice. This page is not in effect until a Platform Admin approves it and a mailing address is on file.
         </p>
       )}
       <h1 className={`${marketingHeroTitle} mt-8 text-[2.1rem] sm:text-4xl`}>Privacy Policy</h1>
-      <p className="mt-3 text-sm text-dim">Last updated: {dates.updated}</p>
-      <p className="mt-1 text-sm text-dim">Effective: {dates.effective}</p>
-      <p className="mt-6 text-sm leading-relaxed text-silver sm:text-[15px]">
+      <p className="mt-3 text-sm text-muted-foreground">Last updated: {dates.updated}</p>
+      <p className="mt-1 text-sm text-muted-foreground">Effective: {dates.effective}</p>
+      <p className="mt-6 text-sm leading-relaxed text-muted-foreground sm:text-[15px]">
         This policy explains what information Vistrial collects, why we collect it, who we share it with, how long we keep it, and what choices you have.
       </p>
       <nav aria-label="Contents" className="mt-8">
-        <h2 className="font-heading text-lg text-white">Contents</h2>
+        <h2 className="font-heading text-lg text-strong">Contents</h2>
         <ol className="mt-3 grid gap-2 text-sm">
           {sections.map((section) => (
             <li key={section.id}>
-              <a href={`#${section.id}`} className="text-silver hover:text-white">
+              <a href={`#${section.id}`} className="text-muted-foreground hover:text-strong">
                 {section.number}. {section.title}
               </a>
             </li>
           ))}
         </ol>
       </nav>
-      <div className="mt-10 space-y-10 text-sm leading-relaxed text-silver sm:text-[15px]">
+      <div className="mt-10 space-y-10 text-sm leading-relaxed text-muted-foreground sm:text-[15px]">
         {sections.map((section) => (
           <section key={section.id} id={section.id} className="scroll-mt-24 space-y-3">
-            <h2 className="font-heading text-xl tracking-tight text-white">
+            <h2 className="font-heading text-xl tracking-tight text-strong">
               {section.number}. {section.title}
             </h2>
             {section.blocks.map((block, index) => (

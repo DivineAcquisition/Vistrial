@@ -29,12 +29,12 @@ export function ThemeSync() {
   return null;
 }
 
-/** The public site and the auth desk are always dark, whatever the workspace theme is. */
-export function ForceDarkTheme() {
+/** The public site stays white, whatever theme the workspace saved on this device. */
+export function ForceLightTheme() {
   useLayoutEffect(() => {
     const root = document.documentElement;
-    root.setAttribute(THEME_LOCK_ATTRIBUTE, "dark");
-    applyTheme("dark");
+    root.setAttribute(THEME_LOCK_ATTRIBUTE, "light");
+    applyTheme("light");
     return () => {
       root.removeAttribute(THEME_LOCK_ATTRIBUTE);
       applyTheme(storedTheme());

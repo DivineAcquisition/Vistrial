@@ -7,12 +7,12 @@ export function LegalDraft({ kind, trust }: { kind: "privacy" | "terms"; trust: 
   const date = formatTrustDate(kind === "privacy" ? trust.privacyUpdatedOn : trust.termsUpdatedOn);
   return (
     <article className="mx-auto max-w-3xl px-5 py-14 sm:px-6">
-      <p className="rounded-2xl border border-white/10 px-4 py-3 text-sm text-white">
+      <p className="rounded-2xl border border-border px-4 py-3 text-sm text-strong">
         Draft prepared for review by qualified counsel. Not legal advice. A Platform Admin marked this page approved for the public site.
       </p>
       <h1 className={`${marketingHeroTitle} mt-8 text-[2.1rem] sm:text-4xl`}>{kind === "privacy" ? "Privacy" : "Terms"}</h1>
-      <p className="mt-2 text-xs text-dim">Last updated: {date}</p>
-      <div className="mt-8 space-y-4 text-sm leading-relaxed text-silver">
+      <p className="mt-2 text-xs text-muted-foreground">Last updated: {date}</p>
+      <div className="mt-8 space-y-4 text-sm leading-relaxed text-muted-foreground">
         <p>{trust.legalEntity} operates Vistrial. Mailing address: {trust.mailingAddress}. Place named for counsel review: {trust.governingPlace}.</p>
         {kind === "privacy" ? (
           <>

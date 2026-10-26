@@ -15,13 +15,8 @@ function filesUnder(dir: string): string[] {
   return out;
 }
 
-/** Surfaces that are always dark: the public site and the auth desk. */
-const ALWAYS_DARK = [
-  "src/components/marketing/",
-  "src/app/(marketing)/",
-  "src/lib/marketing/",
-  "src/components/auth/",
-];
+/** The auth desk keeps its own dark treatment. The public site is white. */
+const ALWAYS_DARK = ["src/components/auth/"];
 
 /** Third-party demos that carry their own light and dark pairs. */
 const DEMOS = ["src/components/sidebar-demo.tsx", "src/components/glowing-effect-demo.tsx", "src/components/ui/aceternity-sidebar.tsx"];
@@ -42,10 +37,14 @@ describe("a white workspace with a dark theme a person can choose", () => {
     expect(read("src/app/global-error.tsx")).toContain('cn("dark"');
   });
 
-  it("keeps the public site dark", () => {
+  it("keeps the public site white", () => {
     const layout = read("src/app/(marketing)/layout.tsx");
-    expect(layout).toMatch(/className="dark /);
-    expect(layout).toContain("<ForceDarkTheme />");
+    expect(layout).not.toMatch(/className="dark /);
+    expect(layout).toContain("<ForceLightTheme />");
+    expect(layout).not.toContain("ForceDarkTheme");
+    const theme = read("src/lib/theme.ts");
+    expect(theme).toContain('lock === "light"');
+    expect(theme).toContain('setAttribute("${THEME_LOCK_ATTRIBUTE}","light")');
   });
 
   it("puts the theme switch on the workspace shell and the staff page", () => {

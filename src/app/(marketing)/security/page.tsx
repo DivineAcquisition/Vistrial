@@ -35,7 +35,7 @@ export default async function SecurityPage() {
               <Button variant="gradient" className="h-12! rounded-[8px]! before:rounded-[7px]!" render={<Link href="/security/review" />}>
                 Request a security review
               </Button>
-              <Button variant="outline" className="h-12! rounded-[8px]! border-[#2a2833]! before:rounded-[7px]!" render={<a href="#glance" />}>
+              <Button variant="outline" className="h-12! rounded-[8px]! border-border! before:rounded-[7px]!" render={<a href="#glance" />}>
                 Read the details
               </Button>
             </div>
@@ -49,8 +49,8 @@ export default async function SecurityPage() {
               {cards.map((card) => (
                 <li key={card.title}>
                   <SpotlightCard>
-                    <h3 className="font-heading text-lg text-white">{card.title}</h3>
-                    <p className="mt-2 text-sm leading-relaxed text-silver">{card.body}</p>
+                    <h3 className="font-heading text-lg text-strong">{card.title}</h3>
+                    <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{card.body}</p>
                   </SpotlightCard>
                 </li>
               ))}
@@ -62,14 +62,14 @@ export default async function SecurityPage() {
           <div className={marketingShell}>
             <h2 className={marketingSectionTitle}>Where your data comes from</h2>
             <p className={cn(marketingLead, "mt-4")}>One lead can show up in more than one tool. Vistrial reads the sources you connect.</p>
-            <ul className="mt-6 space-y-3 text-sm leading-relaxed text-silver">
+            <ul className="mt-6 space-y-3 text-sm leading-relaxed text-muted-foreground">
               <li>CRM: GoHighLevel works today. Contacts, stages, and call activity that the connection is allowed to read. Other CRMs are not listed here until they are built.</li>
               <li>Call transcripts, when a recording source is connected. The case file is built from that text.</li>
               <li>Calendar bookings, when a calendar is connected: booked, rescheduled, canceled, and no-show events that connection can see.</li>
               <li>Form events sent to a webhook address that belongs to one workspace.</li>
               <li>Notes and corrections your team types in Vistrial.</li>
             </ul>
-            <p className="mt-4 text-sm text-silver">Airtable is not a live connector. HubSpot is not a live connector.</p>
+            <p className="mt-4 text-sm text-muted-foreground">Airtable is not a live connector. HubSpot is not a live connector.</p>
           </div>
         </section>
 
@@ -85,7 +85,7 @@ export default async function SecurityPage() {
         <section id="ai" className={cn(marketingPageGutter, "scroll-mt-24 py-12")}>
           <div className={marketingShell}>
             <h2 className={marketingSectionTitle}>AI with guardrails</h2>
-            <ul className="mt-6 space-y-3 text-sm leading-relaxed text-silver">
+            <ul className="mt-6 space-y-3 text-sm leading-relaxed text-muted-foreground">
               {ai.map((line) => (
                 <li key={line}>{line}</li>
               ))}
@@ -96,7 +96,7 @@ export default async function SecurityPage() {
         <section id="never" className={cn(marketingPageGutter, "scroll-mt-24 py-12")}>
           <div className={marketingShell}>
             <h2 className={marketingSectionTitle}>What we never do</h2>
-            <ul className="mt-6 space-y-3 text-sm leading-relaxed text-white">
+            <ul className="mt-6 space-y-3 text-sm leading-relaxed text-strong">
               {neverDo(trust.switches).map((line) => (
                 <li key={line}>{line}</li>
               ))}
@@ -107,7 +107,7 @@ export default async function SecurityPage() {
         <section id="choices" className={cn(marketingPageGutter, "scroll-mt-24 py-12")}>
           <div className={marketingShell}>
             <h2 className={marketingSectionTitle}>Your choices</h2>
-            <ul className="mt-6 space-y-3 text-sm leading-relaxed text-silver">
+            <ul className="mt-6 space-y-3 text-sm leading-relaxed text-muted-foreground">
               <li>Disconnect a source. New data from that source stops. Existing case files stay until you ask for deletion.</li>
               <li>
                 <Link href="/privacy/requests" className="text-brand-300 underline">Ask for an export, a correction, or deletion</Link>. A person verifies the request. Nothing is deleted or exported automatically.
@@ -119,7 +119,7 @@ export default async function SecurityPage() {
         <section id="hood" className={cn(marketingPageGutter, "scroll-mt-24 py-12")}>
           <div className={marketingShell}>
             <h2 className={marketingSectionTitle}>Under the hood</h2>
-            <ul className="mt-6 space-y-3 text-sm leading-relaxed text-silver">
+            <ul className="mt-6 space-y-3 text-sm leading-relaxed text-muted-foreground">
               {hood.map((line) => (
                 <li key={line}>{line}</li>
               ))}
@@ -140,14 +140,14 @@ export default async function SecurityPage() {
               <Button variant="gradient" className="h-12! rounded-[8px]! before:rounded-[7px]!" render={<Link href="/security/review" />}>
                 Request a security review
               </Button>
-              <Button variant="outline" className="h-12! rounded-[8px]! border-[#2a2833]! before:rounded-[7px]!" render={<Link href="/security/report" />}>
+              <Button variant="outline" className="h-12! rounded-[8px]! border-border! before:rounded-[7px]!" render={<Link href="/security/report" />}>
                 Report a vulnerability
               </Button>
             </div>
-            <p className="mt-4 text-sm text-silver">
+            <p className="mt-4 text-sm text-muted-foreground">
               Email <a className="text-brand-300 underline" href={`mailto:${trust.securityEmail}`}>{trust.securityEmail}</a> or use the report page.
             </p>
-            <p className="mt-8 text-xs text-dim">Last updated: {formatTrustDate(trust.securityUpdatedOn)}</p>
+            <p className="mt-8 text-xs text-muted-foreground">Last updated: {formatTrustDate(trust.securityUpdatedOn)}</p>
           </div>
         </section>
       </article>

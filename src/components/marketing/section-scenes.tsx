@@ -2,7 +2,7 @@ import type { LiveAgentId } from "@/lib/agents/roster";
 import { marketingInset } from "@/lib/marketing/ui";
 import { cn } from "@/lib/utils";
 
-const scene = "h-32 overflow-hidden rounded-lg border border-[#2a2833] bg-[#12111a] p-3";
+const scene = "h-32 overflow-hidden rounded-lg border border-border bg-muted p-3";
 
 /** Three records that do not line up: CRM, dialer, and calendar. */
 export function ProblemScene() {
@@ -19,11 +19,11 @@ export function ProblemScene() {
           className={cn(marketingInset, "animate-vistrial-shift p-3 motion-reduce:animate-none")}
           style={{ animationDelay: lane.delay }}
         >
-          <p className="text-[11px] font-semibold tracking-wide text-white uppercase">{lane.label}</p>
+          <p className="text-[11px] font-semibold tracking-wide text-strong uppercase">{lane.label}</p>
           <div className="mt-3 space-y-2">
-            <div className="h-2 rounded-sm bg-[#3a3650]" />
-            <div className="h-2 w-4/5 rounded-sm bg-[#3a3650]" />
-            <div className="h-2 w-1/2 rounded-sm bg-[#3a3650]" />
+            <div className="h-2 rounded-sm bg-foreground/15" />
+            <div className="h-2 w-4/5 rounded-sm bg-foreground/15" />
+            <div className="h-2 w-1/2 rounded-sm bg-foreground/15" />
           </div>
         </div>
       ))}
@@ -45,14 +45,14 @@ function CentralizeScene() {
         {sources.map((label, index) => (
           <div
             key={label}
-            className={cn(marketingInset, "animate-vistrial-shift px-1.5 py-2 text-center text-[10px] leading-tight text-white motion-reduce:animate-none")}
+            className={cn(marketingInset, "animate-vistrial-shift px-1.5 py-2 text-center text-[10px] leading-tight text-strong motion-reduce:animate-none")}
             style={{ animationDelay: `${index * 0.3}s` }}
           >
             {label}
           </div>
         ))}
       </div>
-      <div className={cn(marketingInset, "px-3 py-2 text-xs font-medium text-white")}>One case file</div>
+      <div className={cn(marketingInset, "px-3 py-2 text-xs font-medium text-strong")}>One case file</div>
     </div>
   );
 }
@@ -60,10 +60,10 @@ function CentralizeScene() {
 function WatchScene() {
   return (
     <div className={cn(scene, "flex flex-col justify-center gap-3")} aria-hidden>
-      <div className="h-2.5 overflow-hidden rounded-sm border border-[#2a2833] bg-[#1c1a27]">
+      <div className="h-2.5 overflow-hidden rounded-sm border border-border bg-card">
         <div className="h-full animate-vistrial-grow bg-brand-400 shadow-[0_0_16px_rgba(154,136,252,0.85)] motion-reduce:w-2/3 motion-reduce:animate-none" />
       </div>
-      <div className={cn(marketingInset, "px-3 py-2 text-xs text-white")}>Past the team&apos;s standard</div>
+      <div className={cn(marketingInset, "px-3 py-2 text-xs text-strong")}>Past the team&apos;s standard</div>
     </div>
   );
 }
@@ -72,9 +72,9 @@ function ActScene() {
   return (
     <div className={scene} aria-hidden>
       <div className={cn(marketingInset, "h-full p-3")}>
-        <div className="h-2 w-4/5 rounded-sm bg-[#3a3650]" />
-        <div className="mt-2 h-2 w-3/5 rounded-sm bg-[#3a3650]" />
-        <div className="mt-4 inline-flex animate-vistrial-glow rounded-md border border-[#2a2833] bg-brand-500 px-3 py-1.5 text-xs font-medium text-white motion-reduce:animate-none">
+        <div className="h-2 w-4/5 rounded-sm bg-foreground/15" />
+        <div className="mt-2 h-2 w-3/5 rounded-sm bg-foreground/15" />
+        <div className="mt-4 inline-flex animate-vistrial-glow rounded-md border border-border bg-brand-500 px-3 py-1.5 text-xs font-medium text-strong motion-reduce:animate-none">
           Approve
         </div>
       </div>
@@ -90,8 +90,8 @@ export function AgentScene({ id }: { id: LiveAgentId }) {
           <div key={height} className="flex h-full flex-1 items-end">
             <div
               className={cn(
-                "w-full rounded-sm border border-[#2a2833]",
-                index === 3 ? "animate-vistrial-highlight bg-brand-400 motion-reduce:animate-none" : "bg-[#1c1a27]",
+                "w-full rounded-sm border border-border",
+                index === 3 ? "animate-vistrial-highlight bg-brand-400 motion-reduce:animate-none" : "bg-card",
               )}
               style={{ height: `${height}%` }}
             />
@@ -104,12 +104,12 @@ export function AgentScene({ id }: { id: LiveAgentId }) {
   if (id === "compass") {
     return (
       <div className={cn(scene, "flex flex-col justify-center gap-2")} aria-hidden>
-        <div className={cn(marketingInset, "px-3 py-2 text-xs text-white")}>Ask</div>
+        <div className={cn(marketingInset, "px-3 py-2 text-xs text-strong")}>Ask</div>
         <div className="grid grid-cols-2 gap-2">
           {["Calls", "Case file"].map((label, index) => (
             <div
               key={label}
-              className={cn(marketingInset, "animate-vistrial-highlight px-3 py-2 text-xs text-white motion-reduce:animate-none")}
+              className={cn(marketingInset, "animate-vistrial-highlight px-3 py-2 text-xs text-strong motion-reduce:animate-none")}
               style={{ animationDelay: `${index * 0.6}s` }}
             >
               {label}
@@ -122,9 +122,9 @@ export function AgentScene({ id }: { id: LiveAgentId }) {
   return (
     <div className={cn(scene, "flex flex-col justify-center gap-2")} aria-hidden>
       {["w-4/5", "w-full", "w-2/3", "w-3/5"].map((width, index) => (
-        <div key={width} className="h-2 overflow-hidden rounded-sm border border-[#2a2833] bg-[#1c1a27]">
+        <div key={width} className="h-2 overflow-hidden rounded-sm border border-border bg-card">
           <div
-            className={cn("h-full animate-vistrial-grow bg-[#3a3650] motion-reduce:animate-none", width)}
+            className={cn("h-full animate-vistrial-grow bg-foreground/15 motion-reduce:animate-none", width)}
             style={{ animationDelay: `${index * 0.35}s` }}
           />
         </div>
@@ -146,8 +146,8 @@ export function SafetyScene() {
           key={step.label}
           className={cn(
             marketingInset,
-            "px-4 py-4 text-sm font-medium text-white",
-            step.hold ? "animate-vistrial-highlight motion-reduce:animate-none" : "bg-[#1c1a27]",
+            "px-4 py-4 text-sm font-medium text-strong",
+            step.hold ? "animate-vistrial-highlight motion-reduce:animate-none" : "bg-card",
           )}
           style={{ animationDelay: `${index * 0.35}s` }}
         >

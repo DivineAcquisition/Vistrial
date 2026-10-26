@@ -44,18 +44,18 @@ export default function DevelopersDocsPage() {
     <MarketingShell headerAction="none">
       <article className="mx-auto max-w-3xl px-5 py-14 sm:px-6 sm:py-20">
         <h1 className={`${marketingHeroTitle} text-[2.1rem] sm:text-4xl`}>Developers</h1>
-        <p className="mt-4 text-sm leading-relaxed text-silver">
+        <p className="mt-4 text-sm leading-relaxed text-muted-foreground">
           Version 1 of the Vistrial API. Vistrial does not attribute leads to ads. Source labels come from your own tools.
         </p>
         <div className="mt-8 space-y-8">
           {SECTIONS.map((section) => (
             <section key={section.heading}>
-              <h2 className="font-heading text-xl text-white">{section.heading}</h2>
-              <p className="mt-2 text-sm leading-relaxed text-silver">{section.body}</p>
+              <h2 className="font-heading text-xl text-strong">{section.heading}</h2>
+              <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{section.body}</p>
             </section>
           ))}
         </div>
-        <pre className="mt-8 overflow-x-auto rounded-2xl border border-white/10 bg-white/[0.03] p-4 text-xs text-silver">{`curl https://app.vistrial.com/api/v1/leads \\
+        <pre className="mt-8 overflow-x-auto rounded-2xl border border-border bg-muted p-4 text-xs text-muted-foreground">{`curl https://app.vistrial.com/api/v1/leads \\
   -H "Authorization: Bearer vstr_test_example"`}</pre>
       </article>
     </MarketingShell>

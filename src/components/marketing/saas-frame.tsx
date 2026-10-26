@@ -46,7 +46,7 @@ export function BeamFrame({
   return (
     <div
       className={cn(
-        "relative overflow-hidden rounded-xl border border-[#2a2833] bg-[#1c1a27] p-5 sm:p-6",
+        "relative overflow-hidden rounded-xl border border-border bg-card p-5 sm:p-6",
         glow ? cardGlow : "shadow-[0_24px_50px_-28px_rgba(0,0,0,0.85)]",
         className,
       )}

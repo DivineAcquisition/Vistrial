@@ -76,10 +76,10 @@ export default async function CalendarPage() {
             </div>
           ) : (
             <Panel className="mx-auto max-w-2xl p-8 text-center">
-              <p className="text-sm leading-relaxed text-silver">{CALENDAR.missing}</p>
-              <p className="mt-4 text-sm text-white">
+              <p className="text-sm leading-relaxed text-muted-foreground">{CALENDAR.missing}</p>
+              <p className="mt-4 text-sm text-strong">
                 <a
-                  className="text-brand-300 underline-offset-4 hover:text-white hover:underline"
+                  className="text-brand-300 underline-offset-4 hover:text-strong hover:underline"
                   href={`mailto:${CONTACT_EMAIL}`}
                 >
                   {CONTACT_EMAIL}

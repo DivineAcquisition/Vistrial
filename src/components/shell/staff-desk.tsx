@@ -1,9 +1,9 @@
 "use client";
 
-import { SignInButton } from "@clerk/nextjs";
 import { Authenticated, Unauthenticated, useMutation, useQuery } from "convex/react";
 import { Component, useState, type ReactNode } from "react";
 
+import { SignInCard } from "@/components/auth/sign-in-card";
 import { useConvexReady } from "@/components/providers/convex-ready";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -43,9 +43,12 @@ export function StaffDesk() {
         </QuietBoundary>
       </Authenticated>
       <Unauthenticated>
-        <SignInButton mode="modal">
-          <Button type="button">Sign in</Button>
-        </SignInButton>
+        <SignInCard
+          title="Sign in"
+          detail="Use your staff account. A second factor is required."
+          fallbackRedirectUrl="/admin"
+          allowSignUp={false}
+        />
       </Unauthenticated>
     </>
   );

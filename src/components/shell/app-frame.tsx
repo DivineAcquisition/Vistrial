@@ -1,10 +1,10 @@
 "use client";
 
-import { SignInButton } from "@clerk/nextjs";
 import { useMutation, useQuery } from "convex/react";
 import { Authenticated, Unauthenticated } from "convex/react";
 import { useState } from "react";
 
+import { SignInCard } from "@/components/auth/sign-in-card";
 import { ProductShell } from "@/components/shell/product-shell";
 import { ShellProvider, type WorkspaceShell } from "@/components/shell/shell-context";
 import { useConvexReady } from "@/components/providers/convex-ready";
@@ -26,12 +26,13 @@ function LiveFrame({ children }: { children: React.ReactNode }) {
       </Authenticated>
       <Unauthenticated>
         <ProductShell agents={[]}>
-          <div className="grid max-w-md gap-4">
-            <h1 className="font-heading text-2xl text-strong">Sign in</h1>
-            <p className="text-sm text-muted-foreground">Use your email to open your workspace.</p>
-            <SignInButton mode="modal">
-              <Button type="button">Sign in</Button>
-            </SignInButton>
+          <div className="py-4 md:py-10">
+            <SignInCard
+              eyebrow="Workspace"
+              title="Open your workspace"
+              detail="Email or Google. You name the workspace after you sign in."
+              fallbackRedirectUrl="/app"
+            />
           </div>
         </ProductShell>
       </Unauthenticated>

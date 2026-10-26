@@ -17,7 +17,7 @@ import { describe, expect, it } from "vitest";
  */
 
 const ROOT = path.join(__dirname, "..", "..");
-const SCAN_DIRS = ["src", "supabase"];
+const SCAN_DIRS = ["src", "convex", "docs"];
 const TEXT_EXTENSIONS = new Set([".ts", ".tsx", ".sql", ".md"]);
 const SKIP_DIRS = new Set(["node_modules", ".next", ".git"]);
 
@@ -36,7 +36,7 @@ function collectFiles(dir: string, out: string[] = []): string[] {
 }
 
 describe("no messaging surface named Inbox", () => {
-  it('never uses the word "Inbox" anywhere in src/ or supabase/', () => {
+  it('never uses the word "Inbox" anywhere in the product tree', () => {
     const inboxPattern = /\binbox\b/i;
     const offenders: string[] = [];
 

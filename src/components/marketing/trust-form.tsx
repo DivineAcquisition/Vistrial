@@ -47,7 +47,7 @@ export function TrustRequestForm({ kind }: { kind: "security_review" | "vulnerab
             {error?.role ? <p className="text-xs text-destructive">{error.role}</p> : null}
           </Field>
           <fieldset>
-            <legend className="text-sm font-medium text-white">What do you need?</legend>
+            <legend className="text-sm font-medium text-strong">What do you need?</legend>
             <div className="mt-2 grid gap-2">
               {NEEDS.map(([value, label]) => (
                 <label key={value} className="flex items-center gap-2 text-sm">
@@ -60,10 +60,10 @@ export function TrustRequestForm({ kind }: { kind: "security_review" | "vulnerab
           <Field label="Deadline" name="deadline" htmlFor="trust-deadline" help="Optional.">
             <Input className={publicFieldClass} id="trust-deadline" name="deadline" type="date" />
           </Field>
-          <p className="text-sm text-silver">If you have a questionnaire to send, tell us here and we will reply with a secure way to share it. This form does not take files.</p>
+          <p className="text-sm text-muted-foreground">If you have a questionnaire to send, tell us here and we will reply with a secure way to share it. This form does not take files.</p>
         </>
       ) : (
-        <p className="text-sm text-silver">Include what you saw, where, and how to reproduce it. Do not include passwords or lead data.</p>
+        <p className="text-sm text-muted-foreground">Include what you saw, where, and how to reproduce it. Do not include passwords or lead data.</p>
       )}
       <Field label={kind === "vulnerability" ? "What did you find?" : "Anything else"} name="details" htmlFor="trust-details" required={kind === "vulnerability"}>
         <textarea id="trust-details" name="details" maxLength={2000} className={cn(textareaClass, publicFieldClass)} required={kind === "vulnerability"} />

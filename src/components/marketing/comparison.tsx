@@ -28,7 +28,7 @@ function OrbitTag({
     <span
       aria-hidden
       className={cn(
-        "absolute z-20 hidden rounded-full border border-white/[0.1] bg-ink-900/90 px-3 py-1.5 text-[12px] font-medium text-silver shadow-[0_12px_40px_-18px_rgba(0,0,0,0.9)] backdrop-blur-sm lg:inline-flex",
+        "absolute z-20 hidden rounded-full border border-border bg-ink-900/90 px-3 py-1.5 text-[12px] font-medium text-muted-foreground shadow-[0_12px_40px_-18px_rgba(0,0,0,0.9)] backdrop-blur-sm lg:inline-flex",
         className,
       )}
     >
@@ -51,20 +51,20 @@ export function ComparisonPair() {
             <ul className="space-y-5">
               {PROBLEM.points.map((point) => (
                 <li key={point.lead}>
-                  <p className="text-[15px] leading-relaxed text-white sm:text-base">
+                  <p className="text-[15px] leading-relaxed text-strong sm:text-base">
                     <span className="font-semibold">{point.lead}</span> {point.rest}
                   </p>
                 </li>
               ))}
             </ul>
-            <p className="mt-8 text-[15px] font-medium text-white">{PROBLEM.closing}</p>
+            <p className="mt-8 text-[15px] font-medium text-strong">{PROBLEM.closing}</p>
           </MagicCard>
         </Panel>
       </div>
 
       <div
         aria-hidden
-        className="pointer-events-none absolute top-1/2 left-1/2 z-30 hidden size-12 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border border-white/[0.12] bg-ink-950 font-heading text-sm text-silver lg:flex"
+        className="pointer-events-none absolute top-1/2 left-1/2 z-30 hidden size-12 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border border-border bg-ink-950 font-heading text-sm text-muted-foreground lg:flex"
       >
         /
       </div>
@@ -77,7 +77,7 @@ export function ComparisonPair() {
         ))}
         <Panel className="overflow-hidden border-brand-500/30 p-0 shadow-[0_0_80px_-28px_rgba(154,136,252,0.55)]">
           <MagicCard className="h-full rounded-2xl p-6 sm:p-8">
-            <p className="font-heading text-2xl tracking-tight text-white sm:text-[1.65rem]">
+            <p className="font-heading text-2xl tracking-tight text-strong sm:text-[1.65rem]">
               {WHAT_IT_DOES.headline}
             </p>
             <ul className="mt-6 space-y-3">
@@ -86,7 +86,7 @@ export function ComparisonPair() {
                   <span className="mt-0.5 flex size-5 shrink-0 items-center justify-center rounded-md bg-brand-500/15 text-brand-300">
                     <Check className="size-3.5" aria-hidden />
                   </span>
-                  <span className="text-[15px] font-medium text-white">{item.title}</span>
+                  <span className="text-[15px] font-medium text-strong">{item.title}</span>
                 </li>
               ))}
             </ul>

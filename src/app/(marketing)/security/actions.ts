@@ -2,14 +2,10 @@
 
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
-import type { SupabaseClient } from "@supabase/supabase-js";
 
 import { cleanText } from "@/lib/access-requests/validate";
-import { transactionalEmailHtml } from "@/lib/email/layout";
-import { resendConfigured } from "@/lib/notifications/env";
-import { requestIp } from "@/lib/ops/rate-limit";
-import { getSupabaseAdmin } from "@/lib/supabase/admin";
-import { Resend } from "resend";
+import { capturePublicRequest } from "@/lib/marketing/capture";
+import { requestIp, verifyTurnstile } from "@/lib/marketing/turnstile";
 
 export type TrustFormState = {
   ok: boolean;
@@ -34,61 +30,17 @@ export async function submitTrustForm(_prev: TrustFormState, form: FormData): Pr
   if (Object.keys(errors).length) {
     return { ok: false, message: "Check the fields below and try again.", errors };
   }
-  const ip = requestIp(await headers());
-  try {
-    const db = getSupabaseAdmin() as unknown as SupabaseClient;
-    const { data, error } = await db.rpc("submit_trust_request", {
-      p_payload: {
-        kind: kind === "vulnerability" ? "vulnerability" : "security_review",
-        fullName,
-        email,
-        businessName: business,
-        role,
-        needs: form.getAll("needs").map(String),
-        deadline: String(form.get("deadline") ?? ""),
-        details,
-        consent: "true",
-        honeypot: cleanText(form.get("company_website_confirm"), 200),
-      },
-      p_ip: ip.slice(0, 80),
-    });
-    if (error || !(data as { ok?: boolean } | null)?.ok) {
-      const code = (data as { code?: string } | null)?.code;
-      return {
-        ok: false,
-        message: code === "rate" ? "Please wait a few minutes and try again." : "We could not submit that just now. Try again in a moment.",
-        errors: {},
-      };
-    }
-    if (!cleanText(form.get("company_website_confirm"), 200)) {
-      await sendTrustConfirmation(email, fullName, kind === "vulnerability");
-    }
-  } catch {
-    return { ok: false, message: "We could not submit that just now. Try again in a moment.", errors: {} };
+  if (cleanText(form.get("company_website_confirm"), 200)) {
+    redirect(kind === "vulnerability" ? "/thanks?kind=report" : "/thanks?kind=review");
   }
-  redirect(kind === "vulnerability" ? "/thanks?kind=report" : "/thanks?kind=review");
-}
-
-async function sendTrustConfirmation(email: string, name: string, vulnerability: boolean) {
-  const cfg = resendConfigured();
-  if (!cfg) return;
-  const safe = name.replace(/[\r\n]+/g, " ").trim().slice(0, 120);
-  const lines = vulnerability
-    ? [`Hello ${safe},`, "We received your security report. A person will reply from contact@vistrial.io.", "This note does not include the details you submitted."]
-    : [`Hello ${safe},`, "We received your security review request. A person will reply from contact@vistrial.io.", "This note does not include the details you submitted."];
-  const html = transactionalEmailHtml({
-    heading: vulnerability ? "Security report received" : "Security review request received",
-    lines: lines.slice(1),
+  const human = await verifyTurnstile(String(form.get("cf-turnstile-response") ?? ""), requestIp(await headers()));
+  if (!human) return { ok: false, message: "We could not submit that just now. Try again in a moment.", errors: {} };
+  const saved = await capturePublicRequest({
+    kind: kind === "vulnerability" ? "vulnerability" : "security_review",
+    email,
+    name: fullName,
+    detail: [business, role, details].filter(Boolean).join("\n"),
   });
-  try {
-    await new Resend(cfg.apiKey).emails.send({
-      from: cfg.from,
-      to: email,
-      subject: vulnerability ? "We received your security report" : "We received your security review request",
-      html,
-      text: lines.join("\n\n"),
-    });
-  } catch {
-    /* the request is already saved */
-  }
+  if (!saved.ok) return { ok: false, message: saved.message, errors: {} };
+  redirect(kind === "vulnerability" ? "/thanks?kind=report" : "/thanks?kind=review");
 }

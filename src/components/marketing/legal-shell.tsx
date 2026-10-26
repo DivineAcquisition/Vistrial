@@ -24,23 +24,23 @@ export function LegalShell({
         <div className="mx-auto max-w-3xl">
           <h1 className={`${marketingHeroTitle} text-[2.1rem] sm:text-4xl`}>{title}</h1>
           {updated || effective ? (
-            <p className="mt-4 text-sm leading-relaxed text-silver">
+            <p className="mt-4 text-sm leading-relaxed text-muted-foreground">
               {updated ? (
                 <>
-                  <strong className="font-semibold text-white">Last updated:</strong> {updated}
+                  <strong className="font-semibold text-strong">Last updated:</strong> {updated}
                 </>
               ) : null}
               {updated && effective ? <br /> : null}
               {effective ? (
                 <>
-                  <strong className="font-semibold text-white">Effective:</strong> {effective}
+                  <strong className="font-semibold text-strong">Effective:</strong> {effective}
                 </>
               ) : null}
             </p>
           ) : description ? (
-            <p className="mt-4 text-sm leading-relaxed text-silver">{description}</p>
+            <p className="mt-4 text-sm leading-relaxed text-muted-foreground">{description}</p>
           ) : null}
-          <div className="mt-8 text-[15px] leading-relaxed text-silver [&>p+p]:mt-4 [&>section]:mt-10 [&_strong]:font-semibold [&_strong]:text-white">
+          <div className="mt-8 text-[15px] leading-relaxed text-muted-foreground [&>p+p]:mt-4 [&>section]:mt-10 [&_strong]:font-semibold [&_strong]:text-strong">
             {children}
           </div>
         </div>
@@ -60,7 +60,7 @@ export function LegalSection({
 }) {
   return (
     <section id={id}>
-      <h2 className="font-heading text-xl tracking-tight text-white sm:text-[1.35rem]">{heading}</h2>
+      <h2 className="font-heading text-xl tracking-tight text-strong sm:text-[1.35rem]">{heading}</h2>
       <div className="mt-4 space-y-4">{children}</div>
     </section>
   );
@@ -71,7 +71,7 @@ export function LegalList({ children }: { children: ReactNode }) {
 }
 
 const legalLinkClass =
-  "text-brand-300 underline-offset-4 hover:text-white hover:underline";
+  "text-brand-300 underline-offset-4 hover:text-strong hover:underline";
 
 export function LegalMail({ email }: { email: string }) {
   return (
@@ -100,22 +100,22 @@ export function LegalTable({
     <div className="overflow-x-auto">
       <table className="w-full min-w-[28rem] border-collapse text-left text-[14px] leading-relaxed">
         <thead>
-          <tr className="border-b border-white/[0.08]">
-            <th scope="col" className="py-2 pr-6 font-semibold text-white">
+          <tr className="border-b border-border">
+            <th scope="col" className="py-2 pr-6 font-semibold text-strong">
               {headers[0]}
             </th>
-            <th scope="col" className="py-2 font-semibold text-white">
+            <th scope="col" className="py-2 font-semibold text-strong">
               {headers[1]}
             </th>
           </tr>
         </thead>
         <tbody>
           {rows.map((row, index) => (
-            <tr key={index} className="border-b border-white/[0.06] align-top">
-              <th scope="row" className="py-2.5 pr-6 font-medium text-white">
+            <tr key={index} className="border-b border-border align-top">
+              <th scope="row" className="py-2.5 pr-6 font-medium text-strong">
                 {row[0]}
               </th>
-              <td className="py-2.5 text-silver">{row[1]}</td>
+              <td className="py-2.5 text-muted-foreground">{row[1]}</td>
             </tr>
           ))}
         </tbody>

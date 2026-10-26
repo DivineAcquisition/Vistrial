@@ -35,8 +35,8 @@ import {
 } from "@/lib/marketing/ui";
 import { cn } from "@/lib/utils";
 
-const landingButton = "h-12! rounded-[8px]! border-brand-800! before:rounded-[7px]!";
-const landingOutline = "rounded-[8px]! border-[#2a2833] bg-[#1c1a27] before:rounded-[7px]! hover:bg-[#262333]";
+const landingButton = "h-12! rounded-[8px]! before:rounded-[7px]!";
+const landingOutline = "rounded-[8px]! border-border bg-card before:rounded-[7px]! hover:bg-muted";
 
 function Section({
   id,
@@ -53,7 +53,7 @@ function Section({
 }) {
   const centered = align === "center";
   return (
-    <section id={id} className={cn(marketingPageGutter, "scroll-mt-24 border-t border-[#2a2833] py-20 sm:py-28")}>
+    <section id={id} className={cn(marketingPageGutter, "scroll-mt-24 border-t border-border py-20 sm:py-28")}>
       <BlurFade inView offset={12} blur="8px" duration={0.55} className={marketingShell}>
         <h2 className={cn(marketingSectionTitle, centered && "mx-auto text-center")}>{headline}</h2>
         {lead ? <p className={cn(marketingLead, "mt-4", centered && "mx-auto text-center")}>{lead}</p> : null}
@@ -108,7 +108,7 @@ export function LandingPage() {
                   {HERO.secondaryCta}
                 </Button>
               </div>
-              <p className="mt-4 max-w-xl text-sm leading-relaxed text-silver">{HERO.trust}</p>
+              <p className="mt-4 max-w-xl text-sm leading-relaxed text-muted-foreground">{HERO.trust}</p>
             </div>
             <BeamFrame glow>
               <HeroExample />
@@ -125,7 +125,7 @@ export function LandingPage() {
           <div className="grid items-start gap-8 lg:grid-cols-[1.05fr_0.95fr]">
             <div className="space-y-5">
               <ProblemScene />
-              <div className="space-y-4 text-[15px] leading-relaxed text-silver sm:text-base">
+              <div className="space-y-4 text-[15px] leading-relaxed text-muted-foreground sm:text-base">
                 <p>{PROBLEM.opening}</p>
                 <p>{PROBLEM.scattered}</p>
               </div>
@@ -134,10 +134,10 @@ export function LandingPage() {
               {PROBLEM.pains.map((pain, index) => (
                 <li key={pain}>
                   <SpotlightCard className="flex items-start gap-3">
-                    <span className="inline-flex h-7 min-w-7 items-center justify-center rounded-md border border-[#2a2833] bg-[#12111a] px-1.5 font-heading text-xs text-white" aria-hidden>
+                    <span className="inline-flex h-7 min-w-7 items-center justify-center rounded-md border border-border bg-muted px-1.5 font-heading text-xs text-strong" aria-hidden>
                       {String(index + 1).padStart(2, "0")}
                     </span>
-                    <span className="text-sm leading-relaxed text-white">{pain}</span>
+                    <span className="text-sm leading-relaxed text-strong">{pain}</span>
                   </SpotlightCard>
                 </li>
               ))}
@@ -153,11 +153,11 @@ export function LandingPage() {
               <li key={step.id}>
                 <SpotlightCard glow beamDelay={index * 2.6} className="relative">
                   <HowScene id={step.id} />
-                  <Badge variant="outline" size="sm" className="mt-4 border-[#2a2833] bg-[#12111a]">
+                  <Badge variant="outline" size="sm" className="mt-4 border-border bg-muted">
                     {String(index + 1).padStart(2, "0")}
                   </Badge>
-                  <h3 className="mt-4 font-heading text-2xl text-white">{step.title}</h3>
-                  <p className="mt-3 text-sm leading-relaxed text-silver">{step.body}</p>
+                  <h3 className="mt-4 font-heading text-2xl text-strong">{step.title}</h3>
+                  <p className="mt-3 text-sm leading-relaxed text-muted-foreground">{step.body}</p>
                 </SpotlightCard>
               </li>
             ))}
@@ -181,8 +181,8 @@ export function LandingPage() {
                   <div className="mt-4">
                     <AgentName agentId={agent.id} size="lg" />
                   </div>
-                  <p className="mt-3 text-sm leading-relaxed text-silver">{agent.role}</p>
-                  <p className="mt-2 text-sm leading-relaxed text-white">{agent.promise}</p>
+                  <p className="mt-3 text-sm leading-relaxed text-muted-foreground">{agent.role}</p>
+                  <p className="mt-2 text-sm leading-relaxed text-strong">{agent.promise}</p>
                 </SpotlightCard>
               </li>
             ))}
@@ -204,7 +204,7 @@ export function LandingPage() {
             {SAFETY.items.map((item) => (
               <li key={item}>
                 <SpotlightCard>
-                  <p className="text-sm leading-relaxed text-white">{item}</p>
+                  <p className="text-sm leading-relaxed text-strong">{item}</p>
                 </SpotlightCard>
               </li>
             ))}
@@ -224,23 +224,23 @@ export function LandingPage() {
         <Section id="pricing" headline="Pricing">
           <div className="grid gap-4 lg:grid-cols-2">
             <SpotlightCard glow className="p-6">
-              <h3 className="font-heading text-2xl text-white">{PRICING_DISPLAY.privateAccess.name}</h3>
-              <p className="mt-2 text-lg text-white">{PRICING_DISPLAY.privateAccess.price}</p>
-              <ul className="mt-4 space-y-2 text-sm leading-relaxed text-silver">
+              <h3 className="font-heading text-2xl text-strong">{PRICING_DISPLAY.privateAccess.name}</h3>
+              <p className="mt-2 text-lg text-strong">{PRICING_DISPLAY.privateAccess.price}</p>
+              <ul className="mt-4 space-y-2 text-sm leading-relaxed text-muted-foreground">
                 {PRICING_DISPLAY.privateAccess.includes.map((item) => (
                   <li key={item}>{item}</li>
                 ))}
               </ul>
-              <p className="mt-4 text-sm leading-relaxed text-silver">{PRICING_DISPLAY.privateAccess.why}</p>
-              <p className="mt-3 text-sm leading-relaxed text-silver">{PRICING_DISPLAY.privateAccess.billingNote}</p>
+              <p className="mt-4 text-sm leading-relaxed text-muted-foreground">{PRICING_DISPLAY.privateAccess.why}</p>
+              <p className="mt-3 text-sm leading-relaxed text-muted-foreground">{PRICING_DISPLAY.privateAccess.billingNote}</p>
               <Button variant="gradient" className={cn("mt-6", landingButton)} render={<Link href="/request?from=pricing" data-cta-position="pricing" />}>
                 {PRICING_DISPLAY.privateAccess.cta}
               </Button>
             </SpotlightCard>
             <SpotlightCard className="p-6">
-              <h3 className="font-heading text-2xl text-white">{PRICING_DISPLAY.custom.name}</h3>
-              <p className="mt-2 text-lg text-white">{PRICING_DISPLAY.custom.price}</p>
-              <p className="mt-4 text-sm leading-relaxed text-silver">{PRICING_DISPLAY.custom.body}</p>
+              <h3 className="font-heading text-2xl text-strong">{PRICING_DISPLAY.custom.name}</h3>
+              <p className="mt-2 text-lg text-strong">{PRICING_DISPLAY.custom.price}</p>
+              <p className="mt-4 text-sm leading-relaxed text-muted-foreground">{PRICING_DISPLAY.custom.body}</p>
               <Button variant="outline" className={cn("mt-6", landingOutline)} render={<Link href="/contact?from=pricing" data-cta-position="pricing" />}>
                 {PRICING_DISPLAY.custom.cta}
               </Button>
@@ -262,7 +262,7 @@ export function LandingPage() {
       ) : null}
 
       {SECTIONS.final ? (
-        <section id={FINAL_CTA.id} className={cn(marketingPageGutter, "scroll-mt-24 border-t border-[#2a2833] py-20 sm:py-28")}>
+        <section id={FINAL_CTA.id} className={cn(marketingPageGutter, "scroll-mt-24 border-t border-border py-20 sm:py-28")}>
           <BlurFade inView offset={12} blur="8px" duration={0.55} className={marketingShell}>
             <BeamFrame glow beamDelay={1.4} className="mx-auto max-w-3xl text-center">
               <h2 className={cn(marketingSectionTitle, "mx-auto text-center")}>{FINAL_CTA.headline}</h2>

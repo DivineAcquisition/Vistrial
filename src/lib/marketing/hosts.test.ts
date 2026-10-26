@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import { PRODUCTION_APP_ORIGIN, PRODUCTION_SITE_ORIGIN } from "@/lib/constants";
 import {
   hostnameFromHostHeader,
+  isClerkHost,
   isOperatorAppHost,
   resolveSiteOrigin,
 } from "@/lib/marketing/hosts";
@@ -16,6 +17,16 @@ describe("isOperatorAppHost", () => {
     expect(isOperatorAppHost("localhost:3000")).toBe(false);
     expect(isOperatorAppHost("forsight.vistrial.io")).toBe(false);
     expect(isOperatorAppHost("pulse.vistrial.io")).toBe(false);
+  });
+});
+
+describe("isClerkHost", () => {
+  it("turns sign-in on for the app hosts and leaves the public site alone", () => {
+    expect(isClerkHost("app.vistrial.io")).toBe(true);
+    expect(isClerkHost("admin.vistrial.io")).toBe(true);
+    expect(isClerkHost("localhost:3000")).toBe(true);
+    expect(isClerkHost("www.vistrial.io")).toBe(false);
+    expect(isClerkHost("vistrial.io")).toBe(false);
   });
 });
 

@@ -1,11 +1,7 @@
 "use server";
 
-import { headers } from "next/headers";
-import type { SupabaseClient } from "@supabase/supabase-js";
-
 import { cleanText } from "@/lib/access-requests/validate";
-import { requestIp } from "@/lib/ops/rate-limit";
-import { getSupabaseAdmin } from "@/lib/supabase/admin";
+import { capturePublicRequest } from "@/lib/marketing/capture";
 
 export type LeadNoteState = { ok: boolean; message: string };
 
@@ -15,20 +11,15 @@ export async function submitLeadNote(_prev: LeadNoteState, form: FormData): Prom
   if (!email.includes("@") || !details) {
     return { ok: false, message: "Enter an email and what should change." };
   }
-  try {
-    const db = getSupabaseAdmin() as unknown as SupabaseClient;
-    const { data, error } = await db.rpc("submit_lead_data_note", {
-      p_name: cleanText(form.get("name"), 120),
-      p_email: email,
-      p_business: cleanText(form.get("business"), 160),
-      p_details: details,
-      p_ip: requestIp(await headers()),
-    });
-    if (error || !(data as { ok?: boolean } | null)?.ok) {
-      return { ok: false, message: "We could not save that just now. Try again in a moment." };
-    }
-  } catch {
-    return { ok: false, message: "We could not save that just now. Try again in a moment." };
+  if (cleanText(form.get("company_website_confirm"), 200)) {
+    return { ok: true, message: "Received. We will pass this to the business when we can tell who they are." };
   }
+  const saved = await capturePublicRequest({
+    kind: "lead_data_note",
+    email,
+    name: cleanText(form.get("name"), 120),
+    detail: [cleanText(form.get("business"), 160), details].filter(Boolean).join("\n"),
+  });
+  if (!saved.ok) return { ok: false, message: saved.message };
   return { ok: true, message: "Received. We will pass this to the business when we can tell who they are." };
 }

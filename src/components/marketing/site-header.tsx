@@ -4,10 +4,11 @@ import Link from "next/link";
 import { MarketingMobileNav, MarketingNav } from "@/components/marketing/marketing-nav";
 import { Button } from "@/components/ui/button";
 import { APP_NAME } from "@/lib/constants";
-import { EMAIL_LOGO_PATH } from "@/lib/email/layout";
 import { NAV } from "@/lib/marketing/content";
 import { marketingPageGutter, marketingShell } from "@/lib/marketing/ui";
 import { cn } from "@/lib/utils";
+
+const EMAIL_LOGO_PATH = "/brand/vistrial-icon.png";
 
 const navButton = "h-12! rounded-[8px]! before:rounded-[7px]!";
 
@@ -15,7 +16,7 @@ export function SiteHeader({ action = "cta" }: { action?: "cta" | "none" }) {
   const showNav = action === "cta";
 
   return (
-    <header className="relative sticky top-0 z-50 border-b border-[#2a2833] bg-[#07070b]">
+    <header className="relative sticky top-0 z-50 border-b border-border bg-background">
       <div className={cn(marketingShell, marketingPageGutter, "flex h-[4.5rem] items-center justify-between gap-4")}>
         <Link href="/" className="shrink-0 rounded-md" aria-label={`${APP_NAME} home`}>
           {/* Same square mark as the email header. */}
@@ -35,11 +36,11 @@ export function SiteHeader({ action = "cta" }: { action?: "cta" | "none" }) {
         ) : null}
         {showNav ? (
           <details className="relative shrink-0">
-            <summary className="flex size-10 cursor-pointer list-none items-center justify-center rounded-md border border-[#2a2833] bg-[#12111a] text-white [&::-webkit-details-marker]:hidden">
+            <summary className="flex size-10 cursor-pointer list-none items-center justify-center rounded-md border border-border bg-muted text-strong [&::-webkit-details-marker]:hidden">
               <span className="sr-only">{NAV.openMenu}</span>
               <Menu className="size-4" aria-hidden="true" />
             </summary>
-            <div className="absolute right-0 z-50 mt-2 w-64 rounded-lg border border-[#2a2833] bg-[#12111a] p-3 shadow-xl">
+            <div className="absolute right-0 z-50 mt-2 w-64 rounded-lg border border-border bg-muted p-3 shadow-xl">
               <Button variant="gradient" size="lg" className={cn(navButton, "w-full")} render={<Link href="/request?from=nav" data-cta-position="nav" />}>
                 {NAV.request}
               </Button>

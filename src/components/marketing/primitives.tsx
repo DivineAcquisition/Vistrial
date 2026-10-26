@@ -25,7 +25,7 @@ export function Eyebrow({ children }: { children: ReactNode }) {
 
 export function StatusPill({ children }: { children: ReactNode }) {
   return (
-    <p className="inline-flex items-center gap-2 rounded-full border border-white/[0.1] bg-white/[0.04] px-3 py-1 text-[11px] font-semibold tracking-[0.16em] text-brand-300 uppercase">
+    <p className="inline-flex items-center gap-2 rounded-full border border-border bg-muted px-3 py-1 text-[11px] font-semibold tracking-[0.16em] text-brand-300 uppercase">
       <span className="relative flex size-1.5">
         <span className="absolute inline-flex size-full animate-ping rounded-full bg-brand-400 opacity-70" />
         <span className="relative inline-flex size-1.5 rounded-full bg-brand-400" />
@@ -78,7 +78,7 @@ export function MarketingSection({
     <section
       id={id}
       className={cn(
-        "scroll-mt-32 border-t border-white/[0.07]",
+        "scroll-mt-32 border-t border-border",
         marketingPageGutter,
         marketingSectionY,
         className
@@ -164,7 +164,7 @@ export function ProductFrame({
           filter: "blur(28px)",
         }}
       />
-      <div className="relative overflow-hidden rounded-2xl border border-white/[0.1] bg-ink-850/90 shadow-[inset_0_1px_0_rgba(255,255,255,0.07),0_28px_90px_-32px_rgba(0,0,0,0.9)]">
+      <div className="relative overflow-hidden rounded-2xl border border-border bg-ink-850/90 shadow-[inset_0_1px_0_rgba(255,255,255,0.07),0_28px_90px_-32px_rgba(0,0,0,0.9)]">
         <BorderBeam
           size={80}
           duration={8}
@@ -172,15 +172,15 @@ export function ProductFrame({
           colorTo="#C3B6FE"
           borderWidth={1}
         />
-        <div className="flex items-center gap-3 border-b border-white/[0.06] px-3 py-2.5">
+        <div className="flex items-center gap-3 border-b border-border px-3 py-2.5">
           <span className="flex gap-1.5" aria-hidden>
-            <span className="size-2 rounded-full bg-white/25" />
-            <span className="size-2 rounded-full bg-white/15" />
-            <span className="size-2 rounded-full bg-white/15" />
+            <span className="size-2 rounded-full bg-foreground/20" />
+            <span className="size-2 rounded-full bg-foreground/10" />
+            <span className="size-2 rounded-full bg-foreground/10" />
           </span>
-          <figcaption className="min-w-0 truncate text-[12px] font-medium tracking-wide text-dim">
+          <figcaption className="min-w-0 truncate text-[12px] font-medium tracking-wide text-muted-foreground">
             {title}
-            {caption ? <span className="text-silver"> · {caption}</span> : null}
+            {caption ? <span className="text-muted-foreground"> · {caption}</span> : null}
           </figcaption>
         </div>
         <div className="overflow-hidden">{children}</div>
@@ -197,7 +197,7 @@ export function FinalCta({
   children: ReactNode;
 }) {
   return (
-    <div className="relative overflow-hidden rounded-3xl border border-white/[0.1] bg-ink-900 px-6 py-14 text-center sm:px-16 sm:py-20">
+    <div className="relative overflow-hidden rounded-3xl border border-border bg-ink-900 px-6 py-14 text-center sm:px-16 sm:py-20">
       <ShineBorder shineColor={["#9A88FC", "#C3B6FE"]} duration={12} />
       <div
         aria-hidden

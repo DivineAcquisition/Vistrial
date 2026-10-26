@@ -10,7 +10,7 @@
  * product reads as one brand.
  *
  * The workspace is white by default with a dark theme a person can switch to.
- * The public site and the auth desk stay dark. #9A88FC (brand-500) is the prime
+ * The public site stays white. #9A88FC (brand-500) is the prime
  * colour in both themes. It is light enough that near-black type reads better on
  * it than white, which is why filled buttons invert their label. Neutrals are
  * slightly violet-shifted (ink-*) so the brand sits naturally on top of them.
@@ -2185,4 +2185,13 @@ html[data-calm="true"] .live-shimmer-text {
     flex-basis: 100%;
     max-width: none;
   }
+}
+
+/* Clerk paints a black strip behind "Secured by". Keep that line on the card. */
+.cl-footer,
+.cl-footerItem {
+  background-color: var(--card) !important;
+  background-image: none !important;
+  box-shadow: none !important;
+  color: var(--muted-foreground) !important;
 }

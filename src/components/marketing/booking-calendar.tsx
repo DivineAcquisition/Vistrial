@@ -18,7 +18,7 @@ export function BookingCalendar({
   if (!open) {
     return (
       <div className="mx-auto max-w-xl text-center">
-        <p className="text-sm leading-relaxed text-silver">
+        <p className="text-sm leading-relaxed text-muted-foreground">
           The booking calendar is provided by GoHighLevel. It stays unloaded until you open it, and it may set its own cookies after that.
         </p>
         <Button type="button" className="mt-4" variant="outline" onClick={() => setOpen(true)}>

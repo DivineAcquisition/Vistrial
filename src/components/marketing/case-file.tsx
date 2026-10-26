@@ -18,18 +18,18 @@ export function HeroCaseFile() {
   const demo = DEMO_CASE;
   return (
     <div className="bg-ink-900">
-      <div className="flex gap-5 border-b border-white/[0.06] px-4 pt-3">
-        <span className="border-b-2 border-brand-500 pb-2.5 text-xs font-medium text-white">File</span>
-        <span className="pb-2.5 text-xs text-dim">Timeline</span>
-        <span className="pb-2.5 text-xs text-dim">Brief</span>
+      <div className="flex gap-5 border-b border-border px-4 pt-3">
+        <span className="border-b-2 border-brand-500 pb-2.5 text-xs font-medium text-strong">File</span>
+        <span className="pb-2.5 text-xs text-muted-foreground">Timeline</span>
+        <span className="pb-2.5 text-xs text-muted-foreground">Brief</span>
       </div>
 
       <div className="p-4">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div className="min-w-0">
             <SampleMark />
-            <p className="mt-1.5 font-heading text-base text-white">{demo.name}</p>
-            <p className="mt-1 text-sm text-silver">
+            <p className="mt-1.5 font-heading text-base text-strong">{demo.name}</p>
+            <p className="mt-1 text-sm text-muted-foreground">
               {demo.email} · {demo.phone}
             </p>
             <div className="mt-3 flex flex-wrap gap-2">
@@ -45,7 +45,7 @@ export function HeroCaseFile() {
                 className="text-brand-500 dark:text-brand-500"
               />
             </p>
-            <p className="mt-1 text-xs text-dim">/ 100</p>
+            <p className="mt-1 text-xs text-muted-foreground">/ 100</p>
           </div>
         </div>
 
@@ -64,17 +64,17 @@ export function HeroCaseFile() {
         <div className="mt-6 rounded-xl border border-flag-warning/25 bg-flag-warning/[0.08] p-4">
           <div className="flex flex-wrap items-center gap-2">
             <StatusBadge label={demo.objection.type} tone="warning" />
-            <span className="text-xs text-dim">{demo.objection.source}</span>
+            <span className="text-xs text-muted-foreground">{demo.objection.source}</span>
           </div>
-          <p className="mt-2 text-sm text-white">“{demo.objection.verbatim}”</p>
+          <p className="mt-2 text-sm text-strong">“{demo.objection.verbatim}”</p>
         </div>
 
-        <AnimatedList className="mt-5 items-stretch gap-3 border-t border-white/[0.06] pt-4" delay={800}>
+        <AnimatedList className="mt-5 items-stretch gap-3 border-t border-border pt-4" delay={800}>
           {demo.touches.slice(0, 3).map((touch) => (
             <div key={`${touch.when}-${touch.channel}`} className="flex items-start justify-between gap-3">
-              <p className="text-sm text-white">
+              <p className="text-sm text-strong">
                 {touch.channel}
-                <span className="ml-2 text-dim">
+                <span className="ml-2 text-muted-foreground">
                   {touch.who} · {touch.when}
                 </span>
               </p>
@@ -82,12 +82,12 @@ export function HeroCaseFile() {
           ))}
         </AnimatedList>
 
-        <div className="mt-4 rounded-lg border border-white/[0.08] bg-white/[0.03] px-3 py-2.5">
+        <div className="mt-4 rounded-lg border border-border bg-muted px-3 py-2.5">
           <div className="flex flex-wrap items-center gap-2">
             <StatusBadge label={demo.followUp.channel} tone="brand" />
             <StatusBadge label={demo.followUp.status} tone="warning" />
           </div>
-          <p className="mt-2 line-clamp-2 text-xs leading-relaxed text-silver">{demo.followUp.body}</p>
+          <p className="mt-2 line-clamp-2 text-xs leading-relaxed text-muted-foreground">{demo.followUp.body}</p>
         </div>
       </div>
     </div>
@@ -103,15 +103,15 @@ export function AnnotatedCaseFile() {
         <div className="flex flex-wrap items-end justify-between gap-4">
           <div>
             <SampleMark />
-            <p className="mt-2 font-heading text-base text-white">{demo.name}</p>
-            <p className="mt-1 text-xs text-silver">
+            <p className="mt-2 font-heading text-base text-strong">{demo.name}</p>
+            <p className="mt-1 text-xs text-muted-foreground">
               {demo.source}
               {demo.campaign ? ` · ${demo.campaign}` : ""}
             </p>
           </div>
           <div className="text-right">
             <p className="tabular font-heading text-2xl text-brand-500">{demo.score.total}</p>
-            <p className="mt-1 text-xs text-dim">{demo.score.confidence}</p>
+            <p className="mt-1 text-xs text-muted-foreground">{demo.score.confidence}</p>
           </div>
         </div>
         <div className="mt-5 grid gap-3 sm:grid-cols-2">
@@ -125,28 +125,28 @@ export function AnnotatedCaseFile() {
             />
           ))}
         </div>
-        <p className="mt-4 text-sm leading-relaxed text-silver">{demo.score.reasoning}</p>
+        <p className="mt-4 text-sm leading-relaxed text-muted-foreground">{demo.score.reasoning}</p>
       </CasePart>
 
       <CasePart title={CASE_FILE.parts[1].title} body={CASE_FILE.parts[1].body}>
         <ol className="space-y-3">
           {demo.touches.map((touch) => (
-            <li key={`${touch.when}-${touch.channel}`} className="border-t border-white/[0.05] pt-3 first:border-t-0 first:pt-0">
-              <p className="text-sm text-white">
+            <li key={`${touch.when}-${touch.channel}`} className="border-t border-border pt-3 first:border-t-0 first:pt-0">
+              <p className="text-sm text-strong">
                 {touch.channel}
-                <span className="ml-2 text-dim">
+                <span className="ml-2 text-muted-foreground">
                   {touch.who} · {touch.when}
                 </span>
               </p>
-              <p className="mt-1 text-sm text-silver">{touch.detail}</p>
+              <p className="mt-1 text-sm text-muted-foreground">{touch.detail}</p>
             </li>
           ))}
         </ol>
       </CasePart>
 
       <CasePart title={CASE_FILE.parts[2].title} body={CASE_FILE.parts[2].body}>
-        <p className="text-sm font-medium text-white">{demo.transcript.title}</p>
-        <dl className="mt-3 divide-y divide-white/[0.05]">
+        <p className="text-sm font-medium text-strong">{demo.transcript.title}</p>
+        <dl className="mt-3 divide-y divide-border">
           <TranscriptRow label="Budget" value={demo.transcript.budget} />
           <TranscriptRow label="Timeline" value={demo.transcript.timeline} />
           <TranscriptRow label="Who else decides" value={demo.transcript.authority} />
@@ -156,22 +156,22 @@ export function AnnotatedCaseFile() {
       <CasePart title={CASE_FILE.parts[3].title} body={CASE_FILE.parts[3].body}>
         <div className={insetSurface}>
           <StatusBadge label={demo.objection.type} tone="warning" />
-          <p className="mt-2 text-sm text-white">“{demo.objection.verbatim}”</p>
-          <p className="mt-1 text-xs text-dim">{demo.objection.source}</p>
+          <p className="mt-2 text-sm text-strong">“{demo.objection.verbatim}”</p>
+          <p className="mt-1 text-xs text-muted-foreground">{demo.objection.source}</p>
         </div>
       </CasePart>
 
       <CasePart title={CASE_FILE.parts[4].title} body={CASE_FILE.parts[4].body}>
         <p className="text-[11px] font-semibold tracking-[0.14em] text-brand-300 uppercase">Who</p>
-        <p className="mt-1 font-heading text-sm text-white">{demo.brief.who}</p>
+        <p className="mt-1 font-heading text-sm text-strong">{demo.brief.who}</p>
         <p className="mt-4 text-[11px] font-semibold tracking-[0.14em] text-brand-300 uppercase">
           What the setter established
         </p>
-        <p className="mt-1 text-sm text-silver">{demo.brief.setter}</p>
+        <p className="mt-1 text-sm text-muted-foreground">{demo.brief.setter}</p>
         <p className="mt-4 text-[11px] font-semibold tracking-[0.14em] text-brand-300 uppercase">
           Their words
         </p>
-        <p className="mt-1 text-sm text-silver">“{demo.brief.quote}”</p>
+        <p className="mt-1 text-sm text-muted-foreground">“{demo.brief.quote}”</p>
       </CasePart>
 
       <CasePart title={CASE_FILE.parts[5].title} body={CASE_FILE.parts[5].body}>
@@ -179,7 +179,7 @@ export function AnnotatedCaseFile() {
           <StatusBadge label={demo.followUp.channel} tone="brand" />
           <StatusBadge label={demo.followUp.status} tone="warning" />
         </div>
-        <p className="mt-3 whitespace-pre-wrap text-sm leading-relaxed text-silver">
+        <p className="mt-3 whitespace-pre-wrap text-sm leading-relaxed text-muted-foreground">
           {demo.followUp.body}
         </p>
       </CasePart>
@@ -198,8 +198,8 @@ function CasePart({
 }) {
   return (
     <Card className="rounded-xl p-4">
-      <h3 className="font-heading text-base text-white">{title}</h3>
-      <p className="mt-2 max-w-2xl text-sm leading-relaxed text-silver">{body}</p>
+      <h3 className="font-heading text-base text-strong">{title}</h3>
+      <p className="mt-2 max-w-2xl text-sm leading-relaxed text-muted-foreground">{body}</p>
       <div className="mt-5">{children}</div>
     </Card>
   );
@@ -208,10 +208,10 @@ function CasePart({
 function TranscriptRow({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex flex-col gap-1 py-2.5 sm:flex-row sm:items-baseline sm:gap-4">
-      <dt className="w-full shrink-0 text-xs font-medium tracking-[0.1em] text-dim uppercase sm:w-40">
+      <dt className="w-full shrink-0 text-xs font-medium tracking-[0.1em] text-muted-foreground uppercase sm:w-40">
         {label}
       </dt>
-      <dd className="min-w-0 flex-1 text-sm text-silver">{value}</dd>
+      <dd className="min-w-0 flex-1 text-sm text-muted-foreground">{value}</dd>
     </div>
   );
 }

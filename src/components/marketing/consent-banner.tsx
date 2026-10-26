@@ -114,9 +114,9 @@ export function ConsentBanner({
   return (
     <>
       {showBanner ? (
-        <div className="fixed inset-x-0 bottom-0 z-40 border-t border-[#2a2833] bg-[#07070b] px-4 py-3 backdrop-blur" role="dialog" aria-label="Cookie choices">
+        <div className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-background px-4 py-3 backdrop-blur" role="dialog" aria-label="Cookie choices">
           <div className="mx-auto flex max-w-3xl flex-col gap-3">
-            <p className="text-sm leading-relaxed text-silver">
+            <p className="text-sm leading-relaxed text-muted-foreground">
               We use cookies and similar tools to keep this site working, and, if you allow it, to understand how it is used and to measure our ads. Nothing optional runs until you choose.{" "}
               <a href="/privacy" className="text-brand-300 underline">Privacy</a>
               {" · "}
@@ -127,23 +127,23 @@ export function ConsentBanner({
               <Button type="button" variant="outline" onClick={() => save("reject", version, gpc)}>Reject all</Button>
               <Button type="button" variant="outline" onClick={openPreferences}>Manage preferences</Button>
             </div>
-            <button type="button" className="text-left text-xs text-dim underline" onClick={() => { if (!save("dismiss", version, gpc)) setBlocked(true); }}>
+            <button type="button" className="text-left text-xs text-muted-foreground underline" onClick={() => { if (!save("dismiss", version, gpc)) setBlocked(true); }}>
               Close without choosing
             </button>
-            {blocked ? <p className="text-xs text-silver">We could not save a choice in this browser. Optional tools stay off.</p> : null}
+            {blocked ? <p className="text-xs text-muted-foreground">We could not save a choice in this browser. Optional tools stay off.</p> : null}
           </div>
         </div>
       ) : null}
       {open ? (
         <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 p-4 sm:items-center" role="dialog" aria-modal="true" aria-label="Cookie preferences">
-          <div className="max-h-[85vh] w-full max-w-lg overflow-y-auto rounded-xl border border-[#2a2833] bg-[#07070b] p-5">
-            <h2 className="font-heading text-xl text-white">Cookie preferences</h2>
-            <p className="mt-2 text-sm text-silver">Your choice applies to this browser.</p>
-            {gpc ? <p className="mt-2 text-sm text-white">We detected your Global Privacy Control setting and are honoring it. You can still allow a category here.</p> : null}
+          <div className="max-h-[85vh] w-full max-w-lg overflow-y-auto rounded-xl border border-border bg-background p-5">
+            <h2 className="font-heading text-xl text-strong">Cookie preferences</h2>
+            <p className="mt-2 text-sm text-muted-foreground">Your choice applies to this browser.</p>
+            {gpc ? <p className="mt-2 text-sm text-strong">We detected your Global Privacy Control setting and are honoring it. You can still allow a category here.</p> : null}
             <Category title="Essential" body="Always on. Sign-in, security, form abuse checks, and remembering this choice." locked />
             <Category title="Analytics" body="Page counts on our servers, and Google Analytics when it is switched on." checked={analytics} onChange={setAnalytics} />
             <Category title="Advertising" body="The Meta pixel, when it is switched on, to measure our own ads." checked={advertising} onChange={setAdvertising} />
-            <ul className="mt-4 space-y-2 text-xs text-dim">
+            <ul className="mt-4 space-y-2 text-xs text-muted-foreground">
               {tools.filter((tool) => tool.enabled).map((tool) => (
                 <li key={tool.slug}>{tool.name} ({tool.company}): {tool.purpose}</li>
               ))}
@@ -152,9 +152,9 @@ export function ConsentBanner({
               <Button type="button" variant="outline" onClick={() => save("custom", version, gpc, { analytics, advertising })}>Save my choices</Button>
               <Button type="button" variant="outline" onClick={() => save("accept", version, gpc)}>Accept all</Button>
               <Button type="button" variant="outline" onClick={() => save("reject", version, gpc)}>Reject all</Button>
-              <button type="button" className="text-sm text-dim underline" onClick={() => setOpen(false)}>Close</button>
+              <button type="button" className="text-sm text-muted-foreground underline" onClick={() => setOpen(false)}>Close</button>
             </div>
-            {blocked ? <p className="mt-2 text-xs text-silver">We could not save a choice in this browser. Optional tools stay off.</p> : null}
+            {blocked ? <p className="mt-2 text-xs text-muted-foreground">We could not save a choice in this browser. Optional tools stay off.</p> : null}
           </div>
         </div>
       ) : null}
@@ -176,9 +176,9 @@ function Category({
   onChange?: (value: boolean) => void;
 }) {
   return (
-    <label className="mt-4 flex items-start justify-between gap-3 text-sm text-silver">
+    <label className="mt-4 flex items-start justify-between gap-3 text-sm text-muted-foreground">
       <span>
-        <span className="block text-white">{title}</span>
+        <span className="block text-strong">{title}</span>
         {body}
       </span>
       <input type="checkbox" className="mt-1" checked={locked ? true : checked} disabled={locked} onChange={(event) => onChange?.(event.target.checked)} />
@@ -190,7 +190,7 @@ export function OpenConsentButton({ label = "Cookie preferences", className }: {
   return (
     <button
       type="button"
-      className={cn("text-sm text-silver hover:text-brand-300", className)}
+      className={cn("text-sm text-muted-foreground hover:text-brand-300", className)}
       onClick={() => window.dispatchEvent(new Event("vistrial-open-consent"))}
     >
       {label}

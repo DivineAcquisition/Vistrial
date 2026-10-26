@@ -35,7 +35,9 @@ export default function AgentPage() {
             <li key={skill.slug} className="grid gap-2 rounded-xl border border-border p-4">
               <p className="font-medium text-card-foreground">{skill.name}</p>
               <p className="text-sm text-muted-foreground">{skill.handsBack}</p>
-              {canRun ? (
+              {skill.status === "comingSoon" ? (
+                <p className="text-sm text-muted-foreground">Coming soon.</p>
+              ) : canRun ? (
                 <Button
                   type="button"
                   variant="secondary"

@@ -92,15 +92,26 @@ export const shell = workspaceQuery({
       .query("workspaceSettings")
       .withIndex("by_workspace", (q) => q.eq("workspaceId", ctx.workspaceId))
       .unique();
+    const areas = await ctx.db.query("areas").withIndex("by_sort").take(20);
     const agents = await ctx.db.query("agents").withIndex("by_sort").take(50);
+    const skills = await ctx.db.query("skills").withIndex("by_sort").take(100);
     const links = await ctx.db
       .query("workspaceAgents")
       .withIndex("by_workspace", (q) => q.eq("workspaceId", ctx.workspaceId))
       .take(50);
     const stateByAgent = new Map(links.map((link) => [link.agentId, link.state]));
+    const skillsByAgent = new Map<string, typeof skills>();
+    for (const skill of skills) {
+      const list = skillsByAgent.get(skill.agentSlug) ?? [];
+      list.push(skill);
+      skillsByAgent.set(skill.agentSlug, list);
+    }
     return {
       role: ctx.member.role,
       setupDone: settings?.setupDone ?? false,
+      areas: areas
+        .map((area) => ({ slug: area.slug, name: area.name, sort: area.sort }))
+        .sort((a, b) => a.sort - b.sort),
       agents: agents
         .filter((agent) => agent.retired !== true)
         .map((agent) => ({
@@ -111,7 +122,16 @@ export const shell = workspaceQuery({
           job: agent.job,
           promise: agent.promise,
           sort: agent.sort,
-          skills: agent.skills ?? [],
+          skills: (skillsByAgent.get(agent.slug) ?? [])
+            .sort((a, b) => a.sort - b.sort)
+            .map((skill) => ({
+              slug: skill.slug,
+              name: skill.name,
+              handsBack: skill.job,
+              promise: skill.promise,
+              status: skill.status,
+              sort: skill.sort,
+            })),
           state: stateByAgent.get(agent._id) ?? "off",
         }))
         .sort((a, b) => a.sort - b.sort || a.name.localeCompare(b.name)),

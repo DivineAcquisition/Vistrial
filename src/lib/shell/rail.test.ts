@@ -16,6 +16,15 @@ describe("workspace rail", () => {
     ]);
   });
 
+  it("uses the area name stored in the table", () => {
+    const rail = railFromCatalog(CATALOG, [
+      { slug: "sales", name: "Pipeline", sort: 0 },
+      { slug: "retention", name: "Keep", sort: 1 },
+      { slug: "operations", name: "Run", sort: 2 },
+    ]);
+    expect(rail.areas.map((group) => group.label)).toEqual(["Pipeline", "Keep", "Run"]);
+  });
+
   it("shows a new registry row in its area without a code change", () => {
     const north: CatalogAgent = {
       slug: "north",

@@ -25,6 +25,13 @@ describe("sales studio", () => {
     const t = convexTest(schema, modules);
     const owner = t.withIdentity(person("owner"));
     const workspaceId = await owner.mutation(api.workspace.create, { name: "Alpha" });
+    const shell = await owner.query(api.workspace.shell, { workspaceId });
+    expect(shell.areas.map((area: { slug: string }) => area.slug)).toEqual(["sales", "retention", "operations"]);
+    expect(
+      shell.agents
+        .find((agent: { slug: string }) => agent.slug === "sales")
+        ?.skills.find((skill: { slug: string }) => skill.slug === "ad-research")?.status,
+    ).toBe("available");
     await expect(owner.mutation(api.studio.completeSetup, { workspaceId })).rejects.toThrow("Add the offer and the audience");
     await owner.mutation(api.studio.saveProfile, {
       workspaceId,

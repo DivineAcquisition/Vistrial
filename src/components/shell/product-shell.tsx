@@ -10,7 +10,7 @@ import Logo from "@/components/brand/logo";
 import { CommandBar } from "@/components/shell/command-bar";
 import { LiveAside } from "@/components/shell/live-aside";
 import { StatusBadge } from "@/components/ui/status-badge";
-import { railFromCatalog, type RailAgent } from "@/lib/shell/rail";
+import { railFromCatalog, type RailAgent, type RailArea } from "@/lib/shell/rail";
 import { cn } from "@/lib/utils";
 
 const tabs = [
@@ -24,8 +24,18 @@ function active(pathname: string, href: string) {
   return pathname === href || pathname.startsWith(`${href}/`);
 }
 
-function RailLinks({ agents, pathname, onNavigate }: { agents: RailAgent[]; pathname: string; onNavigate?: () => void }) {
-  const rail = railFromCatalog(agents);
+function RailLinks({
+  areas,
+  agents,
+  pathname,
+  onNavigate,
+}: {
+  areas: RailArea[];
+  agents: RailAgent[];
+  pathname: string;
+  onNavigate?: () => void;
+}) {
+  const rail = railFromCatalog(agents, areas);
   const item = "flex items-center justify-between gap-3 rounded-lg px-3 py-2 text-sm text-foreground hover:bg-accent";
   return (
     <div className="grid gap-6">
@@ -77,7 +87,15 @@ function RailLinks({ agents, pathname, onNavigate }: { agents: RailAgent[]; path
   );
 }
 
-export function ProductShell({ agents, children }: { agents: RailAgent[]; children: React.ReactNode }) {
+export function ProductShell({
+  areas = [],
+  agents,
+  children,
+}: {
+  areas?: RailArea[];
+  agents: RailAgent[];
+  children: React.ReactNode;
+}) {
   const pathname = usePathname();
   const [menuOpen, setMenuOpen] = useState(false);
   const [askOpen, setAskOpen] = useState(false);
@@ -98,7 +116,7 @@ export function ProductShell({ agents, children }: { agents: RailAgent[]; childr
             </Link>
           </div>
           <div className="min-h-0 flex-1 overflow-y-auto px-3 pb-6">
-            <RailLinks agents={agents} pathname={pathname} />
+            <RailLinks areas={areas} agents={agents} pathname={pathname} />
           </div>
         </aside>
         <div className="flex min-w-0 flex-1 flex-col">
@@ -145,7 +163,7 @@ export function ProductShell({ agents, children }: { agents: RailAgent[]; childr
       </div>
       {menuOpen ? (
         <div className="fixed inset-x-0 bottom-16 z-30 max-h-[70dvh] overflow-y-auto border-t border-border bg-background p-4 md:hidden">
-          <RailLinks agents={agents} pathname={pathname} onNavigate={() => setMenuOpen(false)} />
+          <RailLinks areas={areas} agents={agents} pathname={pathname} onNavigate={() => setMenuOpen(false)} />
         </div>
       ) : null}
       <nav

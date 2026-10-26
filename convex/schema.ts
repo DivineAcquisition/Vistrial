@@ -81,6 +81,16 @@ export default defineSchema({
     createdAt: v.number(),
   }).index("by_workspace", ["workspaceId"]),
 
+  areas: defineTable({
+    slug: v.string(),
+    name: v.string(),
+    job: v.string(),
+    promise: v.string(),
+    sort: v.number(),
+  })
+    .index("by_slug", ["slug"])
+    .index("by_sort", ["sort"]),
+
   agents: defineTable({
     slug: v.string(),
     name: v.string(),
@@ -102,6 +112,20 @@ export default defineSchema({
     retired: v.optional(v.boolean()),
   })
     .index("by_slug", ["slug"])
+    .index("by_sort", ["sort"])
+    .index("by_area", ["area", "sort"]),
+
+  skills: defineTable({
+    slug: v.string(),
+    agentSlug: v.string(),
+    name: v.string(),
+    job: v.string(),
+    promise: v.string(),
+    status: v.union(v.literal("available"), v.literal("comingSoon")),
+    sort: v.number(),
+  })
+    .index("by_slug", ["slug"])
+    .index("by_agent", ["agentSlug", "sort"])
     .index("by_sort", ["sort"]),
 
   workspaceAgents: defineTable({

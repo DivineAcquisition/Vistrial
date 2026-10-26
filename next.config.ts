@@ -9,7 +9,7 @@ const ContentSecurityPolicy = [
   "style-src 'self' 'unsafe-inline'",
   "img-src 'self' data: blob: https:",
   "font-src 'self' data:",
-  "connect-src 'self' https://*.convex.cloud wss://*.convex.cloud https://challenges.cloudflare.com https://clerk.vistrial.io https://*.clerk.accounts.dev https://clerk-telemetry.com https://*.clerk-telemetry.com https://*.protect.clerk.com",
+  "connect-src 'self' https://*.convex.cloud wss://*.convex.cloud https://challenges.cloudflare.com https://clerk.vistrial.io https://*.clerk.accounts.dev https://clerk-telemetry.com https://*.clerk-telemetry.com https://*.protect.clerk.com https://*.protect.clerk.com:* https://*.client.protect.clerk.com https://*.client.protect.clerk.com:*",
   "frame-src 'self' https://link.msgsndr.com https://*.leadconnectorhq.com https://*.msgsndr.com https://docs.google.com https://content.googleapis.com https://challenges.cloudflare.com https://clerk.vistrial.io https://accounts.vistrial.io https://*.clerk.accounts.dev https://*.protect.clerk.com",
   "frame-ancestors 'none'",
   "base-uri 'self'",

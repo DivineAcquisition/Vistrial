@@ -1,13 +1,17 @@
 import type { AuthConfig } from "convex/server";
 
 /**
- * Clerk is the auth provider. Register it after CLERK_JWT_ISSUER_DOMAIN
- * is set on the Convex deployment. Until then there is no issuer.
- * Workspace functions stay closed until a provider is registered here.
- * The secondFactor claim is added in Clerk's token settings, not in client code.
+ * Clerk development instance for Vistrial.
+ * The session token audience is "convex", and secondFactor comes from
+ * Clerk's token settings, never from client input.
  */
 const authConfig = {
-  providers: [],
+  providers: [
+    {
+      domain: "https://safe-mollusk-2369.clerk.accounts.dev",
+      applicationID: "convex",
+    },
+  ],
 } satisfies AuthConfig;
 
 export default authConfig;

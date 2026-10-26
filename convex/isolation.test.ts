@@ -186,7 +186,7 @@ describe("workspace isolation", () => {
       await ctx.db.insert("agents", {
         slug: "north",
         name: "North",
-        area: "sales",
+        stage: "foundation",
         job: "Watches a motion the others do not.",
         promise: "North never messages a lead.",
         sort: 9,

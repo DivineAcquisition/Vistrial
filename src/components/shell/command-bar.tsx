@@ -17,17 +17,17 @@ export function CommandBar() {
         const data = new FormData(event.currentTarget);
         const text = String(data.get("ask") ?? "").trim();
         if (!text) return;
-        setReply("Compass is not on yet.");
+        setReply("Open the Sales Agent to run a skill. Nothing is posted from here.");
       }}
     >
       <div className="flex min-w-0 items-center gap-2">
         <label className="sr-only" htmlFor={fieldId}>
-          Ask Compass anything or tell it what to do
+          Note for the Sales Agent
         </label>
         <Input
           id={fieldId}
           name="ask"
-          placeholder="Ask Compass anything or tell it what to do"
+          placeholder="Notes stay here. Skills run on the Sales Agent."
           autoComplete="off"
           className="min-w-0 flex-1"
         />

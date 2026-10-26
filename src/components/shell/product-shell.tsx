@@ -10,8 +10,7 @@ import Logo from "@/components/brand/logo";
 import { CommandBar } from "@/components/shell/command-bar";
 import { LiveAside } from "@/components/shell/live-aside";
 import { StatusBadge } from "@/components/ui/status-badge";
-import type { CatalogAgent } from "@/lib/shell/rail";
-import { railFromCatalog } from "@/lib/shell/rail";
+import { railFromCatalog, type RailAgent } from "@/lib/shell/rail";
 import { cn } from "@/lib/utils";
 
 const tabs = [
@@ -25,7 +24,7 @@ function active(pathname: string, href: string) {
   return pathname === href || pathname.startsWith(`${href}/`);
 }
 
-function RailLinks({ agents, pathname, onNavigate }: { agents: CatalogAgent[]; pathname: string; onNavigate?: () => void }) {
+function RailLinks({ agents, pathname, onNavigate }: { agents: RailAgent[]; pathname: string; onNavigate?: () => void }) {
   const rail = railFromCatalog(agents);
   const item = "flex items-center justify-between gap-3 rounded-lg px-3 py-2 text-sm text-foreground hover:bg-accent";
   return (
@@ -36,6 +35,7 @@ function RailLinks({ agents, pathname, onNavigate }: { agents: CatalogAgent[]; p
           <ul className="mt-2 grid gap-1">
             {group.agents.map((agent) => {
               const href = `/app/agents/${agent.slug}`;
+              const stateLabel = agent.state === "on" ? "On" : agent.state === "suggesting" ? "Suggesting" : "Off";
               return (
                 <li key={agent.slug}>
                   <Link
@@ -48,7 +48,7 @@ function RailLinks({ agents, pathname, onNavigate }: { agents: CatalogAgent[]; p
                       <span className="block font-medium">{agent.name}</span>
                       <span className="mt-0.5 block text-xs text-muted-foreground">{agent.job}</span>
                     </span>
-                    <StatusBadge label="Off" />
+                    <StatusBadge label={stateLabel} />
                   </Link>
                 </li>
               );
@@ -77,7 +77,7 @@ function RailLinks({ agents, pathname, onNavigate }: { agents: CatalogAgent[]; p
   );
 }
 
-export function ProductShell({ agents, children }: { agents: CatalogAgent[]; children: React.ReactNode }) {
+export function ProductShell({ agents, children }: { agents: RailAgent[]; children: React.ReactNode }) {
   const pathname = usePathname();
   const [menuOpen, setMenuOpen] = useState(false);
   const [askOpen, setAskOpen] = useState(false);
@@ -107,7 +107,7 @@ export function ProductShell({ agents, children }: { agents: CatalogAgent[]; chi
               {agents.map((agent) => (
                 <span key={agent.slug} className="inline-flex items-center gap-2 text-xs text-muted-foreground">
                   <span className="text-foreground">{agent.name}</span>
-                  <StatusBadge label="Off" />
+                  <StatusBadge label={agent.state === "on" ? "On" : agent.state === "suggesting" ? "Suggesting" : "Off"} />
                 </span>
               ))}
             </div>
@@ -122,7 +122,7 @@ export function ProductShell({ agents, children }: { agents: CatalogAgent[]; chi
                 aria-controls="compass-command"
                 onClick={() => setAskOpen((open) => !open)}
               >
-                Ask Compass
+                Sales Agent
               </button>
               <ThemeToggle />
             </div>

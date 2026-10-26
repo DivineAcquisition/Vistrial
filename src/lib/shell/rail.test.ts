@@ -4,33 +4,33 @@ import { CATALOG, type CatalogAgent } from "../../../convex/catalog";
 import { railAgentSlugs, railFromCatalog } from "@/lib/shell/rail";
 
 describe("workspace rail", () => {
-  it("lists the three agents once, grouped by area in order", () => {
+  it("lists the three areas and one agent in each", () => {
     const rail = railFromCatalog(CATALOG);
-    expect(railAgentSlugs(rail)).toEqual(["sales", "retention", "operations"]);
     expect(rail.areas.map((group) => group.label)).toEqual(["Sales", "Retention", "Operations"]);
+    expect(railAgentSlugs(rail)).toEqual(["sales", "retention", "operations"]);
+    expect(CATALOG.find((agent) => agent.slug === "sales")?.skills.map((skill) => skill.slug)).toEqual([
+      "ad-research",
+      "ad-copy",
+      "creative",
+      "content",
+    ]);
   });
 
-  it("seeds every skill as coming soon", () => {
-    for (const agent of CATALOG) {
-      expect(agent.skills.length).toBeGreaterThan(0);
-      expect(agent.skills.every((skill) => skill.status === "comingSoon")).toBe(true);
-    }
-  });
-
-  it("shows a new registry row without a code change", () => {
-    const extra: CatalogAgent = {
-      slug: "extra",
-      name: "Extra Agent",
+  it("shows a new registry row in its area without a code change", () => {
+    const north: CatalogAgent = {
+      slug: "north",
+      name: "North",
       area: "sales",
+      stage: "execution",
       job: "Watches a motion the others do not.",
-      promise: "Extra never posts anything.",
+      promise: "North never posts.",
       sort: 9,
       skills: [],
     };
-    const rail = railFromCatalog([...CATALOG, extra]);
+    const rail = railFromCatalog([...CATALOG, north]);
     expect(rail.areas.find((group) => group.area === "sales")?.agents.map((agent) => agent.slug)).toEqual([
       "sales",
-      "extra",
+      "north",
     ]);
   });
 });

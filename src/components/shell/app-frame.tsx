@@ -2,7 +2,7 @@
 
 import { useMutation, useQuery } from "convex/react";
 import { Authenticated, Unauthenticated } from "convex/react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import { RedirectToSignIn } from "@/components/auth/redirect-to-sign-in";
 import { ProductShell } from "@/components/shell/product-shell";
@@ -19,6 +19,10 @@ export function AppFrame({ children }: { children: React.ReactNode }) {
 }
 
 function LiveFrame({ children }: { children: React.ReactNode }) {
+  const sync = useMutation(api.workspace.syncCatalog);
+  useEffect(() => {
+    void sync({});
+  }, [sync]);
   return (
     <>
       <Authenticated>

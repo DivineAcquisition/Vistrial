@@ -1,40 +1,48 @@
-import { CATALOG, STAGES, type CatalogAgent, type Stage } from "../../../convex/catalog";
+import { AREAS, AREA_LABEL, CATALOG, type Area, type CatalogAgent } from "../../../convex/catalog";
 
-export type { CatalogAgent, Stage };
-export { CATALOG, STAGES };
+export type { CatalogAgent, Area };
+export { CATALOG, AREAS, AREA_LABEL };
 
-const STAGE_LABEL: Record<Stage, string> = {
-  foundation: "Foundation",
-  organization: "Organization",
-  execution: "Execution",
+export type RailSkill = { slug: string; name: string; handsBack: string; sort: number };
+
+export type RailAgent = {
+  slug: string;
+  name: string;
+  area: Area | null;
+  job: string;
+  promise: string;
+  sort: number;
+  skills?: RailSkill[];
+  state?: "off" | "suggesting" | "on";
 };
 
 export type RailGroup = {
-  stage: Stage;
+  area: Area | "other";
   label: string;
-  agents: CatalogAgent[];
+  agents: RailAgent[];
 };
 
 export type RailModel = {
-  compass: CatalogAgent | null;
-  stages: RailGroup[];
+  areas: RailGroup[];
 };
 
-/** Compass is pinned once. Every other agent appears in its stage, from the rows passed in. */
-export function railFromCatalog(agents: CatalogAgent[]): RailModel {
-  const compass = agents.find((agent) => agent.slug === "compass") ?? null;
-  const stages = STAGES.map((stage) => ({
-    stage,
-    label: STAGE_LABEL[stage],
+/** Areas first, then the agents in each area. A row with no area is listed under Other. */
+export function railFromCatalog(agents: RailAgent[]): RailModel {
+  const areas: RailGroup[] = AREAS.map((area) => ({
+    area,
+    label: AREA_LABEL[area],
     agents: agents
-      .filter((agent) => agent.stage === stage && agent.slug !== "compass")
+      .filter((agent) => agent.area === area)
       .sort((a, b) => a.sort - b.sort || a.name.localeCompare(b.name)),
   })).filter((group) => group.agents.length > 0);
-  return { compass, stages };
+
+  const other = agents
+    .filter((agent) => agent.area !== "sales" && agent.area !== "retention" && agent.area !== "operations")
+    .sort((a, b) => a.sort - b.sort || a.name.localeCompare(b.name));
+  if (other.length > 0) areas.push({ area: "other", label: "Other", agents: other });
+  return { areas };
 }
 
 export function railAgentSlugs(model: RailModel): string[] {
-  const slugs = model.compass ? [model.compass.slug] : [];
-  for (const group of model.stages) slugs.push(...group.agents.map((agent) => agent.slug));
-  return slugs;
+  return model.areas.flatMap((group) => group.agents.map((agent) => agent.slug));
 }

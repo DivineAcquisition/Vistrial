@@ -177,10 +177,10 @@ describe("workspace isolation", () => {
       manager.mutation(api.workspace.markSetupDone, { workspaceId: workspaceA, setupDone: true }),
     ).rejects.toThrow("Not allowed.");
     await expect(
-      manager.mutation(api.workspace.setAgentState, { workspaceId: workspaceA, slug: "assay", state: "suggesting" }),
+      manager.mutation(api.workspace.setAgentState, { workspaceId: workspaceA, slug: "sales", state: "suggesting" }),
     ).rejects.toThrow("Not allowed.");
     await ownerA.mutation(api.workspace.markSetupDone, { workspaceId: workspaceA, setupDone: true });
-    await ownerA.mutation(api.workspace.setAgentState, { workspaceId: workspaceA, slug: "assay", state: "suggesting" });
+    await ownerA.mutation(api.workspace.setAgentState, { workspaceId: workspaceA, slug: "sales", state: "suggesting" });
 
     await t.run(async (ctx) => {
       await ctx.db.insert("agents", {
@@ -194,9 +194,9 @@ describe("workspace isolation", () => {
     });
     const shell = await ownerA.query(api.workspace.shell, { workspaceId: workspaceA });
     expect(shell.setupDone).toBe(true);
-    expect(shell.agents.find((agent: { slug: string; state: string }) => agent.slug === "assay")?.state).toBe("suggesting");
+    expect(shell.agents.find((agent: { slug: string; state: string }) => agent.slug === "sales")?.state).toBe("suggesting");
     expect(shell.agents.map((agent: { slug: string }) => agent.slug)).toContain("north");
-    expect(shell.agents.filter((agent: { slug: string }) => agent.slug === "compass")).toHaveLength(1);
+    expect(shell.agents.filter((agent: { slug: string }) => agent.slug === "sales")).toHaveLength(1);
 
     const noteId = await ownerA.mutation(api.records.addNote, {
       workspaceId: workspaceA,

@@ -3,9 +3,9 @@
 import { createContext, useContext } from "react";
 
 import type { Id } from "../../../convex/_generated/dataModel";
-import type { CatalogAgent } from "@/lib/shell/rail";
+import type { RailAgent } from "@/lib/shell/rail";
 
-export type ShellAgent = CatalogAgent & { state: "off" | "suggesting" | "on" };
+export type ShellAgent = RailAgent & { state: "off" | "suggesting" | "on" };
 
 export type WorkspaceShell = {
   workspaceId: Id<"workspaces">;

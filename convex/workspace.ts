@@ -10,6 +10,14 @@ import { seedSpine } from "./lib/seedSpine";
 
 const INVITE_MS = 7 * 24 * 60 * 60 * 1000;
 
+export const syncCatalog = signedInMutation({
+  args: {},
+  handler: async (ctx) => {
+    await ensureAgents(ctx);
+    return null;
+  },
+});
+
 export const mine = signedInQuery({
   args: {},
   handler: async (ctx) => {
@@ -57,6 +65,7 @@ export const create = signedInMutation({
     await seedSpine(ctx, workspaceId);
     const agents = await ctx.db.query("agents").withIndex("by_sort").take(50);
     for (const agent of agents) {
+      if (agent.retired) continue;
       await ctx.db.insert("workspaceAgents", {
         workspaceId,
         agentId: agent._id,
@@ -93,13 +102,16 @@ export const shell = workspaceQuery({
       role: ctx.member.role,
       setupDone: settings?.setupDone ?? false,
       agents: agents
+        .filter((agent) => agent.retired !== true)
         .map((agent) => ({
           slug: agent.slug,
           name: agent.name,
+          area: agent.area ?? null,
           stage: agent.stage,
           job: agent.job,
           promise: agent.promise,
           sort: agent.sort,
+          skills: agent.skills ?? [],
           state: stateByAgent.get(agent._id) ?? "off",
         }))
         .sort((a, b) => a.sort - b.sort || a.name.localeCompare(b.name)),

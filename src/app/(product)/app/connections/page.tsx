@@ -9,9 +9,9 @@ export default function ConnectionsPage() {
     <ShellPage
       eyebrow="Setup"
       title="Connections"
-      description="Email and calendar first, then the CRM. Each one is finished before the next starts."
+      description="The Sales Agent can use your own ad results, a swipe file, public pages, and public ad libraries."
       emptyTitle="Nothing connected"
-      emptyDetail="Nylas is first. GoHighLevel is second. Neither is available in this step."
+      emptyDetail="Own ad results wait for the official marketing APIs. Public library collection stays off until an Owner accepts the risk in writing."
       kind="unconfigured"
     />
   );

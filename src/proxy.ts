@@ -1,6 +1,7 @@
 import { clerkMiddleware } from "@clerk/nextjs/server";
 import { NextResponse, type NextFetchEvent, type NextRequest } from "next/server";
 
+import { isAuthPath, isProtectedAppPath, safeAppPath } from "@/lib/auth/redirect";
 import { PRODUCTION_APP_ORIGIN } from "@/lib/constants";
 import { classifyProductHost, isClerkHost } from "@/lib/marketing/hosts";
 
@@ -18,9 +19,9 @@ function hostProxy(request: NextRequest) {
   const path = request.nextUrl.pathname;
   const host = request.headers.get("x-forwarded-host") ?? request.headers.get("host");
   const product = classifyProductHost(host);
-  const productPath = path === "/app" || path.startsWith("/app/") || path === "/admin" || path.startsWith("/admin/");
+  const productPath = isProtectedAppPath(path);
 
-  if ((product === "site" || product === "unknown") && productPath) {
+  if ((product === "site" || product === "unknown") && (productPath || isAuthPath(path))) {
     const dest = new URL(PRODUCTION_APP_ORIGIN);
     dest.pathname = path;
     dest.search = request.nextUrl.search;
@@ -53,7 +54,45 @@ function hostProxy(request: NextRequest) {
   return continueWithPath(request);
 }
 
-const withClerk = clerkMiddleware((_auth, request: NextRequest) => hostProxy(request));
+function redirectToSignIn(request: NextRequest, returnPath: string) {
+  const dest = request.nextUrl.clone();
+  dest.pathname = "/sign-in";
+  dest.search = "";
+  dest.searchParams.set("redirect_url", returnPath);
+  return NextResponse.redirect(dest);
+}
+
+const withClerk = clerkMiddleware(async (auth, request) => {
+  const routed = hostProxy(request);
+  const path = request.nextUrl.pathname;
+  const product = classifyProductHost(request.headers.get("x-forwarded-host") ?? request.headers.get("host"));
+
+  if (routed.headers.get("location")) {
+    if ((product === "app" || product === "pulse") && path === "/") {
+      const { userId } = await auth();
+      if (!userId) return redirectToSignIn(request, "/app");
+    }
+    return routed;
+  }
+
+  const { userId } = await auth();
+
+  if (isAuthPath(path)) {
+    if (!userId) return routed;
+    const next = safeAppPath(request.nextUrl.searchParams.get("redirect_url"), "/app");
+    const dest = request.nextUrl.clone();
+    const url = new URL(next, request.url);
+    dest.pathname = url.pathname;
+    dest.search = url.search;
+    return NextResponse.redirect(dest);
+  }
+
+  if (isProtectedAppPath(path) && !userId) {
+    return redirectToSignIn(request, path + request.nextUrl.search);
+  }
+
+  return routed;
+});
 
 export default function proxy(request: NextRequest, event: NextFetchEvent) {
   if (process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY && process.env.CLERK_SECRET_KEY && isClerkHost(request.headers.get("x-forwarded-host") ?? request.headers.get("host"))) {

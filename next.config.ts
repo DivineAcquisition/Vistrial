@@ -4,13 +4,13 @@ const ContentSecurityPolicy = [
   "default-src 'self'",
   // apis.google.com and gstatic: Google's folder picker, used only on the Drive connection card.
   // clerk.vistrial.io: production sign-in. *.clerk.accounts.dev: the development instance.
-  "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://apis.google.com https://www.gstatic.com https://challenges.cloudflare.com https://clerk.vistrial.io https://*.clerk.accounts.dev",
+  "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://apis.google.com https://www.gstatic.com https://challenges.cloudflare.com https://clerk.vistrial.io https://*.clerk.accounts.dev https://*.protect.clerk.com",
   "worker-src 'self' blob:",
   "style-src 'self' 'unsafe-inline'",
   "img-src 'self' data: blob: https:",
   "font-src 'self' data:",
-  "connect-src 'self' https://*.convex.cloud wss://*.convex.cloud https://challenges.cloudflare.com https://clerk.vistrial.io https://*.clerk.accounts.dev https://clerk-telemetry.com https://*.clerk-telemetry.com",
-  "frame-src 'self' https://link.msgsndr.com https://*.leadconnectorhq.com https://*.msgsndr.com https://docs.google.com https://content.googleapis.com https://challenges.cloudflare.com https://clerk.vistrial.io https://accounts.vistrial.io https://*.clerk.accounts.dev",
+  "connect-src 'self' https://*.convex.cloud wss://*.convex.cloud https://challenges.cloudflare.com https://clerk.vistrial.io https://*.clerk.accounts.dev https://clerk-telemetry.com https://*.clerk-telemetry.com https://*.protect.clerk.com",
+  "frame-src 'self' https://link.msgsndr.com https://*.leadconnectorhq.com https://*.msgsndr.com https://docs.google.com https://content.googleapis.com https://challenges.cloudflare.com https://clerk.vistrial.io https://accounts.vistrial.io https://*.clerk.accounts.dev https://*.protect.clerk.com",
   "frame-ancestors 'none'",
   "base-uri 'self'",
   "form-action 'self' https://clerk.vistrial.io https://accounts.vistrial.io https://*.clerk.accounts.dev",

@@ -81,7 +81,7 @@ export const CATALOG: CatalogAgent[] = [
         job: "A research report.",
         promise: "It does not post an ad.",
         handsBack: "A research report.",
-        status: "available",
+        status: "comingSoon",
         sort: 0,
       },
       {
@@ -90,7 +90,7 @@ export const CATALOG: CatalogAgent[] = [
         job: "Copy sets.",
         promise: "It does not post copy.",
         handsBack: "Copy sets.",
-        status: "available",
+        status: "comingSoon",
         sort: 1,
       },
       {
@@ -99,7 +99,7 @@ export const CATALOG: CatalogAgent[] = [
         job: "Creative briefs.",
         promise: "It does not publish a creative.",
         handsBack: "Creative briefs.",
-        status: "available",
+        status: "comingSoon",
         sort: 2,
       },
       {
@@ -108,7 +108,7 @@ export const CATALOG: CatalogAgent[] = [
         job: "A content calendar.",
         promise: "It does not schedule a post.",
         handsBack: "A content calendar.",
-        status: "available",
+        status: "comingSoon",
         sort: 3,
       },
     ],

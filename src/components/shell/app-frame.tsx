@@ -4,7 +4,7 @@ import { useMutation, useQuery } from "convex/react";
 import { Authenticated, Unauthenticated } from "convex/react";
 import { useState } from "react";
 
-import { SignInCard } from "@/components/auth/sign-in-card";
+import { RedirectToSignIn } from "@/components/auth/redirect-to-sign-in";
 import { ProductShell } from "@/components/shell/product-shell";
 import { ShellProvider, type WorkspaceShell } from "@/components/shell/shell-context";
 import { useConvexReady } from "@/components/providers/convex-ready";
@@ -25,16 +25,7 @@ function LiveFrame({ children }: { children: React.ReactNode }) {
         <AuthedFrame>{children}</AuthedFrame>
       </Authenticated>
       <Unauthenticated>
-        <ProductShell agents={[]}>
-          <div className="py-4 md:py-10">
-            <SignInCard
-              eyebrow="Workspace"
-              title="Open your workspace"
-              detail="Email or Google. You name the workspace after you sign in."
-              fallbackRedirectUrl="/app"
-            />
-          </div>
-        </ProductShell>
+        <RedirectToSignIn />
       </Unauthenticated>
     </>
   );

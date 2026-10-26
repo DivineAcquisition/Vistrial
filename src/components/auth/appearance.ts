@@ -31,13 +31,13 @@ export const authAppearance = {
     footer: "bg-transparent!",
     footerAction: "bg-transparent!",
     socialButtonsBlockButton:
-      "h-11 rounded-xl border border-border bg-card text-sm font-medium text-strong shadow-none! hover:bg-muted",
-    socialButtonsBlockButtonText: "font-medium text-strong",
+      "box-border h-11! rounded-xl border! border-solid! border-[var(--field-border)]! bg-[var(--field-bg)]! text-sm! font-medium! text-[var(--strong)]! shadow-none! hover:bg-muted!",
+    socialButtonsBlockButtonText: "font-medium! text-[var(--strong)]!",
     dividerLine: "bg-border",
     dividerText: "text-xs text-muted-foreground",
     formFieldLabel: "text-sm font-medium text-strong",
     formFieldInput:
-      "h-11 rounded-xl border border-input bg-[var(--field-bg)] text-sm text-strong shadow-none!",
+      "box-border h-11! rounded-xl border! border-solid! border-[var(--field-border)]! bg-[var(--field-bg)]! text-sm! text-[var(--strong)]! shadow-none!",
     formButtonPrimary:
       "h-11 rounded-xl border border-[#6650d8]/25 bg-gradient-to-b from-[#d9d1fe] via-[#c3b6fe] to-[#9a88fc] text-sm font-medium text-[#07070b] shadow-[inset_0_1px_0_rgba(255,255,255,0.45)]! hover:from-[#ebe7ff] hover:via-[#d9d1fe] hover:to-[#ae9dfd]",
     footerActionLink: "font-medium text-brand-300 hover:text-brand-200",

@@ -30,24 +30,8 @@ function RailLinks({ agents, pathname, onNavigate }: { agents: CatalogAgent[]; p
   const item = "flex items-center justify-between gap-3 rounded-lg px-3 py-2 text-sm text-foreground hover:bg-accent";
   return (
     <div className="grid gap-6">
-      {rail.compass ? (
-        <div>
-          <Link
-            href={`/app/agents/${rail.compass.slug}`}
-            onClick={onNavigate}
-            aria-current={active(pathname, `/app/agents/${rail.compass.slug}`) ? "page" : undefined}
-            className={cn(item, active(pathname, `/app/agents/${rail.compass.slug}`) && "bg-accent")}
-          >
-            <span>
-              <span className="block font-medium">{rail.compass.name}</span>
-              <span className="mt-0.5 block text-xs text-muted-foreground">{rail.compass.job}</span>
-            </span>
-            <StatusBadge label="Off" />
-          </Link>
-        </div>
-      ) : null}
-      {rail.stages.map((group) => (
-        <div key={group.stage}>
+      {rail.areas.map((group) => (
+        <div key={group.area}>
           <p className="px-3 text-[11px] font-semibold tracking-[0.14em] text-muted-foreground uppercase">{group.label}</p>
           <ul className="mt-2 grid gap-1">
             {group.agents.map((agent) => {

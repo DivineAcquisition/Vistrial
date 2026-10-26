@@ -89,6 +89,7 @@ export const shell = workspaceQuery({
       .withIndex("by_workspace", (q) => q.eq("workspaceId", ctx.workspaceId))
       .take(50);
     const stateByAgent = new Map(links.map((link) => [link.agentId, link.state]));
+    const skillRows = await ctx.db.query("skills").take(200);
     return {
       role: ctx.member.role,
       setupDone: settings?.setupDone ?? false,
@@ -96,10 +97,14 @@ export const shell = workspaceQuery({
         .map((agent) => ({
           slug: agent.slug,
           name: agent.name,
-          stage: agent.stage,
+          area: agent.area,
           job: agent.job,
           promise: agent.promise,
           sort: agent.sort,
+          skills: skillRows
+            .filter((skill) => skill.agentId === agent._id)
+            .sort((a, b) => a.sort - b.sort)
+            .map((skill) => ({ key: skill.key, name: skill.name, status: skill.status, sort: skill.sort })),
           state: stateByAgent.get(agent._id) ?? "off",
         }))
         .sort((a, b) => a.sort - b.sort || a.name.localeCompare(b.name)),

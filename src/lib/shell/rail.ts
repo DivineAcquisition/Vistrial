@@ -1,40 +1,35 @@
-import { CATALOG, STAGES, type CatalogAgent, type Stage } from "../../../convex/catalog";
+import { AREAS, AREA_ROWS, CATALOG, type Area, type CatalogAgent, type CatalogSkill } from "../../../convex/catalog";
 
-export type { CatalogAgent, Stage };
-export { CATALOG, STAGES };
+export type { Area, CatalogAgent, CatalogSkill };
+export { AREAS, CATALOG };
 
-const STAGE_LABEL: Record<Stage, string> = {
-  foundation: "Foundation",
-  organization: "Organization",
-  execution: "Execution",
-};
+const AREA_LABEL: Record<Area, string> = Object.fromEntries(AREA_ROWS.map((row) => [row.key, row.name])) as Record<
+  Area,
+  string
+>;
 
 export type RailGroup = {
-  stage: Stage;
+  area: Area;
   label: string;
   agents: CatalogAgent[];
 };
 
 export type RailModel = {
-  compass: CatalogAgent | null;
-  stages: RailGroup[];
+  areas: RailGroup[];
 };
 
-/** Compass is pinned once. Every other agent appears in its stage, from the rows passed in. */
+/** Areas in order, each with its agents, from the rows passed in. */
 export function railFromCatalog(agents: CatalogAgent[]): RailModel {
-  const compass = agents.find((agent) => agent.slug === "compass") ?? null;
-  const stages = STAGES.map((stage) => ({
-    stage,
-    label: STAGE_LABEL[stage],
+  const areas = AREAS.map((area) => ({
+    area,
+    label: AREA_LABEL[area],
     agents: agents
-      .filter((agent) => agent.stage === stage && agent.slug !== "compass")
+      .filter((agent) => agent.area === area)
       .sort((a, b) => a.sort - b.sort || a.name.localeCompare(b.name)),
   })).filter((group) => group.agents.length > 0);
-  return { compass, stages };
+  return { areas };
 }
 
 export function railAgentSlugs(model: RailModel): string[] {
-  const slugs = model.compass ? [model.compass.slug] : [];
-  for (const group of model.stages) slugs.push(...group.agents.map((agent) => agent.slug));
-  return slugs;
+  return model.areas.flatMap((group) => group.agents.map((agent) => agent.slug));
 }

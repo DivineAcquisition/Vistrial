@@ -20,7 +20,8 @@ const bookingStatus = v.union(
   v.literal("noShow"),
 );
 const inviteRole = v.union(v.literal("manager"), v.literal("rep"));
-const stage = v.union(v.literal("foundation"), v.literal("organization"), v.literal("execution"));
+const area = v.union(v.literal("sales"), v.literal("retention"), v.literal("operations"));
+const skillStatus = v.union(v.literal("available"), v.literal("comingSoon"));
 const agentState = v.union(v.literal("off"), v.literal("suggesting"), v.literal("on"));
 
 export default defineSchema({
@@ -81,16 +82,34 @@ export default defineSchema({
     createdAt: v.number(),
   }).index("by_workspace", ["workspaceId"]),
 
+  areas: defineTable({
+    key: area,
+    name: v.string(),
+    sort: v.number(),
+  })
+    .index("by_key", ["key"])
+    .index("by_sort", ["sort"]),
+
   agents: defineTable({
     slug: v.string(),
     name: v.string(),
-    stage,
+    area,
     job: v.string(),
     promise: v.string(),
     sort: v.number(),
   })
     .index("by_slug", ["slug"])
     .index("by_sort", ["sort"]),
+
+  skills: defineTable({
+    agentId: v.id("agents"),
+    key: v.string(),
+    name: v.string(),
+    status: skillStatus,
+    sort: v.number(),
+  })
+    .index("by_agent", ["agentId", "sort"])
+    .index("by_agent_key", ["agentId", "key"]),
 
   workspaceAgents: defineTable({
     workspaceId: v.id("workspaces"),

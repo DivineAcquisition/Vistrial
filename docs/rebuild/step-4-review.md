@@ -45,3 +45,27 @@ Step 4 does not pass review yet. Every item marked **Confirmed** below was repro
 ## Not yet reviewed
 
 The screens (profile editor, run page, assets, controls), and the phone and accessibility pass.
+
+## Status (2026-10-27)
+
+Fixed directly on `claude/visual-sales-workflows-c6aw7j`, each with a test that failed before the fix:
+
+| # | Fix |
+|---|---|
+| 1 | Pause and halt are checked before every step and again after a model call returns. A call that lands during a pause is counted, then the run stops. |
+| 2 | Caps are checked before the model call. The real cost of any call that happened is always recorded. |
+| 3 | `runs.list` reads newest first. |
+| 4 | Profile reads use the version index, newest first. `profile.read` takes the newest confirmed version. |
+| 5 | `profile.read` fails the run (`no_confirmed_profile`) when nothing is confirmed. A cited source must be a real profile, example, or artifact record in the same workspace. |
+| 6 | A new version of an approved asset sets it back to `draft`. |
+| 7 | `start` schedules the steps on the server, and each step schedules the next. A time-cap stop is scheduled at start. The public `advance` action is gone, and the screens no longer drive runs. |
+| 8 | A missing route fails the run (`no_route`) unless dev skills are on. |
+| 9 | Claude calls go through `@anthropic-ai/sdk` with a price table per model. An unpriced model cannot run. Output room is set per kind of work, the fallback route takes over on retryable failures and refusals, and errors become result codes. |
+| 10 | Only a Platform Admin can change routes. Kind of work and provider are validated. |
+| 11 | Only an Owner or Manager can start a run. |
+| 12 | `runs.get` returns artifact metadata. Bodies load one at a time through `runs.artifact`. |
+| Lint | `profile-editor.tsx` seeds its form from props, so no state is set inside an effect. |
+
+Platform ceiling added: at most 200 steps and 1 hour per run.
+
+Still open: item 13 (the four unused tables), refusal billing (a refused call that was billed is not counted yet), and the screen and accessibility review.

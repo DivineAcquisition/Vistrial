@@ -24,7 +24,8 @@ export const get = workspaceQuery({
   handler: async (ctx) => {
     const rows = await ctx.db
       .query("profileVersions")
-      .withIndex("by_workspace", (q) => q.eq("workspaceId", ctx.workspaceId))
+      .withIndex("by_workspace_version", (q) => q.eq("workspaceId", ctx.workspaceId))
+      .order("desc")
       .take(20);
     const ordered = [...rows].sort((a, b) => b.version - a.version);
     const draft = ordered.find((row) => row.status === "draft") ?? null;
@@ -79,7 +80,8 @@ export const saveDraft = workspaceMutation({
     const competitors = cleanCompetitors(args.competitors);
     const rows = await ctx.db
       .query("profileVersions")
-      .withIndex("by_workspace", (q) => q.eq("workspaceId", ctx.workspaceId))
+      .withIndex("by_workspace_version", (q) => q.eq("workspaceId", ctx.workspaceId))
+      .order("desc")
       .take(20);
     const draft = rows.filter((row) => row.status === "draft").sort((a, b) => b.version - a.version)[0];
     const fields = {
@@ -129,8 +131,9 @@ export const confirm = workspaceMutation({
     const rows = await ctx.db
       .query("profileVersions")
       .withIndex("by_workspace_status", (q) => q.eq("workspaceId", ctx.workspaceId).eq("status", "draft"))
-      .take(5);
-    const draft = rows.sort((a, b) => b.version - a.version)[0];
+      .order("desc")
+      .take(1);
+    const draft = rows[0];
     if (!draft) notFound();
     if (!draft.offer.trim() || !draft.audience.trim()) throw new Error("Add the offer and the audience first.");
     await ctx.db.patch(draft._id, {

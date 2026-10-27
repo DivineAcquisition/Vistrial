@@ -1,7 +1,8 @@
 "use client";
 
 import { useMutation, useQuery } from "convex/react";
-import { useEffect, useState } from "react";
+import type { FunctionReturnType } from "convex/server";
+import { useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -21,45 +22,42 @@ const empty = {
   brandVoice: "",
 };
 
-export function ProfileEditor({
-  workspaceId,
-  role,
-}: {
-  workspaceId: Id<"workspaces">;
-  role: "owner" | "manager" | "rep";
-}) {
+type Profile = NonNullable<FunctionReturnType<typeof api.profile.get>>;
+
+type EditorProps = { workspaceId: Id<"workspaces">; role: "owner" | "manager" | "rep" };
+
+export function ProfileEditor({ workspaceId, role }: EditorProps) {
   const profile = useQuery(api.profile.get, { workspaceId });
+  if (profile === undefined) return <p className="text-sm text-muted-foreground">Loading the profile.</p>;
+  // A new key remounts the form, so its fields start from the version that is open now.
+  const key = profile.draft?.version ?? profile.confirmed?.version ?? "new";
+  return <ProfileForm key={key} workspaceId={workspaceId} role={role} profile={profile} />;
+}
+
+function ProfileForm({ workspaceId, role, profile }: EditorProps & { profile: Profile }) {
   const save = useMutation(api.profile.saveDraft);
   const confirm = useMutation(api.profile.confirm);
   const upload = useMutation(api.profile.createUpload);
   const addExample = useMutation(api.profile.addExample);
-  const [fields, setFields] = useState(empty);
-  const [ready, setReady] = useState(false);
+  const source = profile.draft ?? profile.confirmed;
+  const [fields, setFields] = useState(() =>
+    source
+      ? {
+          offer: source.offer,
+          priceNotes: source.priceNotes,
+          audience: source.audience,
+          geography: source.geography,
+          channels: source.channels,
+          brandVoice: source.brandVoice,
+        }
+      : empty,
+  );
   const [competitorName, setCompetitorName] = useState("");
   const [competitorUrl, setCompetitorUrl] = useState("");
-  const [competitors, setCompetitors] = useState<Competitor[]>([]);
+  const [competitors, setCompetitors] = useState<Competitor[]>(() => source?.competitors ?? []);
   const [example, setExample] = useState("");
   const [error, setError] = useState("");
   const canEdit = role !== "rep";
-
-  useEffect(() => {
-    if (!profile || ready) return;
-    const source = profile.draft ?? profile.confirmed;
-    if (source) {
-      setFields({
-        offer: source.offer,
-        priceNotes: source.priceNotes,
-        audience: source.audience,
-        geography: source.geography,
-        channels: source.channels,
-        brandVoice: source.brandVoice,
-      });
-      setCompetitors(source.competitors);
-    }
-    setReady(true);
-  }, [profile, ready]);
-
-  if (profile === undefined) return <p className="text-sm text-muted-foreground">Loading the profile.</p>;
 
   const version = profile.draft?.version;
 

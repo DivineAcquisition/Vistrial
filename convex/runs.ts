@@ -1,15 +1,15 @@
 import { v } from "convex/values";
 
 import { internal } from "./_generated/api";
-import { internalMutation, internalQuery } from "./_generated/server";
-import type { Id } from "./_generated/dataModel";
-import type { MutationCtx } from "./_generated/server";
-import { memberAction, workspaceMutation, workspaceQuery } from "./lib/builders";
+import { internalAction, internalMutation } from "./_generated/server";
+import type { Doc, Id } from "./_generated/dataModel";
+import type { MutationCtx, QueryCtx } from "./_generated/server";
+import { workspaceMutation, workspaceQuery } from "./lib/builders";
 import { writeAudit } from "./lib/audit";
-import { DEFAULT_CAPS, dayKey, overCap, type Caps } from "./lib/caps";
-import { assertClaims } from "./lib/evidence";
+import { DEFAULT_CAPS, PLATFORM_CEILING, dayKey, overCap, type Caps } from "./lib/caps";
+import { assertClaims, assertSourcesExist } from "./lib/evidence";
 import { notAllowed, notFound } from "./lib/errors";
-import { complete, type ModelRoute } from "./lib/modelRouter";
+import { ModelError, complete, type ModelRoute } from "./lib/modelRouter";
 import {
   INJECTION_FIXTURE,
   TEST_AGENT,
@@ -20,18 +20,19 @@ import {
   wrapUntrusted,
 } from "./lib/registry";
 
-const OPEN = ["queued", "running", "waiting"] as const;
+const OPEN = new Set(["queued", "running", "waiting"]);
 
-async function loadCaps(ctx: MutationCtx, workspaceId: Id<"workspaces">, agentSlug: string): Promise<Caps> {
+type StopReason = "cap" | "error" | "cancelled" | "halted" | "done";
+
+async function loadCaps(ctx: QueryCtx, workspaceId: Id<"workspaces">, agentSlug: string): Promise<Caps> {
   const row = await ctx.db
     .query("agentCaps")
     .withIndex("by_workspace_agent", (q) => q.eq("workspaceId", workspaceId).eq("agentSlug", agentSlug))
     .unique();
-  if (!row) return DEFAULT_CAPS;
-  return row;
+  return row ?? DEFAULT_CAPS;
 }
 
-async function daySpend(ctx: MutationCtx, workspaceId: Id<"workspaces">, agentSlug: string, day: string) {
+async function daySpend(ctx: QueryCtx, workspaceId: Id<"workspaces">, agentSlug: string, day: string) {
   const row = await ctx.db
     .query("capCounters")
     .withIndex("by_workspace_agent_day", (q) => q.eq("workspaceId", workspaceId).eq("agentSlug", agentSlug).eq("day", day))
@@ -39,7 +40,7 @@ async function daySpend(ctx: MutationCtx, workspaceId: Id<"workspaces">, agentSl
   return row?.costCents ?? 0;
 }
 
-async function controls(ctx: MutationCtx, workspaceId: Id<"workspaces">) {
+async function controls(ctx: QueryCtx, workspaceId: Id<"workspaces">) {
   const workspace = await ctx.db
     .query("workspaceControls")
     .withIndex("by_workspace", (q) => q.eq("workspaceId", workspaceId))
@@ -51,28 +52,19 @@ async function controls(ctx: MutationCtx, workspaceId: Id<"workspaces">) {
   return { paused: workspace?.agentsPaused === true, halted: platform?.halted === true };
 }
 
-async function ensureRoute(ctx: MutationCtx, workKind: string): Promise<ModelRoute> {
-  const row = await ctx.db
-    .query("modelRoutes")
-    .withIndex("by_workKind", (q) => q.eq("workKind", workKind))
-    .unique();
-  if (row) return row;
-  const created = {
-    workKind,
-    provider: "fake",
-    model: "fake-writer",
-    fallbackProvider: "fake",
-    fallbackModel: "fake-writer",
-  };
-  await ctx.db.insert("modelRoutes", created);
-  return created;
+async function stepCount(ctx: QueryCtx, run: Doc<"agentRuns">) {
+  return ctx.db
+    .query("runSteps")
+    .withIndex("by_workspace_run", (q) => q.eq("workspaceId", run.workspaceId).eq("runId", run._id))
+    .take(PLATFORM_CEILING.maxSteps + 1);
 }
 
 async function stopRun(
   ctx: MutationCtx,
-  run: { _id: Id<"agentRuns">; workspaceId: Id<"workspaces">; costCents: number },
-  stopReason: "cap" | "error" | "cancelled" | "halted" | "done",
+  run: Doc<"agentRuns">,
+  stopReason: StopReason,
   status: "stopped" | "failed" | "completed",
+  costCents = run.costCents,
 ) {
   await ctx.db.patch(run._id, { status, stopReason, finishedAt: Date.now() });
   await writeAudit(ctx, {
@@ -81,17 +73,28 @@ async function stopRun(
     actorId: "runtime",
     action: "run.finished",
     subject: run._id,
-    count: run.costCents,
+    count: costCents,
   });
 }
 
-async function memberOrThrow(ctx: MutationCtx, workspaceId: Id<"workspaces">, userId: string) {
+/** The person who started the run must still be an active member, or the run stops. */
+async function starterActive(ctx: QueryCtx, run: Doc<"agentRuns">) {
   const member = await ctx.db
     .query("members")
-    .withIndex("by_workspace_user", (q) => q.eq("workspaceId", workspaceId).eq("userId", userId))
+    .withIndex("by_workspace_user", (q) => q.eq("workspaceId", run.workspaceId).eq("userId", run.startedBy))
     .unique();
-  if (!member?.active) notFound();
-  return member;
+  return member?.active === true;
+}
+
+/** A workspace without a route uses the fake model only where dev skills are on. Production fails the run instead. */
+async function routeFor(ctx: QueryCtx, workKind: string): Promise<ModelRoute | null> {
+  const row = await ctx.db
+    .query("modelRoutes")
+    .withIndex("by_workKind", (q) => q.eq("workKind", workKind))
+    .unique();
+  if (row) return row;
+  if (!devSkillsEnabled()) return null;
+  return { provider: "fake", model: "fake-writer", fallbackProvider: "fake", fallbackModel: "fake-writer" };
 }
 
 export const devSkill = workspaceQuery({
@@ -108,29 +111,26 @@ export const list = workspaceQuery({
     const rows = await ctx.db
       .query("agentRuns")
       .withIndex("by_workspace_agent", (q) => q.eq("workspaceId", ctx.workspaceId).eq("agentSlug", args.agentSlug))
+      .order("desc")
       .take(20);
-    return rows
-      .map((row) => ({
-        id: row._id,
-        skillSlug: row.skillSlug,
-        status: row.status,
-        stopReason: row.stopReason ?? null,
-        costCents: row.costCents,
-        startedAt: row.startedAt,
-      }))
-      .sort((a, b) => b.startedAt - a.startedAt);
+    return rows.map((row) => ({
+      id: row._id,
+      skillSlug: row.skillSlug,
+      status: row.status,
+      stopReason: row.stopReason ?? null,
+      costCents: row.costCents,
+      startedAt: row.startedAt,
+    }));
   },
 });
 
+/** Run metadata only. Artifact bodies load one at a time through `artifact`. */
 export const get = workspaceQuery({
   args: { runId: v.id("agentRuns") },
   handler: async (ctx, args) => {
     const run = await ctx.db.get(args.runId);
     if (!run || run.workspaceId !== ctx.workspaceId) notFound();
-    const steps = await ctx.db
-      .query("runSteps")
-      .withIndex("by_workspace_run", (q) => q.eq("workspaceId", ctx.workspaceId).eq("runId", run._id))
-      .take(50);
+    const steps = await stepCount(ctx, run);
     const artifacts = await ctx.db
       .query("runArtifacts")
       .withIndex("by_workspace_run", (q) => q.eq("workspaceId", ctx.workspaceId).eq("runId", run._id))
@@ -158,14 +158,25 @@ export const get = workspaceQuery({
           resultCode: step.resultCode,
           durationMs: step.durationMs,
         })),
-      artifacts: artifacts.map((row) => ({ id: row._id, kind: row.kind, byteSize: row.byteSize, body: row.body ?? "" })),
+      artifacts: artifacts.map((row) => ({ id: row._id, kind: row.kind, byteSize: row.byteSize })),
     };
+  },
+});
+
+/** One artifact body, checked against the caller's workspace every time. */
+export const artifact = workspaceQuery({
+  args: { artifactId: v.id("runArtifacts") },
+  handler: async (ctx, args) => {
+    const row = await ctx.db.get(args.artifactId);
+    if (!row || row.workspaceId !== ctx.workspaceId) notFound();
+    return { id: row._id, kind: row.kind, byteSize: row.byteSize, body: row.body ?? "" };
   },
 });
 
 export const start = workspaceMutation({
   args: { agentSlug: v.string(), skillSlug: v.string() },
   handler: async (ctx, args) => {
+    if (ctx.member.role === "rep") notAllowed();
     if (args.skillSlug === TEST_SKILL && !devSkillsEnabled()) notFound();
     const tools = declaredTools(args.skillSlug);
     if (tools.length === 0) throw new Error("This skill is not built yet.");
@@ -195,6 +206,10 @@ export const start = workspaceMutation({
       subject: id,
       count: 0,
     });
+    if (!blocked) {
+      await ctx.scheduler.runAfter(0, internal.runs.step, { runId: id });
+      await ctx.scheduler.runAfter(caps.maxDurationMs, internal.runs.expire, { runId: id });
+    }
     return id;
   },
 });
@@ -205,136 +220,183 @@ export const stop = workspaceMutation({
     if (ctx.member.role === "rep") notAllowed();
     const run = await ctx.db.get(args.runId);
     if (!run || run.workspaceId !== ctx.workspaceId) notFound();
-    if (run.status === "completed" || run.status === "failed" || run.status === "stopped") return null;
+    if (!OPEN.has(run.status)) return null;
     await stopRun(ctx, run, "halted", "stopped");
     return null;
   },
 });
 
-export const plan = internalQuery({
-  args: { workspaceId: v.id("workspaces"), runId: v.id("agentRuns"), userId: v.string() },
+/** Stops a run that is still open when its time cap runs out, whether or not anyone is watching. */
+export const expire = internalMutation({
+  args: { runId: v.id("agentRuns") },
   handler: async (ctx, args) => {
-    const member = await ctx.db
-      .query("members")
-      .withIndex("by_workspace_user", (q) => q.eq("workspaceId", args.workspaceId).eq("userId", args.userId))
-      .unique();
-    if (!member?.active) notFound();
     const run = await ctx.db.get(args.runId);
-    if (!run || run.workspaceId !== args.workspaceId) notFound();
-    if (run.status !== "queued" && run.status !== "running") {
-      return { done: true as const, status: run.status };
+    if (!run || !OPEN.has(run.status)) return null;
+    await stopRun(ctx, run, "cap", "stopped");
+    return null;
+  },
+});
+
+const PLAN: { kind: "tool" | "model"; toolSlug?: string }[] = [
+  { kind: "tool", toolSlug: "profile.read" },
+  { kind: "model" },
+  { kind: "tool", toolSlug: "asset.create" },
+];
+
+/**
+ * Every check that can stop a run happens here, before any model call or tool runs:
+ * the starter's membership, pause, halt, every cap, and the model route.
+ */
+export const prepare = internalMutation({
+  args: { runId: v.id("agentRuns") },
+  handler: async (ctx, args) => {
+    const run = await ctx.db.get(args.runId);
+    if (!run || !OPEN.has(run.status)) return { done: true as const };
+    if (!(await starterActive(ctx, run))) {
+      await stopRun(ctx, run, "cancelled", "stopped");
+      return { done: true as const };
     }
-    const steps = await ctx.db
-      .query("runSteps")
-      .withIndex("by_workspace_run", (q) => q.eq("workspaceId", args.workspaceId).eq("runId", run._id))
-      .take(50);
+    const gate = await controls(ctx, run.workspaceId);
+    if (gate.paused || gate.halted) {
+      await stopRun(ctx, run, "cancelled", "stopped");
+      return { done: true as const };
+    }
+    const caps = await loadCaps(ctx, run.workspaceId, run.agentSlug);
+    const steps = await stepCount(ctx, run);
+    const spent = await daySpend(ctx, run.workspaceId, run.agentSlug, dayKey());
+    if (overCap({ caps, runCost: run.costCents, dayCost: spent, steps: steps.length, startedAt: run.startedAt, now: Date.now() })) {
+      await stopRun(ctx, run, "cap", "stopped");
+      return { done: true as const };
+    }
     const index = steps.length;
-    const tools = declaredTools(run.skillSlug);
-    const planSteps: { kind: "tool" | "model"; toolSlug?: string; workKind?: "write" }[] = [
-      { kind: "tool", toolSlug: "profile.read" },
-      { kind: "model", workKind: "write" },
-      { kind: "tool", toolSlug: "asset.create" },
-    ];
-    const next = planSteps[index];
-    if (!next) return { done: true as const, status: run.status };
-    if (next.kind === "tool" && next.toolSlug && !tools.includes(next.toolSlug as "profile.read")) {
-      throw new Error("That tool is not declared for this skill.");
+    const next = PLAN[index];
+    if (!next) {
+      await stopRun(ctx, run, "done", "completed");
+      return { done: true as const };
     }
-    const route = await ctx.db
-      .query("modelRoutes")
-      .withIndex("by_workKind", (q) => q.eq("workKind", "write"))
-      .unique();
+    if (next.kind === "tool") assertDeclared(run.skillSlug, next.toolSlug ?? "");
+    if (run.status === "queued") await ctx.db.patch(run._id, { status: "running" });
+    const idempotencyKey = `${run._id}:${index}`;
+    if (next.kind === "tool") {
+      return { done: false as const, kind: "tool" as const, index, idempotencyKey, toolSlug: next.toolSlug ?? "" };
+    }
+    const route = await routeFor(ctx, "write");
+    if (!route) {
+      await recordFailure(ctx, run, index, idempotencyKey, "no_route");
+      return { done: true as const };
+    }
     return {
       done: false as const,
-      status: run.status,
+      kind: "model" as const,
       index,
-      idempotencyKey: `${run._id}:${index}`,
-      kind: next.kind,
-      toolSlug: next.toolSlug ?? null,
-      workKind: "write" as const,
-      route: route ?? {
-        provider: "fake",
-        model: "fake-writer",
-        fallbackProvider: "fake",
-        fallbackModel: "fake-writer",
+      idempotencyKey,
+      route: {
+        provider: route.provider,
+        model: route.model,
+        fallbackProvider: route.fallbackProvider,
+        fallbackModel: route.fallbackModel,
       },
       modelInput: wrapUntrusted(INJECTION_FIXTURE),
     };
   },
 });
 
-export const commitTool = internalMutation({
+async function recordFailure(
+  ctx: MutationCtx,
+  run: Doc<"agentRuns">,
+  index: number,
+  idempotencyKey: string,
+  code: string,
+  kind: "tool" | "model" = "model",
+) {
+  await ctx.db.insert("runSteps", {
+    workspaceId: run.workspaceId,
+    runId: run._id,
+    index,
+    idempotencyKey,
+    kind,
+    status: "failed",
+    durationMs: 0,
+    inputTokens: 0,
+    outputTokens: 0,
+    resultCode: code,
+  });
+  await stopRun(ctx, run, "error", "failed");
+}
+
+/** Marks a run failed after a model call errored. Codes only, no provider text. */
+export const fail = internalMutation({
   args: {
-    workspaceId: v.id("workspaces"),
     runId: v.id("agentRuns"),
-    userId: v.string(),
-    idempotencyKey: v.string(),
     index: v.number(),
-    toolSlug: v.string(),
+    idempotencyKey: v.string(),
+    code: v.string(),
+    kind: v.union(v.literal("tool"), v.literal("model")),
   },
   handler: async (ctx, args) => {
-    await memberOrThrow(ctx, args.workspaceId, args.userId);
     const run = await ctx.db.get(args.runId);
-    if (!run || run.workspaceId !== args.workspaceId) notFound();
+    if (!run || !OPEN.has(run.status)) return null;
+    await recordFailure(ctx, run, args.index, args.idempotencyKey, args.code, args.kind);
+    return null;
+  },
+});
+
+/** The tool's effect and its step marker commit together, so a retry can never repeat the effect. */
+export const commitTool = internalMutation({
+  args: { runId: v.id("agentRuns"), idempotencyKey: v.string(), index: v.number(), toolSlug: v.string() },
+  handler: async (ctx, args) => {
+    const run = await ctx.db.get(args.runId);
+    if (!run) notFound();
     const prior = await ctx.db
       .query("runSteps")
-      .withIndex("by_workspace_idempotency", (q) =>
-        q.eq("workspaceId", args.workspaceId).eq("idempotencyKey", args.idempotencyKey),
-      )
+      .withIndex("by_workspace_idempotency", (q) => q.eq("workspaceId", run.workspaceId).eq("idempotencyKey", args.idempotencyKey))
       .unique();
-    if (prior?.resultId) return { status: run.status, resultId: prior.resultId };
-
+    if (prior) return { status: run.status };
+    if (!OPEN.has(run.status)) return { status: run.status };
     assertDeclared(run.skillSlug, args.toolSlug);
-    const gate = await controls(ctx, args.workspaceId);
-    if (gate.paused || gate.halted) {
-      await stopRun(ctx, run, "cancelled", "stopped");
-      return { status: "stopped" as const, resultId: null };
-    }
-    const caps = await loadCaps(ctx, args.workspaceId, run.agentSlug);
-    const steps = await ctx.db
-      .query("runSteps")
-      .withIndex("by_workspace_run", (q) => q.eq("workspaceId", args.workspaceId).eq("runId", run._id))
-      .take(50);
-    const spent = await daySpend(ctx, args.workspaceId, run.agentSlug, dayKey());
-    if (
-      overCap({
-        caps,
-        runCost: run.costCents,
-        dayCost: spent,
-        steps: steps.length,
-        startedAt: run.startedAt,
-        now: Date.now(),
-      })
-    ) {
-      await stopRun(ctx, run, "cap", "stopped");
-      return { status: "stopped" as const, resultId: null };
-    }
+    const steps = await stepCount(ctx, run);
 
-    await ctx.db.patch(run._id, { status: "running" });
-    let resultId = "read";
+    let resultId: string;
     if (args.toolSlug === "profile.read") {
-      const profiles = await ctx.db
+      const confirmed = await ctx.db
         .query("profileVersions")
-        .withIndex("by_workspace_status", (q) => q.eq("workspaceId", args.workspaceId).eq("status", "confirmed"))
-        .take(10);
-      const confirmed = profiles.sort((a, b) => b.version - a.version)[0];
-      resultId = confirmed?._id ?? "none";
+        .withIndex("by_workspace_status", (q) => q.eq("workspaceId", run.workspaceId).eq("status", "confirmed"))
+        .order("desc")
+        .first();
+      if (!confirmed) {
+        await ctx.db.insert("runSteps", {
+          workspaceId: run.workspaceId,
+          runId: run._id,
+          index: args.index,
+          idempotencyKey: args.idempotencyKey,
+          kind: "tool",
+          toolSlug: args.toolSlug,
+          status: "failed",
+          durationMs: 0,
+          inputTokens: 0,
+          outputTokens: 0,
+          resultCode: "no_confirmed_profile",
+        });
+        await stopRun(ctx, run, "error", "failed");
+        return { status: "failed" as const };
+      }
+      resultId = confirmed._id;
     } else if (args.toolSlug === "test.echo") {
       resultId = "echo";
     } else if (args.toolSlug === "asset.create") {
-      const readStep = steps.find((step) => step.toolSlug === "profile.read");
-      const sourceId = readStep?.resultId ?? "none";
+      const readStep = steps.find((step) => step.toolSlug === "profile.read" && step.status === "completed");
       const claims = [
         {
           claimKey: "profile",
           statement: "The confirmed profile was read.",
-          sourceId,
+          sourceId: readStep?.resultId,
           fetchedAt: Date.now(),
         },
       ];
       assertClaims(claims);
+      await assertSourcesExist(ctx, run.workspaceId, claims);
       const assetId = await ctx.db.insert("assets", {
-        workspaceId: args.workspaceId,
+        workspaceId: run.workspaceId,
         kind: "researchReport",
         title: "Test echo",
         status: "draft",
@@ -343,7 +405,7 @@ export const commitTool = internalMutation({
         createdAt: Date.now(),
       });
       const versionId = await ctx.db.insert("assetVersions", {
-        workspaceId: args.workspaceId,
+        workspaceId: run.workspaceId,
         assetId,
         version: 1,
         body: "ok",
@@ -351,7 +413,7 @@ export const commitTool = internalMutation({
       });
       for (const claim of claims) {
         await ctx.db.insert("evidence", {
-          workspaceId: args.workspaceId,
+          workspaceId: run.workspaceId,
           assetVersionId: versionId,
           claimKey: claim.claimKey,
           sourceId: claim.sourceId,
@@ -364,7 +426,7 @@ export const commitTool = internalMutation({
     }
 
     const stepId = await ctx.db.insert("runSteps", {
-      workspaceId: args.workspaceId,
+      workspaceId: run.workspaceId,
       runId: run._id,
       index: args.index,
       idempotencyKey: args.idempotencyKey,
@@ -378,29 +440,27 @@ export const commitTool = internalMutation({
       resultId,
     });
     if (args.toolSlug === "test.echo") {
-      const bytes = new TextEncoder().encode(wrapUntrusted(INJECTION_FIXTURE));
+      const body = wrapUntrusted(INJECTION_FIXTURE);
       await ctx.db.insert("runArtifacts", {
-        workspaceId: args.workspaceId,
+        workspaceId: run.workspaceId,
         runId: run._id,
         stepId,
         kind: "tool",
-        byteSize: bytes.byteLength,
-        body: wrapUntrusted(INJECTION_FIXTURE),
+        byteSize: new TextEncoder().encode(body).byteLength,
+        body,
       });
     }
-    if (args.toolSlug === "asset.create") {
-      await stopRun(ctx, { ...run, costCents: run.costCents }, "done", "completed");
-      return { status: "completed" as const, resultId };
-    }
-    return { status: "running" as const, resultId };
+    return { status: "running" as const };
   },
 });
 
+/**
+ * Records a model call that already happened. The cost is always counted, even when the run
+ * was paused or capped while the call was out, and the run then stops for that reason.
+ */
 export const commitModel = internalMutation({
   args: {
-    workspaceId: v.id("workspaces"),
     runId: v.id("agentRuns"),
-    userId: v.string(),
     idempotencyKey: v.string(),
     index: v.number(),
     text: v.string(),
@@ -411,63 +471,31 @@ export const commitModel = internalMutation({
     model: v.string(),
   },
   handler: async (ctx, args) => {
-    await memberOrThrow(ctx, args.workspaceId, args.userId);
     const run = await ctx.db.get(args.runId);
-    if (!run || run.workspaceId !== args.workspaceId) notFound();
+    if (!run) notFound();
     const prior = await ctx.db
       .query("runSteps")
-      .withIndex("by_workspace_idempotency", (q) =>
-        q.eq("workspaceId", args.workspaceId).eq("idempotencyKey", args.idempotencyKey),
-      )
+      .withIndex("by_workspace_idempotency", (q) => q.eq("workspaceId", run.workspaceId).eq("idempotencyKey", args.idempotencyKey))
       .unique();
-    if (prior?.resultId) return { status: run.status, resultId: prior.resultId };
+    if (prior) return { status: run.status };
 
-    const caps = await loadCaps(ctx, args.workspaceId, run.agentSlug);
-    const steps = await ctx.db
-      .query("runSteps")
-      .withIndex("by_workspace_run", (q) => q.eq("workspaceId", args.workspaceId).eq("runId", run._id))
-      .take(50);
     const day = dayKey();
-    const spent = await daySpend(ctx, args.workspaceId, run.agentSlug, day);
-    if (
-      overCap({
-        caps,
-        runCost: run.costCents,
-        dayCost: spent,
-        steps: steps.length,
-        startedAt: run.startedAt,
-        now: Date.now(),
-      })
-    ) {
-      await stopRun(ctx, run, "cap", "stopped");
-      return { status: "stopped" as const, resultId: null };
-    }
-
+    const spent = await daySpend(ctx, run.workspaceId, run.agentSlug, day);
     const nextCost = run.costCents + args.costCents;
     const nextDay = spent + args.costCents;
     const counter = await ctx.db
       .query("capCounters")
-      .withIndex("by_workspace_agent_day", (q) =>
-        q.eq("workspaceId", args.workspaceId).eq("agentSlug", run.agentSlug).eq("day", day),
-      )
+      .withIndex("by_workspace_agent_day", (q) => q.eq("workspaceId", run.workspaceId).eq("agentSlug", run.agentSlug).eq("day", day))
       .unique();
     if (counter) await ctx.db.patch(counter._id, { costCents: nextDay });
-    else {
-      await ctx.db.insert("capCounters", {
-        workspaceId: args.workspaceId,
-        agentSlug: run.agentSlug,
-        day,
-        costCents: nextDay,
-      });
-    }
+    else await ctx.db.insert("capCounters", { workspaceId: run.workspaceId, agentSlug: run.agentSlug, day, costCents: nextDay });
     await ctx.db.patch(run._id, {
-      status: "running",
       costCents: nextCost,
       inputTokens: run.inputTokens + args.inputTokens,
       outputTokens: run.outputTokens + args.outputTokens,
     });
     const stepId = await ctx.db.insert("runSteps", {
-      workspaceId: args.workspaceId,
+      workspaceId: run.workspaceId,
       runId: run._id,
       index: args.index,
       idempotencyKey: args.idempotencyKey,
@@ -480,55 +508,64 @@ export const commitModel = internalMutation({
       resultCode: "ok",
       resultId: `${args.provider}/${args.model}`,
     });
-    const bytes = new TextEncoder().encode(args.text);
     await ctx.db.insert("runArtifacts", {
-      workspaceId: args.workspaceId,
+      workspaceId: run.workspaceId,
       runId: run._id,
       stepId,
       kind: "model",
-      byteSize: bytes.byteLength,
+      byteSize: new TextEncoder().encode(args.text).byteLength,
       body: args.text,
     });
     await writeAudit(ctx, {
-      workspaceId: args.workspaceId,
+      workspaceId: run.workspaceId,
       actorType: "system",
       actorId: "runtime",
       action: "run.model",
       subject: stepId,
       count: args.costCents,
     });
-    const crossed = overCap({
-      caps,
-      runCost: nextCost,
-      dayCost: nextDay,
-      steps: steps.length + 1,
-      startedAt: run.startedAt,
-      now: Date.now(),
-    });
-    if (crossed) {
-      await stopRun(ctx, { ...run, costCents: nextCost }, "cap", "stopped");
-      return { status: "stopped" as const, resultId: stepId };
+
+    const current = { ...run, costCents: nextCost };
+    if (!OPEN.has(run.status)) return { status: run.status };
+    const gate = await controls(ctx, run.workspaceId);
+    if (gate.paused || gate.halted) {
+      await stopRun(ctx, current, "cancelled", "stopped", nextCost);
+      return { status: "stopped" as const };
     }
-    return { status: "running" as const, resultId: stepId };
+    const caps = await loadCaps(ctx, run.workspaceId, run.agentSlug);
+    const steps = await stepCount(ctx, run);
+    if (overCap({ caps, runCost: nextCost, dayCost: nextDay, steps: steps.length, startedAt: run.startedAt, now: Date.now() })) {
+      await stopRun(ctx, current, "cap", "stopped", nextCost);
+      return { status: "stopped" as const };
+    }
+    return { status: "running" as const };
   },
 });
 
-export const advance = memberAction({
+/** Runs one step, then schedules the next. Nothing depends on a browser staying open. */
+export const step = internalAction({
   args: { runId: v.id("agentRuns") },
-  handler: async (ctx, args): Promise<string> => {
-    const plan = await ctx.runQuery(internal.runs.plan, {
-      workspaceId: ctx.workspaceId,
-      runId: args.runId,
-      userId: ctx.userId,
-    });
-    if (plan.done) return plan.status;
+  handler: async (ctx, args): Promise<null> => {
+    const plan = await ctx.runMutation(internal.runs.prepare, { runId: args.runId });
+    if (plan.done) return null;
+    let status: string;
     if (plan.kind === "model") {
-      const route = plan.route;
-      const result = await complete(route, plan.workKind, plan.modelInput);
-      const saved: { status: string } = await ctx.runMutation(internal.runs.commitModel, {
-        workspaceId: ctx.workspaceId,
+      let result;
+      try {
+        result = await complete(plan.route, "write", plan.modelInput);
+      } catch (error) {
+        const code = error instanceof ModelError ? error.code : "provider_error";
+        await ctx.runMutation(internal.runs.fail, {
+          runId: args.runId,
+          index: plan.index,
+          idempotencyKey: plan.idempotencyKey,
+          code,
+          kind: "model",
+        });
+        return null;
+      }
+      ({ status } = await ctx.runMutation(internal.runs.commitModel, {
         runId: args.runId,
-        userId: ctx.userId,
         idempotencyKey: plan.idempotencyKey,
         index: plan.index,
         text: result.text,
@@ -537,18 +574,28 @@ export const advance = memberAction({
         costCents: result.costCents,
         provider: result.provider,
         model: result.model,
-      });
-      return saved.status;
+      }));
+    } else {
+      try {
+        ({ status } = await ctx.runMutation(internal.runs.commitTool, {
+          runId: args.runId,
+          idempotencyKey: plan.idempotencyKey,
+          index: plan.index,
+          toolSlug: plan.toolSlug,
+        }));
+      } catch {
+        await ctx.runMutation(internal.runs.fail, {
+          runId: args.runId,
+          index: plan.index,
+          idempotencyKey: plan.idempotencyKey,
+          code: "tool_error",
+          kind: "tool",
+        });
+        return null;
+      }
     }
-    const saved: { status: string } = await ctx.runMutation(internal.runs.commitTool, {
-      workspaceId: ctx.workspaceId,
-      runId: args.runId,
-      userId: ctx.userId,
-      idempotencyKey: plan.idempotencyKey,
-      index: plan.index,
-      toolSlug: plan.toolSlug ?? "",
-    });
-    return saved.status;
+    if (status === "running") await ctx.scheduler.runAfter(0, internal.runs.step, { runId: args.runId });
+    return null;
   },
 });
 

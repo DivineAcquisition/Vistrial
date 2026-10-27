@@ -544,6 +544,8 @@ export default defineSchema({
     kind: v.union(v.literal("tool"), v.literal("model"), v.literal("note")),
     toolSlug: v.optional(v.string()),
     modelRoute: v.optional(v.string()),
+    /** The kind of work a model step did. Workspace screens show this, never the model name. */
+    workKind: v.optional(v.string()),
     status: v.union(v.literal("completed"), v.literal("failed")),
     durationMs: v.number(),
     inputTokens: v.number(),
@@ -581,7 +583,8 @@ export default defineSchema({
   })
     .index("by_workspace", ["workspaceId"])
     .index("by_workspace_status", ["workspaceId", "status"])
-    .index("by_workspace_kind_status", ["workspaceId", "kind", "status"]),
+    .index("by_workspace_kind_status", ["workspaceId", "kind", "status"])
+    .index("by_workspace_run", ["workspaceId", "createdByRun"]),
 
   assetVersions: defineTable({
     workspaceId: v.id("workspaces"),
@@ -597,6 +600,8 @@ export default defineSchema({
     workspaceId: v.id("workspaces"),
     assetVersionId: v.id("assetVersions"),
     claimKey: v.string(),
+    /** The claim as written in the asset. Asset content, never copied into logs. */
+    statement: v.optional(v.string()),
     sourceId: v.optional(v.string()),
     fetchedAt: v.optional(v.number()),
     computed: v.optional(v.boolean()),

@@ -72,6 +72,21 @@ async function finishRun(
   return status;
 }
 
+/** The model each step used, read straight from the table. Only staff screens may show these. */
+function makeTester() {
+  return convexTest(schema, modules);
+}
+
+async function modelRoutes(t: ReturnType<typeof makeTester>, workspaceId: string, runId: string) {
+  const steps = await t.run(async (ctx) =>
+    ctx.db
+      .query("runSteps")
+      .withIndex("by_workspace_run", (q) => q.eq("workspaceId", workspaceId as never).eq("runId", runId as never))
+      .take(50),
+  );
+  return steps.map((step) => step.modelRoute ?? null);
+}
+
 describe("step 4 runtime", () => {
   beforeEach(() => {
     vi.useFakeTimers();
@@ -306,8 +321,11 @@ describe("step 4 runtime", () => {
     });
     const runId = await owner.mutation(api.runs.start, { workspaceId, agentSlug: "sales", skillSlug: "test-echo" });
     await finishRun(t, owner, workspaceId, runId);
+    expect(await modelRoutes(t, workspaceId, runId)).toContain("fake/fake-writer-b");
+    // Workspace screens get the kind of work, never the model name.
     const run = await owner.query(api.runs.get, { workspaceId, runId });
-    expect(run.steps.some((step: { modelRoute: string | null }) => step.modelRoute === "fake/fake-writer-b")).toBe(true);
+    expect(JSON.stringify(run)).not.toContain("fake-writer-b");
+    expect(run.steps.some((step: { workKind: string | null }) => step.workKind === "write")).toBe(true);
     delete process.env.ALLOW_DEV_SKILLS;
   });
 
@@ -470,8 +488,7 @@ describe("step 4 runtime", () => {
     });
     const runId = await owner.mutation(api.runs.start, { workspaceId, agentSlug: "sales", skillSlug: "test-echo" });
     expect(await finishRun(t, owner, workspaceId, runId)).toBe("completed");
-    const run = await owner.query(api.runs.get, { workspaceId, runId });
-    expect(run.steps.some((step: { modelRoute: string | null }) => step.modelRoute === "fake/fake-writer")).toBe(true);
+    expect(await modelRoutes(t, workspaceId, runId)).toContain("fake/fake-writer");
   });
 
   it("lets only a Platform Admin change model routes", async () => {

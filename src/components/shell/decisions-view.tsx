@@ -2,13 +2,13 @@
 
 import { useMutation, useQuery } from "convex/react";
 
+import { AssetRow, type AssetRowView } from "@/components/assets/asset-row";
 import { ProfileEditor } from "@/components/profile/profile-editor";
 import { useWorkspaceShell } from "@/components/shell/shell-context";
 import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components/ui/page-header";
 import { Panel } from "@/components/ui/panel";
 import { api } from "../../../convex/_generated/api";
-import type { Id } from "../../../convex/_generated/dataModel";
 import { bodyText } from "@/lib/ui";
 
 export function DecisionsView() {
@@ -26,7 +26,6 @@ function LiveDecisions({ shell }: { shell: NonNullable<ReturnType<typeof useWork
   });
   const turnOn = useMutation(api.workspace.setAgentState);
   const finish = useMutation(api.profile.finishSetup);
-  const approve = useMutation(api.assets.approve);
   const mark = useMutation(api.workspace.markSetupDone);
   const salesOn = shell.agents.find((agent) => agent.slug === "sales")?.state !== "off";
 
@@ -77,19 +76,18 @@ function LiveDecisions({ shell }: { shell: NonNullable<ReturnType<typeof useWork
       <Panel className="p-4 sm:p-6">
         <h2 className="font-heading text-base text-card-foreground">Waiting on you</h2>
         {waiting.page.length === 0 ? <p className={`${bodyText} mt-3`}>Nothing is waiting.</p> : null}
-        <ul className="mt-4 grid gap-4">
-          {waiting.page.map((asset: { id: Id<"assets">; title: string; kind: string }) => (
-            <li key={asset.id} className="grid gap-2 rounded-xl border border-border p-4">
-              <p className="font-medium text-card-foreground">{asset.title}</p>
-              <p className="text-sm text-muted-foreground">{asset.kind}</p>
-              {shell.role === "rep" ? null : (
-                <Button type="button" onClick={() => void approve({ workspaceId: shell.workspaceId, assetId: asset.id })}>
-                  Approve
-                </Button>
-              )}
+        <ul className="mt-4 grid gap-3">
+          {waiting.page.map((asset: AssetRowView) => (
+            <li key={asset.id}>
+              <AssetRow asset={asset} />
             </li>
           ))}
         </ul>
+        {waiting.page.length > 0 ? (
+          <p className="mt-4 text-sm text-muted-foreground">
+            {shell.role === "rep" ? "An owner or manager approves these." : "Open one to read its claims and sources, then approve it."}
+          </p>
+        ) : null}
         {shell.role === "owner" ? (
           <Button className="mt-6" type="button" variant="ghost" onClick={() => void mark({ workspaceId: shell.workspaceId, setupDone: false })}>
             Show the setup path

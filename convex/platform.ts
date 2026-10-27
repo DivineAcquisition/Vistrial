@@ -2,6 +2,8 @@ import { v } from "convex/values";
 
 import { staffMutation, staffQuery } from "./lib/builders";
 import { writeAudit } from "./lib/audit";
+import { notAllowed } from "./lib/errors";
+import { isProvider, isWorkKind } from "./lib/modelRouter";
 
 const OPEN = ["queued", "running", "waiting"] as const;
 
@@ -64,6 +66,9 @@ export const setRoute = staffMutation({
     fallbackModel: v.string(),
   },
   handler: async (ctx, args) => {
+    if (ctx.staff.role !== "platform_admin") notAllowed();
+    if (!isWorkKind(args.workKind)) throw new Error("Unknown kind of work.");
+    if (!isProvider(args.provider) || !isProvider(args.fallbackProvider)) throw new Error("Unknown provider.");
     const current = await ctx.db
       .query("modelRoutes")
       .withIndex("by_workKind", (q) => q.eq("workKind", args.workKind))

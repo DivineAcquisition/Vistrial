@@ -1,6 +1,6 @@
 "use client";
 
-import { useAction, useQuery } from "convex/react";
+import { useQuery } from "convex/react";
 import { useParams } from "next/navigation";
 import { useState } from "react";
 
@@ -11,16 +11,20 @@ import { Panel } from "@/components/ui/panel";
 import { api } from "../../../../../../convex/_generated/api";
 import type { Id } from "../../../../../../convex/_generated/dataModel";
 
+function ArtifactBody({ workspaceId, artifactId }: { workspaceId: Id<"workspaces">; artifactId: Id<"runArtifacts"> }) {
+  const artifact = useQuery(api.runs.artifact, { workspaceId, artifactId });
+  if (artifact === undefined) return <p className="mt-1 text-sm text-muted-foreground">Loading.</p>;
+  return <pre className="mt-1 whitespace-pre-wrap font-sans">{artifact.body}</pre>;
+}
+
 export default function RunPage() {
   const params = useParams<{ id: string }>();
   const shell = useWorkspaceShell();
   const runId = params.id as Id<"agentRuns">;
   const run = useQuery(api.runs.get, shell ? { workspaceId: shell.workspaceId, runId } : "skip");
-  const advance = useAction(api.runs.advance);
-  const [notice, setNotice] = useState("");
+  const [opened, setOpened] = useState<string | null>(null);
   if (!shell) return <p className="text-sm text-muted-foreground">Sign in to open your workspace.</p>;
   if (run === undefined) return <p className="text-sm text-muted-foreground">Loading the run.</p>;
-  const open = run.status === "queued" || run.status === "running";
   return (
     <div className="mx-auto grid w-full max-w-3xl min-w-0 gap-6">
       <PageHeader
@@ -34,20 +38,6 @@ export default function RunPage() {
           Status {run.status}
           {run.stopReason ? `. Stopped: ${run.stopReason}.` : "."} Cost {run.costCents} cents.
         </p>
-        {open ? (
-          <Button
-            type="button"
-            onClick={() => {
-              void advance({ workspaceId: shell.workspaceId, runId }).then(
-                (status) => setNotice(`Status ${status}.`),
-                () => setNotice("The run did not advance."),
-              );
-            }}
-          >
-            Advance
-          </Button>
-        ) : null}
-        {notice ? <p className="text-sm text-muted-foreground">{notice}</p> : null}
         <h2 className="font-heading text-base text-card-foreground">Steps</h2>
         <ol className="grid gap-2">
           {run.steps.map((step: { id: string; index: number; kind: string; toolSlug: string | null; modelRoute: string | null; resultCode: string }) => (
@@ -60,10 +50,16 @@ export default function RunPage() {
         </ol>
         <h2 className="font-heading text-base text-card-foreground">Artifacts</h2>
         <ul className="grid gap-2">
-          {run.artifacts.map((row: { id: string; kind: string; byteSize: number; body: string }) => (
+          {run.artifacts.map((row: { id: Id<"runArtifacts">; kind: string; byteSize: number }) => (
             <li key={row.id} className="text-sm text-muted-foreground">
-              {row.kind}, {row.byteSize} bytes.
-              {row.body ? <pre className="mt-1 whitespace-pre-wrap font-sans">{row.body}</pre> : null}
+              {row.kind}, {row.byteSize} bytes.{" "}
+              {opened === row.id ? (
+                <ArtifactBody workspaceId={shell.workspaceId} artifactId={row.id} />
+              ) : (
+                <Button type="button" variant="outline" size="sm" onClick={() => setOpened(row.id)}>
+                  Open
+                </Button>
+              )}
             </li>
           ))}
         </ul>

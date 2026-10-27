@@ -3,7 +3,7 @@ import { v } from "convex/values";
 
 import { workspaceMutation, workspaceQuery } from "./lib/builders";
 import { writeAudit } from "./lib/audit";
-import { assertClaims, type ClaimInput } from "./lib/evidence";
+import { assertClaims, assertSourcesExist, type ClaimInput } from "./lib/evidence";
 import { notAllowed, notFound } from "./lib/errors";
 
 const claim = v.object({
@@ -75,6 +75,7 @@ export const get = workspaceQuery({
     const versions = await ctx.db
       .query("assetVersions")
       .withIndex("by_workspace_asset", (q) => q.eq("workspaceId", ctx.workspaceId).eq("assetId", asset._id))
+      .order("desc")
       .take(20);
     const current = versions.find((row) => row.version === asset.currentVersion) ?? null;
     const evidence = current
@@ -135,6 +136,7 @@ export const addVersion = workspaceMutation({
     const asset = await ctx.db.get(args.assetId);
     if (!asset || asset.workspaceId !== ctx.workspaceId) notFound();
     assertClaims(args.claims as ClaimInput[]);
+    await assertSourcesExist(ctx, ctx.workspaceId, args.claims as ClaimInput[]);
     const version = asset.currentVersion + 1;
     const versionId = await ctx.db.insert("assetVersions", {
       workspaceId: ctx.workspaceId,
@@ -154,7 +156,8 @@ export const addVersion = workspaceMutation({
         computed: item.computed,
       });
     }
-    await ctx.db.patch(asset._id, { currentVersion: version });
+    // Approval covers one version. New content waits for approval again.
+    await ctx.db.patch(asset._id, { currentVersion: version, status: "draft" });
     await writeAudit(ctx, {
       workspaceId: ctx.workspaceId,
       actorType: "user",

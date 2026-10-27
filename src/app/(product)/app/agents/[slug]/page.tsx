@@ -1,6 +1,6 @@
 "use client";
 
-import { useAction, useMutation, useQuery } from "convex/react";
+import { useMutation, useQuery } from "convex/react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useState } from "react";
@@ -20,7 +20,6 @@ export default function AgentPage() {
   const devSkill = useQuery(api.runs.devSkill, shell ? { workspaceId: shell.workspaceId } : "skip");
   const runs = useQuery(api.runs.list, shell ? { workspaceId: shell.workspaceId, agentSlug: params.slug } : "skip");
   const start = useMutation(api.runs.start);
-  const advance = useAction(api.runs.advance);
   const [notice, setNotice] = useState("");
   if (!shell) return <p className="text-sm text-muted-foreground">Sign in to open your workspace.</p>;
   const agent = shell.agents.find((row) => row.slug === params.slug);
@@ -47,14 +46,10 @@ export default function AgentPage() {
           <Button
             type="button"
             onClick={() => {
-              void start({ workspaceId: shell.workspaceId, agentSlug: agent.slug, skillSlug: devSkill.slug }).then(async (runId) => {
-                let status = "queued";
-                for (let i = 0; i < 6; i += 1) {
-                  status = await advance({ workspaceId: shell.workspaceId, runId });
-                  if (status === "completed" || status === "stopped" || status === "failed") break;
-                }
-                setNotice(`Test run ${status}.`);
-              });
+              void start({ workspaceId: shell.workspaceId, agentSlug: agent.slug, skillSlug: devSkill.slug }).then(
+                () => setNotice("Test run started. It runs on its own and shows below."),
+                () => setNotice("The test run did not start."),
+              );
             }}
           >
             Run test skill

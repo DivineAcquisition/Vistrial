@@ -51,8 +51,10 @@ export function StaffDesk() {
 
 function StaffPanel() {
   const grants = useQuery(api.staff.listMine, {});
+  const platform = useQuery(api.platform.get, {});
   const grant = useMutation(api.staff.grant);
   const enter = useMutation(api.staff.enter);
+  const setHalt = useMutation(api.platform.setHalt);
   const [workspaceId, setWorkspaceId] = useState("");
   const [reason, setReason] = useState("");
   const [opened, setOpened] = useState("");
@@ -100,6 +102,12 @@ function StaffPanel() {
         ))}
       </ul>
       {opened ? <p className="text-sm text-foreground">{opened}</p> : null}
+      <div className="grid gap-2">
+        <p className="text-sm text-muted-foreground">{platform?.halted ? "Agents are halted." : "Agents are not halted."}</p>
+        <Button type="button" variant="secondary" onClick={() => void setHalt({ halted: !platform?.halted })}>
+          {platform?.halted ? "Resume the platform" : "Halt the platform"}
+        </Button>
+      </div>
     </div>
   );
 }

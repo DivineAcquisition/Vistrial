@@ -3,9 +3,9 @@ import type { UserIdentity } from "convex/server";
 import { v, type ObjectType, type PropertyValidators } from "convex/values";
 
 import type { Doc, Id } from "../_generated/dataModel";
-import { mutation, query, type MutationCtx, type QueryCtx } from "../_generated/server";
+import { action, mutation, query, type ActionCtx, type MutationCtx, type QueryCtx } from "../_generated/server";
 import { requireGrant, requireIdentity, requireMember, requireStaff } from "./access";
-import { notAllowed } from "./errors";
+import { notAllowed, notFound } from "./errors";
 
 type AnyValidators = Record<string, PropertyValidators[string]>;
 
@@ -106,6 +106,24 @@ export function signedInMutation<V extends AnyValidators>(def: {
         },
         args,
       );
+    },
+  } as any);
+}
+
+export function memberAction<V extends AnyValidators>(def: {
+  args: V;
+  handler: (
+    ctx: ActionCtx & { userId: string; workspaceId: Id<"workspaces"> },
+    args: ObjectType<V>,
+  ) => Promise<unknown>;
+}) {
+  return action({
+    args: { workspaceId: v.id("workspaces"), ...def.args },
+    handler: async (ctx: ActionCtx, args: { workspaceId: Id<"workspaces"> }) => {
+      const identity = await ctx.auth.getUserIdentity();
+      if (!identity) notFound();
+      const { workspaceId, ...rest } = args;
+      return def.handler({ ...ctx, userId: identity.subject, workspaceId }, rest as ObjectType<V>);
     },
   } as any);
 }

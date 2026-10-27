@@ -81,6 +81,16 @@ export default defineSchema({
     createdAt: v.number(),
   }).index("by_workspace", ["workspaceId"]),
 
+  areas: defineTable({
+    slug: v.string(),
+    name: v.string(),
+    job: v.string(),
+    promise: v.string(),
+    sort: v.number(),
+  })
+    .index("by_slug", ["slug"])
+    .index("by_sort", ["sort"]),
+
   agents: defineTable({
     slug: v.string(),
     name: v.string(),
@@ -102,6 +112,20 @@ export default defineSchema({
     retired: v.optional(v.boolean()),
   })
     .index("by_slug", ["slug"])
+    .index("by_sort", ["sort"])
+    .index("by_area", ["area", "sort"]),
+
+  skills: defineTable({
+    slug: v.string(),
+    agentSlug: v.string(),
+    name: v.string(),
+    job: v.string(),
+    promise: v.string(),
+    status: v.union(v.literal("available"), v.literal("comingSoon")),
+    sort: v.number(),
+  })
+    .index("by_slug", ["slug"])
+    .index("by_agent", ["agentSlug", "sort"])
     .index("by_sort", ["sort"]),
 
   workspaceAgents: defineTable({
@@ -449,4 +473,160 @@ export default defineSchema({
     count: v.optional(v.number()),
     createdAt: v.number(),
   }).index("by_workspace", ["workspaceId"]),
+
+  profileVersions: defineTable({
+    workspaceId: v.id("workspaces"),
+    version: v.number(),
+    offer: v.string(),
+    priceNotes: v.string(),
+    audience: v.string(),
+    geography: v.string(),
+    channels: v.string(),
+    brandVoice: v.string(),
+    competitors: v.array(v.object({ name: v.string(), url: v.string() })),
+    confirmedBy: v.optional(v.string()),
+    confirmedAt: v.optional(v.number()),
+    status: v.union(v.literal("draft"), v.literal("confirmed")),
+  })
+    .index("by_workspace", ["workspaceId"])
+    .index("by_workspace_version", ["workspaceId", "version"])
+    .index("by_workspace_status", ["workspaceId", "status"]),
+
+  profileExamples: defineTable({
+    workspaceId: v.id("workspaces"),
+    version: v.number(),
+    kind: v.union(v.literal("voiceExample"), v.literal("pastAd"), v.literal("other")),
+    storageId: v.optional(v.id("_storage")),
+    text: v.optional(v.string()),
+  }).index("by_workspace_version", ["workspaceId", "version"]),
+
+  modelRoutes: defineTable({
+    workKind: v.string(),
+    provider: v.string(),
+    model: v.string(),
+    fallbackProvider: v.string(),
+    fallbackModel: v.string(),
+  }).index("by_workKind", ["workKind"]),
+
+  agentRuns: defineTable({
+    workspaceId: v.id("workspaces"),
+    agentSlug: v.string(),
+    skillSlug: v.string(),
+    status: v.union(
+      v.literal("queued"),
+      v.literal("running"),
+      v.literal("waiting"),
+      v.literal("completed"),
+      v.literal("failed"),
+      v.literal("stopped"),
+    ),
+    startedBy: v.string(),
+    inputRef: v.string(),
+    startedAt: v.number(),
+    finishedAt: v.optional(v.number()),
+    stopReason: v.optional(
+      v.union(v.literal("done"), v.literal("cap"), v.literal("error"), v.literal("cancelled"), v.literal("halted")),
+    ),
+    costCents: v.number(),
+    inputTokens: v.number(),
+    outputTokens: v.number(),
+  })
+    .index("by_workspace", ["workspaceId"])
+    .index("by_workspace_status", ["workspaceId", "status"])
+    .index("by_workspace_agent", ["workspaceId", "agentSlug"])
+    .index("by_status", ["status"]),
+
+  runSteps: defineTable({
+    workspaceId: v.id("workspaces"),
+    runId: v.id("agentRuns"),
+    index: v.number(),
+    idempotencyKey: v.string(),
+    kind: v.union(v.literal("tool"), v.literal("model"), v.literal("note")),
+    toolSlug: v.optional(v.string()),
+    modelRoute: v.optional(v.string()),
+    status: v.union(v.literal("completed"), v.literal("failed")),
+    durationMs: v.number(),
+    inputTokens: v.number(),
+    outputTokens: v.number(),
+    resultCode: v.string(),
+    resultId: v.optional(v.string()),
+  })
+    .index("by_workspace_run", ["workspaceId", "runId"])
+    .index("by_workspace_idempotency", ["workspaceId", "idempotencyKey"]),
+
+  runArtifacts: defineTable({
+    workspaceId: v.id("workspaces"),
+    runId: v.id("agentRuns"),
+    stepId: v.id("runSteps"),
+    kind: v.string(),
+    storageId: v.optional(v.id("_storage")),
+    byteSize: v.number(),
+    body: v.optional(v.string()),
+  }).index("by_workspace_run", ["workspaceId", "runId"]),
+
+  assets: defineTable({
+    workspaceId: v.id("workspaces"),
+    kind: v.union(
+      v.literal("researchReport"),
+      v.literal("adCopySet"),
+      v.literal("creativeBrief"),
+      v.literal("contentCalendar"),
+      v.literal("swipeItem"),
+    ),
+    title: v.string(),
+    status: v.union(v.literal("draft"), v.literal("approved"), v.literal("archived")),
+    currentVersion: v.number(),
+    createdByRun: v.optional(v.id("agentRuns")),
+    createdAt: v.number(),
+  })
+    .index("by_workspace", ["workspaceId"])
+    .index("by_workspace_status", ["workspaceId", "status"])
+    .index("by_workspace_kind_status", ["workspaceId", "kind", "status"]),
+
+  assetVersions: defineTable({
+    workspaceId: v.id("workspaces"),
+    assetId: v.id("assets"),
+    version: v.number(),
+    body: v.optional(v.string()),
+    storageId: v.optional(v.id("_storage")),
+    createdBy: v.union(v.literal("agent"), v.literal("person")),
+    notes: v.optional(v.string()),
+  }).index("by_workspace_asset", ["workspaceId", "assetId"]),
+
+  evidence: defineTable({
+    workspaceId: v.id("workspaces"),
+    assetVersionId: v.id("assetVersions"),
+    claimKey: v.string(),
+    sourceId: v.optional(v.string()),
+    fetchedAt: v.optional(v.number()),
+    computed: v.optional(v.boolean()),
+  })
+    .index("by_workspace", ["workspaceId"])
+    .index("by_workspace_version", ["workspaceId", "assetVersionId"]),
+
+  agentCaps: defineTable({
+    workspaceId: v.id("workspaces"),
+    agentSlug: v.string(),
+    maxCostCentsPerRun: v.number(),
+    maxCostCentsPerDay: v.number(),
+    maxSteps: v.number(),
+    maxDurationMs: v.number(),
+  }).index("by_workspace_agent", ["workspaceId", "agentSlug"]),
+
+  capCounters: defineTable({
+    workspaceId: v.id("workspaces"),
+    agentSlug: v.string(),
+    day: v.string(),
+    costCents: v.number(),
+  }).index("by_workspace_agent_day", ["workspaceId", "agentSlug", "day"]),
+
+  workspaceControls: defineTable({
+    workspaceId: v.id("workspaces"),
+    agentsPaused: v.boolean(),
+  }).index("by_workspace", ["workspaceId"]),
+
+  platformControls: defineTable({
+    key: v.literal("platform"),
+    halted: v.boolean(),
+  }).index("by_key", ["key"]),
 });

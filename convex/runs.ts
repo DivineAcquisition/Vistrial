@@ -1,3 +1,4 @@
+import { paginationOptsValidator } from "convex/server";
 import { v } from "convex/values";
 
 import { internal } from "./_generated/api";
@@ -6,7 +7,7 @@ import type { Doc, Id } from "./_generated/dataModel";
 import type { MutationCtx, QueryCtx } from "./_generated/server";
 import { workspaceMutation, workspaceQuery } from "./lib/builders";
 import { writeAudit } from "./lib/audit";
-import { DEFAULT_CAPS, PLATFORM_CEILING, dayKey, overCap, type Caps } from "./lib/caps";
+import { DEFAULT_CAPS, PLATFORM_CEILING, SOFT_WARNING_RATIO, dayKey, overCap, type Caps } from "./lib/caps";
 import { assertClaims, assertSourcesExist } from "./lib/evidence";
 import { notAllowed, notFound } from "./lib/errors";
 import { ModelError, complete, type ModelRoute } from "./lib/modelRouter";
@@ -124,6 +125,63 @@ export const list = workspaceQuery({
   },
 });
 
+const runStatus = v.union(
+  v.literal("queued"),
+  v.literal("running"),
+  v.literal("waiting"),
+  v.literal("completed"),
+  v.literal("failed"),
+  v.literal("stopped"),
+);
+
+/** The Runs page: newest first, a page at a time, with optional filters. */
+export const page = workspaceQuery({
+  args: {
+    paginationOpts: paginationOptsValidator,
+    status: v.optional(runStatus),
+    agentSlug: v.optional(v.string()),
+    skillSlug: v.optional(v.string()),
+    startedByMe: v.optional(v.boolean()),
+    since: v.optional(v.number()),
+  },
+  handler: async (ctx, args) => {
+    const base = args.status
+      ? ctx.db
+          .query("agentRuns")
+          .withIndex("by_workspace_status", (q) => q.eq("workspaceId", ctx.workspaceId).eq("status", args.status!))
+      : args.agentSlug
+        ? ctx.db
+            .query("agentRuns")
+            .withIndex("by_workspace_agent", (q) => q.eq("workspaceId", ctx.workspaceId).eq("agentSlug", args.agentSlug!))
+        : ctx.db.query("agentRuns").withIndex("by_workspace", (q) => q.eq("workspaceId", ctx.workspaceId));
+    const result = await base
+      .order("desc")
+      .filter((q) =>
+        q.and(
+          args.agentSlug ? q.eq(q.field("agentSlug"), args.agentSlug) : true,
+          args.skillSlug ? q.eq(q.field("skillSlug"), args.skillSlug) : true,
+          args.startedByMe ? q.eq(q.field("startedBy"), ctx.identity.subject) : true,
+          args.since !== undefined ? q.gte(q.field("startedAt"), args.since) : true,
+        ),
+      )
+      .paginate(args.paginationOpts);
+    return {
+      ...result,
+      page: result.page.map((row) => ({
+        id: row._id,
+        agentSlug: row.agentSlug,
+        skillSlug: row.skillSlug,
+        status: row.status,
+        stopReason: row.stopReason ?? null,
+        costCents: row.costCents,
+        startedAt: row.startedAt,
+        finishedAt: row.finishedAt ?? null,
+        startedByMe: row.startedBy === ctx.identity.subject,
+      })),
+    };
+  },
+});
+
 /** Run metadata only. Artifact bodies load one at a time through `artifact`. */
 export const get = workspaceQuery({
   args: { runId: v.id("agentRuns") },
@@ -134,7 +192,17 @@ export const get = workspaceQuery({
     const artifacts = await ctx.db
       .query("runArtifacts")
       .withIndex("by_workspace_run", (q) => q.eq("workspaceId", ctx.workspaceId).eq("runId", run._id))
-      .take(50);
+      .take(PLATFORM_CEILING.maxSteps + 1);
+    const assets = await ctx.db
+      .query("assets")
+      .withIndex("by_workspace_run", (q) => q.eq("workspaceId", ctx.workspaceId).eq("createdByRun", run._id))
+      .take(20);
+    const caps = await loadCaps(ctx, ctx.workspaceId, run.agentSlug);
+    const day = dayKey(run.startedAt);
+    const starter = await ctx.db
+      .query("members")
+      .withIndex("by_workspace_user", (q) => q.eq("workspaceId", ctx.workspaceId).eq("userId", run.startedBy))
+      .unique();
     return {
       id: run._id,
       agentSlug: run.agentSlug,
@@ -146,6 +214,15 @@ export const get = workspaceQuery({
       outputTokens: run.outputTokens,
       startedAt: run.startedAt,
       finishedAt: run.finishedAt ?? null,
+      startedByName: starter?.displayName ?? null,
+      caps: {
+        maxCostCentsPerRun: caps.maxCostCentsPerRun,
+        maxCostCentsPerDay: caps.maxCostCentsPerDay,
+        maxSteps: caps.maxSteps,
+        maxDurationMs: caps.maxDurationMs,
+        softWarningCents: caps.maxCostCentsPerRun * SOFT_WARNING_RATIO,
+      },
+      daySpentCents: await daySpend(ctx, ctx.workspaceId, run.agentSlug, day),
       steps: steps
         .sort((a, b) => a.index - b.index)
         .map((step) => ({
@@ -153,12 +230,21 @@ export const get = workspaceQuery({
           index: step.index,
           kind: step.kind,
           toolSlug: step.toolSlug ?? null,
-          modelRoute: step.modelRoute ?? null,
+          workKind: step.kind === "model" ? (step.workKind ?? "write") : null,
           status: step.status,
           resultCode: step.resultCode,
           durationMs: step.durationMs,
+          inputTokens: step.inputTokens,
+          outputTokens: step.outputTokens,
         })),
-      artifacts: artifacts.map((row) => ({ id: row._id, kind: row.kind, byteSize: row.byteSize })),
+      artifacts: artifacts.map((row) => ({ id: row._id, kind: row.kind, byteSize: row.byteSize, stepId: row.stepId })),
+      assets: assets.map((row) => ({
+        id: row._id,
+        title: row.title,
+        kind: row.kind,
+        status: row.status,
+        currentVersion: row.currentVersion,
+      })),
     };
   },
 });
@@ -220,9 +306,9 @@ export const stop = workspaceMutation({
     if (ctx.member.role === "rep") notAllowed();
     const run = await ctx.db.get(args.runId);
     if (!run || run.workspaceId !== ctx.workspaceId) notFound();
-    if (!OPEN.has(run.status)) return null;
+    if (!OPEN.has(run.status)) return { stopped: false };
     await stopRun(ctx, run, "halted", "stopped");
-    return null;
+    return { stopped: true };
   },
 });
 
@@ -416,6 +502,7 @@ export const commitTool = internalMutation({
           workspaceId: run.workspaceId,
           assetVersionId: versionId,
           claimKey: claim.claimKey,
+          statement: claim.statement,
           sourceId: claim.sourceId,
           fetchedAt: claim.fetchedAt,
         });
@@ -469,6 +556,7 @@ export const commitModel = internalMutation({
     costCents: v.number(),
     provider: v.string(),
     model: v.string(),
+    workKind: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     const run = await ctx.db.get(args.runId);
@@ -501,6 +589,7 @@ export const commitModel = internalMutation({
       idempotencyKey: args.idempotencyKey,
       kind: "model",
       modelRoute: `${args.provider}/${args.model}`,
+      workKind: args.workKind,
       status: "completed",
       durationMs: 1,
       inputTokens: args.inputTokens,
@@ -574,6 +663,7 @@ export const step = internalAction({
         costCents: result.costCents,
         provider: result.provider,
         model: result.model,
+        workKind: "write",
       }));
     } else {
       try {

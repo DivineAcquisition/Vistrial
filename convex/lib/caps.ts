@@ -12,6 +12,9 @@ export const PLATFORM_CEILING = {
   maxDurationMs: 3_600_000,
 };
 
+/** The run cost bar warns at this share of the per-run cap, before the hard stop. */
+export const SOFT_WARNING_RATIO = 0.8;
+
 export type Caps = {
   maxCostCentsPerRun: number;
   maxCostCentsPerDay: number;

@@ -10,9 +10,11 @@ import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components/ui/page-header";
 import { Panel } from "@/components/ui/panel";
 import { StatusBadge } from "@/components/ui/status-badge";
+import { RunList } from "@/components/runs/run-list";
 import { api } from "../../../../../../convex/_generated/api";
-import type { Id } from "../../../../../../convex/_generated/dataModel";
 import { bodyText } from "@/lib/ui";
+import { skillName } from "@/lib/runs/skill-name";
+import { asRunStatus, asStopReason } from "@/lib/runs/view";
 
 export default function AgentPage() {
   const params = useParams<{ slug: string }>();
@@ -42,7 +44,7 @@ export default function AgentPage() {
             </li>
           ))}
         </ul>
-        {devSkill && agent.slug === devSkill.agentSlug ? (
+        {devSkill && agent.slug === devSkill.agentSlug && shell.role !== "rep" ? (
           <Button
             type="button"
             onClick={() => {
@@ -56,17 +58,25 @@ export default function AgentPage() {
           </Button>
         ) : null}
         {notice ? <p className="text-sm text-muted-foreground">{notice}</p> : null}
-        <h2 className="font-heading text-base text-card-foreground">Recent runs</h2>
-        <ul className="grid gap-2">
-          {(runs ?? []).length === 0 ? <li className="text-sm text-muted-foreground">No runs yet.</li> : null}
-          {(runs ?? []).map((run: { id: Id<"agentRuns">; skillSlug: string; status: string; costCents: number }) => (
-            <li key={run.id}>
-              <Link className="text-sm text-foreground underline-offset-4 hover:underline" href={`/app/runs/${run.id}`}>
-                {run.skillSlug}: {run.status}, {run.costCents} cents
-              </Link>
-            </li>
-          ))}
-        </ul>
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <h2 className="font-heading text-base text-card-foreground">Recent runs</h2>
+          <Link className="text-sm underline-offset-4 hover:underline" href="/app/runs">
+            All runs
+          </Link>
+        </div>
+        {(runs ?? []).length === 0 ? <p className="text-sm text-muted-foreground">No runs yet.</p> : null}
+        <RunList
+          runs={(runs ?? []).map((run: { id: string; skillSlug: string; status: string; stopReason: string | null; costCents: number; startedAt: number }) => ({
+            id: run.id,
+            skillName: skillName(shell, agent.slug, run.skillSlug),
+            agentName: agent.name,
+            status: asRunStatus(run.status),
+            stopReason: asStopReason(run.stopReason),
+            costCents: run.costCents,
+            startedAt: run.startedAt,
+            startedByMe: false,
+          }))}
+        />
       </Panel>
     </div>
   );

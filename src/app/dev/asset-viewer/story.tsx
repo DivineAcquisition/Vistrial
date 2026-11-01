@@ -9,10 +9,12 @@ import { Panel } from "@/components/ui/panel";
 const T0 = Date.UTC(2026, 9, 27, 14, 0, 0);
 
 const EVIDENCE: EvidenceView[] = [
-  { claimKey: "durable", statement: "Twelve competitor ads have run for more than 30 days.", computed: true, fetchedAt: null, sourceLabel: null },
-  { claimKey: "offer", statement: "The offer is a first deep clean at $300.", computed: false, fetchedAt: T0, sourceLabel: "Business profile, version 3" },
-  { claimKey: "hook", statement: "Most long-running ads open with a before-and-after photo.", computed: false, fetchedAt: T0 + 60_000, sourceLabel: "Saved run record" },
-  { claimKey: "broken", statement: "A claim whose source was deleted.", computed: false, fetchedAt: T0, sourceLabel: null },
+  { claimKey: "durable", statement: "Twelve competitor ads have run for more than 30 days.", basis: "observed", computed: true, fetchedAt: null, sourceLabel: "Saved run record", sourceLabels: ["Saved run record"], missing: false },
+  { claimKey: "offer", statement: "The offer is a first deep clean at $300.", basis: "firstParty", computed: false, fetchedAt: T0, sourceLabel: "Business profile, version 3", sourceLabels: ["Business profile, version 3"], missing: false },
+  { claimKey: "hook", statement: "Most long-running ads open with a before-and-after photo.", basis: "inferred", computed: false, fetchedAt: T0 + 60_000, sourceLabel: "Saved run record", sourceLabels: ["Saved run record", "Saved run record"], missing: false },
+  { claimKey: "test", statement: "A same-week booking guarantee may lift replies.", basis: "hypothesis", computed: false, fetchedAt: null, sourceLabel: null, sourceLabels: [], missing: false },
+  { claimKey: "few", statement: "Too few video ads were found to compare formats.", basis: "insufficient", computed: false, fetchedAt: null, sourceLabel: null, sourceLabels: [], missing: false },
+  { claimKey: "broken", statement: "A claim whose source was deleted.", basis: "observed", computed: false, fetchedAt: T0, sourceLabel: null, sourceLabels: [null], missing: true },
 ];
 
 const V1 = "Market snapshot\n42 ads from 9 advertisers.\nTop hook: before and after.\nTest plan: 3 ideas.";

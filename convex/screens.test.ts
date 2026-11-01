@@ -125,12 +125,23 @@ describe("run and asset screens", () => {
     const current = await owner.query(api.assets.get, { workspaceId, assetId: asset.id });
     expect(current.currentVersion).toBe(2);
     expect(current.evidence).toEqual([
-      { claimKey: "count", statement: "Twelve ads ran over 30 days.", computed: true, fetchedAt: null, sourceLabel: null },
+      {
+        claimKey: "count",
+        statement: "Twelve ads ran over 30 days.",
+        basis: null,
+        computed: true,
+        fetchedAt: null,
+        sourceLabel: null,
+        sourceLabels: [],
+        missing: false,
+      },
     ]);
     const first = await owner.query(api.assets.version, { workspaceId, assetId: asset.id, version: 1 });
     expect(first.body).toBe("ok");
     expect(first.evidence[0].statement).toBe("The confirmed profile was read.");
     expect(first.evidence[0].sourceLabel).toBe("Business profile, version 1");
+    expect(first.evidence[0].basis).toBe("firstParty");
+    expect(first.evidence[0].missing).toBe(false);
 
     const stranger = t.withIdentity(person("stranger", "stranger@example.com"));
     const otherId = await stranger.mutation(api.workspace.create, { name: "Beta" });

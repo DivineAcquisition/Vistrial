@@ -1,6 +1,6 @@
 # Growth Architect V1: audit and implementation plan
 
-Date: 2026-11-01. Responds to the "Updated Product Vision" brief (seven-agent Agentic Workforce, Growth Architect first, Market Intelligence as the first skill). The brief asks for this plan before any broad implementation. Nothing here is built yet.
+Date: 2026-11-01. Responds to the "Updated Product Vision" brief (seven-agent Agentic Workforce, Growth Architect first, Market Intelligence as the first skill). The brief asks for this plan before any broad implementation. Nothing here is built yet. Decisions D1 to D5 are settled (Section 5).
 
 Read with: `v2-brief-agents-and-areas.md` (superseded where it conflicts), `step-4-review.md`, `agentic-ui-research.md`.
 
@@ -207,13 +207,13 @@ Phase 3 onward (Offer Intelligence, Campaign Strategy, Creative Production, Funn
 
 ## 5. Risks and open questions
 
-### Decisions needed before Phase 2
+### Decisions (made 2026-11-01)
 
-- **D1. Ad-library scraping is dropped.** The earlier Step 5 plan scraped public library pages. The new brief forbids bypassing access restrictions, and these sites' terms restrict automated collection. This plan uses official APIs, official embeds, web search and user-supplied URLs only. Confirm.
-- **D2. Research model.** Opus 5.5 for writing the report and Sonnet 5.5 for search and classification is the likely cost and quality balance. The router lets us change this without code. Default: Opus 5.5 everywhere until Phase 1 measures cost.
-- **D3. Research caps.** $3 per run and $25 a day per workspace (Section 3.4), or other numbers.
-- **D4. Platform accounts.** YouTube needs a Google Cloud API key with a quota increase. Instagram embeds and hashtag search need a Meta app through app review. Who owns these accounts, and should we apply now? Review takes weeks.
-- **D5. Roles.** Keep Owner, Manager and Rep for now, or simplify to Owner and Member. The brief does not say.
+- **D1. Ad-library scraping: dropped.** Research uses official APIs, official embeds, Claude web search and links users paste in. `grok-step-5-ad-research-prompt.md` is superseded on this point.
+- **D2. Research model: Claude Opus 5.5 for every step to start.** Phase 1 measures real cost. If quality holds, bulk steps (search planning, classification) move to Sonnet 5.5 through the model routes, with no code change.
+- **D3. Research caps: $3 per run and $25 a day per workspace** for Market Intelligence, set per skill. The platform ceiling rises to $10 per run and $100 a day. The test skill keeps its small caps.
+- **D4. Platform accounts: owned by the business, applied for now.** Setup steps are in `platform-accounts-setup.md`. Meta review takes weeks, so it starts in parallel with Phase 1.
+- **D5. Roles: unchanged for V1** (Owner, Manager, Rep). Revisit before launch.
 
 ### Risks
 

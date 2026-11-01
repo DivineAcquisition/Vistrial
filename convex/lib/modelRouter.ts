@@ -36,11 +36,32 @@ export const MAX_TOKENS: Record<WorkKind, number> = {
   summarize: 4000,
 };
 
-/** A failed call carries a code for the step row. The message never holds model or page text. */
+/** Tokens and money a call used. A refused call is billed, so it carries this too. */
+export type Spend = {
+  inputTokens: number;
+  outputTokens: number;
+  costCents: number;
+};
+
+export const NO_SPEND: Spend = { inputTokens: 0, outputTokens: 0, costCents: 0 };
+
+export function addSpend(a: Spend, b: Spend): Spend {
+  return {
+    inputTokens: a.inputTokens + b.inputTokens,
+    outputTokens: a.outputTokens + b.outputTokens,
+    costCents: a.costCents + b.costCents,
+  };
+}
+
+/**
+ * A failed call carries a code for the step row, and what it was billed, so the cost is still
+ * counted. The message never holds model or page text.
+ */
 export class ModelError extends Error {
   constructor(
     readonly code: string,
     readonly retryable: boolean,
+    readonly spent: Spend = NO_SPEND,
   ) {
     super(`Model call failed: ${code}`);
   }
@@ -61,15 +82,25 @@ export function costCents(model: string, inputTokens: number, outputTokens: numb
   return Math.round(dollars * 100 * 10_000) / 10_000;
 }
 
-/** Application code asks for a work kind. The route decides the model, and the fallback takes over on a retryable failure. */
+/**
+ * Application code asks for a work kind. The route decides the model, and the fallback takes over on a
+ * retryable failure. What a failed first call was billed is added to the result, or to the error when
+ * the fallback fails too, so no billed call goes uncounted.
+ */
 export async function complete(route: ModelRoute, workKind: WorkKind, input: string): Promise<Completion> {
   try {
     return await callProvider(route.provider, route.model, workKind, input);
   } catch (error) {
-    const retryable = error instanceof ModelError && error.retryable;
     const sameRoute = route.fallbackProvider === route.provider && route.fallbackModel === route.model;
-    if (!retryable || sameRoute) throw error;
-    return callProvider(route.fallbackProvider, route.fallbackModel, workKind, input);
+    if (!(error instanceof ModelError) || !error.retryable || sameRoute) throw error;
+    const spent = error.spent;
+    try {
+      const result = await callProvider(route.fallbackProvider, route.fallbackModel, workKind, input);
+      return { ...result, ...addSpend(result, spent) };
+    } catch (fallbackError) {
+      if (!(fallbackError instanceof ModelError)) throw new ModelError("provider_error", false, spent);
+      throw new ModelError(fallbackError.code, fallbackError.retryable, addSpend(spent, fallbackError.spent));
+    }
   }
 }
 
@@ -81,6 +112,7 @@ async function callProvider(provider: string, model: string, workKind: WorkKind,
 
 export function fakeComplete(provider: string, model: string): Completion {
   if (model === "fake-failing") throw new ModelError("provider_error", true);
+  if (model.startsWith("fake-refusing")) throw new ModelError("refused", true, { inputTokens: 10, outputTokens: 2, costCents: 2 });
   const costCents = model === "fake-expensive" ? 30 : 1;
   return { text: "ok", inputTokens: 10, outputTokens: 5, costCents, provider, model };
 }
@@ -106,16 +138,18 @@ export async function claudeComplete(model: string, workKind: WorkKind, input: s
     }
     throw new ModelError("provider_error", false);
   }
-  if (response.stop_reason === "refusal") throw new ModelError("refused", true);
-  const text = response.content.flatMap((block) => (block.type === "text" ? [block.text] : [])).join("\n");
+  return completionFromResponse(model, response);
+}
+
+/** Turns a Claude response into a completion. A refusal is still billed, so its usage rides on the error. */
+export function completionFromResponse(
+  model: string,
+  response: Pick<Anthropic.Message, "content" | "stop_reason" | "usage">,
+): Completion {
   const inputTokens = response.usage.input_tokens;
   const outputTokens = response.usage.output_tokens;
-  return {
-    text,
-    inputTokens,
-    outputTokens,
-    costCents: costCents(model, inputTokens, outputTokens),
-    provider: "claude",
-    model,
-  };
+  const spent = { inputTokens, outputTokens, costCents: costCents(model, inputTokens, outputTokens) };
+  if (response.stop_reason === "refusal") throw new ModelError("refused", true, spent);
+  const text = response.content.flatMap((block) => (block.type === "text" ? [block.text] : [])).join("\n");
+  return { text, ...spent, provider: "claude", model };
 }

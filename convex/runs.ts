@@ -10,7 +10,7 @@ import { writeAudit } from "./lib/audit";
 import { DEFAULT_CAPS, PLATFORM_CEILING, SOFT_WARNING_RATIO, dayKey, overCap, type Caps } from "./lib/caps";
 import { assertClaims, assertSourcesExist } from "./lib/evidence";
 import { notAllowed, notFound } from "./lib/errors";
-import { ModelError, complete, type ModelRoute } from "./lib/modelRouter";
+import { ModelError, NO_SPEND, complete, type ModelRoute, type Spend } from "./lib/modelRouter";
 import {
   INJECTION_FIXTURE,
   TEST_AGENT,
@@ -394,8 +394,9 @@ async function recordFailure(
   idempotencyKey: string,
   code: string,
   kind: "tool" | "model" = "model",
+  spent: Spend = NO_SPEND,
 ) {
-  await ctx.db.insert("runSteps", {
+  const stepId = await ctx.db.insert("runSteps", {
     workspaceId: run.workspaceId,
     runId: run._id,
     index,
@@ -403,14 +404,44 @@ async function recordFailure(
     kind,
     status: "failed",
     durationMs: 0,
-    inputTokens: 0,
-    outputTokens: 0,
+    inputTokens: spent.inputTokens,
+    outputTokens: spent.outputTokens,
     resultCode: code,
   });
-  await stopRun(ctx, run, "error", "failed");
+  if (OPEN.has(run.status)) await stopRun(ctx, run, "error", "failed");
+  return stepId;
 }
 
-/** Marks a run failed after a model call errored. Codes only, no provider text. */
+/** Adds what a model call was billed to the run and to today's counter, and returns the new totals. */
+async function charge(ctx: MutationCtx, run: Doc<"agentRuns">, spent: Spend) {
+  const day = dayKey();
+  const counter = await ctx.db
+    .query("capCounters")
+    .withIndex("by_workspace_agent_day", (q) => q.eq("workspaceId", run.workspaceId).eq("agentSlug", run.agentSlug).eq("day", day))
+    .unique();
+  const dayCost = (counter?.costCents ?? 0) + spent.costCents;
+  const runCost = run.costCents + spent.costCents;
+  if (counter) await ctx.db.patch(counter._id, { costCents: dayCost });
+  else await ctx.db.insert("capCounters", { workspaceId: run.workspaceId, agentSlug: run.agentSlug, day, costCents: dayCost });
+  await ctx.db.patch(run._id, {
+    costCents: runCost,
+    inputTokens: run.inputTokens + spent.inputTokens,
+    outputTokens: run.outputTokens + spent.outputTokens,
+  });
+  return { runCost, dayCost };
+}
+
+async function findStep(ctx: QueryCtx, run: Doc<"agentRuns">, idempotencyKey: string) {
+  return ctx.db
+    .query("runSteps")
+    .withIndex("by_workspace_idempotency", (q) => q.eq("workspaceId", run.workspaceId).eq("idempotencyKey", idempotencyKey))
+    .unique();
+}
+
+/**
+ * Marks a run failed after a step errored. Codes only, no provider text. A model call that failed
+ * but was billed (a refusal) is still counted, even when the run was stopped while the call was out.
+ */
 export const fail = internalMutation({
   args: {
     runId: v.id("agentRuns"),
@@ -418,11 +449,34 @@ export const fail = internalMutation({
     idempotencyKey: v.string(),
     code: v.string(),
     kind: v.union(v.literal("tool"), v.literal("model")),
+    inputTokens: v.optional(v.number()),
+    outputTokens: v.optional(v.number()),
+    costCents: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
     const run = await ctx.db.get(args.runId);
-    if (!run || !OPEN.has(run.status)) return null;
-    await recordFailure(ctx, run, args.index, args.idempotencyKey, args.code, args.kind);
+    if (!run) return null;
+    if (await findStep(ctx, run, args.idempotencyKey)) return null;
+    const spent = {
+      inputTokens: args.inputTokens ?? 0,
+      outputTokens: args.outputTokens ?? 0,
+      costCents: args.costCents ?? 0,
+    };
+    const billed = spent.costCents > 0 || spent.inputTokens > 0 || spent.outputTokens > 0;
+    if (!billed && !OPEN.has(run.status)) return null;
+    if (billed) await charge(ctx, run, spent);
+    const current = (await ctx.db.get(run._id)) ?? run;
+    const stepId = await recordFailure(ctx, current, args.index, args.idempotencyKey, args.code, args.kind, spent);
+    if (billed) {
+      await writeAudit(ctx, {
+        workspaceId: run.workspaceId,
+        actorType: "system",
+        actorId: "runtime",
+        action: "run.model",
+        subject: stepId,
+        count: spent.costCents,
+      });
+    }
     return null;
   },
 });
@@ -561,26 +615,12 @@ export const commitModel = internalMutation({
   handler: async (ctx, args) => {
     const run = await ctx.db.get(args.runId);
     if (!run) notFound();
-    const prior = await ctx.db
-      .query("runSteps")
-      .withIndex("by_workspace_idempotency", (q) => q.eq("workspaceId", run.workspaceId).eq("idempotencyKey", args.idempotencyKey))
-      .unique();
-    if (prior) return { status: run.status };
+    if (await findStep(ctx, run, args.idempotencyKey)) return { status: run.status };
 
-    const day = dayKey();
-    const spent = await daySpend(ctx, run.workspaceId, run.agentSlug, day);
-    const nextCost = run.costCents + args.costCents;
-    const nextDay = spent + args.costCents;
-    const counter = await ctx.db
-      .query("capCounters")
-      .withIndex("by_workspace_agent_day", (q) => q.eq("workspaceId", run.workspaceId).eq("agentSlug", run.agentSlug).eq("day", day))
-      .unique();
-    if (counter) await ctx.db.patch(counter._id, { costCents: nextDay });
-    else await ctx.db.insert("capCounters", { workspaceId: run.workspaceId, agentSlug: run.agentSlug, day, costCents: nextDay });
-    await ctx.db.patch(run._id, {
-      costCents: nextCost,
-      inputTokens: run.inputTokens + args.inputTokens,
-      outputTokens: run.outputTokens + args.outputTokens,
+    const { runCost: nextCost, dayCost: nextDay } = await charge(ctx, run, {
+      inputTokens: args.inputTokens,
+      outputTokens: args.outputTokens,
+      costCents: args.costCents,
     });
     const stepId = await ctx.db.insert("runSteps", {
       workspaceId: run.workspaceId,
@@ -643,13 +683,14 @@ export const step = internalAction({
       try {
         result = await complete(plan.route, "write", plan.modelInput);
       } catch (error) {
-        const code = error instanceof ModelError ? error.code : "provider_error";
+        const failed = error instanceof ModelError ? error : new ModelError("provider_error", false);
         await ctx.runMutation(internal.runs.fail, {
           runId: args.runId,
           index: plan.index,
           idempotencyKey: plan.idempotencyKey,
-          code,
+          code: failed.code,
           kind: "model",
+          ...failed.spent,
         });
         return null;
       }

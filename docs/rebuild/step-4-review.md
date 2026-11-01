@@ -68,4 +68,6 @@ Fixed directly on `claude/visual-sales-workflows-c6aw7j`, each with a test that 
 
 Platform ceiling added: at most 200 steps and 1 hour per run.
 
-Still open: item 13 (the four unused tables), refusal billing (a refused call that was billed is not counted yet), and the screen and accessibility review.
+Still open: item 13 (the four unused tables), and the screen and accessibility review.
+
+Phase 1 (2026-11-01) closed two more gaps, each with tests that fail before the fix: a refused call that was billed is now counted, and `assets.approve` refuses on the server when a claim's source is missing. See `phase-1-results.md`.

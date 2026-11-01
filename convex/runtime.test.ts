@@ -6,6 +6,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { api, internal } from "./_generated/api";
 import { NOT_ALLOWED, NOT_FOUND } from "./lib/errors";
+import { MISSING_SOURCE } from "./lib/evidence";
 import { INJECTION_FIXTURE, toolsAfterModel } from "./lib/registry";
 import schema from "./schema";
 
@@ -520,6 +521,147 @@ describe("step 4 runtime", () => {
     await expect(
       other.query(api.runs.artifact, { workspaceId: otherId, artifactId: run.artifacts[0].id }),
     ).rejects.toThrow(NOT_FOUND);
+  });
+
+  it("refuses on the server to approve a version whose source is missing", async () => {
+    process.env.ALLOW_DEV_SKILLS = "true";
+    const t = convexTest(schema, modules);
+    const { owner, manager, workspaceId } = await seedPeople(t);
+    await confirmProfile(owner, workspaceId);
+    const runId = await owner.mutation(api.runs.start, { workspaceId, agentSlug: "sales", skillSlug: "test-echo" });
+    expect(await finishRun(t, owner, workspaceId, runId)).toBe("completed");
+    const assetId = (await owner.query(api.runs.get, { workspaceId, runId })).assets[0].id;
+
+    // The run cited the confirmed profile. Remove that record, as a data deletion would.
+    await t.run(async (ctx) => {
+      const rows = await ctx.db
+        .query("profileVersions")
+        .withIndex("by_workspace_version", (q) => q.eq("workspaceId", workspaceId))
+        .take(10);
+      for (const row of rows) await ctx.db.delete(row._id);
+    });
+    // The screen would block this. Calling the mutation directly must be refused too.
+    await expect(manager.mutation(api.assets.approve, { workspaceId, assetId })).rejects.toThrow(MISSING_SOURCE);
+    await expect(owner.mutation(api.assets.approve, { workspaceId, assetId })).rejects.toThrow(MISSING_SOURCE);
+    expect((await owner.query(api.assets.get, { workspaceId, assetId })).status).toBe("draft");
+
+    // A source from another workspace counts as missing, even though the record exists.
+    const other = t.withIdentity(person("other", "other@example.com"));
+    const otherId = await other.mutation(api.workspace.create, { name: "Beta" });
+    await confirmProfile(other, otherId);
+    const otherProfile = await t.run(async (ctx) =>
+      ctx.db
+        .query("profileVersions")
+        .withIndex("by_workspace_version", (q) => q.eq("workspaceId", otherId))
+        .first(),
+    );
+    const crossId = await t.run(async (ctx) => {
+      const id = await ctx.db.insert("assets", {
+        workspaceId,
+        kind: "researchReport",
+        title: "Cross",
+        status: "draft",
+        currentVersion: 1,
+        createdAt: Date.now(),
+      });
+      const versionId = await ctx.db.insert("assetVersions", { workspaceId, assetId: id, version: 1, body: "x", createdBy: "agent" });
+      await ctx.db.insert("evidence", {
+        workspaceId,
+        assetVersionId: versionId,
+        claimKey: "cross",
+        statement: "s",
+        sourceId: otherProfile!._id,
+        fetchedAt: Date.now(),
+      });
+      return id;
+    });
+    await expect(owner.mutation(api.assets.approve, { workspaceId, assetId: crossId })).rejects.toThrow(MISSING_SOURCE);
+
+    // Only the version being approved is checked: a fixed new version with a computed claim goes through.
+    await manager.mutation(api.assets.addVersion, {
+      workspaceId,
+      assetId,
+      body: "Fixed",
+      claims: [{ claimKey: "count", statement: "Computed from the run", computed: true }],
+    });
+    await owner.mutation(api.assets.approve, { workspaceId, assetId });
+    expect((await owner.query(api.assets.get, { workspaceId, assetId })).status).toBe("approved");
+  });
+
+  it("counts a refused model call that was billed, and fails the run", async () => {
+    process.env.ALLOW_DEV_SKILLS = "true";
+    const t = convexTest(schema, modules);
+    const { owner, workspaceId } = await seedPeople(t);
+    await confirmProfile(owner, workspaceId);
+    await t.mutation(internal.staffAdmin.enroll, { userId: "staff", role: "platform_admin" });
+    const staff = t.withIdentity(person("staff", "staff@example.com", { secondFactor: true }));
+    await staff.mutation(api.platform.setRoute, {
+      workKind: "write",
+      provider: "fake",
+      model: "fake-refusing",
+      fallbackProvider: "fake",
+      fallbackModel: "fake-refusing",
+    });
+    const runId = await owner.mutation(api.runs.start, { workspaceId, agentSlug: "sales", skillSlug: "test-echo" });
+    expect(await finishRun(t, owner, workspaceId, runId)).toBe("failed");
+    const run = await owner.query(api.runs.get, { workspaceId, runId });
+    expect(run.stopReason).toBe("error");
+    expect(run.costCents).toBe(2);
+    expect([run.inputTokens, run.outputTokens]).toEqual([10, 2]);
+    const failed = run.steps.find((step: { kind: string }) => step.kind === "model");
+    expect(failed).toMatchObject({ status: "failed", resultCode: "refused", inputTokens: 10, outputTokens: 2 });
+    expect(run.daySpentCents).toBe(2);
+    expect(run.assets).toHaveLength(0);
+  });
+
+  it("adds a refused call's cost to the fallback's answer", async () => {
+    process.env.ALLOW_DEV_SKILLS = "true";
+    const t = convexTest(schema, modules);
+    const { owner, workspaceId } = await seedPeople(t);
+    await confirmProfile(owner, workspaceId);
+    await t.mutation(internal.staffAdmin.enroll, { userId: "staff", role: "platform_admin" });
+    const staff = t.withIdentity(person("staff", "staff@example.com", { secondFactor: true }));
+    await staff.mutation(api.platform.setRoute, {
+      workKind: "write",
+      provider: "fake",
+      model: "fake-refusing",
+      fallbackProvider: "fake",
+      fallbackModel: "fake-writer",
+    });
+    const runId = await owner.mutation(api.runs.start, { workspaceId, agentSlug: "sales", skillSlug: "test-echo" });
+    expect(await finishRun(t, owner, workspaceId, runId)).toBe("completed");
+    const run = await owner.query(api.runs.get, { workspaceId, runId });
+    // 2 cents for the refusal plus 1 cent for the answer.
+    expect(run.costCents).toBe(3);
+    expect(run.daySpentCents).toBe(3);
+    expect(await modelRoutes(t, workspaceId, runId)).toContain("fake/fake-writer");
+  });
+
+  it("counts a refused call that lands after Stop, once", async () => {
+    process.env.ALLOW_DEV_SKILLS = "true";
+    const t = convexTest(schema, modules);
+    const { owner, workspaceId } = await seedPeople(t);
+    await confirmProfile(owner, workspaceId);
+    const runId = await owner.mutation(api.runs.start, { workspaceId, agentSlug: "sales", skillSlug: "test-echo" });
+    await owner.mutation(api.runs.stop, { workspaceId, runId });
+    const refused = {
+      runId: runId as never,
+      index: 1,
+      idempotencyKey: `${runId}:1`,
+      code: "refused",
+      kind: "model" as const,
+      inputTokens: 40,
+      outputTokens: 3,
+      costCents: 0.5,
+    };
+    await t.mutation(internal.runs.fail, refused);
+    await t.mutation(internal.runs.fail, refused);
+    const run = await owner.query(api.runs.get, { workspaceId, runId });
+    expect(run.status).toBe("stopped");
+    expect(run.stopReason).toBe("halted");
+    expect(run.costCents).toBe(0.5);
+    expect(run.daySpentCents).toBe(0.5);
+    expect(run.steps).toHaveLength(1);
   });
 
   it("schedules its own steps and its time-cap stop when it starts", async () => {

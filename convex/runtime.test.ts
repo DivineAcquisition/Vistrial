@@ -5,6 +5,7 @@ import { convexTest } from "convex-test";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { api, internal } from "./_generated/api";
+import type { Id } from "./_generated/dataModel";
 import { NOT_ALLOWED, NOT_FOUND } from "./lib/errors";
 import { MISSING_SOURCE } from "./lib/evidence";
 import { INJECTION_FIXTURE, toolsAfterModel } from "./lib/registry";
@@ -43,7 +44,7 @@ async function seedPeople(t: ReturnType<typeof convexTest>) {
   return { owner, manager, rep, workspaceId };
 }
 
-async function confirmProfile(owner: ReturnType<ReturnType<typeof convexTest>["withIdentity"]>, workspaceId: string) {
+async function confirmProfile(owner: ReturnType<ReturnType<typeof convexTest>["withIdentity"]>, workspaceId: Id<"workspaces">) {
   await owner.mutation(api.profile.saveDraft, {
     workspaceId,
     offer: "UNIQUE_OFFER_TOKEN",
@@ -61,8 +62,8 @@ async function confirmProfile(owner: ReturnType<ReturnType<typeof convexTest>["w
 async function finishRun(
   t: ReturnType<typeof convexTest>,
   caller: ReturnType<ReturnType<typeof convexTest>["withIdentity"]>,
-  workspaceId: string,
-  runId: string,
+  workspaceId: Id<"workspaces">,
+  runId: Id<"agentRuns">,
 ) {
   let status = "queued";
   for (let i = 0; i < 20 && (status === "queued" || status === "running"); i += 1) {

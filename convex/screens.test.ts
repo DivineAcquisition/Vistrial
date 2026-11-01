@@ -5,6 +5,7 @@ import { convexTest } from "convex-test";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { api } from "./_generated/api";
+import type { Id } from "./_generated/dataModel";
 import { NOT_FOUND } from "./lib/errors";
 import schema from "./schema";
 
@@ -42,7 +43,7 @@ async function seed(t: Tester) {
   return { owner, manager, workspaceId };
 }
 
-async function drain(t: Tester, caller: ReturnType<Tester["withIdentity"]>, workspaceId: string, runId: string) {
+async function drain(t: Tester, caller: ReturnType<Tester["withIdentity"]>, workspaceId: Id<"workspaces">, runId: Id<"agentRuns">) {
   let status = "queued";
   for (let i = 0; i < 20 && (status === "queued" || status === "running"); i += 1) {
     vi.advanceTimersByTime(0);

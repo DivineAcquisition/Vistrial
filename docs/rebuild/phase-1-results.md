@@ -79,7 +79,7 @@ refused, Opus fallback      completed          2.7516¢   = 2¢ + 0.7516¢ (39 i
 
 ## Findings for Phase 2
 
-1. **`convex/_generated` in git is stale.** It lists modules that no longer exist (`agents`, `marketing`) and few that do. Real codegen finds 3 type errors: `usePaginatedQuery` on `assets.list`, `runs.page` and `leads` is rejected, because the access builders cast to `any` and lose the argument types. The Vercel build runs `next build` before `convex deploy` regenerates the code, so production also builds against the stale files. Fix before 2.1: type the builders, commit real codegen.
+1. **`convex/_generated` in git is stale.** It lists modules that no longer exist (`agents`, `marketing`) and few that do. Real codegen finds 3 type errors: `usePaginatedQuery` on `assets.list`, `runs.page` and `leads` is rejected, because the access builders cast to `any` and lose the argument types. The Vercel build runs `next build` before `convex deploy` regenerates the code, so production also builds against the stale files. **Fixed:** the builders now declare their exact registered types, real codegen is committed, and `convex/codegen.test.ts` fails if the generated list of modules drifts from `convex/`.
 2. **Model step duration is not measured.** `commitModel` writes `durationMs: 1`, so a 3-second call shows "under 1s".
 3. **`runs.start` ignores the agent's on/off state.** A run started while the Sales Agent was off. Task 2.1 (planned agents cannot start runs) should check the workspace's agent state at the same time.
 4. **The shell's Live panel** says "Nothing is running. Agents are off." while the Sales Agent is on.

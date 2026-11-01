@@ -623,8 +623,8 @@ describe("data spine", () => {
       ownerMemberId: repBId,
       paginationOpts: { numItems: 20, cursor: null },
     });
-    expect(own.page.every((row: { ownerMemberId: string }) => row.ownerMemberId === repAId)).toBe(true);
-    expect(own.page.some((row: { lastActivityAt: number }) => row.lastActivityAt === 100)).toBe(false);
+    expect(own.page.every((row) => row.ownerMemberId === repAId)).toBe(true);
+    expect(own.page.some((row) => row.lastActivityAt === 100)).toBe(false);
   });
 
   it("reads the file from an action and stamps the source time", async () => {

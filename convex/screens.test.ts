@@ -137,4 +137,86 @@ describe("run and asset screens", () => {
     ).rejects.toThrow(NOT_FOUND);
     await expect(owner.query(api.assets.version, { workspaceId, assetId: asset.id, version: 9 })).rejects.toThrow(NOT_FOUND);
   });
+
+  it("refuses on the server to approve an asset whose source is gone", async () => {
+    const t = convexTest(schema, modules);
+    const { owner, manager, workspaceId } = await seed(t);
+    const runId = await owner.mutation(api.runs.start, { workspaceId, agentSlug: "sales", skillSlug: "test-echo" });
+    await drain(t, owner, workspaceId, runId);
+    const [asset] = (await owner.query(api.runs.get, { workspaceId, runId })).assets;
+    // The cited profile version disappears after the asset was made.
+    await t.run(async (ctx) => {
+      const profiles = await ctx.db
+        .query("profileVersions")
+        .withIndex("by_workspace_status", (q) => q.eq("workspaceId", workspaceId as never))
+        .collect();
+      for (const row of profiles) await ctx.db.delete(row._id);
+    });
+    expect((await owner.query(api.assets.get, { workspaceId, assetId: asset.id })).evidence[0].sourceLabel).toBeNull();
+    await expect(manager.mutation(api.assets.approve, { workspaceId, assetId: asset.id })).rejects.toThrow("no source");
+    expect((await owner.query(api.assets.get, { workspaceId, assetId: asset.id })).status).toBe("draft");
+
+    // A new version with only computed claims can be approved.
+    await manager.mutation(api.assets.addVersion, {
+      workspaceId,
+      assetId: asset.id,
+      body: "fixed",
+      claims: [{ claimKey: "count", statement: "Twelve ads.", computed: true }],
+    });
+    await manager.mutation(api.assets.approve, { workspaceId, assetId: asset.id });
+    expect((await owner.query(api.assets.get, { workspaceId, assetId: asset.id })).status).toBe("approved");
+  });
+
+  it("refuses to approve a claim that cites another workspace or nothing", async () => {
+    const t = convexTest(schema, modules);
+    const { owner, workspaceId } = await seed(t);
+    const stranger = t.withIdentity(person("stranger", "stranger@example.com"));
+    const otherId = await stranger.mutation(api.workspace.create, { name: "Beta" });
+    await stranger.mutation(api.profile.saveDraft, {
+      workspaceId: otherId,
+      offer: "x",
+      priceNotes: "x",
+      audience: "x",
+      geography: "x",
+      channels: "x",
+      brandVoice: "x",
+      competitors: [],
+    });
+    const foreignSource = await t.run(async (ctx) => {
+      const row = await ctx.db
+        .query("profileVersions")
+        .withIndex("by_workspace_status", (q) => q.eq("workspaceId", otherId as never))
+        .first();
+      return row!._id as string;
+    });
+    for (const sourceId of [foreignSource, undefined]) {
+      const assetId = await t.run(async (ctx) => {
+        const id = await ctx.db.insert("assets", {
+          workspaceId: workspaceId as never,
+          kind: "researchReport",
+          title: "Planted",
+          status: "draft",
+          currentVersion: 1,
+          createdAt: Date.now(),
+        });
+        const versionId = await ctx.db.insert("assetVersions", {
+          workspaceId: workspaceId as never,
+          assetId: id,
+          version: 1,
+          body: "x",
+          createdBy: "agent",
+        });
+        await ctx.db.insert("evidence", {
+          workspaceId: workspaceId as never,
+          assetVersionId: versionId,
+          claimKey: "c",
+          statement: "s",
+          sourceId,
+          fetchedAt: Date.now(),
+        });
+        return id;
+      });
+      await expect(owner.mutation(api.assets.approve, { workspaceId, assetId })).rejects.toThrow("no source");
+    }
+  });
 });

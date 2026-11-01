@@ -43,6 +43,26 @@ export async function assertSourcesExist(
   }
 }
 
+/**
+ * Claims on an asset version whose source is gone or never belonged to this workspace.
+ * Same rule as the asset screen: a computed claim needs no source; any other claim needs one that still exists.
+ */
+export async function claimsMissingSource(
+  ctx: { db: GenericDatabaseReader<DataModel> },
+  workspaceId: Id<"workspaces">,
+  assetVersionId: Id<"assetVersions">,
+): Promise<string[]> {
+  const missing: string[] = [];
+  const rows = ctx.db
+    .query("evidence")
+    .withIndex("by_workspace_version", (q) => q.eq("workspaceId", workspaceId).eq("assetVersionId", assetVersionId));
+  for await (const row of rows) {
+    if (row.computed === true) continue;
+    if (!row.sourceId || !(await findSource(ctx, workspaceId, row.sourceId))) missing.push(row.claimKey);
+  }
+  return missing;
+}
+
 async function findSource(ctx: { db: GenericDatabaseReader<DataModel> }, workspaceId: Id<"workspaces">, sourceId: string) {
   for (const table of SOURCE_TABLES) {
     const id = ctx.db.normalizeId(table, sourceId);

@@ -5,7 +5,7 @@ import type { Doc, Id } from "./_generated/dataModel";
 import type { QueryCtx } from "./_generated/server";
 import { workspaceMutation, workspaceQuery } from "./lib/builders";
 import { writeAudit } from "./lib/audit";
-import { assertClaims, assertSourcesExist, type ClaimInput } from "./lib/evidence";
+import { assertClaims, assertSourcesExist, claimsMissingSource, type ClaimInput } from "./lib/evidence";
 import { notAllowed, notFound } from "./lib/errors";
 
 const claim = v.object({
@@ -167,6 +167,16 @@ export const approve = workspaceMutation({
     const asset = await ctx.db.get(args.assetId);
     if (!asset || asset.workspaceId !== ctx.workspaceId) notFound();
     if (asset.status !== "draft") throw new Error("That asset is not waiting.");
+    // The screen disables Approve when a source is missing. Enforce it here too, for any caller.
+    const current = await ctx.db
+      .query("assetVersions")
+      .withIndex("by_workspace_asset", (q) => q.eq("workspaceId", ctx.workspaceId).eq("assetId", asset._id))
+      .filter((q) => q.eq(q.field("version"), asset.currentVersion))
+      .first();
+    if (!current) throw new Error("That asset has no content to approve.");
+    if ((await claimsMissingSource(ctx, ctx.workspaceId, current._id)).length > 0) {
+      throw new Error("A claim has no source, so it cannot be approved yet.");
+    }
     await ctx.db.patch(asset._id, { status: "approved" });
     await writeAudit(ctx, {
       workspaceId: ctx.workspaceId,

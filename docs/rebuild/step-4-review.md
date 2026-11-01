@@ -68,4 +68,9 @@ Fixed directly on `claude/visual-sales-workflows-c6aw7j`, each with a test that 
 
 Platform ceiling added: at most 200 steps and 1 hour per run.
 
-Still open: item 13 (the four unused tables), refusal billing (a refused call that was billed is not counted yet), and the screen and accessibility review.
+Still open: item 13 (the four unused tables, Phase 2 task 2.2), and the screen and accessibility review.
+
+Closed 2026-11-01 (Phase 1, task 1.6):
+
+- **Refusal billing.** A refused Claude call carries its billed usage on the error. The fallback's cost is added to it, a failed fallback adds both, and `runs.fail` records the spend on the run, the day counter and the step, even when the run stopped while the call was out. Idempotent per step.
+- **Approval with a missing source.** `assets.approve` checks every claim on the current version on the server, with the same rule as the screen: a claim that is not computed needs a source that still exists in this workspace.

@@ -28,8 +28,8 @@ Audited on `main` at `2bf3d54`. "Works" means covered by tests that pass and, wh
 - **Skills are hard-coded.** The only runnable skill is the dev `test-echo`. Its three steps live in `runs.ts` as a fixed list. There is no skill interface that a real skill implements.
 - **Evidence has one kind of support.** A claim is sourced or computed. The brief needs five: observed, inferred, hypothesis, first-party, insufficient.
 - **Sources panel is a placeholder.** The UI is built, but nothing produces per-source status yet.
-- **Refused or billed-but-failed model calls** are not counted in cost.
-- **Server-side check for approving an asset whose source is missing** is not enforced (the screen blocks it).
+- ~~**Refused or billed-but-failed model calls** are not counted in cost.~~ Fixed in Phase 1, task 1.6.
+- ~~**Server-side check for approving an asset whose source is missing** is not enforced (the screen blocks it).~~ Fixed in Phase 1, task 1.6.
 
 ### 1.3 Placeholders and leftovers
 
@@ -42,6 +42,7 @@ Audited on `main` at `2bf3d54`. "Works" means covered by tests that pass and, wh
 
 - The `CONVEX_DEPLOY_KEY` in this cloud environment is a **production** key (prefix `prod:`), and Convex rejected it as invalid. Nothing was run against it. Phase 1 needs a **development** deploy key from the dev deployment (Convex dashboard, dev deployment, Settings, Deploy keys), stored under the same name. A production key should not live in this environment.
 - `ANTHROPIC_API_KEY` and `ALLOW_DEV_SKILLS=true` need to be set on the Convex **dev** deployment.
+- **Update 2026-11-01:** the production key is gone, but no `CONVEX_DEPLOY_KEY` is set in the cloud environment at all, so tasks 1.1 to 1.5 are still blocked. Task 1.6 (code only) is done.
 
 ---
 

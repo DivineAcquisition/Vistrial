@@ -491,6 +491,85 @@ describe("step 4 runtime", () => {
     expect(await modelRoutes(t, workspaceId, runId)).toContain("fake/fake-writer");
   });
 
+  async function routeWrite(t: ReturnType<typeof makeTester>, model: string, fallbackModel: string) {
+    await t.mutation(internal.staffAdmin.enroll, { userId: "staff", role: "platform_admin" });
+    const staff = t.withIdentity(person("staff", "staff@example.com", { secondFactor: true }));
+    await staff.mutation(api.platform.setRoute, { workKind: "write", provider: "fake", model, fallbackProvider: "fake", fallbackModel });
+  }
+
+  async function dayCounters(t: ReturnType<typeof makeTester>, workspaceId: string) {
+    const rows = await t.run(async (ctx) =>
+      ctx.db.query("capCounters").withIndex("by_workspace_agent_day", (q) => q.eq("workspaceId", workspaceId as never)).take(5),
+    );
+    return rows.map((row) => row.costCents);
+  }
+
+  it("counts the cost of a refused call that has no fallback", async () => {
+    process.env.ALLOW_DEV_SKILLS = "true";
+    const t = makeTester();
+    const { owner, workspaceId } = await seedPeople(t);
+    await confirmProfile(owner, workspaceId);
+    await routeWrite(t, "fake-refusing", "fake-refusing");
+    const runId = await owner.mutation(api.runs.start, { workspaceId, agentSlug: "sales", skillSlug: "test-echo" });
+    expect(await finishRun(t, owner, workspaceId, runId)).toBe("failed");
+    const run = await owner.query(api.runs.get, { workspaceId, runId });
+    expect(run.costCents).toBe(2);
+    expect(run.inputTokens).toBe(10);
+    expect(run.outputTokens).toBe(5);
+    const failed = run.steps.find((step: { kind: string }) => step.kind === "model");
+    expect(failed).toMatchObject({ status: "failed", resultCode: "refused", inputTokens: 10, outputTokens: 5 });
+    expect(await dayCounters(t, workspaceId)).toEqual([2]);
+  });
+
+  it("adds a refused call's cost to the fallback's cost", async () => {
+    process.env.ALLOW_DEV_SKILLS = "true";
+    const t = makeTester();
+    const { owner, workspaceId } = await seedPeople(t);
+    await confirmProfile(owner, workspaceId);
+    await routeWrite(t, "fake-refusing", "fake-writer");
+    const runId = await owner.mutation(api.runs.start, { workspaceId, agentSlug: "sales", skillSlug: "test-echo" });
+    expect(await finishRun(t, owner, workspaceId, runId)).toBe("completed");
+    const run = await owner.query(api.runs.get, { workspaceId, runId });
+    // 2 cents refused + 1 cent from the fallback.
+    expect(run.costCents).toBe(3);
+    expect(run.inputTokens).toBe(20);
+    expect(await dayCounters(t, workspaceId)).toEqual([3]);
+  });
+
+  it("counts both calls when the fallback refuses too", async () => {
+    process.env.ALLOW_DEV_SKILLS = "true";
+    const t = makeTester();
+    const { owner, workspaceId } = await seedPeople(t);
+    await confirmProfile(owner, workspaceId);
+    await routeWrite(t, "fake-refusing", "fake-refusing-b");
+    const runId = await owner.mutation(api.runs.start, { workspaceId, agentSlug: "sales", skillSlug: "test-echo" });
+    expect(await finishRun(t, owner, workspaceId, runId)).toBe("failed");
+    expect((await owner.query(api.runs.get, { workspaceId, runId })).costCents).toBe(4);
+    expect(await dayCounters(t, workspaceId)).toEqual([4]);
+  });
+
+  it("counts a billed failure that lands after the run stopped, once", async () => {
+    process.env.ALLOW_DEV_SKILLS = "true";
+    const t = makeTester();
+    const { owner, workspaceId } = await seedPeople(t);
+    const runId = await owner.mutation(api.runs.start, { workspaceId, agentSlug: "sales", skillSlug: "test-echo" });
+    await owner.mutation(api.runs.stop, { workspaceId, runId });
+    const failure = {
+      runId: runId as never,
+      index: 1,
+      idempotencyKey: `${runId}:1`,
+      code: "refused",
+      kind: "model" as const,
+      billed: { inputTokens: 100, outputTokens: 0, costCents: 5 },
+    };
+    await t.mutation(internal.runs.fail, failure);
+    await t.mutation(internal.runs.fail, failure);
+    const run = await owner.query(api.runs.get, { workspaceId, runId });
+    expect(run.status).toBe("stopped");
+    expect(run.costCents).toBe(5);
+    expect(await dayCounters(t, workspaceId)).toEqual([5]);
+  });
+
   it("lets only a Platform Admin change model routes", async () => {
     const t = convexTest(schema, modules);
     await t.mutation(internal.staffAdmin.enroll, { userId: "service", role: "service_team" });

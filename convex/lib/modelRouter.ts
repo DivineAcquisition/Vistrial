@@ -36,14 +36,35 @@ export const MAX_TOKENS: Record<WorkKind, number> = {
   summarize: 4000,
 };
 
-/** A failed call carries a code for the step row. The message never holds model or page text. */
+/** What the provider billed for a call, whether or not the call gave usable output. */
+export type BilledUsage = { inputTokens: number; outputTokens: number; costCents: number };
+
+export const NO_USAGE: BilledUsage = { inputTokens: 0, outputTokens: 0, costCents: 0 };
+
+export function addUsage(a: BilledUsage, b: BilledUsage): BilledUsage {
+  return {
+    inputTokens: a.inputTokens + b.inputTokens,
+    outputTokens: a.outputTokens + b.outputTokens,
+    costCents: Math.round((a.costCents + b.costCents) * 10_000) / 10_000,
+  };
+}
+
+/**
+ * A failed call carries a code for the step row. The message never holds model or page text.
+ * `billed` is what the provider charged anyway (a refusal is billed), so caps count it.
+ */
 export class ModelError extends Error {
   constructor(
     readonly code: string,
     readonly retryable: boolean,
+    readonly billed: BilledUsage = NO_USAGE,
   ) {
     super(`Model call failed: ${code}`);
   }
+}
+
+function billedBy(error: unknown): BilledUsage {
+  return error instanceof ModelError ? error.billed : NO_USAGE;
 }
 
 export function isWorkKind(value: string): value is WorkKind {
@@ -61,7 +82,10 @@ export function costCents(model: string, inputTokens: number, outputTokens: numb
   return Math.round(dollars * 100 * 10_000) / 10_000;
 }
 
-/** Application code asks for a work kind. The route decides the model, and the fallback takes over on a retryable failure. */
+/**
+ * Application code asks for a work kind. The route decides the model, and the fallback takes over on a retryable failure.
+ * Usage billed by a failed first attempt is added to the result, or to the error when the fallback fails too.
+ */
 export async function complete(route: ModelRoute, workKind: WorkKind, input: string): Promise<Completion> {
   try {
     return await callProvider(route.provider, route.model, workKind, input);
@@ -69,7 +93,16 @@ export async function complete(route: ModelRoute, workKind: WorkKind, input: str
     const retryable = error instanceof ModelError && error.retryable;
     const sameRoute = route.fallbackProvider === route.provider && route.fallbackModel === route.model;
     if (!retryable || sameRoute) throw error;
-    return callProvider(route.fallbackProvider, route.fallbackModel, workKind, input);
+    const firstBilled = billedBy(error);
+    let result: Completion;
+    try {
+      result = await callProvider(route.fallbackProvider, route.fallbackModel, workKind, input);
+    } catch (second) {
+      const code = second instanceof ModelError ? second.code : "provider_error";
+      const again = second instanceof ModelError && second.retryable;
+      throw new ModelError(code, again, addUsage(firstBilled, billedBy(second)));
+    }
+    return { ...result, ...addUsage(firstBilled, result) };
   }
 }
 
@@ -81,6 +114,8 @@ async function callProvider(provider: string, model: string, workKind: WorkKind,
 
 export function fakeComplete(provider: string, model: string): Completion {
   if (model === "fake-failing") throw new ModelError("provider_error", true);
+  // A billed refusal: 10 input and 5 output tokens, 2 cents.
+  if (model.startsWith("fake-refusing")) throw new ModelError("refused", true, { inputTokens: 10, outputTokens: 5, costCents: 2 });
   const costCents = model === "fake-expensive" ? 30 : 1;
   return { text: "ok", inputTokens: 10, outputTokens: 5, costCents, provider, model };
 }
@@ -106,10 +141,13 @@ export async function claudeComplete(model: string, workKind: WorkKind, input: s
     }
     throw new ModelError("provider_error", false);
   }
-  if (response.stop_reason === "refusal") throw new ModelError("refused", true);
-  const text = response.content.flatMap((block) => (block.type === "text" ? [block.text] : [])).join("\n");
   const inputTokens = response.usage.input_tokens;
   const outputTokens = response.usage.output_tokens;
+  if (response.stop_reason === "refusal") {
+    // The refused call is billed, so its cost travels with the error.
+    throw new ModelError("refused", true, { inputTokens, outputTokens, costCents: costCents(model, inputTokens, outputTokens) });
+  }
+  const text = response.content.flatMap((block) => (block.type === "text" ? [block.text] : [])).join("\n");
   return {
     text,
     inputTokens,

@@ -46,6 +46,62 @@ describe("skill modules", () => {
     expect(testEcho.tools).toEqual(expect.arrayContaining(["profile.read", "asset.create"]));
   });
 
+  it("runs a research step with web search and structured output, and counts search fees", async () => {
+    vi.useFakeTimers();
+    process.env.ALLOW_DEV_SKILLS = "true";
+    const t = convexTest(schema, modules);
+    const owner = t.withIdentity({
+      subject: "owner",
+      email: "owner@example.com",
+      name: "owner",
+      issuer: "https://clerk.vistrial.test",
+      tokenIdentifier: "https://clerk.vistrial.test|owner",
+    });
+    const workspaceId = await owner.mutation(api.workspace.create, { name: "Alpha" });
+    await owner.mutation(api.workspace.setAgentState, { workspaceId, slug: "growth-architect", state: "on" });
+    await owner.mutation(api.profile.saveDraft, {
+      workspaceId,
+      offer: "Deep cleaning",
+      priceNotes: "",
+      audience: "Homeowners",
+      geography: "Austin",
+      channels: "",
+      brandVoice: "",
+      competitors: [],
+    });
+    await owner.mutation(api.profile.confirm, { workspaceId });
+    const runId = await owner.mutation(api.runs.start, { workspaceId, agentSlug: "growth-architect", skillSlug: "test-research" });
+    for (let i = 0; i < 6; i += 1) {
+      vi.advanceTimersByTime(0);
+      await t.finishInProgressScheduledFunctions();
+    }
+    const run = await owner.query(api.runs.get, { workspaceId, runId });
+    expect(run.status).toBe("completed");
+    const model = run.steps.find((step) => step.kind === "model")!;
+    // The fake researcher searches, pauses once, searches again, then answers.
+    expect(model).toMatchObject({ workKind: "research", webSearches: 2, webFetches: 0, resultCode: "ok" });
+    // Two fake turns of 100 in / 20 out at Opus rates, plus two searches at 1 cent.
+    expect(run.costCents).toBeCloseTo(2 * 0.08 + 2, 6);
+    expect(run.daySpentCents).toBeCloseTo(2 * 0.08 + 2, 6);
+    expect(run.artifacts.map((row) => row.kind).sort()).toEqual(["model", "sources"]);
+    const answer = await owner.query(api.runs.artifact, {
+      workspaceId,
+      artifactId: run.artifacts.find((row) => row.kind === "model")!.id,
+    });
+    expect(JSON.parse(answer.body)).toEqual({ summary: "ok", urls: ["https://example.com/a"] });
+    const sources = await owner.query(api.runs.artifact, {
+      workspaceId,
+      artifactId: run.artifacts.find((row) => row.kind === "sources")!.id,
+    });
+    expect(JSON.parse(sources.body).sources).toEqual([{ url: "https://example.com/a", title: "Example A", pageAge: "2026-10-01" }]);
+  });
+
+  it("refuses a model step that uses a web tool the skill did not declare", () => {
+    expect(() => assertDeclared("test-echo", "web.search", true)).toThrow("not declared");
+    expect(() => assertDeclared("test-research", "web.search", true)).not.toThrow();
+    expect(() => assertDeclared("test-research", "web.fetch", true)).toThrow("not declared");
+  });
+
   it("fails a run cleanly when its dev skill is switched off mid-run", async () => {
     vi.useFakeTimers();
     process.env.ALLOW_DEV_SKILLS = "true";

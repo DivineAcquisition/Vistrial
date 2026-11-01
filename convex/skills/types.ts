@@ -6,11 +6,25 @@ import type { ToolSlug, WorkKind } from "../lib/registry";
 /** A step the run has already taken, as a skill sees it. Never page or model text. */
 export type StepRecord = Pick<Doc<"runSteps">, "index" | "kind" | "toolSlug" | "status" | "resultCode" | "resultId">;
 
+/** Limits for one of Claude's web tools on a model step. The skill must also declare the tool. */
+export type WebToolLimits = { maxUses: number; allowedDomains?: string[]; blockedDomains?: string[] };
+
 /** What a skill asks the runtime to do next. */
 export type SkillStep =
   | { kind: "tool"; toolSlug: ToolSlug }
-  /** `input` reaches the model as is. Wrap anything that came from outside with `wrapUntrusted`. */
-  | { kind: "model"; workKind: WorkKind; input: string };
+  | {
+      kind: "model";
+      workKind: WorkKind;
+      /** Reaches the model as is. Wrap anything that came from outside with `wrapUntrusted`. */
+      input: string;
+      system?: string;
+      /** Needs "web.search" in the skill's tools. */
+      webSearch?: WebToolLimits;
+      /** Needs "web.fetch" in the skill's tools. */
+      webFetch?: WebToolLimits & { maxContentTokens?: number };
+      /** JSON schema for the answer. Output that does not parse is retried once, then the step fails. */
+      outputSchema?: Record<string, unknown>;
+    };
 
 export type SkillContext = {
   /** Read-only. A skill decides; the runtime writes. */

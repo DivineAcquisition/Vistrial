@@ -7,7 +7,8 @@ Tracks the Phase 2 backlog in `growth-architect-v1-plan.md`. Everything here was
 | 2.1 | Departments and seven agents, `sales` renamed to `growth-architect`, Leads and My day hidden | Done on dev. Production needs the migration below. |
 | 2.2 | Drop the four unused tables | Done. Pushed to dev. |
 | 2.3 | Skill module interface, `test-echo` moved onto it | Done. Pushed to dev. |
-| 2.4 | `completeWithTools`: server tools, client tools, structured output, search fees | Next |
+| 2.4 | `completeWithTools`: server tools, client tools, structured output, search fees | Done. Live call on dev. |
+| 2.5 | Evidence basis and the new validator rules | Next |
 
 ## 2.1 Departments and the seven agents
 
@@ -46,6 +47,32 @@ Production could not be read from here, so the case with data was tested on dev.
 A skill is now a module (`convex/skills/types.ts`) that declares its tools, what it hands back, and an async `nextStep` that picks the next step from the steps already taken. It gets read-only database access. `runs.ts` asks the skill for each step instead of reading a fixed list, and uses the skill's work kind for the route and the skill's output for the asset. The runtime still owns every stop check, the idempotent commit, and cost. `convex/lib/skills.ts` lists the runnable skills. A dev-only skill exists only while `ALLOW_DEV_SKILLS` is on, and a run whose dev skill is switched off midway fails with `skill_unavailable`.
 
 Acceptance: all 132 existing tests pass with no test changed. Three new tests cover the lookup, the step sequence and the mid-run switch-off. A live `test-echo` run on dev completed through the module path (Opus, 39 in / 389 out, 0.7936¢).
+
+## 2.4 Model calls with tools
+
+`convex/lib/toolRouter.ts` adds `completeWithTools(route, workKind, request)`.
+
+- **Server tools:** `web_search_20260209` and `web_fetch_20260209`, each with `max_uses` and allowed or blocked domains.
+- **Client tools:** our own tools run inside the action. Only declared tools run; a made-up tool name gets an error result. A failing tool reports "The tool failed." with no detail.
+- **Structured output:** `output_config.format` with a JSON schema. Output that does not parse is retried once, then fails with `invalid_output`.
+- **Turns:** a `pause_turn` is resumed by sending the turn back. At most 8 turns, then the call fails with `too_many_turns`.
+- **Cost:** every response is counted, including refused, truncated and failed ones. That covers input, output and cache tokens at the model's rates, plus **1¢ per web search** ($10 per 1,000). Web fetch has no fee; fetched pages count as input tokens.
+- **Fallback:** the same contract as `complete`. The fallback route takes over on retryable failures, carrying what was already spent.
+- **Testing:** the network call is injectable, so tests drive the loop with scripted responses. The fake provider uses the same loop.
+
+**In the runtime**, a skill's model step can set `webSearch`, `webFetch`, `outputSchema` and `system`. Using a web tool requires the skill to declare `web.search` or `web.fetch`, the same rule as every other tool. The step row keeps `webSearches` and `webFetches` (counts only). The answer is saved as the model record, and the sources found (URL, title, page age, short cited lines) are saved as a separate `sources` record.
+
+**Checked live on dev** with the dev-only `test-research` skill. It reads the confirmed profile, then makes one research step with web search (at most 2) and a JSON schema. Results:
+
+| | |
+|---|---|
+| Result | Completed. Valid JSON: three real Austin deep-cleaning competitors with their sites. Web search and structured output work together on Opus 5.5. |
+| Step | 16,032 ms, 25,472 in / 470 out tokens, 1 search, 0 fetches |
+| Cost | 12.1288¢ = 11.1288¢ tokens (Opus $4 / $20) + 1¢ search |
+| Sources record | 9 search results, each with title and page age |
+| Model name | Not in any workspace-facing response |
+
+**Cost finding for Market Intelligence.** One search brought in about **25k input tokens (about 10¢ on Opus)**, ten times the 1¢ search fee. The plan's estimate (20 to 40 searches, 150k to 300k input tokens, $1 to $2.50 a run) is too low if every search lands in context like this. At this rate 20 searches cost about $2 in tokens alone. Before 2.11: lean on `max_uses`, run the collect steps on Sonnet 5.5 (D2 allows it), and measure again. The $3 per-run cap (D3) may be tight.
 
 ## Production steps for 2.1 (for the person who merges)
 

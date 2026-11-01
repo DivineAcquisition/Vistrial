@@ -2,7 +2,8 @@ export const WORK_KINDS = ["research", "classify", "write", "summarize"] as cons
 
 export type WorkKind = (typeof WORK_KINDS)[number];
 
-export const TOOLS = ["profile.read", "asset.create", "asset.addVersion", "test.echo"] as const;
+/** Tools a skill can declare. "web.search" and "web.fetch" are Claude's server tools, used inside model steps. */
+export const TOOLS = ["profile.read", "asset.create", "asset.addVersion", "test.echo", "web.search", "web.fetch"] as const;
 
 export type ToolSlug = (typeof TOOLS)[number];
 

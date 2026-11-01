@@ -12,6 +12,7 @@ import { currentAgentSlug } from "./catalog";
 import { assertClaims, assertSourcesExist } from "./lib/evidence";
 import { notAllowed, notFound } from "./lib/errors";
 import { ModelError, NO_SPEND, complete, type ModelRoute, type Spend } from "./lib/modelRouter";
+import { completeWithTools } from "./lib/toolRouter";
 import { INJECTION_FIXTURE, TEST_SKILL, devSkillsEnabled, wrapUntrusted } from "./lib/registry";
 import { assertDeclared, skillFor } from "./lib/skills";
 
@@ -261,6 +262,8 @@ export const get = workspaceQuery({
           durationMs: step.durationMs,
           inputTokens: step.inputTokens,
           outputTokens: step.outputTokens,
+          webSearches: step.webSearches ?? 0,
+          webFetches: step.webFetches ?? 0,
         })),
       artifacts: artifacts.map((row) => ({ id: row._id, kind: row.kind, byteSize: row.byteSize, stepId: row.stepId })),
       assets: assets.map((row) => ({
@@ -415,6 +418,9 @@ export const prepare = internalMutation({
       return { done: true as const };
     }
     if (next.kind === "tool") assertDeclared(run.skillSlug, next.toolSlug);
+    // Claude's web tools are tools too: a model step may use them only if the skill declared them.
+    if (next.kind === "model" && next.webSearch) assertDeclared(run.skillSlug, "web.search");
+    if (next.kind === "model" && next.webFetch) assertDeclared(run.skillSlug, "web.fetch");
     if (run.status === "queued") await ctx.db.patch(run._id, { status: "running" });
     if (next.kind === "tool") {
       return { done: false as const, kind: "tool" as const, index, idempotencyKey, toolSlug: next.toolSlug };
@@ -437,6 +443,16 @@ export const prepare = internalMutation({
       },
       workKind: next.workKind,
       modelInput: next.input,
+      // Only the fields a step sets: Convex values cannot hold undefined.
+      tools:
+        next.webSearch || next.webFetch || next.outputSchema || next.system
+          ? {
+              ...(next.system ? { system: next.system } : {}),
+              ...(next.webSearch ? { webSearch: next.webSearch } : {}),
+              ...(next.webFetch ? { webFetch: next.webFetch } : {}),
+              ...(next.outputSchema ? { outputSchema: next.outputSchema } : {}),
+            }
+          : null,
     };
   },
 });
@@ -680,6 +696,10 @@ export const commitModel = internalMutation({
     workKind: v.optional(v.string()),
     /** Wall time of the model call, measured in the action around it. */
     durationMs: v.optional(v.number()),
+    webSearches: v.optional(v.number()),
+    webFetches: v.optional(v.number()),
+    /** Sources the web tools found, as JSON: URLs, titles and short cited lines. Saved as its own record. */
+    sources: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     const run = await ctx.db.get(args.runId);
@@ -701,6 +721,8 @@ export const commitModel = internalMutation({
       workKind: args.workKind,
       status: "completed",
       durationMs: args.durationMs ?? 0,
+      webSearches: args.webSearches,
+      webFetches: args.webFetches,
       inputTokens: args.inputTokens,
       outputTokens: args.outputTokens,
       resultCode: "ok",
@@ -714,6 +736,16 @@ export const commitModel = internalMutation({
       byteSize: new TextEncoder().encode(args.text).byteLength,
       body: args.text,
     });
+    if (args.sources) {
+      await ctx.db.insert("runArtifacts", {
+        workspaceId: run.workspaceId,
+        runId: run._id,
+        stepId,
+        kind: "sources",
+        byteSize: new TextEncoder().encode(args.sources).byteLength,
+        body: args.sources,
+      });
+    }
     await writeAudit(ctx, {
       workspaceId: run.workspaceId,
       actorType: "system",
@@ -749,10 +781,27 @@ export const step = internalAction({
     let status: string;
     if (plan.kind === "model") {
       let result;
+      let web: { webSearches: number; webFetches: number; sources: string } | null = null;
       // Date.now() advances inside an action, so this is the real time the call took.
       const began = Date.now();
       try {
-        result = await complete(plan.route, plan.workKind, plan.modelInput);
+        if (plan.tools) {
+          const answer = await completeWithTools(plan.route, plan.workKind, {
+            input: plan.modelInput,
+            system: plan.tools.system,
+            webSearch: plan.tools.webSearch,
+            webFetch: plan.tools.webFetch,
+            outputSchema: plan.tools.outputSchema,
+          });
+          result = { ...answer, text: answer.output === null ? answer.text : JSON.stringify(answer.output) };
+          web = {
+            webSearches: answer.webSearches,
+            webFetches: answer.webFetches,
+            sources: JSON.stringify({ sources: answer.sources, citations: answer.citations }),
+          };
+        } else {
+          result = await complete(plan.route, plan.workKind, plan.modelInput);
+        }
       } catch (error) {
         const failed = error instanceof ModelError ? error : new ModelError("provider_error", false);
         await ctx.runMutation(internal.runs.fail, {
@@ -779,6 +828,7 @@ export const step = internalAction({
         model: result.model,
         workKind: plan.workKind,
         durationMs,
+        ...(web ?? {}),
       }));
     } else {
       try {

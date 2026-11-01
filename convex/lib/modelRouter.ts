@@ -20,12 +20,15 @@ export type Completion = {
 
 export const PROVIDERS = ["claude", "fake"] as const;
 
-/** Dollars per million tokens, first-party API rates. A model missing here cannot run, so caps stay real. */
-export const PRICES: Record<string, { input: number; output: number }> = {
-  "claude-fable-5-1": { input: 10, output: 50 },
-  "claude-opus-5-5": { input: 4, output: 20 },
-  "claude-sonnet-5-5": { input: 2, output: 10 },
-  "claude-haiku-5-5": { input: 0.1, output: 0.5 },
+/**
+ * Dollars per million tokens, first-party API rates. A model missing here cannot run, so caps stay real.
+ * Cache writes cost 1.25x input. Cache reads are listed per model (Haiku 5.5's is assumed at 10% of input).
+ */
+export const PRICES: Record<string, { input: number; output: number; cacheRead: number }> = {
+  "claude-fable-5-1": { input: 10, output: 50, cacheRead: 0.25 },
+  "claude-opus-5-5": { input: 4, output: 20, cacheRead: 0.2 },
+  "claude-sonnet-5-5": { input: 2, output: 10, cacheRead: 0.2 },
+  "claude-haiku-5-5": { input: 0.1, output: 0.5, cacheRead: 0.01 },
 };
 
 /** Output room per kind of work. Short kinds stay short so one call cannot spend the run cap alone. */
@@ -129,16 +132,22 @@ export async function claudeComplete(model: string, workKind: WorkKind, input: s
       messages: [{ role: "user", content: input }],
     });
   } catch (error) {
-    if (error instanceof Anthropic.RateLimitError) throw new ModelError("rate_limited", true);
-    if (error instanceof Anthropic.AuthenticationError) throw new ModelError("auth_failed", false);
-    if (error instanceof Anthropic.BadRequestError) throw new ModelError("bad_request", false);
-    if (error instanceof Anthropic.APIConnectionError) throw new ModelError("connection_failed", true);
-    if (error instanceof Anthropic.APIError) {
-      throw new ModelError("provider_error", typeof error.status === "number" && error.status >= 500);
-    }
-    throw new ModelError("provider_error", false);
+    throw toModelError(error);
   }
   return completionFromResponse(model, response);
+}
+
+/** Maps an SDK error to a result code. Nothing from the provider's message is kept. */
+export function toModelError(error: unknown, spent: Spend = NO_SPEND): ModelError {
+  if (error instanceof ModelError) return new ModelError(error.code, error.retryable, addSpend(spent, error.spent));
+  if (error instanceof Anthropic.RateLimitError) return new ModelError("rate_limited", true, spent);
+  if (error instanceof Anthropic.AuthenticationError) return new ModelError("auth_failed", false, spent);
+  if (error instanceof Anthropic.BadRequestError) return new ModelError("bad_request", false, spent);
+  if (error instanceof Anthropic.APIConnectionError) return new ModelError("connection_failed", true, spent);
+  if (error instanceof Anthropic.APIError) {
+    return new ModelError("provider_error", typeof error.status === "number" && error.status >= 500, spent);
+  }
+  return new ModelError("provider_error", false, spent);
 }
 
 /** Turns a Claude response into a completion. A refusal is still billed, so its usage rides on the error. */

@@ -525,6 +525,9 @@ export default defineSchema({
     modelRoute: v.optional(v.string()),
     /** The kind of work a model step did. Workspace screens show this, never the model name. */
     workKind: v.optional(v.string()),
+    /** Web searches and fetches a model step made. Counts only, never page text. */
+    webSearches: v.optional(v.number()),
+    webFetches: v.optional(v.number()),
     status: v.union(v.literal("completed"), v.literal("failed")),
     durationMs: v.number(),
     inputTokens: v.number(),

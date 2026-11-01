@@ -94,6 +94,43 @@ describe("the seven-agent workforce", () => {
     expect(await owner.query(api.runs.list, { workspaceId, agentSlug: "sales" })).toHaveLength(1);
   });
 
+  it("finishes the migration by itself when old rows are left, and does nothing after", async () => {
+    vi.useFakeTimers();
+    const t = convexTest(schema, modules);
+    const workspaceId = await t.run(async (ctx) => {
+      await ctx.db.insert("agents", { slug: "sales", name: "Sales Agent", stage: "execution", area: "sales", job: "j", promise: "p", sort: 0 });
+      const id = await ctx.db.insert("workspaces", { name: "Old", slug: "old", timezone: "UTC", status: "active", createdAt: 0 });
+      await ctx.db.insert("agentRuns", {
+        workspaceId: id,
+        agentSlug: "sales",
+        skillSlug: "test-echo",
+        status: "completed",
+        startedBy: "owner",
+        inputRef: "test-echo",
+        startedAt: 0,
+        costCents: 0,
+        inputTokens: 0,
+        outputTokens: 0,
+      });
+      return id;
+    });
+    expect(await t.mutation(internal.agentsMigration.backfillIfNeeded, {})).toBe(true);
+    await drainScheduler(t);
+    expect(await t.query(internal.agentsMigration.remaining, {})).toEqual({ agents: 0, runs: 0, caps: 0, counters: 0, oldShapeAgents: 0 });
+    const runs = await t.run(async (ctx) =>
+      ctx.db
+        .query("agentRuns")
+        .withIndex("by_workspace_agent", (q) => q.eq("workspaceId", workspaceId).eq("agentSlug", GROWTH_ARCHITECT))
+        .collect(),
+    );
+    expect(runs).toHaveLength(1);
+    // Nothing left: no work scheduled, nothing written.
+    const scheduledBefore = await t.run(async (ctx) => (await ctx.db.system.query("_scheduled_functions").collect()).length);
+    expect(await t.mutation(internal.agentsMigration.backfillIfNeeded, {})).toBe(false);
+    const scheduledAfter = await t.run(async (ctx) => (await ctx.db.system.query("_scheduled_functions").collect()).length);
+    expect(scheduledAfter).toBe(scheduledBefore);
+  });
+
   it("migrates a deployment seeded with the old Sales Agent, keeping links, caps and spend", async () => {
     vi.useFakeTimers();
     process.env.ALLOW_DEV_SKILLS = "true";

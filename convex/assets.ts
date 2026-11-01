@@ -5,7 +5,7 @@ import type { Doc, Id } from "./_generated/dataModel";
 import type { QueryCtx } from "./_generated/server";
 import { workspaceMutation, workspaceQuery } from "./lib/builders";
 import { writeAudit } from "./lib/audit";
-import { assertClaims, assertSourcesExist, type ClaimInput } from "./lib/evidence";
+import { MISSING_SOURCE, assertClaims, assertSourcesExist, claimsWithMissingSources, type ClaimInput } from "./lib/evidence";
 import { notAllowed, notFound } from "./lib/errors";
 
 const claim = v.object({
@@ -167,6 +167,23 @@ export const approve = workspaceMutation({
     const asset = await ctx.db.get(args.assetId);
     if (!asset || asset.workspaceId !== ctx.workspaceId) notFound();
     if (asset.status !== "draft") throw new Error("That asset is not waiting.");
+    // The screen blocks this too, but the rule lives here: every claim on the version being
+    // approved must still point at a real source in this workspace, or be marked computed.
+    const current = await ctx.db
+      .query("assetVersions")
+      .withIndex("by_workspace_asset", (q) => q.eq("workspaceId", ctx.workspaceId).eq("assetId", asset._id))
+      .filter((q) => q.eq(q.field("version"), asset.currentVersion))
+      .first();
+    if (!current) throw new Error("That version is missing, so it cannot be approved.");
+    const claims = [];
+    for await (const row of ctx.db
+      .query("evidence")
+      .withIndex("by_workspace_version", (q) => q.eq("workspaceId", ctx.workspaceId).eq("assetVersionId", current._id))) {
+      claims.push(row);
+    }
+    if ((await claimsWithMissingSources(ctx, ctx.workspaceId, claims)).length > 0) {
+      throw new Error(MISSING_SOURCE);
+    }
     await ctx.db.patch(asset._id, { status: "approved" });
     await writeAudit(ctx, {
       workspaceId: ctx.workspaceId,

@@ -23,7 +23,7 @@ function step(index: number, toolSlug: string | null, extra: Partial<RunStepView
 
 const base: RunView = {
   id: "story-run",
-  agentSlug: "sales",
+  agentSlug: "growth-architect",
   skillSlug: "ad-research",
   status: "running",
   stopReason: null,

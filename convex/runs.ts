@@ -8,18 +8,13 @@ import type { MutationCtx, QueryCtx } from "./_generated/server";
 import { workspaceMutation, workspaceQuery } from "./lib/builders";
 import { writeAudit } from "./lib/audit";
 import { DEFAULT_CAPS, PLATFORM_CEILING, SOFT_WARNING_RATIO, dayKey, overCap, type Caps } from "./lib/caps";
+import { currentAgentSlug } from "./catalog";
 import { assertClaims, assertSourcesExist } from "./lib/evidence";
 import { notAllowed, notFound } from "./lib/errors";
-import { ModelError, complete, type ModelRoute } from "./lib/modelRouter";
-import {
-  INJECTION_FIXTURE,
-  TEST_AGENT,
-  TEST_SKILL,
-  assertDeclared,
-  declaredTools,
-  devSkillsEnabled,
-  wrapUntrusted,
-} from "./lib/registry";
+import { ModelError, NO_SPEND, complete, type ModelRoute, type Spend } from "./lib/modelRouter";
+import { completeWithTools } from "./lib/toolRouter";
+import { INJECTION_FIXTURE, TEST_SKILL, devSkillsEnabled, wrapUntrusted } from "./lib/registry";
+import { assertDeclared, skillFor } from "./lib/skills";
 
 const OPEN = new Set(["queued", "running", "waiting"]);
 
@@ -101,14 +96,16 @@ async function routeFor(ctx: QueryCtx, workKind: string): Promise<ModelRoute | n
 export const devSkill = workspaceQuery({
   args: {},
   handler: async () => {
-    if (!devSkillsEnabled()) return null;
-    return { slug: TEST_SKILL, name: "Test echo", status: "available" as const, agentSlug: TEST_AGENT };
+    const skill = skillFor(TEST_SKILL);
+    if (!skill) return null;
+    return { slug: skill.slug, name: skill.name, status: "available" as const, agentSlug: skill.agentSlug };
   },
 });
 
 export const list = workspaceQuery({
   args: { agentSlug: v.string() },
-  handler: async (ctx, args) => {
+  handler: async (ctx, input) => {
+    const args = { agentSlug: currentAgentSlug(input.agentSlug) };
     const rows = await ctx.db
       .query("agentRuns")
       .withIndex("by_workspace_agent", (q) => q.eq("workspaceId", ctx.workspaceId).eq("agentSlug", args.agentSlug))
@@ -144,7 +141,8 @@ export const page = workspaceQuery({
     startedByMe: v.optional(v.boolean()),
     since: v.optional(v.number()),
   },
-  handler: async (ctx, args) => {
+  handler: async (ctx, input) => {
+    const args = { ...input, agentSlug: input.agentSlug === undefined ? undefined : currentAgentSlug(input.agentSlug) };
     const base = args.status
       ? ctx.db
           .query("agentRuns")
@@ -179,6 +177,34 @@ export const page = workspaceQuery({
         startedByMe: row.startedBy === ctx.identity.subject,
       })),
     };
+  },
+});
+
+/** The live panel: runs that are still going, newest first. */
+export const open = workspaceQuery({
+  args: {},
+  handler: async (ctx) => {
+    const rows: Doc<"agentRuns">[] = [];
+    for (const status of ["queued", "running", "waiting"] as const) {
+      rows.push(
+        ...(await ctx.db
+          .query("agentRuns")
+          .withIndex("by_workspace_status", (q) => q.eq("workspaceId", ctx.workspaceId).eq("status", status))
+          .order("desc")
+          .take(10)),
+      );
+    }
+    return rows
+      .sort((a, b) => b.startedAt - a.startedAt)
+      .slice(0, 10)
+      .map((row) => ({
+        id: row._id,
+        agentSlug: row.agentSlug,
+        skillSlug: row.skillSlug,
+        status: row.status,
+        costCents: row.costCents,
+        startedAt: row.startedAt,
+      }));
   },
 });
 
@@ -236,6 +262,8 @@ export const get = workspaceQuery({
           durationMs: step.durationMs,
           inputTokens: step.inputTokens,
           outputTokens: step.outputTokens,
+          webSearches: step.webSearches ?? 0,
+          webFetches: step.webFetches ?? 0,
         })),
       artifacts: artifacts.map((row) => ({ id: row._id, kind: row.kind, byteSize: row.byteSize, stepId: row.stepId })),
       assets: assets.map((row) => ({
@@ -261,11 +289,25 @@ export const artifact = workspaceQuery({
 
 export const start = workspaceMutation({
   args: { agentSlug: v.string(), skillSlug: v.string() },
-  handler: async (ctx, args) => {
+  handler: async (ctx, input) => {
     if (ctx.member.role === "rep") notAllowed();
+    // An older client may still send a renamed slug. Runs are always stored under the current one.
+    const args = { ...input, agentSlug: currentAgentSlug(input.agentSlug) };
     if (args.skillSlug === TEST_SKILL && !devSkillsEnabled()) notFound();
-    const tools = declaredTools(args.skillSlug);
-    if (tools.length === 0) throw new Error("This skill is not built yet.");
+    const skill = skillFor(args.skillSlug);
+    if (!skill) throw new Error("This skill is not built yet.");
+    const agent = await ctx.db
+      .query("agents")
+      .withIndex("by_slug", (q) => q.eq("slug", args.agentSlug))
+      .unique();
+    if (!agent || agent.retired === true) notFound();
+    if (agent.status !== "live") throw new Error(`${agent.name} is not available yet.`);
+    const link = await ctx.db
+      .query("workspaceAgents")
+      .withIndex("by_workspace_agent", (q) => q.eq("workspaceId", ctx.workspaceId).eq("agentId", agent._id))
+      .unique();
+    if (!link || link.state === "off") throw new Error(`Turn on the ${agent.name} first.`);
+    if (skill.agentSlug !== agent.slug) notFound();
     const gate = await controls(ctx, ctx.workspaceId);
     const caps = await loadCaps(ctx, ctx.workspaceId, args.agentSlug);
     const spent = await daySpend(ctx, ctx.workspaceId, args.agentSlug, dayKey());
@@ -323,15 +365,10 @@ export const expire = internalMutation({
   },
 });
 
-const PLAN: { kind: "tool" | "model"; toolSlug?: string }[] = [
-  { kind: "tool", toolSlug: "profile.read" },
-  { kind: "model" },
-  { kind: "tool", toolSlug: "asset.create" },
-];
-
 /**
  * Every check that can stop a run happens here, before any model call or tool runs:
- * the starter's membership, pause, halt, every cap, and the model route.
+ * the starter's membership, pause, halt, every cap, and the model route. Then the skill
+ * module names the next step; the runtime checks it against the skill's declared tools.
  */
 export const prepare = internalMutation({
   args: { runId: v.id("agentRuns") },
@@ -355,18 +392,40 @@ export const prepare = internalMutation({
       return { done: true as const };
     }
     const index = steps.length;
-    const next = PLAN[index];
+    const idempotencyKey = `${run._id}:${index}`;
+    // The dev flag can be turned off while a dev skill runs. The run then fails instead of guessing.
+    const skill = skillFor(run.skillSlug);
+    if (!skill) {
+      await recordFailure(ctx, run, index, idempotencyKey, "skill_unavailable", "tool");
+      return { done: true as const };
+    }
+    const next = await skill.nextStep({
+      db: ctx.db,
+      run,
+      steps: [...steps]
+        .sort((a, b) => a.index - b.index)
+        .map((step) => ({
+          index: step.index,
+          kind: step.kind,
+          toolSlug: step.toolSlug,
+          status: step.status,
+          resultCode: step.resultCode,
+          resultId: step.resultId,
+        })),
+    });
     if (!next) {
       await stopRun(ctx, run, "done", "completed");
       return { done: true as const };
     }
-    if (next.kind === "tool") assertDeclared(run.skillSlug, next.toolSlug ?? "");
+    if (next.kind === "tool") assertDeclared(run.skillSlug, next.toolSlug);
+    // Claude's web tools are tools too: a model step may use them only if the skill declared them.
+    if (next.kind === "model" && next.webSearch) assertDeclared(run.skillSlug, "web.search");
+    if (next.kind === "model" && next.webFetch) assertDeclared(run.skillSlug, "web.fetch");
     if (run.status === "queued") await ctx.db.patch(run._id, { status: "running" });
-    const idempotencyKey = `${run._id}:${index}`;
     if (next.kind === "tool") {
-      return { done: false as const, kind: "tool" as const, index, idempotencyKey, toolSlug: next.toolSlug ?? "" };
+      return { done: false as const, kind: "tool" as const, index, idempotencyKey, toolSlug: next.toolSlug };
     }
-    const route = await routeFor(ctx, "write");
+    const route = await routeFor(ctx, next.workKind);
     if (!route) {
       await recordFailure(ctx, run, index, idempotencyKey, "no_route");
       return { done: true as const };
@@ -382,7 +441,18 @@ export const prepare = internalMutation({
         fallbackProvider: route.fallbackProvider,
         fallbackModel: route.fallbackModel,
       },
-      modelInput: wrapUntrusted(INJECTION_FIXTURE),
+      workKind: next.workKind,
+      modelInput: next.input,
+      // Only the fields a step sets: Convex values cannot hold undefined.
+      tools:
+        next.webSearch || next.webFetch || next.outputSchema || next.system
+          ? {
+              ...(next.system ? { system: next.system } : {}),
+              ...(next.webSearch ? { webSearch: next.webSearch } : {}),
+              ...(next.webFetch ? { webFetch: next.webFetch } : {}),
+              ...(next.outputSchema ? { outputSchema: next.outputSchema } : {}),
+            }
+          : null,
     };
   },
 });
@@ -394,23 +464,55 @@ async function recordFailure(
   idempotencyKey: string,
   code: string,
   kind: "tool" | "model" = "model",
+  spent: Spend = NO_SPEND,
+  durationMs = 0,
 ) {
-  await ctx.db.insert("runSteps", {
+  const stepId = await ctx.db.insert("runSteps", {
     workspaceId: run.workspaceId,
     runId: run._id,
     index,
     idempotencyKey,
     kind,
     status: "failed",
-    durationMs: 0,
-    inputTokens: 0,
-    outputTokens: 0,
+    durationMs,
+    inputTokens: spent.inputTokens,
+    outputTokens: spent.outputTokens,
     resultCode: code,
   });
-  await stopRun(ctx, run, "error", "failed");
+  if (OPEN.has(run.status)) await stopRun(ctx, run, "error", "failed");
+  return stepId;
 }
 
-/** Marks a run failed after a model call errored. Codes only, no provider text. */
+/** Adds what a model call was billed to the run and to today's counter, and returns the new totals. */
+async function charge(ctx: MutationCtx, run: Doc<"agentRuns">, spent: Spend) {
+  const day = dayKey();
+  const counter = await ctx.db
+    .query("capCounters")
+    .withIndex("by_workspace_agent_day", (q) => q.eq("workspaceId", run.workspaceId).eq("agentSlug", run.agentSlug).eq("day", day))
+    .unique();
+  const dayCost = (counter?.costCents ?? 0) + spent.costCents;
+  const runCost = run.costCents + spent.costCents;
+  if (counter) await ctx.db.patch(counter._id, { costCents: dayCost });
+  else await ctx.db.insert("capCounters", { workspaceId: run.workspaceId, agentSlug: run.agentSlug, day, costCents: dayCost });
+  await ctx.db.patch(run._id, {
+    costCents: runCost,
+    inputTokens: run.inputTokens + spent.inputTokens,
+    outputTokens: run.outputTokens + spent.outputTokens,
+  });
+  return { runCost, dayCost };
+}
+
+async function findStep(ctx: QueryCtx, run: Doc<"agentRuns">, idempotencyKey: string) {
+  return ctx.db
+    .query("runSteps")
+    .withIndex("by_workspace_idempotency", (q) => q.eq("workspaceId", run.workspaceId).eq("idempotencyKey", idempotencyKey))
+    .unique();
+}
+
+/**
+ * Marks a run failed after a step errored. Codes only, no provider text. A model call that failed
+ * but was billed (a refusal) is still counted, even when the run was stopped while the call was out.
+ */
 export const fail = internalMutation({
   args: {
     runId: v.id("agentRuns"),
@@ -418,11 +520,44 @@ export const fail = internalMutation({
     idempotencyKey: v.string(),
     code: v.string(),
     kind: v.union(v.literal("tool"), v.literal("model")),
+    inputTokens: v.optional(v.number()),
+    outputTokens: v.optional(v.number()),
+    costCents: v.optional(v.number()),
+    durationMs: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
     const run = await ctx.db.get(args.runId);
-    if (!run || !OPEN.has(run.status)) return null;
-    await recordFailure(ctx, run, args.index, args.idempotencyKey, args.code, args.kind);
+    if (!run) return null;
+    if (await findStep(ctx, run, args.idempotencyKey)) return null;
+    const spent = {
+      inputTokens: args.inputTokens ?? 0,
+      outputTokens: args.outputTokens ?? 0,
+      costCents: args.costCents ?? 0,
+    };
+    const billed = spent.costCents > 0 || spent.inputTokens > 0 || spent.outputTokens > 0;
+    if (!billed && !OPEN.has(run.status)) return null;
+    if (billed) await charge(ctx, run, spent);
+    const current = (await ctx.db.get(run._id)) ?? run;
+    const stepId = await recordFailure(
+      ctx,
+      current,
+      args.index,
+      args.idempotencyKey,
+      args.code,
+      args.kind,
+      spent,
+      args.durationMs ?? 0,
+    );
+    if (billed) {
+      await writeAudit(ctx, {
+        workspaceId: run.workspaceId,
+        actorType: "system",
+        actorId: "runtime",
+        action: "run.model",
+        subject: stepId,
+        count: spent.costCents,
+      });
+    }
     return null;
   },
 });
@@ -481,10 +616,12 @@ export const commitTool = internalMutation({
       ];
       assertClaims(claims);
       await assertSourcesExist(ctx, run.workspaceId, claims);
+      // The skill says what it hands back. assertDeclared above already proved the skill exists.
+      const output = skillFor(run.skillSlug)!.output;
       const assetId = await ctx.db.insert("assets", {
         workspaceId: run.workspaceId,
-        kind: "researchReport",
-        title: "Test echo",
+        kind: output.assetKind,
+        title: output.title,
         status: "draft",
         currentVersion: 1,
         createdByRun: run._id,
@@ -557,30 +694,22 @@ export const commitModel = internalMutation({
     provider: v.string(),
     model: v.string(),
     workKind: v.optional(v.string()),
+    /** Wall time of the model call, measured in the action around it. */
+    durationMs: v.optional(v.number()),
+    webSearches: v.optional(v.number()),
+    webFetches: v.optional(v.number()),
+    /** Sources the web tools found, as JSON: URLs, titles and short cited lines. Saved as its own record. */
+    sources: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     const run = await ctx.db.get(args.runId);
     if (!run) notFound();
-    const prior = await ctx.db
-      .query("runSteps")
-      .withIndex("by_workspace_idempotency", (q) => q.eq("workspaceId", run.workspaceId).eq("idempotencyKey", args.idempotencyKey))
-      .unique();
-    if (prior) return { status: run.status };
+    if (await findStep(ctx, run, args.idempotencyKey)) return { status: run.status };
 
-    const day = dayKey();
-    const spent = await daySpend(ctx, run.workspaceId, run.agentSlug, day);
-    const nextCost = run.costCents + args.costCents;
-    const nextDay = spent + args.costCents;
-    const counter = await ctx.db
-      .query("capCounters")
-      .withIndex("by_workspace_agent_day", (q) => q.eq("workspaceId", run.workspaceId).eq("agentSlug", run.agentSlug).eq("day", day))
-      .unique();
-    if (counter) await ctx.db.patch(counter._id, { costCents: nextDay });
-    else await ctx.db.insert("capCounters", { workspaceId: run.workspaceId, agentSlug: run.agentSlug, day, costCents: nextDay });
-    await ctx.db.patch(run._id, {
-      costCents: nextCost,
-      inputTokens: run.inputTokens + args.inputTokens,
-      outputTokens: run.outputTokens + args.outputTokens,
+    const { runCost: nextCost, dayCost: nextDay } = await charge(ctx, run, {
+      inputTokens: args.inputTokens,
+      outputTokens: args.outputTokens,
+      costCents: args.costCents,
     });
     const stepId = await ctx.db.insert("runSteps", {
       workspaceId: run.workspaceId,
@@ -591,7 +720,9 @@ export const commitModel = internalMutation({
       modelRoute: `${args.provider}/${args.model}`,
       workKind: args.workKind,
       status: "completed",
-      durationMs: 1,
+      durationMs: args.durationMs ?? 0,
+      webSearches: args.webSearches,
+      webFetches: args.webFetches,
       inputTokens: args.inputTokens,
       outputTokens: args.outputTokens,
       resultCode: "ok",
@@ -605,6 +736,16 @@ export const commitModel = internalMutation({
       byteSize: new TextEncoder().encode(args.text).byteLength,
       body: args.text,
     });
+    if (args.sources) {
+      await ctx.db.insert("runArtifacts", {
+        workspaceId: run.workspaceId,
+        runId: run._id,
+        stepId,
+        kind: "sources",
+        byteSize: new TextEncoder().encode(args.sources).byteLength,
+        body: args.sources,
+      });
+    }
     await writeAudit(ctx, {
       workspaceId: run.workspaceId,
       actorType: "system",
@@ -640,19 +781,41 @@ export const step = internalAction({
     let status: string;
     if (plan.kind === "model") {
       let result;
+      let web: { webSearches: number; webFetches: number; sources: string } | null = null;
+      // Date.now() advances inside an action, so this is the real time the call took.
+      const began = Date.now();
       try {
-        result = await complete(plan.route, "write", plan.modelInput);
+        if (plan.tools) {
+          const answer = await completeWithTools(plan.route, plan.workKind, {
+            input: plan.modelInput,
+            system: plan.tools.system,
+            webSearch: plan.tools.webSearch,
+            webFetch: plan.tools.webFetch,
+            outputSchema: plan.tools.outputSchema,
+          });
+          result = { ...answer, text: answer.output === null ? answer.text : JSON.stringify(answer.output) };
+          web = {
+            webSearches: answer.webSearches,
+            webFetches: answer.webFetches,
+            sources: JSON.stringify({ sources: answer.sources, citations: answer.citations }),
+          };
+        } else {
+          result = await complete(plan.route, plan.workKind, plan.modelInput);
+        }
       } catch (error) {
-        const code = error instanceof ModelError ? error.code : "provider_error";
+        const failed = error instanceof ModelError ? error : new ModelError("provider_error", false);
         await ctx.runMutation(internal.runs.fail, {
           runId: args.runId,
           index: plan.index,
           idempotencyKey: plan.idempotencyKey,
-          code,
+          code: failed.code,
           kind: "model",
+          durationMs: Date.now() - began,
+          ...failed.spent,
         });
         return null;
       }
+      const durationMs = Date.now() - began;
       ({ status } = await ctx.runMutation(internal.runs.commitModel, {
         runId: args.runId,
         idempotencyKey: plan.idempotencyKey,
@@ -663,7 +826,9 @@ export const step = internalAction({
         costCents: result.costCents,
         provider: result.provider,
         model: result.model,
-        workKind: "write",
+        workKind: plan.workKind,
+        durationMs,
+        ...(web ?? {}),
       }));
     } else {
       try {

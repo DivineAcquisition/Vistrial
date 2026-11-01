@@ -2,6 +2,7 @@
 
 import { useMutation, useQuery } from "convex/react";
 
+import { GROWTH_ARCHITECT } from "../../../convex/catalog";
 import { AssetRow, type AssetRowView } from "@/components/assets/asset-row";
 import { ProfileEditor } from "@/components/profile/profile-editor";
 import { useWorkspaceShell } from "@/components/shell/shell-context";
@@ -27,7 +28,8 @@ function LiveDecisions({ shell }: { shell: NonNullable<ReturnType<typeof useWork
   const turnOn = useMutation(api.workspace.setAgentState);
   const finish = useMutation(api.profile.finishSetup);
   const mark = useMutation(api.workspace.markSetupDone);
-  const salesOn = shell.agents.find((agent) => agent.slug === "sales")?.state !== "off";
+  const architectState = shell.agents.find((agent) => agent.slug === GROWTH_ARCHITECT)?.state ?? "off";
+  const architectOn = architectState !== "off";
 
   if (profile === undefined || waiting === undefined) {
     return <p className="text-sm text-muted-foreground">Loading the queue.</p>;
@@ -39,22 +41,24 @@ function LiveDecisions({ shell }: { shell: NonNullable<ReturnType<typeof useWork
         <PageHeader
           eyebrow="First sign-in"
           title="Set up the workspace"
-          description="Confirm the business profile, then turn on the Sales Agent. Nothing runs until you do."
+          description="Confirm the business profile, then turn on Growth Architect. Nothing runs until you do."
         />
         <ol className="grid gap-2 text-sm">
           <li>{profile.confirmed ? "Profile: done." : "Profile: not done."}</li>
-          <li>{salesOn ? "Sales Agent: done." : "Sales Agent: not done."}</li>
+          <li>{architectOn ? "Growth Architect: done." : "Growth Architect: not done."}</li>
         </ol>
         <ProfileEditor workspaceId={shell.workspaceId} role={shell.role} />
         <Panel className="grid gap-3 p-4 sm:p-6">
-          <h2 className="font-heading text-base text-card-foreground">Sales Agent</h2>
-          <p className={bodyText}>{salesOn ? "The Sales Agent is on. It still cannot post." : "The Sales Agent is off."}</p>
+          <h2 className="font-heading text-base text-card-foreground">Growth Architect</h2>
+          <p className={bodyText}>
+            {architectOn ? "Growth Architect is on. It still cannot publish anything." : "Growth Architect is off."}
+          </p>
           {shell.role === "owner" ? (
-            <Button type="button" variant="secondary" onClick={() => void turnOn({ workspaceId: shell.workspaceId, slug: "sales", state: "on" })}>
-              Turn on the Sales Agent
+            <Button type="button" variant="secondary" onClick={() => void turnOn({ workspaceId: shell.workspaceId, slug: GROWTH_ARCHITECT, state: "on" })}>
+              Turn on Growth Architect
             </Button>
           ) : (
-            <p className={bodyText}>An owner turns the Sales Agent on.</p>
+            <p className={bodyText}>An owner turns Growth Architect on.</p>
           )}
           {shell.role === "owner" ? (
             <Button type="button" onClick={() => void finish({ workspaceId: shell.workspaceId })}>

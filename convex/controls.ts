@@ -1,5 +1,6 @@
 import { v } from "convex/values";
 
+import { currentAgentSlug } from "./catalog";
 import type { Id } from "./_generated/dataModel";
 import type { MutationCtx } from "./_generated/server";
 import { workspaceMutation, workspaceQuery } from "./lib/builders";
@@ -31,7 +32,8 @@ async function cancelOpen(ctx: MutationCtx, workspaceId: Id<"workspaces">, stopR
 
 export const get = workspaceQuery({
   args: { agentSlug: v.string() },
-  handler: async (ctx, args) => {
+  handler: async (ctx, input) => {
+    const args = { agentSlug: currentAgentSlug(input.agentSlug) };
     const caps = await ctx.db
       .query("agentCaps")
       .withIndex("by_workspace_agent", (q) => q.eq("workspaceId", ctx.workspaceId).eq("agentSlug", args.agentSlug))
@@ -67,7 +69,8 @@ export const setCaps = workspaceMutation({
     maxSteps: v.number(),
     maxDurationMs: v.number(),
   },
-  handler: async (ctx, args) => {
+  handler: async (ctx, input) => {
+    const args = { ...input, agentSlug: currentAgentSlug(input.agentSlug) };
     if (ctx.member.role !== "owner") notAllowed();
     assertWithinCeiling(args);
     if (args.maxSteps < 1 || args.maxDurationMs < 1) throw new Error("Caps must allow at least one step.");

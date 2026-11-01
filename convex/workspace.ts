@@ -1,5 +1,6 @@
 import { v } from "convex/values";
 
+import { currentAgentSlug } from "./catalog";
 import { signedInMutation, signedInQuery, workspaceQuery, ownerMutation } from "./lib/builders";
 import { writeAudit } from "./lib/audit";
 import { activeMembership } from "./lib/access";
@@ -92,7 +93,7 @@ export const shell = workspaceQuery({
       .query("workspaceSettings")
       .withIndex("by_workspace", (q) => q.eq("workspaceId", ctx.workspaceId))
       .unique();
-    const areas = await ctx.db.query("areas").withIndex("by_sort").take(20);
+    const departments = await ctx.db.query("departments").withIndex("by_sort").take(20);
     const agents = await ctx.db.query("agents").withIndex("by_sort").take(50);
     const skills = await ctx.db.query("skills").withIndex("by_sort").take(100);
     const links = await ctx.db
@@ -109,16 +110,18 @@ export const shell = workspaceQuery({
     return {
       role: ctx.member.role,
       setupDone: settings?.setupDone ?? false,
-      areas: areas
-        .map((area) => ({ slug: area.slug, name: area.name, sort: area.sort }))
+      departments: departments
+        .map((row) => ({ slug: row.slug, name: row.name, sort: row.sort }))
         .sort((a, b) => a.sort - b.sort),
       agents: agents
         .filter((agent) => agent.retired !== true)
         .map((agent) => ({
           slug: agent.slug,
           name: agent.name,
-          area: agent.area ?? null,
-          stage: agent.stage,
+          number: agent.number ?? null,
+          department: agent.department ?? null,
+          status: agent.status ?? ("planned" as const),
+          lifecycle: agent.lifecycle ?? null,
           job: agent.job,
           promise: agent.promise,
           sort: agent.sort,
@@ -168,9 +171,10 @@ export const setAgentState = ownerMutation({
   handler: async (ctx, args) => {
     const agent = await ctx.db
       .query("agents")
-      .withIndex("by_slug", (q) => q.eq("slug", args.slug))
+      .withIndex("by_slug", (q) => q.eq("slug", currentAgentSlug(args.slug)))
       .unique();
-    if (!agent) notFound();
+    if (!agent || agent.retired === true) notFound();
+    if (agent.status !== "live" && args.state !== "off") throw new Error(`${agent.name} is not available yet.`);
     const link = await ctx.db
       .query("workspaceAgents")
       .withIndex("by_workspace_agent", (q) => q.eq("workspaceId", ctx.workspaceId).eq("agentId", agent._id))

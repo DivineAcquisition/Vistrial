@@ -1,7 +1,7 @@
-import { AREAS, AREA_LABEL, CATALOG, type Area, type CatalogAgent } from "../../../convex/catalog";
+import { CATALOG, DEPARTMENTS, DEPARTMENT_LABEL, type CatalogAgent, type Department } from "../../../convex/catalog";
 
-export type { CatalogAgent, Area };
-export { CATALOG, AREAS, AREA_LABEL };
+export type { CatalogAgent, Department };
+export { CATALOG, DEPARTMENTS, DEPARTMENT_LABEL };
 
 export type RailSkill = {
   slug: string;
@@ -12,12 +12,16 @@ export type RailSkill = {
   sort: number;
 };
 
-export type RailArea = { slug: string; name: string; sort: number };
+export type RailDepartment = { slug: string; name: string; sort: number };
 
 export type RailAgent = {
   slug: string;
   name: string;
-  area: Area | null;
+  number?: number | null;
+  department: string | null;
+  /** A planned agent shows in the rail but cannot be turned on or run. */
+  status: "live" | "planned";
+  lifecycle?: string | null;
   job: string;
   promise: string;
   sort: number;
@@ -26,38 +30,41 @@ export type RailAgent = {
 };
 
 export type RailGroup = {
-  area: Area | "other";
+  department: string;
   label: string;
   agents: RailAgent[];
 };
 
 export type RailModel = {
-  areas: RailGroup[];
+  departments: RailGroup[];
 };
 
-/** Areas first, then the agents in each area. Pass area rows from the table so the labels are live. */
-export function railFromCatalog(agents: RailAgent[], areaRows?: RailArea[]): RailModel {
-  const ordered = areaRows
-    ? [...areaRows].sort((a, b) => a.sort - b.sort)
-    : AREAS.map((slug, sort) => ({ slug, name: AREA_LABEL[slug], sort }));
-  const known = new Set(ordered.map((area) => area.slug));
-  const areas: RailGroup[] = ordered
-    .map((area) => ({
-      area: (known.has(area.slug) ? area.slug : "other") as RailGroup["area"],
-      label: area.name,
-      agents: agents
-        .filter((agent) => agent.area === area.slug)
-        .sort((a, b) => a.sort - b.sort || a.name.localeCompare(b.name)),
+/** Departments first, then the agents in each. Pass department rows from the table so the labels are live. */
+export function railFromCatalog(agents: RailAgent[], departmentRows?: RailDepartment[]): RailModel {
+  const ordered = departmentRows
+    ? [...departmentRows].sort((a, b) => a.sort - b.sort)
+    : DEPARTMENTS.map((slug, sort) => ({ slug, name: DEPARTMENT_LABEL[slug], sort }));
+  const known = new Set(ordered.map((row) => row.slug));
+  const bySort = (a: RailAgent, b: RailAgent) => a.sort - b.sort || a.name.localeCompare(b.name);
+  const departments: RailGroup[] = ordered
+    .map((row) => ({
+      department: row.slug,
+      label: row.name,
+      agents: agents.filter((agent) => agent.department === row.slug).sort(bySort),
     }))
     .filter((group) => group.agents.length > 0);
 
-  const other = agents
-    .filter((agent) => !agent.area || !known.has(agent.area))
-    .sort((a, b) => a.sort - b.sort || a.name.localeCompare(b.name));
-  if (other.length > 0) areas.push({ area: "other", label: "Other", agents: other });
-  return { areas };
+  const other = agents.filter((agent) => !agent.department || !known.has(agent.department)).sort(bySort);
+  if (other.length > 0) departments.push({ department: "other", label: "Other", agents: other });
+  return { departments };
 }
 
 export function railAgentSlugs(model: RailModel): string[] {
-  return model.areas.flatMap((group) => group.agents.map((agent) => agent.slug));
+  return model.departments.flatMap((group) => group.agents.map((agent) => agent.slug));
+}
+
+/** The badge an agent shows in the rail and on its page. */
+export function agentStateLabel(agent: Pick<RailAgent, "status" | "state">) {
+  if (agent.status === "planned") return "Planned";
+  return agent.state === "on" ? "On" : agent.state === "suggesting" ? "Suggesting" : "Off";
 }

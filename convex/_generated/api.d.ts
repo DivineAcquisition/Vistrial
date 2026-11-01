@@ -19,6 +19,7 @@ import type * as leadsMigration from "../leadsMigration.js";
 import type * as lib_access from "../lib/access.js";
 import type * as lib_agents from "../lib/agents.js";
 import type * as lib_audit from "../lib/audit.js";
+import type * as lib_authIssuers from "../lib/authIssuers.js";
 import type * as lib_builders from "../lib/builders.js";
 import type * as lib_canSeeLead from "../lib/canSeeLead.js";
 import type * as lib_caps from "../lib/caps.js";
@@ -66,6 +67,7 @@ declare const fullApi: ApiFromModules<{
   "lib/access": typeof lib_access;
   "lib/agents": typeof lib_agents;
   "lib/audit": typeof lib_audit;
+  "lib/authIssuers": typeof lib_authIssuers;
   "lib/builders": typeof lib_builders;
   "lib/canSeeLead": typeof lib_canSeeLead;
   "lib/caps": typeof lib_caps;

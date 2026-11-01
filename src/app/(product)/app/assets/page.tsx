@@ -13,7 +13,7 @@ import { Select } from "@/components/ui/select";
 import { api } from "../../../../../convex/_generated/api";
 
 type Status = "draft" | "approved" | "archived";
-type Kind = "researchReport" | "adCopySet" | "creativeBrief" | "contentCalendar" | "swipeItem";
+type Kind = "marketReport" | "researchReport" | "adCopySet" | "creativeBrief" | "contentCalendar" | "swipeItem";
 
 const STATUS_OPTIONS = [
   { value: "draft", label: "Waiting for approval" },
@@ -23,6 +23,7 @@ const STATUS_OPTIONS = [
 
 const KIND_OPTIONS = [
   { value: "", label: "Any kind" },
+  { value: "marketReport", label: "Market reports" },
   { value: "researchReport", label: "Research reports" },
   { value: "adCopySet", label: "Ad copy sets" },
   { value: "creativeBrief", label: "Creative briefs" },

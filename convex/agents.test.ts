@@ -246,8 +246,9 @@ describe("the seven-agent workforce", () => {
 
     const runs = await owner.query(api.runs.list, { workspaceId, agentSlug: GROWTH_ARCHITECT });
     expect(runs.map((run) => run.id).sort()).toEqual([...seeded.runs].sort());
-    const controls = await owner.query(api.controls.get, { workspaceId, agentSlug: GROWTH_ARCHITECT });
-    expect(controls.caps.maxCostCentsPerRun).toBe(50);
+    // Caps set per agent before caps were per skill still apply to the test skill.
+    const controls = await owner.query(api.controls.get, { workspaceId });
+    expect(controls.skills.find((skill) => skill.slug === "test-echo")?.caps.maxCostCentsPerRun).toBe(50);
     const counters = await t.run(async (ctx) =>
       ctx.db
         .query("capCounters")

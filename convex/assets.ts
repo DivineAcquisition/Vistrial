@@ -5,7 +5,15 @@ import type { Doc, Id } from "./_generated/dataModel";
 import type { QueryCtx } from "./_generated/server";
 import { workspaceMutation, workspaceQuery } from "./lib/builders";
 import { writeAudit } from "./lib/audit";
-import { MISSING_SOURCE, assertClaims, assertSourcesExist, claimsWithMissingSources, type ClaimInput } from "./lib/evidence";
+import {
+  BASIS_LABEL,
+  MISSING_SOURCE,
+  assertClaims,
+  assertSourcesExist,
+  claimsWithMissingSources,
+  findSourceRef,
+  type ClaimInput,
+} from "./lib/evidence";
 import { notAllowed, notFound } from "./lib/errors";
 
 const claim = v.object({
@@ -14,6 +22,16 @@ const claim = v.object({
   sourceId: v.optional(v.string()),
   fetchedAt: v.optional(v.number()),
   computed: v.optional(v.boolean()),
+  basis: v.optional(
+    v.union(
+      v.literal("observed"),
+      v.literal("inferred"),
+      v.literal("hypothesis"),
+      v.literal("firstParty"),
+      v.literal("insufficient"),
+    ),
+  ),
+  sourceRefIds: v.optional(v.array(v.id("sourceRefs"))),
 });
 
 function assertEditor(role: string) {
@@ -31,6 +49,7 @@ export const list = workspaceQuery({
         v.literal("creativeBrief"),
         v.literal("contentCalendar"),
         v.literal("swipeItem"),
+        v.literal("marketReport"),
       ),
     ),
   },
@@ -91,6 +110,26 @@ async function sourceLabel(ctx: QueryCtx, workspaceId: Id<"workspaces">, sourceI
   return null;
 }
 
+/** The source references a claim cites. One outside the workspace, or deleted, shows as missing. */
+async function sourceRefsView(ctx: QueryCtx, workspaceId: Id<"workspaces">, ids: Id<"sourceRefs">[]) {
+  return Promise.all(
+    ids.map(async (id) => {
+      const ref = await findSourceRef(ctx, workspaceId, id);
+      if (!ref) return { id, missing: true as const };
+      return {
+        id,
+        missing: false as const,
+        platform: ref.platform,
+        title: ref.title ?? null,
+        publisher: ref.publisher ?? null,
+        url: ref.url,
+        observedAt: ref.observedAt,
+        availability: ref.availability,
+      };
+    }),
+  );
+}
+
 async function versionView(ctx: QueryCtx, workspaceId: Id<"workspaces">, version: Doc<"assetVersions">) {
   const evidence = await ctx.db
     .query("evidence")
@@ -109,6 +148,9 @@ async function versionView(ctx: QueryCtx, workspaceId: Id<"workspaces">, version
         computed: row.computed === true,
         fetchedAt: row.fetchedAt ?? null,
         sourceLabel: await sourceLabel(ctx, workspaceId, row.sourceId),
+        basis: row.basis ?? null,
+        basisLabel: row.basis ? BASIS_LABEL[row.basis] : null,
+        sources: await sourceRefsView(ctx, workspaceId, row.sourceRefIds ?? []),
       })),
     ),
   };
@@ -228,6 +270,8 @@ export const addVersion = workspaceMutation({
         sourceId: item.sourceId,
         fetchedAt: item.fetchedAt,
         computed: item.computed,
+        basis: item.basis,
+        sourceRefIds: item.sourceRefIds,
       });
     }
     // Approval covers one version. New content waits for approval again.

@@ -162,14 +162,15 @@ describe("step 4 runtime", () => {
       fallbackProvider: "fake",
       fallbackModel: "fake-writer",
     });
+    // The day cap reads the skill's own day total.
     await t.run(async (ctx) => {
       const day = new Date().toISOString().slice(0, 10);
       const row = await ctx.db
-        .query("capCounters")
-        .withIndex("by_workspace_agent_day", (q) => q.eq("workspaceId", workspaceId).eq("agentSlug", "growth-architect").eq("day", day))
+        .query("skillSpend")
+        .withIndex("by_workspace_skill_day", (q) => q.eq("workspaceId", workspaceId).eq("skillSlug", "test-echo").eq("day", day))
         .unique();
       if (row) await ctx.db.patch(row._id, { costCents: 200 });
-      else await ctx.db.insert("capCounters", { workspaceId, agentSlug: "growth-architect", day, costCents: 200 });
+      else await ctx.db.insert("skillSpend", { workspaceId, skillSlug: "test-echo", day, costCents: 200 });
     });
     const capped = await owner.mutation(api.runs.start, { workspaceId, agentSlug: "growth-architect", skillSlug: "test-echo" });
     expect((await owner.query(api.runs.get, { workspaceId, runId: capped })).stopReason).toBe("cap");
@@ -334,12 +335,13 @@ describe("step 4 runtime", () => {
   });
 
   it("refuses caps above the platform ceiling", async () => {
+    process.env.ALLOW_DEV_SKILLS = "true";
     const t = convexTest(schema, modules);
     const { owner, rep, workspaceId } = await seedPeople(t);
     await expect(
       owner.mutation(api.controls.setCaps, {
         workspaceId,
-        agentSlug: "growth-architect",
+        skillSlug: "test-echo",
         maxCostCentsPerRun: 101,
         maxCostCentsPerDay: 200,
         maxSteps: 40,

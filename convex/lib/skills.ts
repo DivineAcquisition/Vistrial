@@ -13,6 +13,11 @@ export function skillFor(slug: string, allowDev = devSkillsEnabled()): SkillModu
   return skill;
 }
 
+/** Every skill that can run here, in catalog order. */
+export function runnableSkills(allowDev = devSkillsEnabled()): SkillModule[] {
+  return SKILLS.filter((skill) => !skill.devOnly || allowDev);
+}
+
 export function declaredTools(skillSlug: string, allowDev = devSkillsEnabled()): ToolSlug[] {
   return [...(skillFor(skillSlug, allowDev)?.tools ?? [])];
 }

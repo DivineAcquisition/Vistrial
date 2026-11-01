@@ -125,7 +125,16 @@ describe("run and asset screens", () => {
     const current = await owner.query(api.assets.get, { workspaceId, assetId: asset.id });
     expect(current.currentVersion).toBe(2);
     expect(current.evidence).toEqual([
-      { claimKey: "count", statement: "Twelve ads ran over 30 days.", computed: true, fetchedAt: null, sourceLabel: null },
+      {
+        claimKey: "count",
+        statement: "Twelve ads ran over 30 days.",
+        computed: true,
+        fetchedAt: null,
+        sourceLabel: null,
+        basis: null,
+        basisLabel: null,
+        sources: [],
+      },
     ]);
     const first = await owner.query(api.assets.version, { workspaceId, assetId: asset.id, version: 1 });
     expect(first.body).toBe("ok");

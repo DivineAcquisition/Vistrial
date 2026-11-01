@@ -8,7 +8,9 @@ Tracks the Phase 2 backlog in `growth-architect-v1-plan.md`. Everything here was
 | 2.2 | Drop the four unused tables | Done. Pushed to dev. |
 | 2.3 | Skill module interface, `test-echo` moved onto it | Done. Pushed to dev. |
 | 2.4 | `completeWithTools`: server tools, client tools, structured output, search fees | Done. Live call on dev. |
-| 2.5 | Evidence basis and the new validator rules | Next |
+| 2.5 | Evidence basis and the new validator rules | Built, tested offline. **Not yet checked on dev** (see Milestone A below). |
+| 2.6 | `researchProjects`, `sourceRefs`, `sourceStatus`, `collections`, `collectionItems` | Built, tested offline. **Not yet checked on dev.** |
+| 2.12 | Per-skill caps | Built, tested offline. **Not yet checked on dev.** |
 
 ## 2.1 Departments and the seven agents
 
@@ -85,3 +87,82 @@ To confirm, or to run it at once by hand:
    ```
    `remaining` must report all zeros. Until the backfill runs, the first sign-in after the deploy renames the agent row anyway, but old runs, caps and day counters still sit under `sales`, so the day cap starts from zero for that day.
 3. Only after `remaining` is all zeros on production, a later push may drop `areas`, `agents.area` and `agents.stage`.
+
+## Milestone A: evidence and data (2.5, 2.6, 2.12)
+
+**State: built and tested offline. Not checked on dev, so not done.** The dev deploy key in this environment is rejected by Convex (details under "Blocked on dev" below). Nothing was pushed to dev or production.
+
+### 2.5 Evidence basis
+
+Evidence rows gain `basis` and `sourceRefIds`. The rules live in `convex/lib/evidence.ts` and run in three places: when a person adds a version (`assets.addVersion`), when an asset is approved (`assets.approve`, re-checked against what is in the workspace now), and on the asset screen (`sourceMissing` per claim, which blocks the Approve button). `screenClaims` gives the report writer (2.11) the same rules as a keep/drop list with a reason code, so a bad claim is dropped instead of failing the report.
+
+| Basis | Rule | Label (set in code, never by the model) |
+|---|---|---|
+| observed | At least one `sourceRef`, every cited one in this workspace | Observed |
+| inferred | At least one supporting `sourceRef`, same check | Inference |
+| hypothesis | No source needed. Cannot be marked computed. | Untested hypothesis |
+| firstParty | At least one cited `sourceRef` on the `customerData` platform. A web page is not enough. | Your data |
+| insufficient | No sources, not computed, and the line starts with "Not enough data" | Not enough data |
+
+Two choices to review:
+
+- **One rule beyond the plan:** a claim with a basis cites `sourceRefIds` only, not the older `sourceId` (profile, profile example, run record). Mixing the two would let a claim look sourced by a record that is not a collected source.
+- **Claims without a basis keep the old rule** (a source and a fetch time, or computed), so `test-echo` and every existing asset work unchanged.
+
+Tests: `convex/evidence.test.ts`, one test per basis rule, plus the mixed-source rule, approval after a cited source is deleted, and the keep/drop screen. Each rule is exercised through the real `assets.addVersion` and `assets.approve`.
+
+The asset screen now uses the server's `sourceMissing` instead of "no source label", and shows the basis label and linked sources under each claim. Without this, a correctly sourced basis claim would have read "Source not found" and blocked approval. The full report view is still 2.15.
+
+### 2.6 Research data
+
+| Table | Holds | Who can change it |
+|---|---|---|
+| `researchProjects` | Objective, market, geography, competitors, platforms, pasted links, status, latest run, the confirmed profile version it was scoped against | Owner or Manager. Scope is locked once the project has run. |
+| `sourceRefs` | Platform, kind, URL and canonical URL, title, publisher, dates, official embed id, availability, an excerpt of 300 characters or less, model classification (marked as such), limitation, and links to the run and raw artifact | Written only by the runtime (`saveSourceRef`). Read by every member. |
+| `sourceStatus` | Per run and platform: available, partial, unavailable or awaiting authorization, with a reason code and a count | Written only by the runtime (`setSourceStatus`) |
+| `collections` | A named group, personal (has an owner) or the workspace's | Personal: its owner, any role. Workspace: Owner or Manager. A Rep can read it. |
+| `collectionItems` | A source in a collection, with an optional note | Same as its collection |
+
+- `saveSourceRef` refuses a project, run or artifact from another workspace and any URL that is not public `http(s)` (no `javascript:`, `data:`, `file:`, credentials or bare hosts). It stores the same page once per project, matched on a canonical URL (no `www.`, fragment or tracking parameters, sorted query). It cuts excerpts to 300 characters.
+- Screens never get the raw artifact id or body from a source reference.
+- A personal collection reads as not found to everyone else in the workspace, the Owner included.
+
+Tests: `convex/research.test.ts`. Workspace B calls **every** public research and collection function (15) on A's records, or on A's workspace directly, and gets the same `Not found.` each time. B also cannot put A's source in its own collection, read A's run statuses through its own project, or write a source or status against A's project, run or artifact. Separate tests cover roles, scope checks, the scope lock, dedupe, excerpt length and personal collections. As a check on the check, removing the workspace test from `getSourceRef` makes the isolation test fail.
+
+### 2.12 Per-skill caps
+
+- `SKILL_CAPS` in `convex/lib/caps.ts`: Market Intelligence **$3 a run, $25 a day**, 60 steps, 30 minutes. The platform ceiling is now **$10 a run and $100 a day** (decision D3).
+- A skill with its own caps has its own caps row and its **own day counter** (`skillSlug` on `agentCaps` and `capCounters`). A research day cannot use up the test skill's $2, and test runs do not count against research's $25.
+- Every other skill, `test-echo` included, reads and writes the same agent-wide rows as before (no `skillSlug`). Existing rows and the agent migration keep working unchanged.
+- The agent-wide caps row does not apply to Market Intelligence. An Owner who set the agent to 25¢ does not stop research at 25¢.
+- `controls.get` and `controls.setCaps` take an optional `skillSlug`. `get` also returns the scope, the ceiling and today's spend for the assignment form's cost preview (2.13). Setting caps for a skill that shares the agent's is refused.
+- `runs.get` reports `caps.scope` (`skill` or `agent`).
+
+Tests: `convex/caps.test.ts`. Market Intelligence is not built until 2.11, so these tests write its run rows directly and drive the real `prepare` and `commitModel`:
+
+- A Market Intelligence run at 250¢ carries on (the test skill would have stopped at 25¢) and stops at 310¢ with `cap`.
+- Its day budget is checked before each step, apart from the agent's: an agent day at its $2 limit does not stop research, and a research day at $25 does.
+- A test-echo run starts while research has used its day, and still stops at 25¢.
+- The ceiling is enforced at $10.00 and $100.00.
+
+**Changed existing tests (2):** `runtime.test.ts` "refuses caps above the platform ceiling" now uses 1001¢ (101¢ is allowed under the new ceiling). `screens.test.ts` expects the four new evidence fields on an older claim (`basis: null`, `basisLabel: null`, `sources: []`, `sourceMissing: false`).
+
+### Checks
+
+- `npx vitest run`: 169 passed, in 36 files (150 before, 19 new).
+- `npm run lint`: 0 errors, the same 9 warnings as `main`.
+- `npm run typecheck`, `npm run build`, `npm run assert:no-secrets`: pass.
+- `convex/_generated/api.d.ts` gained the five new modules by hand. `convex codegen` needs a reachable deployment, and the key is rejected. The data model types come from `schema.ts`, so the import list is the only part codegen writes per module. `codegen.test.ts` confirms the list matches `convex/`.
+
+### Blocked on dev
+
+`CONVEX_DEPLOY_KEY` starts with `dev:` and names the Phase 1 dev deployment (`grandiose-meerkat-838`), but Convex answers `401 Invalid Convex deploy key`. The stored value has a space inside the token. Removing it, or replacing it with `+`, did not help, so the stored key looks damaged or was regenerated. It needs a fresh dev deploy key, stored under the same name (environment settings, then a new session).
+
+Still to do on dev once the key works:
+
+1. Push schema and functions to dev (dry run first).
+2. Create a project. Write a source and a status through the runtime helpers. Read them as Owner and Rep, and from workspace B.
+3. Add a basis claim per rule to a draft. Approve it, and check that a deleted source blocks approval.
+4. Read Market Intelligence caps through `controls.get`. Check that the two day counters stay apart.
+5. Confirm that the missing-`skillSlug` index lookups (`q.eq("skillSlug", undefined)`) match the existing caps rows and counters on the real deployment, as they do in tests.
+

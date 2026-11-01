@@ -5,7 +5,8 @@ import type { Id } from "./_generated/dataModel";
 import type { MutationCtx } from "./_generated/server";
 import { workspaceMutation, workspaceQuery } from "./lib/builders";
 import { writeAudit } from "./lib/audit";
-import { DEFAULT_CAPS, assertWithinCeiling } from "./lib/caps";
+import { PLATFORM_CEILING, assertWithinCeiling, capScope, dayKey } from "./lib/caps";
+import { capsRow, daySpend, loadCaps } from "./lib/capRows";
 import { notAllowed } from "./lib/errors";
 
 const OPEN = ["queued", "running", "waiting"] as const;
@@ -30,14 +31,15 @@ async function cancelOpen(ctx: MutationCtx, workspaceId: Id<"workspaces">, stopR
   }
 }
 
+/**
+ * Caps for an agent, or for one of its skills. A skill with its own caps (Market Intelligence) has its
+ * own row and day budget; any other skill reads the agent's.
+ */
 export const get = workspaceQuery({
-  args: { agentSlug: v.string() },
+  args: { agentSlug: v.string(), skillSlug: v.optional(v.string()) },
   handler: async (ctx, input) => {
-    const args = { agentSlug: currentAgentSlug(input.agentSlug) };
-    const caps = await ctx.db
-      .query("agentCaps")
-      .withIndex("by_workspace_agent", (q) => q.eq("workspaceId", ctx.workspaceId).eq("agentSlug", args.agentSlug))
-      .unique();
+    const args = { agentSlug: currentAgentSlug(input.agentSlug), skillSlug: input.skillSlug };
+    const caps = await loadCaps(ctx, ctx.workspaceId, args.agentSlug, args.skillSlug);
     const paused = await ctx.db
       .query("workspaceControls")
       .withIndex("by_workspace", (q) => q.eq("workspaceId", ctx.workspaceId))
@@ -47,14 +49,10 @@ export const get = workspaceQuery({
       .withIndex("by_key", (q) => q.eq("key", "platform"))
       .unique();
     return {
-      caps: caps
-        ? {
-            maxCostCentsPerRun: caps.maxCostCentsPerRun,
-            maxCostCentsPerDay: caps.maxCostCentsPerDay,
-            maxSteps: caps.maxSteps,
-            maxDurationMs: caps.maxDurationMs,
-          }
-        : DEFAULT_CAPS,
+      caps,
+      scope: capScope(args.skillSlug) === undefined ? ("agent" as const) : ("skill" as const),
+      ceiling: PLATFORM_CEILING,
+      daySpentCents: await daySpend(ctx, ctx.workspaceId, args.agentSlug, args.skillSlug, dayKey()),
       paused: paused?.agentsPaused === true,
       halted: platform?.halted === true,
     };
@@ -64,6 +62,8 @@ export const get = workspaceQuery({
 export const setCaps = workspaceMutation({
   args: {
     agentSlug: v.string(),
+    /** Sets a skill's own caps. Only skills that have their own caps accept this; others share the agent's. */
+    skillSlug: v.optional(v.string()),
     maxCostCentsPerRun: v.number(),
     maxCostCentsPerDay: v.number(),
     maxSteps: v.number(),
@@ -74,10 +74,9 @@ export const setCaps = workspaceMutation({
     if (ctx.member.role !== "owner") notAllowed();
     assertWithinCeiling(args);
     if (args.maxSteps < 1 || args.maxDurationMs < 1) throw new Error("Caps must allow at least one step.");
-    const current = await ctx.db
-      .query("agentCaps")
-      .withIndex("by_workspace_agent", (q) => q.eq("workspaceId", ctx.workspaceId).eq("agentSlug", args.agentSlug))
-      .unique();
+    const scope = capScope(args.skillSlug);
+    if (args.skillSlug !== undefined && scope === undefined) throw new Error("That skill uses the agent's caps.");
+    const current = await capsRow(ctx, ctx.workspaceId, args.agentSlug, scope);
     const fields = {
       maxCostCentsPerRun: args.maxCostCentsPerRun,
       maxCostCentsPerDay: args.maxCostCentsPerDay,
@@ -86,7 +85,12 @@ export const setCaps = workspaceMutation({
     };
     const id = current
       ? (await ctx.db.patch(current._id, fields), current._id)
-      : await ctx.db.insert("agentCaps", { workspaceId: ctx.workspaceId, agentSlug: args.agentSlug, ...fields });
+      : await ctx.db.insert("agentCaps", {
+          workspaceId: ctx.workspaceId,
+          agentSlug: args.agentSlug,
+          ...(scope === undefined ? {} : { skillSlug: scope }),
+          ...fields,
+        });
     await writeAudit(ctx, {
       workspaceId: ctx.workspaceId,
       actorType: "user",

@@ -12,6 +12,7 @@ import type * as agentsMigration from "../agentsMigration.js";
 import type * as assets from "../assets.js";
 import type * as catalog from "../catalog.js";
 import type * as controls from "../controls.js";
+import type * as crons from "../crons.js";
 import type * as events from "../events.js";
 import type * as imports from "../imports.js";
 import type * as leads from "../leads.js";
@@ -62,6 +63,7 @@ declare const fullApi: ApiFromModules<{
   assets: typeof assets;
   catalog: typeof catalog;
   controls: typeof controls;
+  crons: typeof crons;
   events: typeof events;
   imports: typeof imports;
   leads: typeof leads;

@@ -85,6 +85,47 @@ export const backfill = internalMutation({
   },
 });
 
+/**
+ * Starts the backfill only when something still needs it. A cron (convex/crons.ts) calls this every
+ * few minutes on every deployment, so production finishes the migration without anyone running it.
+ * Once nothing names an old slug it does no writes and schedules nothing.
+ */
+export const backfillIfNeeded = internalMutation({
+  args: {},
+  handler: async (ctx) => {
+    if (!(await needsBackfill(ctx))) return false;
+    await ctx.scheduler.runAfter(0, internal.agentsMigration.backfill, {});
+    return true;
+  },
+});
+
+async function needsBackfill(ctx: MutationCtx) {
+  const oldSlugs = Object.keys(RENAMED_AGENTS);
+  for (const slug of oldSlugs) {
+    if (await ctx.db.query("agents").withIndex("by_slug", (q) => q.eq("slug", slug)).first()) return true;
+  }
+  for await (const agent of ctx.db.query("agents")) {
+    if (agent.area !== undefined || agent.stage !== undefined) return true;
+  }
+  for await (const workspace of ctx.db.query("workspaces")) {
+    for (const slug of oldSlugs) {
+      const byWorkspaceAgent = (table: "agentRuns" | "agentCaps") =>
+        ctx.db
+          .query(table)
+          .withIndex("by_workspace_agent", (q) => q.eq("workspaceId", workspace._id).eq("agentSlug", slug))
+          .first();
+      if (await byWorkspaceAgent("agentRuns")) return true;
+      if (await byWorkspaceAgent("agentCaps")) return true;
+      const counter = await ctx.db
+        .query("capCounters")
+        .withIndex("by_workspace_agent_day", (q) => q.eq("workspaceId", workspace._id).eq("agentSlug", slug))
+        .first();
+      if (counter) return true;
+    }
+  }
+  return false;
+}
+
 /** Rows still naming an old agent slug. Zero everywhere means the migration finished. */
 export const remaining = internalQuery({
   args: {},

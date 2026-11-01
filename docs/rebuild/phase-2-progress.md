@@ -74,10 +74,11 @@ Acceptance: all 132 existing tests pass with no test changed. Three new tests co
 
 **Cost finding for Market Intelligence.** One search brought in about **25k input tokens (about 10¢ on Opus)**, ten times the 1¢ search fee. The plan's estimate (20 to 40 searches, 150k to 300k input tokens, $1 to $2.50 a run) is too low if every search lands in context like this. At this rate 20 searches cost about $2 in tokens alone. Before 2.11: lean on `max_uses`, run the collect steps on Sonnet 5.5 (D2 allows it), and measure again. The $3 per-run cap (D3) may be tight.
 
-## Production steps for 2.1 (for the person who merges)
+## Production steps for 2.1
 
-1. Merge. Vercel pushes the widened schema and the new code to production.
-2. Run the backfill once on production, then check it:
+The migration now finishes by itself. A Convex cron (`convex/crons.ts`) calls `agentsMigration:backfillIfNeeded` every 10 minutes on every deployment. When any row still names `sales`, or any agent row still has the old area fields, it starts the backfill. Otherwise it writes nothing. So production completes within 10 minutes of this cron being deployed, with no key needed here.
+
+To confirm, or to run it at once by hand:
    ```
    npx convex run agentsMigration:backfill --prod
    npx convex run agentsMigration:remaining --prod

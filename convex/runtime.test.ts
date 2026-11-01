@@ -41,6 +41,8 @@ async function seedPeople(t: ReturnType<typeof convexTest>) {
   const rep = t.withIdentity(person("rep", "rep@example.com"));
   await manager.mutation(api.workspace.acceptInvite, { token: managerInvite.token });
   await rep.mutation(api.workspace.acceptInvite, { token: repInvite.token });
+  // Runs only start while the agent is on.
+  await owner.mutation(api.workspace.setAgentState, { workspaceId, slug: "sales", state: "on" });
   return { owner, manager, rep, workspaceId };
 }
 
@@ -663,6 +665,74 @@ describe("step 4 runtime", () => {
     expect(run.costCents).toBe(0.5);
     expect(run.daySpentCents).toBe(0.5);
     expect(run.steps).toHaveLength(1);
+  });
+
+  it("does not start a run while the agent is off", async () => {
+    process.env.ALLOW_DEV_SKILLS = "true";
+    const t = convexTest(schema, modules);
+    const { owner, manager, workspaceId } = await seedPeople(t);
+    await confirmProfile(owner, workspaceId);
+    await owner.mutation(api.workspace.setAgentState, { workspaceId, slug: "sales", state: "off" });
+    await expect(
+      manager.mutation(api.runs.start, { workspaceId, agentSlug: "sales", skillSlug: "test-echo" }),
+    ).rejects.toThrow("Turn on the Sales Agent first.");
+    expect((await owner.query(api.runs.page, { workspaceId, paginationOpts: { numItems: 5, cursor: null } })).page).toHaveLength(0);
+    await expect(
+      manager.mutation(api.runs.start, { workspaceId, agentSlug: "nobody", skillSlug: "test-echo" }),
+    ).rejects.toThrow(NOT_FOUND);
+    await owner.mutation(api.workspace.setAgentState, { workspaceId, slug: "sales", state: "suggesting" });
+    const runId = await manager.mutation(api.runs.start, { workspaceId, agentSlug: "sales", skillSlug: "test-echo" });
+    expect(await finishRun(t, owner, workspaceId, runId)).toBe("completed");
+  });
+
+  it("records how long a model step took", async () => {
+    process.env.ALLOW_DEV_SKILLS = "true";
+    const t = convexTest(schema, modules);
+    const { owner, workspaceId } = await seedPeople(t);
+    const runId = await owner.mutation(api.runs.start, { workspaceId, agentSlug: "sales", skillSlug: "test-echo" });
+    await t.mutation(internal.runs.commitModel, {
+      runId,
+      idempotencyKey: `${runId}:1`,
+      index: 1,
+      text: "x",
+      inputTokens: 1,
+      outputTokens: 1,
+      costCents: 1,
+      provider: "fake",
+      model: "fake-writer",
+      workKind: "write",
+      durationMs: 2750,
+    });
+    await t.mutation(internal.runs.fail, {
+      runId,
+      index: 2,
+      idempotencyKey: `${runId}:2`,
+      code: "refused",
+      kind: "model",
+      durationMs: 1200,
+      costCents: 0.5,
+    });
+    const run = await owner.query(api.runs.get, { workspaceId, runId });
+    expect(run.steps.map((step) => [step.index, step.durationMs])).toEqual([
+      [1, 2750],
+      [2, 1200],
+    ]);
+  });
+
+  it("lists only open runs in this workspace for the live panel", async () => {
+    process.env.ALLOW_DEV_SKILLS = "true";
+    const t = convexTest(schema, modules);
+    const { owner, rep, workspaceId } = await seedPeople(t);
+    await confirmProfile(owner, workspaceId);
+    const done = await owner.mutation(api.runs.start, { workspaceId, agentSlug: "sales", skillSlug: "test-echo" });
+    expect(await finishRun(t, owner, workspaceId, done)).toBe("completed");
+    const open = await owner.mutation(api.runs.start, { workspaceId, agentSlug: "sales", skillSlug: "test-echo" });
+    const live = await rep.query(api.runs.open, { workspaceId });
+    expect(live.map((row) => [row.id, row.status])).toEqual([[open, "queued"]]);
+    const other = t.withIdentity(person("other", "other@example.com"));
+    const otherId = await other.mutation(api.workspace.create, { name: "Beta" });
+    expect(await other.query(api.runs.open, { workspaceId: otherId })).toEqual([]);
+    await expect(other.query(api.runs.open, { workspaceId })).rejects.toThrow(NOT_FOUND);
   });
 
   it("schedules its own steps and its time-cap stop when it starts", async () => {

@@ -44,7 +44,10 @@ export default function AgentPage() {
             </li>
           ))}
         </ul>
-        {devSkill && agent.slug === devSkill.agentSlug && shell.role !== "rep" ? (
+        {devSkill && agent.slug === devSkill.agentSlug && shell.role !== "rep" && agent.state === "off" ? (
+          <p className="text-sm text-muted-foreground">Turn on the {agent.name} to run its test skill.</p>
+        ) : null}
+        {devSkill && agent.slug === devSkill.agentSlug && shell.role !== "rep" && agent.state !== "off" ? (
           <Button
             type="button"
             onClick={() => {

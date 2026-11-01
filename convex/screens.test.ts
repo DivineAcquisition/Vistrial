@@ -29,6 +29,7 @@ async function seed(t: Tester) {
   const invite = await owner.mutation(api.workspace.invite, { workspaceId, email: "manager@example.com", role: "manager" });
   const manager = t.withIdentity(person("manager", "manager@example.com"));
   await manager.mutation(api.workspace.acceptInvite, { token: invite.token });
+  await owner.mutation(api.workspace.setAgentState, { workspaceId, slug: "sales", state: "on" });
   await owner.mutation(api.profile.saveDraft, {
     workspaceId,
     offer: "Deep cleaning",

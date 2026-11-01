@@ -182,6 +182,34 @@ export const page = workspaceQuery({
   },
 });
 
+/** The live panel: runs that are still going, newest first. */
+export const open = workspaceQuery({
+  args: {},
+  handler: async (ctx) => {
+    const rows: Doc<"agentRuns">[] = [];
+    for (const status of ["queued", "running", "waiting"] as const) {
+      rows.push(
+        ...(await ctx.db
+          .query("agentRuns")
+          .withIndex("by_workspace_status", (q) => q.eq("workspaceId", ctx.workspaceId).eq("status", status))
+          .order("desc")
+          .take(10)),
+      );
+    }
+    return rows
+      .sort((a, b) => b.startedAt - a.startedAt)
+      .slice(0, 10)
+      .map((row) => ({
+        id: row._id,
+        agentSlug: row.agentSlug,
+        skillSlug: row.skillSlug,
+        status: row.status,
+        costCents: row.costCents,
+        startedAt: row.startedAt,
+      }));
+  },
+});
+
 /** Run metadata only. Artifact bodies load one at a time through `artifact`. */
 export const get = workspaceQuery({
   args: { runId: v.id("agentRuns") },
@@ -266,6 +294,16 @@ export const start = workspaceMutation({
     if (args.skillSlug === TEST_SKILL && !devSkillsEnabled()) notFound();
     const tools = declaredTools(args.skillSlug);
     if (tools.length === 0) throw new Error("This skill is not built yet.");
+    const agent = await ctx.db
+      .query("agents")
+      .withIndex("by_slug", (q) => q.eq("slug", args.agentSlug))
+      .unique();
+    if (!agent || agent.retired === true) notFound();
+    const link = await ctx.db
+      .query("workspaceAgents")
+      .withIndex("by_workspace_agent", (q) => q.eq("workspaceId", ctx.workspaceId).eq("agentId", agent._id))
+      .unique();
+    if (!link || link.state === "off") throw new Error(`Turn on the ${agent.name} first.`);
     const gate = await controls(ctx, ctx.workspaceId);
     const caps = await loadCaps(ctx, ctx.workspaceId, args.agentSlug);
     const spent = await daySpend(ctx, ctx.workspaceId, args.agentSlug, dayKey());
@@ -395,6 +433,7 @@ async function recordFailure(
   code: string,
   kind: "tool" | "model" = "model",
   spent: Spend = NO_SPEND,
+  durationMs = 0,
 ) {
   const stepId = await ctx.db.insert("runSteps", {
     workspaceId: run.workspaceId,
@@ -403,7 +442,7 @@ async function recordFailure(
     idempotencyKey,
     kind,
     status: "failed",
-    durationMs: 0,
+    durationMs,
     inputTokens: spent.inputTokens,
     outputTokens: spent.outputTokens,
     resultCode: code,
@@ -452,6 +491,7 @@ export const fail = internalMutation({
     inputTokens: v.optional(v.number()),
     outputTokens: v.optional(v.number()),
     costCents: v.optional(v.number()),
+    durationMs: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
     const run = await ctx.db.get(args.runId);
@@ -466,7 +506,16 @@ export const fail = internalMutation({
     if (!billed && !OPEN.has(run.status)) return null;
     if (billed) await charge(ctx, run, spent);
     const current = (await ctx.db.get(run._id)) ?? run;
-    const stepId = await recordFailure(ctx, current, args.index, args.idempotencyKey, args.code, args.kind, spent);
+    const stepId = await recordFailure(
+      ctx,
+      current,
+      args.index,
+      args.idempotencyKey,
+      args.code,
+      args.kind,
+      spent,
+      args.durationMs ?? 0,
+    );
     if (billed) {
       await writeAudit(ctx, {
         workspaceId: run.workspaceId,
@@ -611,6 +660,8 @@ export const commitModel = internalMutation({
     provider: v.string(),
     model: v.string(),
     workKind: v.optional(v.string()),
+    /** Wall time of the model call, measured in the action around it. */
+    durationMs: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
     const run = await ctx.db.get(args.runId);
@@ -631,7 +682,7 @@ export const commitModel = internalMutation({
       modelRoute: `${args.provider}/${args.model}`,
       workKind: args.workKind,
       status: "completed",
-      durationMs: 1,
+      durationMs: args.durationMs ?? 0,
       inputTokens: args.inputTokens,
       outputTokens: args.outputTokens,
       resultCode: "ok",
@@ -680,6 +731,8 @@ export const step = internalAction({
     let status: string;
     if (plan.kind === "model") {
       let result;
+      // Date.now() advances inside an action, so this is the real time the call took.
+      const began = Date.now();
       try {
         result = await complete(plan.route, "write", plan.modelInput);
       } catch (error) {
@@ -690,10 +743,12 @@ export const step = internalAction({
           idempotencyKey: plan.idempotencyKey,
           code: failed.code,
           kind: "model",
+          durationMs: Date.now() - began,
           ...failed.spent,
         });
         return null;
       }
+      const durationMs = Date.now() - began;
       ({ status } = await ctx.runMutation(internal.runs.commitModel, {
         runId: args.runId,
         idempotencyKey: plan.idempotencyKey,
@@ -705,6 +760,7 @@ export const step = internalAction({
         provider: result.provider,
         model: result.model,
         workKind: "write",
+        durationMs,
       }));
     } else {
       try {

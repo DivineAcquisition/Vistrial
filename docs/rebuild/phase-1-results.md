@@ -80,10 +80,10 @@ refused, Opus fallback      completed          2.7516¢   = 2¢ + 0.7516¢ (39 i
 ## Findings for Phase 2
 
 1. **`convex/_generated` in git is stale.** It lists modules that no longer exist (`agents`, `marketing`) and few that do. Real codegen finds 3 type errors: `usePaginatedQuery` on `assets.list`, `runs.page` and `leads` is rejected, because the access builders cast to `any` and lose the argument types. The Vercel build runs `next build` before `convex deploy` regenerates the code, so production also builds against the stale files. **Fixed:** the builders now declare their exact registered types, real codegen is committed, and `convex/codegen.test.ts` fails if the generated list of modules drifts from `convex/`.
-2. **Model step duration is not measured.** `commitModel` writes `durationMs: 1`, so a 3-second call shows "under 1s".
-3. **`runs.start` ignores the agent's on/off state.** A run started while the Sales Agent was off. Task 2.1 (planned agents cannot start runs) should check the workspace's agent state at the same time.
-4. **The shell's Live panel** says "Nothing is running. Agents are off." while the Sales Agent is on.
-5. **Live screen checks need a sign-in path to dev.** `auth.config.ts` names only the production Clerk instance. Phase 2's "live on dev" checks can keep using the admin-auth wrapper, or dev can get a Clerk development instance.
+2. **Model step duration is not measured.** `commitModel` writes `durationMs: 1`, so a 3-second call shows "under 1s". **Fixed:** the step action times the call, and failed calls are timed too. On dev, a model step recorded 3,247 ms in a 3,678 ms run. Tool steps still record 1 ms, because time does not advance inside a Convex mutation.
+3. **`runs.start` ignores the agent's on/off state.** A run started while the Sales Agent was off. **Fixed:** `runs.start` refuses an unknown or retired agent (`Not found.`) and an agent that is off in the workspace ("Turn on the Sales Agent first."). On dev, workspace B's agent is off and its start is now refused. Task 2.1 adds the planned-agent check on top.
+4. **The shell's Live panel** says "Nothing is running. Agents are off." while the Sales Agent is on. It read the old `events` table, which nothing writes. **Fixed:** it now lists open runs from `runs.open`, with links, and says "Agents are off" only when every agent is off.
+5. **Live screen checks need a sign-in path to dev.** `auth.config.ts` names only the production Clerk instance. Phase 2's "live on dev" checks can keep using the admin-auth wrapper, or dev can get a Clerk development instance. **Open, needs a decision:** Convex refuses to push an auth config that reads an environment variable the deployment does not have, so a dev-only issuer cannot be optional. Adding one means setting the issuer variable on production and on preview deployments first.
 
 ## Test data left on dev
 

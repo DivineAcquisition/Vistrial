@@ -6,7 +6,8 @@ Tracks the Phase 2 backlog in `growth-architect-v1-plan.md`. Everything here was
 |---|---|---|
 | 2.1 | Departments and seven agents, `sales` renamed to `growth-architect`, Leads and My day hidden | Done on dev. Production needs the migration below. |
 | 2.2 | Drop the four unused tables | Done. Pushed to dev. |
-| 2.3 | Skill module interface | Next |
+| 2.3 | Skill module interface, `test-echo` moved onto it | Done. Pushed to dev. |
+| 2.4 | `completeWithTools`: server tools, client tools, structured output, search fees | Next |
 
 ## 2.1 Departments and the seven agents
 
@@ -39,6 +40,12 @@ Tests: 132 pass, including a migration test on seeded old-shape data (rename in 
 `businessProfiles`, `approvalAssets`, `swipeEntries` and `libraryAcceptances` are gone from the schema. No code read them, and they were empty on dev.
 
 Production could not be read from here, so the case with data was tested on dev. One row was added to `swipeEntries`, then the schema was pushed without the table. The push **succeeded**. Convex dropped the table's index and left the row in place, outside the schema. The row was then cleared from dev. So the production push cannot fail on these tables, and any old rows there stay untouched until someone clears them on purpose.
+
+## 2.3 Skill modules
+
+A skill is now a module (`convex/skills/types.ts`) that declares its tools, what it hands back, and an async `nextStep` that picks the next step from the steps already taken. It gets read-only database access. `runs.ts` asks the skill for each step instead of reading a fixed list, and uses the skill's work kind for the route and the skill's output for the asset. The runtime still owns every stop check, the idempotent commit, and cost. `convex/lib/skills.ts` lists the runnable skills. A dev-only skill exists only while `ALLOW_DEV_SKILLS` is on, and a run whose dev skill is switched off midway fails with `skill_unavailable`.
+
+Acceptance: all 132 existing tests pass with no test changed. Three new tests cover the lookup, the step sequence and the mid-run switch-off. A live `test-echo` run on dev completed through the module path (Opus, 39 in / 389 out, 0.7936¢).
 
 ## Production steps for 2.1 (for the person who merges)
 

@@ -12,15 +12,8 @@ import { currentAgentSlug } from "./catalog";
 import { assertClaims, assertSourcesExist } from "./lib/evidence";
 import { notAllowed, notFound } from "./lib/errors";
 import { ModelError, NO_SPEND, complete, type ModelRoute, type Spend } from "./lib/modelRouter";
-import {
-  INJECTION_FIXTURE,
-  TEST_AGENT,
-  TEST_SKILL,
-  assertDeclared,
-  declaredTools,
-  devSkillsEnabled,
-  wrapUntrusted,
-} from "./lib/registry";
+import { INJECTION_FIXTURE, TEST_SKILL, devSkillsEnabled, wrapUntrusted } from "./lib/registry";
+import { assertDeclared, skillFor } from "./lib/skills";
 
 const OPEN = new Set(["queued", "running", "waiting"]);
 
@@ -102,8 +95,9 @@ async function routeFor(ctx: QueryCtx, workKind: string): Promise<ModelRoute | n
 export const devSkill = workspaceQuery({
   args: {},
   handler: async () => {
-    if (!devSkillsEnabled()) return null;
-    return { slug: TEST_SKILL, name: "Test echo", status: "available" as const, agentSlug: TEST_AGENT };
+    const skill = skillFor(TEST_SKILL);
+    if (!skill) return null;
+    return { slug: skill.slug, name: skill.name, status: "available" as const, agentSlug: skill.agentSlug };
   },
 });
 
@@ -297,8 +291,8 @@ export const start = workspaceMutation({
     // An older client may still send a renamed slug. Runs are always stored under the current one.
     const args = { ...input, agentSlug: currentAgentSlug(input.agentSlug) };
     if (args.skillSlug === TEST_SKILL && !devSkillsEnabled()) notFound();
-    const tools = declaredTools(args.skillSlug);
-    if (tools.length === 0) throw new Error("This skill is not built yet.");
+    const skill = skillFor(args.skillSlug);
+    if (!skill) throw new Error("This skill is not built yet.");
     const agent = await ctx.db
       .query("agents")
       .withIndex("by_slug", (q) => q.eq("slug", args.agentSlug))
@@ -310,6 +304,7 @@ export const start = workspaceMutation({
       .withIndex("by_workspace_agent", (q) => q.eq("workspaceId", ctx.workspaceId).eq("agentId", agent._id))
       .unique();
     if (!link || link.state === "off") throw new Error(`Turn on the ${agent.name} first.`);
+    if (skill.agentSlug !== agent.slug) notFound();
     const gate = await controls(ctx, ctx.workspaceId);
     const caps = await loadCaps(ctx, ctx.workspaceId, args.agentSlug);
     const spent = await daySpend(ctx, ctx.workspaceId, args.agentSlug, dayKey());
@@ -367,15 +362,10 @@ export const expire = internalMutation({
   },
 });
 
-const PLAN: { kind: "tool" | "model"; toolSlug?: string }[] = [
-  { kind: "tool", toolSlug: "profile.read" },
-  { kind: "model" },
-  { kind: "tool", toolSlug: "asset.create" },
-];
-
 /**
  * Every check that can stop a run happens here, before any model call or tool runs:
- * the starter's membership, pause, halt, every cap, and the model route.
+ * the starter's membership, pause, halt, every cap, and the model route. Then the skill
+ * module names the next step; the runtime checks it against the skill's declared tools.
  */
 export const prepare = internalMutation({
   args: { runId: v.id("agentRuns") },
@@ -399,18 +389,37 @@ export const prepare = internalMutation({
       return { done: true as const };
     }
     const index = steps.length;
-    const next = PLAN[index];
+    const idempotencyKey = `${run._id}:${index}`;
+    // The dev flag can be turned off while a dev skill runs. The run then fails instead of guessing.
+    const skill = skillFor(run.skillSlug);
+    if (!skill) {
+      await recordFailure(ctx, run, index, idempotencyKey, "skill_unavailable", "tool");
+      return { done: true as const };
+    }
+    const next = await skill.nextStep({
+      db: ctx.db,
+      run,
+      steps: [...steps]
+        .sort((a, b) => a.index - b.index)
+        .map((step) => ({
+          index: step.index,
+          kind: step.kind,
+          toolSlug: step.toolSlug,
+          status: step.status,
+          resultCode: step.resultCode,
+          resultId: step.resultId,
+        })),
+    });
     if (!next) {
       await stopRun(ctx, run, "done", "completed");
       return { done: true as const };
     }
-    if (next.kind === "tool") assertDeclared(run.skillSlug, next.toolSlug ?? "");
+    if (next.kind === "tool") assertDeclared(run.skillSlug, next.toolSlug);
     if (run.status === "queued") await ctx.db.patch(run._id, { status: "running" });
-    const idempotencyKey = `${run._id}:${index}`;
     if (next.kind === "tool") {
-      return { done: false as const, kind: "tool" as const, index, idempotencyKey, toolSlug: next.toolSlug ?? "" };
+      return { done: false as const, kind: "tool" as const, index, idempotencyKey, toolSlug: next.toolSlug };
     }
-    const route = await routeFor(ctx, "write");
+    const route = await routeFor(ctx, next.workKind);
     if (!route) {
       await recordFailure(ctx, run, index, idempotencyKey, "no_route");
       return { done: true as const };
@@ -426,7 +435,8 @@ export const prepare = internalMutation({
         fallbackProvider: route.fallbackProvider,
         fallbackModel: route.fallbackModel,
       },
-      modelInput: wrapUntrusted(INJECTION_FIXTURE),
+      workKind: next.workKind,
+      modelInput: next.input,
     };
   },
 });
@@ -590,10 +600,12 @@ export const commitTool = internalMutation({
       ];
       assertClaims(claims);
       await assertSourcesExist(ctx, run.workspaceId, claims);
+      // The skill says what it hands back. assertDeclared above already proved the skill exists.
+      const output = skillFor(run.skillSlug)!.output;
       const assetId = await ctx.db.insert("assets", {
         workspaceId: run.workspaceId,
-        kind: "researchReport",
-        title: "Test echo",
+        kind: output.assetKind,
+        title: output.title,
         status: "draft",
         currentVersion: 1,
         createdByRun: run._id,
@@ -740,7 +752,7 @@ export const step = internalAction({
       // Date.now() advances inside an action, so this is the real time the call took.
       const began = Date.now();
       try {
-        result = await complete(plan.route, "write", plan.modelInput);
+        result = await complete(plan.route, plan.workKind, plan.modelInput);
       } catch (error) {
         const failed = error instanceof ModelError ? error : new ModelError("provider_error", false);
         await ctx.runMutation(internal.runs.fail, {
@@ -765,7 +777,7 @@ export const step = internalAction({
         costCents: result.costCents,
         provider: result.provider,
         model: result.model,
-        workKind: "write",
+        workKind: plan.workKind,
         durationMs,
       }));
     } else {

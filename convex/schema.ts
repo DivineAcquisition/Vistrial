@@ -81,6 +81,7 @@ export default defineSchema({
     createdAt: v.number(),
   }).index("by_workspace", ["workspaceId"]),
 
+  /** Deprecated: replaced by departments. Kept until the agent migration has run on every deployment. */
   areas: defineTable({
     slug: v.string(),
     name: v.string(),
@@ -91,11 +92,29 @@ export default defineSchema({
     .index("by_slug", ["slug"])
     .index("by_sort", ["sort"]),
 
+  departments: defineTable({
+    slug: v.string(),
+    name: v.string(),
+    job: v.string(),
+    sort: v.number(),
+  })
+    .index("by_slug", ["slug"])
+    .index("by_sort", ["sort"]),
+
   agents: defineTable({
     slug: v.string(),
     name: v.string(),
-    stage,
+    /** Deprecated with areas. Optional while old rows are rewritten by the catalog sync. */
+    stage: v.optional(stage),
+    /** Deprecated: replaced by department. */
     area: v.optional(v.union(v.literal("sales"), v.literal("retention"), v.literal("operations"))),
+    department: v.optional(v.string()),
+    /** Workforce number shown next to the name, 1 to 7. */
+    number: v.optional(v.number()),
+    /** Only a live agent can start runs or be turned on. */
+    status: v.optional(v.union(v.literal("live"), v.literal("planned"))),
+    /** Where the agent works in the customer lifecycle, in a few words. */
+    lifecycle: v.optional(v.string()),
     job: v.string(),
     promise: v.string(),
     sort: v.number(),

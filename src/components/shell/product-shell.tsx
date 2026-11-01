@@ -3,21 +3,18 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
-import { LayoutListIcon, MenuIcon, SunMediumIcon, UsersIcon } from "lucide-react";
+import { LayoutListIcon, MenuIcon } from "lucide-react";
 
 import { ThemeToggle } from "@/components/app/theme-toggle";
 import Logo from "@/components/brand/logo";
 import { CommandBar } from "@/components/shell/command-bar";
 import { LiveAside } from "@/components/shell/live-aside";
 import { StatusBadge } from "@/components/ui/status-badge";
-import { railFromCatalog, type RailAgent, type RailArea } from "@/lib/shell/rail";
+import { agentStateLabel, railFromCatalog, type RailAgent, type RailDepartment } from "@/lib/shell/rail";
 import { cn } from "@/lib/utils";
 
-const tabs = [
-  { href: "/app", label: "Decisions", icon: LayoutListIcon },
-  { href: "/app/day", label: "My day", icon: SunMediumIcon },
-  { href: "/app/leads", label: "Leads", icon: UsersIcon },
-] as const;
+// Leads and My day belong to the Sales Conversion agent. Their pages stay, hidden from the nav until it ships.
+const tabs = [{ href: "/app", label: "Decisions", icon: LayoutListIcon }] as const;
 
 function active(pathname: string, href: string) {
   if (href === "/app") return pathname === "/app";
@@ -25,27 +22,27 @@ function active(pathname: string, href: string) {
 }
 
 function RailLinks({
-  areas,
+  departments,
   agents,
   pathname,
   onNavigate,
 }: {
-  areas: RailArea[];
+  departments: RailDepartment[];
   agents: RailAgent[];
   pathname: string;
   onNavigate?: () => void;
 }) {
-  const rail = railFromCatalog(agents, areas);
+  const rail = railFromCatalog(agents, departments);
   const item = "flex items-center justify-between gap-3 rounded-lg px-3 py-2 text-sm text-foreground hover:bg-accent";
   return (
     <div className="grid gap-6">
-      {rail.areas.map((group) => (
-        <div key={group.area}>
+      {rail.departments.map((group) => (
+        <div key={group.department}>
           <p className="px-3 text-[11px] font-semibold tracking-[0.14em] text-muted-foreground uppercase">{group.label}</p>
           <ul className="mt-2 grid gap-1">
             {group.agents.map((agent) => {
               const href = `/app/agents/${agent.slug}`;
-              const stateLabel = agent.state === "on" ? "On" : agent.state === "suggesting" ? "Suggesting" : "Off";
+              const stateLabel = agentStateLabel(agent);
               return (
                 <li key={agent.slug}>
                   <Link
@@ -69,7 +66,7 @@ function RailLinks({
       <ul className="grid gap-1 border-t border-border pt-4">
         {[
           { href: "/app/profile", label: "Profile" },
-          { href: "/app/runs", label: "Runs" },
+          { href: "/app/runs", label: "Activity" },
           { href: "/app/assets", label: "Assets" },
           { href: "/app/controls", label: "Controls" },
           { href: "/app/connections", label: "Connections" },
@@ -92,11 +89,11 @@ function RailLinks({
 }
 
 export function ProductShell({
-  areas = [],
+  departments = [],
   agents,
   children,
 }: {
-  areas?: RailArea[];
+  departments?: RailDepartment[];
   agents: RailAgent[];
   children: React.ReactNode;
 }) {
@@ -120,18 +117,20 @@ export function ProductShell({
             </Link>
           </div>
           <div className="min-h-0 flex-1 overflow-y-auto px-3 pb-6">
-            <RailLinks areas={areas} agents={agents} pathname={pathname} />
+            <RailLinks departments={departments} agents={agents} pathname={pathname} />
           </div>
         </aside>
         <div className="flex min-w-0 flex-1 flex-col">
           <header className="border-b border-border">
             <div className="flex flex-wrap items-center gap-2 px-4 py-2" aria-label="Crew">
-              {agents.map((agent) => (
-                <span key={agent.slug} className="inline-flex items-center gap-2 text-xs text-muted-foreground">
-                  <span className="text-foreground">{agent.name}</span>
-                  <StatusBadge label={agent.state === "on" ? "On" : agent.state === "suggesting" ? "Suggesting" : "Off"} />
-                </span>
-              ))}
+              {agents
+                .filter((agent) => agent.status === "live")
+                .map((agent) => (
+                  <span key={agent.slug} className="inline-flex items-center gap-2 text-xs text-muted-foreground">
+                    <span className="text-foreground">{agent.name}</span>
+                    <StatusBadge label={agentStateLabel(agent)} />
+                  </span>
+                ))}
             </div>
             <div className="flex items-center gap-2 px-4 py-3">
               <div className="hidden min-w-0 flex-1 md:block">
@@ -144,7 +143,7 @@ export function ProductShell({
                 aria-controls="compass-command"
                 onClick={() => setAskOpen((open) => !open)}
               >
-                Sales Agent
+                Growth Architect
               </button>
               <ThemeToggle />
             </div>
@@ -167,7 +166,7 @@ export function ProductShell({
       </div>
       {menuOpen ? (
         <div className="fixed inset-x-0 bottom-16 z-30 max-h-[70dvh] overflow-y-auto border-t border-border bg-background p-4 md:hidden">
-          <RailLinks areas={areas} agents={agents} pathname={pathname} onNavigate={() => setMenuOpen(false)} />
+          <RailLinks departments={departments} agents={agents} pathname={pathname} onNavigate={() => setMenuOpen(false)} />
         </div>
       ) : null}
       <nav

@@ -17,17 +17,17 @@ export function CommandBar() {
         const data = new FormData(event.currentTarget);
         const text = String(data.get("ask") ?? "").trim();
         if (!text) return;
-        setReply("Open the Sales Agent to run a skill. Nothing is posted from here.");
+        setReply("Open Growth Architect to run a skill. Nothing is published from here.");
       }}
     >
       <div className="flex min-w-0 items-center gap-2">
         <label className="sr-only" htmlFor={fieldId}>
-          Note for the Sales Agent
+          Note for Growth Architect
         </label>
         <Input
           id={fieldId}
           name="ask"
-          placeholder="Notes stay here. Skills run on the Sales Agent."
+          placeholder="Notes stay here. Skills run on Growth Architect."
           autoComplete="off"
           className="min-w-0 flex-1"
         />

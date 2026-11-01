@@ -1,45 +1,76 @@
 import { describe, expect, it } from "vitest";
 
 import { CATALOG, type CatalogAgent } from "../../../convex/catalog";
-import { railAgentSlugs, railFromCatalog } from "@/lib/shell/rail";
+import { agentStateLabel, railAgentSlugs, railFromCatalog } from "@/lib/shell/rail";
 
 describe("workspace rail", () => {
-  it("lists the three areas and one agent in each", () => {
+  it("lists the four departments and the seven agents in workforce order", () => {
     const rail = railFromCatalog(CATALOG);
-    expect(rail.areas.map((group) => group.label)).toEqual(["Sales", "Retention", "Operations"]);
-    expect(railAgentSlugs(rail)).toEqual(["sales", "retention", "operations"]);
-    expect(CATALOG.find((agent) => agent.slug === "sales")?.skills.map((skill) => skill.slug)).toEqual([
-      "ad-research",
-      "ad-copy",
-      "creative",
-      "content",
+    expect(rail.departments.map((group) => group.label)).toEqual([
+      "Growth and Marketing",
+      "Sales",
+      "Customer Success",
+      "Operations",
+    ]);
+    expect(railAgentSlugs(rail)).toEqual([
+      "growth-architect",
+      "campaign-execution",
+      "sales-conversion",
+      "activation",
+      "retention",
+      "expansion",
+      "operations-intelligence",
+    ]);
+    expect(CATALOG.map((agent) => agent.number)).toEqual([1, 2, 3, 4, 5, 6, 7]);
+  });
+
+  it("has Growth Architect as the only live agent, with its six skills", () => {
+    expect(CATALOG.filter((agent) => agent.status === "live").map((agent) => agent.slug)).toEqual(["growth-architect"]);
+    expect(CATALOG.find((agent) => agent.slug === "growth-architect")?.skills.map((skill) => skill.slug)).toEqual([
+      "market-intelligence",
+      "offer-intelligence",
+      "campaign-strategy",
+      "creative-production",
+      "funnel-architect",
+      "growth-diagnostics",
     ]);
   });
 
-  it("uses the area name stored in the table", () => {
+  it("uses the department name stored in the table", () => {
     const rail = railFromCatalog(CATALOG, [
-      { slug: "sales", name: "Pipeline", sort: 0 },
-      { slug: "retention", name: "Keep", sort: 1 },
-      { slug: "operations", name: "Run", sort: 2 },
+      { slug: "growth", name: "Growth", sort: 0 },
+      { slug: "sales", name: "Pipeline", sort: 1 },
+      { slug: "customer-success", name: "Customers", sort: 2 },
+      { slug: "operations", name: "Run", sort: 3 },
     ]);
-    expect(rail.areas.map((group) => group.label)).toEqual(["Pipeline", "Keep", "Run"]);
+    expect(rail.departments.map((group) => group.label)).toEqual(["Growth", "Pipeline", "Customers", "Run"]);
   });
 
-  it("shows a new registry row in its area without a code change", () => {
+  it("shows a new registry row in its department without a code change", () => {
     const north: CatalogAgent = {
       slug: "north",
+      number: 8,
       name: "North",
-      area: "sales",
-      stage: "execution",
+      department: "growth",
+      status: "planned",
+      lifecycle: "Attract",
       job: "Watches a motion the others do not.",
       promise: "North never posts.",
       sort: 9,
       skills: [],
     };
     const rail = railFromCatalog([...CATALOG, north]);
-    expect(rail.areas.find((group) => group.area === "sales")?.agents.map((agent) => agent.slug)).toEqual([
-      "sales",
+    expect(rail.departments.find((group) => group.department === "growth")?.agents.map((agent) => agent.slug)).toEqual([
+      "growth-architect",
+      "campaign-execution",
       "north",
     ]);
+  });
+
+  it("labels planned agents Planned, whatever their stored state", () => {
+    expect(agentStateLabel({ status: "planned", state: "on" })).toBe("Planned");
+    expect(agentStateLabel({ status: "live", state: "on" })).toBe("On");
+    expect(agentStateLabel({ status: "live", state: "suggesting" })).toBe("Suggesting");
+    expect(agentStateLabel({ status: "live", state: "off" })).toBe("Off");
   });
 });

@@ -1,5 +1,6 @@
 import { v } from "convex/values";
 
+import { GROWTH_ARCHITECT } from "./catalog";
 import { workspaceMutation, workspaceQuery } from "./lib/builders";
 import { writeAudit } from "./lib/audit";
 import { notAllowed, notFound } from "./lib/errors";
@@ -207,14 +208,14 @@ export const finishSetup = workspaceMutation({
     if (confirmed.length === 0) throw new Error("Confirm the business profile first.");
     const sales = await ctx.db
       .query("agents")
-      .withIndex("by_slug", (q) => q.eq("slug", "sales"))
+      .withIndex("by_slug", (q) => q.eq("slug", GROWTH_ARCHITECT))
       .unique();
     if (!sales) notFound();
     const link = await ctx.db
       .query("workspaceAgents")
       .withIndex("by_workspace_agent", (q) => q.eq("workspaceId", ctx.workspaceId).eq("agentId", sales._id))
       .unique();
-    if (!link || link.state === "off") throw new Error("Turn on the Sales Agent.");
+    if (!link || link.state === "off") throw new Error("Turn on Growth Architect.");
     const settings = await ctx.db
       .query("workspaceSettings")
       .withIndex("by_workspace", (q) => q.eq("workspaceId", ctx.workspaceId))

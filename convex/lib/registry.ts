@@ -8,7 +8,7 @@ export type ToolSlug = (typeof TOOLS)[number];
 
 export const TEST_SKILL = "test-echo";
 
-export const TEST_AGENT = "sales";
+export const TEST_AGENT = "growth-architect";
 
 const BASE_TOOLS = new Set<ToolSlug>(["profile.read", "asset.create", "asset.addVersion"]);
 

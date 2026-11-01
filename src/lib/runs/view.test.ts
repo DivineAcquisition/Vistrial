@@ -32,7 +32,7 @@ function step(index: number, toolSlug: string | null, kind: RunStepView["kind"] 
 function row(overrides: Partial<RunRow> = {}): RunRow {
   return {
     id: "r1",
-    agentSlug: "sales",
+    agentSlug: "growth-architect",
     skillSlug: "test-echo",
     status: "running",
     stopReason: null,

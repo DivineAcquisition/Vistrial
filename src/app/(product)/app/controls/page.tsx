@@ -12,7 +12,7 @@ import { api } from "../../../../../convex/_generated/api";
 
 export default function ControlsPage() {
   const shell = useWorkspaceShell();
-  const controls = useQuery(api.controls.get, shell ? { workspaceId: shell.workspaceId, agentSlug: "sales" } : "skip");
+  const controls = useQuery(api.controls.get, shell ? { workspaceId: shell.workspaceId, agentSlug: "growth-architect" } : "skip");
   const setCaps = useMutation(api.controls.setCaps);
   const setPaused = useMutation(api.controls.setPaused);
   const [runCap, setRunCap] = useState("25");
@@ -46,7 +46,7 @@ export default function ControlsPage() {
               setError("");
               void setCaps({
                 workspaceId: shell.workspaceId,
-                agentSlug: "sales",
+                agentSlug: "growth-architect",
                 maxCostCentsPerRun: Number(runCap),
                 maxCostCentsPerDay: Number(dayCap),
                 maxSteps: 40,

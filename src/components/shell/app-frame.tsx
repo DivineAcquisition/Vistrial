@@ -77,7 +77,7 @@ function WorkspaceFrame({
   };
   return (
     <ShellProvider value={value}>
-      <ProductShell areas={shell.areas} agents={shell.agents}>{children}</ProductShell>
+      <ProductShell departments={shell.departments} agents={shell.agents}>{children}</ProductShell>
     </ShellProvider>
   );
 }

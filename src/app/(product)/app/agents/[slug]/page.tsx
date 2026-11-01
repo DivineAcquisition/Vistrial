@@ -15,6 +15,7 @@ import { api } from "../../../../../../convex/_generated/api";
 import { bodyText } from "@/lib/ui";
 import { skillName } from "@/lib/runs/skill-name";
 import { asRunStatus, asStopReason } from "@/lib/runs/view";
+import { DEPARTMENT_LABEL, agentStateLabel, type Department } from "@/lib/shell/rail";
 
 export default function AgentPage() {
   const params = useParams<{ slug: string }>();
@@ -26,13 +27,17 @@ export default function AgentPage() {
   if (!shell) return <p className="text-sm text-muted-foreground">Sign in to open your workspace.</p>;
   const agent = shell.agents.find((row) => row.slug === params.slug);
   if (!agent) return <p className="text-sm text-muted-foreground">Not found.</p>;
-  const stateLabel = agent.state === "off" ? "Off" : agent.state === "suggesting" ? "Suggesting" : "On";
+  const stateLabel = agentStateLabel(agent);
+  const department = agent.department ? (DEPARTMENT_LABEL[agent.department as Department] ?? "Agent") : "Agent";
 
   return (
     <div className="mx-auto grid w-full max-w-3xl min-w-0 gap-6">
-      <PageHeader eyebrow={agent.area ?? "Agent"} title={agent.name} description={agent.job} status={stateLabel} />
+      <PageHeader eyebrow={department} title={agent.name} description={agent.job} status={stateLabel} />
       <Panel className="grid gap-4 p-4 sm:p-6">
         <StatusBadge label={stateLabel} />
+        {agent.status === "planned" ? (
+          <p className={bodyText}>Planned. This agent is part of the workforce but does not run yet, so it cannot be turned on.</p>
+        ) : null}
         <p className={bodyText}>{agent.promise}</p>
         <ul className="grid gap-3">
           {(agent.skills ?? []).map((skill) => (

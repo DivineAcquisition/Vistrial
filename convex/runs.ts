@@ -8,6 +8,7 @@ import type { MutationCtx, QueryCtx } from "./_generated/server";
 import { workspaceMutation, workspaceQuery } from "./lib/builders";
 import { writeAudit } from "./lib/audit";
 import { DEFAULT_CAPS, PLATFORM_CEILING, SOFT_WARNING_RATIO, dayKey, overCap, type Caps } from "./lib/caps";
+import { currentAgentSlug } from "./catalog";
 import { assertClaims, assertSourcesExist } from "./lib/evidence";
 import { notAllowed, notFound } from "./lib/errors";
 import { ModelError, NO_SPEND, complete, type ModelRoute, type Spend } from "./lib/modelRouter";
@@ -108,7 +109,8 @@ export const devSkill = workspaceQuery({
 
 export const list = workspaceQuery({
   args: { agentSlug: v.string() },
-  handler: async (ctx, args) => {
+  handler: async (ctx, input) => {
+    const args = { agentSlug: currentAgentSlug(input.agentSlug) };
     const rows = await ctx.db
       .query("agentRuns")
       .withIndex("by_workspace_agent", (q) => q.eq("workspaceId", ctx.workspaceId).eq("agentSlug", args.agentSlug))
@@ -144,7 +146,8 @@ export const page = workspaceQuery({
     startedByMe: v.optional(v.boolean()),
     since: v.optional(v.number()),
   },
-  handler: async (ctx, args) => {
+  handler: async (ctx, input) => {
+    const args = { ...input, agentSlug: input.agentSlug === undefined ? undefined : currentAgentSlug(input.agentSlug) };
     const base = args.status
       ? ctx.db
           .query("agentRuns")
@@ -289,8 +292,10 @@ export const artifact = workspaceQuery({
 
 export const start = workspaceMutation({
   args: { agentSlug: v.string(), skillSlug: v.string() },
-  handler: async (ctx, args) => {
+  handler: async (ctx, input) => {
     if (ctx.member.role === "rep") notAllowed();
+    // An older client may still send a renamed slug. Runs are always stored under the current one.
+    const args = { ...input, agentSlug: currentAgentSlug(input.agentSlug) };
     if (args.skillSlug === TEST_SKILL && !devSkillsEnabled()) notFound();
     const tools = declaredTools(args.skillSlug);
     if (tools.length === 0) throw new Error("This skill is not built yet.");
@@ -299,6 +304,7 @@ export const start = workspaceMutation({
       .withIndex("by_slug", (q) => q.eq("slug", args.agentSlug))
       .unique();
     if (!agent || agent.retired === true) notFound();
+    if (agent.status !== "live") throw new Error(`${agent.name} is not available yet.`);
     const link = await ctx.db
       .query("workspaceAgents")
       .withIndex("by_workspace_agent", (q) => q.eq("workspaceId", ctx.workspaceId).eq("agentId", agent._id))

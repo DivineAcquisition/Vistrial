@@ -5,7 +5,7 @@ Tracks the Phase 2 backlog in `growth-architect-v1-plan.md`. Everything here was
 | # | Task | State |
 |---|---|---|
 | 2.1 | Departments and seven agents, `sales` renamed to `growth-architect`, Leads and My day hidden | Done on dev. Production needs the migration below. |
-| 2.2 | Drop the four unused tables | Next |
+| 2.2 | Drop the four unused tables | Done. Pushed to dev. |
 | 2.3 | Skill module interface | Next |
 
 ## 2.1 Departments and the seven agents
@@ -33,6 +33,12 @@ Tracks the Phase 2 backlog in `growth-architect-v1-plan.md`. Everything here was
 | Screens | Rail shows the four departments and seven agents. No Leads or My day. No sideways scroll at 320 px. |
 
 Tests: 132 pass, including a migration test on seeded old-shape data (rename in place, links kept, caps kept, same-day counters added together, a second run changes nothing).
+
+## 2.2 The four unused tables
+
+`businessProfiles`, `approvalAssets`, `swipeEntries` and `libraryAcceptances` are gone from the schema. No code read them, and they were empty on dev.
+
+Production could not be read from here, so the case with data was tested on dev. One row was added to `swipeEntries`, then the schema was pushed without the table. The push **succeeded**. Convex dropped the table's index and left the row in place, outside the schema. The row was then cleared from dev. So the production push cannot fail on these tables, and any old rows there stay untouched until someone clears them on purpose.
 
 ## Production steps for 2.1 (for the person who merges)
 

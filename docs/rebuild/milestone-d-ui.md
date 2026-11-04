@@ -54,9 +54,21 @@ New server queries: `studio.studio` (the project with its run, waiting question,
 - 215 tests pass (2 new for the Studio queries: a project before any run, isolation, and that no key value appears). Typecheck is clean and lint has 0 errors.
 - The story was screenshotted at 1280, 390 and 320 px for done, needs review and waiting. No sideways scroll at any width.
 
+## 4. Visual Research Board (2.14)
+
+`/app/research/[id]/board`, opened from the Studio ("Open the board") and from any evidence chip in Findings. A chip opens the board on exactly the sources behind that claim (`?focus=`), highlighted, with "Only the sources behind the finding you opened" ticked.
+
+- **Cards:** platform, kind or format, relevance, title, creator, the official player or a link card, the attributed excerpt, **the agent's reading** (hook, offer, call to action, and audience marked "a guess"), any limitation, when it was seen and published, and Open source.
+- **Official embeds only, and click to load.** The YouTube player is `youtube-nocookie.com` (privacy-enhanced). TikTok uses its own player, and Instagram its embed page, shown only once oEmbed confirmed the post. Each URL is built from an id we parsed and checked, never from page text. No third party is contacted until a person presses "Load the player". The site's frame policy now allows exactly those three hosts. Media is never downloaded or rehosted.
+- **Filters:** platform, kind, relevance, and collection.
+- **Collections:** pick a collection to save to, make a new one (personal by default; an Owner or Manager can share it with the workspace), and Save on any card. The server keeps the access rules from 2.6.
+- **Compare two:** tick Compare on two cards to get a field-by-field table. Under it: "These are the agent's readings of what each source shows, not facts about results."
+- The board is split into a data container (`ResearchBoard`) and a display view (`BoardView`), so `/dev/research-board` can show it from fixtures.
+
+Checked: screenshots at 1280 px (with compare open) and 390 px (with focus), with no sideways scroll. 218 tests pass, 3 of them new: embed URLs are built only from safe ids, and an id that could change the address is refused.
+
 ### Still to come in Milestone D
 
-- **2.14 Visual Research Board:** media cards with official embeds, filters, collections, and compare two.
 - **2.15 rest:** basis badges on the asset page, version compare for reports, and export as PDF or Markdown.
 - **Review queue:** Waiting for User, Needs Input, and Needs review in Decisions.
 - **Production model routes**, set up with you.

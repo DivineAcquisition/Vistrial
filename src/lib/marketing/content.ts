@@ -107,10 +107,10 @@ export const PHILOSOPHY = {
   maxim: "Understanding precedes advantage.",
   link: { href: "/#how", label: "See how every agent applies it" },
   image: {
-    src: "/brand/philosopher-ink.png",
-    width: 608,
-    height: 958,
-    alt: "A black-and-white ink drawing of a bearded philosopher's bust with a furrowed brow.",
+    src: "/brand/philosopher-soft.png",
+    width: 612,
+    height: 964,
+    alt: "A soft black-and-white drawing of a bearded philosopher's bust with a furrowed brow.",
     credit:
       "Drawn from Pierre Puget, A Philosopher, 1662. Marble. The Cleveland Museum of Art, Leonard C. Hanna Jr. Fund, 1969.121. Public domain (CC0).",
   },

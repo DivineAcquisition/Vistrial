@@ -39,6 +39,14 @@ export default function AgentPage() {
           <p className={bodyText}>Planned. This agent is part of the workforce but does not run yet, so it cannot be turned on.</p>
         ) : null}
         <p className={bodyText}>{agent.promise}</p>
+        {agent.slug === "growth-architect" && agent.status === "live" ? (
+          <div className="flex flex-wrap gap-2">
+            {shell.role !== "rep" && agent.state !== "off" ? <Button render={<Link href="/app/research/new" />}>New assignment</Button> : null}
+            <Button variant="outline" render={<Link href="/app/research" />}>
+              Research
+            </Button>
+          </div>
+        ) : null}
         <ul className="grid gap-3">
           {(agent.skills ?? []).map((skill) => (
             <li key={skill.slug} className="grid gap-1 rounded-xl border border-border p-4">

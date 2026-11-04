@@ -258,6 +258,7 @@ export const get = workspaceQuery({
           outputTokens: step.outputTokens,
           webSearches: step.webSearches ?? 0,
           webFetches: step.webFetches ?? 0,
+          phase: step.phase ?? null,
         })),
       artifacts: artifacts.map((row) => ({ id: row._id, kind: row.kind, byteSize: row.byteSize, stepId: row.stepId })),
       assets: assets.map((row) => ({

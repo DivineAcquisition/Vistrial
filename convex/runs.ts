@@ -297,6 +297,7 @@ export const start = workspaceMutation({
     if (project?.latestRunId) {
       const latest = await ctx.db.get(project.latestRunId);
       if (latest?.status === "waiting") throw new Error("This project has a run waiting for an answer. Answer it first.");
+      if (latest && (latest.status === "queued" || latest.status === "running")) throw new Error("This project already has a run in progress.");
     }
     // An older client may still send a renamed slug. Runs are always stored under the current one.
     const args = { ...input, agentSlug: currentAgentSlug(input.agentSlug) };

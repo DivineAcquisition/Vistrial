@@ -83,6 +83,12 @@ function studioFor(kind: "done" | "review" | "waiting" | "timedOut" | "working")
         { id: "f2", factKey: "topObjection", value: "Customers worry about hidden fees", status: "unverified", sourceType: "agent", recordedAt: 1793700000000 },
       ],
       gaps: kind === "waiting" || kind === "timedOut" ? ["researchMarket"] : [],
+      known: [],
+      missing: [
+        ...(kind === "waiting" || kind === "timedOut" ? [{ key: "researchMarket", blocking: true }] : []),
+        { key: "adBudget", blocking: false },
+      ],
+      assumptions: ["Budget not provided; recommendations do not depend on a budget figure."],
     },
     brief:
       kind === "waiting" || kind === "timedOut"

@@ -31,19 +31,8 @@ export const BRIEF_SCHEMA = {
     researchQuestions: strings,
     searchQueries: strings,
     competitorsToLookUp: strings,
-    known: {
-      type: "object",
-      properties: { profileVersionId: { type: ["string", "null"] }, factIds: strings },
-      required: ["profileVersionId", "factIds"],
-      additionalProperties: false,
-    },
-    missing: {
-      type: "array",
-      items: { type: "object", properties: { gap: str, blocks: { type: "boolean" } }, required: ["gap", "blocks"], additionalProperties: false },
-    },
-    assumptions: strings,
   },
-  required: ["objective", "deliverables", "researchQuestions", "searchQueries", "competitorsToLookUp", "known", "missing", "assumptions"],
+  required: ["objective", "deliverables", "researchQuestions", "searchQueries", "competitorsToLookUp"],
   additionalProperties: false,
 };
 
@@ -161,9 +150,6 @@ export type Brief = {
   researchQuestions: string[];
   searchQueries: string[];
   competitorsToLookUp: string[];
-  known: { profileVersionId: string | null; factIds: string[] };
-  missing: { gap: string; blocks: boolean }[];
-  assumptions: string[];
 };
 
 const MAX_TEXT = 2000;
@@ -228,17 +214,13 @@ export function readReport(value: unknown): Report | null {
 export function readBrief(value: unknown): Brief | null {
   if (!value || typeof value !== "object") return null;
   const row = obj(value);
-  const known = obj(row.known);
+  // What is known, missing and assumed is built in code (ContextRecord). The model only plans.
   return {
     objective: text(row.objective),
     deliverables: list(row.deliverables),
     researchQuestions: list(row.researchQuestions, 12),
     searchQueries: list(row.searchQueries, 12),
     competitorsToLookUp: list(row.competitorsToLookUp, 12),
-    known: { profileVersionId: text(known.profileVersionId, 100) || null, factIds: list(known.factIds) },
-    // The model may describe gaps, but whether one blocks the run is decided in code (context.read).
-    missing: (Array.isArray(row.missing) ? row.missing : []).slice(0, 12).map((item) => ({ gap: text(obj(item).gap, 300), blocks: false })),
-    assumptions: list(row.assumptions, 12),
   };
 }
 
@@ -263,7 +245,15 @@ export type ContextRecord = {
   facts: { id: string; factKey: string; value: string; status: string; sourceType: string; recordedAt: number }[];
   /** Declared gaps that block the run: the question keys still unanswered. */
   gaps: string[];
+  /** Built in code, not by the model: what is known, with origin, status and date. */
+  known: { key: string; label: string; value: string; origin: "project" | "profile" | "fact"; status: string; recordedAt: number }[];
+  /** What the brief lacks. A gap that blocks the run is asked; the rest become assumptions. */
+  missing: { key: string; blocking: boolean }[];
+  assumptions: string[];
 };
+
+/** Doctrine 3.3: a missing ad budget does not block research. */
+export const NO_BUDGET_ASSUMPTION = "Budget not provided; recommendations do not depend on a budget figure.";
 
 export type ComputeRecord = {
   totals: { sources: number; byPlatform: Record<string, number>; byKind: Record<string, number> };

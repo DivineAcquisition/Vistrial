@@ -201,8 +201,13 @@ describe("Market Intelligence (2.11)", () => {
     const asset = await a.owner.query(api.assets.get, { workspaceId: a.workspaceId, assetId: assets.page[0].id });
     expect(asset.body).toContain("## Opportunities");
     expect(asset.body).toContain("monthlyAdBudget: $1,500");
-    const evidence = asset.evidence as { claimKey: string; basis: string | null; sourceMissing: boolean }[];
-    expect(evidence.map((row) => [row.claimKey, row.basis])).toEqual([
+    const evidence = asset.evidence as { claimKey: string; statement: string; basis: string | null; computed: boolean; sources: unknown[]; sourceMissing: boolean }[];
+    // Counts are computed in code and saved as observed claims that cite every source counted.
+    const counts = evidence.filter((row) => row.claimKey.startsWith("count-"));
+    expect(counts[0]).toMatchObject({ claimKey: "count-sources", statement: "4 sources were reviewed: 4 web.", basis: "observed", computed: true });
+    expect(counts[0].sources).toHaveLength(4);
+    expect(counts.slice(1).map((row) => row.statement)).toEqual(['4 of 4 sources show the call to action "Book now" (the agent\'s reading).']);
+    expect(evidence.filter((row) => !row.claimKey.startsWith("count-")).map((row) => [row.claimKey, row.basis])).toEqual([
       ["finding-1", "observed"],
       ["opportunity-1", "inferred"],
       ["opportunity-2", "inferred"],
@@ -261,6 +266,12 @@ describe("Market Intelligence (2.11)", () => {
     const runId = await start(a.owner, a.workspaceId, a.projectId);
     expect(await finishRun(t, a.owner, a.workspaceId, runId)).toBe("completed");
     expect((await phases(t, runId)).slice(-4)).toEqual(["check:checks_failed", "revise:ok", "recheck:passed", "save:ok"]);
+    // The first draft is kept as version 1 and the revision is version 2, so the change can be compared.
+    const asset = (await a.owner.query(api.assets.list, { workspaceId: a.workspaceId, kind: "marketReport", paginationOpts: { numItems: 5, cursor: null } })).page[0];
+    expect(asset).toMatchObject({ status: "draft", currentVersion: 2 });
+    const v1 = await a.owner.query(api.assets.version, { workspaceId: a.workspaceId, assetId: asset.id, version: 1 });
+    expect(v1.body).toContain("Understood the objective");
+    expect(v1.body).toContain("A revision follows as version 2.");
     const failed = (await t.run((ctx) => ctx.db.query("runArtifacts").collect())).filter((row) => row.runId === runId && row.kind === "checks").map((row) => JSON.parse(row.body!));
     expect(failed[0].results.filter((row: { passed: boolean }) => !row.passed).map((row: { id: number }) => row.id)).toEqual([1]);
   });
@@ -284,6 +295,34 @@ describe("Market Intelligence (2.11)", () => {
     expect(revise.kind).toBe("model");
     const run = await a.owner.query(api.runs.get, { workspaceId: a.workspaceId, runId });
     expect(run.costCents).toBeLessThanOrEqual(300);
+  });
+
+  it("builds what is known, missing and assumed in code, with origin and date", async () => {
+    const t = makeTester();
+    const a = await seed(t, "Alpha");
+    script({ opportunities: 3 });
+    const runId = await start(a.owner, a.workspaceId, a.projectId);
+    await stepOnce(t);
+    const context = await lastRecord(t, runId, "context");
+    const keys = context.known.map((row: { key: string; origin: string }) => `${row.key}:${row.origin}`);
+    expect(keys).toEqual(expect.arrayContaining(["market:project", "geography:project", "profile.offer:profile", `fact:${a.factId}:fact`]));
+    expect(context.missing).toEqual([]);
+    const b = await seed(t, "Beta", { profile: false });
+    const other = await start(b.owner, b.workspaceId, b.projectId);
+    await stepOnce(t);
+    const lean = await lastRecord(t, other, "context");
+    expect(lean.missing).toEqual([{ key: "adBudget", blocking: false }, { key: "businessProfile", blocking: false }]);
+    expect(lean.assumptions[0]).toBe("Budget not provided; recommendations do not depend on a budget figure.");
+  });
+
+  it("refuses a second run on a project while one is still running", async () => {
+    const t = makeTester();
+    const a = await seed(t, "Alpha");
+    script({ opportunities: 3 });
+    const first = await start(a.owner, a.workspaceId, a.projectId);
+    expect(await message(start(a.owner, a.workspaceId, a.projectId))).toContain("already has a run in progress");
+    expect(await finishRun(t, a.owner, a.workspaceId, first)).toBe("completed");
+    expect(await message(start(a.owner, a.workspaceId, a.projectId))).toBe("accepted");
   });
 
   it("refuses to start without a project, on another workspace's project, or by a Rep", async () => {
@@ -386,6 +425,9 @@ describe("completion checks", () => {
     profile: { versionId: "pv", offer: "o", priceNotes: "", audience: "", geography: "", channels: "", brandVoice: "", competitors: [] },
     facts: [{ id: "f1", factKey: "budget", value: "$1", status: "verified", sourceType: "owner", recordedAt: 1 }],
     gaps: [],
+    known: [],
+    missing: [],
+    assumptions: [],
   };
   const opp = (action: string) => ({
     opportunity: "o",

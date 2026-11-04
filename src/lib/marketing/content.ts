@@ -107,7 +107,7 @@ export const PHILOSOPHY = {
   maxim: "Understanding precedes advantage.",
   link: { href: "/#how", label: "See how every agent applies it" },
   image: {
-    src: "/brand/philosopher-thinker-outlined.png",
+    src: "/brand/philosopher-thinker-crisp.png",
     width: 640,
     height: 1326,
     alt: "A black-and-white cartoon-style drawing of a full-length seated figure in deep thought, chin resting on his hand.",

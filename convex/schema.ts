@@ -1,6 +1,8 @@
 import { defineSchema, defineTable } from "convex/server";
 import { v } from "convex/values";
 
+import { assetStatus } from "./lib/assetStatus";
+import { factSourceType, factStatus, feedbackKind } from "./lib/factShapes";
 import { availability, basis, classification, embed, platform, projectStatus, sourceKind, sourceState } from "./lib/researchShapes";
 
 const memberRole = v.union(v.literal("owner"), v.literal("manager"), v.literal("rep"));
@@ -561,7 +563,7 @@ export default defineSchema({
       v.literal("swipeItem"),
     ),
     title: v.string(),
-    status: v.union(v.literal("draft"), v.literal("approved"), v.literal("archived")),
+    status: assetStatus,
     currentVersion: v.number(),
     createdByRun: v.optional(v.id("agentRuns")),
     createdAt: v.number(),
@@ -630,6 +632,47 @@ export default defineSchema({
     workspaceId: v.id("workspaces"),
     agentsPaused: v.boolean(),
   }).index("by_workspace", ["workspaceId"]),
+
+  /**
+   * A fact about the business that can change on its own and that a later agent must be able to trust or
+   * doubt (doctrine D6). One live row per key; replacing a fact inserts a new row that supersedes the old.
+   * Rows are never edited into a new value and never hard-deleted.
+   */
+  businessFacts: defineTable({
+    workspaceId: v.id("workspaces"),
+    factKey: v.string(),
+    value: v.string(),
+    sourceType: factSourceType,
+    /** A sourceRefs id, asset id, feedback id, or a short note such as "onboarding". Empty only for owner and assumption. */
+    sourceReference: v.optional(v.string()),
+    recordedAt: v.number(),
+    /** The user who wrote the row, or "agent" for a run. */
+    recordedBy: v.string(),
+    /** The run that wrote it, for an agent fact. */
+    runId: v.optional(v.id("agentRuns")),
+    verifiedAt: v.optional(v.number()),
+    verifiedBy: v.optional(v.string()),
+    status: factStatus,
+    supersedesFactId: v.optional(v.id("businessFacts")),
+    deletedAt: v.optional(v.number()),
+    deletedBy: v.optional(v.string()),
+  })
+    .index("by_workspace_key", ["workspaceId", "factKey", "recordedAt"])
+    .index("by_workspace_status", ["workspaceId", "status", "recordedAt"]),
+
+  /** A person's reason when they reject an asset or ask for a revision. Reusable only once a person promotes it. */
+  feedback: defineTable({
+    workspaceId: v.id("workspaces"),
+    assetId: v.id("assets"),
+    assetVersionId: v.id("assetVersions"),
+    kind: feedbackKind,
+    reason: v.string(),
+    createdBy: v.string(),
+    createdAt: v.number(),
+    promotedFactId: v.optional(v.id("businessFacts")),
+  })
+    .index("by_workspace", ["workspaceId", "createdAt"])
+    .index("by_workspace_asset", ["workspaceId", "assetId", "createdAt"]),
 
   /** One piece of market research: what to find out, and where to look. */
   researchProjects: defineTable({

@@ -33,11 +33,13 @@ export type SourceStatusView = { source: string; state: SourceState; reasonCode:
 
 export type RunArtifactView = { id: string; kind: string; byteSize: number };
 
+export const ASSET_STATUSES = ["draft", "needsReview", "approved", "rejected", "archived"] as const;
+
 export type RunAssetView = {
   id: string;
   title: string;
   kind: string;
-  status: "draft" | "approved" | "archived";
+  status: "draft" | "needsReview" | "approved" | "rejected" | "archived";
   currentVersion: number;
 };
 
@@ -137,7 +139,7 @@ export function toRunView(row: RunRow): RunView {
     artifacts: row.artifacts,
     assets: row.assets.map((asset) => ({
       ...asset,
-      status: asset.status === "approved" || asset.status === "archived" ? asset.status : "draft",
+      status: ASSET_STATUSES.includes(asset.status as RunAssetView["status"]) ? (asset.status as RunAssetView["status"]) : "draft",
     })),
   };
 }

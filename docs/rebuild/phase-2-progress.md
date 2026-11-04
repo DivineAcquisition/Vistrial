@@ -15,6 +15,8 @@ Tracks the Phase 2 backlog in `growth-architect-v1-plan.md`. Everything here was
 | 2.8 | YouTube adapter (Data API, embeds) | Done, tested on fixtures. Live search waits on `YOUTUBE_API_KEY` on dev. |
 | 2.9 | TikTok and Instagram URL adapters (oEmbed) | Done. TikTok live on dev. Instagram waits on Meta's oEmbed Read approval. |
 | 2.10 | Meta Ad Library links, plus the official API in the EU and UK | Done, tested on fixtures. Live API call waits on a fresh `META_AD_LIBRARY_TOKEN`. |
+| 2.18 | Business facts (doctrine D6) | Done. Checked on dev. |
+| 2.20 | Feedback: reject or request a revision with a reason, promote to a fact | Done. Checked on dev. CSV results uploads are still to come. |
 
 ## 2.1 Departments and the seven agents
 
@@ -139,6 +141,35 @@ The first live run showed TikTok profile and topic pages being sent to oEmbed an
 1. **`YOUTUBE_API_KEY`** in the Convex dev (and later production) environment variables. Without it YouTube shows pasted and found videos and says search is not set up.
 2. **`META_AD_LIBRARY_TOKEN`**: the one on dev is rejected (expired or revoked). It needs a new long-lived token, and Ad Library API access (identity check and terms) on the business's Meta account.
 3. **Instagram oEmbed Read** approval on the business's Meta app (`META_APP_ID` / `META_APP_SECRET` are set).
+
+## 2.18 Business facts and 2.20 feedback
+
+**State: done.** These follow `doctrine-understanding-precedes-advantage.md` sections 3.1 and 3.5. They were checked live on `calm-spider-678` on 2026-11-04.
+
+### Business facts (`businessFacts`, `convex/facts.ts`, `convex/lib/facts.ts`)
+
+- **What a row holds:** a key, a value, a source type (owner, agent, assumption, upload, feedback), a source reference, when it was recorded and by whom, when and by whom it was verified, a status (unverified, verified, disputed, superseded), and the fact it supersedes.
+- **One live fact per key.** Replacing a fact inserts a new row that points at the old one, and the old row becomes `superseded`. Nothing is edited into a new value. Removing a fact is a soft delete: audited, by an Owner or Manager, with its history kept.
+- **A person's statement is verified.** That covers `facts.record` and a promoted feedback row. Only an Owner or Manager records, verifies, disputes or removes a fact. Disputing a fact keeps its verification history.
+- **An agent's fact is always unverified** (`writeAgentFact`). It never replaces a fact a person verified: the verified fact stays current and nothing is written.
+- **Source references:** agent, upload and feedback facts must have one. Owner and assumption facts may leave it empty.
+- **What a run can see:** `factsForRun` returns only live facts, each with its status. 2.11 records which fact ids a run used.
+
+### Feedback (`feedback`, `assets.reject`, `assets.requestRevision`, `convex/feedback.ts`)
+
+- **Reject:** an Owner or Manager rejects a waiting asset with a reason of 3 to 1,000 characters. The asset becomes `rejected`, leaves the queue and keeps every version.
+- **Request a revision:** the asset stays waiting.
+- **Both save a `feedback` row** with the asset version, the reason, who and when.
+- **Promoting:** `feedback.promote` turns a reason into a verified fact, with `sourceType: feedback` and the feedback id as its reference. Only a person can do it, once per row. Nothing is promoted automatically.
+
+### Asset statuses
+
+These are now shared in `convex/lib/assetStatus.ts`: draft, **needsReview**, approved, **rejected**, archived. "Needs review" is for an agent's draft that failed a completion check (2.11). It cannot be approved until a person adds a version or rejects it. The asset page has Reject with a reason. Lists show the two new statuses and can filter by them.
+
+### Tests and checks
+
+- 202 pass, 11 of them new (`convex/facts.test.ts`). They cover the supersede chain, roles, key and value checks, source references, agent facts never verifying themselves, removed and replaced facts, what a run sees, the feedback flows, promotion, needs review, and isolation for both tables through every public function.
+- **Live on dev:** 9 of 9 checks pass. Those covered replacement, roles, dispute history and isolation. They also included rejecting a real `test-echo` draft, the queue emptying, and promoting the reason into a verified fact.
 
 ## Production steps for 2.1
 

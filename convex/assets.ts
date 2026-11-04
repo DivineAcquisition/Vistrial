@@ -17,7 +17,11 @@ import {
   type ClaimInput,
 } from "./lib/evidence";
 import { basis } from "./lib/researchShapes";
+import { assetStatus } from "./lib/assetStatus";
 import { notAllowed, notFound } from "./lib/errors";
+
+/** A draft that failed a completion check is fixed by a person first: a new version, or a rejection. */
+export const NEEDS_REVIEW = "This draft did not pass its checks. Edit it to add a new version, or reject it.";
 
 const claim = v.object({
   claimKey: v.string(),
@@ -36,7 +40,7 @@ function assertEditor(role: string) {
 export const list = workspaceQuery({
   args: {
     paginationOpts: paginationOptsValidator,
-    status: v.optional(v.union(v.literal("draft"), v.literal("approved"), v.literal("archived"))),
+    status: v.optional(assetStatus),
     kind: v.optional(
       v.union(
         v.literal("researchReport"),
@@ -203,6 +207,7 @@ export const approve = workspaceMutation({
     assertEditor(ctx.member.role);
     const asset = await ctx.db.get(args.assetId);
     if (!asset || asset.workspaceId !== ctx.workspaceId) notFound();
+    if (asset.status === "needsReview") throw new Error(NEEDS_REVIEW);
     if (asset.status !== "draft") throw new Error("That asset is not waiting.");
     // The screen blocks this too, but the rule lives here: every claim on the version being
     // approved must still point at a real source in this workspace, or be marked computed.
@@ -231,6 +236,91 @@ export const approve = workspaceMutation({
       count: asset.currentVersion,
     });
     return null;
+  },
+});
+
+export const MAX_REASON = 1000;
+
+async function currentVersion(ctx: QueryCtx, asset: Doc<"assets">) {
+  return ctx.db
+    .query("assetVersions")
+    .withIndex("by_workspace_asset", (q) => q.eq("workspaceId", asset.workspaceId).eq("assetId", asset._id))
+    .filter((q) => q.eq(q.field("version"), asset.currentVersion))
+    .first();
+}
+
+function cleanReason(raw: string) {
+  const reason = raw.replace(/\s+/g, " ").trim();
+  if (reason.length < 3) throw new Error("Say why, in a few words.");
+  if (reason.length > MAX_REASON) throw new Error(`Keep the reason to ${MAX_REASON} characters.`);
+  return reason;
+}
+
+/**
+ * Rejects a waiting asset with a reason. It leaves the queue and keeps every version. The reason is saved
+ * as feedback, which becomes reusable context only if a person promotes it.
+ */
+export const reject = workspaceMutation({
+  args: { assetId: v.id("assets"), reason: v.string() },
+  handler: async (ctx, args) => {
+    assertEditor(ctx.member.role);
+    const asset = await ctx.db.get(args.assetId);
+    if (!asset || asset.workspaceId !== ctx.workspaceId) notFound();
+    if (asset.status !== "draft" && asset.status !== "needsReview") throw new Error("That asset is not waiting.");
+    const reason = cleanReason(args.reason);
+    const version = await currentVersion(ctx, asset);
+    if (!version) throw new Error("That version is missing.");
+    const feedbackId = await ctx.db.insert("feedback", {
+      workspaceId: ctx.workspaceId,
+      assetId: asset._id,
+      assetVersionId: version._id,
+      kind: "rejection",
+      reason,
+      createdBy: ctx.identity.subject,
+      createdAt: Date.now(),
+    });
+    await ctx.db.patch(asset._id, { status: "rejected" });
+    await writeAudit(ctx, {
+      workspaceId: ctx.workspaceId,
+      actorType: "user",
+      actorId: ctx.identity.subject,
+      action: "asset.rejected",
+      subject: asset._id,
+      count: asset.currentVersion,
+    });
+    return feedbackId;
+  },
+});
+
+/** Asks for changes to a waiting asset. It stays in the queue; the reason is saved as feedback. */
+export const requestRevision = workspaceMutation({
+  args: { assetId: v.id("assets"), reason: v.string() },
+  handler: async (ctx, args) => {
+    assertEditor(ctx.member.role);
+    const asset = await ctx.db.get(args.assetId);
+    if (!asset || asset.workspaceId !== ctx.workspaceId) notFound();
+    if (asset.status !== "draft" && asset.status !== "needsReview") throw new Error("That asset is not waiting.");
+    const reason = cleanReason(args.reason);
+    const version = await currentVersion(ctx, asset);
+    if (!version) throw new Error("That version is missing.");
+    const feedbackId = await ctx.db.insert("feedback", {
+      workspaceId: ctx.workspaceId,
+      assetId: asset._id,
+      assetVersionId: version._id,
+      kind: "revisionRequest",
+      reason,
+      createdBy: ctx.identity.subject,
+      createdAt: Date.now(),
+    });
+    await writeAudit(ctx, {
+      workspaceId: ctx.workspaceId,
+      actorType: "user",
+      actorId: ctx.identity.subject,
+      action: "asset.revision_requested",
+      subject: asset._id,
+      count: asset.currentVersion,
+    });
+    return feedbackId;
   },
 });
 

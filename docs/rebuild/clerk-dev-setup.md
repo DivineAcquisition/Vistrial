@@ -7,7 +7,7 @@ Production sign-in (`clerk.vistrial.io`) cannot reach the Convex dev deployment.
 `convex/auth.config.ts` uses `convex/lib/authIssuers.ts`:
 
 - **Production, previews and any other deployment** accept production Clerk only. They never read `CLERK_DEV_ISSUER_DOMAIN`, so nothing has to be set there.
-- **The dev deployment** (`grandiose-meerkat-838`) also accepts the Clerk instance named by `CLERK_DEV_ISSUER_DOMAIN`. Only `https://<name>.clerk.accounts.dev` domains are allowed. It is set to `none` on dev until the instance exists.
+- **The dev deployment** (`calm-spider-678`) also accepts the Clerk instance named by `CLERK_DEV_ISSUER_DOMAIN`. Only `https://<name>.clerk.accounts.dev` domains are allowed. It is set to `none` on dev until the instance exists.
 
 Convex refuses an auth config that reads a variable the deployment lacks. That was checked on dev, and it is why the variable is read only on dev.
 
@@ -27,7 +27,7 @@ Convex refuses an auth config that reads a variable the deployment lacks. That w
 - Set `CLERK_DEV_ISSUER_DOMAIN` on dev to the Frontend API URL and push once, so the auth config picks it up.
 - Run the app locally against dev with this in `.env.local`:
   ```
-  NEXT_PUBLIC_CONVEX_URL=https://grandiose-meerkat-838.convex.cloud
+  NEXT_PUBLIC_CONVEX_URL=https://calm-spider-678.convex.cloud
   NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=pk_test_...
   CLERK_SECRET_KEY=sk_test_...
   ```

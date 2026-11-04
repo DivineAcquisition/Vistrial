@@ -5,7 +5,18 @@ import type { Doc, Id } from "./_generated/dataModel";
 import type { QueryCtx } from "./_generated/server";
 import { workspaceMutation, workspaceQuery } from "./lib/builders";
 import { writeAudit } from "./lib/audit";
-import { MISSING_SOURCE, assertClaims, assertSourcesExist, claimsWithMissingSources, type ClaimInput } from "./lib/evidence";
+import {
+  BASIS_LABEL,
+  MISSING_SOURCE,
+  assertClaims,
+  assertSourcesExist,
+  claimFromRow,
+  claimProblem,
+  claimsWithMissingSources,
+  sourceRefsInWorkspace,
+  type ClaimInput,
+} from "./lib/evidence";
+import { basis } from "./lib/researchShapes";
 import { notAllowed, notFound } from "./lib/errors";
 
 const claim = v.object({
@@ -14,6 +25,8 @@ const claim = v.object({
   sourceId: v.optional(v.string()),
   fetchedAt: v.optional(v.number()),
   computed: v.optional(v.boolean()),
+  basis: v.optional(basis),
+  sourceRefIds: v.optional(v.array(v.id("sourceRefs"))),
 });
 
 function assertEditor(role: string) {
@@ -27,6 +40,7 @@ export const list = workspaceQuery({
     kind: v.optional(
       v.union(
         v.literal("researchReport"),
+        v.literal("marketReport"),
         v.literal("adCopySet"),
         v.literal("creativeBrief"),
         v.literal("contentCalendar"),
@@ -44,17 +58,23 @@ export const list = workspaceQuery({
             )
             .order("desc")
             .paginate(args.paginationOpts)
-        : args.status
+        : args.kind
           ? await ctx.db
               .query("assets")
-              .withIndex("by_workspace_status", (q) => q.eq("workspaceId", ctx.workspaceId).eq("status", args.status!))
+              .withIndex("by_workspace_kind", (q) => q.eq("workspaceId", ctx.workspaceId).eq("kind", args.kind!))
               .order("desc")
               .paginate(args.paginationOpts)
-          : await ctx.db
-              .query("assets")
-              .withIndex("by_workspace", (q) => q.eq("workspaceId", ctx.workspaceId))
-              .order("desc")
-              .paginate(args.paginationOpts);
+          : args.status
+            ? await ctx.db
+                .query("assets")
+                .withIndex("by_workspace_status", (q) => q.eq("workspaceId", ctx.workspaceId).eq("status", args.status!))
+                .order("desc")
+                .paginate(args.paginationOpts)
+            : await ctx.db
+                .query("assets")
+                .withIndex("by_workspace", (q) => q.eq("workspaceId", ctx.workspaceId))
+                .order("desc")
+                .paginate(args.paginationOpts);
     return {
       ...page,
       page: page.page.map((row) => ({
@@ -103,13 +123,30 @@ async function versionView(ctx: QueryCtx, workspaceId: Id<"workspaces">, version
     notes: version.notes ?? null,
     body: version.body ?? "",
     evidence: await Promise.all(
-      evidence.map(async (row) => ({
-        claimKey: row.claimKey,
-        statement: row.statement ?? null,
-        computed: row.computed === true,
-        fetchedAt: row.fetchedAt ?? null,
-        sourceLabel: await sourceLabel(ctx, workspaceId, row.sourceId),
-      })),
+      evidence.map(async (row) => {
+        const refs = await sourceRefsInWorkspace(ctx, workspaceId, row.sourceRefIds ?? []);
+        return {
+          claimKey: row.claimKey,
+          statement: row.statement ?? null,
+          computed: row.computed === true,
+          fetchedAt: row.fetchedAt ?? null,
+          sourceLabel: await sourceLabel(ctx, workspaceId, row.sourceId),
+          basis: row.basis ?? null,
+          /** From the basis, in code. A claim the model wrote as fact still reads "Inference" if that is its basis. */
+          basisLabel: row.basis ? BASIS_LABEL[row.basis] : null,
+          sources: refs.map((ref) => ({
+            id: ref._id,
+            platform: ref.platform,
+            title: ref.title,
+            url: ref.url,
+            publisher: ref.publisher ?? null,
+            observedAt: ref.observedAt,
+            availability: ref.availability,
+          })),
+          /** True when the claim cannot stand on what is in the workspace now. The screen blocks approval on it. */
+          sourceMissing: (await claimProblem(ctx, workspaceId, claimFromRow(row))) !== null,
+        };
+      }),
     ),
   };
 }
@@ -175,11 +212,11 @@ export const approve = workspaceMutation({
       .filter((q) => q.eq(q.field("version"), asset.currentVersion))
       .first();
     if (!current) throw new Error("That version is missing, so it cannot be approved.");
-    const claims = [];
+    const claims: ClaimInput[] = [];
     for await (const row of ctx.db
       .query("evidence")
       .withIndex("by_workspace_version", (q) => q.eq("workspaceId", ctx.workspaceId).eq("assetVersionId", current._id))) {
-      claims.push(row);
+      claims.push(claimFromRow(row));
     }
     if ((await claimsWithMissingSources(ctx, ctx.workspaceId, claims)).length > 0) {
       throw new Error(MISSING_SOURCE);
@@ -228,6 +265,8 @@ export const addVersion = workspaceMutation({
         sourceId: item.sourceId,
         fetchedAt: item.fetchedAt,
         computed: item.computed,
+        basis: item.basis,
+        sourceRefIds: item.sourceRefIds,
       });
     }
     // Approval covers one version. New content waits for approval again.

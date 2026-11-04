@@ -1,6 +1,8 @@
 import { defineSchema, defineTable } from "convex/server";
 import { v } from "convex/values";
 
+import { availability, basis, classification, embed, platform, projectStatus, sourceKind, sourceState } from "./lib/researchShapes";
+
 const memberRole = v.union(v.literal("owner"), v.literal("manager"), v.literal("rep"));
 const consentState = v.union(v.literal("unknown"), v.literal("granted"), v.literal("revoked"));
 const identityKind = v.union(
@@ -552,6 +554,7 @@ export default defineSchema({
     workspaceId: v.id("workspaces"),
     kind: v.union(
       v.literal("researchReport"),
+      v.literal("marketReport"),
       v.literal("adCopySet"),
       v.literal("creativeBrief"),
       v.literal("contentCalendar"),
@@ -566,6 +569,7 @@ export default defineSchema({
     .index("by_workspace", ["workspaceId"])
     .index("by_workspace_status", ["workspaceId", "status"])
     .index("by_workspace_kind_status", ["workspaceId", "kind", "status"])
+    .index("by_workspace_kind", ["workspaceId", "kind"])
     .index("by_workspace_run", ["workspaceId", "createdByRun"]),
 
   assetVersions: defineTable({
@@ -587,30 +591,137 @@ export default defineSchema({
     sourceId: v.optional(v.string()),
     fetchedAt: v.optional(v.number()),
     computed: v.optional(v.boolean()),
+    /** What supports the claim. Missing on claims written before bases existed; those keep the old rule. */
+    basis: v.optional(basis),
+    /** The collected sources behind the claim. Each must be in the same workspace. */
+    sourceRefIds: v.optional(v.array(v.id("sourceRefs"))),
   })
     .index("by_workspace", ["workspaceId"])
     .index("by_workspace_version", ["workspaceId", "assetVersionId"]),
 
+  /**
+   * Caps per workspace and agent. A row with a skillSlug holds the caps of a skill that has its own
+   * (Market Intelligence); a row without one holds the caps every other skill of the agent shares.
+   */
   agentCaps: defineTable({
     workspaceId: v.id("workspaces"),
     agentSlug: v.string(),
+    skillSlug: v.optional(v.string()),
     maxCostCentsPerRun: v.number(),
     maxCostCentsPerDay: v.number(),
     maxSteps: v.number(),
     maxDurationMs: v.number(),
-  }).index("by_workspace_agent", ["workspaceId", "agentSlug"]),
+  })
+    .index("by_workspace_agent", ["workspaceId", "agentSlug"])
+    .index("by_workspace_agent_skill", ["workspaceId", "agentSlug", "skillSlug"]),
 
+  /** Spend per day, in the same scope as the caps row: a skill with its own caps counts on its own. */
   capCounters: defineTable({
     workspaceId: v.id("workspaces"),
     agentSlug: v.string(),
+    skillSlug: v.optional(v.string()),
     day: v.string(),
     costCents: v.number(),
-  }).index("by_workspace_agent_day", ["workspaceId", "agentSlug", "day"]),
+  })
+    .index("by_workspace_agent_day", ["workspaceId", "agentSlug", "day"])
+    .index("by_workspace_agent_skill_day", ["workspaceId", "agentSlug", "skillSlug", "day"]),
 
   workspaceControls: defineTable({
     workspaceId: v.id("workspaces"),
     agentsPaused: v.boolean(),
   }).index("by_workspace", ["workspaceId"]),
+
+  /** One piece of market research: what to find out, and where to look. */
+  researchProjects: defineTable({
+    workspaceId: v.id("workspaces"),
+    title: v.string(),
+    objective: v.string(),
+    market: v.string(),
+    geography: v.string(),
+    competitors: v.array(v.object({ name: v.string(), url: v.optional(v.string()) })),
+    platforms: v.array(platform),
+    /** Links a person pasted in to be analyzed. */
+    suppliedUrls: v.array(v.string()),
+    status: projectStatus,
+    latestRunId: v.optional(v.id("agentRuns")),
+    /** The confirmed profile version the project was scoped against. */
+    profileVersionId: v.optional(v.id("profileVersions")),
+    createdBy: v.string(),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_workspace", ["workspaceId", "updatedAt"])
+    .index("by_workspace_status", ["workspaceId", "status", "updatedAt"]),
+
+  /**
+   * One thing the agent found or a person supplied: a page, video, post or ad. Only metadata, a short
+   * attributed excerpt, and official embed ids. Media is never downloaded or rehosted.
+   */
+  sourceRefs: defineTable({
+    workspaceId: v.id("workspaces"),
+    projectId: v.id("researchProjects"),
+    runId: v.optional(v.id("agentRuns")),
+    /** The raw fetch this came from, for provenance. Never shown in place of the source. */
+    artifactId: v.optional(v.id("runArtifacts")),
+    origin: v.union(v.literal("found"), v.literal("supplied")),
+    platform,
+    kind: sourceKind,
+    url: v.string(),
+    canonicalUrl: v.string(),
+    title: v.string(),
+    /** Creator, advertiser or site. */
+    publisher: v.optional(v.string()),
+    publishedAt: v.optional(v.number()),
+    observedAt: v.number(),
+    embed: v.optional(embed),
+    availability,
+    /** 300 characters or less, from the source and attributed to it. */
+    excerpt: v.optional(v.string()),
+    classification: v.optional(classification),
+    /** What this source cannot show, in a few words. */
+    limitation: v.optional(v.string()),
+  })
+    .index("by_workspace_project", ["workspaceId", "projectId"])
+    .index("by_workspace_project_platform", ["workspaceId", "projectId", "platform"])
+    .index("by_workspace_project_canonical", ["workspaceId", "projectId", "canonicalUrl"])
+    .index("by_workspace_run", ["workspaceId", "runId"]),
+
+  /** Each source adapter's status for one run, with a reason code. Never page text. */
+  sourceStatus: defineTable({
+    workspaceId: v.id("workspaces"),
+    projectId: v.id("researchProjects"),
+    runId: v.id("agentRuns"),
+    platform,
+    state: sourceState,
+    reasonCode: v.string(),
+    found: v.number(),
+    checkedAt: v.number(),
+  })
+    .index("by_workspace_run", ["workspaceId", "runId", "platform"])
+    .index("by_workspace_project", ["workspaceId", "projectId"]),
+
+  /** A saved group of source references. With an owner it is personal; without one it is the workspace's. */
+  collections: defineTable({
+    workspaceId: v.id("workspaces"),
+    projectId: v.optional(v.id("researchProjects")),
+    name: v.string(),
+    ownerUserId: v.optional(v.string()),
+    createdBy: v.string(),
+    createdAt: v.number(),
+  })
+    .index("by_workspace_owner", ["workspaceId", "ownerUserId"])
+    .index("by_workspace_project", ["workspaceId", "projectId"]),
+
+  collectionItems: defineTable({
+    workspaceId: v.id("workspaces"),
+    collectionId: v.id("collections"),
+    sourceRefId: v.id("sourceRefs"),
+    note: v.optional(v.string()),
+    addedBy: v.string(),
+    addedAt: v.number(),
+  })
+    .index("by_workspace_collection", ["workspaceId", "collectionId", "sourceRefId"])
+    .index("by_workspace_ref", ["workspaceId", "sourceRefId"]),
 
   platformControls: defineTable({
     key: v.literal("platform"),

@@ -5,12 +5,38 @@ export const DEFAULT_CAPS = {
   maxDurationMs: 300_000,
 };
 
+/** No workspace can set caps above these. Raised for research (decision D3): $10 a run, $100 a day. */
 export const PLATFORM_CEILING = {
-  maxCostCentsPerRun: 100,
-  maxCostCentsPerDay: 1000,
+  maxCostCentsPerRun: 1000,
+  maxCostCentsPerDay: 10_000,
   maxSteps: 200,
   maxDurationMs: 3_600_000,
 };
+
+/**
+ * Skills that cost far more than the rest set their own caps and keep their own day counter, so a
+ * research day cannot use up the test skill's budget or the other way round (decision D3). Every
+ * other skill shares the agent's caps (DEFAULT_CAPS unless the Owner changed them).
+ */
+export const SKILL_CAPS: Readonly<Record<string, Caps>> = {
+  "market-intelligence": {
+    maxCostCentsPerRun: 300,
+    maxCostCentsPerDay: 2500,
+    maxSteps: 60,
+    maxDurationMs: 1_800_000,
+  },
+};
+
+/** The caps row and day counter a skill uses: its own slug when it has its own caps, otherwise the agent's (undefined). */
+export function capScope(skillSlug: string | undefined): string | undefined {
+  return skillSlug !== undefined && Object.hasOwn(SKILL_CAPS, skillSlug) ? skillSlug : undefined;
+}
+
+/** The caps a skill runs under when the workspace has not set any. */
+export function defaultCapsFor(skillSlug: string | undefined): Caps {
+  const scope = capScope(skillSlug);
+  return scope === undefined ? DEFAULT_CAPS : SKILL_CAPS[scope];
+}
 
 /** The run cost bar warns at this share of the per-run cap, before the hard stop. */
 export const SOFT_WARNING_RATIO = 0.8;

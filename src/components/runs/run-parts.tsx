@@ -113,6 +113,7 @@ export function ArtifactList({
 
 const ASSET_KIND: Record<string, string> = {
   researchReport: "Research report",
+  marketReport: "Market report",
   adCopySet: "Ad copy set",
   creativeBrief: "Creative brief",
   contentCalendar: "Content calendar",

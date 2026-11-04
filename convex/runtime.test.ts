@@ -340,7 +340,8 @@ describe("step 4 runtime", () => {
       owner.mutation(api.controls.setCaps, {
         workspaceId,
         agentSlug: "growth-architect",
-        maxCostCentsPerRun: 101,
+        // The ceiling is $10 a run since decision D3 (it was $1).
+        maxCostCentsPerRun: 1001,
         maxCostCentsPerDay: 200,
         maxSteps: 40,
         maxDurationMs: 300000,

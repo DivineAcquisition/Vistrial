@@ -7,7 +7,8 @@ import type { Doc, Id } from "./_generated/dataModel";
 import type { MutationCtx, QueryCtx } from "./_generated/server";
 import { workspaceMutation, workspaceQuery } from "./lib/builders";
 import { writeAudit } from "./lib/audit";
-import { DEFAULT_CAPS, PLATFORM_CEILING, SOFT_WARNING_RATIO, dayKey, overCap, type Caps } from "./lib/caps";
+import { PLATFORM_CEILING, SOFT_WARNING_RATIO, capScope, dayKey, overCap } from "./lib/caps";
+import { addDaySpend, daySpend, loadCaps } from "./lib/capRows";
 import { currentAgentSlug } from "./catalog";
 import { assertClaims, assertSourcesExist } from "./lib/evidence";
 import { notAllowed, notFound } from "./lib/errors";
@@ -19,22 +20,6 @@ import { assertDeclared, skillFor } from "./lib/skills";
 const OPEN = new Set(["queued", "running", "waiting"]);
 
 type StopReason = "cap" | "error" | "cancelled" | "halted" | "done";
-
-async function loadCaps(ctx: QueryCtx, workspaceId: Id<"workspaces">, agentSlug: string): Promise<Caps> {
-  const row = await ctx.db
-    .query("agentCaps")
-    .withIndex("by_workspace_agent", (q) => q.eq("workspaceId", workspaceId).eq("agentSlug", agentSlug))
-    .unique();
-  return row ?? DEFAULT_CAPS;
-}
-
-async function daySpend(ctx: QueryCtx, workspaceId: Id<"workspaces">, agentSlug: string, day: string) {
-  const row = await ctx.db
-    .query("capCounters")
-    .withIndex("by_workspace_agent_day", (q) => q.eq("workspaceId", workspaceId).eq("agentSlug", agentSlug).eq("day", day))
-    .unique();
-  return row?.costCents ?? 0;
-}
 
 async function controls(ctx: QueryCtx, workspaceId: Id<"workspaces">) {
   const workspace = await ctx.db
@@ -223,7 +208,7 @@ export const get = workspaceQuery({
       .query("assets")
       .withIndex("by_workspace_run", (q) => q.eq("workspaceId", ctx.workspaceId).eq("createdByRun", run._id))
       .take(20);
-    const caps = await loadCaps(ctx, ctx.workspaceId, run.agentSlug);
+    const caps = await loadCaps(ctx, ctx.workspaceId, run.agentSlug, run.skillSlug);
     const day = dayKey(run.startedAt);
     const starter = await ctx.db
       .query("members")
@@ -247,8 +232,10 @@ export const get = workspaceQuery({
         maxSteps: caps.maxSteps,
         maxDurationMs: caps.maxDurationMs,
         softWarningCents: caps.maxCostCentsPerRun * SOFT_WARNING_RATIO,
+        /** "skill" when the skill has its own caps and day budget, "agent" when it shares the agent's. */
+        scope: capScope(run.skillSlug) === undefined ? ("agent" as const) : ("skill" as const),
       },
-      daySpentCents: await daySpend(ctx, ctx.workspaceId, run.agentSlug, day),
+      daySpentCents: await daySpend(ctx, ctx.workspaceId, run.agentSlug, run.skillSlug, day),
       steps: steps
         .sort((a, b) => a.index - b.index)
         .map((step) => ({
@@ -309,8 +296,8 @@ export const start = workspaceMutation({
     if (!link || link.state === "off") throw new Error(`Turn on the ${agent.name} first.`);
     if (skill.agentSlug !== agent.slug) notFound();
     const gate = await controls(ctx, ctx.workspaceId);
-    const caps = await loadCaps(ctx, ctx.workspaceId, args.agentSlug);
-    const spent = await daySpend(ctx, ctx.workspaceId, args.agentSlug, dayKey());
+    const caps = await loadCaps(ctx, ctx.workspaceId, args.agentSlug, args.skillSlug);
+    const spent = await daySpend(ctx, ctx.workspaceId, args.agentSlug, args.skillSlug, dayKey());
     const blocked = gate.paused || gate.halted || spent >= caps.maxCostCentsPerDay;
     const id = await ctx.db.insert("agentRuns", {
       workspaceId: ctx.workspaceId,
@@ -384,9 +371,9 @@ export const prepare = internalMutation({
       await stopRun(ctx, run, "cancelled", "stopped");
       return { done: true as const };
     }
-    const caps = await loadCaps(ctx, run.workspaceId, run.agentSlug);
+    const caps = await loadCaps(ctx, run.workspaceId, run.agentSlug, run.skillSlug);
     const steps = await stepCount(ctx, run);
-    const spent = await daySpend(ctx, run.workspaceId, run.agentSlug, dayKey());
+    const spent = await daySpend(ctx, run.workspaceId, run.agentSlug, run.skillSlug, dayKey());
     if (overCap({ caps, runCost: run.costCents, dayCost: spent, steps: steps.length, startedAt: run.startedAt, now: Date.now() })) {
       await stopRun(ctx, run, "cap", "stopped");
       return { done: true as const };
@@ -483,17 +470,13 @@ async function recordFailure(
   return stepId;
 }
 
-/** Adds what a model call was billed to the run and to today's counter, and returns the new totals. */
+/**
+ * Adds what a model call was billed to the run and to today's counter, and returns the new totals.
+ * The counter is the skill's own when the skill has its own caps, otherwise the agent's.
+ */
 async function charge(ctx: MutationCtx, run: Doc<"agentRuns">, spent: Spend) {
-  const day = dayKey();
-  const counter = await ctx.db
-    .query("capCounters")
-    .withIndex("by_workspace_agent_day", (q) => q.eq("workspaceId", run.workspaceId).eq("agentSlug", run.agentSlug).eq("day", day))
-    .unique();
-  const dayCost = (counter?.costCents ?? 0) + spent.costCents;
+  const dayCost = await addDaySpend(ctx, run.workspaceId, run.agentSlug, run.skillSlug, dayKey(), spent.costCents);
   const runCost = run.costCents + spent.costCents;
-  if (counter) await ctx.db.patch(counter._id, { costCents: dayCost });
-  else await ctx.db.insert("capCounters", { workspaceId: run.workspaceId, agentSlug: run.agentSlug, day, costCents: dayCost });
   await ctx.db.patch(run._id, {
     costCents: runCost,
     inputTokens: run.inputTokens + spent.inputTokens,
@@ -762,7 +745,7 @@ export const commitModel = internalMutation({
       await stopRun(ctx, current, "cancelled", "stopped", nextCost);
       return { status: "stopped" as const };
     }
-    const caps = await loadCaps(ctx, run.workspaceId, run.agentSlug);
+    const caps = await loadCaps(ctx, run.workspaceId, run.agentSlug, run.skillSlug);
     const steps = await stepCount(ctx, run);
     if (overCap({ caps, runCost: nextCost, dayCost: nextDay, steps: steps.length, startedAt: run.startedAt, now: Date.now() })) {
       await stopRun(ctx, current, "cap", "stopped", nextCost);

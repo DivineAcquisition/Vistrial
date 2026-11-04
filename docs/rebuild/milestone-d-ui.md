@@ -87,3 +87,14 @@ Checked: screenshots at 1280 px (with compare open) and 390 px (with focus), wit
 Checks: 223 tests pass, 5 of them new. They cover the routes helper (fills only missing routes, a second run adds nothing), the Decisions query (with isolation), and the report renderer (structure, no markup injection, export lists each source once). Typecheck is clean and lint has 0 errors. The report body and basis badges were checked on the asset story page.
 
 **Milestone D is complete.** Next is Milestone E: 2.16, the injection test, and 2.17, end-to-end acceptance against the doctrine's five tests.
+
+## Context Engine alignment (founder brief, 2026-11-04)
+
+The founder's brief is kept in `context-engine-brief.md`. The Studio now follows its "What the user sees":
+
+- **One layout, `src/components/research/studio-layout.tsx`**, used by both `/app/research/[id]` and the `/dev/research-studio` story (`?state=done&section=review` opens a section directly).
+- **Current objective** line with status chips: business context loaded or not, sources collected or research needed, checks passed or needs review.
+- **Five sections:** Context, Research, Findings, Assets, Review. Progress and source status stay at the side.
+- **Context** holds *Business memory* (each fact with source, date and status; Correct and Remove) and the *Task brief*: objective, deliverable, what is already known (with origin and date), what is missing and assumed, permitted sources and tools, and the research budget with the reserve.
+- **Assets** lists the report with its version and says Creative Production is a separate skill (D7) that starts from the approved report.
+- **Review** holds the eight completion checks and the decision: Approve, **Request changes** (a reason, kept as feedback), or Reject.

@@ -15,6 +15,7 @@ import {
   SOURCE_STATE_WORDS,
   STAGES,
   errorWords,
+  money,
   shortDate,
 } from "@/lib/research/words";
 import { api } from "../../../convex/_generated/api";
@@ -39,6 +40,7 @@ const MISSING_WORDS: Record<string, string> = {
  */
 export function ContextPanel({ workspaceId, studio, canEdit }: { workspaceId: Id<"workspaces">; studio: Studio; canEdit: boolean }) {
   const record = useMutation(api.facts.record);
+  const remove = useMutation(api.facts.remove);
   const [editing, setEditing] = useState<string | null>(null);
   const [value, setValue] = useState("");
   const [notice, setNotice] = useState("");
@@ -46,8 +48,8 @@ export function ContextPanel({ workspaceId, studio, canEdit }: { workspaceId: Id
   return (
     <Panel className="grid gap-4 p-4">
       <div className="grid gap-1">
-        <h2 className={heading}>Context</h2>
-        <p className="text-sm text-muted-foreground">What the agent knows, where it came from, and what it had to assume.</p>
+        <h2 className={heading}>Business memory</h2>
+        <p className="text-sm text-muted-foreground">What Vistrial knows about your business, shared across your research. Each item shows where it came from and when. Correct or remove anything that is wrong.</p>
       </div>
       {!context ? <p className="text-sm text-muted-foreground">Read when the run starts.</p> : null}
       {context ? (
@@ -112,7 +114,7 @@ export function ContextPanel({ workspaceId, studio, canEdit }: { workspaceId: Id
                     {FACT_SOURCE_WORDS[fact.sourceType] ?? fact.sourceType}, {shortDate(fact.recordedAt)}
                   </p>
                   {canEdit && editing !== fact.id ? (
-                    <div>
+                    <div className="flex flex-wrap gap-1">
                       <Button
                         type="button"
                         size="sm"
@@ -124,6 +126,19 @@ export function ContextPanel({ workspaceId, studio, canEdit }: { workspaceId: Id
                       >
                         Correct
                       </Button>
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="ghost"
+                        onClick={() =>
+                          void remove({ workspaceId, factId: fact.id as Id<"businessFacts"> }).then(
+                            () => setNotice(`Removed ${fact.factKey}. Its history is kept, and the next run will not use it.`),
+                            (problem: unknown) => setNotice(errorWords(problem, "It was not removed.")),
+                          )
+                        }
+                      >
+                        Remove
+                      </Button>
                     </div>
                   ) : null}
                 </li>
@@ -132,22 +147,7 @@ export function ContextPanel({ workspaceId, studio, canEdit }: { workspaceId: Id
           </ul>
         </div>
       ) : null}
-      {context && (context.missing.length > 0 || context.assumptions.length > 0) ? (
-        <div className="grid gap-2">
-          <h3 className="text-sm font-medium text-card-foreground">Missing, and what it assumed</h3>
-          <ul className="grid gap-1 text-sm text-muted-foreground">
-            {context.missing.map((row) => (
-              <li key={`m-${row.key}`}>
-                Missing: {MISSING_WORDS[row.key] ?? row.key}
-                {row.blocking ? " (it asks before researching)" : ""}
-              </li>
-            ))}
-            {context.assumptions.map((row) => (
-              <li key={`a-${row}`}>Assumed: {row}</li>
-            ))}
-          </ul>
-        </div>
-      ) : null}
+
       <p role="status" className="min-h-5 text-sm text-muted-foreground">
         {notice}
       </p>
@@ -277,36 +277,111 @@ export function SourceStatusList({ statuses }: { statuses: { platform: string; s
   );
 }
 
-/** The plan the agent wrote before it researched anything. */
-export function BriefCard({ studio }: { studio: Studio }) {
+/**
+ * The task brief (doctrine 3.2): objective, deliverables, what is known with origin and date, what is
+ * missing and assumed, which sources and tools are permitted, and the research budget. Built in code;
+ * only the research questions and planned searches come from the model.
+ */
+export function BriefCard({ studio, capCents, reserveCents = 50 }: { studio: Studio; capCents: number; reserveCents?: number }) {
   const brief = studio.brief;
+  const context = studio.context;
+  const spent = studio.run?.costCents ?? 0;
+  const row = "grid gap-1 border-t border-border pt-3 first:border-0 first:pt-0";
+  const label = "text-xs font-semibold tracking-[0.08em] text-muted-foreground uppercase";
   return (
     <Panel className="grid gap-3 p-4 sm:p-5">
-      <h2 className={heading}>Brief</h2>
-      <p className="text-sm text-card-foreground">{studio.project.objective}</p>
-      {!brief ? <p className="text-sm text-muted-foreground">The agent writes its plan here before it researches.</p> : null}
-      {brief && brief.researchQuestions.length > 0 ? (
-        <div className="grid gap-1">
-          <h3 className="text-sm font-medium text-card-foreground">Questions it set out to answer</h3>
-          <ul className="list-disc pl-5 text-sm text-muted-foreground">
-            {brief.researchQuestions.map((row) => (
-              <li key={row}>{row}</li>
-            ))}
-          </ul>
+      <div className="grid gap-1">
+        <h2 className={heading}>Task brief</h2>
+        <p className="text-sm text-muted-foreground">Written before any research. The agent works from this, and the report is checked against it.</p>
+      </div>
+      <dl className="grid gap-3 text-sm">
+        <div className={row}>
+          <dt className={label}>Objective</dt>
+          <dd className="text-card-foreground">{studio.project.objective}</dd>
         </div>
-      ) : null}
-      {brief && brief.searchQueries.length > 0 ? (
-        <div className="grid gap-1">
-          <h3 className="text-sm font-medium text-card-foreground">Planned searches</h3>
-          <ul className="flex flex-wrap gap-2">
-            {brief.searchQueries.map((row) => (
-              <li key={row} className="rounded-full border border-border px-2.5 py-0.5 text-xs text-muted-foreground">
-                {row}
-              </li>
-            ))}
-          </ul>
+        <div className={row}>
+          <dt className={label}>Deliverable</dt>
+          <dd className="text-card-foreground">A market report with three actionable opportunities, each with its evidence, why it matters here, a proposed action, and how to tell if it worked.</dd>
         </div>
-      ) : null}
+        <div className={row}>
+          <dt className={label}>Already known</dt>
+          <dd>
+            {context && context.known.length > 0 ? (
+              <ul className="grid gap-1">
+                {context.known.map((item) => (
+                  <li key={item.key} className="break-words">
+                    <span className="text-card-foreground">{item.label}:</span> <span className="text-card-foreground">{item.value}</span>{" "}
+                    <span className="text-xs text-muted-foreground">
+                      ({item.origin === "project" ? "this assignment" : item.origin === "profile" ? "business profile" : `business fact, ${FACT_STATUS_WORDS[item.status]?.label.toLowerCase() ?? item.status}`}, {shortDate(item.recordedAt)})
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <span className="text-muted-foreground">Read when the run starts.</span>
+            )}
+          </dd>
+        </div>
+        <div className={row}>
+          <dt className={label}>Missing, and assumed</dt>
+          <dd>
+            {context && (context.missing.length > 0 || context.assumptions.length > 0) ? (
+              <ul className="grid gap-1 text-muted-foreground">
+                {context.missing.map((item) => (
+                  <li key={`m-${item.key}`}>
+                    Missing: {MISSING_WORDS[item.key] ?? item.key}
+                    {item.blocking ? " (it asks before researching)" : ""}
+                  </li>
+                ))}
+                {context.assumptions.map((item) => (
+                  <li key={`a-${item}`}>Assumed: {item}</li>
+                ))}
+              </ul>
+            ) : (
+              <span className="text-muted-foreground">{context ? "Nothing missing." : "Read when the run starts."}</span>
+            )}
+          </dd>
+        </div>
+        <div className={row}>
+          <dt className={label}>Permitted sources and tools</dt>
+          <dd className="text-card-foreground">
+            {studio.project.platforms.map((platform) => PLATFORM_LABEL[platform] ?? platform).join(", ")}, through Claude web search, official APIs and embeds, and links you paste.{" "}
+            <span className="text-muted-foreground">It never logs in anywhere and never works around a block.</span>
+          </dd>
+        </div>
+        <div className={row}>
+          <dt className={label}>Research budget</dt>
+          <dd className="text-card-foreground">
+            Up to {money(capCents)} for this run, with {money(reserveCents)} held back to check the report and fix it once. Spent so far: {money(spent)}.
+          </dd>
+        </div>
+        {brief && brief.researchQuestions.length > 0 ? (
+          <div className={row}>
+            <dt className={label}>Questions it set out to answer</dt>
+            <dd>
+              <ul className="list-disc pl-5 text-muted-foreground">
+                {brief.researchQuestions.map((item) => (
+                  <li key={item}>{item}</li>
+                ))}
+              </ul>
+            </dd>
+          </div>
+        ) : null}
+        {brief && brief.searchQueries.length > 0 ? (
+          <div className={row}>
+            <dt className={label}>Planned searches</dt>
+            <dd>
+              <ul className="flex flex-wrap gap-2">
+                {brief.searchQueries.map((item) => (
+                  <li key={item} className="rounded-full border border-border px-2.5 py-0.5 text-xs text-muted-foreground">
+                    {item}
+                  </li>
+                ))}
+              </ul>
+            </dd>
+          </div>
+        ) : null}
+      </dl>
     </Panel>
   );
 }

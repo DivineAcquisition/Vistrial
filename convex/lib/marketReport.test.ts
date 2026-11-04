@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import { keepSupported } from "../skills/marketIntelligence";
 import { stepAllowance } from "./estimate";
-import { NO_CONTEXT, TWO_OPPORTUNITIES, checkReport, readOpportunities, type Brief, type MarketReport, type Opportunity } from "./marketReport";
+import { NO_CONTEXT, TWO_OPPORTUNITIES, checkReport, readOpportunities, type Brief, type CheckInputs, type MarketReport, type Opportunity } from "./marketReport";
 
 const brief: Brief = {
   objective: "Win more bookings",
@@ -45,9 +45,9 @@ function report(overrides: Partial<MarketReport> = {}): MarketReport {
   };
 }
 
-const inputs = { brief, droppedClaims: [], notAvailable: [], runCostCents: 10, runCapCents: 300 };
+const inputs: CheckInputs = { brief, droppedClaims: [], notAvailable: [], runCostCents: 10, runCapCents: 300 };
 
-function failed(r: MarketReport, extra: Partial<typeof inputs> = {}) {
+function failed(r: MarketReport, extra: Partial<CheckInputs> = {}) {
   return checkReport(r, { ...inputs, ...extra })
     .filter((row) => !row.passed)
     .map((row) => row.key);

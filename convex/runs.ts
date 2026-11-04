@@ -2,7 +2,7 @@ import { paginationOptsValidator } from "convex/server";
 import { v } from "convex/values";
 
 import { internal } from "./_generated/api";
-import { internalAction, internalMutation } from "./_generated/server";
+import { internalAction, internalMutation, internalQuery } from "./_generated/server";
 import type { Doc, Id } from "./_generated/dataModel";
 import type { MutationCtx, QueryCtx } from "./_generated/server";
 import { workspaceMutation, workspaceQuery } from "./lib/builders";
@@ -14,7 +14,10 @@ import { assertClaims, assertSourcesExist } from "./lib/evidence";
 import { notAllowed, notFound } from "./lib/errors";
 import { ModelError, NO_SPEND, complete, type ModelRoute, type Spend } from "./lib/modelRouter";
 import { completeWithTools } from "./lib/toolRouter";
-import { INJECTION_FIXTURE, TEST_SKILL, devSkillsEnabled, wrapUntrusted } from "./lib/registry";
+import { INJECTION_FIXTURE, TEST_SKILL, devSkillsEnabled, isCollectTool, wrapUntrusted } from "./lib/registry";
+import { collectResult, type Platform } from "./lib/researchShapes";
+import { saveSourceRef, setSourceStatus } from "./lib/sourceRefs";
+import { liveEnv, runAdapter } from "./adapters";
 import { assertDeclared, skillFor } from "./lib/skills";
 
 const OPEN = new Set(["queued", "running", "waiting"]);
@@ -275,9 +278,17 @@ export const artifact = workspaceQuery({
 });
 
 export const start = workspaceMutation({
-  args: { agentSlug: v.string(), skillSlug: v.string() },
-  handler: async (ctx, input) => {
+  args: {
+    agentSlug: v.string(),
+    skillSlug: v.string(),
+    /** The research project this run works on. Collect steps save their sources to it. */
+    projectId: v.optional(v.id("researchProjects")),
+  },
+  handler: async (ctx, { projectId, ...input }) => {
     if (ctx.member.role === "rep") notAllowed();
+    const project = projectId ? await ctx.db.get(projectId) : null;
+    if (projectId && (!project || project.workspaceId !== ctx.workspaceId)) notFound();
+    if (project?.status === "archived") throw new Error("This project is archived.");
     // An older client may still send a renamed slug. Runs are always stored under the current one.
     const args = { ...input, agentSlug: currentAgentSlug(input.agentSlug) };
     if (args.skillSlug === TEST_SKILL && !devSkillsEnabled()) notFound();
@@ -305,7 +316,7 @@ export const start = workspaceMutation({
       skillSlug: args.skillSlug,
       status: blocked ? "stopped" : "queued",
       startedBy: ctx.identity.subject,
-      inputRef: args.skillSlug,
+      inputRef: project?._id ?? args.skillSlug,
       startedAt: Date.now(),
       finishedAt: blocked ? Date.now() : undefined,
       stopReason: blocked ? (gate.halted || gate.paused ? "cancelled" : "cap") : undefined,
@@ -321,6 +332,8 @@ export const start = workspaceMutation({
       subject: id,
       count: 0,
     });
+    // Running locks the project's scope. Whether it is running now is read from its latest run.
+    if (project) await ctx.db.patch(project._id, { status: "ready", latestRunId: id, updatedAt: Date.now() });
     if (!blocked) {
       await ctx.scheduler.runAfter(0, internal.runs.step, { runId: id });
       await ctx.scheduler.runAfter(caps.maxDurationMs, internal.runs.expire, { runId: id });
@@ -409,6 +422,9 @@ export const prepare = internalMutation({
     if (next.kind === "model" && next.webSearch) assertDeclared(run.skillSlug, "web.search");
     if (next.kind === "model" && next.webFetch) assertDeclared(run.skillSlug, "web.fetch");
     if (run.status === "queued") await ctx.db.patch(run._id, { status: "running" });
+    if (next.kind === "tool" && isCollectTool(next.toolSlug)) {
+      return { done: false as const, kind: "collect" as const, index, idempotencyKey, toolSlug: next.toolSlug };
+    }
     if (next.kind === "tool") {
       return { done: false as const, kind: "tool" as const, index, idempotencyKey, toolSlug: next.toolSlug };
     }
@@ -453,6 +469,7 @@ async function recordFailure(
   kind: "tool" | "model" = "model",
   spent: Spend = NO_SPEND,
   durationMs = 0,
+  toolSlug?: string,
 ) {
   const stepId = await ctx.db.insert("runSteps", {
     workspaceId: run.workspaceId,
@@ -460,6 +477,7 @@ async function recordFailure(
     index,
     idempotencyKey,
     kind,
+    ...(toolSlug ? { toolSlug } : {}),
     status: "failed",
     durationMs,
     inputTokens: spent.inputTokens,
@@ -507,6 +525,8 @@ export const fail = internalMutation({
     outputTokens: v.optional(v.number()),
     costCents: v.optional(v.number()),
     durationMs: v.optional(v.number()),
+    /** The tool that failed, so the run page can name it. */
+    toolSlug: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     const run = await ctx.db.get(args.runId);
@@ -530,6 +550,7 @@ export const fail = internalMutation({
       args.kind,
       spent,
       args.durationMs ?? 0,
+      args.toolSlug,
     );
     if (billed) {
       await writeAudit(ctx, {
@@ -755,6 +776,130 @@ export const commitModel = internalMutation({
   },
 });
 
+/** The project a run works on, when its input is a project in the run's workspace. */
+async function runProject(ctx: QueryCtx, run: Doc<"agentRuns">) {
+  const id = ctx.db.normalizeId("researchProjects", run.inputRef);
+  const project = id ? await ctx.db.get(id) : null;
+  return project && project.workspaceId === run.workspaceId ? project : null;
+}
+
+const KNOWN_PLATFORMS: Platform[] = ["youtube", "tiktok", "instagram", "metaAdLibrary"];
+
+/**
+ * What a collect step works from: the project's scope, the web tools' results from this run's model steps
+ * (newest first), and links the project already holds per platform. Null when the run has no project.
+ */
+export const collectInput = internalQuery({
+  args: { runId: v.id("agentRuns") },
+  handler: async (ctx, args) => {
+    const run = await ctx.db.get(args.runId);
+    if (!run) return null;
+    const project = await runProject(ctx, run);
+    if (!project) return null;
+    const artifacts = await ctx.db
+      .query("runArtifacts")
+      .withIndex("by_workspace_run", (q) => q.eq("workspaceId", run.workspaceId).eq("runId", run._id))
+      .order("desc")
+      .take(200);
+    const webResults = artifacts.filter((row) => row.kind === "sources" && row.body).map((row) => row.body!);
+    const knownUrls: Partial<Record<Platform, string[]>> = {};
+    for (const platform of KNOWN_PLATFORMS) {
+      const rows = await ctx.db
+        .query("sourceRefs")
+        .withIndex("by_workspace_project_platform", (q) =>
+          q.eq("workspaceId", run.workspaceId).eq("projectId", project._id).eq("platform", platform),
+        )
+        .order("desc")
+        .take(50);
+      knownUrls[platform] = rows.map((row) => row.url);
+    }
+    return {
+      scope: {
+        market: project.market,
+        geography: project.geography,
+        competitors: project.competitors,
+        platforms: project.platforms,
+        suppliedUrls: project.suppliedUrls,
+      },
+      webResults,
+      knownUrls,
+    };
+  },
+});
+
+const COLLECT_CODE = { available: "ok", partial: "partial", unavailable: "unavailable", awaitingAuthorization: "awaiting_authorization" } as const;
+
+/**
+ * Saves what one adapter found: the adapter's result as the raw record, each source on the project (the
+ * same page once), and the adapter's status for this run. The step marker commits with them. An adapter
+ * that could not reach its source still completes its step: the status says why, and the run goes on.
+ */
+export const commitCollect = internalMutation({
+  args: {
+    runId: v.id("agentRuns"),
+    idempotencyKey: v.string(),
+    index: v.number(),
+    toolSlug: v.string(),
+    result: collectResult,
+    durationMs: v.number(),
+  },
+  handler: async (ctx, args) => {
+    const run = await ctx.db.get(args.runId);
+    if (!run) notFound();
+    if (await findStep(ctx, run, args.idempotencyKey)) return { status: run.status };
+    if (!OPEN.has(run.status)) return { status: run.status };
+    assertDeclared(run.skillSlug, args.toolSlug);
+    const project = await runProject(ctx, run);
+    if (!project) {
+      await recordFailure(ctx, run, args.index, args.idempotencyKey, "no_project", "tool", NO_SPEND, 0, args.toolSlug);
+      return { status: "failed" as const };
+    }
+    const stepId = await ctx.db.insert("runSteps", {
+      workspaceId: run.workspaceId,
+      runId: run._id,
+      index: args.index,
+      idempotencyKey: args.idempotencyKey,
+      kind: "tool",
+      toolSlug: args.toolSlug,
+      status: "completed",
+      durationMs: args.durationMs,
+      inputTokens: 0,
+      outputTokens: 0,
+      resultCode: COLLECT_CODE[args.result.state],
+    });
+    const body = JSON.stringify(args.result);
+    const artifactId = await ctx.db.insert("runArtifacts", {
+      workspaceId: run.workspaceId,
+      runId: run._id,
+      stepId,
+      kind: "tool",
+      byteSize: new TextEncoder().encode(body).byteLength,
+      body,
+    });
+    let saved = 0;
+    const now = Date.now();
+    for (const source of args.result.sources) {
+      try {
+        await saveSourceRef(ctx, { ...source, workspaceId: run.workspaceId, projectId: project._id, runId: run._id, artifactId, observedAt: now });
+        saved++;
+      } catch {
+        // A link that is not a public address is left out. The adapter's raw record still shows it was found.
+      }
+    }
+    const statusId = await setSourceStatus(ctx, {
+      workspaceId: run.workspaceId,
+      runId: run._id,
+      projectId: project._id,
+      platform: args.result.platform,
+      state: args.result.state,
+      reasonCode: args.result.reasonCode,
+      found: saved,
+    });
+    await ctx.db.patch(stepId, { resultId: statusId });
+    return { status: "running" as const };
+  },
+});
+
 /** Runs one step, then schedules the next. Nothing depends on a browser staying open. */
 export const step = internalAction({
   args: { runId: v.id("agentRuns") },
@@ -813,6 +958,29 @@ export const step = internalAction({
         durationMs,
         ...(web ?? {}),
       }));
+    } else if (plan.kind === "collect") {
+      const input = await ctx.runQuery(internal.runs.collectInput, { runId: args.runId });
+      if (!input) {
+        await ctx.runMutation(internal.runs.fail, {
+          runId: args.runId,
+          index: plan.index,
+          idempotencyKey: plan.idempotencyKey,
+          code: "no_project",
+          kind: "tool",
+          toolSlug: plan.toolSlug,
+        });
+        return null;
+      }
+      const began = Date.now();
+      const collected = await runAdapter(plan.toolSlug, input, liveEnv());
+      ({ status } = await ctx.runMutation(internal.runs.commitCollect, {
+        runId: args.runId,
+        idempotencyKey: plan.idempotencyKey,
+        index: plan.index,
+        toolSlug: plan.toolSlug,
+        result: collected,
+        durationMs: Date.now() - began,
+      }));
     } else {
       try {
         ({ status } = await ctx.runMutation(internal.runs.commitTool, {
@@ -828,6 +996,7 @@ export const step = internalAction({
           idempotencyKey: plan.idempotencyKey,
           code: "tool_error",
           kind: "tool",
+          toolSlug: plan.toolSlug,
         });
         return null;
       }

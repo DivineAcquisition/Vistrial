@@ -7,7 +7,7 @@ export type AssetRowView = {
   id: string;
   title: string;
   kind: string;
-  status: "draft" | "approved" | "archived";
+  status: "draft" | "needsReview" | "approved" | "rejected" | "archived";
   currentVersion: number;
   createdAt: number;
   createdByRun: string | null;
@@ -34,8 +34,8 @@ export function AssetRow({ asset }: { asset: AssetRowView }) {
       </div>
       <div className="flex flex-wrap items-center gap-2">
         <AssetStatusBadge status={asset.status} />
-        <Button render={<Link href={`/app/assets/${asset.id}`} />} variant={asset.status === "draft" ? "primary" : "outline"} size="sm">
-          {asset.status === "draft" ? "Review" : "Open"}
+        <Button render={<Link href={`/app/assets/${asset.id}`} />} variant={asset.status === "draft" || asset.status === "needsReview" ? "primary" : "outline"} size="sm">
+          {asset.status === "draft" || asset.status === "needsReview" ? "Review" : "Open"}
         </Button>
       </div>
     </div>

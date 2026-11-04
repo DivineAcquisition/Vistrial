@@ -15,6 +15,11 @@ export const TOOLS = [
   "source.tiktok",
   "source.instagram",
   "source.metaAdLibrary",
+  "context.read",
+  "mi.applyClassification",
+  "mi.compute",
+  "mi.check",
+  "mi.save",
 ] as const;
 
 export type ToolSlug = (typeof TOOLS)[number];

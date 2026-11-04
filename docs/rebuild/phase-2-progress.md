@@ -15,6 +15,10 @@ Tracks the Phase 2 backlog in `growth-architect-v1-plan.md`. Everything here was
 | 2.8 | YouTube adapter (Data API, embeds) | Done, tested on fixtures. Live search waits on `YOUTUBE_API_KEY` on dev. |
 | 2.9 | TikTok and Instagram URL adapters (oEmbed) | Done. TikTok live on dev. Instagram waits on Meta's oEmbed Read approval. |
 | 2.10 | Meta Ad Library links, plus the official API in the EU and UK | Done, tested on fixtures. Live API call waits on a fresh `META_AD_LIBRARY_TOKEN`. |
+| 2.18 | Business facts (doctrine D6) | Done. Checked on dev. |
+| 2.20 | Feedback: reject or request a revision with a reason, promote to a fact | Done. Checked on dev. CSV results uploads are still to come. |
+| 2.11 | Market Intelligence: context, brief, research, collect, classify, compute, prioritize, write, eight checks, one revision, save | Done. Live run on dev passed, 81.6¢. |
+| 2.19 | Ask, wait, resume, guarded seven-day timeout | Done, tested. |
 
 ## 2.1 Departments and the seven agents
 
@@ -139,6 +143,105 @@ The first live run showed TikTok profile and topic pages being sent to oEmbed an
 1. **`YOUTUBE_API_KEY`** in the Convex dev (and later production) environment variables. Without it YouTube shows pasted and found videos and says search is not set up.
 2. **`META_AD_LIBRARY_TOKEN`**: the one on dev is rejected (expired or revoked). It needs a new long-lived token, and Ad Library API access (identity check and terms) on the business's Meta account.
 3. **Instagram oEmbed Read** approval on the business's Meta app (`META_APP_ID` / `META_APP_SECRET` are set).
+
+## 2.18 Business facts and 2.20 feedback
+
+**State: done.** These follow `doctrine-understanding-precedes-advantage.md` sections 3.1 and 3.5. They were checked live on `calm-spider-678` on 2026-11-04.
+
+### Business facts (`businessFacts`, `convex/facts.ts`, `convex/lib/facts.ts`)
+
+- **What a row holds:** a key, a value, a source type (owner, agent, assumption, upload, feedback), a source reference, when it was recorded and by whom, when and by whom it was verified, a status (unverified, verified, disputed, superseded), and the fact it supersedes.
+- **One live fact per key.** Replacing a fact inserts a new row that points at the old one, and the old row becomes `superseded`. Nothing is edited into a new value. Removing a fact is a soft delete: audited, by an Owner or Manager, with its history kept.
+- **A person's statement is verified.** That covers `facts.record` and a promoted feedback row. Only an Owner or Manager records, verifies, disputes or removes a fact. Disputing a fact keeps its verification history.
+- **An agent's fact is always unverified** (`writeAgentFact`). It never replaces a fact a person verified: the verified fact stays current and nothing is written.
+- **Source references:** agent, upload and feedback facts must have one. Owner and assumption facts may leave it empty.
+- **What a run can see:** `factsForRun` returns only live facts, each with its status. 2.11 records which fact ids a run used.
+
+### Feedback (`feedback`, `assets.reject`, `assets.requestRevision`, `convex/feedback.ts`)
+
+- **Reject:** an Owner or Manager rejects a waiting asset with a reason of 3 to 1,000 characters. The asset becomes `rejected`, leaves the queue and keeps every version.
+- **Request a revision:** the asset stays waiting.
+- **Both save a `feedback` row** with the asset version, the reason, who and when.
+- **Promoting:** `feedback.promote` turns a reason into a verified fact, with `sourceType: feedback` and the feedback id as its reference. Only a person can do it, once per row. Nothing is promoted automatically.
+
+### Asset statuses
+
+These are now shared in `convex/lib/assetStatus.ts`: draft, **needsReview**, approved, **rejected**, archived. "Needs review" is for an agent's draft that failed a completion check (2.11). It cannot be approved until a person adds a version or rejects it. The asset page has Reject with a reason. Lists show the two new statuses and can filter by them.
+
+### Tests and checks
+
+- 202 pass, 11 of them new (`convex/facts.test.ts`). They cover the supersede chain, roles, key and value checks, source references, agent facts never verifying themselves, removed and replaced facts, what a run sees, the feedback flows, promotion, needs review, and isolation for both tables through every public function.
+- **Live on dev:** 9 of 9 checks pass. Those covered replacement, roles, dispute history and isolation. They also included rejecting a real `test-echo` draft, the queue emptying, and promoting the reason into a verified fact.
+
+## 2.11 Market Intelligence and 2.19 ask, wait, resume
+
+**State: done.** This follows `doctrine-understanding-precedes-advantage.md` sections 3.2 to 3.4. The code is in `convex/skills/marketIntelligence/`.
+
+### The steps
+
+| # | Phase | Kind | What it does |
+|---|---|---|---|
+| 1 | context | code (`context.read`) | Reads the project's scope, the confirmed profile, and live business facts with their status. It also lists declared gaps: no market or no geography in the project, the answered facts or the profile. |
+| — | ask | waits | Only for a declared gap (`researchMarket`, `researchGeography`), at most twice. Then context is read again. |
+| 2 | brief | model (classify) | Structured: objective, deliverables, research questions, planned searches, known (profile and fact ids), missing, assumptions. Whether a gap blocks the run is decided in code, never by the model. |
+| 3 | research | model (research) | Claude web search, at most 5 searches. |
+| 4 | collect | adapters | `source.web`, plus YouTube, TikTok, Instagram and Meta Ad Library when the project includes them. |
+| 5 | classify | model (classify) | Structured: hook, offer, call to action, format, audience hypothesis and relevance for up to 40 sources. Source text goes in wrapped as untrusted. |
+| 6 | applyClassification | code | Saves the labels on each source as the model's classification. Ids that are not in the project are skipped. |
+| 7 | compute | code | Counts by platform and kind, groupings by offer, call to action and format, dates, and each source's status and limitation. A pattern seen in fewer than 3 sources is marked not enough. |
+| 8 | prioritize | model (write) | Up to three opportunities, each with five fields, or fewer with a reason. |
+| 9 | write | model (write) | The report: objective, summary, findings with a basis and source ids, the opportunities (none added), limits, context used, and the reason for any missing opportunity. |
+| 10 | check | code | The eight checks (doctrine 3.4) in `checks.ts`. No model decides that a report passed. |
+| 11 | revise | model (write), may use the reserve | Only when a check failed. It covers only the failed checks and uses only the sources already collected. |
+| 12 | recheck | code | The same eight checks. |
+| 13 | save | code | Saves a `marketReport` asset with one evidence row per claim, screened by the evidence rules. If every check passed it is a draft waiting for approval; otherwise it is **Needs Review**, with the failed checks written into the draft. The run's record lists the context it used, the checks and any dropped claims. |
+
+### Budget reserve
+
+- Market Intelligence keeps **50¢** of its $3 cap for the check and the one revision.
+- Before every model call, the runtime estimates the worst case (`convex/lib/estimate.ts`): prompt tokens counted high, the work kind's full output room, and 25k input tokens plus 1¢ for each allowed search. The higher of the route's two models is used.
+- A call that would spend into the reserve does not start. Its step is recorded as a note, `over_budget`, and the run goes on. Only the revision may use the reserve.
+- If the reserve cannot pay for the revision, the draft is saved as Needs Review, with that reason.
+
+### Ask, wait, resume (D8)
+
+- **Waiting:** a skill may ask only the questions it declares. The run becomes `waiting` with `waitingFor` (question id, key, words, when). While it waits, no step runs and nothing is spent, and the time cap does not count the wait.
+- **Answering:** `runs.answer`, by an Owner or Manager, needs the current question id. It saves the answer as a verified owner fact and resumes the run.
+- **Timeout:** `runs.askTimeout` is scheduled seven days out. It changes the run only if the run is still waiting on the same question id. It then becomes `needsInput` with `timedOut`; nothing is deleted and the run is not finished.
+- **Resuming:** `runs.resume` asks the same question again with a new id and a new seven days.
+- **One waiting run per project:** a project cannot start a second run while one is waiting. After a timeout it can.
+
+Other changes: `runSteps.phase`; code-only tools dispatched from `commitTool`; the `classify` output room raised to 8,000 tokens; Market Intelligence marked available in the catalog and refusing to start without a project; run screen words for Waiting for User, Needs Input — Timed Out, Needs review, and the new steps and codes.
+
+### Tests
+
+213 pass, 11 of them new (`convex/marketIntelligence.test.ts`, with a scripted fake model):
+- A full run passes all eight checks and saves a draft. Its classifications are saved, the counts and minimum-sample checks are right, and the context used is recorded.
+- The two-opportunity fixture gets one revision and then Needs Review. It says "Only 2 opportunities could be supported by the available evidence", contains no invented third, and cannot be approved.
+- A revision that fixes the failed check passes.
+- A run left with only its reserve skips research and writing as `over_budget`, the revision still runs from the reserve, and the cost stays under the cap.
+- Starting refuses without a project, on another workspace's project, and for a Rep.
+- The ask flow asks only for declared gaps, spends nothing while waiting, and blocks a second run. Answers come from an Owner or Manager only, on the current question, saved as a verified fact. Both questions are asked in turn, then the run completes.
+- The timeout ignores stale questions, fires at seven days, allows a new run after it, and resume asks again with a new id.
+- Another workspace cannot answer or resume a run.
+- Each of the eight checks fails on its own. An opportunity with no source is accepted only when it is labelled uncertain, and with no business context the relevance must say so.
+
+Three earlier tests changed because the skill now exists or the time cap now accounts for waiting: `skills.test.ts`, `caps.test.ts` and `runtime.test.ts` (expire).
+
+### Live run on dev (2026-11-04)
+
+- **Setup:** an Austin deep-cleaning business with a confirmed profile, one verified fact (`monthlyAdBudget`), and a project on web, YouTube and TikTok.
+- **Routes:** classify on Sonnet 5.5, research and write on Opus 5.5 (D2).
+
+| | |
+|---|---|
+| Result | Completed in 206 s for **81.6¢** (104.9k in / 22.2k out) |
+| Sources | 60 (30 web, 22 YouTube, 8 TikTok). Web was `partial`, because many pages were link-only. |
+| Checks | The first draft failed one check. The single revision passed all eight. |
+| Report | Three opportunities, each a different action with a way to tell if it worked. All three are labelled as hypotheses, because the visible sources could not support them as observed. 9 findings with bases, limits for every source, and the profile and the verified fact listed as context used. 12 evidence rows, none with a missing source. |
+| Asset | `marketReport`, draft, waiting for approval |
+
+The report did what the doctrine asks. It said competitor prices were not visible instead of guessing them, it told the user to check the full pages before acting, and it did not treat popularity as performance.
 
 ## Production steps for 2.1
 

@@ -126,7 +126,9 @@ export function assetKindLabel(kind: string) {
 
 const ASSET_STATUS = {
   draft: { label: "Waiting for approval", tone: "warning" },
+  needsReview: { label: "Needs review", tone: "critical" },
   approved: { label: "Approved", tone: "good" },
+  rejected: { label: "Rejected", tone: "neutral" },
   archived: { label: "Archived", tone: "neutral" },
 } as const;
 

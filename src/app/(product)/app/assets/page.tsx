@@ -12,12 +12,14 @@ import { Panel } from "@/components/ui/panel";
 import { Select } from "@/components/ui/select";
 import { api } from "../../../../../convex/_generated/api";
 
-type Status = "draft" | "approved" | "archived";
+type Status = "draft" | "needsReview" | "approved" | "rejected" | "archived";
 type Kind = "researchReport" | "marketReport" | "adCopySet" | "creativeBrief" | "contentCalendar" | "swipeItem";
 
 const STATUS_OPTIONS = [
   { value: "draft", label: "Waiting for approval" },
+  { value: "needsReview", label: "Needs review" },
   { value: "approved", label: "Approved" },
+  { value: "rejected", label: "Rejected" },
   { value: "archived", label: "Archived" },
 ];
 

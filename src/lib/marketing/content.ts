@@ -16,6 +16,7 @@ export const SITE_DESCRIPTION =
 export const SECTIONS = {
   hero: true,
   problem: true,
+  philosophy: true,
   how: true,
   growthArchitect: true,
   evidence: true,
@@ -87,6 +88,32 @@ export const PROBLEM = {
     "AI tools give confident answers with no sources behind them.",
     "We spend before we know which audience or angle to test first.",
   ],
+} as const;
+
+export const PHILOSOPHY = {
+  id: "philosophy",
+  eyebrow: "Our philosophy",
+  headline: "Study first. Then act.",
+  paragraphs: [
+    "Vistrial began with an old discipline, not a new tool. Long before dashboards, philosophers taught that a conclusion is earned by looking carefully, naming what you actually know, and admitting what you do not.",
+    "Most growth work skips that step. It starts with a guess, spends on it, and hopes. We built Vistrial so the careful step comes first, and costs less than the guess it replaces.",
+  ],
+  tenets: [
+    { id: "observe", title: "Observation before opinion", body: "Look at the market as it is before deciding what it should be." },
+    { id: "know", title: "Know what you know", body: "Keep what was seen apart from what is inferred, and both apart from what is hoped." },
+    { id: "admit", title: "Say when you do not", body: "“Not enough data” is an honest answer. A confident guess is not." },
+    { id: "judge", title: "Judgment stays human", body: "Agents do the study and the drafting. A person decides what goes out." },
+  ],
+  maxim: "Understanding precedes advantage.",
+  link: { href: "/#how", label: "See how every agent applies it" },
+  image: {
+    src: "/brand/philosopher-thinker-crisp.png",
+    width: 640,
+    height: 1326,
+    alt: "A black-and-white cartoon-style drawing of a full-length seated figure in deep thought, chin resting on his hand.",
+    credit:
+      "Drawn from Auguste Rodin, The Thinker, c. 1880. Bronze. The Cleveland Museum of Art, Gift of Alexandre P. Rosenberg, 1979.138. Public domain (CC0).",
+  },
 } as const;
 
 export const HOW = {

@@ -107,10 +107,10 @@ export const PHILOSOPHY = {
   maxim: "Understanding precedes advantage.",
   link: { href: "/#how", label: "See how every agent applies it" },
   image: {
-    src: "/brand/philosopher-thinker.png",
+    src: "/brand/philosopher-thinker-outlined.png",
     width: 640,
-    height: 1324,
-    alt: "A soft black-and-white drawing of a full-length seated figure in deep thought, chin resting on his hand.",
+    height: 1326,
+    alt: "A black-and-white cartoon-style drawing of a full-length seated figure in deep thought, chin resting on his hand.",
     credit:
       "Drawn from Auguste Rodin, The Thinker, c. 1880. Bronze. The Cleveland Museum of Art, Gift of Alexandre P. Rosenberg, 1979.138. Public domain (CC0).",
   },

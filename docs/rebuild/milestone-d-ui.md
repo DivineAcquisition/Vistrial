@@ -67,8 +67,23 @@ New server queries: `studio.studio` (the project with its run, waiting question,
 
 Checked: screenshots at 1280 px (with compare open) and 390 px (with focus), with no sideways scroll. 218 tests pass, 3 of them new: embed URLs are built only from safe ids, and an id that could change the address is refused.
 
-### Still to come in Milestone D
+## 5. Report, Review queue, and launch routes (rest of 2.15)
 
-- **2.15 rest:** basis badges on the asset page, version compare for reports, and export as PDF or Markdown.
-- **Review queue:** Waiting for User, Needs Input, and Needs review in Decisions.
-- **Production model routes**, set up with you.
+- **Report page** (`/app/assets/[id]`):
+  - The body renders as a document, through `ReportBody`, a small renderer for the Markdown subset reports use. It builds React elements only and never sets HTML, so a `<script>` in a source or model text shows as text.
+  - Each claim carries a coloured **basis badge**: Observed, Inference, Untested hypothesis, Your data, Not enough data.
+  - Version compare was already in place.
+- **Export:**
+  - **Download Markdown** saves the body, every claim with its basis, and each cited source once, with links.
+  - **Print or save as PDF** uses the browser. The app's navigation and the Approve and Reject controls are hidden when printing.
+- **Decisions queue:**
+  - **Questions for you** lists every run waiting for an answer, or timed out, with its project, the question, and Answer or Resume. It reads from the new `studio.attention`.
+  - **Needs review** lists drafts that failed their checks, with what to do next.
+- **Launch routes:** `platform:ensureDefaultRoutes` is an internal function you run once from the Convex dashboard.
+  - It sets research and write to Opus 5.5 with Sonnet 5.5 as fallback, and classify and summarize the other way round (decision D2).
+  - It fills only kinds of work with no route and never changes one a Platform Admin set.
+  - On dev it kept the three routes set earlier and added `summarize`.
+
+Checks: 223 tests pass, 5 of them new. They cover the routes helper (fills only missing routes, a second run adds nothing), the Decisions query (with isolation), and the report renderer (structure, no markup injection, export lists each source once). Typecheck is clean and lint has 0 errors. The report body and basis badges were checked on the asset story page.
+
+**Milestone D is complete.** Next is Milestone E: 2.16, the injection test, and 2.17, end-to-end acceptance against the doctrine's five tests.

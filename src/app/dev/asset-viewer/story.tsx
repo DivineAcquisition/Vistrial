@@ -4,6 +4,7 @@ import { useState } from "react";
 
 import { EvidenceList, VersionCompare, VersionHistory, type EvidenceView } from "@/components/assets/asset-parts";
 import { AssetRow, type AssetRowView } from "@/components/assets/asset-row";
+import { ReportBody } from "@/components/assets/report-body";
 import { Panel } from "@/components/ui/panel";
 
 const T0 = Date.UTC(2026, 9, 27, 14, 0, 0);
@@ -13,6 +14,36 @@ const EVIDENCE: EvidenceView[] = [
   { claimKey: "offer", statement: "The offer is a first deep clean at $300.", computed: false, fetchedAt: T0, sourceLabel: "Business profile, version 3" },
   { claimKey: "hook", statement: "Most long-running ads open with a before-and-after photo.", computed: false, fetchedAt: T0 + 60_000, sourceLabel: "Saved run record" },
   { claimKey: "broken", statement: "A claim whose source was deleted.", computed: false, fetchedAt: T0, sourceLabel: null },
+];
+
+const MARKET_REPORT = [
+  "# Market report",
+  "",
+  "**Objective:** Find the offers and messages Austin deep-cleaning competitors lead with, and where we can stand out.",
+  "",
+  "Competitors we could see lead with trust or with before-and-after results, and none showed a price.",
+  "",
+  "## Opportunities",
+  "",
+  "### 1. Lead with visible flat-rate pricing",
+  "",
+  "- **Evidence:** Untested hypothesis",
+  "- **Why it matters here:** Your offer is flat-rate. No competitor excerpt showed a price.",
+  "- **Proposed action:** Check the top listings first, then list both prices on your profile.",
+  "- **How to tell if it worked:** Compare four weeks of calls before and after.",
+  "",
+  "## Limits",
+  "",
+  "- **web:** Partial. Many pages were link-only.",
+  "",
+  "_Publicly visible ads and posts are not evidence that a campaign was profitable._",
+].join("\n");
+
+const BASIS_EVIDENCE: EvidenceView[] = [
+  { claimKey: "finding-1", statement: "Trust is the most repeated lead message.", computed: false, fetchedAt: null, sourceLabel: null, basis: "observed", basisLabel: "Observed", sources: [{ id: "s1", platform: "web", title: "Molly Maid of Greater Austin", url: "https://www.mollymaid.com/greater-austin/", publisher: "Molly Maid", observedAt: T0, availability: "linkOnly" }], sourceMissing: false },
+  { claimKey: "finding-2", statement: "A visible flat price may set the business apart.", computed: false, fetchedAt: null, sourceLabel: null, basis: "inferred", basisLabel: "Inference", sources: [], sourceMissing: false },
+  { claimKey: "opportunity-1", statement: "Lead with visible flat-rate pricing.", computed: false, fetchedAt: null, sourceLabel: null, basis: "hypothesis", basisLabel: "Untested hypothesis", sources: [], sourceMissing: false },
+  { claimKey: "finding-3", statement: "Not enough data: no competitor prices were collected.", computed: false, fetchedAt: null, sourceLabel: null, basis: "insufficient", basisLabel: "Not enough data", sources: [], sourceMissing: false },
 ];
 
 const V1 = "Market snapshot\n42 ads from 9 advertisers.\nTop hook: before and after.\nTest plan: 3 ideas.";
@@ -31,6 +62,14 @@ export function AssetViewerStory() {
       <p className="rounded-xl border border-dashed border-border p-4 text-sm text-muted-foreground">
         Asset screen parts. Fake data, development only.
       </p>
+      <Panel className="grid gap-3 p-4 sm:p-6">
+        <h2 className="font-heading text-base text-card-foreground">Market report body</h2>
+        <ReportBody body={MARKET_REPORT} />
+      </Panel>
+      <Panel className="grid gap-3 p-4 sm:p-6">
+        <h2 className="font-heading text-base text-card-foreground">Claims with basis badges</h2>
+        <EvidenceList evidence={BASIS_EVIDENCE} />
+      </Panel>
       <Panel className="grid gap-3 p-4 sm:p-6">
         <h2 className="font-heading text-base text-card-foreground">Queue rows</h2>
         <ul className="grid gap-3">

@@ -1,6 +1,7 @@
 "use client";
 
 import { CalculatorIcon, CircleAlertIcon, FileSearchIcon } from "lucide-react";
+import { StatusBadge } from "@/components/ui/status-badge";
 
 import { cn } from "@/lib/utils";
 import { lineDiff } from "@/lib/diff";
@@ -37,6 +38,15 @@ export function claimMissing(claim: EvidenceView) {
 export type VersionSummary = { version: number; createdBy: "agent" | "person" | string; createdAt: number };
 
 /** Each claim with its evidence beside it. A claim whose source cannot be found says so in red. */
+/** How each basis reads at a glance. The label itself is set on the server, never by the model. */
+const BASIS_TONE: Record<string, "good" | "brand" | "warning" | "neutral"> = {
+  observed: "good",
+  inferred: "brand",
+  hypothesis: "warning",
+  firstParty: "good",
+  insufficient: "neutral",
+};
+
 export function EvidenceList({ evidence }: { evidence: EvidenceView[] }) {
   if (evidence.length === 0) return <p className="text-sm text-muted-foreground">This version makes no claims.</p>;
   return (
@@ -48,7 +58,9 @@ export function EvidenceList({ evidence }: { evidence: EvidenceView[] }) {
         return (
           <li key={claim.claimKey} className="grid gap-1.5 rounded-lg border border-border p-3">
             {claim.basisLabel ? (
-              <p className="text-[11px] font-semibold tracking-[0.08em] text-muted-foreground uppercase">{claim.basisLabel}</p>
+              <div>
+                <StatusBadge label={claim.basisLabel} tone={BASIS_TONE[claim.basis ?? ""] ?? "neutral"} className="[&_span]:normal-case" />
+              </div>
             ) : null}
             <p className="text-sm text-card-foreground">{claim.statement ?? claim.claimKey}</p>
             <p className={cn("flex flex-wrap items-center gap-1.5 text-xs", missing ? "text-destructive" : "text-muted-foreground")}>

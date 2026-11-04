@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Panel } from "@/components/ui/panel";
 import { Textarea } from "@/components/ui/textarea";
+import { ReportBody, reportMarkdown } from "@/components/assets/report-body";
 import { api } from "../../../../../../convex/_generated/api";
 import type { Id } from "../../../../../../convex/_generated/dataModel";
 
@@ -65,7 +66,7 @@ function Asset({ shell, assetId }: { shell: WorkspaceShell; assetId: Id<"assets"
           </p>
         ) : null}
         {editor && status === "draft" ? (
-          <div className="flex flex-wrap items-center gap-3">
+          <div className="flex flex-wrap items-center gap-3 print:hidden">
             <Button
               type="button"
               disabled={missingSource}
@@ -84,7 +85,7 @@ function Asset({ shell, assetId }: { shell: WorkspaceShell; assetId: Id<"assets"
         {editor && (status === "draft" || status === "needsReview") ? (
           rejecting ? (
             <form
-              className="grid max-w-xl gap-2"
+              className="grid max-w-xl gap-2 print:hidden"
               onSubmit={(event) => {
                 event.preventDefault();
                 void reject({ workspaceId: shell.workspaceId, assetId, reason }).then(
@@ -111,7 +112,7 @@ function Asset({ shell, assetId }: { shell: WorkspaceShell; assetId: Id<"assets"
               </div>
             </form>
           ) : (
-            <div>
+            <div className="print:hidden">
               <Button type="button" variant="outline" size="sm" onClick={() => setRejecting(true)}>
                 Reject
               </Button>
@@ -130,19 +131,46 @@ function Asset({ shell, assetId }: { shell: WorkspaceShell; assetId: Id<"assets"
               <h2 className="font-heading text-base text-card-foreground">
                 {viewingOld ? `Version ${selected} (older)` : `Version ${selected}`}
               </h2>
-              {selected > 1 ? (
-                <Button type="button" variant="outline" size="sm" aria-pressed={comparing} onClick={() => setComparing(!comparing)}>
-                  {comparing ? "Hide changes" : `Compare with version ${selected - 1}`}
+              <div className="flex flex-wrap gap-2 print:hidden">
+                {selected > 1 ? (
+                  <Button type="button" variant="outline" size="sm" aria-pressed={comparing} onClick={() => setComparing(!comparing)}>
+                    {comparing ? "Hide changes" : `Compare with version ${selected - 1}`}
+                  </Button>
+                ) : null}
+                {shown ? (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {
+                      const text = reportMarkdown(asset.title, selected, shown.body ?? "", shown.evidence as EvidenceView[]);
+                      const url = URL.createObjectURL(new Blob([text], { type: "text/markdown;charset=utf-8" }));
+                      const link = document.createElement("a");
+                      link.href = url;
+                      link.download = `${asset.title.replace(/[^A-Za-z0-9 _-]+/g, "").trim().replace(/\s+/g, "-") || "report"}-v${selected}.md`;
+                      link.click();
+                      URL.revokeObjectURL(url);
+                    }}
+                  >
+                    Download Markdown
+                  </Button>
+                ) : null}
+                <Button type="button" variant="ghost" size="sm" onClick={() => window.print()}>
+                  Print or save as PDF
                 </Button>
-              ) : null}
+              </div>
             </div>
             {shown === undefined ? <p className="text-sm text-muted-foreground">Loading the version.</p> : null}
             {shown && comparing && previous ? (
               <VersionCompare before={previous.body} after={shown.body} beforeVersion={selected - 1} afterVersion={selected} />
             ) : shown ? (
-              <div className="text-sm leading-relaxed whitespace-pre-wrap break-words text-card-foreground">
-                {shown.body || "This version has no text."}
-              </div>
+              shown.body && /^#{1,3}\s/m.test(shown.body) ? (
+                <ReportBody body={shown.body} />
+              ) : (
+                <div className="text-sm leading-relaxed whitespace-pre-wrap break-words text-card-foreground">
+                  {shown.body || "This version has no text."}
+                </div>
+              )
             ) : null}
           </Panel>
           <Panel className="grid gap-3 p-4 sm:p-6">

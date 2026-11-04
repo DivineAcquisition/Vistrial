@@ -40,6 +40,9 @@ export function RunViewerStory() {
           connected={story.connected ?? true}
           canStop
           canApprove
+          canAnswer
+          onAnswer={async () => undefined}
+          onResume={async () => undefined}
           onStop={async () => ({ stopped: story.run.status === "running" || story.run.status === "queued" })}
           onApprove={() => undefined}
           onCopyLink={() => undefined}

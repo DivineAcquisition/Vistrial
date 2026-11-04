@@ -45,6 +45,9 @@ const base: RunView = {
   sources: [],
   artifacts: [],
   assets: [],
+  question: null,
+  timedOut: false,
+  completion: null,
 };
 
 const researchSteps = [
@@ -76,7 +79,49 @@ export type Story = { key: string; label: string; run: RunView; connected?: bool
 export const STORIES: Story[] = [
   { key: "queued", label: "Queued", run: { ...base, status: "queued", cost: { ...base.cost, spentCents: 0, inputTokens: 0, outputTokens: 0 } } },
   { key: "running", label: "Running", run: { ...base, steps: researchSteps.slice(0, 4) } },
-  { key: "waiting", label: "Waiting on a person", run: { ...base, status: "waiting", steps: researchSteps } },
+  {
+    key: "waiting",
+    label: "Waiting for User",
+    run: {
+      ...base,
+      status: "waiting",
+      steps: [step(0, null, { kind: "note", workKind: null, resultCode: "asked", durationMs: 0, inputTokens: 0, outputTokens: 0 })],
+      question: { questionId: "q1", text: "Which industry or market should I research?", askedAt: T0 },
+    },
+  },
+  {
+    key: "needs-input",
+    label: "Needs Input — Timed Out",
+    run: {
+      ...base,
+      status: "needsInput",
+      timedOut: true,
+      steps: [step(0, null, { kind: "note", workKind: null, resultCode: "asked", durationMs: 0, inputTokens: 0, outputTokens: 0 })],
+      question: { questionId: "q1", text: "Which industry or market should I research?", askedAt: T0 },
+    },
+  },
+  {
+    key: "needs-review",
+    label: "Needs Review",
+    run: {
+      ...base,
+      status: "completed",
+      stopReason: "done",
+      finishedAt: T0 + 240_000,
+      cost: { ...base.cost, spentCents: 128, runCapCents: 300, softWarningCents: 240 },
+      steps: [...researchSteps, step(6, "asset.create")],
+      assets: [{ ...report, title: "Market report: deep cleaning", kind: "marketReport", status: "needsReview", currentVersion: 2 }],
+      completion: {
+        needsReview: true,
+        revisionSkipped: false,
+        checks: [
+          { key: "objectiveAndContext", passed: true, detail: "The report answers the brief's objective, and each opportunity names the business context it uses." },
+          { key: "threeOpportunities", passed: false, detail: "Only two opportunities could be supported by the available evidence. Additional research or user input is required." },
+          { key: "claimsSourced", passed: true, detail: "Every claim points to sources in this workspace or says it is untested." },
+        ],
+      },
+    },
+  },
   {
     key: "completed",
     label: "Completed",

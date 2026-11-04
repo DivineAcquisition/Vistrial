@@ -1,13 +1,16 @@
 "use client";
 
 import { useState, type ReactNode } from "react";
-import { FileTextIcon } from "lucide-react";
+import { CircleCheckIcon, CircleXIcon, FileTextIcon } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { StatusBadge } from "@/components/ui/status-badge";
+import { Textarea } from "@/components/ui/textarea";
 import {
   SOURCE_WORDS,
   STATUS_META,
+  type CompletionView,
+  type QuestionView,
   type RunArtifactView,
   type RunAssetView,
   type RunStatus,
@@ -171,5 +174,118 @@ export function MadeAssets({
         </li>
       ))}
     </ul>
+  );
+}
+
+/** The run's open question. A person answers it while the run waits, or resumes the run after it timed out. */
+export function QuestionPanel({
+  question,
+  timedOut,
+  canAnswer,
+  onAnswer,
+  onResume,
+}: {
+  question: QuestionView;
+  timedOut: boolean;
+  canAnswer: boolean;
+  onAnswer: (answer: string) => Promise<unknown>;
+  onResume: () => Promise<unknown>;
+}) {
+  const [answer, setAnswer] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+  const asked = new Date(question.askedAt).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" });
+  const act = async (work: () => Promise<unknown>) => {
+    setBusy(true);
+    setError("");
+    try {
+      await work();
+      setAnswer("");
+    } catch (failure) {
+      setError(failure instanceof Error ? failure.message : "That did not go through. Try again.");
+    } finally {
+      setBusy(false);
+    }
+  };
+  return (
+    <section aria-labelledby="run-question" className="grid gap-3">
+      <h2 id="run-question" className="font-heading text-base text-card-foreground">
+        {timedOut ? "Needs Input — Timed Out" : "Waiting for User"}
+      </h2>
+      <p className="text-base text-card-foreground">{question.text}</p>
+      <p className="text-xs text-muted-foreground">
+        Asked <time dateTime={new Date(question.askedAt).toISOString()}>{asked}</time>.{" "}
+        {timedOut
+          ? "No answer came in seven days. Resume to ask again; nothing it found was lost."
+          : "The run spends nothing while it waits. Your answer is saved as a verified business fact."}
+      </p>
+      {!canAnswer ? (
+        <p className="text-sm text-muted-foreground">An owner or manager answers this.</p>
+      ) : timedOut ? (
+        <div>
+          <Button disabled={busy} onClick={() => void act(onResume)}>
+            Resume and ask again
+          </Button>
+        </div>
+      ) : (
+        <form
+          className="grid gap-2"
+          onSubmit={(event) => {
+            event.preventDefault();
+            if (answer.trim()) void act(() => onAnswer(answer.trim()));
+          }}
+        >
+          <label htmlFor="run-answer" className="sr-only">
+            Your answer
+          </label>
+          <Textarea id="run-answer" value={answer} maxLength={500} onChange={(event) => setAnswer(event.target.value)} />
+          <div>
+            <Button type="submit" disabled={busy || !answer.trim()}>
+              Answer
+            </Button>
+          </div>
+        </form>
+      )}
+      <p role="alert" className="min-h-5 text-sm text-destructive">
+        {error}
+      </p>
+    </section>
+  );
+}
+
+/** The completion check, in plain words. A failed check is listed first, so a reviewer sees it. */
+export function CompletionPanel({ completion }: { completion: CompletionView }) {
+  const failed = completion.checks.filter((row) => !row.passed);
+  const passed = completion.checks.filter((row) => row.passed);
+  return (
+    <section aria-labelledby="run-checks" className="grid gap-3">
+      <div className="flex flex-wrap items-center gap-3">
+        <h2 id="run-checks" className="font-heading text-base text-card-foreground">
+          Completion check
+        </h2>
+        {completion.needsReview ? (
+          <StatusBadge label="Needs Review" tone="warning" className={SENTENCE_CASE} />
+        ) : failed.length === 0 ? (
+          <StatusBadge label="Passed" tone="good" className={SENTENCE_CASE} />
+        ) : null}
+      </div>
+      {completion.revisionSkipped ? (
+        <p className="text-sm text-card-foreground">The revision was not run because the reserve could not cover it.</p>
+      ) : null}
+      <ul className="grid gap-2">
+        {[...failed, ...passed].map((row) => {
+          const Icon = row.passed ? CircleCheckIcon : CircleXIcon;
+          return (
+            <li key={row.key} className="flex items-start gap-2 text-sm">
+              <Icon aria-hidden="true" className={row.passed ? "mt-0.5 size-4 shrink-0 text-success" : "mt-0.5 size-4 shrink-0 text-destructive"} />
+              <span className="text-card-foreground">
+                <span className="sr-only">{row.passed ? "Passed: " : "Failed: "}</span>
+                {row.detail}
+              </span>
+            </li>
+          );
+        })}
+      </ul>
+    </section>
   );
 }

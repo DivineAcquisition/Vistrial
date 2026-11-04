@@ -8,7 +8,7 @@
 
 import type { Tone } from "@/components/ui/tone";
 
-export type RunStatus = "queued" | "running" | "waiting" | "completed" | "failed" | "stopped";
+export type RunStatus = "queued" | "running" | "waiting" | "needsInput" | "completed" | "failed" | "stopped";
 export type StopReason = "done" | "cap" | "error" | "cancelled" | "halted";
 export type SourceState = "ok" | "unavailable" | "blocked" | "partial";
 
@@ -43,6 +43,14 @@ export type RunAssetView = {
   currentVersion: number;
 };
 
+/** The question a run is waiting on, or that timed out. */
+export type QuestionView = { questionId: string; text: string; askedAt: number };
+
+export type CheckView = { key: string; passed: boolean; detail: string };
+
+/** The completion check of a skill that has one. */
+export type CompletionView = { checks: CheckView[]; needsReview: boolean; revisionSkipped: boolean };
+
 export type CostView = {
   spentCents: number;
   runCapCents: number;
@@ -69,6 +77,9 @@ export type RunView = {
   sources: SourceStatusView[];
   artifacts: RunArtifactView[];
   assets: RunAssetView[];
+  question: QuestionView | null;
+  timedOut: boolean;
+  completion: CompletionView | null;
 };
 
 /** The shape `runs.get` returns. Kept loose on strings so a new code never breaks the screen. */
@@ -95,9 +106,12 @@ export type RunRow = {
   steps: Array<Omit<RunStepView, "kind" | "status"> & { kind: string; status: string }>;
   artifacts: RunArtifactView[];
   assets: Array<Omit<RunAssetView, "status"> & { status: string }>;
+  question?: QuestionView | null;
+  needsInputReason?: string | null;
+  completion?: CompletionView | null;
 };
 
-const RUN_STATUSES: RunStatus[] = ["queued", "running", "waiting", "completed", "failed", "stopped"];
+const RUN_STATUSES: RunStatus[] = ["queued", "running", "waiting", "needsInput", "completed", "failed", "stopped"];
 const STOP_REASONS: StopReason[] = ["done", "cap", "error", "cancelled", "halted"];
 
 /** An unknown status reads as failed, so a new backend value never looks like healthy progress. */
@@ -141,6 +155,9 @@ export function toRunView(row: RunRow): RunView {
       ...asset,
       status: ASSET_STATUSES.includes(asset.status as RunAssetView["status"]) ? (asset.status as RunAssetView["status"]) : "draft",
     })),
+    question: row.question ?? null,
+    timedOut: row.needsInputReason === "timedOut",
+    completion: row.completion ?? null,
   };
 }
 
@@ -155,7 +172,8 @@ export function isOpen(status: RunStatus) {
 export const STATUS_META: Record<RunStatus, { label: string; tone: Tone }> = {
   queued: { label: "Queued", tone: "neutral" },
   running: { label: "Running", tone: "brand" },
-  waiting: { label: "Waiting on a person", tone: "warning" },
+  waiting: { label: "Waiting for User", tone: "warning" },
+  needsInput: { label: "Needs Input — Timed Out", tone: "warning" },
   completed: { label: "Completed", tone: "good" },
   failed: { label: "Failed", tone: "critical" },
   stopped: { label: "Stopped", tone: "warning" },
@@ -210,11 +228,33 @@ export const RESULT_CODE_WORDS: Record<string, string> = {
   unavailable: "This source could not be used this time. Its status says why.",
   awaiting_authorization: "This source is waiting for an account to be approved.",
   no_project: "This run has no research project.",
+  asked: "Asked a question and waited for the answer.",
+  answered: "Got an answer and saved it as a verified fact.",
+  brief_saved: "Saved the brief: what it knows, what is missing, and what it assumes.",
+  check_passed: "Every completion check passed.",
+  check_failed: "A completion check failed.",
+  budget_skip: "Not run: the budget left could not cover this step.",
+  needs_review: "The draft was kept for a person to review.",
+  no_report: "No report was saved.",
+  undeclared_question: "The skill asked a question it may not ask.",
+  max_tokens: "The answer ran past its length limit.",
+  invalid_output: "The model's answer was not in the expected form.",
+  too_many_turns: "The model took too many turns.",
 };
 
-export function stepLabel(step: Pick<RunStepView, "kind" | "toolSlug" | "workKind">) {
+const NOTE_LABELS: Record<string, string> = {
+  asked: "Asked a question",
+  answered: "Got an answer",
+  brief_saved: "Wrote the brief",
+  check_passed: "Checked the report",
+  check_failed: "Checked the report",
+  budget_skip: "Skipped a step",
+  needs_review: "Kept for review",
+};
+
+export function stepLabel(step: Pick<RunStepView, "kind" | "toolSlug" | "workKind"> & { resultCode?: string }) {
   if (step.kind === "model") return WORK_KIND_LABELS[step.workKind ?? ""] ?? "Used the model";
-  if (step.kind === "note") return "Note";
+  if (step.kind === "note") return NOTE_LABELS[step.resultCode ?? ""] ?? "Note";
   return TOOL_LABELS[step.toolSlug ?? ""]?.one ?? "Used a tool";
 }
 
@@ -308,8 +348,13 @@ export function summaryLine(run: RunView) {
     case "running":
       return `Working. ${stepWords} so far.`;
     case "waiting":
-      return `Waiting on a person after ${stepWords}.`;
+      return `Waiting for your answer after ${stepWords}. Nothing is spent while it waits.`;
+    case "needsInput":
+      return "No answer came in seven days. Everything it found is kept. Resume it to ask again.";
     case "completed":
+      if (run.completion?.needsReview) {
+        return `Finished after ${stepWords}. The draft did not pass every check, so it needs review.`;
+      }
       return madeAsset
         ? `Finished after ${stepWords}. The draft is waiting for approval.`
         : `Finished after ${stepWords}.`;

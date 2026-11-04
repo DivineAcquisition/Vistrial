@@ -23,6 +23,8 @@ function LiveRun({ shell, runId }: { shell: WorkspaceShell; runId: Id<"agentRuns
   const row = useQuery(api.runs.get, { workspaceId: shell.workspaceId, runId });
   const stop = useMutation(api.runs.stop);
   const approve = useMutation(api.assets.approve);
+  const answer = useMutation(api.runs.answer);
+  const resume = useMutation(api.runs.resume);
   const connection = useConvexConnectionState();
   const run = row ? toRunView(row as RunRow) : null;
   const now = useNow(run !== null && isOpen(run.status));
@@ -39,6 +41,9 @@ function LiveRun({ shell, runId }: { shell: WorkspaceShell; runId: Id<"agentRuns
       connected={connection.isWebSocketConnected || !connection.hasEverConnected}
       canStop={editor}
       canApprove={editor}
+      canAnswer={editor}
+      onAnswer={(questionId, text) => answer({ workspaceId: shell.workspaceId, runId, questionId, answer: text })}
+      onResume={() => resume({ workspaceId: shell.workspaceId, runId })}
       onStop={() => stop({ workspaceId: shell.workspaceId, runId })}
       onApprove={(assetId) => void approve({ workspaceId: shell.workspaceId, assetId: assetId as Id<"assets"> })}
       onCopyLink={() => void navigator.clipboard?.writeText(window.location.href)}

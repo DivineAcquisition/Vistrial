@@ -93,6 +93,21 @@ describe("run view", () => {
     expect(unknown.status).toBe("failed");
   });
 
+  it("reads a waiting question, a timeout, and a draft that needs review", () => {
+    const question = { questionId: "q1", text: "Which area should I research?", askedAt: 5 };
+    const waiting = toRunView(row({ status: "waiting", question }));
+    expect(waiting).toMatchObject({ status: "waiting", question, timedOut: false });
+    expect(summaryLine(waiting)).toContain("Nothing is spent while it waits.");
+    const timedOut = toRunView(row({ status: "needsInput", needsInputReason: "timedOut", question }));
+    expect(timedOut).toMatchObject({ status: "needsInput", timedOut: true });
+    expect(summaryLine(timedOut)).toContain("Resume it to ask again.");
+    const review = toRunView(
+      row({ status: "completed", completion: { checks: [{ key: "threeOpportunities", passed: false, detail: "x" }], needsReview: true, revisionSkipped: true } }),
+    );
+    expect(summaryLine(review)).toContain("needs review");
+    expect(stepLabel({ ...step(0, null, "note"), resultCode: "asked" })).toBe("Asked a question");
+  });
+
   it("maps unknown result codes to a safe sentence", () => {
     expect(resultWords("brand_new_code")).toBe("Finished with an unknown result.");
   });

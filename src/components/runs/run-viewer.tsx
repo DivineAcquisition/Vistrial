@@ -4,7 +4,7 @@ import { useState, type ReactNode } from "react";
 import { LinkIcon, WifiOffIcon } from "lucide-react";
 
 import { CostBar } from "@/components/runs/cost-bar";
-import { ArtifactList, MadeAssets, RunStatusBadge, SourcesPanel } from "@/components/runs/run-parts";
+import { ArtifactList, CompletionPanel, MadeAssets, QuestionPanel, RunStatusBadge, SourcesPanel } from "@/components/runs/run-parts";
 import { StepList } from "@/components/runs/step-list";
 import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
@@ -21,6 +21,10 @@ export type RunViewerProps = {
   connected: boolean;
   canStop: boolean;
   canApprove: boolean;
+  /** Owners and managers answer a run's question and resume a run that timed out. */
+  canAnswer: boolean;
+  onAnswer: (questionId: string, answer: string) => Promise<unknown>;
+  onResume: () => Promise<unknown>;
   onStop: () => Promise<{ stopped: boolean }>;
   onApprove: (assetId: string) => void;
   onCopyLink: () => void;
@@ -35,6 +39,9 @@ export function RunViewer({
   connected,
   canStop,
   canApprove,
+  canAnswer,
+  onAnswer,
+  onResume,
   onStop,
   onApprove,
   onCopyLink,
@@ -81,7 +88,7 @@ export function RunViewer({
           </div>
         </dl>
         <div className="flex flex-wrap gap-2">
-          {canStop && open ? (
+          {canStop && (open || run.status === "needsInput") ? (
             <ConfirmDialog
               trigger={<Button variant="destructive-outline">Stop run</Button>}
               title="Stop this run?"
@@ -122,6 +129,25 @@ export function RunViewer({
           {announcement}
         </p>
       </Panel>
+
+      {run.question && (run.status === "waiting" || run.status === "needsInput") ? (
+        <Panel className="p-4 sm:p-6">
+          <QuestionPanel
+            key={run.question.questionId}
+            question={run.question}
+            timedOut={run.status === "needsInput"}
+            canAnswer={canAnswer}
+            onAnswer={(answer) => onAnswer(run.question!.questionId, answer)}
+            onResume={onResume}
+          />
+        </Panel>
+      ) : null}
+
+      {run.completion ? (
+        <Panel className="p-4 sm:p-6">
+          <CompletionPanel completion={run.completion} />
+        </Panel>
+      ) : null}
 
       <Panel className="grid gap-4 p-4 sm:p-6">
         <h2 className="font-heading text-base text-card-foreground">Cost and limits</h2>

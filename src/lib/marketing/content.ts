@@ -11,12 +11,14 @@ import { AGENTS } from "@/lib/agents/roster";
 import { PRODUCTION_APP_ORIGIN } from "@/lib/constants";
 
 export const SITE_DESCRIPTION =
-  "Vistrial pulls the calls, touches, and outcomes scattered across your CRM, phone, and calendar into one case file for every lead, and alerts you before a high-value lead slips.";
+  "Vistrial is an agentic workforce for business growth: specialized AI agents that research your market, sharpen your strategy, and produce the work to grow, with evidence on every claim and a person approving every step.";
 
 export const SECTIONS = {
   hero: true,
   problem: true,
   how: true,
+  growthArchitect: true,
+  evidence: true,
   agents: true,
   industries: true,
   safety: true,
@@ -28,19 +30,20 @@ export const SECTIONS = {
 } as const;
 
 export const HERO = {
-  /** Chosen draft. The other two options are in HEADLINE_OPTIONS for review. */
-  headline: "The acquisition record for high-ticket sales teams.",
-  supporting: SITE_DESCRIPTION,
+  /** Chosen draft. The other options are in HEADLINE_OPTIONS for review. */
+  headline: "The agentic workforce for business growth.",
+  supporting:
+    "Specialized AI agents that research your market, sharpen your strategy, and produce the work to grow. Starting with Growth Architect.",
   primaryCta: "Request private access",
-  secondaryCta: "See how it works",
-  trust: "Works with the CRM you already use. Nothing sends without a person's approval. Each customer's data is kept separate.",
+  secondaryCta: "See Growth Architect",
+  trust: "Every claim shows its source. Nothing is published without a person's approval. Each customer's data is kept separate.",
   exampleLabel: "Example with sample data",
 } as const;
 
 export const HEADLINE_OPTIONS = [
-  "Every lead. Every call. One record.",
-  "Stop piecing together your leads from five tools.",
-  "The acquisition record for high-ticket sales teams.",
+  "The agentic workforce for business growth.",
+  "Understand your market before you spend on it.",
+  "Specialists for every stage of growth. Starting with research.",
 ] as const;
 
 export const NAV = {
@@ -52,108 +55,222 @@ export const NAV = {
   request: "Request private access",
   links: [
     { href: "/#how", label: "How it works" },
+    { href: "/#growth-architect", label: "Growth Architect" },
     { href: "/#agents", label: "Agents" },
-    { href: "/#safety", label: "Safety" },
     { href: "/#pricing", label: "Pricing" },
     { href: "/#faq", label: "FAQ" },
   ],
 } as const;
 
+export const SOURCES = {
+  label: "Researches across",
+  items: [
+    { key: "web", label: "The open web" },
+    { key: "youtube", label: "YouTube" },
+    { key: "meta", label: "Meta Ad Library" },
+    { key: "tiktok", label: "TikTok" },
+    { key: "instagram", label: "Instagram" },
+    { key: "results", label: "Your own results" },
+  ],
+} as const;
+
 export const PROBLEM = {
   id: "problem",
-  headline: "A slipped lead is real money.",
+  headline: "Most growth starts with a guess.",
   opening:
-    "When a single closed deal is worth thousands, a lead that waits too long or a call nobody wrote up properly is real money.",
+    "Businesses launch ads, publish content, and raise spend before they understand the market they are trying to move.",
   scattered:
-    "The CRM has one version. The dialer has another. The calendar has a third. The call recordings sit there because nobody has time to replay them. A manager cannot see what is happening without asking. Follow-up depends on who remembers.",
+    "Competitor research lives in browser tabs and screenshots. Strategy sits in one document and the creative in another. When a campaign works, nobody can say why. When it fails, nobody can say which assumption was wrong.",
   pains: [
-    "I cannot see what is happening with a lead without listening to the call or asking the rep.",
-    "Notes live in five places and none of them agree.",
-    "Leads wait too long, and I only find out afterward.",
-    "Follow-up depends on who remembers.",
+    "We copy what competitors seem to do without knowing whether it works.",
+    "Research, strategy, and creative live in different places and drift apart.",
+    "AI tools give confident answers with no sources behind them.",
+    "We spend before we know which audience or angle to test first.",
   ],
 } as const;
 
 export const HOW = {
   id: "how",
-  headline: "Centralize. Watch. Act.",
+  headline: "Understanding precedes advantage.",
+  lead: "Every Vistrial agent works in the same order. It studies before it recommends, and it shows how sure it is.",
   steps: [
     {
-      id: "centralize",
-      title: "Centralize",
-      body: "Connect your CRM, phone, calendar, and call recordings. Vistrial reads them and builds one case file per lead, kept up to date automatically. It does not change anything in your CRM unless you turn that on.",
+      id: "observe",
+      title: "Observe",
+      body: "Study the market first: competitors, customers, offers, ads, and content, from sources you can open and check.",
     },
     {
-      id: "watch",
-      title: "Watch",
-      body: "It tracks how fast each lead gets answered against the standard your team sets, flags leads that are slipping, and shows why deals stall: objections, readiness, and next steps pulled from calls and notes.",
+      id: "distinguish",
+      title: "Distinguish",
+      body: "Separate what was seen from what is inferred, what is only a hypothesis, and what your own results prove.",
     },
     {
-      id: "act",
-      title: "Act",
-      body: "Follow-ups are drafted for you, and a person approves each one. Ask questions about your sales operation in plain language and get answers from your own data, with sources.",
+      id: "prioritize",
+      title: "Prioritize",
+      body: "Choose the few audiences, angles, and experiments worth your attention, and say what to leave for later.",
     },
+    {
+      id: "create",
+      title: "Create",
+      body: "Turn the chosen strategy into real work: reports, copy, scripts, creative briefs, and landing pages.",
+    },
+    {
+      id: "validate",
+      title: "Validate",
+      body: "Read your own results, learn what held up, and feed it into the next round of research.",
+    },
+  ],
+} as const;
+
+export const GROWTH_ARCHITECT = {
+  id: "growth-architect",
+  eyebrow: "Agent 01",
+  headline: "Growth Architect",
+  lead: "One agent for market research, strategy, creative, and funnels. Each skill hands back finished work that the next skill builds on.",
+  skills: [
+    {
+      id: "market-intelligence",
+      name: "Market Intelligence",
+      handsBack: "Market reports and a visual research board of the ads and videos it found.",
+      status: "first" as const,
+    },
+    {
+      id: "offer-intelligence",
+      name: "Offer Intelligence",
+      handsBack: "Ideal customer profiles, positioning, and messaging.",
+      status: "next" as const,
+    },
+    {
+      id: "campaign-strategy",
+      name: "Campaign Strategy",
+      handsBack: "Campaign blueprints, ad angles, and testing plans.",
+      status: "next" as const,
+    },
+    {
+      id: "creative-production",
+      name: "Creative Production",
+      handsBack: "Ad copy, video scripts, creative briefs, and content packages.",
+      status: "next" as const,
+    },
+    {
+      id: "funnel-architect",
+      name: "Funnel Architect",
+      handsBack: "Funnel blueprints, landing page copy, and page drafts.",
+      status: "next" as const,
+    },
+    {
+      id: "growth-diagnostics",
+      name: "Growth Diagnostics",
+      handsBack: "Performance analysis and a prioritized improvement plan from your own data.",
+      status: "next" as const,
+    },
+  ],
+  statusLabel: { first: "Available first", next: "Coming next" },
+} as const;
+
+export const EVIDENCE = {
+  id: "evidence",
+  headline: "Every claim shows its source.",
+  lead: "Growth Architect labels how much it knows. Popular is not the same as profitable, and a long-running ad is not proof that it worked.",
+  kinds: [
+    { id: "observed", label: "Observed", body: "Seen directly in a source you can open." },
+    { id: "inferred", label: "Inferred", body: "A reasonable reading of what was seen." },
+    { id: "hypothesis", label: "Hypothesis", body: "An idea to test, never presented as fact." },
+    { id: "firstParty", label: "Your results", body: "Backed by your own measured data." },
+    { id: "insufficient", label: "Not enough data", body: "Said plainly instead of guessed." },
   ],
 } as const;
 
 export const AGENTS_SECTION = {
   id: "agents",
-  headline: "Meet the agents",
-  lead: "Four agents work the record. A person still approves anything that would reach a lead.",
+  headline: "Seven specialists. One organization.",
+  lead: "Vistrial grows into a workforce across the customer lifecycle. Every agent shares the same context, evidence, and approvals. We start with one, and build it properly.",
+  departments: [
+    {
+      id: "growth",
+      name: "Growth and Marketing",
+      agents: [
+        { number: "01", name: "Growth Architect", job: "Research, strategy, creative, and funnels.", live: true },
+        { number: "02", name: "Campaign Execution", job: "Approved launches, testing, and reporting.", live: false },
+      ],
+    },
+    {
+      id: "sales",
+      name: "Sales",
+      agents: [{ number: "03", name: "Sales Conversion", job: "Qualification, follow-up drafts, and pipeline.", live: false }],
+    },
+    {
+      id: "success",
+      name: "Customer Success",
+      agents: [
+        { number: "04", name: "Activation", job: "Onboarding and first value.", live: false },
+        { number: "05", name: "Retention", job: "Customer health and save plans.", live: false },
+        { number: "06", name: "Expansion", job: "Upsell, referrals, and account growth.", live: false },
+      ],
+    },
+    {
+      id: "operations",
+      name: "Operations",
+      agents: [{ number: "07", name: "Operations Intelligence", job: "Briefings, reporting, and coordination.", live: false }],
+    },
+  ],
+  liveLabel: "Live",
+  plannedLabel: "Planned",
 } as const;
 
 export const INDUSTRIES = {
   id: "industries",
-  headline: "For teams that sell considered purchases.",
-  lead: "The current setup templates match these sales motions. Other high-ticket businesses can request access.",
+  headline: "Built for businesses that sell considered purchases.",
+  lead: "Growth Architect already knows what to look for in these markets. Other businesses can request access.",
   cards: [
     {
       id: "med-spa",
       title: "Aesthetic and medical spa",
-      motion: "Consultation requests and treatment plans, handled by a small team.",
+      motion: "Treatments and consultations sold to a local market that compares carefully.",
       watches: [
-        "Consultation requests",
-        "Treatment plan follow-up",
-        "No-shows and reschedules",
-        "Objections about price and timing",
+        "What competitors in your area advertise, and for how long",
+        "Which treatments and offers they lead with",
+        "How they frame price and financing",
+        "Before-and-after formats that keep running",
       ],
     },
     {
       id: "home-services",
       title: "Home services and remodeling",
-      motion: "Estimates, site visits, and quotes that go quiet.",
+      motion: "Projects with long decisions, estimates, and seasonal demand.",
       watches: [
-        "Estimate requests",
-        "Site visit scheduling",
-        "Quote follow-up",
-        "Projects that go quiet after the estimate",
+        "Seasonal offers local competitors run",
+        "Guarantee, warranty, and financing messages",
+        "Themes customers repeat in public reviews",
+        "The landing pages behind local ads",
       ],
     },
     {
       id: "coaches-consultants",
       title: "Coaches and consultants",
-      motion: "Discovery calls, applications, and decisions that involve more than one person.",
+      motion: "Programs sold through content, applications, and calls.",
       watches: [
-        "Discovery and strategy calls",
-        "Application follow-up",
-        "Objections about investment and timing",
-        "A decision-maker who was not on the call",
+        "Short-form hooks that keep getting reused",
+        "Webinar, application, and booking funnels",
+        "How competitors frame the investment",
+        "Proof and testimonial patterns",
       ],
     },
   ],
-  closing: "If you sell a considered purchase through real conversations, and your industry is not listed, request access and tell us what you sell.",
+  closing: "If you sell a considered purchase and your industry is not listed, request access and tell us what you sell.",
 } as const;
 
 export const SAFETY = {
   id: "safety",
   headline: "Safe by design",
   lead: "These are product behaviors, not badges.",
+  steps: ["Draft", "Your review", "Not published"],
   items: [
-    "Nothing is sent without a person's approval, and the same checks run again at the moment it is sent.",
-    "Quiet hours are enforced: no messages between 8 pm and 8 am in the lead's local time.",
-    "Opt-outs and do-not-contact markers are respected.",
+    "Nothing is published, posted, or sent without a person's approval.",
+    "Research uses official access only: public sources, official APIs, and links you provide. No logins and no getting around blocks.",
+    "Every claim is labeled as observed, inferred, a hypothesis, or your own result, with its source.",
+    "Every run has a cost limit, and the cost is shown as it runs.",
     "Each customer's data is separate from every other customer's.",
-    "Your CRM stays the source of truth. Vistrial reads from it and does not write to it unless you choose.",
     "Every important action is recorded.",
   ],
   linkLabel: "Security overview",
@@ -165,28 +282,28 @@ export const FAQ = {
   headline: "Frequently asked questions",
   items: [
     {
-      q: "Does it replace my CRM?",
-      a: "No. Vistrial brings together the records from your CRM and your other tools, such as call tools, spreadsheets, and calendars, into one case file for each lead. Each of your tools stays the record for its own data.",
+      q: "What is Growth Architect?",
+      a: "The first Vistrial agent. It researches your market, competitors, and the ads and content that keep running, then turns that into strategy, creative, and funnels. Market Intelligence comes first, and the other skills follow one at a time.",
     },
     {
-      q: "Which CRMs work with it?",
-      a: "GoHighLevel works today. Other CRMs are coming. A calendar can be read when Google Calendar or the CRM calendar is connected. Call transcripts are read when a recording source is connected.",
+      q: "Where does the research come from?",
+      a: "Public web pages, YouTube, Meta's Ad Library where it is available, TikTok and Instagram posts it finds or you provide, and your own results if you upload them. It uses official access only, and every source shows whether it was available.",
     },
     {
-      q: "Will it text my leads on its own?",
-      a: "No. Relay drafts the follow-up. A person approves it before anything is sent, and the checks run again at send time. Quiet hours, opt-outs, and do-not-contact markers still apply.",
+      q: "Can I trust what it says?",
+      a: "Every claim is labeled as observed, inferred, a hypothesis, or backed by your own results, and links to its source. When there is not enough data, it says so instead of guessing. It never claims an ad made money unless your own numbers show it.",
+    },
+    {
+      q: "Will it post or spend on its own?",
+      a: "No. Growth Architect produces reports and assets for review. Nothing is published, posted, sent, or charged to an ad account without a person's approval.",
     },
     {
       q: "What does it do with my data?",
-      a: "Each workspace is separate. Vistrial uses the record to build case files, watch response time, draft follow-ups, and answer questions from that workspace's own data. The Security overview describes the controls. The Privacy page is a draft for counsel and is not a finished policy.",
-    },
-    {
-      q: "How long does setup take?",
-      a: "Setup is guided step by step inside your workspace, and we pace it with your team.",
+      a: "Each workspace is separate. Vistrial uses your business profile, research, and results to do the work for that workspace only. The Security overview describes the controls. The Privacy page is a draft for counsel and is not a finished policy.",
     },
     {
       q: "Who is Private Access for?",
-      a: "Teams that sell considered purchases through calls or consultations, already use a CRM, and want a limited number of people set up properly. We bring on a limited number of teams at a time.",
+      a: "Businesses that sell considered purchases and want to understand their market before they spend more on it. We bring on a limited number of teams at a time.",
     },
     {
       q: "What happens after I request access?",
@@ -202,7 +319,7 @@ export const FAQ = {
 export const FINAL_CTA = {
   id: "final",
   headline: "Request access. We review each team.",
-  body: "Private Access is for a limited number of teams at a time, so each one is set up properly.",
+  body: "Growth Architect is opening to a limited number of teams at a time, so each one is set up properly.",
   primary: "Request private access",
   secondary: "Contact us about Custom",
   secondaryHref: "/contact",
@@ -215,7 +332,7 @@ export const PROOF = {
 } as const;
 
 export const FOOTER = {
-  productLine: "The acquisition record for high-ticket sales teams.",
+  productLine: "The agentic workforce for business growth.",
   copyright: "Vistrial",
   links: [
     { href: "/security-overview", label: "Security overview" },

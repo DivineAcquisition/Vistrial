@@ -66,7 +66,7 @@ async function seed(t: Tester, name: string) {
     });
     const assetId = await ctx.db.insert("assets", {
       workspaceId,
-      kind: "researchReport",
+      kind: "marketReport",
       title: "Report",
       status: "draft",
       currentVersion: 1,
@@ -88,6 +88,16 @@ async function message(run: Promise<unknown>) {
 }
 
 describe("evidence basis rules", () => {
+  it("lists a market report under its own kind", async () => {
+    const t = makeTester();
+    const a = await seed(t, "Alpha");
+    const page = { numItems: 10, cursor: null };
+    const market = await a.owner.query(api.assets.list, { workspaceId: a.workspaceId, kind: "marketReport", paginationOpts: page });
+    expect(market.page.map((row: { id: string }) => row.id)).toEqual([a.assetId]);
+    const other = await a.owner.query(api.assets.list, { workspaceId: a.workspaceId, kind: "researchReport", paginationOpts: page });
+    expect(other.page).toHaveLength(0);
+  });
+
   it("observed: needs at least one source in the same workspace", async () => {
     const t = makeTester();
     const a = await seed(t, "Alpha");

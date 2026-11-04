@@ -40,6 +40,7 @@ export const list = workspaceQuery({
     kind: v.optional(
       v.union(
         v.literal("researchReport"),
+        v.literal("marketReport"),
         v.literal("adCopySet"),
         v.literal("creativeBrief"),
         v.literal("contentCalendar"),
@@ -57,17 +58,23 @@ export const list = workspaceQuery({
             )
             .order("desc")
             .paginate(args.paginationOpts)
-        : args.status
+        : args.kind
           ? await ctx.db
               .query("assets")
-              .withIndex("by_workspace_status", (q) => q.eq("workspaceId", ctx.workspaceId).eq("status", args.status!))
+              .withIndex("by_workspace_kind", (q) => q.eq("workspaceId", ctx.workspaceId).eq("kind", args.kind!))
               .order("desc")
               .paginate(args.paginationOpts)
-          : await ctx.db
-              .query("assets")
-              .withIndex("by_workspace", (q) => q.eq("workspaceId", ctx.workspaceId))
-              .order("desc")
-              .paginate(args.paginationOpts);
+          : args.status
+            ? await ctx.db
+                .query("assets")
+                .withIndex("by_workspace_status", (q) => q.eq("workspaceId", ctx.workspaceId).eq("status", args.status!))
+                .order("desc")
+                .paginate(args.paginationOpts)
+            : await ctx.db
+                .query("assets")
+                .withIndex("by_workspace", (q) => q.eq("workspaceId", ctx.workspaceId))
+                .order("desc")
+                .paginate(args.paginationOpts);
     return {
       ...page,
       page: page.page.map((row) => ({

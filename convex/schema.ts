@@ -554,6 +554,7 @@ export default defineSchema({
     workspaceId: v.id("workspaces"),
     kind: v.union(
       v.literal("researchReport"),
+      v.literal("marketReport"),
       v.literal("adCopySet"),
       v.literal("creativeBrief"),
       v.literal("contentCalendar"),
@@ -568,6 +569,7 @@ export default defineSchema({
     .index("by_workspace", ["workspaceId"])
     .index("by_workspace_status", ["workspaceId", "status"])
     .index("by_workspace_kind_status", ["workspaceId", "kind", "status"])
+    .index("by_workspace_kind", ["workspaceId", "kind"])
     .index("by_workspace_run", ["workspaceId", "createdByRun"]),
 
   assetVersions: defineTable({

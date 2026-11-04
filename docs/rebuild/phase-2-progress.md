@@ -8,9 +8,9 @@ Tracks the Phase 2 backlog in `growth-architect-v1-plan.md`. Everything here was
 | 2.2 | Drop the four unused tables | Done. Pushed to dev. |
 | 2.3 | Skill module interface, `test-echo` moved onto it | Done. Pushed to dev. |
 | 2.4 | `completeWithTools`: server tools, client tools, structured output, search fees | Done. Live call on dev. |
-| 2.5 | Evidence basis and the new validator rules | Built, tested offline. **Not yet checked on dev** (see Milestone A below). |
-| 2.6 | `researchProjects`, `sourceRefs`, `sourceStatus`, `collections`, `collectionItems` | Built, tested offline. **Not yet checked on dev.** |
-| 2.12 | Per-skill caps | Built, tested offline. **Not yet checked on dev.** |
+| 2.5 | Evidence basis and the new validator rules | Done. Checked on dev. |
+| 2.6 | `researchProjects`, `sourceRefs`, `sourceStatus`, `collections`, `collectionItems`, asset kind `marketReport` | Done. Checked on dev. |
+| 2.12 | Per-skill caps | Done. Checked on dev. |
 
 ## 2.1 Departments and the seven agents
 
@@ -90,7 +90,7 @@ To confirm, or to run it at once by hand:
 
 ## Milestone A: evidence and data (2.5, 2.6, 2.12)
 
-**State: built and tested offline. Not checked on dev, so not done.** The dev deploy key in this environment is rejected by Convex (details under "Blocked on dev" below). Nothing was pushed to dev or production.
+**State: done.** Checked live on the dev deployment `calm-spider-678` on 2026-11-04 (see "Checked on dev" at the end of this section). Nothing was run on production.
 
 ### 2.5 Evidence basis
 
@@ -154,15 +154,33 @@ Tests: `convex/caps.test.ts`. Market Intelligence is not built until 2.11, so th
 - `npm run typecheck`, `npm run build`, `npm run assert:no-secrets`: pass.
 - `convex/_generated/api.d.ts` gained the five new modules by hand. `convex codegen` needs a reachable deployment, and the key is rejected. The data model types come from `schema.ts`, so the import list is the only part codegen writes per module. `codegen.test.ts` confirms the list matches `convex/`.
 
-### Blocked on dev
+### Added when checked
 
-`CONVEX_DEPLOY_KEY` starts with `dev:` and names the Phase 1 dev deployment (`grandiose-meerkat-838`), but Convex answers `401 Invalid Convex deploy key`. The stored value has a space inside the token. Removing it, or replacing it with `+`, did not help, so the stored key looks damaged or was regenerated. It needs a fresh dev deploy key, stored under the same name (environment settings, then a new session).
+- **Asset kind `marketReport`.** Section 3.3 lists it and it was missing. Market Intelligence (2.11) writes this kind. The test skills keep `researchReport`.
+- **`assets.list` filtered by kind alone.** A kind with no status was ignored and every asset came back. It now reads a new `by_workspace_kind` index. The assets screen always sends a status, so no screen showed the bug.
 
-Still to do on dev once the key works:
+Tests: 170 pass (one new: a market report lists under its own kind and not under `researchReport`).
 
-1. Push schema and functions to dev (dry run first).
-2. Create a project. Write a source and a status through the runtime helpers. Read them as Owner and Rep, and from workspace B.
-3. Add a basis claim per rule to a draft. Approve it, and check that a deleted source blocks approval.
-4. Read Market Intelligence caps through `controls.get`. Check that the two day counters stay apart.
-5. Confirm that the missing-`skillSlug` index lookups (`q.eq("skillSlug", undefined)`) match the existing caps rows and counters on the real deployment, as they do in tests.
+### Checked on dev
+
+Schema and functions pushed to `calm-spider-678`. Functions were called as test members of two new workspaces (Owner and Rep in A, Owner in B) with admin auth and a test identity. Runtime-only writes (`saveSourceRef`, `setSourceStatus`, a day-counter add, a source delete) went through a temporary internal module that was pushed, used, and removed again. It was never committed.
+
+| Area | Check | Result |
+|---|---|---|
+| 2.6 | Owner creates a project; Rep is refused | Pass |
+| 2.6 | `test-echo` run finishes by itself and makes a draft (run id and asset for the checks below) | Pass |
+| 2.6 | Same page saved once on its canonical URL (`www.`, tracking and fragment removed) | Pass |
+| 2.6 | 500-character excerpt stored as 300 or fewer | Pass |
+| 2.6 | `javascript:` URL refused; a source written against B's project refused | Pass |
+| 2.6 | Owner and Rep both list the sources; no artifact id or body in screen rows; run status readable | Pass |
+| 2.6 | B calling five research reads on A's records or workspace gets `Not found.` each time | Pass |
+| 2.6 | Rep's personal collection: Rep reads it, Owner gets not found; Rep cannot make a workspace collection; B cannot add A's source | Pass |
+| 2.5 | Refused through `assets.addVersion`: observed with no source, observed citing another workspace's id, inferred with no source, firstParty citing a web page, computed hypothesis, insufficient line that makes a claim | Pass |
+| 2.5 | One valid claim per basis accepted; labels come back as Observed, Inference, Untested hypothesis, Your data, Not enough data | Pass |
+| 2.5 | After a cited source is deleted, `assets.approve` refuses and the screen marks the claim's source missing | Pass |
+| 2.12 | Market Intelligence: $3 a run, $25 a day, scope `skill`; ceiling $10 and $100; agent-wide caps still 25¢ and $2 | Pass |
+| 2.12 | 700¢ of research spend shows on its own counter; the agent-wide counter stays at 1¢. Two counter rows, one without `skillSlug` | Pass |
+| 2.12 | Setting caps for a skill that shares the agent's caps is refused | Pass |
+
+32 of 32 checks passed. Lookups with `skillSlug` missing match the agent-wide rows on the real deployment, the same as in tests.
 

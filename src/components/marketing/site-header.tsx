@@ -35,7 +35,17 @@ export function SiteHeader({ action = "cta" }: { action?: "cta" | "none" }) {
           </nav>
         ) : null}
         {showNav ? (
-          <details className="relative shrink-0">
+          <Button
+            variant="gradient"
+            size="lg"
+            className={cn(navButton, "hidden shrink-0 md:inline-flex")}
+            render={<Link href="/request?from=nav" data-cta-position="nav" />}
+          >
+            {NAV.request}
+          </Button>
+        ) : null}
+        {showNav ? (
+          <details className="relative shrink-0 md:hidden">
             <summary className="flex size-10 cursor-pointer list-none items-center justify-center rounded-md border border-border bg-muted text-strong [&::-webkit-details-marker]:hidden">
               <span className="sr-only">{NAV.openMenu}</span>
               <Menu className="size-4" aria-hidden="true" />
@@ -44,7 +54,7 @@ export function SiteHeader({ action = "cta" }: { action?: "cta" | "none" }) {
               <Button variant="gradient" size="lg" className={cn(navButton, "w-full")} render={<Link href="/request?from=nav" data-cta-position="nav" />}>
                 {NAV.request}
               </Button>
-              <nav aria-label="On this page" className="mt-2 md:hidden">
+              <nav aria-label="On this page" className="mt-2">
                 <MarketingMobileNav />
               </nav>
             </div>

@@ -74,10 +74,16 @@ export function overCap(args: {
   steps: number;
   startedAt: number;
   now: number;
+  /** Time the run spent waiting for a person. It does not count toward the time cap. */
+  waitedMs?: number;
 }) {
   if (args.runCost >= args.caps.maxCostCentsPerRun) return true;
   if (args.dayCost >= args.caps.maxCostCentsPerDay) return true;
   if (args.steps >= args.caps.maxSteps) return true;
-  if (args.now - args.startedAt >= args.caps.maxDurationMs) return true;
+  if (activeMs(args.startedAt, args.now, args.waitedMs) >= args.caps.maxDurationMs) return true;
   return false;
+}
+
+export function activeMs(startedAt: number, now: number, waitedMs = 0) {
+  return now - startedAt - waitedMs;
 }

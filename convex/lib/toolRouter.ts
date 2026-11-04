@@ -39,6 +39,8 @@ export type ToolRequest = {
   /** JSON schema for the final answer. The answer must parse, or the call is retried once and then fails. */
   outputSchema?: Record<string, unknown>;
   maxTurns?: number;
+  /** Output room for this call. Never more than the work kind allows. */
+  maxOutputTokens?: number;
 };
 
 export type FoundSource = { url: string; title: string | null; pageAge: string | null };
@@ -170,7 +172,10 @@ async function attempt(
     try {
       response = await create({
         model,
-        max_tokens: MAX_TOKENS[workKind],
+        max_tokens:
+          request.maxOutputTokens === undefined
+            ? MAX_TOKENS[workKind]
+            : Math.max(1, Math.min(MAX_TOKENS[workKind], Math.floor(request.maxOutputTokens))),
         ...(request.system ? { system: request.system } : {}),
         messages,
         ...(tools.length > 0 ? { tools } : {}),
@@ -324,11 +329,88 @@ const FAKE_SEARCH_RESULT = {
   content: [{ type: "web_search_result", url: "https://example.com/a", title: "Example A", page_age: "2026-10-01", encrypted_content: "x" }],
 };
 
+const FAKE_MARKET_RESULTS = {
+  type: "web_search_tool_result",
+  tool_use_id: "srvtoolu_fake",
+  content: ["a", "b", "c"].map((key) => ({
+    type: "web_search_result",
+    url: `https://example.com/${key}`,
+    title: `Competitor ${key.toUpperCase()}`,
+    page_age: "2026-10-01",
+    encrypted_content: "x",
+  })),
+};
+
+function fakeText(text: string, citations: unknown[] | null = null) {
+  return { type: "text", text, citations };
+}
+
+/**
+ * The Market Intelligence fixture. It answers each step by its schema title, citing only the [ref] and [ctx]
+ * ids in its input, as a well-behaved model would. "fake-market-two" can support only two opportunities;
+ * "fake-market-dup" proposes the same action twice, then fixes it when asked to revise.
+ */
+function fakeMarketAnswer(model: string, params: Anthropic.MessageCreateParamsNonStreaming) {
+  const first = params.messages[0]?.content;
+  const input = typeof first === "string" ? first : "";
+  const refs = [...input.matchAll(/\[ref ([^\]]+)\]/g)].map((match) => match[1]);
+  const ctx = [...input.matchAll(/\[ctx ([^\]]+)\]/g)].map((match) => match[1]);
+  const relevance = ctx.length > 0 ? `Fits this business (${ctx[0]}).` : "No business context was on record, so this rests on the market alone.";
+  const opportunity = (n: number, action: string) => ({
+    opportunity: `Opportunity ${n}`,
+    basis: refs.length > 0 ? "observed" : "hypothesis",
+    sourceRefIds: refs.slice(0, 1 + (n % 2)),
+    businessRelevance: relevance,
+    contextUsed: ctx.slice(0, 1),
+    proposedAction: action,
+    validationMethod: `Track bookings from action ${n} for four weeks.`,
+  });
+  const three = [opportunity(1, "Offer same-day booking"), opportunity(2, "Publish before-and-after videos"), opportunity(3, "Bundle a move-out clean")];
+  const schema = (params as { output_config?: { format?: { schema?: { title?: string } } } }).output_config?.format?.schema;
+  switch (schema?.title) {
+    case "marketPlan":
+      return { questions: ["Who competes on speed?"], queries: ["deep cleaning competitors"] };
+    case "marketClassify":
+      return { items: refs.map((id, i) => ({ sourceRefId: id, theme: i % 2 === 0 ? "Same-day booking" : "Price match", offer: "Deep clean", hook: "Book today" })) };
+    case "marketPrioritize":
+      if (model === "fake-market-two") return { opportunities: three.slice(0, 2), missingOpportunityReason: "The sources support only two." };
+      if (model === "fake-market-dup") return { opportunities: [three[0], three[1], { ...three[2], proposedAction: three[0].proposedAction }], missingOpportunityReason: "" };
+      return { opportunities: three, missingOpportunityReason: "" };
+    case "marketRevise":
+      if (model === "fake-market-two") return { opportunities: three.slice(0, 2), missingOpportunityReason: "The sources still support only two." };
+      return { opportunities: three, missingOpportunityReason: "" };
+    case "marketWrite":
+      return {
+        summary: "Competitors lead with speed of booking.",
+        observations: [{ statement: "Competitor A offers same-day booking.", basis: "observed", sourceRefIds: refs.slice(0, 1) }],
+      };
+    default:
+      return null;
+  }
+}
+
 /** A researcher that searches, pauses once, searches again, then answers in JSON. */
 export function fakeCreate(model: string): CreateMessage {
   let calls = 0;
-  return async () => {
+  return async (params) => {
     calls += 1;
+    if (model.startsWith("fake-market")) {
+      const searching = (params.tools ?? []).length > 0;
+      if (searching && calls === 1) {
+        return fakeMessage(model, {
+          stop: "pause_turn",
+          searches: 1,
+          content: [{ type: "server_tool_use", id: "srvtoolu_fake", name: "web_search", input: { query: "q" } }, FAKE_MARKET_RESULTS],
+        });
+      }
+      const answer = fakeMarketAnswer(model, params);
+      const citation = { type: "web_search_result_location", url: "https://example.com/a", title: "Competitor A", cited_text: "Same-day booking", encrypted_index: "x" };
+      return fakeMessage(model, {
+        stop: "end_turn",
+        searches: searching ? 1 : 0,
+        content: [answer === null ? fakeText("Competitors lead with speed.", [citation]) : fakeText(JSON.stringify(answer))],
+      });
+    }
     if (model === "fake-tool-refusing") return fakeMessage(model, { stop: "refusal", content: [], searches: 1 });
     if (model === "fake-tool-bad-json") return fakeMessage(model, { stop: "end_turn", content: [{ type: "text", text: "not json", citations: null }] });
     if (calls === 1) {

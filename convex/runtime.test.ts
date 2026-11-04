@@ -6,6 +6,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { api, internal } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
+import { DEFAULT_CAPS } from "./lib/caps";
 import { NOT_ALLOWED, NOT_FOUND } from "./lib/errors";
 import { MISSING_SOURCE } from "./lib/evidence";
 import { INJECTION_FIXTURE, toolsAfterModel } from "./lib/registry";
@@ -743,6 +744,10 @@ describe("step 4 runtime", () => {
     const runId = await owner.mutation(api.runs.start, { workspaceId, agentSlug: "growth-architect", skillSlug: "test-echo" });
     const scheduled = await t.run(async (ctx) => ctx.db.system.query("_scheduled_functions").take(10));
     expect(scheduled.map((row) => row.name).sort()).toEqual(["runs:expire", "runs:step"]);
+    // Called early, it reschedules itself for the time left rather than stopping the run.
+    await t.mutation(internal.runs.expire, { runId: runId as never });
+    expect((await owner.query(api.runs.get, { workspaceId, runId })).stopReason).toBeNull();
+    await t.run((ctx) => ctx.db.patch(runId, { startedAt: Date.now() - DEFAULT_CAPS.maxDurationMs }));
     await t.mutation(internal.runs.expire, { runId: runId as never });
     expect((await owner.query(api.runs.get, { workspaceId, runId })).stopReason).toBe("cap");
   });

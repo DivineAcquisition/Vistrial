@@ -7,11 +7,13 @@ import type { Doc, Id } from "./_generated/dataModel";
 import type { MutationCtx, QueryCtx } from "./_generated/server";
 import { workspaceMutation, workspaceQuery } from "./lib/builders";
 import { writeAudit } from "./lib/audit";
-import { PLATFORM_CEILING, SOFT_WARNING_RATIO, capScope, dayKey, overCap } from "./lib/caps";
+import { PLATFORM_CEILING, SOFT_WARNING_RATIO, activeMs, capScope, dayKey, overCap } from "./lib/caps";
 import { addDaySpend, daySpend, loadCaps } from "./lib/capRows";
 import { currentAgentSlug } from "./catalog";
-import { assertClaims, assertSourcesExist } from "./lib/evidence";
+import { assertClaims, assertSourcesExist, screenClaims } from "./lib/evidence";
+import { estimateCents, stepAllowance } from "./lib/estimate";
 import { notAllowed, notFound } from "./lib/errors";
+import { writeFact } from "./lib/facts";
 import { ModelError, NO_SPEND, complete, type ModelRoute, type Spend } from "./lib/modelRouter";
 import { completeWithTools } from "./lib/toolRouter";
 import { INJECTION_FIXTURE, TEST_SKILL, devSkillsEnabled, isCollectTool, wrapUntrusted } from "./lib/registry";
@@ -19,8 +21,119 @@ import { collectResult, type Platform } from "./lib/researchShapes";
 import { saveSourceRef, setSourceStatus } from "./lib/sourceRefs";
 import { liveEnv, runAdapter } from "./adapters";
 import { assertDeclared, skillFor } from "./lib/skills";
+import type { CheckResult, SkillModule, StepRecord } from "./skills/types";
 
 const OPEN = new Set(["queued", "running", "waiting"]);
+
+/** How long a question waits before the run becomes Needs Input (decision D8). */
+export const QUESTION_TIMEOUT_MS = 7 * 24 * 60 * 60 * 1000;
+
+/** Plain words for a question that can no longer be answered. */
+export const QUESTION_GONE = "This question is no longer waiting for an answer.";
+
+function stepRecords(steps: Doc<"runSteps">[]): StepRecord[] {
+  return [...steps]
+    .sort((a, b) => a.index - b.index)
+    .map((step) => ({
+      index: step.index,
+      kind: step.kind,
+      toolSlug: step.toolSlug,
+      status: step.status,
+      resultCode: step.resultCode,
+      resultId: step.resultId,
+      ...(step.workKind ? { workKind: step.workKind } : {}),
+    }));
+}
+
+/** A step the runtime records itself: a question asked or answered, a check, a skipped call. */
+async function recordNote(
+  ctx: MutationCtx,
+  run: Doc<"agentRuns">,
+  index: number,
+  resultCode: string,
+  extra: { resultId?: string; workKind?: string; artifact?: { kind: string; body: string } } = {},
+) {
+  const stepId = await ctx.db.insert("runSteps", {
+    workspaceId: run.workspaceId,
+    runId: run._id,
+    index,
+    idempotencyKey: `${run._id}:${index}`,
+    kind: "note",
+    ...(extra.workKind ? { workKind: extra.workKind } : {}),
+    status: "completed",
+    durationMs: 0,
+    inputTokens: 0,
+    outputTokens: 0,
+    resultCode,
+    ...(extra.resultId ? { resultId: extra.resultId } : {}),
+  });
+  if (extra.artifact) {
+    await ctx.db.insert("runArtifacts", {
+      workspaceId: run.workspaceId,
+      runId: run._id,
+      stepId,
+      kind: extra.artifact.kind,
+      byteSize: new TextEncoder().encode(extra.artifact.body).byteLength,
+      body: extra.artifact.body,
+    });
+  }
+  return stepId;
+}
+
+async function runArtifactsOfKind(ctx: QueryCtx, run: Pick<Doc<"agentRuns">, "_id" | "workspaceId">, kind: string) {
+  const rows = await ctx.db
+    .query("runArtifacts")
+    .withIndex("by_workspace_run", (q) => q.eq("workspaceId", run.workspaceId).eq("runId", run._id))
+    .take(PLATFORM_CEILING.maxSteps * 3);
+  return rows.filter((row) => row.kind === kind);
+}
+
+async function latestRunAsset(ctx: QueryCtx, run: Pick<Doc<"agentRuns">, "_id" | "workspaceId">) {
+  return ctx.db
+    .query("assets")
+    .withIndex("by_workspace_run", (q) => q.eq("workspaceId", run.workspaceId).eq("createdByRun", run._id))
+    .order("desc")
+    .first();
+}
+
+function parseChecks(body: string | undefined): CheckResult[] {
+  try {
+    const parsed = JSON.parse(body ?? "") as unknown;
+    return Array.isArray(parsed) ? (parsed as CheckResult[]) : [];
+  } catch {
+    return [];
+  }
+}
+
+/**
+ * A skill with a completion check finishes as passed only when its latest check passed. Otherwise the
+ * draft is kept as Needs Review, with the failed checks and whether the revision was skipped for budget.
+ */
+async function finishChecked(ctx: MutationCtx, run: Doc<"agentRuns">, steps: StepRecord[]) {
+  const asset = await latestRunAsset(ctx, run);
+  const index = steps.length;
+  if (!asset) {
+    await recordFailure(ctx, run, index, `${run._id}:${index}`, "no_report", "tool");
+    return;
+  }
+  const lastCheck = [...steps].reverse().find((step) => step.resultCode === "check_passed" || step.resultCode === "check_failed");
+  if (lastCheck?.resultCode === "check_passed") {
+    await stopRun(ctx, run, "done", "completed");
+    return;
+  }
+  const checkArtifacts = await runArtifactsOfKind(ctx, run, "check");
+  const failed = lastCheck
+    ? parseChecks(checkArtifacts.at(-1)?.body).filter((row) => !row.passed)
+    : [{ key: "checkRan", passed: false, detail: "The completion check did not run." }];
+  const lastCheckIndex = lastCheck?.index ?? -1;
+  const revisionSkipped = steps.some((step) => step.index > lastCheckIndex && step.resultCode === "budget_skip");
+  if (asset.status === "draft") await ctx.db.patch(asset._id, { status: "needsReview" });
+  await recordNote(ctx, run, index, "needs_review", {
+    resultId: asset._id,
+    artifact: { kind: "review", body: JSON.stringify({ failed, revisionSkipped }) },
+  });
+  await stopRun(ctx, run, "done", "completed");
+}
 
 type StopReason = "cap" | "error" | "cancelled" | "halted" | "done";
 
@@ -114,6 +227,7 @@ const runStatus = v.union(
   v.literal("queued"),
   v.literal("running"),
   v.literal("waiting"),
+  v.literal("needsInput"),
   v.literal("completed"),
   v.literal("failed"),
   v.literal("stopped"),
@@ -217,12 +331,29 @@ export const get = workspaceQuery({
       .query("members")
       .withIndex("by_workspace_user", (q) => q.eq("workspaceId", ctx.workspaceId).eq("userId", run.startedBy))
       .unique();
+    const checks = artifacts.filter((row) => row.kind === "check").at(-1);
+    const review = artifacts.filter((row) => row.kind === "review").at(-1);
+    let revisionSkipped = false;
+    try {
+      revisionSkipped = review ? (JSON.parse(review.body ?? "{}") as { revisionSkipped?: boolean }).revisionSkipped === true : false;
+    } catch {
+      revisionSkipped = false;
+    }
     return {
       id: run._id,
       agentSlug: run.agentSlug,
       skillSlug: run.skillSlug,
       status: run.status,
       stopReason: run.stopReason ?? null,
+      /** The open question, while the run waits for it or after it timed out. */
+      question:
+        run.waitingFor && (run.status === "waiting" || run.status === "needsInput")
+          ? { questionId: run.waitingFor.questionId, text: run.waitingFor.question, askedAt: run.waitingFor.askedAt }
+          : null,
+      needsInputReason: run.needsInputReason ?? null,
+      waitedMs: run.waitedMs ?? 0,
+      /** The latest completion check, in plain words. Null for a skill without one, or before it runs. */
+      completion: checks ? { checks: parseChecks(checks.body), needsReview: review !== undefined, revisionSkipped } : null,
       costCents: run.costCents,
       inputTokens: run.inputTokens,
       outputTokens: run.outputTokens,
@@ -294,12 +425,17 @@ export const start = workspaceMutation({
     if (args.skillSlug === TEST_SKILL && !devSkillsEnabled()) notFound();
     const skill = skillFor(args.skillSlug);
     if (!skill) throw new Error("This skill is not built yet.");
+    if (skill.needsProject && !project) throw new Error("Choose a research project first.");
     const agent = await ctx.db
       .query("agents")
       .withIndex("by_slug", (q) => q.eq("slug", args.agentSlug))
       .unique();
     if (!agent || agent.retired === true) notFound();
     if (agent.status !== "live") throw new Error(`${agent.name} is not available yet.`);
+    if (project?.latestRunId) {
+      const latest = await ctx.db.get(project.latestRunId);
+      if (latest && OPEN.has(latest.status)) throw new Error("This project already has a run in progress.");
+    }
     const link = await ctx.db
       .query("workspaceAgents")
       .withIndex("by_workspace_agent", (q) => q.eq("workspaceId", ctx.workspaceId).eq("agentId", agent._id))
@@ -348,20 +484,107 @@ export const stop = workspaceMutation({
     if (ctx.member.role === "rep") notAllowed();
     const run = await ctx.db.get(args.runId);
     if (!run || run.workspaceId !== ctx.workspaceId) notFound();
-    if (!OPEN.has(run.status)) return { stopped: false };
+    if (!OPEN.has(run.status) && run.status !== "needsInput") return { stopped: false };
     await stopRun(ctx, run, "halted", "stopped");
     return { stopped: true };
   },
 });
 
-/** Stops a run that is still open when its time cap runs out, whether or not anyone is watching. */
+/**
+ * Stops a run that is still open when its time cap runs out, whether or not anyone is watching. Time
+ * spent waiting for a person does not count: a waiting run is left alone, and a run that waited earlier
+ * gets the rest of its time.
+ */
 export const expire = internalMutation({
   args: { runId: v.id("agentRuns") },
   handler: async (ctx, args) => {
     const run = await ctx.db.get(args.runId);
-    if (!run || !OPEN.has(run.status)) return null;
+    if (!run || !OPEN.has(run.status) || run.status === "waiting") return null;
+    const caps = await loadCaps(ctx, run.workspaceId, run.agentSlug, run.skillSlug);
+    const used = activeMs(run.startedAt, Date.now(), run.waitedMs);
+    if (used < caps.maxDurationMs) {
+      await ctx.scheduler.runAfter(caps.maxDurationMs - used, internal.runs.expire, { runId: run._id });
+      return null;
+    }
     await stopRun(ctx, run, "cap", "stopped");
     return null;
+  },
+});
+
+/**
+ * A person answers the run's question. The answer is saved as a verified fact, because the person
+ * stated it, and the run picks up where it stopped. Only the question still waiting can be answered.
+ */
+export const answer = workspaceMutation({
+  args: { runId: v.id("agentRuns"), questionId: v.string(), answer: v.string() },
+  handler: async (ctx, args) => {
+    if (ctx.member.role === "rep") notAllowed();
+    const run = await ctx.db.get(args.runId);
+    if (!run || run.workspaceId !== ctx.workspaceId) notFound();
+    if (run.status !== "waiting" || run.waitingFor?.questionId !== args.questionId) throw new Error(QUESTION_GONE);
+    const now = Date.now();
+    const factId = await writeFact(ctx, {
+      workspaceId: run.workspaceId,
+      factKey: run.waitingFor.factKey,
+      value: args.answer,
+      sourceType: "owner",
+      sourceReference: `run:${run._id}`,
+      recordedBy: ctx.identity.subject,
+      verifiedBy: ctx.identity.subject,
+    });
+    const waitedMs = (run.waitedMs ?? 0) + (now - run.waitingFor.askedAt);
+    const steps = await stepCount(ctx, run);
+    await recordNote(ctx, run, steps.length, "answered", { resultId: factId });
+    await ctx.db.patch(run._id, { status: "running", waitingFor: undefined, waitedMs });
+    await writeAudit(ctx, { workspaceId: run.workspaceId, actorType: "user", actorId: ctx.identity.subject, action: "run.answered", subject: run._id });
+    const caps = await loadCaps(ctx, run.workspaceId, run.agentSlug, run.skillSlug);
+    await ctx.scheduler.runAfter(0, internal.runs.step, { runId: run._id });
+    await ctx.scheduler.runAfter(Math.max(0, caps.maxDurationMs - activeMs(run.startedAt, now, waitedMs)), internal.runs.expire, {
+      runId: run._id,
+    });
+    return null;
+  },
+});
+
+/**
+ * Seven days after a question is asked. Changes the run only if it is still waiting on that same
+ * question: a run that was answered, finished, stopped or asked again is left alone. Nothing is deleted.
+ */
+export const timeoutQuestion = internalMutation({
+  args: { runId: v.id("agentRuns"), questionId: v.string() },
+  handler: async (ctx, args) => {
+    const run = await ctx.db.get(args.runId);
+    if (!run || run.status !== "waiting" || run.waitingFor?.questionId !== args.questionId) return null;
+    await ctx.db.patch(run._id, {
+      status: "needsInput",
+      needsInputReason: "timedOut",
+      waitedMs: (run.waitedMs ?? 0) + (Date.now() - run.waitingFor.askedAt),
+    });
+    await writeAudit(ctx, { workspaceId: run.workspaceId, actorType: "system", actorId: "runtime", action: "run.timedOut", subject: run._id });
+    return null;
+  },
+});
+
+/** Reopens a run that timed out. It asks the same question again, with a new id and a new seven days. */
+export const resume = workspaceMutation({
+  args: { runId: v.id("agentRuns") },
+  handler: async (ctx, args) => {
+    if (ctx.member.role === "rep") notAllowed();
+    const run = await ctx.db.get(args.runId);
+    if (!run || run.workspaceId !== ctx.workspaceId) notFound();
+    if (run.status !== "needsInput" || !run.waitingFor) throw new Error("Only a run that needs input can be resumed.");
+    const steps = await stepCount(ctx, run);
+    const now = Date.now();
+    const questionId = `${run._id}:${steps.length}:${now}`;
+    await recordNote(ctx, run, steps.length, "asked", { resultId: questionId });
+    await ctx.db.patch(run._id, {
+      status: "waiting",
+      needsInputReason: undefined,
+      waitingFor: { ...run.waitingFor, questionId, askedAt: now },
+    });
+    await ctx.scheduler.runAfter(QUESTION_TIMEOUT_MS, internal.runs.timeoutQuestion, { runId: run._id, questionId });
+    await writeAudit(ctx, { workspaceId: run.workspaceId, actorType: "user", actorId: ctx.identity.subject, action: "run.resumed", subject: run._id });
+    return { questionId };
   },
 });
 
@@ -374,7 +597,8 @@ export const prepare = internalMutation({
   args: { runId: v.id("agentRuns") },
   handler: async (ctx, args) => {
     const run = await ctx.db.get(args.runId);
-    if (!run || !OPEN.has(run.status)) return { done: true as const };
+    // A waiting run moves on only when a person answers.
+    if (!run || !OPEN.has(run.status) || run.status === "waiting") return { done: true as const };
     if (!(await starterActive(ctx, run))) {
       await stopRun(ctx, run, "cancelled", "stopped");
       return { done: true as const };
@@ -387,7 +611,17 @@ export const prepare = internalMutation({
     const caps = await loadCaps(ctx, run.workspaceId, run.agentSlug, run.skillSlug);
     const steps = await stepCount(ctx, run);
     const spent = await daySpend(ctx, run.workspaceId, run.agentSlug, run.skillSlug, dayKey());
-    if (overCap({ caps, runCost: run.costCents, dayCost: spent, steps: steps.length, startedAt: run.startedAt, now: Date.now() })) {
+    if (
+      overCap({
+        caps,
+        runCost: run.costCents,
+        dayCost: spent,
+        steps: steps.length,
+        startedAt: run.startedAt,
+        now: Date.now(),
+        waitedMs: run.waitedMs,
+      })
+    ) {
       await stopRun(ctx, run, "cap", "stopped");
       return { done: true as const };
     }
@@ -399,29 +633,31 @@ export const prepare = internalMutation({
       await recordFailure(ctx, run, index, idempotencyKey, "skill_unavailable", "tool");
       return { done: true as const };
     }
-    const next = await skill.nextStep({
-      db: ctx.db,
-      run,
-      steps: [...steps]
-        .sort((a, b) => a.index - b.index)
-        .map((step) => ({
-          index: step.index,
-          kind: step.kind,
-          toolSlug: step.toolSlug,
-          status: step.status,
-          resultCode: step.resultCode,
-          resultId: step.resultId,
-        })),
-    });
-    if (!next) {
-      await stopRun(ctx, run, "done", "completed");
+    if (skill.needsProject && !(await runProject(ctx, run))) {
+      await recordFailure(ctx, run, index, idempotencyKey, "no_project", "tool");
       return { done: true as const };
+    }
+    const records = stepRecords(steps);
+    const next = await skill.nextStep({ db: ctx.db, run, steps: records });
+    if (!next) {
+      if (skill.check) await finishChecked(ctx, run, records);
+      else await stopRun(ctx, run, "done", "completed");
+      return { done: true as const };
+    }
+    if (run.status === "queued") await ctx.db.patch(run._id, { status: "running" });
+    if (next.kind === "ask") return { done: true as const, ...(await ask(ctx, run, skill, index, next.factKey)) };
+    if (next.kind === "check") {
+      await runCheck(ctx, run, skill, index, records);
+      return { done: false as const, kind: "continue" as const };
+    }
+    if (next.kind === "brief") {
+      await recordNote(ctx, run, index, "brief_saved", { artifact: { kind: "brief", body: next.body } });
+      return { done: false as const, kind: "continue" as const };
     }
     if (next.kind === "tool") assertDeclared(run.skillSlug, next.toolSlug);
     // Claude's web tools are tools too: a model step may use them only if the skill declared them.
     if (next.kind === "model" && next.webSearch) assertDeclared(run.skillSlug, "web.search");
     if (next.kind === "model" && next.webFetch) assertDeclared(run.skillSlug, "web.fetch");
-    if (run.status === "queued") await ctx.db.patch(run._id, { status: "running" });
     if (next.kind === "tool" && isCollectTool(next.toolSlug)) {
       return { done: false as const, kind: "collect" as const, index, idempotencyKey, toolSlug: next.toolSlug };
     }
@@ -432,6 +668,32 @@ export const prepare = internalMutation({
     if (!route) {
       await recordFailure(ctx, run, index, idempotencyKey, "no_route");
       return { done: true as const };
+    }
+    if (skill.reserveCents !== undefined) {
+      const estimate = estimateCents(route, {
+        workKind: next.workKind,
+        inputChars: next.input.length + (next.system?.length ?? 0),
+        maxOutputTokens: next.maxOutputTokens,
+        webSearchMaxUses: next.webSearch?.maxUses,
+        webFetchMaxUses: next.webFetch?.maxUses,
+        webFetchMaxContentTokens: next.webFetch?.maxContentTokens,
+      });
+      const allowance = stepAllowance({
+        runCapCents: caps.maxCostCentsPerRun,
+        dayCapCents: caps.maxCostCentsPerDay,
+        runCostCents: run.costCents,
+        dayCostCents: spent,
+        reserveCents: skill.reserveCents,
+        useReserve: next.useReserve === true,
+      });
+      if (estimate > allowance) {
+        // Not started. The skill sees the skip and decides what to do without this call.
+        await recordNote(ctx, run, index, "budget_skip", {
+          workKind: next.workKind,
+          artifact: { kind: "estimate", body: JSON.stringify({ estimateCents: estimate, allowanceCents: Math.max(0, allowance) }) },
+        });
+        return { done: false as const, kind: "continue" as const };
+      }
     }
     return {
       done: false as const,
@@ -448,17 +710,54 @@ export const prepare = internalMutation({
       modelInput: next.input,
       // Only the fields a step sets: Convex values cannot hold undefined.
       tools:
-        next.webSearch || next.webFetch || next.outputSchema || next.system
+        next.webSearch || next.webFetch || next.outputSchema || next.system || next.maxOutputTokens !== undefined
           ? {
               ...(next.system ? { system: next.system } : {}),
               ...(next.webSearch ? { webSearch: next.webSearch } : {}),
               ...(next.webFetch ? { webFetch: next.webFetch } : {}),
               ...(next.outputSchema ? { outputSchema: next.outputSchema } : {}),
+              ...(next.maxOutputTokens !== undefined ? { maxOutputTokens: next.maxOutputTokens } : {}),
             }
           : null,
     };
   },
 });
+
+/** Pauses the run on one of the skill's own questions and sets its seven-day timeout. */
+async function ask(ctx: MutationCtx, run: Doc<"agentRuns">, skill: SkillModule, index: number, factKey: string) {
+  const question = skill.asks?.[factKey];
+  if (!question) {
+    await recordFailure(ctx, run, index, `${run._id}:${index}`, "undeclared_question", "tool");
+    return {};
+  }
+  const now = Date.now();
+  const questionId = `${run._id}:${index}:${now}`;
+  await recordNote(ctx, run, index, "asked", { resultId: questionId });
+  await ctx.db.patch(run._id, { status: "waiting", waitingFor: { questionId, factKey, question, askedAt: now } });
+  await ctx.scheduler.runAfter(QUESTION_TIMEOUT_MS, internal.runs.timeoutQuestion, { runId: run._id, questionId });
+  await writeAudit(ctx, { workspaceId: run.workspaceId, actorType: "system", actorId: "runtime", action: "run.asked", subject: run._id });
+  return {};
+}
+
+/** The skill's completion check, run in code over the newest saved report. Recorded as its own step. */
+async function runCheck(ctx: MutationCtx, run: Doc<"agentRuns">, skill: SkillModule, index: number, records: StepRecord[]) {
+  const reports = await runArtifactsOfKind(ctx, run, "report");
+  let report: unknown = null;
+  try {
+    report = reports.length > 0 ? JSON.parse(reports.at(-1)!.body ?? "null") : null;
+  } catch {
+    report = null;
+  }
+  const results: CheckResult[] = skill.check
+    ? report === null
+      ? [{ key: "report", passed: false, detail: "No report was saved, so nothing could be checked." }]
+      : await skill.check({ db: ctx.db, run, steps: records, report })
+    : [];
+  const passed = results.length > 0 && results.every((row) => row.passed);
+  await recordNote(ctx, run, index, passed ? "check_passed" : "check_failed", {
+    artifact: { kind: "check", body: JSON.stringify(results) },
+  });
+}
 
 async function recordFailure(
   ctx: MutationCtx,
@@ -581,8 +880,14 @@ export const commitTool = internalMutation({
     assertDeclared(run.skillSlug, args.toolSlug);
     const steps = await stepCount(ctx, run);
 
+    const skill = skillFor(run.skillSlug)!;
     let resultId: string;
-    if (args.toolSlug === "profile.read") {
+    let report: string | null = null;
+    if ((args.toolSlug === "asset.create" || args.toolSlug === "asset.addVersion") && skill.buildReport) {
+      const saved = await saveBuiltReport(ctx, run, skill, stepRecords(steps), args.toolSlug);
+      resultId = saved.assetId;
+      report = saved.structured;
+    } else if (args.toolSlug === "profile.read") {
       const confirmed = await ctx.db
         .query("profileVersions")
         .withIndex("by_workspace_status", (q) => q.eq("workspaceId", run.workspaceId).eq("status", "confirmed"))
@@ -678,9 +983,73 @@ export const commitTool = internalMutation({
         body,
       });
     }
+    if (report !== null) {
+      await ctx.db.insert("runArtifacts", {
+        workspaceId: run.workspaceId,
+        runId: run._id,
+        stepId,
+        kind: "report",
+        byteSize: new TextEncoder().encode(report).byteLength,
+        body: report,
+      });
+    }
     return { status: "running" as const };
   },
 });
+
+/**
+ * Saves a skill's report as a draft: a new asset for `asset.create`, the next version of the run's asset for
+ * `asset.addVersion`. Every claim is screened again here, so one the rules refuse is left out, never saved.
+ */
+async function saveBuiltReport(
+  ctx: MutationCtx,
+  run: Doc<"agentRuns">,
+  skill: SkillModule,
+  steps: StepRecord[],
+  toolSlug: "asset.create" | "asset.addVersion",
+) {
+  const built = await skill.buildReport!({ db: ctx.db, run, steps });
+  const { kept } = await screenClaims(ctx, run.workspaceId, built.claims);
+  const existing = toolSlug === "asset.addVersion" ? await latestRunAsset(ctx, run) : null;
+  let assetId: Id<"assets">;
+  let version: number;
+  if (existing) {
+    version = existing.currentVersion + 1;
+    assetId = existing._id;
+    await ctx.db.patch(assetId, { title: built.title, currentVersion: version, status: "draft" });
+  } else {
+    version = 1;
+    assetId = await ctx.db.insert("assets", {
+      workspaceId: run.workspaceId,
+      kind: skill.output.assetKind,
+      title: built.title,
+      status: "draft",
+      currentVersion: 1,
+      createdByRun: run._id,
+      createdAt: Date.now(),
+    });
+  }
+  const versionId = await ctx.db.insert("assetVersions", {
+    workspaceId: run.workspaceId,
+    assetId,
+    version,
+    body: built.body,
+    createdBy: "agent",
+  });
+  for (const claim of kept) {
+    const refs = (claim.sourceRefIds ?? []).map((id) => ctx.db.normalizeId("sourceRefs", id)).filter((id) => id !== null);
+    await ctx.db.insert("evidence", {
+      workspaceId: run.workspaceId,
+      assetVersionId: versionId,
+      claimKey: claim.claimKey,
+      statement: claim.statement,
+      basis: claim.basis,
+      ...(claim.computed ? { computed: true } : {}),
+      ...(refs.length > 0 ? { sourceRefIds: refs } : {}),
+    });
+  }
+  return { assetId: assetId as string, structured: JSON.stringify(built.structured) };
+}
 
 /**
  * Records a model call that already happened. The cost is always counted, even when the run
@@ -768,7 +1137,9 @@ export const commitModel = internalMutation({
     }
     const caps = await loadCaps(ctx, run.workspaceId, run.agentSlug, run.skillSlug);
     const steps = await stepCount(ctx, run);
-    if (overCap({ caps, runCost: nextCost, dayCost: nextDay, steps: steps.length, startedAt: run.startedAt, now: Date.now() })) {
+    if (
+      overCap({ caps, runCost: nextCost, dayCost: nextDay, steps: steps.length, startedAt: run.startedAt, now: Date.now(), waitedMs: run.waitedMs })
+    ) {
       await stopRun(ctx, current, "cap", "stopped", nextCost);
       return { status: "stopped" as const };
     }
@@ -906,6 +1277,10 @@ export const step = internalAction({
   handler: async (ctx, args): Promise<null> => {
     const plan = await ctx.runMutation(internal.runs.prepare, { runId: args.runId });
     if (plan.done) return null;
+    if (plan.kind === "continue") {
+      await ctx.scheduler.runAfter(0, internal.runs.step, { runId: args.runId });
+      return null;
+    }
     let status: string;
     if (plan.kind === "model") {
       let result;
@@ -920,6 +1295,7 @@ export const step = internalAction({
             webSearch: plan.tools.webSearch,
             webFetch: plan.tools.webFetch,
             outputSchema: plan.tools.outputSchema,
+            maxOutputTokens: plan.tools.maxOutputTokens,
           });
           result = { ...answer, text: answer.output === null ? answer.text : JSON.stringify(answer.output) };
           web = {

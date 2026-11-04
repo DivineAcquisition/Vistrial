@@ -499,6 +499,8 @@ export default defineSchema({
       v.literal("queued"),
       v.literal("running"),
       v.literal("waiting"),
+      /** Asked a question and nobody answered in time. Nothing runs; a person resumes it. */
+      v.literal("needsInput"),
       v.literal("completed"),
       v.literal("failed"),
       v.literal("stopped"),
@@ -513,6 +515,16 @@ export default defineSchema({
     costCents: v.number(),
     inputTokens: v.number(),
     outputTokens: v.number(),
+    /**
+     * The question a waiting run asked. `questionId` changes every time it is asked, so a timeout
+     * scheduled for an older question never touches the run. Kept after a timeout so resume can ask again.
+     */
+    waitingFor: v.optional(
+      v.object({ questionId: v.string(), factKey: v.string(), question: v.string(), askedAt: v.number() }),
+    ),
+    /** Time spent waiting for a person. The run's time cap does not count it. */
+    waitedMs: v.optional(v.number()),
+    needsInputReason: v.optional(v.literal("timedOut")),
   })
     .index("by_workspace", ["workspaceId"])
     .index("by_workspace_status", ["workspaceId", "status"])

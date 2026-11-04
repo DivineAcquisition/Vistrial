@@ -146,9 +146,9 @@ describe("per-skill caps", () => {
     });
     const under = await miRun(t, workspaceId, 299);
     await t.mutation(internal.runs.prepare, { runId: under });
-    // Not capped: the run reached the skill lookup, which fails only because 2.11 has not built the skill yet.
+    // Not capped: the run reached the skill, which fails only because this run has no research project.
     const passed = await owner.query(api.runs.get, { workspaceId, runId: under });
-    expect(passed.steps.map((step) => step.resultCode)).toEqual(["skill_unavailable"]);
+    expect(passed.steps.map((step) => step.resultCode)).toEqual(["no_project"]);
     expect(passed.stopReason).toBe("error");
 
     await t.run(async (ctx) => {

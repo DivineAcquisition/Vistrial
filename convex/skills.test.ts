@@ -25,7 +25,8 @@ describe("skill modules", () => {
   it("finds a dev-only skill only when dev skills are on, and nothing that is not built", () => {
     expect(skillFor("test-echo", true)?.name).toBe("Test echo");
     expect(skillFor("test-echo", false)).toBeNull();
-    expect(skillFor("market-intelligence", true)).toBeNull();
+    expect(skillFor("market-intelligence", false)?.name).toBe("Market Intelligence");
+    expect(skillFor("offer-intelligence", true)).toBeNull();
     expect(declaredTools("test-echo", true)).toEqual(["profile.read", "test.echo", "asset.create"]);
     expect(declaredTools("test-echo", false)).toEqual([]);
     expect(() => assertDeclared("test-echo", "asset.addVersion", true)).toThrow("not declared");

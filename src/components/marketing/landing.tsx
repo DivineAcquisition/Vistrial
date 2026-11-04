@@ -3,6 +3,7 @@ import Link from "next/link";
 
 import { BlurFade } from "@/components/ui/blur-fade";
 import { LandingFaq } from "@/components/marketing/faq";
+import { PhilosophySection } from "@/components/marketing/philosophy";
 import {
   AssetApprovalExample,
   DoctrineFlow,
@@ -156,6 +157,8 @@ export function LandingPage() {
           </div>
         </Section>
       ) : null}
+
+      {SECTIONS.philosophy ? <PhilosophySection /> : null}
 
       {SECTIONS.how ? (
         <Section id={HOW.id} headline={HOW.headline} lead={HOW.lead}>

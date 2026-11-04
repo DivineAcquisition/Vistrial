@@ -2,7 +2,7 @@
 
 Date: 2026-11-01. Responds to the "Updated Product Vision" brief (seven-agent Agentic Workforce, Growth Architect first, Market Intelligence as the first skill). The brief asks for this plan before any broad implementation. Nothing here is built yet. Decisions D1 to D5 are settled (Section 5).
 
-Read with: `v2-brief-agents-and-areas.md` (superseded where it conflicts), `step-4-review.md`, `agentic-ui-research.md`.
+Read with: `doctrine-understanding-precedes-advantage.md` (adds tasks 2.18 to 2.20 and changes 2.11 and 2.13 to 2.17), `v2-brief-agents-and-areas.md` (superseded where it conflicts), `step-4-review.md`, `agentic-ui-research.md`.
 
 ---
 

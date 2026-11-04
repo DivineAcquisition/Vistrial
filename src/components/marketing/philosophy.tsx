@@ -21,10 +21,10 @@ function PhilosopherPortrait() {
         width={image.width}
         height={image.height}
         alt={image.alt}
-        sizes="(min-width: 1024px) 400px, (min-width: 640px) 360px, 75vw"
-        className="h-auto w-3/4 max-w-[400px] sm:w-[360px] lg:w-full"
+        sizes="(min-width: 1024px) 320px, (min-width: 640px) 280px, 62vw"
+        className="h-auto w-[62%] max-w-[320px] sm:w-[280px] lg:w-[320px]"
       />
-      <figcaption className="w-full max-w-[400px] text-center lg:text-left">
+      <figcaption className="w-full max-w-[360px] text-center lg:text-left">
         <span className="mb-1.5 block text-[11px] font-semibold tracking-[0.16em] text-brand-200 uppercase">What fueled Vistrial</span>
         <span className="block font-heading text-lg leading-snug tracking-tight text-strong sm:text-xl">{maxim}</span>
         <span className="mt-3 block text-xs leading-relaxed text-muted-foreground">{image.credit}</span>

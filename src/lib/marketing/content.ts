@@ -107,12 +107,12 @@ export const PHILOSOPHY = {
   maxim: "Understanding precedes advantage.",
   link: { href: "/#how", label: "See how every agent applies it" },
   image: {
-    src: "/brand/philosopher-soft.png",
-    width: 612,
-    height: 964,
-    alt: "A soft black-and-white drawing of a bearded philosopher's bust with a furrowed brow.",
+    src: "/brand/philosopher-thinker.png",
+    width: 640,
+    height: 1324,
+    alt: "A soft black-and-white drawing of a full-length seated figure in deep thought, chin resting on his hand.",
     credit:
-      "Drawn from Pierre Puget, A Philosopher, 1662. Marble. The Cleveland Museum of Art, Leonard C. Hanna Jr. Fund, 1969.121. Public domain (CC0).",
+      "Drawn from Auguste Rodin, The Thinker, c. 1880. Bronze. The Cleveland Museum of Art, Gift of Alexandre P. Rosenberg, 1979.138. Public domain (CC0).",
   },
 } as const;
 

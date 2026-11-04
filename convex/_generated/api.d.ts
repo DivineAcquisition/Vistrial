@@ -75,6 +75,7 @@ import type * as skills_testSources from "../skills/testSources.js";
 import type * as skills_types from "../skills/types.js";
 import type * as staff from "../staff.js";
 import type * as staffAdmin from "../staffAdmin.js";
+import type * as studio from "../studio.js";
 import type * as workspace from "../workspace.js";
 
 import type {
@@ -151,6 +152,7 @@ declare const fullApi: ApiFromModules<{
   "skills/types": typeof skills_types;
   staff: typeof staff;
   staffAdmin: typeof staffAdmin;
+  studio: typeof studio;
   workspace: typeof workspace;
 }>;
 

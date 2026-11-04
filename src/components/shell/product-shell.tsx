@@ -66,6 +66,7 @@ function RailLinks({
       <ul className="grid gap-1 border-t border-border pt-4">
         {[
           { href: "/app/profile", label: "Profile" },
+          { href: "/app/research", label: "Research" },
           { href: "/app/runs", label: "Activity" },
           { href: "/app/assets", label: "Assets" },
           { href: "/app/controls", label: "Controls" },

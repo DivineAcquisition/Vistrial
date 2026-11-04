@@ -23,6 +23,8 @@ export type RunStepView = {
   durationMs: number;
   inputTokens: number;
   outputTokens: number;
+  /** The skill's name for the step (brief, classify, write...). */
+  phase?: string | null;
 };
 
 export type StepGroup =

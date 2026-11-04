@@ -97,7 +97,11 @@ export async function saveSourceRef(ctx: MutationCtx, input: SourceRefInput): Pr
       q.eq("workspaceId", input.workspaceId).eq("projectId", input.projectId).eq("canonicalUrl", canonical),
     )
     .first();
-  if (existing) return { id: existing._id, created: false };
+  if (existing) {
+    const gaps = fillGaps(existing, input);
+    if (Object.keys(gaps).length > 0) await ctx.db.patch(existing._id, gaps);
+    return { id: existing._id, created: false };
+  }
   const title = input.title.replace(/\s+/g, " ").trim().slice(0, MAX_TITLE) || canonical;
   const id = await ctx.db.insert("sourceRefs", {
     workspaceId: input.workspaceId,
@@ -120,6 +124,29 @@ export async function saveSourceRef(ctx: MutationCtx, input: SourceRefInput): Pr
     limitation: input.limitation?.trim().slice(0, MAX_TITLE) || undefined,
   });
   return { id, created: true };
+}
+
+/**
+ * What a later check adds to a source already saved. It fills gaps and never overwrites: a TikTok link the
+ * web search found gains its embed once oEmbed confirms it, or is marked unavailable when oEmbed refuses it.
+ */
+export function fillGaps(existing: Doc<"sourceRefs">, input: SourceRefInput) {
+  const patch: Partial<Doc<"sourceRefs">> = {};
+  if (input.embed && !existing.embed) {
+    patch.embed = input.embed;
+    patch.availability = input.availability;
+    patch.kind = input.kind;
+    if (existing.title === existing.canonicalUrl || existing.title === existing.url) {
+      patch.title = input.title.replace(/\s+/g, " ").trim().slice(0, MAX_TITLE) || existing.title;
+    }
+  } else if (!existing.embed && (input.availability === "unavailable" || input.availability === "removed") && existing.availability === "linkOnly") {
+    patch.availability = input.availability;
+    if (input.limitation && !existing.limitation) patch.limitation = input.limitation.trim().slice(0, MAX_TITLE);
+  }
+  if (input.publisher && !existing.publisher) patch.publisher = input.publisher.trim().slice(0, MAX_TITLE);
+  if (input.publishedAt && !existing.publishedAt) patch.publishedAt = input.publishedAt;
+  if (input.excerpt && !existing.excerpt) patch.excerpt = clipExcerpt(input.excerpt);
+  return patch;
 }
 
 /** Sets one adapter's status for a run. A second call for the same source replaces the first. */

@@ -11,6 +11,10 @@ Tracks the Phase 2 backlog in `growth-architect-v1-plan.md`. Everything here was
 | 2.5 | Evidence basis and the new validator rules | Done. Checked on dev. |
 | 2.6 | `researchProjects`, `sourceRefs`, `sourceStatus`, `collections`, `collectionItems`, asset kind `marketReport` | Done. Checked on dev. |
 | 2.12 | Per-skill caps | Done. Checked on dev. |
+| 2.7 | Web adapter (Claude web search and fetch) | Done. Live on dev. |
+| 2.8 | YouTube adapter (Data API, embeds) | Done, tested on fixtures. Live search waits on `YOUTUBE_API_KEY` on dev. |
+| 2.9 | TikTok and Instagram URL adapters (oEmbed) | Done. TikTok live on dev. Instagram waits on Meta's oEmbed Read approval. |
+| 2.10 | Meta Ad Library links, plus the official API in the EU and UK | Done, tested on fixtures. Live API call waits on a fresh `META_AD_LIBRARY_TOKEN`. |
 
 ## 2.1 Departments and the seven agents
 
@@ -75,6 +79,66 @@ Acceptance: all 132 existing tests pass with no test changed. Three new tests co
 | Model name | Not in any workspace-facing response |
 
 **Cost finding for Market Intelligence.** One search brought in about **25k input tokens (about 10¢ on Opus)**, ten times the 1¢ search fee. The plan's estimate (20 to 40 searches, 150k to 300k input tokens, $1 to $2.50 a run) is too low if every search lands in context like this. At this rate 20 searches cost about $2 in tokens alone. Before 2.11: lean on `max_uses`, run the collect steps on Sonnet 5.5 (D2 allows it), and measure again. The $3 per-run cap (D3) may be tight.
+
+## Milestone B: source adapters (2.7 to 2.10)
+
+**State: done.** Built, tested on fixtures, and run live on the dev deployment `calm-spider-678` on 2026-11-04. Three live paths wait on accounts, not code (see "Waiting on accounts").
+
+### How it fits the runtime
+
+- **Adapters** live in `convex/adapters/`. Each one takes the project scope, the web tools' results from this run, and the links the project already holds, and returns a typed result: `state` (available, partial, unavailable, awaitingAuthorization), a `reasonCode`, a plain `limitation`, and the sources. The network and settings are passed in, so tests use fixtures.
+- No adapter logs in, keeps cookies, solves challenges, rotates proxies or retries around a block. `runAdapter` never throws: anything unexpected reads as `unavailable / adapter_error` with no detail kept.
+- **Collect steps.** Five new tools, `source.web`, `source.youtube`, `source.tiktok`, `source.instagram` and `source.metaAdLibrary`, are declared by a skill like any other tool. They run in the step action, where the network is. `commitCollect` then saves, in one mutation with the step marker:
+  - the adapter's result as the raw record;
+  - each source on the project, the same page once;
+  - the adapter's status for the run.
+  An adapter that could not reach its source still completes its step. The status says why, and the run goes on.
+- **Runs on a project.** `runs.start` takes an optional `projectId` from the same workspace. Starting a run locks the project's scope and sets `latestRunId`. An archived project cannot run, and a project with an open run cannot be archived. A collect step on a run with no project fails with `no_project`.
+- **Later checks fill gaps.** When a step finds a page already saved, it adds what is missing and never overwrites. For example, a TikTok link the web search found gains its embed when oEmbed confirms it.
+- **Failed tool steps record the tool**, so the run page can say which step failed.
+- `test-sources` (dev only) runs one web search (at most 2), then every adapter. Market Intelligence (2.11) will use the same tools with its own plan.
+
+### The adapters
+
+| Adapter | Discovery | Shown as | Honest statuses |
+|---|---|---|---|
+| Web (2.7) | Claude web search in the model step (`maxUses`, domain lists). The adapter keeps links, titles, dates and cited lines, and sorts each link onto its platform. | Link card with excerpt | `no_search_step`, `unreadable_results`, `no_results` |
+| YouTube (2.8) | Data API `search.list`, at most 2 searches a run (100 quota units each), plus pasted links | Official iframe embed from the video id | `not_configured`, `quota_exceeded` (never "no videos"), `key_rejected`, `connection_failed` |
+| TikTok (2.9) | Links pasted in or found by web search. Only video links are sent to TikTok's oEmbed. | Official embed once oEmbed confirms it | Profile and topic pages stay links ("not a video"). A refused video is kept as unavailable. With no links: "Paste the TikTok links you want analyzed." |
+| Instagram (2.9) | Links pasted in or found. Posts and reels go to Meta's `instagram_oembed` (Graph v25.0). The app token travels in a header, never in a URL. | Embed after approval, link card until then | `not_configured`, `oembed_not_approved`, `token_rejected`. Profiles stay links ("not a post"). |
+| Meta Ad Library (2.10) | Pasted Ad Library links. The official `ads_archive` API only where it covers commercial ads (EU and UK, found by country or city name, never a two-letter code: "DE" is also Delaware). | Link card rebuilt from the ad id. `ad_snapshot_url` carries the token, so it is never requested or stored. | `commercial_outside_eu_uk`, `not_configured`, `token_rejected`, `access_not_granted`, `rate_limited` |
+
+Graph API version: `v25.0` (supported until July 2028), changeable with the `META_GRAPH_VERSION` setting.
+
+### Tests
+
+191 pass, 21 of them new:
+- 16 adapter fixture tests (`convex/adapters/adapters.test.ts`). They cover link parsing, every status above, partial results, and that no key appears in any result, link, reason or title.
+- 5 runtime tests (`convex/collect.test.ts`):
+  - a full run saves sources and one status per platform;
+  - a second run adds no duplicates;
+  - gap filling;
+  - another workspace's project and a Rep are both refused;
+  - the archive rules.
+
+### Checked live on dev
+
+The `research` route on dev was set to Opus 5.5, with Sonnet 5.5 as fallback, by a test Platform Admin.
+
+| Run | Result |
+|---|---|
+| Austin, TX (5 platforms, 3 pasted links) | Completed, 15.6¢ (2 searches, 28.6k in / 1.1k out). Web: 14 pages kept. TikTok: 2 videos confirmed with embeds; 2 profile pages kept as links. YouTube: 2 videos with embeds (pasted and found), status `not_configured`. Instagram: `awaitingAuthorization / oembed_not_approved`. Meta: `unavailable / commercial_outside_eu_uk`. |
+| London, UK (web and Meta) | Completed, 19.8¢. Web: 19 found, including 4 YouTube videos with embeds. Meta: the official API was called and answered `token_rejected`, shown as `awaitingAuthorization`. |
+
+The first live run showed TikTok profile and topic pages being sent to oEmbed and marked "private or removed". The adapters now send only video and post links to oEmbed; the rerun above shows the fix.
+
+**Cost note for 2.11:** each 2-search step cost 15 to 20¢, almost all of it input tokens (search results in context). That matches the 2.4 finding.
+
+### Waiting on accounts (no code needed)
+
+1. **`YOUTUBE_API_KEY`** in the Convex dev (and later production) environment variables. Without it YouTube shows pasted and found videos and says search is not set up.
+2. **`META_AD_LIBRARY_TOKEN`**: the one on dev is rejected (expired or revoked). It needs a new long-lived token, and Ad Library API access (identity check and terms) on the business's Meta account.
+3. **Instagram oEmbed Read** approval on the business's Meta app (`META_APP_ID` / `META_APP_SECRET` are set).
 
 ## Production steps for 2.1
 

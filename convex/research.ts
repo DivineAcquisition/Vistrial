@@ -139,7 +139,10 @@ export const archiveProject = workspaceMutation({
   handler: async (ctx, args) => {
     if (ctx.member.role === "rep") notAllowed();
     const project = await ownProject(ctx, ctx.workspaceId, args.projectId);
-    if (project.status === "running") throw new Error("Stop the run before archiving this project.");
+    const latest = project.latestRunId ? await ctx.db.get(project.latestRunId) : null;
+    if (project.status === "running" || (latest && ["queued", "running", "waiting"].includes(latest.status))) {
+      throw new Error("Stop the run before archiving this project.");
+    }
     await ctx.db.patch(project._id, { status: "archived", updatedAt: Date.now() });
     await writeAudit(ctx, {
       workspaceId: ctx.workspaceId,

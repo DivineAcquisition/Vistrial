@@ -73,3 +73,30 @@ export const classification = v.object({
 });
 
 export const projectStatus = v.union(v.literal("draft"), v.literal("running"), v.literal("ready"), v.literal("archived"));
+
+/** One source an adapter found or checked, before it is saved. Code-built; the model never fills it. */
+export const foundSource = v.object({
+  origin: v.union(v.literal("found"), v.literal("supplied")),
+  platform,
+  kind: sourceKind,
+  url: v.string(),
+  title: v.string(),
+  publisher: v.optional(v.string()),
+  publishedAt: v.optional(v.number()),
+  embed: v.optional(embed),
+  availability,
+  excerpt: v.optional(v.string()),
+  limitation: v.optional(v.string()),
+});
+export type FoundSource = Infer<typeof foundSource>;
+
+/** What one adapter reports for one run: its honest status, a reason code, and what it found. */
+export const collectResult = v.object({
+  platform,
+  state: sourceState,
+  reasonCode: v.string(),
+  /** What this source cannot show, in plain words, for the report's limits section. */
+  limitation: v.optional(v.string()),
+  sources: v.array(foundSource),
+});
+export type CollectResult = Infer<typeof collectResult>;

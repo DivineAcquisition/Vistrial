@@ -8,6 +8,13 @@
  * @module
  */
 
+import type * as adapters_index from "../adapters/index.js";
+import type * as adapters_links from "../adapters/links.js";
+import type * as adapters_metaAdLibrary from "../adapters/metaAdLibrary.js";
+import type * as adapters_oembed from "../adapters/oembed.js";
+import type * as adapters_types from "../adapters/types.js";
+import type * as adapters_web from "../adapters/web.js";
+import type * as adapters_youtube from "../adapters/youtube.js";
 import type * as agentsMigration from "../agentsMigration.js";
 import type * as assets from "../assets.js";
 import type * as catalog from "../catalog.js";
@@ -52,6 +59,7 @@ import type * as runs from "../runs.js";
 import type * as seed from "../seed.js";
 import type * as skills_testEcho from "../skills/testEcho.js";
 import type * as skills_testResearch from "../skills/testResearch.js";
+import type * as skills_testSources from "../skills/testSources.js";
 import type * as skills_types from "../skills/types.js";
 import type * as staff from "../staff.js";
 import type * as staffAdmin from "../staffAdmin.js";
@@ -64,6 +72,13 @@ import type {
 } from "convex/server";
 
 declare const fullApi: ApiFromModules<{
+  "adapters/index": typeof adapters_index;
+  "adapters/links": typeof adapters_links;
+  "adapters/metaAdLibrary": typeof adapters_metaAdLibrary;
+  "adapters/oembed": typeof adapters_oembed;
+  "adapters/types": typeof adapters_types;
+  "adapters/web": typeof adapters_web;
+  "adapters/youtube": typeof adapters_youtube;
   agentsMigration: typeof agentsMigration;
   assets: typeof assets;
   catalog: typeof catalog;
@@ -108,6 +123,7 @@ declare const fullApi: ApiFromModules<{
   seed: typeof seed;
   "skills/testEcho": typeof skills_testEcho;
   "skills/testResearch": typeof skills_testResearch;
+  "skills/testSources": typeof skills_testSources;
   "skills/types": typeof skills_types;
   staff: typeof staff;
   staffAdmin: typeof staffAdmin;

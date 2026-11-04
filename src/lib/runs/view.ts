@@ -174,9 +174,11 @@ const TOOL_LABELS: Record<string, { one: string; many: (count: number) => string
   "test.echo": { one: "Ran the echo test", many: (n) => `Ran the echo test ${n} times` },
   "web.search": { one: "Searched the web", many: (n) => `Ran ${n} web searches` },
   "web.fetch": { one: "Read a page", many: (n) => `Read ${n} pages` },
-  "library.meta": { one: "Read the Meta Ad Library", many: (n) => `Read ${n} Meta Ad Library pages` },
-  "library.tiktok": { one: "Read the TikTok Creative Center", many: (n) => `Read ${n} TikTok Creative Center pages` },
-  "library.google": { one: "Read the Google Ads Transparency Center", many: (n) => `Read ${n} Google Ads Transparency pages` },
+  "source.web": { one: "Kept what the web search found", many: (n) => `Kept web results ${n} times` },
+  "source.youtube": { one: "Searched YouTube", many: (n) => `Searched YouTube ${n} times` },
+  "source.tiktok": { one: "Checked TikTok links", many: (n) => `Checked TikTok links ${n} times` },
+  "source.instagram": { one: "Checked Instagram links", many: (n) => `Checked Instagram links ${n} times` },
+  "source.metaAdLibrary": { one: "Checked the Meta Ad Library", many: (n) => `Checked the Meta Ad Library ${n} times` },
   "swipe.read": { one: "Read the swipe file", many: (n) => `Read ${n} swipe file items` },
   "results.read": { one: "Read past results", many: (n) => `Read past results ${n} times` },
 };
@@ -202,6 +204,10 @@ export const RESULT_CODE_WORDS: Record<string, string> = {
   no_key: "No model key is set. A platform admin adds one.",
   unpriced_model: "This model has no price set, so it cannot run.",
   unknown_provider: "This model provider is not known.",
+  partial: "Done, but this source could not show everything. Its status says why.",
+  unavailable: "This source could not be used this time. Its status says why.",
+  awaiting_authorization: "This source is waiting for an account to be approved.",
+  no_project: "This run has no research project.",
 };
 
 export function stepLabel(step: Pick<RunStepView, "kind" | "toolSlug" | "workKind">) {

@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import Link from "next/link";
 
 import { BlurFade } from "@/components/ui/blur-fade";
+import { AgentFlow } from "@/components/marketing/agentic-visuals";
 import { LandingFaq } from "@/components/marketing/faq";
 import { PhilosophySection } from "@/components/marketing/philosophy";
 import {
@@ -13,7 +14,6 @@ import {
   ScatteredScene,
   SectionEyebrow,
   SkillMap,
-  SourceStrip,
   WorkforceMap,
 } from "@/components/marketing/growth-visuals";
 import { BeamFrame, HeroAtmosphere, ShinyLabel, SpotlightCard } from "@/components/marketing/saas-frame";
@@ -130,7 +130,7 @@ export function LandingPage() {
         </section>
       ) : null}
 
-      {SECTIONS.hero ? <SourceStrip /> : null}
+      {SECTIONS.hero ? <AgentFlow /> : null}
 
       {SECTIONS.problem ? (
         <Section headline={PROBLEM.headline}>

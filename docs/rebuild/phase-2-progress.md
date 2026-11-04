@@ -17,6 +17,8 @@ Tracks the Phase 2 backlog in `growth-architect-v1-plan.md`. Everything here was
 | 2.10 | Meta Ad Library links, plus the official API in the EU and UK | Done, tested on fixtures. Live API call waits on a fresh `META_AD_LIBRARY_TOKEN`. |
 | 2.18 | Business facts (doctrine D6) | Done. Checked on dev. |
 | 2.20 | Feedback: reject or request a revision with a reason, promote to a fact | Done. Checked on dev. CSV results uploads are still to come. |
+| 2.11 | Market Intelligence: brief, plan, research, collect, classify, compute, prioritize, write, check | Built and tested offline on the fake provider. Not yet run live on dev. |
+| 2.19 | Ask, wait, answer, seven-day timeout, resume (doctrine D8) | Built and tested offline. Not yet run live on dev. |
 
 ## 2.1 Departments and the seven agents
 
@@ -141,6 +143,66 @@ The first live run showed TikTok profile and topic pages being sent to oEmbed an
 1. **`YOUTUBE_API_KEY`** in the Convex dev (and later production) environment variables. Without it YouTube shows pasted and found videos and says search is not set up.
 2. **`META_AD_LIBRARY_TOKEN`**: the one on dev is rejected (expired or revoked). It needs a new long-lived token, and Ad Library API access (identity check and terms) on the business's Meta account.
 3. **Instagram oEmbed Read** approval on the business's Meta app (`META_APP_ID` / `META_APP_SECRET` are set).
+
+## 2.11 Market Intelligence and 2.19 ask, pause, resume
+
+**State: built, tested offline.** These follow doctrine sections 3.2 to 3.4 and decisions D7 to D9. This environment has no deploy key and no Anthropic key, so nothing here has run against a real model yet. The skill is registered and runs through `runs.start` with a project. The catalog still shows it as coming soon until the Research Studio screens (2.13) give a way to pick a project.
+
+### The skill (`convex/skills/marketIntelligence.ts`, `convex/lib/marketReport.ts`)
+
+1. **Ask (only if needed).** Before anything else, it checks the two declared gaps: the market, and the area. It asks only when the project, the confirmed profile and the live facts all leave one empty. The questions are worded in code (`MARKET_ASKS`), so the model can never add one.
+2. **Brief.** Built in code and saved as the run's `brief` artifact before collection starts. It holds the objective, the deliverable, the market and area, what is known (each profile field and live fact, with its origin, status and date), what is missing, and the assumptions. A missing ad budget does not block a run; it becomes the assumption "Budget not provided; recommendations do not depend on a budget figure."
+3. **Plan.** A small `classify` step that returns up to three questions and four search queries.
+4. **Research.** One `research` step with at most three web searches.
+5. **Collect.** `source.web` always, then each other adapter only for a platform the project lists.
+6. **Classify.** Each source's theme, offer and hook, citing source ids exactly.
+7. **Compute.** Counts by platform and by theme, done in code. They are saved as observed, computed claims that cite the sources counted.
+8. **Prioritize.** Up to three opportunities, each with the five fields: opportunity, evidence (basis plus source ids), business relevance (naming the profile fields or fact ids it uses), proposed action, and validation method. Source ids the project does not hold are dropped. An opportunity left with no sources becomes a hypothesis. Fewer than three must come with a reason.
+9. **Write.** A summary and up to eight observations. It cannot add opportunities.
+10. **Save, then check.** `asset.create` saves a draft `marketReport`. Every claim is screened again as it is saved, and the structured report is kept as a `report` artifact.
+
+### The completion check
+
+The eight checks from doctrine 3.4 run in code over the structured report: objective and context use, the context list, three opportunities with distinct actions, `screenClaims`, a basis on every claim, every non-available source named in the limits, the required structure, and cost within the cap. If any check fails, the run gets **one revision**:
+
+- The revision may use only sources already collected. It cannot search.
+- It cannot add an untested opportunity to reach three (`keepSupported`).
+- Then `asset.addVersion` saves it and the checks run again.
+
+If the checks still fail, or the reserve cannot pay for the revision, the draft is kept as **Needs Review** with the failed checks in plain words. `runs.get` returns them as `completion`.
+
+### Runtime changes (`convex/runs.ts`)
+
+- **New step kinds:** `ask`, `check` and `brief`, each recorded as a note step. A skill with a check can finish as passed only if its latest check passed.
+- **Budget reserve:** a skill can declare `reserveCents`; Market Intelligence keeps back 50¢. Before every model call the runtime estimates the worst case (`convex/lib/estimate.ts`): prompt, output room, and searches priced at the dearer of the two models. A call that does not fit its allowance does not start, and the runtime records `budget_skip` instead. Only the revision may spend the reserve.
+- **Questions:** `ask` sets the run to `waiting` with `waitingFor`, and schedules `timeoutQuestion` for seven days later. While a run waits it makes no calls, and the wait does not count toward the time cap (`waitedMs`). `answer` saves a verified owner fact and resumes the run.
+- **Timeout:** `timeoutQuestion` changes the run only if it still waits on that same question. The run then becomes `needsInput` (timed out), with everything kept. `resume` asks the same question again, with a new id and a new seven days.
+- **Starting runs:** a project cannot start a second run while one is open or waiting. Once that run has timed out, a new run is allowed. Market Intelligence needs a project to start.
+- **Expiry:** `expire` now leaves waiting runs alone and reschedules itself for the active time left.
+
+### Run viewer
+
+- The status reads **Waiting for User** or **Needs Input — Timed Out**.
+- A question panel lets an Owner or Manager answer the question, or resume after a timeout.
+- A completion panel lists the failed checks first, with a **Needs Review** badge and the skipped-revision note when it applies.
+- The story page (`/dev/run-viewer`) has all three states.
+
+### Tests and checks
+
+- 220 pass. New tests:
+  - `convex/marketIntelligence.test.ts`: 9 full runs on scripted fake models (`fake-market`, `fake-market-two`, `fake-market-dup`).
+  - `convex/lib/marketReport.test.ts`: each check failing on its own fault, the revision guard, and the reserve allowance.
+- The full runs cover:
+  - three opportunities passing all eight checks;
+  - two opportunities ending as Needs Review with no third invented;
+  - one revision fixing a duplicate action;
+  - the revision skipped for budget;
+  - ask, wait past the time cap and answer, twice;
+  - the timeout, a stale timeout doing nothing, and resume;
+  - a new run allowed after a timeout;
+  - isolation and roles on `answer` and `resume`.
+- Typecheck, lint (no new warnings), production build and the client secrets scan pass.
+- **Still to do live on dev:** one real run on a real project, to measure cost per step against the estimates and tune the 50¢ reserve.
 
 ## 2.18 Business facts and 2.20 feedback
 

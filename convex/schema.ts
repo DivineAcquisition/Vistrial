@@ -499,10 +499,17 @@ export default defineSchema({
       v.literal("queued"),
       v.literal("running"),
       v.literal("waiting"),
+      v.literal("needsInput"),
       v.literal("completed"),
       v.literal("failed"),
       v.literal("stopped"),
     ),
+    /** Set while the run waits on a person (doctrine D8). A new question gets a new id. */
+    waitingFor: v.optional(v.object({ questionId: v.string(), questionKey: v.string(), question: v.string(), askedAt: v.number() })),
+    /** Time spent waiting, which the time cap does not count. */
+    waitedMs: v.optional(v.number()),
+    /** Why a run needs input: it waited seven days with no answer. */
+    needsInputReason: v.optional(v.literal("timedOut")),
     startedBy: v.string(),
     inputRef: v.string(),
     startedAt: v.number(),
@@ -538,6 +545,8 @@ export default defineSchema({
     outputTokens: v.number(),
     resultCode: v.string(),
     resultId: v.optional(v.string()),
+    /** The skill's name for this step (brief, classify, write...). Skills find their own earlier steps by it. */
+    phase: v.optional(v.string()),
   })
     .index("by_workspace_run", ["workspaceId", "runId"])
     .index("by_workspace_idempotency", ["workspaceId", "idempotencyKey"]),

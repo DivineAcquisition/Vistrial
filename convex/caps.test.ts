@@ -145,11 +145,11 @@ describe("per-skill caps", () => {
       await ctx.db.insert("capCounters", { workspaceId, agentSlug: AGENT, skillSlug: MI, day, costCents: 2499 });
     });
     const under = await miRun(t, workspaceId, 299);
-    await t.mutation(internal.runs.prepare, { runId: under });
-    // Not capped: the run reached the skill lookup, which fails only because 2.11 has not built the skill yet.
+    const plan = await t.mutation(internal.runs.prepare, { runId: under });
+    // Not capped: the skill was asked for its first step (reading context).
+    expect(plan).toMatchObject({ done: false, kind: "tool", toolSlug: "context.read" });
     const passed = await owner.query(api.runs.get, { workspaceId, runId: under });
-    expect(passed.steps.map((step) => step.resultCode)).toEqual(["skill_unavailable"]);
-    expect(passed.stopReason).toBe("error");
+    expect(passed.stopReason).toBeNull();
 
     await t.run(async (ctx) => {
       const row = await ctx.db

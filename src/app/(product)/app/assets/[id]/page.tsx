@@ -5,7 +5,7 @@ import { useMutation, useQuery } from "convex/react";
 import { useParams } from "next/navigation";
 import { useState } from "react";
 
-import { EvidenceList, VersionCompare, VersionHistory, type EvidenceView } from "@/components/assets/asset-parts";
+import { EvidenceList, VersionCompare, VersionHistory, claimMissing, type EvidenceView } from "@/components/assets/asset-parts";
 import { AssetStatusBadge, assetKindLabel } from "@/components/runs/run-parts";
 import { useWorkspaceShell, type WorkspaceShell } from "@/components/shell/shell-context";
 import { Button } from "@/components/ui/button";
@@ -34,7 +34,7 @@ function Asset({ shell, assetId }: { shell: WorkspaceShell; assetId: Id<"assets"
   if (asset === undefined) return <p className="text-sm text-muted-foreground">Loading the asset.</p>;
   const shown = viewingOld ? older : { body: asset.body, evidence: asset.evidence as EvidenceView[] };
   const editor = shell.role === "owner" || shell.role === "manager";
-  const missingSource = (asset.evidence as EvidenceView[]).some((claim) => !claim.computed && !claim.sourceLabel);
+  const missingSource = (asset.evidence as EvidenceView[]).some(claimMissing);
   const status = asset.status as "draft" | "approved" | "archived";
 
   return (

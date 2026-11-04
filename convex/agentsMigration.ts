@@ -31,14 +31,15 @@ async function moveRuns(ctx: MutationCtx, workspaceId: Id<"workspaces">, from: s
 
 /** A workspace that set caps for the new slug keeps them. Otherwise the old caps move over. */
 async function moveCaps(ctx: MutationCtx, workspaceId: Id<"workspaces">, from: string, to: string) {
+  // Old agents never had skill caps, so only the agent-wide row (no skillSlug) moves.
   const old = await ctx.db
     .query("agentCaps")
-    .withIndex("by_workspace_agent", (q) => q.eq("workspaceId", workspaceId).eq("agentSlug", from))
+    .withIndex("by_workspace_agent_skill", (q) => q.eq("workspaceId", workspaceId).eq("agentSlug", from).eq("skillSlug", undefined))
     .unique();
   if (!old) return;
   const current = await ctx.db
     .query("agentCaps")
-    .withIndex("by_workspace_agent", (q) => q.eq("workspaceId", workspaceId).eq("agentSlug", to))
+    .withIndex("by_workspace_agent_skill", (q) => q.eq("workspaceId", workspaceId).eq("agentSlug", to).eq("skillSlug", undefined))
     .unique();
   if (current) await ctx.db.delete(old._id);
   else await ctx.db.patch(old._id, { agentSlug: to });
@@ -53,7 +54,9 @@ async function moveCounters(ctx: MutationCtx, workspaceId: Id<"workspaces">, fro
   for (const row of rows) {
     const current = await ctx.db
       .query("capCounters")
-      .withIndex("by_workspace_agent_day", (q) => q.eq("workspaceId", workspaceId).eq("agentSlug", to).eq("day", row.day))
+      .withIndex("by_workspace_agent_skill_day", (q) =>
+        q.eq("workspaceId", workspaceId).eq("agentSlug", to).eq("skillSlug", row.skillSlug).eq("day", row.day),
+      )
       .unique();
     if (current) {
       await ctx.db.patch(current._id, { costCents: current.costCents + row.costCents });

@@ -5,13 +5,34 @@ import { CalculatorIcon, CircleAlertIcon, FileSearchIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { lineDiff } from "@/lib/diff";
 
+export type EvidenceSource = {
+  id: string;
+  platform: string;
+  title: string;
+  url: string;
+  publisher: string | null;
+  observedAt: number;
+  availability: string;
+};
+
 export type EvidenceView = {
   claimKey: string;
   statement: string | null;
   computed: boolean;
   fetchedAt: number | null;
   sourceLabel: string | null;
+  /** Set on claims written with a basis. Older claims have none. */
+  basis?: string | null;
+  basisLabel?: string | null;
+  sources?: EvidenceSource[];
+  /** From the server's rules. Older story data leaves it out and falls back to the source label. */
+  sourceMissing?: boolean;
 };
+
+/** Whether a claim cannot stand on its evidence. The server decides; old story data falls back. */
+export function claimMissing(claim: EvidenceView) {
+  return claim.sourceMissing ?? (!claim.computed && !claim.sourceLabel);
+}
 
 export type VersionSummary = { version: number; createdBy: "agent" | "person" | string; createdAt: number };
 
@@ -21,19 +42,27 @@ export function EvidenceList({ evidence }: { evidence: EvidenceView[] }) {
   return (
     <ul className="grid gap-3">
       {evidence.map((claim) => {
-        const missing = !claim.computed && !claim.sourceLabel;
+        const missing = claimMissing(claim);
         const Icon = claim.computed ? CalculatorIcon : missing ? CircleAlertIcon : FileSearchIcon;
+        const sources = claim.sources ?? [];
         return (
           <li key={claim.claimKey} className="grid gap-1.5 rounded-lg border border-border p-3">
+            {claim.basisLabel ? (
+              <p className="text-[11px] font-semibold tracking-[0.08em] text-muted-foreground uppercase">{claim.basisLabel}</p>
+            ) : null}
             <p className="text-sm text-card-foreground">{claim.statement ?? claim.claimKey}</p>
             <p className={cn("flex flex-wrap items-center gap-1.5 text-xs", missing ? "text-destructive" : "text-muted-foreground")}>
               <Icon aria-hidden="true" className="size-3.5 shrink-0" />
               <span>
-                {claim.computed
-                  ? "Computed from collected data."
-                  : missing
-                    ? "Source not found. Do not approve until this is fixed."
-                    : `Source: ${claim.sourceLabel}`}
+                {missing
+                  ? "Source not found. Do not approve until this is fixed."
+                  : claim.computed
+                    ? "Computed from collected data."
+                    : claim.basis
+                      ? sources.length > 0
+                        ? `${sources.length === 1 ? "1 source" : `${sources.length} sources`}.`
+                        : "No source needed."
+                      : `Source: ${claim.sourceLabel}`}
                 {claim.fetchedAt && !missing && !claim.computed ? (
                   <>
                     , read{" "}
@@ -45,6 +74,18 @@ export function EvidenceList({ evidence }: { evidence: EvidenceView[] }) {
                 ) : null}
               </span>
             </p>
+            {sources.length > 0 ? (
+              <ul className="grid gap-1 text-xs">
+                {sources.map((source) => (
+                  <li key={source.id} className="min-w-0 break-words">
+                    <a href={source.url} target="_blank" rel="noopener noreferrer" className="text-primary underline-offset-2 hover:underline">
+                      {source.title}
+                    </a>
+                    {source.publisher ? <span className="text-muted-foreground">, {source.publisher}</span> : null}
+                  </li>
+                ))}
+              </ul>
+            ) : null}
           </li>
         );
       })}

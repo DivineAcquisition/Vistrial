@@ -111,7 +111,7 @@ export function ProductShell({
         Skip to content
       </a>
       <div className="flex min-h-dvh min-w-0">
-        <aside className="hidden w-72 shrink-0 border-r border-border md:flex md:flex-col" aria-label="Workspace">
+        <aside className="hidden w-72 shrink-0 border-r border-border md:flex md:flex-col print:hidden" aria-label="Workspace">
           <div className="px-4 py-4">
             <Link href="/app" aria-label="Vistrial home">
               <Logo className="h-7 w-auto" />
@@ -122,7 +122,7 @@ export function ProductShell({
           </div>
         </aside>
         <div className="flex min-w-0 flex-1 flex-col">
-          <header className="border-b border-border">
+          <header className="border-b border-border print:hidden">
             <div className="flex flex-wrap items-center gap-2 px-4 py-2" aria-label="Crew">
               {agents
                 .filter((agent) => agent.status === "live")
@@ -158,7 +158,7 @@ export function ProductShell({
             <main id="workspace-main" className="min-w-0 flex-1 px-4 py-6 pb-28 md:px-8 md:pb-10">
               {children}
             </main>
-            <aside aria-label="Live stream" className="hidden w-72 shrink-0 border-l border-border p-4 lg:block">
+            <aside aria-label="Live stream" className="hidden w-72 shrink-0 border-l border-border p-4 lg:block print:hidden">
               <p className="text-[11px] font-semibold tracking-[0.14em] text-muted-foreground uppercase">Live</p>
               <LiveAside />
             </aside>
@@ -166,13 +166,13 @@ export function ProductShell({
         </div>
       </div>
       {menuOpen ? (
-        <div className="fixed inset-x-0 bottom-16 z-30 max-h-[70dvh] overflow-y-auto border-t border-border bg-background p-4 md:hidden">
+        <div className="fixed inset-x-0 bottom-16 z-30 max-h-[70dvh] overflow-y-auto border-t border-border bg-background p-4 md:hidden print:hidden">
           <RailLinks departments={departments} agents={agents} pathname={pathname} onNavigate={() => setMenuOpen(false)} />
         </div>
       ) : null}
       <nav
         aria-label="Primary"
-        className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-background pb-[env(safe-area-inset-bottom)] md:hidden"
+        className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-background pb-[env(safe-area-inset-bottom)] md:hidden print:hidden"
       >
         <ul className="grid grid-cols-4">
           {tabs.map((tab) => {

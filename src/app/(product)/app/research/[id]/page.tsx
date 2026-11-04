@@ -85,7 +85,12 @@ function StudioScreen({ shell, projectId }: { shell: WorkspaceShell; projectId: 
             )}
           </Panel>
           <Panel className="grid gap-3 p-4">
-            <h2 className="font-heading text-base text-card-foreground">Sources</h2>
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <h2 className="font-heading text-base text-card-foreground">Sources</h2>
+              <Link className="text-sm underline-offset-4 hover:underline" href={`/app/research/${projectId}/board`}>
+                Open the board
+              </Link>
+            </div>
             <SourceStatusList statuses={statuses ?? []} />
             {counts.size > 0 ? (
               <p className="text-xs text-muted-foreground">
@@ -110,7 +115,14 @@ function StudioScreen({ shell, projectId }: { shell: WorkspaceShell; projectId: 
           {shown === "brief" ? (
             <BriefCard studio={studio} />
           ) : (
-            <FindingsView workspaceId={shell.workspaceId} studio={studio} sources={sources} assetStatus={assetStatus} canDecide={editor} />
+            <FindingsView
+              workspaceId={shell.workspaceId}
+              studio={studio}
+              sources={sources}
+              assetStatus={assetStatus}
+              canDecide={editor}
+              boardHref={`/app/research/${projectId}/board`}
+            />
           )}
           {!studio.run && editor ? (
             <Panel className="p-4">

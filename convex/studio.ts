@@ -47,6 +47,40 @@ export const sourceSetup = workspaceQuery({
   },
 });
 
+/**
+ * Runs that need a person: waiting on an answer, or timed out waiting. Each comes with its research project
+ * so the Decisions queue can link straight to the question.
+ */
+export const attention = workspaceQuery({
+  args: {},
+  handler: async (ctx) => {
+    const rows = [];
+    for (const status of ["waiting", "needsInput"] as const) {
+      rows.push(
+        ...(await ctx.db
+          .query("agentRuns")
+          .withIndex("by_workspace_status", (q) => q.eq("workspaceId", ctx.workspaceId).eq("status", status))
+          .take(25)),
+      );
+    }
+    const out = [];
+    for (const run of rows) {
+      const projectId = ctx.db.normalizeId("researchProjects", run.inputRef);
+      const project = projectId ? await ctx.db.get(projectId) : null;
+      if (!run.waitingFor || !project || project.workspaceId !== ctx.workspaceId) continue;
+      out.push({
+        runId: run._id,
+        status: run.status,
+        question: run.waitingFor.question,
+        askedAt: run.waitingFor.askedAt,
+        projectId: project._id,
+        projectTitle: project.title,
+      });
+    }
+    return out.sort((a, b) => b.askedAt - a.askedAt);
+  },
+});
+
 async function stepsOf(ctx: QueryCtx, run: Doc<"agentRuns">) {
   const rows = await ctx.db
     .query("runSteps")

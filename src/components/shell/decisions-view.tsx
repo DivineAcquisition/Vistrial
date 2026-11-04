@@ -1,6 +1,7 @@
 "use client";
 
 import { useMutation, useQuery } from "convex/react";
+import Link from "next/link";
 
 import { GROWTH_ARCHITECT } from "../../../convex/catalog";
 import { AssetRow, type AssetRowView } from "@/components/assets/asset-row";
@@ -9,6 +10,7 @@ import { useWorkspaceShell } from "@/components/shell/shell-context";
 import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components/ui/page-header";
 import { Panel } from "@/components/ui/panel";
+import { StatusBadge } from "@/components/ui/status-badge";
 import { api } from "../../../convex/_generated/api";
 import { bodyText } from "@/lib/ui";
 
@@ -25,6 +27,12 @@ function LiveDecisions({ shell }: { shell: NonNullable<ReturnType<typeof useWork
     status: "draft",
     paginationOpts: { numItems: 20, cursor: null },
   });
+  const review = useQuery(api.assets.list, {
+    workspaceId: shell.workspaceId,
+    status: "needsReview",
+    paginationOpts: { numItems: 20, cursor: null },
+  });
+  const questions = useQuery(api.studio.attention, { workspaceId: shell.workspaceId });
   const turnOn = useMutation(api.workspace.setAgentState);
   const finish = useMutation(api.profile.finishSetup);
   const mark = useMutation(api.workspace.markSetupDone);
@@ -77,6 +85,45 @@ function LiveDecisions({ shell }: { shell: NonNullable<ReturnType<typeof useWork
         title="Decisions"
         description="Assets wait here until a person approves them. Nothing is posted on its own."
       />
+      {questions && questions.length > 0 ? (
+        <Panel className="grid gap-3 p-4 sm:p-6">
+          <h2 className="font-heading text-base text-card-foreground">Questions for you</h2>
+          <p className="text-sm text-muted-foreground">Research stopped to ask instead of guessing. Nothing runs or spends until you answer.</p>
+          <ul className="grid gap-3">
+            {questions.map((row) => (
+              <li key={row.runId} className="grid gap-2 rounded-xl border border-border p-4 sm:grid-cols-[1fr_auto] sm:items-center">
+                <div className="grid min-w-0 gap-1">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <StatusBadge
+                      label={row.status === "needsInput" ? "Needs Input — Timed Out" : "Waiting for User"}
+                      tone={row.status === "needsInput" ? "critical" : "warning"}
+                      className="[&_span]:normal-case"
+                    />
+                    <span className="text-xs text-muted-foreground">{row.projectTitle}</span>
+                  </div>
+                  <p className="font-medium break-words text-card-foreground">{row.question}</p>
+                </div>
+                <Button size="sm" render={<Link href={`/app/research/${row.projectId}`} />}>
+                  {row.status === "needsInput" ? "Resume" : "Answer"}
+                </Button>
+              </li>
+            ))}
+          </ul>
+        </Panel>
+      ) : null}
+      {review && review.page.length > 0 ? (
+        <Panel className="grid gap-3 p-4 sm:p-6">
+          <h2 className="font-heading text-base text-card-foreground">Needs review</h2>
+          <p className="text-sm text-muted-foreground">These drafts did not pass every check. Edit one to add a new version, or reject it with a reason.</p>
+          <ul className="grid gap-3">
+            {review.page.map((asset: AssetRowView) => (
+              <li key={asset.id}>
+                <AssetRow asset={asset} />
+              </li>
+            ))}
+          </ul>
+        </Panel>
+      ) : null}
       <Panel className="p-4 sm:p-6">
         <h2 className="font-heading text-base text-card-foreground">Waiting on you</h2>
         {waiting.page.length === 0 ? <p className={`${bodyText} mt-3`}>Nothing is waiting.</p> : null}

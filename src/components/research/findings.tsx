@@ -23,9 +23,13 @@ const BASIS_WORDS: Record<string, { label: string; tone: "good" | "warning" | "n
   insufficient: { label: "Not enough data", tone: "neutral" },
 };
 
-/** A numbered chip per cited source. Opening one shows the source itself; nothing is rehosted. */
-function EvidenceChips({ ids, sources, onOpen }: { ids: string[]; sources: Map<string, SourceLite>; onOpen?: (id: string) => void }) {
+/**
+ * A numbered chip per cited source. With a board link, every chip opens the board on exactly the sources
+ * behind this claim; without one (story pages), a chip opens the source itself.
+ */
+function EvidenceChips({ ids, sources, boardHref }: { ids: string[]; sources: Map<string, SourceLite>; boardHref?: string }) {
   if (ids.length === 0) return null;
+  const chip = "inline-block max-w-64 truncate rounded-full border border-border px-2.5 py-0.5 text-xs text-muted-foreground hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring";
   return (
     <ul className="flex flex-wrap gap-1.5" aria-label="Sources">
       {ids.map((id, index) => {
@@ -33,29 +37,16 @@ function EvidenceChips({ ids, sources, onOpen }: { ids: string[]; sources: Map<s
         const label = source ? `${PLATFORM_LABEL[source.platform] ?? source.platform}: ${source.publisher ?? source.title}` : "Source no longer available";
         return (
           <li key={id}>
-            {source ? (
-              onOpen ? (
-                <button
-                  type="button"
-                  onClick={() => onOpen(id)}
-                  className="max-w-64 truncate rounded-full border border-border px-2.5 py-0.5 text-xs text-muted-foreground hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring"
-                  title={source.title}
-                >
-                  [{index + 1}] {label}
-                </button>
-              ) : (
-                <a
-                  href={source.url}
-                  target="_blank"
-                  rel="noreferrer noopener"
-                  className="inline-block max-w-64 truncate rounded-full border border-border px-2.5 py-0.5 text-xs text-muted-foreground hover:bg-accent"
-                  title={source.title}
-                >
-                  [{index + 1}] {label}
-                </a>
-              )
-            ) : (
+            {!source ? (
               <span className="rounded-full border border-dashed border-border px-2.5 py-0.5 text-xs text-muted-foreground">{label}</span>
+            ) : boardHref ? (
+              <Link href={`${boardHref}?focus=${ids.join(",")}`} className={chip} title={source.title}>
+                [{index + 1}] {label}
+              </Link>
+            ) : (
+              <a href={source.url} target="_blank" rel="noreferrer noopener" className={chip} title={source.title}>
+                [{index + 1}] {label}
+              </a>
             )}
           </li>
         );
@@ -176,14 +167,15 @@ export function FindingsView({
   sources,
   assetStatus,
   canDecide,
-  onOpenSource,
+  boardHref,
 }: {
   workspaceId: Id<"workspaces">;
   studio: Studio;
   sources: Map<string, SourceLite>;
   assetStatus: string | null;
   canDecide: boolean;
-  onOpenSource?: (id: string) => void;
+  /** The project's board. Evidence chips open it on the sources behind each claim. */
+  boardHref?: string;
 }) {
   const report = studio.report;
   if (!report) {
@@ -243,7 +235,7 @@ export function FindingsView({
                       <dd className="text-card-foreground">{row.validationMethod}</dd>
                     </div>
                   </dl>
-                  <EvidenceChips ids={row.evidence.sourceRefIds} sources={sources} onOpen={onOpenSource} />
+                  <EvidenceChips ids={row.evidence.sourceRefIds} sources={sources} boardHref={boardHref} />
                 </Panel>
               </li>
             );
@@ -269,7 +261,7 @@ export function FindingsView({
                   <p className="min-w-0 flex-1 text-sm break-words text-card-foreground">{row.statement}</p>
                   <StatusBadge label={basis.label} tone={basis.tone} className="[&_span]:normal-case" />
                 </div>
-                <EvidenceChips ids={row.sourceRefIds} sources={sources} onOpen={onOpenSource} />
+                <EvidenceChips ids={row.sourceRefIds} sources={sources} boardHref={boardHref} />
               </li>
             );
           })}

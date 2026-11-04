@@ -54,9 +54,36 @@ New server queries: `studio.studio` (the project with its run, waiting question,
 - 215 tests pass (2 new for the Studio queries: a project before any run, isolation, and that no key value appears). Typecheck is clean and lint has 0 errors.
 - The story was screenshotted at 1280, 390 and 320 px for done, needs review and waiting. No sideways scroll at any width.
 
-### Still to come in Milestone D
+## 4. Visual Research Board (2.14)
 
-- **2.14 Visual Research Board:** media cards with official embeds, filters, collections, and compare two.
-- **2.15 rest:** basis badges on the asset page, version compare for reports, and export as PDF or Markdown.
-- **Review queue:** Waiting for User, Needs Input, and Needs review in Decisions.
-- **Production model routes**, set up with you.
+`/app/research/[id]/board`, opened from the Studio ("Open the board") and from any evidence chip in Findings. A chip opens the board on exactly the sources behind that claim (`?focus=`), highlighted, with "Only the sources behind the finding you opened" ticked.
+
+- **Cards:** platform, kind or format, relevance, title, creator, the official player or a link card, the attributed excerpt, **the agent's reading** (hook, offer, call to action, and audience marked "a guess"), any limitation, when it was seen and published, and Open source.
+- **Official embeds only, and click to load.** The YouTube player is `youtube-nocookie.com` (privacy-enhanced). TikTok uses its own player, and Instagram its embed page, shown only once oEmbed confirmed the post. Each URL is built from an id we parsed and checked, never from page text. No third party is contacted until a person presses "Load the player". The site's frame policy now allows exactly those three hosts. Media is never downloaded or rehosted.
+- **Filters:** platform, kind, relevance, and collection.
+- **Collections:** pick a collection to save to, make a new one (personal by default; an Owner or Manager can share it with the workspace), and Save on any card. The server keeps the access rules from 2.6.
+- **Compare two:** tick Compare on two cards to get a field-by-field table. Under it: "These are the agent's readings of what each source shows, not facts about results."
+- The board is split into a data container (`ResearchBoard`) and a display view (`BoardView`), so `/dev/research-board` can show it from fixtures.
+
+Checked: screenshots at 1280 px (with compare open) and 390 px (with focus), with no sideways scroll. 218 tests pass, 3 of them new: embed URLs are built only from safe ids, and an id that could change the address is refused.
+
+## 5. Report, Review queue, and launch routes (rest of 2.15)
+
+- **Report page** (`/app/assets/[id]`):
+  - The body renders as a document, through `ReportBody`, a small renderer for the Markdown subset reports use. It builds React elements only and never sets HTML, so a `<script>` in a source or model text shows as text.
+  - Each claim carries a coloured **basis badge**: Observed, Inference, Untested hypothesis, Your data, Not enough data.
+  - Version compare was already in place.
+- **Export:**
+  - **Download Markdown** saves the body, every claim with its basis, and each cited source once, with links.
+  - **Print or save as PDF** uses the browser. The app's navigation and the Approve and Reject controls are hidden when printing.
+- **Decisions queue:**
+  - **Questions for you** lists every run waiting for an answer, or timed out, with its project, the question, and Answer or Resume. It reads from the new `studio.attention`.
+  - **Needs review** lists drafts that failed their checks, with what to do next.
+- **Launch routes:** `platform:ensureDefaultRoutes` is an internal function you run once from the Convex dashboard.
+  - It sets research and write to Opus 5.5 with Sonnet 5.5 as fallback, and classify and summarize the other way round (decision D2).
+  - It fills only kinds of work with no route and never changes one a Platform Admin set.
+  - On dev it kept the three routes set earlier and added `summarize`.
+
+Checks: 223 tests pass, 5 of them new. They cover the routes helper (fills only missing routes, a second run adds nothing), the Decisions query (with isolation), and the report renderer (structure, no markup injection, export lists each source once). Typecheck is clean and lint has 0 errors. The report body and basis badges were checked on the asset story page.
+
+**Milestone D is complete.** Next is Milestone E: 2.16, the injection test, and 2.17, end-to-end acceptance against the doctrine's five tests.

@@ -243,6 +243,21 @@ Three earlier tests changed because the skill now exists or the time cap now acc
 
 The report did what the doctrine asks. It said competitor prices were not visible instead of guessing them, it told the user to check the full pages before acting, and it did not treat popularity as performance.
 
+## Market Intelligence: ideas taken from Cursor's parallel build (#196)
+
+Cursor built a second Market Intelligence in #196 from the same doctrine. It had never run against a real model. Four of its choices were closer to the doctrine than the live version, so they are now in the live skill, and #196 is closed as a duplicate.
+
+| Idea | What changed |
+|---|---|
+| The brief's "known" list is built in code | `context.read` now writes what is known: the market and area, each confirmed profile field, and each live business fact, with origin, status and date. It also writes what is missing (a gap that blocks is asked about; an ad budget or a profile does not block) and the assumptions, such as "Budget not provided; recommendations do not depend on a budget figure." The model's brief step now plans only the research questions, searches and competitors. The Context panel shows the code-built lists. |
+| Counts are claims | Save adds observed claims, computed in code, citing every source counted: the total by platform, and each offer or call to action seen in at least 3 sources. Formats are not counted, because they are free text. |
+| The revision is a new version | Version 1 is the first draft with its own checks ("A revision follows as version 2."). Version 2 is the revision with the second checks. A person can compare them on the report page. |
+| One open run per project | A project cannot start a second run while one is queued or running, not only while one is waiting. |
+
+Tests: 225 pass. New tests cover the code-built known, missing and assumed lists (with and without a profile), the open-run block, and version 1 being kept with its checks.
+
+**Live rerun on dev (2026-11-04):** the same Austin assignment completed in 232 s for **95.9¢**. It collected 60 sources (40 web, 20 YouTube). The first draft failed one check and the revision passed all eight. The report has 2 versions and 21 evidence rows, none with a missing source, including "60 sources were reviewed: 20 YouTube, 40 web." That run also showed format labels producing noisy counts, so formats are no longer counted.
+
 ## Production steps for 2.1
 
 The migration now finishes by itself. A Convex cron (`convex/crons.ts`) calls `agentsMigration:backfillIfNeeded` every 10 minutes on every deployment. When any row still names `sales`, or any agent row still has the old area fields, it starts the backfill. Otherwise it writes nothing. So production completes within 10 minutes of this cron being deployed, with no key needed here.

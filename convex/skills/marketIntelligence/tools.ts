@@ -8,6 +8,7 @@ import { latest, latestDone, projectOf, projectSources, recordOf } from "./recor
 import { renderReport } from "./render";
 import {
   MIN_SAMPLE,
+  NO_BUDGET_ASSUMPTION,
   PHASE,
   parseJson,
   readReport,
@@ -61,9 +62,39 @@ const contextRead: MutationTool = async (ctx, run) => {
     .first();
   const facts = await factsForRun(ctx, run.workspaceId);
   const answered = async (key: string) => (await liveFact(ctx, run.workspaceId, key))?.value ?? "";
-  const market = project.market || (await answered("researchMarket")) || profile?.offer || "";
-  const geography = project.geography || (await answered("researchGeography")) || profile?.geography || "";
+  const answeredMarket = await answered("researchMarket");
+  const answeredArea = await answered("researchGeography");
+  const market = project.market || answeredMarket || profile?.offer || "";
+  const geography = project.geography || answeredArea || profile?.geography || "";
+  const originOf = (fromProject: string, fromAnswer: string) => (fromProject ? "project" : fromAnswer ? "fact" : "profile") as "project" | "fact" | "profile";
   const gaps = [...(market ? [] : ["researchMarket"]), ...(geography ? [] : ["researchGeography"])];
+  // The brief's "known" list is built here, with where each item came from and when. No model writes it.
+  const known: ContextRecord["known"] = [];
+  if (market) known.push({ key: "market", label: "Market", value: market, origin: originOf(project.market, answeredMarket), status: "verified", recordedAt: project.createdAt });
+  if (geography) known.push({ key: "geography", label: "Area", value: geography, origin: originOf(project.geography, answeredArea), status: "verified", recordedAt: project.createdAt });
+  if (profile) {
+    const fields = [
+      ["offer", "Offer", profile.offer],
+      ["priceNotes", "Price notes", profile.priceNotes],
+      ["audience", "Audience", profile.audience],
+      ["channels", "Channels", profile.channels],
+      ["brandVoice", "Brand voice", profile.brandVoice],
+    ] as const;
+    for (const [key, label, value] of fields) {
+      if (value.trim()) known.push({ key: `profile.${key}`, label, value, origin: "profile", status: "confirmed", recordedAt: profile.confirmedAt ?? profile._creationTime });
+    }
+  }
+  for (const fact of facts) known.push({ key: `fact:${fact._id}`, label: fact.factKey, value: fact.value, origin: "fact", status: fact.status, recordedAt: fact.recordedAt });
+  const missing: ContextRecord["missing"] = gaps.map((key) => ({ key, blocking: true }));
+  const assumptions: string[] = [];
+  if (!facts.some((row) => /budget/i.test(row.factKey))) {
+    missing.push({ key: "adBudget", blocking: false });
+    assumptions.push(NO_BUDGET_ASSUMPTION);
+  }
+  if (!profile) {
+    missing.push({ key: "businessProfile", blocking: false });
+    assumptions.push("No confirmed business profile, so relevance is judged from the assignment alone.");
+  }
   const context: ContextRecord = {
     projectId: project._id,
     objective: project.objective,
@@ -85,6 +116,9 @@ const contextRead: MutationTool = async (ctx, run) => {
       : null,
     facts: facts.map((row) => ({ id: row._id, factKey: row.factKey, value: row.value, status: row.status, sourceType: row.sourceType, recordedAt: row.recordedAt })),
     gaps,
+    known,
+    missing,
+    assumptions,
   };
   return { resultCode: gaps.length ? "missing_context" : "ok", resultId: project._id, artifact: record("context", context) };
 };
@@ -210,12 +244,6 @@ const check: MutationTool = async (ctx, run, steps) => {
   return { resultCode: result.passed ? "passed" : "checks_failed", artifact: record("checks", result) };
 };
 
-async function checksOf(ctx: MutationCtx, run: Doc<"agentRuns">, steps: Step[]): Promise<ChecksRecord | null> {
-  const recheck = latestDone(steps, PHASE.recheck);
-  const first = latestDone(steps, PHASE.check);
-  const step = recheck ?? first;
-  return step ? ((await recordOf(ctx.db, run, step._id, "checks")) as ChecksRecord | null) : null;
-}
 
 const NOT_ENOUGH = "Not enough data";
 
@@ -224,53 +252,77 @@ const NOT_ENOUGH = "Not enough data";
  * waits for approval; one that did not is marked Needs Review, with the failed checks named. Claims that
  * break an evidence rule are dropped and listed, never stored as if supported.
  */
-const save: MutationTool = async (ctx, run, steps) => {
-  const project = await projectOf(ctx.db, run);
-  const context = await contextOf(ctx, run, steps);
-  if (!project || !context) return { failCode: "no_project" };
-  const report = await reportOf(ctx, run, steps);
-  const checks: ChecksRecord = (await checksOf(ctx, run, steps)) ?? { passed: false, results: [] };
-  const notes: string[] = [];
-  const revise = latest(steps, PHASE.revise);
-  if (revise?.kind === "note" && revise.resultCode === "over_budget") notes.push("The revision was not run because the reserve could not cover it.");
-  if (!report) notes.push("The report could not be written within the run's budget.");
-  const passed = checks.passed && report !== null;
-
-  const claims: (ClaimInput & { statement: string })[] = [];
-  if (report) {
-    report.findings.forEach((row, i) => {
-      if (!row.basis) return;
-      const statement = row.basis === "insufficient" && !row.statement.startsWith(NOT_ENOUGH) ? `${NOT_ENOUGH}: ${row.statement}` : row.statement;
-      claims.push({ claimKey: `finding-${i + 1}`, statement, basis: row.basis, ...(row.basis === "insufficient" ? {} : { sourceRefIds: row.sourceRefIds }) });
+/** The claims one version of the report makes, before the evidence rules screen them. */
+function reportClaims(report: Report | null, counts: (ClaimInput & { statement: string })[]) {
+  const claims: (ClaimInput & { statement: string })[] = [...counts];
+  if (!report) return claims;
+  report.findings.forEach((row, i) => {
+    if (!row.basis) return;
+    const statement = row.basis === "insufficient" && !row.statement.startsWith(NOT_ENOUGH) ? `${NOT_ENOUGH}: ${row.statement}` : row.statement;
+    claims.push({ claimKey: `finding-${i + 1}`, statement, basis: row.basis, ...(row.basis === "insufficient" ? {} : { sourceRefIds: row.sourceRefIds }) });
+  });
+  report.opportunities.forEach((row, i) => {
+    const supported = row.evidence.uncertainty === "none" && row.evidence.sourceRefIds.length > 0;
+    const basis = supported ? "inferred" : row.evidence.uncertainty === "insufficient" ? "insufficient" : "hypothesis";
+    const statement = `${row.opportunity}. ${row.proposedAction}`;
+    claims.push({
+      claimKey: `opportunity-${i + 1}`,
+      statement: basis === "insufficient" && !statement.startsWith(NOT_ENOUGH) ? `${NOT_ENOUGH}: ${statement}` : statement,
+      basis,
+      ...(supported ? { sourceRefIds: row.evidence.sourceRefIds } : {}),
     });
-    report.opportunities.forEach((row, i) => {
-      const supported = row.evidence.uncertainty === "none" && row.evidence.sourceRefIds.length > 0;
-      const basis = supported ? "inferred" : row.evidence.uncertainty === "insufficient" ? "insufficient" : "hypothesis";
-      const statement = `${row.opportunity}. ${row.proposedAction}`;
+  });
+  return claims;
+}
+
+/**
+ * Counts as claims: how many sources were reviewed per platform, and each pattern seen in at least
+ * MIN_SAMPLE of them. Computed in code, marked observed, and citing every source counted, so any number
+ * in the report can be checked against its sources.
+ */
+function countClaims(sources: Doc<"sourceRefs">[], computed: ComputeRecord | null) {
+  if (sources.length === 0) return [];
+  const byPlatform = new Map<string, number>();
+  for (const row of sources) byPlatform.set(row.platform, (byPlatform.get(row.platform) ?? 0) + 1);
+  const parts = [...byPlatform.entries()].map(([platform, n]) => `${n} ${PLATFORM_WORDS[platform] ?? platform}`).join(", ");
+  const claims: (ClaimInput & { statement: string })[] = [
+    {
+      claimKey: "count-sources",
+      statement: `${sources.length} ${sources.length === 1 ? "source was" : "sources were"} reviewed: ${parts}.`,
+      basis: "observed",
+      computed: true,
+      sourceRefIds: sources.map((row) => row._id),
+    },
+  ];
+  const dimension = { offer: "offer", callToAction: "call to action", format: "format" } as const;
+  (computed?.patterns ?? [])
+    // Offers and calls to action only: format labels are free text and counting them says nothing.
+    .filter((row) => row.enough && row.dimension !== "format" && !/not visible|title only/i.test(row.value))
+    .slice(0, 6)
+    .forEach((row, i) => {
       claims.push({
-        claimKey: `opportunity-${i + 1}`,
-        statement: basis === "insufficient" && !statement.startsWith(NOT_ENOUGH) ? `${NOT_ENOUGH}: ${statement}` : statement,
-        basis,
-        ...(supported ? { sourceRefIds: row.evidence.sourceRefIds } : {}),
+        claimKey: `count-pattern-${i + 1}`,
+        statement: `${row.count} of ${sources.length} sources show the ${dimension[row.dimension]} "${row.value}" (the agent's reading).`,
+        basis: "observed",
+        computed: true,
+        sourceRefIds: row.sourceRefIds,
       });
     });
-  }
-  const screened = await screenClaims(ctx, run.workspaceId, claims);
-  if (screened.dropped.length > 0) notes.push(`${screened.dropped.length} claim(s) were left out because they broke an evidence rule.`);
+  return claims;
+}
 
-  const body = report
-    ? renderReport(report, context, checks, notes)
-    : `# Market report\n\n**Objective:** ${context.objective}\n\n## Needs review\n\n${notes.map((note) => `- ${note}`).join("\n")}\n`;
-  const assetId = await ctx.db.insert("assets", {
-    workspaceId: run.workspaceId,
-    kind: "marketReport",
-    title: `Market report: ${project.title}`.slice(0, 200),
-    status: passed ? "draft" : "needsReview",
-    currentVersion: 1,
-    createdByRun: run._id,
-    createdAt: Date.now(),
-  });
-  const versionId = await ctx.db.insert("assetVersions", { workspaceId: run.workspaceId, assetId, version: 1, body, createdBy: "agent" });
+const PLATFORM_WORDS: Record<string, string> = { web: "web", youtube: "YouTube", tiktok: "TikTok", instagram: "Instagram", metaAdLibrary: "Meta Ad Library", customerData: "your data" };
+
+async function writeVersion(
+  ctx: MutationCtx,
+  run: Doc<"agentRuns">,
+  assetId: Id<"assets">,
+  version: number,
+  body: string,
+  claims: (ClaimInput & { statement: string })[],
+) {
+  const screened = await screenClaims(ctx, run.workspaceId, claims);
+  const versionId = await ctx.db.insert("assetVersions", { workspaceId: run.workspaceId, assetId, version, body, createdBy: "agent" });
   for (const claim of screened.kept) {
     const ids = (claim.sourceRefIds ?? []).map((raw) => ctx.db.normalizeId("sourceRefs", raw)).filter((id): id is Id<"sourceRefs"> => id !== null);
     await ctx.db.insert("evidence", {
@@ -279,14 +331,69 @@ const save: MutationTool = async (ctx, run, steps) => {
       claimKey: claim.claimKey,
       statement: claim.statement,
       basis: claim.basis,
+      ...(claim.computed ? { computed: true } : {}),
       ...(ids.length ? { sourceRefIds: ids } : {}),
     });
   }
+  return screened.dropped;
+}
+
+/**
+ * Save: the report as a marketReport asset. Version 1 is the first draft with its own checks. When a
+ * revision ran, it is version 2 with the second checks, so the person can compare what changed. A report
+ * that passed waits for approval; one that did not is Needs Review, with the failed checks named. Claims
+ * that break an evidence rule are dropped and counted, never stored as if supported.
+ */
+const save: MutationTool = async (ctx, run, steps) => {
+  const project = await projectOf(ctx.db, run);
+  const context = await contextOf(ctx, run, steps);
+  if (!project || !context) return { failCode: "no_project" };
+  const sources = await projectSources(ctx.db, run.workspaceId, project._id, 500);
+  const counts = countClaims(sources, await computeOf(ctx, run, steps));
+
+  const writeStep = latestDone(steps, PHASE.write);
+  const reviseStep = latestDone(steps, PHASE.revise);
+  const first = writeStep ? readReport(await recordOf(ctx.db, run, writeStep._id, "model")) : null;
+  const second = reviseStep ? readReport(await recordOf(ctx.db, run, reviseStep._id, "model")) : null;
+  const checkStep = latestDone(steps, PHASE.check);
+  const recheckStep = latestDone(steps, PHASE.recheck);
+  const firstChecks: ChecksRecord = (checkStep ? ((await recordOf(ctx.db, run, checkStep._id, "checks")) as ChecksRecord | null) : null) ?? { passed: false, results: [] };
+  const finalChecks: ChecksRecord = recheckStep ? (((await recordOf(ctx.db, run, recheckStep._id, "checks")) as ChecksRecord | null) ?? { passed: false, results: [] }) : firstChecks;
+  const finalReport = second ?? first;
+  const passed = finalChecks.passed && finalReport !== null;
+
+  const firstNotes: string[] = [];
+  const revise = latest(steps, PHASE.revise);
+  if (!first) firstNotes.push("The first draft could not be written within the run's budget.");
+  if (!firstChecks.passed && revise?.kind === "note" && revise.resultCode === "over_budget") firstNotes.push("The revision was not run because the reserve could not cover it.");
+  if (!firstChecks.passed && second) firstNotes.push("A revision follows as version 2.");
+
+  const assetId = await ctx.db.insert("assets", {
+    workspaceId: run.workspaceId,
+    kind: "marketReport",
+    title: `Market report: ${project.title}`.slice(0, 200),
+    status: passed ? "draft" : "needsReview",
+    currentVersion: second ? 2 : 1,
+    createdByRun: run._id,
+    createdAt: Date.now(),
+  });
+  const bodyFor = (report: Report | null, checks: ChecksRecord, notes: string[]) =>
+    report
+      ? renderReport(report, context, checks, notes)
+      : `# Market report\n\n**Objective:** ${context.objective}\n\n## Needs review\n\n${notes.map((note) => `- ${note}`).join("\n")}\n`;
+  const droppedFirst = await writeVersion(ctx, run, assetId, 1, bodyFor(first, firstChecks, firstNotes), reportClaims(first, counts));
+  const droppedSecond = second ? await writeVersion(ctx, run, assetId, 2, bodyFor(second, finalChecks, []), reportClaims(second, counts)) : [];
   // The run's record of what it used and how it was checked, kept with the run.
   return {
     resultId: assetId,
     resultCode: passed ? "ok" : "needs_review",
-    artifact: record("report", { report, checks, notes, dropped: screened.dropped, contextUsed: report?.contextUsed ?? null }),
+    artifact: record("report", {
+      report: finalReport,
+      checks: finalChecks,
+      versions: second ? 2 : 1,
+      dropped: second ? droppedSecond : droppedFirst,
+      contextUsed: finalReport?.contextUsed ?? null,
+    }),
   };
 };
 

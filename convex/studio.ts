@@ -160,6 +160,9 @@ export const studio = workspaceQuery({
             profile: context.profile ? { versionId: context.profile.versionId, offer: context.profile.offer, audience: context.profile.audience, geography: context.profile.geography } : null,
             facts: context.facts.map((row) => ({ id: row.id, factKey: row.factKey, value: row.value, status: row.status, sourceType: row.sourceType, recordedAt: row.recordedAt })),
             gaps: context.gaps,
+            known: context.known ?? [],
+            missing: context.missing ?? [],
+            assumptions: context.assumptions ?? [],
           }
         : null,
       brief,

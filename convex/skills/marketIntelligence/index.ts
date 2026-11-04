@@ -142,8 +142,9 @@ export const marketIntelligence: SkillModule = {
         input: [
           "Write the task brief for this market research assignment before any research starts.",
           "The deliverable is a market report with three actionable opportunities, each with evidence, business relevance, a proposed action and a validation method.",
-          `List what is known (the profile version id and fact ids you will use), what is missing, and one assumption for each gap. Plan at most ${RESEARCH_SEARCHES} web searches.`,
-          context.gaps.length ? `Still unknown after asking: ${context.gaps.join(", ")}. Record an assumption for each.` : "",
+          `What is known, missing and assumed is already recorded below. Plan only: the research questions that matter for this business, at most ${RESEARCH_SEARCHES} web searches, and the competitors to look up.`,
+          context.gaps.length ? `Still unknown after asking: ${context.gaps.join(", ")}.` : "",
+          context.assumptions.length ? `Assumptions on record:\n${context.assumptions.map((row) => `- ${row}`).join("\n")}` : "",
           "",
           assignment(context),
           "",

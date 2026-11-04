@@ -25,6 +25,13 @@ type Step = { phase?: string | null; status: string; kind: string; resultCode: s
 
 const heading = "font-heading text-base text-card-foreground";
 
+const MISSING_WORDS: Record<string, string> = {
+  researchMarket: "the market to research",
+  researchGeography: "the area to research",
+  adBudget: "an ad budget",
+  businessProfile: "a confirmed business profile",
+};
+
 /**
  * "Know what you know": everything the agent is working from, with where each item came from and when,
  * what is missing, and the assumptions it made. An Owner or Manager corrects a fact in place; the
@@ -125,14 +132,17 @@ export function ContextPanel({ workspaceId, studio, canEdit }: { workspaceId: Id
           </ul>
         </div>
       ) : null}
-      {studio.brief && (studio.brief.missing.length > 0 || studio.brief.assumptions.length > 0) ? (
+      {context && (context.missing.length > 0 || context.assumptions.length > 0) ? (
         <div className="grid gap-2">
           <h3 className="text-sm font-medium text-card-foreground">Missing, and what it assumed</h3>
           <ul className="grid gap-1 text-sm text-muted-foreground">
-            {studio.brief.missing.map((row) => (
-              <li key={`m-${row.gap}`}>Missing: {row.gap}</li>
+            {context.missing.map((row) => (
+              <li key={`m-${row.key}`}>
+                Missing: {MISSING_WORDS[row.key] ?? row.key}
+                {row.blocking ? " (it asks before researching)" : ""}
+              </li>
             ))}
-            {studio.brief.assumptions.map((row) => (
+            {context.assumptions.map((row) => (
               <li key={`a-${row}`}>Assumed: {row}</li>
             ))}
           </ul>

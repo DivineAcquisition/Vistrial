@@ -182,7 +182,7 @@ const SOURCE_LOGO: Record<(typeof SOURCES.items)[number]["key"], string | null> 
 
 function SourceMark({ sourceKey }: { sourceKey: (typeof SOURCES.items)[number]["key"] }) {
   const logo = SOURCE_LOGO[sourceKey];
-  if (logo) return <PlatformLogo id={logo} size={16} />;
+  if (logo) return <PlatformLogo id={logo} size={16} decorative />;
   const Icon = sourceKey === "web" ? Globe : Upload;
   return <Icon className="size-4 text-brand-400" aria-hidden />;
 }
@@ -193,13 +193,13 @@ export function AgentFlow() {
   const status = useCycle(AGENT_FLOW.statuses.length, 2400);
 
   return (
-    <section aria-label={SOURCES.label} className="border-y border-border bg-card">
-      <div className={cn(marketingShell, marketingPageGutter, "py-8 sm:py-10")}>
+    <section aria-label={SOURCES.label} className={cn("border-y border-border bg-card", marketingPageGutter)}>
+      <div className={cn(marketingShell, "py-10 sm:py-12")}>
         <div ref={containerRef} className="relative grid items-center gap-6 lg:grid-cols-[1fr_auto_1fr] lg:gap-20">
           <Beams paths={paths} id="agent-flow" />
 
           <div className="relative">
-            <p className="mb-3 text-sm font-medium text-muted-foreground">{SOURCES.label}</p>
+            <p className="mb-3 text-sm font-medium text-muted-foreground lg:text-right">{SOURCES.label}</p>
             <ul className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-1 lg:justify-items-end">
               {SOURCES.items.map((item) => (
                 <li
@@ -218,7 +218,7 @@ export function AgentFlow() {
             <span className="relative flex size-14 items-center justify-center rounded-full border border-brand-400/40 bg-background shadow-[0_0_0_4px_rgba(154,136,252,0.12)]">
               {/* The black Vistrial crest. The public site is always light, so the ink art always shows. */}
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src="/brand/vistrial-crest-ink.png" alt="" width={1080} height={1080} className="size-12" />
+              <img src="/brand/vistrial-crest-ink-96.png" alt="" width={96} height={96} className="size-10" />
               <span aria-hidden className="live-pulse absolute -right-0.5 -top-0.5 size-3 rounded-full border-2 border-background bg-success" />
             </span>
             <div>

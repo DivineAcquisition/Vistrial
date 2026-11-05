@@ -21,6 +21,7 @@ import { IndustrySwitcher } from "@/components/marketing/saas-blocks";
 import { Button } from "@/components/ui/button";
 import {
   AGENTS_SECTION,
+  APPROVAL,
   EVIDENCE,
   FAQ,
   FINAL_CTA,
@@ -203,12 +204,14 @@ export function LandingPage() {
               </li>
             ))}
           </ul>
-          <div className="mt-8 grid gap-6 lg:grid-cols-[0.7fr_1fr] lg:items-start">
-            <p>
-              <Link href={SAFETY.linkHref} className="text-sm font-medium text-brand-300 underline">
+          <div className="mt-10 grid gap-6 lg:grid-cols-[0.8fr_1fr] lg:items-center lg:gap-12">
+            <div className="max-w-md">
+              <h3 className="font-heading text-xl tracking-tight text-strong">{APPROVAL.introTitle}</h3>
+              <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{APPROVAL.introBody}</p>
+              <Link href={SAFETY.linkHref} className="mt-4 inline-flex text-sm font-medium text-brand-300 underline underline-offset-4">
                 {SAFETY.linkLabel}
               </Link>
-            </p>
+            </div>
             <AssetApprovalExample />
           </div>
         </Section>

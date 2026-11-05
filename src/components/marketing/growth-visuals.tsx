@@ -56,7 +56,7 @@ const SOURCE_LOGO: Record<string, string | null> = { web: null, youtube: "youtub
 
 function SourceMark({ sourceKey, size = 14 }: { sourceKey: string; size?: number }) {
   const logo = SOURCE_LOGO[sourceKey];
-  if (logo) return <PlatformLogo id={logo} size={size} />;
+  if (logo) return <PlatformLogo id={logo} size={size} decorative />;
   const Icon = sourceKey === "web" ? Globe : BarChart3;
   return <Icon className="shrink-0 text-muted-foreground" style={{ width: size, height: size }} aria-hidden />;
 }
@@ -154,7 +154,7 @@ export function ResearchStudioHero() {
                 <SourceMark sourceKey={source.key} />
                 <span className="min-w-0">
                   <span className="block truncate text-[11px] font-medium text-strong">{source.label}</span>
-                  <span className={cn("block text-[10px]", source.tone === "warning" ? "text-warning" : "text-success")}>
+                  <span className={cn("block text-[10px]", source.tone === "warning" ? "text-flag-warning" : "text-flag-good")}>
                     {source.state}
                   </span>
                 </span>
@@ -253,7 +253,7 @@ function DoctrineScene({ id }: { id: string }) {
     return (
       <div className="grid grid-cols-3 gap-1.5" aria-hidden>
         {["youtube", "meta", "tiktok"].map((key) => (
-          <span key={key} className="flex aspect-square items-center justify-center rounded-md border border-border bg-muted">
+          <span key={key} className="flex h-12 items-center justify-center rounded-md border border-border bg-muted">
             <SourceMark sourceKey={key} size={16} />
           </span>
         ))}
@@ -262,7 +262,7 @@ function DoctrineScene({ id }: { id: string }) {
   }
   if (id === "distinguish") {
     return (
-      <div className="flex flex-wrap gap-1" aria-hidden>
+      <div className="inline-grid grid-cols-[auto_auto] justify-start gap-1" aria-hidden>
         <BasisBadge basis="observed" />
         <BasisBadge basis="inferred" />
         <BasisBadge basis="hypothesis" />
@@ -364,13 +364,13 @@ export function DoctrineFlow() {
               beamDelay={index * 1.8}
               className={cn("flex flex-col gap-4 transition-opacity duration-500 motion-reduce:transition-none", state === "queued" && "opacity-70")}
             >
-              <div className="flex min-h-12 items-center">
+              <div className="flex h-14 items-center overflow-hidden">
                 <div className="w-full">
                   <DoctrineScene id={step.id} />
                 </div>
               </div>
               <div>
-                <div className="flex flex-wrap items-center justify-between gap-2">
+                <div className="flex flex-wrap items-center justify-between gap-2 border-t border-border pt-3">
                   <Badge variant="outline" size="sm" className="border-border bg-muted">
                     {String(index + 1).padStart(2, "0")}
                   </Badge>

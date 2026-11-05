@@ -13,7 +13,7 @@ import { api } from "../../../convex/_generated/api";
 import type { Id } from "../../../convex/_generated/dataModel";
 import type { Studio } from "./studio-parts";
 
-export type SourceLite = { id: string; title: string; url: string; platform: string; publisher: string | null };
+export type SourceLite = { id: string; title: string; url: string; platform: string; publisher: string | null; origin?: string };
 
 const BASIS_WORDS: Record<string, { label: string; tone: "good" | "warning" | "neutral" | "brand" }> = {
   observed: { label: "Observed", tone: "good" },
@@ -78,10 +78,12 @@ export function ChecksList({ checks }: { checks: NonNullable<Studio["checks"]> }
  * "Judgment stays human": the approval says exactly what approving does, before anyone presses it. A
  * draft that failed its checks cannot be approved; it is edited or rejected with a reason.
  */
-function ApprovalCard({ workspaceId, assetId, status, canDecide }: { workspaceId: Id<"workspaces">; assetId: Id<"assets">; status: string; canDecide: boolean }) {
+export function ApprovalCard({ workspaceId, assetId, status, canDecide }: { workspaceId: Id<"workspaces">; assetId: Id<"assets">; status: string; canDecide: boolean }) {
   const approve = useMutation(api.assets.approve);
   const reject = useMutation(api.assets.reject);
-  const [rejecting, setRejecting] = useState(false);
+  const requestRevision = useMutation(api.assets.requestRevision);
+  // "reject" or "changes": which reason form is open.
+  const [rejecting, setRejecting] = useState<false | "reject" | "changes">(false);
   const [reason, setReason] = useState("");
   const [notice, setNotice] = useState("");
   const waiting = status === "draft" || status === "needsReview";
@@ -103,19 +105,24 @@ function ApprovalCard({ workspaceId, assetId, status, canDecide }: { workspaceId
                 className="grid gap-2"
                 onSubmit={(event) => {
                   event.preventDefault();
-                  void reject({ workspaceId, assetId, reason }).then(
-                    () => setNotice("Rejected. The reason is saved as feedback you can turn into a business fact."),
-                    (problem: unknown) => setNotice(errorWords(problem, "It was not rejected.")),
-                  );
+                  const done = (words: string) => {
+                    setRejecting(false);
+                    setReason("");
+                    setNotice(words);
+                  };
+                  void (rejecting === "reject"
+                    ? reject({ workspaceId, assetId, reason }).then(() => done("Rejected. The reason is saved as feedback you can turn into a business fact."))
+                    : requestRevision({ workspaceId, assetId, reason }).then(() => done("Saved. The report stays waiting, and the request is kept as feedback."))
+                  ).catch((problem: unknown) => setNotice(errorWords(problem, "It was not saved.")));
                 }}
               >
                 <label className="grid gap-2 text-sm" htmlFor="findings-reason">
-                  Why are you rejecting it?
+                  {rejecting === "reject" ? "Why are you rejecting it?" : "What should change?"}
                   <Textarea id="findings-reason" value={reason} onChange={(event) => setReason(event.target.value)} />
                 </label>
                 <div className="flex flex-wrap gap-2">
                   <Button type="submit" variant="outline" disabled={reason.trim().length < 3}>
-                    Reject with this reason
+                    {rejecting === "reject" ? "Reject with this reason" : "Request these changes"}
                   </Button>
                   <Button type="button" variant="ghost" onClick={() => setRejecting(false)}>
                     Cancel
@@ -137,7 +144,10 @@ function ApprovalCard({ workspaceId, assetId, status, canDecide }: { workspaceId
                     Approve report
                   </Button>
                 ) : null}
-                <Button type="button" variant="outline" onClick={() => setRejecting(true)}>
+                <Button type="button" variant="outline" onClick={() => setRejecting("changes")}>
+                  Request changes
+                </Button>
+                <Button type="button" variant="outline" onClick={() => setRejecting("reject")}>
                   Reject
                 </Button>
                 <Button variant="ghost" render={<Link href={`/app/assets/${assetId}`} />}>
@@ -168,6 +178,7 @@ export function FindingsView({
   assetStatus,
   canDecide,
   boardHref,
+  showDecision = true,
 }: {
   workspaceId: Id<"workspaces">;
   studio: Studio;
@@ -176,6 +187,8 @@ export function FindingsView({
   canDecide: boolean;
   /** The project's board. Evidence chips open it on the sources behind each claim. */
   boardHref?: string;
+  /** The Studio shows the decision in its own Review section. */
+  showDecision?: boolean;
 }) {
   const report = studio.report;
   if (!report) {
@@ -292,7 +305,7 @@ export function FindingsView({
         </details>
       ) : null}
 
-      {studio.assetId && assetStatus ? (
+      {showDecision && studio.assetId && assetStatus ? (
         <ApprovalCard workspaceId={workspaceId} assetId={studio.assetId as Id<"assets">} status={assetStatus} canDecide={canDecide} />
       ) : null}
     </div>

@@ -3,12 +3,10 @@
 import { ConvexProvider, ConvexReactClient } from "convex/react";
 import { useMemo, useState } from "react";
 
-import { FindingsView, type SourceLite } from "@/components/research/findings";
-import { BriefCard, ContextPanel, QuestionCard, SourceStatusList, StageProgress, type Studio } from "@/components/research/studio-parts";
-import { PageHeader } from "@/components/ui/page-header";
-import { Panel } from "@/components/ui/panel";
+import { type SourceLite } from "@/components/research/findings";
+import { StudioLayout } from "@/components/research/studio-layout";
+import { type Studio } from "@/components/research/studio-parts";
 import { Select } from "@/components/ui/select";
-import { SegmentedControl } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
 import type { Id } from "../../../../convex/_generated/dataModel";
 
@@ -16,7 +14,7 @@ const WS = "ws1" as Id<"workspaces">;
 const S = (n: number) => `src${n}`;
 
 const SOURCES: SourceLite[] = [
-  { id: S(1), title: "Molly Maid of Greater Austin", url: "https://www.mollymaid.com/greater-austin/", platform: "web", publisher: "Molly Maid" },
+  { id: S(1), title: "Molly Maid of Greater Austin", url: "https://www.mollymaid.com/greater-austin/", platform: "web", publisher: "Molly Maid", origin: "supplied" },
   { id: S(2), title: "Full home deep cleaning transformation", url: "https://www.youtube.com/watch?v=aaaaaaaaaaa", platform: "youtube", publisher: "Sparkly Maid Austin" },
   { id: S(3), title: "It's not magic, it's the checklist", url: "https://austincleaningcrew.example.com/", platform: "web", publisher: "Austin Cleaning Crew" },
   { id: S(4), title: "Move-out clean before and after", url: "https://www.tiktok.com/@team/video/7234567890123456789", platform: "tiktok", publisher: "family-run team" },
@@ -83,12 +81,14 @@ function studioFor(kind: "done" | "review" | "waiting" | "timedOut" | "working")
         { id: "f2", factKey: "topObjection", value: "Customers worry about hidden fees", status: "unverified", sourceType: "agent", recordedAt: 1793700000000 },
       ],
       gaps: kind === "waiting" || kind === "timedOut" ? ["researchMarket"] : [],
-      known: [],
-      missing: [
-        ...(kind === "waiting" || kind === "timedOut" ? [{ key: "researchMarket", blocking: true }] : []),
-        { key: "adBudget", blocking: false },
+      known: [
+        { key: "geography", label: "Area", value: "Austin, TX", origin: "profile", status: "verified", recordedAt: 1793600000000 },
+        { key: "offer", label: "Offer", value: "Deep house cleaning and move-out cleaning, flat-rate pricing", origin: "profile", status: "verified", recordedAt: 1793600000000 },
+        { key: "monthlyAdBudget", label: "Ad budget", value: "$1,500 a month on Meta", origin: "fact", status: "verified", recordedAt: 1793800000000 },
+        { key: "topObjection", label: "Top objection", value: "Customers worry about hidden fees", origin: "fact", status: "unverified", recordedAt: 1793700000000 },
       ],
-      assumptions: ["Budget not provided; recommendations do not depend on a budget figure."],
+      missing: kind === "waiting" || kind === "timedOut" ? [{ key: "researchMarket", blocking: true }] : [],
+      assumptions: [],
     },
     brief:
       kind === "waiting" || kind === "timedOut"
@@ -112,8 +112,8 @@ function studioFor(kind: "done" | "review" | "waiting" | "timedOut" | "working")
     status,
     stopReason: status === "completed" ? "done" : null,
     costCents: status === "completed" ? 81.62 : 12.4,
-    startedAt: 1793800000000,
-    finishedAt: null,
+    startedAt: T0,
+    finishedAt: status === "completed" ? T0 + 298_000 : null,
     waitingFor: null,
     needsInputReason: null,
     stepsDone: 15,
@@ -162,10 +162,22 @@ function studioFor(kind: "done" | "review" | "waiting" | "timedOut" | "working")
   }
 }
 
-const STEPS: Record<string, { phase: string; status: string; kind: string; resultCode: string }[]> = {
-  done: ["context", "brief", "research", "collect", "classify", "applyClassification", "compute", "prioritize", "write", "check", "save"].map((phase) => ({ phase, status: "completed", kind: "tool", resultCode: "ok" })),
-  working: ["context", "brief", "research", "collect", "classify"].map((phase) => ({ phase, status: "completed", kind: "tool", resultCode: "ok" })),
-  waiting: [{ phase: "context", status: "completed", kind: "tool", resultCode: "missing_context" }, { phase: "ask", status: "completed", kind: "note", resultCode: "waiting_for_user" }],
+const T0 = 1793800000000;
+/** Seconds after the start at which each phase finished, from the dev run. */
+const AT: Record<string, number> = { context: 2, ask: 3, brief: 21, research: 118, collect: 131, classify: 176, applyClassification: 177, compute: 178, prioritize: 214, write: 296, check: 297, save: 298 };
+const stepRow = (phase: string, extra: Record<string, unknown> = {}) => ({
+  phase,
+  status: "completed",
+  kind: "tool",
+  resultCode: "ok",
+  at: T0 + (AT[phase] ?? 0) * 1000,
+  ...(phase === "research" ? { webSearches: 9, webFetches: 14 } : {}),
+  ...extra,
+});
+const STEPS: Record<string, { phase: string; status: string; kind: string; resultCode: string; at?: number; webSearches?: number; webFetches?: number }[]> = {
+  done: ["context", "brief", "research", "collect", "classify", "applyClassification", "compute", "prioritize", "write", "check", "save"].map((phase) => stepRow(phase, phase === "check" ? { resultCode: "passed" } : {})),
+  working: ["context", "brief", "research", "collect", "classify"].map((phase) => stepRow(phase)),
+  waiting: [stepRow("context", { resultCode: "missing_context" }), stepRow("ask", { kind: "note", resultCode: "waiting_for_user" })],
 };
 
 const STORIES = [
@@ -183,15 +195,26 @@ const WIDTHS = [
 ];
 
 /** The Research Studio from fake data. Development only. */
-export function ResearchStudioStory({ initialState, initialWidth }: { initialState?: string; initialWidth?: string }) {
+const META = {
+  done: { label: "Completed", tone: "good" },
+  review: { label: "Completed", tone: "good" },
+  waiting: { label: "Waiting for User", tone: "warning" },
+  timedOut: { label: "Needs Input — Timed Out", tone: "critical" },
+  working: { label: "Running", tone: "brand" },
+} as const;
+
+export function ResearchStudioStory({ initialState, initialWidth, initialSection }: { initialState?: string; initialWidth?: string; initialSection?: string }) {
   const client = useMemo(() => new ConvexReactClient("https://story-only.convex.cloud"), []);
   const [key, setKey] = useState<(typeof STORIES)[number]["key"]>(
     () => (STORIES.find((row) => row.key === initialState)?.key ?? "done"),
   );
   const [width, setWidth] = useState(() => (WIDTHS.some((row) => row.value === initialWidth) ? initialWidth! : "full"));
-  const [tab, setTab] = useState<"findings" | "brief">("findings");
-  const studio = studioFor(key);
-  const steps = STEPS[key === "review" ? "done" : key === "timedOut" ? "waiting" : key] ?? STEPS.waiting;
+  // The working story starts three minutes ago, so its clock and timings read like a live run.
+  const [liveStart] = useState(() => Date.now() - 180_000);
+  const shift = key === "working" ? liveStart - T0 : 0;
+  const base = studioFor(key);
+  const studio = (shift && base.run ? { ...base, run: { ...base.run, startedAt: liveStart } } : base) as Studio;
+  const steps = (STEPS[key === "review" ? "done" : key === "timedOut" ? "waiting" : key] ?? STEPS.waiting).map((row) => (row.at ? { ...row, at: row.at + shift } : row));
   const open = key === "waiting" || key === "working";
   const sources = new Map(SOURCES.map((row) => [row.id, row]));
   return (
@@ -205,51 +228,30 @@ export function ResearchStudioStory({ initialState, initialWidth }: { initialSta
           </div>
         </div>
         <div className={cn("mx-auto w-full", width === "390" && "max-w-[390px]", width === "320" && "max-w-[320px]")}>
-          <div className="mx-auto grid w-full max-w-6xl min-w-0 gap-6">
-            <PageHeader eyebrow="Market Intelligence" title={studio.project.title} description={studio.project.objective} />
-            <QuestionCard workspaceId={WS} studio={studio} canAnswer />
-            <div className="grid min-w-0 gap-6 lg:grid-cols-[20rem_1fr]">
-              <div className="order-2 grid min-w-0 content-start gap-4 lg:order-1">
-                <Panel className="grid gap-4 p-4">
-                  <h2 className="font-heading text-base text-card-foreground">Progress</h2>
-                  <StageProgress steps={steps} open={open} />
-                  <p className="text-sm text-muted-foreground">Spent {studio.run ? `${Math.round(studio.run.costCents)}¢` : "0¢"} of $3.00.</p>
-                </Panel>
-                <Panel className="grid gap-3 p-4">
-                  <h2 className="font-heading text-base text-card-foreground">Sources</h2>
-                  <SourceStatusList
-                    statuses={
-                      open && key === "waiting"
-                        ? []
-                        : [
-                            { platform: "web", state: "partial", reasonCode: "ok", found: 30 },
-                            { platform: "youtube", state: "available", reasonCode: "ok", found: 22 },
-                            { platform: "tiktok", state: "available", reasonCode: "ok", found: 8 },
-                          ]
-                    }
-                  />
-                </Panel>
-                <ContextPanel workspaceId={WS} studio={studio} canEdit />
-              </div>
-              <div className="order-1 grid min-w-0 content-start gap-4 lg:order-2">
-                <SegmentedControl<"findings" | "brief">
-                  label="Show"
-                  className="justify-self-start"
-                  options={[
-                    { value: "findings", label: "Findings" },
-                    { value: "brief", label: "Brief" },
-                  ]}
-                  value={tab}
-                  onChange={setTab}
-                />
-                {tab === "brief" ? (
-                  <BriefCard studio={studio} />
-                ) : (
-                  <FindingsView workspaceId={WS} studio={studio} sources={sources} assetStatus={key === "review" ? "needsReview" : key === "done" ? "draft" : null} canDecide />
-                )}
-              </div>
-            </div>
-          </div>
+          <StudioLayout
+            workspaceId={WS}
+            studio={studio}
+            steps={steps}
+            open={open}
+            meta={META[key]}
+            statuses={
+              key === "waiting" || key === "timedOut"
+                ? []
+                : [
+                    { platform: "web", state: "partial", reasonCode: "ok", found: 30 },
+                    { platform: "youtube", state: "available", reasonCode: "ok", found: 22 },
+                    { platform: "tiktok", state: "available", reasonCode: "ok", found: 8 },
+                  ]
+            }
+            counts={key === "waiting" || key === "timedOut" ? new Map() : new Map([["web", 30], ["youtube", 22], ["tiktok", 8]])}
+            sources={key === "waiting" || key === "timedOut" ? new Map() : sources}
+            assetStatus={key === "review" ? "needsReview" : key === "done" ? "draft" : null}
+            reportAsset={key === "done" || key === "review" ? { id: "a1", title: "Market report: Austin deep cleaning", status: key === "review" ? "needsReview" : "draft", currentVersion: key === "review" ? 2 : 1 } : null}
+            capCents={300}
+            editor
+            initialSection={initialSection}
+            researchSlot={<p className="text-sm text-muted-foreground">The board renders here. See /dev/research-board for it with fixtures.</p>}
+          />
         </div>
       </div>
     </ConvexProvider>

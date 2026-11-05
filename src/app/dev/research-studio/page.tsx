@@ -9,5 +9,5 @@ export default async function ResearchStudioStoryPage({ searchParams }: { search
   if (process.env.NODE_ENV === "production") notFound();
   const query = await searchParams;
   const pick = (name: string) => (typeof query[name] === "string" ? (query[name] as string) : undefined);
-  return <ResearchStudioStory initialState={pick("state")} initialWidth={pick("width")} />;
+  return <ResearchStudioStory initialState={pick("state")} initialWidth={pick("width")} initialSection={pick("section")} />;
 }

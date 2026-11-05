@@ -69,12 +69,7 @@ export function PrivacyPolicy({ trust }: { trust: TrustPublic }) {
   const sections = privacyPolicySections(trust);
   return (
     <article className="mx-auto max-w-3xl px-5 py-12 sm:px-6 sm:py-16">
-      {trust.privacyLive ? null : (
-        <p className="rounded-[12px] border border-border bg-muted px-4 py-3 text-sm leading-relaxed text-strong">
-          Draft for review by qualified counsel. Not legal advice. This page is not in effect until a Platform Admin approves it and a mailing address is on file.
-        </p>
-      )}
-      <h1 className={`${marketingHeroTitle} mt-8 text-[2.1rem] sm:text-4xl`}>Privacy Policy</h1>
+      <h1 className={`${marketingHeroTitle} text-[2.1rem] sm:text-4xl`}>Privacy Policy</h1>
       <p className="mt-3 text-sm text-muted-foreground">Last updated: {dates.updated}</p>
       <p className="mt-1 text-sm text-muted-foreground">Effective: {dates.effective}</p>
       <p className="mt-6 text-sm leading-relaxed text-muted-foreground sm:text-[15px]">

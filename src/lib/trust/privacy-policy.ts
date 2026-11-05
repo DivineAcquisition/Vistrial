@@ -251,6 +251,7 @@ export function privacyPolicySections(trust: TrustPublic): PolicySection[] {
             "Clerk, which handles sign-in and accounts.",
             "Anthropic, which provides the AI models our agents use, including their web search and web page reading.",
             "Cloudflare, which runs the bot check on our public forms when it is switched on.",
+            "Resend, which delivers the email that tells our team a website form was submitted.",
           ],
         },
         {

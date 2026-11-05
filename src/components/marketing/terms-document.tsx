@@ -66,12 +66,7 @@ export function TermsDocument({ trust }: { trust: TrustPublic }) {
   const sections = termsSections(trust);
   return (
     <article className="mx-auto max-w-3xl px-5 py-12 sm:px-6 sm:py-16">
-      {trust.termsLive ? null : (
-        <p className="rounded-[12px] border border-border bg-muted px-4 py-3 text-sm leading-relaxed text-strong">
-          Draft for review by qualified counsel. Not legal advice. This page is not in effect until a Platform Admin approves it.
-        </p>
-      )}
-      <h1 className={`${marketingHeroTitle} mt-8 text-[2.1rem] sm:text-4xl`}>Terms of Service</h1>
+      <h1 className={`${marketingHeroTitle} text-[2.1rem] sm:text-4xl`}>Terms of Service</h1>
       <p className="mt-3 text-sm text-muted-foreground">Last updated: {dates.updated}</p>
       <p className="mt-1 text-sm text-muted-foreground">Effective: {dates.effective}</p>
       <nav aria-label="Contents" className="mt-8">

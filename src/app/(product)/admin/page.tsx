@@ -26,6 +26,13 @@ export default function StaffPage() {
           title="Workspace access"
           description="Platform admin and service team are not a workspace role. A second factor is required before a grant."
         />
+        <Link
+          href="/admin/submissions"
+          className="flex items-center justify-between rounded-[12px] border border-border bg-card px-4 py-3 text-sm font-medium text-strong hover:bg-muted"
+        >
+          Form submissions
+          <span className="hidden text-muted-foreground sm:inline">Requests, contacts, and reports from the public site</span>
+        </Link>
         <StaffDesk />
       </main>
     </div>

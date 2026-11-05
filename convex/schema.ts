@@ -75,6 +75,21 @@ export default defineSchema({
     .index("by_workspace", ["workspaceId"])
     .index("by_staff_workspace", ["staffUserId", "workspaceId"]),
 
+  /** Posts from the public site's forms. Read by staff on /admin/submissions. */
+  publicSubmissions: defineTable({
+    kind: v.string(),
+    name: v.string(),
+    email: v.string(),
+    business: v.optional(v.string()),
+    summary: v.string(),
+    fields: v.array(v.object({ label: v.string(), value: v.string() })),
+    pagePath: v.optional(v.string()),
+    status: v.union(v.literal("new"), v.literal("reviewed"), v.literal("archived")),
+    emailStatus: v.union(v.literal("pending"), v.literal("sent"), v.literal("failed"), v.literal("skipped")),
+    emailError: v.optional(v.string()),
+    createdAt: v.number(),
+  }).index("by_created", ["createdAt"]),
+
   auditLog: defineTable({
     workspaceId: v.optional(v.id("workspaces")),
     actorType: v.union(v.literal("user"), v.literal("staff"), v.literal("system")),

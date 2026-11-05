@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useState } from "react";
 
+import { LiveActivity } from "@/components/research/live-activity";
 import { ApprovalCard, ChecksList, FindingsView, type SourceLite } from "@/components/research/findings";
 import { BriefCard, ContextPanel, QuestionCard, SourceStatusList, StageProgress, type Studio } from "@/components/research/studio-parts";
 import { AssetStatusBadge } from "@/components/runs/run-parts";
@@ -20,7 +21,7 @@ type Section = "context" | "research" | "findings" | "assets" | "review";
 /** The five sections of an assignment, in the order the work moves through them. */
 const SECTIONS: { value: Section; label: string; words: string }[] = [
   { value: "context", label: "Context", words: "What the agent knows about your business, and the brief it works from." },
-  { value: "research", label: "Research", words: "Every source it found or was given, with its own player or a link." },
+  { value: "research", label: "Research", words: "The work as it happens, then every source it found or was given, with its own player or a link." },
   { value: "findings", label: "Findings", words: "What the sources show, what it infers, and the opportunities it picked." },
   { value: "assets", label: "Assets", words: "The finished work from this assignment." },
   { value: "review", label: "Review", words: "Check the work, ask for changes, or approve it." },
@@ -49,7 +50,7 @@ export function StudioLayout({
 }: {
   workspaceId: Id<"workspaces">;
   studio: Studio;
-  steps: { phase?: string | null; status: string; kind: string; resultCode: string }[];
+  steps: { phase?: string | null; status: string; kind: string; resultCode: string; webSearches?: number; webFetches?: number; at?: number }[];
   open: boolean;
   meta: { label: string; tone: Tone } | null;
   statuses: { platform: string; state: string; reasonCode: string; found: number }[];
@@ -66,7 +67,10 @@ export function StudioLayout({
   const [section, setSection] = useState<Section | null>(() => SECTIONS.find((row) => row.value === initialSection)?.value ?? null);
   const hasContext = Boolean(studio.context && (studio.context.profile || studio.context.facts.length > 0));
   const sourceCount = sources.size;
-  const shownSection: Section = section ?? (studio.report ? "findings" : sourceCount > 0 ? "research" : "context");
+  const runStatus = studio.run?.status ?? null;
+  const working = runStatus === "running" || runStatus === "queued";
+  const shownSection: Section = section ?? (working ? "research" : studio.report ? "findings" : sourceCount > 0 ? "research" : "context");
+  const sourceList = [...sources.values()];
 
   return (
     <div className="mx-auto grid w-full max-w-6xl min-w-0 gap-6">
@@ -96,6 +100,19 @@ export function StudioLayout({
             <StatusBadge label={studio.checks.passed ? "All checks passed" : "Needs review"} tone={studio.checks.passed ? "good" : "critical"} className="[&_span]:normal-case" />
           ) : null}
         </div>
+        {working && shownSection !== "research" ? (
+          <button
+            type="button"
+            onClick={() => setSection("research")}
+            className="flex w-fit items-center gap-2 rounded-full border border-primary/30 bg-primary/5 px-3 py-1 text-sm text-primary hover:bg-primary/10"
+          >
+            <span aria-hidden className="relative flex size-2">
+              <span className="absolute inline-flex size-full animate-ping rounded-full bg-primary opacity-60" />
+              <span className="relative inline-flex size-2 rounded-full bg-primary" />
+            </span>
+            Working now. Watch it live
+          </button>
+        ) : null}
       </Panel>
 
       <QuestionCard workspaceId={workspaceId} studio={studio} canAnswer={editor} />
@@ -150,7 +167,19 @@ export function StudioLayout({
               <BriefCard studio={studio} capCents={capCents} />
             </>
           ) : null}
-          {shownSection === "research" ? researchSlot : null}
+          {shownSection === "research" ? (
+            <>
+              <LiveActivity
+                steps={steps}
+                sources={sourceList}
+                status={runStatus}
+                startedAt={studio.run?.startedAt ?? null}
+                finishedAt={studio.run?.finishedAt ?? null}
+                costCents={studio.run?.costCents ?? 0}
+              />
+              {researchSlot}
+            </>
+          ) : null}
           {shownSection === "findings" ? (
             <FindingsView
               workspaceId={workspaceId}

@@ -259,6 +259,8 @@ export const get = workspaceQuery({
           webSearches: step.webSearches ?? 0,
           webFetches: step.webFetches ?? 0,
           phase: step.phase ?? null,
+          /** When the step was recorded, for the live feed's timings. */
+          at: step._creationTime,
         })),
       artifacts: artifacts.map((row) => ({ id: row._id, kind: row.kind, byteSize: row.byteSize, stepId: row.stepId })),
       assets: assets.map((row) => ({

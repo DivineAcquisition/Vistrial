@@ -13,7 +13,7 @@ import { api } from "../../../convex/_generated/api";
 import type { Id } from "../../../convex/_generated/dataModel";
 import type { Studio } from "./studio-parts";
 
-export type SourceLite = { id: string; title: string; url: string; platform: string; publisher: string | null };
+export type SourceLite = { id: string; title: string; url: string; platform: string; publisher: string | null; origin?: string };
 
 const BASIS_WORDS: Record<string, { label: string; tone: "good" | "warning" | "neutral" | "brand" }> = {
   observed: { label: "Observed", tone: "good" },

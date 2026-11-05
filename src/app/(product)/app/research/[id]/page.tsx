@@ -25,7 +25,7 @@ function StudioScreen({ shell, projectId }: { shell: WorkspaceShell; projectId: 
 
   const sources = useMemo(() => {
     const map = new Map<string, SourceLite>();
-    for (const row of sourcesPage?.page ?? []) map.set(row.id, { id: row.id, title: row.title, url: row.url, platform: row.platform, publisher: row.publisher });
+    for (const row of sourcesPage?.page ?? []) map.set(row.id, { id: row.id, title: row.title, url: row.url, platform: row.platform, publisher: row.publisher, origin: row.origin });
     return map;
   }, [sourcesPage]);
 

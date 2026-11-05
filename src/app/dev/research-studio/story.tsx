@@ -14,7 +14,7 @@ const WS = "ws1" as Id<"workspaces">;
 const S = (n: number) => `src${n}`;
 
 const SOURCES: SourceLite[] = [
-  { id: S(1), title: "Molly Maid of Greater Austin", url: "https://www.mollymaid.com/greater-austin/", platform: "web", publisher: "Molly Maid" },
+  { id: S(1), title: "Molly Maid of Greater Austin", url: "https://www.mollymaid.com/greater-austin/", platform: "web", publisher: "Molly Maid", origin: "supplied" },
   { id: S(2), title: "Full home deep cleaning transformation", url: "https://www.youtube.com/watch?v=aaaaaaaaaaa", platform: "youtube", publisher: "Sparkly Maid Austin" },
   { id: S(3), title: "It's not magic, it's the checklist", url: "https://austincleaningcrew.example.com/", platform: "web", publisher: "Austin Cleaning Crew" },
   { id: S(4), title: "Move-out clean before and after", url: "https://www.tiktok.com/@team/video/7234567890123456789", platform: "tiktok", publisher: "family-run team" },
@@ -112,8 +112,8 @@ function studioFor(kind: "done" | "review" | "waiting" | "timedOut" | "working")
     status,
     stopReason: status === "completed" ? "done" : null,
     costCents: status === "completed" ? 81.62 : 12.4,
-    startedAt: 1793800000000,
-    finishedAt: null,
+    startedAt: T0,
+    finishedAt: status === "completed" ? T0 + 298_000 : null,
     waitingFor: null,
     needsInputReason: null,
     stepsDone: 15,
@@ -162,10 +162,22 @@ function studioFor(kind: "done" | "review" | "waiting" | "timedOut" | "working")
   }
 }
 
-const STEPS: Record<string, { phase: string; status: string; kind: string; resultCode: string }[]> = {
-  done: ["context", "brief", "research", "collect", "classify", "applyClassification", "compute", "prioritize", "write", "check", "save"].map((phase) => ({ phase, status: "completed", kind: "tool", resultCode: "ok" })),
-  working: ["context", "brief", "research", "collect", "classify"].map((phase) => ({ phase, status: "completed", kind: "tool", resultCode: "ok" })),
-  waiting: [{ phase: "context", status: "completed", kind: "tool", resultCode: "missing_context" }, { phase: "ask", status: "completed", kind: "note", resultCode: "waiting_for_user" }],
+const T0 = 1793800000000;
+/** Seconds after the start at which each phase finished, from the dev run. */
+const AT: Record<string, number> = { context: 2, ask: 3, brief: 21, research: 118, collect: 131, classify: 176, applyClassification: 177, compute: 178, prioritize: 214, write: 296, check: 297, save: 298 };
+const stepRow = (phase: string, extra: Record<string, unknown> = {}) => ({
+  phase,
+  status: "completed",
+  kind: "tool",
+  resultCode: "ok",
+  at: T0 + (AT[phase] ?? 0) * 1000,
+  ...(phase === "research" ? { webSearches: 9, webFetches: 14 } : {}),
+  ...extra,
+});
+const STEPS: Record<string, { phase: string; status: string; kind: string; resultCode: string; at?: number; webSearches?: number; webFetches?: number }[]> = {
+  done: ["context", "brief", "research", "collect", "classify", "applyClassification", "compute", "prioritize", "write", "check", "save"].map((phase) => stepRow(phase, phase === "check" ? { resultCode: "passed" } : {})),
+  working: ["context", "brief", "research", "collect", "classify"].map((phase) => stepRow(phase)),
+  waiting: [stepRow("context", { resultCode: "missing_context" }), stepRow("ask", { kind: "note", resultCode: "waiting_for_user" })],
 };
 
 const STORIES = [
@@ -197,8 +209,12 @@ export function ResearchStudioStory({ initialState, initialWidth, initialSection
     () => (STORIES.find((row) => row.key === initialState)?.key ?? "done"),
   );
   const [width, setWidth] = useState(() => (WIDTHS.some((row) => row.value === initialWidth) ? initialWidth! : "full"));
-  const studio = studioFor(key);
-  const steps = STEPS[key === "review" ? "done" : key === "timedOut" ? "waiting" : key] ?? STEPS.waiting;
+  // The working story starts three minutes ago, so its clock and timings read like a live run.
+  const [liveStart] = useState(() => Date.now() - 180_000);
+  const shift = key === "working" ? liveStart - T0 : 0;
+  const base = studioFor(key);
+  const studio = (shift && base.run ? { ...base, run: { ...base.run, startedAt: liveStart } } : base) as Studio;
+  const steps = (STEPS[key === "review" ? "done" : key === "timedOut" ? "waiting" : key] ?? STEPS.waiting).map((row) => (row.at ? { ...row, at: row.at + shift } : row));
   const open = key === "waiting" || key === "working";
   const sources = new Map(SOURCES.map((row) => [row.id, row]));
   return (

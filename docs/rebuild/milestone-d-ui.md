@@ -98,3 +98,15 @@ The founder's brief is kept in `context-engine-brief.md`. The Studio now follows
 - **Context** holds *Business memory* (each fact with source, date and status; Correct and Remove) and the *Task brief*: objective, deliverable, what is already known (with origin and date), what is missing and assumed, permitted sources and tools, and the research budget with the reserve.
 - **Assets** lists the report with its version and says Creative Production is a separate skill (D7) that starts from the approved report.
 - **Review** holds the eight completion checks and the decision: Approve, **Request changes** (a reason, kept as feedback), or Reject.
+
+## Live research view
+
+The founder's brief asks that the process be visible: the user should feel Vistrial studying the business. The Research section now opens with **Working now** (or, after the run, **How the research went**), from `src/components/research/live-activity.tsx` and the pure feed builder `src/lib/research/activity.ts`.
+
+- **What it is doing now**, in plain words from the last finished step ("Searching the web", "Reading each source"), with a live dot, a moving bar on the current stage, and an elapsed clock that ticks in the browser. While a run works, the Current objective panel shows "Working now. Watch it live", which opens this section.
+- **Stage rail:** the five stages (Observe, Distinguish, Prioritize, Create, Validate) as a horizontal bar, each done, working or still to come.
+- **Counters:** searches, pages read, sources kept and money spent. They show the real number at once and spring to each new value as Convex pushes it.
+- **Feed:** one line per step with an icon, its time since the start (`runs.get` steps now carry `at`), and a sentence on what it did. Failed steps, failed checks and a skipped revision say so in warning or critical tones. Links you gave come first; sources the agent kept sit under the collect step as tiles that open the original.
+- **Rules kept:** no model names, no page text, no third-party images (tiles use platform icons, not thumbnails, matching the board's click-to-load rule). Motion follows the person's reduced-motion setting.
+
+UI research reused from section 2, plus three catalog pieces looked at, none installed: Agent Activity (21st.dev 29318, an animated step timeline), Agent Trace (26968, a waterfall with statuses flipping from queued to done) and AI Agent Pipeline (20802, a request flowing through stages with live stats). We took the timeline with a rail, the stage bar, and live stats; the pieces are built from our own primitives, `motion`, `lucide-react`, and the existing BorderBeam and AnimatedShinyText.

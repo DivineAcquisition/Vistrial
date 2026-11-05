@@ -8,12 +8,19 @@ import {
   Circle,
   Clapperboard,
   Clock,
+  Clock3,
+  Copy,
   FileText,
   Globe,
   Loader2,
+  MessageSquareWarning,
   Play,
   Search,
   Sparkles,
+  Split,
+  TriangleAlert,
+  UserX,
+  Wallet,
 } from "lucide-react";
 
 import { HoldToApprove, useCycle, useInViewSequence } from "@/components/marketing/agentic-visuals";
@@ -21,7 +28,7 @@ import { PlatformLogo } from "@/components/marketing/platform-logo";
 import { BeamFrame, GlowPanel, SpotlightCard } from "@/components/marketing/saas-frame";
 import { Badge, type BadgeProps } from "@/components/ui/badge";
 import { Popover, PopoverPopup, PopoverTrigger } from "@/components/ui/popover";
-import { AGENT_FLOW, AGENTS_SECTION, DOCTRINE_RUN, EVIDENCE, GROWTH_ARCHITECT, HERO, HOW, SAFETY } from "@/lib/marketing/content";
+import { AGENT_FLOW, AGENTS_SECTION, DOCTRINE_RUN, EVIDENCE, GROWTH_ARCHITECT, HERO, HOW, PROBLEM, SAFETY } from "@/lib/marketing/content";
 import { marketingInset } from "@/lib/marketing/ui";
 import { cn } from "@/lib/utils";
 
@@ -214,33 +221,82 @@ export function ResearchStudioHero() {
  * Problem: scattered research
  * ------------------------------------------------------------------------- */
 
+const FLAG_ICON = [TriangleAlert, UserX, Clock3] as const;
+
+/**
+ * The "before" picture: research spread across browser tabs, with nothing to
+ * back it. Tabs shrink and truncate, and only two show on phones, so the scene
+ * never forces its column wider than the screen.
+ */
 export function ScatteredScene() {
-  const tabs = ["competitor-site.com", "Ad screenshot (3).png", "Strategy v4 FINAL", "Notes from call"];
+  const { tabs, activeTab, note, flags, stamp } = PROBLEM.scene;
   return (
-    <div className={cn(marketingInset, "relative overflow-hidden p-4")} aria-hidden>
-      <div className="flex gap-1.5 overflow-hidden">
+    <div className={cn(marketingInset, "relative min-w-0 overflow-hidden p-3 sm:p-4")} aria-hidden>
+      <div className="mb-2 flex items-center gap-1.5 px-1">
+        <span className="size-2 rounded-full bg-foreground/15" />
+        <span className="size-2 rounded-full bg-foreground/15" />
+        <span className="size-2 rounded-full bg-foreground/15" />
+      </div>
+      <div className="flex min-w-0 gap-1">
         {tabs.map((tab, index) => (
           <span
             key={tab}
             className={cn(
-              "shrink-0 truncate rounded-t-md border border-b-0 border-border px-2.5 py-1.5 text-[11px]",
-              index === 2 ? "bg-card text-strong" : "bg-muted text-muted-foreground",
+              "min-w-0 max-w-[10rem] flex-1 truncate rounded-t-md border border-b-0 border-border px-2.5 py-1.5 text-[11px]",
+              index === activeTab ? "bg-card text-strong" : "bg-muted text-muted-foreground",
+              (index === 0 || index === tabs.length - 1) && "hidden sm:block",
             )}
-            style={{ maxWidth: "10rem" }}
           >
             {tab}
           </span>
         ))}
       </div>
-      <div className="rounded-b-md rounded-tr-md border border-border bg-card p-3">
-        <p className="text-xs text-strong">“Competitors seem to run discounts? Maybe test video?”</p>
-        <div className="mt-3 flex flex-wrap gap-1.5">
-          <Badge variant="outline" size="sm">No source</Badge>
-          <Badge variant="outline" size="sm">Unclear owner</Badge>
-          <Badge variant="outline" size="sm">Last edited 6 weeks ago</Badge>
-        </div>
+      <div className="relative rounded-b-md rounded-tr-md border border-border bg-card p-3 sm:p-4">
+        <span className="absolute top-3 right-3 rotate-6 rounded-md border border-flag-warning/40 bg-card px-2 py-0.5 font-heading text-[11px] font-semibold tracking-wide text-flag-warning uppercase shadow-sm">
+          {stamp}
+        </span>
+        <p className="pr-16 text-sm leading-relaxed text-strong">{note}</p>
+        <ul className="mt-3 flex flex-wrap gap-1.5">
+          {flags.map((flag, index) => {
+            const Icon = FLAG_ICON[index % FLAG_ICON.length];
+            return (
+              <li key={flag} className="inline-flex items-center gap-1 rounded-md border border-border bg-muted px-1.5 py-0.5 text-[11px] text-muted-foreground">
+                <Icon className="size-3 text-flag-warning" />
+                {flag}
+              </li>
+            );
+          })}
+        </ul>
       </div>
     </div>
+  );
+}
+
+const PAIN_ICON = [Copy, Split, MessageSquareWarning, Wallet] as const;
+
+/** The four pains, each with its own mark, so the list scans at a glance. */
+export function PainList() {
+  return (
+    <ul className="grid min-w-0 gap-3">
+      {PROBLEM.pains.map((pain, index) => {
+        const Icon = PAIN_ICON[index % PAIN_ICON.length];
+        return (
+          <li key={pain}>
+            <SpotlightCard className="p-4">
+              <div className="flex items-center gap-3.5">
+                <span className="flex size-9 shrink-0 items-center justify-center rounded-lg border border-border bg-muted" aria-hidden>
+                  <Icon className="size-4 text-brand-400" />
+                </span>
+                <p className="min-w-0 text-sm leading-relaxed text-strong">
+                  <span className="mr-1.5 font-heading text-xs text-muted-foreground tabular-nums">{String(index + 1).padStart(2, "0")}</span>
+                  {pain}
+                </p>
+              </div>
+            </SpotlightCard>
+          </li>
+        );
+      })}
+    </ul>
   );
 }
 

@@ -77,6 +77,7 @@ import type * as skills_testEcho from "../skills/testEcho.js";
 import type * as skills_testResearch from "../skills/testResearch.js";
 import type * as skills_testSources from "../skills/testSources.js";
 import type * as skills_types from "../skills/types.js";
+import type * as sourceCheck from "../sourceCheck.js";
 import type * as staff from "../staff.js";
 import type * as staffAdmin from "../staffAdmin.js";
 import type * as studio from "../studio.js";
@@ -158,6 +159,7 @@ declare const fullApi: ApiFromModules<{
   "skills/testResearch": typeof skills_testResearch;
   "skills/testSources": typeof skills_testSources;
   "skills/types": typeof skills_types;
+  sourceCheck: typeof sourceCheck;
   staff: typeof staff;
   staffAdmin: typeof staffAdmin;
   studio: typeof studio;

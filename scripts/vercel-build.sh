@@ -27,4 +27,20 @@ if [ "${VERCEL_ENV:-}" = "production" ]; then
 fi
 
 export CONVEX_DEPLOY_KEY
+
+# Form secrets live in Vercel only. Copy them to the Convex deployment this build
+# targets, so the two sides always agree. Values go over stdin, not argv.
+for name in PUBLIC_FORM_SECRET RESEND_API_KEY FORM_ALERT_TO; do
+  value="$(printenv "$name" || true)"
+  if [ -n "$value" ]; then
+    if printf '%s' "$value" | npx convex env set "$name" >/dev/null 2>&1; then
+      echo "Synced $name to Convex."
+    else
+      echo "Could not sync $name to Convex." >&2
+    fi
+  else
+    echo "$name is not set in Vercel; skipping." >&2
+  fi
+done
+
 exec npx convex deploy --cmd 'npm run build' --cmd-url-env-var-name NEXT_PUBLIC_CONVEX_URL

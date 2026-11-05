@@ -22,6 +22,7 @@ const FORBIDDEN = [
   /CRON_SECRET/,
   /RESEND_API_KEY/,
   /RESEND_WEBHOOK_SECRET/,
+  /PUBLIC_FORM_SECRET/,
   /META_ACCESS_TOKEN/,
   /sk-ant-[A-Za-z0-9_-]{8,}/,
   /sk_(?:live|test)_[A-Za-z0-9]{12,}/,

@@ -2,8 +2,6 @@
  * Public page copy. One source for the landing page, pricing, forms, and
  * supporting pages. Layout code reads this file and does not own sentences.
  *
- * Legal pages are drafts for qualified counsel, not final text.
- *
  * Display prices are not connected to billing.
  */
 
@@ -445,74 +443,6 @@ export const EXAMPLE = {
     { agent: "scribe" as const, line: `${AGENTS.scribe.name}, ${AGENTS.scribe.sublabel}, updated the case file from the call.` },
     { agent: "relay" as const, line: `${AGENTS.relay.name}, ${AGENTS.relay.sublabel}, prepared a draft. It waits for approval.` },
   ],
-} as const;
-
-export const SECURITY_PAGE = {
-  title: "Security overview",
-  description: "How Vistrial separates customer data, gates sending, and records important actions.",
-  draft: "Draft for review. This page describes controls that exist in the product today. It is not a certification, an audit report, or a compliance claim. Align it with the governance notes when those are final.",
-  sections: [
-    {
-      heading: "Separate workspaces",
-      body: "Each customer's leads, calls, and settings live in their own workspace. A person in one workspace cannot read another customer's workspace. Staff access is a separate role, not a shared customer login.",
-    },
-    {
-      heading: "Approval before anything is sent",
-      body: "Follow-ups are drafts until a person approves them. At the moment of sending, opt-out, do-not-contact, and related checks run again.",
-    },
-    {
-      heading: "Quiet hours",
-      body: "The default quiet hours are 8 pm to 8 am in the lead's local time. Messages wait until quiet hours end.",
-    },
-    {
-      heading: "A record of important actions",
-      body: "Status changes, approvals, and staff actions are written down with who did them and when.",
-    },
-    {
-      heading: "Credentials",
-      body: "Connection secrets are stored for the workspace that connected them and are not shown on this public page. Vistrial does not ask you to paste a password into this marketing site.",
-    },
-  ],
-} as const;
-
-export const LEGAL_DRAFT_BANNER =
-  "Draft for review by qualified counsel. This is not final legal text. Do not treat it as the policy or the terms.";
-
-export const PRIVACY_PAGE = {
-  title: "Privacy",
-  description: "A placeholder structure for the privacy text counsel will provide.",
-  sections: [
-    {
-      heading: "What this site collects",
-      body: "The access form collects the name, work email, business, and answers the visitor types. A phone number is optional. The form also stores the time, the page it came from, and campaign parameters when they are present.",
-    },
-    {
-      heading: "Why",
-      body: "The purpose is to review a request for Private Access or a Custom conversation, and to reply about that request.",
-    },
-    {
-      heading: "Who receives it",
-      body: "Platform Admins can review requests. Service Team can see them only when a Platform Admin grants that. Request data is not copied into a customer workspace except the fields needed to start onboarding, and only when a Platform Admin converts the request.",
-    },
-    {
-      heading: "How long it is kept",
-      body: "Access requests that are declined or inactive are kept for 12 months, then deleted. This is our current default.",
-    },
-    {
-      heading: "How to ask for deletion",
-      body: "Email contact@vistrial.io and ask for the request to be deleted. A Platform Admin can delete it, and the deletion is recorded.",
-    },
-    {
-      heading: "Contact",
-      body: "For privacy questions or requests, email contact@vistrial.io.",
-    },
-  ],
-} as const;
-
-export const TERMS_PAGE = {
-  title: "Terms",
-  description: "A placeholder for the terms counsel will provide.",
-  body: "No contract term, setup fee, or guarantee is stated on this placeholder. The Terms of Service page is the draft visitors read.",
 } as const;
 
 export const THANKS = {

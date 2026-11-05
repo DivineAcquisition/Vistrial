@@ -39,7 +39,13 @@ export async function submitTrustForm(_prev: TrustFormState, form: FormData): Pr
     kind: kind === "vulnerability" ? "vulnerability" : "security_review",
     email,
     name: fullName,
-    detail: [business, role, details].filter(Boolean).join("\n"),
+    business,
+    detail: details || role,
+    fields: [
+      { label: "Role", value: role },
+      { label: "Details", value: details },
+    ],
+    pagePath: kind === "vulnerability" ? "/security/report" : "/security/review",
   });
   if (!saved.ok) return { ok: false, message: saved.message, errors: {} };
   redirect(kind === "vulnerability" ? "/thanks?kind=report" : "/thanks?kind=review");

@@ -30,7 +30,7 @@ describe("privacy policy stays inside verified behavior", () => {
     expect(text).toContain("Meta pixel");
     expect(text).not.toContain("[COUNSEL:");
     // The policy names the providers the code actually calls, and no retired ones.
-    for (const name of ["Vercel", "Convex", "Clerk", "Anthropic", "Cloudflare"]) expect(text).toContain(name);
+    for (const name of ["Vercel", "Convex", "Clerk", "Anthropic", "Cloudflare", "Resend"]) expect(text).toContain(name);
     expect(text).not.toMatch(/stripe|supabase|compass|quiet hours|embeddings/i);
     expect(text).not.toMatch(/GoHighLevel is the CRM/i);
   });

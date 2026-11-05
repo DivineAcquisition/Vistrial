@@ -3,6 +3,7 @@
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 
+import { submissionFields } from "@/lib/access-requests/summary";
 import { parseAccessForm, type RequestKind } from "@/lib/access-requests/validate";
 import { capturePublicRequest } from "@/lib/marketing/capture";
 import { FORMS } from "@/lib/marketing/content";
@@ -29,13 +30,10 @@ async function submit(kind: RequestKind, formData: FormData): Promise<AccessForm
     kind,
     email: parsed.value.email,
     name: parsed.value.fullName,
-    detail: [
-      parsed.value.businessName,
-      parsed.value.need,
-      parsed.value.problem,
-    ]
-      .filter(Boolean)
-      .join("\n"),
+    business: parsed.value.businessName,
+    detail: (kind === "custom" ? parsed.value.need : parsed.value.problem) ?? "",
+    fields: submissionFields(parsed.value),
+    pagePath: parsed.value.pagePath,
   });
   if (!saved.ok) return { ok: false, message: saved.message, errors: initialErrors };
   redirect(kind === "custom" ? "/thanks?kind=custom" : "/thanks?kind=access");

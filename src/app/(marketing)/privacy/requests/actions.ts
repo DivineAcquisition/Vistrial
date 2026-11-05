@@ -18,7 +18,10 @@ export async function submitLeadNote(_prev: LeadNoteState, form: FormData): Prom
     kind: "lead_data_note",
     email,
     name: cleanText(form.get("name"), 120),
-    detail: [cleanText(form.get("business"), 160), details].filter(Boolean).join("\n"),
+    business: cleanText(form.get("business"), 160),
+    detail: details,
+    fields: [{ label: "What should change", value: details }],
+    pagePath: "/privacy/requests",
   });
   if (!saved.ok) return { ok: false, message: saved.message };
   return { ok: true, message: "Received. We will pass this to the business when we can tell who they are." };

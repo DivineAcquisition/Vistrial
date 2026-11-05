@@ -13,7 +13,7 @@ const cardGlow = "shadow-[0_0_72px_-28px_rgba(154,136,252,0.8)]";
 function TravelingBeam({ delay = 0 }: { delay?: number }) {
   return (
     <div className="pointer-events-none absolute inset-0 motion-safe:block motion-reduce:hidden">
-      <BorderBeam delay={delay} duration={8} size={110} borderWidth={1} colorFrom="#9A88FC" colorTo="#6650D8" />
+      <BorderBeam delay={delay} duration={8} size={110} borderWidth={1} colorFrom="#9A88FC" colorTo="#C3B6FE" />
     </div>
   );
 }
@@ -65,16 +65,15 @@ export function BeamFrame({
 export function GlowPanel({
   children,
   className,
-  beamDelay = 0,
 }: {
   children: ReactNode;
   className?: string;
+  /** Kept for callers; cards no longer animate a border beam. */
   beamDelay?: number;
 }) {
   return (
     <div className={cn("relative overflow-hidden", cardGlow, marketingPanel, className)}>
       <div aria-hidden className="pointer-events-none absolute inset-x-0 top-0 h-16 bg-gradient-to-b from-brand-500/20 to-transparent" />
-      <TravelingBeam delay={beamDelay} />
       <div className="relative">{children}</div>
     </div>
   );
@@ -84,7 +83,6 @@ export function SpotlightCard({
   children,
   className,
   glow = false,
-  beamDelay = 0,
 }: {
   children: ReactNode;
   className?: string;
@@ -94,10 +92,7 @@ export function SpotlightCard({
   return (
     <MagicCard className={cn("h-full overflow-hidden p-5", marketingPanel, glow && cardGlow, className)}>
       {glow ? (
-        <>
-          <div aria-hidden className="pointer-events-none absolute inset-x-0 top-0 h-16 bg-gradient-to-b from-brand-500/20 to-transparent" />
-          <TravelingBeam delay={beamDelay} />
-        </>
+        <div aria-hidden className="pointer-events-none absolute inset-x-0 top-0 h-16 bg-gradient-to-b from-brand-500/20 to-transparent" />
       ) : null}
       <div className="relative">{children}</div>
     </MagicCard>

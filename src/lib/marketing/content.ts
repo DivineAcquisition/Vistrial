@@ -95,7 +95,7 @@ export const AGENT_FLOW = {
 
 /** How it works, played as a run: each step reports what it did. Sample numbers. */
 export const DOCTRINE_RUN = {
-  labels: { queued: "Queued", running: "Running", done: "Done", waiting: "Waiting on your results" },
+  labels: { queued: "Queued", running: "Running", done: "Done", waiting: "Waiting on you" },
   notes: {
     observe: "Found 42 ads and 18 videos",
     distinguish: "14 claims, each labeled",
@@ -107,6 +107,8 @@ export const DOCTRINE_RUN = {
 
 /** The approval moment in Safety. */
 export const APPROVAL = {
+  introTitle: "Try the approval step",
+  introBody: "Every draft waits here until a person approves it. Hold the button to approve the sample report. Nothing is published either way.",
   hold: "Hold to approve",
   holding: "Keep holding",
   hint: "Press and hold the button, or hold Space or Enter.",
@@ -527,6 +529,32 @@ export const FORMS = {
   phoneHelp: "Optional. We will not use this for marketing texts.",
   problemHelp: "Optional. 1000 characters at most.",
   honeypotLabel: "Company website confirm",
+  sections: {
+    you: "About you",
+    business: "Your business",
+    selling: "How you sell today",
+    more: "Anything else",
+    need: "What you need",
+  },
+  /** The panel beside the forms: what happens after you send. A plan, not a promise of timing. */
+  next: {
+    title: "What happens next",
+    now: "Now",
+    next: "Next",
+    later: "Then",
+    access: [
+      { title: "You send this form", body: "It takes a few minutes. A phone number is optional." },
+      { title: "A person reads it", body: "We review every request ourselves to check the fit." },
+      { title: "We reply by email", body: "If it is a fit, we set up your private workspace with you." },
+      { title: "Growth Architect starts", body: "Your first market report is drafted, then waits for your approval." },
+    ],
+    custom: [
+      { title: "You send this form", body: "Tell us what your team needs." },
+      { title: "We reply by email", body: "A person on our team sets up a short call." },
+      { title: "We plan your setup", body: "Seats, workspaces, sources, and limits that fit how you work." },
+    ],
+    sourcesLabel: "Growth Architect researches across",
+  },
   errors: {
     required: "This field is required.",
     email: "Enter a work email, like name@company.com.",

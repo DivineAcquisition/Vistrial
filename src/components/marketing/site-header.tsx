@@ -8,7 +8,8 @@ import { NAV } from "@/lib/marketing/content";
 import { marketingPageGutter, marketingShell } from "@/lib/marketing/ui";
 import { cn } from "@/lib/utils";
 
-const EMAIL_LOGO_PATH = "/brand/vistrial-icon.png";
+/** Same square mark as the email header, sized for a 40px slot at 2x. */
+const EMAIL_LOGO_PATH = "/brand/vistrial-icon-96.png";
 
 const navButton = "h-12! rounded-[8px]! before:rounded-[7px]!";
 
@@ -16,8 +17,8 @@ export function SiteHeader({ action = "cta" }: { action?: "cta" | "none" }) {
   const showNav = action === "cta";
 
   return (
-    <header className="relative sticky top-0 z-50 border-b border-border bg-background">
-      <div className={cn(marketingShell, marketingPageGutter, "flex h-[4.5rem] items-center justify-between gap-4")}>
+    <header className={cn("relative sticky top-0 z-50 border-b border-border bg-background", marketingPageGutter)}>
+      <div className={cn(marketingShell, "flex h-[4.5rem] items-center justify-between gap-4")}>
         <Link href="/" className="shrink-0 rounded-md" aria-label={`${APP_NAME} home`}>
           {/* Same square mark as the email header. */}
           {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -30,7 +31,7 @@ export function SiteHeader({ action = "cta" }: { action?: "cta" | "none" }) {
           />
         </Link>
         {showNav ? (
-          <nav aria-label="On this page" className="hidden md:block">
+          <nav aria-label="On this page" className="hidden lg:block">
             <MarketingNav />
           </nav>
         ) : null}
@@ -38,14 +39,14 @@ export function SiteHeader({ action = "cta" }: { action?: "cta" | "none" }) {
           <Button
             variant="gradient"
             size="lg"
-            className={cn(navButton, "hidden shrink-0 md:inline-flex")}
+            className={cn(navButton, "hidden shrink-0 lg:inline-flex")}
             render={<Link href="/request?from=nav" data-cta-position="nav" />}
           >
             {NAV.request}
           </Button>
         ) : null}
         {showNav ? (
-          <details className="relative shrink-0 md:hidden">
+          <details className="relative shrink-0 lg:hidden">
             <summary className="flex size-10 cursor-pointer list-none items-center justify-center rounded-md border border-border bg-muted text-strong [&::-webkit-details-marker]:hidden">
               <span className="sr-only">{NAV.openMenu}</span>
               <Menu className="size-4" aria-hidden="true" />

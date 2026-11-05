@@ -9,7 +9,8 @@ import { marketingPageGutter, marketingShell } from "@/lib/marketing/ui";
 import { loadTrustPublic } from "@/lib/trust/public";
 import { cn } from "@/lib/utils";
 
-const EMAIL_LOGO_PATH = "/brand/vistrial-icon.png";
+/** Same square mark as the email header, sized for a 40px slot at 2x. */
+const EMAIL_LOGO_PATH = "/brand/vistrial-icon-96.png";
 
 const footerLinkClass = "text-sm text-muted-foreground transition-colors hover:text-strong";
 const footerButton = "h-12! rounded-[8px]! before:rounded-[7px]!";
@@ -41,8 +42,8 @@ export async function SiteFooter() {
   const trust = await loadTrustPublic();
 
   return (
-    <footer className="relative border-t border-border bg-muted">
-      <div className={cn(marketingShell, marketingPageGutter, "py-12 sm:py-16")}>
+    <footer className={cn("relative border-t border-border bg-muted", marketingPageGutter)}>
+      <div className={cn(marketingShell, "py-12 sm:py-16")}>
         <div className="grid gap-10 sm:grid-cols-2 lg:grid-cols-[1.4fr_0.8fr_0.9fr_0.8fr]">
           <div>
             <Link href="/" className="inline-block rounded-md" aria-label={`${APP_NAME} home`}>

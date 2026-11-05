@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import Link from "next/link";
+import { ArrowRight } from "lucide-react";
 
 import { BlurFade } from "@/components/ui/blur-fade";
 import { AgentFlow } from "@/components/marketing/agentic-visuals";
@@ -9,6 +10,7 @@ import {
   AssetApprovalExample,
   DoctrineFlow,
   EvidenceReport,
+  PainList,
   ResearchStudioHero,
   SafetySteps,
   ScatteredScene,
@@ -134,28 +136,24 @@ export function LandingPage() {
       {SECTIONS.hero ? <AgentFlow /> : null}
 
       {SECTIONS.problem ? (
-        <Section headline={PROBLEM.headline}>
-          <div className="grid items-start gap-8 lg:grid-cols-[1.05fr_0.95fr]">
-            <div className="space-y-5">
+        <Section id={PROBLEM.id} headline={PROBLEM.headline}>
+          <div className="grid items-start gap-8 lg:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)] lg:gap-10">
+            <div className="min-w-0 space-y-6">
               <ScatteredScene />
               <div className="space-y-4 text-[15px] leading-relaxed text-muted-foreground sm:text-base">
                 <p>{PROBLEM.opening}</p>
                 <p>{PROBLEM.scattered}</p>
               </div>
             </div>
-            <ul className="grid gap-3">
-              {PROBLEM.pains.map((pain, index) => (
-                <li key={pain}>
-                  <SpotlightCard className="flex items-start gap-3">
-                    <span className="inline-flex h-7 min-w-7 items-center justify-center rounded-md border border-border bg-muted px-1.5 font-heading text-xs text-strong" aria-hidden>
-                      {String(index + 1).padStart(2, "0")}
-                    </span>
-                    <span className="text-sm leading-relaxed text-strong">{pain}</span>
-                  </SpotlightCard>
-                </li>
-              ))}
-            </ul>
+            <PainList />
           </div>
+          <p className="mt-10 flex flex-wrap items-center gap-x-3 gap-y-1 border-t border-border pt-6 text-sm text-strong sm:text-base">
+            <span className="font-medium">{PROBLEM.bridge.text}</span>
+            <a href={PROBLEM.bridge.href} className="inline-flex items-center gap-1.5 font-medium text-brand-300 underline-offset-4 hover:underline">
+              {PROBLEM.bridge.link}
+              <ArrowRight className="size-4" aria-hidden />
+            </a>
+          </p>
         </Section>
       ) : null}
 

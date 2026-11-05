@@ -130,6 +130,19 @@ export const PROBLEM = {
     "AI tools give confident answers with no sources behind them.",
     "We spend before we know which audience or angle to test first.",
   ],
+  /** The "before" picture: research spread across tabs, with nothing to back it. */
+  scene: {
+    tabs: ["competitor-site.com", "Ad screenshot (3).png", "Strategy v4 FINAL", "Notes from call"],
+    activeTab: 2,
+    note: "“Competitors seem to run discounts? Maybe test video?”",
+    flags: ["No source", "Unclear owner", "Last edited 6 weeks ago"],
+    stamp: "Guess",
+  },
+  bridge: {
+    text: "Vistrial starts with evidence instead.",
+    link: "See how it works",
+    href: "#how",
+  },
 } as const;
 
 export const PHILOSOPHY = {

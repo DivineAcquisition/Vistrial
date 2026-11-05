@@ -867,6 +867,36 @@ export default defineSchema({
     ),
   }).index("by_workspace_account", ["workspaceId", "adAccountId"]),
 
+  /** One read of a connected ad account, step by step, so the person can watch it and look back. */
+  metaSyncRuns: defineTable({
+    workspaceId: v.id("workspaces"),
+    trigger: v.union(v.literal("manual"), v.literal("schedule"), v.literal("connect")),
+    adAccountId: v.string(),
+    startedAt: v.number(),
+    finishedAt: v.optional(v.number()),
+    status: v.union(v.literal("running"), v.literal("done"), v.literal("failed")),
+    code: v.optional(v.string()),
+    steps: v.array(
+      v.object({
+        key: v.string(),
+        status: v.union(v.literal("waiting"), v.literal("working"), v.literal("done"), v.literal("failed")),
+        calls: v.number(),
+        rows: v.optional(v.number()),
+        ms: v.optional(v.number()),
+      }),
+    ),
+    callsOk: v.number(),
+    callsFailed: v.number(),
+  }).index("by_workspace", ["workspaceId", "startedAt"]),
+
+  /** Marketing API calls per workspace per UTC day, for the person and Meta's 15-day access tier. */
+  metaCallDays: defineTable({
+    workspaceId: v.id("workspaces"),
+    day: v.string(),
+    ok: v.number(),
+    failed: v.number(),
+  }).index("by_workspace_day", ["workspaceId", "day"]),
+
   platformControls: defineTable({
     key: v.literal("platform"),
     halted: v.boolean(),

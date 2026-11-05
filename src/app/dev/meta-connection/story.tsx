@@ -1,6 +1,10 @@
 "use client";
 
+import { useState } from "react";
+
+import type { SyncRun, Usage } from "@/components/connections/meta-effort";
 import { MetaAdsView, type AccountChoice, type MetaCampaign, type MetaStatus } from "@/components/connections/meta-ads-view";
+import { observe } from "../../../../convex/lib/metaGraph";
 
 /** Shapes from the dev test run against the Bay Area Cleaning Professionals account (all time). */
 const CAMPAIGNS: MetaCampaign[] = [
@@ -43,9 +47,44 @@ const CONNECTION = {
   calls: { ok: 48, failed: 1, successRate: 48 / 49 },
 };
 
-function statusFor(state: string): MetaStatus {
-  if (state === "none") return { configured: true, canManage: true, connection: null, snapshot: null };
-  if (state === "accounts") return { configured: true, canManage: true, connection: { ...CONNECTION, adAccountId: null, adAccountName: null, lastSyncAt: null }, snapshot: null };
+const STEP_KEYS = ["access", "results", "campaigns", "trend", "save"];
+const TIMES = [324, 1801, 335, 543, 69];
+const ROWS = [1, 14, 6, 8, 14];
+
+function runAt(now: number, id: string, trigger: SyncRun["trigger"], agoMs: number, liveAt?: number): SyncRun {
+  const startedAt = now - agoMs;
+  const steps = STEP_KEYS.map((key, index) => {
+    if (liveAt === undefined || index < liveAt) return { key, status: "done" as const, calls: key === "save" ? 0 : 1, rows: ROWS[index], ms: TIMES[index] };
+    return { key, status: index === liveAt ? ("working" as const) : ("waiting" as const), calls: 0 };
+  });
+  return {
+    id,
+    trigger,
+    status: liveAt === undefined ? "done" : "running",
+    code: liveAt === undefined ? "ok" : null,
+    startedAt,
+    finishedAt: liveAt === undefined ? startedAt + 3072 : null,
+    steps,
+    callsOk: liveAt === undefined ? 4 : liveAt,
+    callsFailed: 0,
+  };
+}
+
+function usageAt(now: number): Usage {
+  const days = Array.from({ length: 15 }, (_, index) => {
+    const day = new Date(now - (14 - index) * 86_400_000).toISOString().slice(0, 10);
+    const ok = index < 9 ? 0 : [22, 31, 28, 35, 40, 44][index - 9];
+    return { day, ok, failed: index === 12 ? 2 : 0 };
+  });
+  const ok = days.reduce((sum, row) => sum + row.ok, 0);
+  const failed = days.reduce((sum, row) => sum + row.failed, 0);
+  return { days, ok, failed, successRate: ok / (ok + failed), target: { calls: 500, successRate: 0.85, days: 15 } };
+}
+
+function statusFor(state: string, now: number): MetaStatus {
+  const empty = { runs: [], usage: null, observations: [] };
+  if (state === "none") return { configured: true, canManage: true, connection: null, snapshot: null, ...empty };
+  if (state === "accounts") return { configured: true, canManage: true, connection: { ...CONNECTION, adAccountId: null, adAccountName: null, lastSyncAt: null }, snapshot: null, ...empty };
   const snapshot = {
     currency: "USD",
     range: "maximum",
@@ -56,20 +95,36 @@ function statusFor(state: string): MetaStatus {
     daily: DAILY,
     campaigns: CAMPAIGNS,
   };
-  return { configured: true, canManage: true, connection: { ...CONNECTION, status: state === "reconnect" ? "needsReconnect" : "connected" }, snapshot };
+  const runs = [
+    ...(state === "syncing" ? [runAt(now, "live", "manual", 2400, 2)] : []),
+    runAt(now, "r1", "schedule", 42 * 60_000),
+    runAt(now, "r2", "schedule", 3 * 3_600_000 + 42 * 60_000),
+    runAt(now, "r3", "manual", 5 * 3_600_000),
+    runAt(now, "r4", "connect", 26 * 3_600_000),
+  ];
+  return {
+    configured: true,
+    canManage: true,
+    connection: { ...CONNECTION, status: state === "reconnect" ? "needsReconnect" : "connected" },
+    snapshot,
+    runs,
+    usage: usageAt(now),
+    observations: observe(CAMPAIGNS, snapshot.totals, "USD"),
+  };
 }
 
 const wait = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
 
 export function MetaConnectionStory({ state }: { state: string }) {
+  const [now] = useState(() => Date.now());
   return (
     <div className="min-h-screen bg-background p-4 sm:p-8">
       <div className="mx-auto grid max-w-5xl gap-4">
         <p className="rounded-xl border border-dashed border-border p-3 text-sm text-muted-foreground">
-          Meta connection story. Fixtures from the dev test run. States: none, accounts, connected, reconnect.
+          Meta connection story. Fixtures from the dev test run. States: none, accounts, connected, syncing, reconnect.
         </p>
         <MetaAdsView
-          status={statusFor(state)}
+          status={statusFor(state, now)}
           returned={state === "accounts" ? "connected" : null}
           actions={{
             connect: async () => wait(300),

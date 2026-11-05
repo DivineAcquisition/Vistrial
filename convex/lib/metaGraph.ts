@@ -187,3 +187,141 @@ export function graphErrorCode(body: unknown): string {
   if (error.code === 100) return "bad_request";
   return "provider_error";
 }
+
+/** The steps of one read, in order. Screens name them; the server only uses the keys. */
+export const SYNC_STEPS = ["access", "results", "campaigns", "trend", "save"] as const;
+export type SyncStepKey = (typeof SYNC_STEPS)[number];
+
+/** Meta's access tier counts the last 15 days; it asks for 500 calls at 85% success. */
+export const TIER = { days: 15, calls: 500, successRate: 0.85 } as const;
+
+export function utcDay(time: number) {
+  return new Date(time).toISOString().slice(0, 10);
+}
+
+/** The last `days` UTC days, oldest first, each with its counts (zero when none). */
+export function fillDays(rows: { day: string; ok: number; failed: number }[], now: number, days: number = TIER.days) {
+  const byDay = new Map(rows.map((row) => [row.day, row]));
+  const out: { day: string; ok: number; failed: number }[] = [];
+  for (let back = days - 1; back >= 0; back--) {
+    const day = utcDay(now - back * 86_400_000);
+    out.push({ day, ok: byDay.get(day)?.ok ?? 0, failed: byDay.get(day)?.failed ?? 0 });
+  }
+  return out;
+}
+
+export type Observation = {
+  key: string;
+  kind: "share" | "best" | "noResults" | "spread" | "idle" | "clickRate";
+  title: string;
+  detail: string;
+  tone: "good" | "warning" | "neutral";
+  campaignIds: string[];
+};
+
+function fmtMoney(amount: number, currency: string) {
+  try {
+    return new Intl.NumberFormat("en-US", { style: "currency", currency, maximumFractionDigits: amount >= 1000 ? 0 : 2 }).format(amount);
+  } catch {
+    return `${amount.toFixed(2)} ${currency}`;
+  }
+}
+
+/**
+ * What the account's own numbers show, computed in code. Each line is a fact about these campaigns
+ * compared with each other, never with outside benchmarks, so every one is Observed first-party evidence.
+ */
+export function observe(campaigns: CampaignResult[], totals: { spend: number; active: number; ctr?: number | null }, currency: string): Observation[] {
+  const out: Observation[] = [];
+  const spent = campaigns.filter((row) => row.spend > 0);
+  if (spent.length === 0) return out;
+
+  const top = spent[0];
+  const share = totals.spend > 0 ? top.spend / totals.spend : 0;
+  if (spent.length >= 2 && share >= 0.4) {
+    out.push({
+      key: "share",
+      kind: "share",
+      title: `${Math.round(share * 100)}% of spend went to one campaign`,
+      detail: `${top.name} spent ${fmtMoney(top.spend, currency)} of ${fmtMoney(totals.spend, currency)}.`,
+      tone: "neutral",
+      campaignIds: [top.id],
+    });
+  }
+
+  const byLabel = new Map<string, CampaignResult[]>();
+  for (const row of spent) {
+    if (row.resultLabel && row.results !== null && row.results > 0 && row.costPerResult !== null) {
+      byLabel.set(row.resultLabel, [...(byLabel.get(row.resultLabel) ?? []), row]);
+    }
+  }
+  for (const [label, rows] of byLabel) {
+    const sorted = [...rows].sort((a, b) => a.costPerResult! - b.costPerResult!);
+    const best = sorted[0];
+    const unit = label.toLowerCase().replace(/s$/, "");
+    if (sorted.length >= 2) {
+      out.push({
+        key: `best-${label}`,
+        kind: "best",
+        title: `Cheapest ${unit}: ${fmtMoney(best.costPerResult!, currency)}`,
+        detail: `${best.name}, the lowest cost per ${unit} of ${sorted.length} campaigns that produced ${label.toLowerCase()}.`,
+        tone: "good",
+        campaignIds: [best.id],
+      });
+      const worst = sorted.at(-1)!;
+      if (worst.costPerResult! >= best.costPerResult! * 2) {
+        out.push({
+          key: `spread-${label}`,
+          kind: "spread",
+          title: `Cost per ${unit} ranges ${(worst.costPerResult! / best.costPerResult!).toFixed(1)}×`,
+          detail: `From ${fmtMoney(best.costPerResult!, currency)} (${best.name}) to ${fmtMoney(worst.costPerResult!, currency)} (${worst.name}).`,
+          tone: "warning",
+          campaignIds: [best.id, worst.id],
+        });
+      }
+    } else {
+      out.push({
+        key: `best-${label}`,
+        kind: "best",
+        title: `${best.results} ${label.toLowerCase()} at ${fmtMoney(best.costPerResult!, currency)} each`,
+        detail: `${best.name} is the only campaign that produced ${label.toLowerCase()} in this window.`,
+        tone: "good",
+        campaignIds: [best.id],
+      });
+    }
+  }
+
+  const empty = spent.filter((row) => row.resultLabel && row.results === 0);
+  if (empty.length > 0) {
+    const wasted = empty.reduce((sum, row) => sum + row.spend, 0);
+    out.push({
+      key: "noResults",
+      kind: "noResults",
+      title: `${fmtMoney(wasted, currency)} spent with no results`,
+      detail:
+        empty.length === 1
+          ? `${empty[0].name} spent ${fmtMoney(empty[0].spend, currency)} and produced no ${empty[0].resultLabel!.toLowerCase()}.`
+          : `${empty.length} campaigns spent money and produced none of the result they were set up for.`,
+      tone: "warning",
+      campaignIds: empty.map((row) => row.id),
+    });
+  }
+
+  const rated = spent.filter((row) => row.ctr !== null && row.impressions >= 5000);
+  if (rated.length >= 3) {
+    const low = [...rated].sort((a, b) => a.ctr! - b.ctr!)[0];
+    out.push({
+      key: "clickRate",
+      kind: "clickRate",
+      title: `Lowest click rate: ${(low.ctr! * 100).toFixed(2)}%`,
+      detail: `${low.name}, across ${low.impressions.toLocaleString("en-US")} impressions${totals.ctr ? `. The whole account: ${(totals.ctr * 100).toFixed(2)}%` : ""}.`,
+      tone: "neutral",
+      campaignIds: [low.id],
+    });
+  }
+
+  if (totals.active === 0) {
+    out.push({ key: "idle", kind: "idle", title: "Nothing is running now", detail: "No campaign in this account is active. These results are history.", tone: "neutral", campaignIds: [] });
+  }
+  return out.slice(0, 6);
+}

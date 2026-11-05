@@ -7,7 +7,6 @@ import {
   CircleDollarSign,
   Eye,
   Lock,
-  Megaphone,
   MousePointerClick,
   Plug,
   RefreshCw,
@@ -19,6 +18,8 @@ import {
 import { motion } from "motion/react";
 import { useState } from "react";
 
+import { ApiUsage, Observations, SyncActivity, type Observation, type SyncRun, type Usage } from "@/components/connections/meta-effort";
+import { MetaLogo } from "@/components/connections/meta-logo";
 import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Panel } from "@/components/ui/panel";
@@ -72,6 +73,9 @@ export type MetaStatus = {
     daily: { date: string; spend: number; impressions: number; clicks: number }[];
     campaigns: MetaCampaign[];
   } | null;
+  runs: SyncRun[];
+  usage: Usage | null;
+  observations: Observation[];
 };
 
 export type AccountChoice = { id: string; name: string; currency: string; business: string | null; status: { label: string; tone: Tone }; usable: boolean };
@@ -155,8 +159,8 @@ const CANNOT = ["Create, edit, pause or delete ads", "Spend money or change budg
 
 function MetaMark({ className }: { className?: string }) {
   return (
-    <span className={cn("flex size-11 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-primary to-primary/70 text-primary-foreground shadow-[0_8px_24px_-10px_rgba(102,80,216,0.6)]", className)}>
-      <Megaphone aria-hidden className="size-5" />
+    <span className={cn("flex size-12 shrink-0 items-center justify-center rounded-xl border border-border bg-card shadow-sm", className)}>
+      <MetaLogo className="h-5" />
     </span>
   );
 }
@@ -262,22 +266,36 @@ function Kpi({ icon: Icon, label, value, hint }: { icon: typeof Eye; label: stri
   );
 }
 
-/** Spend over the window as bars. Each bar has a title for its exact figure. */
-function SpendBars({ daily, currency }: { daily: { date: string; spend: number }[]; currency: string }) {
+/** Spend over the window as bars, with a readout for the bar under the pointer or keyboard focus. */
+function SpendBars({ daily, currency }: { daily: { date: string; spend: number; clicks: number }[]; currency: string }) {
+  const [hover, setHover] = useState<number | null>(null);
   if (daily.length === 0) return <p className="text-sm text-muted-foreground">No spend in this window.</p>;
   const max = Math.max(...daily.map((row) => row.spend), 1);
+  const total = daily.reduce((sum, row) => sum + row.spend, 0);
+  const shown = hover !== null ? daily[hover] : null;
   return (
     <div className="grid gap-2">
-      <div className="flex h-28 items-end gap-[3px]" role="img" aria-label={`Spend by ${daily.length > 40 ? "month" : "day"}`}>
+      <p className="text-xs text-muted-foreground tabular-nums" aria-live="polite">
+        {shown ? `${shown.date}: ${money(shown.spend, currency)} · ${compact(shown.clicks)} clicks` : `${money(total, currency)} across ${daily.length} ${daily.length > 40 ? "days" : "periods"}. Point at a bar for its figure.`}
+      </p>
+      <div className="flex h-32 items-end gap-[2px]" onMouseLeave={() => setHover(null)}>
         {daily.map((row, index) => (
-          <motion.div
+          <button
             key={row.date}
-            title={`${row.date}: ${money(row.spend, currency)}`}
-            className="min-w-[3px] flex-1 rounded-t-sm bg-primary/70 hover:bg-primary"
-            initial={{ height: 0 }}
-            animate={{ height: `${Math.max(2, (row.spend / max) * 100)}%` }}
-            transition={{ delay: index * 0.01, type: "spring", stiffness: 200, damping: 26 }}
-          />
+            type="button"
+            aria-label={`${row.date}: ${money(row.spend, currency)}`}
+            onMouseEnter={() => setHover(index)}
+            onFocus={() => setHover(index)}
+            onBlur={() => setHover(null)}
+            className="flex h-full min-w-[3px] flex-1 items-end rounded-t-[4px] outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+          >
+            <motion.span
+              className={cn("block w-full rounded-t-[4px]", hover === null || hover === index ? "bg-primary" : "bg-primary/40")}
+              initial={{ height: 0 }}
+              animate={{ height: `${Math.max(2, (row.spend / max) * 100)}%` }}
+              transition={{ delay: index * 0.01, type: "spring", stiffness: 200, damping: 26 }}
+            />
+          </button>
         ))}
       </div>
       <div className="flex justify-between text-[11px] text-muted-foreground tabular-nums">
@@ -289,7 +307,7 @@ function SpendBars({ daily, currency }: { daily: { date: string; spend: number }
   );
 }
 
-function CampaignTable({ campaigns, currency }: { campaigns: MetaCampaign[]; currency: string }) {
+function CampaignTable({ campaigns, currency, focus = [] }: { campaigns: MetaCampaign[]; currency: string; focus?: string[] }) {
   if (campaigns.length === 0) return <p className="text-sm text-muted-foreground">No campaigns in this account.</p>;
   return (
     <>
@@ -297,7 +315,7 @@ function CampaignTable({ campaigns, currency }: { campaigns: MetaCampaign[]; cur
         {campaigns.map((row) => {
           const status = CAMPAIGN_STATUS[row.status] ?? { label: row.status.toLowerCase(), tone: "neutral" as const };
           return (
-            <li key={row.id} className="grid gap-2 rounded-xl border border-border p-3">
+            <li key={row.id} className={cn("grid gap-2 rounded-xl border p-3 transition-colors", focus.includes(row.id) ? "border-primary bg-primary/5" : "border-border")}>
               <div className="flex items-start justify-between gap-2">
                 <div className="min-w-0">
                   <p className="text-sm break-words text-card-foreground">{row.name}</p>
@@ -339,7 +357,7 @@ function CampaignTable({ campaigns, currency }: { campaigns: MetaCampaign[]; cur
           {campaigns.map((row) => {
             const status = CAMPAIGN_STATUS[row.status] ?? { label: row.status.toLowerCase(), tone: "neutral" as const };
             return (
-              <tr key={row.id} className="border-t border-border">
+              <tr key={row.id} className={cn("border-t border-border transition-colors", focus.includes(row.id) && "bg-primary/5")}>
                 <td className="max-w-[18rem] px-3 py-2">
                   <p className="truncate text-card-foreground" title={row.name}>
                     {row.name}
@@ -452,6 +470,7 @@ export function MetaAdsView({ status, actions, returned }: { status: MetaStatus;
   const [working, setWorking] = useState<null | "connect" | "sync">(null);
   const [notice, setNotice] = useState<{ text: string; tone: Tone } | null>(returned ? (RETURN_WORDS[returned] ?? null) : null);
   const [changing, setChanging] = useState(false);
+  const [focus, setFocus] = useState<string[]>([]);
   const connection = status.connection;
   const snapshot = status.snapshot;
   const needsReconnect = connection?.status === "needsReconnect";
@@ -562,34 +581,49 @@ export function MetaAdsView({ status, actions, returned }: { status: MetaStatus;
             </div>
           </div>
 
+          <div className="grid min-w-0 gap-5 lg:grid-cols-[minmax(0,1fr)_20rem]">
+            <div className="grid min-w-0 content-start gap-5">
+              {snapshot ? (
+                <>
+                  <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 xl:grid-cols-5">
+                    <Kpi icon={CircleDollarSign} label="Spend" value={money(snapshot.totals.spend, currency)} hint={`${snapshot.dateStart} to ${snapshot.dateStop}`} />
+                    <Kpi icon={Eye} label="Impressions" value={compact(snapshot.totals.impressions)} hint={`Reach ${compact(snapshot.totals.reach)}`} />
+                    <Kpi icon={MousePointerClick} label="Clicks" value={compact(snapshot.totals.clicks)} hint={`CTR ${percent(snapshot.totals.ctr)}`} />
+                    <Kpi icon={Target} label="Cost per click" value={snapshot.totals.cpc === null ? "–" : money(snapshot.totals.cpc, currency)} />
+                    <Kpi icon={BarChart3} label="Campaigns" value={String(snapshot.campaigns.length)} hint={`${snapshot.totals.active} active`} />
+                  </div>
+                  <div className="grid gap-2">
+                    <h3 className="text-sm font-medium text-card-foreground">Spend over time</h3>
+                    <SpendBars daily={snapshot.daily} currency={currency} />
+                  </div>
+                  <Observations items={status.observations} onFocus={(ids) => setFocus((current) => (current.join() === ids.join() ? [] : ids))} />
+                </>
+              ) : (
+                <p className="text-sm text-muted-foreground">{connection.lastSyncCode && connection.lastSyncCode !== "ok" ? META_CODE_WORDS[connection.lastSyncCode] : "Reading the account…"}</p>
+              )}
+            </div>
+            <aside className="grid min-w-0 content-start gap-4" aria-label="What Vistrial did">
+              <SyncActivity runs={status.runs} />
+              {status.usage ? <ApiUsage usage={status.usage} /> : null}
+            </aside>
+          </div>
           {snapshot ? (
-            <>
-              <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5">
-                <Kpi icon={CircleDollarSign} label="Spend" value={money(snapshot.totals.spend, currency)} hint={`${snapshot.dateStart} to ${snapshot.dateStop}`} />
-                <Kpi icon={Eye} label="Impressions" value={compact(snapshot.totals.impressions)} hint={`Reach ${compact(snapshot.totals.reach)}`} />
-                <Kpi icon={MousePointerClick} label="Clicks" value={compact(snapshot.totals.clicks)} hint={`CTR ${percent(snapshot.totals.ctr)}`} />
-                <Kpi icon={Target} label="Cost per click" value={snapshot.totals.cpc === null ? "–" : money(snapshot.totals.cpc, currency)} />
-                <Kpi icon={BarChart3} label="Campaigns" value={String(snapshot.campaigns.length)} hint={`${snapshot.totals.active} active`} />
-              </div>
-              <div className="grid gap-2">
-                <h3 className="text-sm font-medium text-card-foreground">Spend over time</h3>
-                <SpendBars daily={snapshot.daily} currency={currency} />
-              </div>
-              <div className="grid gap-2">
+            <div className="grid gap-2">
+              <div className="flex flex-wrap items-center justify-between gap-2">
                 <h3 className="text-sm font-medium text-card-foreground">Campaigns</h3>
-                <CampaignTable campaigns={snapshot.campaigns} currency={currency} />
+                {focus.length ? (
+                  <Button variant="ghost" size="sm" onClick={() => setFocus([])}>
+                    Clear highlight
+                  </Button>
+                ) : null}
               </div>
+              <CampaignTable campaigns={snapshot.campaigns} currency={currency} focus={focus} />
               <p className="text-xs text-muted-foreground">These are your own results as Meta reports them. Vistrial only reads them, and only this workspace sees them.</p>
-            </>
-          ) : (
-            <p className="text-sm text-muted-foreground">{connection.lastSyncCode && connection.lastSyncCode !== "ok" ? META_CODE_WORDS[connection.lastSyncCode] : "Reading the account…"}</p>
-          )}
+            </div>
+          ) : null}
 
           <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border pt-4">
-            <p className="text-xs text-muted-foreground tabular-nums">
-              {connection.calls.ok} successful Meta API calls
-              {connection.calls.successRate !== null ? ` · ${Math.round(connection.calls.successRate * 100)}% success` : ""}
-            </p>
+            <p className="text-xs text-muted-foreground">Connected {new Date(connection.connectedAt).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" })}. Disconnecting removes everything Vistrial saved.</p>
             {status.canManage ? (
               <div className="flex flex-wrap gap-2">
                 <Button variant="ghost" size="sm" onClick={() => setChanging(true)}>

@@ -24,7 +24,13 @@ import {
   oauthScopes,
   safeReturnOrigin,
   totalsOf,
+  fillDays,
+  observe,
+  SYNC_STEPS,
+  TIER,
+  utcDay,
   type CampaignRow,
+  type SyncStepKey,
   type InsightRow,
 } from "./lib/metaGraph";
 
@@ -52,7 +58,7 @@ export const status = workspaceQuery({
       .withIndex("by_workspace", (q) => q.eq("workspaceId", ctx.workspaceId))
       .unique();
     const configured = Boolean(process.env.META_APP_ID && process.env.META_APP_SECRET);
-    if (!connection) return { configured, canManage: ctx.member.role === "owner", connection: null, snapshot: null };
+    if (!connection) return { configured, canManage: ctx.member.role === "owner", connection: null, snapshot: null, runs: [], usage: null, observations: [] };
     const snapshot = connection.adAccountId
       ? await ctx.db
           .query("metaAdSnapshots")
@@ -60,6 +66,20 @@ export const status = workspaceQuery({
           .unique()
       : null;
     const total = connection.callsOk + connection.callsFailed;
+    const runs = await ctx.db
+      .query("metaSyncRuns")
+      .withIndex("by_workspace", (q) => q.eq("workspaceId", ctx.workspaceId))
+      .order("desc")
+      .take(8);
+    const since = utcDay(Date.now() - (TIER.days - 1) * 86_400_000);
+    const dayRows = await ctx.db
+      .query("metaCallDays")
+      .withIndex("by_workspace_day", (q) => q.eq("workspaceId", ctx.workspaceId).gte("day", since))
+      .take(TIER.days + 1);
+    const days = fillDays(dayRows, Date.now());
+    const windowOk = days.reduce((sum, row) => sum + row.ok, 0);
+    const windowFailed = days.reduce((sum, row) => sum + row.failed, 0);
+    const currency = snapshot?.currency ?? connection.currency ?? "USD";
     return {
       configured,
       canManage: ctx.member.role === "owner",
@@ -78,6 +98,25 @@ export const status = workspaceQuery({
         lastSyncCode: connection.lastSyncCode ?? null,
         calls: { ok: connection.callsOk, failed: connection.callsFailed, successRate: total > 0 ? connection.callsOk / total : null },
       },
+      runs: runs.map((row) => ({
+        id: row._id,
+        trigger: row.trigger,
+        status: row.status,
+        code: row.code ?? null,
+        startedAt: row.startedAt,
+        finishedAt: row.finishedAt ?? null,
+        steps: row.steps,
+        callsOk: row.callsOk,
+        callsFailed: row.callsFailed,
+      })),
+      usage: {
+        days,
+        ok: windowOk,
+        failed: windowFailed,
+        successRate: windowOk + windowFailed > 0 ? windowOk / (windowOk + windowFailed) : null,
+        target: { calls: TIER.calls, successRate: TIER.successRate, days: TIER.days },
+      },
+      observations: snapshot ? observe(snapshot.campaigns, snapshot.totals, currency) : [],
       snapshot: snapshot
         ? {
             currency: snapshot.currency,
@@ -246,6 +285,15 @@ export const recordCalls = internalMutation({
     const row = await ctx.db.get(args.connectionId);
     if (!row) return null;
     const expired = args.code === "token_expired" || args.code === "token_rejected";
+    if (args.ok + args.failed > 0) {
+      const day = utcDay(Date.now());
+      const counts = await ctx.db
+        .query("metaCallDays")
+        .withIndex("by_workspace_day", (q) => q.eq("workspaceId", row.workspaceId).eq("day", day))
+        .unique();
+      if (counts) await ctx.db.patch(counts._id, { ok: counts.ok + args.ok, failed: counts.failed + args.failed });
+      else await ctx.db.insert("metaCallDays", { workspaceId: row.workspaceId, day, ok: args.ok, failed: args.failed });
+    }
     await ctx.db.patch(row._id, {
       callsOk: row.callsOk + args.ok,
       callsFailed: row.callsFailed + args.failed,
@@ -303,41 +351,146 @@ async function liveConnection(ctx: ActionCtx, workspaceId: Id<"workspaces">): Pr
   return connection;
 }
 
-/** Reads the chosen account over its window: campaigns, their results, and a series. */
-async function syncConnection(ctx: ActionCtx, connection: Doc<"metaConnections">): Promise<{ code: string }> {
+export const startRun = internalMutation({
+  args: { workspaceId: v.id("workspaces"), adAccountId: v.string(), trigger: v.union(v.literal("manual"), v.literal("schedule"), v.literal("connect")) },
+  handler: async (ctx, args) => {
+    const running = await ctx.db
+      .query("metaSyncRuns")
+      .withIndex("by_workspace", (q) => q.eq("workspaceId", args.workspaceId))
+      .order("desc")
+      .first();
+    // A read that stopped mid-way (a crash or timeout) is closed so it does not look busy forever.
+    if (running?.status === "running") await ctx.db.patch(running._id, { status: "failed", code: "interrupted", finishedAt: Date.now() });
+    return ctx.db.insert("metaSyncRuns", {
+      ...args,
+      startedAt: Date.now(),
+      status: "running",
+      steps: SYNC_STEPS.map((key, index) => ({ key, status: index === 0 ? ("working" as const) : ("waiting" as const), calls: 0 })),
+      callsOk: 0,
+      callsFailed: 0,
+    });
+  },
+});
+
+export const stepRun = internalMutation({
+  args: { runId: v.id("metaSyncRuns"), key: v.string(), ok: v.boolean(), calls: v.number(), failed: v.number(), rows: v.optional(v.number()), ms: v.number() },
+  handler: async (ctx, args) => {
+    const run = await ctx.db.get(args.runId);
+    if (!run) return null;
+    const at = run.steps.findIndex((step) => step.key === args.key);
+    const steps = run.steps.map((step, index) => {
+      if (index === at) return { ...step, status: args.ok ? ("done" as const) : ("failed" as const), calls: args.calls, rows: args.rows, ms: args.ms };
+      if (index === at + 1 && args.ok) return { ...step, status: "working" as const };
+      return step;
+    });
+    await ctx.db.patch(run._id, { steps, callsOk: run.callsOk + args.calls - args.failed, callsFailed: run.callsFailed + args.failed });
+    return null;
+  },
+});
+
+export const finishRun = internalMutation({
+  args: { runId: v.id("metaSyncRuns"), code: v.string() },
+  handler: async (ctx, args) => {
+    const run = await ctx.db.get(args.runId);
+    if (!run) return null;
+    await ctx.db.patch(run._id, { status: args.code === "ok" ? "done" : "failed", code: args.code, finishedAt: Date.now() });
+    // Keep the last 30 reads per workspace.
+    const old = await ctx.db
+      .query("metaSyncRuns")
+      .withIndex("by_workspace", (q) => q.eq("workspaceId", run.workspaceId))
+      .order("desc")
+      .take(60);
+    for (const row of old.slice(30)) await ctx.db.delete(row._id);
+    return null;
+  },
+});
+
+type Trigger = "manual" | "schedule" | "connect";
+
+/** Reads the chosen account over its window, one recorded step at a time: access, results, campaigns, trend, save. */
+async function syncConnection(ctx: ActionCtx, connection: Doc<"metaConnections">, trigger: Trigger): Promise<{ code: string }> {
   if (!connection.adAccountId) return { code: "no_account" };
   const counter: Counter = { ok: 0, failed: 0, lastCode: null };
   const account = connection.adAccountId;
   const token = connection.accessToken;
   const range = isRange(connection.range) ? connection.range : "last_30d";
-  const insights = await graphList<InsightRow>(
-    token,
-    `${account}/insights?level=campaign&date_preset=${range}&fields=campaign_id,campaign_name,spend,impressions,reach,clicks,actions,date_start,date_stop&limit=100`,
-    counter,
-  );
-  const campaigns = insights.ok
-    ? await graphList<CampaignRow>(token, `${account}/campaigns?fields=id,name,status,effective_status,objective&limit=100`, counter)
-    : { ok: false as const, code: insights.code, rows: [] };
-  const daily = campaigns.ok
-    ? await graphList<InsightRow>(token, `${account}/insights?date_preset=${range}&time_increment=${RANGES[range].step}&fields=spend,impressions,clicks&limit=100`, counter)
-    : { ok: false as const, code: campaigns.code, rows: [] };
-  const code = !insights.ok ? insights.code : !campaigns.ok ? campaigns.code : !daily.ok ? daily.code : "ok";
+  const runId = await ctx.runMutation(internal.metaAds.startRun, { workspaceId: connection.workspaceId, adAccountId: account, trigger });
+
+  const step = async <T>(key: SyncStepKey, work: () => Promise<{ ok: boolean; code: string; rows?: number; value?: T }>) => {
+    const before = { ok: counter.ok, failed: counter.failed };
+    const started = Date.now();
+    const result = await work();
+    await ctx.runMutation(internal.metaAds.stepRun, {
+      runId,
+      key,
+      ok: result.ok,
+      calls: counter.ok + counter.failed - before.ok - before.failed,
+      failed: counter.failed - before.failed,
+      rows: result.rows,
+      ms: Date.now() - started,
+    });
+    return result;
+  };
+
+  let code = "ok";
+  const access = await step("access", async () => {
+    const check = await graphGet(token, `${account}?fields=name,currency,account_status`, counter);
+    return { ok: check.ok, code: check.code, rows: check.ok ? 1 : 0 };
+  });
+  if (!access.ok) code = access.code;
+
+  const insights =
+    code === "ok"
+      ? await step("results", async () => {
+          const list = await graphList<InsightRow>(
+            token,
+            `${account}/insights?level=campaign&date_preset=${range}&fields=campaign_id,campaign_name,spend,impressions,reach,clicks,actions,date_start,date_stop&limit=100`,
+            counter,
+          );
+          return { ok: list.ok, code: list.code, rows: list.rows.length, value: list.rows };
+        })
+      : null;
+  if (insights && !insights.ok) code = insights.code;
+
+  const campaigns =
+    code === "ok"
+      ? await step("campaigns", async () => {
+          const list = await graphList<CampaignRow>(token, `${account}/campaigns?fields=id,name,status,effective_status,objective&limit=100`, counter);
+          return { ok: list.ok, code: list.code, rows: list.rows.length, value: list.rows };
+        })
+      : null;
+  if (campaigns && !campaigns.ok) code = campaigns.code;
+
+  const daily =
+    code === "ok"
+      ? await step("trend", async () => {
+          const list = await graphList<InsightRow>(token, `${account}/insights?date_preset=${range}&time_increment=${RANGES[range].step}&fields=spend,impressions,clicks&limit=100`, counter);
+          return { ok: list.ok, code: list.code, rows: list.rows.length, value: list.rows };
+        })
+      : null;
+  if (daily && !daily.ok) code = daily.code;
+
   if (code === "ok") {
-    const joined = joinCampaigns(campaigns.rows, insights.rows);
-    const today = new Date().toISOString().slice(0, 10);
-    const monthAgo = new Date(Date.now() - 30 * 86_400_000).toISOString().slice(0, 10);
-    await ctx.runMutation(internal.metaAds.saveSnapshot, {
-      workspaceId: connection.workspaceId,
-      adAccountId: account,
-      currency: connection.currency ?? "USD",
-      range,
-      dateStart: insights.rows[0]?.date_start ?? monthAgo,
-      dateStop: insights.rows[0]?.date_stop ?? today,
-      totals: totalsOf(joined),
-      daily: dailySeries(daily.rows),
-      campaigns: joined.slice(0, 100),
+    await step("save", async () => {
+      const insightRows = (insights?.value ?? []) as InsightRow[];
+      const joined = joinCampaigns((campaigns?.value ?? []) as CampaignRow[], insightRows);
+      const today = new Date().toISOString().slice(0, 10);
+      const monthAgo = new Date(Date.now() - 30 * 86_400_000).toISOString().slice(0, 10);
+      await ctx.runMutation(internal.metaAds.saveSnapshot, {
+        workspaceId: connection.workspaceId,
+        adAccountId: account,
+        currency: connection.currency ?? "USD",
+        range,
+        dateStart: insightRows[0]?.date_start ?? monthAgo,
+        dateStop: insightRows[0]?.date_stop ?? today,
+        totals: totalsOf(joined),
+        daily: dailySeries((daily?.value ?? []) as InsightRow[]),
+        campaigns: joined.slice(0, 100),
+      });
+      return { ok: true, code: "ok", rows: joined.length };
     });
   }
+  await ctx.runMutation(internal.metaAds.finishRun, { runId, code });
   await ctx.runMutation(internal.metaAds.recordCalls, { connectionId: connection._id, ok: counter.ok, failed: counter.failed, code, synced: true });
   return { code };
 }
@@ -403,7 +556,7 @@ export const chooseAccount = memberAction({
       userId: ctx.userId,
     });
     const fresh = await liveConnection(ctx, ctx.workspaceId);
-    return syncConnection(ctx, fresh);
+    return syncConnection(ctx, fresh, "connect");
   },
 });
 
@@ -416,9 +569,9 @@ export const syncNow = memberAction({
     if (args.range !== undefined) {
       if (!isRange(args.range)) throw new Error("Pick last_30d, last_90d or maximum.");
       await ctx.runMutation(internal.metaAds.setRange, { connectionId: connection._id, range: args.range });
-      return syncConnection(ctx, { ...connection, range: args.range });
+      return syncConnection(ctx, { ...connection, range: args.range }, "manual");
     }
-    return syncConnection(ctx, connection);
+    return syncConnection(ctx, connection, "manual");
   },
 });
 
@@ -444,6 +597,11 @@ export const disconnect = ownerMutation({
       .withIndex("by_workspace_account", (q) => q.eq("workspaceId", ctx.workspaceId))
       .take(20);
     for (const row of snapshots) await ctx.db.delete(row._id);
+    const runs = await ctx.db
+      .query("metaSyncRuns")
+      .withIndex("by_workspace", (q) => q.eq("workspaceId", ctx.workspaceId))
+      .take(100);
+    for (const row of runs) await ctx.db.delete(row._id);
     await ctx.db.delete(connection._id);
     await writeAudit(ctx, { workspaceId: ctx.workspaceId, actorType: "user", actorId: ctx.identity.subject, action: "meta.disconnected", subject: connection.metaUserId });
     return null;
@@ -467,7 +625,7 @@ export const syncAll = internalAction({
     const workspaces: Id<"workspaces">[] = await ctx.runQuery(internal.metaAds.connectionsToSync, {});
     for (const workspaceId of workspaces) {
       const connection: Doc<"metaConnections"> | null = await ctx.runQuery(internal.metaAds.connectionFor, { workspaceId });
-      if (connection) await syncConnection(ctx, connection);
+      if (connection) await syncConnection(ctx, connection, "schedule");
     }
     return { synced: workspaces.length };
   },
@@ -512,7 +670,7 @@ export const connectWithServerToken = internalAction({
       userId: owner ?? "system",
     });
     if (isRange(args.range)) await ctx.runMutation(internal.metaAds.setRange, { connectionId: connection._id, range: args.range });
-    return { connected: true, synced: (await syncConnection(ctx, await liveConnection(ctx, args.workspaceId))).code };
+    return { connected: true, synced: (await syncConnection(ctx, await liveConnection(ctx, args.workspaceId), "connect")).code };
   },
 });
 

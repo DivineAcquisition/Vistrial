@@ -52,3 +52,15 @@ Checked on dev with `sourceCheck:metaTokenScope`, which returns no token:
 
 - Use these results in research: the business's own campaign results as **First-party result** evidence in the Market Intelligence report.
 - Then the paused-draft campaign builder and approve-to-launch flow (`ads_management`), submitted separately.
+
+## Showing the work (agentic view)
+
+The connected card now shows what Vistrial did, not only the result:
+
+- **Meta's own mark** (from Meta's artwork via svgl, `src/components/connections/meta-logo.tsx`) names the integration. Buttons keep plain words ("Connect with Facebook").
+- **What Vistrial did** (`SyncActivity`): every read is recorded in `metaSyncRuns` as five steps (check access, read results, read campaigns, read spend over time, save), each with its API calls, rows and time. While a read runs, each step lights up as Convex pushes it, with a moving border and a live clock; afterwards it lists the last reads with what started them (refresh, schedule, first read).
+- **Meta API use** (`ApiUsage`): successful calls in the last 15 days as a ring toward 500, the success rate against Meta's 85%, and calls per day as stacked bars (successful, failed) with a hover readout. Counts come from `metaCallDays`, filled by real reads only.
+- **What the numbers show** (`Observations`, computed by `observe` in `convex/lib/metaGraph.ts`): facts about this account's campaigns compared with each other, never with outside benchmarks, such as the share of spend in one campaign, the cheapest result, the spread in cost per result, money spent with no results, and the lowest click rate. Each is labelled Observed and First-party, and clicking one highlights its campaigns in the table.
+- **Spend over time** has a hover and keyboard readout per bar.
+
+Story page states: `none`, `accounts`, `connected`, `syncing`, `reconnect`.

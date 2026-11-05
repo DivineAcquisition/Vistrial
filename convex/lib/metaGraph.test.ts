@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { dailySeries, graphErrorCode, isAdAccountId, joinCampaigns, resultsFor, safeReturnOrigin, totalsOf } from "./metaGraph";
+import { dailySeries, fillDays, graphErrorCode, isAdAccountId, joinCampaigns, observe, resultsFor, safeReturnOrigin, totalsOf } from "./metaGraph";
 
 describe("Meta Graph helpers", () => {
   it("counts the result each objective is judged by", () => {
@@ -49,5 +49,46 @@ describe("Meta Graph helpers", () => {
     expect(safeReturnOrigin("http://app.vistrial.io")).toBeNull();
     expect(isAdAccountId("act_123456")).toBe(true);
     expect(isAdAccountId("123456")).toBe(false);
+  });
+});
+
+describe("what the account's own numbers show", () => {
+  const row = (id: string, spend: number, extra: Partial<Parameters<typeof observe>[0][number]> = {}) => ({
+    id,
+    name: `C${id}`,
+    status: "PAUSED",
+    objective: "OUTCOME_LEADS",
+    spend,
+    impressions: 10000,
+    reach: 5000,
+    clicks: 100,
+    ctr: 0.01,
+    cpc: spend / 100,
+    resultLabel: "Leads",
+    results: 10,
+    costPerResult: spend / 10,
+    ...extra,
+  });
+
+  it("names the big spender, the cheapest result, the spread and spend with no results", () => {
+    const campaigns = [row("1", 400), row("2", 100), row("3", 50, { results: 0, costPerResult: null })];
+    const found = observe(campaigns, { spend: 550, active: 0 }, "USD");
+    expect(found.map((item) => item.kind)).toEqual(["share", "best", "spread", "noResults", "clickRate", "idle"]);
+    expect(found[0].title).toBe("73% of spend went to one campaign");
+    expect(found[1].title).toBe("Cheapest lead: $10.00");
+    expect(found[2].title).toBe("Cost per lead ranges 4.0×");
+    expect(found[3].campaignIds).toEqual(["3"]);
+  });
+
+  it("says nothing when nothing was spent", () => {
+    expect(observe([row("1", 0)], { spend: 0, active: 0 }, "USD")).toEqual([]);
+  });
+
+  it("fills the last 15 days, oldest first", () => {
+    const now = Date.parse("2026-11-05T12:00:00Z");
+    const days = fillDays([{ day: "2026-11-05", ok: 4, failed: 1 }], now);
+    expect(days).toHaveLength(15);
+    expect(days[0].day).toBe("2026-10-22");
+    expect(days.at(-1)).toEqual({ day: "2026-11-05", ok: 4, failed: 1 });
   });
 });

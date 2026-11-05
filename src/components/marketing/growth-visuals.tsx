@@ -1,25 +1,28 @@
 "use client";
 
-import { useEffect, useState, type ReactNode } from "react";
+import { useRef, type ReactNode } from "react";
 import {
   ArrowRight,
   BarChart3,
-  Camera,
   CheckCircle2,
+  Circle,
   Clapperboard,
+  Clock,
   FileText,
   Globe,
-  Megaphone,
-  Music2,
+  Loader2,
   Play,
   Search,
   Sparkles,
 } from "lucide-react";
 
+import { HoldToApprove, useCycle, useInViewSequence } from "@/components/marketing/agentic-visuals";
+import { PlatformLogo } from "@/components/marketing/platform-logo";
 import { BeamFrame, GlowPanel, SpotlightCard } from "@/components/marketing/saas-frame";
 import { Badge, type BadgeProps } from "@/components/ui/badge";
-import { AGENTS_SECTION, EVIDENCE, GROWTH_ARCHITECT, HERO, HOW, SAFETY, SOURCES } from "@/lib/marketing/content";
-import { marketingInset, marketingPageGutter, marketingShell } from "@/lib/marketing/ui";
+import { Popover, PopoverPopup, PopoverTrigger } from "@/components/ui/popover";
+import { AGENT_FLOW, AGENTS_SECTION, DOCTRINE_RUN, EVIDENCE, GROWTH_ARCHITECT, HERO, HOW, SAFETY } from "@/lib/marketing/content";
+import { marketingInset } from "@/lib/marketing/ui";
 import { cn } from "@/lib/utils";
 
 /* ---------------------------------------------------------------------------
@@ -27,30 +30,6 @@ import { cn } from "@/lib/utils";
  * ------------------------------------------------------------------------- */
 
 const eyebrow = "text-[11px] font-semibold tracking-[0.14em] text-brand-200 uppercase";
-
-/** Steps forward on a timer, and holds the last frame when motion is reduced. */
-function useCycle(length: number, interval = 2600) {
-  const [index, setIndex] = useState<number | "still">("still");
-  useEffect(() => {
-    const media = window.matchMedia("(prefers-reduced-motion: reduce)");
-    if (media.matches) return;
-    const timer = window.setInterval(() => {
-      setIndex((current) => (current === "still" ? 0 : (current + 1) % length));
-    }, interval);
-    const onChange = () => {
-      if (media.matches) {
-        window.clearInterval(timer);
-        setIndex("still");
-      }
-    };
-    media.addEventListener("change", onChange);
-    return () => {
-      window.clearInterval(timer);
-      media.removeEventListener("change", onChange);
-    };
-  }, [interval, length]);
-  return index === "still" ? length - 1 : index;
-}
 
 type Basis = (typeof EVIDENCE.kinds)[number]["id"];
 
@@ -72,20 +51,21 @@ export function BasisBadge({ basis, size = "sm" }: { basis: Basis; size?: BadgeP
   );
 }
 
-const SOURCE_ICON = {
-  web: Globe,
-  youtube: Clapperboard,
-  meta: Megaphone,
-  tiktok: Music2,
-  instagram: Camera,
-  results: BarChart3,
-} as const;
+/** Real platform mark where one exists; a plain icon for the open web and the customer's own results. */
+const SOURCE_LOGO: Record<string, string | null> = { web: null, youtube: "youtube", meta: "meta", tiktok: "tiktok", instagram: "instagram", results: null };
+
+function SourceMark({ sourceKey, size = 14 }: { sourceKey: string; size?: number }) {
+  const logo = SOURCE_LOGO[sourceKey];
+  if (logo) return <PlatformLogo id={logo} size={size} />;
+  const Icon = sourceKey === "web" ? Globe : BarChart3;
+  return <Icon className="shrink-0 text-muted-foreground" style={{ width: size, height: size }} aria-hidden />;
+}
 
 /* ---------------------------------------------------------------------------
  * Hero: the Research Studio with its visual board
  * ------------------------------------------------------------------------- */
 
-const STUDIO_STEPS = ["Planning the research", "Collecting from sources", "Sorting what it found", "Writing the report"];
+const STUDIO_STEPS = ["Planning the research", "Collecting from sources", "Sorting what it found", "Writing the report", "Waiting for your approval"];
 
 const STUDIO_SOURCES = [
   { key: "web" as const, label: "Web", state: "24 pages", tone: "good" as const },
@@ -125,6 +105,7 @@ export function ResearchStudioHero() {
   const step = useCycle(STUDIO_STEPS.length, 2400);
   const highlight = step % STUDIO_CARDS.length;
   const progress = ((step + 1) / STUDIO_STEPS.length) * 100;
+  const waiting = step === STUDIO_STEPS.length - 1;
 
   return (
     <div className="space-y-4 text-left" aria-label={HERO.exampleLabel}>
@@ -153,10 +134,12 @@ export function ResearchStudioHero() {
       <div className={cn(marketingInset, "p-3")}>
         <div className="flex items-center justify-between gap-3 text-xs">
           <span className="flex items-center gap-2 text-strong">
-            <Search className="size-3.5 text-brand-400" aria-hidden />
-            <span className="live-shimmer-text">{STUDIO_STEPS[step]}</span>
+            {waiting ? <Clock className="size-3.5 text-warning" aria-hidden /> : <Search className="size-3.5 text-brand-400" aria-hidden />}
+            <span className={waiting ? "text-warning" : "live-shimmer-text"}>{STUDIO_STEPS[step]}</span>
           </span>
-          <span className="text-muted-foreground tabular-nums">Step {step + 1} of 4</span>
+          <span className="text-muted-foreground tabular-nums">
+            Step {step + 1} of {STUDIO_STEPS.length}
+          </span>
         </div>
         <div className="mt-2 h-1 rounded-full bg-overlay/10">
           <div
@@ -166,10 +149,9 @@ export function ResearchStudioHero() {
         </div>
         <ul className="mt-3 grid grid-cols-2 gap-1.5 sm:grid-cols-4">
           {STUDIO_SOURCES.map((source) => {
-            const Icon = SOURCE_ICON[source.key];
             return (
               <li key={source.key} className="flex items-center gap-1.5 rounded-md border border-border bg-card px-2 py-1.5">
-                <Icon className="size-3.5 shrink-0 text-muted-foreground" aria-hidden />
+                <SourceMark sourceKey={source.key} />
                 <span className="min-w-0">
                   <span className="block truncate text-[11px] font-medium text-strong">{source.label}</span>
                   <span className={cn("block text-[10px]", source.tone === "warning" ? "text-warning" : "text-success")}>
@@ -229,33 +211,6 @@ export function ResearchStudioHero() {
 }
 
 /* ---------------------------------------------------------------------------
- * Strip under the hero: where research comes from
- * ------------------------------------------------------------------------- */
-
-export function SourceStrip() {
-  return (
-    <div className="border-y border-border bg-card">
-      <div className={cn(marketingShell, marketingPageGutter, "flex flex-col gap-4 py-4 lg:flex-row lg:items-center")}>
-        <p className="max-w-xs shrink-0 text-sm leading-relaxed text-muted-foreground">{SOURCES.label}</p>
-        <ul className="flex min-w-0 flex-1 flex-wrap gap-2">
-          {SOURCES.items.map((item) => {
-            const Icon = SOURCE_ICON[item.key];
-            return (
-              <li key={item.key}>
-                <span className="inline-flex items-center gap-2 rounded-md border border-border bg-muted px-2.5 py-1.5 text-sm font-medium text-strong">
-                  <Icon className="size-4 text-brand-400" aria-hidden />
-                  {item.label}
-                </span>
-              </li>
-            );
-          })}
-        </ul>
-      </div>
-    </div>
-  );
-}
-
-/* ---------------------------------------------------------------------------
  * Problem: scattered research
  * ------------------------------------------------------------------------- */
 
@@ -297,9 +252,9 @@ function DoctrineScene({ id }: { id: string }) {
   if (id === "observe") {
     return (
       <div className="grid grid-cols-3 gap-1.5" aria-hidden>
-        {[Globe, Clapperboard, Megaphone].map((Icon, index) => (
-          <span key={index} className="flex aspect-square items-center justify-center rounded-md border border-border bg-muted">
-            <Icon className="size-4 text-brand-400" />
+        {["youtube", "meta", "tiktok"].map((key) => (
+          <span key={key} className="flex aspect-square items-center justify-center rounded-md border border-border bg-muted">
+            <SourceMark sourceKey={key} size={16} />
           </span>
         ))}
       </div>
@@ -347,33 +302,103 @@ function DoctrineScene({ id }: { id: string }) {
   );
 }
 
-export function DoctrineFlow() {
+type RunState = "queued" | "running" | "done" | "waiting";
+
+function RunStateChip({ state }: { state: RunState }) {
+  const label = DOCTRINE_RUN.labels[state];
+  if (state === "done") {
+    return (
+      <Badge variant="success" size="sm">
+        <CheckCircle2 aria-hidden />
+        {label}
+      </Badge>
+    );
+  }
+  if (state === "running") {
+    return (
+      <Badge variant="info" size="sm">
+        <Loader2 className="animate-spin motion-reduce:animate-none" aria-hidden />
+        {label}
+      </Badge>
+    );
+  }
+  if (state === "waiting") {
+    return (
+      <Badge variant="warning" size="sm">
+        <Clock aria-hidden />
+        {label}
+      </Badge>
+    );
+  }
   return (
-    <ol className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
-      {HOW.steps.map((step, index) => (
-        <li key={step.id} className="relative">
-          <SpotlightCard glow={index === 0} beamDelay={index * 1.8} className="flex flex-col gap-4">
-            <div className="flex min-h-12 items-center">
-              <div className="w-full">
-                <DoctrineScene id={step.id} />
+    <Badge variant="outline" size="sm">
+      <Circle aria-hidden />
+      {label}
+    </Badge>
+  );
+}
+
+/** The five steps, played as a run when the section scrolls into view. The last step waits on the customer's results. */
+export function DoctrineFlow() {
+  const listRef = useRef<HTMLOListElement>(null);
+  const steps = HOW.steps.length;
+  // 0..steps-1 completed so far; the final step never "completes" on its own.
+  const progress = useInViewSequence(listRef, steps - 1, 1100);
+
+  const stateFor = (index: number): RunState => {
+    if (index === steps - 1) return progress >= steps - 1 ? "waiting" : "queued";
+    if (index < progress) return "done";
+    if (index === progress) return "running";
+    return "queued";
+  };
+
+  return (
+    <ol ref={listRef} className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+      {HOW.steps.map((step, index) => {
+        const state = stateFor(index);
+        const note = DOCTRINE_RUN.notes[step.id as keyof typeof DOCTRINE_RUN.notes];
+        return (
+          <li key={step.id} className="relative">
+            <SpotlightCard
+              glow={state === "running"}
+              beamDelay={index * 1.8}
+              className={cn("flex flex-col gap-4 transition-opacity duration-500 motion-reduce:transition-none", state === "queued" && "opacity-70")}
+            >
+              <div className="flex min-h-12 items-center">
+                <div className="w-full">
+                  <DoctrineScene id={step.id} />
+                </div>
               </div>
-            </div>
-            <div>
-              <Badge variant="outline" size="sm" className="border-border bg-muted">
-                {String(index + 1).padStart(2, "0")}
-              </Badge>
-              <h3 className="mt-3 font-heading text-xl text-strong">{step.title}</h3>
-              <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{step.body}</p>
-            </div>
-          </SpotlightCard>
-          {index < HOW.steps.length - 1 ? (
-            <ArrowRight
-              className="absolute -right-2.5 top-1/2 z-10 hidden size-4 -translate-y-1/2 rounded-full bg-background text-brand-400 lg:block"
-              aria-hidden
-            />
-          ) : null}
-        </li>
-      ))}
+              <div>
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <Badge variant="outline" size="sm" className="border-border bg-muted">
+                    {String(index + 1).padStart(2, "0")}
+                  </Badge>
+                  <RunStateChip state={state} />
+                </div>
+                <h3 className="mt-3 font-heading text-xl text-strong">{step.title}</h3>
+                <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{step.body}</p>
+                {note ? (
+                  <p
+                    className={cn(
+                      "mt-3 border-t border-border pt-3 text-xs leading-relaxed transition-colors duration-500 motion-reduce:transition-none",
+                      state === "done" ? "text-strong" : "text-muted-foreground",
+                    )}
+                  >
+                    {note}
+                  </p>
+                ) : null}
+              </div>
+            </SpotlightCard>
+            {index < HOW.steps.length - 1 ? (
+              <ArrowRight
+                className="absolute -right-2.5 top-1/2 z-10 hidden size-4 -translate-y-1/2 rounded-full bg-background text-brand-400 lg:block"
+                aria-hidden
+              />
+            ) : null}
+          </li>
+        );
+      })}
     </ol>
   );
 }
@@ -421,13 +446,63 @@ export function SkillMap() {
  * Evidence: a report where every claim carries its basis
  * ------------------------------------------------------------------------- */
 
-const REPORT_CLAIMS: Array<{ text: string; basis: Basis; sources: string[] }> = [
-  { text: "8 of 12 competitors advertise a first-visit discount.", basis: "observed", sources: ["Meta Ad Library", "4 sites"] },
-  { text: "Discounts are the default hook in this market, so a guarantee would stand out.", basis: "inferred", sources: ["12 ads"] },
-  { text: "A “same-week booking” angle may convert busy professionals.", basis: "hypothesis", sources: ["Test plan"] },
-  { text: "Your Google leads book at twice the rate of Meta leads.", basis: "firstParty", sources: ["Your CSV"] },
+type Citation = { label: string; source: string; seen: string; detail: string };
+
+const REPORT_CLAIMS: Array<{ text: string; basis: Basis; sources: Citation[] }> = [
+  {
+    text: "8 of 12 competitors advertise a first-visit discount.",
+    basis: "observed",
+    sources: [
+      { label: "Meta Ad Library", source: "meta", seen: "Seen Oct 28", detail: "8 active ads across 6 advertisers lead with a first-visit offer." },
+      { label: "4 sites", source: "web", seen: "Checked Oct 28", detail: "Offer pages on 4 competitor websites state the same discount." },
+    ],
+  },
+  {
+    text: "Discounts are the default hook in this market, so a guarantee would stand out.",
+    basis: "inferred",
+    sources: [{ label: "12 ads", source: "meta", seen: "Seen Oct 28", detail: "Read from the 12 ads above. None of them offer a guarantee." }],
+  },
+  {
+    text: "A “same-week booking” angle may convert busy professionals.",
+    basis: "hypothesis",
+    sources: [{ label: "Test plan", source: "results", seen: "Not tested yet", detail: "An idea to test. It is not presented as a fact until your results show it." }],
+  },
+  {
+    text: "Your Google leads book at twice the rate of Meta leads.",
+    basis: "firstParty",
+    sources: [{ label: "Your CSV", source: "results", seen: "Uploaded Oct 30", detail: "From the results file you shared: 212 leads over 90 days." }],
+  },
   { text: "Which competitor ads are profitable.", basis: "insufficient", sources: [] },
 ];
+
+function CitationChip({ citation }: { citation: Citation }) {
+  return (
+    <Popover>
+      <PopoverTrigger
+        openOnHover
+        delay={120}
+        className="inline-flex items-center gap-1 rounded-md border border-border bg-muted px-1.5 py-0.5 text-[10px] text-muted-foreground transition-colors hover:border-brand-400/50 hover:text-strong focus-visible:outline-2 focus-visible:outline-brand-500"
+      >
+        <SourceMark sourceKey={citation.source} size={10} />
+        {citation.label}
+      </PopoverTrigger>
+      <PopoverPopup side="top" className="w-64">
+        <div className="flex items-start gap-2.5">
+          <span className="mt-0.5">
+            <SourceMark sourceKey={citation.source} size={16} />
+          </span>
+          <div className="min-w-0 space-y-1">
+            <p className="text-xs font-medium text-strong">{citation.label}</p>
+            <p className="text-xs leading-relaxed text-muted-foreground">{citation.detail}</p>
+            <p className="text-[10px] text-muted-foreground">
+              {citation.seen} · {HERO.exampleLabel}
+            </p>
+          </div>
+        </div>
+      </PopoverPopup>
+    </Popover>
+  );
+}
 
 export function EvidenceReport() {
   return (
@@ -448,10 +523,8 @@ export function EvidenceReport() {
               </p>
               <span className="flex flex-wrap items-center gap-1.5 sm:justify-end">
                 <BasisBadge basis={claim.basis} />
-                {claim.sources.map((source) => (
-                  <span key={source} className="rounded-md border border-border bg-muted px-1.5 py-0.5 text-[10px] text-muted-foreground">
-                    {source}
-                  </span>
+                {claim.sources.map((citation) => (
+                  <CitationChip key={citation.label} citation={citation} />
                 ))}
               </span>
             </li>
@@ -473,6 +546,17 @@ export function EvidenceReport() {
 /* ---------------------------------------------------------------------------
  * The workforce: seven agents by department
  * ------------------------------------------------------------------------- */
+
+/** What the live agent is doing right now, in sample terms. */
+function AgentStatusLine() {
+  const status = useCycle(AGENT_FLOW.statuses.length, 2600);
+  return (
+    <p className="mt-1 flex items-center gap-2 border-t border-border pt-2 text-xs text-muted-foreground">
+      <span className="live-pulse size-1.5 shrink-0 rounded-full bg-brand-400" aria-hidden />
+      <span className="live-shimmer-text truncate">{AGENT_FLOW.statuses[status]}</span>
+    </p>
+  );
+}
 
 export function WorkforceMap() {
   return (
@@ -496,6 +580,7 @@ export function WorkforceMap() {
                     </div>
                     <p className="font-heading text-lg text-strong">{agent.name}</p>
                     <p className="text-sm leading-relaxed text-muted-foreground">{agent.job}</p>
+                    <AgentStatusLine />
                   </SpotlightCard>
                 </li>
               ) : (
@@ -550,20 +635,30 @@ export function AssetApprovalExample() {
         <p className={eyebrow}>{HERO.exampleLabel}</p>
         <span className="size-2 rounded-full bg-brand-400" aria-hidden />
       </div>
-      <div className="space-y-3 p-4">
-        <div className="flex items-start justify-between gap-3">
-          <div>
-            <p className="text-sm font-medium text-strong">Market report · Deep cleaning, Austin</p>
-            <p className="text-xs text-muted-foreground">Version 2 · 14 claims · 31 sources · 84¢ to research</p>
-          </div>
-          <Badge variant="warning" size="sm">Waiting</Badge>
-        </div>
-        <div className="flex flex-wrap gap-1.5">
-          <BasisBadge basis="observed" />
-          <BasisBadge basis="inferred" />
-          <BasisBadge basis="hypothesis" />
-        </div>
-        <p className="text-sm text-muted-foreground">Waiting for a person to approve. Nothing has been published.</p>
+      <div className="p-4">
+        <HoldToApprove>
+          {(approved) => (
+            <>
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <p className="text-sm font-medium text-strong">Market report · Deep cleaning, Austin</p>
+                  <p className="text-xs text-muted-foreground">Version 2 · 14 claims · 31 sources · 84¢ to research</p>
+                </div>
+                <Badge variant={approved ? "success" : "warning"} size="sm">
+                  {approved ? "Approved" : "Waiting"}
+                </Badge>
+              </div>
+              <div className="flex flex-wrap gap-1.5">
+                <BasisBadge basis="observed" />
+                <BasisBadge basis="inferred" />
+                <BasisBadge basis="hypothesis" />
+              </div>
+              {approved ? null : (
+                <p className="text-sm text-muted-foreground">Waiting for a person to approve. Nothing has been published.</p>
+              )}
+            </>
+          )}
+        </HoldToApprove>
       </div>
     </BeamFrame>
   );

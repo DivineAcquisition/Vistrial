@@ -75,6 +75,46 @@ export const SOURCES = {
   ],
 } as const;
 
+/** The strip under the hero: sources flow into the agent, and the agent hands back a draft. */
+export const AGENT_FLOW = {
+  agent: "Growth Architect",
+  agentRole: "Agent 01",
+  statuses: [
+    "Reading competitor ads",
+    "Checking what keeps running",
+    "Sorting what was seen from what is inferred",
+    "Drafting the report",
+  ],
+  output: {
+    title: "Market report",
+    meta: "Draft · 14 claims · 31 sources",
+    state: "Waiting for your approval",
+  },
+  caption: "Sample run. Any source that was unavailable is named in the report.",
+} as const;
+
+/** How it works, played as a run: each step reports what it did. Sample numbers. */
+export const DOCTRINE_RUN = {
+  labels: { queued: "Queued", running: "Running", done: "Done", waiting: "Waiting on your results" },
+  notes: {
+    observe: "Found 42 ads and 18 videos",
+    distinguish: "14 claims, each labeled",
+    prioritize: "3 angles to test first",
+    create: "Report and 6 ad drafts",
+    validate: "Reads your results when you share them",
+  },
+} as const;
+
+/** The approval moment in Safety. */
+export const APPROVAL = {
+  hold: "Hold to approve",
+  holding: "Keep holding",
+  hint: "Press and hold the button, or hold Space or Enter.",
+  approvedTitle: "Approved",
+  approvedBody: "Nothing goes live until you publish it.",
+  reset: "Reset example",
+} as const;
+
 export const PROBLEM = {
   id: "problem",
   headline: "Most growth starts with a guess.",

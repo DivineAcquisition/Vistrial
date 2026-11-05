@@ -1749,6 +1749,34 @@
   animation: live-shimmer 2.8s linear infinite;
 }
 
+/* A short light travelling along an SVG beam. Paths set pathLength="100". */
+.beam-dash {
+  stroke-dasharray: 10 110;
+  stroke-dashoffset: 110;
+  animation: beam-travel 3.2s cubic-bezier(0.45, 0, 0.55, 1) infinite;
+}
+
+@keyframes beam-travel {
+  from {
+    stroke-dashoffset: 110;
+  }
+  to {
+    stroke-dashoffset: -10;
+  }
+}
+
+html[data-calm="true"] .beam-dash {
+  animation: none !important;
+  opacity: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .beam-dash {
+    animation: none;
+    opacity: 0;
+  }
+}
+
 html[data-calm="true"] .an-text-shimmer,
 html[data-calm="true"] .live-pulse,
 html[data-calm="true"] .live-enter,

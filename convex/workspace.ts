@@ -6,8 +6,8 @@ import { writeAudit } from "./lib/audit";
 import { activeMembership } from "./lib/access";
 import { notFound } from "./lib/errors";
 import { ensureAgents } from "./lib/agents";
-import { hashToken, randomToken, slugFromName } from "./lib/token";
-import { seedSpine } from "./lib/seedSpine";
+import { hashToken, randomToken } from "./lib/token";
+import { createWorkspaceFor } from "./lib/newWorkspace";
 
 const INVITE_MS = 7 * 24 * 60 * 60 * 1000;
 
@@ -42,46 +42,7 @@ export const create = signedInMutation({
     if (await activeMembership(ctx, ctx.userId)) throw new Error("You already belong to a workspace.");
     const name = args.name.trim();
     if (!name) throw new Error("Name the workspace.");
-    await ensureAgents(ctx);
-    const workspaceId = await ctx.db.insert("workspaces", {
-      name,
-      slug: slugFromName(name),
-      timezone: args.timezone?.trim() || "America/New_York",
-      status: "active",
-      createdAt: Date.now(),
-    });
-    const memberId = await ctx.db.insert("members", {
-      workspaceId,
-      userId: ctx.userId,
-      role: "owner",
-      displayName: ctx.name,
-      active: true,
-    });
-    await ctx.db.insert("workspaceSettings", {
-      workspaceId,
-      setupDone: false,
-      themeDefault: "light",
-      defaultCountry: "US",
-    });
-    await seedSpine(ctx, workspaceId);
-    const agents = await ctx.db.query("agents").withIndex("by_sort").take(50);
-    for (const agent of agents) {
-      if (agent.retired) continue;
-      await ctx.db.insert("workspaceAgents", {
-        workspaceId,
-        agentId: agent._id,
-        state: "off",
-        updatedAt: Date.now(),
-        updatedBy: ctx.userId,
-      });
-    }
-    await writeAudit(ctx, {
-      workspaceId,
-      actorType: "user",
-      actorId: ctx.userId,
-      action: "workspace.created",
-      subject: memberId,
-    });
+    const workspaceId = await createWorkspaceFor(ctx, { userId: ctx.userId, displayName: ctx.name, name, timezone: args.timezone });
     return workspaceId;
   },
 });

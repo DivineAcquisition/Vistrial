@@ -790,6 +790,83 @@ export default defineSchema({
     .index("by_workspace_collection", ["workspaceId", "collectionId", "sourceRefId"])
     .index("by_workspace_ref", ["workspaceId", "sourceRefId"]),
 
+  /**
+   * A workspace's read-only connection to Meta ads (Marketing API). The token is server-only: no public
+   * query returns it. One connection per workspace.
+   */
+  metaConnections: defineTable({
+    workspaceId: v.id("workspaces"),
+    /** "oauth" from Facebook Login; "serverToken" for the operator's own token in development. */
+    source: v.union(v.literal("oauth"), v.literal("serverToken")),
+    accessToken: v.string(),
+    tokenExpiresAt: v.optional(v.number()),
+    scopes: v.array(v.string()),
+    metaUserId: v.string(),
+    metaUserName: v.string(),
+    connectedBy: v.string(),
+    connectedAt: v.number(),
+    status: v.union(v.literal("connected"), v.literal("needsReconnect")),
+    adAccountId: v.optional(v.string()),
+    adAccountName: v.optional(v.string()),
+    currency: v.optional(v.string()),
+    /** The window to read: last_30d, last_90d or maximum. */
+    range: v.optional(v.string()),
+    lastSyncAt: v.optional(v.number()),
+    lastSyncCode: v.optional(v.string()),
+    /** Marketing API calls this connection made, for the person and for Meta's access tier. */
+    callsOk: v.number(),
+    callsFailed: v.number(),
+  }).index("by_workspace", ["workspaceId"]),
+
+  /** One Facebook Login attempt: bound to a workspace and person, used once, short-lived. */
+  metaOauthStates: defineTable({
+    workspaceId: v.id("workspaces"),
+    userId: v.string(),
+    nonce: v.string(),
+    returnOrigin: v.optional(v.string()),
+    createdAt: v.number(),
+    usedAt: v.optional(v.number()),
+  }).index("by_nonce", ["nonce"]),
+
+  /** The last read of a connected ad account: 30-day totals, a daily series and each campaign. */
+  metaAdSnapshots: defineTable({
+    workspaceId: v.id("workspaces"),
+    adAccountId: v.string(),
+    currency: v.string(),
+    /** last_30d, last_90d or maximum. */
+    range: v.optional(v.string()),
+    dateStart: v.string(),
+    dateStop: v.string(),
+    syncedAt: v.number(),
+    totals: v.object({
+      spend: v.number(),
+      impressions: v.number(),
+      clicks: v.number(),
+      reach: v.number(),
+      active: v.number(),
+      ctr: v.union(v.number(), v.null()),
+      cpc: v.union(v.number(), v.null()),
+    }),
+    daily: v.array(v.object({ date: v.string(), spend: v.number(), impressions: v.number(), clicks: v.number() })),
+    campaigns: v.array(
+      v.object({
+        id: v.string(),
+        name: v.string(),
+        status: v.string(),
+        objective: v.union(v.string(), v.null()),
+        spend: v.number(),
+        impressions: v.number(),
+        reach: v.number(),
+        clicks: v.number(),
+        ctr: v.union(v.number(), v.null()),
+        cpc: v.union(v.number(), v.null()),
+        resultLabel: v.union(v.string(), v.null()),
+        results: v.union(v.number(), v.null()),
+        costPerResult: v.union(v.number(), v.null()),
+      }),
+    ),
+  }).index("by_workspace_account", ["workspaceId", "adAccountId"]),
+
   platformControls: defineTable({
     key: v.literal("platform"),
     halted: v.boolean(),

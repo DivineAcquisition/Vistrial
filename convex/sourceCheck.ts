@@ -80,3 +80,48 @@ export const metaToken = internalAction({
     return { setting: args.setting, present: true, me: await check("me?fields=id"), adsArchive: await check(`ads_archive?${params}`) };
   },
 });
+
+/**
+ * What a Meta token can do: whose it is, its type and expiry, its granted permissions, and the ad accounts
+ * it reaches. Takes the setting's name, never the token. Returns no token.
+ */
+export const metaTokenScope = internalAction({
+  args: { setting: v.union(v.literal("META_AD_LIBRARY_TOKEN"), v.literal("META_AD_ACCESS_TOKEN")) },
+  handler: async (_ctx, args) => {
+    const token = process.env[args.setting];
+    if (!token) return { setting: args.setting, present: false };
+    const version = process.env.META_GRAPH_VERSION || "v25.0";
+    const get = async (path: string, bearer = token) => {
+      const response = await fetch(`https://graph.facebook.com/${version}/${path}`, { headers: { Authorization: `Bearer ${bearer}` }, signal: AbortSignal.timeout(15_000) });
+      const body = (await response.json().catch(() => null)) as Record<string, unknown> | null;
+      return { ok: response.ok, body };
+    };
+    const me = await get("me?fields=id,name");
+    const permissions = await get("me/permissions");
+    const accounts = await get("me/adaccounts?fields=id,name,account_status,currency&limit=25");
+    const appId = process.env.META_APP_ID;
+    const secret = process.env.META_APP_SECRET;
+    const debug = appId && secret ? await get(`debug_token?input_token=${encodeURIComponent(token)}`, `${appId}|${secret}`) : null;
+    const data = (debug?.body?.data ?? null) as { type?: string; app_id?: string; expires_at?: number; data_access_expires_at?: number; is_valid?: boolean; scopes?: string[] } | null;
+    return {
+      setting: args.setting,
+      present: true,
+      user: me.ok ? { id: me.body?.id ?? null, name: me.body?.name ?? null } : { error: (me.body?.error as { message?: string } | undefined)?.message ?? null },
+      token: data
+        ? {
+            type: data.type ?? null,
+            valid: data.is_valid ?? null,
+            forThisApp: data.app_id ? data.app_id === appId : null,
+            expiresAt: data.expires_at ? new Date(data.expires_at * 1000).toISOString() : "never",
+            dataAccessExpiresAt: data.data_access_expires_at ? new Date(data.data_access_expires_at * 1000).toISOString() : null,
+          }
+        : null,
+      granted: Array.isArray(permissions.body?.data)
+        ? (permissions.body.data as { permission: string; status: string }[]).filter((row) => row.status === "granted").map((row) => row.permission)
+        : [],
+      adAccounts: Array.isArray(accounts.body?.data)
+        ? (accounts.body.data as { id: string; name?: string; account_status?: number; currency?: string }[]).map((row) => ({ id: row.id, name: row.name ?? null, status: row.account_status ?? null, currency: row.currency ?? null }))
+        : { error: (accounts.body?.error as { message?: string } | undefined)?.message ?? null },
+    };
+  },
+});

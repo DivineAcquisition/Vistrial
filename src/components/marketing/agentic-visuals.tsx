@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useLayoutEffect, useRef, useState, type ReactNode, type RefObject } from "react";
-import { CheckCircle2, FileText, Globe, Hand, Loader2, RotateCcw, Sparkles, Upload } from "lucide-react";
+import { CheckCircle2, FileText, Globe, Hand, Loader2, RotateCcw, Upload } from "lucide-react";
 
 import { PlatformLogo } from "@/components/marketing/platform-logo";
 import { Badge } from "@/components/ui/badge";
@@ -215,8 +215,10 @@ export function AgentFlow() {
           </div>
 
           <div data-beam="agent" className="relative mx-auto flex w-full max-w-xs flex-col items-center gap-3 rounded-xl border border-brand-400/40 bg-background p-5 text-center shadow-[0_0_60px_-24px_rgba(154,136,252,0.9)] lg:w-64">
-            <span className="relative flex size-12 items-center justify-center rounded-full bg-gradient-to-br from-brand-400 to-brand-700 text-primary-foreground">
-              <Sparkles className="size-5" aria-hidden />
+            <span className="relative flex size-14 items-center justify-center rounded-full border border-brand-400/40 bg-background shadow-[0_0_0_4px_rgba(154,136,252,0.12)]">
+              {/* The black Vistrial crest. The public site is always light, so the ink art always shows. */}
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src="/brand/vistrial-crest-ink.png" alt="" width={1080} height={1080} className="size-12" />
               <span aria-hidden className="live-pulse absolute -right-0.5 -top-0.5 size-3 rounded-full border-2 border-background bg-success" />
             </span>
             <div>

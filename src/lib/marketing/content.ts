@@ -381,7 +381,7 @@ export const FAQ = {
     },
     {
       q: "What does it do with my data?",
-      a: "Each workspace is separate. Vistrial uses your business profile, research, and results to do the work for that workspace only. The Security overview describes the controls. The Privacy page is a draft for counsel and is not a finished policy.",
+      a: "Each workspace is separate. Vistrial uses your business profile, research, and results to do the work for that workspace only. The Security overview describes the controls, and the Privacy Policy explains how information is handled.",
     },
     {
       q: "Who is Private Access for?",

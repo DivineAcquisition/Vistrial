@@ -11,7 +11,8 @@ import type { Doc, Id } from "./_generated/dataModel";
 import { internalAction, internalMutation, internalQuery, type ActionCtx } from "./_generated/server";
 import { writeAudit } from "./lib/audit";
 import { memberAction, ownerMutation, workspaceQuery } from "./lib/builders";
-import { notAllowed } from "./lib/errors";
+import { GROWTH_ARCHITECT } from "./catalog";
+import { notAllowed, notFound } from "./lib/errors";
 import {
   ACCOUNT_STATUS,
   dailySeries,
@@ -86,6 +87,7 @@ export const status = workspaceQuery({
       connection: {
         source: connection.source,
         status: connection.status,
+        agents: grantedAgents(connection),
         metaUserName: connection.metaUserName,
         connectedAt: connection.connectedAt,
         tokenExpiresAt: connection.tokenExpiresAt ?? null,
@@ -130,6 +132,40 @@ export const status = workspaceQuery({
           }
         : null,
     };
+  },
+});
+
+/** The agents a workspace connection is granted to. Missing means the Growth Architect only. */
+export function grantedAgents(connection: Pick<Doc<"metaConnections">, "agents">) {
+  return connection.agents ?? [GROWTH_ARCHITECT];
+}
+
+/** Grants or withdraws an agent's use of the workspace's Meta connection. Owner only. */
+export const setAgentAccess = ownerMutation({
+  args: { agentSlug: v.string(), granted: v.boolean() },
+  handler: async (ctx, args) => {
+    const connection = await ctx.db
+      .query("metaConnections")
+      .withIndex("by_workspace", (q) => q.eq("workspaceId", ctx.workspaceId))
+      .unique();
+    if (!connection) notFound();
+    const agent = await ctx.db
+      .query("agents")
+      .withIndex("by_slug", (q) => q.eq("slug", args.agentSlug))
+      .unique();
+    if (!agent || agent.retired) notFound();
+    const current = new Set(grantedAgents(connection));
+    if (args.granted) current.add(args.agentSlug);
+    else current.delete(args.agentSlug);
+    await ctx.db.patch(connection._id, { agents: [...current] });
+    await writeAudit(ctx, {
+      workspaceId: ctx.workspaceId,
+      actorType: "user",
+      actorId: ctx.identity.subject,
+      action: args.granted ? "meta.agent_granted" : "meta.agent_withdrawn",
+      subject: args.agentSlug,
+    });
+    return null;
   },
 });
 

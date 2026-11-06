@@ -30,7 +30,7 @@ function Projects({ shell }: { shell: WorkspaceShell }) {
         <ul className="grid gap-3">
           {results.map((row) => (
             <li key={row.id} className="grid gap-1 rounded-xl border border-border p-4">
-              <Link className="font-medium break-words text-card-foreground underline-offset-4 hover:underline" href={`/app/research/${row.id}`}>
+              <Link className="font-medium break-words text-card-foreground underline-offset-4 hover:underline" href={`/app/agents/growth-architect/sessions/${row.id}`}>
                 {row.title}
               </Link>
               <p className="text-sm break-words text-muted-foreground">{row.objective}</p>

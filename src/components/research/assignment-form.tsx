@@ -20,12 +20,21 @@ type Competitor = { name: string; url: string };
  * A new Market Intelligence assignment. The person states the objective and the scope; the form shows,
  * before anything runs, what each source can and cannot see here and what the run can cost.
  */
-export function AssignmentForm({ workspaceId, canStart }: { workspaceId: Id<"workspaces">; canStart: boolean }) {
+export function AssignmentForm({
+  workspaceId,
+  canStart,
+  initialObjective = "",
+}: {
+  workspaceId: Id<"workspaces">;
+  canStart: boolean;
+  /** A follow-up from a session's composer, or a suggestion the person picked. */
+  initialObjective?: string;
+}) {
   const router = useRouter();
   const createProject = useMutation(api.research.createProject);
   const start = useMutation(api.runs.start);
   const [title, setTitle] = useState("");
-  const [objective, setObjective] = useState("");
+  const [objective, setObjective] = useState(initialObjective);
   const [market, setMarket] = useState("");
   const [geography, setGeography] = useState("");
   const [competitors, setCompetitors] = useState<Competitor[]>([]);
@@ -58,7 +67,7 @@ export function AssignmentForm({ workspaceId, canStart }: { workspaceId: Id<"wor
           .filter(Boolean),
       });
       await start({ workspaceId, agentSlug: "growth-architect", skillSlug: "market-intelligence", projectId });
-      router.push(`/app/research/${projectId}`);
+      router.push(`/app/agents/growth-architect/sessions/${projectId}`);
     } catch (problem) {
       setError(errorWords(problem, "The assignment did not start. Check the fields and try again."));
       setBusy(false);

@@ -103,7 +103,7 @@ function LiveDecisions({ shell }: { shell: NonNullable<ReturnType<typeof useWork
                   </div>
                   <p className="font-medium break-words text-card-foreground">{row.question}</p>
                 </div>
-                <Button size="sm" render={<Link href={`/app/research/${row.projectId}`} />}>
+                <Button size="sm" render={<Link href={`/app/agents/growth-architect/sessions/${row.projectId}`} />}>
                   {row.status === "needsInput" ? "Resume" : "Answer"}
                 </Button>
               </li>

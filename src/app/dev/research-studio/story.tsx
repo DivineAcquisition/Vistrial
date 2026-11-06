@@ -13,7 +13,7 @@ import type { Id } from "../../../../convex/_generated/dataModel";
 const WS = "ws1" as Id<"workspaces">;
 const S = (n: number) => `src${n}`;
 
-const SOURCES: SourceLite[] = [
+export const SOURCES: SourceLite[] = [
   { id: S(1), title: "Molly Maid of Greater Austin", url: "https://www.mollymaid.com/greater-austin/", platform: "web", publisher: "Molly Maid", origin: "supplied" },
   { id: S(2), title: "Full home deep cleaning transformation", url: "https://www.youtube.com/watch?v=aaaaaaaaaaa", platform: "youtube", publisher: "Sparkly Maid Austin" },
   { id: S(3), title: "It's not magic, it's the checklist", url: "https://austincleaningcrew.example.com/", platform: "web", publisher: "Austin Cleaning Crew" },
@@ -58,7 +58,7 @@ const OPPS = [
   },
 ];
 
-function studioFor(kind: "done" | "review" | "waiting" | "timedOut" | "working"): Studio {
+export function studioFor(kind: "done" | "review" | "waiting" | "timedOut" | "working"): Studio {
   const base = {
     project: {
       id: "p1",
@@ -174,7 +174,7 @@ const stepRow = (phase: string, extra: Record<string, unknown> = {}) => ({
   ...(phase === "research" ? { webSearches: 9, webFetches: 14 } : {}),
   ...extra,
 });
-const STEPS: Record<string, { phase: string; status: string; kind: string; resultCode: string; at?: number; webSearches?: number; webFetches?: number }[]> = {
+export const STEPS: Record<string, { phase: string; status: string; kind: string; resultCode: string; at?: number; webSearches?: number; webFetches?: number }[]> = {
   done: ["context", "brief", "research", "collect", "classify", "applyClassification", "compute", "prioritize", "write", "check", "save"].map((phase) => stepRow(phase, phase === "check" ? { resultCode: "passed" } : {})),
   working: ["context", "brief", "research", "collect", "classify"].map((phase) => stepRow(phase)),
   waiting: [stepRow("context", { resultCode: "missing_context" }), stepRow("ask", { kind: "note", resultCode: "waiting_for_user" })],

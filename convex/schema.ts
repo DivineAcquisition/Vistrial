@@ -806,6 +806,8 @@ export default defineSchema({
     connectedBy: v.string(),
     connectedAt: v.number(),
     status: v.union(v.literal("connected"), v.literal("needsReconnect")),
+    /** Agents granted use of this workspace connection. Missing means the Growth Architect only. */
+    agents: v.optional(v.array(v.string())),
     adAccountId: v.optional(v.string()),
     adAccountName: v.optional(v.string()),
     currency: v.optional(v.string()),

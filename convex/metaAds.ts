@@ -684,3 +684,53 @@ export const ownerOf = internalQuery({
     return members.find((row) => row.active && row.role === "owner")?.userId ?? null;
   },
 });
+
+/**
+ * A full read-only pass over every active ad account the workspace's Meta connection reaches: account
+ * details, campaigns, ad sets, ads, and insights at each level. Paced to stay well inside Meta's rate
+ * limits, and every call is counted on the connection. Internal only; run from the dashboard.
+ */
+export const readAllAccounts = internalAction({
+  args: { workspaceId: v.id("workspaces"), pauseMs: v.optional(v.number()), maxCalls: v.optional(v.number()) },
+  handler: async (ctx, args): Promise<{ ok: number; failed: number; accounts: { id: string; name: string; ok: number; failed: number; stoppedAt: string | null }[] }> => {
+    const connection = await liveConnection(ctx, args.workspaceId);
+    const pause = Math.max(300, args.pauseMs ?? 800);
+    const budget = Math.min(400, args.maxCalls ?? 300);
+    const counter: Counter = { ok: 0, failed: 0, lastCode: null };
+    const sleep = () => new Promise((resolve) => setTimeout(resolve, pause));
+    const token = connection.accessToken;
+
+    const list = await graphGet(token, "me/adaccounts?fields=id,name,account_status&limit=100", counter);
+    const accounts = (((list.body?.data as { id: string; name?: string; account_status?: number }[] | undefined) ?? []) as { id: string; name?: string; account_status?: number }[])
+      .filter((row) => isAdAccountId(row.id) && row.account_status === 1);
+    const reads = [
+      "?fields=name,currency,account_status,amount_spent,timezone_name",
+      "/campaigns?fields=id,name,status,effective_status,objective,daily_budget,lifetime_budget&limit=100",
+      "/adsets?fields=id,name,status,campaign_id,optimization_goal,billing_event&limit=100",
+      "/ads?fields=id,name,status,adset_id,campaign_id&limit=100",
+      "/insights?level=campaign&date_preset=last_90d&fields=campaign_id,campaign_name,spend,impressions,reach,clicks,actions&limit=100",
+      "/insights?level=adset&date_preset=last_90d&fields=adset_id,adset_name,spend,impressions,clicks,actions&limit=100",
+      "/insights?level=ad&date_preset=last_90d&fields=ad_id,ad_name,spend,impressions,clicks,actions&limit=100",
+      "/insights?date_preset=maximum&time_increment=monthly&fields=spend,impressions,clicks,reach&limit=100",
+    ];
+    const results: { id: string; name: string; ok: number; failed: number; stoppedAt: string | null }[] = [];
+    for (const account of accounts) {
+      const before = { ok: counter.ok, failed: counter.failed };
+      let stoppedAt: string | null = null;
+      for (const read of reads) {
+        if (counter.ok + counter.failed >= budget) break;
+        await sleep();
+        const result = await graphGet(token, `${account.id}${read}`, counter);
+        if (!result.ok) {
+          stoppedAt = result.code;
+          // Rate limits and access problems end this account's pass; nothing is retried around a block.
+          if (result.code === "rate_limited" || result.code === "permission_missing" || result.code.startsWith("token")) break;
+        }
+      }
+      results.push({ id: account.id, name: account.name ?? account.id, ok: counter.ok - before.ok, failed: counter.failed - before.failed, stoppedAt });
+      if (counter.ok + counter.failed >= budget || counter.lastCode === "rate_limited") break;
+    }
+    await ctx.runMutation(internal.metaAds.recordCalls, { connectionId: connection._id, ok: counter.ok, failed: counter.failed, code: counter.lastCode ?? "ok" });
+    return { ok: counter.ok, failed: counter.failed, accounts: results };
+  },
+});

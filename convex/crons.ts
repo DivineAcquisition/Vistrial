@@ -11,6 +11,13 @@ const crons = cronJobs();
  */
 crons.interval("finish agent rename", { minutes: 10 }, internal.agentsMigration.backfillIfNeeded, {});
 
+/**
+ * Fills any kind of model work that has no route with the defaults (research and write on Opus, classify
+ * and summarize on Sonnet). It never changes a route that exists, so a Platform Admin's choice stands, and
+ * a deployment works without anyone running platform:ensureDefaultRoutes by hand.
+ */
+crons.interval("fill default model routes", { hours: 1 }, internal.platform.ensureDefaultRoutes, {});
+
 /** Keeps connected Meta ad accounts' results fresh (read-only). */
 crons.interval("refresh Meta ad results", { hours: 3 }, internal.metaAds.syncAll, {});
 

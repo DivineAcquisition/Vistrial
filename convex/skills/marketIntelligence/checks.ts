@@ -74,16 +74,19 @@ export function runChecks(input: CheckInput): ChecksRecord {
   );
 
   // 3. Three opportunities with different proposed actions.
+  // Evidence-backed means citing at least one collected source. An opportunity that cites none (labelled
+  // not enough evidence, or a hypothesis with nothing behind it) does not count toward the three.
   const actions = new Set(report.opportunities.map((row) => norm(row.proposedAction)));
-  const three = report.opportunities.length === 3;
+  const backed = report.opportunities.filter((row) => row.evidence.sourceRefIds.some((id) => input.knownSourceIds.has(id))).length;
+  const three = report.opportunities.length === 3 && backed === 3;
   const distinct = actions.size === report.opportunities.length;
   add(
     3,
     CHECK_NAMES[2][1],
     three && distinct,
     !three
-      ? report.opportunities.length < 3
-        ? `Only ${report.opportunities.length} opportunit${report.opportunities.length === 1 ? "y" : "ies"} could be supported by the available evidence.${report.missingOpportunityReason ? ` ${report.missingOpportunityReason}` : " The report does not say why."} Additional research or user input is required.`
+      ? backed < 3 && report.opportunities.length <= 3
+        ? `Only ${backed} opportunit${backed === 1 ? "y" : "ies"} could be supported by the available evidence.${report.missingOpportunityReason ? ` ${report.missingOpportunityReason}` : " The report does not say why."} Additional research or user input is required.`
         : "The report has more than three opportunities."
       : distinct
         ? "Three opportunities, each with its own action."

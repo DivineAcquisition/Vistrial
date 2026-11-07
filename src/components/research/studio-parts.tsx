@@ -312,7 +312,7 @@ export function BriefCard({ studio, capCents, reserveCents = 50 }: { studio: Stu
                   <li key={item.key} className="break-words">
                     <span className="text-card-foreground">{item.label}:</span> <span className="text-card-foreground">{item.value}</span>{" "}
                     <span className="text-xs text-muted-foreground">
-                      ({item.origin === "project" ? "this assignment" : item.origin === "profile" ? "business profile" : `business fact, ${FACT_STATUS_WORDS[item.status]?.label.toLowerCase() ?? item.status}`}, {shortDate(item.recordedAt)})
+                      ({item.origin === "project" ? "this assignment" : item.origin === "profile" ? "business profile" : item.origin === "connection" ? "your connected Meta ads" : `business fact, ${FACT_STATUS_WORDS[item.status]?.label.toLowerCase() ?? item.status}`}, {shortDate(item.recordedAt)})
                     </span>
                   </li>
                 ))}

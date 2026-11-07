@@ -72,6 +72,7 @@ import type * as reviewer from "../reviewer.js";
 import type * as runs from "../runs.js";
 import type * as seed from "../seed.js";
 import type * as skills_marketIntelligence_checks from "../skills/marketIntelligence/checks.js";
+import type * as skills_marketIntelligence_firstParty from "../skills/marketIntelligence/firstParty.js";
 import type * as skills_marketIntelligence_index from "../skills/marketIntelligence/index.js";
 import type * as skills_marketIntelligence_records from "../skills/marketIntelligence/records.js";
 import type * as skills_marketIntelligence_render from "../skills/marketIntelligence/render.js";
@@ -158,6 +159,7 @@ declare const fullApi: ApiFromModules<{
   runs: typeof runs;
   seed: typeof seed;
   "skills/marketIntelligence/checks": typeof skills_marketIntelligence_checks;
+  "skills/marketIntelligence/firstParty": typeof skills_marketIntelligence_firstParty;
   "skills/marketIntelligence/index": typeof skills_marketIntelligence_index;
   "skills/marketIntelligence/records": typeof skills_marketIntelligence_records;
   "skills/marketIntelligence/render": typeof skills_marketIntelligence_render;

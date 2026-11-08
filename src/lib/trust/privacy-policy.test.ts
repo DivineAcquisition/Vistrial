@@ -10,8 +10,8 @@ describe("privacy policy stays inside verified behavior", () => {
   it("names the operator and the Lanham address", () => {
     expect(text).toContain("Divine Agency LLC");
     expect(text).toContain("7404 Executive Place, Lanham, MD 20706");
-    expect(text).toContain("Effective: November 5, 2026");
-    expect(text).toContain("Last updated: November 5, 2026");
+    expect(text).toContain("Effective: November 8, 2026");
+    expect(text).toContain("Last updated: November 8, 2026");
   });
 
   it("drops claims the product does not enforce", () => {
@@ -42,6 +42,14 @@ describe("privacy policy stays inside verified behavior", () => {
     expect(text).toContain("We do not currently use Google Analytics or the Meta pixel");
   });
 
+  it("says what is read from Meta, how it is deleted, and keeps outcome learning de-identified", () => {
+    expect(text).toContain("Connected Meta ad accounts");
+    expect(text).toContain("Vistrial never creates, edits, pauses or pays for ads");
+    expect(text).toContain("Disconnecting the account in Connections deletes the token and every saved read straight away");
+    expect(text).toContain("Only Vistrial uses it; it is never shown to other customers");
+    expect(text).toContain("Uploaded results files are deleted as soon as they are read");
+  });
+
   it("shows Not in effect while the policy is switched off", () => {
     expect(privacyPolicyText({ ...TRUST_FALLBACK, privacyLive: false })).toContain("Effective: Not in effect");
   });
@@ -55,7 +63,7 @@ describe("privacy policy stays inside verified behavior", () => {
     });
     expect(on).toMatch(/not used to train/i);
     expect(on).toMatch(/encrypted at rest/i);
-    expect(on).toContain("Effective: November 5, 2026");
+    expect(on).toContain("Effective: November 8, 2026");
     expect(on).toContain("Registered agent, Maryland");
   });
 });

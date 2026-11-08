@@ -20,6 +20,7 @@ import {
 } from "@/lib/research/words";
 import { api } from "../../../convex/_generated/api";
 import type { Id } from "../../../convex/_generated/dataModel";
+import { SourceIcon } from "@/components/research/source-icon";
 
 export type Studio = FunctionReturnType<typeof api.studio.studio>;
 type Step = { phase?: string | null; status: string; kind: string; resultCode: string };
@@ -267,7 +268,10 @@ export function SourceStatusList({ statuses }: { statuses: { platform: string; s
         const state = SOURCE_STATE_WORDS[row.state] ?? SOURCE_STATE_WORDS.unavailable;
         return (
           <li key={row.platform} className="flex flex-wrap items-center gap-2 text-sm">
-            <span className="min-w-28 text-card-foreground">{PLATFORM_LABEL[row.platform] ?? row.platform}</span>
+            <span className="flex min-w-28 items-center gap-2 text-card-foreground">
+              <SourceIcon platform={row.platform} size={16} />
+              {PLATFORM_LABEL[row.platform] ?? row.platform}
+            </span>
             <StatusBadge label={state.label} tone={state.tone} className="[&_span]:normal-case" />
             <span className="text-muted-foreground">{row.found} found</span>
           </li>

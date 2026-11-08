@@ -24,6 +24,7 @@ import { StatusBadge } from "@/components/ui/status-badge";
 import { Textarea } from "@/components/ui/textarea";
 import { money } from "@/lib/research/words";
 import { cn } from "@/lib/utils";
+import { SourceIcon } from "@/components/research/source-icon";
 
 export type IntakeSlots = {
   objective: string;
@@ -236,11 +237,12 @@ function PlanCard({ view, actions, editor }: { view: IntakeView; actions: Intake
                     if (next.length) void actions.setPlatforms(next);
                   }}
                   className={cn(
-                    "rounded-full px-2.5 py-1 text-xs ring-1 transition-colors",
+                    "inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs ring-1 transition-colors",
                     on ? "bg-primary/10 text-primary ring-primary/30" : "bg-background text-muted-foreground ring-border",
                     !locked && "hover:ring-primary/50",
                   )}
                 >
+                  <SourceIcon platform={platform.value} size={12} />
                   {platform.label}
                 </button>
               );

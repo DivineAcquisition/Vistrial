@@ -4,7 +4,6 @@ import { useQuery } from "convex/react";
 import {
   ArrowRight,
   BriefcaseBusiness,
-  Globe,
   Store,
   type LucideIcon,
 } from "lucide-react";
@@ -13,6 +12,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect } from "react";
 
 import { MetaLogo } from "@/components/connections/meta-logo";
+import { PlatformLogo } from "@/components/marketing/platform-logo";
 import { useWorkspaceShell } from "@/components/shell/shell-context";
 import { EmptyState } from "@/components/ui/empty-state";
 import { PageHeader } from "@/components/ui/page-header";
@@ -177,7 +177,7 @@ export function ConnectionsScreen() {
           />
           <Card
             dim
-            icon={icon(Globe)}
+            icon={<PlatformLogo id="google-ads" size={18} decorative />}
             title="Google Ads"
             kind="Search ad results"
             words="Your search campaigns and conversions, read-only."

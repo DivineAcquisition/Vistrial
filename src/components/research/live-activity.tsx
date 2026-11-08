@@ -8,21 +8,16 @@ import {
   Download,
   ExternalLink,
   FileSearch,
-  Globe,
   Link2,
   Loader,
-  Megaphone,
   MessageCircleQuestion,
-  Music2,
   PenLine,
-  PlaySquare,
   RefreshCw,
   Save,
   Search,
   ShieldCheck,
   Sparkles,
   Target,
-  Camera,
   TriangleAlert,
   type LucideIcon,
 } from "lucide-react";
@@ -44,6 +39,7 @@ import {
 } from "@/lib/research/activity";
 import { PLATFORM_LABEL, STAGES } from "@/lib/research/words";
 import { cn } from "@/lib/utils";
+import { SourceIcon } from "@/components/research/source-icon";
 
 const ICONS: Record<ActivityIcon, LucideIcon> = {
   memory: BookOpen,
@@ -62,14 +58,6 @@ const ICONS: Record<ActivityIcon, LucideIcon> = {
   failed: TriangleAlert,
   links: Link2,
   work: Sparkles,
-};
-
-export const PLATFORM_ICONS: Record<string, LucideIcon> = {
-  web: Globe,
-  youtube: PlaySquare,
-  tiktok: Music2,
-  instagram: Camera,
-  metaAdLibrary: Megaphone,
 };
 
 const TONE_RING: Record<ActivityTone, string> = {
@@ -166,11 +154,10 @@ function Counter({ label, value, prefix, decimals = 0 }: { label: string; value:
 
 /** A small tile for one source: platform, title and who published it. Opens the original. */
 export function SourceTile({ source }: { source: ActivitySource & { url?: string } }) {
-  const Icon = PLATFORM_ICONS[source.platform] ?? Globe;
   const body = (
     <>
       <span className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
-        <Icon aria-hidden className="size-3.5 shrink-0" />
+        <SourceIcon platform={source.platform} size={14} />
         {PLATFORM_LABEL[source.platform] ?? source.platform}
         {source.url ? <ExternalLink aria-hidden className="ml-auto size-3 shrink-0 opacity-60" /> : null}
       </span>

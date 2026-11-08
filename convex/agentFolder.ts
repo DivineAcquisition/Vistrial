@@ -9,6 +9,7 @@ import type { Doc } from "./_generated/dataModel";
 import { GROWTH_ARCHITECT } from "./catalog";
 import { workspaceQuery } from "./lib/builders";
 import { grantedAgents } from "./metaAds";
+import { uploadAgents } from "./resultUploads";
 
 const SESSIONS_SHOWN = 8;
 
@@ -86,6 +87,14 @@ export const tree = workspaceQuery({
       .withIndex("by_workspace", (q) => q.eq("workspaceId", ctx.workspaceId))
       .unique();
     const metaGranted = meta ? grantedAgents(meta).includes(args.agentSlug) : false;
+    const uploads = (
+      await ctx.db
+        .query("resultUploads")
+        .withIndex("by_workspace", (q) => q.eq("workspaceId", ctx.workspaceId))
+        .order("desc")
+        .take(20)
+    ).filter((row) => row.status === "ready");
+    const uploadsGranted = uploads.filter((row) => uploadAgents(row).includes(args.agentSlug)).length;
 
     return {
       sessions,
@@ -102,6 +111,12 @@ export const tree = workspaceQuery({
           label: "Meta ads",
           state: !meta ? ("off" as const) : !metaGranted ? ("notGranted" as const) : meta.status === "needsReconnect" ? ("attention" as const) : ("on" as const),
           detail: meta?.adAccountName ?? null,
+        },
+        {
+          key: "results",
+          label: "Results files",
+          state: uploads.length === 0 ? ("off" as const) : uploadsGranted === 0 ? ("notGranted" as const) : ("on" as const),
+          detail: uploadsGranted > 0 ? `${uploadsGranted} ${uploadsGranted === 1 ? "file" : "files"}` : null,
         },
       ],
     };

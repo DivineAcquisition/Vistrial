@@ -4,6 +4,7 @@ import { useQuery } from "convex/react";
 import {
   ArrowRight,
   BriefcaseBusiness,
+  FileSpreadsheet,
   Store,
   type LucideIcon,
 } from "lucide-react";
@@ -98,6 +99,10 @@ export function ConnectionsScreen() {
     api.metaAds.status,
     shell ? { workspaceId: shell.workspaceId } : "skip",
   );
+  const uploads = useQuery(
+    api.resultUploads.list,
+    shell ? { workspaceId: shell.workspaceId } : "skip",
+  );
   const returned = params.get("meta");
 
   // Facebook Login comes back here; carry the outcome to the Meta page.
@@ -118,6 +123,9 @@ export function ConnectionsScreen() {
     : conn.status === "connected"
       ? { label: "Connected", tone: "good" }
       : { label: "Reconnect needed", tone: "warning" };
+  const readyFiles = (uploads ?? []).filter(
+    (row) => row.status === "ready",
+  ).length;
   const live = shell.agents.filter((agent) => agent.status === "live");
   const usedBy = conn
     ? live
@@ -150,6 +158,23 @@ export function ConnectionsScreen() {
             status={metaStatus}
             href="/app/connections/meta"
             action={conn ? "Manage" : "Connect"}
+          />
+          <Card
+            icon={icon(FileSpreadsheet)}
+            title="Results files"
+            kind="Exports from your other tools"
+            words={
+              readyFiles > 0
+                ? `${readyFiles} ${readyFiles === 1 ? "file" : "files"} with totals kept. Google Ads, your CRM, bookings or email.`
+                : "Upload a CSV from Google Ads, your CRM, bookings or email. Only totals are kept, cited in research as your data."
+            }
+            status={
+              readyFiles > 0
+                ? { label: "In use", tone: "good" }
+                : { label: "No files", tone: "neutral" }
+            }
+            href="/app/connections/results"
+            action={readyFiles > 0 ? "Manage" : "Upload"}
           />
         </div>
       </section>

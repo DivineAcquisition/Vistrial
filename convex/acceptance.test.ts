@@ -333,6 +333,63 @@ describe("first-party results in research", () => {
     expect(own).toHaveLength(0);
   });
 
+  async function uploadResults(t: Tester, workspaceId: Id<"workspaces">, agents?: string[]) {
+    await t.run(async (ctx) => {
+      await ctx.db.insert("resultUploads", {
+        workspaceId,
+        fileName: "google-ads.csv",
+        label: "Google Ads",
+        currency: "USD",
+        uploadedBy: "x",
+        createdAt: 1793900000000,
+        status: "ready",
+        ...(agents ? { agents } : {}),
+        summary: {
+          rows: 2,
+          dateStart: "2026-09-01",
+          dateStop: "2026-09-30",
+          metrics: ["spend", "conversions"],
+          totals: { spend: 200, conversions: 12 },
+          groupBy: "Campaign",
+          groups: [{ name: "Search - Brand", spend: 120, conversions: 10 }],
+          otherGroups: 0,
+          ignoredColumns: [],
+        },
+      });
+    });
+  }
+
+  it("cites an uploaded results file as Your data, listed as known", async () => {
+    const t = makeTester();
+    const a = await seed(t, "Alpha", ALPHA);
+    await uploadResults(t, a.workspaceId);
+    const inputs = script({ sources: PAGES, firstParty: true });
+    const { status } = await run(t, a.owner, a.workspaceId, a.projectId);
+    expect(status).toBe("completed");
+    const own = (await t.run((ctx) => ctx.db.query("sourceRefs").collect())).filter((row) => row.platform === "customerData");
+    expect(own.map((row) => row.title)).toEqual(["Your results: Google Ads (google-ads.csv)"]);
+    expect(own[0].excerpt).toBe("Google Ads from 2026-09-01 to 2026-09-30: spend USD 200, 12 conversions.");
+    expect(inputs.find((row) => row.startsWith("Classify each source"))).not.toContain("customerData");
+    const asset = await reportAsset(a.owner, a.workspaceId);
+    const evidence = asset!.evidence as { basis: string | null; sources: { id: string }[] }[];
+    expect(evidence.find((row) => row.basis === "firstParty")?.sources.map((row) => row.id)).toEqual([own[0]._id]);
+    const context = (await t.run((ctx) => ctx.db.query("runArtifacts").collect())).find((row) => row.kind === "context");
+    expect(context?.body).toContain("Your results: Google Ads");
+  });
+
+  it("uses no uploaded results that are not granted, or that belong to another workspace", async () => {
+    const t = makeTester();
+    const a = await seed(t, "Alpha", ALPHA);
+    const b = await seed(t, "Beta", BETA);
+    await uploadResults(t, a.workspaceId, ["sales-conversion"]);
+    await uploadResults(t, b.workspaceId);
+    const inputs = script({ sources: PAGES });
+    await run(t, a.owner, a.workspaceId, a.projectId);
+    const own = (await t.run((ctx) => ctx.db.query("sourceRefs").collect())).filter((row) => row.platform === "customerData");
+    expect(own).toHaveLength(0);
+    expect(inputs.join("\n")).not.toContain("Google Ads");
+  });
+
   it("never reads another workspace's ad results", async () => {
     const t = makeTester();
     const a = await seed(t, "Alpha", ALPHA);

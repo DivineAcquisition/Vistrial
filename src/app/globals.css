@@ -146,6 +146,22 @@
   --color-strong: var(--strong);
   /* Tints and hairlines over a surface. bg-overlay/5 is a faint wash in either theme. */
   --color-overlay: var(--overlay);
+  @keyframes ob-scan {
+  from {
+    transform: translateX(-100%);
+    }
+  to {
+    transform: translateX(300%);
+    }
+  }
+  @keyframes ob-sweep {
+  from {
+    transform: translateY(-100%);
+    }
+  to {
+    transform: translateY(600%);
+    }
+  }
   @keyframes skeleton {
   to {
     background-position: -200% 0;

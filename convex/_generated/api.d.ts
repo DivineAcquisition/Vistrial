@@ -72,6 +72,7 @@ import type * as lib_token from "../lib/token.js";
 import type * as lib_toolRouter from "../lib/toolRouter.js";
 import type * as merges from "../merges.js";
 import type * as metaAds from "../metaAds.js";
+import type * as onboarding from "../onboarding.js";
 import type * as people from "../people.js";
 import type * as perf from "../perf.js";
 import type * as platform from "../platform.js";
@@ -171,6 +172,7 @@ declare const fullApi: ApiFromModules<{
   "lib/toolRouter": typeof lib_toolRouter;
   merges: typeof merges;
   metaAds: typeof metaAds;
+  onboarding: typeof onboarding;
   people: typeof people;
   perf: typeof perf;
   platform: typeof platform;

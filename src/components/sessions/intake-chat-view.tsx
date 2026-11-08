@@ -17,6 +17,7 @@ import {
 import { AnimatePresence, motion } from "motion/react";
 import { useEffect, useRef, useState } from "react";
 
+import { useFillViewport } from "@/components/chat/use-fill-viewport";
 import { VistrialMark } from "@/components/brand/vistrial-mark";
 import { Button } from "@/components/ui/button";
 import { Panel } from "@/components/ui/panel";
@@ -24,6 +25,7 @@ import { StatusBadge } from "@/components/ui/status-badge";
 import { Textarea } from "@/components/ui/textarea";
 import { money } from "@/lib/research/words";
 import { cn } from "@/lib/utils";
+import { SourceIcon } from "@/components/research/source-icon";
 
 export type IntakeSlots = {
   objective: string;
@@ -236,11 +238,12 @@ function PlanCard({ view, actions, editor }: { view: IntakeView; actions: Intake
                     if (next.length) void actions.setPlatforms(next);
                   }}
                   className={cn(
-                    "rounded-full px-2.5 py-1 text-xs ring-1 transition-colors",
+                    "inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs ring-1 transition-colors",
                     on ? "bg-primary/10 text-primary ring-primary/30" : "bg-background text-muted-foreground ring-border",
                     !locked && "hover:ring-primary/50",
                   )}
                 >
+                  <SourceIcon platform={platform.value} size={12} />
                   {platform.label}
                 </button>
               );
@@ -321,6 +324,7 @@ export function IntakeChatView({
   const [text, setText] = useState(initialText);
   const [sending, setSending] = useState(false);
   const end = useRef<HTMLDivElement>(null);
+  const column = useFillViewport<HTMLDivElement>();
   const status = view?.intake.status ?? "new";
   const lastId = view?.messages.at(-1)?.id;
 
@@ -347,7 +351,7 @@ export function IntakeChatView({
   const lastQuestion = view ? [...view.messages].reverse().find((row) => row.kind === "question") : null;
 
   return (
-    <div className="mx-auto grid w-full max-w-3xl min-w-0 gap-4">
+    <div ref={column} className="mx-auto flex w-full max-w-3xl min-w-0 flex-col gap-4">
       <ol className="grid gap-4" aria-label="Conversation" aria-live="polite">
         <Agent name={agentName}>
           <p className="text-sm text-card-foreground">
@@ -459,10 +463,10 @@ export function IntakeChatView({
       </ol>
 
       {composer && editor && status !== "started" ? (
-        <div className="sticky bottom-20 z-10 bg-gradient-to-t from-background via-background to-transparent pt-3 md:bottom-4">{composer}</div>
+        <div className="sticky bottom-20 z-10 mt-auto bg-gradient-to-t from-background via-background to-transparent pt-3 md:bottom-4">{composer}</div>
       ) : editor && status !== "started" ? (
         <form
-          className="sticky bottom-20 z-10 grid gap-1.5 bg-gradient-to-t from-background via-background to-transparent pt-3 md:bottom-4"
+          className="sticky bottom-20 z-10 mt-auto grid gap-1.5 bg-gradient-to-t from-background via-background to-transparent pt-3 md:bottom-4"
           onSubmit={(event) => {
             event.preventDefault();
             void send(text);

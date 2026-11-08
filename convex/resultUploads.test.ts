@@ -123,7 +123,7 @@ describe("results files", () => {
       platform: "customerData",
       kind: "dataset",
       availability: "available",
-      url: `https://vistrial.io/app/agents/growth-architect/connections/results?upload=${uploadId}`,
+      url: `https://vistrial.io/app/connections/results?upload=${uploadId}`,
     });
     expect(source?.excerpt).toBe(
       "Google Ads from 2026-09-01 to 2026-09-02: spend USD 200, 8,000 impressions, 340 clicks, 12 conversions, revenue USD 2,900.",

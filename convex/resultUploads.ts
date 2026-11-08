@@ -32,8 +32,8 @@ function clip(text: string, max: number) {
 }
 
 /** Where the figures can be read in the product. Used as the source link. */
-export function uploadUrl(agentSlug: string, uploadId: Id<"resultUploads">) {
-  return `https://vistrial.io/app/agents/${agentSlug}/connections/results?upload=${uploadId}`;
+export function uploadUrl(uploadId: Id<"resultUploads">) {
+  return `https://vistrial.io/app/connections/results?upload=${uploadId}`;
 }
 
 /** One line a reader can check against the page: what the file covers and its totals. */
@@ -304,7 +304,7 @@ export async function saveUploadSourcesFor(
   const used: { upload: Doc<"resultUploads">; sourceId: Id<"sourceRefs"> }[] = [];
   for (const upload of rows) {
     if (upload.status !== "ready" || !uploadAgents(upload).includes(args.agentSlug)) continue;
-    const url = uploadUrl(args.agentSlug, upload._id);
+    const url = uploadUrl(upload._id);
     const canonical = canonicalUrl(url) ?? url;
     const existing = await ctx.db
       .query("sourceRefs")

@@ -13,6 +13,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { PLATFORMS, PLATFORM_LABEL, errorWords, money, type PlatformSlug } from "@/lib/research/words";
 import { api } from "../../../convex/_generated/api";
 import type { Id } from "../../../convex/_generated/dataModel";
+import { SourceIcon } from "@/components/research/source-icon";
 
 type Competitor = { name: string; url: string };
 
@@ -163,6 +164,7 @@ export function AssignmentForm({
                   disabled={platform === "web"}
                   onCheckedChange={(checked) => toggle(platform, checked === true)}
                 />
+                <SourceIcon platform={platform} size={16} />
                 {PLATFORM_LABEL[platform]}
                 {platform === "web" ? <span className="text-muted-foreground">(always)</span> : null}
               </label>

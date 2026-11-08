@@ -287,8 +287,8 @@ function UploadForm({ workspaceId, onNotice }: { workspaceId: Id<"workspaces">; 
   );
 }
 
-/** The workspace's results files, shown in an agent's folder. */
-export function ResultsFiles({ workspaceId, agentSlug, highlight }: { workspaceId: Id<"workspaces">; agentSlug: string; highlight?: string | null }) {
+/** The workspace's results files. */
+export function ResultsFiles({ workspaceId, highlight }: { workspaceId: Id<"workspaces">; highlight?: string | null }) {
   const shell = useWorkspaceShell();
   const uploads = useQuery(api.resultUploads.list, { workspaceId });
   const setAccess = useMutation(api.resultUploads.setAgentAccess);
@@ -298,14 +298,11 @@ export function ResultsFiles({ workspaceId, agentSlug, highlight }: { workspaceI
   const canEdit = shell.role !== "rep";
   const canGrant = shell.role === "owner";
   const live = shell.agents.filter((agent) => agent.status === "live").map((agent) => ({ slug: agent.slug, name: agent.name }));
-  const here = shell.agents.find((agent) => agent.slug === agentSlug);
-  const usedHere = (uploads ?? []).filter((row) => row.status === "ready" && row.agents.includes(agentSlug)).length;
   return (
     <div className="grid gap-4">
       <p className="text-sm text-muted-foreground">
-        Results you export from your own tools: ad platforms other than Meta, your CRM, bookings or email. Only totals are kept, and{" "}
-        <span className="text-card-foreground">{here?.name ?? agentSlug}</span> cites them as your data.{" "}
-        {uploads ? (usedHere === 0 ? "It uses none yet." : `It uses ${usedHere} ${usedHere === 1 ? "file" : "files"}.`) : null}
+        Results you export from your own tools: ad platforms other than Meta, your CRM, bookings or email. Only totals are kept, and the
+        agents you grant cite them as your data.
       </p>
       {canEdit ? <UploadForm workspaceId={workspaceId} onNotice={setNotice} /> : null}
       {notice ? (

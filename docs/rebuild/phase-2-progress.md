@@ -8,8 +8,7 @@ Tracks the Phase 2 backlog in `growth-architect-v1-plan.md`. Everything here was
 | 2.2 | Drop the four unused tables | Done. Pushed to dev. |
 | 2.3 | Skill module interface, `test-echo` moved onto it | Done. Pushed to dev. |
 | 2.4 | `completeWithTools`: server tools, client tools, structured output, search fees | Done. Live call on dev. |
-| 2.5 | Evidence basis and the new validator rules | Done. Pushed to dev. |
-| 2.6 | `researchProjects`, `sourceRefs`, `sourceStatus`, `collections` with access tests | Next |
+| 2.5 | Evidence basis and the new validator rules | Next |
 
 ## 2.1 Departments and the seven agents
 
@@ -74,27 +73,6 @@ Acceptance: all 132 existing tests pass with no test changed. Three new tests co
 | Model name | Not in any workspace-facing response |
 
 **Cost finding for Market Intelligence.** One search brought in about **25k input tokens (about 10¢ on Opus)**, ten times the 1¢ search fee. The plan's estimate (20 to 40 searches, 150k to 300k input tokens, $1 to $2.50 a run) is too low if every search lands in context like this. At this rate 20 searches cost about $2 in tokens alone. Before 2.11: lean on `max_uses`, run the collect steps on Sonnet 5.5 (D2 allows it), and measure again. The $3 per-run cap (D3) may be tight.
-
-## 2.5 Evidence basis
-
-Every claim now says what it stands on, and each basis has its own rule. The rules are checked when a version is written, and again on approval.
-
-| Basis | Shown as | Rule |
-|---|---|---|
-| `observed` | Observed | At least one source, every one a real record in this workspace |
-| `inferred` | Inferred from sources | At least one supporting source, every one real |
-| `hypothesis` | Hypothesis, untested | Needs no source; cannot be marked computed |
-| `firstParty` | From your data | At least one source, and every source must be the business's own record (profile or profile example). A saved run record does not count. |
-| `insufficient` | Not enough data | Cites nothing and computes nothing |
-
-- **Several sources per claim:** a claim can cite more than one source (`sourceIds`).
-- **Older claims:** claims written before bases existed keep their old rule (a source with a fetch time, or computed).
-- **Missing sources:** the asset page shows every source by name, plus a `missing` flag the server works out with the same rule approval uses. The Approve button and the server can no longer disagree.
-- **Test skill claim:** "The confirmed profile was read." is now `firstParty`.
-
-Naming: the plan said `sourceRefIds`. The field is `sourceIds`, because a claim can cite any source record. `sourceRefs` (2.6) will be added to the list of source tables.
-
-Tests: one per basis, a test for older claims, and a test that a deleted first-party source blocks approval and is flagged on the page. 157 pass. On dev, a run's claim is stored and shown as `firstParty`.
 
 ## Production steps for 2.1
 

@@ -584,18 +584,6 @@ export default defineSchema({
     claimKey: v.string(),
     /** The claim as written in the asset. Asset content, never copied into logs. */
     statement: v.optional(v.string()),
-    /** What the claim stands on. Missing on claims written before bases existed. */
-    basis: v.optional(
-      v.union(
-        v.literal("observed"),
-        v.literal("inferred"),
-        v.literal("hypothesis"),
-        v.literal("firstParty"),
-        v.literal("insufficient"),
-      ),
-    ),
-    /** Every source the claim cites. `sourceId` is the single-source form older claims use. */
-    sourceIds: v.optional(v.array(v.string())),
     sourceId: v.optional(v.string()),
     fetchedAt: v.optional(v.number()),
     computed: v.optional(v.boolean()),

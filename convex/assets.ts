@@ -5,29 +5,12 @@ import type { Doc, Id } from "./_generated/dataModel";
 import type { QueryCtx } from "./_generated/server";
 import { workspaceMutation, workspaceQuery } from "./lib/builders";
 import { writeAudit } from "./lib/audit";
-import {
-  MISSING_SOURCE,
-  assertClaims,
-  assertSourcesExist,
-  citedSources,
-  claimsWithMissingSources,
-  type ClaimInput,
-} from "./lib/evidence";
+import { MISSING_SOURCE, assertClaims, assertSourcesExist, claimsWithMissingSources, type ClaimInput } from "./lib/evidence";
 import { notAllowed, notFound } from "./lib/errors";
-
-const basis = v.union(
-  v.literal("observed"),
-  v.literal("inferred"),
-  v.literal("hypothesis"),
-  v.literal("firstParty"),
-  v.literal("insufficient"),
-);
 
 const claim = v.object({
   claimKey: v.string(),
   statement: v.string(),
-  basis: v.optional(basis),
-  sourceIds: v.optional(v.array(v.string())),
   sourceId: v.optional(v.string()),
   fetchedAt: v.optional(v.number()),
   computed: v.optional(v.boolean()),
@@ -108,16 +91,6 @@ async function sourceLabel(ctx: QueryCtx, workspaceId: Id<"workspaces">, sourceI
   return null;
 }
 
-/**
- * Every source a claim cites, named in plain words, and whether the claim's sources hold up. `missing`
- * uses the same rule as approval, so the screen and the server cannot disagree.
- */
-async function sourcesView(ctx: QueryCtx, workspaceId: Id<"workspaces">, row: Doc<"evidence">) {
-  const labels = await Promise.all(citedSources(row).map((id) => sourceLabel(ctx, workspaceId, id)));
-  const missing = (await claimsWithMissingSources(ctx, workspaceId, [row])).length > 0;
-  return { sourceLabel: labels[0] ?? null, sourceLabels: labels, missing };
-}
-
 async function versionView(ctx: QueryCtx, workspaceId: Id<"workspaces">, version: Doc<"assetVersions">) {
   const evidence = await ctx.db
     .query("evidence")
@@ -135,8 +108,7 @@ async function versionView(ctx: QueryCtx, workspaceId: Id<"workspaces">, version
         statement: row.statement ?? null,
         computed: row.computed === true,
         fetchedAt: row.fetchedAt ?? null,
-        basis: row.basis ?? null,
-        ...(await sourcesView(ctx, workspaceId, row)),
+        sourceLabel: await sourceLabel(ctx, workspaceId, row.sourceId),
       })),
     ),
   };
@@ -253,8 +225,6 @@ export const addVersion = workspaceMutation({
         assetVersionId: versionId,
         claimKey: item.claimKey,
         statement: item.statement,
-        basis: item.basis,
-        sourceIds: item.sourceIds,
         sourceId: item.sourceId,
         fetchedAt: item.fetchedAt,
         computed: item.computed,

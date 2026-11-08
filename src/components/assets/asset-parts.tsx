@@ -1,75 +1,40 @@
 "use client";
 
-import { CalculatorIcon, CircleAlertIcon, CircleDashedIcon, FileSearchIcon, LightbulbIcon } from "lucide-react";
+import { CalculatorIcon, CircleAlertIcon, FileSearchIcon } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import { lineDiff } from "@/lib/diff";
 
-export type EvidenceBasis = "observed" | "inferred" | "hypothesis" | "firstParty" | "insufficient";
-
 export type EvidenceView = {
   claimKey: string;
   statement: string | null;
-  /** Null on claims written before bases existed. */
-  basis: EvidenceBasis | null;
   computed: boolean;
   fetchedAt: number | null;
   sourceLabel: string | null;
-  sourceLabels: (string | null)[];
-  /** Set by the server with the same rule approval uses. */
-  missing: boolean;
 };
 
 export type VersionSummary = { version: number; createdBy: "agent" | "person" | string; createdAt: number };
 
-/** The badge each basis shows, so a reader never mistakes an idea for a finding. */
-export const BASIS_LABEL: Record<EvidenceBasis, string> = {
-  observed: "Observed",
-  inferred: "Inferred from sources",
-  hypothesis: "Hypothesis, untested",
-  firstParty: "From your data",
-  insufficient: "Not enough data",
-};
-
-function sourceLine(claim: EvidenceView) {
-  if (claim.missing) return "Source not found. Do not approve until this is fixed.";
-  if (claim.computed) return "Computed from collected data.";
-  const named = claim.sourceLabels.filter((label): label is string => Boolean(label));
-  if (named.length === 0) {
-    if (claim.basis === "hypothesis") return "An idea to test. No source yet.";
-    if (claim.basis === "insufficient") return "There is not enough data to say more.";
-    return "No source.";
-  }
-  return named.length === 1 ? `Source: ${named[0]}` : `Sources: ${named.join("; ")}`;
-}
-
-/** Each claim with its basis and evidence beside it. A claim whose source cannot be found says so in red. */
+/** Each claim with its evidence beside it. A claim whose source cannot be found says so in red. */
 export function EvidenceList({ evidence }: { evidence: EvidenceView[] }) {
   if (evidence.length === 0) return <p className="text-sm text-muted-foreground">This version makes no claims.</p>;
   return (
     <ul className="grid gap-3">
       {evidence.map((claim) => {
-        const Icon = claim.missing
-          ? CircleAlertIcon
-          : claim.computed
-            ? CalculatorIcon
-            : claim.basis === "hypothesis"
-              ? LightbulbIcon
-              : claim.basis === "insufficient"
-                ? CircleDashedIcon
-                : FileSearchIcon;
-        const named = claim.sourceLabels.some(Boolean);
+        const missing = !claim.computed && !claim.sourceLabel;
+        const Icon = claim.computed ? CalculatorIcon : missing ? CircleAlertIcon : FileSearchIcon;
         return (
           <li key={claim.claimKey} className="grid gap-1.5 rounded-lg border border-border p-3">
-            {claim.basis ? (
-              <p className="text-[11px] font-semibold tracking-[0.08em] text-muted-foreground uppercase">{BASIS_LABEL[claim.basis]}</p>
-            ) : null}
             <p className="text-sm text-card-foreground">{claim.statement ?? claim.claimKey}</p>
-            <p className={cn("flex flex-wrap items-center gap-1.5 text-xs", claim.missing ? "text-destructive" : "text-muted-foreground")}>
+            <p className={cn("flex flex-wrap items-center gap-1.5 text-xs", missing ? "text-destructive" : "text-muted-foreground")}>
               <Icon aria-hidden="true" className="size-3.5 shrink-0" />
               <span>
-                {sourceLine(claim)}
-                {claim.fetchedAt && named && !claim.missing && !claim.computed ? (
+                {claim.computed
+                  ? "Computed from collected data."
+                  : missing
+                    ? "Source not found. Do not approve until this is fixed."
+                    : `Source: ${claim.sourceLabel}`}
+                {claim.fetchedAt && !missing && !claim.computed ? (
                   <>
                     , read{" "}
                     <time dateTime={new Date(claim.fetchedAt).toISOString()}>

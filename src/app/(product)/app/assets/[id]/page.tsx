@@ -34,8 +34,7 @@ function Asset({ shell, assetId }: { shell: WorkspaceShell; assetId: Id<"assets"
   if (asset === undefined) return <p className="text-sm text-muted-foreground">Loading the asset.</p>;
   const shown = viewingOld ? older : { body: asset.body, evidence: asset.evidence as EvidenceView[] };
   const editor = shell.role === "owner" || shell.role === "manager";
-  // The server sets `missing` with the rule approval uses, so the button and the server agree.
-  const missingSource = (asset.evidence as EvidenceView[]).some((claim) => claim.missing);
+  const missingSource = (asset.evidence as EvidenceView[]).some((claim) => !claim.computed && !claim.sourceLabel);
   const status = asset.status as "draft" | "approved" | "archived";
 
   return (

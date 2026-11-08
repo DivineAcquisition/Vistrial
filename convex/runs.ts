@@ -9,7 +9,7 @@ import { workspaceMutation, workspaceQuery } from "./lib/builders";
 import { writeAudit } from "./lib/audit";
 import { DEFAULT_CAPS, PLATFORM_CEILING, SOFT_WARNING_RATIO, dayKey, overCap, type Caps } from "./lib/caps";
 import { currentAgentSlug } from "./catalog";
-import { assertClaims, assertSourcesExist, type ClaimInput } from "./lib/evidence";
+import { assertClaims, assertSourcesExist } from "./lib/evidence";
 import { notAllowed, notFound } from "./lib/errors";
 import { ModelError, NO_SPEND, complete, type ModelRoute, type Spend } from "./lib/modelRouter";
 import { completeWithTools } from "./lib/toolRouter";
@@ -606,13 +606,11 @@ export const commitTool = internalMutation({
       resultId = "echo";
     } else if (args.toolSlug === "asset.create") {
       const readStep = steps.find((step) => step.toolSlug === "profile.read" && step.status === "completed");
-      // The profile is the business's own record, so this claim is first-party.
-      const claims: ClaimInput[] = [
+      const claims = [
         {
           claimKey: "profile",
           statement: "The confirmed profile was read.",
-          basis: "firstParty",
-          sourceIds: readStep?.resultId ? [readStep.resultId] : [],
+          sourceId: readStep?.resultId,
           fetchedAt: Date.now(),
         },
       ];
@@ -642,8 +640,7 @@ export const commitTool = internalMutation({
           assetVersionId: versionId,
           claimKey: claim.claimKey,
           statement: claim.statement,
-          basis: claim.basis,
-          sourceIds: claim.sourceIds,
+          sourceId: claim.sourceId,
           fetchedAt: claim.fetchedAt,
         });
       }

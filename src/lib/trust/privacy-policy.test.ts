@@ -10,8 +10,8 @@ describe("privacy policy stays inside verified behavior", () => {
   it("names the operator and the Lanham address", () => {
     expect(text).toContain("Divine Agency LLC");
     expect(text).toContain("7404 Executive Place, Lanham, MD 20706");
-    expect(text).toContain("Effective: Not in effect");
-    expect(text).toContain("Last updated: October 15, 2026");
+    expect(text).toContain("Effective: November 5, 2026");
+    expect(text).toContain("Last updated: November 5, 2026");
   });
 
   it("drops claims the product does not enforce", () => {
@@ -21,14 +21,29 @@ describe("privacy policy stays inside verified behavior", () => {
     expect(text).not.toMatch(/last four/i);
     expect(text).not.toMatch(/seven years/i);
     expect(text).not.toMatch(/two years/i);
-    expect(text).toContain("14 days");
-    expect(text).toContain("does not delete all raw imported data after 7 days");
+    // Retention: only what the product does today. No invented deletion schedules.
+    expect(text).toContain("does not currently delete workspace information on an automatic schedule");
+    expect(text).not.toMatch(/after 12 months|after 14 days|365 days|after 90 days/i);
     expect(text).not.toMatch(/train/i);
     expect(text).not.toMatch(/at rest/i);
     expect(text).toContain("Global Privacy Control");
     expect(text).toContain("Meta pixel");
     expect(text).not.toContain("[COUNSEL:");
-    expect(text).toContain("US East, N. Virginia");
+    // The policy names the providers the code actually calls, and no retired ones.
+    for (const name of ["Vercel", "Convex", "Clerk", "Anthropic", "Cloudflare", "Resend"]) expect(text).toContain(name);
+    expect(text).not.toMatch(/stripe|supabase|compass|quiet hours|embeddings/i);
+    expect(text).not.toMatch(/GoHighLevel is the CRM/i);
+  });
+
+  it("describes the current product and its research rules", () => {
+    expect(text).toContain("Growth Architect");
+    expect(text).toContain("official access only");
+    expect(text).toContain("does not store copies of ad images or video files");
+    expect(text).toContain("We do not currently use Google Analytics or the Meta pixel");
+  });
+
+  it("shows Not in effect while the policy is switched off", () => {
+    expect(privacyPolicyText({ ...TRUST_FALLBACK, privacyLive: false })).toContain("Effective: Not in effect");
   });
 
   it("adds a switch line only when that switch is on", () => {
@@ -40,7 +55,7 @@ describe("privacy policy stays inside verified behavior", () => {
     });
     expect(on).toMatch(/not used to train/i);
     expect(on).toMatch(/encrypted at rest/i);
-    expect(on).toContain("Effective: October 15, 2026");
+    expect(on).toContain("Effective: November 5, 2026");
     expect(on).toContain("Registered agent, Maryland");
   });
 });

@@ -1,5 +1,6 @@
 import { v } from "convex/values";
 
+import { internalMutation } from "./_generated/server";
 import { staffMutation, staffQuery } from "./lib/builders";
 import { writeAudit } from "./lib/audit";
 import { notAllowed } from "./lib/errors";
@@ -91,5 +92,38 @@ export const setRoute = staffMutation({
       count: 1,
     });
     return null;
+  },
+});
+
+/**
+ * The launch routes (decision D2): Opus 5.5 for research and writing, Sonnet 5.5 for the brief and
+ * classification, each falling back to the other. Run once from the Convex dashboard (Functions, then
+ * platform:ensureDefaultRoutes, then Run). It fills only the kinds of work that have no route, so a route a
+ * Platform Admin has set is never changed. Internal, so no client can call it.
+ */
+export const DEFAULT_ROUTES = [
+  { workKind: "research", provider: "claude", model: "claude-opus-5-5", fallbackProvider: "claude", fallbackModel: "claude-sonnet-5-5" },
+  { workKind: "write", provider: "claude", model: "claude-opus-5-5", fallbackProvider: "claude", fallbackModel: "claude-sonnet-5-5" },
+  { workKind: "classify", provider: "claude", model: "claude-sonnet-5-5", fallbackProvider: "claude", fallbackModel: "claude-opus-5-5" },
+  { workKind: "summarize", provider: "claude", model: "claude-sonnet-5-5", fallbackProvider: "claude", fallbackModel: "claude-opus-5-5" },
+] as const;
+
+export const ensureDefaultRoutes = internalMutation({
+  args: {},
+  handler: async (ctx) => {
+    const added: string[] = [];
+    for (const route of DEFAULT_ROUTES) {
+      const current = await ctx.db
+        .query("modelRoutes")
+        .withIndex("by_workKind", (q) => q.eq("workKind", route.workKind))
+        .unique();
+      if (current) continue;
+      await ctx.db.insert("modelRoutes", { ...route });
+      added.push(route.workKind);
+    }
+    if (added.length > 0) {
+      await writeAudit(ctx, { actorType: "system", actorId: "system", action: "route.defaults", subject: added.join(","), count: added.length });
+    }
+    return { added, kept: DEFAULT_ROUTES.map((row) => row.workKind).filter((kind) => !added.includes(kind)) };
   },
 });

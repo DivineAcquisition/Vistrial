@@ -52,7 +52,7 @@ const researchSteps = [
   step(1, "web.fetch"),
   step(2, "web.fetch"),
   step(3, "web.fetch"),
-  step(4, "library.meta"),
+  step(4, "source.metaAdLibrary"),
   step(5, null),
 ];
 

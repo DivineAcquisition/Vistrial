@@ -8,9 +8,10 @@ import { LayoutListIcon, MenuIcon } from "lucide-react";
 import { ThemeToggle } from "@/components/app/theme-toggle";
 import Logo from "@/components/brand/logo";
 import { CommandBar } from "@/components/shell/command-bar";
+import { FolderTree } from "@/components/shell/folder-tree";
 import { LiveAside } from "@/components/shell/live-aside";
 import { StatusBadge } from "@/components/ui/status-badge";
-import { agentStateLabel, railFromCatalog, type RailAgent, type RailDepartment } from "@/lib/shell/rail";
+import { agentStateLabel, type RailAgent, type RailDepartment } from "@/lib/shell/rail";
 import { cn } from "@/lib/utils";
 
 // Leads and My day belong to the Sales Conversion agent. Their pages stay, hidden from the nav until it ships.
@@ -19,73 +20,6 @@ const tabs = [{ href: "/app", label: "Decisions", icon: LayoutListIcon }] as con
 function active(pathname: string, href: string) {
   if (href === "/app") return pathname === "/app";
   return pathname === href || pathname.startsWith(`${href}/`);
-}
-
-function RailLinks({
-  departments,
-  agents,
-  pathname,
-  onNavigate,
-}: {
-  departments: RailDepartment[];
-  agents: RailAgent[];
-  pathname: string;
-  onNavigate?: () => void;
-}) {
-  const rail = railFromCatalog(agents, departments);
-  const item = "flex items-center justify-between gap-3 rounded-lg px-3 py-2 text-sm text-foreground hover:bg-accent";
-  return (
-    <div className="grid gap-6">
-      {rail.departments.map((group) => (
-        <div key={group.department}>
-          <p className="px-3 text-[11px] font-semibold tracking-[0.14em] text-muted-foreground uppercase">{group.label}</p>
-          <ul className="mt-2 grid gap-1">
-            {group.agents.map((agent) => {
-              const href = `/app/agents/${agent.slug}`;
-              const stateLabel = agentStateLabel(agent);
-              return (
-                <li key={agent.slug}>
-                  <Link
-                    href={href}
-                    onClick={onNavigate}
-                    aria-current={active(pathname, href) ? "page" : undefined}
-                    className={cn(item, active(pathname, href) && "bg-accent")}
-                  >
-                    <span className="min-w-0">
-                      <span className="block font-medium">{agent.name}</span>
-                      <span className="mt-0.5 block text-xs text-muted-foreground">{agent.job}</span>
-                    </span>
-                    <StatusBadge label={stateLabel} />
-                  </Link>
-                </li>
-              );
-            })}
-          </ul>
-        </div>
-      ))}
-      <ul className="grid gap-1 border-t border-border pt-4">
-        {[
-          { href: "/app/profile", label: "Profile" },
-          { href: "/app/runs", label: "Activity" },
-          { href: "/app/assets", label: "Assets" },
-          { href: "/app/controls", label: "Controls" },
-          { href: "/app/connections", label: "Connections" },
-          { href: "/app/settings", label: "Settings" },
-        ].map((link) => (
-          <li key={link.href}>
-            <Link
-              href={link.href}
-              onClick={onNavigate}
-              aria-current={active(pathname, link.href) ? "page" : undefined}
-              className={cn(item, active(pathname, link.href) && "bg-accent")}
-            >
-              {link.label}
-            </Link>
-          </li>
-        ))}
-      </ul>
-    </div>
-  );
 }
 
 export function ProductShell({
@@ -110,18 +44,18 @@ export function ProductShell({
         Skip to content
       </a>
       <div className="flex min-h-dvh min-w-0">
-        <aside className="hidden w-72 shrink-0 border-r border-border md:flex md:flex-col" aria-label="Workspace">
+        <aside className="hidden w-72 shrink-0 border-r border-border md:flex md:flex-col print:hidden" aria-label="Workspace">
           <div className="px-4 py-4">
             <Link href="/app" aria-label="Vistrial home">
               <Logo className="h-7 w-auto" />
             </Link>
           </div>
           <div className="min-h-0 flex-1 overflow-y-auto px-3 pb-6">
-            <RailLinks departments={departments} agents={agents} pathname={pathname} />
+            <FolderTree departments={departments} agents={agents} pathname={pathname} />
           </div>
         </aside>
         <div className="flex min-w-0 flex-1 flex-col">
-          <header className="border-b border-border">
+          <header className="border-b border-border print:hidden">
             <div className="flex flex-wrap items-center gap-2 px-4 py-2" aria-label="Crew">
               {agents
                 .filter((agent) => agent.status === "live")
@@ -157,7 +91,7 @@ export function ProductShell({
             <main id="workspace-main" className="min-w-0 flex-1 px-4 py-6 pb-28 md:px-8 md:pb-10">
               {children}
             </main>
-            <aside aria-label="Live stream" className="hidden w-72 shrink-0 border-l border-border p-4 lg:block">
+            <aside aria-label="Live stream" className="hidden w-72 shrink-0 border-l border-border p-4 lg:block print:hidden">
               <p className="text-[11px] font-semibold tracking-[0.14em] text-muted-foreground uppercase">Live</p>
               <LiveAside />
             </aside>
@@ -165,13 +99,13 @@ export function ProductShell({
         </div>
       </div>
       {menuOpen ? (
-        <div className="fixed inset-x-0 bottom-16 z-30 max-h-[70dvh] overflow-y-auto border-t border-border bg-background p-4 md:hidden">
-          <RailLinks departments={departments} agents={agents} pathname={pathname} onNavigate={() => setMenuOpen(false)} />
+        <div className="fixed inset-x-0 bottom-16 z-30 max-h-[70dvh] overflow-y-auto border-t border-border bg-background p-4 md:hidden print:hidden">
+          <FolderTree departments={departments} agents={agents} pathname={pathname} onNavigate={() => setMenuOpen(false)} />
         </div>
       ) : null}
       <nav
         aria-label="Primary"
-        className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-background pb-[env(safe-area-inset-bottom)] md:hidden"
+        className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-background pb-[env(safe-area-inset-bottom)] md:hidden print:hidden"
       >
         <ul className="grid grid-cols-4">
           {tabs.map((tab) => {

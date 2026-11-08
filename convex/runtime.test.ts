@@ -340,7 +340,8 @@ describe("step 4 runtime", () => {
       owner.mutation(api.controls.setCaps, {
         workspaceId,
         agentSlug: "growth-architect",
-        maxCostCentsPerRun: 101,
+        // The ceiling is $10 a run since decision D3 (it was $1).
+        maxCostCentsPerRun: 1001,
         maxCostCentsPerDay: 200,
         maxSteps: 40,
         maxDurationMs: 300000,
@@ -742,6 +743,10 @@ describe("step 4 runtime", () => {
     const runId = await owner.mutation(api.runs.start, { workspaceId, agentSlug: "growth-architect", skillSlug: "test-echo" });
     const scheduled = await t.run(async (ctx) => ctx.db.system.query("_scheduled_functions").take(10));
     expect(scheduled.map((row) => row.name).sort()).toEqual(["runs:expire", "runs:step"]);
+    // Fired early (time was spent waiting on a person), it only pushes the stop back.
+    await t.mutation(internal.runs.expire, { runId: runId as never });
+    expect((await owner.query(api.runs.get, { workspaceId, runId })).stopReason).toBeNull();
+    vi.setSystemTime(Date.now() + 300_001);
     await t.mutation(internal.runs.expire, { runId: runId as never });
     expect((await owner.query(api.runs.get, { workspaceId, runId })).stopReason).toBe("cap");
   });

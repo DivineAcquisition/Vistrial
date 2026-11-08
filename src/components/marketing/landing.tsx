@@ -1,20 +1,33 @@
 import type { ReactNode } from "react";
 import Link from "next/link";
+import { ArrowRight } from "lucide-react";
 
 import { BlurFade } from "@/components/ui/blur-fade";
+import { AgentFlow } from "@/components/marketing/agentic-visuals";
 import { LandingFaq } from "@/components/marketing/faq";
-import { ApprovalExample, HeroExample } from "@/components/marketing/hero-example";
+import { PhilosophySection } from "@/components/marketing/philosophy";
+import {
+  AssetApprovalExample,
+  DoctrineFlow,
+  EvidenceReport,
+  PainList,
+  ResearchStudioHero,
+  SafetySteps,
+  ScatteredScene,
+  SectionEyebrow,
+  SkillMap,
+  WorkforceMap,
+} from "@/components/marketing/growth-visuals";
 import { BeamFrame, HeroAtmosphere, ShinyLabel, SpotlightCard } from "@/components/marketing/saas-frame";
-import { CaseFileBoard, IndustrySwitcher, StackStrip } from "@/components/marketing/saas-blocks";
-import { AgentScene, HowScene, ProblemScene, SafetyScene } from "@/components/marketing/section-scenes";
-import { Badge } from "@/components/ui/badge";
+import { IndustrySwitcher } from "@/components/marketing/saas-blocks";
 import { Button } from "@/components/ui/button";
-import { AgentName } from "@/components/live/agent-identity";
-import { AGENT_LIST } from "@/lib/agents/roster";
 import {
   AGENTS_SECTION,
+  APPROVAL,
+  EVIDENCE,
   FAQ,
   FINAL_CTA,
+  GROWTH_ARCHITECT,
   HOW,
   INDUSTRIES,
   PROBLEM,
@@ -23,7 +36,6 @@ import {
   SECTIONS,
 } from "@/lib/marketing/content";
 import { HERO } from "@/lib/marketing/content";
-import { CASE_FILE } from "@/lib/marketing/copy";
 import { PRICING_DISPLAY } from "@/lib/marketing/pricing";
 import {
   marketingDisplayTitle,
@@ -40,12 +52,14 @@ const landingOutline = "rounded-[8px]! border-border bg-card before:rounded-[7px
 
 function Section({
   id,
+  eyebrow,
   headline,
   lead,
   children,
   align = "start",
 }: {
   id?: string;
+  eyebrow?: string;
   headline: string;
   lead?: string;
   children: ReactNode;
@@ -54,7 +68,8 @@ function Section({
   const centered = align === "center";
   return (
     <section id={id} className={cn(marketingPageGutter, "scroll-mt-24 border-t border-border py-20 sm:py-28")}>
-      <BlurFade inView offset={12} blur="8px" duration={0.55} className={marketingShell}>
+      <BlurFade inView offset={12} blur="2px" duration={0.55} className={marketingShell}>
+        {eyebrow ? <SectionEyebrow>{eyebrow}</SectionEyebrow> : null}
         <h2 className={cn(marketingSectionTitle, centered && "mx-auto text-center")}>{headline}</h2>
         {lead ? <p className={cn(marketingLead, "mt-4", centered && "mx-auto text-center")}>{lead}</p> : null}
         <div className="mt-10">{children}</div>
@@ -104,89 +119,67 @@ export function LandingPage() {
                 <Button variant="gradient" size="xl" className={landingButton} render={<Link href="/request?from=hero" data-cta-position="hero" />}>
                   {HERO.primaryCta}
                 </Button>
-                <Button variant="outline" size="xl" className={landingOutline} render={<a href="#how" />}>
+                <Button variant="outline" size="xl" className={landingOutline} render={<a href={`#${GROWTH_ARCHITECT.id}`} />}>
                   {HERO.secondaryCta}
                 </Button>
               </div>
               <p className="mt-4 max-w-xl text-sm leading-relaxed text-muted-foreground">{HERO.trust}</p>
             </div>
             <BeamFrame glow>
-              <HeroExample />
+              <ResearchStudioHero />
             </BeamFrame>
           </div>
           </HeroAtmosphere>
         </section>
       ) : null}
 
-      {SECTIONS.hero ? <StackStrip /> : null}
+      {SECTIONS.hero ? <AgentFlow /> : null}
 
       {SECTIONS.problem ? (
-        <Section headline={PROBLEM.headline}>
-          <div className="grid items-start gap-8 lg:grid-cols-[1.05fr_0.95fr]">
-            <div className="space-y-5">
-              <ProblemScene />
+        <Section id={PROBLEM.id} headline={PROBLEM.headline}>
+          <div className="grid items-start gap-8 lg:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)] lg:gap-10">
+            <div className="min-w-0 space-y-6">
+              <ScatteredScene />
               <div className="space-y-4 text-[15px] leading-relaxed text-muted-foreground sm:text-base">
                 <p>{PROBLEM.opening}</p>
                 <p>{PROBLEM.scattered}</p>
               </div>
             </div>
-            <ul className="grid gap-3">
-              {PROBLEM.pains.map((pain, index) => (
-                <li key={pain}>
-                  <SpotlightCard className="flex items-start gap-3">
-                    <span className="inline-flex h-7 min-w-7 items-center justify-center rounded-md border border-border bg-muted px-1.5 font-heading text-xs text-strong" aria-hidden>
-                      {String(index + 1).padStart(2, "0")}
-                    </span>
-                    <span className="text-sm leading-relaxed text-strong">{pain}</span>
-                  </SpotlightCard>
-                </li>
-              ))}
-            </ul>
+            <PainList />
           </div>
+          <p className="mt-10 flex flex-wrap items-center gap-x-3 gap-y-1 border-t border-border pt-6 text-sm text-strong sm:text-base">
+            <span className="font-medium">{PROBLEM.bridge.text}</span>
+            <a href={PROBLEM.bridge.href} className="inline-flex items-center gap-1.5 font-medium text-brand-300 underline-offset-4 hover:underline">
+              {PROBLEM.bridge.link}
+              <ArrowRight className="size-4" aria-hidden />
+            </a>
+          </p>
         </Section>
       ) : null}
 
+      {SECTIONS.philosophy ? <PhilosophySection /> : null}
+
       {SECTIONS.how ? (
-        <Section id={HOW.id} headline={HOW.headline}>
-          <ol className="grid gap-4 md:grid-cols-3">
-            {HOW.steps.map((step, index) => (
-              <li key={step.id}>
-                <SpotlightCard glow beamDelay={index * 2.6} className="relative">
-                  <HowScene id={step.id} />
-                  <Badge variant="outline" size="sm" className="mt-4 border-border bg-muted">
-                    {String(index + 1).padStart(2, "0")}
-                  </Badge>
-                  <h3 className="mt-4 font-heading text-2xl text-strong">{step.title}</h3>
-                  <p className="mt-3 text-sm leading-relaxed text-muted-foreground">{step.body}</p>
-                </SpotlightCard>
-              </li>
-            ))}
-          </ol>
+        <Section id={HOW.id} headline={HOW.headline} lead={HOW.lead}>
+          <DoctrineFlow />
         </Section>
       ) : null}
 
-      {SECTIONS.how ? (
-        <Section headline={CASE_FILE.headline}>
-          <CaseFileBoard />
+      {SECTIONS.growthArchitect ? (
+        <Section id={GROWTH_ARCHITECT.id} eyebrow={GROWTH_ARCHITECT.eyebrow} headline={GROWTH_ARCHITECT.headline} lead={GROWTH_ARCHITECT.lead}>
+          <SkillMap />
+        </Section>
+      ) : null}
+
+      {SECTIONS.evidence ? (
+        <Section id={EVIDENCE.id} headline={EVIDENCE.headline} lead={EVIDENCE.lead}>
+          <EvidenceReport />
         </Section>
       ) : null}
 
       {SECTIONS.agents ? (
         <Section id={AGENTS_SECTION.id} headline={AGENTS_SECTION.headline} lead={AGENTS_SECTION.lead}>
-          <ul className="grid gap-4 sm:grid-cols-2">
-            {AGENT_LIST.map((agent) => (
-              <li key={agent.id}>
-                <SpotlightCard>
-                  <AgentScene id={agent.id} />
-                  <div className="mt-4">
-                    <AgentName agentId={agent.id} size="lg" />
-                  </div>
-                  <p className="mt-3 text-sm leading-relaxed text-muted-foreground">{agent.role}</p>
-                  <p className="mt-2 text-sm leading-relaxed text-strong">{agent.promise}</p>
-                </SpotlightCard>
-              </li>
-            ))}
-          </ul>
+          <WorkforceMap />
         </Section>
       ) : null}
 
@@ -199,7 +192,7 @@ export function LandingPage() {
 
       {SECTIONS.safety ? (
         <Section id={SAFETY.id} headline={SAFETY.headline} lead={SAFETY.lead}>
-          <SafetyScene />
+          <SafetySteps />
           <ul className="mt-4 grid gap-3 sm:grid-cols-2">
             {SAFETY.items.map((item) => (
               <li key={item}>
@@ -209,13 +202,15 @@ export function LandingPage() {
               </li>
             ))}
           </ul>
-          <div className="mt-8 grid gap-6 lg:grid-cols-[0.7fr_1fr] lg:items-start">
-            <p>
-              <Link href={SAFETY.linkHref} className="text-sm font-medium text-brand-300 underline">
+          <div className="mt-10 grid gap-6 lg:grid-cols-[0.8fr_1fr] lg:items-center lg:gap-12">
+            <div className="max-w-md">
+              <h3 className="font-heading text-xl tracking-tight text-strong">{APPROVAL.introTitle}</h3>
+              <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{APPROVAL.introBody}</p>
+              <Link href={SAFETY.linkHref} className="mt-4 inline-flex text-sm font-medium text-brand-300 underline underline-offset-4">
                 {SAFETY.linkLabel}
               </Link>
-            </p>
-            <ApprovalExample />
+            </div>
+            <AssetApprovalExample />
           </div>
         </Section>
       ) : null}
@@ -263,7 +258,7 @@ export function LandingPage() {
 
       {SECTIONS.final ? (
         <section id={FINAL_CTA.id} className={cn(marketingPageGutter, "scroll-mt-24 border-t border-border py-20 sm:py-28")}>
-          <BlurFade inView offset={12} blur="8px" duration={0.55} className={marketingShell}>
+          <BlurFade inView offset={12} blur="2px" duration={0.55} className={marketingShell}>
             <BeamFrame glow beamDelay={1.4} className="mx-auto max-w-3xl text-center">
               <h2 className={cn(marketingSectionTitle, "mx-auto text-center")}>{FINAL_CTA.headline}</h2>
               <p className={cn(marketingLead, "mx-auto mt-4 text-center")}>{FINAL_CTA.body}</p>

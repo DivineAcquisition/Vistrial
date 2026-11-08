@@ -2,9 +2,9 @@ import { COMPANY_ADDRESS, LEGAL_ENTITY } from "@/lib/constants";
 import { formatTrustDate, type TrustPublic } from "@/lib/trust/model";
 
 /**
- * Public privacy policy. A sentence is included only when the product does
- * that thing, or when the draft marked it for counsel. Switch lines stay out
- * until a Platform Admin turns them on.
+ * Public privacy policy for the current product (Growth Architect). A sentence
+ * is included only when the product does that thing today. Switch lines stay
+ * out until a Platform Admin confirms the setting and turns them on.
  */
 
 export type PolicyBlock =
@@ -38,9 +38,10 @@ export function privacyPolicySections(trust: TrustPublic): PolicySection[] {
 
   const ai: string[] = [
     "Agents work only inside the workspace they belong to.",
-    "Text written by leads or contacts is treated as information to read, not as instructions to follow.",
-    "Agents cannot send, change, or delete anything without a person on the customer team approving it.",
-    "AI output can be wrong. Teams should review it before approving.",
+    "Text found in public sources, and text in files you upload, is treated as information to read, not as instructions to follow.",
+    "Agents cannot publish, post, send, or spend anything. A person on the customer team reviews and approves the work, and publishing happens outside Vistrial.",
+    "Every claim in a report is labeled as observed, inferred, a hypothesis, or backed by the customer's own results, with its source. When there is not enough data, the report says so.",
+    "AI output can be wrong. Teams should review it before approving or using it.",
   ];
   if (trust.switches.aiNoTraining) {
     ai.push(
@@ -49,10 +50,10 @@ export function privacyPolicySections(trust: TrustPublic): PolicySection[] {
   }
 
   const protection: string[] = [
-    "Separate workspaces. Customers are separated from each other, and the separation is enforced in the database, not only on screen.",
+    "Separate workspaces. Customers are separated from each other, and the separation is enforced on the server for every request, not only on screen.",
     "Role-based access. People see only what their role allows.",
-    "Protected credentials. Access keys for connected tools are stored as protected references and are not displayed.",
-    "Audit trail. Sign-ins, approvals, and exports are recorded. Important staff actions that change a workspace are recorded.",
+    "Audit trail. Important actions, such as approvals and staff actions that change a workspace, are recorded.",
+    "Cost limits. Every research run has a cost limit, and the cost is shown as it runs.",
     "The website and the application are served over HTTPS. Browsers are told to stay on HTTPS.",
   ];
   if (trust.switches.encryptionAtRest) {
@@ -63,14 +64,10 @@ export function privacyPolicySections(trust: TrustPublic): PolicySection[] {
   }
 
   const retention: string[] = [
-    "Website access and contact forms that have not been converted into a workspace are deleted after 12 months by default. Requests left in waiting, answered, or closed are not deleted by that job. The period can be set from 1 to 84 months.",
-    "Account and workspace information is kept while the workspace is active.",
-    "Raw webhook payloads are replaced after 14 days. Imported lead records stay in the workspace. The product does not delete all raw imported data after 7 days.",
-    "Call transcripts and recording links are cleared after the workspace retention setting. The default is 365 days. A workspace can set this from 30 days to 1,095 days.",
-    "Case files stay while the workspace is active, unless the customer deletes them or asks us to.",
-    "Notification records, including the text of the notice, are deleted after 90 days.",
-    "Audit records and billing records do not have a separate automatic deletion period.",
-    "When a workspace is closed, a delete date is set from that workspace closed-retention setting. The default is 90 days. The offboarding path keeps data for 30 days, then the retention job deletes it.",
+    "Account and workspace information, including research, reports, drafts, and uploaded files, is kept while the workspace is active.",
+    "Earlier versions of a report or draft are kept with it, so a team can see what changed. Versions are not overwritten.",
+    "Information you send us through our website or by email is kept as long as we need it to respond to you and to manage our relationship with you.",
+    "Vistrial does not currently delete workspace information on an automatic schedule. When a customer asks us to delete information, we verify the request and a person carries it out.",
   ];
   if (trust.switches.backups) {
     retention.push(
@@ -87,12 +84,12 @@ export function privacyPolicySections(trust: TrustPublic): PolicySection[] {
         {
           kind: "ul",
           items: [
-            "Vistrial helps sales teams bring the records of their leads together in one place, with every call, booking, and outcome in a single case file.",
+            "Vistrial is an agentic workforce for business growth. Our first agent, Growth Architect, researches a business's market from public sources and the business's own results, then prepares reports, strategy, and creative drafts for a person to review.",
             "If you visit our website or ask for access, we collect only what we need to respond to you.",
-            "If you are a customer, the lead and contact information in your workspace belongs to you. We handle it on your behalf to provide the service.",
-            "We do not keep a mailbox of the text messages, emails, or chats sent to your leads. A draft can hold the words until it is sent or dropped, and the stored draft text is then cleared. Call transcripts are kept when a recording source is connected.",
-            "Nothing is sent to your leads until a person on your team approves it.",
-            "We use a small number of trusted companies to run the service. They are listed on /security/subprocessors once their role and processing location are confirmed.",
+            "If you are a customer, the information in your workspace belongs to you. We handle it on your behalf to provide the service.",
+            "Research uses official access only: public web pages, official platform APIs, and links you provide. Vistrial does not log in to a platform for you or get around blocks.",
+            "Nothing is published, posted, or sent by Vistrial. A person on your team approves the work, and you decide what to use.",
+            "We use a small number of service providers to run Vistrial. Section 6 names them.",
             "You can ask us to export, correct, or delete your information. Section 12 explains how.",
             `Questions? Email ${email}.`,
           ],
@@ -113,18 +110,18 @@ export function privacyPolicySections(trust: TrustPublic): PolicySection[] {
           kind: "ul",
           items: [
             "Our public website and its forms.",
-            "The Vistrial application, including accounts, workspaces, and notifications.",
+            "The Vistrial application, including accounts, workspaces, and agents.",
             "Our communications with you, such as email and support replies.",
           ],
         },
         { kind: "p", text: "We act in two different roles, and the difference matters:" },
         {
           kind: "p",
-          text: "Our own information. For visitors, people who request access, account holders, billing contacts, and people who contact us, we decide why and how the information is used. This policy describes those uses.",
+          text: "Our own information. For visitors, people who request access, account holders, and people who contact us, we decide why and how the information is used. This policy describes those uses.",
         },
         {
           kind: "p",
-          text: "Customer workspace information. A Vistrial customer connects its own tools and brings in information about its leads and contacts. The customer decides what to bring in and how it is used. We process that information for the customer, to provide the service, and follow the customer instructions and our agreement with them. If you are a lead or contact of a customer, Section 13 explains your options.",
+          text: "Customer workspace information. A Vistrial customer tells Growth Architect what to research and brings in its own information, such as its business profile, competitors, results files, and lead lists. The customer decides what to bring in and how it is used. We process that information for the customer, to provide the service, and follow the customer's instructions and our agreement with them. If you are a lead or contact of a customer, Section 13 explains your options.",
         },
       ],
     },
@@ -138,16 +135,15 @@ export function privacyPolicySections(trust: TrustPublic): PolicySection[] {
           kind: "ul",
           items: [
             "Basic technical information your browser sends automatically, such as IP address, browser type, device type, pages viewed, referring page, and the date and time of your visit.",
-            "Information needed to keep the site secure, such as records of unusual or abusive traffic.",
-            "A choice about site measurement, described in Section 8.",
+            "Information needed to keep the site secure, such as records of unusual or abusive traffic and the result of a bot check on our forms.",
+            "Your choice about optional cookies, described in Section 8.",
           ],
         },
         { kind: "h", text: "B. When you request access or contact us" },
         {
           kind: "ul",
           items: [
-            "Name, work email address, company, role, and the details you choose to give us in the form, such as your team size, tools, or what you need.",
-            "For security review requests: what you need (for example a questionnaire or data processing agreement), any deadline, and anything you add.",
+            "Name, work email address, business name, website, and the details you choose to give us in the form, such as your type of business, team size, the tools you use, and what you need.",
             "For data requests: the details needed to verify and fulfil the request.",
             "Records of our replies and the status of your request.",
           ],
@@ -156,50 +152,47 @@ export function privacyPolicySections(trust: TrustPublic): PolicySection[] {
         {
           kind: "ul",
           items: [
-            "Name, email address, role in your workspace, and sign-in information. Passwords are not stored in readable form.",
-            "Settings and preferences, such as notification choices and time zone.",
-            "Information about how you use the product, such as sign-in history, actions taken (for example approvals), and security events. We keep an audit trail of important actions.",
+            "Name, email address, role in your workspace, and sign-in information. Sign-in is handled by our sign-in provider. Passwords are not stored by Vistrial in readable form.",
+            "Settings and preferences.",
+            "Information about how you use the product, such as actions taken (for example approvals) and security events. We keep an audit trail of important actions.",
           ],
         },
         { kind: "h", text: "D. Customer workspace information" },
         {
           kind: "p",
-          text: "A customer workspace may hold information that the customer brings in from its connected sources or enters directly. Depending on what the customer connects, this can include:",
+          text: "A customer workspace holds the information the customer enters or uploads, and the work Growth Architect prepares from it. This can include:",
         },
         {
           kind: "ul",
           items: [
-            "Lead and contact details: names, email addresses, phone numbers, company, job title, tags, owner, and pipeline stage.",
-            "Deal information: values, stage history, and outcomes.",
-            "Appointments and bookings: booked, rescheduled, canceled, and no-show status.",
-            "Call and meeting records, when a recording source is connected: call logs, recordings, and transcripts, and what they contain (see Section 14).",
-            "Records from the CRM, calendars, booking tools, forms, and automation webhooks the customer connects. GoHighLevel is the CRM that works today.",
-            "Notes, corrections, uploads, and other information the team types or imports.",
-            "Records of what the agents prepared and what the team approved or rejected.",
+            "The business profile: what the business sells, where, to whom, its offers, and its competitors.",
+            "Research assignments: the questions, markets, keywords, competitors, and links the team asks Growth Architect to look at.",
+            "Files the team uploads, such as the business's own ad or sales results.",
+            "Lead lists the team imports, such as names, email addresses, phone numbers, and activity dates, and notes the team adds.",
+            "Research runs: the steps an agent took, the sources it checked, whether each source was available, and the cost of the run.",
+            "Reports, strategy, ad copy, scripts, briefs, and other drafts, with their versions and who approved them.",
           ],
         },
-        { kind: "p", text: "We keep track of where each item came from, so the team can see its source." },
-        { kind: "h", text: "E. What we do not keep as a mailbox" },
+        { kind: "h", text: "E. Information from public sources" },
         {
           kind: "p",
-          text: "We do not keep a mailbox of text messages, emails, or chat messages sent to or received from leads. We may record that a touch happened, such as the channel, time, and result, without keeping the words. Draft text can be stored until the send finishes or is dropped, and is then cleared. Compass does not show message threads.",
+          text: "To research a market, Growth Architect reads public sources: public web pages, YouTube through its official API, the Meta Ad Library through Meta's official API where it is available, and TikTok and Instagram posts the team provides or the research finds, through the platforms' public link previews. From these, Vistrial stores links, titles, publishers, dates, short text excerpts, and the facts drawn from them, such as which offers an advertiser leads with and how long an ad has run. It does not store copies of ad images or video files. Some posts are shown through the platform's own embedded player.",
         },
-        { kind: "h", text: "F. Billing information" },
         {
           kind: "p",
-          text: "Payments are handled by Stripe. We store a Stripe customer reference and limited billing information such as plan, billing contact, invoice history, and payment status. We do not see or store a full card number.",
+          text: "Public sources can name businesses and people, such as advertisers, creators, and reviewers. Section 14 explains your options if that includes you.",
+        },
+        { kind: "h", text: "F. Payments" },
+        {
+          kind: "p",
+          text: "Vistrial does not take payments on its website or in the application. Billing details are shared with a customer when their team is approved. We do not see or store a full card number.",
         },
         { kind: "h", text: "G. Support and communications" },
         { kind: "p", text: "Messages you send us, our replies, and information you share to get help." },
-        { kind: "h", text: "H. Information from connected tools" },
+        { kind: "h", text: "H. Information created by our AI features" },
         {
           kind: "p",
-          text: "When a customer connects a tool, we receive the information that customer authorizes. Access is granted on the other tool's own screen, and we ask for the minimum needed. Access keys are stored as protected references, and we do not display them.",
-        },
-        { kind: "h", text: "I. Information created by our AI features" },
-        {
-          kind: "p",
-          text: "Summaries, draft messages, suggestions, and answers that our agents prepare from the customer workspace information. These belong with the workspace they were created for.",
+          text: "Reports, summaries, drafts, and answers that our agents prepare from the customer's workspace information and from public sources. These belong with the workspace they were created for.",
         },
       ],
     },
@@ -212,12 +205,10 @@ export function privacyPolicySections(trust: TrustPublic): PolicySection[] {
         {
           kind: "ul",
           items: [
-            "Provide, run, and maintain the service, including building case files and showing them to the right people in a workspace.",
+            "Provide, run, and maintain the service, including running research and preparing reports and drafts for the right people in a workspace.",
             "Create and manage accounts, roles, and invitations.",
-            "Prepare drafts and summaries for a customer's team, and send approved messages through the customer's own tools.",
-            "Send notices you need or asked for, such as account, security, billing, and product notifications.",
-            "Process payments and keep billing records.",
-            "Respond to access requests, security review requests, support requests, and data requests.",
+            "Send notices you need or asked for, such as account and security notices.",
+            "Respond to access requests, support requests, and data requests.",
             "Keep the service secure, prevent abuse and fraud, and investigate problems.",
             "Meet legal obligations and enforce our terms.",
             "Understand how the product is used so we can fix problems and improve it, using aggregated or de-identified information wherever practical.",
@@ -234,10 +225,9 @@ export function privacyPolicySections(trust: TrustPublic): PolicySection[] {
         {
           kind: "ul",
           items: [
-            "Nothing is sent to your leads until a person approves it. Before sending, we re-check consent, opt-outs, contact limits, and quiet hours (no messages between 8 pm and 8 am in the local time of the lead, by default).",
-            "Opt-outs and do-not-contact markers from any source are processed first.",
-            "Historic records imported from a connected CRM do not start alerts, follow-ups, or drafts on their own. A person working that lead, or the lead getting in touch again, is what brings the record into live work.",
-            "Vistrial does not change a connected CRM unless you turn that on and a person approves the action.",
+            "Growth Architect prepares work for review. It does not publish, post, send, or charge anything to an ad account. A person approves the work, and you decide what to use.",
+            "You choose what Growth Architect researches, and every run has a cost limit.",
+            "Collection from public ad libraries stays off until a workspace Owner accepts the risk in writing.",
             "Only the people invited into a workspace can see it, and what each person sees depends on their role. Important actions, including staff actions that change a workspace, are recorded.",
           ],
         },
@@ -251,11 +241,26 @@ export function privacyPolicySections(trust: TrustPublic): PolicySection[] {
         { kind: "p", text: "We share information only in these ways:" },
         {
           kind: "p",
-          text: "Service providers (subprocessors). We use trusted companies to host, store, deliver, and process information on our behalf. They may use it only to provide their service to us. The current public list, with what each does and what it handles, is at /security/subprocessors. A company is listed there only after its processing location is confirmed.",
+          text: "Service providers. We use companies that host, store, and process information on our behalf. They may use it only to provide their service to us. Today they are:",
+        },
+        {
+          kind: "ul",
+          items: [
+            "Vercel, which hosts the website and the application.",
+            "Convex, which stores the application's data.",
+            "Clerk, which handles sign-in and accounts.",
+            "Anthropic, which provides the AI models our agents use, including their web search and web page reading.",
+            "Cloudflare, which runs the bot check on our public forms when it is switched on.",
+            "Resend, which delivers the email that tells our team a website form was submitted.",
+          ],
         },
         {
           kind: "p",
-          text: "Connected tools. When a customer connects a tool and approves a send, information goes to that tool as the customer directs. Those tools are the customer's own accounts and are governed by their own terms.",
+          text: "Platforms we read from. When Growth Architect researches a market, it sends search terms and links to Google (for YouTube) and Meta (for the Meta Ad Library), and requests public link previews from platforms such as TikTok and Instagram. It sends what is needed to find public content, not the contents of your workspace.",
+        },
+        {
+          kind: "p",
+          text: "These companies may process information in the United States and in other countries where they operate.",
         },
         { kind: "p", text: "Within a workspace. Information is visible to people the customer has invited, according to their role." },
         {
@@ -277,11 +282,7 @@ export function privacyPolicySections(trust: TrustPublic): PolicySection[] {
         },
         {
           kind: "p",
-          text: "That statement is about information in customer workspaces. Website visits are described in Section 8. Optional analytics and advertising on the public site stay off until a visitor allows them.",
-        },
-        {
-          kind: "p",
-          text: "The public website does not send visit information to advertising platforms. Optional first-party page counts are described in Section 8.",
+          text: "The public website does not send visit information to advertising platforms. Optional page counts are described in Section 8.",
         },
       ],
     },
@@ -292,7 +293,7 @@ export function privacyPolicySections(trust: TrustPublic): PolicySection[] {
       blocks: [
         {
           kind: "p",
-          text: "Vistrial uses AI to prepare summaries, drafts, alerts, and answers inside a customer workspace. When an AI feature runs, the relevant workspace information is sent to the model provider for that feature. Anthropic is used for drafts, summaries, and answers. Google is used for embeddings and extraction. A provider is added to /security/subprocessors once its processing location is confirmed.",
+          text: "Vistrial uses AI to research, sort, and write inside a customer workspace. When an agent runs, the relevant workspace information and the public sources it found are sent to our AI provider, Anthropic, to do that work. Web searches and web page reading for research also run through Anthropic.",
         },
         { kind: "ul", items: ai },
       ],
@@ -306,19 +307,18 @@ export function privacyPolicySections(trust: TrustPublic): PolicySection[] {
         {
           kind: "ul",
           items: [
-            "Essential: keeping you signed in, protecting against abuse, and remembering security settings. The application cannot work without these.",
-            "Preferences: remembering choices such as display settings.",
-            "Analytics, off until you allow it: our own count of public page visits, and Google Analytics when that tool is switched on. They collect pages visited, device and browser type, approximate location, and referring page. They do not receive your name, email, or form answers.",
-            "Advertising, off until you allow it: the Meta pixel, when that tool is switched on, to measure our own ads. It does not receive your name, email, phone number, or form answers. Google Analytics and the Meta pixel stay switched off until this policy is in effect and a Platform Admin enables them.",
+            "Essential: keeping you signed in, protecting against abuse, and remembering your cookie choice. The application cannot work without these.",
+            "Analytics, off until you allow it: our own count of public page visits, kept as daily totals. It records the page and the type of event, not your name, email, or form answers.",
+            "We do not currently use Google Analytics or the Meta pixel. If we turn either on, we will update this policy first, and it will stay off until you allow that category.",
           ],
         },
         {
           kind: "p",
-          text: "Analytics and advertising tools run only on the public website, and only after you allow them. They are not used inside the Vistrial application or on workspace pages. The booking calendar is provided by GoHighLevel and does not load until you click to open it. Details are on /cookies.",
+          text: "Optional tools run only on the public website, and only after you allow them. They are not used inside the Vistrial application. The older booking calendar on /book is provided by GoHighLevel and does not load until you open it. Details are on /cookies.",
         },
         {
           kind: "p",
-          text: "You can change your choice at any time from the cookie preferences link on our website, or at /cookies. If your browser sends a Global Privacy Control signal, we keep analytics and advertising off unless you deliberately turn a category on. Blocking essential cookies may stop parts of the service from working. We do not currently respond to Do Not Track signals other than as described here.",
+          text: "You can change your choice at any time from the cookie preferences link on our website, or at /cookies. If your browser sends a Global Privacy Control signal, we keep optional tools off unless you deliberately turn a category on. Blocking essential cookies may stop parts of the service from working. We do not currently respond to Do Not Track signals other than as described here.",
         },
       ],
     },
@@ -329,13 +329,9 @@ export function privacyPolicySections(trust: TrustPublic): PolicySection[] {
       blocks: [
         {
           kind: "p",
-          text: "We send service email: sign-in links, security notices, invitations, billing notices, notifications you set up, data request updates, and replies to your requests. You cannot turn off account, security, and billing notices because they are required to run your account.",
+          text: "We send service email: sign-in and account messages, invitations, security notices, data request updates, and replies to your requests. You cannot turn off account and security notices because they are required to run your account.",
         },
         { kind: "p", text: "Vistrial does not send a separate product newsletter." },
-        {
-          kind: "p",
-          text: "A notification email does not include message text, call transcripts, email addresses, or phone numbers. It can include a first name and a link into the product.",
-        },
       ],
     },
     {
@@ -345,13 +341,9 @@ export function privacyPolicySections(trust: TrustPublic): PolicySection[] {
       blocks: [
         {
           kind: "p",
-          text: "We keep information only as long as needed for the purposes in this policy, then delete or de-identify it. These are the periods the product enforces today:",
+          text: "We keep information only as long as needed for the purposes in this policy, then delete or de-identify it:",
         },
         { kind: "ul", items: retention },
-        {
-          kind: "p",
-          text: "When a customer asks for deletion, we verify the request and a person carries it out through a tracked process. A deletion request is not executed on its own.",
-        },
       ],
     },
     {
@@ -386,17 +378,12 @@ export function privacyPolicySections(trust: TrustPublic): PolicySection[] {
         { kind: "p", text: "Workspace Owners can also ask us to:" },
         {
           kind: "ul",
-          items: [
-            "Export their workspace data.",
-            "Delete imported data after disconnecting a source.",
-            "Delete the workspace.",
-          ],
+          items: ["Export their workspace data.", "Delete uploaded files or imported lists.", "Delete the workspace."],
         },
         {
           kind: "p",
-          text: `How to ask. Use the data requests page at /privacy/requests, or email ${email}. Workspace Owners can also make requests inside the product. We verify your identity before acting, because we do not want to give your information to the wrong person. We aim to respond within 30 days. The staff queue shows the age of each open request, including requests older than 30 days. We will tell you if we cannot fulfil a request and why.`,
+          text: `How to ask. Use the data requests page at /privacy/requests, or email ${email}. We verify your identity before acting, because we do not want to give your information to the wrong person. We aim to respond within 30 days. We will tell you if we cannot fulfil a request and why.`,
         },
-        { kind: "p", text: "You can also disconnect any source at any time, from Vistrial or from the other tool. Data stops flowing when you do." },
         { kind: "p", text: "You will not be treated worse for making a request." },
       ],
     },
@@ -407,26 +394,26 @@ export function privacyPolicySections(trust: TrustPublic): PolicySection[] {
       blocks: [
         {
           kind: "p",
-          text: "Customers use Vistrial to manage their own sales records. If a business has your information in Vistrial, the business decides what to keep and how to use it. Vistrial handles that information on the business's behalf.",
+          text: "A customer can import its own lead lists into Vistrial. If a business has your information in Vistrial, the business decides what to keep and how to use it. Vistrial handles that information on the business's behalf and does not contact you.",
         },
         {
           kind: "p",
-          text: `If you want to see, correct, or delete your information, or stop being contacted, the fastest route is to contact the business directly. You can also email ${email}, tell us which business contacted you, and we will pass your request to that business. We may not be able to act on the request ourselves without the customer's direction, but we will tell you what happens next.`,
-        },
-        {
-          kind: "p",
-          text: "If you ask not to be contacted, the business's tools are set up to honor opt-outs and do-not-contact markers first.",
+          text: `If you want to see, correct, or delete your information, the fastest route is to contact the business directly. You can also email ${email}, tell us which business you mean, and we will pass your request to that business. We may not be able to act on the request ourselves without the customer's direction, but we will tell you what happens next.`,
         },
       ],
     },
     {
-      id: "recordings",
+      id: "public-sources",
       number: "14",
-      title: "Call recordings and transcripts",
+      title: "If you appear in public content we researched",
       blocks: [
         {
           kind: "p",
-          text: "Customers can bring call recordings and transcripts into Vistrial from their call and meeting tools. Laws about recording calls vary, and some states require everyone on a call to agree. Customers are responsible for giving required notices and getting required consent before they record, and for having the right to bring those recordings into Vistrial. Vistrial does not decide whether a call may be recorded. Transcripts are visible only to the roles the customer allows.",
+          text: "Growth Architect reads content that is already public, such as ads in the Meta Ad Library, public videos and posts, and public web pages. A research report can mention the business or person who published that content and link to it. Vistrial does not log in to see private content, does not get around blocks, and does not store copies of images or videos.",
+        },
+        {
+          kind: "p",
+          text: `If you want a link or excerpt about you removed from a report, email ${email} with the link, and we will review it with the customer whose workspace holds it.`,
         },
       ],
     },
@@ -448,15 +435,11 @@ export function privacyPolicySections(trust: TrustPublic): PolicySection[] {
       blocks: [
         {
           kind: "p",
-          text: "We are based in the United States, and our main database is hosted in the United States (US East, N. Virginia). Service providers may also process information in the United States. Hosting, email, and model providers are named on /security/subprocessors only after a processing location is confirmed.",
+          text: "We are based in the United States. Our service providers may process information in the United States and in other countries where they operate.",
         },
         {
           kind: "p",
           text: "If you use Vistrial from Canada or elsewhere outside the United States, you understand your information will be transferred to and processed in the United States, which may have different data protection laws than your country.",
-        },
-        {
-          kind: "p",
-          text: "This section is the notice we give about storage and processing in the United States.",
         },
       ],
     },
@@ -471,11 +454,11 @@ export function privacyPolicySections(trust: TrustPublic): PolicySection[] {
         },
         {
           kind: "p",
-          text: `To ask about these rights, email ${email}. We reply by email. This page does not set a legal response deadline or an appeal process.`,
+          text: `To ask about these rights, email ${email}. We reply by email.`,
         },
         {
           kind: "p",
-          text: `If you are in Canada, email ${email} about your information and about storage in the United States. This page does not name a privacy regulator.`,
+          text: `If you are in Canada, email ${email} about your information and about storage in the United States.`,
         },
         {
           kind: "p",

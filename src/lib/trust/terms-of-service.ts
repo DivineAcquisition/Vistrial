@@ -3,9 +3,9 @@ import { formatTrustDate, type TrustPublic } from "@/lib/trust/model";
 import type { PolicyBlock, PolicySection } from "@/lib/trust/privacy-policy";
 
 /**
- * Public terms. Billing stages are included only when the billing system does
- * them. Counsel notes stay. The operator and address come from settings, with
- * the filled-in values as the fallback.
+ * Public terms for the current product (Growth Architect). A sentence is
+ * included only when the product does that thing today. The operator and
+ * address come from settings, with the filled-in values as the fallback.
  */
 
 export function termsEntity(trust: TrustPublic): string {
@@ -28,10 +28,11 @@ export function termsSections(trust: TrustPublic): PolicySection[] {
   const address = termsAddress(trust);
   const email = CONTACT_EMAIL;
   const ai = [
-    "Vistrial uses AI to prepare summaries, drafts, alerts, and answers. AI output can be wrong, incomplete, or out of date. You are responsible for reviewing it and for deciding what to do with it.",
-    "Agents cannot send, change, or delete anything without a person on your team approving it. If you approve something, it is your decision.",
+    "Vistrial uses AI to research markets and to prepare reports, strategy, and creative drafts. AI output can be wrong, incomplete, or out of date. You are responsible for reviewing it and for deciding what to do with it.",
+    "Reports label each claim as observed, inferred, a hypothesis, or backed by your own results, and link to its source. A long-running or popular ad is not proof that it worked. Do not treat a hypothesis as a fact.",
+    "Agents do not publish, post, send, or spend anything. A person on your team approves the work. If you approve or use something, it is your decision.",
     "Do not rely on AI output as legal, financial, or other professional advice.",
-    "Anthropic is used for drafts, summaries, and answers. Google is used for embeddings and extraction. A provider is added to /security/subprocessors once its processing location is confirmed.",
+    "Anthropic provides the AI models our agents use, including their web search and web page reading.",
   ];
   if (trust.switches.aiNoTraining) {
     ai.push(
@@ -75,7 +76,7 @@ export function termsSections(trust: TrustPublic): PolicySection[] {
         },
         {
           kind: "p",
-          text: "Each workspace has an Owner, who is responsible for the workspace. Workspaces use roles: Workspace Owner, Workspace Member, and Workspace Operator (a customer's own setters, closers, and virtual assistants). Vistrial staff roles exist for support and administration. What each person can see depends on their role.",
+          text: "Each workspace has an Owner, who is responsible for the workspace. Workspaces use roles, and what each person can see and approve depends on their role. Vistrial staff roles exist for support and administration.",
         },
         { kind: "p", text: "You are responsible for:" },
         {
@@ -100,7 +101,7 @@ export function termsSections(trust: TrustPublic): PolicySection[] {
       blocks: [
         {
           kind: "p",
-          text: "Vistrial brings together information about a business's leads from the tools the business connects (for example a CRM, call and meeting tools, calendars and booking tools, forms, and automation tools) and from what the business's own team enters. GoHighLevel is the CRM that works today. It builds a case file for each lead, shows where each piece came from, and uses agents to help the team notice what needs attention, summarize activity, and prepare drafts for human approval.",
+          text: "Vistrial is an agentic workforce for business growth: specialized AI agents that research a business's market, sharpen its strategy, and prepare the work to grow. The first agent, Growth Architect, studies competitors, offers, ads, and content from public sources and from the business's own results, and prepares market reports, strategy, ad copy, scripts, briefs, and landing page drafts for a person to review. Skills are released one at a time, and the product shows which are available.",
         },
         {
           kind: "p",
@@ -144,26 +145,25 @@ export function termsSections(trust: TrustPublic): PolicySection[] {
       ],
     },
     {
-      id: "messaging",
+      id: "marketing-compliance",
       number: "5",
-      title: "Messaging, calling, and recording compliance",
+      title: "Research, content, and marketing compliance",
       blocks: [
         {
           kind: "p",
-          text: "You are responsible for how you contact your leads and for following the laws and rules that apply to you. These can include rules about texting, calling, email, telemarketing, do-not-call lists, consent, opt-outs, calling hours, recording calls, and carrier requirements.",
+          text: "Growth Architect uses official access only: public web pages, official platform APIs, and links you provide. It does not log in to a platform for you and does not get around blocks or limits. You must not ask it to, and you must not use Vistrial to collect content you do not have the right to access.",
         },
         {
           kind: "p",
-          text: "Vistrial includes safeguards. A person on your team approves each message before it is sent. Before sending, we re-check consent, opt-outs, contact limits, and quiet hours. The default quiet hours are 8 pm to 8 am in the local time of the lead. These safeguards are tools to help you. They are not legal advice and they do not guarantee that your messages or calls comply with any law. Some places set stricter rules than our defaults. You remain responsible for compliance.",
+          text: "Research about competitors and public content is for your own analysis. You are responsible for how you use it, including respecting other people's trademarks, copyrights, and privacy. Do not copy another business's ads, images, or videos.",
         },
         {
           kind: "p",
-          text: "Recordings. If you bring call or meeting recordings or transcripts into Vistrial, you are responsible for giving required notices and getting required consent from everyone on the call, which some places require, and for having the right to use those recordings in Vistrial.",
+          text: "You are responsible for any ads, posts, emails, pages, or other content you publish, whether or not Vistrial helped draft it. That includes following advertising laws, platform ad policies, and rules about claims, testimonials, pricing, and financing, which can be stricter for some industries, such as medical and aesthetic services.",
         },
-        { kind: "p", text: "Messages sent to your leads through your own tools are your messages, not ours." },
         {
           kind: "p",
-          text: "You must not use Vistrial to send a message to anyone who has opted out, and you must keep your opt-out and do-not-contact information accurate in your connected tools.",
+          text: "If you import lead lists into Vistrial, you are responsible for having the right to hold that information and for following the laws that apply when you contact those people. Vistrial does not contact your leads.",
         },
       ],
     },
@@ -174,11 +174,11 @@ export function termsSections(trust: TrustPublic): PolicySection[] {
       blocks: [
         {
           kind: "p",
-          text: "Ownership. As between you and Vistrial, you own the information you bring into Vistrial or create with it, including your leads' information, call records, notes, and outcomes (\"Customer Data\"). We do not claim ownership of Customer Data.",
+          text: "Ownership. As between you and Vistrial, you own the information you bring into Vistrial or create with it, including your business profile, uploaded files and results, lead lists, research assignments, and the reports and drafts prepared for you (\"Customer Data\"). Public content that a report links to or quotes stays the property of whoever owns it. We do not claim ownership of Customer Data.",
         },
         {
           kind: "p",
-          text: "Our use. You give us the right to host, copy, process, and display Customer Data as needed to provide, secure, support, and improve the service for you, to meet our legal duties, and as described in our Privacy Policy. We do not keep a mailbox of the text messages, emails, or chats sent to or received from your leads. Draft text can be stored until a send finishes or is dropped, and is then cleared. We do not use the contents of your workspace for advertising.",
+          text: "Our use. You give us the right to host, copy, process, and display Customer Data as needed to provide, secure, support, and improve the service for you, to meet our legal duties, and as described in our Privacy Policy. We do not use the contents of your workspace for advertising.",
         },
         {
           kind: "p",
@@ -194,11 +194,11 @@ export function termsSections(trust: TrustPublic): PolicySection[] {
         },
         {
           kind: "p",
-          text: "Subprocessors. We use trusted providers to run the service. The public list is at /security/subprocessors. A company appears there after its processing location is confirmed. We will tell customers before a new company is added to that public list.",
+          text: "Service providers. We use providers to run the service, named in our Privacy Policy. We will tell customers before we add a provider that handles Customer Data.",
         },
         {
           kind: "p",
-          text: "Export and deletion. You can disconnect any source at any time. You can ask for an export or deletion of your workspace data through /privacy/requests, as the Privacy Policy describes. Cancelling a subscription does not delete the workspace. Closing or offboarding a workspace follows the retention periods in the Privacy Policy.",
+          text: "Export and deletion. You can ask for an export or deletion of your workspace data through /privacy/requests, as the Privacy Policy describes. Canceling does not delete the workspace on its own. We delete workspace data when you ask us to, after we verify the request.",
         },
         {
           kind: "p",
@@ -207,23 +207,18 @@ export function termsSections(trust: TrustPublic): PolicySection[] {
       ],
     },
     {
-      id: "connected-tools",
+      id: "platforms",
       number: "7",
-      title: "Connected tools",
+      title: "Third-party platforms and sources",
       blocks: [
         {
           kind: "p",
-          text: "Vistrial can connect to tools you already use. Those tools are your accounts and are governed by your agreements with their providers. You are responsible for having the right to connect them and for following their terms.",
+          text: "Growth Architect reads from third-party platforms, such as YouTube, the Meta Ad Library, TikTok, Instagram, and public websites. We do not control those platforms and are not responsible for their content, availability, changes, or errors. A platform can change or limit its access at any time, which can affect what Vistrial can research. Each report shows which sources were available.",
         },
         {
           kind: "p",
-          text: "Connections are read-only by default. Vistrial does not change anything in a connected tool unless you turn that on and a person approves the action. Messages you approve are sent through your own connected tools.",
+          text: "If Vistrial later lets you connect your own accounts, such as an ad account to read your own results, those accounts stay yours and are governed by your agreements with their providers. Connections will be read-only unless you turn on something else and a person approves it.",
         },
-        {
-          kind: "p",
-          text: "We do not control third-party tools and are not responsible for their availability, changes, or errors. A change by a third party (for example a change to its interface or limits) can affect what Vistrial can do.",
-        },
-        { kind: "p", text: "You can disconnect any tool at any time." },
       ],
     },
     {
@@ -239,11 +234,11 @@ export function termsSections(trust: TrustPublic): PolicySection[] {
       blocks: [
         {
           kind: "p",
-          text: "Plans. Private Access starts at $97 per month. Custom plans are agreed with us. What each plan includes is shown in the product or in your agreement. Plans may have limits, which we will show you. We do not charge overage fees. Private Access does not include a free trial.",
+          text: "Plans. Private Access starts at $97 per month. Custom plans are agreed with us. What each plan includes, and its limits, is shown in the product or in your agreement. We do not charge overage fees. Private Access does not include a free trial.",
         },
         {
           kind: "p",
-          text: "Billing. Fees are billed in advance through Stripe, in U.S. dollars, on the interval Stripe has for that subscription. A subscription renews until it is canceled. By providing a payment method, you authorize us and Stripe to charge it. We do not see or store your full card number. The price on an invoice is the price in Stripe for that workspace.",
+          text: "Billing. Nothing is charged on our website. When your team is approved, we share the billing details, and the price, billing interval, and payment method are set out in your order or invoice. Fees are in U.S. dollars and billed in advance. A subscription renews until it is canceled.",
         },
         {
           kind: "p",
@@ -255,11 +250,7 @@ export function termsSections(trust: TrustPublic): PolicySection[] {
         },
         {
           kind: "p",
-          text: "If a payment fails. Days are counted in America/New_York from the date the payment failed. That date is day 0. Through day 7, everything keeps working. From day 8, new drafts, new AI case files, Compass, and new transcription wait. You can still read your leads. At day 30 the workspace is suspended. Follow-ups stop, and the Owner can still pay, export, and cancel. At day 60 the workspace is closed. Paying what is owed restores a workspace that is past due, restricted, suspended, or closed for non-payment.",
-        },
-        {
-          kind: "p",
-          text: "After closing, workspace data follows that workspace retention setting. The default is 90 days. It is not deleted 30 days after closing.",
+          text: "Late payment. If a payment is not made when due, we will contact you first. If it stays unpaid, we may limit or suspend the workspace until it is paid. You can still ask for an export of your data.",
         },
         { kind: "p", text: "Charges are non-refundable except as stated in Section 10 or required by law." },
         {
@@ -275,7 +266,7 @@ export function termsSections(trust: TrustPublic): PolicySection[] {
       blocks: [
         {
           kind: "p",
-          text: `You can cancel at any time from billing settings, or by contacting ${email}. Cancellation takes effect at the end of the period you have already paid for, and you keep access until then. We do not refund the remainder of a period you chose to cancel. Canceling does not delete the workspace.`,
+          text: `You can cancel at any time by contacting ${email}. Cancellation takes effect at the end of the period you have already paid for, and you keep access until then. We do not refund the remainder of a period you chose to cancel. Canceling does not delete the workspace.`,
         },
         {
           kind: "p",
@@ -309,7 +300,7 @@ export function termsSections(trust: TrustPublic): PolicySection[] {
         },
         {
           kind: "p",
-          text: "A failed payment is not, by itself, one of those automatic stages. Section 9 describes what a failed payment does today.",
+          text: "Section 9 describes what happens if a payment is late.",
         },
         {
           kind: "p",
@@ -393,7 +384,7 @@ export function termsSections(trust: TrustPublic): PolicySection[] {
       blocks: [
         {
           kind: "p",
-          text: 'VISTRIAL IS PROVIDED "AS IS" AND "AS AVAILABLE." TO THE FULLEST EXTENT THE LAW ALLOWS, WE DISCLAIM ALL WARRANTIES, EXPRESS OR IMPLIED, INCLUDING WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, TITLE, AND NON-INFRINGEMENT. WE DO NOT WARRANT THAT THE SERVICE WILL BE UNINTERRUPTED, SECURE, OR ERROR FREE, THAT AI OUTPUT WILL BE ACCURATE, OR THAT THE SERVICE WILL MEET YOUR REQUIREMENTS OR RESULT IN ANY BOOKINGS, SALES, OR REVENUE. WE DO NOT PROVIDE LEGAL, TAX, OR COMPLIANCE ADVICE.',
+          text: 'VISTRIAL IS PROVIDED "AS IS" AND "AS AVAILABLE." TO THE FULLEST EXTENT THE LAW ALLOWS, WE DISCLAIM ALL WARRANTIES, EXPRESS OR IMPLIED, INCLUDING WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, TITLE, AND NON-INFRINGEMENT. WE DO NOT WARRANT THAT THE SERVICE WILL BE UNINTERRUPTED, SECURE, OR ERROR FREE, THAT AI OUTPUT OR RESEARCH WILL BE ACCURATE OR COMPLETE, THAT ANY STRATEGY OR AD WILL PERFORM, OR THAT THE SERVICE WILL MEET YOUR REQUIREMENTS OR RESULT IN ANY LEADS, SALES, OR REVENUE. WE DO NOT PROVIDE LEGAL, TAX, OR COMPLIANCE ADVICE.',
         },
       ],
     },
@@ -432,7 +423,7 @@ export function termsSections(trust: TrustPublic): PolicySection[] {
       blocks: [
         {
           kind: "p",
-          text: "You will defend and reimburse us against claims, losses, and costs (including reasonable legal fees) arising from third-party claims that come from: (a) Customer Data or your right to bring it into Vistrial, (b) your messaging, calling, or recording practices, (c) your use of Vistrial in breach of these Terms or the law, or (d) your connected tools or your agreements with their providers. We will tell you promptly about the claim, let you control the defense with our reasonable cooperation, and you will not settle in a way that admits fault for us without our consent.",
+          text: "You will defend and reimburse us against claims, losses, and costs (including reasonable legal fees) arising from third-party claims that come from: (a) Customer Data or your right to bring it into Vistrial, (b) content you publish or ads you run, including content Vistrial helped draft, (c) your use of Vistrial in breach of these Terms or the law, or (d) your own accounts on third-party platforms or your agreements with their providers. We will tell you promptly about the claim, let you control the defense with our reasonable cooperation, and you will not settle in a way that admits fault for us without our consent.",
         },
       ],
     },

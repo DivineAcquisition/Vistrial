@@ -167,3 +167,30 @@ export async function openGrant(
 ) {
   return requireGrant(ctx, staffUserId, workspaceId);
 }
+
+function sameSecret(given: string, expected: string): boolean {
+  if (given.length !== expected.length) return false;
+  let diff = 0;
+  for (let i = 0; i < given.length; i += 1) diff |= given.charCodeAt(i) ^ expected.charCodeAt(i);
+  return diff === 0;
+}
+
+/**
+ * Called only by the Vistrial web server, which holds PUBLIC_FORM_SECRET. A caller without the
+ * matching secret gets the same "Not found." as a missing function. With no secret set, it is closed.
+ */
+export function serverMutation<V extends AnyValidators, R>(def: {
+  args: V;
+  handler: (ctx: MutationCtx, args: ObjectType<V>) => R;
+}): RegisteredMutation<"public", ObjectType<V> & { secret: string }, R> {
+  return mutation({
+    args: { secret: v.string(), ...def.args },
+    handler: async (ctx: MutationCtx, args: { secret: string }) => {
+      const expected = process.env.PUBLIC_FORM_SECRET?.trim();
+      if (!expected || !sameSecret(args.secret, expected)) notFound();
+      const rest: Record<string, unknown> = { ...args };
+      delete rest.secret;
+      return def.handler(ctx, rest as ObjectType<V>);
+    },
+  } as any);
+}

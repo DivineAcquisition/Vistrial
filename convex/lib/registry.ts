@@ -3,9 +3,35 @@ export const WORK_KINDS = ["research", "classify", "write", "summarize"] as cons
 export type WorkKind = (typeof WORK_KINDS)[number];
 
 /** Tools a skill can declare. "web.search" and "web.fetch" are Claude's server tools, used inside model steps. */
-export const TOOLS = ["profile.read", "asset.create", "asset.addVersion", "test.echo", "web.search", "web.fetch"] as const;
+export const TOOLS = [
+  "profile.read",
+  "asset.create",
+  "asset.addVersion",
+  "test.echo",
+  "web.search",
+  "web.fetch",
+  "source.web",
+  "source.youtube",
+  "source.tiktok",
+  "source.instagram",
+  "source.metaAdLibrary",
+  "context.read",
+  "mi.applyClassification",
+  "mi.compute",
+  "mi.check",
+  "mi.save",
+] as const;
 
 export type ToolSlug = (typeof TOOLS)[number];
+
+/** Tools that collect sources for a research project. They run in the step action, where the network is. */
+export const COLLECT_TOOLS = ["source.web", "source.youtube", "source.tiktok", "source.instagram", "source.metaAdLibrary"] as const;
+
+export type CollectTool = (typeof COLLECT_TOOLS)[number];
+
+export function isCollectTool(slug: string): slug is CollectTool {
+  return (COLLECT_TOOLS as readonly string[]).includes(slug);
+}
 
 export const TEST_SKILL = "test-echo";
 

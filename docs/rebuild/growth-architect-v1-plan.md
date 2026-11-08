@@ -2,7 +2,7 @@
 
 Date: 2026-11-01. Responds to the "Updated Product Vision" brief (seven-agent Agentic Workforce, Growth Architect first, Market Intelligence as the first skill). The brief asks for this plan before any broad implementation. Nothing here is built yet. Decisions D1 to D5 are settled (Section 5).
 
-Read with: `v2-brief-agents-and-areas.md` (superseded where it conflicts), `step-4-review.md`, `agentic-ui-research.md`.
+Read with: `doctrine-understanding-precedes-advantage.md` (adds tasks 2.18 to 2.20 and changes 2.11 and 2.13 to 2.17), `v2-brief-agents-and-areas.md` (superseded where it conflicts), `step-4-review.md`, `agentic-ui-research.md`.
 
 ---
 
@@ -127,7 +127,7 @@ Where broad discovery is not available, the agent says so in the report's limits
 3. **Collect steps** (one per source adapter): results become `sourceRefs`, with live per-source status.
 4. **Classify step** (model, structured output, batched): each reference gets hook, offer, call to action, format and audience hypothesis, labeled as classifications.
 5. **Compute step** (code): counts, groupings, dates and the minimum-sample checks. Below the threshold, a pattern reads "Not enough data".
-6. **Write step** (model, structured output): the 14 report sections from the brief. Every claim carries a basis and source ids. The validator drops or flags any claim that breaks the rules.
+6. **Write step** (model, structured output): the report. Every claim carries a basis and source ids. The validator drops or flags any claim that breaks the rules. The report's required shape is locked in `doctrine-understanding-precedes-advantage.md` (D7, D9): three actionable opportunities, each with evidence, business relevance, a proposed action and a validation method. Where an older brief lists a different report shape, the doctrine wins.
 7. **Save:** a `marketReport` asset in draft, the project's board populated, and the run complete. The report waits in Approvals.
 
 ### 3.2 Screens
@@ -195,7 +195,7 @@ Each task ends with tests that pass, and on Phase 1 onward a check on the live d
 | 2.8 | YouTube adapter (Data API, embeds) | 2.6 | Needs an API key. Quota errors become `unavailable` with a reason. |
 | 2.9 | TikTok and Instagram URL adapters (oEmbed) | 2.6 | Bad or private URLs become `unavailable`. No scraping. |
 | 2.10 | Meta Ad Library link adapter, plus the official API where it applies | 2.6 | Statuses are honest about coverage |
-| 2.11 | Market Intelligence skill: plan, collect, classify, compute, write | 2.4–2.10 | Full fixture run, then one live run on dev |
+| 2.11 | Market Intelligence skill: plan, collect, classify, compute, prioritize, write, check. Report shape and the eight checks are locked in the doctrine (D7, D9). | 2.4–2.10, 2.18 | Full fixture run, including a run that can support only two opportunities, then one live run on dev |
 | 2.12 | Per-skill caps (Section 3.4) | 2.3 | Cap tests per skill |
 | 2.13 | Screens: overview, new assignment, Research Studio | 2.11 | Story pages, then live on dev |
 | 2.14 | Visual Research Board with collections and compare | 2.11 | Story page, live on dev, 320 px, keyboard |
@@ -216,6 +216,15 @@ Phase 3 onward (Offer Intelligence, Campaign Strategy, Creative Production, Funn
 - **D3. Research caps: $3 per run and $25 a day per workspace** for Market Intelligence, set per skill. The platform ceiling rises to $10 per run and $100 a day. The test skill keeps its small caps.
 - **D4. Platform accounts: owned by the business, applied for now.** Setup steps are in `platform-accounts-setup.md`. Meta review takes weeks, so it starts in parallel with Phase 1.
 - **D5. Roles: unchanged for V1** (Owner, Manager, Rep). Revisit before launch.
+
+### Decisions (locked 2026-11-04)
+
+Locked in `doctrine-understanding-precedes-advantage.md`. The backlog tasks there (2.18 to 2.20, and the changes to 2.11 and 2.19) are part of this plan.
+
+- **D6. Business facts have their own table**, `businessFacts`. The profile stays identity and configuration. A fact an agent writes stays unverified until a person verifies it. Replacing a fact keeps the old row as superseded.
+- **D7. The first release is the research report**, with three actionable opportunities. Creative Production is a later skill. It starts from the approved report, has its own $3 cap, and shows its estimated cost before it starts.
+- **D8. The run asks, then waits.** It asks only when a gap would change the result or make the task unreliable. After seven days with no answer it becomes Needs Input — Timed Out, and the user can resume it. The scheduled timeout changes the run only when it is still waiting on the same question.
+- **D9. Eight completion checks, one revision, then Needs Review.** A 50¢ reserve pays for the check and the revision. A call that would pass its allowance does not start. A missing opportunity is reported, not invented.
 
 ### Risks
 

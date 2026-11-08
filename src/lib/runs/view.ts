@@ -8,7 +8,7 @@
 
 import type { Tone } from "@/components/ui/tone";
 
-export type RunStatus = "queued" | "running" | "waiting" | "completed" | "failed" | "stopped";
+export type RunStatus = "queued" | "running" | "waiting" | "needsInput" | "completed" | "failed" | "stopped";
 export type StopReason = "done" | "cap" | "error" | "cancelled" | "halted";
 export type SourceState = "ok" | "unavailable" | "blocked" | "partial";
 
@@ -23,6 +23,8 @@ export type RunStepView = {
   durationMs: number;
   inputTokens: number;
   outputTokens: number;
+  /** The skill's name for the step (brief, classify, write...). */
+  phase?: string | null;
 };
 
 export type StepGroup =
@@ -33,11 +35,13 @@ export type SourceStatusView = { source: string; state: SourceState; reasonCode:
 
 export type RunArtifactView = { id: string; kind: string; byteSize: number };
 
+export const ASSET_STATUSES = ["draft", "needsReview", "approved", "rejected", "archived"] as const;
+
 export type RunAssetView = {
   id: string;
   title: string;
   kind: string;
-  status: "draft" | "approved" | "archived";
+  status: "draft" | "needsReview" | "approved" | "rejected" | "archived";
   currentVersion: number;
 };
 
@@ -95,7 +99,7 @@ export type RunRow = {
   assets: Array<Omit<RunAssetView, "status"> & { status: string }>;
 };
 
-const RUN_STATUSES: RunStatus[] = ["queued", "running", "waiting", "completed", "failed", "stopped"];
+const RUN_STATUSES: RunStatus[] = ["queued", "running", "waiting", "needsInput", "completed", "failed", "stopped"];
 const STOP_REASONS: StopReason[] = ["done", "cap", "error", "cancelled", "halted"];
 
 /** An unknown status reads as failed, so a new backend value never looks like healthy progress. */
@@ -137,7 +141,7 @@ export function toRunView(row: RunRow): RunView {
     artifacts: row.artifacts,
     assets: row.assets.map((asset) => ({
       ...asset,
-      status: asset.status === "approved" || asset.status === "archived" ? asset.status : "draft",
+      status: ASSET_STATUSES.includes(asset.status as RunAssetView["status"]) ? (asset.status as RunAssetView["status"]) : "draft",
     })),
   };
 }
@@ -153,7 +157,8 @@ export function isOpen(status: RunStatus) {
 export const STATUS_META: Record<RunStatus, { label: string; tone: Tone }> = {
   queued: { label: "Queued", tone: "neutral" },
   running: { label: "Running", tone: "brand" },
-  waiting: { label: "Waiting on a person", tone: "warning" },
+  waiting: { label: "Waiting for User", tone: "warning" },
+  needsInput: { label: "Needs Input — Timed Out", tone: "critical" },
   completed: { label: "Completed", tone: "good" },
   failed: { label: "Failed", tone: "critical" },
   stopped: { label: "Stopped", tone: "warning" },
@@ -174,9 +179,16 @@ const TOOL_LABELS: Record<string, { one: string; many: (count: number) => string
   "test.echo": { one: "Ran the echo test", many: (n) => `Ran the echo test ${n} times` },
   "web.search": { one: "Searched the web", many: (n) => `Ran ${n} web searches` },
   "web.fetch": { one: "Read a page", many: (n) => `Read ${n} pages` },
-  "library.meta": { one: "Read the Meta Ad Library", many: (n) => `Read ${n} Meta Ad Library pages` },
-  "library.tiktok": { one: "Read the TikTok Creative Center", many: (n) => `Read ${n} TikTok Creative Center pages` },
-  "library.google": { one: "Read the Google Ads Transparency Center", many: (n) => `Read ${n} Google Ads Transparency pages` },
+  "source.web": { one: "Kept what the web search found", many: (n) => `Kept web results ${n} times` },
+  "source.youtube": { one: "Searched YouTube", many: (n) => `Searched YouTube ${n} times` },
+  "source.tiktok": { one: "Checked TikTok links", many: (n) => `Checked TikTok links ${n} times` },
+  "source.instagram": { one: "Checked Instagram links", many: (n) => `Checked Instagram links ${n} times` },
+  "source.metaAdLibrary": { one: "Checked the Meta Ad Library", many: (n) => `Checked the Meta Ad Library ${n} times` },
+  "context.read": { one: "Read the business context", many: (n) => `Read the business context ${n} times` },
+  "mi.applyClassification": { one: "Saved the classifications", many: (n) => `Saved classifications ${n} times` },
+  "mi.compute": { one: "Counted and grouped the sources", many: (n) => `Counted the sources ${n} times` },
+  "mi.check": { one: "Checked the report", many: (n) => `Checked the report ${n} times` },
+  "mi.save": { one: "Saved the report", many: (n) => `Saved ${n} reports` },
   "swipe.read": { one: "Read the swipe file", many: (n) => `Read ${n} swipe file items` },
   "results.read": { one: "Read past results", many: (n) => `Read past results ${n} times` },
 };
@@ -202,6 +214,19 @@ export const RESULT_CODE_WORDS: Record<string, string> = {
   no_key: "No model key is set. A platform admin adds one.",
   unpriced_model: "This model has no price set, so it cannot run.",
   unknown_provider: "This model provider is not known.",
+  partial: "Done, but this source could not show everything. Its status says why.",
+  unavailable: "This source could not be used this time. Its status says why.",
+  awaiting_authorization: "This source is waiting for an account to be approved.",
+  no_project: "This run has no research project.",
+  missing_context: "Something the research needs is missing.",
+  waiting_for_user: "Asked a question and waited for an answer.",
+  over_budget: "Skipped, because it could have spent the money held back for checking the report.",
+  passed: "Every check passed.",
+  checks_failed: "Some checks did not pass.",
+  needs_review: "Saved as a draft that needs review.",
+  undeclared_question: "The skill tried to ask a question it is not allowed to ask.",
+  max_tokens: "The answer ran out of room.",
+  invalid_output: "The answer was not in the required form.",
 };
 
 export function stepLabel(step: Pick<RunStepView, "kind" | "toolSlug" | "workKind">) {
@@ -300,10 +325,14 @@ export function summaryLine(run: RunView) {
     case "running":
       return `Working. ${stepWords} so far.`;
     case "waiting":
-      return `Waiting on a person after ${stepWords}.`;
+      return `Waiting for an answer after ${stepWords}. Nothing runs or spends until then.`;
+    case "needsInput":
+      return `No answer came within seven days, after ${stepWords}. Resume it to ask again.`;
     case "completed":
       return madeAsset
-        ? `Finished after ${stepWords}. The draft is waiting for approval.`
+        ? run.assets.some((asset) => asset.status === "needsReview")
+          ? `Finished after ${stepWords}. The draft did not pass every check and needs review.`
+          : `Finished after ${stepWords}. The draft is waiting for approval.`
         : `Finished after ${stepWords}.`;
     case "failed": {
       const failed = run.steps.find((step) => step.status === "failed");

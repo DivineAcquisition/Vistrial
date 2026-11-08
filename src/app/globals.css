@@ -1247,9 +1247,13 @@
   0%, 100% { width: 24%; }
   50% { width: 92%; }
 }
+/* Theme tokens, not fixed colors: the same pulse reads on the light site and the dark app. */
 @keyframes vistrial-highlight {
-  0%, 100% { background-color: #12111a; border-color: #2a2833; }
-  45% { background-color: #241f33; border-color: #2a2833; }
+  0%, 100% { background-color: var(--muted); border-color: var(--border); }
+  45% {
+    background-color: color-mix(in srgb, var(--brand) 12%, var(--muted));
+    border-color: color-mix(in srgb, var(--brand) 35%, var(--border));
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -1743,6 +1747,34 @@
   background-clip: text;
   -webkit-text-fill-color: transparent;
   animation: live-shimmer 2.8s linear infinite;
+}
+
+/* A short light travelling along an SVG beam. Paths set pathLength="100". */
+.beam-dash {
+  stroke-dasharray: 10 110;
+  stroke-dashoffset: 110;
+  animation: beam-travel 3.2s cubic-bezier(0.45, 0, 0.55, 1) infinite;
+}
+
+@keyframes beam-travel {
+  from {
+    stroke-dashoffset: 110;
+  }
+  to {
+    stroke-dashoffset: -10;
+  }
+}
+
+html[data-calm="true"] .beam-dash {
+  animation: none !important;
+  opacity: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .beam-dash {
+    animation: none;
+    opacity: 0;
+  }
 }
 
 html[data-calm="true"] .an-text-shimmer,

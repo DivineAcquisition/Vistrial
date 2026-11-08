@@ -11,4 +11,7 @@ const crons = cronJobs();
  */
 crons.interval("finish agent rename", { minutes: 10 }, internal.agentsMigration.backfillIfNeeded, {});
 
+/** Keeps connected Meta ad accounts' results fresh (read-only). */
+crons.interval("refresh Meta ad results", { hours: 3 }, internal.metaAds.syncAll, {});
+
 export default crons;

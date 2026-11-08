@@ -113,6 +113,7 @@ export function ArtifactList({
 
 const ASSET_KIND: Record<string, string> = {
   researchReport: "Research report",
+  marketReport: "Market report",
   adCopySet: "Ad copy set",
   creativeBrief: "Creative brief",
   contentCalendar: "Content calendar",
@@ -125,7 +126,9 @@ export function assetKindLabel(kind: string) {
 
 const ASSET_STATUS = {
   draft: { label: "Waiting for approval", tone: "warning" },
+  needsReview: { label: "Needs review", tone: "critical" },
   approved: { label: "Approved", tone: "good" },
+  rejected: { label: "Rejected", tone: "neutral" },
   archived: { label: "Archived", tone: "neutral" },
 } as const;
 

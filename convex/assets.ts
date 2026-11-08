@@ -5,8 +5,23 @@ import type { Doc, Id } from "./_generated/dataModel";
 import type { QueryCtx } from "./_generated/server";
 import { workspaceMutation, workspaceQuery } from "./lib/builders";
 import { writeAudit } from "./lib/audit";
-import { MISSING_SOURCE, assertClaims, assertSourcesExist, claimsWithMissingSources, type ClaimInput } from "./lib/evidence";
+import {
+  BASIS_LABEL,
+  MISSING_SOURCE,
+  assertClaims,
+  assertSourcesExist,
+  claimFromRow,
+  claimProblem,
+  claimsWithMissingSources,
+  sourceRefsInWorkspace,
+  type ClaimInput,
+} from "./lib/evidence";
+import { basis } from "./lib/researchShapes";
+import { assetStatus } from "./lib/assetStatus";
 import { notAllowed, notFound } from "./lib/errors";
+
+/** A draft that failed a completion check is fixed by a person first: a new version, or a rejection. */
+export const NEEDS_REVIEW = "This draft did not pass its checks. Edit it to add a new version, or reject it.";
 
 const claim = v.object({
   claimKey: v.string(),
@@ -14,6 +29,8 @@ const claim = v.object({
   sourceId: v.optional(v.string()),
   fetchedAt: v.optional(v.number()),
   computed: v.optional(v.boolean()),
+  basis: v.optional(basis),
+  sourceRefIds: v.optional(v.array(v.id("sourceRefs"))),
 });
 
 function assertEditor(role: string) {
@@ -23,10 +40,11 @@ function assertEditor(role: string) {
 export const list = workspaceQuery({
   args: {
     paginationOpts: paginationOptsValidator,
-    status: v.optional(v.union(v.literal("draft"), v.literal("approved"), v.literal("archived"))),
+    status: v.optional(assetStatus),
     kind: v.optional(
       v.union(
         v.literal("researchReport"),
+        v.literal("marketReport"),
         v.literal("adCopySet"),
         v.literal("creativeBrief"),
         v.literal("contentCalendar"),
@@ -44,17 +62,23 @@ export const list = workspaceQuery({
             )
             .order("desc")
             .paginate(args.paginationOpts)
-        : args.status
+        : args.kind
           ? await ctx.db
               .query("assets")
-              .withIndex("by_workspace_status", (q) => q.eq("workspaceId", ctx.workspaceId).eq("status", args.status!))
+              .withIndex("by_workspace_kind", (q) => q.eq("workspaceId", ctx.workspaceId).eq("kind", args.kind!))
               .order("desc")
               .paginate(args.paginationOpts)
-          : await ctx.db
-              .query("assets")
-              .withIndex("by_workspace", (q) => q.eq("workspaceId", ctx.workspaceId))
-              .order("desc")
-              .paginate(args.paginationOpts);
+          : args.status
+            ? await ctx.db
+                .query("assets")
+                .withIndex("by_workspace_status", (q) => q.eq("workspaceId", ctx.workspaceId).eq("status", args.status!))
+                .order("desc")
+                .paginate(args.paginationOpts)
+            : await ctx.db
+                .query("assets")
+                .withIndex("by_workspace", (q) => q.eq("workspaceId", ctx.workspaceId))
+                .order("desc")
+                .paginate(args.paginationOpts);
     return {
       ...page,
       page: page.page.map((row) => ({
@@ -103,13 +127,30 @@ async function versionView(ctx: QueryCtx, workspaceId: Id<"workspaces">, version
     notes: version.notes ?? null,
     body: version.body ?? "",
     evidence: await Promise.all(
-      evidence.map(async (row) => ({
-        claimKey: row.claimKey,
-        statement: row.statement ?? null,
-        computed: row.computed === true,
-        fetchedAt: row.fetchedAt ?? null,
-        sourceLabel: await sourceLabel(ctx, workspaceId, row.sourceId),
-      })),
+      evidence.map(async (row) => {
+        const refs = await sourceRefsInWorkspace(ctx, workspaceId, row.sourceRefIds ?? []);
+        return {
+          claimKey: row.claimKey,
+          statement: row.statement ?? null,
+          computed: row.computed === true,
+          fetchedAt: row.fetchedAt ?? null,
+          sourceLabel: await sourceLabel(ctx, workspaceId, row.sourceId),
+          basis: row.basis ?? null,
+          /** From the basis, in code. A claim the model wrote as fact still reads "Inference" if that is its basis. */
+          basisLabel: row.basis ? BASIS_LABEL[row.basis] : null,
+          sources: refs.map((ref) => ({
+            id: ref._id,
+            platform: ref.platform,
+            title: ref.title,
+            url: ref.url,
+            publisher: ref.publisher ?? null,
+            observedAt: ref.observedAt,
+            availability: ref.availability,
+          })),
+          /** True when the claim cannot stand on what is in the workspace now. The screen blocks approval on it. */
+          sourceMissing: (await claimProblem(ctx, workspaceId, claimFromRow(row))) !== null,
+        };
+      }),
     ),
   };
 }
@@ -166,6 +207,7 @@ export const approve = workspaceMutation({
     assertEditor(ctx.member.role);
     const asset = await ctx.db.get(args.assetId);
     if (!asset || asset.workspaceId !== ctx.workspaceId) notFound();
+    if (asset.status === "needsReview") throw new Error(NEEDS_REVIEW);
     if (asset.status !== "draft") throw new Error("That asset is not waiting.");
     // The screen blocks this too, but the rule lives here: every claim on the version being
     // approved must still point at a real source in this workspace, or be marked computed.
@@ -175,11 +217,11 @@ export const approve = workspaceMutation({
       .filter((q) => q.eq(q.field("version"), asset.currentVersion))
       .first();
     if (!current) throw new Error("That version is missing, so it cannot be approved.");
-    const claims = [];
+    const claims: ClaimInput[] = [];
     for await (const row of ctx.db
       .query("evidence")
       .withIndex("by_workspace_version", (q) => q.eq("workspaceId", ctx.workspaceId).eq("assetVersionId", current._id))) {
-      claims.push(row);
+      claims.push(claimFromRow(row));
     }
     if ((await claimsWithMissingSources(ctx, ctx.workspaceId, claims)).length > 0) {
       throw new Error(MISSING_SOURCE);
@@ -194,6 +236,91 @@ export const approve = workspaceMutation({
       count: asset.currentVersion,
     });
     return null;
+  },
+});
+
+export const MAX_REASON = 1000;
+
+async function currentVersion(ctx: QueryCtx, asset: Doc<"assets">) {
+  return ctx.db
+    .query("assetVersions")
+    .withIndex("by_workspace_asset", (q) => q.eq("workspaceId", asset.workspaceId).eq("assetId", asset._id))
+    .filter((q) => q.eq(q.field("version"), asset.currentVersion))
+    .first();
+}
+
+function cleanReason(raw: string) {
+  const reason = raw.replace(/\s+/g, " ").trim();
+  if (reason.length < 3) throw new Error("Say why, in a few words.");
+  if (reason.length > MAX_REASON) throw new Error(`Keep the reason to ${MAX_REASON} characters.`);
+  return reason;
+}
+
+/**
+ * Rejects a waiting asset with a reason. It leaves the queue and keeps every version. The reason is saved
+ * as feedback, which becomes reusable context only if a person promotes it.
+ */
+export const reject = workspaceMutation({
+  args: { assetId: v.id("assets"), reason: v.string() },
+  handler: async (ctx, args) => {
+    assertEditor(ctx.member.role);
+    const asset = await ctx.db.get(args.assetId);
+    if (!asset || asset.workspaceId !== ctx.workspaceId) notFound();
+    if (asset.status !== "draft" && asset.status !== "needsReview") throw new Error("That asset is not waiting.");
+    const reason = cleanReason(args.reason);
+    const version = await currentVersion(ctx, asset);
+    if (!version) throw new Error("That version is missing.");
+    const feedbackId = await ctx.db.insert("feedback", {
+      workspaceId: ctx.workspaceId,
+      assetId: asset._id,
+      assetVersionId: version._id,
+      kind: "rejection",
+      reason,
+      createdBy: ctx.identity.subject,
+      createdAt: Date.now(),
+    });
+    await ctx.db.patch(asset._id, { status: "rejected" });
+    await writeAudit(ctx, {
+      workspaceId: ctx.workspaceId,
+      actorType: "user",
+      actorId: ctx.identity.subject,
+      action: "asset.rejected",
+      subject: asset._id,
+      count: asset.currentVersion,
+    });
+    return feedbackId;
+  },
+});
+
+/** Asks for changes to a waiting asset. It stays in the queue; the reason is saved as feedback. */
+export const requestRevision = workspaceMutation({
+  args: { assetId: v.id("assets"), reason: v.string() },
+  handler: async (ctx, args) => {
+    assertEditor(ctx.member.role);
+    const asset = await ctx.db.get(args.assetId);
+    if (!asset || asset.workspaceId !== ctx.workspaceId) notFound();
+    if (asset.status !== "draft" && asset.status !== "needsReview") throw new Error("That asset is not waiting.");
+    const reason = cleanReason(args.reason);
+    const version = await currentVersion(ctx, asset);
+    if (!version) throw new Error("That version is missing.");
+    const feedbackId = await ctx.db.insert("feedback", {
+      workspaceId: ctx.workspaceId,
+      assetId: asset._id,
+      assetVersionId: version._id,
+      kind: "revisionRequest",
+      reason,
+      createdBy: ctx.identity.subject,
+      createdAt: Date.now(),
+    });
+    await writeAudit(ctx, {
+      workspaceId: ctx.workspaceId,
+      actorType: "user",
+      actorId: ctx.identity.subject,
+      action: "asset.revision_requested",
+      subject: asset._id,
+      count: asset.currentVersion,
+    });
+    return feedbackId;
   },
 });
 
@@ -228,6 +355,8 @@ export const addVersion = workspaceMutation({
         sourceId: item.sourceId,
         fetchedAt: item.fetchedAt,
         computed: item.computed,
+        basis: item.basis,
+        sourceRefIds: item.sourceRefIds,
       });
     }
     // Approval covers one version. New content waits for approval again.

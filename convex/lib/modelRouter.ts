@@ -34,7 +34,7 @@ export const PRICES: Record<string, { input: number; output: number; cacheRead: 
 /** Output room per kind of work. Short kinds stay short so one call cannot spend the run cap alone. */
 export const MAX_TOKENS: Record<WorkKind, number> = {
   research: 16000,
-  classify: 1024,
+  classify: 8000,
   write: 16000,
   summarize: 4000,
 };

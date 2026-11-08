@@ -2,7 +2,7 @@
 export const PRODUCTION_ISSUER = "https://clerk.vistrial.io";
 
 /** The only deployment that may also accept a Clerk development instance: the shared dev deployment. */
-export const DEV_DEPLOYMENT_URL = "https://grandiose-meerkat-838.convex.cloud";
+export const DEV_DEPLOYMENT_URL = "https://calm-spider-678.convex.cloud";
 
 /** Clerk development instances live here. Nothing else is accepted as a second issuer. */
 const DEV_ISSUER = /^https:\/\/[a-z0-9-]+\.clerk\.accounts\.dev$/;

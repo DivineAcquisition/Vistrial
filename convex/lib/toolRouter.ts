@@ -325,8 +325,29 @@ const FAKE_SEARCH_RESULT = {
 };
 
 /** A researcher that searches, pauses once, searches again, then answers in JSON. */
+/**
+ * Tests script answers per call with this hook, used only by the "fake-scripted" model. Nothing in the
+ * product sets it, and the fake provider itself runs only where dev skills are on or a test sets a route.
+ */
+export type ScriptedModel = (params: Anthropic.MessageCreateParamsNonStreaming) => { text: string; searches?: number; sources?: { url: string; title: string }[] };
+
 export function fakeCreate(model: string): CreateMessage {
   let calls = 0;
+  const scripted = (globalThis as { __vistrialScriptedModel?: ScriptedModel }).__vistrialScriptedModel;
+  if (model === "fake-scripted" && scripted) {
+    return async (params) => {
+      const reply = scripted(params);
+      const results = (reply.sources ?? []).map((row) => ({ type: "web_search_result", url: row.url, title: row.title, page_age: null, encrypted_content: "x" }));
+      return fakeMessage(model, {
+        stop: "end_turn",
+        searches: reply.searches ?? 0,
+        content: [
+          ...(results.length ? [{ type: "server_tool_use", id: "srvtoolu_s", name: "web_search", input: { query: "q" } }, { type: "web_search_tool_result", tool_use_id: "srvtoolu_s", content: results }] : []),
+          { type: "text", text: reply.text, citations: null },
+        ],
+      });
+    };
+  }
   return async () => {
     calls += 1;
     if (model === "fake-tool-refusing") return fakeMessage(model, { stop: "refusal", content: [], searches: 1 });

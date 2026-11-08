@@ -67,6 +67,8 @@ export function privacyPolicySections(trust: TrustPublic): PolicySection[] {
     "Account and workspace information, including research, reports, drafts, and uploaded files, is kept while the workspace is active.",
     "Earlier versions of a report or draft are kept with it, so a team can see what changed. Versions are not overwritten.",
     "Information you send us through our website or by email is kept as long as we need it to respond to you and to manage our relationship with you.",
+    "Uploaded results files are deleted as soon as they are read. Only their totals are kept.",
+    "A connected Meta ad account's token and saved results are deleted as soon as the account is disconnected.",
     "Vistrial does not currently delete workspace information on an automatic schedule. When a customer asks us to delete information, we verify the request and a person carries it out.",
   ];
   if (trust.switches.backups) {
@@ -167,7 +169,9 @@ export function privacyPolicySections(trust: TrustPublic): PolicySection[] {
           items: [
             "The business profile: what the business sells, where, to whom, its offers, and its competitors.",
             "Research assignments: the questions, markets, keywords, competitors, and links the team asks Growth Architect to look at.",
-            "Files the team uploads, such as the business's own ad or sales results.",
+            "Files the team uploads, such as the business's own ad or sales results. A results file is read once and deleted; only totals by date and by campaign or channel are kept. Columns that name a person or how to reach them, such as names, email addresses, phone numbers and street addresses, are skipped without being read.",
+            "Results from accounts the team connects, such as Meta ad results, described in part I below.",
+            "Decisions about recommendations: which recommendations the team chose to try, when to check back, what the team says happened, and the business's own figures before and after.",
             "Lead lists the team imports, such as names, email addresses, phone numbers, and activity dates, and notes the team adds.",
             "Research runs: the steps an agent took, the sources it checked, whether each source was available, and the cost of the run.",
             "Reports, strategy, ad copy, scripts, briefs, and other drafts, with their versions and who approved them.",
@@ -194,6 +198,15 @@ export function privacyPolicySections(trust: TrustPublic): PolicySection[] {
           kind: "p",
           text: "Reports, summaries, drafts, and answers that our agents prepare from the customer's workspace information and from public sources. These belong with the workspace they were created for.",
         },
+        { kind: "h", text: "I. Connected Meta ad accounts" },
+        {
+          kind: "p",
+          text: "If a workspace Owner connects a Meta ad account, Vistrial reads that account's campaigns and results with read-only access: campaign names, status and objective, spend, impressions, reach, clicks, and the results Meta reports, such as leads, with their cost. Vistrial never creates, edits, pauses or pays for ads. The access token Meta issues is kept on our servers and is never shown in the app. These results are used only for the workspace that connected them, shown to its team and cited in its reports as the business's own data.",
+        },
+        {
+          kind: "p",
+          text: "Disconnecting the account in Connections deletes the token and every saved read straight away. You can also remove Vistrial from your Facebook settings, under Business Integrations.",
+        },
       ],
     },
     {
@@ -212,6 +225,7 @@ export function privacyPolicySections(trust: TrustPublic): PolicySection[] {
             "Keep the service secure, prevent abuse and fraud, and investigate problems.",
             "Meet legal obligations and enforce our terms.",
             "Understand how the product is used so we can fix problems and improve it, using aggregated or de-identified information wherever practical.",
+            "Learn which kinds of recommendations work. When a team records what happened after trying a recommendation, we keep a separate de-identified record: the type of business in a few words, the recommendation, the result, how long it took, and changes as percentages. It does not include the workspace, the business's name or location, amounts, or anything the team wrote. Only Vistrial uses it; it is never shown to other customers. Deleting the decision deletes this record.",
           ],
         },
         { kind: "p", text: "We do not use the contents of a customer workspace for advertising." },

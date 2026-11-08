@@ -19,7 +19,7 @@ export function ShellPage({
   return (
     <div className="mx-auto grid w-full max-w-3xl gap-6">
       <PageHeader eyebrow={eyebrow} title={title} description={description} />
-      <EmptyState kind={kind} title={emptyTitle} detail={emptyDetail} />
+      <EmptyState kind={kind} preview="rows" title={emptyTitle} detail={emptyDetail} />
     </div>
   );
 }

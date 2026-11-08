@@ -13,6 +13,10 @@ import { Panel } from "@/components/ui/panel";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { bodyText } from "@/lib/ui";
 import { api } from "../../../../../../convex/_generated/api";
+import { Stagger, StaggerItem } from "@/components/motion/stagger";
+import { StartSessionButton } from "@/components/sessions/start-session-button";
+import { EmptyState } from "@/components/ui/empty-state";
+import { NumberTicker } from "@/components/ui/number-ticker";
 
 /** The agent's overview: what it does, its latest sessions and its skills. */
 export default function AgentOverview() {
@@ -71,30 +75,20 @@ export default function AgentOverview() {
               </Link>
             </div>
             {tree.sessions.length === 0 ? (
-              <Panel className="grid gap-3 p-5">
-                <p className="text-sm text-muted-foreground">
-                  No sessions yet. A session is one piece of work: you ask, it
-                  studies, you review.
-                </p>
-                {shell.role !== "rep" && agent.state !== "off" ? (
-                  <Button
-                    className="w-fit"
-                    render={<Link href={`${base}/sessions/new`} />}
-                  >
-                    Start the first session
-                  </Button>
-                ) : null}
-              </Panel>
+              <EmptyState
+                preview="cards"
+                title="Your sessions with this agent will appear here."
+                detail="A session is one piece of work: you ask, it studies, you review."
+                action={shell.role !== "rep" && agent.state !== "off" ? <StartSessionButton agentSlug={agent.slug} label="Start the first session" /> : undefined}
+              />
             ) : (
-              <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+              <Stagger as="div" className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
                 {tree.sessions.map((session) => (
-                  <SessionCard
-                    key={session.id}
-                    session={session}
-                    href={`${base}/sessions/${session.id}`}
-                  />
+                  <StaggerItem as="div" key={session.id}>
+                    <SessionCard session={session} href={`${base}/sessions/${session.id}`} />
+                  </StaggerItem>
                 ))}
-              </div>
+              </Stagger>
             )}
           </section>
           <aside className="grid content-start gap-3" aria-label="At a glance">
@@ -122,7 +116,7 @@ export default function AgentOverview() {
                   className="grid rounded-xl border border-border bg-card px-2 py-2 hover:border-primary/40"
                 >
                   <span className="font-heading text-lg text-card-foreground tabular-nums">
-                    {item.value}
+                    <NumberTicker value={item.value} className="text-card-foreground" />
                   </span>
                   <span className="text-[11px] text-muted-foreground">
                     {item.label}

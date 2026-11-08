@@ -13,6 +13,7 @@ import { Select } from "@/components/ui/select";
 import { asRunStatus, asStopReason, type RunStatus } from "@/lib/runs/view";
 import { skillName } from "@/lib/runs/skill-name";
 import { api } from "../../../../../convex/_generated/api";
+import { StartSessionButton } from "@/components/sessions/start-session-button";
 
 const STATUS_OPTIONS = [
   { value: "", label: "Any status" },
@@ -123,8 +124,10 @@ function Runs({ shell }: { shell: WorkspaceShell }) {
           <EmptyState
             bare
             kind={filtered ? "no-results" : "empty"}
-            title={filtered ? "No runs match these filters." : "No runs yet."}
-            detail={filtered ? undefined : "Runs show here once an owner or manager starts a skill."}
+            preview="rows"
+            title={filtered ? "No runs match these filters." : "Every step the agents take will appear here."}
+            detail={filtered ? undefined : "Each run lists its searches, sources, checks and cost, live as it works."}
+            action={filtered || shell.role === "rep" ? undefined : <StartSessionButton />}
           />
         ) : null}
         <RunList runs={items} />

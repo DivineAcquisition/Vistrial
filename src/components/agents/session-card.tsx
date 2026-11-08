@@ -4,6 +4,7 @@ import { CheckCircle2, CircleDot, CircleHelp, Loader, MapPin, Square, type Lucid
 import Link from "next/link";
 
 import { cn } from "@/lib/utils";
+import { HoverLift } from "@/components/motion/hover-lift";
 
 export type SessionLite = { id: string; title: string; objective: string; geography: string; state: string; updatedAt: number; costCents: number };
 
@@ -28,9 +29,10 @@ function ago(time: number) {
 export function SessionCard({ session, href }: { session: SessionLite; href: string }) {
   const look = SESSION_LOOK[session.state] ?? SESSION_LOOK.draft;
   return (
+    <HoverLift>
     <Link href={href} className="group grid min-w-0 content-start gap-2 rounded-xl border border-border bg-card p-4 transition-colors hover:border-primary/40">
       <span className="flex items-center justify-between gap-2">
-        <span className={cn("inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-xs ring-1", look.ring)}>
+        <span className={cn("inline-flex items-center gap-1.5 rounded-md px-2 py-0.5 text-xs ring-1", look.ring)}>
           <look.icon aria-hidden className={cn("size-3.5", look.spin && "animate-spin motion-reduce:animate-none")} />
           {look.label}
         </span>
@@ -46,5 +48,6 @@ export function SessionCard({ session, href }: { session: SessionLite; href: str
         </span>
       ) : null}
     </Link>
+    </HoverLift>
   );
 }

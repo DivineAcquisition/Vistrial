@@ -26,6 +26,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { money } from "@/lib/research/words";
 import { cn } from "@/lib/utils";
 import { SourceIcon } from "@/components/research/source-icon";
+import { Banner } from "@/components/ui/banner";
 
 export type IntakeSlots = {
   objective: string;
@@ -258,16 +259,15 @@ function PlanCard({ view, actions, editor }: { view: IntakeView; actions: Intake
         slots.origins.platforms === "memory" ? "memory" : undefined,
       )}
       {assumptions.length ? (
-        <div className="mt-2 grid gap-1 rounded-xl bg-warning/5 p-3 ring-1 ring-warning/20">
-          <span className="text-xs font-medium text-warning">Assumed</span>
+        <Banner compact tone="warning" role="note" title="Assumed" className="mt-2">
           <ul className="grid gap-0.5">
             {assumptions.map((line) => (
-              <li key={line} className="text-xs text-muted-foreground">
+              <li key={line} className="text-xs">
                 {line}
               </li>
             ))}
           </ul>
-        </div>
+        </Banner>
       ) : null}
       <div className="mt-3 flex flex-wrap items-center justify-between gap-3 rounded-xl bg-muted/50 p-3">
         <span className="flex items-start gap-2 text-xs text-muted-foreground">

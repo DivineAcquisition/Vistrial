@@ -28,6 +28,7 @@ import { Panel } from "@/components/ui/panel";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { SegmentedControl } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
+import { Banner } from "@/components/ui/banner";
 
 export type Tone = "good" | "warning" | "critical" | "neutral";
 
@@ -168,17 +169,7 @@ function MetaMark({ className }: { className?: string }) {
 }
 
 function Notice({ text, tone }: { text: string; tone: Tone }) {
-  const styles: Record<Tone, string> = {
-    good: "border-success/30 bg-success/5 text-success",
-    warning: "border-warning/30 bg-warning/5 text-warning",
-    critical: "border-destructive/30 bg-destructive/5 text-destructive",
-    neutral: "border-border bg-muted/40 text-muted-foreground",
-  };
-  return (
-    <p role="status" className={cn("rounded-lg border px-3 py-2 text-sm", styles[tone])}>
-      {text}
-    </p>
-  );
+  return <Banner compact tone={tone} title={text} />;
 }
 
 function CanCannot() {

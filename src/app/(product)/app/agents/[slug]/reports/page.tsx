@@ -6,9 +6,11 @@ import Link from "next/link";
 
 import { AssetStatusBadge } from "@/components/runs/run-parts";
 import { useWorkspaceShell } from "@/components/shell/shell-context";
-import { Panel } from "@/components/ui/panel";
 import { shortDate } from "@/lib/research/words";
 import { api } from "../../../../../../../convex/_generated/api";
+import { StartSessionButton } from "@/components/sessions/start-session-button";
+import { EmptyState } from "@/components/ui/empty-state";
+import { Stagger, StaggerItem } from "@/components/motion/stagger";
 
 /** The finished work this agent produced, newest first. Each opens with its versions and evidence. */
 export default function AgentReports() {
@@ -21,13 +23,16 @@ export default function AgentReports() {
       {page === undefined ? (
         <p className="text-sm text-muted-foreground">Loading.</p>
       ) : rows.length === 0 ? (
-        <Panel className="p-5">
-          <p className="text-sm text-muted-foreground">No reports yet. Each finished session leaves one here.</p>
-        </Panel>
+        <EmptyState
+          preview="rows"
+          title="Finished reports will appear here."
+          detail="Each finished session leaves one, with its versions, claims and sources."
+          action={shell.role !== "rep" ? <StartSessionButton /> : undefined}
+        />
       ) : (
-        <ul className="grid gap-2">
+        <Stagger className="grid gap-2">
           {rows.map((row) => (
-            <li key={row.id}>
+            <StaggerItem key={row.id}>
               <Link href={`/app/assets/${row.id}`} className="flex min-w-0 items-center gap-3 rounded-xl border border-border bg-card p-4 hover:border-primary/40">
                 <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
                   <FileText aria-hidden className="size-4" />
@@ -40,9 +45,9 @@ export default function AgentReports() {
                 </span>
                 <AssetStatusBadge status={row.status as "draft"} />
               </Link>
-            </li>
+            </StaggerItem>
           ))}
-        </ul>
+        </Stagger>
       )}
     </div>
   );

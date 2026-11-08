@@ -11,6 +11,9 @@ import { StatusBadge } from "@/components/ui/status-badge";
 import { FACT_SOURCE_WORDS, FACT_STATUS_WORDS, errorWords, shortDate } from "@/lib/research/words";
 import { api } from "../../../../../../../convex/_generated/api";
 import type { Id } from "../../../../../../../convex/_generated/dataModel";
+import { StartSessionButton } from "@/components/sessions/start-session-button";
+import { EmptyState } from "@/components/ui/empty-state";
+import { Stagger, StaggerItem } from "@/components/motion/stagger";
 
 function words(key: string) {
   const spaced = key.replace(/([a-z])([A-Z])/g, "$1 $2").replace(/[_-]+/g, " ");
@@ -37,15 +40,18 @@ export default function AgentMemory() {
       {facts === undefined ? (
         <p className="text-sm text-muted-foreground">Loading.</p>
       ) : facts.length === 0 ? (
-        <Panel className="p-5">
-          <p className="text-sm text-muted-foreground">Nothing yet. Facts appear as you answer questions in sessions and confirm your profile.</p>
-        </Panel>
+        <EmptyState
+          preview="facts"
+          title="What Vistrial learns about your business will appear here."
+          detail="Facts appear as you answer questions in sessions and confirm your profile."
+          action={canEdit ? <StartSessionButton /> : undefined}
+        />
       ) : (
-        <ul className="grid gap-2 sm:grid-cols-2">
+        <Stagger className="grid gap-2 sm:grid-cols-2">
           {facts.map((fact) => {
             const status = FACT_STATUS_WORDS[fact.status] ?? { label: fact.status, tone: "neutral" as const };
             return (
-              <li key={fact.id} className="grid content-start gap-1.5 rounded-xl border border-border bg-card p-4">
+              <StaggerItem key={fact.id} className="grid content-start gap-1.5 rounded-xl border border-border bg-card p-4">
                 <span className="flex items-center justify-between gap-2">
                   <span className="text-xs text-muted-foreground">{words(fact.factKey)}</span>
                   <StatusBadge label={status.label} tone={status.tone} className="[&_span]:normal-case" />
@@ -70,10 +76,10 @@ export default function AgentMemory() {
                     </Button>
                   ) : null}
                 </span>
-              </li>
+              </StaggerItem>
             );
           })}
-        </ul>
+        </Stagger>
       )}
     </div>
   );

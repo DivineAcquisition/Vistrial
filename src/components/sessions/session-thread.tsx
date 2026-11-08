@@ -43,6 +43,8 @@ import { cn } from "@/lib/utils";
 import { SourceIcon } from "@/components/research/source-icon";
 import { api } from "../../../convex/_generated/api";
 import type { Id } from "../../../convex/_generated/dataModel";
+import { Banner } from "@/components/ui/banner";
+import { AnimatedShinyText } from "@/components/ui/animated-shiny-text";
 
 export type ThreadData = {
   studio: Studio;
@@ -177,15 +179,12 @@ function Composer({
 
   if (busy) {
     return (
-      <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-primary/30 bg-primary/5 px-4 py-3">
-        <span className="flex items-center gap-2 text-sm text-primary">
-          <span aria-hidden className="relative flex size-2">
-            <span className="absolute inline-flex size-full animate-ping rounded-full bg-primary opacity-60" />
-            <span className="relative inline-flex size-2 rounded-full bg-primary" />
-          </span>
-          Working. It asks you if it needs anything, and spends nothing while it waits.
-        </span>
-        {studio.run ? (
+      <Banner
+        tone="brand"
+        icon={<Loader aria-hidden className="animate-spin motion-reduce:animate-none" />}
+        title="Working on it"
+        action={
+          studio.run ? (
           <Button
             variant="outline"
             size="sm"
@@ -195,17 +194,28 @@ function Composer({
           >
             <Square aria-hidden className="size-3.5" /> Stop
           </Button>
-        ) : null}
-        {notice ? <p className="w-full text-xs text-muted-foreground">{notice}</p> : null}
-      </div>
+          ) : null
+        }
+      >
+        It asks you if it needs anything, and spends nothing while it waits.
+        {notice ? <span className="block text-xs">{notice}</span> : null}
+      </Banner>
     );
   }
 
   if (waitingAnswer) {
     return (
-      <a href="#question" className="block rounded-2xl border border-warning/40 bg-warning/5 px-4 py-3 text-sm text-warning">
-        Waiting for your answer to its question above. Nothing runs or spends until you answer.
-      </a>
+      <Banner
+        tone="warning"
+        title="Waiting for your answer"
+        action={
+          <Button size="sm" variant="outline" render={<a href="#question" />}>
+            Answer
+          </Button>
+        }
+      >
+        It asked a question above. Nothing runs or spends until you answer.
+      </Banner>
     );
   }
 
@@ -298,7 +308,7 @@ export function FollowUpsView({
           return (
             <AgentSaid key={row.id} name={agentName} icon={row.status === "running" ? Search : MessageSquareText} line={row.status === "running" ? "is researching that now." : "is reading this session's sources."}>
               <span className="inline-flex items-center gap-2 text-sm text-muted-foreground">
-                <Loader aria-hidden className="size-4 animate-spin text-primary motion-reduce:animate-none" /> Working…
+                <Loader aria-hidden className="size-4 animate-spin text-primary motion-reduce:animate-none" /> <AnimatedShinyText>Working…</AnimatedShinyText>
               </span>
             </AgentSaid>
           );

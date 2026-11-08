@@ -8,8 +8,10 @@ import { useParams } from "next/navigation";
 import { SessionCard } from "@/components/agents/session-card";
 import { useWorkspaceShell } from "@/components/shell/shell-context";
 import { Button } from "@/components/ui/button";
-import { Panel } from "@/components/ui/panel";
 import { api } from "../../../../../../../convex/_generated/api";
+import { StartSessionButton } from "@/components/sessions/start-session-button";
+import { EmptyState } from "@/components/ui/empty-state";
+import { Stagger, StaggerItem } from "@/components/motion/stagger";
 
 /** Every session with this agent, newest first. */
 export default function AgentSessions() {
@@ -33,15 +35,20 @@ export default function AgentSessions() {
       {tree === undefined ? (
         <p className="text-sm text-muted-foreground">Loading sessions.</p>
       ) : tree.sessions.length === 0 ? (
-        <Panel className="p-5">
-          <p className="text-sm text-muted-foreground">{params.slug === "growth-architect" ? "No sessions yet." : "This agent has no sessions yet."}</p>
-        </Panel>
+        <EmptyState
+          preview="cards"
+          title="Your sessions with this agent will appear here."
+          detail="A session is one piece of work: you ask, it studies, you review."
+          action={shell.role !== "rep" ? <StartSessionButton agentSlug={params.slug} /> : undefined}
+        />
       ) : (
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        <Stagger as="div" className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {tree.sessions.map((session) => (
-            <SessionCard key={session.id} session={session} href={`${base}/sessions/${session.id}`} />
+            <StaggerItem as="div" key={session.id}>
+              <SessionCard session={session} href={`${base}/sessions/${session.id}`} />
+            </StaggerItem>
           ))}
-        </div>
+        </Stagger>
       )}
     </div>
   );

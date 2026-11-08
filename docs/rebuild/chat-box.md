@@ -1,6 +1,6 @@
 # The chat box
 
-One chat box is used everywhere: on the home page, at the top of each agent, in the header and mobile ask panel, in the intake conversation and inside a finished session. It works like the boxes in Claude and ChatGPT.
+The chat box lives only in sessions: a new session's conversation and an open session's follow-ups. Like Claude and ChatGPT, it sits at the bottom of the screen and stays there while the conversation scrolls; a short conversation still has the box at the bottom (`useFillViewport` stretches the column to the screen). Home and the agent page have a **New session** button instead, and the header has no chat.
 
 ![Chat box and follow-ups](../screenshots/chat-box-and-followups.png)
 
@@ -8,7 +8,7 @@ One chat box is used everywhere: on the home page, at the top of each agent, in 
 
 | Control | What it does |
 | --- | --- |
-| **Agent chip** | Picks the agent. It defaults to the agent of the page you're on. Planned agents show "Coming soon". Once a conversation has started, the agent is locked. |
+| **Agent chip** | Picks the agent when a new session starts. It defaults to the session's agent. Planned agents show "Coming soon". Once a conversation has started, the agent is locked. |
 | **Quality chip** | **Thorough** (Opus 5.5, research capped at $3) is the default. **Fast** (Sonnet 5.5, capped at $1.50) is quicker and costs about half. The mode is stored on the run: Fast sends research and writing to the classify route and lowers the run cap. |
 | **+ menu** | Add images, PDFs or CSVs (up to 10 files, 10 MB each). Add a link. **Where to look**: everywhere until Vistrial learns where the audience is, or focus on chosen sources. **Connect an integration**: Meta ads, then Manage connections. |
 | **Connect Meta ads** | A shortcut shown only while Meta isn't connected. Connecting happens through the workspace Connections flow, and Facebook sends you back to the page you came from. Only owners can connect. |

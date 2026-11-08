@@ -7,7 +7,6 @@ import { LayoutListIcon, MenuIcon } from "lucide-react";
 
 import { ThemeToggle } from "@/components/app/theme-toggle";
 import Logo from "@/components/brand/logo";
-import { StartChat } from "@/components/chat/start-chat";
 import { FolderTree } from "@/components/shell/folder-tree";
 import { LiveAside } from "@/components/shell/live-aside";
 import { StatusBadge } from "@/components/ui/status-badge";
@@ -33,10 +32,6 @@ export function ProductShell({
 }) {
   const pathname = usePathname();
   const [menuOpen, setMenuOpen] = useState(false);
-  const [askOpen, setAskOpen] = useState(false);
-  // Pages with their own chat (home, agent overview, conversations, sessions) do not repeat it in the header.
-  const hideDock = pathname === "/app" || /^\/app\/agents\/[^/]+(\/sessions(\/.*)?)?$/.test(pathname);
-  const pageAgent = pathname.match(/^\/app\/agents\/([^/]+)/)?.[1] ?? "growth-architect";
 
   return (
     <div className="min-h-dvh overflow-x-hidden bg-background text-foreground">
@@ -59,7 +54,8 @@ export function ProductShell({
         </aside>
         <div className="flex min-w-0 flex-1 flex-col">
           <header className="border-b border-border print:hidden">
-            <div className="flex flex-wrap items-center gap-2 px-4 py-2" aria-label="Crew">
+            <div className="flex flex-wrap items-center gap-2 px-4 py-2">
+              <div className="flex min-w-0 flex-1 flex-wrap items-center gap-2" aria-label="Crew">
               {agents
                 .filter((agent) => agent.status === "live")
                 .map((agent) => (
@@ -68,27 +64,9 @@ export function ProductShell({
                     <StatusBadge label={agentStateLabel(agent)} />
                   </span>
                 ))}
-            </div>
-            <div className="flex items-center gap-2 px-4 py-3">
-              <div className="hidden min-w-0 flex-1 md:block">
-                {hideDock ? null : <StartChat size="compact" defaultAgent={pageAgent} placeholder="Ask Vistrial to research something…" />}
               </div>
-              <button
-                type="button"
-                className="inline-flex h-12 flex-1 items-center rounded-xl border border-border px-4 text-sm text-muted-foreground md:hidden"
-                aria-expanded={askOpen}
-                aria-controls="compass-command"
-                onClick={() => setAskOpen((open) => !open)}
-              >
-                Growth Architect
-              </button>
               <ThemeToggle />
             </div>
-            {askOpen ? (
-              <div id="compass-command" className="px-4 pb-3 md:hidden">
-                <StartChat size="compact" defaultAgent={pageAgent} placeholder="Ask Vistrial to research something…" />
-              </div>
-            ) : null}
           </header>
           <div className="flex min-w-0 flex-1">
             <main id="workspace-main" className="min-w-0 flex-1 px-4 py-6 pb-28 md:px-8 md:pb-10">

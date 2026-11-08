@@ -8,8 +8,9 @@
 import { convexTest } from "convex-test";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { api } from "./_generated/api";
+import { api, internal } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
+import { learningSummary } from "./decisions";
 import { INJECTION_FIXTURE } from "./lib/registry";
 import type { ScriptedModel } from "./lib/toolRouter";
 import { marketIntelligence } from "./skills/marketIntelligence";
@@ -400,5 +401,125 @@ describe("first-party results in research", () => {
     expect(inputs.join("\n")).not.toContain("Bay Area Cleaning");
     const own = (await t.run((ctx) => ctx.db.query("sourceRefs").collect())).filter((row) => row.platform === "customerData");
     expect(own).toHaveLength(0);
+  });
+});
+
+describe("outcome loop", () => {
+  beforeEach(() => vi.useFakeTimers());
+  afterEach(() => {
+    vi.useRealTimers();
+    delete (globalThis as { __vistrialScriptedModel?: ScriptedModel }).__vistrialScriptedModel;
+  });
+
+  async function results(t: Tester, workspaceId: Id<"workspaces">, spend: number, conversions: number) {
+    await t.run(async (ctx) => {
+      await ctx.db.insert("resultUploads", {
+        workspaceId,
+        fileName: "jobber.csv",
+        label: "Jobber bookings",
+        currency: "USD",
+        uploadedBy: "x",
+        createdAt: Date.now(),
+        status: "ready",
+        summary: {
+          rows: 30,
+          dateStart: "2026-10-01",
+          dateStop: "2026-10-31",
+          metrics: ["spend", "conversions"],
+          totals: { spend, conversions },
+          groupBy: null,
+          groups: [],
+          otherGroups: 0,
+          ignoredColumns: [],
+        },
+      });
+    });
+  }
+
+  it("records a decision with measured figures, closes it with an outcome, and the next research builds on it", async () => {
+    const t = makeTester();
+    const a = await seed(t, "Alpha", ALPHA);
+    await results(t, a.workspaceId, 1000, 20);
+    script({ sources: PAGES });
+    expect((await run(t, a.owner, a.workspaceId, a.projectId)).status).toBe("completed");
+
+    const decisionId = await a.owner.mutation(api.decisions.plan, { workspaceId: a.workspaceId, projectId: a.projectId, opportunityIndex: 1, checkInDays: 30 });
+    // Planning the same opportunity again keeps one decision.
+    expect(await a.owner.mutation(api.decisions.plan, { workspaceId: a.workspaceId, projectId: a.projectId, opportunityIndex: 1, checkInDays: 30 })).toBe(decisionId);
+    // The words come from the saved report, not the browser.
+    const [planned] = await a.owner.query(api.decisions.forProject, { workspaceId: a.workspaceId, projectId: a.projectId });
+    expect(planned).toMatchObject({ opportunity: "Opportunity 2", proposedAction: "Action 2", validationMethod: "Track bookings for a month.", due: false, outcome: null });
+    expect(planned.baseline).toEqual([expect.objectContaining({ source: "upload", label: "Jobber bookings", spend: 1000, conversions: 20 })]);
+    expect(await a.owner.query(api.decisions.due, { workspaceId: a.workspaceId })).toEqual([]);
+
+    // A month later the check-in is due, and newer figures are in.
+    vi.advanceTimersByTime(31 * 24 * 60 * 60 * 1000);
+    const due = await a.owner.query(api.decisions.due, { workspaceId: a.workspaceId });
+    expect(due.map((row) => row.id)).toEqual([decisionId]);
+    await results(t, a.workspaceId, 900, 30);
+    await a.owner.mutation(api.decisions.recordOutcome, { workspaceId: a.workspaceId, decisionId, result: "better", note: "Ran the first-clean offer at Sparkle's price." });
+    const [closed] = await a.owner.query(api.decisions.forProject, { workspaceId: a.workspaceId, projectId: a.projectId });
+    expect(closed.outcome?.changes).toEqual([
+      { source: "upload", label: "Jobber bookings", metric: "spend", before: 1000, after: 900, percent: -10 },
+      { source: "upload", label: "Jobber bookings", metric: "conversions", before: 20, after: 30, percent: 50 },
+    ]);
+    expect(await a.owner.query(api.decisions.due, { workspaceId: a.workspaceId })).toEqual([]);
+
+    // The next session lists it as known and tells the model.
+    const inputs = script({ sources: PAGES });
+    expect((await run(t, a.owner, a.workspaceId, a.projectId)).status).toBe("completed");
+    const brief = inputs.find((row) => row.startsWith("Write the task brief"))!;
+    expect(brief).toContain("What this business tried after earlier reports");
+    expect(brief).toContain("Tried: Action 2. Result: it helped (Jobber bookings spend -10%, Jobber bookings conversions +50%).");
+    const contexts = (await t.run((ctx) => ctx.db.query("runArtifacts").collect())).filter((row) => row.kind === "context");
+    expect(contexts.at(-1)?.body).toContain('"origin":"outcome"');
+  });
+
+  it("writes internal learning with no workspace, place, amount or owner note, and deletes it with the decision", async () => {
+    const t = makeTester();
+    const a = await seed(t, "Alpha", ALPHA);
+    await results(t, a.workspaceId, 1000, 20);
+    script({ sources: PAGES });
+    await run(t, a.owner, a.workspaceId, a.projectId);
+    const decisionId = await a.owner.mutation(api.decisions.plan, { workspaceId: a.workspaceId, projectId: a.projectId, opportunityIndex: 0, checkInDays: 14 });
+    await results(t, a.workspaceId, 1000, 25);
+    await a.owner.mutation(api.decisions.recordOutcome, { workspaceId: a.workspaceId, decisionId, result: "better", note: "Call me at 555-0100, Alpha Cleaning on 5th St." });
+
+    const [signal] = await t.run((ctx) => ctx.db.query("learningSignals").collect());
+    expect(signal.decisionId).toBe(decisionId);
+    const kept = Object.fromEntries(Object.entries(signal).filter(([key]) => !["_id", "_creationTime", "decisionId"].includes(key)));
+    expect(Object.keys(kept).sort()).toEqual(["changes", "daysToOutcome", "market", "month", "opportunity", "proposedAction", "result"]);
+    expect(kept).toMatchObject({ market: "deep house cleaning", result: "better", changes: [{ source: "upload", metric: "spend", percent: 0 }, { source: "upload", metric: "conversions", percent: 25 }] });
+    expect(JSON.stringify(kept)).not.toMatch(/Austin|555-0100|Alpha|1000|5th St/);
+
+    // Internal only: the team reads it from the dashboard or CLI; no signed-in caller can.
+    expect((await t.query(internal.decisions.learningSummary, {})).byMarket).toEqual([{ market: "deep house cleaning", better: 1, same: 0, worse: 0, tooEarly: 0, notTried: 0 }]);
+    // Registered as internal: Convex refuses it to any client. (convex-test does not enforce visibility.)
+    expect((learningSummary as unknown as { isInternal: boolean; isPublic?: boolean }).isInternal).toBe(true);
+
+    await a.owner.mutation(api.decisions.remove, { workspaceId: a.workspaceId, decisionId });
+    expect(await t.run((ctx) => ctx.db.query("learningSignals").collect())).toEqual([]);
+  });
+
+  it("keeps decisions to their workspace, lets reps only read, and refuses opportunities the report does not have", async () => {
+    const t = makeTester();
+    const a = await seed(t, "Alpha", ALPHA);
+    const b = await seed(t, "Beta", BETA);
+    script({ sources: PAGES });
+    await run(t, a.owner, a.workspaceId, a.projectId);
+    await expect(a.owner.mutation(api.decisions.plan, { workspaceId: a.workspaceId, projectId: a.projectId, opportunityIndex: 7, checkInDays: 30 })).rejects.toThrow();
+    await expect(a.owner.mutation(api.decisions.plan, { workspaceId: a.workspaceId, projectId: a.projectId, opportunityIndex: 0, checkInDays: 5 })).rejects.toThrow();
+    // Another workspace cannot plan on this project, even naming its own workspace.
+    await expect(b.owner.mutation(api.decisions.plan, { workspaceId: b.workspaceId, projectId: a.projectId, opportunityIndex: 0, checkInDays: 30 })).rejects.toThrow();
+    const decisionId = await a.owner.mutation(api.decisions.plan, { workspaceId: a.workspaceId, projectId: a.projectId, opportunityIndex: 0, checkInDays: 30 });
+    await expect(b.owner.mutation(api.decisions.recordOutcome, { workspaceId: b.workspaceId, decisionId, result: "worse", note: "" })).rejects.toThrow();
+    await expect(b.owner.query(api.decisions.forProject, { workspaceId: b.workspaceId, projectId: a.projectId })).rejects.toThrow();
+
+    await t.run(async (ctx) => {
+      await ctx.db.insert("members", { workspaceId: a.workspaceId, userId: "Alpha-rep", role: "rep", displayName: "Rep", active: true });
+    });
+    const rep = t.withIdentity(person("Alpha-rep"));
+    expect(await rep.query(api.decisions.forProject, { workspaceId: a.workspaceId, projectId: a.projectId })).toHaveLength(1);
+    await expect(rep.mutation(api.decisions.recordOutcome, { workspaceId: a.workspaceId, decisionId, result: "better", note: "" })).rejects.toThrow();
   });
 });

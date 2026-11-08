@@ -4,6 +4,7 @@ import { runCaps } from "../../lib/capRows";
 import { screenClaims, type ClaimInput } from "../../lib/evidence";
 import { factsForRun, liveFact } from "../../lib/facts";
 import { runChecks } from "./checks";
+import { decisionsForContext, describeDecision } from "../../decisions";
 import { describeUpload, saveUploadSourcesFor } from "../../resultUploads";
 import { saveFirstPartySources } from "./firstParty";
 import { latest, latestDone, projectOf, projectSources, recordOf } from "./records";
@@ -96,6 +97,18 @@ const contextRead: MutationTool = async (ctx, run) => {
   for (const { upload } of uploads) {
     known.push({ key: `upload:${upload._id}`, label: `Your results: ${upload.label}`, value: describeUpload(upload), origin: "connection", status: "verified", recordedAt: upload.createdAt });
   }
+  // What the business tried after earlier reports, and what happened: outcomes first, then open check-ins.
+  for (const decision of await decisionsForContext(ctx, run.workspaceId)) {
+    known.push({
+      key: `decision:${decision._id}`,
+      label: decision.outcome ? "Tried before" : "Being tried",
+      value: describeDecision(decision),
+      origin: "outcome",
+      status: decision.outcome ? "verified" : "unverified",
+      recordedAt: decision.outcome?.recordedAt ?? decision.createdAt,
+    });
+  }
+
   const missing: ContextRecord["missing"] = gaps.map((key) => ({ key, blocking: true }));
   const assumptions: string[] = [];
   if (!facts.some((row) => /budget/i.test(row.factKey))) {

@@ -54,6 +54,12 @@ export function isRange(value: string | undefined): value is RangeKey {
   return value !== undefined && value in RANGES;
 }
 
+/** Only app pages: a path under /app/ with no scheme, host or traversal. */
+export function safeReturnPath(path: string | undefined) {
+  if (!path) return null;
+  return /^\/app\/[A-Za-z0-9/_?=&.-]*$/.test(path) && !path.includes("//") && !path.includes("..") ? path.slice(0, 300) : null;
+}
+
 /** act_123 ids only. */
 export function isAdAccountId(id: string) {
   return /^act_\d{3,25}$/.test(id);

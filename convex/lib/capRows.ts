@@ -69,3 +69,22 @@ export async function addDaySpend(
   }
   return total;
 }
+
+/** Quality modes. Thorough uses the routes as set (Opus for research and writing); Fast uses the faster
+ * route for them and a lower cap. */
+export const MODES = {
+  thorough: { label: "Thorough", capCents: null as number | null },
+  fast: { label: "Fast", capCents: 150 as number | null },
+} as const;
+export type Mode = keyof typeof MODES;
+
+export function isMode(value: unknown): value is Mode {
+  return value === "thorough" || value === "fast";
+}
+
+/** A run's caps: the scope's caps, lowered to the mode's cap when the mode has one. */
+export async function runCaps(ctx: Reader, run: { workspaceId: Id<"workspaces">; agentSlug: string; skillSlug: string; mode?: string }): Promise<Caps> {
+  const caps = await loadCaps(ctx, run.workspaceId, run.agentSlug, run.skillSlug);
+  const modeCap = isMode(run.mode) ? MODES[run.mode].capCents : null;
+  return modeCap === null ? caps : { ...caps, maxCostCentsPerRun: Math.min(caps.maxCostCentsPerRun, modeCap) };
+}

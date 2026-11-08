@@ -7,6 +7,7 @@ import { useParams } from "next/navigation";
 import { useState } from "react";
 
 import { SessionCard } from "@/components/agents/session-card";
+import { StartChat } from "@/components/chat/start-chat";
 import { MetaLogo } from "@/components/connections/meta-logo";
 import { useWorkspaceShell } from "@/components/shell/shell-context";
 import { Button } from "@/components/ui/button";
@@ -38,6 +39,7 @@ export default function AgentOverview() {
 
   return (
     <div className="grid gap-5">
+      {live ? <StartChat size="hero" defaultAgent={agent.slug} placeholder={`What should ${agent.name} work on?`} /> : null}
       <Panel className="grid gap-3 p-4 sm:p-5">
         <p className={bodyText}>{agent.promise}</p>
         {!live ? <p className={bodyText}>Planned. This agent is part of the workforce but does not run yet, so it cannot be turned on.</p> : null}

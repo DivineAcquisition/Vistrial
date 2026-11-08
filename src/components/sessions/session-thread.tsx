@@ -2,13 +2,13 @@
 
 import { useMutation, useQuery } from "convex/react";
 import {
-  ArrowUp,
   BookOpenCheck,
   ChevronDown,
   ClipboardList,
   ExternalLink,
   FileText,
   Footprints,
+  Loader,
   Brain,
   MessagesSquare,
   LayoutGrid,
@@ -26,13 +26,16 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
+import { VistrialMark } from "@/components/brand/vistrial-mark";
+import { ChatComposer } from "@/components/chat/chat-composer";
+import { useChatExtras } from "@/components/chat/use-chat-extras";
+import { useWorkspaceShell } from "@/components/shell/shell-context";
 import { ApprovalCard, ChecksList, FindingsView, type SourceLite } from "@/components/research/findings";
 import { LiveActivity } from "@/components/research/live-activity";
 import { BriefCard, QuestionCard, SourceStatusList, StageProgress, type Studio } from "@/components/research/studio-parts";
 import { Button } from "@/components/ui/button";
 import { Panel } from "@/components/ui/panel";
 import { StatusBadge } from "@/components/ui/status-badge";
-import { Textarea } from "@/components/ui/textarea";
 import type { Tone } from "@/components/ui/tone";
 import { errorWords, money, PLATFORM_LABEL } from "@/lib/research/words";
 import { cn } from "@/lib/utils";
@@ -76,11 +79,10 @@ function YouSaid({ children, at }: { children: React.ReactNode; at?: number }) {
 function AgentSaid({ name, line, icon: Icon = Sparkles, children, id }: { name: string; line: React.ReactNode; icon?: typeof Sparkles; children?: React.ReactNode; id?: string }) {
   return (
     <motion.li id={id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="flex min-w-0 gap-3">
-      <span className="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-primary to-primary/60 text-primary-foreground shadow-[0_6px_16px_-8px_rgba(102,80,216,0.8)]">
-        <Icon aria-hidden className="size-4" />
-      </span>
+      <VistrialMark className="mt-0.5" />
       <div className="grid min-w-0 flex-1 gap-2">
-        <p className="text-sm text-card-foreground">
+        <p className="flex flex-wrap items-center gap-x-1.5 text-sm text-card-foreground">
+          <Icon aria-hidden className="size-3.5 text-primary" />
           <span className="font-medium">{name}</span> <span className="text-muted-foreground">{line}</span>
         </p>
         {children ? <div className="min-w-0">{children}</div> : null}
@@ -161,16 +163,11 @@ function Composer({
   editor: boolean;
   base: string;
 }) {
-  const router = useRouter();
   const stop = useMutation(api.runs.stop);
-  const requestRevision = useMutation(api.assets.requestRevision);
-  const [text, setText] = useState("");
   const [notice, setNotice] = useState("");
-  const [working, setWorking] = useState(false);
   const { studio } = data;
   const runStatus = studio.run?.status ?? null;
   const waitingAnswer = Boolean(studio.run?.waitingFor);
-  const reviewing = data.assetStatus === "draft" || data.assetStatus === "needsReview";
   const busy = runStatus === "running" || runStatus === "queued";
 
   if (!editor) return <p className="text-center text-xs text-muted-foreground">You can follow this session. Owners and Managers decide on it.</p>;
@@ -209,59 +206,161 @@ function Composer({
     );
   }
 
-  const placeholder = reviewing ? "Ask for a change to this report…" : "Ask for a follow-up session…";
-  const submit = async () => {
-    const value = text.trim();
-    if (!value) return;
-    if (reviewing && studio.assetId) {
-      setWorking(true);
-      try {
-        await requestRevision({ workspaceId, assetId: studio.assetId as Id<"assets">, reason: value });
-        setText("");
-        setNotice("Saved as a change request. The report stays waiting, and your note is kept as feedback.");
-      } catch (problem) {
-        setNotice(errorWords(problem, "It was not saved."));
-      }
-      setWorking(false);
-      return;
-    }
-    router.push(`${base}/sessions/new?objective=${encodeURIComponent(value)}`);
-  };
+  return <FollowUpComposer workspaceId={workspaceId} projectId={studio.project.id as Id<"researchProjects">} base={base} hasReport={Boolean(studio.report)} />;
+}
 
+/** The chat box inside a session: follow-up questions about the report, with the quality mode and files. */
+function FollowUpComposer({ workspaceId, projectId, base, hasReport }: { workspaceId: Id<"workspaces">; projectId: Id<"researchProjects">; base: string; hasReport: boolean }) {
+  const router = useRouter();
+  const ask = useMutation(api.followups.ask);
+  const followups = useQuery(api.followups.list, { workspaceId, projectId });
+  const shell = useWorkspaceShell();
+  const extras = useChatExtras(workspaceId, shell?.role !== "rep", shell?.role === "owner");
+  const [notice, setNotice] = useState("");
+  const busy = followups?.messages.some((row) => row.status === "thinking" || row.status === "running") ?? false;
   return (
-    <form
-      className="grid gap-2"
-      onSubmit={(event) => {
-        event.preventDefault();
-        void submit();
-      }}
-    >
-      <div className="flex items-end gap-2 rounded-2xl border border-border bg-card p-2 shadow-sm focus-within:border-primary/50">
-        <label className="sr-only" htmlFor="session-composer">
-          {placeholder}
-        </label>
-        <Textarea
-          id="session-composer"
-          rows={1}
-          value={text}
-          onChange={(event) => setText(event.target.value)}
-          onKeyDown={(event) => {
-            if (event.key === "Enter" && !event.shiftKey) {
-              event.preventDefault();
-              void submit();
-            }
-          }}
-          placeholder={placeholder}
-          className="min-h-10 flex-1 resize-none border-0 bg-transparent shadow-none focus-visible:ring-0"
-        />
-        <Button type="submit" size="icon" aria-label={reviewing ? "Send change request" : "Start a follow-up session"} loading={working} disabled={!text.trim()}>
-          <ArrowUp aria-hidden className="size-4" />
-        </Button>
-      </div>
-      <p className="px-1 text-[11px] text-muted-foreground">
-        {notice || (reviewing ? "Your note is saved as feedback on this version. Approve or reject it in the card above." : "Starts a new session with this as its question. It shows its plan and budget before it researches.")}
-      </p>
-    </form>
+    <div className="grid gap-1">
+      <ChatComposer
+        placeholder={hasReport ? "Ask about this report, or ask for more research…" : "Ask a follow-up, or start a new session…"}
+        disabled={busy}
+        mode={extras.composer.mode}
+        files={extras.composer.files}
+        connect={extras.composer.connect}
+        footnote={
+          notice ||
+          `Answers come from this session's sources and cost a few cents. New research is proposed first, with an estimate, and runs only when you tap Run.${
+            followups && followups.spentCents > 0 ? ` Follow-ups so far: ${money(followups.spentCents)}.` : ""
+          }`
+        }
+        onSubmit={async (text) => {
+          setNotice("");
+          if (!hasReport) {
+            router.push(`${base}/sessions/new?objective=${encodeURIComponent(text)}`);
+            return;
+          }
+          try {
+            await extras.attachTo({ projectId });
+            extras.reset();
+            await ask({ workspaceId, projectId, text, mode: extras.mode });
+          } catch (problem) {
+            setNotice(errorWords(problem, "That question was not sent."));
+            throw problem;
+          }
+        }}
+      />
+    </div>
+  );
+}
+
+/** Follow-up turns after the report: answers with their sources, and research waiting for a Run tap. */
+function FollowUps({ workspaceId, projectId, agentName, editor }: { workspaceId: Id<"workspaces">; projectId: Id<"researchProjects">; agentName: string; editor: boolean }) {
+  const data = useQuery(api.followups.list, { workspaceId, projectId });
+  const run = useMutation(api.followups.run);
+  const decline = useMutation(api.followups.decline);
+  return (
+    <FollowUpsView
+      messages={data?.messages ?? []}
+      agentName={agentName}
+      editor={editor}
+      onRun={(chatId) => void run({ workspaceId, chatId: chatId as Id<"sessionChats"> })}
+      onDecline={(chatId) => void decline({ workspaceId, chatId: chatId as Id<"sessionChats"> })}
+    />
+  );
+}
+
+export type FollowUpMessage = { id: string; role: string; kind: string; text: string; status: string; data?: unknown; costCents: number };
+
+/** The follow-up turns as plain data, so stories can show them without a backend. */
+export function FollowUpsView({
+  messages,
+  agentName,
+  editor,
+  onRun,
+  onDecline,
+}: {
+  messages: FollowUpMessage[];
+  agentName: string;
+  editor: boolean;
+  onRun: (chatId: string) => void;
+  onDecline: (chatId: string) => void;
+}) {
+  if (messages.length === 0) return null;
+  const data = { messages };
+  return (
+    <>
+      {data.messages.map((row) => {
+        if (row.role === "you") return <YouSaid key={row.id}>{row.text}</YouSaid>;
+        const cited = ((row.data as { cited?: { id: string; title: string; url: string; platform: string }[] } | null)?.cited ?? []).slice(0, 8);
+        if (row.status === "thinking" || row.status === "running") {
+          return (
+            <AgentSaid key={row.id} name={agentName} icon={row.status === "running" ? Search : MessageSquareText} line={row.status === "running" ? "is researching that now." : "is reading this session's sources."}>
+              <span className="inline-flex items-center gap-2 text-sm text-muted-foreground">
+                <Loader aria-hidden className="size-4 animate-spin text-primary motion-reduce:animate-none" /> Working…
+              </span>
+            </AgentSaid>
+          );
+        }
+        if (row.kind === "proposal" && row.status !== "done") {
+          const plan = row.data as { searches?: string[]; low?: number; high?: number } | null;
+          return (
+            <AgentSaid key={row.id} name={agentName} icon={Search} line="needs new research for that.">
+              <div className="grid gap-3 rounded-xl border border-primary/30 bg-primary/5 p-4">
+                <p className="text-sm text-card-foreground">{row.text}</p>
+                {plan?.searches?.length ? (
+                  <ul className="grid gap-1">
+                    {plan.searches.map((query) => (
+                      <li key={query} className="flex items-center gap-2 text-xs text-muted-foreground">
+                        <Search aria-hidden className="size-3" /> {query}
+                      </li>
+                    ))}
+                  </ul>
+                ) : null}
+                <p className="text-xs text-muted-foreground">
+                  Estimate {money(plan?.low ?? 0)}–{money(plan?.high ?? 0)}. New pages it finds join this session as sources.
+                </p>
+                {row.status === "proposed" && editor ? (
+                  <div className="flex flex-wrap gap-2">
+                    <Button size="sm" variant="gradient" onClick={() => onRun(row.id)}>
+                      Run
+                    </Button>
+                    <Button size="sm" variant="ghost" onClick={() => onDecline(row.id)}>
+                      Not now
+                    </Button>
+                  </div>
+                ) : row.status === "declined" ? (
+                  <p className="text-xs text-muted-foreground">Not run.</p>
+                ) : null}
+              </div>
+            </AgentSaid>
+          );
+        }
+        return (
+          <AgentSaid key={row.id} name={agentName} icon={row.kind === "proposal" ? Search : MessageSquareText} line={row.kind === "proposal" ? "researched it:" : "answered from this session's sources:"}>
+            <div className="grid gap-2 rounded-xl border border-border bg-card p-4">
+              <p className="text-sm whitespace-pre-line text-card-foreground">{row.text}</p>
+              {cited.length ? (
+                <div className="flex flex-wrap gap-1.5">
+                  {cited.map((source, index) => (
+                    <a
+                      key={source.id}
+                      href={source.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex max-w-64 items-center gap-1 rounded-full border border-border px-2 py-0.5 text-xs text-muted-foreground hover:border-primary/40 hover:text-foreground"
+                    >
+                      [{index + 1}] <span className="truncate">{source.title}</span>
+                    </a>
+                  ))}
+                </div>
+              ) : row.status === "done" ? (
+                <p className="text-xs text-muted-foreground">No source in this session answers it directly.</p>
+              ) : null}
+              {row.costCents > 0 ? <p className="text-[11px] text-muted-foreground">{money(row.costCents)}</p> : null}
+            </div>
+          </AgentSaid>
+        );
+      })}
+    </>
   );
 }
 
@@ -451,6 +550,8 @@ export function SessionThread({
               <ApprovalCard workspaceId={workspaceId} assetId={studio.assetId as Id<"assets">} status={data.assetStatus} canDecide={editor} />
             </AgentSaid>
           ) : null}
+
+          <FollowUps workspaceId={workspaceId} projectId={project.id as Id<"researchProjects">} agentName={agentName} editor={editor} />
         </ol>
 
         <div className="sticky bottom-20 z-10 bg-gradient-to-t from-background via-background to-transparent pt-4 md:bottom-4">

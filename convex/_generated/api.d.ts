@@ -25,6 +25,8 @@ import type * as crons from "../crons.js";
 import type * as events from "../events.js";
 import type * as facts from "../facts.js";
 import type * as feedback from "../feedback.js";
+import type * as files from "../files.js";
+import type * as followups from "../followups.js";
 import type * as http from "../http.js";
 import type * as imports from "../imports.js";
 import type * as intake from "../intake.js";
@@ -114,6 +116,8 @@ declare const fullApi: ApiFromModules<{
   events: typeof events;
   facts: typeof facts;
   feedback: typeof feedback;
+  files: typeof files;
+  followups: typeof followups;
   http: typeof http;
   imports: typeof imports;
   intake: typeof intake;

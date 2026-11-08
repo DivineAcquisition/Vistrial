@@ -25,6 +25,7 @@ import {
   Square,
   Users,
   type LucideIcon,
+  Wallet,
 } from "@/components/icons";
 import Link from "next/link";
 import { useEffect, useState } from "react";
@@ -408,6 +409,7 @@ const ACROSS = [
 
 const WORKSPACE = [
   { href: "/app/connections", label: "Connections", icon: Plug },
+  { href: "/app/billing", label: "Billing", icon: Wallet },
   { href: "/app/profile", label: "Profile", icon: Sparkles },
   { href: "/app/team", label: "Team", icon: Users },
   { href: "/app/controls", label: "Controls", icon: ShieldCheck },

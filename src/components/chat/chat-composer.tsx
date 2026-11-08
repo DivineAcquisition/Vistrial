@@ -39,6 +39,7 @@ import {
 } from "@/components/ui/menu";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
+import { SourceIcon } from "@/components/research/source-icon";
 
 export type ComposerMode = "thorough" | "fast";
 export type ComposerAgent = { slug: string; name: string; live: boolean };
@@ -363,7 +364,10 @@ export function ChatComposer({
                               sources.onChange(next.length ? next : null);
                             }}
                           >
-                            {option.label}
+                            <span className="flex items-center gap-2">
+                              <SourceIcon platform={option.value} size={14} />
+                              {option.label}
+                            </span>
                           </MenuCheckboxItem>
                         ))}
                       </MenuGroup>
@@ -508,7 +512,7 @@ export function ChatComposer({
               onClick={() => sources.onChange(null)}
               aria-label="Search everywhere instead"
             >
-              <Compass aria-hidden className="size-3.5" />
+              {focused.length === 1 ? <SourceIcon platform={focused[0]} size={14} /> : <Compass aria-hidden className="size-3.5" />}
               <span className="max-w-40 truncate">
                 {focused
                   .map(

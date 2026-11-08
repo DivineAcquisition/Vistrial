@@ -39,6 +39,7 @@ import { StatusBadge } from "@/components/ui/status-badge";
 import type { Tone } from "@/components/ui/tone";
 import { errorWords, money, PLATFORM_LABEL } from "@/lib/research/words";
 import { cn } from "@/lib/utils";
+import { SourceIcon } from "@/components/research/source-icon";
 import { api } from "../../../convex/_generated/api";
 import type { Id } from "../../../convex/_generated/dataModel";
 
@@ -129,7 +130,8 @@ function AudienceTurn({ workspaceId, counts, agentName, editor }: { workspaceId:
       <div className="grid gap-3 rounded-xl border border-border bg-card p-4">
         <div className="flex flex-wrap gap-2">
           {ranked.map(([platform, n]) => (
-            <span key={platform} className={cn("rounded-full px-2.5 py-1 text-xs ring-1", top.includes(platform) ? "bg-primary/10 text-primary ring-primary/30" : "bg-background text-muted-foreground ring-border")}>
+            <span key={platform} className={cn("inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs ring-1", top.includes(platform) ? "bg-primary/10 text-primary ring-primary/30" : "bg-background text-muted-foreground ring-border")}>
+              <SourceIcon platform={platform} size={12} />
               {PLATFORM_LABEL[platform] ?? platform} · {n}
             </span>
           ))}

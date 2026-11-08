@@ -34,7 +34,7 @@ describe("agent folders", () => {
     const tree = await t.withIdentity(identity("user_owner")).query(api.agentFolder.tree, { workspaceId, agentSlug: "growth-architect" });
     expect(tree.sessions).toHaveLength(1);
     expect(tree.sessions[0]).toMatchObject({ title: "Austin deep cleaning", state: "draft" });
-    expect(tree.connections.map((row) => row.key)).toEqual(["meta", "youtube", "instagram", "adLibrary"]);
+    expect(tree.connections.map((row) => row.key)).toEqual(["meta"]);
     expect(tree.connections[0].state).toBe("off");
     await expect(t.withIdentity(identity("user_other")).query(api.agentFolder.tree, { workspaceId, agentSlug: "growth-architect" })).rejects.toThrow();
   });

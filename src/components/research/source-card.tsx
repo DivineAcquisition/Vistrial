@@ -9,6 +9,7 @@ import { StatusBadge } from "@/components/ui/status-badge";
 import { embedShape, embedUrl, type Embed } from "@/lib/research/embeds";
 import { PLATFORM_LABEL, shortDate } from "@/lib/research/words";
 import { cn } from "@/lib/utils";
+import { SourceIcon } from "@/components/research/source-icon";
 
 export type BoardSource = {
   id: string;
@@ -117,6 +118,7 @@ export function SourceCard({
       className={cn("grid min-w-0 content-start gap-3 rounded-xl border border-border bg-card p-4", highlighted && "ring-2 ring-brand-500")}
     >
       <div className="flex flex-wrap items-center gap-2">
+        <SourceIcon platform={source.platform} size={18} />
         <StatusBadge label={PLATFORM_LABEL[source.platform] ?? source.platform} tone="brand" className="[&_span]:normal-case" />
         <span className="text-xs text-muted-foreground">{reading?.format || KIND_WORDS[source.kind] || source.kind}</span>
         {reading?.relevance ? (

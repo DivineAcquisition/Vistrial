@@ -1,13 +1,12 @@
 "use client";
 
 import { useMutation, useQuery } from "convex/react";
-import { ArrowRight, MessagesSquare } from "lucide-react";
+import { ArrowRight, MessagesSquare, Plus } from "lucide-react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useState } from "react";
 
 import { SessionCard } from "@/components/agents/session-card";
-import { StartChat } from "@/components/chat/start-chat";
 import { useWorkspaceShell } from "@/components/shell/shell-context";
 import { Button } from "@/components/ui/button";
 import { Panel } from "@/components/ui/panel";
@@ -38,12 +37,10 @@ export default function AgentOverview() {
 
   return (
     <div className="grid gap-5">
-      {live ? (
-        <StartChat
-          size="hero"
-          defaultAgent={agent.slug}
-          placeholder={`What should ${agent.name} work on?`}
-        />
+      {live && shell.role !== "rep" && agent.state !== "off" ? (
+        <Button className="w-fit" render={<Link href={`${base}/sessions/new`} />}>
+          <Plus aria-hidden /> New session
+        </Button>
       ) : null}
       <Panel className="grid gap-3 p-4 sm:p-5">
         <p className={bodyText}>{agent.promise}</p>

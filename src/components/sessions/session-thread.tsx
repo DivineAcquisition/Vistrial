@@ -28,6 +28,7 @@ import { useState } from "react";
 
 import { VistrialMark } from "@/components/brand/vistrial-mark";
 import { ChatComposer } from "@/components/chat/chat-composer";
+import { useFillViewport } from "@/components/chat/use-fill-viewport";
 import { useChatExtras } from "@/components/chat/use-chat-extras";
 import { useWorkspaceShell } from "@/components/shell/shell-context";
 import { ApprovalCard, ChecksList, FindingsView, type SourceLite } from "@/components/research/findings";
@@ -386,6 +387,7 @@ export function SessionThread({
   /** The chat that started this session, if it began as one. */
   intakeMessages?: { id: string; role: "you" | "agent"; kind: string; text: string }[];
 }) {
+  const column = useFillViewport<HTMLElement>();
   const { studio } = data;
   const project = studio.project;
   const run = studio.run;
@@ -399,7 +401,7 @@ export function SessionThread({
 
   return (
     <div className="grid min-w-0 gap-5 lg:grid-cols-[minmax(0,1fr)_17rem]">
-      <section className="grid min-w-0 content-start gap-4" aria-label="Session">
+      <section ref={column} className="flex min-w-0 flex-col gap-4" aria-label="Session">
         <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border pb-3">
           <div className="min-w-0">
             <Link href={`${base}/sessions`} className="text-xs text-muted-foreground hover:text-foreground">
@@ -556,7 +558,7 @@ export function SessionThread({
           <FollowUps workspaceId={workspaceId} projectId={project.id as Id<"researchProjects">} agentName={agentName} editor={editor} />
         </ol>
 
-        <div className="sticky bottom-20 z-10 bg-gradient-to-t from-background via-background to-transparent pt-4 md:bottom-4">
+        <div className="sticky bottom-20 z-10 mt-auto bg-gradient-to-t from-background via-background to-transparent pt-4 md:bottom-4">
           <Composer workspaceId={workspaceId} data={data} editor={editor} base={base} />
         </div>
       </section>

@@ -17,6 +17,7 @@ import {
 import { AnimatePresence, motion } from "motion/react";
 import { useEffect, useRef, useState } from "react";
 
+import { useFillViewport } from "@/components/chat/use-fill-viewport";
 import { VistrialMark } from "@/components/brand/vistrial-mark";
 import { Button } from "@/components/ui/button";
 import { Panel } from "@/components/ui/panel";
@@ -323,6 +324,7 @@ export function IntakeChatView({
   const [text, setText] = useState(initialText);
   const [sending, setSending] = useState(false);
   const end = useRef<HTMLDivElement>(null);
+  const column = useFillViewport<HTMLDivElement>();
   const status = view?.intake.status ?? "new";
   const lastId = view?.messages.at(-1)?.id;
 
@@ -349,7 +351,7 @@ export function IntakeChatView({
   const lastQuestion = view ? [...view.messages].reverse().find((row) => row.kind === "question") : null;
 
   return (
-    <div className="mx-auto grid w-full max-w-3xl min-w-0 gap-4">
+    <div ref={column} className="mx-auto flex w-full max-w-3xl min-w-0 flex-col gap-4">
       <ol className="grid gap-4" aria-label="Conversation" aria-live="polite">
         <Agent name={agentName}>
           <p className="text-sm text-card-foreground">
@@ -461,10 +463,10 @@ export function IntakeChatView({
       </ol>
 
       {composer && editor && status !== "started" ? (
-        <div className="sticky bottom-20 z-10 bg-gradient-to-t from-background via-background to-transparent pt-3 md:bottom-4">{composer}</div>
+        <div className="sticky bottom-20 z-10 mt-auto bg-gradient-to-t from-background via-background to-transparent pt-3 md:bottom-4">{composer}</div>
       ) : editor && status !== "started" ? (
         <form
-          className="sticky bottom-20 z-10 grid gap-1.5 bg-gradient-to-t from-background via-background to-transparent pt-3 md:bottom-4"
+          className="sticky bottom-20 z-10 mt-auto grid gap-1.5 bg-gradient-to-t from-background via-background to-transparent pt-3 md:bottom-4"
           onSubmit={(event) => {
             event.preventDefault();
             void send(text);

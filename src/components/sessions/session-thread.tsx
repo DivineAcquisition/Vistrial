@@ -1,6 +1,6 @@
 "use client";
 
-import { useMutation } from "convex/react";
+import { useMutation, useQuery } from "convex/react";
 import {
   ArrowUp,
   BookOpenCheck,
@@ -9,6 +9,8 @@ import {
   ExternalLink,
   FileText,
   Footprints,
+  Brain,
+  MessagesSquare,
   LayoutGrid,
   ListChecks,
   MapPin,
@@ -103,6 +105,47 @@ function Fold({ summary, children, defaultOpen = false }: { summary: React.React
       </button>
       {open ? children : null}
     </div>
+  );
+}
+
+/**
+ * After research: where competitor material actually showed up, with an offer to remember it so later
+ * sessions start there. The person decides; nothing is saved without the tap.
+ */
+function AudienceTurn({ workspaceId, counts, agentName, editor }: { workspaceId: Id<"workspaces">; counts: Map<string, number>; agentName: string; editor: boolean }) {
+  const record = useMutation(api.facts.record);
+  const facts = useQuery(api.facts.list, { workspaceId });
+  const [saved, setSaved] = useState<string | null>(null);
+  const ranked = [...counts.entries()].filter(([platform, n]) => platform !== "customerData" && n > 0).sort((a, b) => b[1] - a[1]);
+  if (ranked.length === 0) return null;
+  const top = ranked.filter(([, n]) => n >= 3).slice(0, 3).map(([platform]) => platform);
+  const value = (top.length ? top : ranked.slice(0, 1).map(([platform]) => platform)).join(", ");
+  const current = facts?.find((row) => row.factKey === "audienceChannels")?.value ?? null;
+  const already = saved === value || current === value;
+  return (
+    <AgentSaid name={agentName} icon={Brain} line="noted where the material showed up.">
+      <div className="grid gap-3 rounded-xl border border-border bg-card p-4">
+        <div className="flex flex-wrap gap-2">
+          {ranked.map(([platform, n]) => (
+            <span key={platform} className={cn("rounded-full px-2.5 py-1 text-xs ring-1", top.includes(platform) ? "bg-primary/10 text-primary ring-primary/30" : "bg-background text-muted-foreground ring-border")}>
+              {PLATFORM_LABEL[platform] ?? platform} · {n}
+            </span>
+          ))}
+        </div>
+        <p className="text-sm text-muted-foreground">
+          {already
+            ? "Remembered. Your next sessions start with these sources, and you can still add others on the plan."
+            : "Should I remember these as where to look first? Next sessions would start there; you can still add others on the plan."}
+        </p>
+        {!already && editor ? (
+          <div className="flex flex-wrap gap-2">
+            <Button size="sm" onClick={() => void record({ workspaceId, factKey: "audienceChannels", value }).then(() => setSaved(value))}>
+              Yes, remember
+            </Button>
+          </div>
+        ) : null}
+      </div>
+    </AgentSaid>
   );
 }
 
@@ -232,12 +275,15 @@ export function SessionThread({
   editor,
   agentName,
   base,
+  intakeMessages = [],
 }: {
   workspaceId: Id<"workspaces">;
   data: ThreadData;
   editor: boolean;
   agentName: string;
   base: string;
+  /** The chat that started this session, if it began as one. */
+  intakeMessages?: { id: string; role: "you" | "agent"; kind: string; text: string }[];
 }) {
   const { studio } = data;
   const project = studio.project;
@@ -264,6 +310,29 @@ export function SessionThread({
         </div>
 
         <ol className="grid gap-5" aria-label="Conversation">
+          {intakeMessages.length ? (
+            <li>
+              <Fold
+                summary={
+                  <span className="flex items-center gap-2">
+                    <MessagesSquare aria-hidden className="size-4 text-primary" />
+                    How this session started: {intakeMessages.filter((row) => row.kind === "question").length} questions, then the plan you started
+                  </span>
+                }
+              >
+                <ul className="grid gap-2 rounded-xl border border-border bg-card p-3">
+                  {intakeMessages
+                    .filter((row) => row.kind === "text" || row.kind === "question" || row.kind === "found")
+                    .map((row) => (
+                      <li key={row.id} className={cn("text-sm", row.role === "you" ? "text-right text-card-foreground" : "text-muted-foreground")}>
+                        <span className="text-xs text-muted-foreground">{row.role === "you" ? "You" : agentName}: </span>
+                        {row.text}
+                      </li>
+                    ))}
+                </ul>
+              </Fold>
+            </li>
+          ) : null}
           <YouSaid at={(project as { createdAt?: number }).createdAt}>
             <p className="break-words">{project.objective}</p>
             <span className="mt-2 flex flex-wrap gap-1.5">
@@ -374,6 +443,8 @@ export function SessionThread({
               </Fold>
             </AgentSaid>
           ) : null}
+
+          {run?.status === "completed" && data.counts.size ? <AudienceTurn workspaceId={workspaceId} counts={data.counts} agentName={agentName} editor={editor} /> : null}
 
           {studio.assetId && data.assetStatus ? (
             <AgentSaid name={agentName} icon={FileText} line={data.assetStatus === "approved" ? "has your approval on this report." : "is waiting for your decision."}>

@@ -465,11 +465,14 @@ describe("completion checks", () => {
     expect(failing(null)).toEqual([1, 2, 3, 4, 5, 6, 7, 8]);
   });
 
-  it("accepts an opportunity with no source only when it says it is uncertain", () => {
+  it("accepts an opportunity with no source only when it says it is uncertain, and does not count it as supported", () => {
     const hypothesis = { ...opp("c"), evidence: { sourceRefIds: [], uncertainty: "hypothesis" as const } };
-    expect(run({ ...report, opportunities: [opp("a"), opp("b"), hypothesis] }).passed).toBe(true);
+    // Labelled, so the evidence rule (4) passes; but only two are evidence-backed, so the three rule (3) does not.
+    expect(failing({ ...report, opportunities: [opp("a"), opp("b"), hypothesis] })).toEqual([3]);
+    expect(run({ ...report, opportunities: [opp("a"), opp("b"), hypothesis] }).results.find((row) => row.id === 3)?.detail).toContain("Only 2 opportunities could be supported");
     const unsupported = { ...opp("c"), evidence: { sourceRefIds: [], uncertainty: "none" as const } };
-    expect(failing({ ...report, opportunities: [opp("a"), opp("b"), unsupported] })).toEqual([4]);
+    // With no source and no uncertainty label it is both unsupported (3) and unlabelled (4).
+    expect(failing({ ...report, opportunities: [opp("a"), opp("b"), unsupported] })).toEqual([3, 4]);
   });
 
   it("with no business context on record, relevance must say so", () => {

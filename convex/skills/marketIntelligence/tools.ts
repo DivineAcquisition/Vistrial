@@ -4,6 +4,7 @@ import { loadCaps } from "../../lib/capRows";
 import { screenClaims, type ClaimInput } from "../../lib/evidence";
 import { factsForRun, liveFact } from "../../lib/facts";
 import { runChecks } from "./checks";
+import { saveFirstPartySources } from "./firstParty";
 import { latest, latestDone, projectOf, projectSources, recordOf } from "./records";
 import { renderReport } from "./render";
 import {
@@ -85,6 +86,10 @@ const contextRead: MutationTool = async (ctx, run) => {
     }
   }
   for (const fact of facts) known.push({ key: `fact:${fact._id}`, label: fact.factKey, value: fact.value, origin: "fact", status: fact.status, recordedAt: fact.recordedAt });
+  // The business's own ad results, when its Meta connection is granted to this agent: saved as sources the
+  // report can cite as "Your data", and listed as known.
+  const firstParty = await saveFirstPartySources(ctx, run.workspaceId, project, run._id);
+  if (firstParty) known.push({ key: "connection:meta", label: firstParty.label, value: firstParty.value, origin: "connection", status: "verified", recordedAt: firstParty.recordedAt });
   const missing: ContextRecord["missing"] = gaps.map((key) => ({ key, blocking: true }));
   const assumptions: string[] = [];
   if (!facts.some((row) => /budget/i.test(row.factKey))) {
@@ -166,7 +171,8 @@ function norm(value: string | undefined) {
 const compute: MutationTool = async (ctx, run) => {
   const project = await projectOf(ctx.db, run);
   if (!project) return { failCode: "no_project" };
-  const sources = await projectSources(ctx.db, run.workspaceId, project._id);
+  // Counts describe the market; the business's own results are not part of them.
+  const sources = (await projectSources(ctx.db, run.workspaceId, project._id)).filter((row) => row.platform !== "customerData");
   const byPlatform: Record<string, number> = {};
   const byKind: Record<string, number> = {};
   const groups = new Map<string, { dimension: "offer" | "callToAction" | "format"; value: string; ids: string[] }>();
@@ -349,7 +355,10 @@ const save: MutationTool = async (ctx, run, steps) => {
   const context = await contextOf(ctx, run, steps);
   if (!project || !context) return { failCode: "no_project" };
   const sources = await projectSources(ctx.db, run.workspaceId, project._id, 500);
-  const counts = countClaims(sources, await computeOf(ctx, run, steps));
+  const counts = countClaims(
+    sources.filter((row) => row.platform !== "customerData"),
+    await computeOf(ctx, run, steps),
+  );
 
   const writeStep = latestDone(steps, PHASE.write);
   const reviseStep = latestDone(steps, PHASE.revise);

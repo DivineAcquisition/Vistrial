@@ -74,7 +74,12 @@ export function ConnectionList({ workspaceId, agentSlug }: { workspaceId: Id<"wo
           </div>
         );
       })}
-      <Panel className="p-4 text-sm text-muted-foreground sm:col-span-2">Every connection is read-only. Vistrial never logs in to a platform for you, and anything that would publish or spend asks you first.</Panel>
+      <Panel className="flex flex-wrap items-center justify-between gap-3 p-4 text-sm text-muted-foreground sm:col-span-2">
+        <span>Connections belong to the workspace. Connect, reconnect or change them in Connections; this folder shows what this agent may use.</span>
+        <Link href="/app/connections" className="flex items-center gap-1 text-primary">
+          Manage in Connections <ArrowRight aria-hidden className="size-3.5" />
+        </Link>
+      </Panel>
     </div>
   );
 }

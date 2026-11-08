@@ -7,7 +7,7 @@ import { api } from "../../../convex/_generated/api";
 import type { Id } from "../../../convex/_generated/dataModel";
 
 /** The Meta ads card, fed by Convex. The token never reaches the browser. */
-export function MetaAds({ workspaceId, returned }: { workspaceId: Id<"workspaces">; returned: string | null }) {
+export function MetaAds({ workspaceId, returned, manageHref }: { workspaceId: Id<"workspaces">; returned: string | null; manageHref?: string }) {
   const status = useQuery(api.metaAds.status, { workspaceId });
   const startConnect = useMutation(api.metaAds.startConnect);
   const disconnect = useMutation(api.metaAds.disconnect);
@@ -20,6 +20,7 @@ export function MetaAds({ workspaceId, returned }: { workspaceId: Id<"workspaces
     <MetaAdsView
       status={status as MetaStatus}
       returned={returned}
+      manageHref={manageHref}
       actions={{
         connect: async () => {
           const { url } = await startConnect({ workspaceId, returnOrigin: window.location.origin });

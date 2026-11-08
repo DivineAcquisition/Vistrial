@@ -944,6 +944,44 @@ export default defineSchema({
     failed: v.number(),
   }).index("by_workspace_day", ["workspaceId", "day"]),
 
+  /**
+   * A research intake: the conversation before a session. Slots are filled from business memory, then
+   * from what the person says; code decides what is missing. Nothing runs or spends on research until the
+   * person presses Start on the plan.
+   */
+  intakes: defineTable({
+    workspaceId: v.id("workspaces"),
+    agentSlug: v.string(),
+    createdBy: v.string(),
+    status: v.union(v.literal("chatting"), v.literal("thinking"), v.literal("ready"), v.literal("started"), v.literal("abandoned")),
+    slots: v.any(),
+    questionsAsked: v.number(),
+    /** The checklist item the last question asked about. */
+    asking: v.optional(v.string()),
+    costCents: v.number(),
+    capCents: v.number(),
+    /** Answers the person may want remembered; cleared once they choose. */
+    pendingRemember: v.array(v.object({ factKey: v.string(), label: v.string(), value: v.string() })),
+    platformNote: v.optional(v.string()),
+    projectId: v.optional(v.id("researchProjects")),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_workspace", ["workspaceId", "updatedAt"])
+    .index("by_project", ["projectId"]),
+
+  intakeMessages: defineTable({
+    workspaceId: v.id("workspaces"),
+    intakeId: v.id("intakes"),
+    role: v.union(v.literal("you"), v.literal("agent")),
+    /** text, question, known (memory cards), remember (chips), found (competitors found), plan, note. */
+    kind: v.string(),
+    text: v.string(),
+    chips: v.optional(v.array(v.string())),
+    data: v.optional(v.any()),
+    at: v.number(),
+  }).index("by_intake", ["intakeId", "at"]),
+
   platformControls: defineTable({
     key: v.literal("platform"),
     halted: v.boolean(),

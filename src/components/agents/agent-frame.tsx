@@ -1,6 +1,6 @@
 "use client";
 
-import { Activity, Brain, FileText, LayoutGrid, MessagesSquare, Plug, Plus, type LucideIcon } from "lucide-react";
+import { Activity, Brain, FileText, LayoutGrid, MessagesSquare, Plug, Plus, type LucideIcon } from "@/components/icons";
 import Link from "next/link";
 import { useParams, usePathname } from "next/navigation";
 

@@ -13,7 +13,7 @@ import {
   Target,
   Wallet,
   X,
-} from "lucide-react";
+} from "@/components/icons";
 import { AnimatePresence, motion } from "motion/react";
 import { useEffect, useRef, useState } from "react";
 
@@ -501,6 +501,10 @@ export function IntakeChatView({
               : "Nothing runs or spends until you press Start research on the plan."}
           </p>
         </form>
+      ) : !editor ? (
+        <p className="sticky bottom-20 z-10 mt-auto rounded-2xl border border-border bg-card px-4 py-3 text-center text-sm text-muted-foreground md:bottom-4">
+          Owners and Managers start sessions. You can follow the ones they run.
+        </p>
       ) : null}
     </div>
   );

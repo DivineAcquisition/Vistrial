@@ -1,4 +1,4 @@
-import { Circle, CircleDashed, Loader2 } from "lucide-react";
+import { Circle, CircleDashed, Loader2 } from "@/components/icons";
 
 import { PlatformLogo } from "@/components/marketing/platform-logo";
 import { Badge } from "@/components/ui/badge";

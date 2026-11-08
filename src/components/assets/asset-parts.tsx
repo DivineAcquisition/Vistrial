@@ -1,6 +1,6 @@
 "use client";
 
-import { CalculatorIcon, CircleAlertIcon, FileSearchIcon } from "lucide-react";
+import { CalculatorIcon, CircleAlertIcon, FileSearchIcon } from "@/components/icons";
 import { StatusBadge } from "@/components/ui/status-badge";
 
 import { cn } from "@/lib/utils";

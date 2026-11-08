@@ -1,4 +1,4 @@
-import { FileSpreadsheet, Globe, Paperclip } from "lucide-react";
+import { FileSpreadsheet, Globe, Paperclip } from "@/components/icons";
 
 import { PlatformLogo } from "@/components/marketing/platform-logo";
 import { cn } from "@/lib/utils";

@@ -184,6 +184,14 @@ export default defineSchema({
     .index("by_workspace", ["workspaceId"])
     .index("by_workspace_agent", ["workspaceId", "agentId"]),
 
+  /** People who asked to hear when a planned agent goes live. One row per person and agent. */
+  agentWaitlist: defineTable({
+    workspaceId: v.id("workspaces"),
+    agentSlug: v.string(),
+    userId: v.string(),
+    at: v.number(),
+  }).index("by_workspace_agent_user", ["workspaceId", "agentSlug", "userId"]),
+
   workspaceSettings: defineTable({
     workspaceId: v.id("workspaces"),
     setupDone: v.boolean(),

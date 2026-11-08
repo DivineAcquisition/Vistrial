@@ -1,4 +1,4 @@
-import { Check } from "lucide-react";
+import { Check } from "@/components/icons";
 
 import { MagicCard } from "@/components/ui/magic-card";
 import { Panel } from "@/components/ui/panel";

@@ -5,7 +5,7 @@ import {
   ChevronLeftIcon,
   ChevronRightIcon,
   ChevronsUpDownIcon,
-} from "lucide-react";
+} from "@/components/icons";
 import type * as React from "react";
 import { cn } from "@/lib/utils";
 

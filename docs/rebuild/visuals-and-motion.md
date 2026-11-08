@@ -64,3 +64,28 @@ Every animation respects the system's reduced-motion setting.
   - Spinning rings in "running" tags and in the Working banner.
   - Shimmering "Working…" text on follow-ups.
   - Count-up numbers on the agent overview.
+
+## Round two: the owner's follow-up choices
+
+- **Empty pages: agent scene over the faded preview.** `AgentScene` shows the Vistrial orb breathing, with a scanning sweep. The real source logos (Web, YouTube, Instagram, TikTok, Meta) circle it, and a "Growth Architect is ready" tag sits beneath. It is drawn over each page's faded preview. Under reduced motion it holds still.
+- **Page headers: animated shader banners.** `PageHeader` is now a rounded banner. Behind it, `ShaderBackdrop` runs a small WebGL shader: a slow mesh of brand colours (violet, indigo, pink, sky) with a faint grid.
+  - It is tuned for both light and dark themes.
+  - It pauses when off-screen or when the tab is hidden, and holds still under reduced motion.
+  - Without WebGL it falls back to a CSS gradient.
+  - The label ("OWNER", "TODAY") is now a square tag instead of an oval.
+- **Planned agents: preview scenes.** Each coming-soon agent opens on a page made of:
+  - its own scene, in its own colour, with the logos of the integrations it will use circling it;
+  - three capability cards, each with a faded preview;
+  - a "Will work with" row of real logos;
+  - a **Notify me when it's live** button. This is stored per person and per workspace in the `agentWaitlist` table (`convex/agentWaitlist.ts`), and nothing is sent from it.
+
+  The plans live in `src/lib/agents/planned.ts`.
+- **Icons: Phosphor duotone, app-wide.** `src/components/icons` re-exports Phosphor icons under the names the app already used, so every screen switched in one step. Icons use the duotone weight by default. Small UI glyphs (chevrons, close, check, spinners) stay regular so they read cleanly at 12–14px. Brand logos still come from `PlatformLogo`.
+- **The chat box is always in a session.** It used to be replaced while the agent worked or waited. Now it stays in place:
+  - **While the agent works:** a "Working on it" banner with Stop sits above the box, and the box is disabled.
+  - **While a question waits:** the box answers it directly.
+  - **For people who can't decide:** the box is shown disabled, with a note.
+
+![Page headers](../screenshots/visuals-header.png)
+![Planned agent](../screenshots/visuals-planned.png)
+![Phosphor icons in a session](../screenshots/phosphor-session.png)

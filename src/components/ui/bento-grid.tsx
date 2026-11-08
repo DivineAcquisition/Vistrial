@@ -1,5 +1,5 @@
 import { type ComponentPropsWithoutRef, type ElementType, type ReactNode } from "react";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight } from "@/components/icons";
 
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";

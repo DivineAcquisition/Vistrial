@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, type ReactNode } from "react";
-import { LinkIcon, WifiOffIcon } from "lucide-react";
+import { LinkIcon, WifiOffIcon } from "@/components/icons";
 
 import { CostBar } from "@/components/runs/cost-bar";
 import { ArtifactList, MadeAssets, RunStatusBadge, SourcesPanel } from "@/components/runs/run-parts";

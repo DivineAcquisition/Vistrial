@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { ArrowDownRight, ArrowRight, ArrowUpRight } from "lucide-react";
+import { ArrowDownRight, ArrowRight, ArrowUpRight } from "@/components/icons";
 
 import { Card } from "@/components/ui/card";
 import { NumberTicker } from "@/components/ui/number-ticker";

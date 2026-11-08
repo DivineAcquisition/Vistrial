@@ -1,7 +1,7 @@
 "use client";
 
 import { useQuery } from "convex/react";
-import { FileText } from "lucide-react";
+import { FileText } from "@/components/icons";
 import Link from "next/link";
 
 import { AssetStatusBadge } from "@/components/runs/run-parts";

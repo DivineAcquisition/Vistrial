@@ -21,7 +21,7 @@ import {
   TriangleAlert,
   UserX,
   Wallet,
-} from "lucide-react";
+} from "@/components/icons";
 
 import { HoldToApprove, useCycle, useInViewSequence } from "@/components/marketing/agentic-visuals";
 import { PlatformLogo } from "@/components/marketing/platform-logo";

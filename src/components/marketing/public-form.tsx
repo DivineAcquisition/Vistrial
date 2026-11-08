@@ -1,7 +1,7 @@
 "use client";
 
 import type React from "react";
-import { ChevronDown } from "lucide-react";
+import { ChevronDown } from "@/components/icons";
 
 /** Solid near-black panel with a purple glow on the edge. */
 export const publicFormClass =

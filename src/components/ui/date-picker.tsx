@@ -2,7 +2,7 @@
 
 import type { DateRange } from "@daypicker/react";
 import { format } from "date-fns";
-import { CalendarIcon } from "lucide-react";
+import { CalendarIcon } from "@/components/icons";
 import { useMemo, useState } from "react";
 
 import { Button } from "@/components/ui/button";

@@ -8,7 +8,7 @@ import {
   Radio,
   X,
   type LucideIcon,
-} from "lucide-react";
+} from "@/components/icons";
 
 import { Badge, type BadgeProps } from "@/components/ui/badge";
 import { type Tone } from "@/components/ui/tone";

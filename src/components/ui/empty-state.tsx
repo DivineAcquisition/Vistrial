@@ -6,9 +6,9 @@ import {
   PlugZap,
   SearchX,
   type LucideIcon,
-} from "lucide-react";
+} from "@/components/icons";
 
-import { VistrialMark } from "@/components/brand/vistrial-mark";
+import { AgentScene } from "@/components/agents/agent-scene";
 import {
   Empty,
   EmptyContent,
@@ -141,6 +141,7 @@ export function EmptyState({
   action,
   secondaryAction,
   preview,
+  agentLabel,
   className,
   /** Drops the card border, for an empty state already inside one. */
   bare = false,
@@ -152,6 +153,8 @@ export function EmptyState({
   secondaryAction?: ReactNode;
   /** Show a faded sketch of what will fill this page. Only for "empty" and "no-results". */
   preview?: EmptyPreview;
+  /** The line under the agent visual, e.g. "Growth Architect is ready". */
+  agentLabel?: string;
   className?: string;
   bare?: boolean;
 }) {
@@ -169,7 +172,7 @@ export function EmptyState({
     >
       <EmptyHeader>
         {ghost ? (
-          <VistrialMark size="md" />
+          <AgentScene label={agentLabel} />
         ) : (
           <EmptyMedia variant="icon">
             <Icon className={meta.tint} aria-hidden="true" />

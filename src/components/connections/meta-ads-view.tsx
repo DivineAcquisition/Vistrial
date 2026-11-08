@@ -15,7 +15,7 @@ import {
   Target,
   Unplug,
   X,
-} from "lucide-react";
+} from "@/components/icons";
 import { motion } from "motion/react";
 import Link from "next/link";
 import { useState } from "react";

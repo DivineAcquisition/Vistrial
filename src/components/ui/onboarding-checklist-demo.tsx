@@ -1,6 +1,6 @@
 "use client"
 
-import { Bell, PlayCircle, User } from "lucide-react"
+import { Bell, PlayCircle, User } from "@/components/icons"
 import { useState } from "react"
 
 import { Badge } from "@/components/ui/badge"

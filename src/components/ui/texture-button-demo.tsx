@@ -1,6 +1,6 @@
 "use client"
 
-import { ChevronLeft, Trash, X } from "lucide-react"
+import { ChevronLeft, Trash, X } from "@/components/icons"
 
 import { TextureButton } from "@/components/ui/texture-button"
 

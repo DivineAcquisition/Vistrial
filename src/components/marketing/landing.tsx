@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 import Link from "next/link";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight } from "@/components/icons";
 
 import { BlurFade } from "@/components/ui/blur-fade";
 import { AgentFlow } from "@/components/marketing/agentic-visuals";

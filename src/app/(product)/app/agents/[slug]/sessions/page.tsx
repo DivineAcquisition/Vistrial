@@ -1,7 +1,7 @@
 "use client";
 
 import { useQuery } from "convex/react";
-import { Plus } from "lucide-react";
+import { Plus } from "@/components/icons";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 

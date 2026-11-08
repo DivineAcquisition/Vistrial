@@ -16,6 +16,7 @@ import type { ModelRoute } from "./lib/modelRouter";
 import { devSkillsEnabled, wrapUntrusted } from "./lib/registry";
 import { canonicalUrl } from "./lib/sourceRefs";
 import { completeWithTools } from "./lib/toolRouter";
+import { assertCanSpend, chargeUsage } from "./lib/billing";
 
 export const MAX_FILE_BYTES = 10 * 1024 * 1024;
 const MAX_FILES = 10;
@@ -65,6 +66,7 @@ export const attach = workspaceMutation({
   },
   handler: async (ctx, args) => {
     assertEditor(ctx.member.role);
+    await assertCanSpend(ctx, ctx.workspaceId);
     if (!args.intakeId && !args.projectId) throw new Error("Add the file to a conversation or a session.");
     if (args.intakeId) {
       const intake = await ctx.db.get(args.intakeId);
@@ -167,6 +169,7 @@ export const saveRead = internalMutation({
     const row = await ctx.db.get(args.fileId);
     if (!row) return null;
     await ctx.db.patch(row._id, { status: args.failed ? "failed" : "read", summary: args.summary?.slice(0, 1500), costCents: row.costCents + args.costCents });
+    await chargeUsage(ctx, { workspaceId: row.workspaceId, costCents: args.costCents, source: "file", ref: row._id });
     // Reading spends from the conversation's intake cap when the file belongs to one.
     if (row.intakeId && args.costCents > 0) {
       const intake = await ctx.db.get(row.intakeId);

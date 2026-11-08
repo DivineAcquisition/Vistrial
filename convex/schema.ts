@@ -184,6 +184,36 @@ export default defineSchema({
     .index("by_workspace", ["workspaceId"])
     .index("by_workspace_agent", ["workspaceId", "agentId"]),
 
+  /**
+   * A workspace's credit account. Autumn (over Stripe) holds the real balance; this mirror lets every
+   * mutation check it without a network call. Amounts are cents of what the customer pays.
+   */
+  billingAccounts: defineTable({
+    workspaceId: v.id("workspaces"),
+    balanceCents: v.number(),
+    planId: v.optional(v.string()),
+    planStatus: v.optional(v.string()),
+    nextResetAt: v.optional(v.number()),
+    autoRefill: v.optional(v.object({ enabled: v.boolean(), thresholdCents: v.number(), amountCents: v.number() })),
+    refreshedAt: v.number(),
+  }).index("by_workspace", ["workspaceId"]),
+
+  /** Every charge for AI work: what it really cost, the markup, and what the customer paid. */
+  billingLedger: defineTable({
+    workspaceId: v.id("workspaces"),
+    source: v.union(v.literal("run"), v.literal("followup"), v.literal("intake"), v.literal("file")),
+    ref: v.string(),
+    costCents: v.number(),
+    priceCents: v.number(),
+    markup: v.number(),
+    at: v.number(),
+    /** Set once Autumn has the usage. Unsynced rows are retried. */
+    syncedAt: v.optional(v.number()),
+    syncError: v.optional(v.string()),
+  })
+    .index("by_workspace_at", ["workspaceId", "at"])
+    .index("by_synced", ["syncedAt"]),
+
   /** People who asked to hear when a planned agent goes live. One row per person and agent. */
   agentWaitlist: defineTable({
     workspaceId: v.id("workspaces"),

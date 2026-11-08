@@ -22,6 +22,7 @@ import { estimateCents } from "./lib/estimate";
 import { MUTATION_TOOLS } from "./skills/marketIntelligence/tools";
 import { liveEnv, runAdapter } from "./adapters";
 import { assertDeclared, skillFor } from "./lib/skills";
+import { assertCanSpend, chargeUsage } from "./lib/billing";
 
 const OPEN = new Set(["queued", "running", "waiting"]);
 
@@ -294,6 +295,7 @@ export const start = workspaceMutation({
     mode: v.optional(v.union(v.literal("thorough"), v.literal("fast"))),
   },
   handler: async (ctx, { projectId, ...input }) => {
+    await assertCanSpend(ctx, ctx.workspaceId);
     if (ctx.member.role === "rep") notAllowed();
     const project = projectId ? await ctx.db.get(projectId) : null;
     if (projectId && (!project || project.workspaceId !== ctx.workspaceId)) notFound();
@@ -560,6 +562,7 @@ async function recordFailure(
  */
 async function charge(ctx: MutationCtx, run: Doc<"agentRuns">, spent: Spend) {
   const dayCost = await addDaySpend(ctx, run.workspaceId, run.agentSlug, run.skillSlug, dayKey(), spent.costCents);
+  await chargeUsage(ctx, { workspaceId: run.workspaceId, costCents: spent.costCents, source: "run", ref: run._id });
   const runCost = run.costCents + spent.costCents;
   await ctx.db.patch(run._id, {
     costCents: runCost,

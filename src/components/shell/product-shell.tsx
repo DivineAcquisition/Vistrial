@@ -13,6 +13,7 @@ import { StatusBadge } from "@/components/ui/status-badge";
 import { agentStateLabel, type RailAgent, type RailDepartment } from "@/lib/shell/rail";
 import { cn } from "@/lib/utils";
 import { PageEnter } from "@/components/motion/page-enter";
+import { BalanceNotice } from "@/components/billing/balance-notice";
 
 // Leads and My day belong to the Sales Conversion agent. Their pages stay, hidden from the nav until it ships.
 const tabs = [{ href: "/app", label: "Decisions", icon: LayoutListIcon }] as const;
@@ -71,6 +72,7 @@ export function ProductShell({
           </header>
           <div className="flex min-w-0 flex-1">
             <main id="workspace-main" className="min-w-0 flex-1 px-4 py-6 pb-28 md:px-8 md:pb-10">
+              <BalanceNotice />
               <PageEnter id={pathname}>{children}</PageEnter>
             </main>
             <aside aria-label="Live stream" className="hidden w-72 shrink-0 border-l border-border p-4 lg:block print:hidden">

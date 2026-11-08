@@ -5,6 +5,14 @@ import { assetStatus } from "./lib/assetStatus";
 import { factSourceType, factStatus, feedbackKind } from "./lib/factShapes";
 import { availability, basis, classification, embed, platform, projectStatus, sourceKind, sourceState } from "./lib/researchShapes";
 
+const resultFigureFields = {
+  spend: v.optional(v.number()),
+  impressions: v.optional(v.number()),
+  clicks: v.optional(v.number()),
+  conversions: v.optional(v.number()),
+  revenue: v.optional(v.number()),
+};
+const resultFigures = v.object(resultFigureFields);
 const memberRole = v.union(v.literal("owner"), v.literal("manager"), v.literal("rep"));
 const consentState = v.union(v.literal("unknown"), v.literal("granted"), v.literal("revoked"));
 const identityKind = v.union(
@@ -794,6 +802,43 @@ export default defineSchema({
    * A workspace's read-only connection to Meta ads (Marketing API). The token is server-only: no public
    * query returns it. One connection per workspace.
    */
+  /**
+   * A results file the business uploaded (ad platform, CRM, booking or email export). Only totals and
+   * per-campaign figures are kept; the file is deleted once read, and personal columns are never read.
+   * Its figures become "Your data" sources for the agents it is granted to.
+   */
+  resultUploads: defineTable({
+    workspaceId: v.id("workspaces"),
+    fileName: v.string(),
+    /** Where the figures come from, in the person's words ("Google Ads", "Jobber bookings"). */
+    label: v.string(),
+    currency: v.string(),
+    uploadedBy: v.string(),
+    createdAt: v.number(),
+    status: v.union(v.literal("processing"), v.literal("ready"), v.literal("refused")),
+    /** Why a file was refused: empty, too_large, too_many_rows, personal_data, no_metrics, parse_failed, file_missing. */
+    code: v.optional(v.string()),
+    /** Present only until the file is read, then deleted from storage. */
+    storageId: v.optional(v.id("_storage")),
+    /** Agents granted use of these figures. Missing means the Growth Architect only. */
+    agents: v.optional(v.array(v.string())),
+    summary: v.optional(
+      v.object({
+        rows: v.number(),
+        dateStart: v.union(v.string(), v.null()),
+        dateStop: v.union(v.string(), v.null()),
+        metrics: v.array(v.string()),
+        totals: resultFigures,
+        groupBy: v.union(v.string(), v.null()),
+        groups: v.array(v.object({ name: v.string(), ...resultFigureFields })),
+        otherGroups: v.number(),
+        ignoredColumns: v.array(v.string()),
+      }),
+    ),
+    /** Header names of personal columns skipped in a refused file. Names only. */
+    ignoredColumns: v.optional(v.array(v.string())),
+  }).index("by_workspace", ["workspaceId"]),
+
   metaConnections: defineTable({
     workspaceId: v.id("workspaces"),
     /** "oauth" from Facebook Login; "serverToken" for the operator's own token in development. */

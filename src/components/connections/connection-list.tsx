@@ -1,7 +1,7 @@
 "use client";
 
 import { useQuery } from "convex/react";
-import { ArrowRight, Camera, Globe, Megaphone, PlaySquare, type LucideIcon } from "lucide-react";
+import { ArrowRight, Camera, FileSpreadsheet, Globe, Megaphone, PlaySquare, type LucideIcon } from "lucide-react";
 import Link from "next/link";
 
 import { MetaLogo } from "@/components/connections/meta-logo";
@@ -10,6 +10,9 @@ import { StatusBadge } from "@/components/ui/status-badge";
 import { cn } from "@/lib/utils";
 import { api } from "../../../convex/_generated/api";
 import type { Id } from "../../../convex/_generated/dataModel";
+
+/** Connections with their own page in the agent's folder. */
+const PAGES: Record<string, string> = { meta: "meta", results: "results" };
 
 const STATE: Record<string, { label: string; tone: "good" | "warning" | "neutral" }> = {
   on: { label: "On", tone: "good" },
@@ -20,6 +23,7 @@ const STATE: Record<string, { label: string; tone: "good" | "warning" | "neutral
 
 const ABOUT: Record<string, { icon: LucideIcon | null; kind: string; words: string }> = {
   meta: { icon: null, kind: "Your results", words: "Your own Facebook and Instagram ad results, read-only. Used as first-party evidence." },
+  results: { icon: FileSpreadsheet, kind: "Your results", words: "Exports from your other tools: Google Ads, your CRM, bookings, email. Only totals are kept." },
   youtube: { icon: PlaySquare, kind: "Research source", words: "Public videos through the official YouTube API. Plays in its own player." },
   instagram: { icon: Camera, kind: "Research source", words: "Public posts you paste, shown with Instagram's official embed once Meta approves the app." },
   adLibrary: { icon: Megaphone, kind: "Research source", words: "Public ads from Meta's Ad Library. Commercial ads are only available for the EU and UK." },
@@ -52,16 +56,16 @@ export function ConnectionList({ workspaceId, agentSlug }: { workspaceId: Id<"wo
             </span>
             <span className="text-sm text-muted-foreground">{about?.words}</span>
             {row.detail ? <span className="text-xs text-muted-foreground">{row.key === "meta" ? `Reading ${row.detail}` : row.detail}</span> : null}
-            {row.key === "meta" ? (
+            {PAGES[row.key] ? (
               <span className="flex items-center gap-1 text-sm text-primary">
                 Open <ArrowRight aria-hidden className="size-3.5" />
               </span>
             ) : null}
           </>
         );
-        const className = cn("grid content-start gap-2 rounded-xl border border-border bg-card p-4", row.key === "meta" && "transition-colors hover:border-primary/40");
-        return row.key === "meta" ? (
-          <Link key={row.key} id={row.key} href={`${base}/connections/meta`} className={className}>
+        const className = cn("grid content-start gap-2 rounded-xl border border-border bg-card p-4", PAGES[row.key] && "transition-colors hover:border-primary/40");
+        return PAGES[row.key] ? (
+          <Link key={row.key} id={row.key} href={`${base}/connections/${PAGES[row.key]}`} className={className}>
             {body}
           </Link>
         ) : (

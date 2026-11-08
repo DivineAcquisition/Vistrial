@@ -81,7 +81,7 @@ export default function AgentOverview() {
                 return (
                   <Link
                     key={row.key}
-                    href={row.key === "meta" ? `${base}/connections/meta` : `${base}/connections#${row.key}`}
+                    href={row.key === "meta" || row.key === "results" ? `${base}/connections/${row.key}` : `${base}/connections#${row.key}`}
                     className="flex min-w-0 items-center gap-2 rounded-lg px-2 py-2 text-sm hover:bg-accent"
                   >
                     {row.key === "meta" ? <MetaLogo className="h-3.5 w-5 shrink-0" /> : <span aria-hidden className={cn("ml-1.5 size-2 shrink-0 rounded-full", row.state === "on" ? "bg-success" : row.state === "attention" ? "bg-warning" : "bg-muted-foreground/40")} />}

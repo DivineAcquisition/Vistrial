@@ -177,7 +177,9 @@ export const marketIntelligence: SkillModule = {
     for (const row of collect) if (!steps.some((step) => step.toolSlug === row.tool)) return tool(row.tool, PHASE.collect);
 
     const sources = await sourceList(db, run, project);
-    if (sources.length > 0 && !latest(steps, PHASE.classify)) {
+    // The business's own results are not classified like competitors' material.
+    const market = sources.filter((row) => row.platform !== "customerData");
+    if (market.length > 0 && !latest(steps, PHASE.classify)) {
       return {
         kind: "model",
         phase: PHASE.classify,
@@ -190,7 +192,7 @@ export const marketIntelligence: SkillModule = {
           "",
           `Objective: ${context.objective}`,
           "",
-          wrapUntrusted(JSON.stringify(sources.map((row) => ({ id: row.id, platform: row.platform, kind: row.kind, title: row.title, publisher: row.publisher, excerpt: row.excerpt })))),
+          wrapUntrusted(JSON.stringify(market.map((row) => ({ id: row.id, platform: row.platform, kind: row.kind, title: row.title, publisher: row.publisher, excerpt: row.excerpt })))),
         ].join("\n"),
       };
     }
@@ -203,7 +205,7 @@ export const marketIntelligence: SkillModule = {
       `Computed in code (counts are facts; a pattern under ${MIN_SAMPLE} sources is "Not enough data"):`,
       JSON.stringify(computed),
       "",
-      "Sources (use these ids exactly; classifications are the model's, not facts):",
+      "Sources (use these ids exactly; classifications are the model's, not facts). Sources on platform customerData are this business's own results from its connected ad account: cite them with basis firstParty for claims about its own performance. Competitors' popularity is never evidence of their performance.",
       wrapUntrusted(JSON.stringify(sources)),
     ].join("\n");
 

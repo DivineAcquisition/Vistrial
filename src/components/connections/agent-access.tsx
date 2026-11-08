@@ -14,7 +14,7 @@ import type { Id } from "../../../convex/_generated/dataModel";
  * Who may use the workspace's Meta connection. The connection belongs to the workspace; each agent is
  * granted use of it by an Owner.
  */
-export function AgentAccess({ workspaceId, agentSlug }: { workspaceId: Id<"workspaces">; agentSlug: string }) {
+export function AgentAccess({ workspaceId, agentSlug }: { workspaceId: Id<"workspaces">; agentSlug?: string }) {
   const shell = useWorkspaceShell();
   const status = useQuery(api.metaAds.status, { workspaceId });
   const setAccess = useMutation(api.metaAds.setAgentAccess);
@@ -28,16 +28,8 @@ export function AgentAccess({ workspaceId, agentSlug }: { workspaceId: Id<"works
       <p className="flex items-start gap-2 text-sm text-muted-foreground">
         <Building2 aria-hidden className="mt-0.5 size-4 shrink-0" />
         <span>
-          This connection belongs to the workspace.{" "}
-          {granted.has(agentSlug) ? (
-            <>
-              <span className="text-card-foreground">{here?.name ?? agentSlug}</span> is granted use of it.
-            </>
-          ) : (
-            <>
-              <span className="text-card-foreground">{here?.name ?? agentSlug}</span> is not granted use of it yet.
-            </>
-          )}
+          This connection belongs to the workspace. Choose which agents may use it; an agent that is not granted never reads it.
+          {agentSlug && here ? ` ${here.name} is ${granted.has(agentSlug) ? "granted" : "not granted"}.` : ""}
         </span>
       </p>
       <ul className="grid gap-2">

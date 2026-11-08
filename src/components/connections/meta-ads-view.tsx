@@ -10,12 +10,14 @@ import {
   MousePointerClick,
   Plug,
   RefreshCw,
+  Settings2,
   ShieldCheck,
   Target,
   Unplug,
   X,
 } from "lucide-react";
 import { motion } from "motion/react";
+import Link from "next/link";
 import { useState } from "react";
 
 import { ApiUsage, Observations, SyncActivity, type Observation, type SyncRun, type Usage } from "@/components/connections/meta-effort";
@@ -465,8 +467,17 @@ function AccountPicker({ actions, canManage, onChosen }: { actions: MetaActions;
   );
 }
 
-/** The Meta ads connection card: connect, choose an account, then the account's results. */
-export function MetaAdsView({ status, actions, returned }: { status: MetaStatus; actions: MetaActions; returned?: string | null }) {
+/**
+ * The Meta ads connection card: connect, choose an account, then the account's results. With `manageHref`
+ * it is the view an agent's folder shows: results and status only, and every change happens in Connections.
+ */
+export function MetaAdsView({ status, actions, returned, manageHref }: { status: MetaStatus; actions: MetaActions; returned?: string | null; manageHref?: string }) {
+  const manage = !manageHref && status.canManage;
+  const manageLink = manageHref ? (
+    <Button variant="outline" size="sm" render={<Link href={manageHref} />}>
+      <Settings2 aria-hidden className="size-3.5" /> Manage in Connections
+    </Button>
+  ) : null;
   const [working, setWorking] = useState<null | "connect" | "sync">(null);
   const [notice, setNotice] = useState<{ text: string; tone: Tone } | null>(returned ? (RETURN_WORDS[returned] ?? null) : null);
   const [changing, setChanging] = useState(false);
@@ -514,6 +525,7 @@ export function MetaAdsView({ status, actions, returned }: { status: MetaStatus;
             <ShieldCheck aria-hidden className="size-3.5" /> Read-only
           </span>
           <StatusBadge label={badge.label} tone={badge.tone} className="[&_span]:normal-case" />
+          {manageLink}
         </div>
       </div>
 
@@ -521,10 +533,12 @@ export function MetaAdsView({ status, actions, returned }: { status: MetaStatus;
       {needsReconnect ? (
         <div className="grid gap-2">
           <Notice text={META_CODE_WORDS.token_expired} tone="warning" />
-          {status.canManage && status.configured ? (
+          {manage && status.configured ? (
             <Button variant="gradient" className="w-fit" onClick={() => void connect()} loading={working === "connect"}>
               <Plug aria-hidden className="size-4" /> Reconnect with Facebook
             </Button>
+          ) : manageHref ? (
+            <p className="text-sm text-muted-foreground">Reconnect it in Connections; this agent picks it up right away.</p>
           ) : null}
         </div>
       ) : null}
@@ -536,7 +550,9 @@ export function MetaAdsView({ status, actions, returned }: { status: MetaStatus;
           <CanCannot />
           {!status.configured ? (
             <Notice text="The Meta app is not set up on this deployment yet." tone="warning" />
-          ) : status.canManage ? (
+          ) : manageHref ? (
+            <p className="text-sm text-muted-foreground">Not connected yet. Connections is where the workspace connects Meta ads and grants this agent its use.</p>
+          ) : manage ? (
             <div className="flex flex-wrap items-center gap-3">
               <Button variant="gradient" onClick={() => void connect()} loading={working === "connect"}>
                 <Plug aria-hidden className="size-4" /> Connect with Facebook
@@ -554,7 +570,11 @@ export function MetaAdsView({ status, actions, returned }: { status: MetaStatus;
           <p className="text-sm text-muted-foreground">
             Connected as <span className="text-card-foreground">{connection.metaUserName}</span>. Choose the ad account for this business.
           </p>
-          <AccountPicker actions={actions} canManage={status.canManage} onChosen={() => setChanging(false)} />
+          {manageHref ? (
+            <p className="text-sm text-muted-foreground">The ad account is chosen in Connections.</p>
+          ) : (
+            <AccountPicker actions={actions} canManage={status.canManage} onChosen={() => setChanging(false)} />
+          )}
           {changing ? (
             <Button variant="ghost" className="w-fit" onClick={() => setChanging(false)}>
               Keep {connection.adAccountName}
@@ -624,7 +644,8 @@ export function MetaAdsView({ status, actions, returned }: { status: MetaStatus;
 
           <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border pt-4">
             <p className="text-xs text-muted-foreground">Connected {new Date(connection.connectedAt).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" })}. Disconnecting removes everything Vistrial saved.</p>
-            {status.canManage ? (
+            {manageLink}
+            {manage ? (
               <div className="flex flex-wrap gap-2">
                 <Button variant="ghost" size="sm" onClick={() => setChanging(true)}>
                   Change account

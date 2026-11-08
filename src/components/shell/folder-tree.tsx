@@ -290,10 +290,10 @@ const ACROSS = [
   { href: "/app/research", label: "All research", icon: BookOpen },
   { href: "/app/runs", label: "All activity", icon: Gauge },
   { href: "/app/assets", label: "All assets", icon: FileText },
-  { href: "/app/connections", label: "All connections", icon: Plug },
 ];
 
 const WORKSPACE = [
+  { href: "/app/connections", label: "Connections", icon: Plug },
   { href: "/app/profile", label: "Profile", icon: Sparkles },
   { href: "/app/team", label: "Team", icon: Users },
   { href: "/app/controls", label: "Controls", icon: ShieldCheck },

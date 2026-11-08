@@ -205,7 +205,7 @@ export const marketIntelligence: SkillModule = {
       `Computed in code (counts are facts; a pattern under ${MIN_SAMPLE} sources is "Not enough data"):`,
       JSON.stringify(computed),
       "",
-      "Sources (use these ids exactly; classifications are the model's, not facts). Sources on platform customerData are this business's own results from its connected ad account: cite them with basis firstParty for claims about its own performance. Competitors' popularity is never evidence of their performance.",
+      "Sources (use these ids exactly; classifications are the model's, not facts). Sources on platform customerData are this business's own results, from its connected ad account or results files it uploaded: cite them with basis firstParty for claims about its own performance. Competitors' popularity is never evidence of their performance.",
       wrapUntrusted(JSON.stringify(sources)),
     ].join("\n");
 

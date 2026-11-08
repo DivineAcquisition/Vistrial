@@ -4,6 +4,7 @@ import { loadCaps } from "../../lib/capRows";
 import { screenClaims, type ClaimInput } from "../../lib/evidence";
 import { factsForRun, liveFact } from "../../lib/facts";
 import { runChecks } from "./checks";
+import { describeUpload, saveUploadSourcesFor } from "../../resultUploads";
 import { saveFirstPartySources } from "./firstParty";
 import { latest, latestDone, projectOf, projectSources, recordOf } from "./records";
 import { renderReport } from "./render";
@@ -90,6 +91,11 @@ const contextRead: MutationTool = async (ctx, run) => {
   // report can cite as "Your data", and listed as known.
   const firstParty = await saveFirstPartySources(ctx, run.workspaceId, project, run._id);
   if (firstParty) known.push({ key: "connection:meta", label: firstParty.label, value: firstParty.value, origin: "connection", status: "verified", recordedAt: firstParty.recordedAt });
+  // Results files the business uploaded and granted to this agent: totals only, cited the same way.
+  const uploads = await saveUploadSourcesFor(ctx, { workspaceId: run.workspaceId, projectId: project._id, runId: run._id, agentSlug: run.agentSlug });
+  for (const { upload } of uploads) {
+    known.push({ key: `upload:${upload._id}`, label: `Your results: ${upload.label}`, value: describeUpload(upload), origin: "connection", status: "verified", recordedAt: upload.createdAt });
+  }
   const missing: ContextRecord["missing"] = gaps.map((key) => ({ key, blocking: true }));
   const assumptions: string[] = [];
   if (!facts.some((row) => /budget/i.test(row.factKey))) {

@@ -10,7 +10,7 @@ import Papa from "papaparse";
 
 import { internal } from "./_generated/api";
 import type { Doc, Id } from "./_generated/dataModel";
-import { internalAction, internalMutation, internalQuery } from "./_generated/server";
+import { internalAction, internalMutation, internalQuery, type MutationCtx } from "./_generated/server";
 import { GROWTH_ARCHITECT } from "./catalog";
 import { writeAudit } from "./lib/audit";
 import { ownerMutation, workspaceMutation, workspaceQuery } from "./lib/builders";
@@ -289,9 +289,58 @@ export const readyForAgent = internalQuery({
 });
 
 /**
- * Saves an agent's ready uploads as "Your data" sources on a research project, once each, so a claim
- * with basis firstParty can cite them. Returns the source ids.
+ * Saves an agent's ready uploads as "Your data" sources on a research project, once each (refreshed on a
+ * later run), so a claim with basis firstParty can cite them. Returns the uploads used.
  */
+export async function saveUploadSourcesFor(
+  ctx: MutationCtx,
+  args: { workspaceId: Id<"workspaces">; projectId: Id<"researchProjects">; runId?: Id<"agentRuns">; agentSlug: string },
+) {
+  const rows = await ctx.db
+    .query("resultUploads")
+    .withIndex("by_workspace", (q) => q.eq("workspaceId", args.workspaceId))
+    .order("desc")
+    .take(LIST_LIMIT);
+  const used: { upload: Doc<"resultUploads">; sourceId: Id<"sourceRefs"> }[] = [];
+  for (const upload of rows) {
+    if (upload.status !== "ready" || !uploadAgents(upload).includes(args.agentSlug)) continue;
+    const url = uploadUrl(args.agentSlug, upload._id);
+    const canonical = canonicalUrl(url) ?? url;
+    const existing = await ctx.db
+      .query("sourceRefs")
+      .withIndex("by_workspace_project_canonical", (q) =>
+        q.eq("workspaceId", args.workspaceId).eq("projectId", args.projectId).eq("canonicalUrl", canonical),
+      )
+      .first();
+    const fields = {
+      title: clip(`Your results: ${upload.label} (${upload.fileName})`, 200),
+      publisher: "Your business",
+      observedAt: upload.createdAt,
+      excerpt: clip(describeUpload(upload), 300),
+      limitation: "Totals from a file you uploaded. Vistrial cannot check them against the platform.",
+      ...(args.runId ? { runId: args.runId } : {}),
+    };
+    if (existing) {
+      await ctx.db.patch(existing._id, fields);
+      used.push({ upload, sourceId: existing._id });
+      continue;
+    }
+    const sourceId = await ctx.db.insert("sourceRefs", {
+      workspaceId: args.workspaceId,
+      projectId: args.projectId,
+      origin: "supplied",
+      platform: "customerData",
+      kind: "dataset",
+      url,
+      canonicalUrl: canonical,
+      availability: "available",
+      ...fields,
+    });
+    used.push({ upload, sourceId });
+  }
+  return used;
+}
+
 export const saveUploadSources = internalMutation({
   args: {
     workspaceId: v.id("workspaces"),
@@ -299,46 +348,5 @@ export const saveUploadSources = internalMutation({
     runId: v.optional(v.id("agentRuns")),
     agentSlug: v.string(),
   },
-  handler: async (ctx, args) => {
-    const rows = await ctx.db
-      .query("resultUploads")
-      .withIndex("by_workspace", (q) => q.eq("workspaceId", args.workspaceId))
-      .order("desc")
-      .take(LIST_LIMIT);
-    const ids: Id<"sourceRefs">[] = [];
-    for (const upload of rows) {
-      if (upload.status !== "ready" || !uploadAgents(upload).includes(args.agentSlug)) continue;
-      const url = uploadUrl(args.agentSlug, upload._id);
-      const canonical = canonicalUrl(url) ?? url;
-      const existing = await ctx.db
-        .query("sourceRefs")
-        .withIndex("by_workspace_project_canonical", (q) =>
-          q.eq("workspaceId", args.workspaceId).eq("projectId", args.projectId).eq("canonicalUrl", canonical),
-        )
-        .first();
-      if (existing) {
-        ids.push(existing._id);
-        continue;
-      }
-      ids.push(
-        await ctx.db.insert("sourceRefs", {
-          workspaceId: args.workspaceId,
-          projectId: args.projectId,
-          runId: args.runId,
-          origin: "supplied",
-          platform: "customerData",
-          kind: "dataset",
-          url,
-          canonicalUrl: canonical,
-          title: clip(`${upload.label} results (${upload.fileName})`, 300),
-          publisher: "Your business",
-          observedAt: upload.createdAt,
-          availability: "available",
-          excerpt: clip(describeUpload(upload), 300),
-          limitation: "Totals from a file you uploaded. Vistrial cannot check them against the platform.",
-        }),
-      );
-    }
-    return ids;
-  },
+  handler: async (ctx, args) => (await saveUploadSourcesFor(ctx, args)).map((row) => row.sourceId),
 });

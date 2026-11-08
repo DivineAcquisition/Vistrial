@@ -20,6 +20,7 @@ import type { ModelRoute } from "./lib/modelRouter";
 import { devSkillsEnabled, wrapUntrusted } from "./lib/registry";
 import { canonicalUrl } from "./lib/sourceRefs";
 import { completeWithTools } from "./lib/toolRouter";
+import { assertCanSpend, chargeUsage } from "./lib/billing";
 
 const SKILL = "market-intelligence";
 /** Per answer and per approved research, so one follow-up can never run away. */
@@ -103,6 +104,7 @@ export const ask = workspaceMutation({
   args: { projectId: v.id("researchProjects"), text: v.string(), mode: v.optional(v.union(v.literal("thorough"), v.literal("fast"))) },
   handler: async (ctx, args) => {
     assertEditor(ctx.member.role);
+    await assertCanSpend(ctx, ctx.workspaceId);
     const project = await ctx.db.get(args.projectId);
     if (!project || project.workspaceId !== ctx.workspaceId) notFound();
     const text = args.text.replace(/\s+/g, " ").trim().slice(0, 1000);
@@ -128,6 +130,7 @@ export const run = workspaceMutation({
   args: { chatId: v.id("sessionChats") },
   handler: async (ctx, args) => {
     assertEditor(ctx.member.role);
+    await assertCanSpend(ctx, ctx.workspaceId);
     const row = await ctx.db.get(args.chatId);
     if (!row || row.workspaceId !== ctx.workspaceId) notFound();
     if (row.kind !== "proposal" || row.status !== "proposed") throw new Error("That research is not waiting to run.");
@@ -249,6 +252,7 @@ export const save = internalMutation({
     }
     await ctx.db.patch(row._id, { text: args.text.slice(0, 4000), status: args.status, data, costCents: row.costCents + args.costCents });
     if (args.costCents > 0) await addDaySpend(ctx, row.workspaceId, GROWTH_ARCHITECT, SKILL, dayKey(), args.costCents);
+    await chargeUsage(ctx, { workspaceId: row.workspaceId, costCents: args.costCents, source: "followup", ref: row._id });
     if (args.proposal) {
       await ctx.db.insert("sessionChats", {
         workspaceId: row.workspaceId,

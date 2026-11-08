@@ -37,6 +37,7 @@ import type { ModelRoute } from "./lib/modelRouter";
 import { devSkillsEnabled, wrapUntrusted } from "./lib/registry";
 import { completeWithTools } from "./lib/toolRouter";
 import { moveFilesToProject } from "./files";
+import { assertCanSpend, chargeUsage } from "./lib/billing";
 
 function assertEditor(role: string) {
   if (role === "rep") notAllowed();
@@ -173,6 +174,7 @@ export const create = workspaceMutation({
   },
   handler: async (ctx, args) => {
     assertEditor(ctx.member.role);
+    await assertCanSpend(ctx, ctx.workspaceId);
     if (args.agentSlug !== GROWTH_ARCHITECT) throw new Error("This agent does not run sessions yet.");
     const text = clean(args.text, 1000);
     if (!text) throw new Error("Say what you want to find out.");
@@ -237,6 +239,7 @@ export const reply = workspaceMutation({
   args: { intakeId: v.id("intakes"), text: v.string(), mode: modeArg, platforms: v.optional(v.array(v.string())), links: v.optional(v.array(v.string())) },
   handler: async (ctx, args) => {
     assertEditor(ctx.member.role);
+    await assertCanSpend(ctx, ctx.workspaceId);
     const row = await ownIntake(ctx, args.intakeId);
     if (row.status === "thinking") throw new Error("One moment. Vistrial is still reading your last message.");
     if (row.status === "started" || row.status === "abandoned") throw new Error("This conversation has ended. Start a new session.");
@@ -413,6 +416,7 @@ export const commit = internalMutation({
     for (const [index, message] of args.messages.entries()) {
       await ctx.db.insert("intakeMessages", { workspaceId: row.workspaceId, intakeId: row._id, ...message, at: base + index });
     }
+    await chargeUsage(ctx, { workspaceId: row.workspaceId, costCents: args.addCents, source: "intake", ref: row._id });
     await ctx.db.patch(row._id, {
       slots: args.slots,
       costCents: row.costCents + args.addCents,

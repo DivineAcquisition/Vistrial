@@ -107,6 +107,17 @@ function lastOf(steps: Doc<"runSteps">[], phase: string) {
  * for, the context it used (with origin and date), the brief, the checks, and the opportunities. Built on
  * the server from the run's own records, so screens never read raw model or page text.
  */
+/** The latest report written for a project, read from its run's own records. Null before one is written. */
+export async function reportForProject(ctx: QueryCtx, project: Doc<"researchProjects">) {
+  const run = project.latestRunId ? await ctx.db.get(project.latestRunId) : null;
+  if (!run || run.workspaceId !== project.workspaceId) return null;
+  const steps = await stepsOf(ctx, run);
+  const reportStep = lastOf(steps, PHASE.revise) ?? lastOf(steps, PHASE.write);
+  const report = readReport(await recordFor(ctx, run, reportStep?._id, "model"));
+  const saveStep = lastOf(steps, PHASE.save);
+  return report ? { report, runId: run._id, assetId: (saveStep?.resultId as Id<"assets"> | undefined) ?? null } : null;
+}
+
 export const studio = workspaceQuery({
   args: { projectId: v.id("researchProjects") },
   handler: async (ctx, args) => {

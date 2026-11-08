@@ -53,7 +53,14 @@ function businessContext(context: ContextRecord) {
   const facts = context.facts.length
     ? ["Business facts (use verified ones; mention others only with their status):", ...context.facts.map((row) => `- [${row.id}] ${row.factKey}: ${row.value} (${row.status}, ${row.sourceType})`)].join("\n")
     : "No business facts are on record.";
-  return `${profile}\n\n${facts}`;
+  const outcomes = (context.known ?? []).filter((row) => row.origin === "outcome");
+  const tried = outcomes.length
+    ? [
+        "What this business tried after earlier reports, and what happened (build on what helped; do not recommend again what failed or showed no change without saying so and why it would differ now):",
+        ...outcomes.map((row) => `- ${row.value}`),
+      ].join("\n")
+    : "";
+  return [profile, facts, tried].filter(Boolean).join("\n\n");
 }
 
 function assignment(context: ContextRecord) {

@@ -16,6 +16,7 @@ import { bodyText } from "@/lib/ui";
 import { StartSessionButton } from "@/components/sessions/start-session-button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Stagger, StaggerItem } from "@/components/motion/stagger";
+import { CheckInsDue } from "@/components/research/outcome-loop";
 
 export function DecisionsView() {
   const shell = useWorkspaceShell();
@@ -114,6 +115,7 @@ function LiveDecisions({ shell }: { shell: NonNullable<ReturnType<typeof useWork
           </Stagger>
         </Panel>
       ) : null}
+      <CheckInsDue />
       {review && review.page.length > 0 ? (
         <Panel className="grid gap-3 p-4 sm:p-6">
           <h2 className="font-heading text-base text-card-foreground">Needs review</h2>

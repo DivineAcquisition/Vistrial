@@ -12,6 +12,7 @@ import { PLATFORM_LABEL, UNCERTAINTY_WORDS, errorWords } from "@/lib/research/wo
 import { api } from "../../../convex/_generated/api";
 import type { Id } from "../../../convex/_generated/dataModel";
 import type { Studio } from "./studio-parts";
+import { OpportunityDecision } from "@/components/research/outcome-loop";
 
 export type SourceLite = { id: string; title: string; url: string; platform: string; publisher: string | null; origin?: string };
 
@@ -249,6 +250,7 @@ export function FindingsView({
                     </div>
                   </dl>
                   <EvidenceChips ids={row.evidence.sourceRefIds} sources={sources} boardHref={boardHref} />
+                  <OpportunityDecision workspaceId={workspaceId} projectId={studio.project.id} index={index} ready={Boolean(studio.assetId)} />
                 </Panel>
               </li>
             );

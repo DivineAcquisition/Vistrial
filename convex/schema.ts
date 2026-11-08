@@ -13,6 +13,18 @@ const resultFigureFields = {
   revenue: v.optional(v.number()),
 };
 const resultFigures = v.object(resultFigureFields);
+const decisionResult = v.union(v.literal("better"), v.literal("same"), v.literal("worse"), v.literal("tooEarly"), v.literal("notTried"));
+const decisionFigures = v.object({
+  source: v.union(v.literal("meta"), v.literal("upload")),
+  label: v.string(),
+  currency: v.string(),
+  dateStart: v.union(v.string(), v.null()),
+  dateStop: v.union(v.string(), v.null()),
+  spend: v.optional(v.number()),
+  conversions: v.optional(v.number()),
+  revenue: v.optional(v.number()),
+  capturedAt: v.number(),
+});
 const memberRole = v.union(v.literal("owner"), v.literal("manager"), v.literal("rep"));
 const consentState = v.union(v.literal("unknown"), v.literal("granted"), v.literal("revoked"));
 const identityKind = v.union(
@@ -817,6 +829,56 @@ export default defineSchema({
    * per-campaign figures are kept; the file is deleted once read, and personal columns are never read.
    * Its figures become "Your data" sources for the agents it is granted to.
    */
+  /**
+   * A report opportunity the business chose to try, and what happened. Figures are read from the business's
+   * own Meta results and results files when the decision is made (baseline) and when the outcome is recorded.
+   */
+  decisions: defineTable({
+    workspaceId: v.id("workspaces"),
+    projectId: v.id("researchProjects"),
+    runId: v.id("agentRuns"),
+    assetId: v.optional(v.id("assets")),
+    /** Position of the opportunity in the report, and its words as written, so a later report cannot change them. */
+    opportunityIndex: v.number(),
+    opportunity: v.string(),
+    proposedAction: v.string(),
+    validationMethod: v.string(),
+    checkInAt: v.number(),
+    createdBy: v.string(),
+    createdAt: v.number(),
+    baseline: v.array(decisionFigures),
+    outcome: v.optional(
+      v.object({
+        result: decisionResult,
+        /** The owner's own words, 500 characters at most. Stays in this workspace. */
+        note: v.string(),
+        after: v.array(decisionFigures),
+        recordedAt: v.number(),
+        recordedBy: v.string(),
+      }),
+    ),
+  })
+    .index("by_workspace", ["workspaceId", "checkInAt"])
+    .index("by_workspace_project", ["workspaceId", "projectId"]),
+
+  /**
+   * Vistrial's own learning from outcomes, across businesses. Internal only: no public function reads it,
+   * and no screen shows it. Holds no workspace, person, place, business name or owner note: only the market
+   * in a few words, the action as the report wrote it, the result, and changes as percentages.
+   * `decisionId` exists only so deleting a decision deletes its row.
+   */
+  learningSignals: defineTable({
+    decisionId: v.id("decisions"),
+    market: v.string(),
+    opportunity: v.string(),
+    proposedAction: v.string(),
+    result: decisionResult,
+    daysToOutcome: v.number(),
+    /** Percent change per measure, e.g. { spend: -12.5, conversions: 30 }, from the same source before and after. */
+    changes: v.array(v.object({ source: v.string(), metric: v.string(), percent: v.number() })),
+    month: v.string(),
+  }).index("by_decision", ["decisionId"]),
+
   resultUploads: defineTable({
     workspaceId: v.id("workspaces"),
     fileName: v.string(),

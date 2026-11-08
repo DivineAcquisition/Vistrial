@@ -103,10 +103,6 @@ export const tree = workspaceQuery({
           state: !meta ? ("off" as const) : !metaGranted ? ("notGranted" as const) : meta.status === "needsReconnect" ? ("attention" as const) : ("on" as const),
           detail: meta?.adAccountName ?? null,
         },
-        // Research sources: on when the deployment holds what they need. Names only; no key leaves the server.
-        { key: "youtube", label: "YouTube", state: process.env.YOUTUBE_API_KEY ? ("on" as const) : ("off" as const), detail: null },
-        { key: "instagram", label: "Instagram", state: process.env.META_APP_ID ? ("attention" as const) : ("off" as const), detail: "Waiting for Meta approval" },
-        { key: "adLibrary", label: "Meta Ad Library", state: process.env.META_AD_LIBRARY_TOKEN ? ("attention" as const) : ("off" as const), detail: "EU and UK ads only" },
       ],
     };
   },

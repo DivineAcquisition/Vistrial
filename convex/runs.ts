@@ -285,6 +285,94 @@ export const artifact = workspaceQuery({
   },
 });
 
+/**
+ * Starts a run. Shared by the public start (a signed-in member) and development tools that drive the real
+ * path from the dashboard; `checkCredit` is off only for the latter.
+ */
+export async function startRunFor(
+  ctx: MutationCtx,
+  {
+    workspaceId,
+    userId,
+    role,
+    checkCredit = true,
+    projectId,
+    ...input
+  }: {
+    workspaceId: Id<"workspaces">;
+    userId: string;
+    role: string;
+    checkCredit?: boolean;
+    agentSlug: string;
+    skillSlug: string;
+    projectId?: Id<"researchProjects">;
+    mode?: "thorough" | "fast";
+  },
+) {
+  if (checkCredit) await assertCanSpend(ctx, workspaceId);
+  if (role === "rep") notAllowed();
+  const project = projectId ? await ctx.db.get(projectId) : null;
+  if (projectId && (!project || project.workspaceId !== workspaceId)) notFound();
+  if (project?.status === "archived") throw new Error("This project is archived.");
+  if (project?.latestRunId) {
+    const latest = await ctx.db.get(project.latestRunId);
+    if (latest?.status === "waiting") throw new Error("This project has a run waiting for an answer. Answer it first.");
+    if (latest && (latest.status === "queued" || latest.status === "running")) throw new Error("This project already has a run in progress.");
+  }
+  // An older client may still send a renamed slug. Runs are always stored under the current one.
+  const args = { ...input, agentSlug: currentAgentSlug(input.agentSlug) };
+  if (args.skillSlug === TEST_SKILL && !devSkillsEnabled()) notFound();
+  const skill = skillFor(args.skillSlug);
+  if (!skill) throw new Error("This skill is not built yet.");
+  if (skill.needsProject && !projectId) throw new Error("Choose a research project first.");
+  const agent = await ctx.db
+    .query("agents")
+    .withIndex("by_slug", (q) => q.eq("slug", args.agentSlug))
+    .unique();
+  if (!agent || agent.retired === true) notFound();
+  if (agent.status !== "live") throw new Error(`${agent.name} is not available yet.`);
+  const link = await ctx.db
+    .query("workspaceAgents")
+    .withIndex("by_workspace_agent", (q) => q.eq("workspaceId", workspaceId).eq("agentId", agent._id))
+    .unique();
+  if (!link || link.state === "off") throw new Error(`Turn on the ${agent.name} first.`);
+  if (skill.agentSlug !== agent.slug) notFound();
+  const gate = await controls(ctx, workspaceId);
+  const caps = await loadCaps(ctx, workspaceId, args.agentSlug, args.skillSlug);
+  const spent = await daySpend(ctx, workspaceId, args.agentSlug, args.skillSlug, dayKey());
+  const blocked = gate.paused || gate.halted || spent >= caps.maxCostCentsPerDay;
+  const id = await ctx.db.insert("agentRuns", {
+    workspaceId: workspaceId,
+    agentSlug: args.agentSlug,
+    skillSlug: args.skillSlug,
+    status: blocked ? "stopped" : "queued",
+    startedBy: userId,
+    inputRef: project?._id ?? args.skillSlug,
+    ...(args.mode ? { mode: args.mode } : {}),
+    startedAt: Date.now(),
+    finishedAt: blocked ? Date.now() : undefined,
+    stopReason: blocked ? (gate.halted || gate.paused ? "cancelled" : "cap") : undefined,
+    costCents: 0,
+    inputTokens: 0,
+    outputTokens: 0,
+  });
+  await writeAudit(ctx, {
+    workspaceId: workspaceId,
+    actorType: "user",
+    actorId: userId,
+    action: "run.started",
+    subject: id,
+    count: 0,
+  });
+  // Running locks the project's scope. Whether it is running now is read from its latest run.
+  if (project) await ctx.db.patch(project._id, { status: "ready", latestRunId: id, updatedAt: Date.now() });
+  if (!blocked) {
+    await ctx.scheduler.runAfter(0, internal.runs.step, { runId: id });
+    await ctx.scheduler.runAfter(caps.maxDurationMs, internal.runs.expire, { runId: id });
+  }
+  return id;
+}
+
 export const start = workspaceMutation({
   args: {
     agentSlug: v.string(),
@@ -294,70 +382,8 @@ export const start = workspaceMutation({
     /** Quality mode; thorough when missing. */
     mode: v.optional(v.union(v.literal("thorough"), v.literal("fast"))),
   },
-  handler: async (ctx, { projectId, ...input }) => {
-    await assertCanSpend(ctx, ctx.workspaceId);
-    if (ctx.member.role === "rep") notAllowed();
-    const project = projectId ? await ctx.db.get(projectId) : null;
-    if (projectId && (!project || project.workspaceId !== ctx.workspaceId)) notFound();
-    if (project?.status === "archived") throw new Error("This project is archived.");
-    if (project?.latestRunId) {
-      const latest = await ctx.db.get(project.latestRunId);
-      if (latest?.status === "waiting") throw new Error("This project has a run waiting for an answer. Answer it first.");
-      if (latest && (latest.status === "queued" || latest.status === "running")) throw new Error("This project already has a run in progress.");
-    }
-    // An older client may still send a renamed slug. Runs are always stored under the current one.
-    const args = { ...input, agentSlug: currentAgentSlug(input.agentSlug) };
-    if (args.skillSlug === TEST_SKILL && !devSkillsEnabled()) notFound();
-    const skill = skillFor(args.skillSlug);
-    if (!skill) throw new Error("This skill is not built yet.");
-    if (skill.needsProject && !projectId) throw new Error("Choose a research project first.");
-    const agent = await ctx.db
-      .query("agents")
-      .withIndex("by_slug", (q) => q.eq("slug", args.agentSlug))
-      .unique();
-    if (!agent || agent.retired === true) notFound();
-    if (agent.status !== "live") throw new Error(`${agent.name} is not available yet.`);
-    const link = await ctx.db
-      .query("workspaceAgents")
-      .withIndex("by_workspace_agent", (q) => q.eq("workspaceId", ctx.workspaceId).eq("agentId", agent._id))
-      .unique();
-    if (!link || link.state === "off") throw new Error(`Turn on the ${agent.name} first.`);
-    if (skill.agentSlug !== agent.slug) notFound();
-    const gate = await controls(ctx, ctx.workspaceId);
-    const caps = await loadCaps(ctx, ctx.workspaceId, args.agentSlug, args.skillSlug);
-    const spent = await daySpend(ctx, ctx.workspaceId, args.agentSlug, args.skillSlug, dayKey());
-    const blocked = gate.paused || gate.halted || spent >= caps.maxCostCentsPerDay;
-    const id = await ctx.db.insert("agentRuns", {
-      workspaceId: ctx.workspaceId,
-      agentSlug: args.agentSlug,
-      skillSlug: args.skillSlug,
-      status: blocked ? "stopped" : "queued",
-      startedBy: ctx.identity.subject,
-      inputRef: project?._id ?? args.skillSlug,
-      ...(args.mode ? { mode: args.mode } : {}),
-      startedAt: Date.now(),
-      finishedAt: blocked ? Date.now() : undefined,
-      stopReason: blocked ? (gate.halted || gate.paused ? "cancelled" : "cap") : undefined,
-      costCents: 0,
-      inputTokens: 0,
-      outputTokens: 0,
-    });
-    await writeAudit(ctx, {
-      workspaceId: ctx.workspaceId,
-      actorType: "user",
-      actorId: ctx.identity.subject,
-      action: "run.started",
-      subject: id,
-      count: 0,
-    });
-    // Running locks the project's scope. Whether it is running now is read from its latest run.
-    if (project) await ctx.db.patch(project._id, { status: "ready", latestRunId: id, updatedAt: Date.now() });
-    if (!blocked) {
-      await ctx.scheduler.runAfter(0, internal.runs.step, { runId: id });
-      await ctx.scheduler.runAfter(caps.maxDurationMs, internal.runs.expire, { runId: id });
-    }
-    return id;
-  },
+  handler: async (ctx, { projectId, ...input }) =>
+    startRunFor(ctx, { workspaceId: ctx.workspaceId, userId: ctx.identity.subject, role: ctx.member.role, projectId, ...input }),
 });
 
 export const stop = workspaceMutation({

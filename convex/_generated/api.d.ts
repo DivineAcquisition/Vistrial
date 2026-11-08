@@ -26,6 +26,7 @@ import type * as collections from "../collections.js";
 import type * as controls from "../controls.js";
 import type * as crons from "../crons.js";
 import type * as decisions from "../decisions.js";
+import type * as devResearch from "../devResearch.js";
 import type * as events from "../events.js";
 import type * as facts from "../facts.js";
 import type * as feedback from "../feedback.js";
@@ -124,6 +125,7 @@ declare const fullApi: ApiFromModules<{
   controls: typeof controls;
   crons: typeof crons;
   decisions: typeof decisions;
+  devResearch: typeof devResearch;
   events: typeof events;
   facts: typeof facts;
   feedback: typeof feedback;

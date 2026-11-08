@@ -12,6 +12,7 @@ import { cn } from "@/lib/utils";
 
 export type BillingData = {
   on: boolean;
+  testMode?: boolean;
   canManage: boolean;
   markup: number;
   plan: { id: string; name: string; priceCents: number; includedCents: number };
@@ -51,6 +52,11 @@ export function BillingView({
     <div className="mx-auto grid w-full max-w-5xl min-w-0 gap-6">
       <PageHeader eyebrow="Workspace" title="Billing" description={`Credits pay for the AI work your agents do. Each piece of work costs what it really cost Vistrial, times ${data.markup}. Nothing is charged until work runs.`} />
 
+      {data.testMode ? (
+        <Banner compact tone="brand" title="Test mode">
+          Payments use Stripe test mode, so nothing real is charged. Use the card 4242 4242 4242 4242 with any future date and CVC.
+        </Banner>
+      ) : null}
       {!data.on ? (
         <Banner tone="neutral" title="Billing is not switched on for this deployment yet">
           Work runs freely here. Once billing is on, new work needs a credit balance.

@@ -9,13 +9,13 @@ import { v } from "convex/values";
 import { internal } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
 import { internalAction, type ActionCtx } from "./_generated/server";
-import { AUTO_REFILL, CREDITS_FEATURE, PLAN, PLAN_ID, TOPUP_ID, TOPUP_PACKS_CENTS, billingOn } from "./lib/billing";
+import { AUTO_REFILL, CREDITS_FEATURE, PLAN, PLAN_ID, TOPUP_ID, TOPUP_PACKS_CENTS, autumnKey, autumnMode, billingOn } from "./lib/billing";
 import { memberAction } from "./lib/builders";
 import { notAllowed, notFound } from "./lib/errors";
 
 function client() {
-  const secretKey = process.env.AUTUMN_SECRET_KEY;
-  if (!secretKey) throw new Error("Billing is not set up on this deployment yet. Add AUTUMN_SECRET_KEY to its environment variables.");
+  const secretKey = autumnKey();
+  if (!secretKey) throw new Error(autumnMode() === "test" ? "Billing test mode needs AUTUMN_TEST_SECRET_KEY on this deployment." : "Billing is not set up on this deployment yet. Add AUTUMN_SECRET_KEY to its environment variables.");
   return new Autumn({ secretKey });
 }
 
@@ -179,15 +179,15 @@ export const portal = memberAction({
 
 /**
  * Setup check for the Owner or a developer: does this Autumn account have the credits feature and the
- * growth and topup plans the app expects? Reads a key by name (AUTUMN_SECRET_KEY unless told otherwise),
+ * growth and topup plans the app expects? Uses this deployment's key for its mode unless given a key name,
  * returns IDs only, never the key. Run from the Convex dashboard: billingActions:checkSetup.
  */
 export const checkSetup = internalAction({
   args: { keyName: v.optional(v.string()) },
   handler: async (_ctx, args) => {
-    const name = args.keyName ?? "AUTUMN_SECRET_KEY";
-    if (!/^AUT[A-Z_]*$/.test(name)) throw new Error("Give the name of an Autumn key variable.");
-    const secretKey = process.env[name];
+    if (args.keyName && !/^AUT[A-Z_]*$/.test(args.keyName)) throw new Error("Give the name of an Autumn key variable.");
+    const name = args.keyName ?? (autumnMode() === "test" ? "AUTUMN_TEST_SECRET_KEY" : "AUTUMN_SECRET_KEY");
+    const secretKey = args.keyName ? process.env[args.keyName] : autumnKey();
     if (!secretKey) return { ok: false, problem: `${name} is not set on this deployment.` };
     const autumn = new Autumn({ secretKey });
     const features = (await autumn.features.list({})) as unknown as { list?: { id: string; type?: string; name?: string }[] } | { id: string }[];

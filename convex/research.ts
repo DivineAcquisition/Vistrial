@@ -32,7 +32,7 @@ type ScopeInput = {
 };
 
 /** Checks and tidies what a person typed. Refuses with plain words, never guesses. */
-function cleanScope(input: ScopeInput) {
+export function cleanScope(input: ScopeInput) {
   const title = input.title.trim();
   const objective = input.objective.trim();
   if (title.length === 0 || title.length > LIMITS.title) throw new Error(`Give the project a name of up to ${LIMITS.title} characters.`);

@@ -25,7 +25,7 @@ import {
   Square,
   Users,
   type LucideIcon,
-} from "lucide-react";
+} from "@/components/icons";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 

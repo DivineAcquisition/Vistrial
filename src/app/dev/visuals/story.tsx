@@ -1,13 +1,16 @@
 "use client";
 
-import { Plus, WifiOff } from "lucide-react";
+import { Plus, WifiOff } from "@/components/icons";
+import { useState } from "react";
 
+import { PlannedAgentView } from "@/components/agents/planned-agent";
 import { PageEnter } from "@/components/motion/page-enter";
 import { HoverLift } from "@/components/motion/hover-lift";
 import { Stagger, StaggerItem } from "@/components/motion/stagger";
 import { Banner } from "@/components/ui/banner";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
+import { PageHeader } from "@/components/ui/page-header";
 import { StatusBadge } from "@/components/ui/status-badge";
 
 const TAGS: { label: string; tone: "brand" | "neutral" | "good" | "warning" | "critical" }[] = [
@@ -29,10 +32,30 @@ const action = (
 
 export function VisualsStory({ part }: { part: string }) {
   const show = (name: string) => part === "all" || part === name;
+  const [joined, setJoined] = useState(false);
   return (
     <main className="mx-auto grid min-h-screen max-w-5xl gap-12 bg-background px-4 py-10">
       <PageEnter id={part}>
         <div className="grid gap-12">
+          {show("planned") ? (
+            <section className="grid gap-6">
+              <PlannedAgentView slug="sales-conversion" name="Sales Conversion" job="Will help turn leads into customers: follow-ups, calls and pipeline." joined={joined} onToggle={() => setJoined(!joined)} />
+              <PlannedAgentView slug="retention" name="Retention" job="Will spot risk early and suggest plays to keep customers." joined onToggle={() => undefined} />
+            </section>
+          ) : null}
+
+          {show("header") ? (
+            <section className="grid gap-3">
+              <PageHeader
+                eyebrow="Today"
+                title="Decisions"
+                description="Assets wait here until a person approves them. Nothing is posted on its own."
+                actions={action}
+              />
+              <PageHeader eyebrow="Owner" title="Controls" description="Spend caps, approvals and what each agent may do." />
+            </section>
+          ) : null}
+
           {show("tags") ? (
             <section className="grid gap-3">
               <h2 className="text-sm font-medium text-muted-foreground">Status tags</h2>

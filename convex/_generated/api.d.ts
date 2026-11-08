@@ -16,6 +16,7 @@ import type * as adapters_types from "../adapters/types.js";
 import type * as adapters_web from "../adapters/web.js";
 import type * as adapters_youtube from "../adapters/youtube.js";
 import type * as agentFolder from "../agentFolder.js";
+import type * as agentWaitlist from "../agentWaitlist.js";
 import type * as agentsMigration from "../agentsMigration.js";
 import type * as assets from "../assets.js";
 import type * as catalog from "../catalog.js";
@@ -109,6 +110,7 @@ declare const fullApi: ApiFromModules<{
   "adapters/web": typeof adapters_web;
   "adapters/youtube": typeof adapters_youtube;
   agentFolder: typeof agentFolder;
+  agentWaitlist: typeof agentWaitlist;
   agentsMigration: typeof agentsMigration;
   assets: typeof assets;
   catalog: typeof catalog;

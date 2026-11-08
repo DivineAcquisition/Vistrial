@@ -19,7 +19,7 @@ import {
   TrendingUp,
   XCircle,
   type LucideIcon,
-} from "lucide-react";
+} from "@/components/icons";
 import { AnimatePresence, MotionConfig, motion } from "motion/react";
 import { useEffect, useState } from "react";
 

@@ -1,7 +1,7 @@
 "use client";
 
 import { useMutation, useQuery } from "convex/react";
-import { ArrowRight, MessagesSquare, Plus } from "lucide-react";
+import { ArrowRight, MessagesSquare, Plus } from "@/components/icons";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useState } from "react";
@@ -17,6 +17,7 @@ import { Stagger, StaggerItem } from "@/components/motion/stagger";
 import { StartSessionButton } from "@/components/sessions/start-session-button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { NumberTicker } from "@/components/ui/number-ticker";
+import { PlannedAgent } from "@/components/agents/planned-agent";
 
 /** The agent's overview: what it does, its latest sessions and its skills. */
 export default function AgentOverview() {
@@ -46,15 +47,13 @@ export default function AgentOverview() {
           <Plus aria-hidden /> New session
         </Button>
       ) : null}
-      <Panel className="grid gap-3 p-4 sm:p-5">
-        <p className={bodyText}>{agent.promise}</p>
-        {!live ? (
-          <p className={bodyText}>
-            Planned. This agent is part of the workforce but does not run yet,
-            so it cannot be turned on.
-          </p>
-        ) : null}
-      </Panel>
+      {live ? (
+        <Panel className="grid gap-3 p-4 sm:p-5">
+          <p className={bodyText}>{agent.promise}</p>
+        </Panel>
+      ) : (
+        <PlannedAgent workspaceId={shell.workspaceId} slug={agent.slug} name={agent.name} job={agent.job} />
+      )}
 
       {live && tree ? (
         <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_18rem]">

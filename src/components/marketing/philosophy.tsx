@@ -1,6 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight } from "@/components/icons";
 
 import { BlurFade } from "@/components/ui/blur-fade";
 import { SectionEyebrow } from "@/components/marketing/growth-visuals";

@@ -5,7 +5,7 @@ import {
   Clock3,
   Info,
   type LucideIcon,
-} from "lucide-react";
+} from "@/components/icons";
 
 import { cn } from "@/lib/utils";
 

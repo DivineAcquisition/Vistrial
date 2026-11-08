@@ -1,4 +1,4 @@
-import { Plus } from "lucide-react";
+import { Plus } from "@/components/icons";
 import Link from "next/link";
 
 import { VistrialMark } from "@/components/brand/vistrial-mark";

@@ -69,7 +69,7 @@ export const btnIconLg = "size-10! p-0! sm:size-9!";
  * ------------------------------------------------------------------------- */
 
 export const eyebrow =
-  "inline-flex items-center gap-2 rounded-full border border-brand-500/30 bg-brand-500/[0.08] px-3.5 py-1.5 text-[11px] font-semibold uppercase tracking-[0.14em] text-brand-300";
+  "inline-flex items-center gap-2 rounded-[6px] border border-primary/25 bg-background/70 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-primary shadow-sm backdrop-blur";
 
 export const sectionLabel =
   "text-[11px] font-semibold uppercase tracking-[0.2em] text-brand-300";

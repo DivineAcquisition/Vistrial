@@ -1,6 +1,6 @@
 "use client";
 
-import { EllipsisVertical, Plus } from "lucide-react";
+import { EllipsisVertical, Plus } from "@/components/icons";
 import Link from "next/link";
 import type { CSSProperties } from "react";
 

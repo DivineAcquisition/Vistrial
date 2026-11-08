@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 
 import { Breadcrumbs, type Crumb } from "@/components/ui/breadcrumbs";
+import { ShaderBackdrop } from "@/components/ui/shader-backdrop";
 import { StatusBadge } from "@/components/ui/status-badge";
 import type { Tone } from "@/components/ui/tone";
 import { eyebrow as eyebrowClass, pageTitle } from "@/lib/ui";
@@ -48,6 +49,8 @@ export function PageHeader({
         <Breadcrumbs items={breadcrumbs} className="mb-3" />
       ) : null}
 
+      <div className="relative isolate overflow-hidden rounded-3xl border border-overlay/[0.08] px-5 py-6 shadow-[0_24px_60px_-40px_color-mix(in_oklab,var(--color-primary)_60%,transparent)] sm:px-8 sm:py-8">
+      <ShaderBackdrop className="-z-10" />
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div className="min-w-0">
           {eyebrow ? <p className={cn(eyebrowClass, "mb-4")}>{eyebrow}</p> : null}
@@ -56,7 +59,7 @@ export function PageHeader({
             {status ? <StatusBadge label={status} tone={statusTone} /> : null}
           </div>
           {description ? (
-            <p className="mt-2.5 max-w-2xl text-[15px] leading-relaxed text-silver">{description}</p>
+            <p className="mt-2.5 max-w-2xl text-[15px] leading-relaxed text-muted-foreground">{description}</p>
           ) : null}
         </div>
 
@@ -66,6 +69,7 @@ export function PageHeader({
             {actions}
           </div>
         ) : null}
+      </div>
       </div>
 
       {toolbar ? (

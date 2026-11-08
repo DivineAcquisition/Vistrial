@@ -1,6 +1,6 @@
 "use client";
 
-import { CheckCircle2, CircleDot, CircleHelp, Loader, MapPin, Square, type LucideIcon } from "lucide-react";
+import { CheckCircle2, CircleDot, CircleHelp, Loader, MapPin, Square, type LucideIcon } from "@/components/icons";
 import Link from "next/link";
 
 import { cn } from "@/lib/utils";

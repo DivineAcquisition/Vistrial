@@ -7,7 +7,7 @@ import {
   FileSpreadsheet,
   Store,
   type LucideIcon,
-} from "lucide-react";
+} from "@/components/icons";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect } from "react";

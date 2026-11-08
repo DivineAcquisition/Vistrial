@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useLayoutEffect, useRef, useState, type ReactNode, type RefObject } from "react";
-import { CheckCircle2, FileText, Globe, Hand, Loader2, RotateCcw, Upload } from "lucide-react";
+import { CheckCircle2, FileText, Globe, Hand, Loader2, RotateCcw, Upload } from "@/components/icons";
 
 import { PlatformLogo } from "@/components/marketing/platform-logo";
 import { Badge } from "@/components/ui/badge";

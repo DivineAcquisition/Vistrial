@@ -20,7 +20,7 @@ import {
   Sparkles,
   Square,
   Users,
-} from "lucide-react";
+} from "@/components/icons";
 import { motion } from "motion/react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -169,22 +169,22 @@ function Composer({
   base: string;
 }) {
   const stop = useMutation(api.runs.stop);
+  const answer = useMutation(api.runs.answer);
   const [notice, setNotice] = useState("");
   const { studio } = data;
   const runStatus = studio.run?.status ?? null;
   const waitingAnswer = Boolean(studio.run?.waitingFor);
   const busy = runStatus === "running" || runStatus === "queued";
 
-  if (!editor) return <p className="text-center text-xs text-muted-foreground">You can follow this session. Owners and Managers decide on it.</p>;
-
-  if (busy) {
-    return (
-      <Banner
-        tone="brand"
-        icon={<Loader aria-hidden className="animate-spin motion-reduce:animate-none" />}
-        title="Working on it"
-        action={
-          studio.run ? (
+  // The chat box is always here, like Claude and ChatGPT; what the session is doing shows above it.
+  const status = !editor ? null : busy ? (
+    <Banner
+      compact
+      tone="brand"
+      icon={<Loader aria-hidden className="animate-spin motion-reduce:animate-none" />}
+      title="Working on it"
+      action={
+        studio.run ? (
           <Button
             variant="outline"
             size="sm"
@@ -194,32 +194,55 @@ function Composer({
           >
             <Square aria-hidden className="size-3.5" /> Stop
           </Button>
-          ) : null
-        }
-      >
-        It asks you if it needs anything, and spends nothing while it waits.
-        {notice ? <span className="block text-xs">{notice}</span> : null}
-      </Banner>
-    );
-  }
+        ) : null
+      }
+    >
+      It asks you if it needs anything, and spends nothing while it waits.
+      {notice ? <span className="block text-xs">{notice}</span> : null}
+    </Banner>
+  ) : waitingAnswer ? (
+    <Banner
+      compact
+      tone="warning"
+      title="Waiting for your answer"
+      action={
+        <Button size="sm" variant="outline" render={<a href="#question" />}>
+          See the question
+        </Button>
+      }
+    >
+      Type your answer below. Nothing runs or spends until you answer.
+      {notice ? <span className="block text-xs">{notice}</span> : null}
+    </Banner>
+  ) : null;
 
-  if (waitingAnswer) {
-    return (
-      <Banner
-        tone="warning"
-        title="Waiting for your answer"
-        action={
-          <Button size="sm" variant="outline" render={<a href="#question" />}>
-            Answer
-          </Button>
+  const box = !editor ? (
+    <ChatComposer disabled placeholder="You can follow this session. Owners and Managers decide on it." onSubmit={async () => undefined} />
+  ) : busy ? (
+    <ChatComposer disabled placeholder="Working… you can ask follow-ups as soon as it finishes." onSubmit={async () => undefined} />
+  ) : waitingAnswer && studio.run?.waitingFor ? (
+    <ChatComposer
+      placeholder={`Answer: ${studio.run.waitingFor.question ?? "its question"}`}
+      onSubmit={async (text) => {
+        setNotice("");
+        try {
+          await answer({ workspaceId, runId: studio.run!.id as Id<"agentRuns">, questionId: studio.run!.waitingFor!.questionId, answer: text });
+        } catch (problem) {
+          setNotice(errorWords(problem, "That answer was not saved."));
+          throw problem;
         }
-      >
-        It asked a question above. Nothing runs or spends until you answer.
-      </Banner>
-    );
-  }
+      }}
+    />
+  ) : (
+    <FollowUpComposer workspaceId={workspaceId} projectId={studio.project.id as Id<"researchProjects">} base={base} hasReport={Boolean(studio.report)} />
+  );
 
-  return <FollowUpComposer workspaceId={workspaceId} projectId={studio.project.id as Id<"researchProjects">} base={base} hasReport={Boolean(studio.report)} />;
+  return (
+    <div className="grid gap-2">
+      {status}
+      {box}
+    </div>
+  );
 }
 
 /** The chat box inside a session: follow-up questions about the report, with the quality mode and files. */

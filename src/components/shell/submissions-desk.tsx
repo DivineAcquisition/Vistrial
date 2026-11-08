@@ -1,7 +1,7 @@
 "use client";
 
 import { Authenticated, Unauthenticated, useMutation, useQuery } from "convex/react";
-import { Download } from "lucide-react";
+import { Download } from "@/components/icons";
 import { Component, useMemo, useState, type ReactNode } from "react";
 
 import { RedirectToSignIn } from "@/components/auth/redirect-to-sign-in";

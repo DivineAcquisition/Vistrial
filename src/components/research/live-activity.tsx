@@ -20,7 +20,7 @@ import {
   Target,
   TriangleAlert,
   type LucideIcon,
-} from "lucide-react";
+} from "@/components/icons";
 import { AnimatePresence, MotionConfig, motion, useSpring } from "motion/react";
 import { useEffect, useMemo, useRef, useState } from "react";
 

@@ -1,7 +1,7 @@
 "use client";
 
 import { useMutation, useQuery } from "convex/react";
-import { FileSpreadsheet, ShieldCheck, Trash2 } from "lucide-react";
+import { FileSpreadsheet, ShieldCheck, Trash2 } from "@/components/icons";
 import { useId, useState } from "react";
 
 import { useWorkspaceShell } from "@/components/shell/shell-context";

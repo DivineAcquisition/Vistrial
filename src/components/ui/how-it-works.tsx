@@ -1,4 +1,4 @@
-import { Cable, Rocket, ShieldCheck, Users } from "lucide-react";
+import { Cable, Rocket, ShieldCheck, Users } from "@/components/icons";
 
 import { cn } from "@/lib/utils";
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { ExternalLink, Play } from "lucide-react";
+import { ExternalLink, Play } from "@/components/icons";
 import { useState } from "react";
 
 import { Button } from "@/components/ui/button";

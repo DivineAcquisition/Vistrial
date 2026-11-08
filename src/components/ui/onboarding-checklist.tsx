@@ -1,7 +1,7 @@
 "use client"
 
 import { AnimatePresence, motion } from "motion/react"
-import { Check, CheckCircle2, ChevronLeft, ChevronRight, Circle, X } from "lucide-react"
+import { Check, CheckCircle2, ChevronLeft, ChevronRight, Circle, X } from "@/components/icons"
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 
 import { Button } from "@/components/ui/button"

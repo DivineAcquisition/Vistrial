@@ -1,4 +1,4 @@
-import { Menu } from "lucide-react";
+import { Menu } from "@/components/icons";
 import Link from "next/link";
 
 import { MarketingMobileNav, MarketingNav } from "@/components/marketing/marketing-nav";

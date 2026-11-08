@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
-import { LayoutListIcon, MenuIcon } from "lucide-react";
+import { LayoutListIcon, MenuIcon } from "@/components/icons";
 
 import { ThemeToggle } from "@/components/app/theme-toggle";
 import Logo from "@/components/brand/logo";

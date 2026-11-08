@@ -1,7 +1,7 @@
 "use client";
 
 import { memo, useMemo, useState } from "react";
-import { BotIcon, ChevronRightIcon, CircleCheckIcon, CircleXIcon, NotebookPenIcon, WrenchIcon } from "lucide-react";
+import { BotIcon, ChevronRightIcon, CircleCheckIcon, CircleXIcon, NotebookPenIcon, WrenchIcon } from "@/components/icons";
 
 import { Button } from "@/components/ui/button";
 import { Collapsible, CollapsiblePanel, CollapsibleTrigger } from "@/components/ui/collapsible";

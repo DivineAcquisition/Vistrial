@@ -1,6 +1,6 @@
 "use client";
 
-import { CompassIcon, ScaleIcon, ScrollTextIcon, SendIcon, ShieldIcon, SparklesIcon, type LucideIcon } from "lucide-react";
+import { CompassIcon, ScaleIcon, ScrollTextIcon, SendIcon, ShieldIcon, SparklesIcon, type LucideIcon } from "@/components/icons";
 
 import { Avatar, type AvatarColor, type AvatarSize } from "@/components/ui/heroui-avatar";
 import { AGENT_ACCENTS, AGENTS, type AgentAccentKey, type AgentGlyph as GlyphName, type LiveAgentId } from "@/lib/agents/roster";

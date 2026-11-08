@@ -17,7 +17,7 @@ import {
   Settings2,
   X,
   Zap,
-} from "lucide-react";
+} from "@/components/icons";
 import Link from "next/link";
 import { useRef, useState } from "react";
 

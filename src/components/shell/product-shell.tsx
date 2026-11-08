@@ -7,7 +7,7 @@ import { LayoutListIcon, MenuIcon } from "lucide-react";
 
 import { ThemeToggle } from "@/components/app/theme-toggle";
 import Logo from "@/components/brand/logo";
-import { CommandBar } from "@/components/shell/command-bar";
+import { StartChat } from "@/components/chat/start-chat";
 import { FolderTree } from "@/components/shell/folder-tree";
 import { LiveAside } from "@/components/shell/live-aside";
 import { StatusBadge } from "@/components/ui/status-badge";
@@ -34,6 +34,9 @@ export function ProductShell({
   const pathname = usePathname();
   const [menuOpen, setMenuOpen] = useState(false);
   const [askOpen, setAskOpen] = useState(false);
+  // Pages with their own chat (home, agent overview, conversations, sessions) do not repeat it in the header.
+  const hideDock = pathname === "/app" || /^\/app\/agents\/[^/]+(\/sessions(\/.*)?)?$/.test(pathname);
+  const pageAgent = pathname.match(/^\/app\/agents\/([^/]+)/)?.[1] ?? "growth-architect";
 
   return (
     <div className="min-h-dvh overflow-x-hidden bg-background text-foreground">
@@ -68,7 +71,7 @@ export function ProductShell({
             </div>
             <div className="flex items-center gap-2 px-4 py-3">
               <div className="hidden min-w-0 flex-1 md:block">
-                <CommandBar />
+                {hideDock ? null : <StartChat size="compact" defaultAgent={pageAgent} placeholder="Ask Vistrial to research something…" />}
               </div>
               <button
                 type="button"
@@ -83,7 +86,7 @@ export function ProductShell({
             </div>
             {askOpen ? (
               <div id="compass-command" className="px-4 pb-3 md:hidden">
-                <CommandBar />
+                <StartChat size="compact" defaultAgent={pageAgent} placeholder="Ask Vistrial to research something…" />
               </div>
             ) : null}
           </header>

@@ -39,6 +39,8 @@ export type ToolRequest = {
   /** JSON schema for the final answer. The answer must parse, or the call is retried once and then fails. */
   outputSchema?: Record<string, unknown>;
   maxTurns?: number;
+  /** Images and documents sent with the input, before it. */
+  attachments?: Anthropic.ContentBlockParam[];
 };
 
 export type FoundSource = { url: string; title: string | null; pageAge: string | null };
@@ -160,7 +162,9 @@ async function attempt(
 ): Promise<ToolCompletion> {
   const tools = toolList(request);
   const declared = new Map((request.clientTools ?? []).map((tool) => [tool.name, tool]));
-  const messages: Anthropic.MessageParam[] = [{ role: "user", content: request.input }];
+  const messages: Anthropic.MessageParam[] = [
+    { role: "user", content: request.attachments?.length ? [...request.attachments, { type: "text", text: request.input }] : request.input },
+  ];
   const sources = new Map<string, FoundSource>();
   const citations: Citation[] = [];
   const maxTurns = request.maxTurns ?? DEFAULT_MAX_TURNS;

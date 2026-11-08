@@ -10,7 +10,6 @@ import {
   MapPin,
   Plus,
   Rocket,
-  Sparkles,
   Target,
   Wallet,
   X,
@@ -18,6 +17,7 @@ import {
 import { AnimatePresence, motion } from "motion/react";
 import { useEffect, useRef, useState } from "react";
 
+import { VistrialMark } from "@/components/brand/vistrial-mark";
 import { Button } from "@/components/ui/button";
 import { Panel } from "@/components/ui/panel";
 import { StatusBadge } from "@/components/ui/status-badge";
@@ -51,6 +51,8 @@ export type IntakeView = {
     pendingRemember: { factKey: string; label: string; value: string }[];
     platformNote: string | null;
     projectId: string | null;
+    mode?: "thorough" | "fast";
+    researchCapCents?: number;
   };
   messages: IntakeMessage[];
 };
@@ -81,11 +83,7 @@ const SUGGESTIONS = [
 ];
 
 function Avatar() {
-  return (
-    <span className="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-primary to-primary/60 text-primary-foreground shadow-[0_6px_16px_-8px_rgba(102,80,216,0.8)]">
-      <Sparkles aria-hidden className="size-4" />
-    </span>
-  );
+  return <VistrialMark className="mt-0.5" />;
 }
 
 function Agent({ children, name }: { children: React.ReactNode; name?: string }) {
@@ -272,7 +270,8 @@ function PlanCard({ view, actions, editor }: { view: IntakeView; actions: Intake
         <span className="flex items-start gap-2 text-xs text-muted-foreground">
           <Wallet aria-hidden className="mt-0.5 size-3.5 shrink-0" />
           <span>
-            This conversation: {money(intake.costCents)} of {money(intake.capCents)}. Research: up to {money(300)}, with 50¢ held back to check and fix the report once.
+            {intake.mode === "fast" ? "Fast (Sonnet 5.5)" : "Thorough (Opus 5.5)"}. This conversation: {money(intake.costCents)} of {money(intake.capCents)}. Research: up to{" "}
+            {money(intake.researchCapCents ?? 300)}, with 50¢ held back to check and fix the report once.
           </span>
         </span>
         {intake.status === "ready" && editor ? (
@@ -308,6 +307,7 @@ export function IntakeChatView({
   agentName,
   initialText = "",
   onFirstMessage,
+  composer,
 }: {
   view: IntakeView | null;
   actions: IntakeActions;
@@ -315,6 +315,8 @@ export function IntakeChatView({
   agentName: string;
   initialText?: string;
   onFirstMessage?: (text: string) => Promise<void>;
+  /** The shared chat box, used in place of the plain one. */
+  composer?: React.ReactNode;
 }) {
   const [text, setText] = useState(initialText);
   const [sending, setSending] = useState(false);
@@ -456,7 +458,9 @@ export function IntakeChatView({
         <div ref={end} />
       </ol>
 
-      {editor && status !== "started" ? (
+      {composer && editor && status !== "started" ? (
+        <div className="sticky bottom-20 z-10 bg-gradient-to-t from-background via-background to-transparent pt-3 md:bottom-4">{composer}</div>
+      ) : editor && status !== "started" ? (
         <form
           className="sticky bottom-20 z-10 grid gap-1.5 bg-gradient-to-t from-background via-background to-transparent pt-3 md:bottom-4"
           onSubmit={(event) => {

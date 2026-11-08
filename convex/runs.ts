@@ -8,7 +8,7 @@ import type { MutationCtx, QueryCtx } from "./_generated/server";
 import { workspaceMutation, workspaceQuery } from "./lib/builders";
 import { writeAudit } from "./lib/audit";
 import { PLATFORM_CEILING, SOFT_WARNING_RATIO, capScope, dayKey, overCap } from "./lib/caps";
-import { addDaySpend, daySpend, loadCaps } from "./lib/capRows";
+import { addDaySpend, daySpend, loadCaps, runCaps } from "./lib/capRows";
 import { currentAgentSlug } from "./catalog";
 import { assertClaims, assertSourcesExist } from "./lib/evidence";
 import { notAllowed, notFound } from "./lib/errors";
@@ -215,7 +215,7 @@ export const get = workspaceQuery({
       .query("assets")
       .withIndex("by_workspace_run", (q) => q.eq("workspaceId", ctx.workspaceId).eq("createdByRun", run._id))
       .take(20);
-    const caps = await loadCaps(ctx, ctx.workspaceId, run.agentSlug, run.skillSlug);
+    const caps = await runCaps(ctx, run);
     const day = dayKey(run.startedAt);
     const starter = await ctx.db
       .query("members")
@@ -290,6 +290,8 @@ export const start = workspaceMutation({
     skillSlug: v.string(),
     /** The research project this run works on. Collect steps save their sources to it. */
     projectId: v.optional(v.id("researchProjects")),
+    /** Quality mode; thorough when missing. */
+    mode: v.optional(v.union(v.literal("thorough"), v.literal("fast"))),
   },
   handler: async (ctx, { projectId, ...input }) => {
     if (ctx.member.role === "rep") notAllowed();
@@ -330,6 +332,7 @@ export const start = workspaceMutation({
       status: blocked ? "stopped" : "queued",
       startedBy: ctx.identity.subject,
       inputRef: project?._id ?? args.skillSlug,
+      ...(args.mode ? { mode: args.mode } : {}),
       startedAt: Date.now(),
       finishedAt: blocked ? Date.now() : undefined,
       stopReason: blocked ? (gate.halted || gate.paused ? "cancelled" : "cap") : undefined,
@@ -375,7 +378,7 @@ export const expire = internalMutation({
     if (!run || !OPEN.has(run.status)) return null;
     // Waiting does not count against the time cap. A wait pushes the stop back by its length.
     if (run.status === "waiting") return null;
-    const caps = await loadCaps(ctx, run.workspaceId, run.agentSlug, run.skillSlug);
+    const caps = await runCaps(ctx, run);
     const left = caps.maxDurationMs - (Date.now() - run.startedAt - (run.waitedMs ?? 0));
     if (left > 0) {
       await ctx.scheduler.runAfter(left, internal.runs.expire, { runId: run._id });
@@ -407,7 +410,7 @@ export const prepare = internalMutation({
       await stopRun(ctx, run, "cancelled", "stopped");
       return { done: true as const };
     }
-    const caps = await loadCaps(ctx, run.workspaceId, run.agentSlug, run.skillSlug);
+    const caps = await runCaps(ctx, run);
     const steps = await stepCount(ctx, run);
     const spent = await daySpend(ctx, run.workspaceId, run.agentSlug, run.skillSlug, dayKey());
     const activeSince = run.startedAt + (run.waitedMs ?? 0);
@@ -464,7 +467,9 @@ export const prepare = internalMutation({
     if (next.kind === "tool") {
       return { done: false as const, kind: "tool" as const, index, idempotencyKey, toolSlug: next.toolSlug, ...phase };
     }
-    const route = await routeFor(ctx, next.workKind);
+    // Fast mode runs research and writing on the faster route.
+    const workKindRoute = run.mode === "fast" && (next.workKind === "research" || next.workKind === "write") ? "classify" : next.workKind;
+    const route = await routeFor(ctx, workKindRoute);
     if (!route) {
       await recordFailure(ctx, run, index, idempotencyKey, "no_route", "model", NO_SPEND, 0, undefined, next.phase);
       return { done: true as const };
@@ -870,7 +875,7 @@ export const commitModel = internalMutation({
       await stopRun(ctx, current, "cancelled", "stopped", nextCost);
       return { status: "stopped" as const };
     }
-    const caps = await loadCaps(ctx, run.workspaceId, run.agentSlug, run.skillSlug);
+    const caps = await runCaps(ctx, run);
     const steps = await stepCount(ctx, run);
     if (overCap({ caps, runCost: nextCost, dayCost: nextDay, steps: steps.length, startedAt: run.startedAt, now: Date.now() })) {
       await stopRun(ctx, current, "cap", "stopped", nextCost);

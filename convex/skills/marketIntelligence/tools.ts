@@ -1,6 +1,6 @@
 import type { Doc, Id } from "../../_generated/dataModel";
 import type { MutationCtx } from "../../_generated/server";
-import { loadCaps } from "../../lib/capRows";
+import { runCaps } from "../../lib/capRows";
 import { screenClaims, type ClaimInput } from "../../lib/evidence";
 import { factsForRun, liveFact } from "../../lib/facts";
 import { runChecks } from "./checks";
@@ -243,7 +243,7 @@ const check: MutationTool = async (ctx, run, steps) => {
   const context = await contextOf(ctx, run, steps);
   if (!project || !context) return { failCode: "no_project" };
   const sources = await projectSources(ctx.db, run.workspaceId, project._id, 500);
-  const caps = await loadCaps(ctx, run.workspaceId, run.agentSlug, run.skillSlug);
+  const caps = await runCaps(ctx, run);
   const result = runChecks({
     report: await reportOf(ctx, run, steps),
     context,
@@ -323,7 +323,7 @@ function countClaims(sources: Doc<"sourceRefs">[], computed: ComputeRecord | nul
   return claims;
 }
 
-const PLATFORM_WORDS: Record<string, string> = { web: "web", youtube: "YouTube", tiktok: "TikTok", instagram: "Instagram", metaAdLibrary: "Meta Ad Library", customerData: "your data" };
+const PLATFORM_WORDS: Record<string, string> = { web: "web", youtube: "YouTube", tiktok: "TikTok", instagram: "Instagram", metaAdLibrary: "Meta Ad Library", customerData: "your data", upload: "your files" };
 
 async function writeVersion(
   ctx: MutationCtx,

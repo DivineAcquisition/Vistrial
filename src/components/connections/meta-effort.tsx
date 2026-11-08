@@ -23,6 +23,7 @@ import {
 import { AnimatePresence, MotionConfig, motion } from "motion/react";
 import { useEffect, useState } from "react";
 
+import { VistrialMark } from "@/components/brand/vistrial-mark";
 import { BorderBeam } from "@/components/ui/border-beam";
 import { Panel } from "@/components/ui/panel";
 import { StatusBadge } from "@/components/ui/status-badge";
@@ -112,7 +113,7 @@ export function SyncActivity({ runs }: { runs: SyncRun[] }) {
     return (
       <Panel className="grid gap-2 p-4">
         <h3 className="flex items-center gap-2 font-heading text-base text-card-foreground">
-          <Sparkles aria-hidden className="size-4 text-primary" /> What Vistrial did
+          <VistrialMark size="xs" /> What Vistrial did
         </h3>
         <p className="text-sm text-muted-foreground">Each read of your account shows here, step by step.</p>
       </Panel>
@@ -133,7 +134,7 @@ export function SyncActivity({ runs }: { runs: SyncRun[] }) {
                 <span className="relative inline-flex size-2.5 rounded-full bg-primary" />
               </span>
             ) : (
-              <Sparkles aria-hidden className="size-4 text-primary" />
+              <VistrialMark size="xs" />
             )}
             {live ? "Reading your account" : "What Vistrial did"}
           </h3>
@@ -356,7 +357,7 @@ export function Observations({ items, onFocus }: { items: Observation[]; onFocus
     <div className="grid gap-2">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h3 className="flex items-center gap-2 text-sm font-medium text-card-foreground">
-          <Sparkles aria-hidden className="size-4 text-primary" /> What the numbers show
+          <VistrialMark size="xs" /> What the numbers show
         </h3>
         <span className="text-xs text-muted-foreground">Observed in your own results. No outside benchmarks.</span>
       </div>

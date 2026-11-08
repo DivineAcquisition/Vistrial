@@ -25,6 +25,8 @@ export const platform = v.union(
   v.literal("instagram"),
   v.literal("metaAdLibrary"),
   v.literal("customerData"),
+  /** A file a person added: an image, a PDF. Their own spreadsheets are customerData. */
+  v.literal("upload"),
 );
 export type Platform = Infer<typeof platform>;
 
@@ -36,6 +38,7 @@ export const sourceKind = v.union(
   v.literal("reel"),
   v.literal("ad"),
   v.literal("dataset"),
+  v.literal("file"),
 );
 
 /** Whether the original can still be viewed. `linkOnly` means we may show a link card and nothing more. */

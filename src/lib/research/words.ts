@@ -9,6 +9,7 @@ export const PLATFORM_LABEL: Record<string, string> = {
   instagram: "Instagram",
   metaAdLibrary: "Meta Ad Library",
   customerData: "Your data",
+  upload: "Your files",
 };
 
 export const PLATFORMS = ["web", "youtube", "tiktok", "instagram", "metaAdLibrary"] as const;

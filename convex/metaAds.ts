@@ -24,6 +24,7 @@ import {
   joinCampaigns,
   oauthScopes,
   safeReturnOrigin,
+  safeReturnPath,
   totalsOf,
   fillDays,
   observe,
@@ -173,7 +174,7 @@ export const setAgentAccess = ownerMutation({
 
 /** Starts Facebook Login for this workspace. Owner only. Returns the dialog URL to open. */
 export const startConnect = ownerMutation({
-  args: { returnOrigin: v.optional(v.string()) },
+  args: { returnOrigin: v.optional(v.string()), returnPath: v.optional(v.string()) },
   handler: async (ctx, args) => {
     const appId = process.env.META_APP_ID;
     if (!appId || !process.env.META_APP_SECRET) throw new Error("The Meta app is not set up on this deployment yet.");
@@ -183,6 +184,7 @@ export const startConnect = ownerMutation({
       userId: ctx.identity.subject,
       nonce,
       returnOrigin: safeReturnOrigin(args.returnOrigin) ?? undefined,
+      returnPath: safeReturnPath(args.returnPath) ?? undefined,
       createdAt: Date.now(),
     });
     const params = new URLSearchParams({
@@ -211,7 +213,7 @@ export const consumeState = internalMutation({
       .withIndex("by_workspace_user", (q) => q.eq("workspaceId", row.workspaceId).eq("userId", row.userId))
       .unique();
     if (!member?.active || member.role !== "owner") return null;
-    return { workspaceId: row.workspaceId, userId: row.userId, returnOrigin: row.returnOrigin ?? null };
+    return { workspaceId: row.workspaceId, userId: row.userId, returnOrigin: row.returnOrigin ?? null, returnPath: row.returnPath ?? null };
   },
 });
 

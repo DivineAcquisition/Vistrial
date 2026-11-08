@@ -1,9 +1,10 @@
 "use client";
 
-import { Activity, Brain, FileText, LayoutGrid, MessagesSquare, Plug, Plus, Sparkles, type LucideIcon } from "lucide-react";
+import { Activity, Brain, FileText, LayoutGrid, MessagesSquare, Plug, Plus, type LucideIcon } from "lucide-react";
 import Link from "next/link";
 import { useParams, usePathname } from "next/navigation";
 
+import { VistrialMark } from "@/components/brand/vistrial-mark";
 import { useWorkspaceShell } from "@/components/shell/shell-context";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -40,9 +41,7 @@ export function AgentFrame({ children }: { children: React.ReactNode }) {
       <header className={cn("grid gap-4", inThread && "hidden md:grid")}>
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div className="flex min-w-0 items-center gap-3">
-            <span className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-primary to-primary/60 text-primary-foreground shadow-[0_10px_24px_-12px_rgba(102,80,216,0.7)]">
-              <Sparkles aria-hidden className="size-5" />
-            </span>
+            <VistrialMark size="md" />
             <div className="min-w-0">
               <p className="text-[11px] font-semibold tracking-[0.14em] text-muted-foreground uppercase">{department}</p>
               <h1 className="font-heading text-xl break-words text-foreground">{agent.name}</h1>

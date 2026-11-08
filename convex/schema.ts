@@ -535,6 +535,8 @@ export default defineSchema({
     needsInputReason: v.optional(v.literal("timedOut")),
     startedBy: v.string(),
     inputRef: v.string(),
+    /** Quality mode: thorough (the default) or fast (faster models, lower cap). */
+    mode: v.optional(v.union(v.literal("thorough"), v.literal("fast"))),
     startedAt: v.number(),
     finishedAt: v.optional(v.number()),
     stopReason: v.optional(
@@ -871,6 +873,8 @@ export default defineSchema({
     userId: v.string(),
     nonce: v.string(),
     returnOrigin: v.optional(v.string()),
+    /** A page inside the app to come back to, such as the chat that started the connection. */
+    returnPath: v.optional(v.string()),
     createdAt: v.number(),
     usedAt: v.optional(v.number()),
   }).index("by_nonce", ["nonce"]),
@@ -963,6 +967,8 @@ export default defineSchema({
     /** Answers the person may want remembered; cleared once they choose. */
     pendingRemember: v.array(v.object({ factKey: v.string(), label: v.string(), value: v.string() })),
     platformNote: v.optional(v.string()),
+    /** Quality mode chosen in the chat box; thorough when missing. */
+    mode: v.optional(v.union(v.literal("thorough"), v.literal("fast"))),
     projectId: v.optional(v.id("researchProjects")),
     createdAt: v.number(),
     updatedAt: v.number(),
@@ -981,6 +987,48 @@ export default defineSchema({
     data: v.optional(v.any()),
     at: v.number(),
   }).index("by_intake", ["intakeId", "at"]),
+
+  /**
+   * A file a person added to a conversation or session: an image, a PDF or a spreadsheet. Claude reads it
+   * into an attributed summary; a spreadsheet of the business's own results is first-party evidence.
+   */
+  sessionFiles: defineTable({
+    workspaceId: v.id("workspaces"),
+    intakeId: v.optional(v.id("intakes")),
+    projectId: v.optional(v.id("researchProjects")),
+    storageId: v.id("_storage"),
+    name: v.string(),
+    contentType: v.string(),
+    size: v.number(),
+    kind: v.union(v.literal("image"), v.literal("pdf"), v.literal("csv")),
+    status: v.union(v.literal("reading"), v.literal("read"), v.literal("failed")),
+    summary: v.optional(v.string()),
+    costCents: v.number(),
+    sourceRefId: v.optional(v.id("sourceRefs")),
+    createdBy: v.string(),
+    createdAt: v.number(),
+  })
+    .index("by_intake", ["intakeId"])
+    .index("by_project", ["projectId"]),
+
+  /**
+   * Follow-up chat inside a session, after the report: questions answered from the session's own sources,
+   * and new research the person approved. Each answer cites real sources of the session.
+   */
+  sessionChats: defineTable({
+    workspaceId: v.id("workspaces"),
+    projectId: v.id("researchProjects"),
+    role: v.union(v.literal("you"), v.literal("agent")),
+    /** question, answer, proposal (new research awaiting Run), note. */
+    kind: v.string(),
+    text: v.string(),
+    status: v.union(v.literal("thinking"), v.literal("done"), v.literal("failed"), v.literal("proposed"), v.literal("running"), v.literal("declined")),
+    data: v.optional(v.any()),
+    mode: v.optional(v.union(v.literal("thorough"), v.literal("fast"))),
+    costCents: v.number(),
+    createdBy: v.string(),
+    at: v.number(),
+  }).index("by_project", ["projectId", "at"]),
 
   platformControls: defineTable({
     key: v.literal("platform"),

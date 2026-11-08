@@ -9,7 +9,7 @@ import { v } from "convex/values";
 import { internal } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
 import { internalAction, type ActionCtx } from "./_generated/server";
-import { AUTO_REFILL, CREDITS_FEATURE, PLAN_ID, TOPUP_ID, TOPUP_PACKS_CENTS, billingOn } from "./lib/billing";
+import { AUTO_REFILL, CREDITS_FEATURE, PLAN, PLAN_ID, TOPUP_ID, TOPUP_PACKS_CENTS, billingOn } from "./lib/billing";
 import { memberAction } from "./lib/builders";
 import { notAllowed, notFound } from "./lib/errors";
 
@@ -174,5 +174,89 @@ export const portal = memberAction({
     const autumn = client();
     const result = await autumn.billing.openCustomerPortal({ customerId: ctx.workspaceId, returnUrl: safeReturn(args.returnOrigin, "/app/billing") });
     return { url: result.url };
+  },
+});
+
+/**
+ * Setup check for the Owner or a developer: does this Autumn account have the credits feature and the
+ * growth and topup plans the app expects? Reads a key by name (AUTUMN_SECRET_KEY unless told otherwise),
+ * returns IDs only, never the key. Run from the Convex dashboard: billingActions:checkSetup.
+ */
+export const checkSetup = internalAction({
+  args: { keyName: v.optional(v.string()) },
+  handler: async (_ctx, args) => {
+    const name = args.keyName ?? "AUTUMN_SECRET_KEY";
+    if (!/^AUT[A-Z_]*$/.test(name)) throw new Error("Give the name of an Autumn key variable.");
+    const secretKey = process.env[name];
+    if (!secretKey) return { ok: false, problem: `${name} is not set on this deployment.` };
+    const autumn = new Autumn({ secretKey });
+    const features = (await autumn.features.list({})) as unknown as { list?: { id: string; type?: string; name?: string }[] } | { id: string }[];
+    const plans = (await autumn.plans.list({})) as unknown as { list?: { id: string; name?: string }[] } | { id: string }[];
+    const featureRows = Array.isArray(features) ? features : (features.list ?? []);
+    const planRows = Array.isArray(plans) ? plans : (plans.list ?? []);
+    const featureIds = featureRows.map((row) => row.id);
+    const planIds = planRows.map((row) => row.id);
+    return {
+      ok: true,
+      testMode: secretKey.startsWith("am_sk_test"),
+      features: featureIds,
+      plans: planIds,
+      missing: [
+        ...(featureIds.includes(CREDITS_FEATURE()) ? [] : [`feature ${CREDITS_FEATURE()}`]),
+        ...(planIds.includes(PLAN_ID()) ? [] : [`plan ${PLAN_ID()}`]),
+        ...(planIds.includes(TOPUP_ID()) ? [] : [`plan ${TOPUP_ID()}`]),
+      ],
+    };
+  },
+});
+
+/**
+ * Creates what the app expects in Autumn, skipping anything that already exists: the `credits` feature
+ * (1 unit = 1¢), the `growth` plan ($49 a month with 4,000 credits that renew monthly) and the `topup`
+ * add-on (prepaid credits at $1 per 100, bought once, never expire). Safe to run again.
+ */
+export const setupProducts = internalAction({
+  args: {},
+  handler: async () => {
+    const autumn = client();
+    const featureId = CREDITS_FEATURE();
+    const features = (await autumn.features.list({})) as unknown as { list?: { id: string }[] } | { id: string }[];
+    const plans = (await autumn.plans.list({})) as unknown as { list?: { id: string }[] } | { id: string }[];
+    const haveFeatures = new Set((Array.isArray(features) ? features : (features.list ?? [])).map((row) => row.id));
+    const havePlans = new Set((Array.isArray(plans) ? plans : (plans.list ?? [])).map((row) => row.id));
+    const created: string[] = [];
+
+    if (!haveFeatures.has(featureId)) {
+      await autumn.features.create({
+        featureId,
+        name: "Credits",
+        type: "metered",
+        consumable: true,
+        display: { singular: "credit", plural: "credits" },
+      });
+      created.push(`feature ${featureId}`);
+    }
+    if (!havePlans.has(PLAN_ID())) {
+      await autumn.plans.create({
+        planId: PLAN_ID(),
+        name: PLAN.name,
+        description: "Vistrial Growth: includes $40 of AI credits every month.",
+        group: "main",
+        price: { amount: PLAN.priceCents / 100, interval: "month" },
+        items: [{ featureId, included: PLAN.includedCents, reset: { interval: "month" } }],
+      });
+      created.push(`plan ${PLAN_ID()}`);
+    }
+    if (!havePlans.has(TOPUP_ID())) {
+      await autumn.plans.create({
+        planId: TOPUP_ID(),
+        name: "Credit top-up",
+        description: "Extra AI credits. $1 per 100 credits; they never expire.",
+        addOn: true,
+        items: [{ featureId, price: { amount: 1, billingUnits: 100, interval: "one_off", billingMethod: "prepaid" } }],
+      });
+      created.push(`plan ${TOPUP_ID()}`);
+    }
+    return { created, alreadyThere: [...haveFeatures, ...havePlans] };
   },
 });

@@ -26,6 +26,14 @@ The Autumn SDK is too large for Convex's default runtime, so every call to Autum
 
 ## Setting it up (one time, in Autumn)
 
+Two internal actions do most of this for you. Run them from the Convex dashboard or the CLI once the key is set:
+
+- `billingActions:checkSetup` reports whether the key works and whether it is a test or live key, and lists any missing feature or plan. It returns IDs only, never the key.
+- `billingActions:setupProducts` creates the `credits` feature and the `growth` and `topup` plans. It skips anything that already exists, so running it twice is safe.
+
+The manual steps below are the same setup, done by hand.
+
+
 1. Create an Autumn account and connect your Stripe account (test mode first).
 2. Create a **feature** with ID `credits`, of type metered and single-use. 1 unit = 1 cent of credit.
 3. Create a **plan** with ID `growth`:

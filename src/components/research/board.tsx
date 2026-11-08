@@ -265,7 +265,7 @@ export function BoardView({
 
       {loading ? <p className="text-sm text-muted-foreground">Loading sources.</p> : null}
       {!loading && shown.length === 0 ? (
-        <EmptyState kind={sources.length === 0 ? "empty" : "no-results"} title={sources.length === 0 ? "No sources yet." : "Nothing matches these filters."} />
+        <EmptyState kind={sources.length === 0 ? "empty" : "no-results"} preview="board" title={sources.length === 0 ? "Sources appear here as the agent finds them." : "Nothing matches these filters."} />
       ) : null}
       <ul className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
         {shown.map((source) => (

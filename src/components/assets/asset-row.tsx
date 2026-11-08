@@ -2,6 +2,7 @@ import Link from "next/link";
 
 import { AssetStatusBadge, assetKindLabel } from "@/components/runs/run-parts";
 import { Button } from "@/components/ui/button";
+import { HoverLift } from "@/components/motion/hover-lift";
 
 export type AssetRowView = {
   id: string;
@@ -19,7 +20,8 @@ export type AssetRowView = {
  */
 export function AssetRow({ asset }: { asset: AssetRowView }) {
   return (
-    <div className="grid gap-3 rounded-xl border border-border p-4 sm:grid-cols-[1fr_auto] sm:items-center">
+    <HoverLift>
+    <div className="grid gap-3 rounded-xl border border-border bg-card p-4 transition-colors hover:border-primary/40 sm:grid-cols-[1fr_auto] sm:items-center">
       <div className="min-w-0">
         <p className="font-medium break-words text-card-foreground">
           <Link className="underline-offset-4 hover:underline" href={`/app/assets/${asset.id}`}>
@@ -39,5 +41,6 @@ export function AssetRow({ asset }: { asset: AssetRowView }) {
         </Button>
       </div>
     </div>
+    </HoverLift>
   );
 }

@@ -11,6 +11,8 @@ import { PageHeader } from "@/components/ui/page-header";
 import { Panel } from "@/components/ui/panel";
 import { Select } from "@/components/ui/select";
 import { api } from "../../../../../convex/_generated/api";
+import { StartSessionButton } from "@/components/sessions/start-session-button";
+import { Stagger, StaggerItem } from "@/components/motion/stagger";
 
 type Status = "draft" | "needsReview" | "approved" | "rejected" | "archived";
 type Kind = "researchReport" | "marketReport" | "adCopySet" | "creativeBrief" | "contentCalendar" | "swipeItem";
@@ -57,15 +59,15 @@ function Library({ shell }: { shell: WorkspaceShell }) {
       <Panel className="grid gap-3 p-4 sm:p-6">
         {loadStatus === "LoadingFirstPage" ? <p className="text-sm text-muted-foreground">Loading assets.</p> : null}
         {loadStatus !== "LoadingFirstPage" && results.length === 0 ? (
-          <EmptyState bare kind={kind ? "no-results" : "empty"} title={kind ? "Nothing matches these filters." : "Nothing here yet."} />
+          <EmptyState bare kind={kind ? "no-results" : "empty"} preview="rows" title={kind ? "Nothing matches these filters." : "Reports and drafts the agents make will appear here."} detail={kind ? "Try another status or kind." : "Every asset keeps its versions, claims and sources, and waits for a person to approve it."} action={kind || shell.role === "rep" ? undefined : <StartSessionButton />} />
         ) : null}
-        <ul className="grid gap-3">
+        <Stagger className="grid gap-3">
           {results.map((asset: AssetRowView) => (
-            <li key={asset.id}>
+            <StaggerItem key={asset.id}>
               <AssetRow asset={asset} />
-            </li>
+            </StaggerItem>
           ))}
-        </ul>
+        </Stagger>
         {loadStatus === "CanLoadMore" ? (
           <Button type="button" variant="outline" className="justify-self-start" onClick={() => loadMore(20)}>
             Show more assets

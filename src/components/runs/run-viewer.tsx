@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Panel } from "@/components/ui/panel";
 import { centsInWords, formatCents, formatDuration, isOpen, stepAnnouncement, summaryLine, type RunAssetView, type RunView } from "@/lib/runs/view";
+import { Banner } from "@/components/ui/banner";
 
 export type RunViewerProps = {
   run: RunView;
@@ -110,10 +111,9 @@ export function RunViewer({
       </header>
 
       {!connected ? (
-        <div role="alert" className="flex items-center gap-2 rounded-lg border border-warning/40 bg-warning/10 p-3 text-sm text-warning">
-          <WifiOffIcon aria-hidden="true" className="size-4" />
-          Reconnecting. This page may be out of date until the connection returns.
-        </div>
+        <Banner tone="warning" role="alert" icon={<WifiOffIcon aria-hidden="true" />} title="Reconnecting">
+          This page may be out of date until the connection returns.
+        </Banner>
       ) : null}
 
       <Panel className="grid gap-2 p-4 sm:p-6">

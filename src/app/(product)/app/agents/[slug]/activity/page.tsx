@@ -9,6 +9,8 @@ import { Panel } from "@/components/ui/panel";
 import { skillName } from "@/lib/runs/skill-name";
 import { asRunStatus, asStopReason } from "@/lib/runs/view";
 import { api } from "../../../../../../../convex/_generated/api";
+import { StartSessionButton } from "@/components/sessions/start-session-button";
+import { EmptyState } from "@/components/ui/empty-state";
 
 /** Every run this agent made, newest first. */
 export default function AgentActivity() {
@@ -20,7 +22,17 @@ export default function AgentActivity() {
   return (
     <Panel className="grid gap-3 p-4 sm:p-5">
       <p className="text-sm text-muted-foreground">Each run is one piece of work, with every step, its cost and what it made.</p>
-      {runs === undefined ? <p className="text-sm text-muted-foreground">Loading.</p> : runs.length === 0 ? <p className="text-sm text-muted-foreground">No runs yet.</p> : null}
+      {runs === undefined ? (
+        <p className="text-sm text-muted-foreground">Loading.</p>
+      ) : runs.length === 0 ? (
+        <EmptyState
+          bare
+          preview="rows"
+          title="Every step this agent takes will appear here."
+          detail="Searches, sources, checks and cost, live as it works."
+          action={shell.role !== "rep" ? <StartSessionButton agentSlug={params.slug} /> : undefined}
+        />
+      ) : null}
       <RunList
         runs={(runs ?? []).map((run: { id: string; skillSlug: string; status: string; stopReason: string | null; costCents: number; startedAt: number }) => ({
           id: run.id,

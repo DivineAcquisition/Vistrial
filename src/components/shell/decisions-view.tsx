@@ -13,6 +13,9 @@ import { Panel } from "@/components/ui/panel";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { api } from "../../../convex/_generated/api";
 import { bodyText } from "@/lib/ui";
+import { StartSessionButton } from "@/components/sessions/start-session-button";
+import { EmptyState } from "@/components/ui/empty-state";
+import { Stagger, StaggerItem } from "@/components/motion/stagger";
 
 export function DecisionsView() {
   const shell = useWorkspaceShell();
@@ -89,9 +92,9 @@ function LiveDecisions({ shell }: { shell: NonNullable<ReturnType<typeof useWork
         <Panel className="grid gap-3 p-4 sm:p-6">
           <h2 className="font-heading text-base text-card-foreground">Questions for you</h2>
           <p className="text-sm text-muted-foreground">Research stopped to ask instead of guessing. Nothing runs or spends until you answer.</p>
-          <ul className="grid gap-3">
+          <Stagger className="grid gap-3">
             {questions.map((row) => (
-              <li key={row.runId} className="grid gap-2 rounded-xl border border-border p-4 sm:grid-cols-[1fr_auto] sm:items-center">
+              <StaggerItem key={row.runId} className="grid gap-2 rounded-xl border border-border p-4 sm:grid-cols-[1fr_auto] sm:items-center">
                 <div className="grid min-w-0 gap-1">
                   <div className="flex flex-wrap items-center gap-2">
                     <StatusBadge
@@ -106,34 +109,42 @@ function LiveDecisions({ shell }: { shell: NonNullable<ReturnType<typeof useWork
                 <Button size="sm" render={<Link href={`/app/agents/growth-architect/sessions/${row.projectId}`} />}>
                   {row.status === "needsInput" ? "Resume" : "Answer"}
                 </Button>
-              </li>
+              </StaggerItem>
             ))}
-          </ul>
+          </Stagger>
         </Panel>
       ) : null}
       {review && review.page.length > 0 ? (
         <Panel className="grid gap-3 p-4 sm:p-6">
           <h2 className="font-heading text-base text-card-foreground">Needs review</h2>
           <p className="text-sm text-muted-foreground">These drafts did not pass every check. Edit one to add a new version, or reject it with a reason.</p>
-          <ul className="grid gap-3">
+          <Stagger className="grid gap-3">
             {review.page.map((asset: AssetRowView) => (
-              <li key={asset.id}>
+              <StaggerItem key={asset.id}>
                 <AssetRow asset={asset} />
-              </li>
+              </StaggerItem>
             ))}
-          </ul>
+          </Stagger>
         </Panel>
       ) : null}
+      {waiting.page.length === 0 && !(questions && questions.length) && !(review && review.page.length) ? (
+        <EmptyState
+          preview="rows"
+          title="Decisions waiting on you will appear here."
+          detail="Reports wait for your approval and questions wait for your answer. Nothing is posted or spent on its own."
+          action={shell.role !== "rep" ? <StartSessionButton /> : undefined}
+        />
+      ) : (
       <Panel className="p-4 sm:p-6">
         <h2 className="font-heading text-base text-card-foreground">Waiting on you</h2>
-        {waiting.page.length === 0 ? <p className={`${bodyText} mt-3`}>Nothing is waiting.</p> : null}
-        <ul className="mt-4 grid gap-3">
+        {waiting.page.length === 0 ? <p className={`${bodyText} mt-3`}>Nothing else is waiting.</p> : null}
+        <Stagger className="mt-4 grid gap-3">
           {waiting.page.map((asset: AssetRowView) => (
-            <li key={asset.id}>
+            <StaggerItem key={asset.id}>
               <AssetRow asset={asset} />
-            </li>
+            </StaggerItem>
           ))}
-        </ul>
+        </Stagger>
         {waiting.page.length > 0 ? (
           <p className="mt-4 text-sm text-muted-foreground">
             {shell.role === "rep" ? "An owner or manager approves these." : "Open one to read its claims and sources, then approve it."}
@@ -145,6 +156,7 @@ function LiveDecisions({ shell }: { shell: NonNullable<ReturnType<typeof useWork
           </Button>
         ) : null}
       </Panel>
+      )}
     </div>
   );
 }

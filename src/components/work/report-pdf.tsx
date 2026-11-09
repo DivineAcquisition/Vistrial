@@ -221,7 +221,7 @@ export function ReportPdf({ model }: { model: ReportPdfModel }) {
               <Text style={styles.refs}>
                 {row.platform}
                 {row.publisher ? ` · ${row.publisher}` : ""} ·{" "}
-                <Link src={row.url} style={styles.link}>
+                <Link src={row.url} style={[styles.link, { color: accent }]}>
                   {row.url}
                 </Link>
               </Text>

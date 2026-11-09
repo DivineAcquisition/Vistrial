@@ -32,6 +32,7 @@ import type * as facts from "../facts.js";
 import type * as feedback from "../feedback.js";
 import type * as files from "../files.js";
 import type * as followups from "../followups.js";
+import type * as home from "../home.js";
 import type * as http from "../http.js";
 import type * as imports from "../imports.js";
 import type * as intake from "../intake.js";
@@ -142,6 +143,7 @@ declare const fullApi: ApiFromModules<{
   feedback: typeof feedback;
   files: typeof files;
   followups: typeof followups;
+  home: typeof home;
   http: typeof http;
   imports: typeof imports;
   intake: typeof intake;

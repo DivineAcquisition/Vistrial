@@ -14,14 +14,14 @@ import { showError } from "@/lib/errors/show-error";
  * The chat box that starts work from anywhere: pick the agent and the quality, add files, links or a focus,
  * and send. It opens a new session conversation with that agent.
  */
-type StartChatProps = { defaultAgent?: string; size?: "hero" | "dock" | "compact"; placeholder?: string };
+type StartChatProps = { defaultAgent?: string; size?: "hero" | "dock" | "compact"; placeholder?: string; initialText?: string };
 
 export function StartChat(props: StartChatProps) {
   const shell = useWorkspaceShell();
   return shell ? <StartChatInner {...props} /> : null;
 }
 
-function StartChatInner({ defaultAgent = "growth-architect", size = "dock", placeholder = "What should Vistrial work on?" }: StartChatProps) {
+function StartChatInner({ defaultAgent = "growth-architect", size = "dock", placeholder = "What should Vistrial work on?", initialText }: StartChatProps) {
   const shell = useWorkspaceShell();
   const router = useRouter();
   const create = useMutation(api.intake.create);
@@ -38,6 +38,7 @@ function StartChatInner({ defaultAgent = "growth-architect", size = "dock", plac
       <ChatComposer
         size={size}
         placeholder={canStart ? placeholder : "Owners and Managers start sessions."}
+        initialText={initialText}
         disabled={!canStart}
         agent={{ value: chosen, options, onChange: setAgentSlug }}
         {...extras.composer}

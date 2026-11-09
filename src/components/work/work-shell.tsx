@@ -82,7 +82,7 @@ export function WorkHero({ icon: Icon, eyebrow, title, promise, children }: { ic
 /** Live progress for this skill's runs. Each opens its full step list. */
 export function RunningNow({ running, finished, sessionHref }: { running: RunningRun[]; finished: FinishedRun[]; sessionHref?: (projectId: string) => string }) {
   return (
-    <section className="grid gap-3" aria-label="Running now">
+    <section id="running" className="grid scroll-mt-24 gap-3" aria-label="Running now">
       <SectionTitle icon={LoaderCircle}>Running now</SectionTitle>
       {running.length === 0 ? (
         <p className="rounded-xl border border-dashed border-border px-4 py-3 text-sm text-muted-foreground">Nothing is running. Work starts only when you press Start on a plan.</p>
@@ -160,7 +160,7 @@ export function ResultsList({
 }) {
   const waiting = results.filter((row) => row.status === "draft" || row.status === "needsReview").length;
   return (
-    <section className="grid gap-3" aria-label="Results">
+    <section id="results" className="grid scroll-mt-24 gap-3" aria-label="Results">
       <SectionTitle icon={FileText} aside={waiting ? <StatusBadge label={`${waiting} to review`} tone="warning" className="[&_span]:normal-case" /> : null}>
         Results
       </SectionTitle>

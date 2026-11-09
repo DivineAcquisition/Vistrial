@@ -60,6 +60,7 @@ import type * as lib_leadGuard from "../lib/leadGuard.js";
 import type * as lib_metaGraph from "../lib/metaGraph.js";
 import type * as lib_modelRouter from "../lib/modelRouter.js";
 import type * as lib_newWorkspace from "../lib/newWorkspace.js";
+import type * as lib_onboarding from "../lib/onboarding.js";
 import type * as lib_phones from "../lib/phones.js";
 import type * as lib_registry from "../lib/registry.js";
 import type * as lib_researchShapes from "../lib/researchShapes.js";
@@ -160,6 +161,7 @@ declare const fullApi: ApiFromModules<{
   "lib/metaGraph": typeof lib_metaGraph;
   "lib/modelRouter": typeof lib_modelRouter;
   "lib/newWorkspace": typeof lib_newWorkspace;
+  "lib/onboarding": typeof lib_onboarding;
   "lib/phones": typeof lib_phones;
   "lib/registry": typeof lib_registry;
   "lib/researchShapes": typeof lib_researchShapes;

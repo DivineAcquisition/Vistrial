@@ -105,7 +105,8 @@ export const refresh = memberAction({
 
 /** Starts (or resumes) the $49 Growth plan. Returns Stripe's checkout page when payment is needed. */
 export const subscribe = memberAction({
-  args: { returnOrigin: v.optional(v.string()) },
+  /** `returnPath` is where Stripe sends the person back to; only app pages are allowed. */
+  args: { returnOrigin: v.optional(v.string()), returnPath: v.optional(v.string()) },
   handler: async (ctx, args): Promise<{ url: string | null }> => {
     await requireRole(ctx, ctx.workspaceId, ctx.userId, true);
     const autumn = client();
@@ -114,7 +115,7 @@ export const subscribe = memberAction({
     const result = await autumn.billing.attach({
       customerId: ctx.workspaceId,
       planId: PLAN_ID(),
-      successUrl: safeReturn(args.returnOrigin, "/app/billing?paid=plan"),
+      successUrl: safeReturn(args.returnOrigin, args.returnPath ?? "/app/billing?paid=plan"),
     });
     await refreshFrom(ctx, ctx.workspaceId);
     return { url: result.paymentUrl ?? null };

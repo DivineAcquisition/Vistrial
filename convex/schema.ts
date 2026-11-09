@@ -260,6 +260,8 @@ export default defineSchema({
     }),
     freeProjectId: v.optional(v.id("researchProjects")),
     freeRunId: v.optional(v.id("agentRuns")),
+    /** How many free sessions were started. One retry is allowed when the first one stops without a report. */
+    freeAttempts: v.optional(v.number()),
     createdAt: v.number(),
     updatedAt: v.number(),
   })
@@ -637,6 +639,8 @@ export default defineSchema({
     costCents: v.number(),
     inputTokens: v.number(),
     outputTokens: v.number(),
+    /** The free research session from onboarding. Vistrial pays for it; it never touches the workspace's credits. */
+    free: v.optional(v.boolean()),
   })
     .index("by_workspace", ["workspaceId"])
     .index("by_workspace_status", ["workspaceId", "status"])

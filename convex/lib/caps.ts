@@ -26,6 +26,13 @@ export const SKILL_CAPS: Readonly<Record<string, Caps>> = {
     maxSteps: 60,
     maxDurationMs: 1_800_000,
   },
+  /** One long write over approved research, plus one revision held in reserve. No web research. */
+  "offer-intelligence": {
+    maxCostCentsPerRun: 150,
+    maxCostCentsPerDay: 1000,
+    maxSteps: 20,
+    maxDurationMs: 600_000,
+  },
 };
 
 /** The caps row and day counter a skill uses: its own slug when it has its own caps, otherwise the agent's (undefined). */

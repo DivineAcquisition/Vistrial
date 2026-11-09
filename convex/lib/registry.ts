@@ -20,6 +20,9 @@ export const TOOLS = [
   "mi.compute",
   "mi.check",
   "mi.save",
+  "oi.context",
+  "oi.check",
+  "oi.save",
 ] as const;
 
 export type ToolSlug = (typeof TOOLS)[number];

@@ -1,6 +1,6 @@
 "use client";
 
-import { Activity, Brain, FileText, LayoutGrid, MessagesSquare, Plug, Plus, type LucideIcon } from "@/components/icons";
+import { Brain, FileSearch, Gauge, LayoutGrid, Plug, Plus, Store, type LucideIcon } from "@/components/icons";
 import Link from "next/link";
 import { useParams, usePathname } from "next/navigation";
 
@@ -12,13 +12,17 @@ import { StatusBadge } from "@/components/ui/status-badge";
 import { DEPARTMENT_LABEL, agentStateLabel, type Department } from "@/lib/shell/rail";
 import { cn } from "@/lib/utils";
 
+/**
+ * The agent's tabs. Research, Offers and Diagnostics are each a workspace for one skill; the old Sessions,
+ * Reports and Activity pages redirect into Research.
+ */
 export const AGENT_TABS: { key: string; label: string; icon: LucideIcon }[] = [
   { key: "", label: "Overview", icon: LayoutGrid },
-  { key: "sessions", label: "Sessions", icon: MessagesSquare },
+  { key: "work/research", label: "Research", icon: FileSearch },
+  { key: "work/offers", label: "Offers", icon: Store },
+  { key: "work/diagnostics", label: "Diagnostics", icon: Gauge },
   { key: "connections", label: "Connections", icon: Plug },
   { key: "memory", label: "Memory", icon: Brain },
-  { key: "reports", label: "Reports", icon: FileText },
-  { key: "activity", label: "Activity", icon: Activity },
 ];
 
 /** The agent's folder as a page: who it is, its state, and a tab for each thing it holds. */
@@ -32,9 +36,10 @@ export function AgentFrame({ children }: { children: React.ReactNode }) {
   const base = `/app/agents/${agent.slug}`;
   const department = agent.department ? (DEPARTMENT_LABEL[agent.department as Department] ?? "Agent") : "Agent";
   const live = agent.status === "live";
-  const current = pathname.slice(base.length).split("/")[1] ?? "";
+  const rest = pathname.slice(base.length).split("/").filter(Boolean);
+  const current = rest[0] === "work" ? `work/${rest[1] ?? ""}` : (rest[0] ?? "");
   // A session thread uses the full width; its own header names the session.
-  const inThread = current === "sessions" && pathname.split("/").length > 5;
+  const inThread = (rest[0] === "sessions" && rest.length > 1) || (rest[0] === "work" && rest.length > 2);
 
   return (
     <div className="mx-auto grid w-full max-w-6xl min-w-0 gap-5">
@@ -51,8 +56,8 @@ export function AgentFrame({ children }: { children: React.ReactNode }) {
           <div className="flex flex-wrap items-center gap-2">
             <StatusBadge label={live ? agentStateLabel(agent) : "Planned"} tone={agent.state === "on" ? "good" : "neutral"} />
             {live && shell.role !== "rep" && agent.state !== "off" && agent.slug === "growth-architect" ? (
-              <Button size="sm" render={<Link href={`${base}/sessions/new`} />}>
-                <Plus aria-hidden className="size-4" /> New session
+              <Button size="sm" render={<Link href={`${base}/work/research`} />}>
+                <Plus aria-hidden className="size-4" /> New research
               </Button>
             ) : null}
           </div>

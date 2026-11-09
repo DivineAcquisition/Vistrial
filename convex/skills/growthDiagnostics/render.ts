@@ -1,4 +1,4 @@
-import { STAGE_WORDS, type ChecksRecord, type Diagnosis, type DiagnosticsRecord, type Figure } from "./shapes";
+import { PHASE_WORDS, ROADMAP_PHASES, STAGE_WORDS, type ChecksRecord, type Diagnosis, type DiagnosticsRecord, type Figure } from "./shapes";
 
 function figureLine(row: Figure) {
   const how = row.computed ? `computed${row.formula ? `: ${row.formula}` : ""}` : "as reported";
@@ -43,6 +43,20 @@ export function renderDiagnosis(diagnosis: Diagnosis, record: DiagnosticsRecord,
   diagnosis.fixes.forEach((row, i) => {
     lines.push(`### ${i + 1}. ${row.fix}`, "", `- **Why:** ${row.why}`, `- **How to tell if it worked:** ${row.howToTell}`, "");
   });
+  if (diagnosis.roadmap.length) {
+    lines.push("## 90-day roadmap", "");
+    if (record.goal) lines.push(`_Goal: ${record.goal.text}_`, "");
+    for (const phase of ROADMAP_PHASES) {
+      const steps = diagnosis.roadmap.filter((row) => row.phase === phase);
+      if (!steps.length) continue;
+      lines.push(`### ${PHASE_WORDS[phase].name} (${PHASE_WORDS[phase].weeks})`, "");
+      for (const row of steps) {
+        lines.push(`- **${row.action}**`, `  - Problem: ${row.problem}`, `  - Watch: ${row.targetMetric}. Target: ${row.target}`);
+        for (const figure of cited(record, row.figureIds)) lines.push(`  - ${figureLine(figure)}`);
+      }
+      lines.push("");
+    }
+  }
   const gaps = record.missing.map((row) => row.text);
   if (gaps.length || diagnosis.limits.length) {
     lines.push("## Limits", "");

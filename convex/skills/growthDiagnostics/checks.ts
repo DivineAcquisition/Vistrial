@@ -1,4 +1,4 @@
-import { MAX_FIXES, MIN_FIXES, type ChecksRecord, type CheckResult, type Diagnosis, type Figure, type DiagnosticsRecord } from "./shapes";
+import { MAX_FIXES, MIN_FIXES, NOT_ENOUGH_DATA, ROADMAP_PHASES, type ChecksRecord, type CheckResult, type Diagnosis, type Figure, type DiagnosticsRecord } from "./shapes";
 
 /**
  * The completion checks for a diagnosis, in code. No model call says a diagnosis passed. Each check reads
@@ -10,6 +10,7 @@ export const CHECK_NAMES = [
   [3, "Every number comes from a computed or reported figure"],
   [4, "Two or three fixes, each with how to tell if it worked"],
   [5, "No outside benchmarks"],
+  [6, "A 90-day roadmap in three phases, grounded in the business's own figures"],
 ] as const;
 
 /** Words that compare against figures the system cannot source. */
@@ -37,9 +38,10 @@ function figureNumbers(figures: Figure[]) {
   return out;
 }
 
-/** The numbers in a text that no cited figure shows. Small counts are allowed. */
-export function unsupportedNumbers(text: string, cited: Figure[]) {
+/** The numbers in a text that no cited figure shows. Small counts are allowed, and so are numbers the owner's own goal states. */
+export function unsupportedNumbers(text: string, cited: Figure[], allowed: number[] = []) {
   const known = figureNumbers(cited);
+  for (const value of allowed) known.add(value);
   return numbersIn(text).filter((value) => value > SMALL && !known.has(value));
 }
 
@@ -89,6 +91,12 @@ export function runChecks(diagnosis: Diagnosis | null, record: DiagnosticsRecord
   check(`${diagnosis.summary} ${diagnosis.stageReason}`, record.figures);
   for (const row of diagnosis.findings) check(row.statement, cite(row.figureIds));
   for (const row of diagnosis.fixes) check(`${row.fix} ${row.why} ${row.howToTell}`, record.figures);
+  // The roadmap may also use the numbers in the owner's own goal ("40 more bookings a month").
+  const goalNumbers = record.goal ? numbersIn(record.goal.text) : [];
+  for (const row of diagnosis.roadmap) {
+    const bad = unsupportedNumbers(`${row.problem} ${row.action} ${row.targetMetric} ${row.target}`, record.figures, goalNumbers);
+    if (bad.length) offending.push(...bad.map(String));
+  }
   add(3, CHECK_NAMES[2][1], offending.length === 0, offending.length === 0 ? "Every number matches a figure." : `These numbers match no figure: ${[...new Set(offending)].slice(0, 6).join(", ")}.`);
 
   // 4. Two or three distinct fixes, each grounded in a figure and with a way to tell if it worked.
@@ -110,9 +118,34 @@ export function runChecks(diagnosis: Diagnosis | null, record: DiagnosticsRecord
   );
 
   // 5. No comparison with figures the system cannot source.
-  const texts = [diagnosis.summary, diagnosis.stageReason, ...diagnosis.findings.map((row) => row.statement), ...diagnosis.fixes.flatMap((row) => [row.fix, row.why, row.howToTell])];
+  const texts = [
+    diagnosis.summary,
+    diagnosis.stageReason,
+    ...diagnosis.findings.map((row) => row.statement),
+    ...diagnosis.fixes.flatMap((row) => [row.fix, row.why, row.howToTell]),
+    ...diagnosis.roadmap.flatMap((row) => [row.problem, row.action, row.targetMetric, row.target]),
+  ];
   const benchmark = texts.find((row) => BENCHMARK.test(row));
   add(5, CHECK_NAMES[4][1], !benchmark, benchmark ? `Compares against an outside benchmark: "${benchmark.slice(0, 80)}".` : "Compares the business only with its own figures.");
+
+  // 6. Fix, Build and Scale each have a step; each step names its action, the measure and a target, and
+  // rests on a figure, or says plainly that there is not enough data for it.
+  const missingPhases = ROADMAP_PHASES.filter((phase) => !diagnosis.roadmap.some((row) => row.phase === phase));
+  const incomplete = diagnosis.roadmap.filter((row) => !row.action || !row.targetMetric || !row.target || !row.problem);
+  const ungrounded = diagnosis.roadmap.filter((row) => cite(row.figureIds).length === 0 && !row.problem.startsWith(NOT_ENOUGH_DATA));
+  const roadmapOk = missingPhases.length === 0 && incomplete.length === 0 && ungrounded.length === 0;
+  add(
+    6,
+    CHECK_NAMES[5][1],
+    roadmapOk,
+    roadmapOk
+      ? `${diagnosis.roadmap.length} steps across Fix, Build and Scale, each with its figures, action, measure and target.`
+      : missingPhases.length
+        ? `The roadmap has no ${missingPhases.join(", ")} step.`
+        : incomplete.length
+          ? `${incomplete.length} roadmap step(s) miss a problem, action, measure or target.`
+          : `${ungrounded.length} roadmap step(s) cite no figure and do not say "${NOT_ENOUGH_DATA}".`,
+  );
 
   return { passed: results.every((row) => row.passed), results };
 }

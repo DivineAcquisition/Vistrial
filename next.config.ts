@@ -9,7 +9,8 @@ const ContentSecurityPolicy = [
   "style-src 'self' 'unsafe-inline'",
   "img-src 'self' data: blob: https:",
   "font-src 'self' data:",
-  "connect-src 'self' https://*.convex.cloud wss://*.convex.cloud https://challenges.cloudflare.com https://clerk.vistrial.io https://*.clerk.accounts.dev https://clerk-telemetry.com https://*.clerk-telemetry.com https://*.protect.clerk.com https://*.protect.clerk.com:* https://*.client.protect.clerk.com https://*.client.protect.clerk.com:*",
+  // data: react-pdf loads its layout engine (WebAssembly) from an inline data URL, to draw PDFs in the browser.
+  "connect-src 'self' data: https://*.convex.cloud wss://*.convex.cloud https://challenges.cloudflare.com https://clerk.vistrial.io https://*.clerk.accounts.dev https://clerk-telemetry.com https://*.clerk-telemetry.com https://*.protect.clerk.com https://*.protect.clerk.com:* https://*.client.protect.clerk.com https://*.client.protect.clerk.com:*",
   // youtube-nocookie, tiktok and instagram: official embeds on the Research Board, loaded only when a person clicks.
   "frame-src 'self' https://www.youtube-nocookie.com https://www.tiktok.com https://www.instagram.com https://link.msgsndr.com https://*.leadconnectorhq.com https://*.msgsndr.com https://docs.google.com https://content.googleapis.com https://challenges.cloudflare.com https://clerk.vistrial.io https://accounts.vistrial.io https://*.clerk.accounts.dev https://*.protect.clerk.com",
   "frame-ancestors 'none'",

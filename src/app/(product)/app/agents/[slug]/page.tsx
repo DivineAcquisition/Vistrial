@@ -53,8 +53,8 @@ export default function AgentOverview() {
   return (
     <div className="grid gap-5">
       {live && shell.role !== "rep" && agent.state !== "off" ? (
-        <Button className="w-fit" render={<Link href={`${base}/sessions/new`} />}>
-          <Plus aria-hidden /> New session
+        <Button className="w-fit" render={<Link href={`${base}/work/research`} />}>
+          <Plus aria-hidden /> New research
         </Button>
       ) : null}
       {live ? (
@@ -77,7 +77,7 @@ export default function AgentOverview() {
                 Latest sessions
               </h2>
               <Link
-                href={`${base}/sessions`}
+                href={`${base}/work/research`}
                 className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
               >
                 All sessions <ArrowRight aria-hidden className="size-3.5" />
@@ -94,7 +94,7 @@ export default function AgentOverview() {
               <Stagger as="div" className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
                 {tree.sessions.map((session) => (
                   <StaggerItem as="div" key={session.id}>
-                    <SessionCard session={session} href={`${base}/sessions/${session.id}`} />
+                    <SessionCard session={session} href={`${base}/work/research/${session.id}`} />
                   </StaggerItem>
                 ))}
               </Stagger>
@@ -111,12 +111,12 @@ export default function AgentOverview() {
                 {
                   label: "Reports",
                   value: tree.counts.reports,
-                  href: `${base}/reports`,
+                  href: `${base}/work/research#results`,
                 },
                 {
                   label: "Running",
                   value: tree.counts.runsOpen,
-                  href: `${base}/activity`,
+                  href: `${base}/work/research#running`,
                 },
               ].map((item) => (
                 <Link

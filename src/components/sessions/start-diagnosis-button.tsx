@@ -44,7 +44,7 @@ export function StartDiagnosisButton({ workspaceId, agentSlug }: { workspaceId: 
               suppliedUrls: [],
             });
             await start({ workspaceId, agentSlug, skillSlug: "growth-diagnostics", projectId });
-            router.push(`/app/agents/${agentSlug}/sessions/${projectId}`);
+            router.push(`/app/agents/${agentSlug}/work/diagnostics/${projectId}`);
           } catch (error) {
             setProblem(showError(error, "The diagnosis did not start."));
             setBusy(false);

@@ -1,44 +1,14 @@
-"use client";
+import { redirect } from "next/navigation";
 
-import { useParams, useSearchParams } from "next/navigation";
-import { Suspense } from "react";
-
-import { IntakeChat } from "@/components/sessions/intake-chat";
-import { useWorkspaceShell } from "@/components/shell/shell-context";
-import { Panel } from "@/components/ui/panel";
-import type { Id } from "../../../../../../../../convex/_generated/dataModel";
-
-function NewSession() {
-  const params = useParams<{ slug: string }>();
-  const query = useSearchParams();
-  const shell = useWorkspaceShell();
-  if (!shell) return null;
-  const agent = shell.agents.find((row) => row.slug === params.slug);
-  if (params.slug !== "growth-architect") {
-    return (
-      <Panel className="p-5">
-        <p className="text-sm text-muted-foreground">{agent?.name ?? "This agent"} does not run sessions yet.</p>
-      </Panel>
-    );
+/** Starting a session happens in the Research workspace's chat. The conversation and any objective carry over. */
+export default async function NewSessionRedirect({ params, searchParams }: { params: Promise<{ slug: string }>; searchParams: Promise<Record<string, string | string[] | undefined>> }) {
+  const { slug } = await params;
+  const query = await searchParams;
+  const keep = new URLSearchParams();
+  for (const key of ["intake", "objective"]) {
+    const value = query[key];
+    if (typeof value === "string" && value) keep.set(key, value);
   }
-  const intakeId = query.get("intake") as Id<"intakes"> | null;
-  return (
-    <IntakeChat
-      key={intakeId ?? "new"}
-      workspaceId={shell.workspaceId}
-      agentSlug={params.slug}
-      agentName={agent?.name ?? "Growth Architect"}
-      intakeId={intakeId}
-      editor={shell.role !== "rep" && agent?.state !== "off"}
-      initialText={query.get("objective") ?? ""}
-    />
-  );
-}
-
-export default function NewSessionPage() {
-  return (
-    <Suspense>
-      <NewSession />
-    </Suspense>
-  );
+  const rest = keep.toString();
+  redirect(`/app/agents/${slug}/work/research${rest ? `?${rest}` : ""}`);
 }

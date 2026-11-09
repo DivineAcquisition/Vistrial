@@ -3,7 +3,7 @@
 import { useMutation, useQuery } from "convex/react";
 import { ArrowRight, MessagesSquare, Plus } from "@/components/icons";
 import Link from "next/link";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { useState } from "react";
 
 import { SessionCard } from "@/components/agents/session-card";
@@ -18,6 +18,12 @@ import { StartSessionButton } from "@/components/sessions/start-session-button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { NumberTicker } from "@/components/ui/number-ticker";
 import { PlannedAgent } from "@/components/agents/planned-agent";
+import { showError } from "@/lib/errors/show-error";
+
+/** Skills that start straight from their card, without a research session. Each builds on approved work. */
+const DIRECT_START: Record<string, { label: string; note: string }> = {
+  "offer-intelligence": { label: "Analyze my offer", note: "Builds on your approved market reports." },
+};
 
 /** The agent's overview: what it does, its latest sessions and its skills. */
 export default function AgentOverview() {
@@ -36,7 +42,10 @@ export default function AgentOverview() {
     shell ? { workspaceId: shell.workspaceId } : "skip",
   );
   const start = useMutation(api.runs.start);
+  const router = useRouter();
   const [notice, setNotice] = useState("");
+  const [skillNotice, setSkillNotice] = useState<{ slug: string; text: string } | null>(null);
+  const [starting, setStarting] = useState<string | null>(null);
   if (!shell || !agent) return null;
   const base = `/app/agents/${agent.slug}`;
 
@@ -154,6 +163,36 @@ export default function AgentOverview() {
                 {skill.promise ? (
                   <span className="text-sm text-muted-foreground">
                     {skill.promise}
+                  </span>
+                ) : null}
+                {DIRECT_START[skill.slug] &&
+                skill.status === "available" &&
+                live &&
+                shell.role !== "rep" &&
+                agent.state !== "off" ? (
+                  <span className="mt-2 flex flex-wrap items-center gap-2">
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      disabled={starting !== null}
+                      onClick={() => {
+                        setStarting(skill.slug);
+                        setSkillNotice(null);
+                        void start({ workspaceId: shell.workspaceId, agentSlug: agent.slug, skillSlug: skill.slug }).then(
+                          (runId) => router.push(`/app/runs/${runId}`),
+                          (problem: unknown) => {
+                            setStarting(null);
+                            setSkillNotice({ slug: skill.slug, text: showError(problem, "It did not start.") });
+                          },
+                        );
+                      }}
+                    >
+                      {DIRECT_START[skill.slug].label}
+                    </Button>
+                    <span className="text-xs text-muted-foreground">
+                      {skillNotice?.slug === skill.slug ? skillNotice.text : DIRECT_START[skill.slug].note}
+                    </span>
                   </span>
                 ) : null}
               </li>

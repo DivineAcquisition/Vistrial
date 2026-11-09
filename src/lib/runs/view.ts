@@ -189,6 +189,9 @@ const TOOL_LABELS: Record<string, { one: string; many: (count: number) => string
   "mi.compute": { one: "Counted and grouped the sources", many: (n) => `Counted the sources ${n} times` },
   "mi.check": { one: "Checked the report", many: (n) => `Checked the report ${n} times` },
   "mi.save": { one: "Saved the report", many: (n) => `Saved ${n} reports` },
+  "oi.context": { one: "Read the approved research and business context", many: (n) => `Read the approved research ${n} times` },
+  "oi.check": { one: "Checked the offer analysis", many: (n) => `Checked the offer analysis ${n} times` },
+  "oi.save": { one: "Saved the offer analysis", many: (n) => `Saved ${n} offer analyses` },
   "swipe.read": { one: "Read the swipe file", many: (n) => `Read ${n} swipe file items` },
   "results.read": { one: "Read past results", many: (n) => `Read past results ${n} times` },
 };
@@ -218,6 +221,8 @@ export const RESULT_CODE_WORDS: Record<string, string> = {
   unavailable: "This source could not be used this time. Its status says why.",
   awaiting_authorization: "This source is waiting for an account to be approved.",
   no_project: "This run has no research project.",
+  no_approved_research: "No market report is approved yet. Approve one first: this analysis does not invent competitor offers.",
+  no_research_sources: "The approved market reports cite no competitor sources, so there is nothing to compare the offer against.",
   missing_context: "Something the research needs is missing.",
   waiting_for_user: "Asked a question and waited for an answer.",
   over_budget: "Skipped, because it could have spent the money held back for checking the report.",

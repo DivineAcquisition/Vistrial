@@ -2,16 +2,13 @@ import type { Doc, Id } from "../../_generated/dataModel";
 import type { MutationCtx } from "../../_generated/server";
 import { runCaps } from "../../lib/capRows";
 import { screenClaims, type ClaimInput } from "../../lib/evidence";
-import { factsForRun, liveFact } from "../../lib/facts";
+import { readBusinessContext } from "../../lib/businessContext";
+import { liveFact } from "../../lib/facts";
 import { runChecks } from "./checks";
-import { decisionsForContext, describeDecision } from "../../decisions";
-import { describeUpload, saveUploadSourcesFor } from "../../resultUploads";
-import { saveFirstPartySources } from "./firstParty";
 import { latest, latestDone, projectOf, projectSources, recordOf } from "./records";
 import { renderReport } from "./render";
 import {
   MIN_SAMPLE,
-  NO_BUDGET_ASSUMPTION,
   PHASE,
   parseJson,
   readReport,
@@ -58,12 +55,8 @@ export async function reportOf(ctx: MutationCtx, run: Doc<"agentRuns">, steps: S
 const contextRead: MutationTool = async (ctx, run) => {
   const project = await projectOf(ctx.db, run);
   if (!project) return { failCode: "no_project" };
-  const profile = await ctx.db
-    .query("profileVersions")
-    .withIndex("by_workspace_status", (q) => q.eq("workspaceId", run.workspaceId).eq("status", "confirmed"))
-    .order("desc")
-    .first();
-  const facts = await factsForRun(ctx, run.workspaceId);
+  const business = await readBusinessContext(ctx, run, project);
+  const { profile, facts } = business;
   const answered = async (key: string) => (await liveFact(ctx, run.workspaceId, key))?.value ?? "";
   const answeredMarket = await answered("researchMarket");
   const answeredArea = await answered("researchGeography");
@@ -71,54 +64,14 @@ const contextRead: MutationTool = async (ctx, run) => {
   const geography = project.geography || answeredArea || profile?.geography || "";
   const originOf = (fromProject: string, fromAnswer: string) => (fromProject ? "project" : fromAnswer ? "fact" : "profile") as "project" | "fact" | "profile";
   const gaps = [...(market ? [] : ["researchMarket"]), ...(geography ? [] : ["researchGeography"])];
-  // The brief's "known" list is built here, with where each item came from and when. No model writes it.
+  // The brief's "known" list is built in code, with where each item came from and when. No model writes it.
   const known: ContextRecord["known"] = [];
   if (market) known.push({ key: "market", label: "Market", value: market, origin: originOf(project.market, answeredMarket), status: "verified", recordedAt: project.createdAt });
   if (geography) known.push({ key: "geography", label: "Area", value: geography, origin: originOf(project.geography, answeredArea), status: "verified", recordedAt: project.createdAt });
-  if (profile) {
-    const fields = [
-      ["offer", "Offer", profile.offer],
-      ["priceNotes", "Price notes", profile.priceNotes],
-      ["audience", "Audience", profile.audience],
-      ["channels", "Channels", profile.channels],
-      ["brandVoice", "Brand voice", profile.brandVoice],
-    ] as const;
-    for (const [key, label, value] of fields) {
-      if (value.trim()) known.push({ key: `profile.${key}`, label, value, origin: "profile", status: "confirmed", recordedAt: profile.confirmedAt ?? profile._creationTime });
-    }
-  }
-  for (const fact of facts) known.push({ key: `fact:${fact._id}`, label: fact.factKey, value: fact.value, origin: "fact", status: fact.status, recordedAt: fact.recordedAt });
-  // The business's own ad results, when its Meta connection is granted to this agent: saved as sources the
-  // report can cite as "Your data", and listed as known.
-  const firstParty = await saveFirstPartySources(ctx, run.workspaceId, project, run._id);
-  if (firstParty) known.push({ key: "connection:meta", label: firstParty.label, value: firstParty.value, origin: "connection", status: "verified", recordedAt: firstParty.recordedAt });
-  // Results files the business uploaded and granted to this agent: totals only, cited the same way.
-  const uploads = await saveUploadSourcesFor(ctx, { workspaceId: run.workspaceId, projectId: project._id, runId: run._id, agentSlug: run.agentSlug });
-  for (const { upload } of uploads) {
-    known.push({ key: `upload:${upload._id}`, label: `Your results: ${upload.label}`, value: describeUpload(upload), origin: "connection", status: "verified", recordedAt: upload.createdAt });
-  }
-  // What the business tried after earlier reports, and what happened: outcomes first, then open check-ins.
-  for (const decision of await decisionsForContext(ctx, run.workspaceId)) {
-    known.push({
-      key: `decision:${decision._id}`,
-      label: decision.outcome ? "Tried before" : "Being tried",
-      value: describeDecision(decision),
-      origin: "outcome",
-      status: decision.outcome ? "verified" : "unverified",
-      recordedAt: decision.outcome?.recordedAt ?? decision.createdAt,
-    });
-  }
-
-  const missing: ContextRecord["missing"] = gaps.map((key) => ({ key, blocking: true }));
-  const assumptions: string[] = [];
-  if (!facts.some((row) => /budget/i.test(row.factKey))) {
-    missing.push({ key: "adBudget", blocking: false });
-    assumptions.push(NO_BUDGET_ASSUMPTION);
-  }
-  if (!profile) {
-    missing.push({ key: "businessProfile", blocking: false });
-    assumptions.push("No confirmed business profile, so relevance is judged from the assignment alone.");
-  }
+  // The profile, facts, the business's own results and past outcomes (shared with Offer Intelligence).
+  known.push(...business.known);
+  const missing: ContextRecord["missing"] = [...gaps.map((key) => ({ key, blocking: true })), ...business.missing];
+  const assumptions = business.assumptions;
   const context: ContextRecord = {
     projectId: project._id,
     objective: project.objective,

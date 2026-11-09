@@ -19,12 +19,16 @@ import { collectResult, type Platform } from "./lib/researchShapes";
 import { saveSourceRef, setSourceStatus } from "./lib/sourceRefs";
 import { writeFact } from "./lib/facts";
 import { estimateCents } from "./lib/estimate";
-import { MUTATION_TOOLS } from "./skills/marketIntelligence/tools";
+import { MUTATION_TOOLS as MI_TOOLS } from "./skills/marketIntelligence/tools";
+import { OFFER_TOOLS } from "./skills/offerIntelligence/tools";
 import { liveEnv, runAdapter } from "./adapters";
 import { assertDeclared, skillFor } from "./lib/skills";
 import { assertCanSpend, chargeUsage } from "./lib/billing";
 
 const OPEN = new Set(["queued", "running", "waiting"]);
+
+/** Every skill's code-only tools, by slug. */
+const MUTATION_TOOLS = { ...MI_TOOLS, ...OFFER_TOOLS };
 
 type StopReason = "cap" | "error" | "cancelled" | "halted" | "done";
 

@@ -15,7 +15,7 @@ import { StartSessionButton } from "@/components/sessions/start-session-button";
 import { Stagger, StaggerItem } from "@/components/motion/stagger";
 
 type Status = "draft" | "needsReview" | "approved" | "rejected" | "archived";
-type Kind = "researchReport" | "marketReport" | "adCopySet" | "creativeBrief" | "contentCalendar" | "swipeItem";
+type Kind = "researchReport" | "marketReport" | "offerAnalysis" | "adCopySet" | "creativeBrief" | "contentCalendar" | "swipeItem";
 
 const STATUS_OPTIONS = [
   { value: "draft", label: "Waiting for approval" },
@@ -29,6 +29,7 @@ const KIND_OPTIONS = [
   { value: "", label: "Any kind" },
   { value: "researchReport", label: "Research reports" },
   { value: "marketReport", label: "Market reports" },
+  { value: "offerAnalysis", label: "Offer analyses" },
   { value: "adCopySet", label: "Ad copy sets" },
   { value: "creativeBrief", label: "Creative briefs" },
   { value: "contentCalendar", label: "Content calendars" },

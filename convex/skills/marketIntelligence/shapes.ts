@@ -252,8 +252,8 @@ export type ContextRecord = {
   assumptions: string[];
 };
 
-/** Doctrine 3.3: a missing ad budget does not block research. */
-export const NO_BUDGET_ASSUMPTION = "Budget not provided; recommendations do not depend on a budget figure.";
+/** Doctrine 3.3: a missing ad budget does not block research. Shared with every skill's context. */
+export { NO_BUDGET_ASSUMPTION } from "../../lib/businessContext";
 
 export type ComputeRecord = {
   totals: { sources: number; byPlatform: Record<string, number>; byKind: Record<string, number> };

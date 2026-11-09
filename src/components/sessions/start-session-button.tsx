@@ -12,7 +12,7 @@ export function StartSessionButton({
   label?: string;
 }) {
   return (
-    <Button render={<Link href={`/app/agents/${agentSlug}/sessions/new`} />}>
+    <Button render={<Link href={`/app/agents/${agentSlug}/work/research`} />}>
       <Plus aria-hidden /> {label}
     </Button>
   );

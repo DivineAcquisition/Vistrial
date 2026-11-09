@@ -2,7 +2,7 @@ import { wrapUntrusted, type ToolSlug } from "../../lib/registry";
 import type { SkillModule, SkillStep } from "../types";
 import { latest, latestDone, recordOf } from "../marketIntelligence/records";
 import { diagnosticsOf } from "./tools";
-import { DIAGNOSIS_SCHEMA, MAX_FIXES, MIN_FIXES, PHASE, SKILL_SLUG, STAGES, type ChecksRecord, type DiagnosticsRecord } from "./shapes";
+import { DIAGNOSIS_SCHEMA, MAX_FIXES, MAX_STEPS_PER_PHASE, MIN_FIXES, NOT_ENOUGH_DATA, PHASE, SKILL_SLUG, STAGES, type ChecksRecord, type DiagnosticsRecord } from "./shapes";
 
 const SYSTEM = [
   "You are Growth Architect, diagnosing where growth stalls for one small business, from its own data only.",
@@ -28,7 +28,10 @@ function businessContext(record: DiagnosticsRecord) {
   const facts = record.facts.length
     ? ["Business facts (context only, not figures to cite):", ...record.facts.map((row) => `- ${row.factKey}: ${row.value} (${row.status})`)].join("\n")
     : "No business facts are on record.";
-  return `${profile}\n\n${facts}`;
+  const goal = record.goal
+    ? `The owner's goal, in their words: "${record.goal.text}". Aim the roadmap at it. Its numbers may be used as targets; never invent another.`
+    : "The owner has not set a goal. Aim the roadmap at the stall stage.";
+  return `${profile}\n\n${facts}\n\n${goal}`;
 }
 
 function evidence(record: DiagnosticsRecord) {
@@ -60,6 +63,7 @@ const RULES = [
   "stageReason: one or two sentences why. stageFigureIds: the ids of the figures about that stage that show it.",
   "findings: 2 to 6 plain statements of what the figures show, each citing the figure ids it rests on. Quote numbers exactly as the figures display them.",
   `fixes: ${MIN_FIXES} or ${MAX_FIXES} fixes in priority order, each a different action the business can take itself; why, citing figure ids; and howToTell: which of the figures above to watch, in which direction, and over what period.`,
+  `roadmap: a firm 90-day plan in three phases, in order: fix (weeks 1-4, the stall stage first), build (weeks 5-8), scale (weeks 9-12). 1 to ${MAX_STEPS_PER_PHASE} steps per phase, every phase at least one. Each step: problem: what it fixes, quoting the business's own figures exactly, with their ids in figureIds (if no figure covers it, start the problem with "${NOT_ENOUGH_DATA}" and cite none); action: what the business does, specific enough to start this week; targetMetric: the label of one figure above to watch; target: the direction and size of change to aim for, stated against that figure's own current value or the owner's goal, never an outside benchmark (write "${NOT_ENOUGH_DATA}" when no figure supports a target). Build and scale steps build on fix steps; do not repeat a step.`,
   "limits: anything else the reader should not assume. summary: three plain sentences at most.",
 ];
 

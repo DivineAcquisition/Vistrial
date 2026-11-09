@@ -19,6 +19,9 @@ import { workspaceMutation, workspaceQuery } from "./lib/builders";
 import { notAllowed, notFound } from "./lib/errors";
 import { uploadAgents } from "./resultUploads";
 import { reportForProject } from "./studio";
+import { analysisFor } from "./offers";
+import { savedRecord } from "./lib/savedRecords";
+import { readDiagnosis, type RoadmapPhase } from "./skills/growthDiagnostics/shapes";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 export const CHECK_IN_DAYS = [14, 30, 60, 90] as const;
@@ -142,6 +145,10 @@ async function ownDecision(ctx: QueryCtx, workspaceId: Id<"workspaces">, decisio
 
 export type DecisionView = {
   id: Id<"decisions">;
+  /** Null for a report opportunity. */
+  itemKind: "offerChange" | "roadmapStep" | null;
+  phase: RoadmapPhase | null;
+  assetId: Id<"assets"> | null;
   opportunityIndex: number;
   opportunity: string;
   proposedAction: string;
@@ -156,6 +163,9 @@ export type DecisionView = {
 function view(decision: Doc<"decisions">, now: number): DecisionView {
   return {
     id: decision._id,
+    itemKind: decision.itemKind ?? null,
+    phase: decision.phase ?? null,
+    assetId: decision.assetId ?? null,
     opportunityIndex: decision.opportunityIndex,
     opportunity: decision.opportunity,
     proposedAction: decision.proposedAction,
@@ -185,9 +195,120 @@ export const forProject = workspaceQuery({
     const rows = await ctx.db
       .query("decisions")
       .withIndex("by_workspace_project", (q) => q.eq("workspaceId", ctx.workspaceId).eq("projectId", args.projectId))
-      .take(20);
+      .take(50);
     const now = Date.now();
-    return rows.map((row) => view(row, now));
+    // Report opportunities only: offer changes and roadmap steps belong to their own asset.
+    return rows.filter((row) => !row.itemKind).map((row) => view(row, now));
+  },
+});
+
+/** The decisions made on one offer analysis or growth diagnosis: its offer changes or roadmap steps. */
+export const forAsset = workspaceQuery({
+  args: { assetId: v.id("assets") },
+  handler: async (ctx, args) => {
+    const asset = await ctx.db.get(args.assetId);
+    if (!asset || asset.workspaceId !== ctx.workspaceId) notFound();
+    const rows = await ctx.db
+      .query("decisions")
+      .withIndex("by_workspace_asset", (q) => q.eq("workspaceId", ctx.workspaceId).eq("assetId", asset._id))
+      .take(50);
+    const now = Date.now();
+    return rows.filter((row) => row.itemKind).map((row) => view(row, now));
+  },
+});
+
+type PlannedItem = {
+  projectId: Id<"researchProjects">;
+  runId: Id<"agentRuns">;
+  itemKind: "offerChange" | "roadmapStep";
+  phase?: RoadmapPhase;
+  opportunity: string;
+  proposedAction: string;
+  validationMethod: string;
+};
+
+/**
+ * The item a person chose from an asset, read from the run's own saved record, never from the screen: an
+ * offer change from an offer analysis, or a roadmap step from a growth diagnosis. Its research project is
+ * the diagnosis's own, or the approved market report the offer analysis built on, so the next research
+ * session reads the outcome as known context.
+ */
+async function itemOf(ctx: QueryCtx, asset: Doc<"assets">, index: number): Promise<PlannedItem | null> {
+  const run = asset.createdByRun ? await ctx.db.get(asset.createdByRun) : null;
+  if (!run || run.workspaceId !== asset.workspaceId) return null;
+  if (asset.kind === "offerAnalysis") {
+    const read = await analysisFor(ctx, asset);
+    const change = read?.analysis.changes[index];
+    const raw = read?.context?.baseProjectId ?? read?.context?.reports.find((row) => row.projectId)?.projectId ?? null;
+    const projectId = raw ? ctx.db.normalizeId("researchProjects", raw) : null;
+    const project = projectId ? await ctx.db.get(projectId) : null;
+    if (!change || !project || project.workspaceId !== asset.workspaceId) return null;
+    return { projectId: project._id, runId: run._id, itemKind: "offerChange", opportunity: change.title, proposedAction: change.proposedChange, validationMethod: change.validationMethod };
+  }
+  if (asset.kind === "growthDiagnosis") {
+    const saved = (await savedRecord(ctx.db, asset, "diagnosis")) as { diagnosis: unknown } | null;
+    const step = readDiagnosis(saved?.diagnosis)?.roadmap[index];
+    const projectId = ctx.db.normalizeId("researchProjects", run.inputRef);
+    const project = projectId ? await ctx.db.get(projectId) : null;
+    if (!step || !project || project.workspaceId !== asset.workspaceId) return null;
+    return {
+      projectId: project._id,
+      runId: run._id,
+      itemKind: "roadmapStep",
+      phase: step.phase,
+      opportunity: step.problem,
+      proposedAction: step.action,
+      validationMethod: `Watch ${step.targetMetric}. Target: ${step.target}`,
+    };
+  }
+  return null;
+}
+
+/**
+ * "We'll try this" on an offer change or a roadmap step: the same outcome loop as a report opportunity,
+ * with the check-in date and today's figures. Rejected work cannot be tried. Owners and managers.
+ */
+export const planItem = workspaceMutation({
+  args: { assetId: v.id("assets"), index: v.number(), checkInDays: v.number() },
+  handler: async (ctx, args) => {
+    requireEditor(ctx.member.role);
+    if (!CHECK_IN_DAYS.includes(args.checkInDays as (typeof CHECK_IN_DAYS)[number])) notAllowed();
+    const asset = await ctx.db.get(args.assetId);
+    if (!asset || asset.workspaceId !== ctx.workspaceId) notFound();
+    if (asset.status === "rejected" || asset.status === "archived") notAllowed();
+    const item = await itemOf(ctx, asset, args.index);
+    if (!item) notFound();
+    const existing = await ctx.db
+      .query("decisions")
+      .withIndex("by_workspace_asset", (q) => q.eq("workspaceId", ctx.workspaceId).eq("assetId", asset._id))
+      .take(50);
+    const same = existing.find((row) => row.itemKind === item.itemKind && row.opportunityIndex === args.index);
+    if (same) return same._id;
+    const now = Date.now();
+    const decisionId = await ctx.db.insert("decisions", {
+      workspaceId: ctx.workspaceId,
+      projectId: item.projectId,
+      runId: item.runId,
+      assetId: asset._id,
+      itemKind: item.itemKind,
+      ...(item.phase ? { phase: item.phase } : {}),
+      opportunityIndex: args.index,
+      opportunity: clip(item.opportunity, MAX_TEXT),
+      proposedAction: clip(item.proposedAction, MAX_TEXT),
+      validationMethod: clip(item.validationMethod, MAX_TEXT),
+      checkInAt: now + args.checkInDays * DAY_MS,
+      createdBy: ctx.identity.subject,
+      createdAt: now,
+      baseline: await currentFigures(ctx, ctx.workspaceId),
+    });
+    await writeAudit(ctx, {
+      workspaceId: ctx.workspaceId,
+      actorType: "user",
+      actorId: ctx.identity.subject,
+      action: "decision.planned",
+      subject: decisionId,
+    });
+    return decisionId;
   },
 });
 

@@ -111,6 +111,11 @@ function lastOf(steps: Doc<"runSteps">[], phase: string) {
 export async function reportForProject(ctx: QueryCtx, project: Doc<"researchProjects">) {
   const run = project.latestRunId ? await ctx.db.get(project.latestRunId) : null;
   if (!run || run.workspaceId !== project.workspaceId) return null;
+  return reportForRun(ctx, run);
+}
+
+/** The report one run wrote, read from its own records. Null before it is written. */
+export async function reportForRun(ctx: QueryCtx, run: Doc<"agentRuns">) {
   const steps = await stepsOf(ctx, run);
   const reportStep = lastOf(steps, PHASE.revise) ?? lastOf(steps, PHASE.write);
   const report = readReport(await recordFor(ctx, run, reportStep?._id, "model"));

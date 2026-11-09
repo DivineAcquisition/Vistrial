@@ -272,7 +272,7 @@ function FollowUpComposer({ workspaceId, projectId, base, hasReport }: { workspa
         onSubmit={async (text) => {
           setNotice("");
           if (!hasReport) {
-            router.push(`${base}/sessions/new?objective=${encodeURIComponent(text)}`);
+            router.push(`${base}/work/research?objective=${encodeURIComponent(text)}`);
             return;
           }
           try {
@@ -440,7 +440,7 @@ export function SessionThread({
       <section ref={column} className="flex min-w-0 flex-col gap-4" aria-label="Session">
         <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border pb-3">
           <div className="min-w-0">
-            <Link href={`${base}/sessions`} className="text-xs text-muted-foreground hover:text-foreground">
+            <Link href={`${base}/work/research`} className="text-xs text-muted-foreground hover:text-foreground">
               Sessions
             </Link>
             <h2 className="font-heading text-lg break-words text-foreground">{project.title}</h2>

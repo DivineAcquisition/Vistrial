@@ -2,6 +2,7 @@ import { v } from "convex/values";
 
 import { internalMutation } from "./_generated/server";
 import { writeAudit } from "./lib/audit";
+import { userError } from "./lib/errors";
 
 async function revokeGrants(ctx: { db: import("./_generated/server").MutationCtx["db"] }, userId: string) {
   const grants = await ctx.db
@@ -21,12 +22,12 @@ export const enroll = internalMutation({
   },
   handler: async (ctx, args) => {
     const userId = args.userId.trim();
-    if (!userId) throw new Error("Not found.");
+    if (!userId) throw userError("Not found.", "not_found");
     const existing = await ctx.db
       .query("staff")
       .withIndex("by_user", (q) => q.eq("userId", userId))
       .unique();
-    if (existing) throw new Error("Already enrolled.");
+    if (existing) throw userError("Already enrolled.");
     const staffId = await ctx.db.insert("staff", { userId, role: args.role });
     await writeAudit(ctx, {
       actorType: "system",
@@ -46,7 +47,7 @@ export const remove = internalMutation({
       .query("staff")
       .withIndex("by_user", (q) => q.eq("userId", userId))
       .unique();
-    if (!existing) throw new Error("Not found.");
+    if (!existing) throw userError("Not found.", "not_found");
     await revokeGrants(ctx, userId);
     await ctx.db.delete(existing._id);
     await writeAudit(ctx, {
@@ -68,17 +69,17 @@ export const rotate = internalMutation({
   handler: async (ctx, args) => {
     const fromUserId = args.fromUserId.trim();
     const toUserId = args.toUserId.trim();
-    if (!fromUserId || !toUserId || fromUserId === toUserId) throw new Error("Not found.");
+    if (!fromUserId || !toUserId || fromUserId === toUserId) throw userError("Not found.", "not_found");
     const from = await ctx.db
       .query("staff")
       .withIndex("by_user", (q) => q.eq("userId", fromUserId))
       .unique();
-    if (!from) throw new Error("Not found.");
+    if (!from) throw userError("Not found.", "not_found");
     const already = await ctx.db
       .query("staff")
       .withIndex("by_user", (q) => q.eq("userId", toUserId))
       .unique();
-    if (already) throw new Error("Already enrolled.");
+    if (already) throw userError("Already enrolled.");
     await revokeGrants(ctx, fromUserId);
     await ctx.db.delete(from._id);
     await writeAudit(ctx, {

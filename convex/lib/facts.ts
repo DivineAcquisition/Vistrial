@@ -2,6 +2,7 @@ import type { Doc, Id } from "../_generated/dataModel";
 import type { MutationCtx, QueryCtx } from "../_generated/server";
 import { writeAudit } from "./audit";
 import type { FactSourceType } from "./factShapes";
+import { userError } from "./errors";
 
 export const MAX_FACT_VALUE = 500;
 export const MAX_FACT_REFERENCE = 200;
@@ -18,14 +19,14 @@ export const FACT_TEXT = {
 
 export function cleanFactKey(raw: string) {
   const key = raw.trim();
-  if (!FACT_KEY.test(key)) throw new Error(FACT_TEXT.badKey);
+  if (!FACT_KEY.test(key)) throw userError(FACT_TEXT.badKey);
   return key;
 }
 
 export function cleanFactValue(raw: string) {
   const value = raw.replace(/\s+/g, " ").trim();
-  if (!value) throw new Error(FACT_TEXT.emptyValue);
-  if (value.length > MAX_FACT_VALUE) throw new Error(FACT_TEXT.longValue);
+  if (!value) throw userError(FACT_TEXT.emptyValue);
+  if (value.length > MAX_FACT_VALUE) throw userError(FACT_TEXT.longValue);
   return value;
 }
 
@@ -64,7 +65,7 @@ export async function writeFact(ctx: MutationCtx, input: FactWrite) {
   const factKey = cleanFactKey(input.factKey);
   const value = cleanFactValue(input.value);
   const reference = input.sourceReference?.trim().slice(0, MAX_FACT_REFERENCE) || undefined;
-  if (!reference && input.sourceType !== "owner" && input.sourceType !== "assumption") throw new Error(FACT_TEXT.needsReference);
+  if (!reference && input.sourceType !== "owner" && input.sourceType !== "assumption") throw userError(FACT_TEXT.needsReference);
   const current = await liveFact(ctx, input.workspaceId, factKey);
   const now = Date.now();
   const id = await ctx.db.insert("businessFacts", {

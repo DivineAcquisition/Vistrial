@@ -2,7 +2,7 @@ import { v } from "convex/values";
 
 import { writeAudit } from "./lib/audit";
 import { canSeeLead } from "./lib/canSeeLead";
-import { notAllowed, notFound } from "./lib/errors";
+import { notAllowed, notFound, userError } from "./lib/errors";
 import { workspaceMutation, workspaceQuery } from "./lib/builders";
 
 const channel = v.union(v.literal("email"), v.literal("text"), v.literal("call"), v.literal("all"));
@@ -36,7 +36,7 @@ export const setConsent = workspaceMutation({
         args.next !== "revoked");
     if (clearing) {
       if (ctx.member.role === "rep") notAllowed();
-      if (!args.reason || args.reason.trim().length < 8) throw new Error("A reason is required.");
+      if (!args.reason || args.reason.trim().length < 8) throw userError("A reason is required.");
     }
     const at = Date.now();
     const patch: Record<string, unknown> = {};

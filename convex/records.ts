@@ -3,6 +3,7 @@ import { v } from "convex/values";
 import type { Id } from "./_generated/dataModel";
 import type { MutationCtx } from "./_generated/server";
 import { writeAudit } from "./lib/audit";
+import { userError } from "./lib/errors";
 import {
   bookingMutation,
   bookingQuery,
@@ -56,7 +57,7 @@ export const addNote = leadMutation({
   args: { body: v.string() },
   handler: async (ctx, args) => {
     const body = args.body.trim();
-    if (!body) throw new Error("Write a note.");
+    if (!body) throw userError("Write a note.");
     const at = Date.now();
     const noteId = await ctx.db.insert("notes", {
       workspaceId: ctx.workspaceId,
@@ -118,7 +119,7 @@ export const addTask = leadMutation({
         q.eq("workspaceId", ctx.workspaceId).eq("leadId", ctx.lead._id).eq("purposeKey", purposeKey).eq("status", "open"),
       )
       .take(1);
-    if (open.length > 0) throw new Error("That task is already open.");
+    if (open.length > 0) throw userError("That task is already open.");
     const at = args.dueAt ?? Date.now();
     const taskId = await ctx.db.insert("tasks", {
       workspaceId: ctx.workspaceId,

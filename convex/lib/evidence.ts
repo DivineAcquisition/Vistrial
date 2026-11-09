@@ -2,6 +2,7 @@ import type { GenericDatabaseReader } from "convex/server";
 
 import type { DataModel, Doc, Id } from "../_generated/dataModel";
 import type { Basis } from "./researchShapes";
+import { userError } from "./errors";
 
 export type ClaimInput = {
   claimKey: string;
@@ -85,7 +86,7 @@ export function claimsWithoutEvidence(claims: ClaimInput[]): string[] {
 export function assertClaims(claims: ClaimInput[]) {
   for (const claim of claims) {
     const problem = shapeProblem(claim);
-    if (problem) throw new Error(CLAIM_PROBLEM_TEXT[problem]);
+    if (problem) throw userError(CLAIM_PROBLEM_TEXT[problem]);
   }
 }
 
@@ -161,7 +162,7 @@ export async function claimsWithMissingSources(ctx: Reader, workspaceId: Id<"wor
 export async function assertSourcesExist(ctx: Reader, workspaceId: Id<"workspaces">, claims: ClaimInput[]) {
   for (const claim of claims) {
     const problem = await claimProblem(ctx, workspaceId, claim);
-    if (problem) throw new Error(problem === "source_not_found" ? "A claim needs evidence." : CLAIM_PROBLEM_TEXT[problem]);
+    if (problem) throw userError(problem === "source_not_found" ? "A claim needs evidence." : CLAIM_PROBLEM_TEXT[problem]);
   }
 }
 

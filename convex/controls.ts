@@ -7,7 +7,7 @@ import { workspaceMutation, workspaceQuery } from "./lib/builders";
 import { writeAudit } from "./lib/audit";
 import { PLATFORM_CEILING, assertWithinCeiling, capScope, dayKey } from "./lib/caps";
 import { capsRow, daySpend, loadCaps } from "./lib/capRows";
-import { notAllowed } from "./lib/errors";
+import { notAllowed, userError } from "./lib/errors";
 
 const OPEN = ["queued", "running", "waiting"] as const;
 
@@ -73,9 +73,9 @@ export const setCaps = workspaceMutation({
     const args = { ...input, agentSlug: currentAgentSlug(input.agentSlug) };
     if (ctx.member.role !== "owner") notAllowed();
     assertWithinCeiling(args);
-    if (args.maxSteps < 1 || args.maxDurationMs < 1) throw new Error("Caps must allow at least one step.");
+    if (args.maxSteps < 1 || args.maxDurationMs < 1) throw userError("Caps must allow at least one step.");
     const scope = capScope(args.skillSlug);
-    if (args.skillSlug !== undefined && scope === undefined) throw new Error("That skill uses the agent's caps.");
+    if (args.skillSlug !== undefined && scope === undefined) throw userError("That skill uses the agent's caps.");
     const current = await capsRow(ctx, ctx.workspaceId, args.agentSlug, scope);
     const fields = {
       maxCostCentsPerRun: args.maxCostCentsPerRun,

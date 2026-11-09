@@ -12,7 +12,7 @@ import { internalAction, internalMutation, internalQuery, type ActionCtx } from 
 import { writeAudit } from "./lib/audit";
 import { memberAction, ownerMutation, workspaceQuery } from "./lib/builders";
 import { GROWTH_ARCHITECT } from "./catalog";
-import { notAllowed, notFound } from "./lib/errors";
+import { notAllowed, notFound, userError } from "./lib/errors";
 import {
   ACCOUNT_STATUS,
   dailySeries,
@@ -385,7 +385,7 @@ async function requireRole(ctx: ActionCtx, workspaceId: Id<"workspaces">, userId
 
 async function liveConnection(ctx: ActionCtx, workspaceId: Id<"workspaces">): Promise<Doc<"metaConnections">> {
   const connection: Doc<"metaConnections"> | null = await ctx.runQuery(internal.metaAds.connectionFor, { workspaceId });
-  if (!connection) throw new Error("Connect your Meta ads first.");
+  if (!connection) throw userError("Connect your Meta ads first.");
   return connection;
 }
 
@@ -580,7 +580,7 @@ export const chooseAccount = memberAction({
   args: { adAccountId: v.string() },
   handler: async (ctx, args): Promise<{ code: string }> => {
     await requireRole(ctx, ctx.workspaceId, ctx.userId, ["owner"]);
-    if (!isAdAccountId(args.adAccountId)) throw new Error("That is not an ad account id.");
+    if (!isAdAccountId(args.adAccountId)) throw userError("That is not an ad account id.");
     const connection = await liveConnection(ctx, ctx.workspaceId);
     const counter: Counter = { ok: 0, failed: 0, lastCode: null };
     const check = await graphGet(connection.accessToken, `${args.adAccountId}?fields=name,currency,account_status`, counter);
@@ -605,7 +605,7 @@ export const syncNow = memberAction({
     await requireRole(ctx, ctx.workspaceId, ctx.userId, ["owner", "manager"]);
     const connection = await liveConnection(ctx, ctx.workspaceId);
     if (args.range !== undefined) {
-      if (!isRange(args.range)) throw new Error("Pick last_30d, last_90d or maximum.");
+      if (!isRange(args.range)) throw userError("Pick last_30d, last_90d or maximum.");
       await ctx.runMutation(internal.metaAds.setRange, { connectionId: connection._id, range: args.range });
       return syncConnection(ctx, { ...connection, range: args.range }, "manual");
     }

@@ -2,7 +2,7 @@ import { v } from "convex/values";
 
 import { workspaceMutation, workspaceQuery } from "./lib/builders";
 import { writeAudit } from "./lib/audit";
-import { notAllowed, notFound } from "./lib/errors";
+import { notAllowed, notFound, userError } from "./lib/errors";
 import { writeFact } from "./lib/facts";
 
 /** Feedback on one asset, or the workspace's latest. Every member can read it. */
@@ -42,7 +42,7 @@ export const promote = workspaceMutation({
     if (ctx.member.role === "rep") notAllowed();
     const row = await ctx.db.get(args.feedbackId);
     if (!row || row.workspaceId !== ctx.workspaceId) notFound();
-    if (row.promotedFactId) throw new Error("This feedback is already a business fact.");
+    if (row.promotedFactId) throw userError("This feedback is already a business fact.");
     const factId = await writeFact(ctx, {
       workspaceId: ctx.workspaceId,
       factKey: args.factKey,

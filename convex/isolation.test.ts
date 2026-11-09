@@ -27,6 +27,9 @@ async function message(run: Promise<unknown>) {
   try {
     await run;
   } catch (error) {
+    // A message meant for a person travels as ConvexError data; read it from there.
+    const data = (error as { data?: { message?: unknown } }).data;
+    if (data && typeof data.message === "string") return data.message;
     return error instanceof Error ? error.message : String(error);
   }
   throw new Error("expected a refusal");

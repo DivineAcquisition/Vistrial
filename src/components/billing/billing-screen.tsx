@@ -7,8 +7,9 @@ import { useEffect, useState } from "react";
 import { BillingView, type BillingData } from "@/components/billing/billing-view";
 import { useWorkspaceShell } from "@/components/shell/shell-context";
 import { EmptyState } from "@/components/ui/empty-state";
-import { errorWords } from "@/lib/research/words";
+
 import { api } from "../../../convex/_generated/api";
+import { showError } from "@/lib/errors/show-error";
 
 /** Workspace → Billing, fed by Convex. Owners buy and manage; everyone sees the balance. */
 export function BillingScreen() {
@@ -41,7 +42,7 @@ export function BillingScreen() {
       const result = await run();
       if (result?.url) window.location.assign(result.url);
     } catch (error) {
-      setNotice(errorWords(error, "That did not go through."));
+      setNotice(showError(error, "That did not go through."));
     } finally {
       setBusy(null);
     }

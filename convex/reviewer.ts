@@ -12,6 +12,7 @@ import { internalAction, internalMutation } from "./_generated/server";
 import { GROWTH_ARCHITECT } from "./catalog";
 import { writeAudit } from "./lib/audit";
 import { createWorkspaceFor } from "./lib/newWorkspace";
+import { userError } from "./lib/errors";
 
 const CLERK_API = "https://api.clerk.com/v1";
 
@@ -49,7 +50,7 @@ export const createReviewerAccount = internalAction({
     const key = process.env.CLERK_SECRET_KEY;
     if (!key) throw new Error("Add CLERK_SECRET_KEY (the Clerk secret key for this deployment's Clerk instance) to this deployment's environment variables.");
     const email = args.email.trim().toLowerCase();
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) throw new Error("Give a valid email address.");
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) throw userError("Give a valid email address.");
     const password = newPassword();
 
     let userId: string | null = null;

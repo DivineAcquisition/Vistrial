@@ -8,19 +8,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Panel } from "@/components/ui/panel";
 import { StatusBadge } from "@/components/ui/status-badge";
-import {
-  FACT_SOURCE_WORDS,
-  FACT_STATUS_WORDS,
-  PLATFORM_LABEL,
-  SOURCE_STATE_WORDS,
-  STAGES,
-  errorWords,
-  money,
-  shortDate,
-} from "@/lib/research/words";
+import { FACT_SOURCE_WORDS, FACT_STATUS_WORDS, PLATFORM_LABEL, SOURCE_STATE_WORDS, STAGES, money, shortDate } from "@/lib/research/words";
 import { api } from "../../../convex/_generated/api";
 import type { Id } from "../../../convex/_generated/dataModel";
 import { SourceIcon } from "@/components/research/source-icon";
+import { showError } from "@/lib/errors/show-error";
 
 export type Studio = FunctionReturnType<typeof api.studio.studio>;
 type Step = { phase?: string | null; status: string; kind: string; resultCode: string };
@@ -91,7 +83,7 @@ export function ContextPanel({ workspaceId, studio, canEdit }: { workspaceId: Id
                             setEditing(null);
                             setNotice("Saved as a verified fact. The next run uses it; the old value is kept in its history.");
                           },
-                          (problem: unknown) => setNotice(errorWords(problem, "The fact was not saved.")),
+                          (problem: unknown) => setNotice(showError(problem, "The fact was not saved.")),
                         );
                       }}
                     >
@@ -134,7 +126,7 @@ export function ContextPanel({ workspaceId, studio, canEdit }: { workspaceId: Id
                         onClick={() =>
                           void remove({ workspaceId, factId: fact.id as Id<"businessFacts"> }).then(
                             () => setNotice(`Removed ${fact.factKey}. Its history is kept, and the next run will not use it.`),
-                            (problem: unknown) => setNotice(errorWords(problem, "It was not removed.")),
+                            (problem: unknown) => setNotice(showError(problem, "It was not removed.")),
                           )
                         }
                       >
@@ -185,7 +177,7 @@ export function QuestionCard({ workspaceId, studio, canAnswer }: { workspaceId: 
             <div>
               <Button
                 type="button"
-                onClick={() => void resume({ workspaceId, runId: run.id }).catch((problem: unknown) => setNotice(errorWords(problem, "It did not resume.")))}
+                onClick={() => void resume({ workspaceId, runId: run.id }).catch((problem: unknown) => setNotice(showError(problem, "It did not resume.")))}
               >
                 Resume
               </Button>
@@ -199,7 +191,7 @@ export function QuestionCard({ workspaceId, studio, canAnswer }: { workspaceId: 
             event.preventDefault();
             void answer({ workspaceId, runId: run.id, questionId: run.waitingFor!.questionId, answer: text }).then(
               () => setText(""),
-              (problem: unknown) => setNotice(errorWords(problem, "The answer was not saved.")),
+              (problem: unknown) => setNotice(showError(problem, "The answer was not saved.")),
             );
           }}
         >

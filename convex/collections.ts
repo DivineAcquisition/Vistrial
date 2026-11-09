@@ -3,7 +3,7 @@ import { v } from "convex/values";
 import type { Doc, Id } from "./_generated/dataModel";
 import type { QueryCtx } from "./_generated/server";
 import { workspaceMutation, workspaceQuery, type MemberAccess } from "./lib/builders";
-import { notAllowed, notFound } from "./lib/errors";
+import { notAllowed, notFound, userError } from "./lib/errors";
 import { sourceRefView } from "./lib/sourceRefs";
 
 const MAX_NAME = 80;
@@ -29,7 +29,7 @@ async function editable(ctx: QueryCtx & MemberAccess, collectionId: Id<"collecti
 
 function cleanName(name: string) {
   const clean = name.trim();
-  if (clean.length === 0 || clean.length > MAX_NAME) throw new Error(`Give the collection a name of up to ${MAX_NAME} characters.`);
+  if (clean.length === 0 || clean.length > MAX_NAME) throw userError(`Give the collection a name of up to ${MAX_NAME} characters.`);
   return clean;
 }
 
@@ -124,7 +124,7 @@ export const addItem = workspaceMutation({
     const ref = await ctx.db.get(args.sourceRefId);
     if (!ref || ref.workspaceId !== ctx.workspaceId) notFound();
     const note = args.note?.trim();
-    if (note && note.length > MAX_NOTE) throw new Error(`Keep the note to ${MAX_NOTE} characters.`);
+    if (note && note.length > MAX_NOTE) throw userError(`Keep the note to ${MAX_NOTE} characters.`);
     const existing = await ctx.db
       .query("collectionItems")
       .withIndex("by_workspace_collection", (q) =>
@@ -132,7 +132,7 @@ export const addItem = workspaceMutation({
       )
       .unique();
     if (existing) return existing._id;
-    if ((await itemCount(ctx, ctx.workspaceId, collection._id)) >= MAX_ITEMS) throw new Error("This collection is full.");
+    if ((await itemCount(ctx, ctx.workspaceId, collection._id)) >= MAX_ITEMS) throw userError("This collection is full.");
     return ctx.db.insert("collectionItems", {
       workspaceId: ctx.workspaceId,
       collectionId: collection._id,

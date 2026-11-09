@@ -1,3 +1,4 @@
+import { userError } from "./errors";
 export const DEFAULT_CAPS = {
   maxCostCentsPerRun: 25,
   maxCostCentsPerDay: 200,
@@ -50,16 +51,16 @@ export type Caps = {
 
 export function assertWithinCeiling(caps: Caps) {
   if (caps.maxSteps > PLATFORM_CEILING.maxSteps || caps.maxDurationMs > PLATFORM_CEILING.maxDurationMs) {
-    throw new Error("Steps and run time cannot exceed the platform ceiling.");
+    throw userError("Steps and run time cannot exceed the platform ceiling.", "limit");
   }
   if (caps.maxCostCentsPerRun > PLATFORM_CEILING.maxCostCentsPerRun) {
-    throw new Error("A run cap cannot exceed the platform ceiling.");
+    throw userError("A run cap cannot exceed the platform ceiling.", "limit");
   }
   if (caps.maxCostCentsPerDay > PLATFORM_CEILING.maxCostCentsPerDay) {
-    throw new Error("A day cap cannot exceed the platform ceiling.");
+    throw userError("A day cap cannot exceed the platform ceiling.", "limit");
   }
   if (caps.maxCostCentsPerRun < 1 || caps.maxCostCentsPerDay < 1) {
-    throw new Error("Caps must be at least 1 cent.");
+    throw userError("Caps must be at least 1 cent.", "limit");
   }
 }
 

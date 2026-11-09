@@ -15,6 +15,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { ReportBody, reportMarkdown } from "@/components/assets/report-body";
 import { api } from "../../../../../../convex/_generated/api";
 import type { Id } from "../../../../../../convex/_generated/dataModel";
+import { showError } from "@/lib/errors/show-error";
 
 function Asset({ shell, assetId }: { shell: WorkspaceShell; assetId: Id<"assets"> }) {
   const asset = useQuery(api.assets.get, { workspaceId: shell.workspaceId, assetId });
@@ -94,7 +95,7 @@ function Asset({ shell, assetId }: { shell: WorkspaceShell; assetId: Id<"assets"
                     setReason("");
                     setNotice("Rejected. The reason is saved as feedback.");
                   },
-                  (error: unknown) => setNotice(error instanceof Error ? error.message.replace(/^[\s\S]*?Uncaught Error: /, "").split("\n")[0] : "It was not rejected."),
+                  (error: unknown) => setNotice(showError(error, "It was not rejected.")),
                 );
               }}
             >

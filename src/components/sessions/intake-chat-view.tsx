@@ -27,6 +27,7 @@ import { money } from "@/lib/research/words";
 import { cn } from "@/lib/utils";
 import { SourceIcon } from "@/components/research/source-icon";
 import { Banner } from "@/components/ui/banner";
+import { showError } from "@/lib/errors/show-error";
 
 export type IntakeSlots = {
   objective: string;
@@ -286,7 +287,7 @@ function PlanCard({ view, actions, editor }: { view: IntakeView; actions: Intake
               setProblem("");
               void actions.start().catch((error: unknown) => {
                 setStarting(false);
-                setProblem(error instanceof Error ? error.message.replace(/^[\s\S]*Uncaught Error: /, "").split("\n")[0] : "It did not start.");
+                setProblem(showError(error, "It did not start."));
               });
             }}
           >

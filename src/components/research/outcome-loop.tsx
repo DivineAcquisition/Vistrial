@@ -10,9 +10,10 @@ import { Button } from "@/components/ui/button";
 import { Panel } from "@/components/ui/panel";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { Textarea } from "@/components/ui/textarea";
-import { errorWords } from "@/lib/research/words";
+
 import { api } from "../../../convex/_generated/api";
 import type { Id } from "../../../convex/_generated/dataModel";
+import { showError } from "@/lib/errors/show-error";
 
 type Result = "better" | "same" | "worse" | "tooEarly" | "notTried";
 
@@ -142,7 +143,7 @@ export function OpportunityDecision({
           onClick={() =>
             void plan({ workspaceId, projectId, opportunityIndex: index, checkInDays: days }).then(
               () => setNotice(""),
-              (problem: unknown) => setNotice(errorWords(problem, "That did not save.")),
+              (problem: unknown) => setNotice(showError(problem, "That did not save.")),
             )
           }
         >
@@ -199,7 +200,7 @@ export function OpportunityDecision({
           onSubmit={(result, note) =>
             record({ workspaceId, decisionId: decision.id, result, note }).then(
               () => setRecording(false),
-              (problem: unknown) => setNotice(errorWords(problem, "That did not save.")),
+              (problem: unknown) => setNotice(showError(problem, "That did not save.")),
             )
           }
         />

@@ -45,7 +45,7 @@ describe("settings: roles", () => {
     expect(business).toMatchObject({ name: "Bay Area Cleaning", defaultCountry: "GB", canEdit: true });
     const actions = await auditActions(t, workspaceId);
     expect(actions).toEqual(
-      expect.arrayContaining(["workspace.renamed", "settings.country_updated", "settings.research_mode_updated", "support_access.off"]),
+      expect.arrayContaining(["workspace.renamed", "settings.country_updated", "settings.research_mode_updated", "workspace.service_team_access_off"]),
     );
   });
 
@@ -173,7 +173,7 @@ describe("settings: Vistrial support access", () => {
     await owner.mutation(api.settings.setSupportAccess, { workspaceId, on: true });
     await staff.mutation(api.staff.grant, { workspaceId, reason: "Second look at the report", hours: 1 });
     expect((await owner.query(api.settings.supportLog, { workspaceId })).grants).toHaveLength(2);
-    expect(await auditActions(t, workspaceId)).toEqual(expect.arrayContaining(["support_access.off", "support_access.on"]));
+    expect(await auditActions(t, workspaceId)).toEqual(expect.arrayContaining(["workspace.service_team_access_off", "workspace.service_team_access_on"]));
   });
 });
 

@@ -322,7 +322,7 @@ export const setSupportAccess = ownerMutation({
         }
       }
     }
-    await audit(ctx, args.on ? "support_access.on" : "support_access.off", settings._id, ended);
+    await audit(ctx, args.on ? "workspace.service_team_access_on" : "workspace.service_team_access_off", settings._id, ended);
     return { ended };
   },
 });

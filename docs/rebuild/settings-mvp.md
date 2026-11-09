@@ -34,7 +34,7 @@ workspace-wide change writes an `auditLog` row (ids and counts only, never text)
   cancel (owner, audited `invite.canceled`; a cancelled link is refused by `acceptInvite`). Links open `/join`, which
   signs the person in and accepts. `/app/team` redirects here.
 - **[built]** Vistrial support access: a switch for `workspaceSettings.serviceTeamAccess` (owner, audited
-  `support_access.on|off`). Turning it off also ends any open grant at once. The owner sees a read-only log of
+  `workspace.service_team_access_on|off`). Turning it off also ends any open grant at once. The owner sees a read-only log of
   `staffAccessGrants`: who (staff role and a short reference), when, reason, expiry, whether it ended early, and how
   many times staff opened the workspace under it (from `staff.entered` audit rows).
 - **[later]** Sending invite emails (today the owner copies the link).

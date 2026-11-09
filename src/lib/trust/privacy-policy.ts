@@ -189,7 +189,7 @@ export function privacyPolicySections(trust: TrustPublic): PolicySection[] {
         { kind: "h", text: "F. Payments" },
         {
           kind: "p",
-          text: "Vistrial does not take payments on its website or in the application. Billing details are shared with a customer when their team is approved. We do not see or store a full card number.",
+          text: "Vistrial sells a monthly plan that includes credits, and packs of extra credits. Credits pay for the AI work agents do; each piece of work is charged from the balance. Payment is taken by Stripe on its own checkout page, through our billing provider Autumn, and cards, invoices and cancelling are managed on Stripe's page. Vistrial does not see or store a full card number. We keep a customer reference, the plan, whether automatic top-up is on, the credit balance, and a record of each charge: which piece of work it paid for, what it cost us, and what it cost you.",
         },
         { kind: "h", text: "G. Support and communications" },
         { kind: "p", text: "Messages you send us, our replies, and information you share to get help." },
@@ -266,6 +266,8 @@ export function privacyPolicySections(trust: TrustPublic): PolicySection[] {
             "Anthropic, which provides the AI models our agents use, including their web search and web page reading.",
             "Cloudflare, which runs the bot check on our public forms when it is switched on.",
             "Resend, which delivers the email that tells our team a website form was submitted.",
+            "Autumn, which runs our plans, credit balances and top-ups.",
+            "Stripe, which takes payments and manages cards and invoices. Card details go to Stripe, not to Vistrial.",
           ],
         },
         {

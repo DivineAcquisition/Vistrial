@@ -10,8 +10,8 @@ describe("privacy policy stays inside verified behavior", () => {
   it("names the operator and the Lanham address", () => {
     expect(text).toContain("Divine Agency LLC");
     expect(text).toContain("7404 Executive Place, Lanham, MD 20706");
-    expect(text).toContain("Effective: November 8, 2026");
-    expect(text).toContain("Last updated: November 8, 2026");
+    expect(text).toContain("Effective: November 9, 2026");
+    expect(text).toContain("Last updated: November 9, 2026");
   });
 
   it("drops claims the product does not enforce", () => {
@@ -30,8 +30,8 @@ describe("privacy policy stays inside verified behavior", () => {
     expect(text).toContain("Meta pixel");
     expect(text).not.toContain("[COUNSEL:");
     // The policy names the providers the code actually calls, and no retired ones.
-    for (const name of ["Vercel", "Convex", "Clerk", "Anthropic", "Cloudflare", "Resend"]) expect(text).toContain(name);
-    expect(text).not.toMatch(/stripe|supabase|compass|quiet hours|embeddings/i);
+    for (const name of ["Vercel", "Convex", "Clerk", "Anthropic", "Cloudflare", "Resend", "Autumn", "Stripe"]) expect(text).toContain(name);
+    expect(text).not.toMatch(/supabase|compass|quiet hours|embeddings/i);
     expect(text).not.toMatch(/GoHighLevel is the CRM/i);
   });
 
@@ -50,6 +50,12 @@ describe("privacy policy stays inside verified behavior", () => {
     expect(text).toContain("Uploaded results files are deleted as soon as they are read");
   });
 
+  it("says how credits are paid for and that card numbers stay with Stripe", () => {
+    expect(text).not.toContain("does not take payments");
+    expect(text).toContain("Payment is taken by Stripe on its own checkout page");
+    expect(text).toContain("Vistrial does not see or store a full card number");
+  });
+
   it("shows Not in effect while the policy is switched off", () => {
     expect(privacyPolicyText({ ...TRUST_FALLBACK, privacyLive: false })).toContain("Effective: Not in effect");
   });
@@ -63,7 +69,7 @@ describe("privacy policy stays inside verified behavior", () => {
     });
     expect(on).toMatch(/not used to train/i);
     expect(on).toMatch(/encrypted at rest/i);
-    expect(on).toContain("Effective: November 8, 2026");
+    expect(on).toContain("Effective: November 9, 2026");
     expect(on).toContain("Registered agent, Maryland");
   });
 });

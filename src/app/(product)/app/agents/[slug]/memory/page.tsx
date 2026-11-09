@@ -8,12 +8,13 @@ import { useWorkspaceShell } from "@/components/shell/shell-context";
 import { Button } from "@/components/ui/button";
 import { Panel } from "@/components/ui/panel";
 import { StatusBadge } from "@/components/ui/status-badge";
-import { FACT_SOURCE_WORDS, FACT_STATUS_WORDS, errorWords, shortDate } from "@/lib/research/words";
+import { FACT_SOURCE_WORDS, FACT_STATUS_WORDS, shortDate } from "@/lib/research/words";
 import { api } from "../../../../../../../convex/_generated/api";
 import type { Id } from "../../../../../../../convex/_generated/dataModel";
 import { StartSessionButton } from "@/components/sessions/start-session-button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Stagger, StaggerItem } from "@/components/motion/stagger";
+import { showError } from "@/lib/errors/show-error";
 
 function words(key: string) {
   const spaced = key.replace(/([a-z])([A-Z])/g, "$1 $2").replace(/[_-]+/g, " ");
@@ -68,7 +69,7 @@ export default function AgentMemory() {
                       onClick={() =>
                         void remove({ workspaceId: shell.workspaceId, factId: fact.id as Id<"businessFacts"> }).then(
                           () => setNotice("Removed. It no longer feeds any agent."),
-                          (problem: unknown) => setNotice(errorWords(problem, "It was not removed.")),
+                          (problem: unknown) => setNotice(showError(problem, "It was not removed.")),
                         )
                       }
                     >

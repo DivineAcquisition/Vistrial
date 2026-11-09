@@ -1,5 +1,6 @@
 import type { Id } from "../_generated/dataModel";
 import type { MutationCtx, QueryCtx } from "../_generated/server";
+import { userError } from "./errors";
 
 const STAGES = [
   { name: "New", sort: 0, kind: "open" as const, meaning: "A lead that has not been worked." },
@@ -36,7 +37,7 @@ export async function firstOpenStage(ctx: MutationCtx | QueryCtx, workspaceId: I
     .withIndex("by_workspace_sort", (q) => q.eq("workspaceId", workspaceId))
     .take(10);
   const open = stages.find((stage) => stage.kind === "open");
-  if (!open) throw new Error("Not found.");
+  if (!open) throw userError("Not found.", "not_found");
   return open;
 }
 

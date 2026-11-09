@@ -38,13 +38,14 @@ import { Button } from "@/components/ui/button";
 import { Panel } from "@/components/ui/panel";
 import { StatusBadge } from "@/components/ui/status-badge";
 import type { Tone } from "@/components/ui/tone";
-import { errorWords, money, PLATFORM_LABEL } from "@/lib/research/words";
+import { money, PLATFORM_LABEL } from "@/lib/research/words";
 import { cn } from "@/lib/utils";
 import { SourceIcon } from "@/components/research/source-icon";
 import { api } from "../../../convex/_generated/api";
 import type { Id } from "../../../convex/_generated/dataModel";
 import { Banner } from "@/components/ui/banner";
 import { AnimatedShinyText } from "@/components/ui/animated-shiny-text";
+import { showError } from "@/lib/errors/show-error";
 
 export type ThreadData = {
   studio: Studio;
@@ -189,7 +190,7 @@ function Composer({
             variant="outline"
             size="sm"
             onClick={() =>
-              void stop({ workspaceId, runId: studio.run!.id as Id<"agentRuns"> }).catch((problem: unknown) => setNotice(errorWords(problem, "It did not stop.")))
+              void stop({ workspaceId, runId: studio.run!.id as Id<"agentRuns"> }).catch((problem: unknown) => setNotice(showError(problem, "It did not stop.")))
             }
           >
             <Square aria-hidden className="size-3.5" /> Stop
@@ -228,7 +229,7 @@ function Composer({
         try {
           await answer({ workspaceId, runId: studio.run!.id as Id<"agentRuns">, questionId: studio.run!.waitingFor!.questionId, answer: text });
         } catch (problem) {
-          setNotice(errorWords(problem, "That answer was not saved."));
+          setNotice(showError(problem, "That answer was not saved."));
           throw problem;
         }
       }}
@@ -279,7 +280,7 @@ function FollowUpComposer({ workspaceId, projectId, base, hasReport }: { workspa
             extras.reset();
             await ask({ workspaceId, projectId, text, mode: extras.mode });
           } catch (problem) {
-            setNotice(errorWords(problem, "That question was not sent."));
+            setNotice(showError(problem, "That question was not sent."));
             throw problem;
           }
         }}

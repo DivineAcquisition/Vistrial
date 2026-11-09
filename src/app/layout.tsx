@@ -14,6 +14,7 @@ import { THEME_COLOR, THEME_SCRIPT } from "@/lib/theme";
 
 import "./globals.css";
 import { cn } from "@/lib/utils";
+import { ErrorNavigator } from "@/components/errors/error-navigator";
 
 export const metadata: Metadata = {
   metadataBase: new URL(PRODUCTION_SITE_ORIGIN),
@@ -73,6 +74,7 @@ export default async function RootLayout({
       <body className="min-h-screen bg-background font-sans text-foreground antialiased">
         <ThemeSync />
         <ToastProvider position="top-right">
+          <ErrorNavigator />
           <AnchoredToastProvider>
             <TooltipProvider>
               <AppProviders clerk={clerk}>{children}</AppProviders>

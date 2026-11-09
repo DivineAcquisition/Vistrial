@@ -2,7 +2,7 @@ import { v } from "convex/values";
 
 import { staffMutation, staffQuery, openGrant } from "./lib/builders";
 import { writeAudit } from "./lib/audit";
-import { notFound } from "./lib/errors";
+import { notFound, userError } from "./lib/errors";
 
 const HOUR_MS = 60 * 60 * 1000;
 
@@ -30,8 +30,8 @@ export const grant = staffMutation({
     const workspace = await ctx.db.get(args.workspaceId);
     if (!workspace) notFound();
     const reason = args.reason.trim();
-    if (reason.length < 8) throw new Error("A reason is required.");
-    if (args.hours < 1 || args.hours > 72) throw new Error("Choose a grant between 1 and 72 hours.");
+    if (reason.length < 8) throw userError("A reason is required.");
+    if (args.hours < 1 || args.hours > 72) throw userError("Choose a grant between 1 and 72 hours.");
     const now = Date.now();
     const grantId = await ctx.db.insert("staffAccessGrants", {
       staffUserId: ctx.identity.subject,

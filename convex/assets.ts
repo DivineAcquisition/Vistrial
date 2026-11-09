@@ -18,7 +18,7 @@ import {
 } from "./lib/evidence";
 import { basis } from "./lib/researchShapes";
 import { assetStatus } from "./lib/assetStatus";
-import { notAllowed, notFound } from "./lib/errors";
+import { notAllowed, notFound, userError } from "./lib/errors";
 
 /** A draft that failed a completion check is fixed by a person first: a new version, or a rejection. */
 export const NEEDS_REVIEW = "This draft did not pass its checks. Edit it to add a new version, or reject it.";
@@ -207,8 +207,8 @@ export const approve = workspaceMutation({
     assertEditor(ctx.member.role);
     const asset = await ctx.db.get(args.assetId);
     if (!asset || asset.workspaceId !== ctx.workspaceId) notFound();
-    if (asset.status === "needsReview") throw new Error(NEEDS_REVIEW);
-    if (asset.status !== "draft") throw new Error("That asset is not waiting.");
+    if (asset.status === "needsReview") throw userError(NEEDS_REVIEW);
+    if (asset.status !== "draft") throw userError("That asset is not waiting.");
     // The screen blocks this too, but the rule lives here: every claim on the version being
     // approved must still point at a real source in this workspace, or be marked computed.
     const current = await ctx.db
@@ -216,7 +216,7 @@ export const approve = workspaceMutation({
       .withIndex("by_workspace_asset", (q) => q.eq("workspaceId", ctx.workspaceId).eq("assetId", asset._id))
       .filter((q) => q.eq(q.field("version"), asset.currentVersion))
       .first();
-    if (!current) throw new Error("That version is missing, so it cannot be approved.");
+    if (!current) throw userError("That version is missing, so it cannot be approved.");
     const claims: ClaimInput[] = [];
     for await (const row of ctx.db
       .query("evidence")
@@ -224,7 +224,7 @@ export const approve = workspaceMutation({
       claims.push(claimFromRow(row));
     }
     if ((await claimsWithMissingSources(ctx, ctx.workspaceId, claims)).length > 0) {
-      throw new Error(MISSING_SOURCE);
+      throw userError(MISSING_SOURCE);
     }
     await ctx.db.patch(asset._id, { status: "approved" });
     await writeAudit(ctx, {
@@ -251,8 +251,8 @@ async function currentVersion(ctx: QueryCtx, asset: Doc<"assets">) {
 
 function cleanReason(raw: string) {
   const reason = raw.replace(/\s+/g, " ").trim();
-  if (reason.length < 3) throw new Error("Say why, in a few words.");
-  if (reason.length > MAX_REASON) throw new Error(`Keep the reason to ${MAX_REASON} characters.`);
+  if (reason.length < 3) throw userError("Say why, in a few words.");
+  if (reason.length > MAX_REASON) throw userError(`Keep the reason to ${MAX_REASON} characters.`);
   return reason;
 }
 
@@ -266,10 +266,10 @@ export const reject = workspaceMutation({
     assertEditor(ctx.member.role);
     const asset = await ctx.db.get(args.assetId);
     if (!asset || asset.workspaceId !== ctx.workspaceId) notFound();
-    if (asset.status !== "draft" && asset.status !== "needsReview") throw new Error("That asset is not waiting.");
+    if (asset.status !== "draft" && asset.status !== "needsReview") throw userError("That asset is not waiting.");
     const reason = cleanReason(args.reason);
     const version = await currentVersion(ctx, asset);
-    if (!version) throw new Error("That version is missing.");
+    if (!version) throw userError("That version is missing.");
     const feedbackId = await ctx.db.insert("feedback", {
       workspaceId: ctx.workspaceId,
       assetId: asset._id,
@@ -299,10 +299,10 @@ export const requestRevision = workspaceMutation({
     assertEditor(ctx.member.role);
     const asset = await ctx.db.get(args.assetId);
     if (!asset || asset.workspaceId !== ctx.workspaceId) notFound();
-    if (asset.status !== "draft" && asset.status !== "needsReview") throw new Error("That asset is not waiting.");
+    if (asset.status !== "draft" && asset.status !== "needsReview") throw userError("That asset is not waiting.");
     const reason = cleanReason(args.reason);
     const version = await currentVersion(ctx, asset);
-    if (!version) throw new Error("That version is missing.");
+    if (!version) throw userError("That version is missing.");
     const feedbackId = await ctx.db.insert("feedback", {
       workspaceId: ctx.workspaceId,
       assetId: asset._id,

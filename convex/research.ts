@@ -5,7 +5,7 @@ import type { Doc, Id } from "./_generated/dataModel";
 import type { QueryCtx } from "./_generated/server";
 import { workspaceMutation, workspaceQuery } from "./lib/builders";
 import { writeAudit } from "./lib/audit";
-import { notAllowed, notFound } from "./lib/errors";
+import { notAllowed, notFound, userError } from "./lib/errors";
 import { platform, projectStatus, type Platform } from "./lib/researchShapes";
 import { canonicalUrl, parsePublicUrl, sourceRefView } from "./lib/sourceRefs";
 
@@ -35,29 +35,29 @@ type ScopeInput = {
 function cleanScope(input: ScopeInput) {
   const title = input.title.trim();
   const objective = input.objective.trim();
-  if (title.length === 0 || title.length > LIMITS.title) throw new Error(`Give the project a name of up to ${LIMITS.title} characters.`);
+  if (title.length === 0 || title.length > LIMITS.title) throw userError(`Give the project a name of up to ${LIMITS.title} characters.`);
   if (objective.length === 0 || objective.length > LIMITS.objective) {
-    throw new Error(`Describe what you want to find out in up to ${LIMITS.objective} characters.`);
+    throw userError(`Describe what you want to find out in up to ${LIMITS.objective} characters.`);
   }
   const market = input.market.trim();
   const geography = input.geography.trim();
-  if (market.length > LIMITS.scopeText || geography.length > LIMITS.scopeText) throw new Error("Market and geography are too long.");
-  if (input.competitors.length > LIMITS.competitors) throw new Error(`List up to ${LIMITS.competitors} competitors.`);
+  if (market.length > LIMITS.scopeText || geography.length > LIMITS.scopeText) throw userError("Market and geography are too long.");
+  if (input.competitors.length > LIMITS.competitors) throw userError(`List up to ${LIMITS.competitors} competitors.`);
   const competitors = input.competitors.map((row) => {
     const name = row.name.trim();
-    if (name.length === 0 || name.length > LIMITS.title) throw new Error("Each competitor needs a name.");
+    if (name.length === 0 || name.length > LIMITS.title) throw userError("Each competitor needs a name.");
     const url = row.url?.trim();
-    if (url && !parsePublicUrl(url)) throw new Error(`The link for ${name} is not a public web address.`);
+    if (url && !parsePublicUrl(url)) throw userError(`The link for ${name} is not a public web address.`);
     return url ? { name, url } : { name };
   });
   const platforms = [...new Set(input.platforms)];
-  if (platforms.length === 0) throw new Error("Pick at least one place to look.");
-  if (input.suppliedUrls.length > LIMITS.suppliedUrls) throw new Error(`Paste up to ${LIMITS.suppliedUrls} links.`);
+  if (platforms.length === 0) throw userError("Pick at least one place to look.");
+  if (input.suppliedUrls.length > LIMITS.suppliedUrls) throw userError(`Paste up to ${LIMITS.suppliedUrls} links.`);
   const seen = new Set<string>();
   const suppliedUrls: string[] = [];
   for (const raw of input.suppliedUrls) {
     const canonical = canonicalUrl(raw);
-    if (!canonical) throw new Error("One of the links is not a public web address.");
+    if (!canonical) throw userError("One of the links is not a public web address.");
     if (seen.has(canonical)) continue;
     seen.add(canonical);
     suppliedUrls.push(raw.trim());
@@ -128,7 +128,7 @@ export const updateProject = workspaceMutation({
   handler: async (ctx, { projectId, ...input }) => {
     if (ctx.member.role === "rep") notAllowed();
     const project = await ownProject(ctx, ctx.workspaceId, projectId);
-    if (project.status !== "draft") throw new Error("This project has already run. Start a new one to change its scope.");
+    if (project.status !== "draft") throw userError("This project has already run. Start a new one to change its scope.");
     await ctx.db.patch(project._id, { ...cleanScope(input), updatedAt: Date.now() });
     return null;
   },
@@ -141,7 +141,7 @@ export const archiveProject = workspaceMutation({
     const project = await ownProject(ctx, ctx.workspaceId, args.projectId);
     const latest = project.latestRunId ? await ctx.db.get(project.latestRunId) : null;
     if (project.status === "running" || (latest && ["queued", "running", "waiting"].includes(latest.status))) {
-      throw new Error("Stop the run before archiving this project.");
+      throw userError("Stop the run before archiving this project.");
     }
     await ctx.db.patch(project._id, { status: "archived", updatedAt: Date.now() });
     await writeAudit(ctx, {

@@ -12,7 +12,7 @@ import type { Doc, Id } from "./_generated/dataModel";
 import { internalAction, internalMutation, internalQuery } from "./_generated/server";
 import { GROWTH_ARCHITECT } from "./catalog";
 import { workspaceMutation, workspaceQuery } from "./lib/builders";
-import { notAllowed, notFound } from "./lib/errors";
+import { notAllowed, notFound, userError } from "./lib/errors";
 import { factsForRun, liveFact, writeFact } from "./lib/facts";
 import {
   ALL_PLATFORMS,
@@ -175,9 +175,9 @@ export const create = workspaceMutation({
   handler: async (ctx, args) => {
     assertEditor(ctx.member.role);
     await assertCanSpend(ctx, ctx.workspaceId);
-    if (args.agentSlug !== GROWTH_ARCHITECT) throw new Error("This agent does not run sessions yet.");
+    if (args.agentSlug !== GROWTH_ARCHITECT) throw userError("This agent does not run sessions yet.");
     const text = clean(args.text, 1000);
-    if (!text) throw new Error("Say what you want to find out.");
+    if (!text) throw userError("Say what you want to find out.");
     const now = Date.now();
     let slots = prefill(emptySlots(), await memoryFor(ctx, ctx.workspaceId));
     slots = withChoices(slots, args.platforms, args.links);
@@ -241,8 +241,8 @@ export const reply = workspaceMutation({
     assertEditor(ctx.member.role);
     await assertCanSpend(ctx, ctx.workspaceId);
     const row = await ownIntake(ctx, args.intakeId);
-    if (row.status === "thinking") throw new Error("One moment. Vistrial is still reading your last message.");
-    if (row.status === "started" || row.status === "abandoned") throw new Error("This conversation has ended. Start a new session.");
+    if (row.status === "thinking") throw userError("One moment. Vistrial is still reading your last message.");
+    if (row.status === "started" || row.status === "abandoned") throw userError("This conversation has ended. Start a new session.");
     const text = clean(args.text, 1000);
     if (!text) return null;
     const now = await nextAt(ctx, row._id);

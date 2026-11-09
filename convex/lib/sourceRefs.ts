@@ -2,7 +2,7 @@ import type { Infer } from "convex/values";
 
 import type { Doc, Id } from "../_generated/dataModel";
 import type { MutationCtx } from "../_generated/server";
-import { notFound } from "./errors";
+import { notFound, userError } from "./errors";
 import type { Platform, SourceState, availability, classification, embed, sourceKind } from "./researchShapes";
 
 export const MAX_EXCERPT = 300;
@@ -90,7 +90,7 @@ export async function saveSourceRef(ctx: MutationCtx, input: SourceRefInput): Pr
     if (!artifact || artifact.workspaceId !== input.workspaceId) notFound();
   }
   const canonical = canonicalUrl(input.url);
-  if (!canonical) throw new Error("That link is not a public web address.");
+  if (!canonical) throw userError("That link is not a public web address.");
   const existing = await ctx.db
     .query("sourceRefs")
     .withIndex("by_workspace_project_canonical", (q) =>

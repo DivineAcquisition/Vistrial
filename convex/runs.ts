@@ -11,7 +11,7 @@ import { PLATFORM_CEILING, SOFT_WARNING_RATIO, capScope, dayKey, overCap } from 
 import { addDaySpend, daySpend, loadCaps, runCaps } from "./lib/capRows";
 import { currentAgentSlug } from "./catalog";
 import { assertClaims, assertSourcesExist } from "./lib/evidence";
-import { notAllowed, notFound } from "./lib/errors";
+import { notAllowed, notFound, userError } from "./lib/errors";
 import { ModelError, NO_SPEND, complete, type ModelRoute, type Spend } from "./lib/modelRouter";
 import { completeWithTools } from "./lib/toolRouter";
 import { INJECTION_FIXTURE, TEST_SKILL, devSkillsEnabled, isCollectTool, wrapUntrusted } from "./lib/registry";
@@ -299,29 +299,29 @@ export const start = workspaceMutation({
     if (ctx.member.role === "rep") notAllowed();
     const project = projectId ? await ctx.db.get(projectId) : null;
     if (projectId && (!project || project.workspaceId !== ctx.workspaceId)) notFound();
-    if (project?.status === "archived") throw new Error("This project is archived.");
+    if (project?.status === "archived") throw userError("This project is archived.");
     if (project?.latestRunId) {
       const latest = await ctx.db.get(project.latestRunId);
-      if (latest?.status === "waiting") throw new Error("This project has a run waiting for an answer. Answer it first.");
-      if (latest && (latest.status === "queued" || latest.status === "running")) throw new Error("This project already has a run in progress.");
+      if (latest?.status === "waiting") throw userError("This project has a run waiting for an answer. Answer it first.");
+      if (latest && (latest.status === "queued" || latest.status === "running")) throw userError("This project already has a run in progress.");
     }
     // An older client may still send a renamed slug. Runs are always stored under the current one.
     const args = { ...input, agentSlug: currentAgentSlug(input.agentSlug) };
     if (args.skillSlug === TEST_SKILL && !devSkillsEnabled()) notFound();
     const skill = skillFor(args.skillSlug);
-    if (!skill) throw new Error("This skill is not built yet.");
-    if (skill.needsProject && !projectId) throw new Error("Choose a research project first.");
+    if (!skill) throw userError("This skill is not built yet.");
+    if (skill.needsProject && !projectId) throw userError("Choose a research project first.");
     const agent = await ctx.db
       .query("agents")
       .withIndex("by_slug", (q) => q.eq("slug", args.agentSlug))
       .unique();
     if (!agent || agent.retired === true) notFound();
-    if (agent.status !== "live") throw new Error(`${agent.name} is not available yet.`);
+    if (agent.status !== "live") throw userError(`${agent.name} is not available yet.`);
     const link = await ctx.db
       .query("workspaceAgents")
       .withIndex("by_workspace_agent", (q) => q.eq("workspaceId", ctx.workspaceId).eq("agentId", agent._id))
       .unique();
-    if (!link || link.state === "off") throw new Error(`Turn on the ${agent.name} first.`);
+    if (!link || link.state === "off") throw userError(`Turn on the ${agent.name} first.`);
     if (skill.agentSlug !== agent.slug) notFound();
     const gate = await controls(ctx, ctx.workspaceId);
     const caps = await loadCaps(ctx, ctx.workspaceId, args.agentSlug, args.skillSlug);
@@ -1087,7 +1087,7 @@ export const answer = workspaceMutation({
     const run = await ctx.db.get(args.runId);
     if (!run || run.workspaceId !== ctx.workspaceId) notFound();
     if (run.status !== "waiting" || run.waitingFor?.questionId !== args.questionId) {
-      throw new Error("That question has already been answered or has changed.");
+      throw userError("That question has already been answered or has changed.");
     }
     await writeFact(ctx, {
       workspaceId: ctx.workspaceId,
@@ -1122,7 +1122,7 @@ export const resume = workspaceMutation({
     if (ctx.member.role === "rep") notAllowed();
     const run = await ctx.db.get(args.runId);
     if (!run || run.workspaceId !== ctx.workspaceId) notFound();
-    if (run.status !== "needsInput" || !run.waitingFor) throw new Error("This run is not waiting for input.");
+    if (run.status !== "needsInput" || !run.waitingFor) throw userError("This run is not waiting for input.");
     const askedAt = Date.now();
     await openQuestion(ctx, run, { ...run.waitingFor, questionId: `${run._id}:resume:${askedAt.toString(36)}`, askedAt });
     return null;

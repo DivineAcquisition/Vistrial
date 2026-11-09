@@ -6,10 +6,11 @@ import { v } from "convex/values";
 
 import { CATALOG } from "./catalog";
 import { workspaceMutation, workspaceQuery } from "./lib/builders";
+import { userError } from "./lib/errors";
 
 function plannedSlug(slug: string) {
   const agent = CATALOG.find((row) => row.slug === slug);
-  if (!agent || agent.status !== "planned") throw new Error("Only planned agents have a waitlist.");
+  if (!agent || agent.status !== "planned") throw userError("Only planned agents have a waitlist.");
   return agent.slug;
 }
 

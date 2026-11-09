@@ -3,7 +3,7 @@ import { v } from "convex/values";
 import { GROWTH_ARCHITECT } from "./catalog";
 import { workspaceMutation, workspaceQuery } from "./lib/builders";
 import { writeAudit } from "./lib/audit";
-import { notAllowed, notFound } from "./lib/errors";
+import { notAllowed, notFound, userError } from "./lib/errors";
 
 const competitor = v.object({ name: v.string(), url: v.string() });
 
@@ -15,7 +15,7 @@ function cleanCompetitors(rows: { name: string; url: string }[]) {
   return rows.map((row) => {
     const name = row.name.trim();
     const url = row.url.trim();
-    if (!name || !url.startsWith("https://")) throw new Error("Each competitor needs a name and an https URL.");
+    if (!name || !url.startsWith("https://")) throw userError("Each competitor needs a name and an https URL.");
     return { name, url };
   });
 }
@@ -136,7 +136,7 @@ export const confirm = workspaceMutation({
       .take(1);
     const draft = rows[0];
     if (!draft) notFound();
-    if (!draft.offer.trim() || !draft.audience.trim()) throw new Error("Add the offer and the audience first.");
+    if (!draft.offer.trim() || !draft.audience.trim()) throw userError("Add the offer and the audience first.");
     await ctx.db.patch(draft._id, {
       status: "confirmed",
       confirmedBy: ctx.identity.subject,
@@ -177,7 +177,7 @@ export const addExample = workspaceMutation({
       .take(1);
     const profile = rows[0];
     if (!profile || profile.status !== "draft") notFound();
-    if (!args.text?.trim() && !args.storageId) throw new Error("Add text or a file.");
+    if (!args.text?.trim() && !args.storageId) throw userError("Add text or a file.");
     const id = await ctx.db.insert("profileExamples", {
       workspaceId: ctx.workspaceId,
       version: args.version,
@@ -205,7 +205,7 @@ export const finishSetup = workspaceMutation({
       .query("profileVersions")
       .withIndex("by_workspace_status", (q) => q.eq("workspaceId", ctx.workspaceId).eq("status", "confirmed"))
       .take(5);
-    if (confirmed.length === 0) throw new Error("Confirm the business profile first.");
+    if (confirmed.length === 0) throw userError("Confirm the business profile first.");
     const sales = await ctx.db
       .query("agents")
       .withIndex("by_slug", (q) => q.eq("slug", GROWTH_ARCHITECT))
@@ -215,7 +215,7 @@ export const finishSetup = workspaceMutation({
       .query("workspaceAgents")
       .withIndex("by_workspace_agent", (q) => q.eq("workspaceId", ctx.workspaceId).eq("agentId", sales._id))
       .unique();
-    if (!link || link.state === "off") throw new Error("Turn on Growth Architect.");
+    if (!link || link.state === "off") throw userError("Turn on Growth Architect.");
     const settings = await ctx.db
       .query("workspaceSettings")
       .withIndex("by_workspace", (q) => q.eq("workspaceId", ctx.workspaceId))

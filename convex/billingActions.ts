@@ -11,7 +11,7 @@ import type { Id } from "./_generated/dataModel";
 import { internalAction, type ActionCtx } from "./_generated/server";
 import { AUTO_REFILL, CREDITS_FEATURE, PLAN, PLAN_ID, TOPUP_ID, TOPUP_PACKS_CENTS, billingOn } from "./lib/billing";
 import { memberAction } from "./lib/builders";
-import { notAllowed, notFound } from "./lib/errors";
+import { notAllowed, notFound, userError } from "./lib/errors";
 
 function client() {
   const secretKey = process.env.AUTUMN_SECRET_KEY;
@@ -126,7 +126,7 @@ export const topUp = memberAction({
   args: { amountCents: v.number(), returnOrigin: v.optional(v.string()) },
   handler: async (ctx, args): Promise<{ url: string | null }> => {
     await requireRole(ctx, ctx.workspaceId, ctx.userId, true);
-    if (!(TOPUP_PACKS_CENTS as readonly number[]).includes(args.amountCents)) throw new Error("Choose a $10, $25 or $50 pack.");
+    if (!(TOPUP_PACKS_CENTS as readonly number[]).includes(args.amountCents)) throw userError("Choose a $10, $25 or $50 pack.");
     const autumn = client();
     const info = await ctx.runQuery(internal.billing.customerInfo, { workspaceId: ctx.workspaceId });
     await autumn.customers.getOrCreate({ customerId: ctx.workspaceId, name: info.name, email: info.email ?? undefined });
@@ -186,7 +186,7 @@ export const checkSetup = internalAction({
   args: { keyName: v.optional(v.string()) },
   handler: async (_ctx, args) => {
     const name = args.keyName ?? "AUTUMN_SECRET_KEY";
-    if (!/^AUT[A-Z_]*$/.test(name)) throw new Error("Give the name of an Autumn key variable.");
+    if (!/^AUT[A-Z_]*$/.test(name)) throw userError("Give the name of an Autumn key variable.");
     const secretKey = process.env[name];
     if (!secretKey) return { ok: false, problem: `${name} is not set on this deployment.` };
     const autumn = new Autumn({ secretKey });

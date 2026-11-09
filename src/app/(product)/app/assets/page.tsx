@@ -15,7 +15,7 @@ import { StartSessionButton } from "@/components/sessions/start-session-button";
 import { Stagger, StaggerItem } from "@/components/motion/stagger";
 
 type Status = "draft" | "needsReview" | "approved" | "rejected" | "archived";
-type Kind = "researchReport" | "marketReport" | "adCopySet" | "creativeBrief" | "contentCalendar" | "swipeItem";
+type Kind = "researchReport" | "marketReport" | "adCopySet" | "creativeBrief" | "contentCalendar" | "swipeItem" | "growthDiagnosis";
 
 const STATUS_OPTIONS = [
   { value: "draft", label: "Waiting for approval" },
@@ -33,6 +33,7 @@ const KIND_OPTIONS = [
   { value: "creativeBrief", label: "Creative briefs" },
   { value: "contentCalendar", label: "Content calendars" },
   { value: "swipeItem", label: "Swipe items" },
+  { value: "growthDiagnosis", label: "Growth diagnoses" },
 ];
 
 function Library({ shell }: { shell: WorkspaceShell }) {

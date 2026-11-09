@@ -15,6 +15,7 @@ import { bodyText } from "@/lib/ui";
 import { api } from "../../../../../../convex/_generated/api";
 import { Stagger, StaggerItem } from "@/components/motion/stagger";
 import { StartSessionButton } from "@/components/sessions/start-session-button";
+import { StartDiagnosisButton } from "@/components/sessions/start-diagnosis-button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { NumberTicker } from "@/components/ui/number-ticker";
 import { PlannedAgent } from "@/components/agents/planned-agent";
@@ -155,6 +156,9 @@ export default function AgentOverview() {
                   <span className="text-sm text-muted-foreground">
                     {skill.promise}
                   </span>
+                ) : null}
+                {skill.slug === "growth-diagnostics" && skill.status === "available" && live && shell.role !== "rep" && agent.state !== "off" ? (
+                  <StartDiagnosisButton workspaceId={shell.workspaceId} agentSlug={agent.slug} />
                 ) : null}
               </li>
             ))}

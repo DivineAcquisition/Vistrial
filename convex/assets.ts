@@ -49,6 +49,7 @@ export const list = workspaceQuery({
         v.literal("creativeBrief"),
         v.literal("contentCalendar"),
         v.literal("swipeItem"),
+        v.literal("growthDiagnosis"),
       ),
     ),
   },

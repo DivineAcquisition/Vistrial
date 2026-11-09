@@ -118,6 +118,7 @@ const ASSET_KIND: Record<string, string> = {
   creativeBrief: "Creative brief",
   contentCalendar: "Content calendar",
   swipeItem: "Swipe item",
+  growthDiagnosis: "Growth diagnosis",
 };
 
 export function assetKindLabel(kind: string) {

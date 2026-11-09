@@ -20,6 +20,9 @@ export const TOOLS = [
   "mi.compute",
   "mi.check",
   "mi.save",
+  "gd.read",
+  "gd.check",
+  "gd.save",
 ] as const;
 
 export type ToolSlug = (typeof TOOLS)[number];

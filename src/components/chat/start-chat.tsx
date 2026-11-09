@@ -59,7 +59,7 @@ function StartChatInner({ defaultAgent = "growth-architect", size = "dock", plac
             });
             await extras.attachTo({ intakeId });
             extras.reset();
-            router.push(`/app/agents/${chosen}/sessions/new?intake=${intakeId}`);
+            router.push(`/app/agents/${chosen}/work/research?intake=${intakeId}`);
           } catch (error) {
             setProblem(showError(error, "That did not start."));
             throw error;

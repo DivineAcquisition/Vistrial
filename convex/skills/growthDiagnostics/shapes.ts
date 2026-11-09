@@ -31,6 +31,22 @@ export const PHASE = {
 export const MIN_FIXES = 2;
 export const MAX_FIXES = 3;
 
+/** The 90-day roadmap's phases, in order: Fix (weeks 1-4), Build (5-8), Scale (9-12). */
+export const ROADMAP_PHASES = ["fix", "build", "scale"] as const;
+export type RoadmapPhase = (typeof ROADMAP_PHASES)[number];
+
+export const PHASE_WORDS: Record<RoadmapPhase, { name: string; weeks: string }> = {
+  fix: { name: "Fix", weeks: "Weeks 1-4" },
+  build: { name: "Build", weeks: "Weeks 5-8" },
+  scale: { name: "Scale", weeks: "Weeks 9-12" },
+};
+
+/** Steps per phase. */
+export const MAX_STEPS_PER_PHASE = 3;
+
+/** The words a roadmap line starts with when the business's data cannot support it. */
+export const NOT_ENOUGH_DATA = "Not enough data";
+
 /**
  * One number from the business's own data. `computed` is true when code derived it (a rate, a ratio, a
  * change); false when it is a figure as the source reported it. Every figure names the sources it came from.
@@ -65,6 +81,8 @@ export type DiagnosticsRecord = {
   missing: { stage: Stage | "all"; text: string }[];
   profile: null | { versionId: string; offer: string; priceNotes: string; audience: string; geography: string; channels: string };
   facts: { id: string; factKey: string; value: string; status: string }[];
+  /** The owner's goal from the Diagnostics workspace, in their words. Missing on records written before goals. */
+  goal?: { text: string; target: number | null; metric: string | null; period: string | null } | null;
 };
 
 const str = { type: "string" };
@@ -95,13 +113,36 @@ export const DIAGNOSIS_SCHEMA = {
         additionalProperties: false,
       },
     },
+    roadmap: {
+      type: "array",
+      items: {
+        type: "object",
+        properties: {
+          phase: { type: "string", enum: [...ROADMAP_PHASES] },
+          problem: str,
+          figureIds: strings,
+          action: str,
+          targetMetric: str,
+          target: str,
+        },
+        required: ["phase", "problem", "figureIds", "action", "targetMetric", "target"],
+        additionalProperties: false,
+      },
+    },
     limits: strings,
   },
-  required: ["summary", "stage", "stageReason", "stageFigureIds", "findings", "fixes", "limits"],
+  required: ["summary", "stage", "stageReason", "stageFigureIds", "findings", "fixes", "roadmap", "limits"],
   additionalProperties: false,
 };
 
 export type Fix = { fix: string; why: string; figureIds: string[]; howToTell: string };
+
+/**
+ * One step of the 90-day roadmap: the problem it fixes (with the business's own figures, cited by id), the
+ * action, the measure to watch and the target for it. A target is stated against the business's own
+ * figures or its goal, never an outside benchmark; "Not enough data" where nothing supports one.
+ */
+export type RoadmapStep = { phase: RoadmapPhase; problem: string; figureIds: string[]; action: string; targetMetric: string; target: string };
 
 export type Diagnosis = {
   summary: string;
@@ -110,6 +151,8 @@ export type Diagnosis = {
   stageFigureIds: string[];
   findings: { statement: string; figureIds: string[] }[];
   fixes: Fix[];
+  /** Empty on diagnoses written before the roadmap existed. */
+  roadmap: RoadmapStep[];
   limits: string[];
 };
 
@@ -144,6 +187,18 @@ export function readDiagnosis(value: unknown): Diagnosis | null {
       const fix = obj(item);
       return { fix: text(fix.fix), why: text(fix.why), figureIds: list(fix.figureIds), howToTell: text(fix.howToTell) };
     }),
+    roadmap: (Array.isArray(row.roadmap) ? row.roadmap : [])
+      .map((item) => {
+        const step = obj(item);
+        const phase = ROADMAP_PHASES.includes(step.phase as RoadmapPhase) ? (step.phase as RoadmapPhase) : null;
+        return phase
+          ? { phase, problem: text(step.problem), figureIds: list(step.figureIds), action: text(step.action), targetMetric: text(step.targetMetric, 200), target: text(step.target, 400) }
+          : null;
+      })
+      .filter((step): step is RoadmapStep => step !== null)
+      // In phase order, at most three steps a phase.
+      .sort((a, b) => ROADMAP_PHASES.indexOf(a.phase) - ROADMAP_PHASES.indexOf(b.phase))
+      .filter((step, i, all) => all.slice(0, i).filter((other) => other.phase === step.phase).length < MAX_STEPS_PER_PHASE),
     limits: list(row.limits, 10),
   };
 }

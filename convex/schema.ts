@@ -921,6 +921,13 @@ export default defineSchema({
     opportunity: v.string(),
     proposedAction: v.string(),
     validationMethod: v.string(),
+    /**
+     * What was chosen, when it is not a report opportunity: an offer change from an offer analysis, or a
+     * step of a growth diagnosis's 90-day roadmap. Missing means a report opportunity.
+     */
+    itemKind: v.optional(v.union(v.literal("offerChange"), v.literal("roadmapStep"))),
+    /** The roadmap phase of a roadmap step. */
+    phase: v.optional(v.union(v.literal("fix"), v.literal("build"), v.literal("scale"))),
     checkInAt: v.number(),
     createdBy: v.string(),
     createdAt: v.number(),
@@ -937,7 +944,56 @@ export default defineSchema({
     ),
   })
     .index("by_workspace", ["workspaceId", "checkInAt"])
-    .index("by_workspace_project", ["workspaceId", "projectId"]),
+    .index("by_workspace_project", ["workspaceId", "projectId"])
+    .index("by_workspace_asset", ["workspaceId", "assetId"]),
+
+  /**
+   * The growth goal the owner set in the Diagnostics workspace, in their own words ("40 more bookings a
+   * month"). The newest row is the current goal; older rows are its history. Growth Diagnostics reads it.
+   */
+  growthGoals: defineTable({
+    workspaceId: v.id("workspaces"),
+    text: v.string(),
+    /** Read from the owner's words in code, when they name a number: 40, "bookings", "month". */
+    target: v.optional(v.number()),
+    metric: v.optional(v.string()),
+    period: v.optional(v.union(v.literal("week"), v.literal("month"), v.literal("quarter"), v.literal("year"))),
+    setBy: v.string(),
+    setAt: v.number(),
+  }).index("by_workspace", ["workspaceId", "setAt"]),
+
+  /** One offer the business sells, shown as an offer card. Its content lives in versions. */
+  offerCards: defineTable({
+    workspaceId: v.id("workspaces"),
+    name: v.string(),
+    currentVersion: v.number(),
+    archived: v.optional(v.boolean()),
+    createdBy: v.string(),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  }).index("by_workspace", ["workspaceId", "updatedAt"]),
+
+  /**
+   * One version of an offer card. A person writes one by editing the card or answering in the Offers chat;
+   * an offer analysis writes one from what the business stated. Never overwritten: a change is a new version.
+   */
+  offerCardVersions: defineTable({
+    workspaceId: v.id("workspaces"),
+    cardId: v.id("offerCards"),
+    version: v.number(),
+    name: v.string(),
+    price: v.string(),
+    included: v.array(v.string()),
+    guarantee: v.string(),
+    terms: v.string(),
+    targetCustomer: v.string(),
+    origin: v.union(v.literal("person"), v.literal("chat"), v.literal("analysis")),
+    /** The offer analysis this version came from, when it came from one. */
+    assetId: v.optional(v.id("assets")),
+    note: v.optional(v.string()),
+    createdBy: v.string(),
+    createdAt: v.number(),
+  }).index("by_workspace_card", ["workspaceId", "cardId", "version"]),
 
   /**
    * Vistrial's own learning from outcomes, across businesses. Internal only: no public function reads it,
@@ -1118,6 +1174,15 @@ export default defineSchema({
     /** Quality mode chosen in the chat box; thorough when missing. */
     mode: v.optional(v.union(v.literal("thorough"), v.literal("fast"))),
     projectId: v.optional(v.id("researchProjects")),
+    /**
+     * The skill this conversation is for. Missing means Market Intelligence (the research intake). Offer
+     * Intelligence and Growth Diagnostics ask their own short checklist, held in code (`skillIntake.ts`).
+     */
+    skillSlug: v.optional(v.string()),
+    /** What the skill checklist gathered, keyed by question. */
+    answers: v.optional(v.record(v.string(), v.string())),
+    /** The run a skill conversation started. */
+    runId: v.optional(v.id("agentRuns")),
     createdAt: v.number(),
     updatedAt: v.number(),
   })

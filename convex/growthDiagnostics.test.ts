@@ -15,7 +15,7 @@ import { CATALOG } from "./catalog";
 import { skillFor } from "./lib/skills";
 import { runChecks, unsupportedNumbers } from "./skills/growthDiagnostics/checks";
 import { computeDiagnostics, type MetaInput } from "./skills/growthDiagnostics/compute";
-import type { DiagnosticsRecord, Diagnosis } from "./skills/growthDiagnostics/shapes";
+import { readDiagnosis, type DiagnosticsRecord, type Diagnosis } from "./skills/growthDiagnostics/shapes";
 import schema from "./schema";
 
 const modules = import.meta.glob(["./**/*.ts", "!./**/*.test.ts"]);
@@ -41,7 +41,7 @@ function figuresIn(input: string): ScriptFigure[] {
  * A scripted model that records every input and answers the diagnose step from the figures it was given.
  * `benchmarkFirst` makes the first draft compare with an industry average, so the checks fail once.
  */
-function script(options: { benchmarkFirst?: boolean } = {}) {
+function script(options: { benchmarkFirst?: boolean; noRoadmap?: boolean } = {}) {
   const inputs: string[] = [];
   const model: ScriptedModel = (params) => {
     const input = String(params.messages[0].content);
@@ -70,6 +70,13 @@ function script(options: { benchmarkFirst?: boolean } = {}) {
           { fix: "Send every lead a reply within an hour", why: "Fewer clicks become leads.", figureIds: [first.id], howToTell: `Watch ${first.label} over the next 30 days.` },
           { fix: "Move spend to the campaign with the lowest cost per lead", why: "Cost per lead differs between campaigns.", figureIds: [second.id], howToTell: `Watch ${second.label} over the next 30 days.` },
         ],
+        roadmap: options.noRoadmap
+          ? []
+          : [
+              { phase: "fix", problem: `${first.label} is ${first.display}.`, figureIds: [first.id], action: "Reply to every lead within an hour", targetMetric: first.label, target: `Better than ${first.display}` },
+              { phase: "build", problem: `${second.label} is ${second.display}.`, figureIds: [second.id], action: "Test a new headline on the best campaign", targetMetric: second.label, target: `Higher than ${second.display}` },
+              { phase: "scale", problem: "Not enough data to size the next channel.", figureIds: [], action: "Put the saved budget behind the winning ad", targetMetric: first.label, target: "Not enough data" },
+            ],
         limits: [],
       }),
     };
@@ -255,6 +262,39 @@ describe("Growth Diagnostics", () => {
     const studio = await a.owner.query(api.studio.studio, { workspaceId: a.workspaceId, projectId });
     expect(studio.run?.skillSlug).toBe(GD);
     expect(studio.assetId).toBe(asset?.id);
+  });
+
+  it("aims a 90-day roadmap at the owner's goal and saves it in three phases with its figures", async () => {
+    const t = makeTester();
+    const a = await seed(t, "Alpha", "Deep house cleaning");
+    await a.owner.mutation(api.goals.set, { workspaceId: a.workspaceId, text: "40 more bookings a month" });
+    await connectMeta(t, a.workspaceId);
+    const inputs = script();
+    const { status } = await run(t, a.owner, a.workspaceId);
+    expect(status).toBe("completed");
+    expect(inputs[0]).toContain('The owner\'s goal, in their words: "40 more bookings a month"');
+    expect(inputs[0]).toContain("roadmap: a firm 90-day plan in three phases");
+    const asset = (await diagnosisAsset(a.owner, a.workspaceId))!;
+    expect(asset.status).toBe("draft");
+    expect(asset.body).toContain("## 90-day roadmap");
+    expect(asset.body).toContain("_Goal: 40 more bookings a month_");
+    expect(asset.body.indexOf("### Fix (Weeks 1-4)")).toBeLessThan(asset.body.indexOf("### Build (Weeks 5-8)"));
+    expect(asset.body).toContain("### Scale (Weeks 9-12)");
+    const roadmap = (asset.evidence as EvidenceRow[]).filter((row) => row.claimKey.startsWith("roadmap-"));
+    expect(roadmap.map((row) => row.basis)).toEqual(["inferred", "inferred", "insufficient"]);
+    const view = await a.owner.query(api.workTabs.diagnostics, { workspaceId: a.workspaceId });
+    expect(view.diagnosis?.roadmap.map((row) => row.phase)).toEqual(["fix", "build", "scale"]);
+    expect(view.diagnosis?.roadmap[0].figures.length).toBe(1);
+  });
+
+  it("revises a draft whose roadmap misses a phase", async () => {
+    const t = makeTester();
+    const a = await seed(t, "Alpha", "Deep house cleaning");
+    await connectMeta(t, a.workspaceId);
+    const inputs = script({ noRoadmap: true });
+    await run(t, a.owner, a.workspaceId);
+    expect(inputs).toHaveLength(2);
+    expect(inputs[1]).toContain("A 90-day roadmap in three phases");
   });
 
   it("says Not enough data with no first-party data, names what to connect, and calls no model", async () => {
@@ -456,6 +496,11 @@ describe("Growth Diagnostics checks", () => {
         { fix: "Answer leads faster", why: "Costly leads.", figureIds: [cpl.id], howToTell: "Watch cost per lead for 30 days." },
         { fix: "Test a new headline", why: "Click rate.", figureIds: [ctr.id], howToTell: "Watch click-through rate for 30 days." },
       ],
+      roadmap: [
+        { phase: "fix", problem: `Each lead costs ${cpl.display}.`, figureIds: [cpl.id], action: "Answer leads within an hour", targetMetric: cpl.label, target: `Below ${cpl.display}` },
+        { phase: "build", problem: `Click-through rate is ${ctr.display}.`, figureIds: [ctr.id], action: "Test a new headline", targetMetric: ctr.label, target: `Above ${ctr.display}` },
+        { phase: "scale", problem: "Not enough data to size a second channel.", figureIds: [], action: "Move budget to the winning ad", targetMetric: cpl.label, target: "Not enough data" },
+      ],
       limits: [],
     };
   };
@@ -476,6 +521,37 @@ describe("Growth Diagnostics checks", () => {
     const oneFix = { ...good(rec), fixes: good(rec).fixes.slice(0, 1) };
     expect(runChecks(oneFix, rec).results.find((row) => row.id === 4)?.passed).toBe(false);
     expect(runChecks(null, rec).passed).toBe(false);
+  });
+
+  it("fails a roadmap that misses a phase, invents a number, compares with a benchmark or rests on nothing", () => {
+    const rec = record();
+    const sixth = (diagnosis: Diagnosis) => runChecks(diagnosis, rec).results.find((row) => row.id === 6)?.passed;
+    expect(sixth(good(rec))).toBe(true);
+    expect(sixth({ ...good(rec), roadmap: good(rec).roadmap.filter((row) => row.phase !== "scale") })).toBe(false);
+    expect(sixth({ ...good(rec), roadmap: [] })).toBe(false);
+    const ungrounded = good(rec).roadmap.map((row) => (row.phase === "build" ? { ...row, figureIds: [], problem: "Headlines are weak." } : row));
+    expect(sixth({ ...good(rec), roadmap: ungrounded })).toBe(false);
+    const noTarget = good(rec).roadmap.map((row) => (row.phase === "fix" ? { ...row, target: "" } : row));
+    expect(sixth({ ...good(rec), roadmap: noTarget })).toBe(false);
+    const invented = good(rec).roadmap.map((row) => (row.phase === "fix" ? { ...row, target: "Get cost per lead to $14.00" } : row));
+    expect(runChecks({ ...good(rec), roadmap: invented }, rec).results.find((row) => row.id === 3)?.passed).toBe(false);
+    const benchmark = good(rec).roadmap.map((row) => (row.phase === "build" ? { ...row, target: "Reach the industry average click rate" } : row));
+    expect(runChecks({ ...good(rec), roadmap: benchmark }, rec).results.find((row) => row.id === 5)?.passed).toBe(false);
+  });
+
+  it("lets a roadmap target use the numbers in the owner's own goal, and no others", () => {
+    const rec = { ...record(), goal: { text: "40 more bookings a month", target: 40, metric: "bookings", period: "month" } };
+    const toGoal = good(rec).roadmap.map((row) => (row.phase === "scale" ? { ...row, target: "Toward 40 more bookings a month" } : row));
+    expect(runChecks({ ...good(rec), roadmap: toGoal }, rec).passed).toBe(true);
+    const beyond = good(rec).roadmap.map((row) => (row.phase === "scale" ? { ...row, target: "65 more bookings a month" } : row));
+    expect(runChecks({ ...good(rec), roadmap: beyond }, rec).results.find((row) => row.id === 3)?.passed).toBe(false);
+  });
+
+  it("keeps roadmap steps in phase order, at most three a phase, and drops steps with no known phase", () => {
+    const steps = Array.from({ length: 5 }, (_, i) => ({ phase: "scale", problem: `p${i}`, figureIds: [], action: `a${i}`, targetMetric: "m", target: "t" }));
+    const read = readDiagnosis({ summary: "", stage: "leads", stageReason: "", stageFigureIds: [], findings: [], fixes: [], roadmap: [...steps, { phase: "fix", problem: "x", figureIds: [], action: "y", targetMetric: "m", target: "t" }, { phase: "later", problem: "z" }], limits: [] })!;
+    expect(read.roadmap.map((row) => row.phase)).toEqual(["fix", "scale", "scale", "scale"]);
+    expect(readDiagnosis({ summary: "" })!.roadmap).toEqual([]);
   });
 
   it("reads numbers the way they are displayed", () => {

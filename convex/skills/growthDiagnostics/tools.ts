@@ -9,6 +9,7 @@ import { runChecks } from "./checks";
 import { computeDiagnostics } from "./compute";
 import { renderDiagnosis, renderNotEnough } from "./render";
 import { gatherFirstParty } from "./sources";
+import { currentGoal } from "../../goals";
 import { PHASE, STAGE_WORDS, readDiagnosis, type ChecksRecord, type Diagnosis, type DiagnosticsRecord, type Figure } from "./shapes";
 
 type Step = Doc<"runSteps">;
@@ -41,6 +42,7 @@ const read: MutationTool = async (ctx, run) => {
     .first();
   const facts = await factsForRun(ctx, run.workspaceId);
   const computed = computeDiagnostics(await gatherFirstParty(ctx, run, project));
+  const goal = await currentGoal(ctx, run.workspaceId);
   const value: DiagnosticsRecord = {
     projectId: project._id,
     ...computed,
@@ -48,6 +50,7 @@ const read: MutationTool = async (ctx, run) => {
       ? { versionId: profile._id, offer: profile.offer, priceNotes: profile.priceNotes, audience: profile.audience, geography: profile.geography, channels: profile.channels }
       : null,
     facts: facts.slice(0, 40).map((row) => ({ id: row._id, factKey: row.factKey, value: row.value, status: row.status })),
+    goal: goal ? { text: goal.text, target: goal.target ?? null, metric: goal.metric ?? null, period: goal.period ?? null } : null,
   };
   return { resultCode: computed.hasData ? "ok" : "no_data", resultId: String(computed.figures.length), artifact: record("diagnostics", value) };
 };
@@ -109,6 +112,15 @@ function diagnosisClaims(diagnosis: Diagnosis | null, diagnostics: DiagnosticsRe
     claims.push(firstParty("stall-stage", `Growth stalls at ${STAGE_WORDS[diagnosis.stage].toLowerCase()}: ${diagnosis.stageReason}`, cite(diagnosis.stageFigureIds)));
   }
   diagnosis.findings.forEach((row, i) => claims.push(firstParty(`finding-${i + 1}`, row.statement, cite(row.figureIds))));
+  diagnosis.roadmap.forEach((row, i) => {
+    const figures = cite(row.figureIds);
+    const statement = `${row.problem} Action: ${row.action}. Watch ${row.targetMetric}; target: ${row.target}`;
+    claims.push(
+      figures.length
+        ? { claimKey: `roadmap-${row.phase}-${i + 1}`, statement, basis: "inferred", sourceRefIds: sourcesOf(figures) }
+        : { claimKey: `roadmap-${row.phase}-${i + 1}`, statement: row.problem.startsWith(NOT_ENOUGH) ? row.problem : `${NOT_ENOUGH}: ${statement}`, basis: "insufficient" },
+    );
+  });
   diagnosis.fixes.forEach((row, i) => {
     const figures = cite(row.figureIds);
     const statement = `${row.fix}. How to tell if it worked: ${row.howToTell}`;
@@ -175,7 +187,7 @@ const save: MutationTool = async (ctx, run, steps) => {
   const bodyFor = (diagnosis: Diagnosis | null, checks: ChecksRecord, lines: string[]) =>
     diagnosis
       ? renderDiagnosis(diagnosis, diagnostics, checks, lines)
-      : renderDiagnosis({ summary: "", stage: "unknown", stageReason: "", stageFigureIds: [], findings: [], fixes: [], limits: [] }, diagnostics, { passed: false, results: [] }, lines);
+      : renderDiagnosis({ summary: "", stage: "unknown", stageReason: "", stageFigureIds: [], findings: [], fixes: [], roadmap: [], limits: [] }, diagnostics, { passed: false, results: [] }, lines);
   const droppedFirst = await writeVersion(ctx, run, assetId, 1, bodyFor(first, firstChecks, notes), diagnosisClaims(first, diagnostics));
   const droppedSecond = second ? await writeVersion(ctx, run, assetId, 2, bodyFor(second, finalChecks, []), diagnosisClaims(second, diagnostics)) : [];
   return {

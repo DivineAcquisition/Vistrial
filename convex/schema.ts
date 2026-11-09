@@ -712,6 +712,7 @@ export default defineSchema({
       v.literal("creativeBrief"),
       v.literal("contentCalendar"),
       v.literal("swipeItem"),
+      v.literal("growthDiagnosis"),
     ),
     title: v.string(),
     status: assetStatus,

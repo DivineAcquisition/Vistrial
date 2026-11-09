@@ -153,6 +153,7 @@ export const studio = workspaceQuery({
       project: projectView,
       run: {
         id: run._id,
+        skillSlug: run.skillSlug,
         status: run.status,
         stopReason: run.stopReason ?? null,
         costCents: run.costCents,

@@ -23,6 +23,9 @@ export const TOOLS = [
   "oi.context",
   "oi.check",
   "oi.save",
+  "gd.read",
+  "gd.check",
+  "gd.save",
 ] as const;
 
 export type ToolSlug = (typeof TOOLS)[number];

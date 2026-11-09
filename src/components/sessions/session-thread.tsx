@@ -432,6 +432,8 @@ export function SessionThread({
   const sourceList = [...data.sources.values()];
   const supplied = sourceList.filter((row) => row.origin === "supplied").length;
   const competitors = (project as { competitors?: { name: string }[] }).competitors ?? [];
+  // A Growth Diagnostics session reads the business's own data; it has no brief, market sources or report view.
+  const diagnosis = run?.skillSlug === "growth-diagnostics";
 
   return (
     <div className="grid min-w-0 gap-5 lg:grid-cols-[minmax(0,1fr)_17rem]">
@@ -496,6 +498,12 @@ export function SessionThread({
 
           {!run ? (
             <AgentSaid name={agentName} line="has not started this one yet." />
+          ) : diagnosis ? (
+            <AgentSaid
+              name={agentName}
+              icon={ClipboardList}
+              line={studio.assetId ? "read your own results and worked out every figure in code." : "is reading your own results: Meta ads, results files and past decisions."}
+            />
           ) : (
             <AgentSaid
               name={agentName}
@@ -533,7 +541,7 @@ export function SessionThread({
           ) : null}
 
           {run && !run.waitingFor ? (
-            <AgentSaid name={agentName} icon={Search} line={data.open ? "is working on it now." : "researched it. Here is how that went."}>
+            <AgentSaid name={agentName} icon={Search} line={data.open ? "is working on it now." : diagnosis ? "diagnosed it. Here is how that went." : "researched it. Here is how that went."}>
               {data.open ? (
                 <LiveActivity steps={data.steps} sources={sourceList} status={run.status} startedAt={run.startedAt} finishedAt={run.finishedAt} costCents={run.costCents} />
               ) : (
@@ -582,6 +590,14 @@ export function SessionThread({
           ) : null}
 
           {run?.status === "completed" && data.counts.size ? <AudienceTurn workspaceId={workspaceId} counts={data.counts} agentName={agentName} editor={editor} /> : null}
+
+          {diagnosis && studio.assetId ? (
+            <AgentSaid name={agentName} icon={BookOpenCheck} line="wrote the diagnosis: where growth stalls, the figures behind it, and the fixes.">
+              <Link href={`/app/assets/${studio.assetId}`} className="inline-flex items-center gap-1 text-sm text-primary hover:underline">
+                <FileText aria-hidden className="size-4" /> Open the diagnosis
+              </Link>
+            </AgentSaid>
+          ) : null}
 
           {studio.assetId && data.assetStatus ? (
             <AgentSaid name={agentName} icon={FileText} line={data.assetStatus === "approved" ? "has your approval on this report." : "is waiting for your decision."}>

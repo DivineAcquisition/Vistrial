@@ -33,6 +33,12 @@ export const SKILL_CAPS: Readonly<Record<string, Caps>> = {
     maxSteps: 20,
     maxDurationMs: 600_000,
   },
+  "growth-diagnostics": {
+    maxCostCentsPerRun: 100,
+    maxCostCentsPerDay: 1000,
+    maxSteps: 20,
+    maxDurationMs: 600_000,
+  },
 };
 
 /** The caps row and day counter a skill uses: its own slug when it has its own caps, otherwise the agent's (undefined). */

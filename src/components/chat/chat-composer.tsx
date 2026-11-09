@@ -392,7 +392,7 @@ export function ChatComposer({
                               : "Owner only"}
                         </span>
                       </MenuItem>
-                      <MenuItem render={<Link href="/app/connections" />}>
+                      <MenuItem render={<Link href="/app/settings?section=data" />}>
                         <Settings2 aria-hidden /> Manage connections
                       </MenuItem>
                     </MenuGroup>

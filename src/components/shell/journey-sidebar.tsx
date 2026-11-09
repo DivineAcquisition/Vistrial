@@ -16,12 +16,9 @@ import {
   FileSearch,
   Gauge,
   Hourglass,
-  Plug,
   Plus,
   Search,
   Settings,
-  ShieldCheck,
-  Sparkles,
   Users,
   Wallet,
   type LucideIcon,
@@ -117,11 +114,7 @@ export type SidebarData = {
 function BusinessHeader({ name, onNavigate }: { name: string; onNavigate?: () => void }) {
   const items: { href: string; label: string; icon: LucideIcon }[] = [
     { href: "/app/settings", label: "Settings", icon: Settings },
-    { href: "/app/team", label: "Team", icon: Users },
     { href: "/app/billing", label: "Billing", icon: Wallet },
-    { href: "/app/profile", label: "Business profile", icon: Sparkles },
-    { href: "/app/connections", label: "Connections", icon: Plug },
-    { href: "/app/controls", label: "Controls", icon: ShieldCheck },
   ];
   return (
     <Menu>

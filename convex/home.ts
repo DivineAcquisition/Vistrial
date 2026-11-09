@@ -20,7 +20,7 @@ export type KnowledgeKey = "profile" | "facts" | "meta" | "results" | "outcome";
 
 /** In the order a business should add them: the first one missing is the suggestion. */
 export const KNOWLEDGE: { key: KnowledgeKey; label: string; missing: string; href: string }[] = [
-  { key: "profile", label: "Confirmed business profile", missing: "Confirm your business profile", href: "/app/profile" },
+  { key: "profile", label: "Confirmed business profile", missing: "Confirm your business profile", href: "/app/settings?section=business" },
   { key: "facts", label: "Business facts", missing: "Add facts about your business", href: "/app/agents/growth-architect/memory" },
   { key: "results", label: "Results file", missing: "Upload a results file", href: "/app/connections/results" },
   { key: "meta", label: "Meta ads connected", missing: "Connect Meta ads", href: "/app/connections/meta" },

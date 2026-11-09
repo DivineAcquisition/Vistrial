@@ -5,6 +5,7 @@ import { convexTest } from "convex-test";
 import { describe, expect, it, vi } from "vitest";
 
 import { api, internal } from "./_generated/api";
+import { siteDomains } from "./onboarding";
 import schema from "./schema";
 
 const modules = import.meta.glob(["./**/*.ts", "!./**/*.test.ts"]);
@@ -133,5 +134,15 @@ describe("onboarding wizard", () => {
     expect(view.business).toMatchObject({ name: "DivineACQ", offer: "Growth systems", area: "Chicago", audience: "Cleaning company owners" });
     expect(view.site.competitors).toEqual(["A", "B"]);
     vi.useRealTimers();
+  });
+});
+
+describe("siteDomains", () => {
+  it("lists a bare host once, since the API refuses repeated domains", () => {
+    expect(siteDomains("divineacquisition.io")).toEqual(["divineacquisition.io"]);
+  });
+
+  it("lists a www host and its bare form", () => {
+    expect(siteDomains("www.example.com")).toEqual(["www.example.com", "example.com"]);
   });
 });

@@ -42,7 +42,7 @@ export const create = signedInMutation({
     if (await activeMembership(ctx, ctx.userId)) throw userError("You already belong to a workspace.");
     const name = args.name.trim();
     if (!name) throw userError("Name the workspace.");
-    const workspaceId = await createWorkspaceFor(ctx, { userId: ctx.userId, displayName: ctx.name, name, timezone: args.timezone });
+    const workspaceId = await createWorkspaceFor(ctx, { userId: ctx.userId, displayName: ctx.name, email: ctx.email || undefined, name, timezone: args.timezone });
     return workspaceId;
   },
 });
@@ -188,6 +188,7 @@ export const invite = ownerMutation({
       role: args.role,
       tokenHash: await hashToken(token),
       expiresAt: Date.now() + INVITE_MS,
+      invitedBy: ctx.identity.subject,
     });
     await writeAudit(ctx, {
       workspaceId: ctx.workspaceId,
@@ -210,16 +211,32 @@ export const acceptInvite = signedInMutation({
       .unique();
     if (!inviteRow) notFound();
     if (inviteRow.acceptedAt !== undefined) throw userError("This invite has already been used.");
+    if (inviteRow.canceledAt !== undefined) throw userError("This invite was cancelled. Ask the owner for a new one.");
     if (inviteRow.expiresAt <= Date.now()) throw userError("This invite has expired.");
     if (!ctx.email || ctx.email !== inviteRow.email) throw userError("This invite is for a different email.");
     if (await activeMembership(ctx, ctx.userId)) throw userError("You already belong to a workspace.");
-    const memberId = await ctx.db.insert("members", {
-      workspaceId: inviteRow.workspaceId,
-      userId: ctx.userId,
-      role: inviteRow.role,
-      displayName: ctx.name,
-      active: true,
-    });
+    // Someone removed earlier and invited back keeps one row, so the workspace never has two for them.
+    const earlier = await ctx.db
+      .query("members")
+      .withIndex("by_workspace_user", (q) => q.eq("workspaceId", inviteRow.workspaceId).eq("userId", ctx.userId))
+      .unique();
+    const memberId = earlier
+      ? (await ctx.db.patch(earlier._id, {
+          role: inviteRow.role,
+          displayName: ctx.name,
+          email: ctx.email,
+          active: true,
+          removedAt: undefined,
+        }),
+        earlier._id)
+      : await ctx.db.insert("members", {
+          workspaceId: inviteRow.workspaceId,
+          userId: ctx.userId,
+          role: inviteRow.role,
+          displayName: ctx.name,
+          email: ctx.email,
+          active: true,
+        });
     await ctx.db.patch(inviteRow._id, { acceptedAt: Date.now() });
     await writeAudit(ctx, {
       workspaceId: inviteRow.workspaceId,

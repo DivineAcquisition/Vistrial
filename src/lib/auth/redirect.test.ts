@@ -8,6 +8,8 @@ describe("safeAppPath", () => {
     expect(safeAppPath("/app/leads")).toBe("/app/leads");
     expect(safeAppPath("/admin")).toBe("/admin");
     expect(safeAppPath("/app/leads?stage=new")).toBe("/app/leads?stage=new");
+    expect(safeAppPath("/join?token=abc")).toBe("/join?token=abc");
+    expect(safeAppPath("/joinery")).toBe("/app");
   });
 
   it("rejects anything outside the app", () => {

@@ -48,7 +48,9 @@ The manual steps below are the same setup, done by hand.
    - `BILLING_MARKUP` (default `3`);
    - `AUTUMN_PLAN_ID`, `AUTUMN_TOPUP_ID` and `AUTUMN_FEATURE_ID`, if you name the plans or the feature differently.
 
-Until `AUTUMN_SECRET_KEY` is set, the Billing page says billing isn't switched on and nothing is ever blocked.
+**Test or live.** Each deployment picks its key by `AUTUMN_MODE`. With `AUTUMN_MODE=test` (set on dev), it uses `AUTUMN_TEST_SECRET_KEY`: Stripe test mode, so nothing real is charged, and the Billing page says so. Without it (production), it uses the live `AUTUMN_SECRET_KEY`. The products must exist in each Autumn environment, so run `setupProducts` once per mode.
+
+Until the key for the deployment's mode is set, the Billing page says billing isn't switched on and nothing is ever blocked.
 
 ## Tests
 

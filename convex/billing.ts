@@ -5,7 +5,7 @@
 import { v } from "convex/values";
 
 import { internalMutation, internalQuery } from "./_generated/server";
-import { AUTO_REFILL, PLAN, PLAN_ID, TOPUP_PACKS_CENTS, accountFor, billingOn, markup } from "./lib/billing";
+import { AUTO_REFILL, PLAN, PLAN_ID, TOPUP_PACKS_CENTS, accountFor, autumnMode, billingOn, markup } from "./lib/billing";
 import { workspaceQuery } from "./lib/builders";
 
 // ---------------------------------------------------------------------------------------------- read
@@ -25,6 +25,7 @@ export const overview = workspaceQuery({
     const since = Date.now() - 30 * 86_400_000;
     return {
       on: billingOn(),
+      testMode: billingOn() && autumnMode() === "test",
       canManage: ctx.member.role === "owner",
       markup: markup(),
       plan: { ...PLAN, id: PLAN_ID() },

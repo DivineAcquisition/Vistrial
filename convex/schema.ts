@@ -226,6 +226,46 @@ export default defineSchema({
     .index("by_workspace_at", ["workspaceId", "at"])
     .index("by_synced", ["syncedAt"]),
 
+  /**
+   * A new customer's way in: the wizard before paying (about you, the business, what you sell, your goal),
+   * the free research session, paying, and the guided chat after. Keyed by the person; the workspace is
+   * created when the wizard finishes, so nothing typed is ever asked again.
+   */
+  onboarding: defineTable({
+    userId: v.string(),
+    workspaceId: v.optional(v.id("workspaces")),
+    stage: v.union(
+      v.literal("about"),
+      v.literal("business"),
+      v.literal("offer"),
+      v.literal("goal"),
+      v.literal("review"),
+      v.literal("freeSession"),
+      v.literal("paywall"),
+      v.literal("guide"),
+      v.literal("done"),
+    ),
+    person: v.object({ fullName: v.string(), role: v.string(), phone: v.string(), heardFrom: v.string() }),
+    business: v.object({ name: v.string(), website: v.string(), offer: v.string(), area: v.string(), audience: v.string() }),
+    goal: v.object({ kind: v.string(), text: v.string() }),
+    site: v.object({
+      status: v.union(v.literal("idle"), v.literal("reading"), v.literal("read"), v.literal("failed")),
+      url: v.string(),
+      summary: v.string(),
+      offer: v.string(),
+      area: v.string(),
+      audience: v.string(),
+      competitors: v.array(v.string()),
+      costCents: v.number(),
+    }),
+    freeProjectId: v.optional(v.id("researchProjects")),
+    freeRunId: v.optional(v.id("agentRuns")),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_user", ["userId"])
+    .index("by_workspace", ["workspaceId"]),
+
   /** People who asked to hear when a planned agent goes live. One row per person and agent. */
   agentWaitlist: defineTable({
     workspaceId: v.id("workspaces"),
@@ -240,6 +280,8 @@ export default defineSchema({
     themeDefault: v.union(v.literal("light"), v.literal("dark")),
     /** ISO country for phone parsing. Missing means US until the owner sets it. */
     defaultCountry: v.optional(v.string()),
+    /** The owner lets the Vistrial service team open time-limited, logged access. On by default from onboarding. */
+    serviceTeamAccess: v.optional(v.boolean()),
   }).index("by_workspace", ["workspaceId"]),
 
   people: defineTable({

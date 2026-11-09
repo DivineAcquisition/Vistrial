@@ -23,9 +23,21 @@ export function markup(): number {
   return Number.isFinite(value) && value >= 1 ? value : 3;
 }
 
-/** Billing is on once the deployment holds an Autumn key. Without one (local, tests) work is never blocked. */
+/**
+ * Which Autumn key this deployment uses. AUTUMN_MODE=test picks AUTUMN_TEST_SECRET_KEY (Stripe test mode,
+ * nothing real is charged): set it on dev. Otherwise the live AUTUMN_SECRET_KEY is used, as on production.
+ */
+export function autumnMode(): "test" | "live" {
+  return process.env.AUTUMN_MODE === "test" ? "test" : "live";
+}
+
+export function autumnKey(): string | undefined {
+  return autumnMode() === "test" ? process.env.AUTUMN_TEST_SECRET_KEY : process.env.AUTUMN_SECRET_KEY;
+}
+
+/** Billing is on once the deployment holds the Autumn key for its mode. Without one (local, tests) work is never blocked. */
 export function billingOn(): boolean {
-  return Boolean(process.env.AUTUMN_SECRET_KEY);
+  return Boolean(autumnKey());
 }
 
 export function priceFor(costCents: number, factor = markup()): number {

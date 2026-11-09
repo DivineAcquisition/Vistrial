@@ -58,7 +58,7 @@ export function currentAgentSlug(slug: string) {
 const PLANNED_PROMISE = "It does not run yet.";
 
 /** Skills that are built and may run for customers. Everything else in the catalog is coming soon. */
-const AVAILABLE_SKILLS = new Set(["market-intelligence", "growth-diagnostics"]);
+const AVAILABLE_SKILLS = new Set(["market-intelligence", "offer-intelligence", "growth-diagnostics"]);
 
 function skill(slug: string, name: string, handsBack: string, promise: string, sort: number): AgentSkill {
   return { slug, name, job: handsBack, handsBack, promise, status: AVAILABLE_SKILLS.has(slug) ? "available" : "comingSoon", sort };

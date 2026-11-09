@@ -45,6 +45,7 @@ export const list = workspaceQuery({
       v.union(
         v.literal("researchReport"),
         v.literal("marketReport"),
+        v.literal("offerAnalysis"),
         v.literal("adCopySet"),
         v.literal("creativeBrief"),
         v.literal("contentCalendar"),

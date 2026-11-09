@@ -687,6 +687,7 @@ export default defineSchema({
     kind: v.union(
       v.literal("researchReport"),
       v.literal("marketReport"),
+      v.literal("offerAnalysis"),
       v.literal("adCopySet"),
       v.literal("creativeBrief"),
       v.literal("contentCalendar"),

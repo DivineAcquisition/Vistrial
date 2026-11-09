@@ -176,6 +176,17 @@ describe("free research session", () => {
     expect(scope).toMatchObject({ market: BUSINESS.offer, geography: BUSINESS.area, suppliedUrls: ["https://divineacquisition.io/"] });
     expect(scope.competitors).toEqual([{ name: "Sparkle" }, { name: "Shine" }]);
     expect(scope.platforms.length).toBeGreaterThan(1);
+
+    // Text read from a website keeps its full stops; the objective doesn't double them.
+    const read = freeScope({
+      business: { ...BUSINESS, offer: "AI sales systems, installed for client teams.", audience: "Small service businesses." },
+      goal: { kind: "leads", text: "" },
+      site: { status: "read", url: "", summary: "", offer: "", area: "", audience: "", competitors: [], costCents: 0 },
+    });
+    expect(read.objective).toBe(
+      "Find the three best ways for DivineACQ to win more customers for AI sales systems, installed for client teams in United States, from what competitors there do that works. Their customers: Small service businesses.",
+    );
+    expect(read.suppliedUrls).toEqual([]);
   });
 
   it("starts once, without credit, while new paid work is still blocked at zero", async () => {

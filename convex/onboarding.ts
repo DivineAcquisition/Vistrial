@@ -368,9 +368,11 @@ const GOAL_OBJECTIVES: Record<string, (b: { name: string; offer: string; area: s
 /** The free session's project, from what the person told the wizard and what the website said. */
 export function freeScope(row: Pick<Doc<"onboarding">, "business" | "goal" | "site">) {
   const { business, goal, site } = row;
-  const objective = (GOAL_OBJECTIVES[goal.kind] ?? GOAL_OBJECTIVES.other)({ name: business.name, offer: business.offer, area: business.area });
+  // Website text often ends in a full stop; the sentences below add their own.
+  const bare = (value: string) => value.trim().replace(/[.!?;:,\s]+$/, "");
+  const objective = (GOAL_OBJECTIVES[goal.kind] ?? GOAL_OBJECTIVES.other)({ name: business.name, offer: bare(business.offer), area: bare(business.area) });
   const theirWords = goal.text ? ` In their words: ${goal.text}` : "";
-  const audience = business.audience ? ` Their customers: ${business.audience}.` : "";
+  const audience = business.audience ? ` Their customers: ${bare(business.audience)}.` : "";
   const website = parsePublicUrl(business.website) ? [business.website] : [];
   return cleanScope({
     title: `${business.name}: free research session`.slice(0, 120),

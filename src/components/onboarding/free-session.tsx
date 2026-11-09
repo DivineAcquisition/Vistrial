@@ -204,7 +204,7 @@ function SessionView({ data, actions, startError }: { data: FreeSessionData; act
       <Hero eyebrow="Free research session" title="The session stopped before the report">
         <p>
           {data.freeAttempts < data.maxAttempts
-            ? "That's on our side, not yours. Try once more; it starts fresh and is still free."
+            ? "Try once more: it starts fresh and is still free."
             : "It stopped again before writing the report. You can still unlock Vistrial and run a new session from your workspace."}
         </p>
       </Hero>

@@ -4,7 +4,7 @@ import { currentAgentSlug } from "./catalog";
 import { signedInMutation, signedInQuery, workspaceQuery, ownerMutation } from "./lib/builders";
 import { writeAudit } from "./lib/audit";
 import { activeMembership } from "./lib/access";
-import { notFound } from "./lib/errors";
+import { notFound, userError } from "./lib/errors";
 import { ensureAgents } from "./lib/agents";
 import { hashToken, randomToken } from "./lib/token";
 import { createWorkspaceFor } from "./lib/newWorkspace";
@@ -39,9 +39,9 @@ export const mine = signedInQuery({
 export const create = signedInMutation({
   args: { name: v.string(), timezone: v.optional(v.string()) },
   handler: async (ctx, args) => {
-    if (await activeMembership(ctx, ctx.userId)) throw new Error("You already belong to a workspace.");
+    if (await activeMembership(ctx, ctx.userId)) throw userError("You already belong to a workspace.");
     const name = args.name.trim();
-    if (!name) throw new Error("Name the workspace.");
+    if (!name) throw userError("Name the workspace.");
     const workspaceId = await createWorkspaceFor(ctx, { userId: ctx.userId, displayName: ctx.name, name, timezone: args.timezone });
     return workspaceId;
   },
@@ -135,7 +135,7 @@ export const setAgentState = ownerMutation({
       .withIndex("by_slug", (q) => q.eq("slug", currentAgentSlug(args.slug)))
       .unique();
     if (!agent || agent.retired === true) notFound();
-    if (agent.status !== "live" && args.state !== "off") throw new Error(`${agent.name} is not available yet.`);
+    if (agent.status !== "live" && args.state !== "off") throw userError(`${agent.name} is not available yet.`);
     const link = await ctx.db
       .query("workspaceAgents")
       .withIndex("by_workspace_agent", (q) => q.eq("workspaceId", ctx.workspaceId).eq("agentId", agent._id))
@@ -180,7 +180,7 @@ export const invite = ownerMutation({
   },
   handler: async (ctx, args) => {
     const email = args.email.trim().toLowerCase();
-    if (!email.includes("@")) throw new Error("Enter an email.");
+    if (!email.includes("@")) throw userError("Enter an email.");
     const token = randomToken();
     const invitationId = await ctx.db.insert("invitations", {
       workspaceId: ctx.workspaceId,
@@ -209,10 +209,10 @@ export const acceptInvite = signedInMutation({
       .withIndex("by_token", (q) => q.eq("tokenHash", tokenHash))
       .unique();
     if (!inviteRow) notFound();
-    if (inviteRow.acceptedAt !== undefined) throw new Error("This invite has already been used.");
-    if (inviteRow.expiresAt <= Date.now()) throw new Error("This invite has expired.");
-    if (!ctx.email || ctx.email !== inviteRow.email) throw new Error("This invite is for a different email.");
-    if (await activeMembership(ctx, ctx.userId)) throw new Error("You already belong to a workspace.");
+    if (inviteRow.acceptedAt !== undefined) throw userError("This invite has already been used.");
+    if (inviteRow.expiresAt <= Date.now()) throw userError("This invite has expired.");
+    if (!ctx.email || ctx.email !== inviteRow.email) throw userError("This invite is for a different email.");
+    if (await activeMembership(ctx, ctx.userId)) throw userError("You already belong to a workspace.");
     const memberId = await ctx.db.insert("members", {
       workspaceId: inviteRow.workspaceId,
       userId: ctx.userId,

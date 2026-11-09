@@ -5,7 +5,7 @@ import type { Doc, Id } from "./_generated/dataModel";
 import type { MutationCtx, QueryCtx } from "./_generated/server";
 import { writeAudit } from "./lib/audit";
 import { canSeeLead, leadOwnerId } from "./lib/canSeeLead";
-import { notAllowed, notFound } from "./lib/errors";
+import { notAllowed, notFound, userError } from "./lib/errors";
 import { leadMutation, leadQuery } from "./lib/leadBuilders";
 import { normalizeEmail, normalizeFullName, toE164 } from "./lib/phones";
 import { defaultCountry, firstOpenStage } from "./lib/seedSpine";
@@ -259,8 +259,8 @@ export const create = workspaceMutation({
     const country = await defaultCountry(ctx, ctx.workspaceId);
     const email = args.email ? normalizeEmail(args.email) : null;
     const phone = args.phone ? toE164(args.phone, country) : null;
-    if (args.phone && !phone) throw new Error("That phone number cannot be read.");
-    if (!email && !phone) throw new Error("Add an email or a phone.");
+    if (args.phone && !phone) throw userError("That phone number cannot be read.");
+    if (!email && !phone) throw userError("Add an email or a phone.");
     const now = Date.now();
     const personId = await attachOrCreatePerson(ctx, {
       email,
@@ -271,7 +271,7 @@ export const create = workspaceMutation({
       source: "manual",
       at: now,
     });
-    if (personId === "split") throw new Error("That email and phone belong to two people. Review the match.");
+    if (personId === "split") throw userError("That email and phone belong to two people. Review the match.");
     const stage = await firstOpenStage(ctx, ctx.workspaceId);
     const leadId = await ctx.db.insert("leads", {
       workspaceId: ctx.workspaceId,
@@ -486,7 +486,7 @@ export const setCountry = ownerMutation({
   args: { country: v.string() },
   handler: async (ctx, args) => {
     const country = args.country.trim().toUpperCase();
-    if (!/^[A-Z]{2}$/.test(country)) throw new Error("Use a two letter country code.");
+    if (!/^[A-Z]{2}$/.test(country)) throw userError("Use a two letter country code.");
     const settings = await ctx.db
       .query("workspaceSettings")
       .withIndex("by_workspace", (q) => q.eq("workspaceId", ctx.workspaceId))

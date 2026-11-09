@@ -11,7 +11,7 @@ import { internal } from "./_generated/api";
 import type { Doc, Id } from "./_generated/dataModel";
 import { internalAction, internalMutation, internalQuery, type MutationCtx } from "./_generated/server";
 import { workspaceMutation, workspaceQuery } from "./lib/builders";
-import { notAllowed, notFound } from "./lib/errors";
+import { notAllowed, notFound, userError } from "./lib/errors";
 import type { ModelRoute } from "./lib/modelRouter";
 import { devSkillsEnabled, wrapUntrusted } from "./lib/registry";
 import { canonicalUrl } from "./lib/sourceRefs";
@@ -67,7 +67,7 @@ export const attach = workspaceMutation({
   handler: async (ctx, args) => {
     assertEditor(ctx.member.role);
     await assertCanSpend(ctx, ctx.workspaceId);
-    if (!args.intakeId && !args.projectId) throw new Error("Add the file to a conversation or a session.");
+    if (!args.intakeId && !args.projectId) throw userError("Add the file to a conversation or a session.");
     if (args.intakeId) {
       const intake = await ctx.db.get(args.intakeId);
       if (!intake || intake.workspaceId !== ctx.workspaceId) notFound();
@@ -82,11 +82,11 @@ export const attach = workspaceMutation({
     const kind = fileKind(meta.contentType ?? "", name);
     if (!kind) {
       await ctx.storage.delete(args.storageId);
-      throw new Error("Add an image, a PDF or a CSV spreadsheet.");
+      throw userError("Add an image, a PDF or a CSV spreadsheet.");
     }
     if (meta.size > MAX_FILE_BYTES) {
       await ctx.storage.delete(args.storageId);
-      throw new Error("That file is over 10 MB.");
+      throw userError("That file is over 10 MB.");
     }
     const existing = args.intakeId
       ? await ctx.db
@@ -97,7 +97,7 @@ export const attach = workspaceMutation({
           .query("sessionFiles")
           .withIndex("by_project", (q) => q.eq("projectId", args.projectId))
           .take(MAX_FILES + 1);
-    if (existing.length >= MAX_FILES) throw new Error(`Up to ${MAX_FILES} files per session.`);
+    if (existing.length >= MAX_FILES) throw userError(`Up to ${MAX_FILES} files per session.`);
     const fileId = await ctx.db.insert("sessionFiles", {
       workspaceId: ctx.workspaceId,
       intakeId: args.intakeId,
@@ -141,7 +141,7 @@ export const remove = workspaceMutation({
     assertEditor(ctx.member.role);
     const row = await ctx.db.get(args.fileId);
     if (!row || row.workspaceId !== ctx.workspaceId) notFound();
-    if (row.sourceRefId) throw new Error("This file is already part of a session's research.");
+    if (row.sourceRefId) throw userError("This file is already part of a session's research.");
     await ctx.storage.delete(row.storageId);
     await ctx.db.delete(row._id);
     return null;

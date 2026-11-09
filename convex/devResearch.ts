@@ -11,7 +11,7 @@ import type { Id } from "./_generated/dataModel";
 import { internalMutation, internalQuery } from "./_generated/server";
 import { GROWTH_ARCHITECT } from "./catalog";
 import { writeAudit } from "./lib/audit";
-import { notFound } from "./lib/errors";
+import { notFound, userError } from "./lib/errors";
 import { createWorkspaceFor } from "./lib/newWorkspace";
 import { devSkillsEnabled } from "./lib/registry";
 import { cleanScope } from "./research";
@@ -59,7 +59,7 @@ export const startFromIntake = internalMutation({
   handler: async (ctx, args) => {
     if (!devSkillsEnabled()) notFound();
     const intake = await ctx.db.get(args.intakeId);
-    if (!intake || intake.status !== "ready") throw new Error("That conversation has no plan ready yet.");
+    if (!intake || intake.status !== "ready") throw userError("That conversation has no plan ready yet.");
     const slots = intake.slots;
     const title = slots.market && slots.geography ? `${slots.market}, ${slots.geography}`.slice(0, 80) : slots.objective.slice(0, 80) || "Research session";
     const scope = cleanScope({

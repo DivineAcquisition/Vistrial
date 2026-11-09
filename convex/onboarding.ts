@@ -11,6 +11,7 @@ import type { Doc, Id } from "./_generated/dataModel";
 import { internalAction, internalMutation, internalQuery, type MutationCtx, type QueryCtx } from "./_generated/server";
 import { GROWTH_ARCHITECT } from "./catalog";
 import { writeAudit } from "./lib/audit";
+import { userError } from "./lib/errors";
 import { signedInMutation, signedInQuery } from "./lib/builders";
 import { writeFact } from "./lib/facts";
 import type { ModelRoute } from "./lib/modelRouter";
@@ -102,7 +103,7 @@ export const save = signedInMutation({
   },
   handler: async (ctx, args) => {
     const row = await ensureRow(ctx);
-    if (!WIZARD.includes(row.stage as (typeof WIZARD)[number])) throw new Error("The details are already saved.");
+    if (!WIZARD.includes(row.stage as (typeof WIZARD)[number])) throw userError("The details are already saved.");
     const patch: Partial<Doc<"onboarding">> = { stage: args.stage, updatedAt: Date.now() };
     if (args.person) {
       patch.person = {
@@ -134,7 +135,7 @@ export const readSite = signedInMutation({
     const row = await ensureRow(ctx);
     const raw = args.url.trim();
     const parsed = parsePublicUrl(/^https?:\/\//i.test(raw) ? raw : `https://${raw}`);
-    if (!parsed) throw new Error("That doesn't look like a website address. Try something like yourbusiness.com.");
+    if (!parsed) throw userError("That doesn't look like a website address. Try something like yourbusiness.com.");
     const url = `${parsed.protocol}//${parsed.host}/`;
     await ctx.db.patch(row._id, { site: { ...row.site, status: "reading", url }, business: { ...row.business, website: url }, updatedAt: Date.now() });
     await ctx.scheduler.runAfter(0, internal.onboarding.readSiteNow, { rowId: row._id, url });
@@ -258,11 +259,11 @@ export const finish = signedInMutation({
     const row = await ensureRow(ctx);
     if (row.workspaceId) return row.workspaceId;
     const { person, business, goal } = row;
-    if (!person.fullName) throw new Error("Add your name first.");
-    if (!business.name) throw new Error("Add the business name first.");
-    if (!business.offer) throw new Error("Say what the business sells first.");
-    if (!business.area) throw new Error("Say where the business works first.");
-    if (!goal.kind) throw new Error("Pick a main goal first.");
+    if (!person.fullName) throw userError("Add your name first.");
+    if (!business.name) throw userError("Add the business name first.");
+    if (!business.offer) throw userError("Say what the business sells first.");
+    if (!business.area) throw userError("Say where the business works first.");
+    if (!goal.kind) throw userError("Pick a main goal first.");
 
     const existing = await ctx.db
       .query("members")

@@ -2,7 +2,7 @@ import { v } from "convex/values";
 
 import { workspaceMutation, workspaceQuery } from "./lib/builders";
 import { writeAudit } from "./lib/audit";
-import { notAllowed, notFound } from "./lib/errors";
+import { notAllowed, notFound, userError } from "./lib/errors";
 import { FACT_TEXT, cleanFactKey, factView, isLive, liveFact, writeFact } from "./lib/facts";
 
 function assertEditor(role: string) {
@@ -64,7 +64,7 @@ export const setStatus = workspaceMutation({
     assertEditor(ctx.member.role);
     const row = await ctx.db.get(args.factId);
     if (!row || row.workspaceId !== ctx.workspaceId) notFound();
-    if (!isLive(row)) throw new Error(FACT_TEXT.notLive);
+    if (!isLive(row)) throw userError(FACT_TEXT.notLive);
     // Verification history stays when a fact is later disputed.
     await ctx.db.patch(row._id, {
       status: args.status,
@@ -88,7 +88,7 @@ export const remove = workspaceMutation({
     assertEditor(ctx.member.role);
     const row = await ctx.db.get(args.factId);
     if (!row || row.workspaceId !== ctx.workspaceId) notFound();
-    if (!isLive(row)) throw new Error(FACT_TEXT.notLive);
+    if (!isLive(row)) throw userError(FACT_TEXT.notLive);
     await ctx.db.patch(row._id, { deletedAt: Date.now(), deletedBy: ctx.identity.subject });
     await writeAudit(ctx, {
       workspaceId: ctx.workspaceId,

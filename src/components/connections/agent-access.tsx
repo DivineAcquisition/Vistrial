@@ -6,9 +6,10 @@ import { useState } from "react";
 
 import { useWorkspaceShell } from "@/components/shell/shell-context";
 import { Switch } from "@/components/ui/switch";
-import { errorWords } from "@/lib/research/words";
+
 import { api } from "../../../convex/_generated/api";
 import type { Id } from "../../../convex/_generated/dataModel";
+import { showError } from "@/lib/errors/show-error";
 
 /**
  * Who may use the workspace's Meta connection. The connection belongs to the workspace; each agent is
@@ -45,7 +46,7 @@ export function AgentAccess({ workspaceId, agentSlug }: { workspaceId: Id<"works
               onCheckedChange={(checked: boolean) =>
                 void setAccess({ workspaceId, agentSlug: agent.slug, granted: checked }).then(
                   () => setNotice(checked ? `${agent.name} may use Meta ads.` : `${agent.name} no longer uses Meta ads.`),
-                  (problem: unknown) => setNotice(errorWords(problem, "That did not save.")),
+                  (problem: unknown) => setNotice(showError(problem, "That did not save.")),
                 )
               }
             />

@@ -7,6 +7,7 @@
 import type { Id } from "../_generated/dataModel";
 import type { MutationCtx, QueryCtx } from "../_generated/server";
 import { internal } from "../_generated/api";
+import { userError } from "./errors";
 
 export const CREDITS_FEATURE = () => process.env.AUTUMN_FEATURE_ID || "credits";
 export const PLAN_ID = () => process.env.AUTUMN_PLAN_ID || "growth";
@@ -50,17 +51,13 @@ export async function accountFor(ctx: QueryCtx, workspaceId: Id<"workspaces">) {
     .unique();
 }
 
-export class OutOfCredits extends Error {
-  constructor() {
-    super("Your credit balance is empty. An owner can add credits in Billing to start new work.");
-  }
-}
+export const OUT_OF_CREDITS = "Your credit balance is empty. An owner can add credits in Billing to start new work.";
 
 /** Throws when billing is on and this workspace has no credit left. Call before starting new work. */
 export async function assertCanSpend(ctx: QueryCtx, workspaceId: Id<"workspaces">) {
   if (!billingOn()) return;
   const account = await accountFor(ctx, workspaceId);
-  if (!account || account.balanceCents <= 0) throw new OutOfCredits();
+  if (!account || account.balanceCents <= 0) throw userError(OUT_OF_CREDITS, "out_of_credits");
 }
 
 /**

@@ -8,11 +8,12 @@ import { Button } from "@/components/ui/button";
 import { Panel } from "@/components/ui/panel";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { Textarea } from "@/components/ui/textarea";
-import { PLATFORM_LABEL, UNCERTAINTY_WORDS, errorWords } from "@/lib/research/words";
+import { PLATFORM_LABEL, UNCERTAINTY_WORDS } from "@/lib/research/words";
 import { api } from "../../../convex/_generated/api";
 import type { Id } from "../../../convex/_generated/dataModel";
 import type { Studio } from "./studio-parts";
 import { OpportunityDecision } from "@/components/research/outcome-loop";
+import { showError } from "@/lib/errors/show-error";
 
 export type SourceLite = { id: string; title: string; url: string; platform: string; publisher: string | null; origin?: string };
 
@@ -114,7 +115,7 @@ export function ApprovalCard({ workspaceId, assetId, status, canDecide }: { work
                   void (rejecting === "reject"
                     ? reject({ workspaceId, assetId, reason }).then(() => done("Rejected. The reason is saved as feedback you can turn into a business fact."))
                     : requestRevision({ workspaceId, assetId, reason }).then(() => done("Saved. The report stays waiting, and the request is kept as feedback."))
-                  ).catch((problem: unknown) => setNotice(errorWords(problem, "It was not saved.")));
+                  ).catch((problem: unknown) => setNotice(showError(problem, "It was not saved.")));
                 }}
               >
                 <label className="grid gap-2 text-sm" htmlFor="findings-reason">
@@ -138,7 +139,7 @@ export function ApprovalCard({ workspaceId, assetId, status, canDecide }: { work
                     onClick={() =>
                       void approve({ workspaceId, assetId }).then(
                         () => setNotice("Approved."),
-                        (problem: unknown) => setNotice(errorWords(problem, "It was not approved. Look again and retry.")),
+                        (problem: unknown) => setNotice(showError(problem, "It was not approved. Look again and retry.")),
                       )
                     }
                   >

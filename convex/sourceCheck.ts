@@ -9,6 +9,7 @@ import { v } from "convex/values";
 import { internalAction } from "./_generated/server";
 import { liveEnv, runAdapter } from "./adapters";
 import type { CollectTool } from "./lib/registry";
+import { userError } from "./lib/errors";
 
 const TOOLS: Record<string, CollectTool> = {
   web: "source.web",
@@ -28,7 +29,7 @@ export const probe = internalAction({
   },
   handler: async (_ctx, args) => {
     const tool = TOOLS[args.platform];
-    if (!tool) throw new Error(`Pick one of: ${Object.keys(TOOLS).join(", ")}.`);
+    if (!tool) throw userError(`Pick one of: ${Object.keys(TOOLS).join(", ")}.`);
     const result = await runAdapter(
       tool,
       {

@@ -11,6 +11,7 @@ import { useWorkspaceShell } from "@/components/shell/shell-context";
 import { money } from "@/lib/research/words";
 import { api } from "../../../convex/_generated/api";
 import type { Id } from "../../../convex/_generated/dataModel";
+import { showError } from "@/lib/errors/show-error";
 
 function titleFor(slots: IntakeView["intake"]["slots"]) {
   if (slots.market && slots.geography) return `${slots.market}, ${slots.geography}`.slice(0, 80);
@@ -110,7 +111,7 @@ export function IntakeChat({
                   const { storageId } = (await response.json()) as { storageId: Id<"_storage"> };
                   await attach({ workspaceId, storageId, name: file.name, intakeId });
                 } catch (error) {
-                  setProblem(error instanceof Error ? error.message.replace(/^[\s\S]*Uncaught Error: /, "").split("\n")[0] : "That file was not added.");
+                  setProblem(showError(error, "That file was not added."));
                 } finally {
                   setUploading((rows) => rows.filter((row) => row.key !== key));
                 }
@@ -128,7 +129,12 @@ export function IntakeChat({
         footnote={`Question ${Math.min(intake.questionsAsked, intake.maxQuestions)} of up to ${intake.maxQuestions} · this conversation ${money(intake.costCents)} of ${money(intake.capCents)}`}
         onSubmit={async (text) => {
           setProblem("");
-          await reply({ workspaceId, intakeId, text });
+          try {
+            await reply({ workspaceId, intakeId, text });
+          } catch (error) {
+            setProblem(showError(error, "That message was not sent."));
+            throw error;
+          }
         }}
       />
       {problem ? <p className="px-1 text-xs text-destructive">{problem}</p> : null}
@@ -143,7 +149,12 @@ export function IntakeChat({
       composer={composer}
       actions={{
         send: async (text) => {
-          await reply({ workspaceId, intakeId, text });
+          try {
+            await reply({ workspaceId, intakeId, text });
+          } catch (error) {
+            showError(error, "That message was not sent.");
+            throw error;
+          }
         },
         remember: async (factKey, yes) => {
           await remember({ workspaceId, intakeId, factKey, yes });

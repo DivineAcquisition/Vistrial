@@ -9,10 +9,11 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { Input } from "@/components/ui/input";
 import { Panel } from "@/components/ui/panel";
 import { Select } from "@/components/ui/select";
-import { PLATFORM_LABEL, errorWords } from "@/lib/research/words";
+import { PLATFORM_LABEL } from "@/lib/research/words";
 import { api } from "../../../convex/_generated/api";
 import type { Id } from "../../../convex/_generated/dataModel";
 import { SourceCard, type BoardSource } from "./source-card";
+import { showError } from "@/lib/errors/show-error";
 
 const READING_FIELDS = [
   ["hook", "Hook"],
@@ -236,7 +237,7 @@ export function BoardView({
                     setNewName("");
                     setNotice(`Made "${newName.trim()}". Save sources to it from their cards.`);
                   },
-                  (problem: unknown) => setNotice(errorWords(problem, "The collection was not made.")),
+                  (problem: unknown) => setNotice(showError(problem, "The collection was not made.")),
                 );
               }}
             >
@@ -285,7 +286,7 @@ export function BoardView({
                     onClick={() =>
                       void onSave(target, source.id).then(
                         () => setNotice(`Saved to ${targetName ?? "the collection"}.`),
-                        (problem: unknown) => setNotice(errorWords(problem, "It was not saved.")),
+                        (problem: unknown) => setNotice(showError(problem, "It was not saved.")),
                       )
                     }
                   >

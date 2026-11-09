@@ -10,9 +10,10 @@ import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Input } from "@/components/ui/input";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { Switch } from "@/components/ui/switch";
-import { errorWords } from "@/lib/research/words";
+
 import { api } from "../../../convex/_generated/api";
 import type { Id } from "../../../convex/_generated/dataModel";
+import { showError } from "@/lib/errors/show-error";
 
 type Figures = { spend?: number; impressions?: number; clicks?: number; conversions?: number; revenue?: number };
 
@@ -247,7 +248,7 @@ function UploadForm({ workspaceId, onNotice }: { workspaceId: Id<"workspaces">; 
           setLabel("");
           onNotice("Uploaded. The totals show below in a moment, and the file itself is deleted once read.");
         })()
-          .catch((problem: unknown) => onNotice(errorWords(problem, "The file did not upload.")))
+          .catch((problem: unknown) => onNotice(showError(problem, "The file did not upload.")))
           .finally(() => setWorking(false));
       }}
     >
@@ -323,13 +324,13 @@ export function ResultsFiles({ workspaceId, highlight }: { workspaceId: Id<"work
           onGrant={(slug, granted) =>
             void setAccess({ workspaceId, uploadId: upload.id, agentSlug: slug, granted }).then(
               () => setNotice(granted ? "Granted." : "Withdrawn."),
-              (problem: unknown) => setNotice(errorWords(problem, "That did not save.")),
+              (problem: unknown) => setNotice(showError(problem, "That did not save.")),
             )
           }
           onRemove={() =>
             remove({ workspaceId, uploadId: upload.id }).then(
               () => setNotice("Deleted."),
-              (problem: unknown) => setNotice(errorWords(problem, "That did not delete.")),
+              (problem: unknown) => setNotice(showError(problem, "That did not delete.")),
             )
           }
         />

@@ -10,10 +10,11 @@ import { Input } from "@/components/ui/input";
 import { Panel } from "@/components/ui/panel";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { Textarea } from "@/components/ui/textarea";
-import { PLATFORMS, PLATFORM_LABEL, errorWords, money, type PlatformSlug } from "@/lib/research/words";
+import { PLATFORMS, PLATFORM_LABEL, money, type PlatformSlug } from "@/lib/research/words";
 import { api } from "../../../convex/_generated/api";
 import type { Id } from "../../../convex/_generated/dataModel";
 import { SourceIcon } from "@/components/research/source-icon";
+import { showError } from "@/lib/errors/show-error";
 
 type Competitor = { name: string; url: string };
 
@@ -70,7 +71,7 @@ export function AssignmentForm({
       await start({ workspaceId, agentSlug: "growth-architect", skillSlug: "market-intelligence", projectId });
       router.push(`/app/agents/growth-architect/sessions/${projectId}`);
     } catch (problem) {
-      setError(errorWords(problem, "The assignment did not start. Check the fields and try again."));
+      setError(showError(problem, "The assignment did not start. Check the fields and try again."));
       setBusy(false);
     }
   };

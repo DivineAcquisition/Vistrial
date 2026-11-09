@@ -30,6 +30,7 @@ import { Input, InputGroup } from "@/components/ui/input";
 import { ShaderBackdrop } from "@/components/ui/shader-backdrop";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
+import { errorWords } from "@/lib/research/words";
 import { cn } from "@/lib/utils";
 
 // ------------------------------------------------------------------------------------------- types
@@ -174,7 +175,7 @@ export function OnboardingWizard({ data, actions }: { data: WizardData; actions:
       if (stage === "goal") await actions.save(next, { goal });
       go(step + 1);
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message.replace(/^.*Uncaught Error: /, "").split("\n")[0]! : "That didn't save. Try again.");
+      setError(errorWords(cause, "That didn't save. Try again."));
     } finally {
       setBusy(false);
     }

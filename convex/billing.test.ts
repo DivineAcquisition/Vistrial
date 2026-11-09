@@ -63,6 +63,17 @@ describe("credits billing", () => {
     await expect(start(owner, workspaceId, projectId)).resolves.toBeTruthy();
   });
 
+  it("tells the browser it is out of credits, with a code the chat box can act on", async () => {
+    const { workspaceId, owner } = await setup();
+    process.env.AUTUMN_SECRET_KEY = "am_sk_test";
+    const problem = await owner.mutation(api.intake.create, { workspaceId, agentSlug: "growth-architect", text: "Why are we losing move-out jobs?" }).catch((error: unknown) => error);
+    // ConvexError data reaches the browser in production; a plain Error shows only "Server Error".
+    expect((problem as { data?: unknown }).data).toEqual({
+      code: "out_of_credits",
+      message: "Your credit balance is empty. An owner can add credits in Billing to start new work.",
+    });
+  });
+
   it("charges work already running in full, even past zero, and records cost and price", async () => {
     const { t, workspaceId, owner } = await setup();
     await t.mutation(internal.billing.saveAccount, { workspaceId, balanceCents: 100 });

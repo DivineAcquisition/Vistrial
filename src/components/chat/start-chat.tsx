@@ -8,6 +8,7 @@ import { ChatComposer } from "@/components/chat/chat-composer";
 import { useChatExtras } from "@/components/chat/use-chat-extras";
 import { useWorkspaceShell } from "@/components/shell/shell-context";
 import { api } from "../../../convex/_generated/api";
+import { showError } from "@/lib/errors/show-error";
 
 /**
  * The chat box that starts work from anywhere: pick the agent and the quality, add files, links or a focus,
@@ -60,7 +61,7 @@ function StartChatInner({ defaultAgent = "growth-architect", size = "dock", plac
             extras.reset();
             router.push(`/app/agents/${chosen}/sessions/new?intake=${intakeId}`);
           } catch (error) {
-            setProblem(error instanceof Error ? error.message.replace(/^[\s\S]*Uncaught Error: /, "").split("\n")[0] : "That did not start.");
+            setProblem(showError(error, "That did not start."));
             throw error;
           }
         }}

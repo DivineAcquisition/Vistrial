@@ -3,7 +3,7 @@ import { v } from "convex/values";
 import type { Id } from "./_generated/dataModel";
 import { writeAudit } from "./lib/audit";
 import { mergeConsent, type ConsentSnapshot } from "./lib/consent";
-import { notAllowed, notFound } from "./lib/errors";
+import { notAllowed, notFound, userError } from "./lib/errors";
 import { workspaceMutation, workspaceQuery } from "./lib/builders";
 
 const SIMILAR_CAP = 50;
@@ -293,7 +293,7 @@ export const undo = workspaceMutation({
     const record = await ctx.db.get(args.mergeId);
     if (!record || record.workspaceId !== ctx.workspaceId || record.revertedAt !== undefined) notFound();
     const survivor = await ctx.db.get(record.survivorPersonId);
-    if (!survivor || survivor.mergedIntoPersonId) throw new Error("This merge cannot be undone.");
+    if (!survivor || survivor.mergedIntoPersonId) throw userError("This merge cannot be undone.");
     const absorbedLater = await ctx.db
       .query("mergeRecords")
       .withIndex("by_workspace_merged", (q) =>
@@ -309,7 +309,7 @@ export const undo = workspaceMutation({
     const blocked = [...absorbedLater, ...survivorLater].some(
       (row) => row._id !== record._id && row.revertedAt === undefined && row.at > record.at,
     );
-    if (blocked) throw new Error("This merge cannot be undone.");
+    if (blocked) throw userError("This merge cannot be undone.");
     const snapshot = JSON.parse(record.snapshotJson) as {
       prior: ConsentSnapshot;
       identityIds: Id<"identities">[];

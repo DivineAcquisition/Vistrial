@@ -1,3 +1,4 @@
+import { describeError } from "@/lib/errors/user-error";
 /** Plain words for research screens. Labels live here so every screen says the same thing. */
 
 type Tone = "good" | "warning" | "critical" | "neutral";
@@ -53,10 +54,9 @@ export const UNCERTAINTY_WORDS: Record<string, { label: string; tone: Tone }> = 
 };
 
 /** A Convex error as one plain sentence. Server messages are already written for people. */
+/** The words for a failure: the server's message for a person, or the fallback. No pop-up; see showError. */
 export function errorWords(error: unknown, fallback: string) {
-  if (!(error instanceof Error)) return fallback;
-  const line = error.message.replace(/^[\s\S]*?Uncaught Error: /, "").split("\n")[0].trim();
-  return line && !line.startsWith("[CONVEX") ? line : fallback;
+  return describeError(error, fallback).message;
 }
 
 export function shortDate(time: number) {

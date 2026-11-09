@@ -1,7 +1,9 @@
 import { wrapUntrusted, type ToolSlug } from "../../lib/registry";
 import type { SkillContext, SkillModule, SkillStep } from "../types";
 import { latest, latestDone, recordOf } from "../marketIntelligence/records";
+import { CHANNEL_METRICS, CHANNEL_TEMPERATURE, CHANNEL_WORDS, CHANNELS, EVIDENCE_PLATFORMS } from "./channels";
 import { CHECK_NAMES } from "./checks";
+import { PLAYBOOK, credit } from "./playbook";
 import { NO_CONTEXT_WORDS, OFFER_SCHEMA, PHASE, QUESTIONS, SKILL_SLUG, type ChecksRecord, type OfferContext } from "./shapes";
 
 const SYSTEM = [
@@ -11,8 +13,8 @@ const SYSTEM = [
   "A competitor leading with an offer is not evidence that the offer works for them. Where evidence is thin, say so.",
 ].join(" ");
 
-/** At most one question per run. Past that, the analysis records an assumption and goes on. */
-const MAX_ASKS = 1;
+/** At most two questions per run (what it sells, where customers come from). Past that, it records an assumption. */
+const MAX_ASKS = 2;
 
 const tool = (toolSlug: ToolSlug, phase: string): SkillStep => ({ kind: "tool", toolSlug, phase });
 
@@ -43,6 +45,26 @@ function businessContext(context: OfferContext) {
   return [profile, facts, offer, tried, assumptions].filter(Boolean).join("\n\n");
 }
 
+/** Where the business gets customers, and how each channel works. Built in code. */
+function channelBrief(context: OfferContext) {
+  const used = context.channels.length
+    ? context.channels.map((row) => `- ${row.channel}: ${CHANNEL_WORDS[row.channel]} (from ${row.from})`).join("\n")
+    : "- None on record. Mark every change newChannel true.";
+  const rules = CHANNELS.map(
+    (channel) =>
+      `- ${channel}: ${CHANNEL_WORDS[channel]}. Audience: ${CHANNEL_TEMPERATURE[channel]}. Evidence from sources on: ${EVIDENCE_PLATFORMS[channel].join(", ")}, or this business's own results on it. Measure with: ${CHANNEL_METRICS[channel].join(", ")}.`,
+  );
+  return ["Channels this business gets customers from:", used, "", "How each channel works (an offer that suits one can fail on another):", ...rules].join("\n");
+}
+
+/** The offer playbook: our own summaries, credited. Guidance for shaping a change, never evidence for it. */
+function playbookBrief() {
+  return [
+    "Offer playbook (cite principle ids; a principle is guidance, never evidence; use one only on a channel it lists, or any channel when it lists none):",
+    ...PLAYBOOK.map((row) => `- [${row.id}] ${row.name} (${credit(row)}). ${row.idea} Use when: ${row.useWhen} Channels: ${row.channels.join(", ") || "any"}. Needs: ${row.needs.join("; ") || "nothing special"}. Risk: ${row.risks}`),
+  ].join("\n");
+}
+
 /** The approved research and the business's own results. Everything here came from outside, so it is wrapped. */
 function evidence(context: OfferContext) {
   return [
@@ -62,12 +84,13 @@ function evidence(context: OfferContext) {
 const RULES = [
   "Write the offer analysis as JSON.",
   "summary: a few plain sentences on how this offer stands against what competitors lead with.",
+  "offerPosition: where this offer should sit against the competition on the channels the business uses, and why, naming the playbook principle ids it rests on.",
   "currentOffer: what the business sells (product), its price, its guarantee and its terms, from the profile, the facts or the owner's words. Write \"Not stated\" for any of them nothing on record says. basis: stated (from the profile, facts or owner), firstParty (from its own results, citing customerData ids) or insufficient. factIds: the facts it uses.",
   "competitorOffers: the offers competitors lead with, only as the approved research's sources show them. Each cites the source ids it comes from; basis observed (a source shows it) or inferred (reasoned from sources). If the research shows no offer for a competitor, leave that competitor out. Never invent one.",
   "gapsAndRisks: where this offer falls short of or exposes the business against those offers. Each has a basis: observed, inferred, hypothesis (untested), firstParty (its own data) or insufficient (a line starting \"Not enough data\", citing nothing).",
   "changes: two or three concrete offer changes to test, never more. Each has a title; evidence (text, basis and the source ids behind it: research ids, or customerData ids with basis firstParty); fit: why it fits this business, naming the profile fields (offer, priceNotes, audience, geography, channels, brandVoice, competitors), fact ids and past-outcome ids it uses" +
     ` (if there is no business context on record, say "${NO_CONTEXT_WORDS} on record")` +
-    "; proposedChange: the change itself, specific enough to make; validationMethod: how to tell if it worked. Each change proposes something different. If the evidence supports fewer than two, give what it supports and say so in limits.",
+    "; channel: the one channel the change is for; newChannel: true only if the business does not use that channel yet; principleIds: the playbook principles it applies, each suited to that channel; proposedChange: the change itself, specific enough to make; validationMethod: how to tell if it worked; metric: the measure for that channel. The evidence must come from sources on that channel or the business's own results on it. Each change proposes something different. If the evidence supports fewer than two, give what it supports and say so in limits.",
   "limits: anything the reader should not assume, including what the research did not cover.",
   "contextUsed: the profile version id, the fact ids and the approved report ids you used.",
 ];
@@ -107,7 +130,7 @@ export const offerIntelligence: SkillModule = {
         workKind: "write",
         system: SYSTEM,
         outputSchema: OFFER_SCHEMA,
-        input: [...RULES, "", businessContext(context), "", evidence(context)].join("\n"),
+        input: [...RULES, "", businessContext(context), "", channelBrief(context), "", playbookBrief(), "", evidence(context)].join("\n"),
       };
     }
 
@@ -135,6 +158,10 @@ export const offerIntelligence: SkillModule = {
           wrapUntrusted(`Draft: ${draft}`),
           "",
           businessContext(context),
+          "",
+          channelBrief(context),
+          "",
+          playbookBrief(),
           "",
           evidence(context),
         ].join("\n"),

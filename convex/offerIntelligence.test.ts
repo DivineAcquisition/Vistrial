@@ -14,6 +14,8 @@ import { INJECTION_FIXTURE } from "./lib/registry";
 import type { ScriptedModel } from "./lib/toolRouter";
 import { offerIntelligence } from "./skills/offerIntelligence";
 import { runChecks } from "./skills/offerIntelligence/checks";
+import type { Channel, Metric } from "./skills/offerIntelligence/channels";
+import { PLAYBOOK } from "./skills/offerIntelligence/playbook";
 import type { OfferAnalysis, OfferContext } from "./skills/offerIntelligence/shapes";
 import schema from "./schema";
 
@@ -46,6 +48,8 @@ function script(plan: Plan = {}) {
     if (!input.startsWith("Write the offer analysis") && !input.startsWith("Revise the offer analysis")) throw new Error(`unscripted call: ${input.slice(0, 40)}`);
     const revising = input.startsWith("Revise");
     const research = [...input.matchAll(/"id":"([^"]+)","platform":"(?!customerData)/g)].map((m) => m[1]);
+    const ads = [...input.matchAll(/"id":"([^"]+)","platform":"metaAdLibrary"/g)].map((m) => m[1]);
+    const pages = [...input.matchAll(/"id":"([^"]+)","platform":"web"/g)].map((m) => m[1]);
     const own = [...input.matchAll(/"id":"([^"]+)","platform":"customerData"/g)].map((m) => m[1]);
     const reports = [...input.matchAll(/"id":"([^"]+)","title":"[^"]*","version"/g)].map((m) => m[1]);
     const version = input.match(/\(version id ([^\s)]+)\):/)?.[1] ?? null;
@@ -53,19 +57,30 @@ function script(plan: Plan = {}) {
     const decisions = [...input.matchAll(/^- \[([^\]]+)\] (Tried|Planned):/gm)].map((m) => m[1]);
     const invented = revising ? [] : (plan.inventIds ?? []);
     const n = plan.changes ?? 3;
-    const changes = [0, 1, 2].slice(0, n).map((i) => ({
+    // Two changes for paid social (the business runs Meta ads), one for search as a new channel.
+    const plans = [
+      { channel: "paidSocial", newChannel: false, principleIds: ["guarantee"], metric: "costPerLead", ids: ads.slice(0, 1) },
+      { channel: "paidSocial", newChannel: false, principleIds: ["self-liquidating-entry"], metric: "costPerBooking", ids: ads.slice(0, 1) },
+      { channel: "search", newChannel: true, principleIds: ["commodity-escape"], metric: "conversionRate", ids: pages.slice(0, 2) },
+    ];
+    const changes = plans.slice(0, n).map((row, i) => ({
       title: `Change ${i + 1}`,
       evidence:
         plan.firstParty && i === 0 && own.length
           ? { text: "Your $50 special got leads at $21.50 each.", basis: "firstParty", sourceRefIds: own.slice(0, 1) }
-          : { text: "Two competitors lead with a first-clean discount.", basis: "observed", sourceRefIds: research.slice(i, i + 2) },
+          : { text: "Competitors lead with a first-clean discount.", basis: "observed", sourceRefIds: row.ids },
       fit: { text: "Fits the offer and the past outcome.", profileFields: version ? ["offer"] : [], factIds: facts.slice(0, 1), decisionIds: decisions.slice(0, 1) },
+      channel: row.channel,
+      newChannel: row.newChannel,
+      principleIds: row.principleIds,
       proposedChange: `Proposed change ${i + 1}`,
-      validationMethod: "Compare bookings for four weeks before and after.",
+      validationMethod: "Compare four weeks before and after.",
+      metric: row.metric,
     }));
     return {
       text: JSON.stringify({
         summary: "Competitors lead with first-clean discounts and guarantees; this offer leads with neither.",
+        offerPosition: { text: "Lead with a guaranteed result instead of matching discounts.", principleIds: ["value-equation", "commodity-escape"] },
         currentOffer: { product: "Deep house cleaning", price: "Not stated", guarantee: "Not stated", terms: "Not stated", basis: "stated", sourceRefIds: [], factIds: facts.slice(0, 1) },
         competitorOffers: [
           { competitor: "Sparkle", offer: "20% off a first deep clean", price: "Not stated", guarantee: "Not stated", basis: "observed", sourceRefIds: research.slice(0, 1) },
@@ -85,10 +100,13 @@ function script(plan: Plan = {}) {
   return inputs;
 }
 
-const PAGES = [
+type Page = { url: string; title: string; platform?: "web" | "metaAdLibrary" };
+
+const PAGES: Page[] = [
   { url: "https://sparkle.example.com/offers", title: "Sparkle: 20% off your first deep clean" },
   { url: "https://tidy.example.com/move-out", title: "Tidy: move-out cleaning guarantee" },
   { url: "https://fresh.example.com/", title: "Fresh: 20% off first clean for new customers" },
+  { url: "https://www.facebook.com/ads/library/?id=111", title: "Shine ad: $79 first clean, re-clean free", platform: "metaAdLibrary" },
 ];
 
 async function seed(t: Tester, name: string, offer = "Deep house cleaning") {
@@ -126,7 +144,7 @@ async function marketReport(
   workspaceId: Id<"workspaces">,
   projectId: Id<"researchProjects">,
   status: "approved" | "draft",
-  pages = PAGES,
+  pages: Page[] = PAGES,
 ) {
   return t.run(async (ctx) => {
     const runId = await ctx.db.insert("agentRuns", {
@@ -149,8 +167,8 @@ async function marketReport(
           projectId,
           runId,
           origin: "found",
-          platform: "web",
-          kind: "page",
+          platform: page.platform ?? "web",
+          kind: page.platform === "metaAdLibrary" ? "ad" : "page",
           url: page.url,
           canonicalUrl: page.url,
           title: page.title,
@@ -311,7 +329,7 @@ describe("Offer Intelligence", () => {
     expect(asset?.kind).toBe("offerAnalysis");
     expect(asset?.status).toBe("draft");
     expect(asset?.currentVersion).toBe(1);
-    for (const section of ["## Your offer", "## What competitors lead with", "## Gaps and risks", "## Changes to test", "**Evidence:**", "**Why it fits this business:**", "**Proposed change:**", "**How to tell if it worked:**"]) {
+    for (const section of ["## Offer position", "**Search (Google, Maps, local listings)**", "**Channel:**", "**Principle:**", "Alex Hormozi, $100M Offers", "(measure: cost per lead)", "## Your offer", "## What competitors lead with", "## Gaps and risks", "## Changes to test", "**Evidence:**", "**Why it fits this business:**", "**Proposed change:**", "**How to tell if it worked:**"]) {
       expect(asset?.body).toContain(section);
     }
     const evidence = asset!.evidence as EvidenceView[];
@@ -326,7 +344,7 @@ describe("Offer Intelligence", () => {
     const firstParty = evidence.filter((row) => row.basis === "firstParty");
     expect(firstParty.length).toBeGreaterThan(0);
     expect(firstParty.every((row) => row.sources.length > 0 && row.sources.every((source) => source.platform === "customerData"))).toBe(true);
-    expect(evidence.find((row) => row.claimKey === "count-research")?.statement).toBe("1 approved market report and 3 of its sources were read.");
+    expect(evidence.find((row) => row.claimKey === "count-research")?.statement).toBe("1 approved market report and 4 of its sources were read.");
     expect(evidence.filter((row) => row.claimKey.startsWith("change-"))).toHaveLength(3);
 
     // Approve, reject and request changes work on it like any other asset.
@@ -383,6 +401,30 @@ describe("Offer Intelligence", () => {
     }
     expect((await a.owner.query(api.runs.get, { workspaceId: a.workspaceId, runId })).status).toBe("completed");
     expect(inputs[0]).toContain("Move-out cleans, $249 flat, re-clean free within 48 hours");
+  });
+
+  it("asks where customers come from when no channel is on record, and builds the changes on the answer", async () => {
+    const t = makeTester();
+    const a = await seed(t, "Alpha");
+    await t.run(async (ctx) => {
+      for (const row of await ctx.db.query("profileVersions").collect()) await ctx.db.patch(row._id, { channels: "" });
+    });
+    await marketReport(t, a.workspaceId, a.projectId, "approved");
+    const inputs = script();
+    const { runId, status } = await run(t, a.owner, a.workspaceId);
+    expect(status).toBe("waiting");
+    const waiting = await t.run((ctx) => ctx.db.get(runId));
+    expect(waiting?.waitingFor?.questionKey).toBe("acquisitionChannels");
+    await a.owner.mutation(api.runs.answer, { workspaceId: a.workspaceId, runId, questionId: waiting!.waitingFor!.questionId, answer: "Mostly Facebook ads, some referrals" });
+    for (let i = 0; i < 20; i += 1) {
+      vi.advanceTimersByTime(0);
+      await t.finishInProgressScheduledFunctions();
+    }
+    expect((await a.owner.query(api.runs.get, { workspaceId: a.workspaceId, runId })).status).toBe("completed");
+    expect(inputs[0]).toContain("- paidSocial: Paid social (Meta, TikTok and similar ads) (from owner)");
+    expect(inputs[0]).toContain("- warm: Warm (past customers, referrals, your list) (from owner)");
+    expect(inputs[0]).toContain("[guarantee] Risk reversal through a guarantee (Alex Hormozi, $100M Offers)");
+    expect((await offerAsset(a.owner, a.workspaceId))?.status).toBe("draft");
   });
 
   it("keeps each workspace's research and context to itself", async () => {
@@ -463,7 +505,7 @@ describe("Offer Intelligence", () => {
   it("treats a page that says to ignore instructions as data", async () => {
     const t = makeTester();
     const a = await seed(t, "Alpha");
-    await marketReport(t, a.workspaceId, a.projectId, "approved", [...PAGES.slice(0, 2), { url: "https://evil.example.com/", title: `Cheap cleaning. ${INJECTION_FIXTURE}` }]);
+    await marketReport(t, a.workspaceId, a.projectId, "approved", [...PAGES.slice(0, 2), PAGES[3], { url: "https://evil.example.com/", title: `Cheap cleaning. ${INJECTION_FIXTURE}` }]);
     const inputs = script();
     const { runId, status } = await run(t, a.owner, a.workspaceId);
     expect(status).toBe("completed");
@@ -479,8 +521,12 @@ describe("Offer Intelligence", () => {
 describe("Offer Intelligence checks", () => {
   const context: OfferContext = {
     reports: [{ assetId: "r1", title: "Report", version: 1, projectId: "p1", claims: [] }],
-    researchSources: ["s1", "s2", "s3"].map((id) => ({ id, platform: "web", title: id, publisher: null, url: `https://${id}.example.com`, excerpt: null, offerReading: null, observed: "2026-11-01" })),
-    ownSources: [{ id: "own1", platform: "customerData", title: "Your Meta ads", publisher: null, url: "https://adsmanager.facebook.com", excerpt: null, offerReading: null, observed: "2026-11-01" }],
+    researchSources: [
+      ...["s1", "s3"].map((id) => ({ id, platform: "web", title: id, publisher: null, url: `https://${id}.example.com`, excerpt: null, offerReading: null, observed: "2026-11-01", channel: "search" as const })),
+      { id: "s2", platform: "metaAdLibrary", title: "ad", publisher: null, url: "https://www.facebook.com/ads/library/?id=1", excerpt: null, offerReading: null, observed: "2026-11-01", channel: "paidSocial" as const },
+    ],
+    ownSources: [{ id: "own1", platform: "customerData", title: "Your Meta ads", publisher: null, url: "https://adsmanager.facebook.com", excerpt: null, offerReading: null, observed: "2026-11-01", channel: "paidSocial" }],
+    channels: [{ channel: "paidSocial", from: "profile" }],
     baseProjectId: "p1",
     profile: { versionId: "pv1", offer: "Cleaning", priceNotes: "", audience: "", geography: "", channels: "", brandVoice: "", competitors: [] },
     facts: [{ id: "f1", factKey: "budget", value: "$1", status: "verified", sourceType: "owner", recordedAt: 1 }],
@@ -491,19 +537,27 @@ describe("Offer Intelligence checks", () => {
     missing: [],
     assumptions: [],
   };
-  const change = (i: number, ids: string[], basis: "observed" | "firstParty" | "hypothesis" = "observed") => ({
+  const change = (
+    i: number,
+    ids: string[],
+    basis: "observed" | "firstParty" | "hypothesis" = "observed",
+    at: { channel: Channel; newChannel: boolean; metric: Metric; principleIds: string[] } = { channel: "search", newChannel: true, metric: "conversionRate", principleIds: ["guarantee"] },
+  ): OfferAnalysis["changes"][number] => ({
     title: `C${i}`,
     evidence: { text: "e", basis, sourceRefIds: ids },
     fit: { text: "fits", profileFields: ["offer"], factIds: [], decisionIds: ["d1"] },
+    ...at,
     proposedChange: `Change ${i}`,
     validationMethod: "v",
   });
+  const PAID = { channel: "paidSocial" as const, newChannel: false, metric: "costPerLead" as const, principleIds: ["self-liquidating-entry"] };
   const good = (): OfferAnalysis => ({
     summary: "s",
+    offerPosition: { text: "Lead with a guarantee.", principleIds: ["guarantee"] },
     currentOffer: { product: "Cleaning", price: "Not stated", guarantee: "Not stated", terms: "Not stated", basis: "stated", sourceRefIds: [], factIds: ["f1"] },
     competitorOffers: [{ competitor: "A", offer: "20% off", price: "", guarantee: "", basis: "observed", sourceRefIds: ["s1"] }],
     gapsAndRisks: [{ kind: "gap", statement: "Not enough data on prices", basis: "insufficient", sourceRefIds: [] }],
-    changes: [change(1, ["s1"]), change(2, ["own1"], "firstParty")],
+    changes: [change(1, ["s1"]), change(2, ["own1"], "firstParty", PAID)],
     limits: [],
     contextUsed: { profileVersionId: "pv1", factIds: ["f1"], reportIds: ["r1"] },
   });
@@ -545,7 +599,7 @@ describe("Offer Intelligence checks", () => {
 
   it("holds every claim to its basis: firstParty needs the business's own data, insufficient cites nothing", () => {
     const wrongFirstParty = good();
-    wrongFirstParty.changes[1] = change(2, ["s2"], "firstParty");
+    wrongFirstParty.changes[1] = change(2, ["s2"], "firstParty", PAID);
     expect(failed(wrongFirstParty)).toContain("Claims point to evidence");
     const insufficient = good();
     insufficient.gapsAndRisks[0].sourceRefIds = ["s1"];
@@ -566,5 +620,46 @@ describe("Offer Intelligence checks", () => {
     blank.currentOffer.price = "";
     expect(failed(blank)).toContain("States the current offer");
     expect(runChecks({ analysis: null, context, runCostCents: 0, capCents: 100 }).passed).toBe(false);
+  });
+  it("ties each change to one channel: one the business uses or a stated new one, with evidence and a measure from it", () => {
+    const unused = good();
+    unused.changes[0].newChannel = false;
+    expect(failed(unused)).toContain("Each change fits its channel");
+    const wrongEvidence = good();
+    wrongEvidence.changes[1] = change(2, ["s1"], "observed", PAID);
+    expect(failed(wrongEvidence)).toContain("Each change fits its channel");
+    const wrongMeasure = good();
+    wrongMeasure.changes[1].metric = "referralsPerMonth";
+    expect(failed(wrongMeasure)).toContain("Each change fits its channel");
+    const noChannel = good();
+    noChannel.changes[0].channel = null;
+    expect(failed(noChannel)).toContain("Each change fits its channel");
+    // An ad from the Meta Ad Library is evidence for a paid social change.
+    const ad = good();
+    ad.changes[1] = change(2, ["s2"], "observed", PAID);
+    expect(failed(ad)).toEqual([]);
+  });
+
+  it("needs a playbook principle that exists and suits the change's channel", () => {
+    const madeUp = good();
+    madeUp.changes[0].principleIds = ["secret-sauce"];
+    expect(failed(madeUp)).toContain("Applies the offer playbook");
+    const none = good();
+    none.changes[0].principleIds = [];
+    expect(failed(none)).toContain("Applies the offer playbook");
+    // Paying for ads with an entry offer is a paid social principle, not a search one.
+    const misfit = good();
+    misfit.changes[0].principleIds = ["self-liquidating-entry"];
+    expect(failed(misfit)).toContain("Applies the offer playbook");
+    const noPosition = good();
+    noPosition.offerPosition = { text: "", principleIds: [] };
+    expect(failed(noPosition)).toContain("Applies the offer playbook");
+  });
+
+  it("keeps the playbook well formed: unique ids, credited, with uses and risks", () => {
+    expect(new Set(PLAYBOOK.map((row) => row.id)).size).toBe(PLAYBOOK.length);
+    for (const row of PLAYBOOK) {
+      expect(row.source.author && row.source.work && row.idea && row.useWhen && row.risks).toBeTruthy();
+    }
   });
 });

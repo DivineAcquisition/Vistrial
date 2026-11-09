@@ -93,8 +93,10 @@ import type * as skills_marketIntelligence_records from "../skills/marketIntelli
 import type * as skills_marketIntelligence_render from "../skills/marketIntelligence/render.js";
 import type * as skills_marketIntelligence_shapes from "../skills/marketIntelligence/shapes.js";
 import type * as skills_marketIntelligence_tools from "../skills/marketIntelligence/tools.js";
+import type * as skills_offerIntelligence_channels from "../skills/offerIntelligence/channels.js";
 import type * as skills_offerIntelligence_checks from "../skills/offerIntelligence/checks.js";
 import type * as skills_offerIntelligence_index from "../skills/offerIntelligence/index.js";
+import type * as skills_offerIntelligence_playbook from "../skills/offerIntelligence/playbook.js";
 import type * as skills_offerIntelligence_render from "../skills/offerIntelligence/render.js";
 import type * as skills_offerIntelligence_shapes from "../skills/offerIntelligence/shapes.js";
 import type * as skills_offerIntelligence_tools from "../skills/offerIntelligence/tools.js";
@@ -200,8 +202,10 @@ declare const fullApi: ApiFromModules<{
   "skills/marketIntelligence/render": typeof skills_marketIntelligence_render;
   "skills/marketIntelligence/shapes": typeof skills_marketIntelligence_shapes;
   "skills/marketIntelligence/tools": typeof skills_marketIntelligence_tools;
+  "skills/offerIntelligence/channels": typeof skills_offerIntelligence_channels;
   "skills/offerIntelligence/checks": typeof skills_offerIntelligence_checks;
   "skills/offerIntelligence/index": typeof skills_offerIntelligence_index;
+  "skills/offerIntelligence/playbook": typeof skills_offerIntelligence_playbook;
   "skills/offerIntelligence/render": typeof skills_offerIntelligence_render;
   "skills/offerIntelligence/shapes": typeof skills_offerIntelligence_shapes;
   "skills/offerIntelligence/tools": typeof skills_offerIntelligence_tools;

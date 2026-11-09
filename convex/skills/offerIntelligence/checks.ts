@@ -1,3 +1,5 @@
+import { CHANNEL_METRICS, EVIDENCE_PLATFORMS } from "./channels";
+import { principleFits, PRINCIPLE_IDS } from "./playbook";
 import { NO_CONTEXT_WORDS, PROFILE_FIELDS, type ChecksRecord, type CheckResult, type OfferAnalysis, type OfferChange, type OfferContext } from "./shapes";
 
 /**
@@ -18,7 +20,9 @@ export const CHECK_NAMES: [number, string][] = [
   [4, "Claims point to evidence"],
   [5, "Each change fits this business"],
   [6, "Used the business context"],
-  [7, "Within the cost cap"],
+  [7, "Each change fits its channel"],
+  [8, "Applies the offer playbook"],
+  [9, "Within the cost cap"],
 ];
 
 function norm(value: string) {
@@ -137,8 +141,46 @@ export function runChecks(input: CheckInput): ChecksRecord {
         : "The context used is listed.",
   );
 
-  // 7. Cost within the cap.
-  add(7, input.runCostCents <= input.capCents, `The run cost ${input.runCostCents.toFixed(2)}¢ of its ${input.capCents}¢ cap.`);
+  // 7. Each change targets one channel the business uses (or says it is new), cites evidence from that
+  // channel, and is measured the way that channel is measured.
+  const businessChannels = new Set(context.channels.map((row) => row.channel));
+  const sources = new Map([...context.researchSources, ...context.ownSources].map((row) => [row.id, row]));
+  const channelProblems = analysis.changes.flatMap((row, i) => {
+    const n = i + 1;
+    if (row.channel === null) return [`change ${n} names no channel`];
+    const problems: string[] = [];
+    if (!businessChannels.has(row.channel) && !row.newChannel) problems.push(`change ${n} targets a channel the business does not use without saying it is new`);
+    const fromChannel = row.evidence.sourceRefIds.some((id) => {
+      const source = sources.get(id);
+      if (!source) return false;
+      // The business's own results count for their channel, or for any channel when it is not known.
+      if (source.platform === "customerData") return source.channel === null || source.channel === row.channel;
+      return EVIDENCE_PLATFORMS[row.channel!].includes(source.platform);
+    });
+    if (!fromChannel) problems.push(`change ${n} cites no evidence from its channel`);
+    if (row.metric === null || !CHANNEL_METRICS[row.channel].includes(row.metric)) problems.push(`change ${n} is not measured the way its channel is measured`);
+    return problems;
+  });
+  add(7, channelProblems.length === 0, channelProblems.length === 0 ? "Each change targets a channel, with evidence and a measure from it." : `${channelProblems.join("; ")}.`);
+
+  // 8. The offer position and every change apply a playbook principle that exists and suits the channel.
+  const positionOk = Boolean(analysis.offerPosition.text) && analysis.offerPosition.principleIds.length > 0 && analysis.offerPosition.principleIds.every((id) => PRINCIPLE_IDS.has(id));
+  const unknown = analysis.changes.filter((row) => row.principleIds.length === 0 || !row.principleIds.every((id) => PRINCIPLE_IDS.has(id))).length;
+  const misfit = analysis.changes.filter((row) => row.channel !== null && row.principleIds.some((id) => PRINCIPLE_IDS.has(id) && !principleFits(id, row.channel!))).length;
+  add(
+    8,
+    positionOk && unknown === 0 && misfit === 0,
+    !positionOk
+      ? "The offer position is missing, or names no principle from the playbook."
+      : unknown > 0
+        ? `${unknown} change(s) name no principle, or one that is not in the playbook.`
+        : misfit > 0
+          ? `${misfit} change(s) apply a principle that does not suit their channel.`
+          : "The position and each change apply a playbook principle that suits the channel.",
+  );
+
+  // 9. Cost within the cap.
+  add(9, input.runCostCents <= input.capCents, `The run cost ${input.runCostCents.toFixed(2)}¢ of its ${input.capCents}¢ cap.`);
 
   return { passed: results.every((row) => row.passed), results };
 }

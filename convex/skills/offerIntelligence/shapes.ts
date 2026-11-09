@@ -4,6 +4,7 @@
  */
 
 import type { KnownItem } from "../../lib/businessContext";
+import { CHANNELS, METRICS, type Channel, type Metric } from "./channels";
 
 export const SKILL_SLUG = "offer-intelligence";
 
@@ -44,10 +45,14 @@ const change = {
       required: ["text", "profileFields", "factIds", "decisionIds"],
       additionalProperties: false,
     },
+    channel: { type: "string", enum: [...CHANNELS] },
+    newChannel: { type: "boolean" },
+    principleIds: ids,
     proposedChange: str,
     validationMethod: str,
+    metric: { type: "string", enum: [...METRICS] },
   },
-  required: ["title", "evidence", "fit", "proposedChange", "validationMethod"],
+  required: ["title", "evidence", "fit", "channel", "newChannel", "principleIds", "proposedChange", "validationMethod", "metric"],
   additionalProperties: false,
 };
 
@@ -55,6 +60,12 @@ export const OFFER_SCHEMA = {
   type: "object",
   properties: {
     summary: str,
+    offerPosition: {
+      type: "object",
+      properties: { text: str, principleIds: ids },
+      required: ["text", "principleIds"],
+      additionalProperties: false,
+    },
     currentOffer: {
       type: "object",
       properties: {
@@ -108,7 +119,7 @@ export const OFFER_SCHEMA = {
       additionalProperties: false,
     },
   },
-  required: ["summary", "currentOffer", "competitorOffers", "gapsAndRisks", "changes", "limits", "contextUsed"],
+  required: ["summary", "offerPosition", "currentOffer", "competitorOffers", "gapsAndRisks", "changes", "limits", "contextUsed"],
   additionalProperties: false,
 };
 
@@ -139,12 +150,18 @@ export type OfferChange = {
   title: string;
   evidence: { text: string; basis: (typeof CHANGE_BASIS)[number] | null; sourceRefIds: string[] };
   fit: { text: string; profileFields: string[]; factIds: string[]; decisionIds: string[] };
+  channel: Channel | null;
+  newChannel: boolean;
+  principleIds: string[];
   proposedChange: string;
   validationMethod: string;
+  metric: Metric | null;
 };
 
 export type OfferAnalysis = {
   summary: string;
+  /** Where the offer should sit against the competition, and the playbook principles behind that. */
+  offerPosition: { text: string; principleIds: string[] };
   currentOffer: CurrentOffer;
   competitorOffers: CompetitorOffer[];
   gapsAndRisks: GapOrRisk[];
@@ -176,8 +193,10 @@ export function readAnalysis(value: unknown): OfferAnalysis | null {
   const row = obj(value);
   const offer = obj(row.currentOffer);
   const used = obj(row.contextUsed);
+  const position = obj(row.offerPosition);
   return {
     summary: text(row.summary, 4000),
+    offerPosition: { text: text(position.text), principleIds: list(position.principleIds, 6) },
     currentOffer: {
       product: text(offer.product),
       price: text(offer.price),
@@ -210,8 +229,12 @@ export function readAnalysis(value: unknown): OfferAnalysis | null {
         title: text(change.title, 300),
         evidence: { text: text(evidence.text), basis: oneOf(CHANGE_BASIS, evidence.basis), sourceRefIds: list(evidence.sourceRefIds) },
         fit: { text: text(fit.text), profileFields: list(fit.profileFields), factIds: list(fit.factIds), decisionIds: list(fit.decisionIds) },
+        channel: oneOf(CHANNELS, change.channel),
+        newChannel: change.newChannel === true,
+        principleIds: list(change.principleIds, 4),
         proposedChange: text(change.proposedChange),
         validationMethod: text(change.validationMethod),
+        metric: oneOf(METRICS, change.metric),
       };
     }),
     limits: list(row.limits, 20),
@@ -230,6 +253,8 @@ export type SourceLite = {
   /** The earlier classification's reading of the offer, marked as the model's, not a fact. */
   offerReading: string | null;
   observed: string;
+  /** The channel this source shows an offer on, set in code from its platform. Null means any. */
+  channel: Channel | null;
 };
 
 /** What the context step saw, saved as its record. The other steps read it from there. */
@@ -253,6 +278,8 @@ export type OfferContext = {
     competitors: { name: string; url: string }[];
   };
   facts: { id: string; factKey: string; value: string; status: string; sourceType: string; recordedAt: number }[];
+  /** The channels the business gets customers from, found in code, with where each was found. */
+  channels: { channel: Channel; from: string }[];
   /** What the business tried before, and what happened. */
   decisions: { id: string; text: string; tried: boolean }[];
   /** The owner's own words on what they sell, at what price and on what terms, when they answered. */
@@ -278,7 +305,8 @@ export const PHASE = {
   save: "save",
 } as const;
 
-/** The only question Offer Intelligence may ask: what the business sells, when nothing on record says. */
+/** The only questions Offer Intelligence may ask: what the business sells, and where its customers come from. */
 export const QUESTIONS = {
   offerDetails: "What do you sell, at what price, and with what guarantee or terms?",
+  acquisitionChannels: "Where do most of your customers find you? For example: Google search, Facebook or Instagram ads, referrals, social posts, or calls and door-knocking.",
 } as const;

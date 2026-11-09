@@ -7,6 +7,7 @@ import { liveFact } from "../../lib/facts";
 import { describeDecision } from "../../decisions";
 import { latest, latestDone, projectOf, recordOf } from "../marketIntelligence/records";
 import type { ToolOutcome } from "../marketIntelligence/tools";
+import { CHANNEL_WORDS, channelOfPlatform, channelsInText, type Channel } from "./channels";
 import { runChecks } from "./checks";
 import { renderAnalysis } from "./render";
 import { MAX_REPORTS, MAX_SOURCES, PHASE, readAnalysis, type ChecksRecord, type OfferAnalysis, type OfferContext, type SourceLite } from "./shapes";
@@ -16,6 +17,13 @@ type MutationTool = (ctx: MutationCtx, run: Doc<"agentRuns">, steps: Step[]) => 
 type Claim = ClaimInput & { statement: string };
 
 const record = (kind: string, value: unknown) => ({ kind, body: JSON.stringify(value) });
+
+/** The channel a source shows an offer on: from its platform, or, for the business's own data, its origin. */
+function channelOf(row: Doc<"sourceRefs">): Channel | null {
+  if (row.platform !== "customerData") return channelOfPlatform(row.platform);
+  // Meta results are paid social; an uploaded file's channel is not known, so it counts for any.
+  return row.url.startsWith("https://adsmanager.facebook.com/") ? "paidSocial" : null;
+}
 
 function lite(row: Doc<"sourceRefs">): SourceLite {
   return {
@@ -27,7 +35,17 @@ function lite(row: Doc<"sourceRefs">): SourceLite {
     excerpt: row.excerpt ?? null,
     offerReading: row.classification?.offer ?? null,
     observed: new Date(row.observedAt).toISOString().slice(0, 10),
+    channel: channelOf(row),
   };
+}
+
+/** The channels the business gets customers from: its profile, the owner's answer, and connected ad accounts. */
+function businessChannels(profileChannels: string, answered: string, ownSources: SourceLite[]) {
+  const found = new Map<Channel, string>();
+  for (const channel of channelsInText(profileChannels)) found.set(channel, "profile");
+  for (const channel of channelsInText(answered)) if (!found.has(channel)) found.set(channel, "owner");
+  if (ownSources.some((row) => row.channel === "paidSocial") && !found.has("paidSocial")) found.set("paidSocial", "connected Meta ads");
+  return [...found.entries()].map(([channel, from]) => ({ channel, from }));
 }
 
 export async function contextOf(db: MutationCtx["db"], run: Pick<Doc<"agentRuns">, "_id" | "workspaceId">, steps: Step[]) {
@@ -105,10 +123,13 @@ const contextRead: MutationTool = async (ctx, run) => {
         .map(lite)
     : [];
   const offerDetails = (await liveFact(ctx, run.workspaceId, "offerDetails"))?.value ?? "";
+  const answeredChannels = (await liveFact(ctx, run.workspaceId, "acquisitionChannels"))?.value ?? "";
   const profile = business.profile;
-  const gaps = profile?.offer.trim() || offerDetails ? [] : ["offerDetails"];
+  const channels = businessChannels(profile?.channels ?? "", answeredChannels, ownSources);
+  const gaps = [...(profile?.offer.trim() || offerDetails ? [] : ["offerDetails"]), ...(channels.length ? [] : ["acquisitionChannels"])];
   const assumptions = [...business.assumptions];
-  if (gaps.length) assumptions.push("What the business sells is not on record, so the current offer reads \"Not enough data\".");
+  if (gaps.includes("acquisitionChannels")) assumptions.push("Where customers come from is not on record, so every change is marked as a new channel to try.");
+  if (gaps.includes("offerDetails")) assumptions.push("What the business sells is not on record, so the current offer reads \"Not enough data\".");
   else if (!profile?.priceNotes.trim() && !offerDetails) assumptions.push("No price is on record, so the price reads \"Not stated\".");
 
   const context: OfferContext = {
@@ -129,6 +150,7 @@ const contextRead: MutationTool = async (ctx, run) => {
         }
       : null,
     facts: business.facts.map((row) => ({ id: row._id, factKey: row.factKey, value: row.value, status: row.status, sourceType: row.sourceType, recordedAt: row.recordedAt })),
+    channels,
     decisions: business.decisions.map((row) => ({ id: row._id, text: describeDecision(row), tried: Boolean(row.outcome) })),
     offerDetails,
     gaps,
@@ -188,7 +210,8 @@ function analysisClaims(analysis: OfferAnalysis | null, context: OfferContext, c
     claims.push(based(`${row.kind}-${i + 1}`, row.statement, row.basis ?? "hypothesis", row.sourceRefIds));
   });
   analysis.changes.forEach((row, i) => {
-    claims.push(based(`change-${i + 1}`, `${row.title}. ${row.proposedChange}`, row.evidence.basis ?? "hypothesis", row.evidence.sourceRefIds));
+    const channel = row.channel ? ` (${CHANNEL_WORDS[row.channel]}${row.newChannel ? ", new channel" : ""})` : "";
+    claims.push(based(`change-${i + 1}`, `${row.title}${channel}. ${row.proposedChange}`, row.evidence.basis ?? "hypothesis", row.evidence.sourceRefIds));
   });
   return claims;
 }

@@ -1,10 +1,10 @@
 "use client";
 
 import { MoonIcon, SunIcon } from "@/components/icons";
-import { useLayoutEffect, useSyncExternalStore } from "react";
+import { useEffect, useLayoutEffect, useSyncExternalStore } from "react";
 
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { applyTheme, readTheme, saveTheme, storedTheme, THEME_LOCK_ATTRIBUTE, type Theme } from "@/lib/theme";
+import { applyTheme, readTheme, saveTheme, storedChoice, storedTheme, THEME_LOCK_ATTRIBUTE, type Theme } from "@/lib/theme";
 import { cn } from "@/lib/utils";
 
 function subscribe(onChange: () => void): () => void {
@@ -25,6 +25,16 @@ export function useTheme(): [Theme, (theme: Theme) => void] {
 export function ThemeSync() {
   useLayoutEffect(() => {
     applyTheme(storedTheme());
+  }, []);
+  // A "system" choice follows the device when it switches between light and dark.
+  useEffect(() => {
+    if (!window.matchMedia) return;
+    const media = window.matchMedia("(prefers-color-scheme: dark)");
+    const follow = () => {
+      if (storedChoice() === "system") applyTheme(storedTheme());
+    };
+    media.addEventListener("change", follow);
+    return () => media.removeEventListener("change", follow);
   }, []);
   return null;
 }

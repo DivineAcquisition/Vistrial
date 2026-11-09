@@ -16,8 +16,8 @@ function ManageResults() {
   if (!shell) return <EmptyState kind="permission" title="Sign in to open your workspace." />;
   return (
     <div className="mx-auto grid w-full max-w-6xl min-w-0 gap-4">
-      <Link href="/app/connections" className="flex w-fit items-center gap-1 text-sm text-muted-foreground hover:text-foreground">
-        <ChevronLeft aria-hidden className="size-4" /> Connections
+      <Link href="/app/settings?section=data" className="flex w-fit items-center gap-1 text-sm text-muted-foreground hover:text-foreground">
+        <ChevronLeft aria-hidden className="size-4" /> Settings · Data
       </Link>
       <h1 className="font-heading text-xl text-foreground">Results files</h1>
       <ResultsFiles workspaceId={shell.workspaceId} highlight={query.get("upload")} />

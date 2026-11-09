@@ -11,7 +11,8 @@ export function safeAppPath(value: string | null | undefined, fallback = "/app")
     return fallback;
   }
   const path = decoded.split("?")[0]?.split("#")[0] ?? "";
-  const allowed = path === "/app" || path.startsWith("/app/") || path === "/admin" || path.startsWith("/admin/");
+  const allowed =
+    path === "/app" || path.startsWith("/app/") || path === "/admin" || path.startsWith("/admin/") || path === "/join";
   return allowed ? decoded : fallback;
 }
 

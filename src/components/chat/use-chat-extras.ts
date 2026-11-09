@@ -27,7 +27,10 @@ export function useChatExtras(workspaceId: Id<"workspaces">, canEdit: boolean, o
   const attach = useMutation(api.files.attach);
   const startConnect = useMutation(api.metaAds.startConnect);
   const meta = useQuery(api.metaAds.status, { workspaceId });
-  const [mode, setMode] = useState<ComposerMode>("thorough");
+  const me = useQuery(api.settings.me, { workspaceId });
+  // The workspace's default research quality (Settings → Agents) until this chat picks its own.
+  const [chosenMode, setMode] = useState<ComposerMode | null>(null);
+  const mode: ComposerMode = chosenMode ?? me?.defaultResearchMode ?? "thorough";
   const [sources, setSources] = useState<string[] | null>(null);
   const [links, setLinks] = useState<string[]>([]);
   const [files, setFiles] = useState<Uploaded[]>([]);

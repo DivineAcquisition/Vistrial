@@ -62,6 +62,10 @@ export default defineSchema({
     role: memberRole,
     displayName: v.string(),
     active: v.boolean(),
+    /** Sign-in email, kept so Settings can list it. Missing on members who have not opened Settings since. */
+    email: v.optional(v.string()),
+    /** When an owner removed this member. The row stays (inactive) for the audit trail. */
+    removedAt: v.optional(v.number()),
   })
     .index("by_workspace", ["workspaceId"])
     .index("by_user", ["userId"])
@@ -74,6 +78,9 @@ export default defineSchema({
     tokenHash: v.string(),
     expiresAt: v.number(),
     acceptedAt: v.optional(v.number()),
+    /** An owner withdrew the invite before it was used. A cancelled invite cannot be accepted. */
+    canceledAt: v.optional(v.number()),
+    invitedBy: v.optional(v.string()),
   })
     .index("by_token", ["tokenHash"])
     .index("by_workspace", ["workspaceId"]),
@@ -284,7 +291,20 @@ export default defineSchema({
     defaultCountry: v.optional(v.string()),
     /** The owner lets the Vistrial service team open time-limited, logged access. On by default from onboarding. */
     serviceTeamAccess: v.optional(v.boolean()),
+    /** The research quality a new chat starts with. Missing means thorough. */
+    defaultResearchMode: v.optional(v.union(v.literal("fast"), v.literal("thorough"))),
   }).index("by_workspace", ["workspaceId"]),
+
+  /** One member's own choices: theme and which in-app notices they want. Missing fields mean the default. */
+  memberPreferences: defineTable({
+    workspaceId: v.id("workspaces"),
+    userId: v.string(),
+    theme: v.optional(v.union(v.literal("light"), v.literal("dark"), v.literal("system"))),
+    notifyCheckInsDue: v.optional(v.boolean()),
+    notifyQuestionsWaiting: v.optional(v.boolean()),
+    notifyReportReady: v.optional(v.boolean()),
+    updatedAt: v.number(),
+  }).index("by_workspace_user", ["workspaceId", "userId"]),
 
   people: defineTable({
     workspaceId: v.id("workspaces"),

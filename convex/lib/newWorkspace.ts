@@ -8,7 +8,7 @@ import { slugFromName } from "./token";
 /** Creates a workspace with its owner, settings, pipeline and agent links (all off). */
 export async function createWorkspaceFor(
   ctx: MutationCtx,
-  input: { userId: string; displayName: string; name: string; timezone?: string; defaultCountry?: string },
+  input: { userId: string; displayName: string; name: string; timezone?: string; defaultCountry?: string; email?: string },
 ): Promise<Id<"workspaces">> {
   await ensureAgents(ctx);
   const workspaceId = await ctx.db.insert("workspaces", {
@@ -24,6 +24,7 @@ export async function createWorkspaceFor(
     role: "owner",
     displayName: input.displayName,
     active: true,
+    ...(input.email ? { email: input.email } : {}),
   });
   await ctx.db.insert("workspaceSettings", {
     workspaceId,

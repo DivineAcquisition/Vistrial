@@ -17,8 +17,8 @@ function ManageMeta() {
   if (!shell) return <EmptyState kind="permission" title="Sign in to open your workspace." />;
   return (
     <div className="mx-auto grid w-full max-w-6xl min-w-0 gap-4">
-      <Link href="/app/connections" className="flex w-fit items-center gap-1 text-sm text-muted-foreground hover:text-foreground">
-        <ChevronLeft aria-hidden className="size-4" /> Connections
+      <Link href="/app/settings?section=data" className="flex w-fit items-center gap-1 text-sm text-muted-foreground hover:text-foreground">
+        <ChevronLeft aria-hidden className="size-4" /> Settings · Data
       </Link>
       <MetaAds workspaceId={shell.workspaceId} returned={query.get("meta")} />
       <section className="grid gap-2" aria-label="Agents that may use it">

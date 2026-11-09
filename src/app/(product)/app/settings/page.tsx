@@ -1,17 +1,14 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 
-import { ShellPage } from "@/components/shell/shell-page";
+import { SettingsScreen } from "@/components/settings/settings-screen";
 
 export const metadata: Metadata = { title: "Settings" };
 
 export default function SettingsPage() {
   return (
-    <ShellPage
-      eyebrow="Owner"
-      title="Settings"
-      description="Billing, connections, trust, and which agents are on. Managers cannot change these."
-      emptyTitle="Settings are quiet"
-      emptyDetail="Trust starts as a suggestion. Nothing here can be published until an owner is signed in."
-    />
+    <Suspense>
+      <SettingsScreen />
+    </Suspense>
   );
 }

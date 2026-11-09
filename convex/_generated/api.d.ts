@@ -92,6 +92,7 @@ import type * as resultUploads from "../resultUploads.js";
 import type * as reviewer from "../reviewer.js";
 import type * as runs from "../runs.js";
 import type * as seed from "../seed.js";
+import type * as settings from "../settings.js";
 import type * as skillIntake from "../skillIntake.js";
 import type * as skills_growthDiagnostics_checks from "../skills/growthDiagnostics/checks.js";
 import type * as skills_growthDiagnostics_compute from "../skills/growthDiagnostics/compute.js";
@@ -216,6 +217,7 @@ declare const fullApi: ApiFromModules<{
   reviewer: typeof reviewer;
   runs: typeof runs;
   seed: typeof seed;
+  settings: typeof settings;
   skillIntake: typeof skillIntake;
   "skills/growthDiagnostics/checks": typeof skills_growthDiagnostics_checks;
   "skills/growthDiagnostics/compute": typeof skills_growthDiagnostics_compute;

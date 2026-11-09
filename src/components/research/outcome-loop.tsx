@@ -2,9 +2,9 @@
 
 import { useMutation, useQuery } from "convex/react";
 import { CalendarClock, CheckCircle2, FlaskConical } from "lucide-react";
-import Link from "next/link";
 import { useId, useState } from "react";
 
+import { CheckInRow } from "@/components/home/waiting-rows";
 import { useWorkspaceShell } from "@/components/shell/shell-context";
 import { Button } from "@/components/ui/button";
 import { Panel } from "@/components/ui/panel";
@@ -235,14 +235,8 @@ export function CheckInsDue() {
       <p className="text-sm text-muted-foreground">You said you&apos;d try these. Say what happened, and the next research builds on it.</p>
       <ul className="grid gap-3">
         {due.map((row) => (
-          <li key={row.id} className="grid gap-2 rounded-xl border border-border p-4 sm:grid-cols-[1fr_auto] sm:items-center">
-            <div className="grid min-w-0 gap-1">
-              <span className="text-xs text-muted-foreground">Due {shortDate(row.checkInAt)}</span>
-              <p className="font-medium break-words text-card-foreground">{row.proposedAction}</p>
-            </div>
-            <Button size="sm" render={<Link href={`/app/agents/growth-architect/sessions/${row.projectId}`} />}>
-              Say what happened
-            </Button>
+          <li key={row.id}>
+            <CheckInRow row={row} />
           </li>
         ))}
       </ul>

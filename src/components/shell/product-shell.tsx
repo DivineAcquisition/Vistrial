@@ -6,8 +6,7 @@ import { useState } from "react";
 import { LayoutListIcon, MenuIcon } from "@/components/icons";
 
 import { ThemeToggle } from "@/components/app/theme-toggle";
-import Logo from "@/components/brand/logo";
-import { FolderTree } from "@/components/shell/folder-tree";
+import { JourneySidebar } from "@/components/shell/journey-sidebar";
 import { LiveAside } from "@/components/shell/live-aside";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { agentStateLabel, type RailAgent, type RailDepartment } from "@/lib/shell/rail";
@@ -16,7 +15,7 @@ import { PageEnter } from "@/components/motion/page-enter";
 import { BalanceNotice } from "@/components/billing/balance-notice";
 
 // Leads and My day belong to the Sales Conversion agent. Their pages stay, hidden from the nav until it ships.
-const tabs = [{ href: "/app", label: "Decisions", icon: LayoutListIcon }] as const;
+const tabs = [{ href: "/app", label: "Home", icon: LayoutListIcon }] as const;
 
 function active(pathname: string, href: string) {
   if (href === "/app") return pathname === "/app";
@@ -24,10 +23,10 @@ function active(pathname: string, href: string) {
 }
 
 export function ProductShell({
-  departments = [],
   agents,
   children,
 }: {
+  /** Kept for callers; the sidebar groups agents by journey, not department. */
   departments?: RailDepartment[];
   agents: RailAgent[];
   children: React.ReactNode;
@@ -44,15 +43,8 @@ export function ProductShell({
         Skip to content
       </a>
       <div className="flex min-h-dvh min-w-0">
-        <aside className="hidden w-72 shrink-0 border-r border-border md:flex md:flex-col print:hidden" aria-label="Workspace">
-          <div className="px-4 py-4">
-            <Link href="/app" aria-label="Vistrial home">
-              <Logo className="h-7 w-auto" />
-            </Link>
-          </div>
-          <div className="min-h-0 flex-1 overflow-y-auto px-3 pb-6">
-            <FolderTree departments={departments} agents={agents} pathname={pathname} />
-          </div>
+        <aside className="sticky top-0 hidden h-dvh w-72 shrink-0 border-r border-border md:flex md:flex-col print:hidden" aria-label="Workspace">
+          <JourneySidebar agents={agents} pathname={pathname} />
         </aside>
         <div className="flex min-w-0 flex-1 flex-col">
           <header className="border-b border-border print:hidden">
@@ -83,8 +75,8 @@ export function ProductShell({
         </div>
       </div>
       {menuOpen ? (
-        <div className="fixed inset-x-0 bottom-16 z-30 max-h-[70dvh] overflow-y-auto border-t border-border bg-background p-4 md:hidden print:hidden">
-          <FolderTree departments={departments} agents={agents} pathname={pathname} onNavigate={() => setMenuOpen(false)} />
+        <div className="fixed inset-x-0 bottom-16 z-30 flex h-[75dvh] flex-col border-t border-border bg-background md:hidden print:hidden">
+          <JourneySidebar agents={agents} pathname={pathname} onNavigate={() => setMenuOpen(false)} />
         </div>
       ) : null}
       <nav

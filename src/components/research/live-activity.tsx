@@ -186,6 +186,7 @@ export function LiveActivity({
   startedAt,
   finishedAt,
   costCents,
+  free = false,
 }: {
   steps: ActivityStep[];
   sources: (ActivitySource & { url?: string })[];
@@ -193,6 +194,8 @@ export function LiveActivity({
   startedAt: number | null;
   finishedAt: number | null;
   costCents: number;
+  /** The free onboarding session: the person pays nothing, so the counter says so instead of the spend. */
+  free?: boolean;
 }) {
   const working = status === "running" || status === "queued";
   const open = working || status === "waiting";
@@ -243,7 +246,7 @@ export function LiveActivity({
           <Counter label="Searches" value={totals.searches} />
           <Counter label="Pages read" value={totals.pages} />
           <Counter label="Sources kept" value={sources.length} />
-          <Counter label="Spent" value={costCents / 100} prefix="$" decimals={2} />
+          {free ? <Counter label="Your cost (free)" value={0} prefix="$" decimals={2} /> : <Counter label="Spent" value={costCents / 100} prefix="$" decimals={2} />}
         </div>
 
         <ol className="relative grid gap-3 before:absolute before:top-2 before:bottom-2 before:left-[15px] before:w-px before:bg-border" aria-label="What it did">

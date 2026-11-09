@@ -5,7 +5,8 @@
 import { v } from "convex/values";
 
 import { internalMutation, internalQuery } from "./_generated/server";
-import { AUTO_REFILL, PLAN, PLAN_ID, TOPUP_PACKS_CENTS, accountFor, autumnMode, billingOn, markup } from "./lib/billing";
+import { AUTO_REFILL, PLAN, PLAN_ID, TOPUP_PACKS_CENTS, accountFor, autumnMode, billingOn, markup, planActive } from "./lib/billing";
+import { unlockOnboarding } from "./lib/onboarding";
 import { workspaceQuery } from "./lib/builders";
 
 // ---------------------------------------------------------------------------------------------- read
@@ -92,6 +93,8 @@ export const saveAccount = internalMutation({
     const account = await accountFor(ctx, workspaceId);
     if (account) await ctx.db.patch(account._id, next);
     else await ctx.db.insert("billingAccounts", { workspaceId, ...next });
+    // Paying for the plan is what unlocks a new workspace after its free session.
+    if (planActive(next)) await unlockOnboarding(ctx, workspaceId, "plan");
   },
 });
 

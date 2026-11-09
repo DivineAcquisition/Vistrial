@@ -296,6 +296,7 @@ export async function startRunFor(
     userId,
     role,
     checkCredit = true,
+    free = false,
     projectId,
     ...input
   }: {
@@ -303,13 +304,15 @@ export async function startRunFor(
     userId: string;
     role: string;
     checkCredit?: boolean;
+    /** Onboarding's free session: no credit check, and nothing is charged to the workspace. */
+    free?: boolean;
     agentSlug: string;
     skillSlug: string;
     projectId?: Id<"researchProjects">;
     mode?: "thorough" | "fast";
   },
 ) {
-  if (checkCredit) await assertCanSpend(ctx, workspaceId);
+  if (checkCredit && !free) await assertCanSpend(ctx, workspaceId);
   if (role === "rep") notAllowed();
   const project = projectId ? await ctx.db.get(projectId) : null;
   if (projectId && (!project || project.workspaceId !== workspaceId)) notFound();
@@ -355,6 +358,7 @@ export async function startRunFor(
     costCents: 0,
     inputTokens: 0,
     outputTokens: 0,
+    ...(free ? { free: true } : {}),
   });
   await writeAudit(ctx, {
     workspaceId: workspaceId,
@@ -588,7 +592,8 @@ async function recordFailure(
  */
 async function charge(ctx: MutationCtx, run: Doc<"agentRuns">, spent: Spend) {
   const dayCost = await addDaySpend(ctx, run.workspaceId, run.agentSlug, run.skillSlug, dayKey(), spent.costCents);
-  await chargeUsage(ctx, { workspaceId: run.workspaceId, costCents: spent.costCents, source: "run", ref: run._id });
+  // The free session is on Vistrial: its cost is kept on the run and the day's counter, never charged as credits.
+  if (!run.free) await chargeUsage(ctx, { workspaceId: run.workspaceId, costCents: spent.costCents, source: "run", ref: run._id });
   const runCost = run.costCents + spent.costCents;
   await ctx.db.patch(run._id, {
     costCents: runCost,

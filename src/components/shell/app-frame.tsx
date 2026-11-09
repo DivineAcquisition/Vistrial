@@ -5,6 +5,7 @@ import { Authenticated, Unauthenticated } from "convex/react";
 import { useEffect } from "react";
 
 import { RedirectToSignIn } from "@/components/auth/redirect-to-sign-in";
+import { FreeSessionFlow } from "@/components/onboarding/free-session-flow";
 import { OnboardingFlow } from "@/components/onboarding/onboarding-flow";
 import { ProductShell } from "@/components/shell/product-shell";
 import { ShellProvider, type WorkspaceShell } from "@/components/shell/shell-context";
@@ -35,12 +36,16 @@ function LiveFrame({ children }: { children: React.ReactNode }) {
 }
 
 const WIZARD_STAGES = new Set(["about", "business", "offer", "goal", "review"]);
+/** After the wizard and before paying: the free research session, its report, and the paywall. */
+const LOCKED_STAGES = new Set(["freeSession", "paywall"]);
 
 function AuthedFrame({ children }: { children: React.ReactNode }) {
   const onboarding = useQuery(api.onboarding.mine, {});
   const mine = useQuery(api.workspace.mine, {});
   // New people answer the wizard before anything else; it creates their workspace.
   if (onboarding && WIZARD_STAGES.has(onboarding.stage)) return <OnboardingFlow />;
+  // The workspace exists, but the rest of the app opens once the plan is paid for.
+  if (onboarding && LOCKED_STAGES.has(onboarding.stage) && onboarding.workspaceId) return <FreeSessionFlow />;
   if (mine === undefined || onboarding === undefined) {
     return (
       <ProductShell agents={[]}>

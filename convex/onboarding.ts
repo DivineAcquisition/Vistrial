@@ -11,14 +11,19 @@ import type { Doc, Id } from "./_generated/dataModel";
 import { internalAction, internalMutation, internalQuery, type MutationCtx, type QueryCtx } from "./_generated/server";
 import { GROWTH_ARCHITECT } from "./catalog";
 import { writeAudit } from "./lib/audit";
+import { PLAN, accountFor, autumnMode, billingOn, planActive } from "./lib/billing";
 import { userError } from "./lib/errors";
 import { signedInMutation, signedInQuery } from "./lib/builders";
 import { writeFact } from "./lib/facts";
+import { ALL_PLATFORMS } from "./lib/intake";
+import { unlockOnboarding } from "./lib/onboarding";
 import type { ModelRoute } from "./lib/modelRouter";
 import { createWorkspaceFor } from "./lib/newWorkspace";
 import { devSkillsEnabled, wrapUntrusted } from "./lib/registry";
 import { parsePublicUrl } from "./lib/sourceRefs";
 import { completeWithTools } from "./lib/toolRouter";
+import { cleanScope } from "./research";
+import { startRunFor } from "./runs";
 
 const WIZARD = ["about", "business", "offer", "goal", "review"] as const;
 type Stage = (typeof WIZARD)[number] | "freeSession" | "paywall" | "guide" | "done";
@@ -62,8 +67,14 @@ function view(row: Doc<"onboarding"> | null, userId: string, name: string) {
     workspaceId: base.workspaceId ?? null,
     freeProjectId: base.freeProjectId ?? null,
     freeRunId: base.freeRunId ?? null,
+    freeAttempts: (base as { freeAttempts?: number }).freeAttempts ?? 0,
     goals: GOALS,
   };
+}
+
+/** What the paywall needs: whether billing is on here, test mode, whether the plan is paid, and the plan. */
+function billingView(account: Parameters<typeof planActive>[0]) {
+  return { on: billingOn(), testMode: billingOn() && autumnMode() === "test", paid: planActive(account), plan: PLAN };
 }
 
 /** Where this person is in onboarding. A person who already had a workspace before onboarding existed is done. */
@@ -78,10 +89,11 @@ export const mine = signedInQuery({
         .withIndex("by_user", (q) => q.eq("userId", ctx.userId))
         .filter((q) => q.eq(q.field("active"), true))
         .first();
-      if (member) return { ...view(null, ctx.userId, ""), stage: "done" as Stage, workspaceId: member.workspaceId };
+      if (member) return { ...view(null, ctx.userId, ""), stage: "done" as Stage, workspaceId: member.workspaceId, billing: billingView(null) };
     }
     const identity = await ctx.auth.getUserIdentity();
-    return view(row, ctx.userId, identity?.name ?? "");
+    const account = row?.workspaceId ? await accountFor(ctx, row.workspaceId) : null;
+    return { ...view(row, ctx.userId, identity?.name ?? ""), billing: billingView(account) };
   },
 });
 
@@ -338,5 +350,145 @@ export const finish = signedInMutation({
       subject: workspaceId,
     });
     return workspaceId;
+  },
+});
+
+// ------------------------------------------------------------------------------------ free session
+
+/** What the free session researches, by the main goal. Every one ends in a report with three opportunities. */
+const GOAL_OBJECTIVES: Record<string, (b: { name: string; offer: string; area: string }) => string> = {
+  leads: (b) => `Find the three best ways for ${b.name} to win more customers for ${b.offer} in ${b.area}, from what competitors there do that works.`,
+  ads: (b) => `Find how ${b.name} can get more from its advertising for ${b.offer} in ${b.area}: what competitors' ads and offers say, and where they leave gaps.`,
+  competitors: (b) => `Map ${b.name}'s main competitors for ${b.offer} in ${b.area}: what they offer, how they market it, and where ${b.name} can stand out.`,
+  prices: (b) => `Find how competitors in ${b.area} price and package ${b.offer}, and how ${b.name} should price and package its own.`,
+  retention: (b) => `Find how competitors offering ${b.offer} in ${b.area} keep customers coming back, and what ${b.name} should do to keep more of its own.`,
+  other: (b) => `Find the three best growth opportunities for ${b.name}, which sells ${b.offer} in ${b.area}, from what competitors there do.`,
+};
+
+/** The free session's project, from what the person told the wizard and what the website said. */
+export function freeScope(row: Pick<Doc<"onboarding">, "business" | "goal" | "site">) {
+  const { business, goal, site } = row;
+  // Website text often ends in a full stop; the sentences below add their own.
+  const bare = (value: string) => value.trim().replace(/[.!?;:,\s]+$/, "");
+  const objective = (GOAL_OBJECTIVES[goal.kind] ?? GOAL_OBJECTIVES.other)({ name: business.name, offer: bare(business.offer), area: bare(business.area) });
+  const theirWords = goal.text ? ` In their words: ${goal.text}` : "";
+  const audience = business.audience ? ` Their customers: ${bare(business.audience)}.` : "";
+  const website = parsePublicUrl(business.website) ? [business.website] : [];
+  return cleanScope({
+    title: `${business.name}: free research session`.slice(0, 120),
+    objective: `${objective}${audience}${theirWords}`.slice(0, 2000),
+    market: business.offer.slice(0, 200),
+    geography: business.area.slice(0, 200),
+    competitors: site.competitors.slice(0, 6).map((name) => ({ name: name.slice(0, 120) })),
+    platforms: [...ALL_PLATFORMS],
+    suppliedUrls: website,
+  });
+}
+
+/** One retry when the first free session stops without a report. */
+export const FREE_ATTEMPTS = 2;
+/** The free session runs in the default quality mode: it is the first report a customer sees. */
+const FREE_MODE = "thorough" as const;
+
+/**
+ * Starts the free research session, once. Vistrial pays for it: it skips the credit check and is never
+ * charged to the workspace. Calling it again while one is going, or after it made a report, returns that one.
+ */
+export const startFree = signedInMutation({
+  args: {},
+  handler: async (ctx): Promise<{ projectId: Id<"researchProjects">; runId: Id<"agentRuns"> }> => {
+    const row = await rowFor(ctx, ctx.userId);
+    if (!row?.workspaceId || row.stage !== "freeSession") throw userError("The free session isn't open for this account.");
+    const member = await ctx.db
+      .query("members")
+      .withIndex("by_user", (q) => q.eq("userId", ctx.userId))
+      .filter((q) => q.and(q.eq(q.field("workspaceId"), row.workspaceId), q.eq(q.field("active"), true)))
+      .first();
+    if (!member || member.role !== "owner") throw userError("Only the workspace owner can start the free session.", "not_allowed");
+
+    const previous = row.freeRunId ? await ctx.db.get(row.freeRunId) : null;
+    if (previous && row.freeProjectId) {
+      const ended = previous.status === "failed" || previous.status === "stopped";
+      const report = ended ? await reportFor(ctx, previous._id) : null;
+      if (!ended || report) return { projectId: row.freeProjectId, runId: previous._id };
+      if ((row.freeAttempts ?? 1) >= FREE_ATTEMPTS) throw userError("The free session has already been tried twice.", "limit");
+    }
+
+    const now = Date.now();
+    let projectId = row.freeProjectId;
+    if (!projectId) {
+      const profile = await ctx.db
+        .query("profileVersions")
+        .withIndex("by_workspace_version", (q) => q.eq("workspaceId", row.workspaceId!))
+        .order("desc")
+        .first();
+      projectId = await ctx.db.insert("researchProjects", {
+        workspaceId: row.workspaceId,
+        ...freeScope(row),
+        status: "draft",
+        ...(profile ? { profileVersionId: profile._id } : {}),
+        createdBy: ctx.userId,
+        createdAt: now,
+        updatedAt: now,
+      });
+    }
+    const runId = await startRunFor(ctx, {
+      workspaceId: row.workspaceId,
+      userId: ctx.userId,
+      role: member.role,
+      free: true,
+      agentSlug: GROWTH_ARCHITECT,
+      skillSlug: "market-intelligence",
+      projectId,
+      mode: FREE_MODE,
+    });
+    await ctx.db.patch(row._id, { freeProjectId: projectId, freeRunId: runId, freeAttempts: (row.freeAttempts ?? 0) + 1, updatedAt: now });
+    await writeAudit(ctx, { workspaceId: row.workspaceId, actorType: "user", actorId: ctx.userId, action: "onboarding.free_session_started", subject: runId });
+    return { projectId, runId };
+  },
+});
+
+async function reportFor(ctx: QueryCtx, runId: Id<"agentRuns">) {
+  const run = await ctx.db.get(runId);
+  if (!run) return null;
+  return ctx.db
+    .query("assets")
+    .withIndex("by_workspace_run", (q) => q.eq("workspaceId", run.workspaceId).eq("createdByRun", runId))
+    .first();
+}
+
+/** Moves between the free session's report and the paywall. Paying is what moves past both. */
+export const showPaywall = signedInMutation({
+  args: { open: v.boolean() },
+  handler: async (ctx, args) => {
+    const row = await rowFor(ctx, ctx.userId);
+    if (!row?.workspaceId || (row.stage !== "freeSession" && row.stage !== "paywall")) return null;
+    const stage = args.open ? "paywall" : "freeSession";
+    if (row.stage !== stage) await ctx.db.patch(row._id, { stage, updatedAt: Date.now() });
+    if (args.open && row.stage !== "paywall") {
+      await writeAudit(ctx, { workspaceId: row.workspaceId, actorType: "user", actorId: ctx.userId, action: "onboarding.paywall_shown", subject: row._id });
+    }
+    return null;
+  },
+});
+
+/**
+ * Moves on when the plan is already paid for (the billing mirror can lag Stripe's return), or when this
+ * deployment has no billing at all, so there is nothing to pay.
+ */
+export const unlock = signedInMutation({
+  args: {},
+  handler: async (ctx) => {
+    const row = await rowFor(ctx, ctx.userId);
+    if (!row?.workspaceId || (row.stage !== "freeSession" && row.stage !== "paywall")) return { unlocked: true };
+    if (!billingOn()) {
+      await unlockOnboarding(ctx, row.workspaceId, "billingOff");
+      return { unlocked: true };
+    }
+    if (planActive(await accountFor(ctx, row.workspaceId))) {
+      await unlockOnboarding(ctx, row.workspaceId, "plan");
+      return { unlocked: true };
+    }
+    return { unlocked: false };
   },
 });

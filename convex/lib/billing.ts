@@ -40,6 +40,12 @@ export function billingOn(): boolean {
   return Boolean(autumnKey());
 }
 
+/** The Growth plan is paid for: Autumn lists it and has not ended it. */
+export function planActive(account: { planId?: string | null; planStatus?: string | null } | null | undefined): boolean {
+  if (!account?.planId || account.planId !== PLAN_ID()) return false;
+  return !["canceled", "cancelled", "expired", "incomplete", "incomplete_expired", "unpaid"].includes(account.planStatus ?? "");
+}
+
 export function priceFor(costCents: number, factor = markup()): number {
   return costCents > 0 ? Math.ceil(costCents * factor) : 0;
 }

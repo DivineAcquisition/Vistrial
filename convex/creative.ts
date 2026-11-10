@@ -10,6 +10,7 @@ import type { Doc, Id } from "./_generated/dataModel";
 import type { QueryCtx } from "./_generated/server";
 import { contentOf as kitContent, ownKit } from "./brandKits";
 import { GROWTH_ARCHITECT } from "./catalog";
+import { testFor, testStates } from "./creativeTests";
 import { writeAudit } from "./lib/audit";
 import { brandGaps } from "./lib/brandKits";
 import { workspaceMutation, workspaceQuery } from "./lib/builders";
@@ -190,6 +191,7 @@ export const tab = workspaceQuery({
       .withIndex("by_workspace_kind", (q) => q.eq("workspaceId", ctx.workspaceId).eq("kind", "adCopySet"))
       .order("desc")
       .take(40);
+    const tests = await testStates(ctx, ctx.workspaceId);
     const results = [];
     const withResult = new Set<string>();
     for (const asset of assets) {
@@ -197,7 +199,7 @@ export const tab = workspaceQuery({
       if (asset.status === "archived") continue;
       const saved = (await savedRecord(ctx.db, asset, "creative")) as CreativeRecord | null;
       if (!saved) continue;
-      results.push({ id: asset._id, title: asset.title, status: asset.status, createdAt: asset.createdAt, brand: saved.kit.name, reference: saved.reference?.title ?? null, offer: saved.offer?.name ?? null });
+      results.push({ id: asset._id, title: asset.title, status: asset.status, createdAt: asset.createdAt, brand: saved.kit.name, reference: saved.reference?.title ?? null, offer: saved.offer?.name ?? null, test: tests.get(asset._id) ?? null });
     }
     results.sort((a, b) => STATUS_ORDER[a.status] - STATUS_ORDER[b.status] || b.createdAt - a.createdAt);
 
@@ -238,6 +240,7 @@ export const view = workspaceQuery({
       disclaimers: saved.disclaimers,
       creative: saved.creative,
       checks: saved.checks,
+      test: await testFor(ctx, ctx.workspaceId, asset._id),
     };
   },
 });

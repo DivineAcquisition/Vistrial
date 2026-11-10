@@ -50,8 +50,12 @@ function businessBrief(context: CreativeContext) {
     ? `The offer this creative sells (offer card version ${context.offer.version}, the business's own words; a claim may cite it with support "offer"): ${offerDetailsText(context.offer.content)}`
     : "No offer card was chosen. Use the profile's offer.";
   const tried = context.outcomes.length ? ["What this business tried before, and what happened (lean toward what helped):", ...context.outcomes.map((row) => `- ${row}`)].join("\n") : "";
+  // The winning lines are this brand's own earlier copy, and the note is the owner's. Wrapped all the same: they are data.
+  const tests = context.tests?.length
+    ? ["What this brand's earlier ad sets showed when they ran. Build on the kind of hook that won, write new lines, and test at least one new idea against it:", wrapUntrusted(context.tests.map((row) => `- ${row}`).join("\n"))].join("\n")
+    : "";
   const note = context.note ? `The person's note for this creative: ${context.note}` : "";
-  return [profile, facts, offer, tried, note].filter(Boolean).join("\n\n");
+  return [profile, facts, offer, tried, tests, note].filter(Boolean).join("\n\n");
 }
 
 /** The reference ad. It came from outside, so it is wrapped, and it is something to learn from, never to copy. */

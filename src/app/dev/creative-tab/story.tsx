@@ -64,7 +64,7 @@ const variation = (key: string, hookType: string, hook: string, primaryText: str
   design: { eyebrow: "For nervous patients", kicker: "The first visit, step by step", accent: "first visit", visual: "A calm dental chair with three small numbered steps beside it.", labels: ["Say hello", "Gentle check", "Clear plan"], subline: "No rushing. No lectures.", },
 });
 
-function view(status: CreativeView["status"]): CreativeView {
+function view(status: CreativeView["status"], test: CreativeView["test"] = null): CreativeView {
   const passed = status !== "needsReview";
   return {
     assetId: id("a1"),
@@ -99,6 +99,7 @@ function view(status: CreativeView["status"]): CreativeView {
       limits: ["No patient results are on record, so none are stated."],
       contextUsed: { profileVersionId: "p1", factIds: [] },
     },
+    test,
     checks: {
       passed,
       results: [
@@ -131,13 +132,23 @@ const IMAGES: CreativeImageList = {
   ],
 };
 
-/** The Creative workspace with fixture data. `state`: full, review (did not pass), empty, rep, form, running. */
+const FIGURES = { source: "meta" as const, label: "Meta ads", currency: "USD", dateStart: "2026-10-10", dateStop: "2026-11-08", spend: 1200, conversions: 31, capturedAt: AT };
+const TEST = { id: id<NonNullable<CreativeView["test"]>["id"]>("t1"), assetId: id<CreativeView["assetId"]>("a1"), title: "Northside Dental: ad set", checkInAt: AT - 86_400_000, createdAt: AT - 15 * 86_400_000, due: true, baseline: [FIGURES], outcome: null };
+
+/** The Creative workspace with fixture data. `state`: full, review (did not pass), empty, rep, form, running, approved, due, won. */
 export function CreativeTabStory({ state, theme }: { state: string; theme: string }) {
   const empty = state === "empty" || state === "form";
-  const status: CreativeView["status"] = state === "review" ? "needsReview" : "draft";
+  const live = state === "approved" || state === "due" || state === "won";
+  const status: CreativeView["status"] = state === "review" ? "needsReview" : live ? "approved" : "draft";
+  const test: CreativeView["test"] =
+    state === "due"
+      ? TEST
+      : state === "won"
+        ? { ...TEST, due: false, outcome: { result: "better", winner: { key: "B", hookType: "walk-through", hook: view(status).creative!.variations[1].hook, headline: "A gentler first visit" }, note: "B got twice the bookings of the others.", recordedAt: AT, changes: [{ source: "meta", label: "Meta ads", metric: "conversions", before: 31, after: 44, percent: 41.9 }] } }
+        : null;
   const tab: CreativeTabData = {
     running: state === "running" ? [{ id: id("r1"), startedAt: AT, costCents: 12, stepsDone: 1, words: "Writing the brief and four variations" }] : [],
-    results: empty ? [] : [{ id: id("a1"), title: "Ad set", status, createdAt: AT, brand: "Northside Dental", reference: "BrightSmile", offer: "New patient check-up" }],
+    results: empty ? [] : [{ id: id("a1"), title: "Ad set", status, createdAt: AT, brand: "Northside Dental", reference: "BrightSmile", offer: "New patient check-up", test: state === "due" ? "due" : state === "won" ? "recorded" : null }],
     stopped: state === "running" ? [{ id: id("r0"), status: "failed", stopReason: "error", startedAt: AT - 86_400_000 }] : [],
   };
   return (
@@ -149,10 +160,11 @@ export function CreativeTabStory({ state, theme }: { state: string; theme: strin
         references={state === "form" ? REFERENCES : []}
         referenceActions={{ addLink: async () => null, upload: async () => null, remove: noop }}
         tab={tab}
-        view={empty ? null : view(status)}
+        view={empty ? null : view(status, test)}
         onSelect={() => undefined}
         onStart={noop}
         review={{ approve: noop, reject: noop, requestChanges: noop }}
+        test={{ start: noop, record: noop, remove: noop }}
         initialSource={state === "form" ? "s1" : null}
         images={
           <CreativeImagesView

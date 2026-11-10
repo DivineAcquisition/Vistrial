@@ -1130,6 +1130,38 @@ export default defineSchema({
   }).index("by_workspace", ["workspaceId", "createdAt"]),
 
   /**
+   * An approved ad set the business is running, and which variation won. Figures are read from its own
+   * Meta results and results files when it starts and again when the outcome is recorded. The next ad set
+   * for the same brand reads the outcome. One per ad set.
+   */
+  creativeTests: defineTable({
+    workspaceId: v.id("workspaces"),
+    assetId: v.id("assets"),
+    kitId: v.id("brandKits"),
+    /** The ad set's title when it started running, so the record reads the same if the set is renamed. */
+    title: v.string(),
+    checkInAt: v.number(),
+    createdBy: v.string(),
+    createdAt: v.number(),
+    baseline: v.array(decisionFigures),
+    outcome: v.optional(
+      v.object({
+        result: decisionResult,
+        /** The variation that did best, as it was written. Missing when none stood out or it was not run. */
+        winner: v.optional(v.object({ key: v.string(), hookType: v.string(), hook: v.string(), headline: v.string() })),
+        /** The owner's own words, 500 characters at most. Stays in this workspace. */
+        note: v.string(),
+        after: v.array(decisionFigures),
+        recordedAt: v.number(),
+        recordedBy: v.string(),
+      }),
+    ),
+  })
+    .index("by_workspace", ["workspaceId", "checkInAt"])
+    .index("by_workspace_asset", ["workspaceId", "assetId"])
+    .index("by_workspace_kit", ["workspaceId", "kitId", "createdAt"]),
+
+  /**
    * One image made for one variation of an ad set, in one placement. A designed ad carries its words in the
    * picture, checked after it is made. A photo carries none: the headline and the brand's real logo file
    * are placed on top when it is shown and downloaded.

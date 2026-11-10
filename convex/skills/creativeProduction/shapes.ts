@@ -77,6 +77,8 @@ export type CreativeContext = {
   facts: FactLite[];
   /** What the business tried before and what happened, in words. */
   outcomes: string[];
+  /** What this brand's earlier ad sets showed when they ran: the result and the variation that won. Missing on older records. */
+  tests?: string[];
   /** Names the copy must not use: competitors on record and the reference's advertiser. */
   blockedNames: string[];
 };

@@ -20,6 +20,7 @@ import { BRAND_KIND_WORDS } from "../../../convex/lib/brandKits";
 import { ATTEST_WORDS, MAX_IMAGE_BYTES, MAX_VIDEO_BYTES, readReferenceLink } from "../../../convex/lib/referenceShapes";
 
 import { CreativeImages } from "./creative-images";
+import { CreativeTest, type TestActions } from "./creative-test";
 import { ReviewBar } from "./review-bar";
 import type { AddedReference, CreativeOptions, CreativeTabData, CreativeView, ReviewActions } from "./types";
 import { useReviewActions } from "./use-review";
@@ -52,6 +53,8 @@ export type CreativeTabProps = {
   initialForm?: boolean;
   /** The images of the ad set that is open, drawn under its copy. */
   images?: ReactNode;
+  /** Marking the open ad set as running and recording which variation won. */
+  test: TestActions;
 };
 
 /** Why a run ended with nothing to review, in plain words. The run's own page has the step that failed. */
@@ -391,7 +394,7 @@ function CopyButton({ text, label }: { text: string; label: string }) {
 }
 
 /** One ad set: what it was made from, the checks, the brief, the four variations, the script and the captions. */
-function AdSet({ view, editor, review, images }: { view: CreativeView; editor: boolean; review: ReviewActions; images?: ReactNode }) {
+function AdSet({ view, editor, review, images, test }: { view: CreativeView; editor: boolean; review: ReviewActions; images?: ReactNode; test: TestActions }) {
   const creative = view.creative;
   const failed = view.checks.results.filter((row) => !row.passed);
   const waiting = view.status === "draft" || view.status === "needsReview";
@@ -557,6 +560,12 @@ function AdSet({ view, editor, review, images }: { view: CreativeView; editor: b
 
       {creative && images ? <div className="border-t border-border pt-4">{images}</div> : null}
 
+      {creative && (view.test || (editor && view.status === "approved")) ? (
+        <div className="border-t border-border pt-4">
+          <CreativeTest key={view.assetId} test={view.test} approved={view.status === "approved"} variations={creative.variations.map((row) => ({ key: row.key, hook: row.hook }))} editor={editor} actions={test} />
+        </div>
+      ) : null}
+
       <div className="grid gap-2 border-t border-border pt-4">
         {editor && waiting ? <ReviewBar assetId={view.assetId} actions={review} needsReview={view.status === "needsReview"} /> : null}
         <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
@@ -571,7 +580,7 @@ function AdSet({ view, editor, review, images }: { view: CreativeView; editor: b
 }
 
 /** The Creative workspace: the ask, what is running, and the ad sets with the one chosen opened. */
-export function CreativeTabView({ base, editor, options, references, referenceActions, tab, view, onSelect, onStart, review, initialSource, initialForm, images }: CreativeTabProps) {
+export function CreativeTabView({ base, editor, options, references, referenceActions, tab, view, onSelect, onStart, review, initialSource, initialForm, images, test }: CreativeTabProps) {
   const [form, setForm] = useState(Boolean(initialForm || initialSource));
   return (
     <div className="grid min-w-0 gap-5">
@@ -652,12 +661,13 @@ export function CreativeTabView({ base, editor, options, references, referenceAc
                     {row.brand} · {shortDate(row.createdAt)}
                   </span>
                   {row.status === "draft" || row.status === "needsReview" ? <span aria-label="Waiting for review" className="size-2 shrink-0 rounded-full bg-warning" /> : null}
+                  {row.test === "due" ? <span className="shrink-0 text-xs text-warning">check-in due</span> : row.test === "running" ? <span className="shrink-0 text-xs text-muted-foreground">running</span> : null}
                 </button>
               </li>
             ))}
           </ul>
         )}
-        {view ? <AdSet view={view} editor={editor} review={review} images={images} /> : null}
+        {view ? <AdSet view={view} editor={editor} review={review} images={images} test={test} /> : null}
       </section>
     </div>
   );
@@ -676,6 +686,9 @@ export function CreativeTab({ workspaceId, base, editor, source }: { workspaceId
   const referenceUploadUrl = useMutation(api.references.uploadUrl);
   const removeReference = useMutation(api.references.remove);
   const review = useReviewActions(workspaceId);
+  const startTest = useMutation(api.creativeTests.start);
+  const recordTest = useMutation(api.creativeTests.recordOutcome);
+  const removeTest = useMutation(api.creativeTests.remove);
   if (!options || !tab) return <p className="text-sm text-muted-foreground">Loading creative.</p>;
   return (
     <CreativeTabView
@@ -713,6 +726,17 @@ export function CreativeTab({ workspaceId, base, editor, source }: { workspaceId
         setAssetId(null);
       }}
       review={review}
+      test={{
+        start: async (checkInDays) => {
+          if (chosen) await startTest({ workspaceId, assetId: chosen, checkInDays });
+        },
+        record: async (testId, result, winnerKey, note) => {
+          await recordTest({ workspaceId, testId: testId as Id<"creativeTests">, result, ...(winnerKey ? { winnerKey } : {}), note });
+        },
+        remove: async (testId) => {
+          await removeTest({ workspaceId, testId: testId as Id<"creativeTests"> });
+        },
+      }}
       initialSource={source ?? null}
       images={view?.creative ? <CreativeImages key={view.assetId} workspaceId={workspaceId} assetId={view.assetId} editor={editor} variations={view.creative.variations.map((row) => ({ key: row.key, headline: row.headline, cta: row.cta }))} /> : null}
     />

@@ -6,12 +6,14 @@ import { useRef, useState } from "react";
 
 import { Check, Download, FileImage, LoaderCircle, Sparkles } from "@/components/icons";
 import { Button } from "@/components/ui/button";
+import { SegmentedRadioGroup } from "@/components/ui/segmented-radio";
 import { showError } from "@/lib/errors/show-error";
 import { money } from "@/lib/research/words";
 import { cn } from "@/lib/utils";
 import { api } from "../../../convex/_generated/api";
 import type { Id } from "../../../convex/_generated/dataModel";
 import { PLACEMENTS, PLACEMENT_WORDS, type Placement } from "../../../convex/lib/brandKits";
+import type { Look, Tone } from "../../../convex/lib/creativeImages";
 
 import type { CreativeImageList, CreativeImageQuote } from "./types";
 import { SectionTitle } from "./work-shell";
@@ -25,7 +27,12 @@ export type CreativeImagesProps = {
   variations: VariationCopy[];
   placements: Placement[];
   onPlacements: (placements: Placement[]) => void;
-  /** The price of the placements chosen. Null while it is being read. */
+  /** How the picture is made: the whole ad drawn with its words, or a photo with the words placed on top. */
+  look: Look;
+  onLook: (look: Look) => void;
+  tone: Tone;
+  onTone: (tone: Tone) => void;
+  /** The price of the placements and the look chosen. Null while it is being read. */
   quote: CreativeImageQuote | null;
   list: CreativeImageList | null;
   /** Makes one image per variation per placement, for the total the person was shown. */
@@ -111,6 +118,12 @@ function Tile({ image, copy, brand, placement, editor, eachCents, onRetake }: { 
         <div className="flex w-full items-center justify-center rounded-xl border border-dashed border-border text-sm text-muted-foreground" style={{ aspectRatio: ASPECT[placement] }}>
           <LoaderCircle aria-hidden className="mr-2 size-4 animate-spin text-primary motion-reduce:animate-none" /> Making it
         </div>
+      ) : image.url && image.look === "designed" ? (
+        <div ref={node} className="w-full overflow-hidden rounded-xl bg-muted" style={{ aspectRatio: ASPECT[placement] }}>
+          {/* The words are part of this picture, and each was read back and checked when it was made. */}
+          {/* eslint-disable-next-line @next/next/no-img-element -- a generated file from storage, drawn as it is */}
+          <img src={image.url} alt={`Designed ad for variation ${copy.key}: ${copy.headline}`} crossOrigin="anonymous" className="size-full object-cover" />
+        </div>
       ) : image.url ? (
         <Composed node={node} image={image} copy={copy} brand={brand} placement={placement} />
       ) : (
@@ -150,7 +163,7 @@ function Tile({ image, copy, brand, placement, editor, eachCents, onRetake }: { 
 }
 
 /** Images for an ad set: choose the placements, see the price, confirm, then the finished ads. */
-export function CreativeImagesView({ editor, variations, placements, onPlacements, quote, list, onGenerate, onRetake }: CreativeImagesProps) {
+export function CreativeImagesView({ editor, variations, placements, onPlacements, look, onLook, tone, onTone, quote, list, onGenerate, onRetake }: CreativeImagesProps) {
   const [confirming, setConfirming] = useState(false);
   const [starting, setStarting] = useState(false);
   const [problem, setProblem] = useState("");
@@ -170,10 +183,40 @@ export function CreativeImagesView({ editor, variations, placements, onPlacement
   return (
     <section className="grid gap-3" aria-label="Images">
       <SectionTitle icon={FileImage}>Images</SectionTitle>
-      <p className="text-xs text-muted-foreground">Each picture is made with no text and no logo. Your headline, button and real logo file are placed on top, so the words are exact. Pictures carry an invisible AI watermark from the image model.</p>
+      <p className="text-xs text-muted-foreground">Pictures carry an invisible AI watermark from the image model. Nothing from the ad you modelled this on goes into them.</p>
 
       {editor ? (
         <div className="grid gap-3 rounded-xl border border-border p-3">
+          {quote ? (
+            <div className="grid gap-2">
+              <div className="flex flex-wrap items-center gap-2">
+                <SegmentedRadioGroup
+                  aria-label="How the picture is made"
+                  value={look}
+                  onValueChange={(value) => {
+                    setConfirming(false);
+                    onLook(value as Look);
+                  }}
+                  options={quote.looks.map((row) => ({ value: row.value, label: `${row.label} · ${money(row.eachCents)}` }))}
+                />
+                {look === "designed" ? (
+                  <SegmentedRadioGroup
+                    aria-label="Background"
+                    value={tone}
+                    onValueChange={(value) => onTone(value as Tone)}
+                    options={[
+                      { value: "dark", label: "Dark" },
+                      { value: "light", label: "Light" },
+                    ]}
+                  />
+                ) : null}
+              </div>
+              <p className="text-xs text-muted-foreground">
+                {quote.looks.find((row) => row.value === look)?.what}
+                {look === "designed" ? (quote.styleRefs > 0 ? ` Following ${quote.styleRefs} of your own ads from the brand kit.` : " Add a few of your own past ads to the brand kit and designed ads will follow their look.") : ""}
+              </p>
+            </div>
+          ) : null}
           <div className="flex flex-wrap gap-2" role="group" aria-label="Placements to make">
             {PLACEMENTS.map((placement) => {
               const on = placements.includes(placement);
@@ -196,7 +239,7 @@ export function CreativeImagesView({ editor, variations, placements, onPlacement
           </div>
           {placements.length === 0 ? <p className="text-sm text-muted-foreground">Choose at least one placement.</p> : null}
           {placements.length > 0 && !quote ? <p className="text-sm text-muted-foreground">Working out the price.</p> : null}
-          {placements.length > 0 && quote ? (
+          {placements.length > 0 && quote && quote.count > 0 ? (
             <>
               <p className="text-sm text-card-foreground">
                 {quote.count} image{quote.count === 1 ? "" : "s"}: {quote.variations} variations × {quote.placements.length} placement{quote.placements.length === 1 ? "" : "s"}. <span className="font-medium">{money(quote.totalCents)} of credits</span>{" "}
@@ -251,7 +294,7 @@ export function CreativeImagesView({ editor, variations, placements, onPlacement
                 <ul className="grid grid-cols-2 items-start gap-3 md:grid-cols-3 lg:grid-cols-4">
                   {PLACEMENTS.filter((placement) => mine.some((row) => row.placement === placement)).map((placement) => {
                     const image = mine.find((row) => row.placement === placement)!;
-                    return <Tile key={image.id} image={image} copy={copy} brand={list.brand} placement={placement} editor={editor} eachCents={list.eachCents} onRetake={() => onRetake(copy.key, placement, list.eachCents)} />;
+                    return <Tile key={image.id} image={image} copy={copy} brand={list.brand} placement={placement} editor={editor} eachCents={list.eachCents[image.look]} onRetake={() => onRetake(copy.key, placement, list.eachCents[image.look])} />;
                   })}
                 </ul>
               </div>
@@ -266,9 +309,11 @@ export function CreativeImagesView({ editor, variations, placements, onPlacement
 /** The images of one ad set, fed by Convex. Starts on the placements the brand kit names. */
 export function CreativeImages({ workspaceId, assetId, editor, variations }: { workspaceId: Id<"workspaces">; assetId: Id<"assets">; editor: boolean; variations: VariationCopy[] }) {
   const [chosen, setChosen] = useState<Placement[] | null>(null);
-  const first = useQuery(api.creativeImages.quote, { workspaceId, assetId, placements: [] });
+  const [look, setLook] = useState<Look>("designed");
+  const [tone, setTone] = useState<Tone>("dark");
+  const first = useQuery(api.creativeImages.quote, { workspaceId, assetId, placements: [], look });
   const placements = chosen ?? (first ? (first.kitPlacements.length > 0 ? first.kitPlacements : (["1:1"] as Placement[])) : []);
-  const quote = useQuery(api.creativeImages.quote, placements.length > 0 ? { workspaceId, assetId, placements } : "skip");
+  const quote = useQuery(api.creativeImages.quote, placements.length > 0 ? { workspaceId, assetId, placements, look } : "skip");
   const list = useQuery(api.creativeImages.list, { workspaceId, assetId });
   const generate = useMutation(api.creativeImages.generate);
   return (
@@ -277,10 +322,14 @@ export function CreativeImages({ workspaceId, assetId, editor, variations }: { w
       variations={variations}
       placements={placements}
       onPlacements={setChosen}
-      quote={placements.length > 0 ? (quote ?? null) : null}
+      look={look}
+      onLook={setLook}
+      tone={tone}
+      onTone={setTone}
+      quote={placements.length > 0 ? (quote ?? null) : (first ?? null)}
       list={list ?? null}
       onGenerate={async (rows, confirmedCents) => {
-        await generate({ workspaceId, assetId, placements: rows, confirmedCents });
+        await generate({ workspaceId, assetId, placements: rows, confirmedCents, look, tone });
       }}
       onRetake={async (variationKey, placement, confirmedCents) => {
         await generate({ workspaceId, assetId, placements: [], confirmedCents, only: { variationKey, placement } });

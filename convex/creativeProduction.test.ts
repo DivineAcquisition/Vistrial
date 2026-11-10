@@ -81,6 +81,7 @@ function script(plan: Plan = {}) {
       cta: "Book a time",
       imageDirection: "A bright, tidy living room in natural light, no people, lots of white space.",
       hypothesis: `Hook ${index + 1} will earn more clicks than the others.`,
+      design: { eyebrow: "For busy homeowners", kicker: "Your weekend back", accent: "", visual: "A mop leaning unused against a sunny wall.", labels: [], subline: "A deep clean, done for you." },
     }));
     return {
       text: JSON.stringify({
@@ -325,7 +326,7 @@ describe("creative checks", () => {
   });
 
   it("names every rule a creative breaks", () => {
-    const variation = (key: string, primaryText: string) => ({ key, hookType: "question", hook: `Hook ${key}`, primaryText, headline: "Headline", cta: "Book", imageDirection: "A room", hypothesis: "It wins" });
+    const variation = (key: string, primaryText: string) => ({ key, hookType: "question", hook: `Hook ${key}`, primaryText, headline: "Headline", cta: "Book", imageDirection: "A room", hypothesis: "It wins", design: { eyebrow: "", kicker: "", accent: "", visual: "A calm room", labels: [], subline: "" } });
     const creative = readCreative({
       summary: "s",
       structure: {},
@@ -342,5 +343,100 @@ describe("creative checks", () => {
     expect(failed[0].detail).toContain("surgery");
     expect(failed[2].detail).toContain("Heals your back in 7 days.");
     expect(runChecks({ creative: null, context, runCostCents: 0, capCents: 150 }).passed).toBe(false);
+  });
+});
+
+describe("Running an ad set", () => {
+  beforeEach(() => vi.useFakeTimers());
+  afterEach(() => {
+    vi.useRealTimers();
+    delete (globalThis as { __vistrialScriptedModel?: ScriptedModel }).__vistrialScriptedModel;
+  });
+
+  async function made(t: Tester, a: Awaited<ReturnType<typeof seed>>) {
+    const started = await a.owner.mutation(api.creative.start, { workspaceId: a.workspaceId, kitId: a.kitId, offerCardId: a.offerCardId });
+    expect(await finish(t, a.owner, a.workspaceId, started.runId)).toBe("completed");
+    return (await adSet(a.owner, a.workspaceId))!.row.id;
+  }
+
+  it("marks an approved set as running, records the winner, and the brand's next brief reads it", async () => {
+    const t = makeTester();
+    const a = await seed(t, "Alpha");
+    const inputs = script();
+    const assetId = await made(t, a);
+    const base = { workspaceId: a.workspaceId };
+
+    // Nothing unreviewed is recorded as running.
+    expect(await message(a.owner.mutation(api.creativeTests.start, { ...base, assetId, checkInDays: 14 }))).toBe("Approve this ad set before you mark it as running.");
+    await a.owner.mutation(api.assets.approve, { ...base, assetId });
+    expect(await message(a.owner.mutation(api.creativeTests.start, { ...base, assetId, checkInDays: 3 }))).toBe(NOT_ALLOWED);
+
+    const testId = await a.owner.mutation(api.creativeTests.start, { ...base, assetId, checkInDays: 14 });
+    // Marking it twice keeps the one record.
+    expect(await a.owner.mutation(api.creativeTests.start, { ...base, assetId, checkInDays: 30 })).toBe(testId);
+    let view = await a.owner.query(api.creative.view, { ...base, assetId });
+    expect(view?.test).toMatchObject({ id: testId, due: false, outcome: null, title: "Alpha Cleaning: ad set for First deep clean" });
+    expect((await a.owner.query(api.creative.tab, base)).results[0].test).toBe("running");
+    expect(await a.owner.query(api.creativeTests.due, base)).toEqual([]);
+
+    vi.advanceTimersByTime(15 * 24 * 60 * 60 * 1000);
+    expect((await a.owner.query(api.creative.tab, base)).results[0].test).toBe("due");
+    expect((await a.owner.query(api.creativeTests.due, base)).map((row) => row.id)).toEqual([testId]);
+
+    // The winner is read from the saved set, never from the screen.
+    expect(await message(a.owner.mutation(api.creativeTests.recordOutcome, { ...base, testId, result: "better", winnerKey: "Z", note: "" }))).toBe("That variation is not in this ad set.");
+    await a.owner.mutation(api.creativeTests.recordOutcome, { ...base, testId, result: "better", winnerKey: "B", note: "  B got twice   the bookings. " });
+    view = await a.owner.query(api.creative.view, { ...base, assetId });
+    expect(view?.test?.outcome).toMatchObject({ result: "better", note: "B got twice the bookings.", winner: { key: "B", hook: "What would you do with four free hours?", hookType: "question" } });
+    expect((await a.owner.query(api.creative.tab, base)).results[0].test).toBe("recorded");
+    expect(await a.owner.query(api.creativeTests.due, base)).toEqual([]);
+
+    // The next ad set for the same brand is briefed with what won, as wrapped data.
+    expect(inputs[0]).not.toContain("earlier ad sets");
+    await made(t, a);
+    const brief = inputs[inputs.length - 1];
+    expect(brief).toContain("What this brand's earlier ad sets showed when they ran.");
+    expect(brief).toContain('"Alpha Cleaning: ad set for First deep clean" ran for 15 days. Result: it helped. Best variation: B (hook type: question; hook: "What would you do with four free hours?"');
+    expect(brief).toContain('Owner: "B got twice the bookings."');
+
+    // A set that was never run teaches nothing.
+    await a.owner.mutation(api.creativeTests.recordOutcome, { ...base, testId, result: "notTried", winnerKey: "B", note: "" });
+    expect((await a.owner.query(api.creative.view, { ...base, assetId }))?.test?.outcome?.winner).toBeNull();
+    await made(t, a);
+    expect(inputs[inputs.length - 1]).not.toContain("earlier ad sets");
+
+    await a.owner.mutation(api.creativeTests.remove, { ...base, testId });
+    expect((await a.owner.query(api.creative.view, { ...base, assetId }))?.test).toBeNull();
+  });
+
+  it("keeps another brand's results out of the brief, reps read-only, and other workspaces out", async () => {
+    const t = makeTester();
+    const a = await seed(t, "Alpha");
+    const b = await seed(t, "Beta");
+    const inputs = script();
+    const base = { workspaceId: a.workspaceId };
+    const assetId = await made(t, a);
+    await a.owner.mutation(api.assets.approve, { ...base, assetId });
+
+    const invite = await a.owner.mutation(api.workspace.invite, { ...base, email: "rep@example.com", role: "rep" });
+    const rep = t.withIdentity({ ...person("rep"), email: "rep@example.com" });
+    await rep.mutation(api.workspace.acceptInvite, { token: invite.token });
+    expect(await message(rep.mutation(api.creativeTests.start, { ...base, assetId, checkInDays: 14 }))).toBe(NOT_ALLOWED);
+    expect(await message(b.owner.mutation(api.creativeTests.start, { workspaceId: b.workspaceId, assetId, checkInDays: 14 }))).toBe(NOT_FOUND);
+
+    const testId = await a.owner.mutation(api.creativeTests.start, { ...base, assetId, checkInDays: 14 });
+    expect(await message(rep.mutation(api.creativeTests.recordOutcome, { ...base, testId, result: "better", note: "" }))).toBe(NOT_ALLOWED);
+    expect(await message(b.owner.mutation(api.creativeTests.recordOutcome, { workspaceId: b.workspaceId, testId, result: "better", note: "" }))).toBe(NOT_FOUND);
+    expect(await message(b.owner.mutation(api.creativeTests.remove, { workspaceId: b.workspaceId, testId }))).toBe(NOT_FOUND);
+    expect((await rep.query(api.creative.view, { ...base, assetId }))?.test?.id).toBe(testId);
+    await a.owner.mutation(api.creativeTests.recordOutcome, { ...base, testId, result: "same", note: "" });
+
+    // A client's ad set is briefed with that client's results only.
+    const client = await a.owner.mutation(api.brandKits.saveVersion, { ...base, kind: "client", name: "Northside Dental", tone: "Calm." });
+    const started = await a.owner.mutation(api.creative.start, { ...base, kitId: client.kitId as Id<"brandKits">, offerCardId: a.offerCardId });
+    expect(await finish(t, a.owner, a.workspaceId, started.runId)).toBe("completed");
+    expect(inputs[inputs.length - 1]).not.toContain("earlier ad sets");
+    await made(t, a);
+    expect(inputs[inputs.length - 1]).toContain("Result: no clear change. No variation stood out.");
   });
 });

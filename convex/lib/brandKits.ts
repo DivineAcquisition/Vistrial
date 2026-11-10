@@ -23,6 +23,8 @@ export const PLACEMENT_WORDS: Record<Placement, string> = { "1:1": "Square feed"
 
 export type BrandColor = { label: string; hex: string };
 export type BrandLogo = { storageId: string; variant: LogoVariant; name: string };
+/** An ad this brand has already run, kept as a picture of its look for the image model to follow. */
+export type BrandStyleRef = { storageId: string; name: string };
 
 export type BrandContent = {
   name: string;
@@ -43,6 +45,10 @@ export type BrandContent = {
   logos: BrandLogo[];
   /** The person confirmed the business owns these logos or may use them. Required once a logo is added. */
   logosOwned: boolean;
+  /** Ads this brand has run itself. A designed ad follows their look. Never a competitor's ad. */
+  styleRefs: BrandStyleRef[];
+  /** The person confirmed these are the brand's own ads. Required once one is added. */
+  styleRefsOwned: boolean;
 };
 
 export const EMPTY_BRAND: BrandContent = {
@@ -63,6 +69,8 @@ export const EMPTY_BRAND: BrandContent = {
   placements: [],
   logos: [],
   logosOwned: false,
+  styleRefs: [],
+  styleRefsOwned: false,
 };
 
 export const BRAND_MAX = {
@@ -84,17 +92,21 @@ export const BRAND_MAX = {
   bannedTopic: 80,
   logos: 6,
   logoName: 120,
+  styleRefs: 4,
   note: 200,
 } as const;
 
 export const LOGO_TYPES = ["image/png", "image/jpeg", "image/webp", "image/svg+xml"] as const;
 export const MAX_LOGO_BYTES = 5 * 1024 * 1024;
+export const STYLE_REF_TYPES = ["image/png", "image/jpeg", "image/webp"] as const;
+export const STYLE_REFS_OWNED_WORDS = "These are ads this brand made and ran itself, not another business's.";
 
 /** What a caller may send: anything missing is read as blank. */
-export type BrandInput = Partial<Omit<BrandContent, "regulated" | "placements" | "logos">> & {
+export type BrandInput = Partial<Omit<BrandContent, "regulated" | "placements" | "logos" | "styleRefs">> & {
   regulated?: string;
   placements?: string[];
   logos?: { storageId: string; variant: string; name: string }[];
+  styleRefs?: { storageId: string; name: string }[];
 };
 
 const HEX = /^#[0-9a-f]{6}$/;
@@ -143,6 +155,9 @@ export function brandProblem(input: BrandInput): string | null {
     if (!(LOGO_VARIANTS as readonly string[]).includes(logo.variant)) return "Say what each logo is for: light backgrounds, dark backgrounds or an icon.";
   }
   if (logos.length > 0 && input.logosOwned !== true) return "Confirm that this business owns these logos or may use them.";
+  const refs = input.styleRefs ?? [];
+  if (refs.length > BRAND_MAX.styleRefs) return `Keep to ${BRAND_MAX.styleRefs} example ads.`;
+  if (refs.length > 0 && input.styleRefsOwned !== true) return "Confirm that the example ads are this brand's own. Another business's ad cannot be a style example.";
   return null;
 }
 
@@ -163,6 +178,13 @@ export function cleanBrand(input: BrandInput): BrandContent {
     seenLogos.add(logo.storageId);
     logos.push({ storageId: logo.storageId, variant: logo.variant as LogoVariant, name: text(logo.name.replace(/[^\w .()-]+/g, ""), BRAND_MAX.logoName) || "logo" });
   }
+  const seenRefs = new Set<string>();
+  const styleRefs: BrandStyleRef[] = [];
+  for (const ref of input.styleRefs ?? []) {
+    if (seenRefs.has(ref.storageId)) continue;
+    seenRefs.add(ref.storageId);
+    styleRefs.push({ storageId: ref.storageId, name: text(ref.name.replace(/[^\w .()-]+/g, ""), BRAND_MAX.logoName) || "ad" });
+  }
   return {
     name: text(input.name, BRAND_MAX.name),
     website: text(input.website, BRAND_MAX.website),
@@ -181,6 +203,8 @@ export function cleanBrand(input: BrandInput): BrandContent {
     placements: PLACEMENTS.filter((placement) => (input.placements ?? []).includes(placement)),
     logos: logos.slice(0, BRAND_MAX.logos),
     logosOwned: logos.length > 0 && input.logosOwned === true,
+    styleRefs: styleRefs.slice(0, BRAND_MAX.styleRefs),
+    styleRefsOwned: styleRefs.length > 0 && input.styleRefsOwned === true,
   };
 }
 

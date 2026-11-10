@@ -29,6 +29,7 @@ import type * as controls from "../controls.js";
 import type * as creative from "../creative.js";
 import type * as creativeImageActions from "../creativeImageActions.js";
 import type * as creativeImages from "../creativeImages.js";
+import type * as creativeTests from "../creativeTests.js";
 import type * as crons from "../crons.js";
 import type * as decisions from "../decisions.js";
 import type * as devResearch from "../devResearch.js";
@@ -175,6 +176,7 @@ declare const fullApi: ApiFromModules<{
   creative: typeof creative;
   creativeImageActions: typeof creativeImageActions;
   creativeImages: typeof creativeImages;
+  creativeTests: typeof creativeTests;
   crons: typeof crons;
   decisions: typeof decisions;
   devResearch: typeof devResearch;

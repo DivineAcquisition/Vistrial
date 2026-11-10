@@ -1,6 +1,7 @@
 import type { Doc, Id } from "../../_generated/dataModel";
 import type { MutationCtx } from "../../_generated/server";
 import { contentOf as kitContent } from "../../brandKits";
+import { testsForKit } from "../../creativeTests";
 import { describeDecision } from "../../decisions";
 import { readBusinessContext } from "../../lib/businessContext";
 import { runCaps } from "../../lib/capRows";
@@ -132,6 +133,7 @@ const contextRead: MutationTool = async (ctx, run) => {
     profile: profile ? { versionId: profile._id, offer: profile.offer, audience: profile.audience, brandVoice: profile.brandVoice, competitors } : null,
     facts: business.facts.map((row) => ({ id: row._id, factKey: row.factKey, value: row.value, status: row.status })),
     outcomes: business.decisions.filter((row) => row.outcome).map(describeDecision).slice(0, 10),
+    tests: await testsForKit(ctx, run.workspaceId, kit._id),
     blockedNames: [...new Set([...competitors, ...(advertiser.length >= 3 ? [advertiser] : [])])],
   };
   return { resultCode: "ok", resultId: request._id, artifact: record("context", context) };

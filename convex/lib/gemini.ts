@@ -124,7 +124,16 @@ export const DEFAULT_IMAGE_MODEL = "gemini-nano-banana-2.1";
  */
 export const GEMINI_IMAGE_PRICES: Record<string, Record<ImageSize, number>> = {
   "gemini-nano-banana-2.1": { "1K": 0.0336, "2K": 0.0504 },
+  // The model Google's docs recommend when the words in the picture must be right.
+  "gemini-3-pro-image": { "1K": 0.134, "2K": 0.134 },
 };
+
+export const DEFAULT_DESIGN_MODEL = "gemini-3-pro-image";
+
+/** The model for a designed ad, where the text is part of the picture. */
+export function designModel() {
+  return process.env.GEMINI_DESIGN_MODEL?.trim() || DEFAULT_DESIGN_MODEL;
+}
 
 export type ImageSize = "1K" | "2K";
 /** The aspect ratios Nano Banana 2.1 makes that we use. A link ad (1.91:1) is cut from 16:9. */
@@ -141,12 +150,15 @@ export function imageCostCents(model: string, size: ImageSize) {
   return Math.round(price * 100 * 100) / 100;
 }
 
-export type GeminiImageRequest = { model: string; prompt: string; aspect: ImageAspect; size: ImageSize };
+export type ReferenceImage = { data: string; mimeType: string };
+export type GeminiImageRequest = { model: string; prompt: string; aspect: ImageAspect; size: ImageSize; /** Pictures of the look to follow: the brand's own ads only. */ references?: ReferenceImage[] };
+type ImageInput = { type: "text"; text: string } | { type: "image"; mime_type: string; data: string };
 
 export function geminiImageBody(request: GeminiImageRequest) {
+  const input: ImageInput[] = [{ type: "text", text: request.prompt }, ...(request.references ?? []).map((row) => ({ type: "image" as const, mime_type: row.mimeType, data: row.data }))];
   return {
     model: request.model,
-    input: [{ type: "text", text: request.prompt }],
+    input,
     response_format: { type: "image", mime_type: "image/jpeg", aspect_ratio: request.aspect, image_size: request.size },
     store: false,
   };

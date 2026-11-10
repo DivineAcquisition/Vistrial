@@ -24,7 +24,7 @@ export function renderCreative(creative: CreativeSet, context: CreativeContext, 
   }
   lines.push("## Variations", "");
   for (const row of creative.variations) {
-    lines.push(`### ${row.key}: ${row.hookType || "Variation"}`, "", `**Hook:** ${row.hook}`, "", `**Text:** ${row.primaryText}`, "", `**Headline:** ${row.headline}`, "", `**Call to action:** ${row.cta}`, "", `**Image:** ${row.imageDirection}`, "", `**Tests (untested hypothesis):** ${row.hypothesis}`, "");
+    lines.push(`### ${row.key}: ${row.hookType || "Variation"}`, "", `**Hook:** ${row.hook}`, "", `**Text:** ${row.primaryText}`, "", `**Headline:** ${row.headline}`, "", `**Call to action:** ${row.cta}`, "", `**Image:** ${row.imageDirection}`, "", ...(row.design.visual ? [`**Designed ad:** ${[row.design.eyebrow && `bar "${row.design.eyebrow}"`, row.design.kicker && `line "${row.design.kicker}"`, `visual: ${row.design.visual}`, row.design.labels.length ? `labels: ${row.design.labels.join(", ")}` : "", row.design.subline && `under it "${row.design.subline}"`].filter(Boolean).join("; ")}`, ""] : []), `**Tests (untested hypothesis):** ${row.hypothesis}`, "");
   }
   if (creative.script.beats.length) {
     lines.push("## Video script", "", "| Time | Voiceover | On screen |", "|---|---|---|", ...creative.script.beats.map((beat) => `| ${beat.seconds} | ${beat.voiceover.replace(/\|/g, "/")} | ${beat.onScreen.replace(/\|/g, "/")} |`), "");

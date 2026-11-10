@@ -50,8 +50,12 @@ function businessBrief(context: CreativeContext) {
     ? `The offer this creative sells (offer card version ${context.offer.version}, the business's own words; a claim may cite it with support "offer"): ${offerDetailsText(context.offer.content)}`
     : "No offer card was chosen. Use the profile's offer.";
   const tried = context.outcomes.length ? ["What this business tried before, and what happened (lean toward what helped):", ...context.outcomes.map((row) => `- ${row}`)].join("\n") : "";
+  // The winning lines are this brand's own earlier copy, and the note is the owner's. Wrapped all the same: they are data.
+  const tests = context.tests?.length
+    ? ["What this brand's earlier ad sets showed when they ran. Build on the kind of hook that won, write new lines, and test at least one new idea against it:", wrapUntrusted(context.tests.map((row) => `- ${row}`).join("\n"))].join("\n")
+    : "";
   const note = context.note ? `The person's note for this creative: ${context.note}` : "";
-  return [profile, facts, offer, tried, note].filter(Boolean).join("\n\n");
+  return [profile, facts, offer, tried, tests, note].filter(Boolean).join("\n\n");
 }
 
 /** The reference ad. It came from outside, so it is wrapped, and it is something to learn from, never to copy. */
@@ -75,7 +79,8 @@ const RULES = [
   "summary: two or three plain sentences on what this ad set is and the idea behind it.",
   "structure: the structure this creative follows, in your own words: hookType, format, beats (the order of the ad, a few words each), offerType, ctaPlacement. With a reference ad, this is the structure taken from it.",
   "brief: audience (who it is for), promise (the one thing it promises), angle (the way in), tone.",
-  `variations: exactly ${VARIATIONS}, with keys ${VARIATION_KEYS.join(", ")}. Each opens with a different hook and tests one thing against the others. Each has hookType (a few words), hook (at most ${COPY_MAX.hook} characters), primaryText (the ad's main text, at most ${COPY_MAX.primaryText} characters), headline (at most ${COPY_MAX.headline} characters), cta (at most ${COPY_MAX.cta} characters), imageDirection (what the image shows, in the brand's image style; never a logo, never a real person, never text copied from the reference) and hypothesis (what this variation tests, as an untested guess).`,
+  `variations: exactly ${VARIATIONS}, with keys ${VARIATION_KEYS.join(", ")}. Each opens with a different hook and tests one thing against the others. Each has hookType (a few words), hook (at most ${COPY_MAX.hook} characters), primaryText (the ad's main text, at most ${COPY_MAX.primaryText} characters), headline (at most ${COPY_MAX.headline} characters), cta (at most ${COPY_MAX.cta} characters), imageDirection (what a photo background shows, in the brand's image style; never a logo, never a real person, never text copied from the reference), hypothesis (what this variation tests, as an untested guess) and design.`,
+  `design: the same variation as a designed static ad where the words are part of the picture. eyebrow (who it is for, like "For roofers and remodelers", at most ${COPY_MAX.eyebrow} characters), kicker (a short line above the headline, at most ${COPY_MAX.kicker} characters), accent (a phrase taken word for word from the headline, to set in the brand's colour), visual (one central object or simple diagram that makes the headline's point at a glance, described plainly: what it is and what it shows; never a logo, a real person or another business's product), labels (up to ${COPY_MAX.labels} short callouts on the visual, each at most ${COPY_MAX.label} characters; leave empty if the visual needs none) and subline (one line under the visual, at most ${COPY_MAX.subline} characters). Every number, price or result in these words follows the same rule as the rest of the copy: it needs a claim behind it. An illustrative figure is not allowed unless a verified fact gives it.`,
   "script: a short vertical video script for the strongest variation, as beats with seconds (like \"0-3\"), voiceover and onScreen text.",
   `captions: three organic post captions in the brand's voice, each at most ${COPY_MAX.caption} characters.`,
   "claims: every sentence in the copy that states a result, a number, a price, a guarantee or a promise as fact, quoted exactly as it appears in the copy. support is \"fact\" with the verified fact ids behind it, or \"offer\" when the offer card states it (then factIds is empty). If nothing on record backs a line, do not write that line.",

@@ -26,6 +26,7 @@ const NORTHSIDE_V1 = {
   tone: "Warm and plain-spoken.",
   regulated: "health" as const,
   logos: [],
+  styleRefs: [],
   note: null,
   createdAt: AT,
 };
@@ -53,11 +54,16 @@ const NORTHSIDE_V2 = {
     { storageId: "s2", variant: "dark" as const, name: "northside-white.svg", url: logo("#ffffff", "#0f8b8d") },
   ],
   logosOwned: true,
+  styleRefs: [
+    { storageId: "r1", name: "funnel-ad.png", url: logo("#16121f", "#9a88fc") },
+    { storageId: "r2", name: "receipt-ad.png", url: logo("#e3defc", "#3a1fd1") },
+  ],
+  styleRefsOwned: true,
   note: "New logo after the rebrand",
   createdAt: AT + 6 * 86_400_000,
 };
 
-const OWN = { ...EMPTY_BRAND, version: 1, name: "Alpha Growth Agency", industry: "Marketing agency", tone: "Direct. Numbers first.", colors: [{ label: "Violet", hex: "#5b3df5" }], logos: [], note: null, createdAt: AT };
+const OWN = { ...EMPTY_BRAND, version: 1, name: "Alpha Growth Agency", industry: "Marketing agency", tone: "Direct. Numbers first.", colors: [{ label: "Violet", hex: "#5b3df5" }], logos: [], styleRefs: [], note: null, createdAt: AT };
 
 const KITS: Record<string, BrandKitFull> = {
   own: { id: "own" as BrandKitFull["id"], kind: "own", name: OWN.name, currentVersion: 1, archived: false, versions: [OWN] },

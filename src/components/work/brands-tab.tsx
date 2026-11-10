@@ -25,6 +25,7 @@ import {
   PLACEMENT_WORDS,
   REGULATED,
   REGULATED_WORDS,
+  STYLE_REFS_OWNED_WORDS,
   brandGaps,
   brandProblem,
   normalHex,
@@ -40,8 +41,10 @@ import { SectionTitle, WorkHero } from "./work-shell";
 
 /** A logo in the editor: one the kit holds (with its link), or one just uploaded (with a local preview). */
 type DraftLogo = { storageId: string; variant: LogoVariant; name: string; url: string | null };
-type Draft = Omit<BrandContent, "logos" | "useWords" | "avoidWords" | "examples" | "disclaimers" | "bannedTopics"> & {
+type DraftRef = { storageId: string; name: string; url: string | null };
+type Draft = Omit<BrandContent, "logos" | "styleRefs" | "useWords" | "avoidWords" | "examples" | "disclaimers" | "bannedTopics"> & {
   logos: DraftLogo[];
+  styleRefs: DraftRef[];
   /** Lists are typed one per line. */
   useWords: string;
   avoidWords: string;
@@ -50,7 +53,7 @@ type Draft = Omit<BrandContent, "logos" | "useWords" | "avoidWords" | "examples"
   bannedTopics: string;
 };
 
-export type BrandSave = Omit<BrandContent, "logos"> & { logos: { storageId: string; variant: LogoVariant; name: string }[] };
+export type BrandSave = Omit<BrandContent, "logos" | "styleRefs"> & { logos: { storageId: string; variant: LogoVariant; name: string }[]; styleRefs: { storageId: string; name: string }[] };
 
 export type BrandsTabProps = {
   editor: boolean;
@@ -68,10 +71,11 @@ export type BrandsTabProps = {
 
 const lines = (value: string) => value.split("\n").map((row) => row.trim()).filter(Boolean);
 
-function draftOf(content: Omit<BrandContent, "logos"> & { logos: (BrandContent["logos"][number] & { url?: string | null })[] }): Draft {
+function draftOf(content: Omit<BrandContent, "logos" | "styleRefs"> & { logos: (BrandContent["logos"][number] & { url?: string | null })[]; styleRefs: (BrandContent["styleRefs"][number] & { url?: string | null })[] }): Draft {
   return {
     ...content,
     logos: content.logos.map((logo) => ({ storageId: logo.storageId, variant: logo.variant, name: logo.name, url: logo.url ?? null })),
+    styleRefs: content.styleRefs.map((ref) => ({ storageId: ref.storageId, name: ref.name, url: ref.url ?? null })),
     useWords: content.useWords.join("\n"),
     avoidWords: content.avoidWords.join("\n"),
     examples: content.examples.join("\n"),
@@ -84,6 +88,7 @@ function saveOf(draft: Draft): BrandSave {
   return {
     ...draft,
     logos: draft.logos.map(({ storageId, variant, name }) => ({ storageId, variant, name })),
+    styleRefs: draft.styleRefs.map(({ storageId, name }) => ({ storageId, name })),
     useWords: lines(draft.useWords),
     avoidWords: lines(draft.avoidWords),
     examples: lines(draft.examples),
@@ -151,6 +156,24 @@ function BrandEditor({ initial, kind: startKind, editing, ownTaken, onCancel, on
     } finally {
       setUploading(false);
       if (file.current) file.current.value = "";
+    }
+  };
+
+  const refFile = useRef<HTMLInputElement>(null);
+  const addRef = async (picked: File | undefined) => {
+    if (!picked) return;
+    if (picked.size > MAX_LOGO_BYTES) return setProblem("That example ad is over 5 MB.");
+    if (draft.styleRefs.length >= BRAND_MAX.styleRefs) return setProblem(`Keep to ${BRAND_MAX.styleRefs} example ads.`);
+    setUploading(true);
+    setProblem("");
+    try {
+      const storageId = await onUploadLogo(picked);
+      setDraft((current) => ({ ...current, styleRefs: [...current.styleRefs, { storageId, name: picked.name, url: URL.createObjectURL(picked) }] }));
+    } catch (error) {
+      setProblem(showError(error, "The example ad did not upload."));
+    } finally {
+      setUploading(false);
+      if (refFile.current) refFile.current.value = "";
     }
   };
 
@@ -276,6 +299,38 @@ function BrandEditor({ initial, kind: startKind, editing, ownTaken, onCancel, on
                 <Plus aria-hidden className="size-4" /> Add a colour
               </Button>
             </div>
+          ) : null}
+        </div>
+        <div className="grid gap-2 text-sm">
+          <span className="flex flex-wrap items-baseline gap-x-2 text-card-foreground">
+            Ads you have run <span className="text-xs text-muted-foreground">Optional</span>
+          </span>
+          <p className="text-xs text-muted-foreground">Up to {BRAND_MAX.styleRefs} of this brand&rsquo;s own ads. A designed ad follows their look: the layout, the weight of the type, the finish of the picture. Their words are never reused.</p>
+          {draft.styleRefs.length > 0 ? (
+            <ul className="flex flex-wrap gap-2">
+              {draft.styleRefs.map((ref, index) => (
+                <li key={ref.storageId} className="relative size-24 overflow-hidden rounded-xl border border-border bg-muted">
+                  {/* eslint-disable-next-line @next/next/no-img-element -- a customer's file from storage, shown as uploaded */}
+                  {ref.url ? <img src={ref.url} alt={`Example ad ${index + 1}: ${ref.name}`} className="size-full object-cover" /> : null}
+                  <button type="button" aria-label={`Remove example ad ${index + 1}`} onClick={() => set("styleRefs", draft.styleRefs.filter((_, at) => at !== index))} className="absolute top-1 right-1 flex size-6 items-center justify-center rounded-full bg-background text-foreground shadow">
+                    <X aria-hidden className="size-3.5" />
+                  </button>
+                </li>
+              ))}
+            </ul>
+          ) : null}
+          <div className="flex flex-wrap items-center gap-2">
+            <input ref={refFile} type="file" accept="image/png,image/jpeg,image/webp" className="sr-only" aria-label="Choose an example ad" onChange={(event) => void addRef(event.target.files?.[0])} />
+            <Button size="sm" variant="outline" disabled={uploading || draft.styleRefs.length >= BRAND_MAX.styleRefs} onClick={() => refFile.current?.click()}>
+              <Upload aria-hidden className="size-4" /> {uploading ? "Uploading…" : "Add an example ad"}
+            </Button>
+            <span className="text-xs text-muted-foreground">PNG, JPG or WebP, up to 5 MB.</span>
+          </div>
+          {draft.styleRefs.length > 0 ? (
+            <label className="flex items-start gap-2 text-sm text-card-foreground">
+              <input type="checkbox" className="mt-0.5 size-4 accent-primary" checked={draft.styleRefsOwned} onChange={(event) => set("styleRefsOwned", event.target.checked)} />
+              <span>{STYLE_REFS_OWNED_WORDS}</span>
+            </label>
           ) : null}
         </div>
         <div className="grid gap-3 sm:grid-cols-2">
@@ -427,6 +482,18 @@ function BrandCard({ kind, version }: { kind: BrandKind; version: BrandKitFull["
             NONE
           )}
         </Row>
+        {version.styleRefs.length > 0 ? (
+          <Row label="Ads you have run">
+            <ul className="flex flex-wrap gap-2">
+              {version.styleRefs.map((ref, index) => (
+                <li key={ref.storageId} className="size-20 overflow-hidden rounded-lg border border-border bg-muted">
+                  {/* eslint-disable-next-line @next/next/no-img-element -- a customer's file from storage, shown as uploaded */}
+                  {ref.url ? <img src={ref.url} alt={`Example ad ${index + 1}`} className="size-full object-cover" /> : null}
+                </li>
+              ))}
+            </ul>
+          </Row>
+        ) : null}
         <Row label="Fonts">{version.headingFont || version.bodyFont ? [version.headingFont && `${version.headingFont} for headings`, version.bodyFont && `${version.bodyFont} for body`].filter(Boolean).join(", ") : NONE}</Row>
         <Row label="Image style">{version.imageStyle || NONE}</Row>
         <Row label="Tone">{version.tone || NONE}</Row>

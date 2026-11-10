@@ -84,6 +84,8 @@ export const me = workspaceQuery({
         checkInsDue: prefs?.notifyCheckInsDue ?? true,
         questionsWaiting: prefs?.notifyQuestionsWaiting ?? true,
         reportReady: prefs?.notifyReportReady ?? true,
+        /** Whether the notices above also go out by email. Reps get no email either way. */
+        email: prefs?.notifyByEmail ?? true,
       },
       defaultResearchMode: settings?.defaultResearchMode ?? ("thorough" as const),
     };
@@ -111,6 +113,7 @@ export const setMyPreferences = workspaceMutation({
     checkInsDue: v.optional(v.boolean()),
     questionsWaiting: v.optional(v.boolean()),
     reportReady: v.optional(v.boolean()),
+    email: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
     const fields = {
@@ -118,6 +121,7 @@ export const setMyPreferences = workspaceMutation({
       ...(args.checkInsDue === undefined ? {} : { notifyCheckInsDue: args.checkInsDue }),
       ...(args.questionsWaiting === undefined ? {} : { notifyQuestionsWaiting: args.questionsWaiting }),
       ...(args.reportReady === undefined ? {} : { notifyReportReady: args.reportReady }),
+      ...(args.email === undefined ? {} : { notifyByEmail: args.email }),
       updatedAt: Date.now(),
     };
     const current = await ctx.db

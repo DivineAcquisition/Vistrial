@@ -303,6 +303,8 @@ export default defineSchema({
     notifyCheckInsDue: v.optional(v.boolean()),
     notifyQuestionsWaiting: v.optional(v.boolean()),
     notifyReportReady: v.optional(v.boolean()),
+    /** Off stops reminder emails for this member. Missing means on. The switches above still choose which notices. */
+    notifyByEmail: v.optional(v.boolean()),
     updatedAt: v.number(),
   }).index("by_workspace_user", ["workspaceId", "userId"]),
 
@@ -949,6 +951,8 @@ export default defineSchema({
     /** The roadmap phase of a roadmap step. */
     phase: v.optional(v.union(v.literal("fix"), v.literal("build"), v.literal("scale"))),
     checkInAt: v.number(),
+    /** When the check-in-due email went out. Set once, so the reminder is never sent twice. */
+    remindedAt: v.optional(v.number()),
     createdBy: v.string(),
     createdAt: v.number(),
     baseline: v.array(decisionFigures),

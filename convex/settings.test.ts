@@ -76,7 +76,7 @@ describe("settings: roles", () => {
     await rep.mutation(api.settings.setMyPreferences, { workspaceId, theme: "dark", reportReady: false });
     expect(await rep.query(api.settings.me, { workspaceId })).toMatchObject({
       theme: "dark",
-      notifications: { checkInsDue: true, questionsWaiting: true, reportReady: false },
+      notifications: { checkInsDue: true, questionsWaiting: true, reportReady: false, email: true },
     });
   });
 });
@@ -194,7 +194,7 @@ describe("settings: defaults and preferences", () => {
     expect((await manager.query(api.settings.me, { workspaceId })).notifications.checkInsDue).toBe(true);
     expect((await manager.query(api.settings.me, { workspaceId })).theme).toBeNull();
     await owner.mutation(api.settings.setMyPreferences, { workspaceId, questionsWaiting: false });
-    expect((await owner.query(api.settings.me, { workspaceId })).notifications).toEqual({ checkInsDue: false, questionsWaiting: false, reportReady: true });
+    expect((await owner.query(api.settings.me, { workspaceId })).notifications).toEqual({ checkInsDue: false, questionsWaiting: false, reportReady: true, email: true });
   });
 });
 

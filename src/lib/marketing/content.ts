@@ -595,7 +595,7 @@ export const CLAIMS: Array<{ statement: string; support: string }> = [
     support: "The integration hub connects GoHighLevel. No other CRM connector is on that hub.",
   },
   {
-    statement: "Private Access starts at $97 per month. The page does not charge anyone.",
+    statement: "Private Access starts at $179 per month. The page does not charge anyone.",
     support: "The price is display copy in the pricing configuration. The public pages do not take payment.",
   },
 ];

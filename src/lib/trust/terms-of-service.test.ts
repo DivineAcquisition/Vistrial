@@ -9,19 +9,24 @@ describe("terms stay inside what the product does", () => {
   it("uses the filled operator, address, and dates", () => {
     expect(text).toContain("Divine Agency LLC");
     expect(text).toContain("7404 Executive Place, Lanham, MD 20706");
-    expect(text).toContain("Last updated: November 5, 2026");
-    expect(text).toContain("Effective: November 5, 2026");
+    expect(text).toContain("Last updated: November 10, 2026");
+    expect(text).toContain("Effective: November 10, 2026");
     expect(text).toContain("contact@vistrial.io");
     expect(text).not.toContain("\u2014");
     expect(text).not.toMatch(/apply this/i);
   });
 
-  it("keeps the commercial terms, without a billing system the product does not have", () => {
-    // No payment system runs in the product today, so no Stripe and no failed-payment day schedule.
-    expect(text).not.toMatch(/stripe|through day 7|from day 8|America\/New_York/i);
-    expect(text).toContain("Nothing is charged on our website");
+  it("states the billing terms the product runs: plan, credits, renewal, refunds and failed payments", () => {
+    expect(text).toContain("$179 per month and includes $150 of credits");
+    expect(text).toContain("Payment is taken by Stripe on its own checkout page");
+    expect(text).toContain("renews automatically each month");
+    expect(text).toContain("still unpaid 7 days after it was due");
+    expect(text).toContain("No refunds.");
+    expect(text).toContain("charged you twice");
+    expect(text).not.toContain("Nothing is charged on our website");
+    expect(text).not.toContain("$97");
+    expect(text).not.toMatch(/America\/New_York/i);
     expect(text).toMatch(/six \(6\) months/i);
-    expect(text).toContain("$97");
     expect(text).toContain("Prince George's County");
     expect(text).not.toContain("[COUNSEL:");
     expect(text).not.toMatch(/legal@divineacquisition/i);

@@ -103,7 +103,7 @@ export const refresh = memberAction({
   },
 });
 
-/** Starts (or resumes) the $49 Growth plan. Returns Stripe's checkout page when payment is needed. */
+/** Starts (or resumes) the Growth plan. Returns Stripe's checkout page when payment is needed. */
 export const subscribe = memberAction({
   /** `returnPath` is where Stripe sends the person back to; only app pages are allowed. */
   args: { returnOrigin: v.optional(v.string()), returnPath: v.optional(v.string()) },
@@ -213,7 +213,7 @@ export const checkSetup = internalAction({
 
 /**
  * Creates what the app expects in Autumn, skipping anything that already exists: the `credits` feature
- * (1 unit = 1¢), the `growth` plan ($49 a month with 4,000 credits that renew monthly) and the `topup`
+ * (1 unit = 1¢), the `growth` plan (the price and monthly credits in PLAN) and the `topup`
  * add-on (prepaid credits at $1 per 100, bought once, never expire). Safe to run again.
  */
 export const setupProducts = internalAction({
@@ -237,16 +237,20 @@ export const setupProducts = internalAction({
       });
       created.push(`feature ${featureId}`);
     }
+    const growth = {
+      name: PLAN.name,
+      description: `Vistrial Growth: includes $${PLAN.includedCents / 100} of AI credits every month.`,
+      price: { amount: PLAN.priceCents / 100, interval: "month" as const },
+      items: [{ featureId, included: PLAN.includedCents, reset: { interval: "month" as const } }],
+    };
     if (!havePlans.has(PLAN_ID())) {
-      await autumn.plans.create({
-        planId: PLAN_ID(),
-        name: PLAN.name,
-        description: "Vistrial Growth: includes $40 of AI credits every month.",
-        group: "main",
-        price: { amount: PLAN.priceCents / 100, interval: "month" },
-        items: [{ featureId, included: PLAN.includedCents, reset: { interval: "month" } }],
-      });
+      await autumn.plans.create({ planId: PLAN_ID(), group: "main", ...growth });
       created.push(`plan ${PLAN_ID()}`);
+    } else {
+      // The plan exists: bring its price and monthly credits in line with PLAN, so a price change in code
+      // reaches checkout. Existing subscribers keep what Autumn's versioning gives them.
+      await autumn.plans.update({ planId: PLAN_ID(), ...growth });
+      created.push(`plan ${PLAN_ID()} updated to $${PLAN.priceCents / 100}/month`);
     }
     if (!havePlans.has(TOPUP_ID())) {
       await autumn.plans.create({

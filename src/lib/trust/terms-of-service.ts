@@ -234,15 +234,27 @@ export function termsSections(trust: TrustPublic): PolicySection[] {
       blocks: [
         {
           kind: "p",
-          text: "Plans. Private Access starts at $97 per month. Custom plans are agreed with us. What each plan includes, and its limits, is shown in the product or in your agreement. We do not charge overage fees. Private Access does not include a free trial.",
+          text: "Plans and credits. The Growth plan is $179 per month and includes $150 of credits each month. Credits pay for the AI work agents do: each piece of work is charged from your balance at the price shown in the product before it runs. Included credits reset each month and do not carry over. You can buy extra credit packs of $10, $25 or $50; credits from packs do not expire while your workspace is active. Custom plans are agreed with us. A new workspace gets one free research session before a plan is needed.",
         },
         {
           kind: "p",
-          text: "Billing. Nothing is charged on our website. When your team is approved, we share the billing details, and the price, billing interval, and payment method are set out in your order or invoice. Fees are in U.S. dollars and billed in advance. A subscription renews until it is canceled.",
+          text: "Payment. Payment is taken by Stripe on its own checkout page, through our billing provider Autumn. Fees are in U.S. dollars and billed in advance. We do not see or store your full card number.",
         },
         {
           kind: "p",
-          text: "Taxes. Fees do not include taxes unless an invoice says otherwise. You are responsible for any taxes that apply, and we may add them to your invoice.",
+          text: "Renewal. The plan renews automatically each month, on the day you subscribed, until you cancel. By subscribing you authorize that monthly charge.",
+        },
+        {
+          kind: "p",
+          text: "Automatic top-up. If you turn on automatic top-up, we charge your saved payment method for a credit pack when your balance falls below the amount you set, up to four times a month. You can turn it off at any time in Billing.",
+        },
+        {
+          kind: "p",
+          text: "When credits run out. New work cannot start while your balance is empty. Work already running finishes and is charged in full, which can leave a small negative balance that your next credits cover.",
+        },
+        {
+          kind: "p",
+          text: "Taxes. Fees do not include taxes unless an invoice says otherwise. You are responsible for any taxes that apply, and they may be added at checkout or to your invoice.",
         },
         {
           kind: "p",
@@ -250,7 +262,7 @@ export function termsSections(trust: TrustPublic): PolicySection[] {
         },
         {
           kind: "p",
-          text: "Late payment. If a payment is not made when due, we will contact you first. If it stays unpaid, we may limit or suspend the workspace until it is paid. You can still ask for an export of your data.",
+          text: "Failed payments. If a renewal payment fails, the payment is retried and you are emailed so you can update your payment method. If it is still unpaid 7 days after it was due, we may pause new work in the workspace until it is paid. Nothing is deleted, work already running finishes, and you can still ask for an export of your data.",
         },
         { kind: "p", text: "Charges are non-refundable except as stated in Section 10 or required by law." },
         {
@@ -266,22 +278,25 @@ export function termsSections(trust: TrustPublic): PolicySection[] {
       blocks: [
         {
           kind: "p",
-          text: `You can cancel at any time by contacting ${email}. Cancellation takes effect at the end of the period you have already paid for, and you keep access until then. We do not refund the remainder of a period you chose to cancel. Canceling does not delete the workspace.`,
+          text: `You can cancel at any time from Billing in the product, which opens Stripe's page for your subscription, or by contacting ${email}. Cancellation stops the next renewal. You keep access, and that month's included credits, until the end of the period you have already paid for. Canceling does not delete the workspace.`,
         },
         {
           kind: "p",
-          text: "You can ask for an export of your workspace data before it ends. Cancellation does not delete the workspace. Deletion follows Section 6 and the Privacy Policy.",
+          text: "No refunds. Credits pay for AI work that costs us money as it runs, so the plan fee, credit packs and used or unused credits are not refunded, and we do not refund the remainder of a period you chose to cancel. This does not limit any refund the law requires.",
         },
-        { kind: "p", text: "We will refund a pro-rated amount for the unused part of a paid period if:" },
+        { kind: "p", text: "We will refund you if:" },
         {
           kind: "ul",
           items: [
-            "We end your access for reasons other than your breach of these Terms.",
-            "We permanently shut down the service.",
-            "You ask us to end your access immediately and we agree.",
+            "We charged you in error, or charged you twice for the same thing. We refund the mistaken amount.",
+            "We end your access for reasons other than your breach of these Terms, or we permanently shut down the service. We refund a pro-rated amount for the unused part of the paid period and any unused credit packs.",
           ],
         },
-        { kind: "p", text: "Refunds are made to the original payment method. A refund of this kind is handled by us. It is not an automatic charge reversal in the product." },
+        {
+          kind: "p",
+          text: "You can ask for an export of your workspace data before it ends. Deletion follows Section 6 and the Privacy Policy.",
+        },
+        { kind: "p", text: "Refunds are made to the original payment method. A refund is handled by us; it is not an automatic charge reversal in the product." },
       ],
     },
     {

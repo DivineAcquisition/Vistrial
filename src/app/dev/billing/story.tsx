@@ -17,7 +17,7 @@ function data(state: string): BillingData {
     on: state !== "off",
     canManage: true,
     markup: 3,
-    plan: { id: "growth", name: "Growth", priceCents: 4900, includedCents: 4000 },
+    plan: { id: "growth", name: "Growth", priceCents: 17900, includedCents: 15000 },
     packs: [1000, 2500, 5000],
     autoRefillDefaults: { thresholdCents: 200, amountCents: 1000, maxPerMonth: 4 },
     account: null,

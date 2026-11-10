@@ -11,6 +11,7 @@ import {
   Brain,
   Building2,
   Check,
+  ChevronDown,
   ChevronsUpDownIcon,
   Coins,
   FileSearch,
@@ -39,8 +40,7 @@ import {
   agentsOffJourney,
   defaultTab,
   isJourneyTab,
-  liveSkills,
-  skillChipLabel,
+  agentTabs,
   tabForPath,
   type AgentActivity,
   type AgentDot,
@@ -209,40 +209,103 @@ function LiveSearchResults({ text, close }: { text: string; close: () => void })
   return <SearchResults text={text} hits={hits} close={close} />;
 }
 
+const OPEN_STORE = "vistrial.agentOpen.v1";
+
+function readOpenAgents(): string[] | null {
+  try {
+    const value = JSON.parse(window.localStorage.getItem(OPEN_STORE) ?? "null");
+    return Array.isArray(value) ? value.filter((row): row is string => typeof row === "string") : null;
+  } catch {
+    return null;
+  }
+}
+
+function writeOpenAgents(slugs: string[]) {
+  try {
+    window.localStorage.setItem(OPEN_STORE, JSON.stringify(slugs));
+  } catch {
+    // Blocked storage: rows still open and close, they just are not remembered.
+  }
+}
+
 function AgentRow({ agent, activity, pathname, onNavigate }: { agent: RailAgent; activity: AgentActivity | undefined; pathname: string; onNavigate?: () => void }) {
   const live = agent.status === "live";
   const href = `/app/agents/${agent.slug}`;
   const active = isActive(pathname, href);
   const dot = agentDot(activity);
   const mark = AGENT_MARK[agent.slug] ?? { glyph: "spark" as const, accent: "neutral" as const };
-  const skills = live ? liveSkills(agent) : [];
+  const tabs = live ? agentTabs(agent) : [];
+  // Open by default when the agent has tabs, or when its page is the one being read.
+  const [open, setOpen] = useState(() => {
+    if (typeof window === "undefined") return true;
+    const stored = readOpenAgents();
+    return stored ? stored.includes(agent.slug) || active : true;
+  });
+  const toggle = () => {
+    const next = !open;
+    setOpen(next);
+    const stored = new Set(readOpenAgents() ?? []);
+    if (next) stored.add(agent.slug);
+    else stored.delete(agent.slug);
+    writeOpenAgents([...stored]);
+  };
+  const shared = [
+    { href: `${href}/memory`, label: "Memory" },
+    { href: "/app/evidence", label: "Evidence" },
+    { href: "/app/connections", label: "Connections" },
+  ];
   return (
-    <li className="grid gap-1">
-      <Link href={href} onClick={onNavigate} aria-current={active ? "page" : undefined} className={cn(row, active && "bg-accent", !live && "text-muted-foreground")}>
-        <GlyphMark glyph={mark.glyph} accent={mark.accent} size="xs" working={dot === "working"} className={cn(!live && "opacity-50")} />
-        <span className="truncate">{agent.name}</span>
-        {live ? (
-          <span className="ml-auto flex shrink-0 items-center gap-1.5">
-            <Count value={activity?.waiting ?? 0} tone="warning" label={`${activity?.waiting ?? 0} waiting on you`} />
-            <span role="img" aria-label={DOT[dot].label} title={DOT[dot].label} className={cn("size-2 rounded-full", DOT[dot].className)} />
-          </span>
-        ) : (
-          <span className="ml-auto shrink-0 rounded-md border border-border px-1.5 text-[10px] leading-4 tracking-wide text-muted-foreground uppercase">Soon</span>
-        )}
-      </Link>
-      {skills.length ? (
-        <div className="flex flex-wrap gap-1 pl-9" aria-label={`${agent.name} skills`}>
-          {skills.map((skill) => (
-            <Link
-              key={skill.slug}
-              href={NEW_SESSION}
-              onClick={onNavigate}
-              title={`Start a session: ${skill.name}`}
-              className="rounded-md border border-border bg-overlay/[0.03] px-2 py-0.5 text-[11px] text-muted-foreground outline-none hover:border-primary/40 hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring"
-            >
-              {skillChipLabel(skill.name)}
-            </Link>
-          ))}
+    <li className="grid gap-0.5">
+      <div className="flex min-w-0 items-center">
+        <Link href={href} onClick={onNavigate} aria-current={active && pathname === href ? "page" : undefined} className={cn(row, "min-w-0 flex-1", active && pathname === href && "bg-accent", !live && "text-muted-foreground")}>
+          <GlyphMark glyph={mark.glyph} accent={mark.accent} size="xs" working={dot === "working"} className={cn(!live && "opacity-50")} />
+          <span className="truncate">{agent.name}</span>
+          {live ? (
+            <span className="ml-auto flex shrink-0 items-center gap-1.5">
+              <Count value={activity?.waiting ?? 0} tone="warning" label={`${activity?.waiting ?? 0} waiting on you`} />
+              <span role="img" aria-label={DOT[dot].label} title={DOT[dot].label} className={cn("size-2 rounded-full", DOT[dot].className)} />
+            </span>
+          ) : (
+            <span className="ml-auto shrink-0 rounded-md border border-border px-1.5 text-[10px] leading-4 tracking-wide text-muted-foreground uppercase">Soon</span>
+          )}
+        </Link>
+        {tabs.length ? (
+          <button
+            type="button"
+            onClick={toggle}
+            aria-expanded={open}
+            aria-controls={`agent-tabs-${agent.slug}`}
+            aria-label={open ? `Hide ${agent.name}'s work` : `Show ${agent.name}'s work`}
+            className="flex size-8 shrink-0 items-center justify-center rounded-lg text-muted-foreground outline-none hover:bg-accent hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring"
+          >
+            <ChevronDown aria-hidden className={cn("size-4 transition-transform motion-reduce:transition-none", !open && "-rotate-90")} />
+          </button>
+        ) : null}
+      </div>
+      {tabs.length && open ? (
+        <div id={`agent-tabs-${agent.slug}`} className="ml-4 grid gap-0.5 border-l border-border pl-2">
+          <ul className="grid gap-0.5" aria-label={`${agent.name} work`}>
+            {tabs.map((tab) => {
+              const on = isActive(pathname, tab.href);
+              return (
+                <li key={tab.slug}>
+                  <Link href={tab.href} onClick={onNavigate} aria-current={on ? "page" : undefined} className={cn(row, "py-1", on && "bg-accent")}>
+                    <span>{tab.label}</span>
+                  </Link>
+                </li>
+              );
+            })}
+          </ul>
+          <p className="flex flex-wrap items-center gap-x-1.5 px-2 pt-0.5 pb-1 text-[11px] text-muted-foreground">
+            {shared.map((item, index) => (
+              <span key={item.href} className="flex items-center gap-1.5">
+                {index ? <span aria-hidden>·</span> : null}
+                <Link href={item.href} onClick={onNavigate} className="rounded outline-none hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring">
+                  {item.label}
+                </Link>
+              </span>
+            ))}
+          </p>
         </div>
       ) : null}
     </li>

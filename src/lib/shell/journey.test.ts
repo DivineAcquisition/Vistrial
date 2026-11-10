@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { CATALOG } from "../../../convex/catalog";
-import { agentDot, agentsForTab, agentsOffJourney, defaultTab, journeyTabOf, liveSkills, skillChipLabel, tabForPath } from "./journey";
+import { agentDot, agentTabs, agentsForTab, agentsOffJourney, defaultTab, journeyTabOf, liveSkills, skillChipLabel, tabForPath } from "./journey";
 import type { RailAgent } from "./rail";
 
 const agents: RailAgent[] = CATALOG.map((row) => ({ ...row, skills: row.skills }));
@@ -32,5 +32,24 @@ describe("journey tabs", () => {
     expect(defaultTab(agents)).toBe("attract");
     expect(tabForPath("/app/agents/retention", agents)).toBe("keep");
     expect(tabForPath("/app/research", agents)).toBeNull();
+  });
+});
+
+describe("agent tabs", () => {
+  it("opens a live agent into one tab per live skill, named for the work", () => {
+    const agent = {
+      slug: "growth-architect",
+      skills: [
+        { slug: "growth-diagnostics", name: "Growth Diagnostics", status: "available", sort: 2 },
+        { slug: "market-intelligence", name: "Market Intelligence", status: "available", sort: 0 },
+        { slug: "offer-intelligence", name: "Offer Intelligence", status: "available", sort: 1 },
+        { slug: "campaign-strategy", name: "Campaign Strategy", status: "comingSoon", sort: 3 },
+      ],
+    } as unknown as RailAgent;
+    expect(agentTabs(agent)).toEqual([
+      { slug: "market-intelligence", label: "Research", href: "/app/agents/growth-architect/work/research" },
+      { slug: "offer-intelligence", label: "Offers", href: "/app/agents/growth-architect/work/offers" },
+      { slug: "growth-diagnostics", label: "Diagnostics", href: "/app/agents/growth-architect/work/diagnostics" },
+    ]);
   });
 });

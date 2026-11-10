@@ -43,6 +43,23 @@ export function skillChipLabel(name: string) {
   return short || name;
 }
 
+/** Each live skill's workspace tab under its agent: the work the owner wants, not the skill's name. */
+const SKILL_TAB: Record<string, { tab: string; label: string }> = {
+  "market-intelligence": { tab: "research", label: "Research" },
+  "offer-intelligence": { tab: "offers", label: "Offers" },
+  "growth-diagnostics": { tab: "diagnostics", label: "Diagnostics" },
+};
+
+export type AgentTab = { slug: string; label: string; href: string };
+
+/** The tabs a live agent opens into, in skill order. Skills without a workspace yet are left out. */
+export function agentTabs(agent: RailAgent): AgentTab[] {
+  return liveSkills(agent).flatMap((skill) => {
+    const tab = SKILL_TAB[skill.slug];
+    return tab ? [{ slug: skill.slug, label: tab.label, href: `/app/agents/${agent.slug}/work/${tab.tab}` }] : [];
+  });
+}
+
 /** The skills a person can start today. */
 export function liveSkills(agent: RailAgent) {
   return (agent.skills ?? []).filter((skill) => skill.status === "available").sort((a, b) => a.sort - b.sort);

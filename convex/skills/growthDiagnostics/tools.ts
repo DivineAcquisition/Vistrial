@@ -1,3 +1,4 @@
+import { internal } from "../../_generated/api";
 import type { Doc, Id } from "../../_generated/dataModel";
 import type { MutationCtx } from "../../_generated/server";
 import { screenClaims, type ClaimInput } from "../../lib/evidence";
@@ -163,6 +164,7 @@ const save: MutationTool = async (ctx, run, steps) => {
     const assetId = await ctx.db.insert("assets", { ...base, status: "needsReview", currentVersion: 1 });
     const statement = `${NOT_ENOUGH}: ${diagnostics.missing.slice(1).map((row) => row.text).join(" ")}`;
     const dropped = await writeVersion(ctx, run, assetId, 1, renderNotEnough(diagnostics), [{ claimKey: "not-enough-data", statement, basis: "insufficient" }]);
+    await ctx.scheduler.runAfter(0, internal.emailReminders.sendReportReady, { assetId });
     return { resultId: assetId, resultCode: "not_enough_data", artifact: record("diagnosis", { diagnosis: null, missing: diagnostics.missing, dropped }) };
   }
 
@@ -190,6 +192,8 @@ const save: MutationTool = async (ctx, run, steps) => {
       : renderDiagnosis({ summary: "", stage: "unknown", stageReason: "", stageFigureIds: [], findings: [], fixes: [], roadmap: [], limits: [] }, diagnostics, { passed: false, results: [] }, lines);
   const droppedFirst = await writeVersion(ctx, run, assetId, 1, bodyFor(first, firstChecks, notes), diagnosisClaims(first, diagnostics));
   const droppedSecond = second ? await writeVersion(ctx, run, assetId, 2, bodyFor(second, finalChecks, []), diagnosisClaims(second, diagnostics)) : [];
+  // Tells Owners and Managers by email that it waits for them. Scheduled, so a send failure never fails the run.
+  await ctx.scheduler.runAfter(0, internal.emailReminders.sendReportReady, { assetId });
   return {
     resultId: assetId,
     resultCode: passed ? "ok" : "needs_review",

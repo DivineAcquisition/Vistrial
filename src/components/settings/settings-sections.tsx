@@ -722,10 +722,10 @@ export type YouData = {
   role: Role;
   joinedAt: number;
   theme: ThemeChoice;
-  notifications: { checkInsDue: boolean; questionsWaiting: boolean; reportReady: boolean };
+  notifications: { checkInsDue: boolean; questionsWaiting: boolean; reportReady: boolean; email: boolean };
 };
 
-const NOTICES: { key: keyof YouData["notifications"]; label: string; description: string }[] = [
+const NOTICES: { key: Exclude<keyof YouData["notifications"], "email">; label: string; description: string }[] = [
   { key: "checkInsDue", label: "Check-ins due", description: "When a decision you made is ready for its follow-up." },
   { key: "questionsWaiting", label: "Questions waiting", description: "When an agent needs an answer from you to carry on." },
   { key: "reportReady", label: "Report ready", description: "When research you started has a finished report." },
@@ -799,6 +799,14 @@ export function YouSection({
               description={row.description}
             />
           ))}
+          {data.role === "rep" ? null : (
+            <Switch
+              checked={data.notifications.email}
+              onCheckedChange={(next) => void onNotice("email", next)}
+              label="Email"
+              description="Also email you when a check-in is due or a report is ready. Off keeps them in Vistrial only."
+            />
+          )}
         </div>
       </StatusCard>
     </div>

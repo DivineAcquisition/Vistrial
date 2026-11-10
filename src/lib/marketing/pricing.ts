@@ -12,7 +12,7 @@ export const PRICING_DISPLAY = {
   privateAccess: {
     id: "private_access",
     name: "Private Access",
-    price: "Starting at $97 per month.",
+    price: "Starting at $179 per month.",
     includes: [
       "Your own private workspace",
       "Growth Architect, starting with Market Intelligence",

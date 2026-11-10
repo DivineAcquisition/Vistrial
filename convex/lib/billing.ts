@@ -13,8 +13,8 @@ export const CREDITS_FEATURE = () => process.env.AUTUMN_FEATURE_ID || "credits";
 export const PLAN_ID = () => process.env.AUTUMN_PLAN_ID || "growth";
 export const TOPUP_ID = () => process.env.AUTUMN_TOPUP_ID || "topup";
 
-/** The owner's choices: $49 a month with $40 of credits, packs of $10, $25 or $50, refill $10 under $2. */
-export const PLAN = { name: "Growth", priceCents: 4900, includedCents: 4000 } as const;
+/** The owner's choices: $179 a month with $150 of credits, packs of $10, $25 or $50, refill $10 under $2. */
+export const PLAN = { name: "Growth", priceCents: 17900, includedCents: 15000 } as const;
 export const TOPUP_PACKS_CENTS = [1000, 2500, 5000] as const;
 export const AUTO_REFILL = { thresholdCents: 200, amountCents: 1000, maxPerMonth: 4 } as const;
 

@@ -329,6 +329,9 @@ describe("Offer Intelligence", () => {
     expect(asset?.kind).toBe("offerAnalysis");
     expect(asset?.status).toBe("draft");
     expect(asset?.currentVersion).toBe(1);
+    // The save step queued the report-ready email; it runs apart from the run, so it cannot fail it.
+    const queued = await t.run((ctx) => ctx.db.system.query("_scheduled_functions").collect());
+    expect(queued.filter((row) => row.name.includes("emailReminders")).map((row) => row.args)).toEqual([[{ assetId: asset!.id }]]);
     for (const section of ["## Offer position", "**Search (Google, Maps, local listings)**", "**Channel:**", "**Principle:**", "Alex Hormozi, $100M Offers", "(measure: cost per lead)", "## Your offer", "## What competitors lead with", "## Gaps and risks", "## Changes to test", "**Evidence:**", "**Why it fits this business:**", "**Proposed change:**", "**How to tell if it worked:**"]) {
       expect(asset?.body).toContain(section);
     }

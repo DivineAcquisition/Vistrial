@@ -220,7 +220,7 @@ export default defineSchema({
   /** Every charge for AI work: what it really cost, the markup, and what the customer paid. */
   billingLedger: defineTable({
     workspaceId: v.id("workspaces"),
-    source: v.union(v.literal("run"), v.literal("followup"), v.literal("intake"), v.literal("file")),
+    source: v.union(v.literal("run"), v.literal("followup"), v.literal("intake"), v.literal("file"), v.literal("creative")),
     ref: v.string(),
     costCents: v.number(),
     priceCents: v.number(),
@@ -1041,6 +1041,139 @@ export default defineSchema({
     createdBy: v.string(),
     createdAt: v.number(),
   }).index("by_workspace_card", ["workspaceId", "cardId", "version"]),
+
+  /**
+   * A brand a creative is made for: the workspace's own (one), or a client's. Its content lives in versions,
+   * so an approved creative can say which version of the kit it used.
+   */
+  brandKits: defineTable({
+    workspaceId: v.id("workspaces"),
+    kind: v.union(v.literal("own"), v.literal("client")),
+    name: v.string(),
+    currentVersion: v.number(),
+    archived: v.optional(v.boolean()),
+    createdBy: v.string(),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  }).index("by_workspace", ["workspaceId", "updatedAt"]),
+
+  /** One version of a brand kit. Never overwritten: a change is a new version. */
+  brandKitVersions: defineTable({
+    workspaceId: v.id("workspaces"),
+    kitId: v.id("brandKits"),
+    version: v.number(),
+    name: v.string(),
+    website: v.string(),
+    industry: v.string(),
+    colors: v.array(v.object({ label: v.string(), hex: v.string() })),
+    headingFont: v.string(),
+    bodyFont: v.string(),
+    imageStyle: v.string(),
+    tone: v.string(),
+    useWords: v.array(v.string()),
+    avoidWords: v.array(v.string()),
+    examples: v.array(v.string()),
+    disclaimers: v.array(v.string()),
+    regulated: v.union(v.literal("none"), v.literal("health"), v.literal("finance"), v.literal("other")),
+    bannedTopics: v.array(v.string()),
+    placements: v.array(v.string()),
+    /** The real logo files. Creative Production places these on top of an image; it never generates a logo. */
+    logos: v.array(v.object({ storageId: v.id("_storage"), variant: v.union(v.literal("light"), v.literal("dark"), v.literal("icon")), name: v.string() })),
+    /** A person confirmed the business owns the logos or may use them. */
+    logosOwned: v.boolean(),
+    note: v.optional(v.string()),
+    createdBy: v.string(),
+    createdAt: v.number(),
+  }).index("by_workspace_kit", ["workspaceId", "kitId", "version"]),
+
+  /**
+   * A reference ad a person added themselves: a public YouTube link, or a video or image file they uploaded.
+   * Only its breakdown is kept. An uploaded file is deleted as soon as it is read; a video is never
+   * downloaded from a platform.
+   */
+  creativeReferences: defineTable({
+    workspaceId: v.id("workspaces"),
+    origin: v.union(v.literal("link"), v.literal("upload")),
+    platform: v.string(),
+    mediaKind: v.union(v.literal("video"), v.literal("image")),
+    url: v.optional(v.string()),
+    /** The uploaded file, until it is read. Cleared when the file is deleted. */
+    storageId: v.optional(v.id("_storage")),
+    contentType: v.optional(v.string()),
+    title: v.string(),
+    status: v.union(v.literal("analysing"), v.literal("ready"), v.literal("failed")),
+    failCode: v.optional(v.string()),
+    breakdown: v.optional(
+      v.object({
+        title: v.string(),
+        advertiser: v.string(),
+        lengthSeconds: v.number(),
+        format: v.string(),
+        hook: v.object({ type: v.string(), words: v.string() }),
+        beats: v.array(v.object({ seconds: v.string(), what: v.string() })),
+        onScreenText: v.array(v.string()),
+        spoken: v.string(),
+        offer: v.string(),
+        cta: v.object({ words: v.string(), placement: v.string() }),
+        audience: v.string(),
+      }),
+    ),
+    costCents: v.number(),
+    /** Who confirmed they may submit an uploaded file, and when. */
+    attestedBy: v.optional(v.string()),
+    attestedAt: v.optional(v.number()),
+    createdBy: v.string(),
+    createdAt: v.number(),
+  }).index("by_workspace", ["workspaceId", "createdAt"]),
+
+  /**
+   * One image made for one variation of an ad set, in one placement. The picture carries no text and no
+   * logo: the headline and the brand's real logo file are placed on top when it is shown and downloaded.
+   */
+  creativeImages: defineTable({
+    workspaceId: v.id("workspaces"),
+    assetId: v.id("assets"),
+    variationKey: v.string(),
+    placement: v.string(),
+    status: v.union(v.literal("generating"), v.literal("ready"), v.literal("failed")),
+    storageId: v.optional(v.id("_storage")),
+    failCode: v.optional(v.string()),
+    model: v.string(),
+    /** What the image cost us once it was delivered. Zero for one that failed. */
+    costCents: v.number(),
+    /** The price held from the balance while it is being made, so two batches cannot spend the same credit. */
+    holdCents: v.number(),
+    createdBy: v.string(),
+    createdAt: v.number(),
+  })
+    .index("by_workspace_asset", ["workspaceId", "assetId"])
+    .index("by_workspace_status", ["workspaceId", "status"])
+    .index("by_workspace", ["workspaceId", "createdAt"]),
+
+  /**
+   * One ask of Creative Production: the brand it is for, the reference ad or offer it starts from, and how
+   * closely to follow the reference. The run reads it; the saved creative is linked back here.
+   */
+  creativeRequests: defineTable({
+    workspaceId: v.id("workspaces"),
+    kitId: v.id("brandKits"),
+    /** The kit version read when the request was made, so the creative says which one it used. */
+    kitVersion: v.number(),
+    /** The reference ad: a source research collected. Its structure is modelled; nothing of it is reused. */
+    sourceRefId: v.optional(v.id("sourceRefs")),
+    /** The reference ad, when the person added it themselves as a link or a file. */
+    referenceId: v.optional(v.id("creativeReferences")),
+    offerCardId: v.optional(v.id("offerCards")),
+    offerVersion: v.optional(v.number()),
+    dial: v.union(v.literal("inspired"), v.literal("structure"), v.literal("close")),
+    note: v.optional(v.string()),
+    runId: v.optional(v.id("agentRuns")),
+    assetId: v.optional(v.id("assets")),
+    createdBy: v.string(),
+    createdAt: v.number(),
+  })
+    .index("by_workspace", ["workspaceId", "createdAt"])
+    .index("by_workspace_run", ["workspaceId", "runId"]),
 
   /**
    * Vistrial's own learning from outcomes, across businesses. Internal only: no public function reads it,

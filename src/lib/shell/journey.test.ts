@@ -30,19 +30,21 @@ describe("journey tabs", () => {
     expect(workTabsFor(agents.find((row) => row.slug === "retention")!)).toEqual([]);
   });
 
-  it("lists the sidebar tabs under an agent: Chat first, then one per live skill", () => {
+  it("lists the sidebar tabs under an agent: Chat first, then one per live skill, then Creative and Brands", () => {
     const growth = agents.find((row) => row.slug === "growth-architect")!;
     expect(agentTabs(growth).map((row) => [row.label, row.href])).toEqual([
       ["Chat", "/app/agents/growth-architect/work/chat"],
       ["Research", "/app/agents/growth-architect/work/research"],
       ["Offers", "/app/agents/growth-architect/work/offers"],
       ["Diagnostics", "/app/agents/growth-architect/work/diagnostics"],
+      ["Creative", "/app/agents/growth-architect/work/creative"],
+      ["Brands", "/app/agents/growth-architect/work/brands"],
     ]);
-    // Chat belongs to no single skill; every other tab names the skill whose counts it shows.
-    expect(agentTabs(growth).map((row) => row.skillSlug)).toEqual([null, "market-intelligence", "offer-intelligence", "growth-diagnostics"]);
+    // Chat and Brands belong to no single skill; every other tab names the skill whose counts it shows.
+    expect(agentTabs(growth).map((row) => row.skillSlug)).toEqual([null, "market-intelligence", "offer-intelligence", "growth-diagnostics", "creative-production", null]);
     // Chat stays first when only some skills are live.
     const onlyOffers = { ...growth, skills: growth.skills!.map((row) => (row.slug === "offer-intelligence" ? row : { ...row, status: "comingSoon" as const })) };
-    expect(agentTabs(onlyOffers).map((row) => row.tab)).toEqual(["chat", "offers"]);
+    expect(agentTabs(onlyOffers).map((row) => row.tab)).toEqual(["chat", "offers", "brands"]);
     // No work tab, no chat: planned agents and agents with no live skill have no tabs at all.
     expect(agentTabs(agents.find((row) => row.slug === "retention")!)).toEqual([]);
     expect(agentTabs({ ...growth, skills: growth.skills!.map((row) => ({ ...row, status: "comingSoon" as const })) })).toEqual([]);

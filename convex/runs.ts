@@ -21,6 +21,7 @@ import { writeFact } from "./lib/facts";
 import { estimateCents } from "./lib/estimate";
 import { MUTATION_TOOLS as MI_TOOLS } from "./skills/marketIntelligence/tools";
 import { OFFER_TOOLS } from "./skills/offerIntelligence/tools";
+import { CREATIVE_TOOLS } from "./skills/creativeProduction/tools";
 import { GD_MUTATION_TOOLS } from "./skills/growthDiagnostics/tools";
 import { liveEnv, runAdapter } from "./adapters";
 import { assertDeclared, skillFor } from "./lib/skills";
@@ -29,7 +30,7 @@ import { assertCanSpend, chargeUsage } from "./lib/billing";
 const OPEN = new Set(["queued", "running", "waiting"]);
 
 /** Every skill's code-only tools, by slug. */
-const MUTATION_TOOLS = { ...MI_TOOLS, ...OFFER_TOOLS, ...GD_MUTATION_TOOLS };
+const MUTATION_TOOLS = { ...MI_TOOLS, ...OFFER_TOOLS, ...GD_MUTATION_TOOLS, ...CREATIVE_TOOLS };
 
 type StopReason = "cap" | "error" | "cancelled" | "halted" | "done";
 
@@ -303,6 +304,7 @@ export async function startRunFor(
     checkCredit = true,
     free = false,
     projectId,
+    inputRef,
     ...input
   }: {
     workspaceId: Id<"workspaces">;
@@ -314,6 +316,8 @@ export async function startRunFor(
     agentSlug: string;
     skillSlug: string;
     projectId?: Id<"researchProjects">;
+    /** What the run works on when it is not a research project: the id of a record the skill reads. */
+    inputRef?: string;
     mode?: "thorough" | "fast";
   },
 ) {
@@ -355,7 +359,7 @@ export async function startRunFor(
     skillSlug: args.skillSlug,
     status: blocked ? "stopped" : "queued",
     startedBy: userId,
-    inputRef: project?._id ?? args.skillSlug,
+    inputRef: project?._id ?? inputRef ?? args.skillSlug,
     ...(args.mode ? { mode: args.mode } : {}),
     startedAt: Date.now(),
     finishedAt: blocked ? Date.now() : undefined,

@@ -1,9 +1,11 @@
 "use client";
 
 import { useMutation, usePaginatedQuery, useQuery } from "convex/react";
+import Link from "next/link";
 import { useMemo, useState } from "react";
 
 import { Button } from "@/components/ui/button";
+import { buttonVariants } from "@/components/ui/button-variants";
 import { Checkbox } from "@/components/ui/checkbox";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Input } from "@/components/ui/input";
@@ -121,6 +123,9 @@ export function ResearchBoard({
     />
   );
 }
+
+/** Sources a creative can be modelled on: ads, videos and posts. Never the business's own results or an uploaded file. */
+const MODEL_PLATFORMS = new Set(["youtube", "tiktok", "instagram", "metaAdLibrary", "web"]);
 
 type CollectionRow = { id: string; name: string; shared: boolean; items: number };
 
@@ -278,7 +283,13 @@ export function BoardView({
               compareFull={compare.length >= 2}
               onCompare={(on) => setCompare((current) => (on ? [...current, source.id].slice(-2) : current.filter((id) => id !== source.id)))}
               saveSlot={
-                target ? (
+                <>
+                  {canShare && MODEL_PLATFORMS.has(source.platform) ? (
+                    <Link href={`/app/agents/growth-architect/work/creative?source=${source.id}`} className={buttonVariants({ variant: "ghost", size: "sm" })} title="Make your own version of this, for one of your brands. Only its structure is followed.">
+                      Make our version
+                    </Link>
+                  ) : null}
+                  {target ? (
                   <Button
                     type="button"
                     variant="ghost"
@@ -292,7 +303,8 @@ export function BoardView({
                   >
                     Save
                   </Button>
-                ) : null
+                  ) : null}
+                </>
               }
             />
           </li>

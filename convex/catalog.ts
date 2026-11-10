@@ -58,7 +58,7 @@ export function currentAgentSlug(slug: string) {
 const PLANNED_PROMISE = "It does not run yet.";
 
 /** Skills that are built and may run for customers. Everything else in the catalog is coming soon. */
-const AVAILABLE_SKILLS = new Set(["market-intelligence", "offer-intelligence", "growth-diagnostics"]);
+const AVAILABLE_SKILLS = new Set(["market-intelligence", "offer-intelligence", "growth-diagnostics", "creative-production"]);
 
 function skill(slug: string, name: string, handsBack: string, promise: string, sort: number): AgentSkill {
   return { slug, name, job: handsBack, handsBack, promise, status: AVAILABLE_SKILLS.has(slug) ? "available" : "comingSoon", sort };
@@ -79,7 +79,7 @@ export const CATALOG: CatalogAgent[] = [
       skill("market-intelligence", "Market Intelligence", "A market report with sources: competitors, ads, content and patterns.", "It reads public sources and links you give it. It does not log in anywhere.", 0),
       skill("offer-intelligence", "Offer Intelligence", "An offer analysis built on approved research.", "It does not change your offer.", 1),
       skill("campaign-strategy", "Campaign Strategy", "A campaign strategy built on approved research.", "It does not launch a campaign.", 2),
-      skill("creative-production", "Creative Production", "Copy and creative briefs, original and sourced.", "It does not publish anything.", 3),
+      skill("creative-production", "Creative Production", "Your own version of an ad that works: a brief, four copy variations, a script and captions, for one brand.", "It models an ad's structure and never reuses its words, footage, faces, voice, music or logos. It does not publish anything.", 3),
       skill("funnel-architect", "Funnel Architect", "A funnel plan with the pages and steps it needs.", "It does not change your site.", 4),
       skill("growth-diagnostics", "Growth Diagnostics", "A diagnosis of where growth stalls, from your own data.", "It does not change your accounts.", 5),
     ],

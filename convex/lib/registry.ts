@@ -26,6 +26,9 @@ export const TOOLS = [
   "gd.read",
   "gd.check",
   "gd.save",
+  "cp.context",
+  "cp.check",
+  "cp.save",
 ] as const;
 
 export type ToolSlug = (typeof TOOLS)[number];

@@ -33,6 +33,13 @@ export const SKILL_CAPS: Readonly<Record<string, Caps>> = {
     maxSteps: 20,
     maxDurationMs: 600_000,
   },
+  /** Words only for now: a brief, four copy variations, a script and captions, plus one revision in reserve. */
+  "creative-production": {
+    maxCostCentsPerRun: 150,
+    maxCostCentsPerDay: 1500,
+    maxSteps: 20,
+    maxDurationMs: 600_000,
+  },
   "growth-diagnostics": {
     maxCostCentsPerRun: 100,
     maxCostCentsPerDay: 1000,

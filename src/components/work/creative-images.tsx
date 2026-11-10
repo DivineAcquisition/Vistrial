@@ -138,6 +138,7 @@ function Tile({ image, copy, brand, placement, editor, eachCents, onRetake }: { 
         <span className="mr-auto">
           {PLACEMENT_WORDS[placement]} {placement}
           {image.status === "generating" && image.url ? " · making a new one" : ""}
+          {image.stale && image.status !== "generating" ? <span className="text-warning"> · the words were edited after this was made</span> : null}
         </span>
         {image.url ? (
           <Button size="sm" variant="ghost" disabled={busy !== null} onClick={() => void save()}>

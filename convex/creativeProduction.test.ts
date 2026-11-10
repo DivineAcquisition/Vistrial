@@ -346,6 +346,87 @@ describe("creative checks", () => {
   });
 });
 
+describe("Editing an ad set before approving it", () => {
+  beforeEach(() => vi.useFakeTimers());
+  afterEach(() => {
+    vi.useRealTimers();
+    delete (globalThis as { __vistrialScriptedModel?: ScriptedModel }).__vistrialScriptedModel;
+  });
+
+  it("saves a person's edit as a new version, runs the checks on their words, and marks designed pictures out of date", async () => {
+    const t = makeTester();
+    const a = await seed(t, "Alpha");
+    script();
+    const base = { workspaceId: a.workspaceId };
+    const started = await a.owner.mutation(api.creative.start, { ...base, kitId: a.kitId, sourceRefId: a.sourceRefId, offerCardId: a.offerCardId });
+    expect(await finish(t, a.owner, a.workspaceId, started.runId)).toBe("completed");
+    const assetId = (await adSet(a.owner, a.workspaceId))!.row.id;
+    const view = async () => (await a.owner.query(api.creative.view, { ...base, assetId }))!;
+    const fieldsOf = (row: Awaited<ReturnType<typeof view>>["creative"] extends infer C ? (C extends { variations: (infer V)[] } ? V : never) : never) => ({ variationKey: row.key, hook: row.hook, primaryText: row.primaryText, headline: row.headline, cta: row.cta, eyebrow: row.design.eyebrow, kicker: row.design.kicker, subline: row.design.subline, labels: row.design.labels });
+    const first = (await view()).creative!.variations[0];
+    // A designed picture and a photo of variation A, and a designed picture of B.
+    const imageIds = await t.run(async (ctx) => {
+      const make = (variationKey: string, look: "designed" | "photo") => ctx.db.insert("creativeImages", { workspaceId: a.workspaceId, assetId, variationKey, placement: "1:1", look, status: "ready", model: "m", costCents: 1, holdCents: 0, createdBy: "seed", createdAt: 1 });
+      return [await make("A", "designed"), await make("A", "photo"), await make("B", "designed")];
+    });
+
+    // Nothing changed: nothing is saved.
+    expect(await a.owner.mutation(api.creative.edit, { ...base, assetId, ...fieldsOf(first) })).toMatchObject({ changed: false });
+    expect((await view()).versions).toBe(1);
+    expect(await message(a.owner.mutation(api.creative.edit, { ...base, assetId, ...fieldsOf(first), headline: " " }))).toBe("The headline cannot be blank.");
+    expect(await message(a.owner.mutation(api.creative.edit, { ...base, assetId, ...fieldsOf(first), headline: "x".repeat(61) }))).toBe("Keep the headline to 60 characters. It is 61.");
+
+    // A clean edit: a new version by a person, still a draft, the designed picture of A out of date.
+    expect(await a.owner.mutation(api.creative.edit, { ...base, assetId, ...fieldsOf(first), headline: "  Your Saturday,   handed back " })).toEqual({ status: "draft", passed: true, changed: true });
+    let now = await view();
+    expect(now.versions).toBe(2);
+    expect(now.creative!.variations[0].headline).toBe("Your Saturday, handed back");
+    expect(now.creative!.variations[1].headline).toBe("Deep clean, done for you 2");
+    const asset = await a.owner.query(api.assets.get, { ...base, assetId });
+    expect(asset.body).toContain("Your Saturday, handed back");
+    expect(asset.body).toContain("Variation A was edited by a person.");
+    expect(await t.run(async (ctx) => (await Promise.all(imageIds.map((id) => ctx.db.get(id)))).map((row) => row?.stale === true))).toEqual([true, false, false]);
+
+    // Their words are held to the same rules: the reference's wording, then a claim nothing backs.
+    expect(await a.owner.mutation(api.creative.edit, { ...base, assetId, ...fieldsOf(now.creative!.variations[0]), primaryText: REFERENCE_TEXT })).toMatchObject({ status: "needsReview", passed: false });
+    now = await view();
+    expect(now.status).toBe("needsReview");
+    expect(now.checks.results.find((row) => !row.passed)?.name).toBe("New words, not the reference's");
+    expect(await message(a.owner.mutation(api.assets.approve, { ...base, assetId }))).toContain("did not pass its checks");
+    expect(await a.owner.mutation(api.creative.edit, { ...base, assetId, ...fieldsOf(now.creative!.variations[0]), primaryText: "Rated #1 by 500 local families." })).toMatchObject({ status: "needsReview" });
+    expect((await view()).checks.results.filter((row) => !row.passed).map((row) => row.name)).toEqual(["Claims are backed"]);
+
+    // Fixing it brings it back to a draft that can be approved; after that it cannot be edited.
+    now = await view();
+    expect(await a.owner.mutation(api.creative.edit, { ...base, assetId, ...fieldsOf(now.creative!.variations[0]), primaryText: "A vetted team does the deep clean." })).toMatchObject({ status: "draft", passed: true });
+    expect((await view()).versions).toBe(5);
+    await a.owner.mutation(api.assets.approve, { ...base, assetId });
+    now = await view();
+    expect(await message(a.owner.mutation(api.creative.edit, { ...base, assetId, ...fieldsOf(now.creative!.variations[0]), headline: "Another" }))).toBe("Only an ad set that is waiting for review can be edited.");
+    // What the writer first produced is still on record.
+    const kept = await t.run(async (ctx) => (await ctx.db.query("runArtifacts").collect()).filter((row) => row.kind === "creative").length);
+    expect(kept).toBe(5);
+  });
+
+  it("is for Owners and Managers of the same workspace only", async () => {
+    const t = makeTester();
+    const a = await seed(t, "Alpha");
+    const b = await seed(t, "Beta");
+    script();
+    const base = { workspaceId: a.workspaceId };
+    const started = await a.owner.mutation(api.creative.start, { ...base, kitId: a.kitId, offerCardId: a.offerCardId });
+    expect(await finish(t, a.owner, a.workspaceId, started.runId)).toBe("completed");
+    const assetId = (await adSet(a.owner, a.workspaceId))!.row.id;
+    const fields = { assetId, variationKey: "A", hook: "h", primaryText: "t", headline: "New", cta: "Go", eyebrow: "", kicker: "", subline: "", labels: [] };
+    const invite = await a.owner.mutation(api.workspace.invite, { ...base, email: "rep@example.com", role: "rep" });
+    const rep = t.withIdentity({ ...person("rep"), email: "rep@example.com" });
+    await rep.mutation(api.workspace.acceptInvite, { token: invite.token });
+    expect(await message(rep.mutation(api.creative.edit, { ...base, ...fields }))).toBe(NOT_ALLOWED);
+    expect(await message(b.owner.mutation(api.creative.edit, { workspaceId: b.workspaceId, ...fields }))).toBe(NOT_FOUND);
+    expect(await message(a.owner.mutation(api.creative.edit, { ...base, ...fields, variationKey: "Z" }))).toBe(NOT_FOUND);
+  });
+});
+
 describe("example figures on a designed ad", () => {
   const context: CreativeContext = { requestId: "r1", dial: "structure", note: "", kit: { id: "k1", kind: "own", version: 1, content: { ...EMPTY_BRAND, name: "Alpha" } }, reference: null, offer: null, profile: null, facts: [], outcomes: [], blockedNames: [] };
   const set = (labels: string[], illustrative: boolean, subline = "Where the jobs go.") =>

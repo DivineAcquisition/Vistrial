@@ -209,6 +209,8 @@ export const list = workspaceQuery({
         placement: row.placement,
         look: (row.look ?? "photo") as Look,
         status: row.status,
+        /** The copy was edited after this designed ad was drawn, so its words are out of date. */
+        stale: row.stale === true && row.status === "ready",
         url: row.storageId ? await ctx.storage.getUrl(row.storageId) : null,
         problem: row.status === "failed" ? (IMAGE_FAIL_WORDS[row.failCode ?? ""] ?? "This image could not be made.") : null,
       });
@@ -281,7 +283,7 @@ export const saveMade = internalMutation({
     }
     if (args.storageId) {
       if (row.storageId) await ctx.storage.delete(row.storageId);
-      await ctx.db.patch(row._id, { status: "ready", storageId: args.storageId, costCents: row.costCents + args.costCents, holdCents: 0, failCode: undefined });
+      await ctx.db.patch(row._id, { status: "ready", storageId: args.storageId, costCents: row.costCents + args.costCents, holdCents: 0, failCode: undefined, stale: undefined });
       await chargeUsage(ctx, { workspaceId: row.workspaceId, costCents: args.costCents, source: "creative", ref: row._id });
     } else {
       // A retake that failed keeps the earlier picture.

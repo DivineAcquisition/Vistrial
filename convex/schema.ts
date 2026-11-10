@@ -1176,6 +1176,8 @@ export default defineSchema({
     tone: v.optional(v.union(v.literal("dark"), v.literal("light"))),
     /** "fresh": a new layout, with none of the brand's past ads shown to the image model. Missing or "brand": follows them. */
     style: v.optional(v.union(v.literal("brand"), v.literal("fresh"))),
+    /** The words in this picture were edited after it was made, so it no longer matches the copy. Cleared when it is made again. */
+    stale: v.optional(v.boolean()),
     status: v.union(v.literal("generating"), v.literal("ready"), v.literal("failed")),
     storageId: v.optional(v.id("_storage")),
     failCode: v.optional(v.string()),

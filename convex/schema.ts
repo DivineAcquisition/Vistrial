@@ -715,6 +715,7 @@ export default defineSchema({
       v.literal("contentCalendar"),
       v.literal("swipeItem"),
       v.literal("growthDiagnosis"),
+      v.literal("pageTeardown"),
     ),
     title: v.string(),
     status: assetStatus,
@@ -947,7 +948,7 @@ export default defineSchema({
      * What was chosen, when it is not a report opportunity: an offer change from an offer analysis, or a
      * step of a growth diagnosis's 90-day roadmap. Missing means a report opportunity.
      */
-    itemKind: v.optional(v.union(v.literal("offerChange"), v.literal("roadmapStep"))),
+    itemKind: v.optional(v.union(v.literal("offerChange"), v.literal("roadmapStep"), v.literal("pageChange"))),
     /** The roadmap phase of a roadmap step. */
     phase: v.optional(v.union(v.literal("fix"), v.literal("build"), v.literal("scale"))),
     checkInAt: v.number(),
@@ -1519,6 +1520,29 @@ export default defineSchema({
   })
     .index("by_workspace_job", ["workspaceId", "jobId", "order"])
     .index("by_workspace", ["workspaceId", "createdAt"]),
+
+  /**
+   * One ask of the Landing Page Teardown skill: the industry, the pages to read (the business's own, others
+   * it named, and whether to search for more), and the read job the run made for them.
+   */
+  teardownRequests: defineTable({
+    workspaceId: v.id("workspaces"),
+    projectId: v.id("researchProjects"),
+    industry: v.string(),
+    ownUrl: v.optional(v.string()),
+    urls: v.array(v.string()),
+    /** Search for pages competitors in the industry run, on top of the ones named. */
+    find: v.boolean(),
+    note: v.optional(v.string()),
+    /** Pages the search step added, so a finding can say which pages a person chose and which were found. */
+    foundUrls: v.optional(v.array(v.string())),
+    jobId: v.optional(v.id("pageReadJobs")),
+    runId: v.optional(v.id("agentRuns")),
+    createdBy: v.string(),
+    createdAt: v.number(),
+  })
+    .index("by_workspace", ["workspaceId", "createdAt"])
+    .index("by_workspace_project", ["workspaceId", "projectId"]),
 
   /**
    * One row per site the reader has opened, shared by every workspace because the site does not care who

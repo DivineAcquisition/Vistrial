@@ -22,6 +22,7 @@ import { reportForProject } from "./studio";
 import { analysisFor } from "./offers";
 import { savedRecord } from "./lib/savedRecords";
 import { readDiagnosis, type RoadmapPhase } from "./skills/growthDiagnostics/shapes";
+import { readIndustry } from "./skills/landingTeardown/shapes";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 export const CHECK_IN_DAYS = [14, 30, 60, 90] as const;
@@ -146,7 +147,7 @@ async function ownDecision(ctx: QueryCtx, workspaceId: Id<"workspaces">, decisio
 export type DecisionView = {
   id: Id<"decisions">;
   /** Null for a report opportunity. */
-  itemKind: "offerChange" | "roadmapStep" | null;
+  itemKind: "offerChange" | "roadmapStep" | "pageChange" | null;
   phase: RoadmapPhase | null;
   assetId: Id<"assets"> | null;
   opportunityIndex: number;
@@ -220,7 +221,7 @@ export const forAsset = workspaceQuery({
 type PlannedItem = {
   projectId: Id<"researchProjects">;
   runId: Id<"agentRuns">;
-  itemKind: "offerChange" | "roadmapStep";
+  itemKind: "offerChange" | "roadmapStep" | "pageChange";
   phase?: RoadmapPhase;
   opportunity: string;
   proposedAction: string;
@@ -260,6 +261,15 @@ async function itemOf(ctx: QueryCtx, asset: Doc<"assets">, index: number): Promi
       proposedAction: step.action,
       validationMethod: `Watch ${step.targetMetric}. Target: ${step.target}`,
     };
+  }
+  if (asset.kind === "pageTeardown") {
+    // A change to a landing page, from a teardown. Its project is the teardown's own.
+    const saved = (await savedRecord(ctx.db, asset, "teardown")) as { read?: unknown } | null;
+    const suggestion = readIndustry(saved?.read)?.suggestions[index];
+    const projectId = ctx.db.normalizeId("researchProjects", run.inputRef);
+    const project = projectId ? await ctx.db.get(projectId) : null;
+    if (!suggestion || !project || project.workspaceId !== asset.workspaceId) return null;
+    return { projectId: project._id, runId: run._id, itemKind: "pageChange", opportunity: suggestion.title, proposedAction: suggestion.change, validationMethod: suggestion.howToTell };
   }
   return null;
 }

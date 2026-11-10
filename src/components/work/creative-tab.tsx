@@ -2,11 +2,12 @@
 
 import { useMutation, useQuery } from "convex/react";
 import Link from "next/link";
-import { useState } from "react";
+import { useRef, useState } from "react";
 
-import { Check, Copy, FileText, LoaderCircle, Megaphone, Plus, ShieldCheck, Sparkles, X } from "@/components/icons";
+import { Check, Copy, FileText, LoaderCircle, Megaphone, Plus, ShieldCheck, Sparkles, Trash2, Upload, X } from "@/components/icons";
 import { AssetStatusBadge } from "@/components/runs/run-parts";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Panel } from "@/components/ui/panel";
 import { SegmentedRadioGroup } from "@/components/ui/segmented-radio";
 import { Textarea } from "@/components/ui/textarea";
@@ -16,18 +17,29 @@ import { cn } from "@/lib/utils";
 import { api } from "../../../convex/_generated/api";
 import type { Id } from "../../../convex/_generated/dataModel";
 import { BRAND_KIND_WORDS } from "../../../convex/lib/brandKits";
+import { ATTEST_WORDS, MAX_IMAGE_BYTES, MAX_VIDEO_BYTES, readReferenceLink } from "../../../convex/lib/referenceShapes";
 
 import { ReviewBar } from "./review-bar";
-import type { CreativeOptions, CreativeTabData, CreativeView, ReviewActions } from "./types";
+import type { AddedReference, CreativeOptions, CreativeTabData, CreativeView, ReviewActions } from "./types";
 import { useReviewActions } from "./use-review";
 import { SectionTitle, WorkHero } from "./work-shell";
 
-export type CreativeStart = { kitId: string; sourceRefId: string | null; offerCardId: string | null; dial: string; note: string };
+export type CreativeStart = { kitId: string; sourceRefId: string | null; referenceId: string | null; offerCardId: string | null; dial: string; note: string };
+
+/** Adding a reference of one's own. Each returns words when it was refused, or null when the breakdown started. */
+export type ReferenceActions = {
+  addLink: (url: string) => Promise<string | null>;
+  upload: (file: File) => Promise<string | null>;
+  remove: (referenceId: string) => Promise<void>;
+};
 
 export type CreativeTabProps = {
   base: string;
   editor: boolean;
   options: CreativeOptions;
+  /** References the person added themselves, newest first. */
+  references: AddedReference[];
+  referenceActions: ReferenceActions;
   tab: CreativeTabData;
   view: CreativeView | null;
   onSelect: (assetId: string) => void;
@@ -65,10 +77,94 @@ function Pick({ on, onClick, children, title }: { on: boolean; onClick: () => vo
   );
 }
 
+/** Add a reference of your own: a public YouTube link, or a video or image file. */
+function AddReference({ actions }: { actions: ReferenceActions }) {
+  const [url, setUrl] = useState("");
+  const [attested, setAttested] = useState(false);
+  const [busy, setBusy] = useState<"link" | "upload" | null>(null);
+  const [problem, setProblem] = useState("");
+  const file = useRef<HTMLInputElement>(null);
+
+  const run = async (kind: "link" | "upload", work: () => Promise<string | null>) => {
+    setBusy(kind);
+    setProblem("");
+    try {
+      const refused = await work();
+      if (refused) setProblem(refused);
+      else if (kind === "link") setUrl("");
+    } catch (error) {
+      setProblem(showError(error, "The reference was not added."));
+    } finally {
+      setBusy(null);
+      if (file.current) file.current.value = "";
+    }
+  };
+
+  const addLink = () => {
+    // Checked here first, so a TikTok or Instagram link gets its answer without a round trip.
+    const link = readReferenceLink(url);
+    if (!link.ok) return setProblem(link.problem);
+    void run("link", () => actions.addLink(url));
+  };
+
+  const pick = (picked: File | undefined) => {
+    if (!picked) return;
+    const video = picked.type.startsWith("video/");
+    if (video && picked.size > MAX_VIDEO_BYTES) return setProblem("That video is over 14 MB. Export a smaller copy (720p is plenty) and upload that.");
+    if (!video && picked.size > MAX_IMAGE_BYTES) return setProblem("That image is over 10 MB.");
+    void run("upload", () => actions.upload(picked));
+  };
+
+  return (
+    <div className="grid gap-3 rounded-xl border border-border p-3">
+      <p className="text-sm text-card-foreground">Add an ad of your own to model</p>
+      <form
+        className="flex flex-wrap items-center gap-2"
+        onSubmit={(event) => {
+          event.preventDefault();
+          if (url.trim()) addLink();
+        }}
+      >
+        <label className="sr-only" htmlFor="reference-link">
+          A public YouTube link
+        </label>
+        <Input id="reference-link" className="min-w-0 flex-1 basis-56" inputMode="url" value={url} placeholder="A public YouTube video or Short link" onChange={(event) => setUrl(event.target.value)} />
+        <Button type="submit" size="sm" variant="outline" disabled={!url.trim() || busy !== null}>
+          {busy === "link" ? "Adding…" : "Read this video"}
+        </Button>
+      </form>
+      <div className="grid gap-2">
+        <label className="flex items-start gap-2 text-sm text-card-foreground">
+          <input type="checkbox" className="mt-0.5 size-4 accent-primary" checked={attested} onChange={(event) => setAttested(event.target.checked)} />
+          <span>{ATTEST_WORDS}</span>
+        </label>
+        <div className="flex flex-wrap items-center gap-2">
+          <input ref={file} type="file" accept="video/mp4,video/quicktime,video/webm,image/png,image/jpeg,image/webp" className="sr-only" aria-label="Choose a video or image file" onChange={(event) => pick(event.target.files?.[0])} />
+          <Button type="button" size="sm" variant="outline" disabled={!attested || busy !== null} onClick={() => file.current?.click()}>
+            <Upload aria-hidden className="size-4" /> {busy === "upload" ? "Uploading…" : "Upload a video or image"}
+          </Button>
+          <span className="text-xs text-muted-foreground">MP4, MOV or WebM up to 14 MB, or an image up to 10 MB.</span>
+        </div>
+      </div>
+      {problem ? (
+        <p role="alert" className="text-sm text-destructive">
+          {problem}
+        </p>
+      ) : null}
+      <p className="text-xs text-muted-foreground">
+        For TikTok, Instagram and ad libraries, upload the file: Vistrial does not take videos from those platforms. Your file is read once and then deleted; only the breakdown is kept. A read usually costs a few cents of credits.
+      </p>
+    </div>
+  );
+}
+
 /** The ask: which brand, what to start from, and how closely to follow a reference. */
-function StartForm({ base, options, initialSource, onCancel, onStart }: { base: string; options: CreativeOptions; initialSource: string | null; onCancel: () => void; onStart: (start: CreativeStart) => Promise<void> }) {
+function StartForm({ base, options, references, referenceActions, initialSource, onCancel, onStart }: { base: string; options: CreativeOptions; references: AddedReference[]; referenceActions: ReferenceActions; initialSource: string | null; onCancel: () => void; onStart: (start: CreativeStart) => Promise<void> }) {
   const [kitId, setKitId] = useState<string | null>(options.kits.length === 1 ? options.kits[0].id : null);
   const [sourceRefId, setSourceRefId] = useState<string | null>(initialSource && options.sources.some((row) => row.id === initialSource) ? initialSource : null);
+  const [picked, setPicked] = useState<string | null>(null);
+  // A reference that was removed, or is not ready, is not a choice.
+  const referenceId = references.some((row) => row.id === picked && row.status === "ready") ? picked : null;
   const [offerCardId, setOfferCardId] = useState<string | null>(null);
   const [dial, setDial] = useState("structure");
   const [note, setNote] = useState("");
@@ -76,7 +172,7 @@ function StartForm({ base, options, initialSource, onCancel, onStart }: { base: 
   const [starting, setStarting] = useState(false);
   const kit = options.kits.find((row) => row.id === kitId) ?? null;
   const chosenDial = options.dials.find((row) => row.value === dial);
-  const ready = Boolean(kitId && (sourceRefId || offerCardId));
+  const ready = Boolean(kitId && (sourceRefId || referenceId || offerCardId));
 
   if (options.kits.length === 0) {
     return (
@@ -121,6 +217,57 @@ function StartForm({ base, options, initialSource, onCancel, onStart }: { base: 
       <div className="grid gap-2">
         <h3 className="text-sm text-card-foreground">2. What should it start from?</h3>
         <p className="text-xs text-muted-foreground">Pick a reference ad, a saved offer, or both.</p>
+        <AddReference actions={referenceActions} />
+        {references.length > 0 ? (
+          <ul className="grid gap-2 sm:grid-cols-2" aria-label="References you added">
+            {references.map((row) => {
+              const on = referenceId === row.id;
+              const usable = row.status === "ready";
+              return (
+                <li key={row.id} className={cn("grid gap-1 rounded-xl border bg-card p-3", on ? "border-primary" : "border-border")}>
+                  <div className="flex items-center justify-between gap-2 text-xs text-muted-foreground">
+                    <span className="truncate">
+                      {row.origin === "upload" ? "Your file" : (PLATFORM_LABEL[row.platform] ?? row.platform)}
+                      {row.breakdown?.advertiser ? ` · ${row.breakdown.advertiser}` : ""}
+                    </span>
+                    <Button size="sm" variant="ghost" aria-label={`Remove ${row.title}`} onClick={() => void referenceActions.remove(row.id).catch((error: unknown) => void showError(error, "It was not removed."))}>
+                      <Trash2 aria-hidden className="size-3.5" />
+                    </Button>
+                  </div>
+                  <p className="line-clamp-2 text-sm text-card-foreground">{row.title}</p>
+                  {row.status === "analysing" ? (
+                    <p className="flex items-center gap-2 text-xs text-muted-foreground">
+                      <LoaderCircle aria-hidden className="size-3.5 animate-spin text-primary motion-reduce:animate-none" /> Reading it. This takes up to a minute.
+                    </p>
+                  ) : null}
+                  {row.status === "failed" ? <p className="text-xs text-destructive">{row.problem}</p> : null}
+                  {usable && row.breakdown ? (
+                    <>
+                      <p className="line-clamp-2 text-xs text-muted-foreground">
+                        Hook: {row.breakdown.hook.type || "not clear"}
+                        {row.breakdown.format ? ` · ${row.breakdown.format}` : ""}
+                        {row.breakdown.lengthSeconds ? ` · ${row.breakdown.lengthSeconds}s` : ""}
+                      </p>
+                      {row.breakdown.beats.length > 0 ? <p className="line-clamp-2 text-xs text-muted-foreground">Beats: {row.breakdown.beats.map((beat) => beat.what).join(" → ")}</p> : null}
+                      <div>
+                        <Pick
+                          on={on}
+                          onClick={() => {
+                            setPicked(on ? null : row.id);
+                            setSourceRefId(null);
+                          }}
+                        >
+                          {on ? "Using this" : "Use this"}
+                        </Pick>
+                      </div>
+                    </>
+                  ) : null}
+                </li>
+              );
+            })}
+          </ul>
+        ) : null}
+        {options.sources.length > 0 ? <p className="text-xs text-muted-foreground">Or pick one research already collected:</p> : null}
         {options.sources.length > 0 ? (
           <ul className="grid max-h-72 gap-2 overflow-y-auto sm:grid-cols-2" aria-label="Reference ads from your research">
             {options.sources.map((row) => {
@@ -130,7 +277,10 @@ function StartForm({ base, options, initialSource, onCancel, onStart }: { base: 
                   <button
                     type="button"
                     aria-pressed={on}
-                    onClick={() => setSourceRefId(on ? null : row.id)}
+                    onClick={() => {
+                      setSourceRefId(on ? null : row.id);
+                      setPicked(null);
+                    }}
                     className={cn("grid w-full gap-1 rounded-xl border bg-card p-3 text-left transition-colors", on ? "border-primary" : "border-border hover:border-primary/40")}
                   >
                     <span className="flex items-center justify-between gap-2 text-xs text-muted-foreground">
@@ -148,7 +298,7 @@ function StartForm({ base, options, initialSource, onCancel, onStart }: { base: 
             })}
           </ul>
         ) : (
-          <p className="rounded-xl border border-dashed border-border px-3 py-2 text-sm text-muted-foreground">No reference ads yet. Research collects ads and videos; pick one on a research board with &ldquo;Make our version&rdquo;.</p>
+          <p className="text-xs text-muted-foreground">Research also collects ads and videos: pick one on a research board with &ldquo;Make our version&rdquo;.</p>
         )}
         {options.offers.length > 0 ? (
           <div className="flex flex-wrap items-center gap-2">
@@ -170,7 +320,7 @@ function StartForm({ base, options, initialSource, onCancel, onStart }: { base: 
         )}
       </div>
 
-      {sourceRefId ? (
+      {sourceRefId || referenceId ? (
         <div className="grid gap-2">
           <h3 className="text-sm text-card-foreground">3. How closely should it follow the reference?</h3>
           <SegmentedRadioGroup aria-label="How closely to follow the reference" value={dial} onValueChange={setDial} options={options.dials.map((row) => ({ value: row.value, label: row.label }))} />
@@ -201,7 +351,7 @@ function StartForm({ base, options, initialSource, onCancel, onStart }: { base: 
             if (!kitId) return;
             setStarting(true);
             setProblem("");
-            void onStart({ kitId, sourceRefId, offerCardId, dial, note }).catch((error: unknown) => {
+            void onStart({ kitId, sourceRefId, referenceId, offerCardId, dial, note }).catch((error: unknown) => {
               setProblem(showError(error, "The creative did not start."));
               setStarting(false);
             });
@@ -261,9 +411,13 @@ function AdSet({ view, editor, review }: { view: CreativeView; editor: boolean; 
           {view.reference ? (
             <li>
               Reference:{" "}
-              <a href={view.reference.url} target="_blank" rel="noreferrer" className="text-primary underline-offset-4 hover:underline">
-                {view.reference.title}
-              </a>{" "}
+              {view.reference.url ? (
+                <a href={view.reference.url} target="_blank" rel="noreferrer" className="text-primary underline-offset-4 hover:underline">
+                  {view.reference.title}
+                </a>
+              ) : (
+                <span className="text-card-foreground">{view.reference.title} (a file you uploaded)</span>
+              )}{" "}
               · {view.dial.label}. {view.dial.keeps}
             </li>
           ) : null}
@@ -407,7 +561,7 @@ function AdSet({ view, editor, review }: { view: CreativeView; editor: boolean; 
 }
 
 /** The Creative workspace: the ask, what is running, and the ad sets with the one chosen opened. */
-export function CreativeTabView({ base, editor, options, tab, view, onSelect, onStart, review, initialSource, initialForm }: CreativeTabProps) {
+export function CreativeTabView({ base, editor, options, references, referenceActions, tab, view, onSelect, onStart, review, initialSource, initialForm }: CreativeTabProps) {
   const [form, setForm] = useState(Boolean(initialForm || initialSource));
   return (
     <div className="grid min-w-0 gap-5">
@@ -425,7 +579,7 @@ export function CreativeTabView({ base, editor, options, tab, view, onSelect, on
         }
       />
 
-      {form && editor ? <StartForm base={base} options={options} initialSource={initialSource ?? null} onCancel={() => setForm(false)} onStart={(start) => onStart(start).then(() => setForm(false))} /> : null}
+      {form && editor ? <StartForm base={base} options={options} references={references} referenceActions={referenceActions} initialSource={initialSource ?? null} onCancel={() => setForm(false)} onStart={(start) => onStart(start).then(() => setForm(false))} /> : null}
 
       {tab.running.length > 0 ? (
         <section className="grid gap-3" aria-label="Running now">
@@ -506,7 +660,11 @@ export function CreativeTab({ workspaceId, base, editor, source }: { workspaceId
   const [assetId, setAssetId] = useState<string | null>(null);
   const chosen = (tab?.results.some((row) => row.id === assetId) ? assetId : (tab?.results[0]?.id ?? null)) as Id<"assets"> | null;
   const view = useQuery(api.creative.view, chosen ? { workspaceId, assetId: chosen } : "skip");
+  const references = useQuery(api.references.list, { workspaceId });
   const start = useMutation(api.creative.start);
+  const addReference = useMutation(api.references.add);
+  const referenceUploadUrl = useMutation(api.references.uploadUrl);
+  const removeReference = useMutation(api.references.remove);
   const review = useReviewActions(workspaceId);
   if (!options || !tab) return <p className="text-sm text-muted-foreground">Loading creative.</p>;
   return (
@@ -514,6 +672,21 @@ export function CreativeTab({ workspaceId, base, editor, source }: { workspaceId
       base={base}
       editor={editor}
       options={options}
+      references={references ?? []}
+      referenceActions={{
+        addLink: async (url) => (await addReference({ workspaceId, url })).problem,
+        // The tick beside the button is the person's word that they may submit the file.
+        upload: async (file) => {
+          const target = await referenceUploadUrl({ workspaceId });
+          const response = await fetch(target, { method: "POST", headers: { "Content-Type": file.type }, body: file });
+          if (!response.ok) throw new Error("upload failed");
+          const body = (await response.json()) as { storageId: Id<"_storage"> };
+          return (await addReference({ workspaceId, storageId: body.storageId, name: file.name, attested: true })).problem;
+        },
+        remove: async (referenceId) => {
+          await removeReference({ workspaceId, referenceId: referenceId as Id<"creativeReferences"> });
+        },
+      }}
       tab={tab}
       view={view ?? null}
       onSelect={setAssetId}
@@ -522,6 +695,7 @@ export function CreativeTab({ workspaceId, base, editor, source }: { workspaceId
           workspaceId,
           kitId: row.kitId as Id<"brandKits">,
           ...(row.sourceRefId ? { sourceRefId: row.sourceRefId as Id<"sourceRefs"> } : {}),
+          ...(row.referenceId ? { referenceId: row.referenceId as Id<"creativeReferences"> } : {}),
           ...(row.offerCardId ? { offerCardId: row.offerCardId as Id<"offerCards"> } : {}),
           dial: row.dial,
           note: row.note,

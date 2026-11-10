@@ -20,6 +20,7 @@ export type BrandKitFull = FunctionReturnType<typeof api.brandKits.get>;
 
 export type CreativeOptions = FunctionReturnType<typeof api.creative.options>;
 export type CreativeTabData = FunctionReturnType<typeof api.creative.tab>;
+export type AddedReference = FunctionReturnType<typeof api.references.list>[number];
 export type CreativeView = NonNullable<FunctionReturnType<typeof api.creative.view>>;
 
 export type DiagnosticsData = FunctionReturnType<typeof api.workTabs.diagnostics>;

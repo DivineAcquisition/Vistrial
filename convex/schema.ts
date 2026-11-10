@@ -1087,6 +1087,46 @@ export default defineSchema({
   }).index("by_workspace_kit", ["workspaceId", "kitId", "version"]),
 
   /**
+   * A reference ad a person added themselves: a public YouTube link, or a video or image file they uploaded.
+   * Only its breakdown is kept. An uploaded file is deleted as soon as it is read; a video is never
+   * downloaded from a platform.
+   */
+  creativeReferences: defineTable({
+    workspaceId: v.id("workspaces"),
+    origin: v.union(v.literal("link"), v.literal("upload")),
+    platform: v.string(),
+    mediaKind: v.union(v.literal("video"), v.literal("image")),
+    url: v.optional(v.string()),
+    /** The uploaded file, until it is read. Cleared when the file is deleted. */
+    storageId: v.optional(v.id("_storage")),
+    contentType: v.optional(v.string()),
+    title: v.string(),
+    status: v.union(v.literal("analysing"), v.literal("ready"), v.literal("failed")),
+    failCode: v.optional(v.string()),
+    breakdown: v.optional(
+      v.object({
+        title: v.string(),
+        advertiser: v.string(),
+        lengthSeconds: v.number(),
+        format: v.string(),
+        hook: v.object({ type: v.string(), words: v.string() }),
+        beats: v.array(v.object({ seconds: v.string(), what: v.string() })),
+        onScreenText: v.array(v.string()),
+        spoken: v.string(),
+        offer: v.string(),
+        cta: v.object({ words: v.string(), placement: v.string() }),
+        audience: v.string(),
+      }),
+    ),
+    costCents: v.number(),
+    /** Who confirmed they may submit an uploaded file, and when. */
+    attestedBy: v.optional(v.string()),
+    attestedAt: v.optional(v.number()),
+    createdBy: v.string(),
+    createdAt: v.number(),
+  }).index("by_workspace", ["workspaceId", "createdAt"]),
+
+  /**
    * One ask of Creative Production: the brand it is for, the reference ad or offer it starts from, and how
    * closely to follow the reference. The run reads it; the saved creative is linked back here.
    */
@@ -1097,6 +1137,8 @@ export default defineSchema({
     kitVersion: v.number(),
     /** The reference ad: a source research collected. Its structure is modelled; nothing of it is reused. */
     sourceRefId: v.optional(v.id("sourceRefs")),
+    /** The reference ad, when the person added it themselves as a link or a file. */
+    referenceId: v.optional(v.id("creativeReferences")),
     offerCardId: v.optional(v.id("offerCards")),
     offerVersion: v.optional(v.number()),
     dial: v.union(v.literal("inspired"), v.literal("structure"), v.literal("close")),

@@ -1,7 +1,7 @@
 "use client";
 
 import { CreativeTabView } from "@/components/work/creative-tab";
-import type { CreativeOptions, CreativeTabData, CreativeView } from "@/components/work/types";
+import type { AddedReference, CreativeOptions, CreativeTabData, CreativeView } from "@/components/work/types";
 
 import { StoryFrame } from "../work-tabs/story-frame";
 
@@ -27,6 +27,30 @@ const OPTIONS: CreativeOptions = {
   ],
 };
 
+const BREAKDOWN = {
+  title: "BrightSmile: the two-minute first visit",
+  advertiser: "BrightSmile Dental",
+  lengthSeconds: 22,
+  format: "Talking head with clinic shots",
+  hook: { type: "worry question", words: "Still putting it off?" },
+  beats: [
+    { seconds: "0-3", what: "Names the worry" },
+    { seconds: "3-15", what: "Walks through the visit" },
+    { seconds: "15-22", what: "States the offer and asks for the booking" },
+  ],
+  onScreenText: ["Still putting it off?", "New patients welcome"],
+  spoken: "",
+  offer: "New patient check-up",
+  cta: { words: "Book today", placement: "last 3 seconds" },
+  audience: "Adults who avoid the dentist",
+};
+
+const REFERENCES: AddedReference[] = [
+  { id: id("ref1"), origin: "link", platform: "youtube", mediaKind: "video", url: "https://www.youtube.com/watch?v=abc", title: BREAKDOWN.title, status: "ready", problem: null, breakdown: BREAKDOWN, costCents: 1, createdAt: AT },
+  { id: id("ref2"), origin: "upload", platform: "upload", mediaKind: "video", url: null, title: "competitor-reel.mp4", status: "analysing", problem: null, breakdown: null, costCents: 0, createdAt: AT },
+  { id: id("ref3"), origin: "upload", platform: "upload", mediaKind: "image", url: null, title: "static-ad.png", status: "failed", problem: "Nothing in it could be read as an ad.", breakdown: null, costCents: 1, createdAt: AT },
+];
+
 const variation = (key: string, hookType: string, hook: string, primaryText: string, hypothesis: string) => ({
   key,
   hookType,
@@ -48,7 +72,7 @@ function view(status: CreativeView["status"]): CreativeView {
     versions: passed ? 1 : 2,
     dial: OPTIONS.dials[1],
     kit: { id: "k2", name: "Northside Dental", kind: "client", version: 2 },
-    reference: { sourceRefId: "s1", title: "BrightSmile: nervous about the dentist?", url: "https://www.facebook.com/ads/library/?id=1", platform: "metaAdLibrary", publisher: "BrightSmile Dental" },
+    reference: { sourceRefId: "s1", referenceId: null, title: "BrightSmile: nervous about the dentist?", url: "https://www.facebook.com/ads/library/?id=1", platform: "metaAdLibrary", publisher: "BrightSmile Dental" },
     offer: { cardId: "o1", name: "New patient check-up", version: 2 },
     disclaimers: ["Results vary by patient."],
     creative: {
@@ -103,6 +127,8 @@ export function CreativeTabStory({ state, theme }: { state: string; theme: strin
         base="/app/agents/growth-architect"
         editor={state !== "rep"}
         options={OPTIONS}
+        references={state === "form" ? REFERENCES : []}
+        referenceActions={{ addLink: async () => null, upload: async () => null, remove: noop }}
         tab={tab}
         view={empty ? null : view(status)}
         onSelect={() => undefined}

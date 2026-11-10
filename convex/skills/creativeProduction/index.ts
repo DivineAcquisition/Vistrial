@@ -61,8 +61,13 @@ function referenceBrief(context: CreativeContext) {
     `Reference ad, and how closely to follow it: ${DIAL_WORDS[context.dial].label}. ${DIAL_RULES[context.dial]}`,
     `At every setting the wording is new: never share a run of more than ${MAX_SHARED_RUN} words with the reference.`,
     "The reference, as research recorded it (structure is an earlier reading, not a fact):",
-    wrapUntrusted(JSON.stringify({ platform: context.reference.platform, kind: context.reference.kind, title: context.reference.title, excerpt: context.reference.excerpt, structure: context.reference.structure })),
-  ].join("\n");
+    wrapUntrusted(JSON.stringify({ platform: context.reference.platform, kind: context.reference.kind, title: context.reference.title, excerpt: context.reference.excerpt, structure: context.reference.structure, ...(context.reference.beats.length ? { beats: context.reference.beats } : {}) })),
+    // The reference's own lines are given only so they can be avoided.
+    context.reference.words ? "The reference's own words follow, so that you can avoid them. Do not reuse or closely paraphrase any of these lines:" : "",
+    context.reference.words ? wrapUntrusted(context.reference.words) : "",
+  ]
+    .filter(Boolean)
+    .join("\n");
 }
 
 const RULES = [

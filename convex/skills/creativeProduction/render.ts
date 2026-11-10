@@ -13,7 +13,7 @@ export function renderCreative(creative: CreativeSet, context: CreativeContext, 
   lines.push("## Made for", "", `- Brand: ${kit.name} (${BRAND_KIND_WORDS[context.kit.kind]}, brand kit version ${context.kit.version})`);
   if (context.offer) lines.push(`- Offer: ${context.offer.content.name} (version ${context.offer.version})`);
   if (context.reference) {
-    lines.push(`- Reference: [${context.reference.title}](${context.reference.url})`, `- How close: ${DIAL_WORDS[context.dial].label}. ${DIAL_WORDS[context.dial].keeps}`);
+    lines.push(`- Reference: ${context.reference.url ? `[${context.reference.title}](${context.reference.url})` : `${context.reference.title} (a file you uploaded; only its breakdown was kept)`}`, `- How close: ${DIAL_WORDS[context.dial].label}. ${DIAL_WORDS[context.dial].keeps}`);
     lines.push("- Only the structure follows the reference. Its wording, footage, faces, voice, music and logos are not reused.");
   }
   lines.push("", "## Brief", "", `- For: ${creative.brief.audience}`, `- Promise: ${creative.brief.promise}`, `- Angle: ${creative.brief.angle}`, `- Tone: ${creative.brief.tone}`, "");

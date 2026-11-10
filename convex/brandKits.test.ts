@@ -112,7 +112,7 @@ describe("brand kits", () => {
     expect(await owner.mutation(api.brandKits.saveVersion, { workspaceId, kind: "own", name: "Alpha Agency" })).toMatchObject({ version: 1, added: true });
   });
 
-  it("takes real logo files only, with the ownership tick, and deletes a refused upload", async () => {
+  it("takes real logo files only, with the ownership tick", async () => {
     const { t, owner, workspaceId, store } = await setup();
     const png = await store("image/png");
     expect(await message(owner.mutation(api.brandKits.saveVersion, { workspaceId, kind: "client", name: "Northside", logos: [{ storageId: png, variant: "light", name: "logo.png" }] }))).toContain("owns these logos");

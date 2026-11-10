@@ -44,15 +44,23 @@ export type RequestStart = { kind: "source"; sourceRefId: string } | { kind: "of
 
 /** The reference ad, as research already recorded it. Its text is data to compare against, never to reuse. */
 export type ReferenceView = {
-  sourceRefId: string;
+  /** A source research collected, or null when the person added the reference themselves. */
+  sourceRefId: string | null;
+  /** A reference the person added as a link or a file, or null. */
+  referenceId: string | null;
   platform: string;
   kind: string;
   title: string;
   publisher: string | null;
-  url: string;
+  /** Null for an uploaded file, which has no public address. */
+  url: string | null;
   excerpt: string | null;
-  /** The earlier classification: a model's reading of the ad's structure, not a fact about it. */
+  /** A model's reading of the ad's structure, not a fact about it. */
   structure: { hook: string | null; offer: string | null; callToAction: string | null; format: string | null; audience: string | null };
+  /** The order of the ad, from a breakdown. Empty for a research source, which has none. */
+  beats: string[];
+  /** The ad's own words (opening line, on-screen text, what is said): compared against, never reused. */
+  words: string;
 };
 
 export type FactLite = { id: string; factKey: string; value: string; status: string };
@@ -117,7 +125,7 @@ export type CreativeRecord = {
   versions: number;
   dial: Dial;
   kit: { id: string; name: string; kind: "own" | "client"; version: number };
-  reference: { sourceRefId: string; title: string; url: string; platform: string; publisher: string | null } | null;
+  reference: { sourceRefId: string | null; referenceId?: string | null; title: string; url: string | null; platform: string; publisher: string | null } | null;
   offer: { cardId: string; name: string; version: number } | null;
   disclaimers: string[];
 };
@@ -199,5 +207,5 @@ export function allCopy(creative: CreativeSet) {
 /** The reference's own words: what the creative's wording is compared against. */
 export function referenceText(reference: ReferenceView | null) {
   if (!reference) return "";
-  return [reference.title, reference.excerpt, reference.structure.hook, reference.structure.offer, reference.structure.callToAction].filter(Boolean).join(". ");
+  return [reference.title, reference.excerpt, reference.structure.hook, reference.structure.offer, reference.structure.callToAction, reference.words].filter(Boolean).join(". ");
 }

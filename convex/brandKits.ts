@@ -131,7 +131,7 @@ export const logoUploadUrl = workspaceMutation({
 
 /**
  * Checks each logo is a real uploaded image of a kind and size we accept. A logo the kit already holds was
- * checked when it was added. A file that fails is deleted, so a refused upload does not linger.
+ * checked when it was added.
  */
 async function assertLogos(ctx: MutationCtx, content: BrandContent, held: Set<string>) {
   for (const logo of content.logos) {
@@ -142,14 +142,8 @@ async function assertLogos(ctx: MutationCtx, content: BrandContent, held: Set<st
     // The type the browser sent with the upload. A file stored without one is judged by its name.
     const type = (meta.contentType ?? "").split(";")[0].trim().toLowerCase();
     const accepted = type ? (LOGO_TYPES as readonly string[]).includes(type) : LOGO_NAME.test(logo.name);
-    if (!accepted) {
-      await ctx.storage.delete(id);
-      throw userError("Add the logo as a PNG, JPG, WebP or SVG file.");
-    }
-    if (meta.size > MAX_LOGO_BYTES) {
-      await ctx.storage.delete(id);
-      throw userError("That logo file is over 5 MB.");
-    }
+    if (!accepted) throw userError("Add the logo as a PNG, JPG, WebP or SVG file.");
+    if (meta.size > MAX_LOGO_BYTES) throw userError("That logo file is over 5 MB.");
   }
 }
 

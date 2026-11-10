@@ -33,6 +33,9 @@ export async function contextOf(db: MutationCtx["db"], run: Pick<Doc<"agentRuns"
 function referenceView(row: Doc<"sourceRefs">): ReferenceView {
   return {
     sourceRefId: row._id,
+    referenceId: null,
+    beats: [],
+    words: "",
     platform: row.platform,
     kind: row.kind,
     title: row.title,
@@ -46,6 +49,31 @@ function referenceView(row: Doc<"sourceRefs">): ReferenceView {
       format: row.classification?.format ?? null,
       audience: row.classification?.audienceHypothesis ?? null,
     },
+  };
+}
+
+/** A reference the person added, from its breakdown. Its words are kept apart so they are compared against and never shown as copy to reuse. */
+function addedReferenceView(row: Doc<"creativeReferences">): ReferenceView | null {
+  const breakdown = row.breakdown;
+  if (row.status !== "ready" || !breakdown) return null;
+  return {
+    sourceRefId: null,
+    referenceId: row._id,
+    platform: row.platform,
+    kind: row.mediaKind,
+    title: breakdown.title || row.title,
+    publisher: breakdown.advertiser || null,
+    url: row.url ?? null,
+    excerpt: null,
+    structure: {
+      hook: breakdown.hook.type || null,
+      offer: breakdown.offer || null,
+      callToAction: [breakdown.cta.words, breakdown.cta.placement && `(${breakdown.cta.placement})`].filter(Boolean).join(" ") || null,
+      format: [breakdown.format, breakdown.lengthSeconds ? `${breakdown.lengthSeconds} seconds` : ""].filter(Boolean).join(", ") || null,
+      audience: breakdown.audience || null,
+    },
+    beats: breakdown.beats.map((beat) => [beat.seconds && `${beat.seconds}s`, beat.what].filter(Boolean).join(": ")),
+    words: [breakdown.hook.words, ...breakdown.onScreenText, breakdown.spoken].filter(Boolean).join(". "),
   };
 }
 
@@ -71,6 +99,11 @@ const contextRead: MutationTool = async (ctx, run) => {
     // The business's own results are never a reference ad.
     if (!source || source.workspaceId !== run.workspaceId || source.platform === "customerData") return { failCode: "reference_missing" };
     reference = referenceView(source);
+  }
+  if (request.referenceId) {
+    const added = await ctx.db.get(request.referenceId);
+    reference = added && added.workspaceId === run.workspaceId ? addedReferenceView(added) : null;
+    if (!reference) return { failCode: "reference_missing" };
   }
   let offer: CreativeContext["offer"] = null;
   if (request.offerCardId) {
@@ -129,12 +162,10 @@ function creativeClaims(creative: CreativeSet | null, context: CreativeContext, 
   const claims: Claim[] = [{ claimKey: "brand", statement: `Made for ${kit.name}, brand kit version ${context.kit.version}.`, computed: true }];
   if (!creative) return claims;
   if (context.reference) {
-    claims.push({
-      claimKey: "structure",
-      statement: `Structure modelled on "${context.reference.title}": ${[creative.structure.hookType && `hook type ${creative.structure.hookType}`, creative.structure.format && `format ${creative.structure.format}`].filter(Boolean).join(", ") || "its hook and format"}. The wording is new.`,
-      basis: "observed",
-      sourceRefIds: [context.reference.sourceRefId],
-    });
+    const statement = `Structure modelled on "${context.reference.title}": ${[creative.structure.hookType && `hook type ${creative.structure.hookType}`, creative.structure.format && `format ${creative.structure.format}`].filter(Boolean).join(", ") || "its hook and format"}. The wording is new.`;
+    // A research source is cited itself. A reference the person added is cited through the run's own record of its breakdown.
+    if (context.reference.sourceRefId) claims.push({ claimKey: "structure", statement, basis: "observed", sourceRefIds: [context.reference.sourceRefId] });
+    else if (contextRecordId) claims.push({ claimKey: "structure", statement, sourceId: contextRecordId, fetchedAt: Date.now() });
   }
   for (const row of creative.variations) {
     if (row.hypothesis) claims.push({ claimKey: `variation-${row.key}`, statement: `${row.key}: ${row.hypothesis}`, basis: "hypothesis" });
@@ -226,7 +257,7 @@ const save: MutationTool = async (ctx, run, steps) => {
     versions: second ? 2 : 1,
     dial: context.dial,
     kit: { id: context.kit.id, name: kit.name, kind: context.kit.kind, version: context.kit.version },
-    reference: context.reference ? { sourceRefId: context.reference.sourceRefId, title: context.reference.title, url: context.reference.url, platform: context.reference.platform, publisher: context.reference.publisher } : null,
+    reference: context.reference ? { sourceRefId: context.reference.sourceRefId, referenceId: context.reference.referenceId, title: context.reference.title, url: context.reference.url, platform: context.reference.platform, publisher: context.reference.publisher } : null,
     offer: context.offer ? { cardId: context.offer.cardId, name: context.offer.content.name, version: context.offer.version } : null,
     disclaimers: kit.disclaimers,
     dropped: second ? droppedSecond : droppedFirst,

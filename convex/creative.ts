@@ -113,13 +113,16 @@ export const start = workspaceMutation({
   args: {
     kitId: v.id("brandKits"),
     sourceRefId: v.optional(v.id("sourceRefs")),
+    /** A reference the person added as a link or a file, once its breakdown is ready. */
+    referenceId: v.optional(v.id("creativeReferences")),
     offerCardId: v.optional(v.id("offerCards")),
     dial: v.optional(v.string()),
     note: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     if (ctx.member.role === "rep") notAllowed();
-    if (!args.sourceRefId && !args.offerCardId) throw userError("Choose a reference ad or a saved offer to start from.");
+    if (!args.sourceRefId && !args.referenceId && !args.offerCardId) throw userError("Choose a reference ad or a saved offer to start from.");
+    if (args.sourceRefId && args.referenceId) throw userError("Choose one reference ad.");
     const dial = DIALS.find((row) => row === (args.dial ?? "structure"));
     if (!dial) throw userError("Choose how closely to follow the reference.");
     const note = (args.note ?? "").replace(/\s+/g, " ").trim();
@@ -127,6 +130,12 @@ export const start = workspaceMutation({
     const kit = await ownKit(ctx, ctx.workspaceId, args.kitId);
     if (kit.archived) throw userError("This brand was put away. Choose another, or add it again.");
     if (args.sourceRefId) await referenceSource(ctx, ctx.workspaceId, args.sourceRefId);
+    if (args.referenceId) {
+      const added = await ctx.db.get(args.referenceId);
+      if (!added || added.workspaceId !== ctx.workspaceId) notFound();
+      if (added.status === "analysing") throw userError("This reference is still being read. Give it a moment.");
+      if (added.status !== "ready" || !added.breakdown) throw userError("This reference could not be read, so there is nothing to model. Add it again or choose another.");
+    }
     let offerVersion: number | undefined;
     if (args.offerCardId) {
       const card = await ctx.db.get(args.offerCardId);
@@ -139,6 +148,7 @@ export const start = workspaceMutation({
       kitId: kit._id,
       kitVersion: kit.currentVersion,
       ...(args.sourceRefId ? { sourceRefId: args.sourceRefId } : {}),
+      ...(args.referenceId ? { referenceId: args.referenceId } : {}),
       ...(args.offerCardId ? { offerCardId: args.offerCardId, offerVersion } : {}),
       dial,
       ...(note ? { note } : {}),

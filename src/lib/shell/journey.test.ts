@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { CATALOG } from "../../../convex/catalog";
-import { agentDot, agentsForTab, agentsOffJourney, defaultTab, journeyTabOf, liveSkills, skillChipLabel, tabForPath } from "./journey";
+import { agentDot, agentsForTab, agentsOffJourney, defaultTab, journeyTabOf, liveSkills, tabForPath, workTabsFor } from "./journey";
 import type { RailAgent } from "./rail";
 
 const agents: RailAgent[] = CATALOG.map((row) => ({ ...row, skills: row.skills }));
@@ -16,13 +16,18 @@ describe("journey tabs", () => {
     expect(journeyTabOf(null)).toBeNull();
   });
 
-  it("names skills short enough for a chip and lists only live ones", () => {
-    expect(skillChipLabel("Market Intelligence")).toBe("Market");
-    expect(skillChipLabel("Offer Intelligence")).toBe("Offer");
-    expect(skillChipLabel("Growth Diagnostics")).toBe("Diagnostics");
+  it("gives a live agent one work tab per live skill, named for the outcome", () => {
     const growth = agents.find((row) => row.slug === "growth-architect")!;
-    expect(liveSkills(growth).map((row) => row.slug)).toEqual(expect.arrayContaining(["market-intelligence", "offer-intelligence"]));
+    expect(workTabsFor(growth).map((row) => [row.label, row.href])).toEqual([
+      ["Research", "/app/agents/growth-architect/work/research"],
+      ["Offers", "/app/agents/growth-architect/work/offers"],
+      ["Diagnostics", "/app/agents/growth-architect/work/diagnostics"],
+    ]);
     expect(liveSkills(growth).every((row) => row.status === "available")).toBe(true);
+    // No tabs for coming-soon skills or planned agents.
+    const onlyMarket = { ...growth, skills: growth.skills!.map((row) => (row.slug === "market-intelligence" ? row : { ...row, status: "comingSoon" as const })) };
+    expect(workTabsFor(onlyMarket).map((row) => row.tab)).toEqual(["research"]);
+    expect(workTabsFor(agents.find((row) => row.slug === "retention")!)).toEqual([]);
   });
 
   it("picks a dot, a default tab and the tab for the open page", () => {

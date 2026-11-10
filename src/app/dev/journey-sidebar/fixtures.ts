@@ -40,6 +40,7 @@ export function storyOverview(state: string): HomeOverview {
         : { key: "results", label: "Upload a results file", href: "/app/connections/results" },
     },
     agents: empty ? {} : { "growth-architect": { working: 1, waiting: 4 } },
+    skills: empty ? {} : { "market-intelligence": { running: 1, review: 1 }, "offer-intelligence": { running: 0, review: 1 } },
   };
 }
 

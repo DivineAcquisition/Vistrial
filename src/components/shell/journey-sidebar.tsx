@@ -9,6 +9,7 @@ import {
   Bell,
   BookOpen,
   Brain,
+  ChevronRight,
   Building2,
   Check,
   ChevronsUpDownIcon,
@@ -39,8 +40,7 @@ import {
   agentsOffJourney,
   defaultTab,
   isJourneyTab,
-  liveSkills,
-  skillChipLabel,
+  workTabsFor,
   tabForPath,
   type AgentActivity,
   type AgentDot,
@@ -209,40 +209,146 @@ function LiveSearchResults({ text, close }: { text: string; close: () => void })
   return <SearchResults text={text} hits={hits} close={close} />;
 }
 
-function AgentRow({ agent, activity, pathname, onNavigate }: { agent: RailAgent; activity: AgentActivity | undefined; pathname: string; onNavigate?: () => void }) {
+const ROWS_STORE = "vistrial.agentRows.v1";
+
+function readRows(): Set<string> | null {
+  try {
+    const raw = window.localStorage.getItem(ROWS_STORE);
+    const parsed: unknown = raw ? JSON.parse(raw) : null;
+    return Array.isArray(parsed) ? new Set(parsed.filter((item): item is string => typeof item === "string")) : null;
+  } catch {
+    return null;
+  }
+}
+
+function writeRows(open: Set<string>) {
+  try {
+    window.localStorage.setItem(ROWS_STORE, JSON.stringify([...open]));
+  } catch {
+    // Private windows and blocked storage: rows still open and close, they just are not remembered.
+  }
+}
+
+export type SkillCounts = Record<string, { running: number; review: number }>;
+
+/** A work tab's count: what is running first, otherwise what is waiting for review. */
+function TabCount({ counts }: { counts: { running: number; review: number } | undefined }) {
+  if (counts?.running) {
+    return (
+      <span aria-label={`${counts.running} running`} className="ml-auto shrink-0 rounded-full bg-primary/12 px-1.5 text-[11px] leading-5 font-medium text-primary tabular-nums">
+        {counts.running} running
+      </span>
+    );
+  }
+  if (counts?.review) {
+    return (
+      <span aria-label={`${counts.review} to review`} className="ml-auto shrink-0 rounded-full bg-warning/15 px-1.5 text-[11px] leading-5 font-medium text-warning tabular-nums">
+        {counts.review} to review
+      </span>
+    );
+  }
+  return null;
+}
+
+function AgentRow({
+  agent,
+  activity,
+  skillCounts,
+  pathname,
+  open,
+  onToggle,
+  onNavigate,
+  drawer,
+}: {
+  agent: RailAgent;
+  activity: AgentActivity | undefined;
+  skillCounts: SkillCounts | undefined;
+  pathname: string;
+  open: boolean;
+  onToggle: (slug: string) => void;
+  onNavigate?: () => void;
+  /** In the phone drawer, tapping the agent opens its tabs instead of leaving the drawer. */
+  drawer: boolean;
+}) {
   const live = agent.status === "live";
   const href = `/app/agents/${agent.slug}`;
-  const active = isActive(pathname, href);
+  const active = isActive(pathname, href, true);
   const dot = agentDot(activity);
   const mark = AGENT_MARK[agent.slug] ?? { glyph: "spark" as const, accent: "neutral" as const };
-  const skills = live ? liveSkills(agent) : [];
+  const tabs = workTabsFor(agent);
+  const expandable = tabs.length > 0;
+  const groupId = `agent-tabs-${agent.slug}`;
+  const inner = (
+    <>
+      <GlyphMark glyph={mark.glyph} accent={mark.accent} size="xs" working={dot === "working"} className={cn(!live && "opacity-50")} />
+      <span className="truncate">{agent.name}</span>
+      {live ? (
+        <span className="ml-auto flex shrink-0 items-center gap-1.5">
+          <Count value={activity?.waiting ?? 0} tone="warning" label={`${activity?.waiting ?? 0} waiting on you`} />
+          <span role="img" aria-label={DOT[dot].label} title={DOT[dot].label} className={cn("size-2 rounded-full", DOT[dot].className)} />
+        </span>
+      ) : (
+        <span className="ml-auto shrink-0 rounded-md border border-border px-1.5 text-[10px] leading-4 tracking-wide text-muted-foreground uppercase">Soon</span>
+      )}
+    </>
+  );
+  const shared = [
+    { href: `/app/agents/${agent.slug}/memory`, label: "Memory" },
+    { href: "/app/evidence", label: "Evidence" },
+    { href: "/app/settings?section=data", label: "Connections" },
+  ];
   return (
-    <li className="grid gap-1">
-      <Link href={href} onClick={onNavigate} aria-current={active ? "page" : undefined} className={cn(row, active && "bg-accent", !live && "text-muted-foreground")}>
-        <GlyphMark glyph={mark.glyph} accent={mark.accent} size="xs" working={dot === "working"} className={cn(!live && "opacity-50")} />
-        <span className="truncate">{agent.name}</span>
-        {live ? (
-          <span className="ml-auto flex shrink-0 items-center gap-1.5">
-            <Count value={activity?.waiting ?? 0} tone="warning" label={`${activity?.waiting ?? 0} waiting on you`} />
-            <span role="img" aria-label={DOT[dot].label} title={DOT[dot].label} className={cn("size-2 rounded-full", DOT[dot].className)} />
-          </span>
+    <li className="grid gap-0.5">
+      <div className={cn("flex min-w-0 items-center rounded-lg", active && "bg-accent")}>
+        {expandable ? (
+          <button
+            type="button"
+            aria-expanded={open}
+            aria-controls={groupId}
+            aria-label={open ? `Close ${agent.name}` : `Open ${agent.name}`}
+            onClick={() => onToggle(agent.slug)}
+            className="flex size-6 shrink-0 items-center justify-center rounded-md text-muted-foreground outline-none hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring"
+          >
+            <ChevronRight aria-hidden className={cn("size-3.5 transition-transform motion-reduce:transition-none", open && "rotate-90")} />
+          </button>
         ) : (
-          <span className="ml-auto shrink-0 rounded-md border border-border px-1.5 text-[10px] leading-4 tracking-wide text-muted-foreground uppercase">Soon</span>
+          <span className="size-6 shrink-0" />
         )}
-      </Link>
-      {skills.length ? (
-        <div className="flex flex-wrap gap-1 pl-9" aria-label={`${agent.name} skills`}>
-          {skills.map((skill) => (
-            <Link
-              key={skill.slug}
-              href={NEW_SESSION}
-              onClick={onNavigate}
-              title={`Start a session: ${skill.name}`}
-              className="rounded-md border border-border bg-overlay/[0.03] px-2 py-0.5 text-[11px] text-muted-foreground outline-none hover:border-primary/40 hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring"
-            >
-              {skillChipLabel(skill.name)}
-            </Link>
-          ))}
+        {drawer && expandable ? (
+          <button type="button" aria-expanded={open} aria-controls={groupId} onClick={() => onToggle(agent.slug)} className={cn(row, "flex-1 pl-1 text-left")}>
+            {inner}
+          </button>
+        ) : (
+          <Link href={href} onClick={onNavigate} aria-current={active ? "page" : undefined} className={cn(row, "flex-1 pl-1", !live && "text-muted-foreground")}>
+            {inner}
+          </Link>
+        )}
+      </div>
+      {expandable && open ? (
+        <div id={groupId} className="ml-[11px] grid gap-0.5 border-l border-border pl-2">
+          <ul className="grid gap-0.5" aria-label={`${agent.name} work`}>
+            {tabs.map((tab) => {
+              const tabActive = isActive(pathname, tab.href);
+              return (
+                <li key={tab.tab}>
+                  <Link href={tab.href} onClick={onNavigate} aria-current={tabActive ? "page" : undefined} className={cn(row, "text-[13px]", tabActive && "bg-accent")}>
+                    <span className="truncate">{tab.label}</span>
+                    <TabCount counts={skillCounts?.[tab.skillSlug]} />
+                  </Link>
+                </li>
+              );
+            })}
+          </ul>
+          <p className="flex flex-wrap items-center gap-x-1 px-2 pt-0.5 pb-1 text-[11px] text-muted-foreground">
+            {shared.map((item, index) => (
+              <span key={item.label} className="flex items-center gap-1">
+                {index > 0 ? <span aria-hidden>·</span> : null}
+                <Link href={item.href} onClick={onNavigate} className="rounded outline-none hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring">
+                  {item.label}
+                </Link>
+              </span>
+            ))}
+          </p>
         </div>
       ) : null}
     </li>
@@ -274,6 +380,16 @@ export function JourneySidebarView({
   renderSearch?: (text: string, close: () => void) => React.ReactNode;
 }) {
   const { overview, credits } = data;
+  const liveSlugs = () => new Set(agents.filter((agent) => workTabsFor(agent).length > 0).map((agent) => agent.slug));
+  const [openRows, setOpenRows] = useState<Set<string>>(() => (typeof window === "undefined" ? liveSlugs() : (readRows() ?? liveSlugs())));
+  const toggleRow = (slug: string) =>
+    setOpenRows((current) => {
+      const next = new Set(current);
+      if (next.has(slug)) next.delete(slug);
+      else next.add(slug);
+      writeRows(next);
+      return next;
+    });
   const [tab, setTab] = useState<JourneyTab>(() => (typeof window === "undefined" ? defaultTab(agents) : (readTab() ?? defaultTab(agents))));
 
   // Opening an agent's page shows its tab.
@@ -331,7 +447,19 @@ export function JourneySidebarView({
           />
           <ul className="grid gap-1" aria-label={`${JOURNEY_TABS.find((row) => row.value === tab)?.label} agents`}>
             {shown.length ? (
-              shown.map((agent) => <AgentRow key={agent.slug} agent={agent} activity={overview?.agents[agent.slug]} pathname={pathname} onNavigate={onNavigate} />)
+              shown.map((agent) => (
+                <AgentRow
+                  key={agent.slug}
+                  agent={agent}
+                  activity={overview?.agents[agent.slug]}
+                  skillCounts={overview?.skills}
+                  pathname={pathname}
+                  open={openRows.has(agent.slug)}
+                  onToggle={toggleRow}
+                  onNavigate={onNavigate}
+                  drawer={Boolean(onNavigate)}
+                />
+              ))
             ) : (
               <li className="px-2 py-1.5 text-xs text-muted-foreground">No agents here yet.</li>
             )}

@@ -11,6 +11,7 @@ import type { QueryCtx } from "./_generated/server";
 import { GROWTH_ARCHITECT } from "./catalog";
 import { changesBetween, currentFigures } from "./decisions";
 import { workspaceQuery } from "./lib/builders";
+import { SKILL_ASSET } from "./lib/workTabs";
 
 type Ctx = QueryCtx & { workspaceId: Id<"workspaces"> };
 
@@ -166,6 +167,19 @@ export const overview = workspaceQuery({
     // Decisions come from Growth Architect reports.
     for (let index = 0; index < due.length; index += 1) bump(GROWTH_ARCHITECT, "waiting");
 
+    // Per skill, for the agent's work tabs: runs going (or waiting on a question) and results to review.
+    const skills: Record<string, { running: number; review: number }> = {};
+    const skillBump = (slug: string, key: "running" | "review") => {
+      skills[slug] ??= { running: 0, review: 0 };
+      skills[slug][key] += 1;
+    };
+    for (const run of running) skillBump(run.skillSlug, "running");
+    for (const row of asked) skillBump(row.run.skillSlug, "running");
+    for (const asset of reports) {
+      const skill = (Object.keys(SKILL_ASSET) as (keyof typeof SKILL_ASSET)[]).find((slug) => SKILL_ASSET[slug] === asset.kind);
+      if (skill) skillBump(skill, "review");
+    }
+
     const known = await knowledge(ctx);
     return {
       workspaceName: workspace?.name ?? "Your business",
@@ -187,6 +201,7 @@ export const overview = workspaceQuery({
       },
       knowledge: known,
       agents,
+      skills,
     };
   },
 });

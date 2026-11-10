@@ -101,6 +101,9 @@ describe("home", () => {
     expect(overview.waiting).toEqual({ total: 3, questions: 1, checkIns: 1, approvals: 1 });
     expect(overview.loop).toMatchObject({ research: 1, decide: 1, try: 1, measure: 1 });
     expect(overview.agents["growth-architect"]).toEqual({ working: 1, waiting: 3 });
+    // The work tabs: the running and the waiting run count as running; the draft market report is to review.
+    expect(overview.skills["market-intelligence"]).toEqual({ running: 2, review: 1 });
+    expect(overview.skills["offer-intelligence"]).toBeUndefined();
     expect(overview.actionable).toBe(true);
   });
 

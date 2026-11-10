@@ -1,3 +1,4 @@
+import { SKILL_TAB, type WorkTab } from "../../../convex/lib/workTabs";
 import type { RailAgent } from "@/lib/shell/rail";
 
 /** The customer journey the sidebar groups agents by. */
@@ -37,10 +38,18 @@ export function agentsOffJourney(agents: RailAgent[]) {
   return agents.filter((agent) => journeyTabOf(agent.lifecycle) === null);
 }
 
-/** "Market Intelligence" reads "Market", "Growth Diagnostics" reads "Diagnostics": short enough for a chip. */
-export function skillChipLabel(name: string) {
-  const short = name.replace(/\s+Intelligence$/i, "").replace(/^Growth\s+/i, "").trim();
-  return short || name;
+const WORK_TAB_LABEL: Record<WorkTab, string> = { research: "Research", offers: "Offers", diagnostics: "Diagnostics" };
+
+/**
+ * A live agent's work tabs, one per live skill that has a workspace, named for the outcome: Research
+ * (Market Intelligence), Offers (Offer Intelligence), Diagnostics (Growth Diagnostics). No coming-soon tabs.
+ */
+export function workTabsFor(agent: RailAgent) {
+  if (agent.status !== "live") return [];
+  return liveSkills(agent).flatMap((skill) => {
+    const tab = SKILL_TAB[skill.slug];
+    return tab ? [{ tab, skillSlug: skill.slug, label: WORK_TAB_LABEL[tab], href: `/app/agents/${agent.slug}/work/${tab}` }] : [];
+  });
 }
 
 /** The skills a person can start today. */

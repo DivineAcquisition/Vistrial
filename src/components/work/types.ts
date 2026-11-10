@@ -15,6 +15,9 @@ export type OfferVersion = OfferCardFull["versions"][number];
 export type OfferComparison = FunctionReturnType<typeof api.offers.compare>;
 export type OfferAnalysisView = NonNullable<FunctionReturnType<typeof api.offers.analysis>>;
 
+export type BrandKitRow = FunctionReturnType<typeof api.brandKits.list>[number];
+export type BrandKitFull = FunctionReturnType<typeof api.brandKits.get>;
+
 export type DiagnosticsData = FunctionReturnType<typeof api.workTabs.diagnostics>;
 export type DiagnosisView = NonNullable<DiagnosticsData["diagnosis"]>;
 export type GoalView = DiagnosticsData["goal"];

@@ -1043,6 +1043,50 @@ export default defineSchema({
   }).index("by_workspace_card", ["workspaceId", "cardId", "version"]),
 
   /**
+   * A brand a creative is made for: the workspace's own (one), or a client's. Its content lives in versions,
+   * so an approved creative can say which version of the kit it used.
+   */
+  brandKits: defineTable({
+    workspaceId: v.id("workspaces"),
+    kind: v.union(v.literal("own"), v.literal("client")),
+    name: v.string(),
+    currentVersion: v.number(),
+    archived: v.optional(v.boolean()),
+    createdBy: v.string(),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  }).index("by_workspace", ["workspaceId", "updatedAt"]),
+
+  /** One version of a brand kit. Never overwritten: a change is a new version. */
+  brandKitVersions: defineTable({
+    workspaceId: v.id("workspaces"),
+    kitId: v.id("brandKits"),
+    version: v.number(),
+    name: v.string(),
+    website: v.string(),
+    industry: v.string(),
+    colors: v.array(v.object({ label: v.string(), hex: v.string() })),
+    headingFont: v.string(),
+    bodyFont: v.string(),
+    imageStyle: v.string(),
+    tone: v.string(),
+    useWords: v.array(v.string()),
+    avoidWords: v.array(v.string()),
+    examples: v.array(v.string()),
+    disclaimers: v.array(v.string()),
+    regulated: v.union(v.literal("none"), v.literal("health"), v.literal("finance"), v.literal("other")),
+    bannedTopics: v.array(v.string()),
+    placements: v.array(v.string()),
+    /** The real logo files. Creative Production places these on top of an image; it never generates a logo. */
+    logos: v.array(v.object({ storageId: v.id("_storage"), variant: v.union(v.literal("light"), v.literal("dark"), v.literal("icon")), name: v.string() })),
+    /** A person confirmed the business owns the logos or may use them. */
+    logosOwned: v.boolean(),
+    note: v.optional(v.string()),
+    createdBy: v.string(),
+    createdAt: v.number(),
+  }).index("by_workspace_kit", ["workspaceId", "kitId", "version"]),
+
+  /**
    * Vistrial's own learning from outcomes, across businesses. Internal only: no public function reads it,
    * and no screen shows it. Holds no workspace, person, place, business name or owner note: only the market
    * in a few words, the action as the report wrote it, the result, and changes as percentages.

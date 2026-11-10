@@ -52,21 +52,30 @@ export function workTabsFor(agent: RailAgent) {
   });
 }
 
-export type AgentTab = { tab: "chat" | WorkTab; skillSlug: string | null; label: string; href: string };
+export type AgentTab = { tab: "chat" | "brands" | WorkTab; skillSlug: string | null; label: string; href: string };
 
 /** Where the one chat with an agent lives. */
 export function chatHref(agentSlug: string) {
   return `/app/agents/${agentSlug}/work/chat`;
 }
 
+/** Where the brand kits live: one for the business and one per client. Creative work reads them. */
+export function brandsHref(agentSlug: string) {
+  return `/app/agents/${agentSlug}/work/brands`;
+}
+
+/** The agent whose work is made for a brand, so its sidebar holds the brand kits. */
+const BRANDS_AGENT = "growth-architect";
+
 /**
- * The tabs under an agent in the sidebar: Chat first (the one place to talk to it), then its work tabs.
- * An agent with no work tab has no chat either, so it has no tabs.
+ * The tabs under an agent in the sidebar: Chat first (the one place to talk to it), then its work tabs,
+ * then Brands for the Growth Architect. An agent with no work tab has no chat either, so it has no tabs.
  */
 export function agentTabs(agent: RailAgent): AgentTab[] {
   const work = workTabsFor(agent);
   if (work.length === 0) return [];
-  return [{ tab: "chat", skillSlug: null, label: "Chat", href: chatHref(agent.slug) }, ...work];
+  const brands: AgentTab[] = agent.slug === BRANDS_AGENT ? [{ tab: "brands", skillSlug: null, label: "Brands", href: brandsHref(agent.slug) }] : [];
+  return [{ tab: "chat", skillSlug: null, label: "Chat", href: chatHref(agent.slug) }, ...work, ...brands];
 }
 
 /** The skills a person can start today. */

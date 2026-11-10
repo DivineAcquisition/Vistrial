@@ -17,7 +17,7 @@ import { containsPhrase, longestSharedRun, sharedPhraseShare } from "./lib/simil
 import type { ScriptedModel } from "./lib/toolRouter";
 import { creativeProduction } from "./skills/creativeProduction";
 import { claimSentences, claimStands, runChecks } from "./skills/creativeProduction/checks";
-import { readCreative, type CreativeContext } from "./skills/creativeProduction/shapes";
+import { designText, readCreative, type CreativeContext } from "./skills/creativeProduction/shapes";
 import schema from "./schema";
 
 const modules = import.meta.glob(["./**/*.ts", "!./**/*.test.ts"]);
@@ -343,6 +343,43 @@ describe("creative checks", () => {
     expect(failed[0].detail).toContain("surgery");
     expect(failed[2].detail).toContain("Heals your back in 7 days.");
     expect(runChecks({ creative: null, context, runCostCents: 0, capCents: 150 }).passed).toBe(false);
+  });
+});
+
+describe("example figures on a designed ad", () => {
+  const context: CreativeContext = { requestId: "r1", dial: "structure", note: "", kit: { id: "k1", kind: "own", version: 1, content: { ...EMPTY_BRAND, name: "Alpha" } }, reference: null, offer: null, profile: null, facts: [], outcomes: [], blockedNames: [] };
+  const set = (labels: string[], illustrative: boolean, subline = "Where the jobs go.") =>
+    readCreative({
+      summary: "s",
+      structure: {},
+      brief: { audience: "Roofers", promise: "Fewer lost jobs" },
+      variations: ["A", "B", "C", "D"].map((key) => ({ key, hookType: "question", hook: `Hook ${key}`, primaryText: "Find where the jobs go.", headline: "You are leaking jobs", cta: "Find the leak", imageDirection: "A funnel", hypothesis: "It wins", design: { eyebrow: "For roofers", kicker: "The leak", accent: "", visual: "A funnel with holes", labels: key === "A" ? labels : [], subline: key === "A" ? subline : "Where the jobs go.", illustrative: key === "A" && illustrative } })),
+      script: { beats: [] },
+      captions: [],
+      claims: [],
+      limits: [],
+      contextUsed: { profileVersionId: null, factIds: [] },
+    })!;
+  const claims = (creative: ReturnType<typeof set>, with_: CreativeContext = context) => runChecks({ creative, context: with_, runCostCents: 1, capCents: 150 }).results.find((row) => row.name === "Claims are backed")!;
+
+  it("allows made-up figures on the visual's labels only when the picture is marked, and never as the business's own result", () => {
+    const figures = ["100 leads in", "12 jobs booked", "$4,200 spent"];
+    // Unmarked figures are claims like any other.
+    expect(claims(set(figures, false)).passed).toBe(false);
+    // Marked, they pass, and the picture must show the note.
+    const marked = set(figures, true);
+    expect(claims(marked)).toMatchObject({ passed: true, detail: expect.stringContaining("are examples, and the picture says so") });
+    expect(designText(marked.variations[0])).toEqual(["For roofers", "The leak", "You are leaking jobs", ...figures, "Example figures", "Where the jobs go.", "Find the leak"]);
+    expect(designText(marked.variations[1])).not.toContain("Example figures");
+    // The mark covers the labels only: a figure anywhere else still needs backing.
+    expect(claims(set(figures, true, "You lose 88% of them.")).passed).toBe(false);
+    // Never worded as this business's or its customers' results.
+    expect(claims(set(["Our clients book 3x more"], true))).toMatchObject({ passed: false, detail: expect.stringContaining("own results") });
+    // Never in a regulated field.
+    const finance = { ...context, kit: { ...context.kit, content: { ...context.kit.content, regulated: "finance" as const } } };
+    expect(claims(marked, finance)).toMatchObject({ passed: false, detail: expect.stringContaining("regulated field") });
+    // Marked with no labels is not an example at all.
+    expect(designText(set([], true).variations[0])).not.toContain("Example figures");
   });
 });
 

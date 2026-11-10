@@ -207,7 +207,7 @@ export function storyDiagnosisChat(): SkillChatData {
 }
 
 export function storyDiagnostics(state: string): DiagnosticsData {
-  if (state === "empty") return { goal: null, diagnosis: null };
+  if (state === "empty") return { goal: null, data: { meta: false, resultsFiles: 0, outcomes: 0 }, diagnosis: null };
   const f = (fid: string, label: string, display: string, computed: boolean, formula: string | null = null, period: string | null = "Oct 1 to Oct 31, 2026") => ({ id: fid, label, display, computed, formula, period });
   const cpl = f("F3", "Meta ads: cost per booked call", "$86.00", true, "spend $3,870.00 ÷ 45 calls");
   const lead = f("F4", "Clicks that became booked calls", "2.4%", true, "45 calls ÷ 1,874 clicks");
@@ -216,6 +216,7 @@ export function storyDiagnostics(state: string): DiagnosticsData {
   const repeat = f("F6", "Clients kept past month three", "14 of 22", false);
   return {
     goal: { text: "10 more retained clients this quarter", target: 10, metric: "clients", period: "quarter", setAt: NOW - 3 * DAY },
+    data: { meta: true, resultsFiles: 2, outcomes: 0 },
     diagnosis: {
       assetId: id("g1"),
       title: "Growth diagnosis, 2026-11-08",

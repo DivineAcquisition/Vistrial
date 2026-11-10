@@ -316,7 +316,7 @@ describe("the Diagnostics tab", () => {
     const a = await seed(t, "Alpha");
     const b = await seed(t, "Beta");
     const empty = await a.owner.query(api.workTabs.diagnostics, { workspaceId: a.workspaceId });
-    expect(empty).toEqual({ goal: null, diagnosis: null });
+    expect(empty).toEqual({ goal: null, data: { meta: false, resultsFiles: 0, outcomes: 0 }, diagnosis: null });
     await a.owner.mutation(api.goals.set, { workspaceId: a.workspaceId, text: "10 more clients a month" });
     const { assetId } = await seedDiagnosisAsset(t, a.workspaceId);
     const view = await a.owner.query(api.workTabs.diagnostics, { workspaceId: a.workspaceId });
@@ -328,6 +328,37 @@ describe("the Diagnostics tab", () => {
     expect(view.diagnosis?.roadmap[2]).toMatchObject({ figures: [], target: "Not enough data" });
     expect((await b.owner.query(api.workTabs.diagnostics, { workspaceId: b.workspaceId })).diagnosis).toBeNull();
     await expect(b.owner.query(api.workTabs.diagnostics, { workspaceId: b.workspaceId, assetId })).rejects.toThrow();
+  });
+});
+
+describe("the Diagnostics tab's data checklist", () => {
+  it("says which of the workspace's own data is connected: Meta, results files and outcomes", async () => {
+    const t = makeTester();
+    const a = await seed(t, "Alpha");
+    const b = await seed(t, "Beta");
+    await t.run(async (ctx) => {
+      await ctx.db.insert("metaConnections", { workspaceId: a.workspaceId, source: "oauth", accessToken: "SECRET", scopes: ["ads_read"], metaUserId: "m1", metaUserName: "Pat", connectedBy: "x", connectedAt: 1, status: "connected", callsOk: 0, callsFailed: 0 });
+      const upload = { workspaceId: a.workspaceId, fileName: "hubspot-deals.csv", label: "HubSpot deals", currency: "USD", uploadedBy: "x", createdAt: 1 };
+      await ctx.db.insert("resultUploads", { ...upload, status: "ready" });
+      await ctx.db.insert("resultUploads", { ...upload, fileName: "signed-clients.csv", status: "ready" });
+      // A refused file is not connected data.
+      await ctx.db.insert("resultUploads", { ...upload, fileName: "broken.csv", status: "refused", code: "no_metrics" });
+    });
+    const view = await a.rep.query(api.workTabs.diagnostics, { workspaceId: a.workspaceId });
+    expect(view.data).toEqual({ meta: true, resultsFiles: 2, outcomes: 0 });
+    // A connection that needs reconnecting does not count.
+    await t.run(async (ctx) => {
+      const row = (await ctx.db.query("metaConnections").first())!;
+      await ctx.db.patch(row._id, { status: "needsReconnect" });
+    });
+    expect((await a.owner.query(api.workTabs.diagnostics, { workspaceId: a.workspaceId })).data.meta).toBe(false);
+    // An outcome recorded on a roadmap step counts.
+    const { assetId } = await seedDiagnosisAsset(t, a.workspaceId);
+    const planned = await a.owner.mutation(api.decisions.planItem, { workspaceId: a.workspaceId, assetId, index: 0, checkInDays: 14 });
+    await a.owner.mutation(api.decisions.recordOutcome, { workspaceId: a.workspaceId, decisionId: planned, result: "better", note: "Two more signed clients." });
+    expect((await a.owner.query(api.workTabs.diagnostics, { workspaceId: a.workspaceId })).data.outcomes).toBe(1);
+    // Another workspace sees none of it.
+    expect((await b.owner.query(api.workTabs.diagnostics, { workspaceId: b.workspaceId })).data).toEqual({ meta: false, resultsFiles: 0, outcomes: 0 });
   });
 });
 

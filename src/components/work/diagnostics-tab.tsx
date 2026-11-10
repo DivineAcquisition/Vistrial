@@ -2,9 +2,10 @@
 
 import { useMutation, useQuery } from "convex/react";
 import Link from "next/link";
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 
-import { AlertTriangle, ArrowRight, Gauge, PenLine, Target, TrendingUp, WrenchIcon, Rocket, type LucideIcon } from "@/components/icons";
+import { AlertTriangle, ArrowRight, CheckCircle2, Circle, Gauge, Plug, PenLine, Target, TrendingUp, WrenchIcon, Rocket, type LucideIcon } from "@/components/icons";
+import { StartDiagnosisButton } from "@/components/sessions/start-diagnosis-button";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Panel } from "@/components/ui/panel";
@@ -16,9 +17,9 @@ import { api } from "../../../convex/_generated/api";
 import type { Id } from "../../../convex/_generated/dataModel";
 
 import { TryThis, useItemDecisions, type TryActions } from "./try-this";
-import type { DiagnosisView, GoalView, ItemDecision, ReviewActions, TabData } from "./types";
+import type { ConnectedData, DiagnosisView, GoalView, ItemDecision, ReviewActions, TabData } from "./types";
 import { useReviewActions } from "./use-review";
-import { ResultsList, RunningNow, SectionTitle, SharedLinks, SuggestedNext, WorkHero, WorkLayout, refineLink, suggestionHref } from "./work-shell";
+import { RefineInChat, ResultsList, RunningNow, SectionTitle, SharedLinks, SuggestedNext, WorkHero, WorkLayout, refineLink, suggestionHref } from "./work-shell";
 
 const PHASES: { key: "fix" | "build" | "scale"; name: string; weeks: string; icon: LucideIcon; blurb: string }[] = [
   { key: "fix", name: "Fix", weeks: "Weeks 1–4", icon: WrenchIcon, blurb: "Stop the leak where growth stalls." },
@@ -26,7 +27,7 @@ const PHASES: { key: "fix" | "build" | "scale"; name: string; weeks: string; ico
   { key: "scale", name: "Scale", weeks: "Weeks 9–12", icon: Rocket, blurb: "Put more behind what is proven." },
 ];
 
-const STAGE_WORDS: Record<string, string> = { reach: "Reach", clicks: "Clicks", leads: "Leads or bookings", revenue: "Revenue", unknown: "Not enough data" };
+const STAGE_WORDS: Record<string, string> = { reach: "Reach", clicks: "Clicks", leads: "Leads or booked calls", revenue: "Revenue", unknown: "Not enough data" };
 
 type Figure = DiagnosisView["stageFigures"][number];
 
@@ -59,7 +60,7 @@ export function GoalCard({ goal, editor, onSave }: { goal: GoalView; editor: boo
             {goal && !open ? (
               <p className="font-heading text-xl break-words text-card-foreground">{goal.text}</p>
             ) : (
-              <p className="text-sm text-card-foreground">{editor ? "Start here: what do you want to reach in the next 90 days? Say it with a number if you can." : "No goal is set yet."}</p>
+              <p className="text-sm text-card-foreground">{editor ? "Start here: what do you want to reach in the next 90 days? Say it with a number if you can, for example 10 more retained clients this quarter." : "No goal is set yet."}</p>
             )}
             {goal && !open ? (
               <p className="text-xs text-muted-foreground">
@@ -94,7 +95,7 @@ export function GoalCard({ goal, editor, onSave }: { goal: GoalView; editor: boo
             );
           }}
         >
-          <Input aria-label="Your 90-day goal" className="min-w-0 flex-1 basis-60" placeholder="40 more bookings a month" value={text} maxLength={200} onChange={(event) => setText(event.target.value)} />
+          <Input aria-label="Your 90-day goal" className="min-w-0 flex-1 basis-60" placeholder="10 more retained clients this quarter" value={text} maxLength={200} onChange={(event) => setText(event.target.value)} />
           <Button type="submit" size="sm" disabled={busy || text.trim().length < 3}>
             Save goal
           </Button>
@@ -220,9 +221,63 @@ export function Roadmap({ diagnosis, goal, decisions, actions, editor }: { diagn
   );
 }
 
+/**
+ * Which of the business's own data is connected. A diagnosis reads only this: nothing from outside, and
+ * nothing in these accounts is changed. Each row links to where it is connected.
+ */
+export function DataChecklist({ data, base }: { data: ConnectedData; base: string }) {
+  const rows = [
+    { key: "meta", done: data.meta, label: "Meta ads", detail: data.meta ? "Connected. Spend, clicks and results are read as they are." : "Not connected. Connect it to read spend, clicks and results.", href: `${base}/connections/meta`, action: data.meta ? "Manage" : "Connect" },
+    {
+      key: "results",
+      done: data.resultsFiles > 0,
+      label: "Results files",
+      detail: data.resultsFiles > 0 ? `${data.resultsFiles} file${data.resultsFiles === 1 ? "" : "s"} ready: your own signed clients, booked calls or revenue.` : "None yet. Upload a CSV of signed clients, booked calls or revenue.",
+      href: `${base}/connections/results`,
+      action: data.resultsFiles > 0 ? "Add another" : "Upload",
+    },
+    {
+      key: "outcomes",
+      done: data.outcomes > 0,
+      label: "Outcomes",
+      detail: data.outcomes > 0 ? `${data.outcomes} recorded: what happened after you tried a change.` : "None recorded yet. They come from “We’ll try this” check-ins.",
+      href: "/app",
+      action: "Open check-ins",
+    },
+  ];
+  const connected = rows.filter((row) => row.done).length;
+  return (
+    <Panel className="grid gap-3 p-4 sm:p-5">
+      <SectionTitle icon={Plug} aside={<StatusBadge label={`${connected} of ${rows.length} connected`} tone={connected === 0 ? "warning" : connected === rows.length ? "good" : "neutral"} className="[&_span]:normal-case" />}>
+        Your data
+      </SectionTitle>
+      <p className="text-sm text-muted-foreground">A diagnosis reads only your own data. The more of it is connected, the more of your funnel it can see.</p>
+      <ul className="grid gap-2">
+        {rows.map((row) => (
+          <li key={row.key} className="flex flex-wrap items-start gap-x-3 gap-y-1 rounded-xl border border-border bg-card px-3 py-2.5">
+            {row.done ? <CheckCircle2 aria-hidden className="mt-0.5 size-4 shrink-0 text-success" /> : <Circle aria-hidden className="mt-0.5 size-4 shrink-0 text-muted-foreground" />}
+            <span className="grid min-w-0 flex-1 basis-48 gap-0.5">
+              <span className="text-sm text-card-foreground">
+                {row.label} <span className="sr-only">{row.done ? "connected" : "not connected"}</span>
+              </span>
+              <span className="text-xs text-muted-foreground">{row.detail}</span>
+            </span>
+            <Link href={row.href} className="shrink-0 text-xs font-medium text-primary hover:underline">
+              {row.action}
+            </Link>
+          </li>
+        ))}
+      </ul>
+    </Panel>
+  );
+}
+
 export type DiagnosticsTabProps = {
   base: string;
   editor: boolean;
+  data: ConnectedData;
+  /** The Run diagnosis button. Owners and Managers. */
+  run: ReactNode;
   tab: TabData;
   goal: GoalView;
   diagnosis: DiagnosisView | null;
@@ -232,13 +287,16 @@ export type DiagnosticsTabProps = {
   review: ReviewActions;
 };
 
-export function DiagnosticsTabView({ base, editor, tab, goal, diagnosis, onSaveGoal, decisions, tryActions, review }: DiagnosticsTabProps) {
+export function DiagnosticsTabView({ base, editor, data, run, tab, goal, diagnosis, onSaveGoal, decisions, tryActions, review }: DiagnosticsTabProps) {
   return (
     <WorkLayout
       main={
         <>
           <GoalCard key={goal?.text ?? "none"} goal={goal} editor={editor} onSave={onSaveGoal} />
-          <WorkHero icon={Gauge} eyebrow="Growth Architect · Growth Diagnostics" title="Diagnostics" promise="Finds where growth stalls in your own data and turns it into a 90-day plan: Fix, Build, Scale." />
+          <WorkHero icon={Gauge} eyebrow="Growth Architect · Growth Diagnostics" title="Diagnostics" promise="Finds where growth stalls in your own data and turns it into a 90-day plan: Fix, Build, Scale." action={editor ? run : null}>
+            {editor && !data.meta && data.resultsFiles === 0 ? <p className="text-xs text-warning">Nothing is connected yet, so a diagnosis would have no figures to read. Connect Meta or upload a results file first.</p> : null}
+          </WorkHero>
+          <DataChecklist data={data} base={base} />
           {diagnosis ? (
             <>
               <StallSummary diagnosis={diagnosis} />
@@ -259,14 +317,17 @@ export function DiagnosticsTabView({ base, editor, tab, goal, diagnosis, onSaveG
                   ) : null}
                 </Panel>
               ) : null}
-              {diagnosis.projectId ? (
-                <Link href={`${base}/work/diagnostics/${diagnosis.projectId}`} className="w-fit text-sm text-primary hover:underline">
-                  Open the full diagnosis with every figure and its source
-                </Link>
-              ) : null}
+              <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+                {diagnosis.projectId ? (
+                  <Link href={`${base}/work/diagnostics/${diagnosis.projectId}`} className="w-fit text-sm text-primary hover:underline">
+                    Open the full diagnosis with every figure and its source
+                  </Link>
+                ) : null}
+                {editor ? <RefineInChat href={refineLink(base, "growth-diagnostics", { kind: "asset", id: diagnosis.assetId, title: diagnosis.title })} /> : null}
+              </div>
             </>
           ) : null}
-          <ResultsList results={tab.results} actions={review} editor={editor} empty="Diagnoses appear here for you to review." openHref={(row) => (row.projectId ? `${base}/work/diagnostics/${row.projectId}` : `/app/assets/${row.id}`)} refineHref={(row) => refineLink(base, "growth-diagnostics", { kind: "asset", id: row.id, title: row.title })} />
+          <ResultsList results={tab.results} actions={review} editor={editor} empty="Diagnoses appear here for you to review. Press Run diagnosis to start one." openHref={(row) => (row.projectId ? `${base}/work/diagnostics/${row.projectId}` : `/app/assets/${row.id}`)} refineHref={(row) => refineLink(base, "growth-diagnostics", { kind: "asset", id: row.id, title: row.title })} />
         </>
       }
       rail={
@@ -292,6 +353,8 @@ export function DiagnosticsTab({ workspaceId, base, editor }: { workspaceId: Id<
     <DiagnosticsTabView
       base={base}
       editor={editor}
+      data={data.data}
+      run={<StartDiagnosisButton workspaceId={workspaceId} agentSlug={base.split("/").pop() ?? "growth-architect"} />}
       tab={tab}
       goal={data.goal}
       diagnosis={data.diagnosis}

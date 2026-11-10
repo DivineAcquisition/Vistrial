@@ -1,5 +1,7 @@
 "use client";
 
+import { Activity } from "@/components/icons";
+import { Button } from "@/components/ui/button";
 import { DiagnosticsTabView } from "@/components/work/diagnostics-tab";
 
 import { storyDiagnostics, storyRoadmapDecisions, storyTab } from "../work-tabs/fixtures";
@@ -16,6 +18,12 @@ export function DiagnosticsTabStory({ state, theme }: { state: string; theme: st
       <DiagnosticsTabView
         base="/app/agents/growth-architect"
         editor={editor}
+        data={data.data}
+        run={
+          <Button>
+            <Activity aria-hidden /> Run diagnosis
+          </Button>
+        }
         tab={storyTab("growth-diagnostics", state)}
         goal={data.goal}
         diagnosis={data.diagnosis}

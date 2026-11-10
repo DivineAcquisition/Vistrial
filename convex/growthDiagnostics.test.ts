@@ -307,6 +307,9 @@ describe("Growth Diagnostics", () => {
 
     const asset = await diagnosisAsset(a.owner, a.workspaceId);
     expect(asset?.status).toBe("needsReview");
+    // The save step queued the report-ready email; it runs apart from the run, so it cannot fail it.
+    const queued = await t.run((ctx) => ctx.db.system.query("_scheduled_functions").collect());
+    expect(queued.filter((row) => row.name.includes("emailReminders")).map((row) => row.args)).toEqual([[{ assetId: asset!.id }]]);
     expect(asset?.body).toContain("## Not enough data");
     expect(asset?.body).toContain("Connect your Meta ad account under Connections → Meta ads");
     expect(asset?.body).toContain("Connections → Results files");

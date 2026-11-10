@@ -111,7 +111,7 @@ export function SettingsStory({ section: asked, role: askedRole, support }: { se
     role,
     joinedAt: NOW - 60 * DAY,
     theme: "system",
-    notifications: { checkInsDue: true, questionsWaiting: true, reportReady: false },
+    notifications: { checkInsDue: true, questionsWaiting: true, reportReady: false, email: true },
   });
 
   const hrefFor = (next: SettingsSection) => `/dev/settings?section=${next}&role=${role}`;

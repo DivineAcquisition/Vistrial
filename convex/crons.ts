@@ -24,4 +24,7 @@ crons.interval("refresh Meta ad results", { hours: 3 }, internal.metaAds.syncAll
 /** Resends any credit charge Autumn did not take the first time. Does nothing while billing is off. */
 crons.interval("retry billing sync", { hours: 1 }, internal.billingActions.retryUnsynced, {});
 
+/** Emails Owners and Managers the check-ins that came due. Each check-in is sent once. Does nothing without a Resend key. */
+crons.interval("email check-ins due", { hours: 1 }, internal.emailReminders.sendCheckInsDue, {});
+
 export default crons;

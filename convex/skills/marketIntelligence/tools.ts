@@ -1,3 +1,4 @@
+import { internal } from "../../_generated/api";
 import type { Doc, Id } from "../../_generated/dataModel";
 import type { MutationCtx } from "../../_generated/server";
 import { runCaps } from "../../lib/capRows";
@@ -364,6 +365,8 @@ const save: MutationTool = async (ctx, run, steps) => {
       : `# Market report\n\n**Objective:** ${context.objective}\n\n## Needs review\n\n${notes.map((note) => `- ${note}`).join("\n")}\n`;
   const droppedFirst = await writeVersion(ctx, run, assetId, 1, bodyFor(first, firstChecks, firstNotes), reportClaims(first, counts));
   const droppedSecond = second ? await writeVersion(ctx, run, assetId, 2, bodyFor(second, finalChecks, []), reportClaims(second, counts)) : [];
+  // Tells Owners and Managers by email that it waits for them. Scheduled, so a send failure never fails the run.
+  await ctx.scheduler.runAfter(0, internal.emailReminders.sendReportReady, { assetId });
   // The run's record of what it used and how it was checked, kept with the run.
   return {
     resultId: assetId,

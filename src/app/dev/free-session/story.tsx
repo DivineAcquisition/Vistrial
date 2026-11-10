@@ -10,7 +10,7 @@ import type { Id } from "../../../../convex/_generated/dataModel";
 
 const WS = "ws1" as Id<"workspaces">;
 const BUSINESS = { name: "DivineACQ", offer: "AI-powered sales and client-retention systems for service businesses", area: "United States", website: "https://divineacquisition.io/" };
-const PLAN = { name: "Growth", priceCents: 4900, includedCents: 4000 };
+const PLAN = { name: "Growth", priceCents: 17900, includedCents: 15000 };
 
 /** The free session with an in-memory backend: every state, no sign-in. */
 export function FreeSessionStory({ state }: { state: string }) {

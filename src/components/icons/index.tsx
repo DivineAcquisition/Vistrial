@@ -227,6 +227,7 @@ export const MessageSquareText = wrap(PhChatText, "MessageSquareText", true);
 export const MessageSquareWarning = wrap(PhChatCircleText, "MessageSquareWarning", true);
 export const Megaphone = wrap(PhMegaphone, "Megaphone", true);
 export const MessagesSquare = wrap(PhChatsCircle, "MessagesSquare", true);
+export const Minus = wrap(PhMinus, "Minus", false);
 export const MinusCircle = wrap(PhMinusCircle, "MinusCircle", true);
 export const MinusIcon = wrap(PhMinus, "MinusIcon", false);
 export const MoonIcon = wrap(PhMoon, "MoonIcon", true);

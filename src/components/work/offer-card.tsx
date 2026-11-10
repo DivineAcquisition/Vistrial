@@ -2,7 +2,7 @@
 
 import { forwardRef } from "react";
 
-import { ArrowRight, Check, Megaphone, ShieldCheck, Sparkles, Target, Users, X } from "@/components/icons";
+import { ArrowRight, Check, Megaphone, ShieldCheck, Sparkles, X } from "@/components/icons";
 import { shortDate } from "@/lib/research/words";
 import { cn } from "@/lib/utils";
 import { GUARANTEE_WORDS, PRICE_KIND_WORDS, itemsTotal, type OfferContent } from "../../../convex/lib/offerCards";
@@ -18,9 +18,10 @@ function Missing({ text = "Not stated" }: { text?: string }) {
 }
 
 /**
- * The offer card: a premium, printable summary of one offer. Its own colours come from the theme tokens,
- * so it reads in light and dark and exports as it looks. The builder draws it live as a person types, so
- * an unfilled part says what goes there (`draft`) rather than "Not stated".
+ * The offer card: the outcome as the headline and what is included on the left; a price panel on the right
+ * with the price, the guarantee and the call to action (stacked under it when the card is narrow). It reads
+ * in light and dark and exports as it looks. The builder draws it live as a person types, so an unfilled
+ * part says what goes there (`draft`) rather than "Not stated".
  */
 export const OfferCardView = forwardRef<HTMLDivElement, { offer: OfferContent; version?: number; origin?: OfferVersion["origin"]; at?: number; draft?: boolean; className?: string }>(function OfferCardView(
   { offer, version, origin, at, draft = false, className },
@@ -29,119 +30,106 @@ export const OfferCardView = forwardRef<HTMLDivElement, { offer: OfferContent; v
   const pricing = offer.pricing;
   const total = itemsTotal(offer.items);
   const items = offer.items.length ? offer.items : offer.included.map((text) => ({ text, value: "" }));
+  const tiered = pricing?.kind === "tiered" && pricing.tiers.length > 0;
+  // The outcome is the headline when there is one; the offer's name sits under it.
+  const headline = offer.outcome || offer.name;
   return (
-    <div ref={ref} className={cn("relative overflow-hidden rounded-3xl bg-gradient-to-br from-primary/60 via-primary/20 to-primary/50 p-px", className)}>
-      <div className="relative grid gap-5 rounded-[calc(1.5rem-1px)] bg-card p-5 sm:p-6">
-        <div aria-hidden className="pointer-events-none absolute -top-20 -right-20 size-56 rounded-full bg-primary/15 blur-3xl" />
-        <div className="relative flex flex-wrap items-start justify-between gap-3">
-          <div className="grid min-w-0 flex-1 basis-52 gap-1">
-            <p className="text-[11px] font-semibold tracking-[0.14em] text-muted-foreground uppercase">Offer</p>
-            <h3 className="font-heading text-xl break-words text-card-foreground sm:text-2xl">{offer.name || <Missing text={draft ? "Your offer's name" : undefined} />}</h3>
-            {offer.outcome ? (
-              <p className="flex items-start gap-1.5 text-sm text-card-foreground">
-                <Target aria-hidden className="mt-0.5 size-4 shrink-0 text-primary" />
-                <span className="min-w-0 break-words">{offer.outcome}</span>
-              </p>
-            ) : draft ? (
-              <p className="text-sm">
-                <Missing text="The outcome they get" />
-              </p>
-            ) : null}
+    <div ref={ref} className={cn("@container overflow-hidden rounded-3xl border border-border bg-card", className)}>
+      <div className="grid @xl:grid-cols-[minmax(0,1.35fr)_minmax(0,1fr)]">
+        <div className="grid content-start gap-5 p-5 sm:p-7">
+          <div className="grid gap-2">
+            <p className="text-[11px] font-semibold tracking-[0.14em] break-words text-muted-foreground uppercase">{offer.targetCustomer ? `For ${offer.targetCustomer}` : draft ? "Who it is for" : "Offer"}</p>
+            <h3 className="font-heading text-2xl leading-tight break-words text-card-foreground @xl:text-[1.75rem]">{headline || <Missing text={draft ? "The outcome they get" : undefined} />}</h3>
+            {offer.outcome ? <p className="text-sm break-words text-muted-foreground">{offer.name || <Missing text={draft ? "Your offer's name" : undefined} />}</p> : draft && offer.name ? <p className="text-sm"><Missing text="The outcome they get" /></p> : null}
           </div>
-          <div className="grid min-w-0 justify-items-start gap-0.5 sm:justify-items-end">
-            {pricing?.kind === "tiered" && pricing.tiers.length ? (
-              <ul className="grid gap-1">
-                {pricing.tiers.map((tier) => (
-                  <li key={`${tier.name}-${tier.price}`} className="flex items-baseline justify-between gap-4">
-                    <span className="text-sm text-muted-foreground">{tier.name}</span>
-                    <span className="font-heading text-lg text-card-foreground tabular-nums">{tier.price}</span>
+          <div className="grid gap-2">
+            <p className="flex flex-wrap items-baseline justify-between gap-2 text-xs font-medium text-muted-foreground">
+              <span>What&apos;s included</span>
+              {total ? <span className="tabular-nums">{total} total value</span> : null}
+            </p>
+            {items.length ? (
+              <ul className="grid gap-2">
+                {items.map((item) => (
+                  <li key={item.text} className="flex items-start gap-2 text-sm text-card-foreground">
+                    <Check aria-hidden className="mt-0.5 size-4 shrink-0 text-primary" />
+                    <span className="min-w-0 flex-1 break-words">{item.text}</span>
+                    {item.value ? <span className="shrink-0 text-xs text-muted-foreground tabular-nums">{item.value}</span> : null}
                   </li>
                 ))}
               </ul>
             ) : (
-              <span className="flex flex-wrap items-baseline gap-x-2">
-                {pricing?.was ? <s className="text-sm text-muted-foreground tabular-nums">{pricing.was}</s> : null}
-                <span className="font-heading text-2xl break-words text-card-foreground tabular-nums sm:text-3xl">{offer.price || <Missing text={draft ? "Price" : undefined} />}</span>
-              </span>
+              <p className="text-sm">
+                <Missing text={draft ? "Line items show here" : undefined} />
+              </p>
             )}
-            {pricing ? <span className="text-[11px] text-muted-foreground">{PRICE_KIND_WORDS[pricing.kind]} price</span> : null}
-            {version ? (
-              <span className="text-[11px] text-muted-foreground">
-                Version {version}
-                {at ? ` · ${shortDate(at)}` : ""}
-              </span>
-            ) : null}
           </div>
-        </div>
-        <div className="relative grid gap-2">
-          <p className="flex flex-wrap items-baseline justify-between gap-2 text-xs font-medium text-muted-foreground">
-            <span>What&apos;s included</span>
-            {total ? <span className="tabular-nums">{total} total value</span> : null}
-          </p>
-          {items.length ? (
-            <ul className="grid gap-1.5">
-              {items.map((item) => (
-                <li key={item.text} className="flex items-start gap-2 text-sm text-card-foreground">
-                  <span className="mt-0.5 flex size-4 shrink-0 items-center justify-center rounded-full bg-primary/15 text-primary">
-                    <Check aria-hidden className="size-3" />
-                  </span>
-                  <span className="min-w-0 flex-1 break-words">{item.text}</span>
-                  {item.value ? <span className="shrink-0 text-xs text-muted-foreground tabular-nums">{item.value} value</span> : null}
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <p className="text-sm">
-              <Missing text={draft ? "Line items show here" : undefined} />
-            </p>
-          )}
-        </div>
-        {offer.bonuses.length ? (
-          <div className="relative grid gap-2">
-            <p className="text-xs font-medium text-muted-foreground">Bonuses</p>
-            <ul className="flex flex-wrap gap-1.5">
+          {offer.bonuses.length ? (
+            <ul className="flex flex-wrap gap-1.5" aria-label="Bonuses">
               {offer.bonuses.map((bonus) => (
-                <li key={bonus} className="inline-flex max-w-full items-start gap-1.5 rounded-full border border-primary/25 bg-primary/[0.07] px-2.5 py-1 text-xs text-card-foreground">
+                <li key={bonus} className="inline-flex max-w-full items-start gap-1.5 rounded-full bg-primary/[0.12] px-3 py-1 text-xs font-medium text-card-foreground">
                   <Sparkles aria-hidden className="mt-px size-3.5 shrink-0 text-primary" />
-                  <span className="min-w-0 break-words">{bonus}</span>
+                  <span className="min-w-0 break-words">Bonus: {bonus}</span>
                 </li>
               ))}
             </ul>
-          </div>
-        ) : null}
-        <div className="relative grid gap-3 sm:grid-cols-2">
-          <div className="grid content-start gap-1 rounded-2xl border border-border bg-muted/30 p-3">
-            <p className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
-              <ShieldCheck aria-hidden className="size-3.5 text-primary" /> {offer.guaranteeType ? GUARANTEE_WORDS[offer.guaranteeType] : "Guarantee"}
-            </p>
-            {offer.guaranteeType === "none" ? <p className="text-sm text-muted-foreground">None offered.</p> : <p className="text-sm break-words text-card-foreground">{offer.guarantee || <Missing />}</p>}
-          </div>
-          <div className="grid content-start gap-1 rounded-2xl border border-border bg-muted/30 p-3">
-            <p className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
-              <Users aria-hidden className="size-3.5 text-primary" /> For
-            </p>
-            <p className="text-sm break-words text-card-foreground">{offer.targetCustomer || <Missing />}</p>
-          </div>
-        </div>
-        {offer.cta || offer.channel ? (
-          <div className="relative flex flex-wrap items-center gap-x-3 gap-y-2">
-            {offer.cta ? (
-              <span className="inline-flex max-w-full items-center gap-1.5 rounded-full bg-primary px-3.5 py-1.5 text-sm font-medium text-primary-foreground">
-                <span className="min-w-0 break-words">{offer.cta}</span> <ArrowRight aria-hidden className="size-3.5 shrink-0" />
-              </span>
-            ) : null}
-            {offer.channel ? (
-              <span className="inline-flex min-w-0 items-center gap-1.5 text-xs text-muted-foreground">
-                <Megaphone aria-hidden className="size-3.5 shrink-0 text-primary" /> <span className="min-w-0 break-words">Offered through {offer.channel}</span>
-              </span>
-            ) : null}
-          </div>
-        ) : null}
-        <div className="relative flex flex-wrap items-center justify-between gap-2 border-t border-border pt-3 text-xs">
-          <span className="min-w-0 break-words text-muted-foreground">
+          ) : null}
+          <p className="mt-auto min-w-0 text-xs leading-relaxed break-words text-muted-foreground">
             <span className="font-medium text-card-foreground">Terms:</span> {offer.terms || "Not stated"}
-          </span>
-          {origin ? <span className="text-muted-foreground">{ORIGIN_WORDS[origin]}</span> : null}
+          </p>
+        </div>
+        {/* The price panel: dark on a light page, raised on a dark one, so the price is the loudest thing either way. */}
+        <div className="grid content-start gap-4 bg-[#0b0a11] p-5 text-white sm:p-7 dark:bg-white/[0.06]">
+          <div className="grid gap-1.5">
+            <p className="text-xs text-white/70">
+              {pricing ? `${PRICE_KIND_WORDS[pricing.kind]} price` : "Price"}
+              {pricing?.was ? (
+                <>
+                  {" · was "}
+                  <s>{pricing.was}</s>
+                </>
+              ) : null}
+            </p>
+            {tiered ? (
+              <ul className="grid gap-1.5">
+                {pricing.tiers.map((tier) => (
+                  <li key={`${tier.name}-${tier.price}`} className="flex items-baseline justify-between gap-4 border-b border-white/15 pb-1.5 last:border-0">
+                    <span className="min-w-0 text-sm break-words text-white/80">{tier.name}</span>
+                    <span className="font-heading text-xl tabular-nums">{tier.price}</span>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="font-heading text-4xl leading-none font-semibold tracking-tight break-words tabular-nums @xl:text-5xl">{offer.price || <span className="text-2xl text-white/60 italic">{draft ? "Price" : "Not stated"}</span>}</p>
+            )}
+            {total ? <p className="text-xs text-white/70">{total} of work included</p> : null}
+          </div>
+          <div className="grid gap-1.5 rounded-2xl border border-white/20 p-3.5">
+            <p className="flex items-center gap-1.5 text-xs font-semibold tracking-wide text-emerald-300 uppercase">
+              <ShieldCheck aria-hidden className="size-4" /> {offer.guaranteeType ? GUARANTEE_WORDS[offer.guaranteeType] : "Guarantee"}
+            </p>
+            <p className="text-sm leading-snug break-words">{offer.guaranteeType === "none" ? "None offered." : offer.guarantee || <span className="text-white/60 italic">Not stated</span>}</p>
+          </div>
+          {offer.cta ? (
+            <span className="mt-auto flex min-h-11 items-center justify-center gap-1.5 rounded-xl bg-primary px-4 py-2 text-center text-sm font-semibold text-primary-foreground">
+              <span className="min-w-0 break-words">{offer.cta}</span> <ArrowRight aria-hidden className="size-4 shrink-0" />
+            </span>
+          ) : draft ? (
+            <span className="mt-auto flex min-h-11 items-center justify-center rounded-xl border border-dashed border-white/30 px-4 text-sm text-white/60 italic">Call to action</span>
+          ) : null}
+          <p className="flex flex-wrap items-center justify-center gap-x-1.5 text-center text-[11px] text-white/70">
+            {offer.channel ? (
+              <span className="inline-flex min-w-0 items-center gap-1">
+                <Megaphone aria-hidden className="size-3.5 shrink-0" /> <span className="break-words">Offered through {offer.channel}</span>
+              </span>
+            ) : null}
+            {version ? (
+              <span>
+                {offer.channel ? "· " : ""}Version {version}
+                {at ? `, ${shortDate(at)}` : ""}
+              </span>
+            ) : null}
+            {origin ? <span>· {ORIGIN_WORDS[origin]}</span> : null}
+          </p>
         </div>
       </div>
     </div>

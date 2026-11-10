@@ -9,5 +9,5 @@ export default async function DiagnosticsTabStoryPage({ searchParams }: { search
   if (process.env.NODE_ENV === "production") notFound();
   const query = await searchParams;
   const pick = (key: string, fallback: string) => (typeof query[key] === "string" ? (query[key] as string) : fallback);
-  return <DiagnosticsTabStory state={pick("state", "full")} theme={pick("theme", "light")} />;
+  return <DiagnosticsTabStory state={pick("state", "full")} theme={pick("theme", "light")} view={pick("view", "cards")} />;
 }

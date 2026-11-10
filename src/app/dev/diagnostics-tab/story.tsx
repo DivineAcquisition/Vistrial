@@ -10,7 +10,7 @@ import { StoryFrame } from "../work-tabs/story-frame";
 const noop = async () => undefined;
 
 /** The Diagnostics workspace with fixture data: the goal first, where growth stalls, and the 90-day roadmap. */
-export function DiagnosticsTabStory({ state, theme }: { state: string; theme: string }) {
+export function DiagnosticsTabStory({ state, theme, view }: { state: string; theme: string; view: string }) {
   const editor = state !== "rep";
   const data = storyDiagnostics(state);
   return (
@@ -24,6 +24,7 @@ export function DiagnosticsTabStory({ state, theme }: { state: string; theme: st
             <Activity aria-hidden /> Run diagnosis
           </Button>
         }
+        initialView={view === "canvas" ? "canvas" : "cards"}
         tab={storyTab("growth-diagnostics", state)}
         goal={data.goal}
         diagnosis={data.diagnosis}

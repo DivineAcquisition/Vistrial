@@ -13,7 +13,7 @@ const noop = async () => undefined;
  * The Offers workspace with fixture data. `state`: full (the card, its versions, the analysis under it),
  * empty, rep, analysing, new (the builder, blank), build (the builder mid-way, step from `step`), edit.
  */
-export function OffersTabStory({ state, theme, step }: { state: string; theme: string; step: number }) {
+export function OffersTabStory({ state, theme, step, view }: { state: string; theme: string; step: number; view: string }) {
   const editor = state !== "rep";
   const data = state === "new" ? "full" : state === "build" || state === "edit" ? "full" : state;
   const { cards, card } = storyCards(data);
@@ -39,6 +39,7 @@ export function OffersTabStory({ state, theme, step }: { state: string; theme: s
         tryActions={{ plan: noop, record: noop, remove: noop }}
         review={{ approve: noop, reject: noop, requestChanges: noop }}
         initialBuilder={builder}
+        initialView={view === "canvas" ? "canvas" : "cards"}
       />
     </StoryFrame>
   );

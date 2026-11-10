@@ -15,6 +15,7 @@ import { api } from "../../../convex/_generated/api";
 import type { Id } from "../../../convex/_generated/dataModel";
 import { EMPTY_OFFER, cleanOffer, compareOffers, type OfferContent, type OfferInput } from "../../../convex/lib/offerCards";
 
+import { ViewSwitch, useWorkView, type WorkView } from "./board-canvas";
 import { CompetitorSideBySide, GapsList, TestPlan } from "./offer-analysis";
 import { OfferBuilder } from "./offer-builder";
 import { OfferCardView, OfferCompareView, exportOfferImage, exportOfferPdf } from "./offer-card";
@@ -22,6 +23,7 @@ import type { TryActions } from "./try-this";
 import { useItemDecisions } from "./try-this";
 import type { ItemDecision, OfferAnalysisView, OfferCardFull, OfferCardRow, ReviewActions, TabData } from "./types";
 import { useReviewActions } from "./use-review";
+import { OffersCanvas } from "./work-canvases";
 import { RefineInChat, ResultsList, RunningNow, SectionTitle, SharedLinks, SuggestedNext, WorkHero, WorkLayout, refineLink, suggestionHref } from "./work-shell";
 
 export type OffersTabProps = {
@@ -45,6 +47,8 @@ export type OffersTabProps = {
   review: ReviewActions;
   /** Opens the builder straight away (stories and deep links). */
   initialBuilder?: { mode: "new" | "edit"; step?: number } | null;
+  /** Opens on Cards or Canvas (stories). Otherwise the view a person last chose. */
+  initialView?: WorkView;
 };
 
 /** A version row as card content alone. */
@@ -53,7 +57,7 @@ function contentOf(row: OfferContent): OfferContent {
 }
 
 /** The offer workspace: the builder, the card, its versions and a comparison of any two, and the analysis under it. */
-function CardsPanel(props: OffersTabProps) {
+function CardsPanel(props: OffersTabProps & { onBuilderClosed?: () => void }) {
   const { base, editor, tab, cards, card, starter, onSelectCard, onSaveCard, onAnalyse, initialBuilder } = props;
   const [building, setBuilding] = useState<"new" | "edit" | null>(initialBuilder?.mode ?? null);
   const [viewing, setViewing] = useState<number | null>(null);
@@ -96,10 +100,14 @@ function CardsPanel(props: OffersTabProps) {
         editing={editing}
         start={{ profile: starter, copies: cards.map((row) => ({ id: row.id, offer: contentOf(row.current) })) }}
         initialStep={initialBuilder?.step}
-        onCancel={() => setBuilding(null)}
+        onCancel={() => {
+          setBuilding(null);
+          props.onBuilderClosed?.();
+        }}
         onSave={(offer, note, copyOf) =>
           onSaveCard(editing ? (card?.id ?? null) : null, offer, note, copyOf).then(() => {
             setBuilding(null);
+            props.onBuilderClosed?.();
             setViewing(null);
             setCompare(null);
           })
@@ -339,6 +347,10 @@ export function OffersTabView(props: OffersTabProps) {
   // The builder's own button lives in the hero, so the panel is remounted with the builder open.
   const [builderKey, setBuilderKey] = useState(0);
   const [openNew, setOpenNew] = useState(false);
+  const [view, setView] = useWorkView(props.initialView);
+  const building = openNew || Boolean(props.initialBuilder);
+  // The canvas shows a saved offer; building one always happens in Cards.
+  const canvas = view === "canvas" && props.card !== null && !building;
   return (
     <WorkLayout
       main={
@@ -349,20 +361,29 @@ export function OffersTabView(props: OffersTabProps) {
             title="Offers"
             promise="Build your offer step by step, keep every version, and set it beside what competitors lead with."
             action={
-              editor ? (
-                <Button
-                  onClick={() => {
-                    setOpenNew(true);
-                    setBuilderKey((value) => value + 1);
-                  }}
-                >
-                  <Plus aria-hidden className="size-4" /> New offer
-                </Button>
-              ) : null
+              <>
+                {props.card ? <ViewSwitch view={view} onChange={setView} /> : null}
+                {editor ? (
+                  <Button
+                    onClick={() => {
+                      setOpenNew(true);
+                      setBuilderKey((value) => value + 1);
+                    }}
+                  >
+                    <Plus aria-hidden className="size-4" /> New offer
+                  </Button>
+                ) : null}
+              </>
             }
           />
-          <CardsPanel key={builderKey} {...props} initialBuilder={openNew ? { mode: "new" } : props.initialBuilder} />
-          <AnalysisPanel {...props} />
+          {canvas && props.card ? (
+            <OffersCanvas card={props.card} analysis={props.analysis} decisions={props.decisions} tryActions={props.tryActions} editor={editor} />
+          ) : (
+            <>
+              <CardsPanel key={builderKey} {...props} initialBuilder={openNew ? { mode: "new" } : props.initialBuilder} onBuilderClosed={() => setOpenNew(false)} />
+              <AnalysisPanel {...props} />
+            </>
+          )}
           <ResultsList results={tab.results} actions={review} editor={editor} empty="Offer analyses appear here for you to review." refineHref={(row) => refineLink(base, "offer-intelligence", { kind: "asset", id: row.id, title: row.title })} />
         </>
       }

@@ -259,3 +259,35 @@ describe("free research session", () => {
     expect((await me.query(api.onboarding.mine, {})).stage).toBe("guide");
   });
 });
+
+describe("credits granted by Vistrial", () => {
+  it("lift the paywall and leave an audit row naming who granted how much and why", async () => {
+    const t = convexTest(schema, modules);
+    await t.mutation(internal.seed.agents, {});
+    const me = await walk(t, "grant-1");
+    const workspaceId = (await me.mutation(api.onboarding.finish, {})) as Id<"workspaces">;
+    await t.run(async (ctx) => {
+      const row = await ctx.db.query("onboarding").withIndex("by_workspace", (q) => q.eq("workspaceId", workspaceId)).first();
+      await ctx.db.patch(row!._id, { stage: "paywall" });
+    });
+    await t.mutation(internal.billing.recordGrant, { workspaceId, amountCents: 10_000, reason: "Owner's own workspace", grantedBy: "owner-request" });
+    const stage = await t.run(async (ctx) => (await ctx.db.query("onboarding").withIndex("by_workspace", (q) => q.eq("workspaceId", workspaceId)).first())!.stage);
+    expect(stage).toBe("guide");
+    const audit = await t.run((ctx) => ctx.db.query("auditLog").collect());
+    expect(audit.map((row) => row.action)).toEqual(expect.arrayContaining(["billing.credits_granted", "onboarding.unlocked_by_grant"]));
+    expect(audit.find((row) => row.action === "billing.credits_granted")?.subject).toBe("10000c: Owner's own workspace");
+  });
+
+  it("refuses a grant with no reason or an amount out of range, before calling Autumn", async () => {
+    const t = convexTest(schema, modules);
+    await t.mutation(internal.seed.agents, {});
+    const me = await walk(t, "grant-2");
+    const workspaceId = (await me.mutation(api.onboarding.finish, {})) as Id<"workspaces">;
+    const grant = (amountCents: number, reason = "Testing the product") =>
+      t.action(internal.billingActions.grantCredits, { workspaceId, amountCents, reason, grantedBy: "test" });
+    await expect(grant(0)).rejects.toThrow(/between 1 and/);
+    await expect(grant(100_001)).rejects.toThrow(/between 1 and/);
+    await expect(grant(1.5)).rejects.toThrow(/between 1 and/);
+    await expect(grant(500, "  ")).rejects.toThrow(/reason/);
+  });
+});

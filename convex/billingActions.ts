@@ -261,3 +261,30 @@ export const setupProducts = internalAction({
     return { created, alreadyThere: [...haveFeatures, ...havePlans] };
   },
 });
+
+/** The most Vistrial grants in one call: $1,000 of credits. */
+export const MAX_GRANT_CENTS = 100_000;
+
+/**
+ * Vistrial grants a workspace free credits: a one-time balance in Autumn that never resets, mirrored to the
+ * app, audited, and it lifts the onboarding paywall. Internal only: run it from the Convex dashboard or
+ * `npx convex run billingActions:grantCredits '{"workspaceId":"…","amountCents":10000,"reason":"…","grantedBy":"…"}'`.
+ */
+export const grantCredits = internalAction({
+  args: { workspaceId: v.id("workspaces"), amountCents: v.number(), reason: v.string(), grantedBy: v.string() },
+  handler: async (ctx, args): Promise<{ balanceCents: number | null }> => {
+    if (!Number.isInteger(args.amountCents) || args.amountCents <= 0 || args.amountCents > MAX_GRANT_CENTS) {
+      throw new Error(`Grant between 1 and ${MAX_GRANT_CENTS} cents.`);
+    }
+    if (args.reason.trim().length < 4) throw new Error("Give a reason for the grant.");
+    const info = await ctx.runQuery(internal.billing.customerInfo, { workspaceId: args.workspaceId });
+    const autumn = client();
+    await autumn.customers.getOrCreate({ customerId: args.workspaceId, name: info.name, email: info.email ?? undefined });
+    await autumn.balances.create({ customerId: args.workspaceId, featureId: CREDITS_FEATURE(), includedGrant: args.amountCents });
+    await refreshFrom(ctx, args.workspaceId);
+    await ctx.runMutation(internal.billing.recordGrant, args);
+    const account = await ctx.runQuery(internal.billing.accountOf, { workspaceId: args.workspaceId });
+    return { balanceCents: account?.balanceCents ?? null };
+  },
+});
+

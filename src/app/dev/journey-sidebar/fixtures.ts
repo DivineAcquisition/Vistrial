@@ -21,7 +21,7 @@ export const STORY_AGENTS: ShellAgent[] = CATALOG.map((row) => ({
 export function storyOverview(state: string): HomeOverview {
   const empty = state === "empty";
   return {
-    workspaceName: "Bright Nest Cleaning",
+    workspaceName: "Northlight Growth",
     role: state === "rep" ? "rep" : "owner",
     actionable: state !== "rep",
     waiting: empty ? { total: 0, questions: 0, checkIns: 0, approvals: 0 } : { total: 4, questions: 1, checkIns: 1, approvals: 2 },
@@ -45,7 +45,7 @@ export function storyOverview(state: string): HomeOverview {
 }
 
 export const STORY_HITS: SearchHit[] = [
-  { kind: "session", id: "p1", title: "Austin deep cleaning", href: "/app/agents/growth-architect/sessions/p1" },
-  { kind: "asset", id: "a1", title: "Austin deep cleaning: market report", href: "/app/assets/a1" },
-  { kind: "session", id: "p2", title: "Move-out pricing in Austin", href: "/app/agents/growth-architect/sessions/p2" },
+  { kind: "session", id: "p1", title: "Lead-gen retainers for home-service brands", href: "/app/agents/growth-architect/sessions/p1" },
+  { kind: "asset", id: "a1", title: "Home-service lead generation: market report", href: "/app/assets/a1" },
+  { kind: "session", id: "p2", title: "Paid ads management pricing", href: "/app/agents/growth-architect/sessions/p2" },
 ];

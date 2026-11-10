@@ -52,6 +52,23 @@ export function workTabsFor(agent: RailAgent) {
   });
 }
 
+export type AgentTab = { tab: "chat" | WorkTab; skillSlug: string | null; label: string; href: string };
+
+/** Where the one chat with an agent lives. */
+export function chatHref(agentSlug: string) {
+  return `/app/agents/${agentSlug}/work/chat`;
+}
+
+/**
+ * The tabs under an agent in the sidebar: Chat first (the one place to talk to it), then its work tabs.
+ * An agent with no work tab has no chat either, so it has no tabs.
+ */
+export function agentTabs(agent: RailAgent): AgentTab[] {
+  const work = workTabsFor(agent);
+  if (work.length === 0) return [];
+  return [{ tab: "chat", skillSlug: null, label: "Chat", href: chatHref(agent.slug) }, ...work];
+}
+
 /** The skills a person can start today. */
 export function liveSkills(agent: RailAgent) {
   return (agent.skills ?? []).filter((skill) => skill.status === "available").sort((a, b) => a.sort - b.sort);

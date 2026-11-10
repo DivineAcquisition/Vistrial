@@ -1,234 +1,59 @@
 "use client";
 
 import { useMutation, useQuery } from "convex/react";
-import { ArrowRight, MessagesSquare, Plus } from "@/components/icons";
-import Link from "next/link";
-import { useParams, useRouter } from "next/navigation";
+import { useParams } from "next/navigation";
 import { useState } from "react";
 
-import { SessionCard } from "@/components/agents/session-card";
-import { useWorkspaceShell } from "@/components/shell/shell-context";
+import { AgentOverviewView, overviewFrom } from "@/components/agents/agent-overview";
+import { PlannedAgent } from "@/components/agents/planned-agent";
+import { useWorkspaceShell, type ShellAgent, type WorkspaceShell } from "@/components/shell/shell-context";
 import { Button } from "@/components/ui/button";
 import { Panel } from "@/components/ui/panel";
-import { StatusBadge } from "@/components/ui/status-badge";
-import { bodyText } from "@/lib/ui";
+import { agentStateLabel } from "@/lib/shell/rail";
 import { api } from "../../../../../../convex/_generated/api";
-import { Stagger, StaggerItem } from "@/components/motion/stagger";
-import { StartSessionButton } from "@/components/sessions/start-session-button";
-import { StartDiagnosisButton } from "@/components/sessions/start-diagnosis-button";
-import { EmptyState } from "@/components/ui/empty-state";
-import { NumberTicker } from "@/components/ui/number-ticker";
-import { PlannedAgent } from "@/components/agents/planned-agent";
-import { showError } from "@/lib/errors/show-error";
 
-/** Skills that start straight from their card, without a research session. Each builds on approved work. */
-const DIRECT_START: Record<string, { label: string; note: string }> = {
-  "offer-intelligence": { label: "Analyze my offer", note: "Builds on your approved market reports." },
-};
-
-/** The agent's overview: what it does, its latest sessions and its skills. */
+/** The agent's home, reached from its name in the sidebar: status, what waits on you, recent results and skills. */
 export default function AgentOverview() {
   const params = useParams<{ slug: string }>();
   const shell = useWorkspaceShell();
   const agent = shell?.agents.find((row) => row.slug === params.slug);
-  const live = agent?.status === "live";
-  const tree = useQuery(
-    api.agentFolder.tree,
-    shell && live
-      ? { workspaceId: shell.workspaceId, agentSlug: params.slug, limit: 3 }
-      : "skip",
-  );
-  const devSkill = useQuery(
-    api.runs.devSkill,
-    shell ? { workspaceId: shell.workspaceId } : "skip",
-  );
-  const start = useMutation(api.runs.start);
-  const router = useRouter();
-  const [notice, setNotice] = useState("");
-  const [skillNotice, setSkillNotice] = useState<{ slug: string; text: string } | null>(null);
-  const [starting, setStarting] = useState<string | null>(null);
   if (!shell || !agent) return null;
+  if (agent.status !== "live") return <PlannedAgent workspaceId={shell.workspaceId} slug={agent.slug} name={agent.name} job={agent.job} />;
+  return <LiveOverview shell={shell} agent={agent} />;
+}
+
+function LiveOverview({ shell, agent }: { shell: WorkspaceShell; agent: ShellAgent }) {
+  const workspaceId = shell.workspaceId;
+  const hasTabs = agent.slug === "growth-architect";
+  const research = useQuery(api.workTabs.tab, hasTabs ? { workspaceId, skillSlug: "market-intelligence" } : "skip");
+  const offers = useQuery(api.workTabs.tab, hasTabs ? { workspaceId, skillSlug: "offer-intelligence" } : "skip");
+  const diagnostics = useQuery(api.workTabs.tab, hasTabs ? { workspaceId, skillSlug: "growth-diagnostics" } : "skip");
+  const devSkill = useQuery(api.runs.devSkill, { workspaceId });
+  const start = useMutation(api.runs.start);
+  const [notice, setNotice] = useState("");
   const base = `/app/agents/${agent.slug}`;
+  const editor = shell.role !== "rep" && agent.state !== "off";
+  const loaded = !hasTabs || (research && offers && diagnostics);
+  const data = loaded ? overviewFrom(base, hasTabs ? [research!, offers!, diagnostics!] : []) : undefined;
 
   return (
     <div className="grid gap-5">
-      {live && shell.role !== "rep" && agent.state !== "off" ? (
-        <Button className="w-fit" render={<Link href={`${base}/work/research`} />}>
-          <Plus aria-hidden /> New research
-        </Button>
-      ) : null}
-      {live ? (
-        <Panel className="grid gap-3 p-4 sm:p-5">
-          <p className={bodyText}>{agent.promise}</p>
-        </Panel>
-      ) : (
-        <PlannedAgent workspaceId={shell.workspaceId} slug={agent.slug} name={agent.name} job={agent.job} />
-      )}
-
-      {live && tree ? (
-        <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_18rem]">
-          <section
-            className="grid content-start gap-3"
-            aria-label="Latest sessions"
-          >
-            <div className="flex items-center justify-between gap-2">
-              <h2 className="flex items-center gap-2 font-heading text-base text-foreground">
-                <MessagesSquare aria-hidden className="size-4 text-primary" />{" "}
-                Latest sessions
-              </h2>
-              <Link
-                href={`${base}/work/research`}
-                className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
-              >
-                All sessions <ArrowRight aria-hidden className="size-3.5" />
-              </Link>
-            </div>
-            {tree.sessions.length === 0 ? (
-              <EmptyState
-                preview="cards"
-                title="Your sessions with this agent will appear here."
-                detail="A session is one piece of work: you ask, it studies, you review."
-                action={shell.role !== "rep" && agent.state !== "off" ? <StartSessionButton agentSlug={agent.slug} label="Start the first session" /> : undefined}
-              />
-            ) : (
-              <Stagger as="div" className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-                {tree.sessions.map((session) => (
-                  <StaggerItem as="div" key={session.id}>
-                    <SessionCard session={session} href={`${base}/work/research/${session.id}`} />
-                  </StaggerItem>
-                ))}
-              </Stagger>
-            )}
-          </section>
-          <aside className="grid content-start gap-3" aria-label="At a glance">
-            <div className="grid grid-cols-3 gap-2 text-center">
-              {[
-                {
-                  label: "Facts",
-                  value: tree.counts.facts,
-                  href: `${base}/memory`,
-                },
-                {
-                  label: "Reports",
-                  value: tree.counts.reports,
-                  href: `${base}/work/research#results`,
-                },
-                {
-                  label: "Running",
-                  value: tree.counts.runsOpen,
-                  href: `${base}/work/research#running`,
-                },
-              ].map((item) => (
-                <Link
-                  key={item.label}
-                  href={item.href}
-                  className="grid rounded-xl border border-border bg-card px-2 py-2 hover:border-primary/40"
-                >
-                  <span className="font-heading text-lg text-card-foreground tabular-nums">
-                    <NumberTicker value={item.value} className="text-card-foreground" />
-                  </span>
-                  <span className="text-[11px] text-muted-foreground">
-                    {item.label}
-                  </span>
-                </Link>
-              ))}
-            </div>
-          </aside>
-        </div>
-      ) : null}
-
-      {(agent.skills ?? []).length > 0 ? (
-        <section className="grid gap-3" aria-label="Skills">
-          <h2 className="font-heading text-base text-foreground">Skills</h2>
-          <ul className="grid gap-3 sm:grid-cols-2">
-            {(agent.skills ?? []).map((skill) => (
-              <li
-                key={skill.slug}
-                className="grid content-start gap-1 rounded-xl border border-border bg-card p-4"
-              >
-                <span className="flex items-center justify-between gap-2">
-                  <span className="font-medium text-card-foreground">
-                    {skill.name}
-                  </span>
-                  <StatusBadge
-                    label={
-                      skill.status === "available" ? "Available" : "Coming soon"
-                    }
-                    tone={skill.status === "available" ? "good" : "neutral"}
-                    className="[&_span]:normal-case"
-                  />
-                </span>
-                <span className="text-sm text-muted-foreground">
-                  {skill.handsBack}
-                </span>
-                {skill.promise ? (
-                  <span className="text-sm text-muted-foreground">
-                    {skill.promise}
-                  </span>
-                ) : null}
-                {skill.slug === "growth-diagnostics" && skill.status === "available" && live && shell.role !== "rep" && agent.state !== "off" ? (
-                  <StartDiagnosisButton workspaceId={shell.workspaceId} agentSlug={agent.slug} />
-                ) : null}
-                {DIRECT_START[skill.slug] &&
-                skill.status === "available" &&
-                live &&
-                shell.role !== "rep" &&
-                agent.state !== "off" ? (
-                  <span className="mt-2 flex flex-wrap items-center gap-2">
-                    <Button
-                      type="button"
-                      size="sm"
-                      variant="outline"
-                      disabled={starting !== null}
-                      onClick={() => {
-                        setStarting(skill.slug);
-                        setSkillNotice(null);
-                        void start({ workspaceId: shell.workspaceId, agentSlug: agent.slug, skillSlug: skill.slug }).then(
-                          (runId) => router.push(`/app/runs/${runId}`),
-                          (problem: unknown) => {
-                            setStarting(null);
-                            setSkillNotice({ slug: skill.slug, text: showError(problem, "It did not start.") });
-                          },
-                        );
-                      }}
-                    >
-                      {DIRECT_START[skill.slug].label}
-                    </Button>
-                    <span className="text-xs text-muted-foreground">
-                      {skillNotice?.slug === skill.slug ? skillNotice.text : DIRECT_START[skill.slug].note}
-                    </span>
-                  </span>
-                ) : null}
-              </li>
-            ))}
-          </ul>
-        </section>
-      ) : null}
-
-      {devSkill &&
-      agent.slug === devSkill.agentSlug &&
-      shell.role !== "rep" &&
-      agent.state !== "off" ? (
+      <AgentOverviewView base={base} promise={agent.promise} stateLabel={agentStateLabel(agent)} on={agent.state === "on"} editor={editor && hasTabs} data={data} skills={agent.skills ?? []} />
+      {devSkill && agent.slug === devSkill.agentSlug && editor ? (
         <Panel className="flex flex-wrap items-center gap-3 p-4">
           <Button
             type="button"
             variant="outline"
             onClick={() => {
-              void start({
-                workspaceId: shell.workspaceId,
-                agentSlug: agent.slug,
-                skillSlug: devSkill.slug,
-              }).then(
-                () => setNotice("Test run started. It shows under Activity."),
+              void start({ workspaceId, agentSlug: agent.slug, skillSlug: devSkill.slug }).then(
+                () => setNotice("Test run started."),
                 () => setNotice("The test run did not start."),
               );
             }}
           >
             Run test skill
           </Button>
-          {notice ? (
-            <p className="text-sm text-muted-foreground">{notice}</p>
-          ) : null}
+          {notice ? <p className="text-sm text-muted-foreground">{notice}</p> : null}
         </Panel>
       ) : null}
     </div>

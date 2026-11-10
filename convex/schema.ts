@@ -1087,6 +1087,29 @@ export default defineSchema({
   }).index("by_workspace_kit", ["workspaceId", "kitId", "version"]),
 
   /**
+   * One ask of Creative Production: the brand it is for, the reference ad or offer it starts from, and how
+   * closely to follow the reference. The run reads it; the saved creative is linked back here.
+   */
+  creativeRequests: defineTable({
+    workspaceId: v.id("workspaces"),
+    kitId: v.id("brandKits"),
+    /** The kit version read when the request was made, so the creative says which one it used. */
+    kitVersion: v.number(),
+    /** The reference ad: a source research collected. Its structure is modelled; nothing of it is reused. */
+    sourceRefId: v.optional(v.id("sourceRefs")),
+    offerCardId: v.optional(v.id("offerCards")),
+    offerVersion: v.optional(v.number()),
+    dial: v.union(v.literal("inspired"), v.literal("structure"), v.literal("close")),
+    note: v.optional(v.string()),
+    runId: v.optional(v.id("agentRuns")),
+    assetId: v.optional(v.id("assets")),
+    createdBy: v.string(),
+    createdAt: v.number(),
+  })
+    .index("by_workspace", ["workspaceId", "createdAt"])
+    .index("by_workspace_run", ["workspaceId", "runId"]),
+
+  /**
    * Vistrial's own learning from outcomes, across businesses. Internal only: no public function reads it,
    * and no screen shows it. Holds no workspace, person, place, business name or owner note: only the market
    * in a few words, the action as the report wrote it, the result, and changes as percentages.

@@ -220,7 +220,7 @@ export default defineSchema({
   /** Every charge for AI work: what it really cost, the markup, and what the customer paid. */
   billingLedger: defineTable({
     workspaceId: v.id("workspaces"),
-    source: v.union(v.literal("run"), v.literal("followup"), v.literal("intake"), v.literal("file")),
+    source: v.union(v.literal("run"), v.literal("followup"), v.literal("intake"), v.literal("file"), v.literal("creative")),
     ref: v.string(),
     costCents: v.number(),
     priceCents: v.number(),
@@ -1125,6 +1125,30 @@ export default defineSchema({
     createdBy: v.string(),
     createdAt: v.number(),
   }).index("by_workspace", ["workspaceId", "createdAt"]),
+
+  /**
+   * One image made for one variation of an ad set, in one placement. The picture carries no text and no
+   * logo: the headline and the brand's real logo file are placed on top when it is shown and downloaded.
+   */
+  creativeImages: defineTable({
+    workspaceId: v.id("workspaces"),
+    assetId: v.id("assets"),
+    variationKey: v.string(),
+    placement: v.string(),
+    status: v.union(v.literal("generating"), v.literal("ready"), v.literal("failed")),
+    storageId: v.optional(v.id("_storage")),
+    failCode: v.optional(v.string()),
+    model: v.string(),
+    /** What the image cost us once it was delivered. Zero for one that failed. */
+    costCents: v.number(),
+    /** The price held from the balance while it is being made, so two batches cannot spend the same credit. */
+    holdCents: v.number(),
+    createdBy: v.string(),
+    createdAt: v.number(),
+  })
+    .index("by_workspace_asset", ["workspaceId", "assetId"])
+    .index("by_workspace_status", ["workspaceId", "status"])
+    .index("by_workspace", ["workspaceId", "createdAt"]),
 
   /**
    * One ask of Creative Production: the brand it is for, the reference ad or offer it starts from, and how

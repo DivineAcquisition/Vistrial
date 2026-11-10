@@ -113,3 +113,81 @@ export async function callGemini(request: GeminiRequest): Promise<GeminiResult> 
   }
   return readInteraction(request.model, parsed);
 }
+
+// ---------------------------------------------------------------------------------------------- images
+
+export const DEFAULT_IMAGE_MODEL = "gemini-nano-banana-2.1";
+
+/**
+ * Dollars per image by size, from the same pricing page. Charged per image delivered: an image that fails or
+ * is refused costs the customer nothing.
+ */
+export const GEMINI_IMAGE_PRICES: Record<string, Record<ImageSize, number>> = {
+  "gemini-nano-banana-2.1": { "1K": 0.0336, "2K": 0.0504 },
+};
+
+export type ImageSize = "1K" | "2K";
+/** The aspect ratios Nano Banana 2.1 makes that we use. A link ad (1.91:1) is cut from 16:9. */
+export type ImageAspect = "1:1" | "4:5" | "9:16" | "16:9";
+
+export function imageModel() {
+  return process.env.GEMINI_IMAGE_MODEL?.trim() || DEFAULT_IMAGE_MODEL;
+}
+
+/** What one image costs us, in cents (a fraction of a cent is kept). Throws for a model with no price. */
+export function imageCostCents(model: string, size: ImageSize) {
+  const price = GEMINI_IMAGE_PRICES[model]?.[size];
+  if (price === undefined) throw new GeminiError("unpriced_model");
+  return Math.round(price * 100 * 100) / 100;
+}
+
+export type GeminiImageRequest = { model: string; prompt: string; aspect: ImageAspect; size: ImageSize };
+
+export function geminiImageBody(request: GeminiImageRequest) {
+  return {
+    model: request.model,
+    input: [{ type: "text", text: request.prompt }],
+    response_format: { type: "image", mime_type: "image/jpeg", aspect_ratio: request.aspect, image_size: request.size },
+    store: false,
+  };
+}
+
+type ImageInteraction = { status?: string; steps?: { type?: string; content?: { type?: string; data?: string; mime_type?: string }[] }[] };
+
+/** The last image the model put out, as base64. */
+export function readImage(body: ImageInteraction): { data: string; mimeType: string } {
+  const output = [...(body.steps ?? [])].reverse().find((step) => step.type === "model_output");
+  const image = [...(output?.content ?? [])].reverse().find((block) => block.type === "image" && typeof block.data === "string" && block.data.length > 0);
+  if (body.status !== "completed" || !image?.data) throw new GeminiError("refused");
+  return { data: image.data, mimeType: image.mime_type || "image/jpeg" };
+}
+
+export type ScriptedGeminiImage = (body: ReturnType<typeof geminiImageBody>) => ImageInteraction;
+
+export async function callGeminiImage(request: GeminiImageRequest): Promise<{ data: string; mimeType: string; costCents: number; model: string }> {
+  const costCents = imageCostCents(request.model, request.size);
+  const body = geminiImageBody(request);
+  const scripted = (globalThis as { __vistrialScriptedGeminiImage?: ScriptedGeminiImage }).__vistrialScriptedGeminiImage;
+  const key = process.env.GEMINI_API_KEY;
+  if (scripted && !key) return { ...readImage(scripted(body)), costCents, model: request.model };
+  if (!key) throw new GeminiError("no_key");
+  let response: Response;
+  try {
+    response = await fetch(GEMINI_ENDPOINT, { method: "POST", headers: { "x-goog-api-key": key, "Content-Type": "application/json" }, body: JSON.stringify(body) });
+  } catch {
+    throw new GeminiError("connection_failed");
+  }
+  if (!response.ok) {
+    if (response.status === 429) throw new GeminiError("rate_limited");
+    if (response.status === 401 || response.status === 403) throw new GeminiError("auth_failed");
+    if (response.status === 400) throw new GeminiError("bad_request");
+    throw new GeminiError("provider_error");
+  }
+  let parsed: ImageInteraction;
+  try {
+    parsed = (await response.json()) as ImageInteraction;
+  } catch {
+    throw new GeminiError("provider_error");
+  }
+  return { ...readImage(parsed), costCents, model: request.model };
+}

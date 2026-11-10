@@ -1,7 +1,8 @@
 "use client";
 
+import { CreativeImagesView } from "@/components/work/creative-images";
 import { CreativeTabView } from "@/components/work/creative-tab";
-import type { AddedReference, CreativeOptions, CreativeTabData, CreativeView } from "@/components/work/types";
+import type { AddedReference, CreativeImageList, CreativeOptions, CreativeTabData, CreativeView } from "@/components/work/types";
 
 import { StoryFrame } from "../work-tabs/story-frame";
 
@@ -112,6 +113,23 @@ function view(status: CreativeView["status"]): CreativeView {
   };
 }
 
+/** A plain picture with no text, so the story needs no network. */
+const picture = (from: string, to: string) =>
+  `data:image/svg+xml;utf8,${encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" preserveAspectRatio="none"><defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="${from}"/><stop offset="1" stop-color="${to}"/></linearGradient></defs><rect width="400" height="400" fill="url(#g)"/><circle cx="300" cy="110" r="70" fill="#ffffff" opacity="0.35"/></svg>`)}`;
+const LOGO = `data:image/svg+xml;utf8,${encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 150 40"><circle cx="20" cy="20" r="16" fill="#0f8b8d"/><text x="44" y="27" font-family="Arial" font-size="18" font-weight="700" fill="#12263a">Northside</text></svg>')}`;
+
+const IMAGES: CreativeImageList = {
+  eachCents: 16,
+  brand: { name: "Northside Dental", accent: "#0f8b8d", headingFont: "Poppins", logoUrl: LOGO },
+  images: [
+    { id: id("i1"), variationKey: "A", placement: "1:1", status: "ready", url: picture("#f2e9dc", "#0f8b8d"), problem: null },
+    { id: id("i2"), variationKey: "A", placement: "9:16", status: "ready", url: picture("#dff3f1", "#12263a"), problem: null },
+    { id: id("i3"), variationKey: "A", placement: "1.91:1", status: "ready", url: picture("#f2e9dc", "#12263a"), problem: null },
+    { id: id("i4"), variationKey: "B", placement: "1:1", status: "generating", url: null, problem: null },
+    { id: id("i5"), variationKey: "B", placement: "9:16", status: "failed", url: null, problem: "The image service declined to make this one. Try again, or edit the image direction." },
+  ],
+};
+
 /** The Creative workspace with fixture data. `state`: full, review (did not pass), empty, rep, form, running. */
 export function CreativeTabStory({ state, theme }: { state: string; theme: string }) {
   const empty = state === "empty" || state === "form";
@@ -135,6 +153,18 @@ export function CreativeTabStory({ state, theme }: { state: string; theme: strin
         onStart={noop}
         review={{ approve: noop, reject: noop, requestChanges: noop }}
         initialSource={state === "form" ? "s1" : null}
+        images={
+          <CreativeImagesView
+            editor={state !== "rep"}
+            variations={view(status).creative!.variations.map((row) => ({ key: row.key, headline: row.headline, cta: row.cta }))}
+            placements={["1:1", "9:16", "1.91:1"]}
+            onPlacements={() => undefined}
+            quote={{ count: 12, eachCents: 16, totalCents: 192, variations: 4, placements: ["1:1", "9:16", "1.91:1"], kitPlacements: ["1:1", "9:16"], availableCents: state === "review" ? 40 : 14_250, canAfford: state !== "review", blocked: state === "review" ? "This ad set did not pass its checks. Fix it before spending on images." : null }}
+            list={state === "running" ? { ...IMAGES, images: [] } : IMAGES}
+            onGenerate={noop}
+            onRetake={noop}
+          />
+        }
       />
     </StoryFrame>
   );

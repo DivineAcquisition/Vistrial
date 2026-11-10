@@ -72,7 +72,7 @@ export async function assertCanSpend(ctx: QueryCtx, workspaceId: Id<"workspaces"
  */
 export async function chargeUsage(
   ctx: MutationCtx,
-  args: { workspaceId: Id<"workspaces">; costCents: number; source: "run" | "followup" | "intake" | "file"; ref: string },
+  args: { workspaceId: Id<"workspaces">; costCents: number; source: "run" | "followup" | "intake" | "file" | "creative"; ref: string },
 ) {
   if (args.costCents <= 0) return null;
   const factor = markup();

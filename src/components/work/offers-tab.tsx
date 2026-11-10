@@ -1,7 +1,7 @@
 "use client";
 
 import { useMutation, useQuery } from "convex/react";
-import { useRef, useState, type ReactNode } from "react";
+import { useRef, useState } from "react";
 
 import { Download, FileImage, LayoutList, PenLine, Plus, ScaleIcon, Store, Target } from "@/components/icons";
 import { Button } from "@/components/ui/button";
@@ -16,17 +16,15 @@ import { compareOffers } from "../../../convex/lib/offerCards";
 
 import { CompetitorSideBySide, GapsList, TestPlan } from "./offer-analysis";
 import { OfferCardView, OfferCompareView, OfferEditor, exportOfferImage, exportOfferPdf, type OfferContent } from "./offer-card";
-import { SkillChat } from "./skill-chat";
 import type { TryActions } from "./try-this";
 import { useItemDecisions } from "./try-this";
 import type { ItemDecision, OfferAnalysisView, OfferCardFull, OfferCardRow, ReviewActions, TabData } from "./types";
 import { useReviewActions } from "./use-review";
-import { ResultsList, RunningNow, SectionTitle, SharedLinks, SuggestedNext, WorkHero, WorkLayout } from "./work-shell";
+import { ResultsList, RunningNow, SectionTitle, SharedLinks, SuggestedNext, WorkHero, WorkLayout, refineLink, suggestionHref } from "./work-shell";
 
 export type OffersTabProps = {
   base: string;
   editor: boolean;
-  chat: ReactNode;
   tab: TabData;
   cards: OfferCardRow[];
   card: OfferCardFull | null;
@@ -265,17 +263,15 @@ function AnalysisPanel({ tab, analysis, analysisId, onSelectAnalysis, onCardFrom
 }
 
 export function OffersTabView(props: OffersTabProps) {
-  const { base, editor, chat, tab, review } = props;
+  const { base, editor, tab, review } = props;
   return (
     <WorkLayout
       main={
         <>
-          <WorkHero icon={Store} eyebrow="Growth Architect · Offer Intelligence" title="Offers" promise="Your offer as a card, set beside what competitors lead with, and the changes worth testing.">
-            {chat}
-          </WorkHero>
+          <WorkHero icon={Store} eyebrow="Growth Architect · Offer Intelligence" title="Offers" promise="Your offer as a card, set beside what competitors lead with, and the changes worth testing." />
           <CardsPanel {...props} />
           <AnalysisPanel {...props} />
-          <ResultsList results={tab.results} actions={review} editor={editor} empty="Offer analyses appear here for you to review." />
+          <ResultsList results={tab.results} actions={review} editor={editor} empty="Offer analyses appear here for you to review." refineHref={(row) => refineLink(base, "offer-intelligence", { kind: "asset", id: row.id, title: row.title })} />
         </>
       }
       rail={
@@ -289,19 +285,14 @@ export function OffersTabView(props: OffersTabProps) {
   );
 }
 
-export function suggestionHref(base: string, row: { tab: string; prompt?: string }) {
-  if (row.tab === "connections") return `${base}/connections`;
-  return `${base}/work/${row.tab}${row.prompt ? `?ask=${encodeURIComponent(row.prompt)}` : ""}`;
-}
-
 /** The Offers tab fed by Convex. */
-export function OffersTab({ workspaceId, base, editor, ask }: { workspaceId: Id<"workspaces">; base: string; editor: boolean; ask?: string }) {
+export function OffersTab({ workspaceId, base, editor, analysisId: linked }: { workspaceId: Id<"workspaces">; base: string; editor: boolean; analysisId?: string | null }) {
   const tab = useQuery(api.workTabs.tab, { workspaceId, skillSlug: "offer-intelligence" });
   const cards = useQuery(api.offers.list, { workspaceId });
   const [cardId, setCardId] = useState<string | null>(null);
   const chosenCard = (cardId ?? cards?.[0]?.id ?? null) as Id<"offerCards"> | null;
   const card = useQuery(api.offers.get, chosenCard ? { workspaceId, cardId: chosenCard } : "skip");
-  const [analysisId, setAnalysisId] = useState<string | null>(null);
+  const [analysisId, setAnalysisId] = useState<string | null>(linked ?? null);
   const firstAnalysis = tab?.results.find((row) => row.status !== "rejected")?.id ?? null;
   const chosenAnalysis = (analysisId ?? firstAnalysis) as Id<"assets"> | null;
   const analysis = useQuery(api.offers.analysis, chosenAnalysis ? { workspaceId, assetId: chosenAnalysis } : "skip");
@@ -314,7 +305,6 @@ export function OffersTab({ workspaceId, base, editor, ask }: { workspaceId: Id<
     <OffersTabView
       base={base}
       editor={editor}
-      chat={<SkillChat workspaceId={workspaceId} skillSlug="offer-intelligence" editor={editor} placeholder="What should we look at in your offer?" initialText={ask} />}
       tab={tab}
       cards={cards}
       card={card ?? null}

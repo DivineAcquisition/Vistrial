@@ -1197,12 +1197,18 @@ export default defineSchema({
     /**
      * The skill this conversation is for. Missing means Market Intelligence (the research intake). Offer
      * Intelligence and Growth Diagnostics ask their own short checklist, held in code (`skillIntake.ts`).
+     * "undecided" while the agent chat is still asking which of the three the person wants.
      */
     skillSlug: v.optional(v.string()),
     /** What the skill checklist gathered, keyed by question. */
     answers: v.optional(v.record(v.string(), v.string())),
     /** The run a skill conversation started. */
     runId: v.optional(v.id("agentRuns")),
+    /**
+     * What the person attached with "Refine in chat": a result (an asset) or an offer card of this
+     * workspace. The title is kept so the conversation still names it if the item is later archived.
+     */
+    context: v.optional(v.object({ kind: v.union(v.literal("asset"), v.literal("offer")), id: v.string(), title: v.string() })),
     createdAt: v.number(),
     updatedAt: v.number(),
   })
@@ -1213,7 +1219,7 @@ export default defineSchema({
     workspaceId: v.id("workspaces"),
     intakeId: v.id("intakes"),
     role: v.union(v.literal("you"), v.literal("agent")),
-    /** text, question, known (memory cards), remember (chips), found (competitors found), plan, note. */
+    /** text, question, known (memory cards), remember (chips), found (competitors found), plan, note, route (which skill?), choice (the answer to it), context (an attached item). */
     kind: v.string(),
     text: v.string(),
     chips: v.optional(v.array(v.string())),

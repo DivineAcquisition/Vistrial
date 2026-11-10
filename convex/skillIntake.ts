@@ -33,20 +33,20 @@ export const CHECKLIST: Record<ChatSkill, Question[]> = {
     {
       key: "goal",
       text: "First, what's your goal for the next 90 days? Say it with a number if you can.",
-      chips: ["40 more bookings a month", "Lower my cost per lead", "More repeat customers"],
+      chips: ["10 more retained clients this quarter", "Lower our cost per booked call", "Keep clients past month three"],
     },
   ],
   "offer-intelligence": [
-    { key: "offer", text: "Which offer is this about? Its name and price, for example \"Deep clean, $180\".", chips: [] },
+    { key: "offer", text: "Which offer is this about? Its name and price, for example \"Done-for-you lead generation retainer, $2,500/mo\".", chips: [] },
     {
       key: "included",
       text: "What's included, and what guarantee or terms do you give? Separate items with commas.",
-      chips: ["No guarantee", "Satisfaction guarantee: we come back free"],
+      chips: ["No guarantee", "Results guarantee: 20 booked calls in 60 days or we work free"],
     },
     {
       key: "acquisitionChannels",
-      text: "Where do most of your customers find you?",
-      chips: ["Google search", "Facebook or Instagram ads", "Referrals", "Social posts"],
+      text: "Where do most of your clients find you?",
+      chips: ["Referrals", "Cold outreach", "Facebook or Instagram ads", "Google search"],
     },
   ],
 };
@@ -75,7 +75,7 @@ const PLAN_WORDS: Record<ChatSkill, { name: string; steps: string[]; reads: stri
   },
 };
 
-function isChatSkill(slug: string): slug is ChatSkill {
+export function isChatSkill(slug: string): slug is ChatSkill {
   return (CHAT_SKILLS as readonly string[]).includes(slug);
 }
 
@@ -174,24 +174,48 @@ async function ownIntake(ctx: QueryCtx & { workspaceId: Id<"workspaces"> }, inta
   return row as Doc<"intakes"> & { skillSlug: ChatSkill };
 }
 
-/** Starts a conversation for one skill from the person's first message. Owners and Managers. */
-export const create = workspaceMutation({
-  args: { skillSlug: v.string(), text: v.string() },
-  handler: async (ctx, args) => {
-    assertEditor(ctx.member.role);
-    if (!isChatSkill(args.skillSlug)) throw userError("This skill does not have a chat yet.");
-    const skill = args.skillSlug;
-    const text = clean(args.text, 1000);
-    if (!text) throw userError("Say what you want to work on.");
-    const now = Date.now();
-    const answers = await known(ctx, ctx.workspaceId, skill);
-    // A first message that states a goal with a number is the goal; it replaces the one on record.
-    if (skill === "growth-diagnostics" && readGoal(text).target !== undefined) answers.goal = clean(text, MAX_GOAL);
-    const intakeId = await ctx.db.insert("intakes", {
+/** A card's current version as the two offer answers, so a chat about a saved offer never asks for it again. */
+async function answersFromCard(ctx: QueryCtx, workspaceId: Id<"workspaces">, cardId: string): Promise<Record<string, string>> {
+  const id = ctx.db.normalizeId("offerCards", cardId);
+  const card = id ? await ctx.db.get(id) : null;
+  if (!card || card.workspaceId !== workspaceId) return {};
+  const version = await ctx.db
+    .query("offerCardVersions")
+    .withIndex("by_workspace_card", (q) => q.eq("workspaceId", workspaceId).eq("cardId", card._id).eq("version", card.currentVersion))
+    .unique();
+  if (!version) return {};
+  const included = [...version.included, version.guarantee, version.terms].map((row) => row.trim()).filter(Boolean).join(", ");
+  return { offer: [version.name, version.price].filter(Boolean).join(", "), ...(included ? { included } : {}) };
+}
+
+/**
+ * Starts a skill's conversation: a new one from the person's first message, or, given `row`, a conversation
+ * the agent chat has just routed to this skill (its first message is already saved).
+ */
+export async function beginSkill(
+  ctx: MutationCtx & { workspaceId: Id<"workspaces">; identity: { subject: string } },
+  input: { skill: ChatSkill; text: string; row?: Doc<"intakes">; context?: Doc<"intakes">["context"] },
+) {
+  const { skill } = input;
+  const text = clean(input.text, 1000);
+  if (!text) throw userError("Say what you want to work on.");
+  const now = Date.now();
+  const answers = await known(ctx, ctx.workspaceId, skill);
+  // A first message that states a goal with a number is the goal; it replaces the one on record.
+  if (skill === "growth-diagnostics" && readGoal(text).target !== undefined) answers.goal = clean(text, MAX_GOAL);
+  const context = input.context ?? input.row?.context;
+  if (skill === "offer-intelligence" && context?.kind === "offer") Object.assign(answers, await answersFromCard(ctx, ctx.workspaceId, context.id));
+  let intakeId: Id<"intakes">;
+  if (input.row) {
+    intakeId = input.row._id;
+    await ctx.db.patch(intakeId, { skillSlug: skill, answers, status: "chatting", asking: undefined, updatedAt: now });
+  } else {
+    intakeId = await ctx.db.insert("intakes", {
       workspaceId: ctx.workspaceId,
       agentSlug: GROWTH_ARCHITECT,
       skillSlug: skill,
       answers,
+      ...(context ? { context } : {}),
       createdBy: ctx.identity.subject,
       status: "chatting",
       slots: {},
@@ -203,38 +227,52 @@ export const create = workspaceMutation({
       updatedAt: now,
     });
     await ctx.db.insert("intakeMessages", { workspaceId: ctx.workspaceId, intakeId, role: "you", kind: "text", text, at: now });
-    const remembered = Object.keys(answers).filter((key) => key !== "goal" || answers.goal !== text);
-    if (remembered.length) {
-      await ctx.db.insert("intakeMessages", {
-        workspaceId: ctx.workspaceId,
-        intakeId,
-        role: "agent",
-        kind: "known",
-        text: "From what you told Vistrial before:",
-        data: remembered.map((key) => ({ key, value: answers[key] })),
-        at: now + 1,
-      });
-    }
-    await advance(ctx, (await ctx.db.get(intakeId))!, skill);
-    return intakeId;
+  }
+  const remembered = Object.keys(answers).filter((key) => (key !== "goal" || answers.goal !== text) && !(context?.kind === "offer" && (key === "offer" || key === "included")));
+  if (remembered.length) {
+    await ctx.db.insert("intakeMessages", {
+      workspaceId: ctx.workspaceId,
+      intakeId,
+      role: "agent",
+      kind: "known",
+      text: "From what you told Vistrial before:",
+      data: remembered.map((key) => ({ key, value: answers[key] })),
+      at: await nextAt(ctx, intakeId),
+    });
+  }
+  await advance(ctx, (await ctx.db.get(intakeId))!, skill);
+  return intakeId;
+}
+
+/** Starts a conversation for one skill from the person's first message. Owners and Managers. */
+export const create = workspaceMutation({
+  args: { skillSlug: v.string(), text: v.string() },
+  handler: async (ctx, args) => {
+    assertEditor(ctx.member.role);
+    if (!isChatSkill(args.skillSlug)) throw userError("This skill does not have a chat yet.");
+    return beginSkill(ctx, { skill: args.skillSlug, text: args.text });
   },
 });
 
 /** An answer to the question being asked, or, once the plan shows, a change to an answer. */
+export async function replySkill(ctx: MutationCtx & { workspaceId: Id<"workspaces"> }, row: Doc<"intakes"> & { skillSlug: ChatSkill }, input: { text: string; key?: string }) {
+  if (row.status === "started") throw userError("This work has already started.");
+  if (row.status === "abandoned") throw userError("This conversation has ended. Start a new one.");
+  const text = clean(input.text);
+  if (!text) throw userError("Type an answer, or tap a choice.");
+  const keys = CHECKLIST[row.skillSlug].map((question) => question.key);
+  const key = input.key && keys.includes(input.key) ? input.key : (row.asking ?? keys[0]);
+  await ctx.db.insert("intakeMessages", { workspaceId: ctx.workspaceId, intakeId: row._id, role: "you", kind: "text", text, at: await nextAt(ctx, row._id) });
+  await ctx.db.patch(row._id, { answers: { ...(row.answers ?? {}), [key]: key === "goal" ? clean(text, MAX_GOAL) : text }, updatedAt: Date.now() });
+  await advance(ctx, (await ctx.db.get(row._id))!, row.skillSlug);
+  return null;
+}
+
 export const reply = workspaceMutation({
   args: { intakeId: v.id("intakes"), text: v.string(), key: v.optional(v.string()) },
   handler: async (ctx, args) => {
     assertEditor(ctx.member.role);
-    const row = await ownIntake(ctx, args.intakeId);
-    if (row.status === "started") throw userError("This work has already started.");
-    const text = clean(args.text);
-    if (!text) throw userError("Type an answer, or tap a choice.");
-    const keys = CHECKLIST[row.skillSlug].map((question) => question.key);
-    const key = args.key && keys.includes(args.key) ? args.key : (row.asking ?? keys[0]);
-    await ctx.db.insert("intakeMessages", { workspaceId: ctx.workspaceId, intakeId: row._id, role: "you", kind: "text", text, at: await nextAt(ctx, row._id) });
-    await ctx.db.patch(row._id, { answers: { ...(row.answers ?? {}), [key]: key === "goal" ? clean(text, MAX_GOAL) : text }, updatedAt: Date.now() });
-    await advance(ctx, (await ctx.db.get(row._id))!, row.skillSlug);
-    return null;
+    return replySkill(ctx, await ownIntake(ctx, args.intakeId), args);
   },
 });
 

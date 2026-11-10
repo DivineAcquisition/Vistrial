@@ -2,7 +2,7 @@
 
 import { useMutation, useQuery } from "convex/react";
 import Link from "next/link";
-import { useState, type ReactNode } from "react";
+import { useState } from "react";
 
 import { AlertTriangle, ArrowRight, Gauge, PenLine, Target, TrendingUp, WrenchIcon, Rocket, type LucideIcon } from "@/components/icons";
 import { Button } from "@/components/ui/button";
@@ -15,12 +15,10 @@ import { cn } from "@/lib/utils";
 import { api } from "../../../convex/_generated/api";
 import type { Id } from "../../../convex/_generated/dataModel";
 
-import { suggestionHref } from "./offers-tab";
-import { SkillChat } from "./skill-chat";
 import { TryThis, useItemDecisions, type TryActions } from "./try-this";
 import type { DiagnosisView, GoalView, ItemDecision, ReviewActions, TabData } from "./types";
 import { useReviewActions } from "./use-review";
-import { ResultsList, RunningNow, SectionTitle, SharedLinks, SuggestedNext, WorkHero, WorkLayout } from "./work-shell";
+import { ResultsList, RunningNow, SectionTitle, SharedLinks, SuggestedNext, WorkHero, WorkLayout, refineLink, suggestionHref } from "./work-shell";
 
 const PHASES: { key: "fix" | "build" | "scale"; name: string; weeks: string; icon: LucideIcon; blurb: string }[] = [
   { key: "fix", name: "Fix", weeks: "Weeks 1–4", icon: WrenchIcon, blurb: "Stop the leak where growth stalls." },
@@ -225,7 +223,6 @@ export function Roadmap({ diagnosis, goal, decisions, actions, editor }: { diagn
 export type DiagnosticsTabProps = {
   base: string;
   editor: boolean;
-  chat: ReactNode;
   tab: TabData;
   goal: GoalView;
   diagnosis: DiagnosisView | null;
@@ -235,15 +232,13 @@ export type DiagnosticsTabProps = {
   review: ReviewActions;
 };
 
-export function DiagnosticsTabView({ base, editor, chat, tab, goal, diagnosis, onSaveGoal, decisions, tryActions, review }: DiagnosticsTabProps) {
+export function DiagnosticsTabView({ base, editor, tab, goal, diagnosis, onSaveGoal, decisions, tryActions, review }: DiagnosticsTabProps) {
   return (
     <WorkLayout
       main={
         <>
           <GoalCard key={goal?.text ?? "none"} goal={goal} editor={editor} onSave={onSaveGoal} />
-          <WorkHero icon={Gauge} eyebrow="Growth Architect · Growth Diagnostics" title="Diagnostics" promise="Finds where growth stalls in your own data and turns it into a 90-day plan: Fix, Build, Scale.">
-            {chat}
-          </WorkHero>
+          <WorkHero icon={Gauge} eyebrow="Growth Architect · Growth Diagnostics" title="Diagnostics" promise="Finds where growth stalls in your own data and turns it into a 90-day plan: Fix, Build, Scale." />
           {diagnosis ? (
             <>
               <StallSummary diagnosis={diagnosis} />
@@ -271,7 +266,7 @@ export function DiagnosticsTabView({ base, editor, chat, tab, goal, diagnosis, o
               ) : null}
             </>
           ) : null}
-          <ResultsList results={tab.results} actions={review} editor={editor} empty="Diagnoses appear here for you to review." openHref={(row) => (row.projectId ? `${base}/work/diagnostics/${row.projectId}` : `/app/assets/${row.id}`)} />
+          <ResultsList results={tab.results} actions={review} editor={editor} empty="Diagnoses appear here for you to review." openHref={(row) => (row.projectId ? `${base}/work/diagnostics/${row.projectId}` : `/app/assets/${row.id}`)} refineHref={(row) => refineLink(base, "growth-diagnostics", { kind: "asset", id: row.id, title: row.title })} />
         </>
       }
       rail={
@@ -286,7 +281,7 @@ export function DiagnosticsTabView({ base, editor, chat, tab, goal, diagnosis, o
 }
 
 /** The Diagnostics tab fed by Convex. */
-export function DiagnosticsTab({ workspaceId, base, editor, ask }: { workspaceId: Id<"workspaces">; base: string; editor: boolean; ask?: string }) {
+export function DiagnosticsTab({ workspaceId, base, editor }: { workspaceId: Id<"workspaces">; base: string; editor: boolean }) {
   const tab = useQuery(api.workTabs.tab, { workspaceId, skillSlug: "growth-diagnostics" });
   const data = useQuery(api.workTabs.diagnostics, { workspaceId });
   const setGoal = useMutation(api.goals.set);
@@ -297,7 +292,6 @@ export function DiagnosticsTab({ workspaceId, base, editor, ask }: { workspaceId
     <DiagnosticsTabView
       base={base}
       editor={editor}
-      chat={<SkillChat workspaceId={workspaceId} skillSlug="growth-diagnostics" editor={editor} placeholder="What should we look at in your growth?" initialText={ask} />}
       tab={tab}
       goal={data.goal}
       diagnosis={data.diagnosis}

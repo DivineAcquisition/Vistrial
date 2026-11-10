@@ -63,7 +63,7 @@ export function overviewFrom(base: string, tabs: TabData[], chats: OverviewChat[
     if (chat.status === "ready") waiting.push({ id: `chat-${chat.id}`, kind: "plan", title: chat.title, detail: "Chat · the plan is ready. Nothing runs until you press Start", href: `${base}/work/chat?c=${chat.id}` });
   }
   for (const row of results) {
-    if (row.status === "draft" || row.status === "needsReview") waiting.push({ id: `asset-${row.id}`, kind: "review", title: row.title, detail: `${TAB_LOOK[row.tab].label} · ${row.status === "needsReview" ? "needs a closer look before you approve" : "ready for you to review"}`, href: row.href });
+    if (row.status === "draft" || row.status === "needsReview") waiting.push({ id: `asset-${row.tab}-${row.id}`, kind: "review", title: row.title, detail: `${TAB_LOOK[row.tab].label} · ${row.status === "needsReview" ? "needs a closer look before you approve" : "ready for you to review"}`, href: row.href });
   }
   results.sort((a, b) => b.createdAt - a.createdAt);
   return { running, waiting, results: results.slice(0, 6) };
@@ -168,7 +168,7 @@ export function AgentOverviewView({
               {results.map((row) => {
                 const look = TAB_LOOK[row.tab];
                 return (
-                  <li key={row.id}>
+                  <li key={`${row.tab}-${row.id}`}>
                     <Link href={row.href} className="flex items-start gap-3 rounded-xl border border-border bg-card p-3 transition-colors hover:border-primary/40">
                       <look.icon aria-hidden className="mt-0.5 size-4 shrink-0 text-primary" />
                       <span className="grid min-w-0 flex-1 gap-0.5">

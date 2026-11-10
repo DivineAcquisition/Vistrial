@@ -11,8 +11,8 @@ import { api } from "../../../convex/_generated/api";
 import { showError } from "@/lib/errors/show-error";
 
 /**
- * The chat box that starts work from anywhere: pick the agent and the quality, add files, links or a focus,
- * and send. It opens a new session conversation with that agent.
+ * The chat box on Home: pick the agent and the quality, add files, links or a focus, and send. It opens a
+ * new conversation in that agent's Chat tab, routed to the skill the message is for.
  */
 type StartChatProps = { defaultAgent?: string; size?: "hero" | "dock" | "compact"; placeholder?: string; initialText?: string };
 
@@ -24,7 +24,7 @@ export function StartChat(props: StartChatProps) {
 function StartChatInner({ defaultAgent = "growth-architect", size = "dock", placeholder = "What should Vistrial work on?", initialText }: StartChatProps) {
   const shell = useWorkspaceShell();
   const router = useRouter();
-  const create = useMutation(api.intake.create);
+  const send = useMutation(api.agentChat.send);
   const [agentSlug, setAgentSlug] = useState(defaultAgent);
   const [problem, setProblem] = useState("");
   const extras = useChatExtras(shell!.workspaceId, shell?.role !== "rep", shell?.role === "owner");
@@ -50,17 +50,17 @@ function StartChatInner({ defaultAgent = "growth-architect", size = "dock", plac
         onSubmit={async (text) => {
           setProblem("");
           try {
-            const intakeId = await create({
+            // Routed in code to the skill it is for; when unclear, the chat asks which.
+            const { intakeId, route } = await send({
               workspaceId: shell.workspaceId,
-              agentSlug: chosen,
               text,
               mode: extras.mode,
               ...(extras.sources ? { platforms: extras.sources } : {}),
               ...(extras.links.length ? { links: extras.links } : {}),
             });
-            await extras.attachTo({ intakeId });
+            if (route === "market-intelligence") await extras.attachTo({ intakeId });
             extras.reset();
-            router.push(`/app/agents/${chosen}/work/research?intake=${intakeId}`);
+            router.push(`/app/agents/${chosen}/work/chat?c=${intakeId}`);
           } catch (error) {
             setProblem(showError(error, "That did not start."));
             throw error;

@@ -28,13 +28,14 @@ function LiveOverview({ shell, agent }: { shell: WorkspaceShell; agent: ShellAge
   const research = useQuery(api.workTabs.tab, hasTabs ? { workspaceId, skillSlug: "market-intelligence" } : "skip");
   const offers = useQuery(api.workTabs.tab, hasTabs ? { workspaceId, skillSlug: "offer-intelligence" } : "skip");
   const diagnostics = useQuery(api.workTabs.tab, hasTabs ? { workspaceId, skillSlug: "growth-diagnostics" } : "skip");
+  const chats = useQuery(api.agentChat.list, hasTabs ? { workspaceId } : "skip");
   const devSkill = useQuery(api.runs.devSkill, { workspaceId });
   const start = useMutation(api.runs.start);
   const [notice, setNotice] = useState("");
   const base = `/app/agents/${agent.slug}`;
   const editor = shell.role !== "rep" && agent.state !== "off";
   const loaded = !hasTabs || (research && offers && diagnostics);
-  const data = loaded ? overviewFrom(base, hasTabs ? [research!, offers!, diagnostics!] : []) : undefined;
+  const data = loaded ? overviewFrom(base, hasTabs ? [research!, offers!, diagnostics!] : [], chats ?? []) : undefined;
 
   return (
     <div className="grid gap-5">

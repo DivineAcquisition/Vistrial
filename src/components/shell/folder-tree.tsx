@@ -313,7 +313,7 @@ function AgentFolder({
         }
       >
         <Leaf
-          href={`${base}/sessions/new`}
+          href={`${base}/work/chat`}
           pathname={pathname}
           onNavigate={onNavigate}
         >

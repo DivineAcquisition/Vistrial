@@ -272,7 +272,7 @@ function FollowUpComposer({ workspaceId, projectId, base, hasReport }: { workspa
         onSubmit={async (text) => {
           setNotice("");
           if (!hasReport) {
-            router.push(`${base}/work/research?objective=${encodeURIComponent(text)}`);
+            router.push(`${base}/work/chat?skill=market-intelligence&ask=${encodeURIComponent(text)}`);
             return;
           }
           try {

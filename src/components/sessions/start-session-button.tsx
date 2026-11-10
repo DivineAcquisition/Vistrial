@@ -3,7 +3,7 @@ import Link from "next/link";
 
 import { Button } from "@/components/ui/button";
 
-/** The one action every empty page offers: start a session with the agent that fills it. */
+/** The one action every empty page offers: open the agent's chat, where work starts. */
 export function StartSessionButton({
   agentSlug = "growth-architect",
   label = "Start a session",
@@ -12,7 +12,7 @@ export function StartSessionButton({
   label?: string;
 }) {
   return (
-    <Button render={<Link href={`/app/agents/${agentSlug}/work/research`} />}>
+    <Button render={<Link href={`/app/agents/${agentSlug}/work/chat`} />}>
       <Plus aria-hidden /> {label}
     </Button>
   );

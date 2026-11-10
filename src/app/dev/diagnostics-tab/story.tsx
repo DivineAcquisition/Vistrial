@@ -1,9 +1,8 @@
 "use client";
 
 import { DiagnosticsTabView } from "@/components/work/diagnostics-tab";
-import { SkillChatView } from "@/components/work/skill-chat";
 
-import { storyDiagnosisChat, storyDiagnostics, storyRoadmapDecisions, storyTab } from "../work-tabs/fixtures";
+import { storyDiagnostics, storyRoadmapDecisions, storyTab } from "../work-tabs/fixtures";
 import { StoryFrame } from "../work-tabs/story-frame";
 
 const noop = async () => undefined;
@@ -17,7 +16,6 @@ export function DiagnosticsTabStory({ state, theme }: { state: string; theme: st
       <DiagnosticsTabView
         base="/app/agents/growth-architect"
         editor={editor}
-        chat={<SkillChatView data={state === "empty" ? storyDiagnosisChat() : null} editor={editor} placeholder="What should we look at in your growth?" onSend={noop} onStart={noop} onReset={() => undefined} />}
         tab={storyTab("growth-diagnostics", state)}
         goal={data.goal}
         diagnosis={data.diagnosis}

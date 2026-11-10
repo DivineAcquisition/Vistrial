@@ -124,7 +124,7 @@ export function IntakeChat({
           canConnect: shell?.role === "owner",
           metaConnected: Boolean(meta?.connection),
           onConnectMeta: () =>
-            void startConnect({ workspaceId, returnOrigin: window.location.origin, returnPath: `${base}/work/research?intake=${intakeId}` }).then(({ url }) => window.location.assign(url)),
+            void startConnect({ workspaceId, returnOrigin: window.location.origin, returnPath: `${base}/work/chat?c=${intakeId}` }).then(({ url }) => window.location.assign(url)),
         }}
         footnote={`Question ${Math.min(intake.questionsAsked, intake.maxQuestions)} of up to ${intake.maxQuestions} · this conversation ${money(intake.costCents)} of ${money(intake.capCents)}`}
         onSubmit={async (text) => {

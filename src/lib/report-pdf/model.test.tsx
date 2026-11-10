@@ -15,8 +15,8 @@ const input = storyReportPdf();
 describe("report PDF content", () => {
   it("has a cover, a summary, findings with their basis, opportunities, charts and a sources appendix", () => {
     const model = buildReportPdf(input, { branding: "vistrial", generatedAt: AT });
-    expect(model.cover).toMatchObject({ businessName: "Bright Nest Cleaning", title: "Austin deep cleaning: market report", date: "November 9, 2026", brandMark: true });
-    expect(model.summary.text).toContain("first-visit discounts");
+    expect(model.cover).toMatchObject({ businessName: "Northlight Growth", title: "Home-service lead generation: market report", date: "November 9, 2026", brandMark: true });
+    expect(model.summary.text).toContain("free audits");
     expect(model.summary.stats).toEqual([
       { label: "Findings", value: "4" },
       { label: "Opportunities", value: "2" },
@@ -41,13 +41,13 @@ describe("report PDF content", () => {
       { label: "TikTok", value: 1 },
       { label: "YouTube", value: 1 },
     ]);
-    expect(model.charts.ctas[0]).toEqual({ label: "Book now", value: 2 });
-    expect(model.charts.offers.map((row) => row.label)).toContain("20% off first clean");
+    expect(model.charts.ctas[0]).toEqual({ label: "Book a call", value: 4 });
+    expect(model.charts.offers.map((row) => row.label)).toContain("Free audit, 90-day pilot");
     const meta = model.charts.ownFigures?.find((row) => row.label === "Meta ads");
     expect(meta?.rows.map((row) => [row.label, row.display])).toEqual([
-      ["Spend", "$3,913.89"],
-      ["Results", "182"],
-      ["Cost per result", "$21.50"],
+      ["Spend", "$3,870"],
+      ["Results", "45"],
+      ["Cost per result", "$86"],
     ]);
     expect(buildReportPdf({ ...input, figures: [] }, { branding: "vistrial", generatedAt: AT }).charts.ownFigures).toBeNull();
   });
@@ -56,7 +56,7 @@ describe("report PDF content", () => {
     const model = buildReportPdf(input, { branding: "whiteLabel", generatedAt: AT });
     expect(model.appendix).toHaveLength(input.sources.length);
     expect(model.appendix.map((row) => row.url)).toEqual(input.sources.map((row) => row.url));
-    expect(model.appendix[0]).toMatchObject({ number: 1, platform: "Meta Ad Library", publisher: "Sparkle Co" });
+    expect(model.appendix[0]).toMatchObject({ number: 1, platform: "Meta Ad Library", publisher: "LeadForge Media" });
   });
 
   it("white-label uses the business's name and never says Vistrial, anywhere", () => {
@@ -64,8 +64,8 @@ describe("report PDF content", () => {
     expect(JSON.stringify(model)).not.toMatch(/vistrial/i);
     expect(model.cover.brandMark).toBe(false);
     expect(model.cover.logoUrl).toBeNull();
-    expect(model.meta).toEqual({ title: "Austin deep cleaning: market report", author: "Bright Nest Cleaning", creator: "Bright Nest Cleaning" });
-    expect(model.footer.startsWith("Bright Nest Cleaning")).toBe(true);
+    expect(model.meta).toEqual({ title: "Home-service lead generation: market report", author: "Northlight Growth", creator: "Northlight Growth" });
+    expect(model.footer.startsWith("Northlight Growth")).toBe(true);
     // A logo shows only on a white-label cover.
     expect(buildReportPdf(input, { branding: "whiteLabel", logoUrl: "https://example.com/logo.png", generatedAt: AT }).cover.logoUrl).toBe("https://example.com/logo.png");
     expect(buildReportPdf(input, { branding: "vistrial", logoUrl: "https://example.com/logo.png", generatedAt: AT }).cover.logoUrl).toBeNull();

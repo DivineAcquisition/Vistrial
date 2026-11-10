@@ -45,7 +45,7 @@ function LiveDecisions({ shell }: { shell: NonNullable<ReturnType<typeof useWork
             <p className="text-sm text-muted-foreground">Start a session and ask in your own words. It begins from what it knows about your business.</p>
           </div>
         </div>
-        <Button render={<Link href="/app/agents/growth-architect/sessions/new" />}>
+        <Button render={<Link href="/app/agents/growth-architect/work/chat" />}>
           <Plus aria-hidden /> New session
         </Button>
       </section>

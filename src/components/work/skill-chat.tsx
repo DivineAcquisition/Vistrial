@@ -17,11 +17,12 @@ import type { SkillChatData } from "./types";
 
 type PlanData = { name: string; steps: string[]; reads: string; capCents: number; dayLeftCents: number };
 type Known = { key: string; value: string }[];
+type RouteChoice = { skill: string; chip: string; name: string; does: string };
 
-const KNOWN_WORDS: Record<string, string> = { goal: "Your goal", acquisitionChannels: "Where customers find you", offer: "Your offer" };
+const KNOWN_WORDS: Record<string, string> = { goal: "Your goal", acquisitionChannels: "Where clients find you", offer: "Your offer" };
 
 /**
- * The tab's chat, drawn from its messages: questions with choices, what memory already knew, and the plan
+ * A skill conversation, drawn from its messages: questions with choices, what memory already knew, and the plan
  * with its budget and a Start button. Nothing runs until Start.
  */
 export function SkillChatView({
@@ -123,6 +124,34 @@ export function SkillChatView({
                 </li>
               );
             }
+            if (row.kind === "route") {
+              const choices = (row.data as { choices?: RouteChoice[] } | null)?.choices ?? [];
+              return (
+                <li key={row.id} className="flex max-w-full gap-2 sm:max-w-[92%]">
+                  <VistrialMark size="sm" />
+                  <span className="grid min-w-0 gap-2">
+                    <span className="w-fit rounded-2xl rounded-tl-md border border-border bg-card px-3 py-2 text-sm text-card-foreground">{row.text}</span>
+                    {row.id === last?.id && editor ? (
+                      <span className="grid gap-1.5 sm:grid-cols-3">
+                        {choices.map((choice) => (
+                          <button
+                            key={choice.skill}
+                            type="button"
+                            className="grid content-start gap-0.5 rounded-xl border border-border bg-background px-3 py-2 text-left transition-colors hover:border-primary/50 hover:bg-primary/10"
+                            onClick={() => void onSend(choice.chip).catch((error: unknown) => setProblem(showError(error, "That was not sent.")))}
+                          >
+                            <span className="text-sm font-medium text-card-foreground">{choice.chip}</span>
+                            <span className="text-xs text-muted-foreground">
+                              {choice.name} {choice.does}.
+                            </span>
+                          </button>
+                        ))}
+                      </span>
+                    ) : null}
+                  </span>
+                </li>
+              );
+            }
             return (
               <li key={row.id} className="flex max-w-[92%] gap-2">
                 <VistrialMark size="sm" />
@@ -148,11 +177,11 @@ export function SkillChatView({
           })}
         </ol>
       ) : null}
-      {data?.intake.status === "started" ? null : (
+      {data?.intake.status === "started" || data?.intake.status === "abandoned" ? null : (
         <div className={cn(ready && "opacity-90")}>
           <ChatComposer
             size="compact"
-            placeholder={!editor ? "Owners and Managers start work." : ready ? "Change an answer…" : messages.length ? "Answer, or tap a choice…" : placeholder}
+            placeholder={!editor ? "Owners and Managers start work." : ready ? "Change an answer…" : last?.kind === "route" ? "Say which, or tap a choice…" : messages.length ? "Answer, or tap a choice…" : placeholder}
             disabled={!editor}
             initialText={initialText}
             onSubmit={async (text) => {
@@ -173,54 +202,27 @@ export function SkillChatView({
   );
 }
 
-/** The chat fed by Convex, for Offers and Diagnostics. Picks up an unfinished conversation. */
-export function SkillChat({
-  workspaceId,
-  skillSlug,
-  editor,
-  placeholder,
-  initialText,
-  onStarted,
-}: {
-  workspaceId: Id<"workspaces">;
-  skillSlug: "offer-intelligence" | "growth-diagnostics";
-  editor: boolean;
-  placeholder: string;
-  initialText?: string;
-  onStarted?: (result: { runId: Id<"agentRuns">; projectId: Id<"researchProjects"> | null }) => void;
-}) {
-  const open = useQuery(api.skillIntake.open, { workspaceId, skillSlug });
-  const create = useMutation(api.skillIntake.create);
+/** One Offer Intelligence or Growth Diagnostics conversation, fed by Convex. It lives in the Chat tab. */
+export function SkillConversation({ workspaceId, intakeId, editor, onClosed }: { workspaceId: Id<"workspaces">; intakeId: Id<"intakes">; editor: boolean; onClosed?: () => void }) {
+  const data = useQuery(api.skillIntake.get, { workspaceId, intakeId });
   const reply = useMutation(api.skillIntake.reply);
   const start = useMutation(api.skillIntake.start);
   const abandon = useMutation(api.skillIntake.abandon);
-  const [startedNote, setStartedNote] = useState(false);
-  if (open === undefined) return <p className="text-sm text-muted-foreground">Loading the conversation.</p>;
-  const intakeId = open?.intake.id ?? null;
+  if (data === undefined) return <p className="text-sm text-muted-foreground">Loading the conversation.</p>;
   return (
-    <div className="grid gap-2">
-      {startedNote && !open ? <p className="rounded-xl bg-success/10 px-3 py-2 text-sm text-card-foreground">Started. Follow it under Running now; the result lands in Results for you to review.</p> : null}
-      <SkillChatView
-        key={intakeId ?? "new"}
-        data={open}
-        editor={editor}
-        placeholder={placeholder}
-        initialText={intakeId ? "" : initialText}
-        onSend={async (text) => {
-          setStartedNote(false);
-          if (intakeId) await reply({ workspaceId, intakeId, text });
-          else await create({ workspaceId, skillSlug, text });
-        }}
-        onStart={async () => {
-          if (!intakeId) return;
-          const result = await start({ workspaceId, intakeId });
-          setStartedNote(true);
-          onStarted?.(result);
-        }}
-        onReset={() => {
-          if (intakeId) void abandon({ workspaceId, intakeId });
-        }}
-      />
-    </div>
+    <SkillChatView
+      data={data}
+      editor={editor}
+      placeholder="Answer, or tap a choice…"
+      onSend={async (text) => {
+        await reply({ workspaceId, intakeId, text });
+      }}
+      onStart={async () => {
+        await start({ workspaceId, intakeId });
+      }}
+      onReset={() => {
+        void abandon({ workspaceId, intakeId }).then(() => onClosed?.());
+      }}
+    />
   );
 }

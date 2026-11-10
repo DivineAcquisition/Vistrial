@@ -1,50 +1,58 @@
 "use client";
 
 import { useQuery } from "convex/react";
+import Link from "next/link";
 import type { ReactNode } from "react";
 
 import { SessionCard, type SessionLite } from "@/components/agents/session-card";
-import { StartChat } from "@/components/chat/start-chat";
-import { FileSearch, MessagesSquare } from "@/components/icons";
-import { IntakeChat } from "@/components/sessions/intake-chat";
+import { FileSearch, MessagesSquare, Plus } from "@/components/icons";
+import { Button } from "@/components/ui/button";
 import { api } from "../../../convex/_generated/api";
 import type { Id } from "../../../convex/_generated/dataModel";
 
-import { suggestionHref } from "./offers-tab";
 import { ReportPdfButton } from "./report-pdf-button";
 import type { ResultRow, ReviewActions, TabData } from "./types";
 import { useReviewActions } from "./use-review";
-import { ResultsList, RunningNow, SectionTitle, SharedLinks, SuggestedNext, WorkHero, WorkLayout } from "./work-shell";
+import { ResultsList, RunningNow, SectionTitle, SharedLinks, SuggestedNext, WorkHero, WorkLayout, refineLink, suggestionHref } from "./work-shell";
 
 export type ResearchTabProps = {
   base: string;
   editor: boolean;
-  chat: ReactNode;
-  /** An intake conversation in progress takes the place of the chat box. */
-  conversation?: ReactNode;
   tab: TabData;
   sessions: SessionLite[];
   review: ReviewActions;
   pdf: (row: ResultRow) => ReactNode;
 };
 
-/** The Research workspace: Market Intelligence's chat, its sessions, reports with their PDF, and next steps. */
-export function ResearchTabView({ base, editor, chat, conversation, tab, sessions, review, pdf }: ResearchTabProps) {
+/**
+ * The Research workspace: the reports library with review and PDF export, what is running, and each
+ * session. There is no chat box here: "New research" opens the Chat tab, preset for research.
+ */
+export function ResearchTabView({ base, editor, tab, sessions, review, pdf }: ResearchTabProps) {
   return (
     <WorkLayout
       main={
         <>
-          {conversation ?? (
-            <WorkHero icon={FileSearch} eyebrow="Growth Architect · Market Intelligence" title="Research" promise="Ask about your market. It asks what it needs, shows the plan and budget, then brings back a report with every source.">
-              {chat}
-            </WorkHero>
-          )}
+          <WorkHero
+            icon={FileSearch}
+            eyebrow="Growth Architect · Market Intelligence"
+            title="Research"
+            promise="Your reports library: every report with its sources, ready to approve, send back or export as a PDF."
+            action={
+              editor ? (
+                <Button render={<Link href={`${base}/work/chat?skill=market-intelligence`} />}>
+                  <Plus aria-hidden className="size-4" /> New research
+                </Button>
+              ) : null
+            }
+          />
           <ResultsList
             results={tab.results}
             actions={review}
             editor={editor}
-            empty="Finished reports appear here for you to review, each with its sources."
+            empty="Finished reports appear here for you to review, each with its sources. Start one with New research."
             openHref={(row) => (row.projectId ? `${base}/work/research/${row.projectId}` : `/app/assets/${row.id}`)}
+            refineHref={(row) => refineLink(base, "market-intelligence", { kind: "asset", id: row.id, title: row.title })}
             extra={(row) => (row.status === "rejected" ? null : pdf(row))}
           />
           <section className="grid gap-3" aria-label="Sessions">
@@ -72,8 +80,8 @@ export function ResearchTabView({ base, editor, chat, conversation, tab, session
   );
 }
 
-/** The Research tab fed by Convex. `?intake=` reopens a conversation; `?ask=` or `?objective=` fills the chat box. */
-export function ResearchTab({ workspaceId, base, slug, agentName, editor, intakeId, ask }: { workspaceId: Id<"workspaces">; base: string; slug: string; agentName: string; editor: boolean; intakeId: Id<"intakes"> | null; ask?: string }) {
+/** The Research tab fed by Convex. */
+export function ResearchTab({ workspaceId, base, slug, editor }: { workspaceId: Id<"workspaces">; base: string; slug: string; editor: boolean }) {
   const tab = useQuery(api.workTabs.tab, { workspaceId, skillSlug: "market-intelligence" });
   const tree = useQuery(api.agentFolder.tree, { workspaceId, agentSlug: slug, limit: 12 });
   const review = useReviewActions(workspaceId);
@@ -82,8 +90,6 @@ export function ResearchTab({ workspaceId, base, slug, agentName, editor, intake
     <ResearchTabView
       base={base}
       editor={editor}
-      chat={<StartChat defaultAgent={slug} size="compact" placeholder="What do you want to find out about your market?" initialText={ask} />}
-      conversation={intakeId ? <IntakeChat key={intakeId} workspaceId={workspaceId} agentSlug={slug} agentName={agentName} intakeId={intakeId} editor={editor} /> : undefined}
       tab={tab}
       // A diagnosis is a session too, but it lives under Diagnostics.
       sessions={(tree?.sessions ?? []).filter((session) => !session.title.startsWith("Growth diagnosis"))}

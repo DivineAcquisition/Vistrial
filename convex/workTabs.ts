@@ -36,6 +36,31 @@ async function hasOwnData(ctx: QueryCtx, workspaceId: Id<"workspaces">) {
   return (await currentFigures(ctx, workspaceId)).length > 0;
 }
 
+/**
+ * What a diagnosis can read, for the Diagnostics tab's checklist: Meta ads connected, results files ready,
+ * and outcomes the owner has recorded. A diagnosis reads only the business's own data.
+ */
+async function connectedData(ctx: QueryCtx, workspaceId: Id<"workspaces">) {
+  const meta = await ctx.db
+    .query("metaConnections")
+    .withIndex("by_workspace", (q) => q.eq("workspaceId", workspaceId))
+    .unique();
+  const uploads = await ctx.db
+    .query("resultUploads")
+    .withIndex("by_workspace", (q) => q.eq("workspaceId", workspaceId))
+    .order("desc")
+    .take(50);
+  const decisions = await ctx.db
+    .query("decisions")
+    .withIndex("by_workspace", (q) => q.eq("workspaceId", workspaceId))
+    .take(200);
+  return {
+    meta: meta?.status === "connected",
+    resultsFiles: uploads.filter((row) => row.status === "ready").length,
+    outcomes: decisions.filter((row) => Boolean(row.outcome)).length,
+  };
+}
+
 function projectIdOf(ctx: QueryCtx, run: Doc<"agentRuns"> | null) {
   return run ? ctx.db.normalizeId("researchProjects", run.inputRef) : null;
 }
@@ -119,7 +144,7 @@ export const tab = workspaceQuery({
 });
 
 /**
- * The Diagnostics tab: the goal, and the newest diagnosis as data: the stall stage, the figures it used
+ * The Diagnostics tab: the goal, which of the business's own data is connected, and the newest diagnosis as data: the stall stage, the figures it used
  * and the 90-day roadmap, each step with the figures it cites. Null diagnosis before the first one.
  */
 export const diagnostics = workspaceQuery({
@@ -139,7 +164,8 @@ export const diagnostics = workspaceQuery({
         .take(10);
       asset = rows.find((row) => row.status !== "rejected" && row.status !== "archived") ?? null;
     }
-    if (!asset) return { goal: goalView, diagnosis: null };
+    const data = await connectedData(ctx, ctx.workspaceId);
+    if (!asset) return { goal: goalView, data, diagnosis: null };
     const saved = (await savedRecord(ctx.db, asset, "diagnosis")) as { diagnosis: unknown; missing?: { stage: string; text: string }[] } | null;
     const record = (await savedRecord(ctx.db, asset, "diagnostics")) as DiagnosticsRecord | null;
     const diagnosis = readDiagnosis(saved?.diagnosis);
@@ -152,6 +178,7 @@ export const diagnostics = workspaceQuery({
     const run = asset.createdByRun ? await ctx.db.get(asset.createdByRun) : null;
     return {
       goal: goalView,
+      data,
       diagnosis: {
         assetId: asset._id,
         title: asset.title,

@@ -1,6 +1,6 @@
 import { Document, Page, StyleSheet, Text, View } from "@react-pdf/renderer";
 
-import type { OfferContent } from "./offer-card";
+import { GUARANTEE_WORDS, itemText, type OfferContent } from "../../../convex/lib/offerCards";
 
 const INK = "#16151f";
 const MUTED = "#6b6a78";
@@ -13,6 +13,7 @@ const styles = StyleSheet.create({
   eyebrow: { fontSize: 8, letterSpacing: 1.6, color: MUTED, textTransform: "uppercase" },
   top: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 20 },
   name: { fontSize: 22, fontFamily: "Helvetica-Bold", marginTop: 4, maxWidth: 300 },
+  outcome: { fontSize: 11, marginTop: 6, maxWidth: 300 },
   price: { fontSize: 24, fontFamily: "Helvetica-Bold" },
   version: { fontSize: 8, color: MUTED, textAlign: "right", marginTop: 2 },
   label: { fontSize: 9, color: MUTED, marginBottom: 6 },
@@ -38,15 +39,17 @@ export function OfferCardPdf({ offer, version }: { offer: OfferContent; version?
             <View>
               <Text style={styles.eyebrow}>Offer</Text>
               <Text style={styles.name}>{offer.name || "Not stated"}</Text>
+              {offer.outcome ? <Text style={styles.outcome}>{offer.outcome}</Text> : null}
             </View>
             <View>
               <Text style={styles.price}>{offer.price || "Not stated"}</Text>
+              {offer.pricing?.was ? <Text style={styles.version}>Was {offer.pricing.was}</Text> : null}
               {version ? <Text style={styles.version}>Version {version}</Text> : null}
             </View>
           </View>
           <Text style={styles.label}>What&apos;s included</Text>
           {offer.included.length ? (
-            offer.included.map((item) => (
+            (offer.items.length ? offer.items.map(itemText) : offer.included).map((item) => (
               <View key={item} style={styles.item}>
                 <Text style={styles.tick}>•</Text>
                 <Text>{item}</Text>
@@ -55,9 +58,20 @@ export function OfferCardPdf({ offer, version }: { offer: OfferContent; version?
           ) : (
             <Text style={styles.missing}>Not stated</Text>
           )}
+          {offer.bonuses.length ? (
+            <View style={{ marginTop: 12 }}>
+              <Text style={styles.label}>Bonuses</Text>
+              {offer.bonuses.map((bonus) => (
+                <View key={bonus} style={styles.item}>
+                  <Text style={styles.tick}>+</Text>
+                  <Text>{bonus}</Text>
+                </View>
+              ))}
+            </View>
+          ) : null}
           <View style={styles.boxes}>
             <View style={styles.box}>
-              <Text style={styles.label}>Guarantee</Text>
+              <Text style={styles.label}>{offer.guaranteeType ? GUARANTEE_WORDS[offer.guaranteeType] : "Guarantee"}</Text>
               <Value text={offer.guarantee} />
             </View>
             <View style={styles.box}>
@@ -70,6 +84,7 @@ export function OfferCardPdf({ offer, version }: { offer: OfferContent; version?
               <Text style={{ fontFamily: "Helvetica-Bold" }}>Terms: </Text>
               {offer.terms || "Not stated"}
             </Text>
+            {offer.cta || offer.channel ? <Text style={{ marginTop: 6 }}>{[offer.cta && `Call to action: ${offer.cta}`, offer.channel && `Channel: ${offer.channel}`].filter(Boolean).join("  ·  ")}</Text> : null}
           </View>
         </View>
       </Page>

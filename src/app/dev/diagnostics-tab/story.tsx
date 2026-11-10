@@ -1,15 +1,16 @@
 "use client";
 
+import { Activity } from "@/components/icons";
+import { Button } from "@/components/ui/button";
 import { DiagnosticsTabView } from "@/components/work/diagnostics-tab";
-import { SkillChatView } from "@/components/work/skill-chat";
 
-import { storyDiagnosisChat, storyDiagnostics, storyRoadmapDecisions, storyTab } from "../work-tabs/fixtures";
+import { storyDiagnostics, storyRoadmapDecisions, storyTab } from "../work-tabs/fixtures";
 import { StoryFrame } from "../work-tabs/story-frame";
 
 const noop = async () => undefined;
 
 /** The Diagnostics workspace with fixture data: the goal first, where growth stalls, and the 90-day roadmap. */
-export function DiagnosticsTabStory({ state, theme }: { state: string; theme: string }) {
+export function DiagnosticsTabStory({ state, theme, view }: { state: string; theme: string; view: string }) {
   const editor = state !== "rep";
   const data = storyDiagnostics(state);
   return (
@@ -17,7 +18,13 @@ export function DiagnosticsTabStory({ state, theme }: { state: string; theme: st
       <DiagnosticsTabView
         base="/app/agents/growth-architect"
         editor={editor}
-        chat={<SkillChatView data={state === "empty" ? storyDiagnosisChat() : null} editor={editor} placeholder="What should we look at in your growth?" onSend={noop} onStart={noop} onReset={() => undefined} />}
+        data={data.data}
+        run={
+          <Button>
+            <Activity aria-hidden /> Run diagnosis
+          </Button>
+        }
+        initialView={view === "canvas" ? "canvas" : "cards"}
         tab={storyTab("growth-diagnostics", state)}
         goal={data.goal}
         diagnosis={data.diagnosis}

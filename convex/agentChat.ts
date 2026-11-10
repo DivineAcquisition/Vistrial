@@ -1,0 +1,266 @@
+/**
+ * The Growth Architect's one chat. A first message is routed in code to the skill it is for: research goes
+ * to Market Intelligence (the research intake), offer questions to Offer Intelligence, "why am I not
+ * growing" to Growth Diagnostics (both on the skill intake). Each then asks its follow-up questions and
+ * shows the plan and budget before anything runs. When the intent is unclear the chat asks which of the
+ * three the person wants; it never picks one silently. A conversation is an `intakes` row, as before.
+ */
+
+import { v } from "convex/values";
+
+import type { Doc, Id } from "./_generated/dataModel";
+import type { MutationCtx, QueryCtx } from "./_generated/server";
+import { GROWTH_ARCHITECT } from "./catalog";
+import { beginResearch, replyResearch } from "./intake";
+import { workspaceMutation, workspaceQuery } from "./lib/builders";
+import { ROUTE_CHOICES, ROUTE_QUESTION, UNDECIDED, isChatRoute, routeChoice, routeIntent, type ChatRoute } from "./lib/chatRouting";
+import { notAllowed, notFound, userError } from "./lib/errors";
+import { SKILL_TAB } from "./lib/workTabs";
+import { beginSkill, isChatSkill, replySkill, type ChatSkill } from "./skillIntake";
+
+const OPEN_RUN = ["queued", "running", "waiting", "needsInput"];
+const MAX_TEXT = 1000;
+
+function clean(text: string) {
+  return text.replace(/\s+/g, " ").trim().slice(0, MAX_TEXT);
+}
+
+/** The skill a conversation is on, or null while the chat is still asking. Old research intakes have no skill stored. */
+export function routeOf(row: Pick<Doc<"intakes">, "skillSlug">): ChatRoute | null {
+  if (!row.skillSlug) return "market-intelligence";
+  return isChatRoute(row.skillSlug) ? row.skillSlug : null;
+}
+
+async function ownIntake(ctx: QueryCtx & { workspaceId: Id<"workspaces"> }, intakeId: Id<"intakes">) {
+  const row = await ctx.db.get(intakeId);
+  if (!row || row.workspaceId !== ctx.workspaceId) notFound();
+  return row;
+}
+
+/** The item a person attached, checked to be this workspace's, with its title as it reads now. */
+async function readContext(ctx: QueryCtx & { workspaceId: Id<"workspaces"> }, input: { kind: "asset" | "offer"; id: string }) {
+  if (input.kind === "asset") {
+    const id = ctx.db.normalizeId("assets", input.id);
+    const asset = id ? await ctx.db.get(id) : null;
+    if (!asset || asset.workspaceId !== ctx.workspaceId) notFound();
+    return { kind: "asset" as const, id: asset._id as string, title: asset.title.slice(0, 160) };
+  }
+  const id = ctx.db.normalizeId("offerCards", input.id);
+  const card = id ? await ctx.db.get(id) : null;
+  if (!card || card.workspaceId !== ctx.workspaceId) notFound();
+  return { kind: "offer" as const, id: card._id as string, title: card.name.slice(0, 160) };
+}
+
+async function nextAt(ctx: QueryCtx, intakeId: Id<"intakes">) {
+  const last = await ctx.db
+    .query("intakeMessages")
+    .withIndex("by_intake", (q) => q.eq("intakeId", intakeId))
+    .order("desc")
+    .first();
+  return Math.max(Date.now(), (last?.at ?? 0) + 1);
+}
+
+async function askWhich(ctx: MutationCtx, row: Pick<Doc<"intakes">, "_id" | "workspaceId">, again: boolean) {
+  await ctx.db.insert("intakeMessages", {
+    workspaceId: row.workspaceId,
+    intakeId: row._id,
+    role: "agent",
+    kind: "route",
+    text: again ? "I still can't tell which you mean, and I won't guess. Tap one of these." : ROUTE_QUESTION,
+    chips: ROUTE_CHOICES.map((choice) => choice.chip),
+    data: { choices: ROUTE_CHOICES.map((choice) => ({ skill: choice.skill, chip: choice.chip, name: choice.name, does: choice.does })) },
+    at: await nextAt(ctx, row._id),
+  });
+}
+
+async function firstText(ctx: QueryCtx, intakeId: Id<"intakes">) {
+  const first = await ctx.db
+    .query("intakeMessages")
+    .withIndex("by_intake", (q) => q.eq("intakeId", intakeId))
+    .first();
+  return first?.role === "you" ? first.text : "";
+}
+
+type Access = MutationCtx & { workspaceId: Id<"workspaces">; identity: { subject: string } };
+type Choices = { mode?: "thorough" | "fast"; platforms?: string[]; links?: string[] };
+
+/** Hands a conversation to its skill. `row` is an undecided conversation being routed. */
+async function begin(ctx: Access, route: ChatRoute, input: Choices & { text: string; row?: Doc<"intakes">; context?: Doc<"intakes">["context"] }) {
+  if (route === "market-intelligence") return beginResearch(ctx, input);
+  return beginSkill(ctx, { skill: route as ChatSkill, text: input.text, row: input.row, context: input.context });
+}
+
+/**
+ * One message in the agent chat. Without `intakeId` it starts a conversation: on the skill named by `skill`
+ * (a preset such as "New research"), otherwise on the skill the text is clearly about, otherwise it asks
+ * which. With `intakeId` it answers: the routing question, or the skill's own next question.
+ * Owners and Managers.
+ */
+export const send = workspaceMutation({
+  args: {
+    intakeId: v.optional(v.id("intakes")),
+    text: v.string(),
+    /** A preset from the screen ("New research", "Refine in chat"). The person chose it, so nothing is guessed. */
+    skill: v.optional(v.string()),
+    context: v.optional(v.object({ kind: v.union(v.literal("asset"), v.literal("offer")), id: v.string() })),
+    mode: v.optional(v.union(v.literal("thorough"), v.literal("fast"))),
+    platforms: v.optional(v.array(v.string())),
+    links: v.optional(v.array(v.string())),
+  },
+  handler: async (ctx, args): Promise<{ intakeId: Id<"intakes">; route: ChatRoute | null }> => {
+    if (ctx.member.role === "rep") notAllowed();
+    const text = clean(args.text);
+    if (!text) throw userError("Type what you want to work on.");
+    const choices = { mode: args.mode, platforms: args.platforms, links: args.links };
+
+    if (args.intakeId) {
+      const row = await ownIntake(ctx, args.intakeId);
+      if (row.status === "abandoned") throw userError("This conversation has ended. Start a new one.");
+      const current = routeOf(row);
+      if (current === "market-intelligence") {
+        await replyResearch(ctx, row, { text, ...choices });
+        return { intakeId: row._id, route: current };
+      }
+      if (current) {
+        await replySkill(ctx, row as Doc<"intakes"> & { skillSlug: ChatSkill }, { text });
+        return { intakeId: row._id, route: current };
+      }
+      // Still undecided: this message answers "which do you want?".
+      const tapped = ROUTE_CHOICES.some((choice) => choice.chip.toLowerCase() === text.toLowerCase());
+      const route = routeChoice(text);
+      await ctx.db.insert("intakeMessages", { workspaceId: ctx.workspaceId, intakeId: row._id, role: "you", kind: tapped ? "choice" : "text", text, at: await nextAt(ctx, row._id) });
+      if (!route) {
+        await askWhich(ctx, row, true);
+        await ctx.db.patch(row._id, { updatedAt: Date.now() });
+        return { intakeId: row._id, route: null };
+      }
+      // The skill reads the question the person first asked, not the choice they tapped.
+      const asked = tapped ? (await firstText(ctx, row._id)) || text : text;
+      await begin(ctx, route, { text: asked, row, ...choices });
+      return { intakeId: row._id, route };
+    }
+
+    if (args.skill !== undefined && !isChatRoute(args.skill)) throw userError("That skill has no chat yet.");
+    const context = args.context ? await readContext(ctx, args.context) : undefined;
+    const route = (args.skill as ChatRoute | undefined) ?? routeIntent(text);
+    if (route) {
+      const intakeId = await begin(ctx, route, { text, context, ...choices });
+      return { intakeId, route };
+    }
+    const now = Date.now();
+    const intakeId = await ctx.db.insert("intakes", {
+      workspaceId: ctx.workspaceId,
+      agentSlug: GROWTH_ARCHITECT,
+      skillSlug: UNDECIDED,
+      ...(context ? { context } : {}),
+      createdBy: ctx.identity.subject,
+      status: "chatting",
+      slots: {},
+      questionsAsked: 0,
+      asking: "skill",
+      costCents: 0,
+      capCents: 0,
+      pendingRemember: [],
+      createdAt: now,
+      updatedAt: now,
+    });
+    await ctx.db.insert("intakeMessages", { workspaceId: ctx.workspaceId, intakeId, role: "you", kind: "text", text, at: now });
+    await askWhich(ctx, { _id: intakeId, workspaceId: ctx.workspaceId }, false);
+    return { intakeId, route: null };
+  },
+});
+
+/** Sets a conversation aside. Work it already started keeps running. Owners and Managers. */
+export const close = workspaceMutation({
+  args: { intakeId: v.id("intakes") },
+  handler: async (ctx, args) => {
+    if (ctx.member.role === "rep") notAllowed();
+    const row = await ownIntake(ctx, args.intakeId);
+    if (row.status !== "started") await ctx.db.patch(row._id, { status: "abandoned", updatedAt: Date.now() });
+    return null;
+  },
+});
+
+/**
+ * Where a started conversation's work stands, and the link to its result in the tab it belongs to: the
+ * session under Research or Diagnostics, the analysis under Offers. `path` is relative to the agent's page.
+ */
+async function resultOf(ctx: QueryCtx & { workspaceId: Id<"workspaces"> }, row: Doc<"intakes">, route: ChatRoute | null) {
+  if (row.status !== "started" || !route) return null;
+  const project = row.projectId ? await ctx.db.get(row.projectId) : null;
+  const runId = row.runId ?? (project && project.workspaceId === ctx.workspaceId ? project.latestRunId : undefined) ?? null;
+  const run = runId ? await ctx.db.get(runId) : null;
+  const tab = SKILL_TAB[route];
+  const asset =
+    run && run.workspaceId === ctx.workspaceId
+      ? await ctx.db
+          .query("assets")
+          .withIndex("by_workspace_run", (q) => q.eq("workspaceId", ctx.workspaceId).eq("createdByRun", run._id))
+          .first()
+      : null;
+  const state = !run || run.workspaceId !== ctx.workspaceId ? "running" : run.status === "waiting" || run.status === "needsInput" ? "waiting" : OPEN_RUN.includes(run.status) ? "running" : run.status === "completed" && asset ? "done" : "stopped";
+  const path = tab === "offers" ? (asset ? `/work/offers?analysis=${asset._id}` : "/work/offers") : row.projectId ? `/work/${tab}/${row.projectId}` : `/work/${tab}`;
+  return { state: state as "running" | "waiting" | "done" | "stopped", tab, path, title: asset?.title ?? null, assetStatus: asset?.status ?? null, runId: run?._id ?? null };
+}
+
+function titleOf(row: Doc<"intakes">, first: string) {
+  const slots = row.slots as { objective?: string } | undefined;
+  return (first || slots?.objective || row.answers?.offer || row.answers?.goal || "New conversation").slice(0, 120);
+}
+
+/** This workspace's conversations with the agent, newest first. Everyone on the team can read them. */
+export const list = workspaceQuery({
+  args: {},
+  handler: async (ctx) => {
+    const rows = await ctx.db
+      .query("intakes")
+      .withIndex("by_workspace", (q) => q.eq("workspaceId", ctx.workspaceId))
+      .order("desc")
+      .take(40);
+    const out = [];
+    for (const row of rows) {
+      if (row.status === "abandoned" || row.agentSlug !== GROWTH_ARCHITECT) continue;
+      const route = routeOf(row);
+      out.push({
+        id: row._id,
+        route,
+        title: titleOf(row, await firstText(ctx, row._id)),
+        status: row.status,
+        updatedAt: row.updatedAt,
+        mine: row.createdBy === ctx.identity.subject,
+        context: row.context ?? null,
+        result: await resultOf(ctx, row, route),
+      });
+      if (out.length >= 30) break;
+    }
+    return out;
+  },
+});
+
+/**
+ * One conversation: which skill it is on (null while the chat is asking), what is attached, where its work
+ * stands, and its messages. The research and skill conversations also read their own detail queries.
+ */
+export const get = workspaceQuery({
+  args: { intakeId: v.id("intakes") },
+  handler: async (ctx, args) => {
+    const row = await ownIntake(ctx, args.intakeId);
+    const route = routeOf(row);
+    const messages = await ctx.db
+      .query("intakeMessages")
+      .withIndex("by_intake", (q) => q.eq("intakeId", row._id))
+      .take(200);
+    return {
+      id: row._id,
+      route,
+      /** True for the two skills whose questions come from the skill checklist. */
+      checklist: Boolean(row.skillSlug && isChatSkill(row.skillSlug)),
+      title: titleOf(row, messages[0]?.role === "you" ? messages[0].text : ""),
+      status: row.status,
+      mine: row.createdBy === ctx.identity.subject,
+      context: row.context ?? null,
+      result: await resultOf(ctx, row, route),
+      messages: messages.map((message) => ({ id: message._id, role: message.role, kind: message.kind, text: message.text, chips: message.chips ?? [], data: message.data ?? null, at: message.at })),
+    };
+  },
+});

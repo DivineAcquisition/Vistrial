@@ -18,6 +18,7 @@ export type OfferAnalysisView = NonNullable<FunctionReturnType<typeof api.offers
 export type DiagnosticsData = FunctionReturnType<typeof api.workTabs.diagnostics>;
 export type DiagnosisView = NonNullable<DiagnosticsData["diagnosis"]>;
 export type GoalView = DiagnosticsData["goal"];
+export type ConnectedData = DiagnosticsData["data"];
 
 export type ItemDecision = FunctionReturnType<typeof api.decisions.forAsset>[number];
 

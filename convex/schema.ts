@@ -992,13 +992,17 @@ export default defineSchema({
     name: v.string(),
     currentVersion: v.number(),
     archived: v.optional(v.boolean()),
+    /** The card this one was started from as a copy, when it was. */
+    copiedFrom: v.optional(v.id("offerCards")),
+    /** Each time "Analyse this offer" ran Offer Intelligence on this card: the run and the version it read. Newest last. */
+    analyses: v.optional(v.array(v.object({ runId: v.id("agentRuns"), version: v.number(), at: v.number() }))),
     createdBy: v.string(),
     createdAt: v.number(),
     updatedAt: v.number(),
   }).index("by_workspace", ["workspaceId", "updatedAt"]),
 
   /**
-   * One version of an offer card. A person writes one by editing the card or answering in the Offers chat;
+   * One version of an offer card. A person writes one in the offer builder or by answering in the chat;
    * an offer analysis writes one from what the business stated. Never overwritten: a change is a new version.
    */
   offerCardVersions: defineTable({
@@ -1011,6 +1015,25 @@ export default defineSchema({
     guarantee: v.string(),
     terms: v.string(),
     targetCustomer: v.string(),
+    // The offer builder's fields. All optional: versions from before the builder, the chat or an analysis have none.
+    /** The outcome the customer gets. */
+    outcome: v.optional(v.string()),
+    /** The structured price. `price` above is its plain-text form. */
+    pricing: v.optional(
+      v.object({
+        kind: v.union(v.literal("oneTime"), v.literal("monthly"), v.literal("tiered")),
+        amount: v.string(),
+        /** The optional "was" price. */
+        was: v.string(),
+        tiers: v.array(v.object({ name: v.string(), price: v.string() })),
+      }),
+    ),
+    /** Line items, each with an optional value. `included` above is their names. */
+    items: v.optional(v.array(v.object({ text: v.string(), value: v.string() }))),
+    bonuses: v.optional(v.array(v.string())),
+    guaranteeType: v.optional(v.union(v.literal("none"), v.literal("results"), v.literal("moneyBack"), v.literal("satisfaction"), v.literal("custom"))),
+    cta: v.optional(v.string()),
+    channel: v.optional(v.string()),
     origin: v.union(v.literal("person"), v.literal("chat"), v.literal("analysis")),
     /** The offer analysis this version came from, when it came from one. */
     assetId: v.optional(v.id("assets")),
@@ -1201,12 +1224,18 @@ export default defineSchema({
     /**
      * The skill this conversation is for. Missing means Market Intelligence (the research intake). Offer
      * Intelligence and Growth Diagnostics ask their own short checklist, held in code (`skillIntake.ts`).
+     * "undecided" while the agent chat is still asking which of the three the person wants.
      */
     skillSlug: v.optional(v.string()),
     /** What the skill checklist gathered, keyed by question. */
     answers: v.optional(v.record(v.string(), v.string())),
     /** The run a skill conversation started. */
     runId: v.optional(v.id("agentRuns")),
+    /**
+     * What the person attached with "Refine in chat": a result (an asset) or an offer card of this
+     * workspace. The title is kept so the conversation still names it if the item is later archived.
+     */
+    context: v.optional(v.object({ kind: v.union(v.literal("asset"), v.literal("offer")), id: v.string(), title: v.string() })),
     createdAt: v.number(),
     updatedAt: v.number(),
   })
@@ -1217,7 +1246,7 @@ export default defineSchema({
     workspaceId: v.id("workspaces"),
     intakeId: v.id("intakes"),
     role: v.union(v.literal("you"), v.literal("agent")),
-    /** text, question, known (memory cards), remember (chips), found (competitors found), plan, note. */
+    /** text, question, known (memory cards), remember (chips), found (competitors found), plan, note, route (which skill?), choice (the answer to it), context (an attached item). */
     kind: v.string(),
     text: v.string(),
     chips: v.optional(v.array(v.string())),

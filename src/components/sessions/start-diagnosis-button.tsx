@@ -22,11 +22,9 @@ export function StartDiagnosisButton({ workspaceId, agentSlug }: { workspaceId: 
   const [problem, setProblem] = useState("");
 
   return (
-    <span className="grid gap-1">
+    <span className="grid justify-items-end gap-1">
       <Button
         type="button"
-        variant="outline"
-        size="sm"
         className="w-fit"
         disabled={busy}
         onClick={async () => {
@@ -51,7 +49,7 @@ export function StartDiagnosisButton({ workspaceId, agentSlug }: { workspaceId: 
           }
         }}
       >
-        <Activity aria-hidden /> Run a diagnosis
+        <Activity aria-hidden /> {busy ? "Starting…" : "Run diagnosis"}
       </Button>
       {problem ? <span className="text-xs text-destructive">{problem}</span> : null}
     </span>

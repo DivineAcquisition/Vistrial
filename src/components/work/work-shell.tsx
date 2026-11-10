@@ -10,16 +10,19 @@ import {
   FileText,
   LoaderCircle,
   MessageCircleQuestion,
+  MessagesSquare,
   Plug,
   ShieldCheck,
   Sparkles,
   type LucideIcon,
 } from "@/components/icons";
 import { AssetStatusBadge } from "@/components/runs/run-parts";
+import { Button } from "@/components/ui/button";
 import { Panel } from "@/components/ui/panel";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { money, shortDate } from "@/lib/research/words";
 import { cn } from "@/lib/utils";
+import { TAB_SKILL, type WorkTab } from "../../../convex/lib/workTabs";
 
 import { ReviewBar } from "./review-bar";
 import type { FinishedRun, ResultRow, ReviewActions, RunningRun, SuggestionRow } from "./types";
@@ -59,20 +62,23 @@ export function SectionTitle({ icon: Icon, children, aside }: { icon: LucideIcon
   );
 }
 
-/** The top of a work tab: what it does, in a sentence, with the chat box scoped to its skill below. */
-export function WorkHero({ icon: Icon, eyebrow, title, promise, children }: { icon: LucideIcon; eyebrow: string; title: string; promise: string; children?: ReactNode }) {
+/** The top of a work tab: what it holds, in a sentence, and its one main action. No chat box: talking happens in Chat. */
+export function WorkHero({ icon: Icon, eyebrow, title, promise, action, children }: { icon: LucideIcon; eyebrow: string; title: string; promise: string; action?: ReactNode; children?: ReactNode }) {
   return (
     <Panel className="relative grid gap-4 overflow-hidden p-4 sm:p-6">
       <div aria-hidden className="pointer-events-none absolute -top-24 -right-16 size-64 rounded-full bg-primary/15 blur-3xl" />
-      <div className="relative flex items-start gap-3">
-        <span className="flex size-11 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-primary/25 to-primary/5 text-primary ring-1 ring-primary/25">
-          <Icon aria-hidden className="size-5" />
-        </span>
-        <div className="grid min-w-0 gap-0.5">
-          <p className="text-[11px] font-semibold tracking-[0.14em] text-muted-foreground uppercase">{eyebrow}</p>
-          <h2 className="font-heading text-lg text-card-foreground">{title}</h2>
-          <p className="text-sm text-muted-foreground">{promise}</p>
+      <div className="relative flex flex-wrap items-start justify-between gap-3">
+        <div className="flex min-w-0 flex-1 basis-64 items-start gap-3">
+          <span className="flex size-11 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-primary/25 to-primary/5 text-primary ring-1 ring-primary/25">
+            <Icon aria-hidden className="size-5" />
+          </span>
+          <div className="grid min-w-0 gap-0.5">
+            <p className="text-[11px] font-semibold tracking-[0.14em] text-muted-foreground uppercase">{eyebrow}</p>
+            <h1 className="font-heading text-lg text-card-foreground">{title}</h1>
+            <p className="text-sm text-muted-foreground">{promise}</p>
+          </div>
         </div>
+        {action ? <div className="flex shrink-0 flex-wrap items-center gap-2">{action}</div> : null}
       </div>
       {children ? <div className="relative min-w-0">{children}</div> : null}
     </Panel>
@@ -150,6 +156,7 @@ export function ResultsList({
   empty,
   extra,
   openHref,
+  refineHref,
 }: {
   results: ResultRow[];
   actions: ReviewActions;
@@ -157,6 +164,8 @@ export function ResultsList({
   empty: string;
   extra?: (row: ResultRow) => ReactNode;
   openHref?: (row: ResultRow) => string;
+  /** "Refine in chat": opens the Chat tab with this result attached. Owners and Managers. */
+  refineHref?: (row: ResultRow) => string;
 }) {
   const waiting = results.filter((row) => row.status === "draft" || row.status === "needsReview").length;
   return (
@@ -181,10 +190,13 @@ export function ResultsList({
                   </Link>
                   <AssetStatusBadge status={row.status as "draft"} />
                 </div>
-                {(pending && editor) || extra ? (
+                {(pending && editor) || extra || (refineHref && editor) ? (
                   <div className="flex flex-wrap items-start justify-between gap-2">
                     {pending && editor ? <ReviewBar assetId={row.id} actions={actions} needsReview={row.status === "needsReview"} /> : <span />}
-                    {extra ? extra(row) : null}
+                    <span className="flex flex-wrap items-center gap-2">
+                      {refineHref && editor && row.status !== "rejected" ? <RefineInChat href={refineHref(row)} /> : null}
+                      {extra ? extra(row) : null}
+                    </span>
                   </div>
                 ) : null}
               </li>
@@ -196,7 +208,7 @@ export function ResultsList({
   );
 }
 
-/** Next steps. Each opens a tab with its chat filled in; nothing runs until the owner presses send and Start. */
+/** Next steps. Each opens the Chat tab on the right skill with the box filled in; nothing runs until the owner presses send and Start. */
 export function SuggestedNext({ suggestions, hrefFor }: { suggestions: SuggestionRow[]; hrefFor: (row: SuggestionRow) => string }) {
   if (suggestions.length === 0) return null;
   return (
@@ -218,6 +230,29 @@ export function SuggestedNext({ suggestions, hrefFor }: { suggestions: Suggestio
       <p className="text-[11px] text-muted-foreground">Suggestions never run on their own. You choose, and you see the plan and budget first.</p>
     </section>
   );
+}
+
+/** Opens the Chat tab with one item attached as context. Every result has one. */
+export function RefineInChat({ href, label = "Refine in chat" }: { href: string; label?: string }) {
+  return (
+    <Button size="sm" variant="ghost" render={<Link href={href} />}>
+      <MessagesSquare aria-hidden className="size-4" /> {label}
+    </Button>
+  );
+}
+
+/** Where a suggestion goes: Connections, or the Chat tab on the suggested skill with its prompt filled in. */
+export function suggestionHref(base: string, row: { tab: string; prompt?: string }) {
+  if (row.tab === "connections") return `${base}/connections`;
+  const skill = TAB_SKILL[row.tab as WorkTab];
+  if (!row.prompt || !skill) return `${base}/work/${row.tab}`;
+  return `${base}/work/chat?skill=${skill}&ask=${encodeURIComponent(row.prompt)}`;
+}
+
+/** The link "Refine in chat" uses for a result. */
+export function refineLink(base: string, skill: string, item: { kind: "asset" | "offer"; id: string; title: string }) {
+  const query = new URLSearchParams({ skill, ref: `${item.kind}:${item.id}`, about: item.title.slice(0, 120) });
+  return `${base}/work/chat?${query.toString()}`;
 }
 
 /** The agent's shared shelves: what it knows, the evidence behind its claims, and what it is connected to. */

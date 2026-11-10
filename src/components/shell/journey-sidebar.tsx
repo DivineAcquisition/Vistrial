@@ -37,7 +37,9 @@ import {
   JOURNEY_TABS,
   agentDot,
   agentsForTab,
+  agentTabs,
   agentsOffJourney,
+  chatHref,
   defaultTab,
   isJourneyTab,
   workTabsFor,
@@ -51,7 +53,7 @@ import { cn } from "@/lib/utils";
 import { api } from "../../../convex/_generated/api";
 
 const TAB_STORE = "vistrial.journeyTab.v1";
-const NEW_SESSION = "/app/agents/growth-architect/sessions/new";
+const NEW_CHAT = chatHref("growth-architect");
 
 function readTab(): JourneyTab | null {
   try {
@@ -258,7 +260,6 @@ function AgentRow({
   open,
   onToggle,
   onNavigate,
-  drawer,
 }: {
   agent: RailAgent;
   activity: AgentActivity | undefined;
@@ -267,15 +268,13 @@ function AgentRow({
   open: boolean;
   onToggle: (slug: string) => void;
   onNavigate?: () => void;
-  /** In the phone drawer, tapping the agent opens its tabs instead of leaving the drawer. */
-  drawer: boolean;
 }) {
   const live = agent.status === "live";
   const href = `/app/agents/${agent.slug}`;
   const active = isActive(pathname, href, true);
   const dot = agentDot(activity);
   const mark = AGENT_MARK[agent.slug] ?? { glyph: "spark" as const, accent: "neutral" as const };
-  const tabs = workTabsFor(agent);
+  const tabs = agentTabs(agent);
   const expandable = tabs.length > 0;
   const groupId = `agent-tabs-${agent.slug}`;
   const inner = (
@@ -314,15 +313,10 @@ function AgentRow({
         ) : (
           <span className="size-6 shrink-0" />
         )}
-        {drawer && expandable ? (
-          <button type="button" aria-expanded={open} aria-controls={groupId} onClick={() => onToggle(agent.slug)} className={cn(row, "flex-1 pl-1 text-left")}>
-            {inner}
-          </button>
-        ) : (
-          <Link href={href} onClick={onNavigate} aria-current={active ? "page" : undefined} className={cn(row, "flex-1 pl-1", !live && "text-muted-foreground")}>
-            {inner}
-          </Link>
-        )}
+        {/* The agent's name opens its home (the overview); the arrow beside it opens and closes its tabs. */}
+        <Link href={href} onClick={onNavigate} aria-current={active ? "page" : undefined} className={cn(row, "flex-1 pl-1", !live && "text-muted-foreground")}>
+          {inner}
+        </Link>
       </div>
       {expandable && open ? (
         <div id={groupId} className="ml-[11px] grid gap-0.5 border-l border-border pl-2">
@@ -333,7 +327,7 @@ function AgentRow({
                 <li key={tab.tab}>
                   <Link href={tab.href} onClick={onNavigate} aria-current={tabActive ? "page" : undefined} className={cn(row, "text-[13px]", tabActive && "bg-accent")}>
                     <span className="truncate">{tab.label}</span>
-                    <TabCount counts={skillCounts?.[tab.skillSlug]} />
+                    {tab.skillSlug ? <TabCount counts={skillCounts?.[tab.skillSlug]} /> : null}
                   </Link>
                 </li>
               );
@@ -421,9 +415,9 @@ export function JourneySidebarView({
           </Link>
         </li>
         <li>
-          <Link href={NEW_SESSION} onClick={onNavigate} className={cn(row, "text-primary")}>
+          <Link href={NEW_CHAT} onClick={onNavigate} className={cn(row, "text-primary")}>
             <Plus aria-hidden className="size-4 shrink-0" />
-            <span>New session</span>
+            <span>New chat</span>
           </Link>
         </li>
         <li>
@@ -457,7 +451,6 @@ export function JourneySidebarView({
                   open={openRows.has(agent.slug)}
                   onToggle={toggleRow}
                   onNavigate={onNavigate}
-                  drawer={Boolean(onNavigate)}
                 />
               ))
             ) : (

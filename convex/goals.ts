@@ -26,7 +26,7 @@ const PERIODS: [RegExp, GoalPeriod][] = [
 ];
 
 /** Plain words for the measure, from the word right after the number ("40 more bookings" → bookings). */
-const FILLER = new Set(["more", "extra", "new", "additional", "x", "of", "in", "the"]);
+const FILLER = new Set(["more", "extra", "new", "additional", "x", "of", "in", "the", "retained", "paying", "qualified", "booked"]);
 
 /** Reads "40 more bookings a month" as 40, bookings, month. Missing parts stay missing. */
 export function readGoal(text: string): ReadGoal {

@@ -9,7 +9,7 @@ import { v } from "convex/values";
 
 import { internal } from "./_generated/api";
 import type { Doc, Id } from "./_generated/dataModel";
-import { internalAction, internalMutation, internalQuery } from "./_generated/server";
+import { internalAction, internalMutation, internalQuery, type MutationCtx } from "./_generated/server";
 import { GROWTH_ARCHITECT } from "./catalog";
 import { workspaceMutation, workspaceQuery } from "./lib/builders";
 import { notAllowed, notFound, userError } from "./lib/errors";
@@ -163,6 +163,52 @@ async function memoryFor(ctx: { db: import("./_generated/server").QueryCtx["db"]
 /** Starts an intake from the person's first message. Owner or Manager. */
 const modeArg = v.optional(v.union(v.literal("thorough"), v.literal("fast")));
 
+type ResearchChoices = { mode?: "thorough" | "fast"; platforms?: string[]; links?: string[] };
+
+/**
+ * Starts the research conversation: a new one from the person's first message, or, given `row`, a
+ * conversation the agent chat has just routed to research (its first message is already saved).
+ */
+export async function beginResearch(
+  ctx: MutationCtx & { workspaceId: Id<"workspaces">; identity: { subject: string } },
+  input: ResearchChoices & { text: string; row?: Doc<"intakes">; context?: Doc<"intakes">["context"] },
+) {
+  await assertCanSpend(ctx, ctx.workspaceId);
+  const text = clean(input.text, 1000);
+  if (!text) throw userError("Say what you want to find out.");
+  const now = Date.now();
+  let slots = prefill(emptySlots(), await memoryFor(ctx, ctx.workspaceId));
+  slots = withChoices(slots, input.platforms, input.links);
+  const fields = {
+    ...(input.mode ? { mode: input.mode } : {}),
+    status: "thinking" as const,
+    slots,
+    questionsAsked: 0,
+    asking: "objective",
+    costCents: 0,
+    capCents: INTAKE_CAP_CENTS,
+    pendingRemember: [],
+    updatedAt: now,
+  };
+  let intakeId: Id<"intakes">;
+  if (input.row) {
+    intakeId = input.row._id;
+    await ctx.db.patch(intakeId, { ...fields, skillSlug: undefined });
+  } else {
+    intakeId = await ctx.db.insert("intakes", { workspaceId: ctx.workspaceId, agentSlug: GROWTH_ARCHITECT, createdBy: ctx.identity.subject, ...(input.context ? { context: input.context } : {}), createdAt: now, ...fields });
+    await ctx.db.insert("intakeMessages", { workspaceId: ctx.workspaceId, intakeId, role: "you", kind: "text", text, at: now });
+  }
+  const known = (["market", "geography", "competitors"] as const)
+    .filter((slot) => slots.origins[slot] === "memory")
+    .map((slot) => ({ label: SLOT_WORDS[slot], value: slot === "competitors" ? slots.competitors.map((row) => row.name).join(", ") : slots[slot], origin: "memory" }));
+  if (slots.origins.platforms === "memory") known.push({ label: "Where your audience is", value: slots.platforms.map((row) => PLATFORM_WORDS[row]).join(", "), origin: "memory" });
+  if (known.length) {
+    await ctx.db.insert("intakeMessages", { workspaceId: ctx.workspaceId, intakeId, role: "agent", kind: "known", text: "Here's what I already know about your business.", data: { items: known }, at: await nextAt(ctx, intakeId) });
+  }
+  await ctx.scheduler.runAfter(0, internal.intake.step, { intakeId });
+  return intakeId;
+}
+
 export const create = workspaceMutation({
   args: {
     agentSlug: v.string(),
@@ -174,38 +220,8 @@ export const create = workspaceMutation({
   },
   handler: async (ctx, args) => {
     assertEditor(ctx.member.role);
-    await assertCanSpend(ctx, ctx.workspaceId);
     if (args.agentSlug !== GROWTH_ARCHITECT) throw userError("This agent does not run sessions yet.");
-    const text = clean(args.text, 1000);
-    if (!text) throw userError("Say what you want to find out.");
-    const now = Date.now();
-    let slots = prefill(emptySlots(), await memoryFor(ctx, ctx.workspaceId));
-    slots = withChoices(slots, args.platforms, args.links);
-    const intakeId = await ctx.db.insert("intakes", {
-      workspaceId: ctx.workspaceId,
-      agentSlug: args.agentSlug,
-      ...(args.mode ? { mode: args.mode } : {}),
-      createdBy: ctx.identity.subject,
-      status: "thinking",
-      slots,
-      questionsAsked: 0,
-      asking: "objective",
-      costCents: 0,
-      capCents: INTAKE_CAP_CENTS,
-      pendingRemember: [],
-      createdAt: now,
-      updatedAt: now,
-    });
-    await ctx.db.insert("intakeMessages", { workspaceId: ctx.workspaceId, intakeId, role: "you", kind: "text", text, at: now });
-    const known = (["market", "geography", "competitors"] as const)
-      .filter((slot) => slots.origins[slot] === "memory")
-      .map((slot) => ({ label: SLOT_WORDS[slot], value: slot === "competitors" ? slots.competitors.map((row) => row.name).join(", ") : slots[slot], origin: "memory" }));
-    if (slots.origins.platforms === "memory") known.push({ label: "Where your audience is", value: slots.platforms.map((row) => PLATFORM_WORDS[row]).join(", "), origin: "memory" });
-    if (known.length) {
-      await ctx.db.insert("intakeMessages", { workspaceId: ctx.workspaceId, intakeId, role: "agent", kind: "known", text: "Here's what I already know about your business.", data: { items: known }, at: now + 1 });
-    }
-    await ctx.scheduler.runAfter(0, internal.intake.step, { intakeId });
-    return intakeId;
+    return beginResearch(ctx, { text: args.text, mode: args.mode, platforms: args.platforms, links: args.links });
   },
 });
 
@@ -234,27 +250,33 @@ async function ownIntake(ctx: { db: import("./_generated/server").MutationCtx["d
   return row;
 }
 
+/** The person's next message in a research conversation. */
+export async function replyResearch(ctx: MutationCtx & { workspaceId: Id<"workspaces"> }, row: Doc<"intakes">, input: ResearchChoices & { text: string }) {
+  await assertCanSpend(ctx, ctx.workspaceId);
+  if (row.skillSlug) notFound();
+  if (row.status === "thinking") throw userError("One moment. Vistrial is still reading your last message.");
+  if (row.status === "started" || row.status === "abandoned") throw userError("This conversation has ended. Start a new one.");
+  const text = clean(input.text, 1000);
+  if (!text) return null;
+  const now = await nextAt(ctx, row._id);
+  await ctx.db.insert("intakeMessages", { workspaceId: ctx.workspaceId, intakeId: row._id, role: "you", kind: "text", text, at: now });
+  await ctx.db.patch(row._id, {
+    status: "thinking",
+    updatedAt: now,
+    slots: withChoices(row.slots as Slots, input.platforms, input.links),
+    ...(input.mode ? { mode: input.mode } : {}),
+  });
+  await ctx.scheduler.runAfter(0, internal.intake.step, { intakeId: row._id });
+  return null;
+}
+
 /** The person's next message or tapped chip. */
 export const reply = workspaceMutation({
   args: { intakeId: v.id("intakes"), text: v.string(), mode: modeArg, platforms: v.optional(v.array(v.string())), links: v.optional(v.array(v.string())) },
   handler: async (ctx, args) => {
     assertEditor(ctx.member.role);
-    await assertCanSpend(ctx, ctx.workspaceId);
     const row = await ownIntake(ctx, args.intakeId);
-    if (row.status === "thinking") throw userError("One moment. Vistrial is still reading your last message.");
-    if (row.status === "started" || row.status === "abandoned") throw userError("This conversation has ended. Start a new session.");
-    const text = clean(args.text, 1000);
-    if (!text) return null;
-    const now = await nextAt(ctx, row._id);
-    await ctx.db.insert("intakeMessages", { workspaceId: ctx.workspaceId, intakeId: row._id, role: "you", kind: "text", text, at: now });
-    await ctx.db.patch(row._id, {
-      status: "thinking",
-      updatedAt: now,
-      slots: withChoices(row.slots as Slots, args.platforms, args.links),
-      ...(args.mode ? { mode: args.mode } : {}),
-    });
-    await ctx.scheduler.runAfter(0, internal.intake.step, { intakeId: row._id });
-    return null;
+    return replyResearch(ctx, row, args);
   },
 });
 
@@ -384,6 +406,7 @@ export const load = internalQuery({
       memory: [
         ...(profile ? [`Offer: ${profile.offer}`, `Audience: ${profile.audience}`, `Area: ${profile.geography}`, `Channels: ${profile.channels}`] : ["No confirmed business profile."]),
         ...facts.slice(0, 20).map((row) => `${row.factKey}: ${row.value} (${row.status})`),
+        ...(row.context ? [`The owner attached this ${row.context.kind === "offer" ? "offer of theirs" : "earlier result"} to refine: ${row.context.title}`] : []),
       ],
       route: route ?? (devSkillsEnabled() ? { provider: "fake", model: "fake-writer", fallbackProvider: "fake", fallbackModel: "fake-writer" } : null),
     };
@@ -458,7 +481,8 @@ export const step = internalAction({
     let slots = intake.slots as Slots;
     let spent = 0;
     const out: Message[] = [];
-    const latest = [...state.messages].reverse().find((row) => row.role === "you")?.text ?? "";
+    // A tapped routing choice ("Research my market") is not the question; the last typed message is.
+    const latest = [...state.messages].reverse().find((row) => row.role === "you" && row.kind !== "choice")?.text ?? "";
     const room = () => intake.capCents - intake.costCents - spent;
     const route = state.route as ModelRoute | null;
 

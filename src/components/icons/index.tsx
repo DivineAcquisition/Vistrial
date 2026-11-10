@@ -7,6 +7,7 @@ import { forwardRef, type ComponentType } from "react";
 import {
   ArrowCounterClockwise as PhArrowCounterClockwise,
   ArrowDownRight as PhArrowDownRight,
+  ArrowLeft as PhArrowLeft,
   ArrowRight as PhArrowRight,
   ArrowSquareOut as PhArrowSquareOut,
   ArrowUp as PhArrowUp,
@@ -73,6 +74,7 @@ import {
   ListDashes as PhListDashes,
   Lock as PhLock,
   MagnifyingGlass as PhMagnifyingGlass,
+  MegaphoneSimple as PhMegaphone,
   MagnifyingGlassMinus as PhMagnifyingGlassMinus,
   MapPin as PhMapPin,
   Minus as PhMinus,
@@ -141,6 +143,7 @@ function wrap(Base: Icon, name: string, duotone: boolean): LucideIcon {
 export const Activity = wrap(PhPulse, "Activity", true);
 export const AlertTriangle = wrap(PhWarning, "AlertTriangle", true);
 export const ArrowDownRight = wrap(PhArrowDownRight, "ArrowDownRight", false);
+export const ArrowLeft = wrap(PhArrowLeft, "ArrowLeft", false);
 export const ArrowRight = wrap(PhArrowRight, "ArrowRight", false);
 export const ArrowUp = wrap(PhArrowUp, "ArrowUp", false);
 export const ArrowUpRight = wrap(PhArrowUpRight, "ArrowUpRight", false);
@@ -222,7 +225,9 @@ export const MenuIcon = wrap(PhList, "MenuIcon", false);
 export const MessageCircleQuestion = wrap(PhChatCircleDots, "MessageCircleQuestion", true);
 export const MessageSquareText = wrap(PhChatText, "MessageSquareText", true);
 export const MessageSquareWarning = wrap(PhChatCircleText, "MessageSquareWarning", true);
+export const Megaphone = wrap(PhMegaphone, "Megaphone", true);
 export const MessagesSquare = wrap(PhChatsCircle, "MessagesSquare", true);
+export const Minus = wrap(PhMinus, "Minus", false);
 export const MinusCircle = wrap(PhMinusCircle, "MinusCircle", true);
 export const MinusIcon = wrap(PhMinus, "MinusIcon", false);
 export const MoonIcon = wrap(PhMoon, "MoonIcon", true);

@@ -988,13 +988,17 @@ export default defineSchema({
     name: v.string(),
     currentVersion: v.number(),
     archived: v.optional(v.boolean()),
+    /** The card this one was started from as a copy, when it was. */
+    copiedFrom: v.optional(v.id("offerCards")),
+    /** Each time "Analyse this offer" ran Offer Intelligence on this card: the run and the version it read. Newest last. */
+    analyses: v.optional(v.array(v.object({ runId: v.id("agentRuns"), version: v.number(), at: v.number() }))),
     createdBy: v.string(),
     createdAt: v.number(),
     updatedAt: v.number(),
   }).index("by_workspace", ["workspaceId", "updatedAt"]),
 
   /**
-   * One version of an offer card. A person writes one by editing the card or answering in the Offers chat;
+   * One version of an offer card. A person writes one in the offer builder or by answering in the chat;
    * an offer analysis writes one from what the business stated. Never overwritten: a change is a new version.
    */
   offerCardVersions: defineTable({
@@ -1007,6 +1011,25 @@ export default defineSchema({
     guarantee: v.string(),
     terms: v.string(),
     targetCustomer: v.string(),
+    // The offer builder's fields. All optional: versions from before the builder, the chat or an analysis have none.
+    /** The outcome the customer gets. */
+    outcome: v.optional(v.string()),
+    /** The structured price. `price` above is its plain-text form. */
+    pricing: v.optional(
+      v.object({
+        kind: v.union(v.literal("oneTime"), v.literal("monthly"), v.literal("tiered")),
+        amount: v.string(),
+        /** The optional "was" price. */
+        was: v.string(),
+        tiers: v.array(v.object({ name: v.string(), price: v.string() })),
+      }),
+    ),
+    /** Line items, each with an optional value. `included` above is their names. */
+    items: v.optional(v.array(v.object({ text: v.string(), value: v.string() }))),
+    bonuses: v.optional(v.array(v.string())),
+    guaranteeType: v.optional(v.union(v.literal("none"), v.literal("results"), v.literal("moneyBack"), v.literal("satisfaction"), v.literal("custom"))),
+    cta: v.optional(v.string()),
+    channel: v.optional(v.string()),
     origin: v.union(v.literal("person"), v.literal("chat"), v.literal("analysis")),
     /** The offer analysis this version came from, when it came from one. */
     assetId: v.optional(v.id("assets")),

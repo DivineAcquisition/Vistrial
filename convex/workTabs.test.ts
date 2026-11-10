@@ -35,39 +35,39 @@ async function seed(t: Tester, name: string) {
   return { owner, rep: t.withIdentity(person(`${name}-rep`)), workspaceId };
 }
 
-const card = { name: "Deep clean", price: "$180", included: ["Kitchen", "Bathrooms"], guarantee: "We come back free", terms: "24-hour cancel notice", targetCustomer: "Busy homeowners" };
+const card = { name: "Lead generation retainer", price: "$2,500", included: ["Paid ads", "Landing pages"], guarantee: "We work free until it is met", terms: "30-day cancel notice", targetCustomer: "Home-service brands" };
 
 function offerAnalysis(): OfferAnalysis {
   return {
     summary: "Your offer leads on price but states no guarantee.",
     offerPosition: { text: "Lead with the guarantee.", principleIds: [] },
-    currentOffer: { product: "Deep clean", price: "$180", guarantee: "Not stated", terms: "Not stated", basis: "stated", sourceRefIds: [], factIds: [] },
+    currentOffer: { product: "Lead generation retainer", price: "$2,500", guarantee: "Not stated", terms: "Not stated", basis: "stated", sourceRefIds: [], factIds: [] },
     competitorOffers: [
-      { competitor: "Sparkle Co", offer: "First clean 20% off", price: "$150", guarantee: "100% satisfaction or we re-clean", basis: "observed", sourceRefIds: ["s1"] },
-      { competitor: "Maid Right", offer: "Weekly plan", price: "Not stated", guarantee: "", basis: "observed", sourceRefIds: ["s2"] },
+      { competitor: "LeadForge Media", offer: "First month 20% off", price: "$1,950", guarantee: "30 leads in 30 days or the next month is free", basis: "observed", sourceRefIds: ["s1"] },
+      { competitor: "Summit Scale", offer: "Weekly plan", price: "Not stated", guarantee: "", basis: "observed", sourceRefIds: ["s2"] },
     ],
     gapsAndRisks: [{ kind: "gap", statement: "Competitors state a guarantee; you do not.", basis: "observed", sourceRefIds: ["s1"] }],
     changes: [
       {
-        title: "Add a re-clean guarantee",
-        evidence: { text: "Sparkle Co leads with one.", basis: "observed", sourceRefIds: ["s1"] },
+        title: "Add a results guarantee",
+        evidence: { text: "LeadForge Media leads with one.", basis: "observed", sourceRefIds: ["s1"] },
         fit: { text: "Fits your audience.", profileFields: ["audience"], factIds: [], decisionIds: [] },
         channel: "paidSocial",
         newChannel: false,
         principleIds: [],
-        proposedChange: "Promise a free re-clean within 24 hours.",
-        validationMethod: "Compare bookings for four weeks before and after.",
+        proposedChange: "Promise 20 booked calls in 60 days.",
+        validationMethod: "Compare booked calls for four weeks before and after.",
         metric: "bookings",
       },
       {
-        title: "Offer a first-clean price",
+        title: "Offer a pilot price",
         evidence: { text: "Two competitors discount the first visit.", basis: "inferred", sourceRefIds: ["s1", "s2"] },
         fit: { text: "Price-led buyers.", profileFields: ["priceNotes"], factIds: [], decisionIds: [] },
         channel: "paidSocial",
         newChannel: false,
         principleIds: [],
-        proposedChange: "Take $30 off the first clean.",
-        validationMethod: "Watch cost per booking.",
+        proposedChange: "Take $500 off the first month.",
+        validationMethod: "Watch cost per signed client.",
         metric: "costPerBooking",
       },
     ],
@@ -80,20 +80,20 @@ function offerAnalysis(): OfferAnalysis {
 async function seedOfferAsset(t: Tester, workspaceId: Id<"workspaces">, status: "draft" | "approved" = "draft") {
   return t.run(async (ctx) => {
     const now = Date.now();
-    const projectId = await ctx.db.insert("researchProjects", { workspaceId, title: "Cleaning, Austin", objective: "o", market: "Cleaning", geography: "Austin", competitors: [], platforms: ["web"], suppliedUrls: [], status: "ready", createdBy: "x", createdAt: now, updatedAt: now });
+    const projectId = await ctx.db.insert("researchProjects", { workspaceId, title: "Lead generation, Texas", objective: "o", market: "Lead generation", geography: "Texas", competitors: [], platforms: ["web"], suppliedUrls: [], status: "ready", createdBy: "x", createdAt: now, updatedAt: now });
     const runId = await ctx.db.insert("agentRuns", { workspaceId, agentSlug: AGENT, skillSlug: "offer-intelligence", status: "completed", startedBy: "x", inputRef: "offer-intelligence", startedAt: now, costCents: 40, inputTokens: 0, outputTokens: 0 });
     const step = (index: number, phase: string) => ctx.db.insert("runSteps", { workspaceId, runId, index, idempotencyKey: `${runId}-${index}`, kind: "tool", status: "completed", durationMs: 1, inputTokens: 0, outputTokens: 0, resultCode: "ok", phase });
     const contextStep = await step(0, "context");
     const saveStep = await step(1, "save");
     const context = {
-      reports: [{ assetId: "a", title: "Cleaning report", version: 1, projectId, claims: [] }],
+      reports: [{ assetId: "a", title: "Lead generation report", version: 1, projectId, claims: [] }],
       researchSources: [
-        { id: "s1", platform: "metaAdLibrary", title: "Sparkle Co ad", publisher: "Sparkle Co", url: "https://example.com/ad", excerpt: null, offerReading: null, observed: "2026-10-01", channel: "paidSocial" },
-        { id: "s2", platform: "web", title: "Maid Right pricing", publisher: "Maid Right", url: "https://example.com/pricing", excerpt: null, offerReading: null, observed: "2026-10-01", channel: null },
+        { id: "s1", platform: "metaAdLibrary", title: "LeadForge Media ad", publisher: "LeadForge Media", url: "https://example.com/ad", excerpt: null, offerReading: null, observed: "2026-10-01", channel: "paidSocial" },
+        { id: "s2", platform: "web", title: "Summit Scale pricing", publisher: "Summit Scale", url: "https://example.com/pricing", excerpt: null, offerReading: null, observed: "2026-10-01", channel: null },
       ],
       ownSources: [],
       baseProjectId: null,
-      profile: { versionId: "p", offer: "Deep clean", priceNotes: "$180", audience: "Busy homeowners", geography: "Austin", channels: "Meta", brandVoice: "", competitors: [] },
+      profile: { versionId: "p", offer: "Lead generation retainer", priceNotes: "$2,500", audience: "Home-service brands", geography: "Texas", channels: "Meta", brandVoice: "", competitors: [] },
       facts: [],
       channels: [],
       decisions: [],
@@ -105,7 +105,7 @@ async function seedOfferAsset(t: Tester, workspaceId: Id<"workspaces">, status: 
     } as unknown as OfferContext;
     await ctx.db.insert("runArtifacts", { workspaceId, runId, stepId: contextStep, kind: "context", byteSize: 1, body: JSON.stringify(context) });
     await ctx.db.insert("runArtifacts", { workspaceId, runId, stepId: saveStep, kind: "analysis", byteSize: 1, body: JSON.stringify({ analysis: offerAnalysis() }) });
-    const assetId = await ctx.db.insert("assets", { workspaceId, kind: "offerAnalysis", title: "Offer analysis: Deep clean", status, currentVersion: 1, createdByRun: runId, createdAt: now });
+    const assetId = await ctx.db.insert("assets", { workspaceId, kind: "offerAnalysis", title: "Offer analysis: Lead generation retainer", status, currentVersion: 1, createdByRun: runId, createdAt: now });
     return { assetId, projectId, runId };
   });
 }
@@ -150,7 +150,7 @@ async function seedDiagnosisAsset(t: Tester, workspaceId: Id<"workspaces">) {
       missing: [],
       profile: null,
       facts: [],
-      goal: { text: "40 more bookings a month", target: 40, metric: "bookings", period: "month" },
+      goal: { text: "10 more clients a month", target: 10, metric: "clients", period: "month" },
     };
     await ctx.db.insert("runArtifacts", { workspaceId, runId, stepId: readStep, kind: "diagnostics", byteSize: 1, body: JSON.stringify(record) });
     await ctx.db.insert("runArtifacts", { workspaceId, runId, stepId: saveStep, kind: "diagnosis", byteSize: 1, body: JSON.stringify({ diagnosis: diagnosis() }) });
@@ -161,7 +161,7 @@ async function seedDiagnosisAsset(t: Tester, workspaceId: Id<"workspaces">) {
 
 describe("the growth goal", () => {
   it("reads a number, a measure and a period from the owner's words, and nothing it cannot see", () => {
-    expect(readGoal("40 more bookings a month")).toEqual({ target: 40, metric: "bookings", period: "month" });
+    expect(readGoal("10 more clients a month")).toEqual({ target: 10, metric: "clients", period: "month" });
     expect(readGoal("$10k revenue per month")).toEqual({ target: 10000, metric: "revenue (money)", period: "month" });
     expect(readGoal("200 leads a quarter")).toEqual({ target: 200, metric: "leads", period: "quarter" });
     expect(readGoal("More repeat customers")).toEqual({});
@@ -172,16 +172,16 @@ describe("the growth goal", () => {
     const a = await seed(t, "Alpha");
     const b = await seed(t, "Beta");
     expect(await a.owner.query(api.goals.get, { workspaceId: a.workspaceId })).toBeNull();
-    await a.owner.mutation(api.goals.set, { workspaceId: a.workspaceId, text: "40 more bookings a month" });
-    await a.owner.mutation(api.goals.set, { workspaceId: a.workspaceId, text: "60 more bookings a month" });
+    await a.owner.mutation(api.goals.set, { workspaceId: a.workspaceId, text: "10 more clients a month" });
+    await a.owner.mutation(api.goals.set, { workspaceId: a.workspaceId, text: "15 more clients a month" });
     const goal = await a.owner.query(api.goals.get, { workspaceId: a.workspaceId });
-    expect(goal).toMatchObject({ text: "60 more bookings a month", target: 60, metric: "bookings", period: "month" });
+    expect(goal).toMatchObject({ text: "15 more clients a month", target: 15, metric: "clients", period: "month" });
     expect(await t.run((ctx) => ctx.db.query("growthGoals").collect())).toHaveLength(2);
     expect(await b.owner.query(api.goals.get, { workspaceId: b.workspaceId })).toBeNull();
     await expect(b.owner.query(api.goals.get, { workspaceId: a.workspaceId })).rejects.toThrow();
-    await expect(a.rep.mutation(api.goals.set, { workspaceId: a.workspaceId, text: "1 more booking" })).rejects.toThrow();
+    await expect(a.rep.mutation(api.goals.set, { workspaceId: a.workspaceId, text: "1 more client" })).rejects.toThrow();
     // A rep can read it.
-    expect((await a.rep.query(api.goals.get, { workspaceId: a.workspaceId }))?.text).toBe("60 more bookings a month");
+    expect((await a.rep.query(api.goals.get, { workspaceId: a.workspaceId }))?.text).toBe("15 more clients a month");
     await expect(a.owner.mutation(api.goals.set, { workspaceId: a.workspaceId, text: " " })).rejects.toThrow();
   });
 });
@@ -192,14 +192,14 @@ describe("offer cards", () => {
 
   it("compares two versions field by field, with what's included added and removed", () => {
     const before = cleanOffer(card);
-    const after = cleanOffer({ ...card, price: "$199", included: ["Kitchen", "Oven", "Bathrooms"] });
+    const after = cleanOffer({ ...card, price: "$2,900", included: ["Paid ads", "Call tracking", "Landing pages"] });
     const changes = compareOffers(before, after);
     expect(changes.filter((row) => row.changed).map((row) => row.field)).toEqual(["price", "included"]);
     const included = changes.find((row) => row.field === "included");
-    expect(included && "added" in included ? [included.added, included.removed] : null).toEqual([["Oven"], []]);
+    expect(included && "added" in included ? [included.added, included.removed] : null).toEqual([["Call tracking"], []]);
     expect(compareOffers(before, before).every((row) => !row.changed)).toBe(true);
     // "Not stated" from an analysis reads as blank, and repeats are dropped.
-    expect(cleanOffer({ ...card, guarantee: "Not stated", included: ["Kitchen", "kitchen", " "] })).toMatchObject({ guarantee: "", included: ["Kitchen"] });
+    expect(cleanOffer({ ...card, guarantee: "Not stated", included: ["Paid ads", "paid ads", " "] })).toMatchObject({ guarantee: "", included: ["Paid ads"] });
   });
 
   it("versions a card on every change, never overwrites, adds nothing for the same content, and compares", async () => {
@@ -209,16 +209,16 @@ describe("offer cards", () => {
     expect(first).toMatchObject({ version: 1, added: true });
     const same = await a.owner.mutation(api.offers.saveVersion, { workspaceId: a.workspaceId, cardId: first.cardId, ...card });
     expect(same).toMatchObject({ version: 1, added: false });
-    const second = await a.owner.mutation(api.offers.saveVersion, { workspaceId: a.workspaceId, cardId: first.cardId, ...card, price: "$199", note: "Raised the price" });
+    const second = await a.owner.mutation(api.offers.saveVersion, { workspaceId: a.workspaceId, cardId: first.cardId, ...card, price: "$2,900", note: "Raised the price" });
     expect(second.version).toBe(2);
     const read = await a.owner.query(api.offers.get, { workspaceId: a.workspaceId, cardId: first.cardId });
-    expect(read.versions.map((row) => [row.version, row.price])).toEqual([[1, "$180"], [2, "$199"]]);
+    expect(read.versions.map((row) => [row.version, row.price])).toEqual([[1, "$2,500"], [2, "$2,900"]]);
     expect(read.currentVersion).toBe(2);
     const compared = await a.owner.query(api.offers.compare, { workspaceId: a.workspaceId, cardId: first.cardId, from: 1, to: 2 });
     expect(compared.changes.filter((row) => row.changed).map((row) => row.field)).toEqual(["price"]);
     const list = await a.owner.query(api.offers.list, { workspaceId: a.workspaceId });
     expect(list).toHaveLength(1);
-    expect(list[0]).toMatchObject({ versions: 2, current: { price: "$199", note: "Raised the price" } });
+    expect(list[0]).toMatchObject({ versions: 2, current: { price: "$2,900", note: "Raised the price" } });
     await expect(a.owner.mutation(api.offers.saveVersion, { workspaceId: a.workspaceId, ...card, name: "" })).rejects.toThrow();
   });
 
@@ -241,13 +241,13 @@ describe("offer cards", () => {
     const b = await seed(t, "Beta");
     const { assetId } = await seedOfferAsset(t, a.workspaceId);
     const view = (await a.owner.query(api.offers.analysis, { workspaceId: a.workspaceId, assetId }))!;
-    expect(view.ours).toMatchObject({ product: "Deep clean", price: "$180" });
+    expect(view.ours).toMatchObject({ product: "Lead generation retainer", price: "$2,500" });
     expect(view.competitors.map((row) => [row.competitor, row.gaps.guarantee, row.gaps.price])).toEqual([
-      ["Sparkle Co", true, false],
-      ["Maid Right", false, false],
+      ["LeadForge Media", true, false],
+      ["Summit Scale", false, false],
     ]);
-    expect(view.competitors[0].sources).toEqual([{ id: "s1", title: "Sparkle Co ad", url: "https://example.com/ad", platform: "metaAdLibrary" }]);
-    expect(view.changes.map((row) => row.title)).toEqual(["Add a re-clean guarantee", "Offer a first-clean price"]);
+    expect(view.competitors[0].sources).toEqual([{ id: "s1", title: "LeadForge Media ad", url: "https://example.com/ad", platform: "metaAdLibrary" }]);
+    expect(view.changes.map((row) => row.title)).toEqual(["Add a results guarantee", "Offer a pilot price"]);
     await expect(b.owner.query(api.offers.analysis, { workspaceId: b.workspaceId, assetId })).rejects.toThrow();
   });
 
@@ -259,8 +259,8 @@ describe("offer cards", () => {
     const added = await a.owner.mutation(api.offers.fromAnalysis, { workspaceId: a.workspaceId, assetId, cardId });
     expect(added).toMatchObject({ version: 2, added: true });
     const read = await a.owner.query(api.offers.get, { workspaceId: a.workspaceId, cardId });
-    expect(read.versions[1]).toMatchObject({ origin: "analysis", price: "$180", guarantee: "", included: ["Kitchen", "Bathrooms"], targetCustomer: "Busy homeowners" });
-    expect(JSON.stringify(read.versions)).not.toContain("Sparkle");
+    expect(read.versions[1]).toMatchObject({ origin: "analysis", price: "$2,500", guarantee: "", included: ["Paid ads", "Landing pages"], targetCustomer: "Home-service brands" });
+    expect(JSON.stringify(read.versions)).not.toContain("LeadForge");
     await expect(a.rep.mutation(api.offers.fromAnalysis, { workspaceId: a.workspaceId, assetId })).rejects.toThrow();
   });
 });
@@ -277,11 +277,11 @@ describe("the outcome loop for offer changes and roadmap steps", () => {
     expect(await a.owner.mutation(api.decisions.planItem, { workspaceId: a.workspaceId, assetId, index: 1, checkInDays: 30 })).toBe(id);
     const rows = await a.owner.query(api.decisions.forAsset, { workspaceId: a.workspaceId, assetId });
     expect(rows).toHaveLength(1);
-    expect(rows[0]).toMatchObject({ itemKind: "offerChange", opportunityIndex: 1, opportunity: "Offer a first-clean price", proposedAction: "Take $30 off the first clean.", validationMethod: "Watch cost per booking." });
+    expect(rows[0]).toMatchObject({ itemKind: "offerChange", opportunityIndex: 1, opportunity: "Offer a pilot price", proposedAction: "Take $500 off the first month.", validationMethod: "Watch cost per signed client." });
     const saved = await t.run((ctx) => ctx.db.get(id));
     expect(saved?.projectId).toBe(projectId);
     expect(await a.owner.query(api.decisions.forProject, { workspaceId: a.workspaceId, projectId })).toEqual([]);
-    await a.owner.mutation(api.decisions.recordOutcome, { workspaceId: a.workspaceId, decisionId: id, result: "better", note: "More bookings." });
+    await a.owner.mutation(api.decisions.recordOutcome, { workspaceId: a.workspaceId, decisionId: id, result: "better", note: "More signed clients." });
     expect((await a.owner.query(api.decisions.forAsset, { workspaceId: a.workspaceId, assetId }))[0].outcome?.result).toBe("better");
     await expect(a.owner.mutation(api.decisions.planItem, { workspaceId: a.workspaceId, assetId, index: 9, checkInDays: 30 })).rejects.toThrow();
     await expect(a.owner.mutation(api.decisions.planItem, { workspaceId: a.workspaceId, assetId, index: 0, checkInDays: 7 })).rejects.toThrow();
@@ -317,12 +317,12 @@ describe("the Diagnostics tab", () => {
     const b = await seed(t, "Beta");
     const empty = await a.owner.query(api.workTabs.diagnostics, { workspaceId: a.workspaceId });
     expect(empty).toEqual({ goal: null, diagnosis: null });
-    await a.owner.mutation(api.goals.set, { workspaceId: a.workspaceId, text: "40 more bookings a month" });
+    await a.owner.mutation(api.goals.set, { workspaceId: a.workspaceId, text: "10 more clients a month" });
     const { assetId } = await seedDiagnosisAsset(t, a.workspaceId);
     const view = await a.owner.query(api.workTabs.diagnostics, { workspaceId: a.workspaceId });
-    expect(view.goal?.text).toBe("40 more bookings a month");
+    expect(view.goal?.text).toBe("10 more clients a month");
     expect(view.diagnosis?.assetId).toBe(assetId);
-    expect(view.diagnosis?.goalUsed).toBe("40 more bookings a month");
+    expect(view.diagnosis?.goalUsed).toBe("10 more clients a month");
     expect(view.diagnosis?.roadmap.map((row) => row.phase)).toEqual(["fix", "build", "scale"]);
     expect(view.diagnosis?.roadmap[0].figures).toEqual([{ id: "F1", label: "Meta cost per lead", display: "$25.00", computed: true, formula: "spend ÷ leads", period: null }]);
     expect(view.diagnosis?.roadmap[2]).toMatchObject({ figures: [], target: "Not enough data" });
@@ -366,13 +366,13 @@ describe("the skill-scoped chat", () => {
   afterEach(() => vi.useRealTimers());
 
   it("turns the owner's offer answers into card content in code", () => {
-    expect(offerFromAnswers({ offer: "Deep clean, $180", included: "Kitchen, Bathrooms, Satisfaction guarantee: we come back free, 24-hour cancel notice" }, "Busy homeowners")).toEqual({
-      name: "Deep clean",
-      price: "$180",
-      included: ["Kitchen", "Bathrooms"],
-      guarantee: "Satisfaction guarantee: we come back free",
-      terms: "24-hour cancel notice",
-      targetCustomer: "Busy homeowners",
+    expect(offerFromAnswers({ offer: "Lead generation retainer, $2,500", included: "Paid ads, Landing pages, Results guarantee: we work free until it is met, 30-day cancel notice" }, "Home-service brands")).toMatchObject({
+      name: "Lead generation retainer",
+      price: "$2,500",
+      included: ["Paid ads", "Landing pages"],
+      guarantee: "Results guarantee: we work free until it is met",
+      terms: "30-day cancel notice",
+      targetCustomer: "Home-service brands",
     });
     expect(offerFromAnswers({ offer: "Lawn care plan $49/month", included: "No guarantee" })).toMatchObject({ name: "Lawn care plan", price: "$49/month", guarantee: "", included: [] });
   });
@@ -385,7 +385,7 @@ describe("the skill-scoped chat", () => {
     expect(view.intake.asking).toBe("goal");
     expect(view.messages.at(-1)?.kind).toBe("question");
     await expect(a.owner.mutation(api.skillIntake.start, { workspaceId: a.workspaceId, intakeId })).rejects.toThrow();
-    await a.owner.mutation(api.skillIntake.reply, { workspaceId: a.workspaceId, intakeId, text: "40 more bookings a month" });
+    await a.owner.mutation(api.skillIntake.reply, { workspaceId: a.workspaceId, intakeId, text: "10 more clients a month" });
     view = await a.owner.query(api.skillIntake.get, { workspaceId: a.workspaceId, intakeId });
     expect(view.intake.status).toBe("ready");
     const plan = view.messages.at(-1)!;
@@ -396,7 +396,7 @@ describe("the skill-scoped chat", () => {
     expect(await t.run((ctx) => ctx.db.query("agentRuns").collect())).toHaveLength(0);
     await expect(a.rep.mutation(api.skillIntake.start, { workspaceId: a.workspaceId, intakeId })).rejects.toThrow();
     const started = await a.owner.mutation(api.skillIntake.start, { workspaceId: a.workspaceId, intakeId });
-    expect((await a.owner.query(api.goals.get, { workspaceId: a.workspaceId }))?.target).toBe(40);
+    expect((await a.owner.query(api.goals.get, { workspaceId: a.workspaceId }))?.target).toBe(10);
     const run = await t.run((ctx) => ctx.db.get(started.runId));
     expect(run).toMatchObject({ skillSlug: "growth-diagnostics", inputRef: started.projectId });
     const project = await t.run((ctx) => ctx.db.get(started.projectId!));
@@ -410,24 +410,24 @@ describe("the skill-scoped chat", () => {
     const a = await seed(t, "Alpha");
     const first = await a.owner.mutation(api.skillIntake.create, { workspaceId: a.workspaceId, skillSlug: "growth-diagnostics", text: "I want 25 more leads a week" });
     expect((await a.owner.query(api.skillIntake.get, { workspaceId: a.workspaceId, intakeId: first })).intake).toMatchObject({ status: "ready", answers: { goal: "I want 25 more leads a week" } });
-    await a.owner.mutation(api.goals.set, { workspaceId: a.workspaceId, text: "40 more bookings a month" });
+    await a.owner.mutation(api.goals.set, { workspaceId: a.workspaceId, text: "10 more clients a month" });
     const second = await a.owner.mutation(api.skillIntake.create, { workspaceId: a.workspaceId, skillSlug: "growth-diagnostics", text: "Run it again" });
-    expect((await a.owner.query(api.skillIntake.get, { workspaceId: a.workspaceId, intakeId: second })).intake).toMatchObject({ status: "ready", answers: { goal: "40 more bookings a month" } });
+    expect((await a.owner.query(api.skillIntake.get, { workspaceId: a.workspaceId, intakeId: second })).intake).toMatchObject({ status: "ready", answers: { goal: "10 more clients a month" } });
   });
 
   it("Offers asks about the offer, saves a chat version of the card and the owner's facts on Start, then runs Offer Intelligence", async () => {
     const t = makeTester();
     const a = await seed(t, "Alpha");
     const intakeId = await a.owner.mutation(api.skillIntake.create, { workspaceId: a.workspaceId, skillSlug: "offer-intelligence", text: "Help me sharpen my offer" });
-    await a.owner.mutation(api.skillIntake.reply, { workspaceId: a.workspaceId, intakeId, text: "Deep clean, $180" });
-    await a.owner.mutation(api.skillIntake.reply, { workspaceId: a.workspaceId, intakeId, text: "Kitchen, Bathrooms, Satisfaction guarantee" });
+    await a.owner.mutation(api.skillIntake.reply, { workspaceId: a.workspaceId, intakeId, text: "Lead generation retainer, $2,500" });
+    await a.owner.mutation(api.skillIntake.reply, { workspaceId: a.workspaceId, intakeId, text: "Paid ads, Landing pages, Satisfaction guarantee" });
     expect((await a.owner.query(api.skillIntake.get, { workspaceId: a.workspaceId, intakeId })).intake.asking).toBe("acquisitionChannels");
     await a.owner.mutation(api.skillIntake.reply, { workspaceId: a.workspaceId, intakeId, text: "Referrals" });
     expect((await a.owner.query(api.skillIntake.open, { workspaceId: a.workspaceId, skillSlug: "offer-intelligence" }))?.intake.status).toBe("ready");
     const started = await a.owner.mutation(api.skillIntake.start, { workspaceId: a.workspaceId, intakeId });
     expect((await t.run((ctx) => ctx.db.get(started.runId)))?.skillSlug).toBe("offer-intelligence");
     const cards = await a.owner.query(api.offers.list, { workspaceId: a.workspaceId });
-    expect(cards[0].current).toMatchObject({ name: "Deep clean", price: "$180", included: ["Kitchen", "Bathrooms"], guarantee: "Satisfaction guarantee", origin: "chat" });
+    expect(cards[0].current).toMatchObject({ name: "Lead generation retainer", price: "$2,500", included: ["Paid ads", "Landing pages"], guarantee: "Satisfaction guarantee", origin: "chat" });
     const facts = await a.owner.query(api.facts.list, { workspaceId: a.workspaceId });
     expect(facts.find((row) => row.factKey === "acquisitionChannels")?.value).toBe("Referrals");
     expect(facts.find((row) => row.factKey === "offerDetails")?.status).toBe("verified");
@@ -442,7 +442,7 @@ describe("the skill-scoped chat", () => {
     await expect(a.owner.mutation(api.skillIntake.create, { workspaceId: a.workspaceId, skillSlug: "campaign-strategy", text: "Hi" })).rejects.toThrow();
     const intakeId = await a.owner.mutation(api.skillIntake.create, { workspaceId: a.workspaceId, skillSlug: "growth-diagnostics", text: "Hi" });
     await expect(b.owner.query(api.skillIntake.get, { workspaceId: b.workspaceId, intakeId })).rejects.toThrow();
-    await expect(b.owner.mutation(api.skillIntake.reply, { workspaceId: b.workspaceId, intakeId, text: "40 more bookings a month" })).rejects.toThrow();
+    await expect(b.owner.mutation(api.skillIntake.reply, { workspaceId: b.workspaceId, intakeId, text: "10 more clients a month" })).rejects.toThrow();
     await expect(b.owner.mutation(api.skillIntake.start, { workspaceId: b.workspaceId, intakeId })).rejects.toThrow();
   });
 });

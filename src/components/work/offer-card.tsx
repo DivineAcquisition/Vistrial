@@ -1,44 +1,70 @@
 "use client";
 
-import { forwardRef, useState } from "react";
+import { forwardRef } from "react";
 
-import { Check, ShieldCheck, Users, X } from "@/components/icons";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { showError } from "@/lib/errors/show-error";
+import { ArrowRight, Check, Megaphone, ShieldCheck, Sparkles, Target, Users, X } from "@/components/icons";
 import { shortDate } from "@/lib/research/words";
 import { cn } from "@/lib/utils";
+import { GUARANTEE_WORDS, PRICE_KIND_WORDS, itemsTotal, type OfferContent } from "../../../convex/lib/offerCards";
 
 import type { OfferComparison, OfferVersion } from "./types";
 
-export type OfferContent = { name: string; price: string; included: string[]; guarantee: string; terms: string; targetCustomer: string };
+export type { OfferContent };
 
 const ORIGIN_WORDS: Record<OfferVersion["origin"], string> = { person: "You edited", chat: "From your chat", analysis: "From an offer analysis" };
 
-function Missing() {
-  return <span className="text-muted-foreground italic">Not stated</span>;
+function Missing({ text = "Not stated" }: { text?: string }) {
+  return <span className="text-muted-foreground italic">{text}</span>;
 }
 
 /**
  * The offer card: a premium, printable summary of one offer. Its own colours come from the theme tokens,
- * so it reads in light and dark and exports as it looks.
+ * so it reads in light and dark and exports as it looks. The builder draws it live as a person types, so
+ * an unfilled part says what goes there (`draft`) rather than "Not stated".
  */
-export const OfferCardView = forwardRef<HTMLDivElement, { offer: OfferContent; version?: number; origin?: OfferVersion["origin"]; at?: number; className?: string }>(function OfferCardView(
-  { offer, version, origin, at, className },
+export const OfferCardView = forwardRef<HTMLDivElement, { offer: OfferContent; version?: number; origin?: OfferVersion["origin"]; at?: number; draft?: boolean; className?: string }>(function OfferCardView(
+  { offer, version, origin, at, draft = false, className },
   ref,
 ) {
+  const pricing = offer.pricing;
+  const total = itemsTotal(offer.items);
+  const items = offer.items.length ? offer.items : offer.included.map((text) => ({ text, value: "" }));
   return (
     <div ref={ref} className={cn("relative overflow-hidden rounded-3xl bg-gradient-to-br from-primary/60 via-primary/20 to-primary/50 p-px", className)}>
       <div className="relative grid gap-5 rounded-[calc(1.5rem-1px)] bg-card p-5 sm:p-6">
         <div aria-hidden className="pointer-events-none absolute -top-20 -right-20 size-56 rounded-full bg-primary/15 blur-3xl" />
         <div className="relative flex flex-wrap items-start justify-between gap-3">
-          <div className="grid min-w-0 gap-1">
+          <div className="grid min-w-0 flex-1 basis-52 gap-1">
             <p className="text-[11px] font-semibold tracking-[0.14em] text-muted-foreground uppercase">Offer</p>
-            <h3 className="font-heading text-xl break-words text-card-foreground sm:text-2xl">{offer.name || <Missing />}</h3>
+            <h3 className="font-heading text-xl break-words text-card-foreground sm:text-2xl">{offer.name || <Missing text={draft ? "Your offer's name" : undefined} />}</h3>
+            {offer.outcome ? (
+              <p className="flex items-start gap-1.5 text-sm text-card-foreground">
+                <Target aria-hidden className="mt-0.5 size-4 shrink-0 text-primary" />
+                <span className="min-w-0 break-words">{offer.outcome}</span>
+              </p>
+            ) : draft ? (
+              <p className="text-sm">
+                <Missing text="The outcome they get" />
+              </p>
+            ) : null}
           </div>
-          <div className="grid justify-items-end">
-            <span className="font-heading text-2xl text-card-foreground tabular-nums sm:text-3xl">{offer.price || <Missing />}</span>
+          <div className="grid min-w-0 justify-items-start gap-0.5 sm:justify-items-end">
+            {pricing?.kind === "tiered" && pricing.tiers.length ? (
+              <ul className="grid gap-1">
+                {pricing.tiers.map((tier) => (
+                  <li key={`${tier.name}-${tier.price}`} className="flex items-baseline justify-between gap-4">
+                    <span className="text-sm text-muted-foreground">{tier.name}</span>
+                    <span className="font-heading text-lg text-card-foreground tabular-nums">{tier.price}</span>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <span className="flex flex-wrap items-baseline gap-x-2">
+                {pricing?.was ? <s className="text-sm text-muted-foreground tabular-nums">{pricing.was}</s> : null}
+                <span className="font-heading text-2xl break-words text-card-foreground tabular-nums sm:text-3xl">{offer.price || <Missing text={draft ? "Price" : undefined} />}</span>
+              </span>
+            )}
+            {pricing ? <span className="text-[11px] text-muted-foreground">{PRICE_KIND_WORDS[pricing.kind]} price</span> : null}
             {version ? (
               <span className="text-[11px] text-muted-foreground">
                 Version {version}
@@ -48,40 +74,71 @@ export const OfferCardView = forwardRef<HTMLDivElement, { offer: OfferContent; v
           </div>
         </div>
         <div className="relative grid gap-2">
-          <p className="text-xs font-medium text-muted-foreground">What&apos;s included</p>
-          {offer.included.length ? (
-            <ul className="grid gap-1.5 sm:grid-cols-2">
-              {offer.included.map((item) => (
-                <li key={item} className="flex items-start gap-2 text-sm text-card-foreground">
+          <p className="flex flex-wrap items-baseline justify-between gap-2 text-xs font-medium text-muted-foreground">
+            <span>What&apos;s included</span>
+            {total ? <span className="tabular-nums">{total} total value</span> : null}
+          </p>
+          {items.length ? (
+            <ul className="grid gap-1.5">
+              {items.map((item) => (
+                <li key={item.text} className="flex items-start gap-2 text-sm text-card-foreground">
                   <span className="mt-0.5 flex size-4 shrink-0 items-center justify-center rounded-full bg-primary/15 text-primary">
                     <Check aria-hidden className="size-3" />
                   </span>
-                  {item}
+                  <span className="min-w-0 flex-1 break-words">{item.text}</span>
+                  {item.value ? <span className="shrink-0 text-xs text-muted-foreground tabular-nums">{item.value} value</span> : null}
                 </li>
               ))}
             </ul>
           ) : (
             <p className="text-sm">
-              <Missing />
+              <Missing text={draft ? "Line items show here" : undefined} />
             </p>
           )}
         </div>
-        <div className="relative grid gap-3 sm:grid-cols-2">
-          <div className="grid gap-1 rounded-2xl border border-border bg-muted/30 p-3">
-            <p className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
-              <ShieldCheck aria-hidden className="size-3.5 text-primary" /> Guarantee
-            </p>
-            <p className="text-sm text-card-foreground">{offer.guarantee || <Missing />}</p>
+        {offer.bonuses.length ? (
+          <div className="relative grid gap-2">
+            <p className="text-xs font-medium text-muted-foreground">Bonuses</p>
+            <ul className="flex flex-wrap gap-1.5">
+              {offer.bonuses.map((bonus) => (
+                <li key={bonus} className="inline-flex max-w-full items-start gap-1.5 rounded-full border border-primary/25 bg-primary/[0.07] px-2.5 py-1 text-xs text-card-foreground">
+                  <Sparkles aria-hidden className="mt-px size-3.5 shrink-0 text-primary" />
+                  <span className="min-w-0 break-words">{bonus}</span>
+                </li>
+              ))}
+            </ul>
           </div>
-          <div className="grid gap-1 rounded-2xl border border-border bg-muted/30 p-3">
+        ) : null}
+        <div className="relative grid gap-3 sm:grid-cols-2">
+          <div className="grid content-start gap-1 rounded-2xl border border-border bg-muted/30 p-3">
+            <p className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
+              <ShieldCheck aria-hidden className="size-3.5 text-primary" /> {offer.guaranteeType ? GUARANTEE_WORDS[offer.guaranteeType] : "Guarantee"}
+            </p>
+            {offer.guaranteeType === "none" ? <p className="text-sm text-muted-foreground">None offered.</p> : <p className="text-sm break-words text-card-foreground">{offer.guarantee || <Missing />}</p>}
+          </div>
+          <div className="grid content-start gap-1 rounded-2xl border border-border bg-muted/30 p-3">
             <p className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
               <Users aria-hidden className="size-3.5 text-primary" /> For
             </p>
-            <p className="text-sm text-card-foreground">{offer.targetCustomer || <Missing />}</p>
+            <p className="text-sm break-words text-card-foreground">{offer.targetCustomer || <Missing />}</p>
           </div>
         </div>
+        {offer.cta || offer.channel ? (
+          <div className="relative flex flex-wrap items-center gap-x-3 gap-y-2">
+            {offer.cta ? (
+              <span className="inline-flex max-w-full items-center gap-1.5 rounded-full bg-primary px-3.5 py-1.5 text-sm font-medium text-primary-foreground">
+                <span className="min-w-0 break-words">{offer.cta}</span> <ArrowRight aria-hidden className="size-3.5 shrink-0" />
+              </span>
+            ) : null}
+            {offer.channel ? (
+              <span className="inline-flex min-w-0 items-center gap-1.5 text-xs text-muted-foreground">
+                <Megaphone aria-hidden className="size-3.5 shrink-0 text-primary" /> <span className="min-w-0 break-words">Offered through {offer.channel}</span>
+              </span>
+            ) : null}
+          </div>
+        ) : null}
         <div className="relative flex flex-wrap items-center justify-between gap-2 border-t border-border pt-3 text-xs">
-          <span className="text-muted-foreground">
+          <span className="min-w-0 break-words text-muted-foreground">
             <span className="font-medium text-card-foreground">Terms:</span> {offer.terms || "Not stated"}
           </span>
           {origin ? <span className="text-muted-foreground">{ORIGIN_WORDS[origin]}</span> : null}
@@ -90,70 +147,6 @@ export const OfferCardView = forwardRef<HTMLDivElement, { offer: OfferContent; v
     </div>
   );
 });
-
-/** Edits a card. Saving makes a new version; nothing is overwritten. */
-export function OfferEditor({ initial, onSave, onCancel }: { initial: OfferContent; onSave: (offer: OfferContent, note: string) => Promise<void>; onCancel: () => void }) {
-  const [offer, setOffer] = useState<OfferContent>(initial);
-  const [items, setItems] = useState(initial.included.join("\n"));
-  const [note, setNote] = useState("");
-  const [busy, setBusy] = useState(false);
-  const [problem, setProblem] = useState("");
-  const field = (key: keyof Omit<OfferContent, "included">, label: string, multiline = false) => (
-    <label className="grid gap-1 text-sm">
-      <span className="text-muted-foreground">{label}</span>
-      {multiline ? (
-        <Textarea rows={2} value={offer[key]} onChange={(event) => setOffer({ ...offer, [key]: event.target.value })} />
-      ) : (
-        <Input value={offer[key]} onChange={(event) => setOffer({ ...offer, [key]: event.target.value })} />
-      )}
-    </label>
-  );
-  return (
-    <form
-      className="grid gap-3 rounded-2xl border border-border bg-card p-4"
-      onSubmit={(event) => {
-        event.preventDefault();
-        setBusy(true);
-        setProblem("");
-        const included = items.split("\n").map((row) => row.trim()).filter(Boolean);
-        void onSave({ ...offer, included }, note).then(
-          () => setBusy(false),
-          (error: unknown) => {
-            setBusy(false);
-            setProblem(showError(error, "That did not save."));
-          },
-        );
-      }}
-    >
-      <div className="grid gap-3 sm:grid-cols-2">
-        {field("name", "Name")}
-        {field("price", "Price")}
-      </div>
-      <label className="grid gap-1 text-sm">
-        <span className="text-muted-foreground">What&apos;s included (one per line)</span>
-        <Textarea rows={4} value={items} onChange={(event) => setItems(event.target.value)} />
-      </label>
-      <div className="grid gap-3 sm:grid-cols-2">
-        {field("guarantee", "Guarantee", true)}
-        {field("terms", "Terms", true)}
-      </div>
-      {field("targetCustomer", "Target customer")}
-      <label className="grid gap-1 text-sm">
-        <span className="text-muted-foreground">What changed and why (optional)</span>
-        <Input value={note} maxLength={300} onChange={(event) => setNote(event.target.value)} />
-      </label>
-      <div className="flex flex-wrap gap-2">
-        <Button type="submit" size="sm" disabled={busy}>
-          Save as a new version
-        </Button>
-        <Button type="button" size="sm" variant="ghost" onClick={onCancel}>
-          Cancel
-        </Button>
-      </div>
-      {problem ? <p className="text-xs text-destructive">{problem}</p> : null}
-    </form>
-  );
-}
 
 /** Two versions side by side: each field before and after, changed ones highlighted. */
 export function OfferCompareView({ comparison }: { comparison: OfferComparison }) {
@@ -168,7 +161,7 @@ export function OfferCompareView({ comparison }: { comparison: OfferComparison }
         {comparison.changes.map((row) => (
           <div key={row.field} className={cn("grid gap-2 rounded-xl border p-3 sm:grid-cols-[8rem_minmax(0,1fr)_minmax(0,1fr)]", row.changed ? "border-primary/40 bg-primary/[0.05]" : "border-border")}>
             <dt className="text-xs font-medium text-muted-foreground">{row.label}</dt>
-            {row.field === "included" && "added" in row ? (
+            {"added" in row ? (
               <>
                 <dd className="text-sm text-muted-foreground">{row.before.join(", ") || "Not stated"}</dd>
                 <dd className="grid gap-1 text-sm text-card-foreground">
@@ -183,8 +176,8 @@ export function OfferCompareView({ comparison }: { comparison: OfferComparison }
               </>
             ) : (
               <>
-                <dd className={cn("text-sm", row.changed ? "text-muted-foreground line-through decoration-muted-foreground/50" : "text-muted-foreground")}>{(row.before as string) || "Not stated"}</dd>
-                <dd className={cn("text-sm", row.changed ? "font-medium text-card-foreground" : "text-muted-foreground")}>{(row.after as string) || "Not stated"}</dd>
+                <dd className={cn("text-sm break-words", row.changed ? "text-muted-foreground line-through decoration-muted-foreground/50" : "text-muted-foreground")}>{row.before || "Not stated"}</dd>
+                <dd className={cn("text-sm break-words", row.changed ? "font-medium text-card-foreground" : "text-muted-foreground")}>{row.after || "Not stated"}</dd>
               </>
             )}
           </div>

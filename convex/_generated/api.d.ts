@@ -81,6 +81,7 @@ import type * as lib_toolRouter from "../lib/toolRouter.js";
 import type * as lib_workTabs from "../lib/workTabs.js";
 import type * as merges from "../merges.js";
 import type * as metaAds from "../metaAds.js";
+import type * as offerRuns from "../offerRuns.js";
 import type * as offers from "../offers.js";
 import type * as onboarding from "../onboarding.js";
 import type * as people from "../people.js";
@@ -208,6 +209,7 @@ declare const fullApi: ApiFromModules<{
   "lib/workTabs": typeof lib_workTabs;
   merges: typeof merges;
   metaAds: typeof metaAds;
+  offerRuns: typeof offerRuns;
   offers: typeof offers;
   onboarding: typeof onboarding;
   people: typeof people;

@@ -17,7 +17,8 @@ import { notAllowed, notFound, userError } from "./lib/errors";
 import { liveFact, writeFact } from "./lib/facts";
 import { assertCanSpend } from "./lib/billing";
 import { currentGoal, readGoal, MAX_GOAL } from "./goals";
-import { cleanOffer, compareOffers, type OfferContent } from "./lib/offerCards";
+import { EMPTY_OFFER, cleanOffer, sameOffer, type OfferContent } from "./lib/offerCards";
+import { versionFields } from "./offers";
 import { startRunFor } from "./runs";
 
 export const CHAT_SKILLS = ["offer-intelligence", "growth-diagnostics"] as const;
@@ -347,7 +348,7 @@ async function saveCardFromChat(ctx: MutationCtx & { workspaceId: Id<"workspaces
   const now = Date.now();
   if (!card) {
     const cardId = await ctx.db.insert("offerCards", { workspaceId: ctx.workspaceId, name: content.name, currentVersion: 1, createdBy: ctx.identity.subject, createdAt: now, updatedAt: now });
-    await ctx.db.insert("offerCardVersions", { workspaceId: ctx.workspaceId, cardId, version: 1, ...content, origin: "chat", createdBy: ctx.identity.subject, createdAt: now });
+    await ctx.db.insert("offerCardVersions", { workspaceId: ctx.workspaceId, cardId, version: 1, ...versionFields(content), origin: "chat", createdBy: ctx.identity.subject, createdAt: now });
     return;
   }
   const versions = await ctx.db
@@ -355,20 +356,24 @@ async function saveCardFromChat(ctx: MutationCtx & { workspaceId: Id<"workspaces
     .withIndex("by_workspace_card", (q) => q.eq("workspaceId", ctx.workspaceId).eq("cardId", card._id))
     .take(100);
   const current = versions.find((row) => row.version === card.currentVersion);
-  // Keeps what the chat did not mention.
-  const merged: OfferContent = current
-    ? {
+  // Keeps what the chat did not mention, the builder's fields included.
+  const kept = current ? cleanOffer({ ...EMPTY_OFFER, ...current, items: current.items ?? [] }) : null;
+  const merged: OfferContent = kept
+    ? cleanOffer({
+        ...kept,
         name: content.name,
-        price: content.price || current.price,
-        included: content.included.length ? content.included : current.included,
-        guarantee: content.guarantee || current.guarantee,
-        terms: content.terms || current.terms,
-        targetCustomer: content.targetCustomer || current.targetCustomer,
-      }
+        price: content.price || kept.price,
+        pricing: content.price && content.price !== kept.price ? null : kept.pricing,
+        included: content.included.length ? content.included : kept.included,
+        items: content.included.length ? content.included.map((text) => kept.items.find((row) => row.text.toLowerCase() === text.toLowerCase()) ?? { text, value: "" }) : kept.items,
+        guarantee: content.guarantee || kept.guarantee,
+        terms: content.terms || kept.terms,
+        targetCustomer: content.targetCustomer || kept.targetCustomer,
+      })
     : content;
-  if (current && compareOffers(current, merged).every((change) => !change.changed)) return;
+  if (kept && sameOffer(kept, merged)) return;
   const version = Math.max(0, ...versions.map((row) => row.version)) + 1;
-  await ctx.db.insert("offerCardVersions", { workspaceId: ctx.workspaceId, cardId: card._id, version, ...merged, origin: "chat", createdBy: ctx.identity.subject, createdAt: now });
+  await ctx.db.insert("offerCardVersions", { workspaceId: ctx.workspaceId, cardId: card._id, version, ...versionFields(merged), origin: "chat", createdBy: ctx.identity.subject, createdAt: now });
   await ctx.db.patch(card._id, { currentVersion: version, updatedAt: now });
 }
 

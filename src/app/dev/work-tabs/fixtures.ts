@@ -1,4 +1,5 @@
 import type { ChatDetail, ChatRow } from "@/components/chat/agent-chat";
+import { EMPTY_OFFER, cleanOffer, type OfferInput } from "../../../../convex/lib/offerCards";
 import type {
   DiagnosticsData,
   ItemDecision,
@@ -55,27 +56,67 @@ export function storyTab(skillSlug: TabData["skillSlug"], state: string): TabDat
   };
 }
 
-const retainer = {
+/** The agency's main offer, as the builder saves it. */
+const retainer: OfferInput = {
   name: "Done-for-you lead generation retainer",
-  included: ["Paid ads management on Meta and Google", "Two landing pages, built and tested", "Lead follow-up by text within five minutes", "Weekly lead report"],
+  targetCustomer: "Home-service brands doing $1M to $5M a year",
+  outcome: "20 booked sales calls every month, without hiring a marketer",
+  price: "",
+  pricing: { kind: "monthly", amount: "$2,500", was: "$3,000", tiers: [] },
+  included: [],
+  items: [
+    { text: "Paid ads management on Meta and Google", value: "$1,500" },
+    { text: "Two landing pages, built and tested", value: "$2,000" },
+    { text: "Lead follow-up by text within five minutes", value: "$800" },
+    { text: "Weekly lead report", value: "" },
+  ],
+  bonuses: ["90-day content calendar", "Sales call scripts"],
+  guaranteeType: "results",
   guarantee: "20 booked calls in 60 days or we work free until you get them.",
   terms: "Month to month. 30-day notice. Ad spend billed by the platforms.",
-  targetCustomer: "Home-service brands doing $1M to $5M a year",
+  cta: "Book a strategy call",
+  channel: "Cold outreach",
 };
+
+export const STORY_OFFER = cleanOffer(retainer);
+
+/** What "Start from: Business profile" fills in. */
+export const STORY_PROFILE_OFFER = cleanOffer({
+  ...EMPTY_OFFER,
+  name: "Paid ads management for home-service brands",
+  targetCustomer: "Roofers, HVAC and plumbing companies in Texas",
+  pricing: { kind: "monthly", amount: "$1,500", was: "", tiers: [] },
+  channel: "Referrals",
+});
 
 export function storyCards(state: string): { cards: OfferCardRow[]; card: OfferCardFull | null } {
   if (state === "empty") return { cards: [], card: null };
+  const version = (n: number, change: Partial<OfferInput>, rest: Pick<OfferCardFull["versions"][number], "origin" | "assetId" | "note" | "createdAt">) => ({ version: n, ...cleanOffer({ ...retainer, ...change }), ...rest });
   const versions: OfferCardFull["versions"] = [
-    { version: 1, ...retainer, price: "$2,000/mo", included: retainer.included.slice(0, 3), guarantee: "", origin: "chat", assetId: null, note: null, createdAt: NOW - 30 * DAY },
-    { version: 2, ...retainer, price: "$2,000/mo", origin: "analysis", assetId: id("a0"), note: "From the offer analysis: what you stated.", createdAt: NOW - 18 * DAY },
-    { version: 3, ...retainer, price: "$2,500/mo", origin: "person", assetId: null, note: "Raised the price, added the booked-calls guarantee", createdAt: NOW - 2 * DAY },
+    version(1, { pricing: null, price: "$2,000/mo", outcome: "", items: retainer.items!.slice(0, 2).map((row) => ({ ...row, value: "" })), bonuses: [], guaranteeType: "", guarantee: "", cta: "", channel: "" }, { origin: "chat", assetId: null, note: null, createdAt: NOW - 30 * DAY }),
+    version(2, { pricing: { kind: "monthly", amount: "$2,000", was: "", tiers: [] }, bonuses: [], guaranteeType: "", guarantee: "", cta: "Get a free ad account audit" }, { origin: "person", assetId: null, note: "Added the outcome, the line items and a call to action", createdAt: NOW - 18 * DAY }),
+    version(3, {}, { origin: "person", assetId: null, note: "Raised the price, added the booked-calls guarantee and two bonuses", createdAt: NOW - 2 * DAY }),
   ];
+  const second = {
+    version: 1,
+    ...cleanOffer({ ...EMPTY_OFFER, name: "Paid ads management for home-service brands", targetCustomer: "Roofers, HVAC and plumbers", pricing: { kind: "tiered", amount: "", was: "", tiers: [{ name: "Starter", price: "$1,500/mo" }, { name: "Growth", price: "$2,500/mo" }] }, items: [{ text: "Meta and Google ads", value: "" }, { text: "Monthly creative refresh", value: "" }] }),
+    origin: "person" as const,
+    assetId: null,
+    note: null,
+    createdAt: NOW - 9 * DAY,
+  };
   return {
     cards: [
       { id: id("c1"), versions: 3, updatedAt: NOW - 2 * DAY, current: versions[2] },
-      { id: id("c2"), versions: 1, updatedAt: NOW - 9 * DAY, current: { version: 1, name: "Paid ads management for home-service brands", price: "$1,500/mo", included: ["Meta and Google ads", "Monthly creative refresh"], guarantee: "", terms: "", targetCustomer: "Roofers, HVAC and plumbers", origin: "person", assetId: null, note: null, createdAt: NOW - 9 * DAY } },
+      { id: id("c2"), versions: 1, updatedAt: NOW - 9 * DAY, current: second },
     ],
-    card: { id: id("c1"), currentVersion: 3, versions },
+    card: {
+      id: id("c1"),
+      name: retainer.name,
+      currentVersion: 3,
+      versions,
+      analyses: state === "analysing" ? [{ runId: id("run1"), version: 3, at: NOW - 4 * 60_000, state: "running", assetId: null, assetStatus: null }] : [{ runId: id("run1"), version: 3, at: NOW - 2 * 3_600_000, state: "done", assetId: id("a1"), assetStatus: "draft" }],
+    },
   };
 }
 

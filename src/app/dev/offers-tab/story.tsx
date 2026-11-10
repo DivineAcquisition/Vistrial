@@ -5,32 +5,40 @@ import { useState } from "react";
 import { OffersTabView } from "@/components/work/offers-tab";
 
 import { StoryFrame } from "../work-tabs/story-frame";
-import { storyAnalysis, storyCards, storyDecisions, storyTab } from "../work-tabs/fixtures";
+import { STORY_PROFILE_OFFER, storyAnalysis, storyCards, storyDecisions, storyTab } from "../work-tabs/fixtures";
 
 const noop = async () => undefined;
 
-/** The Offers workspace with fixture data: the card and its versions, the side-by-side, and the test plan. */
-export function OffersTabStory({ state, theme }: { state: string; theme: string }) {
+/**
+ * The Offers workspace with fixture data. `state`: full (the card, its versions, the analysis under it),
+ * empty, rep, analysing, new (the builder, blank), build (the builder mid-way, step from `step`), edit.
+ */
+export function OffersTabStory({ state, theme, step }: { state: string; theme: string; step: number }) {
   const editor = state !== "rep";
-  const { cards, card } = storyCards(state);
+  const data = state === "new" ? "full" : state === "build" || state === "edit" ? "full" : state;
+  const { cards, card } = storyCards(data);
   const [chosen, setChosen] = useState(card);
+  const builder = state === "new" ? { mode: "new" as const, step } : state === "build" || state === "edit" ? { mode: "edit" as const, step } : null;
   return (
-    <StoryFrame tab="work/offers" theme={theme} role={editor ? "owner" : "rep"}>
+    <StoryFrame theme={theme} role={editor ? "owner" : "rep"}>
       <OffersTabView
         base="/app/agents/growth-architect"
         editor={editor}
-        tab={storyTab("offer-intelligence", state)}
+        tab={storyTab("offer-intelligence", data)}
         cards={cards}
         card={chosen}
+        starter={STORY_PROFILE_OFFER}
         onSelectCard={(cardId) => setChosen(cardId === card?.id ? card : null)}
         onSaveCard={noop}
-        analysis={state === "empty" ? null : storyAnalysis()}
+        onAnalyse={noop}
+        analysis={data === "empty" || data === "analysing" ? null : storyAnalysis()}
         analysisId="a1"
         onSelectAnalysis={() => undefined}
         onCardFromAnalysis={noop}
-        decisions={state === "empty" ? new Map() : storyDecisions()}
+        decisions={data === "empty" ? new Map() : storyDecisions()}
         tryActions={{ plan: noop, record: noop, remove: noop }}
         review={{ approve: noop, reject: noop, requestChanges: noop }}
+        initialBuilder={builder}
       />
     </StoryFrame>
   );

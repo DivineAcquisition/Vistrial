@@ -693,6 +693,15 @@ export function DataSection({ role, data }: { role: Role; data: DataData }) {
         }
         footer={<CardLink href="/app/connections/results">{data.files > 0 ? "Manage files" : "Upload a file"}</CardLink>}
       />
+      <StatusCard
+        icon={ShieldCheck}
+        title="Browser access"
+        status="Dry run only"
+        tone="neutral"
+        sentence="Browser access: a practice version of an agent acting inside your own accounts. You sign in yourself, every change waits for your approval, and every step is recorded. No real account is opened yet."
+        affects="Nothing. It runs against a made-up practice site."
+        footer={<CardLink href="/app/connections/browser">Open</CardLink>}
+      />
     </div>
   );
 }

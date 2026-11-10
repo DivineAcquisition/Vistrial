@@ -1555,6 +1555,68 @@ export default defineSchema({
     robots: v.optional(v.object({ fetchedAt: v.number(), rules: v.string() })),
   }).index("by_site", ["site"]),
 
+  /**
+   * Acting inside a customer's own account, with approval (docs/rebuild/browser-with-approval.md). Only the
+   * approval surface exists, with a dry-run driver: no real account is opened. A session records that the
+   * customer signed in themselves, for one site, in one workspace. It holds no password, cookie or token:
+   * a real driver would keep those with the browser vendor, under `vendorRef`.
+   */
+  browserSessions: defineTable({
+    workspaceId: v.id("workspaces"),
+    site: v.string(),
+    driver: v.literal("dryRun"),
+    status: v.union(v.literal("pendingSignIn"), v.literal("active"), v.literal("revoked")),
+    /** The vendor's handle for the signed-in browser profile. Never a credential. Unused by the dry run. */
+    vendorRef: v.optional(v.string()),
+    createdBy: v.string(),
+    createdAt: v.number(),
+    signedInAt: v.optional(v.number()),
+    /** After this the customer must sign in again. Checked every time the session is used. */
+    expiresAt: v.optional(v.number()),
+    lastUsedAt: v.optional(v.number()),
+    revokedAt: v.optional(v.number()),
+    revokedBy: v.optional(v.string()),
+  }).index("by_workspace", ["workspaceId", "createdAt"]),
+
+  browserTasks: defineTable({
+    workspaceId: v.id("workspaces"),
+    sessionId: v.id("browserSessions"),
+    goalKey: v.string(),
+    goal: v.string(),
+    status: v.union(v.literal("running"), v.literal("waitingApproval"), v.literal("done"), v.literal("stopped")),
+    /** Why it stopped, as a code: declined, blocked, revoked, expired, approval_timed_out, stopped, limit. */
+    stopReason: v.optional(v.string()),
+    steps: v.number(),
+    createdBy: v.string(),
+    createdAt: v.number(),
+    finishedAt: v.optional(v.number()),
+  })
+    .index("by_workspace", ["workspaceId", "createdAt"])
+    .index("by_workspace_session", ["workspaceId", "sessionId"]),
+
+  /** The audit trail: every step an agent took or asked to take in an account, in order, with who decided. */
+  browserSteps: defineTable({
+    workspaceId: v.id("workspaces"),
+    browserTaskId: v.id("browserTasks"),
+    sessionId: v.id("browserSessions"),
+    index: v.number(),
+    kind: v.union(v.literal("read"), v.literal("change"), v.literal("restricted")),
+    /** Why it is restricted: payment, security, delete, message or publish. */
+    restrictedReason: v.optional(v.string()),
+    verb: v.string(),
+    target: v.string(),
+    url: v.string(),
+    /** What was or would be typed, cut short, and hidden if it looks like a secret. */
+    value: v.optional(v.string()),
+    why: v.string(),
+    status: v.union(v.literal("proposed"), v.literal("done"), v.literal("declined"), v.literal("blocked"), v.literal("expired")),
+    blockedReason: v.optional(v.string()),
+    decidedBy: v.optional(v.string()),
+    decidedAt: v.optional(v.number()),
+    screenshot: v.optional(v.id("_storage")),
+    createdAt: v.number(),
+  }).index("by_workspace_task", ["workspaceId", "browserTaskId", "index"]),
+
   platformControls: defineTable({
     key: v.literal("platform"),
     halted: v.boolean(),

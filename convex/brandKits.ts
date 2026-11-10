@@ -9,7 +9,7 @@ import { v } from "convex/values";
 import type { Doc, Id } from "./_generated/dataModel";
 import type { MutationCtx, QueryCtx } from "./_generated/server";
 import { writeAudit } from "./lib/audit";
-import { BRAND_MAX, LOGO_TYPES, MAX_LOGO_BYTES, brandGaps, brandProblem, cleanBrand, sameBrand, type BrandContent, type BrandInput } from "./lib/brandKits";
+import { BRAND_MAX, LOGO_TYPES, MAX_LOGO_BYTES, STYLE_REF_TYPES, brandGaps, brandProblem, cleanBrand, sameBrand, type BrandContent, type BrandInput } from "./lib/brandKits";
 import { workspaceMutation, workspaceQuery } from "./lib/builders";
 import { notAllowed, notFound, userError } from "./lib/errors";
 
@@ -52,6 +52,8 @@ export function contentOf(row: Doc<"brandKitVersions">): BrandContent {
     placements: row.placements,
     logos: row.logos,
     logosOwned: row.logosOwned,
+    styleRefs: row.styleRefs ?? [],
+    styleRefsOwned: row.styleRefsOwned ?? false,
   });
 }
 
@@ -68,7 +70,11 @@ async function withLogoUrls(ctx: QueryCtx, content: BrandContent) {
   for (const logo of content.logos) {
     logos.push({ ...logo, url: await ctx.storage.getUrl(logo.storageId as Id<"_storage">) });
   }
-  return { ...content, logos };
+  const styleRefs = [];
+  for (const ref of content.styleRefs) {
+    styleRefs.push({ ...ref, url: await ctx.storage.getUrl(ref.storageId as Id<"_storage">) });
+  }
+  return { ...content, logos, styleRefs };
 }
 
 async function versionView(ctx: QueryCtx, row: Doc<"brandKitVersions">) {
@@ -145,6 +151,16 @@ async function assertLogos(ctx: MutationCtx, content: BrandContent, held: Set<st
     if (!accepted) throw userError("Add the logo as a PNG, JPG, WebP or SVG file.");
     if (meta.size > MAX_LOGO_BYTES) throw userError("That logo file is over 5 MB.");
   }
+  for (const ref of content.styleRefs) {
+    if (held.has(ref.storageId)) continue;
+    const id = ctx.db.system.normalizeId("_storage", ref.storageId);
+    const meta = id ? await ctx.db.system.get(id) : null;
+    if (!id || !meta) throw userError("An example ad did not finish uploading. Add it again.");
+    const type = (meta.contentType ?? "").split(";")[0].trim().toLowerCase();
+    const accepted = type ? (STYLE_REF_TYPES as readonly string[]).includes(type) : /\.(png|jpe?g|webp)$/i.test(ref.name);
+    if (!accepted) throw userError("Add each example ad as a PNG, JPG or WebP image.");
+    if (meta.size > MAX_LOGO_BYTES) throw userError("That example ad is over 5 MB.");
+  }
 }
 
 const contentArgs = {
@@ -166,10 +182,16 @@ const contentArgs = {
   placements: v.optional(v.array(v.string())),
   logos: v.optional(v.array(v.object({ storageId: v.string(), variant: v.string(), name: v.string() }))),
   logosOwned: v.optional(v.boolean()),
+  styleRefs: v.optional(v.array(v.object({ storageId: v.string(), name: v.string() }))),
+  styleRefsOwned: v.optional(v.boolean()),
 };
 
 function versionFields(content: BrandContent) {
-  return { ...content, logos: content.logos.map((logo) => ({ ...logo, storageId: logo.storageId as Id<"_storage"> })) };
+  return {
+    ...content,
+    logos: content.logos.map((logo) => ({ ...logo, storageId: logo.storageId as Id<"_storage"> })),
+    styleRefs: content.styleRefs.map((ref) => ({ ...ref, storageId: ref.storageId as Id<"_storage"> })),
+  };
 }
 
 /**
@@ -196,7 +218,7 @@ export const saveVersion = workspaceMutation({
       const current = versions.find((row) => row.version === kit.currentVersion);
       if (current && sameBrand(contentOf(current), content)) return { kitId: kit._id, version: kit.currentVersion, added: false };
       if (versions.length >= MAX_VERSIONS) throw userError("This brand has too many versions. Add it as a new brand to keep editing.", "limit");
-      await assertLogos(ctx, content, new Set(versions.flatMap((row) => row.logos.map((logo) => logo.storageId as string))));
+      await assertLogos(ctx, content, new Set(versions.flatMap((row) => [...row.logos, ...(row.styleRefs ?? [])].map((file) => file.storageId as string))));
       const version = Math.max(0, ...versions.map((row) => row.version)) + 1;
       await ctx.db.insert("brandKitVersions", { workspaceId: ctx.workspaceId, kitId: kit._id, version, ...versionFields(content), ...stamp });
       await ctx.db.patch(kit._id, { name: content.name, currentVersion: version, updatedAt: now });

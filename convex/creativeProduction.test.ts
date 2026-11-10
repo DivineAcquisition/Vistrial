@@ -81,6 +81,7 @@ function script(plan: Plan = {}) {
       cta: "Book a time",
       imageDirection: "A bright, tidy living room in natural light, no people, lots of white space.",
       hypothesis: `Hook ${index + 1} will earn more clicks than the others.`,
+      design: { eyebrow: "For busy homeowners", kicker: "Your weekend back", accent: "", visual: "A mop leaning unused against a sunny wall.", labels: [], subline: "A deep clean, done for you." },
     }));
     return {
       text: JSON.stringify({
@@ -325,7 +326,7 @@ describe("creative checks", () => {
   });
 
   it("names every rule a creative breaks", () => {
-    const variation = (key: string, primaryText: string) => ({ key, hookType: "question", hook: `Hook ${key}`, primaryText, headline: "Headline", cta: "Book", imageDirection: "A room", hypothesis: "It wins" });
+    const variation = (key: string, primaryText: string) => ({ key, hookType: "question", hook: `Hook ${key}`, primaryText, headline: "Headline", cta: "Book", imageDirection: "A room", hypothesis: "It wins", design: { eyebrow: "", kicker: "", accent: "", visual: "A calm room", labels: [], subline: "" } });
     const creative = readCreative({
       summary: "s",
       structure: {},

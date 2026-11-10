@@ -15,11 +15,12 @@ import { writeAudit } from "./lib/audit";
 import { OUT_OF_CREDITS, accountFor, billingOn, chargeUsage, priceFor } from "./lib/billing";
 import { PLACEMENTS, type Placement } from "./lib/brandKits";
 import { workspaceMutation, workspaceQuery } from "./lib/builders";
-import { IMAGE_FAIL_WORDS, IMAGE_SIZE, MAX_IMAGES_PER_BATCH, MAX_IMAGES_PER_DAY, PLACEMENT_ASPECT, imagePrompt, isPlacement } from "./lib/creativeImages";
+import { CHECK_COST_CENTS, IMAGE_FAIL_WORDS, IMAGE_SIZE, LOOKS, LOOK_WORDS, MAX_IMAGES_PER_BATCH, MAX_IMAGES_PER_DAY, PLACEMENT_ASPECT, designedPrompt, imagePrompt, isLook, isPlacement, isTone, type Look, type Tone } from "./lib/creativeImages";
 import { notAllowed, notFound, userError } from "./lib/errors";
-import { imageCostCents, imageModel } from "./lib/gemini";
+import { designModel, imageCostCents, imageModel } from "./lib/gemini";
+import { devSkillsEnabled } from "./lib/registry";
 import { savedRecord } from "./lib/savedRecords";
-import type { CreativeRecord } from "./skills/creativeProduction/shapes";
+import { EMPTY_DESIGN, designText, type CreativeRecord, type Variation } from "./skills/creativeProduction/shapes";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -63,10 +64,28 @@ function cleanPlacements(raw: string[]): Placement[] {
   return PLACEMENTS.filter((placement) => raw.includes(placement));
 }
 
+const modelFor = (look: Look) => (look === "designed" ? designModel() : imageModel());
+
+/** What one image of a look costs us, in cents: the picture, plus reading a designed ad's words back. */
+function costOf(look: Look) {
+  return imageCostCents(modelFor(look), IMAGE_SIZE) + (look === "designed" ? CHECK_COST_CENTS : 0);
+}
+
 /** What a batch would cost: the count, the price of each and the total, in cents of credit. */
-function priceOf(count: number) {
-  const each = priceFor(imageCostCents(imageModel(), IMAGE_SIZE));
+function priceOf(count: number, look: Look) {
+  const each = priceFor(costOf(look));
   return { count, eachCents: each, totalCents: each * count };
+}
+
+function lookOf(raw: string | undefined): Look {
+  const look = raw ?? "designed";
+  if (!isLook(look)) throw userError("Choose a designed ad or a photo with text on top.");
+  return look;
+}
+
+/** A variation saved before designs existed has none: it is read as blank, and a designed ad uses its headline and button alone. */
+function designOf(variation: Variation) {
+  return variation.design ?? EMPTY_DESIGN;
 }
 
 /**
@@ -74,18 +93,24 @@ function priceOf(count: number) {
  * Also says whether the balance covers it once credit held for images in progress is set aside.
  */
 export const quote = workspaceQuery({
-  args: { assetId: v.id("assets"), placements: v.array(v.string()) },
+  args: { assetId: v.id("assets"), placements: v.array(v.string()), look: v.optional(v.string()) },
   handler: async (ctx, args) => {
     const { asset, saved, creative } = await adSet(ctx, ctx.workspaceId, args.assetId);
     const placements = cleanPlacements(args.placements);
+    const look = lookOf(args.look);
     const kit = await kitOf(ctx, ctx.workspaceId, saved);
-    const price = priceOf(creative.variations.length * placements.length);
+    const price = priceOf(creative.variations.length * placements.length, look);
     const account = billingOn() ? await accountFor(ctx, ctx.workspaceId) : null;
     const available = account ? account.balanceCents - (await heldCents(ctx, ctx.workspaceId)) : null;
     return {
       ...price,
       variations: creative.variations.length,
       placements,
+      look,
+      /** Each look with what one image of it costs, so the choice shows its price. */
+      looks: LOOKS.map((row) => ({ value: row, ...LOOK_WORDS[row], eachCents: priceFor(costOf(row)) })),
+      /** How many of the brand's own ads the kit holds as pictures of its look. A designed ad follows them. */
+      styleRefs: kit?.styleRefs.length ?? 0,
       /** The placements the brand kit names, as the starting choice. */
       kitPlacements: kit?.placements ?? [],
       /** Null when billing is off (local and test deployments): nothing is blocked there. */
@@ -116,7 +141,14 @@ async function assertRoom(ctx: MutationCtx, workspaceId: Id<"workspaces">, count
  * one. An image already made for the same variation and placement is replaced. Owners and Managers.
  */
 export const generate = workspaceMutation({
-  args: { assetId: v.id("assets"), placements: v.array(v.string()), confirmedCents: v.number(), only: v.optional(v.object({ variationKey: v.string(), placement: v.string() })) },
+  args: {
+    assetId: v.id("assets"),
+    placements: v.array(v.string()),
+    confirmedCents: v.number(),
+    look: v.optional(v.string()),
+    tone: v.optional(v.string()),
+    only: v.optional(v.object({ variationKey: v.string(), placement: v.string() })),
+  },
   handler: async (ctx, args) => {
     if (ctx.member.role === "rep") notAllowed();
     const { asset, creative } = await adSet(ctx, ctx.workspaceId, args.assetId);
@@ -125,12 +157,16 @@ export const generate = workspaceMutation({
     const placements = cleanPlacements(args.only ? [args.only.placement] : args.placements);
     const variations = args.only ? creative.variations.filter((row) => row.key === args.only?.variationKey) : creative.variations;
     if (placements.length === 0 || variations.length === 0) throw userError("Choose at least one placement.");
-    const price = priceOf(variations.length * placements.length);
+    const existing = await imagesOf(ctx, ctx.workspaceId, asset._id);
+    // One image made again keeps the look it had, unless a new one is asked for.
+    const earlier = args.only ? existing.find((row) => row.variationKey === args.only?.variationKey && row.placement === args.only?.placement) : undefined;
+    const look = lookOf(args.look ?? earlier?.look ?? (earlier ? "photo" : undefined));
+    const tone: Tone = args.tone === undefined ? (earlier?.tone ?? "dark") : isTone(args.tone) ? args.tone : "dark";
+    const price = priceOf(variations.length * placements.length, look);
     if (args.confirmedCents !== price.totalCents) throw userError("The price changed. Check the new price and confirm again.");
     await assertRoom(ctx, ctx.workspaceId, price.count, price.totalCents);
 
-    const existing = await imagesOf(ctx, ctx.workspaceId, asset._id);
-    const model = imageModel();
+    const model = modelFor(look);
     const now = Date.now();
     let started = 0;
     for (const variation of variations) {
@@ -141,10 +177,10 @@ export const generate = workspaceMutation({
         let imageId;
         if (prior) {
           // The earlier picture stays visible until the new one arrives, then its file is deleted.
-          await ctx.db.patch(prior._id, { status: "generating", model, holdCents: price.eachCents, failCode: undefined });
+          await ctx.db.patch(prior._id, { status: "generating", model, look, tone, holdCents: price.eachCents, failCode: undefined });
           imageId = prior._id;
         } else {
-          imageId = await ctx.db.insert("creativeImages", { workspaceId: ctx.workspaceId, assetId: asset._id, variationKey: variation.key, placement, status: "generating", model, costCents: 0, holdCents: price.eachCents, createdBy: ctx.identity.subject, createdAt: now });
+          imageId = await ctx.db.insert("creativeImages", { workspaceId: ctx.workspaceId, assetId: asset._id, variationKey: variation.key, placement, look, tone, status: "generating", model, costCents: 0, holdCents: price.eachCents, createdBy: ctx.identity.subject, createdAt: now });
         }
         await ctx.scheduler.runAfter(0, internal.creativeImageActions.make, { imageId });
         started += 1;
@@ -167,6 +203,7 @@ export const list = workspaceQuery({
         id: row._id,
         variationKey: row.variationKey,
         placement: row.placement,
+        look: (row.look ?? "photo") as Look,
         status: row.status,
         url: row.storageId ? await ctx.storage.getUrl(row.storageId) : null,
         problem: row.status === "failed" ? (IMAGE_FAIL_WORDS[row.failCode ?? ""] ?? "This image could not be made.") : null,
@@ -175,7 +212,7 @@ export const list = workspaceQuery({
     const logo = kit?.logos.find((row) => row.variant === "light") ?? kit?.logos.find((row) => row.variant === "icon") ?? kit?.logos[0] ?? null;
     return {
       images,
-      eachCents: priceFor(imageCostCents(imageModel(), IMAGE_SIZE)),
+      eachCents: { photo: priceFor(costOf("photo")), designed: priceFor(costOf("designed")) },
       brand: {
         name: saved.kit.name,
         accent: kit?.colors[0]?.hex ?? null,
@@ -198,11 +235,30 @@ export const forMake = internalQuery({
     const variation = saved?.creative?.variations.find((item) => item.key === row.variationKey);
     if (!saved || !variation) return null;
     const kit = await kitOf(ctx, row.workspaceId, saved);
+    const base = { model: row.model, size: IMAGE_SIZE, aspect: PLACEMENT_ASPECT[row.placement] };
+    if ((row.look ?? "photo") !== "designed") {
+      return { ...base, look: "photo" as const, prompt: imagePrompt({ direction: variation.imageDirection, kit: kit ?? { imageStyle: "", colors: [], industry: "" }, placement: row.placement }), expected: [] as string[], styleRefs: [] as Id<"_storage">[], checkRoute: null };
+    }
+    const design = designOf(variation);
+    const refs = (kit?.styleRefsOwned ? kit.styleRefs : []).map((ref) => ref.storageId as Id<"_storage">);
+    const route = await ctx.db
+      .query("modelRoutes")
+      .withIndex("by_workKind", (q) => q.eq("workKind", "classify"))
+      .unique();
     return {
-      model: row.model,
-      size: IMAGE_SIZE,
-      aspect: PLACEMENT_ASPECT[row.placement],
-      prompt: imagePrompt({ direction: variation.imageDirection, kit: kit ?? { imageStyle: "", colors: [], industry: "" }, placement: row.placement }),
+      ...base,
+      look: "designed" as const,
+      prompt: designedPrompt({
+        text: { eyebrow: design.eyebrow, kicker: design.kicker, headline: variation.headline, accent: design.accent, visual: design.visual || variation.imageDirection, labels: design.labels, subline: design.subline, cta: variation.cta },
+        kit: kit ?? { name: saved.kit.name, colors: [], headingFont: "", imageStyle: "", industry: "" },
+        placement: row.placement,
+        tone: row.tone ?? "dark",
+        styleRefs: refs.length,
+      }),
+      /** Every line the picture must show. The action reads the picture back and compares. */
+      expected: designText({ ...variation, design }),
+      styleRefs: refs,
+      checkRoute: route ? { provider: route.provider, model: route.model, fallbackProvider: route.fallbackProvider, fallbackModel: route.fallbackModel } : devSkillsEnabled() ? { provider: "fake", model: "fake-writer", fallbackProvider: "fake", fallbackModel: "fake-writer" } : null,
     };
   },
 });

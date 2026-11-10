@@ -1081,6 +1081,9 @@ export default defineSchema({
     logos: v.array(v.object({ storageId: v.id("_storage"), variant: v.union(v.literal("light"), v.literal("dark"), v.literal("icon")), name: v.string() })),
     /** A person confirmed the business owns the logos or may use them. */
     logosOwned: v.boolean(),
+    /** Ads the brand ran itself, as pictures of its look. Missing on kits saved before these existed. */
+    styleRefs: v.optional(v.array(v.object({ storageId: v.id("_storage"), name: v.string() }))),
+    styleRefsOwned: v.optional(v.boolean()),
     note: v.optional(v.string()),
     createdBy: v.string(),
     createdAt: v.number(),
@@ -1127,14 +1130,18 @@ export default defineSchema({
   }).index("by_workspace", ["workspaceId", "createdAt"]),
 
   /**
-   * One image made for one variation of an ad set, in one placement. The picture carries no text and no
-   * logo: the headline and the brand's real logo file are placed on top when it is shown and downloaded.
+   * One image made for one variation of an ad set, in one placement. A designed ad carries its words in the
+   * picture, checked after it is made. A photo carries none: the headline and the brand's real logo file
+   * are placed on top when it is shown and downloaded.
    */
   creativeImages: defineTable({
     workspaceId: v.id("workspaces"),
     assetId: v.id("assets"),
     variationKey: v.string(),
     placement: v.string(),
+    /** "designed": the words are part of the picture. "photo" (or missing): the words are placed on top. */
+    look: v.optional(v.union(v.literal("designed"), v.literal("photo"))),
+    tone: v.optional(v.union(v.literal("dark"), v.literal("light"))),
     status: v.union(v.literal("generating"), v.literal("ready"), v.literal("failed")),
     storageId: v.optional(v.id("_storage")),
     failCode: v.optional(v.string()),

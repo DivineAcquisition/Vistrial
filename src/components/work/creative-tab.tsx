@@ -492,6 +492,11 @@ function AdSet({ view, editor, review, images }: { view: CreativeView; editor: b
                   <p className="text-xs text-muted-foreground">
                     <span className="text-card-foreground">Image:</span> {row.imageDirection}
                   </p>
+                  {row.design?.visual ? (
+                    <p className="text-xs text-muted-foreground">
+                      <span className="text-card-foreground">Designed ad:</span> {[row.design.eyebrow && `bar “${row.design.eyebrow}”`, row.design.kicker && `“${row.design.kicker}”`, row.design.visual, row.design.labels.length > 0 ? `labels: ${row.design.labels.join(", ")}` : "", row.design.subline && `“${row.design.subline}”`].filter(Boolean).join(" · ")}
+                    </p>
+                  ) : null}
                   <p className="rounded-lg bg-muted px-2 py-1 text-xs text-muted-foreground">
                     <span className="text-card-foreground">Untested hypothesis:</span> {row.hypothesis}
                   </p>

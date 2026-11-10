@@ -38,7 +38,7 @@ export const VARIATIONS = 4;
 export const VARIATION_KEYS = ["A", "B", "C", "D"] as const;
 
 /** Length limits per field, in characters. Ad platforms cut longer text off. */
-export const COPY_MAX = { hook: 140, headline: 60, primaryText: 700, cta: 30, caption: 400 } as const;
+export const COPY_MAX = { hook: 140, headline: 60, primaryText: 700, cta: 30, caption: 400, eyebrow: 40, kicker: 36, label: 24, labels: 4, subline: 70 } as const;
 
 export type RequestStart = { kind: "source"; sourceRefId: string } | { kind: "offer"; offerCardId: string };
 
@@ -92,7 +92,26 @@ export type Variation = {
   imageDirection: string;
   /** What this variation tests against the others. Untested until the business runs it. */
   hypothesis: string;
+  /** The words and the one idea of a designed static ad, where the text is part of the picture. */
+  design: AdDesign;
 };
+
+/**
+ * A designed static ad, top to bottom: a bar naming who it is for, a small line above the headline, the
+ * headline with one phrase in the brand's colour, one central visual that makes the point (with up to four
+ * short labels on it), a line under it, and the button. Empty on ad sets made before designs existed.
+ */
+export type AdDesign = {
+  eyebrow: string;
+  kicker: string;
+  /** A phrase inside the headline to set in the brand's colour. */
+  accent: string;
+  visual: string;
+  labels: string[];
+  subline: string;
+};
+
+export const EMPTY_DESIGN: AdDesign = { eyebrow: "", kicker: "", accent: "", visual: "", labels: [], subline: "" };
 
 export type CopyClaim = {
   /** The factual statement as it appears in the copy. */
@@ -140,7 +159,17 @@ export const CREATIVE_SCHEMA = object({
   brief: object({ audience: str, promise: str, angle: str, tone: str }),
   variations: {
     type: "array",
-    items: object({ key: str, hookType: str, hook: str, primaryText: str, headline: str, cta: str, imageDirection: str, hypothesis: str }),
+    items: object({
+      key: str,
+      hookType: str,
+      hook: str,
+      primaryText: str,
+      headline: str,
+      cta: str,
+      imageDirection: str,
+      hypothesis: str,
+      design: object({ eyebrow: str, kicker: str, accent: str, visual: str, labels: strs, subline: str }),
+    }),
   },
   script: object({ beats: { type: "array", items: object({ seconds: str, voiceover: str, onScreen: str }) } }),
   captions: strs,
@@ -165,6 +194,11 @@ function rows(value: unknown, max: number): Record<string, unknown>[] {
   return Array.isArray(value) ? value.slice(0, max).map(obj) : [];
 }
 
+export function readDesign(value: unknown): AdDesign {
+  const row = obj(value);
+  return { eyebrow: text(row.eyebrow, 120), kicker: text(row.kicker, 120), accent: text(row.accent, 120), visual: text(row.visual, 600), labels: list(row.labels, 8, 80), subline: text(row.subline, 200) };
+}
+
 /** A model's answer read into the shape the checks and screens use. Null when it is not an object at all. */
 export function readCreative(value: unknown): CreativeSet | null {
   if (!value || typeof value !== "object" || Array.isArray(value)) return null;
@@ -185,6 +219,7 @@ export function readCreative(value: unknown): CreativeSet | null {
       cta: text(item.cta, 80),
       imageDirection: text(item.imageDirection, 800),
       hypothesis: text(item.hypothesis, 400),
+      design: readDesign(item.design),
     })),
     script: { beats: rows(obj(row.script).beats, 12).map((item) => ({ seconds: text(item.seconds, 20), voiceover: text(item.voiceover, 500), onScreen: text(item.onScreen, 200) })) },
     captions: list(row.captions, 5, 800),
@@ -196,7 +231,17 @@ export function readCreative(value: unknown): CreativeSet | null {
 
 /** Every word of copy a person would see in a variation. */
 export function variationCopy(row: Variation) {
-  return [row.hook, row.primaryText, row.headline, row.cta].filter(Boolean).join(". ");
+  return [row.hook, row.primaryText, row.headline, row.cta, ...designWords(row)].filter(Boolean).join(". ");
+}
+
+/** The words a designed ad puts in the picture, beyond the headline and the button. */
+export function designWords(row: Variation) {
+  return [row.design.eyebrow, row.design.kicker, row.design.subline, ...row.design.labels].filter(Boolean);
+}
+
+/** Every piece of text a designed ad shows, in reading order. The picture must show exactly these. */
+export function designText(row: Variation) {
+  return [row.design.eyebrow, row.design.kicker, row.headline, ...row.design.labels, row.design.subline, row.cta].filter(Boolean);
 }
 
 /** All the copy of a creative: the variations, the script and the captions. */

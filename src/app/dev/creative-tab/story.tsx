@@ -61,6 +61,7 @@ const variation = (key: string, hookType: string, hook: string, primaryText: str
   cta: "Book a check-up",
   imageDirection: "A bright, calm treatment room in natural light. No people. Teal accent on a sand background.",
   hypothesis,
+  design: { eyebrow: "For nervous patients", kicker: "The first visit, step by step", accent: "first visit", visual: "A calm dental chair with three small numbered steps beside it.", labels: ["Say hello", "Gentle check", "Clear plan"], subline: "No rushing. No lectures.", },
 });
 
 function view(status: CreativeView["status"]): CreativeView {
@@ -119,14 +120,14 @@ const picture = (from: string, to: string) =>
 const LOGO = `data:image/svg+xml;utf8,${encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 150 40"><circle cx="20" cy="20" r="16" fill="#0f8b8d"/><text x="44" y="27" font-family="Arial" font-size="18" font-weight="700" fill="#12263a">Northside</text></svg>')}`;
 
 const IMAGES: CreativeImageList = {
-  eachCents: 16,
+  eachCents: { photo: 16, designed: 42 },
   brand: { name: "Northside Dental", accent: "#0f8b8d", headingFont: "Poppins", logoUrl: LOGO },
   images: [
-    { id: id("i1"), variationKey: "A", placement: "1:1", status: "ready", url: picture("#f2e9dc", "#0f8b8d"), problem: null },
-    { id: id("i2"), variationKey: "A", placement: "9:16", status: "ready", url: picture("#dff3f1", "#12263a"), problem: null },
-    { id: id("i3"), variationKey: "A", placement: "1.91:1", status: "ready", url: picture("#f2e9dc", "#12263a"), problem: null },
-    { id: id("i4"), variationKey: "B", placement: "1:1", status: "generating", url: null, problem: null },
-    { id: id("i5"), variationKey: "B", placement: "9:16", status: "failed", url: null, problem: "The image service declined to make this one. Try again, or edit the image direction." },
+    { id: id("i1"), variationKey: "A", placement: "1:1", look: "photo", status: "ready", url: picture("#f2e9dc", "#0f8b8d"), problem: null },
+    { id: id("i2"), variationKey: "A", look: "photo", placement: "9:16", status: "ready", url: picture("#dff3f1", "#12263a"), problem: null },
+    { id: id("i3"), variationKey: "A", look: "photo", placement: "1.91:1", status: "ready", url: picture("#f2e9dc", "#12263a"), problem: null },
+    { id: id("i4"), variationKey: "B", look: "photo", placement: "1:1", status: "generating", url: null, problem: null },
+    { id: id("i5"), variationKey: "B", look: "photo", placement: "9:16", status: "failed", url: null, problem: "The image service declined to make this one. Try again, or edit the image direction." },
   ],
 };
 
@@ -159,7 +160,11 @@ export function CreativeTabStory({ state, theme }: { state: string; theme: strin
             variations={view(status).creative!.variations.map((row) => ({ key: row.key, headline: row.headline, cta: row.cta }))}
             placements={["1:1", "9:16", "1.91:1"]}
             onPlacements={() => undefined}
-            quote={{ count: 12, eachCents: 16, totalCents: 192, variations: 4, placements: ["1:1", "9:16", "1.91:1"], kitPlacements: ["1:1", "9:16"], availableCents: state === "review" ? 40 : 14_250, canAfford: state !== "review", blocked: state === "review" ? "This ad set did not pass its checks. Fix it before spending on images." : null }}
+            look="designed"
+            onLook={() => undefined}
+            tone="dark"
+            onTone={() => undefined}
+            quote={{ look: "designed", looks: [{ value: "designed", label: "Designed ad", what: "The whole ad is drawn with your words in it, in the style of your own past ads, then read back to check every word.", eachCents: 42 }, { value: "photo", label: "Photo with text on top", what: "A picture with no words. Your headline, button and real logo file are placed on top.", eachCents: 16 }], styleRefs: 2, count: 12, eachCents: 42, totalCents: 504, variations: 4, placements: ["1:1", "9:16", "1.91:1"], kitPlacements: ["1:1", "9:16"], availableCents: state === "review" ? 40 : 14_250, canAfford: state !== "review", blocked: state === "review" ? "This ad set did not pass its checks. Fix it before spending on images." : null }}
             list={state === "running" ? { ...IMAGES, images: [] } : IMAGES}
             onGenerate={noop}
             onRetake={noop}

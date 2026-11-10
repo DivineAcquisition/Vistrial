@@ -77,7 +77,7 @@ export function runChecks(input: CheckInput): ChecksRecord {
   const kit = context.kit.content;
 
   // 1. Four variations, each whole, each with its own hook and something it tests.
-  const whole = creative.variations.filter((row) => row.hook && row.primaryText && row.headline && row.cta && row.imageDirection && row.hypothesis);
+  const whole = creative.variations.filter((row) => row.hook && row.primaryText && row.headline && row.cta && row.imageDirection && row.hypothesis && row.design.visual);
   const hooks = new Set(creative.variations.map((row) => norm(row.hook)));
   const fourOk = creative.variations.length === VARIATIONS && whole.length === VARIATIONS && hooks.size === VARIATIONS;
   add(
@@ -86,7 +86,7 @@ export function runChecks(input: CheckInput): ChecksRecord {
     creative.variations.length !== VARIATIONS
       ? `There are ${creative.variations.length} variations. A set has ${VARIATIONS}.`
       : whole.length !== VARIATIONS
-        ? "A variation is missing its hook, text, headline, call to action, image direction or what it tests."
+        ? "A variation is missing its hook, text, headline, call to action, image direction, designed-ad visual or what it tests."
         : hooks.size !== VARIATIONS
           ? "Two variations open with the same hook."
           : "Four variations, each with its own hook and what it tests.",
@@ -133,6 +133,10 @@ export function runChecks(input: CheckInput): ChecksRecord {
     if (row.headline.length > COPY_MAX.headline) long.push(`${row.key} headline`);
     if (row.primaryText.length > COPY_MAX.primaryText) long.push(`${row.key} text`);
     if (row.cta.length > COPY_MAX.cta) long.push(`${row.key} call to action`);
+    if (row.design.eyebrow.length > COPY_MAX.eyebrow) long.push(`${row.key} top bar`);
+    if (row.design.kicker.length > COPY_MAX.kicker) long.push(`${row.key} line above the headline`);
+    if (row.design.subline.length > COPY_MAX.subline) long.push(`${row.key} line under the picture`);
+    if (row.design.labels.length > COPY_MAX.labels || row.design.labels.some((label) => label.length > COPY_MAX.label)) long.push(`${row.key} labels`);
   }
   creative.captions.forEach((caption, index) => {
     if (caption.length > COPY_MAX.caption) long.push(`caption ${index + 1}`);

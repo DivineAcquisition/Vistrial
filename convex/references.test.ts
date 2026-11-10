@@ -294,7 +294,7 @@ describe("adding a reference", () => {
           summary: "Four ads that open on the lost weekend.",
           structure: { hookType: "problem", format: "talking head", beats: ["name the chore", "show the relief", "offer"], offerType: "first-visit price", ctaPlacement: "last beat" },
           brief: { audience: "Busy homeowners", promise: "A clean home without losing the weekend", angle: "Time back", tone: "Warm" },
-          variations: hooks.map((hook, index) => ({ key: "ABCD"[index], hookType: "question", hook, primaryText: index === 0 && !revising ? SPOKEN : "A vetted team handles the deep clean while you get on with your day.", headline: `Deep clean ${index + 1}`, cta: "Book a time", imageDirection: "A tidy room, no people.", hypothesis: `Hook ${index + 1} wins.` })),
+          variations: hooks.map((hook, index) => ({ key: "ABCD"[index], hookType: "question", hook, primaryText: index === 0 && !revising ? SPOKEN : "A vetted team handles the deep clean while you get on with your day.", headline: `Deep clean ${index + 1}`, cta: "Book a time", imageDirection: "A tidy room, no people.", hypothesis: `Hook ${index + 1} wins.`, design: { eyebrow: "For busy homeowners", kicker: "Your weekend back", accent: "", visual: "A mop leaning unused against a sunny wall.", labels: [], subline: "A deep clean, done for you." } })),
           script: { beats: [] },
           captions: [],
           claims: [],

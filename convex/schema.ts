@@ -220,7 +220,7 @@ export default defineSchema({
   /** Every charge for AI work: what it really cost, the markup, and what the customer paid. */
   billingLedger: defineTable({
     workspaceId: v.id("workspaces"),
-    source: v.union(v.literal("run"), v.literal("followup"), v.literal("intake"), v.literal("file"), v.literal("creative")),
+    source: v.union(v.literal("run"), v.literal("followup"), v.literal("intake"), v.literal("file"), v.literal("creative"), v.literal("page")),
     ref: v.string(),
     costCents: v.number(),
     priceCents: v.number(),
@@ -1467,6 +1467,69 @@ export default defineSchema({
     createdBy: v.string(),
     at: v.number(),
   }).index("by_project", ["projectId", "at"]),
+
+  /**
+   * The page reader. A job is a short list of public pages a person asked Vistrial to open; each page is one
+   * row with what was found on it. Reading obeys robots.txt and a per-site rate limit, never logs in, and
+   * never opens a private address. Page text is untrusted: it is data, never an instruction.
+   */
+  pageReadJobs: defineTable({
+    workspaceId: v.id("workspaces"),
+    status: v.union(v.literal("queued"), v.literal("running"), v.literal("done"), v.literal("stopped")),
+    /** Whether a hosted browser was set up when the job was priced: "browser" reads and takes screenshots. */
+    driver: v.union(v.literal("fetch"), v.literal("browser")),
+    pages: v.number(),
+    /** The most this job can cost, in cents of credit, held from the balance until it finishes. */
+    holdCents: v.number(),
+    /** What the pages that were read cost us. Charged once, when the job ends. */
+    costCents: v.number(),
+    /** Set when an agent run asked for these pages: the run carries the cost, so the job charges nothing itself. */
+    runId: v.optional(v.id("agentRuns")),
+    startedBy: v.string(),
+    createdAt: v.number(),
+    finishedAt: v.optional(v.number()),
+  })
+    .index("by_workspace", ["workspaceId", "createdAt"])
+    .index("by_workspace_status", ["workspaceId", "status"]),
+
+  pageReads: defineTable({
+    workspaceId: v.id("workspaces"),
+    jobId: v.id("pageReadJobs"),
+    order: v.number(),
+    url: v.string(),
+    status: v.union(v.literal("queued"), v.literal("reading"), v.literal("read"), v.literal("partial"), v.literal("blocked"), v.literal("failed")),
+    /** Why, as a code. Never page text. */
+    reasonCode: v.optional(v.string()),
+    finalUrl: v.optional(v.string()),
+    httpStatus: v.optional(v.number()),
+    driver: v.optional(v.union(v.literal("fetch"), v.literal("browser"))),
+    title: v.optional(v.string()),
+    /** The page as JSON (see lib/pageReader/extract). Untrusted content. */
+    snapshot: v.optional(v.string()),
+    /** HTML size after decompression, and as it came over the wire. Not the weight of images or scripts. */
+    htmlBytes: v.optional(v.number()),
+    wireBytes: v.optional(v.number()),
+    redirects: v.optional(v.number()),
+    desktopShot: v.optional(v.id("_storage")),
+    phoneShot: v.optional(v.id("_storage")),
+    durationMs: v.optional(v.number()),
+    costCents: v.number(),
+    createdAt: v.number(),
+    readAt: v.optional(v.number()),
+  })
+    .index("by_workspace_job", ["workspaceId", "jobId", "order"])
+    .index("by_workspace", ["workspaceId", "createdAt"]),
+
+  /**
+   * One row per site the reader has opened, shared by every workspace because the site does not care who
+   * asked: when the next request to it may be made, and its robots.txt rules for a day. Holds nothing about
+   * any customer.
+   */
+  pageSites: defineTable({
+    site: v.string(),
+    nextAt: v.number(),
+    robots: v.optional(v.object({ fetchedAt: v.number(), rules: v.string() })),
+  }).index("by_site", ["site"]),
 
   platformControls: defineTable({
     key: v.literal("platform"),

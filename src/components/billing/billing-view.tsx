@@ -31,7 +31,7 @@ export type BillingData = {
 };
 
 const dollars = (cents: number) => `${cents < 0 ? "-" : ""}$${(Math.abs(cents) / 100).toFixed(2)}`;
-const SOURCE_WORDS: Record<string, string> = { run: "Research session", followup: "Follow-up", intake: "Planning chat", file: "Reading a file", creative: "Creative image" };
+const SOURCE_WORDS: Record<string, string> = { run: "Research session", followup: "Follow-up", intake: "Planning chat", file: "Reading a file", creative: "Creative image", page: "Reading a web page" };
 
 export function BillingView({
   data,

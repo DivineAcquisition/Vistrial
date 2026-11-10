@@ -351,49 +351,59 @@ export function OffersTabView(props: OffersTabProps) {
   const building = openNew || Boolean(props.initialBuilder);
   // The canvas shows a saved offer; building one always happens in Cards.
   const canvas = view === "canvas" && props.card !== null && !building;
+  const hero = (
+    <WorkHero
+      icon={Store}
+      eyebrow="Growth Architect · Offer Intelligence"
+      title="Offers"
+      promise="Build your offer step by step, keep every version, and set it beside what competitors lead with."
+      action={
+        <>
+          {props.card ? <ViewSwitch view={view} onChange={setView} /> : null}
+          {editor ? (
+            <Button
+              onClick={() => {
+                setOpenNew(true);
+                setBuilderKey((value) => value + 1);
+              }}
+            >
+              <Plus aria-hidden className="size-4" /> New offer
+            </Button>
+          ) : null}
+        </>
+      }
+    />
+  );
+  const results = <ResultsList results={tab.results} actions={review} editor={editor} empty="Offer analyses appear here for you to review." refineHref={(row) => refineLink(base, "offer-intelligence", { kind: "asset", id: row.id, title: row.title })} />;
+  const rail = (
+    <>
+      <RunningNow running={tab.running} finished={tab.finished} />
+      <SuggestedNext suggestions={tab.suggestions} hrefFor={(row) => suggestionHref(base, row)} />
+      <SharedLinks base={base} />
+    </>
+  );
+  // The canvas takes the full width: the board needs the room. What sat beside it moves underneath.
+  if (canvas && props.card) {
+    return (
+      <div className="grid min-w-0 gap-5">
+        {hero}
+        <OffersCanvas card={props.card} analysis={props.analysis} decisions={props.decisions} tryActions={props.tryActions} editor={editor} />
+        {results}
+        <aside className="grid min-w-0 content-start gap-5 md:grid-cols-3">{rail}</aside>
+      </div>
+    );
+  }
   return (
     <WorkLayout
       main={
         <>
-          <WorkHero
-            icon={Store}
-            eyebrow="Growth Architect · Offer Intelligence"
-            title="Offers"
-            promise="Build your offer step by step, keep every version, and set it beside what competitors lead with."
-            action={
-              <>
-                {props.card ? <ViewSwitch view={view} onChange={setView} /> : null}
-                {editor ? (
-                  <Button
-                    onClick={() => {
-                      setOpenNew(true);
-                      setBuilderKey((value) => value + 1);
-                    }}
-                  >
-                    <Plus aria-hidden className="size-4" /> New offer
-                  </Button>
-                ) : null}
-              </>
-            }
-          />
-          {canvas && props.card ? (
-            <OffersCanvas card={props.card} analysis={props.analysis} decisions={props.decisions} tryActions={props.tryActions} editor={editor} />
-          ) : (
-            <>
-              <CardsPanel key={builderKey} {...props} initialBuilder={openNew ? { mode: "new" } : props.initialBuilder} onBuilderClosed={() => setOpenNew(false)} />
-              <AnalysisPanel {...props} />
-            </>
-          )}
-          <ResultsList results={tab.results} actions={review} editor={editor} empty="Offer analyses appear here for you to review." refineHref={(row) => refineLink(base, "offer-intelligence", { kind: "asset", id: row.id, title: row.title })} />
+          {hero}
+          <CardsPanel key={builderKey} {...props} initialBuilder={openNew ? { mode: "new" } : props.initialBuilder} onBuilderClosed={() => setOpenNew(false)} />
+          <AnalysisPanel {...props} />
+          {results}
         </>
       }
-      rail={
-        <>
-          <RunningNow running={tab.running} finished={tab.finished} />
-          <SuggestedNext suggestions={tab.suggestions} hrefFor={(row) => suggestionHref(base, row)} />
-          <SharedLinks base={base} />
-        </>
-      }
+      rail={rail}
     />
   );
 }

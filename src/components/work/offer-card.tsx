@@ -77,10 +77,10 @@ export const OfferCardView = forwardRef<HTMLDivElement, { offer: OfferContent; v
             <span className="font-medium text-card-foreground">Terms:</span> {offer.terms || "Not stated"}
           </p>
         </div>
-        {/* The price panel: dark on a light page, raised on a dark one, so the price is the loudest thing either way. */}
-        <div className="grid content-start gap-4 bg-[#0b0a11] p-5 text-white sm:p-7 dark:bg-white/[0.06]">
+        {/* The price panel, in theme tokens: the card's ink as its ground on a light page, a raised surface on a dark one. */}
+        <div className="grid content-start gap-4 bg-card-foreground p-5 text-card sm:p-7 dark:bg-muted dark:text-card-foreground">
           <div className="grid gap-1.5">
-            <p className="text-xs text-white/70">
+            <p className="text-xs opacity-70">
               {pricing ? `${PRICE_KIND_WORDS[pricing.kind]} price` : "Price"}
               {pricing?.was ? (
                 <>
@@ -92,31 +92,31 @@ export const OfferCardView = forwardRef<HTMLDivElement, { offer: OfferContent; v
             {tiered ? (
               <ul className="grid gap-1.5">
                 {pricing.tiers.map((tier) => (
-                  <li key={`${tier.name}-${tier.price}`} className="flex items-baseline justify-between gap-4 border-b border-white/15 pb-1.5 last:border-0">
-                    <span className="min-w-0 text-sm break-words text-white/80">{tier.name}</span>
+                  <li key={`${tier.name}-${tier.price}`} className="flex items-baseline justify-between gap-4 border-b border-current/15 pb-1.5 last:border-0">
+                    <span className="min-w-0 text-sm break-words opacity-80">{tier.name}</span>
                     <span className="font-heading text-xl tabular-nums">{tier.price}</span>
                   </li>
                 ))}
               </ul>
             ) : (
-              <p className="font-heading text-4xl leading-none font-semibold tracking-tight break-words tabular-nums @xl:text-5xl">{offer.price || <span className="text-2xl text-white/60 italic">{draft ? "Price" : "Not stated"}</span>}</p>
+              <p className="font-heading text-4xl leading-none font-semibold tracking-tight break-words tabular-nums @xl:text-5xl">{offer.price || <span className="text-2xl opacity-60 italic">{draft ? "Price" : "Not stated"}</span>}</p>
             )}
-            {total ? <p className="text-xs text-white/70">{total} of work included</p> : null}
+            {total ? <p className="text-xs opacity-70">{total} of work included</p> : null}
           </div>
-          <div className="grid gap-1.5 rounded-2xl border border-white/20 p-3.5">
-            <p className="flex items-center gap-1.5 text-xs font-semibold tracking-wide text-emerald-300 uppercase">
+          <div className="grid gap-1.5 rounded-2xl border border-current/20 p-3.5">
+            <p className="flex items-center gap-1.5 text-xs font-semibold tracking-wide text-success uppercase">
               <ShieldCheck aria-hidden className="size-4" /> {offer.guaranteeType ? GUARANTEE_WORDS[offer.guaranteeType] : "Guarantee"}
             </p>
-            <p className="text-sm leading-snug break-words">{offer.guaranteeType === "none" ? "None offered." : offer.guarantee || <span className="text-white/60 italic">Not stated</span>}</p>
+            <p className="text-sm leading-snug break-words">{offer.guaranteeType === "none" ? "None offered." : offer.guarantee || <span className="opacity-60 italic">Not stated</span>}</p>
           </div>
           {offer.cta ? (
             <span className="mt-auto flex min-h-11 items-center justify-center gap-1.5 rounded-xl bg-primary px-4 py-2 text-center text-sm font-semibold text-primary-foreground">
               <span className="min-w-0 break-words">{offer.cta}</span> <ArrowRight aria-hidden className="size-4 shrink-0" />
             </span>
           ) : draft ? (
-            <span className="mt-auto flex min-h-11 items-center justify-center rounded-xl border border-dashed border-white/30 px-4 text-sm text-white/60 italic">Call to action</span>
+            <span className="mt-auto flex min-h-11 items-center justify-center rounded-xl border border-dashed border-current/30 px-4 text-sm opacity-60 italic">Call to action</span>
           ) : null}
-          <p className="flex flex-wrap items-center justify-center gap-x-1.5 text-center text-[11px] text-white/70">
+          <p className="flex flex-wrap items-center justify-center gap-x-1.5 text-center text-[11px] opacity-70">
             {offer.channel ? (
               <span className="inline-flex min-w-0 items-center gap-1">
                 <Megaphone aria-hidden className="size-3.5 shrink-0" /> <span className="break-words">Offered through {offer.channel}</span>

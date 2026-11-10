@@ -137,9 +137,9 @@ export function OffersCanvas({ card, analysis, decisions, tryActions, editor }: 
 }
 
 const PHASE_WORDS: Record<string, { name: string; weeks: string; tone: string; days: number }> = {
-  fix: { name: "Fix", weeks: "Weeks 1–4", tone: "bg-[#0b0a11] text-white dark:bg-white dark:text-[#0b0a11]", days: 30 },
+  fix: { name: "Fix", weeks: "Weeks 1–4", tone: "bg-card-foreground text-card", days: 30 },
   build: { name: "Build", weeks: "Weeks 5–8", tone: "bg-primary text-primary-foreground", days: 60 },
-  scale: { name: "Scale", weeks: "Weeks 9–12", tone: "bg-success text-white", days: 90 },
+  scale: { name: "Scale", weeks: "Weeks 9–12", tone: "bg-success-foreground text-card", days: 90 },
 };
 
 const STAGE_WORDS: Record<string, string> = { reach: "Reach", clicks: "Clicks", leads: "Leads or booked calls", revenue: "Revenue", unknown: "Not enough data" };

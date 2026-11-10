@@ -222,7 +222,7 @@ export function BoardCard({ tone = "plain", className, children }: { tone?: "pla
     plain: "border-border bg-card",
     accent: "border-primary/40 bg-primary/[0.09]",
     current: "border-2 border-primary bg-card shadow-lg shadow-primary/10",
-    dark: "border-transparent bg-[#0b0a11] text-white dark:bg-white dark:text-[#0b0a11]",
+    dark: "border-transparent bg-card-foreground text-card",
     warning: "border-warning/50 bg-warning/[0.08]",
   } as const;
   return <div className={cn("grid h-full w-full content-start gap-1.5 overflow-hidden rounded-xl border p-3.5 text-left", tones[tone], className)}>{children}</div>;

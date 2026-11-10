@@ -6,6 +6,7 @@ import { v } from "convex/values";
 
 import { internalMutation, internalQuery } from "./_generated/server";
 import { AUTO_REFILL, PLAN, PLAN_ID, TOPUP_PACKS_CENTS, accountFor, autumnMode, billingOn, markup, planActive } from "./lib/billing";
+import { writeAudit } from "./lib/audit";
 import { unlockOnboarding } from "./lib/onboarding";
 import { workspaceQuery } from "./lib/builders";
 
@@ -131,3 +132,32 @@ export const status = workspaceQuery({
     return { on: true, balanceCents, low: balanceCents > 0 && balanceCents <= AUTO_REFILL.thresholdCents, empty: balanceCents <= 0, canManage: ctx.member.role === "owner" };
   },
 });
+
+/**
+ * After Vistrial grants credits: records who granted how much and why, and lets the workspace past the
+ * onboarding paywall, the same way paying for the plan does. Internal only.
+ */
+export const recordGrant = internalMutation({
+  args: { workspaceId: v.id("workspaces"), amountCents: v.number(), reason: v.string(), grantedBy: v.string() },
+  handler: async (ctx, args) => {
+    await writeAudit(ctx, {
+      workspaceId: args.workspaceId,
+      actorType: "system",
+      actorId: args.grantedBy,
+      action: "billing.credits_granted",
+      subject: `${args.amountCents}c: ${args.reason}`.slice(0, 200),
+    });
+    await unlockOnboarding(ctx, args.workspaceId, "grant");
+    return null;
+  },
+});
+
+/** The mirrored account, for internal callers that report a balance back. */
+export const accountOf = internalQuery({
+  args: { workspaceId: v.id("workspaces") },
+  handler: async (ctx, args) => {
+    const account = await accountFor(ctx, args.workspaceId);
+    return account ? { balanceCents: account.balanceCents } : null;
+  },
+});
+

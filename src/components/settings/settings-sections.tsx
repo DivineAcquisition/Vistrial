@@ -12,6 +12,7 @@ import {
   Globe,
   Lock,
   MoonIcon,
+  Plug,
   ShieldCheck,
   Sparkles,
   Trash2,
@@ -692,6 +693,13 @@ export function DataSection({ role, data }: { role: Role; data: DataData }) {
             : "Results files: none yet. Upload a CSV export; only totals are kept and cited as your data."
         }
         footer={<CardLink href="/app/connections/results">{data.files > 0 ? "Manage files" : "Upload a file"}</CardLink>}
+      />
+      <StatusCard
+        icon={Plug}
+        title="More connections"
+        sentence="More connections: Google, your calendar and your call notes. Each one shows Not set up yet until Vistrial has finished setting it up."
+        affects="An Owner connects and disconnects. Read-only."
+        footer={<CardLink href="/app/connections/integrations">Open</CardLink>}
       />
       <StatusCard
         icon={ShieldCheck}

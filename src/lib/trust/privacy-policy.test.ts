@@ -10,8 +10,8 @@ describe("privacy policy stays inside verified behavior", () => {
   it("names the operator and the Lanham address", () => {
     expect(text).toContain("Divine Agency LLC");
     expect(text).toContain("7404 Executive Place, Lanham, MD 20706");
-    expect(text).toContain("Effective: November 9, 2026");
-    expect(text).toContain("Last updated: November 9, 2026");
+    expect(text).toContain("Effective: November 11, 2026");
+    expect(text).toContain("Last updated: November 11, 2026");
   });
 
   it("drops claims the product does not enforce", () => {
@@ -56,6 +56,19 @@ describe("privacy policy stays inside verified behavior", () => {
     expect(text).toContain("Vistrial does not see or store a full card number");
   });
 
+  it("says what is read from calendars and kept from call transcripts, and how each is deleted", () => {
+    expect(text).toContain("J. Connected calendars");
+    expect(text).toContain("Vistrial keeps counts only");
+    expect(text).toContain("It does not keep event titles, descriptions, locations, or the names or email addresses of guests and invitees");
+    expect(text).toContain("adheres to the Google API Services User Data Policy, including the Limited Use requirements");
+    expect(text).toContain("K. Call transcripts");
+    expect(text).toContain("Vistrial takes text only and does not accept audio or video");
+    expect(text).toContain("A connected calendar's access and saved counts are deleted as soon as the calendar is disconnected");
+    expect(text).toContain("A call transcript you add is kept until someone in the workspace deletes it");
+    // Not built yet, so not promised.
+    expect(text).not.toMatch(/Google Ads account|Search Console|Fathom|Fireflies/);
+  });
+
   it("shows Not in effect while the policy is switched off", () => {
     expect(privacyPolicyText({ ...TRUST_FALLBACK, privacyLive: false })).toContain("Effective: Not in effect");
   });
@@ -69,7 +82,7 @@ describe("privacy policy stays inside verified behavior", () => {
     });
     expect(on).toMatch(/not used to train/i);
     expect(on).toMatch(/encrypted at rest/i);
-    expect(on).toContain("Effective: November 9, 2026");
+    expect(on).toContain("Effective: November 11, 2026");
     expect(on).toContain("Registered agent, Maryland");
   });
 });

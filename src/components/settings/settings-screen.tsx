@@ -6,6 +6,7 @@ import { useMutation, useQuery } from "convex/react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 
+import { AccountSecurity } from "@/components/account/security";
 import { ProfileEditor } from "@/components/profile/profile-editor";
 import { SettingsLayout } from "@/components/settings/settings-layout";
 import { parseSection, type SettingsSection } from "@/components/settings/settings-parts";
@@ -213,7 +214,8 @@ function LiveSettings({ shell }: { shell: WorkspaceShell }) {
           void attempt(setPrefs({ workspaceId, theme: choice }));
         }}
         onNotice={(key, on) => attempt(setPrefs({ workspaceId, [key]: on }))}
-        onAccount={() => clerk.openUserProfile()}
+        security={<AccountSecurity />}
+        onSignOut={() => void clerk.signOut({ redirectUrl: "/sign-in" })}
       />
     );
   }

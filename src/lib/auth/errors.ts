@@ -36,7 +36,7 @@ function read(problem: unknown): ReadError | null {
 
 function fieldForParam(param: string, fallback: AuthField): AuthField {
   if (param === "identifier" || param === "email_address") return "email";
-  if (param === "password" || param === "new_password") return "password";
+  if (param === "password" || param === "new_password" || param === "current_password") return "password";
   if (param === "code") return "code";
   if (param === "first_name" || param === "last_name") return "name";
   return fallback;
@@ -175,6 +175,25 @@ export function explainAuthError(problem: unknown, context: AuthErrorContext): A
     case "oauth_identification_claimed":
     case "identification_claimed":
       return { field: "form", message: "That Google account could not be used. Sign in with your email instead." };
+
+    // Account settings.
+    case "form_password_validation_incorrect":
+    case "form_current_password_incorrect":
+      return { field: "password", message: "The current password is not right." };
+    case "form_new_password_matches_current":
+      return { field: "password", message: "That is the password you already have. Choose a different one." };
+    case "totp_already_enabled":
+      return { field: "form", message: "Two-step sign-in is already on. Refresh the page to see it." };
+    case "feature_not_enabled":
+    case "totp_not_enabled":
+    case "backup_codes_not_enabled":
+    case "second_factor_not_enabled":
+      return { field: "form", message: "Two-step sign-in is not switched on for Vistrial yet. Write to us and we will turn it on." };
+    case "session_reverification_required":
+    case "reverification_required":
+      return { field: "form", message: "This needs you to confirm it is you first. Try again." };
+    case "cannot_revoke_current_session":
+      return { field: "form", message: "That is this device. Use Sign out instead." };
 
     // The attempt itself.
     case "session_exists":

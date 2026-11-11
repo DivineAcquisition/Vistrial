@@ -35,9 +35,11 @@ function makeMock(config) {
   // config.accounts: { email: { password, emailCode, second: [], newDevice } }, config.signUp: { required: [] }
   const log = [];
   const state = { signIn: null, signUp: null, sessions: [], account: null, lastSession: null, users: {} };
+  // The signed-in person's own settings, for the account cards.
+  const acct = { password: 'old password', totp: false, backup: false, pendingTotp: false, others: ['sess_2', 'sess_3'], reverified: !config.reverify, ...(config.user || {}) };
   const user = (email) => ({ object: 'user', id: 'user_1', first_name: 'Jay', last_name: 'Brooks', username: null, image_url: '', has_image: false, primary_email_address_id: 'idn_1',
     email_addresses: [{ object: 'email_address', id: 'idn_1', email_address: email, verification: verification('verified', 'email_code'), linked_to: [] }], phone_numbers: [], web3_wallets: [], external_accounts: [], passkeys: [], enterprise_accounts: [], organization_memberships: [],
-    password_enabled: true, two_factor_enabled: false, totp_enabled: false, backup_code_enabled: false, public_metadata: {}, unsafe_metadata: {}, created_at: now(), updated_at: now(), last_sign_in_at: now(), legal_accepted_at: null, create_organization_enabled: false, delete_self_enabled: false });
+    password_enabled: acct.password !== null, two_factor_enabled: acct.totp, totp_enabled: acct.totp, backup_code_enabled: acct.backup, public_metadata: {}, unsafe_metadata: {}, created_at: now(), updated_at: now(), last_sign_in_at: now(), legal_accepted_at: null, create_organization_enabled: false, delete_self_enabled: false });
   const session = (email) => ({ object: 'session', id: 'sess_1', status: 'active', expire_at: now() + 86400000, abandon_at: now() + 86400000 * 7, last_active_at: now(), last_active_organization_id: null, actor: null, tasks: null,
     user: user(email), public_user_data: { first_name: 'Jay', last_name: 'Brooks', image_url: '', has_image: false, identifier: email }, factor_verification_age: [0, -1], created_at: now(), updated_at: now(),
     last_active_token: { object: 'token', jwt: fakeJwt() } });
@@ -119,13 +121,78 @@ function makeMock(config) {
       else { if (form.code !== CODE) return err(422, 'form_code_incorrect', 'code'); s.verifications.email_address = verification('verified', 'email_code'); s.unverified_fields = []; s.status = 'complete'; s.created_session_id = 'sess_1'; s.created_user_id = 'user_1'; state.sessions = [session(state.email)]; }
       return { status: 200, body: wrap(s) };
     }
-    if ((m = pathname.match(/^\/v1\/client\/sessions\/[^/]+\/(touch|tokens)$/))) {
-      if (m[1] === 'tokens') return { status: 200, body: { object: 'token', jwt: fakeJwt() } };
+    if ((m = pathname.match(/^\/v1\/client\/sessions\/[^/]+\/(touch|tokens)(\/[^/]+)?$/)) || pathname === '/v1/client/sessions/tokens') {
+      if (!m || m[1] === 'tokens') return { status: 200, body: { object: 'token', jwt: fakeJwt() } };
       return { status: 200, body: wrap(state.sessions[0]) };
     }
-    if (pathname.startsWith('/v1/client/sessions/') || pathname === '/v1/client/sessions') { state.sessions = []; return { status: 200, body: wrap({ object: 'session', id: 'sess_1', status: 'removed' }) }; }
+    if (/^\/v1\/client\/sessions(\/[^/]+\/(end|remove))?$/.test(pathname) && (method === 'DELETE' || method === 'POST')) { state.sessions = []; return { status: 200, body: wrap({ object: 'session', id: 'sess_1', status: 'removed' }) }; }
+    const me = account(method, pathname, form);
+    if (me) return me;
     log.push('UNHANDLED ' + method + ' ' + pathname);
     return { status: 200, body: {} };
+  }
+  function account(method, rawPath, form) {
+    const pathname = rawPath.replace(/\/$/, '');
+    const refresh = () => { if (state.sessions[0]) state.sessions = [session(state.email)]; };
+    const sensitive = () => (acct.reverified ? null : { status: 403, body: { errors: [{ code: 'session_reverification_required', message: 'RAW CLERK MESSAGE reverify', long_message: 'RAW CLERK LONG', meta: { reverification: { level: config.reverify === 'second' ? 'multi_factor' : 'first_factor', after_minutes: 10 } } }] } });
+    const activity = (browser, device, city) => ({ object: 'session_activity', id: 'sa_' + browser, browser_name: browser, device_type: device, city, country: 'US', ip_address: '203.0.113.9', is_mobile: device === 'iPhone' });
+    const deviceList = () => [
+      { object: 'session', id: 'sess_1', status: 'active', expire_at: now() + 1e8, abandon_at: now() + 1e9, last_active_at: now(), latest_activity: activity('Chrome', 'Macintosh', 'Dallas'), actor: null },
+      ...acct.others.map((id, i) => ({ object: 'session', id, status: 'active', expire_at: now() + 1e8, abandon_at: now() + 1e9, last_active_at: now() - (i + 1) * 3 * 3600e3, latest_activity: id === 'sess_3' ? activity('Edge', 'Windows', 'Austin') : activity('Safari', 'iPhone', 'Dallas'), actor: null })),
+    ];
+    let m;
+    if (pathname === '/v1/me' && method === 'GET') return { status: 200, body: wrap(user(state.email)) };
+    if (pathname === '/v1/me/sessions/active') return { status: 200, body: deviceList() };
+    if ((m = pathname.match(/^\/v1\/me\/sessions\/([^/]+)\/revoke$/))) {
+      const found = deviceList().find((d) => d.id === m[1]);
+      acct.others = acct.others.filter((id) => id !== m[1]);
+      return { status: 200, body: wrap({ ...found, status: 'revoked' }) };
+    }
+    if (pathname === '/v1/me/change_password') {
+      const blocked = sensitive(); if (blocked) return blocked;
+      if (acct.password !== null && form.current_password !== acct.password) return err(422, 'form_password_incorrect', 'current_password');
+      if (form.new_password === 'password') return err(422, 'form_password_pwned', 'new_password');
+      acct.password = form.new_password; acct.signedOutOthers = form.sign_out_of_other_sessions; if (form.sign_out_of_other_sessions === 'true') acct.others = [];
+      refresh();
+      return { status: 200, body: wrap(user(state.email)) };
+    }
+    if (pathname === '/v1/me/totp' && method === 'POST') {
+      const blocked = sensitive(); if (blocked) return blocked;
+      acct.pendingTotp = true;
+      return { status: 200, body: wrap({ object: 'totp', id: 'totp_1', secret: 'JBSWY3DPEHPK3PXP', uri: 'otpauth://totp/Vistrial:jay%40example.com?secret=JBSWY3DPEHPK3PXP&issuer=Vistrial', verified: false, backup_codes: null, created_at: now(), updated_at: now() }) };
+    }
+    if (pathname === '/v1/me/totp/attempt_verification') {
+      if (form.code !== CODE) return err(422, 'form_code_incorrect', 'code');
+      acct.totp = true; acct.backup = true; refresh();
+      return { status: 200, body: wrap({ object: 'totp', id: 'totp_1', verified: true, backup_codes: ['aaaa1111', 'bbbb2222', 'cccc3333', 'dddd4444'], created_at: now(), updated_at: now() }) };
+    }
+    if (pathname === '/v1/me/totp' && method === 'DELETE') {
+      const blocked = sensitive(); if (blocked) return blocked;
+      acct.totp = false; acct.backup = false; refresh();
+      return { status: 200, body: wrap({ object: 'totp', id: 'totp_1', deleted: true }) };
+    }
+    if (pathname === '/v1/me/backup_codes') {
+      const blocked = sensitive(); if (blocked) return blocked;
+      acct.backup = true; refresh();
+      return { status: 200, body: wrap({ object: 'backup_code', id: 'bc_1', codes: ['eeee5555', 'ffff6666', 'gggg7777', 'hhhh8888'], created_at: now(), updated_at: now() }) };
+    }
+    // The "confirm it is you" check before a sensitive change.
+    if ((m = pathname.match(/^\/v1\/client\/sessions\/[^/]+\/verify(\/(prepare_first_factor|attempt_first_factor|prepare_second_factor|attempt_second_factor))?$/))) {
+      const check = (status) => ({ object: 'session_verification', id: 'sv_1', status, level: config.reverify === 'second' ? 'multi_factor' : 'first_factor',
+        supported_first_factors: [...(acct.password !== null ? [{ strategy: 'password' }] : []), { strategy: 'email_code', email_address_id: 'idn_1', safe_identifier: 'j***@example.com', primary: true }],
+        supported_second_factors: status === 'needs_second_factor' ? [{ strategy: 'totp' }, { strategy: 'backup_code' }] : null,
+        first_factor_verification: null, second_factor_verification: null, session: state.sessions[0] });
+      const op = m[2];
+      if (!op) { acct.checkStatus = 'needs_first_factor'; return { status: 200, body: wrap(check('needs_first_factor')) }; }
+      if (op === 'attempt_first_factor') {
+        if (form.strategy === 'password' ? form.password !== acct.password : form.code !== CODE) return err(422, form.strategy === 'password' ? 'form_password_incorrect' : 'form_code_incorrect', form.strategy === 'password' ? 'password' : 'code');
+        acct.checkStatus = config.reverify === 'second' ? 'needs_second_factor' : 'complete';
+      }
+      if (op === 'attempt_second_factor') { if (form.code !== CODE) return err(422, 'form_code_incorrect', 'code'); acct.checkStatus = 'complete'; }
+      if (acct.checkStatus === 'complete') acct.reverified = true;
+      return { status: 200, body: wrap(check(acct.checkStatus)) };
+    }
+    return null;
   }
   async function install(page) {
     await page.route(FAPI + '/**', async (route) => {
@@ -148,7 +215,7 @@ function makeMock(config) {
     });
     await page.route('https://clerk-telemetry.com/**', (r) => r.fulfill({ status: 200, body: '{}' }));
   }
-  return { install, log, state };
+  return { install, log, state, acct };
 }
 function fakeJwt() {
   const b = (o) => Buffer.from(JSON.stringify(o)).toString('base64url');

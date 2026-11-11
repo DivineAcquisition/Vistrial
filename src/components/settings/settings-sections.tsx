@@ -6,7 +6,6 @@ import {
   Bell,
   Brain,
   Building2,
-  ExternalLink,
   FileSpreadsheet,
   Gauge,
   Globe,
@@ -752,13 +751,14 @@ export function YouSection({
   data,
   onTheme,
   onNotice,
-  onAccount,
+  security,
   onSignOut,
 }: {
   data: YouData;
   onTheme: (theme: ThemeChoice) => void;
   onNotice: Act<[keyof YouData["notifications"], boolean]>;
-  onAccount: () => void;
+  /** The password, two-step sign-in and devices cards. */
+  security?: ReactNode;
   onSignOut: () => void;
 }) {
   const onCount = NOTICES.filter((row) => data.notifications[row.key]).length;
@@ -770,17 +770,12 @@ export function YouSection({
         title="Your account"
         sentence={`Signed in as ${data.name}${data.email ? ` (${data.email})` : ""}. ${ROLE_WORDS[data.role]} since ${shortDate(data.joinedAt)}.`}
         footer={
-          <div className="flex flex-wrap gap-2">
-            <Button size="sm" variant="outline" onClick={onAccount}>
-              Password, sessions and two-step sign-in <ExternalLink aria-hidden className="size-3.5" />
-            </Button>
-            <Button size="sm" variant="ghost" onClick={onSignOut}>
-              Sign out
-            </Button>
-          </div>
+          <Button size="sm" variant="outline" onClick={onSignOut}>
+            Sign out
+          </Button>
         }
-        affects="Sign-in is handled by Clerk."
       />
+      {security}
       <StatusCard
         icon={MoonIcon}
         title="Theme"

@@ -238,6 +238,130 @@ async function done(t, name, expectedPath) {
     await t.page.getByLabel('Code').fill(CODE);
     await done(t, n, '/app');
   }
+  // ---- account cards (Settings > You), mounted on their own at /dev/auth-pages?screen=account-live
+  async function account(config) {
+    const ctx = await browser.newContext({ viewport: { width: 390, height: 1400 } });
+    const page = await ctx.newPage();
+    const errors = [];
+    page.on('pageerror', (e) => errors.push(String(e).slice(0, 200)));
+    const mock = makeMock({ accounts: {}, signedIn: true, ...config });
+    await mock.install(page);
+    await page.goto(BASE + '/dev/auth-pages?screen=account-live', { waitUntil: 'load' });
+    await page.waitForFunction(() => document.body.innerText.includes('This device'), null, { timeout: 30000 });
+    return { ctx, page, mock, errors };
+  }
+  const text = (page) => page.locator('body').innerText();
+  const until = (page, words) => page.waitForFunction((w) => document.body.innerText.includes(w), words, { timeout: 15000 });
+  const noClerkUi = async (t, name) => check(`${name}: no Clerk screen appears`, (await t.page.locator('[class*="cl-"]').count()) === 0);
+  const end = async (t, name) => { check(`${name}: no page errors`, t.errors.length === 0, t.errors.join(' ; ')); await t.ctx.close(); };
+
+  { // change password
+    const n = 'account password';
+    const t = await account({});
+    await t.page.getByRole('button', { name: 'Change password' }).click();
+    await t.page.getByLabel('Current password').fill('wrong one'); await t.page.getByLabel('New password').fill('brand new words');
+    await t.page.getByRole('button', { name: 'Change password' }).click();
+    let a = await waitAlert(t.page);
+    check(`${n}: wrong current password in plain words`, a.includes('The current password is not right.'), a);
+    await noRaw(t.page, n);
+    await t.page.getByLabel('New password').fill('short'); await t.page.getByRole('button', { name: 'Change password' }).click();
+    check(`${n}: short password caught on the page`, (await alertText(t.page)).includes('at least 8 characters'));
+    await t.page.getByLabel('Current password').fill('old password'); await t.page.getByLabel('New password').fill('brand new words');
+    await t.page.getByRole('button', { name: 'Change password' }).click();
+    await until(t.page, 'Password changed.').then(() => check(`${n}: change is confirmed in words`, true)).catch(async () => check(`${n}: change is confirmed in words`, false, await alertText(t.page)));
+    check(`${n}: Clerk was told to sign out other devices`, t.mock.acct.signedOutOthers === 'true' && t.mock.acct.password === 'brand new words');
+    await t.page.waitForFunction(() => !document.body.innerText.includes('Safari on iPhone'), null, { timeout: 15000 }).then(() => check(`${n}: device list refreshes to this device only`, true)).catch(() => check(`${n}: device list refreshes to this device only`, false));
+    await noClerkUi(t, n); await end(t, n);
+  }
+  { // Google-only account sets a first password
+    const n = 'account set password';
+    const t = await account({ user: { password: null } });
+    check(`${n}: says there is no password yet`, (await text(t.page)).includes('No password yet.'));
+    await t.page.getByRole('button', { name: 'Set a password' }).click();
+    check(`${n}: does not ask for a current password`, (await t.page.getByLabel('Current password').count()) === 0);
+    await t.page.getByLabel('New password').fill('first real password'); await t.page.getByRole('button', { name: 'Set password' }).click();
+    await until(t.page, 'Password set.').then(() => check(`${n}: set`, true)).catch(async () => check(`${n}: set`, false, await alertText(t.page)));
+    await end(t, n);
+  }
+  { // two-step on
+    const n = 'account two-step on';
+    const t = await account({});
+    await t.page.getByRole('button', { name: 'Turn on' }).click();
+    await until(t.page, 'JBSW Y3DP EHPK 3PXP').then(() => check(`${n}: shows the set-up key in groups`, true)).catch(async () => check(`${n}: shows the set-up key in groups`, false, await alertText(t.page)));
+    check(`${n}: shows a scannable code`, (await t.page.locator('svg[aria-label="Set-up code for your authenticator app"] path').getAttribute('d'))?.length > 500);
+    await t.page.getByLabel('Code from the app').fill('111111'); await t.page.getByRole('button', { name: 'Turn on two-step sign-in' }).click();
+    const a = await waitAlert(t.page);
+    check(`${n}: wrong code in plain words`, a.includes('That code is not right.'), a);
+    await noRaw(t.page, n);
+    await t.page.getByLabel('Code from the app').fill(CODE); await t.page.getByRole('button', { name: 'Turn on two-step sign-in' }).click();
+    await until(t.page, 'aaaa1111').then(() => check(`${n}: backup codes are shown once it is on`, true)).catch(async () => check(`${n}: backup codes are shown once it is on`, false, await text(t.page)));
+    await t.page.getByRole('button', { name: 'I have saved them' }).click();
+    await until(t.page, 'New backup codes');
+    check(`${n}: card now reads On`, /Two-step sign-in\s*\n\s*On\./.test(await text(t.page)) || (await text(t.page)).includes('On. After your password'));
+    await noClerkUi(t, n); await end(t, n);
+  }
+  { // two-step: new codes, then off
+    const n = 'account two-step off';
+    const t = await account({ user: { totp: true, backup: true } });
+    await t.page.getByRole('button', { name: 'New backup codes' }).click();
+    await until(t.page, 'eeee5555').then(() => check(`${n}: new backup codes are shown`, true)).catch(async () => check(`${n}: new backup codes are shown`, false, await alertText(t.page)));
+    await t.page.getByRole('button', { name: 'I have saved them' }).click();
+    await t.page.getByRole('button', { name: 'Turn off' }).click();
+    await until(t.page, 'Turn off two-step sign-in?');
+    check(`${n}: asks before turning off`, t.mock.acct.totp === true);
+    await t.page.getByRole('button', { name: 'Turn off' }).click();
+    await until(t.page, 'Off. With it on').then(() => check(`${n}: turned off`, t.mock.acct.totp === false)).catch(async () => check(`${n}: turned off`, false, await alertText(t.page)));
+    await end(t, n);
+  }
+  { // sign out another device
+    const n = 'account devices';
+    const t = await account({});
+    check(`${n}: this device has no sign-out button of its own`, (await t.page.getByRole('button', { name: /^Sign out/ }).count()) === 2);
+    await t.page.getByRole('button', { name: 'Sign out Safari on iPhone, Dallas, US' }).click();
+    await t.page.waitForFunction(() => !document.body.innerText.includes('Safari on iPhone'), null, { timeout: 15000 }).then(() => check(`${n}: the device is signed out and leaves the list`, true)).catch(() => check(`${n}: the device is signed out and leaves the list`, false));
+    check(`${n}: the other device is still listed`, (await text(t.page)).includes('Edge on Windows'));
+    await end(t, n);
+  }
+  { // Clerk asks "is it you": our own window, password
+    const n = 'account confirm it is you';
+    const t = await account({ reverify: 'first' });
+    await t.page.getByRole('button', { name: 'Turn on' }).click();
+    await until(t.page, 'Confirm it is you').then(() => check(`${n}: our own check opens`, true)).catch(async () => check(`${n}: our own check opens`, false, await text(t.page)));
+    await noClerkUi(t, n);
+    const dialog = t.page.getByRole('dialog');
+    await dialog.getByLabel('Password', { exact: true }).fill('nope'); await dialog.getByRole('button', { name: 'Confirm' }).click();
+    const a = await waitAlert(t.page);
+    check(`${n}: wrong password in plain words`, a.includes('That password is not right.'), a);
+    await dialog.getByLabel('Password', { exact: true }).fill('old password'); await dialog.getByRole('button', { name: 'Confirm' }).click();
+    await until(t.page, 'JBSW Y3DP EHPK 3PXP').then(() => check(`${n}: the change carries on by itself after the check`, true)).catch(async () => check(`${n}: the change carries on by itself after the check`, false, await text(t.page)));
+    await t.page.waitForFunction(() => !document.querySelector('[role=dialog]'), null, { timeout: 10000 }).then(() => check(`${n}: the check window has closed`, true)).catch(() => check(`${n}: the check window has closed`, false));
+    await end(t, n);
+  }
+  { // check with an emailed code, then a second step
+    const n = 'account confirm with code and second step';
+    const t = await account({ reverify: 'second', user: { totp: true, backup: true } });
+    await t.page.getByRole('button', { name: 'New backup codes' }).click();
+    await until(t.page, 'Confirm it is you');
+    const dialog = t.page.getByRole('dialog');
+    await dialog.getByRole('button', { name: 'Email me a code instead' }).click();
+    await until(t.page, 'We emailed a 6-digit code to j***@example.com').then(() => check(`${n}: emailed code offered and sent`, t.mock.log.some((l) => l.includes('verify/prepare_first_factor'))) ).catch(async () => check(`${n}: emailed code offered and sent`, false, await text(t.page)));
+    await dialog.getByLabel('Code').fill(CODE); await dialog.getByRole('button', { name: 'Confirm' }).click();
+    await until(t.page, 'Enter the 6-digit code from your authenticator app.').then(() => check(`${n}: second step asked for`, true)).catch(async () => check(`${n}: second step asked for`, false, await text(t.page)));
+    await dialog.getByLabel('Code').fill(CODE); await dialog.getByRole('button', { name: 'Confirm' }).click();
+    await until(t.page, 'eeee5555').then(() => check(`${n}: change completes after both steps`, true)).catch(async () => check(`${n}: change completes after both steps`, false, await text(t.page)));
+    await end(t, n);
+  }
+  { // backing out of the check
+    const n = 'account confirm cancelled';
+    const t = await account({ reverify: 'first' });
+    await t.page.getByRole('button', { name: 'Turn on' }).click();
+    await until(t.page, 'Confirm it is you');
+    await t.page.getByRole('dialog').getByRole('button', { name: 'Cancel' }).click();
+    await t.page.waitForFunction(() => !document.querySelector('[role=dialog]'), null, { timeout: 10000 }).catch(() => {});
+    check(`${n}: nothing changes and no error is shown`, (await alertText(t.page)).trim() === '' && !(await text(t.page)).includes('JBSW') && t.mock.acct.pendingTotp === false, await alertText(t.page));
+    check(`${n}: the button works again`, !(await t.page.getByRole('button', { name: 'Turn on' }).isDisabled()));
+    await end(t, n);
+  }
   await browser.close();
   console.log(results.join('\n'));
   console.log(failures ? `\n${failures} FAILED` : '\nALL PASSED');

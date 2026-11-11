@@ -1,5 +1,6 @@
 "use client";
 
+import { AccountSecurity } from "@/components/account/security";
 import { AuthFrame, Working } from "@/components/auth/auth-parts";
 import { SignInView } from "@/components/auth/sign-in-view";
 import { SignUpView } from "@/components/auth/sign-up-view";
@@ -7,6 +8,7 @@ import { explainAuthError, type AuthProblem } from "@/lib/auth/errors";
 import type { SignInStep, SignUpStep } from "@/lib/auth/flow";
 
 import { StoryTheme } from "../story-theme";
+import { AccountStory } from "./account-story";
 
 const EMAIL = "jaylen@brookscleaning.com";
 
@@ -55,6 +57,26 @@ export function AuthPagesStory({ screen, step, problem, theme }: { screen: strin
   const shown = found
     ? explainAuthError({ errors: [{ code: found.code, meta: found.meta ?? {} }] }, { flow: signUp ? "sign-up" : "sign-in", field: found.field })
     : null;
+
+  // The live account cards on their own, for the browser check in scripts/auth-pages-check.
+  if (screen === "account-live") {
+    return (
+      <main className="mx-auto grid max-w-2xl gap-4 p-4">
+        <StoryTheme theme={theme} />
+        <AccountSecurity />
+      </main>
+    );
+  }
+
+  // The account cards with made-up data: ?screen=account&step=password|setup|codes|on|off|confirm|...
+  if (screen === "account") {
+    return (
+      <main className="mx-auto grid max-w-2xl gap-4 p-4">
+        <StoryTheme theme={theme} />
+        <AccountStory state={step} />
+      </main>
+    );
+  }
 
   if (!step) {
     return (

@@ -1,11 +1,12 @@
 import {
   BUSINESS_TYPES,
-  CALLS_PER_WEEK,
-  CRMS,
+  AD_SPEND,
+  CHANNELS,
+  CLIENT_COUNTS,
   CUSTOM_TEAM_SIZES,
-  DEAL_VALUES,
-  LEAD_SOURCES,
-  LEADS_PER_MONTH,
+  FIGURES,
+  FIRST_WANTS,
+  OFFER_PRICES,
   TEAM_SIZES,
 } from "@/lib/access-requests/options";
 import type { AccessSubmission } from "@/lib/access-requests/validate";
@@ -33,16 +34,12 @@ export function submissionFields(value: AccessSubmission): { label: string; valu
           ["Website", value.website ?? ""],
           ["Business type", withOther(labelOf(BUSINESS_TYPES, value.businessType), value.businessTypeOther)],
           ["Team size", labelOf(TEAM_SIZES, value.teamSize)],
-          [
-            "Where leads live",
-            value.leadSources
-              .map((item) => withOther(labelOf(LEAD_SOURCES, item), value.leadSourcesOther))
-              .join(", "),
-          ],
-          ["CRM", withOther(labelOf(CRMS, value.crm), value.crmOther)],
-          ["Typical deal value", labelOf(DEAL_VALUES, value.dealValue)],
-          ["Sales calls per week", labelOf(CALLS_PER_WEEK, value.callsPerWeek)],
-          ["New leads per month", labelOf(LEADS_PER_MONTH, value.leadsPerMonth)],
+          ["Works for", labelOf(CLIENT_COUNTS, value.clientCount)],
+          ["Where customers come from", value.channels.map((item) => withOther(labelOf(CHANNELS, item), value.channelsOther)).join(", ")],
+          ["Monthly ad spend", labelOf(AD_SPEND, value.adSpend)],
+          ["Price of main offer", labelOf(OFFER_PRICES, value.offerPrice)],
+          ["Wants first", labelOf(FIRST_WANTS, value.firstWant)],
+          ["Figures they could share", labelOf(FIGURES, value.figures)],
           ["Main problem", value.problem ?? ""],
           ["Heard about us", value.heardAbout ?? ""],
           ["Campaign", campaign],

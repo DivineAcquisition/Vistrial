@@ -24,6 +24,7 @@ describe("public landing copy", () => {
       "Where does the research come from?",
       "Can I trust what it says?",
       "Will it post or spend on its own?",
+      "What happens after it recommends something?",
       "What does it do with my data?",
       "Who is Private Access for?",
       "What happens after I request access?",

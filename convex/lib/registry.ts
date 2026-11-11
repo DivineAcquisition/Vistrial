@@ -29,6 +29,11 @@ export const TOOLS = [
   "cp.context",
   "cp.check",
   "cp.save",
+  "page.read",
+  "lp.context",
+  "lp.apply",
+  "lp.check",
+  "lp.save",
 ] as const;
 
 export type ToolSlug = (typeof TOOLS)[number];
@@ -40,6 +45,18 @@ export type CollectTool = (typeof COLLECT_TOOLS)[number];
 
 export function isCollectTool(slug: string): slug is CollectTool {
   return (COLLECT_TOOLS as readonly string[]).includes(slug);
+}
+
+/**
+ * Tools that need the network but collect no research source. Each runs as its own action from the step
+ * action and reports a result code and what it cost; the runtime records the step and charges the run.
+ */
+export const ACTION_TOOLS = ["page.read"] as const;
+
+export type ActionTool = (typeof ACTION_TOOLS)[number];
+
+export function isActionTool(slug: string): slug is ActionTool {
+  return (ACTION_TOOLS as readonly string[]).includes(slug);
 }
 
 export const TEST_SKILL = "test-echo";

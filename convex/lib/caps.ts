@@ -40,6 +40,13 @@ export const SKILL_CAPS: Readonly<Record<string, Caps>> = {
     maxSteps: 20,
     maxDurationMs: 600_000,
   },
+  /** Up to six pages read and analysed one by one, one write across them, plus one revision in reserve. */
+  "landing-page-teardown": {
+    maxCostCentsPerRun: 300,
+    maxCostCentsPerDay: 1500,
+    maxSteps: 40,
+    maxDurationMs: 1_200_000,
+  },
   "growth-diagnostics": {
     maxCostCentsPerRun: 100,
     maxCostCentsPerDay: 1000,

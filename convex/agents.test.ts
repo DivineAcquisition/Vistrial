@@ -50,7 +50,7 @@ describe("the seven-agent workforce", () => {
       CATALOG.map((agent) => [agent.number, agent.slug, agent.status]),
     );
     expect(shell.agents.filter((agent) => agent.status === "live").map((agent) => agent.slug)).toEqual([GROWTH_ARCHITECT]);
-    expect(shell.agents.find((agent) => agent.slug === GROWTH_ARCHITECT)?.skills).toHaveLength(6);
+    expect(shell.agents.find((agent) => agent.slug === GROWTH_ARCHITECT)?.skills).toHaveLength(7);
   });
 
   it("does not let a planned agent be turned on or start a run", async () => {

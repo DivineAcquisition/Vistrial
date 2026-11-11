@@ -14,7 +14,7 @@ import { assertClaims, assertSourcesExist } from "./lib/evidence";
 import { notAllowed, notFound, userError } from "./lib/errors";
 import { ModelError, NO_SPEND, complete, type ModelRoute, type Spend } from "./lib/modelRouter";
 import { completeWithTools } from "./lib/toolRouter";
-import { INJECTION_FIXTURE, TEST_SKILL, devSkillsEnabled, isCollectTool, wrapUntrusted } from "./lib/registry";
+import { INJECTION_FIXTURE, TEST_SKILL, devSkillsEnabled, isActionTool, isCollectTool, wrapUntrusted } from "./lib/registry";
 import { collectResult, type Platform } from "./lib/researchShapes";
 import { saveSourceRef, setSourceStatus } from "./lib/sourceRefs";
 import { writeFact } from "./lib/facts";
@@ -23,6 +23,7 @@ import { MUTATION_TOOLS as MI_TOOLS } from "./skills/marketIntelligence/tools";
 import { OFFER_TOOLS } from "./skills/offerIntelligence/tools";
 import { CREATIVE_TOOLS } from "./skills/creativeProduction/tools";
 import { GD_MUTATION_TOOLS } from "./skills/growthDiagnostics/tools";
+import { LP_MUTATION_TOOLS } from "./skills/landingTeardown/tools";
 import { liveEnv, runAdapter } from "./adapters";
 import { assertDeclared, skillFor } from "./lib/skills";
 import { assertCanSpend, chargeUsage } from "./lib/billing";
@@ -30,7 +31,7 @@ import { assertCanSpend, chargeUsage } from "./lib/billing";
 const OPEN = new Set(["queued", "running", "waiting"]);
 
 /** Every skill's code-only tools, by slug. */
-const MUTATION_TOOLS = { ...MI_TOOLS, ...OFFER_TOOLS, ...GD_MUTATION_TOOLS, ...CREATIVE_TOOLS };
+const MUTATION_TOOLS = { ...MI_TOOLS, ...OFFER_TOOLS, ...GD_MUTATION_TOOLS, ...CREATIVE_TOOLS, ...LP_MUTATION_TOOLS };
 
 type StopReason = "cap" | "error" | "cancelled" | "halted" | "done";
 
@@ -505,6 +506,9 @@ export const prepare = internalMutation({
     if (next.kind === "tool" && isCollectTool(next.toolSlug)) {
       return { done: false as const, kind: "collect" as const, index, idempotencyKey, toolSlug: next.toolSlug, ...phase };
     }
+    if (next.kind === "tool" && isActionTool(next.toolSlug)) {
+      return { done: false as const, kind: "action" as const, index, idempotencyKey, toolSlug: next.toolSlug, ...phase };
+    }
     if (next.kind === "tool") {
       return { done: false as const, kind: "tool" as const, index, idempotencyKey, toolSlug: next.toolSlug, ...phase };
     }
@@ -928,6 +932,60 @@ export const commitModel = internalMutation({
   },
 });
 
+/**
+ * Records a network tool that already ran (the page reader). What it cost is always counted, like a model
+ * call, and the run then stops if a pause, a halt or a cap says so. The tool reports a code, never page text.
+ */
+export const commitAction = internalMutation({
+  args: {
+    runId: v.id("agentRuns"),
+    idempotencyKey: v.string(),
+    index: v.number(),
+    toolSlug: v.string(),
+    resultCode: v.string(),
+    resultId: v.optional(v.string()),
+    costCents: v.number(),
+    durationMs: v.number(),
+    phase: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const run = await ctx.db.get(args.runId);
+    if (!run) notFound();
+    if (await findStep(ctx, run, args.idempotencyKey)) return { status: run.status };
+    assertDeclared(run.skillSlug, args.toolSlug);
+    const { runCost, dayCost } = await charge(ctx, run, { inputTokens: 0, outputTokens: 0, costCents: Math.max(0, args.costCents) });
+    await ctx.db.insert("runSteps", {
+      workspaceId: run.workspaceId,
+      runId: run._id,
+      index: args.index,
+      idempotencyKey: args.idempotencyKey,
+      kind: "tool",
+      toolSlug: args.toolSlug,
+      status: "completed",
+      durationMs: args.durationMs,
+      inputTokens: 0,
+      outputTokens: 0,
+      resultCode: args.resultCode.slice(0, 60),
+      ...(args.resultId ? { resultId: args.resultId } : {}),
+      ...(args.phase ? { phase: args.phase } : {}),
+    });
+    if (!OPEN.has(run.status)) return { status: run.status };
+    const current = { ...run, costCents: runCost };
+    const gate = await controls(ctx, run.workspaceId);
+    if (gate.paused || gate.halted) {
+      await stopRun(ctx, current, "cancelled", "stopped", runCost);
+      return { status: "stopped" as const };
+    }
+    const caps = await runCaps(ctx, run);
+    const steps = await stepCount(ctx, run);
+    if (overCap({ caps, runCost, dayCost, steps: steps.length, startedAt: run.startedAt + (run.waitedMs ?? 0), now: Date.now() })) {
+      await stopRun(ctx, current, "cap", "stopped", runCost);
+      return { status: "stopped" as const };
+    }
+    return { status: "running" as const };
+  },
+});
+
 /** The project a run works on, when its input is a project in the run's workspace. */
 async function runProject(ctx: QueryCtx, run: Doc<"agentRuns">) {
   const id = ctx.db.normalizeId("researchProjects", run.inputRef);
@@ -1257,6 +1315,35 @@ export const step = internalAction({
         durationMs: Date.now() - began,
         ...phase,
       }));
+    } else if (plan.kind === "action") {
+      const began = Date.now();
+      try {
+        // The only action tool today is the page reader, which runs in Node.
+        const done: { resultCode: string; resultId?: string; costCents: number } = await ctx.runAction(internal.landingTeardownActions.readNext, { runId: args.runId });
+        ({ status } = await ctx.runMutation(internal.runs.commitAction, {
+          runId: args.runId,
+          idempotencyKey: plan.idempotencyKey,
+          index: plan.index,
+          toolSlug: plan.toolSlug,
+          resultCode: done.resultCode,
+          ...(done.resultId ? { resultId: done.resultId } : {}),
+          costCents: done.costCents,
+          durationMs: Date.now() - began,
+          ...phase,
+        }));
+      } catch {
+        await ctx.runMutation(internal.runs.fail, {
+          runId: args.runId,
+          index: plan.index,
+          idempotencyKey: plan.idempotencyKey,
+          code: "tool_error",
+          kind: "tool",
+          durationMs: Date.now() - began,
+          toolSlug: plan.toolSlug,
+          ...phase,
+        });
+        return null;
+      }
     } else {
       try {
         ({ status } = await ctx.runMutation(internal.runs.commitTool, {

@@ -52,7 +52,7 @@ export function workTabsFor(agent: RailAgent) {
   });
 }
 
-export type AgentTab = { tab: "chat" | "creative" | "brands" | WorkTab; skillSlug: string | null; label: string; href: string };
+export type AgentTab = { tab: "chat" | "creative" | "pages" | "brands" | WorkTab; skillSlug: string | null; label: string; href: string };
 
 /** Where the one chat with an agent lives. */
 export function chatHref(agentSlug: string) {
@@ -67,10 +67,11 @@ export function brandsHref(agentSlug: string) {
 /** The agent whose work is made for a brand, so its sidebar holds the brand kits. */
 const BRANDS_AGENT = "growth-architect";
 const CREATIVE_SKILL = "creative-production";
+const PAGES_SKILL = "landing-page-teardown";
 
 /**
  * The tabs under an agent in the sidebar: Chat first (the one place to talk to it), then its work tabs,
- * then Creative when that skill is live, then Brands for the Growth Architect. An agent with no work tab has no chat either, so it has no tabs.
+ * then Creative and Pages when those skills are live, then Brands for the Growth Architect. An agent with no work tab has no chat either, so it has no tabs.
  */
 export function agentTabs(agent: RailAgent): AgentTab[] {
   const work = workTabsFor(agent);
@@ -79,8 +80,12 @@ export function agentTabs(agent: RailAgent): AgentTab[] {
   const creative: AgentTab[] = liveSkills(agent).some((skill) => skill.slug === CREATIVE_SKILL)
     ? [{ tab: "creative", skillSlug: CREATIVE_SKILL, label: "Creative", href: `/app/agents/${agent.slug}/work/creative` }]
     : [];
+  // Landing page teardowns start from a form too: links to read, with the plan and budget shown first.
+  const pages: AgentTab[] = liveSkills(agent).some((skill) => skill.slug === PAGES_SKILL)
+    ? [{ tab: "pages", skillSlug: PAGES_SKILL, label: "Pages", href: `/app/agents/${agent.slug}/work/pages` }]
+    : [];
   const brands: AgentTab[] = agent.slug === BRANDS_AGENT ? [{ tab: "brands", skillSlug: null, label: "Brands", href: brandsHref(agent.slug) }] : [];
-  return [{ tab: "chat", skillSlug: null, label: "Chat", href: chatHref(agent.slug) }, ...work, ...creative, ...brands];
+  return [{ tab: "chat", skillSlug: null, label: "Chat", href: chatHref(agent.slug) }, ...work, ...creative, ...pages, ...brands];
 }
 
 /** The skills a person can start today. */

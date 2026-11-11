@@ -30,6 +30,11 @@ export type DiagnosisView = NonNullable<DiagnosticsData["diagnosis"]>;
 export type GoalView = DiagnosticsData["goal"];
 export type ConnectedData = DiagnosticsData["data"];
 
+export type PagesTabData = FunctionReturnType<typeof api.landingTeardown.tab>;
+export type PagesQuote = FunctionReturnType<typeof api.landingTeardown.quote>;
+export type TeardownView = FunctionReturnType<typeof api.landingTeardown.view>;
+export type TeardownPageView = FunctionReturnType<typeof api.landingTeardown.page>;
+
 export type ItemDecision = FunctionReturnType<typeof api.decisions.forAsset>[number];
 
 export type ReportPdfData = FunctionReturnType<typeof api.workTabs.reportPdf>;

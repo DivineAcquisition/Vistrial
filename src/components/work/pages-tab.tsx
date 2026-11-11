@@ -1,5 +1,6 @@
 "use client";
 
+import { useClientScope } from "@/components/shell/shell-context";
 import { useMutation, useQuery } from "convex/react";
 import Link from "next/link";
 import { useEffect, useState, type ReactNode } from "react";
@@ -689,7 +690,8 @@ export function PagesTabView({ base, editor, tab, quote, onAskChange, onStart, v
 
 /** The Pages workspace with live data. */
 export function PagesTab({ workspaceId, base, editor, initial }: { workspaceId: Id<"workspaces">; base: string; editor: boolean; initial?: string | null }) {
-  const tab = useQuery(api.landingTeardown.tab, { workspaceId });
+  const { scope, clientId } = useClientScope();
+  const tab = useQuery(api.landingTeardown.tab, { workspaceId, scope });
   const [selected, setSelected] = useState<string | null>(initial ?? null);
   const [pageId, setPageId] = useState<string | null>(null);
   const [ask, setAsk] = useState<TeardownAsk | null>(null);
@@ -713,7 +715,7 @@ export function PagesTab({ workspaceId, base, editor, initial }: { workspaceId: 
       quote={quote ?? null}
       onAskChange={setAsk}
       onStart={async (next, confirmedCents) => {
-        await start({ workspaceId, industry: next.industry, ownUrl: next.ownUrl || undefined, urls: next.urls, find: next.find, note: next.note || undefined, confirmedCents });
+        await start({ workspaceId, industry: next.industry, ownUrl: next.ownUrl || undefined, urls: next.urls, find: next.find, note: next.note || undefined, confirmedCents, clientId });
       }}
       view={view ?? null}
       page={page ?? null}

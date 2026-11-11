@@ -7,6 +7,7 @@
  * Vistrial sees a page, not its results. Every screen and every saved teardown says so.
  */
 
+import { clientForNew } from "./lib/clients";
 import { canWork, requireWork } from "./lib/roles";
 import { v } from "convex/values";
 
@@ -125,9 +126,10 @@ export const quote = workspaceQuery({
  * starts and they are shown the new one. Owners, Admins and Members.
  */
 export const start = workspaceMutation({
-  args: { industry: v.string(), ownUrl: v.optional(v.string()), urls: v.array(v.string()), find: v.boolean(), note: v.optional(v.string()), confirmedCents: v.number() },
+  args: { industry: v.string(), ownUrl: v.optional(v.string()), urls: v.array(v.string()), find: v.boolean(), note: v.optional(v.string()), confirmedCents: v.number(), clientId: v.optional(v.id("clients")) },
   handler: async (ctx, args) => {
     requireWork(ctx.member.role);
+    const forClient = await clientForNew(ctx, args.clientId);
     const asked = plan(args);
     if (!asked.industry) throw userError("Say which industry these pages are in.");
     const bad = asked.given.find((row) => !row.ok);
@@ -144,6 +146,7 @@ export const start = workspaceMutation({
     const urls = asked.ok.filter((row) => !row.own).map((row) => row.url);
     const projectId = await ctx.db.insert("researchProjects", {
       workspaceId: ctx.workspaceId,
+      ...forClient,
       title: `Landing pages: ${asked.industry}`.slice(0, 80),
       objective: `Which patterns do landing pages in ${asked.industry} share, and what does ours lack?`,
       market: asked.industry,
@@ -158,6 +161,7 @@ export const start = workspaceMutation({
     });
     const requestId = await ctx.db.insert("teardownRequests", {
       workspaceId: ctx.workspaceId,
+      ...forClient,
       projectId,
       industry: asked.industry,
       ...(asked.own?.ok ? { ownUrl: asked.own.url } : {}),

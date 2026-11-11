@@ -9,8 +9,8 @@ import { RedirectToSignIn } from "@/components/auth/redirect-to-sign-in";
 import { FreeSessionFlow } from "@/components/onboarding/free-session-flow";
 import { OnboardingFlow } from "@/components/onboarding/onboarding-flow";
 import { ProductShell } from "@/components/shell/product-shell";
-import { ShellProvider, type ShellAccount, type ShellOrganization, type WorkspaceShell } from "@/components/shell/shell-context";
-import { chooseOrganization, readOrganizationChoice, writeOrganizationChoice } from "@/lib/shell/organization-choice";
+import { ShellProvider, type ScopeChoice, type ShellAccount, type ShellOrganization, type WorkspaceShell } from "@/components/shell/shell-context";
+import { chooseOrganization, readOrganizationChoice, readScopeChoice, validScope, writeOrganizationChoice, writeScopeChoice } from "@/lib/shell/organization-choice";
 import { useConvexReady } from "@/components/providers/convex-ready";
 import { api } from "../../../convex/_generated/api";
 import type { Id } from "../../../convex/_generated/dataModel";
@@ -95,6 +95,16 @@ function WorkspaceFrame({
   children: React.ReactNode;
 }) {
   const shell = useQuery(api.workspace.shell, { workspaceId });
+  const listed = useQuery(api.clients.list, { workspaceId });
+  // The picker's choice is remembered per organization and per browser.
+  const [stored, setStored] = useState<string>(() => readScopeChoice(workspaceId));
+  const setChoice = useCallback(
+    (next: ScopeChoice) => {
+      writeScopeChoice(workspaceId, next);
+      setStored(next);
+    },
+    [workspaceId],
+  );
   if (shell === undefined) {
     return (
       <ProductShell agents={[]}>
@@ -110,6 +120,12 @@ function WorkspaceFrame({
     organizations,
     account,
     switchOrganization,
+    clients: listed?.clients.map((row) => ({ id: row.id, name: row.name, type: row.type, line: row.line })) ?? [],
+    ownWork: listed?.ownWork ?? true,
+    canManageClients: listed?.canManage ?? false,
+    // Until the list has loaded nothing is narrowed, and a choice that no longer exists is dropped.
+    choice: listed ? (validScope(stored, listed.clients, listed.ownWork) as ScopeChoice) : "all",
+    setChoice,
   };
   return (
     <ShellProvider value={value}>

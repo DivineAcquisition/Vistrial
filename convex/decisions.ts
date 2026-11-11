@@ -49,13 +49,16 @@ function requireEditor(role: Doc<"members">["role"]) {
  * The business's own figures right now: its Meta results (when the connection is granted to the Growth
  * Architect) and each ready results file granted to it. Totals only.
  */
-export async function currentFigures(ctx: QueryCtx, workspaceId: Id<"workspaces">): Promise<Figures[]> {
+export async function currentFigures(ctx: QueryCtx, workspaceId: Id<"workspaces">, clientId?: Id<"clients">): Promise<Figures[]> {
   const now = Date.now();
   const rows: Figures[] = [];
-  const connection = await ctx.db
-    .query("metaConnections")
-    .withIndex("by_workspace", (q) => q.eq("workspaceId", workspaceId))
-    .unique();
+  // The connected ad account is the organization's own, so it never stands for a client's results.
+  const connection = clientId
+    ? null
+    : await ctx.db
+        .query("metaConnections")
+        .withIndex("by_workspace", (q) => q.eq("workspaceId", workspaceId))
+        .unique();
   if (connection?.status === "connected" && connection.adAccountId && (connection.agents ?? [GROWTH_ARCHITECT]).includes(GROWTH_ARCHITECT)) {
     const snapshot = await ctx.db
       .query("metaAdSnapshots")
@@ -83,6 +86,8 @@ export async function currentFigures(ctx: QueryCtx, workspaceId: Id<"workspaces"
   const seen = new Set<string>();
   for (const upload of uploads) {
     if (upload.status !== "ready" || !upload.summary || !uploadAgents(upload).includes(GROWTH_ARCHITECT)) continue;
+    // A client's results files stand for that client only; the organization's own for itself.
+    if (upload.clientId !== clientId) continue;
     // The newest file per label stands for that source.
     if (seen.has(upload.label)) continue;
     seen.add(upload.label);
@@ -298,6 +303,7 @@ export const planItem = workspaceMutation({
     const now = Date.now();
     const decisionId = await ctx.db.insert("decisions", {
       workspaceId: ctx.workspaceId,
+      ...(await clientOfProject(ctx, item.projectId)),
       projectId: item.projectId,
       runId: item.runId,
       assetId: asset._id,
@@ -310,7 +316,7 @@ export const planItem = workspaceMutation({
       checkInAt: now + args.checkInDays * DAY_MS,
       createdBy: ctx.identity.subject,
       createdAt: now,
-      baseline: await currentFigures(ctx, ctx.workspaceId),
+      baseline: await currentFigures(ctx, ctx.workspaceId, (await clientOfProject(ctx, item.projectId)).clientId),
     });
     await writeAudit(ctx, {
       workspaceId: ctx.workspaceId,
@@ -361,6 +367,7 @@ export const plan = workspaceMutation({
     const now = Date.now();
     const decisionId = await ctx.db.insert("decisions", {
       workspaceId: ctx.workspaceId,
+      ...(project.clientId ? { clientId: project.clientId } : {}),
       projectId: args.projectId,
       runId: written.runId,
       ...(assetId ? { assetId } : {}),
@@ -371,7 +378,7 @@ export const plan = workspaceMutation({
       checkInAt: now + args.checkInDays * DAY_MS,
       createdBy: ctx.identity.subject,
       createdAt: now,
-      baseline: await currentFigures(ctx, ctx.workspaceId),
+      baseline: await currentFigures(ctx, ctx.workspaceId, project.clientId),
     });
     await writeAudit(ctx, {
       workspaceId: ctx.workspaceId,
@@ -404,7 +411,7 @@ export const recordOutcome = workspaceMutation({
     requireEditor(ctx.member.role);
     const decision = await ownDecision(ctx, ctx.workspaceId, args.decisionId);
     const now = Date.now();
-    const after = await currentFigures(ctx, ctx.workspaceId);
+    const after = await currentFigures(ctx, ctx.workspaceId, decision.clientId);
     const outcome = { result: args.result, note: clip(args.note, MAX_NOTE), after, recordedAt: now, recordedBy: ctx.identity.subject };
     await ctx.db.patch(decision._id, { outcome });
     await writeLearningSignal(ctx, { ...decision, outcome });
@@ -500,6 +507,12 @@ export const learningSummary = internalQuery({
 });
 
 /** For context.read: the decisions this workspace made, newest first, with outcomes first. */
+/** The client a project's records belong to, as a field to spread into a new row. */
+async function clientOfProject(ctx: QueryCtx, projectId: Id<"researchProjects">): Promise<{ clientId?: Id<"clients"> }> {
+  const project = await ctx.db.get(projectId);
+  return project?.clientId ? { clientId: project.clientId } : {};
+}
+
 export async function decisionsForContext(ctx: QueryCtx, workspaceId: Id<"workspaces">) {
   const rows = await ctx.db
     .query("decisions")

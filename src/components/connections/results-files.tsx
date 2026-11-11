@@ -5,7 +5,7 @@ import { useMutation, useQuery } from "convex/react";
 import { FileSpreadsheet, ShieldCheck, Trash2 } from "@/components/icons";
 import { useId, useState } from "react";
 
-import { useWorkspaceShell } from "@/components/shell/shell-context";
+import { useWorkspaceShell, useClientScope } from "@/components/shell/shell-context";
 import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Input } from "@/components/ui/input";
@@ -219,6 +219,7 @@ export function ResultsUploadCard({
 /** Upload form: the file, where it comes from, and its currency. Owners and managers. */
 function UploadForm({ workspaceId, onNotice }: { workspaceId: Id<"workspaces">; onNotice: (words: string) => void }) {
   const createUpload = useMutation(api.resultUploads.createUpload);
+  const { clientId } = useClientScope();
   const start = useMutation(api.resultUploads.start);
   const [label, setLabel] = useState("");
   const [currency, setCurrency] = useState("USD");
@@ -244,7 +245,7 @@ function UploadForm({ workspaceId, onNotice }: { workspaceId: Id<"workspaces">; 
           const response = await fetch(url, { method: "POST", headers: { "Content-Type": file.type || "text/csv" }, body: file });
           if (!response.ok) throw new Error("upload");
           const { storageId } = (await response.json()) as { storageId: Id<"_storage"> };
-          await start({ workspaceId, storageId, fileName: file.name, label, currency });
+          await start({ workspaceId, storageId, fileName: file.name, label, currency, clientId });
           setFile(null);
           setLabel("");
           onNotice("Uploaded. The totals show below in a moment, and the file itself is deleted once read.");
@@ -292,7 +293,8 @@ function UploadForm({ workspaceId, onNotice }: { workspaceId: Id<"workspaces">; 
 /** The workspace's results files. */
 export function ResultsFiles({ workspaceId, highlight }: { workspaceId: Id<"workspaces">; highlight?: string | null }) {
   const shell = useWorkspaceShell();
-  const uploads = useQuery(api.resultUploads.list, { workspaceId });
+  const { scope } = useClientScope();
+  const uploads = useQuery(api.resultUploads.list, { workspaceId, scope });
   const setAccess = useMutation(api.resultUploads.setAgentAccess);
   const remove = useMutation(api.resultUploads.remove);
   const [notice, setNotice] = useState("");

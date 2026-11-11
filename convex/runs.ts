@@ -1,3 +1,4 @@
+import { requireClientIn } from "./lib/clients";
 import { requireWork } from "./lib/roles";
 import { paginationOptsValidator } from "convex/server";
 import { v } from "convex/values";
@@ -307,6 +308,7 @@ export async function startRunFor(
     free = false,
     projectId,
     inputRef,
+    clientId,
     ...input
   }: {
     workspaceId: Id<"workspaces">;
@@ -320,6 +322,8 @@ export async function startRunFor(
     projectId?: Id<"researchProjects">;
     /** What the run works on when it is not a research project: the id of a record the skill reads. */
     inputRef?: string;
+    /** The client the run is for, when it has no project to take one from. The caller has already checked it. */
+    clientId?: Id<"clients">;
     mode?: "thorough" | "fast";
   },
 ) {
@@ -327,6 +331,9 @@ export async function startRunFor(
   requireWork(role);
   const project = projectId ? await ctx.db.get(projectId) : null;
   if (projectId && (!project || project.workspaceId !== workspaceId)) notFound();
+  // A member starting a run on a client's project must be able to see that client.
+  if (project) requireClientIn(ctx, project.clientId);
+  const runClient = project ? project.clientId : clientId;
   if (project?.status === "archived") throw userError("This project is archived.");
   if (project?.latestRunId) {
     const latest = await ctx.db.get(project.latestRunId);
@@ -370,6 +377,7 @@ export async function startRunFor(
     inputTokens: 0,
     outputTokens: 0,
     ...(free ? { free: true } : {}),
+    ...(runClient ? { clientId: runClient } : {}),
   });
   await writeAudit(ctx, {
     workspaceId: workspaceId,

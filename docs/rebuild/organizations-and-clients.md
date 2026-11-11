@@ -154,8 +154,8 @@ An agency needs its own ad account *and* one per client. The key becomes (organi
 - Decisions and creative tests read "current figures" from the connection of the record's client, falling
   back to none (never to another client's account).
 
-PR 3 adds the fields and makes every existing lookup ask explicitly for the organization's own connection,
-so behaviour is unchanged. **Connecting a second account for a client from the screen is not in PR 3**
+PR 3 adds the `clientId` fields. No row with a client is ever written yet, so every existing lookup still
+finds the organization's one connection and behaviour is unchanged; a client's work never reads it. **Connecting a second account for a client from the screen is not in PR 3**
 (the Meta sign-in state, sync cron and snapshot tables all assume one row); it is listed under "not built"
 there and is the first thing a client-results screen in step 2 will need.
 
@@ -250,6 +250,27 @@ Rules every client-scoped function follows:
 - **Create**: the new row's `clientId` comes from an argument, and `ctx.clients.require(clientId)` runs
   before the insert. A child takes its parent's client and never accepts one from the caller.
 - A client id from another organization fails the `workspaceId` check first.
+
+**As built (PR 3).** The three rules are enforced one level lower than each function, so none can forget:
+
+- `lib/clientGuard.ts` wraps the database a Member or Viewer reads through. Every row that belongs to a
+  client is left out of `get`, `first`, `unique`, `take`, `collect`, `paginate` and iteration unless the
+  member may see that client. A row belongs to a client through its own `clientId`, or through its parent:
+  a run's steps, an asset's versions and evidence, a project's sources and chats, a kit's versions, a
+  card's versions, an intake's messages. An asset with no `clientId` takes its run's. The builders hand the
+  handler this database in place of `ctx.db`. Owners and Admins get the plain one.
+- The picker is the same mechanism: every `workspaceQuery` takes an optional `scope` (`"own"` or a client
+  id) and narrows the guard to it, for any role. So a list filters to the picker's choice without each
+  query being changed, and `scope` can only take away, never add.
+- `clientForNew(ctx, clientId)` is the create rule: the client is in this organization, visible to the
+  member, and not archived.
+- The explicit `requireClientIn` checks in the shared loaders (`ownProject`, `ownKit`, `ownCard`, the
+  transcript and upload loaders) stay as a second line.
+
+**What an agent reads for a client.** `readBusinessContext` gives a client's run the client's profile
+(as "known" items), the client's own results files and calls, and decisions made for that client. The
+organization's own profile, facts, Meta account and goal are left out, and a chat about a client does not
+write to the organization's memory.
 
 ### 4.5 Isolation tests
 

@@ -10,6 +10,8 @@ import type { Doc, Id } from "../_generated/dataModel";
 import { action, mutation, query, type ActionCtx, type MutationCtx, type QueryCtx } from "../_generated/server";
 import { internal } from "../_generated/api";
 import { requireGrant, requireIdentity, requireMember, requireStaff } from "./access";
+import { guardDb } from "./clientGuard";
+import { clientScopeFor, narrowScope, scopeValidator, type ClientScope, type ScopeArg } from "./clients";
 import { notAllowed, notFound } from "./errors";
 import { isAdmin, isOwner, roleOf, type Role } from "./roles";
 
@@ -24,6 +26,8 @@ export type MemberAccess = {
   workspaceId: Id<"workspaces">;
   /** The member's role in the four new words, whatever word their row still holds. */
   role: Role;
+  /** Which clients the member may see. A client-scoped record must pass this as well as the organization check. */
+  clients: ClientScope;
 };
 
 export type StaffAccess = {
@@ -31,19 +35,29 @@ export type StaffAccess = {
   staff: Doc<"staff">;
 };
 
+/** What a workspace query takes: its own arguments, the organization, and optionally the client picker's choice. */
+export type WorkspaceQueryArgs<V extends AnyValidators> = WorkspaceArgs<V> & { scope?: ScopeArg };
+
+/**
+ * A read in an organization. Any active member, a Viewer included. `scope` is the client picker's choice
+ * ("own" for the organization itself, or one client): when given, everything the handler reads is
+ * narrowed to it, so a list filters without each query having to.
+ */
 export function workspaceQuery<V extends AnyValidators, R>(def: {
   args: V;
   handler: (ctx: QueryCtx & MemberAccess, args: ObjectType<V>) => R;
-}): RegisteredQuery<"public", WorkspaceArgs<V>, R> {
+}): RegisteredQuery<"public", WorkspaceQueryArgs<V>, R> {
   return query({
-    args: { workspaceId: v.id("workspaces"), ...def.args },
-    handler: async (ctx: QueryCtx, args: { workspaceId: Id<"workspaces"> }) => {
-      const { workspaceId, ...rest } = args;
+    args: { workspaceId: v.id("workspaces"), scope: scopeValidator, ...def.args },
+    handler: async (ctx: QueryCtx, args: { workspaceId: Id<"workspaces">; scope?: ScopeArg }) => {
+      const { workspaceId, scope, ...rest } = args;
       const access = await requireMember(ctx, workspaceId);
-      return def.handler({ ...ctx, ...access, role: roleOf(access.member.role) }, rest as ObjectType<V>);
+      const clients = narrowScope(await clientScopeFor(ctx, access.member), scope);
+      // A Member or Viewer reads through a database that leaves out the clients they may not see.
+      return def.handler({ ...ctx, db: guardDb(ctx.db, clients), ...access, role: roleOf(access.member.role), clients }, rest as ObjectType<V>);
     },
     // The validators still run. This cast stays inside the access layer.
-  } as any) as RegisteredQuery<"public", WorkspaceArgs<V>, R>;
+  } as any) as RegisteredQuery<"public", WorkspaceQueryArgs<V>, R>;
 }
 
 /** A write any member may make, a Viewer included. Only for a person's own choices: theme, notices, their own row. */
@@ -56,7 +70,9 @@ export function selfMutation<V extends AnyValidators, R>(def: {
     handler: async (ctx: MutationCtx, args: { workspaceId: Id<"workspaces"> }) => {
       const { workspaceId, ...rest } = args;
       const access = await requireMember(ctx, workspaceId);
-      return def.handler({ ...ctx, ...access, role: roleOf(access.member.role) }, rest as ObjectType<V>);
+      const clients = await clientScopeFor(ctx, access.member);
+      // A Member or Viewer reads through a database that leaves out the clients they may not see.
+      return def.handler({ ...ctx, db: guardDb(ctx.db, clients), ...access, role: roleOf(access.member.role), clients }, rest as ObjectType<V>);
     },
   } as any) as RegisteredMutation<"public", WorkspaceArgs<V>, R>;
 }

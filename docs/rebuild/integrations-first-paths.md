@@ -13,7 +13,8 @@ Owner steps are in `integrations-setup.md`. Nothing here was run against a real 
 - Subtitle files lose cue numbers and timestamps; speakers and words stay. Audio, video or any other
   binary sent as text is refused, as is an empty or far too long one (600 KB of text; a workspace keeps
   up to 200).
-- Kept: the text, title, tool, call date, who added it, and when they confirmed. Shown as **Your data**.
+- Kept: the text, title, tool, call date, who added it, and when they confirmed. Shown as **Your data**,
+  with its title, tool, date and length; the text itself is not shown on the card.
   Reps see the list but not the full text and cannot add or delete.
 - **As evidence:** like a results file, each transcript granted to an agent (Growth Architect by default)
   is saved on a research project as a `customerData` source, so a claim labelled **Your data** can cite
@@ -38,6 +39,12 @@ often is the next step, and the reason to hold transcripts at all.
 Behind their settings. Once connected, the calendar is read straight away, then every 6 hours, and when an
 Owner or Manager presses **Refresh**. The window is the last 90 days and the next 30.
 
+**The card is simple on purpose** (owner's direction, 2026-11-11): logo and name, one line on what is read,
+status, when it was last read, and Connect / Refresh / Disconnect. No counts, tables or breakdowns. The
+counts are still read and stored exactly as described below, and `bookings.view` still returns them, for
+the Sales conversion area that will present them. A connected calendar's card says "Booked-call numbers
+will appear in Sales conversion."
+
 | | Google Calendar | Calendly |
 |---|---|---|
 | Asked of the provider | Each event's time, type, status, and guests' email addresses and replies. Titles, descriptions, locations and guest names are never requested (`fields=`) | The connected person's scheduled events; then invitees of the 30 most recent past calls, to see a no-show mark |
@@ -54,12 +61,14 @@ Disconnect deletes the counts with the token.
 | Pure reducers from events to counts | `convex/lib/integrations/bookings.ts` |
 | `syncNow`, `view`; internal `syncOne`, `syncAll` (every 6 hours) | `convex/bookings.ts`, `convex/crons.ts` |
 | First read after sign-in | `convex/integrationHttp.ts` |
-| Screen | `src/components/connections/bookings-panel.tsx` |
+| Screen | The provider card in `src/components/connections/integrations-view.tsx` (status and Refresh only) |
 
 **Limits to know:**
 
-- The counts are shown in Connections only. They are not yet a source an agent can cite, and not yet
-  joined to ad results (cost per booked call).
+- The counts are not shown anywhere yet. They are stored for the Sales conversion area, are not yet a
+  source an agent can cite, and are not yet joined to ad results (cost per booked call).
+- What a calendar cannot show (who turned up; a no-show the host did not mark) is no longer said on the
+  card. It needs saying wherever the numbers are shown.
 - Weeks are Monday to Sunday in UTC, not the workspace's time zone.
 - Google: `calendar.events.owned.readonly` is the narrowest scope that should work; that it returns guests
   and cancelled events the same way as the wider scope is not verified. Cancelled meetings are counted

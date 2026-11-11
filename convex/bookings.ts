@@ -176,7 +176,10 @@ export const syncAll = internalAction({
   },
 });
 
-/** The saved counts for this workspace's calendars. */
+/**
+ * The saved counts for this workspace's calendars. No screen shows these yet: the Connections cards are
+ * kept simple on purpose, and this query is here for the Sales conversion area that will present them.
+ */
 export const view = workspaceQuery({
   args: {},
   handler: async (ctx): Promise<{ canRefresh: boolean; calendars: { provider: string; syncedAt: number; snapshot: BookingsSnapshot }[] }> => {

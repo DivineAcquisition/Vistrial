@@ -2,7 +2,6 @@
 
 import { useAction, useMutation, useQuery } from "convex/react";
 
-import { BookingsPanel, CALENDAR_PANELS } from "@/components/connections/bookings-panel";
 import { IntegrationsView } from "@/components/connections/integrations-view";
 import { TranscriptsView } from "@/components/connections/transcripts-view";
 import { useWorkspaceShell } from "@/components/shell/shell-context";
@@ -10,6 +9,11 @@ import { describeError } from "@/lib/errors/user-error";
 import { showError } from "@/lib/errors/show-error";
 import { api } from "../../../convex/_generated/api";
 import type { Id } from "../../../convex/_generated/dataModel";
+
+/** The connections that can be read again on request, and the one line their cards carry while connected. */
+export const CALENDARS = ["google_calendar", "calendly"];
+const SOON = "Booked-call numbers will appear in Sales conversion.";
+export const CALENDAR_NOTES: Record<string, string> = { google_calendar: SOON, calendly: SOON };
 
 /** The other connections, fed by Convex. Tokens never reach the browser. */
 export function Integrations({
@@ -23,7 +27,6 @@ export function Integrations({
 }) {
   const shell = useWorkspaceShell();
   const data = useQuery(api.integrations.list, { workspaceId });
-  const bookings = useQuery(api.bookings.view, { workspaceId });
   const transcripts = useQuery(api.transcripts.list, { workspaceId });
   const startConnect = useMutation(api.integrations.startConnect);
   const disconnect = useAction(api.integrationActions.disconnect);
@@ -42,26 +45,13 @@ export function Integrations({
   };
   const agents = (shell?.agents ?? []).filter((agent) => agent.status === "live").map((agent) => ({ slug: agent.slug, name: agent.name }));
 
-  const card: Record<string, React.ReactNode> = {};
-  for (const provider of data.providers) {
-    const panel = CALENDAR_PANELS[provider.key];
-    if (!panel || !provider.connection) continue;
-    card[provider.key] = (
-      <BookingsPanel
-        bookings={bookings?.calendars.find((row) => row.provider === provider.key) ?? null}
-        third={panel.third}
-        caveat={panel.caveat}
-        canRefresh={Boolean(bookings?.canRefresh) && provider.connection.status === "connected"}
-        lastCode={provider.connection.lastSyncCode}
-        onRefresh={() => attempt(() => syncNow({ workspaceId, provider: provider.key }))}
-      />
-    );
-  }
-
   return (
     <IntegrationsView
       providers={data.providers}
       canManage={data.canManage}
+      canRefresh={data.canRefresh}
+      refreshable={CALENDARS}
+      notes={CALENDAR_NOTES}
       returned={returned}
       actions={{
         connect: (provider) =>
@@ -70,9 +60,9 @@ export function Integrations({
             window.location.assign(url);
           }),
         disconnect: (provider) => attempt(() => disconnect({ workspaceId, provider })),
+        refresh: (provider) => attempt(() => syncNow({ workspaceId, provider })),
       }}
       extra={{
-        card,
         group: {
           notes: transcripts ? (
             <TranscriptsView

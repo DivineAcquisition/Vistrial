@@ -217,7 +217,6 @@ export function TranscriptsView({
                 ) : null}
               </span>
             </header>
-            <p className="line-clamp-2 text-sm text-muted-foreground">{row.opening}</p>
             {agents.length > 0 ? (
               <ul className="grid gap-2 border-t border-border pt-3" aria-label="Agents that may use this transcript">
                 {agents.map((agent) => (

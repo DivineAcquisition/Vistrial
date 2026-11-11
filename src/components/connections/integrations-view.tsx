@@ -1,6 +1,6 @@
 "use client";
 
-import { CalendarIcon, Check, Search, Store, X, type LucideIcon } from "@/components/icons";
+import { CalendarIcon, Search, Store, type LucideIcon } from "@/components/icons";
 import { useState } from "react";
 
 import { PlatformLogo } from "@/components/marketing/platform-logo";
@@ -30,6 +30,8 @@ export type IntegrationView = {
 export type IntegrationsActions = {
   connect: (provider: string) => Promise<void>;
   disconnect: (provider: string) => Promise<void>;
+  /** Reads a connection again now. Only offered for the providers in `refreshable`. */
+  refresh?: (provider: string) => Promise<void>;
 };
 
 const GROUPS: { key: IntegrationView["group"]; title: string; words: string }[] = [
@@ -74,32 +76,46 @@ function badge(provider: IntegrationView): { label: string; tone: "good" | "warn
   return { label: "Not connected", tone: "neutral" };
 }
 
-function day(at: number) {
-  return new Date(at).toLocaleDateString(undefined, { dateStyle: "medium" });
+function when(at: number) {
+  return new Date(at).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" });
 }
+
+/** Why the last read did not finish, in plain words. */
+export const SYNC_WORDS: Record<string, string> = {
+  token_rejected: "signed Vistrial out",
+  permission_missing: "refused the read",
+  rate_limited: "asked Vistrial to slow down",
+  provider_down: "was not answering",
+  connection_failed: "could not be reached",
+};
 
 function ProviderCard({
   provider,
   canManage,
+  canRefresh,
+  note,
   actions,
-  children,
 }: {
   provider: IntegrationView;
   canManage: boolean;
+  /** This connection can be read again on request, and this person may ask for it. */
+  canRefresh: boolean;
+  /** One short line shown while connected. */
+  note?: string;
   actions: IntegrationsActions;
-  children?: React.ReactNode;
 }) {
-  const [busy, setBusy] = useState(false);
+  const [busy, setBusy] = useState<"connect" | "refresh" | "disconnect" | null>(null);
   const status = badge(provider);
   const connection = provider.connection;
-  const run = async (work: () => Promise<void>) => {
-    setBusy(true);
+  const run = async (what: "connect" | "refresh" | "disconnect", work: () => Promise<void>) => {
+    setBusy(what);
     try {
       await work();
     } finally {
-      setBusy(false);
+      setBusy(null);
     }
   };
+  const failed = connection?.lastSyncCode && connection.lastSyncCode !== "ok" ? (SYNC_WORDS[connection.lastSyncCode] ?? "did not finish the read") : null;
   return (
     <article
       aria-label={provider.name}
@@ -108,68 +124,60 @@ function ProviderCard({
       <header className="flex items-start justify-between gap-2">
         <span className="flex min-w-0 items-center gap-3">
           <Mark provider={provider} />
-          <span className="grid min-w-0">
-            <span className="font-medium text-card-foreground">{provider.name}</span>
-            <span className="text-xs text-muted-foreground">{provider.kind}</span>
-          </span>
+          <span className="font-medium text-card-foreground">{provider.name}</span>
         </span>
         <StatusBadge label={status.label} tone={status.tone} className="shrink-0 [&_span]:normal-case" />
       </header>
 
-      <dl className="grid gap-1.5 text-sm">
-        <div className="flex gap-2">
-          <dt className="flex h-fit shrink-0 items-center gap-1 text-foreground">
-            <Check aria-hidden className="size-3.5 text-success" /> Reads
-          </dt>
-          <dd className="text-muted-foreground">{provider.reads}</dd>
-        </div>
-        <div className="flex gap-2">
-          <dt className="flex h-fit shrink-0 items-center gap-1 text-foreground">
-            <X aria-hidden className="size-3.5 text-muted-foreground" /> Never
-          </dt>
-          <dd className="text-muted-foreground">{provider.never}</dd>
-        </div>
-      </dl>
-
-      {children}
+      <p className="text-sm text-muted-foreground">{provider.reads}</p>
 
       <footer className="mt-auto flex flex-wrap items-center justify-between gap-2 border-t border-border/70 pt-3 text-sm">
         {connection ? (
           <>
             <p className="min-w-0 text-muted-foreground">
               {connection.status === "connected" ? "Connected as " : "Was connected as "}
-              <span className="break-all text-foreground">{connection.accountLabel}</span>, {day(connection.connectedAt)}.
-              {connection.status === "needsReconnect" ? ` ${provider.name} signed Vistrial out. Reconnect to keep reading.` : ""}
+              <span className="break-all text-foreground">{connection.accountLabel}</span>.{" "}
+              {connection.lastSyncAt
+                ? failed
+                  ? `Last tried ${when(connection.lastSyncAt)}: ${provider.name} ${failed}.`
+                  : `Last read ${when(connection.lastSyncAt)}.`
+                : "Not read yet."}
+              {note && connection.status === "connected" ? ` ${note}` : ""}
             </p>
-            {canManage ? (
-              <span className="flex items-center gap-2">
-                {connection.status === "needsReconnect" ? (
-                  <Button type="button" size="sm" disabled={busy || provider.readiness !== "ready"} onClick={() => run(() => actions.connect(provider.key))}>
-                    Reconnect
-                  </Button>
-                ) : null}
+            <span className="flex items-center gap-2">
+              {canRefresh && connection.status === "connected" && actions.refresh ? (
+                <Button type="button" size="sm" variant="ghost" disabled={busy !== null} onClick={() => run("refresh", () => actions.refresh!(provider.key))}>
+                  {busy === "refresh" ? "Reading" : "Refresh"}
+                </Button>
+              ) : null}
+              {canManage && connection.status === "needsReconnect" ? (
+                <Button type="button" size="sm" disabled={busy !== null || provider.readiness !== "ready"} onClick={() => run("connect", () => actions.connect(provider.key))}>
+                  Reconnect
+                </Button>
+              ) : null}
+              {canManage ? (
                 <ConfirmDialog
                   trigger={
-                    <Button type="button" size="sm" variant="outline" disabled={busy}>
+                    <Button type="button" size="sm" variant="outline" disabled={busy !== null}>
                       Disconnect
                     </Button>
                   }
                   title={`Disconnect ${provider.name}?`}
                   description={`Vistrial deletes its access and everything it read from ${provider.name}, straight away. Nothing in ${provider.name} changes.`}
                   confirmLabel="Disconnect"
-                  onConfirm={() => run(() => actions.disconnect(provider.key))}
+                  onConfirm={() => run("disconnect", () => actions.disconnect(provider.key))}
                 />
-              </span>
-            ) : null}
+              ) : null}
+            </span>
           </>
         ) : provider.readiness === "not_set_up" ? (
-          <p className="text-muted-foreground">Vistrial has not finished setting this up. There is nothing for you to do yet.</p>
+          <p className="text-muted-foreground">Not available yet. There is nothing for you to do.</p>
         ) : provider.readiness === "not_built" ? (
-          <p className="text-muted-foreground">Reading from {provider.name} is not built yet.</p>
+          <p className="text-muted-foreground">Not available yet.</p>
         ) : canManage ? (
           <>
-            <p className="text-muted-foreground">Read-only. You can disconnect at any time.</p>
-            <Button type="button" size="sm" disabled={busy} onClick={() => run(() => actions.connect(provider.key))}>
+            <p className="text-muted-foreground">Read-only.</p>
+            <Button type="button" size="sm" disabled={busy !== null} onClick={() => run("connect", () => actions.connect(provider.key))}>
               Connect
             </Button>
           </>
@@ -182,23 +190,33 @@ function ProviderCard({
 }
 
 /**
- * The other accounts a workspace can connect, in three groups. Each provider says what Vistrial reads and
- * never does, and shows "Not set up yet" until Vistrial has that provider's settings.
+ * The other accounts a workspace can connect, in three groups. Each card is kept simple: what Vistrial
+ * reads in one line, its status, when it was last read, and the buttons. Figures read through a connection
+ * are not shown here; they belong to the screens that use them.
  */
 export function IntegrationsView({
   providers,
   canManage,
+  canRefresh = false,
+  refreshable = [],
+  notes = {},
   returned,
   actions,
   extra,
 }: {
   providers: IntegrationView[];
   canManage: boolean;
+  /** Owners and Managers may ask for a fresh read. */
+  canRefresh?: boolean;
+  /** The providers that can be read again on request. */
+  refreshable?: string[];
+  /** One short line for a connected provider's card, by key. */
+  notes?: Record<string, string>;
   /** What a sign-in came back with: the provider and the outcome. */
   returned?: { provider: string | null; outcome: string } | null;
   actions: IntegrationsActions;
-  /** More to show under a provider's card, by key, or after a group's cards, by group. */
-  extra?: { card?: Record<string, React.ReactNode>; group?: Partial<Record<IntegrationView["group"], React.ReactNode>> };
+  /** More to show after a group's cards, by group. */
+  extra?: { group?: Partial<Record<IntegrationView["group"], React.ReactNode>> };
 }) {
   const outcome = returned ? OUTCOME_WORDS[returned.outcome] : null;
   const returnedName = providers.find((row) => row.key === returned?.provider)?.name ?? "That account";
@@ -226,9 +244,7 @@ export function IntegrationsView({
             </div>
             <div className="grid gap-3 md:grid-cols-2">
               {rows.map((row) => (
-                <ProviderCard key={row.key} provider={row} canManage={canManage} actions={actions}>
-                  {extra?.card?.[row.key]}
-                </ProviderCard>
+                <ProviderCard key={row.key} provider={row} canManage={canManage} canRefresh={canRefresh && refreshable.includes(row.key)} note={notes[row.key]} actions={actions} />
               ))}
             </div>
             {extra?.group?.[group.key]}

@@ -12,13 +12,13 @@ export type AccessSubmission = {
   businessType: string | null;
   businessTypeOther: string | null;
   teamSize: string | null;
-  leadSources: string[];
-  leadSourcesOther: string | null;
-  crm: string | null;
-  crmOther: string | null;
-  dealValue: string | null;
-  callsPerWeek: string | null;
-  leadsPerMonth: string | null;
+  clientCount: string | null;
+  channels: string[];
+  channelsOther: string | null;
+  adSpend: string | null;
+  offerPrice: string | null;
+  firstWant: string | null;
+  figures: string | null;
   problem: string | null;
   heardAbout: string | null;
   phone: string | null;
@@ -68,13 +68,14 @@ export function parseAccessForm(form: FormData, kind: RequestKind): ParseResult 
 
   const businessType = one(form, "business_type");
   const teamSize = one(form, "team_size");
-  const dealValue = one(form, "deal_value");
-  const callsPerWeek = one(form, "calls_per_week");
-  const leadsPerMonth = one(form, "leads_per_month");
-  const crm = one(form, "crm");
+  const clientCount = one(form, "client_count");
+  const adSpend = one(form, "ad_spend");
+  const offerPrice = one(form, "offer_price");
+  const firstWant = one(form, "first_want");
+  const figures = one(form, "figures");
   const problem = cleanText(one(form, "problem"), 1200);
   const need = cleanText(one(form, "need"), 1200);
-  const sources = form.getAll("lead_sources").map((value) => String(value)).filter((value) => isAllowed(value, "source"));
+  const channels = form.getAll("channels").map((value) => String(value)).filter((value) => isAllowed(value, "channel"));
 
   if (problem.length > 1000) errors.problem = FORMS.errors.long;
   if (need.length > 1000) errors.need = FORMS.errors.long;
@@ -85,11 +86,11 @@ export function parseAccessForm(form: FormData, kind: RequestKind): ParseResult 
       errors.business_type_other = FORMS.errors.required;
     }
     if (!isAllowed(teamSize, "team")) errors.team_size = FORMS.errors.required;
-    if (!isAllowed(dealValue, "deal")) errors.deal_value = FORMS.errors.required;
-    if (!isAllowed(callsPerWeek, "calls")) errors.calls_per_week = FORMS.errors.required;
-    if (!isAllowed(leadsPerMonth, "leads")) errors.leads_per_month = FORMS.errors.required;
-    if (crm && !isAllowed(crm, "crm")) errors.crm = FORMS.errors.required;
-    if (crm === "other" && !cleanText(one(form, "crm_other"), 120)) errors.crm_other = FORMS.errors.required;
+    if (!isAllowed(clientCount, "clients")) errors.client_count = FORMS.errors.required;
+    if (!isAllowed(adSpend, "spend")) errors.ad_spend = FORMS.errors.required;
+    if (!isAllowed(offerPrice, "price")) errors.offer_price = FORMS.errors.required;
+    if (!isAllowed(firstWant, "want")) errors.first_want = FORMS.errors.required;
+    if (figures && !isAllowed(figures, "figures")) errors.figures = FORMS.errors.required;
   } else if (!need) {
     errors.need = FORMS.errors.required;
   }
@@ -125,13 +126,13 @@ export function parseAccessForm(form: FormData, kind: RequestKind): ParseResult 
       businessType: kind === "private_access" ? businessType : null,
       businessTypeOther: cleanText(one(form, "business_type_other"), 120) || null,
       teamSize: teamSize || null,
-      leadSources: sources.slice(0, 12),
-      leadSourcesOther: cleanText(one(form, "lead_sources_other"), 120) || null,
-      crm: crm || null,
-      crmOther: cleanText(one(form, "crm_other"), 120) || null,
-      dealValue: dealValue || null,
-      callsPerWeek: callsPerWeek || null,
-      leadsPerMonth: leadsPerMonth || null,
+      clientCount: clientCount || null,
+      channels: channels.slice(0, 12),
+      channelsOther: cleanText(one(form, "channels_other"), 120) || null,
+      adSpend: adSpend || null,
+      offerPrice: offerPrice || null,
+      firstWant: firstWant || null,
+      figures: figures || null,
       problem: problem ? problem.slice(0, 1000) : null,
       heardAbout: cleanText(one(form, "heard_about"), 160) || null,
       phone: phone || null,
@@ -153,13 +154,13 @@ export function submissionPayload(value: AccessSubmission): Record<string, unkno
     businessType: value.businessType,
     businessTypeOther: value.businessTypeOther,
     teamSize: value.teamSize,
-    leadSources: value.leadSources,
-    leadSourcesOther: value.leadSourcesOther,
-    crm: value.crm,
-    crmOther: value.crmOther,
-    dealValue: value.dealValue,
-    callsPerWeek: value.callsPerWeek,
-    leadsPerMonth: value.leadsPerMonth,
+    clientCount: value.clientCount,
+    channels: value.channels,
+    channelsOther: value.channelsOther,
+    adSpend: value.adSpend,
+    offerPrice: value.offerPrice,
+    firstWant: value.firstWant,
+    figures: value.figures,
     problem: value.problem,
     heardAbout: value.heardAbout,
     phone: value.phone,

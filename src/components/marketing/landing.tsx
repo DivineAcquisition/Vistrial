@@ -96,7 +96,7 @@ export function LandingPage() {
         description: HERO.supporting,
         offers: {
           "@type": "Offer",
-          price: "97",
+          price: "179",
           priceCurrency: "USD",
           description: PRICING_DISPLAY.privateAccess.price,
         },

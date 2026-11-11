@@ -1,9 +1,10 @@
 /** Choices on the access form. Labels are the public copy. Values are stored. */
 
 export const BUSINESS_TYPES = [
-  { value: "med-spa", label: "Aesthetic or medical spa" },
-  { value: "home-services", label: "Home services or remodeling" },
-  { value: "coaches-consultants", label: "Coaching, consulting, or programs" },
+  { value: "agency", label: "Agency" },
+  { value: "consulting", label: "Consulting" },
+  { value: "coaching", label: "Coaching" },
+  { value: "info-products", label: "Courses, programs, or memberships" },
   { value: "other", label: "Other" },
 ] as const;
 

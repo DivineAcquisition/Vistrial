@@ -18,6 +18,8 @@ import {
   type YouData,
 } from "@/components/settings/settings-sections";
 import { Panel } from "@/components/ui/panel";
+
+import { AccountStory } from "../auth-pages/account-story";
 import { saveTheme, type ThemeChoice } from "@/lib/theme";
 import { CATALOG } from "@/lib/shell/rail";
 
@@ -104,7 +106,7 @@ function agents(canEdit: boolean): AgentsData {
 
 const done = () => Promise.resolve(null);
 
-export function SettingsStory({ section: asked, role: askedRole, support }: { section: string | null; role: string | null; support: boolean }) {
+export function SettingsStory({ section: asked, role: askedRole, support, account = "" }: { section: string | null; role: string | null; support: boolean; account?: string }) {
   const role: Role = askedRole === "admin" || askedRole === "member" || askedRole === "viewer" ? askedRole : "owner";
   const owner = role === "owner";
   const [section, setSection] = useState<SettingsSection>(parseSection(asked, role));
@@ -188,7 +190,8 @@ export function SettingsStory({ section: asked, role: askedRole, support }: { se
               setYou((row) => ({ ...row, theme }));
             }}
             onNotice={async (key, on) => setYou((row) => ({ ...row, notifications: { ...row.notifications, [key]: on } }))}
-            onAccount={() => undefined}
+            security={<AccountStory state={account} />}
+            onSignOut={() => undefined}
           />
         ) : null}
       </SettingsLayout>

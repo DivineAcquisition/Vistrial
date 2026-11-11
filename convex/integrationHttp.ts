@@ -7,6 +7,7 @@ import type { HttpRouter } from "convex/server";
 
 import { internal } from "./_generated/api";
 import { httpAction } from "./_generated/server";
+import { isCalendarProvider } from "./bookings";
 import { completeConnect } from "./integrationActions";
 import { isOAuthAppKey, isProviderKey, OAUTH_APPS, PROVIDERS, type OAuthAppKey } from "./lib/integrations/providers";
 import { bodyDigest, verifyWebhook } from "./lib/integrations/signatures";
@@ -49,6 +50,10 @@ export function addIntegrationRoutes(http: HttpRouter) {
       method: "GET",
       handler: httpAction(async (ctx, request) => {
         const result = await completeConnect(ctx, appKey, new URL(request.url));
+        // A calendar is read once straight after it is connected, so the person does not come back to an empty card.
+        if (result.outcome === "connected" && result.workspaceId && result.provider && isCalendarProvider(result.provider)) {
+          await ctx.scheduler.runAfter(0, internal.bookings.syncOne, { workspaceId: result.workspaceId, provider: result.provider });
+        }
         return back(result.returnOrigin, result.returnPath, result.provider, result.outcome);
       }),
     });

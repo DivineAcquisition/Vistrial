@@ -33,10 +33,14 @@ function setCalendly() {
 
 beforeEach(() => {
   for (const name of ENV) delete process.env[name];
+  // A calendar is read once after it connects, as a scheduled step. Held here so it cannot run into the next test.
+  vi.useFakeTimers({ toFake: ["setTimeout"] });
 });
 afterEach(() => {
   for (const name of ENV) delete process.env[name];
   vi.unstubAllGlobals();
+  vi.clearAllTimers();
+  vi.useRealTimers();
 });
 
 async function setup() {

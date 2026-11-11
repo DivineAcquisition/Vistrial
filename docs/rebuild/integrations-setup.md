@@ -277,8 +277,9 @@ commonly ask for.
   that it names Calendar is **not verified**, it says "and other Google Workspace APIs"). Vistrial's
   agents *read* figures to write a report; that is not training. But it only holds if the model provider
   does not train on what Vistrial sends. The privacy policy already has a switch for that line
-  (`aiNoTraining`), off until a Platform Admin confirms the provider setting. **Confirm it and turn it on
-  before submitting to Google.** Calendar data kept by Vistrial is weekly counts, which keeps the
+  (`aiNoTraining`), off until a Platform Admin confirms the provider setting, and the policy's own tests
+  refuse any "not used to train" sentence while it is off. So the proposed Google paragraph does not say
+  it yet. **Confirm the setting and turn the switch on before submitting to Google.** Calendar data kept by Vistrial is weekly counts, which keeps the
   exposure small either way.
 
 ---
@@ -434,7 +435,9 @@ book, cancel or reschedule, mark a no-show, or message invitees.
 
 **About no-shows:** the host marks them by hand in Calendly, after the meeting's start time, on any plan
 ([Calendly help](https://calendly.com/help/how-to-mark-no-shows-for-meetings)). If the team does not mark
-them, Calendly has none to report. The screen says this.
+them, Calendly has none to report. The screen says this. Seeing a mark takes one request per call, so each
+read checks the 30 most recent past calls (to stay inside the Free plan's 50 requests a minute) and the
+screen says how many were checked.
 
 Steps (you):
 
@@ -621,8 +624,8 @@ when an agent reads it, under the same terms as the rest of a workspace.
   matches the rest of the product, which has no automatic deletion schedule.
 - **Disconnecting** a note taker or a calendar deletes its token and everything read through it, straight
   away. Uploaded or pasted transcripts are deleted one at a time by an Owner or Manager.
-- Deleting a transcript also removes it as a source from reports that have not been written yet. A report
-  already written keeps its sentence and its quote of 300 characters or less, like any other source.
+- Deleting a transcript deletes its text, and agents stop using it. A report already written keeps its
+  sentence and its quote of 300 characters or less, like any other source.
 - **Decision for you:** whether transcripts should delete themselves after a set time (for example 12
   months). It is not built; say if you want it.
 

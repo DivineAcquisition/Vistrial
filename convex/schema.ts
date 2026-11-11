@@ -1673,6 +1673,27 @@ export default defineSchema({
     data: v.any(),
   }).index("by_workspace_provider", ["workspaceId", "provider", "kind"]),
 
+  /**
+   * A call transcript the workspace uploaded or pasted, from any note taker. Text only: no audio or video.
+   * The customer's own data, kept until someone in the workspace deletes it.
+   */
+  callTranscripts: defineTable({
+    workspaceId: v.id("workspaces"),
+    title: v.string(),
+    /** The tool it came from, in the person's words. */
+    tool: v.string(),
+    /** The day of the call, YYYY-MM-DD. */
+    callDate: v.optional(v.string()),
+    text: v.string(),
+    words: v.number(),
+    addedBy: v.string(),
+    createdAt: v.number(),
+    /** When the person adding it confirmed the call was recorded lawfully and may be shared. */
+    consentConfirmedAt: v.number(),
+    /** Agents granted use of this transcript. Missing means the Growth Architect only. */
+    agents: v.optional(v.array(v.string())),
+  }).index("by_workspace", ["workspaceId"]),
+
   /** Webhook deliveries that passed their signature check: which, when and what kind. Never the body. */
   integrationWebhookEvents: defineTable({
     workspaceId: v.id("workspaces"),

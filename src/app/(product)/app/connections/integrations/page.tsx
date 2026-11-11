@@ -9,7 +9,7 @@ import { Integrations } from "@/components/connections/integrations";
 import { useWorkspaceShell } from "@/components/shell/shell-context";
 import { EmptyState } from "@/components/ui/empty-state";
 
-/** Google, calendar and note taker connections. A provider's sign-in returns here with ?integration=&outcome=. */
+/** Google, calendar and note taker connections, and call transcripts. A provider's sign-in returns here with ?integration=&outcome=; a report's transcript source opens here with ?transcript=. */
 function ManageIntegrations() {
   const shell = useWorkspaceShell();
   const query = useSearchParams();
@@ -26,7 +26,11 @@ function ManageIntegrations() {
           Google, your calendar and your call notes. An Owner connects each one; Vistrial only reads, and disconnecting deletes what it read.
         </p>
       </div>
-      <Integrations workspaceId={shell.workspaceId} returned={outcome ? { provider: query.get("integration"), outcome } : null} />
+      <Integrations
+        workspaceId={shell.workspaceId}
+        returned={outcome ? { provider: query.get("integration"), outcome } : null}
+        highlightTranscript={query.get("transcript")}
+      />
     </div>
   );
 }

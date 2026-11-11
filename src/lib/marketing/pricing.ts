@@ -14,7 +14,9 @@ export const PRICING_DISPLAY = {
     name: "Private Access",
     price: "Starting at $179 per month.",
     includes: [
-      "Your own private workspace",
+      "Your first organization, with $150 of credits every month",
+      "Each additional organization: $99 a month, and $50 more credits in your shared balance",
+      "Unlimited clients inside each organization",
       "Growth Architect, starting with Market Intelligence",
       "New Growth Architect skills as they ship",
       "Research limits and team seats, shared when your team is approved.",

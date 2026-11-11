@@ -463,7 +463,7 @@ workspace":
 >
 > Unlimited clients inside each organization
 
-**Terms of Service, Section 7, "Plans and credits"**, after the first sentence:
+**Terms of Service, Section 9, "Plans and credits"**, after the first sentence:
 
 > The plan covers one organization. Each additional organization you add to your account is $99 per month
 > and adds $50 of credits each month. All organizations on your account share one credit balance. An
@@ -471,7 +471,7 @@ workspace":
 > and then with each renewal until you remove it. We do not currently charge for or limit the clients you
 > add inside an organization; if that changes we will tell you before it applies to you.
 
-**Terms, Section 3** ("Each workspace has an Owner…") would read: "Each account has an Owner, who is
+**Terms, the roles paragraph** ("Each workspace has an Owner…") would read: "Each account has an Owner, who is
 responsible for the account and every organization in it. Organizations use roles (Owner, Admin, Member,
 Viewer), and what each person can see and approve depends on their role and on the clients they are
 assigned to."

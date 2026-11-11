@@ -1,0 +1,130 @@
+import { existsSync } from "node:fs";
+import { join } from "node:path";
+import { describe, expect, it } from "vitest";
+
+import { PLAN, TOPUP_PACKS_CENTS } from "../../../convex/lib/billing";
+import { CHECK_IN_DAYS } from "../../../convex/decisions";
+import { FINAL_CTA, HERO, NAV, SECTIONS } from "@/lib/marketing/content";
+import * as landing from "@/lib/marketing/landing";
+
+const { COMPARE, CTA, FIXES, LANDING_FAQ, LANDING_HERO, LANDING_ORDER, LOOP, OFFER, PAINS, PICTURES, PROCESS, ROLES, landingProblems } = landing;
+
+function strings(value: unknown): string[] {
+  if (typeof value === "string") return [value];
+  if (Array.isArray(value)) return value.flatMap(strings);
+  if (value && typeof value === "object") return Object.values(value).flatMap(strings);
+  return [];
+}
+
+const COPY = strings(landing).join("\n");
+
+describe("the landing page follows the owner's framework", () => {
+  it("may be published: no required section is empty and pains match fixes", () => {
+    expect(landingProblems()).toEqual([]);
+  });
+
+  it("refuses a page whose pain and solution counts differ", () => {
+    const fixes = FIXES.items as unknown as unknown[];
+    const removed = fixes.pop();
+    try {
+      expect(landingProblems().join(" ")).toMatch(/Pain and solution counts differ/);
+    } finally {
+      fixes.push(removed);
+    }
+    expect(landingProblems()).toEqual([]);
+  });
+
+  it("refuses a page with an empty required section", () => {
+    const steps = PROCESS.steps as unknown as unknown[];
+    const kept = steps.splice(0, steps.length);
+    try {
+      expect(landingProblems().join(" ")).toMatch(/Process/);
+    } finally {
+      steps.push(...kept);
+    }
+    expect(landingProblems()).toEqual([]);
+  });
+
+  it("keeps the framework's order, with results off until there is real proof", () => {
+    expect(LANDING_ORDER).toEqual(["nav", "hero", "results", "problem", "solution", "offer", "compare", "process", "roles", "faq", "final"]);
+    expect(SECTIONS.proof).toBe(false);
+  });
+
+  it("has one button with a verb, the same words everywhere, and no menu links", () => {
+    expect(CTA.label).toBe("Request private access");
+    expect([NAV.request, HERO.primaryCta, FINAL_CTA.primary]).toEqual([CTA.label, CTA.label, CTA.label]);
+    expect(NAV.links).toEqual([]);
+    expect(COPY).not.toMatch(/Start for \$|Buy now|Checkout|Start free/i);
+  });
+
+  it("opens with a qualifier, an outcome and a one-sentence how", () => {
+    expect(LANDING_HERO.qualifier).toMatch(/agencies, consultants, coaches/);
+    expect(LANDING_HERO.how.match(/[.!?](\s|$)/g)).toHaveLength(1);
+    expect(HERO.headline).toBe(LANDING_HERO.headline);
+  });
+
+  it("pairs three to six pains with fixes one for one, each pain with a cost that is not an invented figure", () => {
+    expect(PAINS.items.length).toBeGreaterThanOrEqual(3);
+    expect(PAINS.items.length).toBeLessThanOrEqual(6);
+    expect(FIXES.items.map((fix) => fix.id)).toEqual(PAINS.items.map((pain) => pain.id));
+    for (const pain of PAINS.items) expect(pain.cost, pain.id).not.toMatch(/[$%]|\d/);
+  });
+
+  it("matches with and without row for row", () => {
+    for (const row of COMPARE.rows) {
+      expect(row.with.length).toBeGreaterThan(0);
+      expect(row.without.length).toBeGreaterThan(0);
+    }
+    expect(new Set(COMPARE.rows.map((row) => row.topic)).size).toBe(COMPARE.rows.length);
+  });
+
+  it("gives every process step the reader's time, and keeps our list longer than theirs", () => {
+    expect(PROCESS.steps.length).toBeGreaterThanOrEqual(3);
+    expect(PROCESS.steps.length).toBeLessThanOrEqual(5);
+    for (const step of PROCESS.steps) expect(step.time.length).toBeGreaterThan(0);
+    expect(ROLES.ours.items.length).toBeGreaterThanOrEqual(ROLES.yours.items.length * 2);
+  });
+
+  it("answers the required questions, price first, and does not invent a guarantee", () => {
+    const topics = LANDING_FAQ.items.map((item) => item.topic);
+    for (const topic of ["price", "guarantee", "who", "how-long", "not-working"]) expect(topics).toContain(topic);
+    expect(topics[0]).toBe("price");
+    for (const item of LANDING_FAQ.items) expect(item.q.endsWith("?"), item.q).toBe(true);
+    const guarantee = LANDING_FAQ.items.find((item) => item.topic === "guarantee")!;
+    expect(guarantee.a.startsWith("No.")).toBe(true);
+    expect(COPY).not.toMatch(/money[- ]back|guaranteed|risk[- ]free/i);
+  });
+
+  it("states the real price, credits, packs and check-in choices", () => {
+    expect(OFFER.price).toBe(`$${PLAN.priceCents / 100}`);
+    expect(OFFER.credits).toContain(`$${PLAN.includedCents / 100}`);
+    const price = LANDING_FAQ.items[0].a;
+    expect(price).toContain(`$${PLAN.priceCents / 100}`);
+    for (const cents of TOPUP_PACKS_CENTS) expect(price).toContain(`$${cents / 100}`);
+    expect(COPY).toContain(CHECK_IN_DAYS.join(", ").replace(/, (\d+)$/, " or $1"));
+    expect(COPY).not.toMatch(/\$99|\$50 of credits/);
+  });
+
+  it("draws the loop as study, propose, you approve, try, measure", () => {
+    expect(LOOP.steps.map((step) => step.id)).toEqual(["study", "propose", "approve", "try", "measure"]);
+  });
+
+  it("shows only real screens, and keeps the planned slots off", () => {
+    for (const picture of PICTURES.filter((entry) => entry.on)) {
+      expect(picture.alt.length, picture.id).toBeGreaterThan(40);
+      for (const theme of ["light", "dark"]) {
+        expect(existsSync(join(process.cwd(), "public/marketing/product", `${picture.file}-${theme}.png`)), `${picture.id} ${theme}`).toBe(true);
+      }
+    }
+    const planned = PICTURES.filter((entry) => entry.place === "planned");
+    expect(planned.map((entry) => entry.id)).toEqual(["tasks-board", "briefing-post", "organizations-clients"]);
+    for (const slot of planned) expect(slot.on, slot.id).toBe(false);
+  });
+
+  it("uses no old audience, no old product names, no invented proof and no em dash", () => {
+    expect(COPY).not.toMatch(/med(ical)? spa|aesthetic|home services|remodel|cleaning|considered purchase/i);
+    expect(COPY).not.toMatch(/\b(Sentry|Scribe|Relay|Compass)\b|GoHighLevel|Ad Library/);
+    expect(COPY).not.toMatch(/trusted by|customers love|\d+x |\d+% (more|better|faster)/i);
+    expect(COPY).not.toMatch(/—/);
+  });
+});

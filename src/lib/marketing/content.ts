@@ -27,22 +27,15 @@ export const SECTIONS = {
   proof: false,
 } as const;
 
+/** Shared hero strings: page titles, the social image, and sample labels. The page's own hero copy is LANDING_HERO in landing.ts. */
 export const HERO = {
-  /** Chosen draft. The other options are in HEADLINE_OPTIONS for review. */
-  headline: "The agentic workforce for business growth.",
+  headline: "Know what to fix in your offer and ads, and whether the fix worked.",
   supporting:
-    "AI agents for agencies, consultants, coaches and info sellers. They research your market, sharpen your offer, and draft the ads to test. Starting with Growth Architect.",
+    "AI agents for agencies, consultants, coaches and info sellers. They study your market, draft the changes for you to approve, and measure each one against your own figures.",
   primaryCta: "Request private access",
-  secondaryCta: "See Growth Architect",
   trust: "Every claim shows its source. Nothing is published without a person's approval. Each customer's data is kept separate.",
   exampleLabel: "Example with sample data",
 } as const;
-
-export const HEADLINE_OPTIONS = [
-  "The agentic workforce for business growth.",
-  "Understand your market before you spend on it.",
-  "Specialists for every stage of growth. Starting with research.",
-] as const;
 
 export const NAV = {
   skipToContent: "Skip to content",
@@ -51,13 +44,8 @@ export const NAV = {
   signIn: "Sign in",
   signInHref: `${PRODUCTION_APP_ORIGIN}/login`,
   request: "Request private access",
-  links: [
-    { href: "/#how", label: "How it works" },
-    { href: "/#growth-architect", label: "Growth Architect" },
-    { href: "/#agents", label: "Agents" },
-    { href: "/#pricing", label: "Pricing" },
-    { href: "/#faq", label: "FAQ" },
-  ],
+  /** The framework's nav has a logo and one button. Menu links are exits, so there are none. */
+  links: [],
 } as const;
 
 /**
@@ -444,7 +432,7 @@ export const PROOF = {
 } as const;
 
 export const FOOTER = {
-  productLine: "The agentic workforce for business growth.",
+  productLine: "AI agents that study your market, draft the changes, and measure what worked.",
   copyright: "Vistrial",
   links: [
     { href: "/security-overview", label: "Security overview" },

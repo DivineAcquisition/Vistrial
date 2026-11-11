@@ -55,7 +55,7 @@ export function FormAside({ kind }: { kind: "private_access" | "custom" }) {
         <p className="text-xs font-medium text-muted-foreground">{FORMS.next.sourcesLabel}</p>
         <ul className="mt-3 flex flex-wrap items-center gap-3 text-muted-foreground">
           {platformsIn("source")
-            .filter((entry) => entry.id !== "facebook")
+            .filter((entry) => entry.id !== "facebook" && entry.id !== "meta")
             .map((entry) => (
               <li key={entry.id} title={entry.name}>
                 <PlatformLogo id={entry.id} tone="mono" size={20} />

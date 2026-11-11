@@ -59,12 +59,12 @@ export function BasisBadge({ basis, size = "sm" }: { basis: Basis; size?: BadgeP
 }
 
 /** Real platform mark where one exists; a plain icon for the open web and the customer's own results. */
-const SOURCE_LOGO: Record<string, string | null> = { web: null, youtube: "youtube", meta: "meta", tiktok: "tiktok", instagram: "instagram", results: null };
+const SOURCE_LOGO: Record<string, string | null> = { web: null, youtube: "youtube", meta: "meta", metaAds: "meta", tiktok: "tiktok", instagram: "instagram", pages: null, results: null };
 
 function SourceMark({ sourceKey, size = 14 }: { sourceKey: string; size?: number }) {
   const logo = SOURCE_LOGO[sourceKey];
   if (logo) return <PlatformLogo id={logo} size={size} decorative />;
-  const Icon = sourceKey === "web" ? Globe : BarChart3;
+  const Icon = sourceKey === "web" ? Globe : sourceKey === "pages" ? FileText : BarChart3;
   return <Icon className="shrink-0 text-muted-foreground" style={{ width: size, height: size }} aria-hidden />;
 }
 
@@ -77,33 +77,34 @@ const STUDIO_STEPS = ["Planning the research", "Collecting from sources", "Sorti
 const STUDIO_SOURCES = [
   { key: "web" as const, label: "Web", state: "24 pages", tone: "good" as const },
   { key: "youtube" as const, label: "YouTube", state: "9 videos", tone: "good" as const },
-  { key: "meta" as const, label: "Meta Ad Library", state: "Partial", tone: "warning" as const },
+  { key: "pages" as const, label: "Landing pages", state: "3 of 4 read", tone: "warning" as const },
   { key: "tiktok" as const, label: "TikTok", state: "6 from links", tone: "good" as const },
 ];
 
+/** Sample data: an agency researching the agencies it competes with. No real business is shown. */
 const STUDIO_CARDS = [
   {
-    platform: "Meta ad",
-    advertiser: "BrightNest Cleaning",
-    hook: "“Your first deep clean, done in one visit.”",
-    offer: "First clean 20% off",
-    running: "Running 94 days",
+    platform: "Offer page",
+    advertiser: "LeadForge Media",
+    hook: "“Free ad account audit, then a 90-day pilot.”",
+    offer: "$1,950/mo pilot",
+    running: "Guarantee stated",
     tint: "from-brand-500/35 via-brand-300/15 to-transparent",
   },
   {
-    platform: "YouTube Short",
-    advertiser: "Austin Home Crew",
-    hook: "“What a move-out clean actually covers.”",
-    offer: "Free walkthrough",
+    platform: "YouTube",
+    advertiser: "Summit Scale",
+    hook: "“Why we only charge per booked appointment.”",
+    offer: "From $85 a booked call",
     running: "41k views",
     tint: "from-info/30 via-brand-200/15 to-transparent",
   },
   {
-    platform: "TikTok",
-    advertiser: "Sparkle & Co",
-    hook: "“Before and after: 1998 kitchen.”",
-    offer: "Book online",
-    running: "3 variations",
+    platform: "Landing page",
+    advertiser: "HomePro Marketing",
+    hook: "“One agency per trade, per territory.”",
+    offer: "Price not stated",
+    running: "11 sections read",
     tint: "from-warning/30 via-brand-200/10 to-transparent",
   },
 ];
@@ -130,7 +131,7 @@ export function ResearchStudioHero() {
       <div className="flex items-end justify-between gap-3">
         <div className="min-w-0">
           <p className={eyebrow}>Growth Architect · Research Studio</p>
-          <p className="mt-1 font-heading text-xl tracking-tight text-strong sm:text-2xl">Deep cleaning, Austin TX</p>
+          <p className="mt-1 font-heading text-xl tracking-tight text-strong sm:text-2xl">Home-service lead generation</p>
         </div>
         <span className="hidden shrink-0 items-center gap-1.5 text-xs text-muted-foreground sm:inline-flex">
           <span className="live-pulse size-1.5 rounded-full bg-success" aria-hidden />
@@ -188,7 +189,11 @@ export function ResearchStudioHero() {
               </span>
               <span className="absolute inset-0 flex items-center justify-center" aria-hidden>
                 <span className="flex size-7 items-center justify-center rounded-full bg-card/90 shadow-sm sm:size-8">
-                  <Play className="size-3.5 translate-x-px fill-strong text-strong" />
+                  {card.platform === "YouTube" ? (
+                    <Play className="size-3.5 translate-x-px fill-strong text-strong" />
+                  ) : (
+                    <FileText className="size-3.5 text-strong" />
+                  )}
                 </span>
               </span>
               <span className="absolute bottom-1.5 left-1.5 hidden rounded-full bg-card/85 px-1.5 py-0.5 text-[10px] text-muted-foreground sm:bottom-2 sm:left-2 sm:inline">
@@ -206,11 +211,11 @@ export function ResearchStudioHero() {
 
       <div className={cn(marketingInset, "flex items-start justify-between gap-3 p-3")}>
         <p className="text-xs leading-relaxed text-strong">
-          Most long-running local ads lead with a first-visit discount, not with price.
+          Two of three competing agencies state a guarantee on their offer page.
         </p>
         <span className="flex shrink-0 flex-col items-end gap-1">
           <BasisBadge basis="observed" />
-          <span className="text-[10px] text-muted-foreground">11 sources</span>
+          <span className="text-[10px] text-muted-foreground">3 sources</span>
         </span>
       </div>
     </div>
@@ -308,7 +313,7 @@ function DoctrineScene({ id }: { id: string }) {
   if (id === "observe") {
     return (
       <div className="grid grid-cols-3 gap-1.5" aria-hidden>
-        {["youtube", "meta", "tiktok"].map((key) => (
+        {["web", "youtube", "tiktok"].map((key) => (
           <span key={key} className="flex h-12 items-center justify-center rounded-md border border-border bg-muted">
             <SourceMark sourceKey={key} size={16} />
           </span>
@@ -460,41 +465,31 @@ export function DoctrineFlow() {
 }
 
 /* ---------------------------------------------------------------------------
- * Growth Architect: six skills, in the order they ship
+ * Growth Architect: its skills, available ones first
  * ------------------------------------------------------------------------- */
 
 export function SkillMap() {
   return (
-    <div className="space-y-4">
-      <ol className="flex flex-wrap items-center gap-x-2 gap-y-1.5 text-xs text-muted-foreground" aria-label="How the skills build on each other">
-        {GROWTH_ARCHITECT.skills.map((skill, index) => (
-          <li key={skill.id} className="flex items-center gap-2">
-            <span className={cn(index === 0 && "font-medium text-strong")}>{skill.name}</span>
-            {index < GROWTH_ARCHITECT.skills.length - 1 ? <ArrowRight className="size-3 text-brand-300" aria-hidden /> : null}
+    <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+      {GROWTH_ARCHITECT.skills.map((skill, index) => {
+        const available = skill.status === "available";
+        return (
+          <li key={skill.id}>
+            <SpotlightCard glow={available} className={cn("flex h-full flex-col gap-3", !available && "border-dashed")}>
+              <div className="flex items-center justify-between gap-2">
+                <span className="font-heading text-sm text-muted-foreground tabular-nums">{String(index + 1).padStart(2, "0")}</span>
+                <Badge variant={available ? "success" : "outline"} size="sm">
+                  {available ? <CheckCircle2 aria-hidden /> : null}
+                  {GROWTH_ARCHITECT.statusLabel[skill.status]}
+                </Badge>
+              </div>
+              <h3 className="font-heading text-xl text-strong">{skill.name}</h3>
+              <p className="text-sm leading-relaxed text-muted-foreground">{skill.handsBack}</p>
+            </SpotlightCard>
           </li>
-        ))}
-      </ol>
-      <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-        {GROWTH_ARCHITECT.skills.map((skill, index) => {
-          const first = skill.status === "first";
-          return (
-            <li key={skill.id}>
-              <SpotlightCard glow={first} className={cn("flex flex-col gap-3", !first && "opacity-90")}>
-                <div className="flex items-center justify-between gap-2">
-                  <span className="font-heading text-sm text-muted-foreground tabular-nums">{String(index + 1).padStart(2, "0")}</span>
-                  <Badge variant={first ? "success" : "outline"} size="sm">
-                    {first ? <CheckCircle2 aria-hidden /> : null}
-                    {GROWTH_ARCHITECT.statusLabel[skill.status]}
-                  </Badge>
-                </div>
-                <h3 className="font-heading text-xl text-strong">{skill.name}</h3>
-                <p className="text-sm leading-relaxed text-muted-foreground">{skill.handsBack}</p>
-              </SpotlightCard>
-            </li>
-          );
-        })}
-      </ul>
-    </div>
+        );
+      })}
+    </ul>
   );
 }
 
@@ -506,27 +501,27 @@ type Citation = { label: string; source: string; seen: string; detail: string };
 
 const REPORT_CLAIMS: Array<{ text: string; basis: Basis; sources: Citation[] }> = [
   {
-    text: "8 of 12 competitors advertise a first-visit discount.",
+    text: "2 of 3 competing agencies state a guarantee on their offer page.",
     basis: "observed",
     sources: [
-      { label: "Meta Ad Library", source: "meta", seen: "Seen Oct 28", detail: "8 active ads across 6 advertisers lead with a first-visit offer." },
-      { label: "4 sites", source: "web", seen: "Checked Oct 28", detail: "Offer pages on 4 competitor websites state the same discount." },
+      { label: "3 offer pages", source: "web", seen: "Checked Nov 9", detail: "LeadForge Media and HomePro Marketing state a guarantee. Summit Scale does not." },
+      { label: "1 video", source: "youtube", seen: "Seen Nov 9", detail: "LeadForge Media repeats the guarantee in the first 20 seconds." },
     ],
   },
   {
-    text: "Discounts are the default hook in this market, so a guarantee would stand out.",
+    text: "A stated guarantee is normal in this market, so an offer without one stands out.",
     basis: "inferred",
-    sources: [{ label: "12 ads", source: "meta", seen: "Seen Oct 28", detail: "Read from the 12 ads above. None of them offer a guarantee." }],
+    sources: [{ label: "3 offer pages", source: "web", seen: "Checked Nov 9", detail: "Read from the three offer pages above." }],
   },
   {
-    text: "A “same-week booking” angle may convert busy professionals.",
+    text: "Stating a results guarantee up front may lift booked calls.",
     basis: "hypothesis",
     sources: [{ label: "Test plan", source: "results", seen: "Not tested yet", detail: "An idea to test. It is not presented as a fact until your results show it." }],
   },
   {
-    text: "Your Google leads book at twice the rate of Meta leads.",
+    text: "Your Meta ads brought 58 conversions last month, up from 40.",
     basis: "firstParty",
-    sources: [{ label: "Your CSV", source: "results", seen: "Uploaded Oct 30", detail: "From the results file you shared: 212 leads over 90 days." }],
+    sources: [{ label: "Your Meta ad account", source: "meta", seen: "Synced Nov 9", detail: "Read from your own ad account through a read-only connection." }],
   },
   { text: "Which competitor ads are profitable.", basis: "insufficient", sources: [] },
 ];
@@ -567,7 +562,7 @@ export function EvidenceReport() {
         <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border px-4 py-3">
           <div className="min-w-0">
             <p className={eyebrow}>Market report · {HERO.exampleLabel}</p>
-            <p className="mt-0.5 text-sm font-medium text-strong">Advertising landscape</p>
+            <p className="mt-0.5 text-sm font-medium text-strong">Home-service lead generation</p>
           </div>
           <Badge variant="warning" size="sm">Waiting for approval</Badge>
         </div>
@@ -697,7 +692,7 @@ export function AssetApprovalExample() {
             <>
               <div className="flex items-start justify-between gap-3">
                 <div>
-                  <p className="text-sm font-medium text-strong">Market report · Deep cleaning, Austin</p>
+                  <p className="text-sm font-medium text-strong">Market report · Home-service lead generation</p>
                   <p className="text-xs text-muted-foreground">Version 2 · 14 claims · 31 sources · 84¢ to research</p>
                 </div>
                 <Badge variant={approved ? "success" : "warning"} size="sm">

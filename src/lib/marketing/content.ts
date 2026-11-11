@@ -5,11 +5,10 @@
  * Display prices are not connected to billing.
  */
 
-import { AGENTS } from "@/lib/agents/roster";
 import { PRODUCTION_APP_ORIGIN } from "@/lib/constants";
 
 export const SITE_DESCRIPTION =
-  "Vistrial is an agentic workforce for business growth: specialized AI agents that research your market, sharpen your strategy, and produce the work to grow, with evidence on every claim and a person approving every step.";
+  "Vistrial is an agentic workforce for agencies, consultants, coaches and info sellers: AI agents that research your market, sharpen your offer, and draft the ads to test, with a source on every claim and a person approving every step.";
 
 export const SECTIONS = {
   hero: true,
@@ -32,7 +31,7 @@ export const HERO = {
   /** Chosen draft. The other options are in HEADLINE_OPTIONS for review. */
   headline: "The agentic workforce for business growth.",
   supporting:
-    "Specialized AI agents that research your market, sharpen your strategy, and produce the work to grow. Starting with Growth Architect.",
+    "AI agents for agencies, consultants, coaches and info sellers. They research your market, sharpen your offer, and draft the ads to test. Starting with Growth Architect.",
   primaryCta: "Request private access",
   secondaryCta: "See Growth Architect",
   trust: "Every claim shows its source. Nothing is published without a person's approval. Each customer's data is kept separate.",
@@ -61,15 +60,20 @@ export const NAV = {
   ],
 } as const;
 
+/**
+ * Only sources that work today. Meta's Ad Library is left out until Vistrial has working access to it,
+ * and TikTok and Instagram are read from links the customer pastes, not searched.
+ */
 export const SOURCES = {
   label: "Researches across",
   items: [
     { key: "web", label: "The open web" },
     { key: "youtube", label: "YouTube" },
-    { key: "meta", label: "Meta Ad Library" },
-    { key: "tiktok", label: "TikTok" },
-    { key: "instagram", label: "Instagram" },
-    { key: "results", label: "Your own results" },
+    { key: "tiktok", label: "TikTok links" },
+    { key: "instagram", label: "Instagram links" },
+    { key: "pages", label: "Public landing pages" },
+    { key: "results", label: "Your results files" },
+    { key: "metaAds", label: "Your Meta ad account" },
   ],
 } as const;
 
@@ -78,8 +82,8 @@ export const AGENT_FLOW = {
   agent: "Growth Architect",
   agentRole: "Agent 01",
   statuses: [
-    "Reading competitor ads",
-    "Checking what keeps running",
+    "Reading competitor offer pages",
+    "Reading the links you pasted",
     "Sorting what was seen from what is inferred",
     "Drafting the report",
   ],
@@ -95,11 +99,11 @@ export const AGENT_FLOW = {
 export const DOCTRINE_RUN = {
   labels: { queued: "Queued", running: "Running", done: "Done", waiting: "Waiting on you" },
   notes: {
-    observe: "Found 42 ads and 18 videos",
+    observe: "Read 24 pages and 9 videos",
     distinguish: "14 claims, each labeled",
-    prioritize: "3 angles to test first",
-    create: "Report and 6 ad drafts",
-    validate: "Reads your results when you share them",
+    prioritize: "3 changes to test first",
+    create: "Report and 4 ad variations",
+    validate: "Check-in set for 30 days",
   },
 } as const;
 
@@ -119,7 +123,7 @@ export const PROBLEM = {
   id: "problem",
   headline: "Most growth starts with a guess.",
   opening:
-    "Businesses launch ads, publish content, and raise spend before they understand the market they are trying to move.",
+    "Agencies, consultants and coaches launch ads, publish content, and raise spend before they understand the market they are trying to move.",
   scattered:
     "Competitor research lives in browser tabs and screenshots. Strategy sits in one document and the creative in another. When a campaign works, nobody can say why. When it fails, nobody can say which assumption was wrong.",
   pains: [
@@ -130,9 +134,9 @@ export const PROBLEM = {
   ],
   /** The "before" picture: research spread across tabs, with nothing to back it. */
   scene: {
-    tabs: ["competitor-site.com", "Ad screenshot (3).png", "Strategy v4 FINAL", "Notes from call"],
+    tabs: ["rival-agency.com", "Ad screenshot (3).png", "Offer v4 FINAL", "Notes from call"],
     activeTab: 2,
-    note: "“Competitors seem to run discounts? Maybe test video?”",
+    note: "“Competitors seem to offer a guarantee? Maybe test a pilot?”",
     flags: ["No source", "Unclear owner", "Last edited 6 weeks ago"],
     stamp: "Guess",
   },
@@ -192,96 +196,108 @@ export const HOW = {
     {
       id: "create",
       title: "Create",
-      body: "Turn the chosen strategy into real work: reports, copy, scripts, creative briefs, and landing pages.",
+      body: "Turn the choice into finished work: reports, offer analyses, ad copy, video scripts, and designed ads.",
     },
     {
       id: "validate",
       title: "Validate",
-      body: "Read your own results, learn what held up, and feed it into the next round of research.",
+      body: "You pick what to try and set a check-in. Your own figures show what held up, and the next round builds on it.",
     },
   ],
 } as const;
 
+/**
+ * Skill status mirrors convex/catalog.ts (AVAILABLE_SKILLS). content.test.ts fails if the two drift apart.
+ * "What it hands back" stays close to the catalog's own wording.
+ */
 export const GROWTH_ARCHITECT = {
   id: "growth-architect",
   eyebrow: "Agent 01",
   headline: "Growth Architect",
-  lead: "One agent for market research, strategy, creative, and funnels. Each skill hands back finished work that the next skill builds on.",
+  lead: "One agent for market research, offers, diagnosis, creative, and landing pages. Each skill hands back finished work for you to approve. Then you pick what to try, set a check-in, and record what happened.",
   skills: [
     {
       id: "market-intelligence",
       name: "Market Intelligence",
-      handsBack: "Market reports and a visual research board of the ads and videos it found.",
-      status: "first" as const,
+      handsBack: "A market report with sources: competitors, ads, content, and patterns.",
+      status: "available" as const,
     },
     {
       id: "offer-intelligence",
       name: "Offer Intelligence",
-      handsBack: "Ideal customer profiles, positioning, and messaging.",
-      status: "next" as const,
-    },
-    {
-      id: "campaign-strategy",
-      name: "Campaign Strategy",
-      handsBack: "Campaign blueprints, ad angles, and testing plans.",
-      status: "next" as const,
-    },
-    {
-      id: "creative-production",
-      name: "Creative Production",
-      handsBack: "Ad copy, video scripts, creative briefs, and content packages.",
-      status: "next" as const,
-    },
-    {
-      id: "funnel-architect",
-      name: "Funnel Architect",
-      handsBack: "Funnel blueprints, landing page copy, and page drafts.",
-      status: "next" as const,
+      handsBack: "Your offer set beside what competitors lead with, and two or three changes to test.",
+      status: "available" as const,
     },
     {
       id: "growth-diagnostics",
       name: "Growth Diagnostics",
-      handsBack: "Performance analysis and a prioritized improvement plan from your own data.",
-      status: "next" as const,
+      handsBack: "A diagnosis of where growth stalls, from your own figures.",
+      status: "available" as const,
+    },
+    {
+      id: "creative-production",
+      name: "Creative Production",
+      handsBack: "An ad set for one brand: a brief, four copy variations, a video script, and captions. Designed ads on request.",
+      status: "available" as const,
+    },
+    {
+      id: "landing-page-teardown",
+      name: "Landing Page Teardown",
+      handsBack: "A section-by-section read of landing pages in your industry: what they share and what your page lacks.",
+      status: "available" as const,
+    },
+    {
+      id: "campaign-strategy",
+      name: "Campaign Strategy",
+      handsBack: "A campaign strategy built on approved research.",
+      status: "comingSoon" as const,
+    },
+    {
+      id: "funnel-architect",
+      name: "Funnel Architect",
+      handsBack: "A funnel plan with the pages and steps it needs.",
+      status: "comingSoon" as const,
     },
   ],
-  statusLabel: { first: "Available first", next: "Coming next" },
+  statusLabel: { available: "Available", comingSoon: "Coming soon" },
 } as const;
 
+/** Labels match the product's own (convex/lib/evidence.ts). */
 export const EVIDENCE = {
   id: "evidence",
   headline: "Every claim shows its source.",
-  lead: "Growth Architect labels how much it knows. Popular is not the same as profitable, and a long-running ad is not proof that it worked.",
+  lead: "Growth Architect labels how much it knows. Popular is not the same as profitable, and a page that keeps running is not proof that it works.",
   kinds: [
     { id: "observed", label: "Observed", body: "Seen directly in a source you can open." },
-    { id: "inferred", label: "Inferred", body: "A reasonable reading of what was seen." },
-    { id: "hypothesis", label: "Hypothesis", body: "An idea to test, never presented as fact." },
-    { id: "firstParty", label: "Your results", body: "Backed by your own measured data." },
+    { id: "inferred", label: "Inference", body: "A reasonable reading of what was seen." },
+    { id: "hypothesis", label: "Untested hypothesis", body: "An idea to test, never presented as fact." },
+    { id: "firstParty", label: "Your data", body: "Backed by your own measured figures." },
     { id: "insufficient", label: "Not enough data", body: "Said plainly instead of guessed." },
   ],
 } as const;
 
+/** Grouped the way the app groups them (src/lib/shell/journey.ts). Live and planned mirror convex/catalog.ts. */
 export const AGENTS_SECTION = {
   id: "agents",
-  headline: "Seven specialists. One organization.",
-  lead: "Vistrial grows into a workforce across the customer lifecycle. Every agent shares the same context, evidence, and approvals. We start with one, and build it properly.",
+  headline: "Seven specialists across the customer journey.",
+  lead: "Vistrial groups its agents by where they help: Attract, Convert, Keep. Growth Architect is live today. The others are planned and do not run yet.",
   departments: [
     {
-      id: "growth",
-      name: "Growth and Marketing",
+      id: "attract",
+      name: "Attract",
       agents: [
-        { number: "01", name: "Growth Architect", job: "Research, strategy, creative, and funnels.", live: true },
+        { number: "01", name: "Growth Architect", job: "Research, offers, diagnosis, creative, and landing pages.", live: true },
         { number: "02", name: "Campaign Execution", job: "Approved launches, testing, and reporting.", live: false },
       ],
     },
     {
-      id: "sales",
-      name: "Sales",
+      id: "convert",
+      name: "Convert",
       agents: [{ number: "03", name: "Sales Conversion", job: "Qualification, follow-up drafts, and pipeline.", live: false }],
     },
     {
-      id: "success",
-      name: "Customer Success",
+      id: "keep",
+      name: "Keep",
       agents: [
         { number: "04", name: "Activation", job: "Onboarding and first value.", live: false },
         { number: "05", name: "Retention", job: "Customer health and save plans.", live: false },
@@ -289,8 +305,8 @@ export const AGENTS_SECTION = {
       ],
     },
     {
-      id: "operations",
-      name: "Operations",
+      id: "run",
+      name: "Across all three",
       agents: [{ number: "07", name: "Operations Intelligence", job: "Briefings, reporting, and coordination.", live: false }],
     },
   ],
@@ -298,46 +314,58 @@ export const AGENTS_SECTION = {
   plannedLabel: "Planned",
 } as const;
 
+/** Who Vistrial is for. Each line names work an available skill does today. */
 export const INDUSTRIES = {
   id: "industries",
-  headline: "Built for businesses that sell considered purchases.",
-  lead: "Growth Architect already knows what to look for in these markets. Other businesses can request access.",
+  headline: "Built for agencies, consultants, coaches and info sellers.",
+  lead: "The same research, pointed at what you sell. Other businesses can request access.",
   cards: [
     {
-      id: "med-spa",
-      title: "Aesthetic and medical spa",
-      motion: "Treatments and consultations sold to a local market that compares carefully.",
+      id: "agencies",
+      title: "Agencies",
+      motion: "Retainers and projects sold to clients who compare you with the agency down the road.",
       watches: [
-        "What competitors in your area advertise, and for how long",
-        "Which treatments and offers they lead with",
-        "How they frame price and financing",
-        "Before-and-after formats that keep running",
+        "What competing agencies lead with: offer, price, and guarantee",
+        "Landing pages in a client's industry, section by section",
+        "Ad sets for one client brand at a time, from that brand's kit",
+        "Reports you can export as a PDF, with a white-label option",
       ],
     },
     {
-      id: "home-services",
-      title: "Home services and remodeling",
-      motion: "Projects with long decisions, estimates, and seasonal demand.",
+      id: "consultants",
+      title: "Consultants",
+      motion: "Expertise sold through proposals, calls, and referrals.",
       watches: [
-        "Seasonal offers local competitors run",
-        "Guarantee, warranty, and financing messages",
-        "Themes customers repeat in public reviews",
-        "The landing pages behind local ads",
+        "How competing firms frame their offer, and whether they state a price",
+        "Which objections their pages answer, and which they skip",
+        "Where your own growth stalls, from your own figures",
+        "Two or three changes to test, each with a way to tell if it worked",
       ],
     },
     {
-      id: "coaches-consultants",
-      title: "Coaches and consultants",
+      id: "coaches",
+      title: "Coaches",
       motion: "Programs sold through content, applications, and calls.",
       watches: [
-        "Short-form hooks that keep getting reused",
-        "Webinar, application, and booking funnels",
-        "How competitors frame the investment",
-        "Proof and testimonial patterns",
+        "Hooks in the videos and posts you paste links to",
+        "Application and booking pages in your niche, section by section",
+        "How competing programs frame the investment",
+        "Ad variations to test, written to your brand kit",
+      ],
+    },
+    {
+      id: "info-sellers",
+      title: "Info sellers",
+      motion: "Courses, memberships, and programs sold from a page.",
+      watches: [
+        "Sales pages for competing courses, section by section",
+        "The offers competitors lead with, and what yours leaves out",
+        "Four copy variations, a video script, and captions for one offer",
+        "What changed after a test, measured from your own figures",
       ],
     },
   ],
-  closing: "If you sell a considered purchase and your industry is not listed, request access and tell us what you sell.",
+  closing: "If you sell your expertise and your business is not listed, request access and tell us what you sell.",
 } as const;
 
 export const SAFETY = {
@@ -348,7 +376,7 @@ export const SAFETY = {
   items: [
     "Nothing is published, posted, or sent without a person's approval.",
     "Research uses official access only: public sources, official APIs, and links you provide. No logins and no getting around blocks.",
-    "Every claim is labeled as observed, inferred, a hypothesis, or your own result, with its source.",
+    "Every claim is labeled as observed, an inference, an untested hypothesis, or your data, with its source.",
     "Every run has a cost limit, and the cost is shown as it runs.",
     "Each customer's data is separate from every other customer's.",
     "Every important action is recorded.",
@@ -363,31 +391,35 @@ export const FAQ = {
   items: [
     {
       q: "What is Growth Architect?",
-      a: "The first Vistrial agent. It researches your market, competitors, and the ads and content that keep running, then turns that into strategy, creative, and funnels. Market Intelligence comes first, and the other skills follow one at a time.",
+      a: "The first Vistrial agent, and the only one that runs today. It researches your market, sets your offer beside what competitors lead with, finds where growth stalls from your own figures, reads landing pages in your industry section by section, and drafts ad sets with designed ads. Campaign Strategy and Funnel Architect are not available yet.",
     },
     {
       q: "Where does the research come from?",
-      a: "Public web pages, YouTube, Meta's Ad Library where it is available, TikTok and Instagram posts it finds or you provide, and your own results if you upload them. It uses official access only, and every source shows whether it was available.",
+      a: "Public web pages, YouTube, TikTok and Instagram links you paste, and public landing pages it reads as VistrialBot. From your side: results files you upload as CSV, and your own Meta ad account through a read-only connection. It does not log in anywhere, and a report names any page it could not read.",
     },
     {
       q: "Can I trust what it says?",
-      a: "Every claim is labeled as observed, inferred, a hypothesis, or backed by your own results, and links to its source. When there is not enough data, it says so instead of guessing. It never claims an ad made money unless your own numbers show it.",
+      a: "Every claim is labeled as observed, an inference, an untested hypothesis, or your data, and links to its source. When there is not enough data, it says so instead of guessing. It never claims an ad made money unless your own numbers show it.",
     },
     {
       q: "Will it post or spend on its own?",
-      a: "No. Growth Architect produces reports and assets for review. Nothing is published, posted, sent, or charged to an ad account without a person's approval.",
+      a: "No. Growth Architect produces reports and drafts for review. It does not publish, post, or contact anyone, and its connection to your Meta ad account is read-only.",
+    },
+    {
+      q: "What happens after it recommends something?",
+      a: "You pick what to try and when to check back: 14, 30, 60, or 90 days. If your Meta ad account or a results file is connected, your starting figures are saved. At the check-in you record what happened, and the next round of research builds on it.",
     },
     {
       q: "What does it do with my data?",
-      a: "Each workspace is separate. Vistrial uses your business profile, research, and results to do the work for that workspace only. The Security overview describes the controls, and the Privacy Policy explains how information is handled.",
+      a: "Your data is kept separate from every other customer's. Vistrial uses your business profile, research, and results to do your work only. The Security overview describes the controls, and the Privacy Policy explains how information is handled.",
     },
     {
       q: "Who is Private Access for?",
-      a: "Businesses that sell considered purchases and want to understand their market before they spend more on it. We bring on a limited number of teams at a time.",
+      a: "Agencies, consultants, coaches, and people who sell courses or programs, who want to understand their market before they spend more on it. Access is by request. We bring on a limited number of teams at a time.",
     },
     {
       q: "What happens after I request access?",
-      a: "We review the request. You get a confirmation email, and a person replies about whether access is available. A person on our team reviews every request and will reply by email.",
+      a: "You get a confirmation email. A person on our team reviews every request and replies by email about whether access is available.",
     },
     {
       q: "Can I cancel?",
@@ -429,22 +461,6 @@ export const SOCIAL_IMAGE = {
   alt: HERO.headline,
 } as const;
 
-export const EXAMPLE = {
-  lead: "Jordan Hale",
-  business: "Northline Aesthetics",
-  sources: ["CRM record", "Recorded call", "Calendar booking", "Follow-up note"],
-  summary:
-    "Asked for a consultation, raised price and timing on the call, and booked Thursday. The follow-up draft is waiting for a person.",
-  draft:
-    "Hi Jordan, following up on the consultation. We can hold the Thursday time we discussed if you still want it.",
-  draftStatus: "Waiting for a person to approve. Nothing has been sent.",
-  steps: [
-    { agent: "sentry" as const, line: `${AGENTS.sentry.name}, ${AGENTS.sentry.sublabel}, noticed this lead waiting past the team's standard.` },
-    { agent: "scribe" as const, line: `${AGENTS.scribe.name}, ${AGENTS.scribe.sublabel}, updated the case file from the call.` },
-    { agent: "relay" as const, line: `${AGENTS.relay.name}, ${AGENTS.relay.sublabel}, prepared a draft. It waits for approval.` },
-  ],
-} as const;
-
 export const THANKS = {
   title: "Request received",
   access:
@@ -475,7 +491,7 @@ export const FORMS = {
   sections: {
     you: "About you",
     business: "Your business",
-    selling: "How you sell today",
+    selling: "How you grow today",
     more: "Anything else",
     need: "What you need",
   },
@@ -494,7 +510,7 @@ export const FORMS = {
     custom: [
       { title: "You send this form", body: "Tell us what your team needs." },
       { title: "We reply by email", body: "A person on our team sets up a short call." },
-      { title: "We plan your setup", body: "Seats, workspaces, sources, and limits that fit how you work." },
+      { title: "We plan your setup", body: "Seats, sources, and limits that fit how you work." },
     ],
     sourcesLabel: "Growth Architect researches across",
   },
@@ -543,59 +559,67 @@ export const EMAIL_DEFAULTS = {
  */
 export const CLAIMS: Array<{ statement: string; support: string }> = [
   {
-    statement: "One case file per lead, kept up to date from CRM, phone, calendar, and call recordings.",
-    support: "Case files are built by Scribe from calls and notes. GoHighLevel syncs CRM records. Calendar and transcript connections exist. Phone activity that reaches the CRM is part of the touch history.",
+    statement: "Growth Architect is the one agent that runs today. The other six are planned.",
+    support: "convex/catalog.ts: Growth Architect has status live. The six other agents have status planned and the promise \"It does not run yet.\"",
   },
   {
-    statement: "Vistrial does not replace the CRM, the dialer, or the team.",
-    support: "The product is a layer on the CRM. People still qualify, book, and close. Compass and Relay cannot send on their own.",
+    statement: "Five Growth Architect skills are available: Market Intelligence, Offer Intelligence, Growth Diagnostics, Creative Production, and Landing Page Teardown. Campaign Strategy and Funnel Architect are coming soon.",
+    support: "convex/catalog.ts AVAILABLE_SKILLS lists those five slugs. Every other skill in the catalog is comingSoon. content.test.ts compares this page with that list.",
   },
   {
-    statement: "Nothing is sent without a person's approval, and checks run again at send time.",
-    support: "Relay drafts wait for approval. The approval gate rechecks opt-out, do-not-contact, a reply, and expiry when the action is performed.",
+    statement: "Creative Production hands back a brief, four copy variations, a video script, and captions for one brand, with designed ads on request.",
+    support: "convex/catalog.ts describes the ad set in those words. Designed ads are an add-on to an ad set (convex/creativeImages.ts), charged per image.",
   },
   {
-    statement: "Quiet hours are 8 pm to 8 am in the lead's local time.",
-    support: "Launch compliance defaults set quiet hours on that window with basis lead_local. Sending waits until quiet hours end.",
+    statement: "Research reads public web pages, YouTube, TikTok and Instagram links you paste, and public landing pages.",
+    support: "convex/adapters: web search and fetch, YouTube search, and link previews for TikTok and Instagram (neither is searched). The page reader (docs/rebuild/page-reader.md) reads public pages as VistrialBot. Meta's Ad Library is not listed because Vistrial has no working access to it today.",
   },
   {
-    statement: "Opt-outs and do-not-contact markers are respected.",
-    support: "Compliance rules stop messages on opt-out words. The send-time recheck includes opted_out and do_not_contact.",
+    statement: "You can add your own figures: results files as CSV, and your Meta ad account through a read-only connection.",
+    support: "convex/resultUploads.ts reads a CSV and keeps totals. The Meta connection asks for ads_read only and never creates, edits, pauses, or funds anything (docs/rebuild/meta-ads-connection.md).",
+  },
+  {
+    statement: "Research uses no logins and does not get around blocks.",
+    support: "The /bot page and docs/rebuild/page-reader.md: VistrialBot follows robots.txt, does not log in or solve CAPTCHAs, and stops when a site refuses. Account access (docs/rebuild/browser-with-approval.md) is a design with a dry-run screen only.",
+  },
+  {
+    statement: "Every claim is labeled Observed, Inference, Untested hypothesis, Your data, or Not enough data.",
+    support: "convex/lib/evidence.ts sets those five labels in code, not by the model.",
+  },
+  {
+    statement: "Nothing is published, posted, or sent without a person's approval.",
+    support: "Assets stay drafts until a person approves them (convex/lib/assetStatus.ts). The product has no publish or send action to an outside channel. The only email it sends goes to the workspace's own owners and managers.",
+  },
+  {
+    statement: "You pick what to try, set a check-in at 14, 30, 60, or 90 days, and record what happened.",
+    support: "convex/decisions.ts: a decision stores the check-in date and starting figures from the business's Meta results and results files, then the outcome. Check-in reminder emails are in convex/emailReminders.ts.",
+  },
+  {
+    statement: "Every run has a cost limit, and the cost is shown as it runs.",
+    support: "convex/lib/caps.ts sets a cap per run and per day. The run screen shows \"Spent x of cap\" while it works.",
   },
   {
     statement: "Each customer's data is separate.",
-    support: "Workspace row-level security isolates leads, calls, and settings by organization.",
+    support: "Every workspace query and mutation checks membership first (convex/lib/builders.ts). convex/isolation.test.ts proves another workspace gets not-found.",
   },
   {
-    statement: "The CRM is not written unless you choose.",
-    support: "The CRM connection is optional. Writes that reach a lead go through the approval gate. Scribe's promise is that it does not change the CRM.",
+    statement: "Every important action is recorded.",
+    support: "convex/lib/audit.ts writes an audit row for approvals, decisions, connections, and staff access.",
   },
   {
-    statement: "Important actions are recorded.",
-    support: "Approval changes, workspace activity, and staff actions write an audit row with actor and time.",
+    statement: "Private Access is $179 per month with $150 of credits included. Included credits reset each month.",
+    support: "convex/lib/billing.ts PLAN: 17900 cents, 15000 cents included. The Terms of Service state the same price and that included credits do not carry over.",
   },
   {
-    statement: `${AGENTS.sentry.name} watches response time and alerts the team. It does not message leads.`,
-    support: `${AGENTS.sentry.name}, ${AGENTS.sentry.sublabel}. ${AGENTS.sentry.description}`,
+    statement: "Nothing is charged on this site.",
+    support: "The public pages have no checkout. PRICING_DISPLAY is display copy and is not connected to billing.",
   },
   {
-    statement: `${AGENTS.scribe.name} builds the case file and does not contact a lead.`,
-    support: `${AGENTS.scribe.name}, ${AGENTS.scribe.sublabel}. ${AGENTS.scribe.description}`,
+    statement: "You can cancel anytime and keep access through the period you have paid for.",
+    support: "Terms of Service, cancellation: cancelling stops the next renewal and access continues to the end of the paid period.",
   },
   {
-    statement: `${AGENTS.relay.name} drafts follow-ups and does not send them.`,
-    support: `${AGENTS.relay.name}, ${AGENTS.relay.sublabel}. ${AGENTS.relay.description}`,
-  },
-  {
-    statement: `${AGENTS.compass.name}, ${AGENTS.compass.sublabel}, answers from the workspace's own data and does not invent numbers.`,
-    support: "Compass instructions require every number to come from a lookup result and forbid estimates.",
-  },
-  {
-    statement: "GoHighLevel works today. Other CRMs are coming.",
-    support: "The integration hub connects GoHighLevel. No other CRM connector is on that hub.",
-  },
-  {
-    statement: "Private Access starts at $179 per month. The page does not charge anyone.",
-    support: "The price is display copy in the pricing configuration. The public pages do not take payment.",
+    statement: "We bring on a limited number of teams at a time.",
+    support: "Access is by request and every request is reviewed by a person before a workspace is set up.",
   },
 ];

@@ -174,16 +174,17 @@ function Beams({ paths, id }: { paths: BeamPath[]; id: string }) {
 const SOURCE_LOGO: Record<(typeof SOURCES.items)[number]["key"], string | null> = {
   web: null,
   youtube: "youtube",
-  meta: "meta",
   tiktok: "tiktok",
   instagram: "instagram",
+  pages: null,
   results: null,
+  metaAds: "meta",
 };
 
 function SourceMark({ sourceKey }: { sourceKey: (typeof SOURCES.items)[number]["key"] }) {
   const logo = SOURCE_LOGO[sourceKey];
   if (logo) return <PlatformLogo id={logo} size={16} decorative />;
-  const Icon = sourceKey === "web" ? Globe : Upload;
+  const Icon = sourceKey === "web" ? Globe : sourceKey === "pages" ? FileText : Upload;
   return <Icon className="size-4 text-brand-400" aria-hidden />;
 }
 

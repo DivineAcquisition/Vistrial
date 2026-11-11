@@ -33,10 +33,14 @@ function setCalendly() {
 
 beforeEach(() => {
   for (const name of ENV) delete process.env[name];
+  // A calendar is read once after it connects, as a scheduled step. Held here so it cannot run into the next test.
+  vi.useFakeTimers({ toFake: ["setTimeout"] });
 });
 afterEach(() => {
   for (const name of ENV) delete process.env[name];
   vi.unstubAllGlobals();
+  vi.clearAllTimers();
+  vi.useRealTimers();
 });
 
 async function setup() {
@@ -89,7 +93,7 @@ describe("connections: what screens read", () => {
   it("shows every provider as not set up while the deployment has no settings, in three groups", async () => {
     const { workspaceId, rep } = await setup();
     const result = await rep.query(api.integrations.list, { workspaceId });
-    expect(result.canManage).toBe(false);
+    expect(result).toMatchObject({ canManage: false, canRefresh: false });
     expect(result.providers.map((row) => row.key)).toEqual([
       "google_ads",
       "google_analytics",
@@ -110,7 +114,7 @@ describe("connections: what screens read", () => {
     const { workspaceId, owner } = await setup();
     setGoogle();
     const result = await owner.query(api.integrations.list, { workspaceId });
-    expect(result.canManage).toBe(true);
+    expect(result).toMatchObject({ canManage: true, canRefresh: true });
     const state = Object.fromEntries(result.providers.map((row) => [row.key, row.readiness]));
     expect(state).toMatchObject({ google_calendar: "ready", google_ads: "not_built", google_analytics: "not_built", calendly: "not_set_up" });
     const text = JSON.stringify(result);

@@ -27,4 +27,7 @@ crons.interval("retry billing sync", { hours: 1 }, internal.billingActions.retry
 /** Emails Owners and Managers the check-ins that came due. Each check-in is sent once. Does nothing without a Resend key. */
 crons.interval("email check-ins due", { hours: 1 }, internal.emailReminders.sendCheckInsDue, {});
 
+/** Keeps connected calendars' booked-call counts fresh (read-only). Does nothing while none is connected. */
+crons.interval("refresh calendar bookings", { hours: 6 }, internal.bookings.syncAll, {});
+
 export default crons;

@@ -69,6 +69,8 @@ export function privacyPolicySections(trust: TrustPublic): PolicySection[] {
     "Information you send us through our website or by email is kept as long as we need it to respond to you and to manage our relationship with you.",
     "Uploaded results files are deleted as soon as they are read. Only their totals are kept.",
     "A connected Meta ad account's token and saved results are deleted as soon as the account is disconnected.",
+    "A connected calendar's access and saved counts are deleted as soon as the calendar is disconnected.",
+    "A call transcript you add is kept until someone in the workspace deletes it, or the workspace is deleted.",
     "Vistrial does not currently delete workspace information on an automatic schedule. When a customer asks us to delete information, we verify the request and a person carries it out.",
   ];
   if (trust.switches.backups) {
@@ -170,7 +172,8 @@ export function privacyPolicySections(trust: TrustPublic): PolicySection[] {
             "The business profile: what the business sells, where, to whom, its offers, and its competitors.",
             "Research assignments: the questions, markets, keywords, competitors, and links the team asks Growth Architect to look at.",
             "Files the team uploads, such as the business's own ad or sales results. A results file is read once and deleted; only totals by date and by campaign or channel are kept. Columns that name a person or how to reach them, such as names, email addresses, phone numbers and street addresses, are skipped without being read.",
-            "Results from accounts the team connects, such as Meta ad results, described in part I below.",
+            "Results from accounts the team connects, such as Meta ad results and booked-call counts from a calendar, described in parts I and J below.",
+            "Call transcripts the team uploads or pastes, described in part K below.",
             "Decisions about recommendations: which recommendations the team chose to try, when to check back, what the team says happened, and the business's own figures before and after.",
             "Lead lists the team imports, such as names, email addresses, phone numbers, and activity dates, and notes the team adds.",
             "Research runs: the steps an agent took, the sources it checked, whether each source was available, and the cost of the run.",
@@ -206,6 +209,28 @@ export function privacyPolicySections(trust: TrustPublic): PolicySection[] {
         {
           kind: "p",
           text: "Disconnecting the account in Connections deletes the token and every saved read straight away. You can also remove Vistrial from your Facebook settings, under Business Integrations.",
+        },
+        { kind: "h", text: "J. Connected calendars" },
+        {
+          kind: "p",
+          text: "If a workspace Owner connects Google Calendar or Calendly, Vistrial reads that person's scheduled events with read-only access, to count booked calls. From Google Calendar it asks only for each event's time, type, cancelled status, and its guests' email addresses and replies, and uses the email addresses once, in passing, to tell an outside guest from a colleague. From Calendly it reads each event's time, event type name and cancelled status, and whether the host marked an invitee as a no-show. Vistrial keeps counts only: how many calls were booked, cancelled, declined or marked no-show each week, and for Calendly by event type. It does not keep event titles, descriptions, locations, or the names or email addresses of guests and invitees. Vistrial never creates, changes or cancels events and never contacts guests.",
+        },
+        {
+          kind: "p",
+          text: "The access token is kept on our servers and is never shown in the app. Disconnecting the calendar in Connections deletes the token and every saved count straight away, and asks the provider to cancel the token. You can also remove Vistrial in your Google Account under third-party connections, or in Calendly under integrations.",
+        },
+        {
+          kind: "p",
+          text: "Vistrial's use and transfer of information received from Google APIs adheres to the Google API Services User Data Policy, including the Limited Use requirements. Information from Google Calendar is used only to show the workspace its own booked-call counts and to cite them in that workspace's reports. It is not sold and not used for advertising.",
+        },
+        { kind: "h", text: "K. Call transcripts" },
+        {
+          kind: "p",
+          text: "A workspace Owner or Manager can upload or paste the transcript of a call they recorded with a note-taking tool. Vistrial keeps the transcript's text, the title and call date the person gives it, the name of the tool, who added it, and when that person confirmed the call was recorded lawfully. Vistrial takes text only and does not accept audio or video. A transcript contains the names and words of the people on the call. It is stored for that workspace only, shown to its Owners and Managers, and read by the agents the Owner allows, to prepare that workspace's reports; a report may quote up to 300 characters of it as a source.",
+        },
+        {
+          kind: "p",
+          text: "The customer who recorded the call is responsible for having told everyone on it, and for having their agreement where the law requires it, before recording. An Owner or Manager can delete a transcript at any time, which deletes its text. If you were on a call with a Vistrial customer and want its transcript removed, contact that business; Section 13 explains how we help.",
         },
       ],
     },

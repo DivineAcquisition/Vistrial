@@ -9,6 +9,7 @@ import type { Doc } from "../_generated/dataModel";
 import type { MutationCtx } from "../_generated/server";
 import { decisionsForContext, describeDecision } from "../decisions";
 import { describeUpload, saveUploadSourcesFor } from "../resultUploads";
+import { describeTranscript, saveTranscriptSourcesFor } from "../transcripts";
 import { saveFirstPartySources } from "../skills/marketIntelligence/firstParty";
 import { factsForRun } from "./facts";
 
@@ -71,6 +72,11 @@ export async function readBusinessContext(
     const uploads = await saveUploadSourcesFor(ctx, { workspaceId: run.workspaceId, projectId: project._id, runId: run._id, agentSlug: run.agentSlug });
     for (const { upload } of uploads) {
       known.push({ key: `upload:${upload._id}`, label: `Your results: ${upload.label}`, value: describeUpload(upload), origin: "connection", status: "verified", recordedAt: upload.createdAt });
+    }
+    // Call transcripts the business provided and granted to this agent.
+    const transcripts = await saveTranscriptSourcesFor(ctx, { workspaceId: run.workspaceId, projectId: project._id, runId: run._id, agentSlug: run.agentSlug });
+    for (const { transcript } of transcripts) {
+      known.push({ key: `transcript:${transcript._id}`, label: `Your call: ${transcript.title}`, value: describeTranscript(transcript), origin: "connection", status: "unverified", recordedAt: transcript.createdAt });
     }
   }
   // What the business tried before, and what happened: outcomes first, then open check-ins.

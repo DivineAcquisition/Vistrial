@@ -84,6 +84,8 @@ export type ConnectOutcome = {
   provider: string | null;
   returnOrigin: string | null;
   returnPath: string | null;
+  /** Set only when a connection was saved. */
+  workspaceId?: Id<"workspaces">;
 };
 
 /**
@@ -125,7 +127,7 @@ export async function completeConnect(ctx: ActionCtx, appKey: OAuthAppKey, url: 
     accountLabel: who.accountLabel,
     connectedBy: state.userId,
   });
-  return { outcome: "connected", ...where };
+  return { outcome: "connected", ...where, workspaceId: state.workspaceId };
 }
 
 /** Asks the provider to cancel a token. Best effort: a failure here never keeps a connection alive. */

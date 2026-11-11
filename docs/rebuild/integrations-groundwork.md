@@ -7,7 +7,7 @@ the deployment, everything builds and every provider shows **Not set up yet**.
 ## What a person sees
 
 **Settings → Data → More connections** (`/app/connections/integrations`): three groups (Google, Calendar,
-AI note takers). Each provider card says what Vistrial reads and never does, and one of:
+AI note takers). Each provider card says in one line what Vistrial reads, and one of:
 
 | Shown | Means |
 |---|---|

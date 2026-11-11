@@ -76,7 +76,7 @@ export type ProviderView = {
 /** Every provider with how far it is set up, and this workspace's connection to it without its tokens. */
 export const list = workspaceQuery({
   args: {},
-  handler: async (ctx): Promise<{ canManage: boolean; providers: ProviderView[] }> => {
+  handler: async (ctx): Promise<{ canManage: boolean; canRefresh: boolean; providers: ProviderView[] }> => {
     const rows = await ctx.db
       .query("integrationConnections")
       .withIndex("by_workspace_provider", (q) => q.eq("workspaceId", ctx.workspaceId))
@@ -84,6 +84,8 @@ export const list = workspaceQuery({
     const byProvider = new Map(rows.map((row) => [row.provider, row]));
     return {
       canManage: ctx.member.role === "owner",
+      // Owners and Managers may ask for a fresh read of a connection that supports one.
+      canRefresh: ctx.member.role !== "rep",
       providers: providerList().map((row) => {
         const connection = byProvider.get(row.key);
         return {

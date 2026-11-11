@@ -251,11 +251,13 @@ not enough, which Google asks for):
 name, the OAuth client ID in the address bar, and each scope in use):
 
 1. Sign in to Vistrial on production as a workspace Owner. Open **Settings → Data → More connections**.
-2. Show the Google Calendar card with what Vistrial reads and never does.
+2. Show the Google Calendar card and its one line on what Vistrial reads.
 3. Click **Connect**. On Google's screen, pause so the address bar (with `client_id=`) and the permission
    text are readable. Approve.
-4. Back in Vistrial, show the weekly counts. Say out loud that only counts are kept.
-5. Click **Disconnect** and show the counts are gone.
+4. Back in Vistrial, show the card as Connected with its last read time, then show the booked-call
+   counts where the product presents them (the Sales conversion area, once built). Say out loud that only
+   counts are kept. Google asks to see each scope in use, so the video waits for that screen.
+5. Click **Disconnect** and show the card return to Not connected and the counts gone.
 6. Repeat 2 to 5 for each other scope being submitted.
 
 **Privacy policy.** Google requires the policy to say how the app "accesses, uses, stores and shares
@@ -277,8 +279,9 @@ commonly ask for.
   that it names Calendar is **not verified**, it says "and other Google Workspace APIs"). Vistrial's
   agents *read* figures to write a report; that is not training. But it only holds if the model provider
   does not train on what Vistrial sends. The privacy policy already has a switch for that line
-  (`aiNoTraining`), off until a Platform Admin confirms the provider setting. **Confirm it and turn it on
-  before submitting to Google.** Calendar data kept by Vistrial is weekly counts, which keeps the
+  (`aiNoTraining`), off until a Platform Admin confirms the provider setting, and the policy's own tests
+  refuse any "not used to train" sentence while it is off. So the proposed Google paragraph does not say
+  it yet. **Confirm the setting and turn the switch on before submitting to Google.** Calendar data kept by Vistrial is weekly counts, which keeps the
   exposure small either way.
 
 ---
@@ -397,7 +400,8 @@ create, change or delete events, or email guests.
 **What Calendar cannot tell you:** whether a guest actually showed up. An event carries the invitation
 reply (accepted, declined, tentative, no reply) and whether it was cancelled, and nothing about attendance
 ([event fields](https://developers.google.com/workspace/calendar/api/v3/reference/events)). No-shows come
-from Calendly (when the host marks them) or from the team's own check-in. The screen says this.
+from Calendly (when the host marks them) or from the team's own check-in. Wherever the counts are shown
+must say this; the connection card no longer does.
 
 - Scope `calendar.events.owned.readonly`, read through `events.list`
   ([reference](https://developers.google.com/workspace/calendar/api/v3/reference/events/list)). If a
@@ -434,7 +438,9 @@ book, cancel or reschedule, mark a no-show, or message invitees.
 
 **About no-shows:** the host marks them by hand in Calendly, after the meeting's start time, on any plan
 ([Calendly help](https://calendly.com/help/how-to-mark-no-shows-for-meetings)). If the team does not mark
-them, Calendly has none to report. The screen says this.
+them, Calendly has none to report. Wherever the counts are shown must say this. Seeing a mark takes one request per call, so each
+read checks the 30 most recent past calls (to stay inside the Free plan's 50 requests a minute); how many
+were checked is stored with the counts.
 
 Steps (you):
 
@@ -621,8 +627,8 @@ when an agent reads it, under the same terms as the rest of a workspace.
   matches the rest of the product, which has no automatic deletion schedule.
 - **Disconnecting** a note taker or a calendar deletes its token and everything read through it, straight
   away. Uploaded or pasted transcripts are deleted one at a time by an Owner or Manager.
-- Deleting a transcript also removes it as a source from reports that have not been written yet. A report
-  already written keeps its sentence and its quote of 300 characters or less, like any other source.
+- Deleting a transcript deletes its text, and agents stop using it. A report already written keeps its
+  sentence and its quote of 300 characters or less, like any other source.
 - **Decision for you:** whether transcripts should delete themselves after a set time (for example 12
   months). It is not built; say if you want it.
 

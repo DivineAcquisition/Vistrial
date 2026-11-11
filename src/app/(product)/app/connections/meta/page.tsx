@@ -14,7 +14,7 @@ import { EmptyState } from "@/components/ui/empty-state";
 function ManageMeta() {
   const shell = useWorkspaceShell();
   const query = useSearchParams();
-  if (!shell) return <EmptyState kind="permission" title="Sign in to open your workspace." />;
+  if (!shell) return <EmptyState kind="permission" title="Sign in to open your organization." />;
   return (
     <div className="mx-auto grid w-full max-w-6xl min-w-0 gap-4">
       <Link href="/app/settings?section=data" className="flex w-fit items-center gap-1 text-sm text-muted-foreground hover:text-foreground">

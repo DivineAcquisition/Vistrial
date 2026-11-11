@@ -27,10 +27,10 @@ async function seed(t: Tester, name: string) {
   const workspaceId = await owner.mutation(api.workspace.create, { name });
   await owner.mutation(api.workspace.setAgentState, { workspaceId, slug: AGENT, state: "on" });
   await t.run(async (ctx) => {
-    await ctx.db.insert("members", { workspaceId, userId: `${name}-rep`, role: "rep", displayName: "Rep", active: true });
-    await ctx.db.insert("members", { workspaceId, userId: `${name}-manager`, role: "manager", displayName: "Manager", active: true });
+    await ctx.db.insert("members", { workspaceId, userId: `${name}-viewer`, role: "viewer", displayName: "Viewer", active: true });
+    await ctx.db.insert("members", { workspaceId, userId: `${name}-admin`, role: "admin", displayName: "Admin", active: true });
   });
-  return { owner, rep: t.withIdentity(person(`${name}-rep`)), manager: t.withIdentity(person(`${name}-manager`)), workspaceId };
+  return { owner, viewer: t.withIdentity(person(`${name}-viewer`)), admin: t.withIdentity(person(`${name}-admin`)), workspaceId };
 }
 
 async function settle(t: Tester) {
@@ -121,10 +121,10 @@ describe("agent chat", () => {
     const offerView = await a.owner.query(api.skillIntake.get, { workspaceId: a.workspaceId, intakeId: offer.intakeId });
     expect(offerView.intake).toMatchObject({ skillSlug: "offer-intelligence", asking: "offer", status: "chatting" });
 
-    const growth = await a.manager.mutation(api.agentChat.send, { workspaceId: a.workspaceId, text: "Why am I not growing?" });
+    const growth = await a.admin.mutation(api.agentChat.send, { workspaceId: a.workspaceId, text: "Why am I not growing?" });
     expect(growth.route).toBe("growth-diagnostics");
-    await a.manager.mutation(api.agentChat.send, { workspaceId: a.workspaceId, intakeId: growth.intakeId, text: "10 more retained clients this quarter" });
-    const growthView = await a.manager.query(api.skillIntake.get, { workspaceId: a.workspaceId, intakeId: growth.intakeId });
+    await a.admin.mutation(api.agentChat.send, { workspaceId: a.workspaceId, intakeId: growth.intakeId, text: "10 more retained clients this quarter" });
+    const growthView = await a.admin.query(api.skillIntake.get, { workspaceId: a.workspaceId, intakeId: growth.intakeId });
     expect(growthView.intake).toMatchObject({ skillSlug: "growth-diagnostics", status: "ready", answers: { goal: "10 more retained clients this quarter" } });
     // The plan and its budget come before anything runs.
     expect(growthView.messages.at(-1)).toMatchObject({ kind: "plan", data: { skill: "growth-diagnostics" } });
@@ -250,7 +250,7 @@ describe("agent chat", () => {
     const a = await seed(t, "Northlight");
     const first = await a.owner.mutation(api.agentChat.send, { workspaceId: a.workspaceId, text: "Is my offer strong enough?" });
     vi.advanceTimersByTime(1000);
-    const second = await a.manager.mutation(api.agentChat.send, { workspaceId: a.workspaceId, text: "I want more clients" });
+    const second = await a.admin.mutation(api.agentChat.send, { workspaceId: a.workspaceId, text: "I want more clients" });
     vi.advanceTimersByTime(1000);
     const third = await a.owner.mutation(api.agentChat.send, { workspaceId: a.workspaceId, text: "Why am I not growing?" });
     let rows = await a.owner.query(api.agentChat.list, { workspaceId: a.workspaceId });
@@ -265,16 +265,16 @@ describe("agent chat", () => {
     await expect(a.owner.mutation(api.agentChat.send, { workspaceId: a.workspaceId, intakeId: second.intakeId, text: "Work on my offer" })).rejects.toThrow(/has ended/);
   });
 
-  it("Owners and Managers talk to the agent; Reps read", async () => {
+  it("Owners and Admins talk to the agent; Viewers read", async () => {
     const t = makeTester();
     const a = await seed(t, "Northlight");
-    await expect(a.rep.mutation(api.agentChat.send, { workspaceId: a.workspaceId, text: "Why am I not growing?" })).rejects.toThrow(/Not allowed/);
-    const sent = await a.manager.mutation(api.agentChat.send, { workspaceId: a.workspaceId, text: "I want more clients" });
-    await expect(a.rep.mutation(api.agentChat.send, { workspaceId: a.workspaceId, intakeId: sent.intakeId, text: "Work on my offer" })).rejects.toThrow(/Not allowed/);
-    await expect(a.rep.mutation(api.agentChat.close, { workspaceId: a.workspaceId, intakeId: sent.intakeId })).rejects.toThrow(/Not allowed/);
-    // A Rep can read the team's conversations.
-    expect((await a.rep.query(api.agentChat.list, { workspaceId: a.workspaceId })).map((row) => row.id)).toEqual([sent.intakeId]);
-    expect((await a.rep.query(api.agentChat.get, { workspaceId: a.workspaceId, intakeId: sent.intakeId })).route).toBeNull();
+    await expect(a.viewer.mutation(api.agentChat.send, { workspaceId: a.workspaceId, text: "Why am I not growing?" })).rejects.toThrow(/Not allowed/);
+    const sent = await a.admin.mutation(api.agentChat.send, { workspaceId: a.workspaceId, text: "I want more clients" });
+    await expect(a.viewer.mutation(api.agentChat.send, { workspaceId: a.workspaceId, intakeId: sent.intakeId, text: "Work on my offer" })).rejects.toThrow(/Not allowed/);
+    await expect(a.viewer.mutation(api.agentChat.close, { workspaceId: a.workspaceId, intakeId: sent.intakeId })).rejects.toThrow(/Not allowed/);
+    // A Viewer can read the team's conversations.
+    expect((await a.viewer.query(api.agentChat.list, { workspaceId: a.workspaceId })).map((row) => row.id)).toEqual([sent.intakeId]);
+    expect((await a.viewer.query(api.agentChat.get, { workspaceId: a.workspaceId, intakeId: sent.intakeId })).route).toBeNull();
   });
 
   it("keeps workspaces apart: no reading, answering or closing another workspace's conversation", async () => {

@@ -1,3 +1,5 @@
+import { requireClientIn } from "./lib/clients";
+import { requireWork } from "./lib/roles";
 import { paginationOptsValidator } from "convex/server";
 import { v } from "convex/values";
 
@@ -11,7 +13,7 @@ import { PLATFORM_CEILING, SOFT_WARNING_RATIO, capScope, dayKey, overCap } from 
 import { addDaySpend, daySpend, loadCaps, runCaps } from "./lib/capRows";
 import { currentAgentSlug } from "./catalog";
 import { assertClaims, assertSourcesExist } from "./lib/evidence";
-import { notAllowed, notFound, userError } from "./lib/errors";
+import { notFound, userError } from "./lib/errors";
 import { ModelError, NO_SPEND, complete, type ModelRoute, type Spend } from "./lib/modelRouter";
 import { completeWithTools } from "./lib/toolRouter";
 import { INJECTION_FIXTURE, TEST_SKILL, devSkillsEnabled, isActionTool, isCollectTool, wrapUntrusted } from "./lib/registry";
@@ -306,6 +308,7 @@ export async function startRunFor(
     free = false,
     projectId,
     inputRef,
+    clientId,
     ...input
   }: {
     workspaceId: Id<"workspaces">;
@@ -319,13 +322,18 @@ export async function startRunFor(
     projectId?: Id<"researchProjects">;
     /** What the run works on when it is not a research project: the id of a record the skill reads. */
     inputRef?: string;
+    /** The client the run is for, when it has no project to take one from. The caller has already checked it. */
+    clientId?: Id<"clients">;
     mode?: "thorough" | "fast";
   },
 ) {
   if (checkCredit && !free) await assertCanSpend(ctx, workspaceId);
-  if (role === "rep") notAllowed();
+  requireWork(role);
   const project = projectId ? await ctx.db.get(projectId) : null;
   if (projectId && (!project || project.workspaceId !== workspaceId)) notFound();
+  // A member starting a run on a client's project must be able to see that client.
+  if (project) requireClientIn(ctx, project.clientId);
+  const runClient = project ? project.clientId : clientId;
   if (project?.status === "archived") throw userError("This project is archived.");
   if (project?.latestRunId) {
     const latest = await ctx.db.get(project.latestRunId);
@@ -369,6 +377,7 @@ export async function startRunFor(
     inputTokens: 0,
     outputTokens: 0,
     ...(free ? { free: true } : {}),
+    ...(runClient ? { clientId: runClient } : {}),
   });
   await writeAudit(ctx, {
     workspaceId: workspaceId,
@@ -403,7 +412,7 @@ export const start = workspaceMutation({
 export const stop = workspaceMutation({
   args: { runId: v.id("agentRuns") },
   handler: async (ctx, args) => {
-    if (ctx.member.role === "rep") notAllowed();
+    requireWork(ctx.member.role);
     const run = await ctx.db.get(args.runId);
     if (!run || run.workspaceId !== ctx.workspaceId) notFound();
     if (!OPEN.has(run.status)) return { stopped: false };
@@ -1175,13 +1184,13 @@ export const askTimeout = internalMutation({
 });
 
 /**
- * An Owner or Manager answers the question a run is waiting on. The answer is saved as a verified business
+ * An Owner, Admin or Member answers the question a run is waiting on. The answer is saved as a verified business
  * fact, because the person stated it, and the run picks up where it stopped.
  */
 export const answer = workspaceMutation({
   args: { runId: v.id("agentRuns"), questionId: v.string(), answer: v.string() },
   handler: async (ctx, args) => {
-    if (ctx.member.role === "rep") notAllowed();
+    requireWork(ctx.member.role);
     const run = await ctx.db.get(args.runId);
     if (!run || run.workspaceId !== ctx.workspaceId) notFound();
     if (run.status !== "waiting" || run.waitingFor?.questionId !== args.questionId) {
@@ -1217,7 +1226,7 @@ export const answer = workspaceMutation({
 export const resume = workspaceMutation({
   args: { runId: v.id("agentRuns") },
   handler: async (ctx, args) => {
-    if (ctx.member.role === "rep") notAllowed();
+    requireWork(ctx.member.role);
     const run = await ctx.db.get(args.runId);
     if (!run || run.workspaceId !== ctx.workspaceId) notFound();
     if (run.status !== "needsInput" || !run.waitingFor) throw userError("This run is not waiting for input.");

@@ -319,7 +319,7 @@ function SignUpStepView(props: SignUpViewProps) {
   }
 
   return (
-    <AuthFrame title="Setting up your workspace">
+    <AuthFrame title="Setting up your organization">
       <Working label="One moment." />
       <ProblemLine problem={formProblem} action={action(formProblem)} />
     </AuthFrame>

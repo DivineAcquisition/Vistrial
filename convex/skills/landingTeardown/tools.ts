@@ -68,7 +68,7 @@ const context: MutationTool = async (ctx, run) => {
     .withIndex("by_workspace_status", (q) => q.eq("workspaceId", run.workspaceId).eq("status", "confirmed"))
     .order("desc")
     .first();
-  const figures = await currentFigures(ctx, run.workspaceId);
+  const figures = await currentFigures(ctx, run.workspaceId, run.clientId);
   const decisions = await ctx.db
     .query("decisions")
     .withIndex("by_workspace", (q) => q.eq("workspaceId", run.workspaceId))

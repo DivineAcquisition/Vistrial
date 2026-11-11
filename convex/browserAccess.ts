@@ -7,11 +7,12 @@
  *     Only an Owner can start one, and only an Owner can end it. It expires on its own.
  *   - A task is a goal on one session. Its steps are taken one at a time.
  *   - A step that only looks is done and logged. A step that changes something is shown first and waits for
- *     an Owner or Manager. A restricted step (payment, security, delete, message, publish) waits for an
+ *     an Owner or Admin. A restricted step (payment, security, delete, message, publish) waits for an
  *     Owner, who types the word shown. Declining stops the task.
  *   - Every step is kept, in order, with who decided and a picture, as the audit trail.
  */
 
+import { isOwner, requireAdmin } from "./lib/roles";
 import { v } from "convex/values";
 
 import { internal } from "./_generated/api";
@@ -21,8 +22,8 @@ import { internalAction, internalMutation, internalQuery } from "./_generated/se
 import { writeAudit } from "./lib/audit";
 import { DRY_RUN_GOALS, drawStep, dryRunDriver } from "./lib/browserAgent/driver";
 import { APPROVAL_HOURS, BLOCKED_WORDS, CONFIRM_WORD, MAX_STEPS_PER_TASK, RESTRICTED_REASONS, SESSION_DAYS, SITES, blocked, classify, redact, siteFor, type Blocked, type RestrictedReason } from "./lib/browserAgent/policy";
-import { managerQuery, ownerMutation, workspaceMutation, workspaceQuery } from "./lib/builders";
-import { notAllowed, notFound, userError } from "./lib/errors";
+import { adminQuery, adminMutation, workspaceMutation, workspaceQuery } from "./lib/builders";
+import { notFound, userError } from "./lib/errors";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 const HOUR_MS = 60 * 60 * 1000;
@@ -78,7 +79,7 @@ export const overview = workspaceQuery({
       .order("desc")
       .take(20);
     return {
-      role: ctx.member.role,
+      role: ctx.role,
       /** Only the practice site can be connected. Real account access is not built. */
       dryRunOnly: true,
       sites: SITES.map((site) => ({ key: site.key, name: site.name, mode: site.mode, note: site.note, reads: site.reads, changes: site.changes })),
@@ -101,7 +102,7 @@ export const overview = workspaceQuery({
  * Starts a session for a site: the customer is about to sign in themselves. Owners only. Today only the
  * practice site can be connected; every real site says why not.
  */
-export const connect = ownerMutation({
+export const connect = adminMutation({
   args: { site: v.string() },
   handler: async (ctx, args) => {
     const site = siteFor(args.site);
@@ -127,7 +128,7 @@ export const connect = ownerMutation({
  * driver it would be the vendor telling us the sign-in view closed on a signed-in page. Either way Vistrial
  * receives no password: only that the session is now signed in, and until when. Owners only.
  */
-export const completeSignIn = ownerMutation({
+export const completeSignIn = adminMutation({
   args: { sessionId: v.id("browserSessions") },
   handler: async (ctx, args) => {
     const session = await ownSession(ctx, ctx.workspaceId, args.sessionId);
@@ -147,7 +148,7 @@ async function stopTask(ctx: MutationCtx, task: Doc<"browserTasks">, stopReason:
 }
 
 /** Ends a session now. Every task on it stops and nothing waiting can be approved afterwards. Owners only. */
-export const revoke = ownerMutation({
+export const revoke = adminMutation({
   args: { sessionId: v.id("browserSessions") },
   handler: async (ctx, args) => {
     const session = await ownSession(ctx, ctx.workspaceId, args.sessionId);
@@ -227,11 +228,11 @@ async function advance(ctx: MutationCtx, browserTaskId: Id<"browserTasks">) {
   }
 }
 
-/** Starts a practice task on a signed-in session. Owners and Managers. */
+/** Starts a practice task on a signed-in session. Owners and Admins. */
 export const startTask = workspaceMutation({
   args: { sessionId: v.id("browserSessions"), goalKey: v.string() },
   handler: async (ctx, args) => {
-    if (ctx.member.role === "rep") notAllowed();
+    requireAdmin(ctx.member.role);
     const session = await ownSession(ctx, ctx.workspaceId, args.sessionId);
     const state = sessionState(session);
     if (state === "expired") throw userError("This session expired. An Owner signs in again to continue.");
@@ -246,14 +247,14 @@ export const startTask = workspaceMutation({
 });
 
 /**
- * Approves or declines the one step a task is waiting on. A change: Owners and Managers. A restricted step:
+ * Approves or declines the one step a task is waiting on. A change: Owners and Admins. A restricted step:
  * Owners only, and approving needs the word shown for it, typed. Approval covers this step and no other.
  * Declining stops the task.
  */
 export const decide = workspaceMutation({
   args: { stepId: v.id("browserSteps"), approve: v.boolean(), confirmWord: v.optional(v.string()) },
   handler: async (ctx, args) => {
-    if (ctx.member.role === "rep") notAllowed();
+    requireAdmin(ctx.member.role);
     const step = await ctx.db.get(args.stepId);
     if (!step || step.workspaceId !== ctx.workspaceId) notFound();
     const task = await ownTask(ctx, ctx.workspaceId, step.browserTaskId);
@@ -266,7 +267,7 @@ export const decide = workspaceMutation({
       return { status: "declined" as const };
     }
     if (step.kind === "restricted") {
-      if (ctx.member.role !== "owner") throw userError("Only an Owner can approve this kind of step.", "not_allowed");
+      if (!isOwner(ctx.member.role)) throw userError("Only an Owner can approve this kind of step.", "not_allowed");
       const word = CONFIRM_WORD[(step.restrictedReason ?? "publish") as RestrictedReason];
       if ((args.confirmWord ?? "").trim() !== word) throw userError(`Type ${word} to approve this step.`);
     }
@@ -285,11 +286,11 @@ export const decide = workspaceMutation({
   },
 });
 
-/** Stops a task. A step that was waiting is declined. Owners and Managers. */
+/** Stops a task. A step that was waiting is declined. Owners and Admins. */
 export const stop = workspaceMutation({
   args: { browserTaskId: v.id("browserTasks") },
   handler: async (ctx, args) => {
-    if (ctx.member.role === "rep") notAllowed();
+    requireAdmin(ctx.member.role);
     const task = await ownTask(ctx, ctx.workspaceId, args.browserTaskId);
     await stopTask(ctx, task, "stopped");
     return null;
@@ -298,9 +299,9 @@ export const stop = workspaceMutation({
 
 /**
  * The audit trail of one task: every step in order, what it touched and where, what was typed, who decided
- * and when, and its picture. Owners and Managers: it can hold what was typed into a customer's account.
+ * and when, and its picture. Owners and Admins: it can hold what was typed into a customer's account.
  */
-export const trail = managerQuery({
+export const trail = adminQuery({
   args: { browserTaskId: v.id("browserTasks") },
   handler: async (ctx, args) => {
     const task = await ownTask(ctx, ctx.workspaceId, args.browserTaskId);
@@ -336,7 +337,7 @@ export const trail = managerQuery({
         at: step.createdAt,
         screenshot: step.screenshot ? await ctx.storage.getUrl(step.screenshot) : null,
         /** Whether this person may decide it: a restricted step is the Owner's alone. */
-        canDecide: step.status === "proposed" && (step.kind !== "restricted" || ctx.member.role === "owner"),
+        canDecide: step.status === "proposed" && (step.kind !== "restricted" || isOwner(ctx.member.role)),
       });
     }
     return { task: taskView(task), siteName: session ? (siteFor(session.site)?.name ?? session.site) : "", dryRun: true, steps: rows };

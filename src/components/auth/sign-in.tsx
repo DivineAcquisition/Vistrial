@@ -26,7 +26,7 @@ import { authHref, ssoCallbackPath } from "@/lib/auth/redirect";
 export function SignInScreen({ redirectTo, fromGoogle = false }: { redirectTo: string; fromGoogle?: boolean }) {
   const ready = useConvexReady();
   if (!ready) {
-    return <AuthFrame title="Sign-in is not available here" detail="This address is not set up for accounts. Open the workspace from app.vistrial.io." />;
+    return <AuthFrame title="Sign-in is not available here" detail="This address is not set up for accounts. Open Vistrial from app.vistrial.io." />;
   }
   return <LiveSignIn redirectTo={redirectTo} fromGoogle={fromGoogle} />;
 }

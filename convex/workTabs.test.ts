@@ -31,8 +31,8 @@ async function seed(t: Tester, name: string) {
   const owner = t.withIdentity(person(`${name}-owner`));
   const workspaceId = await owner.mutation(api.workspace.create, { name });
   await owner.mutation(api.workspace.setAgentState, { workspaceId, slug: AGENT, state: "on" });
-  await t.run((ctx) => ctx.db.insert("members", { workspaceId, userId: `${name}-rep`, role: "rep", displayName: "Rep", active: true }));
-  return { owner, rep: t.withIdentity(person(`${name}-rep`)), workspaceId };
+  await t.run((ctx) => ctx.db.insert("members", { workspaceId, userId: `${name}-viewer`, role: "viewer", displayName: "Viewer", active: true }));
+  return { owner, viewer: t.withIdentity(person(`${name}-viewer`)), workspaceId };
 }
 
 const card = { name: "Lead generation retainer", price: "$2,500", included: ["Paid ads", "Landing pages"], guarantee: "We work free until it is met", terms: "30-day cancel notice", targetCustomer: "Home-service brands" };
@@ -179,9 +179,9 @@ describe("the growth goal", () => {
     expect(await t.run((ctx) => ctx.db.query("growthGoals").collect())).toHaveLength(2);
     expect(await b.owner.query(api.goals.get, { workspaceId: b.workspaceId })).toBeNull();
     await expect(b.owner.query(api.goals.get, { workspaceId: a.workspaceId })).rejects.toThrow();
-    await expect(a.rep.mutation(api.goals.set, { workspaceId: a.workspaceId, text: "1 more client" })).rejects.toThrow();
-    // A rep can read it.
-    expect((await a.rep.query(api.goals.get, { workspaceId: a.workspaceId }))?.text).toBe("15 more clients a month");
+    await expect(a.viewer.mutation(api.goals.set, { workspaceId: a.workspaceId, text: "1 more client" })).rejects.toThrow();
+    // A viewer can read it.
+    expect((await a.viewer.query(api.goals.get, { workspaceId: a.workspaceId }))?.text).toBe("15 more clients a month");
     await expect(a.owner.mutation(api.goals.set, { workspaceId: a.workspaceId, text: " " })).rejects.toThrow();
   });
 });
@@ -222,13 +222,13 @@ describe("offer cards", () => {
     await expect(a.owner.mutation(api.offers.saveVersion, { workspaceId: a.workspaceId, ...card, name: "" })).rejects.toThrow();
   });
 
-  it("only Owners and Managers write, and no workspace reads another's cards", async () => {
+  it("only Owners and Admins write, and no workspace reads another's cards", async () => {
     const t = makeTester();
     const a = await seed(t, "Alpha");
     const b = await seed(t, "Beta");
     const { cardId } = await a.owner.mutation(api.offers.saveVersion, { workspaceId: a.workspaceId, ...card });
-    await expect(a.rep.mutation(api.offers.saveVersion, { workspaceId: a.workspaceId, cardId, ...card, price: "$1" })).rejects.toThrow();
-    expect(await a.rep.query(api.offers.list, { workspaceId: a.workspaceId })).toHaveLength(1);
+    await expect(a.viewer.mutation(api.offers.saveVersion, { workspaceId: a.workspaceId, cardId, ...card, price: "$1" })).rejects.toThrow();
+    expect(await a.viewer.query(api.offers.list, { workspaceId: a.workspaceId })).toHaveLength(1);
     await expect(b.owner.query(api.offers.get, { workspaceId: b.workspaceId, cardId })).rejects.toThrow();
     await expect(b.owner.mutation(api.offers.saveVersion, { workspaceId: b.workspaceId, cardId, ...card, price: "$1" })).rejects.toThrow();
     await expect(b.owner.query(api.offers.list, { workspaceId: a.workspaceId })).rejects.toThrow();
@@ -261,7 +261,7 @@ describe("offer cards", () => {
     const read = await a.owner.query(api.offers.get, { workspaceId: a.workspaceId, cardId });
     expect(read.versions[1]).toMatchObject({ origin: "analysis", price: "$2,500", guarantee: "", included: ["Paid ads", "Landing pages"], targetCustomer: "Home-service brands" });
     expect(JSON.stringify(read.versions)).not.toContain("LeadForge");
-    await expect(a.rep.mutation(api.offers.fromAnalysis, { workspaceId: a.workspaceId, assetId })).rejects.toThrow();
+    await expect(a.viewer.mutation(api.offers.fromAnalysis, { workspaceId: a.workspaceId, assetId })).rejects.toThrow();
   });
 });
 
@@ -297,12 +297,12 @@ describe("the outcome loop for offer changes and roadmap steps", () => {
     expect((await t.run((ctx) => ctx.db.get(id)))?.projectId).toBe(projectId);
   });
 
-  it("refuses reps, other workspaces and rejected work", async () => {
+  it("refuses viewers, other workspaces and rejected work", async () => {
     const t = makeTester();
     const a = await seed(t, "Alpha");
     const b = await seed(t, "Beta");
     const { assetId } = await seedDiagnosisAsset(t, a.workspaceId);
-    await expect(a.rep.mutation(api.decisions.planItem, { workspaceId: a.workspaceId, assetId, index: 0, checkInDays: 14 })).rejects.toThrow();
+    await expect(a.viewer.mutation(api.decisions.planItem, { workspaceId: a.workspaceId, assetId, index: 0, checkInDays: 14 })).rejects.toThrow();
     await expect(b.owner.mutation(api.decisions.planItem, { workspaceId: b.workspaceId, assetId, index: 0, checkInDays: 14 })).rejects.toThrow();
     await expect(b.owner.query(api.decisions.forAsset, { workspaceId: b.workspaceId, assetId })).rejects.toThrow();
     await t.run((ctx) => ctx.db.patch(assetId, { status: "rejected" }));
@@ -344,7 +344,7 @@ describe("the Diagnostics tab's data checklist", () => {
       // A refused file is not connected data.
       await ctx.db.insert("resultUploads", { ...upload, fileName: "broken.csv", status: "refused", code: "no_metrics" });
     });
-    const view = await a.rep.query(api.workTabs.diagnostics, { workspaceId: a.workspaceId });
+    const view = await a.viewer.query(api.workTabs.diagnostics, { workspaceId: a.workspaceId });
     expect(view.data).toEqual({ meta: true, resultsFiles: 2, outcomes: 0 });
     // A connection that needs reconnecting does not count.
     await t.run(async (ctx) => {
@@ -425,7 +425,7 @@ describe("the skill-scoped chat", () => {
     // Nothing is stored or run before Start.
     expect(await a.owner.query(api.goals.get, { workspaceId: a.workspaceId })).toBeNull();
     expect(await t.run((ctx) => ctx.db.query("agentRuns").collect())).toHaveLength(0);
-    await expect(a.rep.mutation(api.skillIntake.start, { workspaceId: a.workspaceId, intakeId })).rejects.toThrow();
+    await expect(a.viewer.mutation(api.skillIntake.start, { workspaceId: a.workspaceId, intakeId })).rejects.toThrow();
     const started = await a.owner.mutation(api.skillIntake.start, { workspaceId: a.workspaceId, intakeId });
     expect((await a.owner.query(api.goals.get, { workspaceId: a.workspaceId }))?.target).toBe(10);
     const run = await t.run((ctx) => ctx.db.get(started.runId));
@@ -465,11 +465,11 @@ describe("the skill-scoped chat", () => {
     expect(await a.owner.query(api.skillIntake.open, { workspaceId: a.workspaceId, skillSlug: "offer-intelligence" })).toBeNull();
   });
 
-  it("is the workspace's own, only for chat skills, and only Owners and Managers start one", async () => {
+  it("is the workspace's own, only for chat skills, and only Owners and Admins start one", async () => {
     const t = makeTester();
     const a = await seed(t, "Alpha");
     const b = await seed(t, "Beta");
-    await expect(a.rep.mutation(api.skillIntake.create, { workspaceId: a.workspaceId, skillSlug: "growth-diagnostics", text: "Hi" })).rejects.toThrow();
+    await expect(a.viewer.mutation(api.skillIntake.create, { workspaceId: a.workspaceId, skillSlug: "growth-diagnostics", text: "Hi" })).rejects.toThrow();
     await expect(a.owner.mutation(api.skillIntake.create, { workspaceId: a.workspaceId, skillSlug: "campaign-strategy", text: "Hi" })).rejects.toThrow();
     const intakeId = await a.owner.mutation(api.skillIntake.create, { workspaceId: a.workspaceId, skillSlug: "growth-diagnostics", text: "Hi" });
     await expect(b.owner.query(api.skillIntake.get, { workspaceId: b.workspaceId, intakeId })).rejects.toThrow();

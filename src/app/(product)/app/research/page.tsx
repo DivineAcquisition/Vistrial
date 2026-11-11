@@ -1,9 +1,10 @@
 "use client";
 
+import { canWork } from "@/lib/roles";
 import { usePaginatedQuery } from "convex/react";
 import Link from "next/link";
 
-import { useWorkspaceShell, type WorkspaceShell } from "@/components/shell/shell-context";
+import { useWorkspaceShell, type WorkspaceShell, scopeOf } from "@/components/shell/shell-context";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { PageHeader } from "@/components/ui/page-header";
@@ -14,8 +15,8 @@ import { StartSessionButton } from "@/components/sessions/start-session-button";
 import { Stagger, StaggerItem } from "@/components/motion/stagger";
 
 function Projects({ shell }: { shell: WorkspaceShell }) {
-  const { results, status, loadMore } = usePaginatedQuery(api.research.listProjects, { workspaceId: shell.workspaceId }, { initialNumItems: 20 });
-  const canStart = shell.role !== "rep";
+  const { results, status, loadMore } = usePaginatedQuery(api.research.listProjects, { workspaceId: shell.workspaceId, scope: scopeOf(shell).scope }, { initialNumItems: 20 });
+  const canStart = canWork(shell.role);
   return (
     <div className="mx-auto grid w-full max-w-4xl min-w-0 gap-6">
       <PageHeader
@@ -55,6 +56,6 @@ function Projects({ shell }: { shell: WorkspaceShell }) {
 
 export default function ResearchPage() {
   const shell = useWorkspaceShell();
-  if (!shell) return <EmptyState kind="permission" title="Sign in to open your workspace." />;
+  if (!shell) return <EmptyState kind="permission" title="Sign in to open your organization." />;
   return <Projects shell={shell} />;
 }

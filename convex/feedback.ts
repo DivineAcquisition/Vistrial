@@ -1,8 +1,9 @@
+import { requireWork } from "./lib/roles";
 import { v } from "convex/values";
 
 import { workspaceMutation, workspaceQuery } from "./lib/builders";
 import { writeAudit } from "./lib/audit";
-import { notAllowed, notFound, userError } from "./lib/errors";
+import { notFound, userError } from "./lib/errors";
 import { writeFact } from "./lib/facts";
 
 /** Feedback on one asset, or the workspace's latest. Every member can read it. */
@@ -39,7 +40,7 @@ export const list = workspaceQuery({
 export const promote = workspaceMutation({
   args: { feedbackId: v.id("feedback"), factKey: v.string(), value: v.string() },
   handler: async (ctx, args) => {
-    if (ctx.member.role === "rep") notAllowed();
+    requireWork(ctx.member.role);
     const row = await ctx.db.get(args.feedbackId);
     if (!row || row.workspaceId !== ctx.workspaceId) notFound();
     if (row.promotedFactId) throw userError("This feedback is already a business fact.");

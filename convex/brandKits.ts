@@ -4,14 +4,18 @@
  * uploaded: Creative Production places them on an image and never generates one.
  */
 
+import { clientForNew, requireClientIn } from "./lib/clients";
+import { requireWork } from "./lib/roles";
 import { v } from "convex/values";
 
 import type { Doc, Id } from "./_generated/dataModel";
 import type { MutationCtx, QueryCtx } from "./_generated/server";
 import { writeAudit } from "./lib/audit";
 import { BRAND_MAX, LOGO_TYPES, MAX_LOGO_BYTES, STYLE_REF_TYPES, brandGaps, brandProblem, cleanBrand, sameBrand, type BrandContent, type BrandInput } from "./lib/brandKits";
-import { workspaceMutation, workspaceQuery } from "./lib/builders";
-import { notAllowed, notFound, userError } from "./lib/errors";
+import { workspaceMutation, workspaceQuery, type MemberAccess } from "./lib/builders";
+import { normalName } from "./clients";
+import { isAdmin } from "./lib/roles";
+import { notFound, userError } from "./lib/errors";
 
 const MAX_KITS = 100;
 const MAX_VERSIONS = 200;
@@ -22,6 +26,8 @@ export const ONE_OWN_KIT = "You already have a kit for your own brand. Edit that
 export async function ownKit(ctx: QueryCtx, workspaceId: Id<"workspaces">, kitId: Id<"brandKits">) {
   const kit = await ctx.db.get(kitId);
   if (!kit || kit.workspaceId !== workspaceId) notFound();
+  // A client's kit is only there for the people who may see that client.
+  requireClientIn(ctx, kit.clientId);
   return kit;
 }
 
@@ -91,7 +97,7 @@ export const list = workspaceQuery({
       .order("desc")
       .take(MAX_KITS);
     const out = [];
-    for (const kit of kits) {
+    for (const kit of ctx.clients.filter(kits)) {
       if (kit.archived) continue;
       const versions = await versionsOf(ctx, ctx.workspaceId, kit._id);
       const current = versions.find((row) => row.version === kit.currentVersion);
@@ -126,11 +132,11 @@ export const get = workspaceQuery({
   },
 });
 
-/** A one-time upload link for a logo file. Owners and Managers. */
+/** A one-time upload link for a logo file. Owners, Admins and Members. */
 export const logoUploadUrl = workspaceMutation({
   args: {},
   handler: async (ctx) => {
-    if (ctx.member.role === "rep") notAllowed();
+    requireWork(ctx.member.role);
     return ctx.storage.generateUploadUrl();
   },
 });
@@ -194,15 +200,62 @@ function versionFields(content: BrandContent) {
   };
 }
 
+export const ONE_KIT_PER_CLIENT = "This client already has a brand kit. Edit that one.";
+export const NEEDS_CLIENT = "Choose the client this brand is for. An Owner or Admin adds clients.";
+
+/**
+ * The client a new client kit belongs to: the one named, or the active client with the brand's name, or
+ * (for an Owner or Admin) a new business client made from the brand. A client has one kit.
+ */
+async function clientForKit(ctx: MutationCtx & MemberAccess, clientId: Id<"clients"> | undefined, content: BrandContent, open: Doc<"brandKits">[]) {
+  let id = clientId ? (await clientForNew(ctx, clientId)).clientId : undefined;
+  if (!id) {
+    const wanted = normalName(content.name);
+    const active = await ctx.db
+      .query("clients")
+      .withIndex("by_workspace", (q) => q.eq("workspaceId", ctx.workspaceId).eq("status", "active"))
+      .take(1000);
+    const match = active.find((row) => row.normalizedName === wanted);
+    if (match) {
+      ctx.clients.require(match._id);
+      id = match._id;
+    } else {
+      if (!isAdmin(ctx.role)) throw userError(NEEDS_CLIENT, "not_allowed");
+      const now = Date.now();
+      id = await ctx.db.insert("clients", {
+        workspaceId: ctx.workspaceId,
+        type: "business",
+        name: content.name.trim().slice(0, 80),
+        normalizedName: wanted,
+        status: "active",
+        business: { website: content.website, industry: content.industry, offer: "", audience: "", geography: "", notes: "" },
+        createdBy: ctx.identity.subject,
+        createdAt: now,
+        updatedAt: now,
+      });
+      await writeAudit(ctx, { workspaceId: ctx.workspaceId, actorType: "user", actorId: ctx.identity.subject, action: "client.created", subject: id, count: 0 });
+    }
+  }
+  if (open.some((row) => row.clientId === id)) throw userError(ONE_KIT_PER_CLIENT);
+  return { clientId: id };
+}
+
 /**
  * Saves the kit as a new version, or a new kit without `kitId` (then `kind` says whose brand it is).
  * Nothing is overwritten, and saving the same content again adds nothing. A workspace has one kit for its
- * own brand. Owners and Managers.
+ * own brand. Owners, Admins and Members.
  */
 export const saveVersion = workspaceMutation({
-  args: { kitId: v.optional(v.id("brandKits")), kind: v.optional(v.union(v.literal("own"), v.literal("client"))), note: v.optional(v.string()), ...contentArgs },
-  handler: async (ctx, { kitId, kind, note, ...raw }) => {
-    if (ctx.member.role === "rep") notAllowed();
+  args: {
+    kitId: v.optional(v.id("brandKits")),
+    kind: v.optional(v.union(v.literal("own"), v.literal("client"))),
+    /** The client a new client kit is for. Without one, a business client named after the brand is found or (by an Owner or Admin) made. */
+    clientId: v.optional(v.id("clients")),
+    note: v.optional(v.string()),
+    ...contentArgs,
+  },
+  handler: async (ctx, { kitId, kind, clientId, note, ...raw }) => {
+    requireWork(ctx.member.role);
     const input = raw as BrandInput;
     const problem = brandProblem(input);
     if (problem) throw userError(problem);
@@ -234,19 +287,21 @@ export const saveVersion = workspaceMutation({
     const open = existing.filter((row) => !row.archived);
     if (open.length >= MAX_KITS) throw userError(`Up to ${MAX_KITS} brands. Put one away to add another.`, "limit");
     if (kind === "own" && open.some((row) => row.kind === "own")) throw userError(ONE_OWN_KIT);
+    if (kind === "own") ctx.clients.require(undefined);
+    const forClient = kind === "client" ? await clientForKit(ctx, clientId, content, open) : {};
     await assertLogos(ctx, content, new Set());
-    const id = await ctx.db.insert("brandKits", { workspaceId: ctx.workspaceId, kind, name: content.name, currentVersion: 1, createdBy: ctx.identity.subject, createdAt: now, updatedAt: now });
+    const id = await ctx.db.insert("brandKits", { workspaceId: ctx.workspaceId, kind, ...forClient, name: content.name, currentVersion: 1, createdBy: ctx.identity.subject, createdAt: now, updatedAt: now });
     await ctx.db.insert("brandKitVersions", { workspaceId: ctx.workspaceId, kitId: id, version: 1, ...versionFields(content), ...stamp });
     await writeAudit(ctx, { workspaceId: ctx.workspaceId, actorType: "user", actorId: ctx.identity.subject, action: "brandKit.created", subject: id });
     return { kitId: id, version: 1, added: true };
   },
 });
 
-/** Puts a kit away. Its versions and logo files are kept, so a creative made with it still shows them. Owners and Managers. */
+/** Puts a kit away. Its versions and logo files are kept, so a creative made with it still shows them. Owners, Admins and Members. */
 export const archive = workspaceMutation({
   args: { kitId: v.id("brandKits") },
   handler: async (ctx, args) => {
-    if (ctx.member.role === "rep") notAllowed();
+    requireWork(ctx.member.role);
     const kit = await ownKit(ctx, ctx.workspaceId, args.kitId);
     await ctx.db.patch(kit._id, { archived: true, updatedAt: Date.now() });
     await writeAudit(ctx, { workspaceId: ctx.workspaceId, actorType: "user", actorId: ctx.identity.subject, action: "brandKit.archived", subject: kit._id });

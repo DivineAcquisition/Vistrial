@@ -1,5 +1,5 @@
 /**
- * The two reminder emails a workspace's Owners and Managers get: a check-in is due, and a report is ready
+ * The two reminder emails a workspace's Owners and Admins get: a check-in is due, and a report is ready
  * for review. Pure, so the words can be tested. They carry the report title or the action text and nothing
  * else from the workspace: no figures, no source excerpts.
  */
@@ -96,7 +96,7 @@ export function checkInDueEmail(input: { workspaceName: string; items: { action:
     ],
     list,
     button: { label: items.length === 1 ? "Record what happened" : "Open your check-ins", url: `${appBase(input.appUrl)}/app` },
-    why: `You got this because you are an Owner or Manager of ${workspace} on Vistrial and have "Check-ins due" emails on.`,
+    why: `You got this because you are an Owner or Admin of ${workspace} on Vistrial and have "Check-ins due" emails on.`,
     settingsUrl: settingsUrl(input.appUrl),
   });
   return { subject, ...body };
@@ -120,7 +120,7 @@ export function reportReadyEmail(input: {
       input.needsReview ? "Edit it or reject it. Nothing builds on it until you do." : "Nothing builds on it until you approve it.",
     ],
     button: { label: input.needsReview ? "Review the report" : "Open the report", url: `${appBase(input.appUrl)}/app/assets/${input.assetId}` },
-    why: `You got this because you are an Owner or Manager of ${workspace} on Vistrial and have "Report ready" emails on.`,
+    why: `You got this because you are an Owner or Admin of ${workspace} on Vistrial and have "Report ready" emails on.`,
     settingsUrl: settingsUrl(input.appUrl),
   });
   return { subject: input.needsReview ? `Report needs review: ${fewWords(input.title, 80)}` : `Report ready: ${fewWords(input.title, 80)}`, ...body };

@@ -136,7 +136,7 @@ function SignInStepView(props: SignInViewProps) {
 
   if (step.kind === "email") {
     return (
-      <AuthFrame title="Open your workspace" detail="Sign in with Google or with your email." footer={footer}>
+      <AuthFrame title="Open your organization" detail="Sign in with Google or with your email." footer={footer}>
         <GoogleButton loading={busy === "google"} disabled={locked} onClick={props.onGoogle} />
         <OrDivider />
         <form
@@ -383,7 +383,7 @@ function SignInStepView(props: SignInViewProps) {
   }
 
   return (
-    <AuthFrame title="Opening your workspace">
+    <AuthFrame title="Opening your organization">
       <Working label="One moment." />
       <ProblemLine problem={formProblem} action={action(formProblem)} />
     </AuthFrame>

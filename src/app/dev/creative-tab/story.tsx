@@ -152,7 +152,7 @@ export function CreativeTabStory({ state, theme }: { state: string; theme: strin
     stopped: state === "running" ? [{ id: id("r0"), status: "failed", stopReason: "error", startedAt: AT - 86_400_000 }] : [],
   };
   return (
-    <StoryFrame theme={theme} role={state === "rep" ? "rep" : "owner"}>
+    <StoryFrame theme={theme} role={state === "rep" ? "viewer" : "owner"}>
       <CreativeTabView
         base="/app/agents/growth-architect"
         editor={state !== "rep"}

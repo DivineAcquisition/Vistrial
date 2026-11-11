@@ -199,7 +199,7 @@ export function explainAuthError(problem: unknown, context: AuthErrorContext): A
     case "session_exists":
     case "identifier_already_signed_in":
     case "already_signed_in":
-      return { field: "form", message: "You are already signed in. Open your workspace." };
+      return { field: "form", message: "You are already signed in. Open your organization." };
     case "client_state_invalid":
     case "sign_in_no_identification_for_user":
     case "resource_not_found":

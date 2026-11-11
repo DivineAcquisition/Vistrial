@@ -4,13 +4,15 @@
  * own words. An analysis may add a version only from what the business stated, never from a competitor.
  */
 
+import { clientForNew, requireClientIn } from "./lib/clients";
+import { requireWork } from "./lib/roles";
 import { v } from "convex/values";
 
 import type { Doc, Id } from "./_generated/dataModel";
 import type { QueryCtx } from "./_generated/server";
 import { writeAudit } from "./lib/audit";
 import { workspaceMutation, workspaceQuery } from "./lib/builders";
-import { notAllowed, notFound, userError } from "./lib/errors";
+import { notFound, userError } from "./lib/errors";
 import { BASIS_LABEL } from "./lib/evidence";
 import { savedRecord } from "./lib/savedRecords";
 import { CHANNEL_WORDS } from "./skills/offerIntelligence/channels";
@@ -48,6 +50,8 @@ export function versionFields(content: OfferContent) {
 export async function ownCard(ctx: QueryCtx, workspaceId: Id<"workspaces">, cardId: Id<"offerCards">) {
   const card = await ctx.db.get(cardId);
   if (!card || card.workspaceId !== workspaceId) notFound();
+  // A client's offer is only there for the people who may see that client.
+  requireClientIn(ctx, card.clientId);
   return card;
 }
 
@@ -72,7 +76,7 @@ export const list = workspaceQuery({
       .order("desc")
       .take(30);
     const out = [];
-    for (const card of cards) {
+    for (const card of ctx.clients.filter(cards)) {
       if (card.archived) continue;
       const versions = await versionsOf(ctx, ctx.workspaceId, card._id);
       const current = versions.find((row) => row.version === card.currentVersion);
@@ -164,12 +168,12 @@ const contentArgs = {
 /**
  * Saves the card as a new version (or a new card without `cardId`). Nothing is overwritten. Saving the same
  * content again adds nothing. A new card may be a copy of another (`copyOf`). The content is checked here,
- * and what is wrong comes back in words for the person. Owners and Managers.
+ * and what is wrong comes back in words for the person. Owners, Admins and Members.
  */
 export const saveVersion = workspaceMutation({
-  args: { cardId: v.optional(v.id("offerCards")), ...contentArgs, origin: v.optional(v.union(v.literal("person"), v.literal("chat"))), note: v.optional(v.string()), copyOf: v.optional(v.id("offerCards")) },
-  handler: async (ctx, { cardId, origin, note, copyOf, ...raw }) => {
-    if (ctx.member.role === "rep") notAllowed();
+  args: { cardId: v.optional(v.id("offerCards")), ...contentArgs, origin: v.optional(v.union(v.literal("person"), v.literal("chat"))), note: v.optional(v.string()), copyOf: v.optional(v.id("offerCards")), clientId: v.optional(v.id("clients")) },
+  handler: async (ctx, { cardId, origin, note, copyOf, clientId, ...raw }) => {
+    requireWork(ctx.member.role);
     const input = raw as OfferInput;
     const problem = offerProblem(input);
     if (problem) throw userError(problem);
@@ -191,18 +195,20 @@ export const saveVersion = workspaceMutation({
       return { cardId: card._id, version, added: true };
     }
     const source = copyOf ? await ownCard(ctx, ctx.workspaceId, copyOf) : null;
-    const id = await ctx.db.insert("offerCards", { workspaceId: ctx.workspaceId, name: content.name, currentVersion: 1, ...(source ? { copiedFrom: source._id } : {}), createdBy: ctx.identity.subject, createdAt: now, updatedAt: now });
+    // A new card is for the client named, or for the one the card it copies is for.
+    const forClient = await clientForNew(ctx, clientId ?? source?.clientId);
+    const id = await ctx.db.insert("offerCards", { workspaceId: ctx.workspaceId, ...forClient, name: content.name, currentVersion: 1, ...(source ? { copiedFrom: source._id } : {}), createdBy: ctx.identity.subject, createdAt: now, updatedAt: now });
     await ctx.db.insert("offerCardVersions", { workspaceId: ctx.workspaceId, cardId: id, version: 1, ...fields, ...(source && !fields.note ? { note: `Copied from ${source.name}`.slice(0, MAX.note) } : {}) });
     await writeAudit(ctx, { workspaceId: ctx.workspaceId, actorType: "user", actorId: ctx.identity.subject, action: "offer.created", subject: id });
     return { cardId: id, version: 1, added: true };
   },
 });
 
-/** Puts a card away. Its versions are kept. Owners and Managers. */
+/** Puts a card away. Its versions are kept. Owners, Admins and Members. */
 export const archive = workspaceMutation({
   args: { cardId: v.id("offerCards") },
   handler: async (ctx, args) => {
-    if (ctx.member.role === "rep") notAllowed();
+    requireWork(ctx.member.role);
     const card = await ownCard(ctx, ctx.workspaceId, args.cardId);
     await ctx.db.patch(card._id, { archived: true, updatedAt: Date.now() });
     return null;
@@ -287,12 +293,12 @@ export const analysis = workspaceQuery({
 
 /**
  * Adds the offer the analysis read from the business's own words to a card, as a new version (or a new
- * card). Only what the business stated: never a competitor's offer. Owners and Managers.
+ * card). Only what the business stated: never a competitor's offer. Owners, Admins and Members.
  */
 export const fromAnalysis = workspaceMutation({
   args: { assetId: v.id("assets"), cardId: v.optional(v.id("offerCards")) },
   handler: async (ctx, args) => {
-    if (ctx.member.role === "rep") notAllowed();
+    requireWork(ctx.member.role);
     const asset = await ctx.db.get(args.assetId);
     if (!asset || asset.workspaceId !== ctx.workspaceId) notFound();
     const read = await analysisFor(ctx, asset);

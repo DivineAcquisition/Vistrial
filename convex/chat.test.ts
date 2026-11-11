@@ -120,13 +120,13 @@ describe("chat build", () => {
     expect(source?.excerpt).toContain("412 leads");
   });
 
-  it("refuses a file type it cannot read, and a Rep cannot add files", async () => {
+  it("refuses a file type it cannot read, and a Viewer cannot add files", async () => {
     const t = makeTester();
     const { workspaceId, owner, projectId } = await setup(t);
-    await t.run(async (ctx) => ctx.db.insert("members", { workspaceId, userId: "user_rep", role: "rep", displayName: "Rep", active: true }));
+    await t.run(async (ctx) => ctx.db.insert("members", { workspaceId, userId: "user_viewer", role: "viewer", displayName: "Viewer", active: true }));
     const storageId = await t.run((ctx) => ctx.storage.store(new Blob(["MZ"], { type: "application/x-msdownload" })));
     await expect(owner.mutation(api.files.attach, { workspaceId, storageId, name: "setup.exe", projectId })).rejects.toThrow(/image, a PDF or a CSV/);
-    await expect(t.withIdentity(identity("user_rep")).mutation(api.files.uploadUrl, { workspaceId })).rejects.toThrow();
+    await expect(t.withIdentity(identity("user_viewer")).mutation(api.files.uploadUrl, { workspaceId })).rejects.toThrow();
   });
 
   it("answers from the session's sources, drops made-up citations, and proposes research instead of running it", async () => {

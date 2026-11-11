@@ -1,5 +1,6 @@
 "use client";
 
+import { useClientScope } from "@/components/shell/shell-context";
 import { useQuery } from "convex/react";
 import Link from "next/link";
 import type { ReactNode } from "react";
@@ -82,7 +83,8 @@ export function ResearchTabView({ base, editor, tab, sessions, review, pdf }: Re
 
 /** The Research tab fed by Convex. */
 export function ResearchTab({ workspaceId, base, slug, editor }: { workspaceId: Id<"workspaces">; base: string; slug: string; editor: boolean }) {
-  const tab = useQuery(api.workTabs.tab, { workspaceId, skillSlug: "market-intelligence" });
+  const { scope } = useClientScope();
+  const tab = useQuery(api.workTabs.tab, { workspaceId, scope, skillSlug: "market-intelligence" });
   const tree = useQuery(api.agentFolder.tree, { workspaceId, agentSlug: slug, limit: 12 });
   const review = useReviewActions(workspaceId);
   if (!tab) return <p className="text-sm text-muted-foreground">Loading research.</p>;

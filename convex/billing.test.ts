@@ -88,15 +88,15 @@ describe("credits billing", () => {
     expect(view.spent30dCents).toBe(246);
   });
 
-  it("keeps the ledger to the workspace and hides it from Reps", async () => {
+  it("keeps the ledger to the workspace and hides it from Viewers", async () => {
     const { t, workspaceId } = await setup();
     await t.run(async (ctx) => {
-      await ctx.db.insert("members", { workspaceId, userId: "user_rep", role: "rep", displayName: "Rep", active: true });
+      await ctx.db.insert("members", { workspaceId, userId: "user_viewer", role: "viewer", displayName: "Viewer", active: true });
       await chargeUsage(ctx, { workspaceId, costCents: 10, source: "followup", ref: "chat_1" });
     });
-    const rep = await t.withIdentity(identity("user_rep")).query(api.billing.overview, { workspaceId });
-    expect(rep.ledger).toHaveLength(0);
-    expect(rep.canManage).toBe(false);
+    const viewer = await t.withIdentity(identity("user_viewer")).query(api.billing.overview, { workspaceId });
+    expect(viewer.ledger).toHaveLength(0);
+    expect(viewer.canManage).toBe(false);
     await expect(t.withIdentity(identity("user_stranger")).query(api.billing.overview, { workspaceId })).rejects.toThrow();
   });
 });

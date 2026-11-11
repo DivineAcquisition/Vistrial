@@ -4,6 +4,7 @@
  * guest name or email address is stored. Nothing is created, changed or cancelled at the provider.
  */
 
+import { isAdmin } from "./lib/roles";
 import { v } from "convex/values";
 
 import { internal } from "./_generated/api";
@@ -134,12 +135,12 @@ async function sync(ctx: ActionCtx, workspaceId: Id<"workspaces">, provider: Cal
   return { code };
 }
 
-/** Reads a connected calendar again now. Owner or Manager. */
+/** Reads a connected calendar again now. Owner or Admin. */
 export const syncNow = memberAction({
   args: { provider: v.string() },
   handler: async (ctx, args): Promise<{ code: string }> => {
     const role: string | null = await ctx.runQuery(internal.integrations.roleOf, { workspaceId: ctx.workspaceId, userId: ctx.userId });
-    if (role !== "owner" && role !== "manager") notAllowed();
+    if (!role || !isAdmin(role)) notAllowed();
     if (!isCalendarProvider(args.provider)) throw userError("That is not a calendar connection.");
     const result = await sync(ctx, ctx.workspaceId, args.provider);
     if (result.code === "not_connected") throw userError("Connect it first.");
@@ -191,6 +192,6 @@ export const view = workspaceQuery({
         .unique();
       if (row) calendars.push({ provider, syncedAt: row.syncedAt, snapshot: row.data as BookingsSnapshot });
     }
-    return { canRefresh: ctx.member.role !== "rep", calendars };
+    return { canRefresh: isAdmin(ctx.member.role), calendars };
   },
 });

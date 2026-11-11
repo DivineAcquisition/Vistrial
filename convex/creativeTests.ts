@@ -6,6 +6,7 @@
  * is the person's word that they put the ads live themselves.
  */
 
+import { requireWork } from "./lib/roles";
 import { v } from "convex/values";
 
 import type { Doc, Id } from "./_generated/dataModel";
@@ -37,7 +38,7 @@ function clip(text: string, max: number) {
 }
 
 function requireEditor(role: Doc<"members">["role"]) {
-  if (role === "rep") notAllowed();
+  requireWork(role);
 }
 
 function view(test: Doc<"creativeTests">, now: number) {
@@ -138,7 +139,7 @@ export const due = workspaceQuery({
 
 /**
  * "We're running this": records that an approved ad set went live, when to check back, and today's
- * figures. Only an approved set can be marked: nothing unreviewed is recorded as running. Owners and Managers.
+ * figures. Only an approved set can be marked: nothing unreviewed is recorded as running. Owners, Admins and Members.
  */
 export const start = workspaceMutation({
   args: { assetId: v.id("assets"), checkInDays: v.number() },
@@ -170,7 +171,7 @@ export const start = workspaceMutation({
   },
 });
 
-/** Moves a check-in date. Owners and Managers. */
+/** Moves a check-in date. Owners, Admins and Members. */
 export const reschedule = workspaceMutation({
   args: { testId: v.id("creativeTests"), checkInDays: v.number() },
   handler: async (ctx, args) => {
@@ -214,7 +215,7 @@ export const recordOutcome = workspaceMutation({
   },
 });
 
-/** Removes the record that an ad set ran. Owners and Managers. */
+/** Removes the record that an ad set ran. Owners, Admins and Members. */
 export const remove = workspaceMutation({
   args: { testId: v.id("creativeTests") },
   handler: async (ctx, args) => {

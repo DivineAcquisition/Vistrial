@@ -27,7 +27,7 @@ const NOW = 1794240000000; // Nov 9, 2026
 const DAY = 86_400_000;
 
 const BUSINESS: BusinessData = {
-  name: "Bay Area Cleaning Professionals",
+  name: "Northlight Growth",
   defaultCountry: "US",
   timezone: "America/Los_Angeles",
   canEdit: true,
@@ -37,14 +37,20 @@ const BUSINESS: BusinessData = {
 
 const PEOPLE: PeopleData = {
   canManage: true,
+  isOwner: true,
   me: "m1",
-  members: [
-    { id: "m1", name: "Malik Sannie", email: "malik@bayareacleaning.com", role: "owner", joinedAt: NOW - 140 * DAY },
-    { id: "m2", name: "Dana Ortiz", email: "dana@bayareacleaning.com", role: "manager", joinedAt: NOW - 60 * DAY },
-    { id: "m3", name: "Jordan Lee", email: "jordan@bayareacleaning.com", role: "rep", joinedAt: NOW - 12 * DAY },
-    { id: "m4", name: "Sam Patel", email: null, role: "rep", joinedAt: NOW - 3 * DAY },
+  organizationName: "Northlight Growth",
+  grantable: [
+    { workspaceId: "w2", name: "Northlight Coaching" },
+    { workspaceId: "w3", name: "Sannie Media" },
   ],
-  invites: [{ id: "i1", email: "taylor@bayareacleaning.com", role: "rep", sentAt: NOW - 2 * DAY, expiresAt: NOW + 5 * DAY }],
+  members: [
+    { id: "m1", name: "Malik Sannie", email: "malik@northlightgrowth.com", role: "owner", joinedAt: NOW - 140 * DAY },
+    { id: "m2", name: "Dana Ortiz", email: "dana@northlightgrowth.com", role: "admin", joinedAt: NOW - 60 * DAY },
+    { id: "m3", name: "Jordan Lee", email: "jordan@northlightgrowth.com", role: "member", joinedAt: NOW - 12 * DAY },
+    { id: "m4", name: "Sam Patel", email: null, role: "viewer", joinedAt: NOW - 3 * DAY },
+  ],
+  invites: [{ id: "i1", email: "taylor@northlightgrowth.com", role: "member", organizations: [{ name: "Northlight Growth", role: "member" }, { name: "Northlight Coaching", role: "viewer" }], sentAt: NOW - 2 * DAY, expiresAt: NOW + 5 * DAY }],
   supportAccess: true,
 };
 
@@ -101,15 +107,15 @@ function agents(canEdit: boolean): AgentsData {
 const done = () => Promise.resolve(null);
 
 export function SettingsStory({ section: asked, role: askedRole, support, account = "" }: { section: string | null; role: string | null; support: boolean; account?: string }) {
-  const role: Role = askedRole === "manager" || askedRole === "rep" ? askedRole : "owner";
+  const role: Role = askedRole === "admin" || askedRole === "member" || askedRole === "viewer" ? askedRole : "owner";
   const owner = role === "owner";
   const [section, setSection] = useState<SettingsSection>(parseSection(asked, role));
   const [business, setBusiness] = useState<BusinessData>({ ...BUSINESS, canEdit: owner });
-  const [people, setPeople] = useState<PeopleData>({ ...PEOPLE, canManage: owner, me: role === "owner" ? "m1" : role === "manager" ? "m2" : "m3", supportAccess: support });
+  const [people, setPeople] = useState<PeopleData>({ ...PEOPLE, canManage: owner || role === "admin", isOwner: owner, me: role === "owner" ? "m1" : role === "admin" ? "m2" : "m3", supportAccess: support });
   const [agentData, setAgentData] = useState<AgentsData>(agents(owner));
   const [you, setYou] = useState<YouData>({
-    name: role === "owner" ? "Malik Sannie" : role === "manager" ? "Dana Ortiz" : "Jordan Lee",
-    email: role === "owner" ? "malik@bayareacleaning.com" : role === "manager" ? "dana@bayareacleaning.com" : "jordan@bayareacleaning.com",
+    name: role === "owner" ? "Malik Sannie" : role === "admin" ? "Dana Ortiz" : "Jordan Lee",
+    email: role === "owner" ? "malik@northlightgrowth.com" : role === "admin" ? "dana@northlightgrowth.com" : "jordan@northlightgrowth.com",
     role,
     joinedAt: NOW - 60 * DAY,
     theme: "system",
@@ -127,7 +133,7 @@ export function SettingsStory({ section: asked, role: askedRole, support, accoun
             memoryHref="/dev/settings?section=business"
             profileEditor={
               <Panel className="grid gap-2 p-4 text-sm text-muted-foreground">
-                <p className="text-foreground">Offer: Deep cleaning and move-out cleans across the Bay Area, fixed prices.</p>
+                <p className="text-foreground">Offer: Paid social and landing pages for coaches and course sellers, on a monthly retainer.</p>
                 <p>Audience: Busy homeowners and property managers. Geography: San Francisco to San Jose.</p>
                 <p>The live page shows the full profile editor here.</p>
               </Panel>
@@ -142,8 +148,9 @@ export function SettingsStory({ section: asked, role: askedRole, support, accoun
             data={people}
             grants={owner ? GRANTS : null}
             now={NOW}
-            onInvite={async (email, inviteRole) => {
-              setPeople((row) => ({ ...row, invites: [{ id: `i${Date.now()}`, email, role: inviteRole, sentAt: NOW, expiresAt: NOW + 7 * DAY }, ...row.invites] }));
+            onInvite={async (email, inviteRole, extra) => {
+              const organizations = [{ name: PEOPLE.organizationName, role: inviteRole }, ...extra.map((grant) => ({ name: PEOPLE.grantable.find((row) => row.workspaceId === grant.workspaceId)?.name ?? "", role: grant.role }))];
+              setPeople((row) => ({ ...row, invites: [{ id: `i${Date.now()}`, email, role: inviteRole, organizations, sentAt: NOW, expiresAt: NOW + 7 * DAY }, ...row.invites] }));
               return { link: "https://app.vistrial.io/join?token=3f9c…example" };
             }}
             onCancelInvite={async (id) => setPeople((row) => ({ ...row, invites: row.invites.filter((invite) => invite.id !== id) }))}
@@ -170,7 +177,7 @@ export function SettingsStory({ section: asked, role: askedRole, support, accoun
             data={{
               canManage: owner,
               files: 2,
-              meta: { status: "connected", account: "Bay Area Cleaning Professionals", user: "Malik Sannie", usedBy: ["Growth Architect"] },
+              meta: { status: "connected", account: "Northlight Growth", user: "Malik Sannie", usedBy: ["Growth Architect"] },
             }}
           />
         ) : null}

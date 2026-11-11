@@ -179,6 +179,8 @@ export function IntakeChat({
             competitors: slots.competitors.map((row) => (row.url ? { name: row.name, url: row.url } : { name: row.name })),
             platforms: slots.platforms as ("web" | "youtube" | "tiktok" | "instagram" | "metaAdLibrary")[],
             suppliedUrls: slots.links,
+            // The research is for whoever the conversation was started for.
+            ...(view?.intake.clientId ? { clientId: view.intake.clientId } : {}),
           });
           await startRun({ workspaceId, agentSlug, skillSlug: "market-intelligence", projectId, mode: intake.mode ?? "thorough" });
           await markStarted({ workspaceId, intakeId, projectId });

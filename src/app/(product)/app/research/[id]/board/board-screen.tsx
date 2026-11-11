@@ -1,5 +1,6 @@
 "use client";
 
+import { canWork } from "@/lib/roles";
 import { useQuery } from "convex/react";
 import Link from "next/link";
 
@@ -14,7 +15,7 @@ import type { Id } from "../../../../../../../convex/_generated/dataModel";
 export function BoardScreen({ projectId, focus }: { projectId: string; focus: string[] }) {
   const shell = useWorkspaceShell();
   const project = useQuery(api.research.getProject, shell ? { workspaceId: shell.workspaceId, projectId: projectId as Id<"researchProjects"> } : "skip");
-  if (!shell) return <EmptyState kind="permission" title="Sign in to open your workspace." />;
+  if (!shell) return <EmptyState kind="permission" title="Sign in to open your organization." />;
   if (project === undefined) return <p className="text-sm text-muted-foreground">Loading the board.</p>;
   return (
     <div className="mx-auto grid w-full max-w-6xl min-w-0 gap-6">
@@ -33,7 +34,7 @@ export function BoardScreen({ projectId, focus }: { projectId: string; focus: st
           </Button>
         }
       />
-      <ResearchBoard workspaceId={shell.workspaceId} projectId={projectId as Id<"researchProjects">} canShare={shell.role !== "rep"} focus={focus} />
+      <ResearchBoard workspaceId={shell.workspaceId} projectId={projectId as Id<"researchProjects">} canShare={canWork(shell.role)} focus={focus} />
     </div>
   );
 }

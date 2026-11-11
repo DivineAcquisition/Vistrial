@@ -78,41 +78,41 @@ describe("workspace isolation", () => {
       "You already belong to a workspace.",
     );
 
-    const repInvite = await ownerA.mutation(api.workspace.invite, {
+    const viewerInvite = await ownerA.mutation(api.workspace.invite, {
       workspaceId: workspaceA,
-      email: "rep-a@example.com",
-      role: "rep",
+      email: "viewer-a@example.com",
+      role: "member",
     });
     const otherRepInvite = await ownerA.mutation(api.workspace.invite, {
       workspaceId: workspaceA,
-      email: "rep-b@example.com",
-      role: "rep",
+      email: "viewer-b@example.com",
+      role: "member",
     });
-    const managerInvite = await ownerA.mutation(api.workspace.invite, {
+    const adminInvite = await ownerA.mutation(api.workspace.invite, {
       workspaceId: workspaceA,
-      email: "manager-a@example.com",
-      role: "manager",
+      email: "admin-a@example.com",
+      role: "admin",
     });
 
     const stranger = t.withIdentity(person("stranger", "someone-else@example.com"));
-    await expect(stranger.mutation(api.workspace.acceptInvite, { token: repInvite.token })).rejects.toThrow(
+    await expect(stranger.mutation(api.workspace.acceptInvite, { token: viewerInvite.token })).rejects.toThrow(
       "This invite is for a different email.",
     );
 
-    const repA = t.withIdentity(person("rep-a", "rep-a@example.com"));
-    const repB = t.withIdentity(person("rep-b", "rep-b@example.com"));
-    const manager = t.withIdentity(person("manager-a", "manager-a@example.com"));
-    await repA.mutation(api.workspace.acceptInvite, { token: repInvite.token });
+    const repA = t.withIdentity(person("viewer-a", "viewer-a@example.com"));
+    const repB = t.withIdentity(person("viewer-b", "viewer-b@example.com"));
+    const admin = t.withIdentity(person("admin-a", "admin-a@example.com"));
+    await repA.mutation(api.workspace.acceptInvite, { token: viewerInvite.token });
     await repB.mutation(api.workspace.acceptInvite, { token: otherRepInvite.token });
-    await manager.mutation(api.workspace.acceptInvite, { token: managerInvite.token });
-    await expect(repA.mutation(api.workspace.acceptInvite, { token: repInvite.token })).rejects.toThrow(
+    await admin.mutation(api.workspace.acceptInvite, { token: adminInvite.token });
+    await expect(repA.mutation(api.workspace.acceptInvite, { token: viewerInvite.token })).rejects.toThrow(
       "This invite has already been used.",
     );
 
     const expired = await ownerB.mutation(api.workspace.invite, {
       workspaceId: workspaceB,
       email: "late@example.com",
-      role: "rep",
+      role: "member",
     });
     await t.run(async (ctx) => {
       await ctx.db.patch(expired.invitationId, { expiresAt: Date.now() - 1000 });
@@ -126,8 +126,8 @@ describe("workspace isolation", () => {
     const members = await t.run(async (ctx) =>
       ctx.db.query("members").withIndex("by_workspace", (q) => q.eq("workspaceId", workspaceA)).take(10),
     );
-    const repAMember = members.find((row) => row.userId === "rep-a");
-    const repBMember = members.find((row) => row.userId === "rep-b");
+    const repAMember = members.find((row) => row.userId === "viewer-a");
+    const repBMember = members.find((row) => row.userId === "viewer-b");
     expect(repAMember && repBMember).toBeTruthy();
 
     const leadForA = await t.run(async (ctx) =>
@@ -165,7 +165,7 @@ describe("workspace isolation", () => {
 
     const seenByRep = await repA.query(api.leads.list, { workspaceId: workspaceA, paginationOpts: page });
     expect(seenByRep.page.map((lead: { id: string }) => lead.id)).toEqual([leadForA]);
-    const seenByManager = await manager.query(api.leads.list, { workspaceId: workspaceA, paginationOpts: page });
+    const seenByManager = await admin.query(api.leads.list, { workspaceId: workspaceA, paginationOpts: page });
     expect(seenByManager.page.map((lead: { id: string }) => lead.id).sort()).toEqual([leadForA, leadForB].sort());
     const seenByOwner = await ownerA.query(api.leads.list, { workspaceId: workspaceA, paginationOpts: page });
     expect(seenByOwner.page.map((lead: { id: string }) => lead.id)).not.toContain(leadInBeta);
@@ -176,12 +176,14 @@ describe("workspace isolation", () => {
       NOT_FOUND,
     );
 
+    // Setup and turning agents on belong to Owners and Admins; a Member is refused.
     await expect(
-      manager.mutation(api.workspace.markSetupDone, { workspaceId: workspaceA, setupDone: true }),
+      repA.mutation(api.workspace.markSetupDone, { workspaceId: workspaceA, setupDone: true }),
     ).rejects.toThrow("Not allowed.");
     await expect(
-      manager.mutation(api.workspace.setAgentState, { workspaceId: workspaceA, slug: "growth-architect", state: "suggesting" }),
+      repA.mutation(api.workspace.setAgentState, { workspaceId: workspaceA, slug: "growth-architect", state: "suggesting" }),
     ).rejects.toThrow("Not allowed.");
+    await admin.mutation(api.workspace.setAgentState, { workspaceId: workspaceA, slug: "growth-architect", state: "off" });
     await ownerA.mutation(api.workspace.markSetupDone, { workspaceId: workspaceA, setupDone: true });
     await ownerA.mutation(api.workspace.setAgentState, { workspaceId: workspaceA, slug: "growth-architect", state: "suggesting" });
 

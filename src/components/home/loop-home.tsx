@@ -10,7 +10,7 @@ import { CheckInRow, QuestionRow } from "@/components/home/waiting-rows";
 import { ArrowRight, Check, FileSearch, X } from "@/components/icons";
 import { Stagger, StaggerItem } from "@/components/motion/stagger";
 import { MeasuredChanges, RESULT_WORDS } from "@/components/research/outcome-loop";
-import { useWorkspaceShell } from "@/components/shell/shell-context";
+import { useWorkspaceShell, scopeOf } from "@/components/shell/shell-context";
 import { Button } from "@/components/ui/button";
 import { Panel } from "@/components/ui/panel";
 import { StatusBadge } from "@/components/ui/status-badge";
@@ -220,7 +220,7 @@ export function LoopHomeView({
 
 export function LoopHome() {
   const shell = useWorkspaceShell();
-  const args = shell ? { workspaceId: shell.workspaceId } : "skip";
+  const args = shell ? { workspaceId: shell.workspaceId, scope: scopeOf(shell).scope } : "skip";
   const overview = useQuery(api.home.overview, args);
   const waiting = useQuery(api.home.waiting, args);
   const proven = useQuery(api.home.proven, args);

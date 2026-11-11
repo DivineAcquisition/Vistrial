@@ -5,14 +5,16 @@
  * recorded lawfully; that confirmation is stored with it.
  */
 
+import { clientForNew, requireClientIn } from "./lib/clients";
+import { canWork, isAdmin, requireWork } from "./lib/roles";
 import { v } from "convex/values";
 
 import type { Doc, Id } from "./_generated/dataModel";
 import type { MutationCtx, QueryCtx } from "./_generated/server";
 import { GROWTH_ARCHITECT } from "./catalog";
 import { writeAudit } from "./lib/audit";
-import { ownerMutation, workspaceMutation, workspaceQuery } from "./lib/builders";
-import { notAllowed, notFound, userError } from "./lib/errors";
+import { adminMutation, workspaceMutation, workspaceQuery } from "./lib/builders";
+import { notFound, userError } from "./lib/errors";
 import { canonicalUrl } from "./lib/sourceRefs";
 import { cleanTranscript, TRANSCRIPT_REFUSAL_WORDS } from "./lib/transcriptText";
 
@@ -33,7 +35,7 @@ function clip(text: string, max: number) {
 }
 
 function requireEditor(role: Doc<"members">["role"]) {
-  if (role === "rep") notAllowed();
+  requireWork(role);
 }
 
 /** Where the transcript can be read in the product. Used as the source link. */
@@ -44,10 +46,12 @@ export function transcriptUrl(id: Id<"callTranscripts">) {
 async function own(ctx: Pick<QueryCtx, "db">, workspaceId: Id<"workspaces">, id: Id<"callTranscripts">) {
   const row = await ctx.db.get(id);
   if (!row || row.workspaceId !== workspaceId) notFound();
+  // A client's call is only there for the people who may see that client.
+  requireClientIn(ctx, row.clientId);
   return row;
 }
 
-/** Adds a transcript from pasted text or a text file's contents. Owners and managers. */
+/** Adds a transcript from pasted text or a text file's contents. Owners, Admins and Members. */
 export const add = workspaceMutation({
   args: {
     title: v.string(),
@@ -58,9 +62,12 @@ export const add = workspaceMutation({
     text: v.string(),
     /** The person confirms the call was recorded lawfully and may be shared with Vistrial. */
     consentConfirmed: v.boolean(),
+    /** The client the call was with. Missing means it is the organization's own. */
+    clientId: v.optional(v.id("clients")),
   },
   handler: async (ctx, args) => {
     requireEditor(ctx.member.role);
+    const forClient = await clientForNew(ctx, args.clientId);
     if (!args.consentConfirmed) throw userError("Confirm that the call was recorded lawfully before adding its transcript.");
     const title = clip(args.title, MAX_TITLE);
     if (!title) throw userError("Give the call a title.");
@@ -76,6 +83,7 @@ export const add = workspaceMutation({
     if (existing.length >= MAX_PER_WORKSPACE) throw userError(`A workspace keeps up to ${MAX_PER_WORKSPACE} transcripts. Delete one you no longer need.`, "limit");
     const id = await ctx.db.insert("callTranscripts", {
       workspaceId: ctx.workspaceId,
+      ...forClient,
       title,
       tool: clip(args.tool, MAX_TOOL) || "Other",
       callDate: args.callDate,
@@ -98,6 +106,7 @@ export type TranscriptView = {
   callDate: string | null;
   words: number;
   createdAt: number;
+  clientId: Id<"clients"> | null;
   agents: string[];
   /** The opening of the call, to recognise it by. */
   opening: string;
@@ -111,6 +120,7 @@ function view(row: Doc<"callTranscripts">): TranscriptView {
     callDate: row.callDate ?? null,
     words: row.words,
     createdAt: row.createdAt,
+    clientId: row.clientId ?? null,
     agents: transcriptAgents(row),
     opening: clip(row.text, 200),
   };
@@ -120,16 +130,17 @@ function view(row: Doc<"callTranscripts">): TranscriptView {
 export const list = workspaceQuery({
   args: {},
   handler: async (ctx) => {
-    const rows = await ctx.db
+    const all = await ctx.db
       .query("callTranscripts")
       .withIndex("by_workspace", (q) => q.eq("workspaceId", ctx.workspaceId))
       .order("desc")
       .take(LIST_LIMIT);
-    return { canEdit: ctx.member.role !== "rep", canGrant: ctx.member.role === "owner", transcripts: rows.map(view) };
+    const rows = ctx.clients.filter(all);
+    return { canEdit: canWork(ctx.member.role), canGrant: isAdmin(ctx.member.role), transcripts: rows.map(view) };
   },
 });
 
-/** One transcript's full text. Owners and managers. */
+/** One transcript's full text. Owners, Admins and Members. */
 export const read = workspaceQuery({
   args: { transcriptId: v.id("callTranscripts") },
   handler: async (ctx, args) => {
@@ -139,7 +150,7 @@ export const read = workspaceQuery({
   },
 });
 
-/** Deletes a transcript and its text. Owners and managers. */
+/** Deletes a transcript and its text. Owners, Admins and Members. */
 export const remove = workspaceMutation({
   args: { transcriptId: v.id("callTranscripts") },
   handler: async (ctx, args) => {
@@ -152,7 +163,7 @@ export const remove = workspaceMutation({
 });
 
 /** Grants or withdraws an agent's use of one transcript. Owner only. */
-export const setAgentAccess = ownerMutation({
+export const setAgentAccess = adminMutation({
   args: { transcriptId: v.id("callTranscripts"), agentSlug: v.string(), granted: v.boolean() },
   handler: async (ctx, args) => {
     const row = await own(ctx, ctx.workspaceId, args.transcriptId);
@@ -194,9 +205,12 @@ export async function saveTranscriptSourcesFor(
     .withIndex("by_workspace", (q) => q.eq("workspaceId", args.workspaceId))
     .order("desc")
     .take(LIST_LIMIT);
+  // A call with one client is never read into work done for another client, or for the organization itself.
+  const project = await ctx.db.get(args.projectId);
   const used: { transcript: Doc<"callTranscripts">; sourceId: Id<"sourceRefs"> }[] = [];
   for (const transcript of rows) {
     if (used.length >= SOURCES_PER_RUN) break;
+    if (transcript.clientId !== project?.clientId) continue;
     if (!transcriptAgents(transcript).includes(args.agentSlug)) continue;
     const url = transcriptUrl(transcript._id);
     const canonical = canonicalUrl(url) ?? url;

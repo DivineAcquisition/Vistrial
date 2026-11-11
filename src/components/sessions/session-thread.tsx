@@ -1,5 +1,6 @@
 "use client";
 
+import { canWork, isAdmin } from "@/lib/roles";
 import { useMutation, useQuery } from "convex/react";
 import {
   BookOpenCheck,
@@ -218,7 +219,7 @@ function Composer({
   ) : null;
 
   const box = !editor ? (
-    <ChatComposer disabled placeholder="You can follow this session. Owners and Managers decide on it." onSubmit={async () => undefined} />
+    <ChatComposer disabled placeholder="You can follow this session. Owners and Admins decide on it." onSubmit={async () => undefined} />
   ) : busy ? (
     <ChatComposer disabled placeholder="Working… you can ask follow-ups as soon as it finishes." onSubmit={async () => undefined} />
   ) : waitingAnswer && studio.run?.waitingFor ? (
@@ -252,7 +253,7 @@ function FollowUpComposer({ workspaceId, projectId, base, hasReport }: { workspa
   const ask = useMutation(api.followups.ask);
   const followups = useQuery(api.followups.list, { workspaceId, projectId });
   const shell = useWorkspaceShell();
-  const extras = useChatExtras(workspaceId, shell?.role !== "rep", shell?.role === "owner");
+  const extras = useChatExtras(workspaceId, shell ? canWork(shell.role) : false, shell ? isAdmin(shell.role) : false);
   const [notice, setNotice] = useState("");
   const busy = followups?.messages.some((row) => row.status === "thinking" || row.status === "running") ?? false;
   return (

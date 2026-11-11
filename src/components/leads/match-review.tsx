@@ -1,5 +1,6 @@
 "use client";
 
+import { isAdmin } from "@/lib/roles";
 import { useMutation, useQuery } from "convex/react";
 
 import { useWorkspaceShell } from "@/components/shell/shell-context";
@@ -11,8 +12,8 @@ import type { Id } from "../../../convex/_generated/dataModel";
 
 export function MatchReview() {
   const shell = useWorkspaceShell();
-  if (!shell) return <p className="text-sm text-muted-foreground">Sign in to open your workspace.</p>;
-  if (shell.role === "rep") {
+  if (!shell) return <p className="text-sm text-muted-foreground">Sign in to open your organization.</p>;
+  if (!isAdmin(shell.role)) {
     return (
       <p className="text-sm text-muted-foreground">An owner or manager reviews matches.</p>
     );

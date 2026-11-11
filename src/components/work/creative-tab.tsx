@@ -1,5 +1,6 @@
 "use client";
 
+import { useClientScope } from "@/components/shell/shell-context";
 import { useMutation, useQuery } from "convex/react";
 import Link from "next/link";
 import { useRef, useState, type ReactNode } from "react";
@@ -676,7 +677,8 @@ export function CreativeTabView({ base, editor, options, references, referenceAc
 /** The Creative tab fed by Convex. `source` (from "Make our version") opens the form on that reference. */
 export function CreativeTab({ workspaceId, base, editor, source }: { workspaceId: Id<"workspaces">; base: string; editor: boolean; source?: string | null }) {
   const options = useQuery(api.creative.options, { workspaceId, ...(source ? { sourceRefId: source as Id<"sourceRefs"> } : {}) });
-  const tab = useQuery(api.creative.tab, { workspaceId });
+  const { scope } = useClientScope();
+  const tab = useQuery(api.creative.tab, { workspaceId, scope });
   const [assetId, setAssetId] = useState<string | null>(null);
   const chosen = (tab?.results.some((row) => row.id === assetId) ? assetId : (tab?.results[0]?.id ?? null)) as Id<"assets"> | null;
   const view = useQuery(api.creative.view, chosen ? { workspaceId, assetId: chosen } : "skip");

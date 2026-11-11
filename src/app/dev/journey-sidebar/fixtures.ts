@@ -22,7 +22,7 @@ export function storyOverview(state: string): HomeOverview {
   const empty = state === "empty";
   return {
     workspaceName: "Northlight Growth",
-    role: state === "rep" ? "rep" : "owner",
+    role: state === "rep" ? "viewer" : "owner",
     actionable: state !== "rep",
     waiting: empty ? { total: 0, questions: 0, checkIns: 0, approvals: 0 } : { total: 4, questions: 1, checkIns: 1, approvals: 2 },
     loop: empty ? { understand: 20, research: 0, decide: 0, try: 0, measure: 0 } : { understand: 60, research: 1, decide: 2, try: 3, measure: 1 },

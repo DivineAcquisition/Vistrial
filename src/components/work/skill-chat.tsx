@@ -181,7 +181,7 @@ export function SkillChatView({
         <div className={cn(ready && "opacity-90")}>
           <ChatComposer
             size="compact"
-            placeholder={!editor ? "Owners and Managers start work." : ready ? "Change an answer…" : last?.kind === "route" ? "Say which, or tap a choice…" : messages.length ? "Answer, or tap a choice…" : placeholder}
+            placeholder={!editor ? "Owners, Admins and Members start work." : ready ? "Change an answer…" : last?.kind === "route" ? "Say which, or tap a choice…" : messages.length ? "Answer, or tap a choice…" : placeholder}
             disabled={!editor}
             initialText={initialText}
             onSubmit={async (text) => {

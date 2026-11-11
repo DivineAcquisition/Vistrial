@@ -18,7 +18,7 @@ const SESSIONS = [
 export function ResearchTabStory({ state, theme }: { state: string; theme: string }) {
   const editor = state !== "rep";
   return (
-    <StoryFrame tab="work/research" theme={theme} role={editor ? "owner" : "rep"}>
+    <StoryFrame tab="work/research" theme={theme} role={editor ? "owner" : "viewer"}>
       <ResearchTabView
         base="/app/agents/growth-architect"
         editor={editor}

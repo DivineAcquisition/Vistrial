@@ -1,5 +1,6 @@
 "use client";
 
+import { isAdmin } from "@/lib/roles";
 import Link from "next/link";
 import { useConvexConnectionState, useMutation, useQuery } from "convex/react";
 import { useParams } from "next/navigation";
@@ -29,7 +30,7 @@ function LiveRun({ shell, runId }: { shell: WorkspaceShell; runId: Id<"agentRuns
 
   if (row === undefined) return <p className="text-sm text-muted-foreground">Loading the run.</p>;
   if (!run) return null;
-  const editor = shell.role === "owner" || shell.role === "manager";
+  const editor = isAdmin(shell.role);
 
   return (
     <RunViewer
@@ -57,6 +58,6 @@ function LiveRun({ shell, runId }: { shell: WorkspaceShell; runId: Id<"agentRuns
 export default function RunPage() {
   const params = useParams<{ id: string }>();
   const shell = useWorkspaceShell();
-  if (!shell) return <EmptyState kind="permission" title="Sign in to open your workspace." />;
+  if (!shell) return <EmptyState kind="permission" title="Sign in to open your organization." />;
   return <LiveRun shell={shell} runId={params.id as Id<"agentRuns">} />;
 }

@@ -1,8 +1,9 @@
+import { canWork } from "./lib/roles";
 import { v } from "convex/values";
 
 import type { Doc, Id } from "./_generated/dataModel";
 import type { QueryCtx } from "./_generated/server";
-import { workspaceMutation, workspaceQuery, type MemberAccess } from "./lib/builders";
+import { selfMutation, workspaceQuery, type MemberAccess } from "./lib/builders";
 import { notAllowed, notFound, userError } from "./lib/errors";
 import { sourceRefView } from "./lib/sourceRefs";
 
@@ -12,7 +13,7 @@ const MAX_ITEMS = 500;
 
 /**
  * A personal collection is seen only by the person who made it. A workspace collection is seen by
- * every member, and changed by an Owner or Manager. Anything else reads as not found.
+ * every member, and changed by an Owner, Admin or Member. Anything else reads as not found.
  */
 async function readable(ctx: QueryCtx & MemberAccess, collectionId: Id<"collections">) {
   const row = await ctx.db.get(collectionId);
@@ -23,7 +24,7 @@ async function readable(ctx: QueryCtx & MemberAccess, collectionId: Id<"collecti
 
 async function editable(ctx: QueryCtx & MemberAccess, collectionId: Id<"collections">) {
   const row = await readable(ctx, collectionId);
-  if (row.ownerUserId === undefined && ctx.member.role === "rep") notAllowed();
+  if (row.ownerUserId === undefined && !canWork(ctx.member.role)) notAllowed();
   return row;
 }
 
@@ -44,11 +45,11 @@ function view(row: Doc<"collections">, items: number) {
   };
 }
 
-/** Anyone can make a personal collection. Only an Owner or Manager can make a workspace one. */
-export const create = workspaceMutation({
+/** Anyone can make a personal collection. Only an Owner, Admin or Member can make a workspace one. */
+export const create = selfMutation({
   args: { name: v.string(), shared: v.boolean(), projectId: v.optional(v.id("researchProjects")) },
   handler: async (ctx, args) => {
-    if (args.shared && ctx.member.role === "rep") notAllowed();
+    if (args.shared && !canWork(ctx.member.role)) notAllowed();
     if (args.projectId) {
       const project = await ctx.db.get(args.projectId);
       if (!project || project.workspaceId !== ctx.workspaceId) notFound();
@@ -64,7 +65,7 @@ export const create = workspaceMutation({
   },
 });
 
-export const rename = workspaceMutation({
+export const rename = selfMutation({
   args: { collectionId: v.id("collections"), name: v.string() },
   handler: async (ctx, args) => {
     const row = await editable(ctx, args.collectionId);
@@ -74,7 +75,7 @@ export const rename = workspaceMutation({
 });
 
 /** Removes the collection and its items. The source references stay. */
-export const remove = workspaceMutation({
+export const remove = selfMutation({
   args: { collectionId: v.id("collections") },
   handler: async (ctx, args) => {
     const row = await editable(ctx, args.collectionId);
@@ -117,7 +118,7 @@ export const list = workspaceQuery({
 });
 
 /** Saves a source to a collection. Saving it again changes nothing. */
-export const addItem = workspaceMutation({
+export const addItem = selfMutation({
   args: { collectionId: v.id("collections"), sourceRefId: v.id("sourceRefs"), note: v.optional(v.string()) },
   handler: async (ctx, args) => {
     const collection = await editable(ctx, args.collectionId);
@@ -144,7 +145,7 @@ export const addItem = workspaceMutation({
   },
 });
 
-export const removeItem = workspaceMutation({
+export const removeItem = selfMutation({
   args: { collectionId: v.id("collections"), sourceRefId: v.id("sourceRefs") },
   handler: async (ctx, args) => {
     const collection = await editable(ctx, args.collectionId);

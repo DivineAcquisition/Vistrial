@@ -1,5 +1,6 @@
 "use client";
 
+import { isAdmin, type Role } from "@/lib/roles";
 import Link from "next/link";
 import { useState } from "react";
 import { usePaginatedQuery, useQuery } from "convex/react";
@@ -14,11 +15,11 @@ import { selectClass } from "@/lib/ui";
 
 export function LeadList() {
   const shell = useWorkspaceShell();
-  if (!shell) return <p className="text-sm text-muted-foreground">Sign in to open your workspace.</p>;
+  if (!shell) return <p className="text-sm text-muted-foreground">Sign in to open your organization.</p>;
   return <LiveList workspaceId={shell.workspaceId} role={shell.role} />;
 }
 
-function LiveList({ workspaceId, role }: { workspaceId: Id<"workspaces">; role: "owner" | "manager" | "rep" }) {
+function LiveList({ workspaceId, role }: { workspaceId: Id<"workspaces">; role: Role }) {
   const stages = useQuery(api.leads.stages, { workspaceId }) ?? [];
   const [stageId, setStageId] = useState("");
   const [status, setStatus] = useState("");
@@ -50,7 +51,7 @@ function LiveList({ workspaceId, role }: { workspaceId: Id<"workspaces">; role: 
             <Button variant="secondary" render={<Link href="/app/leads/import" />}>
               Import
             </Button>
-            {role === "rep" ? null : (
+            {!isAdmin(role) ? null : (
               <Button variant="ghost" render={<Link href="/app/leads/matches" />}>
                 Review matches
               </Button>

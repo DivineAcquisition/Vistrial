@@ -17,9 +17,10 @@ import { Panel } from "@/components/ui/panel";
 import { StatusBadge } from "@/components/ui/status-badge";
 import type { Tone } from "@/components/ui/tone";
 import { cardTitle, captionText, selectClass } from "@/lib/ui";
+import { ROLE_LABEL, isAdmin, type Role } from "@/lib/roles";
 import { cn } from "@/lib/utils";
 
-export type Role = "owner" | "manager" | "rep";
+export type { Role };
 
 export const SECTIONS = ["business", "people", "agents", "data", "billing", "you"] as const;
 export type SettingsSection = (typeof SECTIONS)[number];
@@ -33,9 +34,9 @@ export const SECTION_META: Record<SettingsSection, { label: string; hint: string
   you: { label: "You", hint: "Theme, notices and sign-in", icon: User },
 };
 
-/** Reps see only their own section; everyone else sees every group. */
+/** Owners and Admins see every group. Members and Viewers see only their own section. */
 export function sectionsFor(role: Role): SettingsSection[] {
-  return role === "rep" ? ["you"] : [...SECTIONS];
+  return isAdmin(role) ? [...SECTIONS] : ["you"];
 }
 
 export function parseSection(value: string | null | undefined, role: Role): SettingsSection {
@@ -43,7 +44,7 @@ export function parseSection(value: string | null | undefined, role: Role): Sett
   return allowed.includes(value as SettingsSection) ? (value as SettingsSection) : allowed[0];
 }
 
-export const ROLE_WORDS: Record<Role, string> = { owner: "Owner", manager: "Manager", rep: "Rep" };
+export const ROLE_WORDS: Record<Role, string> = ROLE_LABEL;
 
 const DAY = 86_400_000;
 
@@ -195,10 +196,10 @@ export function SectionTitle({ title, description }: { title: string; descriptio
 
 /** Said once per section to someone who can read but not change it. */
 export function ReadOnlyNote({ role }: { role: Role }) {
-  if (role === "owner") return null;
+  if (isAdmin(role)) return null;
   return (
     <p className="rounded-xl border border-border bg-overlay/[0.03] px-3 py-2 text-sm text-muted-foreground">
-      You can see these as a {ROLE_WORDS[role].toLowerCase()}. An owner changes them.
+      You can see these as a {ROLE_WORDS[role].toLowerCase()}. An owner or admin changes them.
     </p>
   );
 }

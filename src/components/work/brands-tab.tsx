@@ -1,5 +1,6 @@
 "use client";
 
+import { useClientScope } from "@/components/shell/shell-context";
 import { useMutation, useQuery } from "convex/react";
 import { useRef, useState, type ReactNode } from "react";
 
@@ -675,7 +676,8 @@ export function BrandsTabView({ editor, kits, kit, onSelectKit, onSave, onArchiv
 
 /** The Brands tab fed by Convex. */
 export function BrandsTab({ workspaceId, editor }: { workspaceId: Id<"workspaces">; editor: boolean }) {
-  const kits = useQuery(api.brandKits.list, { workspaceId });
+  const { scope, clientId } = useClientScope();
+  const kits = useQuery(api.brandKits.list, { workspaceId, scope });
   const [kitId, setKitId] = useState<string | null>(null);
   const chosen = (kits?.some((row) => row.id === kitId) ? kitId : (kits?.[0]?.id ?? null)) as Id<"brandKits"> | null;
   const kit = useQuery(api.brandKits.get, chosen ? { workspaceId, kitId: chosen } : "skip");
@@ -690,7 +692,7 @@ export function BrandsTab({ workspaceId, editor }: { workspaceId: Id<"workspaces
       kit={kit ?? null}
       onSelectKit={setKitId}
       onSave={async (id, kind, content, note) => {
-        const result = await save({ workspaceId, ...(id ? { kitId: id as Id<"brandKits"> } : { kind }), ...content, note });
+        const result = await save({ workspaceId, ...(id ? { kitId: id as Id<"brandKits"> } : { kind, ...(kind === "client" && clientId ? { clientId } : {}) }), ...content, note });
         setKitId(result.kitId);
       }}
       onArchive={async (id) => {

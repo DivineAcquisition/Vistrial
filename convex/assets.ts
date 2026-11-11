@@ -1,3 +1,4 @@
+import { requireAdmin, requireWork } from "./lib/roles";
 import { paginationOptsValidator } from "convex/server";
 import { v } from "convex/values";
 
@@ -18,7 +19,7 @@ import {
 } from "./lib/evidence";
 import { basis } from "./lib/researchShapes";
 import { assetStatus } from "./lib/assetStatus";
-import { notAllowed, notFound, userError } from "./lib/errors";
+import { notFound, userError } from "./lib/errors";
 
 /** A draft that failed a completion check is fixed by a person first: a new version, or a rejection. */
 export const NEEDS_REVIEW = "This draft did not pass its checks. Edit it to add a new version, or reject it.";
@@ -34,7 +35,7 @@ const claim = v.object({
 });
 
 function assertEditor(role: string) {
-  if (role === "rep") notAllowed();
+  requireWork(role);
 }
 
 export const list = workspaceQuery({
@@ -206,7 +207,8 @@ export const version = workspaceQuery({
 export const approve = workspaceMutation({
   args: { assetId: v.id("assets") },
   handler: async (ctx, args) => {
-    assertEditor(ctx.member.role);
+    // Approving is the sign-off before something can go public: Owners and Admins.
+    requireAdmin(ctx.member.role);
     const asset = await ctx.db.get(args.assetId);
     if (!asset || asset.workspaceId !== ctx.workspaceId) notFound();
     if (asset.status === "needsReview") throw userError(NEEDS_REVIEW);

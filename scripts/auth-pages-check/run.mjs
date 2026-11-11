@@ -92,7 +92,7 @@ async function done(t, name, expectedPath) {
     check(`${n}: account not found in plain words`, a.includes('No account uses that email.'), a);
     const href = await t.page.locator('[role=alert] a').getAttribute('href');
     check(`${n}: offers sign-up and keeps the invite`, href === '/sign-up?redirect_url=%2Fjoin%3Ftoken%3Dabc', href);
-    check(`${n}: still on the email step`, (await h1(t.page)) === 'Open your workspace');
+    check(`${n}: still on the email step`, (await h1(t.page)) === 'Open your organization');
     await noRaw(t.page, n);
     // client-side checks never reach Clerk
     const before = t.mock.log.length;

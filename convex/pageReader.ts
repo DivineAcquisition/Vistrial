@@ -10,6 +10,7 @@
  * What a page says is untrusted. It is stored as data and shown as data; nothing here acts on it.
  */
 
+import { canWork, requireWork } from "./lib/roles";
 import { v } from "convex/values";
 
 import { internal } from "./_generated/api";
@@ -19,7 +20,7 @@ import { internalMutation, internalQuery } from "./_generated/server";
 import { writeAudit } from "./lib/audit";
 import { OUT_OF_CREDITS, accountFor, billingOn, chargeUsage, priceFor } from "./lib/billing";
 import { workspaceMutation, workspaceQuery } from "./lib/builders";
-import { notAllowed, notFound, userError } from "./lib/errors";
+import { notFound, userError } from "./lib/errors";
 import type { PageSnapshot } from "./lib/pageReader/extract";
 import { parseTarget } from "./lib/pageReader/net";
 import { READ_LIMITS, REASON_WORDS } from "./lib/pageReader/read";
@@ -119,7 +120,7 @@ export const quote = workspaceQuery({
       /** Null when billing is off (local and test deployments): nothing is blocked there. */
       availableCents: available,
       canAfford: available === null || available >= totalCents,
-      canStart: ctx.member.role !== "rep",
+      canStart: canWork(ctx.member.role),
     };
   },
 });
@@ -159,12 +160,12 @@ export async function createJob(ctx: MutationCtx, args: { workspaceId: Id<"works
 
 /**
  * Reads the pages a person confirmed. `confirmedCents` is the most they were shown; if that is no longer the
- * price, nothing is opened and they are shown the new one. Owners and Managers.
+ * price, nothing is opened and they are shown the new one. Owners, Admins and Members.
  */
 export const start = workspaceMutation({
   args: { urls: v.array(v.string()), confirmedCents: v.number() },
   handler: async (ctx, args) => {
-    if (ctx.member.role === "rep") notAllowed();
+    requireWork(ctx.member.role);
     const rows = checkUrls(args.urls);
     assertReadable(rows);
     const price = maxPriceCents(rows.length, plannedDriver());
@@ -182,11 +183,11 @@ export const start = workspaceMutation({
   },
 });
 
-/** Stops a job. Pages already read are kept and charged; the rest are not opened. Owners and Managers. */
+/** Stops a job. Pages already read are kept and charged; the rest are not opened. Owners, Admins and Members. */
 export const stop = workspaceMutation({
   args: { jobId: v.id("pageReadJobs") },
   handler: async (ctx, args) => {
-    if (ctx.member.role === "rep") notAllowed();
+    requireWork(ctx.member.role);
     const job = await ctx.db.get(args.jobId);
     if (!job || job.workspaceId !== ctx.workspaceId) notFound();
     if (job.status === "done" || job.status === "stopped") return { stopped: false };

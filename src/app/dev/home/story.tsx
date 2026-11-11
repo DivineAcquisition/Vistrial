@@ -77,7 +77,7 @@ export function HomeStory({ state, theme }: { state: string; theme: string }) {
   const client = useMemo(() => new ConvexReactClient("https://story-fixture-123.convex.cloud"), []);
   const [now] = useState(() => Date.now());
   const empty = state === "empty";
-  const shell: WorkspaceShell = { workspaceId: "ws1" as Id<"workspaces">, role: state === "rep" ? "rep" : "owner", setupDone: true, agents: STORY_AGENTS };
+  const shell: WorkspaceShell = { workspaceId: "ws1" as Id<"workspaces">, role: state === "rep" || state === "viewer" ? "viewer" : "owner", setupDone: true, agents: STORY_AGENTS };
   const overview = storyOverview(state);
   return (
     <ConvexProvider client={client}>

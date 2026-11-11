@@ -1,8 +1,9 @@
+import { isAdmin, requireAdmin } from "./lib/roles";
 import { v } from "convex/values";
 
 import { writeAudit } from "./lib/audit";
 import { canSeeLead } from "./lib/canSeeLead";
-import { notAllowed, notFound, userError } from "./lib/errors";
+import { notFound, userError } from "./lib/errors";
 import { workspaceMutation, workspaceQuery } from "./lib/builders";
 
 const channel = v.union(v.literal("email"), v.literal("text"), v.literal("call"), v.literal("all"));
@@ -19,7 +20,7 @@ export const setConsent = workspaceMutation({
   handler: async (ctx, args) => {
     const person = await ctx.db.get(args.personId);
     if (!person || person.workspaceId !== ctx.workspaceId) notFound();
-    if (ctx.member.role === "rep") {
+    if (!isAdmin(ctx.member.role)) {
       const leads = await ctx.db
         .query("leads")
         .withIndex("by_workspace_person", (q) => q.eq("workspaceId", ctx.workspaceId).eq("personId", person._id))
@@ -35,7 +36,7 @@ export const setConsent = workspaceMutation({
         (person.emailConsent === "revoked" || person.textConsent === "revoked" || person.callConsent === "revoked") &&
         args.next !== "revoked");
     if (clearing) {
-      if (ctx.member.role === "rep") notAllowed();
+      requireAdmin(ctx.member.role);
       if (!args.reason || args.reason.trim().length < 8) throw userError("A reason is required.");
     }
     const at = Date.now();
@@ -85,7 +86,7 @@ export const readConsent = workspaceQuery({
   handler: async (ctx, args) => {
     const person = await ctx.db.get(args.personId);
     if (!person || person.workspaceId !== ctx.workspaceId) notFound();
-    if (ctx.member.role === "rep") {
+    if (!isAdmin(ctx.member.role)) {
       const leads = await ctx.db
         .query("leads")
         .withIndex("by_workspace_person", (q) => q.eq("workspaceId", ctx.workspaceId).eq("personId", person._id))

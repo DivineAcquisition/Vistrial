@@ -3,12 +3,13 @@
  * that module, and starting a run loads every skill.
  */
 
+import { requireWork } from "./lib/roles";
 import { v } from "convex/values";
 
 import { GROWTH_ARCHITECT } from "./catalog";
 import { writeAudit } from "./lib/audit";
 import { workspaceMutation } from "./lib/builders";
-import { notAllowed, notFound, userError } from "./lib/errors";
+import { notFound, userError } from "./lib/errors";
 import { liveFact, writeFact } from "./lib/facts";
 import { offerDetailsText } from "./lib/offerCards";
 import { OPEN_RUN, contentOf, ownCard, versionsOf } from "./offers";
@@ -18,12 +19,12 @@ import { startRunFor } from "./runs";
  * "Analyse this offer": runs Offer Intelligence on the card's saved, current version. The card is what the
  * business states about its offer, so it is written to memory as the owner's words first; the run then sets
  * it beside competitors from approved research. Goes through the run path's own caps and credit check.
- * Owners and Managers.
+ * Owners, Admins and Members.
  */
 export const analyse = workspaceMutation({
   args: { cardId: v.id("offerCards") },
   handler: async (ctx, args) => {
-    if (ctx.member.role === "rep") notAllowed();
+    requireWork(ctx.member.role);
     const card = await ownCard(ctx, ctx.workspaceId, args.cardId);
     if (card.archived) throw userError("This offer was put away.");
     const versions = await versionsOf(ctx, ctx.workspaceId, card._id);

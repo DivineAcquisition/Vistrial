@@ -1,3 +1,4 @@
+import { requireAdmin } from "./lib/roles";
 import { v } from "convex/values";
 
 import { currentAgentSlug } from "./catalog";
@@ -7,7 +8,7 @@ import { workspaceMutation, workspaceQuery } from "./lib/builders";
 import { writeAudit } from "./lib/audit";
 import { PLATFORM_CEILING, assertWithinCeiling, capScope, dayKey } from "./lib/caps";
 import { capsRow, daySpend, loadCaps } from "./lib/capRows";
-import { notAllowed, userError } from "./lib/errors";
+import { userError } from "./lib/errors";
 
 const OPEN = ["queued", "running", "waiting"] as const;
 
@@ -71,7 +72,7 @@ export const setCaps = workspaceMutation({
   },
   handler: async (ctx, input) => {
     const args = { ...input, agentSlug: currentAgentSlug(input.agentSlug) };
-    if (ctx.member.role !== "owner") notAllowed();
+    requireAdmin(ctx.member.role);
     assertWithinCeiling(args);
     if (args.maxSteps < 1 || args.maxDurationMs < 1) throw userError("Caps must allow at least one step.");
     const scope = capScope(args.skillSlug);
@@ -106,7 +107,7 @@ export const setCaps = workspaceMutation({
 export const setPaused = workspaceMutation({
   args: { paused: v.boolean() },
   handler: async (ctx, args) => {
-    if (ctx.member.role !== "owner") notAllowed();
+    requireAdmin(ctx.member.role);
     const current = await ctx.db
       .query("workspaceControls")
       .withIndex("by_workspace", (q) => q.eq("workspaceId", ctx.workspaceId))

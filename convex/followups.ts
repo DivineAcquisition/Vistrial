@@ -5,6 +5,7 @@
  * join the session. Every cent is recorded on the message and counted toward the agent's daily cap.
  */
 
+import { requireWork } from "./lib/roles";
 import { v } from "convex/values";
 
 import { internal } from "./_generated/api";
@@ -15,7 +16,7 @@ import { workspaceMutation, workspaceQuery } from "./lib/builders";
 import { addDaySpend } from "./lib/capRows";
 import { dayKey } from "./lib/caps";
 import { writeAudit } from "./lib/audit";
-import { notAllowed, notFound, userError } from "./lib/errors";
+import { notFound, userError } from "./lib/errors";
 import type { ModelRoute } from "./lib/modelRouter";
 import { devSkillsEnabled, wrapUntrusted } from "./lib/registry";
 import { canonicalUrl } from "./lib/sourceRefs";
@@ -28,7 +29,7 @@ export const ESTIMATE = { thorough: { low: 30, high: 90, maxSearches: 5 }, fast:
 const MAX_FOLLOWUP_CENTS = 400;
 
 function assertEditor(role: string) {
-  if (role === "rep") notAllowed();
+  requireWork(role);
 }
 
 type Mode = "thorough" | "fast";
@@ -99,7 +100,7 @@ async function spentOn(ctx: { db: import("./_generated/server").QueryCtx["db"] }
   return rows.reduce((sum, row) => sum + row.costCents, 0);
 }
 
-/** A follow-up question. Answered from the session's own sources. Owner or Manager. */
+/** A follow-up question. Answered from the session's own sources. Owner, Admin or Member. */
 export const ask = workspaceMutation({
   args: { projectId: v.id("researchProjects"), text: v.string(), mode: v.optional(v.union(v.literal("thorough"), v.literal("fast"))) },
   handler: async (ctx, args) => {

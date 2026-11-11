@@ -13,7 +13,7 @@ import { EmptyState } from "@/components/ui/empty-state";
 function ManageIntegrations() {
   const shell = useWorkspaceShell();
   const query = useSearchParams();
-  if (!shell) return <EmptyState kind="permission" title="Sign in to open your workspace." />;
+  if (!shell) return <EmptyState kind="permission" title="Sign in to open your organization." />;
   const outcome = query.get("outcome");
   return (
     <div className="mx-auto grid w-full max-w-6xl min-w-0 gap-4">

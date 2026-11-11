@@ -70,7 +70,7 @@ export default function InteractiveOnboardingChecklistDemo() {
                   <PlayCircle className="size-5 text-primary" />
                   Welcome
                 </CardTitle>
-                <CardDescription>Where a new workspace starts.</CardDescription>
+                <CardDescription>Where a new organization starts.</CardDescription>
               </CardHeader>
               <CardPanel>
                 <Button className="w-full" variant={completedSteps.has("welcome") ? "outline" : "primary"} onClick={() => complete("welcome")}>

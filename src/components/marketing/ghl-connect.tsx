@@ -39,7 +39,7 @@ export function GhlConnectVisual() {
           Choose a location
         </p>
         <p className="mt-2 text-sm text-muted-foreground">
-          LeadConnector opens the location picker. One click. The workspace is live on that location.
+          LeadConnector opens the location picker. One click. The organization is live on that location.
         </p>
         <ul className="mt-5 space-y-2">
           <li className="rounded-lg border border-brand-500/30 bg-brand-500/[0.08] px-4 py-3">

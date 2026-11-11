@@ -4,7 +4,7 @@ import { useAction, useMutation, useQuery } from "convex/react";
 
 import { IntegrationsView } from "@/components/connections/integrations-view";
 import { TranscriptsView } from "@/components/connections/transcripts-view";
-import { useWorkspaceShell } from "@/components/shell/shell-context";
+import { useWorkspaceShell, useClientScope } from "@/components/shell/shell-context";
 import { describeError } from "@/lib/errors/user-error";
 import { showError } from "@/lib/errors/show-error";
 import { api } from "../../../convex/_generated/api";
@@ -27,7 +27,8 @@ export function Integrations({
 }) {
   const shell = useWorkspaceShell();
   const data = useQuery(api.integrations.list, { workspaceId });
-  const transcripts = useQuery(api.transcripts.list, { workspaceId });
+  const { scope, clientId } = useClientScope();
+  const transcripts = useQuery(api.transcripts.list, { workspaceId, scope });
   const startConnect = useMutation(api.integrations.startConnect);
   const disconnect = useAction(api.integrationActions.disconnect);
   const syncNow = useAction(api.bookings.syncNow);
@@ -73,7 +74,7 @@ export function Integrations({
               highlight={highlightTranscript}
               onAdd={async (input) => {
                 try {
-                  await addTranscript({ workspaceId, ...input });
+                  await addTranscript({ workspaceId, ...input, clientId });
                   return null;
                 } catch (problem) {
                   // Shown beside the form, where the person is looking.

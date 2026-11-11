@@ -1,7 +1,7 @@
 /**
  * Settings: the workspace's business details, its people, its agents' defaults, Vistrial support access,
- * and each member's own choices. Owners change everything here. Managers read the workspace sections and
- * change nothing that affects the whole workspace. Reps only reach their own section ("You").
+ * and each member's own choices. Owners and Admins change what belongs to the organization; only an Owner changes an Owner or Vistrial
+ * support access. Members and Viewers only reach their own section ("You").
  * Every workspace-wide change writes an audit row with ids and counts only.
  */
 import { v } from "convex/values";
@@ -9,14 +9,13 @@ import { v } from "convex/values";
 import type { Doc, Id } from "./_generated/dataModel";
 import type { MutationCtx, QueryCtx } from "./_generated/server";
 import { writeAudit } from "./lib/audit";
-import { managerQuery, ownerMutation, workspaceMutation, workspaceQuery, type MemberAccess } from "./lib/builders";
+import { adminMutation, adminQuery, ownerMutation, selfMutation, workspaceQuery, type MemberAccess } from "./lib/builders";
 import { notAllowed, notFound, userError } from "./lib/errors";
+import { accountMember, activeAccountOwners, closeAccountMemberIfUnused, organizationsOf, upsertAccountMember } from "./lib/organizations";
+import { ROLE_ORDER, isAdmin, isOwner, roleOf, storedRoleValidator } from "./lib/roles";
 
 const researchMode = v.union(v.literal("fast"), v.literal("thorough"));
-const memberRole = v.union(v.literal("owner"), v.literal("manager"), v.literal("rep"));
 const themeChoice = v.union(v.literal("light"), v.literal("dark"), v.literal("system"));
-
-type Role = Doc<"members">["role"];
 
 async function settingsRow(ctx: QueryCtx | MutationCtx, workspaceId: Id<"workspaces">) {
   return ctx.db
@@ -57,10 +56,6 @@ async function memberHere(ctx: MutationCtx & MemberAccess, memberId: Id<"members
   return row;
 }
 
-function ownersLeftAfter(members: Doc<"members">[], change: { memberId: Id<"members">; role: Role | null }) {
-  return members.filter((row) => (row._id === change.memberId ? change.role === "owner" : row.role === "owner")).length;
-}
-
 /* ------------------------------------------------------------------ You */
 
 /** What the signed-in member sees about themself, plus the workspace defaults any member's screens use. */
@@ -76,7 +71,7 @@ export const me = workspaceQuery({
       memberId: ctx.member._id,
       displayName: ctx.member.displayName,
       email: ctx.member.email ?? ctx.identity.email ?? null,
-      role: ctx.member.role,
+      role: ctx.role,
       joinedAt: ctx.member._creationTime,
       theme: prefs?.theme ?? null,
       themeDefault: settings?.themeDefault ?? ("light" as const),
@@ -84,7 +79,7 @@ export const me = workspaceQuery({
         checkInsDue: prefs?.notifyCheckInsDue ?? true,
         questionsWaiting: prefs?.notifyQuestionsWaiting ?? true,
         reportReady: prefs?.notifyReportReady ?? true,
-        /** Whether the notices above also go out by email. Reps get no email either way. */
+        /** Whether the notices above also go out by email. Members and Viewers get no email either way. */
         email: prefs?.notifyByEmail ?? true,
       },
       defaultResearchMode: settings?.defaultResearchMode ?? ("thorough" as const),
@@ -93,7 +88,7 @@ export const me = workspaceQuery({
 });
 
 /** Keeps the member's sign-in email and name on their row so the People list can show them. Self only. */
-export const rememberMe = workspaceMutation({
+export const rememberMe = selfMutation({
   args: {},
   handler: async (ctx) => {
     const email = ctx.identity.email?.trim().toLowerCase();
@@ -107,7 +102,7 @@ export const rememberMe = workspaceMutation({
 });
 
 /** The member's own theme and notice choices. Affects only them, so any role may change it. */
-export const setMyPreferences = workspaceMutation({
+export const setMyPreferences = selfMutation({
   args: {
     theme: v.optional(themeChoice),
     checkInsDue: v.optional(v.boolean()),
@@ -136,7 +131,7 @@ export const setMyPreferences = workspaceMutation({
 
 /* ------------------------------------------------------------- Business */
 
-export const business = managerQuery({
+export const business = adminQuery({
   args: {},
   handler: async (ctx) => {
     const workspace = await ctx.db.get(ctx.workspaceId);
@@ -147,24 +142,30 @@ export const business = managerQuery({
       timezone: workspace.timezone,
       createdAt: workspace.createdAt,
       defaultCountry: settings?.defaultCountry?.trim().toUpperCase() || "US",
-      canEdit: ctx.member.role === "owner",
+      canEdit: isAdmin(ctx.member.role),
     };
   },
 });
 
-export const renameWorkspace = ownerMutation({
+export const renameWorkspace = adminMutation({
   args: { name: v.string() },
   handler: async (ctx, args) => {
     const name = args.name.trim();
     if (!name) throw userError("Name the workspace.");
     if (name.length > 80) throw userError("Keep the name under 80 characters.");
+    const workspace = await ctx.db.get(ctx.workspaceId);
     await ctx.db.patch(ctx.workspaceId, { name });
+    // While an account has one organization its name follows it, as it did when the two were one thing.
+    if (workspace?.accountId) {
+      const account = await ctx.db.get(workspace.accountId);
+      if (account && account.name === workspace.name && (await organizationsOf(ctx, account._id)).length === 1) await ctx.db.patch(account._id, { name });
+    }
     await audit(ctx, "workspace.renamed", ctx.workspaceId);
     return null;
   },
 });
 
-export const setCountry = ownerMutation({
+export const setCountry = adminMutation({
   args: { country: v.string() },
   handler: async (ctx, args) => {
     const country = args.country.trim().toUpperCase();
@@ -178,7 +179,11 @@ export const setCountry = ownerMutation({
 
 /* --------------------------------------------------------------- People */
 
-export const people = managerQuery({
+/**
+ * Who is in this organization, with their role here. Owners and Admins. `grantable` lists the account's
+ * other organizations the caller also runs, so one invite can open several.
+ */
+export const people = adminQuery({
   args: {},
   handler: async (ctx) => {
     const members = await activeMembers(ctx, ctx.workspaceId);
@@ -188,29 +193,58 @@ export const people = managerQuery({
       .take(100);
     const now = Date.now();
     const settings = await settingsRow(ctx, ctx.workspaceId);
-    const order: Record<Role, number> = { owner: 0, manager: 1, rep: 2 };
+    const workspace = await ctx.db.get(ctx.workspaceId);
+    const grantable: { workspaceId: Id<"workspaces">; name: string }[] = [];
+    const names = new Map<Id<"workspaces">, string>();
+    if (workspace) names.set(workspace._id, workspace.name);
+    if (workspace?.accountId) {
+      for (const organization of await organizationsOf(ctx, workspace.accountId)) {
+        if (organization._id === ctx.workspaceId) continue;
+        const mine = await ctx.db
+          .query("members")
+          .withIndex("by_workspace_user", (q) => q.eq("workspaceId", organization._id).eq("userId", ctx.identity.subject))
+          .unique();
+        if (!mine?.active || !isAdmin(mine.role)) continue;
+        grantable.push({ workspaceId: organization._id, name: organization.name });
+        names.set(organization._id, organization.name);
+      }
+    }
     return {
-      canManage: ctx.member.role === "owner",
+      canManage: true,
+      /** Only an Owner makes another Owner, changes one, or switches Vistrial support access. */
+      isOwner: ctx.role === "owner",
       me: ctx.member._id,
+      organizationName: workspace?.name ?? "",
+      grantable,
       members: members
         .map((row) => ({
           id: row._id,
           name: row.displayName,
           email: row.email ?? null,
-          role: row.role,
+          role: roleOf(row.role),
           joinedAt: row._creationTime,
         }))
-        .sort((a, b) => order[a.role] - order[b.role] || a.joinedAt - b.joinedAt),
+        .sort((a, b) => ROLE_ORDER[a.role] - ROLE_ORDER[b.role] || a.joinedAt - b.joinedAt),
       invites: invites
         .filter((row) => row.acceptedAt === undefined && row.canceledAt === undefined && row.expiresAt > now)
-        .map((row) => ({ id: row._id, email: row.email, role: row.role, sentAt: row._creationTime, expiresAt: row.expiresAt }))
+        .map((row) => ({
+          id: row._id,
+          email: row.email,
+          role: roleOf(row.role),
+          /** Every organization the invite opens that the caller can also see, this one first. */
+          organizations: (row.grants ?? [{ workspaceId: row.workspaceId, role: row.role }])
+            .filter((grant) => names.has(grant.workspaceId))
+            .map((grant) => ({ name: names.get(grant.workspaceId) ?? "", role: roleOf(grant.role) })),
+          sentAt: row._creationTime,
+          expiresAt: row.expiresAt,
+        }))
         .sort((a, b) => b.sentAt - a.sentAt),
       supportAccess: settings?.serviceTeamAccess !== false,
     };
   },
 });
 
-export const cancelInvite = ownerMutation({
+export const cancelInvite = adminMutation({
   args: { invitationId: v.id("invitations") },
   handler: async (ctx, args) => {
     const row = await ctx.db.get(args.invitationId);
@@ -223,30 +257,78 @@ export const cancelInvite = ownerMutation({
   },
 });
 
-export const setMemberRole = ownerMutation({
-  args: { memberId: v.id("members"), role: memberRole },
+const LAST_OWNER = "An account needs at least one owner. Make someone else an owner first.";
+const OWNERS_ONLY = "Only an Owner can change an Owner or make one.";
+
+/** The account's active Owners, or this organization's when it has no account yet. */
+async function ownerUserIds(ctx: MutationCtx & MemberAccess): Promise<string[]> {
+  const workspace = await ctx.db.get(ctx.workspaceId);
+  if (workspace?.accountId) return (await activeAccountOwners(ctx, workspace.accountId)).map((row) => row.userId);
+  return (await activeMembers(ctx, ctx.workspaceId)).filter((row) => isOwner(row.role)).map((row) => row.userId);
+}
+
+/**
+ * Changes a person's role in this organization. Owners and Admins; only an Owner touches an Owner.
+ * Owner is a role on the whole account: making someone an Owner makes them one in every organization of
+ * the account, and lowering an Owner here leaves them an Admin in the others.
+ */
+export const setMemberRole = adminMutation({
+  args: { memberId: v.id("members"), role: storedRoleValidator },
   handler: async (ctx, args) => {
     const row = await memberHere(ctx, args.memberId);
-    if (row.role === args.role) return null;
-    const members = await activeMembers(ctx, ctx.workspaceId);
-    if (ownersLeftAfter(members, { memberId: row._id, role: args.role }) === 0) {
-      throw userError("A workspace needs at least one owner. Make someone else an owner first.");
+    const from = roleOf(row.role);
+    const to = roleOf(args.role);
+    if (from === to) return null;
+    if ((from === "owner" || to === "owner") && ctx.role !== "owner") throw userError(OWNERS_ONLY, "not_allowed");
+    const workspace = await ctx.db.get(ctx.workspaceId);
+    const accountId = workspace?.accountId;
+    if (from === "owner") {
+      const owners = await ownerUserIds(ctx);
+      if (owners.filter((userId) => userId !== row.userId).length === 0) throw userError(LAST_OWNER);
     }
-    await ctx.db.patch(row._id, { role: args.role });
-    await audit(ctx, "member.role_changed", row._id, { owner: 0, manager: 1, rep: 2 }[args.role]);
+    await ctx.db.patch(row._id, { role: to });
+    if (accountId && (from === "owner" || to === "owner")) {
+      await upsertAccountMember(ctx, { accountId, userId: row.userId, role: "member", displayName: row.displayName, email: row.email });
+      const accountRow = await accountMember(ctx, accountId, row.userId);
+      if (accountRow) await ctx.db.patch(accountRow._id, { role: to === "owner" ? "owner" : "member" });
+      for (const organization of await organizationsOf(ctx, accountId)) {
+        if (organization._id === ctx.workspaceId) continue;
+        const other = await ctx.db
+          .query("members")
+          .withIndex("by_workspace_user", (q) => q.eq("workspaceId", organization._id).eq("userId", row.userId))
+          .unique();
+        if (to === "owner") {
+          if (other) await ctx.db.patch(other._id, { role: "owner", active: true, removedAt: undefined });
+          else await ctx.db.insert("members", { workspaceId: organization._id, userId: row.userId, role: "owner", displayName: row.displayName, active: true, ...(row.email ? { email: row.email } : {}) });
+        } else if (other?.active && isOwner(other.role)) {
+          await ctx.db.patch(other._id, { role: "admin" });
+        }
+        await writeAudit(ctx, { workspaceId: organization._id, actorType: "user", actorId: ctx.identity.subject, action: "member.role_changed", subject: other?._id ?? row._id, count: ROLE_ORDER[to === "owner" ? "owner" : "admin"] });
+      }
+    }
+    await audit(ctx, "member.role_changed", row._id, ROLE_ORDER[to]);
     return null;
   },
 });
 
-export const removeMember = ownerMutation({
+/** Removes a person from this organization. Their roles in other organizations are not touched. */
+export const removeMember = adminMutation({
   args: { memberId: v.id("members") },
   handler: async (ctx, args) => {
     const row = await memberHere(ctx, args.memberId);
-    const members = await activeMembers(ctx, ctx.workspaceId);
-    if (ownersLeftAfter(members, { memberId: row._id, role: null }) === 0) {
-      throw userError("A workspace needs at least one owner. Make someone else an owner first.");
+    if (isOwner(row.role)) {
+      if (ctx.role !== "owner") throw userError(OWNERS_ONLY, "not_allowed");
+      const owners = await ownerUserIds(ctx);
+      if (owners.filter((userId) => userId !== row.userId).length === 0) throw userError(LAST_OWNER);
+      const workspace = await ctx.db.get(ctx.workspaceId);
+      // An Owner is one in every organization, so they cannot be taken out of just this one.
+      if (workspace?.accountId && (await organizationsOf(ctx, workspace.accountId)).length > 1) {
+        throw userError("An Owner is an Owner in every organization. Change their role first, then remove them.");
+      }
     }
     await ctx.db.patch(row._id, { active: false, removedAt: Date.now() });
+    const workspace = await ctx.db.get(ctx.workspaceId);
+    if (workspace?.accountId) await closeAccountMemberIfUnused(ctx, workspace.accountId, row.userId);
     await audit(ctx, "member.removed", row._id);
     return null;
   },
@@ -263,7 +345,7 @@ const STAFF_ROLE_WORDS = { platform_admin: "Vistrial admin", service_team: "Vist
 export const supportLog = workspaceQuery({
   args: {},
   handler: async (ctx) => {
-    if (ctx.member.role !== "owner") notAllowed();
+    if (!isOwner(ctx.member.role)) notAllowed();
     const settings = await settingsRow(ctx, ctx.workspaceId);
     const grants = await ctx.db
       .query("staffAccessGrants")
@@ -333,18 +415,18 @@ export const setSupportAccess = ownerMutation({
 
 /* --------------------------------------------------------------- Agents */
 
-export const agentDefaults = managerQuery({
+export const agentDefaults = adminQuery({
   args: {},
   handler: async (ctx) => {
     const settings = await settingsRow(ctx, ctx.workspaceId);
     return {
       defaultResearchMode: settings?.defaultResearchMode ?? ("thorough" as const),
-      canEdit: ctx.member.role === "owner",
+      canEdit: isAdmin(ctx.member.role),
     };
   },
 });
 
-export const setDefaultResearchMode = ownerMutation({
+export const setDefaultResearchMode = adminMutation({
   args: { mode: researchMode },
   handler: async (ctx, args) => {
     const settings = await requireSettings(ctx, ctx.workspaceId);

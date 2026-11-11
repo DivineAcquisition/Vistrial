@@ -213,6 +213,7 @@ function LiveSettings({ shell }: { shell: WorkspaceShell }) {
         }}
         onNotice={(key, on) => attempt(setPrefs({ workspaceId, [key]: on }))}
         onAccount={() => clerk.openUserProfile()}
+        onSignOut={() => void clerk.signOut({ redirectUrl: "/sign-in" })}
       />
     );
   }

@@ -182,6 +182,7 @@ export function SettingsStory({ section: asked, role: askedRole, support }: { se
             }}
             onNotice={async (key, on) => setYou((row) => ({ ...row, notifications: { ...row.notifications, [key]: on } }))}
             onAccount={() => undefined}
+            onSignOut={() => undefined}
           />
         ) : null}
       </SettingsLayout>

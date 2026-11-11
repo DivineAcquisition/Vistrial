@@ -115,7 +115,7 @@ export function ConnectionsScreen() {
 
   if (!shell)
     return (
-      <EmptyState kind="permission" title="Sign in to open your workspace." />
+      <EmptyState kind="permission" title="Sign in to open your organization." />
     );
   const conn = meta?.connection ?? null;
   const metaStatus: { label: string; tone: Tone } = !conn

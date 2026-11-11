@@ -1,5 +1,6 @@
 "use client";
 
+import { canWork } from "@/lib/roles";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useEffect } from "react";
 
@@ -22,7 +23,7 @@ function Research() {
   const agent = shell.agents.find((row) => row.slug === params.slug);
   return (
     <WorkGate agent={agent}>
-      <ResearchTab workspaceId={shell.workspaceId} base={`/app/agents/${params.slug}`} slug={params.slug} editor={shell.role !== "rep" && agent?.state !== "off"} />
+      <ResearchTab workspaceId={shell.workspaceId} base={`/app/agents/${params.slug}`} slug={params.slug} editor={canWork(shell.role) && agent?.state !== "off"} />
     </WorkGate>
   );
 }

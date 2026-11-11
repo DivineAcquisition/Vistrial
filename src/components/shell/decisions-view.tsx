@@ -17,7 +17,7 @@ import { bodyText } from "@/lib/ui";
 
 export function DecisionsView() {
   const shell = useWorkspaceShell();
-  if (!shell) return <p className="text-sm text-muted-foreground">Sign in to open your workspace.</p>;
+  if (!shell) return <p className="text-sm text-muted-foreground">Sign in to open your organization.</p>;
   return <LiveDecisions shell={shell} />;
 }
 
@@ -52,7 +52,7 @@ function LiveDecisions({ shell }: { shell: NonNullable<ReturnType<typeof useWork
       <div className="mx-auto grid w-full max-w-3xl min-w-0 gap-6">
         <PageHeader
           eyebrow="First sign-in"
-          title="Set up the workspace"
+          title="Set up the organization"
           description="Confirm the business profile, then turn on Growth Architect. Nothing runs until you do."
         />
         <ol className="grid gap-2 text-sm">

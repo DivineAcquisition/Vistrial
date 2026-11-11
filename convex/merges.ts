@@ -1,9 +1,10 @@
+import { requireAdmin } from "./lib/roles";
 import { v } from "convex/values";
 
 import type { Id } from "./_generated/dataModel";
 import { writeAudit } from "./lib/audit";
 import { mergeConsent, type ConsentSnapshot } from "./lib/consent";
-import { notAllowed, notFound, userError } from "./lib/errors";
+import { notFound, userError } from "./lib/errors";
 import { workspaceMutation, workspaceQuery } from "./lib/builders";
 
 const SIMILAR_CAP = 50;
@@ -11,7 +12,7 @@ const SIMILAR_CAP = 50;
 export const listMatches = workspaceQuery({
   args: {},
   handler: async (ctx) => {
-    if (ctx.member.role === "rep") notAllowed();
+    requireAdmin(ctx.member.role);
     const rows = await ctx.db
       .query("possibleMatches")
       .withIndex("by_workspace_status", (q) => q.eq("workspaceId", ctx.workspaceId).eq("status", "pending"))
@@ -34,7 +35,7 @@ export const listMatches = workspaceQuery({
 export const listMerges = workspaceQuery({
   args: {},
   handler: async (ctx) => {
-    if (ctx.member.role === "rep") notAllowed();
+    requireAdmin(ctx.member.role);
     const rows = await ctx.db
       .query("mergeRecords")
       .withIndex("by_workspace", (q) => q.eq("workspaceId", ctx.workspaceId))
@@ -59,7 +60,7 @@ export const listMerges = workspaceQuery({
 export const dismiss = workspaceMutation({
   args: { matchId: v.id("possibleMatches") },
   handler: async (ctx, args) => {
-    if (ctx.member.role === "rep") notAllowed();
+    requireAdmin(ctx.member.role);
     const match = await ctx.db.get(args.matchId);
     if (!match || match.workspaceId !== ctx.workspaceId) notFound();
     await ctx.db.patch(match._id, { status: "dismissed" });
@@ -90,7 +91,7 @@ export const dismiss = workspaceMutation({
 export const merge = workspaceMutation({
   args: { matchId: v.optional(v.id("possibleMatches")), survivorPersonId: v.id("people"), mergedPersonId: v.id("people") },
   handler: async (ctx, args) => {
-    if (ctx.member.role === "rep") notAllowed();
+    requireAdmin(ctx.member.role);
     return mergePeople(ctx, args.survivorPersonId, args.mergedPersonId, ctx.member._id, args.matchId);
   },
 });
@@ -289,7 +290,7 @@ async function personFor(
 export const undo = workspaceMutation({
   args: { mergeId: v.id("mergeRecords") },
   handler: async (ctx, args) => {
-    if (ctx.member.role === "rep") notAllowed();
+    requireAdmin(ctx.member.role);
     const record = await ctx.db.get(args.mergeId);
     if (!record || record.workspaceId !== ctx.workspaceId || record.revertedAt !== undefined) notFound();
     const survivor = await ctx.db.get(record.survivorPersonId);

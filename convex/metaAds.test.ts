@@ -11,16 +11,16 @@ const modules = import.meta.glob(["./**/*.ts", "!./**/*.test.ts"]);
 async function setup() {
   const t = convexTest(schema, modules);
   const workspaceId = await t.mutation(internal.reviewer.setUpReviewerWorkspace, { userId: "user_owner" });
-  const repId = await t.run(async (ctx) => {
-    await ctx.db.insert("members", { workspaceId, userId: "user_rep", role: "rep", displayName: "Rep", active: true });
+  const viewerId = await t.run(async (ctx) => {
+    await ctx.db.insert("members", { workspaceId, userId: "user_viewer", role: "viewer", displayName: "Viewer", active: true });
     const other = await ctx.db.insert("workspaces", { name: "Other", slug: "other", timezone: "UTC", status: "active", createdAt: 0 });
     await ctx.db.insert("members", { workspaceId: other, userId: "user_other", role: "owner", displayName: "Other", active: true });
     return other;
   });
   const owner = t.withIdentity({ subject: "user_owner", issuer: "https://clerk.test", tokenIdentifier: "x|user_owner", name: "Owner", email: "o@example.com" });
-  const rep = t.withIdentity({ subject: "user_rep", issuer: "https://clerk.test", tokenIdentifier: "x|user_rep", name: "Rep", email: "r@example.com" });
+  const viewer = t.withIdentity({ subject: "user_viewer", issuer: "https://clerk.test", tokenIdentifier: "x|user_viewer", name: "Viewer", email: "r@example.com" });
   const stranger = t.withIdentity({ subject: "user_other", issuer: "https://clerk.test", tokenIdentifier: "x|user_other", name: "Other", email: "s@example.com" });
-  return { t, workspaceId, otherWorkspace: repId, owner, rep, stranger };
+  return { t, workspaceId, otherWorkspace: viewerId, owner, viewer, stranger };
 }
 
 async function connect(t: ReturnType<typeof convexTest>, workspaceId: Id<"workspaces">) {
@@ -38,9 +38,9 @@ async function connect(t: ReturnType<typeof convexTest>, workspaceId: Id<"worksp
 
 describe("Meta ads connection", () => {
   it("never returns the token, and shows members the connection", async () => {
-    const { t, workspaceId, rep } = await setup();
+    const { t, workspaceId, viewer } = await setup();
     await connect(t, workspaceId);
-    const status = await rep.query(api.metaAds.status, { workspaceId });
+    const status = await viewer.query(api.metaAds.status, { workspaceId });
     expect(JSON.stringify(status)).not.toContain("SECRET-TOKEN");
     expect(status.connection).toMatchObject({ metaUserName: "Pat", status: "connected", calls: { ok: 4, failed: 0, successRate: 1 } });
     expect(status.canManage).toBe(false);
@@ -53,11 +53,11 @@ describe("Meta ads connection", () => {
   });
 
   it("lets only an owner start Facebook Login, and each login attempt works once", async () => {
-    const { t, workspaceId, owner, rep } = await setup();
+    const { t, workspaceId, owner, viewer } = await setup();
     process.env.META_APP_ID = "123";
     process.env.META_APP_SECRET = "s";
     process.env.CONVEX_SITE_URL = "https://example.convex.site";
-    await expect(rep.mutation(api.metaAds.startConnect, { workspaceId })).rejects.toThrow();
+    await expect(viewer.mutation(api.metaAds.startConnect, { workspaceId })).rejects.toThrow();
     const { url } = await owner.mutation(api.metaAds.startConnect, { workspaceId, returnOrigin: "https://evil.example.com" });
     const nonce = new URL(url).searchParams.get("state")!;
     expect(new URL(url).searchParams.get("redirect_uri")).toBe("https://example.convex.site/meta/callback");

@@ -1,5 +1,6 @@
 "use client";
 
+import { canWork } from "@/lib/roles";
 import { usePaginatedQuery } from "convex/react";
 import Link from "next/link";
 
@@ -15,7 +16,7 @@ import { Stagger, StaggerItem } from "@/components/motion/stagger";
 
 function Projects({ shell }: { shell: WorkspaceShell }) {
   const { results, status, loadMore } = usePaginatedQuery(api.research.listProjects, { workspaceId: shell.workspaceId }, { initialNumItems: 20 });
-  const canStart = shell.role !== "rep";
+  const canStart = canWork(shell.role);
   return (
     <div className="mx-auto grid w-full max-w-4xl min-w-0 gap-6">
       <PageHeader
@@ -55,6 +56,6 @@ function Projects({ shell }: { shell: WorkspaceShell }) {
 
 export default function ResearchPage() {
   const shell = useWorkspaceShell();
-  if (!shell) return <EmptyState kind="permission" title="Sign in to open your workspace." />;
+  if (!shell) return <EmptyState kind="permission" title="Sign in to open your organization." />;
   return <Projects shell={shell} />;
 }

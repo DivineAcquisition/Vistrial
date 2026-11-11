@@ -616,23 +616,23 @@ describe("landing page teardown", () => {
     expect(done.quote.steps[2]).toBe("Too few other pages for shared patterns: each page is still read against the framework");
   });
 
-  it("lets Owners and Managers start and Reps read, and never crosses workspaces", async () => {
+  it("lets Owners and Admins start and Viewers read, and never crosses workspaces", async () => {
     const t = makeTester();
     const a = await seed(t, "Alpha");
     const b = await seed(t, "Beta");
     web();
     script();
-    const invite = await a.owner.mutation(api.workspace.invite, { workspaceId: a.workspaceId, email: "rep@example.com", role: "rep" });
-    const rep = t.withIdentity({ ...person("rep"), email: "rep@example.com" });
-    await rep.mutation(api.workspace.acceptInvite, { token: invite.token });
-    expect(await message(rep.mutation(api.landingTeardown.start, { workspaceId: a.workspaceId, ...ASK, confirmedCents: 900 }))).toBe(NOT_ALLOWED);
-    expect((await rep.query(api.landingTeardown.quote, { workspaceId: a.workspaceId, ...ASK })).canStart).toBe(false);
+    const invite = await a.owner.mutation(api.workspace.invite, { workspaceId: a.workspaceId, email: "viewer@example.com", role: "viewer" });
+    const viewer = t.withIdentity({ ...person("viewer"), email: "viewer@example.com" });
+    await viewer.mutation(api.workspace.acceptInvite, { token: invite.token });
+    expect(await message(viewer.mutation(api.landingTeardown.start, { workspaceId: a.workspaceId, ...ASK, confirmedCents: 900 }))).toBe(NOT_ALLOWED);
+    expect((await viewer.query(api.landingTeardown.quote, { workspaceId: a.workspaceId, ...ASK })).canStart).toBe(false);
 
     const done = await run(t, a);
     const assetId = done.tab.results[0].id;
-    expect((await rep.query(api.landingTeardown.view, { workspaceId: a.workspaceId, assetId })).pages).toHaveLength(3);
-    expect((await rep.query(api.landingTeardown.page, { workspaceId: a.workspaceId, assetId, pageId: "p2" })).sections.length).toBeGreaterThan(0);
-    expect(await message(rep.mutation(api.decisions.planItem, { workspaceId: a.workspaceId, assetId, index: 0, checkInDays: 30 }))).toBe(NOT_ALLOWED);
+    expect((await viewer.query(api.landingTeardown.view, { workspaceId: a.workspaceId, assetId })).pages).toHaveLength(3);
+    expect((await viewer.query(api.landingTeardown.page, { workspaceId: a.workspaceId, assetId, pageId: "p2" })).sections.length).toBeGreaterThan(0);
+    expect(await message(viewer.mutation(api.decisions.planItem, { workspaceId: a.workspaceId, assetId, index: 0, checkInDays: 30 }))).toBe(NOT_ALLOWED);
 
     for (const workspaceId of [b.workspaceId, a.workspaceId]) {
       expect(await message(b.owner.query(api.landingTeardown.view, { workspaceId, assetId }))).toBe(NOT_FOUND);

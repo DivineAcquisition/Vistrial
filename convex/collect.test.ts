@@ -46,12 +46,12 @@ const scope = {
 async function seed(t: Tester, name: string) {
   const owner = t.withIdentity(person(`${name}-owner`));
   const workspaceId = await owner.mutation(api.workspace.create, { name });
-  const invite = await owner.mutation(api.workspace.invite, { workspaceId, email: `${name}-rep@example.com`, role: "rep" });
-  const rep = t.withIdentity(person(`${name}-rep`));
-  await rep.mutation(api.workspace.acceptInvite, { token: invite.token });
+  const invite = await owner.mutation(api.workspace.invite, { workspaceId, email: `${name}-viewer@example.com`, role: "viewer" });
+  const viewer = t.withIdentity(person(`${name}-viewer`));
+  await viewer.mutation(api.workspace.acceptInvite, { token: invite.token });
   await owner.mutation(api.workspace.setAgentState, { workspaceId, slug: "growth-architect", state: "on" });
   const projectId = await owner.mutation(api.research.createProject, { workspaceId, ...scope });
-  return { owner, rep, workspaceId, projectId };
+  return { owner, viewer, workspaceId, projectId };
 }
 
 async function finishRun(t: Tester, caller: Caller, workspaceId: Id<"workspaces">, runId: Id<"agentRuns">) {
@@ -111,7 +111,7 @@ describe("collect steps (Milestone B)", () => {
       ["source.metaAdLibrary", "partial"],
     ]);
 
-    const statuses = await a.rep.query(api.research.sourceStatuses, { workspaceId: a.workspaceId, projectId: a.projectId, runId });
+    const statuses = await a.viewer.query(api.research.sourceStatuses, { workspaceId: a.workspaceId, projectId: a.projectId, runId });
     const byPlatform = Object.fromEntries(statuses.map((row: { platform: string; state: string; reasonCode: string; found: number }) => [row.platform, [row.state, row.reasonCode, row.found]]));
     expect(byPlatform).toEqual({
       web: ["available", "ok", 1],
@@ -121,7 +121,7 @@ describe("collect steps (Milestone B)", () => {
       metaAdLibrary: ["partial", "commercial_outside_eu_uk", 1],
     });
 
-    const sources = await a.rep.query(api.research.listSourceRefs, { workspaceId: a.workspaceId, projectId: a.projectId, paginationOpts: page });
+    const sources = await a.viewer.query(api.research.listSourceRefs, { workspaceId: a.workspaceId, projectId: a.projectId, paginationOpts: page });
     const rows = sources.page as { platform: string; url: string; embed: { provider: string; id: string } | null; availability: string }[];
     expect(rows.map((row) => row.platform).sort()).toEqual(["instagram", "metaAdLibrary", "tiktok", "web", "youtube"]);
     expect(rows.find((row) => row.platform === "tiktok")).toMatchObject({ availability: "available", embed: { provider: "tiktok", id: "7234567890123456789" } });
@@ -164,7 +164,7 @@ describe("collect steps (Milestone B)", () => {
     expect(row).toMatchObject({ origin: "found", title: "Clean with me", publisher: "shop", availability: "available", excerpt: "first", embed: { provider: "tiktok", id: "7234567890123456789" } });
   });
 
-  it("refuses a run on another workspace's project or by a Rep, and a run with no project fails its first collect step", async () => {
+  it("refuses a run on another workspace's project or by a Viewer, and a run with no project fails its first collect step", async () => {
     const t = makeTester();
     const a = await seed(t, "Alpha");
     const b = await seed(t, "Beta");
@@ -172,7 +172,7 @@ describe("collect steps (Milestone B)", () => {
     const start = (caller: Caller, workspaceId: Id<"workspaces">, projectId?: Id<"researchProjects">) =>
       caller.mutation(api.runs.start, { workspaceId, agentSlug: "growth-architect", skillSlug: "test-sources", ...(projectId ? { projectId } : {}) });
     expect(await message(start(b.owner, b.workspaceId, a.projectId))).toBe(NOT_FOUND);
-    expect(await message(start(a.rep, a.workspaceId, a.projectId))).toBe(NOT_ALLOWED);
+    expect(await message(start(a.viewer, a.workspaceId, a.projectId))).toBe(NOT_ALLOWED);
     const runId = await start(a.owner, a.workspaceId);
     expect(await finishRun(t, a.owner, a.workspaceId, runId)).toBe("failed");
     const run = await a.owner.query(api.runs.get, { workspaceId: a.workspaceId, runId });

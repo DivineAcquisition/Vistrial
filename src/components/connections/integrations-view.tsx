@@ -182,7 +182,7 @@ function ProviderCard({
             </Button>
           </>
         ) : (
-          <p className="text-muted-foreground">A workspace Owner can connect this.</p>
+          <p className="text-muted-foreground">An Owner can connect this.</p>
         )}
       </footer>
     </article>
@@ -206,7 +206,7 @@ export function IntegrationsView({
 }: {
   providers: IntegrationView[];
   canManage: boolean;
-  /** Owners and Managers may ask for a fresh read. */
+  /** Owners and Admins may ask for a fresh read. */
   canRefresh?: boolean;
   /** The providers that can be read again on request. */
   refreshable?: string[];

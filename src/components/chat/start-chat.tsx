@@ -1,5 +1,6 @@
 "use client";
 
+import { canWork, isAdmin } from "@/lib/roles";
 import { useMutation } from "convex/react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -27,17 +28,17 @@ function StartChatInner({ defaultAgent = "growth-architect", size = "dock", plac
   const send = useMutation(api.agentChat.send);
   const [agentSlug, setAgentSlug] = useState(defaultAgent);
   const [problem, setProblem] = useState("");
-  const extras = useChatExtras(shell!.workspaceId, shell?.role !== "rep", shell?.role === "owner");
+  const extras = useChatExtras(shell!.workspaceId, shell ? canWork(shell.role) : false, shell ? isAdmin(shell.role) : false);
   if (!shell) return null;
   const options = shell.agents.map((row) => ({ slug: row.slug, name: row.name, live: row.status === "live" && row.slug === "growth-architect" }));
   const chosen = options.find((row) => row.slug === agentSlug && row.live) ? agentSlug : "growth-architect";
-  const canStart = shell.role !== "rep";
+  const canStart = canWork(shell.role);
 
   return (
     <div className="grid gap-1">
       <ChatComposer
         size={size}
-        placeholder={canStart ? placeholder : "Owners and Managers start sessions."}
+        placeholder={canStart ? placeholder : "Owners, Admins and Members start sessions."}
         initialText={initialText}
         disabled={!canStart}
         agent={{ value: chosen, options, onChange: setAgentSlug }}

@@ -35,20 +35,20 @@ async function message(run: Promise<unknown>) {
 async function seed(t: Tester, name: string) {
   const owner = t.withIdentity(person(`${name}-owner`));
   const workspaceId = await owner.mutation(api.workspace.create, { name });
-  const invite = async (role: "manager" | "rep") => {
+  const invite = async (role: "admin" | "viewer") => {
     const row = await owner.mutation(api.workspace.invite, { workspaceId, email: `${name}-${role}@example.com`, role });
     const caller = t.withIdentity(person(`${name}-${role}`));
     await caller.mutation(api.workspace.acceptInvite, { token: row.token });
     return caller;
   };
-  const manager = await invite("manager");
-  const rep = await invite("rep");
+  const admin = await invite("admin");
+  const viewer = await invite("viewer");
   const assetId = await t.run(async (ctx) => {
     const id = await ctx.db.insert("assets", { workspaceId, kind: "marketReport", title: "Report", status: "draft", currentVersion: 1, createdAt: Date.now() });
     await ctx.db.insert("assetVersions", { workspaceId, assetId: id, version: 1, body: "v1", createdBy: "agent" });
     return id;
   });
-  return { owner, manager, rep, workspaceId, assetId };
+  return { owner, admin, viewer, workspaceId, assetId };
 }
 
 describe("business facts (2.18)", () => {
@@ -56,26 +56,26 @@ describe("business facts (2.18)", () => {
     const t = makeTester();
     const a = await seed(t, "Alpha");
     const first = await a.owner.mutation(api.facts.record, { workspaceId: a.workspaceId, factKey: "monthlyAdBudget", value: "$2,000" });
-    const second = await a.manager.mutation(api.facts.record, { workspaceId: a.workspaceId, factKey: "monthlyAdBudget", value: " $3,000  a month " });
-    const current = await a.rep.query(api.facts.get, { workspaceId: a.workspaceId, factKey: "monthlyAdBudget" });
+    const second = await a.admin.mutation(api.facts.record, { workspaceId: a.workspaceId, factKey: "monthlyAdBudget", value: " $3,000  a month " });
+    const current = await a.viewer.query(api.facts.get, { workspaceId: a.workspaceId, factKey: "monthlyAdBudget" });
     expect(current).toMatchObject({ id: second, value: "$3,000 a month", status: "verified", sourceType: "owner", supersedesFactId: first });
-    const history = await a.rep.query(api.facts.history, { workspaceId: a.workspaceId, factKey: "monthlyAdBudget" });
+    const history = await a.viewer.query(api.facts.history, { workspaceId: a.workspaceId, factKey: "monthlyAdBudget" });
     expect(history.map((row: { id: string; status: string; value: string }) => [row.id, row.status, row.value])).toEqual([
       [second, "verified", "$3,000 a month"],
       [first, "superseded", "$2,000"],
     ]);
-    const live = await a.rep.query(api.facts.list, { workspaceId: a.workspaceId });
+    const live = await a.viewer.query(api.facts.list, { workspaceId: a.workspaceId });
     expect(live.map((row: { id: string }) => row.id)).toEqual([second]);
   });
 
-  it("only an Owner or Manager records, verifies, disputes or removes a fact", async () => {
+  it("only an Owner or Admin records, verifies, disputes or removes a fact", async () => {
     const t = makeTester();
     const a = await seed(t, "Alpha");
-    expect(await message(a.rep.mutation(api.facts.record, { workspaceId: a.workspaceId, factKey: "salesCycle", value: "2 weeks" }))).toBe(NOT_ALLOWED);
+    expect(await message(a.viewer.mutation(api.facts.record, { workspaceId: a.workspaceId, factKey: "salesCycle", value: "2 weeks" }))).toBe(NOT_ALLOWED);
     const id = await a.owner.mutation(api.facts.record, { workspaceId: a.workspaceId, factKey: "salesCycle", value: "2 weeks" });
-    expect(await message(a.rep.mutation(api.facts.setStatus, { workspaceId: a.workspaceId, factId: id, status: "disputed" }))).toBe(NOT_ALLOWED);
-    expect(await message(a.rep.mutation(api.facts.remove, { workspaceId: a.workspaceId, factId: id }))).toBe(NOT_ALLOWED);
-    await a.manager.mutation(api.facts.setStatus, { workspaceId: a.workspaceId, factId: id, status: "disputed" });
+    expect(await message(a.viewer.mutation(api.facts.setStatus, { workspaceId: a.workspaceId, factId: id, status: "disputed" }))).toBe(NOT_ALLOWED);
+    expect(await message(a.viewer.mutation(api.facts.remove, { workspaceId: a.workspaceId, factId: id }))).toBe(NOT_ALLOWED);
+    await a.admin.mutation(api.facts.setStatus, { workspaceId: a.workspaceId, factId: id, status: "disputed" });
     const disputed = await a.owner.query(api.facts.get, { workspaceId: a.workspaceId, factKey: "salesCycle" });
     // Verification history stays when a fact is later disputed.
     expect(disputed).toMatchObject({ status: "disputed" });
@@ -141,14 +141,14 @@ describe("feedback (2.20)", () => {
   it("reject needs a reason, takes the asset out of the queue, and saves the reason as feedback", async () => {
     const t = makeTester();
     const a = await seed(t, "Alpha");
-    expect(await message(a.rep.mutation(api.assets.reject, { workspaceId: a.workspaceId, assetId: a.assetId, reason: "Too generic" }))).toBe(NOT_ALLOWED);
+    expect(await message(a.viewer.mutation(api.assets.reject, { workspaceId: a.workspaceId, assetId: a.assetId, reason: "Too generic" }))).toBe(NOT_ALLOWED);
     expect(await message(a.owner.mutation(api.assets.reject, { workspaceId: a.workspaceId, assetId: a.assetId, reason: " x " }))).toContain("Say why");
-    await a.manager.mutation(api.assets.reject, { workspaceId: a.workspaceId, assetId: a.assetId, reason: "Do not lead with price." });
+    await a.admin.mutation(api.assets.reject, { workspaceId: a.workspaceId, assetId: a.assetId, reason: "Do not lead with price." });
     const waiting = await a.owner.query(api.assets.list, { workspaceId: a.workspaceId, status: "draft", paginationOpts: page });
     expect(waiting.page).toHaveLength(0);
     const rejected = await a.owner.query(api.assets.list, { workspaceId: a.workspaceId, status: "rejected", paginationOpts: page });
     expect(rejected.page.map((row: { id: string }) => row.id)).toEqual([a.assetId]);
-    const rows = await a.rep.query(api.feedback.list, { workspaceId: a.workspaceId, assetId: a.assetId });
+    const rows = await a.viewer.query(api.feedback.list, { workspaceId: a.workspaceId, assetId: a.assetId });
     expect(rows).toMatchObject([{ kind: "rejection", reason: "Do not lead with price.", promotedFactId: null }]);
     expect(await message(a.owner.mutation(api.assets.reject, { workspaceId: a.workspaceId, assetId: a.assetId, reason: "Again" }))).toContain("not waiting");
   });
@@ -166,8 +166,8 @@ describe("feedback (2.20)", () => {
     const t = makeTester();
     const a = await seed(t, "Alpha");
     const feedbackId = await a.owner.mutation(api.assets.reject, { workspaceId: a.workspaceId, assetId: a.assetId, reason: "Do not lead with price." });
-    expect(await message(a.rep.mutation(api.feedback.promote, { workspaceId: a.workspaceId, feedbackId, factKey: "messagingRule", value: "Do not lead with price" }))).toBe(NOT_ALLOWED);
-    const factId = await a.manager.mutation(api.feedback.promote, { workspaceId: a.workspaceId, feedbackId, factKey: "messagingRule", value: "Do not lead with price" });
+    expect(await message(a.viewer.mutation(api.feedback.promote, { workspaceId: a.workspaceId, feedbackId, factKey: "messagingRule", value: "Do not lead with price" }))).toBe(NOT_ALLOWED);
+    const factId = await a.admin.mutation(api.feedback.promote, { workspaceId: a.workspaceId, feedbackId, factKey: "messagingRule", value: "Do not lead with price" });
     expect(await a.owner.query(api.facts.get, { workspaceId: a.workspaceId, factKey: "messagingRule" })).toMatchObject({
       id: factId,
       status: "verified",

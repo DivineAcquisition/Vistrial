@@ -4,6 +4,7 @@
  * never downloaded from a platform, and an uploaded file is deleted as soon as it has been read.
  */
 
+import { requireWork } from "./lib/roles";
 import { v } from "convex/values";
 
 import { internal } from "./_generated/api";
@@ -12,7 +13,7 @@ import { internalMutation, internalQuery } from "./_generated/server";
 import { writeAudit } from "./lib/audit";
 import { assertCanSpend, chargeUsage } from "./lib/billing";
 import { workspaceMutation, workspaceQuery } from "./lib/builders";
-import { notAllowed, notFound, userError } from "./lib/errors";
+import { notFound, userError } from "./lib/errors";
 import { MAX_IMAGE_BYTES, MAX_REFERENCES_PER_DAY, MAX_VIDEO_BYTES, REFERENCE_FAIL_WORDS, contentTypeOf, mediaKindOf, readReferenceLink } from "./lib/referenceShapes";
 import { devSkillsEnabled } from "./lib/registry";
 
@@ -35,11 +36,11 @@ export function referenceView(row: Doc<"creativeReferences">) {
   };
 }
 
-/** A one-time upload link for a reference file. Owners and Managers. */
+/** A one-time upload link for a reference file. Owners, Admins and Members. */
 export const uploadUrl = workspaceMutation({
   args: {},
   handler: async (ctx) => {
-    if (ctx.member.role === "rep") notAllowed();
+    requireWork(ctx.member.role);
     return ctx.storage.generateUploadUrl();
   },
 });
@@ -48,12 +49,12 @@ export const uploadUrl = workspaceMutation({
  * Adds a reference and starts its breakdown. A link must be a public YouTube video: for TikTok, Instagram
  * and ad libraries the person is told to upload the file, because Vistrial does not take videos from those
  * platforms. A file needs the person's word that they may submit it; one we will not read is deleted and the
- * reason is returned as `problem`. Owners and Managers.
+ * reason is returned as `problem`. Owners, Admins and Members.
  */
 export const add = workspaceMutation({
   args: { url: v.optional(v.string()), storageId: v.optional(v.id("_storage")), name: v.optional(v.string()), attested: v.optional(v.boolean()) },
   handler: async (ctx, args) => {
-    if (ctx.member.role === "rep") notAllowed();
+    requireWork(ctx.member.role);
     if (Boolean(args.url?.trim()) === Boolean(args.storageId)) throw userError("Paste a link or upload a file, one at a time.");
     await assertCanSpend(ctx, ctx.workspaceId);
     const now = Date.now();
@@ -113,11 +114,11 @@ export const list = workspaceQuery({
   },
 });
 
-/** Removes a reference and its file, if one is still held. Creatives already made from it keep their own record. Owners and Managers. */
+/** Removes a reference and its file, if one is still held. Creatives already made from it keep their own record. Owners, Admins and Members. */
 export const remove = workspaceMutation({
   args: { referenceId: v.id("creativeReferences") },
   handler: async (ctx, args) => {
-    if (ctx.member.role === "rep") notAllowed();
+    requireWork(ctx.member.role);
     const row = await ctx.db.get(args.referenceId);
     if (!row || row.workspaceId !== ctx.workspaceId) notFound();
     if (row.storageId) await ctx.storage.delete(row.storageId);

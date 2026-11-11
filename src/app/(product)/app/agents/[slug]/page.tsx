@@ -1,5 +1,6 @@
 "use client";
 
+import { canWork } from "@/lib/roles";
 import { useMutation, useQuery } from "convex/react";
 import { useParams } from "next/navigation";
 import { useState } from "react";
@@ -33,7 +34,7 @@ function LiveOverview({ shell, agent }: { shell: WorkspaceShell; agent: ShellAge
   const start = useMutation(api.runs.start);
   const [notice, setNotice] = useState("");
   const base = `/app/agents/${agent.slug}`;
-  const editor = shell.role !== "rep" && agent.state !== "off";
+  const editor = canWork(shell.role) && agent.state !== "off";
   const loaded = !hasTabs || (research && offers && diagnostics);
   const data = loaded ? overviewFrom(base, hasTabs ? [research!, offers!, diagnostics!] : [], chats ?? []) : undefined;
 

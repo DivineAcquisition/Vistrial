@@ -1,5 +1,6 @@
 "use client";
 
+import { isAdmin } from "@/lib/roles";
 import type { ReactNode } from "react";
 
 import { ROLE_WORDS, SettingsNav, sectionsFor, type Role, type SettingsSection } from "@/components/settings/settings-parts";
@@ -25,11 +26,9 @@ export function SettingsLayout({
         eyebrow={ROLE_WORDS[role]}
         title="Settings"
         description={
-          role === "rep"
-            ? "Your own choices: theme, notices and sign-in."
-            : role === "owner"
-              ? "Each setting says what is true now. Changes that reach the whole workspace say so, and are recorded."
-              : "You can see the workspace settings. An owner changes them; your own choices are under You."
+          isAdmin(role)
+            ? "Each setting says what is true now. Changes that reach the whole organization say so, and are recorded."
+            : "Your own choices: theme, notices and sign-in."
         }
         className="mb-6"
       />

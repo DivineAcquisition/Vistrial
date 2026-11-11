@@ -27,7 +27,7 @@ export default function LeadsError({
       <Panel className="grid gap-3 p-6">
         <h1 className="font-heading text-xl">{missing ? "Not found." : "This page failed to load."}</h1>
         <p className="text-sm text-muted-foreground">
-          {missing ? "That record is not in this workspace." : "Try again. Nothing from the failure is shown here."}
+          {missing ? "That record is not in this organization." : "Try again. Nothing from the failure is shown here."}
         </p>
         <Button type="button" onClick={() => retry()}>
           Try again

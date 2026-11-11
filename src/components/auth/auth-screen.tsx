@@ -13,9 +13,9 @@ export function AuthScreen({
   redirectTo: string;
 }) {
   const signIn = mode === "sign-in";
-  const title = signIn ? "Open your workspace" : "Create your account";
+  const title = signIn ? "Open your organization" : "Create your account";
   const detail = signIn
-    ? "Email or Google. You name the workspace after you sign in."
+    ? "Email or Google. You name the organization after you sign in."
     : "Email or Google. Then a few quick questions about your business, and your first research is free.";
   const redirectQuery = `redirect_url=${encodeURIComponent(redirectTo)}`;
 

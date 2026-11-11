@@ -64,7 +64,7 @@ export function PagesTabStory({ state, theme, pageId }: { state: string; theme: 
       ? { ...data.tab, running: [{ id: "run1" as never, startedAt: Date.UTC(2026, 10, 10), priceCents: 42, industry: "Marketing agencies for coaches", words: "Reading page 2 against the framework" }], stopped: [{ id: "run0" as never, status: "stopped", stopReason: "cap", startedAt: Date.UTC(2026, 10, 8) }] }
       : data.tab;
   return (
-    <StoryFrame tab="work/pages" theme={theme} role={editor ? "owner" : "rep"}>
+    <StoryFrame tab="work/pages" theme={theme} role={editor ? "owner" : "viewer"}>
       <PagesTabView
         base="/app/agents/growth-architect"
         editor={editor}

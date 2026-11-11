@@ -1,5 +1,6 @@
 "use client";
 
+import { isAdmin } from "@/lib/roles";
 import { useMutation, useQuery } from "convex/react";
 import type { FunctionReturnType } from "convex/server";
 import { useState, type ReactNode } from "react";
@@ -30,7 +31,7 @@ export type BrowserActions = {
 
 export type BrowserAccessProps = {
   overview: BrowserOverview;
-  /** The audit trail of the task that is open. Null for a Rep, or while nothing is open. */
+  /** The audit trail of the task that is open. Null for a Member or Viewer, or while nothing is open. */
   trail: BrowserTrail | null;
   onOpenTask: (browserTaskId: string) => void;
   actions: BrowserActions;
@@ -227,7 +228,7 @@ function Trail({ trail, actions }: { trail: BrowserTrail; actions: BrowserAction
 /** Browser access, drawn from data so the screen and its story are the same component. */
 export function BrowserAccessView({ overview, trail, onOpenTask, actions }: BrowserAccessProps) {
   const owner = overview.role === "owner";
-  const editor = overview.role !== "rep";
+  const editor = isAdmin(overview.role);
   const [goal, setGoal] = useState(overview.goals[0]?.key ?? "");
   const { busy, problem, run } = useBusy();
   const live = overview.sessions.filter((session) => session.state === "active" || session.state === "pendingSignIn");
@@ -364,7 +365,7 @@ export function BrowserAccessView({ overview, trail, onOpenTask, actions }: Brow
               </li>
             ))}
           </ul>
-          {!editor ? <p className="text-xs text-muted-foreground">The audit trail is for Owners and Managers: it can show what was typed into an account.</p> : null}
+          {!editor ? <p className="text-xs text-muted-foreground">The audit trail is for Owners and Admins: it can show what was typed into an account.</p> : null}
         </section>
       ) : null}
 
@@ -417,7 +418,7 @@ export function BrowserAccessView({ overview, trail, onOpenTask, actions }: Brow
 export function BrowserAccess({ workspaceId }: { workspaceId: Id<"workspaces"> }) {
   const overview = useQuery(api.browserAccess.overview, { workspaceId });
   const [open, setOpen] = useState<string | null>(null);
-  const editor = overview ? overview.role !== "rep" : false;
+  const editor = overview ? isAdmin(overview.role) : false;
   const waiting = overview?.tasks.find((task) => task.status === "waitingApproval");
   const browserTaskId = (open ?? waiting?.id ?? overview?.tasks[0]?.id ?? null) as Id<"browserTasks"> | null;
   const trail = useQuery(api.browserAccess.trail, editor && browserTaskId ? { workspaceId, browserTaskId } : "skip");

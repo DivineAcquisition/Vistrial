@@ -305,7 +305,7 @@ function LiveNewChat({ workspaceId, base, agentName, editor, preset, ask, contex
             key={starter}
             size="hero"
             autoFocus={editor}
-            placeholder={!editor ? "Owners and Managers start work. You can read every conversation." : route ? ROUTE_LOOK[route].hint : "Ask about your market, your offer or your growth…"}
+            placeholder={!editor ? "Owners, Admins and Members start work. You can read every conversation." : route ? ROUTE_LOOK[route].hint : "Ask about your market, your offer or your growth…"}
             initialText={starter || ask}
             disabled={!editor}
             {...(research ? extras.composer : {})}

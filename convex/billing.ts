@@ -2,6 +2,7 @@
  * Credits billing: what the app reads and the ledger it keeps. Calls to Autumn (over Stripe) live in
  * billingActions.ts, which runs in Node because the Autumn SDK is too large for the default runtime.
  */
+import { isAdmin, isOwner } from "./lib/roles";
 import { v } from "convex/values";
 
 import { internalMutation, internalQuery } from "./_generated/server";
@@ -16,7 +17,7 @@ export const overview = workspaceQuery({
   args: {},
   handler: async (ctx) => {
     const account = await accountFor(ctx, ctx.workspaceId);
-    const seesLedger = ctx.member.role !== "rep";
+    const seesLedger = isAdmin(ctx.member.role);
     const ledger = seesLedger
       ? await ctx.db
           .query("billingLedger")
@@ -28,7 +29,7 @@ export const overview = workspaceQuery({
     return {
       on: billingOn(),
       testMode: billingOn() && autumnMode() === "test",
-      canManage: ctx.member.role === "owner",
+      canManage: isOwner(ctx.member.role),
       markup: markup(),
       plan: { ...PLAN, id: PLAN_ID() },
       packs: [...TOPUP_PACKS_CENTS],
@@ -126,10 +127,10 @@ export const unsynced = internalQuery({
 export const status = workspaceQuery({
   args: {},
   handler: async (ctx) => {
-    if (!billingOn()) return { on: false, balanceCents: null, low: false, empty: false, canManage: ctx.member.role === "owner" };
+    if (!billingOn()) return { on: false, balanceCents: null, low: false, empty: false, canManage: isOwner(ctx.member.role) };
     const account = await accountFor(ctx, ctx.workspaceId);
     const balanceCents = account?.balanceCents ?? 0;
-    return { on: true, balanceCents, low: balanceCents > 0 && balanceCents <= AUTO_REFILL.thresholdCents, empty: balanceCents <= 0, canManage: ctx.member.role === "owner" };
+    return { on: true, balanceCents, low: balanceCents > 0 && balanceCents <= AUTO_REFILL.thresholdCents, empty: balanceCents <= 0, canManage: isOwner(ctx.member.role) };
   },
 });
 

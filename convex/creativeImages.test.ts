@@ -223,7 +223,7 @@ describe("images for an ad set", () => {
     expect((await t.run((ctx) => ctx.db.query("creativeImages").collect())).every((row) => row.holdCents === 0 && row.status === "ready")).toBe(true);
   });
 
-  it("spends nothing on an ad set that failed its checks, for a Rep, or across workspaces", async () => {
+  it("spends nothing on an ad set that failed its checks, for a Viewer, or across workspaces", async () => {
     const t = makeTester();
     const a = await seed(t, "Alpha");
     const b = await seed(t, "Beta", "needsReview");
@@ -235,10 +235,10 @@ describe("images for an ad set", () => {
     expect(await message(b.owner.mutation(api.creativeImages.generate, { workspaceId: b.workspaceId, assetId: a.assetId, placements: ["1:1"], look: "photo", confirmedCents: 64 }))).toBe(NOT_FOUND);
     expect(await message(b.owner.query(api.creativeImages.list, { workspaceId: a.workspaceId, assetId: a.assetId }))).toBe(NOT_FOUND);
 
-    const invite = await a.owner.mutation(api.workspace.invite, { workspaceId: a.workspaceId, email: "rep@example.com", role: "rep" });
-    const rep = t.withIdentity({ ...person("rep"), email: "rep@example.com" });
-    await rep.mutation(api.workspace.acceptInvite, { token: invite.token });
-    expect(await message(rep.mutation(api.creativeImages.generate, { workspaceId: a.workspaceId, assetId: a.assetId, placements: ["1:1"], look: "photo", confirmedCents: 64 }))).toBe(NOT_ALLOWED);
+    const invite = await a.owner.mutation(api.workspace.invite, { workspaceId: a.workspaceId, email: "viewer@example.com", role: "viewer" });
+    const viewer = t.withIdentity({ ...person("viewer"), email: "viewer@example.com" });
+    await viewer.mutation(api.workspace.acceptInvite, { token: invite.token });
+    expect(await message(viewer.mutation(api.creativeImages.generate, { workspaceId: a.workspaceId, assetId: a.assetId, placements: ["1:1"], look: "photo", confirmedCents: 64 }))).toBe(NOT_ALLOWED);
 
     expect(await message(a.owner.mutation(api.creativeImages.generate, { workspaceId: a.workspaceId, assetId: a.assetId, placements: ["3:2"], look: "photo", confirmedCents: 64 }))).toContain("not one Vistrial makes");
     expect(await message(a.owner.mutation(api.creativeImages.generate, { workspaceId: a.workspaceId, assetId: a.assetId, placements: ["1:1", "4:5", "9:16", "16:9"], look: "photo", confirmedCents: 256 }))).toContain("12 images at a time");

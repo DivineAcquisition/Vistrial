@@ -192,7 +192,7 @@ const save: MutationTool = async (ctx, run, steps) => {
       : renderDiagnosis({ summary: "", stage: "unknown", stageReason: "", stageFigureIds: [], findings: [], fixes: [], roadmap: [], limits: [] }, diagnostics, { passed: false, results: [] }, lines);
   const droppedFirst = await writeVersion(ctx, run, assetId, 1, bodyFor(first, firstChecks, notes), diagnosisClaims(first, diagnostics));
   const droppedSecond = second ? await writeVersion(ctx, run, assetId, 2, bodyFor(second, finalChecks, []), diagnosisClaims(second, diagnostics)) : [];
-  // Tells Owners and Managers by email that it waits for them. Scheduled, so a send failure never fails the run.
+  // Tells Owners and Admins by email that it waits for them. Scheduled, so a send failure never fails the run.
   await ctx.scheduler.runAfter(0, internal.emailReminders.sendReportReady, { assetId });
   return {
     resultId: assetId,

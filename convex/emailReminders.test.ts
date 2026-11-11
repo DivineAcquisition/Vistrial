@@ -34,10 +34,10 @@ function stubResend(status = 200) {
   return sent;
 }
 
-/** An agency workspace with an owner, a manager, a rep and a removed manager, and a second workspace beside it. */
+/** An agency workspace with an owner, a admin, a viewer and a removed admin, and a second workspace beside it. */
 async function seed(t: Tester) {
   return t.run(async (ctx) => {
-    const workspace = async (name: string, slug: string, people: { userId: string; role: "owner" | "manager" | "rep"; removed?: boolean; noEmail?: boolean }[]) => {
+    const workspace = async (name: string, slug: string, people: { userId: string; role: "owner" | "admin" | "viewer"; removed?: boolean; noEmail?: boolean }[]) => {
       const workspaceId = await ctx.db.insert("workspaces", { name, slug, timezone: "UTC", status: "active", createdAt: 0 });
       for (const row of people) {
         await ctx.db.insert("members", {
@@ -80,10 +80,10 @@ async function seed(t: Tester) {
     };
     const a = await workspace("Northside Agency", "northside", [
       { userId: "user_owner", role: "owner" },
-      { userId: "user_manager", role: "manager" },
-      { userId: "user_rep", role: "rep" },
-      { userId: "user_gone", role: "manager", removed: true },
-      { userId: "user_silent", role: "manager", noEmail: true },
+      { userId: "user_admin", role: "admin" },
+      { userId: "user_viewer", role: "viewer" },
+      { userId: "user_gone", role: "admin", removed: true },
+      { userId: "user_silent", role: "admin", noEmail: true },
     ]);
     const b = await workspace("Harbor Studio", "harbor", [{ userId: "user_other", role: "owner" }]);
     return { a, b };
@@ -164,7 +164,7 @@ describe("email reminders", () => {
       const sent = stubResend();
 
       await t.action(internal.emailReminders.sendCheckInsDue, {});
-      expect(recipientsOf(sent)).toEqual(["user_manager@example.com", "user_owner@example.com"]);
+      expect(recipientsOf(sent)).toEqual(["user_admin@example.com", "user_owner@example.com"]);
       for (const email of sent) {
         expect(email.to).toHaveLength(1);
         expect(email.from).toBe("Vistrial <forms@mail.vistrial.io>");
@@ -174,11 +174,11 @@ describe("email reminders", () => {
         expect(email.text).not.toContain("Drop the hourly plan");
         expect(email.text).toContain("https://app.vistrial.io/app\n");
         expect(email.text).toContain("https://app.vistrial.io/app/settings?section=you");
-        expect(email.text).toContain("You got this because you are an Owner or Manager of Northside Agency");
+        expect(email.text).toContain("You got this because you are an Owner or Admin of Northside Agency");
         expect(email.authorization).toBe("Bearer re_test_key");
       }
       // The idempotency key names the decision and the recipient, so a retry cannot double-send.
-      expect(sent.map((row) => row.idempotencyKey).sort()).toEqual([`checkin-due/${first}/2/user_manager`, `checkin-due/${first}/2/user_owner`]);
+      expect(sent.map((row) => row.idempotencyKey).sort()).toEqual([`checkin-due/${first}/2/user_admin`, `checkin-due/${first}/2/user_owner`]);
 
       const rows = await t.run(async (ctx) => Promise.all([first, second, later].map((id) => ctx.db.get(id))));
       expect(rows[0]?.remindedAt).toBeTypeOf("number");
@@ -194,7 +194,7 @@ describe("email reminders", () => {
       const audit = await emailAudit(t, a.workspaceId);
       expect(audit).toHaveLength(4);
       expect(audit).toContainEqual({ action: "email.checkin_due", subject: `${first}:user_owner`, count: 1, actorType: "system" });
-      expect(audit).toContainEqual({ action: "email.checkin_due", subject: `${second}:user_manager`, count: 1, actorType: "system" });
+      expect(audit).toContainEqual({ action: "email.checkin_due", subject: `${second}:user_admin`, count: 1, actorType: "system" });
       expect(JSON.stringify(audit)).not.toContain("@");
     });
 
@@ -238,37 +238,37 @@ describe("email reminders", () => {
   });
 
   describe("recipients", () => {
-    it("emails Owners and Managers only: no Rep, no removed member, nobody without an address", async () => {
+    it("emails Owners and Admins only: no Viewer, no removed member, nobody without an address", async () => {
       const t = makeTester();
       const { a } = await seed(t);
       await decide(t, a, "Raise retainer to $3,000 for new clients", Date.now() - DAY);
       const sent = stubResend();
       await t.action(internal.emailReminders.sendCheckInsDue, {});
-      expect(recipientsOf(sent)).toEqual(["user_manager@example.com", "user_owner@example.com"]);
+      expect(recipientsOf(sent)).toEqual(["user_admin@example.com", "user_owner@example.com"]);
     });
 
     it("respects each person's switches: the notice, and email as a whole", async () => {
       const t = makeTester();
       const { a } = await seed(t);
       const owner = t.withIdentity(identity("user_owner"));
-      const manager = t.withIdentity(identity("user_manager"));
+      const admin = t.withIdentity(identity("user_admin"));
       await decide(t, a, "Raise retainer to $3,000 for new clients", Date.now() - DAY);
       const { assetId } = await report(t, a, { title: "Market report: Retainer pricing", status: "draft" });
 
       // The owner turns check-ins off: they still get the report. A preference row with nothing set means on.
       await owner.mutation(api.settings.setMyPreferences, { workspaceId: a.workspaceId, checkInsDue: false });
-      await manager.mutation(api.settings.setMyPreferences, { workspaceId: a.workspaceId, theme: "dark" });
-      // A Rep with every switch on still gets nothing.
-      await t.withIdentity(identity("user_rep")).mutation(api.settings.setMyPreferences, { workspaceId: a.workspaceId, checkInsDue: true, reportReady: true, email: true });
+      await admin.mutation(api.settings.setMyPreferences, { workspaceId: a.workspaceId, theme: "dark" });
+      // A Viewer with every switch on still gets nothing.
+      await t.withIdentity(identity("user_viewer")).mutation(api.settings.setMyPreferences, { workspaceId: a.workspaceId, checkInsDue: true, reportReady: true, email: true });
       let sent = stubResend();
       await t.action(internal.emailReminders.sendCheckInsDue, {});
-      expect(recipientsOf(sent)).toEqual(["user_manager@example.com"]);
+      expect(recipientsOf(sent)).toEqual(["user_admin@example.com"]);
       sent = stubResend();
       await t.action(internal.emailReminders.sendReportReady, { assetId });
-      expect(recipientsOf(sent)).toEqual(["user_manager@example.com", "user_owner@example.com"]);
+      expect(recipientsOf(sent)).toEqual(["user_admin@example.com", "user_owner@example.com"]);
 
-      // The manager turns "Report ready" off; the owner turns email off altogether.
-      await manager.mutation(api.settings.setMyPreferences, { workspaceId: a.workspaceId, reportReady: false });
+      // The admin turns "Report ready" off; the owner turns email off altogether.
+      await admin.mutation(api.settings.setMyPreferences, { workspaceId: a.workspaceId, reportReady: false });
       await owner.mutation(api.settings.setMyPreferences, { workspaceId: a.workspaceId, checkInsDue: true, email: false });
       expect((await owner.query(api.settings.me, { workspaceId: a.workspaceId })).notifications.email).toBe(false);
       const next = await report(t, a, { title: "Offer analysis: Growth retainer", status: "needsReview", kind: "offerAnalysis" });
@@ -277,7 +277,7 @@ describe("email reminders", () => {
       await t.action(internal.emailReminders.sendReportReady, { assetId: next.assetId });
       expect(sent).toHaveLength(0);
       await t.action(internal.emailReminders.sendCheckInsDue, {});
-      expect(recipientsOf(sent)).toEqual(["user_manager@example.com"]);
+      expect(recipientsOf(sent)).toEqual(["user_admin@example.com"]);
     });
 
     it("sends nothing for a paused workspace, and sends once it is running again", async () => {
@@ -311,12 +311,12 @@ describe("email reminders", () => {
       const sent = stubResend();
 
       await t.action(internal.emailReminders.sendReportReady, { assetId: draft.assetId });
-      expect(recipientsOf(sent)).toEqual(["user_manager@example.com", "user_owner@example.com"]);
+      expect(recipientsOf(sent)).toEqual(["user_admin@example.com", "user_owner@example.com"]);
       expect(sent[0].subject).toBe("Report ready: Market report: Retainer pricing");
       expect(sent[0].text).toContain("Growth Architect, Research tab");
       expect(sent[0].text).toContain(`Open the report: https://app.vistrial.io/app/assets/${draft.assetId}`);
       expect(sent[0].text).toContain("https://app.vistrial.io/app/settings?section=you");
-      expect(sent.map((row) => row.idempotencyKey).sort()).toEqual([`report-ready/${draft.versionId}/user_manager`, `report-ready/${draft.versionId}/user_owner`]);
+      expect(sent.map((row) => row.idempotencyKey).sort()).toEqual([`report-ready/${draft.versionId}/user_admin`, `report-ready/${draft.versionId}/user_owner`]);
 
       await t.action(internal.emailReminders.sendReportReady, { assetId: review.assetId });
       expect(sent).toHaveLength(4);
@@ -373,7 +373,7 @@ describe("email reminders", () => {
       expect((await t.run((ctx) => ctx.db.get(decisionId)))?.remindedAt).toBeUndefined();
       expect(await emailAudit(t, a.workspaceId)).toEqual([
         { action: "email.report_ready", subject: `${draft.versionId}:user_owner`, count: 0, actorType: "system" },
-        { action: "email.report_ready", subject: `${draft.versionId}:user_manager`, count: 0, actorType: "system" },
+        { action: "email.report_ready", subject: `${draft.versionId}:user_admin`, count: 0, actorType: "system" },
       ]);
 
       vi.stubEnv("RESEND_API_KEY", "re_test_key");
@@ -458,7 +458,7 @@ describe("email reminders", () => {
           "Record what happened: https://app.vistrial.io/app",
           "",
           "--",
-          'You got this because you are an Owner or Manager of Northside Agency on Vistrial and have "Check-ins due" emails on.',
+          'You got this because you are an Owner or Admin of Northside Agency on Vistrial and have "Check-ins due" emails on.',
           "Turn these emails off in Settings, You: https://app.vistrial.io/app/settings?section=you",
         ].join("\n"),
       );

@@ -20,7 +20,7 @@ export function OffersTabStory({ state, theme, step, view }: { state: string; th
   const [chosen, setChosen] = useState(card);
   const builder = state === "new" ? { mode: "new" as const, step } : state === "build" || state === "edit" ? { mode: "edit" as const, step } : null;
   return (
-    <StoryFrame theme={theme} role={editor ? "owner" : "rep"}>
+    <StoryFrame theme={theme} role={editor ? "owner" : "viewer"}>
       <OffersTabView
         base="/app/agents/growth-architect"
         editor={editor}

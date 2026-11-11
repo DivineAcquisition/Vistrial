@@ -1,5 +1,6 @@
 "use client";
 
+import type { Role } from "@/lib/roles";
 import { useMutation, useQuery } from "convex/react";
 import { useState } from "react";
 
@@ -33,11 +34,11 @@ function reasonPhrase(code: string) {
 export function ImportCsv() {
   const ready = useConvexReady();
   const shell = useWorkspaceShell();
-  if (!ready || !shell) return <p className="text-sm text-muted-foreground">Sign in to open your workspace.</p>;
+  if (!ready || !shell) return <p className="text-sm text-muted-foreground">Sign in to open your organization.</p>;
   return <LiveImport workspaceId={shell.workspaceId} role={shell.role} />;
 }
 
-function LiveImport({ workspaceId, role }: { workspaceId: Id<"workspaces">; role: "owner" | "manager" | "rep" }) {
+function LiveImport({ workspaceId, role }: { workspaceId: Id<"workspaces">; role: Role }) {
   const [runId, setRunId] = useState<Id<"importRuns"> | null>(null);
   const [historic, setHistoric] = useState(true);
   const [countryCode, setCountryCode] = useState("US");
@@ -78,7 +79,7 @@ function LiveImport({ workspaceId, role }: { workspaceId: Id<"workspaces">; role
               );
             }}
           >
-            <Field label="Country code" name="country-code" help="Two letters. The workspace default is US.">
+            <Field label="Country code" name="country-code" help="Two letters. The organization default is US.">
               <Input
                 id="country-code"
                 name="country-code"

@@ -6,6 +6,7 @@
  * three the person wants; it never picks one silently. A conversation is an `intakes` row, as before.
  */
 
+import { requireWork } from "./lib/roles";
 import { v } from "convex/values";
 
 import type { Doc, Id } from "./_generated/dataModel";
@@ -14,7 +15,7 @@ import { GROWTH_ARCHITECT } from "./catalog";
 import { beginResearch, replyResearch } from "./intake";
 import { workspaceMutation, workspaceQuery } from "./lib/builders";
 import { ROUTE_CHOICES, ROUTE_QUESTION, UNDECIDED, isChatRoute, routeChoice, routeIntent, type ChatRoute } from "./lib/chatRouting";
-import { notAllowed, notFound, userError } from "./lib/errors";
+import { notFound, userError } from "./lib/errors";
 import { SKILL_TAB } from "./lib/workTabs";
 import { beginSkill, isChatSkill, replySkill, type ChatSkill } from "./skillIntake";
 
@@ -94,7 +95,7 @@ async function begin(ctx: Access, route: ChatRoute, input: Choices & { text: str
  * One message in the agent chat. Without `intakeId` it starts a conversation: on the skill named by `skill`
  * (a preset such as "New research"), otherwise on the skill the text is clearly about, otherwise it asks
  * which. With `intakeId` it answers: the routing question, or the skill's own next question.
- * Owners and Managers.
+ * Owners, Admins and Members.
  */
 export const send = workspaceMutation({
   args: {
@@ -108,7 +109,7 @@ export const send = workspaceMutation({
     links: v.optional(v.array(v.string())),
   },
   handler: async (ctx, args): Promise<{ intakeId: Id<"intakes">; route: ChatRoute | null }> => {
-    if (ctx.member.role === "rep") notAllowed();
+    requireWork(ctx.member.role);
     const text = clean(args.text);
     if (!text) throw userError("Type what you want to work on.");
     const choices = { mode: args.mode, platforms: args.platforms, links: args.links };
@@ -170,11 +171,11 @@ export const send = workspaceMutation({
   },
 });
 
-/** Sets a conversation aside. Work it already started keeps running. Owners and Managers. */
+/** Sets a conversation aside. Work it already started keeps running. Owners, Admins and Members. */
 export const close = workspaceMutation({
   args: { intakeId: v.id("intakes") },
   handler: async (ctx, args) => {
-    if (ctx.member.role === "rep") notAllowed();
+    requireWork(ctx.member.role);
     const row = await ownIntake(ctx, args.intakeId);
     if (row.status !== "started") await ctx.db.patch(row._id, { status: "abandoned", updatedAt: Date.now() });
     return null;

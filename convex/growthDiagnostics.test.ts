@@ -379,7 +379,7 @@ describe("Growth Diagnostics", () => {
     await expect(a.owner.query(api.assets.get, { workspaceId: a.workspaceId, assetId: asset!.id as Id<"assets"> })).rejects.toThrow();
   });
 
-  it("only an Owner or Manager of the workspace can start one, and only on its own project", async () => {
+  it("only an Owner or Admin of the workspace can start one, and only on its own project", async () => {
     const t = makeTester();
     const a = await seed(t, "Alpha", "Deep house cleaning");
     const b = await seed(t, "Beta", "Commercial janitorial contracts");
@@ -388,10 +388,10 @@ describe("Growth Diagnostics", () => {
     await expect(b.owner.mutation(api.runs.start, { workspaceId: b.workspaceId, agentSlug: AGENT, skillSlug: GD, projectId })).rejects.toThrow();
     await expect(b.owner.mutation(api.runs.start, { workspaceId: a.workspaceId, agentSlug: AGENT, skillSlug: GD, projectId })).rejects.toThrow();
     await t.run(async (ctx) => {
-      await ctx.db.insert("members", { workspaceId: a.workspaceId, userId: "Alpha-rep", role: "rep", displayName: "Rep", active: true });
+      await ctx.db.insert("members", { workspaceId: a.workspaceId, userId: "Alpha-viewer", role: "viewer", displayName: "Viewer", active: true });
     });
-    const rep = t.withIdentity(person("Alpha-rep"));
-    await expect(rep.mutation(api.runs.start, { workspaceId: a.workspaceId, agentSlug: AGENT, skillSlug: GD, projectId })).rejects.toThrow();
+    const viewer = t.withIdentity(person("Alpha-viewer"));
+    await expect(viewer.mutation(api.runs.start, { workspaceId: a.workspaceId, agentSlug: AGENT, skillSlug: GD, projectId })).rejects.toThrow();
     // Without a project, the skill refuses to start.
     await expect(a.owner.mutation(api.runs.start, { workspaceId: a.workspaceId, agentSlug: AGENT, skillSlug: GD })).rejects.toThrow("Choose a research project first.");
     const runs = await t.run((ctx) => ctx.db.query("agentRuns").collect());

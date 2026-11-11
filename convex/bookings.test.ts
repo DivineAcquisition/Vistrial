@@ -25,14 +25,14 @@ async function setUp() {
   const t = convexTest(schema, modules);
   const workspaceId = await t.mutation(internal.reviewer.setUpReviewerWorkspace, { userId: "user_owner" });
   const otherWorkspace = await t.run(async (ctx) => {
-    await ctx.db.insert("members", { workspaceId, userId: "user_rep", role: "rep", displayName: "Rep", active: true });
-    await ctx.db.insert("members", { workspaceId, userId: "user_manager", role: "manager", displayName: "Manager", active: true });
+    await ctx.db.insert("members", { workspaceId, userId: "user_viewer", role: "viewer", displayName: "Viewer", active: true });
+    await ctx.db.insert("members", { workspaceId, userId: "user_admin", role: "admin", displayName: "Admin", active: true });
     const other = await ctx.db.insert("workspaces", { name: "Other agency", slug: "other", timezone: "UTC", status: "active", createdAt: 0 });
     await ctx.db.insert("members", { workspaceId: other, userId: "user_other", role: "owner", displayName: "Other", active: true });
     return other;
   });
   const as = (subject: string) => t.withIdentity({ subject, issuer: "https://clerk.test", tokenIdentifier: `x|${subject}`, name: subject, email: `${subject}@example.com` });
-  return { t, workspaceId, otherWorkspace, owner: as("user_owner"), manager: as("user_manager"), rep: as("user_rep"), stranger: as("user_other") };
+  return { t, workspaceId, otherWorkspace, owner: as("user_owner"), admin: as("user_admin"), viewer: as("user_viewer"), stranger: as("user_other") };
 }
 
 async function connect(t: ReturnType<typeof convexTest>, workspaceId: Id<"workspaces">, provider: string) {
@@ -133,7 +133,7 @@ describe("booking counts", () => {
 
 describe("reading a connected calendar", () => {
   it("reads Google Calendar without asking for titles or names, pages through, and saves counts only", async () => {
-    const { t, workspaceId, owner, rep } = await setUp();
+    const { t, workspaceId, owner, viewer } = await setUp();
     await connect(t, workspaceId, "google_calendar");
     const calls = fake((url) =>
       url.searchParams.get("pageToken") ? { json: { items: GOOGLE_EVENTS.slice(5) } } : { json: { items: GOOGLE_EVENTS.slice(0, 5), nextPageToken: "p2" } },
@@ -149,7 +149,7 @@ describe("reading a connected calendar", () => {
     expect(first.searchParams.get("timeMin")).toBe("2026-08-13T12:00:00.000Z");
     expect(first.searchParams.get("timeMax")).toBe("2026-12-11T12:00:00.000Z");
 
-    const shown = await rep.query(api.bookings.view, { workspaceId });
+    const shown = await viewer.query(api.bookings.view, { workspaceId });
     expect(shown.canRefresh).toBe(false);
     expect(shown.calendars).toHaveLength(1);
     expect(shown.calendars[0].snapshot.totals).toEqual({ booked: 4, cancelled: 1, declined: 1 });
@@ -161,7 +161,7 @@ describe("reading a connected calendar", () => {
   });
 
   it("reads Calendly for the connected person only, checks recent past calls for a no-show mark, and saves counts only", async () => {
-    const { t, workspaceId, manager } = await setUp();
+    const { t, workspaceId, admin } = await setUp();
     await connect(t, workspaceId, "calendly");
     const base = "https://api.calendly.com/scheduled_events";
     const calls = fake((url) => {
@@ -181,13 +181,13 @@ describe("reading a connected calendar", () => {
         },
       };
     });
-    expect(await manager.action(api.bookings.syncNow, { workspaceId, provider: "calendly" })).toEqual({ code: "ok" });
+    expect(await admin.action(api.bookings.syncNow, { workspaceId, provider: "calendly" })).toEqual({ code: "ok" });
     const list = new URL(calls[0].url);
     expect(list.searchParams.get("user")).toBe("https://api.calendly.com/users/U1");
     expect(list.searchParams.has("organization")).toBe(false);
     expect(calls.slice(1).map((call) => new URL(call.url).pathname)).toEqual(["/scheduled_events/E3/invitees", "/scheduled_events/E1/invitees"]);
 
-    const shown = await manager.query(api.bookings.view, { workspaceId });
+    const shown = await admin.query(api.bookings.view, { workspaceId });
     expect(shown.canRefresh).toBe(true);
     expect(shown.calendars[0].snapshot).toMatchObject({ totals: { booked: 4, cancelled: 1, noShow: 1 }, noShowChecked: { checked: 2, of: 2 } });
     const stored = await t.run(async (ctx) => JSON.stringify(await ctx.db.query("integrationSnapshots").collect()));
@@ -221,11 +221,11 @@ describe("reading a connected calendar", () => {
     expect((await owner.query(api.bookings.view, { workspaceId })).calendars[0].snapshot.totals.booked).toBe(4);
   });
 
-  it("lets only an owner or manager of that workspace refresh, and only a calendar", async () => {
-    const { t, workspaceId, owner, rep, stranger } = await setUp();
+  it("lets only an owner or admin of that workspace refresh, and only a calendar", async () => {
+    const { t, workspaceId, owner, viewer, stranger } = await setUp();
     await connect(t, workspaceId, "google_calendar");
     const calls = fake(() => ({ json: { items: [] } }));
-    await expect(rep.action(api.bookings.syncNow, { workspaceId, provider: "google_calendar" })).rejects.toThrow();
+    await expect(viewer.action(api.bookings.syncNow, { workspaceId, provider: "google_calendar" })).rejects.toThrow();
     await expect(stranger.action(api.bookings.syncNow, { workspaceId, provider: "google_calendar" })).rejects.toThrow();
     await expect(owner.action(api.bookings.syncNow, { workspaceId, provider: "google_ads" })).rejects.toThrow(/not a calendar/);
     await expect(owner.action(api.bookings.syncNow, { workspaceId, provider: "calendly" })).rejects.toThrow(/Connect it first/);

@@ -1,5 +1,6 @@
 "use client";
 
+import { canWork } from "@/lib/roles";
 import { useMutation, useQuery } from "convex/react";
 import { FileSpreadsheet, ShieldCheck, Trash2 } from "@/components/icons";
 import { useId, useState } from "react";
@@ -296,7 +297,7 @@ export function ResultsFiles({ workspaceId, highlight }: { workspaceId: Id<"work
   const remove = useMutation(api.resultUploads.remove);
   const [notice, setNotice] = useState("");
   if (!shell) return null;
-  const canEdit = shell.role !== "rep";
+  const canEdit = canWork(shell.role);
   const canGrant = shell.role === "owner";
   const live = shell.agents.filter((agent) => agent.status === "live").map((agent) => ({ slug: agent.slug, name: agent.name }));
   return (

@@ -4,13 +4,14 @@
  * The access token stays on the server: no public function returns it.
  */
 
+import { isAdmin, isOwner } from "./lib/roles";
 import { v } from "convex/values";
 
 import { internal } from "./_generated/api";
 import type { Doc, Id } from "./_generated/dataModel";
 import { internalAction, internalMutation, internalQuery, type ActionCtx } from "./_generated/server";
 import { writeAudit } from "./lib/audit";
-import { memberAction, ownerMutation, workspaceQuery } from "./lib/builders";
+import { memberAction, adminMutation, workspaceQuery } from "./lib/builders";
 import { GROWTH_ARCHITECT } from "./catalog";
 import { notAllowed, notFound, userError } from "./lib/errors";
 import {
@@ -60,7 +61,7 @@ export const status = workspaceQuery({
       .withIndex("by_workspace", (q) => q.eq("workspaceId", ctx.workspaceId))
       .unique();
     const configured = Boolean(process.env.META_APP_ID && process.env.META_APP_SECRET);
-    if (!connection) return { configured, canManage: ctx.member.role === "owner", connection: null, snapshot: null, runs: [], usage: null, observations: [] };
+    if (!connection) return { configured, canManage: isAdmin(ctx.member.role), connection: null, snapshot: null, runs: [], usage: null, observations: [] };
     const snapshot = connection.adAccountId
       ? await ctx.db
           .query("metaAdSnapshots")
@@ -84,7 +85,7 @@ export const status = workspaceQuery({
     const currency = snapshot?.currency ?? connection.currency ?? "USD";
     return {
       configured,
-      canManage: ctx.member.role === "owner",
+      canManage: isAdmin(ctx.member.role),
       connection: {
         source: connection.source,
         status: connection.status,
@@ -142,7 +143,7 @@ export function grantedAgents(connection: Pick<Doc<"metaConnections">, "agents">
 }
 
 /** Grants or withdraws an agent's use of the workspace's Meta connection. Owner only. */
-export const setAgentAccess = ownerMutation({
+export const setAgentAccess = adminMutation({
   args: { agentSlug: v.string(), granted: v.boolean() },
   handler: async (ctx, args) => {
     const connection = await ctx.db
@@ -173,7 +174,7 @@ export const setAgentAccess = ownerMutation({
 // ---------- Facebook Login ----------
 
 /** Starts Facebook Login for this workspace. Owner only. Returns the dialog URL to open. */
-export const startConnect = ownerMutation({
+export const startConnect = adminMutation({
   args: { returnOrigin: v.optional(v.string()), returnPath: v.optional(v.string()) },
   handler: async (ctx, args) => {
     const appId = process.env.META_APP_ID;
@@ -212,7 +213,7 @@ export const consumeState = internalMutation({
       .query("members")
       .withIndex("by_workspace_user", (q) => q.eq("workspaceId", row.workspaceId).eq("userId", row.userId))
       .unique();
-    if (!member?.active || member.role !== "owner") return null;
+    if (!member?.active || !isAdmin(member.role)) return null;
     return { workspaceId: row.workspaceId, userId: row.userId, returnOrigin: row.returnOrigin ?? null, returnPath: row.returnPath ?? null };
   },
 });
@@ -377,9 +378,10 @@ export const saveSnapshot = internalMutation({
   },
 });
 
-async function requireRole(ctx: ActionCtx, workspaceId: Id<"workspaces">, userId: string, roles: string[]): Promise<string> {
+/** Reading and choosing the ad account need an Admin of the organization. */
+async function requireRole(ctx: ActionCtx, workspaceId: Id<"workspaces">, userId: string): Promise<string> {
   const role: string | null = await ctx.runQuery(internal.metaAds.roleOf, { workspaceId, userId });
-  if (!role || !roles.includes(role)) notAllowed();
+  if (!role || !isAdmin(role)) notAllowed();
   return role;
 }
 
@@ -535,7 +537,7 @@ async function syncConnection(ctx: ActionCtx, connection: Doc<"metaConnections">
 
 // ---------- What people do ----------
 
-/** The ad accounts the connected Meta person can reach. Owner or Manager. */
+/** The ad accounts the connected Meta person can reach. Owner or Admin. */
 type AccountChoice = {
   id: string;
   name: string;
@@ -548,7 +550,7 @@ type AccountChoice = {
 export const adAccounts = memberAction({
   args: {},
   handler: async (ctx): Promise<{ code: string; accounts: AccountChoice[] }> => {
-    await requireRole(ctx, ctx.workspaceId, ctx.userId, ["owner", "manager"]);
+    await requireRole(ctx, ctx.workspaceId, ctx.userId);
     const connection = await liveConnection(ctx, ctx.workspaceId);
     const counter: Counter = { ok: 0, failed: 0, lastCode: null };
     const list = await graphList<{ id: string; name?: string; account_status?: number; currency?: string; business?: { name?: string } }>(
@@ -579,7 +581,7 @@ export const adAccounts = memberAction({
 export const chooseAccount = memberAction({
   args: { adAccountId: v.string() },
   handler: async (ctx, args): Promise<{ code: string }> => {
-    await requireRole(ctx, ctx.workspaceId, ctx.userId, ["owner"]);
+    await requireRole(ctx, ctx.workspaceId, ctx.userId);
     if (!isAdAccountId(args.adAccountId)) throw userError("That is not an ad account id.");
     const connection = await liveConnection(ctx, ctx.workspaceId);
     const counter: Counter = { ok: 0, failed: 0, lastCode: null };
@@ -598,11 +600,11 @@ export const chooseAccount = memberAction({
   },
 });
 
-/** Reads the chosen account again now, optionally over a new window. Owner or Manager. */
+/** Reads the chosen account again now, optionally over a new window. Owner or Admin. */
 export const syncNow = memberAction({
   args: { range: v.optional(v.string()) },
   handler: async (ctx, args): Promise<{ code: string }> => {
-    await requireRole(ctx, ctx.workspaceId, ctx.userId, ["owner", "manager"]);
+    await requireRole(ctx, ctx.workspaceId, ctx.userId);
     const connection = await liveConnection(ctx, ctx.workspaceId);
     if (args.range !== undefined) {
       if (!isRange(args.range)) throw userError("Pick last_30d, last_90d or maximum.");
@@ -622,7 +624,7 @@ export const setRange = internalMutation({
 });
 
 /** Removes the connection, its token and every saved read. Owner only. Nothing on Meta changes. */
-export const disconnect = ownerMutation({
+export const disconnect = adminMutation({
   args: {},
   handler: async (ctx) => {
     const connection = await ctx.db
@@ -719,7 +721,7 @@ export const ownerOf = internalQuery({
       .query("members")
       .withIndex("by_workspace", (q) => q.eq("workspaceId", args.workspaceId))
       .take(50);
-    return members.find((row) => row.active && row.role === "owner")?.userId ?? null;
+    return members.find((row) => row.active && isOwner(row.role))?.userId ?? null;
   },
 });
 

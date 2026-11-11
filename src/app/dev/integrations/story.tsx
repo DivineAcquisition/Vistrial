@@ -1,5 +1,6 @@
 "use client";
 
+import { canWork } from "@/lib/roles";
 import { useState } from "react";
 
 import { CALENDAR_NOTES, CALENDARS } from "@/components/connections/integrations";
@@ -66,7 +67,7 @@ function build(state: string): IntegrationView[] {
 export function IntegrationsStory({ state, role, theme }: { state: string; role: string; theme: string }) {
   const [providers, setProviders] = useState(() => build(state));
   const [transcripts, setTranscripts] = useState(() => (state === "none" || state === "ready" ? [] : TRANSCRIPTS));
-  const canEdit = role !== "rep";
+  const canEdit = canWork(role);
   return (
     <main className="mx-auto grid max-w-6xl gap-4 p-4 sm:p-8">
       <StoryTheme theme={theme} />

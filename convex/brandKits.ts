@@ -4,6 +4,7 @@
  * uploaded: Creative Production places them on an image and never generates one.
  */
 
+import { requireWork } from "./lib/roles";
 import { v } from "convex/values";
 
 import type { Doc, Id } from "./_generated/dataModel";
@@ -11,7 +12,7 @@ import type { MutationCtx, QueryCtx } from "./_generated/server";
 import { writeAudit } from "./lib/audit";
 import { BRAND_MAX, LOGO_TYPES, MAX_LOGO_BYTES, STYLE_REF_TYPES, brandGaps, brandProblem, cleanBrand, sameBrand, type BrandContent, type BrandInput } from "./lib/brandKits";
 import { workspaceMutation, workspaceQuery } from "./lib/builders";
-import { notAllowed, notFound, userError } from "./lib/errors";
+import { notFound, userError } from "./lib/errors";
 
 const MAX_KITS = 100;
 const MAX_VERSIONS = 200;
@@ -126,11 +127,11 @@ export const get = workspaceQuery({
   },
 });
 
-/** A one-time upload link for a logo file. Owners and Managers. */
+/** A one-time upload link for a logo file. Owners, Admins and Members. */
 export const logoUploadUrl = workspaceMutation({
   args: {},
   handler: async (ctx) => {
-    if (ctx.member.role === "rep") notAllowed();
+    requireWork(ctx.member.role);
     return ctx.storage.generateUploadUrl();
   },
 });
@@ -197,12 +198,12 @@ function versionFields(content: BrandContent) {
 /**
  * Saves the kit as a new version, or a new kit without `kitId` (then `kind` says whose brand it is).
  * Nothing is overwritten, and saving the same content again adds nothing. A workspace has one kit for its
- * own brand. Owners and Managers.
+ * own brand. Owners, Admins and Members.
  */
 export const saveVersion = workspaceMutation({
   args: { kitId: v.optional(v.id("brandKits")), kind: v.optional(v.union(v.literal("own"), v.literal("client"))), note: v.optional(v.string()), ...contentArgs },
   handler: async (ctx, { kitId, kind, note, ...raw }) => {
-    if (ctx.member.role === "rep") notAllowed();
+    requireWork(ctx.member.role);
     const input = raw as BrandInput;
     const problem = brandProblem(input);
     if (problem) throw userError(problem);
@@ -242,11 +243,11 @@ export const saveVersion = workspaceMutation({
   },
 });
 
-/** Puts a kit away. Its versions and logo files are kept, so a creative made with it still shows them. Owners and Managers. */
+/** Puts a kit away. Its versions and logo files are kept, so a creative made with it still shows them. Owners, Admins and Members. */
 export const archive = workspaceMutation({
   args: { kitId: v.id("brandKits") },
   handler: async (ctx, args) => {
-    if (ctx.member.role === "rep") notAllowed();
+    requireWork(ctx.member.role);
     const kit = await ownKit(ctx, ctx.workspaceId, args.kitId);
     await ctx.db.patch(kit._id, { archived: true, updatedAt: Date.now() });
     await writeAudit(ctx, { workspaceId: ctx.workspaceId, actorType: "user", actorId: ctx.identity.subject, action: "brandKit.archived", subject: kit._id });

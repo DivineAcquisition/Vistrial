@@ -5,13 +5,14 @@
  * PDF is material the person supplied. Nothing in a file is treated as an instruction.
  */
 
+import { requireWork } from "./lib/roles";
 import { v } from "convex/values";
 
 import { internal } from "./_generated/api";
 import type { Doc, Id } from "./_generated/dataModel";
 import { internalAction, internalMutation, internalQuery, type MutationCtx } from "./_generated/server";
 import { workspaceMutation, workspaceQuery } from "./lib/builders";
-import { notAllowed, notFound, userError } from "./lib/errors";
+import { notFound, userError } from "./lib/errors";
 import type { ModelRoute } from "./lib/modelRouter";
 import { devSkillsEnabled, wrapUntrusted } from "./lib/registry";
 import { canonicalUrl } from "./lib/sourceRefs";
@@ -40,14 +41,14 @@ export function fileKind(contentType: string, name: string): "image" | "pdf" | "
 }
 
 function assertEditor(role: string) {
-  if (role === "rep") notAllowed();
+  requireWork(role);
 }
 
 function fileView(row: Doc<"sessionFiles">) {
   return { id: row._id, name: row.name, kind: row.kind, size: row.size, status: row.status, summary: row.summary ?? null, costCents: row.costCents };
 }
 
-/** A one-time upload URL for the browser. Owner or Manager. */
+/** A one-time upload URL for the browser. Owner, Admin or Member. */
 export const uploadUrl = workspaceMutation({
   args: {},
   handler: async (ctx) => {

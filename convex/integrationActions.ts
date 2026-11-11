@@ -4,6 +4,7 @@
  * returned to a caller outside it. Provider answers become short codes; their own words are not passed on.
  */
 
+import { isAdmin } from "./lib/roles";
 import { v } from "convex/values";
 
 import { internal } from "./_generated/api";
@@ -201,7 +202,7 @@ export const disconnect = memberAction({
   args: { provider: v.string() },
   handler: async (ctx, args): Promise<{ removed: boolean; revoked: boolean }> => {
     const role: string | null = await ctx.runQuery(internal.integrations.roleOf, { workspaceId: ctx.workspaceId, userId: ctx.userId });
-    if (role !== "owner") notAllowed();
+    if (!role || !isAdmin(role)) notAllowed();
     if (!isProviderKey(args.provider)) throw userError("That connection does not exist.", "not_found");
     const result: { removed: boolean; token: string | null } = await ctx.runMutation(internal.integrations.removeConnection, {
       workspaceId: ctx.workspaceId,

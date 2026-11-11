@@ -1,3 +1,4 @@
+import { requireWork } from "./lib/roles";
 import { paginationOptsValidator } from "convex/server";
 import { v } from "convex/values";
 
@@ -11,7 +12,7 @@ import { PLATFORM_CEILING, SOFT_WARNING_RATIO, capScope, dayKey, overCap } from 
 import { addDaySpend, daySpend, loadCaps, runCaps } from "./lib/capRows";
 import { currentAgentSlug } from "./catalog";
 import { assertClaims, assertSourcesExist } from "./lib/evidence";
-import { notAllowed, notFound, userError } from "./lib/errors";
+import { notFound, userError } from "./lib/errors";
 import { ModelError, NO_SPEND, complete, type ModelRoute, type Spend } from "./lib/modelRouter";
 import { completeWithTools } from "./lib/toolRouter";
 import { INJECTION_FIXTURE, TEST_SKILL, devSkillsEnabled, isActionTool, isCollectTool, wrapUntrusted } from "./lib/registry";
@@ -323,7 +324,7 @@ export async function startRunFor(
   },
 ) {
   if (checkCredit && !free) await assertCanSpend(ctx, workspaceId);
-  if (role === "rep") notAllowed();
+  requireWork(role);
   const project = projectId ? await ctx.db.get(projectId) : null;
   if (projectId && (!project || project.workspaceId !== workspaceId)) notFound();
   if (project?.status === "archived") throw userError("This project is archived.");
@@ -403,7 +404,7 @@ export const start = workspaceMutation({
 export const stop = workspaceMutation({
   args: { runId: v.id("agentRuns") },
   handler: async (ctx, args) => {
-    if (ctx.member.role === "rep") notAllowed();
+    requireWork(ctx.member.role);
     const run = await ctx.db.get(args.runId);
     if (!run || run.workspaceId !== ctx.workspaceId) notFound();
     if (!OPEN.has(run.status)) return { stopped: false };
@@ -1175,13 +1176,13 @@ export const askTimeout = internalMutation({
 });
 
 /**
- * An Owner or Manager answers the question a run is waiting on. The answer is saved as a verified business
+ * An Owner, Admin or Member answers the question a run is waiting on. The answer is saved as a verified business
  * fact, because the person stated it, and the run picks up where it stopped.
  */
 export const answer = workspaceMutation({
   args: { runId: v.id("agentRuns"), questionId: v.string(), answer: v.string() },
   handler: async (ctx, args) => {
-    if (ctx.member.role === "rep") notAllowed();
+    requireWork(ctx.member.role);
     const run = await ctx.db.get(args.runId);
     if (!run || run.workspaceId !== ctx.workspaceId) notFound();
     if (run.status !== "waiting" || run.waitingFor?.questionId !== args.questionId) {
@@ -1217,7 +1218,7 @@ export const answer = workspaceMutation({
 export const resume = workspaceMutation({
   args: { runId: v.id("agentRuns") },
   handler: async (ctx, args) => {
-    if (ctx.member.role === "rep") notAllowed();
+    requireWork(ctx.member.role);
     const run = await ctx.db.get(args.runId);
     if (!run || run.workspaceId !== ctx.workspaceId) notFound();
     if (run.status !== "needsInput" || !run.waitingFor) throw userError("This run is not waiting for input.");

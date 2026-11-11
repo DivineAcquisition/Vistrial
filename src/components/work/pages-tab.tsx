@@ -195,7 +195,7 @@ function StartForm({ initial, quote, onAskChange, onStart, onClose }: { initial:
                   {!quote.ready && quote.industry && quote.maxPages === 0 ? <span className="text-xs text-muted-foreground">Add a page, or tick the box to find some.</span> : null}
                 </div>
               ) : (
-                <p className="text-sm text-muted-foreground">An Owner or Manager can start a teardown.</p>
+                <p className="text-sm text-muted-foreground">An Owner, Admin or Member can start a teardown.</p>
               )}
               {problem ? <p className="text-sm text-destructive">{problem}</p> : null}
             </>
@@ -644,7 +644,7 @@ export function PagesTabView({ base, editor, tab, quote, onAskChange, onStart, v
         <Panel className="grid gap-2 p-4 text-sm sm:p-6">
           <p className="text-card-foreground">No teardowns yet.</p>
           <p className="text-muted-foreground">
-            Give Vistrial your landing page and a few others in your industry, or let it find some. It opens each public page the way a visitor would and matches every section to the job it should do. {editor ? "" : "An Owner or Manager can start one."}
+            Give Vistrial your landing page and a few others in your industry, or let it find some. It opens each public page the way a visitor would and matches every section to the job it should do. {editor ? "" : "An Owner, Admin or Member can start one."}
           </p>
         </Panel>
       ) : null}

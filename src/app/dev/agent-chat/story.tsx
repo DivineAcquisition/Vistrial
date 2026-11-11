@@ -31,7 +31,7 @@ function NewChat({ editor, preset, attached }: { editor: boolean; preset: ChatRo
           size="hero"
           disabled={!editor}
           initialText={starter}
-          placeholder={!editor ? "Owners and Managers start work. You can read every conversation." : route ? ROUTE_LOOK[route].hint : "Ask about your market, your offer or your growth…"}
+          placeholder={!editor ? "Owners, Admins and Members start work. You can read every conversation." : route ? ROUTE_LOOK[route].hint : "Ask about your market, your offer or your growth…"}
           footnote="It asks only what it needs, then shows a plan with its budget. Nothing runs or spends until you press Start."
           onSubmit={noop}
         />
@@ -47,7 +47,7 @@ export function AgentChatStory({ state, theme }: { state: string; theme: string 
   const plan = storyPlanChat();
   const finished = storyFinishedChat();
   return (
-    <StoryFrame theme={theme} role={editor ? "owner" : "rep"}>
+    <StoryFrame theme={theme} role={editor ? "owner" : "viewer"}>
       <ChatLayout list={<ConversationList rows={rows} activeId={OPEN[state] ?? null} base={base} canStart={editor} />}>
         {state === "unclear" ? (
           <ConversationFrame chat={storyUndecidedChat()} base={base}>

@@ -9,7 +9,7 @@ function parse(text: string) {
 }
 
 describe("results files", () => {
-  it("reads a Meta Ads Manager export: totals, campaigns, dates", () => {
+  it("reads a Meta Ads Admin export: totals, campaigns, dates", () => {
     const outcome = parse(`
 Reporting starts,Campaign name,Amount spent (USD),Impressions,Link clicks,Results,CTR (all)
 2026-10-01,Spring Deep Clean,"$1,200.50",40000,800,24,2.00%

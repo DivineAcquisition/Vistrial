@@ -1,5 +1,6 @@
 "use client";
 
+import { isAdmin } from "@/lib/roles";
 import Link from "next/link";
 import { useMutation, useQuery } from "convex/react";
 import { useParams } from "next/navigation";
@@ -39,7 +40,7 @@ function Asset({ shell, assetId }: { shell: WorkspaceShell; assetId: Id<"assets"
 
   if (asset === undefined) return <p className="text-sm text-muted-foreground">Loading the asset.</p>;
   const shown = viewingOld ? older : { body: asset.body, evidence: asset.evidence as EvidenceView[] };
-  const editor = shell.role === "owner" || shell.role === "manager";
+  const editor = isAdmin(shell.role);
   const missingSource = (asset.evidence as EvidenceView[]).some(claimMissing);
   const status = asset.status as "draft" | "needsReview" | "approved" | "rejected" | "archived";
 
@@ -199,6 +200,6 @@ function Asset({ shell, assetId }: { shell: WorkspaceShell; assetId: Id<"assets"
 export default function AssetPage() {
   const params = useParams<{ id: string }>();
   const shell = useWorkspaceShell();
-  if (!shell) return <EmptyState kind="permission" title="Sign in to open your workspace." />;
+  if (!shell) return <EmptyState kind="permission" title="Sign in to open your organization." />;
   return <Asset shell={shell} assetId={params.id as Id<"assets">} />;
 }

@@ -7,6 +7,7 @@
  * Vistrial sees a page, not its results. Every screen and every saved teardown says so.
  */
 
+import { canWork, requireWork } from "./lib/roles";
 import { v } from "convex/values";
 
 import type { Doc, Id } from "./_generated/dataModel";
@@ -19,7 +20,7 @@ import { workspaceMutation, workspaceQuery } from "./lib/builders";
 import { defaultCapsFor } from "./lib/caps";
 import { loadCaps } from "./lib/capRows";
 import { BASIS_LABEL } from "./lib/evidence";
-import { notAllowed, notFound, userError } from "./lib/errors";
+import { notFound, userError } from "./lib/errors";
 import type { PageSnapshot } from "./lib/pageReader/extract";
 import { READ_LIMITS, REASON_WORDS } from "./lib/pageReader/read";
 import { savedRecord } from "./lib/savedRecords";
@@ -114,19 +115,19 @@ export const quote = workspaceQuery({
       /** Whether the balance covers the cap. A run may start with less; it then stops when credit runs out. */
       coversMax: account ? account.balanceCents >= maxCents : true,
       ready: Boolean(asked.industry) && asked.maxPages > 0 && asked.given.every((row) => row.ok) && asked.ok.length <= MAX_PAGES && asked.maxPages <= leftToday,
-      canStart: ctx.member.role !== "rep",
+      canStart: canWork(ctx.member.role),
     };
   },
 });
 
 /**
  * Starts a teardown the person confirmed. `confirmedCents` is the cap they were shown; if it changed, nothing
- * starts and they are shown the new one. Owners and Managers.
+ * starts and they are shown the new one. Owners, Admins and Members.
  */
 export const start = workspaceMutation({
   args: { industry: v.string(), ownUrl: v.optional(v.string()), urls: v.array(v.string()), find: v.boolean(), note: v.optional(v.string()), confirmedCents: v.number() },
   handler: async (ctx, args) => {
-    if (ctx.member.role === "rep") notAllowed();
+    requireWork(ctx.member.role);
     const asked = plan(args);
     if (!asked.industry) throw userError("Say which industry these pages are in.");
     const bad = asked.given.find((row) => !row.ok);

@@ -1,5 +1,6 @@
 "use client";
 
+import { canWork } from "@/lib/roles";
 import { usePaginatedQuery } from "convex/react";
 import { useState } from "react";
 
@@ -61,7 +62,7 @@ function Library({ shell }: { shell: WorkspaceShell }) {
       <Panel className="grid gap-3 p-4 sm:p-6">
         {loadStatus === "LoadingFirstPage" ? <p className="text-sm text-muted-foreground">Loading assets.</p> : null}
         {loadStatus !== "LoadingFirstPage" && results.length === 0 ? (
-          <EmptyState bare kind={kind ? "no-results" : "empty"} preview="rows" title={kind ? "Nothing matches these filters." : "Reports and drafts the agents make will appear here."} detail={kind ? "Try another status or kind." : "Every asset keeps its versions, claims and sources, and waits for a person to approve it."} action={kind || shell.role === "rep" ? undefined : <StartSessionButton />} />
+          <EmptyState bare kind={kind ? "no-results" : "empty"} preview="rows" title={kind ? "Nothing matches these filters." : "Reports and drafts the agents make will appear here."} detail={kind ? "Try another status or kind." : "Every asset keeps its versions, claims and sources, and waits for a person to approve it."} action={kind || !canWork(shell.role) ? undefined : <StartSessionButton />} />
         ) : null}
         <Stagger className="grid gap-3">
           {results.map((asset: AssetRowView) => (
@@ -82,6 +83,6 @@ function Library({ shell }: { shell: WorkspaceShell }) {
 
 export default function AssetsPage() {
   const shell = useWorkspaceShell();
-  if (!shell) return <EmptyState kind="permission" title="Sign in to open your workspace." />;
+  if (!shell) return <EmptyState kind="permission" title="Sign in to open your organization." />;
   return <Library shell={shell} />;
 }

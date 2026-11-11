@@ -1,5 +1,6 @@
 "use client";
 
+import { type Role, isAdmin } from "@/lib/roles";
 import { useMutation, useQuery } from "convex/react";
 import { useState } from "react";
 
@@ -15,7 +16,7 @@ import type { Id } from "../../../convex/_generated/dataModel";
 
 export function LeadRecord({ leadId }: { leadId: string }) {
   const shell = useWorkspaceShell();
-  if (!shell) return <p className="text-sm text-muted-foreground">Sign in to open your workspace.</p>;
+  if (!shell) return <p className="text-sm text-muted-foreground">Sign in to open your organization.</p>;
   return <LiveRecord workspaceId={shell.workspaceId} leadId={leadId as Id<"leads">} role={shell.role} />;
 }
 
@@ -26,7 +27,7 @@ function LiveRecord({
 }: {
   workspaceId: Id<"workspaces">;
   leadId: Id<"leads">;
-  role: "owner" | "manager" | "rep";
+  role: Role;
 }) {
   const lead = useQuery(api.leads.get, { workspaceId, leadId });
   const timeline = useQuery(api.records.timeline, { workspaceId, leadId });
@@ -147,7 +148,7 @@ function LiveRecord({
         >
           Opt out
         </Button>
-        {role === "rep" ? null : (
+        {!isAdmin(role) ? null : (
           <form
             className="grid gap-2"
             onSubmit={(event) => {

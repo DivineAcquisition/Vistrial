@@ -8,8 +8,10 @@ import { v, type ObjectType, type PropertyValidators } from "convex/values";
 
 import type { Doc, Id } from "../_generated/dataModel";
 import { action, mutation, query, type ActionCtx, type MutationCtx, type QueryCtx } from "../_generated/server";
+import { internal } from "../_generated/api";
 import { requireGrant, requireIdentity, requireMember, requireStaff } from "./access";
 import { notAllowed, notFound } from "./errors";
+import { isAdmin, isOwner, roleOf, type Role } from "./roles";
 
 type AnyValidators = Record<string, PropertyValidators[string]>;
 
@@ -20,6 +22,8 @@ export type MemberAccess = {
   identity: UserIdentity;
   member: Doc<"members">;
   workspaceId: Id<"workspaces">;
+  /** The member's role in the four new words, whatever word their row still holds. */
+  role: Role;
 };
 
 export type StaffAccess = {
@@ -36,13 +40,14 @@ export function workspaceQuery<V extends AnyValidators, R>(def: {
     handler: async (ctx: QueryCtx, args: { workspaceId: Id<"workspaces"> }) => {
       const { workspaceId, ...rest } = args;
       const access = await requireMember(ctx, workspaceId);
-      return def.handler({ ...ctx, ...access }, rest as ObjectType<V>);
+      return def.handler({ ...ctx, ...access, role: roleOf(access.member.role) }, rest as ObjectType<V>);
     },
     // The validators still run. This cast stays inside the access layer.
   } as any) as RegisteredQuery<"public", WorkspaceArgs<V>, R>;
 }
 
-export function workspaceMutation<V extends AnyValidators, R>(def: {
+/** A write any member may make, a Viewer included. Only for a person's own choices: theme, notices, their own row. */
+export function selfMutation<V extends AnyValidators, R>(def: {
   args: V;
   handler: (ctx: MutationCtx & MemberAccess, args: ObjectType<V>) => R;
 }): RegisteredMutation<"public", WorkspaceArgs<V>, R> {
@@ -51,36 +56,71 @@ export function workspaceMutation<V extends AnyValidators, R>(def: {
     handler: async (ctx: MutationCtx, args: { workspaceId: Id<"workspaces"> }) => {
       const { workspaceId, ...rest } = args;
       const access = await requireMember(ctx, workspaceId);
-      return def.handler({ ...ctx, ...access }, rest as ObjectType<V>);
+      return def.handler({ ...ctx, ...access, role: roleOf(access.member.role) }, rest as ObjectType<V>);
     },
   } as any) as RegisteredMutation<"public", WorkspaceArgs<V>, R>;
+}
+
+/**
+ * A write to the organization. Owners, Admins and Members; a Viewer is read-only, so the refusal lives here
+ * and a new mutation cannot forget it.
+ */
+export function workspaceMutation<V extends AnyValidators, R>(def: {
+  args: V;
+  handler: (ctx: MutationCtx & MemberAccess, args: ObjectType<V>) => R;
+}) {
+  return selfMutation({
+    args: def.args,
+    handler: async (ctx, args) => {
+      if (ctx.role === "viewer") notAllowed();
+      return def.handler(ctx, args);
+    },
+  });
+}
+
+/** Approving, connecting accounts, people, clients and the organization's settings: Owners and Admins. */
+export function adminMutation<V extends AnyValidators, R>(def: {
+  args: V;
+  handler: (ctx: MutationCtx & MemberAccess, args: ObjectType<V>) => R;
+}) {
+  return selfMutation({
+    args: def.args,
+    handler: async (ctx, args) => {
+      if (!isAdmin(ctx.role)) notAllowed();
+      return def.handler(ctx, args);
+    },
+  });
 }
 
 export function ownerMutation<V extends AnyValidators, R>(def: {
   args: V;
   handler: (ctx: MutationCtx & MemberAccess, args: ObjectType<V>) => R;
 }) {
-  return workspaceMutation({
+  return selfMutation({
     args: def.args,
     handler: async (ctx, args) => {
-      if (ctx.member.role !== "owner") notAllowed();
+      if (!isOwner(ctx.role)) notAllowed();
       return def.handler(ctx, args);
     },
   });
 }
 
-export function managerQuery<V extends AnyValidators, R>(def: {
+/** What Owners and Admins read: people, settings, the ledger. */
+export function adminQuery<V extends AnyValidators, R>(def: {
   args: V;
   handler: (ctx: QueryCtx & MemberAccess, args: ObjectType<V>) => R;
 }) {
   return workspaceQuery({
     args: def.args,
     handler: async (ctx, args) => {
-      if (ctx.member.role === "rep") notAllowed();
+      if (!isAdmin(ctx.role)) notAllowed();
       return def.handler(ctx, args);
     },
   });
 }
+
+/** The name this had while Admins were called Managers. */
+export const managerQuery = adminQuery;
 
 export function signedInQuery<V extends AnyValidators, R>(def: {
   args: V;
@@ -116,22 +156,42 @@ export function signedInMutation<V extends AnyValidators, R>(def: {
   } as any);
 }
 
-export function memberAction<V extends AnyValidators, R>(def: {
-  args: V;
-  handler: (
-    ctx: ActionCtx & { userId: string; workspaceId: Id<"workspaces"> },
-    args: ObjectType<V>,
-  ) => Promise<R>;
-}): RegisteredAction<"public", WorkspaceArgs<V>, Promise<R>> {
+type ActionAccess = { userId: string; workspaceId: Id<"workspaces">; role: Role };
+
+function actionFor<V extends AnyValidators, R>(
+  def: { args: V; handler: (ctx: ActionCtx & ActionAccess, args: ObjectType<V>) => Promise<R> },
+  viewerToo: boolean,
+): RegisteredAction<"public", WorkspaceArgs<V>, Promise<R>> {
   return action({
     args: { workspaceId: v.id("workspaces"), ...def.args },
     handler: async (ctx: ActionCtx, args: { workspaceId: Id<"workspaces"> }) => {
       const identity = await ctx.auth.getUserIdentity();
       if (!identity) notFound();
       const { workspaceId, ...rest } = args;
-      return def.handler({ ...ctx, userId: identity.subject, workspaceId }, rest as ObjectType<V>);
+      // An action has no database of its own, so membership is read through a query, like everything else it reads.
+      const stored: string | null = await ctx.runQuery(internal.access.memberRole, { workspaceId, userId: identity.subject });
+      if (!stored) notFound();
+      const role = roleOf(stored);
+      if (!viewerToo && role === "viewer") notAllowed();
+      return def.handler({ ...ctx, userId: identity.subject, workspaceId, role }, rest as ObjectType<V>);
     },
   } as any);
+}
+
+/** An action in an organization: its members only, and not a Viewer. Handlers still check for Admin or Owner where they need one. */
+export function memberAction<V extends AnyValidators, R>(def: {
+  args: V;
+  handler: (ctx: ActionCtx & ActionAccess, args: ObjectType<V>) => Promise<R>;
+}) {
+  return actionFor(def, false);
+}
+
+/** An action that only reads or refreshes, so a Viewer may run it too. */
+export function viewerAction<V extends AnyValidators, R>(def: {
+  args: V;
+  handler: (ctx: ActionCtx & ActionAccess, args: ObjectType<V>) => Promise<R>;
+}) {
+  return actionFor(def, true);
 }
 
 export function staffQuery<V extends AnyValidators, R>(def: {
